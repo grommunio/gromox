@@ -165,7 +165,7 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 	std::unique_ptr<char[], stdlib_delete> freeme;
 	auto quoted = HX_strquote(username, HXQUOTE_LDAPRDN, &unique_tie(freeme));
 	auto filter = g_mail_attr + "="s + quoted;
-	auto ret = gx_ldap_search(tok.res.meta,
+	auto ret = gx_ldap_search(tok->meta,
 	      g_search_base.size() != 0 ? g_search_base.c_str() : nullptr,
 	      filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
@@ -173,22 +173,22 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 		       filter.c_str(), ldap_err2string(ret));
 		return FALSE;
 	}
-	if (!validate_response(tok.res.meta.get(), msg.get())) {
+	if (!validate_response(tok->meta.get(), msg.get())) {
 		printf("[ldap_adaptor]: filter %s was ambiguous\n", filter.c_str());
 		return FALSE;
 	}
 
-	auto firstmsg = ldap_first_message(tok.res.meta.get(), msg.get());
+	auto firstmsg = ldap_first_message(tok->meta.get(), msg.get());
 	if (firstmsg == nullptr)
 		return FALSE;
-	auto dn = ldap_get_dn(tok.res.meta.get(), firstmsg);
+	auto dn = ldap_get_dn(tok->meta.get(), firstmsg);
 	if (dn == nullptr)
 		return FALSE;
 
 	struct berval bv;
 	bv.bv_val = deconst(znul(password));
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
-	ret = gx_ldap_bind(tok.res.bind, dn, &bv);
+	ret = gx_ldap_bind(tok->bind, dn, &bv);
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
 	printf("[ldap_adaptor]: ldap_simple_bind %s: %s\n", dn, ldap_err2string(ret));

@@ -34,6 +34,10 @@ template<typename Tp> class resource_pool {
 		}
 		~token() { if (!m_done) finish(); }
 		void operator=(token &&) = delete;
+		inline Tp &operator*() { return res; }
+		inline const Tp &operator*() const { return res; }
+		inline Tp *operator->() { return &res; }
+		inline const Tp *operator->() const { return &res; }
 		void finish() noexcept {
 			try {
 				m_pool.put(std::move(res), m_gen);
@@ -46,7 +50,6 @@ template<typename Tp> class resource_pool {
 		resource_pool &m_pool;
 		unsigned int m_gen = 0;
 		bool m_done = false;
-		public:
 		Tp res{};
 	};
 

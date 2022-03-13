@@ -70,9 +70,9 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		"FROM users AS u " JOIN_WITH_DISPLAYTYPE
 		" WHERE u.username='"s + temp_name + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -135,7 +135,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 	auto qstr = "UPDATE users SET password='"s + encrypt_passwd +
 	            "' WHERE username='" + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
 	return TRUE;
 } catch (const std::exception &e) {
@@ -182,9 +182,9 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		"u.privilege_bits FROM users AS u " JOIN_WITH_DISPLAYTYPE
 		" WHERE u.username='"s + temp_name + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	if (pmyres.num_rows() != 1)
@@ -214,7 +214,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	cr_hold.unlock();
 	qstr = "UPDATE users SET password='"s + encrypt_passwd +
 	       "' WHERE username='" + temp_name + "'";
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
 	return TRUE;
 } catch (const std::exception &e) {
@@ -227,9 +227,9 @@ BOOL mysql_adaptor_get_username_from_id(int user_id,
 {
 	auto qstr = "SELECT username FROM users WHERE id=" + std::to_string(user_id);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -250,9 +250,9 @@ BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id) try
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = "SELECT id FROM users WHERE username='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -275,9 +275,9 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id) try
 		"SELECT u.id FROM users AS u " JOIN_WITH_DISPLAYTYPE
 		" WHERE u.maildir='"s + temp_dir + "' AND dt.propval_str=0 LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -305,9 +305,9 @@ bool mysql_adaptor_get_user_displayname(const char *username,
 		"LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 " /* PR_NICKNAME */
 		"WHERE u.username='"s + temp_name + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -336,9 +336,9 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = "SELECT privilege_bits FROM users WHERE username='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -359,9 +359,9 @@ bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t lang_s
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = "SELECT lang FROM users WHERE username='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -386,7 +386,7 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 	auto qstr = "UPDATE users set lang='"s + lang +
 		    "' WHERE username='" + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
 	return TRUE;
 } catch (const std::exception &e) {
@@ -399,9 +399,9 @@ static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
 {
 	auto qstr = "SELECT child_id FROM hierarchy WHERE class_id=" + std::to_string(class_id);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -429,9 +429,9 @@ bool mysql_adaptor_get_timezone(const char *username, char *zone, size_t zone_si
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = "SELECT timezone FROM users WHERE username='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -457,7 +457,7 @@ BOOL mysql_adaptor_set_timezone(const char *username, const char *zone) try
 	auto qstr = "UPDATE users set timezone='"s + temp_zone +
 	            "' WHERE username='" + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
 	return TRUE;
 } catch (const std::exception &e) {
@@ -472,9 +472,9 @@ bool mysql_adaptor_get_maildir(const char *username, char *maildir, size_t md_si
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = "SELECT maildir FROM users WHERE username='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -495,9 +495,9 @@ bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsi
 	mysql_adaptor_encode_squote(domainname, temp_name);
 	auto qstr = "SELECT homedir, domain_status FROM domains WHERE domainname='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -515,9 +515,9 @@ bool mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir, size_t dsize)
 {
 	auto qstr = "SELECT homedir FROM domains WHERE id=" + std::to_string(domain_id);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -538,9 +538,9 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id) try
 	mysql_adaptor_encode_squote(homedir, temp_dir);
 	auto qstr = "SELECT id FROM domains WHERE homedir='"s + temp_dir + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -565,9 +565,9 @@ BOOL mysql_adaptor_get_user_ids(const char *username, int *puser_id,
 		" FROM users AS u " JOIN_WITH_DISPLAYTYPE
 		" WHERE u.username='"s + temp_name + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -595,9 +595,9 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname, int *pdomain_id,
 	mysql_adaptor_encode_squote(domainname, temp_name);
 	auto qstr = "SELECT id, org_id FROM domains WHERE domainname='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -619,9 +619,9 @@ BOOL mysql_adaptor_get_mlist_ids(int user_id, int *pgroup_id,
 	            "FROM users AS u " JOIN_WITH_DISPLAYTYPE
 	            " WHERE id=" + std::to_string(user_id);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -643,9 +643,9 @@ BOOL mysql_adaptor_get_org_domains(int org_id, std::vector<int> &pfile) try
 {
 	auto qstr = "SELECT id FROM domains WHERE org_id=" + std::to_string(org_id);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -666,9 +666,9 @@ BOOL mysql_adaptor_get_domain_info(int domain_id, sql_domain &dinfo) try
 	auto qstr = "SELECT domainname, title, address, homedir "
 	            "FROM domains WHERE id=" + std::to_string(domain_id);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -691,9 +691,9 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2) try
 	auto qstr = "SELECT org_id FROM domains WHERE id=" + std::to_string(domain_id1) +
 	            " OR id=" + std::to_string(domain_id2);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -718,9 +718,9 @@ BOOL mysql_adaptor_get_domain_groups(int domain_id,
 	auto qstr = "SELECT id, groupname, title FROM groups "
 	            "WHERE domain_id=" + std::to_string(domain_id);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -746,9 +746,9 @@ BOOL mysql_adaptor_get_group_classes(int group_id,
 	            "INNER JOIN classes AS c ON h.class_id=0 AND h.group_id=" +
 	            std::to_string(group_id) + " AND h.child_id=c.id";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -772,9 +772,9 @@ BOOL mysql_adaptor_get_sub_classes(int class_id, std::vector<sql_class> &pfile) 
 	            " INNER JOIN classes AS c ON h.class_id=" + std::to_string(class_id) +
 	            " AND h.child_id=c.id";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -841,9 +841,9 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 	mysql_adaptor_encode_squote(account, temp_account);
 	auto qstr = "SELECT id, list_type FROM mlists WHERE listname='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	if (pmyres.num_rows() != 1)
@@ -856,9 +856,9 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 	case MLIST_TYPE_NORMAL:
 		qstr = "SELECT username FROM associations WHERE list_id=" +
 		       std::to_string(id) + " AND username='"s + temp_account + "'";
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() > 0)
@@ -866,9 +866,9 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		return b_result;
 	case MLIST_TYPE_GROUP: {
 		qstr = "SELECT id FROM groups WHERE groupname='"s + temp_name + "'";
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1)
@@ -877,9 +877,9 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		int group_id = strtol(myrow[0], nullptr, 0);
 		qstr = "SELECT username FROM users WHERE group_id=" + std::to_string(group_id) +
 		       " AND username='" + temp_account + "'";
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() > 0)
@@ -888,9 +888,9 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 	}
 	case MLIST_TYPE_DOMAIN: {
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1)
@@ -899,9 +899,9 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		int domain_id = strtol(myrow[0], nullptr, 0);
 		qstr = "SELECT username FROM users WHERE domain_id=" + std::to_string(domain_id) +
 		       " AND username='" + temp_account + "'";
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() > 0)
@@ -910,16 +910,16 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 	}
 	case MLIST_TYPE_CLASS: {
 		qstr = "SELECT id FROM classes WHERE listname='"s + temp_name + "'";
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1)
 			return FALSE;		
 		myrow = pmyres.fetch_row();
 		int class_id = strtol(myrow[0], nullptr, 0);
-		b_result = mysql_adaptor_hierarchy_include(conn.res, temp_account, class_id);
+		b_result = mysql_adaptor_hierarchy_include(*conn, temp_account, class_id);
 		return b_result;
 	}
 	default:
@@ -955,9 +955,9 @@ BOOL mysql_adaptor_check_same_org2(const char *domainname1,
 	auto qstr = "SELECT org_id FROM domains WHERE domainname='"s + temp_name1 +
 	            "' OR domainname='" + temp_name2 + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -990,9 +990,9 @@ bool mysql_adaptor_check_user(const char *username, char *path, size_t dsize) tr
 		"WHERE u.username='"s + temp_name + "' OR a.aliasname='" +
 		temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -1039,9 +1039,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 	auto qstr = "SELECT id, list_type, list_privilege FROM mlists "
 	            "WHERE listname='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	if (pmyres.num_rows() != 1) {
@@ -1072,9 +1072,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			break;
 		case MLIST_PRIVILEGE_SPECIFIED:
 			qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
-			if (!conn.res.query(qstr.c_str()))
+			if (!conn->query(qstr.c_str()))
 				return false;
-			pmyres = mysql_store_result(conn.res.get());
+			pmyres = mysql_store_result(conn->get());
 			if (pmyres == nullptr)
 				return false;
 			rows = pmyres.num_rows();
@@ -1096,9 +1096,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			return TRUE;
 		}
 		qstr = "SELECT username FROM associations WHERE list_id=" + std::to_string(id);
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		rows = pmyres.num_rows();
@@ -1140,9 +1140,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			break;
 		case MLIST_PRIVILEGE_SPECIFIED:
 			qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
-			if (!conn.res.query(qstr.c_str()))
+			if (!conn->query(qstr.c_str()))
 				return false;
-			pmyres = mysql_store_result(conn.res.get());
+			pmyres = mysql_store_result(conn->get());
 			if (pmyres == nullptr)
 				return false;
 			rows = pmyres.num_rows();
@@ -1164,9 +1164,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			return TRUE;
 		}
 		qstr = "SELECT id FROM groups WHERE groupname='"s + temp_name + "'";
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1) {
@@ -1177,9 +1177,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		int group_id = strtol(myrow[0], nullptr, 0);
 		qstr = "SELECT u.username, dt.propval_str AS dtypx FROM users AS u "
 		       JOIN_WITH_DISPLAYTYPE " WHERE u.group_id=" + std::to_string(group_id);
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		rows = pmyres.num_rows();
@@ -1229,9 +1229,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			break;
 		case MLIST_PRIVILEGE_SPECIFIED:
 			qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
-			if (!conn.res.query(qstr.c_str()))
+			if (!conn->query(qstr.c_str()))
 				return false;
-			pmyres = mysql_store_result(conn.res.get());
+			pmyres = mysql_store_result(conn->get());
 			if (pmyres == nullptr)
 				return false;
 			rows = pmyres.num_rows();
@@ -1253,9 +1253,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			return TRUE;
 		}
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1) {
@@ -1266,9 +1266,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		int domain_id = strtol(myrow[0], nullptr, 0);
 		qstr = "SELECT u.username, dt.propval_str AS dtypx FROM users AS u "
 		       JOIN_WITH_DISPLAYTYPE " WHERE u.domain_id=" + std::to_string(domain_id);
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		rows = pmyres.num_rows();
@@ -1318,9 +1318,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			break;
 		case MLIST_PRIVILEGE_SPECIFIED:
 			qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
-			if (!conn.res.query(qstr.c_str()))
+			if (!conn->query(qstr.c_str()))
 				return false;
-			pmyres = mysql_store_result(conn.res.get());
+			pmyres = mysql_store_result(conn->get());
 			if (pmyres == nullptr)
 				return false;
 			rows = pmyres.num_rows();
@@ -1343,9 +1343,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		}
 
 		qstr = "SELECT id FROM classes WHERE listname='"s + temp_name + "'";
-		if (!conn.res.query(qstr.c_str()))
+		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn.res.get());
+		pmyres = mysql_store_result(conn->get());
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1) {
@@ -1356,7 +1356,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		myrow = pmyres.fetch_row();
 		int clsid = strtol(myrow[0], nullptr, 0);
 		std::vector<int> file_temp{clsid};
-		if (!mysql_adaptor_expand_hierarchy(conn.res.get(),
+		if (!mysql_adaptor_expand_hierarchy(conn->get(),
 		    file_temp, clsid)) {
 			*presult = MLIST_RESULT_NONE;
 			return FALSE;
@@ -1365,9 +1365,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		std::set<std::string, icasecmp> file_temp1;
 		for (auto class_id : file_temp) {
 			qstr = "SELECT username FROM members WHERE class_id=" + std::to_string(class_id);
-			if (!conn.res.query(qstr.c_str()))
+			if (!conn->query(qstr.c_str()))
 				return false;
-			pmyres = mysql_store_result(conn.res.get());
+			pmyres = mysql_store_result(conn->get());
 			if (pmyres == nullptr)
 				return false;
 			rows = pmyres.num_rows();
@@ -1406,11 +1406,11 @@ bool mysql_adaptor_get_user_info(const char *username, char *maildir,
 	auto qstr = "SELECT maildir, address_status, lang, timezone "
 	            "FROM users WHERE username='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr)
+	if (*conn == nullptr)
 		return false;
-	if (!conn.res.query(qstr.c_str()))
+	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn->get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();

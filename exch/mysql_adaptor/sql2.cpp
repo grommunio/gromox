@@ -69,9 +69,9 @@ static bool db_upgrade_check_2(MYSQL *conn)
 bool db_upgrade_check()
 {
 	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr)
+	if (*conn == nullptr)
 		return false;
-	return db_upgrade_check_2(conn.res.get());
+	return db_upgrade_check_2(conn->get());
 }
 
 MYSQL *sql_make_conn()
@@ -144,8 +144,8 @@ bool sqlconn::query(const char *q)
 resource_pool<sqlconn>::token sqlconnpool::get_wait()
 {
 	auto c = resource_pool::get_wait();
-	if (c.res == nullptr)
-		c.res = sql_make_conn();
+	if (*c == nullptr)
+		*c = sql_make_conn();
 	return c;
 }
 
@@ -249,14 +249,14 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	char query[427];
 
 	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr)
+	if (*conn == nullptr)
 		return false;
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.username, a.aliasname FROM users AS u "
 	         "INNER JOIN aliases AS a ON u.username=a.mainname "
 	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username", class_id);
 	aliasmap_t amap;
-	aliasmap_load(conn.res, query, amap);
+	aliasmap_load(*conn, query, amap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
@@ -264,7 +264,7 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username "
 	         "ORDER BY p.user_id, p.proptag, p.order_id", class_id);
 	propmap_t pmap;
-	propmap_load(conn.res, query, pmap);
+	propmap_load(*conn, query, pmap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.id, u.username, up.propval_str AS dtypx, 9999, "
@@ -275,7 +275,7 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN groups AS gr ON u.username=gr.groupname", class_id);
-	return userlist_parse(conn.res, query, amap, pmap, pfile);
+	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
 	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
 	return false;
@@ -286,20 +286,20 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 	char query[406];
 
 	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr)
+	if (*conn == nullptr)
 		return false;
 	gx_snprintf(query, arsizeof(query),
 	         "SELECT u.username, a.aliasname FROM users AS u "
 	         "INNER JOIN aliases AS a ON u.domain_id=%d AND u.username=a.mainname", domain_id);
 	aliasmap_t amap;
-	aliasmap_load(conn.res, query, amap);
+	aliasmap_load(*conn, query, amap);
 
 	gx_snprintf(query, arsizeof(query),
 	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
 	         "INNER JOIN user_properties AS p ON u.domain_id=%d AND u.id=p.user_id "
 	         "ORDER BY p.user_id, p.proptag, p.order_id", domain_id);
 	propmap_t pmap;
-	propmap_load(conn.res, query, pmap);
+	propmap_load(*conn, query, pmap);
 
 	gx_snprintf(query, arsizeof(query),
 	         "SELECT u.id, u.username, up.propval_str AS dtypx, 9998, "
@@ -310,7 +310,7 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN groups AS gr ON u.username=gr.groupname "
 	         "WHERE u.domain_id=%u AND u.group_id=0", domain_id);
-	return userlist_parse(conn.res, query, amap, pmap, pfile);
+	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
 	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
 	return false;
@@ -321,7 +321,7 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	char query[457];
 
 	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr)
+	if (*conn == nullptr)
 		return false;
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.username, a.aliasname FROM users AS u "
@@ -330,7 +330,7 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	         "FROM members AS m WHERE u.username=m.username)=0",
 	         group_id);
 	aliasmap_t amap;
-	aliasmap_load(conn.res, query, amap);
+	aliasmap_load(*conn, query, amap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
@@ -339,7 +339,7 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	         "ORDER BY p.user_id, p.proptag, p.order_id",
 	         group_id);
 	propmap_t pmap;
-	propmap_load(conn.res, query, pmap);
+	propmap_load(*conn, query, pmap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.id, u.username, up.propval_str AS dtypx, 9997, "
@@ -351,7 +351,7 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	         "LEFT JOIN groups AS gr ON u.username=gr.groupname "
 	         "WHERE u.group_id=%d AND (SELECT COUNT(*) AS num "
 	         "FROM members AS m WHERE u.username=m.username)=0", group_id);
-	return userlist_parse(conn.res, query, amap, pmap, pfile);
+	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
 	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
 	return false;
@@ -363,9 +363,9 @@ int mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
 	snprintf(query, arsizeof(query), "SELECT `secondary` "
 	         "FROM `secondary_store_hints` WHERE `primary`=%u", pri);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr || !conn.res.query(query))
+	if (*conn == nullptr || !conn->query(query))
 		return EIO;
-	DB_RESULT result = mysql_store_result(conn.res.get());
+	DB_RESULT result = mysql_store_result(conn->get());
 	if (result == nullptr)
 		return ENOMEM;
 	DB_ROW row;
@@ -385,9 +385,9 @@ static int mysql_adaptor_domain_list_query(const char *domain) try
 	char query[576];
 	snprintf(query, arsizeof(query), "SELECT 1 FROM domains WHERE domain_status=0 AND domainname='%s'", qdom);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr || !conn.res.query(query))
+	if (*conn == nullptr || !conn->query(query))
 		return -EIO;
-	DB_RESULT res = mysql_store_result(conn.res.get());
+	DB_RESULT res = mysql_store_result(conn->get());
 	if (res == nullptr)
 		return -ENOMEM;
 	return res.fetch_row() != nullptr;
