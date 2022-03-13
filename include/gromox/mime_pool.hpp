@@ -12,6 +12,11 @@ struct MIME_POOL_NODE {
 	MIME_POOL *pool;
 };
 
+/*
+ * This should be modeled as resource_pool<MIME> instead. Current blocker is
+ * that SIMPLE_TREE is not ready to manage non-trivial types as returned by
+ * resource_pool<T>::get().
+ */
 struct GX_EXPORT MIME_POOL {
 	MIME_POOL(size_t number, int ratio);
 	~MIME_POOL();

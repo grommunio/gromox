@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <gromox/mapi_types.hpp>
+#include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp> 
 using namespace gromox;
@@ -129,6 +130,22 @@ static int t_interval()
 	return EXIT_SUCCESS;
 }
 
+static void t_respool()
+{
+	struct S {};
+	struct M {
+		M() = default;
+		M(int z) : zz(z) {}
+		NOMOVE(M);
+		int zz = 21;
+	};
+	resource_pool<M> m;
+	resource_pool<S> s;
+	m.resize(2);
+	auto mt = m.get_wait(44);
+	printf("%d\n", mt->zz);
+}
+
 int main()
 {
 	using fpt = decltype(&t_interval);
@@ -138,5 +155,6 @@ int main()
 		if (ret != EXIT_SUCCESS)
 			return ret;
 	}
+	t_respool();
 	return EXIT_SUCCESS;
 }
