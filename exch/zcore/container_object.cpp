@@ -1076,58 +1076,56 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 					return FALSE;	
 				pset->count ++;
 			}
-		} else {
-			if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
-				size_t i = 0;
-				for (auto e : pbase->gal_list) {
-					if (i < first_pos) {
-						++i;
-						continue;
-					}
-					pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-					if (NULL == pset->pparray[pset->count]) {
-						return FALSE;
-					}
-					if (!ab_tree_fetch_node_properties(e,
-					    pproptags, pset->pparray[pset->count])) {
-						return FALSE;	
-					}
-					pset->count ++;
-					if (pset->count == row_count) {
-						break;
-					}
+		} else if (pcontainer->id.abtree_id.minid == 0xFFFFFFFF) {
+			size_t i = 0;
+			for (auto e : pbase->gal_list) {
+				if (i < first_pos) {
 					++i;
+					continue;
 				}
-			} else if (0 == pcontainer->id.abtree_id.minid) {
-				return TRUE;
-			} else {
-				auto ptnode = ab_tree_minid_to_node(pbase.get(), pcontainer->id.abtree_id.minid);
-				if (ptnode == nullptr)
-					return TRUE;
-				ptnode = ptnode->get_child();
-				if (ptnode == nullptr)
-					return TRUE;
-				size_t i = 0;
-				do {
-					if (ab_tree_get_node_type(ptnode) >= abnode_type::containers)
-						continue;
-					if (i < first_pos) {
-						continue;
-					}
-					i ++;
-					pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-					if (NULL == pset->pparray[pset->count]) {
-						return FALSE;
-					}
-					if (!ab_tree_fetch_node_properties(ptnode,
-					    pproptags, pset->pparray[pset->count]))
-						return FALSE;	
-					pset->count ++;
-					if (pset->count == row_count) {
-						break;
-					}
-				} while ((ptnode = ptnode->get_sibling()) != nullptr);
+				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
+				if (NULL == pset->pparray[pset->count]) {
+					return FALSE;
+				}
+				if (!ab_tree_fetch_node_properties(e,
+				    pproptags, pset->pparray[pset->count])) {
+					return FALSE;
+				}
+				pset->count++;
+				if (pset->count == row_count) {
+					break;
+				}
+				++i;
 			}
+		} else if (0 == pcontainer->id.abtree_id.minid) {
+			return TRUE;
+		} else {
+			auto ptnode = ab_tree_minid_to_node(pbase.get(), pcontainer->id.abtree_id.minid);
+			if (ptnode == nullptr)
+				return TRUE;
+			ptnode = ptnode->get_child();
+			if (ptnode == nullptr)
+				return TRUE;
+			size_t i = 0;
+			do {
+				if (ab_tree_get_node_type(ptnode) >= abnode_type::containers)
+					continue;
+				if (i < first_pos) {
+					continue;
+				}
+				i++;
+				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
+				if (NULL == pset->pparray[pset->count]) {
+					return FALSE;
+				}
+				if (!ab_tree_fetch_node_properties(ptnode,
+				    pproptags, pset->pparray[pset->count]))
+					return FALSE;
+				pset->count++;
+				if (pset->count == row_count) {
+					break;
+				}
+			} while ((ptnode = ptnode->get_sibling()) != nullptr);
 		}
 	} else {
 		if (NULL == pcontainer->contents.prow_set) {
