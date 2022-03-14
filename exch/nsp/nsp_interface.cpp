@@ -519,19 +519,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_SEND_RICH_INFO:
 		pprop->value.b = 1;
 		return ecSuccess;
-	case PR_BUSINESS_TELEPHONE_NUMBER:
-	case PR_TITLE:
-	case PR_NICKNAME:
-	case PR_PRIMARY_TELEPHONE_NUMBER:
-	case PR_HOME_ADDRESS_STREET:
-	case PR_MOBILE_TELEPHONE_NUMBER:
-	case PR_COMMENT:
-#define PR_EMS_AB_ORG_UNIT_ROOT_DN PROP_TAG(PT_UNICODE, 0x8CA8)
-	case PR_EMS_AB_ORG_UNIT_ROOT_DN:
-		pprop->value.pstr = deconst("N/A");
-		return ecSuccess;
 	}
-	fprintf(stderr, "E-1920: unhandled property %xh\n", proptag);
 	return ecNotFound;
 }		
 
