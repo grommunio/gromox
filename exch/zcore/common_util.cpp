@@ -2444,11 +2444,6 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	return pmsgctnt;
 }
 
-eid_t common_util_convert_notification_folder_id(uint64_t folder_id)
-{
-	return rop_util_nfid_to_eid(folder_id);
-}
-
 const char* common_util_get_default_timezone()
 {
 	return g_default_zone;
