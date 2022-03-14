@@ -3066,14 +3066,10 @@ BOOL exmdb_server_mark_table(const char *dir,
 		*pinst_id = sqlite3_column_int64(pstmt, 0);
 		switch (ptnode->type) {
 		case TABLE_TYPE_HIERARCHY:
-			*pinst_id = (*pinst_id & NFID_UPPER_PART) == 0 ?
-			            rop_util_make_eid_ex(1, *pinst_id) :
-			            rop_util_make_eid_ex(*pinst_id >> 48, *pinst_id & NFID_LOWER_PART);
+			*pinst_id = rop_util_nfid_to_eid(*pinst_id);
 			break;
 		case TABLE_TYPE_CONTENT:
-			*pinst_id = (*pinst_id & NFID_UPPER_PART) == 0 ?
-			            rop_util_make_eid_ex(1, *pinst_id) :
-			            rop_util_make_eid_ex(2, *pinst_id & NFID_LOWER_PART);
+			*pinst_id = rop_util_nfid_to_eid2(*pinst_id);
 			*pinst_num = sqlite3_column_int64(pstmt, 1);
 			*prow_type = sqlite3_column_int64(pstmt, 2);
 			break;

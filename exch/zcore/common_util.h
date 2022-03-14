@@ -172,7 +172,7 @@ BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern BOOL common_util_convert_to_zrule_data(store_object *, TPROPVAL_ARRAY *);
 extern gxerr_t common_util_remote_copy_message(store_object *s0, uint64_t message_id, store_object *s1, uint64_t folder_id1);
 extern gxerr_t common_util_remote_copy_folder(store_object *s0, uint64_t folder_id, store_object *s1, uint64_t folder_id1, const char *new_name);
-uint64_t common_util_convert_notification_folder_id(uint64_t folder_id);
+extern eid_t common_util_convert_notification_folder_id(uint64_t);
 extern BOOL common_util_send_message(store_object *, uint64_t msg_id, BOOL submit);
 extern BOOL common_util_message_to_rfc822(store_object *, uint64_t msg_id, BINARY *eml);
 extern MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *, const BINARY *eml);

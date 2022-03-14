@@ -93,9 +93,7 @@ static BOOL notify_response_specify_folder_created(NOTIFY_RESPONSE *pnotify,
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_OBJECTCREATED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
-	pmemory->folder_id = (folder_id & NFID_UPPER_PART) == 0 ?
-	                     rop_util_make_eid_ex(1, folder_id) :
-	                     rop_util_make_eid_ex(folder_id >> 48, folder_id & NFID_LOWER_PART);
+	pmemory->folder_id = rop_util_nfid_to_eid(folder_id);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
 	pmemory->parent_id = rop_util_make_eid_ex(1, parent_id);
 	pnotify->notification_data.pproptags = &pmemory->proptags;
@@ -175,9 +173,7 @@ static BOOL notify_response_specify_folder_deleted(
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_OBJECTDELETED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
-	pmemory->folder_id = (folder_id & NFID_UPPER_PART) == 0 ?
-	                     rop_util_make_eid_ex(1, folder_id) :
-	                     rop_util_make_eid_ex(folder_id >> 48, folder_id & NFID_LOWER_PART);
+	pmemory->folder_id = rop_util_nfid_to_eid(folder_id);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
 	pmemory->parent_id = rop_util_make_eid_ex(1, parent_id);
 	return TRUE;
@@ -222,9 +218,7 @@ static BOOL notify_response_specify_folder_modified(NOTIFY_RESPONSE *pnotify,
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_OBJECTMODIFIED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
-	pmemory->folder_id = (folder_id & NFID_UPPER_PART) == 0 ?
-	                     rop_util_make_eid_ex(1, folder_id) :
-	                     rop_util_make_eid_ex(folder_id >> 48, folder_id & NFID_LOWER_PART);
+	pmemory->folder_id = rop_util_nfid_to_eid(folder_id);
 	if (NULL != ptotal) {
 		pnotify->notification_data.notification_flags |=
 								NOTIFICATION_FLAG_MOST_TOTAL;
@@ -286,15 +280,11 @@ static BOOL notify_response_specify_folder_mvcp(
 	pnotify->notification_data.notification_flags =
 								notification_flags;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
-	pmemory->folder_id = (folder_id & NFID_UPPER_PART) == 0 ?
-	                     rop_util_make_eid_ex(1, folder_id) :
-	                     rop_util_make_eid_ex(folder_id >> 48, folder_id & NFID_LOWER_PART);
+	pmemory->folder_id = rop_util_nfid_to_eid(folder_id);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
 	pmemory->parent_id = rop_util_make_eid_ex(1, parent_id);
 	pnotify->notification_data.pold_folder_id = &pmemory->old_folder_id;
-	pmemory->old_folder_id = (old_folder_id & NFID_UPPER_PART) == 0 ?
-	                         rop_util_make_eid_ex(1, old_folder_id) :
-	                         rop_util_make_eid_ex(old_folder_id >> 48, old_folder_id & NFID_LOWER_PART);
+	pmemory->old_folder_id = rop_util_nfid_to_eid(old_folder_id);
 	pnotify->notification_data.pold_parent_id = &pmemory->old_parent_id;
 	pmemory->old_parent_id = rop_util_make_eid_ex(1, old_parent_id);
 	return TRUE;
@@ -375,14 +365,10 @@ static BOOL notify_response_specify_hierarchy_table_row_added(
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_ADDED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
-	pmemory->row_folder_id = (row_folder_id & NFID_UPPER_PART) == 0 ?
-	                         rop_util_make_eid_ex(1, row_folder_id) :
-	                         rop_util_make_eid_ex(row_folder_id >> 48, row_folder_id & NFID_LOWER_PART);
+	pmemory->row_folder_id = rop_util_nfid_to_eid(row_folder_id);
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
 	pmemory->after_folder_id = after_folder_id == 0 ? eid_t(0) :
-	                           (after_folder_id & NFID_UPPER_PART) == 0 ?
-	                           rop_util_make_eid_ex(1, after_folder_id) :
-	                           rop_util_make_eid_ex(after_folder_id >> 48, after_folder_id & NFID_LOWER_PART);
+	                           rop_util_nfid_to_eid(after_folder_id);
 	return TRUE;
 }
 
@@ -400,9 +386,7 @@ static BOOL notify_response_specify_content_table_row_added(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	pmemory->row_message_id = (row_message_id & NFID_UPPER_PART) == 0 ?
-	                          rop_util_make_eid_ex(1, row_message_id) :
-	                          rop_util_make_eid_ex(2, row_message_id & NFID_LOWER_PART);
+	pmemory->row_message_id = rop_util_nfid_to_eid2(row_message_id);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
@@ -410,9 +394,7 @@ static BOOL notify_response_specify_content_table_row_added(
 	                           rop_util_make_eid_ex(1, after_folder_id);
 	pnotify->notification_data.pafter_row_id = &pmemory->after_row_id;
 	pmemory->after_row_id = after_row_id == 0 ? eid_t(0) :
-	                        (after_row_id & NFID_UPPER_PART) == 0 ?
-	                        rop_util_make_eid_ex(1, after_row_id) :
-	                        rop_util_make_eid_ex(2, after_row_id & NFID_LOWER_PART);
+	                        rop_util_nfid_to_eid2(after_row_id);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
 	return TRUE;
@@ -434,9 +416,7 @@ static BOOL notify_response_specify_search_table_row_added(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	pmemory->row_message_id = (row_message_id & NFID_UPPER_PART) == 0 ?
-	                          rop_util_make_eid_ex(1, row_message_id) :
-	                          rop_util_make_eid_ex(2, row_message_id & NFID_LOWER_PART);
+	pmemory->row_message_id = rop_util_nfid_to_eid2(row_message_id);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
@@ -444,9 +424,7 @@ static BOOL notify_response_specify_search_table_row_added(
 	                           rop_util_make_eid_ex(1, after_folder_id);
 	pnotify->notification_data.pafter_row_id = &pmemory->after_row_id;
 	pmemory->after_row_id = after_row_id == 0 ? eid_t(0) :
-	                        (after_row_id & NFID_UPPER_PART) == 0 ?
-	                        rop_util_make_eid_ex(1, after_row_id) :
-	                        rop_util_make_eid_ex(2, after_row_id & NFID_LOWER_PART);
+	                        rop_util_nfid_to_eid2(after_row_id);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
 	return TRUE;
@@ -461,9 +439,7 @@ static BOOL notify_response_specify_hierarchy_table_row_deleted(
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_DELETED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
-	pmemory->row_folder_id = (row_folder_id & NFID_UPPER_PART) == 0 ?
-	                         rop_util_make_eid_ex(1, row_folder_id) :
-	                         rop_util_make_eid_ex(row_folder_id >> 48, row_folder_id & NFID_LOWER_PART);
+	pmemory->row_folder_id = rop_util_nfid_to_eid(row_folder_id);
 	return TRUE;
 }
 
@@ -479,9 +455,7 @@ static BOOL notify_response_specify_content_table_row_deleted(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	pmemory->row_message_id = (row_message_id & NFID_UPPER_PART) == 0 ?
-	                          rop_util_make_eid_ex(1, row_message_id) :
-	                          rop_util_make_eid_ex(2, row_message_id & NFID_LOWER_PART);
+	pmemory->row_message_id = rop_util_nfid_to_eid2(row_message_id);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	return TRUE;
@@ -501,9 +475,7 @@ static BOOL notify_response_specify_search_table_row_deleted(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	pmemory->row_message_id = (row_message_id & NFID_UPPER_PART) == 0 ?
-	                          rop_util_make_eid_ex(1, row_message_id) :
-	                          rop_util_make_eid_ex(2, row_message_id & NFID_LOWER_PART);
+	pmemory->row_message_id = rop_util_nfid_to_eid2(row_message_id);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	return TRUE;
@@ -519,14 +491,10 @@ static BOOL notify_response_specify_hierarchy_table_row_modified(
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_MODIFIED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
-	pmemory->row_folder_id = (row_folder_id & NFID_UPPER_PART) == 0 ?
-	                         rop_util_make_eid_ex(1, row_folder_id) :
-	                         rop_util_make_eid_ex(row_folder_id >> 48, row_folder_id & NFID_LOWER_PART);
+	pmemory->row_folder_id = rop_util_nfid_to_eid(row_folder_id);
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
 	pmemory->after_folder_id = after_folder_id == 0 ? eid_t(0) :
-	                           (after_folder_id & NFID_UPPER_PART) == 0 ?
-	                           rop_util_make_eid_ex(1, after_folder_id) :
-	                           rop_util_make_eid_ex(after_folder_id >> 48, after_folder_id & NFID_LOWER_PART);
+	                           rop_util_nfid_to_eid(after_folder_id);
 	return TRUE;
 }
 	
@@ -544,9 +512,7 @@ static BOOL notify_response_specify_content_table_row_modified(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	pmemory->row_message_id = (row_message_id & NFID_UPPER_PART) == 0 ?
-	                          rop_util_make_eid_ex(1, row_message_id) :
-	                          rop_util_make_eid_ex(2, row_message_id & NFID_LOWER_PART);
+	pmemory->row_message_id = rop_util_nfid_to_eid2(row_message_id);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
@@ -554,9 +520,7 @@ static BOOL notify_response_specify_content_table_row_modified(
 	                           rop_util_make_eid_ex(1, after_folder_id);
 	pnotify->notification_data.pafter_row_id = &pmemory->after_row_id;
 	pmemory->after_row_id = after_row_id == 0 ? eid_t(0) :
-	                        (after_row_id & NFID_UPPER_PART) == 0 ?
-	                        rop_util_make_eid_ex(1, after_row_id) :
-	                        rop_util_make_eid_ex(2, after_row_id & NFID_LOWER_PART);
+	                        rop_util_nfid_to_eid2(after_row_id);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
 	return TRUE;
@@ -578,9 +542,7 @@ static BOOL notify_response_specify_search_table_row_modified(
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_make_eid_ex(1, row_folder_id);
 	pnotify->notification_data.prow_message_id = &pmemory->row_message_id;
-	pmemory->row_message_id = (row_message_id & NFID_UPPER_PART) == 0 ?
-	                          rop_util_make_eid_ex(1, row_message_id) :
-	                          rop_util_make_eid_ex(2, row_message_id & NFID_LOWER_PART);
+	pmemory->row_message_id = rop_util_nfid_to_eid2(row_message_id);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
@@ -588,9 +550,7 @@ static BOOL notify_response_specify_search_table_row_modified(
 	                           rop_util_make_eid_ex(1, after_folder_id);
 	pnotify->notification_data.pafter_row_id = &pmemory->after_row_id;
 	pmemory->after_row_id = after_row_id == 0 ? eid_t(0) :
-	                        (after_row_id & NFID_UPPER_PART) == 0 ?
-		                rop_util_make_eid_ex(1, after_row_id) :
-		                rop_util_make_eid_ex(2, after_row_id & NFID_LOWER_PART);
+	                        rop_util_nfid_to_eid2(after_row_id);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
 	return TRUE;

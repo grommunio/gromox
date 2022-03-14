@@ -127,6 +127,18 @@ eid_t rop_util_make_eid_ex(uint16_t replid, uint64_t value)
 	return rop_util_make_eid(replid, rop_util_value_to_gc(value));
 }
 
+eid_t rop_util_nfid_to_eid(uint64_t id)
+{
+	return (id & NFID_UPPER_PART) == 0 ? rop_util_make_eid_ex(1, id) :
+	       rop_util_make_eid_ex(id >> 48, id & NFID_LOWER_PART);
+}
+
+eid_t rop_util_nfid_to_eid2(uint64_t id)
+{
+	return (id & NFID_UPPER_PART) == 0 ? rop_util_make_eid_ex(1, id) :
+	       rop_util_make_eid_ex(2, id & NFID_LOWER_PART);
+}
+
 GUID rop_util_make_user_guid(int user_id)
 {
 	/*

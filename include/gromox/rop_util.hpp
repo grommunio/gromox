@@ -19,6 +19,8 @@ extern GLOBCNT rop_util_value_to_gc(uint64_t);
 extern uint64_t rop_util_gc_to_value(GLOBCNT);
 extern eid_t rop_util_make_eid(uint16_t replid, GLOBCNT);
 extern eid_t rop_util_make_eid_ex(uint16_t replid, uint64_t value);
+extern GX_EXPORT eid_t rop_util_nfid_to_eid(uint64_t);
+extern GX_EXPORT eid_t rop_util_nfid_to_eid2(uint64_t);
 GUID rop_util_make_user_guid(int user_id);
 GUID rop_util_make_domain_guid(int domain_id);
 extern GX_EXPORT int rop_util_get_user_id(GUID);

@@ -2444,11 +2444,9 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	return pmsgctnt;
 }
 
-uint64_t common_util_convert_notification_folder_id(uint64_t folder_id)
+eid_t common_util_convert_notification_folder_id(uint64_t folder_id)
 {
-	return (folder_id & NFID_UPPER_PART) == 0 ?
-	       rop_util_make_eid_ex(1, folder_id) :
-	       rop_util_make_eid_ex(folder_id >> 48, folder_id & NFID_LOWER_PART);
+	return rop_util_nfid_to_eid(folder_id);
 }
 
 const char* common_util_get_default_timezone()
