@@ -228,18 +228,19 @@ OBJECT_TREE::~OBJECT_TREE()
 uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobject)
 {
 	auto pobjtree = this;
-	decltype(m_hash.end()) parent_iter;
+	OBJECT_NODE *parent_ptr = nullptr;
 	
 	if (pobjtree->tree.get_nodes_num() > MAX_HANDLE_NUM)
 		return INVALID_HANDLE;
 	if (parent_handle < 0) {
 		if (pobjtree->tree.get_root() != nullptr)
 			return INVALID_HANDLE;
-		parent_iter = pobjtree->m_hash.end();
+		parent_ptr = nullptr;
 	} else {
-		parent_iter = pobjtree->m_hash.find(parent_handle);
-		if (parent_iter == pobjtree->m_hash.end())
+		auto i = pobjtree->m_hash.find(parent_handle);
+		if (i == pobjtree->m_hash.end())
 			return INVALID_HANDLE;
+		parent_ptr = i->second;
 	}
 	auto pobjnode = me_alloc<OBJECT_NODE>();
 	if (NULL == pobjnode) {
@@ -262,10 +263,10 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 		free(pobjnode);
 		return INVALID_HANDLE;
 	}
-	if (parent_iter == pobjtree->m_hash.end())
+	if (parent_ptr == nullptr)
 		pobjtree->tree.set_root(&pobjnode->node);
 	else
-		pobjtree->tree.add_child(&parent_iter->second->node,
+		pobjtree->tree.add_child(&parent_ptr->node,
 			&pobjnode->node, SIMPLE_TREE_ADD_LAST);
 	return pobjnode->handle;
 }
