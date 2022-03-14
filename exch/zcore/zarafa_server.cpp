@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
+#include <climits>
 #include <csignal>
 #include <cstdint>
 #include <cstdio>
@@ -1131,7 +1132,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	int base_id = pinfo->org_id == 0 ? -pinfo->domain_id : pinfo->org_id;
 	if (0 == entryid.cb) {
 		container_id.abtree_id.base_id = base_id;
-		container_id.abtree_id.minid = 0xFFFFFFFF;
+		container_id.abtree_id.minid = UINT32_MAX;
 		auto contobj = container_object::create(CONTAINER_TYPE_ABTREE, container_id);
 		if (contobj == nullptr)
 			return ecError;
@@ -1154,7 +1155,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		if ('\0' == essdn[0]) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
-			container_id.abtree_id.minid = 0xFFFFFFFF;;
+			container_id.abtree_id.minid = UINT32_MAX;
 		} else if (0 == strcmp(essdn, "/")) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
@@ -2658,9 +2659,8 @@ uint32_t zarafa_server_queryrows(
 	static const uint32_t object_type_message = MAPI_MESSAGE;
 	static const uint32_t object_type_attachment = MAPI_ATTACH;
 	
-	if (count > 0x7FFFFFFF) {
-		count = 0x7FFFFFFF;
-	}
+	if (count > INT32_MAX)
+		count = INT32_MAX;
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -2672,9 +2672,8 @@ uint32_t zarafa_server_queryrows(
 	if (!ptable->check_to_load())
 		return ecError;
 	auto table_type = ptable->get_table_type();
-	if (0xFFFFFFFF != start) {
+	if (start != UINT32_MAX)
 		ptable->set_position(start);
-	}
 	if (NULL != prestriction) {
 		switch (ptable->get_table_type()) {
 		case HIERARCHY_TABLE:

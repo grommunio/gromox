@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -177,7 +178,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		    0, pfolder->folder_id, PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
 		return TRUE;
 	}
 	case PR_ASSOC_MESSAGE_SIZE: {
@@ -189,7 +190,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		    0, pfolder->folder_id, PR_ASSOC_MESSAGE_SIZE_EXTENDED,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
 		return TRUE;
 	}
 	case PR_NORMAL_MESSAGE_SIZE: {
@@ -201,7 +202,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		    0, pfolder->folder_id, PR_NORMAL_MESSAGE_SIZE_EXTENDED,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
 		return TRUE;
 	}
 	case PR_ACCESS:

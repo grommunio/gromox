@@ -961,7 +961,7 @@ static BOOL oxcmail_parse_response_suppress(
 	if (0 == strcasecmp(field, "NONE")) {
 		return TRUE;
 	} else if (0 == strcasecmp(field, "ALL")) {
-		tmp_int32 = 0xFFFFFFFF;
+		tmp_int32 = UINT32_MAX;
 		return pproplist->set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) == 0 ? TRUE : false;
 	}
 	len = strlen(field);
@@ -4558,7 +4558,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	
 	num = pmsg->proplist.get<uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
 	if (num != nullptr && *num != 0) {
-		if (*num == 0xFFFFFFFF) {
+		if (*num == UINT32_MAX) {
 			if (!phead->set_field("X-Auto-Response-Suppress", "ALL"))
 				return FALSE;
 		} else {

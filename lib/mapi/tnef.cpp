@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -157,6 +158,7 @@ struct tnef_push : public EXT_PUSH {
 
 }
 
+static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 static const uint8_t g_pad_bytes[3]{};
 static const char* (*tnef_cpid_to_charset)(uint32_t cpid);
 static BOOL tnef_serialize_internal(tnef_push &, BOOL b_embedded, const MESSAGE_CONTENT *);
@@ -1754,7 +1756,7 @@ int tnef_push::p_propval(const TNEF_PROPVAL &rr)
 	case PT_OBJECT: {
 		TRY(pext->p_uint32(1));
 		auto bv = static_cast<BINARY *>(r->pvalue);
-		if (bv->cb != 0xFFFFFFFF) {
+		if (bv->cb != UINT32_MAX) {
 			TRY(pext->p_uint32(bv->cb + 16));
 			TRY(pext->p_guid(IID_IStorage));
 			TRY(pext->p_bytes(bv->pb, bv->cb));
@@ -2448,7 +2450,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 			}
 		}
 		num = pattachment->proplist.get<uint32_t>(PROP_TAG_RENDERINGPOSITION);
-		tmp_rend.attach_position = num != nullptr ? *num : 0xFFFFFFFF;
+		tmp_rend.attach_position = num != nullptr ? *num : indet_rendering_pos;
 		bv = pattachment->proplist.get<BINARY>(PR_ATTACH_ENCODING);
 		tmp_rend.data_flags = bv != nullptr && bv->cb == sizeof(MACBINARY_ENCODING) &&
 		                      memcmp(bv->pb, MACBINARY_ENCODING, sizeof(MACBINARY_ENCODING)) == 0 ?
@@ -2544,7 +2546,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 						pattachment->proplist.ppropval[j].pvalue;
 		}
 		if (NULL != pattachment->pembedded) {
-			tmp_bin.cb = 0xFFFFFFFF;
+			tmp_bin.cb = UINT32_MAX;
 			tmp_bin.pv = pattachment->pembedded;
 			tnef_proplist.ppropval[tnef_proplist.count].propid = PROP_ID(PR_ATTACH_DATA_OBJ);
 			tnef_proplist.ppropval[tnef_proplist.count].proptype = PT_OBJECT;

@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <csignal>
 #include <cstdint>
 #include <cstdio>
@@ -691,9 +692,8 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		0 == S_ISREG(node_stat.st_mode)) {
 		return FALSE;
 	}
-	if (node_stat.st_size >= 0xFFFFFFFF) {
+	if (node_stat.st_size >= UINT32_MAX)
 		return FALSE;
-	}
 	if (mod_cache_get_others_field(&phttp->request.f_others,
 	    "If-None-Match", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 	    mod_cache_retrieve_etag(tmp_buff, &ino, &size, &mtime)) {

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <climits>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -14,6 +15,8 @@
 #include "logon_object.h"
 #include "message_object.h"
 #include "stream_object.h"
+
+static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 
 std::unique_ptr<attachment_object> attachment_object::create(message_object *pparent,
 	uint32_t attachment_num, uint8_t open_flags)
@@ -68,7 +71,7 @@ BOOL attachment_object::init_attachment()
 	if (NULL == propvals.ppropval[propvals.count].pvalue) {
 		return FALSE;
 	}
-	*rendpos = 0xFFFFFFFF;
+	*rendpos = indet_rendering_pos;
 	++propvals.count;
 	
 	auto modtime = cu_alloc<uint64_t>();

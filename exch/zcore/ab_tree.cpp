@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <climits>
 #include <csignal>
 #include <cstddef>
 #include <cstdint>
@@ -1856,7 +1857,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	SINGLE_LIST_NODE *psnode1;
 	
 	single_list_init(&temp_list);
-	if (0xFFFFFFFF == container_id) {
+	if (container_id == UINT32_MAX) {
 		for (auto ptr : pbase->gal_list) {
 			if (!ab_tree_match_node(ptr, codepage, pfilter))
 				continue;

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <fcntl.h>
@@ -247,9 +248,8 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 	if (parent_handle < 0) {
 		pobjnode->handle = ROOT_HANDLE;
 	} else {
-		if (pobjtree->last_handle >= 0x7FFFFFFF) {
+		if (pobjtree->last_handle >= INT32_MAX)
 			pobjtree->last_handle = 0;
-		}
 		pobjtree->last_handle ++;
 		pobjnode->handle = pobjtree->last_handle;
 	}
@@ -293,9 +293,8 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 
 void *OBJECT_TREE::get_object1(uint32_t obj_handle, uint8_t *ptype)
 {
-	if (obj_handle > 0x7FFFFFFF) {
+	if (obj_handle > INT32_MAX)
 		return NULL;
-	}
 	auto pobjtree = this;
 	auto iter = pobjtree->m_hash.find(obj_handle);
 	if (iter == pobjtree->m_hash.end())
@@ -306,9 +305,8 @@ void *OBJECT_TREE::get_object1(uint32_t obj_handle, uint8_t *ptype)
 
 void OBJECT_TREE::release_object_handle(uint32_t obj_handle)
 {
-	if (ROOT_HANDLE == obj_handle || obj_handle > 0x7FFFFFFF) {
+	if (obj_handle == ROOT_HANDLE || obj_handle > INT32_MAX)
 		return;
-	}
 	auto pobjtree = this;
 	auto iter = pobjtree->m_hash.find(obj_handle);
 	/* do not relase store object until

@@ -3561,7 +3561,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		if (0 == member_id) {
 			*ppvalue = deconst("default");
 			return TRUE;
-		} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
+		} else if (member_id == UINT64_MAX) {
 			*ppvalue = deconst("anonymous");
 			return TRUE;
 		}
@@ -3582,18 +3582,17 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		          " permissions WHERE member_id=%llu", LLU(member_id));
 		break;
 	case PROP_TAG_MEMBERRIGHTS:
-		if (0 == member_id) {
+		if (member_id == 0)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT config_value "
 					"FROM configurations WHERE config_id=%d",
 					CONFIG_ID_DEFAULT_PERMISSION);
-		} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
+		else if (member_id == UINT64_MAX)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT config_value "
 					"FROM configurations WHERE config_id=%d",
 					CONFIG_ID_ANONYMOUS_PERMISSION);
-		} else {
+		else
 			snprintf(sql_string, arsizeof(sql_string), "SELECT permission FROM "
 			          "permissions WHERE member_id=%llu", LLU(member_id));
-		}
 		break;
 	default:
 		*ppvalue = NULL;

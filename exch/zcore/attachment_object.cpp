@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -10,6 +11,8 @@
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "store_object.h"
+
+static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 
 std::unique_ptr<attachment_object> attachment_object::create(message_object *pparent, uint32_t attachment_num)
 {
@@ -63,7 +66,7 @@ BOOL attachment_object::init_attachment()
 	if (NULL == propvals.ppropval[propvals.count].pvalue) {
 		return FALSE;
 	}
-	*static_cast<uint32_t *>(propvals.ppropval[propvals.count++].pvalue) = 0xFFFFFFFF;
+	*static_cast<uint32_t *>(propvals.ppropval[propvals.count++].pvalue) = indet_rendering_pos;
 	pvalue = cu_alloc<uint64_t>();
 	if (NULL == pvalue) {
 		return FALSE;

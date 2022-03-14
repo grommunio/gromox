@@ -1011,7 +1011,7 @@ BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 		tmp_proptags.count = 1;
 		tmp_proptags.pproptag = &tmp_proptag;
 		common_util_reduce_proptags(&proptags, &tmp_proptags);
-		if (!msg->query_attachment_table(&proptags, ptable->position, 0x7FFFFFFF, &tmp_set))
+		if (!msg->query_attachment_table(&proptags, ptable->position, INT32_MAX, &tmp_set))
 			return FALSE;	
 		break;
 	}
@@ -1027,7 +1027,7 @@ BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 	case USER_TABLE:
 		container_object_get_user_table_all_proptags(&proptags);
 		if (!static_cast<container_object *>(ptable->pparent_obj)->
-		    query_user_table(&proptags, ptable->position, 0x7FFFFFFF, &tmp_set))
+		    query_user_table(&proptags, ptable->position, INT32_MAX, &tmp_set))
 			return FALSE;	
 		break;
 	default:

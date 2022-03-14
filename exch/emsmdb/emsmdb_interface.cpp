@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <chrono>
+#include <climits>
 #include <csignal>
 #include <cstdint>
 #include <cstdio>
@@ -596,9 +597,8 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	
 	/* just like EXCHANGE 2010 or later, we do
 		not support session context linking */
-	if (0xFFFFFFFF == cxr_link) {
+	if (cxr_link == UINT32_MAX)
 		*ptimestamp = emsmdb_interface_get_timestamp();
-	}
 	if (!emsmdb_interface_create_handle(rpc_info.username, client_version,
 	    client_mode, cpid, lcid_string, lcid_sort, pcxr, pcxh))
 		return ecLoginFailure;

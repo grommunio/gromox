@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <climits>
 #include <csignal>
 #include <cstdint>
 #include <cstdio>
@@ -251,7 +252,7 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 		if (plogitem->tree.get_root() != nullptr)
 			return -4;
 		ppparent = NULL;
-	} else if (parent_handle >= 0 && parent_handle < 0x7FFFFFFF) {
+	} else if (parent_handle >= 0 && parent_handle < INT32_MAX) {
 		ppparent = plogitem->phash->query<OBJECT_NODE *>(parent_handle);
 		if (NULL == ppparent) {
 			return -5;
@@ -301,9 +302,8 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 void *rop_processor_get_object(LOGMAP *plogmap,
 	uint8_t logon_id, uint32_t obj_handle, int *ptype)
 {
-	if (obj_handle >= 0x7FFFFFFF) {
+	if (obj_handle >= INT32_MAX)
 		return NULL;
-	}
 	auto plogitem = plogmap->p[logon_id];
 	if (NULL == plogitem) {
 		return NULL;
@@ -321,9 +321,8 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 {
 	EMSMDB_INFO *pemsmdb_info;
 	
-	if (obj_handle >= 0x7FFFFFFF) {
+	if (obj_handle >= INT32_MAX)
 		return;
-	}
 	auto plogitem = plogmap->p[logon_id];
 	if (NULL == plogitem) {
 		return;

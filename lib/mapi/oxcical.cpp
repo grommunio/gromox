@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -42,6 +43,7 @@ static constexpr char
 static constexpr size_t namemap_limit = 0x1000;
 static constexpr char EncodedGlobalId_hex[] =
 	"040000008200E00074C5B7101A82E008";
+static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 
 static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 {
@@ -1673,8 +1675,7 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	tmp_int32 = ATTACH_EMBEDDED_MSG;
 	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
 		return FALSE;
-	tmp_int32 = 0xFFFFFFFF;
-	if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &tmp_int32) != 0)
+	if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &indet_rendering_pos) != 0)
 		return FALSE;
 	auto newval = pattachment->pembedded->proplist.getval(PR_SUBJECT);
 	if (newval != nullptr &&
@@ -1785,8 +1786,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			if (pattachment->proplist.set(PROP_TAG_EXCEPTIONSTARTTIME, &tmp_int64) != 0 ||
 			    pattachment->proplist.set(PROP_TAG_EXCEPTIONENDTIME, &tmp_int64) != 0)
 				return FALSE;
-			tmp_int32 = 0xFFFFFFFF;
-			if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &tmp_int32) != 0)
+			if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &indet_rendering_pos) != 0)
 				return FALSE;
 		}
 	} else if (0 == strcasecmp(pvalue, "BINARY")) {
@@ -1870,8 +1870,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		if (pattachment->proplist.set(PROP_TAG_EXCEPTIONSTARTTIME, &tmp_int64) != 0 ||
 		    pattachment->proplist.set(PROP_TAG_EXCEPTIONENDTIME, &tmp_int64) != 0)
 			return FALSE;
-		tmp_int32 = 0xFFFFFFFF;
-		if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &tmp_int32) != 0)
+		if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &indet_rendering_pos) != 0)
 			return FALSE;
 	}
 	return TRUE;

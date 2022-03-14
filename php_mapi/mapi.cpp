@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <gromox/defs.h>
@@ -2002,9 +2003,8 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 	} else {
 		pproptags = NULL;
 	}
-	result = zarafa_client_queryrows(ptable->hsession,
-		ptable->hobject, 0, 0x7FFFFFFF, prestriction,
-		pproptags, &rowset);
+	result = zarafa_client_queryrows(ptable->hsession, ptable->hobject, 0,
+	         INT32_MAX, prestriction, pproptags, &rowset);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
@@ -2019,8 +2019,6 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 
 ZEND_FUNCTION(mapi_table_queryrows)
 {
-	long start;
-	long row_count;
 	zval pzrowset;
 	uint32_t result;
 	zval *pzresource;
@@ -2031,8 +2029,7 @@ ZEND_FUNCTION(mapi_table_queryrows)
 	PROPTAG_ARRAY *pproptags;
 	
 	ZVAL_NULL(&pzrowset);
-	start = 0xFFFFFFFF;
-	row_count = 0xFFFFFFFF;
+	long start = UINT32_MAX, row_count = UINT32_MAX;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|a!ll",
 		&pzresource, &pzproptags, &start, &row_count) == FAILURE ||
 		NULL == pzresource) {

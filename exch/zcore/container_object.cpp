@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -743,7 +744,7 @@ BOOL container_object::get_container_table_num(BOOL b_depth, uint32_t *pnum)
 	proptags.count = 0;
 	proptags.pproptag = NULL;
 	if (!pcontainer->query_container_table(&proptags, b_depth, 0,
-	    0x7FFFFFFF, &tmp_set))
+	    INT32_MAX, &tmp_set))
 		return FALSE;	
 	*pnum = tmp_set.count;
 	return TRUE;
@@ -875,7 +876,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
 		if (pbase == nullptr)
 			return FALSE;
-		if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
+		if (pcontainer->id.abtree_id.minid == UINT32_MAX) {
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				return FALSE;
@@ -967,7 +968,7 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 		if (pbase == nullptr)
 			return FALSE;
 		*pnum = 0;
-		if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
+		if (pcontainer->id.abtree_id.minid == UINT32_MAX) {
 			*pnum = std::min(pbase->gal_list.size(), static_cast<size_t>(UINT32_MAX));
 		} else if (0 == pcontainer->id.abtree_id.minid) {
 			*pnum = 0;
@@ -1076,7 +1077,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 					return FALSE;	
 				pset->count ++;
 			}
-		} else if (pcontainer->id.abtree_id.minid == 0xFFFFFFFF) {
+		} else if (pcontainer->id.abtree_id.minid == UINT32_MAX) {
 			size_t i = 0;
 			for (auto e : pbase->gal_list) {
 				if (i < first_pos) {

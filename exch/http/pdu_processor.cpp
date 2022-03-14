@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -502,9 +503,8 @@ static uint32_t pdu_processor_allocate_group_id(DCERPC_ENDPOINT *pendpoint)
 	
 	pendpoint->last_group_id ++;
 	group_id = pendpoint->last_group_id;
-	if (pendpoint->last_group_id >= 0x7FFFFFFF) {
+	if (pendpoint->last_group_id >= INT32_MAX)
 		pendpoint->last_group_id = 0;
-	}
 	return group_id;
 }
 
@@ -1754,9 +1754,8 @@ static uint32_t pdu_processor_apply_async_id()
 	std::unique_lock as_hold(g_async_lock);
 	g_last_async_id ++;
 	async_id = g_last_async_id;
-	if (g_last_async_id >= 0x7FFFFFFF) {
+	if (g_last_async_id >= INT32_MAX)
 		g_last_async_id = 0;
-	}
 	pfake_async = NULL;
 	if (g_async_hash->add(async_id, &pfake_async) != 1) {
 		as_hold.unlock();

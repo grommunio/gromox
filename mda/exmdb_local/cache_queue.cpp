@@ -24,7 +24,6 @@
 #include "cache_queue.h"
 #include "exmdb_local.h"
 #include "net_failure.h"
-#define MAX_CIRCLE_NUMBER   0x7FFFFFFF
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
 using namespace std::string_literals;
@@ -250,11 +249,10 @@ static int cache_queue_increase_mess_ID()
 {
 	int current_id;
 	std::unique_lock hold(g_id_lock);
-    if (MAX_CIRCLE_NUMBER == g_mess_id) {
-        g_mess_id = 1;
-    } else {
-        g_mess_id ++;
-    }
+	if (g_mess_id == INT32_MAX)
+		g_mess_id = 1;
+	else
+		g_mess_id++;
     current_id  = g_mess_id;
     return current_id;
 }

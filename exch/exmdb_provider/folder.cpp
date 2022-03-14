@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -2393,7 +2394,7 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 			"folder_id=%llu and username=\"default\"", LLU(fid_val));
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return false;
-	} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
+	} else if (member_id == UINT64_MAX) {
 		char sql_string[128];
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"\"", LLU(fid_val));

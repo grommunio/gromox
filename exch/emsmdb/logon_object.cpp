@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cctype>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -410,7 +411,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		    PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
 		return TRUE;
 	}
 	case PR_ASSOC_MESSAGE_SIZE: {
@@ -422,7 +423,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (!exmdb_client_get_store_property(plogon->dir, 0,
 		    PR_ASSOC_MESSAGE_SIZE_EXTENDED, &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
 		return TRUE;
 	}
 	case PR_NORMAL_MESSAGE_SIZE: {
@@ -435,7 +436,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		    PR_NORMAL_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
 		return TRUE;
 	}
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -728,7 +729,7 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 		pmsgctnt->children.pattachments = NULL;
 }
 
-static const property_groupinfo fake_gpinfo = {0xffffffff};
+static const property_groupinfo fake_gpinfo = {UINT32_MAX};
 
 static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
     MESSAGE_CONTENT *pmsgctnt, uint32_t group_id, const INDEX_ARRAY *pindices,
@@ -804,7 +805,7 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 		return TRUE;
 	}
 	auto &pl = pmsg->pchanges[i].proplist;
-	pmsg->pchanges[i].index = 0xFFFFFFFF;
+	pmsg->pchanges[i].index = UINT32_MAX;
 	pl.ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	count = 0;
 	for (j=0; j<pproptags->count; j++) {
