@@ -57,10 +57,12 @@ struct root_object {
 }
 
 struct OBJECT_NODE {
-	SIMPLE_TREE_NODE node;
-	uint32_t handle;
-	uint8_t type;
-	void *pobject;
+	~OBJECT_NODE();
+
+	SIMPLE_TREE_NODE node{};
+	uint32_t handle = INVALID_HANDLE;
+	uint8_t type = ZMG_INVALID;
+	void *pobject = nullptr;
 };
 
 root_object::~root_object()
@@ -156,7 +158,7 @@ static void object_tree_free_root(root_object *prootobj)
 	delete prootobj;
 }
 
-static void object_tree_free_object(void *pobject, uint8_t type)
+OBJECT_NODE::~OBJECT_NODE()
 {
 	switch (type) {
 	case ZMG_ROOT:
@@ -197,22 +199,15 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 	}
 }
 
-static void object_tree_free_objnode(SIMPLE_TREE_NODE *pnode)
-{
-	OBJECT_NODE *pobjnode;
-	
-	pobjnode = (OBJECT_NODE*)pnode->pdata;
-	object_tree_free_object(pobjnode->pobject, pobjnode->type);
-	free(pobjnode);
-}
-
 static void object_tree_release_objnode(
 	OBJECT_TREE *pobjtree, OBJECT_NODE *pobjnode)
 {	
 	simple_tree_enum_from_node(&pobjnode->node, [&](const SIMPLE_TREE_NODE *n) {
 		pobjtree->m_hash.erase(static_cast<const OBJECT_NODE *>(n->pdata)->handle);
 	});
-	pobjtree->tree.destroy_node(&pobjnode->node, object_tree_free_objnode);
+	pobjtree->tree.destroy_node(&pobjnode->node, [](SIMPLE_TREE_NODE *n) {
+		delete static_cast<OBJECT_NODE *>(n->pdata);
+	});
 }
 
 OBJECT_TREE::~OBJECT_TREE()
@@ -242,8 +237,10 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 			return INVALID_HANDLE;
 		parent_ptr = i->second;
 	}
-	auto pobjnode = me_alloc<OBJECT_NODE>();
-	if (NULL == pobjnode) {
+	OBJECT_NODE *pobjnode;
+	try {
+		pobjnode = new OBJECT_NODE;
+	} catch (const std::bad_alloc &) {
 		return INVALID_HANDLE;
 	}
 	if (parent_handle < 0) {
@@ -260,7 +257,7 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 	try {
 		pobjtree->m_hash.try_emplace(pobjnode->handle, pobjnode);
 	} catch (const std::bad_alloc &) {
-		free(pobjnode);
+		delete pobjnode;
 		return INVALID_HANDLE;
 	}
 	if (parent_ptr == nullptr)
