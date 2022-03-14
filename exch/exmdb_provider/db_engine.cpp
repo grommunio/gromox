@@ -24,6 +24,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/restriction.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/sortorder_set.hpp>
 #include <gromox/util.hpp>
@@ -2982,7 +2983,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			datagram.id_array.pl = &ptable->table_id;
 			if (!ptable->b_search) {
 				pdeleted_row->row_folder_id = folder_id;
-			} else if ((pdelnode->inst_id & 0xFF00000000000000ULL) == 0) {
+			} else if ((pdelnode->inst_id & NFID_UPPER_PART) == 0) {
 				if (!common_util_get_message_parent_folder(
 				    pdb->psqlite, pdelnode->inst_id,
 				    &pdeleted_row->row_folder_id))

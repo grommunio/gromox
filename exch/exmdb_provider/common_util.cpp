@@ -1709,9 +1709,9 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = (id & 0xFF00000000000000ULL) == 0 ?
-			rop_util_make_eid_ex(1, id) :
-			rop_util_make_eid_ex(id >> 48, id & 0x00FFFFFFFFFFFFFFULL);
+		*v = (id & NFID_UPPER_PART) == 0 ?
+		     rop_util_make_eid_ex(1, id) :
+		     rop_util_make_eid_ex(id >> 48, id & NFID_LOWER_PART);
 		return GP_ADV;
 	}
 	case PidTagParentFolderId: {

@@ -8,6 +8,7 @@
 #define PROP_ID(x) ((x) >> 16)
 #define PROP_TYPE(x) ((x) & 0xFFFF)
 #define CHANGE_PROP_TYPE(tag, newtype) (((tag) & ~0xFFFF) | (newtype))
+
 /*
  * x|y yields an unsigned result if either x or y are unsigned.
  * x<<y yields unsigned only if x is unsigned.

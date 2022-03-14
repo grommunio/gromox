@@ -3,6 +3,15 @@
 #include <ctime>
 #include <gromox/mapi_types.hpp>
 
+/*
+ * Use unclear. Has something to do with notifications, and that, in sqlite3,
+ * FIDs/MIDs seem to be stored 8:56 bits for replid:gcval, whereas in RPC
+ * transport, it's 16:48. The rop_util_make_eid_ex(x>>48,y&56bits) is also
+ * questionable (should be y&48bits?).
+ */
+#define NFID_UPPER_PART 0xFF00000000000000ULL
+#define NFID_LOWER_PART 0x00FFFFFFFFFFFFFFULL
+
 extern uint16_t rop_util_get_replid(eid_t);
 extern uint64_t rop_util_get_gc_value(eid_t);
 extern GLOBCNT rop_util_get_gc_array(eid_t);

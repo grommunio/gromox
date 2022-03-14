@@ -771,14 +771,10 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			return FALSE;
 		while (sqlite3_step(stm_select_ex) == SQLITE_ROW) {
 			uint64_t fv = sqlite3_column_int64(stm_select_ex, 0);
-			if ((fv & 0xFF00000000000000ULL) == 0) {
-				pgiven_fids->pids[pgiven_fids->count++] =
-						rop_util_make_eid_ex(1, fv);
-			} else {
-				pgiven_fids->pids[pgiven_fids->count++] =
-					rop_util_make_eid_ex(fv >> 48,
-					fv & 0x00FFFFFFFFFFFFFFULL);
-			}
+			pgiven_fids->pids[pgiven_fids->count++] =
+				(fv & NFID_UPPER_PART) == 0 ?
+				rop_util_make_eid_ex(1, fv) :
+				rop_util_make_eid_ex(fv >> 48, fv & NFID_LOWER_PART);
 		}
 	}
 	} /* section 4 */

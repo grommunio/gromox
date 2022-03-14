@@ -961,9 +961,9 @@ static BOOL emsmdb_interface_merge_hierarchy_row_modified(
 	DOUBLE_LIST_NODE *pnode;
 	NOTIFY_RESPONSE *pnotify;
 	NOTIFICATION_DATA *pnotification_data;
-	uint64_t row_folder_id = (pmodified_row->row_folder_id & 0xFF00000000000000ULL) == 0 ?
-	                         rop_util_make_eid_ex(1, pmodified_row->row_folder_id) :
-	                         rop_util_make_eid_ex(pmodified_row->row_folder_id >> 48, pmodified_row->row_folder_id & 0x00FFFFFFFFFFFFFFULL);
+	auto row_folder_id = (pmodified_row->row_folder_id & NFID_UPPER_PART) == 0 ?
+	                     rop_util_make_eid_ex(1, pmodified_row->row_folder_id) :
+	                     rop_util_make_eid_ex(pmodified_row->row_folder_id >> 48, pmodified_row->row_folder_id & NFID_LOWER_PART);
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
@@ -1031,9 +1031,9 @@ static BOOL emsmdb_interface_merge_folder_modified(
 	DOUBLE_LIST_NODE *pnode;
 	NOTIFY_RESPONSE *pnotify;
 	NOTIFICATION_DATA *pnotification_data;
-	uint64_t folder_id = (pmodified_folder->folder_id & 0xFF00000000000000ULL) == 0 ?
-	                     rop_util_make_eid_ex(1, pmodified_folder->folder_id) :
-	                     rop_util_make_eid_ex(pmodified_folder->folder_id >> 48, pmodified_folder->folder_id & 0x00FFFFFFFFFFFFFFULL);
+	auto folder_id = (pmodified_folder->folder_id & NFID_UPPER_PART) == 0 ?
+	                 rop_util_make_eid_ex(1, pmodified_folder->folder_id) :
+	                 rop_util_make_eid_ex(pmodified_folder->folder_id >> 48, pmodified_folder->folder_id & NFID_LOWER_PART);
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {

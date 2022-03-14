@@ -378,9 +378,9 @@ BOOL exmdb_server_get_folder_by_name(const char *dir,
 	    rop_util_get_gc_value(parent_id), str_name, &fid_val))
 		return FALSE;
 	*pfolder_id = fid_val == 0 ? eid_t(0) :
-	              (fid_val & 0xFF00000000000000ULL) == 0 ?
+	              (fid_val & NFID_UPPER_PART) == 0 ?
 	              rop_util_make_eid_ex(1, fid_val) :
-	              rop_util_make_eid_ex(fid_val >> 48, fid_val & 0x00FFFFFFFFFFFFFFULL);
+	              rop_util_make_eid_ex(fid_val >> 48, fid_val & NFID_LOWER_PART);
 	return TRUE;
 }
 

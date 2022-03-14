@@ -1761,7 +1761,7 @@ static BOOL table_column_content_tmptbl(
 		if (*ppvalue != NULL) {
 			*static_cast<uint64_t *>(*ppvalue) = row_type == CONTENT_ROW_MESSAGE ?
 				rop_util_make_eid_ex(1, *static_cast<uint64_t *>(*ppvalue)) :
-				rop_util_make_eid_ex(2, *static_cast<uint64_t *>(*ppvalue) & 0x00FFFFFFFFFFFFFFULL);
+				rop_util_make_eid_ex(2, *static_cast<uint64_t *>(*ppvalue) & NFID_LOWER_PART);
 		}
 		return TRUE;
 	case PROP_TAG_INSTANCENUM:
@@ -2256,7 +2256,7 @@ static BOOL table_get_content_row_property(
 		eid->pbin = nullptr;
 		if (CONTENT_ROW_HEADER == prow_param->row_type) {
 			eid->folder_id = rop_util_make_eid_ex(1, prow_param->folder_id);
-			eid->message_id = rop_util_make_eid_ex(2, prow_param->inst_id & 0x00FFFFFFFFFFFFFFULL);
+			eid->message_id = rop_util_make_eid_ex(2, prow_param->inst_id & NFID_LOWER_PART);
 			eid->instance = 0;
 		} else {
 			if (!common_util_get_message_parent_folder(prow_param->psqlite,
@@ -3066,14 +3066,14 @@ BOOL exmdb_server_mark_table(const char *dir,
 		*pinst_id = sqlite3_column_int64(pstmt, 0);
 		switch (ptnode->type) {
 		case TABLE_TYPE_HIERARCHY:
-			*pinst_id = (*pinst_id & 0xFF00000000000000ULL) == 0 ?
+			*pinst_id = (*pinst_id & NFID_UPPER_PART) == 0 ?
 			            rop_util_make_eid_ex(1, *pinst_id) :
-			            rop_util_make_eid_ex(*pinst_id >> 48, *pinst_id & 0x00FFFFFFFFFFFFFFULL);
+			            rop_util_make_eid_ex(*pinst_id >> 48, *pinst_id & NFID_LOWER_PART);
 			break;
 		case TABLE_TYPE_CONTENT:
-			*pinst_id = (*pinst_id & 0xFF00000000000000ULL) == 0 ?
+			*pinst_id = (*pinst_id & NFID_UPPER_PART) == 0 ?
 			            rop_util_make_eid_ex(1, *pinst_id) :
-			            rop_util_make_eid_ex(2, *pinst_id & 0x00FFFFFFFFFFFFFFULL);
+			            rop_util_make_eid_ex(2, *pinst_id & NFID_LOWER_PART);
 			*pinst_num = sqlite3_column_int64(pstmt, 1);
 			*prow_type = sqlite3_column_int64(pstmt, 2);
 			break;
