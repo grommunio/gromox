@@ -8,7 +8,6 @@
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include <gromox/mail.hpp>
 #include "../mysql_adaptor/mysql_adaptor.h"
 
 #define SOCKET_TIMEOUT										60
@@ -36,6 +35,8 @@ enum {
 	ADJ_DECREASE = true,
 };
 
+struct MAIL;
+struct MIME_POOL;
 extern BOOL (*common_util_lang_to_charset)(
 	const char *lang, char *charset);
 extern const char* (*common_util_cpid_to_charset)(uint32_t cpid);

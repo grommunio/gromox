@@ -33,8 +33,8 @@
 #include <gromox/scope.hpp>
 #include "mkshared.hpp"
 #include "exch/mysql_adaptor/mysql_adaptor.h"
-#define LLU(x) static_cast<unsigned long long>(x)
 
+using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 

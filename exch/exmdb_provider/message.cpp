@@ -36,11 +36,11 @@
 #include "exmdb_client.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
+#define MIN_BATCH_MESSAGE_NUM 20
+/* ossl_typ.h squats in the namespace */
 #define UI(x) static_cast<unsigned int>(x)
-#define LLU(x) static_cast<unsigned long long>(x)
 
-#define MIN_BATCH_MESSAGE_NUM						20
-
+using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 
