@@ -1046,10 +1046,9 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		                b_writable, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
-		*phobject = pinfo->ptree->add_object_handle(hobject, ZMG_MESSAGE, pmessage.get());
+		*phobject = pinfo->ptree->add_object_handle(hobject, {ZMG_MESSAGE, std::move(pmessage)});
 		if (*phobject == INVALID_HANDLE)
 			return ecError;
-		pmessage.release();
 		*pmapi_type = ZMG_MESSAGE;
 	} else {
 		if (!exmdb_client::check_folder_id(pstore->get_dir(),
@@ -1103,10 +1102,9 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		               folder_type, tag_access);
 		if (pfolder == nullptr)
 			return ecError;
-		*phobject = pinfo->ptree->add_object_handle(hobject, ZMG_FOLDER, pfolder.get());
+		*phobject = pinfo->ptree->add_object_handle(hobject, {ZMG_FOLDER, std::move(pfolder)});
 		if (*phobject == INVALID_HANDLE)
 			return ecError;
-		pfolder.release();
 		*pmapi_type = ZMG_FOLDER;
 	}
 	return ecSuccess;
@@ -1118,7 +1116,6 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	GUID guid;
 	int user_id;
 	uint8_t type;
-	void *pobject;
 	int domain_id;
 	uint8_t loc_type;
 	char essdn[1024];
@@ -1137,10 +1134,9 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		if (contobj == nullptr)
 			return ecError;
 		*pmapi_type = ZMG_ABCONT;
-		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, *pmapi_type, contobj.get());
+		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {*pmapi_type, std::move(contobj)});
 		if (*phobject == INVALID_HANDLE)
 			return ecError;
-		contobj.release();
 		return ecSuccess;
 	}
 	if (!common_util_parse_addressbook_entryid(entryid, &address_type,
@@ -1148,8 +1144,6 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		return ecInvalidParam;
 	}
 
-	std::unique_ptr<container_object> contobj;
-	std::unique_ptr<user_object> userobj;
 	if (address_type == DT_CONTAINER) {
 		HX_strlower(essdn);
 		if ('\0' == essdn[0]) {
@@ -1216,11 +1210,11 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			container_id.abtree_id.base_id = base_id;
 			container_id.abtree_id.minid = minid;
 		}
-		contobj = container_object::create(type, container_id);
-		pobject = contobj.get();
-		if (pobject == nullptr)
+		auto contobj = container_object::create(type, container_id);
+		if (contobj == nullptr)
 			return ecError;
 		*pmapi_type = ZMG_ABCONT;
+		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {*pmapi_type, std::move(contobj)});
 	} else if (address_type == DT_DISTLIST || address_type == DT_MAILUSER) {
 		if (!common_util_essdn_to_ids(essdn, &domain_id, &user_id))
 			return ecNotFound;
@@ -1228,22 +1222,19 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		    !system_services_check_same_org(domain_id, pinfo->domain_id))
 			base_id = -domain_id;
 		auto minid = ab_tree_make_minid(minid_type::address, user_id);
-		userobj = user_object::create(base_id, minid);
-		pobject = userobj.get();
+		auto userobj = user_object::create(base_id, minid);
 		if (userobj == nullptr)
 			return ecError;
 		if (!userobj->check_valid())
 			return ecNotFound;
 		*pmapi_type = address_type == DT_DISTLIST ?
 			      ZMG_DISTLIST : ZMG_MAILUSER;
+		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {*pmapi_type, std::move(userobj)});
 	} else {
 		return ecInvalidParam;
 	}
-	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, *pmapi_type, pobject);
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	contobj.release();
-	userobj.release();
 	return ecSuccess;
 }
 
@@ -1396,10 +1387,9 @@ uint32_t zarafa_server_loadstoretable(
 	auto ptable = table_object::create(nullptr, nullptr, STORE_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {ZMG_TABLE, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	ptable.release();
 	return ecSuccess;
 }
 
@@ -1460,7 +1450,9 @@ uint32_t zarafa_server_openprofilesec(GUID hsession,
 	auto ppropvals = pinfo->ptree->get_profile_sec(guid);
 	if (ppropvals == nullptr)
 		return ecNotFound;
-	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, ZMG_PROFPROPERTY, ppropvals);
+	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {ZMG_PROFPROPERTY, ppropvals});
+	if (*phobject == INVALID_HANDLE)
+		return ecError;
 	return ecSuccess;
 }
 
@@ -1491,10 +1483,9 @@ uint32_t zarafa_server_loadhierarchytable(GUID hsession,
 	}
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hfolder, ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(hfolder, {ZMG_TABLE, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	ptable.release();
 	return ecSuccess;
 }
 
@@ -1535,10 +1526,9 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 	}
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hfolder, ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(hfolder, {ZMG_TABLE, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	ptable.release();
 	return ecSuccess;
 }
 
@@ -1558,10 +1548,9 @@ uint32_t zarafa_server_loadrecipienttable(GUID hsession,
 	auto ptable = table_object::create(pmessage->get_store(), pmessage, RECIPIENT_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(hmessage, {ZMG_TABLE, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	ptable.release();
 	return ecSuccess;
 }
 
@@ -1581,10 +1570,9 @@ uint32_t zarafa_server_loadruletable(GUID hsession,
 	auto ptable = table_object::create(pfolder->pstore, &folder_id, RULE_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hfolder, ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(hfolder, {ZMG_TABLE, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	ptable.release();
 	return ecSuccess;
 }
 
@@ -1660,10 +1648,9 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	/* add the store handle as the parent object handle
 		because the caller normaly will not keep the
 		handle of folder */
-	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_MESSAGE, pmessage.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_MESSAGE, std::move(pmessage)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	pmessage.release();
 	return ecSuccess;
 }
 
@@ -2130,13 +2117,12 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		auto hstore = pinfo->ptree->get_store_handle(TRUE, pstore->account_id);
 		if (hstore == INVALID_HANDLE)
 			return ecError;
-		*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_FOLDER, pfolder.get());
+		*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_FOLDER, std::move(pfolder)});
 	} else {
-		*phobject = pinfo->ptree->add_object_handle(hparent_folder, ZMG_FOLDER, pfolder.get());
+		*phobject = pinfo->ptree->add_object_handle(hparent_folder, {ZMG_FOLDER, std::move(pfolder)});
 	}
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	pfolder.release();
 	return ecSuccess;
 }
 
@@ -3527,10 +3513,9 @@ uint32_t zarafa_server_loadattachmenttable(GUID hsession,
 	auto ptable = table_object::create(pstore, pmessage, ATTACHMENT_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_TABLE, ptable.get());
+	*phobject = pinfo->ptree->add_object_handle(hmessage, {ZMG_TABLE, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	ptable.release();
 	return ecSuccess;
 }
 
@@ -3551,10 +3536,9 @@ uint32_t zarafa_server_openattachment(GUID hsession,
 		return ecError;
 	if (pattachment->get_instance_id() == 0)
 		return ecNotFound;
-	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_ATTACH, pattachment.get());
+	*phobject = pinfo->ptree->add_object_handle(hmessage, {ZMG_ATTACH, std::move(pattachment)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	pattachment.release();
 	return ecSuccess;
 }
 
@@ -3579,10 +3563,9 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 		return ecMaxAttachmentExceeded;
 	if (!pattachment->init_attachment())
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_ATTACH, pattachment.get());
+	*phobject = pinfo->ptree->add_object_handle(hmessage, {ZMG_ATTACH, std::move(pattachment)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	pattachment.release();
 	return ecSuccess;
 }
 
@@ -3886,10 +3869,9 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 	/* add the store handle as the parent object handle
 		because the caller normaly will not keep the
 		handle of attachment */
-	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_MESSAGE, pmessage.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_MESSAGE, std::move(pmessage)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	pmessage.release();
 	return ecSuccess;
 }
 
@@ -4108,10 +4090,9 @@ uint32_t zarafa_server_hierarchysync(GUID hsession,
 	auto pctx = icsdownctx_object::create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSDOWNCTX, pctx.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_ICSDOWNCTX, std::move(pctx)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	pctx.release();
 	return ecSuccess;
 }
 
@@ -4134,10 +4115,9 @@ uint32_t zarafa_server_contentsync(GUID hsession,
 	auto pctx = icsdownctx_object::create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSDOWNCTX, pctx.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_ICSDOWNCTX, std::move(pctx)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	pctx.release();
 	return ecSuccess;
 }
 
@@ -4272,10 +4252,9 @@ uint32_t zarafa_server_hierarchyimport(GUID hsession,
 	auto pctx = icsupctx_object::create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSUPCTX, pctx.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_ICSUPCTX, std::move(pctx)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	pctx.release();
 	return ecSuccess;
 }
 
@@ -4298,10 +4277,9 @@ uint32_t zarafa_server_contentimport(GUID hsession,
 	auto pctx = icsupctx_object::create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSUPCTX, pctx.get());
+	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_ICSUPCTX, std::move(pctx)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	pctx.release();
 	return ecSuccess;
 }
 
@@ -4450,10 +4428,9 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		return ecError;
 	if (b_new && !pmessage->init_message(b_fai, pinfo->cpid))
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hctx, ZMG_MESSAGE, pmessage.get());
+	*phobject = pinfo->ptree->add_object_handle(hctx, {ZMG_MESSAGE, std::move(pmessage)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
-	pmessage.release();
 	return ecSuccess;
 }
 

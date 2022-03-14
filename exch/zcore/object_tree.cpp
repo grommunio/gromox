@@ -56,15 +56,6 @@ struct root_object {
 
 }
 
-struct OBJECT_NODE {
-	~OBJECT_NODE();
-
-	SIMPLE_TREE_NODE node{};
-	uint32_t handle = INVALID_HANDLE;
-	uint8_t type = ZMG_INVALID;
-	void *pobject = nullptr;
-};
-
 root_object::~root_object()
 {
 	free(maildir);
@@ -158,7 +149,15 @@ static void object_tree_free_root(root_object *prootobj)
 	delete prootobj;
 }
 
-OBJECT_NODE::~OBJECT_NODE()
+object_node::object_node(object_node &&o) noexcept :
+	handle(o.handle), type(o.type), pobject(o.pobject)
+{
+	o.handle = INVALID_HANDLE;
+	o.type = ZMG_INVALID;
+	o.pobject = nullptr;
+}
+
+object_node::~object_node()
 {
 	switch (type) {
 	case ZMG_ROOT:
@@ -220,7 +219,7 @@ OBJECT_TREE::~OBJECT_TREE()
 	pobjtree->tree.clear();
 }
 
-uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobject)
+uint32_t OBJECT_TREE::add_object_handle(int parent_handle, object_node &&obnode)
 {
 	auto pobjtree = this;
 	OBJECT_NODE *parent_ptr = nullptr;
@@ -239,7 +238,7 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 	}
 	OBJECT_NODE *pobjnode;
 	try {
-		pobjnode = new OBJECT_NODE;
+		pobjnode = new object_node(std::move(obnode));
 	} catch (const std::bad_alloc &) {
 		return INVALID_HANDLE;
 	}
@@ -252,8 +251,6 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 		pobjnode->handle = pobjtree->last_handle;
 	}
 	pobjnode->node.pdata = pobjnode;
-	pobjnode->type = type;
-	pobjnode->pobject = pobject;
 	try {
 		pobjtree->m_hash.try_emplace(pobjnode->handle, pobjnode);
 	} catch (const std::bad_alloc &) {
@@ -282,10 +279,9 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 		return NULL;
 	}
 	simple_tree_init(&pobjtree->tree);
-	auto handle = pobjtree->add_object_handle(-1, ZMG_ROOT, prootobj.get());
+	auto handle = pobjtree->add_object_handle(-1, {ZMG_ROOT, std::move(prootobj)});
 	if (handle == INVALID_HANDLE)
 		return nullptr;
-	prootobj.release();
 	return pobjtree;
 }
 
@@ -447,8 +443,5 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	if (NULL == pstore) {
 		return INVALID_HANDLE;
 	}
-	auto handle = add_object_handle(ROOT_HANDLE, ZMG_STORE, pstore.get());
-	if (handle != INVALID_HANDLE)
-		pstore.release();
-	return handle;
+	return add_object_handle(ROOT_HANDLE, {ZMG_STORE, std::move(pstore)});
 }
