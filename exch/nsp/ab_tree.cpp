@@ -839,7 +839,7 @@ bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	if (pabnode->node_type == abnode_type::remote) {
 		pguid->time_low |= pabnode->id;
 		tmp_id = ab_tree_get_minid_value(pabnode->minid);
-		pguid->time_hi_and_version = (tmp_id & 0xFFFF0000) >> 16;
+		pguid->time_hi_and_version = (tmp_id >> 16) & 0xffff;
 		pguid->time_mid = tmp_id & 0xFFFF;
 	} else {
 		proot = pnode;
@@ -848,7 +848,7 @@ bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 			proot = pnode1;
 		auto abroot = containerof(proot, AB_NODE, stree);
 		pguid->time_low |= abroot->id;
-		pguid->time_hi_and_version = (pabnode->id & 0xFFFF0000) >> 16;
+		pguid->time_hi_and_version = (pabnode->id >> 16) & 0xffff;
 		pguid->time_mid = pabnode->id & 0xFFFF;
 	}
 	memset(temp_path, 0, sizeof(temp_path));
@@ -856,13 +856,13 @@ bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	if (!ab_tree_md5_path(temp_path, &dgt))
 		return false;
 	pguid->node[0] = dgt & 0xFF;
-	pguid->node[1] = (dgt & 0xFF00) >> 8;
-	pguid->node[2] = (dgt & 0xFF0000) >> 16;
-	pguid->node[3] = (dgt & 0xFF000000) >> 24;
-	pguid->node[4] = (dgt & 0xFF00000000ULL) >> 32;
-	pguid->node[5] = (dgt & 0xFF0000000000ULL) >> 40;
-	pguid->clock_seq[0] = (dgt & 0xFF000000000000ULL) >> 48;
-	pguid->clock_seq[1] = (dgt & 0xFF00000000000000ULL) >> 56;
+	pguid->node[1] = (dgt >> 8) & 0xff;
+	pguid->node[2] = (dgt >> 16) & 0xff;
+	pguid->node[3] = (dgt >> 24) & 0xff;
+	pguid->node[4] = (dgt >> 32) & 0xff;
+	pguid->node[5] = (dgt >> 40) & 0xff;
+	pguid->clock_seq[0] = (dgt >> 48) & 0xff;
+	pguid->clock_seq[1] = (dgt >> 56) & 0xff;
 	return true;
 }
 

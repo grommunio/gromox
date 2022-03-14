@@ -1815,7 +1815,7 @@ static BOOL message_rectify_message(const char *account,
 		if (!ext_push.init(pbin1->pb, 27, 0) ||
 		    ext_push.p_uint8(1) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint32(nt_time >> 32) != EXT_ERR_SUCCESS ||
-		    ext_push.p_uint8((nt_time & 0xFFFFFFFF) >> 24) != EXT_ERR_SUCCESS ||
+		    ext_push.p_uint8((nt_time >> 24) & 0xff) != EXT_ERR_SUCCESS ||
 		    ext_push.p_bytes(pbin->pb, 16) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint32(0xFFFFFFFF) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint8(nt_time & 0xFF))

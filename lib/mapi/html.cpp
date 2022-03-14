@@ -374,7 +374,7 @@ static BOOL html_write_header(RTF_WRITER*pwriter)
 	QRF(pwriter->ext_push.p_bytes("}{\\colortbl", 11));
 	for (auto color : pwriter->colors_ordered) {
 		length = snprintf(tmp_string, arsizeof(tmp_string), "\\red%d\\green%d\\blue%d;",
-		         (color & 0xFF0000) >> 16, (color & 0xFF00) >> 8,
+		         (color >> 16) & 0xff, (color >> 8) & 0xff,
 		         color & 0xFF);
 		QRF(pwriter->ext_push.p_bytes(tmp_string, length));
 	}

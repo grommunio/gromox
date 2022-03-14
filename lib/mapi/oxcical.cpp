@@ -4100,9 +4100,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			proptag = PROP_TAG(PT_LONG, propids.ppropid[0]);
 			pvalue = pmsg->proplist.getval(proptag);
 			if (NULL != pvalue) {
-				itime.hour = ((*(uint32_t*)pvalue) & 0x1F000) >> 12;
-				itime.minute = ((*(uint32_t*)pvalue) & 0xFC0) >> 6;
-				itime.second = (*(uint32_t*)pvalue) & 0x3F;
+				auto v = *static_cast<uint32_t *>(pvalue);
+				itime.hour   = (v >> 12) & 0x1f;
+				itime.minute = (v >> 6) & 0x3f;
+				itime.second = v & 0x3f;
 				propname.lid = PidLidGlobalObjectId;
 				if (!get_propids(&propnames, &propids))
 					return FALSE;
