@@ -23,9 +23,9 @@ class sqlconn final {
 	public:
 	sqlconn() = default;
 	sqlconn(MYSQL *m) : m_conn(m) {}
-	sqlconn(sqlconn &&o) : m_conn(o.m_conn) { o.m_conn = nullptr; }
+	sqlconn(sqlconn &&o) noexcept : m_conn(o.m_conn) { o.m_conn = nullptr; }
 	~sqlconn() { mysql_close(m_conn); }
-	sqlconn &operator=(sqlconn &&o);
+	sqlconn &operator=(sqlconn &&o) noexcept;
 	operator bool() const { return m_conn; }
 	bool operator==(std::nullptr_t) const { return m_conn == nullptr; }
 	bool operator!=(std::nullptr_t) const { return m_conn != nullptr; }

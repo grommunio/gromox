@@ -6,10 +6,10 @@
 class GX_EXPORT xtransaction {
 	public:
 	constexpr xtransaction(sqlite3 *d = nullptr) { m_db = d; }
-	xtransaction(xtransaction &&) = delete;
+	xtransaction(xtransaction &&) noexcept = delete;
 	~xtransaction();
 	void commit();
-	xtransaction &operator=(xtransaction &&);
+	xtransaction &operator=(xtransaction &&) noexcept;
 
 	protected:
 	sqlite3 *m_db = nullptr;
@@ -17,7 +17,7 @@ class GX_EXPORT xtransaction {
 
 struct xstmt {
 	xstmt() = default;
-	xstmt(xstmt &&o) : m_ptr(o.m_ptr) { o.m_ptr = nullptr; }
+	xstmt(xstmt &&o) noexcept : m_ptr(o.m_ptr) { o.m_ptr = nullptr; }
 	~xstmt() {
 		if (m_ptr != nullptr)
 			sqlite3_finalize(m_ptr);
@@ -28,7 +28,7 @@ struct xstmt {
 			sqlite3_finalize(m_ptr);
 		m_ptr = nullptr;
 	}
-	void operator=(xstmt &&o) {
+	void operator=(xstmt &&o) noexcept {
 		if (m_ptr != nullptr)
 			sqlite3_finalize(m_ptr);
 		m_ptr = o.m_ptr;

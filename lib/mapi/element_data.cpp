@@ -165,7 +165,7 @@ FOLDER_CONTENT::FOLDER_CONTENT()
 		throw std::bad_alloc();
 }
 
-FOLDER_CONTENT::FOLDER_CONTENT(FOLDER_CONTENT &&o) :
+FOLDER_CONTENT::FOLDER_CONTENT(FOLDER_CONTENT &&o) noexcept :
 	proplist(std::move(o.proplist)), fldmsgs(std::move(o.fldmsgs)),
 	psubflds(std::move(o.psubflds))
 {
@@ -357,7 +357,7 @@ property_groupinfo::property_groupinfo(uint32_t gid) :
 		throw std::bad_alloc();
 }
 
-property_groupinfo::property_groupinfo(property_groupinfo &&o) :
+property_groupinfo::property_groupinfo(property_groupinfo &&o) noexcept :
 	group_id(o.group_id), reserved(o.reserved), count(o.count),
 	pgroups(std::move(o.pgroups))
 {

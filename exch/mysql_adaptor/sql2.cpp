@@ -100,7 +100,7 @@ MYSQL *sql_make_conn()
 	return conn;
 }
 
-sqlconn &sqlconn::operator=(sqlconn &&o)
+sqlconn &sqlconn::operator=(sqlconn &&o) noexcept
 {
 	mysql_close(m_conn);
 	m_conn = o.m_conn;

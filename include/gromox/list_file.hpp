@@ -28,7 +28,7 @@ enum {
 
 struct EXMDB_ITEM {
 	std::string prefix, host;
-	uint16_t port;
+	uint16_t port = 0;
 	enum {
 		EXMDB_PRIVATE,
 		EXMDB_PUBLIC,

@@ -44,9 +44,9 @@ namespace {
 
 struct CONNECTION_NODE {
 	CONNECTION_NODE() = default;
-	CONNECTION_NODE(CONNECTION_NODE &&);
+	CONNECTION_NODE(CONNECTION_NODE &&) noexcept;
 	~CONNECTION_NODE();
-	void operator=(CONNECTION_NODE &&) = delete;
+	void operator=(CONNECTION_NODE &&) noexcept = delete;
 	int sockd = -1;
 	int offset = 0;
 	char buffer[1024]{};
@@ -100,7 +100,7 @@ static BOOL read_mark(CONNECTION_NODE *pconnection);
 static void term_handler(int signo);
 static int increase_tid();
 
-CONNECTION_NODE::CONNECTION_NODE(CONNECTION_NODE &&o) :
+CONNECTION_NODE::CONNECTION_NODE(CONNECTION_NODE &&o) noexcept :
 	sockd(o.sockd), offset(o.offset)
 {
 	o.sockd = -1;

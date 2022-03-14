@@ -19,7 +19,7 @@ xstmt gx_sql_prep(sqlite3 *db, const char *query)
 	return out;
 }
 
-xtransaction &xtransaction::operator=(xtransaction &&o)
+xtransaction &xtransaction::operator=(xtransaction &&o) noexcept
 {
 	if (m_db != nullptr)
 		sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);

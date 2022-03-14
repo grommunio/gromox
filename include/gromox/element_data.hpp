@@ -10,8 +10,8 @@ struct ATTACHMENT_CONTENT;
 struct GX_EXPORT property_groupinfo {
 	property_groupinfo(uint32_t group_id);
 	~property_groupinfo();
-	property_groupinfo(property_groupinfo &&);
-	void operator=(property_groupinfo &&) = delete;
+	property_groupinfo(property_groupinfo &&) noexcept;
+	void operator=(property_groupinfo &&) noexcept = delete;
 	bool append_internal(PROPTAG_ARRAY *);
 	bool get_partial_index(uint32_t proptag, uint32_t *idx) const;
 
@@ -75,9 +75,9 @@ struct FOLDER_MESSAGES {
 
 struct GX_EXPORT FOLDER_CONTENT {
 	FOLDER_CONTENT();
-	FOLDER_CONTENT(FOLDER_CONTENT &&);
+	FOLDER_CONTENT(FOLDER_CONTENT &&) noexcept;
 	~FOLDER_CONTENT();
-	void operator=(FOLDER_CONTENT &&) = delete;
+	void operator=(FOLDER_CONTENT &&) noexcept = delete;
 	BOOL append_subfolder_internal(FOLDER_CONTENT &&);
 	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
 	void append_failist_internal(EID_ARRAY *);
