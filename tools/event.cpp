@@ -471,7 +471,7 @@ static void *ev_enqwork(void *param)
 		}
 		
 		if (0 == strncasecmp(penqueue->line, "ID ", 3)) {
-			strncpy(penqueue->res_id, penqueue->line + 3, 128);
+			snprintf(penqueue->res_id, arsizeof(penqueue->res_id), "%s", penqueue->line + 3);
 			write(penqueue->sockd, "TRUE\r\n", 6);
 			continue;
 		} else if (0 == strncasecmp(penqueue->line, "LISTEN ", 7)) {
@@ -483,7 +483,7 @@ static void *ev_enqwork(void *param)
 				write(penqueue->sockd, "FALSE\r\n", 7);
 				continue;
 			}
-			strncpy(pdequeue->res_id, penqueue->line + 7, 128);
+			snprintf(pdequeue->res_id, arsizeof(pdequeue->res_id), "%s", penqueue->line + 7);
 			pdequeue->fifo = FIFO(g_fifo_alloc.get(), sizeof(MEM_FILE), FIFO_AVERAGE_LENGTH);
 			std::unique_lock hl_hold(g_host_lock);
 			auto host_it = std::find_if(g_host_list.begin(), g_host_list.end(),
