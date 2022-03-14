@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2020 grommunio GmbH
 // This file is part of Gromox.
+#define _GNU_SOURCE 1
 #include <cmath>
 #include <cstring>
 #include <iconv.h>
 #include <string>
+#include <unistd.h>
+#if defined(__linux__) && defined(__GLIBC__) && __GLIBC__ == 2 && __GLIBC_MINOR__ < 30
+#	include <sys/syscall.h>
+#endif
 #include <gromox/binrdwr.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
