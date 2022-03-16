@@ -116,7 +116,7 @@ static void *mod_cache_scanwork(void *pparam)
 			}
 			if (stat(tmp_key, &node_stat) == 0 &&
 			    S_ISREG(node_stat.st_mode) &&
-			    static_cast<unsigned long long>(node_stat.st_size) == pitem->blob.length &&
+			    static_cast<unsigned long long>(node_stat.st_size) == pitem->blob.cb &&
 			    stat3_eq(node_stat, pitem->sb))
 				continue;
 			str_hash_iter_remove(iter);
@@ -380,7 +380,7 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	if (NULL == pcontent_type) {
 		pcontent_type = "application/octet-stream";
 	}
-	strcpy(response_buff, pcontext->until != pcontext->pitem->blob.length ?
+	strcpy(response_buff, pcontext->until != pcontext->pitem->blob.cb ?
 	       "HTTP/1.1 206 Partial Content\r\n" : "HTTP/1.1 200 OK\r\n");
 	response_len = strlen(response_buff);
 	response_len += gx_snprintf(response_buff + response_len,
@@ -394,12 +394,12 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 					date_string, pcontent_type,
 					pcontext->until - pcontext->offset,
 					modified_string, etag);
-	if (pcontext->until != pcontext->pitem->blob.length) {
+	if (pcontext->until != pcontext->pitem->blob.cb) {
 		response_len += gx_snprintf(response_buff + response_len,
 		                GX_ARRAY_SIZE(response_buff) - response_len,
 					"Content-Range: bytes %u-%u/%u\r\n\r\n",
 					pcontext->offset, pcontext->until - 1,
-					pcontext->pitem->blob.length);
+					pcontext->pitem->blob.cb);
 	} else {
 		gx_strlcpy(&response_buff[response_len], "\r\n",
 			arsizeof(response_buff) - response_len);
@@ -428,9 +428,8 @@ static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
 		content_length += 16 + ctype_len;
 		/* Content-Range: bytes x-x/xxx\r\n */
 		content_length += 25 + sprintf(num_buff, "%u%u%u",
-								pcontext->prange[i].begin,
-								pcontext->prange[i].end,
-								pcontext->pitem->blob.length);
+		                  pcontext->prange[i].begin, pcontext->prange[i].end,
+		                  pcontext->pitem->blob.cb);
 		content_length += 2; /* \r\n */
 		content_length += pcontext->prange[i].end -
 						pcontext->prange[i].begin + 1;
@@ -689,7 +688,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	if (NULL != ppitem) {
 		pitem = *ppitem;
 		if (!stat3_eq(pitem->sb, node_stat) ||
-		    pitem->blob.length != static_cast<unsigned long long>(node_stat.st_size)) {
+		    pitem->blob.cb != static_cast<unsigned long long>(node_stat.st_size)) {
 			g_cache_hash->remove(tmp_path);
 			if (pitem->reference > 0) {
 				pitem->b_expired = TRUE;
@@ -849,7 +848,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 					BOUNDARY_STRING, pcontent_type,
 					pcontext->prange[pcontext->range_pos].begin,
 					pcontext->prange[pcontext->range_pos].end,
-					pcontext->pitem->blob.length);
+					pcontext->pitem->blob.cb);
 			} else {
 				tmp_len = sprintf(tmp_buff,
 					"\r\n--%s--\r\n",

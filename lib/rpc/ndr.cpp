@@ -260,7 +260,7 @@ int ndr_pull_data_blob(NDR_PULL *pndr, DATA_BLOB *pblob)
 	if (pblob->pb == nullptr)
 		return NDR_ERR_ALLOC;
 	memcpy(pblob->pb, &pndr->data[pndr->offset], length);
-	pblob->length = length;
+	pblob->cb = length;
 	pndr->offset += length;
 	return NDR_ERR_SUCCESS;
 }
@@ -272,7 +272,7 @@ void ndr_free_data_blob(DATA_BLOB *pblob)
 		free(pblob->pb);
 		pblob->pb = nullptr;
 	}
-	pblob->length = 0;
+	pblob->cb = 0;
 }
 
 int ndr_pull_check_string(NDR_PULL *pndr,
@@ -493,7 +493,7 @@ int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob)
 		status = ndr_push_bytes(pndr, buff, length);
 		return status;
 	} else {
-		TRY(ndr_push_uint32(pndr, blob.length));
+		TRY(ndr_push_uint32(pndr, blob.cb));
 	}
 	assert(blob.pb != nullptr || blob.cb == 0);
 	TRY(ndr_push_bytes(pndr, blob.pb, blob.cb));

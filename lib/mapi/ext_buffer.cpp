@@ -197,7 +197,7 @@ int EXT_PULL::g_blob(DATA_BLOB *pblob)
 	if (pblob->pb == nullptr)
 		return EXT_ERR_ALLOC;
 	memcpy(pblob->pb, &m_udata[m_offset], length);
-	pblob->length = length;
+	pblob->cb = length;
 	m_offset += length;
 	return EXT_ERR_SUCCESS;
 }
