@@ -28,7 +28,7 @@ if (!isset($_SERVER['HTTPS'])) {
 }
 
 if (0 != strcasecmp($_SERVER['REQUEST_METHOD'], "POST")) {
-	die("invalid request method, must be POST!");
+	die("E-2000: invalid request method, must be POST!");
 }
 
 $xml_in = file_get_contents("php://input");
@@ -36,20 +36,20 @@ error_log("Autodiscover Request:\n" . $xml_in, 0);
 $xml_request = simplexml_load_string($xml_in);
 if ($xml_request === false ||
     strcasecmp($xml_request->getName(), "Autodiscover") != 0)
-	die("invalid request xml root, should be Autodiscover");
+	die("E-2001: invalid request xml root, should be Autodiscover");
 $email_address = $xml_request->Request->EMailAddress;
 if (!isset($email_address)) {
-	die("cannot find Request/EMailAddress in xml request");
+	die("E-2002: cannot find Request/EMailAddress in xml request");
 }
 if (!strpos($email_address, '@')) {
-	die("format error with Request/EMailAddress in xml request");
+	die("E-2003: format error with Request/EMailAddress in xml request");
 }
 
 if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"))) {
 	$domain = substr($email_address, strpos($email_address, "@") + 1);
 	$dinfo = get_domain_info_by_name($domain);
 	if (!$dinfo) {
-		die("cannot find domain information");
+		die("E-2004: cannot find domain information");
 	}
 	$Autodiscover = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><Autodiscover></Autodiscover>');
 	$Autodiscover->addAttribute('xmlns', RESPONSE_XMLNS);
@@ -119,7 +119,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		/* ActiveSync Autodiscover */
 		$uinfo = get_user_info_by_name($email_address);
 		if (!$uinfo) {
-			die("cannot find email address information");
+			die("E-2005: cannot find email address information");
 		}
 
 		$Autodiscover = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><Autodiscover></Autodiscover>');
@@ -144,12 +144,12 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		if ($legacy_dn) {
 			$uinfo = essdn_to_username($legacy_dn);
 			if (!$uinfo) {
-				die("cannot find essdn information");
+				die("E-2006: cannot find essdn information");
 			}
 		} else {
 			$uinfo = get_user_info_by_name($email_address);
 			if (!$uinfo) {
-				die("cannot find email address information");
+				die("E-2007: cannot find email address information");
 			}
 		}
 

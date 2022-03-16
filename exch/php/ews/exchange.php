@@ -18,7 +18,7 @@ class ExchangeWebServices {
 		global $soap_out;
 		
 		if (!$Mailbox || !$Mailbox->Address) {
-			die("parameter error in GetUserOofSettingsRequest");
+			die("E-2008: parameter error in GetUserOofSettingsRequest");
 		}
 		if (!$Mailbox->RoutingType) {
 			$Mailbox->RoutingType = "SMTP";
@@ -26,15 +26,15 @@ class ExchangeWebServices {
 		if (0 == strcasecmp($Mailbox->RoutingType, 'EX')) {
 			$uinfo = essdn_to_username($Mailbox->Address);
 			if (!$uinfo) {
-				die("cannot find essdn information");
+				die("E-2009: cannot find essdn information");
 			}
 		} else if (0 == strcasecmp($Mailbox->RoutingType, 'SMTP')) {
 			$uinfo = get_user_info_by_name($Mailbox->Address);
 			if (!$uinfo) {
-				die("cannot find email address information");
+				die("E-2010: cannot find email address information");
 			}
 		} else {
-			die("unrecognized RoutingType " . $Mailbox->RoutingType);
+			die("E-2011: unrecognized RoutingType " . $Mailbox->RoutingType);
 		}
 		date_default_timezone_set($uinfo['timezone']);
 		$oofconf = parse_ini_file($uinfo['maildir'] . "/config/autoreply.cfg", false, INI_SCANNER_RAW);
@@ -136,7 +136,7 @@ class ExchangeWebServices {
 		global $soap_out;
 		
 		if (!$Mailbox || !$Mailbox->Address) {
-			die("parameter error in SetUserOofSettingsRequest");
+			die("E-2012: parameter error in SetUserOofSettingsRequest");
 		}
 		if (!$Mailbox->RoutingType) {
 			$Mailbox->RoutingType = "SMTP";
@@ -144,19 +144,19 @@ class ExchangeWebServices {
 		if (0 == strcasecmp($Mailbox->RoutingType, 'EX')) {
 			$uinfo = essdn_to_username($Mailbox->Address);
 			if (!$uinfo) {
-				die("cannot find essdn information");
+				die("E-2013: cannot find essdn information");
 			}
 		} else if (0 == strcasecmp($Mailbox->RoutingType, 'SMTP')) {
 			$uinfo = get_user_info_by_name($Mailbox->Address);
 			if (!$uinfo) {
-				die("cannot find email address information");
+				die("E-2014: cannot find email address information");
 			}
 		} else {
-			die("unrecognized RoutingType " . $Mailbox->RoutingType);
+			die("E-2015: unrecognized RoutingType " . $Mailbox->RoutingType);
 		}
 		date_default_timezone_set('UTC');
 		if (!$UserOofSettings->OofState) {
-			die("parameter error in SetUserOofSettingsRequest");
+			die("E-2016: parameter error in SetUserOofSettingsRequest");
 		}
 		if (0 == strcasecmp($UserOofSettings->OofState, "Disabled")) {
 			$cfgcontent = "OOF_STATE = 0\n";
@@ -165,7 +165,7 @@ class ExchangeWebServices {
 		} else if (0 == strcasecmp($UserOofSettings->OofState, "Scheduled")) {
 			$cfgcontent = "OOF_STATE = 2\n";
 		} else {
-			die("unrecognized OofState " . $UserOofSettings->OofState);
+			die("E-2017: unrecognized OofState " . $UserOofSettings->OofState);
 		}
 		if (0 == strcasecmp($UserOofSettings->ExternalAudience, "None")) {
 			$cfgcontent .= "ALLOW_EXTERNAL_OOF = 0\n";
@@ -241,7 +241,7 @@ class ExchangeWebServices {
 			$cookie .= ';dtlyear=' . $TimeZone->DaylightTime->Year;
 		}
 		if (!$MailboxDataArray->MailboxData) {
-			die("parameter error in GetUserAvailabilityRequest");
+			die("E-2018: parameter error in GetUserAvailabilityRequest");
 		}
 		if (is_array($MailboxDataArray->MailboxData)) {
 			$num = count($MailboxDataArray->MailboxData);
@@ -258,7 +258,7 @@ class ExchangeWebServices {
 				$Mailbox = $MailboxDataArray->MailboxData;
 			}
 			if (!$Mailbox->Email || !$Mailbox->Email->Address) {
-				die("parameter error in GetUserAvailabilityRequest");
+				die("E-2019: parameter error in GetUserAvailabilityRequest");
 			}
 			if (!$Mailbox->Email->RoutingType) {
 				$Mailbox->Email->RoutingType = "SMTP";
