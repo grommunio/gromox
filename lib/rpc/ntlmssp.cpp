@@ -336,7 +336,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 		case 'A':
 			s = va_arg(ap, char*);
 			head_size += 8;
-			blobs[i].cdata = s;
+			blobs[i].pc = s;
 			blobs[i].length = strlen(s);
 			data_size += blobs[i].length;
 			break;
