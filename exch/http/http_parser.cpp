@@ -1152,7 +1152,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			return PROCESS_IDLE;
 		}
 		pcontext->write_buff = static_cast<BLOB_NODE *>(pnode->pdata)->blob.pb;
-		tmp_len = ((BLOB_NODE*)pnode->pdata)->blob.length;
+		tmp_len = static_cast<BLOB_NODE *>(pnode->pdata)->blob.cb;
 	} else {
 		tmp_len = STREAM_BLOCK_SIZE;
 		pcontext->write_buff = pcontext->stream_out.get_read_buf(&tmp_len);
@@ -1263,7 +1263,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		pnode = double_list_get_head(&hch->pdu_list);
 		if (pnode != nullptr) {
 			pcontext->write_buff = static_cast<BLOB_NODE *>(pnode->pdata)->blob.pb;
-			pcontext->write_length = static_cast<BLOB_NODE *>(pnode->pdata)->blob.length;
+			pcontext->write_length = static_cast<BLOB_NODE *>(pnode->pdata)->blob.cb;
 		} else if (pcontext->total_length > 0 &&
 		    pcontext->total_length - pcontext->bytes_rw <= MAX_RECLYING_REMAINING &&
 		    !hch->b_obsolete) {

@@ -328,17 +328,17 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 				va_end(ap);
 				return false;
 			}
-			blobs[i].length = ret;
+			blobs[i].cb = ret;
 			blobs[i].pb = buffs[i];
-			data_size += blobs[i].length;
+			data_size += blobs[i].cb;
 			break;
 		}
 		case 'A':
 			s = va_arg(ap, char*);
 			head_size += 8;
 			blobs[i].pc = s;
-			blobs[i].length = strlen(s);
-			data_size += blobs[i].length;
+			blobs[i].cb = strlen(s);
+			data_size += blobs[i].cb;
 			break;
 		case 'a': {
 			j = va_arg(ap, int);
@@ -349,23 +349,23 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 				va_end(ap);
 				return false;
 			}
-			blobs[i].length = ret;
+			blobs[i].cb = ret;
 			blobs[i].pb = buffs[i];
-			data_size += blobs[i].length + 4;
+			data_size += blobs[i].cb + 4;
 			break;
 		}
 		case 'B':
 			b = va_arg(ap, uint8_t*);
 			head_size += 8;
 			blobs[i].pb = b;
-			blobs[i].length = va_arg(ap, int);
-			data_size += blobs[i].length;
+			blobs[i].cb = va_arg(ap, int);
+			data_size += blobs[i].cb;
 			break;
 		case 'b':
 			b = va_arg(ap, uint8_t*);
 			blobs[i].pb = b;
-			blobs[i].length = va_arg(ap, int);
-			head_size += blobs[i].length;
+			blobs[i].cb = va_arg(ap, int);
+			head_size += blobs[i].cb;
 			break;
 		case 'd':
 			j = va_arg(ap, int);
@@ -375,8 +375,8 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 		case 'C':
 			s = va_arg(ap, char*);
 			blobs[i].pc = s;
-			blobs[i].length = strlen(s) + 1;
-			head_size += blobs[i].length;
+			blobs[i].cb = strlen(s) + 1;
+			head_size += blobs[i].cb;
 			break;
 		default:
 			va_end(ap);
@@ -398,7 +398,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 		case 'U':
 		case 'A':
 		case 'B':
-			length = blobs[i].length;
+			length = blobs[i].cb;
 			cpu_to_le16p(&pblob->pb[head_ofs], length);
 			head_ofs += 2;
 			cpu_to_le16p(&pblob->pb[head_ofs], length);
@@ -413,7 +413,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 		case 'a':
 			cpu_to_le16p(&pblob->pb[data_ofs], intargs[i]);
 			data_ofs += 2;
-			length = blobs[i].length;
+			length = blobs[i].cb;
 			cpu_to_le16p(&pblob->pb[data_ofs], length);
 			data_ofs += 2;
 			memcpy(&pblob->pb[data_ofs], blobs[i].pb, length);
@@ -424,14 +424,14 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			head_ofs += 4;
 			break;
 		case 'b':
-			length = blobs[i].length;
+			length = blobs[i].cb;
 			if (blobs[i].pb != nullptr && length > 0)
 				/* don't follow null blobs... */
 				memcpy(&pblob->pb[head_ofs], blobs[i].pb, length);
 			head_ofs += length;
 			break;
 		case 'C':
-			length = blobs[i].length;
+			length = blobs[i].cb;
 			memcpy(&pblob->pb[head_ofs], blobs[i].pb, length);
 			head_ofs += length;
 			break;
@@ -441,8 +441,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 		}
 	}
 	va_end(ap);
-	
-	pblob->length = head_size + data_size;
+	pblob->cb = head_size + data_size;
 	return true;
 }
 
@@ -452,8 +451,8 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 
   U = unicode string (output is utf8, input first 4 bytes for buffer length)
   A = ascii string
-  B = data blob (input blob.length of buffer length)
-  b = data blob in header (input blob.length of buffer length)
+  B = data blob (input blob.cb of buffer length)
+  b = data blob in header (input blob.cb of buffer length)
   d = word (4 bytes)
   C = constant ascii string
  */
@@ -471,7 +470,7 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
 		case 'U':
-			if (head_ofs + 8 > blob.length) {
+			if (head_ofs + 8 > blob.cb) {
 				va_end(ap);
 				return false;
 			}
@@ -489,7 +488,7 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			}
 			/* make sure its in the right format - be strict */
 			if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
-				ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.length) {
+			    ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.cb) {
 				va_end(ap);
 				return false;
 			}
@@ -514,7 +513,7 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			}
 			break;
 		case 'A':
-			if (head_ofs + 8 > blob.length) {
+			if (head_ofs + 8 > blob.cb) {
 				va_end(ap);
 				return false;
 			}
@@ -532,7 +531,7 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 				break;
 			}
 			if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
-				ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.length) {
+			    ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.cb) {
 				va_end(ap);
 				return false;
 			}
@@ -549,7 +548,7 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			}
 			break;
 		case 'B':
-			if (head_ofs + 8 > blob.length) {
+			if (head_ofs + 8 > blob.cb) {
 				va_end(ap);
 				return false;
 			}
@@ -562,11 +561,11 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 
 			pblob = (DATA_BLOB*)va_arg(ap, void*);
 			if (0 == len1 && 0 == len2) {
-				pblob->length = 0;
+				pblob->cb = 0;
 			} else {
 				/* make sure its in the right format - be strict */
 				if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
-					ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.length) {
+				    ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.cb) {
 					va_end(ap);
 					return false;
 				}
@@ -577,14 +576,14 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 					return false;
 				}
 				memcpy(pblob->pb, &blob.pb[ptr_ofs], len1);
-				pblob->length = len1;
+				pblob->cb = len1;
 			}
 			break;
 		case 'b':
 			pblob = (DATA_BLOB *)va_arg(ap, void*);
 			len1 = va_arg(ap, unsigned int);
 			/* make sure its in the right format - be strict */
-			if (head_ofs + len1 > blob.length) {
+			if (head_ofs + len1 > blob.cb) {
 				va_end(ap);
 				return false;
 			}
@@ -594,12 +593,12 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 				return false;
 			}
 			memcpy(pblob->pb, &blob.pb[head_ofs], len1);
-			pblob->length = len1;
+			pblob->cb = len1;
 			head_ofs += len1;
 			break;
 		case 'd':
 			v = va_arg(ap, uint32_t*);
-			if (head_ofs + 4 > blob.length) {
+			if (head_ofs + 4 > blob.cb) {
 				va_end(ap);
 				return false;
 			}
@@ -611,7 +610,7 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 
 			if (&blob.pb[head_ofs] < reinterpret_cast<uint8_t *>(head_ofs) ||
 			    &blob.pb[head_ofs] < blob.pb ||
-			    head_ofs + strlen(ps) + 1 > blob.length) {
+			    head_ofs + strlen(ps) + 1 > blob.cb) {
 				va_end(ap);
 				return false;
 			}
@@ -755,14 +754,12 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 	uint8_t struct_blob_buff[1024];
 	
 	neg_flags = 0;
-	if (0 != request.length) {
-		if (request.length < 16 || !ntlmssp_parse_packet(request,
-		    "Cdd", "NTLMSSP", &ntlmssp_command, &neg_flags))
-			return false;
-	}
+	if (request.cb != 0 && (request.cb < 16 || !ntlmssp_parse_packet(request,
+	    "Cdd", "NTLMSSP", &ntlmssp_command, &neg_flags)))
+		return false;
 
 	ntlmssp_handle_neg_flags(pntlmssp, neg_flags);
-	if (pntlmssp->challenge.blob.length > 0) {
+	if (pntlmssp->challenge.blob.cb > 0) {
 		/* get the previous challenge */
 		memcpy(cryptkey, pntlmssp->challenge.blob.pb, 8);
 	} else {
@@ -770,7 +767,7 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 		randstring(cryptkey, 8);
 		pntlmssp->challenge.blob.pb = pntlmssp->challenge.blob_buff;
 		memcpy(pntlmssp->challenge.blob_buff, cryptkey, 8);
-		pntlmssp->challenge.blob.length = 8;
+		pntlmssp->challenge.blob.cb = 8;
 	}
 	
 	
@@ -786,9 +783,9 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 
 	pntlmssp->internal_chal.pb = pntlmssp->internal_chal_buff;
 	memcpy(pntlmssp->internal_chal.pb, cryptkey, 8);
-	pntlmssp->internal_chal.length = 8;
+	pntlmssp->internal_chal.cb = 8;
 	struct_blob.pb = struct_blob_buff;
-	struct_blob.length = 0;
+	struct_blob.cb = 0;
 	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 		if (!ntlmssp_gen_packet(&struct_blob, "aaaaa",
 		    MSVAVNBDOMAINNAME, target_name,
@@ -799,13 +796,13 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 			return false;
 	} else {
 		struct_blob.pb = nullptr;
-		struct_blob.length = 0;
+		struct_blob.cb = 0;
 	}
 
 	
 	/* Marshal the packet in the right format, unicode or ASCII */
 	version_blob.pb = nullptr;
-	version_blob.length = 0;
+	version_blob.cb = 0;
 	
 	if (chal_flags & NTLMSSP_NEGOTIATE_VERSION) {
 		memset(&vers, 0, sizeof(NTLMSSP_VERSION));
@@ -821,7 +818,7 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 			return false;
 		}
 		version_blob.pb = ndr_push.data;
-		version_blob.length = ndr_push.offset;
+		version_blob.cb = ndr_push.offset;
 	}
 		
 	if (pntlmssp->unicode)
@@ -831,7 +828,7 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 	if (!ntlmssp_gen_packet(preply, parse_string, "NTLMSSP",
 	    NTLMSSP_PROCESS_CHALLENGE, target_name, chal_flags, cryptkey,
 	    8, 0, 0, struct_blob.pb, struct_blob.cb, version_blob.pb,
-	    version_blob.length))
+	    version_blob.cb))
 		return false;
 	
 	pntlmssp->expected_state = NTLMSSP_PROCESS_AUTH;
@@ -852,17 +849,16 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 		parse_string = "CdBBAAABd";
 
 	pntlmssp->session_key.pb = pntlmssp->session_key_buff;
-	pntlmssp->session_key.length = 0;
+	pntlmssp->session_key.cb = 0;
 	pntlmssp->lm_resp.pb = pntlmssp->lm_resp_buff;
-	pntlmssp->lm_resp.length = sizeof(pntlmssp->lm_resp_buff);
+	pntlmssp->lm_resp.cb = sizeof(pntlmssp->lm_resp_buff);
 	pntlmssp->nt_resp.pb = pntlmssp->nt_resp_buff;
-	pntlmssp->nt_resp.length = sizeof(pntlmssp->nt_resp_buff);
+	pntlmssp->nt_resp.cb = sizeof(pntlmssp->nt_resp_buff);
 	
 	pntlmssp->user[0] = '\0';
 	pntlmssp->domain[0] = '\0';
 	pauth->encrypted_session_key.pb = pauth->encrypted_session_key_buff;
-	pauth->encrypted_session_key.length =
-							sizeof(pauth->encrypted_session_key_buff);
+	pauth->encrypted_session_key.cb = sizeof(pauth->encrypted_session_key_buff);
 	cpu_to_le32p(pntlmssp->domain, sizeof(pntlmssp->domain));
 	cpu_to_le32p(pntlmssp->user, sizeof(pntlmssp->user));
 	cpu_to_le32p(client_netbios_name, sizeof(client_netbios_name));
@@ -877,14 +873,14 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 			parse_string = "CdBBUUU";
 		else
 			parse_string = "CdBBAAA";
-		pauth->encrypted_session_key.length = 0;
+		pauth->encrypted_session_key.cb = 0;
 		auth_flags = 0;
 		
 		cpu_to_le32p(pntlmssp->domain, sizeof(pntlmssp->domain));
 		cpu_to_le32p(pntlmssp->user, sizeof(pntlmssp->user));
 		cpu_to_le32p(client_netbios_name, sizeof(client_netbios_name));
-		pntlmssp->lm_resp.length = sizeof(pntlmssp->lm_resp_buff);
-		pntlmssp->nt_resp.length = sizeof(pntlmssp->nt_resp_buff);
+		pntlmssp->lm_resp.cb = std::size(pntlmssp->lm_resp_buff);
+		pntlmssp->nt_resp.cb = std::size(pntlmssp->nt_resp_buff);
 		/* now the NTLMSSP encoded auth hashes */
 		if (!ntlmssp_parse_packet(request, parse_string, "NTLMSSP",
 		    &ntlmssp_command, &pntlmssp->lm_resp, &pntlmssp->nt_resp,
@@ -897,7 +893,7 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 	}
 	
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) ||
-	    pntlmssp->nt_resp.length != 24 || pntlmssp->lm_resp.length != 24)
+	    pntlmssp->nt_resp.cb != 24 || pntlmssp->lm_resp.cb != 24)
 		return true;
 	pauth->doing_ntlm2 = true;
 	memcpy(pauth->session_nonce, pntlmssp->internal_chal.pb, 8);
@@ -911,9 +907,9 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 		return false;
 
 	/* LM response is no longer useful */
-	pntlmssp->lm_resp.length = 0;
+	pntlmssp->lm_resp.cb = 0;
 	memcpy(pntlmssp->challenge.blob.pb, session_nonce_hash, 8);
-	pntlmssp->challenge.blob.length = 8;
+	pntlmssp->challenge.blob.cb = 8;
 
 	/* LM Key is incompatible. */
 	pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
@@ -928,15 +924,14 @@ static bool ntlmssp_check_ntlm1(const DATA_BLOB *pnt_response,
 	uint8_t p21[21];
 	uint8_t p24[24];
 	
-	if (psec_blob->length != 8) {
-		debug_info("[ntlmssp]: incorrect challenge size (%lu) in check_ntlm1", 
-			(unsigned long)psec_blob->length);
+	if (psec_blob->cb != 8) {
+		debug_info("[ntlmssp]: incorrect challenge size (%u) in check_ntlm1",
+			psec_blob->cb);
 		return false;
 	}
-
-	if (pnt_response->length != 24) {
-		debug_info("[ntlmssp]: incorrect password length (%lu) in check_ntlm1", 
-			(unsigned long)pnt_response->length);
+	if (pnt_response->cb != 24) {
+		debug_info("[ntlmssp]: incorrect password length (%u) in check_ntlm1",
+			pnt_response->cb);
 		return false;
 	}
 
@@ -954,7 +949,7 @@ static bool ntlmssp_check_ntlm1(const DATA_BLOB *pnt_response,
 	    EVP_DigestUpdate(ctx.get(), part_passwd, 16) <= 0 ||
 	    EVP_DigestFinal(ctx.get(), puser_key->pb, nullptr) <= 0)
 		return false;
-	puser_key->length = 16;
+	puser_key->cb = 16;
 	return true;
 }
 
@@ -969,20 +964,19 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 	DATA_BLOB client_key;
 	uint8_t value_from_encryption[16];
 
-	if (psec_blob->length != 8) {
+	if (psec_blob->cb != 8) {
 		debug_info("[ntlmssp]: incorrect challenge size (%u) "
-			"in check_ntlm2", psec_blob->length);
+			"in check_ntlm2", psec_blob->cb);
 		return false;
 	}
-
-	if (pntv2_response->length < 24) {
+	if (pntv2_response->cb < 24) {
 		debug_info("[ntlmssp]: incorrect password length (%u) "
-			"in check_ntlm2", pntv2_response->length);
+			"in check_ntlm2", pntv2_response->cb);
 		return false;
 	}
 
 	client_key.pb = &pntv2_response->pb[16];
-	client_key.length = pntv2_response->length - 16;
+	client_key.cb = pntv2_response->cb - 16;
 	gx_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
 	HX_strupper(tmp_user);
 	auto user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, sizeof(user_in));
@@ -1011,7 +1005,7 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 		    !hmac_ctx.update(value_from_encryption, 16) ||
 		    !hmac_ctx.finish(puser_key->pb))
 			return false;
-		puser_key->length = 16;
+		puser_key->cb = 16;
 		return true;
 	}
 	return false;
@@ -1028,22 +1022,19 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	DATA_BLOB client_key;
 	uint8_t value_from_encryption[16];
 	
-
-	if (psec_blob->length != 8) {
+	if (psec_blob->cb != 8) {
 		debug_info("[ntlmssp]: incorrect challenge size (%u) "
-			"in sess_key_ntlm2", psec_blob->length);
+			"in sess_key_ntlm2", psec_blob->cb);
 		return false;
 	}
-
-	if (pntv2_response->length < 24) {
+	if (pntv2_response->cb < 24) {
 		debug_info("[ntlmssp]: incorrect password length (%u) "
-			"in sess_key_ntlm2", pntv2_response->length);
+			"in sess_key_ntlm2", pntv2_response->cb);
 		return false;
 	}
 	
 	client_key.pb = &pntv2_response->pb[16];
-	client_key.length = pntv2_response->length - 16;
-
+	client_key.cb = pntv2_response->cb - 16;
 	gx_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
 	HX_strupper(tmp_user);
 	auto user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, std::size(user_in));
@@ -1071,7 +1062,7 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	    !hmac_ctx.update(value_from_encryption, 16) ||
 	    !hmac_ctx.finish(puser_key->pb))
 		return false;
-	puser_key->length = 16;
+	puser_key->cb = 16;
 	return true;
 }
 
@@ -1097,12 +1088,11 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	    !ntlmssp_deshash(plain_passwd, p16))
 		return false;
 	
-	if (pnt_response->length != 0 && pnt_response->length < 24) {
+	if (pnt_response->cb != 0 && pnt_response->cb < 24)
 		debug_info("[ntlmssp]: invalid NT password length (%u) for user %s "
-			"in server_chkpasswd", pnt_response->length, pntlmssp->user);
-	}
+			"in server_chkpasswd", pnt_response->cb, pntlmssp->user);
 
-	if (pnt_response->length > 24) {
+	if (pnt_response->cb > 24) {
 		/* We have the NT MD4 hash challenge available - see if we can use it*/
 		if (ntlmssp_check_ntlm2(pnt_response, nt_p16, pchallenge,
 		    pntlmssp->user, pntlmssp->domain, puser_key) ||
@@ -1110,26 +1100,26 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 		    pntlmssp->user, upper_domain, puser_key) ||
 		    ntlmssp_check_ntlm2(pnt_response, nt_p16, pchallenge,
 		    pntlmssp->user, "", puser_key)) {
-			if (puser_key->length > 8) {
+			if (puser_key->cb > 8) {
 				memcpy(plm_key->pb, puser_key->pb, 8);
-				plm_key->length = 8;
+				plm_key->cb = 8;
 			} else {
 				memcpy(plm_key->pb, puser_key->pb, puser_key->cb);
-				plm_key->length = puser_key->length;
+				plm_key->cb = puser_key->cb;
 			}
 			return true;
 		}
-	} else if (24 == pnt_response->length) {
+	} else if (pnt_response->cb == 24) {
 		if (ntlmssp_check_ntlm1(pnt_response, nt_p16,
 		    pchallenge, puser_key)) {
 			/* The LM session key for this response is not very secure, 
 			   so use it only if we otherwise allow LM authentication */
-			if (puser_key->length > 8) {
+			if (puser_key->cb > 8) {
 				memcpy(plm_key->pb, p16, 8);
-				plm_key->length = 8;
+				plm_key->cb = 8;
 			} else {
 				memcpy(plm_key->pb, p16, puser_key->cb);
-				plm_key->length = puser_key->length;
+				plm_key->cb = puser_key->cb;
 			}
 			return true;
 		} else {
@@ -1137,29 +1127,27 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 		}
 	} 
 	
-
-	if (0 == plm_response->length) {
+	if (plm_response->cb == 0) {
 		debug_info("[ntlmssp]: neither LanMan nor NT password supplied for "
 			"user %s in server_chkpasswd", pntlmssp->user);
 		return false;
 	}
-
-	if (plm_response->length < 24) {
+	if (plm_response->cb < 24) {
 		debug_info("[ntlmssp]: invalid LanMan password length (%u) for "
-			"user %s in server_chkpasswd", pnt_response->length, pntlmssp->user);
+			"user %s in server_chkpasswd", pnt_response->cb, pntlmssp->user);
 		return false;
 	}
 	if (ntlmssp_check_ntlm1(plm_response, p16, pchallenge, nullptr)) {
 		memset(puser_key->pb, 0, 16);
 		memcpy(puser_key->pb, p16, 8);
-		puser_key->length = 16;
+		puser_key->cb = 16;
 		memcpy(plm_key->pb, p16, 8);
-		plm_key->length = 8;
+		plm_key->cb = 8;
 		return true;
 	}
 
 	tmp_key.pb = tmp_key_buff;
-	tmp_key.length = 0;
+	tmp_key.cb = 0;
 	bool b_result = false;
 	/* This is for 'LMv2' authentication.  almost NTLMv2 but limited to 24 bytes. */
 	if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
@@ -1181,21 +1169,21 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	}
 	
 	if (b_result) {
-		if (pnt_response->length > 24) {
+		if (pnt_response->cb > 24) {
 			ntlmssp_sess_key_ntlm2(pnt_response, nt_p16, pchallenge, 
 				pntlmssp->user, pdomain, puser_key);
 		} else {
 			/* Otherwise, use the LMv2 session key */
 			memcpy(puser_key->pb, tmp_key.pb, tmp_key.cb);
-			puser_key->length = tmp_key.length;
+			puser_key->cb = tmp_key.cb;
 		}
-		if (0 != puser_key->length) {
-			if (puser_key->length > 8) {
+		if (puser_key->cb != 0) {
+			if (puser_key->cb > 8) {
 				memcpy(plm_key->pb, puser_key->pb, 8);
-				plm_key->length = 8;
+				plm_key->cb = 8;
 			} else {
 				memcpy(plm_key->pb, puser_key->pb, puser_key->cb);
-				plm_key->length = puser_key->length;
+				plm_key->cb = puser_key->cb;
 			}
 		}
 		return true;
@@ -1209,9 +1197,9 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 			
 		memset(puser_key->pb, 0, 16);
 		memcpy(puser_key->pb, p16, 8);
-		puser_key->length = 16;
+		puser_key->cb = 16;
 		memcpy(plm_key->pb, p16, 8);
-		plm_key->length = 8;
+		plm_key->cb = 8;
 		return true;
 	}
 	return false;
@@ -1231,8 +1219,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 	const char *recv_seal_const;
 	uint8_t weak_session_buff[8];
 	
-
-	if (pntlmssp->session_key.length < 8) {
+	if (pntlmssp->session_key.cb < 8) {
 		debug_info("[ntlmssp]: NO session key, cannot initialise "
 			"signing in sign_init");
 		return false;
@@ -1242,10 +1229,9 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		weak_key = pntlmssp->session_key;
 		send_seal_blob.pb = send_seal_buff;
-		send_seal_blob.length = sizeof(send_seal_buff);
+		send_seal_blob.cb = sizeof(send_seal_buff);
 		recv_seal_blob.pb = recv_seal_buff;
-		recv_seal_blob.length = sizeof(recv_seal_buff);
-
+		recv_seal_blob.cb = sizeof(recv_seal_buff);
 		send_sign_const = SRV_SIGN;
 		send_seal_const = SRV_SEAL;
 		recv_sign_const = CLI_SIGN;
@@ -1254,9 +1240,9 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 		if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_128) {
 			/* do nothing */
 		} else if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_56) {
-			weak_key.length = 7;
+			weak_key.cb = 7;
 		} else { /* forty bits */
-			weak_key.length = 5;
+			weak_key.cb = 5;
 		}
 		
 		/* SEND: sign key */
@@ -1294,17 +1280,13 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 		if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
 			do_weak = true;
 		}
-		
-		if (seal_key.length < 16) {
+		if (seal_key.cb < 16)
 			/* TODO: is this really correct? */
 			do_weak = false;
-		}
-
 		if (do_weak) {
 			memcpy(weak_session_buff, seal_key.pb, 8);
 			seal_key.pb = weak_session_buff;
-			seal_key.length = 8;
-			
+			seal_key.cb = 8;
 			if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_56) {
 				weak_session_buff[7] = 0xa0;
 			} else { /* forty bits */
@@ -1338,48 +1320,47 @@ static bool ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 	plm_key = &pauth->lm_session_key;
 	puser_key = &pauth->user_session_key;
 	session_key.pb = session_key_buff;
-	session_key.length = 0;
+	session_key.cb = 0;
 	
 	/* Handle the different session key derivation for NTLM2 */
 	if (pauth->doing_ntlm2) {
-		if (16 == puser_key->length) {
+		if (puser_key->cb == 16) {
 			HMACMD5_CTX hmac_ctx(puser_key->pb, 16);
 			if (!hmac_ctx.is_valid() ||
 			    !hmac_ctx.update(pauth->session_nonce, sizeof(pauth->session_nonce)) ||
 			    !hmac_ctx.finish(session_key.pb))
 				return false;
-			session_key.length = 16;
+			session_key.cb = 16;
 		} else {
-			session_key.length = 0;
+			session_key.cb = 0;
 		}
 	} else if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY && 
-		(0 == pntlmssp->nt_resp.length  || 24 == pntlmssp->nt_resp.length)) {
-		if (plm_key->length >= 8) {
-			if (24 == pntlmssp->lm_resp.length) {
+	    (pntlmssp->nt_resp.cb == 0 || pntlmssp->nt_resp.cb == 24)) {
+		if (plm_key->cb >= 8) {
+			if (pntlmssp->lm_resp.cb == 24)
 				ntlmssp_lm_session_key(plm_key->pb, pntlmssp->lm_resp.pb,
 					session_key.pb);
-			} else {
+			else
 				ntlmssp_lm_session_key(zeros, zeros, session_key.pb);
-			}
-			session_key.length = 16;
+			session_key.cb = 16;
 		} else {
 			/* LM Key not selected */
 			pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
-			session_key.length = 0;
+			session_key.cb = 0;
 		}
-	} else if (puser_key->length > 0) {
+	} else if (puser_key->cb > 0) {
 		memcpy(session_key.pb, puser_key->pb, puser_key->cb);
-		session_key.length = puser_key->length;
+		session_key.cb = puser_key->cb;
 		/* LM Key not selected */
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
-	} else if (plm_key->length > 0) {
+	} else if (plm_key->cb > 0) {
 		/* Very weird to have LM key, but no user session key, but anyway.. */
 		memcpy(session_key.pb, plm_key->pb, plm_key->cb);
-		session_key.length = plm_key->length;
+		session_key.cb = plm_key->cb;
 		/* LM Key not selected */
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	} else {
-		session_key.length = 0;
+		session_key.cb = 0;
 		/* LM Key not selected */
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
@@ -1387,28 +1368,25 @@ static bool ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 	/* With KEY_EXCH, the client supplies the proposed session key,
 	   but encrypts it with the long-term key */
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
-		if (16 != pauth->encrypted_session_key.length) {
+		if (pauth->encrypted_session_key.cb != 16) {
 			return false;
-		} else if (16 != session_key.length) {
+		} else if (session_key.cb != 16) {
 			memcpy(pntlmssp->session_key.pb, session_key.pb,
-				session_key.length);
-			pntlmssp->session_key.length = session_key.length;
+				session_key.cb);
+			pntlmssp->session_key.cb = session_key.cb;
 		} else {
 			arcfour_crypt(pauth->encrypted_session_key.pb, session_key.pb,
-				pauth->encrypted_session_key.length);
+				pauth->encrypted_session_key.cb);
 			memcpy(pntlmssp->session_key.pb, pauth->encrypted_session_key.pb,
-				pauth->encrypted_session_key.length);
-			pntlmssp->session_key.length = pauth->encrypted_session_key.length;
+				pauth->encrypted_session_key.cb);
+			pntlmssp->session_key.cb = pauth->encrypted_session_key.cb;
 		}
 	} else {
 		memcpy(pntlmssp->session_key.pb, session_key.pb, session_key.cb);
-		pntlmssp->session_key.length = session_key.length;
+		pntlmssp->session_key.cb = session_key.cb;
 	}
-
-	if (0 != pntlmssp->session_key.length) {
+	if (pntlmssp->session_key.cb != 0)
 		ntlmssp_sign_init(pntlmssp);
-	}
-
 	pntlmssp->expected_state = NTLMSSP_PROCESS_DONE;
 	return true;
 }
@@ -1422,15 +1400,14 @@ static bool ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 	
 	
 	/* zero the outbound NTLMSSP packet */
-	pout->length = 0;
-	
+	pout->cb = 0;
 	memset(&auth_state, 0, sizeof(NTLMSSP_SERVER_AUTH_STATE));
 	if (!ntlmssp_server_preauth(pntlmssp, &auth_state, in))
 		return false;
 	auth_state.user_session_key.pb = auth_state.user_session_key_buff;
-	auth_state.user_session_key.length = 0;
+	auth_state.user_session_key.cb = 0;
 	auth_state.lm_session_key.pb = auth_state.lm_session_key_buff;
-	auth_state.lm_session_key.length = 0;
+	auth_state.lm_session_key.cb = 0;
 	
 	if (NULL == strchr(pntlmssp->user, '@')) {
 			snprintf(username, GX_ARRAY_SIZE(username), "%s@%s",
@@ -1457,9 +1434,8 @@ bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 	if (NTLMSSP_PROCESS_DONE == pntlmssp->expected_state) {
 		return false;
 	}
-	if (0 == pblob->length) {
+	if (pblob->cb == 0)
 		return false;
-	}
 	if (!ntlmssp_parse_packet(*pblob, "Cd", "NTLMSSP", &ntlmssp_command))
 		return false;
 	if (ntlmssp_command != pntlmssp->expected_state) {
@@ -1469,7 +1445,7 @@ bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 	}
 	
 	tmp_blob.pb = blob_buff;
-	tmp_blob.length = 0;
+	tmp_blob.cb = 0;
 	
 	if (NTLMSSP_PROCESS_NEGOTIATE == ntlmssp_command) {
 		if (!ntlmssp_server_negotiate(pntlmssp, *pblob, &tmp_blob))
@@ -1484,7 +1460,7 @@ bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 	}
 	
 	free(pblob->pb);
-	if (0 == tmp_blob.length) {
+	if (tmp_blob.cb == 0) {
 		pblob->pb = nullptr;
 	} else {
 		pblob->pb = me_alloc<uint8_t>(tmp_blob.cb);
@@ -1492,7 +1468,7 @@ bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 			return false;
 		memcpy(pblob->pb, tmp_blob.pb, tmp_blob.cb);
 	}
-	pblob->length = tmp_blob.length;
+	pblob->cb = tmp_blob.cb;
 	return true;
 }
 
@@ -1561,7 +1537,7 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 	cpu_to_le32p(&psig->pb[0], NTLMSSP_SIGN_VERSION);
 	memcpy(&psig->pb[4], digest, 8);
 	memcpy(&psig->pb[12], seq_num, 4);
-	psig->length = NTLMSSP_SIG_SIZE;
+	psig->cb = NTLMSSP_SIG_SIZE;
 	return true;
 }
 
@@ -1571,9 +1547,8 @@ bool ntlmssp_sign_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
 {
 	std::lock_guard lk(pntlmssp->lock);
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN) ||
-		0 == pntlmssp->session_key.length) {
+	    pntlmssp->session_key.cb == 0)
 		return false;
-	}
 	if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length, pwhole_pdu,
 	    pdu_length, NTLMSSP_DIRECTION_SEND, psig, true)) {
 		return false;
@@ -1589,25 +1564,21 @@ static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
 	uint8_t local_sig_buff[16];
 	
 	local_sig.pb = local_sig_buff;
-	if (0 == pntlmssp->session_key.length) {
+	if (pntlmssp->session_key.cb == 0)
 		return false;
-	}
-	
-	if (0 == pntlmssp->session_key.length) {
+	if (pntlmssp->session_key.cb == 0) {
 		debug_info("[ntlm]: no session key, cannot check packet signature\n");
 		return false;
 	}
-
-	if (psig->length < 8) {
+	if (psig->cb < 8)
 		debug_info("[ntlmssp]: NTLMSSP packet check failed due to short "
-			"signature (%u bytes)! in check_packet", psig->length);
-	}
+			"signature (%u bytes)! in check_packet", psig->cb);
 	if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length, pwhole_pdu,
 	    pdu_length, NTLMSSP_DIRECTION_RECEIVE, &local_sig, true))
 		return false;
 
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		if (local_sig.length != psig->length ||
+		if (local_sig.cb != psig->cb ||
 			memcmp(local_sig.pb, psig->pb, psig->cb) != 0) {
 			debug_info("[ntlmssp]: NTLMSSP NTLM2 packet check failed due to "
 				"invalid signature!\n");
@@ -1646,7 +1617,7 @@ bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN))
 		return false;
 	std::lock_guard lk(pntlmssp->lock);
-	if (0 == pntlmssp->session_key.length) {
+	if (pntlmssp->session_key.cb == 0) {
 		debug_info("[ntlm]: no session key, cannot seal packet\n");
 		return false;
 	}
@@ -1682,7 +1653,7 @@ bool ntlmssp_unseal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata,
 	const DATA_BLOB *psig)
 {
 	std::lock_guard lk(pntlmssp->lock);
-	if (0 == pntlmssp->session_key.length) {
+	if (pntlmssp->session_key.cb == 0) {
 		debug_info("[ntlm]: no session key, cannot unseal packet\n");
 		return false;
 	}
@@ -1705,13 +1676,11 @@ static bool ntlmssp_session_key(NTLMSSP_CTX *pntlmssp, DATA_BLOB *psession_key)
 	if (pntlmssp->expected_state != NTLMSSP_PROCESS_DONE) {
 		return false;
 	}
-
-	if (0 == pntlmssp->session_key.length) {
+	if (pntlmssp->session_key.cb == 0)
 		return false;
-	}
 	memcpy(psession_key->pb, pntlmssp->session_key.pb,
-		pntlmssp->session_key.length);
-	psession_key->length = pntlmssp->session_key.length;
+		pntlmssp->session_key.cb);
+	psession_key->cb = pntlmssp->session_key.cb;
 	return true;
 }
 

@@ -745,9 +745,7 @@ struct ADVISE_INFO {
  * @pv:		may legitimately be nullptr (only if cb==0)
  */
 struct BINARY {
-	union {
-		uint32_t cb, length;
-	};
+	uint32_t cb;
 	union {
 		uint8_t *pb;
 		char *pc;

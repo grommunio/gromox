@@ -533,16 +533,11 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 {
 	NDR_PULL ndr;
 	uint32_t flags;
-	uint32_t data_and_pad;
-	
-	
-	data_and_pad = ptrailer->length -
-		(DCERPC_AUTH_TRAILER_LENGTH + ppkt->auth_length);
-	if (data_and_pad > ptrailer->length) {
+	uint32_t data_and_pad = ptrailer->cb -
+	                        (DCERPC_AUTH_TRAILER_LENGTH + ppkt->auth_length);
+	if (data_and_pad > ptrailer->cb)
 		return FALSE;
-	}
-	*pauth_length = ptrailer->length - data_and_pad;
-	
+	*pauth_length = ptrailer->cb - data_and_pad;
 	flags = 0;
 	if (0 == (ppkt->drep[0] & DCERPC_DREP_LE)) {
 		flags = NDR_FLAG_BIGENDIAN;
@@ -626,7 +621,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		return FALSE;
 	}
 	
-	ppkt->payload.request.stub_and_verifier.length -= auth_length;
+	ppkt->payload.request.stub_and_verifier.cb -= auth_length;
 
 	/* check signature or unseal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
@@ -639,13 +634,13 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 			return FALSE;
 		}
 		memcpy(prequest->stub_and_verifier.pb, &pblob->pb[hdr_size],
-			prequest->stub_and_verifier.length);
+			prequest->stub_and_verifier.cb);
 		break;
 	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY:
 		if (!ntlmssp_check_packet(pauth_ctx->pntlmssp,
 		    prequest->stub_and_verifier.pb,
 		    prequest->stub_and_verifier.cb, pblob->pb,
-		    pblob->length - auth.credentials.length, &auth.credentials)) {
+		    pblob->cb - auth.credentials.cb, &auth.credentials)) {
 			pdu_ndr_free_dcerpc_auth(&auth);
 			return FALSE;
 		}
@@ -659,11 +654,11 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	}
 	
 	/* remove the indicated amount of padding */
-	if (prequest->stub_and_verifier.length < auth.auth_pad_length) {
+	if (prequest->stub_and_verifier.cb < auth.auth_pad_length) {
 		pdu_ndr_free_dcerpc_auth(&auth);
 		return FALSE;
 	}
-	prequest->stub_and_verifier.length -= auth.auth_pad_length;
+	prequest->stub_and_verifier.cb -= auth.auth_pad_length;
 	pdu_ndr_free_dcerpc_auth(&auth);
 	return TRUE;
 }
@@ -690,13 +685,7 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 	}
 	
 	ndr_push_init(&ndr, pdata, DCERPC_BASE_MARSHALL_SIZE, flags);
-	
-	if (NULL != pauth_info) {
-		ppkt->auth_length = pauth_info->credentials.length;
-	} else {
-		ppkt->auth_length = 0;
-	}
-
+	ppkt->auth_length = pauth_info != nullptr ? pauth_info->credentials.cb : 0;
 	if (NDR_ERR_SUCCESS != pdu_ndr_push_ncacnpkt(&ndr, ppkt)) {
 		free(pdata);
 		return FALSE;
@@ -711,11 +700,9 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 	}
 	
 	pblob->pb = ndr.data;
-	pblob->length = ndr.offset;
-	
+	pblob->cb = ndr.offset;
 	/* fill in the frag length */
-	pdu_processor_set_frag_length(pblob, pblob->length);
-
+	pdu_processor_set_frag_length(pblob, pblob->cb);
 	return TRUE;
 }
 
@@ -732,7 +719,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	pkt.payload.fault.cancel_count = 0;
 	pkt.payload.fault.status = fault_code;
 	pkt.payload.fault.pad.pb = deconst(zeros);
-	pkt.payload.fault.pad.length = sizeof(zeros);
+	pkt.payload.fault.pad.cb = sizeof(zeros);
 
 	auto pblob_node = g_bnode_allocator->get();
 	if (NULL == pblob_node) {
@@ -774,7 +761,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 	memset(pauth_ctx, 0, sizeof(DCERPC_AUTH_CONTEXT));
 	pauth_ctx->node.pdata = pauth_ctx;
 	
-	if (0 == pbind->auth_info.length) {
+	if (pbind->auth_info.cb == 0) {
 		pauth_ctx->auth_info.auth_type = RPC_C_AUTHN_NONE;
 		pauth_ctx->auth_info.auth_level = RPC_C_AUTHN_LEVEL_DEFAULT;
 		double_list_append_as_tail(&pcall->pprocessor->auth_list,
@@ -1051,7 +1038,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	pkt.payload.bind_ack.max_xmit_frag = pcall->pprocessor->cli_max_recv_frag;
 	pkt.payload.bind_ack.max_recv_frag = 0x2000;
 	pkt.payload.bind_ack.pad.pb = nullptr;
-	pkt.payload.bind_ack.pad.length = 0;
+	pkt.payload.bind_ack.pad.cb = 0;
 	
 	if (NULL != pcall->pcontext) {
 		pkt.payload.bind_ack.assoc_group_id = pcall->pcontext->assoc_group_id;
@@ -1097,7 +1084,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	pkt.payload.bind_ack.ctx_list[0].reason = reason;
 	pkt.payload.bind_ack.ctx_list[0].syntax = g_transfer_syntax_ndr;
 	pkt.payload.bind_ack.auth_info.pb = nullptr;
-	pkt.payload.bind_ack.auth_info.length = 0;
+	pkt.payload.bind_ack.auth_info.cb = 0;
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
@@ -1160,9 +1147,8 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	if ((pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NONE &&
 	    pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT) ||
 		NULL == pauth_ctx->pntlmssp ||
-	    0 == ppkt->payload.auth3.auth_info.length) {
+	    ppkt->payload.auth3.auth_info.cb == 0)
 		goto AUTH3_FAIL;
-	}
 	
 	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
 	if (!pdu_processor_pull_auth_trailer(ppkt,
@@ -1358,7 +1344,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pkt.payload.alter_ack.max_xmit_frag = 0x2000;
 	pkt.payload.alter_ack.max_recv_frag = 0x2000;
 	pkt.payload.alter_ack.pad.pb = nullptr;
-	pkt.payload.alter_ack.pad.length = 0;
+	pkt.payload.alter_ack.pad.cb = 0;
 	
 	if (NULL != pcontext) {
 		pkt.payload.alter_ack.assoc_group_id = pcall->pcontext->assoc_group_id;
@@ -1380,7 +1366,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pkt.payload.alter_ack.ctx_list[0].reason = reason;
 	pkt.payload.alter_ack.ctx_list[0].syntax = g_transfer_syntax_ndr;
 	pkt.payload.alter_ack.auth_info.pb = nullptr;
-	pkt.payload.alter_ack.auth_info.length = 0;
+	pkt.payload.alter_ack.auth_info.cb = 0;
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
@@ -1438,7 +1424,7 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	char ndr_buff[DCERPC_BASE_MARSHALL_SIZE];
 
 	creds2.pb = creds2_buff;
-	creds2.length = 0;
+	creds2.cb = 0;
 	pauth_ctx = pcall->pauth_ctx;
 	/* non-signed packets are simple */
 	if (0 == sig_size) {
@@ -1470,13 +1456,13 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	}
 	
 	pauth_ctx->auth_info.auth_pad_length =
-		(16 - (ppkt->payload.response.stub_and_verifier.length & 15)) & 15;
+		(16 - (ppkt->payload.response.stub_and_verifier.cb & 15)) & 15;
 	if (NDR_ERR_SUCCESS != ndr_push_zero(&ndr,
 		pauth_ctx->auth_info.auth_pad_length)) {
 		return FALSE;
 	}
 
-	payload_length = ppkt->payload.response.stub_and_verifier.length +
+	payload_length = ppkt->payload.response.stub_and_verifier.cb +
 						pauth_ctx->auth_info.auth_pad_length;
 
 	/* start without signature, will be appended later */
@@ -1484,7 +1470,7 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 		free(pauth_ctx->auth_info.credentials.pb);
 		pauth_ctx->auth_info.credentials.pb = nullptr;
 	}
-	pauth_ctx->auth_info.credentials.length = 0;
+	pauth_ctx->auth_info.credentials.cb = 0;
 	
 	/* change back into NDR */
 	if (pcall->pcontext->b_ndr64)
@@ -1497,9 +1483,8 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 
 	/* extract the whole packet as a blob */
 	pblob->pb = ndr.data;
-	pblob->length = ndr.offset;
-	
-	pdu_processor_set_frag_length(pblob, pblob->length + sig_size);
+	pblob->cb = ndr.offset;
+	pdu_processor_set_frag_length(pblob, pblob->cb + sig_size);
 	pdu_processor_set_auth_length(pblob, sig_size);
 
 	/* sign or seal the packet */
@@ -1521,13 +1506,14 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 		return FALSE;
 	}
 
-	if (creds2.length != sig_size) {
-		debug_info("[pdu_processor]: auth_response: creds2.length[%u] != "
-			"sig_size[%u] pad[%u] stub[%u]\n", creds2.length, (uint32_t)sig_size,
+	if (creds2.cb != sig_size) {
+		debug_info("[pdu_processor]: auth_response: creds2.cb[%u] != "
+			"sig_size[%u] pad[%u] stub[%u]\n", creds2.cb,
+			static_cast<unsigned int>(sig_size),
 			pauth_ctx->auth_info.auth_pad_length,
-			ppkt->payload.response.stub_and_verifier.length);
-		pdu_processor_set_frag_length(pblob, pblob->length + creds2.length);
-		pdu_processor_set_auth_length(pblob, creds2.length);
+			ppkt->payload.response.stub_and_verifier.cb);
+		pdu_processor_set_frag_length(pblob, pblob->cb + creds2.cb);
+		pdu_processor_set_auth_length(pblob, creds2.cb);
 	}
 
 	auto pdata = me_alloc<uint8_t>(pblob->cb + creds2.cb);
@@ -1537,8 +1523,7 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	memcpy(pdata, pblob->pb, pblob->cb);
 	memcpy(&pdata[pblob->cb], creds2.pb, creds2.cb);
 	pblob->pb = pdata;
-	pblob->length += creds2.length;
-	
+	pblob->cb += creds2.cb;
 	return TRUE;
 }
 
@@ -1592,9 +1577,8 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	}
 	pdu_processor_free_stack_root(pstack_root);
 	stub.pb = ndr_push.data;
-	stub.length = ndr_push.offset;
-	total_length = stub.length;
-	
+	stub.cb = ndr_push.offset;
+	total_length = stub.cb;
 	sig_size = 0;
 	
 	/* full max_recv_frag size minus the dcerpc request header size */
@@ -1621,31 +1605,24 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 		}
 		pblob_node->node.pdata = pblob_node;
 		pblob_node->b_rts = FALSE;
-
-		if (chunk_size > stub.length) {
-			length = stub.length;
-		} else {
-			length = chunk_size;
-		}
+		length = std::min(stub.cb, chunk_size);
 
 		/* form the dcerpc response packet */
 		dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 		pkt.call_id = pcall->pkt.call_id;
 		pkt.pkt_type = DCERPC_PKT_RESPONSE;
 		pkt.pfc_flags = 0;
-		if (stub.length == total_length) {
+		if (stub.cb == total_length)
 			pkt.pfc_flags |= DCERPC_PFC_FLAG_FIRST;
-		}
-		if (length == stub.length) {
+		if (stub.cb == length)
 			pkt.pfc_flags |= DCERPC_PFC_FLAG_LAST;
-		}
-		pkt.payload.response.alloc_hint = stub.length;
+		pkt.payload.response.alloc_hint = stub.cb;
 		pkt.payload.response.context_id = prequest->context_id;
 		pkt.payload.response.cancel_count = 0;
 		pkt.payload.response.pad.pb = prequest->pad.pb;
-		pkt.payload.response.pad.length = prequest->pad.length;
+		pkt.payload.response.pad.cb = prequest->pad.cb;
 		pkt.payload.response.stub_and_verifier.pb = stub.pb;
-		pkt.payload.response.stub_and_verifier.length = length;
+		pkt.payload.response.stub_and_verifier.cb = length;
 
 		if (!pdu_processor_auth_response(pcall,
 			&pblob_node->blob, sig_size, &pkt)) {
@@ -1656,8 +1633,8 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 
 		double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 		stub.pb += length;
-		stub.length -= length;
-	} while (stub.length != 0);
+		stub.cb -= length;
+	} while (stub.cb != 0);
 	free(pdata);
 	return TRUE;
 }
@@ -1911,8 +1888,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	if (pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
 	ndr_pull_init(&ndr_pull, prequest->stub_and_verifier.pb,
-		prequest->stub_and_verifier.length, flags);
-	
+		prequest->stub_and_verifier.cb, flags);
 	pcall->pcontext	= pcontext;
 	
 	/* unmarshaling the NDR in param data */
@@ -2936,7 +2912,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	if (DCERPC_PKT_REQUEST == pcall->pkt.pkt_type) {
 		prequest = &pcall->pkt.payload.request;
 		tmp_blob.pc = const_cast<char *>(pbuff);
-		tmp_blob.length = length;
+		tmp_blob.cb = length;
 		if (!pdu_processor_auth_request(pcall, &tmp_blob)) {
 			if (!pdu_processor_fault(pcall, DCERPC_FAULT_ACCESS_DENIED)) {
 				pdu_processor_free_call(pcall);
@@ -2949,9 +2925,8 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) {
 			if (0 == (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 				alloc_size = prequest->alloc_hint;
-				if (alloc_size < prequest->stub_and_verifier.length) {
-					alloc_size = prequest->stub_and_verifier.length * 8;
-				}
+				if (alloc_size < prequest->stub_and_verifier.cb)
+					alloc_size = prequest->stub_and_verifier.cb * 8;
 				if (alloc_size > g_max_request_mem) {
 					if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 						pdu_processor_free_call(pcall);
@@ -2972,7 +2947,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 				}
 				
 				memcpy(pdata, prequest->stub_and_verifier.pb,
-					prequest->stub_and_verifier.length);
+					prequest->stub_and_verifier.cb);
 				free(prequest->stub_and_verifier.pb);
 				prequest->stub_and_verifier.pb = pdata;
 				pcall->alloc_size = alloc_size;
@@ -3001,9 +2976,8 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 			}
 			
 			prequestx = &pcallx->pkt.payload.request;
-
-			alloc_size = prequestx->stub_and_verifier.length +
-							prequest->stub_and_verifier.length;
+			alloc_size = prequestx->stub_and_verifier.cb +
+			             prequest->stub_and_verifier.cb;
 			if (prequestx->alloc_hint > alloc_size) {
 				alloc_size = prequestx->alloc_hint;
 			}
@@ -3030,19 +3004,17 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 					return PDU_PROCESSOR_OUTPUT;
 				}
 				memcpy(pdata, prequestx->stub_and_verifier.pb,
-					prequestx->stub_and_verifier.length);
+					prequestx->stub_and_verifier.cb);
 				free(prequestx->stub_and_verifier.pb);
 				prequestx->stub_and_verifier.pb = pdata;
 				pcallx->alloc_size = alloc_size;
 			}
 				
-			memcpy(&prequestx->stub_and_verifier.pb[prequestx->stub_and_verifier.length],
+			memcpy(&prequestx->stub_and_verifier.pb[prequestx->stub_and_verifier.cb],
 				prequest->stub_and_verifier.pb,
-				prequest->stub_and_verifier.length);
-			
-			prequestx->stub_and_verifier.length +=
-				prequest->stub_and_verifier.length;
-
+				prequest->stub_and_verifier.cb);
+			prequestx->stub_and_verifier.cb +=
+				prequest->stub_and_verifier.cb;
 			pcallx->pkt.pfc_flags |= pcall->pkt.pfc_flags&DCERPC_PFC_FLAG_LAST;
 			pdu_processor_free_call(pcall);
 			pcall = pcallx;
