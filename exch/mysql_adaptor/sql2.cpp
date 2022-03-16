@@ -21,6 +21,7 @@
 #include <gromox/svc_common.h>
 #include "mysql_adaptor.h"
 #include "sql2.hpp"
+#define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 
 DECLARE_SVC_API();
 
@@ -267,11 +268,11 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	propmap_load(*conn, query, pmap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
-	         "SELECT u.id, u.username, up.propval_str AS dtypx, 9999, "
+	         "SELECT u.id, u.username, dt.propval_str AS dtypx, 9999, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
 	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username "
-	         "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
+	         JOIN_WITH_DISPLAYTYPE
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN groups AS gr ON u.username=gr.groupname", class_id);
@@ -302,10 +303,10 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 	propmap_load(*conn, query, pmap);
 
 	gx_snprintf(query, arsizeof(query),
-	         "SELECT u.id, u.username, up.propval_str AS dtypx, 9998, "
+	         "SELECT u.id, u.username, dt.propval_str AS dtypx, 9998, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
-	         "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
+	         JOIN_WITH_DISPLAYTYPE
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN groups AS gr ON u.username=gr.groupname "
@@ -342,10 +343,10 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	propmap_load(*conn, query, pmap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
-	         "SELECT u.id, u.username, up.propval_str AS dtypx, 9997, "
+	         "SELECT u.id, u.username, dt.propval_str AS dtypx, 9997, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
-	         "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
+	         JOIN_WITH_DISPLAYTYPE
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN groups AS gr ON u.username=gr.groupname "
