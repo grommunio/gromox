@@ -38,20 +38,14 @@ enum {
 #define NDR_ALIGN_FLAGS (NDR_FLAG_NOALIGN|NDR_FLAG_REMAINING|NDR_FLAG_ALIGN2|NDR_FLAG_ALIGN4|NDR_FLAG_ALIGN8)
 
 struct NDR_PULL {
-	uint32_t flags;
-	const uint8_t *data;
-	uint32_t data_size;
-	uint32_t offset;
-	uint32_t ptr_count;
+	const uint8_t *data = nullptr;
+	uint32_t flags = 0, data_size = 0, offset = 0, ptr_count = 0;
 };
 
 struct NDR_PUSH {
-	uint32_t flags;
 	uint8_t *data;
-	uint32_t alloc_size;
-	uint32_t offset;
-	uint32_t ptr_count;
-	DOUBLE_LIST full_ptr_list;
+	uint32_t flags = 0, alloc_size = 0, offset = 0, ptr_count = 0;
+	DOUBLE_LIST full_ptr_list{};
 };
 
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
