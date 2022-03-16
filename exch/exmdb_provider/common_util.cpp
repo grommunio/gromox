@@ -2308,12 +2308,12 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 	case PT_UNSPECIFIED: {
 		auto ptyped = cu_alloc<TYPED_PROPVAL>();
 		if (NULL == ptyped) {
-			return FALSE;
+			return nullptr;
 		}
 		ptyped->type = PROP_TYPE(sqlite3_column_int64(pstmt, 0));
 		ptyped->pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
 		if (NULL == ptyped->pvalue) {
-			return FALSE;
+			return nullptr;
 		}
 		return ptyped;
 	}
