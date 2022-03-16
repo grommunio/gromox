@@ -7,12 +7,6 @@
 static void simple_tree_destroy_group(SIMPLE_TREE *ptree, 
 	SIMPLE_TREE_NODE *pnode, SIMPLE_TREE_DELETE del_func);
 
-static void simple_tree_strip_group(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode);
-
-static void simple_tree_cohere_group(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode);
-
 void simple_tree_init(SIMPLE_TREE *ptree)
 {
 #ifdef _DEBUG_UMTA
@@ -275,57 +269,5 @@ static void simple_tree_destroy_group(SIMPLE_TREE *ptree,
 		pnode_temp->node_children  = 0;
 		del_func(pnode_temp);
 		ptree->nodes_num --;
-	} while (NULL != pnode);
-}
-
-/*
- *	strip a group of nodes from the tree, but not destroy them
- *	@param
- *		ptree [in]		indicate the tree object
- *		pnode [in]		where we begin from
- */
-static void simple_tree_strip_group(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == ptree || NULL == pnode) {	
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_strip_group");
-		return;
-	}
-#endif
-	do {
-		if (NULL != pnode->pnode_child) {
-			simple_tree_strip_group(ptree, pnode->pnode_child);
-		}
-		pnode->node_depth = 0;
-		ptree->nodes_num --;
-		pnode = pnode->pnode_sibling;
-	} while (NULL != pnode);
-}
-
-/*
- *	cohere a group of nodes from the tree
- *	@param
- *		ptree [in]		indicate the tree object
- *		pnode [in]		where we begin from
- */
-static void simple_tree_cohere_group(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == ptree || NULL == pnode) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_cohere_group");
-		return;
-	}
-#endif
-	do {
-		pnode->node_depth = pnode->pnode_parent->node_depth + 1;
-		if (NULL != pnode->pnode_child) {
-			simple_tree_cohere_group(ptree, pnode->pnode_child);
-		}
-		ptree->nodes_num ++;
-		pnode = pnode->pnode_sibling;
 	} while (NULL != pnode);
 }
