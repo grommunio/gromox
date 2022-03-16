@@ -28,8 +28,8 @@ static int pdu_ndr_pull_dcerpc_ctx_list(NDR_PULL *pndr, DCERPC_CTX_LIST *r)
 	uint32_t i;
 	
 	TRY(ndr_pull_align(pndr, 4));
-	TRY(ndr_pull_uint16(pndr, &r->context_id));
-	TRY(ndr_pull_uint8(pndr, &r->num_transfer_syntaxes));
+	TRY(pndr->g_uint16(&r->context_id));
+	TRY(pndr->g_uint8(&r->num_transfer_syntaxes));
 	TRY(ndr_pull_syntax_id(pndr, &r->abstract_syntax));
 	
 	if (r->num_transfer_syntaxes > 0) {
@@ -77,8 +77,8 @@ static void pdu_ndr_free_dcerpc_ctx_list(DCERPC_CTX_LIST *r)
 static int pdu_ndr_pull_dcerpc_ack_ctx(NDR_PULL *pndr, DCERPC_ACK_CTX *r)
 {
 	TRY(ndr_pull_align(pndr, 4));
-	TRY(ndr_pull_uint16(pndr, &r->result));
-	TRY(ndr_pull_uint16(pndr, &r->reason));
+	TRY(pndr->g_uint16(&r->result));
+	TRY(pndr->g_uint16(&r->reason));
 	TRY(ndr_pull_syntax_id(pndr, &r->syntax));
 	return ndr_pull_trailer_align(pndr, 4);
 }
@@ -86,7 +86,7 @@ static int pdu_ndr_pull_dcerpc_ack_ctx(NDR_PULL *pndr, DCERPC_ACK_CTX *r)
 static int pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr, DCERPC_BIND_NAK *r)
 {
 	TRY(ndr_pull_align(pndr, 4));
-	TRY(ndr_pull_uint16(pndr, &r->reject_reason));
+	TRY(pndr->g_uint16(&r->reject_reason));
 	TRY(ndr_pull_align(pndr, 4));
 	
 	if (DECRPC_BIND_REASON_VERSION_NOT_SUPPORTED == r->reject_reason) {
@@ -139,8 +139,8 @@ static int pdu_ndr_pull_dcerpc_request(NDR_PULL *pndr, DCERPC_REQUEST *r)
 	
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(pndr->g_uint32(&r->alloc_hint));
-	TRY(ndr_pull_uint16(pndr, &r->context_id));
-	TRY(ndr_pull_uint16(pndr, &r->opnum));
+	TRY(pndr->g_uint16(&r->context_id));
+	TRY(pndr->g_uint16(&r->opnum));
 	TRY(pdu_ndr_pull_dcerpc_object(pndr, &r->object));
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN8);
@@ -179,8 +179,8 @@ static int pdu_ndr_pull_dcerpc_response(NDR_PULL *pndr, DCERPC_RESPONSE *r)
 	
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(pndr->g_uint32(&r->alloc_hint));
-	TRY(ndr_pull_uint16(pndr, &r->context_id));
-	TRY(ndr_pull_uint8(pndr, &r->cancel_count));
+	TRY(pndr->g_uint16(&r->context_id));
+	TRY(pndr->g_uint8(&r->cancel_count));
 	
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN8);
@@ -219,8 +219,8 @@ static int pdu_ndr_pull_dcerpc_fault(NDR_PULL *pndr, DCERPC_FAULT *r)
 	
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(pndr->g_uint32(&r->alloc_hint));
-	TRY(ndr_pull_uint16(pndr, &r->context_id));
-	TRY(ndr_pull_uint8(pndr, &r->cancel_count));
+	TRY(pndr->g_uint16(&r->context_id));
+	TRY(pndr->g_uint8(&r->cancel_count));
 	TRY(pndr->g_uint32(reinterpret_cast<uint32_t *>(&r->status)));
 	
 	saved_flags = pndr->flags;
@@ -251,12 +251,12 @@ static int pdu_ndr_pull_dcerpc_fack(NDR_PULL *pndr, DCERPC_FACK *r)
 	
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(pndr->g_uint32(&r->version));
-	TRY(ndr_pull_uint8(pndr, &r->pad));
-	TRY(ndr_pull_uint16(pndr, &r->window_size));
+	TRY(pndr->g_uint8(&r->pad));
+	TRY(pndr->g_uint16(&r->window_size));
 	TRY(pndr->g_uint32(&r->max_tdsu));
 	TRY(pndr->g_uint32(&r->max_frag_size));
-	TRY(ndr_pull_uint16(pndr, &r->serial_no));
-	TRY(ndr_pull_uint16(pndr, &r->selack_size));
+	TRY(pndr->g_uint16(&r->serial_no));
+	TRY(pndr->g_uint16(&r->selack_size));
 	if (r->selack_size > 0) {
 		r->selack = me_alloc<uint32_t>(r->selack_size);
 		if (NULL == r->selack) {
@@ -314,10 +314,10 @@ static int pdu_ndr_pull_dcerpc_bind(NDR_PULL *pndr, DCERPC_BIND *r)
 	uint32_t saved_flags;
 	
 	TRY(ndr_pull_align(pndr, 4));
-	TRY(ndr_pull_uint16(pndr, &r->max_xmit_frag));
-	TRY(ndr_pull_uint16(pndr, &r->max_recv_frag));
+	TRY(pndr->g_uint16(&r->max_xmit_frag));
+	TRY(pndr->g_uint16(&r->max_recv_frag));
 	TRY(pndr->g_uint32(&r->assoc_group_id));
-	TRY(ndr_pull_uint8(pndr, &r->num_contexts));
+	TRY(pndr->g_uint8(&r->num_contexts));
 	
 	if (r->num_contexts > 0) {
 		r->ctx_list = me_alloc<DCERPC_CTX_LIST>(r->num_contexts);
@@ -394,10 +394,10 @@ static int pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
 	uint32_t saved_flags;
 	
 	TRY(ndr_pull_align(pndr, 4));
-	TRY(ndr_pull_uint16(pndr, &r->max_xmit_frag));
-	TRY(ndr_pull_uint16(pndr, &r->max_recv_frag));
+	TRY(pndr->g_uint16(&r->max_xmit_frag));
+	TRY(pndr->g_uint16(&r->max_recv_frag));
 	TRY(pndr->g_uint32(&r->assoc_group_id));
-	TRY(ndr_pull_uint16(pndr, &r->secondary_address_size));
+	TRY(pndr->g_uint16(&r->secondary_address_size));
 	if (r->secondary_address_size > sizeof(r->secondary_address)) {
 		return NDR_ERR_RANGE;
 	}
@@ -409,7 +409,7 @@ static int pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	TRY(ndr_pull_uint8(pndr, &r->num_contexts));
+	TRY(pndr->g_uint8(&r->num_contexts));
 	if (r->num_contexts > 0) {
 		r->ctx_list = me_alloc<DCERPC_ACK_CTX>(r->num_contexts);
 		if (NULL == r->ctx_list) {
@@ -555,13 +555,13 @@ int pdu_ndr_pull_dcerpc_auth(NDR_PULL *pndr, DCERPC_AUTH *r)
 	uint32_t saved_flags;
 	
 	TRY(ndr_pull_align(pndr, 4));
-	TRY(ndr_pull_uint8(pndr, &r->auth_type));
-	TRY(ndr_pull_uint8(pndr, &r->auth_level));
+	TRY(pndr->g_uint8(&r->auth_type));
+	TRY(pndr->g_uint8(&r->auth_level));
 	if (0 == r->auth_level) {
 		r->auth_level = RPC_C_AUTHN_LEVEL_CONNECT;
 	}
-	TRY(ndr_pull_uint8(pndr, &r->auth_pad_length));
-	TRY(ndr_pull_uint8(pndr, &r->auth_reserved));
+	TRY(pndr->g_uint8(&r->auth_pad_length));
+	TRY(pndr->g_uint8(&r->auth_reserved));
 	TRY(pndr->g_uint32(&r->auth_context_id));
 	
 	saved_flags = pndr->flags;
@@ -726,8 +726,8 @@ static int pdu_ndr_pull_dcerpc_rts(NDR_PULL *pndr, DCERPC_RTS *r)
 	int status;
 	
 	TRY(ndr_pull_align(pndr, 4));
-	TRY(ndr_pull_uint16(pndr, &r->flags));
-	TRY(ndr_pull_uint16(pndr, &r->num));
+	TRY(pndr->g_uint16(&r->flags));
+	TRY(pndr->g_uint16(&r->num));
 	if (r->num > 0) {
 		r->commands = me_alloc<RTS_CMD>(r->num);
 		if (NULL == r->commands) {
@@ -894,13 +894,13 @@ static void pdu_ndr_free_dcerpc_payload(uint8_t pkt_type,
 int pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt)
 {
 	TRY(ndr_pull_align(pndr, 4));
-	TRY(ndr_pull_uint8(pndr, &pkt->rpc_vers));
-	TRY(ndr_pull_uint8(pndr, &pkt->rpc_vers_minor));
-	TRY(ndr_pull_uint8(pndr, &pkt->pkt_type));
-	TRY(ndr_pull_uint8(pndr, &pkt->pfc_flags));
+	TRY(pndr->g_uint8(&pkt->rpc_vers));
+	TRY(pndr->g_uint8(&pkt->rpc_vers_minor));
+	TRY(pndr->g_uint8(&pkt->pkt_type));
+	TRY(pndr->g_uint8(&pkt->pfc_flags));
 	TRY(ndr_pull_array_uint8(pndr, pkt->drep, 4));
-	TRY(ndr_pull_uint16(pndr, &pkt->frag_length));
-	TRY(ndr_pull_uint16(pndr, &pkt->auth_length));
+	TRY(pndr->g_uint16(&pkt->frag_length));
+	TRY(pndr->g_uint16(&pkt->auth_length));
 	TRY(pndr->g_uint32(&pkt->call_id));
 	TRY(pdu_ndr_pull_dcerpc_payload(pndr, pkt->pkt_type, &pkt->payload));
 	TRY(ndr_pull_trailer_align(pndr, 4));

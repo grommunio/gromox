@@ -163,9 +163,9 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 			return NDR_ERR_ALLOC;
 		memset(prfr, 0, sizeof(RFRGETNEWDSA_IN));
 		TRY(pndr->g_uint32(&prfr->flags));
-		TRY(ndr_pull_ulong(pndr, &size));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length));
+		TRY(pndr->g_ulong(&size));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size || length > 1024)
 			return NDR_ERR_ARRAY_SIZE;
 		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
@@ -174,9 +174,9 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		if (0 != ptr) {
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
 			if (0 != ptr) {
-				TRY(ndr_pull_ulong(pndr, &size));
-				TRY(ndr_pull_ulong(pndr, &offset));
-				TRY(ndr_pull_ulong(pndr, &length));
+				TRY(pndr->g_ulong(&size));
+				TRY(pndr->g_ulong(&offset));
+				TRY(pndr->g_ulong(&length));
 				if (offset != 0 || length > size || length > 256)
 					return NDR_ERR_ARRAY_SIZE;
 				TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
@@ -191,9 +191,9 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		if (0 != ptr) {
 			TRY(ndr_pull_generic_ptr(pndr, &ptr));
 			if (0 != ptr) {
-				TRY(ndr_pull_ulong(pndr, &size));
-				TRY(ndr_pull_ulong(pndr, &offset));
-				TRY(ndr_pull_ulong(pndr, &length));
+				TRY(pndr->g_ulong(&size));
+				TRY(pndr->g_ulong(&offset));
+				TRY(pndr->g_ulong(&length));
 				if (offset != 0 || length > size || length > 256)
 					return NDR_ERR_ARRAY_SIZE;
 				TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
@@ -215,9 +215,9 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		TRY(pndr->g_uint32(&prfr_dn->cb));
 		if (prfr_dn->cb < 10 || prfr_dn->cb > 1024)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_ulong(pndr, &size));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length));
+		TRY(pndr->g_ulong(&size));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size || length > 1024)
 			return NDR_ERR_ARRAY_SIZE;
 		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));

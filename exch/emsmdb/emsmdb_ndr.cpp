@@ -61,21 +61,21 @@ static int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	
 	TRY(ndr_pull_context_handle(pndr, &r->cxh));
 	TRY(pndr->g_uint32(&r->rpc));
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	r->pctx = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pctx == nullptr)
 		return NDR_ERR_ALLOC;
 	TRY(ndr_pull_array_uint8(pndr, r->pctx, size));
-	TRY(ndr_pull_uint16(pndr, &r->cb_ctx));
+	TRY(pndr->g_uint16(&r->cb_ctx));
 	if (r->cb_ctx != size)
 		return NDR_ERR_ARRAY_SIZE;
 	TRY(pndr->g_uint32(&r->advise_bits));
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	r->paddr = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->paddr == nullptr)
 		return NDR_ERR_ALLOC;
 	TRY(ndr_pull_array_uint8(pndr, r->paddr, size));
-	TRY(ndr_pull_uint16(pndr, &r->cb_addr));
+	TRY(pndr->g_uint16(&r->cb_addr));
 	if (r->cb_addr != size)
 		return NDR_ERR_ARRAY_SIZE;
 	return NDR_ERR_SUCCESS;
@@ -101,8 +101,8 @@ static int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 	uint32_t length;
 	
 	TRY(pndr->g_uint32(&size));
-	TRY(ndr_pull_ulong(pndr, &offset));
-	TRY(ndr_pull_ulong(pndr, &length));
+	TRY(pndr->g_ulong(&offset));
+	TRY(pndr->g_ulong(&length));
 	if (offset != 0 || length > size || length > 1024)
 		return NDR_ERR_ARRAY_SIZE;
 	TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
@@ -114,12 +114,12 @@ static int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 	TRY(pndr->g_uint32(&r->lcid_string));
 	TRY(pndr->g_uint32(&r->lcid_sort));
 	TRY(pndr->g_uint32(&r->cxr_link));
-	TRY(ndr_pull_uint16(pndr, &r->cnvt_cps));
-	TRY(ndr_pull_uint16(pndr, &r->pclient_vers[0]));
-	TRY(ndr_pull_uint16(pndr, &r->pclient_vers[1]));
-	TRY(ndr_pull_uint16(pndr, &r->pclient_vers[2]));
+	TRY(pndr->g_uint16(&r->cnvt_cps));
+	TRY(pndr->g_uint16(&r->pclient_vers[0]));
+	TRY(pndr->g_uint16(&r->pclient_vers[1]));
+	TRY(pndr->g_uint16(&r->pclient_vers[2]));
 	TRY(pndr->g_uint32(&r->timestamp));
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pauxin == nullptr)
 		return NDR_ERR_ALLOC;
@@ -179,7 +179,7 @@ static int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 	
 	TRY(ndr_pull_context_handle(pndr, &r->cxh));
 	TRY(pndr->g_uint32(&r->flags));
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	r->pin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pin == nullptr)
 		return NDR_ERR_ALLOC;
@@ -190,7 +190,7 @@ static int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 	TRY(pndr->g_uint32(&r->cb_out));
 	if (r->cb_out > 0x40000)
 		return NDR_ERR_RANGE;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pauxin == nullptr)
 		return NDR_ERR_ALLOC;

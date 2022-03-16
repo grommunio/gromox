@@ -320,7 +320,7 @@ static int mod_fastcgi_pull_end_request(NDR_PULL *pndr,
 	uint8_t padding_len, FCGI_ENDREQUESTBODY *pend_request)
 {
 	TRY(pndr->g_uint32(&pend_request->app_status));
-	TRY(ndr_pull_uint8(pndr, &pend_request->protocol_status));
+	TRY(pndr->g_uint8(&pend_request->protocol_status));
 	TRY(ndr_pull_array_uint8(pndr, pend_request->reserved, 3));
 	return ndr_pull_advance(pndr, padding_len);
 }
@@ -335,12 +335,12 @@ static int mod_fastcgi_pull_stdstream(NDR_PULL *pndr,
 static int mod_fastcgi_pull_record_header(
 	NDR_PULL *pndr, RECORD_HEADER *pheader)
 {
-	TRY(ndr_pull_uint8(pndr, &pheader->version));
-	TRY(ndr_pull_uint8(pndr, &pheader->type));
-	TRY(ndr_pull_uint16(pndr, &pheader->request_id));
-	TRY(ndr_pull_uint16(pndr, &pheader->content_len));
-	TRY(ndr_pull_uint8(pndr, &pheader->padding_len));
-	return ndr_pull_uint8(pndr, &pheader->reserved);
+	TRY(pndr->g_uint8(&pheader->version));
+	TRY(pndr->g_uint8(&pheader->type));
+	TRY(pndr->g_uint16(&pheader->request_id));
+	TRY(pndr->g_uint16(&pheader->content_len));
+	TRY(pndr->g_uint8(&pheader->padding_len));
+	return pndr->g_uint8(&pheader->reserved);
 }
 
 static BOOL mod_fastcgi_get_others_field(MEM_FILE *pf_others,

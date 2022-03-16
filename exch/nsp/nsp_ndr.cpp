@@ -67,7 +67,7 @@ static int nsp_ndr_pull_stat(NDR_PULL *pndr, STAT *r)
 	TRY(pndr->g_uint32(&r->sort_type));
 	TRY(pndr->g_uint32(&r->container_id));
 	TRY(pndr->g_uint32(&r->cur_rec));
-	TRY(ndr_pull_int32(pndr, &r->delta));
+	TRY(pndr->g_int32(&r->delta));
 	TRY(pndr->g_uint32(&r->num_pos));
 	TRY(pndr->g_uint32(&r->total_rec));
 	TRY(pndr->g_uint32(&r->codepage));
@@ -107,13 +107,13 @@ static int nsp_ndr_pull_proptag_array(NDR_PULL *pndr, LPROPTAG_ARRAY *r)
 	uint32_t offset;
 	uint32_t length;
 	
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(pndr->g_uint32(&r->cvalues));
 	if (r->cvalues > 100001)
 		return NDR_ERR_RANGE;
-	TRY(ndr_pull_ulong(pndr, &offset));
-	TRY(ndr_pull_ulong(pndr, &length));
+	TRY(pndr->g_ulong(&offset));
+	TRY(pndr->g_ulong(&length));
 	if (offset != 0 || length > size)
 		return NDR_ERR_ARRAY_SIZE;
 	if (size != r->cvalues + 1 || length != r->cvalues)
@@ -184,7 +184,7 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, unsigned int flag, STRING_A
 	
 	if (!(flag & FLAG_CONTENT) || r->ppstr == nullptr)
 		return NDR_ERR_SUCCESS;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	if (size != r->count)
 		return NDR_ERR_ARRAY_SIZE;
 	r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
@@ -197,9 +197,9 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, unsigned int flag, STRING_A
 	for (cnt = 0; cnt < size; cnt++) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
-		TRY(ndr_pull_ulong(pndr, &size1));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length1));
+		TRY(pndr->g_ulong(&size1));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
 			return NDR_ERR_ARRAY_SIZE;
 		TRY(ndr_pull_check_string(pndr, length1, sizeof(uint8_t)));
@@ -248,7 +248,7 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, unsigned int flag, STRINGS
 	uint32_t length1;
 	
 	if (flag & FLAG_HEADER) {
-		TRY(ndr_pull_ulong(pndr, &size));
+		TRY(pndr->g_ulong(&size));
 		TRY(ndr_pull_align(pndr, 5));
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
@@ -270,9 +270,9 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, unsigned int flag, STRINGS
 	for (size_t cnt = 0; cnt < r->count; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
-		TRY(ndr_pull_ulong(pndr, &size1));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length1));
+		TRY(pndr->g_ulong(&size1));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
 			return NDR_ERR_ARRAY_SIZE;
 		TRY(ndr_pull_check_string(pndr, length1, sizeof(uint8_t)));
@@ -306,7 +306,7 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, unsigned int flag, STRING_
 	
 	if (!(flag & FLAG_CONTENT) || r->ppstr == nullptr)
 		return NDR_ERR_SUCCESS;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	if (size != r->count)
 		return NDR_ERR_ARRAY_SIZE;
 	r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
@@ -319,9 +319,9 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, unsigned int flag, STRING_
 	for (cnt = 0; cnt < size; cnt++) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
-		TRY(ndr_pull_ulong(pndr, &size1));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length1));
+		TRY(pndr->g_ulong(&size1));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
 			return NDR_ERR_ARRAY_SIZE;
 		TRY(ndr_pull_check_string(pndr, length1, sizeof(uint16_t)));
@@ -389,7 +389,7 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, unsigned int flag, STRING
 	uint32_t length1;
 	
 	if (flag & FLAG_HEADER) {
-		TRY(ndr_pull_ulong(pndr, &size));
+		TRY(pndr->g_ulong(&size));
 		TRY(ndr_pull_align(pndr, 5));
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000) {
@@ -417,9 +417,9 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, unsigned int flag, STRING
 	for (size_t cnt = 0; cnt < r->count; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
-		TRY(ndr_pull_ulong(pndr, &size1));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length1));
+		TRY(pndr->g_ulong(&size1));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
 			return NDR_ERR_ARRAY_SIZE;
 		TRY(ndr_pull_check_string(pndr, length1, sizeof(uint16_t)));
@@ -460,7 +460,7 @@ static int nsp_ndr_pull_binary(NDR_PULL *pndr, unsigned int flag, BINARY *r)
 	
 	if (!(flag & FLAG_CONTENT) || r->pb == nullptr)
 		return EXT_ERR_SUCCESS;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	if (size != r->cb) {
 		r->cb = 0;
 		return NDR_ERR_ARRAY_SIZE;
@@ -523,14 +523,14 @@ static int nsp_ndr_pull_short_array(NDR_PULL *pndr, unsigned int flag, SHORT_ARR
 	
 	if (!(flag & FLAG_CONTENT) || r->ps == nullptr)
 		return EXT_ERR_SUCCESS;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	if (size != r->count)
 		return NDR_ERR_ARRAY_SIZE;
 	r->ps = ndr_stack_anew<uint16_t>(NDR_STACK_IN, size);
 	if (r->ps == nullptr)
 		return NDR_ERR_ALLOC;
 	for (size_t cnt = 0; cnt < size; ++cnt)
-		TRY(ndr_pull_uint16(pndr, &r->ps[cnt]));
+		TRY(pndr->g_uint16(&r->ps[cnt]));
 	return NDR_ERR_SUCCESS;
 }
 
@@ -568,7 +568,7 @@ static int nsp_ndr_pull_long_array(NDR_PULL *pndr, unsigned int flag, LONG_ARRAY
 	
 	if (!(flag & FLAG_CONTENT) || r->pl == nullptr)
 		return EXT_ERR_SUCCESS;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	if (size != r->count)
 		return NDR_ERR_ARRAY_SIZE;
 	r->pl = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
@@ -613,7 +613,7 @@ static int nsp_ndr_pull_binary_array(NDR_PULL *pndr, unsigned int flag, BINARY_A
 	
 	if (!(flag & FLAG_CONTENT) || r->pbin == nullptr)
 		return EXT_ERR_SUCCESS;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	if (size != r->count)
 		return NDR_ERR_ARRAY_SIZE;
 	r->pbin = ndr_stack_anew<BINARY>(NDR_STACK_IN, size);
@@ -662,7 +662,7 @@ static int nsp_ndr_pull_flatuid_array(NDR_PULL *pndr, unsigned int flag, FLATUID
 	
 	if (!(flag & FLAG_CONTENT) || r->ppguid == nullptr)
 		return EXT_ERR_SUCCESS;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	if (size != r->cvalues)
 		return NDR_ERR_ARRAY_SIZE;
 	r->ppguid = ndr_stack_anew<FLATUID *>(NDR_STACK_IN, size);
@@ -720,7 +720,7 @@ static int nsp_ndr_pull_filetime_array(NDR_PULL *pndr, unsigned int flag, FILETI
 	}
 	if (!(flag & FLAG_CONTENT) || r->pftime == nullptr)
 		return EXT_ERR_SUCCESS;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	if (size != r->cvalues)
 		return NDR_ERR_ARRAY_SIZE;
 	r->pftime = ndr_stack_anew<FILETIME>(NDR_STACK_IN, size);
@@ -762,14 +762,14 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, unsigned int flag,
 		TRY(ndr_pull_union_align(pndr, 5));
 		switch (*ptype) {
 		case PT_SHORT:
-			TRY(ndr_pull_uint16(pndr, &r->s));
+			TRY(pndr->g_uint16(&r->s));
 			break;
 		case PT_LONG:
 		case PT_OBJECT:
 			TRY(pndr->g_uint32(&r->l));
 			break;
 		case PT_BOOLEAN:
-			TRY(ndr_pull_uint8(pndr, &r->b));
+			TRY(pndr->g_uint8(&r->b));
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
@@ -831,9 +831,9 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, unsigned int flag,
 	case PT_STRING8:
 		if (r->pstr == nullptr)
 			break;
-		TRY(ndr_pull_ulong(pndr, &size));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length));
+		TRY(pndr->g_ulong(&size));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size)
 			return NDR_ERR_ARRAY_SIZE;
 		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
@@ -845,9 +845,9 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, unsigned int flag,
 	case PT_UNICODE: {
 		if (r->pstr == nullptr)
 			break;
-		TRY(ndr_pull_ulong(pndr, &size));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length));
+		TRY(pndr->g_ulong(&size));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size)
 			return NDR_ERR_ARRAY_SIZE;
 		TRY(ndr_pull_check_string(pndr, length, sizeof(uint16_t)));
@@ -1106,7 +1106,7 @@ static int nsp_ndr_pull_property_row(NDR_PULL *pndr, unsigned int flag, NSP_PROP
 	
 	if (!(flag & FLAG_CONTENT) || r->pprops == nullptr)
 		return EXT_ERR_SUCCESS;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	if (size != r->cvalues)
 		return NDR_ERR_ARRAY_SIZE;
 	r->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_IN, size);
@@ -1173,7 +1173,7 @@ static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, unsigned int flag,
 	
 	if (!(flag & FLAG_CONTENT) || r->pres == nullptr)
 		return EXT_ERR_SUCCESS;
-	TRY(ndr_pull_ulong(pndr, &size));
+	TRY(pndr->g_ulong(&size));
 	if (size != r->cres)
 		return NDR_ERR_ARRAY_SIZE;
 	r->pres = ndr_stack_anew<NSPRES>(NDR_STACK_IN, size);
@@ -1692,7 +1692,7 @@ int nsp_ndr_pull_nspiupdatestat(NDR_PULL *pndr, NSPIUPDATESTAT_IN *r)
 		r->pdelta = ndr_stack_anew<int32_t>(NDR_STACK_IN);
 		if (r->pdelta == nullptr)
 			return NDR_ERR_ALLOC;
-		TRY(ndr_pull_int32(pndr, r->pdelta));
+		TRY(pndr->g_int32(r->pdelta));
 	} else {
 		r->pdelta = NULL;
 	}
@@ -1724,7 +1724,7 @@ int nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
 		return NDR_ERR_RANGE;
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		TRY(ndr_pull_ulong(pndr, &size));
+		TRY(pndr->g_ulong(&size));
 		if (size != r->table_count)
 			return NDR_ERR_ARRAY_SIZE;
 		r->ptable = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
@@ -2014,9 +2014,9 @@ int nsp_ndr_pull_nspigettemplateinfo(NDR_PULL *pndr, NSPIGETTEMPLATEINFO_IN *r)
 	TRY(pndr->g_uint32(&r->type));
 	TRY(ndr_pull_generic_ptr(pndr, &ptr));
 	if (0 != ptr) {
-		TRY(ndr_pull_ulong(pndr, &size));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length));
+		TRY(pndr->g_ulong(&size));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size)
 			return NDR_ERR_ARRAY_SIZE;
 		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));

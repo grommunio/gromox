@@ -181,7 +181,7 @@ int ndr_pull_ulong(NDR_PULL *pndr, uint32_t *v)
 	uint64_t v64;
 	
 	if (pndr->flags & NDR_FLAG_NDR64) {
-		TRY(ndr_pull_uint64(pndr, &v64));
+		TRY(pndr->g_uint64(&v64));
 		*v = v64;
 		if (v64 != *v) {
 			return NDR_ERR_NDR64;
@@ -212,8 +212,8 @@ int ndr_pull_guid(NDR_PULL *pndr, GUID *r)
 {
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(pndr->g_uint32(&r->time_low));
-	TRY(ndr_pull_uint16(pndr, &r->time_mid));
-	TRY(ndr_pull_uint16(pndr, &r->time_hi_and_version));
+	TRY(pndr->g_uint16(&r->time_mid));
+	TRY(pndr->g_uint16(&r->time_hi_and_version));
 	TRY(ndr_pull_array_uint8(pndr, r->clock_seq, 2));
 	TRY(ndr_pull_array_uint8(pndr, r->node, 6));
 	TRY(ndr_pull_trailer_align(pndr, 4));
@@ -299,9 +299,7 @@ int ndr_pull_check_string(NDR_PULL *pndr,
 
 int ndr_pull_generic_ptr(NDR_PULL *pndr, uint32_t *v)
 {
-	int status;
-	
-	status = ndr_pull_ulong(pndr, v);
+	auto status = pndr->g_ulong(v);
 	if (status == NDR_ERR_SUCCESS && *v != 0)
 		pndr->ptr_count ++;
 	return NDR_ERR_SUCCESS;
