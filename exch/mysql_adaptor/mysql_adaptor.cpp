@@ -122,7 +122,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	*externid_present = myrow[6] != nullptr;
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1701, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1701, e.what());
 	return false;
 }
 
@@ -142,7 +142,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 		return false;
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1702, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1702, e.what());
 	return false;
 }
 
@@ -221,7 +221,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		return false;
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1703, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1703, e.what());
 	return false;
 }
 
@@ -242,7 +242,7 @@ BOOL mysql_adaptor_get_username_from_id(int user_id,
 	gx_strlcpy(username, myrow[0], ulen);
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1704, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1704, e.what());
 	return false;
 }
 
@@ -265,7 +265,7 @@ BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id) try
 	*puser_id = strtol(myrow[0], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1705, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1705, e.what());
 	return false;
 }
 
@@ -290,7 +290,7 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id) try
 	*puser_id = strtol(myrow[0], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1706, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1706, e.what());
 	return false;
 }
 
@@ -327,7 +327,7 @@ bool mysql_adaptor_get_user_displayname(const char *username,
 	       username, dsize);
 	return true;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1707, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1707, e.what());
 	return false;
 }
 
@@ -351,7 +351,7 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 	*pprivilege_bits = strtol(myrow[0], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1708, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1708, e.what());
 	return false;
 }
 
@@ -376,7 +376,7 @@ bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t lang_s
 	}
 	return true;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1709, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1709, e.what());
 	return false;
 }
 
@@ -393,7 +393,7 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 		return false;
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1710, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1710, e.what());
 	return false;
 }
 
@@ -421,7 +421,7 @@ static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
 	}
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1711, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1711, e.what());
 	return false;
 }
 
@@ -446,7 +446,7 @@ bool mysql_adaptor_get_timezone(const char *username, char *zone, size_t zone_si
 	}
 	return true;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1712, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1712, e.what());
 	return false;
 }
 
@@ -464,7 +464,7 @@ BOOL mysql_adaptor_set_timezone(const char *username, const char *zone) try
 		return false;
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1713, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1713, e.what());
 	return false;
 }
 
@@ -487,7 +487,7 @@ bool mysql_adaptor_get_maildir(const char *username, char *maildir, size_t md_si
 	gx_strlcpy(maildir, myrow[0], md_size);
 	return true;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1714, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1714, e.what());
 	return false;
 }
 
@@ -510,7 +510,7 @@ bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsi
 	gx_strlcpy(homedir, myrow[0], dsize);
 	return true;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1716, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1716, e.what());
 	return false;
 }
 
@@ -530,7 +530,7 @@ bool mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir, size_t dsize)
 	gx_strlcpy(homedir, myrow[0], dsize);
 	return true;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1717, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1717, e.what());
 	return false;
 }
 
@@ -553,7 +553,7 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id) try
 	*pdomain_id = strtol(myrow[0], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1718, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1718, e.what());
 	return false;
 }
 
@@ -586,7 +586,7 @@ BOOL mysql_adaptor_get_user_ids(const char *username, int *puser_id,
 	}
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1719, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1719, e.what());
 	return false;
 }
 
@@ -611,7 +611,7 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname, int *pdomain_id,
 	*porg_id = strtol(myrow[1], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1720, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1720, e.what());
 	return false;
 }
 
@@ -638,7 +638,7 @@ BOOL mysql_adaptor_get_mlist_ids(int user_id, int *pgroup_id,
 	*pgroup_id = strtol(myrow[2], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1721, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1721, e.what());
 	return false;
 }
 
@@ -660,7 +660,7 @@ BOOL mysql_adaptor_get_org_domains(int org_id, std::vector<int> &pfile) try
 	}
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1722, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1722, e.what());
 	return false;
 }
 
@@ -685,7 +685,7 @@ BOOL mysql_adaptor_get_domain_info(int domain_id, sql_domain &dinfo) try
 	dinfo.address = myrow[2];
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1723, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1723, e.what());
 	return false;
 }
 
@@ -711,7 +711,7 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2) try
 	}
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1724, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1724, e.what());
 	return false;
 }
 
@@ -738,7 +738,7 @@ BOOL mysql_adaptor_get_domain_groups(int domain_id,
 	pfile = std::move(gv);
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1725, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1725, e.what());
 	return false;
 }
 
@@ -765,7 +765,7 @@ BOOL mysql_adaptor_get_group_classes(int group_id,
 	pfile = std::move(cv);
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1726, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1726, e.what());
 	return false;
 }
 
@@ -791,7 +791,7 @@ BOOL mysql_adaptor_get_sub_classes(int class_id, std::vector<sql_class> &pfile) 
 	pfile = std::move(cv);
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1727, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1727, e.what());
 	return false;
 }
 
@@ -823,7 +823,7 @@ static BOOL mysql_adaptor_hierarchy_include(sqlconn &conn,
 	}
 	return FALSE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1728, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1728, e.what());
 	return false;
 }
 
@@ -929,7 +929,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		return FALSE;
 	}
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1729, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1729, e.what());
 	return false;
 }
 
@@ -975,7 +975,7 @@ BOOL mysql_adaptor_check_same_org2(const char *domainname1,
 	}
 	return TRUE;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1730, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1730, e.what());
 	return false;
 }
 
@@ -1011,7 +1011,7 @@ bool mysql_adaptor_check_user(const char *username, char *path, size_t dsize) tr
 	auto status = strtol(myrow[0], nullptr, 0);
 	return status == AF_USER_NORMAL || status == AF_USER_SHAREDMBOX;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1731, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1731, e.what());
 	return false;
 }
 
@@ -1395,7 +1395,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		return TRUE;
 	}
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1732, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1732, e.what());
 	return false;
 }
 
@@ -1435,6 +1435,6 @@ bool mysql_adaptor_get_user_info(const char *username, char *maildir,
 	}
 	return true;
 } catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1733, e.what());
+	fprintf(stderr, "E-%u: %s\n", 1733, e.what());
 	return false;
 }

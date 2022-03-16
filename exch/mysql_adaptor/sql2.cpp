@@ -49,21 +49,21 @@ static bool db_upgrade_check_2(MYSQL *conn)
 		return false;
 	if (current >= recent)
 		return true;
-	printf("[mysql_adaptor]: Current schema n%d. Update available: n%d. Configured action: ",
+	fprintf(stderr, "[mysql_adaptor]: Current schema n%d. Update available: n%d. Configured action: ",
 	       current, recent);
 	static constexpr const char *msg =
 		"The upgrade either needs to be manually done with gromox-dbop(8gx), "
 		"or configure mysql_adaptor(4gx) [see warning in manpage] to do it.";
 	if (g_parm.schema_upgrade == S_SKIP) {
-		printf("skip.\n");
+		fprintf(stderr, "skip.\n");
 		puts(msg);
 		return true;
 	} else if (g_parm.schema_upgrade != S_AUTOUP) {
-		printf("abort.\n");
+		fprintf(stderr, "abort.\n");
 		puts(msg);
 		return false;
 	}
-	printf("autoupgrade (now).\n");
+	fprintf(stderr, "autoupgrade (now).\n");
 	return dbop_mysql_upgrade(conn) == EXIT_SUCCESS;
 }
 
@@ -87,7 +87,7 @@ MYSQL *sql_make_conn()
 	if (mysql_real_connect(conn, g_parm.host.c_str(), g_parm.user.c_str(),
 	    g_parm.pass.size() != 0 ? g_parm.pass.c_str() : nullptr,
 	    g_parm.dbname.c_str(), g_parm.port, nullptr, 0) == nullptr) {
-		printf("[mysql_adaptor]: Failed to connect to mysql server: %s\n",
+		fprintf(stderr, "[mysql_adaptor]: Failed to connect to mysql server: %s\n",
 		       mysql_error(conn));
 		mysql_close(conn);
 		return nullptr;
@@ -278,7 +278,7 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	         "LEFT JOIN groups AS gr ON u.username=gr.groupname", class_id);
 	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
-	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	fprintf(stderr, "[mysql_adaptor]: %s %s\n", __func__, e.what());
 	return false;
 }
 
@@ -313,7 +313,7 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 	         "WHERE u.domain_id=%u AND u.group_id=0", domain_id);
 	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
-	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	fprintf(stderr, "[mysql_adaptor]: %s %s\n", __func__, e.what());
 	return false;
 }
 
@@ -354,7 +354,7 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	         "FROM members AS m WHERE u.username=m.username)=0", group_id);
 	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
-	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	fprintf(stderr, "[mysql_adaptor]: %s %s\n", __func__, e.what());
 	return false;
 }
 
@@ -424,7 +424,7 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 			config_file_apply(*cfg, mysql_adaptor_cfg_defaults);
 	}
 	if (cfg == nullptr) {
-		printf("[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
+		fprintf(stderr, "[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
@@ -437,7 +437,7 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 	par.pass = cfg->get_value("mysql_password");
 	par.dbname = cfg->get_value("mysql_dbname");
 	par.timeout = cfg->get_ll("mysql_rdwr_timeout");
-	printf("[mysql_adaptor]: host [%s]:%d, #conn=%d timeout=%d, db=%s\n",
+	fprintf(stderr, "[mysql_adaptor]: host [%s]:%d, #conn=%d timeout=%d, db=%s\n",
 	       par.host.size() == 0 ? "*" : par.host.c_str(), par.port,
 	       par.conn_num, par.timeout, par.dbname.c_str());
 	auto v = cfg->get_value("schema_upgrade");
@@ -478,19 +478,19 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	LINK_SVC_API(data);
 	auto cfg = config_file_initd("mysql_adaptor.cfg", get_config_path());
 	if (cfg == nullptr) {
-		printf("[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
+		fprintf(stderr, "[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
 	if (!mysql_adaptor_reload_config(cfg))
 		return false;
 	if (mysql_adaptor_run() != 0) {
-		printf("[mysql_adaptor]: failed to run mysql adaptor\n");
+		fprintf(stderr, "[mysql_adaptor]: failed to run mysql adaptor\n");
 		return false;
 	}
 #define E(f, s) do { \
 	if (!register_service((s), mysql_adaptor_ ## f)) { \
-		printf("[%s]: failed to register the \"%s\" service\n", "mysql_adaptor", (s)); \
+		fprintf(stderr, "[%s]: failed to register the \"%s\" service\n", "mysql_adaptor", (s)); \
 		return false; \
 	} \
 } while (false)
