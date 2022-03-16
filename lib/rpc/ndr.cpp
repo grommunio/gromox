@@ -92,7 +92,7 @@ int ndr_pull_union_align(NDR_PULL *pndr, size_t size)
 {
 	/* MS-RPCE section 2.2.5.3.4.4 */
 	if (pndr->flags & NDR_FLAG_NDR64) {
-		return ndr_pull_align(pndr, size);
+		return pndr->align(size);
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -101,7 +101,7 @@ int ndr_pull_trailer_align(NDR_PULL *pndr, size_t size)
 {
 	/* MS-RPCE section 2.2.5.3.4.1 */
 	if (pndr->flags & NDR_FLAG_NDR64) {
-		return ndr_pull_align(pndr, size);
+		return pndr->align(size);
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -137,7 +137,7 @@ int ndr_pull_uint8(NDR_PULL *pndr, uint8_t *v)
 
 int ndr_pull_uint16(NDR_PULL *pndr, uint16_t *v)
 {
-	TRY(ndr_pull_align(pndr, 2));
+	TRY(pndr->align(2));
 	if (pndr->data_size < 2 || pndr->offset + 2 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
@@ -154,7 +154,7 @@ int ndr_pull_int32(NDR_PULL *pndr, int32_t *v)
 
 int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v)
 {
-	TRY(ndr_pull_align(pndr, 4));
+	TRY(pndr->align(4));
 	if (pndr->data_size < 4 || pndr->offset + 4 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
@@ -166,7 +166,7 @@ int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v)
 
 int ndr_pull_uint64(NDR_PULL *pndr, uint64_t *v)
 {
-	TRY(ndr_pull_align(pndr, 8));
+	TRY(pndr->align(8));
 	if (pndr->data_size < 8 || pndr->offset + 8 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
@@ -210,23 +210,23 @@ int ndr_pull_array_uint8(NDR_PULL *pndr, uint8_t *data, uint32_t n)
 
 int ndr_pull_guid(NDR_PULL *pndr, GUID *r)
 {
-	TRY(ndr_pull_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->time_low));
 	TRY(pndr->g_uint16(&r->time_mid));
 	TRY(pndr->g_uint16(&r->time_hi_and_version));
 	TRY(ndr_pull_array_uint8(pndr, r->clock_seq, 2));
 	TRY(ndr_pull_array_uint8(pndr, r->node, 6));
-	TRY(ndr_pull_trailer_align(pndr, 4));
+	TRY(pndr->trailer_align(4));
 	return NDR_ERR_SUCCESS;
 }
 
 
 int ndr_pull_syntax_id(NDR_PULL *pndr, SYNTAX_ID *r)
 {
-	TRY(ndr_pull_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(ndr_pull_guid(pndr, &r->uuid));
 	TRY(pndr->g_uint32(&r->version));
-	TRY(ndr_pull_trailer_align(pndr, 4));
+	TRY(pndr->trailer_align(4));
 	return NDR_ERR_SUCCESS;
 }
 
@@ -307,10 +307,10 @@ int ndr_pull_generic_ptr(NDR_PULL *pndr, uint32_t *v)
 
 int ndr_pull_context_handle(NDR_PULL *pndr, CONTEXT_HANDLE *r)
 {
-	TRY(ndr_pull_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->handle_type));
 	TRY(ndr_pull_guid(pndr, &r->guid));
-	TRY(ndr_pull_trailer_align(pndr, 4));
+	TRY(pndr->trailer_align(4));
 	return NDR_ERR_SUCCESS;
 }
 
