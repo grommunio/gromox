@@ -346,7 +346,7 @@ static int rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 
 	if (ret == ETIMEDOUT)
 		return ret;
-	rd_log(ctx, 8, "SMTP said answered \"%s\" after connection", response);
+	rd_log(ctx, 8, "SMTP said answered \"%s\" after connection", response.c_str());
 	/* change reason to connection refused */
 	if (ret == 0 || 1)
 		ret = ECONNREFUSED;
