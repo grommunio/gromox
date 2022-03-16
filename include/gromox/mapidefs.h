@@ -752,9 +752,7 @@ struct BINARY {
 		union {
 			uint8_t *pb, *data;
 		};
-		union {
-			char *pc, *cdata;
-		};
+		char *pc;
 		void *pv;
 	};
 
