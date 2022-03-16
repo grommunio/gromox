@@ -319,7 +319,7 @@ static int mod_fastcgi_push_stdin(NDR_PUSH *pndr,
 static int mod_fastcgi_pull_end_request(NDR_PULL *pndr,
 	uint8_t padding_len, FCGI_ENDREQUESTBODY *pend_request)
 {
-	TRY(ndr_pull_uint32(pndr, &pend_request->app_status));
+	TRY(pndr->g_uint32(&pend_request->app_status));
 	TRY(ndr_pull_uint8(pndr, &pend_request->protocol_status));
 	TRY(ndr_pull_array_uint8(pndr, pend_request->reserved, 3));
 	return ndr_pull_advance(pndr, padding_len);

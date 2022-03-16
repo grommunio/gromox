@@ -9,7 +9,7 @@
 static int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr, ECDOASYNCWAITEX_IN *r)
 {
 	TRY(ndr_pull_context_handle(pndr, &r->acxh));
-	return ndr_pull_uint32(pndr, &r->flags_in);
+	return pndr->g_uint32(&r->flags_in);
 }
 
 static int asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *pndr,
@@ -60,7 +60,7 @@ static int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	uint32_t size;
 	
 	TRY(ndr_pull_context_handle(pndr, &r->cxh));
-	TRY(ndr_pull_uint32(pndr, &r->rpc));
+	TRY(pndr->g_uint32(&r->rpc));
 	TRY(ndr_pull_ulong(pndr, &size));
 	r->pctx = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pctx == nullptr)
@@ -69,7 +69,7 @@ static int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	TRY(ndr_pull_uint16(pndr, &r->cb_ctx));
 	if (r->cb_ctx != size)
 		return NDR_ERR_ARRAY_SIZE;
-	TRY(ndr_pull_uint32(pndr, &r->advise_bits));
+	TRY(pndr->g_uint32(&r->advise_bits));
 	TRY(ndr_pull_ulong(pndr, &size));
 	r->paddr = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->paddr == nullptr)
@@ -100,34 +100,34 @@ static int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 	uint32_t offset;
 	uint32_t length;
 	
-	TRY(ndr_pull_uint32(pndr, &size));
+	TRY(pndr->g_uint32(&size));
 	TRY(ndr_pull_ulong(pndr, &offset));
 	TRY(ndr_pull_ulong(pndr, &length));
 	if (offset != 0 || length > size || length > 1024)
 		return NDR_ERR_ARRAY_SIZE;
 	TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
 	TRY(ndr_pull_string(pndr, r->puserdn, length));
-	TRY(ndr_pull_uint32(pndr, &r->flags));
-	TRY(ndr_pull_uint32(pndr, &r->conmod));
-	TRY(ndr_pull_uint32(pndr, &r->limit));
-	TRY(ndr_pull_uint32(pndr, &r->cpid));
-	TRY(ndr_pull_uint32(pndr, &r->lcid_string));
-	TRY(ndr_pull_uint32(pndr, &r->lcid_sort));
-	TRY(ndr_pull_uint32(pndr, &r->cxr_link));
+	TRY(pndr->g_uint32(&r->flags));
+	TRY(pndr->g_uint32(&r->conmod));
+	TRY(pndr->g_uint32(&r->limit));
+	TRY(pndr->g_uint32(&r->cpid));
+	TRY(pndr->g_uint32(&r->lcid_string));
+	TRY(pndr->g_uint32(&r->lcid_sort));
+	TRY(pndr->g_uint32(&r->cxr_link));
 	TRY(ndr_pull_uint16(pndr, &r->cnvt_cps));
 	TRY(ndr_pull_uint16(pndr, &r->pclient_vers[0]));
 	TRY(ndr_pull_uint16(pndr, &r->pclient_vers[1]));
 	TRY(ndr_pull_uint16(pndr, &r->pclient_vers[2]));
-	TRY(ndr_pull_uint32(pndr, &r->timestamp));
+	TRY(pndr->g_uint32(&r->timestamp));
 	TRY(ndr_pull_ulong(pndr, &size));
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pauxin == nullptr)
 		return NDR_ERR_ALLOC;
 	TRY(ndr_pull_array_uint8(pndr, r->pauxin, size));
-	TRY(ndr_pull_uint32(pndr, &r->cb_auxin));
+	TRY(pndr->g_uint32(&r->cb_auxin));
 	if (r->cb_auxin != size)
 		return NDR_ERR_ARRAY_SIZE;
-	TRY(ndr_pull_uint32(pndr, &r->cb_auxout));
+	TRY(pndr->g_uint32(&r->cb_auxout));
 	if (r->cb_auxout > 0x1008)
 		return NDR_ERR_RANGE;
 	return NDR_ERR_SUCCESS;
@@ -178,16 +178,16 @@ static int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 	uint32_t size;
 	
 	TRY(ndr_pull_context_handle(pndr, &r->cxh));
-	TRY(ndr_pull_uint32(pndr, &r->flags));
+	TRY(pndr->g_uint32(&r->flags));
 	TRY(ndr_pull_ulong(pndr, &size));
 	r->pin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pin == nullptr)
 		return NDR_ERR_ALLOC;
 	TRY(ndr_pull_array_uint8(pndr, r->pin, size));
-	TRY(ndr_pull_uint32(pndr, &r->cb_in));
+	TRY(pndr->g_uint32(&r->cb_in));
 	if (r->cb_in != size)
 		return NDR_ERR_ARRAY_SIZE;
-	TRY(ndr_pull_uint32(pndr, &r->cb_out));
+	TRY(pndr->g_uint32(&r->cb_out));
 	if (r->cb_out > 0x40000)
 		return NDR_ERR_RANGE;
 	TRY(ndr_pull_ulong(pndr, &size));
@@ -195,10 +195,10 @@ static int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 	if (r->pauxin == nullptr)
 		return NDR_ERR_ALLOC;
 	TRY(ndr_pull_array_uint8(pndr, r->pauxin, size));
-	TRY(ndr_pull_uint32(pndr, &r->cb_auxin));
+	TRY(pndr->g_uint32(&r->cb_auxin));
 	if (r->cb_auxin != size)
 		return NDR_ERR_ARRAY_SIZE;
-	TRY(ndr_pull_uint32(pndr, &r->cb_auxout));
+	TRY(pndr->g_uint32(&r->cb_auxout));
 	if (r->cb_auxout > 0x1008)
 		return NDR_ERR_RANGE;
 	return NDR_ERR_SUCCESS;

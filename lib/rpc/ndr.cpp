@@ -149,7 +149,7 @@ int ndr_pull_uint16(NDR_PULL *pndr, uint16_t *v)
 
 int ndr_pull_int32(NDR_PULL *pndr, int32_t *v)
 {
-	return ndr_pull_uint32(pndr, reinterpret_cast<uint32_t *>(v));
+	return pndr->g_uint32(reinterpret_cast<uint32_t *>(v));
 }
 
 int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v)
@@ -188,7 +188,7 @@ int ndr_pull_ulong(NDR_PULL *pndr, uint32_t *v)
 		}
 		return NDR_ERR_SUCCESS;
 	}
-	return ndr_pull_uint32(pndr, v);
+	return pndr->g_uint32(v);
 }
 
 static int ndr_pull_bytes(NDR_PULL *pndr, uint8_t *data, uint32_t n)
@@ -211,7 +211,7 @@ int ndr_pull_array_uint8(NDR_PULL *pndr, uint8_t *data, uint32_t n)
 int ndr_pull_guid(NDR_PULL *pndr, GUID *r)
 {
 	TRY(ndr_pull_align(pndr, 4));
-	TRY(ndr_pull_uint32(pndr, &r->time_low));
+	TRY(pndr->g_uint32(&r->time_low));
 	TRY(ndr_pull_uint16(pndr, &r->time_mid));
 	TRY(ndr_pull_uint16(pndr, &r->time_hi_and_version));
 	TRY(ndr_pull_array_uint8(pndr, r->clock_seq, 2));
@@ -225,7 +225,7 @@ int ndr_pull_syntax_id(NDR_PULL *pndr, SYNTAX_ID *r)
 {
 	TRY(ndr_pull_align(pndr, 4));
 	TRY(ndr_pull_guid(pndr, &r->uuid));
-	TRY(ndr_pull_uint32(pndr, &r->version));
+	TRY(pndr->g_uint32(&r->version));
 	TRY(ndr_pull_trailer_align(pndr, 4));
 	return NDR_ERR_SUCCESS;
 }
@@ -249,7 +249,7 @@ int ndr_pull_data_blob(NDR_PULL *pndr, DATA_BLOB *pblob)
 			length = pndr->data_size - pndr->offset;
 		}
 	} else {
-		TRY(ndr_pull_uint32(pndr, &length));
+		TRY(pndr->g_uint32(&length));
 	}
 	if (pndr->data_size < length ||
 		pndr->offset + length > pndr->data_size) {
@@ -310,7 +310,7 @@ int ndr_pull_generic_ptr(NDR_PULL *pndr, uint32_t *v)
 int ndr_pull_context_handle(NDR_PULL *pndr, CONTEXT_HANDLE *r)
 {
 	TRY(ndr_pull_align(pndr, 4));
-	TRY(ndr_pull_uint32(pndr, &r->handle_type));
+	TRY(pndr->g_uint32(&r->handle_type));
 	TRY(ndr_pull_guid(pndr, &r->guid));
 	TRY(ndr_pull_trailer_align(pndr, 4));
 	return NDR_ERR_SUCCESS;

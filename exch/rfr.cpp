@@ -162,7 +162,7 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		if (prfr == nullptr)
 			return NDR_ERR_ALLOC;
 		memset(prfr, 0, sizeof(RFRGETNEWDSA_IN));
-		TRY(ndr_pull_uint32(pndr, &prfr->flags));
+		TRY(pndr->g_uint32(&prfr->flags));
 		TRY(ndr_pull_ulong(pndr, &size));
 		TRY(ndr_pull_ulong(pndr, &offset));
 		TRY(ndr_pull_ulong(pndr, &length));
@@ -211,8 +211,8 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		if (prfr_dn == nullptr)
 			return NDR_ERR_ALLOC;
 		memset(prfr_dn, 0, sizeof(RFRGETFQDNFROMLEGACYDN_IN));
-		TRY(ndr_pull_uint32(pndr, &prfr_dn->flags));
-		TRY(ndr_pull_uint32(pndr, &prfr_dn->cb));
+		TRY(pndr->g_uint32(&prfr_dn->flags));
+		TRY(pndr->g_uint32(&prfr_dn->cb));
 		if (prfr_dn->cb < 10 || prfr_dn->cb > 1024)
 			return NDR_ERR_RANGE;
 		TRY(ndr_pull_ulong(pndr, &size));
