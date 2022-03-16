@@ -193,10 +193,10 @@ int EXT_PULL::g_blob(DATA_BLOB *pblob)
 	if (m_offset > m_data_size)
 		return EXT_ERR_BUFSIZE;
 	uint32_t length = m_data_size - m_offset;
-	pblob->data = anew<uint8_t>(length);
-	if (pblob->data == nullptr)
+	pblob->pb = anew<uint8_t>(length);
+	if (pblob->pb == nullptr)
 		return EXT_ERR_ALLOC;
-	memcpy(pblob->data, &m_udata[m_offset], length);
+	memcpy(pblob->pb, &m_udata[m_offset], length);
 	pblob->length = length;
 	m_offset += length;
 	return EXT_ERR_SUCCESS;

@@ -120,7 +120,7 @@ static void *mod_cache_scanwork(void *pparam)
 			    stat3_eq(node_stat, pitem->sb))
 				continue;
 			str_hash_iter_remove(iter);
-			free(pitem->blob.data);
+			free(pitem->blob.pb);
 			free(pitem);
 		}
 		str_hash_iter_free(iter);
@@ -249,7 +249,7 @@ void mod_cache_stop()
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			ppitem = static_cast<CACHE_ITEM **>(str_hash_iter_get_value(iter, nullptr));
-			free((*ppitem)->blob.data);
+			free((*ppitem)->blob.pb);
 			free(*ppitem);
 		}
 		str_hash_iter_free(iter);
@@ -257,7 +257,7 @@ void mod_cache_stop()
 	}
 	while ((pnode = double_list_pop_front(&g_item_list)) != nullptr) {
 		pitem = (CACHE_ITEM*)pnode->pdata;
-		free(pitem->blob.data);
+		free(pitem->blob.pb);
 		free(pitem);
 	}
 	double_list_free(&g_item_list);
@@ -697,7 +697,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 				double_list_append_as_tail(
 					&g_item_list, &pitem->node);
 			} else {
-				free(pitem->blob.data);
+				free(pitem->blob.pb);
 				free(pitem);
 			}
 		} else {
@@ -718,8 +718,8 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	strcpy(pitem->extention, suffix);
 	pitem->reference = 1;
 	pitem->sb = node_stat;
-	pitem->blob.data = me_alloc<uint8_t>(node_stat.st_size);
-	if (NULL == pitem->blob.data) {
+	pitem->blob.pb = me_alloc<uint8_t>(node_stat.st_size);
+	if (pitem->blob.pb == nullptr) {
 		free(pitem);
 		if (NULL != pcontext->prange) {
 			free(pcontext->prange);
@@ -727,8 +727,8 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 		}
 		return FALSE;
 	}
-	if (read(fd.get(), pitem->blob.data, node_stat.st_size) != node_stat.st_size) {
-		free(pitem->blob.data);
+	if (read(fd.get(), pitem->blob.pb, node_stat.st_size) != node_stat.st_size) {
+		free(pitem->blob.pb);
 		free(pitem);
 		if (NULL != pcontext->prange) {
 			free(pcontext->prange);
@@ -774,7 +774,7 @@ void mod_cache_put_context(HTTP_CONTEXT *phttp)
 		return;
 	double_list_remove(&g_item_list, &pitem->node);
 	hhold.unlock();
-	free(pitem->blob.data);
+	free(pitem->blob.pb);
 	free(pitem);
 	if (NULL != pcontext->prange) {
 		free(pcontext->prange);
@@ -824,8 +824,8 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 	} else {
 		tmp_len = pcontext->until - pcontext->offset;
 	}
-	if (phttp->stream_out.write(pcontext->pitem->blob.data +
-	    pcontext->offset, tmp_len) != STREAM_WRITE_OK) {
+	if (phttp->stream_out.write(&pcontext->pitem->blob.pb[pcontext->offset],
+	    tmp_len) != STREAM_WRITE_OK) {
 		mod_cache_put_context(phttp);
 		return FALSE;
 	}
