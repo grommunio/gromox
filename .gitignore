@@ -21,6 +21,7 @@ Makefile.in
 /libtool
 /stamp-h1
 
+/autodiscover
 /cgkrepair
 /delivery
 /delivery-queue

@@ -1,0 +1,41 @@
+.TH autodiscover 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+autodiscover \(em AutoDiscover test utility
+.SH Synopsis
+\fBPASS=\fP\fIsecret\fP \fB/usr/libexec/gromox/autodiscover\fP [\fB\-H\fP
+\fIhttps://host/path\fP] [\fB\-h\fP \fIhostonly\fP] [\fB\-u\fP \fIemailaddr\fP]
+.SH Description
+This utility facilitates sending/receiving AutoDiscover request/responses
+to/from a server for testing.
+.SH Options
+.TP
+\fB\-H\fP \fIhttps://host/Autodiscover/Autodiscover.xml\fP
+The full URL for making the request. Useful when the request URI is
+non-standard.
+.br
+Default: \fIhttps://localhost/Autodiscover/Autodiscover.xml\fP
+.TP
+\fB\-e\fP \fIuser@domain.de\fP
+Username to send along in the request.
+.br
+Default: (none)
+.TP
+\fB\-h\fP \fIhost\fP
+The hostname to use for making the request. From this, the full URL is
+constructed as "https://\fIhost\fP/Autodiscover/Autodiscover.xml". There is no
+implied DNS SRV lookup based no the email address, so unless localhost is
+indeed your desired target, you need to specify \-h/\-H.
+.br
+Default: \fIlocalhost\fP
+.TP
+\fB\-x\fP \fI/o=1234578/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=username\fP
+LegacyDN field to send along in the request.
+.br
+Default: (none)
+.SH Normative references
+.IP \(bu 4
+MS-OXDISCO: Autodiscover HTTP Service Protocol
+.IP \(bu 4
+MS-OXDSCLI: Autodiscover Publishing and Lookup Protocol
+.SH See also
+\fBgromox\fP(7)

@@ -68,6 +68,7 @@ AC_SUBST([unitdir])
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([HX], [libHX >= 4.0])
 PKG_CHECK_MODULES([crypto], [libcrypto])
+PKG_CHECK_MODULES([curl], [libcurl])
 PKG_CHECK_MODULES([gumbo], [gumbo])
 PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [
 	PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 0.8 jsoncpp < 1])
@@ -75,6 +76,7 @@ PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [
 PKG_CHECK_MODULES([pff], [libpff], [have_pff=1], [have_pff=0])
 PKG_CHECK_MODULES([sqlite], [sqlite3])
 PKG_CHECK_MODULES([ssl], [libssl])
+PKG_CHECK_MODULES([tinyxml], [tinyxml2])
 PKG_CHECK_MODULES([zlib], [zlib])
 have_pamheader=""
 AC_CHECK_HEADERS([sys/random.h])
