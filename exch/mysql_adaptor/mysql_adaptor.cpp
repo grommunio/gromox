@@ -273,7 +273,7 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id) try
 	mysql_adaptor_encode_squote(maildir, temp_dir);
 	auto qstr =
 		"SELECT u.id FROM users AS u " JOIN_WITH_DISPLAYTYPE
-		" WHERE u.maildir='"s + temp_dir + "' AND dt.propval_str=0 LIMIT 2";
+		" WHERE u.maildir='"s + temp_dir + "' AND dt.propval_str IN (0,7,8) LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
