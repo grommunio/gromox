@@ -2718,12 +2718,9 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	double_list_init(&pcall->reply_list);
 	
 	if (NDR_ERR_SUCCESS != pdu_ndr_pull_ncacnpkt(&ndr, &pcall->pkt)) {
-		ndr_pull_destroy(&ndr);
 		pdu_processor_free_call(pcall);
 		return PDU_PROCESSOR_ERROR;
 	}
-	ndr_pull_destroy(&ndr);
-	
 	pcall->pkt_loaded = TRUE;
 	
 	
@@ -2985,12 +2982,9 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	double_list_init(&pcall->reply_list);
 	
 	if (NDR_ERR_SUCCESS != pdu_ndr_pull_ncacnpkt(&ndr, &pcall->pkt)) {
-		ndr_pull_destroy(&ndr);
 		pdu_processor_free_call(pcall);
 		return PDU_PROCESSOR_ERROR;
 	}
-	ndr_pull_destroy(&ndr);
-	
 	pcall->pkt_loaded = TRUE;
 	
 	if (pcall->pkt.frag_length != length) {

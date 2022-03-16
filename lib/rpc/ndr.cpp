@@ -57,14 +57,6 @@ void ndr_pull_init(NDR_PULL *pndr, const void *pdata,
 	pndr->ptr_count = 0;
 }
 
-void ndr_pull_destroy(NDR_PULL *pndr)
-{
-	pndr->data = NULL;
-	pndr->data_size = 0;
-	pndr->offset = 0;
-	pndr->flags = 0;
-}
-
 static bool ndr_pull_check_padding(NDR_PULL *pndr, size_t n)
 {
 	size_t ofs2;

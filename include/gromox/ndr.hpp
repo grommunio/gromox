@@ -57,7 +57,6 @@ struct NDR_PUSH {
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
 extern GX_EXPORT uint32_t ndr_pull_get_ptrcnt(const NDR_PULL *);
 extern GX_EXPORT void ndr_pull_init(NDR_PULL *, const void *, uint32_t size, uint32_t flags);
-void ndr_pull_destroy(NDR_PULL *pndr);
 int ndr_pull_advance(NDR_PULL *pndr, uint32_t size);
 int ndr_pull_align(NDR_PULL *pndr, size_t size);
 int ndr_pull_union_align(NDR_PULL *pndr, size_t size);
