@@ -39,7 +39,7 @@ enum {
 
 struct NDR_PULL {
 	uint32_t flags;
-	uint8_t *data;
+	const uint8_t *data;
 	uint32_t data_size;
 	uint32_t offset;
 	uint32_t ptr_count;
@@ -55,9 +55,8 @@ struct NDR_PUSH {
 };
 
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
-uint32_t ndr_pull_get_ptrcnt(NDR_PULL *pndr);
-extern void ndr_pull_init(NDR_PULL *pndr, void *pdata,
-	uint32_t data_size, uint32_t flags);
+extern GX_EXPORT uint32_t ndr_pull_get_ptrcnt(const NDR_PULL *);
+extern GX_EXPORT void ndr_pull_init(NDR_PULL *, const void *, uint32_t size, uint32_t flags);
 void ndr_pull_destroy(NDR_PULL *pndr);
 int ndr_pull_advance(NDR_PULL *pndr, uint32_t size);
 int ndr_pull_align(NDR_PULL *pndr, size_t size);

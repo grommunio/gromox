@@ -33,7 +33,7 @@ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 	(*pflags) |= new_flags;
 }
 
-uint32_t ndr_pull_get_ptrcnt(NDR_PULL *pndr)
+uint32_t ndr_pull_get_ptrcnt(const NDR_PULL *pndr)
 {
 	return pndr->ptr_count;
 }
@@ -47,10 +47,10 @@ static size_t ndr_align_size(uint32_t offset, size_t n)
 }
 
 
-void ndr_pull_init(NDR_PULL *pndr, void *pdata,
+void ndr_pull_init(NDR_PULL *pndr, const void *pdata,
 	uint32_t data_size, uint32_t flags)
 {
-	pndr->data = static_cast<uint8_t *>(pdata);
+	pndr->data = static_cast<const uint8_t *>(pdata);
 	pndr->data_size = data_size;
 	pndr->offset = 0;
 	pndr->flags = flags;
