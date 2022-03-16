@@ -755,9 +755,7 @@ struct BINARY {
 		union {
 			char *pc, *cdata;
 		};
-		union {
-			void *pv, *vdata;
-		};
+		void *pv;
 	};
 
 	int compare(const BINARY &) const;

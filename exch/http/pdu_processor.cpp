@@ -1430,7 +1430,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	DATA_BLOB *pblob, size_t sig_size, DCERPC_NCACN_PACKET *ppkt)
 {
-	void *pdata;
 	NDR_PUSH ndr;
 	uint32_t flags;
 	DATA_BLOB creds2;
@@ -1533,13 +1532,13 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 		pdu_processor_set_auth_length(pblob, creds2.length);
 	}
 
-	pdata = malloc(pblob->length + creds2.length);
+	auto pdata = me_alloc<uint8_t>(pblob->cb + creds2.cb);
 	if (NULL == pdata) {
 		return FALSE;
 	}
 	memcpy(pdata, pblob->data, pblob->length);
-	memcpy(static_cast<char *>(pdata) + pblob->length, creds2.data, creds2.length);
-	pblob->vdata = pdata;
+	memcpy(&pdata[pblob->cb], creds2.data, creds2.cb);
+	pblob->pb = pdata;
 	pblob->length += creds2.length;
 	
 	return TRUE;
