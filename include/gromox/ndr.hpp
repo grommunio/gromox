@@ -37,11 +37,7 @@ enum {
 
 #define NDR_ALIGN_FLAGS (NDR_FLAG_NOALIGN|NDR_FLAG_REMAINING|NDR_FLAG_ALIGN2|NDR_FLAG_ALIGN4|NDR_FLAG_ALIGN8)
 
-struct NDR_PULL {
-	const uint8_t *data = nullptr;
-	uint32_t flags = 0, data_size = 0, offset = 0, ptr_count = 0;
-};
-
+struct NDR_PULL;
 struct NDR_PUSH;
 
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
@@ -88,6 +84,32 @@ int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob);
 int ndr_push_zero(NDR_PUSH *pndr, uint32_t n);
 int ndr_push_unique_ptr(NDR_PUSH *pndr, const void *p);
 int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r);
+
+struct GX_EXPORT NDR_PULL {
+	void init(const void *d, uint32_t z, uint32_t f) { return ndr_pull_init(this, d, z, f); }
+	uint32_t get_ptrcnt() const { return ptr_count; }
+	int advance(uint32_t z) { return ndr_pull_advance(this, z); }
+	int align(size_t z) { return ndr_pull_align(this, z); }
+	int union_align(size_t z) { return ndr_pull_union_align(this, z); }
+	int trailer_align(size_t z) { return ndr_pull_trailer_align(this, z); }
+	int g_str(char *v, uint32_t z) { return ndr_pull_string(this, v, z); }
+	int g_uint8(uint8_t *v) { return ndr_pull_uint8(this, v); }
+	int g_uint16(uint16_t *v) { return ndr_pull_uint16(this, v); }
+	int g_int32(int32_t *v) { return g_uint32(reinterpret_cast<uint32_t *>(v)); }
+	int g_uint32(uint32_t *v) { return ndr_pull_uint32(this, v); }
+	int g_uint64(uint64_t *v) { return ndr_pull_uint64(this, v); }
+	int g_ulong(uint32_t *v) { return ndr_pull_ulong(this, v); }
+	int g_uint8_a(uint8_t *v, uint32_t n) { return ndr_pull_array_uint8(this, v, n); }
+	int g_guid(GUID *v) { return ndr_pull_guid(this, v); }
+	int g_syntax(SYNTAX_ID *v) { return ndr_pull_syntax_id(this, v); }
+	int g_blob(DATA_BLOB *v) { return ndr_pull_data_blob(this, v); }
+	int check_str(uint32_t c, uint32_t z) { return ndr_pull_check_string(this, c, z); }
+	int g_genptr(uint32_t *v) { return ndr_pull_generic_ptr(this, v); }
+	int g_ctx_handle(CONTEXT_HANDLE *v) { return ndr_pull_context_handle(this, v); }
+
+	const uint8_t *data = nullptr;
+	uint32_t flags = 0, data_size = 0, offset = 0, ptr_count = 0;
+};
 
 struct GX_EXPORT NDR_PUSH {
 	void init(void *d, uint32_t asize, uint32_t fl) { return ndr_push_init(this, d, asize, fl); }
