@@ -86,7 +86,7 @@ static int repair_mbox()
 {
 	static constexpr uint32_t tags[] =
 		{PidTagFolderId, PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST};
-	static constexpr PROPTAG_ARRAY ptags[] = {3, deconst(tags)};
+	static constexpr PROPTAG_ARRAY ptags = {3, deconst(tags)};
 	uint32_t table_id = 0, row_num = 0;
 	uint64_t root_fld = g_public_folder ? rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) :
 	                    rop_util_make_eid_ex(1, PUBLIC_FID_ROOT);
@@ -101,7 +101,7 @@ static int repair_mbox()
 	}
 	TARRAY_SET tset{};
 	if (!exmdb_client::query_table(g_storedir, nullptr, codepage, table_id,
-	    ptags, 0, row_num, &tset)) {
+	    &ptags, 0, row_num, &tset)) {
 		fprintf(stderr, "exm: query_table RPC failed\n");
 		return -EIO;
 	}
