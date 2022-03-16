@@ -1151,7 +1151,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			pcontext->sched_stat = SCHED_STAT_WAIT;
 			return PROCESS_IDLE;
 		}
-		pcontext->write_buff = ((BLOB_NODE*)pnode->pdata)->blob.data;
+		pcontext->write_buff = static_cast<BLOB_NODE *>(pnode->pdata)->blob.pb;
 		tmp_len = ((BLOB_NODE*)pnode->pdata)->blob.length;
 	} else {
 		tmp_len = STREAM_BLOCK_SIZE;
@@ -1257,12 +1257,12 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		}
 		auto pnode = double_list_pop_front(&static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->pdu_list);
 		if (pnode != nullptr) {
-			free(((BLOB_NODE*)pnode->pdata)->blob.data);
+			free(static_cast<BLOB_NODE *>(pnode->pdata)->blob.pb);
 			pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
 		}
 		pnode = double_list_get_head(&hch->pdu_list);
 		if (pnode != nullptr) {
-			pcontext->write_buff = static_cast<BLOB_NODE *>(pnode->pdata)->blob.data;
+			pcontext->write_buff = static_cast<BLOB_NODE *>(pnode->pdata)->blob.pb;
 			pcontext->write_length = static_cast<BLOB_NODE *>(pnode->pdata)->blob.length;
 		} else if (pcontext->total_length > 0 &&
 		    pcontext->total_length - pcontext->bytes_rw <= MAX_RECLYING_REMAINING &&
@@ -2206,7 +2206,7 @@ RPC_IN_CHANNEL::~RPC_IN_CHANNEL()
 
 	while ((pnode = double_list_pop_front(&pdu_list)) != nullptr) {
 		auto bnode = static_cast<BLOB_NODE *>(pnode->pdata);
-		free(bnode->blob.data);
+		free(bnode->blob.pb);
 		pdu_processor_free_blob(bnode);
 	}
 	double_list_free(&pdu_list);
@@ -2227,7 +2227,7 @@ RPC_OUT_CHANNEL::~RPC_OUT_CHANNEL()
 	}
 	while ((pnode = double_list_pop_front(&pdu_list)) != nullptr) {
 		auto bnode = static_cast<BLOB_NODE *>(pnode->pdata);
-		free(bnode->blob.data);
+		free(bnode->blob.pb);
 		pdu_processor_free_blob(bnode);
 	}
 	double_list_free(&pdu_list);

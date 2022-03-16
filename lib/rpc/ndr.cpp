@@ -256,11 +256,10 @@ int ndr_pull_data_blob(NDR_PULL *pndr, DATA_BLOB *pblob)
 		pndr->offset + length > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	pblob->data = gromox::me_alloc<uint8_t>(length);
-	if (NULL == pblob->data) {
+	pblob->pb = gromox::me_alloc<uint8_t>(length);
+	if (pblob->pb == nullptr)
 		return NDR_ERR_ALLOC;
-	}
-	memcpy(pblob->data, pndr->data + pndr->offset, length);
+	memcpy(pblob->pb, &pndr->data[pndr->offset], length);
 	pblob->length = length;
 	pndr->offset += length;
 	return NDR_ERR_SUCCESS;
@@ -269,9 +268,9 @@ int ndr_pull_data_blob(NDR_PULL *pndr, DATA_BLOB *pblob)
 /* free memory internal of blob except of blob itself */
 void ndr_free_data_blob(DATA_BLOB *pblob)
 {
-	if (NULL != pblob->data) {
-		free(pblob->data);
-		pblob->data = NULL;
+	if (pblob->pb != nullptr) {
+		free(pblob->pb);
+		pblob->pb = nullptr;
 	}
 	pblob->length = 0;
 }
@@ -496,8 +495,8 @@ int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob)
 	} else {
 		TRY(ndr_push_uint32(pndr, blob.length));
 	}
-	assert(blob.data != nullptr || blob.length == 0);
-	TRY(ndr_push_bytes(pndr, blob.data, blob.length));
+	assert(blob.pb != nullptr || blob.cb == 0);
+	TRY(ndr_push_bytes(pndr, blob.pb, blob.cb));
 	return NDR_ERR_SUCCESS;
 }
 

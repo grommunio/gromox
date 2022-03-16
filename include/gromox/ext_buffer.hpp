@@ -191,7 +191,7 @@ struct EXT_PUSH {
 	int p_float(float);
 	int p_double(double);
 	int p_bool(BOOL);
-	inline int p_blob(DATA_BLOB b) { return p_bytes(b.data, b.length); }
+	inline int p_blob(DATA_BLOB b) { return p_bytes(b.pb, b.cb); }
 	int p_bin(const BINARY &);
 	int p_bin_s(const BINARY &);
 	int p_bin_ex(const BINARY &);
