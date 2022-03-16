@@ -802,7 +802,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	 * to improve usability of the server for clients", but then, if you
 	 * return more than @count entries, Outlook 2019/2021 crashes.
 	 */
-	fprintf(stderr, "QROWS table_count=%u count=%u\n", table_count, count);
+	if (g_nsp_trace > 0)
+		fprintf(stderr, "nsp_query_rows: table_count=%u count=%u\n", table_count, count);
 	nsp_trace(__func__, 0, pstat);
 	int base_id;
 	uint32_t result;
