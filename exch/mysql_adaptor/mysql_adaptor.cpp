@@ -82,11 +82,14 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	}
 	
 	auto myrow = pmyres.fetch_row();
-	auto dtypx = DT_MAILUSER;
+	auto dtypx = 0xff;
 	if (myrow[1] != nullptr)
 		dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
-	if (dtypx != DT_MAILUSER) {
-		snprintf(reason, length, "\"%s\" is not a real user", username);
+	if (dtypx == 0xff) {
+		snprintf(reason, length, "PR_DISPLAY_TYPE_EX is missing for this user");
+		return FALSE;
+	} else if (dtypx != DT_MAILUSER) {
+		snprintf(reason, length, "user is not a real user");
 		return FALSE;
 	}
 	int temp_status = strtol(myrow[2], nullptr, 0);
