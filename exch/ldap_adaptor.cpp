@@ -93,7 +93,7 @@ static ldap_ptr make_conn(bool perform_bind)
 	if (g_use_tls) {
 		ret = ldap_start_tls_s(ld.get(), nullptr, nullptr);
 		if (ret != LDAP_SUCCESS) {
-			printf("ldap_start_tls_s: %s\n", ldap_err2string(ret));
+			fprintf(stderr, "ldap_start_tls_s: %s\n", ldap_err2string(ret));
 			return {};
 		}
 	}
@@ -110,7 +110,7 @@ static ldap_ptr make_conn(bool perform_bind)
 	ret = ldap_sasl_bind_s(ld.get(), binduser, LDAP_SASL_SIMPLE, &cred,
 	      nullptr, nullptr, nullptr);
 	if (ret != LDAP_SUCCESS) {
-		printf("[ldap_adaptor]: bind as \"%s\": %s\n",
+		fprintf(stderr, "[ldap_adaptor]: bind as \"%s\": %s\n",
 		       g_bind_user.c_str(), ldap_err2string(ret));
 		return {};
 	}
@@ -169,12 +169,12 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 	      g_search_base.size() != 0 ? g_search_base.c_str() : nullptr,
 	      filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
-		printf("[ldap_adaptor]: search with filter %s: %s\n",
+		fprintf(stderr, "[ldap_adaptor]: search with filter %s: %s\n",
 		       filter.c_str(), ldap_err2string(ret));
 		return FALSE;
 	}
 	if (!validate_response(tok->meta.get(), msg.get())) {
-		printf("[ldap_adaptor]: filter %s was ambiguous\n", filter.c_str());
+		fprintf(stderr, "[ldap_adaptor]: filter %s was ambiguous\n", filter.c_str());
 		return FALSE;
 	}
 
@@ -191,7 +191,7 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 	ret = gx_ldap_bind(tok->bind, dn, &bv);
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
-	printf("[ldap_adaptor]: ldap_simple_bind %s: %s\n", dn, ldap_err2string(ret));
+	fprintf(stderr, "[ldap_adaptor]: ldap_simple_bind %s: %s\n", dn, ldap_err2string(ret));
 	return FALSE;
 }
 
@@ -199,7 +199,7 @@ static bool ldap_adaptor_load() try
 {
 	auto pfile = config_file_initd("ldap_adaptor.cfg", get_config_path());
 	if (pfile == nullptr) {
-		printf("[ldap_adaptor]: config_file_initd ldap_adaptor.cfg: %s\n",
+		fprintf(stderr, "[ldap_adaptor]: config_file_initd ldap_adaptor.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
@@ -212,7 +212,7 @@ static bool ldap_adaptor_load() try
 	g_mail_attr = pfile->get_value("ldap_mail_attr");
 	g_search_base = pfile->get_value("ldap_search_base");
 	g_edir_workaround = pfile->get_ll("ldap_edirectory_workaround");
-	printf("[ldap_adaptor]: hosts <%s>%s%s, base <%s>, #conn=%d, mailattr=%s\n",
+	fprintf(stderr, "[ldap_adaptor]: hosts <%s>%s%s, base <%s>, #conn=%d, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
 	       g_edir_workaround ? " +EDIRECTORY_WORKAROUNDS" : "",
 	       g_search_base.c_str(), 2 * g_dataconn_num, g_mail_attr.c_str());
@@ -220,7 +220,7 @@ static bool ldap_adaptor_load() try
 	g_conn_pool.bump();
 	return true;
 } catch (const std::bad_alloc &) {
-	printf("[ldap_adaptor]: E-1455: ENOMEM\n");
+	fprintf(stderr, "[ldap_adaptor]: E-1455: ENOMEM\n");
 	return false;
 }
 
@@ -240,7 +240,7 @@ static BOOL svc_ldap_adaptor(int reason, void **ppdata) try
 	if (!ldap_adaptor_load())
 		return false;
 	if (!register_service("ldap_auth_login2", ldap_adaptor_login2)) {
-		printf("[ldap_adaptor]: failed to register services\n");
+		fprintf(stderr, "[ldap_adaptor]: failed to register services\n");
 		return false;
 	}
 	return TRUE;
