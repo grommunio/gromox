@@ -33,22 +33,40 @@ Autodiscover requests. (In other words, removing the DNS entry for the
 Autodiscover server after a profile is set up would break the address book, but
 not the message store.)
 .SH Configuration file directives
-The configuration file is /etc/gromox/autodiscover.ini. In its absence,
-built-in defaults, tuned for the minimal Gromox installation, are used. A few
-ini sections and keys are recognized.
+At first, /etc/gromox/mysql_adaptor.cfg is read for the connection parameters
+to the user database. See mysql_adaptor(4gx) for details. In the file's
+absence, built-in defaults as documented are applied, in other words,
+root@localhost/email.
+.PP
+Note that PHP is dumb and the program cannot distinguish between file absence
+and file presence but missing permissions.
+.PP
+Second, /etc/gromox/autodiscover.ini is read. In the file's absence, built-in
+defaults, tuned for the minimal Gromox installation, are used. A few ini
+sections and keys are recognized.
 .SS [database]
+This section can be used to override the parameters previously sourced from
+mysql_adaptor.cfg (or built-in defaults thereto).
 .TP
 \fBhost\fP
-Host and optionally port to pass to php-mysqli. Default: \fIlocalhost\fP.
+Host and optionally port to pass to php-mysqli.
+.br
+Default: inherit from mysql_adaptor, \fIlocalhost\fP.
 .TP
 \fBusername\fP
-User for the SQL connection. Default: \fIroot\fP.
+User for the SQL connection.
+.br
+Default: inherit, \fIroot\fP.
 .TP
 \fBpassword\fP
-Password for the same. Default: (empty string).
+Password for the same.
+.br
+Default: inherit, (empty string).
 .TP
 \fBdbname\fP
-Database name. Default: \fIemail\fP.
+Database name.
+.br
+Default: inherit, \fIemail\fP.
 .SS [exchange]
 .TP
 \fBhostname\fP

@@ -6,6 +6,16 @@ function get_app_config()
 	if ($appconf) {
 		return $appconf;
 	}
+	if (file_exists("/etc/gromox/mysql_adaptor.cfg")) {
+		$b = parse_ini_file("/etc/gromox/mysql_adaptor.cfg", false);
+		if ($b === false)
+			$b = [];
+	}
+	$b["mysql_host"] ??= "localhost";
+	$b["mysql_username"] ??= "root";
+	$b["mysql_password"] ??= "";
+	$b["mysql_dbname"] ??= "email";
+
 	if (file_exists("/etc/gromox/autodiscover.ini")) {
 		$a = parse_ini_file("/etc/gromox/autodiscover.ini", true);
 		if ($a === false)
@@ -14,10 +24,10 @@ function get_app_config()
 		$a = [];
 	}
 	$a["database"] ??= [];
-	$a["database"]["host"] ??= "localhost";
-	$a["database"]["username"] ??= "root";
-	$a["database"]["password"] ??= "";
-	$a["database"]["dbname"] ??= "email";
+	$a["database"]["host"] ??= $b["mysql_host"];
+	$a["database"]["username"] ??= $b["mysql_username"];
+	$a["database"]["password"] ??= $b["mysql_password"];
+	$a["database"]["dbname"] ??= $b["mysql_dbname"];
 
 	$a["exchange"] ??= [];
 	$a["exchange"]["organization"] ??= "Gromox default";

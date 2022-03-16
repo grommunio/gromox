@@ -149,7 +149,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		} else {
 			$uinfo = get_user_info_by_name($email_address);
 			if (!$uinfo) {
-				die("E-2007: cannot find email address information");
+				die("E-2007: could not resolve $email_address (do you have the right database set?)");
 			}
 		}
 
