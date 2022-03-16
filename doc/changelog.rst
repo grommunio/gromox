@@ -1,3 +1,34 @@
+1.17.120
+========
+
+Enhancements:
+
+* The mkprivate, mkpublic, mkmidb utilities gained an -f option.
+* autodiscover: New diagnostic utility to analyze Autodiscover message
+  from the command-line.
+* gromox-exm2eml: New diagnostic utility to export one message as Internet
+  Mail.
+* delmsg: New diagnostic utility to delete messages in an ICS-conforming way.
+* exmdb_provider: New config directive "sqlite_debug" for enabling analysis of
+  all SQLite queries made.
+* nsp: New config directive "nsp_trace" for enabling analysis of (some)
+  NSPI RPC calls and their parameters.
+
+Fixes:
+
+* exmdb_provider: Abort asynchronous search folder population when the very
+  search folder has been closed.
+* nsp: Fix janky row seeking and crashing when using the name search feature in
+  Outlook's Address Book dialog.
+* mysql_adaptor: Lookup of rooms and equipments by maildir has been restored.
+
+Changes:
+
+* nsp: When performing a name search in Outlook's Address Book dialog,
+  scan the entire table rather than just the entries from the currently
+  highlighted line forwards.
+
+
 1.17 (2021-03-09)
 =================
 
