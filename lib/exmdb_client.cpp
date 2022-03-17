@@ -292,7 +292,16 @@ static int launch_notify_listener(remote_svr &srv) try
 		return 8;
 	}
 	auto thrtxt = std::string("mcn") + mdcl_remote_id;
-	pthread_setname_np(ag.thr_id, thrtxt.c_str());
+	ret = pthread_setname_np(ag.thr_id, thrtxt.c_str());
+#ifdef __GLIBC__
+	/* prctl truncates the name. Why can't you do the same, glibc? */
+	if (ret != 0) {
+		thrtxt.resize(15);
+		ret = pthread_setname_np(ag.thr_id, thrtxt.c_str());
+	}
+#endif
+	if (ret != 0)
+		fprintf(stderr, "pthread_setname_np: %s\n", strerror(ret));
 	return 0;
 } catch (const std::bad_alloc &) {
 	printf("exmdb_client: failed to allocate memory for exmdb\n");
