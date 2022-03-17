@@ -129,9 +129,11 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 			continue;
 		}
 		if (oflags & O_NONBLOCK) {
-			int flags = 0;
-			if (fcntl(fd, F_GETFL, 0) < 0)
+			int flags = fcntl(fd, F_GETFL, 0);
+			if (flags < 0) {
 				fprintf(stderr, "W-1391: fctnl: %s\n", strerror(errno));
+				flags = 0;
+			}
 			flags |= O_NONBLOCK;
 			if (fcntl(fd, F_SETFL, flags) != 0) {
 				saved_errno = errno;
