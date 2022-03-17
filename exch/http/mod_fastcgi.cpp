@@ -34,8 +34,6 @@
 #include "resource.h"
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
 #define QRF(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return FALSE; } while (false)
-#define SOCKET_TIMEOUT							180
-
 #define SERVER_SOFTWARE							"medusa/1.0"
 
 #define POLL_MILLISECONDS_FOR_CHECK				50

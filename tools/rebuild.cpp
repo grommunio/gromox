@@ -31,7 +31,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include "mkshared.hpp"
-#define SOCKET_TIMEOUT								60
 
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;

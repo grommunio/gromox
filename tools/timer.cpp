@@ -30,7 +30,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#define SOCKET_TIMEOUT		60
 
 #define COMMAND_LENGTH		512
 

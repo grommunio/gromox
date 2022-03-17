@@ -36,7 +36,6 @@
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include <gromox/xarray.hpp>
-#define SOCKET_TIMEOUT			60
 
 #define MIDB_RESULT_OK			0
 #define MIDB_NO_SERVER			1

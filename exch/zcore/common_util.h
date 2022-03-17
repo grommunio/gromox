@@ -5,7 +5,6 @@
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/zcore_rpc.hpp>
-#define SOCKET_TIMEOUT								60
 
 /* defined by zarafa */
 #define MAPI_STORE_PROVIDER							33

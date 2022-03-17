@@ -38,7 +38,6 @@
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
 #include "logon_object.h"
-#define SOCKET_TIMEOUT						60
 
 using namespace gromox;
 

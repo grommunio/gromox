@@ -5,7 +5,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
-#define SOCKET_TIMEOUT										60
 #define MAX_DIGLEN											256*1024
 
 BOOL common_util_build_environment(const char *maildir);

@@ -24,9 +24,6 @@
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
-
-#define SOCKET_TIMEOUT          60
-
 #define MAX_CMD_LENGTH			64*1024
 
 using namespace gromox;

@@ -9,8 +9,6 @@
 #include <gromox/element_data.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include "../mysql_adaptor/mysql_adaptor.h"
-
-#define SOCKET_TIMEOUT										60
 #define MAXIMUM_PROPNAME_NUMBER								0x7000
 #define MAX_DIGLEN											256*1024
 #define MAX_RULE_RECIPIENTS									256

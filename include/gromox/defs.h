@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <string>
 #include <type_traits>
+#define SOCKET_TIMEOUT 60
 namespace gromox {
 template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { return N; }
 #define GX_ARRAY_SIZE arsizeof

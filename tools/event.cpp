@@ -35,7 +35,6 @@
 #include <gromox/single_list.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#define SOCKET_TIMEOUT			60
 
 #define SELECT_INTERVAL			24*60*60
 
