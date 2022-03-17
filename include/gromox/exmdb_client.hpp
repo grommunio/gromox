@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <condition_variable>
 #include <ctime>
 #include <list>
 #include <mutex>
@@ -36,6 +37,8 @@ struct agent_thread {
 	remote_svr *pserver = nullptr;
 	pthread_t thr_id{};
 	int sockd = -1;
+	gromox::atomic_bool startup_wait{false};
+	std::condition_variable startup_cv;
 };
 
 struct remote_conn {

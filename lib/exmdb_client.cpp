@@ -262,6 +262,8 @@ static void cl_notif_reader2(agent_thread &agent)
 		sleep(1);
 		return;
 	}
+	agent.startup_wait = false;
+	agent.startup_cv.notify_one();
 	struct pollfd pfd = {agent.sockd, POLLIN | POLLPRI};
 	uint32_t buff_len = 0, offset = 0;
 	uint8_t buff[0x8000];
@@ -282,10 +284,11 @@ static int launch_notify_listener(remote_svr &srv) try
 {
 	if (mdcl_event_proc == nullptr)
 		return 0;
-	mdcl_agent_list.push_back(agent_thread{});
+	mdcl_agent_list.emplace_back();
 	auto &ag = mdcl_agent_list.back();
 	ag.pserver = &srv;
 	ag.sockd = -1;
+	ag.startup_wait = true;
 	auto ret = pthread_create(&ag.thr_id, nullptr, cl_notif_reader, &ag);
 	if (ret != 0) {
 		printf("exmdb_client: E-1449: pthread_create: %s\n", strerror(ret));
@@ -303,6 +306,15 @@ static int launch_notify_listener(remote_svr &srv) try
 #endif
 	if (ret != 0)
 		fprintf(stderr, "pthread_setname_np: %s\n", strerror(ret));
+	/*
+	 * Wait for the notifiy thread to be up before allowing
+	 * current thread to send any commands.
+	 */
+	while (ag.startup_wait) {
+		std::mutex mtx;
+		std::unique_lock lk(mtx);
+		ag.startup_cv.wait(lk);
+	}
 	return 0;
 } catch (const std::bad_alloc &) {
 	printf("exmdb_client: failed to allocate memory for exmdb\n");
