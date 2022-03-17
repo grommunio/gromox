@@ -169,7 +169,7 @@ static BOOL g_wal;
 static BOOL g_async;
 static int g_mime_num;
 static size_t g_table_size;
-static std::atomic<int> g_sequence_id;
+static std::atomic<unsigned int> g_sequence_id;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scaning thread */
 static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
@@ -204,16 +204,6 @@ array_find_istr(const T &kwlist, const char *s)
 		if (strcasecmp(s, kw) == 0)
 			return true;
 	return false;
-}
-
-static int mail_engine_get_sequence_id()
-{
-	int old = 0, nu = 0;
-	do {
-		old = g_sequence_id.load(std::memory_order_relaxed);
-		nu  = old != INT_MAX ? old + 1 : 1;
-	} while (!g_sequence_id.compare_exchange_weak(old, nu));
-	return nu;
 }
 
 static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
@@ -1873,8 +1863,8 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		tmp_len = strlen(temp_buff);
 		memcpy(temp_buff + tmp_len, "}", 2);
 		tmp_len ++;
-		sprintf(mid_string1, "%lld.%d.midb", static_cast<long long>(time(nullptr)),
-			mail_engine_get_sequence_id());
+		snprintf(mid_string1, arsizeof(mid_string1), "%lld.%u.midb",
+		         static_cast<long long>(time(nullptr)), ++g_sequence_id);
 		mid_string = mid_string1;
 		sprintf(temp_path, "%s/ext/%s", dir, mid_string1);
 		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
@@ -3228,7 +3218,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	std::string mid_string;
 	try {
 		mid_string = std::to_string(time(nullptr)) + "." +
-		             std::to_string(mail_engine_get_sequence_id()) + ".midb";
+		             std::to_string(++g_sequence_id) + ".midb";
 		eml_path = argv[1] + "/eml/"s + argv[3];
 		auto eml_path1 = argv[1] + "/eml/"s + mid_string;
 		link(eml_path.c_str(), eml_path1.c_str());

@@ -72,7 +72,7 @@ static unsigned int g_max_msg;
 static thread_local const void *g_var_key;
 static thread_local prepared_statements *g_opt_key;
 unsigned int g_max_rule_num, g_max_extrule_num;
-static std::atomic<int> g_sequence_id;
+static std::atomic<unsigned int> g_sequence_id;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
 E(lang_to_charset)
@@ -241,14 +241,9 @@ const void* common_util_get_tls_var()
 	return g_var_key;
 }
 
-int common_util_sequence_ID()
+unsigned int common_util_sequence_ID()
 {
-	int old = 0, nu = 0;
-	do {
-		old = g_sequence_id.load(std::memory_order_relaxed);
-		nu  = old != INT_MAX ? old + 1 : 1;
-	} while (!g_sequence_id.compare_exchange_weak(old, nu));
-	return nu;
+	return ++g_sequence_id;
 }
 
 /* can directly be called in local rpc thread without
@@ -4705,8 +4700,8 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			mid_string[0] = '\0';
 		} else {
 			gx_strlcpy(mid_string1, S2A(sqlite3_column_text(pstmt, 3)), sizeof(mid_string1));
-			snprintf(mid_string, 128, "%lld.%d.%s", LLD(time(nullptr)),
-					common_util_sequence_ID(), get_host_ID());
+			snprintf(mid_string, arsizeof(mid_string), "%lld.%u.%s",
+			         LLD(time(nullptr)), common_util_sequence_ID(), get_host_ID());
 			snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
 				exmdb_server_get_dir(), mid_string);
 			snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",

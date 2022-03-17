@@ -70,7 +70,7 @@ void common_util_init(const char *org_name, unsigned int max_msg,
 extern void common_util_build_tls();
 void common_util_set_tls_var(const void *pvar);
 extern const void *common_util_get_tls_var();
-extern int common_util_sequence_ID();
+extern unsigned int common_util_sequence_ID();
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc()
 {
