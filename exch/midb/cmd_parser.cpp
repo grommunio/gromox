@@ -293,14 +293,15 @@ static void *midcp_thrwork(void *param)
 				offset -= i + 2;
 				if (offset >= 0)
 					memmove(buffer, buffer + i + 2, offset);
-				break;
+				i = 0;
+				continue;
 			}
 
 			HX_strupper(argv[0]);
 			midcp_exec(argc, argv, pconnection);
 			offset -= i + 2;
 			memmove(buffer, buffer + i + 2, offset);
-			break;
+			i = 0;
 		}
 
 		if (CONN_BUFFLEN == offset) {
