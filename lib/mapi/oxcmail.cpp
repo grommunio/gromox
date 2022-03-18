@@ -4143,7 +4143,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		pskeleton->mail_type = MAIL_TYPE_TNEF;
 	pskeleton->body_type = body_type;
 	pskeleton->pplain = pmsg->proplist.get<char>(PR_BODY);
-	if (MAIL_TYPE_ENCRYPTED == pskeleton->mail_type ||
+	if (pskeleton->mail_type == MAIL_TYPE_SIGNED ||
 		MAIL_TYPE_ENCRYPTED == pskeleton->mail_type ||
 		MAIL_TYPE_TNEF == pskeleton->mail_type) {
 		/* do nothing */
