@@ -1,0 +1,25 @@
+.TH cleaner 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+\fBcleaner\fP \(em Utility to purge orphaned attachments/content files
+.SH Synopsis
+\fB/usr/libexec/gromox/cleaner\fP [\fB\-nv\fP] \fB\-d\fP \fImaildir\fP
+.SH Description
+When message and attachment objects are deleted by the server, it does not
+actually remove the files from disk. This utility may be used to perform this
+cleanup task.
+.SH Options
+.TP
+\fB\-d\fP \fImaildir\fP
+Path to a user's mailbox.
+.TP
+\fB\-n\fP
+Perform a dry run.
+.TP
+\fB\-v\fP
+Be verbose and print a decision reason for every file.
+.SH Examples
+Process a directory:
+.IP \(bu 4
+/usr/libexec/gromox/cleaner -d /var/lib/gromox/user/1/1
+.SH See also
+\fBgromox\fP(7)

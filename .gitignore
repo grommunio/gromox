@@ -23,6 +23,7 @@ Makefile.in
 
 /autodiscover
 /cgkrepair
+/cleaner
 /delivery
 /delivery-queue
 /delmsg

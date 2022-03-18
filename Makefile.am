@@ -8,7 +8,7 @@ AM_CXXFLAGS = ${my_CXXFLAGS}
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
 noinst_DATA = libgromox_common.ldd libgromox_cplus.ldd libgromox_dbop.ldd libgromox_email.ldd libgromox_epoll.ldd libgromox_exrpc.la libgromox_mapi.ldd libgromox_rpc.ldd
-pkglibexec_PROGRAMS = autodiscover cgkrepair delivery delmsg delivery-queue event freebusy http imap midb pop3 rtf2html timer zcore
+pkglibexec_PROGRAMS = autodiscover cgkrepair cleaner delivery delmsg delivery-queue event freebusy http imap midb pop3 rtf2html timer zcore
 pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -233,6 +233,8 @@ autodiscover_SOURCES = tools/autodiscover.cpp
 autodiscover_LDADD = ${curl_LIBS} ${HX_LIBS} ${tinyxml_LIBS}
 cgkrepair_SOURCES = tools/cgkrepair.cpp tools/genimport.cpp
 cgkrepair_LDADD = ${gromox_mt2exm_LDADD}
+cleaner_SOURCES = tools/cleaner.cpp
+cleaner_LDADD = ${fmt_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_cplus.la
 delmsg_SOURCES = tools/delmsg.cpp tools/genimport.cpp
 delmsg_LDADD = ${gromox_mt2exm_LDADD}
 freebusy_SOURCES = tools/freebusy.cpp
@@ -300,7 +302,8 @@ tests_zendfake_LDADD = libmapi4zf.la
 man_MANS = \
 	doc/alias_resolve.4gx doc/at_client.4gx \
 	doc/authmgr.4gx doc/autodiscover.4gx doc/autodiscover.8gx \
-	doc/cgkrepair.8gx doc/delivery.8gx doc/delivery-queue.8gx \
+	doc/cgkrepair.8gx doc/cleaner.8gx \
+	doc/delivery.8gx doc/delivery-queue.8gx \
 	doc/delmsg.8gx doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
