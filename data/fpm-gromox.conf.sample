@@ -13,6 +13,6 @@ pm.max_spare_servers = 20
 catch_workers_output = yes
 php_admin_value[error_log] = /var/log/gromox/php-fpm.log
 php_admin_value[memory_limit] = 256M
-# Some distros may default to a directory that is not writable by user=gromox
-# Reset it back.
+; Some distros may default to a directory that is not writable by user=gromox
+; Reset it back.
 php_admin_value[session.save_path] = /var/tmp/gromox-fpm
