@@ -333,6 +333,9 @@ static bool remove_from_hash(const decltype(g_hash_table)::value_type &it, time_
 	if (double_list_get_nodes_num(&pdb.tables.table_list) > 0)
 		/* emsmdb still references in-memory tables */
 		return false;
+	if (double_list_get_nodes_num(&pdb.nsub_list) > 0)
+		/* there is still a client wanting notifications */
+		return false;
 	if (pdb.reference == 0 && pdb.psqlite == nullptr)
 		return true;
 	if (pdb.reference != 0 || now - pdb.last_time <= g_cache_interval)
