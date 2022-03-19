@@ -578,7 +578,7 @@ void driver::fmap_setup_splice()
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_TASKS, "FID_TASKS"});
 	nid = hid_from_mst(*root, PR_IPM_DRAFTS_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_DRAFT, "FID_DRAFTS"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_DRAFT, "FID_DRAFT"});
 
 	/*
 	 * This here is just for classification of sync folders.

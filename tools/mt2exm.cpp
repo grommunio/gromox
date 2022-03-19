@@ -34,8 +34,28 @@ static gi_folder_map_t g_folder_map;
 static gi_name_map g_src_name_map;
 static gi_thru_map g_thru_name_map;
 static uint8_t g_splice;
-static unsigned int g_oexcl = 1;
+static unsigned int g_oexcl = 1, g_anchor_folder;
+
+static void cb_anchor_folder(const HXoptcb *cb)
+{
+	if (strcmp(cb->data, "inbox") == 0)
+		g_anchor_folder = PRIVATE_FID_INBOX;
+	else if (strcmp(cb->data, "draft") == 0)
+		g_anchor_folder = PRIVATE_FID_DRAFT;
+	else if (strcmp(cb->data, "calendar") == 0)
+		g_anchor_folder = PRIVATE_FID_CALENDAR;
+	else if (strcmp(cb->data, "journal") == 0)
+		g_anchor_folder = PRIVATE_FID_JOURNAL;
+	else if (strcmp(cb->data, "notes") == 0)
+		g_anchor_folder = PRIVATE_FID_NOTES;
+	else if (strcmp(cb->data, "tasks") == 0)
+		g_anchor_folder = PRIVATE_FID_TASKS;
+	else if (strcmp(cb->data, "contacts") == 0)
+		g_anchor_folder = PRIVATE_FID_CONTACTS;
+}
+
 static constexpr HXoption g_options_table[] = {
+	{nullptr, 'B', HXTYPE_STRING, nullptr, nullptr, cb_anchor_folder, 0, "Placement position for unanchored messages", "NAME"},
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
@@ -68,7 +88,8 @@ static ssize_t fullread(int fd, void *vbuf, size_t size)
 static void filter_folder_map(gi_folder_map_t &fmap)
 {
 	if (!g_public_folder)
-		fmap.emplace(~0ULL, tgt_folder{false, PRIVATE_FID_DRAFT, ""});
+		fmap.emplace(~0ULL, tgt_folder{false, g_anchor_folder != 0 ?
+			g_anchor_folder : PRIVATE_FID_DRAFT, ""});
 	else
 		fmap.emplace(~0ULL, tgt_folder{false, PUBLIC_FID_IPMSUBTREE, ""});
 	for (auto &p : fmap)
