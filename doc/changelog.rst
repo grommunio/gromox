@@ -1,5 +1,5 @@
-1.17.120
-========
+1.18 (2022-03-19)
+=================
 
 Enhancements:
 
@@ -18,9 +18,13 @@ Fixes:
 
 * exmdb_provider: Abort asynchronous search folder population when the very
   search folder has been closed.
+* exmdb_providier: do not close idle databases that still have active
+  notification listeners
 * nsp: Fix janky row seeking and crashing when using the name search feature in
   Outlook's Address Book dialog.
 * mysql_adaptor: Lookup of rooms and equipments by maildir has been restored.
+* midb had erroneously processed only the first command for every network read
+* exmdb_client again groups notify connections per PID
 
 Changes:
 
@@ -29,7 +33,7 @@ Changes:
   highlighted line forwards.
 
 
-1.17 (2021-03-09)
+1.17 (2022-03-09)
 =================
 
 Enhancements:
