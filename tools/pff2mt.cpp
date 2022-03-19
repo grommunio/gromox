@@ -15,6 +15,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/endian.hpp>
@@ -108,15 +109,23 @@ enum {
 using namespace std::string_literals;
 using namespace gromox;
 
+static std::vector<uint32_t> g_only_objs;
 static gi_folder_map_t g_folder_map;
 static unsigned int g_splice;
 static int g_with_hidden = -1;
+
+static void cb_only_obj(const HXoptcb *cb)
+{
+	g_only_objs.push_back(cb->data_long);
+}
+
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice PFF objects into existing store hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
 	{"without-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 0, "Do skip folders with PR_ATTR_HIDDEN [default: dependent upon -s]"},
+	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "NID"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -1155,7 +1164,19 @@ static int do_file(const char *filename) try
 
 	if (g_show_tree)
 		fprintf(stderr, "Object tree:\n");
-	return do_item(0, {}, root.get());
+	if (g_only_objs.size() == 0)
+		return do_item(0, {}, root.get());
+
+	auto pd = parent_desc::as_folder(~0ULL);
+	for (const auto nid : g_only_objs) {
+		if (libpff_file_get_item_by_identifier(file.get(), nid,
+		    &~unique_tie(root), &~unique_tie(err)) < 1)
+			throw az_error("PF-1026", err);
+		auto ret = do_item(0, pd, root.get());
+		if (ret < 0)
+			return ret;
+	}
+	return 0;
 } catch (const char *e) {
 	fprintf(stderr, "pff: Exception: %s\n", e);
 	return -ECANCELED;

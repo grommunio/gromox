@@ -37,6 +37,12 @@ Show a diagnostic tree view of the source data as it is being read.
 .TP
 \fB\-\-with\-hidden\fP, \fB\-\-without\-hidden\fP
 This option controls the import of folders that have PR_ATTR_HIDDEN=1.
+.TP
+\fB\-\-only\-obj\fP \fInid\fP
+Extract just the object with the given PFF node id. This option may be
+specified multiple times. In the output stream, the objects will have an
+unspecified location given as their parent folder. (mt2exm will use the
+drafts folder because it is expectedly less crowded than one's inbox.)
 .SH Examples
 Import of a PFF-compatible file into a Gromox mailbox via exmdb transport:
 .PP
