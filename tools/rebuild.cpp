@@ -32,6 +32,7 @@
 #include <gromox/socket.h>
 #include "mkshared.hpp"
 
+using namespace std::string_literals;
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
@@ -119,29 +120,32 @@ int main(int argc, const char **argv)
 		return 9;
 	
 	auto sql_transact = gx_sql_begin_trans(psqlite);
-	static constexpr const char *statements[] = {
-		"INSERT INTO configurations SELECT * FROM source_db.configurations",
-		"INSERT INTO allocated_eids SELECT * FROM source_db.allocated_eids",
-		"INSERT INTO named_properties SELECT * FROM source_db.named_properties",
-		"INSERT INTO store_properties SELECT * FROM source_db.store_properties",
-		"INSERT INTO permissions SELECT * FROM source_db.permissions",
-		"INSERT INTO rules SELECT * FROM source_db.rules",
-		"INSERT INTO folders SELECT * FROM source_db.folders",
-		"INSERT INTO folder_properties SELECT * FROM source_db.folder_properties",
-		"INSERT INTO receive_table SELECT * FROM source_db.receive_table",
-		"INSERT INTO messages SELECT * FROM source_db.messages",
-		"INSERT INTO message_properties SELECT * FROM source_db.message_properties",
-		"INSERT INTO message_changes SELECT * FROM source_db.message_changes",
-		"INSERT INTO recipients SELECT * FROM source_db.recipients",
-		"INSERT INTO recipients_properties SELECT * FROM source_db.recipients_properties",
-		"INSERT INTO attachments SELECT * FROM source_db.attachments",
-		"INSERT INTO attachment_properties SELECT * FROM source_db.attachment_properties",
-		"INSERT INTO search_scopes SELECT * FROM source_db.search_scopes",
-		"INSERT INTO search_result SELECT * FROM source_db.search_result",
+	static constexpr const char *table_list[] = {
+		"configurations",
+		"allocated_eids",
+		"named_properties",
+		"store_properties",
+		"permissions",
+		"rules",
+		"folders",
+		"folder_properties",
+		"receive_table",
+		"messages",
+		"message_properties",
+		"message_changes",
+		"recipients",
+		"recipients_properties",
+		"attachments",
+		"attachment_properties",
+		"search_scopes",
+		"search_result",
 	};
-	for (auto q : statements)
-		if (gx_sql_exec(psqlite, q) != SQLITE_OK)
+	for (auto tbl : table_list) {
+		printf("Rebuilding table \"%s\"...\n", tbl);
+		auto q = "INSERT INTO "s + tbl + " SELECT * FROM source_db." + tbl;
+		if (gx_sql_exec(psqlite, q.c_str()) != SQLITE_OK)
 			return 9;
+	}
 	sql_transact.commit();
 	gx_sql_exec(psqlite, "DETACH DATABASE source_db");
 	if (gx_sql_exec(psqlite, "REINDEX") != SQLITE_OK)
@@ -161,6 +165,7 @@ int main(int argc, const char **argv)
 	}
 	
 	exmdb_client_init(1, 0);
+	printf("Triggering unload of old sqlite file...\n");
 	auto cl_0 = make_scope_exit(exmdb_client_stop);
 	auto ret = exmdb_client_run(PKGSYSCONFDIR, EXMDB_CLIENT_SKIP_PUBLIC);
 	if (ret < 0)
