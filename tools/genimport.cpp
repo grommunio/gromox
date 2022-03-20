@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
-#include <csignal>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -780,10 +779,6 @@ int gi_setup()
 		return EXIT_FAILURE;
 	}
 	g_storedir = g_storedir_s.c_str();
-	struct sigaction sact{};
-	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) {};
-	sigaction(SIGALRM, &sact, nullptr);
 	exmdb_client_init(1, 0);
 	return exmdb_client_run(PKGSYSCONFDIR);
 }

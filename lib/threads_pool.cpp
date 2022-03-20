@@ -47,7 +47,8 @@ static int (*threads_pool_process_func)(SCHEDULE_CONTEXT*);
 void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_CONTEXT *))
 {
 	unsigned int contexts_max_num, contexts_per_thr;
-	
+
+	gromox::setup_sigalrm();
 	g_threads_pool_min_num = init_pool_num;
 	threads_pool_process_func = process_func;
 	/* Caution: Threads pool should be initialized

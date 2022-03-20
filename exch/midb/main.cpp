@@ -112,10 +112,9 @@ int main(int argc, const char **argv) try
 	startup_banner("gromox-midb");
 	if (opt_show_version)
 		return EXIT_SUCCESS;
+	setup_sigalrm();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) {};
-	sigaction(SIGALRM, &sact, nullptr);
 	sact.sa_handler = [](int) { g_hup_signalled = true; };
 	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = SIG_IGN;

@@ -139,10 +139,9 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 
 	startup_banner("gromox-http");
+	setup_sigalrm();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) {};
-	sigaction(SIGALRM, &sact, nullptr);
 	sact.sa_handler = [](int) { g_hup_signalled = true; };
 	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = term_handler;

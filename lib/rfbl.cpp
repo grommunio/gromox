@@ -6,6 +6,7 @@
 #endif
 #define _GNU_SOURCE 1 /* unistd.h:environ */
 #include <cerrno>
+#include <csignal>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -507,6 +508,17 @@ int switch_user_exec(const CONFIG_FILE &cf, const char **argv)
 		break;
 	}
 	return -errno;
+}
+
+int setup_sigalrm()
+{
+	struct sigaction act;
+	sigaction(SIGALRM, nullptr, &act);
+	if (act.sa_handler != SIG_DFL)
+		return 0;
+	sigemptyset(&act.sa_mask);
+	act.sa_handler = [](int) {};
+	return sigaction(SIGALRM, &act, nullptr);
 }
 
 }

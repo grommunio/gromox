@@ -104,10 +104,9 @@ int main(int argc, const char **argv) try
 	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	startup_banner("gromox-pop3");
+	setup_sigalrm();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) {};
-	sigaction(SIGALRM, &sact, nullptr);
 	sact.sa_handler = [](int) { g_hup_signalled = true; };
 	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = SIG_IGN;

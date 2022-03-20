@@ -328,9 +328,7 @@ int main(int argc, const char **argv) try
 	
 	pthread_setname_np(thr_accept_id, "accept");
 	time(&last_cltime);
-	sact.sa_handler = [](int) {};
-	sact.sa_flags   = 0;
-	sigaction(SIGALRM, &sact, nullptr);
+	setup_sigalrm();
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGINT, &sact, nullptr);

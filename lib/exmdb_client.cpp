@@ -22,6 +22,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
+#include <gromox/util.hpp>
 
 namespace gromox {
 
@@ -62,6 +63,7 @@ void remote_conn_ref::reset(bool lost)
 
 void exmdb_client_init(unsigned int conn_max, unsigned int threads_max)
 {
+	setup_sigalrm();
 	mdcl_notify_stop = true;
 	mdcl_conn_max = conn_max;
 	mdcl_threads_max = threads_max;
@@ -462,10 +464,7 @@ BOOL exmdb_client_do_rpc(EXMDB_REQUEST &&rq, EXMDB_RESPONSE *rsp)
 #ifdef TEST1
 int main(int argc, const char **argv)
 {
-	struct sigaction sact{};
-	sigemptyset(&sact.sa_mask);
-	sact.sa_handler = [](int) {};
-	sigaction(SIGALRM, &sact, nullptr);
+	setup_sigalrm();
 	exmdb_client_init(2, 0);
 	auto cl_0 = make_scope_exit(exmdb_client_stop);
 	auto ret = exmdb_client_run(PKGSYSCONFDIR);
