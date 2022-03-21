@@ -13,6 +13,7 @@
 #include <gromox/paths.h>
 
 using namespace std::string_literals;
+using namespace gromox;
 
 enum {
 	OP_CREATE_ZERO = 1,

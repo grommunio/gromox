@@ -5,6 +5,8 @@
 #include <sqlite3.h>
 #include <gromox/database.h>
 
+namespace gromox {
+
 unsigned int gx_sqlite_debug;
 
 xstmt gx_sql_prep(sqlite3 *db, const char *query)
@@ -61,4 +63,6 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 		        estr != nullptr ? estr : sqlite3_errstr(ret));
 	sqlite3_free(estr);
 	return ret;
+}
+
 }

@@ -27,6 +27,8 @@ struct tbl_upgradefn {
 
 }
 
+namespace gromox {
+
 /* If you are thinking about changing any tbl_XXX_N, with N=number, then you should rather add tbl_XXX_top. */
 static constexpr char tbl_options_1[] =
 "CREATE TABLE `options` ("
@@ -791,4 +793,6 @@ int dbop_mysql_upgrade(MYSQL *conn)
 		}
 	}
 	return EXIT_SUCCESS;
+}
+
 }

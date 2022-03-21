@@ -3,6 +3,8 @@
 #include <sqlite3.h>
 #include <gromox/defs.h>
 
+namespace gromox {
+
 class GX_EXPORT xtransaction {
 	public:
 	constexpr xtransaction(sqlite3 *d = nullptr) { m_db = d; }
@@ -15,7 +17,7 @@ class GX_EXPORT xtransaction {
 	sqlite3 *m_db = nullptr;
 };
 
-struct xstmt {
+struct GX_EXPORT xstmt {
 	xstmt() = default;
 	xstmt(xstmt &&o) noexcept : m_ptr(o.m_ptr) { o.m_ptr = nullptr; }
 	~xstmt() {
@@ -60,3 +62,5 @@ static inline uint64_t gx_sql_col_uint64(sqlite3_stmt *s, int c)
 }
 
 extern GX_EXPORT unsigned int gx_sqlite_debug;
+
+}
