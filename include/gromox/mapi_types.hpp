@@ -763,7 +763,8 @@ struct repl_node {
 	std::vector<range_node> range_list; /* GLOBSET */
 };
 
-struct idset {
+class idset {
+	public:
 	idset(bool serialize, uint8_t type);
 	~idset();
 	static std::unique_ptr<idset> create(bool serialize, uint8_t type);
@@ -786,6 +787,11 @@ struct idset {
 	BOOL get_repl_first_max(uint16_t replid, uint64_t *eid);
 	BOOL enum_replist(void *param, REPLIST_ENUM);
 	BOOL enum_repl(uint16_t replid, void *param, REPLICA_ENUM);
+	inline const std::vector<repl_node> &get_repl_list() const { return repl_list; }
+
+	private:
+	BOOL append_internal(uint16_t, uint64_t);
+	std::pair<bool, std::vector<range_node> *> get_range_by_id(uint16_t);
 
 	void *pparam = nullptr;
 	REPLICA_MAPPING mapping = nullptr;

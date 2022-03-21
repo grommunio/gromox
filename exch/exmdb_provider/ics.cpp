@@ -63,7 +63,7 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 		return FALSE;
 	pcache->pstmt = NULL;
 	const std::vector<range_node> *prange_list = nullptr;
-	for (const auto &repl_node : pset->repl_list) {
+	for (const auto &repl_node : pset->get_repl_list()) {
 		if (repl_node.replid == 1) {
 			prange_list = &repl_node.range_list;
 			break;

@@ -13,7 +13,7 @@ static int t_id1()
 	/* right-side half overlap */
 	s.append_range(1, 1, 17);
 	s.append_range(1, 14, 21);
-	auto &l = s.repl_list.front().range_list;
+	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
 	assert(l.front().low_value == 1);
 	assert(l.front().high_value == 21);
@@ -26,7 +26,7 @@ static int t_id2()
 	/* left-side half overlap */
 	s.append_range(1, 14, 21);
 	s.append_range(1, 1, 17);
-	auto &l = s.repl_list.front().range_list;
+	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
 	assert(l.front().low_value == 1);
 	assert(l.front().high_value == 21);
@@ -39,7 +39,7 @@ static int t_id3()
 	/* right-side adjacency */
 	s.append_range(1, 1, 19);
 	s.append_range(1, 20, 29);
-	auto &l = s.repl_list.front().range_list;
+	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
 	assert(l.front().low_value == 1);
 	assert(l.front().high_value == 29);
@@ -52,7 +52,7 @@ static int t_id4()
 	/* left-side adjacency */
 	s.append_range(1, 20, 29);
 	s.append_range(1, 1, 19);
-	auto &l = s.repl_list.front().range_list;
+	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
 	assert(l.front().low_value == 1);
 	assert(l.front().high_value == 29);
@@ -65,7 +65,7 @@ static int t_id5()
 	/* inner overlap */
 	s.append_range(1, 1, 40);
 	s.append_range(1, 15, 19);
-	auto &l = s.repl_list.front().range_list;
+	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
 	assert(l.front().low_value == 1);
 	assert(l.front().high_value == 40);
@@ -78,7 +78,7 @@ static int t_id6()
 	/* outer overlap */
 	s.append_range(1, 15, 19);
 	s.append_range(1, 1, 40);
-	auto &l = s.repl_list.front().range_list;
+	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
 	assert(l.front().low_value == 1);
 	assert(l.front().high_value == 40);
@@ -90,7 +90,7 @@ static int t_id7()
 	idset s(true, REPL_TYPE_ID);
 	s.append_range(1, 11, 19);
 	s.append_range(1, 71, 79);
-	auto &l = s.repl_list.front().range_list;
+	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 2);
 	assert(l.front().low_value == 11);
 	assert(l.front().high_value == 19);

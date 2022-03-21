@@ -67,9 +67,9 @@ BOOL idset::check_empty() const
 	return repl_list.empty() ? TRUE : false;
 }
 
-static BOOL idset_append_internal(IDSET *pset,
-    uint16_t replid, uint64_t value) try
+BOOL idset::append_internal(uint16_t replid, uint64_t value) try
 {
+	auto pset = this;
 	if (!pset->b_serialize)
 		return FALSE;
 	auto prepl_node = std::find_if(pset->repl_list.begin(), pset->repl_list.end(),
@@ -118,7 +118,7 @@ static BOOL idset_append_internal(IDSET *pset,
 
 BOOL idset::append(uint64_t eid)
 {
-	return idset_append_internal(this, rop_util_get_replid(eid),
+	return append_internal(rop_util_get_replid(eid),
 	       rop_util_get_gc_value(eid));
 }
 
@@ -224,8 +224,8 @@ BOOL idset::concatenate(const IDSET *pset_src)
 	     prepl_node != src_list.end(); ++prepl_node) {
 		for (const auto &range_node : prepl_node->range_list) {
 			if (range_node.high_value == range_node.low_value) {
-				if (!idset_append_internal(pset_dst,
-				    prepl_node->replid, range_node.low_value))
+				if (!pset_dst->append_internal(prepl_node->replid,
+				    range_node.low_value))
 					return FALSE;	
 			} else {
 				if (!append_range(prepl_node->replid,
@@ -647,9 +647,9 @@ BOOL idset::convert() try
 	return false;
 }
 
-static std::pair<bool, std::vector<range_node> *>
-get_range_by_id(idset &set, uint16_t replid)
+std::pair<bool, std::vector<range_node> *> idset::get_range_by_id(uint16_t replid)
 {
+	auto &set = *this;
 	if (set.b_serialize || set.repl_type != REPL_TYPE_GUID) {
 		for (auto &repl_node : set.repl_list)
 			if (replid == repl_node.replid)
@@ -670,7 +670,7 @@ get_range_by_id(idset &set, uint16_t replid)
 
 BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 {
-	auto [succ, prange_list] = get_range_by_id(*this, replid);
+	auto [succ, prange_list] = get_range_by_id(replid);
 	if (!succ)
 		return false;
 	if (NULL == prange_list) {
@@ -706,7 +706,7 @@ BOOL idset::enum_replist(void *p, REPLIST_ENUM replist_enum)
 
 BOOL idset::enum_repl(uint16_t replid, void *p, REPLICA_ENUM repl_enum)
 {
-	auto [succ, prange_list] = get_range_by_id(*this, replid);
+	auto [succ, prange_list] = get_range_by_id(replid);
 	if (!succ)
 		return false;
 	if (prange_list == nullptr)
