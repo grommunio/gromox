@@ -30,6 +30,10 @@ struct GX_EXPORT xstmt {
 	inline int bind_blob(unsigned int col, const void *d, size_t z) { return sqlite3_bind_blob64(m_ptr, col, d, z, SQLITE_STATIC); }
 	inline const char *col_text(unsigned int col) { return reinterpret_cast<const char *>(sqlite3_column_text(m_ptr, col)); }
 	inline int64_t col_int64(unsigned int col) { return sqlite3_column_int64(m_ptr, col); }
+	inline uint64_t col_uint64(unsigned int col) {
+		auto x = sqlite3_column_int64(m_ptr, col);
+		return x >= 0 ? x : 0;
+	}
 	inline int step() { return sqlite3_step(m_ptr); }
 	inline int reset() { return sqlite3_reset(m_ptr); }
 	inline void finalize() { *this = nullptr; }
