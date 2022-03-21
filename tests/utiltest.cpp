@@ -118,6 +118,20 @@ static int t_id7()
 	return EXIT_SUCCESS;
 }
 
+static int t_id8()
+{
+	idset s(true, REPL_TYPE_ID);
+	unsigned int cnt = 0;
+	do {
+		unsigned int lo = cnt += 0x10, hi = cnt += 0x10;
+		s.append_range(1, lo, hi);
+		cnt += 0x10;
+	} while (s.get_repl_list().size() < s.get_repl_list().capacity());
+	s.remove(rop_util_make_eid_ex(1, 0x12));
+	s.dump();
+	return EXIT_SUCCESS;
+}
+
 static int t_interval()
 {
 	const char *in = " 1 d 1 h 1 m 1 s ";
@@ -149,7 +163,8 @@ static void t_respool()
 int main()
 {
 	using fpt = decltype(&t_interval);
-	fpt fct[] = {t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6, t_id7};
+	fpt fct[] = {t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
+	             t_id7, t_id8};
 	for (auto f : fct) {
 		auto ret = f();
 		if (ret != EXIT_SUCCESS)

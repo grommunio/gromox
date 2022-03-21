@@ -205,8 +205,9 @@ void idset::remove(uint64_t eid) try
 			--nd->high_value;
 			return;
 		} else if (value > nd->low_value && value < nd->high_value) {
-			range_list.emplace(nd, nd->low_value, value - 1);
+			auto lo = nd->low_value;
 			nd->low_value = value + 1;
+			range_list.emplace(nd, lo, value - 1);
 			return;
 		}
 	}
