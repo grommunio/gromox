@@ -193,22 +193,19 @@ void idset::remove(uint64_t eid) try
 	if (prepl_node == repl_list.end())
 		return;
 	auto &range_list = prepl_node->range_list;
-	for (auto prange_node = range_list.begin();
-	     prange_node != range_list.end(); ++prange_node) {
-		if (value == prange_node->low_value &&
-			value == prange_node->high_value) {
-			range_list.erase(prange_node);
+	for (auto nd = range_list.begin(); nd != range_list.end(); ++nd) {
+		if (value == nd->low_value && value == nd->high_value) {
+			range_list.erase(nd);
 			return;
-		} else if (value == prange_node->low_value) {
-			prange_node->low_value ++;
+		} else if (value == nd->low_value) {
+			++nd->low_value;
 			return;
-		} else if (value == prange_node->high_value) {
-			prange_node->high_value --;
+		} else if (value == nd->high_value) {
+			--nd->high_value;
 			return;
-		} else if (value > prange_node->low_value &&
-			value < prange_node->high_value) {
-			range_list.emplace(prange_node, prange_node->low_value, value - 1);
-			prange_node->low_value = value + 1;
+		} else if (value > nd->low_value && value < nd->high_value) {
+			range_list.emplace(nd, nd->low_value, value - 1);
+			nd->low_value = value + 1;
 			return;
 		}
 	}
