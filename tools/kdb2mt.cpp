@@ -705,6 +705,8 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 			continue;
 		yi->m_sub_hids.push_back({xid, xtype});
 	}
+	if (yi->m_hid != hid)
+		return nullptr;
 	/*
 	 * Put messages before folders, so genimport processes a folder's
 	 * message before the folder's subfolders. (Harmonizes better with
@@ -719,8 +721,6 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 				return false;
 			return a < b;
 		});
-	if (yi->m_hid != hid)
-		return nullptr;
 	return yi;
 }
 
