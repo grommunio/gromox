@@ -292,6 +292,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			return FALSE;	
 	}
 	for (size_t i = 0; i < fldchgs.count; ++i) {
+		auto &chg = fldchgs.pfldchgs[i];
 		static constexpr uint32_t tags[] = {
 			PROP_TAG_FOLDERPATHNAME, PR_NORMAL_MESSAGE_SIZE,
 			PR_NORMAL_MESSAGE_SIZE_EXTENDED, PR_MESSAGE_SIZE_EXTENDED,
@@ -300,40 +301,37 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			PROP_TAG_ARTICLENUMBERNEXT, PROP_TAG_FOLDERFLAGS,
 		};
 		for (auto t : tags)
-			common_util_remove_propvals(&fldchgs.pfldchgs[i], t);
-		if (!fldchgs.pfldchgs[i].has(PR_ATTR_HIDDEN)) {
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_ATTR_HIDDEN, &fake_byte);
-		}
-		if (!fldchgs.pfldchgs[i].has(PROP_TAG_ATTRIBUTESYSTEM)) {
-			cu_set_propval(&fldchgs.pfldchgs[i], PROP_TAG_ATTRIBUTESYSTEM, &fake_byte);
-		}
-		if (!fldchgs.pfldchgs[i].has(PROP_TAG_ATTRIBUTEREADONLY)) {
-			cu_set_propval(&fldchgs.pfldchgs[i], PROP_TAG_ATTRIBUTEREADONLY, &fake_byte);
-		}
-		if (!fldchgs.pfldchgs[i].has(PR_CREATOR_SID)) {
+			common_util_remove_propvals(&chg, t);
+		if (!chg.has(PR_ATTR_HIDDEN))
+			cu_set_propval(&chg, PR_ATTR_HIDDEN, &fake_byte);
+		if (!chg.has(PROP_TAG_ATTRIBUTESYSTEM))
+			cu_set_propval(&chg, PROP_TAG_ATTRIBUTESYSTEM, &fake_byte);
+		if (!chg.has(PROP_TAG_ATTRIBUTEREADONLY))
+			cu_set_propval(&chg, PROP_TAG_ATTRIBUTEREADONLY, &fake_byte);
+		if (!chg.has(PR_CREATOR_SID)) {
 			tmp_bin.cb = 0;
 			tmp_bin.pb = NULL;
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_CREATOR_SID, &tmp_bin);
+			cu_set_propval(&chg, PR_CREATOR_SID, &tmp_bin);
 		}
-		auto pvalue = fldchgs.pfldchgs[i].getval(PidTagFolderId);
+		auto pvalue = chg.getval(PidTagFolderId);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		folder_id = *(uint64_t*)pvalue;
 		if (0 == (SYNC_EXTRA_FLAG_EID & pctx->extra_flags)) {
-			common_util_remove_propvals(&fldchgs.pfldchgs[i], PidTagFolderId);
+			common_util_remove_propvals(&chg, PidTagFolderId);
 		}
-		pvalue = fldchgs.pfldchgs[i].getval(PidTagParentFolderId);
+		pvalue = chg.getval(PidTagParentFolderId);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		parent_fid = *(uint64_t*)pvalue;
 		if (SYNC_FLAG_NOFOREIGNIDENTIFIERS & pctx->sync_flags) {
-			common_util_remove_propvals(&fldchgs.pfldchgs[i], PR_SOURCE_KEY);
+			common_util_remove_propvals(&chg, PR_SOURCE_KEY);
 			auto psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
 			if (psk == nullptr)
 				return FALSE;
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_SOURCE_KEY, psk);
+			cu_set_propval(&chg, PR_SOURCE_KEY, psk);
 			if (pctx->pfolder->folder_id == parent_fid) {
 				tmp_bin.cb = 0;
 				tmp_bin.pb = NULL;
@@ -343,13 +341,13 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				if (psk == nullptr)
 					return FALSE;
 			}
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_PARENT_SOURCE_KEY, psk);
+			cu_set_propval(&chg, PR_PARENT_SOURCE_KEY, psk);
 		} else {
-			if (!fldchgs.pfldchgs[i].has(PR_SOURCE_KEY)) {
+			if (!chg.has(PR_SOURCE_KEY)) {
 				auto psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
 				if (psk == nullptr)
 					return FALSE;
-				cu_set_propval(&fldchgs.pfldchgs[i], PR_SOURCE_KEY, psk);
+				cu_set_propval(&chg, PR_SOURCE_KEY, psk);
 			}
 			void *psk;
 			if (pctx->pfolder->folder_id == parent_fid) {
@@ -366,20 +364,19 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 						return FALSE;
 				}
 			}
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_PARENT_SOURCE_KEY, psk);
+			cu_set_propval(&chg, PR_PARENT_SOURCE_KEY, psk);
 		}
 		auto inboxy = pctx->pstream->plogon->check_private() &&
 		              (folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
 		              folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX));
 		if (!inboxy)
 			continue;
-		auto ppropval = cu_alloc<TAGGED_PROPVAL>(fldchgs.pfldchgs[i].count + 10);
+		auto ppropval = cu_alloc<TAGGED_PROPVAL>(chg.count + 10);
 		if (NULL == ppropval) {
 			return FALSE;
 		}
-		memcpy(ppropval, fldchgs.pfldchgs[i].ppropval,
-			sizeof(TAGGED_PROPVAL)*fldchgs.pfldchgs[i].count);
-		fldchgs.pfldchgs[i].ppropval = ppropval;
+		memcpy(ppropval, chg.ppropval, sizeof(TAGGED_PROPVAL) * chg.count);
+		chg.ppropval = ppropval;
 		tmp_propval.proptag = PR_IPM_DRAFTS_ENTRYID;
 		tmp_propval.pvalue = common_util_to_folder_entryid(
 			pctx->pstream->plogon, rop_util_make_eid_ex(1,
@@ -428,7 +425,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			return FALSE;
 		}
 		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-		if (!fldchgs.pfldchgs[i].has(PR_ADDITIONAL_REN_ENTRYIDS)) {
+		if (!chg.has(PR_ADDITIONAL_REN_ENTRYIDS)) {
 			tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS;
 			auto ba = cu_alloc<BINARY_ARRAY>();
 			if (ba == nullptr)
@@ -472,7 +469,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			common_util_set_propvals(
 				fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		if (!fldchgs.pfldchgs[i].has(PR_ADDITIONAL_REN_ENTRYIDS_EX)) {
+		if (!chg.has(PR_ADDITIONAL_REN_ENTRYIDS_EX)) {
 			tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS_EX;
 			auto bv = cu_alloc<BINARY>();
 			if (bv == nullptr)
@@ -516,7 +513,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			common_util_set_propvals(
 				fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		if (!fldchgs.pfldchgs[i].has(PR_FREEBUSY_ENTRYIDS)) {
+		if (!chg.has(PR_FREEBUSY_ENTRYIDS)) {
 			tmp_propval.proptag = PR_FREEBUSY_ENTRYIDS;
 			auto ba = cu_alloc<BINARY_ARRAY>();
 			if (ba == nullptr)
