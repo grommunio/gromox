@@ -457,6 +457,10 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 
 	auto r1 = libpff_record_entry_get_entry_type(rent, &etype, &unique_tie(err));
 	auto r2 = libpff_record_entry_get_value_type(rent, &vtype, &unique_tie(e2));
+	/*
+	 * It may become necessary to filter some (or perhaps all) properties that
+	 * are in the so-called non-transmittable range(s) (cf. mapidefs.h).
+	 */
 	auto r3 = libpff_record_entry_get_data_size(rent, &dsize, &unique_tie(e3));
 	if (r1 < 0)
 		throw az_error("PF-1061", err);

@@ -152,6 +152,12 @@ static bool skip_property(uint16_t id)
 	 * Skip importing IMAP data; midb rebuilds this anyway, and has its own
 	 * database for this so as to not clutter the store with what is
 	 * effectively computable data.
+	 *
+	 * emsmdb32.dll's ICS also fails to cope with properties in the
+	 * non-transmittable range with a certain size. It seems that the
+	 * property may only be as large as there is remaining space in the rop
+	 * packet, though at least 8K. Since the fill status of the packet can
+	 * be anywhere from 0 to 32K, the behavior is exceptionally erratic.
 	 */
 		PROP_ID(PR_EC_IMAP_ID), PROP_ID(PR_EC_IMAP_SUBSCRIBED),
 		PROP_ID(PR_EC_IMAP_MAX_ID), PROP_ID(PR_EC_IMAP_EMAIL_SIZE),
