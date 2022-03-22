@@ -302,6 +302,13 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		};
 		for (auto t : tags)
 			common_util_remove_propvals(&chg, t);
+		for (size_t j = 0; j < chg.count; ) {
+			if (PROP_ID(chg.ppropval[j].proptag) >= 0x8000)
+				/* emsmdb32.dll stinks */
+				common_util_remove_propvals(&chg, chg.ppropval[j].proptag);
+			else
+				++j;
+		}
 		if (!chg.has(PR_ATTR_HIDDEN))
 			cu_set_propval(&chg, PR_ATTR_HIDDEN, &fake_byte);
 		if (!chg.has(PROP_TAG_ATTRIBUTESYSTEM))
