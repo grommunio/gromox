@@ -1134,6 +1134,11 @@ int main(int argc, const char **argv)
 	if (s != nullptr)
 		sqp.pass = s;
 
+	if (isatty(STDOUT_FILENO)) {
+		fprintf(stderr, "Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
+			"You probably wanted to redirect output into a file or pipe.\n");
+		return EXIT_FAILURE;
+	}
 	try {
 		std::unique_ptr<driver> drv;
 		if (g_srcguid != nullptr)
