@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <list>
 #include <memory>
 #include <mysql.h>
 #include <string>
@@ -17,6 +18,7 @@
 #include <vector>
 #include <zlib.h>
 #include <libHX/option.h>
+#include <fmt/core.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
@@ -74,10 +76,23 @@ struct driver final {
 	void do_database(const char *title);
 
 	MYSQL *m_conn = nullptr;
+	std::string server_guid;
 	uint32_t m_user_id = 0, m_store_hid = 0, m_root_hid = 0;
 	unsigned int schema_vers = 0;
 	bool m_public_store = false;
 	gi_folder_map_t m_folder_map;
+};
+
+struct ace_list final {
+	ace_list();
+	void emplace(std::string &&, uint32_t);
+	inline size_t size() const { return m_rows.size(); }
+	inline const std::vector<PERMISSION_DATA> &get_perms() const { return m_rows; }
+
+	private:
+	std::list<std::string> m_strs;
+	tarray_set_ptr m_rdata;
+	std::vector<PERMISSION_DATA> m_rows;
 };
 
 struct kdb_item final {
@@ -94,6 +109,7 @@ struct kdb_item final {
 	enum mapi_object_type m_mapitype{};
 	tpropval_array_ptr m_props;
 	std::vector<hidxtype> m_sub_hids;
+	ace_list m_acl;
 };
 
 struct sql_login_param {
@@ -108,6 +124,7 @@ static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
 static char *g_srcguid, *g_srcmbox;
 static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
+static unsigned int g_with_acl;
 static int g_with_hidden = -1;
 static std::vector<uint32_t> g_only_objs;
 
@@ -131,6 +148,7 @@ static constexpr HXoption g_options_table[] = {
 	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Mailbox to extract from SQL", "USERNAME"},
 	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "OBJID"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
+	{"with-acl", 0, HXTYPE_VAL, &g_with_acl, nullptr, nullptr, 1, "Enable partial conversion of ACLs (beta)"},
 	{"without-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 0, "Do skip folders with PR_ATTR_HIDDEN [default: dependent upon -s]"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -170,6 +188,22 @@ static bool skip_property(uint16_t id)
 		PROP_ID(PR_PARENT_DISPLAY), PROP_ID(PR_PARENT_DISPLAY_A),
 	};
 	return std::find(std::cbegin(tags), std::cend(tags), id) != std::cend(tags);
+}
+
+ace_list::ace_list() : m_rdata(tarray_set_init())
+{}
+
+void ace_list::emplace(std::string &&s, uint32_t r)
+{
+	tpropval_array_ptr props(tpropval_array_init());
+	if (props == nullptr)
+		throw std::bad_alloc();
+	m_strs.push_back(std::move(s));
+	props->set(PR_SMTP_ADDRESS, m_strs.back().c_str());
+	props->set(PROP_TAG_MEMBERRIGHTS, &r);
+	PERMISSION_DATA d = {ROW_ADD, {2, props->ppropval}};
+	m_rdata->append_move(props.release());
+	m_rows.emplace_back(d);
 }
 
 static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
@@ -396,12 +430,22 @@ kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 	if (hex2bin(guid).size() != 16)
 		throw YError("PK-1011: invalid GUID passed");
 
-	char qstr[96];
-	DB_RESULT res;
-	DB_ROW row;
-	snprintf(qstr, arsizeof(qstr), "SELECT MAX(databaserevision) FROM versions");
+	auto qstr = fmt::format("SELECT value FROM settings WHERE name='server_guid'");
+	DB_RESULT res = drv->query(qstr.c_str());
+	if (res == nullptr)
+		throw YError("PG-1133: unable to request server_guid");
+	auto row = res.fetch_row();
+	if (row == nullptr)
+		throw YError("PG-1134: unable to request server_guid");
+	auto rowlen = res.row_lengths();
+	if (row[0] == nullptr || rowlen[0] != sizeof(GUID))
+		throw YError("PG-1135: unable to request server_guid");
+	drv->server_guid = bin2hex(row[0], rowlen[0]);
+	fmt::print(stderr, "kdb GUID: {}\n", drv->server_guid);
+
+	qstr = "SELECT MAX(databaserevision) FROM versions";
 	try {
-		res = drv->query(qstr);
+		res = drv->query(qstr.c_str());
 		row = res.fetch_row();
 		if (row == nullptr || row[0] == nullptr)
 			throw YError("PK-1002: Database has no version information and is too old");
@@ -415,8 +459,8 @@ kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 	fprintf(stderr, "Database schema is kdb-%u\n", drv->schema_vers);
 
 	/* user_id available from n61 */
-	snprintf(qstr, arsizeof(qstr), "SELECT hierarchy_id, user_id, type FROM stores WHERE guid=0x%.32s", guid);
-	res = drv->query(qstr);
+	qstr = fmt::format("SELECT hierarchy_id, user_id, type FROM stores WHERE guid=0x{}", guid);
+	res = drv->query(qstr.c_str());
 	row = res.fetch_row();
 	if (row == nullptr || row[0] == nullptr || row[1] == nullptr)
 		throw YError("PK-1014: no store by that GUID");
@@ -680,11 +724,15 @@ std::unique_ptr<kdb_item> driver::get_root_folder()
 	return kdb_item::load_hid_base(*this, m_root_hid);
 }
 
+/**
+ * Lookup a specific hierarchy ID and return all kinds of info:
+ * - own type
+ * - children object IDs
+ */
 std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 {
-	char qstr[84];
-	snprintf(qstr, arsizeof(qstr), "SELECT id, type, flags FROM hierarchy WHERE (id=%u OR parent=%u)", hid, hid);
-	auto res = drv.query(qstr);
+	auto qstr = fmt::format("SELECT id, type, flags FROM hierarchy WHERE (id={} OR parent={})", hid, hid);
+	auto res = drv.query(qstr.c_str());
 	auto yi = std::make_unique<kdb_item>(drv);
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr) {
@@ -721,6 +769,23 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 				return false;
 			return a < b;
 		});
+	/* Gromox ACL tables are only specified for folders at this time. */
+	if (yi->m_mapitype != MAPI_FOLDER)
+		return yi;
+	if (!g_with_acl)
+		return yi;
+	/*
+	 * ECSecurity.cpp ECSecurity::GetObjectPermission never evalutes type=1
+	 * (ACCESS_TYPE_DENIED); but only 2 (ACCESS_TYPE_GRANT).
+	 */
+	qstr = fmt::format("SELECT id, rights FROM acl WHERE hierarchy_id={} AND type=2", hid);
+	res = drv.query(qstr.c_str());
+	while ((row = res.fetch_row()) != nullptr) {
+		uint32_t ben_id = strtoul(row[0], nullptr, 0);
+		uint32_t rights = strtoul(row[1], nullptr, 0);
+		rights &= ~(frightsGromoxSendAs | frightsGromoxStoreOwner);
+		yi->m_acl.emplace(std::to_string(ben_id) + "@"s + drv.server_guid + ".kopano.invalid", rights);
+	}
 	return yi;
 }
 
@@ -837,6 +902,9 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 	ep.p_uint32(parent.type);
 	ep.p_uint64(parent.folder_id);
 	ep.p_tpropval_a(*props);
+	ep.p_uint64(item.m_acl.size());
+	for (const auto &ace : item.m_acl.get_perms())
+		ep.p_permission_data(ace);
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	write(STDOUT_FILENO, &xsize, sizeof(xsize));
 	write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
@@ -1059,7 +1127,7 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 
 static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 {
-	write(STDOUT_FILENO, "GXMT0001", 8);
+	write(STDOUT_FILENO, "GXMT0002", 8);
 	uint8_t xsplice = g_splice;
 	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
 	xsplice = drv->m_public_store;

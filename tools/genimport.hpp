@@ -5,11 +5,13 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 
+struct PERMISSION_DATA;
 class YError final : public std::exception {
 	public:
 	YError(const std::string &);
@@ -92,6 +94,7 @@ extern void gi_name_map_write(const gi_name_map &);
 extern uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &);
 extern int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t cn);
 extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl, uint64_t *new_fld_id);
+extern int exm_permissions(eid_t, const std::vector<PERMISSION_DATA> &);
 extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);
 extern void gi_setup_early(const char *dstmbox);
 extern int gi_setup();

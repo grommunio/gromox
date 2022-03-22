@@ -739,6 +739,7 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	ep.p_uint32(parent.type);
 	ep.p_uint64(parent.folder_id);
 	ep.p_tpropval_a(*props);
+	ep.p_uint64(0); /* ACL count */
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	write(STDOUT_FILENO, &xsize, sizeof(xsize));
 	write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
@@ -1136,7 +1137,7 @@ static int do_file(const char *filename) try
 		return -1;
 	}
 
-	write(STDOUT_FILENO, "GXMT0001", 8);
+	write(STDOUT_FILENO, "GXMT0002", 8);
 	uint8_t xsplice = g_splice;
 	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
 	/*

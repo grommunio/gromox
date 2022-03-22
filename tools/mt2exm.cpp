@@ -105,7 +105,7 @@ static void exm_read_base_maps()
 		throw YError("PG-1009: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != arsizeof(magic))
 		throw YError("PG-1126: %s", strerror(errno));
-	if (memcmp(magic, "GXMT0001", 8) != 0)
+	if (memcmp(magic, "GXMT0002", 8) != 0)
 		throw YError("PG-1127: Unrecognized input format");
 	ret = fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
 	if (ret == 0)
@@ -255,7 +255,8 @@ static void exm_folder_adjust(TPROPVAL_ARRAY &props)
 	exm_adjust_namedprops(props);
 }
 
-static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
+static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
+    const std::vector<PERMISSION_DATA> &perms)
 {
 	if (g_show_tree) {
 		printf("exm: Folder %lxh (parent=%llxh)\n",
@@ -289,7 +290,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 			current_it->second.create = false;
 			current_it->second.fid_to = new_fid;
 		}
-		return 0;
+		return exm_permissions(new_fid, perms);
 	} else if (current_it != g_folder_map.end() && !current_it->second.create) {
 		/*
 		 * #2. Instruction to splice @nid onto @fid_to (preexisting folder)
@@ -299,7 +300,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 		 * Subobjects will enter case #3.
 		 */
 		//new_fid = current_it->second.fid_to;
-		return 0;
+		return exm_permissions(current_it->second.fid_to, perms);
 	} else if (parent_it != g_folder_map.end()) {
 		/*
 		 * #3. The parent appears in the folder map.
@@ -317,7 +318,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 				        static_cast<unsigned long long>(new_fid));
 			g_folder_map.try_emplace(obd.nid, tgt_folder{false, new_fid});
 		}
-		return 0;
+		return exm_permissions(new_fid, perms);
 	}
 	fprintf(stderr, "exm: No known placement method for NID %lxh, skipping.\n",
 	        static_cast<unsigned long>(obd.nid));
@@ -366,7 +367,20 @@ static int exm_packet(const void *buf, size_t bufsize)
 		auto cl_0 = make_scope_exit([&]() { tpropval_array_free_internal(&props); });
 		if (ep.g_tpropval_a(&props) != EXT_ERR_SUCCESS)
 			throw YError("PG-1118");
-		auto ret = exm_folder(obd, props);
+		uint64_t acl_items = 0;
+		if (ep.g_uint64(&acl_items) != EXT_ERR_SUCCESS)
+			throw YError("PG-1132");
+		std::vector<PERMISSION_DATA> perms;
+		for (uint64_t i = 0; i < acl_items; ++i) {
+			PERMISSION_DATA d;
+			if (ep.g_permission_data(&d) != EXT_ERR_SUCCESS)
+				throw YError("PG-1129");
+			if (d.flags == ROW_ADD)
+				perms.push_back(std::move(d));
+			else
+				fprintf(stderr, "ACE not of type ROW_ADD, ignoring\n");
+		}
+		auto ret = exm_folder(obd, props, perms);
 		if (ret < 0)
 			throw YError("PG-1122: %s", strerror(-ret));
 		return 0;

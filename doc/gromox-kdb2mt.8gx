@@ -92,6 +92,12 @@ specified multiple times. In the output stream, the objects will have an
 unspecified location given as their parent folder. (mt2exm will use the
 drafts folder because it is expectedly less crowded than one's inbox.)
 .TP
+\fB\-\-with\-acl\fP
+Perform partial conversion of ACLs. Because kdb2mt works completely LDAP-less,
+it has practically no knowledge of users. ACLs for Kopano user \fIn\fP (\fIn\fP
+being a homeserver-specific integer) is transformed to
+\fIn\fP@\fIserverguid\fP.kopano.invalid.
+.TP
 \fB\-\-with\-hidden\fP, \fB\-\-without\-hidden\fP
 This option controls the import of folders that have PR_ATTR_HIDDEN=1.
 .SH Splice mode

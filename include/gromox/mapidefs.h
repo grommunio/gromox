@@ -1331,6 +1331,11 @@ enum {
 	frightsVisible              = 1U << 10, /* 0x400 */
 	frightsFreeBusySimple       = 1U << 11, /* 0x800, cf. IExchangeModifyTable */
 	frightsFreeBusyDetailed     = 1U << 12, /* 0x1000, cf. IExchangeModifyTable */
+	/*
+	 * Special bit that can be set on *IPM_SUBTREE* to toggle the OWNER bit
+	 * on *store_object/logon_object* (since Outlook only shows
+	 * IPM_SUBTREE / and Gromox has no store-level permission bits really).
+	 */
 	frightsGromoxStoreOwner     = 1U << 13, /* 0x2000 */
 
 	/* right sets as per edkmdb */

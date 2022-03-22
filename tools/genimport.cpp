@@ -620,6 +620,19 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	return 0;
 }
 
+int exm_permissions(eid_t fid, const std::vector<PERMISSION_DATA> &perms)
+{
+	if (perms.size() == 0)
+		return 0;
+	if (!exmdb_client::update_folder_permission(g_storedir, fid, false,
+	    perms.size(), perms.data())) {
+		fprintf(stderr, "exm: update_folder_perm(%llxh) RPC failed\n",
+		        static_cast<unsigned long long>(fid));
+		return -EIO;
+	}
+	return 0;
+}
+
 int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 {
 	uint64_t msg_id = 0, change_num = 0;
