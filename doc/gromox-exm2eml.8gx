@@ -1,6 +1,6 @@
 .TH gromox\-exm2eml 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-exm2eml(8gx) \(em Utility to export messages as Internet Mail
+gromox\-exm2eml \(em Utility to export messages as Internet Mail
 .SH Synopsis
 \fBgromox\-exm2eml \-u\fP \fIu@d.de\fP \fImessage_id\fP
 .SH Description

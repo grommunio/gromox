@@ -1,6 +1,6 @@
 .TH authmgr 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-authmgr(4gx) \(em Demultiplexer for authentication requests
+authmgr \(em Demultiplexer for authentication requests
 .SH Description
 authmgr is a service plugin that, for mail account authentication, dynamically
 selects the authentication backend per user account. The

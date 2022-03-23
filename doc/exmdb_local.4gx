@@ -1,6 +1,6 @@
 .TH exmdb_local 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-exmdb_local(4gx) \(em LDA hook plugin that offers a exmdb_provider(4gx) client
+exmdb_local \(em LDA hook plugin that offers a exmdb_provider(4gx) client
 with a C API
 .SH Description
 An LDA hook plugin for delivery(8gx) which places mail into a store by

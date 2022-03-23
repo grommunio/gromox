@@ -1,6 +1,6 @@
 .TH gromox 7 "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-pffimport(8gx) \(em Utility for importing PFF/PST/OST into Gromox
+gromox\-pffimport \(em Utility for importing PFF/PST/OST into Gromox
 .SH Synopsis
 \fBgromox\-pff2mt\fP [\fB\-s\fP] [\fB\-pt\fP] \fIinput.pst\fP\fB | gromox\-mt2exm
 \-u\fP \fImbox@target.de\fP

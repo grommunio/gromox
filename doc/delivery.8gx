@@ -1,6 +1,6 @@
 .TH delivery 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-delivery(8gx) \(em Backend for local delivery
+delivery \(em Backend for local delivery
 .SH Synopsis
 \fBdelivery\fP [\fB\-c\fP \fIconfig\fP]
 .SH Options
