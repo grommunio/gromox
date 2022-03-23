@@ -2589,7 +2589,6 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		strcpy(pprop->value.pstr, paddress);
 		break;
 	default:
-		fprintf(stderr, "E-1921: unhandled proptag %xh\n", proptag);
 		return ecNotFound;
 	}
 	return ecSuccess;
