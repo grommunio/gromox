@@ -283,6 +283,15 @@ void wchar_to_utf8(uint32_t wchar, char *zstring)
 	}
 }
 
+static bool have_jpms()
+{
+	auto cd = iconv_open("UTF-8", "iso-2022-jp-ms");
+	if (cd == iconv_t(-1))
+		return false;
+	iconv_close(cd);
+	return true;
+}
+
 const char* replace_iconv_charset(const char *charset)
 {
 	if (0 == strcasecmp(charset, "gb2312")) {
@@ -292,7 +301,7 @@ const char* replace_iconv_charset(const char *charset)
 		0 == strcasecmp(charset, "ks_c_5601-1987") ||
 		0 == strcasecmp(charset, "csksc56011987")) {
 		return "cp949";
-	} else if (0 == strcasecmp(charset, "iso-2022-jp")) {
+	} else if (strcasecmp(charset, "iso-2022-jp") == 0 && have_jpms()) {
 		return "iso-2022-jp-ms";
 	} else if (0 == strcasecmp(charset, "unicode-1-1-utf-7")) {
 		return "utf-7";
