@@ -1577,9 +1577,10 @@ struct DOUBLE_ARRAY {
 	double *mval;
 };
 
-/*
- * The native-endian view of GUID is often not needed and it can just be
- * treated as an opaque byte sequence.
+/**
+ * The host-endian view of struct GUID is often not needed, and so a plethora
+ * of GUIDs exist as bytearrays/FLATUID, mostly when the consumer does not care
+ * about internal layout.
  */
 struct FLATUID {
 	uint8_t ab[16];
@@ -1606,6 +1607,14 @@ struct GLOBCNT {
 	uint8_t ab[6];
 };
 
+/**
+ * A host-endian view of a GUID.
+ *
+ * Conversion options are e.g.
+ *  - EXT_PUSH::p_guid, produces a little-endian bytearray/FLATUID
+ *  - to_str, produces a big-endian text representation
+ *  - and their reverse functions
+ */
 struct GUID {
 	void to_str(char *, size_t, unsigned int type = 36) const;
 	bool from_str(const char *);

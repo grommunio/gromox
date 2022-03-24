@@ -202,9 +202,10 @@ GUID GUID::random_new()
 		static_assert(sizeof(v) == sizeof(guid));
 		memcpy(&guid, v, sizeof(guid));
 	}
-	/* RFC 4122 pg 24 */
+	/* Set the 1-0-x variant as per RFC 4122 §4.1.1 */
 	guid.clock_seq[0] &= 0x3F;
 	guid.clock_seq[0] |= 0x80;
+	/* v4 version as per §4.1.3 */
 	guid.time_hi_and_version &= 0x0FFF;
 	guid.time_hi_and_version |= 4U << 12;
 	return guid;
