@@ -1440,7 +1440,8 @@ static BOOL encode_strings_to_utf8(
 		}
 		if (end_pos == -1 && begin_pos != -1 && in_buff[i] == '?' &&
 		    in_buff[i+1] == '=' && ((in_buff[i-1] != 'q' &&
-		    in_buff[i-1] != 'Q') || in_buff[i-2] != '?'))
+		    in_buff[i-1] != 'Q' && in_buff[i-1] != 'b' &&
+		    in_buff[i-1] != 'B') || in_buff[i-2] != '?'))
 			end_pos = i + 1;
 		if (-1 != begin_pos && -1 != end_pos) {
 			parse_mime_encode_string(in_buff + begin_pos, 
@@ -1508,7 +1509,8 @@ BOOL mime_string_to_utf8(const char *charset,
 		}
 		if (end_pos == -1 && begin_pos != -1 && in_buff[i] == '?' &&
 		    in_buff[i+1] == '=' && ((in_buff[i-1] != 'q' &&
-		    in_buff[i-1] != 'Q') || in_buff[i-2] != '?'))
+		    in_buff[i-1] != 'Q' && in_buff[i-1] != 'b' &&
+		    in_buff[i-1] != 'B') || in_buff[i-2] != '?'))
 			end_pos = i + 1;
 		if (-1 != begin_pos && -1 != end_pos) {
 			parse_mime_encode_string(in_buff + begin_pos, 
