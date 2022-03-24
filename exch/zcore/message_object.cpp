@@ -10,7 +10,6 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/guid.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
@@ -218,7 +217,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	*crtime = rop_util_current_nttime();
 	propvals.ppropval[propvals.count++].pvalue = crtime;
 	propvals.ppropval[propvals.count].proptag = PR_SEARCH_KEY;
-	auto search_key = common_util_guid_to_binary(guid_random_new());
+	auto search_key = common_util_guid_to_binary(GUID::random_new());
 	if (search_key == nullptr)
 		return FALSE;
 	propvals.ppropval[propvals.count++].pvalue = search_key;

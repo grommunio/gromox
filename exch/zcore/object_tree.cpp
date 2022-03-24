@@ -15,7 +15,6 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>

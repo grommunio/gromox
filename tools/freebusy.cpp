@@ -25,7 +25,6 @@
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/guid.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
@@ -701,7 +700,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 		globalobjectid.creationtime = rop_util_unix_to_nttime(cur_time);
 		globalobjectid.data.cb = 16;
 		globalobjectid.data.pv = tmp_buff1;
-		guid = guid_random_new();
+		guid = GUID::random_new();
 		if (!ext_push.init(tmp_buff1, 16, 0) ||
 		    ext_push.p_guid(guid) != EXT_ERR_SUCCESS ||
 		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||

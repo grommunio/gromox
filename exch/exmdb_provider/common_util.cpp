@@ -25,7 +25,6 @@
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
 #include <gromox/propval.hpp>

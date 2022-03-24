@@ -13,7 +13,6 @@
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
-#include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
 
 using namespace gromox;
@@ -180,16 +179,18 @@ static void machine_guid_read()
 		}
 		close(fd);
 	}
-	machine_guid = guid_random_new();
+	machine_guid = GUID::random_new();
 }
 
-const GUID &guid_machine_id()
+}
+
+const GUID &GUID::machine_id()
 {
 	std::call_once(machine_guid_loaded, machine_guid_read);
 	return machine_guid;
 }
 
-GUID guid_random_new()
+GUID GUID::random_new()
 {
 	GUID guid;
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
@@ -207,8 +208,6 @@ GUID guid_random_new()
 	guid.time_hi_and_version &= 0x0FFF;
 	guid.time_hi_and_version |= 4U << 12;
 	return guid;
-}
-
 }
 
 static const char guidfmt32[] = "%08x%04x%04x%02x%02x%02x%02x%02x%02x%02x%02x";

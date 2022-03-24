@@ -17,7 +17,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
-#include <gromox/guid.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
@@ -227,7 +227,7 @@ static BOOL emsmdb_interface_alloc_cxr(std::vector<HANDLE_DATA *> &plist,
 }
 
 HANDLE_DATA::HANDLE_DATA() :
-	guid(guid_random_new()), last_time(time_point::clock::now())
+	guid(GUID::random_new()), last_time(time_point::clock::now())
 {
 	double_list_init(&notify_list);
 }

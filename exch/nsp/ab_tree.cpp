@@ -29,7 +29,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/hmacmd5.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
@@ -660,7 +659,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 		}
 		pbase->base_id = base_id;
 		pbase->status = BASE_STATUS_CONSTRUCTING;
-		pbase->guid = guid_random_new();
+		pbase->guid = GUID::random_new();
 		memcpy(pbase->guid.node, &base_id, sizeof(uint32_t));
 		pbase->phash.clear();
 		bhold.unlock();

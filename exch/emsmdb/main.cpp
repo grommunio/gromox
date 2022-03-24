@@ -9,8 +9,8 @@
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
-#include <gromox/guid.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>

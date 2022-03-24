@@ -19,7 +19,6 @@
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>

@@ -9,7 +9,6 @@
 #include <unordered_map>
 #include <libHX/string.h>
 #include <gromox/defs.h>
-#include <gromox/guid.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>

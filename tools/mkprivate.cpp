@@ -23,9 +23,9 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/pcl.hpp>
 #include <gromox/proptags.hpp>
@@ -472,7 +472,7 @@ int main(int argc, const char **argv) try
 	if (pstmt == nullptr)
 		return EXIT_FAILURE;
 	char tmp_bguid[GUIDSTR_SIZE];
-	guid_random_new().to_str(tmp_bguid, arsizeof(tmp_bguid));
+	GUID::random_new().to_str(tmp_bguid, arsizeof(tmp_bguid));
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
 	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {

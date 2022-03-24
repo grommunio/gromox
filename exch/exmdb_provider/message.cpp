@@ -21,7 +21,6 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/hmacmd5.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/oxcmail.hpp>
@@ -1692,7 +1691,7 @@ static BOOL message_rectify_message(const char *account,
 		pbin->pv = common_util_alloc(16);
 		if (pbin->pv == nullptr)
 			return FALSE;
-		tmp_guid = guid_random_new();
+		tmp_guid = GUID::random_new();
 		if (!ext_push.init(pbin->pb, 16, 0) ||
 		    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
 			return false;
@@ -1702,7 +1701,7 @@ static BOOL message_rectify_message(const char *account,
 		++vc;
 	}
 	if (!pmsgctnt->proplist.has(PR_BODY_CONTENT_ID)) {
-		tmp_guid = guid_random_new();
+		tmp_guid = GUID::random_new();
 		if (!ext_push.init(cid_string, 256, 0) ||
 		    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
 			return false;
@@ -1789,7 +1788,7 @@ static BOOL message_rectify_message(const char *account,
 			if (!message_md5_string(pvalue, pbin->pb))
 				return false;
 		} else {
-			tmp_guid = guid_random_new();
+			tmp_guid = GUID::random_new();
 			if (!ext_push.init(pbin->pb, 16, 0) ||
 			    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
 				return false;

@@ -20,7 +20,6 @@
 #include <gromox/eid_array.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/restriction.hpp>

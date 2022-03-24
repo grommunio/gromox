@@ -6,7 +6,6 @@
 #include <cstring>
 #include <ctime>
 #include <gromox/database.h>
-#include <gromox/guid.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>

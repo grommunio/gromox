@@ -21,7 +21,6 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
@@ -755,7 +754,7 @@ uint32_t zarafa_server_logon(const char *username,
 		return ecError;
 
 	USER_INFO tmp_info;
-	tmp_info.hsession = guid_random_new();
+	tmp_info.hsession = GUID::random_new();
 	memcpy(tmp_info.hsession.node, &user_id, sizeof(int32_t));
 	tmp_info.user_id = user_id;
 	tmp_info.domain_id = domain_id;

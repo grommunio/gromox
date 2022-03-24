@@ -10,7 +10,6 @@
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
-#include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>

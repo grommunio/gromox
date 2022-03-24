@@ -555,7 +555,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Disconnect") != 0 &&
 	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
-		ctx.sequence_guid = guid_random_new();
+		ctx.sequence_guid = GUID::random_new();
 		ctx.session->sequence_guid = ctx.sequence_guid;
 	}
 	ctx.session->expire_time = ctx.start_time + session_valid_interval + std::chrono::seconds(60);
@@ -582,7 +582,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 			}
 		} else {
 			produce_session(ctx.auth_info.username, ctx.session_string);
-			ctx.sequence_guid = guid_random_new();
+			ctx.sequence_guid = GUID::random_new();
 			std::unique_lock hl_hold(hashLock);
 			auto exptime = time_point::clock::now() + session_valid_interval + std::chrono::seconds(60);
 			try {

@@ -24,7 +24,6 @@
 #include <gromox/dsn.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/html.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>

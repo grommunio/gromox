@@ -6,7 +6,6 @@
 #include <vector>
 #include <gromox/defs.h>
 #include <gromox/eid_array.hpp>
-#include <gromox/guid.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>

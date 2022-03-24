@@ -10,7 +10,7 @@
 #include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/zz_ndr_stack.hpp>
@@ -374,6 +374,6 @@ int common_util_run()
 		printf("[exchange_nsp]: failed to get service \"cpid_to_charset\"\n");
 		return -1;
 	}
-	g_server_guid = guid_random_new();
+	g_server_guid = GUID::random_new();
 	return 0;
 }

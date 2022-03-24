@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <gromox/defs.h>
-#include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>

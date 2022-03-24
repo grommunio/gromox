@@ -14,8 +14,8 @@
 #include <libHX/string.h>
 #include <gromox/alloc_context.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include <gromox/guid.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/mem_file.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>

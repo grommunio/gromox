@@ -9,8 +9,8 @@
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/guid.hpp>
 #include <gromox/hpm_common.h>
+#include <gromox/mapidefs.h>
 
 namespace hpm_mh {
 

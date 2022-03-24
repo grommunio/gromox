@@ -6,7 +6,7 @@
 #include <cstring>
 #include <libHX/string.h>
 #include <gromox/defs.h>
-#include <gromox/guid.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include <gromox/zz_ndr_stack.hpp>

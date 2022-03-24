@@ -21,9 +21,9 @@
 #include <gromox/alloc_context.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
-#include <gromox/guid.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/lib_buffer.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
 #include "hpm_processor.h"

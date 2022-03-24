@@ -20,7 +20,6 @@
 #include <gromox/ab_tree.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/oxoabkt.hpp>

@@ -10,7 +10,6 @@
 #include <gromox/double_list.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>

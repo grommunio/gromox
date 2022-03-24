@@ -1610,6 +1610,8 @@ struct GUID {
 	void to_str(char *, size_t, unsigned int type = 36) const;
 	bool from_str(const char *);
 	int compare(const GUID &) const;
+	static GUID random_new();
+	static const GUID &machine_id();
 
 	uint32_t time_low;
 	uint16_t time_mid;

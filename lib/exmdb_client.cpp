@@ -17,9 +17,9 @@
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/guid.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
@@ -69,7 +69,7 @@ void exmdb_client_init(unsigned int conn_max, unsigned int threads_max)
 	mdcl_threads_max = threads_max;
 	snprintf(mdcl_remote_id, arsizeof(mdcl_remote_id), "%u.", static_cast<unsigned int>(getpid()));
 	auto z = strlen(mdcl_remote_id);
-	guid_machine_id().to_str(mdcl_remote_id + z, arsizeof(mdcl_remote_id) - z, 32);
+	GUID::machine_id().to_str(mdcl_remote_id + z, arsizeof(mdcl_remote_id) - z, 32);
 }
 
 void exmdb_client_stop()

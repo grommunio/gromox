@@ -7,7 +7,6 @@
 #include <cstring>
 #include <ctime>
 #include <gromox/defs.h>
-#include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/oxvcard.hpp>
 #include <gromox/rop_util.hpp>
@@ -1334,7 +1333,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	
 	pvalue = pmsg->proplist.get<char>(PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000]));
 	if (pvalue == nullptr) try {
-		auto guid = guid_random_new();
+		auto guid = GUID::random_new();
 		vcarduid = "uuid:" + bin2hex(&guid, sizeof(guid));
 		pvalue = vcarduid.c_str();
 	} catch (const std::bad_alloc &) {

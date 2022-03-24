@@ -495,7 +495,7 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 			return ctx.error_responsecode(RC_INVALID_SEQUENCE);
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Unbind") != 0) {
-		ctx.sequence_guid = guid_random_new();
+		ctx.sequence_guid = GUID::random_new();
 		ctx.session->sequence_guid = ctx.sequence_guid;
 	}
 	ctx.session_guid = ctx.session->session_guid;
@@ -529,7 +529,7 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 		}
 	} else {
 		produce_session(ctx.auth_info.username, ctx.session_string);
-		ctx.sequence_guid = guid_random_new();
+		ctx.sequence_guid = GUID::random_new();
 		auto exptime = time_point::clock::now() + session_valid_interval + std::chrono::seconds(60);
 		std::unique_lock hl_hold(hashLock);
 		try {

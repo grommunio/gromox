@@ -24,8 +24,8 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/guid.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
