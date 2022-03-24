@@ -19,7 +19,8 @@ messages.
 For unanchored messages (such as produced by the \-\-only\-obj option of
 gromox\-pff2mt and gromox\-kdb2mt), place them in this specific folder. The
 accepted names are: \fIinbox\fP, \fIdraft\fP, \fIcalendar\fP, \fIjournal\fP,
-\fInotes\fP, \fItasks\fP and \fIcontacts\fP.
+\fInotes\fP, \fItasks\fP, \fIcontacts\fP, \fIjunk\fP, \fIsent\fP and
+\fItrash\fP.
 .br
 Default: \fIdraft\fP
 .TP

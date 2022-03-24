@@ -38,6 +38,7 @@ static unsigned int g_oexcl = 1, g_anchor_folder;
 
 static void cb_anchor_folder(const HXoptcb *cb)
 {
+	/* The strings are the common IMAP names for such folders */
 	if (strcmp(cb->data, "inbox") == 0)
 		g_anchor_folder = PRIVATE_FID_INBOX;
 	else if (strcmp(cb->data, "draft") == 0)
@@ -52,6 +53,14 @@ static void cb_anchor_folder(const HXoptcb *cb)
 		g_anchor_folder = PRIVATE_FID_TASKS;
 	else if (strcmp(cb->data, "contacts") == 0)
 		g_anchor_folder = PRIVATE_FID_CONTACTS;
+	else if (strcmp(cb->data, "junk") == 0)
+		g_anchor_folder = PRIVATE_FID_JUNK;
+	else if (strcmp(cb->data, "sent") == 0)
+		g_anchor_folder = PRIVATE_FID_SENT_ITEMS;
+	else if (strcmp(cb->data, "trash") == 0)
+		g_anchor_folder = PRIVATE_FID_DELETED_ITEMS;
+	else
+		fprintf(stderr, "Unrecognized argument for -B: \"%s\", falling back to default\n", cb->data);
 }
 
 static constexpr HXoption g_options_table[] = {
