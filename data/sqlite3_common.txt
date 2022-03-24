@@ -1,6 +1,6 @@
 CREATE TABLE configurations (
 	config_id INTEGER PRIMARY KEY,
-	config_value NONE NOT NULL);
+	config_value BLOB NOT NULL);
 
 CREATE TABLE allocated_eids (
 	range_begin INTEGER NOT NULL,
@@ -16,12 +16,12 @@ CREATE TABLE named_properties (
 
 CREATE TABLE store_properties (
 	proptag INTEGER UNIQUE NOT NULL,
-	propval NONE NOT NULL);
+	propval BLOB NOT NULL);
 
 CREATE TABLE folder_properties (
 	folder_id INTEGER NOT NULL,
 	proptag INTEGER NOT NULL,
-	propval NONE NOT NULL,
+	propval BLOB NOT NULL,
 	FOREIGN KEY (folder_id)
 		REFERENCES folders (folder_id)
 		ON DELETE CASCADE
@@ -67,7 +67,7 @@ CREATE INDEX fid_rules_index on rules(folder_id);
 CREATE TABLE message_properties (
 	message_id INTEGER NOT NULL,
 	proptag INTEGER NOT NULL,
-	propval NONE NOT NULL,
+	propval BLOB NOT NULL,
 	FOREIGN KEY (message_id)
 		REFERENCES messages (message_id)
 		ON DELETE CASCADE
@@ -104,7 +104,7 @@ CREATE INDEX mid_recipients_index ON recipients(message_id);
 CREATE TABLE recipients_properties (
 	recipient_id INTEGER NOT NULL,
 	proptag INTEGER NOT NULL,
-	propval NONE NOT NULL,
+	propval BLOB NOT NULL,
 	FOREIGN KEY (recipient_id)
 		REFERENCES recipients (recipient_id)
 		ON DELETE CASCADE
@@ -127,7 +127,7 @@ CREATE INDEX mid_attachments_index ON attachments(message_id);
 CREATE TABLE attachment_properties (
 	attachment_id INTEGER NOT NULL,
 	proptag INTEGER NOT NULL,
-	propval NONE NOT NULL,
+	propval BLOB NOT NULL,
 	FOREIGN KEY (attachment_id)
 		REFERENCES attachments (attachment_id)
 		ON DELETE CASCADE

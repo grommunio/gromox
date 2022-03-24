@@ -1,6 +1,6 @@
 CREATE TABLE configurations (
 	config_id INTEGER PRIMARY KEY,
-	config_value NONE NOT NULL);
+	config_value BLOB NOT NULL);
 
 CREATE TABLE folders (
 	folder_id INTEGER PRIMARY KEY,
