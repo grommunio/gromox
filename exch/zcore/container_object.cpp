@@ -861,7 +861,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
 		if (pbase == nullptr)
 			return FALSE;
-		if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
+		if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_ROOT) {
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				return FALSE;
@@ -900,6 +900,8 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 				if (!container_object_get_specialtables_from_node(domain.tree.get_root(),
 				    pproptags, b_depth, &tmp_set))
 					return FALSE;
+		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
+			/* no subordinates */
 		} else {
 			auto ptnode = ab_tree_minid_to_node(pbase.get(), pcontainer->id.abtree_id.minid);
 			if (NULL == ptnode) {

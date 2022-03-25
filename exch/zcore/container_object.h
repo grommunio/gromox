@@ -4,6 +4,7 @@
 #include <gromox/mapi_types.hpp>
 
 enum {
+	SPECIAL_CONTAINER_ROOT = 0xc,
 	SPECIAL_CONTAINER_EMPTY = 0xd,
 	SPECIAL_CONTAINER_PROVIDER = 0xe,
 	SPECIAL_CONTAINER_GAL = 0xf,
