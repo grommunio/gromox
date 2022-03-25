@@ -495,7 +495,7 @@ BOOL container_object_fetch_special_property(
 		ab_entryid.version = 1;
 		ab_entryid.type = DT_CONTAINER;
 		ab_entryid.px500dn = special_type == SPECIAL_CONTAINER_GAL ?
-		                     deconst("") : deconst("/");
+		                     deconst("") : deconst("/exmdb");
 		bv->pv = common_util_alloc(128);
 		if (bv->pv == nullptr ||
 		    !ext_push.init(static_cast<BINARY *>(pvalue)->pb, 128, 0) ||
