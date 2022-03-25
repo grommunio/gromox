@@ -101,6 +101,7 @@ int main(int argc, const char **argv)
 	{
 	auto cl_0 = make_scope_exit([]() { sqlite3_shutdown(); });
 	snprintf(temp_path1, 256, "%s/exmdb/new.sqlite3", argv[1]);
+	/* Delete unfinished rebuild attempt from earlier (if any) */
 	if (remove(temp_path1) < 0 && errno != ENOENT)
 		fprintf(stderr, "W-1393: remove %s: %s\n", temp_path1, strerror(errno));
 	if (SQLITE_OK != sqlite3_open_v2(temp_path1, &psqlite,
@@ -163,9 +164,19 @@ int main(int argc, const char **argv)
 		pstmt.finalize();
 	}
 	}
-	
+
+	printf("rm %s\n", temp_path);
+	if (remove(temp_path) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1394: remove %s: %s\n", temp_path, strerror(errno));
+	printf("ln %s %s\n", temp_path1, temp_path);
+	if (link(temp_path1, temp_path) < 0)
+		fprintf(stderr, "W-1395: link %s %s: %s\n", temp_path1, temp_path, strerror(errno));
+	printf("rm %s\n", temp_path1);
+	if (remove(temp_path1) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1396: remove %s: %s\n", temp_path1, strerror(errno));
+
+	printf("Notifying exmdb to close-reopen the db\n");
 	exmdb_client_init(1, 0);
-	printf("Triggering unload of old sqlite file...\n");
 	auto cl_0 = make_scope_exit(exmdb_client_stop);
 	auto ret = exmdb_client_run(PKGSYSCONFDIR, EXMDB_CLIENT_SKIP_PUBLIC);
 	if (ret < 0)
@@ -174,11 +185,5 @@ int main(int argc, const char **argv)
 		printf("fail to unload store\n");
 		return 12;
 	}
-	if (remove(temp_path) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1394: remove %s: %s\n", temp_path, strerror(errno));
-	if (link(temp_path1, temp_path) < 0)
-		fprintf(stderr, "W-1395: link %s %s: %s\n", temp_path1, temp_path, strerror(errno));
-	if (remove(temp_path1) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1396: remove %s: %s\n", temp_path1, strerror(errno));
 	exit(0);
 }
