@@ -37,6 +37,7 @@
 #include <gromox/util.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
+#include "container_object.h"
 #include "system_services.h"
 #include "zarafa_server.h"
 #include "../mysql_adaptor/mysql_adaptor.h"
@@ -1858,7 +1859,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	SINGLE_LIST_NODE *psnode1;
 	
 	single_list_init(&temp_list);
-	if (container_id == UINT32_MAX) {
+	if (container_id == SPECIAL_CONTAINER_GAL) {
 		for (auto ptr : pbase->gal_list) {
 			if (!ab_tree_match_node(ptr, codepage, pfilter))
 				continue;

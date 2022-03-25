@@ -1128,7 +1128,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	int base_id = pinfo->org_id == 0 ? -pinfo->domain_id : pinfo->org_id;
 	if (0 == entryid.cb) {
 		container_id.abtree_id.base_id = base_id;
-		container_id.abtree_id.minid = UINT32_MAX;
+		container_id.abtree_id.minid = SPECIAL_CONTAINER_GAL;
 		auto contobj = container_object::create(CONTAINER_TYPE_ABTREE, container_id);
 		if (contobj == nullptr)
 			return ecError;
@@ -1148,7 +1148,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		if ('\0' == essdn[0]) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
-			container_id.abtree_id.minid = UINT32_MAX;
+			container_id.abtree_id.minid = SPECIAL_CONTAINER_GAL;
 		} else if (0 == strcmp(essdn, "/")) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;

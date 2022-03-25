@@ -861,7 +861,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
 		if (pbase == nullptr)
 			return FALSE;
-		if (pcontainer->id.abtree_id.minid == UINT32_MAX) {
+		if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				return FALSE;
@@ -953,7 +953,7 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 		if (pbase == nullptr)
 			return FALSE;
 		*pnum = 0;
-		if (pcontainer->id.abtree_id.minid == UINT32_MAX) {
+		if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
 			*pnum = std::min(pbase->gal_list.size(), static_cast<size_t>(UINT32_MAX));
 		} else if (0 == pcontainer->id.abtree_id.minid) {
 			*pnum = 0;
@@ -1062,7 +1062,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 					return FALSE;	
 				pset->count ++;
 			}
-		} else if (pcontainer->id.abtree_id.minid == UINT32_MAX) {
+		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
 			size_t i = 0;
 			for (auto e : pbase->gal_list) {
 				if (i < first_pos) {
