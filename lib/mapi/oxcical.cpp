@@ -762,12 +762,8 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		if (NULL != prsvp && 0 == strcasecmp(prsvp, "TRUE")) {
 			tmp_byte = 1;
 		}
-		pproplist = tpropval_array_init();
+		pproplist = prcpts->emplace();
 		if (NULL == pproplist) {
-			return FALSE;
-		}
-		if (prcpts->append_move(pproplist) != 0) {
-			tpropval_array_free(pproplist);
 			return FALSE;
 		}
 		if (pproplist->set(PR_ADDRTYPE, "SMTP") != 0 ||

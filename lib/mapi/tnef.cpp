@@ -1228,7 +1228,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	PROPNAME_ARRAY propnames;
 	TNEF_ATTRIBUTE attribute;
 	const char *message_class;
-	TPROPVAL_ARRAY *pproplist;
 	TNEF_PROPLIST *ptnef_proplist;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment = nullptr;
@@ -1443,12 +1442,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			auto tf = static_cast<TNEF_PROPSET *>(attribute.pvalue);
 			for (size_t i = 0; i < tf->count; ++i) {
 				ptnef_proplist = tf->pplist[i];
-				pproplist = tpropval_array_init();
+				auto pproplist = prcpts->emplace();
 				if (NULL == pproplist) {
-					return NULL;
-				}
-				if (prcpts->append_move(pproplist) != 0) {
-					tpropval_array_free(pproplist);
 					return NULL;
 				}
 				for (size_t j = 0; j < ptnef_proplist->count; ++j) {

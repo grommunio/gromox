@@ -480,16 +480,11 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	char username[UADDR_SIZE], display_name[UADDR_SIZE];
 	char tmp_buff[1280];
 	char utf8_field[512];
-	TPROPVAL_ARRAY *pproplist;
 	
 	if (!paddr->has_value())
 		return TRUE;
-	pproplist = tpropval_array_init();
+	auto pproplist = pset->emplace();
 	if (NULL == pproplist) {
-		return FALSE;
-	}
-	if (pset->append_move(pproplist) != 0) {
-		tpropval_array_free(pproplist);
 		return FALSE;
 	}
 	utf8_field[0] = '\0';
@@ -2851,7 +2846,6 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	DSN_ENUM_INFO *pinfo;
 	DSN_FILEDS_INFO f_info;
 	char display_name[512];
-	TPROPVAL_ARRAY *pproplist;
 	
 	pinfo = (DSN_ENUM_INFO*)pparam;
 	f_info.final_recipient[0] = '\0';
@@ -2907,12 +2901,8 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	if (detail > 9 || detail < 0) {
 		detail = 0;
 	}
-	pproplist = tpropval_array_init();
+	auto pproplist = pinfo->prcpts->emplace();
 	if (NULL == pproplist) {
-		return false;
-	}
-	if (pinfo->prcpts->append_move(pproplist) != 0) {
-		tpropval_array_free(pproplist);
 		return false;
 	}
 	uint32_t tmp_int32 = MAPI_TO;

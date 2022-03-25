@@ -1810,6 +1810,7 @@ struct LTPROPVAL_ARRAY {
 
 struct tarray_set {
 	void erase(uint32_t index);
+	TPROPVAL_ARRAY *emplace();
 	int append_move(TPROPVAL_ARRAY *);
 	tarray_set *dup() const;
 

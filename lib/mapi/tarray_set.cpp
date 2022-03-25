@@ -66,6 +66,19 @@ int tarray_set::append_move(TPROPVAL_ARRAY *pproplist)
 	return 0;
 }
 
+TPROPVAL_ARRAY *tarray_set::emplace()
+{
+	auto p = tpropval_array_init();
+	if (p == nullptr)
+		return nullptr;
+	auto ret = append_move(p);
+	if (ret == 0)
+		return pparray[count-1];
+	tpropval_array_free(p);
+	errno = ret;
+	return nullptr;
+}
+
 tarray_set *tarray_set::dup() const
 {
 	auto pset = this;

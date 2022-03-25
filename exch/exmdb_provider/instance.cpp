@@ -67,7 +67,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	uint64_t message_id1;
 	PROPTAG_ARRAY proptags;
 	uint64_t attachment_id;
-	TPROPVAL_ARRAY *pproplist;
 	MESSAGE_CONTENT *pmsgctnt;
 	MESSAGE_CONTENT *pmsgctnt1;
 	ATTACHMENT_LIST *pattachments;
@@ -194,12 +193,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	}
 	row_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		pproplist = tpropval_array_init();
+		auto pproplist = prcpts->emplace();
 		if (NULL == pproplist) {
-			return FALSE;
-		}
-		if (prcpts->append_move(pproplist) != 0) {
-			tpropval_array_free(pproplist);
 			return FALSE;
 		}
 		if (pproplist->set(PR_ROWID, &row_id) != 0) {

@@ -435,15 +435,10 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 				return GXERR_CALL_FAILED;
 			}
 		} else {
-			prcpt = tpropval_array_init();
-			if (NULL == prcpt) {
-				return GXERR_CALL_FAILED;
-			}
 			pmsgctnt = static_cast<MESSAGE_CONTENT *>(pnode->data.pelement);
-			if (pmsgctnt->children.prcpts->append_move(prcpt) != 0) {
-				tpropval_array_free(prcpt);
+			prcpt = pmsgctnt->children.prcpts->emplace();
+			if (prcpt == nullptr)
 				return GXERR_CALL_FAILED;
-			}
 		}
 		pmarker->marker = marker;
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
