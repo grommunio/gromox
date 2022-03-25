@@ -419,8 +419,10 @@ remote_conn_ref exmdb_client_get_connection(const char *dir)
 	auto &conn = fc.tmplist.back();
 	conn.sockd = exmdb_client_connect_exmdb(*i, false, "mdcl");
 	if (conn.sockd == -2) {
+		fc.tmplist.clear();
 		return fc;
 	} else if (conn.sockd < 0) {
+		fc.tmplist.clear();
 		fprintf(stderr, "exmdb_client: protocol error connecting to [%s]:%hu/%s failed\n",
 		        i->host.c_str(), i->port, i->prefix.c_str());
 		return fc;
