@@ -199,10 +199,12 @@ void ace_list::emplace(std::string &&s, uint32_t r)
 	if (props == nullptr)
 		throw std::bad_alloc();
 	m_strs.push_back(std::move(s));
-	props->set(PR_SMTP_ADDRESS, m_strs.back().c_str());
-	props->set(PROP_TAG_MEMBERRIGHTS, &r);
+	if (!props->set(PR_SMTP_ADDRESS, m_strs.back().c_str()) ||
+	    !props->set(PROP_TAG_MEMBERRIGHTS, &r))
+		throw std::bad_alloc();
 	PERMISSION_DATA d = {ROW_ADD, {2, props->ppropval}};
-	m_rdata->append_move(props.release());
+	if (!m_rdata->append_move(props.release()))
+		throw std::bad_alloc();
 	m_rows.emplace_back(d);
 }
 
