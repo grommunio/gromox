@@ -4,6 +4,22 @@ gromox\-rebuild \(em Tool for rebuilding a message store
 .SH Synopsis
 \fBgromox\-rebuild\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP]
 \fImaildir\fP
+.SH Description
+gromox\-rebuild recreates the SQL database exchange.sqlite3 by way of a
+INSERT-SELECT cycle. In other words, it executes a SELECT for every one of the
+old tables and does an INSERT with a new database, then swaps the filenames.
+Afterwards, it issues a reload command to exmdb_provider(4gx) so that the
+server releases its open file descriptor on the old database file, similar to
+how for example logrotation is performed in Linux systems.
+.PP
+The original intent of this helper utility was to repair SQLite-level
+corruptions; if and when such a corruption came to be, the error message (in
+e.g. exmdb_provider's logs) to look for would be "database disk image is
+malformed".
+.PP
+The rebuild utility can also be used in a limited fashion for schema updates,
+however this only works as long as the column count and names are exactly the
+same.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -13,6 +29,15 @@ specified, /etc/gromox/sa.cfg will be read if it exists.
 \fB\-d\fP \fIdatapath\fP
 This option can be used to override the \fIdata_file_path\fP variable from the
 config file.
+.SH Exit status
+The usual conventions apply. An exit status of 0 indicates success, and any
+other value is considered failure.
+.PP
+When exmdb_provider cannot be contacted for the reloading action ("UNLOAD"
+RPC), the exit status will be 12. Scripted uses of gromox\-rebuild are free to
+treat this a success. Failure to reach a server can imply the server is not
+running, at which point no reload is needed (again, just like considerations
+for log rotation). However, it could also imply a network failure.
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
