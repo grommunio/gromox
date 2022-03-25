@@ -10,6 +10,10 @@
 #define MIME_FIELD_LEN (64U * 1024)
 
 struct EMAIL_ADDR {
+	inline bool has_dispname() const { return *display_name != '\0'; }
+	inline bool has_addr() const { return *local_part != '\0' && *domain != '\0'; }
+	inline bool has_value() const { return has_dispname() || has_addr(); }
+
 	char display_name[256], local_part[ULCLPART_SIZE], domain[UDOM_SIZE];
 };
 

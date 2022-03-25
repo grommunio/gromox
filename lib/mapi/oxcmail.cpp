@@ -482,9 +482,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	char utf8_field[512];
 	TPROPVAL_ARRAY *pproplist;
 	
-	if ('\0' != paddr->display_name[0] ||
-		('\0' != paddr->local_part[0] &&
-		'\0' != paddr->domain[0])) {
+	if (paddr->has_value()) {
 		pproplist = tpropval_array_init();
 		if (NULL == pproplist) {
 			return FALSE;
@@ -497,12 +495,12 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		return FALSE;
 	}
 	utf8_field[0] = '\0';
-	if ('\0' != paddr->display_name[0]) {
+	if (paddr->has_dispname())
 		gx_strlcpy(display_name, paddr->display_name, GX_ARRAY_SIZE(display_name));
-	} else {
+	else
 		snprintf(display_name, GX_ARRAY_SIZE(display_name), "%s@%s",
 			paddr->local_part, paddr->domain);
-	}
+
 	if (mime_string_to_utf8(charset, display_name, utf8_field)) {
 		tmp_len = strlen(utf8_field);
 		if (tmp_len > 1 && '"' == utf8_field[0]
@@ -535,8 +533,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME_A, display_name) != 0)
 			return FALSE;
 	}
-	if (paddr->local_part[0] != '\0' && paddr->domain[0] != '\0' &&
-	    oxcmail_check_ascii(paddr->local_part) &&
+	if (paddr->has_addr() && oxcmail_check_ascii(paddr->local_part) &&
 	    oxcmail_check_ascii(paddr->domain)) {
 		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
 		auto dtypx = DT_MAILUSER;
@@ -641,7 +638,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 	char tmp_buff[1280];
 	char utf8_field[512];
 	
-	if ('\0' != paddr->display_name[0]) {
+	if (paddr->has_dispname()) {
 		if (mime_string_to_utf8(charset, paddr->display_name, utf8_field)) {
 			if (pproplist->set(pr_name, utf8_field) != 0)
 				return false;
@@ -650,15 +647,14 @@ static BOOL oxcmail_parse_address(const char *charset,
 			    paddr->display_name) != 0)
 				return false;
 		}
-	} else if ('\0' != paddr->local_part[0] && '\0' != paddr->domain[0]) {
+	} else if (paddr->has_addr()) {
 		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
 		uint32_t tag = oxcmail_check_ascii(username) ? pr_name :
 		               CHANGE_PROP_TYPE(pr_name, PT_STRING8);
 		if (pproplist->set(tag, username) != 0)
 			return FALSE;
 	}
-	bool ok = paddr->local_part[0] != '\0' && paddr->domain[0] != '\0' &&
-	          oxcmail_check_ascii(paddr->local_part) &&
+	bool ok = paddr->has_addr() && oxcmail_check_ascii(paddr->local_part) &&
 	          oxcmail_check_ascii(paddr->domain);
 	if (!ok)
 		return TRUE;
