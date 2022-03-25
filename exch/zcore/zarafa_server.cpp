@@ -1152,7 +1152,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		} else if (0 == strcmp(essdn, "/")) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
-			container_id.abtree_id.minid = 0;
+			container_id.abtree_id.minid = SPECIAL_CONTAINER_EMPTY;
 		} else if (strncmp(essdn, "/exmdb=", 7) == 0) {
 			if (!common_util_exmdb_locinfo_from_string(
 			    essdn + 7, &loc_type, &user_id,

@@ -2,8 +2,13 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/mapi_types.hpp>
-#define SPECIAL_CONTAINER_GAL					0
-#define SPECIAL_CONTAINER_PROVIDER				1
+
+enum {
+	SPECIAL_CONTAINER_EMPTY = 0xd,
+	SPECIAL_CONTAINER_PROVIDER = 0xe,
+	SPECIAL_CONTAINER_GAL = 0xf,
+};
+
 #define CONTAINER_TYPE_FOLDER					1
 #define CONTAINER_TYPE_ABTREE					2
 

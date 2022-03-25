@@ -705,10 +705,9 @@ BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return container_object_fetch_folder_properties(
 					&tmp_propvals, pproptags, ppropvals);
 	}
-	if (0 == pcontainer->id.abtree_id.minid) { return
-		container_object_fetch_special_properties(
+	if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_EMPTY)
+		return container_object_fetch_special_properties(
 			SPECIAL_CONTAINER_PROVIDER, pproptags, ppropvals);
-	}
 	auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
 	if (pbase == nullptr)
 		return FALSE;
@@ -1084,7 +1083,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				}
 				++i;
 			}
-		} else if (0 == pcontainer->id.abtree_id.minid) {
+		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_EMPTY) {
 			return TRUE;
 		} else {
 			auto ptnode = ab_tree_minid_to_node(pbase.get(), pcontainer->id.abtree_id.minid);
