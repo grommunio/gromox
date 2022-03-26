@@ -40,27 +40,10 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static bool discover_msg_cids(sqlite3 *db, std::vector<uint64_t> &used)
+static bool discover_ids(sqlite3 *db, const std::string &query,
+    std::vector<uint64_t> &used)
 {
-	auto qstr = fmt::format("SELECT propval FROM message_properties "
-	            "WHERE proptag IN ({},{},{},{},{},{})",
-	            PR_TRANSPORT_MESSAGE_HEADERS,
-	            PR_TRANSPORT_MESSAGE_HEADERS_A,
-	            PR_BODY, PR_BODY_A, PR_HTML, PR_RTF_COMPRESSED);
-	auto stm = gx_sql_prep(db, qstr.c_str());
-	if (stm == nullptr)
-		return false;
-	while (stm.step() == SQLITE_ROW)
-		used.push_back(stm.col_int64(0));
-	return true;
-}
-
-static bool discover_atx_cids(sqlite3 *db, std::vector<uint64_t> &used)
-{
-	auto qstr = fmt::format("SELECT propval FROM attachment_properties "
-	            "WHERE proptag IN ({},{})",
-	            PR_ATTACH_DATA_BIN, PR_ATTACH_DATA_OBJ);
-	auto stm = gx_sql_prep(db, qstr.c_str());
+	auto stm = gx_sql_prep(db, query.c_str());
 	if (stm == nullptr)
 		return false;
 	while (stm.step() == SQLITE_ROW)
@@ -80,8 +63,17 @@ static bool discover_cids(const char *dir, std::vector<uint64_t> &used)
 	}
 
 	used.clear();
-	if (!discover_msg_cids(db.get(), used) ||
-	    !discover_atx_cids(db.get(), used))
+	auto query = fmt::format("SELECT propval FROM message_properties "
+	             "WHERE proptag IN ({},{},{},{},{},{})",
+	             PR_TRANSPORT_MESSAGE_HEADERS,
+	             PR_TRANSPORT_MESSAGE_HEADERS_A,
+	             PR_BODY, PR_BODY_A, PR_HTML, PR_RTF_COMPRESSED);
+	if (!discover_ids(db.get(), query, used))
+		return false;
+	query = fmt::format("SELECT propval FROM attachment_properties "
+	        "WHERE proptag IN ({},{})",
+	        PR_ATTACH_DATA_BIN, PR_ATTACH_DATA_OBJ);
+	if (!discover_ids(db.get(), query, used))
 		return false;
 	std::sort(used.begin(), used.end());
 	used.erase(std::unique(used.begin(), used.end()), used.end());
