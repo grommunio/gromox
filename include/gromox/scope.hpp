@@ -6,6 +6,10 @@
 
 namespace gromox {
 
+/*
+ * Modeled upon the C++ standards proposal P0052r10 / Library Fundamentals v3.
+ * Not yet present in GNU stdlibc++ or clang libc++.
+ */
 template<typename F> class scope_exit {
 	private:
 	F m_func;

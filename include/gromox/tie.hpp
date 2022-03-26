@@ -12,6 +12,9 @@ namespace gromox {
  * 	unique_ptr<char> u; char *x; bla_alloc(&x); u.reset(x);
  * With unique_tie, this gets shorter:
  * 	unique_ptr<char> u; bla_alloc(&unique_tie(u));
+ *
+ * Functionality like this has found its way into C++ standards proposal
+ * P1132R0 and then C++23, as std::out_ptr and std::inout_ptr.
  */
 template<typename T, typename D> class unique_proxy {
 	public:
