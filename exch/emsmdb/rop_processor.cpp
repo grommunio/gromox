@@ -136,7 +136,7 @@ static void rop_processor_free_objnode(SIMPLE_TREE_NODE *pnode)
 	g_handle_allocator->put(pobjnode);
 }
 
-static void rop_processor_release_objnode(
+static bool rop_processor_release_objnode(
 	LOGON_ITEM *plogitem, OBJECT_NODE *pobjnode)
 {
 	BOOL b_root;
@@ -168,6 +168,7 @@ static void rop_processor_release_objnode(
 		plogitem->phash.reset();
 		g_logitem_allocator->destroy_and_put(plogitem);
 	}
+	return b_root;
 }
 
 static void rop_processor_release_logon_item(LOGON_ITEM *plogitem)
@@ -335,10 +336,8 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref --;
 	}
-	rop_processor_release_objnode(plogitem, *ppobjnode);
-	if (NULL == plogitem->phash) {
+	if (rop_processor_release_objnode(plogitem, *ppobjnode))
 		plogmap->p[logon_id] = nullptr;
-	}
 }
 
 logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
