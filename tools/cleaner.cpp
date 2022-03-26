@@ -79,12 +79,28 @@ static bool discover_cids(const char *dir, std::vector<std::string> &used)
 	        PR_ATTACH_DATA_BIN, PR_ATTACH_DATA_OBJ);
 	if (!discover_ids(db.get(), query, used))
 		return false;
-	std::sort(used.begin(), used.end());
-	used.erase(std::unique(used.begin(), used.end()), used.end());
 	return true;
 }
 
-static uint64_t delete_unused_cid_files(const std::string &cid_dir,
+static bool discover_mids(const char *dir, std::vector<std::string> &used)
+{
+	used.clear();
+	std::unique_ptr<sqlite3, sql_del> db;
+	auto dbpath = dir + "/exmdb/midb.sqlite3"s;
+	auto ret = access(dbpath.c_str(), R_OK);
+	if (ret < 0 && errno == ENOENT)
+		/* File is allowed to be absent and is equivalent to used={}. */
+		return true;
+	ret = sqlite3_open_v2(dbpath.c_str(), &unique_tie(db),
+	      SQLITE_OPEN_READWRITE, nullptr);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Cannot open %s: %s\n", dbpath.c_str(), sqlite3_errstr(ret));
+		return false;
+	}
+	return discover_ids(db.get(), "SELECT mid_string FROM messages", used);
+}
+
+static uint64_t delete_unused_files(const std::string &cid_dir,
     const std::vector<std::string> &used_ids, time_t upper_bound_ts)
 {
 	std::unique_ptr<DIR, file_deleter> dh(opendir(cid_dir.c_str()));
@@ -92,6 +108,8 @@ static uint64_t delete_unused_cid_files(const std::string &cid_dir,
 		fprintf(stderr, "Cannot open %s: %s\n", cid_dir.c_str(), strerror(errno));
 		return UINT64_MAX;
 	}
+
+	printf("Processing %s...\n", cid_dir.c_str());
 	struct dirent *de;
 	auto dfd = dirfd(dh.get());
 	uint64_t bytes = 0;
@@ -126,8 +144,14 @@ static uint64_t delete_unused_cid_files(const std::string &cid_dir,
 	}
 	char buf[32];
 	HX_unit_size(buf, arsizeof(buf), bytes, 0, 0);
-	printf("Purged %sB\n", buf);
+	printf("Purged %sB from %s\n", buf, cid_dir.c_str());
 	return bytes;
+}
+
+static void sort_unique(std::vector<std::string> &c)
+{
+	std::sort(c.begin(), c.end());
+	c.erase(std::unique(c.begin(), c.end()), c.end());
 }
 
 static bool clean_cid(const char *maildir, time_t upper_bound_ts)
@@ -135,8 +159,22 @@ static bool clean_cid(const char *maildir, time_t upper_bound_ts)
 	std::vector<std::string> used;
 	if (!discover_cids(maildir, used))
 		return false;
-	return delete_unused_cid_files(maildir + "/cid"s,
+	sort_unique(used);
+	return delete_unused_files(maildir + "/cid"s,
 	       std::move(used), upper_bound_ts) < UINT64_MAX;
+}
+
+static bool clean_mid(const char *maildir, time_t upper_bound_ts)
+{
+	std::vector<std::string> used;
+	if (!discover_mids(maildir, used))
+		return false;
+	sort_unique(used);
+	if (delete_unused_files(maildir + "/eml"s, used, upper_bound_ts) == UINT64_MAX)
+		return false;
+	if (delete_unused_files(maildir + "/ext"s, used, upper_bound_ts) == UINT64_MAX)
+		return false;
+	return true;
 }
 
 int main(int argc, const char **argv)
@@ -164,7 +202,8 @@ int main(int argc, const char **argv)
 	 * or, better yet, the cleaning procedure is added to exmdb_server_delete*.)
 	 */
 	auto upper_bound_ts = time(nullptr) - 60;
-	if (!clean_cid(g_maildir, upper_bound_ts)) {
+	if (!clean_cid(g_maildir, upper_bound_ts) ||
+	    !clean_mid(g_maildir, upper_bound_ts)) {
 		fprintf(stderr, "Part of the operation did not complete successfully.\n");
 		return EXIT_FAILURE;
 	}
