@@ -482,13 +482,11 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	char utf8_field[512];
 	TPROPVAL_ARRAY *pproplist;
 	
-	if (paddr->has_value()) {
-		pproplist = tpropval_array_init();
-		if (NULL == pproplist) {
-			return FALSE;
-		}
-	} else {
+	if (!paddr->has_value())
 		return TRUE;
+	pproplist = tpropval_array_init();
+	if (NULL == pproplist) {
+		return FALSE;
 	}
 	if (pset->append_move(pproplist) != 0) {
 		tpropval_array_free(pproplist);
