@@ -330,7 +330,7 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_12 = make_scope_exit(blocks_allocator_stop);
 
-	smtp_parser_init(std::move(scfg));
+	smtp_parser_init(scfg);
 	if (0 != smtp_parser_run()) { 
 		printf("[system]: failed to run smtp parser\n");
 		return EXIT_FAILURE;

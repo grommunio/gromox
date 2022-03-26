@@ -81,7 +81,7 @@ smtp_param g_param;
  *        auth_times         maximum authentification times, session permit
  *        blktime_auths      block interval if max auths is exceeded
  */
-void smtp_parser_init(smtp_param &&param)
+void smtp_parser_init(const smtp_param &param)
 {
 	g_param = std::move(param);
 	g_block_ID              = 0;

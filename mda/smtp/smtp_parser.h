@@ -94,7 +94,7 @@ struct smtp_param {
 	std::string cert_path, cert_passwd, key_path;
 };
 
-extern void smtp_parser_init(smtp_param &&);
+extern void smtp_parser_init(const smtp_param &);
 extern int smtp_parser_run();
 int smtp_parser_process(SMTP_CONTEXT *pcontext);
 extern void smtp_parser_stop();
