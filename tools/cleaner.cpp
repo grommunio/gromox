@@ -53,16 +53,20 @@ static bool discover_ids(sqlite3 *db, const std::string &query,
 
 static bool discover_cids(const char *dir, std::vector<std::string> &used)
 {
+	used.clear();
 	std::unique_ptr<sqlite3, sql_del> db;
 	auto dbpath = dir + "/exmdb/exchange.sqlite3"s;
 	auto ret = sqlite3_open_v2(dbpath.c_str(), &unique_tie(db),
 	           SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
+		/*
+		 * Absence of this file could be seen as used={}. But the
+		 * absence would indicate a bigger issue elsewhere... Abort.
+		 */
 		fprintf(stderr, "Cannot open %s: %s\n", dbpath.c_str(), sqlite3_errstr(ret));
 		return false;
 	}
 
-	used.clear();
 	auto query = fmt::format("SELECT propval FROM message_properties "
 	             "WHERE proptag IN ({},{},{},{},{},{})",
 	             PR_TRANSPORT_MESSAGE_HEADERS,
@@ -142,6 +146,12 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	if (g_maildir == nullptr) {
 		fprintf(stderr, "You need to specify the mailbox directory with -d\n");
+		return EXIT_FAILURE;
+	}
+	/* Trivial check to help fend off dirs that do not look like a mailbox. */
+	auto dbpath = g_maildir + "/exmdb"s;
+	if (access(dbpath.c_str(), X_OK) < 0) {
+		fprintf(stderr, "%s: %s\n", dbpath.c_str(), strerror(errno));
 		return EXIT_FAILURE;
 	}
 	/*
