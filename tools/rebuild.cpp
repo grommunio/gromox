@@ -98,6 +98,8 @@ int main(int argc, const char **argv)
 		printf("Failed to initialize sqlite engine\n");
 		return 8;
 	}
+
+	printf("Working on %s\n", temp_path);
 	{
 	auto cl_0 = make_scope_exit([]() { sqlite3_shutdown(); });
 	snprintf(temp_path1, 256, "%s/exmdb/new.sqlite3", argv[1]);
