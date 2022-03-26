@@ -476,12 +476,12 @@ void gi_name_map_read(const void *buf, size_t bufsize, gi_name_map &map)
 		throw YError("PG-1108");
 	for (size_t n = 0; n < max; ++n) {
 		uint32_t proptag;
-		PROPERTY_NAME propname;
+		PROPERTY_NAME propname{};
 		if (ep.g_uint32(&proptag) != EXT_ERR_SUCCESS ||
 		    ep.g_propname(&propname) != EXT_ERR_SUCCESS)
 			throw YError("PG-1109");
 		try {
-			map.insert_or_assign(proptag, std::move(propname));
+			map.insert_or_assign(proptag, propname);
 		} catch (const std::bad_alloc &) {
 			free(propname.pname);
 			throw;

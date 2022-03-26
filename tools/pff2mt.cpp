@@ -285,21 +285,26 @@ static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t
 	return 0;
 }
 
-static bool tpropval_subject_handler(const uint8_t *buf, TPROPVAL_ARRAY *ar, TAGGED_PROPVAL &&pv)
+/**
+ * Check whether PR_SUBJECT has a \x01 marker at the front, and if so, adjust
+ * @pv to contain the actual subject text set the corrected PR_SUBJECT, and set
+ * PR_SUBJECT_PREFIX too.
+ */
+static bool tpropval_subject_handler(TPROPVAL_ARRAY *ar, const TAGGED_PROPVAL &pv)
 {
 	/* MS-PST v9 §2.5.3.1.1.1 */
-	auto s = reinterpret_cast<const char *>(buf);
+	auto buf = reinterpret_cast<const uint8_t *>(pv.pvalue);
+	auto s = reinterpret_cast<const char *>(pv.pvalue);
 	if (buf[0] != 0x01 || buf[1] == 0x00 || strnlen(s, buf[1]) < buf[1])
 		return false;
-	pv.pvalue = deconst(buf + buf[1] + 1);
-	if (ar->set(pv) != 0)
+	TAGGED_PROPVAL pv2 = {pv.proptag, deconst(buf) + buf[1] + 1};
+	if (ar->set(pv2) != 0)
 		throw std::bad_alloc();
 	if (buf[1] == 0x01)
 		return true;
 	std::string prefix(s + 2, buf[1] - 1);
-	pv.proptag = PR_SUBJECT_PREFIX;
-	pv.pvalue = deconst(prefix.c_str());
-	if (ar->set(pv) != 0)
+	TAGGED_PROPVAL pv3 = {PR_SUBJECT_PREFIX, deconst(prefix.c_str())};
+	if (ar->set(pv3) != 0)
 		throw std::bad_alloc();
 	return true;
 }
@@ -618,7 +623,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 	}
 	bool done = false;
 	if (pv.proptag == PR_SUBJECT)
-		done = tpropval_subject_handler(buf.get(), ar, std::move(pv));
+		done = tpropval_subject_handler(ar, pv);
 	if (!done && ar->set(pv) != 0)
 		throw std::bad_alloc();
 }

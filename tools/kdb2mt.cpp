@@ -857,7 +857,7 @@ static gi_name_map do_namemap(driver &drv)
 		pn.kind = MNID_ID;
 		pn.guid = row.guid;
 		for (pn.lid = row.lid_min; pn.lid < row.lid_max; ++pn.lid)
-			map.emplace(PROP_TAG(PT_UNSPECIFIED, pn.lid - row.lid_min + row.base), std::move(pn));
+			map.emplace(PROP_TAG(PT_UNSPECIFIED, pn.lid - row.lid_min + row.base), pn);
 	}
 	do_namemap_table(drv, map);
 	return map;
