@@ -485,12 +485,13 @@ static BOOL ab_tree_load_tree(int domain_id,
 				ab_tree_put_abnode(pabnode);
 				return FALSE;
 			}
+			auto child_id = cls.child_id;
 			pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
 			if (pabnode->d_info == nullptr)
 				return false;
 			auto pclass = &pabnode->stree;
 			ptree->add_child(pgroup, pclass, SIMPLE_TREE_ADD_LAST);
-			if (!ab_tree_load_class(cls.child_id, ptree, pclass, pbase))
+			if (!ab_tree_load_class(child_id, ptree, pclass, pbase))
 				return FALSE;
 		}
 		
