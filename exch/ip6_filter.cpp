@@ -37,32 +37,40 @@ static unsigned int g_max_within_interval, g_audit_max;
 
 static size_t ip6tl_collect(time_point limit)
 {
+#if __cplusplus >= 202000L
+	return std::erase_if(g_templist, [&](auto &&e) { return e.second > limit; });
+#else
 	size_t coll = 0;
 	for (auto i = g_templist.begin(); i != g_templist.end(); ) {
-		auto next = std::next(i);
 		auto aff = i->second > limit;
 		if (aff) {
-			g_templist.erase(i);
 			++coll;
+			i = g_templist.erase(i);
+		} else {
+			++i;
 		}
-		i = std::move(next);
 	}
 	return coll;
+#endif
 }
 
 static size_t ip6au_collect(time_point limit)
 {
+#if __cplusplus >= 202000L
+	return std::erase_if(g_auditlist, [&](auto &&e) { return limit - e.second.last >= g_audit_intvl; });
+#else
 	size_t coll = 0;
 	for (auto i = g_auditlist.begin(); i != g_auditlist.end(); ) {
-		auto next = std::next(i);
 		auto &au = i->second;
 		if (limit - au.last >= g_audit_intvl) {
-			g_auditlist.erase(i);
+			i = g_auditlist.erase(i);
 			++coll;
+		} else {
+			++i;
 		}
-		i = std::move(next);
 	}
 	return coll;
+#endif
 }
 
 static BOOL ip6flt_add(const char *addr, int fwd)
