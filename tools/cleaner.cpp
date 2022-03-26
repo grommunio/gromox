@@ -41,17 +41,17 @@ static constexpr HXoption g_options_table[] = {
 };
 
 static bool discover_ids(sqlite3 *db, const std::string &query,
-    std::vector<uint64_t> &used)
+    std::vector<std::string> &used)
 {
 	auto stm = gx_sql_prep(db, query.c_str());
 	if (stm == nullptr)
 		return false;
 	while (stm.step() == SQLITE_ROW)
-		used.push_back(stm.col_int64(0));
+		used.push_back(stm.col_text(0));
 	return true;
 }
 
-static bool discover_cids(const char *dir, std::vector<uint64_t> &used)
+static bool discover_cids(const char *dir, std::vector<std::string> &used)
 {
 	std::unique_ptr<sqlite3, sql_del> db;
 	auto dbpath = dir + "/exmdb/exchange.sqlite3"s;
@@ -81,7 +81,7 @@ static bool discover_cids(const char *dir, std::vector<uint64_t> &used)
 }
 
 static uint64_t delete_unused_cid_files(const std::string &cid_dir,
-    const std::vector<uint64_t> &used_ids, time_t upper_bound_ts)
+    const std::vector<std::string> &used_ids, time_t upper_bound_ts)
 {
 	std::unique_ptr<DIR, file_deleter> dh(opendir(cid_dir.c_str()));
 	if (dh == nullptr) {
@@ -94,13 +94,7 @@ static uint64_t delete_unused_cid_files(const std::string &cid_dir,
 	while ((de = readdir(dh.get())) != nullptr) {
 		if (*de->d_name == '.')
 			continue;
-		char *end = nullptr;
-		auto fileid = strtoul(de->d_name, &end, 0);
-		if (*end != '\0') {
-			printf("%s: not recognized\n", de->d_name);
-			continue;
-		}
-		if (std::binary_search(used_ids.begin(), used_ids.end(), fileid)) {
+		if (std::binary_search(used_ids.begin(), used_ids.end(), de->d_name)) {
 			if (g_verbose)
 				printf("%s: still in use\n", de->d_name);
 			continue;
@@ -134,7 +128,7 @@ static uint64_t delete_unused_cid_files(const std::string &cid_dir,
 
 static bool clean_cid(const char *maildir, time_t upper_bound_ts)
 {
-	std::vector<uint64_t> used;
+	std::vector<std::string> used;
 	if (!discover_cids(maildir, used))
 		return false;
 	return delete_unused_cid_files(maildir + "/cid"s,
