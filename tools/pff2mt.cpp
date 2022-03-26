@@ -679,10 +679,9 @@ static tarray_set_ptr item_to_tarray_set(libpff_item_t *item)
 		if (tprops == nullptr)
 			throw std::bad_alloc();
 		recordset_to_tpropval_a(rset.get(), tprops.get());
-		auto ret = tset->append_move(tprops.get());
+		auto ret = tset->append_move(std::move(tprops));
 		if (ret == ENOMEM)
 			throw std::bad_alloc();
-		tprops.release();
 	}
 	return tset;
 }
@@ -825,9 +824,8 @@ static int do_recips(unsigned int depth, const parent_desc &parent, libpff_item_
 		if (props == nullptr)
 			throw std::bad_alloc();
 		recordset_to_tpropval_a(rset.get(), props.get());
-		if (parent.message->children.prcpts->append_move(props.get()) == ENOMEM)
+		if (parent.message->children.prcpts->append_move(std::move(props)) == ENOMEM)
 			throw std::bad_alloc();
-		props.release();
 	}
 	return 0;
 }

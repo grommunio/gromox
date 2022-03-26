@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <unistd.h>
+#include <utility>
 #include <sys/stat.h>
 #include <gromox/database.h>
 #include <gromox/endian.hpp>
@@ -2947,14 +2948,12 @@ BOOL exmdb_server_update_message_instance_rcpts(
 			>= MAX_RECIPIENT_NUMBER) {
 			return FALSE;
 		}
-		auto prcpt = mod.dup();
+		tpropval_array_ptr prcpt(mod.dup());
 		if (NULL == prcpt) {
 			return FALSE;
 		}
-		if (pmsgctnt->children.prcpts->append_move(prcpt) != 0) {
-			tpropval_array_free(prcpt);
+		if (pmsgctnt->children.prcpts->append_move(std::move(prcpt)) != 0)
 			return FALSE;
-		}
 	}
 	return TRUE;
 }

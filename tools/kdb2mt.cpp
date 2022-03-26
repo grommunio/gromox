@@ -98,7 +98,7 @@ struct ace_list final {
 struct kdb_item final {
 	kdb_item(driver &drv) : m_drv(drv) {}
 	static std::unique_ptr<kdb_item> load_hid_base(driver &, uint32_t hid);
-	TPROPVAL_ARRAY *get_props();
+	tpropval_array_ptr &get_props();
 	size_t get_sub_count() { return m_sub_hids.size(); }
 	std::unique_ptr<kdb_item> get_sub_item(size_t idx);
 
@@ -203,7 +203,7 @@ void ace_list::emplace(std::string &&s, uint32_t r)
 	    !props->set(PROP_TAG_MEMBERRIGHTS, &r))
 		throw std::bad_alloc();
 	PERMISSION_DATA d = {ROW_ADD, {2, props->ppropval}};
-	if (!m_rdata->append_move(props.release()))
+	if (!m_rdata->append_move(std::move(props)))
 		throw std::bad_alloc();
 	m_rows.emplace_back(d);
 }
@@ -572,7 +572,7 @@ uint32_t driver::hid_from_eid(const BINARY &eid)
 
 uint32_t driver::hid_from_mst(kdb_item &item, uint32_t proptag)
 {
-	auto props = item.get_props();
+	auto &props = item.get_props();
 	auto eid = props->get<BINARY>(proptag);
 	if (eid == nullptr)
 		return 0;
@@ -581,7 +581,7 @@ uint32_t driver::hid_from_mst(kdb_item &item, uint32_t proptag)
 
 uint32_t driver::hid_from_ren(kdb_item &item, unsigned int idx)
 {
-	auto props = item.get_props();
+	auto &props = item.get_props();
 	auto ba = props->get<BINARY_ARRAY>(PR_ADDITIONAL_REN_ENTRYIDS);
 	if (ba == nullptr || idx >= ba->count)
 		return 0;
@@ -791,11 +791,11 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 	return yi;
 }
 
-TPROPVAL_ARRAY *kdb_item::get_props()
+tpropval_array_ptr &kdb_item::get_props()
 {
 	if (m_props == nullptr)
 		m_props = hid_to_propval_a(m_drv, m_hid);
-	return m_props.get();
+	return m_props;
 }
 
 std::unique_ptr<kdb_item> kdb_item::get_sub_item(size_t idx)
@@ -865,7 +865,7 @@ static gi_name_map do_namemap(driver &drv)
 
 static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
-	auto props = item.get_props();
+	auto &props = item.get_props();
 	if (g_show_tree) {
 		gi_dump_tpropval_a(depth, *props);
 	} else {
@@ -916,7 +916,7 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 static message_content_ptr build_message(driver &drv, unsigned int depth,
     kdb_item &item)
 {
-	auto props = item.get_props();
+	auto &props = item.get_props();
 	message_content_ptr ctnt(message_content_init());
 	if (ctnt == nullptr)
 		throw std::bad_alloc();
@@ -966,10 +966,9 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 
 static int do_recip(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
-	auto props = item.get_props();
-	if (parent.message->children.prcpts->append_move(props) == ENOMEM)
+	auto &props = item.get_props();
+	if (parent.message->children.prcpts->append_move(std::move(props)) == ENOMEM)
 		throw std::bad_alloc();
-	item.m_props.release();
 	return 0;
 }
 
@@ -1045,14 +1044,14 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	attachment_content_ptr atc(attachment_content_init());
 	if (atc == nullptr)
 		throw std::bad_alloc();
-	auto props = item.get_props();
+	auto &props = item.get_props();
 	auto mode = props->get<uint32_t>(PR_ATTACH_METHOD);
 
 	if (mode == nullptr)
 		fprintf(stderr, "PK-1005: Attachment %u without PR_ATTACH_METHOD.\n",
 		        static_cast<unsigned int>(item.m_hid));
 	else if (*mode == ATTACH_BY_VALUE && *g_atxdir != '\0')
-		do_attach_byval(drv, depth, item.m_hid, props);
+		do_attach_byval(drv, depth, item.m_hid, props.get());
 
 	auto saved_show_tree = g_show_tree;
 	g_show_tree = false;
@@ -1093,7 +1092,7 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 	} else if (item.m_mapitype == MAPI_ATTACH) {
 		ret = do_attach(drv, depth, parent, item);
 	} else {
-		auto props = item.get_props();
+		auto &props = item.get_props();
 		if (g_show_tree)
 			gi_dump_tpropval_a(depth, *props);
 	}

@@ -370,16 +370,14 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 		if (*pguid == sec_guid)
 			return prootobj->pprof_set->pparray[i];
 	}
-	auto pproplist = tpropval_array_init();
+	tpropval_array_ptr pproplist(tpropval_array_init());
 	if (NULL == pproplist) {
 		return NULL;
 	}
 	if (pproplist->set(PROP_TAG_PROFILESCLSID, &sec_guid) != 0 ||
-	    prootobj->pprof_set->append_move(pproplist) != 0) {
-		tpropval_array_free(pproplist);
+	    prootobj->pprof_set->append_move(std::move(pproplist)) != 0)
 		return NULL;
-	}
-	return pproplist;
+	return prootobj->pprof_set->back();
 }
 
 void OBJECT_TREE::touch_profile_sec()

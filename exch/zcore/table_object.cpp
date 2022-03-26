@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <utility>
 #include <vector>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
@@ -49,10 +50,11 @@ static int storetbl_add_row(table_object *tbl, const USER_INFO &info,
 		return ENOMEM;
 	if (!store->get_properties(&tags, props))
 		return 0;
-	auto pdup = props->dup(); /* move from cu_alloc space to me_alloc */
+	/* props is from the cu_alloc allocator; by duplication, we make one with me_alloc */
+	tpropval_array_ptr pdup(props->dup());
 	if (pdup == nullptr)
 		return ENOMEM;
-	return tbl->fixed_data->append_move(pdup);
+	return tbl->fixed_data->append_move(std::move(pdup));
 }
 
 static int storetbl_refresh(table_object *tbl)

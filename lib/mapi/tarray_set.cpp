@@ -47,7 +47,7 @@ void tarray_set::erase(uint32_t index)
 	tpropval_array_free(parray);
 }
 
-int tarray_set::append_move(TPROPVAL_ARRAY *pproplist)
+int tarray_set::append_move(tpropval_array_ptr &&pproplist)
 {
 	auto pset = this;
 	
@@ -62,19 +62,18 @@ int tarray_set::append_move(TPROPVAL_ARRAY *pproplist)
 			return ENOMEM;
 		pset->pparray = list;
 	}
-	pset->pparray[pset->count++] = pproplist;
+	pset->pparray[pset->count++] = pproplist.release();
 	return 0;
 }
 
 TPROPVAL_ARRAY *tarray_set::emplace()
 {
-	auto p = tpropval_array_init();
+	tpropval_array_ptr p(tpropval_array_init());
 	if (p == nullptr)
 		return nullptr;
-	auto ret = append_move(p);
+	auto ret = append_move(std::move(p));
 	if (ret == 0)
-		return pparray[count-1];
-	tpropval_array_free(p);
+		return back();
 	errno = ret;
 	return nullptr;
 }
@@ -89,14 +88,13 @@ tarray_set *tarray_set::dup() const
 		return NULL;
 	}
 	for (size_t i = 0; i < pset->count; ++i) {
-		auto pproplist = pset->pparray[i]->dup();
+		tpropval_array_ptr pproplist(pset->pparray[i]->dup());
 		if (NULL == pproplist) {
 			tarray_set_free(pset1);
 			return NULL;
 		}
-		auto ret = pset1->append_move(pproplist);
+		auto ret = pset1->append_move(std::move(pproplist));
 		if (ret != 0) {
-			tpropval_array_free(pproplist);
 			tarray_set_free(pset1);
 			errno = ret;
 			return NULL;

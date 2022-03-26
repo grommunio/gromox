@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <gromox/defs.h>
 
@@ -1803,6 +1804,12 @@ struct TPROPVAL_ARRAY {
 	TAGGED_PROPVAL *ppropval;
 };
 
+struct mapidefs1_del {
+	inline void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
+};
+
+using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, mapidefs1_del>;
+
 struct LTPROPVAL_ARRAY {
 	uint32_t count;
 	TAGGED_PROPVAL *propval;
@@ -1811,7 +1818,9 @@ struct LTPROPVAL_ARRAY {
 struct tarray_set {
 	void erase(uint32_t index);
 	TPROPVAL_ARRAY *emplace();
-	int append_move(TPROPVAL_ARRAY *);
+	inline TPROPVAL_ARRAY *back() { return pparray[count-1]; }
+	inline const TPROPVAL_ARRAY *back() const { return pparray[count-1]; }
+	int append_move(tpropval_array_ptr &&);
 	tarray_set *dup() const;
 
 	uint32_t count;

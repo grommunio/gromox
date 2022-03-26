@@ -28,7 +28,6 @@ struct gi_delete : public gromox::stdlib_delete {
 	inline void operator()(ATTACHMENT_CONTENT *x) const { attachment_content_free(x); }
 	inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
 	inline void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
-	inline void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
 	inline void operator()(TARRAY_SET *x) const { tarray_set_free(x); }
 };
 
@@ -74,7 +73,6 @@ using attachment_content_ptr = std::unique_ptr<ATTACHMENT_CONTENT, gi_delete>;
 using gi_folder_map_t = std::unordered_map<uint32_t, tgt_folder>;
 using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, gi_delete>;
 using propname_array_ptr = std::unique_ptr<PROPNAME_ARRAY, gi_delete>;
-using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, gi_delete>;
 using tarray_set_ptr = std::unique_ptr<TARRAY_SET, gi_delete>;
 
 extern const char *g_storedir;
