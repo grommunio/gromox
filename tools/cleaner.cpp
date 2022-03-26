@@ -162,8 +162,12 @@ int main(int argc, const char **argv)
 	 * Querying the database is not atomic, and the server may produce new
 	 * attachments/bodies at any time. Therefore, place a limit on what
 	 * files we will consider out of all the IDs discovered.
+	 *
+	 * This is still not completely race-free, as new new attachments are
+	 * created on disk before the database is updated. (Either that changes,
+	 * or, better yet, the cleaning procedure is added to exmdb_server_delete*.)
 	 */
-	auto upper_bound_ts = time(nullptr);
+	auto upper_bound_ts = time(nullptr) - 60;
 	if (!clean_cid(g_maildir, upper_bound_ts)) {
 		fprintf(stderr, "Part of the operation did not complete successfully.\n");
 		return EXIT_FAILURE;
