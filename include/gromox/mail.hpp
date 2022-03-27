@@ -13,6 +13,11 @@ using MAIL_MIME_ENUM = void (*)(MIME *, void*);
 
 struct MIME_POOL;
 struct GX_EXPORT MAIL {
+	/*
+	 * Default-construction is only allowed for simplifying initialization.
+	 * When used, you must move-assign a new MAIL obj with proper pool ptr
+	 * when actually using a MAIL object.
+	 */
 	MAIL() = default;
 	MAIL(std::shared_ptr<MIME_POOL>);
 	MAIL(MAIL &&) = delete;
