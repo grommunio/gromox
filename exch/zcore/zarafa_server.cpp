@@ -853,6 +853,7 @@ uint32_t zarafa_server_unloadobject(GUID hsession, uint32_t hobject)
 }
 
 static uint32_t zs_openentry_emsab(GUID, BINARY, uint32_t, const char *, uint32_t, uint8_t *, uint32_t *);
+static uint32_t zs_openentry_zcsab(GUID, BINARY, uint32_t, uint8_t *, uint32_t *);
 
 uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	uint32_t flags, uint8_t *pmapi_type, uint32_t *phobject)
@@ -877,6 +878,9 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	    essdn, arsizeof(essdn))) {
 		return zs_openentry_emsab(hsession, entryid, flags, essdn,
 		       address_type, pmapi_type, phobject);
+	} else if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidZCSAB) {
+		return zs_openentry_zcsab(hsession, entryid, flags,
+		       pmapi_type, phobject);
 	}
 
 	/* Arbitrary GUID, it's probably a FOLDER_ENTRYID/MESSAGE_ENTRYID. */
@@ -948,6 +952,15 @@ static uint32_t zs_openentry_emsab(GUID hsession, BINARY entryid,
 	pinfo.reset();
 	return zarafa_server_openstoreentry(hsession,
 		handle, entryid, flags, pmapi_type, phobject);
+}
+
+static uint32_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
+    uint8_t *mapi_type, uint32_t *objh)
+{
+	if (entryid.cb < 28)
+		return ecInvalidParam;
+	BINARY lower_eid = {entryid.cb - 28, entryid.pb + 28};
+	return zarafa_server_openentry(ses, lower_eid, flags, mapi_type, objh);
 }
 
 uint32_t zarafa_server_openstoreentry(GUID hsession,

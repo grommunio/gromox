@@ -214,6 +214,26 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
+static BINARY *zcsab_prepend(const BINARY *lower_eid, uint32_t type, uint32_t ofs)
+{
+	if (lower_eid == nullptr)
+		return nullptr;
+	EXT_PUSH ep;
+	auto new_eid = cu_alloc<BINARY>();
+	if (new_eid == nullptr)
+		return nullptr;
+	new_eid->pb = cu_alloc<uint8_t>(256);
+	if (new_eid->pb == nullptr || !ep.init(new_eid->pb, 256, EXT_FLAG_UTF16) ||
+	    ep.p_uint32(0) != EXT_ERR_SUCCESS ||
+	    ep.p_guid(muidZCSAB) != EXT_ERR_SUCCESS ||
+	    ep.p_uint32(type) != EXT_ERR_SUCCESS ||
+	    ep.p_uint32(ofs) != EXT_ERR_SUCCESS ||
+	    ep.p_bytes(lower_eid->pb, lower_eid->cb) != EXT_ERR_SUCCESS)
+		return nullptr;
+	new_eid->cb = ep.m_offset;
+	return new_eid;
+}
+
 static BINARY* container_object_folder_to_addressbook_entryid(
 	BOOL b_private, int db_id, uint64_t folder_id)
 {
@@ -229,38 +249,6 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_CONTAINER;
-	tmp_entryid.px500dn = x500dn;
-	pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
-		return NULL;
-	}
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr ||
-	    !ext_push.init(pbin->pb, 256, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
-		return NULL;
-	pbin->cb = ext_push.m_offset;
-	return pbin;
-}
-
-static BINARY* container_object_message_to_addressbook_entryid(
-	BOOL b_private, int db_id, uint64_t message_id, int num)
-{
-	int len;
-	BINARY *pbin;
-	char x500dn[128];
-	EXT_PUSH ext_push;
-	EMSAB_ENTRYID tmp_entryid;
-	uint8_t type = b_private ? LOC_TYPE_PRIVATE_MESSAGE : LOC_TYPE_PUBLIC_MESSAGE;
-	
-	strcpy(x500dn, "/exmdb=");
-	common_util_exmdb_locinfo_to_string(
-		type, db_id, message_id, x500dn + 7);
-	len = strlen(x500dn);
-	sprintf(x500dn + len, ":%d", num);
-	tmp_entryid.flags = 0;
-	tmp_entryid.version = 1;
-	tmp_entryid.type = DT_REMOTE_MAILUSER;
 	tmp_entryid.px500dn = x500dn;
 	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
@@ -340,6 +328,10 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 	    pinfo->cpid, pcontainer->id.exmdb_id.folder_id, nullptr, 0,
 	    nullptr, nullptr, &table_id, &row_num))
 		return FALSE;
+	auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
+	auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
+	if (pstore == nullptr || mapi_type != ZMG_STORE)
+		return false;
 	if (row_num > 0) {
 		proptags.pproptag = proptag_buff;
 		if (!container_object_get_pidlids(&proptags))
@@ -367,10 +359,6 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 		if (NULL == pparent_entryid) {
 			return FALSE;
 		}
-		auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
-		auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
-		if (pstore == nullptr || mapi_type != ZMG_STORE)
-			return FALSE;
 	} else {
 		tmp_set.count = 0;
 	}
@@ -428,12 +416,11 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			if (ppropvals->set(PR_PARENT_ENTRYID, pparent_entryid) != 0) {
 				return FALSE;
 			}
-			auto pvalue = tmp_set.pparray[i]->getval(PidTagMid);
-			if (NULL == pvalue) {
+			auto msgid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
+			if (msgid == nullptr)
 				return FALSE;
-			}
-			pvalue = container_object_message_to_addressbook_entryid(
-								TRUE, pinfo->user_id, *(uint64_t*)pvalue, j);
+			auto pvalue = zcsab_prepend(common_util_to_message_entryid(pstore,
+			              pcontainer->id.exmdb_id.folder_id, *msgid), MAPI_MAILUSER, 3*i+j);
 			if (pvalue == nullptr ||
 			    ppropvals->set(PR_ENTRYID, pvalue) != 0 ||
 			    ppropvals->set(PR_RECORD_KEY, pvalue) != 0 ||
