@@ -309,7 +309,7 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 {
 	char x500dn[1024];
 	EXT_PUSH ext_push;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID tmp_entryid;
 	
 	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;
@@ -335,7 +335,7 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 {
 	char x500dn[1024];
 	EXT_PUSH ext_push;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID tmp_entryid;
 	
 	if (!common_util_public_to_essdn(domainname, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;

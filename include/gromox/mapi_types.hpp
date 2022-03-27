@@ -228,7 +228,7 @@ struct PROBLEM_ARRAY {
 	void transform(const uint16_t *);
 };
 
-struct ADDRESSBOOK_ENTRYID {
+struct EMSAB_ENTRYID {
 	uint32_t flags;
 	FLATUID provider_uid; /* muidEMSAB */
 	uint32_t version; /* should be 0x00000001 */

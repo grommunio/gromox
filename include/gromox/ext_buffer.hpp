@@ -55,9 +55,9 @@ struct RPC_HEADER_EXT {
 	uint16_t size_actual;
 };
 
-struct ADDRESSBOOK_ENTRYID;
 struct APPOINTMENT_RECUR_PAT;
 struct EID_ARRAY;
+struct EMSAB_ENTRYID;
 struct EXT_RULE_ACTIONS;
 struct FLAGGED_PROPVAL;
 struct FOLDER_ENTRYID;
@@ -150,7 +150,7 @@ struct EXT_PULL {
 	int g_modrcpt_row(PROPTAG_ARRAY *tag, MODIFYRECIPIENT_ROW *);
 	int g_permission_data(PERMISSION_DATA *);
 	int g_rule_data(RULE_DATA *);
-	int g_abk_eid(ADDRESSBOOK_ENTRYID *);
+	int g_abk_eid(EMSAB_ENTRYID *);
 	int g_oneoff_eid(ONEOFF_ENTRYID *);
 	int g_oneoff_a(ONEOFF_ARRAY *);
 	int g_eid_a(EID_ARRAY *);
@@ -241,7 +241,7 @@ struct EXT_PUSH {
 	int p_readrecipient_row(const PROPTAG_ARRAY &tags, const READRECIPIENT_ROW &);
 	int p_permission_data(const PERMISSION_DATA &);
 	int p_rule_data(const RULE_DATA &);
-	int p_abk_eid(const ADDRESSBOOK_ENTRYID &);
+	int p_abk_eid(const EMSAB_ENTRYID &);
 	int p_oneoff_eid(const ONEOFF_ENTRYID &);
 	int p_persistdata_a(const PERSISTDATA_ARRAY &);
 	int p_eid_a(const EID_ARRAY &);

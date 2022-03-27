@@ -3669,7 +3669,7 @@ BOOL common_util_addressbook_entryid_to_username(const BINARY *pentryid_bin,
      char *username, size_t ulen)
 {
 	EXT_PULL ext_pull;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID tmp_entryid;
 
 	ext_pull.init(pentryid_bin->pb, pentryid_bin->cb, common_util_alloc, 0);
 	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
@@ -3681,7 +3681,7 @@ BOOL common_util_addressbook_entryid_to_essdn(const BINARY *pentryid_bin,
     char *pessdn, size_t dnmax)
 {
 	EXT_PULL ext_pull;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID tmp_entryid;
 
 	ext_pull.init(pentryid_bin->pb, pentryid_bin->cb, common_util_alloc, 0);
 	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
@@ -3872,7 +3872,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 {
 	char x500dn[1024];
 	EXT_PUSH ext_push;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID tmp_entryid;
 	
 	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;
@@ -4621,7 +4621,7 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 	BINARY *pbin;
 	EXT_PULL ext_pull;
 	char tmp_name[UADDR_SIZE];
-	ADDRESSBOOK_ENTRYID ab_entryid;
+	EMSAB_ENTRYID ab_entryid;
 	
 	if (!cu_get_property(db_table::msg_props, message_id, 0,
 	    psqlite, PR_CREATOR_ENTRYID, reinterpret_cast<void **>(&pbin)))

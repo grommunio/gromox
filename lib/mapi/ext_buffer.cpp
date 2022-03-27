@@ -1540,7 +1540,7 @@ int EXT_PULL::g_rule_data(RULE_DATA *r)
 	return g_tpropval_a(&r->propvals);
 }
 
-int EXT_PULL::g_abk_eid(ADDRESSBOOK_ENTRYID *r)
+int EXT_PULL::g_abk_eid(EMSAB_ENTRYID *r)
 {
 	TRY(g_uint32(&r->flags));
 	TRY(g_guid(&r->provider_uid));
@@ -3050,7 +3050,7 @@ int EXT_PUSH::p_rule_data(const RULE_DATA &r)
 	return p_tpropval_a(r.propvals);
 }
 
-int EXT_PUSH::p_abk_eid(const ADDRESSBOOK_ENTRYID &r)
+int EXT_PUSH::p_abk_eid(const EMSAB_ENTRYID &r)
 {
 	TRY(p_uint32(r.flags));
 	TRY(p_guid(r.provider_uid));
@@ -3422,7 +3422,7 @@ uint8_t *EXT_PUSH::release()
 bool emsab_to_parts(EXT_PULL &ser, char *type, size_t tsize,
     char *addr, size_t asize)
 {
-	ADDRESSBOOK_ENTRYID eid;
+	EMSAB_ENTRYID eid;
 	if (ser.g_abk_eid(&eid) != EXT_ERR_SUCCESS || eid.type != DT_MAILUSER)
 		return false;
 	if (type != nullptr)
@@ -3434,7 +3434,7 @@ bool emsab_to_parts(EXT_PULL &ser, char *type, size_t tsize,
 bool emsab_to_email(EXT_PULL &ser, ESSDN_TO_USERNAME e2u,
     char *addr, size_t asize)
 {
-	ADDRESSBOOK_ENTRYID eid;
+	EMSAB_ENTRYID eid;
 	if (ser.g_abk_eid(&eid) != EXT_ERR_SUCCESS || eid.type != DT_MAILUSER)
 		return false;
 	return e2u(eid.px500dn, addr, asize);

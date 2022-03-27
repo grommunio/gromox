@@ -1259,7 +1259,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 	char dn[1280]{};
 	GUID temp_guid;
 	EXT_PUSH ext_push;
-	ADDRESSBOOK_ENTRYID ab_entryid;
+	EMSAB_ENTRYID ab_entryid;
 	
 	*ppvalue = nullptr;
 	auto node_type = ab_tree_get_node_type(pnode);

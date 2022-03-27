@@ -220,7 +220,7 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	BINARY *pbin;
 	char x500dn[128];
 	EXT_PUSH ext_push;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID tmp_entryid;
 	uint8_t type = b_private ? LOC_TYPE_PRIVATE_FOLDER : LOC_TYPE_PUBLIC_FOLDER;
 	
 	memcpy(x500dn, "/exmdb=", 7);
@@ -251,7 +251,7 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	BINARY *pbin;
 	char x500dn[128];
 	EXT_PUSH ext_push;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID tmp_entryid;
 	uint8_t type = b_private ? LOC_TYPE_PRIVATE_MESSAGE : LOC_TYPE_PUBLIC_MESSAGE;
 	
 	memcpy(x500dn, "/exmdb=", 7);
@@ -472,7 +472,7 @@ BOOL container_object_fetch_special_property(
 {
 	void *pvalue;
 	EXT_PUSH ext_push;
-	ADDRESSBOOK_ENTRYID ab_entryid;
+	EMSAB_ENTRYID ab_entryid;
 	
 	switch (proptag) {
 	case PROP_TAG_ABPROVIDERID: {

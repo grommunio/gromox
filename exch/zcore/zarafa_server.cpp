@@ -818,7 +818,7 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 	char x500dn[1024];
 	EXT_PUSH ext_push;
 	char display_name[1024];
-	ADDRESSBOOK_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID tmp_entryid;
 	
 	if (!system_services_get_user_displayname(username,
 	    display_name, arsizeof(display_name)) ||
@@ -3135,7 +3135,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	TAGGED_PROPVAL *ppropval;
 	TAGGED_PROPVAL tmp_propval;
 	ONEOFF_ENTRYID oneoff_entry;
-	ADDRESSBOOK_ENTRYID ab_entryid;
+	EMSAB_ENTRYID ab_entryid;
 	
 	if (prcpt_list->count >= 0x7FEF || (MODRECIP_ADD != flags &&
 		MODRECIP_MODIFY != flags && MODRECIP_REMOVE != flags)) {

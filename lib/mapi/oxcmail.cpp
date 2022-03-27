@@ -322,7 +322,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = muidEMSAB;
