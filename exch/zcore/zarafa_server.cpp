@@ -1109,24 +1109,17 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 	return ecSuccess;
 }
 
+static uint32_t zs_openemsab(USER_INFO_REF &&, BINARY eid, int base_id, uint8_t *, uint32_t *);
+
 uint32_t zarafa_server_openabentry(GUID hsession,
 	BINARY entryid, uint8_t *pmapi_type, uint32_t *phobject)
 {
-	GUID guid;
-	int user_id;
-	uint8_t type;
-	int domain_id;
-	uint8_t loc_type;
-	char essdn[1024];
-	char tmp_buff[16];
-	uint32_t address_type;
-	CONTAINER_ID container_id;
-	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
 	int base_id = pinfo->org_id == 0 ? -pinfo->domain_id : pinfo->org_id;
 	if (0 == entryid.cb) {
+		CONTAINER_ID container_id;
 		container_id.abtree_id.base_id = base_id;
 		container_id.abtree_id.minid = SPECIAL_CONTAINER_ROOT;
 		auto contobj = container_object::create(CONTAINER_TYPE_ABTREE, container_id);
@@ -1138,12 +1131,27 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			return ecError;
 		return ecSuccess;
 	}
+	if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidEMSAB)
+		return zs_openemsab(std::move(pinfo), entryid, base_id, pmapi_type, phobject);
+	return ecInvalidParam;
+}
+
+static uint32_t zs_openemsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_id,
+    uint8_t *pmapi_type, uint32_t *phobject)
+{
+	int user_id, domain_id;
+	char essdn[1024];
+	uint32_t address_type;
+
 	if (!common_util_parse_addressbook_entryid(entryid, &address_type,
 	    essdn, GX_ARRAY_SIZE(essdn))) {
 		return ecInvalidParam;
 	}
 
 	if (address_type == DT_CONTAINER) {
+		CONTAINER_ID container_id;
+		uint8_t loc_type, type;
+
 		HX_strlower(essdn);
 		if (strcmp(essdn, "/") == 0) {
 			type = CONTAINER_TYPE_ABTREE;
@@ -1165,6 +1173,8 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			if (0 != strncmp(essdn, "/guid=", 6) || 38 != strlen(essdn)) {
 				return ecNotFound;
 			}
+			char tmp_buff[16];
+			GUID guid;
 			memcpy(tmp_buff, essdn + 6, 8);
 			tmp_buff[8] = '\0';
 			guid.time_low = strtoll(tmp_buff, NULL, 16);
