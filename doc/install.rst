@@ -204,15 +204,23 @@ It is possible to run Gromox daemons from the source checkout. Heed the
 following notes.
 
 Gromox daemons switch to unprivileged mode, and after doing so, will still need
-access to the ``.libs`` directory in the build directory. If any path component
-of the build directory is missing the +x permission bit for everyone, the
+access to the build directory to access shared libraries. If any path component
+of the build directory is missing search (execute) permission, the
 daemon may be unable to start up. This happens predominantly when someone tries
 to build Gromox as root (not a great idea) in ``/root`` (has mode 0700).
 
 Gromox programs default to look for files in the installed system, i.e.
-``/etc/gromox`` and ``/usr/share/gromox``. To test updates to data files, the
-modifications will either have to be copied from the checkout to ``/usr``;
-else, you can run the daemon with an alternate config, e.g.:
+``/etc/gromox`` and ``/usr/share/gromox``. If nothing else is needed,
+running daemons in place of their system counterparts is possible
+with no edits to configuration, e.g.::
+
+	systemctl stop gromox-http
+	./http
+
+To test updates to data files such as ``folder_names.txt``, the
+modifications will either have to be copied to corresponding path in
+``/usr/share/gromox``; else, you can set up and run the daemon with
+an alternate config, e.g.:
 
 .. code-block:: sh
 
