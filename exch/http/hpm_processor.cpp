@@ -105,11 +105,6 @@ static const char *hpm_processor_get_host_ID()
 	return resource_get_string("HOST_ID");
 }
 
-static const char* hpm_processor_get_default_domain()
-{
-	return resource_get_string("DEFAULT_DOMAIN");
-}
-
 static const char* hpm_processor_get_plugin_name()
 {
 	if (NULL == g_cur_plugin) {
@@ -228,9 +223,6 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 		return reinterpret_cast<void *>(service_register_service);
 	if (strcmp(service, "get_host_ID") == 0) {
 		return reinterpret_cast<void *>(hpm_processor_get_host_ID);
-	}
-	if (strcmp(service, "get_default_domain") == 0) {
-		return reinterpret_cast<void *>(hpm_processor_get_default_domain);
 	}
 	if (strcmp(service, "get_plugin_name") == 0) {
 		return reinterpret_cast<void *>(hpm_processor_get_plugin_name);
