@@ -263,8 +263,10 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	if (NULL == pobjnode) {
 		return -7;
 	}
-	if (!emsmdb_interface_alloc_handle_number(&pobjnode->handle))
+	if (!emsmdb_interface_alloc_handle_number(&pobjnode->handle)) {
+		g_handle_allocator->put(pobjnode);
 		return -8;
+	}
 	pobjnode->node.pdata = pobjnode;
 	pobjnode->type = type;
 	pobjnode->pobject = pobject;
