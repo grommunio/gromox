@@ -60,7 +60,7 @@ Default: \fIno\fP
 Path to a text file which lists the filenames of MPC plugins to load, one per
 line.
 .br
-Default: (unspecified)
+Default: (built-in list)
 .TP
 \fBmpc_plugin_path\fP
 Path to a secondary directory where MPC plugins will be loaded from if a
@@ -83,7 +83,7 @@ Default: \fIno\fP
 Path to a text file which lists the filenames of service plugins to load,
 one per line.
 .br
-Default: (unspecified)
+Default: (built-in list)
 .TP
 \fBservice_plugin_path\fP
 Path to a secondary directory where service plugins will be loaded from if a

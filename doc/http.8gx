@@ -110,10 +110,10 @@ ignored. If set to no, the daemon will exit if any plugin cannot be loaded.
 Default: \fIno\fP
 .TP
 \fBhpm_plugin_list\fP
-Path to a text file which lists the filenames of HTTP processing modulesplugins
-to load, one per line.
+Path to a text file which lists the filenames of HTTP processing modules
+(plugins) to load, one per line.
 .br
-Default: (unspecified)
+Default: (built-in list)
 .TP
 \fBhttp_auth_times\fP
 The number of login tries a user is allowed before the account is blocked.
@@ -175,7 +175,7 @@ Default: \fIno\fP
 Path to a text file which lists the filenames of processor plugins to load, one
 per line.
 .br
-Default: (unspecified)
+Default: (built-in list)
 .TP
 \fBproc_plugin_path\fP
 Filesystem path for processor plugins.
@@ -202,7 +202,7 @@ Default: \fIno\fP
 Path to a text file which lists the filenames of service plugins to load,
 one per line.
 .br
-Default: (unspecified)
+Default: (built-in list)
 .TP
 \fBservice_plugin_path\fP
 Path to a secondary directory where service plugins will be loaded from if a
