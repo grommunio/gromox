@@ -974,14 +974,14 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
 		return ecError;
 	if (!pstream->check())
 		return ecNotFound;
+	auto rstream = pstream.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_STREAM, pstream.get());
+	           logon_id, hin, {OBJECT_TYPE_STREAM, std::move(pstream)});
 	if (hnd < 0) {
 		return ecError;
 	}
 	*phout = hnd;
-	*pstream_size = pstream->get_length();
-	pstream.release();
+	*pstream_size = rstream->get_length();
 	return ecSuccess;
 }
 

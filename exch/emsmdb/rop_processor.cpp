@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cassert>
 #include <climits>
 #include <csignal>
 #include <cstdint>
@@ -55,13 +56,6 @@ struct LOGON_ITEM {
 	SIMPLE_TREE tree;
 };
 
-struct OBJECT_NODE {
-	SIMPLE_TREE_NODE node;
-	uint32_t handle;
-	int type;
-	void *pobject;
-};
-
 }
 
 struct LOGMAP {
@@ -85,7 +79,17 @@ LOGMAP *rop_processor_create_logmap()
 	return plogmap;
 }
 
-static void rop_processor_free_object(void *pobject, int type)
+object_node::object_node(object_node &&o) noexcept :
+	node(std::move(o.node)), handle(std::move(o.handle)),
+	type(std::move(o.type)), pobject(std::move(o.pobject))
+{
+	o.node = {};
+	o.handle = 0;
+	o.type = OBJECT_TYPE_NONE;
+	o.pobject = nullptr;
+}
+
+void object_node::clear() noexcept
 {
 	switch (type) {
 	case OBJECT_TYPE_LOGON:
@@ -122,16 +126,24 @@ static void rop_processor_free_object(void *pobject, int type)
 		delete static_cast<subscription_object *>(pobject);
 		break;
 	}
+	type = OBJECT_TYPE_NONE;
+	pobject = nullptr;
+}
+
+void object_node::operator=(object_node &&o) noexcept
+{
+	clear();
+	type = std::move(o.type);
+	pobject = std::move(o.pobject);
+	o.type = OBJECT_TYPE_NONE;
+	o.pobject = nullptr;
 }
 
 static void rop_processor_free_objnode(SIMPLE_TREE_NODE *pnode)
 {
 	OBJECT_NODE *pobjnode;
-	
+
 	pobjnode = (OBJECT_NODE*)pnode->pdata;
-	rop_processor_free_object(pobjnode->pobject, pobjnode->type);
-	pobjnode->type = 0;
-	pobjnode->pobject = NULL;
 	g_handle_allocator->put(pobjnode);
 }
 
@@ -195,9 +207,8 @@ void rop_processor_release_logmap(LOGMAP *plogmap)
 }
 
 int rop_processor_create_logon_item(LOGMAP *plogmap,
-    uint8_t logon_id, logon_object *plogon)
+    uint8_t logon_id, std::unique_ptr<logon_object> &&plogon)
 {
-	int handle;
 	uint32_t tmp_ref;
 	auto plogitem = plogmap->p[logon_id];
 	/* MS-OXCROPS 3.1.4.2 */
@@ -216,17 +227,18 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 	}
 	simple_tree_init(&plogitem->tree);
 	plogmap->p[logon_id] = plogitem;
-	handle = rop_processor_add_object_handle(plogmap,
-				logon_id, -1, OBJECT_TYPE_LOGON, plogon);
+	auto rlogon = plogon.get();
+	auto handle = rop_processor_add_object_handle(plogmap,
+				logon_id, -1, {OBJECT_TYPE_LOGON, std::move(plogon)});
 	if (handle < 0) {
 		g_logitem_allocator->put(plogitem);
 		return -3;
 	}
 	std::lock_guard hl_hold(g_hash_lock);
-	auto pref = g_logon_hash->query<uint32_t>(plogon->get_dir());
+	auto pref = g_logon_hash->query<uint32_t>(rlogon->get_dir());
 	if (NULL == pref) {
 		tmp_ref = 1;
-		g_logon_hash->add(plogon->get_dir(), &tmp_ref);
+		g_logon_hash->add(rlogon->get_dir(), &tmp_ref);
 	} else {
 		(*pref) ++;
 	}
@@ -234,7 +246,7 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 }
 
 int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
-	int parent_handle, int type, void *pobject)
+	int parent_handle, object_node &&in_object)
 {
 	int tmp_handle;
 	OBJECT_NODE *ptmphanle;
@@ -267,9 +279,7 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 		g_handle_allocator->put(pobjnode);
 		return -8;
 	}
-	pobjnode->node.pdata = pobjnode;
-	pobjnode->type = type;
-	pobjnode->pobject = pobject;
+	*pobjnode = std::move(in_object);
 	if (plogitem->phash->add(pobjnode->handle, &pobjnode) != 1) {
 		auto phash = INT_HASH_TABLE::create(plogitem->phash->capacity +
 		                        HGROWING_SIZE, sizeof(OBJECT_NODE *));
@@ -293,7 +303,7 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 		plogitem->tree.add_child(&(*ppparent)->node,
 			&pobjnode->node, SIMPLE_TREE_ADD_LAST);
 	}
-	if (OBJECT_TYPE_ICSUPCTX == type) {
+	if (pobjnode->type == OBJECT_TYPE_ICSUPCTX) {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref ++;
 	}

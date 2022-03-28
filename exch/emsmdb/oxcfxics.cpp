@@ -274,11 +274,10 @@ uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
 	if (pctx == nullptr)
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTUPCTX, pctx.get());
+	           logon_id, hin, {OBJECT_TYPE_FASTUPCTX, std::move(pctx)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -401,11 +400,10 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 	if (!pctx->make_topfolder(std::move(pfldctnt)))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
+	           logon_id, hin, {OBJECT_TYPE_FASTDOWNCTX, std::move(pctx)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -476,11 +474,10 @@ uint32_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 		return ecError;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
+	           logon_id, hin, {OBJECT_TYPE_FASTDOWNCTX, std::move(pctx)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -612,11 +609,10 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		break;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
+	           logon_id, hin, {OBJECT_TYPE_FASTDOWNCTX, std::move(pctx)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -754,11 +750,10 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		break;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
+	           logon_id, hin, {OBJECT_TYPE_FASTDOWNCTX, std::move(pctx)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -838,11 +833,10 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	auto pctx = icsdownctx_object::create(plogon, pfolder, sync_type,
 	            send_options, sync_flags, pres, extra_flags, pproptags);
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_ICSDOWNCTX, pctx.get());
+	           logon_id, hin, {OBJECT_TYPE_ICSDOWNCTX, std::move(pctx)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -992,11 +986,10 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	    pmessage->get_instance_id(), &tmp_propvals, &tmp_problems))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage.get());
+	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pmessage.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -1611,11 +1604,10 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *plogmap,
 	uint8_t sync_type = is_content_collector == 0 ? SYNC_TYPE_HIERARCHY : SYNC_TYPE_CONTENTS;
 	auto pctx = icsupctx_object::create(plogon, pfolder, sync_type);
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_ICSUPCTX, pctx.get());
+	           logon_id, hin, {OBJECT_TYPE_ICSUPCTX, std::move(pctx)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -1648,11 +1640,10 @@ uint32_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 	if (!pctx->make_state(pstate))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_FASTDOWNCTX, pctx.get());
+	           logon_id, hin, {OBJECT_TYPE_FASTDOWNCTX, std::move(pctx)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pctx.release();
 	*phout = hnd;
 	return ecSuccess;
 }

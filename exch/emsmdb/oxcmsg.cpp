@@ -154,11 +154,10 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 			return ecMAPIOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage.get());
+	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pmessage.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -244,11 +243,10 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 	if (!pmessage->init_message(b_fai, cpid))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage.get());
+	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pmessage.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -727,11 +725,10 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 	if (pattachment->get_instance_id() == 0)
 		return ecNotFound;
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
-	           hin, OBJECT_TYPE_ATTACHMENT, pattachment.get());
+	           hin, {OBJECT_TYPE_ATTACHMENT, std::move(pattachment)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pattachment.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -763,11 +760,10 @@ uint32_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 	if (!pattachment->init_attachment())
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
-	           hin, OBJECT_TYPE_ATTACHMENT, pattachment.get());
+	           hin, {OBJECT_TYPE_ATTACHMENT, std::move(pattachment)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pattachment.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -889,11 +885,10 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 		}
 		*pmessage_id = *(uint64_t*)pvalue;
 		auto hnd = rop_processor_add_object_handle(plogmap,
-		           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage.get());
+		           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
 		if (hnd < 0) {
 			return ecError;
 		}
-		pmessage.release();
 		*phout = hnd;
 		*phas_named_properties = 0;
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
@@ -955,11 +950,10 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 			return ecMAPIOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage.get());
+	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	pmessage.release();
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -981,13 +975,13 @@ uint32_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
 	              ropGetAttachmentTable, logon_id);
 	if (ptable == nullptr)
 		return ecMAPIOOM;
+	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, OBJECT_TYPE_TABLE, ptable.get());
+	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});
 	if (hnd < 0) {
 		return ecError;
 	}
-	ptable->set_handle(hnd);
-	ptable.release();
+	rtable->set_handle(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }

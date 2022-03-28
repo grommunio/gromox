@@ -18,7 +18,6 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
     GUID *preplica_guid, LOGON_TIME *plogon_time, uint64_t *pgwart_time,
     uint32_t *pstore_stat, LOGMAP *plogmap, uint8_t logon_id, uint32_t *phout)
 {
-	int handle;
 	int user_id;
 	int logon_mode;
 	struct tm *ptm;
@@ -137,11 +136,10 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	if (plogon == nullptr)
 		return ecMAPIOOM;
 	/* create logon map and logon object */
-	handle = rop_processor_create_logon_item(plogmap, logon_id, plogon.get());
+	auto handle = rop_processor_create_logon_item(plogmap, logon_id, std::move(plogon));
 	if (handle < 0) {
 		return ecError;
 	}
-	plogon.release();
 	*phout = handle;
 	return ecSuccess;
 }
@@ -151,7 +149,6 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
     uint16_t *preplica_id, GUID *preplica_guid, GUID *pper_user_guid,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t *phout)
 {
-	int handle;
 	int org_id;
 	int org_id1;
 	void *pvalue;
@@ -234,11 +231,10 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	if (plogon == nullptr)
 		return ecMAPIOOM;
 	/* create logon map and logon object */
-	handle = rop_processor_create_logon_item(plogmap, logon_id, plogon.get());
+	auto handle = rop_processor_create_logon_item(plogmap, logon_id, std::move(plogon));
 	if (handle < 0) {
 		return ecError;
 	}
-	plogon.release();
 	*phout = handle;
 	return ecSuccess;
 }
