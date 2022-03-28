@@ -60,7 +60,7 @@ The following additional developer options are available:
 * --with-ubsan: shorthand for enabling UB Sanitizer
 
 Due to an omission in libtool <= 2.4.6 (fixed in v2.4.6-22-ga5c64665), it is
-necessary to also call `make` with the sanitizer libs (asan, ubsan or both,
+necessary to also call ```make` with the sanitizer libs (asan, ubsan or both,
 depending on choice) if they are shared libraries (usually gcc): ``make
 LIBS="-lasan -lubsan"``
 
@@ -93,8 +93,8 @@ Minimal configuration
 IPv6
 ----
 
-The IPv6 kernel module needs to be available/enabled and the ::1 address must
-exist on the loopback device.
+The IPv6 kernel module needs to be available/enabled and the ``::1``
+address must exist on the loopback device.
 
 
 SQL database
@@ -115,14 +115,14 @@ create or delete users. The grommunio Administration Backend is in charge of use
 management, and this role will need more permissions.
 
 
-SSL certificates
+TLS certificates
 ----------------
 
 Have a PEM-encoded certificate and key ready. The cert file should contain any
 necessary sections of the certificate chain (in case those CAs are not already
 available by way of ``/etc/ssl/certs``). openSSL generally allows having the
 cert and the key in the same file, if you wish to do so. Add to
-`/etc/gromox/http.cfg`::
+``/etc/gromox/http.cfg``::
 
 	listen_ssl_port = 443
 	http_support_ssl = true
