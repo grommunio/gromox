@@ -702,6 +702,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, MODIFYRECIPIENTS_REQUEST &r)
 	if (r.count == 0) {
 		r.prow = nullptr;
 	} else {
+		r.count = std::min(r.count, static_cast<uint16_t>(UINT16_MAX));
 		r.prow = x.anew<MODIFYRECIPIENT_ROW>(r.count);
 		if (r.prow == nullptr) {
 			r.count = 0;
@@ -1218,6 +1219,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, MODIFYPERMISSIONS_REQUEST &r)
 		r.prow = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
+	r.count = std::min(r.count, static_cast<uint16_t>(UINT16_MAX));
 	r.prow = x.anew<PERMISSION_DATA>(r.count);
 	if (r.prow == nullptr) {
 		r.count = 0;
@@ -1240,6 +1242,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, MODIFYRULES_REQUEST &r)
 	TRY(x.g_uint16(&r.count));
 	if (r.count == 0)
 		return EXT_ERR_FORMAT;
+	r.count = std::min(r.count, static_cast<uint16_t>(UINT16_MAX));
 	r.prow = x.anew<RULE_DATA>(r.count);
 	if (r.prow == nullptr) {
 		r.count = 0;
@@ -1481,6 +1484,7 @@ static pack_result rop_ext_pull(EXT_PULL &x,
 	TRY(x.g_uint32(&r.count));
 	if (r.count == 0)
 		return EXT_ERR_FORMAT;
+	r.count = std::min(r.count, static_cast<uint32_t>(UINT32_MAX));
 	r.prange = x.anew<LONG_TERM_ID_RANGE>(r.count);
 	if (r.prange == nullptr) {
 		r.count = 0;
@@ -1940,6 +1944,7 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 	}
 	subext.init(pbuff, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	TRY(subext.g_uint16(&size));
+	size = std::min(size, static_cast<uint16_t>(UINT16_MAX));
 	while (subext.m_offset < size) try {
 		std::unique_ptr<rop_request> rq;
 		TRY(rop_ext_pull(subext, rq));

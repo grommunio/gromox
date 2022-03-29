@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -50,6 +52,7 @@ static BOOL ftstream_parser_read_uint32(fxstream_parser *pstream, uint32_t *pv)
 	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
 		return FALSE;
 	*pv = le32_to_cpu(*pv);
+	*pv = std::min(*pv, static_cast<uint32_t>(UINT32_MAX));
 	pstream->offset += sizeof(uint32_t);
 	return TRUE;
 }

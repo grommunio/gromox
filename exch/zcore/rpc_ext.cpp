@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
@@ -77,6 +79,7 @@ static pack_result rpc_ext_pull_tpropval_array(
 		r->ppropval = NULL;
 		return pack_result::ok;
 	}
+	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (NULL == r->ppropval) {
 		r->count = 0;
@@ -105,6 +108,7 @@ static pack_result rpc_ext_pull_rule_list(
 		r->prule = NULL;
 		return pack_result::ok;
 	}
+	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
 	r->prule = pext->anew<RULE_DATA>(r->count);
 	if (NULL == r->prule) {
 		r->count = 0;
@@ -132,6 +136,7 @@ static pack_result rpc_ext_pull_permission_set(
 	EXT_PULL *pext, PERMISSION_SET *r)
 {
 	QRF(pext->g_uint16(&r->count));
+	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
 	r->prows = pext->anew<PERMISSION_ROW>(r->count);
 	if (NULL == r->prows) {
 		r->count = 0;
@@ -161,6 +166,7 @@ static pack_result rpc_ext_pull_state_array(
 		r->pstate = NULL;
 		return pack_result::ok;
 	}
+	r->count = std::min(r->count, static_cast<uint32_t>(UINT32_MAX));
 	r->pstate = pext->anew<MESSAGE_STATE>(r->count);
 	if (NULL == r->pstate) {
 		r->count = 0;
@@ -827,6 +833,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_notifdequeue &d)
 		return pack_result::alloc;
 	QRF(x.g_guid(&d.psink->hsession));
 	QRF(x.g_uint16(&d.psink->count));
+	d.psink->count = std::min(d.psink->count, static_cast<uint16_t>(UINT16_MAX));
 	d.psink->padvise = x.anew<ADVISE_INFO>(d.psink->count);
 	if (d.psink->padvise == nullptr) {
 		d.psink->count = 0;

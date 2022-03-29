@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
+#include <climits>
 #include <chrono>
 #include <climits>
 #include <condition_variable>
@@ -102,7 +104,6 @@ static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
 
 static void *zcrp_thrwork(void *param)
 {
-	void *pbuff;
 	int read_len;
 	BINARY tmp_bin;
 	uint32_t offset;
@@ -140,7 +141,8 @@ static void *zcrp_thrwork(void *param)
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
-	pbuff = malloc(buff_len);
+	buff_len = std::min(buff_len, UINT32_MAX);
+	auto pbuff = malloc(buff_len);
 	if (NULL == pbuff) {
 		auto tmp_byte = zcore_response::lack_memory;
 		fdpoll.events = POLLOUT|POLLWRBAND;

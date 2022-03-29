@@ -250,6 +250,7 @@ static pack_result pdu_ndr_pull_dcerpc_fack(NDR_PULL *pndr, DCERPC_FACK *r)
 	TRY(pndr->g_uint32(&r->max_frag_size));
 	TRY(pndr->g_uint16(&r->serial_no));
 	TRY(pndr->g_uint16(&r->selack_size));
+	r->selack_size = std::min(r->selack_size, static_cast<uint16_t>(UINT16_MAX));
 	if (r->selack_size > 0) {
 		r->selack = me_alloc<uint32_t>(r->selack_size);
 		if (NULL == r->selack) {
@@ -701,6 +702,7 @@ static pack_result pdu_ndr_pull_dcerpc_rts(NDR_PULL *pndr, DCERPC_RTS *r)
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint16(&r->flags));
 	TRY(pndr->g_uint16(&r->num));
+	r->num = std::min(r->num, static_cast<uint16_t>(r->num));
 	if (r->num > 0) {
 		r->commands = me_alloc<RTS_CMD>(r->num);
 		if (NULL == r->commands) {

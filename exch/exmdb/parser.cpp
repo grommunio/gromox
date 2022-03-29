@@ -172,7 +172,6 @@ static inline void stripslash(char *s)
 static void *request_parser_thread(void *pparam)
 {
 	void *pbuff;
-	int read_len;
 	BOOL b_private;
 	BINARY tmp_bin;
 	uint32_t offset;
@@ -228,7 +227,7 @@ static void *request_parser_thread(void *pparam)
 		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			break;
 		if (NULL == pbuff) {
-			read_len = read(pconnection->sockd,
+			auto read_len = read(pconnection->sockd,
 					&buff_len, sizeof(uint32_t));
 			if (read_len != sizeof(uint32_t))
 				break;
@@ -252,8 +251,8 @@ static void *request_parser_thread(void *pparam)
 			offset = 0;
 			continue;
 		}
-		read_len = read(pconnection->sockd,
-		           static_cast<char *>(pbuff) + offset, buff_len - offset);
+		auto read_len = read(pconnection->sockd,
+		                static_cast<char *>(pbuff) + offset, buff_len - offset);
 		if (read_len <= 0)
 			break;
 		offset += read_len;

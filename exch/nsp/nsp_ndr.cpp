@@ -110,6 +110,7 @@ static pack_result nsp_ndr_pull_proptag_array(NDR_PULL &x, LPROPTAG_ARRAY *r)
 	uint32_t length;
 	
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	TRY(x.align(4));
 	TRY(x.g_uint32(&r->cvalues));
 	if (r->cvalues > 100001)
@@ -189,7 +190,9 @@ static pack_result nsp_ndr_pull_string_array(NDR_PULL &x,
 	if (!(flag & FLAG_CONTENT) || r->ppstr == nullptr)
 		return pack_result::ok;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->count)
+		/* count set by this or a previous function call with FLAG_HEADER */
 		return pack_result::array_size;
 	r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 	if (r->ppstr == nullptr)
@@ -255,6 +258,7 @@ static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
 	
 	if (flag & FLAG_HEADER) {
 		TRY(x.g_ulong(&size));
+		size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 		TRY(x.align(5));
 		TRY(x.g_uint32(&r->count));
 		if (r->count > 100000)
@@ -314,7 +318,9 @@ static pack_result nsp_ndr_pull_wstring_array(NDR_PULL &x,
 	if (!(flag & FLAG_CONTENT) || r->ppstr == nullptr)
 		return pack_result::ok;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->count)
+		/* count set by this or a previous function call with FLAG_HEADER */
 		return pack_result::array_size;
 	r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 	if (r->ppstr == nullptr)
@@ -399,6 +405,7 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
 	
 	if (flag & FLAG_HEADER) {
 		TRY(x.g_ulong(&size));
+		size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 		TRY(x.align(5));
 		TRY(x.g_uint32(&r->count));
 		if (r->count > 100000) {
@@ -470,7 +477,9 @@ static pack_result nsp_ndr_pull_binary(NDR_PULL &x, unsigned int flag, BINARY *r
 	if (!(flag & FLAG_CONTENT) || r->pb == nullptr)
 		return EXT_ERR_SUCCESS;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cb) {
+		/* cb set by this or a previous function call with FLAG_HEADER */
 		r->cb = 0;
 		return pack_result::array_size;
 	}
@@ -534,7 +543,9 @@ static pack_result nsp_ndr_pull_short_array(NDR_PULL &x,
 	if (!(flag & FLAG_CONTENT) || r->ps == nullptr)
 		return EXT_ERR_SUCCESS;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->count)
+		/* count set by this or a previous function call with FLAG_HEADER */
 		return pack_result::array_size;
 	r->ps = ndr_stack_anew<uint16_t>(NDR_STACK_IN, size);
 	if (r->ps == nullptr)
@@ -581,7 +592,9 @@ static pack_result nsp_ndr_pull_long_array(NDR_PULL &x,
 	if (!(flag & FLAG_CONTENT) || r->pl == nullptr)
 		return EXT_ERR_SUCCESS;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->count)
+		/* count set by this or a previous function call with FLAG_HEADER */
 		return pack_result::array_size;
 	r->pl = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
 	if (r->pl == nullptr)
@@ -628,7 +641,9 @@ static pack_result nsp_ndr_pull_binary_array(NDR_PULL &x,
 	if (!(flag & FLAG_CONTENT) || r->pbin == nullptr)
 		return EXT_ERR_SUCCESS;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->count)
+		/* count set by this or a previous function call with FLAG_HEADER */
 		return pack_result::array_size;
 	r->pbin = ndr_stack_anew<BINARY>(NDR_STACK_IN, size);
 	if (r->pbin == nullptr)
@@ -679,7 +694,9 @@ static pack_result nsp_ndr_pull_flatuid_array(NDR_PULL &x,
 	if (!(flag & FLAG_CONTENT) || r->ppguid == nullptr)
 		return EXT_ERR_SUCCESS;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cvalues)
+		/* cvalues set by this or a previous function call with FLAG_HEADER */
 		return pack_result::array_size;
 	r->ppguid = ndr_stack_anew<FLATUID *>(NDR_STACK_IN, size);
 	if (r->ppguid == nullptr)
@@ -739,7 +756,9 @@ static pack_result nsp_ndr_pull_filetime_array(NDR_PULL &x,
 	if (!(flag & FLAG_CONTENT) || r->pftime == nullptr)
 		return EXT_ERR_SUCCESS;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cvalues)
+		/* cvalues set by this or a previous function call with FLAG_HEADER */
 		return pack_result::array_size;
 	r->pftime = ndr_stack_anew<FILETIME>(NDR_STACK_IN, size);
 	if (r->pftime == nullptr)
@@ -1176,7 +1195,9 @@ static pack_result nsp_ndr_pull_property_row(NDR_PULL &x,
 	if (!(flag & FLAG_CONTENT) || r->pprops == nullptr)
 		return EXT_ERR_SUCCESS;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cvalues)
+		/* cvalues set by this or a previous function call with FLAG_HEADER */
 		return pack_result::array_size;
 	r->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_IN, size);
 	if (r->pprops == nullptr)
@@ -1245,7 +1266,9 @@ static pack_result nsp_ndr_pull_restriction_and_or(NDR_PULL &x,
 	if (!(flag & FLAG_CONTENT) || r->pres == nullptr)
 		return EXT_ERR_SUCCESS;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cres)
+		/* cres set by this or a previous function call with FLAG_HEADER */
 		return pack_result::array_size;
 	r->pres = ndr_stack_anew<NSPRES>(NDR_STACK_IN, size);
 	if (r->pres == nullptr)
