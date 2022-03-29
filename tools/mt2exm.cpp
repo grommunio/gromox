@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cerrno>
 #include <climits>
 #include <cstdlib>
@@ -132,7 +133,7 @@ static int exm_read_base_maps()
 	ret = HXio_fullread(STDIN_FILENO, &xsize, sizeof(xsize));
 	if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
 		throw YError("PG-1003: %s", strerror_eof(errno));
-	xsize = le64_to_cpu(xsize);
+	xsize = std::min(le64_to_cpu(xsize), static_cast<uint64_t>(UINT64_MAX));
 	buf = std::make_unique<char[]>(xsize);
 	ret = HXio_fullread(STDIN_FILENO, buf.get(), xsize);
 	if (ret < 0 || static_cast<size_t>(ret) != xsize)

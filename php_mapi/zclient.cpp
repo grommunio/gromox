@@ -2,7 +2,9 @@
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include "php.h"
+#include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -60,7 +62,7 @@ static zend_bool zclient_read_socket(int sockd, BINARY &pbin)
 	} else if (read_len != 5) {
 		return 0;
 	}
-	pbin.cb = le32p_to_cpu(resp_buff + 1) + 5;
+	pbin.cb = std::min(le32p_to_cpu(resp_buff + 1) + 5, static_cast<uint32_t>(UINT32_MAX));
 	pbin.pb = sta_malloc<uint8_t>(pbin.cb);
 	if (pbin.pb == nullptr) {
 		pbin.cb = 0;

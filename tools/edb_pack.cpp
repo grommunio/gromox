@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
+#include <climits>
 #include <gromox/ext_buffer.hpp>
 #include "edb_pack.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
@@ -125,6 +127,7 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 	case EPV_UNICODE_2:
 	case EPV_BINARY_2:
 		TRY(g_uint16(&x16.u));
+		x16.u = std::min(x16.u, static_cast<uint16_t>(UINT16_MAX));
 		break;
 	case EPV_LONG_4:
 	case EPV_I8_4:
@@ -438,6 +441,7 @@ pack_result edb_pull::g_edb_propval_a(TPROPVAL_ARRAY *r)
 		r->ppropval = nullptr;
 		return pack_result::ok;
 	}
+	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
 	r->ppropval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
 	if (r->ppropval == nullptr) {
 		r->count = 0;

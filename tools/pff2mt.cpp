@@ -4,8 +4,10 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <cassert>
 #include <cerrno>
+#include <climits>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -391,7 +393,7 @@ mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 	pv->proptag = proptag;
 	pv->pvalue = ba;
 	/* PST v9 §2.3.3.4.2 */
-	auto nelem = le32p_to_cpu(data);
+	auto nelem = std::min(le32p_to_cpu(data), static_cast<uint32_t>(UINT32_MAX));
 	ba->count = 0;
 	ba->ppstr = static_cast<char **>(calloc(nelem, sizeof(char *)));
 	if (ba->ppstr == nullptr)
@@ -452,7 +454,7 @@ mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
 		throw std::bad_alloc();
 	pv->proptag = proptag;
 	pv->pvalue = ba;
-	auto nelem = le32p_to_cpu(data);
+	auto nelem = std::min(le32p_to_cpu(data), static_cast<uint32_t>(UINT32_MAX));
 	ba->count = 0;
 	ba->pbin = static_cast<BINARY *>(calloc(nelem, sizeof(BINARY)));
 	if (ba->pbin == nullptr)

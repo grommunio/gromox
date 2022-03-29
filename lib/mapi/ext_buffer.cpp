@@ -19,6 +19,7 @@
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define CLAMP16(v) ((v) = std::min((v), static_cast<uint16_t>(UINT16_MAX)))
 #define CLAMP32(v) ((v) = std::min((v), static_cast<uint32_t>(UINT32_MAX)))
+#define CLAMP64(v) ((v) = std::min((v), static_cast<uint64_t>(UINT64_MAX)))
 
 using namespace gromox;
 
@@ -80,6 +81,7 @@ pack_result EXT_PULL::g_uint16(uint16_t *v)
 	    m_offset + sizeof(uint16_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
 	*v = le16p_to_cpu(&m_udata[m_offset]);
+	CLAMP16(*v);
 	m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -90,6 +92,7 @@ pack_result EXT_PULL::g_uint32(uint32_t *v)
 	    m_offset + sizeof(uint32_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
 	*v = le32p_to_cpu(&m_udata[m_offset]);
+	CLAMP32(*v);
 	m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -100,6 +103,7 @@ pack_result EXT_PULL::g_uint64(uint64_t *v)
 	    m_offset + sizeof(uint64_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
 	*v = le64p_to_cpu(&m_udata[m_offset]);
+	CLAMP64(*v);
 	m_offset += sizeof(uint64_t);
 	return EXT_ERR_SUCCESS;
 }

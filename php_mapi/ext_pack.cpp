@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <climits>
 #include <cstdint>
@@ -81,6 +83,7 @@ pack_result PULL_CTX::g_perm_set(PERMISSION_SET *r)
 	int i;
 	
 	TRY(g_uint16(&r->count));
+	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
 	r->prows = sta_malloc<PERMISSION_ROW>(r->count);
 	if (NULL == r->prows) {
 		r->count = 0;
@@ -105,6 +108,7 @@ pack_result PULL_CTX::g_state_a(STATE_ARRAY *r)
 		r->pstate = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	r->count = std::min(r->count, static_cast<uint32_t>(UINT32_MAX));
 	r->pstate = sta_malloc<MESSAGE_STATE>(r->count);
 	if (NULL == r->pstate) {
 		r->count = 0;
@@ -224,6 +228,7 @@ pack_result PULL_CTX::g_znotif_a(ZNOTIFICATION_ARRAY *r)
 		r->ppnotification = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
 	r->ppnotification = sta_malloc<ZNOTIFICATION *>(r->count);
 	if (NULL == r->ppnotification) {
 		r->count = 0;
