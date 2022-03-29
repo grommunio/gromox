@@ -37,9 +37,11 @@ using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
 static char *opt_config_file, *opt_datadir;
+static unsigned int opt_skip_reload;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'd', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Data directory", "DIR"},
+	{"no-reload", 0, HXTYPE_NONE, &opt_skip_reload, nullptr, nullptr, 0, "Do not contact exmdb_provider to reload"},
 	HXOPT_TABLEEND,
 };
 
@@ -203,5 +205,10 @@ int main(int argc, const char **argv)
 	printf("rm %s\n", temp_path1);
 	if (remove(temp_path1) < 0 && errno != ENOENT)
 		fprintf(stderr, "W-1396: remove %s: %s\n", temp_path1, strerror(errno));
-	return do_reload(argv[1], temp_path1);
+	if (!opt_skip_reload) {
+		ret = do_reload(argv[1], temp_path1);
+		if (ret != 0)
+			return ret;
+	}
+	return EXIT_SUCCESS;
 }

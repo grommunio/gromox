@@ -3,7 +3,7 @@
 gromox\-rebuild \(em Tool for rebuilding a message store
 .SH Synopsis
 \fBgromox\-rebuild\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP]
-\fImaildir\fP
+[\fB\-\-no\-reload\fP] \fImaildir\fP
 .SH Description
 gromox\-rebuild recreates the SQL database exchange.sqlite3 by way of a
 INSERT-SELECT cycle. In other words, it executes a SELECT for every one of the
@@ -29,6 +29,9 @@ specified, /etc/gromox/sa.cfg will be read if it exists.
 \fB\-d\fP \fIdatapath\fP
 This option can be used to override the \fIdata_file_path\fP variable from the
 config file.
+.TP
+\fB\-\-no\-reload\fP
+Do not contact exmdb_provider(4gx), do not trigger a mailbox RELOAD.
 .SH Exit status
 The usual conventions apply. An exit status of 0 indicates success, and any
 other value is considered failure.
