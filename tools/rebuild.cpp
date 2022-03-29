@@ -43,11 +43,99 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+/**
+ * @temp_path1:	new.sqlite3
+ * @sql_string:	schema text
+ */
+static int do_rebuild(const char *dir, const char *temp_path1,
+    std::string &&sql_string)
+{
+	sqlite3 *psqlite = nullptr;
+	const char *presult;
+	char tmp_sql[1024];
+
+	/* Delete unfinished rebuild attempt from earlier (if any) */
+	if (remove(temp_path1) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1393: remove %s: %s\n", temp_path1, strerror(errno));
+	if (sqlite3_open_v2(temp_path1, &psqlite,
+	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK) {
+		printf("fail to create store database\n");
+		return 9;
+	}
+	auto cl_2 = make_scope_exit([&]() { sqlite3_close(psqlite); });
+	adjust_rights(temp_path1);
+	auto transact1 = gx_sql_begin_trans(psqlite);
+	if (gx_sql_exec(psqlite, sql_string.c_str()) != SQLITE_OK)
+		return 9;
+	transact1.commit();
+	snprintf(tmp_sql, 1024, "ATTACH DATABASE "
+	         "'%s/exmdb/exchange.sqlite3' AS source_db", dir);
+	if (gx_sql_exec(psqlite, tmp_sql) != SQLITE_OK)
+		return 9;
+
+	auto sql_transact = gx_sql_begin_trans(psqlite);
+	static constexpr const char *table_list[] = {
+		"configurations",
+		"allocated_eids",
+		"named_properties",
+		"store_properties",
+		"permissions",
+		"rules",
+		"folders",
+		"folder_properties",
+		"receive_table",
+		"messages",
+		"message_properties",
+		"message_changes",
+		"recipients",
+		"recipients_properties",
+		"attachments",
+		"attachment_properties",
+		"search_scopes",
+		"search_result",
+	};
+	for (auto tbl : table_list) {
+		printf("Rebuilding table \"%s\"...\n", tbl);
+		auto q = "INSERT INTO "s + tbl + " SELECT * FROM source_db." + tbl;
+		if (gx_sql_exec(psqlite, q.c_str()) != SQLITE_OK)
+			return 9;
+	}
+	sql_transact.commit();
+	gx_sql_exec(psqlite, "DETACH DATABASE source_db");
+	if (gx_sql_exec(psqlite, "REINDEX") != SQLITE_OK)
+		return 9;
+	auto pstmt = gx_sql_prep(psqlite, "PRAGMA integrity_check");
+	if (pstmt == nullptr) {
+		if (sqlite3_step(pstmt) == SQLITE_ROW) {
+			presult = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0));
+			if (presult == nullptr || strcmp(presult, "ok") != 0) {
+				printf("new database is still "
+				       "malformed, can not be fixed!\n");
+				return 10;
+			}
+		}
+		pstmt.finalize();
+	}
+	return 0;
+}
+
+static int do_reload(const char *dir, const char *temp_path1)
+{
+	printf("Notifying exmdb to close-reopen the db\n");
+	exmdb_client_init(1, 0);
+	auto cl_0 = make_scope_exit(exmdb_client_stop);
+	auto ret = exmdb_client_run(PKGSYSCONFDIR, EXMDB_CLIENT_SKIP_PUBLIC);
+	if (ret < 0)
+		return EXIT_FAILURE;
+	if (!exmdb_client::unload_store(dir)) {
+		printf("fail to unload store\n");
+		return 12;
+	}
+	return 0;
+}
+
 int main(int argc, const char **argv)
 {
-	sqlite3 *psqlite;
-	char tmp_sql[1024];
-	const char *presult;
 	char temp_path[256];
 	char temp_path1[256];
 	
@@ -100,72 +188,11 @@ int main(int argc, const char **argv)
 	}
 
 	printf("Working on %s\n", temp_path);
-	{
 	auto cl_0 = make_scope_exit([]() { sqlite3_shutdown(); });
 	snprintf(temp_path1, 256, "%s/exmdb/new.sqlite3", argv[1]);
-	/* Delete unfinished rebuild attempt from earlier (if any) */
-	if (remove(temp_path1) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1393: remove %s: %s\n", temp_path1, strerror(errno));
-	if (SQLITE_OK != sqlite3_open_v2(temp_path1, &psqlite,
-		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
-		printf("fail to create store database\n");
-		return 9;
-	}
-	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	adjust_rights(temp_path1);
-	auto transact1 = gx_sql_begin_trans(psqlite);
-	if (gx_sql_exec(psqlite, sql_string.c_str()) != SQLITE_OK)
-		return 9;
-	transact1.commit();
-	snprintf(tmp_sql, 1024, "ATTACH DATABASE "
-		"'%s/exmdb/exchange.sqlite3' AS source_db", argv[1]);
-	if (gx_sql_exec(psqlite, tmp_sql) != SQLITE_OK)
-		return 9;
-	
-	auto sql_transact = gx_sql_begin_trans(psqlite);
-	static constexpr const char *table_list[] = {
-		"configurations",
-		"allocated_eids",
-		"named_properties",
-		"store_properties",
-		"permissions",
-		"rules",
-		"folders",
-		"folder_properties",
-		"receive_table",
-		"messages",
-		"message_properties",
-		"message_changes",
-		"recipients",
-		"recipients_properties",
-		"attachments",
-		"attachment_properties",
-		"search_scopes",
-		"search_result",
-	};
-	for (auto tbl : table_list) {
-		printf("Rebuilding table \"%s\"...\n", tbl);
-		auto q = "INSERT INTO "s + tbl + " SELECT * FROM source_db." + tbl;
-		if (gx_sql_exec(psqlite, q.c_str()) != SQLITE_OK)
-			return 9;
-	}
-	sql_transact.commit();
-	gx_sql_exec(psqlite, "DETACH DATABASE source_db");
-	if (gx_sql_exec(psqlite, "REINDEX") != SQLITE_OK)
-		return 9;
-	auto pstmt = gx_sql_prep(psqlite, "PRAGMA integrity_check");
-	if (pstmt == nullptr) {
-		if (SQLITE_ROW == sqlite3_step(pstmt)) {
-			presult = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0));
-			if (NULL == presult || 0 != strcmp(presult, "ok")) {
-				printf("new database is still "
-					"malformed, can not be fixed!\n");
-				return 10;
-			}
-		}
-		pstmt.finalize();
-	}
-	}
+	auto ret = do_rebuild(argv[1], temp_path1, std::move(sql_string));
+	if (ret != 0)
+		return ret;
 
 	printf("rm %s\n", temp_path);
 	if (remove(temp_path) < 0 && errno != ENOENT)
@@ -176,16 +203,5 @@ int main(int argc, const char **argv)
 	printf("rm %s\n", temp_path1);
 	if (remove(temp_path1) < 0 && errno != ENOENT)
 		fprintf(stderr, "W-1396: remove %s: %s\n", temp_path1, strerror(errno));
-
-	printf("Notifying exmdb to close-reopen the db\n");
-	exmdb_client_init(1, 0);
-	auto cl_0 = make_scope_exit(exmdb_client_stop);
-	auto ret = exmdb_client_run(PKGSYSCONFDIR, EXMDB_CLIENT_SKIP_PUBLIC);
-	if (ret < 0)
-		return EXIT_FAILURE;
-	if (!exmdb_client::unload_store(argv[1])) {
-		printf("fail to unload store\n");
-		return 12;
-	}
-	exit(0);
+	return do_reload(argv[1], temp_path1);
 }
