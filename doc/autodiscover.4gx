@@ -34,9 +34,12 @@ Autodiscover server after a profile is set up would break the address book, but
 not the message store.)
 .SH Configuration file directives
 At first, /etc/gromox/mysql_adaptor.cfg is read for the connection parameters
-to the user database. See mysql_adaptor(4gx) for details. In the file's
-absence, built-in defaults as documented are applied, in other words,
-root@localhost/email.
+to the user database. See gromox(7) for a description of the format. See
+mysql_adaptor(4gx) for details about the available configuration directives. In
+the file's absence, built-in defaults as documented are applied, in other
+words, root@localhost/email. Note that \fBthis cfg file is read using an ini
+parser\fP, which is not technically correct and has the caveat that it is not
+possible to use any of these characters in values: \fB!"&'();^|~\fP
 .PP
 Note that PHP is dumb and the program cannot distinguish between file absence
 and file presence but missing permissions.

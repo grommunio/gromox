@@ -12,11 +12,20 @@ such as Postfix as a mail transfer agent, and grommunio-admin for user managemen
 A web interface is available with grommunio-web. The grommunio distribution ships
 these essentials and has a ready-to-run installation of Gromox. system.
 .SH Configuration files
-Program configuration files reside within /etc/gromox. Most of the programs
-have a \fBconfig_file_path\fP directive with which the search path for further
-config files can be specified. For example, http(8gx) defaults to
-config_file_path=/etc/gromox/http:/etc/gromox, so the mysql_adaptor(4gx) plugin
-as loaded by http will first try
+Program configuration files reside within /etc/gromox. The format for .cfg
+files is: one "key=value" pair per line. Empty lines are ignored, as are lines
+beginning with a '#' character. Lines can have a maximum length of 1024. Each
+key=value line is logically split at the equals sign, and whitespace is trimmed
+around key and value. Comments at the end of a value are not supported. Escape
+sequences are not supported.
+.PP
+The format for .ini files is: one "key=value" pair per line. Empty lines are
+ignored, as are lines beginning with a ';' character.
+.PP
+Many programs have a \fBconfig_file_path\fP directive with which the search
+path for further config files can be specified. For example, http(8gx) defaults
+to config_file_path=/etc/gromox/http:/etc/gromox, so the mysql_adaptor(4gx)
+plugin as loaded by http will first try
 /etc/gromox/http/mysql_adaptor.cfg, then /etc/gromox/mysql_adaptor.cfg. This
 allows having one file that is shared between multiple programs as well as
 being able to override on a per program-basis.
