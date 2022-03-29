@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cassert>
 #include <climits>
 #include <cstdint>
@@ -156,6 +157,7 @@ static pack_result abkt_read(EXT_PULL &bin, Json::Value &tpl, cpid_t cpid)
 		return pack_result::format;
 	auto &rowdata = tpl["rowdata"] = Json::arrayValue;
 	TRY(bin.g_uint32(&rows));
+	rows = std::min(rows, static_cast<uint32_t>(UINT32_MAX));
 	while (rows-- > 0) {
 		auto &row = rowdata.append(Json::objectValue);
 		abkt_read_row(bin, row, vers, cpid);

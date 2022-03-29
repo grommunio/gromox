@@ -1595,8 +1595,8 @@ errno_t archive::open(const char *file)
 	entries.clear();
 	for (unsigned int i = 0; i < dirsize; ++i) {
 		auto deofs = dirofs + 64 * i;
-		auto entryofs = le32p_to_cpu(&mapped_area[deofs+56]);
-		auto entrysz  = le32p_to_cpu(&mapped_area[deofs+60]);
+		auto entryofs = std::min(le32p_to_cpu(&mapped_area[deofs+56]), static_cast<uint32_t>(UINT32_MAX));
+		auto entrysz  = std::min(le32p_to_cpu(&mapped_area[deofs+60]), static_cast<uint32_t>(UINT32_MAX));
 		std::string_view name(&mapped_area[deofs], strnlen(&mapped_area[deofs], 56));
 		std::string_view data(&mapped_area[entryofs], entrysz);
 		entries.emplace(std::move(name), std::move(data));

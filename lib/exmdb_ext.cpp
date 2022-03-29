@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -17,6 +19,8 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define CLAMP16(v) ((v) = std::min((v), static_cast<uint16_t>(UINT16_MAX)))
+#define CLAMP32(v) ((v) = std::min((v), static_cast<uint32_t>(UINT32_MAX)))
 
 using namespace gromox;
 
@@ -1753,6 +1757,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_update_folder_permission &d)
 		d.prow = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP16(d.count);
 	d.prow = cu_alloc<PERMISSION_DATA>(d.count);
 	if (d.prow == nullptr) {
 		d.count = 0;
@@ -1791,6 +1796,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_update_folder_rule &d)
 		d.prow = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP16(d.count);
 	d.prow = cu_alloc<RULE_DATA>(d.count);
 	if (d.prow == nullptr) {
 		d.count = 0;
@@ -2261,6 +2267,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_imapfile_write &d) try
 	TRY(x.g_str(&d.mid));
 	uint32_t z = 0;
 	TRY(x.g_uint32(&z));
+	CLAMP32(z);
 	d.data.resize(z);
 	return x.g_bytes(d.data.data(), z);
 } catch (const std::bad_alloc &) {
@@ -3583,6 +3590,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_get_hierarchy_sync &d)
 	if (0 == d.fldchgs.count) {
 		d.fldchgs.pfldchgs = nullptr;
 	} else {
+		CLAMP32(d.fldchgs.count);
 		d.fldchgs.pfldchgs = cu_alloc<TPROPVAL_ARRAY>(d.fldchgs.count);
 		if (d.fldchgs.pfldchgs == nullptr) {
 			d.fldchgs.count = 0;
@@ -3688,6 +3696,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_imapfile_read &d) try
 {
 	uint32_t z;
 	TRY(x.g_uint32(&z));
+	CLAMP32(z);
 	d.data.resize(z);
 	return x.g_bytes(d.data.data(), z);
 } catch (const std::bad_alloc &) {
@@ -4343,6 +4352,7 @@ BOOL exmdb_client_read_socket(int fd, BINARY &bin, long timeout_ms)
 				return TRUE;
 			} else if (read_len == 5) {
 				bin.cb = le32p_to_cpu(resp_buff + 1) + 5;
+				CLAMP32(bin.cb);
 				bin.pb = static_cast<uint8_t *>(exmdb_rpc_alloc(bin.cb));
 				if (bin.pb == nullptr) {
 					bin.cb = 0;

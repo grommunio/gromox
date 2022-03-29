@@ -262,11 +262,10 @@ pack_result EXT_PULL::g_blob(DATA_BLOB *pblob)
 
 pack_result EXT_PULL::g_bin(BINARY *r)
 {
-	uint16_t cb;
-	
 	if (m_flags & EXT_FLAG_WCOUNT) {
 		TRY(g_uint32(&r->cb));
 	} else {
+		uint16_t cb;
 		TRY(g_uint16(&cb));
 		r->cb = cb;
 	}
@@ -274,6 +273,7 @@ pack_result EXT_PULL::g_bin(BINARY *r)
 		r->pb = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP32(r->cb);
 	r->pv = m_alloc(r->cb);
 	if (r->pv == nullptr) {
 		r->cb = 0;
@@ -287,6 +287,7 @@ pack_result EXT_PULL::g_sbin(BINARY *r)
 	uint16_t cb;
 	
 	TRY(g_uint16(&cb));
+	CLAMP16(cb);
 	r->cb = cb;
 	if (r->cb == 0) {
 		r->pb = NULL;
@@ -307,6 +308,7 @@ pack_result EXT_PULL::g_bin_ex(BINARY *r)
 		r->pb = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP32(r->cb);
 	r->pv = m_alloc(r->cb);
 	if (r->pv == nullptr) {
 		r->cb = 0;
@@ -867,6 +869,7 @@ static pack_result ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTI
 	
 	TRY(pext->g_uint8(&r->same_store));
 	TRY(pext->g_uint16(&eid_size));
+	CLAMP16(eid_size);
 	if (r->same_store) {
 		r->pstore_eid = NULL;
 		TRY(pext->advance(eid_size));
