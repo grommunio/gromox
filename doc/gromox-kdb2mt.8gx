@@ -16,13 +16,13 @@ of the hierarchy during extraction.
 The SQL server that carries the Zarafa/Kopano database for the home server
 of the user must be active. Databases with a schema version \fBn61\fP or
 newer (ZCP versions 7.0.3 and onwards, and all KC versions) are supported.
-.PP
-The kopano\-server(8) process need not be running. LDAP need not be running.
+The kopano\-server(8) process need not be running. Its LDAP need not be
+available either.
+ACLs can be extracted, but, owing to the independence of the Kopano LDAP
+data model, require custom post-processing.
 .PP
 The directory of Kopano attachments of the home server should be made available
 in the mount namespace whereever gromox\-kdb2mt runs.
-.PP
-No permissions are extracted.
 .PP
 Properties of the \fIstore object itself\fP are only shown (if and when \-p is
 used), but never dumped to the MT data stream. Properties of the store \fIroot
@@ -93,10 +93,7 @@ unspecified location given as their parent folder. (mt2exm will use the
 drafts folder because it is expectedly less crowded than one's inbox.)
 .TP
 \fB\-\-with\-acl\fP
-Perform partial conversion of ACLs. Because kdb2mt works completely LDAP-less,
-it has practically no knowledge of users. ACLs for Kopano user \fIn\fP (\fIn\fP
-being a homeserver-specific integer) is transformed to
-\fIn\fP@\fIserverguid\fP.kopano.invalid.
+Perform partial conversion of ACLs. See the ACL section below for details.
 .TP
 \fB\-\-with\-hidden\fP, \fB\-\-without\-hidden\fP
 This option controls the import of folders that have PR_ATTR_HIDDEN=1.
@@ -197,5 +194,24 @@ contributes to \-\-src\-mbox possibly matching multiple stores.
 .PP
 When more than one store matches in any way, kdb2mt will print the result set
 with GUIDs and exit, at which point you need to use \-\-src\-guid instead.
+.SH ACL Extraction
+Because kdb2mt works completely LDAP-less, it knows nothing about users save
+for their numeric ID on the homeserver and a reference to the LDAP object (e.g.
+objectUUID). That user ID is not globally unique, therefore ACEs are carried
+over such that that permissions for user with ID \fIn\fP are transformed to
+\fIn\fP@\fIserverguid\fP.kopano.invalid.
+.PP
+.RS 4
+.nf
+sqlite3 /var/lib/gromox/user/1/1/exmdb/exchange.sqlite3
+.
+sqlite> select * from permissions;
+member_id  folder_id  username                                           permission
+---------  ---------  -------------------------------------------------  ----------
+1          15         default                                            2048      
+2          24         default                                            2048      
+3          2090545    1@aa8e2b20b2054ca98987ea1053c3bb16.kopano.invalid  1177      
+.fi
+.RE
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)
