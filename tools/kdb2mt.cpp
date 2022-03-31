@@ -85,7 +85,7 @@ struct driver final {
 
 struct ace_list final {
 	ace_list();
-	void emplace(std::string &&, uint32_t);
+	int emplace(std::string &&, uint32_t);
 	inline size_t size() const { return m_rows.size(); }
 	inline const std::vector<PERMISSION_DATA> &get_perms() const { return m_rows; }
 
@@ -193,19 +193,28 @@ static bool skip_property(uint16_t id)
 ace_list::ace_list() : m_rdata(tarray_set_init())
 {}
 
-void ace_list::emplace(std::string &&s, uint32_t r)
+int ace_list::emplace(std::string &&s, uint32_t r)
 {
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
-		throw std::bad_alloc();
+		return ENOMEM;
 	m_strs.push_back(std::move(s));
-	if (!props->set(PR_SMTP_ADDRESS, m_strs.back().c_str()) ||
-	    !props->set(PROP_TAG_MEMBERRIGHTS, &r))
-		throw std::bad_alloc();
+	auto ret = props->set(PR_SMTP_ADDRESS, m_strs.back().c_str());
+	if (ret != 0) {
+		printf("error ACL: %d\n", ret);
+		return ret;
+	}
+	ret = props->set(PROP_TAG_MEMBERRIGHTS, &r);
+	if (ret != 0) {
+		printf("error ACL: %d\n", ret);
+		return ret;
+	}
 	PERMISSION_DATA d = {ROW_ADD, {2, props->ppropval}};
-	if (!m_rdata->append_move(std::move(props)))
-		throw std::bad_alloc();
+	ret = m_rdata->append_move(std::move(props));
+	if (ret != 0)
+		return ret;
 	m_rows.emplace_back(d);
+	return 0;
 }
 
 static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
@@ -786,7 +795,12 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 		uint32_t ben_id = strtoul(row[0], nullptr, 0);
 		uint32_t rights = strtoul(row[1], nullptr, 0);
 		rights &= ~(frightsGromoxSendAs | frightsGromoxStoreOwner);
-		yi->m_acl.emplace(std::to_string(ben_id) + "@"s + drv.server_guid + ".kopano.invalid", rights);
+		auto ret = yi->m_acl.emplace(std::to_string(ben_id) + "@"s +
+		           drv.server_guid + ".kopano.invalid", rights);
+		if (ret == ENOMEM)
+			throw std::bad_alloc();
+		else if (ret != 0)
+			throw YError("PK-1023: %d", ret);
 	}
 	return yi;
 }
