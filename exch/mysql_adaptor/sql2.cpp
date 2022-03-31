@@ -247,7 +247,7 @@ static int userlist_parse(sqlconn &conn, const char *query,
 
 int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) try
 {
-	char query[427];
+	char query[439];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr)
@@ -275,7 +275,7 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	         JOIN_WITH_DISPLAYTYPE
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
-	         "LEFT JOIN groups AS gr ON u.username=gr.groupname", class_id);
+	         "LEFT JOIN `groups` AS `gr` ON `u`.`username`=`gr`.`groupname`", class_id);
 	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
 	fprintf(stderr, "[mysql_adaptor]: %s %s\n", __func__, e.what());
@@ -284,7 +284,7 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 
 int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) try
 {
-	char query[406];
+	char query[418];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr)
@@ -309,7 +309,7 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 	         JOIN_WITH_DISPLAYTYPE
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
-	         "LEFT JOIN groups AS gr ON u.username=gr.groupname "
+	         "LEFT JOIN `groups` AS `gr` ON `u`.`username`=`gr`.`groupname` "
 	         "WHERE u.domain_id=%u AND u.group_id=0", domain_id);
 	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
@@ -319,7 +319,7 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 
 int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) try
 {
-	char query[457];
+	char query[479];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr)
@@ -349,7 +349,7 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	         JOIN_WITH_DISPLAYTYPE
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
-	         "LEFT JOIN groups AS gr ON u.username=gr.groupname "
+	         "LEFT JOIN `groups` AS `gr` ON `u`.`username`=`gr`.`groupname` "
 	         "WHERE u.group_id=%d AND (SELECT COUNT(*) AS num "
 	         "FROM members AS m WHERE u.username=m.username)=0", group_id);
 	return userlist_parse(*conn, query, amap, pmap, pfile);

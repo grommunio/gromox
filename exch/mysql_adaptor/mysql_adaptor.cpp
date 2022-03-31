@@ -718,8 +718,8 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2) try
 BOOL mysql_adaptor_get_domain_groups(int domain_id,
     std::vector<sql_group> &pfile) try
 {
-	auto qstr = "SELECT id, groupname, title FROM groups "
-	            "WHERE domain_id=" + std::to_string(domain_id);
+	auto qstr = "SELECT `id`, `groupname`, `title` FROM `groups` "
+	            "WHERE `domain_id`=" + std::to_string(domain_id);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
@@ -868,7 +868,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 			b_result = TRUE;
 		return b_result;
 	case MLIST_TYPE_GROUP: {
-		qstr = "SELECT id FROM groups WHERE groupname='"s + temp_name + "'";
+		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='"s + temp_name + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
 		pmyres = mysql_store_result(conn->get());
@@ -1166,7 +1166,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
 		}
-		qstr = "SELECT id FROM groups WHERE groupname='"s + temp_name + "'";
+		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='"s + temp_name + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
 		pmyres = mysql_store_result(conn->get());
