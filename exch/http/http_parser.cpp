@@ -496,7 +496,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 	    pcontext->connection.last_timestamp) < g_timeout) {
 		return PROCESS_POLLING_RDONLY;
 	}
-	http_parser_log_info(pcontext, LV_DEBUG, "time out");
+	http_parser_log_info(pcontext, LV_DEBUG, "I-1920: time out");
 	http_4xx(pcontext, "Request Timeout", 408);
 	return X_LOOP;
 }
@@ -505,13 +505,13 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 {
 	auto ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 	if (NULL == ptoken) {
-		http_parser_log_info(pcontext, LV_DEBUG, "request method error");
+		http_parser_log_info(pcontext, LV_DEBUG, "I-1921: request method error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
 	size_t tmp_len = ptoken - line;
 	if (tmp_len >= 32) {
-		http_parser_log_info(pcontext, LV_DEBUG, "request method error");
+		http_parser_log_info(pcontext, LV_DEBUG, "I-1922: request method error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
@@ -520,7 +520,7 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 	pcontext->request.method[tmp_len] = '\0';
 	auto ptoken1 = static_cast<char *>(memchr(ptoken + 1, ' ', line_length - tmp_len - 1));
 	if (NULL == ptoken1) {
-		http_parser_log_info(pcontext, LV_DEBUG, "request method error");
+		http_parser_log_info(pcontext, LV_DEBUG, "I-1923: request method error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
@@ -528,7 +528,7 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 	tmp_len = line_length - (ptoken1 + 6 - line);
 	if (0 != strncasecmp(ptoken1 + 1,
 	    "HTTP/", 5) || tmp_len >= 8) {
-		http_parser_log_info(pcontext, LV_DEBUG, "request method error");
+		http_parser_log_info(pcontext, LV_DEBUG, "I-1924: request method error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
@@ -544,8 +544,7 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 {
 	auto ptoken = static_cast<char *>(memchr(line, ':', line_length));
 	if (NULL == ptoken) {
-		http_parser_log_info(pcontext,
-			6, "request method error");
+		http_parser_log_info(pcontext, LV_DEBUG, "I-1925: request method error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
@@ -695,14 +694,14 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 	auto tmp_len = pcontext->request.f_request_uri.get_total_length();
 	if (0 == tmp_len || tmp_len >= 1024) {
 		http_parser_log_info(pcontext, LV_DEBUG,
-			"rpcproxy request method error");
+			"I-1926: rpcproxy request method error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
 	char tmp_buff[2048];
 	tmp_len = pcontext->request.f_request_uri.read(tmp_buff, 1024);
 	if (tmp_len == MEM_END_OF_FILE) {
-		http_parser_log_info(pcontext, LV_DEBUG, "rpcproxy request method error");
+		http_parser_log_info(pcontext, LV_DEBUG, "I-1927: rpcproxy request method error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
@@ -716,21 +715,21 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		ptoken = tmp_buff + 26;
 	} else {
 		http_parser_log_info(pcontext, LV_DEBUG,
-			"rpcproxy request method error");
+			"I-1928: rpcproxy request method error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
 	auto ptoken1 = strchr(tmp_buff, ':');
 	if (NULL == ptoken1) {
 		http_parser_log_info(pcontext, LV_DEBUG,
-			"rpcproxy request method error");
+			"I-1929: rpcproxy request method error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
 	*ptoken1 = '\0';
 	if (ptoken1 - ptoken > 128) {
 		http_parser_log_info(pcontext, LV_DEBUG,
-			"rpcproxy request method error");
+			"I-1930: rpcproxy request method error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
@@ -756,14 +755,14 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		pcontext->b_close = TRUE;
 		pcontext->sched_stat = SCHED_STAT_WRREP;
 		http_parser_log_info(pcontext, LV_DEBUG,
-			"authentification needed");
+			"I-1931: authentification needed");
 		return X_LOOP;
 	}
 
 	tmp_len = pcontext->request.f_content_length.read(tmp_buff, 256);
 	if (MEM_END_OF_FILE == tmp_len) {
 		http_parser_log_info(pcontext, LV_DEBUG,
-			"content-length of rpcproxy request error");
+			"I-1932: content-length of rpcproxy request error");
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
@@ -872,7 +871,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		switch (pcontext->stream_in.has_newline()) {
 		case STREAM_LINE_FAIL:
 			http_parser_log_info(pcontext, LV_DEBUG,
-				"request header line too long");
+				"I-1933: request header line too long");
 			http_4xx(pcontext);
 			return X_LOOP;
 		case STREAM_LINE_UNAVAILABLE:
@@ -995,7 +994,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 	    pcontext->connection.last_timestamp) < g_timeout) {
 		return htparse_rdhead_st(pcontext, actual_read);
 	}
-	http_parser_log_info(pcontext, LV_DEBUG, "time out");
+	http_parser_log_info(pcontext, LV_DEBUG, "I-1934: time out");
 	http_4xx(pcontext, "Request Timeout", 408);
 	return X_LOOP;
 }
@@ -1334,7 +1333,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 	    pcontext->connection.last_timestamp) < g_timeout) {
 		return PROCESS_POLLING_RDONLY;
 	}
-	http_parser_log_info(pcontext, LV_DEBUG, "time out");
+	http_parser_log_info(pcontext, LV_DEBUG, "I-1935: time out");
 	http_4xx(pcontext, "Request Timeout", 408);
 	return X_LOOP;
 }
@@ -1350,6 +1349,7 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 
 	if (strcasecmp(pcontext->request.method, "RPC_IN_DATA") != 0 &&
 	    strcasecmp(pcontext->request.method, "RPC_OUT_DATA") != 0) {
+		http_parser_log_info(pcontext, LV_DEBUG, "I-1936: unrecognized HTTP method \"%s\"", pcontext->request.method);
 		/* other http request here if wanted */
 		http_4xx(pcontext);
 		return X_LOOP;
@@ -1422,7 +1422,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) < g_timeout) {
 				return PROCESS_POLLING_RDONLY;
 			}
-			http_parser_log_info(pcontext, LV_DEBUG, "time out");
+			http_parser_log_info(pcontext, LV_DEBUG, "I-1937: time out");
 			http_4xx(pcontext, "Request Timeout", 408);
 			return X_LOOP;
 		}
