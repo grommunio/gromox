@@ -174,6 +174,8 @@ static void pdu_processor_free_stack_root(NDR_STACK_ROOT *pstack_root)
 {
 	alloc_context_free(&pstack_root->in_stack);
 	alloc_context_free(&pstack_root->out_stack);
+	if (g_stack_key == pstack_root)
+		g_stack_key = nullptr;
 	g_stack_allocator->put(pstack_root);
 }
 
@@ -254,6 +256,8 @@ void pdu_processor_free_call(DCERPC_CALL *pcall)
 		g_bnode_allocator->put(pblob_node);
 	}
 	double_list_free(&pcall->reply_list);
+	if (g_call_key == pcall)
+		g_call_key = nullptr;
 	g_call_allocator->put(pcall);
 }
 
