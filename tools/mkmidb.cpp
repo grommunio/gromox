@@ -77,16 +77,7 @@ int main(int argc, const char **argv) try
 		mysql_pass.emplace(s);
 	std::string db_name = znul(pconfig->get_value("mysql_dbname"));
 
-	pconfig = config_file_prg(opt_config_file, "sa.cfg");
-	if (opt_config_file != nullptr && pconfig == nullptr)
-		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
-	if (pconfig == nullptr)
-		return EXIT_FAILURE;
-	const char *datadir = opt_datadir != nullptr ? opt_datadir :
-	                      pconfig->get_value("data_file_path");
-	if (datadir == nullptr)
-		datadir = PKGDATADIR;
-	
+	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("Failed to init mysql object\n");
 		return EXIT_FAILURE;

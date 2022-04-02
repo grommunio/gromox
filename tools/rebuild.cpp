@@ -36,11 +36,10 @@ using namespace std::string_literals;
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
-static char *opt_config_file, *opt_datadir;
+static char *opt_datadir;
 static unsigned int opt_skip_reload;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'T', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{"no-reload", 0, HXTYPE_NONE, &opt_skip_reload, nullptr, nullptr, 0, "Do not contact exmdb_provider to reload"},
 	HXOPT_TABLEEND,
 };
@@ -148,22 +147,13 @@ int main(int argc, const char **argv)
 		printf("usage: %s <maildir>\n", argv[0]);
 		return 1;
 	}
-	auto pconfig = config_file_prg(opt_config_file, "sa.cfg");
-	if (opt_config_file != nullptr && pconfig == nullptr)
-		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
-	if (pconfig == nullptr)
-		return 2;
 	snprintf(temp_path, 256, "%s/exmdb/exchange.sqlite3", argv[1]);
 	if (access(temp_path, R_OK) < 0) {
 		printf("%s: %s\n", temp_path, strerror(errno));
 		return 1;
 	}
 
-	const char *datadir = opt_datadir != nullptr ? opt_datadir :
-	                      pconfig->get_value("data_file_path");
-	if (datadir == nullptr)
-		datadir = PKGDATADIR;
-
+	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
 	auto filp = fopen_sd("sqlite3_common.txt", datadir);
 	if (filp == nullptr) {
 		fprintf(stderr, "fopen_sd sqlite3_common.txt: %s\n", strerror(errno));

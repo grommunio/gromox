@@ -2,7 +2,7 @@
 .SH Name
 gromox\-rebuild \(em Tool for rebuilding a message store
 .SH Synopsis
-\fBgromox\-rebuild\fP [\fB\-T\fP \fItemplate_dir\fP] [\fB\-c\fP \fIconfig\fP]
+\fBgromox\-rebuild\fP [\fB\-T\fP \fItemplate_dir\fP]
 [\fB\-\-no\-reload\fP] \fImaildir\fP
 .SH Description
 gromox\-rebuild recreates the SQL database exchange.sqlite3 by way of a
@@ -29,10 +29,6 @@ stored.
 .br
 Default: \fI/usr/share/gromox\fP
 .TP
-\fB\-c\fP \fIconfig\fP
-Read configuration directives from the given file. If this option is not
-specified, /etc/gromox/sa.cfg will be read if it exists.
-.TP
 \fB\-\-no\-reload\fP
 Do not contact exmdb_provider(4gx), do not trigger a mailbox RELOAD.
 .SH Exit status
@@ -53,7 +49,5 @@ of a private store.
 .IP \(bu 4
 \fIdata_file_path\fP/sqlite3_private.txt: SQLite instructions to generate part
 of a private store.
-.SH Config file directives
-The config file is shared with other programs. See \fBsa.cfg\fP(5gx).
 .SH See also
-\fBgromox\fP(7), \fBsa.cfg\fP(5gx)
+\fBgromox\fP(7)
