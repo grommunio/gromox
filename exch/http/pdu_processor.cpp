@@ -138,6 +138,13 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 
 static int pdu_processor_load_library(const char* plugin_name);
 
+dcerpc_call::dcerpc_call()
+{
+	node.pdata = this;
+	gettimeofday(&time, nullptr);
+	double_list_init(&reply_list);
+}
+
 static NDR_STACK_ROOT* pdu_processor_new_stack_root()
 {
 	auto pstack_root = g_stack_allocator->get<NDR_STACK_ROOT>();
@@ -2680,13 +2687,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
 	}
-	memset(pcall, 0, sizeof(DCERPC_CALL));
-	pcall->node.pdata = pcall;
-	pcall->pprocessor = NULL;
 	pcall->b_bigendian = b_bigendian;
-	gettimeofday(&pcall->time, NULL);
-	double_list_init(&pcall->reply_list);
-	
 	if (NDR_ERR_SUCCESS != pdu_ndr_pull_ncacnpkt(&ndr, &pcall->pkt)) {
 		pdu_processor_free_call(pcall);
 		return PDU_PROCESSOR_ERROR;
@@ -2944,13 +2945,8 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
 	}
-	memset(pcall, 0, sizeof(DCERPC_CALL));
-	pcall->node.pdata = pcall;
 	pcall->pprocessor = pprocessor;
 	pcall->b_bigendian = b_bigendian;
-	gettimeofday(&pcall->time, NULL);
-	double_list_init(&pcall->reply_list);
-	
 	if (NDR_ERR_SUCCESS != pdu_ndr_pull_ncacnpkt(&ndr, &pcall->pkt)) {
 		pdu_processor_free_call(pcall);
 		return PDU_PROCESSOR_ERROR;

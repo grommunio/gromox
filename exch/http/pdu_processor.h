@@ -73,19 +73,22 @@ struct DCERPC_CONTEXT {
 };
 
 /* the state of an ongoing dcerpc call */
-struct DCERPC_CALL {
-	DOUBLE_LIST_NODE node;
-	PDU_PROCESSOR *pprocessor;
-	DCERPC_CONTEXT *pcontext;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
-	BOOL pkt_loaded;
-	uint32_t alloc_size; /* alloc size for request stub data */
-	DCERPC_NCACN_PACKET pkt;
-	BOOL b_bigendian;
-	struct timeval time; /* the time the request arrived in the server */
-	DOUBLE_LIST reply_list;
-	uint32_t ptr_cnt;
+struct dcerpc_call {
+	dcerpc_call();
+
+	DOUBLE_LIST_NODE node{};
+	PDU_PROCESSOR *pprocessor = nullptr;
+	DCERPC_CONTEXT *pcontext = nullptr;
+	DCERPC_AUTH_CONTEXT *pauth_ctx = nullptr;
+	BOOL pkt_loaded = false;
+	BOOL b_bigendian = false;
+	uint32_t alloc_size = 0; /* alloc size for request stub data */
+	uint32_t ptr_cnt = 0;
+	DCERPC_NCACN_PACKET pkt{};
+	struct timeval time{}; /* the time the request arrived in the server */
+	DOUBLE_LIST reply_list{};
 };
+using DCERPC_CALL = dcerpc_call;
 
 /* PDU blob for output */
 struct BLOB_NODE {
