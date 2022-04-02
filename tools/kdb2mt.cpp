@@ -759,7 +759,7 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 		if (xtype == MAPI_FOLDER && xflag == FOLDER_SEARCH)
 			/* Skip over search folders */
 			continue;
-		if (xtype == MAPI_MESSAGE && (xflag & KC_MSGFLAG_DELETED))
+		if (xflag & KC_MSGFLAG_DELETED)
 			/* Skip over softdeletes */
 			continue;
 		yi->m_sub_hids.push_back({xid, xtype});
