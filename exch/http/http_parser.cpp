@@ -1351,7 +1351,7 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 	    strcasecmp(pcontext->request.method, "RPC_OUT_DATA") != 0) {
 		http_parser_log_info(pcontext, LV_DEBUG, "I-1936: unrecognized HTTP method \"%s\"", pcontext->request.method);
 		/* other http request here if wanted */
-		http_4xx(pcontext);
+		http_4xx(pcontext, "Method Not Allowed", 405);
 		return X_LOOP;
 	}
 	/* ECHO request */
