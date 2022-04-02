@@ -39,8 +39,8 @@ namespace exmdb_client = exmdb_client_remote;
 static char *opt_config_file, *opt_datadir;
 static unsigned int opt_skip_reload;
 static constexpr HXoption g_options_table[] = {
+	{nullptr, 'T', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
-	{nullptr, 'd', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Data directory", "DIR"},
 	{"no-reload", 0, HXTYPE_NONE, &opt_skip_reload, nullptr, nullptr, 0, "Do not contact exmdb_provider to reload"},
 	HXOPT_TABLEEND,
 };

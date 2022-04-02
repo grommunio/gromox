@@ -2,19 +2,22 @@
 .SH Name
 gromox\-mkmidb \(em Tool for creating a blank message index database
 .SH Synopsis
-\fBgromox\-mkmidb\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP]
+\fBgromox\-mkmidb\fP [\fB\-T\fP \fItemplate_dir\fP] [\fB\-c\fP \fIconfig\fP]
 [\fB\-fP\fP] \fIusername\fP
 .SH Options
+.TP
+\fB\-T\fP \fIpath\fP
+This option can be used to override the \fIdata_file_path\fP variable from the
+config file; it specifies the location where the SQLite schemas etc. are
+stored.
+.br
+Default: \fI/usr/share/gromox\fP
 .TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
 specified, /etc/gromox/mysql_adaptor.cfg will be read for MySQL connection
 parameters if that file exists, and /etc/gromox/sa.cfg will be read for program
 parameters if that file exists.
-.TP
-\fB\-d\fP \fIdatapath\fP
-This option can be used to override the \fIdata_file_path\fP variable from the
-config file.
 .TP
 \fB\-f\fP
 Force overwrite when an existing SQLite database is detected for the user.
