@@ -9,6 +9,11 @@
 #include <gromox/dbop.h>
 #include <gromox/scope.hpp>
 
+/*
+ * INDEX names should be suffixed by the schema number, to facilitate
+ * dbop_sqlite_upgrade (old table+index exists simultaneously with new table).
+ */
+
 namespace gromox {
 
 namespace {
@@ -78,8 +83,8 @@ static constexpr char tbl_fldprops_3[] =
 "  proptag INTEGER NOT NULL,"
 "  propval BLOB NOT NULL,"
 "  FOREIGN KEY (folder_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE);"
-"CREATE INDEX fid_properties_index ON folder_properties(folder_id);"
-"CREATE UNIQUE INDEX folder_property_index ON folder_properties(folder_id, proptag);";
+"CREATE INDEX fid_properties_index3 ON folder_properties(folder_id);"
+"CREATE UNIQUE INDEX folder_property_index3 ON folder_properties(folder_id, proptag);";
 
 static constexpr char tbl_fldprops_move3[] =
 "INSERT INTO folder_properties SELECT folder_id, proptag, propval FROM u0";
@@ -126,9 +131,9 @@ static constexpr char tbl_msgprops_4[] =
 "  proptag INTEGER NOT NULL,"
 "  propval BLOB NOT NULL,"
 "  FOREIGN KEY (message_id) REFERENCES messages (message_id) ON DELETE CASCADE ON UPDATE CASCADE);"
-"CREATE INDEX mid_properties_index ON message_properties(message_id);"
-"CREATE UNIQUE INDEX message_property_index ON message_properties(message_id, proptag);"
-"CREATE INDEX proptag_propval_index ON message_properties(proptag, propval);";
+"CREATE INDEX mid_properties_index4 ON message_properties(message_id);"
+"CREATE UNIQUE INDEX message_property_index4 ON message_properties(message_id, proptag);"
+"CREATE INDEX proptag_propval_index4 ON message_properties(proptag, propval);";
 
 static constexpr char tbl_msgprops_move4[] =
 "INSERT INTO message_properties SELECT message_id, proptag, propval FROM u0";
@@ -164,8 +169,8 @@ static constexpr char tbl_rcptprops_5[] =
 "  proptag INTEGER NOT NULL,"
 "  propval BLOB NOT NULL,"
 "  FOREIGN KEY (recipient_id) REFERENCES recipients (recipient_id) ON DELETE CASCADE ON UPDATE CASCADE);"
-"CREATE INDEX rid_properties_index ON recipients_properties(recipient_id);"
-"CREATE UNIQUE INDEX recipient_property_index ON recipients_properties(recipient_id, proptag);";
+"CREATE INDEX rid_properties_index5 ON recipients_properties(recipient_id);"
+"CREATE UNIQUE INDEX recipient_property_index5 ON recipients_properties(recipient_id, proptag);";
 
 static constexpr char tbl_rcptprops_move5[] =
 "INSERT INTO recipients_properties SELECT recipient_id, proptag, propval FROM u0";
@@ -192,8 +197,8 @@ static constexpr char tbl_atxprops_6[] =
 "  proptag INTEGER NOT NULL,"
 "  propval BLOB NOT NULL,"
 "  FOREIGN KEY (attachment_id) REFERENCES attachments (attachment_id) ON DELETE CASCADE ON UPDATE CASCADE);"
-"CREATE INDEX attid_properties_index ON attachment_properties(attachment_id);"
-"CREATE UNIQUE INDEX attachment_property_index ON attachment_properties(attachment_id, proptag);";
+"CREATE INDEX attid_properties_index6 ON attachment_properties(attachment_id);"
+"CREATE UNIQUE INDEX attachment_property_index6 ON attachment_properties(attachment_id, proptag);";
 
 static constexpr char tbl_atxprops_move6[] =
 "INSERT INTO attachment_properties SELECT attachment_id, proptag, propval FROM u0";
@@ -468,27 +473,27 @@ static constexpr tbl_init tbl_midb_init_top[] = {
 };
 
 static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
-	{1, nullptr, tbl_config_1, tbl_config_move1},
-	{2, nullptr, tbl_storeprops_2, tbl_storeprops_move2},
-	{3, nullptr, tbl_fldprops_3, tbl_fldprops_move3},
-	{4, nullptr, tbl_msgprops_4, tbl_msgprops_move4},
-	{5, nullptr, tbl_rcptprops_5, tbl_rcptprops_move5},
-	{6, nullptr, tbl_atxprops_6, tbl_atxprops_move6},
+	{1, nullptr, "configurations", tbl_config_1, tbl_config_move1},
+	{2, nullptr, "store_properties", tbl_storeprops_2, tbl_storeprops_move2},
+	{3, nullptr, "folder_properties", tbl_fldprops_3, tbl_fldprops_move3},
+	{4, nullptr, "message_properties", tbl_msgprops_4, tbl_msgprops_move4},
+	{5, nullptr, "recipients_properties", tbl_rcptprops_5, tbl_rcptprops_move5},
+	{6, nullptr, "attachment_properties", tbl_atxprops_6, tbl_atxprops_move6},
 	{},
 };
 
 static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
-	{1, nullptr, tbl_config_1, tbl_config_move1},
-	{2, nullptr, tbl_storeprops_2, tbl_storeprops_move2},
-	{3, nullptr, tbl_fldprops_3, tbl_fldprops_move3},
-	{4, nullptr, tbl_msgprops_4, tbl_msgprops_move4},
-	{5, nullptr, tbl_rcptprops_5, tbl_rcptprops_move5},
-	{6, nullptr, tbl_atxprops_6, tbl_atxprops_move6},
+	{1, nullptr, "configurations", tbl_config_1, tbl_config_move1},
+	{2, nullptr, "store_properties", tbl_storeprops_2, tbl_storeprops_move2},
+	{3, nullptr, "folder_properties", tbl_fldprops_3, tbl_fldprops_move3},
+	{4, nullptr, "message_properties", tbl_msgprops_4, tbl_msgprops_move4},
+	{5, nullptr, "recipients_properties", tbl_rcptprops_5, tbl_rcptprops_move5},
+	{6, nullptr, "attachment_properties", tbl_atxprops_6, tbl_atxprops_move6},
 	{},
 };
 
 static constexpr tblite_upgradefn tbl_midb_upgrade_list[] = {
-	{1, nullptr, tbl_config_1, tbl_config_move1},
+	{1, nullptr, "configurations", tbl_config_1, tbl_config_move1},
 	{},
 };
 
@@ -500,6 +505,15 @@ static char kind_to_char(sqlite_kind k)
 	case sqlite_kind::midb: return 'M';
 	default: return 0;
 	}
+}
+
+static int dbop_sqlite_bump(sqlite3 *db, unsigned int version) try
+{
+	auto qstr = fmt::format("REPLACE INTO `configurations` "
+	            "(`config_id`,`config_value`) VALUES (10,{})", version);
+	return gx_sql_exec(db, qstr.c_str()) == SQLITE_OK ? 0 : -EINVAL;
+} catch (const std::bad_alloc &) {
+	return -ENOMEM;
 }
 
 static int dbop_sqlite_create_int(sqlite3 *db, const struct tbl_init *entry,
@@ -518,18 +532,24 @@ static int dbop_sqlite_create_int(sqlite3 *db, const struct tbl_init *entry,
 int dbop_sqlite_create(sqlite3 *db, sqlite_kind k, unsigned int flags)
 {
 	bool s0 = flags & DBOP_SCHEMA_0;
+	const tbl_init *tbl = nullptr;
 	switch (k) {
 	case sqlite_kind::pvt:
-		return dbop_sqlite_create_int(db,
-		       s0 ? tbl_pvt_init_0 : tbl_pvt_init_top, flags);
+		tbl = s0 ? tbl_pvt_init_0 : tbl_pvt_init_top;
+		break;
 	case sqlite_kind::pub:
-		return dbop_sqlite_create_int(db,
-		       s0 ? tbl_pub_init_0 : tbl_pub_init_top, flags);
+		tbl = s0 ? tbl_pub_init_0 : tbl_pub_init_top;
+		break;
 	case sqlite_kind::midb:
-		return dbop_sqlite_create_int(db,
-		       s0 ? tbl_midb_init_0 : tbl_midb_init_top, flags);
-	default: return -EINVAL;
+		tbl = s0 ? tbl_midb_init_0 : tbl_midb_init_top;
+		break;
+	default:
+		return -EINVAL;
 	}
+	auto ret = dbop_sqlite_create_int(db, tbl, flags);
+	if (ret != 0)
+		return ret;
+	return dbop_sqlite_bump(db, s0 ? 0 : dbop_sqlite_recentversion(k));
 }
 
 int dbop_sqlite_recentversion(sqlite_kind k)
@@ -557,24 +577,13 @@ int dbop_sqlite_schemaversion(sqlite3 *db, sqlite_kind)
 	return stm.col_uint64(0);
 }
 
-static int dbop_sqlite_bump(sqlite3 *db, const tblite_upgradefn *entry) try
-{
-	std::string qstr;
-	if (entry->v == 1)
-		qstr = fmt::format("INSERT INTO `configurations` VALUES (10, {})", entry->v);
-	else
-		qstr = fmt::format("UPDATE `configurations` SET `config_value`={} WHERE `config_id`=10", entry->v);
-	return gx_sql_exec(db, qstr.c_str()) == SQLITE_OK ? 0 : -EINVAL;
-} catch (const std::bad_alloc &) {
-	return -ENOMEM;
-}
-
 static int dbop_sqlite_chcol(sqlite3 *db, const tblite_upgradefn *entry)
 {
 	auto qstr = fmt::format("ALTER TABLE `{}` RENAME TO `u0`", entry->tbl_name);
 	if (gx_sql_exec(db, qstr.c_str()) != SQLITE_OK ||
 	    gx_sql_exec(db, entry->q_create) != SQLITE_OK ||
-	    gx_sql_exec(db, entry->q_move) != SQLITE_OK)
+	    gx_sql_exec(db, entry->q_move) != SQLITE_OK ||
+	    gx_sql_exec(db, "DROP TABLE `u0`") != SQLITE_OK)
 		return -EIO;
 	return 0;
 }
@@ -587,9 +596,9 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 		return -EIO;
 	const tblite_upgradefn *entry = nullptr;
 	switch (kind) {
-	case sqlite_kind::pub: entry = tbl_pub_upgrade_list;
-	case sqlite_kind::pvt: entry = tbl_pvt_upgrade_list;
-	case sqlite_kind::midb: entry = tbl_midb_upgrade_list;
+	case sqlite_kind::pub: entry = tbl_pub_upgrade_list; break;
+	case sqlite_kind::pvt: entry = tbl_pvt_upgrade_list; break;
+	case sqlite_kind::midb: entry = tbl_midb_upgrade_list; break;
 	default: return -EINVAL;
 	}
 	while (entry->v <= static_cast<unsigned int>(current) && entry->v != 0)
@@ -599,7 +608,8 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 			fprintf(stderr, "dbop_sqlite: upgrading %s to schema E%c-%u\n",
 			        filedesc, kind_to_char(kind), entry->v);
 		int ret;
-		if (entry->command != nullptr) {
+		if (entry->command != nullptr && entry->tbl_name == nullptr &&
+		    entry->q_create == nullptr && entry->q_move == nullptr) {
 			ret = gx_sql_exec(db, entry->command);
 			if (ret != SQLITE_OK)
 				return -EIO;
@@ -609,8 +619,11 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 			ret = dbop_sqlite_chcol(db, entry);
 			if (ret < 0)
 				return ret;
+		} else {
+			fprintf(stderr, "[dbop_sqlite]: malformed entry in upgrade table, sv %u\n", entry->v);
+			return -EINVAL;
 		}
-		dbop_sqlite_bump(db, entry);
+		dbop_sqlite_bump(db, entry->v);
 	}
 	return 0;
 }

@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <gromox/config_file.hpp>
 #include <gromox/database.h>
-#include <gromox/defs.h>
+#include <gromox/dbop.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
@@ -57,12 +57,13 @@ enum {
 
 static char *opt_config_file, *opt_datadir;
 static const char *g_lang;
-static unsigned int opt_force;
+static unsigned int opt_force, opt_create_old;
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'T', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting exchange.sqlite3"},
+	{"create-old", 0, HXTYPE_NONE, &opt_create_old, nullptr, nullptr, 0, "Create SQLite database tables version 0"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -200,13 +201,6 @@ int main(int argc, const char **argv) try
 	auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);
 	if (ret != 0)
 		return EXIT_FAILURE;
-	std::string sql_string;
-	ret = mbop_slurp(datadir, "sqlite3_common.txt", sql_string);
-	if (ret != 0)
-		return EXIT_FAILURE;
-	ret = mbop_slurp(datadir, "sqlite3_private.txt", sql_string);
-	if (ret != 0)
-		return EXIT_FAILURE;
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
 		return EXIT_FAILURE;
@@ -219,8 +213,14 @@ int main(int argc, const char **argv) try
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	auto sql_transact = gx_sql_begin_trans(psqlite);
-	if (gx_sql_exec(psqlite, sql_string.c_str()) != SQLITE_OK)
+	unsigned int flags = 0;
+	if (opt_create_old)
+		flags |= DBOP_SCHEMA_0;
+	ret = dbop_sqlite_create(psqlite, sqlite_kind::pvt, flags);
+	if (ret != 0) {
+		fprintf(stderr, "sqlite_create: %s\n", strerror(ret));
 		return EXIT_FAILURE;
+	}
 	ret = mbop_insert_namedprops(psqlite, datadir);
 	if (ret != 0)
 		return EXIT_FAILURE;
