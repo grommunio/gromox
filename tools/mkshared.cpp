@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2021–2022 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -10,6 +13,7 @@
 #include <sqlite3.h>
 #include <unistd.h>
 #include <utility>
+#include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
@@ -175,4 +179,28 @@ bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng, uint64_t user_id,
 	rop_util_free_binary(pbin);
 	sqlite3_reset(stmt);
 	return true;
+}
+
+int mbop_truncate_chown(const char *tool, const char *file, bool force_overwrite)
+{
+	/*
+	 * sqlite3_open does not expose O_EXCL, so let's create the file under
+	 * EXCL semantics ahead of time.
+	 */
+	unsigned int flags = O_RDWR | O_CREAT | O_EXCL;
+	if (force_overwrite) {
+		flags &= ~O_EXCL;
+		flags |= O_TRUNC;
+	}
+	auto fd = open(file, flags, S_IRUSR | S_IWUSR | S_IWGRP | S_IRGRP);
+	if (fd >= 0) {
+		adjust_rights(fd);
+		close(fd);
+	} else if (errno == EEXIST) {
+		tool = HX_basename(tool);
+		fprintf(stderr, "%s: %s already exists.\n", tool, file);
+		fprintf(stderr, "%s: Use the -f option to force overwrite.\n", tool);
+		return EEXIST;
+	}
+	return 0;
 }

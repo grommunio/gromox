@@ -143,25 +143,9 @@ int main(int argc, const char **argv) try
 	}
 	adjust_rights(temp_path.c_str());
 	temp_path += "/midb.sqlite3";
-	/*
-	 * sqlite3_open does not expose O_EXCL, so let's create the file under
-	 * EXCL semantics ahead of time.
-	 */
-	unsigned int tfdflags = O_RDWR | O_CREAT | O_EXCL;
-	if (opt_force) {
-		tfdflags = ~O_EXCL;
-		tfdflags |= O_TRUNC;
-	}
-	auto tfd = open(temp_path.c_str(), tfdflags, 0660);
-	if (tfd >= 0) {
-		adjust_rights(tfd);
-		close(tfd);
-	} else if (errno == EEXIST) {
-		printf("mkmidb: %s already exists\n", temp_path.c_str());
-		printf("mkmidb: Use the -f option to force overwrite.\n");
+	auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);
+	if (ret != 0)
 		return EXIT_FAILURE;
-	}
-
 	auto filp = fopen_sd("sqlite3_midb.txt", datadir);
 	if (filp == nullptr) {
 		fprintf(stderr, "fopen_sd sqlite3_midb.txt: %s\n", strerror(errno));

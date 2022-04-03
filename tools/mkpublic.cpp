@@ -198,21 +198,9 @@ int main(int argc, const char **argv) try
 	 * EXCL semantics ahead of time.
 	 */
 	auto temp_path = dir + "/exmdb/exchange.sqlite3";
-	unsigned int tfdflags = O_RDWR | O_CREAT | O_EXCL;
-	if (opt_force) {
-		tfdflags = ~O_EXCL;
-		tfdflags |= O_TRUNC;
-	}
-	auto tfd = open(temp_path.c_str(), tfdflags, 0660);
-	if (tfd >= 0) {
-		adjust_rights(tfd);
-		close(tfd);
-	} else if (errno == EEXIST) {
-		printf("mkpublic: %s already exists\n", temp_path.c_str());
-		printf("mkpublic: Use the -f option to force overwrite.\n");
+	auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);
+	if (ret != 0)
 		return EXIT_FAILURE;
-	}
-	
 	auto filp = fopen_sd("sqlite3_common.txt", datadir);
 	if (filp == nullptr) {
 		fprintf(stderr, "fopen_sd sqlite3_common.txt: %s\n", strerror(errno));
@@ -249,7 +237,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	
 	std::vector<std::string> namedprop_list;
-	auto ret = list_file_read_fixedstrings("propnames.txt", datadir, namedprop_list);
+	ret = list_file_read_fixedstrings("propnames.txt", datadir, namedprop_list);
 	if (ret == -ENOENT) {
 	} else if (ret < 0) {
 		fprintf(stderr, "list_file_initd propnames.txt: %s\n", strerror(-ret));
