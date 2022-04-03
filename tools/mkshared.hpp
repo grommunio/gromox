@@ -10,3 +10,4 @@ extern bool add_folderprop_sv(sqlite3_stmt *, const char *dispname, const char *
 extern bool add_folderprop_tv(sqlite3_stmt *);
 extern bool add_changenum(sqlite3_stmt *, enum cnguid_type, uint64_t user_id, uint64_t change_num);
 extern int mbop_truncate_chown(const char *, const char *, bool);
+extern int mbop_insert_namedprops(sqlite3 *, const char *);

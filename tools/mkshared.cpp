@@ -11,16 +11,22 @@
 #include <grp.h>
 #include <pwd.h>
 #include <sqlite3.h>
+#include <string>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <sys/stat.h>
+#include <gromox/database.h>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
 #include <gromox/proptags.hpp>
 #include <gromox/rop_util.hpp>
 #include "mkshared.hpp"
+
+using namespace gromox;
 
 void adjust_rights(int fd)
 {
@@ -201,6 +207,40 @@ int mbop_truncate_chown(const char *tool, const char *file, bool force_overwrite
 		fprintf(stderr, "%s: %s already exists.\n", tool, file);
 		fprintf(stderr, "%s: Use the -f option to force overwrite.\n", tool);
 		return EEXIST;
+	}
+	return 0;
+}
+
+int mbop_insert_namedprops(sqlite3 *sdb, const char *datadir)
+{
+	std::vector<std::string> nplist;
+	auto ret = list_file_read_fixedstrings("propnames.txt", datadir, nplist);
+	if (ret == -ENOENT) {
+		return 0;
+	} else if (ret < 0) {
+		printf("list_file_initd propnames.txt: %s\n", strerror(-ret));
+		return ret;
+	}
+	auto stm = gx_sql_prep(sdb, "INSERT INTO `named_properties` VALUES (?, ?)");
+	if (stm == nullptr)
+		return -EIO;
+
+	size_t i = 0;
+	for (const auto &name : nplist) {
+		uint16_t propid = 0x8001 + i++;
+		if (propid >= 0xFFFF) {
+			fprintf(stderr, "insert_namedprop: exhausted namedprop space\n");
+			return -EIO;
+		}
+		stm.bind_int64(1, propid);
+		stm.bind_text(2, name.c_str());
+		ret = stm.step();
+		if (ret != SQLITE_DONE) {
+			fprintf(stderr, "insert_namedprop/sqlite3_step \"%s\": %s\n",
+			        name.c_str(), sqlite3_errstr(ret));
+			return -EIO;
+		}
+		stm.reset();
 	}
 	return 0;
 }

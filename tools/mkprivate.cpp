@@ -23,7 +23,6 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
@@ -188,7 +187,6 @@ static BOOL create_search_folder(sqlite3 *psqlite, uint64_t folder_id,
 int main(int argc, const char **argv) try
 {
 	MYSQL *pmysql;
-	uint16_t propid;
 	MYSQL_ROW myrow;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
@@ -330,34 +328,12 @@ int main(int argc, const char **argv) try
 	auto sql_transact = gx_sql_begin_trans(psqlite);
 	if (gx_sql_exec(psqlite, sql_string.c_str()) != SQLITE_OK)
 		return EXIT_FAILURE;
-	
-	std::vector<std::string> namedprop_list;
-	ret = list_file_read_fixedstrings("propnames.txt", datadir, namedprop_list);
-	if (ret == -ENOENT) {
-	} else if (ret < 0) {
-		printf("list_file_initd propnames.txt: %s\n", strerror(-ret));
+	ret = mbop_insert_namedprops(psqlite, datadir);
+	if (ret != 0)
 		return EXIT_FAILURE;
-	}
-	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO named_properties VALUES (?, ?)");
-	if (pstmt == nullptr)
-		return EXIT_FAILURE;
-	
-	size_t i = 0;
-	for (const auto &name : namedprop_list) {
-		propid = 0x8001 + i++;
-		sqlite3_bind_int64(pstmt, 1, propid);
-		sqlite3_bind_text(pstmt, 2, name.c_str(), -1, SQLITE_STATIC);
-		ret = sqlite3_step(pstmt);
-		if (ret != SQLITE_DONE) {
-			printf("sqlite3_step on namedprop \"%s\": %s\n", name.c_str(), sqlite3_errstr(ret));
-			return EXIT_FAILURE;
-		}
-		sqlite3_reset(pstmt);
-	}
-	pstmt.finalize();
 	
 	nt_time = rop_util_unix_to_nttime(time(NULL));
-	pstmt = gx_sql_prep(psqlite, "INSERT INTO receive_table VALUES (?, ?, ?)");
+	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO receive_table VALUES (?, ?, ?)");
 	if (pstmt == nullptr)
 		return EXIT_FAILURE;
 	static constexpr std::pair<const char *, uint64_t> receive_folders[] = {
