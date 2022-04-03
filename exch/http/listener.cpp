@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
+#include <netdb.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <libHX/string.h>

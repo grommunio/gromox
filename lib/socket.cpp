@@ -21,6 +21,12 @@
 
 using namespace gromox;
 
+namespace {
+struct sock_del {
+	inline void operator()(struct addrinfo *a) const { freeaddrinfo(a); }
+};
+}
+
 /**
  * Return the pointer to the singular colon character, any other input
  * yields nullptr.
@@ -97,14 +103,14 @@ int gx_addrport_split(const char *spec, char *host,
 	return 1;
 }
 
-static std::unique_ptr<addrinfo, gx_sock_free>
+static std::unique_ptr<addrinfo, sock_del>
 gx_inet_lookup(const char *host, uint16_t port, unsigned int xflags)
 {
 	struct addrinfo hints{};
 	hints.ai_flags    = AI_V4MAPPED | xflags;
 	hints.ai_family   = AF_INET6;
 	hints.ai_socktype = SOCK_STREAM;
-	std::unique_ptr<addrinfo, gx_sock_free> aires;
+	std::unique_ptr<addrinfo, sock_del> aires;
 
 	char portbuf[16];
 	snprintf(portbuf, sizeof(portbuf), "%hu", port);
@@ -278,7 +284,7 @@ int gx_peer_is_local2(const sockaddr *peer_sockaddr, socklen_t peer_socklen)
 bool gx_peer_is_local(const char *addr)
 {
 	static constexpr struct addrinfo hints = {AI_V4MAPPED};
-	std::unique_ptr<addrinfo, gx_sock_free> aires;
+	std::unique_ptr<addrinfo, sock_del> aires;
 	if (getaddrinfo(addr, nullptr, &hints, &unique_tie(aires)) < 0)
 		return false;
 	return gx_peer_is_local2(aires->ai_addr, aires->ai_addrlen) > 0;
