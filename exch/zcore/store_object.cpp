@@ -34,9 +34,6 @@
 #include "store_object.h"
 #include "system_services.h"
 #include "zarafa_server.h"
-
-#define HGROWING_SIZE									0x500
-
 #define PROP_TAG_USERNAME								0x661A001F
 
 #define PROP_TAG_ECSERVERVERSION						0x6716001F

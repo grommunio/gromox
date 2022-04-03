@@ -31,7 +31,6 @@
 #include "table_object.h"
 #include "user_object.h"
 #include "zarafa_server.h"
-#define HGROWING_SIZE					250
 
 /* maximum handle number per session */
 #define MAX_HANDLE_NUM					500
