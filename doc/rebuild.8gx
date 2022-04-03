@@ -1,16 +1,12 @@
 .TH rebuild 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-rebuild \(em Tool for rebuilding a message store
+rebuild \(em Tool for low-level rebuilding a SQLite database
 .SH Synopsis
-\fB/usr/libexec/gromox/rebuild\fP [\fB\-T\fP \fItemplate_dir\fP]
-[\fB\-\-no\-reload\fP] \fImaildir\fP
+\fB/usr/libexec/gromox/rebuild\fP x.sqlite3[...]
 .SH Description
 gromox\-rebuild recreates the SQL database exchange.sqlite3 by way of a
 INSERT-SELECT cycle. In other words, it executes a SELECT for every one of the
-old tables and does an INSERT with a new database, then swaps the filenames.
-Afterwards, it issues a reload command to exmdb_provider(4gx) so that the
-server releases its open file descriptor on the old database file, similar to
-how for example logrotation is performed in Linux systems.
+old tables and does an INSERT with a new database, then swaps the files.
 .PP
 The intent of this helper utility is to repair SQLite-level
 corruptions; if and when such a corruption came to be, the error message (in

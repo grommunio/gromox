@@ -272,8 +272,8 @@ gromox_mt2exm_SOURCES = tools/genimport.cpp tools/mt2exm.cpp
 gromox_mt2exm_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
 gromox_pff2mt_SOURCES = tools/genimport.cpp tools/pff2mt.cpp
 gromox_pff2mt_LDADD = ${HX_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
-rebuild_SOURCES = tools/rebuild.cpp tools/mkshared.cpp
-rebuild_LDADD = ${fmt_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
+rebuild_SOURCES = tools/rebuild2.cpp
+rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_cplus.la
 timer_SOURCES = tools/timer.cpp
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
