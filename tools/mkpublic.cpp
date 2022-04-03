@@ -31,13 +31,9 @@
 #include "mkshared.hpp"
 #include "exch/mysql_adaptor/mysql_adaptor.h"
 
-using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 
-static uint32_t g_last_art;
-static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
-static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
 static char *opt_config_file, *opt_datadir;
 static unsigned int opt_force;
 
@@ -48,58 +44,6 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
-
-static BOOL create_generic_folder(sqlite3 *psqlite,
-	uint64_t folder_id, uint64_t parent_id, int domain_id,
-	const char *pdisplayname, const char *pcontainer_class)
-{
-	uint64_t cur_eid;
-	uint64_t max_eid;
-	uint32_t art_num;
-	uint64_t change_num;
-	char sql_string[256];
-	
-	cur_eid = g_last_eid + 1;
-	g_last_eid += ALLOCATED_EID_RANGE;
-	max_eid = g_last_eid;
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
-	        " VALUES (%llu, %llu, %lld, 1)", LLU(cur_eid),
-	        LLU(max_eid), static_cast<long long>(time(nullptr)));
-	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
-		return FALSE;
-	g_last_cn ++;
-	change_num = g_last_cn;
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders "
-				"(folder_id, parent_id, change_number, "
-				"cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, folder_id);
-	if (parent_id == 0)
-		sqlite3_bind_null(pstmt, 2);
-	else
-		sqlite3_bind_int64(pstmt, 2, parent_id);
-	sqlite3_bind_int64(pstmt, 3, change_num);
-	sqlite3_bind_int64(pstmt, 4, cur_eid);
-	sqlite3_bind_int64(pstmt, 5, max_eid);
-	if (sqlite3_step(pstmt) != SQLITE_DONE)
-		return FALSE;
-	pstmt.finalize();
-	g_last_art ++;
-	art_num = g_last_art;
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO "
-	          "folder_properties VALUES (%llu, ?, ?)", LLU(folder_id));
-	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	if (!add_folderprop_iv(pstmt, art_num, true) ||
-	    !add_folderprop_sv(pstmt, pdisplayname, pcontainer_class) ||
-	    !add_folderprop_tv(pstmt) ||
-	    !add_changenum(pstmt, CN_DOMAIN, domain_id, change_num))
-		return false;
-	return TRUE;
-}
 
 int main(int argc, const char **argv) try
 {
@@ -241,8 +185,8 @@ int main(int argc, const char **argv) try
 		{PUBLIC_FID_NONIPMSUBTREE, PUBLIC_FID_EFORMSREGISTRY, "EFORMS REGISTRY"},
 	};
 	for (const auto &e : generic_folders) {
-		if (!create_generic_folder(psqlite, e.fid, e.parent,
-		    domain_id, e.name, nullptr)) {
+		if (mbop_create_generic_folder(psqlite, e.fid, e.parent,
+		    domain_id, e.name)) {
 			printf("Failed to create \"%s\" folder\n", e.name);
 			return EXIT_FAILURE;
 		}

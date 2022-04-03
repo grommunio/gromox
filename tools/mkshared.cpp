@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
@@ -29,6 +30,10 @@
 #include "mkshared.hpp"
 
 using namespace gromox;
+
+static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
+uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
+uint32_t g_last_art;
 
 void adjust_rights(int fd)
 {
@@ -91,7 +96,8 @@ bool make_mailbox_hierarchy(const std::string &base) try
 	return false;
 }
 
-bool add_folderprop_iv(sqlite3_stmt *stmt, uint32_t art_num, bool add_next)
+static bool add_folderprop_iv(sqlite3_stmt *stmt,
+    uint32_t art_num, bool add_next)
 {
 	const std::pair<uint32_t, uint32_t> tagvals[] = {
 		{PR_DELETED_COUNT_TOTAL, 0},
@@ -116,7 +122,7 @@ bool add_folderprop_iv(sqlite3_stmt *stmt, uint32_t art_num, bool add_next)
 	return true;
 }
 
-bool add_folderprop_sv(sqlite3_stmt *stmt, const char *dispname,
+static bool add_folderprop_sv(sqlite3_stmt *stmt, const char *dispname,
     const char *contcls)
 {
 	const std::pair<uint32_t, const char *> tagvals[] =
@@ -138,7 +144,7 @@ bool add_folderprop_sv(sqlite3_stmt *stmt, const char *dispname,
 	return true;
 }
 
-bool add_folderprop_tv(sqlite3_stmt *stmt)
+static bool add_folderprop_tv(sqlite3_stmt *stmt)
 {
 	static constexpr uint32_t tags[] = {
 		PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PROP_TAG_HIERREV,
@@ -155,8 +161,8 @@ bool add_folderprop_tv(sqlite3_stmt *stmt)
 	return true;
 }
 
-bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng, uint64_t user_id,
-    uint64_t change_num)
+static bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng,
+    uint64_t user_id, uint64_t change_num)
 {
 	XID xid{cng == CN_DOMAIN ? rop_util_make_domain_guid(user_id) :
 	        rop_util_make_user_guid(user_id), change_num};
@@ -279,5 +285,83 @@ int mbop_slurp(const char *datadir, const char *file, std::string &sql_string)
 		sql_string.append(data, len);
 		free(data);
 	}
+	return 0;
+}
+
+int mbop_create_generic_folder(sqlite3 *sdb, uint64_t folder_id,
+    uint64_t parent_id, int user_id, const char *dispname,
+    const char *cont_cls, bool hidden)
+{
+	auto cur_eid = g_last_eid + 1;
+	g_last_eid += ALLOCATED_EID_RANGE;
+	auto max_eid = g_last_eid;
+	auto qstr = fmt::format("INSERT INTO allocated_eids VALUES ({}, {}, {}, 1)",
+	            cur_eid, max_eid, time(nullptr));
+	if (gx_sql_exec(sdb, qstr.c_str()) != SQLITE_OK)
+		return -EIO;
+
+	auto change_num = ++g_last_cn;
+	auto stm = gx_sql_prep(sdb, "INSERT INTO folders (folder_id, parent_id, "
+	           "change_number, cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
+	if (stm == nullptr)
+		return -EIO;
+	stm.bind_int64(1, folder_id);
+	if (parent_id == 0)
+		stm.bind_null(2);
+	else
+		stm.bind_int64(2, parent_id);
+	stm.bind_int64(3, change_num);
+	stm.bind_int64(4, cur_eid);
+	stm.bind_int64(5, max_eid);
+	if (stm.step() != SQLITE_DONE)
+		return -EIO;
+
+	qstr = fmt::format("INSERT INTO folder_properties VALUES ({}, ?, ?)", folder_id);
+	stm = gx_sql_prep(sdb, qstr.c_str());
+	if (stm == nullptr)
+		return -EIO;
+	if (!add_folderprop_iv(stm, ++g_last_art, true) ||
+	    !add_folderprop_sv(stm, dispname, cont_cls) ||
+	    !add_folderprop_tv(stm) ||
+	    !add_changenum(stm, CN_USER, user_id, change_num))
+		return -EIO;
+	if (hidden) {
+		stm.bind_int64(1, PR_ATTR_HIDDEN);
+		stm.bind_int64(2, 1);
+		if (stm.step() != SQLITE_DONE)
+			return -EIO;
+		stm.reset();
+	}
+	return 0;
+}
+
+int mbop_create_search_folder(sqlite3 *sdb, uint64_t folder_id,
+    uint64_t parent_id, int user_id, const char *dispname)
+{
+	static constexpr char cont_cls[] = "IPF.Note";
+	auto change_num = ++g_last_cn;
+	auto stm = gx_sql_prep(sdb, "INSERT INTO folders (folder_id, parent_id, "
+	           "change_number, is_search, cur_eid, max_eid) "
+	           "VALUES (?, ?, ?, 1, 0, 0)");
+	if (stm == nullptr)
+		return -EIO;
+	stm.bind_int64(1, folder_id);
+	if (parent_id == 0)
+		stm.bind_null(2);
+	else
+		stm.bind_int64(2, parent_id);
+	stm.bind_int64(3, change_num);
+	if (stm.step() != SQLITE_DONE)
+		return -EIO;
+
+	auto qstr = fmt::format("INSERT INTO folder_properties VALUES ({}, ?, ?)", folder_id);
+	stm = gx_sql_prep(sdb, qstr.c_str());
+	if (stm == nullptr)
+		return -EIO;
+	if (!add_folderprop_iv(stm, ++g_last_art, false) ||
+	    !add_folderprop_sv(stm, dispname, cont_cls) ||
+	    !add_folderprop_tv(stm) ||
+	    !add_changenum(stm, CN_USER, user_id, change_num))
+		return -EIO;
 	return 0;
 }

@@ -32,7 +32,6 @@
 #include "mkshared.hpp"
 #include "exch/mysql_adaptor/mysql_adaptor.h"
 
-using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 
@@ -56,9 +55,6 @@ enum {
 	RES_TOTAL_NUM
 };
 
-static uint32_t g_last_art;
-static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
-static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
 static char *opt_config_file, *opt_datadir;
 static const char *g_lang;
 static unsigned int opt_force;
@@ -71,115 +67,27 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static BOOL create_generic_folder1(sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t parent_id, int user_id, const char *pcontainer_class,
-    const char *pdisplayname, BOOL b_hidden)
-{
-	uint64_t cur_eid;
-	uint64_t max_eid;
-	uint32_t art_num;
-	uint64_t change_num;
-	char sql_string[256];
-	
-	cur_eid = g_last_eid + 1;
-	g_last_eid += ALLOCATED_EID_RANGE;
-	max_eid = g_last_eid;
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
-	        " VALUES (%llu, %llu, %lld, 1)", LLU(cur_eid),
-	        LLU(max_eid), static_cast<long long>(time(nullptr)));
-	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
-		return FALSE;
-	g_last_cn ++;
-	change_num = g_last_cn;
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders "
-				"(folder_id, parent_id, change_number, "
-				"cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, folder_id);
-	if (parent_id == 0)
-		sqlite3_bind_null(pstmt, 2);
-	else
-		sqlite3_bind_int64(pstmt, 2, parent_id);
-	sqlite3_bind_int64(pstmt, 3, change_num);
-	sqlite3_bind_int64(pstmt, 4, cur_eid);
-	sqlite3_bind_int64(pstmt, 5, max_eid);
-	if (sqlite3_step(pstmt) != SQLITE_DONE)
-		return FALSE;
-	pstmt.finalize();
-	g_last_art ++;
-	art_num = g_last_art;
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO "
-		"folder_properties VALUES (%llu, ?, ?)", LLU(folder_id));
-	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	if (!add_folderprop_iv(pstmt, art_num, true) ||
-	    !add_folderprop_sv(pstmt, pdisplayname, pcontainer_class) ||
-	    !add_folderprop_tv(pstmt) ||
-	    !add_changenum(pstmt, CN_USER, user_id, change_num))
-		return false;
-	if (b_hidden) {
-		sqlite3_bind_int64(pstmt, 1, PR_ATTR_HIDDEN);
-		sqlite3_bind_int64(pstmt, 2, 1);
-		if (sqlite3_step(pstmt) != SQLITE_DONE)
-			return FALSE;
-		sqlite3_reset(pstmt);
-	}
-	return TRUE;
-}
-
-static BOOL create_generic_folder(sqlite3 *sq, uint64_t fid, uint64_t parent,
+static int create_generic_folder(sqlite3 *sq, uint64_t fid, uint64_t parent,
     int user, const char *fldclass, BOOL hidden)
 {
 	auto dn_eng  = folder_namedb_get("en", fid);
 	auto dn_lang = folder_namedb_get(g_lang, fid);
-	auto ret = create_generic_folder1(sq, fid, parent, user, fldclass,
-	           dn_lang, hidden);
-	if (!ret)
+	auto ret = mbop_create_generic_folder(sq, fid, parent, user, dn_lang,
+	           fldclass, hidden);
+	if (ret != 0)
 		fprintf(stderr, "Failed to create folder \"%s\" (%s)\n", dn_lang, dn_eng);
 	return ret;
 }
 
-static BOOL create_search_folder(sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t parent_id, int user_id, const char *pcontainer_class)
+static int create_search_folder(sqlite3 *sdb, uint64_t fid, uint64_t parent,
+    int sec_id)
 {
-	auto pdisplayname = folder_namedb_get(g_lang, folder_id);
-	uint32_t art_num;
-	uint64_t change_num;
-	char sql_string[256];
-	
-	g_last_cn ++;
-	change_num = g_last_cn;
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders "
-		"(folder_id, parent_id, change_number, is_search,"
-		" cur_eid, max_eid) VALUES (?, ?, ?, 1, 0, 0)");
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, folder_id);
-	if (parent_id == 0)
-		sqlite3_bind_null(pstmt, 2);
-	else
-		sqlite3_bind_int64(pstmt, 2, parent_id);
-	sqlite3_bind_int64(pstmt, 3, change_num);
-	if (sqlite3_step(pstmt) != SQLITE_DONE)
-		return FALSE;
-	pstmt.finalize();
-	g_last_art ++;
-	art_num = g_last_art;
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO "
-	          "folder_properties VALUES (%llu, ?, ?)", LLU(folder_id));
-	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	if (!add_folderprop_iv(pstmt, art_num, false) ||
-	    !add_folderprop_sv(pstmt, pdisplayname, pcontainer_class) ||
-	    !add_folderprop_tv(pstmt) ||
-	    !add_changenum(pstmt, CN_USER, user_id, change_num))
-		return false;
-	return TRUE;
+	auto dn_eng  = folder_namedb_get("en", fid);
+	auto dn_lang = folder_namedb_get(g_lang, fid);
+	auto ret = mbop_create_search_folder(sdb, fid, parent, sec_id, dn_lang);
+	if (ret != 0)
+		fprintf(stderr, "Failed to create folder \"%s\" (%s)\n", dn_lang, dn_eng);
+	return ret;
 }
 
 int main(int argc, const char **argv) try
@@ -383,11 +291,11 @@ int main(int argc, const char **argv) try
 		{PRIVATE_FID_ROOT, PRIVATE_FID_LOCAL_FREEBUSY},
 	};
 	for (const auto &e : generic_folders)
-		if (!create_generic_folder(psqlite, e.fid,
-		    e.parent, user_id, e.fldclass, e.hidden))
+		if (create_generic_folder(psqlite, e.fid,
+		    e.parent, user_id, e.fldclass, e.hidden) != 0)
 			return EXIT_FAILURE;
-	if (!create_search_folder(psqlite, PRIVATE_FID_SPOOLER_QUEUE,
-	    PRIVATE_FID_ROOT, user_id, "IPF.Note")) {
+	if (create_search_folder(psqlite, PRIVATE_FID_SPOOLER_QUEUE,
+	    PRIVATE_FID_ROOT, user_id) != 0) {
 		printf("fail to create \"spooler queue\" folder\n");
 		return EXIT_FAILURE;
 	}
