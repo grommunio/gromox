@@ -12,14 +12,10 @@ Afterwards, it issues a reload command to exmdb_provider(4gx) so that the
 server releases its open file descriptor on the old database file, similar to
 how for example logrotation is performed in Linux systems.
 .PP
-The original intent of this helper utility was to repair SQLite-level
+The intent of this helper utility is to repair SQLite-level
 corruptions; if and when such a corruption came to be, the error message (in
 e.g. exmdb_provider's logs) to look for would be "database disk image is
 malformed".
-.PP
-The rebuild utility can also be used in a limited fashion for schema updates,
-however this only works as long as the column count and names are exactly the
-same.
 .SH Options
 .TP
 \fB\-T\fP \fIpath\fP

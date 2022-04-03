@@ -2,8 +2,8 @@
 .SH Name
 gromox\-mkmidb \(em Tool for creating a blank message index database
 .SH Synopsis
-\fBgromox\-mkmidb\fP [\fB\-T\fP \fItemplate_dir\fP] [\fB\-c\fP \fIconfig\fP]
-[\fB\-fP\fP] \fIusername\fP
+\fBgromox\-mkmidb\fP [\fB\-U\fP] [\fB\-T\fP \fItemplate_dir\fP] [\fB\-c\fP
+\fIconfig\fP] [\fB\-fP\fP] \fIusername\fP
 .SH Options
 .TP
 \fB\-T\fP \fIpath\fP
@@ -13,6 +13,10 @@ stored.
 .br
 Default: \fI/usr/share/gromox\fP
 .TP
+\fB\-U\fP
+Rather than creating the SQLite file, upgrade it. (The \-f option has no
+effect.)
+.TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
 specified, /etc/gromox/mysql_adaptor.cfg will be read for MySQL connection
@@ -21,6 +25,10 @@ parameters if that file exists.
 \fB\-f\fP
 Force overwrite when an existing SQLite database is detected for the user.
 By default, mkprivate will not touch midb.sqlite3.
+.TP
+\fB\-\-create\-old\fP
+Create blank initial database using version 0. (This can be used for testing
+the upgrade procedure.)
 .TP
 \fB\-?\fP
 Display option summary.

@@ -31,12 +31,13 @@ enum {
 	CONFIG_ID_USERNAME = 1, /* obsolete */
 };
 
-static unsigned int opt_force, opt_create_old;
+static unsigned int opt_force, opt_create_old, opt_upgrade;
 static char *opt_config_file;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'T', HXTYPE_STRING, nullptr, nullptr, nullptr, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting exchange.sqlite3"},
+	{nullptr, 'U', HXTYPE_NONE, &opt_upgrade, nullptr, nullptr, 0, "Perform schema upgrade"},
 	{"create-old", 0, HXTYPE_NONE, &opt_create_old, nullptr, nullptr, 0, "Create SQLite database tables version 0"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -142,9 +143,11 @@ int main(int argc, const char **argv) try
 	}
 	adjust_rights(temp_path.c_str());
 	temp_path += "/midb.sqlite3";
-	auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);
-	if (ret != 0)
-		return EXIT_FAILURE;
+	if (!opt_upgrade) {
+		auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);
+		if (ret != 0)
+			return EXIT_FAILURE;
+	}
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
 		return EXIT_FAILURE;
@@ -156,11 +159,20 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	auto sql_transact = gx_sql_begin_trans(psqlite);
 	unsigned int flags = 0;
+	if (opt_upgrade) {
+		auto ret = dbop_sqlite_upgrade(psqlite, temp_path.c_str(),
+		           sqlite_kind::midb, flags | DBOP_VERBOSE);
+		if (ret != 0) {
+			fprintf(stderr, "dbop_sqlite_upgrade: %s\n", strerror(ret));
+			return EXIT_FAILURE;
+		}
+		return EXIT_SUCCESS;
+	}
+	auto sql_transact = gx_sql_begin_trans(psqlite);
 	if (opt_create_old)
 		flags |= DBOP_SCHEMA_0;
-	ret = dbop_sqlite_create(psqlite, sqlite_kind::midb, flags);
+	auto ret = dbop_sqlite_create(psqlite, sqlite_kind::midb, flags);
 	if (ret != 0) {
 		fprintf(stderr, "dbop_sqlite_create_top: %s\n", strerror(ret));
 		return EXIT_FAILURE;
