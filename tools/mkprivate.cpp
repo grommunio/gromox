@@ -13,7 +13,6 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
-#include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
@@ -22,7 +21,6 @@
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
@@ -294,26 +292,13 @@ int main(int argc, const char **argv) try
 	auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);
 	if (ret != 0)
 		return EXIT_FAILURE;
-	auto filp = fopen_sd("sqlite3_common.txt", datadir);
-	if (filp == nullptr) {
-		fprintf(stderr, "fopen_sd sqlite3_common.txt: %s\n", strerror(errno));
-		return EXIT_FAILURE;
-	}
 	std::string sql_string;
-	size_t slurp_len = 0;
-	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(fileno(filp.get()), &slurp_len));
-	if (slurp_data != nullptr)
-		sql_string.append(slurp_data.get(), slurp_len);
-	filp = fopen_sd("sqlite3_private.txt", datadir);
-	if (filp == nullptr) {
-		fprintf(stderr, "fopen_sd sqlite3_private.txt: %s\n", strerror(errno));
+	ret = mbop_slurp(datadir, "sqlite3_common.txt", sql_string);
+	if (ret != 0)
 		return EXIT_FAILURE;
-	}
-	slurp_data.reset(HX_slurp_fd(fileno(filp.get()), &slurp_len));
-	if (slurp_data != nullptr)
-		sql_string.append(slurp_data.get(), slurp_len);
-	slurp_data.reset();
-	filp.reset();
+	ret = mbop_slurp(datadir, "sqlite3_private.txt", sql_string);
+	if (ret != 0)
+		return EXIT_FAILURE;
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
 		return EXIT_FAILURE;

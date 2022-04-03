@@ -15,10 +15,12 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/database.h>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
@@ -259,6 +261,23 @@ int mbop_insert_storeprops(sqlite3 *sdb, const std::pair<uint32_t, uint64_t> *pr
 			return -EIO;
 		}
 		stm.reset();
+	}
+	return 0;
+}
+
+int mbop_slurp(const char *datadir, const char *file, std::string &sql_string)
+{
+	auto fp = fopen_sd(file, datadir);
+	if (fp == nullptr) {
+		int se = errno;
+		fprintf(stderr, "fopen_sd %s: %s\n", file, strerror(errno));
+		return -(errno = se);
+	}
+	size_t len = 0;
+	auto data = HX_slurp_fd(fileno(fp.get()), &len);
+	if (data != nullptr) {
+		sql_string.append(data, len);
+		free(data);
 	}
 	return 0;
 }
