@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <sqlite3.h>
+#include <utility>
 enum cnguid_type { CN_USER, CN_DOMAIN };
 extern void adjust_rights(int fd);
 extern void adjust_rights(const char *);
@@ -11,3 +12,4 @@ extern bool add_folderprop_tv(sqlite3_stmt *);
 extern bool add_changenum(sqlite3_stmt *, enum cnguid_type, uint64_t user_id, uint64_t change_num);
 extern int mbop_truncate_chown(const char *, const char *, bool);
 extern int mbop_insert_namedprops(sqlite3 *, const char *);
+extern int mbop_insert_storeprops(sqlite3 *, const std::pair<uint32_t, uint64_t> *);

@@ -244,3 +244,21 @@ int mbop_insert_namedprops(sqlite3 *sdb, const char *datadir)
 	}
 	return 0;
 }
+
+int mbop_insert_storeprops(sqlite3 *sdb, const std::pair<uint32_t, uint64_t> *props)
+{
+	auto stm = gx_sql_prep(sdb, "INSERT INTO `store_properties` VALUES (?, ?)");
+	if (stm == nullptr)
+		return -EIO;
+	for (const auto *e = props; e->first != 0; ++e) {
+		stm.bind_int64(1, e->first);
+		stm.bind_int64(2, e->second);
+		auto ret = stm.step();
+		if (ret != SQLITE_DONE) {
+			fprintf(stderr, "insert_storeprops: step: %s\n", sqlite3_errstr(ret));
+			return -EIO;
+		}
+		stm.reset();
+	}
+	return 0;
+}

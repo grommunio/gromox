@@ -236,26 +236,16 @@ int main(int argc, const char **argv) try
 	if (ret != 0)
 		return EXIT_FAILURE;
 	
-	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO store_properties VALUES (?, ?)");
-	if (pstmt == nullptr)
-		return EXIT_FAILURE;
-	nt_time = rop_util_unix_to_nttime(time(NULL));
 	std::pair<uint32_t, uint64_t> storeprops[] = {
 		{PR_CREATION_TIME, nt_time},
 		{PR_MESSAGE_SIZE_EXTENDED, 0},
 		{PR_ASSOC_MESSAGE_SIZE_EXTENDED, 0},
 		{PR_NORMAL_MESSAGE_SIZE_EXTENDED, 0},
+		{},
 	};
-	for (const auto &e : storeprops) {
-		sqlite3_bind_int64(pstmt, 1, e.first);
-		sqlite3_bind_int64(pstmt, 2, e.second);
-		if (sqlite3_step(pstmt) != SQLITE_DONE) {
-			printf("fail to step sql inserting\n");
-			return EXIT_FAILURE;
-		}
-		sqlite3_reset(pstmt);
-	}
-	pstmt.finalize();
+	ret = mbop_insert_storeprops(psqlite, storeprops);
+	if (ret != 0)
+		return EXIT_FAILURE;
 	static constexpr struct {
 		uint64_t parent = 0, fid = 0;
 		const char *name = nullptr;
@@ -273,7 +263,7 @@ int main(int argc, const char **argv) try
 		}
 	}
 
-	pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
+	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return EXIT_FAILURE;
 	char tmp_bguid[GUIDSTR_SIZE];
