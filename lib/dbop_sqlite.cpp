@@ -237,6 +237,31 @@ static constexpr char tbl_pvt_msgs_0[] =
 "CREATE INDEX parent_assoc_index ON messages(parent_fid, is_associated);"
 "CREATE INDEX parent_read_assoc_index ON messages(parent_fid, read_state, is_associated);";
 
+static constexpr char tbl_pvt_msgs_7[] =
+"CREATE TABLE messages ("
+"  message_id INTEGER PRIMARY KEY,"
+"  parent_fid INTEGER,"
+"  parent_attid INTEGER,"
+"  is_deleted INTEGER DEFAULT 0,"
+"  is_associated INTEGER,"
+"  change_number INTEGER UNIQUE NOT NULL,"
+"  read_cn INTEGER UNIQUE DEFAULT NULL,"
+"  read_state INTEGER DEFAULT 0,"
+"  message_size INTEGER NOT NULL,"
+"  group_id INTEGER DEFAULT NULL,"
+"  timer_id INTEGER DEFAULT NULL,"
+"  mid_string TEXT DEFAULT NULL,"
+"  FOREIGN KEY (parent_fid) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE,"
+"  FOREIGN KEY (parent_attid) REFERENCES attachments (attachment_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE INDEX pid_messages_index7 ON messages(parent_fid);"
+"CREATE INDEX attid_messages_index7 ON messages(parent_attid);"
+"CREATE INDEX assoc_index7 ON messages(is_associated);"
+"CREATE INDEX parent_assoc_index7 ON messages(parent_fid, is_associated);"
+"CREATE INDEX parent_read_assoc_index7 ON messages(parent_fid, read_state, is_associated);";
+
+static constexpr char tbl_pvt_msgs_move7[] =
+"INSERT INTO messages SELECT message_id, parent_fid, parent_attid, 0 AS is_deleted, is_associated, change_number, read_cn, read_state, message_size, group_id, timer_id, mid_string FROM u0";
+
 static constexpr char tbl_pvt_recvfld_0[] =
 "CREATE TABLE receive_table ("
 "  class TEXT COLLATE NOCASE UNIQUE NOT NULL,"
@@ -479,6 +504,11 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{4, nullptr, "message_properties", tbl_msgprops_4, tbl_msgprops_move4},
 	{5, nullptr, "recipients_properties", tbl_rcptprops_5, tbl_rcptprops_move5},
 	{6, nullptr, "attachment_properties", tbl_atxprops_6, tbl_atxprops_move6},
+	/*
+	 * Some AAPI versions generated schema 0 databases with an is_deleted column.
+	 * Recreate that table to make that column official.
+	 */
+	{7, nullptr, "messages", tbl_pvt_msgs_7, tbl_pvt_msgs_move7},
 	{},
 };
 
