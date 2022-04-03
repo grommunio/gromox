@@ -35,7 +35,7 @@ static unsigned int g_action;
 static struct HXoption g_options_table[] = {
 	{nullptr, 'C', HXTYPE_VAL, &g_action, nullptr, nullptr, OP_CREATE_RECENT, "Create MySQL database tables"},
 	{nullptr, 'U', HXTYPE_VAL, &g_action, nullptr, nullptr, OP_UPGRADE, "Upgrade MySQL database tables"},
-	{"create-old", 0, HXTYPE_VAL, &g_action, nullptr, nullptr, OP_CREATE_ZERO, "Create MySQL database tables version n0"},
+	{"create-old", 0, HXTYPE_VAL, &g_action, nullptr, nullptr, OP_CREATE_ZERO, "Create MySQL database tables version 0"},
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,

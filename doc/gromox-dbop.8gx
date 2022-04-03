@@ -1,6 +1,6 @@
 .TH gromox\-dbop 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-dbop \(em Database maintenance utility
+gromox\-dbop \(em User database maintenance utility
 .SH Synopsis
 \fBgromox\-dbop [\-CU\fP] [\fB\-\-create\-old\fP] [\fB\-c\fP
 \fImysql_adaptor.cfg\fP]
@@ -14,7 +14,8 @@ Upgrade the schema of the user information database. The database
 (MYSQL_DBNAME) should exist and be blank.
 .TP
 \fB\-\-create\-old\fP
-Create blank initial database using version n0. (This can be used for testing.)
+Create blank initial database using version 0. (This can be used for testing
+the upgrade procedure.)
 .TP
 \fB\-c\fP \fImysql_adaptor.cfg\fP
 Path to a configuration file that defines MYSQL_HOST, MYSQL_USERNAME, etc. If

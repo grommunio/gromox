@@ -377,10 +377,10 @@ static constexpr struct tbl_init tbl_init_0[] = {
 static int dbop_mysql_create_int(MYSQL *conn, const struct tbl_init *entry)
 {
 	for (; entry->name != nullptr; ++entry) {
-		printf("Creating %s\n", entry->name);
+		fprintf(stderr, "Creating %s\n", entry->name);
 		auto ret = mysql_real_query(conn, entry->command, strlen(entry->command));
 		if (ret != 0) {
-			printf("Query \"%s\":\n%s\n", entry->command, mysql_error(conn));
+			fprintf(stderr, "Query \"%s\":\n%s\n", entry->command, mysql_error(conn));
 			return EXIT_FAILURE;
 		}
 	}
@@ -610,7 +610,7 @@ int dbop_mysql_create_top(MYSQL *conn)
 	         dbop_mysql_recentversion());
 	ret = mysql_real_query(conn, uq, strlen(uq));
 	if (ret != 0) {
-		printf("Query \"%s\":\n%s\n", uq, mysql_error(conn));
+		fprintf(stderr, "Query \"%s\":\n%s\n", uq, mysql_error(conn));
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -766,7 +766,7 @@ int dbop_mysql_recentversion()
 int dbop_mysql_upgrade(MYSQL *conn)
 {
 	auto current = dbop_mysql_schemaversion(conn);
-	printf("Current database schema: gx-%d\n", current);
+	fprintf(stderr, "Current database schema: gx-%d\n", current);
 	if (current < 0)
 		return EXIT_FAILURE;
 
@@ -775,10 +775,10 @@ int dbop_mysql_upgrade(MYSQL *conn)
 		++entry;
 
 	for (; entry->v != 0; ++entry) {
-		printf("Upgrading schema to gx-%u\n", entry->v);
+		fprintf(stderr, "Upgrading schema to GX-%u\n", entry->v);
 		auto ret = mysql_real_query(conn, entry->command, strlen(entry->command));
 		if (ret != 0) {
-			printf("\"%s\": %s\n", entry->command, mysql_error(conn));
+			fprintf(stderr, "\"%s\": %s\n", entry->command, mysql_error(conn));
 			return EXIT_FAILURE;
 		}
 		char uq[72];
@@ -788,7 +788,7 @@ int dbop_mysql_upgrade(MYSQL *conn)
 			snprintf(uq, sizeof(uq), "UPDATE `options` SET `value`=%u WHERE `key`='schemaversion'", entry->v);
 		ret = mysql_real_query(conn, uq, strlen(uq));
 		if (ret != 0) {
-			printf("\"%s\": %s\n", uq, mysql_error(conn));
+			fprintf(stderr, "\"%s\": %s\n", uq, mysql_error(conn));
 			return EXIT_FAILURE;
 		}
 	}
