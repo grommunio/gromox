@@ -5,7 +5,7 @@
 #include <gromox/defs.h>
 
 struct gx_sock_free {
-	void operator()(struct addrinfo *a) { freeaddrinfo(a); }
+	inline void operator()(struct addrinfo *a) const { freeaddrinfo(a); }
 };
 
 extern int gx_addrport_split(const char *spec, char *host, size_t hsize, uint16_t *port);
