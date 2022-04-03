@@ -33,6 +33,7 @@ static std::shared_ptr<CONFIG_FILE> g_config_during_init;
 static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"cache_interval", "2h", CFG_TIME, "1s"},
 	{"dbg_synthesize_content", "0"},
+	{"exmdb_schema_upgrades", "auto"},
 	{"exrpc_debug", "0"},
 	{"enable_dam", "1", CFG_BOOL},
 	{"listen_ip", "::1"},
@@ -79,6 +80,13 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	g_enable_dam = parse_bool(pconfig->get_value("enable_dam"));
 	g_mbox_contention_warning = pconfig->get_ll("mbox_contention_warning");
 	g_mbox_contention_reject = pconfig->get_ll("mbox_contention_reject");
+	auto s = pconfig->get_value("exmdb_schema_upgrades");
+	if (strcmp(s, "auto") == 0)
+		g_exmdb_schema_upgrades = EXMDB_UPGRADE_AUTO;
+	else if (strcmp(s, "yes") == 0)
+		g_exmdb_schema_upgrades = EXMDB_UPGRADE_YES;
+	else
+		g_exmdb_schema_upgrades = EXMDB_UPGRADE_NO;
 	return true;
 } catch (const cfg_error &) {
 	return false;

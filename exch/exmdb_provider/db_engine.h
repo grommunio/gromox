@@ -11,6 +11,12 @@
 #define CONTENT_ROW_MESSAGE						2
 
 enum {
+	EXMDB_UPGRADE_NO = 0,
+	EXMDB_UPGRADE_YES,
+	EXMDB_UPGRADE_AUTO,
+};
+
+enum {
 	DYNAMIC_EVENT_NEW_MESSAGE,
 	DYNAMIC_EVENT_MODIFY_MESSAGE,
 	DYNAMIC_EVENT_DELETE_MESSAGE,
@@ -146,3 +152,5 @@ extern void db_engine_begin_batch_mode(db_item_ptr &);
 /* pdb will also be put */
 extern void db_engine_commit_batch_mode(db_item_ptr &&);
 extern void db_engine_cancel_batch_mode(db_item_ptr &);
+
+extern unsigned int g_exmdb_schema_upgrades;

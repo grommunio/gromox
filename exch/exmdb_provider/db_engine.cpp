@@ -16,6 +16,7 @@
 #include <vector>
 #include <gromox/atomic.hpp>
 #include <gromox/database.h>
+#include <gromox/dbop.h>
 #include <gromox/double_list.hpp>
 #include <gromox/eid_array.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -95,6 +96,7 @@ static std::condition_variable g_waken_cond;
 static std::unordered_map<std::string, DB_ITEM> g_hash_table;
 static DOUBLE_LIST g_populating_list;
 static DOUBLE_LIST g_populating_list1;
+unsigned int g_exmdb_schema_upgrades;
 
 static void db_engine_notify_content_table_modify_row(db_item_ptr &, uint64_t folder_id, uint64_t message_id);
 
@@ -162,6 +164,28 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 	}
 }
 
+static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
+{
+	if (g_exmdb_schema_upgrades != EXMDB_UPGRADE_YES)
+		return 0;
+	auto is_pvt = exmdb_server_check_private();
+	auto kind = is_pvt ? sqlite_kind::pvt : sqlite_kind::pub;
+	auto recent = dbop_sqlite_recentversion(kind);
+	auto current = dbop_sqlite_schemaversion(db, kind);
+	if (current >= recent)
+		return 0;
+	auto c = is_pvt ? 'V' : 'B';
+	fprintf(stderr, "[dbop_sqlite]: %s: current schema E%c-%d; upgrading to E%c-%d.\n",
+		filedesc, c, current, c, recent);
+	auto ret = dbop_sqlite_upgrade(db, filedesc, kind, DBOP_VERBOSE);
+	if (ret != 0) {
+		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n", filedesc, strerror(ret));
+		return -1;
+	}
+	fprintf(stderr, "[dbop_sqlite]: upgrade %s: complete\n", filedesc);
+	return 0;
+}
+
 /* query or create DB_ITEM in hash table */
 db_item_ptr db_engine_get_db(const char *path)
 {
@@ -222,6 +246,12 @@ db_item_ptr db_engine_get_db(const char *path)
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "E-1434: sqlite3_open %s: %s\n", db_path, sqlite3_errstr(ret));
 		pdb->psqlite = NULL;
+		return db_item_ptr(pdb);
+	}
+	ret = db_engine_autoupgrade(pdb->psqlite, db_path);
+	if (ret != 0) {
+		sqlite3_close(pdb->psqlite);
+		pdb->psqlite = nullptr;
 		return db_item_ptr(pdb);
 	}
 	gx_sql_exec(pdb->psqlite, "PRAGMA foreign_keys=ON");
