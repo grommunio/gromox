@@ -5,12 +5,16 @@
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 
+enum { /* exmdb_server_build_env flags */
+	EM_LOCAL = 0x1,
+	EM_PRIVATE = 0x2,
+};
+
 extern void (*exmdb_server_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
 
 extern int exmdb_server_run();
-void exmdb_server_build_environment(BOOL b_local,
-	BOOL b_private, const char *dir);
+extern void exmdb_server_build_env(unsigned int flags, const char *dir);
 extern void exmdb_server_free_environment();
 void exmdb_server_set_remote_id(const char *remote_id);
 extern const char *exmdb_server_get_remote_id();

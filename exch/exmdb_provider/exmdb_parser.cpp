@@ -821,7 +821,7 @@ static void *mdpps_thrwork(void *pparam)
 		if (offset < buff_len) {
 			continue;
 		}
-		exmdb_server_build_environment(FALSE, b_private, NULL);
+		exmdb_server_build_env(b_private ? EM_PRIVATE : 0, nullptr);
 		tmp_bin.pv = pbuff;
 		tmp_bin.cb = buff_len;
 		status = exmdb_ext_pull_request(&tmp_bin, &request);

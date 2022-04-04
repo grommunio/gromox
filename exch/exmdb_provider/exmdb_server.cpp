@@ -8,9 +8,8 @@
 namespace {
 
 struct ENVIRONMENT_CONTEXT {
-	BOOL b_local;
+	bool b_local, b_private;
 	ALLOC_CONTEXT alloc_ctx;
-	BOOL b_private;
 	const char *dir;
 	int account_id;
 };
@@ -32,15 +31,14 @@ int exmdb_server_run()
 	return 0;
 }
 
-void exmdb_server_build_environment(BOOL b_local,
-	BOOL b_private, const char *dir)
+void exmdb_server_build_env(unsigned int flags, const char *dir)
 {
 	common_util_build_tls();
 	auto pctx = g_ctx_allocator->get<ENVIRONMENT_CONTEXT>();
-	pctx->b_local = b_local;
-	if (!b_local)
+	pctx->b_local = flags & EM_LOCAL;
+	if (!pctx->b_local)
 		alloc_context_init(&pctx->alloc_ctx);
-	pctx->b_private = b_private;
+	pctx->b_private = flags & EM_PRIVATE;
 	pctx->dir = dir;
 	pctx->account_id = -1;
 	g_env_key = pctx;

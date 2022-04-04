@@ -424,7 +424,7 @@ static BOOL db_engine_search_folder(const char *dir,
 			pdb.reset();
 			exmdb_server_free_environment();
 			sleep(1);
-			exmdb_server_build_environment(FALSE, TRUE, dir);
+			exmdb_server_build_env(EM_PRIVATE, dir);
 			pdb = db_engine_get_db(dir);
 			if (pdb == nullptr || pdb->psqlite == nullptr) {
 				return FALSE;
@@ -613,8 +613,8 @@ static void *mdpeng_thrwork(void *param)
 			goto NEXT_SEARCH;	
 		}
 		auto cl_1 = make_scope_exit([&]() { eid_array_free(pfolder_ids); });
-		exmdb_server_build_environment(false, TRUE, psearch->dir);
-		auto cl_2 = make_scope_exit([&]() { exmdb_server_free_environment(); });
+		exmdb_server_build_env(EM_LOCAL, psearch->dir);
+		auto cl_2 = make_scope_exit(exmdb_server_free_environment);
 		for (size_t i = 0; i < psearch->folder_ids.count; ++i) {
 			if (!eid_array_append(pfolder_ids,
 			    psearch->folder_ids.pll[i])) {
