@@ -42,11 +42,11 @@ Makefile.in
 /gromox-mkpublic
 /gromox-mt2exm
 /gromox-pff2mt
-/gromox-rebuild
 /http
 /imap
 /midb
 /pop3
+/rebuild
 /rtf2html
 /timer
 /zcore

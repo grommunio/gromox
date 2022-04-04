@@ -1,8 +1,8 @@
-.TH gromox\-rebuild 8gx "" "Gromox" "Gromox admin reference"
+.TH rebuild 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-rebuild \(em Tool for rebuilding a message store
+rebuild \(em Tool for rebuilding a message store
 .SH Synopsis
-\fBgromox\-rebuild\fP [\fB\-T\fP \fItemplate_dir\fP]
+\fB/usr/libexec/gromox/rebuild\fP [\fB\-T\fP \fItemplate_dir\fP]
 [\fB\-\-no\-reload\fP] \fImaildir\fP
 .SH Description
 gromox\-rebuild recreates the SQL database exchange.sqlite3 by way of a
