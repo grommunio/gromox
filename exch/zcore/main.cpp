@@ -165,7 +165,7 @@ int main(int argc, const char **argv) try
 	}
 	
 	msgchg_grouping_init(g_config_file->get_value("data_file_path"));
-	auto cl_0c = make_scope_exit([&]() { msgchg_grouping_free(); });
+	auto cl_0c = make_scope_exit(msgchg_grouping_free);
 	auto cl_4 = make_scope_exit(msgchg_grouping_stop);
 	unsigned int threads_num = pconfig->get_ll("zarafa_threads_num");
 	printf("[system]: connection threads number is %d\n", threads_num);
