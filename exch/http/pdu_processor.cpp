@@ -1831,7 +1831,7 @@ static BOOL pdu_processor_rpc_build_environment(int async_id)
 }
 
 /* only can be invoked in non-rpc thread */
-BOOL pdu_processor_rpc_new_environment()
+BOOL pdu_processor_rpc_new_stack()
 {
 	NDR_STACK_ROOT *pstack_root;
 	
@@ -1844,7 +1844,7 @@ BOOL pdu_processor_rpc_new_environment()
 }
 
 /* only can be invoked in non-rpc thread */
-void pdu_processor_rpc_free_environment()
+void pdu_processor_rpc_free_stack()
 {
 	auto pstack_root = g_stack_key;
 	if (NULL != pstack_root) {
@@ -3440,12 +3440,10 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 	if (strcmp(service, "rpc_build_environment") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_rpc_build_environment);
 	}
-	if (strcmp(service, "rpc_new_environment") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_rpc_new_environment);
-	}
-	if (strcmp(service, "rpc_free_environment") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_rpc_free_environment);
-	}
+	if (strcmp(service, "rpc_new_stack") == 0)
+		return reinterpret_cast<void *>(pdu_processor_rpc_new_stack);
+	if (strcmp(service, "rpc_free_stack") == 0)
+		return reinterpret_cast<void *>(pdu_processor_rpc_free_stack);
 	if (strcmp(service, "async_reply") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_async_reply);
 	}

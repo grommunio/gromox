@@ -123,6 +123,6 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	DCERPC_CALL *pcall, uint32_t bytes_received,
 	uint32_t available_window, const char *channel_cookie);
 void* pdu_processor_ndr_stack_alloc(int type, size_t size);
-extern BOOL pdu_processor_rpc_new_environment();
-extern void pdu_processor_rpc_free_environment();
+extern BOOL pdu_processor_rpc_new_stack();
+extern void pdu_processor_rpc_free_stack();
 extern void pdu_processor_reload();

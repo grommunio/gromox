@@ -621,8 +621,8 @@ BOOL MhNspPlugin::process(int context_id, const void *content, uint64_t length)
 	if ((result = loadCookies(ctx)))
 		return result.value();
 	set_context(context_id);
-	rpc_new_environment();
-	auto cleanup_0 = make_scope_exit([&]() { rpc_free_environment(); });
+	rpc_new_stack();
+	auto cleanup_0 = make_scope_exit([&]() { rpc_free_stack(); });
 
 	ctx.ext_pull.init(content, length, cu_alloc1, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 	HX_strlower(ctx.request_value);

@@ -68,8 +68,8 @@ struct HTTP_AUTH_INFO {
 	x void (*set_context)(int); \
 	x void (*set_ep_info)(int, const char *, int); \
 	x void *(*ndr_stack_alloc)(int, size_t); \
-	x BOOL (*rpc_new_environment)(); \
-	x void (*rpc_free_environment)();
+	x BOOL (*rpc_new_stack)(); \
+	x void (*rpc_free_stack)();
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_HPM_API_STATIC
@@ -97,8 +97,8 @@ DECLARE_HPM_API(extern);
 	query_service1(set_context); \
 	query_service1(set_ep_info); \
 	query_service1(ndr_stack_alloc); \
-	query_service1(rpc_new_environment); \
-	query_service1(rpc_free_environment);
+	query_service1(rpc_new_stack); \
+	query_service1(rpc_free_stack);
 #define HPM_ENTRY(s) BOOL HPM_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */

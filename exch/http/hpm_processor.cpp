@@ -265,12 +265,10 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 	if (strcmp(service, "ndr_stack_alloc") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc);
 	}
-	if (strcmp(service, "rpc_new_environment") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_rpc_new_environment);
-	}
-	if (strcmp(service, "rpc_free_environment") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_rpc_free_environment);
-	}
+	if (strcmp(service, "rpc_new_stack") == 0)
+		return reinterpret_cast<void *>(pdu_processor_rpc_new_stack);
+	if (strcmp(service, "rpc_free_stack") == 0)
+		return reinterpret_cast<void *>(pdu_processor_rpc_free_stack);
 	/* check if already exists in the reference list */
 	for (const auto &nd : g_cur_plugin->list_reference)
 		if (nd.service_name == service)

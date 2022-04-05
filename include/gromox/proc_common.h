@@ -37,8 +37,8 @@ struct DCERPC_INTERFACE;
 	x void (*activate_async_id)(int); \
 	x void (*cancel_async_id)(int); \
 	x BOOL (*rpc_build_environment)(int); \
-	x void (*rpc_new_environment)(); \
-	x void (*rpc_free_environment)(); \
+	x void (*rpc_new_stack)(); \
+	x void (*rpc_free_stack)(); \
 	x void (*async_reply)(int, void *);
 #define register_service(n, f) register_serviceF((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
@@ -70,8 +70,8 @@ DECLARE_PROC_API(extern);
 	query_service1(activate_async_id); \
 	query_service1(cancel_async_id); \
 	query_service1(rpc_build_environment); \
-	query_service1(rpc_new_environment); \
-	query_service1(rpc_free_environment); \
+	query_service1(rpc_new_stack); \
+	query_service1(rpc_free_stack); \
 	query_service1(async_reply);
 #define PROC_ENTRY(s) BOOL PROC_LibMain(int r, void **p) { return (s)((r), (p)); }
 
