@@ -24,6 +24,7 @@
 #include <gromox/int_hash.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "hpm_processor.h"
 #include "http_parser.h"
@@ -1827,6 +1828,7 @@ static BOOL pdu_processor_rpc_build_environment(int async_id)
 	as_hold.unlock();
 	g_call_key = pasync_node->pcall;
 	g_stack_key = pasync_node->pstack_root;
+	/* Later unset by calling free_call */
 	return TRUE;
 }
 
@@ -1859,7 +1861,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 	DOUBLE_LIST_NODE *pnode;
 	ASYNC_NODE *pasync_node;
 	
-	
+	/* Caller needs to have invoked rpc_build_environment */
 	pcall = pdu_processor_get_call();
 	if (NULL == pcall) {
 		return;
@@ -1929,6 +1931,10 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	
 	g_call_key = pcall;
 	g_stack_key = pstack_root;
+	auto cl_0 = make_scope_exit([]() {
+		g_stack_key = nullptr;
+		g_call_key = nullptr;
+	});
 	flags = 0;
 	if (pcall->b_bigendian)
 		flags |= NDR_FLAG_BIGENDIAN;
