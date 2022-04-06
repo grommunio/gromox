@@ -34,6 +34,16 @@ using namespace gromox;
 static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d);
 static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line);
 
+bool cfg_directive::operator<(const char *s) const
+{
+	return strcmp(key, s) < 0;
+}
+
+bool cfg_directive::operator<(const cfg_directive &o) const
+{
+	return strcmp(key, o.key) < 0;
+}
+
 static const char *default_searchpath()
 {
 	const char *ed = getenv("GROMOX_CONFIG_PATH");

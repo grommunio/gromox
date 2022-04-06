@@ -20,6 +20,10 @@ struct cfg_directive {
 	const char *key = nullptr, *deflt = nullptr;
 	unsigned int flags = 0;
 	const char *min = nullptr, *max = nullptr;
+
+	bool operator<(const cfg_directive &) const;
+	bool operator<(const char *) const;
+	bool operator==(const cfg_directive &) const = delete;
 };
 
 struct CONFIG_ENTRY {
