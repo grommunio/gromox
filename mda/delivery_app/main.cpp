@@ -50,6 +50,22 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 	NULL,
 };
 
+static constexpr cfg_directive delivery_cfg_defaults[] = {
+	{"admin_mailbox", "root@localhost"},
+	{"config_file_path", PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR},
+	{"context_average_mime", "8", CFG_SIZE, "1"},
+	{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
+	{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
+	{"dequeue_path", PKGSTATEQUEUEDIR},
+	{"mpc_plugin_ignore_errors", "false", CFG_BOOL},
+	{"mpc_plugin_path", PKGLIBDIR},
+	{"running_identity", "gromox"},
+	{"service_plugin_path", PKGLIBDIR},
+	{"state_path", PKGSTATEDIR},
+	{"work_threads_min", "16", CFG_SIZE, "1"},
+	CFG_TABLE_END,
+};
+
 static void term_handler(int signo);
 
 int main(int argc, const char **argv) try
@@ -79,22 +95,6 @@ int main(int argc, const char **argv) try
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-
-	static constexpr cfg_directive delivery_cfg_defaults[] = {
-		{"admin_mailbox", "root@localhost"},
-		{"config_file_path", PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR},
-		{"context_average_mime", "8", CFG_SIZE, "1"},
-		{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
-		{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
-		{"dequeue_path", PKGSTATEQUEUEDIR},
-		{"mpc_plugin_ignore_errors", "false", CFG_BOOL},
-		{"mpc_plugin_path", PKGLIBDIR},
-		{"running_identity", "gromox"},
-		{"service_plugin_path", PKGLIBDIR},
-		{"state_path", PKGSTATEDIR},
-		{"work_threads_min", "16", CFG_SIZE, "1"},
-		CFG_TABLE_END,
-	};
 	config_file_apply(*g_config_file, delivery_cfg_defaults);
 
 	auto str_val = g_config_file->get_value("host_id");

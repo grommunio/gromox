@@ -115,6 +115,14 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+static constexpr cfg_directive event_cfg_defaults[] = {
+	{"config_file_path", PKGSYSCONFDIR "/event:" PKGSYSCONFDIR},
+	{"event_listen_ip", "::1"},
+	{"event_listen_port", "33333"},
+	{"event_threads_num", "50", CFG_SIZE, "1", "1000"},
+	CFG_TABLE_END,
+};
+
 static void *ev_acceptwork(void *);
 static void *ev_enqwork(void *);
 static void *ev_deqwork(void *);
@@ -207,14 +215,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 2;
-
-	static constexpr cfg_directive event_cfg_defaults[] = {
-		{"config_file_path", PKGSYSCONFDIR "/event:" PKGSYSCONFDIR},
-		{"event_listen_ip", "::1"},
-		{"event_listen_port", "33333"},
-		{"event_threads_num", "50", CFG_SIZE, "1", "1000"},
-		CFG_TABLE_END,
-	};
 	config_file_apply(*pconfig, event_cfg_defaults);
 
 	auto listen_ip = pconfig->get_value("event_listen_ip");

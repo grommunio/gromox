@@ -58,6 +58,13 @@ static uint16_t g_mx_port;
 static bool g_enable_tls;
 DECLARE_HOOK_API();
 
+static constexpr cfg_directive remote_delivery_cfg_defaults[] = {
+	{"mx_host", "::1"},
+	{"mx_port", "25", 0, "1", "65535"},
+	{"starttls_support", "on", CFG_BOOL},
+	CFG_TABLE_END,
+};
+
 #ifdef OLD_SSL
 static void rd_ssl_locking(int mode, int n, const char *file, int line)
 {
@@ -404,12 +411,6 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
-	static constexpr cfg_directive remote_delivery_cfg_defaults[] = {
-		{"mx_host", "::1"},
-		{"mx_port", "25", 0, "1", "65535"},
-		{"starttls_support", "on", CFG_BOOL},
-		CFG_TABLE_END,
-	};
 	config_file_apply(*cfg_file, remote_delivery_cfg_defaults);
 	g_files_allocator = LIB_BUFFER(FILE_ALLOC_SIZE, 256 * get_threads_num());
 	g_mx_host = cfg_file->get_value("mx_host");

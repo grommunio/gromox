@@ -52,6 +52,30 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 	NULL,
 };
 
+static constexpr cfg_directive imap_cfg_defaults[] = {
+	{"block_interval_auths", "1min", CFG_TIME, "1s"},
+	{"config_file_path", PKGSYSCONFDIR "/imap:" PKGSYSCONFDIR},
+	{"context_average_mem", "128K", CFG_SIZE, "128K"},
+	{"context_average_mitem", "512", CFG_SIZE, "128"},
+	{"context_max_mem", "2M", CFG_SIZE},
+	{"context_num", "400", CFG_SIZE},
+	{"data_file_path", PKGDATADIR "/imap:" PKGDATADIR},
+	{"default_lang", "en"},
+	{"imap_auth_times", "10", CFG_SIZE, "1"},
+	{"imap_autologout_time", "30min", CFG_TIME, "1s"},
+	{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
+	{"imap_force_starttls", "false", CFG_BOOL},
+	{"imap_support_starttls", "false", CFG_BOOL},
+	{"listen_port", "143"},
+	{"listen_ssl_port", "0"},
+	{"running_identity", "gromox"},
+	{"service_plugin_ignore_errors", "false", CFG_BOOL},
+	{"service_plugin_path", PKGLIBDIR},
+	{"state_path", PKGSTATEDIR},
+	{"thread_charge_num", "20", CFG_SIZE, "4"},
+	{"thread_init_num", "5", CFG_SIZE},
+	CFG_TABLE_END,
+};
 static void term_handler(int signo);
 
 int main(int argc, const char **argv) try
@@ -82,31 +106,6 @@ int main(int argc, const char **argv) try
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-
-	static constexpr cfg_directive imap_cfg_defaults[] = {
-		{"block_interval_auths", "1min", CFG_TIME, "1s"},
-		{"config_file_path", PKGSYSCONFDIR "/imap:" PKGSYSCONFDIR},
-		{"context_average_mem", "128K", CFG_SIZE, "128K"},
-		{"context_average_mitem", "512", CFG_SIZE, "128"},
-		{"context_max_mem", "2M", CFG_SIZE},
-		{"context_num", "400", CFG_SIZE},
-		{"data_file_path", PKGDATADIR "/imap:" PKGDATADIR},
-		{"default_lang", "en"},
-		{"imap_auth_times", "10", CFG_SIZE, "1"},
-		{"imap_autologout_time", "30min", CFG_TIME, "1s"},
-		{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
-		{"imap_force_starttls", "false", CFG_BOOL},
-		{"imap_support_starttls", "false", CFG_BOOL},
-		{"listen_port", "143"},
-		{"listen_ssl_port", "0"},
-		{"running_identity", "gromox"},
-		{"service_plugin_ignore_errors", "false", CFG_BOOL},
-		{"service_plugin_path", PKGLIBDIR},
-		{"state_path", PKGSTATEDIR},
-		{"thread_charge_num", "20", CFG_SIZE, "4"},
-		{"thread_init_num", "5", CFG_SIZE},
-		CFG_TABLE_END,
-	};
 	config_file_apply(*g_config_file, imap_cfg_defaults);
 
 	int listen_port = 0, listen_ssl_port = 0;

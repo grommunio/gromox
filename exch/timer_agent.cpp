@@ -45,6 +45,13 @@ static pthread_t g_scan_id;
 static std::mutex g_back_lock;
 static std::list<BACK_CONN> g_back_list, g_lost_list;
 
+static constexpr cfg_directive timer_agent_cfg_defaults[] = {
+	{"connection_num", "8", CFG_SIZE, "1"},
+	{"timer_host", "::1"},
+	{"timer_port", "6666"},
+	CFG_TABLE_END,
+};
+
 static void *tmrag_scanwork(void *);
 
 static int read_line(int sockd, char *buff, int length);
@@ -70,13 +77,6 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
-
-		static constexpr cfg_directive timer_agent_cfg_defaults[] = {
-			{"connection_num", "8", CFG_SIZE, "1"},
-			{"timer_host", "::1"},
-			{"timer_port", "6666"},
-			CFG_TABLE_END,
-		};
 		config_file_apply(*pfile, timer_agent_cfg_defaults);
 
 		size_t conn_num = pfile->get_ll("connection_num");

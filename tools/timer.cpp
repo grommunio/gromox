@@ -87,6 +87,15 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+static constexpr cfg_directive timer_cfg_defaults[] = {
+	{"config_file_path", PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR},
+	{"timer_listen_ip", "::1"},
+	{"timer_listen_port", "6666"},
+	{"timer_state_path", PKGSTATEDIR "/timer.txt"},
+	{"timer_threads_num", "50", CFG_SIZE, "5", "50"},
+	CFG_TABLE_END,
+};
+
 static void *tmr_acceptwork(void *);
 static void *tmr_thrwork(void *);
 static void execute_timer(TIMER *ptimer);
@@ -200,15 +209,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 2;
-
-	static constexpr cfg_directive timer_cfg_defaults[] = {
-		{"config_file_path", PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR},
-		{"timer_listen_ip", "::1"},
-		{"timer_listen_port", "6666"},
-		{"timer_state_path", PKGSTATEDIR "/timer.txt"},
-		{"timer_threads_num", "50", CFG_SIZE, "5", "50"},
-		CFG_TABLE_END,
-	};
 	config_file_apply(*pconfig, timer_cfg_defaults);
 
 	g_list_path = pconfig->get_value("timer_state_path");

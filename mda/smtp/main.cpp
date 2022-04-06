@@ -53,6 +53,32 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 	NULL,
 };
 
+static constexpr cfg_directive smtp_cfg_defaults[] = {
+	{"block_interval_auths", "1min", CFG_TIME, "1s"},
+	{"block_interval_session", "1min", CFG_TIME, "1s"},
+	{"command_protocol", "both"},
+	{"config_file_path", PKGSYSCONFDIR "/smtp:" PKGSYSCONFDIR},
+	{"context_average_mem", "256K", CFG_SIZE, "64K"},
+	{"context_max_mem", "2M", CFG_SIZE},
+	{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
+	{"listen_port", "25"},
+	{"listen_ssl_port", "0"},
+	{"mail_max_length", "64M", CFG_SIZE, "1"},
+	{"running_identity", "gromox"},
+	{"service_plugin_ignore_errors", "false", CFG_BOOL},
+	{"service_plugin_path", PKGLIBDIR},
+	{"smtp_auth_times", "3", CFG_SIZE, "1"},
+	{"smtp_conn_timeout", "3min", CFG_TIME, "1s"},
+	{"smtp_force_starttls", "false", CFG_BOOL},
+	{"smtp_max_mail_num", "100", CFG_SIZE},
+	{"smtp_need_auth", "false", CFG_BOOL},
+	{"smtp_support_pipeline", "true", CFG_BOOL},
+	{"smtp_support_starttls", "false", CFG_BOOL},
+	{"state_path", PKGSTATEDIR},
+	{"thread_charge_num", "400", CFG_SIZE, "4"},
+	CFG_TABLE_END,
+};
+
 static void term_handler(int signo);
 
 int main(int argc, const char **argv) try
@@ -84,32 +110,6 @@ int main(int argc, const char **argv) try
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-
-	static constexpr cfg_directive smtp_cfg_defaults[] = {
-		{"block_interval_auths", "1min", CFG_TIME, "1s"},
-		{"block_interval_session", "1min", CFG_TIME, "1s"},
-		{"command_protocol", "both"},
-		{"config_file_path", PKGSYSCONFDIR "/smtp:" PKGSYSCONFDIR},
-		{"context_average_mem", "256K", CFG_SIZE, "64K"},
-		{"context_max_mem", "2M", CFG_SIZE},
-		{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
-		{"listen_port", "25"},
-		{"listen_ssl_port", "0"},
-		{"mail_max_length", "64M", CFG_SIZE, "1"},
-		{"running_identity", "gromox"},
-		{"service_plugin_ignore_errors", "false", CFG_BOOL},
-		{"service_plugin_path", PKGLIBDIR},
-		{"smtp_auth_times", "3", CFG_SIZE, "1"},
-		{"smtp_conn_timeout", "3min", CFG_TIME, "1s"},
-		{"smtp_force_starttls", "false", CFG_BOOL},
-		{"smtp_max_mail_num", "100", CFG_SIZE},
-		{"smtp_need_auth", "false", CFG_BOOL},
-		{"smtp_support_pipeline", "true", CFG_BOOL},
-		{"smtp_support_starttls", "false", CFG_BOOL},
-		{"state_path", PKGSTATEDIR},
-		{"thread_charge_num", "400", CFG_SIZE, "4"},
-		CFG_TABLE_END,
-	};
 	config_file_apply(*g_config_file, smtp_cfg_defaults);
 
 	if (0 != resource_run()) { 

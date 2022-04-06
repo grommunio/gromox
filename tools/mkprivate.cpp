@@ -70,6 +70,14 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+static constexpr cfg_directive mkprivate_cfg_defaults[] = {
+	{"mysql_dbname", "email"},
+	{"mysql_host", "localhost"},
+	{"mysql_port", "3306"},
+	{"mysql_username", "root"},
+	CFG_TABLE_END,
+};
+
 static int create_generic_folder(sqlite3 *sq, uint64_t fid, uint64_t parent,
     int user, const char *fldclass, BOOL hidden)
 {
@@ -113,13 +121,6 @@ int main(int argc, const char **argv) try
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
-	static constexpr cfg_directive mkprivate_cfg_defaults[] = {
-		{"mysql_host", "localhost"},
-		{"mysql_port", "3306"},
-		{"mysql_username", "root"},
-		{"mysql_dbname", "email"},
-		CFG_TABLE_END,
-	};
 	config_file_apply(*pconfig, mkprivate_cfg_defaults);
 	std::string mysql_host = znul(pconfig->get_value("mysql_host"));
 	uint16_t mysql_port = pconfig->get_ll("mysql_port");
