@@ -101,12 +101,12 @@ int main(int argc, const char **argv) try
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
-	g_config_file = config_file_prg(opt_config_file, "imap.cfg");
+	g_config_file = config_file_prg(opt_config_file, "imap.cfg",
+	                imap_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-	config_file_apply(*g_config_file, imap_cfg_defaults);
 
 	int listen_port = 0, listen_ssl_port = 0;
 	g_config_file->get_int("LISTEN_PORT", &listen_port);

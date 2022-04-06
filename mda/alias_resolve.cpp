@@ -161,17 +161,14 @@ static constexpr const cfg_directive xa_directives[] = {
 static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg,
     std::shared_ptr<CONFIG_FILE> acfg) try
 {
-	if (mcfg == nullptr) {
-		mcfg = config_file_initd("mysql_adaptor.cfg", get_config_path());
-		if (mcfg != nullptr)
-			config_file_apply(*mcfg, mysql_directives);
-	}
+	if (mcfg == nullptr)
+		mcfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
+		       mysql_directives);
 	if (mcfg == nullptr) {
 		printf("[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*mcfg, mysql_directives);
 	g_parm.host = mcfg->get_value("mysql_host");
 	g_parm.port = mcfg->get_ll("mysql_port");
 	g_parm.user = mcfg->get_value("mysql_username");
@@ -182,17 +179,14 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg,
 	       g_parm.host.size() == 0 ? "*" : g_parm.host.c_str(), g_parm.port,
 	       g_parm.timeout, g_parm.dbname.c_str());
 
-	if (acfg == nullptr) {
-		acfg = config_file_initd("alias_resolve.cfg", get_config_path());
-		if (acfg != nullptr)
-			config_file_apply(*acfg, xa_directives);
-	}
+	if (acfg == nullptr)
+		acfg = config_file_initd("alias_resolve.cfg", get_config_path(),
+		       xa_directives);
 	if (acfg == nullptr) {
 		printf("[mysql_adaptor]: config_file_initd alias_resolve.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*acfg, xa_directives);
 	g_cache_lifetime = std::chrono::seconds(acfg->get_ll("cache_lifetime"));
 	return true;
 } catch (const cfg_error &) {
@@ -215,13 +209,15 @@ static BOOL xa_main(int reason, void **data)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_HOOK_API(data);
-	auto mcfg = config_file_initd("mysql_adaptor.cfg", get_config_path());
+	auto mcfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
+	            mysql_directives);
 	if (mcfg == nullptr) {
 		printf("[alias_resolve]: config_file_initd mysql_adaptor.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
-	auto acfg = config_file_initd("alias_resolve.cfg", get_config_path());
+	auto acfg = config_file_initd("alias_resolve.cfg", get_config_path(),
+	            xa_directives);
 	if (acfg == nullptr) {
 		printf("[alias_resolve]: config_file_initd alias_resolve.cfg: %s\n",
 		       strerror(errno));

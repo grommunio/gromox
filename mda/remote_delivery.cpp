@@ -405,13 +405,13 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 	if (pos != plugname.npos)
 		plugname.erase(pos);
 	auto filename = plugname + ".cfg";
-	auto cfg_file = config_file_initd(filename.c_str(), get_config_path());
+	auto cfg_file = config_file_initd(filename.c_str(), get_config_path(),
+	                remote_delivery_cfg_defaults);
 	if (cfg_file == nullptr) {
 		printf("[remote_delivery]: config_file_initd %s: %s\n",
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
-	config_file_apply(*cfg_file, remote_delivery_cfg_defaults);
 	g_files_allocator = LIB_BUFFER(FILE_ALLOC_SIZE, 256 * get_threads_num());
 	g_mx_host = cfg_file->get_value("mx_host");
 	g_mx_port = cfg_file->get_ll("mx_port");

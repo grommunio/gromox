@@ -49,7 +49,8 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		} catch (...) {
 			return false;
 		}
-		auto pfile = config_file_initd(filename.c_str(), get_config_path());
+		auto pfile = config_file_initd(filename.c_str(), get_config_path(),
+		             nullptr);
 		if (NULL == pfile) {
 			printf("[exmdb_local]: config_file_initd %s: %s\n",
 			       filename.c_str(), strerror(errno));

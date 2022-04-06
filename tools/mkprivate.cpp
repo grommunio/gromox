@@ -116,12 +116,12 @@ int main(int argc, const char **argv) try
 		printf("usage: %s <username>\n", argv[0]);
 		return EXIT_FAILURE;
 	}
-	auto pconfig = config_file_prg(opt_config_file, "mysql_adaptor.cfg");
+	auto pconfig = config_file_prg(opt_config_file, "mysql_adaptor.cfg",
+	               mkprivate_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
-	config_file_apply(*pconfig, mkprivate_cfg_defaults);
 	std::string mysql_host = znul(pconfig->get_value("mysql_host"));
 	uint16_t mysql_port = pconfig->get_ll("mysql_port");
 	std::string mysql_user = znul(pconfig->get_value("mysql_username"));

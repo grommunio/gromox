@@ -31,6 +31,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 
+static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d);
 static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line);
 
 static const char *default_searchpath()
@@ -66,7 +67,8 @@ static std::shared_ptr<CONFIG_FILE> config_file_alloc(size_t z)
  *		a pointer point to the config file object, NULL if
  *		some error occurs
  */
-std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename)
+std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
+    const cfg_directive *key_desc)
 {
 	char line[MAX_LINE_LEN];	/* current line being processed */
 	size_t i, table_size;		   /* loop counter, table line num */
@@ -101,6 +103,9 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename)
 
 	fclose(fin);
 	gx_strlcpy(cfg->file_name, filename, GX_ARRAY_SIZE(cfg->file_name));
+	if (key_desc != nullptr)
+		for (; key_desc->key != nullptr; ++key_desc)
+			config_file_apply_1(*cfg, *key_desc);
 	return cfg;
 }
 
@@ -110,10 +115,11 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename)
  *
  * Attempt to read config file @fb from various paths (@sdlist).
  */
-std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb, const char *sdlist)
+std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
+    const char *sdlist, const cfg_directive *key_desc)
 {
 	if (sdlist == nullptr || strchr(fb, '/') != nullptr)
-		return config_file_init(fb);
+		return config_file_init(fb, key_desc);
 	errno = 0;
 	try {
 		for (auto dir : gx_split(sdlist, ':')) {
@@ -121,7 +127,7 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb, const char *sdlis
 				continue;
 			errno = 0;
 			auto full = dir + "/" + fb;
-			auto cfg = config_file_init(full.c_str());
+			auto cfg = config_file_init(full.c_str(), key_desc);
 			if (cfg != nullptr)
 				return cfg;
 			if (errno != ENOENT) {
@@ -138,6 +144,9 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb, const char *sdlis
 	if (cfg == NULL)
 		return nullptr;
 	gx_strlcpy(cfg->file_name, fb, GX_ARRAY_SIZE(cfg->file_name));
+	if (key_desc != nullptr)
+		for (; key_desc->key != nullptr; ++key_desc)
+			config_file_apply_1(*cfg, *key_desc);
 	return cfg;
 }
 
@@ -147,11 +156,12 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb, const char *sdlis
  * Read user-specified config file (@uc) or, if that is unset, try the default file
  * (@fb, located in default searchpaths) in silent mode.
  */
-std::shared_ptr<CONFIG_FILE> config_file_prg(const char *ov, const char *fb)
+std::shared_ptr<CONFIG_FILE> config_file_prg(const char *ov, const char *fb,
+    const cfg_directive *key_desc)
 {
 	if (ov == nullptr)
-		return config_file_initd(fb, default_searchpath());
-	auto cfg = config_file_init(ov);
+		return config_file_initd(fb, default_searchpath(), key_desc);
+	auto cfg = config_file_init(ov, key_desc);
 	if (cfg == nullptr)
 		fprintf(stderr, "config_file_init %s: %s\n", ov, strerror(errno));
 	return cfg;
@@ -349,7 +359,7 @@ unsigned long long CONFIG_FILE::get_ll(const char *key) const
 {
 	auto sv = get_value(key);
 	if (sv == nullptr) {
-		fprintf(stderr, "*** config key \"%s\" has no default and was not set either", key);
+		fprintf(stderr, "*** config key \"%s\" has no default and was not set either\n", key);
 		throw cfg_error();
 	}
 	return strtoull(sv, nullptr, 0);
@@ -361,8 +371,6 @@ BOOL CONFIG_FILE::set_int(const char *key, int value)
 	snprintf(buf, arsizeof(buf), "%d", value);
 	return set_value(key, buf);
 }
-
-namespace gromox {
 
 static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)
 {
@@ -396,12 +404,4 @@ static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)
 		return;
 	}
 	cfg.set_value(d.key, sv);
-}
-
-void config_file_apply(CONFIG_FILE &cfg, const cfg_directive *d)
-{
-	for (; d->key != nullptr; ++d)
-		config_file_apply_1(cfg, *d);
-}
-
 }

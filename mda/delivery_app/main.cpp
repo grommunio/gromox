@@ -90,12 +90,12 @@ int main(int argc, const char **argv) try
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
-	g_config_file = config_file_prg(opt_config_file, "delivery.cfg");
+	g_config_file = config_file_prg(opt_config_file, "delivery.cfg",
+	                delivery_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-	config_file_apply(*g_config_file, delivery_cfg_defaults);
 
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {

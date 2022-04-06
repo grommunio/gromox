@@ -704,7 +704,7 @@ static std::string sql_escape(MYSQL *sqh, const char *in)
 
 static MYSQL *sql_login()
 {
-	auto cfg = config_file_initd("mysql_adaptor.cfg", PKGSYSCONFDIR);
+	auto cfg = config_file_initd("mysql_adaptor.cfg", PKGSYSCONFDIR, nullptr);
 	if (cfg == nullptr) {
 		fprintf(stderr, "exm: No mysql_adaptor.cfg: %s\n", strerror(errno));
 		return nullptr;

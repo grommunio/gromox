@@ -103,13 +103,13 @@ static void term_handler(int signo)
 static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 {
 	if (pconfig == nullptr)
-		pconfig = config_file_prg(opt_config_file, "zcore.cfg");
+		pconfig = config_file_prg(opt_config_file, "zcore.cfg",
+		          zcore_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[exmdb_provider]: config_file_init %s: %s\n",
 		       opt_config_file, strerror(errno));
 		return false;
 	}
-	config_file_apply(*pconfig, zcore_cfg_defaults);
 	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
 	zcore_max_obh_per_session = pconfig->get_ll("zcore_max_obh_per_session");
 	return true;
@@ -139,7 +139,8 @@ int main(int argc, const char **argv) try
 	sact.sa_handler = SIG_IGN;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGPIPE, &sact, nullptr);
-	g_config_file = pconfig = config_file_prg(opt_config_file, "zcore.cfg");
+	g_config_file = pconfig = config_file_prg(opt_config_file, "zcore.cfg",
+	                zcore_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)

@@ -63,17 +63,14 @@ unsigned int g_mbox_contention_warning, g_mbox_contention_reject;
 
 static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 {
-	if (pconfig == nullptr) {
-		pconfig = config_file_initd("exmdb_provider.cfg", get_config_path());
-		if (pconfig != nullptr)
-			config_file_apply(*pconfig, exmdb_cfg_defaults);
-	}
+	if (pconfig == nullptr)
+		pconfig = config_file_initd("exmdb_provider.cfg", get_config_path(),
+		          exmdb_cfg_defaults);
 	if (pconfig == nullptr) {
 		printf("[exmdb_provider]: config_file_initd exmdb_provider.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*pconfig, exmdb_cfg_defaults);
 	g_exrpc_debug = pconfig->get_ll("exrpc_debug");
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	g_dbg_synth_content = pconfig->get_ll("dbg_synthesize_content");
@@ -109,7 +106,8 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		if (pos != cfg_path.npos)
 			cfg_path.erase(pos);
 		cfg_path += ".cfg";
-		auto pconfig = g_config_during_init = config_file_initd(cfg_path.c_str(), get_config_path());
+		auto pconfig = g_config_during_init = config_file_initd(cfg_path.c_str(),
+		               get_config_path(), exmdb_cfg_defaults);
 		if (NULL == pconfig) {
 			printf("[exmdb_provider]: config_file_initd %s: %s\n",
 			       cfg_path.c_str(), strerror(errno));

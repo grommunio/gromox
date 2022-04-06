@@ -164,7 +164,7 @@ static BOOL svc_ip6_filter(int reason, void **data)
 		return false;
 	}
 
-	auto pfile = config_file_initd(filename.c_str(), get_config_path());
+	auto pfile = config_file_initd(filename.c_str(), get_config_path(), nullptr);
 	if (pfile == nullptr) {
 		printf("[ip6_container]: config_file_initd %s: %s\n",
 		       filename.c_str(), strerror(errno));

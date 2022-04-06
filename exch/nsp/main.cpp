@@ -59,13 +59,13 @@ static constexpr cfg_directive nsp_cfg_defaults[] = {
 static bool exch_nsp_reload(std::shared_ptr<CONFIG_FILE> cfg) try
 {
 	if (cfg == nullptr)
-		cfg = config_file_initd("exchange_nsp.cfg", get_config_path());
+		cfg = config_file_initd("exchange_nsp.cfg", get_config_path(),
+		      nsp_cfg_defaults);
 	if (cfg == nullptr) {
 		fprintf(stderr, "[exchange_nsp]: config_file_initd exchange_nsp.cfg: %s\n",
 		        strerror(errno));
 		return false;
 	}
-	config_file_apply(*cfg, nsp_cfg_defaults);
 	return true;
 } catch (const cfg_error &) {
 	return false;
@@ -97,7 +97,8 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		if (pos != plugname.npos)
 			plugname.erase(pos);
 		auto cfg_path = plugname + ".cfg";
-		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path());
+		auto pfile = config_file_initd(cfg_path.c_str(),
+		             get_config_path(), nsp_cfg_defaults);
 		if (NULL == pfile) {
 			printf("[exchange_nsp]: config_file_initd %s: %s\n",
 			       cfg_path.c_str(), strerror(errno));

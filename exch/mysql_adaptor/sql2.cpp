@@ -418,17 +418,14 @@ static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
 
 static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 {
-	if (cfg == nullptr) {
-		cfg = config_file_initd("mysql_adaptor.cfg", get_config_path());
-		if (cfg != nullptr)
-			config_file_apply(*cfg, mysql_adaptor_cfg_defaults);
-	}
+	if (cfg == nullptr)
+		cfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
+		      mysql_adaptor_cfg_defaults);
 	if (cfg == nullptr) {
 		fprintf(stderr, "[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*cfg, mysql_adaptor_cfg_defaults);
 	mysql_adaptor_init_param par;
 	par.conn_num = cfg->get_ll("connection_num");
 	par.host = cfg->get_value("mysql_host");
@@ -476,7 +473,8 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	}
 
 	LINK_SVC_API(data);
-	auto cfg = config_file_initd("mysql_adaptor.cfg", get_config_path());
+	auto cfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
+	           mysql_adaptor_cfg_defaults);
 	if (cfg == nullptr) {
 		fprintf(stderr, "[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
 		       strerror(errno));

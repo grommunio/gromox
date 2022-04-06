@@ -71,13 +71,13 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 		if (pos != plugname.npos)
 			plugname.erase(pos);
 		auto cfg_path = plugname + ".cfg";
-		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path());
+		auto pfile = config_file_initd(cfg_path.c_str(),
+		             get_config_path(), timer_agent_cfg_defaults);
 		if (NULL == pfile) {
 			printf("[timer_agent]: config_file_initd %s: %s\n",
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
-		config_file_apply(*pfile, timer_agent_cfg_defaults);
 
 		size_t conn_num = pfile->get_ll("connection_num");
 		printf("[timer_agent]: timer connection number is %zu\n", conn_num);

@@ -500,7 +500,7 @@ static void* store_object_get_oof_property(
 			return NULL;
 		pvalue = oofstate;
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		auto pconfig = config_file_prg(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, temp_path, nullptr);
 		if (NULL == pconfig) {
 			*oofstate = 0;
 		} else {
@@ -560,7 +560,7 @@ static void* store_object_get_oof_property(
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		auto pconfig = config_file_prg(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, temp_path, nullptr);
 		if (NULL == pconfig) {
 			return NULL;
 		}
@@ -578,7 +578,7 @@ static void* store_object_get_oof_property(
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		auto pconfig = config_file_prg(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, temp_path, nullptr);
 		if (NULL == pconfig) {
 			return deconst(&fake_false);
 		}
@@ -1088,7 +1088,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	close(fdtest);
 	switch (proptag) {
 	case PR_EC_OUTOFOFFICE: {
-		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str());
+		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
 		if (NULL == pconfig) {
 			return FALSE;
 		}
@@ -1107,7 +1107,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
-		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str());
+		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
 		if (NULL == pconfig) {
 			return FALSE;
 		}
@@ -1211,7 +1211,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
-		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str());
+		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
 		if (NULL == pconfig) {
 			return FALSE;
 		}

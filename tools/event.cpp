@@ -210,12 +210,12 @@ int main(int argc, const char **argv) try
 	sact.sa_handler = SIG_IGN;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGPIPE, &sact, nullptr);
-	auto pconfig = config_file_prg(opt_config_file, "event.cfg");
+	auto pconfig = config_file_prg(opt_config_file, "event.cfg",
+	               event_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 2;
-	config_file_apply(*pconfig, event_cfg_defaults);
 
 	auto listen_ip = pconfig->get_value("event_listen_ip");
 	uint16_t listen_port = pconfig->get_ll("event_listen_port");

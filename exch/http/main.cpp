@@ -115,12 +115,11 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 {
 	if (cfg == nullptr)
-		cfg = config_file_prg(opt_config_file, "http.cfg");
+		cfg = config_file_prg(opt_config_file, "http.cfg", http_cfg_defaults);
 	if (opt_config_file != nullptr && cfg == nullptr) {
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
-	config_file_apply(*cfg, http_cfg_defaults);
 	return true;
 }
 
@@ -150,7 +149,7 @@ int main(int argc, const char **argv) try
 	sact.sa_handler = SIG_IGN;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGPIPE, &sact, nullptr);
-	g_config_file = config_file_prg(opt_config_file, "http.cfg");
+	g_config_file = config_file_prg(opt_config_file, "http.cfg", http_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr || !http_reload_config(g_config_file))

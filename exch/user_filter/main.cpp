@@ -34,7 +34,7 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		if (pos != plugname.npos)
 			plugname.erase(pos);
 		auto cfg_path = plugname + ".cfg";
-		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path());
+		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path(), nullptr);
 		if (NULL == pfile) {
 			printf("[%s]: config_file_initd %s: %s\n",
 			       plugname.c_str(), cfg_path.c_str(), strerror(errno));

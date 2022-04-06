@@ -90,13 +90,13 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 {
 	if (pconfig == nullptr)
-		pconfig = config_file_initd("exchange_emsmdb.cfg", get_config_path());
+		pconfig = config_file_initd("exchange_emsmdb.cfg", get_config_path(),
+		          emsmdb_cfg_defaults);
 	if (pconfig == nullptr) {
 		printf("[exmdb_provider]: config_file_initd exmdb_provider.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*pconfig, emsmdb_cfg_defaults);
 	g_rop_debug = pconfig->get_ll("rop_debug");
 	emsmdb_max_cxh_per_user = pconfig->get_ll("emsmdb_max_obh_per_session");
 	emsmdb_max_obh_per_session = pconfig->get_ll("emsmdb_max_obh_per_session");
@@ -153,7 +153,8 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 			*psearch = '\0';
 		}
 		auto cfg_path = file_name + ".cfg"s;
-		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path());
+		auto pfile = config_file_initd(cfg_path.c_str(),
+		             get_config_path(), emsmdb_cfg_defaults);
 		if (NULL == pfile) {
 			printf("[exchange_emsmdb]: config_file_initd %s: %s\n",
 			       cfg_path.c_str(), strerror(errno));

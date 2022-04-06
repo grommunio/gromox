@@ -88,12 +88,12 @@ static void term_handler(int signo)
 static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 {
 	if (pconfig == nullptr)
-		pconfig = config_file_prg(opt_config_file, "midb.cfg");
+		pconfig = config_file_prg(opt_config_file, "midb.cfg",
+		          midb_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
-	config_file_apply(*pconfig, midb_cfg_defaults);
 	g_cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	auto s = pconfig->get_value("midb_schema_upgrades");
 	if (strcmp(s, "auto") == 0)
@@ -128,7 +128,8 @@ int main(int argc, const char **argv) try
 	sact.sa_handler = SIG_IGN;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGPIPE, &sact, nullptr);
-	g_config_file = pconfig = config_file_prg(opt_config_file, "midb.cfg");
+	g_config_file = pconfig = config_file_prg(opt_config_file, "midb.cfg",
+	                midb_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)

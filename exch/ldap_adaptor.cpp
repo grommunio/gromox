@@ -197,13 +197,13 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 
 static bool ldap_adaptor_load() try
 {
-	auto pfile = config_file_initd("ldap_adaptor.cfg", get_config_path());
+	auto pfile = config_file_initd("ldap_adaptor.cfg", get_config_path(),
+	             ldap_adaptor_cfg_defaults);
 	if (pfile == nullptr) {
 		fprintf(stderr, "[ldap_adaptor]: config_file_initd ldap_adaptor.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*pfile, ldap_adaptor_cfg_defaults);
 	g_dataconn_num = pfile->get_ll("data_connections");
 	g_ldap_host = pfile->get_value("ldap_host");
 	g_bind_user = pfile->get_value("ldap_bind_user");

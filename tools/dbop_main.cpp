@@ -48,19 +48,19 @@ int main(int argc, const char **argv)
 
 	std::shared_ptr<CONFIG_FILE> pconfig;
 	if (opt_config_file == nullptr) {
-		auto http_config = config_file_prg(nullptr, "http.cfg");
+		auto http_config = config_file_prg(nullptr, "http.cfg", nullptr);
 		if (http_config == nullptr)
 			return EXIT_FAILURE;
 		auto http_cfgdir = http_config->get_value("CONFIG_FILE_PATH");
 		if (http_cfgdir == nullptr)
 			http_cfgdir = PKGSYSCONFDIR "/http:" PKGSYSCONFDIR;
-		pconfig = config_file_initd("mysql_adaptor.cfg", http_cfgdir);
+		pconfig = config_file_initd("mysql_adaptor.cfg", http_cfgdir, nullptr);
 		if (pconfig == nullptr) {
 			fprintf(stderr, "config_file_initd mysql_adaptor.cfg: %s\n", strerror(errno));
 			return EXIT_FAILURE;
 		}
 	} else {
-		pconfig = config_file_prg(opt_config_file, "http.cfg");
+		pconfig = config_file_prg(opt_config_file, "http.cfg", nullptr);
 		if (pconfig == nullptr) {
 			fprintf(stderr, "%s: %s\n", opt_config_file, strerror(errno));
 			return EXIT_FAILURE;

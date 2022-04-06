@@ -105,12 +105,12 @@ int main(int argc, const char **argv) try
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
-	g_config_file = config_file_prg(opt_config_file, "smtp.cfg");
+	g_config_file = config_file_prg(opt_config_file, "smtp.cfg",
+	                smtp_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-	config_file_apply(*g_config_file, smtp_cfg_defaults);
 
 	if (0 != resource_run()) { 
 		printf("[system]: Failed to load resource\n");

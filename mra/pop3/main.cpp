@@ -83,12 +83,12 @@ static void term_handler(int signo)
 static bool pop3_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 {
 	if (pconfig == nullptr)
-		pconfig = config_file_prg(opt_config_file, "pop3.cfg");
+		pconfig = config_file_prg(opt_config_file, "pop3.cfg",
+		          pop3_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
-	config_file_apply(*pconfig, pop3_cfg_defaults);
 	g_popcmd_debug = pconfig->get_ll("pop3_cmd_debug");
 	return true;
 }
@@ -116,7 +116,8 @@ int main(int argc, const char **argv) try
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
-	g_config_file = config_file_prg(opt_config_file, "pop3.cfg");
+	g_config_file = config_file_prg(opt_config_file, "pop3.cfg",
+	                pop3_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)

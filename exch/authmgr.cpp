@@ -58,7 +58,7 @@ static bool login_gen(const char *username, const char *password,
 
 static bool authmgr_reload()
 {
-	auto pfile = config_file_initd("authmgr.cfg", get_config_path());
+	auto pfile = config_file_initd("authmgr.cfg", get_config_path(), nullptr);
 	if (pfile == nullptr) {
 		printf("[authmgr]: confing_file_initd authmgr.cfg: %s\n", strerror(errno));
 		return false;

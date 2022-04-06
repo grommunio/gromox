@@ -72,7 +72,7 @@ static BOOL svc_logger(int reason, void **data)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_SVC_API(data);
-	auto cfg = config_file_initd("log_plugin.cfg", get_config_path());
+	auto cfg = config_file_initd("log_plugin.cfg", get_config_path(), nullptr);
 	auto sv = cfg->get_value("log_level");
 	g_max_loglevel = sv != nullptr ? strtoul(sv, nullptr, 0) : 4;
 	sv = cfg->get_value("log_file_name");

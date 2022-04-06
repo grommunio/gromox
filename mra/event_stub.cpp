@@ -71,7 +71,8 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		} catch (...) {
 			return false;
 		}
-		auto pfile = config_file_initd(filename.c_str(), get_config_path());
+		auto pfile = config_file_initd(filename.c_str(),
+		             get_config_path(), nullptr);
 		if (NULL == pfile) {
 			printf("[event_stub]: config_file_initd %s: %s\n",
 			       filename.c_str(), strerror(errno));

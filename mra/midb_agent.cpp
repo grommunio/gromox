@@ -203,7 +203,8 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		} catch (...) {
 			return false;
 		}
-		auto pconfig = config_file_initd(filename.c_str(), get_config_path());
+		auto pconfig = config_file_initd(filename.c_str(),
+		               get_config_path(), nullptr);
 		if (NULL == pconfig) {
 			printf("[midb_agent]: config_file_initd %s: %s\n",
 			       filename.c_str(), strerror(errno));

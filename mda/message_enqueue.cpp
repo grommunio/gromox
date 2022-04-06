@@ -450,7 +450,7 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 		} catch (...) {
 			return false;
 		}
-		auto pfile = config_file_initd(filename.c_str(), get_config_path());
+		auto pfile = config_file_initd(filename.c_str(), get_config_path(), nullptr);
 		if (pfile == nullptr) {
 			printf("[message_enqueue]: config_file_initd %s: %s\n",
 			       filename.c_str(), strerror(errno));

@@ -204,12 +204,12 @@ int main(int argc, const char **argv) try
 	sact.sa_handler = SIG_IGN;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGPIPE, &sact, nullptr);
-	auto pconfig = config_file_prg(opt_config_file, "timer.cfg");
+	auto pconfig = config_file_prg(opt_config_file, "timer.cfg",
+	               timer_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 2;
-	config_file_apply(*pconfig, timer_cfg_defaults);
 
 	g_list_path = pconfig->get_value("timer_state_path");
 	uint16_t listen_port = pconfig->get_ll("timer_listen_port");
