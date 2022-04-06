@@ -80,9 +80,9 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"rop_debug", "0"},
 	{"separator_for_bounce", " "},
-	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
 	{"smtp_server_ip", "::1"},
 	{"smtp_server_port", "25"},
+	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };

@@ -145,12 +145,12 @@ static BOOL xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 }
 
 static constexpr const cfg_directive mysql_directives[] = {
-	{"mysql_host", "localhost"},
-	{"mysql_port", "3306"},
-	{"mysql_username", "root"},
-	{"mysql_password", ""},
 	{"mysql_dbname", "email"},
+	{"mysql_host", "localhost"},
+	{"mysql_password", ""},
+	{"mysql_port", "3306"},
 	{"mysql_rdwr_timeout", "0", CFG_TIME},
+	{"mysql_username", "root"},
 	CFG_TABLE_END,
 };
 static constexpr const cfg_directive xa_directives[] = {

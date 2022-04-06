@@ -407,12 +407,12 @@ void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
 	{"connection_num", "8", CFG_SIZE},
 	{"enable_firsttime_password", "no", CFG_BOOL},
-	{"mysql_host", "localhost"},
-	{"mysql_port", "3306"},
-	{"mysql_username", "root"},
-	{"mysql_password", ""},
 	{"mysql_dbname", "email"},
+	{"mysql_host", "localhost"},
+	{"mysql_password", ""},
+	{"mysql_port", "3306"},
 	{"mysql_rdwr_timeout", "0", CFG_TIME},
+	{"mysql_username", "root"},
 	CFG_TABLE_END,
 };
 

@@ -52,11 +52,11 @@ static constexpr cfg_directive ldap_adaptor_cfg_defaults[] = {
 	{"data_connections", "4", CFG_SIZE, "1"},
 	{"ldap_bind_pass", ""},
 	{"ldap_bind_user", ""},
+	{"ldap_edirectory_workaround", "false", CFG_BOOL},
 	{"ldap_host", "ldapi:///"},
 	{"ldap_mail_attr", "mail"},
 	{"ldap_search_base", ""},
 	{"ldap_start_tls", "false", CFG_BOOL},
-	{"ldap_edirectory_workaround", "false", CFG_BOOL},
 	CFG_TABLE_END,
 };
 
