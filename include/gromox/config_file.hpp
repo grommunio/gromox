@@ -11,11 +11,17 @@
 #define CFG_TABLE_END {}
 
 enum cfg_flags {
-	CFG_BOOL = 1U << 0,
-	CFG_SIZE = 1U << 1,
-	CFG_TIME = 1U << 2,
+	CFG_BOOL = 0x1U,
+	CFG_SIZE = 0x2U,
+	CFG_TIME = 0x4U,
+	CFG_ALIAS = 0x8U,
 };
 
+/**
+ * @deflt:	default value for this key.
+ * 		If %CFG_ALIAS is in effect however, this specifies the actual key.
+ * @min,@max:	clamp value to minimum/maximum (only if %CFG_SIZE,%CFG_TIME)
+ */
 struct cfg_directive {
 	const char *key = nullptr, *deflt = nullptr;
 	unsigned int flags = 0;

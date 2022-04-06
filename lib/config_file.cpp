@@ -32,7 +32,7 @@ using namespace std::string_literals;
 using namespace gromox;
 
 static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d);
-static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line);
+static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line, const cfg_directive *kd, const cfg_directive *kdend);
 
 bool cfg_directive::operator<(const char *s) const
 {
@@ -80,9 +80,19 @@ static std::shared_ptr<CONFIG_FILE> config_file_alloc(size_t z)
 std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
     const cfg_directive *key_desc)
 {
+	const cfg_directive *kdend = nullptr;
 	char line[MAX_LINE_LEN];	/* current line being processed */
 	size_t i, table_size;		   /* loop counter, table line num */
-	
+
+	if (key_desc != nullptr) {
+		kdend = key_desc;
+		while (kdend->key != nullptr)
+			++kdend;
+		if (!std::is_sorted(key_desc, kdend)) {
+			fprintf(stderr, "List of built-in defaults (%p) is not sorted\n", key_desc);
+			return nullptr;
+		}
+	}
 	FILE *fin = fopen(filename, "r");
 	if (fin == NULL) {
 		return NULL;
@@ -108,7 +118,7 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
 		}
 		/* prevent line exceed maximum length ---MAX_LINE_LEN */
 		line[sizeof(line) - 1] = '\0';
-		config_file_parse_line(cfg, line);
+		config_file_parse_line(cfg, line, key_desc, kdend);
 	}
 
 	fclose(fin);
@@ -238,13 +248,13 @@ const char *CONFIG_FILE::get_value(const char *key) const
  *		cfg [in]		config file object
  *		line [int]		line read from file
  */
-static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line)
+static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg,
+    char *line, const cfg_directive *key_desc, const cfg_directive *kdend)
 {
 	char temp_buf[MAX_LINE_LEN];
 	char *equal_ptr = NULL;
 	char *cr_ptr	= NULL;
 	char *lf_ptr	= NULL;
-	size_t index;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == cfg || NULL == line) {
@@ -273,13 +283,13 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line
 	HX_strltrim(equal_ptr);
 	if (strlen(temp_buf) == 0)
 		return;
-	index = cfg->num_entries;
-	cfg->num_entries ++;
-	cfg->config_table[index].is_touched = FALSE;
-	gx_strlcpy(cfg->config_table[index].keyname, temp_buf, GX_ARRAY_SIZE(cfg->config_table[index].keyname));
-	HX_strlower(cfg->config_table[index].keyname);
-	gx_strlcpy(cfg->config_table[index].value, equal_ptr, GX_ARRAY_SIZE(cfg->config_table[index].value));
-	return;
+	HX_strlower(temp_buf);
+	auto d = key_desc != nullptr ? std::lower_bound(key_desc, kdend, temp_buf) : nullptr;
+	/* lower_bound always needs an equal compare afterwards */
+	if (d != kdend && strcmp(d->key, temp_buf) == 0 && d->flags & CFG_ALIAS)
+		cfg->set_value(d->deflt, equal_ptr);
+	else
+		cfg->set_value(temp_buf, equal_ptr);
 }
 
 BOOL CONFIG_FILE::set_value(const char *key, const char *value)
@@ -384,6 +394,8 @@ BOOL CONFIG_FILE::set_int(const char *key, int value)
 
 static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)
 {
+	if (d.flags & CFG_ALIAS)
+		return;
 	auto sv = cfg.get_value(d.key);
 	if (sv == nullptr)
 		sv = d.deflt;
