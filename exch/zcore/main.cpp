@@ -30,6 +30,7 @@
 #include "exmdb_client.h"
 #include "listener.h"
 #include "msgchg_grouping.h"
+#include "object_tree.h"
 #include "rpc_parser.h"
 #include "service.h"
 #include "system_services.h"
@@ -89,6 +90,7 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"zarafa_mime_number", "4096", CFG_SIZE, "1024"},
 	{"zarafa_threads_num", "100", CFG_SIZE, "1", "1000"},
 	{"zcore_listen", PKGRUNDIR "/zcore.sock"},
+	{"zcore_max_obh_per_session", "500", CFG_SIZE, "100"},
 	{"zrpc_debug", "0"},
 	CFG_TABLE_END,
 };
@@ -109,6 +111,7 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 	}
 	config_file_apply(*pconfig, zcore_cfg_defaults);
 	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
+	zcore_max_obh_per_session = pconfig->get_ll("zcore_max_obh_per_session");
 	return true;
 }
 

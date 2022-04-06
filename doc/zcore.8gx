@@ -151,6 +151,13 @@ The named path for the AF_LOCAL socket that zcore will listen on.
 .br
 Default: \fI/run/gromox/zcore.sock\fP
 .TP
+\fBzcore_max_obh_per_session\fP
+The maximum number of object handles each session can have at any one time
+(e.g. folders/messages/etc. open simultaneously). There is one session for each
+mailbox opened.
+.br
+Default: \fI500\fP
+.TP
 \fBzrpc_debug\fP
 Log every incoming zcore RPC and the return code of the operation in a minimal
 fashion to stdout. Level 1 emits RPCs with a failure return code, level 2 emits

@@ -32,9 +32,6 @@
 #include "user_object.h"
 #include "zarafa_server.h"
 
-/* maximum handle number per session */
-#define MAX_HANDLE_NUM					500
-
 enum {
 	PROP_TAG_PROFILESCLSID = PROP_TAG(PT_CLSID, 0x0048),
 };
@@ -53,6 +50,8 @@ struct root_object {
 };
 
 }
+
+unsigned int zcore_max_obh_per_session = 500;
 
 root_object::~root_object()
 {
@@ -222,7 +221,7 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, object_node &&obnode)
 	auto pobjtree = this;
 	OBJECT_NODE *parent_ptr = nullptr;
 	
-	if (pobjtree->tree.get_nodes_num() > MAX_HANDLE_NUM)
+	if (pobjtree->tree.get_nodes_num() > zcore_max_obh_per_session)
 		return INVALID_HANDLE;
 	if (parent_handle < 0) {
 		if (pobjtree->tree.get_root() != nullptr)

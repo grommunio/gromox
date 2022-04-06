@@ -48,3 +48,5 @@ struct OBJECT_TREE {
 };
 
 extern std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir);
+
+extern unsigned int zcore_max_obh_per_session;
