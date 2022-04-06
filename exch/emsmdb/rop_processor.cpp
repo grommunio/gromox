@@ -45,10 +45,6 @@
 
 #define HGROWING_SIZE					250
 
-
-/* maximum handle number per session */
-#define MAX_HANDLE_NUM					500
-
 namespace {
 
 struct LOGON_ITEM {
@@ -69,6 +65,10 @@ static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
 static std::unique_ptr<STR_HASH_TABLE> g_logon_hash;
 static LIB_BUFFER g_logmap_allocator, g_handle_allocator, g_logitem_allocator;
+
+unsigned int emsmdb_max_obh_per_session = 500;
+unsigned int emsmdb_max_cxh_per_user = 100;
+unsigned int emsmdb_max_hoc = 10;
 
 LOGMAP *rop_processor_create_logmap()
 {
@@ -257,7 +257,7 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	if (NULL == plogitem) {
 		return -1;
 	}
-	if (plogitem->tree.get_nodes_num() > MAX_HANDLE_NUM)
+	if (plogitem->tree.get_nodes_num() > emsmdb_max_obh_per_session)
 		return -3;
 	if (parent_handle < 0) {
 		if (plogitem->tree.get_root() != nullptr)
@@ -421,7 +421,7 @@ int rop_processor_run()
 	
 	context_num = get_context_num();
 	g_logmap_allocator = LIB_BUFFER(256 * sizeof(LOGON_ITEM *),
-	                     context_num * MAX_HANDLES_ON_CONTEXT);
+	                     context_num * emsmdb_max_hoc);
 	g_logitem_allocator = LIB_BUFFER(sizeof(LOGON_ITEM), 256 * context_num);
 	g_handle_allocator = LIB_BUFFER(sizeof(OBJECT_NODE),
 	                     g_average_handles * context_num);

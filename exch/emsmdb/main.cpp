@@ -70,6 +70,9 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"async_threads_num", "4", CFG_SIZE, "1", "20"},
 	{"average_handles", "1000", CFG_SIZE, "100"},
 	{"average_mem", "4K", CFG_SIZE, "4K"},
+	{"emsmdb_max_cxh_per_user", "100", CFG_SIZE, "100"},
+	{"emsmdb_max_hoc", "10", CFG_SIZE, "1"},
+	{"emsmdb_max_obh_per_session", "500", CFG_SIZE, "500"},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "60s", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
 	{"max_mail_length", "64M", CFG_SIZE, "1"},
@@ -95,6 +98,8 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	}
 	config_file_apply(*pconfig, emsmdb_cfg_defaults);
 	g_rop_debug = pconfig->get_ll("rop_debug");
+	emsmdb_max_cxh_per_user = pconfig->get_ll("emsmdb_max_obh_per_session");
+	emsmdb_max_obh_per_session = pconfig->get_ll("emsmdb_max_obh_per_session");
 	return true;
 } catch (const cfg_error &) {
 	return false;

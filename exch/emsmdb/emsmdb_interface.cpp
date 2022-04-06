@@ -46,7 +46,6 @@
 #define MAX_CONTENT_ROW_DELETED			6
 
 #define FLAG_PRIVILEGE_ADMIN			0x00000001
-#define MAX_HANDLE_PER_USER				100
 
 using namespace gromox;
 
@@ -314,9 +313,9 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 			return FALSE;
 		}
 	} else {
-		if (uh_iter->second.size() >= MAX_HANDLE_PER_USER) {
-			fprintf(stderr, "W-1580: user %s reached maximum number of handles (%u)\n",
-			        phandle->username, MAX_HANDLE_PER_USER);
+		if (uh_iter->second.size() >= emsmdb_max_cxh_per_user) {
+			fprintf(stderr, "W-1580: user %s reached maximum CXH (%u)\n",
+			        phandle->username, emsmdb_max_cxh_per_user);
 			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
 			rop_processor_release_logmap(plogmap);
@@ -396,7 +395,7 @@ int emsmdb_interface_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_handle_hash_max = (context_num + 1) * MAX_HANDLES_ON_CONTEXT;
+	g_handle_hash_max = (context_num + 1) * emsmdb_max_hoc;
 	g_user_hash_max = context_num + 1;
 	g_notify_hash_max = AVERAGE_NOTIFY_NUM * context_num;
 	g_notify_stop = false;

@@ -26,6 +26,26 @@ Default: \fI1000\fP
 \fBaverage_mem\fP
 Default: \fI4K\fP
 .TP
+\fBemsmdb_max_cxh_per_user\fP
+The maximum number of RPC context handles any one user can have at any one
+time.
+.br
+Default: \fI100\fP
+.TP
+\fBemsmdb_max_hoc\fP
+A value used for sizing of internal hash tables. It does not directly affect
+the number of handles a user can open, but the total number of handles in the
+entire emsmdb system.
+.br
+Default: \fI10\fP
+.TP
+\fBemsmdb_max_obh_per_session\fP
+The maximum number of object handles each session can have at any one time
+(e.g. folders/messages/etc. open simultaneously). There is one session for each
+mailbox opened.
+.br
+Default: \fI500\fP
+.TP
 \fBmailbox_ping_interval\fP
 Default: \fI5 minutes\fP
 .TP

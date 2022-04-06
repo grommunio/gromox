@@ -7,7 +7,6 @@
 #include "../mysql_adaptor/mysql_adaptor.h"
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
-#define MAX_HANDLES_ON_CONTEXT						10
 #define MINIMUM_COMPRESS_SIZE						0x100
 
 struct LIB_BUFFER;
