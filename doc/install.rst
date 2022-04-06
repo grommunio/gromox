@@ -8,6 +8,7 @@ dependencies are needed:
 * autotools
 * C++17/C++20 compiler
 * gumbo-parser
+* fmt >= 8
 * jsoncpp
 * libHX
 * Linux-PAM
@@ -16,6 +17,7 @@ dependencies are needed:
 * OpenSSL or compatible
 * PHP 7/8 headers
 * SQLite3
+* tinyxml2
 * zlib
 
 When the grommunio repository is known to zypper, one can request to install

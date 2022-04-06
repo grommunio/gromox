@@ -1,3 +1,30 @@
+1.18.38
+=======
+
+Enhancements:
+
+* kdb2mt: added the --with-acl option for partial conversion of ACLs
+* pff2mt: added the --only-obj option to extract a specific object
+* mt2exm: added the -B option for the placement of unanchored messages
+* eml2mt: new utility to import mails from files
+* mkprivate, mkpublic and mkmidb now recognize the -U option to upgrade SQLite
+  database schemas
+* rebuild: add progress indicator
+
+Fixes:
+
+* emsmdb: no longer send folder named properties in ICS streams
+* mapi_lib: resolve use-after-free in idset::remove
+* exmdb_client: when the exmdb server is not reachable, fail immediately rather
+  than timeout
+* Change SQLite db schema to use BLOB column type/affinity instead of NONE,
+  resolving an unwanted auto-conversion from certain strings that look like
+  numbers, e.g. E.164 telephone numbers without spaces.
+* lib: add missing RFC 2047 Base64 recognition to some mail functions
+* lib: autodetect iso-2022-jp-ms (un)availability in iconv to resolve
+  conversion problems with RFC 2047 encoded-words using iso-2022-jp
+
+
 1.18 (2022-03-19)
 =================
 
