@@ -395,7 +395,7 @@ int mbop_upgrade(const char *file, sqlite_kind kind)
 		c, current, c, recent);
 	ret = dbop_sqlite_upgrade(db, file, kind, DBOP_VERBOSE);
 	if (ret != 0) {
-		fprintf(stderr, "dbop_sqlite_upgrade: %s\n", strerror(ret));
+		fprintf(stderr, "dbop_sqlite_upgrade: %s\n", strerror(-ret));
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

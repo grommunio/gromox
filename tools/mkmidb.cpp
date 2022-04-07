@@ -164,7 +164,7 @@ int main(int argc, const char **argv) try
 		auto ret = dbop_sqlite_upgrade(psqlite, temp_path.c_str(),
 		           sqlite_kind::midb, flags | DBOP_VERBOSE);
 		if (ret != 0) {
-			fprintf(stderr, "dbop_sqlite_upgrade: %s\n", strerror(ret));
+			fprintf(stderr, "dbop_sqlite_upgrade: %s\n", strerror(-ret));
 			return EXIT_FAILURE;
 		}
 		return EXIT_SUCCESS;
@@ -174,7 +174,7 @@ int main(int argc, const char **argv) try
 		flags |= DBOP_SCHEMA_0;
 	auto ret = dbop_sqlite_create(psqlite, sqlite_kind::midb, flags);
 	if (ret != 0) {
-		fprintf(stderr, "dbop_sqlite_create_top: %s\n", strerror(ret));
+		fprintf(stderr, "dbop_sqlite_create_top: %s\n", strerror(-ret));
 		return EXIT_FAILURE;
 	}
 	sql_transact.commit();

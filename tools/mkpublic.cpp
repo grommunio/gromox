@@ -173,7 +173,7 @@ int main(int argc, const char **argv) try
 		flags |= DBOP_SCHEMA_0;
 	auto ret = dbop_sqlite_create(psqlite, sqlite_kind::pub, flags);
 	if (ret != 0) {
-		fprintf(stderr, "dbop_sqlite_create_top: %s\n", strerror(ret));
+		fprintf(stderr, "dbop_sqlite_create_top: %s\n", strerror(-ret));
 		return EXIT_FAILURE;
 	}
 	ret = mbop_insert_namedprops(psqlite, datadir);
