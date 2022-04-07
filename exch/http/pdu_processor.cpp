@@ -861,20 +861,22 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 		return TRUE;
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
-	if (DCERPC_AUTH_TYPE_NONE == pauth_ctx->auth_info.auth_type &&
-		(DCERPC_AUTH_LEVEL_EMPTY == pauth_ctx->auth_info.auth_level ||
-		DCERPC_AUTH_LEVEL_NONE == pauth_ctx->auth_info.auth_level)) {
-		return TRUE;
-	}
-	if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
-		return FALSE;
-	if (NTLMSSP_PROCESS_AUTH == ntlmssp_expected_state(pauth_ctx->pntlmssp)) {
-		pauth_ctx->auth_info.auth_pad_length = 0;
-		pauth_ctx->auth_info.auth_reserved = 0;
-		return TRUE;
-	} else {
+	switch (pauth_ctx->auth_info.auth_type) {
+	case DCERPC_AUTH_TYPE_NONE:
+		return pauth_ctx->auth_info.auth_level == DCERPC_AUTH_LEVEL_EMPTY ||
+		       pauth_ctx->auth_info.auth_level == DCERPC_AUTH_LEVEL_NONE;
+	case DCERPC_AUTH_TYPE_NTLMSSP:
+		if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
+			return FALSE;
+		if (NTLMSSP_PROCESS_AUTH == ntlmssp_expected_state(pauth_ctx->pntlmssp)) {
+			pauth_ctx->auth_info.auth_pad_length = 0;
+			pauth_ctx->auth_info.auth_reserved = 0;
+			return TRUE;
+		}
 		return ntlmssp_session_info(pauth_ctx->pntlmssp,
 		       &pauth_ctx->session_info) ? TRUE : false;
+	default:
+		return false;
 	}
 }
 
