@@ -1524,8 +1524,15 @@ uint32_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	if (!exmdb_client_check_message(plogon->get_dir(),
 	    src_fid, src_mid, &b_exist))
 		return ecError;
+	/*
+	 * No client would normally try to move an entity they have not seen
+	 * before (ecNotFound). As such, every practical move operation will
+	 * either succeed, or {fail because the object is no longer there}
+	 * (SYNC_E_OBJECT_DELETED). Cf. tombstoning mechanism in LDAP for
+	 * something similar.
+	 */
 	if (!b_exist)
-		return ecNotFound;
+		return SYNC_E_OBJECT_DELETED;
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
