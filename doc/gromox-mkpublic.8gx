@@ -24,7 +24,7 @@ parameters if that file exists.
 .TP
 \fB\-f\fP
 Force overwrite when an existing SQLite database is detected for the user.
-By default, mkprivate will not touch exchange.sqlite3.
+By default, mkpublic will not touch exchange.sqlite3.
 .TP
 \fB\-\-create\-old\fP
 Create blank initial database using version 0. (This can be used for testing
