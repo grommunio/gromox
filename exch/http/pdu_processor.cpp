@@ -789,7 +789,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 	pauth_ctx->node.pdata = pauth_ctx;
 	
 	if (0 == pbind->auth_info.length) {
-		pauth_ctx->auth_info.auth_type = DCERPC_AUTH_TYPE_NONE;
+		pauth_ctx->auth_info.auth_type = RPC_C_AUTHN_NONE;
 		pauth_ctx->auth_info.auth_level = RPC_C_AUTHN_LEVEL_DEFAULT;
 		double_list_append_as_tail(&pcall->pprocessor->auth_list,
 			&pauth_ctx->node);
@@ -808,11 +808,11 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 		return FALSE;
 	}
 	
-	if (DCERPC_AUTH_TYPE_NONE == pauth_ctx->auth_info.auth_type) {
+	if (pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NONE) {
 		double_list_append_as_tail(&pcall->pprocessor->auth_list,
 			&pauth_ctx->node);
 		return TRUE;
-	} else if (DCERPC_AUTH_TYPE_NTLMSSP == pauth_ctx->auth_info.auth_type) {
+	} else if (pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NTLMSSP) {
 		if (pauth_ctx->auth_info.auth_level <= RPC_C_AUTHN_LEVEL_CONNECT) {
 			pauth_ctx->pntlmssp = ntlmssp_init(g_netbios_name,
 									g_dns_name, g_dns_domain, TRUE,
@@ -862,10 +862,10 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 	switch (pauth_ctx->auth_info.auth_type) {
-	case DCERPC_AUTH_TYPE_NONE:
+	case RPC_C_AUTHN_NONE:
 		return pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT ||
 		       pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_NONE;
-	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case RPC_C_AUTHN_NTLMSSP:
 		if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
 			return FALSE;
 		if (NTLMSSP_PROCESS_AUTH == ntlmssp_expected_state(pauth_ctx->pntlmssp)) {
@@ -1178,7 +1178,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 	/* can't work without an existing state, and an new blob to feed it */
-	if ((DCERPC_AUTH_TYPE_NONE == pauth_ctx->auth_info.auth_type &&
+	if ((pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NONE &&
 	    pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT) ||
 		NULL == pauth_ctx->pntlmssp ||
 	    0 == ppkt->payload.auth3.auth_info.length) {
@@ -1196,11 +1196,8 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 		debug_info("[pdu_processor]: failed to establish session_info\n");
 		goto AUTH3_FAIL;
 	}
-	
-	if (DCERPC_AUTH_TYPE_NONE != pauth_ctx->auth_info.auth_type) {
+	if (pauth_ctx->auth_info.auth_type != RPC_C_AUTHN_NONE)
 		pauth_ctx->is_login = TRUE;
-	}
-	
 	return TRUE;
 	
  AUTH3_FAIL:
@@ -1631,7 +1628,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	/* full max_recv_frag size minus the dcerpc request header size */
 	chunk_size = pcall->pprocessor->cli_max_recv_frag;
 	chunk_size -= DCERPC_REQUEST_LENGTH;
-	if (DCERPC_AUTH_TYPE_NONE != pcall->pauth_ctx->auth_info.auth_type &&
+	if (pcall->pauth_ctx->auth_info.auth_type != RPC_C_AUTHN_NONE &&
 	    pcall->pauth_ctx->auth_info.auth_level != RPC_C_AUTHN_LEVEL_DEFAULT &&
 	    pcall->pauth_ctx->auth_info.auth_level != RPC_C_AUTHN_LEVEL_NONE &&
 		NULL != pcall->pauth_ctx->pntlmssp) {
