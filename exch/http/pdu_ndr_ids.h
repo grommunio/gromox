@@ -20,13 +20,13 @@ enum {
 };
 
 enum {
-	DCERPC_AUTH_LEVEL_EMPTY = 0,
-	DCERPC_AUTH_LEVEL_NONE = 1,
-	DCERPC_AUTH_LEVEL_CONNECT = 2,
-	DCERPC_AUTH_LEVEL_CALL = 3,
-	DCERPC_AUTH_LEVEL_PACKET = 4,
-	DCERPC_AUTH_LEVEL_INTEGRITY = 5,
-	DCERPC_AUTH_LEVEL_PRIVACY = 6,
+	RPC_C_AUTHN_LEVEL_DEFAULT = 0, /* rpc_c_protect_level_default */
+	RPC_C_AUTHN_LEVEL_NONE = 1, /* rpc_c_protect_level_none */
+	RPC_C_AUTHN_LEVEL_CONNECT = 2, /* rpc_c_protect_level_connect */
+	RPC_C_AUTHN_LEVEL_CALL = 3, /* rpc_c_protect_level_call */
+	RPC_C_AUTHN_LEVEL_PKT = 4, /* rpc_c_protect_level_pkt */
+	RPC_C_AUTHN_LEVEL_PKT_INTEGRITY = 5, /* rpc_c_protect_level_pkt_integrity */
+	RPC_C_AUTHN_LEVEL_PKT_PRIVACY = 6, /* rpc_c_protect_level_pkt_privacy */
 };
 
 enum {

@@ -561,7 +561,7 @@ int pdu_ndr_pull_dcerpc_auth(NDR_PULL *pndr, DCERPC_AUTH *r)
 	TRY(ndr_pull_uint8(pndr, &r->auth_type));
 	TRY(ndr_pull_uint8(pndr, &r->auth_level));
 	if (0 == r->auth_level) {
-		r->auth_level = DCERPC_AUTH_LEVEL_CONNECT;
+		r->auth_level = RPC_C_AUTHN_LEVEL_CONNECT;
 	}
 	TRY(ndr_pull_uint8(pndr, &r->auth_pad_length));
 	TRY(ndr_pull_uint8(pndr, &r->auth_reserved));

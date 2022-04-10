@@ -598,9 +598,9 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 		pcall->pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 		switch (pcall->pauth_ctx->auth_info.auth_level) {
-		case DCERPC_AUTH_LEVEL_EMPTY:
-		case DCERPC_AUTH_LEVEL_CONNECT:
-		case DCERPC_AUTH_LEVEL_NONE:
+		case RPC_C_AUTHN_LEVEL_DEFAULT:
+		case RPC_C_AUTHN_LEVEL_CONNECT:
+		case RPC_C_AUTHN_LEVEL_NONE:
 			return TRUE;
 		default:
 			return FALSE;
@@ -622,14 +622,14 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	}
 	
 	switch (pauth_ctx->auth_info.auth_level) {
-	case DCERPC_AUTH_LEVEL_EMPTY:
+	case RPC_C_AUTHN_LEVEL_DEFAULT:
 		pdu_ndr_free_dcerpc_auth(&auth);
 		return TRUE;
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-	case DCERPC_AUTH_LEVEL_CONNECT:
+	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
+	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY:
+	case RPC_C_AUTHN_LEVEL_CONNECT:
 		break;
-	case DCERPC_AUTH_LEVEL_NONE:
+	case RPC_C_AUTHN_LEVEL_NONE:
 		pdu_ndr_free_dcerpc_auth(&auth);
 		return FALSE;
 	default:
@@ -641,7 +641,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 
 	/* check signature or unseal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
+	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
 		if (!ntlmssp_unseal_packet(pauth_ctx->pntlmssp,
 		    pblob->data + hdr_size, prequest->stub_and_verifier.length,
 		    pblob->data, pblob->length - auth.credentials.length,
@@ -652,7 +652,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		memcpy(prequest->stub_and_verifier.data, pblob->data + hdr_size,
 			prequest->stub_and_verifier.length);
 		break;
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY:
 		if (!ntlmssp_check_packet(pauth_ctx->pntlmssp,
 		    prequest->stub_and_verifier.data,
 		    prequest->stub_and_verifier.length, pblob->data,
@@ -661,7 +661,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 			return FALSE;
 		}
 		break;
-	case DCERPC_AUTH_LEVEL_CONNECT:
+	case RPC_C_AUTHN_LEVEL_CONNECT:
 		/* ignore possible signatures here */
 		break;
 	default:
@@ -790,7 +790,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 	
 	if (0 == pbind->auth_info.length) {
 		pauth_ctx->auth_info.auth_type = DCERPC_AUTH_TYPE_NONE;
-		pauth_ctx->auth_info.auth_level = DCERPC_AUTH_LEVEL_EMPTY;
+		pauth_ctx->auth_info.auth_level = RPC_C_AUTHN_LEVEL_DEFAULT;
 		double_list_append_as_tail(&pcall->pprocessor->auth_list,
 			&pauth_ctx->node);
 		return TRUE;
@@ -813,7 +813,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 			&pauth_ctx->node);
 		return TRUE;
 	} else if (DCERPC_AUTH_TYPE_NTLMSSP == pauth_ctx->auth_info.auth_type) {
-		if (pauth_ctx->auth_info.auth_level <= DCERPC_AUTH_LEVEL_CONNECT ) {
+		if (pauth_ctx->auth_info.auth_level <= RPC_C_AUTHN_LEVEL_CONNECT) {
 			pauth_ctx->pntlmssp = ntlmssp_init(g_netbios_name,
 									g_dns_name, g_dns_domain, TRUE,
 									NTLMSSP_NEGOTIATE_128|
@@ -863,8 +863,8 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 	switch (pauth_ctx->auth_info.auth_type) {
 	case DCERPC_AUTH_TYPE_NONE:
-		return pauth_ctx->auth_info.auth_level == DCERPC_AUTH_LEVEL_EMPTY ||
-		       pauth_ctx->auth_info.auth_level == DCERPC_AUTH_LEVEL_NONE;
+		return pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT ||
+		       pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_NONE;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
 			return FALSE;
@@ -1179,7 +1179,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 	/* can't work without an existing state, and an new blob to feed it */
 	if ((DCERPC_AUTH_TYPE_NONE == pauth_ctx->auth_info.auth_type &&
-		DCERPC_AUTH_LEVEL_EMPTY == pauth_ctx->auth_info.auth_level) ||
+	    pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT) ||
 		NULL == pauth_ctx->pntlmssp ||
 	    0 == ppkt->payload.auth3.auth_info.length) {
 		goto AUTH3_FAIL;
@@ -1474,12 +1474,12 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	}
 
 	switch (pauth_ctx->auth_info.auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
+	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY:
 		break;
-	case DCERPC_AUTH_LEVEL_CONNECT:
-	case DCERPC_AUTH_LEVEL_NONE:
-	case DCERPC_AUTH_LEVEL_EMPTY:
+	case RPC_C_AUTHN_LEVEL_CONNECT:
+	case RPC_C_AUTHN_LEVEL_NONE:
+	case RPC_C_AUTHN_LEVEL_DEFAULT:
 		return pdu_processor_ncacn_push_with_auth(pblob, ppkt, NULL);
 	default:
 		return FALSE;
@@ -1532,13 +1532,13 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 
 	/* sign or seal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
+	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
 		if (!ntlmssp_seal_packet(pauth_ctx->pntlmssp,
 		    ndr.data + DCERPC_REQUEST_LENGTH, payload_length,
 		    pblob->data, pblob->length, &creds2))
 			return FALSE;
 		break;
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY:
 		if (!ntlmssp_sign_packet(pauth_ctx->pntlmssp,
 		    ndr.data + DCERPC_REQUEST_LENGTH, payload_length,
 		    pblob->data, pblob->length, &creds2))
@@ -1632,8 +1632,8 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	chunk_size = pcall->pprocessor->cli_max_recv_frag;
 	chunk_size -= DCERPC_REQUEST_LENGTH;
 	if (DCERPC_AUTH_TYPE_NONE != pcall->pauth_ctx->auth_info.auth_type &&
-		DCERPC_AUTH_LEVEL_EMPTY != pcall->pauth_ctx->auth_info.auth_level &&
-		DCERPC_AUTH_LEVEL_NONE != pcall->pauth_ctx->auth_info.auth_level &&
+	    pcall->pauth_ctx->auth_info.auth_level != RPC_C_AUTHN_LEVEL_DEFAULT &&
+	    pcall->pauth_ctx->auth_info.auth_level != RPC_C_AUTHN_LEVEL_NONE &&
 		NULL != pcall->pauth_ctx->pntlmssp) {
 		sig_size = ntlmssp_sig_size();
 		if (0 != sig_size) {
