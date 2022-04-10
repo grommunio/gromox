@@ -180,17 +180,28 @@ union DCERPC_PAYLOAD {
  * CN = Connection
  * DG = Datagram / Connectionless
  */
-struct DCERPC_NCACN_PACKET {
-	uint8_t rpc_vers;
-	uint8_t rpc_vers_minor;
-	uint8_t pfc_flags;
-	uint8_t drep[4];
-	uint16_t frag_length;
-	uint16_t auth_length;
-	uint32_t call_id;
-	uint8_t pkt_type;
-	DCERPC_PAYLOAD payload;
+struct dcerpc_ncacn_packet {
+	constexpr dcerpc_ncacn_packet(bool be)
+	{
+		drep[0] = be ? 0 : DCERPC_DREP_LE;
+	}
+	uint8_t rpc_vers = 5;
+	uint8_t rpc_vers_minor = 0;
+	uint8_t pfc_flags = 0;
+	uint8_t drep[4]{};
+
+	/*
+	 * Concerning NDR_PUSH: frag_length is 0 in the class, and so
+	 * serialized with pdu_ndr_push_ncacnpkt. The produced blob is later
+	 * updated with pdu_processor_set_frag_length.
+	 */
+	uint16_t frag_length = 0;
+	uint16_t auth_length = 0;
+	uint32_t call_id = 0;
+	uint8_t pkt_type = DCERPC_PKT_INVALID;
+	DCERPC_PAYLOAD payload{};
 };
+using DCERPC_NCACN_PACKET = dcerpc_ncacn_packet;
 
 int pdu_ndr_pull_dcerpc_auth(NDR_PULL *pndr, DCERPC_AUTH *r);
 extern void pdu_ndr_free_dcerpc_auth(DCERPC_AUTH *r);

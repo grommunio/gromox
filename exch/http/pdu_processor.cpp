@@ -139,8 +139,15 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 
 static int pdu_processor_load_library(const char* plugin_name);
 
-dcerpc_call::dcerpc_call()
+dcerpc_call::dcerpc_call() :
+	pkt(b_bigendian)
 {
+	/*
+	 * b_bigendian is false => pkt(false) => pkt.drep[0]=LE. That's ok
+	 * because: If and when we read a packet from the wire, then e.g.
+	 * pdu_processor_rts_input will set b_bigendian based on peeking into
+	 * the packet before ndr_pull_init is called.
+	 */
 	node.pdata = this;
 	gettimeofday(&time, nullptr);
 	double_list_init(&reply_list);
@@ -523,20 +530,6 @@ static DCERPC_AUTH_CONTEXT* pdu_processor_find_auth_context(
 	return NULL;
 }
 
-static void pdu_processor_init_hdr(DCERPC_NCACN_PACKET *ppkt, BOOL bigendian)
-{
-	ppkt->rpc_vers = 5;
-	ppkt->rpc_vers_minor = 0;
-	if (bigendian)
-		ppkt->drep[0] = 0;
-	else
-		ppkt->drep[0] = DCERPC_DREP_LE;
-	ppkt->drep[1] = 0;
-	ppkt->drep[2] = 0;
-	ppkt->drep[3] = 0;
-}
-
-
 static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 	DATA_BLOB *ptrailer, DCERPC_AUTH *pauth, uint32_t *pauth_length,
 	BOOL auth_data_only)
@@ -732,12 +725,9 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 
 static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 {
-	DCERPC_NCACN_PACKET pkt;
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	static constexpr uint8_t zeros[4] = {};
 	
-	/* setup a bind_ack */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_FAULT;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -883,12 +873,8 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 /* return a dcerpc bind_nak */
 static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 {
-	DCERPC_NCACN_PACKET pkt;
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	
-	
-	/* setup a bind_nak */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_BIND_NAK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -925,7 +911,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	uint32_t if_version;
 	uint32_t extra_flags;
 	DOUBLE_LIST_NODE *pnode;
-	DCERPC_NCACN_PACKET pkt;
 	DCERPC_CONTEXT *pcontext;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	BOOL b_negotiate = FALSE;
@@ -1063,9 +1048,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 
-	/* setup a bind_ack */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_BIND_ACK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
@@ -1232,7 +1215,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	uint32_t context_id;
 	DCERPC_BIND *palter;
 	uint32_t extra_flags;
-	DCERPC_NCACN_PACKET pkt;
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext = nullptr;
 	PDU_PROCESSOR *pprocessor;
@@ -1373,8 +1355,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		return FALSE;
 	}
 	
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_ALTER_ACK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
@@ -1584,7 +1565,6 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	NDR_PUSH ndr_push;
 	uint32_t chunk_size;
 	uint32_t total_length;
-	DCERPC_NCACN_PACKET pkt;
 	DCERPC_REQUEST *prequest;
 	
 	
@@ -1657,8 +1637,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 		}
 
 		/* form the dcerpc response packet */
-		pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-		pkt.auth_length = 0;
+		dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 		pkt.call_id = pcall->pkt.call_id;
 		pkt.pkt_type = DCERPC_PKT_RESPONSE;
 		pkt.pfc_flags = 0;
@@ -2047,13 +2026,10 @@ void pdu_processor_rts_echo(char *pbuff)
 {
 	int flags;
 	NDR_PUSH ndr;
-	DCERPC_NCACN_PACKET pkt;
+	dcerpc_ncacn_packet pkt(g_bigendian);
 	
-	/* setup a echo */
-	pdu_processor_init_hdr(&pkt, g_bigendian);
-	pkt.auth_length = 0;
-	pkt.call_id = 0;
 	pkt.pkt_type = DCERPC_PKT_RTS;
+	pkt.frag_length = 20;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_ECHO;
 	pkt.payload.rts.num = 0;
@@ -2070,11 +2046,8 @@ void pdu_processor_rts_echo(char *pbuff)
 
 BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 {
-	DCERPC_NCACN_PACKET pkt;
-	
-	/* setup a echo */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
+
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -2368,17 +2341,14 @@ static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(
 
 static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 {
-	DCERPC_NCACN_PACKET pkt;
-
 	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
-	/* setup a conn/a3 */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
+
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -2409,17 +2379,14 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 {
-	DCERPC_NCACN_PACKET pkt;
-	
 	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
-	/* setup a conn/c2 */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
+
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -2454,16 +2421,14 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 
 static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 {
-	DCERPC_NCACN_PACKET pkt;
-	
 	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
-	/* setup a r2/a4 */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
+
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	pkt.auth_length = 0;
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
@@ -2494,17 +2459,14 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 {
-	DCERPC_NCACN_PACKET pkt;
-	
 	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
-	/* setup a r2/a4 */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
+
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -2534,17 +2496,14 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 {
-	DCERPC_NCACN_PACKET pkt;
-	
 	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
-	/* setup a r2/a6 */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
+
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -2576,17 +2535,14 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 {
-	DCERPC_NCACN_PACKET pkt;
-	
 	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
-	/* setup a r2/b3 */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
+
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -2617,18 +2573,14 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	DCERPC_CALL *pcall, uint32_t bytes_received,
 	uint32_t available_window, const char *channel_cookie)
 {
-	DCERPC_NCACN_PACKET pkt;
-	
 	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
-	/* setup a FlowControlAckWithDestination */
-	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
-	pkt.auth_length = 0;
-	pkt.call_id = 0;
+
+	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_OTHER_CMD;

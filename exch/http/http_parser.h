@@ -80,7 +80,7 @@ struct RPC_IN_CHANNEL {
 	~RPC_IN_CHANNEL();
 	NOMOVE(RPC_IN_CHANNEL);
 
-	uint16_t frag_length = 0; /* indicating in coming PDU length */
+	uint16_t frag_length = 0; /* indicating incoming PDU length */
 	char channel_cookie[GUIDSTR_SIZE]{}, connection_cookie[GUIDSTR_SIZE]{};
 	gromox::time_duration client_keepalive{};
 	uint32_t life_time = 0, available_window = 0;

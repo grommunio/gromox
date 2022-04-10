@@ -84,7 +84,7 @@ struct dcerpc_call {
 	BOOL b_bigendian = false;
 	uint32_t alloc_size = 0; /* alloc size for request stub data */
 	uint32_t ptr_cnt = 0;
-	DCERPC_NCACN_PACKET pkt{};
+	dcerpc_ncacn_packet pkt;
 	struct timeval time{}; /* the time the request arrived in the server */
 	DOUBLE_LIST reply_list{};
 };
