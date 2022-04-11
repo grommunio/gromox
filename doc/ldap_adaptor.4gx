@@ -108,7 +108,7 @@ Recommendations are \fB(objectClass=posixAccount)\fP for OpenLDAP/RFC2307bis,
 .br
 Default: (empty)
 .TP
-\fBldap_user_display_name\fP
+\fBldap_user_displayname\fP
 The name of the LDAP attribute which holds the value for PR_DISPLAY_NAME. Pick
 \fBdisplayName\fP (OpenLDAP as well as ActiveDirectory schemes).
 .br
