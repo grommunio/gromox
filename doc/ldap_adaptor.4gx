@@ -133,7 +133,8 @@ Default: (empty set)
 .TP
 \fBldap_user_aliases\fP
 The name of the LDAP attribute which contains secondary e-mail addresses. Pick
-\fBmailAlternativeAddress\fP (OpenLDAP) or \fBproxyAddresses\fP (AD).
+\fBmailAlternativeAddress\fP (OpenLDAP) or \fBproxyAddresses\fP (AD). The
+\fBsmtp:\fP prefix in proxyAddresses is automatically trimmed when read.
 .br
 Default: (empty)
 .SH See also
