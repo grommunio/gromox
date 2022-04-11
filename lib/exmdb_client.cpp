@@ -124,7 +124,7 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	BINARY bin;
 	if (exmdb_ext_push_request(&rq, &bin) != EXT_ERR_SUCCESS)
 		return -1;
-	if (!exmdb_client_write_socket(sockd, &bin, mdcl_socket_timeout * 1000)) {
+	if (!exmdb_client_write_socket(sockd, bin, mdcl_socket_timeout * 1000)) {
 		free(bin.pb);
 		return -1;
 	}
@@ -132,7 +132,7 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	if (mdcl_build_env != nullptr)
 		mdcl_build_env(srv);
 	auto cl_0 = make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
-	if (!exmdb_client_read_socket(sockd, &bin, mdcl_socket_timeout * 1000))
+	if (!exmdb_client_read_socket(sockd, bin, mdcl_socket_timeout * 1000))
 		return -1;
 	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
 	if (response_code != exmdb_response::success) {
@@ -441,12 +441,12 @@ BOOL exmdb_client_do_rpc(EXMDB_REQUEST &&rq, EXMDB_RESPONSE *rsp)
 		return false;
 	auto conn = exmdb_client_get_connection(rq.dir);
 	if (conn == nullptr || !exmdb_client_write_socket(conn->sockd,
-	    &bin, mdcl_socket_timeout * 1000)) {
+	    bin, mdcl_socket_timeout * 1000)) {
 		free(bin.pb);
 		return false;
 	}
 	free(bin.pb);
-	if (!exmdb_client_read_socket(conn->sockd, &bin, mdcl_socket_timeout * 1000))
+	if (!exmdb_client_read_socket(conn->sockd, bin, mdcl_socket_timeout * 1000))
 		return false;
 	time(&conn->last_time);
 	conn.reset();

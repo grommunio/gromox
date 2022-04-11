@@ -47,67 +47,63 @@ static int zarafa_client_connect()
 	return sockd;
 }
 
-static zend_bool zarafa_client_read_socket(int sockd, BINARY *pbin)
+static zend_bool zarafa_client_read_socket(int sockd, BINARY &pbin)
 {
 	int read_len;
 	uint32_t offset = 0;
 	uint8_t resp_buff[5];
 	
-	pbin->pb = NULL;
+	pbin.pb = nullptr;
 	while (1) {
-		if (NULL == pbin->pb) {
+		if (pbin.pb == nullptr) {
 			read_len = read(sockd, resp_buff, 5);
 			if (1 == read_len) {
-				pbin->cb = 1;
-				pbin->pb = sta_malloc<uint8_t>(1);
-				if (NULL == pbin->pb) {
+				pbin.cb = 1;
+				pbin.pb = sta_malloc<uint8_t>(1);
+				if (pbin.pb == nullptr)
 					return 0;
-				}
-				*(uint8_t*)pbin->pb = resp_buff[0];
+				pbin.pb[0] = resp_buff[0];
 				return 1;
 			} else if (5 == read_len) {
-				pbin->cb = le32p_to_cpu(resp_buff + 1) + 5;
-				pbin->pb = sta_malloc<uint8_t>(pbin->cb);
-				if (NULL == pbin->pb) {
-					pbin->cb = 0;
+				pbin.cb = le32p_to_cpu(resp_buff + 1) + 5;
+				pbin.pb = sta_malloc<uint8_t>(pbin.cb);
+				if (pbin.pb == nullptr) {
+					pbin.cb = 0;
 					return 0;
 				}
-				memcpy(pbin->pb, resp_buff, 5);
+				memcpy(pbin.pb, resp_buff, 5);
 				offset = 5;
-				if (offset == pbin->cb) {
+				if (pbin.cb == offset)
 					return 1;
-				}
 				continue;
 			} else {
 				return 0;
 			}
 		}
-		read_len = read(sockd, pbin->pb + offset, pbin->cb - offset);
+		read_len = read(sockd, pbin.pb + offset, pbin.cb - offset);
 		if (read_len <= 0) {
 			return 0;
 		}
 		offset += read_len;
-		if (offset == pbin->cb) {
+		if (offset == pbin.cb)
 			return 1;
-		}
 	}
 }
 
-static zend_bool zarafa_client_write_socket(int sockd, const BINARY *pbin)
+static zend_bool zarafa_client_write_socket(int sockd, const BINARY &pbin)
 {
 	int written_len;
 	uint32_t offset;
 	
 	offset = 0;
 	while (1) {
-		written_len = write(sockd, pbin->pb + offset, pbin->cb - offset);
+		written_len = write(sockd, pbin.pb + offset, pbin.cb - offset);
 		if (written_len <= 0) {
 			return 0;
 		}
 		offset += written_len;
-		if (offset == pbin->cb) {
+		if (offset == pbin.cb)
 			return 1;
-		}
 	}
 }
 
@@ -124,13 +120,13 @@ zend_bool zarafa_client_do_rpc(RPC_REQUEST &&prequest, RPC_RESPONSE *presponse)
 		efree(tmp_bin.pb);
 		return 0;
 	}
-	if (!zarafa_client_write_socket(sockd, &tmp_bin)) {
+	if (!zarafa_client_write_socket(sockd, tmp_bin)) {
 		efree(tmp_bin.pb);
 		close(sockd);
 		return 0;
 	}
 	efree(tmp_bin.pb);
-	if (!zarafa_client_read_socket(sockd, &tmp_bin)) {
+	if (!zarafa_client_read_socket(sockd, tmp_bin)) {
 		close(sockd);
 		return 0;
 	}
