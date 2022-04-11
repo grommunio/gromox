@@ -175,6 +175,11 @@ union DCERPC_PAYLOAD {
 	DCERPC_RTS rts;
 };
 
+/*
+ * NCA = Network Connection Architecture
+ * CN = Connection
+ * DG = Datagram / Connectionless
+ */
 struct DCERPC_NCACN_PACKET {
 	uint8_t rpc_vers;
 	uint8_t rpc_vers_minor;

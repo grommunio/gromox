@@ -1640,6 +1640,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	}
 	chunk_size -= chunk_size % 16;
 
+	/* Fragmentation into Transport Service Data Units (TSDU) */
 	do {
 		auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 		if (NULL == pblob_node) {

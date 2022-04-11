@@ -11,8 +11,8 @@ enum {
 	RPC_C_AUTHN_DCE_PUBLIC = 2,
 	RPC_C_AUTHN_DEC_PUBLIC = 4,
 	RPC_C_AUTHN_GSS_NEGOTIATE = 9,
-	RPC_C_AUTHN_NTLMSSP = 10,
-	RPC_C_AUTHN_GSS_SCHANNEL = 14,
+	RPC_C_AUTHN_NTLMSSP = 10, /* rpc_c_authn_winnt */
+	RPC_C_AUTHN_GSS_SCHANNEL = 14, /* rpc_c_authn_gss_tls */
 	RPC_C_AUTHN_GSS_KERBEROS = 16,
 	RPC_C_AUTHN_DPA = 17,
 	RPC_C_AUTHN_MSN = 18,
@@ -22,8 +22,9 @@ enum {
 	RPC_C_AUTHN_PKU2U = 31,
 	RPC_C_AUTHN_SCHANNEL = 68,
 	RPC_C_AUTHN_MQ = 100,
-	RPC_C_AUTHN_NCALRPC_AS_SYSTEM = 200,
+	RPC_C_AUTHN_NCALRPC_AS_SYSTEM = 200, /* NCA Local RPC */
 	RPC_C_AUTHN_DEFAULT = 0xFFFFFFFFU,
+	/* Opengroup RFC 81.3 has some assigned values, but in conflict with samba source */
 };
 
 enum {
@@ -36,7 +37,7 @@ enum {
 	RPC_C_AUTHN_LEVEL_PKT_PRIVACY = 6, /* rpc_c_protect_level_pkt_privacy */
 };
 
-enum {
+enum ncacn_pkt_type : uint8_t {
 	DCERPC_PKT_REQUEST = 0,
 	DCERPC_PKT_PING = 1,
 	DCERPC_PKT_RESPONSE = 2,
@@ -45,6 +46,7 @@ enum {
 	DCERPC_PKT_NOCALL = 5,
 	DCERPC_PKT_REJECT = 6,
 	DCERPC_PKT_ACK = 7,
+	DCERPC_PKT_CL_CANCEL = 8,
 	DCERPC_PKT_FACK = 9,
 	DCERPC_PKT_CANCEL_ACK = 10,
 	DCERPC_PKT_BIND = 11,
@@ -52,11 +54,13 @@ enum {
 	DCERPC_PKT_BIND_NAK = 13,
 	DCERPC_PKT_ALTER = 14,
 	DCERPC_PKT_ALTER_ACK = 15,
-	DCERPC_PKT_AUTH3 = 16,
+	/* Hey samba, AUTH3 *is* its real name (3-way authentication) */
+	DCERPC_PKT_AUTH3 = 16, /* DCE v1.2.2 */
 	DCERPC_PKT_SHUTDOWN = 17,
 	DCERPC_PKT_CO_CANCEL = 18,
 	DCERPC_PKT_ORPHANED = 19,
-	DCERPC_PKT_RTS = 20,
+	DCERPC_PKT_RTS = 20, /* MS-RPCH v20210625 */
+	DCERPC_PKT_INVALID = 0xffU,
 };
 
 enum {
