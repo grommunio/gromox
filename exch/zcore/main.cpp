@@ -246,12 +246,6 @@ int main(int argc, const char **argv) try
 	auto cl_7 = make_scope_exit(zarafa_server_stop);
 	rpc_parser_init(threads_num);
 	auto cl_6 = make_scope_exit(rpc_parser_stop);
-	listener_init();
-	auto cl_10 = make_scope_exit(listener_stop);
-	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
-		printf("[system]: failed to run listener\n");
-		return 13;
-	}
 
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
@@ -268,6 +262,12 @@ int main(int argc, const char **argv) try
 	if (0 != system_services_run()) {
 		printf("[system]: failed to run system services\n");
 		return 4;
+	}
+	listener_init();
+	auto cl_10 = make_scope_exit(listener_stop);
+	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
+		printf("[system]: failed to run listener\n");
+		return 13;
 	}
 	if (common_util_run(g_config_file->get_value("data_file_path")) != 0) {
 		printf("[system]: failed to run common util\n");
