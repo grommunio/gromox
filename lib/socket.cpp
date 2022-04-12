@@ -11,6 +11,8 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
 #ifdef __linux__
 #	include <linux/rtnetlink.h>
 #endif
@@ -161,6 +163,31 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 	return -(errno = saved_errno);
 }
 
+static int gx_gai_listen(const struct addrinfo *r)
+{
+	auto fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
+	if (fd < 0)
+		return -2;
+	static const int y = 1;
+	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(y)) < 0)
+		fprintf(stderr, "W-1385: setsockopt: %s\n", strerror(errno));
+	auto ret = bind(fd, r->ai_addr, r->ai_addrlen);
+	if (ret != 0) {
+		int se = errno;
+		close(fd);
+		errno = se;
+		return -1;
+	}
+	ret = listen(fd, SOMAXCONN);
+	if (ret != 0) {
+		int se = errno;
+		close(fd);
+		errno = se;
+		return -1;
+	}
+	return fd;
+}
+
 int gx_inet_listen(const char *host, uint16_t port)
 {
 	auto aires = gx_inet_lookup(host, port, AI_PASSIVE);
@@ -172,30 +199,56 @@ int gx_inet_listen(const char *host, uint16_t port)
 			if (fd >= 0)
 				return fd;
 		}
-		auto fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
-		if (fd < 0) {
-			if (saved_errno != 0)
-				saved_errno = errno;
+		auto fd = gx_gai_listen(r);
+		if (fd >= 0)
+			return fd;
+		saved_errno = errno;
+		if (fd == -2)
 			continue;
-		}
-		static const int y = 1;
-		if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(y)) < 0)
-			fprintf(stderr, "W-1385: setsockopt: %s\n", strerror(errno));
-		auto ret = bind(fd, r->ai_addr, r->ai_addrlen);
-		if (ret != 0) {
-			saved_errno = errno;
-			close(fd);
-			break;
-		}
-		ret = listen(fd, SOMAXCONN);
-		if (ret != 0) {
-			saved_errno = errno;
-			close(fd);
-			break;
-		}
-		return fd;
+		break;
 	}
 	return -(errno = saved_errno);
+}
+
+int gx_local_listen(const char *path, bool delete_on_create)
+{
+	struct sockaddr_un u;
+	if (strlen(path) >= arsizeof(u.sun_path))
+		return -EINVAL;
+	u.sun_family = AF_LOCAL;
+	strcpy(u.sun_path, path);
+	struct addrinfo r{};
+	r.ai_flags = AI_PASSIVE;
+	r.ai_family = AF_LOCAL;
+	r.ai_socktype = SOCK_STREAM;
+	r.ai_addrlen = sizeof(u) - sizeof(u.sun_path) + strlen(u.sun_path) + 1;
+	r.ai_addr = reinterpret_cast<struct sockaddr *>(&u);
+	auto use_env = getenv("HX_LISTEN_TOP_FD") != nullptr || getenv("LISTEN_FDS") != nullptr;
+	if (use_env) {
+		auto fd = HX_socket_from_env(&r, nullptr);
+		if (fd >= 0)
+			return fd;
+	}
+	auto ret = gx_gai_listen(&r);
+	if (ret >= 0)
+		return ret; /* fd */
+	if (ret == -2 || errno != EADDRINUSE)
+		return -errno;
+	int saved_errno = errno;
+	struct stat sb;
+	ret = stat(path, &sb);
+	if (ret < 0 || !S_ISSOCK(sb.st_mode))
+		return -saved_errno;
+	/* There will be a TOCTOU report, but what can you do... */
+	ret = unlink(path);
+	if (ret < 0 && errno != ENOENT) {
+		fprintf(stderr, "E-1400: unlink %s: %s\n", path, strerror(errno));
+		return -errno;
+	}
+	ret = gx_gai_listen(&r);
+	if (ret >= 0)
+		return ret; /* fd */
+	return -errno;
 }
 
 #ifdef __linux__

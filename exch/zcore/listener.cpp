@@ -11,11 +11,14 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/un.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
+#include <gromox/socket.h>
 #include "listener.h"
 #include "rpc_parser.h"
+
+using namespace gromox;
 
 static gromox::atomic_bool g_notify_stop;
 static int g_listen_sockd;
@@ -46,36 +49,16 @@ void listener_init()
 
 int listener_run(const char *CS_PATH)
 {
-	int len;
-	struct sockaddr_un unix_addr;
-
-	 /* Create a Unix domain stream socket */
-	g_listen_sockd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (-1 == g_listen_sockd) {
-		printf("[listener]: failed to create listen socket: %s\n", strerror(errno));
+	g_listen_sockd = gx_local_listen(CS_PATH, true /* autodelete */);
+	if (g_listen_sockd < 0) {
+		printf("[listener]: listen %s: %s\n", CS_PATH, strerror(errno));
 		return -1;
 	}
-	unlink(CS_PATH);
-	/* Fill in socket address structure */
-	memset(&unix_addr, 0, sizeof (unix_addr));
-	unix_addr.sun_family = AF_UNIX;
-	gx_strlcpy(unix_addr.sun_path, CS_PATH, gromox::arsizeof(unix_addr.sun_path));
-	len = sizeof(unix_addr.sun_family) + strlen(unix_addr.sun_path);
-	/* Bind the name to the descriptor */
-	if (bind(g_listen_sockd, (struct sockaddr*)&unix_addr, len) < 0) {
-		close(g_listen_sockd);
-		printf("[listener]: bind %s: %s\n", unix_addr.sun_path, strerror(errno));
-		return -2;
-	}
+	gx_reexec_record(g_listen_sockd);
 	if (chmod(CS_PATH, 0666) < 0) {
 		close(g_listen_sockd);
 		printf("[listener]: fail to change access mode of %s\n", CS_PATH);
 		return -3;
-	}
-	if (listen(g_listen_sockd, 5) < 0) {
-		close(g_listen_sockd);
-		printf("[listener]: fail to listen!\n");
-		return -4;
 	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_listener_id, nullptr, zcls_thrwork, nullptr);
