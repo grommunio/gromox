@@ -57,13 +57,14 @@ enum {
 
 static char *opt_config_file, *opt_datadir;
 static const char *g_lang;
-static unsigned int opt_force, opt_create_old, opt_upgrade;
+static unsigned int opt_force, opt_create_old, opt_upgrade, opt_verbose;
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'T', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting exchange.sqlite3"},
 	{nullptr, 'U', HXTYPE_NONE, &opt_upgrade, nullptr, nullptr, 0, "Perform schema upgrade"},
+	{nullptr, 'v', HXTYPE_NONE, &opt_verbose, nullptr, nullptr, 0, "Bump verbosity"},
 	{"create-old", 0, HXTYPE_NONE, &opt_create_old, nullptr, nullptr, 0, "Create SQLite database tables version 0"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -221,6 +222,8 @@ int main(int argc, const char **argv) try
 	auto sql_transact = gx_sql_begin_trans(psqlite);
 	if (opt_create_old)
 		flags |= DBOP_SCHEMA_0;
+	if (opt_verbose)
+		flags |= DBOP_VERBOSE;
 	auto ret = dbop_sqlite_create(psqlite, sqlite_kind::pvt, flags);
 	if (ret != 0) {
 		fprintf(stderr, "sqlite_create: %s\n", strerror(-ret));

@@ -2,7 +2,7 @@
 .SH Name
 gromox\-mkpublic \(em Tool for creating a blank public store
 .SH Synopsis
-\fBgromox\-mkpublic\fP [\fB\-U\fP] [\fB\-T\fP \fItemplate_dir\fP] [\fB\-c\fP
+\fBgromox\-mkpublic\fP [\fB\-Uv\fP] [\fB\-T\fP \fItemplate_dir\fP] [\fB\-c\fP
 \fIconfig\fP] [\fB\-f\fP] \fIdomainname\fP
 .SH Options
 .TP
@@ -25,6 +25,9 @@ parameters if that file exists.
 \fB\-f\fP
 Force overwrite when an existing SQLite database is detected for the user.
 By default, mkpublic will not touch exchange.sqlite3.
+.TP
+\fB\-v\fP
+Turn on verbose mode for \-U.
 .TP
 \fB\-\-create\-old\fP
 Create blank initial database using version 0. (This can be used for testing
