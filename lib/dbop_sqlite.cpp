@@ -633,6 +633,10 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 	}
 	while (entry->v <= static_cast<unsigned int>(current) && entry->v != 0)
 		++entry;
+
+	if (gx_sql_exec(db, "PRAGMA foreign_keys=OFF") != SQLITE_OK ||
+	    gx_sql_exec(db, "PRAGMA legacy_alter_table=ON") != SQLITE_OK)
+		return -EIO;
 	for (; entry->v != 0; ++entry) {
 		if (flags & DBOP_VERBOSE)
 			fprintf(stderr, "dbop_sqlite: upgrading %s to schema E%c-%u\n",
