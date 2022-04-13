@@ -63,6 +63,15 @@ Default: \fI5555\fP
 \fBmidb_mime_number\fP
 Default: \fI4096\fP
 .TP
+\fBmidb_schema_upgrades\fP
+This directive controls whether database schemas are automatically upgraded
+when a message index database (midb.sqlite) is loaded. During this time, that
+DB is unavailable and operations on it will be delayed. Connection aborts, if
+any, would be due to timeouts in components other than midb. (The file can
+temporarily grow to double its size, so ample disk space may be required.)
+.br
+Default: \fIno\fP
+.TP
 \fBmidb_table_size\fP
 Default: \fI5000\fP
 .TP

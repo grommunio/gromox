@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/database.h>
+#include <gromox/dbop.h>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
@@ -163,6 +164,8 @@ struct SIMU_NODE {
 };
 
 }
+
+unsigned int g_midb_schema_upgrades;
 
 static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 static BOOL g_wal;
@@ -2451,6 +2454,25 @@ static IDB_REF mail_engine_peek_idb(const char *path)
 	return IDB_REF(pidb);
 }
 
+static int mail_engine_autoupgrade(sqlite3 *db, const char *filedesc)
+{
+	if (g_midb_schema_upgrades != MIDB_UPGRADE_YES)
+		return 0;
+	auto recent = dbop_sqlite_recentversion(sqlite_kind::midb);
+	auto current = dbop_sqlite_schemaversion(db, sqlite_kind::midb);
+	if (current >= recent)
+		return 0;
+	fprintf(stderr, "[dbop_sqlite]: %s: current schema EM-%d; upgrading to EM-%d.\n",
+		filedesc, current, recent);
+	auto ret = dbop_sqlite_upgrade(db, filedesc, sqlite_kind::midb, DBOP_VERBOSE);
+	if (ret != 0) {
+		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n", filedesc, strerror(ret));
+		return -1;
+	}
+	fprintf(stderr, "[dbop_sqlite]: upgrade %s: complete\n", filedesc);
+	return 0;
+}
+
 static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 {
 	BOOL b_load;
@@ -2478,6 +2500,12 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 		if (ret != SQLITE_OK) {
 			g_hash_table.erase(xp.first);
 			fprintf(stderr, "E-1438: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
+			return {};
+		}
+		ret = mail_engine_autoupgrade(pidb->psqlite, temp_path);
+		if (ret != 0) {
+			sqlite3_close(pidb->psqlite);
+			pidb->psqlite = nullptr;
 			return {};
 		}
 		gx_sql_exec(pidb->psqlite, "PRAGMA foreign_keys=ON");

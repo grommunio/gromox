@@ -8,6 +8,7 @@ Enhancements:
 * mt2exm: added the -B option for the placement of unanchored messages
 * eml2mt: new utility to import mails from files
 * exmdb_provider: new config directive "exmdb_schema_upgrades"
+* midb: new config directive "midb_schema_upgrades"
 * mkprivate, mkpublic and mkmidb now recognize the -U option to upgrade SQLite
   database schemas
 * mbop: new utility

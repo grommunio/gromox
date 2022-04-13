@@ -65,6 +65,7 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"midb_listen_ip", "::1"},
 	{"midb_listen_port", "5555"},
 	{"midb_mime_number", "4096", CFG_SIZE, "1024"},
+	{"midb_schema_upgrades", "auto"},
 	{"midb_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"midb_threads_num", "100", CFG_SIZE, "20", "1000"},
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "200"},
@@ -94,6 +95,13 @@ static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 	}
 	config_file_apply(*pconfig, midb_cfg_defaults);
 	g_cmd_debug = pconfig->get_ll("midb_cmd_debug");
+	auto s = pconfig->get_value("midb_schema_upgrades");
+	if (strcmp(s, "auto") == 0)
+		g_midb_schema_upgrades = MIDB_UPGRADE_AUTO;
+	else if (strcmp(s, "yes") == 0)
+		g_midb_schema_upgrades = MIDB_UPGRADE_YES;
+	else
+		g_midb_schema_upgrades = MIDB_UPGRADE_NO;
 	return true;
 }
 
