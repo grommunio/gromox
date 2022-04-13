@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 #include <gromox/atomic.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
 #include <gromox/double_list.hpp>
@@ -177,12 +178,16 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	auto c = is_pvt ? 'V' : 'B';
 	fprintf(stderr, "[dbop_sqlite]: %s: current schema E%c-%d; upgrading to E%c-%d.\n",
 		filedesc, c, current, c, recent);
+	auto start = time_point::clock::now();
 	auto ret = dbop_sqlite_upgrade(db, filedesc, kind, DBOP_VERBOSE);
 	if (ret != 0) {
 		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n", filedesc, strerror(ret));
 		return -1;
 	}
-	fprintf(stderr, "[dbop_sqlite]: upgrade %s: complete\n", filedesc);
+	auto d1 = time_point::clock::now() - start;
+	auto d2 = std::chrono::duration<double>(d1).count();
+	fprintf(stderr, "[dbop_sqlite]: Completed upgrade of %s in %.2fs.\n",
+	        filedesc, d2);
 	return 0;
 }
 
