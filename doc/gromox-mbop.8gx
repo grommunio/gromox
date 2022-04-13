@@ -1,0 +1,11 @@
+.TH gromox\-dbop 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+gromox\-mbop \(em Mailbox operations utility
+.SH Synopsis
+\fBgromox\-mbop\fP \fIcommand\fP [args...]
+.SH Commands
+.SS unload
+Issue the UNLOAD RPC to exmdb_provider(4gx). Takes the mailbox directory as
+argument, e.g. `\fBgromox\-mbop unload /var/lib/gromox/user/0/1\fP`.
+.SH See also
+\fBgromox\fP(7)

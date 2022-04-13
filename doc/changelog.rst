@@ -1,5 +1,5 @@
-1.18.38
-=======
+1.18.138
+========
 
 Enhancements:
 
@@ -7,8 +7,10 @@ Enhancements:
 * pff2mt: added the --only-obj option to extract a specific object
 * mt2exm: added the -B option for the placement of unanchored messages
 * eml2mt: new utility to import mails from files
+* exmdb_provider: new config directive "exmdb_schema_upgrades"
 * mkprivate, mkpublic and mkmidb now recognize the -U option to upgrade SQLite
   database schemas
+* mbop: new utility
 * rebuild: add progress indicator
 
 Fixes:
@@ -23,6 +25,14 @@ Fixes:
 * lib: add missing RFC 2047 Base64 recognition to some mail functions
 * lib: autodetect iso-2022-jp-ms (un)availability in iconv to resolve
   conversion problems with RFC 2047 encoded-words using iso-2022-jp
+
+Changes:
+
+* rebuild: no longer performs implicit schema updates; see
+  gromox-mkprivate/mkpublic/mkmidb -U, or the exmdb_schema_upgrades directive
+  for replacement.
+* rebuild: no longer performs db unload/reload; this operation moved to
+  gromox-mbop.
 
 
 1.18 (2022-03-19)

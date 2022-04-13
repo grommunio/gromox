@@ -12,6 +12,10 @@ The intent of this helper utility is to repair SQLite-level
 corruptions; if and when such a corruption came to be, the error message (in
 e.g. exmdb_provider's logs) to look for would be "database disk image is
 malformed".
+.PP
+After rebuilding an exchange.sqlite3 file, you should invoke gromox\-mbop(8gx)
+with the "unload" command on the specific mailbox directory to make
+exmdb_provider(4gx) aware of the change.
 .SH Options
 .TP
 \fB\-T\fP \fIpath\fP
@@ -20,18 +24,6 @@ config file; it specifies the location where the SQLite schemas etc. are
 stored.
 .br
 Default: \fI/usr/share/gromox\fP
-.TP
-\fB\-\-no\-reload\fP
-Do not contact exmdb_provider(4gx), do not trigger a mailbox RELOAD.
-.SH Exit status
-The usual conventions apply. An exit status of 0 indicates success, and any
-other value is considered failure.
-.PP
-When exmdb_provider cannot be contacted for the reloading action ("UNLOAD"
-RPC), the exit status will be 12. Scripted uses of gromox\-rebuild are free to
-treat this a success. Failure to reach a server can imply the server is not
-running, at which point no reload is needed (again, just like considerations
-for log rotation). However, it could also imply a network failure.
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
@@ -42,4 +34,4 @@ of a private store.
 \fIdata_file_path\fP/sqlite3_private.txt: SQLite instructions to generate part
 of a private store.
 .SH See also
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBgromox\-mbop\fP(8gx)

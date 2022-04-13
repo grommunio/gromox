@@ -80,7 +80,7 @@ noinst_DATA += \
 	libgxs_mysql_adaptor.ldd \
 	libgxs_textmaps.ldd \
 	libgxs_user_filter.ldd
-sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-e2ghelper gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-e2ghelper gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
@@ -260,6 +260,8 @@ gromox_eml2mt_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cpl
 gromox_exm2eml_SOURCES = tools/exm2eml.cpp tools/genimport.cpp exch/http/service.cpp
 gromox_exm2eml_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la -ldl
 gromox_mailq_SOURCES = tools/mailq.cpp
+gromox_mbop_SOURCES = tools/mbop_main.cpp
+gromox_mbop_LDADD = libgromox_exrpc.la
 gromox_mkmidb_SOURCES = tools/mkmidb.cpp tools/mkshared.cpp
 gromox_mkmidb_LDADD = ${fmt_LIBS} ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_mapi.la
 gromox_mkprivate_SOURCES = tools/mkprivate.cpp tools/mkshared.cpp
@@ -313,7 +315,7 @@ man_MANS = \
 	doc/freebusy.8gx doc/gromox.7 doc/gromox-abktconv.8gx \
 	doc/gromox-abktpull.8gx doc/gromox-dbop.8gx \
 	doc/gromox-eml2mt.8gx doc/gromox-exm2eml.8gx \
-	doc/gromox-kdb2mt.8gx doc/gromox-mailq.8gx \
+	doc/gromox-kdb2mt.8gx doc/gromox-mailq.8gx doc/gromox-mbop.8gx \
 	doc/gromox-mkmidb.8gx doc/gromox-mkprivate.8gx doc/gromox-mkpublic.8gx \
 	doc/gromox-mt2exm.8gx doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
