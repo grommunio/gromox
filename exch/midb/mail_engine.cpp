@@ -1165,20 +1165,18 @@ static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 		if (NULL != ptree_node->pbranch) {
 			mail_engine_ct_destroy_internal(ptree_node->pbranch);
 			ptree_node->pbranch = NULL;
-		} else {
-			if (cond_is_id(ptree_node->condition)) {
-				mail_engine_ct_free_sequence(
-					(DOUBLE_LIST*)ptree_node->pstatment);
-				ptree_node->pstatment = NULL;
-			} else if (cond_w_stmt(ptree_node->condition)) {
-				free(ptree_node->pstatment);
-				ptree_node->pstatment = NULL;
-			} else if (ptree_node->condition == midb_cond::header) {
-				free(((void**)ptree_node->pstatment)[0]);
-				free(((void**)ptree_node->pstatment)[1]);
-				free(ptree_node->pstatment);
-				ptree_node->pstatment = NULL;
-			}
+		} else if (cond_is_id(ptree_node->condition)) {
+			mail_engine_ct_free_sequence(
+				(DOUBLE_LIST *)ptree_node->pstatment);
+			ptree_node->pstatment = NULL;
+		} else if (cond_w_stmt(ptree_node->condition)) {
+			free(ptree_node->pstatment);
+			ptree_node->pstatment = NULL;
+		} else if (ptree_node->condition == midb_cond::header) {
+			free(((void **)ptree_node->pstatment)[0]);
+			free(((void **)ptree_node->pstatment)[1]);
+			free(ptree_node->pstatment);
+			ptree_node->pstatment = NULL;
 		}
 		free(ptree_node);
 	}
