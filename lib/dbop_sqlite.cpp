@@ -659,6 +659,9 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 		}
 		dbop_sqlite_bump(db, entry->v);
 	}
+	if (gx_sql_exec(db, "PRAGMA foreign_keys=ON") != SQLITE_OK ||
+	    gx_sql_exec(db, "PRAGMA legacy_alter_table=OFF") != SQLITE_OK)
+		return -EIO;
 	return 0;
 }
 
