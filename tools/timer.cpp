@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <condition_variable>
 #include <csignal>
@@ -68,7 +69,7 @@ struct srcitem {
 
 static gromox::atomic_bool g_notify_stop;
 static unsigned int g_threads_num;
-static int g_last_tid;
+static std::atomic<int> g_last_tid;
 static int g_list_fd = -1;
 static std::string g_list_path;
 static std::vector<std::string> g_acl_list;
@@ -97,7 +98,6 @@ static void encode_line(const char *in, char *out);
 static BOOL read_mark(CONNECTION_NODE *pconnection);
 
 static void term_handler(int signo);
-static int increase_tid();
 
 CONNECTION_NODE::CONNECTION_NODE(CONNECTION_NODE &&o) noexcept :
 	sockd(o.sockd), offset(o.offset)
@@ -508,7 +508,7 @@ static void *tmr_thrwork(void *param)
 			}
 
 			TIMER tmr;
-			tmr.t_id = increase_tid();
+			tmr.t_id = ++g_last_tid;
 			tmr.exec_time = exec_interval + time(nullptr);
 			try {
 				tmr.command = pspace;
@@ -664,14 +664,3 @@ static void encode_line(const char *in, char *out)
 	}
 	out[j] = '\0';
 }
-
-static int increase_tid()
-{
-	int val;
-
-	std::lock_guard lk(g_tid_lock);
-	g_last_tid ++;
-	val = g_last_tid;
-	return val;
-}
-
