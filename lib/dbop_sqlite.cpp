@@ -621,6 +621,7 @@ static int dbop_sqlite_chcol(sqlite3 *db, const tblite_upgradefn *entry)
 int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
     sqlite_kind kind, unsigned int flags)
 {
+	bool did_chcol = false;
 	auto current = dbop_sqlite_schemaversion(db, kind);
 	if (current < 0)
 		return -EIO;
@@ -653,12 +654,17 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 			ret = dbop_sqlite_chcol(db, entry);
 			if (ret < 0)
 				return ret;
+			did_chcol = true;
 		} else {
 			fprintf(stderr, "[dbop_sqlite]: malformed entry in upgrade table, sv %u\n", entry->v);
 			return -EINVAL;
 		}
 		dbop_sqlite_bump(db, entry->v);
 	}
+	/* Reclaim some diskspace */
+	if (did_chcol && gx_sql_exec(db, "VACUUM") != SQLITE_OK)
+		/* ignore */;
+
 	if (gx_sql_exec(db, "PRAGMA foreign_keys=ON") != SQLITE_OK ||
 	    gx_sql_exec(db, "PRAGMA legacy_alter_table=OFF") != SQLITE_OK)
 		return -EIO;

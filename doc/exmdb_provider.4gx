@@ -39,9 +39,9 @@ This directive controls whether database schemas are automatically upgraded
 when a mailbox is loaded. During this time, the mailbox is unavailable and
 operations on it will be delayed. Connection aborts, if any, would be due to
 timeouts in components other than exmdb_provider. (The procedure takes roughly
-30sec per gigabyte of exchange.sqlite3 worth of data, or about 100000 messages,
-on a 3700X CPU. The file can temporarily grow to double its size, so ample disk
-space may be required.)
+36sec per gigabyte of exchange.sqlite3 worth of data, or about 110k messages,
+on a 3700X CPU, single-thread. The file can also temporarily grow to double its
+size, so ample disk space may be required.)
 .br
 Default: \fIno\fP
 .TP
