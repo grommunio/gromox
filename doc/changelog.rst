@@ -1,5 +1,5 @@
-1.18.138
-========
+1.19 (2022-04-14)
+=================
 
 Enhancements:
 
@@ -12,12 +12,18 @@ Enhancements:
 * mkprivate, mkpublic and mkmidb now recognize the -U option to upgrade SQLite
   database schemas
 * mbop: new utility
-* rebuild: add progress indicator
+* rebuild: added progress indicator
+* zcore: new config directive "zcore_max_obh_per_session"
+* emsmdb: new config directives "emsmdb_max_obh_per_session",
+  "emsmdb_max_cxh_per_user" to allow higher resource use when a lot of stores
+  are used by an Outlook profile (warning W-1580).
 
 Fixes:
 
 * emsmdb: no longer send folder named properties in ICS streams
 * mapi_lib: resolve use-after-free in idset::remove
+* http: cure a crash in pdu_processor_auth_bind_ack when NTLMSSP authentication
+  is attempted
 * exmdb_client: when the exmdb server is not reachable, fail immediately rather
   than timeout
 * Change SQLite db schema to use BLOB column type/affinity instead of NONE,
@@ -27,13 +33,14 @@ Fixes:
 * lib: autodetect iso-2022-jp-ms (un)availability in iconv to resolve
   conversion problems with RFC 2047 encoded-words using iso-2022-jp
 
-Changes:
+Behavioral changes:
 
 * rebuild: no longer performs implicit schema updates; see
   gromox-mkprivate/mkpublic/mkmidb -U, or the exmdb_schema_upgrades directive
   for replacement.
 * rebuild: no longer performs db unload/reload; this operation moved to
   gromox-mbop.
+* zcore: move socket creation after privilege drop
 
 
 1.18 (2022-03-19)

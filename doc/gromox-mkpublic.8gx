@@ -15,7 +15,11 @@ Default: \fI/usr/share/gromox\fP
 .TP
 \fB\-U\fP
 Rather than creating the SQLite file, upgrade it. (The \-f option has no
-effect.)
+effect.) mkpublic does not coordinate with exmdb_provider(4gx) and data
+corruption is possible if both try to edit the file at the same time. You
+should let exmdb_provider(4gx) do upgrades instead, via the
+"exmdb_schema_upgrades" directive, or at the very least, stop
+http(8gx)/exmdb_provider when using mkpublic \-U.
 .TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not

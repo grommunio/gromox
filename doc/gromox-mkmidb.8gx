@@ -15,7 +15,10 @@ Default: \fI/usr/share/gromox\fP
 .TP
 \fB\-U\fP
 Rather than creating the SQLite file, upgrade it. (The \-f option has no
-effect.)
+effect.) mkmidb does not coordinate with mkmidb(8gx) and data corruption is
+possible if both try to edit the file at the same time. You should let
+mkmidb(8gx) do upgrades instead, via the "midb_schema_upgrades" directive, or
+at the very least, stop midb when using mkmidb \-U.
 .TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
