@@ -82,7 +82,12 @@ struct CONDITION_RESULT {
 	SINGLE_LIST_NODE *pcur_node;
 };
 
-struct CONDITION_TREE : DOUBLE_LIST {};
+struct CONDITION_TREE : DOUBLE_LIST {
+	CONDITION_TREE() { double_list_init(&m_list); }
+	~CONDITION_TREE();
+	DOUBLE_LIST m_list{};
+};
+
 struct CONDITION_TREE_NODE {
 	DOUBLE_LIST_NODE node;
 	CONDITION_TREE *pbranch;
@@ -1103,15 +1108,14 @@ static inline bool cond_w_stmt(enum midb_cond x)
 	       x == midb_cond::unkeyword;
 }
 
-static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
+CONDITION_TREE::~CONDITION_TREE()
 {
 	DOUBLE_LIST_NODE *pnode;
 	CONDITION_TREE_NODE *ptree_node;
 	
-	while ((pnode = double_list_pop_front(plist)) != nullptr) {
+	while ((pnode = double_list_pop_front(&m_list)) != nullptr) {
 		ptree_node = (CONDITION_TREE_NODE*)pnode->pdata;
 		if (NULL != ptree_node->pbranch) {
-			mail_engine_ct_destroy_internal(ptree_node->pbranch);
 			ptree_node->pbranch = NULL;
 		} else if (cond_is_id(ptree_node->condition)) {
 			mail_engine_ct_free_sequence(ptree_node->ct_seq);
@@ -1127,8 +1131,7 @@ static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 		}
 		free(ptree_node);
 	}
-	double_list_free(plist);
-	free(plist);
+	double_list_free(&m_list);
 }
 
 static enum midb_cond cond_str_to_cond(const char *s)
@@ -1174,8 +1177,8 @@ static enum midb_cond cond_str_to_cond(const char *s)
 	return midb_cond::x_none;
 }
 
-static CONDITION_TREE *mail_engine_ct_build_internal(
-	const char *charset, int argc, char **argv)
+static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
+    const char *charset, int argc, char **argv) try
 {
 	static constexpr const char *kwlist1[] =
 		{"BCC", "BODY", "CC", "FROM", "KEYWORD", "SUBJECT", "TEXT",
@@ -1193,16 +1196,11 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 	char* tmp_argv[256];
 	DOUBLE_LIST_NODE *pnode;
 	CONDITION_TREE_NODE *ptree_node;
+	auto plist = std::make_unique<CONDITION_TREE>();
 
-	auto plist = me_alloc<CONDITION_TREE>();
-	if (NULL == plist) {
-		return {};
-	}
-	double_list_init(plist);
 	for (i=0; i<argc; i++) {
 		ptree_node = me_alloc<CONDITION_TREE_NODE>();
 		if (NULL == ptree_node) {
-			mail_engine_ct_destroy_internal(plist);
 			return {};
 		}
 		ptree_node->node.pdata = ptree_node;
@@ -1212,7 +1210,6 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			i ++;
 			if (i >= argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 		} else {
@@ -1223,32 +1220,27 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			ptree_node->ct_keyword = mail_engine_ct_to_utf8(charset, argv[i]).release();
 			if (ptree_node->ct_keyword == nullptr) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 		} else if (array_find_istr(kwlist2, argv[i])) {
 			if (i + 1 > argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL == strptime(argv[i], "%d-%b-%Y", &tmp_tm)) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			ptree_node->ct_time = mktime(&tmp_tm);
@@ -1259,60 +1251,51 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 				len - 2, tmp_argv, sizeof(tmp_argv));
 			if (-1 == tmp_argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			auto plist1 = mail_engine_ct_build_internal(
 						charset, tmp_argc, tmp_argv);
 			if (NULL == plist1) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
-			ptree_node->pbranch = plist1;
+			ptree_node->pbranch = plist1.release();
 		} else if (0 == strcasecmp(argv[i], "OR")) {
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			tmp_argc = mail_engine_ct_compile_criteria(
 								argc, argv, i, tmp_argv);
 			if (-1 == tmp_argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			i += tmp_argc;
 			if (i + 1 > argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			tmp_argc1 = mail_engine_ct_compile_criteria(
 					argc, argv, i, tmp_argv + tmp_argc);
 			if (-1 == tmp_argc1) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			auto plist1 = mail_engine_ct_build_internal(charset,
 							tmp_argc + tmp_argc1, tmp_argv);
 			if (NULL == plist1) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
-			if (2 != double_list_get_nodes_num(plist1) ||
-				NULL == (pnode = double_list_get_tail(plist1))) {
+			if (double_list_get_nodes_num(plist1.get()) != 2 ||
+			    (pnode = double_list_get_tail(plist1.get())) == nullptr) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
-				mail_engine_ct_destroy_internal(plist1);
 				return {};
 			}
 			static_cast<CONDITION_TREE_NODE *>(pnode->pdata)->conjunction = midb_conj::c_or;
-			ptree_node->pbranch = plist1;
+			ptree_node->pbranch = plist1.release();
 			i += tmp_argc1 - 1;
 		} else if (array_find_istr(kwlist3, argv[i])) {
 			ptree_node->condition = cond_str_to_cond(argv[i]);
@@ -1321,14 +1304,12 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			ptree_node->ct_headers[0] = strdup(argv[i]);
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			ptree_node->ct_headers[1] = strdup(argv[i]);
@@ -1339,7 +1320,6 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			ptree_node->ct_size = strtol(argv[i], nullptr, 0);
@@ -1348,13 +1328,11 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			auto plist1 = mail_engine_ct_parse_sequence(argv[i]);
 			if (NULL == plist1) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			ptree_node->ct_seq = plist1;
@@ -1362,29 +1340,26 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			auto plist1 = mail_engine_ct_parse_sequence(argv[i]);
 			if (NULL == plist1) {
 				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
 				return {};
 			}
 			ptree_node->condition = midb_cond::id;
 			ptree_node->ct_seq = plist1;
 		}
-		double_list_append_as_tail(plist, &ptree_node->node);
+		double_list_append_as_tail(plist.get(), &ptree_node->node);
 	}
 	return plist;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1926: ENOMEM\n");
+	return {};
 }
 
-static CONDITION_TREE* mail_engine_ct_build(int argc, char **argv)
+static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build(int argc, char **argv)
 {
 	if (strcasecmp(argv[0], "CHARSET") != 0)
 		return mail_engine_ct_build_internal("UTF-8", argc, argv);
 	if (argc < 3)
 		return {};
 	return mail_engine_ct_build_internal(argv[1], argc - 2, argv + 2);
-}
-
-static void mail_engine_ct_destroy(CONDITION_TREE *ptree)
-{
-	mail_engine_ct_destroy_internal(ptree);
 }
 
 static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
@@ -4693,10 +4668,8 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	size_t decode_len;
 	char temp_path[256];
 	char* tmp_argv[1024];
-	CONDITION_TREE *ptree;
 	char tmp_buff[16*1024];
 	char list_buff[256*1024];
-	CONDITION_RESULT *presult;
 	
 	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
@@ -4715,10 +4688,9 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	}
 	if (tmp_argc == 0)
 		return MIDB_E_PARAMETER_ERROR;
-	ptree = mail_engine_ct_build(tmp_argc, tmp_argv);
+	auto ptree = mail_engine_ct_build(tmp_argc, tmp_argv);
 	if (ptree == nullptr)
 		return MIDB_E_PARAMETER_ERROR;
-	auto cl_tree = make_scope_exit([&]() { mail_engine_ct_destroy(ptree); });
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr) {
 		return MIDB_E_HASHTABLE_FULL;
@@ -4734,8 +4706,7 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 		fprintf(stderr, "E-1439: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
 		return MIDB_E_HASHTABLE_FULL;
 	}
-	presult = mail_engine_ct_match(argv[3],
-		psqlite, folder_id, ptree, FALSE);
+	auto presult = mail_engine_ct_match(argv[3], psqlite, folder_id, ptree.get(), false);
 	if (NULL == presult) {
 		sqlite3_close(psqlite);
 		return MIDB_E_NO_MEMORY;
@@ -4752,8 +4723,6 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 		}
     }
     mail_engine_ct_free_result(presult);
-    mail_engine_ct_destroy(ptree);
-	cl_tree.release();
     list_buff[tmp_len] = '\r';
 	tmp_len ++;
     list_buff[tmp_len] = '\n';
@@ -4779,7 +4748,6 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	char* tmp_argv[1024];
 	char tmp_buff[16*1024];
 	char list_buff[256*1024];
-	CONDITION_RESULT *presult;
 	
 	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
@@ -4801,7 +4769,6 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	auto ptree = mail_engine_ct_build(tmp_argc, tmp_argv);
 	if (ptree == nullptr)
 		return MIDB_E_PARAMETER_ERROR;
-	auto cl_tree = make_scope_exit([&]() { mail_engine_ct_destroy(ptree); });
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr) {
 		return MIDB_E_HASHTABLE_FULL;
@@ -4817,8 +4784,7 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 		fprintf(stderr, "E-1505: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
 		return MIDB_E_HASHTABLE_FULL;
 	}
-	presult = mail_engine_ct_match(argv[3],
-		psqlite, folder_id, ptree, TRUE);
+	auto presult = mail_engine_ct_match(argv[3], psqlite, folder_id, ptree.get(), TRUE);
 	if (NULL == presult) {
 		sqlite3_close(psqlite);
 		return MIDB_E_NO_MEMORY;
@@ -4835,8 +4801,6 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 		}
     }
     mail_engine_ct_free_result(presult);
-    mail_engine_ct_destroy(ptree);
-	cl_tree.release();
     list_buff[tmp_len] = '\r';
 	tmp_len ++;
     list_buff[tmp_len] = '\n';
