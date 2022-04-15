@@ -1382,15 +1382,11 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 
 static CONDITION_TREE* mail_engine_ct_build(int argc, char **argv)
 {
-	if (0 == strcasecmp(argv[0], "CHARSET")) {
-		if (argc < 3) {
-			return NULL;
-		}
-		return mail_engine_ct_build_internal(argv[1], argc - 2, argv + 2);
-		
-	} else {
+	if (strcasecmp(argv[0], "CHARSET") != 0)
 		return mail_engine_ct_build_internal("UTF-8", argc, argv);
-	}
+	if (argc < 3)
+		return NULL;
+	return mail_engine_ct_build_internal(argv[1], argc - 2, argv + 2);
 }
 
 static void mail_engine_ct_destroy(CONDITION_TREE *ptree)
