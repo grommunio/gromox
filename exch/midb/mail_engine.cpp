@@ -429,10 +429,9 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 	return nullptr;
 }
 
-static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param)
+static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 {
 	auto penum = static_cast<KEYWORD_ENUM *>(param);
-	char *pbuff;
 	size_t length;
 	size_t temp_len;
 	const char *charset;
@@ -452,41 +451,36 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param)
 		}
 	}
 	length = pmime->get_length(MJSON_MIME_CONTENT);
-	pbuff = me_alloc<char>(2 * length + 1);
-	if (pbuff == nullptr)
-		return;
+	auto pbuff = std::make_unique<char[]>(2 * length + 1);
 	auto fd = penum->pjson->seek_fd(pmime->get_id(), MJSON_MIME_CONTENT);
 	if (-1 == fd) {
-		free(pbuff);
 		return;
 	}
-	auto read_len = read(fd, pbuff, length);
+	auto read_len = read(fd, pbuff.get(), length);
 	if (read_len < 0 || static_cast<size_t>(read_len) != length) {
-		free(pbuff);
 		return;
 	}
 	if (strcasecmp(pmime->get_encoding(), "base64") == 0) {
-		if (0 != decode64_ex(pbuff, length,
-		    pbuff + length, length, &temp_len)) {
-			free(pbuff);
+		if (decode64_ex(pbuff.get(), length, &pbuff[length],
+		    length, &temp_len) != 0)
 			return;
-		}
 		pbuff[length + temp_len] = '\0';
 	} else if (strcasecmp(pmime->get_encoding(), "quoted-printable") == 0) {
-		temp_len = qp_decode(pbuff + length, pbuff, length);
+		temp_len = qp_decode(&pbuff[length], pbuff.get(), length);
 		pbuff[length + temp_len] = '\0';
 	} else {
-		memcpy(pbuff + length, pbuff, length);
+		memcpy(&pbuff[length], pbuff.get(), length);
 		pbuff[2*length] = '\0';
 	}
 
 	charset = pmime->get_charset();
 	auto rs = mail_engine_ct_to_utf8(*charset != '\0' ?
-	          charset : penum->charset, pbuff + length);
+	          charset : penum->charset, &pbuff[length]);
 	if (rs != nullptr && search_string(rs.get(), penum->keyword,
 	    strlen(rs.get())) != nullptr)
 		penum->b_result = TRUE;
-	free(pbuff);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1925: ENOMEM\n");
 }
 
 static BOOL mail_engine_ct_search_head(const char *charset,
