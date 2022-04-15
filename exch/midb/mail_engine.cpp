@@ -1197,14 +1197,14 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 
 	auto plist = me_alloc<CONDITION_TREE>();
 	if (NULL == plist) {
-		return NULL;
+		return {};
 	}
 	double_list_init(plist);
 	for (i=0; i<argc; i++) {
 		ptree_node = me_alloc<CONDITION_TREE_NODE>();
 		if (NULL == ptree_node) {
 			mail_engine_ct_destroy_internal(plist);
-			return NULL;
+			return {};
 		}
 		ptree_node->node.pdata = ptree_node;
 		ptree_node->pbranch = NULL;
@@ -1214,7 +1214,7 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			if (i >= argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 		} else {
 			ptree_node->conjunction = midb_conj::c_and;
@@ -1225,32 +1225,32 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			if (i + 1 > argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			ptree_node->ct_keyword = mail_engine_ct_to_utf8(charset, argv[i]).release();
 			if (ptree_node->ct_keyword == nullptr) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 		} else if (array_find_istr(kwlist2, argv[i])) {
 			if (i + 1 > argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL == strptime(argv[i], "%d-%b-%Y", &tmp_tm)) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			ptree_node->ct_time = mktime(&tmp_tm);
 		} else if ('(' == argv[i][0]) {
@@ -1261,14 +1261,14 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			if (-1 == tmp_argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			auto plist1 = mail_engine_ct_build_internal(
 						charset, tmp_argc, tmp_argv);
 			if (NULL == plist1) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			ptree_node->pbranch = plist1;
 		} else if (0 == strcasecmp(argv[i], "OR")) {
@@ -1276,41 +1276,41 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			if (i + 1 > argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			tmp_argc = mail_engine_ct_compile_criteria(
 								argc, argv, i, tmp_argv);
 			if (-1 == tmp_argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			i += tmp_argc;
 			if (i + 1 > argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			tmp_argc1 = mail_engine_ct_compile_criteria(
 					argc, argv, i, tmp_argv + tmp_argc);
 			if (-1 == tmp_argc1) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			auto plist1 = mail_engine_ct_build_internal(charset,
 							tmp_argc + tmp_argc1, tmp_argv);
 			if (NULL == plist1) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			if (2 != double_list_get_nodes_num(plist1) ||
 				NULL == (pnode = double_list_get_tail(plist1))) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
 				mail_engine_ct_destroy_internal(plist1);
-				return NULL;
+				return {};
 			}
 			static_cast<CONDITION_TREE_NODE *>(pnode->pdata)->conjunction = midb_conj::c_or;
 			ptree_node->pbranch = plist1;
@@ -1323,14 +1323,14 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			if (i + 1 > argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			ptree_node->ct_headers[0] = strdup(argv[i]);
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			ptree_node->ct_headers[1] = strdup(argv[i]);
 		} else if (0 == strcasecmp(argv[i], "LARGER") ||
@@ -1341,7 +1341,7 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			if (i + 1 > argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			ptree_node->ct_size = strtol(argv[i], nullptr, 0);
 		} else if (0 == strcasecmp(argv[i], "UID")) {
@@ -1350,13 +1350,13 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			if (i + 1 > argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			auto plist1 = mail_engine_ct_parse_sequence(argv[i]);
 			if (NULL == plist1) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			ptree_node->ct_seq = plist1;
 		} else {
@@ -1364,7 +1364,7 @@ static CONDITION_TREE *mail_engine_ct_build_internal(
 			if (NULL == plist1) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
-				return NULL;
+				return {};
 			}
 			ptree_node->condition = midb_cond::id;
 			ptree_node->ct_seq = plist1;
@@ -1379,7 +1379,7 @@ static CONDITION_TREE* mail_engine_ct_build(int argc, char **argv)
 	if (strcasecmp(argv[0], "CHARSET") != 0)
 		return mail_engine_ct_build_internal("UTF-8", argc, argv);
 	if (argc < 3)
-		return NULL;
+		return {};
 	return mail_engine_ct_build_internal(argv[1], argc - 2, argv + 2);
 }
 
