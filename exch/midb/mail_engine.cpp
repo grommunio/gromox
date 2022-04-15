@@ -215,7 +215,8 @@ array_find_istr(const T &kwlist, const char *s)
 	return false;
 }
 
-static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
+static std::unique_ptr<char[]> mail_engine_ct_to_utf8(const char *charset,
+    const char *string) try
 {
 	int length;
 	iconv_t conv_id;
@@ -223,27 +224,26 @@ static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
 
 	if (strcasecmp(charset, "UTF-8") == 0||
 	    strcasecmp(charset, "US-ASCII") == 0)
-		return strdup(string);
+		return std::unique_ptr<char[]>(strdup(string));
 	length = strlen(string) + 1;
-	auto ret_string = me_alloc<char>(2 * length);
-	if (ret_string == nullptr)
-		return NULL;
+	auto ret_string = std::make_unique<char[]>(2 * length);
 	conv_id = iconv_open("UTF-8", charset);
 	if ((iconv_t)-1 == conv_id) {
-		free(ret_string);
 		return NULL;
 	}
 	auto pin = deconst(string);
-	auto pout = ret_string;
+	auto pout = ret_string.get();
 	in_len = length;
 	out_len = 2*length;
 	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
-		free(ret_string);
 		return NULL;
 	}
 	iconv_close(conv_id);
 	return ret_string;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1924: ENOMEM\n");
+	return nullptr;
 }
 
 static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
@@ -353,7 +353,6 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 	int offset;
 	int last_pos, begin_pos, end_pos;
 	ENCODE_STRING encode_string;
-	char *tmp_string;
 	char temp_buff[1024];
 
 	buff_len = strlen(mime_string);
@@ -371,13 +370,12 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 				memcpy(temp_buff, in_buff + last_pos, begin_pos - last_pos);
 				temp_buff[begin_pos - last_pos] = '\0';
 				HX_strltrim(temp_buff);
-				tmp_string = mail_engine_ct_to_utf8(charset, temp_buff);
+				auto tmp_string = mail_engine_ct_to_utf8(charset, temp_buff);
 				if (NULL == tmp_string) {
 					return NULL;
 				}
-				auto tmp_len = strlen(tmp_string);
-				memcpy(out_buff + offset, tmp_string, tmp_len);
-				free(tmp_string);
+				auto tmp_len = strlen(tmp_string.get());
+				memcpy(out_buff + offset, tmp_string.get(), tmp_len);
 				offset += tmp_len;
 				last_pos = i;
 			}
@@ -390,6 +388,7 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 			parse_mime_encode_string(in_buff + begin_pos, 
 				end_pos - begin_pos + 1, &encode_string);
 			auto tmp_len = strlen(encode_string.title);
+			std::unique_ptr<char[]> tmp_string;
 			if (0 == strcmp(encode_string.encoding, "base64")) {
 				size_t decode_len = 0;
 				decode64(encode_string.title, tmp_len, temp_buff, &decode_len);
@@ -405,9 +404,8 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 			if (NULL == tmp_string) {
 				return NULL;
 			}
-			tmp_len = strlen(tmp_string);
-			memcpy(out_buff + offset, tmp_string, tmp_len);
-			free(tmp_string);
+			tmp_len = strlen(tmp_string.get());
+			memcpy(out_buff + offset, tmp_string.get(), tmp_len);
 			offset += tmp_len;
 			
 			last_pos = end_pos + 1;
@@ -418,13 +416,12 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 		}
 	}
 	if (i > last_pos) {
-		tmp_string = mail_engine_ct_to_utf8(charset, in_buff + last_pos);
+		auto tmp_string = mail_engine_ct_to_utf8(charset, in_buff + last_pos);
 		if (NULL == tmp_string) {
 			return NULL;
 		}
-		auto tmp_len = strlen(tmp_string);
-		memcpy(out_buff + offset, tmp_string, tmp_len);
-		free(tmp_string);
+		auto tmp_len = strlen(tmp_string.get());
+		memcpy(out_buff + offset, tmp_string.get(), tmp_len);
 		offset += tmp_len;
 	} 
 	out_buff[offset] = '\0';
@@ -486,14 +483,11 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param)
 	}
 
 	charset = pmime->get_charset();
-	auto ret_string = mail_engine_ct_to_utf8(*charset != '\0' ?
-	                  charset : penum->charset, pbuff + length);
-	if (NULL != ret_string) {
-		if (search_string(ret_string, penum->keyword,
-		    strlen(ret_string)) != nullptr)
-			penum->b_result = TRUE;
-		free(ret_string);
-	}
+	auto rs = mail_engine_ct_to_utf8(*charset != '\0' ?
+	          charset : penum->charset, pbuff + length);
+	if (rs != nullptr && search_string(rs.get(), penum->keyword,
+	    strlen(rs.get())) != nullptr)
+		penum->b_result = TRUE;
 	free(pbuff);
 }
 
@@ -1242,7 +1236,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				mail_engine_ct_destroy_internal(plist);
 				return NULL;
 			}
-			ptree_node->ct_keyword = mail_engine_ct_to_utf8(charset, argv[i]);
+			ptree_node->ct_keyword = mail_engine_ct_to_utf8(charset, argv[i]).release();
 			if (ptree_node->ct_keyword == nullptr) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
