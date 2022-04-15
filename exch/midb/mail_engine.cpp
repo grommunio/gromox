@@ -528,10 +528,9 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 	return FALSE;
 }
 
-static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
-	const char *charset, sqlite3_stmt *pstmt_message,
-	const char *mid_string, int id, int total_mail,
-	uint32_t uidnext, CONDITION_TREE *ptree)
+static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
+    sqlite3_stmt *pstmt_message, const char *mid_string, int id, int total_mail,
+    uint32_t uidnext, const CONDITION_TREE *ptree)
 {
 	int sp = 0;
 	BOOL b_loaded;
@@ -544,12 +543,12 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 	char temp_buff[1024];
 	char temp_buff1[1024];
 	midb_conj conjunctions[1024];
-	DOUBLE_LIST_NODE *pnode;
+	const DOUBLE_LIST_NODE *pnode;
 	KEYWORD_ENUM keyword_enum;
-	CONDITION_TREE* trees[1024];
+	const CONDITION_TREE *trees[1024];
 	char digest_buff[MAX_DIGLEN];
-	DOUBLE_LIST_NODE* nodes[1024];
-	CONDITION_TREE_NODE *ptree_node;
+	const DOUBLE_LIST_NODE *nodes[1024];
+	const CONDITION_TREE_NODE *ptree_node;
 	
 #define PUSH_MATCH(TREE, NODE, CONJUNCTION, RESULT) \
 		{trees[sp]=TREE;nodes[sp]=NODE;conjunctions[sp]=CONJUNCTION;results[sp]=RESULT;sp++;}
@@ -1524,9 +1523,9 @@ static BOOL mail_engine_ct_hint_sequence(DOUBLE_LIST *plist,
 	return FALSE;
 }
 
-static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
-	sqlite3 *psqlite, uint64_t folder_id, CONDITION_TREE *ptree,
-	BOOL b_uid)
+static CONDITION_RESULT *mail_engine_ct_match(const char *charset,
+    sqlite3 *psqlite, uint64_t folder_id, const CONDITION_TREE *ptree,
+    BOOL b_uid)
 {
 	int i;
 	uint32_t uid;
