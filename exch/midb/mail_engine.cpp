@@ -346,8 +346,8 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 	return folder_id;
 }
 
-static char* mail_engine_ct_decode_mime(
-	const char *charset, const char *mime_string)
+static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
+    const char *mime_string) try
 {
 	int i, buff_len;
 	int offset;
@@ -357,11 +357,9 @@ static char* mail_engine_ct_decode_mime(
 	char temp_buff[1024];
 
 	buff_len = strlen(mime_string);
-	auto ret_string = me_alloc<char>(2 * (buff_len + 1));
-	if (ret_string == nullptr)
-		return NULL;
+	auto ret_string = std::make_unique<char[]>(2 * (buff_len + 1));
 	auto in_buff = deconst(mime_string);
-	auto out_buff = ret_string;
+	auto out_buff = ret_string.get();
 	offset = 0;
 	begin_pos = -1;
 	end_pos = -1;
@@ -375,7 +373,6 @@ static char* mail_engine_ct_decode_mime(
 				HX_strltrim(temp_buff);
 				tmp_string = mail_engine_ct_to_utf8(charset, temp_buff);
 				if (NULL == tmp_string) {
-					free(ret_string);
 					return NULL;
 				}
 				auto tmp_len = strlen(tmp_string);
@@ -406,7 +403,6 @@ static char* mail_engine_ct_decode_mime(
 				tmp_string = mail_engine_ct_to_utf8(charset, encode_string.title);
 			}
 			if (NULL == tmp_string) {
-				free(ret_string);
 				return NULL;
 			}
 			tmp_len = strlen(tmp_string);
@@ -424,7 +420,6 @@ static char* mail_engine_ct_decode_mime(
 	if (i > last_pos) {
 		tmp_string = mail_engine_ct_to_utf8(charset, in_buff + last_pos);
 		if (NULL == tmp_string) {
-			free(ret_string);
 			return NULL;
 		}
 		auto tmp_len = strlen(tmp_string);
@@ -434,7 +429,9 @@ static char* mail_engine_ct_decode_mime(
 	} 
 	out_buff[offset] = '\0';
 	return ret_string;
-
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1923: ENOMEM\n");
+	return nullptr;
 }
 
 static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param)
@@ -452,13 +449,11 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param)
 	if (strncmp(pmime->get_ctype(), "text/", 5) != 0) {
 		filename = pmime->get_filename();
 		if ('\0' != filename[0]) {
-			auto ret_string = mail_engine_ct_decode_mime(penum->charset, filename);
-			if (NULL != ret_string) {
-				if (search_string(ret_string, penum->keyword,
-				    strlen(ret_string)) != nullptr)
-					penum->b_result = TRUE;
-				free(ret_string);
-			}
+			auto rs = mail_engine_ct_decode_mime(penum->charset, filename);
+			if (rs != nullptr &&
+			    search_string(rs.get(), penum->keyword,
+			    strlen(rs.get())) != nullptr)
+				penum->b_result = TRUE;
 		}
 	}
 	length = pmime->get_length(MJSON_MIME_CONTENT);
@@ -506,7 +501,6 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 	const char *file_path, const char *tag, const char *value)
 {
 	FILE * fp;
-	char *str_mime;
 	BOOL stat_head;
 	size_t head_offset = 0, offset = 0, len;
 	MIME_FIELD mime_field;
@@ -539,16 +533,10 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 		if (tag_len == mime_field.field_name_len &&
 			0 == strncasecmp(tag, mime_field.field_name, tag_len)) {
 			mime_field.field_value[mime_field.field_value_len] = '\0';
-			str_mime = mail_engine_ct_decode_mime(
-				charset, mime_field.field_value);
-			if (NULL != str_mime) {
-				if (NULL != search_string(str_mime,
-					value, strlen(str_mime))) {
-					free(str_mime);
-					return TRUE;
-				}
-				free(str_mime);
-			}
+			auto rs = mail_engine_ct_decode_mime(charset, mime_field.field_value);
+			if (rs != nullptr &&
+			    search_string(rs.get(), value, strlen(rs.get())))
+				return TRUE;
 		}
 	}
 	return FALSE;
@@ -566,7 +554,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 	midb_conj conjunction;
 	time_t tmp_time;
 	size_t temp_len;
-	char *ret_string;
 	int results[1024];
 	char temp_buff[1024];
 	char temp_buff1[1024];
@@ -661,13 +648,11 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				if (get_digest(digest_buff, "cc", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
-					ret_string = mail_engine_ct_decode_mime(charset, temp_buff1);
-					if (NULL != ret_string) {
-						if (search_string(ret_string, ptree_node->ct_keyword,
-						    strlen(ret_string)) != nullptr)
-							b_result1 = TRUE;
-						free(ret_string);
-					}
+					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+					if (rs != nullptr &&
+					    search_string(rs.get(), ptree_node->ct_keyword,
+					    strlen(rs.get())) != nullptr)
+						b_result1 = TRUE;
 				}
 				break;
 			case midb_cond::deleted:
@@ -706,13 +691,11 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				if (get_digest(digest_buff, "from", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
-					ret_string = mail_engine_ct_decode_mime(charset, temp_buff1);
-					if (NULL != ret_string) {
-						if (search_string(ret_string, ptree_node->ct_keyword,
-						    strlen(ret_string)) != nullptr)
-							b_result1 = TRUE;
-						free(ret_string);
-					}
+					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+					if (rs != nullptr &&
+					    search_string(rs.get(), ptree_node->ct_keyword,
+					    strlen(rs.get())) != nullptr)
+						b_result1 = TRUE;
 				}
 				break;
 			case midb_cond::header:
@@ -852,13 +835,11 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				if (get_digest(digest_buff, "subject", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
-					ret_string = mail_engine_ct_decode_mime(charset, temp_buff1);
-					if (NULL != ret_string) {
-						if (search_string(ret_string, ptree_node->ct_keyword,
-						    strlen(ret_string)) != nullptr)
-							b_result1 = TRUE;
-						free(ret_string);
-					}
+					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+					if (rs != nullptr &&
+					    search_string(rs.get(), ptree_node->ct_keyword,
+					    strlen(rs.get())) != nullptr)
+						b_result1 = TRUE;
 				}
 				break;
 			case midb_cond::text: {
@@ -872,56 +853,44 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				if (get_digest(digest_buff, "cc", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
-					ret_string = mail_engine_ct_decode_mime(
-										charset, temp_buff1);
-					if (NULL != ret_string) {
-						if (search_string(ret_string, ptree_node->ct_keyword,
-						    strlen(ret_string)) != nullptr)
-							b_result1 = TRUE;
-						free(ret_string);
-					}
+					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+					if (rs != nullptr &&
+					    search_string(rs.get(), ptree_node->ct_keyword,
+					    strlen(rs.get())) != nullptr)
+						b_result1 = TRUE;
 				}
 				if (b_result1)
 					break;
 				if (get_digest(digest_buff, "from", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
-					ret_string = mail_engine_ct_decode_mime(
-										charset, temp_buff1);
-					if (NULL != ret_string) {
-						if (search_string(ret_string, ptree_node->ct_keyword,
-						    strlen(ret_string)) != nullptr)
-							b_result1 = TRUE;
-						free(ret_string);
-					}
+					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+					if (rs != nullptr &&
+					    search_string(rs.get(), ptree_node->ct_keyword,
+					    strlen(rs.get())) != nullptr)
+						b_result1 = TRUE;
 				}
 				if (b_result1)
 					break;
 				if (get_digest(digest_buff, "subject", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
-					ret_string = mail_engine_ct_decode_mime(
-										charset, temp_buff1);
-					if (NULL != ret_string) {
-						if (search_string(ret_string, ptree_node->ct_keyword,
-						    strlen(ret_string)) != nullptr)
-							b_result1 = TRUE;
-						free(ret_string);
-					}
+					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+					if (rs != nullptr &&
+					    search_string(rs.get(), ptree_node->ct_keyword,
+					    strlen(rs.get())) != nullptr)
+						b_result1 = TRUE;
 				}
 				if (b_result1)
 					break;
 				if (get_digest(digest_buff, "to", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
-					ret_string = mail_engine_ct_decode_mime(
-										charset, temp_buff1);
-					if (NULL != ret_string) {
-						if (search_string(ret_string, ptree_node->ct_keyword,
-						    strlen(ret_string)) != nullptr)
-							b_result1 = TRUE;
-						free(ret_string);
-					}
+					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+					if (rs != nullptr &&
+					    search_string(rs.get(), ptree_node->ct_keyword,
+					    strlen(rs.get())) != nullptr)
+						b_result1 = TRUE;
 				}
 				if (b_result1)
 					break;
@@ -950,13 +919,11 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				if (get_digest(digest_buff, "to", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
-					ret_string = mail_engine_ct_decode_mime(charset, temp_buff1);
-					if (NULL != ret_string) {
-						if (search_string(ret_string, ptree_node->ct_keyword,
-						    strlen(ret_string)) != nullptr)
-							b_result1 = TRUE;
-						free(ret_string);
-					}
+					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+					if (rs != nullptr &&
+					    search_string(rs.get(), ptree_node->ct_keyword,
+					    strlen(rs.get())) != nullptr)
+						b_result1 = TRUE;
 				}
 				break;
 			case midb_cond::unanswered:
