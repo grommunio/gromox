@@ -92,7 +92,7 @@ struct CONDITION_TREE_NODE {
 	enum midb_cond condition;
 
 	union {
-		char **ct_headers;
+		char *ct_headers[2];
 		char *ct_keyword;
 		time_t ct_time;
 		size_t ct_size;
@@ -1170,8 +1170,8 @@ static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 		} else if (ptree_node->condition == midb_cond::header) {
 			free(ptree_node->ct_headers[0]);
 			free(ptree_node->ct_headers[1]);
-			free(ptree_node->ct_headers);
-			ptree_node->ct_headers = nullptr;
+			ptree_node->ct_headers[0] = nullptr;
+			ptree_node->ct_headers[1] = nullptr;
 		}
 		free(ptree_node);
 	}
@@ -1367,12 +1367,6 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 		} else if (0 == strcasecmp(argv[i], "HEADER")) {
 			ptree_node->condition = midb_cond::header;
-			ptree_node->ct_headers = me_alloc<char *>(2);
-			if (ptree_node->ct_headers == nullptr) {
-				free(ptree_node);
-				mail_engine_ct_destroy_internal(plist);
-				return NULL;
-			}
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
