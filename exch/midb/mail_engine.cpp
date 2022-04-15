@@ -52,9 +52,6 @@
 
 #define FILENUM_PER_MIME				8
 #define MAX_DIGLEN						256*1024
-
-#define CONDITION_TREE					DOUBLE_LIST
-
 #define RELOAD_INTERVAL					3600
 #define MAX_DB_WAITING_THREADS			5
 
@@ -85,9 +82,10 @@ struct CONDITION_RESULT {
 	SINGLE_LIST_NODE *pcur_node;
 };
 
+struct CONDITION_TREE : DOUBLE_LIST {};
 struct CONDITION_TREE_NODE {
 	DOUBLE_LIST_NODE node;
-	DOUBLE_LIST *pbranch;
+	CONDITION_TREE *pbranch;
 	enum midb_conj conjunction;
 	enum midb_cond condition;
 
@@ -1183,7 +1181,7 @@ static enum midb_cond cond_str_to_cond(const char *s)
 	return midb_cond::x_none;
 }
 
-static DOUBLE_LIST* mail_engine_ct_build_internal(
+static CONDITION_TREE *mail_engine_ct_build_internal(
 	const char *charset, int argc, char **argv)
 {
 	static constexpr const char *kwlist1[] =
@@ -1200,11 +1198,10 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 	int tmp_argc1;
 	struct tm tmp_tm;
 	char* tmp_argv[256];
-	DOUBLE_LIST *plist1;
 	DOUBLE_LIST_NODE *pnode;
 	CONDITION_TREE_NODE *ptree_node;
 
-	auto plist = me_alloc<DOUBLE_LIST>();
+	auto plist = me_alloc<CONDITION_TREE>();
 	if (NULL == plist) {
 		return NULL;
 	}
@@ -1272,7 +1269,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				mail_engine_ct_destroy_internal(plist);
 				return NULL;
 			}
-			plist1 = mail_engine_ct_build_internal(
+			auto plist1 = mail_engine_ct_build_internal(
 						charset, tmp_argc, tmp_argv);
 			if (NULL == plist1) {
 				free(ptree_node);
@@ -1307,7 +1304,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				mail_engine_ct_destroy_internal(plist);
 				return NULL;
 			}
-			plist1 = mail_engine_ct_build_internal(charset,
+			auto plist1 = mail_engine_ct_build_internal(charset,
 							tmp_argc + tmp_argc1, tmp_argv);
 			if (NULL == plist1) {
 				free(ptree_node);
@@ -1361,7 +1358,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				mail_engine_ct_destroy_internal(plist);
 				return NULL;
 			}
-			plist1 = mail_engine_ct_parse_sequence(argv[i]);
+			auto plist1 = mail_engine_ct_parse_sequence(argv[i]);
 			if (NULL == plist1) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
@@ -1369,7 +1366,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 			}
 			ptree_node->ct_seq = plist1;
 		} else {
-			plist1 = mail_engine_ct_parse_sequence(argv[i]);
+			auto plist1 = mail_engine_ct_parse_sequence(argv[i]);
 			if (NULL == plist1) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
