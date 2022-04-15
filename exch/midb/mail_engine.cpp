@@ -516,14 +516,14 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 	while ((len = parse_mime_field(head_buff + offset,
 	       head_offset - offset, &mime_field)) != 0) {
 		offset += len;
-		if (tag_len == mime_field.field_name_len &&
-			0 == strncasecmp(tag, mime_field.field_name, tag_len)) {
-			mime_field.field_value[mime_field.field_value_len] = '\0';
-			auto rs = mail_engine_ct_decode_mime(charset, mime_field.field_value);
-			if (rs != nullptr &&
-			    search_string(rs.get(), value, strlen(rs.get())))
-				return TRUE;
-		}
+		if (tag_len != mime_field.field_name_len ||
+		    strncasecmp(tag, mime_field.field_name, tag_len) != 0)
+			continue;
+		mime_field.field_value[mime_field.field_value_len] = '\0';
+		auto rs = mail_engine_ct_decode_mime(charset, mime_field.field_value);
+		if (rs != nullptr &&
+		    search_string(rs.get(), value, strlen(rs.get())))
+			return TRUE;
 	}
 	return FALSE;
 }
