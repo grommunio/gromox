@@ -2464,7 +2464,8 @@ static int mail_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 		filedesc, current, recent);
 	auto ret = dbop_sqlite_upgrade(db, filedesc, sqlite_kind::midb, DBOP_VERBOSE);
 	if (ret != 0) {
-		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n", filedesc, strerror(ret));
+		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n",
+		        filedesc, strerror(-ret));
 		return -1;
 	}
 	fprintf(stderr, "[dbop_sqlite]: upgrade %s: complete\n", filedesc);
