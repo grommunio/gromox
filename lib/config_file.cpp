@@ -385,11 +385,11 @@ static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)
 		return;
 	}
 	if (d.flags & CFG_SIZE) {
-		auto nv = atobyte(sv);
+		auto nv = HX_strtoull_unit(sv, nullptr, 1024);
 		if (d.min != nullptr)
-			nv = std::max(nv, atobyte(d.min));
+			nv = std::max(nv, HX_strtoull_unit(d.min, nullptr, 1024));
 		if (d.max != nullptr)
-			nv = std::min(nv, atobyte(d.max));
+			nv = std::min(nv, HX_strtoull_unit(d.max, nullptr, 1024));
 		char out[HXSIZEOF_Z64];
 		snprintf(out, arsizeof(out), "%llu", static_cast<unsigned long long>(nv));
 		cfg.set_value(d.key, out);

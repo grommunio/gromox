@@ -66,7 +66,7 @@ AC_ARG_WITH([unitdir],
 AC_SUBST([unitdir])
 
 PKG_PROG_PKG_CONFIG
-PKG_CHECK_MODULES([HX], [libHX >= 4.0])
+PKG_CHECK_MODULES([HX], [libHX >= 4.2])
 PKG_CHECK_MODULES([crypto], [libcrypto])
 PKG_CHECK_MODULES([curl], [libcurl])
 PKG_CHECK_MODULES([fmt], [fmt >= 8])

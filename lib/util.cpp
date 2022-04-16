@@ -684,40 +684,6 @@ char* bytetoa(uint64_t byte, char *string)
 	return string;
 }
 
-uint64_t atobyte(const char *string)
-{
-	int length, last_pos;
-	char unit;
-	char temp_buff[36]; 
-
-	length = strlen(string);
-	if (length > 32) {
-		return 0;
-	}
-	strcpy(temp_buff, string);
-	HX_strrtrim(temp_buff);
-	HX_strltrim(temp_buff);
-	last_pos = strlen(temp_buff) - 1;
-	unit = temp_buff[last_pos];
-	if ('B' == unit) {
-		temp_buff[last_pos] = '\0';
-		return strtoll(temp_buff, nullptr, 0);
-	} else if ('K' == unit || 'k' == unit) {
-		temp_buff[last_pos] = '\0';
-		return strtoll(temp_buff, nullptr, 0) * 1024;
-	} else if ('M' == unit || 'm' == unit) {
-		temp_buff[last_pos] = '\0';
-		return strtoll(temp_buff, nullptr, 0) * 1024 * 1024;
-	} else if ('G' == unit || 'g' == unit) {
-		temp_buff[last_pos] = '\0';
-		return strtoll(temp_buff, nullptr, 0) * 1024 * 1024 * 1024;
-	} else if ('T' == unit || 't' == unit) {
-		temp_buff[last_pos] = '\0';
-		return strtoll(temp_buff, nullptr, 0) * 0x10000000000LL;
-	}
-	return strtoll(temp_buff, nullptr, 0);
-}
-
 static char crypt_salt[65]=
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./";
 
