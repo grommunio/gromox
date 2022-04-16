@@ -3227,14 +3227,14 @@ static BOOL oxcmail_parse_smime_message(
 	}
 	auto content_type = phead->content_type;
 	if (0 == strcasecmp(content_type, "multipart/signed")) {
-		memcpy(pcontent, "Content-Type: ", 14);
+		strcpy(pcontent, "Content-Type: ");
 		offset = 14;
 		if (!phead->get_field("Content-Type", pcontent + offset, 1024 - offset)) {
 			free(pcontent);
 			return FALSE;
 		}
 		offset += strlen(pcontent + offset);
-		memcpy(pcontent + offset, "\r\n\r\n", 4);
+		strcpy(&pcontent[offset], "\r\n\r\n");
 		offset += 4;
 		if (!phead->read_content(pcontent + offset, &content_len)) {
 			free(pcontent);
