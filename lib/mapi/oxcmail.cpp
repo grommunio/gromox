@@ -4458,7 +4458,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		tmp_len = 0;
 		for (size_t i = 0; i < sa->count; ++i) {
 			if (0 != tmp_len) {
-				memcpy(tmp_field, " ,", 2);
+				strcpy(tmp_field, " ,");
 				tmp_len += 2;
 			}
 			if (tmp_len >= MIME_FIELD_LEN) {
