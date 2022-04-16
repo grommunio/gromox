@@ -83,7 +83,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		if (NULL == str_value) {
 			cache_interval = 180;
 		} else {
-			cache_interval = atoitvl(str_value);
+			cache_interval = HX_strtoull_sec(str_value, nullptr);
 			if (cache_interval <= 0)
 				cache_interval = 180;
 		}
@@ -107,7 +107,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		if (NULL == str_value) {
 			interval = 3600;
 		} else {
-			interval = atoitvl(str_value);
+			interval = HX_strtoull_sec(str_value, nullptr);
 			if (interval <= 0)
 				interval = 3600;
 		}
@@ -118,7 +118,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		if (NULL == str_value) {
 			alarm_interval = 1800;
 		} else {
-			alarm_interval = atoitvl(str_value);
+			alarm_interval = HX_strtoull_sec(str_value, nullptr);
 			if (alarm_interval <= 0)
 				alarm_interval = 1800;
 		}
@@ -136,7 +136,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		if (NULL == str_value) {
 			response_interval = 180;
 		} else {
-			response_interval = atoitvl(str_value);
+			response_interval = HX_strtoull_sec(str_value, nullptr);
 			if (response_interval <= 0)
 				response_interval = 180;
 		}

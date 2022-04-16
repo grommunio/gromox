@@ -374,13 +374,13 @@ static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)
 		return;
 	}
 	if (d.flags & CFG_TIME) {
-		auto nv = atoitvl(sv);
+		auto nv = HX_strtoull_sec(sv, nullptr);
 		if (d.min != nullptr)
-			nv = std::max(nv, atoitvl(d.min));
+			nv = std::max(nv, HX_strtoull_sec(d.min, nullptr));
 		if (d.max != nullptr)
-			nv = std::min(nv, atoitvl(d.max));
+			nv = std::min(nv, HX_strtoull_sec(d.max, nullptr));
 		char out[HXSIZEOF_Z64];
-		snprintf(out, arsizeof(out), "%ld", nv);
+		snprintf(out, arsizeof(out), "%llu", nv);
 		cfg.set_value(d.key, out);
 		return;
 	}

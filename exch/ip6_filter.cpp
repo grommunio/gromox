@@ -12,6 +12,7 @@
 #include <mutex>
 #include <string>
 #include <utility>
+#include <libHX/string.h>
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/svc_common.h>
@@ -172,7 +173,7 @@ static BOOL svc_ip6_filter(int reason, void **data)
 	auto strv = pfile->get_value("audit_max_num");
 	g_audit_max = strv != nullptr ? strtoul(strv, nullptr, 0) : 0;
 	strv = pfile->get_value("audit_interval");
-	g_audit_intvl = std::chrono::seconds(strv != nullptr ? atoitvl(strv) : 60);
+	g_audit_intvl = std::chrono::seconds(strv != nullptr ? HX_strtoull_sec(strv, nullptr) : 60);
 	strv = pfile->get_value("audit_times");
 	g_max_within_interval = strv != nullptr ? strtoul(strv, nullptr, 0) : 10;
 	strv = pfile->get_value("temp_list_size");

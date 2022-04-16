@@ -78,7 +78,6 @@ extern void debug_info(const char *format, ...);
 
 namespace gromox {
 
-extern GX_EXPORT long atoitvl(const char *);
 extern GX_EXPORT bool parse_bool(const char *s);
 extern GX_EXPORT std::string bin2hex(const void *, size_t);
 template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }

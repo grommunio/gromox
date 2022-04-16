@@ -375,38 +375,6 @@ static constexpr struct {
 	{"d", 1, 86400},
 };
 
-long atoitvl(const char *s)
-{
-	long result = 0;
-	do {
-		while (HX_isspace(*s))
-			++s;
-		if (*s == '\0')
-			break;
-		unsigned int mult = 0;
-		char *end;
-		auto v = strtoul(s, &end, 10);
-		if (s == end)
-			return -1;
-		s = end;
-		while (HX_isspace(*s))
-			++s;
-		if (*s == '\0')
-			mult = 1; /* assume seconds */
-		for (const auto &e : time_suffix) {
-			if (strncmp(s, e.suffix, e.len) == 0) {
-				mult = e.mult;
-				s += e.len;
-				break;
-			}
-		}
-		if (mult == 0)
-			return -1;
-		result += v * mult;
-	} while (true);
-	return result;
-}
-
 bool parse_bool(const char *s)
 {
 	if (s == nullptr)

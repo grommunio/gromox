@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <libHX/string.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
@@ -134,11 +135,11 @@ static int t_id8()
 
 static int t_interval()
 {
-	const char *in = " 1 d 1 h 1 m 1 s ";
-	long exp = 86400 + 3600 + 60 + 1;
-	auto got = atoitvl(in);
+	const char *in = " 1 d 1 h 1 min 1 s ";
+	unsigned int exp = 86400 + 3600 + 60 + 1;
+	auto got = HX_strtoull_sec(in, nullptr);
 	if (got != exp) {
-		printf("IN \"%s\" EXP %ld GOT %ld\n", in, exp, got);
+		printf("IN \"%s\" EXP %u GOT %llu\n", in, exp, got);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

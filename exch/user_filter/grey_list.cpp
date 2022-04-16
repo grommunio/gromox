@@ -201,7 +201,7 @@ int grey_list_refresh()
 		if (!g_case_sensitive)
 			HX_strlower(pitem->string);
 		phash.emplace(pitem->string, GREY_LIST_ENTRY{0, pitem->allow_times,
-			static_cast<int>(atoitvl(pitem->interval)), current_time});
+			static_cast<int>(HX_strtoull_sec(pitem->interval, nullptr)), current_time});
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1564: ENOMEM\n");
 		return false;

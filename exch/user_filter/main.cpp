@@ -65,7 +65,7 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		if (NULL == str_value) {
 			audit_interval = 60;
 		} else {
-			audit_interval = atoitvl(str_value);
+			audit_interval = HX_strtoull_sec(str_value, nullptr);
 			if (audit_interval <= 0)
 				audit_interval = 60;
 		}
