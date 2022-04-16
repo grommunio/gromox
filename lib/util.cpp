@@ -926,7 +926,7 @@ int encode64(const void *vin, size_t inlen, char *out,
  * @vout needs to have sufficient space, namely inlin*3/4+1.
  * On success, @vout is NUL-terminated (@outlen count is without NUL).
  */
-int decode64(const char *in, size_t inlen, void *vout, size_t *outlen)
+int decode64(const char *in, size_t inlen, void *vout, size_t outmax, size_t *outlen)
 {
 	auto out = static_cast<uint8_t *>(vout);
 	size_t len = 0,lup;
@@ -934,6 +934,8 @@ int decode64(const char *in, size_t inlen, void *vout, size_t *outlen)
 
 	/* check parameters */
 	if (out==NULL) return FAIL;
+	if ((inlen + 3) / 4 * 3 >= outmax)
+		return BUFOVER;
 
 	/* xxx these necessary? */
 	if (in[0] == '+' && in[1] == ' ') in += 2;

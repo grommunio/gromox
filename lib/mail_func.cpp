@@ -1456,7 +1456,8 @@ static BOOL encode_strings_to_utf8(
 			if (0 == strcmp(encode_string.encoding, "base64")) {
 				decode_len = 0;
 				decode64(encode_string.title, tmp_len,
-					temp_buff + buff_offset, &decode_len);
+				         temp_buff + buff_offset,
+				         arsizeof(temp_buff) - buff_offset, &decode_len);
 				buff_offset += decode_len;
 			} else if (0 == strcmp(encode_string.encoding,
 				"quoted-printable")){
@@ -1518,7 +1519,8 @@ BOOL mime_string_to_utf8(const char *charset,
 			tmp_len = strlen(encode_string.title);
 			if (0 == strcmp(encode_string.encoding, "base64")) {
 				decode_len = 0;
-				decode64(encode_string.title, tmp_len, temp_buff, &decode_len);
+				decode64(encode_string.title, tmp_len, temp_buff,
+				         arsizeof(temp_buff), &decode_len);
 				temp_buff[decode_len] = '\0';
 				if (!string_to_utf8(encode_string.charset, temp_buff,
 				    out_buff + offset))

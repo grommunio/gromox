@@ -1813,7 +1813,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			tmp_bin.pv = malloc(tmp_int32);
 			if (tmp_bin.pv == nullptr)
 				return FALSE;
-			if (decode64(pvalue, tmp_int32, tmp_bin.pv, &decode_len) != 0) {
+			if (decode64(pvalue, tmp_int32, tmp_bin.pv, tmp_int32, &decode_len) != 0) {
 				free(tmp_bin.pb);
 				return FALSE;
 			}

@@ -264,9 +264,9 @@ MESSAGE_CONTENT* oxvcard_import(
 				goto IMPORT_FAILURE;
 			}
 			tmp_len = strlen(pstring);
-			if (0 != decode64(pstring, tmp_len, tmp_buff, &decode_len)) {
+			if (decode64(pstring, tmp_len, tmp_buff,
+			    arsizeof(tmp_buff), &decode_len) != 0)
 				goto IMPORT_FAILURE;
-			}
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
 			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0 ||
@@ -534,9 +534,9 @@ MESSAGE_CONTENT* oxvcard_import(
 				goto IMPORT_FAILURE;
 			}
 			tmp_len = strlen(pstring);
-			if (0 != decode64(pstring, tmp_len, tmp_buff, &decode_len)) {
+			if (decode64(pstring, tmp_len, tmp_buff,
+			    arsizeof(tmp_buff), &decode_len) != 0)
 				goto IMPORT_FAILURE;
-			}
 			bin_array.count = 1;
 			bin_array.pbin = &tmp_bin;
 			tmp_bin.pc = tmp_buff;

@@ -912,7 +912,8 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		if (http_parser_request_head(&pcontext->request.f_others,
 		    "Authorization", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 		    strncasecmp(tmp_buff, "Basic ", 6) == 0 &&
-		    decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1, &decode_len) == 0 &&
+		    decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1,
+		    arsizeof(tmp_buff1), &decode_len) == 0 &&
 		    (ptoken = strchr(tmp_buff1, ':')) != nullptr) {
 			*ptoken = '\0';
 			ptoken++;

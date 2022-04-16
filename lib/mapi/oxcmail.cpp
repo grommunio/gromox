@@ -887,9 +887,8 @@ static BOOL oxcmail_parse_thread_index(
 		}
 	}
 	len = sizeof(tmp_buff);
-	if (0 != decode64(field, strlen(field), tmp_buff, &len)) {
+	if (decode64(field, strlen(field), tmp_buff, arsizeof(tmp_buff), &len) != 0)
 		return TRUE;
-	}
 	tmp_bin.pc = tmp_buff;
 	tmp_bin.cb = len;
 	return pproplist->set(PR_CONVERSATION_INDEX, &tmp_bin) == 0 ? TRUE : false;
@@ -3125,7 +3124,8 @@ static bool oxcmail_enum_mdn(const char *tag,
 		       mcparam->proplist.set(PR_REPORT_TEXT, value) == 0;
 	} else if (0 == strcasecmp(tag, "X-MSExch-Correlation-Key")) {
 		len = strlen(value);
-		if (len <= 1024 && 0 == decode64(value, len, tmp_buff, &len)) {
+		if (len <= 1024 && decode64(value, len, tmp_buff,
+		    arsizeof(tmp_buff), &len) == 0) {
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = len;
 			return mcparam->proplist.set(PR_PARENT_KEY, &tmp_bin) == 0;

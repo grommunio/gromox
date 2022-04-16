@@ -64,7 +64,7 @@ extern GX_EXPORT void randstring_k(char *out, int len, const char *pool);
 void randstring(char *buff, int length);
 extern int encode64(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern int encode64_ex(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
-extern int decode64(const char *in, size_t inlen, void *out, size_t *outlen);
+extern int decode64(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
 extern int decode64_ex(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
 extern GX_EXPORT size_t qp_decode(void *output, const char *input, size_t length, unsigned int qp_flags = 0);
 extern GX_EXPORT ssize_t qp_decode_ex(void *output, size_t out_len, const char *input, size_t length);

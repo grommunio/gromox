@@ -249,16 +249,20 @@ static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 		    strlen(plang->charset) == 0 ||
 		    !get_digest(ptr + 1, "draft", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
-			0 != decode64(temp_buff, strlen(temp_buff), plang->draft, &temp_len) ||
+		    decode64(temp_buff, strlen(temp_buff), plang->draft,
+		    arsizeof(plang->draft), &temp_len) != 0 ||
 		    !get_digest(ptr + 1, "sent", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
-			0 != decode64(temp_buff, strlen(temp_buff), plang->sent, &temp_len) ||
+		    decode64(temp_buff, strlen(temp_buff), plang->sent,
+		    arsizeof(plang->sent), &temp_len) != 0 ||
 		    !get_digest(ptr + 1, "trash", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
-			0 != decode64(temp_buff, strlen(temp_buff), plang->trash, &temp_len) ||
+		    decode64(temp_buff, strlen(temp_buff), plang->trash,
+		    arsizeof(plang->trash), &temp_len) != 0 ||
 		    !get_digest(ptr + 1, "junk", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
-			0 != decode64(temp_buff, strlen(temp_buff), plang->junk, &temp_len)) {
+		    decode64(temp_buff, strlen(temp_buff), plang->junk,
+		    arsizeof(plang->junk), &temp_len) != 0) {
 			printf("[resource]: line %d format error in %s\n", total + 1, filename);
 			return -1;
 		}
