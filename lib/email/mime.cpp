@@ -1022,16 +1022,13 @@ BOOL MIME::serialize(STREAM *pstream)
 		pstream->write("\r\n\r\n", 4);
 	}
 	if (SINGLE_MIME == pmime->mime_type) {
-		if (NULL != pmime->content_begin) {
-			if (0 != pmime->content_length) {
-				pstream->write(pmime->content_begin, pmime->content_length);
-			} else {
-				reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream);
-			}
-		} else {
+		if (pmime->content_begin == nullptr)
 			/* if there's nothing, just append an empty line */
 			pstream->write("\r\n", 2);
-		}
+		else if (pmime->content_length != 0)
+			pstream->write(pmime->content_begin, pmime->content_length);
+		else
+			reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream);
 		return TRUE;
 	}
 	if (NULL == pmime->first_boundary) {
@@ -1061,16 +1058,16 @@ BOOL MIME::serialize(STREAM *pstream)
 	pstream->write("--", 2);
 	if (NULL == pmime->last_boundary) {
 		pstream->write("\r\n\r\n", 4);
+		return TRUE;
+	}
+	tmp_len = pmime->content_length -
+	          (pmime->last_boundary - pmime->content_begin);
+	if (tmp_len > 0) {
+		pstream->write(pmime->last_boundary, tmp_len);
+	} else if (0 == tmp_len) {
+		pstream->write("\r\n", 2);
 	} else {
-		tmp_len = pmime->content_length -
-		          (pmime->last_boundary - pmime->content_begin);
-		if (tmp_len > 0) {
-			pstream->write(pmime->last_boundary, tmp_len);
-		} else if (0 == tmp_len) {
-			pstream->write("\r\n", 2);
-		} else {
-			debug_info("[mime]: fatal error in MIME::serialize");
-		}
+		debug_info("[mime]: fatal error in MIME::serialize");
 	}
 	return TRUE;
 }
