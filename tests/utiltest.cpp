@@ -160,8 +160,38 @@ static void t_respool()
 	printf("%d\n", mt->zz);
 }
 
+static void t_base64()
+{
+	static constexpr char cpool[] = "12345678901234567890123456789012345678901234567890123456789012345678901234567890";
+	char out[120];
+	size_t outlen;
+	if (encode64(cpool, 60, out, 80, &outlen) >= 0)
+		printf("TB-1 failed\n");
+	if (encode64(cpool, 60, out, 81, &outlen) < 0)
+		printf("TB-2 failed\n");
+	if (encode64_ex(cpool, 60, out, 84, &outlen) >= 0)
+		printf("TB-3 failed\n");
+	if (encode64_ex(cpool, 60, out, 85, &outlen) < 0)
+		printf("TB-4 failed\n");
+
+	if (decode64("MTIz", 4, out, &outlen) < 0)
+		printf("TB-5 failed\n");
+	if (decode64_ex("MTIz", 4, out, 3, &outlen) >= 0)
+		printf("TB-6 failed\n");
+	if (decode64_ex("MTIz", 4, out, 4, &outlen) < 0)
+		printf("TB-7 failed\n");
+
+	if (decode64_ex(cpool, arsizeof(cpool) - 1, out, arsizeof(out), &outlen) < 0)
+		printf("TB-8 failed\n");
+	if (decode64_ex("MTIz\nMTIz\nMTIz\n", 15, out, arsizeof(out), &outlen) < 0)
+		printf("TB-9 failed\n");
+	else if (memcmp(out, "123123123", 9) != 0)
+		printf("TB-10 failed\n");
+}
+
 int main()
 {
+	t_base64();
 	using fpt = decltype(&t_interval);
 	fpt fct[] = {t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
 	             t_id7, t_id8};

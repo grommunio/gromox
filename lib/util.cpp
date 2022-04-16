@@ -882,7 +882,9 @@ static int8_t index_64[128] = {
 	41,42,43,44, 45,46,47,48, 49,50,51,-1, -1,-1,-1,-1
 };
 
-
+/*
+ * On success, 0 is returned and @out is NUL-terminated (@outlen does not count NUL).
+ */
 int encode64(const void *vin, size_t inlen, char *out,
     size_t outmax, size_t *outlen)
 {
@@ -894,7 +896,7 @@ int encode64(const void *vin, size_t inlen, char *out,
 	olen = (inlen + 2) / 3 * 4;
 	if (outlen)
 	  *outlen = olen;
-	if (outmax < olen)
+	if (olen >= outmax)
 	  return BUFOVER;
 
 	/* Do the work... */
@@ -916,13 +918,14 @@ int encode64(const void *vin, size_t inlen, char *out,
 		*out++ = (inlen < 2) ? '=' : basis_64[(in[1] << 2) & 0x3c];
 		*out++ = '=';
 	}
-
-	if (olen < outmax)
-	  *out = '\0';
-	
+	*out = '\0';
 	return OK;
 }
 
+/*
+ * @vout needs to have sufficient space, namely inlin*3/4+1.
+ * On success, @vout is NUL-terminated (@outlen count is without NUL).
+ */
 int decode64(const char *in, size_t inlen, void *vout, size_t *outlen)
 {
 	auto out = static_cast<uint8_t *>(vout);
@@ -997,8 +1000,10 @@ static char hextab[] = "0123456789ABCDEF";
 					|| ('0' <= (a) && (a) <= '9') \
 					||	(a) == '+' || (a) == '/'  )
 
-
-
+/*
+ * BASE64-encode with newlines.
+ * On success, 0 is returned and @_out is NUL-terminated (@outlen does count NUL)
+ */
 int encode64_ex(const void *vin, size_t inlen, char *_out,
 	size_t outmax, size_t *outlen)
 {
@@ -1017,9 +1022,8 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 		return -1;
 	}
 	outsize += strlen(DW_EOL)*outsize/MAXLINE + 2;	/* Space for newlines and NUL */
-	if (outmax < outsize) {
+	if (outsize >= outmax)
 		return -1;
-	}
 	/* Get three characters at a time and encode them. */
 	for (i=0; i < inLen/3; ++i) {
 		c1 = _in[inpos++] & 0xFF;
@@ -1078,7 +1082,9 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 	return 0;
 }
 
-
+/*
+ * On success, 0 is returned, @vout is NUL-terminated (@outlen does not count NUL)
+ */
 int decode64_ex(const char *_in, size_t inlen, void *vout,
 	size_t outmax, size_t *outlen)
 {
@@ -1099,7 +1105,7 @@ int decode64_ex(const char *_in, size_t inlen, void *vout,
 	
 	if (_in == nullptr || vout == nullptr || outlen == nullptr)
 		return -1;
-	if (outmax < outsize) {
+	if (outsize >= outmax) {
 		*outlen = 0;
 		return -1;
 	}
