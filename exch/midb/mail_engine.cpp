@@ -1671,38 +1671,33 @@ static void mail_engine_extract_digest_fields(const char *digest,
 	EMAIL_ADDR temp_address;
 	
 	subject[0] = '\0';
-	if (get_digest(digest, "subject", temp_buff, arsizeof(temp_buff))) {
-		if (decode64(temp_buff, strlen(temp_buff), subject, &out_len) != 0)
-			/* Decode failed */
-			subject[0] = '\0';
-	}
+	if (get_digest(digest, "subject", temp_buff, arsizeof(temp_buff)) &&
+	    decode64(temp_buff, strlen(temp_buff), subject, &out_len) != 0)
+		/* Decode failed */
+		subject[0] = '\0';
 	from[0] = '\0';
-	if (get_digest(digest, "from", temp_buff, arsizeof(temp_buff))) {
-		if (0 == decode64(temp_buff, strlen(temp_buff),
-			temp_buff1, &out_len)) {
-			memset(&temp_address, 0, sizeof(temp_address));
-			parse_email_addr(&temp_address, temp_buff1);
-			snprintf(from, UADDR_SIZE, "%s@%s",
-				temp_address.local_part, temp_address.domain);
-		}
+	if (get_digest(digest, "from", temp_buff, arsizeof(temp_buff)) &&
+	    decode64(temp_buff, strlen(temp_buff), temp_buff1, &out_len) == 0) {
+		memset(&temp_address, 0, sizeof(temp_address));
+		parse_email_addr(&temp_address, temp_buff1);
+		snprintf(from, UADDR_SIZE, "%s@%s",
+		         temp_address.local_part, temp_address.domain);
 	}
 	rcpt[0] = '\0';
-	if (get_digest(digest, "to", temp_buff, arsizeof(temp_buff))) {
-		if (0 == decode64(temp_buff, strlen(temp_buff),
-			temp_buff1, &out_len)) {
-			for (size_t i = 0; i < out_len; ++i) {
-				if (',' == temp_buff1[i] ||
-					';' == temp_buff1[i]) {
-					temp_buff1[i] = '\0';
-					break;
-				}
+	if (get_digest(digest, "to", temp_buff, arsizeof(temp_buff)) &&
+	    decode64(temp_buff, strlen(temp_buff), temp_buff1, &out_len) == 0) {
+		for (size_t i = 0; i < out_len; ++i) {
+			if (',' == temp_buff1[i] ||
+			    ';' == temp_buff1[i]) {
+				temp_buff1[i] = '\0';
+				break;
 			}
-			HX_strrtrim(temp_buff1);
-			memset(&temp_address, 0, sizeof(temp_address));
-			parse_email_addr(&temp_address, temp_buff1);
-			snprintf(rcpt, UADDR_SIZE, "%s@%s",
-				temp_address.local_part, temp_address.domain);
 		}
+		HX_strrtrim(temp_buff1);
+		memset(&temp_address, 0, sizeof(temp_address));
+		parse_email_addr(&temp_address, temp_buff1);
+		snprintf(rcpt, UADDR_SIZE, "%s@%s",
+		         temp_address.local_part, temp_address.domain);
 	}
 	*psize = 0;
 	if (get_digest(digest, "size", temp_buff, arsizeof(temp_buff)))

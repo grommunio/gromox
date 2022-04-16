@@ -529,58 +529,42 @@ static BOOL mjson_record_value(MJSON *pjson, char *tag,
 			pjson->uid = strtol(temp_buff, nullptr, 0);
 		}
 	} else if (0 == strcasecmp(tag, "msgid")) {
-		if ('\0' == pjson->msgid[0] && length <= sizeof(pjson->msgid)) {
-			if (0 != decode64(value, length, pjson->msgid, &temp_len)) {
-				pjson->msgid[0] = '\0';
-			}
-		}
+		if (*pjson->msgid == '\0' && length <= sizeof(pjson->msgid) &&
+		    decode64(value, length, pjson->msgid, &temp_len) != 0)
+			pjson->msgid[0] = '\0';
 	} else if (0 == strcasecmp(tag, "from")) {
-		if ('\0' == pjson->from[0] && length <= sizeof(pjson->from)) {
-			if (0 != decode64(value, length, pjson->from, &temp_len)) {
-				pjson->from[0] = '\0';
-			}
-		}
+		if (*pjson->from == '\0' && length <= sizeof(pjson->from) &&
+		    decode64(value, length, pjson->from, &temp_len) != 0)
+			pjson->from[0] = '\0';
 	} else if (0 == strcasecmp(tag, "charset")) {
 		if ('\0' == pjson->charset[0] && length < 32) {
 			memcpy(pjson->charset, value, length);
 			pjson->charset[length] = '\0';
 		}
 	} else if (0 == strcasecmp(tag, "sender")) {
-		if ('\0' == pjson->sender[0] && length <= sizeof(pjson->sender)) {
-			if (0 != decode64(value, length, pjson->sender, &temp_len)) {
-				pjson->sender[0] = '\0';
-			}
-		}
+		if (*pjson->sender == '\0' && length <= sizeof(pjson->sender) &&
+		    decode64(value, length, pjson->sender, &temp_len) != 0)
+			pjson->sender[0] = '\0';
 	} else if (0 == strcasecmp(tag, "reply")) {
-		if ('\0' == pjson->reply[0] && length <= sizeof(pjson->reply)) {
-			if (0 != decode64(value, length, pjson->reply, &temp_len)) {
-				pjson->reply[0] = '\0';
-			}
-		}
+		if (*pjson->reply == '\0' && length <= sizeof(pjson->reply) &&
+		    decode64(value, length, pjson->reply, &temp_len) != 0)
+			pjson->reply[0] = '\0';
 	} else if (0 == strcasecmp(tag, "to")) {
-		if ('\0' == pjson->to[0] && length <= sizeof(pjson->to)) {
-			if (0 != decode64(value, length, pjson->to, &temp_len)) {
-				pjson->to[0] = '\0';
-			}
-		}
+		if (*pjson->to == '\0' && length <= sizeof(pjson->to) &&
+		    decode64(value, length, pjson->to, &temp_len) != 0)
+			pjson->to[0] = '\0';
 	} else if (0 == strcasecmp(tag, "cc")) {
-		if ('\0' == pjson->cc[0] && length <= sizeof(pjson->cc)) {
-			if (0 != decode64(value, length, pjson->cc, &temp_len)) {
-				pjson->cc[0] = '\0';
-			}
-		}
+		if (*pjson->cc == '\0' && length <= sizeof(pjson->cc) &&
+		    decode64(value, length, pjson->cc, &temp_len) != 0)
+			pjson->cc[0] = '\0';
 	} else if (0 == strcasecmp(tag, "inreply")) {
-		if ('\0' == pjson->inreply[0] && length <= sizeof(pjson->inreply)) {
-			if (0 != decode64(value, length, pjson->inreply, &temp_len)) {
-				pjson->inreply[0] = '\0';
-			}
-		}
+		if (*pjson->inreply == '\0' && length <= sizeof(pjson->inreply) &&
+		    decode64(value, length, pjson->inreply, &temp_len) != 0)
+			pjson->inreply[0] = '\0';
 	} else if (0 == strcasecmp(tag, "subject")) {
-		if ('\0' == pjson->subject[0] && length <= sizeof(pjson->subject)) {
-			if (0 != decode64(value, length, pjson->subject, &temp_len)) {
-				pjson->subject[0] = '\0';
-			}
-		}
+		if (*pjson->subject == '\0' && length <= sizeof(pjson->subject) &&
+		    decode64(value, length, pjson->subject, &temp_len) != 0)
+			pjson->subject[0] = '\0';
 	} else if (0 == strcasecmp(tag, "received")) {
 		if ('\0' == pjson->received[0] && length <= sizeof(pjson->received)) {
 			if (0 != decode64(value, length, pjson->received, &temp_len)) {
@@ -590,59 +574,35 @@ static BOOL mjson_record_value(MJSON *pjson, char *tag,
 			}
 		}
 	} else if (0 == strcasecmp(tag, "date")) {
-		if ('\0' == pjson->date[0] && length <= sizeof(pjson->date)) {
-			if (0 != decode64(value, length, pjson->date, &temp_len)) {
-				pjson->date[0] = '\0';
-			}
-		}
+		if (*pjson->date == '\0' && length <= sizeof(pjson->date) &&
+		    decode64(value, length, pjson->date, &temp_len) != 0)
+			pjson->date[0] = '\0';
 	} else if (0 == strcasecmp(tag, "notification")) {
-		if ('\0' == pjson->notification[0] && length <= sizeof(pjson->notification)) {
-			if (0 != decode64(value, length, pjson->notification, &temp_len)) {
-				pjson->notification[0] = '\0';
-			}
-		}
+		if (*pjson->notification == '\0' && length <= sizeof(pjson->notification) &&
+		    decode64(value, length, pjson->notification, &temp_len) != 0)
+			pjson->notification[0] = '\0';
 	} else if (0 == strcasecmp(tag, "read")) {
-		if (0 == pjson->read && 1 == length) {
-			if ('1' == value[0]) {
-				pjson->read = 1;
-			}
-		}
+		if (!pjson->read && length == 1 && *value == '1')
+			pjson->read = 1;
 	} else if (0 == strcasecmp(tag, "replied")) {
-		if (0 == pjson->replied && 1 == length) {
-			if ('1' == value[0]) {
-				pjson->replied = 1;
-			}
-		}
+		if (!pjson->replied && length == 1 && *value == '1')
+			pjson->replied = 1;
 	} else if (0 == strcasecmp(tag, "unsent")) {
-		if (0 == pjson->unsent && 1 == length) {
-			if ('1' == value[0]) {
-				pjson->unsent = 1;
-			}
-		}
+		if (!pjson->unsent && length == 1 && *value == '1')
+			pjson->unsent = 1;
 	} else if (0 == strcasecmp(tag, "forwarded")) {
-		if (0 == pjson->forwarded && 1 == length) {
-			if ('1' == value[0]) {
-				pjson->forwarded = 1;
-			}
-		}
+		if (!pjson->forwarded && length == 1 && *value == '1')
+			pjson->forwarded = 1;
 	} else if (0 == strcasecmp(tag, "flag")) {
-		if (0 == pjson->flag && 1 == length) {
-			if ('1' == value[0]) {
-				pjson->flag = 1;
-			}
-		}
+		if (!pjson->flag && length == 1 && *value == '1')
+			pjson->flag = 1;
 	} else if (0 == strcasecmp(tag, "priority")) {
-		if (0 == pjson->priority && 1 == length) {
-			if ('0' <= value[0] && value[0] <= '9') {
-				pjson->priority = value[0] - '0';
-			}
-		}
+		if (!pjson->priority && length == 1 && *value >= '0' && *value <= '9')
+			pjson->priority = value[0] - '0';
 	} else if (0 == strcasecmp(tag, "ref")) {
-		if ('\0' == pjson->ref[0] && length <= sizeof(pjson->ref)) {
-			if (0 != decode64(value, length, pjson->ref, &temp_len)) {
-				pjson->ref[0] = '\0';
-			}
-		}
+		if (*pjson->ref == '\0' && length <= sizeof(pjson->ref) &&
+		    decode64(value, length, pjson->ref, &temp_len) != 0)
+			pjson->ref[0] = '\0';
 	} else if (0 == strcasecmp(tag, "structure")) {
 		if (!mjson_parse_array(pjson, value, length, TYPE_STRUCTURE))
 			return FALSE;
