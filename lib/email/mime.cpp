@@ -1252,12 +1252,11 @@ BOOL MIME::read_head(char *out_buff, size_t *plength)
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL MIME::read_content(char *out_buff, size_t *plength)
+BOOL MIME::read_content(char *out_buff, size_t *plength) try
 {
 	auto pmime = this;
 	void *ptr;
 	int encoding_type;
-	char encoding[256], *pbuff;
 	size_t i, offset, max_length;
 	unsigned int buff_size;
 	
@@ -1312,6 +1311,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 		*plength = offset;
 		return TRUE;
 	}
+	char encoding[256];
 	if (!pmime->get_field("Content-Transfer-Encoding", encoding, 256)) {
 		encoding_type = MIME_ENCODING_NONE;
 	} else {
@@ -1331,13 +1331,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 		}
 	}
 	
-	pbuff = me_alloc<char>(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
-	if (NULL == pbuff) {
-		debug_info("[mime]: Failed to allocate memory in MIME::read_content");
-		*plength = 0;
-		return FALSE;
-	}
-	
+	auto pbuff = std::make_unique<char[]>(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
 	/* \r\n before boundary string or end of mail should not be inclued */
 	size_t tmp_len = pmime->content_length < 2 ? 1 : pmime->content_length - 2;
 	size_t size = 0;
@@ -1361,45 +1355,43 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 	
 	switch (encoding_type) {
 	case MIME_ENCODING_BASE64:
-		if (0 != decode64_ex(pbuff, size, out_buff, max_length, plength)) {
+		if (decode64_ex(pbuff.get(), size, out_buff, max_length, plength) != 0) {
 			debug_info("[mime]: fail to decode base64 mime content");
 			if (0 == *plength) {
-				free(pbuff);
 				return FALSE;
 			}
 		}
-		free(pbuff);
 		return TRUE;
 	case MIME_ENCODING_QP: {
-		auto qdlen = qp_decode_ex(out_buff, max_length, pbuff, size);
+		auto qdlen = qp_decode_ex(out_buff, max_length, pbuff.get(), size);
 		if (qdlen < 0) {
 			goto COPY_RAW_DATA;
 		} else {
 			*plength = qdlen;
-			free(pbuff);
 			return TRUE;
 		}
 	}
 	case MIME_ENCODING_UUENCODE:
-		if (0 != uudecode(pbuff, size, NULL, NULL, out_buff, plength)) {
+		if (uudecode(pbuff.get(), size, nullptr, nullptr, out_buff, plength) != 0) {
 			debug_info("[mime]: fail to decode uuencode mime content");
 			goto COPY_RAW_DATA;
 		}
-		free(pbuff);
 		return TRUE;
 	default:
  COPY_RAW_DATA:
 		if (max_length >= size) {
-			memcpy(out_buff, pbuff, size);
+			memcpy(out_buff, pbuff.get(), size);
 			*plength = size;
-			free(pbuff);
 			return TRUE;
 		} else {
 			*plength = 0;
-			free(pbuff);
 			return FALSE;
 		}
 	}
+} catch (const std::bad_alloc &) {
+	debug_info("[mime]: E-1928: Failed to allocate memory in MIME::read_content");
+	*plength = 0;
+	return false;
 }
 
 /*
