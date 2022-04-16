@@ -252,11 +252,10 @@ void MIME::clear()
  *		encoding_type		
  */
 BOOL MIME::write_content(const char *pcontent, size_t length,
-	int encoding_type)
+    int encoding_type) try
 {
 	auto pmime = this;
 	size_t i, j;
-	char *pbuff;
 	/* align the buffer with 64K */
 	
 #ifdef _DEBUG_UMTA
@@ -319,23 +318,18 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 	}
 	case MIME_ENCODING_QP: {
 		size_t buff_length = strange_roundup(4 * length, 64 * 1024);
-		pbuff = me_alloc<char>(buff_length);
-		if (NULL == pbuff) {
-			return FALSE;
-		}
+		auto pbuff = std::make_unique<char[]>(buff_length);
 		pmime->content_begin = me_alloc<char>(buff_length);
 		if (NULL == pmime->content_begin) {
-			free(pbuff);
 			return FALSE;
 		}
-		auto qdlen = qp_encode_ex(pbuff, buff_length, pcontent, length);
+		auto qdlen = qp_encode_ex(pbuff.get(), buff_length, pcontent, length);
 		if (qdlen < 0) {
-			free(pbuff);
 			return false;
 		}
 		length = qdlen;
 		if (length > 0 && pbuff[length-1] != '\n') {
-			memcpy(pbuff + length, "\r\n", 2);
+			memcpy(&pbuff[length], "\r\n", 2);
 			length += 2;
 		}
 		for (i=0,j=0; i<length; i++,j++) {
@@ -353,7 +347,6 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 			}
 			pmime->content_begin[j] = pbuff[i];
 		}
-		free(pbuff);
 		pmime->content_length = j;
 		pmime->set_field("Content-Transfer-Encoding", "quoted-printable");
 		return TRUE;
@@ -370,6 +363,9 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		return TRUE;
 	}
 	}
+	return false;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1929: ENOMEM\n");
 	return false;
 }
 
