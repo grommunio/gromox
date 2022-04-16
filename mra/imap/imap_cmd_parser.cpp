@@ -3081,11 +3081,10 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1800;
 	}
 	if ('(' == argv[4][0] && ')' == argv[4][strlen(argv[4]) - 1]) {
-		if (-1 == (temp_argc = parse_imap_args(
-			argv[4] + 1, strlen(argv[4]) - 2, temp_argv,
-			sizeof(temp_argv)/sizeof(char*)))) {
+		temp_argc = parse_imap_args(argv[4] + 1, strlen(argv[4]) - 2,
+		            temp_argv, arsizeof(temp_argv));
+		if (temp_argc == -1)
 			return 1800;
-		}
 	} else {
 		temp_argc = 1;
 		temp_argv[0] = argv[4];
@@ -3419,11 +3418,10 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1800;
 	}
 	if ('(' == argv[5][0] && ')' == argv[5][strlen(argv[5]) - 1]) {
-		if (-1 == (temp_argc = parse_imap_args(
-			argv[5] + 1, strlen(argv[5]) - 2, temp_argv,
-			sizeof(temp_argv)/sizeof(char*)))) {
+		temp_argc = parse_imap_args(argv[5] + 1, strlen(argv[5]) - 2,
+		            temp_argv, arsizeof(temp_argv));
+		if (temp_argc == -1)
 			return 1800;
-		}
 	} else {
 		temp_argc = 1;
 		temp_argv[0] = argv[5];

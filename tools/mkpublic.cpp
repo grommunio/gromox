@@ -50,7 +50,6 @@ static constexpr HXoption g_options_table[] = {
 
 int main(int argc, const char **argv) try
 {
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
@@ -86,7 +85,8 @@ int main(int argc, const char **argv) try
 	std::string db_name = znul(pconfig->get_value("mysql_dbname"));
 
 	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
-	if (NULL == (pmysql = mysql_init(NULL))) {
+	auto pmysql = mysql_init(nullptr);
+	if (pmysql == nullptr) {
 		printf("Failed to init mysql object\n");
 		return EXIT_FAILURE;
 	}

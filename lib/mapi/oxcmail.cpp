@@ -3634,11 +3634,13 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				message_content_free(pmsg);
 				return nullptr;
 			}
-			if (!ical.retrieve(pcontent + content_len + 1) ||
-				NULL == (pmsg1 = oxcical_import(
-				str_zone, &ical, alloc, get_propids,
-				oxcmail_username_to_entryid))) {
-				mime_enum.pcalendar = NULL;
+			if (!ical.retrieve(pcontent + content_len + 1)) {
+				mime_enum.pcalendar = nullptr;
+			} else {
+				pmsg1 = oxcical_import(str_zone, &ical, alloc,
+				        get_propids, oxcmail_username_to_entryid);
+				if (pmsg1 == nullptr)
+					mime_enum.pcalendar = NULL;
 			}
 		}
 		free(pcontent);

@@ -229,7 +229,8 @@ static void *evst_thrwork(void *param)
 	pback = (BACK_CONN*)param;
 
 	while (!g_notify_stop) {
-		if (-1 == (pback->sockd = connect_event())) {
+		pback->sockd = connect_event();
+		if (pback->sockd < 0) {
 			sleep(3);
 			continue;
 		}

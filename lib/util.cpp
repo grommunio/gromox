@@ -70,9 +70,9 @@ BOOL utf8_check(const char *str)
 	while (*ptr != '\0') {
 		ch = (unsigned char)*ptr;
 		if (byte_num == 0) {
-			if (0 == (byte_num = utf8_byte_num(ch))) {
+			byte_num = utf8_byte_num(ch);
+			if (byte_num == 0)
 				return FALSE;
-			}
 		}
 		else {
 			if ((ch & 0xC0) != 0x80) {
@@ -142,9 +142,9 @@ BOOL utf8_truncate(char *str, int length)
 			return TRUE;
 		}
 		ch = (unsigned char)*ptr;
-		if (0 == (byte_num = utf8_byte_num(ch))) {
+		byte_num = utf8_byte_num(ch);
+		if (byte_num == 0)
 			return FALSE;
-		}
 		ptr += byte_num;
 		len ++;
 	}
