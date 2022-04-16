@@ -41,19 +41,18 @@ static int utf8_byte_num(unsigned char ch)
 {
 	int byte_num = 0;
 
-	if (ch >= 0xFC && ch < 0xFE) {
+	if (ch >= 0xFC && ch < 0xFE)
 		byte_num = 6;
-	} else if (ch >= 0xF8) {
+	else if (ch >= 0xF8)
 		byte_num = 5;
-	} else if (ch >= 0xF0) {
+	else if (ch >= 0xF0)
 		byte_num = 4;
-	} else if (ch >= 0xE0) {
+	else if (ch >= 0xE0)
 		byte_num = 3;
-	} else if (ch >= 0xC0) {
+	else if (ch >= 0xC0)
 		byte_num = 2;
-	} else if (0 == (ch & 0x80)) {
+	else if (!(ch & 0x80))
 		byte_num = 1;
-	}
 	return byte_num;
 }
  
@@ -64,9 +63,8 @@ BOOL utf8_check(const char *str)
 	unsigned char ch;
 	const char *ptr = str;
 
-	if (NULL == str) {
+	if (str == nullptr)
 		return FALSE;
-	}
 	while (*ptr != '\0') {
 		ch = (unsigned char)*ptr;
 		if (byte_num == 0) {
@@ -75,16 +73,14 @@ BOOL utf8_check(const char *str)
 				return FALSE;
 		}
 		else {
-			if ((ch & 0xC0) != 0x80) {
+			if ((ch & 0xC0) != 0x80)
 				return FALSE;
-			}
 		}
 		byte_num --;
 		ptr ++;
 	}
-	if (byte_num > 0) {
+	if (byte_num > 0)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -179,12 +175,11 @@ void utf8_filter(char *string)
 			}
 			minus_s = 0;  
 			count_s = 0;
-            if (0x09 == bytes[0]  || 0x0A == bytes[0] || 0x0D == bytes[0]
-				|| (0x20 <= bytes[0] && bytes[0] <= 0x7E)) {
-				/* do nothing */ 
-			} else {
+			if (bytes[0] == 0x09 || bytes[0] == 0x0A || bytes[0] == 0x0D ||
+			    (bytes[0] >= 0x20 && bytes[0] <= 0x7E))
+				/* do nothing */;
+			else
 				bytes[0] = '?';
-			}
 			bytes ++;
 			continue;
 		}
@@ -219,11 +214,10 @@ void utf8_filter(char *string)
 			continue;
 		}
 		if ((bytes[0] & 0xC0) == 0x80) {
-			if (minus_s) {
+			if (minus_s)
 				-- minus_s;
-			} else {
+			else
 				bytes[0] = '?';
-			}
 			bytes ++;
 			continue;
 		}
@@ -294,18 +288,17 @@ static bool have_jpms()
 
 const char* replace_iconv_charset(const char *charset)
 {
-	if (0 == strcasecmp(charset, "gb2312")) {
+	if (strcasecmp(charset, "gb2312") == 0)
 		return "gbk";
-	} else if (0 == strcasecmp(charset, "ksc_560") ||
-		0 == strcasecmp(charset, "ks_c_5601") ||
-		0 == strcasecmp(charset, "ks_c_5601-1987") ||
-		0 == strcasecmp(charset, "csksc56011987")) {
+	else if (strcasecmp(charset, "ksc_560") == 0 ||
+	    strcasecmp(charset, "ks_c_5601") == 0 ||
+	    strcasecmp(charset, "ks_c_5601-1987") == 0 ||
+	    strcasecmp(charset, "csksc56011987") == 0)
 		return "cp949";
-	} else if (strcasecmp(charset, "iso-2022-jp") == 0 && have_jpms()) {
+	else if (strcasecmp(charset, "iso-2022-jp") == 0 && have_jpms())
 		return "iso-2022-jp-ms";
-	} else if (0 == strcasecmp(charset, "unicode-1-1-utf-7")) {
+	else if (strcasecmp(charset, "unicode-1-1-utf-7") == 0)
 		return "utf-7";
-	}
 	return charset;
 }
 
@@ -332,13 +325,11 @@ BOOL string_to_utf8(const char *charset,
 		return TRUE;
 	}
 	gx_strlcpy(tmp_charset, replace_iconv_charset(charset), GX_ARRAY_SIZE(tmp_charset));
-	if (0 != strcasecmp("utf-7", tmp_charset)) {
+	if (strcasecmp("utf-7", tmp_charset) != 0)
 		length ++;
-	}
 	conv_id = iconv_open("UTF-8", tmp_charset);
-	if ((iconv_t)-1 == conv_id) {
+	if (conv_id == iconv_t(-1))
 		return FALSE;
-	}
 	pin = (char*)in_string;
 	pout = out_string;
 	in_len = length;
@@ -348,9 +339,8 @@ BOOL string_to_utf8(const char *charset,
 		return FALSE;
 	}
 	iconv_close(conv_id);
-	if (0 == strcasecmp("utf-7", tmp_charset)) {
+	if (strcasecmp("utf-7", tmp_charset) == 0)
 		out_string[2*length - out_len] = '\0';	
-	}
 	return TRUE;
 }
 
@@ -379,9 +369,8 @@ BOOL string_from_utf8(const char *charset, const char *in_string,
 	length ++;
 	
 	conv_id = iconv_open(replace_iconv_charset(charset), "UTF-8");
-	if ((iconv_t)-1 == conv_id) {
+	if (conv_id == iconv_t(-1))
 		return FALSE;
-	}
 	pin = (char*)in_string;
 	pout = out_string;
 	in_len = length;
@@ -450,15 +439,13 @@ BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len)
 	length = strlen(src);
 	len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
 	ptr1 = search_string(src, temp_tag, length);
-	if (NULL == ptr1) {
+	if (ptr1 == nullptr)
 		return FALSE;
-	}
 
 	ptr1 += len;
 	ptr1 = static_cast<const char *>(memchr(ptr1, ':', length - (ptr1 - src)));
-	if (NULL == ptr1) {
+	if (ptr1 == nullptr)
 		return FALSE;
-	}
 	ptr1 ++;
 	while (' ' == *ptr1 || '\t' == *ptr1) {
 		ptr1 ++;
@@ -490,9 +477,8 @@ BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len)
 		memmove(buff, buff + 1, len);
 		buff[len] = '\0';
 	}
-	if ('"' == buff[len - 1]) {
+	if (buff[len-1] == '"')
 		buff[len - 1] = '\0';
-	}
 	return TRUE;
 }
 
@@ -507,15 +493,13 @@ BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
 	temp_len = strlen(src) + 1;
 	len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
 	ptr1 = search_string(src, temp_tag, temp_len);
-	if (NULL == ptr1) {
+	if (ptr1 == nullptr)
 		return FALSE;
-	}
 
 	ptr1 += len;
 	ptr1 = static_cast<char *>(memchr(ptr1, ':', temp_len - (ptr1 - src)));
-	if (NULL == ptr1) {
+	if (ptr1 == nullptr)
 		return FALSE;
-	}
 	ptr1 ++;
 	
 	while (' ' == *ptr1 || '\t' == *ptr1) {
@@ -540,10 +524,8 @@ BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
 	len = strlen(value);
 	
 	temp_len1 = temp_len + len - (ptr2 - ptr1);
-	
-	if (temp_len1 > length) {
+	if (temp_len1 > length)
 		return FALSE;
-	}
 	if (static_cast<size_t>(ptr2 - ptr1) < len)
 		memmove(ptr1 + len, ptr2, temp_len1 - (ptr1 - src + len));
 	else if (static_cast<size_t>(ptr2 - ptr1) > len)
@@ -576,10 +558,8 @@ char* search_string(const char *haystack, const char *needle,
 	while (1) {
 		if (plen <= 0)
 			return NULL;
-
-		if (strncasecmp(p, needle, len) == 0) {
+		if (strncasecmp(p, needle, len) == 0)
 			return (p);
-		}
 		p++;
 		plen--;
 
@@ -685,9 +665,8 @@ void randstring_k(char *buff, int length, const char *string)
 	int i, key;
 	int string_len;
 	
-	if (length <= 0) {
+	if (length <= 0)
 		length = 1;
-	}
 	string_len = strlen(string);
 	for (i=0; i<length; i++) {
 		key = rand() % string_len;
@@ -861,9 +840,8 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 	int lineLen = 0;
 	const char* cp;
 	
-	if (!_in || !_out || !outlen) {
+	if (_in == nullptr || _out == nullptr || outlen == nullptr)
 		return -1;
-	}
 	outsize += strlen(DW_EOL)*outsize/MAXLINE + 2;	/* Space for newlines and NUL */
 	if (outsize >= outmax)
 		return -1;
@@ -890,9 +868,8 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 	case 0:
 		cp = DW_EOL;
 		out[outPos++] = *cp++;
-		if (*cp) {
+		if (*cp != '\0')
 			out[outPos++] = *cp;
-		}
 		break;
 	case 1:
 		c1 = _in[inpos] & 0xFF;
@@ -902,9 +879,8 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 		out[outPos++] = '=';
 		cp = DW_EOL;
 		out[outPos++] = *cp++;
-		if (*cp) {
+		if (*cp != '\0')
 			out[outPos++] = *cp;
-		}
 		break;
 	case 2:
 		c1 = _in[inpos++] & 0xFF;
@@ -915,9 +891,8 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 		out[outPos++] = '=';
 		cp = DW_EOL;
 		out[outPos++] = *cp++;
-		if (*cp) {
+		if (*cp != '\0')
 			out[outPos++] = *cp;
-		}
 		break;
 	}
 	out[outPos] = 0;
@@ -1038,9 +1013,8 @@ int decode64_ex(const char *_in, size_t inlen, void *vout,
 		else {
 			break;
 		}
-		if (is_endSeen) {
+		if (is_endSeen)
 			break;
-		}
 	} /* end while loop */
 	out[outPos] = 0;
 	*outlen = outPos;
@@ -1053,9 +1027,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 	size_t inpos, outpos, linelen;
 	int ch;
 
-	if (!input || !output) {
+	if (input == nullptr || output == nullptr)
 		return -1;
-	}
 	inpos  = 0;
 	outpos = 0;
 	linelen = 0;
@@ -1283,9 +1256,8 @@ ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
 			break;
 		}
 	}
-	if (cnt >= out_len) {
+	if (cnt >= out_len)
 		return -1;
-	}
 	return qp_decode(output, input, length);
 }
 
@@ -1309,10 +1281,8 @@ int decode_hex_int(const char *in)
 	int retval;
 	char t_buff[3];
 	
-	if (strlen(in) < 2*sizeof(int)) {
+	if (strlen(in) < 2 * sizeof(int))
 		return 0;
-	}
-
 	retval = 0;
 	for (size_t i = 0; i < sizeof(int); ++i) {
 		t_buff[0] = in[2*i];
@@ -1331,9 +1301,8 @@ BOOL encode_hex_binary(const void *vsrc, int srclen, char *dst, int dstlen)
 	int i, j;
 	char t_char;
 	
-	if (2*srclen + 1 > dstlen) {
+	if (2 * srclen + 1 > dstlen)
 		return FALSE;
-	}
 	for (i=0,j=0; i<srclen; i++,j+=2) {
 		t_char = src[i];
 		dst[j + 1] = codes[t_char&0x0f];
@@ -1350,18 +1319,16 @@ BOOL decode_hex_binary(const char *src, void *vdst, int dstlen)
 	int i, j, len;
 
 	len = strlen(src);
-	if (len/2 > dstlen) {
+	if (len / 2 > dstlen)
 		return FALSE;
-	}
 	for (i=0,j=0; i<len; i+=2,j++) {
 		t_buff[0] = src[i];
 		t_buff[1] = src[i+1];
 		t_buff[2] = '\0';
 		dst[j] = strtol(t_buff, NULL, 16);
 	}
-	if (j < dstlen) {
+	if (j < dstlen)
 		dst[j] = '\0';
-	}
 	return TRUE;
 }
 
@@ -1390,12 +1357,10 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 	ptr = search_string(in, "begin ", inlen);
 	if (NULL != ptr) {
 		ptr += 6;
-		if (' ' != ptr[3]) {
+		if (ptr[3] != ' ')
 			return -1;
-		}
-		if (1 != sscanf(ptr, "%o ", &mode)) {
+		if (sscanf(ptr, "%o ", &mode) != 1)
 			return -1;
-		}
 		ptr += 4;
 		for (i=0; i<256; i++,ptr++) {
 			if ('\r' == *ptr || '\n' == *ptr) {
@@ -1405,12 +1370,10 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 			}
 			tmp_name[i] = *ptr;
 		}
-		if (i >= 256) {
+		if (i >= 256)
 			return -1;
-		}
-		if ('\r' == *(ptr - 1) && '\n' == *ptr) {
+		if (ptr[-1] == '\r' && *ptr == '\n')
 			ptr ++;
-		}
 	} else {
 		ptr = (char*)in;
 	}
@@ -1422,52 +1385,42 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 				line_len = j;
 				break;
 			}
-			if (pline + j >= pend) {
+			if (pline + j >= pend)
 				return -1;
-			}
 			buff[j] = pline[j];
 		}
-		if (j >= 80) {
+		if (j >= 80)
 			return -1;
-		}
-		if ('\r' == pline[j] && '\n' == pline[j + 1]) {
+		if (pline[j] == '\r' && pline[j+1] == '\n')
 			pline += j + 2;
-		} else {
+		else
 			pline += j + 1;
-		}
 		n = DEC(buff[0]);
-		if (n <= 0 || 0 == line_len) {
+		if (n <= 0 || line_len == 0)
 			break;
-		}
 		/* Calculate expected # of chars and pad if necessary */
 		expected = ((n + 2) / 3) << 2;
-		for (j=line_len; j<=expected; j++) {
+		for (j = line_len; j <= expected; ++j)
 			buff[j] = ' ';
-		}
 		ptr = buff + 1;
 		while (n > 0) {
 			c1 = DEC(*ptr) << 2 | DEC(ptr[1]) >> 4;
 			c2 = DEC(ptr[1]) << 4 | DEC(ptr[2]) >> 2;
 			c3 = DEC(ptr[2]) << 6 | DEC(ptr[3]);
-			if (n >= 1) {
+			if (n >= 1)
 				out[(*outlen)++] = c1;
-			}
-			if (n >= 2) {
+			if (n >= 2)
 				out[(*outlen)++] = c2;
-			}
-			if (n >= 3) {
+			if (n >= 3)
 				out[(*outlen)++] = c3;
-			}
 			ptr += 4;
 			n -= 3;
 		}
 	}
-	if (NULL != pmode) {
+	if (pmode != nullptr)
 		*pmode = mode;
-	}
-	if (NULL != file_name) {
+	if (file_name != nullptr)
 		strcpy(file_name, tmp_name);
-	}
 	return 0;
 }
 
@@ -1481,64 +1434,53 @@ int uuencode(int mode, const char *file_name, const char *in,
 	
 	if (NULL != file_name) {
 		offset = gx_snprintf(out, outmax, "begin %o %s\r\n", mode, file_name);
-		if (offset >= outmax) {
+		if (offset >= outmax)
 			return -1;
-		}
 	} else {
 		offset = 0;
 	}
 	ptr = in;
 	while (true) {
 		/* 1 (up to) 45 character line */
-		if (in + inlen - ptr >= 45) {
+		if (in + inlen - ptr >= 45)
 			n = 45;
-		} else {
+		else
 			n = in + inlen - ptr;
-		}
 		out[offset] = ENC(n);
 		offset ++;
-		if (offset >= outmax) {
+		if (offset >= outmax)
 			return -1;
-		}
 		for (i=0; i<n; i+=3) {
 			c1 = ptr[i] >> 2;
 			c2 = ((ptr[i] << 4) & 060) | ((ptr[i + 1] >> 4) & 017);
 			c3 = ((ptr[i + 1] << 2) & 074) | ((ptr[i + 2] >> 6) & 03);
 			c4 = ptr[i + 2] & 077;
 			out[offset++] = ENC(c1);
-			if (offset >= outmax) {
+			if (offset >= outmax)
 				return -1;
-			}
 			out[offset++] = ENC(c2);
-			if (offset >= outmax) {
+			if (offset >= outmax)
 				return -1;
-			}
 			out[offset++] = ENC(c3);
-			if (offset >= outmax) {
+			if (offset >= outmax)
 				return -1;
-			}
 			out[offset++] = ENC(c4);
-			if (offset >= outmax) {
+			if (offset >= outmax)
 				return -1;
-			}
 		}
 		ptr += n;
 		out[offset++] = '\r';
-		if (offset >= outmax) {
+		if (offset >= outmax)
 			return -1;
-		}
 		out[offset++] = '\n';
-		if (offset >= outmax) {
+		if (offset >= outmax)
 			return -1;
-		}
-		if (n <= 0) {
+		if (n <= 0)
 			break;
-		}
 	}
 	if (NULL != file_name) {
-		if (outmax - offset < 5) {
+		if (outmax - offset < 5)
 			return -1;
-		}
 		memcpy(out + offset, "end\r\n", 5);
 		offset += 5;
 	}
