@@ -176,7 +176,7 @@ int main(int argc, const char **argv) try
 	if (0 == mmap_size) {
 		printf("[system]: sqlite mmap_size is disabled\n");
 	} else {
-		bytetoa(mmap_size, temp_buff);
+		HX_unit_size(temp_buff, arsizeof(temp_buff), mmap_size, 1024, 0);
 		printf("[system]: sqlite mmap_size is %s\n", temp_buff);
 	}
 	

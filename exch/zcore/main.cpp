@@ -204,11 +204,11 @@ int main(int argc, const char **argv) try
 	printf("[system]: maximum mail number is %lld\n", max_mail);
 	
 	auto max_length = pconfig->get_ll("mail_max_length");
-	bytetoa(max_length, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), max_length, 1024, 0);
 	printf("[system]: maximum mail length is %s\n", temp_buff);
 	
 	auto max_rule_len = pconfig->get_ll("max_ext_rule_length");
-	bytetoa(max_rule_len, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), max_rule_len, 1024, 0);
 	printf("[system]: maximum extended rule length is %s\n", temp_buff);
 	
 	uint16_t smtp_port = pconfig->get_ll("smtp_server_port");

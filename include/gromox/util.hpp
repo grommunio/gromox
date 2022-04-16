@@ -55,7 +55,6 @@ extern BOOL set_digest(char *src, size_t length, const char *tag, const char *va
 char* search_string(const char *haystack, const char *needle, 
     size_t haystacklen);
 char* itvltoa(long interval, char *string);
-char* bytetoa(uint64_t byte, char *string);
 extern GX_EXPORT const char *crypt_wrapper(const char *);
 int wildcard_match(const char *data, const char *mask, BOOL icase);
 extern GX_EXPORT void randstring_k(char *out, int len, const char *pool);

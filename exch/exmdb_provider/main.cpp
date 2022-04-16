@@ -175,7 +175,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		if (0 == mmap_size) {
 			printf("[exmdb_provider]: sqlite mmap_size is disabled\n");
 		} else {
-			bytetoa(mmap_size, temp_buff);
+			HX_unit_size(temp_buff, arsizeof(temp_buff), mmap_size, 1024, 0);
 			printf("[exmdb_provider]: sqlite mmap_size is %s\n", temp_buff);
 		}
 		

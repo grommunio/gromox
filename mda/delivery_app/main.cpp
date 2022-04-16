@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
@@ -145,7 +146,7 @@ int main(int argc, const char **argv) try
 		mime_ratio);
 
 	size_t max_mem = g_config_file->get_ll("dequeue_maximum_mem");
-	bytetoa(max_mem, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), max_mem, 1024, 0);
     printf("[message_dequeue]: maximum allocated memory is %s\n", temp_buff);
     
 	const char *str_value = resource_get_string("MPC_PLUGIN_LIST");

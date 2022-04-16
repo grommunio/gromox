@@ -17,6 +17,7 @@
 #include <gromox/util.hpp>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include "listener.h" 
 #include <memory>
 #include "resource.h" 
@@ -167,17 +168,17 @@ int main(int argc, const char **argv) try
 		thread_init_num);
 
 	size_t context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
-	bytetoa(context_aver_mem*64*1024, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
 	printf("[smtp]: context average memory is %s\n", temp_buff);
  
 	scfg.flushing_size = g_config_file->get_ll("context_max_mem") / (64 * 1024);
 	if (scfg.flushing_size < context_aver_mem) {
 		scfg.flushing_size = context_aver_mem;
-		bytetoa(scfg.flushing_size * 64 * 1024, temp_buff);
+		HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.flushing_size * 64 * 1024, 1024, 0);
 		resource_set_string("CONTEXT_MAX_MEM", temp_buff);
 	} 
 	scfg.flushing_size *= 64 * 1024;
-	bytetoa(scfg.flushing_size, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.flushing_size, 1024, 0);
 	printf("[smtp]: context maximum memory is %s\n", temp_buff);
  
 	scfg.timeout = std::chrono::seconds(g_config_file->get_ll("smtp_conn_timeout"));
@@ -231,7 +232,7 @@ int main(int argc, const char **argv) try
 			"is exceeded\n", temp_buff);
 
 	scfg.max_mail_length = g_config_file->get_ll("mail_max_length");
-	bytetoa(scfg.max_mail_length, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.max_mail_length, 1024, 0);
 	printf("[smtp]: maximum mail length is %s\n", temp_buff);
 
 	scfg.max_mail_sessions = g_config_file->get_ll("smtp_max_mail_num");

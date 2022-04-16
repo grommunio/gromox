@@ -433,7 +433,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 				printf("[exmdb_local]: fail to get mail length\n");
 				mail_len = 0;
 			}
-			bytetoa(mail_len, ptr);
+			HX_unit_size(ptr, 128 /* yuck */, mail_len, 1000, 0);
 			len = strlen(ptr);
 			ptr += len;
 			break;

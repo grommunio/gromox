@@ -667,23 +667,6 @@ char* itvltoa(long interval, char *string)
 	return string;
 }
 
-char* bytetoa(uint64_t byte, char *string)
-{
-	if (byte < 1024) {
-		sprintf(string, "%llu", static_cast<unsigned long long>(byte));
-	} else if (byte >= 1024 && byte < 1024*1024) {
-		sprintf(string, "%4.1lfK", (double)byte/1024);
-	} else if (byte >= 1024*1024 && byte < 1024*1024*1024) {
-		sprintf(string, "%4.1lfM", (double)byte/(1024*1024));
-	} else if (byte >= 1024*1024*1024 && byte < 0x10000000000LL) {
-		sprintf(string, "%1.1lfG", (double)byte/(1024*1024*1024));
-	} else {
-		sprintf(string, "%1.1lfT", (double)byte/0x10000000000LL);
-	}
-	HX_strltrim(string);
-	return string;
-}
-
 static char crypt_salt[65]=
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./";
 
