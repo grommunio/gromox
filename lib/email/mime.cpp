@@ -1260,6 +1260,8 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 	}
 #endif
 	max_length = *plength;
+	if (max_length > 0)
+		*out_buff = '\0';
 	if (NONE_MIME == pmime->mime_type) {
 		*plength = 0;
 		return FALSE;
@@ -1284,7 +1286,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 			*plength = 0;
 			return FALSE;
 		}
-		if (static_cast<size_t>(mail_len) > max_length) {
+		if (static_cast<size_t>(mail_len) >= max_length) {
 			*plength = 0;
 			return FALSE;
 		}
@@ -1301,6 +1303,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 			offset += buff_size;
 			buff_size = STREAM_BLOCK_SIZE;
 		}
+		out_buff[offset] = '\0';
 		*plength = offset;
 		return TRUE;
 	}
