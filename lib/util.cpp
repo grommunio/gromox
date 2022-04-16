@@ -552,34 +552,6 @@ BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
 	return TRUE;
 }
 
-BOOL add_digest(char *src, size_t length, const char *tag, const char *value)
-{
-	size_t i, len;
-	size_t temp_len;
-	char temp_tag[256];
-	char temp_buff[1024];
-	
-	temp_len = strlen(src) + 1;
-	snprintf(temp_tag, 255, "\"%s\"", tag);
-	if (NULL != search_string(src, temp_tag, temp_len)) {
-		return set_digest(src, length, tag, value);
-		
-	}
-	
-	for (i=temp_len-1; i>0; i--) {
-		if ('}' == src[i]) {
-			len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff), ",\"%s\":%s", tag, value);
-			if (length - i < len + 2) {
-				return FALSE;
-			}
-			memcpy(src + i, temp_buff, len);
-			memcpy(src + i + len, "}", 2);
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
 /*
  *	search a substring in a string
  *	@param

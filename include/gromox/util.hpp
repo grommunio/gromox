@@ -52,7 +52,6 @@ extern int utf8_to_utf16le(const char *src, void *dst, size_t len);
 extern BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len);
 extern BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len);
 extern BOOL set_digest(char *src, size_t length, const char *tag, const char *value);
-extern BOOL add_digest(char *src, size_t length, const char *tag, const char *value);
 char* search_string(const char *haystack, const char *needle, 
     size_t haystacklen);
 char* itvltoa(long interval, char *string);
