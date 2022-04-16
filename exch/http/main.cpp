@@ -218,7 +218,7 @@ int main(int argc, const char **argv) try
 	printf("[http]: context average memory is %s\n", temp_buff);
 	
 	std::chrono::seconds http_conn_timeout{g_config_file->get_ll("http_conn_timeout")};
-	itvltoa(http_conn_timeout.count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), http_conn_timeout.count(), 0);
 	printf("[http]: http socket read write time out is %s\n", temp_buff);
  
 	int http_auth_times = g_config_file->get_ll("http_auth_times");
@@ -226,7 +226,7 @@ int main(int argc, const char **argv) try
 			http_auth_times);
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
-	itvltoa(block_interval_auth, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
 	printf("[http]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 	
@@ -307,7 +307,7 @@ int main(int argc, const char **argv) try
 	printf("[mod_fastcgi]: fastcgi maximum size is %s\n", temp_buff);
 	
 	std::chrono::seconds fastcgi_exec_timeout{g_config_file->get_ll("fastcgi_exec_timeout")};
-	itvltoa(fastcgi_exec_timeout.count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), fastcgi_exec_timeout.count(), 0);
 	printf("[http]: fastcgi excution time out is %s\n", temp_buff);
 	uint16_t listen_port = g_config_file->get_ll("listen_port");
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");

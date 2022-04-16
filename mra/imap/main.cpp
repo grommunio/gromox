@@ -177,11 +177,11 @@ int main(int argc, const char **argv) try
 	printf("[imap]: context average mitem number is %d\n", context_aver_mitem);
 	
 	std::chrono::seconds imap_conn_timeout(g_config_file->get_ll("imap_conn_timeout"));
-	itvltoa(imap_conn_timeout.count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), imap_conn_timeout.count(), 0);
 	printf("[imap]: imap socket read write time out is %s\n", temp_buff);
  
 	std::chrono::seconds autologout_time(g_config_file->get_ll("imap_autologout_time"));
-	itvltoa(autologout_time.count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), autologout_time.count(), 0);
 	printf("[imap]: imap session autologout time is %s\n", temp_buff);
  
 	int imap_auth_times = g_config_file->get_ll("imap_auth_times");
@@ -189,7 +189,7 @@ int main(int argc, const char **argv) try
 			imap_auth_times);
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
-	itvltoa(block_interval_auth, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
 	printf("[imap]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 

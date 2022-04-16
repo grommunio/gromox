@@ -185,7 +185,7 @@ static BOOL svc_ip6_filter(int reason, void **data)
 	if (add_name == nullptr)
 		add_name = "ip_filter_add";
 	char temp_buff[64];
-	itvltoa(std::chrono::duration_cast<std::chrono::seconds>(g_audit_intvl).count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), std::chrono::duration_cast<std::chrono::seconds>(g_audit_intvl).count(), 0);
 	printf("[%s]: audit capacity is %d\n", plugname.c_str(), g_audit_max);
 	printf("[%s]: audit interval is %s\n", plugname.c_str(), temp_buff);
 	printf("[%s]: audit times is %d\n", plugname.c_str(), g_max_within_interval);

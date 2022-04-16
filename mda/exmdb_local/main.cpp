@@ -87,7 +87,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			if (cache_interval <= 0)
 				cache_interval = 180;
 		}
-		itvltoa(cache_interval, temp_buff);
+		HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
 		printf("[exmdb_local]: cache scanning interval is %s\n", temp_buff);
 
 		str_value = pfile->get_value("RETRYING_TIMES");
@@ -111,7 +111,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			if (interval <= 0)
 				interval = 3600;
 		}
-		itvltoa(interval, temp_buff);
+		HX_unit_seconds(temp_buff, arsizeof(temp_buff), interval, 0);
 		printf("[exmdb_local]: interval for failure alarm is %s\n", temp_buff);
 
 		str_value = pfile->get_value("ALARM_INTERVAL");
@@ -122,7 +122,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			if (alarm_interval <= 0)
 				alarm_interval = 1800;
 		}
-		itvltoa(alarm_interval, temp_buff);
+		HX_unit_seconds(temp_buff, arsizeof(temp_buff), alarm_interval, 0);
 		printf("[exmdb_local]: alarms interval is %s\n", temp_buff);
 
 		str_value = pfile->get_value("RESPONSE_AUDIT_CAPACITY");
@@ -140,7 +140,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			if (response_interval <= 0)
 				response_interval = 180;
 		}
-		itvltoa(response_interval, temp_buff);
+		HX_unit_seconds(temp_buff, arsizeof(temp_buff), response_interval, 0);
 		printf("[exmdb_local]: auto response interval is %s\n", temp_buff);
 
 		net_failure_init(times, interval, alarm_interval);

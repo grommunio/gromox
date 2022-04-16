@@ -182,7 +182,7 @@ int main(int argc, const char **argv) try
 	printf("[smtp]: context maximum memory is %s\n", temp_buff);
  
 	scfg.timeout = std::chrono::seconds(g_config_file->get_ll("smtp_conn_timeout"));
-	itvltoa(std::chrono::duration_cast<std::chrono::seconds>(scfg.timeout).count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), std::chrono::duration_cast<std::chrono::seconds>(scfg.timeout).count(), 0);
 	printf("[smtp]: smtp socket read write time out is %s\n", temp_buff);
 
 	scfg.support_pipeline = parse_bool(g_config_file->get_value("smtp_support_pipeline"));
@@ -227,7 +227,7 @@ int main(int argc, const char **argv) try
 	       scfg.auth_times);
 
 	scfg.blktime_auths = g_config_file->get_ll("block_interval_auths");
-	itvltoa(scfg.blktime_auths, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), scfg.blktime_auths, 0);
 	printf("[smtp]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 
@@ -237,7 +237,7 @@ int main(int argc, const char **argv) try
 
 	scfg.max_mail_sessions = g_config_file->get_ll("smtp_max_mail_num");
 	scfg.blktime_sessions = g_config_file->get_ll("block_interval_session");
-	itvltoa(scfg.blktime_sessions, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), scfg.blktime_sessions, 0);
 	printf("[smtp]: block remote side %s when mails number is exceed for one "
 			"session\n", temp_buff);
 	

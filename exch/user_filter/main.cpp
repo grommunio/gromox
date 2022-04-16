@@ -69,7 +69,7 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 			if (audit_interval <= 0)
 				audit_interval = 60;
 		}
-		itvltoa(audit_interval, temp_buff);
+		HX_unit_seconds(temp_buff, arsizeof(temp_buff), audit_interval, 0);
 		printf("[%s]: audit interval is %s\n", plugname.c_str(), temp_buff);
 		str_value = pfile->get_value("AUDIT_TIMES");
 		audit_times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;

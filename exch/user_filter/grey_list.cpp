@@ -250,7 +250,7 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 	}
 	string_len = j;
 	string_len += sprintf(file_item + string_len, "\t%d\t", times);
-	itvltoa(interval, file_item + string_len);
+	HX_unit_seconds(file_item + string_len, 128 /* yuck */, interval, 0);
 	string_len += strlen(file_item + string_len);
 	file_item[string_len] = '\n';
 	string_len ++;
@@ -342,7 +342,7 @@ static void grey_list_flush()
 		string_len = j;
 		string_len += sprintf(file_item + string_len, "\t%d\t",
 						pentry->allowed_times);
-		itvltoa(pentry->interval, file_item + string_len);
+		HX_unit_seconds(file_item + string_len, 128 /* yuck */, pentry->interval, 0);
 		string_len += strlen(file_item + string_len);
 		file_item[string_len] = '\n';
 		string_len ++;

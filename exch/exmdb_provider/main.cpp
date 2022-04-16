@@ -150,7 +150,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		printf("[exmdb_provider]: db hash table size is %d\n", table_size);
 		
 		int cache_interval = pconfig->get_ll("cache_interval");
-		itvltoa(cache_interval, temp_buff);
+		HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
 		printf("[exmdb_provider]: cache interval is %s\n", temp_buff);
 		
 		int max_msg_count = pconfig->get_ll("max_store_message_count");

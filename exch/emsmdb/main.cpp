@@ -181,7 +181,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		HX_unit_size(size_buff, arsizeof(size_buff), max_rule_len, 1024, 0);
 		printf("[exchange_emsmdb]: maximum extended rule length is %s\n", size_buff);
 		ping_interval = pfile->get_ll("mailbox_ping_interval");
-		itvltoa(ping_interval, temp_buff);
+		HX_unit_seconds(temp_buff, arsizeof(temp_buff), ping_interval, 0);
 		printf("[exchange_emsmdb]: mailbox ping interval is %s\n",
 			temp_buff);
 		gx_strlcpy(smtp_ip, pfile->get_value("smtp_server_ip"), arsizeof(smtp_ip));

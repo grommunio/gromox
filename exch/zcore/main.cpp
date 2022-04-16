@@ -186,7 +186,7 @@ int main(int argc, const char **argv) try
 	printf("[system]: address table size is %d\n", table_size);
 
 	int cache_interval = pconfig->get_ll("address_cache_interval");
-	itvltoa(cache_interval, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
 	printf("[system]: address book tree item"
 		" cache interval is %s\n", temp_buff);
 
@@ -235,11 +235,11 @@ int main(int argc, const char **argv) try
 	printf("[system]: hash table size is %d\n", table_size);
 
 	cache_interval = pconfig->get_ll("user_cache_interval");
-	itvltoa(cache_interval, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
 	printf("[system]: cache interval is %s\n", temp_buff);
 	
 	int ping_interval = pconfig->get_ll("mailbox_ping_interval");
-	itvltoa(ping_interval, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), ping_interval, 0);
 	printf("[system]: mailbox ping interval is %s\n", temp_buff);
 	
 	zarafa_server_init(table_size, cache_interval, ping_interval);

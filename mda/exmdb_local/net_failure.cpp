@@ -175,7 +175,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		offset += sprintf(tmp_buff + offset, "  The local delivery of %s "
 		          "failed %d times within ", get_host_ID(),
 		          g_times);
-		itvltoa(g_interval, tmp_buff + offset);
+		HX_unit_seconds(tmp_buff + offset, arsizeof(tmp_buff) - offset, g_interval, 0);
 		offset += strlen(tmp_buff + offset);
 		strcpy(tmp_buff + offset, "\r\n<P></P><BR><P></P><BR><P></P><BR>Alarm time: ");
 		offset += strlen(tmp_buff + offset);

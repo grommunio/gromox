@@ -188,7 +188,7 @@ int main(int argc, const char **argv) try
 	printf("[pop3]: context average units number is %d\n", context_aver_units);
 	
 	std::chrono::seconds pop3_conn_timeout(g_config_file->get_ll("pop3_conn_timeout"));
-	itvltoa(pop3_conn_timeout.count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), pop3_conn_timeout.count(), 0);
 	printf("[pop3]: pop3 socket read write time out is %s\n", temp_buff);
  
 	int pop3_auth_times = g_config_file->get_ll("pop3_auth_times");
@@ -196,7 +196,7 @@ int main(int argc, const char **argv) try
 			pop3_auth_times);
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
-	itvltoa(block_interval_auth, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
 	printf("[pop3]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 

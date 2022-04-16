@@ -165,7 +165,7 @@ int main(int argc, const char **argv) try
 	printf("[system]: hash table size is %zu\n", table_size);
 
 	int cache_interval = pconfig->get_ll("midb_cache_interval");
-	itvltoa(cache_interval, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
 	printf("[system]: cache interval is %s\n", temp_buff);
 	
 	int mime_num = pconfig->get_ll("midb_mime_number");

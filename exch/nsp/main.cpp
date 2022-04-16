@@ -110,7 +110,7 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		table_size = pfile->get_ll("hash_table_size");
 		printf("[exchange_nsp]: hash table size is %d\n", table_size);
 		cache_interval = pfile->get_ll("cache_interval");
-		itvltoa(cache_interval, temp_buff);
+		HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
 		printf("[exchange_nsp]: address book tree item"
 				" cache interval is %s\n", temp_buff);
 		b_check = pfile->get_ll("session_check");
