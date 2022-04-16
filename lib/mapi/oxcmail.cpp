@@ -3203,8 +3203,7 @@ static BOOL oxcmail_parse_encrypted(MIME *phead, uint16_t *plast_propid,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_smime_message(
-	MAIL *pmail, MESSAGE_CONTENT *pmsg)
+static BOOL oxcmail_parse_smime_message(MAIL *pmail, MESSAGE_CONTENT *pmsg) try
 {
 	size_t offset;
 	BINARY tmp_bin;
@@ -3221,51 +3220,41 @@ static BOOL oxcmail_parse_smime_message(
 		return false;
 	}
 	size_t content_len = rdlength;
-	auto pcontent = me_alloc<char>(content_len + 1024);
-	if (NULL == pcontent) {
-		return FALSE;
-	}
+	auto pcontent = std::make_unique<char[]>(content_len + 1024);
 	auto content_type = phead->content_type;
 	if (0 == strcasecmp(content_type, "multipart/signed")) {
-		strcpy(pcontent, "Content-Type: ");
+		strcpy(pcontent.get(), "Content-Type: ");
 		offset = 14;
-		if (!phead->get_field("Content-Type", pcontent + offset, 1024 - offset)) {
-			free(pcontent);
+		if (!phead->get_field("Content-Type", &pcontent[offset], 1024 - offset)) {
 			return FALSE;
 		}
-		offset += strlen(pcontent + offset);
+		offset += strlen(&pcontent[offset]);
 		strcpy(&pcontent[offset], "\r\n\r\n");
 		offset += 4;
-		if (!phead->read_content(pcontent + offset, &content_len)) {
-			free(pcontent);
+		if (!phead->read_content(&pcontent[offset], &content_len)) {
 			return FALSE;
 		}
 		offset += content_len;
 	} else {
-		if (!phead->read_content(pcontent, &content_len)) {
-			free(pcontent);
+		if (!phead->read_content(pcontent.get(), &content_len)) {
 			return FALSE;
 		}
 		offset = content_len;
 	}
 	pattachment = attachment_content_init();
 	if (NULL == pattachment) {
-		free(pcontent);
 		return FALSE;
 	}
 	if (!attachment_list_append_internal(
 		pmsg->children.pattachments, pattachment)) {
 		attachment_content_free(pattachment);
-		free(pcontent);
 		return FALSE;
 	}
 	tmp_bin.cb = offset;
-	tmp_bin.pc = pcontent;
+	tmp_bin.pc = pcontent.get();
 	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0) {
-		free(pcontent);
 		return FALSE;
 	}
-	free(pcontent);
 	tmp_int32 = ATTACH_BY_VALUE;
 	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0 ||
 	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, content_type) != 0 ||
@@ -3275,6 +3264,9 @@ static BOOL oxcmail_parse_smime_message(
 	    pattachment->proplist.set(PR_DISPLAY_NAME, "SMIME.p7m") != 0)
 		return FALSE;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1927: ENOMEM\n");
+	return false;
 }
 
 static BOOL oxcmail_try_assign_propval(TPROPVAL_ARRAY *pproplist,
