@@ -1365,7 +1365,8 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 		}
 	}
 	case MIME_ENCODING_UUENCODE:
-		if (uudecode(pbuff.get(), size, nullptr, nullptr, out_buff, plength) != 0) {
+		if (uudecode(pbuff.get(), size, nullptr, nullptr, 0, out_buff,
+		    max_length, plength) != 0) {
 			debug_info("[mime]: fail to decode uuencode mime content");
 			goto COPY_RAW_DATA;
 		}

@@ -1336,24 +1336,17 @@ BOOL decode_hex_binary(const char *src, void *vdst, int dstlen)
 
 #define ENC(c) ((c) ? (((c) & 077) + ' ') : '`')
 
-
-int uudecode(const char *in, size_t inlen, int *pmode,
-	char *file_name, char *out, size_t *outlen)
+int uudecode(const char *in, size_t inlen, int *pmode, char *file_name,
+    size_t fnmax, char *out, size_t outmax, size_t *outlen)
 {
-	int i, j;
-	int mode;
 	char *ptr;
 	char *pline;
-	int line_len;
 	char buff[80]{};
-	int c1, c2, c3;
-	int n, expected;
+	int c1, c2, c3, mode, line_len;
 	const char *pend;
-	char tmp_name[256];
 	
 	*outlen = 0;
 	mode = 0666;
-	tmp_name[0] = '\0';
 	ptr = search_string(in, "begin ", inlen);
 	if (NULL != ptr) {
 		ptr += 6;
@@ -1362,17 +1355,15 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 		if (sscanf(ptr, "%o ", &mode) != 1)
 			return -1;
 		ptr += 4;
-		for (i=0; i<256; i++,ptr++) {
-			if ('\r' == *ptr || '\n' == *ptr) {
-				ptr ++;
-				tmp_name[i] = '\0';
-				break;
-			}
-			tmp_name[i] = *ptr;
+		auto fnstart = ptr;
+		while (*ptr != '\r' && *ptr != '\n' && *ptr != '\0')
+			++ptr;
+		if (file_name != nullptr && fnmax > 0) {
+			gx_strlcpy(file_name, fnstart, fnmax);
+			if (static_cast<size_t>(ptr - fnstart) > fnmax - 1)
+				return -1;
 		}
-		if (i >= 256)
-			return -1;
-		if (ptr[-1] == '\r' && *ptr == '\n')
+		if (ptr[0] == '\r' && ptr[1] == '\n')
 			ptr ++;
 	} else {
 		ptr = (char*)in;
@@ -1380,6 +1371,7 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 	pline = ptr;
 	pend = in + inlen;
 	while (pline < pend) {
+		unsigned int j;
 		for (j=0; j<80; j++) {
 			if ('\r' == pline[j] || '\n' == pline[j]) {
 				line_len = j;
@@ -1395,14 +1387,17 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 			pline += j + 2;
 		else
 			pline += j + 1;
-		n = DEC(buff[0]);
+		int n = DEC(buff[0]);
 		if (n <= 0 || line_len == 0)
 			break;
 		/* Calculate expected # of chars and pad if necessary */
-		expected = ((n + 2) / 3) << 2;
+		unsigned int expected = ((n + 2) / 3) * 4;
 		for (j = line_len; j <= expected; ++j)
 			buff[j] = ' ';
 		ptr = buff + 1;
+		if (static_cast<unsigned int>(n) + 1 > outmax)
+			return -1;
+		outmax -= n;
 		while (n > 0) {
 			c1 = DEC(*ptr) << 2 | DEC(ptr[1]) >> 4;
 			c2 = DEC(ptr[1]) << 4 | DEC(ptr[2]) >> 2;
@@ -1417,10 +1412,9 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 			n -= 3;
 		}
 	}
+	out[*outlen] = '\0';
 	if (pmode != nullptr)
 		*pmode = mode;
-	if (file_name != nullptr)
-		strcpy(file_name, tmp_name);
 	return 0;
 }
 
@@ -1484,6 +1478,9 @@ int uuencode(int mode, const char *file_name, const char *in,
 		memcpy(out + offset, "end\r\n", 5);
 		offset += 5;
 	}
+	if (offset >= outmax)
+		return -1;
+	out[offset] = '\0';
 	*outlen = offset;
 	return 0;
 }

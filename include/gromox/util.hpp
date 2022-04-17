@@ -69,8 +69,7 @@ void encode_hex_int(int id, char *out);
 int decode_hex_int(const char *in);
 extern BOOL encode_hex_binary(const void *src, int srclen, char *dst, int dstlen);
 extern BOOL decode_hex_binary(const char *src, void *dst, int dstlen);
-int uudecode(const char *in, size_t inlen, int *pmode,
-	char *file_name, char *out, size_t *outlen);
+extern int uudecode(const char *in, size_t inlen, int *pmode, char *file_name, size_t fnmax, char *out, size_t maxlen, size_t *outlen);
 int uuencode(int mode, const char *file_name, const char *in,
 	size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern void debug_info(const char *format, ...);
