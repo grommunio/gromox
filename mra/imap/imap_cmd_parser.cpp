@@ -2520,10 +2520,18 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return DISPATCH_CONTINUE;
 }
 
+static inline bool is_flag_name(const char *flag)
+{
+	static constexpr const char *names[] = {"\\Answered", "\\Flagged", "\\Seen", "\\Draft"};
+	for (auto s : names)
+		if (strcasecmp(flag, s) == 0)
+			return true;
+	return false;
+}
+
 static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int temp_argc;
-	int i, len;
+	int temp_argc, len;
 	char buff[1024];
 	char *str_received = nullptr, *flags_string = nullptr;
 	char* temp_argv[5];
@@ -2560,16 +2568,9 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 		            temp_argv, sizeof(temp_argv));
 		if (temp_argc == -1)
 			return 1800 | DISPATCH_BREAK;
-		for (i=0; i<temp_argc; i++) {
-			if (0 == strcasecmp(temp_argv[i], "\\Answered") ||
-				0 == strcasecmp(temp_argv[i], "\\Flagged") ||
-				0 == strcasecmp(temp_argv[i], "\\Seen") ||
-				0 == strcasecmp(temp_argv[i], "\\Draft")) {
-				/* do nothing */
-			} else {
+		for (int i = 0; i < temp_argc; ++i)
+			if (!is_flag_name(temp_argv[i]))
 				return 1800 | DISPATCH_BREAK;
-			}
-		}
 	}
 	try {
 		pcontext->mid = std::to_string(time(nullptr)) + "." +
