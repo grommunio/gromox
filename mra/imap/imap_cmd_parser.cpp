@@ -2702,6 +2702,11 @@ int imap_cmd_parser_close(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1717;
 }
 
+static bool zero_uid_bit(const MITEM &i)
+{
+	return i.uid == 0 || !(i.flag_bits & FLAG_DELETED);
+}
+
 int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
@@ -2734,9 +2739,8 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	single_list_init(&temp_list);
 	for (size_t i = 0; i < num; ++i) {
 		auto pitem = static_cast<MITEM *>(xarray.get_item(i));
-		if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED)) {
+		if (zero_uid_bit(*pitem))
 			continue;
-		}
 		pitem->node.pdata = pitem;
 		single_list_append_as_tail(&temp_list, &pitem->node);
 	}
@@ -2748,9 +2752,8 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		del_num = 0;
 		for (size_t i = 0; i < xarray.get_capacity(); ++i) try {
 			auto pitem = static_cast<MITEM *>(xarray.get_item(i));
-			if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED)) {
+			if (zero_uid_bit(*pitem))
 				continue;
-			}
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			remove(eml_path.c_str());
 			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
@@ -3453,7 +3456,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	single_list_init(&temp_list);
 	for (size_t i = 0; i < num; ++i) {
 		pitem = static_cast<MITEM *>(xarray.get_item(i));
-		if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED) ||
+		if (zero_uid_bit(*pitem) ||
 		    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
 		    max_uid))
 			continue;
@@ -3468,7 +3471,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		del_num = 0;
 		for (size_t i = 0; i < xarray.get_capacity(); ++i) try {
 			pitem = static_cast<MITEM *>(xarray.get_item(i));
-			if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED) ||
+			if (zero_uid_bit(*pitem) ||
 			    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
 			    max_uid))
 				continue;
@@ -3561,9 +3564,8 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	single_list_init(&temp_list);
 	for (i=0; i<num; i++) {
 		auto pitem = static_cast<MITEM *>(xarray.get_item(i));
-		if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED)) {
+		if (zero_uid_bit(*pitem))
 			continue;
-		}
 		pitem->node.pdata = pitem;
 		single_list_append_as_tail(&temp_list, &pitem->node);
 	}
@@ -3573,9 +3575,8 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	case MIDB_RESULT_OK:
 		for (i = 0; i < num; ++i) try {
 			auto pitem = static_cast<MITEM *>(xarray.get_item(i));
-			if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED)) {
+			if (zero_uid_bit(*pitem))
 				continue;
-			}
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			remove(eml_path.c_str());
 			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
