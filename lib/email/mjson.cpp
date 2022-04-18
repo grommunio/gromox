@@ -1090,7 +1090,6 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		
 		if (NULL != storage_path && NULL != msg_filename &&
 			0 == strcasecmp(pmime->ctype, "MESSAGE/RFC822")) {
-			int fd;
 			int envl_len;
 			int body_len;
 			char temp_path[256];
@@ -1104,28 +1103,20 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				snprintf(temp_path, 256, "%s/%s.%s.dgt", storage_path,
 					msg_filename, pmime->id);
 			}
-			if (0 != stat(temp_path, &node_stat) ||
-				0 == S_ISREG(node_stat.st_mode) ||
-				node_stat.st_size > MAX_DIGLEN) {
+			wrapfd fd = open(temp_path, O_RDONLY);
+			if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
+			    !S_ISREG(node_stat.st_mode) ||
+			    node_stat.st_size > MAX_DIGLEN)
 				goto RFC822_FAILURE;
-			}
 			digest_buff = me_alloc<char>(MAX_DIGLEN);
 			if (NULL == digest_buff) {
 				goto RFC822_FAILURE;
 			}
-			fd = open(temp_path, O_RDONLY);
-			if (-1 == fd) {
+			if (::read(fd.get(), digest_buff, node_stat.st_size) != node_stat.st_size) {
 				free(digest_buff);
 				goto RFC822_FAILURE;
 			}
-			
-			if (::read(fd, digest_buff, node_stat.st_size) != node_stat.st_size) {
-				free(digest_buff);
-				close(fd);
-				goto RFC822_FAILURE;
-			}
-			
-			close(fd);
+			fd.close();
 			MJSON temp_mjson(pmime->ppool);
 			if (!temp_mjson.retrieve(digest_buff, node_stat.st_size, storage_path)) {
 				free(digest_buff);
