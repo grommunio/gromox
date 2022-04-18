@@ -1718,10 +1718,8 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], temp_name))
 		return 1800;
-	if (NULL != strchr(argv[2], '*') || NULL != strchr(argv[2], '%')
-		|| NULL != strchr(argv[2], '?')) {
+	if (strpbrk(argv[2], "%*?") != nullptr)
 		return 1910;
-	}
 	if (special_folder(temp_name))
 		return 1911;
 	mem_file_init(&temp_file, imap_parser_get_allocator());
@@ -1835,10 +1833,8 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], encoded_name) ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[3], encoded_name1))
 		return 1800;
-	if (NULL != strchr(argv[3], '?') || NULL != strchr(argv[3], '*') ||
-		NULL != strchr(argv[3], '%')) {
+	if (strpbrk(argv[3], "%*?") != nullptr)
 		return 1910;
-	}
 	if (special_folder(encoded_name) || special_folder(encoded_name1))
 		return 1914;
 	switch (system_services_rename_folder(pcontext->maildir,
