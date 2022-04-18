@@ -807,19 +807,15 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				} catch (const std::bad_alloc &) {
 					fprintf(stderr, "E-1461: ENOMEM\n");
 				}
-				if (rfc_path.size() > 0 &&
-				    mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str())) {
-					auto len = mjson.rfc822_fetch(rfc_path.c_str(),
-						resource_get_default_charset(pcontext->lang),
-						FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
-					if (-1 == len) {
-						goto FETCH_BODY_SIMPLE;
-					} else {
-						buff_len += len;
-					}
-				} else {
+				if (rfc_path.size() <= 0 ||
+				    !mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str()))
 					goto FETCH_BODY_SIMPLE;
-				}
+				auto len = mjson.rfc822_fetch(rfc_path.c_str(),
+					resource_get_default_charset(pcontext->lang),
+					FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
+				if (len == -1)
+					goto FETCH_BODY_SIMPLE;
+				buff_len += len;
 			} else {
  FETCH_BODY_SIMPLE:
 				auto len = mjson.fetch_structure(resource_get_default_charset(pcontext->lang),
@@ -841,19 +837,15 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				} catch (const std::bad_alloc &) {
 					fprintf(stderr, "E-1462: ENOMEM\n");
 				}
-				if (rfc_path.size() > 0 &&
-				    mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str())) {
-					auto len = mjson.rfc822_fetch(rfc_path.c_str(),
-						resource_get_default_charset(pcontext->lang),
-						TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
-					if (-1 == len) {
-						goto FETCH_BODYSTRUCTURE_SIMPLE;
-					} else {
-						buff_len += len;
-					}
-				} else {
+				if (rfc_path.size() <= 0 ||
+				    !mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str()))
 					goto FETCH_BODYSTRUCTURE_SIMPLE;
-				}
+				auto len = mjson.rfc822_fetch(rfc_path.c_str(),
+					resource_get_default_charset(pcontext->lang),
+					TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
+				if (len == -1)
+					goto FETCH_BODYSTRUCTURE_SIMPLE;
+				buff_len += len;
 			} else {
  FETCH_BODYSTRUCTURE_SIMPLE:
 				auto len = mjson.fetch_structure(resource_get_default_charset(pcontext->lang),
@@ -971,15 +963,12 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				*ptr = '\0';
 				break;
 			}
-			if (NULL != ptr) {
-				if (ptr < temp_buff) {
-					temp_id = "";
-				} else {
-					temp_id = temp_buff;
-				}
-			} else {
+			if (ptr == nullptr)
 				temp_id = temp_buff;
-			}
+			else if (ptr < temp_buff)
+				temp_id = "";
+			else
+				temp_id = temp_buff;
 			if (0 != strcmp(temp_id, "") &&
 			    mjson.rfc822_check()) {
 				std::string rfc_path;
