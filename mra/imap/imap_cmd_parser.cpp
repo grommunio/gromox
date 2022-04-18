@@ -536,16 +536,15 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 		b_hit = FALSE;
 		for (i=0; i<tmp_argc; i++) {
 			auto tag_len = strlen(tmp_argv[i]);
-			if (tag_len == mime_field.field_name_len
-				&& 0 == strncasecmp(tmp_argv[i],
-				mime_field.field_name, tag_len)) {
-				if (!b_not) {
-					memcpy(buff1 + len1, buff + buff_len, len);
-					len1 += len;
-					break;
-				}
-				b_hit = TRUE;
+			if (tag_len != mime_field.field_name_len ||
+			    strncasecmp(tmp_argv[i], mime_field.field_name, tag_len) != 0)
+				continue;
+			if (!b_not) {
+				memcpy(buff1 + len1, buff + buff_len, len);
+				len1 += len;
+				break;
 			}
+			b_hit = TRUE;
 		}
 		if (b_not && !b_hit) {
 			memcpy(buff1 + len1, buff + buff_len, len);
