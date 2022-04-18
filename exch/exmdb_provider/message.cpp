@@ -3414,7 +3414,7 @@ static bool op_delegate(const char *from_address, const char *account,
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 		char essdn_buff[1280];
-		memcpy(essdn_buff, "EX:", 3);
+		strcpy(essdn_buff, "EX:");
 		if (!common_util_username_to_essdn(account,
 		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 			return FALSE;
@@ -3817,7 +3817,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 		char essdn_buff[1280];
-		memcpy(essdn_buff, "EX:", 3);
+		strcpy(essdn_buff, "EX:");
 		if (!common_util_username_to_essdn(account,
 		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 			return FALSE;
@@ -4205,7 +4205,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		if (NULL == pentryid) {
 			return FALSE;	
 		}
-		memcpy(essdn_buff, "EX:", 3);
+		strcpy(essdn_buff, "EX:");
 		if (!common_util_username_to_essdn(account,
 		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 			return FALSE;

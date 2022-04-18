@@ -431,7 +431,8 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 					pcontext->offset, pcontext->until - 1,
 					pcontext->pitem->blob.length);
 	} else {
-		memcpy(response_buff + response_len, "\r\n", 2);
+		gx_strlcpy(&response_buff[response_len], "\r\n",
+			arsizeof(response_buff) - response_len);
 		response_len += 2;
 	}
 	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;

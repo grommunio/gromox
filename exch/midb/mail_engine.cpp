@@ -290,7 +290,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		imail.clear();
 		pbuff.reset();
 		tmp_len = strlen(digest_buff);
-		memcpy(digest_buff + tmp_len, "}", 2);
+		strcpy(&digest_buff[tmp_len], "}");
 		tmp_len ++;
 		snprintf(temp_path, 256, "%s/ext/%s",
 			common_util_get_maildir(), mid_string);
@@ -1777,7 +1777,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		    MAX_DIGLEN - tmp_len - 1) <= 0)
 			return;
 		tmp_len = strlen(temp_buff);
-		memcpy(temp_buff + tmp_len, "}", 2);
+		strcpy(&temp_buff[tmp_len], "}");
 		tmp_len ++;
 		snprintf(mid_string1, arsizeof(mid_string1), "%lld.%u.midb",
 		         static_cast<long long>(time(nullptr)), ++g_sequence_id);
@@ -4726,7 +4726,7 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	}
 	sqlite3_close(psqlite);
 	tmp_len = 4;
-    memcpy(list_buff, "TRUE", 4);
+	strcpy(list_buff, "TRUE");
     while (-1 != (result = mail_engine_ct_fetch_result(presult))) {
 		tmp_len += gx_snprintf(list_buff + tmp_len,
 		           GX_ARRAY_SIZE(list_buff) - tmp_len, " %d", result);
@@ -4804,7 +4804,7 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	}
 	sqlite3_close(psqlite);
 	tmp_len = 4;
-    memcpy(list_buff, "TRUE", 4);
+	strcpy(list_buff, "TRUE");
     while (-1 != (result = mail_engine_ct_fetch_result(presult))) {
 		tmp_len += gx_snprintf(list_buff + tmp_len,
 		           GX_ARRAY_SIZE(list_buff) - tmp_len, " %d", result);
