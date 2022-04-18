@@ -2937,6 +2937,17 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return DISPATCH_BREAK;
 }
 
+static bool store_flagkeyword(const char *str)
+{
+	static constexpr const char *names[] =
+		{"FLAGS", "FLAGS.SILENT", "+FLAGS", "+FLAGS.SILENT",
+		"-FLAGS", "-FLAGS.SILENT"};
+	for (auto elem : names)
+		if (strcasecmp(str, elem) == 0)
+			return true;
+	return false;
+}
+
 int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum, result, i;
@@ -2950,13 +2961,8 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
 	if (argc < 5 || !imap_cmd_parser_parse_sequence(&list_seq,
-	    sequence_nodes, argv[2]) || (0 != strcasecmp(argv[3],
-		"FLAGS") && 0 != strcasecmp(argv[3], "FLAGS.SILENT") &&
-		0 != strcasecmp(argv[3], "+FLAGS") && 0 != strcasecmp(argv[3],
-		"+FLAGS.SILENT") && 0 != strcasecmp(argv[3], "-FLAGS") &&
-		0 != strcasecmp(argv[3], "-FLAGS.SILENT"))) {
+	    sequence_nodes, argv[2]) || !store_flagkeyword(argv[3]))
 		return 1800;
-	}
 	if ('(' == argv[4][0] && ')' == argv[4][strlen(argv[4]) - 1]) {
 		temp_argc = parse_imap_args(argv[4] + 1, strlen(argv[4]) - 2,
 		            temp_argv, arsizeof(temp_argv));
@@ -3270,13 +3276,8 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
 	if (argc < 6 || !imap_cmd_parser_parse_sequence(&list_seq,
-	    sequence_nodes, argv[3]) || (0 != strcasecmp(argv[4],
-		"FLAGS") && 0 != strcasecmp(argv[4], "FLAGS.SILENT") &&
-		0 != strcasecmp(argv[4], "+FLAGS") && 0 != strcasecmp(argv[4],
-		"+FLAGS.SILENT") && 0 != strcasecmp(argv[4], "-FLAGS") &&
-		0 != strcasecmp(argv[4], "-FLAGS.SILENT"))) {
+	    sequence_nodes, argv[3]) || !store_flagkeyword(argv[4]))
 		return 1800;
-	}
 	if ('(' == argv[5][0] && ')' == argv[5][strlen(argv[5]) - 1]) {
 		temp_argc = parse_imap_args(argv[5] + 1, strlen(argv[5]) - 2,
 		            temp_argv, arsizeof(temp_argv));
