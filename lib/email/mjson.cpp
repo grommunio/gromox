@@ -1804,9 +1804,10 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 	snprintf(mjson_id, 64, "%s.", id);
 	while (NULL != (pdot = strrchr(mjson_id, '.'))) {
 		*pdot = '\0';
-		snprintf(temp_path, 256, "%s/%s/%s.dgt", storage_path,
+		char dgt_path[256];
+		snprintf(dgt_path, arsizeof(dgt_path), "%s/%s/%s.dgt", storage_path,
 			pjson_base->filename, mjson_id);
-		fd = open(temp_path, O_RDONLY);
+		fd = open(dgt_path, O_RDONLY);
 		if (-1 == fd) {
 			if (errno == ENOENT || errno == EISDIR)
 				continue;
@@ -1826,8 +1827,6 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 			}
 			close(fd);
 			pjson->clear();
-			snprintf(temp_path, 256, "%s/%s", storage_path,
-				pjson_base->filename);
 			if (!pjson->retrieve(digest_buff, node_stat.st_size, temp_path)) {
 				/* was never implemented */
 			}
