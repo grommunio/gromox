@@ -533,13 +533,10 @@ static void* store_object_get_oof_property(
 		         proptag == PR_EC_OUTOFOFFICE_SUBJECT ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
 		         maildir);
-		if (0 != stat(temp_path, &node_stat)) {
-			return NULL;
-		}
-		buff_len = node_stat.st_size;
 		wrapfd fd = open(temp_path, O_RDONLY);
-		if (fd.get() < 0)
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 			return NULL;
+		buff_len = node_stat.st_size;
 		pbuff = cu_alloc<char>(buff_len);
 		if (pbuff == nullptr || read(fd.get(), pbuff, buff_len) != buff_len)
 			return NULL;
@@ -1173,7 +1170,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			return false;
 		}
 		struct stat node_stat;
-		if (stat(autoreply_path.c_str(), &node_stat) != 0) {
+		wrapfd fd = open(autoreply_path.c_str(), O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
 			pbuff = cu_alloc<char>(buff_len + 256);
 			if (NULL == pbuff) {
@@ -1192,9 +1190,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			if (NULL == ptoken) {
 				return FALSE;
 			}
-			wrapfd fd2 = open(autoreply_path.c_str(), O_RDONLY);
-			if (fd2.get() < 0 ||
-			    read(fd2.get(), ptoken, buff_len) != buff_len)
+			if (read(fd.get(), ptoken, buff_len) != buff_len)
 				return FALSE;
 			ptoken[buff_len] = '\0';
 			ptoken = strstr(ptoken, "\r\n\r\n");
@@ -1208,7 +1204,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				           static_cast<const char *>(pvalue), ptoken);
 			}
 		}
-		wrapfd fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+		fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
 		if (fd.get() < 0 || write(fd.get(), pbuff, buff_len) != buff_len)
 			return FALSE;
 		return TRUE;
