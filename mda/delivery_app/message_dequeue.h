@@ -21,7 +21,7 @@ struct MESSAGE {
 	BOOL				is_spam;			/* is this a spam mail */
 	int					message_option;		/* tape message or mess message */
 	int					message_data;		/* tape position or mess ID*/
-	void				*begin_address;		/* message buffer address */
+	char *begin_address; /* message buffer address */
 	size_t				size;				/* size of allocated buffer */
 	void				*mail_begin;		/* mail begin address */
 	size_t				mail_length;		/* mail length */

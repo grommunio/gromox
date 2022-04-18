@@ -232,7 +232,7 @@ MESSAGE* message_dequeue_get()
  */
 void message_dequeue_put(MESSAGE *pmessage) try
 {
-	free(pmessage->begin_address);
+	delete[] pmessage->begin_address;
 	pmessage->begin_address = NULL;
 	auto name = g_path_mess + "/" + std::to_string(pmessage->message_data);
 	if (remove(name.c_str()) < 0 && errno != ENOENT)
@@ -384,7 +384,7 @@ static void message_dequeue_load_from_mess(int mess) try
 	pmessage->message_data = mess;
 	std::unique_ptr<char[]> ptr;
 	try {
-		ptr = std::make_unique<char[]>(size);
+		ptr = std::make_unique<char[]>(size + 1);
 	} catch (const std::bad_alloc &) {
 		message_dequeue_put_to_free(pmessage);
 	        return;
@@ -394,6 +394,7 @@ static void message_dequeue_load_from_mess(int mess) try
 		message_dequeue_put_to_free(pmessage);
         return;
 	}
+	ptr[rdret] = '\0';
 	/* check if it is an incomplete message */
 	if (le64p_to_cpu(ptr.get()) == 0) {
 		message_dequeue_put_to_free(pmessage);
