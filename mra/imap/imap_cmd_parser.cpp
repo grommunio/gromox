@@ -53,6 +53,16 @@ enum {
 static constexpr const char *g_folder_list[] = {"draft", "sent", "trash", "junk"};
 static constexpr const char *g_xproperty_list[] = {"Drafts", "Sent", "Trash", "Spam"};
 
+static inline bool special_folder(const char *name)
+{
+	if (strcasecmp(name, "inbox") == 0)
+		return true;
+	for (auto s : g_folder_list)
+		if (strcmp(name, s) == 0)
+			return true;
+	return false;
+}
+
 static BOOL imap_cmd_parser_hint_sequence(DOUBLE_LIST *plist,
 	unsigned int num, unsigned int max_uid)
 {
@@ -1274,17 +1284,11 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 		len = gx_snprintf(converted_name, arsizeof(converted_name), "%s%s", temp_folder, ptoken);
 		encode_hex_binary(converted_name,
 			strlen(converted_name), sys_folder, 1024);
+	} else if (special_folder(temp_folder)) {
+		strcpy(sys_folder, temp_folder);
 	} else {
-		if (0 == strcmp("inbox", temp_folder) ||
-			0 == strcmp("sent", temp_folder) ||
-			0 == strcmp("draft", temp_folder) ||
-			0 == strcmp("junk", temp_folder) ||
-			0 == strcmp("trash", temp_folder)) {
-			strcpy(sys_folder, temp_folder);	
-		} else {
-			encode_hex_binary(temp_folder,
-				strlen(temp_folder), sys_folder, 1024);
-		}
+		encode_hex_binary(temp_folder,
+			strlen(temp_folder), sys_folder, 1024);
 	}
 	return TRUE;
 }
@@ -1767,13 +1771,8 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		|| NULL != strchr(argv[2], '?')) {
 		return 1910;
 	}
-	if (0 == strcasecmp(temp_name, "inbox") ||
-		0 == strcmp(temp_name, "draft") ||
-		0 == strcmp(temp_name, "sent") ||
-		0 == strcmp(temp_name, "trash") ||
-		0 == strcmp(temp_name, "junk")) {
+	if (special_folder(temp_name))
 		return 1911;
-	}
 	mem_file_init(&temp_file, imap_parser_get_allocator());
 	switch (system_services_enum_folders(
 	        pcontext->maildir, &temp_file, &errnum)) {
@@ -1862,13 +1861,8 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], encoded_name))
 		return 1800;
-	if (0 == strcmp(encoded_name, "inbox") ||
-		0 == strcmp(encoded_name, "draft") ||
-		0 == strcmp(encoded_name, "sent") ||
-		0 == strcmp(encoded_name, "trash") ||
-		0 == strcmp(encoded_name, "junk")) {
+	if (special_folder(encoded_name))
 		return 1913;
-	}
 	switch (system_services_remove_folder(
 	        pcontext->maildir, encoded_name, &errnum)) {
 	case MIDB_RESULT_OK:
@@ -1907,19 +1901,8 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		NULL != strchr(argv[3], '%')) {
 		return 1910;
 	}
-	if (0 == strcmp(encoded_name, "inbox") ||
-		0 == strcmp(encoded_name1, "inbox") ||
-		0 == strcmp(encoded_name, "draft") ||
-		0 == strcmp(encoded_name1, "draft") ||
-		0 == strcmp(encoded_name, "sent") ||
-		0 == strcmp(encoded_name1, "sent") ||
-		0 == strcmp(encoded_name, "trash") ||
-		0 == strcmp(encoded_name1, "trash") ||
-		0 == strcmp(encoded_name, "junk") ||
-		0 == strcmp(encoded_name1, "junk")) {
-		
+	if (special_folder(encoded_name) || special_folder(encoded_name1))
 		return 1914;
-	}
 	switch (system_services_rename_folder(pcontext->maildir,
 	        encoded_name, encoded_name1, &errnum)) {
 	case MIDB_RESULT_OK:
