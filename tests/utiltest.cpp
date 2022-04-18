@@ -203,6 +203,15 @@ static int t_base64()
 		return printf("TU-5 failed\n");
 	if (uudecode("!,3(S\n`\n", 8, nullptr, nullptr, 0, out, 2, &outlen) < 0)
 		return printf("TU-6 failed\n");
+
+	if (qp_encode_ex(out, 3, "\x01", 1) >= 0)
+		return printf("TQ-1 failed\n");
+	if (qp_encode_ex(out, 4, "\x01", 1) < 0)
+		return printf("TQ-2 failed\n");
+	if (qp_decode_ex(out, 1, "=3D", 3) >= 0)
+		return printf("TQ-3 failed\n");
+	if (qp_decode_ex(out, 2, "=3D", 3) < 0)
+		return printf("TQ-4 failed\n");
 	return 0;
 }
 

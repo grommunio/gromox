@@ -1036,6 +1036,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 		ch = input[inpos++] & 0xFF;
 		/* '.' at beginning of line (confuses some SMTPs) */
 		if (linelen == 0 && ch == '.') {
+			if (outpos + 3 >= outlen)
+				return -1;
 			output[outpos++] = '=';
 			output[outpos++] = hextab[(ch >> 4) & 0x0F];
 			output[outpos++] = hextab[ch & 0x0F];
@@ -1045,6 +1047,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 		else if (linelen == 0 && inpos+3 < length && ch == 'F'
 				 && input[inpos	 ] == 'r' && input[inpos+1] == 'o'
 				 && input[inpos+2] == 'm' && input[inpos+3] == ' ') {
+			if (outpos + 3 >= outlen)
+				return -1;
 			output[outpos++] = '=';
 			output[outpos++] = hextab[(ch >> 4) & 0x0F];
 			output[outpos++] = hextab[ch & 0x0F];
@@ -1052,6 +1056,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 		}
 		/* Normal printable char */
 		else if ((62 <= ch && ch <= 126) || (33 <= ch && ch <= 60)) {
+			if (outpos + 1 >= outlen)
+				return -1;
 			output[outpos++] = (char) ch;
 			++linelen;
 		}
@@ -1062,13 +1068,16 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 				|| (inpos < length-1	  /* End of line? */
 					&& input[inpos	] == '\r' 
 					&& input[inpos+1] == '\n') ) {
-
+				if (outlen + 3 >= outlen)
+					return -1;
 				output[outpos++] = '=';
 				output[outpos++] = '2';
 				output[outpos++] = '0';
 				linelen += 3;
 			}
 			else {
+				if (outpos + 1 >= outlen)
+					return -1;
 				output[outpos++] = ' ';
 				++linelen;
 			}
@@ -1076,6 +1085,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 		/* Hard line break */
 		else if (inpos < length && ch == '\r' && input[inpos] == '\n') {
 			++inpos;
+			if (outpos + 2 >= outlen)
+				return -1;
 			output[outpos++] = '\r';
 			output[outpos++] = '\n';
 			linelen = 0;
@@ -1085,6 +1096,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 				 || !(ch & 0xE0)  /* control char */
 				 || ch == 0x7F	  /* DEL */
 				 || ch == '=') {  /* special case */
+			if (outpos + 3 >= outlen)
+				return -1;
 			output[outpos++] = '=';
 			output[outpos++] = hextab[(ch >> 4) & 0x0F];
 			output[outpos++] = hextab[ch & 0x0F];
@@ -1093,7 +1106,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 		/* Soft line break */
 		if (linelen >= MAXLINE-3 && !(inpos < length-1 && 
 			input[inpos] == '\r' && input[inpos+1] == '\n')) {
-
+			if (outpos + 3 >= outlen)
+				return -1;
 			output[outpos++] = '=';
 			output[outpos++] = '\r';
 			output[outpos++] = '\n';
@@ -1173,7 +1187,7 @@ static const unsigned char hex_tab[256] =
 	0x10, 0x10, 0x10, 0x10, 0x10, 0x10
 };
 
-size_t qp_decode(void *voutput, const char *input, size_t length,
+static size_t qp_decode(void *voutput, const char *input, size_t length,
     unsigned int qp_flags)
 {
 	auto output = static_cast<uint8_t *>(voutput);
@@ -1220,7 +1234,7 @@ size_t qp_decode(void *voutput, const char *input, size_t length,
 }
 
 ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
-    size_t length)
+    size_t length, unsigned int qp_flags)
 {
 	auto output = static_cast<uint8_t *>(voutput);
 	int c;
@@ -1258,7 +1272,7 @@ ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
 	}
 	if (cnt >= out_len)
 		return -1;
-	return qp_decode(output, input, length);
+	return qp_decode(output, input, length, qp_flags);
 }
 
 void encode_hex_int(int id, char *out)

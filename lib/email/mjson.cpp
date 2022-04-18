@@ -1253,8 +1253,9 @@ static int mjson_convert_address(char *address, const char *charset,
 		} else if (0 == strcasecmp(encode_string.encoding,
 			"quoted-printable") && 0 != strcasecmp(
 			encode_string.charset, "default")) {
-			qp_decode(temp_address, encode_string.title,
-				strlen(encode_string.title));
+			if (qp_decode_ex(temp_address, arsizeof(temp_address),
+			    encode_string.title, strlen(encode_string.title)) < 0)
+				temp_address[0] = '\0';
 			email_charset = encode_string.charset;
 		} else {
 			gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));

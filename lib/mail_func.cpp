@@ -1461,8 +1461,11 @@ static BOOL encode_strings_to_utf8(
 				buff_offset += decode_len;
 			} else if (0 == strcmp(encode_string.encoding,
 				"quoted-printable")){
-				buff_offset += qp_decode(temp_buff,
-					encode_string.title, tmp_len);
+				auto xl = qp_decode_ex(temp_buff, arsizeof(temp_buff),
+				          encode_string.title, tmp_len);
+				if (xl < 0)
+					return false;
+				buff_offset += xl;
 			} else {
 				return FALSE;
 			}
@@ -1527,8 +1530,11 @@ BOOL mime_string_to_utf8(const char *charset,
 					return encode_strings_to_utf8(mime_string, out_string);
 			} else if (0 == strcmp(encode_string.encoding,
 				"quoted-printable")){
-				decode_len = qp_decode(temp_buff, encode_string.title,
-				             tmp_len, QP_MIME_HEADER);
+				auto xl = qp_decode_ex(temp_buff, arsizeof(temp_buff),
+				          encode_string.title, tmp_len, QP_MIME_HEADER);
+				if (xl < 0)
+					return false;
+				decode_len = xl;
 				temp_buff[decode_len] = '\0';
 				if (!string_to_utf8(encode_string.charset, temp_buff,
 				    out_buff + offset))

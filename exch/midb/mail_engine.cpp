@@ -399,7 +399,10 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 				temp_buff[decode_len] = '\0';
 				tmp_string = mail_engine_ct_to_utf8(encode_string.charset, temp_buff);
 			} else if (0 == strcmp(encode_string.encoding, "quoted-printable")){
-				auto decode_len = qp_decode(temp_buff, encode_string.title, tmp_len);
+				auto decode_len = qp_decode_ex(temp_buff, arsizeof(temp_buff),
+				                  encode_string.title, tmp_len);
+				if (decode_len < 0)
+					return NULL;
 				temp_buff[decode_len] = '\0';
 				tmp_string = mail_engine_ct_to_utf8(encode_string.charset, temp_buff);
 			} else {
@@ -472,7 +475,10 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 			return;
 		pbuff[length + temp_len] = '\0';
 	} else if (strcasecmp(pmime->get_encoding(), "quoted-printable") == 0) {
-		temp_len = qp_decode(&pbuff[length], pbuff.get(), length);
+		auto xl = qp_decode_ex(&pbuff[length], length, pbuff.get(), length);
+		if (xl < 0)
+			return;
+		temp_len = xl;
 		pbuff[length + temp_len] = '\0';
 	} else {
 		memcpy(&pbuff[length], pbuff.get(), length);
