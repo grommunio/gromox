@@ -488,17 +488,14 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 			&pcontext->list)) {
 		case MIDB_RESULT_OK:
 			break;
-		case MIDB_NO_SERVER: {
+		case MIDB_NO_SERVER:
 			return 1716 | DISPATCH_SHOULD_CLOSE;
-		}
-		case MIDB_RDWR_ERROR: {
+		case MIDB_RDWR_ERROR:
 			pop3_parser_log_info(pcontext, LV_WARN, "failed RW I/O with midb server");
 			return 1721 | DISPATCH_SHOULD_CLOSE;
-		}
-		case MIDB_RESULT_ERROR: {
+		case MIDB_RESULT_ERROR:
 			pop3_parser_log_info(pcontext, LV_WARN, "failed to execute delete command on midb server!");
 			return 1722 | DISPATCH_SHOULD_CLOSE;
-		}
 		}
 		string_length = gx_snprintf(temp_buff, arsizeof(temp_buff),
 			"FOLDER-TOUCH %s inbox", pcontext->username);
