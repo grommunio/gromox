@@ -195,10 +195,6 @@ int main(int argc, const char **argv) try
 	mysql_close(pmysql);
 	
 	make_mailbox_hierarchy(dir);
-	/*
-	 * sqlite3_open does not expose O_EXCL, so let's create the file under
-	 * EXCL semantics ahead of time.
-	 */
 	auto temp_path = dir + "/exmdb/exchange.sqlite3";
 	if (!opt_upgrade) {
 		auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);

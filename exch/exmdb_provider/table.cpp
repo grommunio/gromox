@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <iconv.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -3581,7 +3582,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	char tmp_buff[1024];
 	uint32_t tmp_proptag;
 	char sql_string[1024];
-	struct stat node_stat;
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
@@ -3602,8 +3602,14 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		return TRUE;
 	}
 	snprintf(tmp_path, arsizeof(tmp_path), "%s/tmp/state.sqlite3", exmdb_server_get_dir());
-	if (0 != stat(tmp_path, &node_stat)) {
-		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
+	/*
+	 * sqlite3_open does not expose O_EXCL, so let's create the file under
+	 * EXCL semantics ahead of time.
+	 */
+	int tfd = open(tmp_path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IWGRP | S_IRGRP);
+	if (tfd >= 0) {
+		close(tfd);
+		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
 			fprintf(stderr, "E-1435: sqlite3_open %s: %s\n", tmp_path, sqlite3_errstr(ret));
 			return FALSE;
@@ -3633,7 +3639,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			remove(tmp_path);
 			return FALSE;
 		}
-	} else {
+	} else if (errno == EEXIST) {
 		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
 			fprintf(stderr, "E-1436: sqlite3_open %s: %s\n", tmp_path, sqlite3_errstr(ret));
@@ -3641,6 +3647,9 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		}
 		gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
 		gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
+	} else {
+		fprintf(stderr, "E-1943: open %s: %s\n", tmp_path, strerror(errno));
+		return false;
 	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (NULL != ptnode->psorts && 0 != ptnode->psorts->ccategories) {
