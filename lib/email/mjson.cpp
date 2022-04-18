@@ -1106,16 +1106,18 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			wrapfd fd = open(temp_path, O_RDONLY);
 			if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 			    !S_ISREG(node_stat.st_mode) ||
-			    node_stat.st_size > MAX_DIGLEN)
+			    node_stat.st_size >= MAX_DIGLEN)
 				goto RFC822_FAILURE;
 			digest_buff = me_alloc<char>(MAX_DIGLEN);
 			if (NULL == digest_buff) {
 				goto RFC822_FAILURE;
 			}
-			if (::read(fd.get(), digest_buff, node_stat.st_size) != node_stat.st_size) {
+			auto rdret = ::read(fd.get(), digest_buff, node_stat.st_size);
+			if (rdret < 0 || rdret != node_stat.st_size) {
 				free(digest_buff);
 				goto RFC822_FAILURE;
 			}
+			digest_buff[rdret] = '\0';
 			fd.close();
 			MJSON temp_mjson(pmime->ppool);
 			if (!temp_mjson.retrieve(digest_buff, node_stat.st_size, storage_path)) {
