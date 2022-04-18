@@ -1629,15 +1629,12 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        &exists, &recent, nullptr, &uidvalid, &uidnext, &firstunseen, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	strcpy(pcontext->selected_folder, temp_name);
 	pcontext->proto_stat = PROTO_STAT_SELECT;
@@ -1697,15 +1694,12 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        &exists, &recent, nullptr, &uidvalid, &uidnext, &firstunseen, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	strcpy(pcontext->selected_folder, temp_name);
 	pcontext->proto_stat = PROTO_STAT_SELECT;
@@ -1766,18 +1760,15 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, &temp_file, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		mem_file_free(&temp_file);
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		mem_file_free(&temp_file);
 		return 1906;
-	}
-	default: {
+	default:
 		mem_file_free(&temp_file);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	temp_file.writeline("inbox");
 	temp_file.writeline("draft");
@@ -1816,18 +1807,15 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			pcontext->maildir, converted_name, &errnum)) {
 		case MIDB_RESULT_OK:
 			break;
-		case MIDB_NO_SERVER: {
+		case MIDB_NO_SERVER:
 			mem_file_free(&temp_file);
 			return 1905;
-		}
-		case MIDB_RDWR_ERROR: {
+		case MIDB_RDWR_ERROR:
 			mem_file_free(&temp_file);
 			return 1906;
-		}
-		default: {
+		default:
 			mem_file_free(&temp_file);
 			return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-		}
 		}
 		temp_name1[i] = temp_name[i];
 	}
@@ -1855,15 +1843,12 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, encoded_name, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
@@ -1895,15 +1880,12 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        encoded_name, encoded_name1, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
@@ -1927,15 +1909,12 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, temp_name, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
@@ -1958,15 +1937,12 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, temp_name, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
@@ -2012,18 +1988,15 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		        pcontext->maildir, &temp_file, &errnum)) {
 		case MIDB_RESULT_OK:
 			break;
-		case MIDB_NO_SERVER: {
+		case MIDB_NO_SERVER:
 			mem_file_free(&temp_file);
 			return 1905;
-		}
-		case MIDB_RDWR_ERROR: {
+		case MIDB_RDWR_ERROR:
 			mem_file_free(&temp_file);
 			return 1906;
-		}
-		default: {
+		default:
 			mem_file_free(&temp_file);
 			return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-		}
 		}
 		temp_file.writeline("inbox");
 		temp_file.writeline("draft");
@@ -2129,18 +2102,15 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, &temp_file, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		mem_file_free(&temp_file);
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		mem_file_free(&temp_file);
 		return 1906;
-	}
-	default: {
+	default:
 		mem_file_free(&temp_file);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	dir_tree temp_tree(imap_parser_get_dpool());
@@ -2236,18 +2206,15 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        pcontext->maildir, &temp_file, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		mem_file_free(&temp_file);
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		mem_file_free(&temp_file);
 		return 1906;
-	}
-	default: {
+	default:
 		mem_file_free(&temp_file);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	mem_file_init(&temp_file1, imap_parser_get_allocator());
@@ -2321,15 +2288,12 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	        &unseen, &uidvalid, &uidnext, nullptr, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	/* IMAP_CODE_2170014: OK STATUS completed */
 	auto imap_reply_str = resource_get_imap_code(1714, 1, &string_length);
@@ -2480,15 +2444,12 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	case MIDB_RESULT_OK:
 		imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", eml_path.c_str());
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	imap_parser_touch_modify(NULL, pcontext->username,
 							pcontext->selected_folder);
@@ -2744,18 +2705,15 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		pcontext->mid.clear();
 		imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", eml_path.c_str());
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		pcontext->mid.clear();
 		return 1905 | DISPATCH_TAG;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		pcontext->mid.clear();
 		return 1906 | DISPATCH_TAG;
-	}
-	default: {
+	default:
 		pcontext->mid.clear();
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB | DISPATCH_TAG;
-	}
 	}
 	imap_parser_touch_modify(NULL, pcontext->username,
 							pcontext->selected_folder);
@@ -2832,15 +2790,12 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	auto num = xarray.get_capacity();
 	single_list_init(&temp_list);
@@ -2887,15 +2842,12 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->sched_stat = SCHED_STAT_WRLST;
 		return DISPATCH_BREAK;
 	}
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 }
 
@@ -2933,15 +2885,12 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	buff_len += 9;
 	buff[buff_len] = '\r';
@@ -2995,15 +2944,12 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	pcontext->stream.clear();
 	num = xarray.get_capacity();
@@ -3087,15 +3033,12 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	int num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
@@ -3140,15 +3083,12 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	if (system_services_summary_folder(pcontext->maildir,
 	    temp_name, nullptr, nullptr, nullptr, &uidvalidity, nullptr,
@@ -3258,15 +3198,12 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	buff_len += 9;
 	buff[buff_len] = '\r';
@@ -3332,15 +3269,12 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	pcontext->stream.clear();
 	num = xarray.get_capacity();
@@ -3424,15 +3358,12 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	int num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
@@ -3476,15 +3407,12 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	if (system_services_summary_folder(pcontext->maildir,
 	    temp_name, nullptr, nullptr, nullptr, &uidvalidity,
@@ -3592,15 +3520,12 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 	auto num = xarray.get_capacity();
 	if (0 == num) {
@@ -3657,15 +3582,12 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->sched_stat = SCHED_STAT_WRLST;
 		return DISPATCH_BREAK;
 	}
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		return 1905;
-	}
-	case MIDB_RDWR_ERROR: {
+	case MIDB_RDWR_ERROR:
 		return 1906;
-	}
-	default: {
+	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-	}
 	}
 }
 
