@@ -485,10 +485,10 @@ BOOL bounce_producer_make(const char *username,
 	
 	if (system_services_get_user_displayname(username, tmp_buff,
 	    arsizeof(tmp_buff)) && '\0' != tmp_buff[0]) {
-		memcpy(mime_from, "=?utf-8?b?", 10);
+		strcpy(mime_from, "=?utf-8?b?");
 		encode64(tmp_buff, strlen(tmp_buff), mime_from + 10,
 			sizeof(mime_from) - 13, &out_len);
-		memcpy(mime_from + 10 + out_len, "?=", 3);
+		strcpy(mime_from + 10 + out_len, "?=");
 	} else {
 		mime_from[0] = '\0';
 	}
@@ -519,10 +519,10 @@ BOOL bounce_producer_make(const char *username,
 	}
 	pvalue = pbrief->proplist.getval(PR_SENT_REPRESENTING_NAME);
 	if (NULL != pvalue && '\0' != ((char*)pvalue)[0]) {
-		memcpy(mime_to, "\"=?utf-8?b?", 11);
+		strcpy(mime_to, "\"=?utf-8?b?");
 		encode64(pvalue, strlen(static_cast<char *>(pvalue)), mime_to + 11,
 			sizeof(mime_to) - 15, &out_len);
-		memcpy(mime_to + 11 + out_len, "?=\"", 4);
+		strcpy(mime_to + 11 + out_len, "?=\"");
 	} else {
 		mime_to[0] = '\0';
 	}
