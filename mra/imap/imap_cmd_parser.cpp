@@ -2415,12 +2415,13 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		str_received = NULL;
 	} 
 	if (NULL != flags_string) {
-		if ('(' != flags_string[0] || ')' != flags_string[
-			strlen(flags_string) - 1] || -1 == (temp_argc =
-			parse_imap_args(flags_string + 1, strlen(flags_string)
-			- 2, temp_argv, sizeof(temp_argv)))) {
+		if (flags_string[0] != '(' ||
+		    flags_string[strlen(flags_string)-1] != ')')
 			return 1800;
-		}
+		temp_argc = parse_imap_args(flags_string + 1, strlen(flags_string) - 2,
+		            temp_argv, sizeof(temp_argv));
+		if (temp_argc == -1)
+			return 1800;
 		for (i=0; i<temp_argc; i++) {
 			if (0 == strcasecmp(temp_argv[i], "\\Answered")) {
 				b_answered = TRUE;
@@ -2552,12 +2553,13 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 	}
 	if (NULL != flags_string) {
 		gx_strlcpy(str_flags, flags_string, arsizeof(str_flags));
-		if ('(' != flags_string[0] || ')' != flags_string[
-			strlen(flags_string) - 1] || -1 == (temp_argc =
-			parse_imap_args(flags_string + 1, strlen(flags_string)
-			- 2, temp_argv, sizeof(temp_argv)))) {
+		if (flags_string[0] != '(' ||
+		    flags_string[strlen(flags_string)-1] != ')')
 			return 1800 | DISPATCH_BREAK;
-		}
+		temp_argc = parse_imap_args(flags_string + 1, strlen(flags_string) - 2,
+		            temp_argv, sizeof(temp_argv));
+		if (temp_argc == -1)
+			return 1800 | DISPATCH_BREAK;
 		for (i=0; i<temp_argc; i++) {
 			if (0 == strcasecmp(temp_argv[i], "\\Answered") ||
 				0 == strcasecmp(temp_argv[i], "\\Flagged") ||
