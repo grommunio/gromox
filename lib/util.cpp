@@ -1355,7 +1355,7 @@ int uudecode(const char *in, size_t inlen, int *pmode, char *file_name,
 {
 	char *ptr;
 	char *pline;
-	char buff[80]{};
+	char buff[132]{};
 	int c1, c2, c3, mode, line_len;
 	const char *pend;
 	
@@ -1385,8 +1385,14 @@ int uudecode(const char *in, size_t inlen, int *pmode, char *file_name,
 	pline = ptr;
 	pend = in + inlen;
 	while (pline < pend) {
+		/*
+		 * U+0060 is the end marker, so the largest (non-standard)
+		 * length marker is U+0059 (95+32), i.e. 128 enc chars.
+		 * (1 length marker + 128 enc chars + 2 newline + 1 NUL => 132
+		 * bytes for buff)
+		 */
 		unsigned int j;
-		for (j=0; j<80; j++) {
+		for (j = 0; j < 96; ++j) {
 			if ('\r' == pline[j] || '\n' == pline[j]) {
 				line_len = j;
 				break;
@@ -1395,7 +1401,7 @@ int uudecode(const char *in, size_t inlen, int *pmode, char *file_name,
 				return -1;
 			buff[j] = pline[j];
 		}
-		if (j >= 80)
+		if (j >= 96)
 			return -1;
 		if (pline[j] == '\r' && pline[j+1] == '\n')
 			pline += j + 2;
