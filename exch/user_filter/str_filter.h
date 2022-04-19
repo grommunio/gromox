@@ -1,4 +1,5 @@
 #pragma once
+#include <sys/stat.h>
 #include <gromox/common_types.hpp>
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH

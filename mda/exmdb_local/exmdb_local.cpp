@@ -12,6 +12,7 @@
 #include <string>
 #include <unistd.h>
 #include <libHX/string.h>
+#include <sys/stat.h>
 #include <gromox/alloc_context.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/list_file.hpp>
