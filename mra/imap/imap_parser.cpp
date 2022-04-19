@@ -1108,7 +1108,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 				last_line[line_length] = '\0';
 				if (NULL == (ptr = strchr(last_line + 8, '|')) ||
 					NULL == (ptr1 = strchr(ptr + 1, '|'))) {
-					memcpy(pcontext->write_buff + pcontext->write_length , "NIL", 3);
+					strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
 					pcontext->write_length += 3;
 				} else {
 					*ptr = '\0';
@@ -1121,7 +1121,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 						fprintf(stderr, "E-1466: ENOMEM\n");
 					}
 					if (-1 == pcontext->message_fd) {
-						memcpy(pcontext->write_buff + pcontext->write_length, "NIL", 3);
+						strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
 						pcontext->write_length += 3;
 					} else {
 						if (lseek(pcontext->message_fd, strtol(ptr + 1, nullptr, 0), SEEK_SET) < 0)
@@ -1154,7 +1154,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 				last_line[line_length] = '\0';
 				if (NULL == (ptr = strchr(last_line + 10, '|')) ||
 					NULL == (ptr1 = strchr(ptr + 1, '|'))) {
-					memcpy(pcontext->write_buff + pcontext->write_length , "NIL", 3);
+					strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
 					pcontext->write_length += 3;
 				} else {
 					*ptr = '\0';
@@ -1167,7 +1167,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 						fprintf(stderr, "E-1467: ENOMEM\n");
 					}
 					if (-1 == pcontext->message_fd) {
-						memcpy(pcontext->write_buff + pcontext->write_length, "NIL", 3);
+						strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
 						pcontext->write_length += 3;
 					} else {
 						if (lseek(pcontext->message_fd, strtol(ptr + 1, nullptr, 0), SEEK_SET) < 0)
@@ -1198,7 +1198,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 				}
 			} else {
 				pcontext->write_length += line_length;
-				memcpy(pcontext->write_buff + pcontext->write_length, "\r\n", 2);
+				strcpy(&pcontext->write_buff[pcontext->write_length], "\r\n");
 				pcontext->write_length += 2;
 			}
 			break;

@@ -2741,7 +2741,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1805;
 	if (argc < 3 || argc > 1024)
 		return 1800;
-	memcpy(buff, "* SEARCH ", 9);
+	strcpy(buff, "* SEARCH ");
 	buff_len = sizeof(buff) - 11;
 	result = system_services_search(pcontext->maildir,
 		pcontext->selected_folder, resource_get_default_charset(
@@ -3049,7 +3049,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1805;
 	if (argc < 3 || argc > 1024)
 		return 1800;
-	memcpy(buff, "* SEARCH ", 9);
+	strcpy(buff, "* SEARCH ");
 	buff_len = sizeof(buff) - 11;
 	result = system_services_search_uid(pcontext->maildir,
 	         pcontext->selected_folder, resource_get_default_charset(pcontext->lang),
