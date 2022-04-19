@@ -109,7 +109,11 @@ static std::unique_ptr<addrinfo, sock_del>
 gx_inet_lookup(const char *host, uint16_t port, unsigned int xflags)
 {
 	struct addrinfo hints{};
+#if defined(AI_V4MAPPED)
 	hints.ai_flags    = AI_V4MAPPED | xflags;
+#else
+	hints.ai_flags    = xflags;
+#endif
 	hints.ai_family   = AF_INET6;
 	hints.ai_socktype = SOCK_STREAM;
 	std::unique_ptr<addrinfo, sock_del> aires;
@@ -336,7 +340,11 @@ int gx_peer_is_local2(const sockaddr *peer_sockaddr, socklen_t peer_socklen)
 
 bool gx_peer_is_local(const char *addr)
 {
+#if defined(AI_V4MAPPED)
 	static constexpr struct addrinfo hints = {AI_V4MAPPED};
+#else
+	static constexpr struct addrinfo hints = {};
+#endif
 	std::unique_ptr<addrinfo, sock_del> aires;
 	if (getaddrinfo(addr, nullptr, &hints, &unique_tie(aires)) < 0)
 		return false;
