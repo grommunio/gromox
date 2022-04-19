@@ -21,6 +21,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/socket.h>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_listener.h"
 #include "exmdb_parser.h"

@@ -24,6 +24,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/socket.h>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_ext.h"
 #include "exmdb_parser.h"

@@ -9,6 +9,17 @@
 #define FILE_BLOCK_SIZE 0x100
 #define FILE_ALLOC_SIZE (FILE_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
 
+#if defined(__OpenBSD__)
+#include <pthread.h>
+#include <pthread_np.h>
+static inline int _pthread_setname_np(pthread_t thread, const char *name)
+{
+	pthread_set_name_np(thread, name);
+	return 0;
+}
+#define pthread_setname_np _pthread_setname_np
+#endif
+
 enum {
 	QP_MIME_HEADER = 1U << 0,
 };

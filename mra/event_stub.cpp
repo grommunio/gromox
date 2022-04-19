@@ -21,6 +21,7 @@
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
+#include <gromox/util.hpp>
 #define MAX_CMD_LENGTH			64*1024
 
 using namespace gromox;

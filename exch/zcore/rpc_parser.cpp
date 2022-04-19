@@ -14,6 +14,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/util.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include "common_util.h"
 #include "rpc_ext.h"

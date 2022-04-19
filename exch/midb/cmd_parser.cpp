@@ -21,6 +21,7 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/util.hpp>
 #include "cmd_parser.h"
 #include "common_util.h"
 #define MAX_ARGS			(32*1024)
