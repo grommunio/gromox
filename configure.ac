@@ -80,6 +80,7 @@ PKG_CHECK_MODULES([ssl], [libssl])
 PKG_CHECK_MODULES([tinyxml], [tinyxml2])
 PKG_CHECK_MODULES([zlib], [zlib])
 have_pamheader=""
+AC_CHECK_HEADERS([crypt.h])
 AC_CHECK_HEADERS([sys/random.h])
 AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
 AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])

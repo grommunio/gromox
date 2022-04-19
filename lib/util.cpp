@@ -3,7 +3,9 @@
  *	this file includes some utility functions that will be used by many 
  *	programs
  */
+#if defined(HAVE_CRYPT_H)
 #include <crypt.h>
+#endif
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
