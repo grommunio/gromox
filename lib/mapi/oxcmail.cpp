@@ -3829,7 +3829,7 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 	if (offset + 3 >= max_length) {
 		return 0;
 	}
-	memcpy(pout_string + offset, "?=", 3);
+	strcpy(&pout_string[offset], "?=");
 	return offset + 2;
 }
 
@@ -3878,10 +3878,10 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 		if (pvalue == nullptr || *pvalue != rcpt_type)
 			continue;
 		if (0 != offset) {
-			memcpy(field + offset, ",\r\n\t", 4);
+			if (offset + 5 >= fdsize)
+				return false;
+			strcpy(&field[offset], ",\r\n\t");
 			offset += 4;
-			if (offset >= fdsize)
-				return FALSE;
 		}
 		auto pdisplay_name = prcpt->get<char>(PR_DISPLAY_NAME);
 		if (NULL != pdisplay_name) {
@@ -3913,8 +3913,9 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 }
 
 static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
-	const char *charset, EXT_BUFFER_ALLOC alloc, char *field)
+    const char *charset, EXT_BUFFER_ALLOC alloc, char *field)
 {
+	size_t fieldmax = MIME_FIELD_LEN;
 	EXT_PULL ext_pull;
 	ONEOFF_ARRAY address_array;
 	
@@ -3933,18 +3934,16 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 	size_t offset = 0;
 	for (size_t i = 0; i < address_array.count; ++i) {
 		if (0 != offset) {
-			memcpy(field + offset, ", ", 2);
+			if (offset + 3 >= fieldmax)
+				return false;
+			strcpy(&field[offset], ", ");
 			offset += 2;
-			if (offset >= MIME_FIELD_LEN) {
-				return FALSE;
-			}
 		}
 		if (NULL != pstrings) {
-			field[offset] = '"';
+			if (offset + 2 >= fieldmax)
+				return false;
+			strcpy(&field[offset], "\"");
 			offset ++;
-			if (offset >= MIME_FIELD_LEN) {
-				return FALSE;
-			}
 			auto tmp_len = oxcmail_encode_mime_string(charset,
 					pstrings->ppstr[i], field + offset,
 					MIME_FIELD_LEN - offset);
@@ -3952,11 +3951,10 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 				return FALSE;
 			}
 			offset += tmp_len;
-			field[offset] = '"';
+			if (offset + 2 >= fieldmax)
+				return false;
+			strcpy(&field[offset], "\"");
 			offset ++;
-			if (offset >= MIME_FIELD_LEN) {
-				return FALSE;
-			}
 		}
 		if (0 != strcasecmp("SMTP", 
 			address_array.pentry_id[i].paddress_type)) {
@@ -3966,9 +3964,9 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 		          pstrings != nullptr ? " <%s>" : "<%s>",
 		          address_array.pentry_id[i].pmail_address));
 	}
-	if (0 == offset || offset >= MIME_FIELD_LEN) {
+	if (offset == 0 || offset >= fieldmax)
 		return FALSE;
-	}
+	field[offset] = '\0';
 	return TRUE;
 }
 
@@ -4955,7 +4953,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 		tmp_len = oxcmail_encode_mime_string(pskeleton->charset,
 		          str, tmp_field + 1, 512);
 		if (tmp_len > 0) {
-			memcpy(tmp_field + 1 + tmp_len, "\"", 2);
+			strcpy(&tmp_field[tmp_len+1], "\"");
 			if (!pmime2->set_content_param("name", tmp_field))
 				return FALSE;
 		}
@@ -4968,7 +4966,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 		}
 		tmp_len += oxcmail_encode_mime_string(pskeleton->charset,
 		           str, tmp_field + tmp_len, arsizeof(tmp_field) - tmp_len);
-		memcpy(tmp_field + tmp_len, "\"", 2);
+		strcpy(&tmp_field[tmp_len], "\"");
 		if (!pmime2->set_field("Content-Disposition", tmp_field))
 			return FALSE;
 	}
@@ -5039,7 +5037,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 				pskeleton->charset,	pfile_name,
 				tmp_field + 1, 512);
 			if (tmp_len > 0) {
-				memcpy(tmp_field + 1 + tmp_len, "\"", 2);
+				strcpy(&tmp_field[tmp_len+1], "\"");
 				if (!pmime->set_content_param("name", tmp_field))
 					return FALSE;
 			}
@@ -5077,11 +5075,11 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		tmp_len = 12;
 	}
 	if (NULL != pfile_name) {
-		memcpy(tmp_field + tmp_len, "filename=\"", 10);
+		strcpy(&tmp_field[tmp_len], "filename=\"");
 		tmp_len += 10;
 		tmp_len += oxcmail_encode_mime_string(pskeleton->charset,
 				pfile_name, tmp_field + tmp_len, 1024 - tmp_len);
-		memcpy(tmp_field + tmp_len, "\";\r\n\t", 5);
+		strcpy(&tmp_field[tmp_len], "\";\r\n\t");
 		tmp_len += 5;
 	}
 	time(&tmp_time);
