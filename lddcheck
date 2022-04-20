@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 if [ -z "$1" ]; then
 	exit 0
@@ -6,6 +6,12 @@ fi
 libtool="$1"; shift
 input="$1"; shift
 output="$1"; shift
+if echo "$input" | grep -q /; then
+	:
+else
+	# The source command needs an exec-compatible path
+	input="./$input"
+fi
 
 case "$input" in #((
 	*.la)
