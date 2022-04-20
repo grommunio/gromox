@@ -1566,32 +1566,29 @@ int EXT_PULL::g_oneoff_eid(ONEOFF_ENTRYID *r)
 	}
 }
 
-int EXT_PULL::g_oneoff_a(ONEOFF_ARRAY *r)
+int EXT_PULL::g_flatentry_a(BINARY_ARRAY *r)
 {
 	uint32_t bytes;
 	uint8_t pad_len;
 	
 	TRY(g_uint32(&r->count));
-	r->pentry_id = anew<ONEOFF_ENTRYID>(r->count);
-	if (NULL == r->pentry_id) {
+	r->pbin = anew<BINARY>(r->count);
+	if (r->pbin == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
 	TRY(g_uint32(&bytes));
 	uint32_t offset = m_offset + bytes;
 	for (size_t i = 0; i < r->count; ++i) {
-		TRY(g_uint32(&bytes));
-		uint32_t offset2 = m_offset + bytes;
-		TRY(g_oneoff_eid(&r->pentry_id[i]));
-		if (m_offset > offset2)
+		TRY(g_bin(&r->pbin[i]));
+		if (m_offset > offset)
 			return EXT_ERR_FORMAT;
-		m_offset = offset2;
+		bytes = r->pbin[i].cb;
 		pad_len = ((bytes + 3) & ~3) - bytes;
 		TRY(advance(pad_len));
 	}
 	if (m_offset > offset)
 		return EXT_ERR_FORMAT;
-	m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 

@@ -3917,7 +3917,7 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 {
 	size_t fieldmax = MIME_FIELD_LEN;
 	EXT_PULL ext_pull;
-	ONEOFF_ARRAY address_array;
+	BINARY_ARRAY address_array;
 	
 	auto pbin = pmsg->proplist.get<BINARY>(PR_REPLY_RECIPIENT_ENTRIES);
 	if (NULL == pbin) {
@@ -3928,8 +3928,8 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 	 * to distinguish between semicolon as a separator and semicolon as
 	 * part of a name. So we ignore that property altogether.
 	 */
-	ext_pull.init(pbin->pb, pbin->cb, alloc, 0);
-	if (ext_pull.g_oneoff_a(&address_array) != EXT_ERR_SUCCESS)
+	ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_WCOUNT);
+	if (ext_pull.g_flatentry_a(&address_array) != EXT_ERR_SUCCESS)
 		return FALSE;
 	size_t offset = 0;
 	for (size_t i = 0; i < address_array.count; ++i) {
@@ -3939,12 +3939,29 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 			strcpy(&field[offset], ", ");
 			offset += 2;
 		}
-		if (0 != strcasecmp("SMTP", 
-			address_array.pentry_id[i].paddress_type)) {
-			return FALSE;
+		EXT_PULL ep2;
+		ONEOFF_ENTRYID oo;
+		ep2.init(address_array.pbin[i].pb, address_array.pbin[i].cb, alloc, EXT_FLAG_UTF16);
+		if (ep2.g_oneoff_eid(&oo) != EXT_ERR_SUCCESS ||
+		    oo.provider_uid != muidOOP ||
+		    strcasecmp(oo.paddress_type, "SMTP") != 0)
+			continue;
+		if (oo.pdisplay_name != nullptr && *oo.pdisplay_name != '\0') {
+			if (offset + 2 >= fieldmax)
+				return false;
+			strcpy(&field[offset], "\"");
+			offset ++;
+			auto tmp_len = oxcmail_encode_mime_string(charset,
+					oo.pdisplay_name, field + offset,
+					MIME_FIELD_LEN - offset);
+			offset += tmp_len;
+			if (offset + 3 >= fieldmax)
+				return false;
+			strcpy(&field[offset], "\" ");
+			offset += 2;
 		}
 		offset += std::max(0, gx_snprintf(field, MIME_FIELD_LEN - offset,
-		          "<%s>", address_array.pentry_id[i].pmail_address));
+		          "<%s>", oo.pmail_address));
 	}
 	if (offset == 0 || offset >= fieldmax)
 		return FALSE;
