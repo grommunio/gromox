@@ -3923,14 +3923,14 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 	if (NULL == pbin) {
 		return FALSE;
 	}
+	/*
+	 * PR_REPLY_RECIPIENT_NAMES is semicolon-separated, but there is no way
+	 * to distinguish between semicolon as a separator and semicolon as
+	 * part of a name. So we ignore that property altogether.
+	 */
 	ext_pull.init(pbin->pb, pbin->cb, alloc, 0);
 	if (ext_pull.g_oneoff_a(&address_array) != EXT_ERR_SUCCESS)
 		return FALSE;
-	auto pstrings = pmsg->proplist.get<STRING_ARRAY>(PR_REPLY_RECIPIENT_NAMES);
-	if (NULL != pstrings && pstrings->count !=
-		address_array.count) {
-		pstrings = NULL;
-	}
 	size_t offset = 0;
 	for (size_t i = 0; i < address_array.count; ++i) {
 		if (0 != offset) {
@@ -3939,30 +3939,12 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 			strcpy(&field[offset], ", ");
 			offset += 2;
 		}
-		if (NULL != pstrings) {
-			if (offset + 2 >= fieldmax)
-				return false;
-			strcpy(&field[offset], "\"");
-			offset ++;
-			auto tmp_len = oxcmail_encode_mime_string(charset,
-					pstrings->ppstr[i], field + offset,
-					MIME_FIELD_LEN - offset);
-			if (0 == tmp_len) {
-				return FALSE;
-			}
-			offset += tmp_len;
-			if (offset + 2 >= fieldmax)
-				return false;
-			strcpy(&field[offset], "\"");
-			offset ++;
-		}
 		if (0 != strcasecmp("SMTP", 
 			address_array.pentry_id[i].paddress_type)) {
 			return FALSE;
 		}
 		offset += std::max(0, gx_snprintf(field, MIME_FIELD_LEN - offset,
-		          pstrings != nullptr ? " <%s>" : "<%s>",
-		          address_array.pentry_id[i].pmail_address));
+		          "<%s>", address_array.pentry_id[i].pmail_address));
 	}
 	if (offset == 0 || offset >= fieldmax)
 		return FALSE;
