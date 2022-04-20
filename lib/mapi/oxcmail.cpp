@@ -3960,7 +3960,7 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 			strcpy(&field[offset], "\" ");
 			offset += 2;
 		}
-		offset += std::max(0, gx_snprintf(field, MIME_FIELD_LEN - offset,
+		offset += std::max(0, gx_snprintf(&field[offset], MIME_FIELD_LEN - offset,
 		          "<%s>", oo.pmail_address));
 	}
 	if (offset == 0 || offset >= fieldmax)
