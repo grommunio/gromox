@@ -121,9 +121,6 @@ BINARY* common_util_username_to_addressbook_entryid(
 BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin);
 BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t);
 BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t);
-void common_util_exmdb_locinfo_to_string(
-	uint8_t type, int db_id, uint64_t eid,
-	char *loc_string);
 BOOL common_util_exmdb_locinfo_from_string(
 	const char *loc_string, uint8_t *ptype,
 	int *pdb_id, uint64_t *peid);

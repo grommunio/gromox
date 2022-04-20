@@ -234,35 +234,6 @@ static BINARY *zcsab_prepend(const BINARY *lower_eid, uint32_t type, uint32_t of
 	return new_eid;
 }
 
-static BINARY* container_object_folder_to_addressbook_entryid(
-	BOOL b_private, int db_id, uint64_t folder_id)
-{
-	BINARY *pbin;
-	char x500dn[128];
-	EXT_PUSH ext_push;
-	EMSAB_ENTRYID tmp_entryid;
-	uint8_t type = b_private ? LOC_TYPE_PRIVATE_FOLDER : LOC_TYPE_PUBLIC_FOLDER;
-	
-	strcpy(x500dn, "/exmdb=");
-	common_util_exmdb_locinfo_to_string(
-		type, db_id, folder_id, x500dn + 7);
-	tmp_entryid.flags = 0;
-	tmp_entryid.version = 1;
-	tmp_entryid.type = DT_CONTAINER;
-	tmp_entryid.px500dn = x500dn;
-	pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
-		return NULL;
-	}
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr ||
-	    !ext_push.init(pbin->pb, 256, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
-		return NULL;
-	pbin->cb = ext_push.m_offset;
-	return pbin;
-}
-
 BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 {
 	auto pcontainer = this;
@@ -354,8 +325,8 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 		if (!exmdb_client::query_table(pinfo->get_maildir(), nullptr,
 		    pinfo->cpid, table_id, &proptags, 0, row_num, &tmp_set))
 			return FALSE;
-		pparent_entryid = container_object_folder_to_addressbook_entryid(
-				TRUE, pinfo->user_id, pcontainer->id.exmdb_id.folder_id);
+		pparent_entryid = zcsab_prepend(common_util_to_folder_entryid(pstore,
+		                  pcontainer->id.exmdb_id.folder_id), MAPI_ABCONT, UINT32_MAX);
 		if (NULL == pparent_entryid) {
 			return FALSE;
 		}
@@ -581,23 +552,27 @@ static BOOL container_object_fetch_folder_properties(
 		}
 		case PR_ENTRYID:
 		case PR_PARENT_ENTRYID: {
+			uint8_t mapi_type = 0;
 			auto pinfo = zarafa_server_get_info();
+			auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
+			auto store = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
+			if (store == nullptr || mapi_type != ZMG_STORE)
+				return false;
 			void *pvalue = nullptr;
 			if (pproptags->pproptag[i] != PR_PARENT_ENTRYID) {
-				pvalue = container_object_folder_to_addressbook_entryid(
-				         TRUE, pinfo->user_id, folder_id);
+				pvalue = zcsab_prepend(common_util_to_folder_entryid(
+				         store, folder_id), MAPI_ABCONT, UINT32_MAX);
 			} else if (folder_id == rop_util_make_eid_ex(
 			    1, PRIVATE_FID_CONTACTS)) {
 				if (!container_object_fetch_special_property(SPECIAL_CONTAINER_PROVIDER,
 				    PR_ENTRYID, &pvalue))
 					return FALSE;
 			} else {
-				pvalue = ppropvals->getval(PidTagParentFolderId);
-				if (NULL == pvalue) {
+				auto fid = ppropvals->get<uint64_t>(PidTagParentFolderId);
+				if (fid == nullptr)
 					return FALSE;
-				}
-				pvalue = container_object_folder_to_addressbook_entryid(
-				         TRUE, pinfo->user_id, *(uint64_t *)pvalue);
+				pvalue = zcsab_prepend(common_util_to_folder_entryid(
+				         store, *fid), MAPI_ABCONT, UINT32_MAX);
 			}
 			if (NULL == pvalue) {
 				return FALSE;

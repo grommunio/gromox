@@ -1144,6 +1144,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 }
 
 static uint32_t zs_openab_emsab(USER_INFO_REF &&, BINARY eid, int base_id, uint8_t *, uint32_t *);
+static uint32_t zs_openab_zcsab(USER_INFO_REF &&, BINARY eid, int base_id, uint8_t *, uint32_t *);
 
 uint32_t zarafa_server_openabentry(GUID hsession,
 	BINARY entryid, uint8_t *pmapi_type, uint32_t *phobject)
@@ -1165,8 +1166,12 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			return ecError;
 		return ecSuccess;
 	}
-	if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidEMSAB)
+	if (entryid.cb < 20)
+		return ecInvalidParam;
+	if (*reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidEMSAB)
 		return zs_openab_emsab(std::move(pinfo), entryid, base_id, pmapi_type, phobject);
+	if (*reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidZCSAB)
+		return zs_openab_zcsab(std::move(pinfo), entryid, base_id, pmapi_type, phobject);
 	return ecInvalidParam;
 }
 
@@ -1184,7 +1189,7 @@ static uint32_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_
 
 	if (address_type == DT_CONTAINER) {
 		CONTAINER_ID container_id;
-		uint8_t loc_type, type;
+		uint8_t type;
 
 		HX_strlower(essdn);
 		if (strcmp(essdn, "/") == 0) {
@@ -1195,14 +1200,6 @@ static uint32_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
 			container_id.abtree_id.minid = SPECIAL_CONTAINER_EMPTY;
-		} else if (strncmp(essdn, "/exmdb=", 7) == 0) {
-			if (!common_util_exmdb_locinfo_from_string(
-			    essdn + 7, &loc_type, &user_id,
-			    &container_id.exmdb_id.folder_id) ||
-			    loc_type != LOC_TYPE_PRIVATE_FOLDER)
-				return ecNotFound;
-			container_id.exmdb_id.b_private = TRUE;
-			type = CONTAINER_TYPE_FOLDER;
 		} else {
 			if (0 != strncmp(essdn, "/guid=", 6) || 38 != strlen(essdn)) {
 				return ecNotFound;
@@ -1279,6 +1276,31 @@ static uint32_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
+}
+
+static uint32_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid, int base_id,
+    uint8_t *zmg_type, uint32_t *objh)
+{
+	EXT_PULL ep;
+	FOLDER_ENTRYID fe;
+	uint32_t mapi_type = 0;
+	ep.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
+	ep.m_offset += 20;
+	if (ep.g_uint32(&mapi_type) != EXT_ERR_SUCCESS ||
+	    mapi_type != MAPI_ABCONT || ep.advance(4) != EXT_ERR_SUCCESS ||
+	    ep.g_folder_eid(&fe) != EXT_ERR_SUCCESS ||
+	    fe.folder_type != EITLT_PRIVATE_FOLDER)
+		return ecInvalidParam;
+
+	CONTAINER_ID ctid;
+	ctid.exmdb_id.b_private = TRUE;
+	ctid.exmdb_id.folder_id = rop_util_make_eid(1, fe.global_counter);
+	auto contobj = container_object::create(CONTAINER_TYPE_FOLDER, ctid);
+	if (contobj == nullptr)
+		return ecError;
+	*zmg_type = ZMG_ABCONT;
+	*objh = info->ptree->add_object_handle(ROOT_HANDLE, {*zmg_type, std::move(contobj)});
+	return *objh != INVALID_HANDLE ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_resolvename(GUID hsession,

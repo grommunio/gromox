@@ -350,15 +350,6 @@ BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t dnma
 	return FALSE;
 }
 
-void common_util_exmdb_locinfo_to_string(
-	uint8_t type, int db_id, uint64_t eid,
-	char *loc_string)
-{
-	
-	sprintf(loc_string, "%d:%d:%llx", (int)type,
-	        db_id, static_cast<unsigned long long>(rop_util_get_gc_value(eid)));
-}
-
 BOOL common_util_exmdb_locinfo_from_string(
 	const char *loc_string, uint8_t *ptype,
 	int *pdb_id, uint64_t *peid)
