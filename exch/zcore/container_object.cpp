@@ -596,23 +596,21 @@ static BOOL container_object_fetch_folder_properties(
 		case PR_PARENT_ENTRYID: {
 			auto pinfo = zarafa_server_get_info();
 			void *pvalue = nullptr;
-			if (pproptags->pproptag[i] == PR_PARENT_ENTRYID) {
-				if (folder_id == rop_util_make_eid_ex(
-					1, PRIVATE_FID_CONTACTS)) {
-					if (!container_object_fetch_special_property(SPECIAL_CONTAINER_PROVIDER,
-					    PR_ENTRYID, &pvalue))
-						return FALSE;	
-				} else {
-					pvalue = ppropvals->getval(PidTagParentFolderId);
-					if (NULL == pvalue) {
-						return FALSE;
-					}
-					pvalue = container_object_folder_to_addressbook_entryid(
-									TRUE, pinfo->user_id, *(uint64_t*)pvalue);
-				}
-			} else {
+			if (pproptags->pproptag[i] != PR_PARENT_ENTRYID) {
 				pvalue = container_object_folder_to_addressbook_entryid(
-										TRUE, pinfo->user_id, folder_id);
+				         TRUE, pinfo->user_id, folder_id);
+			} else if (folder_id == rop_util_make_eid_ex(
+			    1, PRIVATE_FID_CONTACTS)) {
+				if (!container_object_fetch_special_property(SPECIAL_CONTAINER_PROVIDER,
+				    PR_ENTRYID, &pvalue))
+					return FALSE;
+			} else {
+				pvalue = ppropvals->getval(PidTagParentFolderId);
+				if (NULL == pvalue) {
+					return FALSE;
+				}
+				pvalue = container_object_folder_to_addressbook_entryid(
+				         TRUE, pinfo->user_id, *(uint64_t *)pvalue);
 			}
 			if (NULL == pvalue) {
 				return FALSE;
