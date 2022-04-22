@@ -261,7 +261,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 				continue;
 		}
 		if (prestriction != nullptr &&
-		    !common_util_evaluate_message_restriction(pdb->psqlite,
+		    !cu_eval_msg_restriction(pdb->psqlite,
 		    cpid, mid_val, prestriction))
 			continue;	
 		sqlite3_reset(stm_insert_exist);

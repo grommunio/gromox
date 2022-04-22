@@ -163,7 +163,7 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 				continue;
 		}
 		if (prestriction != nullptr &&
-		    !common_util_evaluate_folder_restriction(psqlite, folder_id1, prestriction))
+		    !cu_eval_folder_restriction(psqlite, folder_id1, prestriction))
 			goto LOAD_SUBFOLDER;
 		sqlite3_bind_int64(pstmt, 1, folder_id1);
 		sqlite3_bind_int64(pstmt, 2, depth);
@@ -956,7 +956,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				continue;
 			}
 		} else if (prestriction != nullptr &&
-		    !common_util_evaluate_message_restriction(pdb->psqlite, cpid, mid_val, prestriction)) {
+		    !cu_eval_msg_restriction(pdb->psqlite, cpid, mid_val, prestriction)) {
 			continue;
 		}
 		sqlite3_bind_int64(pstmt1, 1, mid_val);

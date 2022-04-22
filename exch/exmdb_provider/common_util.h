@@ -144,8 +144,8 @@ BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 	uint64_t message_id, uint64_t *pfolder_id);
 BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	uint64_t folder_id, LONGLONG_ARRAY *pfolder_ids);
-extern bool common_util_evaluate_folder_restriction(sqlite3 *, uint64_t folder_id, const RESTRICTION *);
-extern bool common_util_evaluate_message_restriction(sqlite3 *, uint32_t cpid, uint64_t msgid, const RESTRICTION *);
+extern bool cu_eval_folder_restriction(sqlite3 *, uint64_t folder_id, const RESTRICTION *);
+extern bool cu_eval_msg_restriction(sqlite3 *, uint32_t cpid, uint64_t msgid, const RESTRICTION *);
 BOOL common_util_check_search_result(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t message_id, BOOL *pb_exist);
 BOOL common_util_get_mid_string(sqlite3 *psqlite,

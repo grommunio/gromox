@@ -93,7 +93,7 @@ E(get_handle)
 
 static BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
 static BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum display_type *);
-static bool common_util_evaluate_subobject_restriction(sqlite3 *, uint32_t cpid, uint64_t msgid, uint32_t proptag, const RESTRICTION *);
+static bool cu_eval_subobj_restriction(sqlite3 *, uint32_t cpid, uint64_t msgid, uint32_t proptag, const RESTRICTION *);
 static bool gp_prepare_anystr(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_mvstr(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_default(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
@@ -3994,7 +3994,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static bool common_util_evaluate_subitem_restriction(sqlite3 *psqlite,
+static bool cu_eval_subitem_restriction(sqlite3 *psqlite,
     uint32_t cpid, db_table table_type, uint64_t id, const RESTRICTION *pres)
 {
 	int len;
@@ -4124,7 +4124,7 @@ static bool common_util_evaluate_subitem_restriction(sqlite3 *psqlite,
 		auto rcom = pres->comment;
 		if (rcom->pres == nullptr)
 			return TRUE;
-		return common_util_evaluate_subitem_restriction(psqlite, cpid,
+		return cu_eval_subitem_restriction(psqlite, cpid,
 		       table_type, id, rcom->pres);
 	}
 	default:
@@ -4133,7 +4133,7 @@ static bool common_util_evaluate_subitem_restriction(sqlite3 *psqlite,
 	return FALSE;
 }
 
-static bool common_util_evaluate_msgsubs_restriction(
+static bool cu_eval_msgsubs_restriction(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	uint32_t proptag, const RESTRICTION *pres)
 {
@@ -4158,12 +4158,12 @@ static bool common_util_evaluate_msgsubs_restriction(
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		id = sqlite3_column_int64(pstmt, 0);
 		if (pres->rt == RES_COUNT) {
-			if (common_util_evaluate_subitem_restriction(psqlite,
+			if (cu_eval_subitem_restriction(psqlite,
 			    cpid, table_type, id,
 			    &static_cast<RESTRICTION_COUNT *>(pres->pres)->sub_res))
 				count ++;
 		} else {
-			if (common_util_evaluate_subitem_restriction(psqlite,
+			if (cu_eval_subitem_restriction(psqlite,
 			    cpid, table_type, id, pres))
 				return TRUE;
 		}
@@ -4171,25 +4171,24 @@ static bool common_util_evaluate_msgsubs_restriction(
 	return pres->rt == RES_COUNT && pres->count->count == count;
 }
 
-static bool common_util_evaluate_subobject_restriction(
-	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
-	uint32_t proptag, const RESTRICTION *pres)
+static bool cu_eval_subobj_restriction(sqlite3 *psqlite, uint32_t cpid,
+    uint64_t message_id, uint32_t proptag, const RESTRICTION *pres)
 {
 	switch (pres->rt) {
 	case RES_OR:
 		for (size_t i = 0; i < pres->andor->count; ++i)
-			if (common_util_evaluate_subobject_restriction(psqlite,
+			if (cu_eval_subobj_restriction(psqlite,
 			    cpid, message_id, proptag, &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
 	case RES_AND:
 		for (size_t i = 0; i < pres->andor->count; ++i)
-			if (!common_util_evaluate_subobject_restriction(psqlite,
+			if (!cu_eval_subobj_restriction(psqlite,
 			    cpid, message_id, proptag, &pres->andor->pres[i]))
 				return FALSE;
 		return TRUE;
 	case RES_NOT:
-		if (common_util_evaluate_subobject_restriction(psqlite, cpid,
+		if (cu_eval_subobj_restriction(psqlite, cpid,
 		    message_id, proptag, &pres->xnot->res))
 			return FALSE;
 		return TRUE;
@@ -4201,7 +4200,7 @@ static bool common_util_evaluate_subobject_restriction(
 	case RES_EXIST:
 	case RES_COMMENT:
 	case RES_COUNT:
-		return common_util_evaluate_msgsubs_restriction(
+		return cu_eval_msgsubs_restriction(
 				psqlite, cpid, message_id, proptag, pres);
 	default:
 		return false;
@@ -4209,7 +4208,7 @@ static bool common_util_evaluate_subobject_restriction(
 	return FALSE;
 }
 
-bool common_util_evaluate_folder_restriction(sqlite3 *psqlite,
+bool cu_eval_folder_restriction(sqlite3 *psqlite,
 	uint64_t folder_id, const RESTRICTION *pres)
 {
 	void *pvalue;
@@ -4219,18 +4218,18 @@ bool common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	switch (pres->rt) {
 	case RES_OR:
 		for (size_t i = 0; i < pres->andor->count; ++i)
-			if (common_util_evaluate_folder_restriction(psqlite,
+			if (cu_eval_folder_restriction(psqlite,
 			    folder_id, &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
 	case RES_AND:
 		for (size_t i = 0; i < pres->andor->count; ++i)
-			if (!common_util_evaluate_folder_restriction(psqlite,
+			if (!cu_eval_folder_restriction(psqlite,
 			    folder_id, &pres->andor->pres[i]))
 				return FALSE;
 		return TRUE;
 	case RES_NOT:
-		if (common_util_evaluate_folder_restriction(psqlite,
+		if (cu_eval_folder_restriction(psqlite,
 		    folder_id, &pres->xnot->res))
 			return FALSE;
 		return TRUE;
@@ -4359,7 +4358,7 @@ bool common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	case RES_COMMENT:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
-		return common_util_evaluate_folder_restriction(psqlite,
+		return cu_eval_folder_restriction(psqlite,
 		       folder_id, pres->comment->pres);
 	default:
 		return FALSE;
@@ -4367,7 +4366,7 @@ bool common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	return FALSE;
 }
 
-bool common_util_evaluate_message_restriction(sqlite3 *psqlite,
+bool cu_eval_msg_restriction(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, const RESTRICTION *pres)
 {
 	void *pvalue;
@@ -4377,18 +4376,18 @@ bool common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	switch (pres->rt) {
 	case RES_OR:
 		for (size_t i = 0; i < pres->andor->count; ++i)
-			if (common_util_evaluate_message_restriction(psqlite,
+			if (cu_eval_msg_restriction(psqlite,
 			    cpid, message_id, &pres->andor->pres[i]))
 				return TRUE;
 		return FALSE;
 	case RES_AND:
 		for (size_t i = 0; i < pres->andor->count; ++i)
-			if (!common_util_evaluate_message_restriction(psqlite,
+			if (!cu_eval_msg_restriction(psqlite,
 			    cpid, message_id, &pres->andor->pres[i]))
 				return FALSE;
 		return TRUE;
 	case RES_NOT:
-		if (common_util_evaluate_message_restriction(psqlite,
+		if (cu_eval_msg_restriction(psqlite,
 		    cpid, message_id, &pres->xnot->res))
 			return FALSE;
 		return TRUE;
@@ -4532,11 +4531,11 @@ bool common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		auto rsub = pres->sub;
 		switch (rsub->subobject) {
 		case PR_MESSAGE_RECIPIENTS:
-			return common_util_evaluate_subobject_restriction(psqlite,
+			return cu_eval_subobj_restriction(psqlite,
 			       cpid, message_id, PR_MESSAGE_RECIPIENTS,
 			       &rsub->res);
 		case PR_MESSAGE_ATTACHMENTS:
-			return common_util_evaluate_subobject_restriction(psqlite,
+			return cu_eval_subobj_restriction(psqlite,
 			       cpid, message_id, PR_MESSAGE_ATTACHMENTS,
 			       &rsub->res);
 		default:
@@ -4547,13 +4546,13 @@ bool common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	case RES_COMMENT:
 		if (pres->comment->pres == nullptr)
 			return TRUE;
-		return common_util_evaluate_message_restriction(psqlite, cpid,
+		return cu_eval_msg_restriction(psqlite, cpid,
 		       message_id, pres->comment->pres);
 	case RES_COUNT: {
 		auto rcnt = pres->count;
 		if (rcnt->count == 0)
 			return FALSE;
-		if (common_util_evaluate_message_restriction(psqlite,
+		if (cu_eval_msg_restriction(psqlite,
 		    cpid, message_id, &rcnt->sub_res)) {
 			--rcnt->count;
 			return TRUE;

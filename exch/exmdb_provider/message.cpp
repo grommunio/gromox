@@ -3588,7 +3588,7 @@ static bool op_process(BOOL b_oof, const char *from_address,
 	if (!common_util_get_rule_property(prnode->id, psqlite,
 	    PR_RULE_CONDITION, &pvalue))
 		return FALSE;
-	if (pvalue == nullptr || !common_util_evaluate_message_restriction(psqlite,
+	if (pvalue == nullptr || !cu_eval_msg_restriction(psqlite,
 	    0, message_id, static_cast<RESTRICTION *>(pvalue)))
 		return true;
 	if (prnode->state & RULE_STATE_EXIT_LEVEL) {
@@ -4002,8 +4002,7 @@ static bool opx_process(BOOL b_oof, const char *from_address,
 		return true;
 	if (!message_replace_restriction_propid(psqlite, &propname_info, &restriction))
 		return FALSE;
-	if (!common_util_evaluate_message_restriction(psqlite,
-	    0, message_id, &restriction))
+	if (!cu_eval_msg_restriction(psqlite, 0, message_id, &restriction))
 		return true;
 	if (prnode->state & RULE_STATE_EXIT_LEVEL) {
 		b_exit = TRUE;

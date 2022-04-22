@@ -466,7 +466,7 @@ static BOOL db_engine_search_folder(const char *dir,
 			}
 			count = 0;
 		}
-		if (!common_util_evaluate_message_restriction(pdb->psqlite,
+		if (!cu_eval_msg_restriction(pdb->psqlite,
 		    cpid, pmessage_ids->pids[i], prestriction))
 			continue;
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO search_result "
@@ -976,7 +976,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 					"delete from search_result\n");
 			continue;
 		}
-		if (!common_util_evaluate_message_restriction(pdb->psqlite,
+		if (!cu_eval_msg_restriction(pdb->psqlite,
 		    cpid, message_id, pdynamic->prestriction))
 			return;
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result "
@@ -1023,7 +1023,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 		}
 		if (b_exist)
 			return;
-		if (!common_util_evaluate_message_restriction(pdb->psqlite,
+		if (!cu_eval_msg_restriction(pdb->psqlite,
 		    cpid, id2, pdynamic->prestriction))
 			return;
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result "
@@ -1068,7 +1068,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 				" item in search_result\n");
 			return;
 		}
-		if (common_util_evaluate_message_restriction(
+		if (cu_eval_msg_restriction(
 			pdb->psqlite, cpid, id2, pdynamic->prestriction)) {
 			if (b_exist) {
 				db_engine_notify_content_table_modify_row(
@@ -1470,7 +1470,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 		if (pdb->tables.b_batch && ptable->b_hint)
 			continue;
 		if (ptable->prestriction != nullptr &&
-		    !common_util_evaluate_message_restriction(pdb->psqlite,
+		    !cu_eval_msg_restriction(pdb->psqlite,
 		    ptable->cpid, message_id, ptable->prestriction))
 			continue;
 		if (pdb->tables.b_batch) {
@@ -2355,7 +2355,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			}
 		}
 		if (ptable->prestriction != nullptr &&
-		    !common_util_evaluate_folder_restriction(pdb->psqlite,
+		    !cu_eval_folder_restriction(pdb->psqlite,
 		    folder_id, ptable->prestriction))
 			continue;
 		if (NULL == padded_row) {
@@ -4043,7 +4043,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			pstmt.finalize();
 			if (NULL != ptable->prestriction &&
-			    common_util_evaluate_folder_restriction(
+			    cu_eval_folder_restriction(
 				pdb->psqlite, folder_id, ptable->prestriction)) {
 				if (NULL == padded_row) {
 					datagram2.dir = deconst(exmdb_server_get_dir());
@@ -4093,7 +4093,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 		idx = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 		if (NULL != ptable->prestriction &&
-		    !common_util_evaluate_folder_restriction(pdb->psqlite,
+		    !cu_eval_folder_restriction(pdb->psqlite,
 		    folder_id, ptable->prestriction)) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM t%u WHERE "
 			        "folder_id=%llu", ptable->table_id, LLU(folder_id));
