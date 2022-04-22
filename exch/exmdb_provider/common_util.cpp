@@ -93,9 +93,7 @@ E(get_handle)
 
 static BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
 static BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum display_type *);
-static BOOL common_util_evaluate_subobject_restriction(
-	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
-	uint32_t proptag, const RESTRICTION *pres);
+static bool common_util_evaluate_subobject_restriction(sqlite3 *, uint32_t cpid, uint64_t msgid, uint32_t proptag, const RESTRICTION *);
 static bool gp_prepare_anystr(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_mvstr(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_default(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
@@ -3996,7 +3994,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static BOOL common_util_evaluate_subitem_restriction(sqlite3 *psqlite,
+static bool common_util_evaluate_subitem_restriction(sqlite3 *psqlite,
     uint32_t cpid, db_table table_type, uint64_t id, const RESTRICTION *pres)
 {
 	int len;
@@ -4135,7 +4133,7 @@ static BOOL common_util_evaluate_subitem_restriction(sqlite3 *psqlite,
 	return FALSE;
 }
 
-static BOOL common_util_evaluate_msgsubs_restriction(
+static bool common_util_evaluate_msgsubs_restriction(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	uint32_t proptag, const RESTRICTION *pres)
 {
@@ -4170,10 +4168,10 @@ static BOOL common_util_evaluate_msgsubs_restriction(
 				return TRUE;
 		}
 	}
-	return pres->rt == RES_COUNT && count == pres->count->count ? TRUE : false;
+	return pres->rt == RES_COUNT && pres->count->count == count;
 }
 
-static BOOL common_util_evaluate_subobject_restriction(
+static bool common_util_evaluate_subobject_restriction(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	uint32_t proptag, const RESTRICTION *pres)
 {
@@ -4211,7 +4209,7 @@ static BOOL common_util_evaluate_subobject_restriction(
 	return FALSE;
 }
 
-BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
+bool common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	uint64_t folder_id, const RESTRICTION *pres)
 {
 	void *pvalue;
@@ -4369,7 +4367,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	return FALSE;
 }
 
-BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
+bool common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, const RESTRICTION *pres)
 {
 	void *pvalue;
