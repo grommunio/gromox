@@ -585,6 +585,18 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 	return TRUE;
 }
 
+static inline const BINARY *get_conv_id(const RESTRICTION *x)
+{
+	if (x == nullptr || x->rt != RES_PROPERTY || x->prop == nullptr)
+		return nullptr;
+	auto y = x->prop;
+	if (y->relop != RELOP_EQ || y->proptag != PR_CONVERSATION_ID ||
+	    PROP_TYPE(y->propval.proptag) != PT_BINARY)
+		return nullptr;
+	auto b = static_cast<const BINARY *>(y->propval.pvalue);
+	return b->cb == 16 ? b : nullptr;
+}
+
 /* under public mode username always available for read state */
 static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	uint64_t fid_val, const char *username, uint8_t table_flags,
@@ -603,7 +615,6 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	uint64_t mid_val;
 	uint32_t table_id;
 	TABLE_NODE *ptnode;
-	BOOL b_conversation;
 	uint64_t parent_fid;
 	uint64_t last_row_id;
 	uint32_t tmp_proptag;
@@ -612,17 +623,9 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	const char *remote_id;
 	DOUBLE_LIST value_list;
 	uint32_t tmp_proptags[16];
-	RESTRICTION_PROPERTY *pres = nullptr;
 	
-	b_conversation = FALSE;
-	if ((table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) &&
-	    prestriction != nullptr &&
-	    prestriction->rt == RES_PROPERTY &&
-	    (pres = prestriction->prop) != nullptr &&
-	    pres->relop == RELOP_EQ &&
-	    pres->proptag == PR_CONVERSATION_ID &&
-	    static_cast<BINARY *>(pres->propval.pvalue)->cb == 16)
-		b_conversation = TRUE;
+	auto conv_id = (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) ?
+	               get_conv_id(prestriction) : nullptr;
 	if (NULL != psorts && psorts->count >
 		sizeof(tmp_proptags)/sizeof(uint32_t)) {
 		return FALSE;	
@@ -888,8 +891,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				        " AND messages.is_associated=1", LLU(fid_val));
 			}
 		} else if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
-			if (b_conversation) {
-				encode_hex_binary(static_cast<BINARY *>(pres->propval.pvalue)->pb,
+			if (conv_id != nullptr) {
+				encode_hex_binary(conv_id->pb,
 					16, tmp_string, sizeof(tmp_string));
 				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 				        "FROM message_properties WHERE proptag=%u AND"
@@ -920,9 +923,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		            LLU(fid_val),
 		            !!(table_flags & TABLE_FLAG_SOFTDELETES),
 		            !!(table_flags & TABLE_FLAG_ASSOCIATED));
-	} else if (b_conversation) {
-		encode_hex_binary(static_cast<BINARY *>(pres->propval.pvalue)->pb,
-			16, tmp_string, sizeof(tmp_string));
+	} else if (conv_id != nullptr) {
+		encode_hex_binary(conv_id->pb, 16, tmp_string, sizeof(tmp_string));
 		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 		            "SELECT message_properties.message_id "
 		            "FROM message_properties JOIN messages ON "
@@ -944,7 +946,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	last_row_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		mid_val = sqlite3_column_int64(pstmt, 0);
-		if (b_conversation) {
+		if (conv_id != nullptr) {
 			if (common_util_check_message_associated(pdb->psqlite, mid_val))
 				continue;
 			if (!common_util_get_message_parent_folder(pdb->psqlite,
