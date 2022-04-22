@@ -356,6 +356,84 @@ void message_object::set_open_flags(uint8_t f)
 	open_flags = f;
 }
 
+static gxerr_t message_object_save2(message_object *pmessage, bool b_fai,
+    BINARY *&pbin_pcl, const char *rpc_user)
+{
+	BINARY *pbin_pcl1 = nullptr;
+
+	if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
+	    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
+	    reinterpret_cast<void **>(&pbin_pcl)) ||
+	    pbin_pcl == nullptr)
+		return GXERR_CALL_FAILED;
+	if (!exmdb_client_get_message_property(pmessage->plogon->get_dir(),
+	    nullptr, 0, pmessage->message_id, PR_PREDECESSOR_CHANGE_LIST,
+	    reinterpret_cast<void **>(&pbin_pcl1)) ||
+	    pbin_pcl1 == nullptr)
+		return GXERR_CALL_FAILED;
+
+	uint32_t result = 0;
+	if (!common_util_pcl_compare(pbin_pcl, pbin_pcl1, &result))
+		return GXERR_CALL_FAILED;
+	if (result != PCL_CONFLICT)
+		return GXERR_SUCCESS;
+
+	void *rv;
+	if (!exmdb_client_get_folder_property(pmessage->plogon->get_dir(),
+	    0, pmessage->folder_id, PROP_TAG_RESOLVEMETHOD, &rv))
+		return GXERR_CALL_FAILED;
+	uint32_t resolve_method = rv == nullptr ? RESOLVE_METHOD_DEFAULT :
+	                          *static_cast<uint32_t *>(rv);
+	if (!b_fai && resolve_method == RESOLVE_METHOD_DEFAULT) {
+		MESSAGE_CONTENT *pmsgctnt = nullptr;
+		if (pmessage->plogon->check_private()) {
+			if (!exmdb_client_read_message(pmessage->plogon->get_dir(),
+			    nullptr, pmessage->cpid,
+			    pmessage->message_id, &pmsgctnt))
+				return GXERR_CALL_FAILED;
+		} else if (!exmdb_client_read_message(pmessage->plogon->get_dir(),
+		    rpc_user, pmessage->cpid,
+		    pmessage->message_id, &pmsgctnt)) {
+			return GXERR_CALL_FAILED;
+		}
+		if (NULL != pmsgctnt) {
+			auto mstatus = pmsgctnt->proplist.get<const uint32_t>(PROP_TAG_MESSAGESTATUS);
+			if (mstatus == nullptr)
+				return GXERR_CALL_FAILED;
+			if (!exmdb_client_set_message_instance_conflict(
+			    pmessage->plogon->get_dir(),
+			    pmessage->instance_id, pmsgctnt))
+				return GXERR_CALL_FAILED;
+			auto tmp_status = *mstatus | MSGSTATUS_IN_CONFLICT;
+			TAGGED_PROPVAL tmp_propval;
+			TPROPVAL_ARRAY tmp_propvals;
+			PROBLEM_ARRAY tmp_problems;
+			tmp_propval.proptag = PROP_TAG_MESSAGESTATUS;
+			tmp_propval.pvalue = &tmp_status;
+			tmp_propvals.count = 1;
+			tmp_propvals.ppropval = &tmp_propval;
+			if (!message_object_set_properties_internal(pmessage,
+			    false, &tmp_propvals, &tmp_problems))
+				return GXERR_CALL_FAILED;
+		}
+	}
+	pbin_pcl = common_util_pcl_merge(pbin_pcl, pbin_pcl1);
+	if (NULL == pbin_pcl) {
+		return GXERR_CALL_FAILED;
+	}
+	TAGGED_PROPVAL tmp_propval;
+	TPROPVAL_ARRAY tmp_propvals;
+	PROBLEM_ARRAY tmp_problems;
+	tmp_propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
+	tmp_propval.pvalue = pbin_pcl;
+	tmp_propvals.count = 1;
+	tmp_propvals.ppropval = &tmp_propval;
+	if (!message_object_set_properties_internal(pmessage,
+	    false, &tmp_propvals, &tmp_problems))
+		return GXERR_CALL_FAILED;
+	return GXERR_SUCCESS;
+}
+
 gxerr_t message_object::save()
 {
 	auto pmessage = this;
@@ -364,7 +442,6 @@ gxerr_t message_object::save()
 	uint32_t tmp_index;
 	uint32_t *pgroup_id;
 	INDEX_ARRAY *pindices;
-	MESSAGE_CONTENT *pmsgctnt;
 	PROPTAG_ARRAY *pungroup_proptags;
 	
 	if (!pmessage->b_new && !pmessage->b_touched)
@@ -380,74 +457,10 @@ gxerr_t message_object::save()
 	BOOL b_fai = assoc == nullptr || *static_cast<uint8_t *>(assoc) == 0 ? false : TRUE;
 	if (NULL != pmessage->pstate) {
 		if (!pmessage->b_new) {
-			BINARY *pbin_pcl1 = nullptr;
-
-			if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
-			    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
-			    reinterpret_cast<void **>(&pbin_pcl)) ||
-			    pbin_pcl == nullptr)
-				return GXERR_CALL_FAILED;
-			if (!exmdb_client_get_message_property(pmessage->plogon->get_dir(),
-			    nullptr, 0, pmessage->message_id, PR_PREDECESSOR_CHANGE_LIST,
-			    reinterpret_cast<void **>(&pbin_pcl1)) ||
-			    pbin_pcl1 == nullptr)
-				return GXERR_CALL_FAILED;
-			if (!common_util_pcl_compare(pbin_pcl, pbin_pcl1, &result))
-				return GXERR_CALL_FAILED;
-			if (PCL_CONFLICT == result) {
-				void *rv;
-				if (!exmdb_client_get_folder_property(pmessage->plogon->get_dir(),
-				    0, pmessage->folder_id, PROP_TAG_RESOLVEMETHOD, &rv))
-					return GXERR_CALL_FAILED;
-				uint32_t resolve_method = rv == nullptr ? RESOLVE_METHOD_DEFAULT :
-				                          *static_cast<uint32_t *>(rv);
-				if (!b_fai && resolve_method == RESOLVE_METHOD_DEFAULT) {
-					if (pmessage->plogon->check_private()) {
-						if (!exmdb_client_read_message(pmessage->plogon->get_dir(),
-						    nullptr, pmessage->cpid,
-						    pmessage->message_id, &pmsgctnt))
-							return GXERR_CALL_FAILED;
-					} else if (!exmdb_client_read_message(pmessage->plogon->get_dir(),
-					    rpc_info.username, pmessage->cpid,
-					    pmessage->message_id, &pmsgctnt)) {
-						return GXERR_CALL_FAILED;
-					}
-					if (NULL != pmsgctnt) {
-						auto mstatus = pmsgctnt->proplist.get<const uint32_t>(PROP_TAG_MESSAGESTATUS);
-						if (mstatus == nullptr)
-							return GXERR_CALL_FAILED;
-						if (!exmdb_client_set_message_instance_conflict(
-						    pmessage->plogon->get_dir(),
-						    pmessage->instance_id, pmsgctnt))
-							return GXERR_CALL_FAILED;
-						auto tmp_status = *mstatus | MSGSTATUS_IN_CONFLICT;
-						TAGGED_PROPVAL tmp_propval;
-						TPROPVAL_ARRAY tmp_propvals;
-						PROBLEM_ARRAY tmp_problems;
-						tmp_propval.proptag = PROP_TAG_MESSAGESTATUS;
-						tmp_propval.pvalue = &tmp_status;
-						tmp_propvals.count = 1;
-						tmp_propvals.ppropval = &tmp_propval;
-						if (!message_object_set_properties_internal(pmessage,
-						    false, &tmp_propvals, &tmp_problems))
-							return GXERR_CALL_FAILED;
-					}
-				}
-				pbin_pcl = common_util_pcl_merge(pbin_pcl, pbin_pcl1);
-				if (NULL == pbin_pcl) {
-					return GXERR_CALL_FAILED;
-				}
-				TAGGED_PROPVAL tmp_propval;
-				TPROPVAL_ARRAY tmp_propvals;
-				PROBLEM_ARRAY tmp_problems;
-				tmp_propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
-				tmp_propval.pvalue = pbin_pcl;
-				tmp_propvals.count = 1;
-				tmp_propvals.ppropval = &tmp_propval;
-				if (!message_object_set_properties_internal(pmessage,
-				    false, &tmp_propvals, &tmp_problems))
-					return GXERR_CALL_FAILED;
-			}
+			auto ret = message_object_save2(pmessage, b_fai,
+			           pbin_pcl, rpc_info.username);
+			if (ret != 0)
+				return ret;
 		}
 	} else if (0 != pmessage->message_id) {
 		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
