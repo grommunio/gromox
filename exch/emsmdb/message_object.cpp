@@ -953,7 +953,7 @@ BOOL message_object::check_readonly_property(uint32_t proptag) const
 	case PR_ACCESS_LEVEL:
 	case PR_ASSOCIATED:
 	case PidTagChangeNumber:
-	case PROP_TAG_CONVERSATIONID:
+	case PR_CONVERSATION_ID:
 	case PR_CREATOR_NAME:
 	case PR_CREATOR_ENTRYID:
 	case PR_DISPLAY_BCC:

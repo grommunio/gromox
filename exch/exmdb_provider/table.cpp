@@ -620,7 +620,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	    prestriction->rt == RES_PROPERTY &&
 	    (pres = prestriction->prop) != nullptr &&
 	    pres->relop == RELOP_EQ &&
-	    pres->proptag == PROP_TAG_CONVERSATIONID &&
+	    pres->proptag == PR_CONVERSATION_ID &&
 	    static_cast<BINARY *>(pres->propval.pvalue)->cb == 16)
 		b_conversation = TRUE;
 	if (NULL != psorts && psorts->count >
@@ -893,7 +893,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					16, tmp_string, sizeof(tmp_string));
 				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 				        "FROM message_properties WHERE proptag=%u AND"
-				        " propval=x'%s'", PROP_TAG_CONVERSATIONID,
+				        " propval=x'%s'", PR_CONVERSATION_ID,
 				        tmp_string);
 			} else {
 				strcpy(sql_string, "SELECT message_id"
@@ -929,7 +929,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		            "messages.message_id=message_properties.message_id"
 		            " WHERE message_properties.proptag=%u AND"
 		            " message_properties.propval=x'%s' AND "
-		            "messages.is_deleted=%u", PROP_TAG_CONVERSATIONID,
+		            "messages.is_deleted=%u", PR_CONVERSATION_ID,
 		            tmp_string, !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	} else {
 		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),

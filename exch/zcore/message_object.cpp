@@ -723,7 +723,7 @@ static BOOL msgo_check_readonly_property(const message_object *pmessage,
 	case PR_ACCESS_LEVEL:
 	case PR_ASSOCIATED:
 	case PidTagChangeNumber:
-	case PROP_TAG_CONVERSATIONID:
+	case PR_CONVERSATION_ID:
 	case PR_CREATOR_NAME:
 	case PR_CREATOR_ENTRYID:
 	case PR_DISPLAY_BCC:

@@ -200,7 +200,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 	
 	pproplist = message_content_get_proplist(pctx->pmsgctnt);
 	static constexpr uint32_t tags[] = {
-		PROP_TAG_CONVERSATIONID, PR_DISPLAY_TO, PR_DISPLAY_TO_A,
+		PR_CONVERSATION_ID, PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A, PR_DISPLAY_BCC,
 		PR_DISPLAY_BCC_A, PidTagMid, PR_MESSAGE_SIZE,
 		PR_MESSAGE_SIZE_EXTENDED, PROP_TAG_HASNAMEDPROPERTIES,

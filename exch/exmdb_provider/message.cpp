@@ -1794,11 +1794,11 @@ static BOOL message_rectify_message(const char *account,
 				return false;
 		}
 	}
-	vc->proptag = PROP_TAG_CONVERSATIONID;
+	vc->proptag = PR_CONVERSATION_ID;
 	vc->pvalue = pbin;
 	pmsgctnt1->proplist.count ++;
 	++vc;
-	vc->proptag = PROP_TAG_CONVERSATIONINDEXTRACKING;
+	vc->proptag = PR_CONVERSATION_INDEX_TRACKING;
 	vc->pvalue = deconst(&fake_true);
 	pmsgctnt1->proplist.count ++;
 	++vc;

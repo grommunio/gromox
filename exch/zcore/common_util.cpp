@@ -2006,7 +2006,7 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 		return GXERR_SUCCESS;
 	}
 	static constexpr uint32_t tags[] = {
-		PROP_TAG_CONVERSATIONID, PR_DISPLAY_TO,
+		PR_CONVERSATION_ID, PR_DISPLAY_TO,
 		PR_DISPLAY_TO_A, PR_DISPLAY_CC,
 		PR_DISPLAY_CC_A, PR_DISPLAY_BCC, PR_DISPLAY_BCC_A, PidTagMid,
 		PR_MESSAGE_SIZE, PR_MESSAGE_SIZE_EXTENDED,
