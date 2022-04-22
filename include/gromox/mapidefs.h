@@ -1771,6 +1771,8 @@ struct SVREID {
 struct TAGGED_PROPVAL {
 	uint32_t proptag;
 	void *pvalue;
+
+	std::string repr() const;
 };
 
 struct tarray_set;
@@ -1879,65 +1881,93 @@ struct RESTRICTION {
 		RESTRICTION_COMMENT *comment;
 		RESTRICTION_COUNT *count;
 	};
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_AND_OR {
 	uint32_t count;
 	RESTRICTION *pres;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_NOT {
 	RESTRICTION res;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_CONTENT {
 	uint32_t fuzzy_level;
 	uint32_t proptag;
 	TAGGED_PROPVAL propval;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_PROPERTY {
 	enum relop relop;
 	uint32_t proptag;
+	/*
+	 * propval.proptag is only used for proptype information, the propid is
+	 * ignored, but generally the same as RESTRICTION_PROPERTY::proptag.
+	 */
 	TAGGED_PROPVAL propval;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_PROPCOMPARE {
 	enum relop relop;
 	uint32_t proptag1;
 	uint32_t proptag2;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_BITMASK {
 	enum bm_relop bitmask_relop;
 	uint32_t proptag;
 	uint32_t mask;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_SIZE {
 	enum relop relop;
 	uint32_t proptag;
 	uint32_t size;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_EXIST {
 	uint32_t proptag;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_SUBOBJ {
 	uint32_t subobject;
 	RESTRICTION res;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_COMMENT {
 	uint8_t count;
 	TAGGED_PROPVAL *ppropval;
 	RESTRICTION *pres;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_COUNT {
 	uint32_t count;
 	RESTRICTION sub_res;
+
+	std::string repr() const;
 };
 
 struct RULE_ACTIONS {
