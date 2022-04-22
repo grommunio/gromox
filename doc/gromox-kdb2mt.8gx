@@ -126,7 +126,7 @@ want to mix your (existing) with their mails.
 \fBSRCPASS\fP
 Password for the source SQL connection.
 .SH Examples
-Scenario 1. Gromox and Kopano are located on two different hosts; gromox\-kdb2mt
+Applicable to when Gromox and Kopano are located on two different hosts: gromox\-kdb2mt
 is executed from the Gromox system and pulls from a remote SQL and remote
 filesystem presented locally.
 .PP
@@ -134,13 +134,6 @@ sshfs root@kdb.lan:/var/lib/kopano/attachments /tmp/at
 .PP
 SRCPASS=sqlrootpass gromox\-kdb2mt \-\-src\-host kdb.lan \-\-src\-at /tmp/at
 \-\-src\-mbox jdoe | gromox\-mt2exm \-u target@domain.de
-.PP
-Scenario 2. Gromox can be installed on the Kopano host, pulling from a
-local/remote SQL and local filesystem, while sending its export stream to
-another machine.
-.PP
-gromox\-kdb2mt \-\-src\-at /var/lib/kopano/attachments \-\-src\-mbox jdoe |
-ssh \-T \-e none root@gromox.lan "gromox\-mt2exm \-u target@domain.de"
 .PP
 It is also possible to copy the attachment directory beforehand, or to store
 the MT data stream generated on stdout to a file, though doing so would
