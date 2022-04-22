@@ -3506,7 +3506,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			}
 		}
 		}
-	} else if (strcasecmp(head_ct, "multipart/signed") == 0) {
+	// multipart/signed is SMIME only if protocol=application/pkcs7-mime
+	} else if (strcasecmp(head_ct, "multipart/signed") == 0 &&
+	    oxcmail_get_content_param(phead, "protocol", tmp_buff, arsizeof(tmp_buff)) &&
+	    strcasecmp(tmp_buff, "application/pkcs7-mime") == 0) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned") != 0) {
 			message_content_free(pmsg);
 			return NULL;
