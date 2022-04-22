@@ -4016,41 +4016,30 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite,
 		switch (rcon->fuzzy_level & 0xFFFF) {
 		case FL_FULLSTRING:
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
+				return strcasecmp(static_cast<char *>(rcon->propval.pvalue),
+				       static_cast<char *>(pvalue)) == 0;
 			} else {
-				if (strcmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
+				return strcmp(static_cast<char *>(rcon->propval.pvalue),
+				       static_cast<char *>(pvalue)) == 0;
 			}
 			return FALSE;
 		case FL_SUBSTRING:
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-				return FALSE;
+				return strcasestr(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
 			} else {
-				if (strstr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
+				return strstr(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
 			}
 			return FALSE;
 		case FL_PREFIX:
 			len = strlen(static_cast<char *>(rcon->propval.pvalue));
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-				return FALSE;
+				return strncasecmp(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
 			} else {
-				if (strncmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-				return FALSE;
+				return strncmp(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
 			}
 			return FALSE;
 		}
@@ -4064,10 +4053,8 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite,
 		if (rprop->proptag == PROP_TAG_ANR) {
 			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
-			if (strcasestr(static_cast<char *>(pvalue),
-			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-				return TRUE;
-			return FALSE;
+			return strcasestr(static_cast<char *>(pvalue),
+			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 		}
 		return propval_compare_relop(rprop->relop,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
@@ -4094,13 +4081,9 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite,
 			return FALSE;
 		switch (rbm->bitmask_relop) {
 		case BMR_EQZ:
-			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
-				return TRUE;
-			break;
+			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0;
 		case BMR_NEZ:
-			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
-				return TRUE;
-			break;
+			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) != 0;
 		}	
 		return FALSE;
 	}
@@ -4188,10 +4171,8 @@ static bool cu_eval_subobj_restriction(sqlite3 *psqlite, uint32_t cpid,
 				return FALSE;
 		return TRUE;
 	case RES_NOT:
-		if (cu_eval_subobj_restriction(psqlite, cpid,
-		    message_id, proptag, &pres->xnot->res))
-			return FALSE;
-		return TRUE;
+		return !cu_eval_subobj_restriction(psqlite, cpid,
+		       message_id, proptag, &pres->xnot->res);
 	case RES_CONTENT:
 	case RES_PROPERTY:
 	case RES_PROPCOMPARE:
@@ -4229,10 +4210,8 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 				return FALSE;
 		return TRUE;
 	case RES_NOT:
-		if (cu_eval_folder_restriction(psqlite,
-		    folder_id, &pres->xnot->res))
-			return FALSE;
-		return TRUE;
+		return !cu_eval_folder_restriction(psqlite,
+		       folder_id, &pres->xnot->res);
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
 		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
@@ -4246,41 +4225,30 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		switch (rcon->fuzzy_level & 0xFFFF) {
 		case FL_FULLSTRING:
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
+				return strcasecmp(static_cast<char *>(rcon->propval.pvalue),
+				       static_cast<char *>(pvalue)) == 0;
 			} else {
-				if (strcmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
+				return strcmp(static_cast<char *>(rcon->propval.pvalue),
+				       static_cast<char *>(pvalue)) == 0;
 			}
 			return FALSE;
 		case FL_SUBSTRING:
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-				return FALSE;
+				return strcasestr(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
 			} else {
-				if (strstr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
+				return strstr(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
 			}
 			return FALSE;
 		case FL_PREFIX: {
 			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-				return FALSE;
+				return strncasecmp(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
 			} else {
-				if (strncmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-				return FALSE;
+				return strncmp(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
 			}
 			return FALSE;
 		}
@@ -4296,10 +4264,8 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		if (rprop->proptag == PROP_TAG_ANR) {
 			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
-			if (strcasestr(static_cast<char *>(pvalue),
-			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-				return TRUE;
-			return FALSE;
+			return strcasestr(static_cast<char *>(pvalue),
+			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 		}
 		return propval_compare_relop(rprop->relop,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
@@ -4329,13 +4295,9 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 			return FALSE;
 		switch (rbm->bitmask_relop) {
 		case BMR_EQZ:
-			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
-				return TRUE;
-			break;
+			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0;
 		case BMR_NEZ:
-			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
-				return TRUE;
-			break;
+			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) != 0;
 		}	
 		return FALSE;
 	}
@@ -4387,10 +4349,8 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 				return FALSE;
 		return TRUE;
 	case RES_NOT:
-		if (cu_eval_msg_restriction(psqlite,
-		    cpid, message_id, &pres->xnot->res))
-			return FALSE;
-		return TRUE;
+		return !cu_eval_msg_restriction(psqlite,
+		       cpid, message_id, &pres->xnot->res);
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
 		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
@@ -4405,41 +4365,30 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		switch (rcon->fuzzy_level & 0xFFFF) {
 		case FL_FULLSTRING:
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
+				return strcasecmp(static_cast<char *>(rcon->propval.pvalue),
+				       static_cast<char *>(pvalue)) == 0;
 			} else {
-				if (strcmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
+				return strcmp(static_cast<char *>(rcon->propval.pvalue),
+				       static_cast<char *>(pvalue)) == 0;
 			}
 			return FALSE;
 		case FL_SUBSTRING:
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-				return FALSE;
+				return strcasestr(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
 			} else {
-				if (strstr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
+				return strstr(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
 			}
 			return FALSE;
 		case FL_PREFIX: {
 			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-				return FALSE;
+				return strncasecmp(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
 			} else {
-				if (strncmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-				return FALSE;
+				return strncmp(static_cast<char *>(pvalue),
+				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
 			}
 			return FALSE;
 		}
@@ -4466,10 +4415,8 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 			if (rprop->proptag == PROP_TAG_ANR) {
 				if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 					return FALSE;
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-					return TRUE;
-				return FALSE;
+				return strcasestr(static_cast<char *>(pvalue),
+				       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 			}
 			break;
 		}
@@ -4501,13 +4448,9 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 			return FALSE;
 		switch (rbm->bitmask_relop) {
 		case BMR_EQZ:
-			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
-				return TRUE;
-			break;
+			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0;
 		case BMR_NEZ:
-			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
-				return TRUE;
-			break;
+			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) != 0;
 		}	
 		return FALSE;
 	}
