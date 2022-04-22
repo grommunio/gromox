@@ -126,18 +126,53 @@ want to mix your (existing) with their mails.
 \fBSRCPASS\fP
 Password for the source SQL connection.
 .SH Examples
-Applicable to when Gromox and Kopano are located on two different hosts: gromox\-kdb2mt
-is executed from the Gromox system and pulls from a remote SQL and remote
-filesystem presented locally.
+.SS Common scenario (Separate hosts)
+When Gromox and Kopano run on different hosts, and you wish to have the Gromox
+host to initiate all necessary connections.
 .PP
-sshfs root@kdb.lan:/var/lib/kopano/attachments /tmp/at
+Step 1. Establish an sshfs mount. This is used to get at the attachment
+directory of Kopano Core. Command:
 .PP
-SRCPASS=sqlrootpass gromox\-kdb2mt \-\-src\-host kdb.lan \-\-src\-at /tmp/at
-\-\-src\-mbox jdoe | gromox\-mt2exm \-u target@domain.de
+.RS 4
+sshfs root@kp:/var/lib/kopano/attachment /mnt
+.RE
 .PP
-It is also possible to copy the attachment directory beforehand, or to store
-the MT data stream generated on stdout to a file, though doing so would
-naturally require additional disk space.
+For this to work, root logins need to be possible in some form (password or
+pubkey-based authentication).
+.PP
+Step 2. Establish an SSH tunnel. This is used to get at the MariaDB/MySQL
+database, assuming that this database is not already accepting connections on
+port 3306. Command:
+.PP
+.RS 4
+ssh -L 12345:localhost:3306 root@kp
+.RE
+.PP
+This way, the database can be accessed as 127.0.0.1:12345 later.
+.PP
+Step 3. Locate the MariaDB connection parameters that you want to use. You can
+use the MariaDB "root" user (if available), or reuse the credentials from
+/etc/kopano/server.cfg (often a "kopano" user).
+.PP
+Step 4. Run the conversion. The use of "127.0.0.1" is necessary to bypass the
+special meaning of "localhost" (which implies the use of an AF_LOCAL socket,
+e.g. /run/mysql/mysql.sock). Command:
+.PP
+.RS 4
+SRCPASS=kopanosqlpass gromox\-kdb2mt \-\-src\-host 127.0.0.1 \-\-src\-port
+12345 \-\-src\-user kopano \-\-src\-at /mnt \-\-src\-mbox jdoe | gromox\-mt2exm
+\-u target@domain.de
+.RE
+.PP
+Done! The speed of the operation depends on the capabilities of the network
+and the source database (latency more so than throughput).
+.SS Other options
+If the Gromox host is not allowed to connect to the Kopano host for reasons
+of networking and/or firewall setups, there are plenty of other ways to
+carry over the data. Administrators are asked to use their experience to
+mix and match the plethora of utilities available at their disposal.
+Possible operations include mysqldump(1), sftp(1), rsync(1), tar(1) and
+curl(1).
 .SH Store lookup using Kopano tools
 If kdb2mt's built-in heuristic \-\-src\-mbox resolution mechanism is not
 adequate enough, you can use utilities from the Kopano installation, provided
