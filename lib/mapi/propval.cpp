@@ -688,6 +688,18 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 
 namespace gromox {
 
+bool propval_compare_relop_nullok(enum relop relop, uint16_t proptype,
+    const void *a, const void *b)
+{
+	/*
+	 * EXC2019-compatible behavior: absent values sort before anything
+	 * else, and compare equal to another absent property.
+	 */
+	if (a == nullptr)
+		return three_way_evaluate(b == nullptr ? 0 : -1, relop);
+	return b == nullptr ? 1 : propval_compare_relop(relop, proptype, a, b);
+}
+
 bool three_way_evaluate(int order, enum relop r)
 {
 	switch (r) {

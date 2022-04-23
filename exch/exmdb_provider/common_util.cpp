@@ -3921,8 +3921,11 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite,
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
 		if (!cu_get_property(table_type, id, cpid, psqlite,
-		    rprop->proptag, &pvalue) || pvalue == nullptr)
+		    rprop->proptag, &pvalue))
 			return FALSE;
+		if (pvalue == nullptr)
+			return propval_compare_relop_nullok(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 		if (rprop->proptag == PROP_TAG_ANR) {
 			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
@@ -3937,12 +3940,12 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite,
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!cu_get_property(table_type, id, cpid, psqlite,
-		    rprop->proptag1, &pvalue) || pvalue == nullptr)
+		    rprop->proptag1, &pvalue))
 			return FALSE;
 		if (!cu_get_property(table_type, id, cpid, psqlite,
-		    rprop->proptag2, &pvalue1) || pvalue1 == nullptr)
+		    rprop->proptag2, &pvalue1))
 			return FALSE;
-		return propval_compare_relop(rprop->relop,
+		return propval_compare_relop_nullok(rprop->relop,
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RES_BITMASK: {
@@ -3963,10 +3966,10 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite,
 	case RES_SIZE: {
 		auto rsize = pres->size;
 		if (!cu_get_property(table_type, id, cpid, psqlite,
-		    rsize->proptag, &pvalue) || pvalue == nullptr)
+		    rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PT_LONG,
+		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
+		return propval_compare_relop_nullok(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST: {
@@ -4128,9 +4131,11 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
 		if (!cu_get_property(db_table::folder_props,
-		    folder_id, 0, psqlite, rprop->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		    folder_id, 0, psqlite, rprop->proptag, &pvalue))
 			return FALSE;
+		if (pvalue == nullptr)
+			return propval_compare_relop_nullok(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 		if (rprop->proptag == PROP_TAG_ANR) {
 			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
@@ -4145,14 +4150,12 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!cu_get_property(db_table::folder_props,
-		    folder_id, 0, psqlite, rprop->proptag1, &pvalue) ||
-		    pvalue == nullptr)
+		    folder_id, 0, psqlite, rprop->proptag1, &pvalue))
 			return FALSE;
 		if (!cu_get_property(db_table::folder_props,
-		    folder_id, 0, psqlite, rprop->proptag2, &pvalue1) ||
-		    pvalue1 == nullptr)
+		    folder_id, 0, psqlite, rprop->proptag2, &pvalue1))
 			return FALSE;
-		return propval_compare_relop(rprop->relop,
+		return propval_compare_relop_nullok(rprop->relop,
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RES_BITMASK: {
@@ -4174,11 +4177,10 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 	case RES_SIZE: {
 		auto rsize = pres->size;
 		if (!cu_get_property(db_table::folder_props,
-		    folder_id, 0, psqlite, rsize->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		    folder_id, 0, psqlite, rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PT_LONG,
+		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
+		return propval_compare_relop_nullok(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST:
@@ -4273,9 +4275,10 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 			break;
 		default:
 			if (!cu_get_property(db_table::msg_props,
-			    message_id, cpid, psqlite, rprop->proptag, &pvalue) ||
-			    pvalue == nullptr)
+			    message_id, cpid, psqlite, rprop->proptag, &pvalue))
 				return FALSE;
+			if (pvalue == nullptr)
+				break;
 			if (rprop->proptag == PROP_TAG_ANR) {
 				if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 					return FALSE;
@@ -4284,7 +4287,7 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 			}
 			break;
 		}
-		return propval_compare_relop(rprop->relop,
+		return propval_compare_relop_nullok(rprop->relop,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RES_PROPCOMPARE: {
@@ -4292,14 +4295,12 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!cu_get_property(db_table::msg_props,
-		    message_id, cpid, psqlite, rprop->proptag1, &pvalue) ||
-		    pvalue == nullptr)
+		    message_id, cpid, psqlite, rprop->proptag1, &pvalue))
 			return FALSE;
 		if (!cu_get_property(db_table::msg_props,
-		    message_id, cpid, psqlite, rprop->proptag2, &pvalue1) ||
-		    pvalue1 == nullptr)
+		    message_id, cpid, psqlite, rprop->proptag2, &pvalue1))
 			return FALSE;
-		return propval_compare_relop(rprop->relop,
+		return propval_compare_relop_nullok(rprop->relop,
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RES_BITMASK: {
@@ -4321,11 +4322,10 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 	case RES_SIZE: {
 		auto rsize = pres->size;
 		if (!cu_get_property(db_table::msg_props,
-		    message_id, cpid, psqlite, rsize->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		    message_id, cpid, psqlite, rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PT_LONG,
+		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
+		return propval_compare_relop_nullok(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST:
