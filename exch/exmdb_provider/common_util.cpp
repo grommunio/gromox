@@ -3948,7 +3948,7 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite,
 		    rprop->proptag1, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		if (!cu_get_property(table_type, id, cpid, psqlite,
-		    rprop->proptag1, &pvalue1) || pvalue1 == nullptr)
+		    rprop->proptag2, &pvalue1) || pvalue1 == nullptr)
 			return FALSE;
 		return propval_compare_relop(rprop->relop,
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
@@ -4306,7 +4306,7 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		    pvalue == nullptr)
 			return FALSE;
 		if (!cu_get_property(db_table::msg_props,
-		    message_id, cpid, psqlite, rprop->proptag1, &pvalue1) ||
+		    message_id, cpid, psqlite, rprop->proptag2, &pvalue1) ||
 		    pvalue1 == nullptr)
 			return FALSE;
 		return propval_compare_relop(rprop->relop,
