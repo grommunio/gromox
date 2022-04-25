@@ -3827,27 +3827,20 @@ BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static BINARY* common_util_get_message_parent_svrid(
-	sqlite3 *psqlite, uint64_t message_id)
+static SVREID *cu_get_msg_parent_svreid(sqlite3 *psqlite, uint64_t message_id)
 {
-	EXT_PUSH ext_push;
 	uint64_t folder_id;
 	
 	if (!common_util_get_message_parent_folder(psqlite, message_id, &folder_id))
 		return NULL;	
-	auto pbin = cu_alloc<BINARY>();
-	if (pbin == nullptr)
+	auto s = cu_alloc<SVREID>();
+	if (s == nullptr)
 		return NULL;
-	pbin->cb = sizeof(uint8_t) + sizeof(uint32_t) + 
-				sizeof(uint64_t) + sizeof(uint64_t);
-	pbin->pv = common_util_alloc(pbin->cb);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, pbin->cb, 0) ||
-	    ext_push.p_uint8(1) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint64(folder_id) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint64(0) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS)
-		return NULL;
-	return ext_push.m_offset == pbin->cb ? pbin : nullptr;
+	s->pbin = nullptr;
+	s->folder_id = folder_id;
+	s->message_id = 0;
+	s->instance = 0;
+	return s;
 }
 
 BOOL common_util_load_search_scopes(sqlite3 *psqlite,
@@ -4274,9 +4267,7 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		switch (rprop->proptag) {
 		case PR_PARENT_SVREID:
 		case PR_PARENT_ENTRYID:
-			/* parent entryid under this situation is a SVREID binary */
-			pvalue = common_util_get_message_parent_svrid(
-									psqlite, message_id);
+			pvalue = cu_get_msg_parent_svreid(psqlite, message_id);
 			if (pvalue == nullptr)
 				return FALSE;
 			break;
