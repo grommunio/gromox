@@ -1715,8 +1715,8 @@ bool ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage, char *pstr,
 	return false;
 }
 
-static BOOL ab_tree_match_node(const SIMPLE_TREE_NODE *pnode,
-	uint32_t codepage, const RESTRICTION *pfilter)
+static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, uint32_t codepage,
+    const RESTRICTION *pfilter)
 {
 	int len;
 	char *ptoken;

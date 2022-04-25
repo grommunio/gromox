@@ -848,8 +848,8 @@ static void table_object_reset(table_object *ptable)
 	ptable->clear_bookmarks();
 }
 
-static BOOL table_object_evaluate_restriction(
-	const TPROPVAL_ARRAY *ppropvals, const RESTRICTION *pres)
+static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
+    const RESTRICTION *pres)
 {
 	uint32_t val_size;
 	
@@ -984,7 +984,7 @@ static BOOL table_object_evaluate_restriction(
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST:
-		return ppropvals->has(pres->exist->proptag) ? TRUE : false;
+		return ppropvals->has(pres->exist->proptag);
 	case RES_COMMENT:
 		if (pres->comment->pres == nullptr)
 			return TRUE;

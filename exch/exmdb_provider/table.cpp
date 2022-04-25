@@ -1426,8 +1426,8 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	return TRUE;
 }
 
-static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
-	uint64_t rule_id, const RESTRICTION *pres)
+static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
+    const RESTRICTION *pres)
 {
 	void *pvalue;
 	void *pvalue1;
@@ -2310,9 +2310,8 @@ static BOOL table_get_hierarchy_row_property(
 	return TRUE;
 }
 
-static BOOL table_evaluate_row_restriction(
-	const RESTRICTION *pres, void *pparam,
-	TABLE_GET_ROW_PROPERTY get_property)
+static bool table_evaluate_row_restriction(const RESTRICTION *pres,
+    void *pparam, TABLE_GET_ROW_PROPERTY get_property)
 {
 	void *pvalue;
 	void *pvalue1;

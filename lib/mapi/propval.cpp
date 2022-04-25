@@ -544,7 +544,7 @@ int SVREID_compare(const SVREID *a, const SVREID *b)
 	return a->compare(*b);
 }
 
-BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
+bool propval_compare_relop(enum relop relop, uint16_t proptype,
     const void *pvalue1, const void *pvalue2)
 {
 #define MVCOMPARE(field) do { \
@@ -682,7 +682,7 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 		break;
 	}
 	}
-	return three_way_evaluate(cmp, static_cast<enum relop>(relop)) ? TRUE : false;
+	return three_way_evaluate(cmp, relop);
 #undef MVCOMPARE
 }
 
