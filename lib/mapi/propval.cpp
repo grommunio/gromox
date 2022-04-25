@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
@@ -500,6 +501,49 @@ int BINARY::compare(const BINARY &o) const
 	return memcmp(pv, o.pv, cb);
 }
 
+int SVREID::compare(const SVREID &o) const
+{
+	/*
+	 * This performs a FLATUID/bytewise comparison similar to BINARY properties.
+	 * Still need to validate if Exchange actually does the same.
+	 */
+	uint16_t len = cpu_to_le16(pbin != nullptr ? pbin->cb + 1 : 21);
+	uint16_t o_len = cpu_to_le16(o.pbin != nullptr ? o.pbin->cb + 1 : 21);
+	uint8_t flag = pbin == nullptr;
+	uint8_t o_flag = o.pbin == nullptr;
+	auto ret = memcmp(&len, &o_len, sizeof(uint16_t));
+	if (ret != 0)
+		return ret;
+	ret = memcmp(&flag, &o_flag, sizeof(uint8_t));
+	if (ret != 0)
+		return ret;
+	uint8_t buf[20], o_buf[20];
+	BINARY bin{20, buf}, o_bin{20, o_buf};
+	if (flag) {
+		cpu_to_le64p(&buf[0], folder_id);
+		cpu_to_le64p(&buf[8], message_id);
+		cpu_to_le32p(&buf[16], instance);
+	}
+	if (o_flag) {
+		cpu_to_le64p(&o_buf[0], o.folder_id);
+		cpu_to_le64p(&o_buf[8], o.message_id);
+		cpu_to_le32p(&o_buf[16], o.instance);
+	}
+	if (flag)
+		return bin.compare(o_flag ? o_bin : *o.pbin);
+	else
+		return pbin->compare(o_flag ? o_bin : *o.pbin);
+}
+
+int SVREID_compare(const SVREID *a, const SVREID *b)
+{
+	if (a == nullptr)
+		return b == nullptr ? 0 : -1;
+	if (b == nullptr)
+		return 1;
+	return a->compare(*b);
+}
+
 BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
     const void *pvalue1, const void *pvalue2)
 {
@@ -590,49 +634,15 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 		return FALSE;
 	}
 	case PT_SVREID: {
-		auto sv1 = static_cast<const SVREID *>(pvalue1);
-		auto sv2 = static_cast<const SVREID *>(pvalue2);
+		auto &sv1 = *static_cast<const SVREID *>(pvalue1);
+		auto &sv2 = *static_cast<const SVREID *>(pvalue2);
 		switch (relop) {
-		case RELOP_EQ:
-			if ((sv1->pbin == nullptr && sv2->pbin != nullptr) ||
-			    (sv1->pbin != nullptr && sv2->pbin == nullptr)) {
-				return FALSE;	
-			} else if (NULL != sv1->pbin && NULL != sv2->pbin) {
-				if (sv1->pbin->cb != sv2->pbin->cb)
-					return FALSE;	
-				if (sv1->pbin->cb == 0)
-					return TRUE;
-				if (memcmp(sv1->pbin->pv, sv2->pbin->pv, sv1->pbin->cb) == 0)
-					return TRUE;	
-				return FALSE;
-			}
-			if (sv1->folder_id != sv2->folder_id)
-				return FALSE;
-			if (sv1->message_id != sv2->message_id)
-				return FALSE;
-			if (sv1->instance != sv2->instance)
-				return FALSE;
-			return TRUE;
-		case RELOP_NE:
-			if ((sv1->pbin == nullptr && sv2->pbin != nullptr) ||
-			    (sv1->pbin != nullptr && sv2->pbin == nullptr)) {
-				return TRUE;	
-			} else if (sv1->pbin != nullptr && sv2->pbin != nullptr) {
-				if (sv1->pbin->cb != sv2->pbin->cb)
-					return TRUE;	
-				if (sv1->pbin->cb == 0)
-					return FALSE;
-				if (memcmp(sv1->pbin->pv, sv2->pbin->pv, sv1->pbin->cb) != 0)
-					return TRUE;	
-				return FALSE;
-			}
-			if (sv1->folder_id == sv2->folder_id)
-				return FALSE;
-			if (sv1->message_id == sv2->message_id)
-				return FALSE;
-			if (sv1->instance == sv2->instance)
-				return FALSE;
-			return TRUE;
+		case RELOP_LT: return sv1.compare(sv2) < 0 ? TRUE : false;
+		case RELOP_LE: return sv1.compare(sv2) <= 0 ? TRUE : false;
+		case RELOP_GT: return sv1.compare(sv2) > 0 ? TRUE : false;
+		case RELOP_GE: return sv1.compare(sv2) >= 0 ? TRUE : false;
+		case RELOP_EQ: return sv1.compare(sv2) == 0 ? TRUE : false;
+		case RELOP_NE: return sv1.compare(sv2) != 0 ? TRUE : false;
 		}
 		return FALSE;
 	}

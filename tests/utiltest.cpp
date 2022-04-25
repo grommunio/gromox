@@ -1,10 +1,12 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/propval.hpp>
 #include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/util.hpp> 
+#include <gromox/util.hpp>
 using namespace gromox;
 
 static int t_id1()
@@ -173,6 +175,25 @@ static void t_cmp_guid()
 	assert(g1.compare(g2) < 0);
 }
 
+static void t_cmp_svreid()
+{
+	uint8_t eid1[] = "\x02\x00\x00\x01", eid2[] = "\x03\x00\x00\x00\x01";
+	EXT_PULL ep;
+	SVREID s1, s2;
+	ep.init(eid1, sizeof(eid1), malloc, 0);
+	ep.g_svreid(&s1);
+	ep.init(eid2, sizeof(eid2), malloc, 0);
+	ep.g_svreid(&s2);
+	assert(s1.compare(s2) < 0);
+	assert(s1.compare(s1) == 0);
+	assert(s2.compare(s1) > 0);
+	assert(SVREID_compare(nullptr, &s1) < 0);
+	assert(SVREID_compare(nullptr, &s2) < 0);
+	assert(SVREID_compare(nullptr, nullptr) == 0);
+	assert(SVREID_compare(&s1, nullptr) > 0);
+	assert(SVREID_compare(&s2, nullptr) > 0);
+}
+
 int main()
 {
 	using fpt = decltype(&t_interval);
@@ -186,5 +207,6 @@ int main()
 	t_respool();
 	t_cmp_binary();
 	t_cmp_guid();
+	t_cmp_svreid();
 	return EXIT_SUCCESS;
 }

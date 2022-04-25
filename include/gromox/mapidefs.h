@@ -1770,6 +1770,8 @@ struct SVREID {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t instance;
+
+	int compare(const SVREID &) const;
 };
 
 struct TAGGED_PROPVAL {
