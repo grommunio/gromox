@@ -487,6 +487,19 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	return 0;
 }
 
+int BINARY::compare(const BINARY &o) const
+{
+	/*
+	 * The sorting by length could be explained by BINARY's encoding on the wire
+	 * (length prefixes the byte block). It could also just be convention.
+	 */
+	if (cb < o.cb)
+		return -1;
+	if (cb > o.cb)
+		return 1;
+	return memcmp(pv, o.pv, cb);
+}
+
 BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
     const void *pvalue1, const void *pvalue2)
 {
@@ -564,77 +577,15 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 		return FALSE;
 	}
 	case PT_BINARY: {
-		auto bv1 = static_cast<const BINARY *>(pvalue1);
-		auto bv2 = static_cast<const BINARY *>(pvalue2);
+		auto &bv1 = *static_cast<const BINARY *>(pvalue1);
+		auto &bv2 = *static_cast<const BINARY *>(pvalue2);
 		switch (relop) {
-		case RELOP_LT:
-			if (bv1->cb == 0 && bv2->cb != 0)
-				return TRUE;
-			if (bv1->cb == 0 || bv2->cb == 0)
-				return FALSE;	
-			if (bv1->cb > bv2->cb) {
-				if (memcmp(bv1->pv, bv2->pv, bv2->cb) < 0)
-					return TRUE;
-			} else {
-				if (memcmp(bv1->pv, bv2->pv, bv1->cb) < 0)
-					return TRUE;
-			}
-			return FALSE;
-		case RELOP_LE:
-			if (bv1->cb == 0)
-				return TRUE;
-			if (bv2->cb == 0)
-				return FALSE;
-			if (bv1->cb > bv2->cb) {
-				if (memcmp(bv1->pv, bv2->pv, bv2->cb) <= 0)
-					return TRUE;
-			} else {
-				if (memcmp(bv1->pv, bv2->pv, bv1->cb) <= 0)
-					return TRUE;
-			}
-			return FALSE;
-		case RELOP_GT:
-			if (bv1->cb != 0 && bv2->cb == 0)
-				return TRUE;
-			if (bv1->cb == 0 || bv2->cb == 0)
-				return FALSE;	
-			if (bv1->cb > bv2->cb) {
-				if (memcmp(bv1->pv, bv2->pv, bv2->cb) > 0)
-					return TRUE;
-			} else {
-				if (memcmp(bv1->pv, bv2->pv, bv1->cb) > 0)
-					return TRUE;
-			}
-			return FALSE;
-		case RELOP_GE:
-			if (bv2->cb == 0)
-				return TRUE;
-			if (bv1->cb == 0)
-				return FALSE;	
-			if (bv1->cb > bv2->cb) {
-				if (memcmp(bv1->pv, bv2->pv, bv2->cb) >= 0)
-					return TRUE;
-			} else {
-				if (memcmp(bv1->pv, bv2->pv, bv1->cb) >= 0)
-					return TRUE;
-			}
-			return FALSE;
-		case RELOP_EQ:
-			if (bv1->cb != bv2->cb)
-				return FALSE;
-			if (bv1->pv == nullptr)
-				return TRUE;
-			if (memcmp(bv1->pv, bv2->pv, bv1->cb) == 0)
-				return TRUE;
-			return FALSE;
-		case RELOP_NE:
-			if (bv1->cb != bv2->cb)
-				return TRUE;
-			if (bv1->pv == nullptr)
-				return FALSE;
-			if (memcmp(bv1->pv, bv2->pv, bv1->cb) != 0)
-				return TRUE;
-			return FALSE;
+		case RELOP_LT: return bv1.compare(bv2) < 0 ? TRUE : false;
+		case RELOP_LE: return bv1.compare(bv2) <= 0 ? TRUE : false;
+		case RELOP_GT: return bv1.compare(bv2) > 0 ? TRUE : false;
+		case RELOP_GE: return bv1.compare(bv2) >= 0 ? TRUE : false;
+		case RELOP_EQ: return bv1.compare(bv2) == 0 ? TRUE : false;
+		case RELOP_NE: return bv1.compare(bv2) != 0 ? TRUE : false;
 		}
 		return FALSE;
 	}

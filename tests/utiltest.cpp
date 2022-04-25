@@ -160,6 +160,13 @@ static void t_respool()
 	printf("%d\n", mt->zz);
 }
 
+static void t_cmp_binary()
+{
+	uint8_t x[] = "X", xy[] = "XY";
+	BINARY p = {1, x}, q = {2, xy};
+	assert(p.compare(q) < 0);
+}
+
 int main()
 {
 	using fpt = decltype(&t_interval);
@@ -171,5 +178,6 @@ int main()
 			return ret;
 	}
 	t_respool();
+	t_cmp_binary();
 	return EXIT_SUCCESS;
 }

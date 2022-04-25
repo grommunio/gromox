@@ -1201,19 +1201,8 @@ static int db_engine_compare_propval(
 		return strcasecmp(static_cast<char *>(pvalue1), static_cast<char *>(pvalue2));
 	case PT_CLSID:
 		return static_cast<GUID *>(pvalue1)->compare(*static_cast<GUID *>(pvalue2));
-	case PT_BINARY: {
-		auto bv1 = static_cast<BINARY *>(pvalue1), bv2 = static_cast<BINARY *>(pvalue2);
-		if (bv1->cb == 0 && bv2->cb != 0)
-			return -1;
-		else if (bv1->cb != 0 && bv2->cb == 0)
-			return 1;
-		else if (bv1->cb == 0 && bv2->cb == 0)
-			return 0;	
-		if (bv1->cb > bv2->cb)
-			return memcmp(bv1->pb, bv2->pb, bv2->cb);
-		else
-			return memcmp(bv1->pb, bv2->pb, bv1->cb);
-	}
+	case PT_BINARY:
+		return static_cast<BINARY *>(pvalue1)->compare(*static_cast<BINARY *>(pvalue2));
 	}
 	return 0;
 }

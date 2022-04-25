@@ -1567,6 +1567,8 @@ struct BINARY {
 			void *pv, *vdata;
 		};
 	};
+
+	int compare(const BINARY &) const;
 };
 using DATA_BLOB = BINARY;
 
