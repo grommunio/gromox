@@ -22,15 +22,24 @@ static inline const char *relop_repr(relop r)
 std::string TAGGED_PROPVAL::repr() const
 {
 	std::stringstream ss;
-	ss << "PT{" << std::hex << proptag << "h,";
 	switch (PROP_TYPE(proptag)) {
-	case PT_LONG: ss << *static_cast<uint32_t *>(pvalue); break;
-	case PT_I8: ss << *static_cast<uint64_t *>(pvalue); break;
-	case PT_STRING8:
-	case PT_UNICODE: ss << static_cast<const char *>(pvalue); break;
-	default: ss << "notshown"; break;
+	#define PTI << std::hex << PROP_ID(proptag) << "h," << std::dec
+	case PT_LONG: ss << "PT_LONG{" PTI << *static_cast<uint32_t *>(pvalue) << "}"; break;
+	case PT_I8: ss << "PT_I8{" PTI << *static_cast<uint64_t *>(pvalue) << "}"; break;
+	case PT_STRING8: ss << "PT_STRING8{" PTI << "\"" << static_cast<const char *>(pvalue) << "\"}"; break;
+	case PT_UNICODE: ss << "PT_UNICODE{" PTI << "\"" << static_cast<const char *>(pvalue) << "\"}"; break;
+	case PT_SVREID: {
+		auto &x = *static_cast<const SVREID *>(pvalue);
+		ss << "PT_SVREID{" PTI;
+		if (x.pbin != nullptr)
+			ss << x.pbin->cb << "bytes}";
+		else
+			ss << "fid=" << std::hex << x.folder_id << ",mid=" << x.message_id << ",ins=" << x.instance << "}";
+		break;
 	}
-	ss << "}";
+	default: ss << "PT_" << std::hex << proptag << "h{}"; break;
+	#undef PTI
+	}
 	return std::move(ss).str();
 }
 
