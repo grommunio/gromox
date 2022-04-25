@@ -25,6 +25,7 @@
 #include <gromox/oxoabkt.hpp>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
+#include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
@@ -1300,86 +1301,26 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 		    pfilter->res.res_property.proptag, &prop_val,
 		    temp_buff, GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
 			return FALSE;
+		int cmp;
 		switch (PROP_TYPE(pfilter->res.res_property.proptag)) {
-		case PT_SHORT: {
-			auto s = pfilter->res.res_property.pprop->value.s;
-			switch (pfilter->res.res_property.relop) {
-			case RELOP_LT:
-				return prop_val.value.s < s ? TRUE : false;
-			case RELOP_LE:
-				return prop_val.value.s <= s ? TRUE : false;
-			case RELOP_GT:
-				return prop_val.value.s > s ? TRUE : false;
-			case RELOP_GE:
-				return prop_val.value.s >= s ? TRUE : false;
-			case RELOP_EQ:
-				return prop_val.value.s == s ? TRUE : false;
-			case RELOP_NE:
-				return prop_val.value.s != s ? TRUE : false;
-			}
-			return FALSE;
-		}
-		case PT_LONG: {
-			auto l = pfilter->res.res_property.pprop->value.l;
-			switch (pfilter->res.res_property.relop) {
-			case RELOP_LT:
-				return prop_val.value.l < l ? TRUE : false;
-			case RELOP_LE:
-				return prop_val.value.l <= l ? TRUE : false;
-			case RELOP_GT:
-				return prop_val.value.l > l ? TRUE : false;
-			case RELOP_GE:
-				return prop_val.value.l >= l ? TRUE : false;
-			case RELOP_EQ:
-				return prop_val.value.l == l ? TRUE : false;
-			case RELOP_NE:
-				return prop_val.value.l != l ? TRUE : false;
-			}
-			return FALSE;
-		}
-		case PT_BOOLEAN: {
-			auto b = pfilter->res.res_property.pprop->value.b;
-			switch (pfilter->res.res_property.relop) {
-			case RELOP_LT:
-				return prop_val.value.b < b ? TRUE : false;
-			case RELOP_LE:
-				return prop_val.value.b <= b ? TRUE : false;
-			case RELOP_GT:
-				return prop_val.value.b > b ? TRUE : false;
-			case RELOP_GE:
-				return prop_val.value.b >= b ? TRUE : false;
-			case RELOP_EQ:
-				return prop_val.value.b == b ? TRUE : false;
-			case RELOP_NE:
-				return prop_val.value.b != b ? TRUE : false;
-			}
-			return FALSE;
-		}
+		case PT_SHORT:
+			cmp = three_way_compare(prop_val.value.s, pfilter->res.res_property.pprop->value.s);
+			break;
+		case PT_LONG:
+			cmp = three_way_compare(prop_val.value.l, pfilter->res.res_property.pprop->value.l);
+			break;
+		case PT_BOOLEAN:
+			cmp = three_way_compare(prop_val.value.b, pfilter->res.res_property.pprop->value.b);
+			break;
 		case PT_STRING8:
-		case PT_UNICODE: {
-			auto cmp = strcasecmp(prop_val.value.pstr,
-			           pfilter->res.res_property.pprop->value.pstr);
-			switch (pfilter->res.res_property.relop) {
-			case RELOP_LT:
-				return cmp < 0 ? TRUE : false;
-			case RELOP_LE:
-				return cmp <= 0 ? TRUE : false;
-			case RELOP_GT:
-				return cmp > 0 ? TRUE : false;
-			case RELOP_GE:
-				return cmp >= 0 ? TRUE : false;
-			case RELOP_EQ:
-				return cmp == 0 ? TRUE : false;
-			case RELOP_NE:
-				return cmp != 0 ? TRUE : false;
-			}
-			return FALSE;
-		}
+		case PT_UNICODE:
+			cmp = strcasecmp(prop_val.value.pstr, pfilter->res.res_property.pprop->value.pstr);
+			break;
 		default:
 			fprintf(stderr, "E-1922: unhandled proptag %xh\n", pfilter->res.res_property.proptag);
 			return false;
 		}
-		return FALSE;
+		return three_way_evaluate(cmp, static_cast<relop>(pfilter->res.res_property.relop)) ? TRUE : false;
 	case RES_PROPCOMPARE:
 		return FALSE;
 	case RES_BITMASK:
