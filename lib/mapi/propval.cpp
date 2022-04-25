@@ -558,6 +558,33 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 		} \
 		return false; \
 	} while (false)
+#define MVCOMPARE(field) do { \
+		switch (relop) { \
+		case RELOP_LT: \
+			if (a->count < b->count) return TRUE; \
+			if (a->count > b->count) return false; \
+			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) < 0 ? TRUE : false; \
+		case RELOP_LE: \
+			if (a->count < b->count) return TRUE; \
+			if (a->count > b->count) return false; \
+			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) <= 0 ? TRUE : false; \
+		case RELOP_GT: \
+			if (a->count > b->count) return TRUE; \
+			if (a->count < b->count) return false; \
+			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) > 0 ? TRUE : false; \
+		case RELOP_GE: \
+			if (a->count > b->count) return TRUE; \
+			if (a->count < b->count) return false; \
+			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) >= 0 ? TRUE : false; \
+		case RELOP_EQ: \
+			if (a->count != b->count) return false; \
+			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) == 0 ? TRUE : false; \
+		case RELOP_NE: \
+			if (a->count != b->count) return TRUE; \
+			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) != 0 ? TRUE : false; \
+		} \
+		return false; \
+	} while (false)
 
 	switch (proptype) {
 	case PT_SHORT: {
@@ -647,94 +674,32 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 		return FALSE;
 	}
 	case PT_MV_SHORT: {
-		auto sa1 = static_cast<const SHORT_ARRAY *>(pvalue1);
-		auto sa2 = static_cast<const SHORT_ARRAY *>(pvalue2);
-		switch (relop) {
-		case RELOP_EQ:
-			if (sa1->count != sa2->count)
-				return FALSE;
-			if (memcmp(sa1->ps, sa2->ps, sizeof(uint16_t) * sa1->count) != 0)
-				return FALSE;
-			return TRUE;
-		case RELOP_NE:
-			if (sa1->count != sa2->count)
-				return TRUE;
-			if (memcmp(sa1->ps, sa2->ps, sizeof(uint16_t) * sa1->count) != 0)
-				return TRUE;
-			return FALSE;
-		}
-		return FALSE;
+		auto a = static_cast<const SHORT_ARRAY *>(pvalue1);
+		auto b = static_cast<const SHORT_ARRAY *>(pvalue2);
+		MVCOMPARE(ps);
 	}
 	case PT_MV_LONG: {
-		auto la1 = static_cast<const LONG_ARRAY *>(pvalue1);
-		auto la2 = static_cast<const LONG_ARRAY *>(pvalue2);
-		switch (relop) {
-		case RELOP_EQ:
-			if (la1->count != la2->count)
-				return FALSE;
-			if (memcmp(la1->pl, la2->pl, sizeof(uint32_t) * la1->count) != 0)
-				return FALSE;
-			return TRUE;
-		case RELOP_NE:
-			if (la1->count != la2->count)
-				return TRUE;
-			if (memcmp(la1->pl, la2->pl, sizeof(uint32_t) * la1->count) != 0)
-				return TRUE;
-			return FALSE;
-		}
-		return FALSE;
+		auto a = static_cast<const LONG_ARRAY *>(pvalue1);
+		auto b = static_cast<const LONG_ARRAY *>(pvalue2);
+		MVCOMPARE(pl);
 	}
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
 	case PT_MV_SYSTIME: {
-		auto la1 = static_cast<const LONGLONG_ARRAY *>(pvalue1);
-		auto la2 = static_cast<const LONGLONG_ARRAY *>(pvalue2);
-		switch (relop) {
-		case RELOP_EQ:
-			if (la1->count != la2->count)
-				return FALSE;
-			if (memcmp(la1->pll, la2->pll, sizeof(uint64_t) * la1->count) != 0)
-				return FALSE;
-			return TRUE;
-		case RELOP_NE:
-			if (la1->count != la2->count)
-				return TRUE;
-			if (memcmp(la1->pll, la2->pll, sizeof(uint64_t) * la1->count) != 0)
-				return TRUE;
-			return FALSE;
-		}
-		return FALSE;
+		auto a = static_cast<const LONGLONG_ARRAY *>(pvalue1);
+		auto b = static_cast<const LONGLONG_ARRAY *>(pvalue2);
+		MVCOMPARE(pll);
 	}
 	case PT_MV_FLOAT: {
 		auto a = static_cast<const FLOAT_ARRAY *>(pvalue1);
 		auto b = static_cast<const FLOAT_ARRAY *>(pvalue2);
-		switch (relop) {
-		case RELOP_EQ:
-			return a->count == b->count &&
-			       memcmp(a->mval, b->mval, sizeof(float) * a->count) == 0 ?
-			       TRUE : false;
-		case RELOP_NE:
-			return a->count != b->count ||
-			       memcmp(a->mval, b->mval, sizeof(float) * a->count) != 0 ?
-			       TRUE : false;
-		}
-		return false;
+		MVCOMPARE(mval);
 	}
 	case PT_MV_DOUBLE:
 	case PT_MV_APPTIME: {
 		auto a = static_cast<const DOUBLE_ARRAY *>(pvalue1);
 		auto b = static_cast<const DOUBLE_ARRAY *>(pvalue2);
-		switch (relop) {
-		case RELOP_EQ:
-			return a->count == b->count &&
-			       memcmp(a->mval, b->mval, sizeof(double) * a->count) == 0 ?
-			       TRUE : false;
-		case RELOP_NE:
-			return a->count != b->count ||
-			       memcmp(a->mval, b->mval, sizeof(double) * a->count) != 0 ?
-			       TRUE : false;
-		}
-		return false;
+		MVCOMPARE(mval);
 	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
@@ -965,4 +930,5 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 	}
 	return FALSE;
 #undef COMPARE
+#undef MVCOMPARE
 }
