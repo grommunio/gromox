@@ -810,6 +810,79 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 		}
 		return FALSE;
 	}
+	case PT_MV_CLSID: {
+		auto bv1 = static_cast<const GUID_ARRAY *>(pvalue1);
+		auto bv2 = static_cast<const GUID_ARRAY *>(pvalue2);
+		switch (relop) {
+		case RELOP_LT:
+			if (bv1->count < bv2->count)
+				return TRUE;
+			if (bv1->count > bv2->count)
+				return false;
+			for (size_t i = 0; i < bv1->count; ++i) {
+				auto ret = bv1->pguid[i].compare(bv2->pguid[i]);
+				if (ret < 0)
+					return TRUE;
+				else if (ret > 0)
+					return false;
+			}
+			return false;
+		case RELOP_LE:
+			if (bv1->count < bv2->count)
+				return TRUE;
+			if (bv1->count > bv2->count)
+				return false;
+			for (size_t i = 0; i < bv1->count; ++i) {
+				auto ret = bv1->pguid[i].compare(bv2->pguid[i]);
+				if (ret < 0)
+					return TRUE;
+				else if (ret > 0)
+					return false;
+			}
+			return TRUE;
+		case RELOP_GT:
+			if (bv1->count > bv2->count)
+				return TRUE;
+			if (bv1->count < bv2->count)
+				return false;
+			for (size_t i = 0; i < bv1->count; ++i) {
+				auto ret = bv1->pguid[i].compare(bv2->pguid[i]);
+				if (ret > 0)
+					return TRUE;
+				else if (ret < 0)
+					return false;
+			}
+			return false;
+		case RELOP_GE:
+			if (bv1->count > bv2->count)
+				return TRUE;
+			if (bv1->count < bv2->count)
+				return false;
+			for (size_t i = 0; i < bv1->count; ++i) {
+				auto ret = bv1->pguid[i].compare(bv2->pguid[i]);
+				if (ret > 0)
+					return TRUE;
+				else if (ret < 0)
+					return false;
+			}
+			return TRUE;
+		case RELOP_EQ:
+			if (bv1->count != bv2->count)
+				return FALSE;
+			for (size_t i = 0; i < bv1->count; ++i)
+				if (bv1->pguid[i].compare(bv2->pguid[i]) != 0)
+					return false;
+			return TRUE;
+		case RELOP_NE:
+			if (bv1->count != bv2->count)
+				return TRUE;
+			for (size_t i = 0; i < bv1->count; ++i)
+				if (bv1->pguid[i].compare(bv2->pguid[i]) != 0)
+					return TRUE;
+			return FALSE;
+		}
+		return FALSE;
+	}
 	case PT_MV_BINARY: {
 		auto bv1 = static_cast<const BINARY_ARRAY *>(pvalue1);
 		auto bv2 = static_cast<const BINARY_ARRAY *>(pvalue2);
