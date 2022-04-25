@@ -741,6 +741,58 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 		auto sa1 = static_cast<const STRING_ARRAY *>(pvalue1);
 		auto sa2 = static_cast<const STRING_ARRAY *>(pvalue2);
 		switch (relop) {
+		case RELOP_LT:
+			if (sa1->count < sa2->count)
+				return TRUE;
+			if (sa1->count > sa2->count)
+				return false;
+			for (size_t i = 0; i < sa1->count; ++i) {
+				auto ret = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]);
+				if (ret < 0)
+					return TRUE;
+				else if (ret > 0)
+					return false;
+			}
+			return false;
+		case RELOP_LE:
+			if (sa1->count < sa2->count)
+				return TRUE;
+			if (sa1->count > sa2->count)
+				return false;
+			for (size_t i = 0; i < sa1->count; ++i) {
+				auto ret = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]);
+				if (ret < 0)
+					return TRUE;
+				else if (ret > 0)
+					return false;
+			}
+			return TRUE;
+		case RELOP_GT:
+			if (sa1->count > sa2->count)
+				return TRUE;
+			if (sa1->count < sa2->count)
+				return false;
+			for (size_t i = 0; i < sa1->count; ++i) {
+				auto ret = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]);
+				if (ret > 0)
+					return TRUE;
+				else if (ret < 0)
+					return false;
+			}
+			return false;
+		case RELOP_GE:
+			if (sa1->count > sa2->count)
+				return TRUE;
+			if (sa1->count < sa2->count)
+				return false;
+			for (size_t i = 0; i < sa1->count; ++i) {
+				auto ret = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]);
+				if (ret > 0)
+					return TRUE;
+				else if (ret < 0)
+					return false;
+			}
+			return TRUE;
 		case RELOP_EQ:
 			if (sa1->count != sa2->count)
 				return FALSE;
