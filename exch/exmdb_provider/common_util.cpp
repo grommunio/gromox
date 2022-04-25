@@ -1592,11 +1592,7 @@ enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
 
 static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 {
-	pv.proptag = tag;
 	switch (tag) {
-	case PR_STORE_RECORD_KEY:
-		pv.pvalue = common_util_get_mailbox_guid(db);
-		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	case PR_STORE_STATE: {
 		auto v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
@@ -1636,7 +1632,6 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
     sqlite3 *db, uint64_t id)
 {
-	pv.proptag = tag;
 	switch (tag) {
 	case PR_ENTRYID:
 		pv.pvalue = common_util_to_folder_entryid(db, id);
@@ -1771,7 +1766,6 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
     uint64_t id, uint32_t cpid)
 {
-	pv.proptag = tag;
 	switch (tag) {
 	case PR_ENTRYID:
 		pv.pvalue = common_util_to_message_entryid(db, id);
@@ -1914,7 +1908,6 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
     sqlite3 *db, uint64_t id)
 {
-	pv.proptag = tag;
 	switch (tag) {
 	case PR_RECORD_KEY: {
 		auto ptmp_bin = cu_alloc<BINARY>();
@@ -1940,6 +1933,12 @@ static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
 static GP_RESULT gp_spectableprop(db_table table_type, uint32_t tag,
     TAGGED_PROPVAL &pv, sqlite3 *db, uint64_t id, uint32_t cpid)
 {
+	pv.proptag = tag;
+	switch (tag) {
+	case PR_STORE_RECORD_KEY:
+		pv.pvalue = common_util_get_mailbox_guid(db);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	}
 	switch (table_type) {
 	case db_table::store_props:
 		return gp_storeprop(tag, pv, db);
