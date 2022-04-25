@@ -7,3 +7,10 @@ void propval_free(uint16_t type, void *pvalue);
 uint32_t propval_size(uint16_t type, void *pvalue);
 extern GX_EXPORT BOOL propval_compare_relop(uint8_t relop, uint16_t proptype, const void *, const void *);
 extern GX_EXPORT int SVREID_compare(const SVREID *, const SVREID *);
+namespace gromox {
+extern GX_EXPORT bool three_way_evaluate(int, enum relop);
+template<typename T> static auto three_way_compare(T &&a, T &&b)
+{
+	return (a < b) ? -1 : (a == b) ? 0 : 1;
+}
+}

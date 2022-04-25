@@ -547,141 +547,78 @@ int SVREID_compare(const SVREID *a, const SVREID *b)
 BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
     const void *pvalue1, const void *pvalue2)
 {
-#define COMPARE() do { \
-		switch (relop) { \
-		case RELOP_LT: return *a < *b ? TRUE : false; \
-		case RELOP_LE: return *a <= *b ? TRUE : false; \
-		case RELOP_GT: return *a > *b ? TRUE : false; \
-		case RELOP_GE: return *a >= *b ? TRUE : false; \
-		case RELOP_EQ: return *a == *b ? TRUE : false; \
-		case RELOP_NE: return *a != *b ? TRUE : false; \
-		} \
-		return false; \
-	} while (false)
 #define MVCOMPARE(field) do { \
-		switch (relop) { \
-		case RELOP_LT: \
-			if (a->count < b->count) return TRUE; \
-			if (a->count > b->count) return false; \
-			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) < 0 ? TRUE : false; \
-		case RELOP_LE: \
-			if (a->count < b->count) return TRUE; \
-			if (a->count > b->count) return false; \
-			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) <= 0 ? TRUE : false; \
-		case RELOP_GT: \
-			if (a->count > b->count) return TRUE; \
-			if (a->count < b->count) return false; \
-			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) > 0 ? TRUE : false; \
-		case RELOP_GE: \
-			if (a->count > b->count) return TRUE; \
-			if (a->count < b->count) return false; \
-			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) >= 0 ? TRUE : false; \
-		case RELOP_EQ: \
-			if (a->count != b->count) return false; \
-			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) == 0 ? TRUE : false; \
-		case RELOP_NE: \
-			if (a->count != b->count) return TRUE; \
-			return memcmp(a->field, b->field, sizeof(a->field[0]) * a->count) != 0 ? TRUE : false; \
-		} \
-		return false; \
+		cmp = three_way_compare(a->count, b->count); \
+		if (cmp == 0) \
+			cmp = memcmp(a->field, b->field, sizeof(a->field[0]) * a->count); \
 	} while (false)
 
+	int cmp = -2;
+	switch (relop) {
+	case RELOP_LT:
+	case RELOP_LE:
+	case RELOP_GT:
+	case RELOP_GE:
+	case RELOP_EQ:
+	case RELOP_NE:
+		break;
+	default: /* RE, DL - not implemented */
+		return false;
+	}
 	switch (proptype) {
-	case PT_SHORT: {
-		auto a = static_cast<const uint16_t *>(pvalue1);
-		auto b = static_cast<const uint16_t *>(pvalue2);
-		COMPARE();
-	}
+	case PT_SHORT:
+		cmp = three_way_compare(*static_cast<const uint16_t *>(pvalue1),
+		      *static_cast<const uint16_t *>(pvalue2));
+		break;
 	case PT_LONG:
-	case PT_ERROR: {
-		auto a = static_cast<const uint32_t *>(pvalue1);
-		auto b = static_cast<const uint32_t *>(pvalue2);
-		COMPARE();
-	}
-	case PT_BOOLEAN: {
-		auto a = static_cast<const uint8_t *>(pvalue1);
-		auto b = static_cast<const uint8_t *>(pvalue2);
-		COMPARE();
-	}
+	case PT_ERROR:
+		cmp = three_way_compare(*static_cast<const uint32_t *>(pvalue1),
+		      *static_cast<const uint32_t *>(pvalue2));
+		break;
+	case PT_BOOLEAN:
+		cmp = three_way_compare(*static_cast<const uint8_t *>(pvalue1),
+		      *static_cast<const uint8_t *>(pvalue2));
+		break;
 	case PT_CURRENCY:
 	case PT_I8:
-	case PT_SYSTIME: {
-		auto a = static_cast<const uint64_t *>(pvalue1);
-		auto b = static_cast<const uint64_t *>(pvalue2);
-		COMPARE();
-	}
-	case PT_FLOAT: {
-		auto a = static_cast<const float *>(pvalue1);
-		auto b = static_cast<const float *>(pvalue2);
-		COMPARE();
-	}
+	case PT_SYSTIME:
+		cmp = three_way_compare(*static_cast<const uint64_t *>(pvalue1),
+		      *static_cast<const uint64_t *>(pvalue2));
+		break;
+	case PT_FLOAT:
+		cmp = three_way_compare(*static_cast<const float *>(pvalue1),
+		      *static_cast<const float *>(pvalue2));
+		break;
 	case PT_DOUBLE:
-	case PT_APPTIME: {
-		auto a = static_cast<const double *>(pvalue1);
-		auto b = static_cast<const double *>(pvalue2);
-		COMPARE();
-	}
+	case PT_APPTIME:
+		cmp = three_way_compare(*static_cast<const double *>(pvalue1),
+		      *static_cast<const double *>(pvalue2));
+		break;
 	case PT_STRING8:
-	case PT_UNICODE: {
-		auto s1 = static_cast<const char *>(pvalue1), s2 = static_cast<const char *>(pvalue2);
-		switch (relop) {
-		case RELOP_LT: return strcasecmp(s1, s2) < 0 ? TRUE : false;
-		case RELOP_LE: return strcasecmp(s1, s2) <= 0 ? TRUE : false;
-		case RELOP_GT: return strcasecmp(s1, s2) > 0 ? TRUE : false;
-		case RELOP_GE: return strcasecmp(s1, s2) >= 0 ? TRUE : false;
-		case RELOP_EQ: return strcasecmp(s1, s2) == 0 ? TRUE : false;
-		case RELOP_NE: return strcasecmp(s1, s2) != 0 ? TRUE : false;
-		}
-		return FALSE;
-	}
-	case PT_CLSID: {
-		auto &g1 = *static_cast<const GUID *>(pvalue1);
-		auto &g2 = *static_cast<const GUID *>(pvalue2);
-		switch (relop) {
-		case RELOP_LT: return g1.compare(g2) < 0 ? TRUE : false;
-		case RELOP_LE: return g1.compare(g2) <= 0 ? TRUE : false;
-		case RELOP_GT: return g1.compare(g2) > 0 ? TRUE : false;
-		case RELOP_GE: return g1.compare(g2) >= 0 ? TRUE : false;
-		case RELOP_EQ: return g1 == g2 ? TRUE : false;
-		case RELOP_NE: return g1 != g2 ? TRUE : false;
-		}
-		return FALSE;
-	}
-	case PT_BINARY: {
-		auto &bv1 = *static_cast<const BINARY *>(pvalue1);
-		auto &bv2 = *static_cast<const BINARY *>(pvalue2);
-		switch (relop) {
-		case RELOP_LT: return bv1.compare(bv2) < 0 ? TRUE : false;
-		case RELOP_LE: return bv1.compare(bv2) <= 0 ? TRUE : false;
-		case RELOP_GT: return bv1.compare(bv2) > 0 ? TRUE : false;
-		case RELOP_GE: return bv1.compare(bv2) >= 0 ? TRUE : false;
-		case RELOP_EQ: return bv1.compare(bv2) == 0 ? TRUE : false;
-		case RELOP_NE: return bv1.compare(bv2) != 0 ? TRUE : false;
-		}
-		return FALSE;
-	}
-	case PT_SVREID: {
-		auto &sv1 = *static_cast<const SVREID *>(pvalue1);
-		auto &sv2 = *static_cast<const SVREID *>(pvalue2);
-		switch (relop) {
-		case RELOP_LT: return sv1.compare(sv2) < 0 ? TRUE : false;
-		case RELOP_LE: return sv1.compare(sv2) <= 0 ? TRUE : false;
-		case RELOP_GT: return sv1.compare(sv2) > 0 ? TRUE : false;
-		case RELOP_GE: return sv1.compare(sv2) >= 0 ? TRUE : false;
-		case RELOP_EQ: return sv1.compare(sv2) == 0 ? TRUE : false;
-		case RELOP_NE: return sv1.compare(sv2) != 0 ? TRUE : false;
-		}
-		return FALSE;
-	}
+	case PT_UNICODE:
+		cmp = strcasecmp(static_cast<const char *>(pvalue1),
+		      static_cast<const char *>(pvalue2));
+		break;
+	case PT_CLSID:
+		cmp = static_cast<const GUID *>(pvalue1)->compare(*static_cast<const GUID *>(pvalue2));
+		break;
+	case PT_BINARY:
+		cmp = static_cast<const BINARY *>(pvalue1)->compare(*static_cast<const BINARY *>(pvalue2));
+		break;
+	case PT_SVREID:
+		cmp = static_cast<const SVREID *>(pvalue1)->compare(*static_cast<const SVREID *>(pvalue2));
+		break;
 	case PT_MV_SHORT: {
 		auto a = static_cast<const SHORT_ARRAY *>(pvalue1);
 		auto b = static_cast<const SHORT_ARRAY *>(pvalue2);
 		MVCOMPARE(ps);
+		break;
 	}
 	case PT_MV_LONG: {
 		auto a = static_cast<const LONG_ARRAY *>(pvalue1);
 		auto b = static_cast<const LONG_ARRAY *>(pvalue2);
 		MVCOMPARE(pl);
+		break;
 	}
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
@@ -689,246 +626,79 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 		auto a = static_cast<const LONGLONG_ARRAY *>(pvalue1);
 		auto b = static_cast<const LONGLONG_ARRAY *>(pvalue2);
 		MVCOMPARE(pll);
+		break;
 	}
 	case PT_MV_FLOAT: {
 		auto a = static_cast<const FLOAT_ARRAY *>(pvalue1);
 		auto b = static_cast<const FLOAT_ARRAY *>(pvalue2);
 		MVCOMPARE(mval);
+		break;
 	}
 	case PT_MV_DOUBLE:
 	case PT_MV_APPTIME: {
 		auto a = static_cast<const DOUBLE_ARRAY *>(pvalue1);
 		auto b = static_cast<const DOUBLE_ARRAY *>(pvalue2);
 		MVCOMPARE(mval);
+		break;
 	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
 		auto sa1 = static_cast<const STRING_ARRAY *>(pvalue1);
 		auto sa2 = static_cast<const STRING_ARRAY *>(pvalue2);
-		switch (relop) {
-		case RELOP_LT:
-			if (sa1->count < sa2->count)
-				return TRUE;
-			if (sa1->count > sa2->count)
-				return false;
-			for (size_t i = 0; i < sa1->count; ++i) {
-				auto ret = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]);
-				if (ret < 0)
-					return TRUE;
-				else if (ret > 0)
-					return false;
-			}
-			return false;
-		case RELOP_LE:
-			if (sa1->count < sa2->count)
-				return TRUE;
-			if (sa1->count > sa2->count)
-				return false;
-			for (size_t i = 0; i < sa1->count; ++i) {
-				auto ret = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]);
-				if (ret < 0)
-					return TRUE;
-				else if (ret > 0)
-					return false;
-			}
-			return TRUE;
-		case RELOP_GT:
-			if (sa1->count > sa2->count)
-				return TRUE;
-			if (sa1->count < sa2->count)
-				return false;
-			for (size_t i = 0; i < sa1->count; ++i) {
-				auto ret = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]);
-				if (ret > 0)
-					return TRUE;
-				else if (ret < 0)
-					return false;
-			}
-			return false;
-		case RELOP_GE:
-			if (sa1->count > sa2->count)
-				return TRUE;
-			if (sa1->count < sa2->count)
-				return false;
-			for (size_t i = 0; i < sa1->count; ++i) {
-				auto ret = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]);
-				if (ret > 0)
-					return TRUE;
-				else if (ret < 0)
-					return false;
-			}
-			return TRUE;
-		case RELOP_EQ:
-			if (sa1->count != sa2->count)
-				return FALSE;
-			for (size_t i = 0; i < sa1->count; ++i)
-				if (strcasecmp(sa1->ppstr[i], sa2->ppstr[i]) != 0)
-					return FALSE;	
-			return TRUE;
-		case RELOP_NE:
-			if (sa1->count != sa2->count)
-				return TRUE;
-			for (size_t i = 0; i < sa1->count; ++i)
-				if (strcasecmp(sa1->ppstr[i], sa2->ppstr[i]) != 0)
-					return TRUE;	
-			return FALSE;
+		cmp = three_way_compare(sa1->count, sa2->count);
+		if (cmp != 0)
+			break;
+		for (size_t i = 0; i < sa1->count; ++i) {
+			cmp = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]);
+			if (cmp != 0)
+				break;
 		}
-		return FALSE;
+		break;
 	}
 	case PT_MV_CLSID: {
 		auto bv1 = static_cast<const GUID_ARRAY *>(pvalue1);
 		auto bv2 = static_cast<const GUID_ARRAY *>(pvalue2);
-		switch (relop) {
-		case RELOP_LT:
-			if (bv1->count < bv2->count)
-				return TRUE;
-			if (bv1->count > bv2->count)
-				return false;
-			for (size_t i = 0; i < bv1->count; ++i) {
-				auto ret = bv1->pguid[i].compare(bv2->pguid[i]);
-				if (ret < 0)
-					return TRUE;
-				else if (ret > 0)
-					return false;
-			}
-			return false;
-		case RELOP_LE:
-			if (bv1->count < bv2->count)
-				return TRUE;
-			if (bv1->count > bv2->count)
-				return false;
-			for (size_t i = 0; i < bv1->count; ++i) {
-				auto ret = bv1->pguid[i].compare(bv2->pguid[i]);
-				if (ret < 0)
-					return TRUE;
-				else if (ret > 0)
-					return false;
-			}
-			return TRUE;
-		case RELOP_GT:
-			if (bv1->count > bv2->count)
-				return TRUE;
-			if (bv1->count < bv2->count)
-				return false;
-			for (size_t i = 0; i < bv1->count; ++i) {
-				auto ret = bv1->pguid[i].compare(bv2->pguid[i]);
-				if (ret > 0)
-					return TRUE;
-				else if (ret < 0)
-					return false;
-			}
-			return false;
-		case RELOP_GE:
-			if (bv1->count > bv2->count)
-				return TRUE;
-			if (bv1->count < bv2->count)
-				return false;
-			for (size_t i = 0; i < bv1->count; ++i) {
-				auto ret = bv1->pguid[i].compare(bv2->pguid[i]);
-				if (ret > 0)
-					return TRUE;
-				else if (ret < 0)
-					return false;
-			}
-			return TRUE;
-		case RELOP_EQ:
-			if (bv1->count != bv2->count)
-				return FALSE;
-			for (size_t i = 0; i < bv1->count; ++i)
-				if (bv1->pguid[i].compare(bv2->pguid[i]) != 0)
-					return false;
-			return TRUE;
-		case RELOP_NE:
-			if (bv1->count != bv2->count)
-				return TRUE;
-			for (size_t i = 0; i < bv1->count; ++i)
-				if (bv1->pguid[i].compare(bv2->pguid[i]) != 0)
-					return TRUE;
-			return FALSE;
+		cmp = three_way_compare(bv1->count, bv2->count);
+		if (cmp != 0)
+			break;
+		for (size_t i = 0; i < bv1->count; ++i) {
+			cmp = bv1->pguid[i].compare(bv2->pguid[i]);
+			if (cmp != 0)
+				break;
 		}
-		return FALSE;
+		break;
 	}
 	case PT_MV_BINARY: {
 		auto bv1 = static_cast<const BINARY_ARRAY *>(pvalue1);
 		auto bv2 = static_cast<const BINARY_ARRAY *>(pvalue2);
-		switch (relop) {
-		case RELOP_LT:
-			if (bv1->count < bv2->count)
-				return TRUE;
-			if (bv1->count > bv2->count)
-				return false;
-			for (size_t i = 0; i < bv1->count; ++i) {
-				auto ret = bv1->pbin[i].compare(bv2->pbin[i]);
-				if (ret < 0)
-					return TRUE;
-				else if (ret > 0)
-					return false;
-			}
-			return false;
-		case RELOP_LE:
-			if (bv1->count < bv2->count)
-				return TRUE;
-			if (bv1->count > bv2->count)
-				return false;
-			for (size_t i = 0; i < bv1->count; ++i) {
-				auto ret = bv1->pbin[i].compare(bv2->pbin[i]);
-				if (ret < 0)
-					return TRUE;
-				else if (ret > 0)
-					return false;
-			}
-			return TRUE;
-		case RELOP_GT:
-			if (bv1->count > bv2->count)
-				return TRUE;
-			if (bv1->count < bv2->count)
-				return false;
-			for (size_t i = 0; i < bv1->count; ++i) {
-				auto ret = bv1->pbin[i].compare(bv2->pbin[i]);
-				if (ret > 0)
-					return TRUE;
-				else if (ret < 0)
-					return false;
-			}
-			return false;
-		case RELOP_GE:
-			if (bv1->count > bv2->count)
-				return TRUE;
-			if (bv1->count < bv2->count)
-				return false;
-			for (size_t i = 0; i < bv1->count; ++i) {
-				auto ret = bv1->pbin[i].compare(bv2->pbin[i]);
-				if (ret > 0)
-					return TRUE;
-				else if (ret < 0)
-					return false;
-			}
-			return TRUE;
-		case RELOP_EQ:
-			if (bv1->count != bv2->count)
-				return FALSE;
-			for (size_t i = 0; i < bv1->count; ++i) {
-				if (bv1->pbin[i].cb != bv2->pbin[i].cb)
-					return FALSE;	
-				if (memcmp(bv1->pbin[i].pv, bv2->pbin[i].pv, bv1->pbin[i].cb) != 0)
-					return FALSE;
-			}
-			return TRUE;
-		case RELOP_NE:
-			if (bv1->count != bv2->count)
-				return TRUE;
-			for (size_t i = 0; i < bv1->count; ++i) {
-				if (bv1->pbin[i].cb != bv2->pbin[i].cb)
-					return TRUE;	
-				if (memcmp(bv1->pbin[i].pv, bv2->pbin[i].pv, bv1->pbin[i].cb) != 0)
-					return TRUE;
-			}
-			return FALSE;
+		cmp = three_way_compare(bv1->count, bv2->count);
+		if (cmp != 0)
+			break;
+		for (size_t i = 0; i < bv1->count; ++i) {
+			cmp = bv1->pbin[i].compare(bv2->pbin[i]);
+			if (cmp != 0)
+				break;
 		}
-		return FALSE;
+		break;
 	}
 	}
-	return FALSE;
-#undef COMPARE
+	return three_way_evaluate(cmp, static_cast<enum relop>(relop)) ? TRUE : false;
 #undef MVCOMPARE
+}
+
+namespace gromox {
+
+bool three_way_evaluate(int order, enum relop r)
+{
+	switch (r) {
+	case RELOP_LT: return order < 0;
+	case RELOP_LE: return order <= 0;
+	case RELOP_GT: return order > 0;
+	case RELOP_GE: return order >= 0;
+	case RELOP_EQ: return order == 0;
+	case RELOP_NE: return order != 0;
+	default: return false;
+	}
+}
+
 }
