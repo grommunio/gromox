@@ -255,6 +255,11 @@ bool GUID::from_str(const char *s)
 
 int GUID::compare(const GUID &o) const
 {
+	/*
+	 * EXC2019 also evaluates restrictions (should be the same as the
+	 * outcome of a sort operation) such that GUID fields are compared in
+	 * broken-out fashion, host-order.
+	 */
 	if (time_low != o.time_low)
 		return time_low > o.time_low ? 1 : -1;
 	if (time_mid != o.time_mid)

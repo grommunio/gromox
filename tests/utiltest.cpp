@@ -167,6 +167,12 @@ static void t_cmp_binary()
 	assert(p.compare(q) < 0);
 }
 
+static void t_cmp_guid()
+{
+	GUID g1 = {0x01}, g2 = {0x0100};
+	assert(g1.compare(g2) < 0);
+}
+
 int main()
 {
 	using fpt = decltype(&t_interval);
@@ -179,5 +185,6 @@ int main()
 	}
 	t_respool();
 	t_cmp_binary();
+	t_cmp_guid();
 	return EXIT_SUCCESS;
 }
