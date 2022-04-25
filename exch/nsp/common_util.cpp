@@ -345,25 +345,16 @@ uint32_t* common_util_proptagarray_enlarge(LPROPTAG_ARRAY *pproptags)
 
 BOOL common_util_load_file(const char *path, BINARY *pbin)
 {
-	int fd;
 	struct stat node_state;
-	
-	if (0 != stat(path, &node_state)) {
+	wrapfd fd = open(path, O_RDONLY);
+	if (fd.get() < 0 || fstat(fd.get(), &node_state) != 0)
 		return FALSE;
-	}
 	pbin->cb = node_state.st_size;
 	pbin->pv = ndr_stack_alloc(NDR_STACK_OUT, node_state.st_size);
 	if (pbin->pv == nullptr)
 		return FALSE;
-	fd = open(path, O_RDONLY);
-	if (-1 == fd) {
+	if (read(fd.get(), pbin->pv, node_state.st_size) != node_state.st_size)
 		return FALSE;
-	}
-	if (read(fd, pbin->pv, node_state.st_size) != node_state.st_size) {
-		close(fd);
-		return FALSE;
-	}
-	close(fd);
 	return TRUE;
 }
 

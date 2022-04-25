@@ -223,7 +223,7 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	EMSAB_ENTRYID tmp_entryid;
 	uint8_t type = b_private ? LOC_TYPE_PRIVATE_FOLDER : LOC_TYPE_PUBLIC_FOLDER;
 	
-	memcpy(x500dn, "/exmdb=", 7);
+	strcpy(x500dn, "/exmdb=");
 	common_util_exmdb_locinfo_to_string(
 		type, db_id, folder_id, x500dn + 7);
 	tmp_entryid.flags = 0;
@@ -254,7 +254,7 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	EMSAB_ENTRYID tmp_entryid;
 	uint8_t type = b_private ? LOC_TYPE_PRIVATE_MESSAGE : LOC_TYPE_PUBLIC_MESSAGE;
 	
-	memcpy(x500dn, "/exmdb=", 7);
+	strcpy(x500dn, "/exmdb=");
 	common_util_exmdb_locinfo_to_string(
 		type, db_id, message_id, x500dn + 7);
 	len = strlen(x500dn);

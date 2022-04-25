@@ -158,7 +158,8 @@ static constexpr const cfg_directive xa_directives[] = {
 	CFG_TABLE_END,
 };
 
-static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg, std::shared_ptr<CONFIG_FILE> acfg)
+static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg,
+    std::shared_ptr<CONFIG_FILE> acfg) try
 {
 	if (mcfg == nullptr) {
 		mcfg = config_file_initd("mysql_adaptor.cfg", get_config_path());
@@ -194,6 +195,8 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg, std::shared_ptr<
 	config_file_apply(*acfg, xa_directives);
 	g_cache_lifetime = std::chrono::seconds(acfg->get_ll("cache_lifetime"));
 	return true;
+} catch (const cfg_error &) {
+	return false;
 }
 
 static BOOL xa_main(int reason, void **data)

@@ -181,7 +181,8 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	auto start = time_point::clock::now();
 	auto ret = dbop_sqlite_upgrade(db, filedesc, kind, DBOP_VERBOSE);
 	if (ret != 0) {
-		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n", filedesc, strerror(ret));
+		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n",
+		        filedesc, strerror(-ret));
 		return -1;
 	}
 	auto d1 = time_point::clock::now() - start;

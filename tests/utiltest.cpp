@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <libHX/string.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/propval.hpp>
@@ -136,11 +137,11 @@ static int t_id8()
 
 static int t_interval()
 {
-	const char *in = " 1 d 1 h 1 m 1 s ";
-	long exp = 86400 + 3600 + 60 + 1;
-	auto got = atoitvl(in);
+	const char *in = " 1 d 1 h 1 min 1 s ";
+	unsigned int exp = 86400 + 3600 + 60 + 1;
+	auto got = HX_strtoull_sec(in, nullptr);
 	if (got != exp) {
-		printf("IN \"%s\" EXP %ld GOT %ld\n", in, exp, got);
+		printf("IN \"%s\" EXP %u GOT %llu\n", in, exp, got);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -194,8 +195,64 @@ static void t_cmp_svreid()
 	assert(SVREID_compare(&s2, nullptr) > 0);
 }
 
+static int t_base64()
+{
+	static constexpr char cpool[] = "12345678901234567890123456789012345678901234567890123456789012345678901234567890";
+	char out[120];
+	size_t outlen;
+	if (encode64(cpool, 60, out, 80, &outlen) >= 0)
+		return printf("TB-1 failed\n");
+	if (encode64(cpool, 60, out, 81, &outlen) < 0)
+		return printf("TB-2 failed\n");
+	if (encode64_ex(cpool, 60, out, 84, &outlen) >= 0)
+		return printf("TB-3 failed\n");
+	if (encode64_ex(cpool, 60, out, 85, &outlen) < 0)
+		return printf("TB-4 failed\n");
+
+	if (decode64("MTIz", 4, out, 3, &outlen) >= 0)
+		return printf("TB-11 failed\n");
+	if (decode64("MTIz", 4, out, 4, &outlen) < 0)
+		return printf("TB-5 failed\n");
+	if (decode64_ex("MTIz", 4, out, 3, &outlen) >= 0)
+		return printf("TB-6 failed\n");
+	if (decode64_ex("MTIz", 4, out, 4, &outlen) < 0)
+		printf("TB-7 failed\n");
+
+	if (decode64_ex(cpool, arsizeof(cpool) - 1, out, arsizeof(out), &outlen) < 0)
+		return printf("TB-8 failed\n");
+	if (decode64_ex("MTIz\nMTIz\nMTIz\n", 15, out, arsizeof(out), &outlen) < 0)
+		return printf("TB-9 failed\n");
+	else if (memcmp(out, "123123123", 9) != 0)
+		return printf("TB-10 failed\n");
+
+	if (uuencode(0666, "file", cpool, 60, out, 89, &outlen) >= 0)
+		return printf("TU-1 failed\n");
+	if (uuencode(0666, nullptr, cpool, 60, out, 90, &outlen) < 0)
+		return printf("TU-2 failed\n");
+	if (uuencode(0666, nullptr, cpool, 1, out, 90, &outlen) < 0)
+		return printf("TU-3 failed\n");
+	else if (strcmp(out, "!,3(S\r\n`\r\n") != 0)
+		return printf("TU-4 failed\n");
+	if (uudecode("!,3(S\n`\n", 8, nullptr, nullptr, 0, out, 1, &outlen) >= 0)
+		return printf("TU-5 failed\n");
+	if (uudecode("!,3(S\n`\n", 8, nullptr, nullptr, 0, out, 2, &outlen) < 0)
+		return printf("TU-6 failed\n");
+
+	if (qp_encode_ex(out, 3, "\x01", 1) >= 0)
+		return printf("TQ-1 failed\n");
+	if (qp_encode_ex(out, 4, "\x01", 1) < 0)
+		return printf("TQ-2 failed\n");
+	if (qp_decode_ex(out, 1, "=3D", 3) >= 0)
+		return printf("TQ-3 failed\n");
+	if (qp_decode_ex(out, 2, "=3D", 3) < 0)
+		return printf("TQ-4 failed\n");
+	return 0;
+}
+
 int main()
 {
+	if (t_base64() != 0)
+		return EXIT_FAILURE;
 	using fpt = decltype(&t_interval);
 	fpt fct[] = {t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
 	             t_id7, t_id8};

@@ -431,7 +431,8 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 					pcontext->offset, pcontext->until - 1,
 					pcontext->pitem->blob.length);
 	} else {
-		memcpy(response_buff + response_len, "\r\n", 2);
+		gx_strlcpy(&response_buff[response_len], "\r\n",
+			arsizeof(response_buff) - response_len);
 		response_len += 2;
 	}
 	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
@@ -600,7 +601,6 @@ static BOOL mod_cache_parse_range_value(char *value,
 
 BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 {
-	int fd;
 	ino_t ino;
 	char *ptoken;
 	time_t mtime;
@@ -688,10 +688,10 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		return FALSE;
 	snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s%s", it->dir.c_str(),
 	         request_uri + it->path.size());
-	if (0 != stat(tmp_path, &node_stat) ||
-		0 == S_ISREG(node_stat.st_mode)) {
+	wrapfd fd = open(tmp_path, O_RDONLY);
+	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
+	    !S_ISREG(node_stat.st_mode))
 		return FALSE;
-	}
 	if (node_stat.st_size >= UINT32_MAX)
 		return FALSE;
 	if (mod_cache_get_others_field(&phttp->request.f_others,
@@ -771,8 +771,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		}
 		return FALSE;
 	}
-	fd = open(tmp_path, O_RDONLY);
-	if (-1 == fd) {
+	if (read(fd.get(), pitem->blob.data, node_stat.st_size) != node_stat.st_size) {
 		free(pitem->blob.data);
 		free(pitem);
 		if (NULL != pcontext->prange) {
@@ -781,18 +780,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		}
 		return FALSE;
 	}
-	if (node_stat.st_size != read(fd,
-		pitem->blob.data, node_stat.st_size)) {
-		close(fd);
-		free(pitem->blob.data);
-		free(pitem);
-		if (NULL != pcontext->prange) {
-			free(pcontext->prange);
-			pcontext->prange = NULL;
-		}
-		return FALSE;
-	}
-	close(fd);
+	fd.close();
 	hhold.lock();
 	ppitem = g_cache_hash->query<CACHE_ITEM *>(tmp_path);
 	if (NULL == ppitem) {

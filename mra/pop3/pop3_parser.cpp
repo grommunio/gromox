@@ -536,7 +536,8 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 				line_length ++;
 			}
 			if (STREAM_COPY_OK == copy_result) {
-				memcpy(line_buff + line_length, "\r\n", 2);
+				gx_strlcpy(&line_buff[line_length], "\r\n",
+					arsizeof(line_buff) - line_length);
 				line_length += 2;
 			}
 			pcontext->stream.write(line_buff, line_length);

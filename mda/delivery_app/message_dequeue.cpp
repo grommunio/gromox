@@ -232,7 +232,7 @@ MESSAGE* message_dequeue_get()
  */
 void message_dequeue_put(MESSAGE *pmessage) try
 {
-	free(pmessage->begin_address);
+	delete[] pmessage->begin_address;
 	pmessage->begin_address = NULL;
 	auto name = g_path_mess + "/" + std::to_string(pmessage->message_data);
 	if (remove(name.c_str()) < 0 && errno != ENOENT)
@@ -268,9 +268,10 @@ void message_dequeue_stop()
  *		in_buff [in]			buffer of mail message
  */
 static void message_dequeue_retrieve_to_message(MESSAGE *pmessage,
-    const char *in_buff)
+    std::unique_ptr<char[]> &&msgtext)
 {
-	pmessage->begin_address = deconst(in_buff);
+	auto in_buff = msgtext.get();
+	pmessage->begin_address = msgtext.release();
 	pmessage->mail_begin = deconst(in_buff) + sizeof(size_t);
 	memcpy(&pmessage->mail_length, in_buff, sizeof(size_t));
 	memcpy(&pmessage->flush_ID, in_buff + sizeof(size_t) + pmessage->mail_length, sizeof(uint32_t));
@@ -360,10 +361,9 @@ static void message_dequeue_put_to_used(MESSAGE *pmessage)
  *	@param
  *		mess			mess ID
  */
-static void message_dequeue_load_from_mess(int mess)
+static void message_dequeue_load_from_mess(int mess) try
 {
 	struct stat node_stat;
-	char *ptr;
 
 	std::unique_lock h(g_hash_mutex);
 	auto pmessage = g_mess_hash->query<MESSAGE>(mess);
@@ -371,13 +371,7 @@ static void message_dequeue_load_from_mess(int mess)
 	if (NULL != pmessage) {
 		return;
 	}
-	std::string name;
-	try {
-		name = g_path_mess + "/" + std::to_string(mess);
-	} catch (const std::bad_alloc &) {
-		printf("[message_dequeue]: MDQ-390\n");
-		return;
-	}
+	auto name = g_path_mess + "/"s + std::to_string(mess);
 	wrapfd fd = open(name.c_str(), O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 	    !S_ISREG(node_stat.st_mode))
@@ -388,26 +382,31 @@ static void message_dequeue_load_from_mess(int mess)
 		return;
 	}
 	pmessage->message_data = mess;
-	ptr = (char*)malloc(size);
-	if (NULL == ptr) {
+	std::unique_ptr<char[]> ptr;
+	try {
+		ptr = std::make_unique<char[]>(size + 1);
+	} catch (const std::bad_alloc &) {
+		message_dequeue_put_to_free(pmessage);
+	        return;
+	}
+	auto rdret = read(fd.get(), ptr.get(), node_stat.st_size);
+	if (rdret < 0 || rdret != node_stat.st_size) {
 		message_dequeue_put_to_free(pmessage);
         return;
 	}
-	if (read(fd.get(), ptr, node_stat.st_size) != node_stat.st_size) {
-		message_dequeue_put_to_free(pmessage);
-		free(ptr);
-        return;
-	}
+	ptr[rdret] = '\0';
 	/* check if it is an incomplete message */
-	if (le64p_to_cpu(ptr) == 0) {
+	if (le64p_to_cpu(ptr.get()) == 0) {
 		message_dequeue_put_to_free(pmessage);
-		free(ptr);
 		return;	
 	}
-	message_dequeue_retrieve_to_message(pmessage, ptr);
+	message_dequeue_retrieve_to_message(pmessage, std::move(ptr));
 	message_dequeue_put_to_used(pmessage);
 	h.lock();
 	g_mess_hash->add(mess, pmessage);
+} catch (const std::bad_alloc &) {
+	printf("[message_dequeue]: E-1940\n");
+	return;
 }
 
 static void *mdq_thrwork(void *arg)

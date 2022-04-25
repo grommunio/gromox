@@ -50,7 +50,6 @@ static constexpr HXoption g_options_table[] = {
 
 int main(int argc, const char **argv) try
 {
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
@@ -86,7 +85,8 @@ int main(int argc, const char **argv) try
 	std::string db_name = znul(pconfig->get_value("mysql_dbname"));
 
 	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
-	if (NULL == (pmysql = mysql_init(NULL))) {
+	auto pmysql = mysql_init(nullptr);
+	if (pmysql == nullptr) {
 		printf("Failed to init mysql object\n");
 		return EXIT_FAILURE;
 	}
@@ -135,10 +135,6 @@ int main(int argc, const char **argv) try
 	
 	if (!make_mailbox_hierarchy(dir))
 		return EXIT_FAILURE;
-	/*
-	 * sqlite3_open does not expose O_EXCL, so let's create the file under
-	 * EXCL semantics ahead of time.
-	 */
 	auto temp_path = dir + "/exmdb/exchange.sqlite3";
 	if (!opt_upgrade) {
 		auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);

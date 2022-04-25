@@ -165,7 +165,7 @@ int main(int argc, const char **argv) try
 	printf("[system]: hash table size is %zu\n", table_size);
 
 	int cache_interval = pconfig->get_ll("midb_cache_interval");
-	itvltoa(cache_interval, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
 	printf("[system]: cache interval is %s\n", temp_buff);
 	
 	int mime_num = pconfig->get_ll("midb_mime_number");
@@ -176,7 +176,7 @@ int main(int argc, const char **argv) try
 	if (0 == mmap_size) {
 		printf("[system]: sqlite mmap_size is disabled\n");
 	} else {
-		bytetoa(mmap_size, temp_buff);
+		HX_unit_size(temp_buff, arsizeof(temp_buff), mmap_size, 1024, 0);
 		printf("[system]: sqlite mmap_size is %s\n", temp_buff);
 	}
 	

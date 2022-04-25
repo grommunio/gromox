@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
@@ -159,28 +160,28 @@ int main(int argc, const char **argv) try
 		thread_init_num);
 
 	unsigned int context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
-	bytetoa(context_aver_mem*64*1024, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
 	printf("[imap]: context average memory is %s\n", temp_buff);
  
 	unsigned int context_max_mem = g_config_file->get_ll("context_max_mem") / (64 * 1024);
 	if (context_max_mem < context_aver_mem) {
 		context_max_mem = context_aver_mem;
-		bytetoa(context_max_mem*64*1024, temp_buff);
+		HX_unit_size(temp_buff, arsizeof(temp_buff), context_max_mem * 64 * 1024, 1024, 0);
 		resource_set_string("CONTEXT_MAX_MEM", temp_buff);
 	} 
 	context_max_mem *= 64*1024;
-	bytetoa(context_max_mem, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), context_max_mem, 1024, 0);
 	printf("[imap]: context maximum memory is %s\n", temp_buff);
  
 	unsigned int context_aver_mitem = g_config_file->get_ll("context_average_mitem");
 	printf("[imap]: context average mitem number is %d\n", context_aver_mitem);
 	
 	std::chrono::seconds imap_conn_timeout(g_config_file->get_ll("imap_conn_timeout"));
-	itvltoa(imap_conn_timeout.count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), imap_conn_timeout.count(), 0);
 	printf("[imap]: imap socket read write time out is %s\n", temp_buff);
  
 	std::chrono::seconds autologout_time(g_config_file->get_ll("imap_autologout_time"));
-	itvltoa(autologout_time.count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), autologout_time.count(), 0);
 	printf("[imap]: imap session autologout time is %s\n", temp_buff);
  
 	int imap_auth_times = g_config_file->get_ll("imap_auth_times");
@@ -188,7 +189,7 @@ int main(int argc, const char **argv) try
 			imap_auth_times);
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
-	itvltoa(block_interval_auth, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
 	printf("[imap]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 

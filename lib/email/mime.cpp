@@ -252,11 +252,10 @@ void MIME::clear()
  *		encoding_type		
  */
 BOOL MIME::write_content(const char *pcontent, size_t length,
-	int encoding_type)
+    int encoding_type) try
 {
 	auto pmime = this;
 	size_t i, j;
-	char *pbuff;
 	/* align the buffer with 64K */
 	
 #ifdef _DEBUG_UMTA
@@ -319,23 +318,18 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 	}
 	case MIME_ENCODING_QP: {
 		size_t buff_length = strange_roundup(4 * length, 64 * 1024);
-		pbuff = me_alloc<char>(buff_length);
-		if (NULL == pbuff) {
-			return FALSE;
-		}
+		auto pbuff = std::make_unique<char[]>(buff_length);
 		pmime->content_begin = me_alloc<char>(buff_length);
 		if (NULL == pmime->content_begin) {
-			free(pbuff);
 			return FALSE;
 		}
-		auto qdlen = qp_encode_ex(pbuff, buff_length, pcontent, length);
+		auto qdlen = qp_encode_ex(pbuff.get(), buff_length, pcontent, length);
 		if (qdlen < 0) {
-			free(pbuff);
 			return false;
 		}
 		length = qdlen;
 		if (length > 0 && pbuff[length-1] != '\n') {
-			memcpy(pbuff + length, "\r\n", 2);
+			memcpy(&pbuff[length], "\r\n", 2);
 			length += 2;
 		}
 		for (i=0,j=0; i<length; i++,j++) {
@@ -353,7 +347,6 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 			}
 			pmime->content_begin[j] = pbuff[i];
 		}
-		free(pbuff);
 		pmime->content_length = j;
 		pmime->set_field("Content-Transfer-Encoding", "quoted-printable");
 		return TRUE;
@@ -370,6 +363,9 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		return TRUE;
 	}
 	}
+	return false;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1929: ENOMEM\n");
 	return false;
 }
 
@@ -1026,16 +1022,13 @@ BOOL MIME::serialize(STREAM *pstream)
 		pstream->write("\r\n\r\n", 4);
 	}
 	if (SINGLE_MIME == pmime->mime_type) {
-		if (NULL != pmime->content_begin) {
-			if (0 != pmime->content_length) {
-				pstream->write(pmime->content_begin, pmime->content_length);
-			} else {
-				reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream);
-			}
-		} else {
+		if (pmime->content_begin == nullptr)
 			/* if there's nothing, just append an empty line */
 			pstream->write("\r\n", 2);
-		}
+		else if (pmime->content_length != 0)
+			pstream->write(pmime->content_begin, pmime->content_length);
+		else
+			reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream);
 		return TRUE;
 	}
 	if (NULL == pmime->first_boundary) {
@@ -1065,16 +1058,16 @@ BOOL MIME::serialize(STREAM *pstream)
 	pstream->write("--", 2);
 	if (NULL == pmime->last_boundary) {
 		pstream->write("\r\n\r\n", 4);
+		return TRUE;
+	}
+	tmp_len = pmime->content_length -
+	          (pmime->last_boundary - pmime->content_begin);
+	if (tmp_len > 0) {
+		pstream->write(pmime->last_boundary, tmp_len);
+	} else if (0 == tmp_len) {
+		pstream->write("\r\n", 2);
 	} else {
-		tmp_len = pmime->content_length -
-		          (pmime->last_boundary - pmime->content_begin);
-		if (tmp_len > 0) {
-			pstream->write(pmime->last_boundary, tmp_len);
-		} else if (0 == tmp_len) {
-			pstream->write("\r\n", 2);
-		} else {
-			debug_info("[mime]: fatal error in MIME::serialize");
-		}
+		debug_info("[mime]: fatal error in MIME::serialize");
 	}
 	return TRUE;
 }
@@ -1252,12 +1245,11 @@ BOOL MIME::read_head(char *out_buff, size_t *plength)
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL MIME::read_content(char *out_buff, size_t *plength)
+BOOL MIME::read_content(char *out_buff, size_t *plength) try
 {
 	auto pmime = this;
 	void *ptr;
 	int encoding_type;
-	char encoding[256], *pbuff;
 	size_t i, offset, max_length;
 	unsigned int buff_size;
 	
@@ -1268,6 +1260,8 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 	}
 #endif
 	max_length = *plength;
+	if (max_length > 0)
+		*out_buff = '\0';
 	if (NONE_MIME == pmime->mime_type) {
 		*plength = 0;
 		return FALSE;
@@ -1292,7 +1286,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 			*plength = 0;
 			return FALSE;
 		}
-		if (static_cast<size_t>(mail_len) > max_length) {
+		if (static_cast<size_t>(mail_len) >= max_length) {
 			*plength = 0;
 			return FALSE;
 		}
@@ -1309,9 +1303,11 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 			offset += buff_size;
 			buff_size = STREAM_BLOCK_SIZE;
 		}
+		out_buff[offset] = '\0';
 		*plength = offset;
 		return TRUE;
 	}
+	char encoding[256];
 	if (!pmime->get_field("Content-Transfer-Encoding", encoding, 256)) {
 		encoding_type = MIME_ENCODING_NONE;
 	} else {
@@ -1331,13 +1327,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 		}
 	}
 	
-	pbuff = me_alloc<char>(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
-	if (NULL == pbuff) {
-		debug_info("[mime]: Failed to allocate memory in MIME::read_content");
-		*plength = 0;
-		return FALSE;
-	}
-	
+	auto pbuff = std::make_unique<char[]>(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
 	/* \r\n before boundary string or end of mail should not be inclued */
 	size_t tmp_len = pmime->content_length < 2 ? 1 : pmime->content_length - 2;
 	size_t size = 0;
@@ -1361,45 +1351,44 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 	
 	switch (encoding_type) {
 	case MIME_ENCODING_BASE64:
-		if (0 != decode64_ex(pbuff, size, out_buff, max_length, plength)) {
+		if (decode64_ex(pbuff.get(), size, out_buff, max_length, plength) != 0) {
 			debug_info("[mime]: fail to decode base64 mime content");
 			if (0 == *plength) {
-				free(pbuff);
 				return FALSE;
 			}
 		}
-		free(pbuff);
 		return TRUE;
 	case MIME_ENCODING_QP: {
-		auto qdlen = qp_decode_ex(out_buff, max_length, pbuff, size);
+		auto qdlen = qp_decode_ex(out_buff, max_length, pbuff.get(), size);
 		if (qdlen < 0) {
 			goto COPY_RAW_DATA;
 		} else {
 			*plength = qdlen;
-			free(pbuff);
 			return TRUE;
 		}
 	}
 	case MIME_ENCODING_UUENCODE:
-		if (0 != uudecode(pbuff, size, NULL, NULL, out_buff, plength)) {
+		if (uudecode(pbuff.get(), size, nullptr, nullptr, 0, out_buff,
+		    max_length, plength) != 0) {
 			debug_info("[mime]: fail to decode uuencode mime content");
 			goto COPY_RAW_DATA;
 		}
-		free(pbuff);
 		return TRUE;
 	default:
  COPY_RAW_DATA:
 		if (max_length >= size) {
-			memcpy(out_buff, pbuff, size);
+			memcpy(out_buff, pbuff.get(), size);
 			*plength = size;
-			free(pbuff);
 			return TRUE;
 		} else {
 			*plength = 0;
-			free(pbuff);
 			return FALSE;
 		}
 	}
+} catch (const std::bad_alloc &) {
+	debug_info("[mime]: E-1928: Failed to allocate memory in MIME::read_content");
+	*plength = 0;
+	return false;
 }
 
 /*

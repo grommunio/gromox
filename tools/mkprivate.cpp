@@ -95,7 +95,6 @@ static int create_search_folder(sqlite3 *sdb, uint64_t fid, uint64_t parent,
 
 int main(int argc, const char **argv) try
 {
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
@@ -132,7 +131,8 @@ int main(int argc, const char **argv) try
 
 	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
 	textmaps_init(datadir);
-	if (NULL == (pmysql = mysql_init(NULL))) {
+	auto pmysql = mysql_init(nullptr);
+	if (pmysql == nullptr) {
 		printf("Failed to init mysql object\n");
 		return EXIT_FAILURE;
 	}
@@ -195,10 +195,6 @@ int main(int argc, const char **argv) try
 	mysql_close(pmysql);
 	
 	make_mailbox_hierarchy(dir);
-	/*
-	 * sqlite3_open does not expose O_EXCL, so let's create the file under
-	 * EXCL semantics ahead of time.
-	 */
 	auto temp_path = dir + "/exmdb/exchange.sqlite3";
 	if (!opt_upgrade) {
 		auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);

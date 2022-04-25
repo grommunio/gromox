@@ -912,7 +912,8 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		if (http_parser_request_head(&pcontext->request.f_others,
 		    "Authorization", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 		    strncasecmp(tmp_buff, "Basic ", 6) == 0 &&
-		    decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1, &decode_len) == 0 &&
+		    decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1,
+		    arsizeof(tmp_buff1), &decode_len) == 0 &&
 		    (ptoken = strchr(tmp_buff1, ':')) != nullptr) {
 			*ptoken = '\0';
 			ptoken++;
@@ -977,10 +978,12 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
 	} else if (actual_read > 0) {
-		if (g_http_debug)
-			fprintf(stderr, "<< ctx %p recv %zd\n%.*s\n<<-END\n",
-			        pcontext, actual_read, (int)actual_read,
-			        static_cast<const char *>(pbuff));
+		if (g_http_debug) {
+			fprintf(stderr, "<< ctx %p recv %zd\n", pcontext, actual_read);
+			fflush(stderr);
+			write(STDERR_FILENO, pbuff, actual_read);
+			fprintf(stderr, "\n<<-END\n");
+		}
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
 		return htparse_rdhead_st(pcontext, actual_read);

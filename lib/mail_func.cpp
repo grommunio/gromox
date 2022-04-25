@@ -1456,12 +1456,16 @@ static BOOL encode_strings_to_utf8(
 			if (0 == strcmp(encode_string.encoding, "base64")) {
 				decode_len = 0;
 				decode64(encode_string.title, tmp_len,
-					temp_buff + buff_offset, &decode_len);
+				         temp_buff + buff_offset,
+				         arsizeof(temp_buff) - buff_offset, &decode_len);
 				buff_offset += decode_len;
 			} else if (0 == strcmp(encode_string.encoding,
 				"quoted-printable")){
-				buff_offset += qp_decode(temp_buff,
-					encode_string.title, tmp_len);
+				auto xl = qp_decode_ex(temp_buff, arsizeof(temp_buff),
+				          encode_string.title, tmp_len);
+				if (xl < 0)
+					return false;
+				buff_offset += xl;
 			} else {
 				return FALSE;
 			}
@@ -1518,15 +1522,19 @@ BOOL mime_string_to_utf8(const char *charset,
 			tmp_len = strlen(encode_string.title);
 			if (0 == strcmp(encode_string.encoding, "base64")) {
 				decode_len = 0;
-				decode64(encode_string.title, tmp_len, temp_buff, &decode_len);
+				decode64(encode_string.title, tmp_len, temp_buff,
+				         arsizeof(temp_buff), &decode_len);
 				temp_buff[decode_len] = '\0';
 				if (!string_to_utf8(encode_string.charset, temp_buff,
 				    out_buff + offset))
 					return encode_strings_to_utf8(mime_string, out_string);
 			} else if (0 == strcmp(encode_string.encoding,
 				"quoted-printable")){
-				decode_len = qp_decode(temp_buff, encode_string.title,
-				             tmp_len, QP_MIME_HEADER);
+				auto xl = qp_decode_ex(temp_buff, arsizeof(temp_buff),
+				          encode_string.title, tmp_len, QP_MIME_HEADER);
+				if (xl < 0)
+					return false;
+				decode_len = xl;
 				temp_buff[decode_len] = '\0';
 				if (!string_to_utf8(encode_string.charset, temp_buff,
 				    out_buff + offset))

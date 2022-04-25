@@ -63,36 +63,29 @@ extern int utf8_to_utf16le(const char *src, void *dst, size_t len);
 extern BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len);
 extern BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len);
 extern BOOL set_digest(char *src, size_t length, const char *tag, const char *value);
-extern BOOL add_digest(char *src, size_t length, const char *tag, const char *value);
 char* search_string(const char *haystack, const char *needle, 
     size_t haystacklen);
-char* itvltoa(long interval, char *string);
-char* bytetoa(uint64_t byte, char *string);
-uint64_t atobyte(const char *string);
 extern GX_EXPORT const char *crypt_wrapper(const char *);
 int wildcard_match(const char *data, const char *mask, BOOL icase);
 extern GX_EXPORT void randstring_k(char *out, int len, const char *pool);
 void randstring(char *buff, int length);
 extern int encode64(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern int encode64_ex(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
-extern int decode64(const char *in, size_t inlen, void *out, size_t *outlen);
+extern int decode64(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
 extern int decode64_ex(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
-extern GX_EXPORT size_t qp_decode(void *output, const char *input, size_t length, unsigned int qp_flags = 0);
-extern GX_EXPORT ssize_t qp_decode_ex(void *output, size_t out_len, const char *input, size_t length);
+extern GX_EXPORT ssize_t qp_decode_ex(void *output, size_t out_len, const char *input, size_t length, unsigned int qp_flags = 0);
 extern GX_EXPORT ssize_t qp_encode_ex(void *output, size_t outlen, const char *input, size_t length);
 void encode_hex_int(int id, char *out);
 int decode_hex_int(const char *in);
 extern BOOL encode_hex_binary(const void *src, int srclen, char *dst, int dstlen);
 extern BOOL decode_hex_binary(const char *src, void *dst, int dstlen);
-int uudecode(const char *in, size_t inlen, int *pmode,
-	char *file_name, char *out, size_t *outlen);
+extern int uudecode(const char *in, size_t inlen, int *pmode, char *file_name, size_t fnmax, char *out, size_t maxlen, size_t *outlen);
 int uuencode(int mode, const char *file_name, const char *in,
 	size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern void debug_info(const char *format, ...);
 
 namespace gromox {
 
-extern GX_EXPORT long atoitvl(const char *);
 extern GX_EXPORT bool parse_bool(const char *s);
 extern GX_EXPORT std::string bin2hex(const void *, size_t);
 template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }

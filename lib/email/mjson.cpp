@@ -529,120 +529,91 @@ static BOOL mjson_record_value(MJSON *pjson, char *tag,
 			pjson->uid = strtol(temp_buff, nullptr, 0);
 		}
 	} else if (0 == strcasecmp(tag, "msgid")) {
-		if ('\0' == pjson->msgid[0] && length <= sizeof(pjson->msgid)) {
-			if (0 != decode64(value, length, pjson->msgid, &temp_len)) {
-				pjson->msgid[0] = '\0';
-			}
-		}
+		if (*pjson->msgid == '\0' && length <= sizeof(pjson->msgid) &&
+		    decode64(value, length, pjson->msgid,
+		    arsizeof(pjson->msgid), &temp_len) != 0)
+			pjson->msgid[0] = '\0';
 	} else if (0 == strcasecmp(tag, "from")) {
-		if ('\0' == pjson->from[0] && length <= sizeof(pjson->from)) {
-			if (0 != decode64(value, length, pjson->from, &temp_len)) {
-				pjson->from[0] = '\0';
-			}
-		}
+		if (*pjson->from == '\0' && length <= sizeof(pjson->from) &&
+		    decode64(value, length, pjson->from,
+		    arsizeof(pjson->from), &temp_len) != 0)
+			pjson->from[0] = '\0';
 	} else if (0 == strcasecmp(tag, "charset")) {
 		if ('\0' == pjson->charset[0] && length < 32) {
 			memcpy(pjson->charset, value, length);
 			pjson->charset[length] = '\0';
 		}
 	} else if (0 == strcasecmp(tag, "sender")) {
-		if ('\0' == pjson->sender[0] && length <= sizeof(pjson->sender)) {
-			if (0 != decode64(value, length, pjson->sender, &temp_len)) {
-				pjson->sender[0] = '\0';
-			}
-		}
+		if (*pjson->sender == '\0' && length <= sizeof(pjson->sender) &&
+		    decode64(value, length, pjson->sender,
+		    arsizeof(pjson->sender), &temp_len) != 0)
+			pjson->sender[0] = '\0';
 	} else if (0 == strcasecmp(tag, "reply")) {
-		if ('\0' == pjson->reply[0] && length <= sizeof(pjson->reply)) {
-			if (0 != decode64(value, length, pjson->reply, &temp_len)) {
-				pjson->reply[0] = '\0';
-			}
-		}
+		if (*pjson->reply == '\0' && length <= sizeof(pjson->reply) &&
+		    decode64(value, length, pjson->reply,
+		    arsizeof(pjson->reply), &temp_len) != 0)
+			pjson->reply[0] = '\0';
 	} else if (0 == strcasecmp(tag, "to")) {
-		if ('\0' == pjson->to[0] && length <= sizeof(pjson->to)) {
-			if (0 != decode64(value, length, pjson->to, &temp_len)) {
-				pjson->to[0] = '\0';
-			}
-		}
+		if (*pjson->to == '\0' && length <= sizeof(pjson->to) &&
+		    decode64(value, length, pjson->to,
+		    arsizeof(pjson->to), &temp_len) != 0)
+			pjson->to[0] = '\0';
 	} else if (0 == strcasecmp(tag, "cc")) {
-		if ('\0' == pjson->cc[0] && length <= sizeof(pjson->cc)) {
-			if (0 != decode64(value, length, pjson->cc, &temp_len)) {
-				pjson->cc[0] = '\0';
-			}
-		}
+		if (*pjson->cc == '\0' && length <= sizeof(pjson->cc) &&
+		    decode64(value, length, pjson->cc,
+		    arsizeof(pjson->cc), &temp_len) != 0)
+			pjson->cc[0] = '\0';
 	} else if (0 == strcasecmp(tag, "inreply")) {
-		if ('\0' == pjson->inreply[0] && length <= sizeof(pjson->inreply)) {
-			if (0 != decode64(value, length, pjson->inreply, &temp_len)) {
-				pjson->inreply[0] = '\0';
-			}
-		}
+		if (*pjson->inreply == '\0' && length <= sizeof(pjson->inreply) &&
+		    decode64(value, length, pjson->inreply,
+		    arsizeof(pjson->inreply), &temp_len) != 0)
+			pjson->inreply[0] = '\0';
 	} else if (0 == strcasecmp(tag, "subject")) {
-		if ('\0' == pjson->subject[0] && length <= sizeof(pjson->subject)) {
-			if (0 != decode64(value, length, pjson->subject, &temp_len)) {
-				pjson->subject[0] = '\0';
-			}
-		}
+		if (*pjson->subject == '\0' && length <= sizeof(pjson->subject) &&
+		    decode64(value, length, pjson->subject,
+		    arsizeof(pjson->subject), &temp_len) != 0)
+			pjson->subject[0] = '\0';
 	} else if (0 == strcasecmp(tag, "received")) {
 		if ('\0' == pjson->received[0] && length <= sizeof(pjson->received)) {
-			if (0 != decode64(value, length, pjson->received, &temp_len)) {
+			if (decode64(value, length, pjson->received,
+			    arsizeof(pjson->received), &temp_len) != 0)
 				pjson->received[0] = '\0';
-			} else {
+			else
 				HX_strltrim(pjson->received);
-			}
 		}
 	} else if (0 == strcasecmp(tag, "date")) {
-		if ('\0' == pjson->date[0] && length <= sizeof(pjson->date)) {
-			if (0 != decode64(value, length, pjson->date, &temp_len)) {
-				pjson->date[0] = '\0';
-			}
-		}
+		if (*pjson->date == '\0' && length <= sizeof(pjson->date) &&
+		    decode64(value, length, pjson->date,
+		    arsizeof(pjson->date), &temp_len) != 0)
+			pjson->date[0] = '\0';
 	} else if (0 == strcasecmp(tag, "notification")) {
-		if ('\0' == pjson->notification[0] && length <= sizeof(pjson->notification)) {
-			if (0 != decode64(value, length, pjson->notification, &temp_len)) {
-				pjson->notification[0] = '\0';
-			}
-		}
+		if (*pjson->notification == '\0' && length <= sizeof(pjson->notification) &&
+		    decode64(value, length, pjson->notification,
+		    arsizeof(pjson->notification), &temp_len) != 0)
+			pjson->notification[0] = '\0';
 	} else if (0 == strcasecmp(tag, "read")) {
-		if (0 == pjson->read && 1 == length) {
-			if ('1' == value[0]) {
-				pjson->read = 1;
-			}
-		}
+		if (!pjson->read && length == 1 && *value == '1')
+			pjson->read = 1;
 	} else if (0 == strcasecmp(tag, "replied")) {
-		if (0 == pjson->replied && 1 == length) {
-			if ('1' == value[0]) {
-				pjson->replied = 1;
-			}
-		}
+		if (!pjson->replied && length == 1 && *value == '1')
+			pjson->replied = 1;
 	} else if (0 == strcasecmp(tag, "unsent")) {
-		if (0 == pjson->unsent && 1 == length) {
-			if ('1' == value[0]) {
-				pjson->unsent = 1;
-			}
-		}
+		if (!pjson->unsent && length == 1 && *value == '1')
+			pjson->unsent = 1;
 	} else if (0 == strcasecmp(tag, "forwarded")) {
-		if (0 == pjson->forwarded && 1 == length) {
-			if ('1' == value[0]) {
-				pjson->forwarded = 1;
-			}
-		}
+		if (!pjson->forwarded && length == 1 && *value == '1')
+			pjson->forwarded = 1;
 	} else if (0 == strcasecmp(tag, "flag")) {
-		if (0 == pjson->flag && 1 == length) {
-			if ('1' == value[0]) {
-				pjson->flag = 1;
-			}
-		}
+		if (!pjson->flag && length == 1 && *value == '1')
+			pjson->flag = 1;
 	} else if (0 == strcasecmp(tag, "priority")) {
-		if (0 == pjson->priority && 1 == length) {
-			if ('0' <= value[0] && value[0] <= '9') {
-				pjson->priority = value[0] - '0';
-			}
-		}
+		if (!pjson->priority && length == 1 && *value >= '0' && *value <= '9')
+			pjson->priority = value[0] - '0';
 	} else if (0 == strcasecmp(tag, "ref")) {
-		if ('\0' == pjson->ref[0] && length <= sizeof(pjson->ref)) {
-			if (0 != decode64(value, length, pjson->ref, &temp_len)) {
-				pjson->ref[0] = '\0';
-			}
-		}
+		if (*pjson->ref == '\0' && length <= sizeof(pjson->ref) &&
+		    decode64(value, length, pjson->ref,
+		    arsizeof(pjson->ref), &temp_len) != 0)
+			pjson->ref[0] = '\0';
 	} else if (0 == strcasecmp(tag, "structure")) {
 		if (!mjson_parse_array(pjson, value, length, TYPE_STRUCTURE))
 			return FALSE;
@@ -804,22 +775,19 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 					temp_mime.charset[temp_len] = '\0';
 				} else if (0 == strcasecmp(temp_tag, "filename") &&
 					temp_len < sizeof(temp_mime.filename)) {
-					if (0 != decode64(value + last_pos, temp_len, 
-						temp_mime.filename, &temp_len)) {
+					if (decode64(value + last_pos, temp_len, temp_mime.filename,
+					    arsizeof(temp_mime.filename), &temp_len) != 0)
 						temp_mime.filename[0] = '\0';
-					}
 				} else if (0 == strcasecmp(temp_tag, "cid") &&
 					temp_len < sizeof(temp_mime.cid)) {
-					if (0 != decode64(value + last_pos, temp_len,
-						temp_mime.cid, &temp_len)) {
+					if (decode64(value + last_pos, temp_len, temp_mime.cid,
+					    arsizeof(temp_mime.cid), &temp_len) != 0)
 						temp_mime.cid[0] = '\0';
-					}
 				} else if (0 == strcasecmp(temp_tag, "cntl") &&
 					temp_len < sizeof(temp_mime.cntl)) {
-					if (0 != decode64(value + last_pos, temp_len,
-						temp_mime.cntl, &temp_len)) {
+					if (decode64(value + last_pos, temp_len, temp_mime.cntl,
+					    arsizeof(temp_mime.cntl), &temp_len) != 0)
 						temp_mime.cntl[0] = '\0';
-					}
 				} else if (0 == strcasecmp(temp_tag, "cntdspn") &&
 					temp_len < sizeof(temp_mime.cntdspn)) {
 					memcpy(temp_mime.cntdspn, value + last_pos, temp_len);
@@ -1122,7 +1090,6 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		
 		if (NULL != storage_path && NULL != msg_filename &&
 			0 == strcasecmp(pmime->ctype, "MESSAGE/RFC822")) {
-			int fd;
 			int envl_len;
 			int body_len;
 			char temp_path[256];
@@ -1136,28 +1103,22 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				snprintf(temp_path, 256, "%s/%s.%s.dgt", storage_path,
 					msg_filename, pmime->id);
 			}
-			if (0 != stat(temp_path, &node_stat) ||
-				0 == S_ISREG(node_stat.st_mode) ||
-				node_stat.st_size > MAX_DIGLEN) {
+			wrapfd fd = open(temp_path, O_RDONLY);
+			if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
+			    !S_ISREG(node_stat.st_mode) ||
+			    node_stat.st_size >= MAX_DIGLEN)
 				goto RFC822_FAILURE;
-			}
 			digest_buff = me_alloc<char>(MAX_DIGLEN);
 			if (NULL == digest_buff) {
 				goto RFC822_FAILURE;
 			}
-			fd = open(temp_path, O_RDONLY);
-			if (-1 == fd) {
+			auto rdret = ::read(fd.get(), digest_buff, node_stat.st_size);
+			if (rdret < 0 || rdret != node_stat.st_size) {
 				free(digest_buff);
 				goto RFC822_FAILURE;
 			}
-			
-			if (::read(fd, digest_buff, node_stat.st_size) != node_stat.st_size) {
-				free(digest_buff);
-				close(fd);
-				goto RFC822_FAILURE;
-			}
-			
-			close(fd);
+			digest_buff[rdret] = '\0';
+			fd.close();
 			MJSON temp_mjson(pmime->ppool);
 			if (!temp_mjson.retrieve(digest_buff, node_stat.st_size, storage_path)) {
 				free(digest_buff);
@@ -1277,17 +1238,17 @@ static int mjson_convert_address(char *address, const char *charset,
 		parse_mime_encode_string(address, temp_len, &encode_string);
 		if (0 == strcasecmp(encode_string.encoding, "base64") &&
 			0 != strcasecmp(encode_string.charset, "default")) {
-			if (0 == decode64(encode_string.title, strlen(encode_string.title),
-				temp_address, &temp_len)) {
+			if (decode64(encode_string.title, strlen(encode_string.title),
+			    temp_address, arsizeof(temp_address), &temp_len) == 0)
 				email_charset = encode_string.charset;
-			} else {
+			else
 				gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
-			}
 		} else if (0 == strcasecmp(encode_string.encoding,
 			"quoted-printable") && 0 != strcasecmp(
 			encode_string.charset, "default")) {
-			qp_decode(temp_address, encode_string.title,
-				strlen(encode_string.title));
+			if (qp_decode_ex(temp_address, arsizeof(temp_address),
+			    encode_string.title, strlen(encode_string.title)) < 0)
+				temp_address[0] = '\0';
 			email_charset = encode_string.charset;
 		} else {
 			gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
@@ -1836,9 +1797,10 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 	snprintf(mjson_id, 64, "%s.", id);
 	while (NULL != (pdot = strrchr(mjson_id, '.'))) {
 		*pdot = '\0';
-		snprintf(temp_path, 256, "%s/%s/%s.dgt", storage_path,
+		char dgt_path[256];
+		snprintf(dgt_path, arsizeof(dgt_path), "%s/%s/%s.dgt", storage_path,
 			pjson_base->filename, mjson_id);
-		fd = open(temp_path, O_RDONLY);
+		fd = open(dgt_path, O_RDONLY);
 		if (-1 == fd) {
 			if (errno == ENOENT || errno == EISDIR)
 				continue;
@@ -1858,8 +1820,6 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 			}
 			close(fd);
 			pjson->clear();
-			snprintf(temp_path, 256, "%s/%s", storage_path,
-				pjson_base->filename);
 			if (!pjson->retrieve(digest_buff, node_stat.st_size, temp_path)) {
 				/* was never implemented */
 			}

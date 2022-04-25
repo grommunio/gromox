@@ -214,11 +214,11 @@ int main(int argc, const char **argv) try
 		thread_init_num);
 
 	unsigned int context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
-	bytetoa(context_aver_mem*64*1024, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
 	printf("[http]: context average memory is %s\n", temp_buff);
 	
 	std::chrono::seconds http_conn_timeout{g_config_file->get_ll("http_conn_timeout")};
-	itvltoa(http_conn_timeout.count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), http_conn_timeout.count(), 0);
 	printf("[http]: http socket read write time out is %s\n", temp_buff);
  
 	int http_auth_times = g_config_file->get_ll("http_auth_times");
@@ -226,7 +226,7 @@ int main(int argc, const char **argv) try
 			http_auth_times);
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
-	itvltoa(block_interval_auth, temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
 	printf("[http]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 	
@@ -254,7 +254,7 @@ int main(int argc, const char **argv) try
 	}
 	
 	size_t max_request_mem = g_config_file->get_ll("request_max_mem");
-	bytetoa(max_request_mem, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), max_request_mem, 1024, 0);
 	printf("[pdu_processor]: maximum request memory is %s\n", temp_buff);
 
 	auto str_value = g_config_file->get_value("service_plugin_list");
@@ -282,11 +282,11 @@ int main(int argc, const char **argv) try
 	}
 	
 	uint64_t hpm_cache_size = g_config_file->get_ll("hpm_cache_size");
-	bytetoa(hpm_cache_size, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), hpm_cache_size, 1024, 0);
 	printf("[hpm_processor]: fastcgi cache size is %s\n", temp_buff);
 	
 	uint64_t hpm_max_size = g_config_file->get_ll("hpm_max_size");
-	bytetoa(hpm_max_size, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), hpm_max_size, 1024, 0);
 	printf("[hpm_processor]: hpm maximum size is %s\n", temp_buff);
 
 	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
@@ -299,15 +299,15 @@ int main(int argc, const char **argv) try
 	}
 
 	uint64_t fastcgi_cache_size = g_config_file->get_ll("fastcgi_cache_size");
-	bytetoa(fastcgi_cache_size, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), fastcgi_cache_size, 1024, 0);
 	printf("[mod_fastcgi]: fastcgi cache size is %s\n", temp_buff);
 	
 	uint64_t fastcgi_max_size = g_config_file->get_ll("fastcgi_max_size");
-	bytetoa(fastcgi_max_size, temp_buff);
+	HX_unit_size(temp_buff, arsizeof(temp_buff), fastcgi_max_size, 1024, 0);
 	printf("[mod_fastcgi]: fastcgi maximum size is %s\n", temp_buff);
 	
 	std::chrono::seconds fastcgi_exec_timeout{g_config_file->get_ll("fastcgi_exec_timeout")};
-	itvltoa(fastcgi_exec_timeout.count(), temp_buff);
+	HX_unit_seconds(temp_buff, arsizeof(temp_buff), fastcgi_exec_timeout.count(), 0);
 	printf("[http]: fastcgi excution time out is %s\n", temp_buff);
 	uint16_t listen_port = g_config_file->get_ll("listen_port");
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");

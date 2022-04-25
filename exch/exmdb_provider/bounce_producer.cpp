@@ -424,7 +424,7 @@ BOOL bounce_producer_make_content(const char *from,
 			ptr += len;
 			break;
 		case TAG_LENGTH:
-			bytetoa(message_size, ptr);
+			HX_unit_size(ptr, 128 /* yuck */, message_size, 1000, 0);
 			len = strlen(ptr);
 			ptr += len;
 			break;

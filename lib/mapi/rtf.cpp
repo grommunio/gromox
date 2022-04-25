@@ -2003,21 +2003,18 @@ static int rtf_cmd_tab(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
 	if (preader->have_fromhtml) {
 		if (preader->ext_push.p_uint8(0x09) != EXT_ERR_SUCCESS)
 			return CMD_RESULT_ERROR;
-		return CMD_RESULT_CONTINUE;
-	} else {
-		need = 8 - preader->total_chars_in_line%8;
-		preader->total_chars_in_line += need;
-		while (need > 0) {
-			if (preader->ext_push.p_bytes(TAG_FORCED_SPACE,
-			    sizeof(TAG_FORCED_SPACE) - 1) != EXT_ERR_SUCCESS)
-				return CMD_RESULT_ERROR;
-			need --;
-		}
+		++preader->total_chars_in_line;
 		return CMD_RESULT_CONTINUE;
 	}
-	preader->total_chars_in_line ++;
+	need = 8 - preader->total_chars_in_line % 8;
+	preader->total_chars_in_line += need;
+	while (need > 0) {
+		if (preader->ext_push.p_bytes(TAG_FORCED_SPACE,
+		    sizeof(TAG_FORCED_SPACE) - 1) != EXT_ERR_SUCCESS)
+			return CMD_RESULT_ERROR;
+		need--;
+	}
 	return CMD_RESULT_CONTINUE;
-	
 }
 
 static int rtf_cmd_plain(RTF_READER *preader, SIMPLE_TREE_NODE *pword,

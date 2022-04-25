@@ -152,7 +152,7 @@ struct EXT_PULL {
 	int g_rule_data(RULE_DATA *);
 	int g_abk_eid(EMSAB_ENTRYID *);
 	int g_oneoff_eid(ONEOFF_ENTRYID *);
-	int g_oneoff_a(ONEOFF_ARRAY *);
+	int g_flatentry_a(BINARY_ARRAY *);
 	int g_eid_a(EID_ARRAY *);
 	int g_systime(SYSTEMTIME *);
 	int g_tzstruct(TIMEZONESTRUCT *);

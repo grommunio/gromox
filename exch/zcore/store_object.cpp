@@ -481,7 +481,6 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 static void* store_object_get_oof_property(
 	const char *maildir, uint32_t proptag)
 {
-	int fd;
 	int offset;
 	char *pbuff;
 	int buff_len;
@@ -517,25 +516,13 @@ static void* store_object_get_oof_property(
 		         proptag == PR_EC_OUTOFOFFICE_MSG ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
 		         maildir);
-		fd = open(temp_path, O_RDONLY);
-		if (-1 == fd) {
-			return NULL;
-		}
-		if (fstat(fd, &node_stat) != 0) {
-			close(fd);
+		wrapfd fd = open(temp_path, O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 			return nullptr;
-		}
 		buff_len = node_stat.st_size;
 		pbuff = cu_alloc<char>(buff_len + 1);
-		if (NULL == pbuff) {
-			close(fd);
+		if (pbuff == nullptr || read(fd.get(), pbuff, buff_len) != buff_len)
 			return NULL;
-		}
-		if (buff_len != read(fd, pbuff, buff_len)) {
-			close(fd);
-			return NULL;
-		}
-		close(fd);
 		pbuff[buff_len] = '\0';
 		auto ptr = strstr(pbuff, "\r\n\r\n");
 		return ptr != nullptr ? ptr + 4 : nullptr;
@@ -546,24 +533,13 @@ static void* store_object_get_oof_property(
 		         proptag == PR_EC_OUTOFOFFICE_SUBJECT ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
 		         maildir);
-		if (0 != stat(temp_path, &node_stat)) {
+		wrapfd fd = open(temp_path, O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 			return NULL;
-		}
 		buff_len = node_stat.st_size;
-		fd = open(temp_path, O_RDONLY);
-		if (-1 == fd) {
-			return NULL;
-		}
 		pbuff = cu_alloc<char>(buff_len);
-		if (NULL == pbuff) {
-			close(fd);
+		if (pbuff == nullptr || read(fd.get(), pbuff, buff_len) != buff_len)
 			return NULL;
-		}
-		if (buff_len != read(fd, pbuff, buff_len)) {
-			close(fd);
-			return NULL;
-		}
-		close(fd);
 		offset = 0;
 		size_t parsed_length;
 		while ((parsed_length = parse_mime_field(pbuff + offset, buff_len - offset, &mime_field)) != 0) {
@@ -1194,7 +1170,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			return false;
 		}
 		struct stat node_stat;
-		if (stat(autoreply_path.c_str(), &node_stat) != 0) {
+		wrapfd fd = open(autoreply_path.c_str(), O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
 			pbuff = cu_alloc<char>(buff_len + 256);
 			if (NULL == pbuff) {
@@ -1213,15 +1190,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			if (NULL == ptoken) {
 				return FALSE;
 			}
-			auto fd = open(autoreply_path.c_str(), O_RDONLY);
-			if (-1 == fd) {
+			if (read(fd.get(), ptoken, buff_len) != buff_len)
 				return FALSE;
-			}
-			if (buff_len != read(fd, ptoken, buff_len)) {
-				close(fd);
-				return FALSE;
-			}
-			close(fd);
 			ptoken[buff_len] = '\0';
 			ptoken = strstr(ptoken, "\r\n\r\n");
 			if (NULL == ptoken) {
@@ -1234,15 +1204,9 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				           static_cast<const char *>(pvalue), ptoken);
 			}
 		}
-		auto fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
-		if (-1 == fd) {
+		fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+		if (fd.get() < 0 || write(fd.get(), pbuff, buff_len) != buff_len)
 			return FALSE;
-		}
-		if (buff_len != write(fd, pbuff, buff_len)) {
-			close(fd);
-			return FALSE;
-		}
-		close(fd);
 		return TRUE;
 	}
 	case PR_EC_ALLOW_EXTERNAL:
@@ -1386,18 +1350,17 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		case PR_EMS_AB_THUMBNAIL_PHOTO: {
 			if (!pstore->b_private)
 				break;
-			int fd = -1;
+			std::string pic_path;
 			try {
 				auto pic_path = pstore->dir + "/config/portrait.jpg"s;
-				fd = open(pic_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
 			} catch (const std::bad_alloc &) {
 				fprintf(stderr, "E-1494: ENOMEM\n");
 			}
-			if (-1 != fd) {
-				auto bv = static_cast<BINARY *>(ppropvals->ppropval[i].pvalue);
-				write(fd, bv->pb, bv->cb);
-				close(fd);
-			}
+			wrapfd fd = open(pic_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+			if (fd.get() < 0)
+				break;
+			auto bv = static_cast<BINARY *>(ppropvals->ppropval[i].pvalue);
+			write(fd.get(), bv->pb, bv->cb);
 			break;
 		}
 		default:

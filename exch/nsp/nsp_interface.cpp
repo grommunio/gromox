@@ -1440,10 +1440,11 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				break;
 			}
 			int user_id;
-			if (!get_id_from_username(pitem[i].user, &user_id) ||
-				NULL == (pnode = ab_tree_uid_to_node(pbase.get(), user_id))) {
+			if (!get_id_from_username(pitem[i].user, &user_id))
 				continue;
-			}
+			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
+			if (pnode == nullptr)
+				continue;
 			if (pfilter != nullptr &&
 			    !nsp_interface_match_node(pnode, pstat->codepage, pfilter))
 				continue;	

@@ -43,19 +43,18 @@ static int utf8_byte_num(unsigned char ch)
 {
 	int byte_num = 0;
 
-	if (ch >= 0xFC && ch < 0xFE) {
+	if (ch >= 0xFC && ch < 0xFE)
 		byte_num = 6;
-	} else if (ch >= 0xF8) {
+	else if (ch >= 0xF8)
 		byte_num = 5;
-	} else if (ch >= 0xF0) {
+	else if (ch >= 0xF0)
 		byte_num = 4;
-	} else if (ch >= 0xE0) {
+	else if (ch >= 0xE0)
 		byte_num = 3;
-	} else if (ch >= 0xC0) {
+	else if (ch >= 0xC0)
 		byte_num = 2;
-	} else if (0 == (ch & 0x80)) {
+	else if (!(ch & 0x80))
 		byte_num = 1;
-	}
 	return byte_num;
 }
  
@@ -66,27 +65,24 @@ BOOL utf8_check(const char *str)
 	unsigned char ch;
 	const char *ptr = str;
 
-	if (NULL == str) {
+	if (str == nullptr)
 		return FALSE;
-	}
 	while (*ptr != '\0') {
 		ch = (unsigned char)*ptr;
 		if (byte_num == 0) {
-			if (0 == (byte_num = utf8_byte_num(ch))) {
+			byte_num = utf8_byte_num(ch);
+			if (byte_num == 0)
 				return FALSE;
-			}
 		}
 		else {
-			if ((ch & 0xC0) != 0x80) {
+			if ((ch & 0xC0) != 0x80)
 				return FALSE;
-			}
 		}
 		byte_num --;
 		ptr ++;
 	}
-	if (byte_num > 0) {
+	if (byte_num > 0)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -144,9 +140,9 @@ BOOL utf8_truncate(char *str, int length)
 			return TRUE;
 		}
 		ch = (unsigned char)*ptr;
-		if (0 == (byte_num = utf8_byte_num(ch))) {
+		byte_num = utf8_byte_num(ch);
+		if (byte_num == 0)
 			return FALSE;
-		}
 		ptr += byte_num;
 		len ++;
 	}
@@ -181,12 +177,11 @@ void utf8_filter(char *string)
 			}
 			minus_s = 0;  
 			count_s = 0;
-            if (0x09 == bytes[0]  || 0x0A == bytes[0] || 0x0D == bytes[0]
-				|| (0x20 <= bytes[0] && bytes[0] <= 0x7E)) {
-				/* do nothing */ 
-			} else {
+			if (bytes[0] == 0x09 || bytes[0] == 0x0A || bytes[0] == 0x0D ||
+			    (bytes[0] >= 0x20 && bytes[0] <= 0x7E))
+				/* do nothing */;
+			else
 				bytes[0] = '?';
-			}
 			bytes ++;
 			continue;
 		}
@@ -221,11 +216,10 @@ void utf8_filter(char *string)
 			continue;
 		}
 		if ((bytes[0] & 0xC0) == 0x80) {
-			if (minus_s) {
+			if (minus_s)
 				-- minus_s;
-			} else {
+			else
 				bytes[0] = '?';
-			}
 			bytes ++;
 			continue;
 		}
@@ -296,18 +290,17 @@ static bool have_jpms()
 
 const char* replace_iconv_charset(const char *charset)
 {
-	if (0 == strcasecmp(charset, "gb2312")) {
+	if (strcasecmp(charset, "gb2312") == 0)
 		return "gbk";
-	} else if (0 == strcasecmp(charset, "ksc_560") ||
-		0 == strcasecmp(charset, "ks_c_5601") ||
-		0 == strcasecmp(charset, "ks_c_5601-1987") ||
-		0 == strcasecmp(charset, "csksc56011987")) {
+	else if (strcasecmp(charset, "ksc_560") == 0 ||
+	    strcasecmp(charset, "ks_c_5601") == 0 ||
+	    strcasecmp(charset, "ks_c_5601-1987") == 0 ||
+	    strcasecmp(charset, "csksc56011987") == 0)
 		return "cp949";
-	} else if (strcasecmp(charset, "iso-2022-jp") == 0 && have_jpms()) {
+	else if (strcasecmp(charset, "iso-2022-jp") == 0 && have_jpms())
 		return "iso-2022-jp-ms";
-	} else if (0 == strcasecmp(charset, "unicode-1-1-utf-7")) {
+	else if (strcasecmp(charset, "unicode-1-1-utf-7") == 0)
 		return "utf-7";
-	}
 	return charset;
 }
 
@@ -334,13 +327,11 @@ BOOL string_to_utf8(const char *charset,
 		return TRUE;
 	}
 	gx_strlcpy(tmp_charset, replace_iconv_charset(charset), GX_ARRAY_SIZE(tmp_charset));
-	if (0 != strcasecmp("utf-7", tmp_charset)) {
+	if (strcasecmp("utf-7", tmp_charset) != 0)
 		length ++;
-	}
 	conv_id = iconv_open("UTF-8", tmp_charset);
-	if ((iconv_t)-1 == conv_id) {
+	if (conv_id == iconv_t(-1))
 		return FALSE;
-	}
 	pin = (char*)in_string;
 	pout = out_string;
 	in_len = length;
@@ -350,9 +341,8 @@ BOOL string_to_utf8(const char *charset,
 		return FALSE;
 	}
 	iconv_close(conv_id);
-	if (0 == strcasecmp("utf-7", tmp_charset)) {
+	if (strcasecmp("utf-7", tmp_charset) == 0)
 		out_string[2*length - out_len] = '\0';	
-	}
 	return TRUE;
 }
 
@@ -381,9 +371,8 @@ BOOL string_from_utf8(const char *charset, const char *in_string,
 	length ++;
 	
 	conv_id = iconv_open(replace_iconv_charset(charset), "UTF-8");
-	if ((iconv_t)-1 == conv_id) {
+	if (conv_id == iconv_t(-1))
 		return FALSE;
-	}
 	pin = (char*)in_string;
 	pout = out_string;
 	in_len = length;
@@ -452,15 +441,13 @@ BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len)
 	length = strlen(src);
 	len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
 	ptr1 = search_string(src, temp_tag, length);
-	if (NULL == ptr1) {
+	if (ptr1 == nullptr)
 		return FALSE;
-	}
 
 	ptr1 += len;
 	ptr1 = static_cast<const char *>(memchr(ptr1, ':', length - (ptr1 - src)));
-	if (NULL == ptr1) {
+	if (ptr1 == nullptr)
 		return FALSE;
-	}
 	ptr1 ++;
 	while (' ' == *ptr1 || '\t' == *ptr1) {
 		ptr1 ++;
@@ -492,9 +479,8 @@ BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len)
 		memmove(buff, buff + 1, len);
 		buff[len] = '\0';
 	}
-	if ('"' == buff[len - 1]) {
+	if (buff[len-1] == '"')
 		buff[len - 1] = '\0';
-	}
 	return TRUE;
 }
 
@@ -509,15 +495,13 @@ BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
 	temp_len = strlen(src) + 1;
 	len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
 	ptr1 = search_string(src, temp_tag, temp_len);
-	if (NULL == ptr1) {
+	if (ptr1 == nullptr)
 		return FALSE;
-	}
 
 	ptr1 += len;
 	ptr1 = static_cast<char *>(memchr(ptr1, ':', temp_len - (ptr1 - src)));
-	if (NULL == ptr1) {
+	if (ptr1 == nullptr)
 		return FALSE;
-	}
 	ptr1 ++;
 	
 	while (' ' == *ptr1 || '\t' == *ptr1) {
@@ -542,44 +526,14 @@ BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
 	len = strlen(value);
 	
 	temp_len1 = temp_len + len - (ptr2 - ptr1);
-	
-	if (temp_len1 > length) {
+	if (temp_len1 > length)
 		return FALSE;
-	}
 	if (static_cast<size_t>(ptr2 - ptr1) < len)
 		memmove(ptr1 + len, ptr2, temp_len1 - (ptr1 - src + len));
 	else if (static_cast<size_t>(ptr2 - ptr1) > len)
 		memmove(ptr1 + len, ptr2, src + temp_len - ptr2);
 	memcpy(ptr1, value, len);
 	return TRUE;
-}
-
-BOOL add_digest(char *src, size_t length, const char *tag, const char *value)
-{
-	size_t i, len;
-	size_t temp_len;
-	char temp_tag[256];
-	char temp_buff[1024];
-	
-	temp_len = strlen(src) + 1;
-	snprintf(temp_tag, 255, "\"%s\"", tag);
-	if (NULL != search_string(src, temp_tag, temp_len)) {
-		return set_digest(src, length, tag, value);
-		
-	}
-	
-	for (i=temp_len-1; i>0; i--) {
-		if ('}' == src[i]) {
-			len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff), ",\"%s\":%s", tag, value);
-			if (length - i < len + 2) {
-				return FALSE;
-			}
-			memcpy(src + i, temp_buff, len);
-			memcpy(src + i + len, "}", 2);
-			return TRUE;
-		}
-	}
-	return FALSE;
 }
 
 /*
@@ -606,146 +560,13 @@ char* search_string(const char *haystack, const char *needle,
 	while (1) {
 		if (plen <= 0)
 			return NULL;
-
-		if (strncasecmp(p, needle, len) == 0) {
+		if (strncasecmp(p, needle, len) == 0)
 			return (p);
-		}
 		p++;
 		plen--;
 
 	}
 	return NULL;
-}
-
-char* itvltoa(long interval, char *string)
-{
-	long days, hours;
-	long minutes, seconds;
-	long rest, offset;
-	
-	string[44] = '\0'; /* help static checkers flag callers */
-	days = 0;
-	hours = 0;
-	minutes = 0;
-	offset = 0;
-	if (0 == interval) {
-		strcpy(string, "0second");
-		return string;
-	} else if (interval < 0) {
-		interval = -interval;
-	}
-	if (interval >= 86400) {
-		days = interval/86400;
-		rest = interval%86400;
-		hours = rest/3600;
-		rest = rest%3600;
-		minutes = rest/60;
-		seconds = rest%60;
-	} else if (interval >= 3600 && interval < 86400) {
-		hours = interval/3600;
-		rest = interval%3600;
-		minutes = rest/60;
-		seconds = rest%60;
-	} else if (interval >= 60 && interval < 3600) {
-		minutes = interval/60;
-		seconds = interval%60;
-	}else {
-		seconds = interval;
-	}
-	if (0 != days) {
-		if (days > 1) {
-			sprintf(string, "%ld", days);
-			offset = strlen(string);
-			strcpy(string + offset, "days");
-			offset += 4;
-		} else if (1 == days) {
-			strcpy(string, "1day");
-			offset = 5;
-		}
-	}
-	if (0 != hours) {
-		if (hours > 1) {
-			sprintf(string + offset, "%ld", hours);
-			offset = strlen(string);
-			strcpy(string + offset, "hours");
-			offset += 5;
-		} else if (1 == hours) {
-			strcpy(string + offset, "1hour");
-			offset += 6;
-		}
-	}
-	if (0 != minutes) {
-		if (minutes > 1) {
-			sprintf(string + offset, "%ld", minutes);
-			offset = strlen(string);
-			strcpy(string + offset, "minutes");
-			offset += 7;
-		} else if (1 == minutes) {
-			strcpy(string + offset, "1minute");
-			offset += 8;
-		}
-	}
-	if (0 != seconds) {
-		if (seconds > 1) {
-			sprintf(string + offset, "%ld", seconds);
-			offset = strlen(string);
-			strcpy(string + offset, "seconds");
-		} else if (1 == seconds) {
-			strcpy(string + offset, "1second");
-		}
-	}
-	return string;
-}
-
-char* bytetoa(uint64_t byte, char *string)
-{
-	if (byte < 1024) {
-		sprintf(string, "%llu", static_cast<unsigned long long>(byte));
-	} else if (byte >= 1024 && byte < 1024*1024) {
-		sprintf(string, "%4.1lfK", (double)byte/1024);
-	} else if (byte >= 1024*1024 && byte < 1024*1024*1024) {
-		sprintf(string, "%4.1lfM", (double)byte/(1024*1024));
-	} else if (byte >= 1024*1024*1024 && byte < 0x10000000000LL) {
-		sprintf(string, "%1.1lfG", (double)byte/(1024*1024*1024));
-	} else {
-		sprintf(string, "%1.1lfT", (double)byte/0x10000000000LL);
-	}
-	HX_strltrim(string);
-	return string;
-}
-
-uint64_t atobyte(const char *string)
-{
-	int length, last_pos;
-	char unit;
-	char temp_buff[36]; 
-
-	length = strlen(string);
-	if (length > 32) {
-		return 0;
-	}
-	strcpy(temp_buff, string);
-	HX_strrtrim(temp_buff);
-	HX_strltrim(temp_buff);
-	last_pos = strlen(temp_buff) - 1;
-	unit = temp_buff[last_pos];
-	if ('B' == unit) {
-		temp_buff[last_pos] = '\0';
-		return strtoll(temp_buff, nullptr, 0);
-	} else if ('K' == unit || 'k' == unit) {
-		temp_buff[last_pos] = '\0';
-		return strtoll(temp_buff, nullptr, 0) * 1024;
-	} else if ('M' == unit || 'm' == unit) {
-		temp_buff[last_pos] = '\0';
-		return strtoll(temp_buff, nullptr, 0) * 1024 * 1024;
-	} else if ('G' == unit || 'g' == unit) {
-		temp_buff[last_pos] = '\0';
-		return strtoll(temp_buff, nullptr, 0) * 1024 * 1024 * 1024;
-	} else if ('T' == unit || 't' == unit) {
-		temp_buff[last_pos] = '\0';
-		return strtoll(temp_buff, nullptr, 0) * 0x10000000000LL;
-	}
-	return strtoll(temp_buff, nullptr, 0);
 }
 
 static char crypt_salt[65]=
@@ -846,9 +667,8 @@ void randstring_k(char *buff, int length, const char *string)
 	int i, key;
 	int string_len;
 	
-	if (length <= 0) {
+	if (length <= 0)
 		length = 1;
-	}
 	string_len = strlen(string);
 	for (i=0; i<length; i++) {
 		key = rand() % string_len;
@@ -884,7 +704,9 @@ static int8_t index_64[128] = {
 	41,42,43,44, 45,46,47,48, 49,50,51,-1, -1,-1,-1,-1
 };
 
-
+/*
+ * On success, 0 is returned and @out is NUL-terminated (@outlen does not count NUL).
+ */
 int encode64(const void *vin, size_t inlen, char *out,
     size_t outmax, size_t *outlen)
 {
@@ -896,7 +718,7 @@ int encode64(const void *vin, size_t inlen, char *out,
 	olen = (inlen + 2) / 3 * 4;
 	if (outlen)
 	  *outlen = olen;
-	if (outmax < olen)
+	if (olen >= outmax)
 	  return BUFOVER;
 
 	/* Do the work... */
@@ -918,14 +740,15 @@ int encode64(const void *vin, size_t inlen, char *out,
 		*out++ = (inlen < 2) ? '=' : basis_64[(in[1] << 2) & 0x3c];
 		*out++ = '=';
 	}
-
-	if (olen < outmax)
-	  *out = '\0';
-	
+	*out = '\0';
 	return OK;
 }
 
-int decode64(const char *in, size_t inlen, void *vout, size_t *outlen)
+/*
+ * @vout needs to have sufficient space, namely inlin*3/4+1.
+ * On success, @vout is NUL-terminated (@outlen count is without NUL).
+ */
+int decode64(const char *in, size_t inlen, void *vout, size_t outmax, size_t *outlen)
 {
 	auto out = static_cast<uint8_t *>(vout);
 	size_t len = 0,lup;
@@ -933,6 +756,8 @@ int decode64(const char *in, size_t inlen, void *vout, size_t *outlen)
 
 	/* check parameters */
 	if (out==NULL) return FAIL;
+	if ((inlen + 3) / 4 * 3 >= outmax)
+		return BUFOVER;
 
 	/* xxx these necessary? */
 	if (in[0] == '+' && in[1] == ' ') in += 2;
@@ -999,8 +824,10 @@ static char hextab[] = "0123456789ABCDEF";
 					|| ('0' <= (a) && (a) <= '9') \
 					||	(a) == '+' || (a) == '/'  )
 
-
-
+/*
+ * BASE64-encode with newlines.
+ * On success, 0 is returned and @_out is NUL-terminated (@outlen does count NUL)
+ */
 int encode64_ex(const void *vin, size_t inlen, char *_out,
 	size_t outmax, size_t *outlen)
 {
@@ -1015,13 +842,11 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 	int lineLen = 0;
 	const char* cp;
 	
-	if (!_in || !_out || !outlen) {
+	if (_in == nullptr || _out == nullptr || outlen == nullptr)
 		return -1;
-	}
 	outsize += strlen(DW_EOL)*outsize/MAXLINE + 2;	/* Space for newlines and NUL */
-	if (outmax < outsize) {
+	if (outsize >= outmax)
 		return -1;
-	}
 	/* Get three characters at a time and encode them. */
 	for (i=0; i < inLen/3; ++i) {
 		c1 = _in[inpos++] & 0xFF;
@@ -1045,9 +870,8 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 	case 0:
 		cp = DW_EOL;
 		out[outPos++] = *cp++;
-		if (*cp) {
+		if (*cp != '\0')
 			out[outPos++] = *cp;
-		}
 		break;
 	case 1:
 		c1 = _in[inpos] & 0xFF;
@@ -1057,9 +881,8 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 		out[outPos++] = '=';
 		cp = DW_EOL;
 		out[outPos++] = *cp++;
-		if (*cp) {
+		if (*cp != '\0')
 			out[outPos++] = *cp;
-		}
 		break;
 	case 2:
 		c1 = _in[inpos++] & 0xFF;
@@ -1070,9 +893,8 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 		out[outPos++] = '=';
 		cp = DW_EOL;
 		out[outPos++] = *cp++;
-		if (*cp) {
+		if (*cp != '\0')
 			out[outPos++] = *cp;
-		}
 		break;
 	}
 	out[outPos] = 0;
@@ -1080,7 +902,9 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 	return 0;
 }
 
-
+/*
+ * On success, 0 is returned, @vout is NUL-terminated (@outlen does not count NUL)
+ */
 int decode64_ex(const char *_in, size_t inlen, void *vout,
 	size_t outmax, size_t *outlen)
 {
@@ -1101,7 +925,7 @@ int decode64_ex(const char *_in, size_t inlen, void *vout,
 	
 	if (_in == nullptr || vout == nullptr || outlen == nullptr)
 		return -1;
-	if (outmax < outsize) {
+	if (outsize >= outmax) {
 		*outlen = 0;
 		return -1;
 	}
@@ -1191,9 +1015,8 @@ int decode64_ex(const char *_in, size_t inlen, void *vout,
 		else {
 			break;
 		}
-		if (is_endSeen) {
+		if (is_endSeen)
 			break;
-		}
 	} /* end while loop */
 	out[outPos] = 0;
 	*outlen = outPos;
@@ -1206,9 +1029,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 	size_t inpos, outpos, linelen;
 	int ch;
 
-	if (!input || !output) {
+	if (input == nullptr || output == nullptr)
 		return -1;
-	}
 	inpos  = 0;
 	outpos = 0;
 	linelen = 0;
@@ -1216,6 +1038,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 		ch = input[inpos++] & 0xFF;
 		/* '.' at beginning of line (confuses some SMTPs) */
 		if (linelen == 0 && ch == '.') {
+			if (outpos + 3 >= outlen)
+				return -1;
 			output[outpos++] = '=';
 			output[outpos++] = hextab[(ch >> 4) & 0x0F];
 			output[outpos++] = hextab[ch & 0x0F];
@@ -1225,6 +1049,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 		else if (linelen == 0 && inpos+3 < length && ch == 'F'
 				 && input[inpos	 ] == 'r' && input[inpos+1] == 'o'
 				 && input[inpos+2] == 'm' && input[inpos+3] == ' ') {
+			if (outpos + 3 >= outlen)
+				return -1;
 			output[outpos++] = '=';
 			output[outpos++] = hextab[(ch >> 4) & 0x0F];
 			output[outpos++] = hextab[ch & 0x0F];
@@ -1232,6 +1058,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 		}
 		/* Normal printable char */
 		else if ((62 <= ch && ch <= 126) || (33 <= ch && ch <= 60)) {
+			if (outpos + 1 >= outlen)
+				return -1;
 			output[outpos++] = (char) ch;
 			++linelen;
 		}
@@ -1242,13 +1070,16 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 				|| (inpos < length-1	  /* End of line? */
 					&& input[inpos	] == '\r' 
 					&& input[inpos+1] == '\n') ) {
-
+				if (outlen + 3 >= outlen)
+					return -1;
 				output[outpos++] = '=';
 				output[outpos++] = '2';
 				output[outpos++] = '0';
 				linelen += 3;
 			}
 			else {
+				if (outpos + 1 >= outlen)
+					return -1;
 				output[outpos++] = ' ';
 				++linelen;
 			}
@@ -1256,6 +1087,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 		/* Hard line break */
 		else if (inpos < length && ch == '\r' && input[inpos] == '\n') {
 			++inpos;
+			if (outpos + 2 >= outlen)
+				return -1;
 			output[outpos++] = '\r';
 			output[outpos++] = '\n';
 			linelen = 0;
@@ -1265,6 +1098,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 				 || !(ch & 0xE0)  /* control char */
 				 || ch == 0x7F	  /* DEL */
 				 || ch == '=') {  /* special case */
+			if (outpos + 3 >= outlen)
+				return -1;
 			output[outpos++] = '=';
 			output[outpos++] = hextab[(ch >> 4) & 0x0F];
 			output[outpos++] = hextab[ch & 0x0F];
@@ -1273,7 +1108,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 		/* Soft line break */
 		if (linelen >= MAXLINE-3 && !(inpos < length-1 && 
 			input[inpos] == '\r' && input[inpos+1] == '\n')) {
-
+			if (outpos + 3 >= outlen)
+				return -1;
 			output[outpos++] = '=';
 			output[outpos++] = '\r';
 			output[outpos++] = '\n';
@@ -1353,7 +1189,7 @@ static const unsigned char hex_tab[256] =
 	0x10, 0x10, 0x10, 0x10, 0x10, 0x10
 };
 
-size_t qp_decode(void *voutput, const char *input, size_t length,
+static size_t qp_decode(void *voutput, const char *input, size_t length,
     unsigned int qp_flags)
 {
 	auto output = static_cast<uint8_t *>(voutput);
@@ -1400,7 +1236,7 @@ size_t qp_decode(void *voutput, const char *input, size_t length,
 }
 
 ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
-    size_t length)
+    size_t length, unsigned int qp_flags)
 {
 	auto output = static_cast<uint8_t *>(voutput);
 	int c;
@@ -1436,10 +1272,9 @@ ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
 			break;
 		}
 	}
-	if (cnt >= out_len) {
+	if (cnt >= out_len)
 		return -1;
-	}
-	return qp_decode(output, input, length);
+	return qp_decode(output, input, length, qp_flags);
 }
 
 void encode_hex_int(int id, char *out)
@@ -1462,10 +1297,8 @@ int decode_hex_int(const char *in)
 	int retval;
 	char t_buff[3];
 	
-	if (strlen(in) < 2*sizeof(int)) {
+	if (strlen(in) < 2 * sizeof(int))
 		return 0;
-	}
-
 	retval = 0;
 	for (size_t i = 0; i < sizeof(int); ++i) {
 		t_buff[0] = in[2*i];
@@ -1484,9 +1317,8 @@ BOOL encode_hex_binary(const void *vsrc, int srclen, char *dst, int dstlen)
 	int i, j;
 	char t_char;
 	
-	if (2*srclen + 1 > dstlen) {
+	if (2 * srclen + 1 > dstlen)
 		return FALSE;
-	}
 	for (i=0,j=0; i<srclen; i++,j+=2) {
 		t_char = src[i];
 		dst[j + 1] = codes[t_char&0x0f];
@@ -1503,18 +1335,16 @@ BOOL decode_hex_binary(const char *src, void *vdst, int dstlen)
 	int i, j, len;
 
 	len = strlen(src);
-	if (len/2 > dstlen) {
+	if (len / 2 > dstlen)
 		return FALSE;
-	}
 	for (i=0,j=0; i<len; i+=2,j++) {
 		t_buff[0] = src[i];
 		t_buff[1] = src[i+1];
 		t_buff[2] = '\0';
 		dst[j] = strtol(t_buff, NULL, 16);
 	}
-	if (j < dstlen) {
+	if (j < dstlen)
 		dst[j] = '\0';
-	}
 	return TRUE;
 }
 
@@ -1522,105 +1352,91 @@ BOOL decode_hex_binary(const char *src, void *vdst, int dstlen)
 
 #define ENC(c) ((c) ? (((c) & 077) + ' ') : '`')
 
-
-int uudecode(const char *in, size_t inlen, int *pmode,
-	char *file_name, char *out, size_t *outlen)
+int uudecode(const char *in, size_t inlen, int *pmode, char *file_name,
+    size_t fnmax, char *out, size_t outmax, size_t *outlen)
 {
-	int i, j;
-	int mode;
 	char *ptr;
 	char *pline;
-	int line_len;
-	char buff[80]{};
-	int c1, c2, c3;
-	int n, expected;
+	char buff[132]{};
+	int c1, c2, c3, mode, line_len;
 	const char *pend;
-	char tmp_name[256];
 	
 	*outlen = 0;
 	mode = 0666;
-	tmp_name[0] = '\0';
 	ptr = search_string(in, "begin ", inlen);
 	if (NULL != ptr) {
 		ptr += 6;
-		if (' ' != ptr[3]) {
+		if (ptr[3] != ' ')
 			return -1;
-		}
-		if (1 != sscanf(ptr, "%o ", &mode)) {
+		if (sscanf(ptr, "%o ", &mode) != 1)
 			return -1;
-		}
 		ptr += 4;
-		for (i=0; i<256; i++,ptr++) {
-			if ('\r' == *ptr || '\n' == *ptr) {
-				ptr ++;
-				tmp_name[i] = '\0';
-				break;
-			}
-			tmp_name[i] = *ptr;
+		auto fnstart = ptr;
+		while (*ptr != '\r' && *ptr != '\n' && *ptr != '\0')
+			++ptr;
+		if (file_name != nullptr && fnmax > 0) {
+			gx_strlcpy(file_name, fnstart, fnmax);
+			if (static_cast<size_t>(ptr - fnstart) > fnmax - 1)
+				return -1;
 		}
-		if (i >= 256) {
-			return -1;
-		}
-		if ('\r' == *(ptr - 1) && '\n' == *ptr) {
+		if (ptr[0] == '\r' && ptr[1] == '\n')
 			ptr ++;
-		}
 	} else {
 		ptr = (char*)in;
 	}
 	pline = ptr;
 	pend = in + inlen;
 	while (pline < pend) {
-		for (j=0; j<80; j++) {
+		/*
+		 * U+0060 is the end marker, so the largest (non-standard)
+		 * length marker is U+0059 (95+32), i.e. 128 enc chars.
+		 * (1 length marker + 128 enc chars + 2 newline + 1 NUL => 132
+		 * bytes for buff)
+		 */
+		unsigned int j;
+		for (j = 0; j < 96; ++j) {
 			if ('\r' == pline[j] || '\n' == pline[j]) {
 				line_len = j;
 				break;
 			}
-			if (pline + j >= pend) {
+			if (pline + j >= pend)
 				return -1;
-			}
 			buff[j] = pline[j];
 		}
-		if (j >= 80) {
+		if (j >= 96)
 			return -1;
-		}
-		if ('\r' == pline[j] && '\n' == pline[j + 1]) {
+		if (pline[j] == '\r' && pline[j+1] == '\n')
 			pline += j + 2;
-		} else {
+		else
 			pline += j + 1;
-		}
-		n = DEC(buff[0]);
-		if (n <= 0 || 0 == line_len) {
+		int n = DEC(buff[0]);
+		if (n <= 0 || line_len == 0)
 			break;
-		}
 		/* Calculate expected # of chars and pad if necessary */
-		expected = ((n + 2) / 3) << 2;
-		for (j=line_len; j<=expected; j++) {
+		unsigned int expected = ((n + 2) / 3) * 4;
+		for (j = line_len; j <= expected; ++j)
 			buff[j] = ' ';
-		}
 		ptr = buff + 1;
+		if (static_cast<unsigned int>(n) + 1 > outmax)
+			return -1;
+		outmax -= n;
 		while (n > 0) {
 			c1 = DEC(*ptr) << 2 | DEC(ptr[1]) >> 4;
 			c2 = DEC(ptr[1]) << 4 | DEC(ptr[2]) >> 2;
 			c3 = DEC(ptr[2]) << 6 | DEC(ptr[3]);
-			if (n >= 1) {
+			if (n >= 1)
 				out[(*outlen)++] = c1;
-			}
-			if (n >= 2) {
+			if (n >= 2)
 				out[(*outlen)++] = c2;
-			}
-			if (n >= 3) {
+			if (n >= 3)
 				out[(*outlen)++] = c3;
-			}
 			ptr += 4;
 			n -= 3;
 		}
 	}
-	if (NULL != pmode) {
+	out[*outlen] = '\0';
+	if (pmode != nullptr)
 		*pmode = mode;
-	}
-	if (NULL != file_name) {
-		strcpy(file_name, tmp_name);
-	}
 	return 0;
 }
 
@@ -1634,67 +1450,59 @@ int uuencode(int mode, const char *file_name, const char *in,
 	
 	if (NULL != file_name) {
 		offset = gx_snprintf(out, outmax, "begin %o %s\r\n", mode, file_name);
-		if (offset >= outmax) {
+		if (offset >= outmax)
 			return -1;
-		}
 	} else {
 		offset = 0;
 	}
 	ptr = in;
 	while (true) {
 		/* 1 (up to) 45 character line */
-		if (in + inlen - ptr >= 45) {
+		if (in + inlen - ptr >= 45)
 			n = 45;
-		} else {
+		else
 			n = in + inlen - ptr;
-		}
 		out[offset] = ENC(n);
 		offset ++;
-		if (offset >= outmax) {
+		if (offset >= outmax)
 			return -1;
-		}
 		for (i=0; i<n; i+=3) {
 			c1 = ptr[i] >> 2;
 			c2 = ((ptr[i] << 4) & 060) | ((ptr[i + 1] >> 4) & 017);
 			c3 = ((ptr[i + 1] << 2) & 074) | ((ptr[i + 2] >> 6) & 03);
 			c4 = ptr[i + 2] & 077;
 			out[offset++] = ENC(c1);
-			if (offset >= outmax) {
+			if (offset >= outmax)
 				return -1;
-			}
 			out[offset++] = ENC(c2);
-			if (offset >= outmax) {
+			if (offset >= outmax)
 				return -1;
-			}
 			out[offset++] = ENC(c3);
-			if (offset >= outmax) {
+			if (offset >= outmax)
 				return -1;
-			}
 			out[offset++] = ENC(c4);
-			if (offset >= outmax) {
+			if (offset >= outmax)
 				return -1;
-			}
 		}
 		ptr += n;
 		out[offset++] = '\r';
-		if (offset >= outmax) {
+		if (offset >= outmax)
 			return -1;
-		}
 		out[offset++] = '\n';
-		if (offset >= outmax) {
+		if (offset >= outmax)
 			return -1;
-		}
-		if (n <= 0) {
+		if (n <= 0)
 			break;
-		}
 	}
 	if (NULL != file_name) {
-		if (outmax - offset < 5) {
+		if (outmax - offset < 5)
 			return -1;
-		}
 		memcpy(out + offset, "end\r\n", 5);
 		offset += 5;
 	}
+	if (offset >= outmax)
+		return -1;
+	out[offset] = '\0';
 	*outlen = offset;
 	return 0;
 }

@@ -67,6 +67,10 @@ static void terse_help()
 
 static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 {
+	ids->ppropid = me_alloc<uint16_t>(names->count);
+	if (ids->ppropid == nullptr)
+		return false;
+	ids->count = names->count;
 	for (size_t i = 0; i < names->count; ++i) {
 		auto &name = names->ppropname[i];
 		char guid[GUIDSTR_SIZE], txt[NP_STRBUF_SIZE];

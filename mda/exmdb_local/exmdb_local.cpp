@@ -484,10 +484,12 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	g_alloc_key = nullptr;
 
 	nt_time = rop_util_current_nttime();
-	pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time);
+	if (pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0)
+		/* ignore */;
 	if (!pcontext->pcontrol->need_bounce) {
 		tmp_int32 = UINT32_MAX;
-		pmsg->proplist.set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32);
+		if (pmsg->proplist.set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) != 0)
+			/* ignore */;
 	}
 	
 	pmsg->proplist.erase(PidTagChangeNumber);
