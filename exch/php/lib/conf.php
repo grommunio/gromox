@@ -7,7 +7,7 @@ function get_app_config()
 		return $appconf;
 	}
 	if (file_exists("/etc/gromox/mysql_adaptor.cfg")) {
-		$b = parse_ini_file("/etc/gromox/mysql_adaptor.cfg", false);
+		$b = parse_ini_file("/etc/gromox/mysql_adaptor.cfg", false, INI_SCANNER_RAW);
 		if ($b === false)
 			$b = [];
 	}

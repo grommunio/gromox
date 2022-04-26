@@ -39,7 +39,7 @@ mysql_adaptor(4gx) for details about the available configuration directives. In
 the file's absence, built-in defaults as documented are applied, in other
 words, root@localhost/email. Note that \fBthis cfg file is read using an ini
 parser\fP, which is not technically correct and has the caveat that it is not
-possible to use any of these characters in values: \fB!"&'();^|~\fP
+possible to use any of these characters in values: \fB;\fP
 .PP
 Note that PHP is dumb and the program cannot distinguish between file absence
 and file presence but missing permissions.
