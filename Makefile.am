@@ -87,7 +87,7 @@ endif
 sbin_SCRIPTS = gromox-abktpull gromox-pffimport
 pkglibexec_SCRIPTS = tools/create_queue.sh
 
-BUILT_SOURCES = include/gromox/paths.h php_mapi/zarafa_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
+BUILT_SOURCES = include/gromox/paths.h php_mapi/zrpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/alloc_context.cpp lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/xarray.cpp lib/mapi/ext_buffer.cpp
@@ -280,7 +280,7 @@ timer_SOURCES = tools/timer.cpp
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
 libphp_mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
-libphp_mapi_la_SOURCES = php_mapi/ext_pack.cpp php_mapi/mapi.cpp php_mapi/rpc_ext.cpp php_mapi/type_conversion.cpp php_mapi/zarafa_client.cpp php_mapi/zarafa_rpc.cpp
+libphp_mapi_la_SOURCES = php_mapi/ext_pack.cpp php_mapi/mapi.cpp php_mapi/rpc_ext.cpp php_mapi/type_conversion.cpp php_mapi/zarafa_client.cpp php_mapi/zrpc.cpp
 libphp_mapi_la_LIBADD = ${HX_LIBS} libgromox_common.la
 libmapi4zf_la_SOURCES =
 libmapi4zf_la_LDFLAGS = ${PHP_LDFLAGS}
@@ -341,7 +341,7 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 		<$< >$@.tmp
 	${AM_V_at}if ! cmp $@ $@.tmp 2>/dev/null; then mv $@.tmp $@; fi; rm -f $@.tmp
 
-php_mapi/zarafa_rpc.cpp: php_mapi/zarafa_client.h zcidl
+php_mapi/zrpc.cpp: php_mapi/zarafa_client.h zcidl
 	${AM_V_GEN}${top_srcdir}/zcidl <$< >$@
 
 lib/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
