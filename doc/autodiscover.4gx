@@ -99,14 +99,9 @@ Program location of the freebusy binary.
 .br
 Default: \fI/usr/libexec/gromox/freebusy\fP
 .SS [http-proxy]
-This section contains the emsmdb multiserver map. This conveys the HTTP home
-server for users. If a HTTP home server is not also the exmdb/sqlite home
-server for a user, said HTTP server will proxy the datastream to the right
-exmdb home server, which may result in lower performance than when connecting
-to the right server from the start.
-.PP
-Keys in this ini section are homedir prefixes, and values are the
-corresponding HTTP server, quite similar to exmdb_list.txt.
+This section contains the emsmdb multiserver map. This conveys the
+public-facing HTTP server name(s) for homedir prefix(es), and Outlook and other
+clients will connect to these servers.
 .PP
 Default:
 .PP
