@@ -1792,7 +1792,7 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;
-		if (rprop->proptag == PROP_TAG_ANR) {
+		if (rprop->proptag == PR_ANR) {
 			if (ab_tree_fetch_node_property(pnode, codepage,
 			    PR_ACCOUNT, &pvalue) && pvalue != nullptr &&
 			    strcasestr(static_cast<char *>(pvalue),

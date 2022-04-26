@@ -927,7 +927,7 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		if (rprop->proptag == PROP_TAG_ANR) {
+		if (rprop->proptag == PR_ANR) {
 			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
 			if (strcasestr(static_cast<char *>(rprop->propval.pvalue),

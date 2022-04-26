@@ -348,6 +348,8 @@ enum {
 	PR_CONTENT_UNREAD = PROP_TAG(PT_LONG, 0x3603), /* PidTagContentUnreadCount */
 	// PR_DETAILS_TABLE  = PROP_TAG(PT_OBJECT, 0x3605), /* PidTagDetailsTable */
 	// PR_SELECTABLE = PROP_TAG(PT_BOOLEAN, 0x3609), /* PidTagSelectable */
+	PR_ANR = PROP_TAG(PT_UNICODE, 0x360C), /* PidTagAnr */
+	PR_ANR_A = PROP_TAG(PT_STRING8, 0x360C),
 	PR_CONTAINER_CLASS = PROP_TAG(PT_UNICODE, 0x3613), /* PidTagContainerClass */
 	PR_ASSOC_CONTENT_COUNT = PROP_TAG(PT_LONG, 0x3617), /* PidTagAssociatedContentCount */
 	PR_IPM_APPOINTMENT_ENTRYID = PROP_TAG(PT_BINARY, 0x36D0), /* PidTagIpmAppointmentEntryId */

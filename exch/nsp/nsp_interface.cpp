@@ -1250,7 +1250,7 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 		if (NULL == pfilter->res.res_property.pprop) {
 			return TRUE;
 		}
-		if (PROP_TAG_ANR == pfilter->res.res_property.proptag) {
+		if (pfilter->res.res_property.proptag == PR_ANR) {
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_ACCOUNT, &prop_val, temp_buff,
 			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
@@ -1274,7 +1274,7 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
 				return TRUE;
 			return FALSE;
-		} else if (PROP_TAG_ANR_STRING8 == pfilter->res.res_property.proptag) {
+		} else if (pfilter->res.res_property.proptag == PR_ANR_A) {
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_ACCOUNT_A, &prop_val, temp_buff,
 			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess &&

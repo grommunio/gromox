@@ -3926,7 +3926,7 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite,
 		if (pvalue == nullptr)
 			return propval_compare_relop_nullok(rprop->relop,
 			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
-		if (rprop->proptag == PROP_TAG_ANR) {
+		if (rprop->proptag == PR_ANR) {
 			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
 			return strcasestr(static_cast<char *>(pvalue),
@@ -4136,7 +4136,7 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		if (pvalue == nullptr)
 			return propval_compare_relop_nullok(rprop->relop,
 			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
-		if (rprop->proptag == PROP_TAG_ANR) {
+		if (rprop->proptag == PR_ANR) {
 			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
 			return strcasestr(static_cast<char *>(pvalue),
@@ -4279,7 +4279,7 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 				return FALSE;
 			if (pvalue == nullptr)
 				break;
-			if (rprop->proptag == PROP_TAG_ANR) {
+			if (rprop->proptag == PR_ANR) {
 				if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 					return FALSE;
 				return strcasestr(static_cast<char *>(pvalue),
