@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <tinyxml2.h>
 #include <curl/curl.h>
 #include <libHX/option.h>
@@ -57,6 +58,89 @@ oxd_make_request(const char *email, const char *dn)
 	doc.Print(prt.get());
 	return prt;
 	/* tinyxml has no move ctors and no copy ctors, ugh */
+}
+
+static size_t oxd_write_null(char *, size_t s, size_t n, void *)
+{
+	return s * n;
+}
+
+static bool oxd_validate_url(CURL *ch, const tinyxml2::XMLElement *elem,
+    std::unordered_set<std::string> &seen_urls)
+{
+	if (elem == nullptr)
+		return true;
+	auto node = elem->FirstChild();
+	if (node == nullptr)
+		return true;
+	auto url = node->Value();
+	if (url == nullptr)
+		return true;
+	if (seen_urls.find(url) != seen_urls.end())
+		return true;
+	seen_urls.emplace(url);
+	auto ret = curl_easy_setopt(ch, CURLOPT_URL, url);
+	if (ret != CURLE_OK)
+		return ret;
+	ret = curl_easy_perform(ch);
+	if (ret != CURLE_OK) {
+		fprintf(stderr, "%s: %s\n", url, curl_easy_strerror(ret));
+		return false;
+	}
+	return true;
+}
+
+static bool oxd_validate_response(const std::string &xml_in)
+{
+	tinyxml2::XMLDocument doc;
+	auto ret = doc.Parse(xml_in.c_str(), xml_in.size());
+	if (ret != tinyxml2::XML_SUCCESS) {
+		fprintf(stderr, "Failed to xmlparse response\n");
+		return false;
+	}
+	auto node = doc.RootElement();
+	if (node == nullptr) {
+		fprintf(stderr, "No Autodiscover root element\n");
+		return false;
+	}
+	auto name = node->Name();
+	if (name == nullptr || strcasecmp(name, "Autodiscover") != 0) {
+		fprintf(stderr, "No Autodiscover root element\n");
+		return false;
+	}
+	node = node->FirstChildElement("Response");
+	if (node == nullptr) {
+		fprintf(stderr, "No Response element\n");
+		return false;
+	}
+	node = node->FirstChildElement("Account");
+	if (node == nullptr) {
+		fprintf(stderr, "No Account element\n");
+		return false;
+	}
+
+	std::unique_ptr<CURL, curl_del> chp(curl_easy_init());
+	if (chp == nullptr) {
+		perror("curl_easy_init: ENOMEM\n");
+		return false;
+	}
+	auto cc = curl_easy_setopt(chp.get(), CURLOPT_WRITEFUNCTION, oxd_write_null);
+	if (cc != CURLE_OK) {
+		fprintf(stderr, "curl_easy_setopt: %s\n", curl_easy_strerror(cc));
+		return false;
+	}
+
+	std::unordered_set<std::string> seen_urls;
+	bool ok = false;
+	for (node = node->FirstChildElement(); node != nullptr; node = node->NextSiblingElement()) {
+		name = node->Name();
+		if (name == nullptr || strcasecmp(name, "Protocol") != 0)
+			continue;
+		for (const char *s : {"OOFUrl", "OABUrl", "ASUrl", "EwsUrl", "EmwsUrl", "EcpUrl"})
+			if (!oxd_validate_url(chp.get(), node->FirstChildElement(s), seen_urls))
+				ok = false;
+	}
+	return ok;
 }
 
 static size_t oxd_write(char *ptr, size_t size, size_t nemb, void *udata)
@@ -166,5 +250,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 	printf("* Response body:\n%s\n", xml_response.c_str());
+	if (!oxd_validate_response(xml_response))
+		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
