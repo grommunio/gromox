@@ -41,6 +41,7 @@ static int zarafa_client_connect()
 	gx_strlcpy(un.sun_path, sockpath != nullptr ? sockpath : PKGRUNDIR "/zcore.sock", sizeof(un.sun_path));
 	len = offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path);
 	if (connect(sockd, (struct sockaddr*)&un, len) < 0) {
+		fprintf(stderr, "connect %s: %s\n", un.sun_path, strerror(errno));
 		close(sockd);
 		return -2;
 	}
