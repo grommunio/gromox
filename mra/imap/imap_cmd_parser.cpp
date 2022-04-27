@@ -1099,6 +1099,11 @@ static BOOL imap_cmd_parser_convert_imaptime(const char *str_time, time_t *ptime
 	return TRUE;
 }
 
+/*
+ * This function is from Chris Fuller <crf@cfox.bchs.uh.edu>, released into the
+ * Public Domain, and which subsequently found its way into e.g. the Dovecot
+ * server. The terrible variable naming is from there, too.
+ */
 static BOOL imap_cmd_parser_wildcard_match(const char *data, const char *mask)
 {
 	int type = 0;
