@@ -1955,6 +1955,35 @@ static GP_RESULT gp_spectableprop(db_table table_type, uint32_t tag,
 	}
 }
 
+static GP_RESULT gp_rcptprop_synth(sqlite3 *db, uint32_t proptag, xstmt &stm)
+{
+	switch (proptag) {
+	case PR_RECIPIENT_TYPE:
+		stm = gx_sql_prep(db, "SELECT 1"); // MAPI_TO
+		break;
+	case PR_DISPLAY_NAME:
+	case PR_EMAIL_ADDRESS:
+		stm = gx_sql_prep(db, "SELECT 15, ''"); // PT_UNICODE
+		break;
+	case PR_ADDRTYPE:
+		stm = gx_sql_prep(db, "SELECT 15, 'NONE'");
+		break;
+	default:
+		return GP_UNHANDLED;
+	}
+	return GP_ADV;
+}
+
+static GP_RESULT gp_fallbackprop(sqlite3 *db, db_table table_type, uint32_t proptag, xstmt &stm)
+{
+	switch (table_type) {
+	case db_table::rcpt_props:
+		return gp_rcptprop_synth(db, proptag, stm);
+	default:
+		return GP_UNHANDLED;
+	}
+}
+
 BOOL cu_get_properties(db_table table_type,
 	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
@@ -1999,24 +2028,10 @@ BOOL cu_get_properties(db_table table_type,
 			if (!bret)
 				return false;
 		}
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			if (table_type != db_table::rcpt_props)
+		if (sqlite3_step(pstmt) != SQLITE_ROW) {
+			auto ret = gp_fallbackprop(psqlite, table_type, pproptags->pproptag[i], own_stmt);
+			if (ret == GP_UNHANDLED)
 				continue;
-			switch (pproptags->pproptag[i]) {
-			case PR_RECIPIENT_TYPE:
-				own_stmt = gx_sql_prep(psqlite, "SELECT 1"); // MAPI_TO
-				break;
-			case PR_DISPLAY_NAME:
-			case PR_EMAIL_ADDRESS:
-				own_stmt = gx_sql_prep(psqlite, "SELECT 15, ''"); // PT_UNICODE
-				break;
-			case PR_ADDRTYPE:
-				own_stmt = gx_sql_prep(psqlite, "SELECT 15, 'NONE'");
-				break;
-			default:
-				own_stmt = nullptr;
-				break;
-			}
 			pstmt = own_stmt;
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 				continue;
