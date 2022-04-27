@@ -682,7 +682,7 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 		break;
 	}
 	}
-	return three_way_evaluate(cmp, relop);
+	return three_way_eval(relop, cmp);
 #undef MVCOMPARE
 }
 
@@ -696,12 +696,12 @@ bool propval_compare_relop_nullok(enum relop relop, uint16_t proptype,
 	 * else, and compare equal to another absent property.
 	 */
 	if (a == nullptr)
-		return three_way_evaluate(b == nullptr ? 0 : -1, relop);
-	return b == nullptr ? three_way_evaluate(1, relop) :
+		return three_way_eval(relop, b == nullptr ? 0 : -1);
+	return b == nullptr ? three_way_eval(relop, 1) :
 	       propval_compare_relop(relop, proptype, a, b);
 }
 
-bool three_way_evaluate(int order, enum relop r)
+bool three_way_eval(relop r, int order)
 {
 	switch (r) {
 	case RELOP_LT: return order < 0;

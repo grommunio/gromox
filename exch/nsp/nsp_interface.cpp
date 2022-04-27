@@ -1320,7 +1320,7 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 			fprintf(stderr, "E-1922: unhandled proptag %xh\n", pfilter->res.res_property.proptag);
 			return false;
 		}
-		return three_way_evaluate(cmp, static_cast<relop>(pfilter->res.res_property.relop)) ? TRUE : false;
+		return three_way_eval(static_cast<relop>(pfilter->res.res_property.relop), cmp) ? TRUE : false;
 	case RES_PROPCOMPARE:
 		return FALSE;
 	case RES_BITMASK:
