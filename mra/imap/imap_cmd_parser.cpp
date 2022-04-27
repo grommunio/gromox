@@ -1099,79 +1099,29 @@ static BOOL imap_cmd_parser_convert_imaptime(const char *str_time, time_t *ptime
 	return TRUE;
 }
 
-/*
- * This function is from Chris Fuller <crf@cfox.bchs.uh.edu>, released into the
- * Public Domain, and which subsequently found its way into e.g. the Dovecot
- * server. The terrible variable naming is from there, too.
- */
-static BOOL imap_cmd_parser_wildcard_match(const char *data, const char *mask)
+static BOOL imap_cmd_parser_wildcard_match(const char *folder, const char *mask)
 {
-	int type = 0;
-	const char *ma = mask;
-	const char *na = data;
-	const char *lsm = nullptr, *lsn = nullptr;
-	
-	BOOL icase = strncasecmp(data, "inbox", 5) == 0 ? TRUE : false;
-	/* null strings should never match */
-	if (ma == nullptr || na == nullptr || *ma == '\0' || *na == '\0')
-		return FALSE;
-	mask = mask + strlen(mask) - 1;
-	data = data + strlen(data) - 1;
-	while (data >= na) {
-		/* If the mask runs out of chars before the string, fall back on
-		* a wildcard or fail. */
-		if (mask < ma) {
-			if (lsm) {
-				data = --lsn;
-				mask = lsm;
-				if (*data == '/' && type == TYPE_WILDP)
-					lsm = nullptr;
-				if (data < na)
-					lsm = nullptr;
-			} else {
-				return FALSE;
-			}
+	while (true) {
+		if (*folder == '\0' && *mask == '\0')
+			return true;
+		if (*mask != '*' && *mask != '%') {
+			if (HX_toupper(*folder) != HX_toupper(*mask))
+				return false;
+			++folder;
+			++mask;
+			continue;
 		}
-		switch (*mask) {
-		case '*':                /* Matches anything */
-			do {
-				mask--;                    /* Zap redundant wilds */
-			} while ((mask >= ma) && ((*mask == '*') || (*mask == '%')));
-			type = TYPE_WILDS;
-			lsm = mask;
-			lsn = data;
-			if (mask < ma)
-				return TRUE;
-			continue;                 /* Next char, please */
-		case '%':
-			do {
-				mask--;                    /* Zap redundant wilds */
-			} while ((mask >= ma) && (*mask == '%'));
-			type = TYPE_WILDP;
-			lsm = mask;
-			lsn = data;
-			continue;                 /* Next char, please */
+		/* Find longest match for wildcards */
+		auto span = *mask == '*' ? strlen(folder) : strcspn(folder, "/");
+		++mask;
+		while (true) {
+			if (imap_cmd_parser_wildcard_match(&folder[span], mask))
+				return true;
+			if (span-- == 0)
+				break;
 		}
-		if ((icase && data - na < 5) ? HX_toupper(*mask) == HX_toupper(*data) :
-			(*mask == *data)) {     /* If matching char */
-			mask--;
-			data--;
-			continue;                 /* Next char, please */
-		}
-		if (lsm) {                  /* To to fallback on '*' */
-			data = --lsn;
-			mask = lsm;
-			if (*data == '/' && type == TYPE_WILDP)
-				lsm = nullptr;
-			if (data < na)
-				lsm = nullptr; /* Rewind to saved pos */
-			continue;                 /* Next char, please */
-		}
-		return FALSE;             /* No fallback=No match */
+		return false;
 	}
-	while (mask >= ma && (*mask == '*' || *mask == '%'))
-		mask--;                        /* Zap leftover %s & *s */
-	return (mask >= ma) ? FALSE : TRUE;   /* Start of both = match */
 }
 
 static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
