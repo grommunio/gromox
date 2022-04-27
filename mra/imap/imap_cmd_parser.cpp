@@ -1110,13 +1110,8 @@ static BOOL imap_cmd_parser_wildcard_match(const char *data, const char *mask)
 	/* null strings should never match */
 	if (ma == nullptr || na == nullptr || *ma == '\0' || *na == '\0')
 		return FALSE;
-	/* find the end of each string */
-	while (*++mask != '\0')
-		/* do nothing */
-	mask--;
-	while (*++data != '\0')
-		/* do nothing */
-	data--;
+	mask = mask + strlen(mask) - 1;
+	data = data + strlen(data) - 1;
 	while (data >= na) {
 		/* If the mask runs out of chars before the string, fall back on
 		* a wildcard or fail. */
