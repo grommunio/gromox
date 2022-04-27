@@ -697,7 +697,8 @@ bool propval_compare_relop_nullok(enum relop relop, uint16_t proptype,
 	 */
 	if (a == nullptr)
 		return three_way_evaluate(b == nullptr ? 0 : -1, relop);
-	return b == nullptr ? 1 : propval_compare_relop(relop, proptype, a, b);
+	return b == nullptr ? three_way_evaluate(1, relop) :
+	       propval_compare_relop(relop, proptype, a, b);
 }
 
 bool three_way_evaluate(int order, enum relop r)
