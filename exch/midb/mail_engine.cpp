@@ -83,9 +83,8 @@ struct CONDITION_RESULT {
 };
 
 struct CONDITION_TREE : DOUBLE_LIST {
-	CONDITION_TREE() { double_list_init(&m_list); }
+	CONDITION_TREE() { double_list_init(this); }
 	~CONDITION_TREE();
-	DOUBLE_LIST m_list{};
 };
 
 struct CONDITION_TREE_NODE {
@@ -1128,7 +1127,7 @@ CONDITION_TREE::~CONDITION_TREE()
 	DOUBLE_LIST_NODE *pnode;
 	CONDITION_TREE_NODE *ptree_node;
 	
-	while ((pnode = double_list_pop_front(&m_list)) != nullptr) {
+	while ((pnode = double_list_pop_front(this)) != nullptr) {
 		ptree_node = (CONDITION_TREE_NODE*)pnode->pdata;
 		if (NULL != ptree_node->pbranch) {
 			ptree_node->pbranch = NULL;
@@ -1146,7 +1145,7 @@ CONDITION_TREE::~CONDITION_TREE()
 		}
 		free(ptree_node);
 	}
-	double_list_free(&m_list);
+	double_list_free(this);
 }
 
 static enum midb_cond cond_str_to_cond(const char *s)
