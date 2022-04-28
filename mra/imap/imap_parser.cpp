@@ -1713,17 +1713,18 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 	auto plist = g_select_hash->query<DOUBLE_LIST>(temp_string);
 	if (NULL != plist) {
 		double_list_remove(plist, &pcontext->hash_node);
-		if (0 == double_list_get_nodes_num(plist)) {
+		if (double_list_get_nodes_num(plist) == 0) {
 			g_select_hash->remove(temp_string);
-		}
-		pcontext->b_modify = FALSE;
-		pcontext->f_flags.clear();
-		for (pnode=double_list_get_head(plist); NULL!=pnode;
-			pnode=double_list_get_after(plist, pnode)) {
-			pcontext1 = (IMAP_CONTEXT*)pnode->pdata;
-			if (0 == strcmp(pcontext->selected_folder, pcontext1->selected_folder)) {
-				should_remove = FALSE;
-				break;
+		} else {
+			pcontext->b_modify = FALSE;
+			pcontext->f_flags.clear();
+			for (pnode=double_list_get_head(plist); NULL!=pnode;
+				pnode=double_list_get_after(plist, pnode)) {
+				pcontext1 = (IMAP_CONTEXT*)pnode->pdata;
+				if (0 == strcmp(pcontext->selected_folder, pcontext1->selected_folder)) {
+					should_remove = FALSE;
+					break;
+				}
 			}
 		}
 	}
