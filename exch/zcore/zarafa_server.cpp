@@ -2364,7 +2364,7 @@ uint32_t zarafa_server_getstoreentryid(
 	if (0 == strncasecmp(mailbox_dn, "/o=", 3)) {
 		if (!common_util_essdn_to_username(mailbox_dn,
 		    username, GX_ARRAY_SIZE(username)))
-			return ecError;
+			return ecNotFound;
 	} else {
 		gx_strlcpy(username, mailbox_dn, GX_ARRAY_SIZE(username));
 		if (!common_util_username_to_essdn(username,
