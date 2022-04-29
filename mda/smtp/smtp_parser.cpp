@@ -231,11 +231,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			memcpy(reply_buf, smtp_reply_str, string_length);
 			string_length += sprintf(reply_buf + string_length, 
 							" queue-id: %d\r\n", pcontext->flusher.flush_ID);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, reply_buf, string_length);
-			} else {
-				write(pcontext->connection.sockd, reply_buf, string_length);
-			}
+			pcontext->connection.write(reply_buf, string_length);
 			smtp_parser_log_info(pcontext, LV_NOTICE, "return OK, queue-id:%d",
 							pcontext->flusher.flush_ID);
 			smtp_parser_reset_context_session(pcontext);
@@ -267,22 +263,14 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	} else if (FLUSH_TEMP_FAIL == pcontext->flusher.flush_result) {
 		/* 451 Temporary internal failure - queue message failed */
 		auto smtp_reply_str = resource_get_smtp_code(414, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
+		pcontext->connection.write(smtp_reply_str, string_length);
 		smtp_parser_log_info(pcontext, LV_ERR, "flushing queue temporary fail");
 		smtp_parser_reset_context_session(pcontext);
 		return PROCESS_CONTINUE;
 	} else if (FLUSH_PERMANENT_FAIL == pcontext->flusher.flush_result) {
 		/* 554 Message is infected by virus */
 		auto smtp_reply_str = resource_get_smtp_code(536, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
+		pcontext->connection.write(smtp_reply_str, string_length);
 		smtp_parser_log_info(pcontext, LV_ERR, "flushing queue permanent failure");
 		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 		if (system_services_container_remove_ip != nullptr)
@@ -347,11 +335,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	pbuff = static_cast<char *>(pcontext->stream.get_write_buf(reinterpret_cast<unsigned int *>(&size)));
 	if (NULL == pbuff) {
 		auto smtp_reply_str = resource_get_smtp_code(416, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-	       write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
+		pcontext->connection.write(smtp_reply_str, string_length);
 		smtp_parser_log_info(pcontext, LV_ERR, "out of memory");
 		if (0 != pcontext->flusher.flush_ID) {
 			flusher_cancel(pcontext);
@@ -391,11 +375,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		    pcontext->connection.last_timestamp) >= g_param.timeout) {
 			/* 451 Timeout */
 			auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, smtp_reply_str, string_length);
-			}
+			pcontext->connection.write(smtp_reply_str, string_length);
 			smtp_parser_log_info(pcontext, LV_DEBUG, "time out");
 			if (0 != pcontext->flusher.flush_ID) {
 				flusher_cancel(pcontext);
@@ -416,11 +396,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		switch (pcontext->stream.has_newline()) {
 		case STREAM_LINE_FAIL: {
 			auto smtp_reply_str = resource_get_smtp_code(525, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, smtp_reply_str, string_length);
-			}
+			pcontext->connection.write(smtp_reply_str, string_length);
 			smtp_parser_log_info(pcontext, LV_DEBUG, "envelope line too long");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			if (system_services_container_remove_ip != nullptr)
@@ -513,11 +489,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 	if (pcontext->total_length >= g_param.max_mail_length && !is_whole) {
 		/* 552 message exceeds fixed maximum message size */
 		auto smtp_reply_str = resource_get_smtp_code(521, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
+		pcontext->connection.write(smtp_reply_str, string_length);
 		smtp_parser_log_info(pcontext, LV_NOTICE, "close session because of exceeding "
 				 "maximum size of message");
 		if (0 != pcontext->flusher.flush_ID) {
@@ -582,11 +554,7 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		(4 != line_length || 0 != strncasecmp(cmd_line, "QUIT", 4))) {
 		/* reach the maximum of mail transactions */
 		smtp_reply_str = resource_get_smtp_code(529, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
+		pcontext->connection.write(smtp_reply_str, string_length);
 		if (system_services_add_ip_into_temp_list != nullptr)
 			system_services_add_ip_into_temp_list(pcontext->connection.client_ip,
 				g_param.blktime_sessions);
@@ -640,10 +608,7 @@ static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
 		return ret & DISPATCH_ACTMASK;
 	size_t zlen = 0;
 	auto str = resource_get_smtp_code(code, 1, &zlen);
-	if (ctx->connection.ssl != nullptr)
-		SSL_write(ctx->connection.ssl, str, zlen);
-	else
-		write(ctx->connection.sockd, str, zlen);
+	ctx->connection.write(str, zlen);
 	return ret & DISPATCH_ACTMASK;
 }
 

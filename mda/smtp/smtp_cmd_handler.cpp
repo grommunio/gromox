@@ -84,11 +84,7 @@ static int smtp_cmd_handler_xhlo(const char *cmd_line, int line_length,
         /* send the size of "SIZE" command */
 		g_param.max_mail_length);
 
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, buff, string_length);
-	} else {
-		write(pcontext->connection.sockd, buff, string_length);
-	}
+	pcontext->connection.write(buff, string_length);
     return DISPATCH_CONTINUE;
 }
 
@@ -162,11 +158,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
 		smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);
         string_length = sprintf(buff2, "%s%s%s", smtp_reply_str, buff,
                         smtp_reply_str2);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, buff2, string_length);
-		} else {
-			write(pcontext->connection.sockd, buff2, string_length);
-		}
+		pcontext->connection.write(buff2, string_length);
         return DISPATCH_CONTINUE;
     }
     /* check the running mode */
@@ -214,11 +206,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 		smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);
         string_length = sprintf(reason, "%s%s%s", smtp_reply_str, buff,
                         smtp_reply_str2);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, reason,string_length);
-		} else {
-			write(pcontext->connection.sockd, reason, string_length);
-		}
+		pcontext->connection.write(reason, string_length);
         return DISPATCH_CONTINUE;
     }
     if (T_MAIL_CMD == pcontext->last_cmd || T_RCPT_CMD == pcontext->last_cmd) {
@@ -232,11 +220,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
                 string_length = gx_snprintf(reason, GX_ARRAY_SIZE(reason),
                                 "%s<%s>%s", smtp_reply_str, buff,
                                 smtp_reply_str2);
-				if (NULL != pcontext->connection.ssl) {
-					SSL_write(pcontext->connection.ssl, reason, string_length);
-				} else {
-					write(pcontext->connection.sockd, reason, string_length);
-				}
+				pcontext->connection.write(reason, string_length);
 				system_services_log_info(LV_NOTICE, "remote=%s from=%s to=%s  RCPT address is invalid",
 					pcontext->connection.client_ip,
 					pcontext->menv.from, buff);
@@ -250,11 +234,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
                 string_length = gx_snprintf(reason, GX_ARRAY_SIZE(reason),
                                 "%s<%s>%s", smtp_reply_str, buff,
                                 smtp_reply_str2);
-				if (NULL != pcontext->connection.ssl) {
-					SSL_write(pcontext->connection.ssl, reason, string_length);
-				} else {
-					write(pcontext->connection.sockd, reason, string_length);
-				}
+				pcontext->connection.write(reason, string_length);
 				system_services_log_info(LV_NOTICE, "remote=%s from=%s to=%s  Mailbox is full",
 					pcontext->connection.client_ip,
 					pcontext->menv.from, buff);
@@ -299,11 +279,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
     if (NULL == pbuff) {
 		/* clear stream, all envelope imformation is recorded in menv */
 		pcontext->stream.clear();
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
+		pcontext->connection.write(smtp_reply_str, string_length);
         return DISPATCH_CONTINUE;
     }
 	/* fill the new stream the data after "data" command */
@@ -337,11 +313,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 	} while (NULL != pbuff);
 	stream.fwd_write_ptr(size2_used);
 	pcontext->stream = std::move(stream);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-	} else {
-		write(pcontext->connection.sockd, smtp_reply_str, string_length);
-	}
+	pcontext->connection.write(smtp_reply_str, string_length);
 	return DISPATCH_BREAK;
 }    
 
@@ -358,11 +330,7 @@ int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
 		resource_get_smtp_code(203, 1, &string_length),
 		resource_get_string("HOST_ID"),
 		resource_get_smtp_code(203, 2, &string_length));
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, buff, strlen(buff));
-	} else {
-		write(pcontext->connection.sockd, buff, strlen(buff));
-	}
+	pcontext->connection.write(buff, strlen(buff));
     return DISPATCH_SHOULD_CLOSE;
 }
 
@@ -438,11 +406,7 @@ static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
 		/* 501 Syntax error in parameters or arguments */
 		size_t string_length = 0;
 		auto smtp_reply_str = resource_get_smtp_code(505, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
+		pcontext->connection.write(smtp_reply_str, string_length);
 		return FALSE;
     }
     return TRUE;
