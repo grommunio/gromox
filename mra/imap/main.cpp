@@ -78,6 +78,17 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 };
 static void term_handler(int signo);
 
+static bool imap_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
+{
+	if (cfg == nullptr)
+		cfg = config_file_prg(opt_config_file, "imap.cfg", imap_cfg_defaults);
+	if (opt_config_file != nullptr && cfg == nullptr) {
+		fprintf(stderr, "config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		return false;
+	}
+	return true;
+}
+
 int main(int argc, const char **argv) try
 { 
 	int retcode = EXIT_FAILURE;
@@ -106,6 +117,8 @@ int main(int argc, const char **argv) try
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
+		return EXIT_FAILURE;
+	if (!imap_reload_config(g_config_file))
 		return EXIT_FAILURE;
 
 	int listen_port = 0, listen_ssl_port = 0;
@@ -335,8 +348,10 @@ int main(int argc, const char **argv) try
 	printf("[system]: IMAP DAEMON is now running\n");
 	while (!g_notify_stop) {
 		sleep(3);
-		if (g_hup_signalled.exchange(false))
+		if (g_hup_signalled.exchange(false)) {
+			imap_reload_config(nullptr);
 			service_reload_all();
+		}
 	}
 	listener_stop_accept();
 	return retcode;
