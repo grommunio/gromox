@@ -881,7 +881,6 @@ static BOOL common_util_username_to_entryid(const char *username,
 	if (pbin->pv == nullptr)
 		return FALSE;
 	oneoff_entry.flags = 0;
-	oneoff_entry.provider_uid = muidOOP;
 	oneoff_entry.version = 0;
 	oneoff_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
 	oneoff_entry.pdisplay_name = pdisplay_name != nullptr && *pdisplay_name != '\0' ?

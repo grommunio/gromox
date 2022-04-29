@@ -1559,8 +1559,11 @@ int EXT_PULL::g_abk_eid(EMSAB_ENTRYID *r)
 
 int EXT_PULL::g_oneoff_eid(ONEOFF_ENTRYID *r)
 {
+	FLATUID g;
 	TRY(g_uint32(&r->flags));
-	TRY(g_guid(&r->provider_uid));
+	TRY(g_guid(&g));
+	if (g != muidOOP)
+		return EXT_ERR_FORMAT;
 	TRY(g_uint16(&r->version));
 	TRY(g_uint16(&r->ctrl_flags));
 	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
@@ -3067,7 +3070,7 @@ int EXT_PUSH::p_abk_eid(const EMSAB_ENTRYID &r)
 int EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID &r)
 {
 	TRY(p_uint32(r.flags));
-	TRY(p_guid(r.provider_uid));
+	TRY(p_guid(muidOOP));
 	TRY(p_uint16(r.version));
 	TRY(p_uint16(r.ctrl_flags));
 	if (r.ctrl_flags & CTRL_FLAG_UNICODE) {

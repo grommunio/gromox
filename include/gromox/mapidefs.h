@@ -1677,8 +1677,6 @@ struct NOTIF_SINK {
 
 struct ONEOFF_ENTRYID {
 	uint32_t flags;
-	/* 81.2B.1F.A4.BE.A3.10.19.9D.6E.00.DD.01.0F.54.02 */
-	FLATUID provider_uid;
 	uint16_t version; /* should be 0x0000 */
 	uint16_t ctrl_flags;
 	char *pdisplay_name;

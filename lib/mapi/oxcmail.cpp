@@ -298,7 +298,6 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	ONEOFF_ENTRYID tmp_entry;
 	
 	tmp_entry.flags = 0;
-	tmp_entry.provider_uid = muidOOP;
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
 	tmp_entry.pdisplay_name = pdisplay_name != nullptr && *pdisplay_name != '\0' ?
@@ -713,7 +712,6 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 		return FALSE;
 	str_offset = 0;
 	tmp_entry.flags = 0;
-	tmp_entry.provider_uid = muidOOP;
 	tmp_entry.version = 0;
 	tmp_entry.pdisplay_name = utf8_field;
 	tmp_entry.paddress_type = deconst("SMTP");
@@ -3945,7 +3943,6 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 		ONEOFF_ENTRYID oo;
 		ep2.init(address_array.pbin[i].pb, address_array.pbin[i].cb, alloc, EXT_FLAG_UTF16);
 		if (ep2.g_oneoff_eid(&oo) != EXT_ERR_SUCCESS ||
-		    oo.provider_uid != muidOOP ||
 		    strcasecmp(oo.paddress_type, "SMTP") != 0)
 			continue;
 		if (oo.pdisplay_name != nullptr && *oo.pdisplay_name != '\0') {

@@ -764,7 +764,6 @@ ZEND_FUNCTION(mapi_createoneoff)
 		pdisplayname = empty;
 	}
 	tmp_entry.flags = 0;
-	tmp_entry.provider_uid = muidOOP;
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = flags;
 	tmp_entry.pdisplay_name = pdisplayname;
