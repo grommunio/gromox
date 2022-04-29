@@ -911,8 +911,15 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 	
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS ||
-	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS ||
-	    ext_pull.g_uint16(&folder_type) != EXT_ERR_SUCCESS)
+	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
+		return 0;
+	/*
+	 * The GUID determines how things look after byte 20. Without
+	 * inspecting the GUID, pulling an uint16_t here is undefined if going
+	 * by specification. I suppose the caller ought to ensure it is only
+	 * used with FOLDER_ENTRYIDs and MESSAGE_ENTRYIDs.
+         */
+	if (ext_pull.g_uint16(&folder_type) != EXT_ERR_SUCCESS)
 		return 0;
 	return folder_type;
 }

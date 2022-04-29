@@ -902,8 +902,12 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	} else if (common_util_parse_addressbook_entryid(entryid, &address_type,
 	    essdn, GX_ARRAY_SIZE(essdn)) && strncmp(essdn, "/exmdb=", 7) == 0 &&
 	    address_type == DT_REMOTE_MAILUSER) {
-		/* do nothing */	
+		/*
+		 * EMSAB entryid with a X500DN that specifies some
+		 * folder/message in some private/public store
+		 */
 	} else {
+		/* EMSAB entryid for GAL root (/exmdb) or GAL entries (/guid=) */
 		return ecInvalidParam;
 	}
 	if (!common_util_exmdb_locinfo_from_string(essdn + 7,
