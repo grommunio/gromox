@@ -201,7 +201,6 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	unsigned int tmp_len;
 	int read_len;
 	int ssl_errno;
-	int written_len;
 	const char *host_ID;
 	char temp_command[1024];
 	char reply_buf[1024];
@@ -260,16 +259,10 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	}
 
 	time_point current_time;	
+	ssize_t written_len = 0;
 	if (pcontext->data_stat) {
-		if (NULL != pcontext->connection.ssl) {
-			written_len = SSL_write(pcontext->connection.ssl,
-							pcontext->write_buff + pcontext->write_offset,
-							pcontext->write_length - pcontext->write_offset);
-		} else {
-			written_len = write(pcontext->connection.sockd,
-							pcontext->write_buff + pcontext->write_offset,
-							pcontext->write_length - pcontext->write_offset);
-		}
+		written_len = pcontext->connection.write(&pcontext->write_buff[pcontext->write_offset],
+		              pcontext->write_length - pcontext->write_offset);
 		current_time = time_point::clock::now();
 		if (0 == written_len) {
 			pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
@@ -312,16 +305,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	}
 
 	if (pcontext->list_stat) {
-		if (NULL != pcontext->connection.ssl) {
-			written_len = SSL_write(pcontext->connection.ssl,
-							pcontext->write_buff + pcontext->write_offset,
-							pcontext->write_length - pcontext->write_offset);
-		} else {
-			written_len = write(pcontext->connection.sockd,
-							pcontext->write_buff + pcontext->write_offset,
-							pcontext->write_length - pcontext->write_offset);
-		}
-			
+		written_len = pcontext->connection.write(&pcontext->write_buff[pcontext->write_offset],
+		              pcontext->write_length - pcontext->write_offset);
 		current_time = time_point::clock::now();
 		if (0 == written_len) {
 			pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
@@ -384,11 +369,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		if (CALCULATE_INTERVAL(current_time,
 			pcontext->connection.last_timestamp) >= g_timeout) {
 			auto pop3_reply_str = resource_get_pop3_code(1701, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-			}
+			pcontext->connection.write(pop3_reply_str, string_length);
 			pop3_parser_log_info(pcontext, LV_DEBUG, "time out");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			if (system_services_container_remove_ip != nullptr)
@@ -435,20 +416,12 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	if (1024 == pcontext->read_offset) {
 		pcontext->read_offset = 0;
 		auto pop3_reply_str = resource_get_pop3_code(1702, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, pop3_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, pop3_reply_str, string_length);
-		}
+		pcontext->connection.write(pop3_reply_str, string_length);
 	}
 	return PROCESS_CONTINUE;
 	
  ERROR_TRANSPROT:
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, "\r\n.\r\n", 5);
-	} else {
-		write(pcontext->connection.sockd, "\r\n.\r\n", 5);
-	}
+	pcontext->connection.write("\r\n.\r\n", 5);
 	if (pcontext->message_fd != -1) {
 		close(pcontext->message_fd);
 		pcontext->message_fd = -1;
@@ -645,10 +618,7 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
 		return ret & DISPATCH_ACTMASK;
 	size_t zlen = 0;
 	auto str = resource_get_pop3_code(code, 1, &zlen);
-	if (ctx->connection.ssl != nullptr)
-		SSL_write(ctx->connection.ssl, str, zlen);
-	else
-		write(ctx->connection.sockd, str, zlen);
+	ctx->connection.write(str, zlen);
 	return ret & DISPATCH_ACTMASK;
 }
 

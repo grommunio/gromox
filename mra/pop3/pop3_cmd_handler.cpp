@@ -59,12 +59,7 @@ int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
 			"IMPLEMENTATION gromox-pop3-%s\r\n",
 			PACKAGE_VERSION);
 	snprintf(buff + strlen(buff), sizeof(buff) - strlen(buff), ".\r\n");
-
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, buff, strlen(buff));
-	} else {
-		write(pcontext->connection.sockd, buff, strlen(buff));
-	}
+	pcontext->connection.write(buff, strlen(buff));
 	return DISPATCH_CONTINUE;
 }
 
@@ -112,11 +107,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 			                resource_get_pop3_code(1717, 1, &string_length),
 			                pcontext->username,
 			                resource_get_pop3_code(1717, 2, &string_length));
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, buff, string_length);
-			} else {
-				write(pcontext->connection.sockd, buff, string_length);
-			}
+			pcontext->connection.write(buff, string_length);
 			pop3_parser_log_info(pcontext, LV_WARN, "user %s is denied by user filter",
 					pcontext->username);
 			return DISPATCH_SHOULD_CLOSE;
@@ -210,11 +201,7 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
 	snprintf(temp_buff, sizeof(temp_buff), "+OK %d %llu\r\n",
 	         pcontext->total_mail, static_cast<unsigned long long>(pcontext->total_size));
 	string_length = strlen(temp_buff);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, temp_buff, string_length);
-	} else {
-		write(pcontext->connection.sockd, temp_buff, string_length);
-	}
+	pcontext->connection.write(temp_buff, string_length);
     return DISPATCH_CONTINUE;    
 }
 
@@ -266,11 +253,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		auto punit = sa_get_item(pcontext->array, n - 1);
 		string_length = sprintf(temp_buff, "+OK %d %s\r\n", n,
 							punit->file_name);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, temp_buff, string_length);
-		} else {
-			write(pcontext->connection.sockd, temp_buff, string_length);
-		}
+		pcontext->connection.write(temp_buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	return 1707;
@@ -322,11 +305,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
 		auto punit = sa_get_item(pcontext->array, n - 1);
 		string_length = sprintf(temp_buff, "+OK %d %zu\r\n", n, punit->size);	
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, temp_buff, string_length);
-		} else {
-			write(pcontext->connection.sockd, temp_buff, string_length);
-		}
+		pcontext->connection.write(temp_buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
 	return 1707;
@@ -516,11 +495,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 	sprintf(temp_buff, "%s%s%s", resource_get_pop3_code(1710, 1,
 		&string_length), resource_get_string("HOST_ID"),
 			resource_get_pop3_code(1710, 2, &string_length));
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, temp_buff, strlen(temp_buff));
-	} else {
-		write(pcontext->connection.sockd, temp_buff, strlen(temp_buff));
-	}
+	pcontext->connection.write(temp_buff, strlen(temp_buff));
 	return DISPATCH_SHOULD_CLOSE;
 	
 }
