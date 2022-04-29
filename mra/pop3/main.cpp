@@ -346,8 +346,10 @@ int main(int argc, const char **argv) try
 	printf("[system]: POP3 DAEMON is now running\n");
 	while (!g_notify_stop) {
 		sleep(3);
-		if (g_hup_signalled.exchange(false))
+		if (g_hup_signalled.exchange(false)) {
+			pop3_reload_config(nullptr);
 			service_reload_all();
+		}
 	}
 	listener_stop_accept();
 	return retcode;
