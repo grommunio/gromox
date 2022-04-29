@@ -15,7 +15,7 @@ static STORE_ENTRYID* store_entryid_dup(STORE_ENTRYID *peid)
 	if (NULL == pstore) {
 		return NULL;
 	}
-	memcpy(pstore, peid, sizeof(STORE_ENTRYID));
+	*pstore = *peid;
 	pstore->pserver_name = strdup(peid->pserver_name);
 	if (NULL == pstore->pserver_name) {
 		free(pstore);

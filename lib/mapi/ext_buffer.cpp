@@ -717,8 +717,13 @@ int EXT_PULL::g_svreid(SVREID *r)
 
 int EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 {
+	FLATUID g;
 	TRY(g_uint32(&r->flags));
-	TRY(g_guid(&r->provider_uid));
+	TRY(g_guid(&g));
+	if (g != muidStoreWrap) {
+		fprintf(stderr, "I-1969: not a wrapuid\n");
+		return EXT_ERR_FORMAT;
+	}
 	TRY(g_uint8(&r->version));
 	TRY(g_uint8(&r->flag));
 	TRY(g_bytes(r->dll_name, 14));
@@ -2503,7 +2508,7 @@ int EXT_PUSH::p_svreid(const SVREID &r)
 int EXT_PUSH::p_store_eid(const STORE_ENTRYID &r)
 {
 	TRY(p_uint32(r.flags));
-	TRY(p_guid(r.provider_uid));
+	TRY(p_guid(muidStoreWrap));
 	TRY(p_uint8(r.version));
 	TRY(p_uint8(r.flag));
 	TRY(p_bytes(r.dll_name, 14));

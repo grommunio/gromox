@@ -2372,7 +2372,6 @@ uint32_t zarafa_server_getstoreentryid(
 		mailbox_dn = tmp_buff;
 	}
 	store_entryid.flags = 0;
-	store_entryid.provider_uid = muidStoreWrap;
 	store_entryid.version = 0;
 	store_entryid.flag = 0;
 	snprintf(store_entryid.dll_name, sizeof(store_entryid.dll_name), "emsmdb.dll");

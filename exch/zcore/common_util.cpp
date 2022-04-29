@@ -1873,7 +1873,6 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 	STORE_ENTRYID store_entryid = {};
 	
 	store_entryid.flags = 0;
-	store_entryid.provider_uid = muidStoreWrap;
 	store_entryid.version = 0;
 	store_entryid.flag = 0;
 	snprintf(store_entryid.dll_name, sizeof(store_entryid.dll_name), "emsmdb.dll");
