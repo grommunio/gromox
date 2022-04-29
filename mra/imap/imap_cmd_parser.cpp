@@ -911,7 +911,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			for (decltype(len) i = 0; i < len; ++i) {
 				if (temp_buff[i] == '.' || HX_isdigit(temp_buff[i]))
 					continue;
-				ptr = &temp_buff[i];
+				ptr = temp_buff + i - 1;
 				*ptr = '\0';
 				break;
 			}
