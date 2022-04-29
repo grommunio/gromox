@@ -24,6 +24,12 @@ struct GX_EXPORT GENERIC_CONNECTION {
 		}
 	}
 
+	ssize_t write(const void *buf, size_t z)
+	{
+		return ssl != nullptr ? SSL_write(ssl, buf, z) :
+		       ::write(sockd, buf, z);
+	}
+
 	char client_ip[40]{}; /* client ip address string */
 	char server_ip[40]{}; /* server ip address */
 	uint16_t client_port = 0, server_port = 0;

@@ -417,11 +417,7 @@ static int ps_stat_notifying(IMAP_CONTEXT *pcontext)
 		           "* %d RECENT\r\n"
 		           "* %d EXISTS\r\n",
 		           recent, exists);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, temp_buff, len);
-		} else {
-			write(pcontext->connection.sockd, temp_buff, len);
-		}
+		pcontext->connection.write(temp_buff, len);
 	}
 	std::unique_lock ll_hold(g_list_lock);
 	double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
@@ -546,11 +542,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 			/* IMAP_CODE_2160003: + ready for additional command text */
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, imap_reply_str, string_length);
-			}
+			pcontext->connection.write(imap_reply_str, string_length);
 			return X_LITERAL_CHECKING;
 		}
 		memcpy(pcontext->command_buffer + pcontext->command_len,
@@ -577,11 +569,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 				/* IMAP_CODE_2160003 + Ready for additional command text */
 				size_t string_length = 0;
 				auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
-				if (NULL != pcontext->connection.ssl) {
-					SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
-				} else {
-					write(pcontext->connection.sockd, imap_reply_str, string_length);
-				}
+				pcontext->connection.write(imap_reply_str, string_length);
 				return PROCESS_CONTINUE;
 			}
 			case DISPATCH_SHOULD_CLOSE:
@@ -603,13 +591,8 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		/* IMAP_CODE_2180017: BAD literal size too large */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, "* ", 2);
-			SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, "* ", 2);
-			write(pcontext->connection.sockd, imap_reply_str, string_length);
-		}
+		pcontext->connection.write("* ", 2);
+		pcontext->connection.write(imap_reply_str, string_length);
 		pcontext->read_offset -= (ptr + 3 - pcontext->read_buffer);
 		if (pcontext->read_offset > 0 && pcontext->read_offset < 64*1024) {
 			memmove(pcontext->read_buffer, ptr + 3, pcontext->read_offset);
@@ -684,15 +667,9 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 				}
 				size_t string_length = 0;
 				auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-				if (NULL != pcontext->connection.ssl) {
-					SSL_write(pcontext->connection.ssl, pcontext->tag_string, strlen(pcontext->tag_string));
-					SSL_write(pcontext->connection.ssl, " ", 1);
-					SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
-				} else {
-					write(pcontext->connection.sockd, pcontext->tag_string, strlen(pcontext->tag_string));
-					write(pcontext->connection.sockd, " ", 1);
-					write(pcontext->connection.sockd, imap_reply_str, string_length);
-				}
+				pcontext->connection.write(pcontext->tag_string, strlen(pcontext->tag_string));
+				pcontext->connection.write(" ", 1);
+				pcontext->connection.write(imap_reply_str, string_length);
 			} else {
 				imap_cmd_parser_append_end(argc, argv, pcontext);
 			}
@@ -716,15 +693,9 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 				imap_reply_str = resource_get_imap_code(1727, 1,
 				                 &string_length);
 			}
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, pcontext->tag_string, strlen(pcontext->tag_string));
-				SSL_write(pcontext->connection.ssl, " ", 1);
-				SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, pcontext->tag_string, strlen(pcontext->tag_string));
-				write(pcontext->connection.sockd, " ", 1);
-				write(pcontext->connection.sockd, imap_reply_str, string_length);
-			}
+			pcontext->connection.write(pcontext->tag_string, strlen(pcontext->tag_string));
+			pcontext->connection.write(" ", 1);
+			pcontext->connection.write(imap_reply_str, string_length);
 			pcontext->command_len = 0;
 			return X_LITERAL_PROCESSING;
 		}
@@ -733,23 +704,12 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 			if (argc <= 0 || strlen(argv[0]) >= 32) {
-				if (pcontext->connection.ssl != nullptr) {
-					SSL_write(pcontext->connection.ssl, "* ", 2);
-					SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
-				} else {
-					write(pcontext->connection.sockd, "* ", 2);
-					write(pcontext->connection.sockd, imap_reply_str, string_length);
-				}
+				pcontext->connection.write("* ", 2);
+				pcontext->connection.write(imap_reply_str, string_length);
 			} else {
-				if (pcontext->connection.ssl != nullptr) {
-					SSL_write(pcontext->connection.ssl, argv[0], strlen(argv[0]));
-					SSL_write(pcontext->connection.ssl, " ", 1);
-					SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
-				} else {
-					write(pcontext->connection.sockd, argv[0], strlen(argv[0]));
-					write(pcontext->connection.sockd, " ", 1);
-					write(pcontext->connection.sockd, imap_reply_str, string_length);
-				}
+				pcontext->connection.write(argv[0], strlen(argv[0]));
+				pcontext->connection.write(" ", 1);
+				pcontext->connection.write(imap_reply_str, string_length);
 			}
 			pcontext->command_len = 0;
 			return X_LITERAL_CHECKING;
@@ -774,11 +734,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 		pcontext->command_len = 0;
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, imap_reply_str, string_length);
-		}
+		pcontext->connection.write(imap_reply_str, string_length);
 	}
 
 	if (pcontext->sched_stat != SCHED_STAT_IDLING) {
@@ -863,17 +819,8 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 	if (0 == pcontext->write_length) {
 		imap_parser_wrdat_retrieve(pcontext);
 	}
-	ssize_t written_len;
-	if (NULL != pcontext->connection.ssl) {
-		written_len = SSL_write(pcontext->connection.ssl,
-			pcontext->write_buff + pcontext->write_offset,
-			pcontext->write_length - pcontext->write_offset);
-	} else {
-		written_len = write(pcontext->connection.sockd,
-			pcontext->write_buff + pcontext->write_offset,
-			pcontext->write_length - pcontext->write_offset);
-	}
-
+	auto written_len = pcontext->connection.write(&pcontext->write_buff[pcontext->write_offset],
+	                   pcontext->write_length - pcontext->write_offset);
 	auto current_time = time_point::clock::now();
 	if (0 == written_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
@@ -960,17 +907,8 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&temp_len));
 		pcontext->write_length = temp_len;
 	}
-	ssize_t written_len;
-	if (NULL != pcontext->connection.ssl) {
-		written_len = SSL_write(pcontext->connection.ssl,
-			pcontext->write_buff + pcontext->write_offset,
-			pcontext->write_length - pcontext->write_offset);
-	} else {
-		written_len = write(pcontext->connection.sockd,
-			pcontext->write_buff + pcontext->write_offset,
-			pcontext->write_length - pcontext->write_offset);
-	}
-
+	auto written_len = pcontext->connection.write(&pcontext->write_buff[pcontext->write_offset],
+	                   pcontext->write_length - pcontext->write_offset);
 	auto current_time = time_point::clock::now();
 	if (0 == written_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
@@ -1050,13 +988,8 @@ static int ps_end_processing(IMAP_CONTEXT *pcontext,
     const char *imap_reply_str, ssize_t string_length)
 {
 	if (NULL != imap_reply_str) {
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, "* ", 2);
-			SSL_write(pcontext->connection.ssl, imap_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, "* ", 2);
-			write(pcontext->connection.sockd, imap_reply_str, string_length);
-		}
+		pcontext->connection.write("* ", 2);
+		pcontext->connection.write(imap_reply_str, string_length);
 	}
 	pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
@@ -1339,11 +1272,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 									   "* %d EXISTS\r\n",
 									   recent, exists);
 		if (NULL == pstream) {
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, buff, tmp_len);
-			} else {
-				write(pcontext->connection.sockd, buff, tmp_len);
-			}
+			pcontext->connection.write(buff, tmp_len);
 		} else {
 			pstream->write(buff, tmp_len);
 		}
@@ -1410,10 +1339,8 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		tmp_len += gx_snprintf(buff + tmp_len, arsizeof(buff) - tmp_len, "))\r\n");
 		if (pstream != nullptr)
 			pstream->write(buff, tmp_len);
-		else if (pcontext->connection.ssl != nullptr)
-			SSL_write(pcontext->connection.ssl, buff, tmp_len);
 		else
-			write(pcontext->connection.sockd, buff, tmp_len);
+			pcontext->connection.write(buff, tmp_len);
 	}
 	mem_file_free(&temp_file);
 }
@@ -1503,11 +1430,7 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pconte
     } else {
 		imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 		string_length = gx_snprintf(reply_buff, arsizeof(reply_buff), "%s %s", argv[0], imap_reply_str);
-        if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, reply_buff, string_length);
-		} else {
-			write(pcontext->connection.sockd, reply_buff, string_length);
-		}
+		pcontext->connection.write(reply_buff, string_length);
 		return DISPATCH_CONTINUE;
     }
 }
@@ -1822,11 +1745,7 @@ void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t co
 	if (fcntl(pcontext->connection.sockd, F_SETFL, opt) < 0)
 		fprintf(stderr, "W-1365: fcntl: %s\n", strerror(errno));
 	/* end of set mode */
-	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, pbuff, count);
-	} else {
-		write(pcontext->connection.sockd, pbuff, count);
-	}
+	pcontext->connection.write(pbuff, count);
 	/* set the socket back to non-block mode */
 	opt |= O_NONBLOCK;
 	if (fcntl(pcontext->connection.sockd, F_SETFL, opt) < 0)
