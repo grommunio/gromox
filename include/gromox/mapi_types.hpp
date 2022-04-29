@@ -230,7 +230,6 @@ struct PROBLEM_ARRAY {
 
 struct EMSAB_ENTRYID {
 	uint32_t flags;
-	FLATUID provider_uid; /* muidEMSAB */
 	uint32_t version; /* should be 0x00000001 */
 	uint32_t type;
 	char *px500dn;

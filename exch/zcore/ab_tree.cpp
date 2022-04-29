@@ -1416,7 +1416,6 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		}
 		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
-		ab_entryid.provider_uid = muidEMSAB;
 		ab_entryid.version = 1;
 		if (node_type >= abnode_type::containers)
 			ab_entryid.type = DT_CONTAINER;

@@ -227,7 +227,6 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	common_util_exmdb_locinfo_to_string(
 		type, db_id, folder_id, x500dn + 7);
 	tmp_entryid.flags = 0;
-	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_CONTAINER;
 	tmp_entryid.px500dn = x500dn;
@@ -260,7 +259,6 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	len = strlen(x500dn);
 	sprintf(x500dn + len, ":%d", num);
 	tmp_entryid.flags = 0;
-	tmp_entryid.provider_uid = muidZCSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_REMOTE_MAILUSER;
 	tmp_entryid.px500dn = x500dn;
@@ -491,7 +489,6 @@ BOOL container_object_fetch_special_property(
 		}
 		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
-		ab_entryid.provider_uid = muidEMSAB;
 		ab_entryid.version = 1;
 		ab_entryid.type = DT_CONTAINER;
 		ab_entryid.px500dn = special_type == SPECIAL_CONTAINER_GAL ?

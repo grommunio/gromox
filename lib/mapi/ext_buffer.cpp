@@ -1542,8 +1542,11 @@ int EXT_PULL::g_rule_data(RULE_DATA *r)
 
 int EXT_PULL::g_abk_eid(EMSAB_ENTRYID *r)
 {
+	FLATUID g;
 	TRY(g_uint32(&r->flags));
-	TRY(g_guid(&r->provider_uid));
+	TRY(g_guid(&g));
+	if (g != muidEMSAB)
+		return EXT_ERR_FORMAT;
 	TRY(g_uint32(&r->version));
 	TRY(g_uint32(&r->type));
 	return g_str(&r->px500dn);
@@ -3050,7 +3053,7 @@ int EXT_PUSH::p_rule_data(const RULE_DATA &r)
 int EXT_PUSH::p_abk_eid(const EMSAB_ENTRYID &r)
 {
 	TRY(p_uint32(r.flags));
-	TRY(p_guid(r.provider_uid));
+	TRY(p_guid(muidEMSAB));
 	TRY(p_uint32(r.version));
 	TRY(p_uint32(r.type));
 	return p_str(r.px500dn);

@@ -810,7 +810,6 @@ BINARY* common_util_username_to_addressbook_entryid(
 	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;
 	tmp_entryid.flags = 0;
-	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = x500dn;
@@ -835,7 +834,6 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 	if (pbin->pv == nullptr)
 		return FALSE;
 	tmp_entryid.flags = 0;
-	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = deconst(essdn);
