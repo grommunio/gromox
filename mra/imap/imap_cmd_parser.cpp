@@ -912,13 +912,19 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				if (temp_buff[i] == '.' || HX_isdigit(temp_buff[i]))
 					continue;
 				ptr = temp_buff + i - 1;
-				*ptr = '\0';
+				if (i > 0)
+					*ptr = '\0';
 				break;
 			}
 			const char *temp_id;
 			if (ptr == nullptr)
 				temp_id = temp_buff;
 			else if (ptr < temp_buff)
+				/*
+				 * This is still crap, @ptr is invalid, the
+				 * comparison is undefined (pointers must point
+				 * into the object)
+				 */
 				temp_id = "";
 			else
 				temp_id = temp_buff;
