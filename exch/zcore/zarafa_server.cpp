@@ -852,24 +852,34 @@ uint32_t zarafa_server_unloadobject(GUID hsession, uint32_t hobject)
 	return ecSuccess;
 }
 
+static uint32_t zs_openentry_emsab(GUID, BINARY, uint32_t, const char *, uint32_t, uint8_t *, uint32_t *);
 
 uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	uint32_t flags, uint8_t *pmapi_type, uint32_t *phobject)
 {
-	int user_id;
-	uint64_t eid;
-	uint16_t type;
 	BOOL b_private;
 	int account_id;
 	char essdn[1024];
-	uint8_t loc_type;
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t address_type;
+	uint16_t type;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
+	if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
+		/* Stupid GUID-less entryid from submit.php */
+		gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
+		return zs_openentry_emsab(hsession, entryid, flags, essdn,
+		       DT_REMOTE_MAILUSER, pmapi_type, phobject);
+	} else if (common_util_parse_addressbook_entryid(entryid, &address_type,
+	    essdn, arsizeof(essdn))) {
+		return zs_openentry_emsab(hsession, entryid, flags, essdn,
+		       address_type, pmapi_type, phobject);
+	}
+
+	/* Arbitrary GUID, it's probably a FOLDER_ENTRYID/MESSAGE_ENTRYID. */
 	type = common_util_get_messaging_entryid_type(entryid);
 	switch (type) {
 	case EITLT_PRIVATE_FOLDER:
@@ -897,19 +907,27 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 			handle, entryid, flags, pmapi_type, phobject);
 	}
 	}
-	if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
-		gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
-	} else if (common_util_parse_addressbook_entryid(entryid, &address_type,
-	    essdn, GX_ARRAY_SIZE(essdn)) && strncmp(essdn, "/exmdb=", 7) == 0 &&
-	    address_type == DT_REMOTE_MAILUSER) {
-		/*
-		 * EMSAB entryid with a X500DN that specifies some
-		 * folder/message in some private/public store
-		 */
-	} else {
-		/* EMSAB entryid for GAL root (/exmdb) or GAL entries (/guid=) */
+	return ecInvalidParam;
+}
+
+static uint32_t zs_openentry_emsab(GUID hsession, BINARY entryid,
+    uint32_t flags, const char *essdn, uint32_t address_type,
+    uint8_t *pmapi_type, uint32_t *phobject)
+{
+	/*
+	 * EMSAB entryids with a X500DN of the /exmdb=t:u:i form specify some
+	 * folder/message in some private/public store. Everything else (e.g.
+	 * GAL root or GAL entries) have no message to open.
+	 */
+	if (strncmp(essdn, "/exmdb=", 7) != 0 ||
+	    address_type != DT_REMOTE_MAILUSER)
 		return ecInvalidParam;
-	}
+
+	auto pinfo = zarafa_server_query_session(hsession);
+	BOOL b_private;
+	int user_id;
+	uint64_t eid;
+	uint8_t loc_type;
 	if (!common_util_exmdb_locinfo_from_string(essdn + 7,
 	    &loc_type, &user_id, &eid))
 		return ecNotFound;
