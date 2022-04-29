@@ -718,26 +718,9 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	BOOL b_data, MITEM *pitem, int item_id, DOUBLE_LIST *pitem_list)
 {
-	char *ptr;
 	int errnum;
-	char *pdot;
-	char *pend;
-	char *pbody;
 	MJSON mjson(imap_parser_get_jpool());
-	BOOL b_first;
-	int buff_len;
-	const char *temp_id;
-	size_t offset;
-	size_t length;
-	time_t tmp_time;
-	struct tm tmp_tm;
-	MJSON_MIME *pmime;
-	char mjson_id[64];
-	char final_id[64];
-	char temp_buff[1024];
 	char buff[MAX_DIGLEN];
-	char flags_string[128];
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (pitem->flag_bits & FLAG_LOADED) {
 		pitem->f_digest.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -754,11 +737,12 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		    !mjson.retrieve(buff, len, eml_path.c_str()))
 			return;
 	}
-	buff_len = 0;
+
+	BOOL b_first = FALSE;
+	int buff_len = 0;
 	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
 	            "* %d FETCH (", item_id);
-	b_first = FALSE;
-	for (pnode=double_list_get_head(pitem_list); NULL!=pnode;
+	for (auto pnode = double_list_get_head(pitem_list); pnode != nullptr;
 		pnode=double_list_get_after(pitem_list, pnode)) {
 		if (!b_first) {
 			b_first = TRUE;
@@ -836,11 +820,15 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			else
 				buff_len += len;
 		} else if (strcasecmp(kw, "FLAGS") == 0) {
+			char flags_string[128];
 			imap_cmd_parser_convert_flags_string(
 				pitem->flag_bits, flags_string);
 			buff_len += gx_snprintf(buff + buff_len,
 			            arsizeof(buff) - buff_len, "FLAGS %s", flags_string);
 		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
+			time_t tmp_time;
+			struct tm tmp_tm;
+
 			if (!parse_rfc822_timestamp(mjson.get_mail_received(), &tmp_time))
 				tmp_time = strtol(mjson.get_mail_filename(), nullptr, 0);
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
@@ -862,7 +850,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				imap_parser_modify_flags(pcontext, pitem->mid);
 			}
 		} else if (strcasecmp(kw, "RFC822.HEADER") == 0) {
-			pmime = mjson.get_mime("");
+			auto pmime = mjson.get_mime("");
 			if (pmime != nullptr)
 				buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
 				            "RFC822.HEADER ({%zd}\r\n<<{file}%s|0|%zd\r\n)",
@@ -877,7 +865,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			            arsizeof(buff) - buff_len,
 			            "RFC822.SIZE %zd", mjson.get_mail_length());
 		} else if (strcasecmp(kw, "RFC822.TEXT") == 0) {
-			pmime = mjson.get_mime("");
+			auto pmime = mjson.get_mime("");
 			if (pmime != nullptr)
 				buff_len += gx_snprintf(buff + buff_len,
 				            arsizeof(buff) - buff_len,
@@ -902,14 +890,13 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			            arsizeof(buff) - buff_len, "UID %d", pitem->uid);
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
-			pbody = strchr(static_cast<char *>(pnode->pdata), '[');
-			ptr = pbody + 1;
-			pend = strchr(ptr, ']');
-			offset = 0;
-			length = -1;
+			auto pbody = strchr(static_cast<char *>(pnode->pdata), '[');
+			auto ptr = pbody + 1;
+			auto pend = strchr(ptr, ']');
+			size_t offset = 0, length = -1;
 			if (pend[1] == '<') {
 				offset = strtol(pend + 2, nullptr, 0);
-				pdot = strchr(pend + 2, '.');
+				auto pdot = strchr(pend + 2, '.');
 				if (NULL != pdot) {
 					length = strtol(pdot + 1, nullptr, 0);
 					/* trim the length information for response tag */
@@ -918,6 +905,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				}
 			}
 			auto len = pend - ptr;
+			char temp_buff[1024];
 			memcpy(temp_buff, ptr, len);
 			temp_buff[len] = '\0';
 			ptr = NULL;
@@ -928,6 +916,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				*ptr = '\0';
 				break;
 			}
+			const char *temp_id;
 			if (ptr == nullptr)
 				temp_id = temp_buff;
 			else if (ptr < temp_buff)
@@ -945,6 +934,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				if (rfc_path.size() > 0 &&
 				    mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str())) {
 					MJSON temp_mjson(imap_parser_get_jpool());
+					char mjson_id[64], final_id[64];
 					if (mjson.rfc822_get(&temp_mjson, rfc_path.c_str(),
 					    temp_id, mjson_id, final_id))
 						len = imap_cmd_parser_print_structure(
