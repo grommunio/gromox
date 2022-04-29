@@ -1112,7 +1112,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 	return ecSuccess;
 }
 
-static uint32_t zs_openemsab(USER_INFO_REF &&, BINARY eid, int base_id, uint8_t *, uint32_t *);
+static uint32_t zs_openab_emsab(USER_INFO_REF &&, BINARY eid, int base_id, uint8_t *, uint32_t *);
 
 uint32_t zarafa_server_openabentry(GUID hsession,
 	BINARY entryid, uint8_t *pmapi_type, uint32_t *phobject)
@@ -1135,11 +1135,11 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		return ecSuccess;
 	}
 	if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidEMSAB)
-		return zs_openemsab(std::move(pinfo), entryid, base_id, pmapi_type, phobject);
+		return zs_openab_emsab(std::move(pinfo), entryid, base_id, pmapi_type, phobject);
 	return ecInvalidParam;
 }
 
-static uint32_t zs_openemsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_id,
+static uint32_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_id,
     uint8_t *pmapi_type, uint32_t *phobject)
 {
 	int user_id, domain_id;
