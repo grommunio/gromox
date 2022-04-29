@@ -891,8 +891,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
 			auto pbody = strchr(static_cast<char *>(pnode->pdata), '[');
-			auto ptr = pbody + 1;
-			auto pend = strchr(ptr, ']');
+			auto pend = strchr(pbody + 1, ']');
 			size_t offset = 0, length = -1;
 			if (pend[1] == '<') {
 				offset = strtol(pend + 2, nullptr, 0);
@@ -904,11 +903,11 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					pdot[1] = '\0';
 				}
 			}
-			auto len = pend - ptr;
+			auto len = pend - (pbody + 1);
 			char temp_buff[1024];
-			memcpy(temp_buff, ptr, len);
+			memcpy(temp_buff, pbody + 1, len);
 			temp_buff[len] = '\0';
-			ptr = NULL;
+			char *ptr = nullptr;
 			for (decltype(len) i = 0; i < len; ++i) {
 				if (temp_buff[i] == '.' || HX_isdigit(temp_buff[i]))
 					continue;
