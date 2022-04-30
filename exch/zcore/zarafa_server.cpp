@@ -2431,7 +2431,6 @@ uint32_t zarafa_server_getstoreentryid(
 	store_entryid.flags = 0;
 	store_entryid.version = 0;
 	store_entryid.flag = 0;
-	snprintf(store_entryid.dll_name, sizeof(store_entryid.dll_name), "emsmdb.dll");
 	store_entryid.wrapped_flags = 0;
 	store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 	store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;

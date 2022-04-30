@@ -15,7 +15,6 @@ struct STORE_ENTRYID {
 	uint32_t flags;
 	uint8_t version;
 	uint8_t flag;
-	char dll_name[14]; /* "emsmdb.dll" */
 	uint32_t wrapped_flags;
 	FLATUID wrapped_provider_uid; /* g_muidStorePrivate / g_muidStorePublic */
 	uint32_t wrapped_type;

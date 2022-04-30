@@ -726,7 +726,8 @@ int EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 	}
 	TRY(g_uint8(&r->version));
 	TRY(g_uint8(&r->flag));
-	TRY(g_bytes(r->dll_name, 14));
+	char dll[14];
+	TRY(g_bytes(dll, 14));
 	TRY(g_uint32(&r->wrapped_flags));
 	TRY(g_guid(&r->wrapped_provider_uid));
 	TRY(g_uint32(&r->wrapped_type));
@@ -2514,7 +2515,8 @@ int EXT_PUSH::p_store_eid(const STORE_ENTRYID &r)
 	TRY(p_guid(muidStoreWrap));
 	TRY(p_uint8(r.version));
 	TRY(p_uint8(r.flag));
-	TRY(p_bytes(r.dll_name, 14));
+	constexpr char dll[14] = "emsmdb.dll";
+	TRY(p_bytes(dll, arsizeof(dll)));
 	TRY(p_uint32(r.wrapped_flags));
 	TRY(p_guid(r.wrapped_provider_uid));
 	TRY(p_uint32(r.wrapped_type));
