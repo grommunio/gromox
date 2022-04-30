@@ -244,7 +244,7 @@ static std::unique_ptr<char[]> mail_engine_ct_to_utf8(const char *charset,
 	iconv_close(conv_id);
 	return ret_string;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1924: ENOMEM\n");
+	fprintf(stderr, "E-1963: ENOMEM\n");
 	return nullptr;
 }
 
@@ -433,7 +433,7 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 	out_buff[offset] = '\0';
 	return ret_string;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1923: ENOMEM\n");
+	fprintf(stderr, "E-1968: ENOMEM\n");
 	return nullptr;
 }
 
@@ -491,7 +491,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	    strlen(rs.get())) != nullptr)
 		penum->b_result = TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1925: ENOMEM\n");
+	fprintf(stderr, "E-1970: ENOMEM\n");
 }
 
 static BOOL mail_engine_ct_search_head(const char *charset,
@@ -1363,7 +1363,7 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 	}
 	return plist;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1926: ENOMEM\n");
+	fprintf(stderr, "E-1971: ENOMEM\n");
 	return {};
 }
 

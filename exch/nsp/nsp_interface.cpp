@@ -1317,7 +1317,7 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 			cmp = strcasecmp(prop_val.value.pstr, pfilter->res.res_property.pprop->value.pstr);
 			break;
 		default:
-			fprintf(stderr, "E-1922: unhandled proptag %xh\n", pfilter->res.res_property.proptag);
+			fprintf(stderr, "E-1967: unhandled proptag %xh\n", pfilter->res.res_property.proptag);
 			return false;
 		}
 		return three_way_eval(static_cast<relop>(pfilter->res.res_property.relop), cmp) ? TRUE : false;

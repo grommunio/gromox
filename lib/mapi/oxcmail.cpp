@@ -3262,7 +3262,7 @@ static BOOL oxcmail_parse_smime_message(MAIL *pmail, MESSAGE_CONTENT *pmsg) try
 		return FALSE;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1927: ENOMEM\n");
+	fprintf(stderr, "E-1972: ENOMEM\n");
 	return false;
 }
 

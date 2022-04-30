@@ -365,7 +365,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 	}
 	return false;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1929: ENOMEM\n");
+	fprintf(stderr, "E-1966: ENOMEM\n");
 	return false;
 }
 
@@ -1386,7 +1386,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 		}
 	}
 } catch (const std::bad_alloc &) {
-	debug_info("[mime]: E-1928: Failed to allocate memory in MIME::read_content");
+	debug_info("[mime]: E-1973: Failed to allocate memory in MIME::read_content");
 	*plength = 0;
 	return false;
 }
