@@ -1,3 +1,30 @@
+1.20 (2022-04-30)
+=================
+
+Fixes:
+
+* Resolve a use-after-free in gromox-eml2mt
+* oxcmail: conversion of Reply-To MAPI field to Internet Mail had only used the last
+  ONEOFF-type recipient, now it uses all ONEOFF recipients.
+* oxcmail: set IPM.Note.SMIME.MultipartSigned only for incoming S/MIME mails,
+  not for OpenPGP mails.
+* autodiscover: Change the way autodiscover.ini is parsed. This allows a few
+  more non-alphanumeric characters in the MariaDB password. ';' is still
+  unusable.
+* exmdb_provider: Evaluate restrictions against absent values differently;
+  this makes messages without a sensitivity tag and which are located
+  in a non-default store visible in Outlook again.
+* pop3: SIGHUP now really reloads pop3_cmd_debug from the .cfg file
+
+Changes:
+
+* zcore: entryids for PAB entries now follow the ZCSAB entryid scheme
+
+Known issues:
+
+* oxcmail: Reply-To still skips EX-type recipients (W-1964)
+
+
 1.19 (2022-04-14)
 =================
 
