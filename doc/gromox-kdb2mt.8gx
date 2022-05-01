@@ -241,5 +241,21 @@ member_id  folder_id  username                                           permiss
 3          2090545    1@aa8e2b20b2054ca98987ea1053c3bb16.kopano.invalid  1177      
 .fi
 .RE
+.SH ZARAFA Address Type
+MAPI is a system that supports referencing conversation participants of a
+message by means other than an SMTP e-mail address. For example, the "EX"
+address type employed by Exchange uses the Distinguished Name of the user
+object in the ActiveDirectory. (Obviously, this only works for users present in
+the LDAP tree.) Zarafa/Kopano systems define a "ZARAFA" address type, and the
+identifiers contain the username (possibly in other forms such as
+company\\username or company@username) or the (SMTP) email address.
+.PP
+Because kdb2mt operates without LDAP, the utility cannot convert those
+usernames. Conversion of what appears to be email addresses but isn't may lead
+to a wrong result. Rewriting ZARAFA-type addresses is therefore left to a
+separate tool.
+.PP
+The presence of a ZARAFA-type address on a message object will make many
+clients skip such objects silently in part or in full.
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)
