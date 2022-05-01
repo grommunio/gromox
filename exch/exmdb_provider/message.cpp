@@ -4212,10 +4212,10 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		propval.proptag = PR_RECEIVED_BY_ENTRYID;
 		propval.pvalue = pentryid;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
-		propval.proptag = PROP_TAG_RECEIVEDBYADDRESSTYPE;
+		propval.proptag = PR_RECEIVED_BY_ADDRTYPE;
 		propval.pvalue  = deconst("EX");
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
-		propval.proptag = PROP_TAG_RECEIVEDBYEMAILADDRESS;
+		propval.proptag = PR_RECEIVED_BY_EMAIL_ADDRESS;
 		propval.pvalue = essdn_buff + 3;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
 		if (common_util_get_user_displayname(account, display_name,
