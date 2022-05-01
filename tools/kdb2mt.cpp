@@ -165,7 +165,7 @@ static std::string sql_escape(MYSQL *sqh, const char *in)
 
 static bool skip_property(uint16_t id)
 {
-	static constexpr uint16_t tags[] = {
+	switch (id) {
 	/*
 	 * Skip importing IMAP data; midb rebuilds this anyway, and has its own
 	 * database for this so as to not clutter the store with what is
@@ -177,17 +177,25 @@ static bool skip_property(uint16_t id)
 	 * packet, though at least 8K. Since the fill status of the packet can
 	 * be anywhere from 0 to 32K, the behavior is exceptionally erratic.
 	 */
-		PROP_ID(PR_EC_IMAP_ID), PROP_ID(PR_EC_IMAP_SUBSCRIBED),
-		PROP_ID(PR_EC_IMAP_MAX_ID), PROP_ID(PR_EC_IMAP_EMAIL_SIZE),
-		PROP_ID(PR_EC_IMAP_BODY), PROP_ID(PR_EC_IMAP_BODYSTRUCTURE),
+	case PROP_ID(PR_EC_IMAP_ID):
+	case PROP_ID(PR_EC_IMAP_SUBSCRIBED):
+	case PROP_ID(PR_EC_IMAP_MAX_ID):
+	case PROP_ID(PR_EC_IMAP_EMAIL_SIZE):
+	case PROP_ID(PR_EC_IMAP_BODY):
+	case PROP_ID(PR_EC_IMAP_BODYSTRUCTURE):
+		return true;
 	/* Contains entryids and so on, pretty useless after import. */
-		PROP_ID(PR_ACL_DATA), PROP_ID(PR_RULES_DATA),
-		PROP_ID(PR_RW_RULES_STREAM),
-		PROP_ID(PR_EC_WEBACCESS_SETTINGS_JSON),
-	/* Computed property */
-		PROP_ID(PR_PARENT_DISPLAY), PROP_ID(PR_PARENT_DISPLAY_A),
-	};
-	return std::find(std::cbegin(tags), std::cend(tags), id) != std::cend(tags);
+	case PROP_ID(PR_ACL_DATA):
+	case PROP_ID(PR_RULES_DATA):
+	case PROP_ID(PR_RW_RULES_STREAM):
+	case PROP_ID(PR_EC_WEBACCESS_SETTINGS_JSON):
+		return true;
+	/* In Gromox, these are computed properties */
+	case PROP_ID(PR_PARENT_DISPLAY):
+		return true;
+	default:
+		return false;
+	}
 }
 
 ace_list::ace_list() : m_rdata(tarray_set_init())
