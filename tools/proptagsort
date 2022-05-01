@@ -1,11 +1,14 @@
 #!/usr/bin/perl
 print sort {
-	my($x, $y) = ($a, $b);
-	chomp($x);
-	chomp($y);
+	my ($p, $q) = ($a, $b);
+	$p =~ s{^\s*//\s+}{};
+	$q =~ s{^\s*//\s+}{};
+	my ($x, $y) = ($p, $q);
 	my $have_x = $x =~ s{.*\bPROP_TAG\(\w+, (0x[0-9a-f]+)\).*}{$1}ig;
 	my $have_y = $y =~ s{.*\bPROP_TAG\(\w+, (0x[0-9a-f]+)\).*}{$1}ig;
 	return 1 if (!$have_x && $have_y);
 	return -1 if ($have_x && !$have_y);
-	return $x cmp $y;
+	my $z = $x cmp $y;
+	return $z if ($z != 0);
+	return $p cmp $q;
 } <>;
