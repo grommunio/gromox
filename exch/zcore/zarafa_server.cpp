@@ -2425,7 +2425,7 @@ uint32_t zarafa_server_getstoreentryid(
 		gx_strlcpy(username, mailbox_dn, GX_ARRAY_SIZE(username));
 		if (!common_util_username_to_essdn(username,
 		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
-			return ecError;
+			return ecNotFound;
 		mailbox_dn = tmp_buff;
 	}
 	store_entryid.flags = 0;
