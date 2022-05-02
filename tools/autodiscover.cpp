@@ -19,6 +19,7 @@ struct curl_del {
 using namespace std::string_literals;
 using namespace gromox;
 
+static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
 static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_password, *g_legacydn;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'h', HXTYPE_STRING, &g_disc_host, nullptr, nullptr, 0, "Host to contact (in absence of -H; default: localhost)"},
@@ -129,6 +130,11 @@ static bool oxd_validate_response(const std::string &xml_in)
 		fprintf(stderr, "curl_easy_setopt: %s\n", curl_easy_strerror(cc));
 		return false;
 	}
+	cc = curl_easy_setopt(chp.get(), CURLOPT_USERAGENT, g_user_agent);
+	if (cc != CURLE_OK) {
+		fprintf(stderr, "curl_easy_setopt: %s\n", curl_easy_strerror(cc));
+		return false;
+	}
 
 	std::unordered_set<std::string> seen_urls;
 	bool ok = false;
@@ -136,9 +142,19 @@ static bool oxd_validate_response(const std::string &xml_in)
 		name = node->Name();
 		if (name == nullptr || strcasecmp(name, "Protocol") != 0)
 			continue;
-		for (const char *s : {"OOFUrl", "OABUrl", "ASUrl", "EwsUrl", "EmwsUrl", "EcpUrl"})
-			if (!oxd_validate_url(chp.get(), node->FirstChildElement(s), seen_urls))
+		for (const char *s : {"OOFUrl", "OABUrl", "ASUrl", "EwsUrl", "EmwsUrl", "EcpUrl"}) {
+			auto elem = node->FirstChildElement(s);
+			if (!oxd_validate_url(chp.get(), elem, seen_urls))
 				ok = false;
+		}
+		for (const char *s : {"MailStore", "AddressBook"}) {
+			auto elem = node->FirstChildElement(s);
+			if (elem == nullptr)
+				continue;
+			for (const char *t : {"InternalUrl", "ExternalUrl"})
+				if (!oxd_validate_url(chp.get(), elem->FirstChildElement(t), seen_urls))
+					ok = false;
+		}
 	}
 	return ok;
 }
@@ -193,6 +209,9 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 	if (ret != CURLE_OK)
 		return ret;
 	ret = curl_easy_setopt(ch, CURLOPT_VERBOSE, 1L);
+	if (ret != CURLE_OK)
+		return ret;
+	ret = curl_easy_setopt(ch, CURLOPT_USERAGENT, g_user_agent);
 	if (ret != CURLE_OK)
 		return ret;
 	if (g_disc_url != nullptr)
