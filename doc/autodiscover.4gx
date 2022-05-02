@@ -101,7 +101,10 @@ Default: \fI/usr/libexec/gromox/freebusy\fP
 .SS [http-proxy]
 This section contains the emsmdb multiserver map. This conveys the
 public-facing HTTP server name(s) for homedir prefix(es), and Outlook and other
-clients will connect to these servers.
+clients will connect to these servers. Whether prefixes end in a slash or not
+is of no consequence, their right will always be treated as a word boundary so
+that "/var/lib/gromox/user" will not be a match to a userdir
+"/var/lib/gromox/users/x/y" (but will be for "/var/lib/gromox/user/x/y").
 .PP
 Default:
 .PP
@@ -111,6 +114,9 @@ Default:
 /var/lib/gromox/domain/ = (system hostname)
 .fi
 .RE
+.PP
+If no prefix yields a match for a given mailbox directory, the value from the
+exchange.hostname setting is used as a response.
 .SH Outlook notes
 When Outlook is active, it is possible to Ctrl-MouseBtn3 (right click) on the
 status tray icon to call up a context menu, from which "Test Email

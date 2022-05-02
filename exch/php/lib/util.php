@@ -188,9 +188,13 @@ function get_http_proxy($dir, $host_name)
 		return $host_name;
 	}
 	foreach ($http_proxy as $dir_prefix => $server_name) {
-		if (0 === strpos($dir, $dir_prefix) && '/' == $dir[strlen($dir_prefix)]) {
-			return $server_name;
-		}
+		if (strpos($dir, $dir_prefix) != 0)
+			continue;
+		# Support prefixes both with and without trailing slash
+		if ($dir_prefix[-1] == '/')
+			return $r.$server_name;
+		if ($dir[strlen($dir_prefix)] == '/')
+			return $r.$server_name;
 	}
 	return $host_name;
 }
