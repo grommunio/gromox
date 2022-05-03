@@ -23,6 +23,8 @@ using namespace gromox;
 using LLD = long long;
 using LLU = unsigned long long;
 
+unsigned int exmdb_pf_read_states;
+
 /* private only */
 BOOL exmdb_server_get_folder_by_class(const char *dir,
 	const char *str_class, uint64_t *pid, char *str_explicit)
@@ -2727,6 +2729,10 @@ BOOL exmdb_server_get_public_folder_unread_count(const char *dir,
 {
 	if (exmdb_server_check_private())
 		return FALSE;
+	if (exmdb_pf_read_states == 0) {
+		*pcount = 0;
+		return TRUE;
+	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;

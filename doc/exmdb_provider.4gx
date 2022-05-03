@@ -34,6 +34,17 @@ opened it, turn this option off for mitigation.
 .br
 Default: \fIon\fP
 .TP
+\fBexmdb_pf_read_states\fP
+When set to 0, messages in public stores/folders will always be shown as read
+and the folder summary will reflect that.
+.br
+When set to 1, messages will have new/read markings per user but the folder
+summary will indicate 0 new messages at all times.
+.br
+When set to 2, folder summaries will indicate the number of new messages.
+.br
+Default: \fI2\fP
+.TP
 \fBexmdb_schema_upgrades\fP
 This directive controls whether database schemas are automatically upgraded
 when a mailbox is loaded. During this time, the mailbox is unavailable and

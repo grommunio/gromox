@@ -1842,7 +1842,8 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = !!common_util_check_message_read(db, id);
+		*v = exmdb_pf_read_states == 0 && !exmdb_server_check_private() ?
+		     true : !!common_util_check_message_read(db, id);
 		return GP_ADV;
 	}
 	case PROP_TAG_HASNAMEDPROPERTIES: {
@@ -1873,6 +1874,8 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		if (!common_util_get_message_flags(db, id, false,
 		    reinterpret_cast<uint32_t **>(&pv.pvalue)))
 			return GP_ERR;
+		if (exmdb_pf_read_states == 0 && !exmdb_server_check_private())
+			*static_cast<uint32_t *>(pv.pvalue) |= MSGFLAG_READ;
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PR_SUBJECT:
 	case PR_SUBJECT_A:
