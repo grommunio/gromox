@@ -3324,7 +3324,8 @@ static bool smime_clearsigned(const char *head_ct, MIME *head, char (&buf)[256])
 		return false;
 	if (!oxcmail_get_content_param(head, "protocol", buf, arsizeof(buf)))
 		return false;
-	return strcasecmp(buf, "application/pkcs7-mime") == 0;
+	return strcasecmp(buf, "application/pkcs7-signature") == 0 ||
+	       strcasecmp(buf, "application/x-pkcs7-signature") == 0;
 }
 
 MESSAGE_CONTENT* oxcmail_import(const char *charset,
