@@ -886,6 +886,7 @@ BOOL exmdb_server_get_message_properties(const char *dir,
 		return FALSE;
 	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	return cu_get_properties(db_table::msg_props,
 	       rop_util_get_gc_value(message_id), cpid, pdb->psqlite,
 	       pproptags, ppropvals);
@@ -907,6 +908,7 @@ BOOL exmdb_server_set_message_properties(const char *dir,
 		return FALSE;
 	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!cu_set_properties(db_table::msg_props, mid_val, cpid,
@@ -987,6 +989,7 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 		return false;
 	if (!exmdb_server_check_private()) {
 		exmdb_server_set_public_username(username);
+		auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 		common_util_set_message_read(pdb->psqlite,
 			mid_val, mark_as_read);
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
@@ -4396,6 +4399,7 @@ BOOL exmdb_server_read_message(const char *dir, const char *username,
 		return FALSE;
 	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!common_util_begin_message_optimize(pdb->psqlite))
@@ -4429,6 +4433,7 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	auto is_pvt = exmdb_server_check_private();
 	if (!is_pvt)
 		exmdb_server_set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	fid_val = rop_util_get_gc_value(folder_id);
 	mid_val = rop_util_get_gc_value(message_id);
 	pdigest = NULL;

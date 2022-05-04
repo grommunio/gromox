@@ -377,6 +377,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	}
 	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!common_util_begin_message_optimize(pdb->psqlite))
 		return FALSE;
@@ -1615,6 +1616,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	BOOL b_result = exmdb_server_write_message(dir, account, 0, folder_id,
 	                pmsgctnt, pe_result);
 	common_util_set_tls_var(NULL);
+	exmdb_server_set_public_username(nullptr);
 	return b_result;
 }
 	

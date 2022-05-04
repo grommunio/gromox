@@ -2739,6 +2739,7 @@ BOOL exmdb_server_get_public_folder_unread_count(const char *dir,
 	exmdb_server_set_public_username(username);
 	*pcount = common_util_get_folder_unread_count(
 		pdb->psqlite, rop_util_get_gc_value(folder_id));
+	exmdb_server_set_public_username(nullptr);
 	return TRUE;
 	
 }

@@ -214,6 +214,7 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 		return FALSE;
 	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (NULL == pdb->tables.psqlite) {
 		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
@@ -647,6 +648,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			b_search = TRUE;
 		}
 	}
+	auto cl_1 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	if (pdb->tables.psqlite == nullptr &&
 	    sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
 	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
@@ -1938,6 +1940,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 	}
 	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	switch (ptnode->type) {
 	case TABLE_TYPE_HIERARCHY: {
@@ -2740,6 +2743,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	ppropvals->count = 0;
 	ppropvals->ppropval = NULL;
 	BOOL ret = TRUE;
@@ -3005,6 +3009,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
+	auto cl_1 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	if (TABLE_TYPE_HIERARCHY == ptnode->type) {
 		return read_tblrow_hier(cpid, table_id, pproptags, inst_id, inst_num, ppropvals, pdb);
 	} else if (TABLE_TYPE_CONTENT == ptnode->type) {

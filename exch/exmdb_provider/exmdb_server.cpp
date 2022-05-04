@@ -80,6 +80,7 @@ void exmdb_server_set_public_username(const char *username)
 
 const char* exmdb_server_get_public_username()
 {
+	/* Only ever used by readstate tracking */
 	return g_public_username_key;
 }
 
