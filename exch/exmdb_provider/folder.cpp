@@ -23,7 +23,7 @@ using namespace gromox;
 using LLD = long long;
 using LLU = unsigned long long;
 
-unsigned int exmdb_pf_read_states;
+unsigned int exmdb_pf_read_per_user, exmdb_pf_read_states;
 
 /* private only */
 BOOL exmdb_server_get_folder_by_class(const char *dir,

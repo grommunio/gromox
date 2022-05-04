@@ -899,7 +899,7 @@ uint32_t common_util_get_folder_unread_count(
 		return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 		       sqlite3_column_int64(pstmt, 0);
 	}
-	auto username = exmdb_server_get_public_username();
+	auto username = exmdb_pf_read_per_user ? exmdb_server_get_public_username() : "";
 	if (username == nullptr)
 		return 0;
 	gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM messages WHERE"
@@ -1259,10 +1259,9 @@ static BOOL common_util_check_message_read(
 	sqlite3 *psqlite, uint64_t message_id)
 {
 	char sql_string[128];
-	const char *username;
 	
 	if (!exmdb_server_check_private()) {
-		username = exmdb_server_get_public_username();
+		auto username = exmdb_pf_read_per_user ? exmdb_server_get_public_username() : "";
 		if (username == nullptr)
 			return FALSE;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
@@ -2511,7 +2510,6 @@ void common_util_set_message_read(sqlite3 *psqlite,
 	uint64_t message_id, uint8_t is_read)
 {
 	char sql_string[128];
-	const char *username;
 	
 	if (is_read)
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE message_properties "
@@ -2534,7 +2532,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 		gx_sql_exec(psqlite, sql_string);
 		return;
 	}
-	username = exmdb_server_get_public_username();
+	auto username = exmdb_pf_read_per_user ? exmdb_server_get_public_username() : "";
 	if (username == nullptr)
 		return;
 	if (is_read)
