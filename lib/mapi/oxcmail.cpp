@@ -3318,6 +3318,15 @@ static inline bool tnef_vfy_check_key(MESSAGE_CONTENT *msg, const char *xtnefcor
 #endif
 }
 
+static bool smime_clearsigned(const char *head_ct, MIME *head, char (&buf)[256])
+{
+	if (strcasecmp(head_ct, "multipart/signed") != 0)
+		return false;
+	if (!oxcmail_get_content_param(head, "protocol", buf, arsizeof(buf)))
+		return false;
+	return strcasecmp(buf, "application/pkcs7-mime") == 0;
+}
+
 MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	const char *str_zone, MAIL *pmail,
 	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
@@ -3503,10 +3512,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			}
 		}
 		}
-	// multipart/signed is SMIME only if protocol=application/pkcs7-mime
-	} else if (strcasecmp(head_ct, "multipart/signed") == 0 &&
-	    oxcmail_get_content_param(phead, "protocol", tmp_buff, arsizeof(tmp_buff)) &&
-	    strcasecmp(tmp_buff, "application/pkcs7-mime") == 0) {
+	} else if (smime_clearsigned(head_ct, phead, tmp_buff)) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned") != 0) {
 			message_content_free(pmsg);
 			return NULL;
