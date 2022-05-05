@@ -1949,9 +1949,9 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	if (pstmt2 == nullptr) {
 		return FALSE;
 	}
-	auto pstmt3 = gx_sql_prep(pidb->psqlite, "UPDATE messages"
+	auto stm_upd_msg = gx_sql_prep(pidb->psqlite, "UPDATE messages"
 	              " SET unsent=?, read=? WHERE message_id=?");
-	if (pstmt3 == nullptr) {
+	if (stm_upd_msg == nullptr) {
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -1968,7 +1968,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 				sqlite3_column_int64(pstmt, 2));
 		} else {
 			mail_engine_sync_message(pidb,
-				pstmt2, pstmt3, &uidnext, message_id,
+				pstmt2, stm_upd_msg, &uidnext, message_id,
 				sqlite3_column_int64(pstmt, 4),
 				S2A(sqlite3_column_text(pstmt, 1)),
 				S2A(sqlite3_column_text(pstmt1, 1)),
@@ -1989,7 +1989,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	pstmt.finalize();
 	pstmt1.finalize();
 	pstmt2.finalize();
-	pstmt3.finalize();
+	stm_upd_msg.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM "
 	          "messages WHERE folder_id=%llu", LLU(folder_id));
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -2239,21 +2239,21 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	if (pstmt2 == nullptr) {
 		return false;
 	}
-	auto pstmt3 = gx_sql_prep(psqlite, "SELECT parent_fid, "
+	auto mem_sel_fld = gx_sql_prep(psqlite, "SELECT parent_fid, "
 		"display_name FROM folders WHERE folder_id=?");
-	if (pstmt3 == nullptr) {
+	if (mem_sel_fld == nullptr) {
 		return false;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		uint64_t folder_id = sqlite3_column_int64(pstmt, 0);
-		switch (mail_engine_get_top_folder_id(pstmt3, folder_id)) {
+		switch (mail_engine_get_top_folder_id(mem_sel_fld, folder_id)) {
 		case PRIVATE_FID_OUTBOX:
 		case PRIVATE_FID_SYNC_ISSUES:
 			continue;			
 		}
 		parent_fid = sqlite3_column_int64(pstmt, 1);
 		commit_max = sqlite3_column_int64(pstmt, 2);
-		if (!mail_engine_get_encoded_name(pstmt3, folder_id, encoded_name))
+		if (!mail_engine_get_encoded_name(mem_sel_fld, folder_id, encoded_name))
 			continue;
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, folder_id);
@@ -2294,7 +2294,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	pstmt.finalize();
 	pstmt1.finalize();
 	pstmt2.finalize();
-	pstmt3.finalize();
+	mem_sel_fld.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM folders");
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr) {
