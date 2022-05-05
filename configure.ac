@@ -79,6 +79,7 @@ PKG_CHECK_MODULES([sqlite], [sqlite3])
 PKG_CHECK_MODULES([ssl], [libssl])
 PKG_CHECK_MODULES([tinyxml], [tinyxml2])
 PKG_CHECK_MODULES([zlib], [zlib])
+PKG_CHECK_MODULES([zstd], [libzstd])
 have_pamheader=""
 AC_CHECK_HEADERS([crypt.h])
 AC_CHECK_HEADERS([sys/random.h])

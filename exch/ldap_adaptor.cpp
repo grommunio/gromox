@@ -14,6 +14,7 @@
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/resource_pool.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
@@ -208,6 +209,9 @@ static bool ldap_adaptor_load() try
 	g_ldap_host = pfile->get_value("ldap_host");
 	g_bind_user = pfile->get_value("ldap_bind_user");
 	g_bind_pass = pfile->get_value("ldap_bind_pass");
+	auto p2 = pfile->get_value("ldap_bind_pass_mode_id107");
+	if (p2 != nullptr)
+		g_bind_pass = zstd_decompress(base64_decode(p2));
 	g_use_tls = pfile->get_ll("ldap_start_tls");
 	g_mail_attr = pfile->get_value("ldap_mail_attr");
 	g_search_base = pfile->get_value("ldap_search_base");

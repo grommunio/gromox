@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <zstd.h>
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif

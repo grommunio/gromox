@@ -120,6 +120,8 @@ int service_run()
 			++it;
 			continue;
 		}
+		fprintf(stderr, "[service]: Init of %s not successful\n",
+		        g_cur_plug->file_name.c_str());
 		it = g_list_plug.erase(it);
 		g_cur_plug = nullptr;
 		if (g_ign_loaderr)
