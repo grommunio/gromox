@@ -2630,13 +2630,15 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		return NULL;
 	}
 	pcomponent->append_comp(pcomponent1);
+	order = ptzstruct->standarddate.day;
+	if (order == 5)
+		order = -1;
 	if (0 == ptzstruct->daylightdate.month) {
 		strcpy(tmp_buff, "16010101T000000");
 	} else {
 		if (0 == ptzstruct->standarddate.year) {
 			day = ical_get_dayofmonth(year,
-				ptzstruct->standarddate.month,
-				ptzstruct->standarddate.day,
+				ptzstruct->standarddate.month, order,
 				ptzstruct->standarddate.dayofweek);
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 				year, (int)ptzstruct->standarddate.month,
@@ -2682,10 +2684,6 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
-			order = ptzstruct->standarddate.day;
-			if (5 == order) {
-				order = -1;
-			}
 			switch (ptzstruct->standarddate.dayofweek) {
 			case 0:
 				snprintf(tmp_buff, arsizeof(tmp_buff), "%dSU", order);
@@ -2788,10 +2786,12 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		return NULL;
 	}
 	pcomponent->append_comp(pcomponent1);
+	order = ptzstruct->daylightdate.day;
+	if (order == 5)
+		order = -1;
 	if (0 == ptzstruct->daylightdate.year) {
 		day = ical_get_dayofmonth(year,
-			ptzstruct->daylightdate.month,
-			ptzstruct->daylightdate.day,
+			ptzstruct->daylightdate.month, order,
 			ptzstruct->daylightdate.dayofweek);
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 			year, (int)ptzstruct->daylightdate.month,
@@ -2835,10 +2835,6 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
-		order = ptzstruct->daylightdate.day;
-		if (5 == order) {
-			order = -1;
-		}
 		switch (ptzstruct->daylightdate.dayofweek) {
 		case 0:
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%dSU", order);
