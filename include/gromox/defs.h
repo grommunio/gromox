@@ -409,4 +409,8 @@ template<typename T> static inline T *re_alloc(void *x, size_t elem) {
 static inline const char *snul(const std::string &s) { return s.size() != 0 ? s.c_str() : nullptr; }
 static inline const char *znul(const char *s) { return s != nullptr ? s : ""; }
 
+template<typename U, typename V> static int three_way_compare(U &&a, V &&b)
+{
+	return (a < b) ? -1 : (a == b) ? 0 : 1;
+}
 }

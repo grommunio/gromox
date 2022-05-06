@@ -878,43 +878,29 @@ bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitim
 	return true;
 }
 
-int ICAL_TIME::twcompare(const ICAL_TIME &itime2) const
+int ICAL_TIME::twcompare(const ICAL_TIME &o) const
 {
-	const ICAL_TIME &itime1 = *this;
-	if (itime1.year > itime2.year) {
+	auto r = three_way_compare(year, o.year);
+	if (r != 0)
+		return r;
+	r = three_way_compare(month, o.month);
+	if (r != 0)
+		return r;
+	r = three_way_compare(day, o.day);
+	if (r != 0)
+		return r;
+	r = three_way_compare(hour, o.hour);
+	if (r != 0)
+		return r;
+	r = three_way_compare(minute, o.minute);
+	if (r != 0)
+		return r;
+	r = three_way_compare(second, o.second);
+	if (r != 0)
+		return r;
+	if (leap_second > 59 && o.leap_second <= 59)
 		return 1;
-	} else if (itime1.year < itime2.year) {
-		return -1;
-	}
-	if (itime1.month > itime2.month) {
-		return 1;
-	} else if (itime1.month < itime2.month) {
-		return -1;
-	}
-	if (itime1.day > itime2.day) {
-		return 1;
-	} else if (itime1.day < itime2.day) {
-		return -1;
-	}
-	if (itime1.hour > itime2.hour) {
-		return 1;
-	} else if (itime1.hour < itime2.hour) {
-		return -1;
-	}
-	if (itime1.minute > itime2.minute) {
-		return 1;
-	} else if (itime1.minute < itime2.minute) {
-		return -1;
-	}
-	if (itime1.second > itime2.second) {
-		return 1;
-	} else if (itime1.second < itime2.second) {
-		return -1;
-	}
-	if (itime1.leap_second > 59 && itime2.leap_second <= 59) {
-		return 1;
-	}
-	if (itime1.leap_second <= 59 && itime2.leap_second > 59)
+	if (leap_second <= 59 && o.leap_second > 59)
 		return -1;
 	return 0;
 }

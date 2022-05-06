@@ -10,8 +10,4 @@ extern GX_EXPORT int SVREID_compare(const SVREID *, const SVREID *);
 namespace gromox {
 extern GX_EXPORT bool three_way_eval(enum relop, int);
 extern GX_EXPORT bool propval_compare_relop_nullok(relop, uint16_t proptype, const void *, const void *);
-template<typename T> static auto three_way_compare(T &&a, T &&b)
-{
-	return (a < b) ? -1 : (a == b) ? 0 : 1;
-}
 }
