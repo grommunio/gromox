@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <libHX/string.h>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/resource_pool.hpp>
@@ -253,6 +254,16 @@ static int t_base64()
 	return 0;
 }
 
+static int t_cmp_icaltime()
+{
+	ICAL_TIME a{}, b{};
+	a.second = b.second = 59;
+	a.leap_second = 60;
+	if (a.twcompare(b) != -b.twcompare(a))
+		return printf("ICAL_TIME::compare failed\n");
+	return 0;
+}
+
 int main()
 {
 	if (t_base64() != 0)
@@ -273,6 +284,9 @@ int main()
 	if (ret != 0)
 		return ret;
 	ret = t_cmp_svreid();
+	if (ret != 0)
+		return ret;
+	ret = t_cmp_icaltime();
 	if (ret != 0)
 		return ret;
 	return EXIT_SUCCESS;

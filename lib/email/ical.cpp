@@ -914,6 +914,8 @@ int ICAL_TIME::twcompare(const ICAL_TIME &itime2) const
 	if (itime1.leap_second > 59 && itime2.leap_second <= 59) {
 		return 1;
 	}
+	if (itime1.leap_second <= 59 && itime2.leap_second > 59)
+		return -1;
 	return 0;
 }
 
