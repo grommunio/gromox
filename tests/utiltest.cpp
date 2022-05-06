@@ -1,4 +1,3 @@
-#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <libHX/string.h>
@@ -8,6 +7,8 @@
 #include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
+#undef assert
+#define assert(x) do { if (!(x)) return EXIT_FAILURE; } while (false)
 using namespace gromox;
 
 static int t_id1()
@@ -163,20 +164,22 @@ static void t_respool()
 	printf("%d\n", mt->zz);
 }
 
-static void t_cmp_binary()
+static int t_cmp_binary()
 {
 	uint8_t x[] = "X", xy[] = "XY";
 	BINARY p = {1, x}, q = {2, xy};
 	assert(p.compare(q) < 0);
+	return EXIT_SUCCESS;
 }
 
-static void t_cmp_guid()
+static int t_cmp_guid()
 {
 	GUID g1 = {0x01}, g2 = {0x0100};
 	assert(g1.compare(g2) < 0);
+	return EXIT_SUCCESS;
 }
 
-static void t_cmp_svreid()
+static int t_cmp_svreid()
 {
 	uint8_t eid1[] = "\x02\x00\x00\x01", eid2[] = "\x03\x00\x00\x00\x01";
 	EXT_PULL ep;
@@ -193,6 +196,7 @@ static void t_cmp_svreid()
 	assert(SVREID_compare(nullptr, nullptr) == 0);
 	assert(SVREID_compare(&s1, nullptr) > 0);
 	assert(SVREID_compare(&s2, nullptr) > 0);
+	return EXIT_SUCCESS;
 }
 
 static int t_base64()
@@ -262,8 +266,14 @@ int main()
 			return ret;
 	}
 	t_respool();
-	t_cmp_binary();
-	t_cmp_guid();
-	t_cmp_svreid();
+	auto ret = t_cmp_binary();
+	if (ret != 0)
+		return ret;
+	ret = t_cmp_guid();
+	if (ret != 0)
+		return ret;
+	ret = t_cmp_svreid();
+	if (ret != 0)
+		return ret;
 	return EXIT_SUCCESS;
 }
