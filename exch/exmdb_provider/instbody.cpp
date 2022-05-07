@@ -26,6 +26,7 @@ struct instbody_delete : public stdlib_delete {
 };
 }
 
+unsigned int exmdb_body_autosynthesis;
 static constexpr size_t UTF8LEN_MARKER_SIZE = sizeof(uint32_t);
 
 /* Get an arbitrary body, no fallbacks. */
@@ -89,7 +90,7 @@ static int instance_conv_htmlfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 {
 	auto ret = instance_get_raw(mc, bin, ID_TAG_HTML);
-	if (ret == 0)
+	if (exmdb_body_autosynthesis && ret == 0)
 		ret = instance_conv_htmlfromhigher(mc, bin);
 	if (ret <= 0)
 		return ret;
@@ -168,7 +169,7 @@ static int instance_get_body_unspec(MESSAGE_CONTENT *mc, TPROPVAL_ARRAY *pval)
 		bin->pc += UTF8LEN_MARKER_SIZE;
 	else if (ret == 0)
 		ret = instance_get_raw(mc, bin, ID_TAG_BODY_STRING8);
-	if (ret == 0) {
+	if (exmdb_body_autosynthesis && ret == 0) {
 		ret = instance_conv_textfromhigher(mc, bin);
 		if (ret > 0)
 			unicode_body = true;
@@ -205,7 +206,7 @@ static int instance_get_body_utf8(MESSAGE_CONTENT *mc, unsigned int cpid,
 				return -1;
 		}
 	}
-	if (ret == 0)
+	if (exmdb_body_autosynthesis && ret == 0)
 		ret = instance_conv_textfromhigher(mc, bin);
 	if (ret <= 0)
 		return ret;
@@ -254,10 +255,12 @@ static int instance_get_html(MESSAGE_CONTENT *mc, unsigned int cpid,
 {
 	BINARY *bin = nullptr;
 	auto ret = instance_get_raw(mc, bin, ID_TAG_HTML);
-	if (ret == 0)
-		ret = instance_conv_htmlfromhigher(mc, bin);
-	if (ret == 0)
-		ret = instance_conv_htmlfromlower(mc, cpid, bin);
+	if (exmdb_body_autosynthesis) {
+		if (ret == 0)
+			ret = instance_conv_htmlfromhigher(mc, bin);
+		if (ret == 0)
+			ret = instance_conv_htmlfromlower(mc, cpid, bin);
+	}
 	if (ret <= 0)
 		return ret;
 	auto &pv   = pval->ppropval[pval->count];
@@ -290,7 +293,7 @@ static int instance_get_rtfcp(MESSAGE_CONTENT *mc, unsigned int cpid,
 {
 	BINARY *bin = nullptr;
 	auto ret = instance_get_raw(mc, bin, ID_TAG_RTFCOMPRESSED);
-	if (ret == 0)
+	if (exmdb_body_autosynthesis && ret == 0)
 		ret = instance_conv_rtfcpfromlower(mc, cpid, bin);
 	if (ret <= 0)
 		return ret;

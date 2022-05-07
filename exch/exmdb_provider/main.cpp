@@ -34,6 +34,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"cache_interval", "2h", CFG_TIME, "1s"},
 	{"dbg_synthesize_content", "0"},
 	{"enable_dam", "1", CFG_BOOL},
+	{"exmdb_body_autosynthesis", "1", CFG_BOOL},
 	{"exmdb_pf_read_per_user", "1"},
 	{"exmdb_pf_read_states", "2"},
 	{"exmdb_schema_upgrades", "auto"},
@@ -79,6 +80,7 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	g_enable_dam = parse_bool(pconfig->get_value("enable_dam"));
 	g_mbox_contention_warning = pconfig->get_ll("mbox_contention_warning");
 	g_mbox_contention_reject = pconfig->get_ll("mbox_contention_reject");
+	exmdb_body_autosynthesis = pconfig->get_ll("exmdb_body_autosynthesis");
 	exmdb_pf_read_per_user = pconfig->get_ll("exmdb_pf_read_per_user");
 	exmdb_pf_read_states = pconfig->get_ll("exmdb_pf_read_states");
 	auto s = pconfig->get_value("exmdb_schema_upgrades");

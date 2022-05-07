@@ -344,4 +344,5 @@ extern void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t ta
 extern int instance_get_message_body(MESSAGE_CONTENT *, unsigned int tag, unsigned int cpid, TPROPVAL_ARRAY *);
 
 extern unsigned int g_dbg_synth_content;
+extern unsigned int exmdb_body_autosynthesis;
 extern unsigned int exmdb_pf_read_per_user, exmdb_pf_read_states;
