@@ -69,6 +69,15 @@ in Windows MAPI, UTF-16LE over the network, and Gromox stores it as UTF-8 on
 disk.
 
 
+Rendition
+=========
+
+When Gromox's autosynthesis of HTML/RTF is disabled, Outlook only has
+the plaintext form available and runs its own conversion to richtext.
+In doing so, it will use the standard system font (usually Segoe UI),
+breaking expectations of character width in some mails.
+
+
 Wire format
 ===========
 
