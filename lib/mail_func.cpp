@@ -1953,8 +1953,7 @@ int html_to_plain(const void *inbuf, int len, std::string &outbuf)
 char *plain_to_html(const char *rbuf)
 {
 	const char head[] =
-		"<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;"
-		" charset=utf-8\">\r\n<meta name=\"Generator\" content=\"gromox-texttohtml"
+		"<html><head><meta name=\"Generator\" content=\"gromox-texttohtml"
 		"\">\r\n</head>\r\n<body>\r\n<pre>";
 	const char footer[] = "</pre>\r\n</body>\r\n</html>";
 
