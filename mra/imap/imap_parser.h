@@ -119,5 +119,6 @@ extern LIB_BUFFER *imap_parser_get_dpool();
 extern int imap_parser_get_sequence_ID();
 extern void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format, ...);
 
+extern unsigned int g_imapcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
 extern bool g_support_starttls, g_force_starttls;

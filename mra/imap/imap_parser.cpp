@@ -65,6 +65,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontex
 static void imap_parser_context_clear(IMAP_CONTEXT *pcontext);
 static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 
+unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_starttls, g_force_starttls;
 static std::atomic<int> g_sequence_id;
@@ -1437,8 +1438,23 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pconte
 
 static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx)
 {
-	return imap_cmd_parser_dval(argc, argv, ctx,
-	       imap_parser_dispatch_cmd2(argc, argv, ctx));
+	auto ret = imap_parser_dispatch_cmd2(argc, argv, ctx);
+	auto code = ret & DISPATCH_VALMASK;
+	if (g_imapcmd_debug >= 2 || (g_imapcmd_debug >= 1 && code != 0 && code != 1700)) {
+		/*
+		 * Can't really hide AUTHENTICATE because the prompts
+		 * and answers are backend-specific.
+		 */
+		if (strcasecmp(argv[1], "LOGIN") == 0) {
+			fprintf(stderr, "< LOGIN ****: ret=%xh code=%u\n", ret, code);
+		} else {
+			fprintf(stderr, "<");
+			for (int i = 0; i < argc; ++i)
+				fprintf(stderr, " %s", argv[i]);
+			fprintf(stderr, ": ret=%xh code=%u\n", ret, code);
+		}
+	}
+	return imap_cmd_parser_dval(argc, argv, ctx, ret);
 }
 
 IMAP_CONTEXT::IMAP_CONTEXT() :

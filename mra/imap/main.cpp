@@ -86,6 +86,7 @@ static bool imap_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 		fprintf(stderr, "config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
+	g_imapcmd_debug = cfg->get_ll("imap_cmd_debug");
 	return true;
 }
 
