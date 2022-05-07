@@ -11,11 +11,13 @@
 #include <utility>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mime_pool.hpp>
+#include <gromox/oxcical.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -25,10 +27,18 @@
 
 using namespace gromox;
 
+enum {
+	IMPORT_MAIL,
+	IMPORT_ICAL,
+};
+
+static unsigned int g_import_mode = IMPORT_MAIL;
 static unsigned int g_oneoff;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
+	{"ical", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_ICAL, "Treat input as iCalendar"},
+	{"mail", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_MAIL, "Treat input as Internet Mail"},
 	{"oneoff", 0, HXTYPE_NONE, &g_oneoff, nullptr, nullptr, 0, "Resolve addresses to ONEOFF rather than EX addresses"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -118,8 +128,41 @@ do_mail(const char *file, std::shared_ptr<MIME_POOL> mime_pool)
 	return msg;
 }
 
+static std::unique_ptr<MESSAGE_CONTENT, gi_delete> do_ical(const char *file)
+{
+	size_t slurp_len = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
+		HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(file, &slurp_len));
+	if (slurp_data == nullptr) {
+		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
+		return nullptr;
+	}
+	ICAL ical;
+	auto ret = ical.init();
+	if (ret < 0) {
+		fprintf(stderr, "ical_init: %s\n", strerror(-ret));
+		return nullptr;
+	} else if (!ical.retrieve(slurp_data.get())) {
+		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
+		return nullptr;
+	}
+	std::unique_ptr<MESSAGE_CONTENT, gi_delete> msg(oxcical_import("UTC",
+		&ical, malloc, ee_get_propids, oxcmail_username_to_entryid));
+	if (msg == nullptr)
+		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
+	return msg;
+}
+
 int main(int argc, const char **argv) try
 {
+	if (strcmp(HX_basename(argv[0]), "gromox-eml2mt") == 0) {
+		g_import_mode = IMPORT_MAIL;
+	} else if (strcmp(HX_basename(argv[0]), "gromox-ical2mt") == 0) {
+		g_import_mode = IMPORT_ICAL;
+	} else {
+		fprintf(stderr, "Invocation of this utilit as \"%s\" not recognized\n", argv[0]);
+		return EXIT_FAILURE;
+	}
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
@@ -185,7 +228,11 @@ int main(int argc, const char **argv) try
 	std::vector<std::unique_ptr<MESSAGE_CONTENT, gi_delete>> msgs;
 
 	for (int i = 1; i < argc; ++i) {
-		auto msg = do_mail(argv[i], mime_pool);
+		std::unique_ptr<MESSAGE_CONTENT, gi_delete> msg;
+		if (g_import_mode == IMPORT_MAIL)
+			msg = do_mail(argv[i], mime_pool);
+		else if (g_import_mode == IMPORT_ICAL)
+			msg = do_ical(argv[i]);
 		if (msg == nullptr)
 			continue;
 		msgs.push_back(std::move(msg));
@@ -201,7 +248,10 @@ int main(int argc, const char **argv) try
 	uint8_t flag = false;
 	write(STDOUT_FILENO, &flag, sizeof(flag)); /* splice */
 	write(STDOUT_FILENO, &flag, sizeof(flag)); /* public store */
-	gi_folder_map_write({});
+	gi_folder_map_t fmap;
+	if (g_import_mode == IMPORT_ICAL)
+		fmap.emplace(~0ULL, tgt_folder{false, PRIVATE_FID_CALENDAR, ""});
+	gi_folder_map_write(fmap);
 	gi_dump_name_map(name_map);
 	gi_name_map_write(name_map);
 

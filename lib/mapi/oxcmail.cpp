@@ -334,7 +334,7 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 	return TRUE;
 }
 
-static BOOL oxcmail_username_to_entryid(const char *username,
+BOOL oxcmail_username_to_entryid(const char *username,
     const char *pdisplay_name, BINARY *pbin, enum display_type *dtpp)
 {
 	char x500dn[1024];

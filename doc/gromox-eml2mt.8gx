@@ -3,15 +3,28 @@
 gromox\-eml2mt \(em Utility to import Internet Mail messages
 .SH Synopsis
 \fBgromox\-eml2mt\fP \fIfile.eml\fP[...]
+.PP
+\fBgromox\-ical2mt\fP \fIfile.ics\fP[...]
 .SH Description
 gromox\-eml2mt reads one or more RFC5322-formatted e-mail messages and
 re-exports the data in a Gromox-specific mailbox transfer format to stdout for
 consumption by pipe by the gromox-mt2exm(8gx) program.
 .PP
+When called as gromox\-ical2mt, the input is treated as RFC5545-formatted
+calendaring and scheduling objects (.ics).
+.PP
 eml2mt will resolve email adresses to Gromox objects already, so the emitted
 data stream should be consumed by an mt2exm invocation on the \fIsame\fP Gromox
 cluster.
 .SH Options
+.TP
+\fB\-\-ical\fP
+Treat all file arguments as iCalendar input. This is the default if the program
+was invoked as gromox\-ical2mt.
+.TP
+\fB\-\-mail\fP
+Treat all file arguments as Internet Mail input. This is the default if the
+program was invoked as gromox\-eml2mt.
 .TP
 \fB\-\-oneoff\fP
 Do not resolve email addresses to EX addresses, but to ONEOFF instead. This
@@ -21,5 +34,9 @@ clusters that do not have the same user set.
 Import of an RFC5322 message (sometimes with .eml file extension) to drafts:
 .PP
 gromox\-eml2mt msg.eml | gromox\-mt2exm \-u target@mailbox.de \-B drafts
+.PP
+Import of calendar objects:
+.PP
+gromox\-ical2mt meeting.ics | gromox\-mt2exm \-u target@mailbox.de
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)

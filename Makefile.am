@@ -351,10 +351,13 @@ exch/exmdb_provider/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl -p <$< >$@
 
 install-exec-hook:
+	${MKDIR_P} ${DESTDIR}${sbindir}
+	ln -s gromox-eml2mt ${DESTDIR}${sbindir}/gromox-ical2mt
 	rm -fv ${DESTDIR}${pkglibdir}/libmapi4zf.*
 
 install-data-local:
-	${MKDIR_P} ${DESTDIR}${pkgdatadir}/http/php
+	${MKDIR_P} ${DESTDIR}${mandir}/man8 ${DESTDIR}${pkgdatadir}/http/php
+	ln -s gromox-eml2mt.8gx ${DESTDIR}${mandir}/man8/gromox-ical2mt.8gx
 	cp -av data/* ${DESTDIR}${pkgdatadir}/
 	cp -av exch/php/* ${DESTDIR}${pkgdatadir}/http/php/
 
