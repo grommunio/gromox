@@ -1946,6 +1946,10 @@ int html_to_plain(const void *inbuf, int len, std::string &outbuf)
 	return 1;
 }
 
+/*
+ * Always outputs UTF-8. The caller must ensure that this is conveyed properly
+ * (e.g. via PR_INTERNET_CPID=65001).
+ */
 char *plain_to_html(const char *rbuf)
 {
 	const char head[] =

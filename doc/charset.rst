@@ -44,8 +44,9 @@ The character set for a HTML document is given by a sideband mechanism, i.e.
 
 Only when no sideband mechanism exists should the ``<meta
 http-equiv="Content-Type" content="...">`` tag inside the document have effect,
-if any. However, to get to <meta>, a parser needs to make an assumption about
-the character set, and ASCII/chars is a sensible starting choice.
+if any. (Outlook's fallback mechanism is to actually use the RPC/session
+character set.) However, to get to <meta>, a parser needs to make an assumption
+about the character set, and ASCII/chars is a sensible starting choice.
 
 A problem arises when the sideband data is not carried along when the HTML data
 is replicated, i.e. transmitted or stored somewhere else, such as a file. This

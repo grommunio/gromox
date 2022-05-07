@@ -104,7 +104,7 @@ static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 		bin->pv = common_util_convert_copy(TRUE, orig_cpid, plainbuf.c_str());
 		return bin->pv != nullptr ? 1 : -1;
 	}
-	/* Original already was UTF-8, or conversion to UTF-8 happened by HTP */
+	/* Original already was UTF-8, or conversion to UTF-8 happened by htmltoplain */
 	bin->pv = common_util_alloc(plainbuf.size() + 1);
 	if (bin->pv == nullptr)
 		return -1;
@@ -131,11 +131,10 @@ static int instance_conv_htmlfromlower(MESSAGE_CONTENT *mc,
 	std::unique_ptr<char[], instbody_delete> htmlout(plain_to_html(bin->pc));
 	if (htmlout == nullptr)
 		return -1;
-	bin->cb = strlen(htmlout.get());
-	bin->pv = common_util_alloc(bin->cb + 1);
-	if (bin->pv == nullptr)
+	bin->pc = common_util_convert_copy(false, cpid, htmlout.get());
+	if (bin->pc == nullptr)
 		return -1;
-	memcpy(bin->pv, htmlout.get(), bin->cb + 1);
+	bin->cb = strlen(bin->pc);
 	return 1;
 }
 
