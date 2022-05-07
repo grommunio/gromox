@@ -93,6 +93,29 @@ static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 	return TRUE;
 }
 
+static std::unique_ptr<MESSAGE_CONTENT, gi_delete>
+do_mail(const char *file, std::shared_ptr<MIME_POOL> mime_pool)
+{
+	size_t slurp_len = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
+		HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(file, &slurp_len));
+	if (slurp_data == nullptr) {
+		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
+		return nullptr;
+	}
+
+	MAIL imail(std::move(mime_pool));
+	if (!imail.retrieve(slurp_data.get(), slurp_len)) {
+		fprintf(stderr, "Unable to parse %s\n", file);
+		return nullptr;
+	}
+	std::unique_ptr<MESSAGE_CONTENT, gi_delete> msg(oxcmail_import("utf-8",
+		"UTC", &imail, malloc, ee_get_propids));
+	if (msg == nullptr)
+		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
+	return msg;
+}
+
 int main(int argc, const char **argv) try
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -158,24 +181,9 @@ int main(int argc, const char **argv) try
 	std::vector<std::unique_ptr<MESSAGE_CONTENT, gi_delete>> msgs;
 
 	for (int i = 1; i < argc; ++i) {
-		MAIL imail(mime_pool);
-		size_t slurp_len = 0;
-		std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(argv[i], "-") == 0 ?
-			HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(argv[i], &slurp_len));
-
-		if (slurp_data == nullptr) {
-			fprintf(stderr, "Unable to read from %s: %s\n", argv[i], strerror(errno));
+		auto msg = do_mail(argv[i], mime_pool);
+		if (msg == nullptr)
 			continue;
-		} else if (!imail.retrieve(slurp_data.get(), slurp_len)) {
-			fprintf(stderr, "Unable to parse %s\n", argv[i]);
-			continue;
-		}
-		std::unique_ptr<MESSAGE_CONTENT, gi_delete> msg(oxcmail_import("utf-8",
-			"UTC", &imail, malloc, ee_get_propids));
-		if (msg == nullptr) {
-			fprintf(stderr, "Failed to convert IM %s to MAPI\n", argv[i]);
-			continue;
-		}
 		msgs.push_back(std::move(msg));
 	}
 
