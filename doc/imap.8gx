@@ -96,7 +96,7 @@ directive to pull CA certs in).
 Default: (unset)
 .TP
 \fBimap_cmd_debug\fP
-Log every incoming POP3 command and the return code of the operation in a
+Log every incoming IMAP command and the return code of the operation in a
 minimal fashion to stderr. Level 1 emits commands that have failed execution,
 level 2 emits all commands.
 .br
