@@ -1,21 +1,21 @@
-1.20.28
-=======
+1.21 (2022-05-08)
+=================
 
 Fixes:
 
 * lib: repair wrong propid for PR_IPM_PUBLIC_FOLDERS_ENTRYID
-* exmdb_provider: avoid use-after-free crash related to PF read
+* exmdb_provider: avoid use-after-free crash related to Public Store read
   state username handling
-* oxcmail: have smime_clearsigned test for the right protocol strings
+* oxcmail: rework classification of S/MIME mails
 * email_lib: make ICAL_TIME::twcompare behave symmetrically
-* oxcical: timezone switches were erroneously emitted with
-  dayofmonth 32..35 in certain years
-* exmdb_provider: output HTML according to PR_INTERNET_CPID/RPC character set
+* oxcical: appointments were prone to being in the wrong timezone due to
+  DTSTART values being emitted with dayofmonth 32..35 in certain years
+* exmdb_provider: output autosynthesized HTML in the proper character set
 
 Enhancements:
 
 * doc: mention issues related to senders/recipients with ZARAFA address type
-* autodiscover: test URLs from Autodiscover response for validity
+* autodiscover: test URLs inside Autodiscover responses for validity
 * exmdb_provider: add "exmdb_pf_read_states" config directive
 * exmdb_provider: add "exmdb_pf_read_per_user" config directive
 * imap: add directive "imap_cmd_debug"
