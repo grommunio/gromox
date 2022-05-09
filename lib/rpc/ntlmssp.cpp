@@ -150,7 +150,7 @@ static bool des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7
 	str_to_key(key, derived_key);
 	if (EVP_CipherInit_ex(ctx.get(), cipher, nullptr, derived_key, iv, 1) <= 0 ||
 	    EVP_CipherUpdate(ctx.get(), out, &dummy_n, in, 8) <= 0 ||
-	    EVP_CipherFinal(ctx.get(), dummy_pad, &dummy_n) <= 0)
+	    EVP_CipherFinal_ex(ctx.get(), dummy_pad, &dummy_n) <= 0)
 		return false;
 	return true;
 }
