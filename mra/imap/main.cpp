@@ -63,6 +63,7 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"default_lang", "en"},
 	{"imap_auth_times", "10", CFG_SIZE, "1"},
 	{"imap_autologout_time", "30min", CFG_TIME, "1s"},
+	{"imap_cmd_debug", "0"},
 	{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"imap_force_starttls", "false", CFG_BOOL},
 	{"imap_support_starttls", "false", CFG_BOOL},
