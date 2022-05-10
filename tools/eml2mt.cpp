@@ -19,6 +19,7 @@
 #include <gromox/mime_pool.hpp>
 #include <gromox/oxcical.hpp>
 #include <gromox/oxcmail.hpp>
+#include <gromox/oxvcard.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include "genimport.hpp"
@@ -30,6 +31,7 @@ using namespace gromox;
 enum {
 	IMPORT_MAIL,
 	IMPORT_ICAL,
+	IMPORT_VCARD,
 };
 
 static unsigned int g_import_mode = IMPORT_MAIL;
@@ -40,6 +42,7 @@ static constexpr HXoption g_options_table[] = {
 	{"ical", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_ICAL, "Treat input as iCalendar"},
 	{"mail", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_MAIL, "Treat input as Internet Mail"},
 	{"oneoff", 0, HXTYPE_NONE, &g_oneoff, nullptr, nullptr, 0, "Resolve addresses to ONEOFF rather than EX addresses"},
+	{"vcard", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_VCARD, "Treat input as vCard"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -153,12 +156,37 @@ static std::unique_ptr<MESSAGE_CONTENT, gi_delete> do_ical(const char *file)
 	return msg;
 }
 
+static std::unique_ptr<MESSAGE_CONTENT, gi_delete> do_vcard(const char *file)
+{
+	size_t slurp_len = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
+		HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(file, &slurp_len));
+	if (slurp_data == nullptr) {
+		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
+		return nullptr;
+	}
+	VCARD card;
+	vcard_init(&card);
+	auto cl_0 = make_scope_exit([&]() { vcard_free(&card); });
+	if (!vcard_retrieve(&card, slurp_data.get())) {
+		fprintf(stderr, "vcard_parse %s unsuccessful\n", file);
+		return nullptr;
+	}
+	std::unique_ptr<MESSAGE_CONTENT, gi_delete> msg(oxvcard_import(&card, ee_get_propids));
+	if (msg == nullptr)
+		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
+	return msg;
+}
+
 int main(int argc, const char **argv) try
 {
-	if (strcmp(HX_basename(argv[0]), "gromox-eml2mt") == 0) {
+	auto bn = HX_basename(argv[0]);
+	if (strcmp(bn, "gromox-eml2mt") == 0) {
 		g_import_mode = IMPORT_MAIL;
-	} else if (strcmp(HX_basename(argv[0]), "gromox-ical2mt") == 0) {
+	} else if (strcmp(bn, "gromox-ical2mt") == 0) {
 		g_import_mode = IMPORT_ICAL;
+	} else if (strcmp(bn, "gromox-vcf2mt") == 0) {
+		g_import_mode = IMPORT_VCARD;
 	} else {
 		fprintf(stderr, "Invocation of this utilit as \"%s\" not recognized\n", argv[0]);
 		return EXIT_FAILURE;
@@ -233,6 +261,8 @@ int main(int argc, const char **argv) try
 			msg = do_mail(argv[i], mime_pool);
 		else if (g_import_mode == IMPORT_ICAL)
 			msg = do_ical(argv[i]);
+		else if (g_import_mode == IMPORT_VCARD)
+			msg = do_vcard(argv[i]);
 		if (msg == nullptr)
 			continue;
 		msgs.push_back(std::move(msg));
@@ -251,6 +281,8 @@ int main(int argc, const char **argv) try
 	gi_folder_map_t fmap;
 	if (g_import_mode == IMPORT_ICAL)
 		fmap.emplace(~0ULL, tgt_folder{false, PRIVATE_FID_CALENDAR, ""});
+	else
+		fmap.emplace(~0ULL, tgt_folder{false, PRIVATE_FID_CONTACTS, ""});
 	gi_folder_map_write(fmap);
 	gi_dump_name_map(name_map);
 	gi_name_map_write(name_map);
