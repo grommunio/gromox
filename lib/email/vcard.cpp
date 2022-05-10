@@ -459,7 +459,7 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 				0 == strcasecmp(pvline->name, "NOTE") ||
 				0 == strcasecmp(pvline->name, "LOGO") ||
 				0 == strcasecmp(pvline->name, "ROLE") ||
-				0 == strcasecmp(pvline->name, "LABLE") ||
+				0 == strcasecmp(pvline->name, "LABEL") ||
 				0 == strcasecmp(pvline->name, "PHOTO") ||
 				0 == strcasecmp(pvline->name, "SOUND") ||
 				0 == strcasecmp(pvline->name, "TITLE") ||
