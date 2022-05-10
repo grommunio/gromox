@@ -7,6 +7,10 @@ gromox\-eml2mt \(em Utility to import Internet Mail messages
 gromox\-eml2mt reads one or more RFC5322-formatted e-mail messages and
 re-exports the data in a Gromox-specific mailbox transfer format to stdout for
 consumption by pipe by the gromox-mt2exm(8gx) program.
+.PP
+eml2mt will resolve email adresses to Gromox objects already, so the emitted
+data stream should be consumed by an mt2exm invocation on the \fIsame\fP Gromox
+cluster.
 .SH Examples
 Import of an RFC5322 message (sometimes with .eml file extension) to drafts:
 .PP
