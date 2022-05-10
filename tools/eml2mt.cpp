@@ -25,9 +25,11 @@
 
 using namespace gromox;
 
+static unsigned int g_oneoff;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
+	{"oneoff", 0, HXTYPE_NONE, &g_oneoff, nullptr, nullptr, 0, "Resolve addresses to ONEOFF rather than EX addresses"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -151,6 +153,8 @@ int main(int argc, const char **argv) try
 	E(system_services_get_username_from_id, "get_username_from_id");
 	auto cl_1 = make_scope_exit([]() { service_release("get_username_from_id", "system"); });
 	E(system_services_get_user_ids, "get_user_ids");
+	if (g_oneoff)
+		system_services_get_user_ids = [](const char *, int *, int *, display_type *) -> BOOL { return false; };
 	auto cl_2 = make_scope_exit([]() { service_release("get_user_ids", "system"); });
 	E(system_services_cpid_to_charset, "cpid_to_charset");
 	auto cl_3 = make_scope_exit([]() { service_release("cpid_to_charset", "system"); });

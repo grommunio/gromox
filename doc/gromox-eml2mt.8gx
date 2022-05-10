@@ -11,6 +11,12 @@ consumption by pipe by the gromox-mt2exm(8gx) program.
 eml2mt will resolve email adresses to Gromox objects already, so the emitted
 data stream should be consumed by an mt2exm invocation on the \fIsame\fP Gromox
 cluster.
+.SH Options
+.TP
+\fB\-\-oneoff\fP
+Do not resolve email addresses to EX addresses, but to ONEOFF instead. This
+way, streams created by eml2mt can be imported into \fIother\fP Gromox
+clusters that do not have the same user set.
 .SH Examples
 Import of an RFC5322 message (sometimes with .eml file extension) to drafts:
 .PP
