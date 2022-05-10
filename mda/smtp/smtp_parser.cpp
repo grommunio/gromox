@@ -308,7 +308,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				/* 451 Timeout */
 				auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
-				smtp_parser_log_info(pcontext, LV_DEBUG, "time out");
+				smtp_parser_log_info(pcontext, LV_DEBUG, "timeout");
 				pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			} else {
 				pcontext->connection.reset();
@@ -376,7 +376,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			/* 451 Timeout */
 			auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
 			pcontext->connection.write(smtp_reply_str, string_length);
-			smtp_parser_log_info(pcontext, LV_DEBUG, "time out");
+			smtp_parser_log_info(pcontext, LV_DEBUG, "timeout");
 			if (0 != pcontext->flusher.flush_ID) {
 				flusher_cancel(pcontext);
 			}

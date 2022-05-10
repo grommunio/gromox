@@ -253,7 +253,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*ppvalue = common_util_to_store_entryid(pfolder->pstore);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_DELETED_FOLDER_COUNT:
-		/* just like exchange 2013, always return 0 */
+		/* just like Exchange 2013, always return 0 */
 		*ppvalue = deconst(&fake_del);
 		return TRUE;
 	case PR_IPM_DRAFTS_ENTRYID:

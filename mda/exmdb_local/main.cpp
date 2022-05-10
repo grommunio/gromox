@@ -102,7 +102,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;
 		if (times <= 0)
 			times = 10;
-		printf("[exmdb_local]: failure times for alarm is %d\n", times);
+		printf("[exmdb_local]: failure count for alarm is %d\n", times);
 
 		str_value = pfile->get_value("INTERVAL_FOR_FAILURE_STATISTIC");
 		if (NULL == str_value) {

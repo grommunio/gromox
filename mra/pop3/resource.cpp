@@ -22,7 +22,7 @@ using namespace gromox;
 
 static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = {
 	{1700, "+OK"},
-	{1701, "-ERR time out"},
+	{1701, "-ERR timeout"},
 	{1702, "-ERR line too long"},
 	{1703, "-ERR command unknown"},
 	{1704, "-ERR command parameter error"},

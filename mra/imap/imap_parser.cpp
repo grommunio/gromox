@@ -392,12 +392,12 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 		    pcontext->connection.last_timestamp) < g_timeout) {
 			return PROCESS_POLLING_RDONLY;
 		}
-		/* IMAP_CODE_2180011: BAD time out */
+		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		write(pcontext->connection.sockd, "* ", 2);
 		write(pcontext->connection.sockd, imap_reply_str, string_length);
-		imap_parser_log_info(pcontext, LV_DEBUG, "time out");
+		imap_parser_log_info(pcontext, LV_DEBUG, "timeout");
 		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 	} else {
 		pcontext->connection.reset();
@@ -455,7 +455,7 @@ static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 			double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
 			return PROCESS_SLEEPING;
 		}
-		/* IMAP_CODE_2180011: BAD time out */
+		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
@@ -777,7 +777,7 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 		    pcontext->connection.last_timestamp) < g_timeout) {
 			return PROCESS_POLLING_RDONLY;
 		}
-		/* IMAP_CODE_2180011: BAD time out */
+		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
@@ -836,8 +836,8 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 		    pcontext->connection.last_timestamp) < g_timeout) {
 			return PROCESS_POLLING_WRONLY;
 		}
-		imap_parser_log_info(pcontext, LV_DEBUG, "time out");
-		/* IMAP_CODE_2180011: BAD time out */
+		imap_parser_log_info(pcontext, LV_DEBUG, "timeout");
+		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
@@ -925,7 +925,7 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 			return PROCESS_POLLING_WRONLY;
 		}
 		imap_parser_log_info(pcontext, LV_DEBUG, "time out");
-		/* IMAP_CODE_2180011: BAD time out */
+		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);

@@ -301,7 +301,7 @@ Changes:
 
 * mod_fastcgi: switch URL processing to case-sensitive
 * mda: alias resolution is now done by the delivery(8gx) daemon itself
-  throughout the new alias_resolve(4gx) module, and the adaptor(8gx)
+  through the new alias_resolve(4gx) module, and the adaptor(8gx)
   daemon's textfile outputs are no longer used
 
 

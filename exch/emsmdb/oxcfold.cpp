@@ -87,7 +87,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 			}
 		}
 		if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
-			/* same as exchange 2013, not ecAccessDenied */
+			/* same as Exchange 2013, not ecAccessDenied */
 			return ecNotFound;
 		if (permission & frightsOwner) {
 			tag_access = MAPI_ACCESS_AllSix;
@@ -734,7 +734,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associated,
 	BOOL b_fai = want_delete_associated == 0 ? false : TRUE;
 	auto rpc_info = get_rpc_info();
 	if (!plogon->check_private())
-		/* just like exchange 2013 or later */
+		/* just like Exchange 2013 or later */
 		return ecNotSupported;
 	auto fid_val = rop_util_get_gc_value(pfolder->folder_id);
 	if (PRIVATE_FID_ROOT == fid_val ||

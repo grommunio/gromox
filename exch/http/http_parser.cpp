@@ -496,7 +496,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 	    pcontext->connection.last_timestamp) < g_timeout) {
 		return PROCESS_POLLING_RDONLY;
 	}
-	http_parser_log_info(pcontext, LV_DEBUG, "I-1920: time out");
+	http_parser_log_info(pcontext, LV_DEBUG, "I-1920: timeout");
 	http_4xx(pcontext, "Request Timeout", 408);
 	return X_LOOP;
 }
@@ -997,7 +997,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 	    pcontext->connection.last_timestamp) < g_timeout) {
 		return htparse_rdhead_st(pcontext, actual_read);
 	}
-	http_parser_log_info(pcontext, LV_DEBUG, "I-1934: time out");
+	http_parser_log_info(pcontext, LV_DEBUG, "I-1934: timeout");
 	http_4xx(pcontext, "Request Timeout", 408);
 	return X_LOOP;
 }
@@ -1049,7 +1049,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		case RESPONSE_TIMEOUT:
 			http_parser_log_info(pcontext, LV_DEBUG,
-				"fastcgi execution time out");
+				"fastcgi execution timeout");
 			http_5xx(pcontext, "FastCGI Timeout", 504);
 			return X_LOOP;
 		}
@@ -1171,7 +1171,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		    pcontext->connection.last_timestamp) < g_timeout) {
 			return PROCESS_POLLING_WRONLY;
 		}
-		http_parser_log_info(pcontext, LV_DEBUG, "time out");
+		http_parser_log_info(pcontext, LV_DEBUG, "timeout");
 		return X_RUNOFF;
 	}
 	pcontext->connection.last_timestamp = current_time;
@@ -1336,7 +1336,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 	    pcontext->connection.last_timestamp) < g_timeout) {
 		return PROCESS_POLLING_RDONLY;
 	}
-	http_parser_log_info(pcontext, LV_DEBUG, "I-1935: time out");
+	http_parser_log_info(pcontext, LV_DEBUG, "I-1935: timeout");
 	http_4xx(pcontext, "Request Timeout", 408);
 	return X_LOOP;
 }
@@ -1425,7 +1425,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) < g_timeout) {
 				return PROCESS_POLLING_RDONLY;
 			}
-			http_parser_log_info(pcontext, LV_DEBUG, "I-1937: time out");
+			http_parser_log_info(pcontext, LV_DEBUG, "I-1937: timeout");
 			http_4xx(pcontext, "Request Timeout", 408);
 			return X_LOOP;
 		}
@@ -1772,7 +1772,7 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 			if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) < g_timeout) {
 				return PROCESS_POLLING_WRONLY;
 			}
-			http_parser_log_info(pcontext, LV_DEBUG, "time out");
+			http_parser_log_info(pcontext, LV_DEBUG, "timeout");
 			return X_RUNOFF;
 		}
 	}
@@ -1802,7 +1802,7 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) < g_timeout) {
 		return PROCESS_POLLING_RDONLY;
 	}
-	http_parser_log_info(pcontext, LV_DEBUG, "time out");
+	http_parser_log_info(pcontext, LV_DEBUG, "timeout");
 	return X_RUNOFF;
 }
 

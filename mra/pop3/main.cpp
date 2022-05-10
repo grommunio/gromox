@@ -190,7 +190,7 @@ int main(int argc, const char **argv) try
 	
 	std::chrono::seconds pop3_conn_timeout(g_config_file->get_ll("pop3_conn_timeout"));
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), pop3_conn_timeout.count(), 0);
-	printf("[pop3]: pop3 socket read write time out is %s\n", temp_buff);
+	printf("[pop3]: pop3 socket read write timeout is %s\n", temp_buff);
  
 	int pop3_auth_times = g_config_file->get_ll("pop3_auth_times");
 	printf("[pop3]: maximum authentication failure times is %d\n", 
@@ -198,7 +198,7 @@ int main(int argc, const char **argv) try
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
-	printf("[pop3]: block client %s when authentication failure times "
+	printf("[pop3]: block client %s when authentication failure count "
 			"is exceeded\n", temp_buff);
 
 	auto pop3_support_stls = parse_bool(g_config_file->get_value("pop3_support_stls"));

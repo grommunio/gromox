@@ -90,7 +90,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1808, "BAD internal error, fail to retrieve from stream object"},
 	{1809, "BAD internal error, fail to get stream buffer"},
 	{1810, "BAD internal error, fail to dump stream object"},
-	{1811, "BAD time out"},
+	{1811, "BAD timeout"},
 	{1812, "BAD internal error, fail to read file"},
 	{1813, "BAD search parameter syntax error"},
 	{1814, "BAD internal error, failed to init SSL object"},

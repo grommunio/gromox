@@ -192,7 +192,7 @@ int main(int argc, const char **argv) try
 	
 	std::chrono::seconds imap_conn_timeout(g_config_file->get_ll("imap_conn_timeout"));
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), imap_conn_timeout.count(), 0);
-	printf("[imap]: imap socket read write time out is %s\n", temp_buff);
+	printf("[imap]: imap socket read write timeout is %s\n", temp_buff);
  
 	std::chrono::seconds autologout_time(g_config_file->get_ll("imap_autologout_time"));
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), autologout_time.count(), 0);
@@ -204,7 +204,7 @@ int main(int argc, const char **argv) try
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
-	printf("[imap]: block client %s when authentication failure times "
+	printf("[imap]: block client %s when authentication failure count "
 			"is exceeded\n", temp_buff);
 
 	auto imap_support_stls = parse_bool(g_config_file->get_value("imap_support_starttls"));

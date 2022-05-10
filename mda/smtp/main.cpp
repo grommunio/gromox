@@ -183,7 +183,7 @@ int main(int argc, const char **argv) try
  
 	scfg.timeout = std::chrono::seconds(g_config_file->get_ll("smtp_conn_timeout"));
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), std::chrono::duration_cast<std::chrono::seconds>(scfg.timeout).count(), 0);
-	printf("[smtp]: smtp socket read write time out is %s\n", temp_buff);
+	printf("[smtp]: smtp socket read write timeout is %s\n", temp_buff);
 
 	scfg.support_pipeline = parse_bool(g_config_file->get_value("smtp_support_pipeline"));
 	scfg.support_starttls = parse_bool(g_config_file->get_value("smtp_support_starttls")) ? TRUE : false;
@@ -228,7 +228,7 @@ int main(int argc, const char **argv) try
 
 	scfg.blktime_auths = g_config_file->get_ll("block_interval_auths");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), scfg.blktime_auths, 0);
-	printf("[smtp]: block client %s when authentication failure times "
+	printf("[smtp]: block client %s when authentication failure count "
 			"is exceeded\n", temp_buff);
 
 	scfg.max_mail_length = g_config_file->get_ll("mail_max_length");

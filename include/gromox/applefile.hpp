@@ -95,7 +95,7 @@ struct ASHEADER {
 /* 
 	entry ID 1, data fork of file - arbitrary length octet string 
 	entry ID 2, resource fork - arbitrary length opaque octet string;
-              as created and managed by Mac O.S. resource manager
+              as created and managed by MacOS resource manager
 	entry ID 3, file's name as created on home file system - arbitrary
               length octet string; usually short, printable ASCII
 	entry ID 4, standard Macintosh comment - arbitrary length octet

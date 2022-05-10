@@ -234,7 +234,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 				}
 				auto pop3_reply_str = resource_get_pop3_code(1701, 1, &string_length);
 				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-				pop3_parser_log_info(pcontext, LV_DEBUG, "time out");
+				pop3_parser_log_info(pcontext, LV_DEBUG, "timeout");
 				SLEEP_BEFORE_CLOSE;
 			}
 			SSL_free(pcontext->connection.ssl);
@@ -275,7 +275,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
-				pop3_parser_log_info(pcontext, LV_DEBUG, "time out");
+				pop3_parser_log_info(pcontext, LV_DEBUG, "timeout");
 				goto END_TRANSPORT;
 			} else {
 				return PROCESS_POLLING_WRONLY;
@@ -319,7 +319,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
-				pop3_parser_log_info(pcontext, LV_DEBUG, "time out");
+				pop3_parser_log_info(pcontext, LV_DEBUG, "timeout");
 				goto END_TRANSPORT;
 			} else {
 				return PROCESS_POLLING_WRONLY;
@@ -370,7 +370,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			pcontext->connection.last_timestamp) >= g_timeout) {
 			auto pop3_reply_str = resource_get_pop3_code(1701, 1, &string_length);
 			pcontext->connection.write(pop3_reply_str, string_length);
-			pop3_parser_log_info(pcontext, LV_DEBUG, "time out");
+			pop3_parser_log_info(pcontext, LV_DEBUG, "timeout");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			if (system_services_container_remove_ip != nullptr)
 				system_services_container_remove_ip(pcontext->connection.client_ip);
