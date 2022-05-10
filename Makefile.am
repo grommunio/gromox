@@ -299,7 +299,7 @@ tests_cryptest_LDADD = libgromox_common.la
 tests_icalparse_SOURCES = tests/icalparse.cpp
 tests_icalparse_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 tests_utiltest_SOURCES = tests/utiltest.cpp
-tests_utiltest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_mapi.la
+tests_utiltest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 tests_zendfake_SOURCES = tests/zendfake.cpp
 tests_zendfake_LDADD = libmapi4zf.la
 
