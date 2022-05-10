@@ -549,7 +549,7 @@ static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 }
 
 /*
- *	enum the mail attachement
+ *	enum the mail attachment
  */
 static void bounce_producer_enum_parts(MIME *pmime, void *param)
 {

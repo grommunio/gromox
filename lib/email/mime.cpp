@@ -1328,7 +1328,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 	}
 	
 	auto pbuff = std::make_unique<char[]>(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
-	/* \r\n before boundary string or end of mail should not be inclued */
+	/* \r\n before boundary string or end of mail should not be included */
 	size_t tmp_len = pmime->content_length < 2 ? 1 : pmime->content_length - 2;
 	size_t size = 0;
 	for (i=0; i<tmp_len; i++) {

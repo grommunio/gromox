@@ -4,7 +4,7 @@
  * the key. Remember the ip hash table is thread-unsafe!
  *
  * Caution:
- *		In multithread enviroment, we must consider mutual exclusion and 
+ *		In multithread environment, we must consider mutual exclusion and 
  *		synchronized problems. 
  */
 #include <cstddef>
@@ -293,7 +293,7 @@ void int_hash_iter_free(INT_HASH_ITER *piter)
  *	tell we begin to iterator the hash table
  *
  *	@param	
- *		piter [in]	pointer to the iterator, THE FOLLOWIN shows
+ *		piter [in]	pointer to the iterator, THE FOLLOWING shows
  *		how to use the iterator
  *			
  *		[code]:

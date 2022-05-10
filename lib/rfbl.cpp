@@ -323,7 +323,7 @@ ssize_t feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 
 /*
  * Trim "<foo>" from string, and make two C strings from it,
- * each with a trailing \0, and each being preprended with
+ * each with a trailing \0, and each being prepended with
  * Pascal-style length byte which incidentally also counts the \0.
  * \r\n is appended.
  * "hi <who>, give" -> 4 h i space \0 9 , space g i v e \r \n \0

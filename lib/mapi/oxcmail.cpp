@@ -174,7 +174,7 @@ static inline size_t worst_encoding_overhead(size_t in)
 {
 	/*
 	 * (To be used for conversions _from UTF-8_ to any other encoding.)
-	 * UTF-7 can be *so* pathalogical.
+	 * UTF-7 can be *so* pathological.
 	 */
 	return 5 * in;
 }

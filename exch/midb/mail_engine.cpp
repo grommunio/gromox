@@ -181,7 +181,7 @@ static BOOL g_async;
 static int g_mime_num;
 static size_t g_table_size;
 static std::atomic<unsigned int> g_sequence_id;
-static gromox::atomic_bool g_notify_stop; /* stop signal for scaning thread */
+static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
 static int g_cache_interval;          /* maximum living interval in table */

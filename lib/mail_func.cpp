@@ -833,8 +833,8 @@ void parse_mime_encode_string(char *in_buff, long ibuff_len,
  *	field value
  *	@param
  *		in_buff [in]	buffer passed in
- *		buff_len		buffer length, normally should be less tahn 64K
- *		value [out]		buffer for retriving the value
+ *		buff_len		buffer length, normally should be less than 64K
+ *		value [out]		buffer for retrieving the value
  *		val_len			length of value buffer
  *		pfile [in,out]	mem file to retrieving the parsing result of params
  */

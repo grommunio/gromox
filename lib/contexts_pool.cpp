@@ -94,7 +94,7 @@ static void *ctxp_thrwork(void *pparam)
 			if (!pcontext->b_waiting) {
 				debug_info("[contexts_pool]: fatal error in context"
 					" queue! b_waiting mismatch in thread_work_func"
-					" conext: %p\n", pcontext);
+					" context: %p\n", pcontext);
 				continue;
 			}
 			double_list_remove(&g_context_lists[CONTEXT_POLLING],

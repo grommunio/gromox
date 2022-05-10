@@ -19,7 +19,7 @@ enum{
 	CONTEXT_TYPES,
 	CONTEXT_CONSTRUCTING,	/* context is got from pool
 								and wait to be construct */
-	CONTEXT_SWITCHING		/* context is switching between sheduling
+	CONTEXT_SWITCHING		/* context is switching between scheduling
 								(polling, idling to turning) queues */
 };
 

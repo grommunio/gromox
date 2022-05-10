@@ -199,12 +199,12 @@ int main(int argc, const char **argv) try
 	printf("[imap]: imap session autologout time is %s\n", temp_buff);
  
 	int imap_auth_times = g_config_file->get_ll("imap_auth_times");
-	printf("[imap]: maximum authentification failure times is %d\n", 
+	printf("[imap]: maximum authentication failure times is %d\n", 
 			imap_auth_times);
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
-	printf("[imap]: block client %s when authentification failure times "
+	printf("[imap]: block client %s when authentication failure times "
 			"is exceeded\n", temp_buff);
 
 	auto imap_support_stls = parse_bool(g_config_file->get_value("imap_support_starttls"));

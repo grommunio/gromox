@@ -955,7 +955,7 @@ SRestriction:
 	names are not allowed to contain semicolons, and the OL2019 UI inhibits
 	the keypress.
 
-All specified catgories must be present on the message for the match to occur.
+All specified categories must be present on the message for the match to occur.
 (Labeling: DE:``Nach Erhalt einer Nachricht ... die Kategorie C1 und C2
 zugeordnet ist...``)
 
@@ -2937,7 +2937,7 @@ RES_NOT container.
 
 Actions:
 
-See the individual sections on actions how they get maped to SSRT actions. If a
+See the individual sections on actions how they get mapped to SSRT actions. If a
 rule has been defined with any actions, or when the only action is "stop
 processing more rules", OP_DEFER_ACTION/XR_Begin is also used.
 

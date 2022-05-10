@@ -136,7 +136,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
     EMAIL_ADDR email_addr;    
     
     if (line_length <= 10 || 0 != strncasecmp(cmd_line + 4, " FROM:", 6)) {
-        /* sytax error or arguments error*/
+        /* syntax error or arguments error*/
 		return 505;
     }
     memcpy(buff, cmd_line + 10    , line_length - 10);
@@ -189,7 +189,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
     EMAIL_ADDR email_addr;
     
     if (line_length <= 8 || 0 != strncasecmp(cmd_line + 4, " TO:", 4)) {
-        /* sytax error or arguments error*/
+        /* syntax error or arguments error*/
 		return 505;
     }
 	if (g_param.support_starttls && g_param.force_starttls &&
@@ -365,7 +365,7 @@ int smtp_cmd_handler_help(const char* cmd_line, int line_length,
 		return 520;
 	}
 
-    /* 214 Help availble on http:// ... */
+    /* 214 Help available on http:// ... */
 	return 201;
 }        
 

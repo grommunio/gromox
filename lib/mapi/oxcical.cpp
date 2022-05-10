@@ -247,7 +247,7 @@ static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_compo
 			}
 		}
 		/* ignore the definition which has only STANDARD component 
-			or whith the same STANDARD and DAYLIGHT component */
+			or with the same STANDARD and DAYLIGHT component */
 		if (0 == ptz_definition->prules[i].daylightdate.month ||
 			0 == memcmp(&ptz_definition->prules[i].standarddate,
 				&ptz_definition->prules[i].daylightdate,

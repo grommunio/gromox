@@ -223,12 +223,12 @@ int main(int argc, const char **argv) try
 	printf("[smtp]: auth_needed is %s\n", scfg.need_auth ? "ON" : "OFF");
 
 	scfg.auth_times = g_config_file->get_ll("smtp_auth_times");
-	printf("[smtp]: maximum authentification failure times is %d\n", 
+	printf("[smtp]: maximum authentication failure times is %d\n", 
 	       scfg.auth_times);
 
 	scfg.blktime_auths = g_config_file->get_ll("block_interval_auths");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), scfg.blktime_auths, 0);
-	printf("[smtp]: block client %s when authentification failure times "
+	printf("[smtp]: block client %s when authentication failure times "
 			"is exceeded\n", temp_buff);
 
 	scfg.max_mail_length = g_config_file->get_ll("mail_max_length");

@@ -95,7 +95,7 @@ struct ASHEADER {
 /* 
 	entry ID 1, data fork of file - arbitrary length octet string 
 	entry ID 2, resource fork - arbitrary length opaque octet string;
-              as created and managed by Mac O.S. resoure manager
+              as created and managed by Mac O.S. resource manager
 	entry ID 3, file's name as created on home file system - arbitrary
               length octet string; usually short, printable ASCII
 	entry ID 4, standard Macintosh comment - arbitrary length octet
@@ -192,7 +192,7 @@ struct ASMSDOSINFO {
 
 /*
 * entry ID 13, short file name on AFP server - arbitrary length
-*  octet string; usualy printable ASCII starting with '!' (0x21)
+*  octet string; usually printable ASCII starting with '!' (0x21)
 */
 
 /* entry ID 12, AFP server file information */

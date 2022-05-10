@@ -6,7 +6,7 @@ property
 propid, property identifier
 	A 16-bit number used to identify a given property logically. propids
 	below 0x8000 are fixed; e.g. the Subject is assigned 0x37. propids above
-	0x8000 are dynamicly assigned during the runtime of a program, cf.
+	0x8000 are dynamically assigned during the runtime of a program, cf.
 	propname.
 
 propname, property name

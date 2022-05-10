@@ -1711,7 +1711,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	if (!pmessage->init_message(b_fai, pinfo->cpid))
 		return ecError;
 	/* add the store handle as the parent object handle
-		because the caller normaly will not keep the
+		because the caller normally will not keep the
 		handle of folder */
 	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_MESSAGE, std::move(pmessage)});
 	if (*phobject == INVALID_HANDLE)
@@ -2177,7 +2177,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		return ecError;
 	if (folder_type == FOLDER_SEARCH) {
 		/* add the store handle as the parent object handle
-			because the caller normaly will not keep the
+			because the caller normally will not keep the
 			handle of parent folder */
 		auto hstore = pinfo->ptree->get_store_handle(TRUE, pstore->account_id);
 		if (hstore == INVALID_HANDLE)
@@ -3930,7 +3930,7 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 			return ecError;
 	}
 	/* add the store handle as the parent object handle
-		because the caller normaly will not keep the
+		because the caller normally will not keep the
 		handle of attachment */
 	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_MESSAGE, std::move(pmessage)});
 	if (*phobject == INVALID_HANDLE)

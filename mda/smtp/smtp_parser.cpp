@@ -77,7 +77,7 @@ smtp_param g_param;
  *        blktime_sessions   block interval if max sessions is exceeded
  *        flushing_size      maximum size the stream can hold
  *        timeout            seconds if there's no data comes from connection
- *        auth_times         maximum authentification times, session permit
+ *        auth_times         maximum authentication times, session permit
  *        blktime_auths      block interval if max auths is exceeded
  */
 void smtp_parser_init(const smtp_param &param)

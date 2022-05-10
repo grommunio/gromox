@@ -180,7 +180,7 @@ int message_dequeue_run()
 	size = sizeof(MESSAGE)*g_message_units;
 	g_message_ptr = (MESSAGE*)malloc(size);
 	if (NULL == g_message_ptr) {
-		printf("[message_dequeue]: fail to allcate message nodes\n");
+		printf("[message_dequeue]: fail to allocate message nodes\n");
 		message_dequeue_collect_resource();
 		return -7;
 	}
@@ -501,7 +501,7 @@ int message_dequeue_get_param(int param)
 }
 
 /*
- *	for debuging when fail to retrieve message into mail object
+ *	for debugging when fail to retrieve message into mail object
  *	@param
  *		pmessage [in]			message object
  */

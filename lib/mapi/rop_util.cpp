@@ -101,7 +101,7 @@ uint64_t rop_util_gc_to_value(GLOBCNT gc)
  * message_object.cpp:common_util_to_folder_entryid and zeroed, it probably
  * does not matter which way.
  *
- * The return value is mixed endianess and mildly useless when printed as a
+ * The return value is mixed endianness and mildly useless when printed as a
  * number. Consumers such as message_object.cpp:common_util_to_folder_entryid
  * just deconstruct it again for PR_RECORD_KEY.
  */

@@ -1573,7 +1573,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (firstunseen != -1)
 		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
-			"* OK [PERMANENTFLAGS ()] no permanenet flag permited\r\n"
+			"* OK [PERMANENTFLAGS ()] no permanenet flag permitted\r\n"
 			"* %d EXISTS\r\n"
 			"* %d RECENT\r\n"
 			"* OK [UNSEEN %d] message %d is first unseen\r\n"
@@ -1585,7 +1585,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	else
 		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
-			"* OK [PERMANENTFLAGS ()] no permanenet flag permited\r\n"
+			"* OK [PERMANENTFLAGS ()] no permanenet flag permitted\r\n"
 			"* %d EXISTS\r\n"
 			"* %d RECENT\r\n"
 			"* OK [UIDVALIDITY %u] UIDs valid\r\n"

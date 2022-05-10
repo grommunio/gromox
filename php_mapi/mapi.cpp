@@ -4153,9 +4153,9 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 	param endtime 		unix time stamp
 	return				json string of user's freebusy data,
 						json string, empty string means not
-						found. fileds:
+						found. fields:
 						starttime, endtime, busytype, subject(base64),
-						location(base64), rests are all bool(absense
+						location(base64), rests are all bool(absence
 						means false). ismeeting, isrecurring,
 						isexception, isreminderset, isprivate
 */

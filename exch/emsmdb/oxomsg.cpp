@@ -306,7 +306,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	BOOL b_delete = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	/* we don't use spool queue, so disable the whole functionality */
 #if 0
-	/* check if it is alread in spooler queue */
+	/* check if it is already in spooler queue */
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
 	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
 	    pmessage->get_id(), &b_exist))

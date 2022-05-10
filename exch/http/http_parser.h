@@ -97,7 +97,7 @@ struct RPC_OUT_CHANNEL {
 
 	uint16_t frag_length = 0;
 	char channel_cookie[64]{}, connection_cookie[64]{};
-	BOOL b_obsolete = false; /* out channel is obsolte, wait for new out channel */
+	BOOL b_obsolete = false; /* out channel is obsolete, wait for new out channel */
 	gromox::time_duration client_keepalive{}; /* get from in channel */
 	std::atomic<uint32_t> available_window{0};
 	uint32_t window_size = 0;

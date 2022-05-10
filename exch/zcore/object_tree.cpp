@@ -300,7 +300,7 @@ void OBJECT_TREE::release_object_handle(uint32_t obj_handle)
 		return;
 	auto pobjtree = this;
 	auto iter = pobjtree->m_hash.find(obj_handle);
-	/* do not relase store object until
+	/* do not release store object until
 	the whole object tree is unloaded */
 	if (iter == pobjtree->m_hash.end() || iter->second->type == ZMG_STORE)
 		return;

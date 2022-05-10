@@ -41,7 +41,7 @@ In the absence of midb_list.txt, an implicit default entry is used:
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/\fIinstance\fP.cfg: configuration file for the instance
-of midb_agent. (Instace is usually \fBmidb_agent\fP, as there is not much point
+of midb_agent. (Instance is usually \fBmidb_agent\fP, as there is not much point
 in loading midb_agent twice.)
 .IP \(bu 4
 \fIconfig_file_path\fP/midb_list.txt: midb multiserver map

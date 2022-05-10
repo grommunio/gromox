@@ -278,7 +278,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*outvalue = common_util_guid_to_binary(pfolder->plogon->mailbox_guid);
 		return TRUE;
 	case PR_DELETED_FOLDER_COUNT:
-		/* just like exchange 2013, alway return 0 */
+		/* just like exchange 2013, always return 0 */
 		*outvalue = deconst(&fake_del);
 		return TRUE;
 	case PR_IPM_DRAFTS_ENTRYID:

@@ -626,7 +626,7 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 }
 
 
-/* neg_flags can be one ore more followings
+/* neg_flags can be one ore more following
 	NTLMSSP_NEGOTIATE_128
 	NTLMSSP_NEGOTIATE_56
 	NTLMSSP_NEGOTIATE_KEY_EXCH
@@ -771,7 +771,7 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 	
 	
 	/* The flags we send back are not just the negotiated flags,
-	 * they are also 'what is in this packet'.  Therfore, we
+	 * they are also 'what is in this packet'.  Therefore, we
 	 * operate on 'chal_flags' from here on
 	 */
 
@@ -1243,7 +1243,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 	
 
 	if (pntlmssp->session_key.length < 8) {
-		debug_info("[ntlmssp]: NO session key, cannot intialise "
+		debug_info("[ntlmssp]: NO session key, cannot initialise "
 			"signing in sign_init");
 		return false;
 	}

@@ -3399,7 +3399,7 @@ static bool op_delegate(const char *from_address, const char *account,
 	    pmsgctnt == nullptr)
 		return FALSE;
 	if (pmsgctnt->proplist.has(PROP_TAG_DELEGATEDBYRULE)) {
-		common_util_log_info(LV_DEBUG, "user=%s host=unkonwn  Delegated"
+		common_util_log_info(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU(message_id), LLU(folder_id));
 		return true;
@@ -3802,7 +3802,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
 	if (pmsgctnt->proplist.has(PROP_TAG_DELEGATEDBYRULE)) {
-		common_util_log_info(LV_DEBUG, "user=%s host=unkonwn  Delegated"
+		common_util_log_info(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU(message_id), LLU(folder_id));
 		return true;

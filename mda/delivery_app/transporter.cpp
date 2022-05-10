@@ -676,7 +676,7 @@ int transporter_load_library(const char* path)
         return PLUGIN_FAIL_ALLOCNODE;
     }
 	memset(plib, 0, sizeof(*plib));
-    /* make the node's pdata ponter point to the SHARELIB struct */
+    /* make the node's pdata pointer point to the SHARELIB struct */
     plib->node.pdata = plib;
     double_list_init(&plib->list_reference);
     double_list_init(&plib->list_hook);
@@ -940,7 +940,7 @@ static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
 /*
  *  get a context from context queue
  *  @return
- *		poiter to context, NULL means none
+ *		pointer to context, NULL means none
  */
 static MESSAGE_CONTEXT* transporter_dequeue_context()
 {

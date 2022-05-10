@@ -649,7 +649,7 @@ struct RECURRENCE_PATTERN {
 	uint32_t modifiedinstancecount;
 	uint32_t *pmodifiedinstancedates;
 	uint32_t startdate;
-	uint32_t enddate; /* if no enddate, shoule be set to 0x5AE980DF */
+	uint32_t enddate; /* if no enddate, should be set to 0x5AE980DF */
 };
 
 struct EXCEPTIONINFO {

@@ -656,7 +656,7 @@ void mem_file_free(MEM_FILE *pfile)
 
 /*
  *	  append one block in mem file list. Caution: This function should be 
- *	  invoked when the last blcok is fully written. a new block is needed.
+ *	  invoked when the last block is fully written. a new block is needed.
  *	  @param	
  *		  pfile [in]	indicate the mem file object
  *	  @return 

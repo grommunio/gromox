@@ -156,7 +156,7 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 					ptr = temp_ptr - 1;
 				}
 				if (strlen(temp_buf) == 0) {
-					printf("[list_file]: invalid fromat, should have a "
+					printf("[list_file]: invalid format, should have a "
 							"number after \":\"\n");
 					return FALSE;
 				}

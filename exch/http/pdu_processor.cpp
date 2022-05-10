@@ -1950,7 +1950,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 			pobject, handle, pin, &pout)) {
 	case DISPATCH_FAIL:
 		pdu_processor_free_stack_root(pstack_root);
-		debug_info("[pdu_processor]: RPC excution fault in call %s:%02x\n",
+		debug_info("[pdu_processor]: RPC execution fault in call %s:%02x\n",
 			pcontext->pinterface->name, prequest->opnum);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OP_RNG_ERROR);
 	case DISPATCH_PENDING:

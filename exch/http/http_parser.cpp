@@ -755,7 +755,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		pcontext->b_close = TRUE;
 		pcontext->sched_stat = SCHED_STAT_WRREP;
 		http_parser_log_info(pcontext, LV_DEBUG,
-			"I-1931: authentification needed");
+			"I-1931: authentication needed");
 		return X_LOOP;
 	}
 
@@ -1049,7 +1049,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		case RESPONSE_TIMEOUT:
 			http_parser_log_info(pcontext, LV_DEBUG,
-				"fastcgi excution time out");
+				"fastcgi execution time out");
 			http_5xx(pcontext, "FastCGI Timeout", 504);
 			return X_LOOP;
 		}

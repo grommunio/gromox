@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *  user config resource file, which provide some interface for 
- *  programmer to set and get the configuration dynamicly
+ *  programmer to set and get the configuration dynamically
  *
  */
 #include <algorithm>
@@ -114,7 +114,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1912, "NO DELETE can not delete subfolder"},
 	{1913, "NO DELETE can not delete reserved folder name"},
 	{1914, "NO RENAME can not rename reserved folder name"},
-	{1915, "NO server internal error: out of memery"},
+	{1915, "NO server internal error: out of memory"},
 	{1916, "NO COPY failed"},
 	{1917, "NO UID COPY failed"},
 	{1918, "NO Memory allocation failure"},

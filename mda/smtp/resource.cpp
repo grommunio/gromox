@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *  user config resource file, which provide some interface for 
- *  programmer to set and get the configuration dynamicly
+ *  programmer to set and get the configuration dynamically
  *
  */
 #include <cerrno>
@@ -22,7 +22,7 @@
 using namespace gromox;
 
 static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = {
-	{201, "214 Help availble on " DFL_LOGOLINK},
+	{201, "214 Help available on " DFL_LOGOLINK},
 	{202, "220 <domain> Service ready"},
 	{203, "221 <domain> Good-bye"},
 	{204, "235 Authentication ok, go ahead"},

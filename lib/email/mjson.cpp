@@ -448,7 +448,7 @@ size_t MJSON_MIME::get_offset(unsigned int param) const
 }
 
 /*
- *	get file descrition of mail file and seek pointer to location
+ *	get file description of mail file and seek pointer to location
  *	@param
  *		pjson [in]			indicate the mjson object
  *		id [in]				id string of mime

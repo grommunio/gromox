@@ -22,7 +22,7 @@ ACLs can be extracted, but, owing to the independence of the Kopano LDAP
 data model, require custom post-processing.
 .PP
 The directory of Kopano attachments of the home server should be made available
-in the mount namespace whereever gromox\-kdb2mt runs.
+in the mount namespace wherever gromox\-kdb2mt runs.
 .PP
 Properties of the \fIstore object itself\fP are only shown (if and when \-p is
 used), but never dumped to the MT data stream. Properties of the store \fIroot

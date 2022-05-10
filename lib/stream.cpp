@@ -282,7 +282,7 @@ static BOOL stream_append_node(STREAM *pstream)
 }
 
 /*
- *	  get a buffer in stream for writting
+ *	  get a buffer in stream for writing
  *	  @param
  *		  pstream [in]	  indicate the stream object
  *		  psize [in,out]  for retrieving the size of buffer
@@ -729,7 +729,7 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
  *	@param
  *		pstream [in]			stream object
  *		pbuff					buffer for retrieving content
- *		size					size of bufffer
+ *		size					size of buffer
  *	@return
  *		length of content retrieved
  */

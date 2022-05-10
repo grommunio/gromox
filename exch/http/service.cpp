@@ -186,7 +186,7 @@ static int service_load_library(const char *path)
 	/*
 	 *  indicate the current lib node when plugin rigisters service
      *  plugin can only register service in "SVC_LibMain"
-	 *  whith the paramter PLUGIN_INIT
+	 *  with the parameter PLUGIN_INIT
 	 */
 	g_cur_plug = &g_list_plug.back();
 	return PLUGIN_LOAD_OK;

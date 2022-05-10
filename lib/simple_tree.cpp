@@ -169,7 +169,7 @@ BOOL tree::add_child(tree_node *pnode_base, tree_node *pnode, int opt)
  *	@param
  *		ptree [in]		indicate the tree object
  *		pnode [in]		node to be destroyed
- *		del_func		callback function to free held resouce
+ *		del_func		callback function to free held resource
  */
 void tree::destroy_node(tree_node *pnode, SIMPLE_TREE_DELETE del_func)
 {
@@ -235,7 +235,7 @@ void tree::destroy_node(tree_node *pnode, SIMPLE_TREE_DELETE del_func)
 /*
  *	Destroy all descendant nodes of pnode, including pnode itself.
  *	@param
- *		ptree [in]		indicate the tree oject
+ *		ptree [in]		indicate the tree object
  *		pnode [in]		indicate the node object, where we begin from
  *		del_func		when a node is about to be destroyed, this function 
  *						will be invoked to notify the function caller, this

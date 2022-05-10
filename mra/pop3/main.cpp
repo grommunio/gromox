@@ -193,12 +193,12 @@ int main(int argc, const char **argv) try
 	printf("[pop3]: pop3 socket read write time out is %s\n", temp_buff);
  
 	int pop3_auth_times = g_config_file->get_ll("pop3_auth_times");
-	printf("[pop3]: maximum authentification failure times is %d\n", 
+	printf("[pop3]: maximum authentication failure times is %d\n", 
 			pop3_auth_times);
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
-	printf("[pop3]: block client %s when authentification failure times "
+	printf("[pop3]: block client %s when authentication failure times "
 			"is exceeded\n", temp_buff);
 
 	auto pop3_support_stls = parse_bool(g_config_file->get_value("pop3_support_stls"));
