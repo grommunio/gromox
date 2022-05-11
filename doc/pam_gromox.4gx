@@ -1,4 +1,4 @@
-.TH pam_gromox 8gx "" "Gromox" "Gromox admin reference"
+.TH pam_gromox 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 pam_gromox \(em a PAM plugin to authenticate with Gromox
 .SH Description

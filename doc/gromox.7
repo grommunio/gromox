@@ -78,7 +78,7 @@ delmsg(8gx) \(em MAPI message deletion from the command-line
 user_filter(4gx) \(em Service plugin for application of user login limits
 .SS Auxiliary services
 .IP \(bu 4
-pam_gromox(8gx) \(em a PAM plugin to authenticate with Gromox
+pam_gromox(4gx) \(em a PAM plugin to authenticate with Gromox
 .IP \(bu 4
 rtf2html(1gx) \(em C++ helper for php_mapi's mapi_decompressrtf function
 .IP \(bu 4
@@ -182,7 +182,7 @@ alias_resolve(4gx) inside delivery(8gx): /etc/gromox/alias_resolve.cfg,
 at_client(4gx) inside (no process by default): no config file
 .IP \(bu 4
 authmgr(4gx) inside delivery(8gx), delivery-queue(8gx), http(8gx), imap(8gx),
-midb(8gx), pam_gromox(8gx), pop3(8gx), zcore(8gx): /etc/gromox/authmgr.cfg
+midb(8gx), pam_gromox(4gx), pop3(8gx), zcore(8gx): /etc/gromox/authmgr.cfg
 .IP \(bu 4
 autodiscover(4gx) inside php-fpm(8): /etc/gromox/autodiscover.ini,
 /etc/gromox/mysql_adaptor.cfg
@@ -257,7 +257,7 @@ zcore(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/zcore.cfg,
 /etc/gromox/alias_resolve.cfg: used by the alias_resolve(4gx) plugin, accessed
 process-wise by the delivery(8gx) process.
 .IP \(bu 4
-/etc/gromox/authmgr.cfg: used by the authmgr(4gx) and pam_gromox(8gx) plugin,
+/etc/gromox/authmgr.cfg: used by the authmgr(4gx) and pam_gromox(4gx) plugin,
 accessed process-wise by delivery(8gx), delivery-queue(8gx), http(8gx),
 imap(8gx), midb(8gx), pop3(8gx), zcore(8gx), and arbitrary PAM applications.
 .IP \(bu 4
@@ -324,7 +324,7 @@ process-wise by http(8gx).
 /etc/gromox/mysql_adaptor.cfg: used by the autodiscover(4gx) plugin, http(8gx),
 imap(8gx), pop3(8gx), zcore(8gx) processes.
 .IP \(bu 4
-/etc/gromox/pam.cfg: used by the pam_gromox(8gx) plugin, accessed process-wise
+/etc/gromox/pam.cfg: used by the pam_gromox(4gx) plugin, accessed process-wise
 by arbitrary PAM applications.
 .IP \(bu 4
 /etc/gromox/pop3.cfg: used by the pop3(8gx) process.
