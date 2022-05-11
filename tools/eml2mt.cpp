@@ -53,7 +53,7 @@ static constexpr const char *g_svc_plugins[] =
 static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR},
 	{"data_path", PKGDATADIR},
-	{"service_plugin_path", PKGLIBEXECDIR},
+	{"service_plugin_path", PKGLIBDIR},
 	{"state_path", PKGSTATEDIR},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
