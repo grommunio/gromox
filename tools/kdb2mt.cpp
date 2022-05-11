@@ -961,9 +961,19 @@ static message_content_ptr build_message(driver &drv, unsigned int depth,
 	return ctnt;
 }
 
+static bool is_problematic_message(const TPROPVAL_ARRAY &props)
+{
+	auto flags = props.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	auto mcls  = props.get<const char>(PR_MESSAGE_CLASS);
+	return flags != nullptr && mcls != nullptr &&
+	       *flags & MSGFLAG_ASSOCIATED && strcmp(mcls, "IPM.MessageManager") == 0;
+}
+
 static int do_message(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	auto ctnt = build_message(drv, depth, item);
+	if (is_problematic_message(ctnt->proplist))
+		return 0;
 	if (parent.type == MAPI_ATTACH)
 		attachment_content_set_embedded_internal(parent.attach, ctnt.release());
 	if (parent.type != MAPI_FOLDER)
