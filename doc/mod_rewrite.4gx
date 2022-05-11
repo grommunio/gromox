@@ -5,11 +5,12 @@ before processing
 .SH Description
 mod_rewrite can alter request URIs. It runs before any of the other built-in or
 HTTP processing modules.
-.SH Config file directives
+.SH Configuration directives
 This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
 .SH Rewrite map
 The filemap that specifies which URIs to handle is \fBrewrite.txt\fP,
-which is searched for in \fIconfig_file_path\fP.
+which is searched for in \fIconfig_file_path\fP. The usual location is
+/etc/gromox/rewrite.txt.
 .PP
 Each line in this file consists of 3 columns separated by whitespace:
 .IP \(bu 4

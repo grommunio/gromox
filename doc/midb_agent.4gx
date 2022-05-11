@@ -1,7 +1,8 @@
 .TH midb_agent 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 midb_agent \(em Service plugin for conversing with midb(8gx)
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/midb_agent.cfg.
 .TP
 \fBconnection_num\fP
 The number of connections to keep open towards every midb target.

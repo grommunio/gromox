@@ -5,7 +5,8 @@ ip6_container \(em trivial source connection counter
 ip6_container is used by one or more daemons to keep track of the number of
 connections made by every source address, and to block them from exceeding a
 connection limit.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/ip6_container.cfg.
 .TP
 \fBconnection_max_num\fP
 The maximum number of concurrent connections any one source address is allowed

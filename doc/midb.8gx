@@ -20,7 +20,8 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/midb.cfg.
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further

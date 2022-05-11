@@ -7,11 +7,12 @@ mod_fastcgi can forward HTTP requests to one or more FastCGI servers when
 certain URIs are requested.
 .PP
 mod_fastcgi plugin is built into http(8gx) and not a separate .so file.
-.SH Config file directives
+.SH Configuration directives
 This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
 .SH URI map
 The filemap that specifies which URIs to handle is \fBfastcgi.txt\fP,
-which is searched for in \fIconfig_file_path\fP.
+which is searched for in \fIconfig_file_path\fP. The usual location is
+/etc/gromox/fastcgi.txt.
 .PP
 Each line in this file consists of 7 columns separated by whitespace:
 .IP \(bu 4

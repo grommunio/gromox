@@ -14,7 +14,8 @@ Display option summary.
 .SH Plugins
 The delivery daemon can be extended by a number of plugins. In Gromox, their
 filenames begin with libmtahook_.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/delivery.cfg.
 .TP
 \fBadmin_mailbox\fP
 Default: (unspecified)

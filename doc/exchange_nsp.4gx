@@ -6,7 +6,8 @@ Service Provider Interface Protocol.
 exchange_nsp is a processing plugin for http(8gx) which handles the Exchange
 Server Name Service Provider Interface Protocol, in essence providing the
 Address Book for the EMSMDB connector.
-.SH Config file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/exchange_nsp.cfg.
 .TP
 \fBcache_interval\fP
 Default: \fI5 minutes\fP

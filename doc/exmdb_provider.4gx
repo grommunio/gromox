@@ -8,7 +8,8 @@ functionality is also exposed by way of a Gromox-specific network protocol on
 port 5000. The aforementioned RPC functions transparently operate over the
 network and may connect to a remote exmdb. In other words, this plugin contains
 a process-local function API, a network client, and a network server.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/exmdb_provider.cfg.
 .TP
 \fBcache_interval\fP
 Default: \fI2 hours\fP

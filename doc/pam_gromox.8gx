@@ -31,7 +31,8 @@ Check for a specific privilege bit on the user account. Possible values for
 \fBvideo\fP, \fBfiles\fP, \fBarchive\fP.
 .br
 Default: \fBsmtp\fP
-.SH Configuration directives in /etc/gromox/pam.cfg
+.SH Configuration directives
+The usual config file location is /etc/gromox/pam.cfg.
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories in which further configuration files,

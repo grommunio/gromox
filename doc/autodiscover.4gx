@@ -1,6 +1,6 @@
 .TH autodiscover 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-Autodiscover HTTP Service Protocol handler
+Autodiscover HTTP Service Protocol handler (AutoDiscover responder)
 .SH Description
 Autodiscover clients can locate the Autodiscover server for a given domain
 \fIexample.com\fP by attempting to resolve the
@@ -32,7 +32,7 @@ to the message store service. However, the Address Book always issues
 Autodiscover requests. (In other words, removing the DNS entry for the
 Autodiscover server after a profile is set up would break the address book, but
 not the message store.)
-.SH Configuration file directives
+.SH Configuration directives
 At first, /etc/gromox/mysql_adaptor.cfg is read for the connection parameters
 to the user database. See gromox(7) for a description of the format. See
 mysql_adaptor(4gx) for details about the available configuration directives. In

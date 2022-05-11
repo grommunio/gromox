@@ -4,7 +4,8 @@ mysql_adaptor \(em MySQL/MariaDB connector for user metadata and authentication
 .SH Description
 mysql_adaptor is a service plugin for integrating mail accounts from
 a MySQL/MariaDB database.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/mysql_adaptor.cfg.
 .TP
 \fBconnection_num\fP
 Number of SQL connections to keep active.

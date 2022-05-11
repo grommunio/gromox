@@ -8,7 +8,8 @@ run under the control of systemd (i.e. have been started with systemctl),
 journald will take care of capture, storage and periodic log rotation.
 .PP
 logthru is the default logging plugin for all Gromox services.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/log_plugin.cfg.
 .TP
 \fBlog_file_name\fP
 Path to the file where log messages will be appended to. Setting this to the

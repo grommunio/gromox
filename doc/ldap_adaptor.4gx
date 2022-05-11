@@ -7,9 +7,9 @@ server for authentication purposes. Since the authoritative user database is in
 MySQL, LDAP is only used to perform authentication (Bind operations), and
 metadata searches that lead up to such Binds, i.e. looking for the LDAP object
 that has a particular "mail" attribute.
-.SH Configuration file directives
-The configuration file, ldap_adaptor.cfg, serves not only the ldap_adaptor
-plugin, but is also read by the Grommunio Admin API.
+.SH Configuration directives
+The configuration file, /etc/gromox/ldap_adaptor.cfg, serves not only the
+ldap_adaptor plugin, but is also read by the Grommunio Admin API.
 .SS Gromox directives
 .TP
 \fBauth_connections\fP

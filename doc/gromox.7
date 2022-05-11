@@ -1,6 +1,6 @@
 .TH gromox 7 "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox \(em overview of the Gromox groupware server
+gromox \(em Overview of the Gromox groupware server
 .SH Description
 Gromox is a groupware server capable of serving as a replacement for Microsoft
 Exchange. Connectivity options include RPC/HTTP (Outlook Anywhere),
@@ -15,7 +15,9 @@ these essentials and has a ready-to-run installation of Gromox. system.
 Gromox documentation consists of at least a dozen manual pages ("manpages") on
 its individual components. We have grouped these according to their principal
 function.
-.SS Overview
+.SS Overview and definitions
+.IP \(bu 4
+gromox(7gx) \(em This page, an overview of the Gromox groupware server.
 .IP \(bu 4
 mapi(7gx) \(em Definition for "Messaging Application Programming Interface"
 .SS Exchange subsystem and its components
@@ -171,6 +173,174 @@ plugin as loaded by http will first try
 /etc/gromox/http/mysql_adaptor.cfg, then /etc/gromox/mysql_adaptor.cfg. This
 allows having one file that is shared between multiple programs as well as
 being able to override on a per program-basis.
+.SS Listing of config files per component
+A list of components and the config files they potentially use.
+.IP \(bu 4
+alias_resolve(4gx) inside delivery(8gx): /etc/gromox/alias_resolve.cfg,
+/etc/gromox/mysql_adaptor.cfg
+.IP \(bu 4
+at_client(4gx) inside (no process by default): no config file
+.IP \(bu 4
+authmgr(4gx) inside delivery(8gx), delivery-queue(8gx), http(8gx), imap(8gx),
+midb(8gx), pam_gromox(8gx), pop3(8gx), zcore(8gx): /etc/gromox/authmgr.cfg
+.IP \(bu 4
+autodiscover(4gx) inside php-fpm(8): /etc/gromox/autodiscover.ini,
+/etc/gromox/mysql_adaptor.cfg
+.IP \(bu 4
+delivery(8gx): /etc/gromox/alias_resolve.cfg, /etc/gromox/exmdb_local.cfg,
+/etc/gromox/ldap_adaptor.cfg, /etc/gromox/log_plugin.cfg,
+/etc/gromox/mlist_expand.cfg, /etc/gromox/mysql_adaptor.cfg,
+/etc/gromox/remote_delivery.cfg
+.IP \(bu 4
+delivery-queue(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/log_plugin.cfg,
+/etc/gromox/midb_agent.cfg, /etc/gromox/ldap_adaptor.cfg,
+/etc/gromox/mysql_adaptor.cfg, /etc/gromox/user_filter.cfg
+.IP \(bu 4
+event(8gx): /etc/gromox/event.cfg
+.IP \(bu 4
+exchange_emsmdb(4gx) inside http(8gx): /etc/gromox/exchange_emsmdb.cfg
+.IP \(bu 4
+exchange_nsp(4gx) inside http(8gx): /etc/gromox/exchange_nsp.cfg
+.IP \(bu 4
+exchange_rfr(4gx) inside http(8gx): no config file
+.IP \(bu 4
+exmdb_provider(4gx) inside http(8gx): /etc/gromox/exmdb_provider.cfg
+.IP \(bu 4
+freebusy(8gx) subprocess run from php-fpm(8): no config file
+.IP \(bu 4
+http(8gx): /etc/gromox/cache.txt, /etc/gromox/exchange_emsmdb.cfg,
+/etc/gromox/exchange_nsp.cfg, etc/gromox/exmdb_provider.cfg,
+/etc/gromox/fastcgi.txt, /etc/gromox/log_plugin.cfg, /etc/gromox/rewrite.txt
+.IP \(bu 4
+imap(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/event_proxy.cfg,
+/etc/gromox/event_stub.cfg, /etc/gromox/imap.cfg, /etc/gromox/ldap_adaptor.cfg,
+/etc/gromox/log_plugin.cfg, /etc/gromox/mysql_adaptor.cfg
+.IP \(bu 4
+ip6_container(4gx) inside (no process by default):
+/etc/gromox/ip6_container.cfg
+.IP \(bu 4
+midb_agent(4gx) inside delivery-queue(8gx), imap(8gx), pop3(8gx):
+/etc/gromox/midb_agent.cfg
+.IP \(bu 4
+mlist_expand(4gx) inside delivery(8gx): /etc/gromox/mlist_expand.cfg
+.IP \(bu 4
+mod_cache(4gx) inside http(8gx): /etc/gromox/http.cfg, /etc/gromox/cache.txt
+.IP \(bu 4
+mod_fastcgi(4gx) inside http(8gx): /etc/gromox/http.cfg, /etc/gromox/fastcgi.txt
+.IP \(bu 4
+mod_rewrite(4gx) inside http(8gx): /etc/gromox/http.cfg, /etc/gromox/rewrite.txt
+.IP \(bu 4
+mh_emsmdb(4gx) inside http(8gx): no config file
+.IP \(bu 4
+mh_nsp(4gx) inside http(8gx): no config file
+.IP \(bu 4
+pop3(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/event_proxy.cfg,
+/etc/gromox/imap.cfg, /etc/gromox/ldap_adaptor.cfg, /etc/gromox/log_plugin.cfg,
+/etc/gromox/mysql_adaptor.cfg
+.IP \(bu 4
+remote_delivery(4gx) inside delivery(8gx): /etc/gromox/remote_delivery.cfg
+.IP \(bu 4
+rtf2html(1gx): no config file
+.IP \(bu 4
+timer(8gx): /etc/gromox/timer.cfg
+.IP \(bu 4
+timer_agent(4gx) inside http(8gx), zcore(8gx): /etc/gromox/timer_agent.cfg
+.IP \(bu 4
+user_filter(4gx) inside delivery-queue(8gx), http(8gx), imap(8gx), pop3(8gx):
+/etc/gromox/user_filter.cfg
+.IP \(bu 4
+zcore(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/zcore.cfg,
+/etc/gromox/ldap_adaptor.cfg, /etc/gromox/log_plugin.cfg,
+/etc/gromox/mysql_adaptor.cfg, /etc/gromox/timer_agent.cfg
+.SS Listing of components per config file
+.IP \(bu 4
+/etc/gromox/alias_resolve.cfg: used by the alias_resolve(4gx) plugin, accessed
+process-wise by the delivery(8gx) process.
+.IP \(bu 4
+/etc/gromox/authmgr.cfg: used by the authmgr(4gx) and pam_gromox(8gx) plugin,
+accessed process-wise by delivery(8gx), delivery-queue(8gx), http(8gx),
+imap(8gx), midb(8gx), pop3(8gx), zcore(8gx), and arbitrary PAM applications.
+.IP \(bu 4
+/etc/gromox/autodiscover.ini: used by the autodiscover(4gx) component, accessed
+process-wise by php-fpm(8).
+.IP \(bu 4
+/etc/gromox/event.cfg: used by the event(8gx) process.
+.IP \(bu 4
+/etc/gromox/event_proxy.cfg: used by the event_proxy(4gx) plugin, accessed
+process-wise by imap(8gx), midb(8gx), pop3(8gx).
+.IP \(bu 4
+/etc/gromox/event_stub.cfg: used by the event_stub(4gx) plugin, accessed
+process-wise by imap(8gx).
+.IP \(bu 4
+/etc/gromox/exchange_emsmdb.cfg: used by the exchange_emsmdb(4gx) plugin,
+accessed process-wise by http(8gx).
+.IP \(bu 4
+/etc/gromox/exchange_nsp.cfg: used by the exchange_nsp(4gx) plugin, accessed
+process-wise by http(8gx).
+.IP \(bu 4
+/etc/gromox/exmdb_local.cfg: used by the exmdb_local(4gx) plugin, accessed
+process-wise by delivery(8gx).
+.IP \(bu 4
+/etc/gromox/exmdb_provider.cfg: used by the exmdb_provider(4gx) plugin,
+accessed process-wise by http(8gx).
+.IP \(bu 4
+/etc/gromox/http.cfg: used by the mod_cache(4gx), mod_fastcgi(4gx),
+mod_rewrite(4gx) plugins, and the http(8gx) process.
+.IP \(bu 4
+/etc/gromox/imap.cfg: used by the imap(8gx) process.
+.IP \(bu 4
+/etc/gromox/ip6_container.cfg: used by the ip6_container(4gx) plugin.
+.IP \(bu 4
+/etc/gromox/ldap_adaptor.cfg: used by the ldap_adaptor(4gx) plugin, accessed
+process-wise by delivery(8gx), delivery-queue(8gx), http(8gx), imap(8gx),
+midb(8gx), pop3(8gx), zcore(8gx), and arbitrary PAM applications.
+.IP \(bu 4
+/etc/gromox/log_plugin.cfg: used by the log_plugin(4gx) plugin, accessed
+process-wise by delivery(8gx), delivery-queue(8gx), http(8gx), imap(8gx),
+pop3(8gx), zcore(8gx).
+.IP \(bu 4
+/etc/gromox/midb_agent.cfg: used by the midb_agent(4gx) plugin, accessed
+process-wise by delivery-queue(8gx), imap(8gx), pop3(8gx).
+.IP \(bu 4
+/etc/gromox/mlist_expand.cfg: used by the mlist_expand(4gx) plugin,
+accessed process-wise by delivery(8gx).
+.IP \(bu 4
+/etc/gromox/mysql_adaptor.cfg: used by the alias_resolve(4gx),
+mysql_adaptor(4gx) plugins, accessed process-wise by delivery(8gx),
+delivery-queue(8gx), http(8gx), imap(8gx), midb(8gx), pop3(8gx), zcore(8gx),
+and arbitrary PAM applications.
+.IP \(bu 4
+/etc/gromox/midb.cfg: used by the midb(8gx) process.
+.IP \(bu 4
+/etc/gromox/mod_cache.txt: used by the mod_cache(4gx) plugin, accessed
+process-wise by http(8gx).
+.IP \(bu 4
+/etc/gromox/mod_fastcgi.txt: used by the mod_fastcgi(4gx) plugin, accessed
+process-wise by http(8gx).
+.IP \(bu 4
+/etc/gromox/mod_rewrite.txt: used by the mod_rewrite(4gx) plugin, accessed
+process-wise by http(8gx).
+.IP \(bu 4
+/etc/gromox/mysql_adaptor.cfg: used by the autodiscover(4gx) plugin, http(8gx),
+imap(8gx), pop3(8gx), zcore(8gx) processes.
+.IP \(bu 4
+/etc/gromox/pam.cfg: used by the pam_gromox(8gx) plugin, accessed process-wise
+by arbitrary PAM applications.
+.IP \(bu 4
+/etc/gromox/pop3.cfg: used by the pop3(8gx) process.
+.IP \(bu 4
+/etc/gromox/remote_delivery.cfg: used by the remote_delivery(4gx) plugin,
+accessed process-wise by delivery(8gx).
+.IP \(bu 4
+/etc/gromox/timer.cfg: used by the timer(8gx) process.
+.IP \(bu 4
+/etc/gromox/timer_agent.cfg: used by the timer_agent(4gx) plugin, accessed
+process-wise by http(8gx), zcore(8gx).
+.IP \(bu 4
+/etc/gromox/user_filter.cfg: used by the user_filter(4gx) plugin, accessed
+process-wise by delivery-queue(8gx), http(8gx), imap(8gx), pop3(8gx)
+.IP \(bu 4
+/etc/gromox/zcore.cfg: used by the zcore(8gx) process.
 .SH Databases
 .IP \(bu 4
 User information is held in a MariaDB/MySQL database. This database can be

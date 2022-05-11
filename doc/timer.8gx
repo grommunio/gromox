@@ -28,7 +28,8 @@ default-whitelisted.
 .IP \(bu 4
 /var/lib/gromox/timer.txt: This file is used to save the state of timer(8gx)
 and persist them across restarts.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/timer.cfg.
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further

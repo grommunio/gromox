@@ -26,7 +26,8 @@ Display option summary.
 \fIconfig_file_path\fP/event_acl.txt: A file with one address (IPv6 or
 v4-mapped) per line of allowed clients. In its absence, ::1 is
 default-whitelisted.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/event.cfg.
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further

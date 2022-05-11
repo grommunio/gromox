@@ -21,7 +21,8 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/zcore.cfg.
 .TP
 \fBaddress_cache_internal\fP
 Default: \fI5 minutes\fP

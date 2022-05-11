@@ -15,7 +15,8 @@ wrapping is given in the OXCRPC spec. MAPIHTTP runs OXCROPS directly without
 the extra EMSMDB framing.
 .PP
 OXCROPS consists of 130 calls that make up the mailbox protocol.
-.SH Config file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/exchange_emsmdb.cfg.
 .TP
 \fBasync_threads_num\fP
 Default: \fI4\fP

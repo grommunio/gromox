@@ -3,10 +3,9 @@
 mh_emsmdb \(em MAPI-HTTP processor for EMSMDB
 .SH Description
 mh_emsmdb is a processing plugin for http(8gx) which reacts to URIs starting
-in \fB/mapi/emsmdb/\fP. The ROP stream inside the HTTP request bodies is handed
-off to exchange_emsmdb(4gx) for processing.
-.SH Config file directives
-This plugin has no directives.
+in \fB/mapi/emsmdb/\fP. The ROP stream inside the HTTP request bodies is handedoff to exchange_emsmdb(4gx) for processing.
+.SH Configuration directives
+This plugin has no directives and therefore no config file.
 .SH Normative references
 .IP \(bu 4
 MS-OXCMAPIHTTP: Messaging Application Programming Interface (MAPI) Extensions

@@ -7,13 +7,13 @@ alias_resolve is a mail delivery agent hook plugin which will download from
 MariaDB/SQL all alias mappings and use them to rewrite the envelope FROM and
 RCPT addresses of mails and which replaces aliases by their respective primary
 addresses,
-.SH Configuration file directives
-alias_resolve(4gx) reads mysql_adaptor.cfg for \fBmysql_host\fP,
+.SH Configuration directives
+alias_resolve(4gx) reads /etc/gromox/mysql_adaptor.cfg for \fBmysql_host\fP,
 \fBmysql_port\fP, \fBmysql_username\fP, \fBmysql_password\fP,
 \fBmysql_dbname\fP and \fBmysql_rdwr_timeout\fP. Confer with mysql_adaptor(4gx)
 for details.
 .PP
-alias_resolve(4gx) reads alias_resolve.cfg:
+alias_resolve(4gx) reads /etc/gromox/alias_resolve.cfg:
 .TP
 \fBcache_lifetime\fP
 Interval between alias map refreshes.

@@ -14,7 +14,8 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/imap.cfg.
 .TP
 \fBblock_interval_auths\fP
 The amount of time a user is blocked from connecting to the service after too

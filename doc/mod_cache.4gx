@@ -6,11 +6,12 @@ filesystem
 mod_cache serves local files when certain URIs are requests.
 .PP
 mod_cache is built into http(8gx) and not a separate .so file.
-.SH Config file directives
+.SH Configuration directives
 This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
 .SH URI map
 The filemap that specifies which URIs to handle is \fBcache.txt\fP,
-which is searched for in \fIconfig_file_path\fP.
+which is searched for in \fIconfig_file_path\fP. The usual location is
+/etc/gromox/cache.txt.
 .PP
 Each line in this file consists of 3 columns separated by whitespace:
 .IP \(bu 4

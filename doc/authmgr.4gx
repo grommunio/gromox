@@ -6,7 +6,8 @@ authmgr is a service plugin that, for mail account authentication, dynamically
 selects the authentication backend per user account. The
 libgxs_mysql_adaptor.so and/or libgxs_ldap_adaptor.so plugins need to be
 loaded in advance (this is the case by default).
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/authmgr.cfg.
 .TP
 \fBauth_backend_selection\fP
 This controls how authmgr will verify passwords supplied with login operations.

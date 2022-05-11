@@ -5,7 +5,8 @@ with a C API
 .SH Description
 An LDA hook plugin for delivery(8gx) which places mail into a store by
 connecting to a exmdb_provider(4gx) service.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/exmdb_local.cfg.
 .TP
 \fBalarm_interval\fP
 Default: \fI30min\fP

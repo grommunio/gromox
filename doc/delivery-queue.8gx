@@ -14,7 +14,9 @@ specified, /etc/gromox/smtp.cfg will be read if it exists.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH Configuration file directives
+.SH Configuration directives
+The usual config file location is /etc/gromox/\fBsmtp.cfg\fP. (Deviation from
+the process name due to compatibility with older installations.)
 .TP
 \fBblock_interval_sessions\fP
 The amount of time a source IP address is blocked from connecting to the
