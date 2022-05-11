@@ -8,7 +8,7 @@ AM_CXXFLAGS = ${my_CXXFLAGS}
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
 noinst_DATA = libgromox_common.ldd libgromox_cplus.ldd libgromox_dbop.ldd libgromox_email.ldd libgromox_epoll.ldd libgromox_exrpc.la libgromox_mapi.ldd libgromox_rpc.ldd
-pkglibexec_PROGRAMS = autodiscover cgkrepair cleaner delivery delmsg delivery-queue event freebusy http imap midb pop3 rebuild rtf2html timer zcore
+pkglibexec_PROGRAMS = cgkrepair cleaner delivery delmsg delivery-queue event freebusy http imap midb pop3 rebuild rtf2html timer zcore
 pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -80,7 +80,7 @@ noinst_DATA += \
 	libgxs_mysql_adaptor.ldd \
 	libgxs_textmaps.ldd \
 	libgxs_user_filter.ldd
-sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-e2ghelper gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
@@ -229,8 +229,6 @@ libgxs_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_user_filter_la_DEPENDENCIES = ${default_sym}
 
-autodiscover_SOURCES = tools/autodiscover.cpp
-autodiscover_LDADD = ${curl_LIBS} ${HX_LIBS} ${tinyxml_LIBS}
 cgkrepair_SOURCES = tools/cgkrepair.cpp tools/genimport.cpp
 cgkrepair_LDADD = ${gromox_mt2exm_LDADD}
 cleaner_SOURCES = tools/cleaner.cpp
@@ -253,6 +251,8 @@ gromox_abktconv_SOURCES = tools/abktconv.cpp
 gromox_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp tools/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
+gromox_dscli_SOURCES = tools/dscli.cpp
+gromox_dscli_LDADD = ${curl_LIBS} ${HX_LIBS} ${tinyxml_LIBS}
 gromox_e2ghelper_SOURCES = tools/e2ghelper.cpp
 gromox_e2ghelper_LDADD = ${HX_LIBS}
 gromox_eml2mt_SOURCES = tools/eml2mt.cpp tools/genimport.cpp exch/http/service.cpp
@@ -305,7 +305,7 @@ tests_zendfake_LDADD = libmapi4zf.la
 
 man_MANS = \
 	doc/alias_resolve.4gx doc/at_client.4gx \
-	doc/authmgr.4gx doc/autodiscover.4gx doc/autodiscover.8gx \
+	doc/authmgr.4gx doc/autodiscover.4gx \
 	doc/cgkrepair.8gx doc/cleaner.8gx \
 	doc/delivery.8gx doc/delivery-queue.8gx \
 	doc/delmsg.8gx doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
@@ -313,7 +313,7 @@ man_MANS = \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/freebusy.8gx doc/gromox.7 doc/gromox-abktconv.8gx \
-	doc/gromox-abktpull.8gx doc/gromox-dbop.8gx \
+	doc/gromox-abktpull.8gx doc/gromox-dbop.8gx doc/gromox-dscli.8gx \
 	doc/gromox-eml2mt.8gx doc/gromox-exm2eml.8gx \
 	doc/gromox-kdb2mt.8gx doc/gromox-mailq.8gx doc/gromox-mbop.8gx \
 	doc/gromox-mkmidb.8gx doc/gromox-mkprivate.8gx doc/gromox-mkpublic.8gx \

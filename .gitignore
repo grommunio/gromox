@@ -22,7 +22,6 @@ Makefile.in
 /libtool
 /stamp-h1
 
-/autodiscover
 /cgkrepair
 /cleaner
 /delivery
@@ -33,6 +32,7 @@ Makefile.in
 /freebusy
 /gromox-abktconv
 /gromox-dbop
+/gromox-dscli
 /gromox-e2ghelper
 /gromox-eml2mt
 /gromox-exm2eml

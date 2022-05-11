@@ -1,9 +1,9 @@
-.TH autodiscover 8gx "" "Gromox" "Gromox admin reference"
+.TH gromox\-dscli 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-autodiscover \(em AutoDiscover test utility
+gromox\-dscli \(em AutoDiscover command line utility
 .SH Synopsis
-\fBPASS=\fP\fIsecret\fP \fB/usr/libexec/gromox/autodiscover\fP [\fB\-H\fP
-\fIhttps://host/path\fP] [\fB\-h\fP \fIhostonly\fP] [\fB\-u\fP \fIemailaddr\fP]
+\fBPASS=\fP\fIsecret\fP \fBgromox\-dscli\fP [\fB\-H\fP \fIhttps://host/path\fP]
+[\fB\-h\fP \fIhostonly\fP] [\fB\-u\fP \fIemailaddr\fP]
 .SH Description
 This utility facilitates sending/receiving AutoDiscover request/responses
 to/from a server for testing.
