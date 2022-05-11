@@ -43,10 +43,14 @@ system, but can be shared through network filesystems provided that file
 locking is properly implemented in the filesystem driver. Normal file
 mechanisms can be used to backup or transfer the database to another Gromox
 host.
-.SH Definitions
+.SH Manual page listing
+Gromox documentation consists of at least a dozen manual pages ("manpages") on
+its individual components. We have grouped these according to their principal
+function.
+.SS Overview
 .IP \(bu 4
 mapi(7gx) \(em Definition for "Messaging Application Programming Interface"
-.SH Exchange subsystem
+.SS Exchange subsystem and its components
 .IP \(bu 4
 autodiscover(4gx) \(em Autodiscover HTTP Service Protocol handler
 .IP \(bu 4
@@ -79,19 +83,19 @@ mh_emsmdb(4gx) \(em MAPI-HTTP processor for EMSMDB
 mh_nsp(4gx) \(em MAPI-HTTP processor for NSPI
 .IP \(bu 4
 timer(8gx) \(em deferred command executor
-.SH PHP-MAPI subsystem
+.SS PHP-MAPI subsystem
 .IP \(bu 4
 rtf2html(1gx) \(em C++ helper program for the mapi(4gx) mapi_decompressrtf function
 .IP \(bu 4
 zcore(8gx) \(em Bridge for PHP-MAPI requests
-.SH Mail retrieval agent subsystem
+.SS Mail retrieval agent subsystem (MRA)
 .IP \(bu 4
 imap(8gx) \(em IMAP server
 .IP \(bu 4
 midb_agent(4gx) \(em Service plugin for conversing with midb(8gx)
 .IP \(bu 4
 pop3(8gx) \(em POP3 server
-.SH Local delivery agent
+.SS Local delivery agent (LDA)
 .IP \(bu 4
 alias_resolve(4gx) \(em Alias resolution for delivery(8gx) using MySQL
 .IP \(bu 4
@@ -102,7 +106,7 @@ delivery-queue(8gx) \(em LMTP/SMTP frontend for local delivery
 delmsg(8gx) \(em MAPI message deletion from the command-line
 .IP \(bu 4
 user_filter(4gx) \(em Service plugin for application of user login limits
-.SH Auxiliary services
+.SS Auxiliary services
 .IP \(bu 4
 pam_gromox(8gx) \(em a PAM plugin to authenticate with Gromox
 .IP \(bu 4
@@ -111,7 +115,7 @@ rtf2html(1gx) \(em C++ helper for php_mapi's mapi_decompressrtf function
 event(8gx) \(em Folder change notification daemon
 .IP \(bu 4
 midb(8gx) \(em Message Index database daemon
-.SH System administration
+.SS System administration
 .IP \(bu 4
 cleaner(8gx) \(em Utility to purge orphaned attachments/content files
 .IP \(bu 4
@@ -149,7 +153,9 @@ gromox\-pff2mt(8gx) \(em Utility for analysis of PFF/PST/OST files
 gromox\-vcf2mt(8gx) \(em Utility to import vCard objects
 .IP \(bu 4
 rebuild(8gx) \(em Tool for rebuilding a message store
-.SH Service plugins
+.SS Service plugins
+Service plugins can be used by various processes (i.e. from different
+subsystems), as such, we have put them in this general category.
 .IP \(bu 4
 at_client(4gx) \(em Service plugin for deferred command execution with at(1)
 .IP \(bu 4
@@ -168,7 +174,7 @@ textmaps(4gx) \(em Service plugin for various data maps
 .IP \(bu 4
 timer_agent(4gx) \(em Service plugin for deferred command execution with
 timer(8gx)
-.SH Historic commands that have been removed
+.SS Historic commands that have been removed
 The following is a list of programs that no longer exist. It is intended solely
 to capture keyword searches within the documentation for said obsolete/removed commands.
 .IP \(bu 4
@@ -176,7 +182,7 @@ autodiscover(8gx): renamed to gromox\-dscli to avoid a name clash with the
 autodiscover(4gx) manpage
 .IP \(bu 4
 gromox\-pffimport(8gx): replaced by gromox\-pff2mt and gromox\-mt2exm.
-.SH Language bindings
+.SS Language bindings
 .IP \(bu 4
 mapi(4gx) \(em PHP module providing MAPI functions
 .SH Listening sockets
