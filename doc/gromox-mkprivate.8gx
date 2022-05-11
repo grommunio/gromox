@@ -47,12 +47,6 @@ message store.
 \fIdata_file_path\fP/propnames.txt: Initial set of named properties to add to
 the new private store.
 .IP \(bu 4
-\fIdata_file_path\fP/sqlite3_common.txt: SQLite instructions to generate part
-of a private store.
-.IP \(bu 4
-\fIdata_file_path\fP/sqlite3_private.txt: SQLite instructions to generate part
-of a private store.
-.IP \(bu 4
 \fI/var/lib/gromox/...\fP/exmdb/exchange.sqlite3: MAPI object database.
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mkmidb\fP(8gx), \fBgromox\-mkpublic\fP(8gx),

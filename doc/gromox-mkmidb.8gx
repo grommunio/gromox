@@ -40,9 +40,6 @@ the upgrade procedure.)
 Display option summary.
 .SH Files
 .IP \(bu 4
-\fIdata_file_path\fP/sqlite3_midb.txt: SQLite instructions to generate a
-message index database.
-.IP \(bu 4
 \fI/var/lib/gromox/...\fP/exmdb/midb.sqlite3: Message index database for IMAP.
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mkprivate\fP(8gx), \fBmidb\fP(8gx),

@@ -27,11 +27,5 @@ Default: \fI/usr/share/gromox\fP
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
-.IP \(bu 4
-\fIdata_file_path\fP/sqlite3_common.txt: SQLite instructions to generate part
-of a private store.
-.IP \(bu 4
-\fIdata_file_path\fP/sqlite3_private.txt: SQLite instructions to generate part
-of a private store.
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mbop\fP(8gx)
