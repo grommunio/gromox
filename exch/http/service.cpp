@@ -95,12 +95,13 @@ int service_run_early()
 {
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
 		int ret = service_load_library(*i);
-		if (ret == PLUGIN_LOAD_OK &&
-		    g_cur_plug->lib_main(PLUGIN_EARLY_INIT, const_cast<void **>(server_funcs))) {
-			g_cur_plug = nullptr;
-			continue;
+		if (ret == PLUGIN_LOAD_OK) {
+			if (g_cur_plug->lib_main(PLUGIN_EARLY_INIT, const_cast<void **>(server_funcs))) {
+				g_cur_plug = nullptr;
+				continue;
+			}
+			g_list_plug.pop_back();
 		}
-		g_list_plug.pop_back();
 		g_cur_plug = nullptr;
 		if (g_ign_loaderr)
 			continue;
