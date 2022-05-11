@@ -227,6 +227,12 @@ uint32_t lzxpress_decompress(const void *inputv, uint32_t input_size,
 				return 0;
 			indicator = le32p_to_cpu(&input[input_index]);
 			input_index += sizeof(uint32_t);
+			if (input_index == input_size)
+				/*
+				 * The compressor left room for indicator
+				 * flags for data that doesn't exist.
+				 */
+				break;
 			indicator_bit = 32;
 		}
 		indicator_bit --;
