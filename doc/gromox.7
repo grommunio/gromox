@@ -11,38 +11,6 @@ Gromox relies on other components to provide a sensibly complete mail system,
 such as Postfix as a mail transfer agent, and grommunio-admin for user management.
 A web interface is available with grommunio-web. The grommunio distribution ships
 these essentials and has a ready-to-run installation of Gromox. system.
-.SH Configuration files
-Program configuration files reside within /etc/gromox. The format for .cfg
-files is: one "key=value" pair per line. Empty lines are ignored, as are lines
-beginning with a '#' character. Lines can have a maximum length of 1024. Each
-key=value line is logically split at the equals sign, and whitespace is trimmed
-around key and value. Comments at the end of a value are not supported. Escape
-sequences are not supported.
-.PP
-The format for .ini files is: one "key=value" pair per line. Empty lines are
-ignored, as are lines beginning with a ';' character.
-.PP
-Many programs have a \fBconfig_file_path\fP directive with which the search
-path for further config files can be specified. For example, http(8gx) defaults
-to config_file_path=/etc/gromox/http:/etc/gromox, so the mysql_adaptor(4gx)
-plugin as loaded by http will first try
-/etc/gromox/http/mysql_adaptor.cfg, then /etc/gromox/mysql_adaptor.cfg. This
-allows having one file that is shared between multiple programs as well as
-being able to override on a per program-basis.
-.SH Databases
-.IP \(bu 4
-User information is held in a MariaDB/MySQL database. This database can be
-accessed by multiple Gromox servers, and so enables distributed Gromox
-operation. The MariaDB system itself provides the necessary utilities for
-distributing or replicating this database.
-.IP \(bu 4
-Per-user e-mail messages are stored in a SQLite database (e.g.
-/var/lib/gromox/user/m1/1/1/exchange.sqlite3), as is a message index (e.g.
-/var/lib/gromox/user/m1/1/1/midb.sqlite3). These are normally only used by one
-system, but can be shared through network filesystems provided that file
-locking is properly implemented in the filesystem driver. Normal file
-mechanisms can be used to backup or transfer the database to another Gromox
-host.
 .SH Manual page listing
 Gromox documentation consists of at least a dozen manual pages ("manpages") on
 its individual components. We have grouped these according to their principal
@@ -185,6 +153,38 @@ gromox\-pffimport(8gx): replaced by gromox\-pff2mt and gromox\-mt2exm.
 .SS Language bindings
 .IP \(bu 4
 mapi(4gx) \(em PHP module providing MAPI functions
+.SH Configuration files
+Program configuration files reside within /etc/gromox. The format for .cfg
+files is: one "key=value" pair per line. Empty lines are ignored, as are lines
+beginning with a '#' character. Lines can have a maximum length of 1024. Each
+key=value line is logically split at the equals sign, and whitespace is trimmed
+around key and value. Comments at the end of a value are not supported. Escape
+sequences are not supported.
+.PP
+The format for .ini files is: one "key=value" pair per line. Empty lines are
+ignored, as are lines beginning with a ';' character.
+.PP
+Many programs have a \fBconfig_file_path\fP directive with which the search
+path for further config files can be specified. For example, http(8gx) defaults
+to config_file_path=/etc/gromox/http:/etc/gromox, so the mysql_adaptor(4gx)
+plugin as loaded by http will first try
+/etc/gromox/http/mysql_adaptor.cfg, then /etc/gromox/mysql_adaptor.cfg. This
+allows having one file that is shared between multiple programs as well as
+being able to override on a per program-basis.
+.SH Databases
+.IP \(bu 4
+User information is held in a MariaDB/MySQL database. This database can be
+accessed by multiple Gromox servers, and so enables distributed Gromox
+operation. The MariaDB system itself provides the necessary utilities for
+distributing or replicating this database.
+.IP \(bu 4
+Per-user e-mail messages are stored in a SQLite database (e.g.
+/var/lib/gromox/user/m1/1/1/exchange.sqlite3), as is a message index (e.g.
+/var/lib/gromox/user/m1/1/1/midb.sqlite3). These are normally only used by one
+system, but can be shared through network filesystems provided that file
+locking is properly implemented in the filesystem driver. Normal file
+mechanisms can be used to backup or transfer the database to another Gromox
+host.
 .SH Listening sockets
 .IP \(bu 4
 /run/gromox/zcore.sock \(em zcore(8gx)
