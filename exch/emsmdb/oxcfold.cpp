@@ -363,16 +363,12 @@ uint32_t rop_setsearchcriteria(RESTRICTION *pres,
 	uint32_t permission;
 	uint32_t search_status;
 	
-	if (0 == (search_flags & SEARCH_FLAG_RESTART) &&
-		0 == (search_flags & SEARCH_FLAG_STOP)) {
+	if (!(search_flags & (RESTART_SEARCH | STOP_SEARCH)))
 		/* make the default search_flags */
-		search_flags |= SEARCH_FLAG_STOP;	
-	}
-	if (0 == (search_flags & SEARCH_FLAG_RECURSIVE) &&
-		0 == (search_flags & SEARCH_FLAG_SHALLOW)) {
+		search_flags |= STOP_SEARCH;
+	if (!(search_flags & (RECURSIVE_SEARCH | SHALLOW_SEARCH)))
 		/* make the default search_flags */
-		search_flags |= SEARCH_FLAG_SHALLOW;
-	}
+		search_flags |= SHALLOW_SEARCH;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -400,13 +396,12 @@ uint32_t rop_setsearchcriteria(RESTRICTION *pres,
 		if (SEARCH_STATUS_NOT_INITIALIZED == search_status) {
 			return ecNotInitialized;
 		}
-		if (0 == (search_flags & SEARCH_FLAG_RESTART) &&
-			NULL == pres && 0 == pfolder_ids->count) {
+		if (!(search_flags & RESTART_SEARCH) && pres == nullptr &&
+		    pfolder_ids->count == 0)
 			/* stop static search folder has no meaning,
 				status of dynamic running search folder
 				cannot be changed */
 			return ecSuccess;
-		}
 	}
 	for (size_t i = 0; i < pfolder_ids->count; ++i) {
 		if (1 != rop_util_get_replid(pfolder_ids->pll[i])) {

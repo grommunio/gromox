@@ -122,11 +122,8 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 			break;
 		}
 		search_flags = sqlite3_column_int64(pstmt, 1);
-		if ((0 == search_flags) || (search_flags &
-			SEARCH_FLAG_STATIC) || (search_flags &
-			SEARCH_FLAG_STOP)) {
+		if (search_flags == 0 || (search_flags & (STATIC_SEARCH | STOP_SEARCH)))
 			continue;
-		}
 		pdynamic = me_alloc<DYNAMIC_NODE>();
 		if (NULL == pdynamic) {
 			break;
@@ -932,7 +929,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 	uint64_t message_id;
 	char sql_string[128];
 
-	if (!(pdynamic->search_flags & SEARCH_FLAG_RECURSIVE))
+	if (!(pdynamic->search_flags & RECURSIVE_SEARCH))
 		return;
 
 	if (!common_util_check_descendant(pdb->psqlite,
@@ -1000,7 +997,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 	BOOL b_included;
 	char sql_string[128];
 
-	if (pdynamic->search_flags & SEARCH_FLAG_RECURSIVE) {
+	if (pdynamic->search_flags & RECURSIVE_SEARCH) {
 		if (!common_util_check_descendant(pdb->psqlite,
 		    id1, pdynamic->folder_ids.pll[i], &b_included)) {
 			debug_info("[db_engine]: fatal error in"

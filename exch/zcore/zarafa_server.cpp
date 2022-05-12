@@ -5000,12 +5000,12 @@ uint32_t zarafa_server_setsearchcriteria(
 	uint32_t search_status;
 	LONGLONG_ARRAY folder_ids;
 	
-	if (!(flags & (SEARCH_FLAG_RESTART | SEARCH_FLAG_STOP)))
+	if (!(flags & (RESTART_SEARCH | STOP_SEARCH)))
 		/* make the default search_flags */
-		flags |= SEARCH_FLAG_RESTART;	
-	if (!(flags & (SEARCH_FLAG_RECURSIVE | SEARCH_FLAG_SHALLOW)))
+		flags |= RESTART_SEARCH;
+	if (!(flags & (RECURSIVE_SEARCH | SHALLOW_SEARCH)))
 		/* make the default search_flags */
-		flags |= SEARCH_FLAG_SHALLOW;
+		flags |= SHALLOW_SEARCH;
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -5031,10 +5031,9 @@ uint32_t zarafa_server_setsearchcriteria(
 		if (SEARCH_STATUS_NOT_INITIALIZED == search_status) {
 			return ecNotInitialized;
 		}
-		if (0 == (flags & SEARCH_FLAG_RESTART) &&
-			NULL == prestriction && 0 == pfolder_array->count) {
+		if (!(flags & RESTART_SEARCH) && prestriction == nullptr &&
+		    pfolder_array->count == 0)
 			return ecSuccess;
-		}
 	}
 	folder_ids.count = pfolder_array->count;
 	folder_ids.pll   = cu_alloc<uint64_t>(folder_ids.count);

@@ -2026,23 +2026,19 @@ BOOL exmdb_server_get_search_criteria(
 	*psearch_status = 0;
 	if (db_engine_check_populating(dir, fid_val))
 		*psearch_status |= SEARCH_STATUS_REBUILD;
-	if (search_flags & SEARCH_FLAG_STATIC) {
-		if (search_flags & SEARCH_FLAG_RESTART) {
+	if (search_flags & STATIC_SEARCH) {
+		if (search_flags & RESTART_SEARCH)
 			*psearch_status |= SEARCH_STATUS_COMPLETE;
-		}
 	} else {
-		if (search_flags & SEARCH_FLAG_RESTART) {
+		if (search_flags & RESTART_SEARCH)
 			*psearch_status |= SEARCH_STATUS_RUNNING;
-		}
 	}
-	if (search_flags & SEARCH_FLAG_RECURSIVE) {
+	if (search_flags & RECURSIVE_SEARCH)
 		*psearch_status |= SEARCH_STATUS_RECURSIVE;
-	}
-	if (search_flags & SEARCH_FLAG_CONTENT_INDEXED) {
+	if (search_flags & CONTENT_INDEXED_SEARCH)
 		*psearch_status |= SEARCH_STATUS_CI_TOTALLY;
-	} else {
+	else
 		*psearch_status |= SEARCH_STATUS_TWIR_TOTALLY;
-	}
 	return TRUE;
 }
 
@@ -2201,17 +2197,16 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		if (!common_util_load_search_scopes(pdb->psqlite, fid_val, &folder_ids))
 			return false;
 	}
-	b_recursive = (search_flags & SEARCH_FLAG_RECURSIVE) ? TRUE : false;
+	b_recursive = (search_flags & RECURSIVE_SEARCH) ? TRUE : false;
 	b_update = FALSE;
 	b_populate = FALSE;
 	if (!folder_clear_search_folder(pdb, cpid, fid_val))
 		return false;
 	sql_transact.commit();
-	if (search_flags & SEARCH_FLAG_RESTART) {
+	if (search_flags & RESTART_SEARCH) {
 		b_populate = TRUE;
-		if (0 == (search_flags & SEARCH_FLAG_STATIC)) {
+		if (!(search_flags & STATIC_SEARCH))
 			b_update = TRUE;
-		}
 	}
 	if (b_update)
 		db_engine_update_dynamic(pdb, fid_val,

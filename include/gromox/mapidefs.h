@@ -2019,6 +2019,18 @@ struct FORWARDDELEGATE_ACTION {
 	RECIPIENT_BLOCK *pblock;
 };
 
+enum { /* for SetSearchCriteria */
+	STOP_SEARCH                = 0x1,
+	RESTART_SEARCH             = 0x2,
+	RECURSIVE_SEARCH           = 0x4,
+	SHALLOW_SEARCH             = 0x8,
+	FOREGROUND_SEARCH          = 0x10,
+	BACKGROUND_SEARCH          = 0x20,
+	CONTENT_INDEXED_SEARCH     = 0x10000,
+	NON_CONTENT_INDEXED_SEARCH = 0x20000,
+	STATIC_SEARCH              = 0x40000,
+};
+
 extern const FLATUID
 	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,
