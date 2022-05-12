@@ -131,7 +131,7 @@ BOOL db_engine_enqueue_populating_criteria(
 	const char *dir, uint32_t cpid, uint64_t folder_id,
 	BOOL b_recursive, const RESTRICTION *prestriction,
 	const LONGLONG_ARRAY *pfolder_ids);
-BOOL db_engine_check_populating(const char *dir, uint64_t folder_id);
+extern bool db_engine_check_populating(const char *dir, uint64_t folder_id);
 extern void db_engine_update_dynamic(db_item_ptr &, uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
 extern void db_engine_delete_dynamic(db_item_ptr &, uint64_t folder_id);
 extern void db_engine_proc_dynamic_event(db_item_ptr &, uint32_t cpid, int event_type, uint64_t id1, uint64_t id2, uint64_t id3);

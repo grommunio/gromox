@@ -833,7 +833,7 @@ BOOL db_engine_enqueue_populating_criteria(
 	return TRUE;
 }
 
-BOOL db_engine_check_populating(const char *dir, uint64_t folder_id)
+bool db_engine_check_populating(const char *dir, uint64_t folder_id)
 {
 	DOUBLE_LIST_NODE *pnode;
 	POPULATING_NODE *psearch;
@@ -844,7 +844,7 @@ BOOL db_engine_check_populating(const char *dir, uint64_t folder_id)
 		psearch = (POPULATING_NODE*)pnode->pdata;
 		if (0 == strcmp(psearch->dir, dir) &&
 			folder_id == psearch->folder_id) {
-			return TRUE;
+			return true;
 		}
 	}
 	for (pnode=double_list_get_head(&g_populating_list1); NULL!=pnode;
@@ -852,10 +852,10 @@ BOOL db_engine_check_populating(const char *dir, uint64_t folder_id)
 		psearch = (POPULATING_NODE*)pnode->pdata;
 		if (0 == strcmp(psearch->dir, dir) &&
 			folder_id == psearch->folder_id) {
-			return TRUE;
+			return true;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 void db_engine_update_dynamic(db_item_ptr &pdb, uint64_t folder_id,
