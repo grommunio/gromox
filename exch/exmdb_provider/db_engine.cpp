@@ -11,6 +11,7 @@
 #include <mutex>
 #include <pthread.h>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
@@ -101,7 +102,7 @@ static std::condition_variable g_waken_cond;
 static std::unordered_map<std::string, DB_ITEM> g_hash_table;
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
-unsigned int g_exmdb_schema_upgrades;
+unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 
 static void db_engine_notify_content_table_modify_row(db_item_ptr &, uint64_t folder_id, uint64_t message_id);
 
@@ -457,9 +458,10 @@ static BOOL db_engine_search_folder(const char *dir,
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
 		if (g_notify_stop)
 			break;
-		if (200 == count) {
+		if (count == g_exmdb_search_pacing) {
 			pdb.reset();
 			exmdb_server_free_environment();
+			// std::this_thread::yield(); // +2~3% walltime
 			exmdb_server_build_env(EM_PRIVATE, dir);
 			pdb = db_engine_get_db(dir);
 			if (pdb == nullptr || pdb->psqlite == nullptr) {

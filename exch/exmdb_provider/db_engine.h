@@ -152,4 +152,4 @@ extern void db_engine_begin_batch_mode(db_item_ptr &);
 extern void db_engine_commit_batch_mode(db_item_ptr &&);
 extern void db_engine_cancel_batch_mode(db_item_ptr &);
 
-extern unsigned int g_exmdb_schema_upgrades;
+extern unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;

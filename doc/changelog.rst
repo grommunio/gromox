@@ -1,4 +1,4 @@
-1.22.8
+1.22.9
 ======
 
 Fixes:
@@ -6,6 +6,10 @@ Fixes:
 * exmdb_provider: fix search opening the exmdb store with wrong flags
   and skipping 200 messages during the search operation
 * exmdb_provider: speed up Online Mode searches by 14 to 18-fold
+
+Enhancements:
+
+* exmdb_provider: add a config directive "exmdb_search_pacing"
 
 
 1.22 (2022-05-12)
