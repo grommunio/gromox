@@ -460,7 +460,6 @@ static BOOL db_engine_search_folder(const char *dir,
 		if (200 == count) {
 			pdb.reset();
 			exmdb_server_free_environment();
-			sleep(1);
 			exmdb_server_build_env(EM_PRIVATE, dir);
 			pdb = db_engine_get_db(dir);
 			if (pdb == nullptr || pdb->psqlite == nullptr) {
