@@ -76,7 +76,7 @@ std::string RESTRICTION_AND_OR::repr() const
 {
 	auto s = std::to_string(count);
 	for (size_t i = 0; i < count; ++i)
-		s += "," + pres->repr();
+		s += "," + pres[i].repr();
 	return "RES_AOR{" + std::move(s) + "}";
 }
 
