@@ -95,8 +95,8 @@ static std::vector<pthread_t> g_thread_ids;
 static std::mutex g_list_lock, g_hash_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static std::unordered_map<std::string, DB_ITEM> g_hash_table;
-static DOUBLE_LIST g_populating_list;
-static DOUBLE_LIST g_populating_list1;
+/* List of queued searchcriteria, and list of searchcriteria evaluated right now */
+static DOUBLE_LIST g_populating_list, g_populating_list_active;
 unsigned int g_exmdb_schema_upgrades;
 
 static void db_engine_notify_content_table_modify_row(db_item_ptr &, uint64_t folder_id, uint64_t message_id);
@@ -512,7 +512,7 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 static void db_engine_free_populating_node(POPULATING_NODE *psearch)
 {
 	std::unique_lock lhold(g_list_lock);
-	double_list_remove(&g_populating_list1, &psearch->node);
+	double_list_remove(&g_populating_list_active, &psearch->node);
 	lhold.unlock();
 	free(psearch->dir);
 	restriction_free(psearch->prestriction);
@@ -634,7 +634,7 @@ static void *mdpeng_thrwork(void *param)
 		pnode = double_list_pop_front(&g_populating_list);
 		if (pnode == nullptr)
 			continue;
-		double_list_append_as_tail(&g_populating_list1, pnode);
+		double_list_append_as_tail(&g_populating_list_active, pnode);
 		lhold.unlock();
 		auto psearch = static_cast<POPULATING_NODE *>(pnode->pdata);
 		auto cl_0 = make_scope_exit([&]() { db_engine_free_populating_node(psearch); });
@@ -715,7 +715,7 @@ void db_engine_init(size_t table_size, int cache_interval,
 	g_threads_num = threads_num;
 	g_thread_ids.reserve(g_threads_num);
 	double_list_init(&g_populating_list);
-	double_list_init(&g_populating_list1);
+	double_list_init(&g_populating_list_active);
 }
 
 int db_engine_run()
@@ -786,7 +786,7 @@ void db_engine_stop()
 void db_engine_free()
 {
 	double_list_free(&g_populating_list);
-	double_list_free(&g_populating_list1);
+	double_list_free(&g_populating_list_active);
 }
 
 BOOL db_engine_enqueue_populating_criteria(
@@ -844,8 +844,8 @@ bool db_engine_check_populating(const char *dir, uint64_t folder_id)
 			return true;
 		}
 	}
-	for (pnode=double_list_get_head(&g_populating_list1); NULL!=pnode;
-		pnode=double_list_get_after(&g_populating_list1, pnode)) {
+	for (pnode = double_list_get_head(&g_populating_list_active); pnode != nullptr;
+	     pnode = double_list_get_after(&g_populating_list_active, pnode)) {
 		psearch = (POPULATING_NODE*)pnode->pdata;
 		if (0 == strcmp(psearch->dir, dir) &&
 			folder_id == psearch->folder_id) {
