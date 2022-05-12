@@ -632,13 +632,10 @@ static void *mdpeng_thrwork(void *param)
 			break;
 		std::unique_lock lhold(g_list_lock);
 		pnode = double_list_pop_front(&g_populating_list);
-		if (NULL != pnode) {
-			double_list_append_as_tail(&g_populating_list1, pnode);
-		}
-		lhold.unlock();
-		if (NULL == pnode) {
+		if (pnode == nullptr)
 			continue;
-		}
+		double_list_append_as_tail(&g_populating_list1, pnode);
+		lhold.unlock();
 		auto psearch = static_cast<POPULATING_NODE *>(pnode->pdata);
 		auto cl_0 = make_scope_exit([&]() { db_engine_free_populating_node(psearch); });
 		auto pfolder_ids = eid_array_init();
