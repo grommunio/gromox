@@ -1,3 +1,12 @@
+1.22.7
+======
+
+Fixes:
+
+* exmdb_provider: fix search opening the exmdb store with wrong flags
+  and skipping 200 messages during the search operation
+
+
 1.22 (2022-05-12)
 =================
 

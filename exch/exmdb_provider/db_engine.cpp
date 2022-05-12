@@ -641,7 +641,7 @@ static void *mdpeng_thrwork(void *param)
 			goto NEXT_SEARCH;	
 		}
 		auto cl_1 = make_scope_exit([&]() { eid_array_free(pfolder_ids); });
-		exmdb_server_build_env(EM_LOCAL, psearch->dir.c_str());
+		exmdb_server_build_env(EM_PRIVATE, psearch->dir.c_str());
 		auto cl_2 = make_scope_exit(exmdb_server_free_environment);
 		for (size_t i = 0; i < psearch->folder_ids.count; ++i) {
 			if (!eid_array_append(pfolder_ids,
