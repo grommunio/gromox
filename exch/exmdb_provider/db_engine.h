@@ -115,7 +115,6 @@ struct DB_ITEM {
 extern void db_engine_init(size_t table_size, int cache_interval, BOOL async, BOOL wal, uint64_t mmap_size, unsigned int threads_num);
 extern int db_engine_run();
 extern void db_engine_stop();
-extern void db_engine_free();
 void db_engine_put_db(DB_ITEM *pdb);
 
 class db_item_deleter {

@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <list>
 #include <mutex>
 #include <pthread.h>
 #include <string>
@@ -43,13 +44,16 @@ using namespace gromox;
 namespace {
 
 struct POPULATING_NODE {
-	DOUBLE_LIST_NODE node;
-	char *dir;
-	uint32_t cpid;
-	uint64_t folder_id;
-	BOOL b_recursive;
-	RESTRICTION *prestriction;
-	LONGLONG_ARRAY folder_ids;
+	POPULATING_NODE() = default;
+	~POPULATING_NODE();
+	NOMOVE(POPULATING_NODE);
+
+	std::string dir;
+	uint32_t cpid = 0;
+	uint64_t folder_id = 0;
+	BOOL b_recursive = false;
+	RESTRICTION *prestriction = nullptr;
+	LONGLONG_ARRAY folder_ids{};
 };
 
 struct ID_ARRAYS {
@@ -96,7 +100,7 @@ static std::mutex g_list_lock, g_hash_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static std::unordered_map<std::string, DB_ITEM> g_hash_table;
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
-static DOUBLE_LIST g_populating_list, g_populating_list_active;
+static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
 unsigned int g_exmdb_schema_upgrades;
 
 static void db_engine_notify_content_table_modify_row(db_item_ptr &, uint64_t folder_id, uint64_t message_id);
@@ -509,15 +513,10 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 	return TRUE;
 }
 
-static void db_engine_free_populating_node(POPULATING_NODE *psearch)
+POPULATING_NODE::~POPULATING_NODE()
 {
-	std::unique_lock lhold(g_list_lock);
-	double_list_remove(&g_populating_list_active, &psearch->node);
-	lhold.unlock();
-	free(psearch->dir);
-	restriction_free(psearch->prestriction);
-	free(psearch->folder_ids.pll);
-	free(psearch);
+	restriction_free(prestriction);
+	free(folder_ids.pll);
 }
 
 static ID_ARRAYS *db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
@@ -631,19 +630,18 @@ static void *mdpeng_thrwork(void *param)
 		if (g_notify_stop)
 			break;
 		std::unique_lock lhold(g_list_lock);
-		pnode = double_list_pop_front(&g_populating_list);
-		if (pnode == nullptr)
+		if (g_populating_list.size() == 0)
 			continue;
-		double_list_append_as_tail(&g_populating_list_active, pnode);
+		g_populating_list_active.splice(g_populating_list_active.end(), g_populating_list, g_populating_list.begin());
+		auto psearch = std::prev(g_populating_list_active.end());
 		lhold.unlock();
-		auto psearch = static_cast<POPULATING_NODE *>(pnode->pdata);
-		auto cl_0 = make_scope_exit([&]() { db_engine_free_populating_node(psearch); });
+		auto cl_0 = make_scope_exit([&]() { g_populating_list_active.erase(psearch); });
 		auto pfolder_ids = eid_array_init();
 		if (NULL == pfolder_ids) {
 			goto NEXT_SEARCH;	
 		}
 		auto cl_1 = make_scope_exit([&]() { eid_array_free(pfolder_ids); });
-		exmdb_server_build_env(EM_LOCAL, psearch->dir);
+		exmdb_server_build_env(EM_LOCAL, psearch->dir.c_str());
 		auto cl_2 = make_scope_exit(exmdb_server_free_environment);
 		for (size_t i = 0; i < psearch->folder_ids.count; ++i) {
 			if (!eid_array_append(pfolder_ids,
@@ -652,23 +650,21 @@ static void *mdpeng_thrwork(void *param)
 			}
 			if (!psearch->b_recursive)
 				continue;
-			if (!db_engine_load_folder_descendant(
-				psearch->dir, psearch->b_recursive,
-				psearch->folder_ids.pll[i], pfolder_ids)) {
+			if (!db_engine_load_folder_descendant(psearch->dir.c_str(),
+			    psearch->b_recursive, psearch->folder_ids.pll[i], pfolder_ids))
 				goto NEXT_SEARCH;
-			}
 		}
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
 			if (g_notify_stop)
 				break;
-			if (!db_engine_search_folder(psearch->dir,
+			if (!db_engine_search_folder(psearch->dir.c_str(),
 			    psearch->cpid, psearch->folder_id,
 			    pfolder_ids->pids[i], psearch->prestriction))
 				break;	
 		}
 		if (g_notify_stop)
 			break;
-		auto pdb = db_engine_get_db(psearch->dir);
+		auto pdb = db_engine_get_db(psearch->dir.c_str());
 		if (pdb == nullptr || pdb->psqlite == nullptr)
 			goto NEXT_SEARCH;
 		db_engine_notify_search_completion(
@@ -695,7 +691,7 @@ static void *mdpeng_thrwork(void *param)
 		}
 		pdb.reset();
 		while (table_ids.size() > 0) {
-			exmdb_server_reload_content_table(psearch->dir, table_ids.back());
+			exmdb_server_reload_content_table(psearch->dir.c_str(), table_ids.back());
 			table_ids.pop_back();
 		}
 		goto NEXT_SEARCH;
@@ -714,8 +710,6 @@ void db_engine_init(size_t table_size, int cache_interval,
 	g_mmap_size = mmap_size;
 	g_threads_num = threads_num;
 	g_thread_ids.reserve(g_threads_num);
-	double_list_init(&g_populating_list);
-	double_list_init(&g_populating_list_active);
 }
 
 int db_engine_run()
@@ -757,9 +751,6 @@ int db_engine_run()
 
 void db_engine_stop()
 {
-	DOUBLE_LIST_NODE *pnode;
-	POPULATING_NODE *psearch;
-	
 	if (!g_notify_stop) {
 		g_notify_stop = true;
 		if (!pthread_equal(g_scan_tid, {})) {
@@ -774,47 +765,24 @@ void db_engine_stop()
 	}
 	g_thread_ids.clear();
 	g_hash_table.clear();
-	while ((pnode = double_list_pop_front(&g_populating_list)) != nullptr) {
-		psearch = (POPULATING_NODE*)pnode->pdata;
-		restriction_free(psearch->prestriction);
-		free(psearch->folder_ids.pll);
-		free(psearch);
-	}
+	g_populating_list.clear();
 	sqlite3_shutdown();
 }
 
-void db_engine_free()
+BOOL db_engine_enqueue_populating_criteria(const char *dir, uint32_t cpid,
+    uint64_t folder_id, BOOL b_recursive, const RESTRICTION *prestriction,
+    const LONGLONG_ARRAY *pfolder_ids) try
 {
-	double_list_free(&g_populating_list);
-	double_list_free(&g_populating_list_active);
-}
-
-BOOL db_engine_enqueue_populating_criteria(
-	const char *dir, uint32_t cpid, uint64_t folder_id,
-	BOOL b_recursive, const RESTRICTION *prestriction,
-	const LONGLONG_ARRAY *pfolder_ids)
-{
-	auto psearch = me_alloc<POPULATING_NODE>();
-	if (NULL == psearch) {
-		return FALSE;
-	}
-	psearch->node.pdata = psearch;
-	psearch->dir = strdup(dir);
-	if (NULL == psearch->dir) {
-		free(psearch);
-		return FALSE;
-	}
+	std::list<POPULATING_NODE> holder;
+	holder.emplace_back();
+	auto psearch = &holder.back();
+	psearch->dir = dir;
 	psearch->prestriction = restriction_dup(prestriction);
 	if (NULL == psearch->prestriction) {
-		free(psearch->dir);
-		free(psearch);
 		return FALSE;
 	}
 	psearch->folder_ids.pll = me_alloc<uint64_t>(pfolder_ids->count);
 	if (NULL == psearch->folder_ids.pll) {
-		restriction_free(psearch->prestriction);
-		free(psearch->dir);
-		free(psearch);
 		return FALSE;
 	}
 	memcpy(psearch->folder_ids.pll, pfolder_ids->pll,
@@ -824,34 +792,24 @@ BOOL db_engine_enqueue_populating_criteria(
 	psearch->b_recursive = b_recursive;
 	psearch->folder_ids.count = pfolder_ids->count;
 	std::unique_lock lhold(g_list_lock);
-	double_list_append_as_tail(&g_populating_list, &psearch->node);
+	g_populating_list.splice(g_populating_list.end(), std::move(holder));
 	lhold.unlock();
 	g_waken_cond.notify_one();
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1962: ENOMEM\n");
+	return false;
 }
 
 bool db_engine_check_populating(const char *dir, uint64_t folder_id)
 {
-	DOUBLE_LIST_NODE *pnode;
-	POPULATING_NODE *psearch;
-	
 	std::lock_guard lhold(g_list_lock);
-	for (pnode=double_list_get_head(&g_populating_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_populating_list, pnode)) {
-		psearch = (POPULATING_NODE*)pnode->pdata;
-		if (0 == strcmp(psearch->dir, dir) &&
-			folder_id == psearch->folder_id) {
+	for (const auto &e : g_populating_list)
+		if (e.dir == dir && e.folder_id == folder_id)
 			return true;
-		}
-	}
-	for (pnode = double_list_get_head(&g_populating_list_active); pnode != nullptr;
-	     pnode = double_list_get_after(&g_populating_list_active, pnode)) {
-		psearch = (POPULATING_NODE*)pnode->pdata;
-		if (0 == strcmp(psearch->dir, dir) &&
-			folder_id == psearch->folder_id) {
+	for (const auto &e : g_populating_list_active)
+		if (e.dir == dir && e.folder_id == folder_id)
 			return true;
-		}
-	}
 	return false;
 }
 

@@ -201,24 +201,21 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		
 		if (bounce_producer_run(get_data_path()) != 0) {
 			printf("[exmdb_provider]: failed to run bounce producer\n");
-			db_engine_free();
 			return FALSE;
 		}
 		if (0 != exmdb_server_run()) {
 			printf("[exmdb_provider]: failed to run exmdb server\n");
 			db_engine_stop();
-			db_engine_free();
 			return FALSE;
 		}
 		if (0 != db_engine_run()) {
 			printf("[exmdb_provider]: failed to run db engine\n");
-			db_engine_free();
+			db_engine_stop();
 			return FALSE;
 		}
 		if (exmdb_parser_run(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb parser\n");
 			db_engine_stop();
-			db_engine_free();
 			return FALSE;
 		}
 		if (0 != exmdb_listener_trigger_accept()) {
@@ -226,7 +223,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			exmdb_listener_stop();
 			exmdb_parser_stop();
 			db_engine_stop();
-			db_engine_free();
 			return FALSE;
 		}
 		if (exmdb_client_run_front(get_config_path()) != 0) {
@@ -234,7 +230,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			exmdb_listener_stop();
 			exmdb_parser_stop();
 			db_engine_stop();
-			db_engine_free();
 			return FALSE;
 		}
 
@@ -252,7 +247,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		exmdb_listener_stop();
 		exmdb_parser_stop();
 		db_engine_stop();
-		db_engine_free();
 		return TRUE;
 	}
 	return TRUE;
