@@ -1,3 +1,25 @@
+1.22 (2022-05-12)
+=================
+
+Fixes:
+
+* imap: add a default for the `imap_cmd_debug` directive
+* service_loader: resolve crash when first module is unloadable
+* eml2mt, exm2eml: rectify wrong serivce plugin search path
+
+Enhancements:
+
+* eml2mt: add iCalendar and vCard file import
+* doc: added configuration file overview lists to gromox(7)
+* kdb2mt: skip IPM.MessageManager FAI messages (cause Outlook to sometimes
+  refuse opening a folder)
+
+Changes:
+
+* The `/usr/libexec/gromox/autodiscover` command has been renamed to just
+  `gromox-dscli`.
+
+
 1.21 (2022-05-08)
 =================
 
