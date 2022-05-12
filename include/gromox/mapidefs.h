@@ -2019,6 +2019,18 @@ struct FORWARDDELEGATE_ACTION {
 	RECIPIENT_BLOCK *pblock;
 };
 
+enum { /* for GetSearchCriteria */
+	SEARCH_RUNNING      = 0x1,
+	SEARCH_REBUILD      = 0x2,
+	SEARCH_RECURSIVE    = 0x4,
+	SEARCH_COMPLETE     = 0x1000,
+	SEARCH_PARTIAL      = 0x2000,
+	SEARCH_STATIC       = 0x10000,
+	SEARCH_MAYBE_STATIC = 0x20000,
+	CI_TOTALLY          = 0x1000000,
+	TWIR_TOTALLY        = 0x8000000,
+};
+
 enum { /* for SetSearchCriteria */
 	STOP_SEARCH                = 0x1,
 	RESTART_SEARCH             = 0x2,

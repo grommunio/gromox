@@ -2025,20 +2025,20 @@ BOOL exmdb_server_get_search_criteria(
 	}
 	*psearch_status = 0;
 	if (db_engine_check_populating(dir, fid_val))
-		*psearch_status |= SEARCH_STATUS_REBUILD;
+		*psearch_status |= SEARCH_REBUILD;
 	if (search_flags & STATIC_SEARCH) {
 		if (search_flags & RESTART_SEARCH)
-			*psearch_status |= SEARCH_STATUS_COMPLETE;
+			*psearch_status |= SEARCH_COMPLETE;
 	} else {
 		if (search_flags & RESTART_SEARCH)
-			*psearch_status |= SEARCH_STATUS_RUNNING;
+			*psearch_status |= SEARCH_RUNNING;
 	}
 	if (search_flags & RECURSIVE_SEARCH)
-		*psearch_status |= SEARCH_STATUS_RECURSIVE;
+		*psearch_status |= SEARCH_RECURSIVE;
 	if (search_flags & CONTENT_INDEXED_SEARCH)
-		*psearch_status |= SEARCH_STATUS_CI_TOTALLY;
+		*psearch_status |= CI_TOTALLY;
 	else
-		*psearch_status |= SEARCH_STATUS_TWIR_TOTALLY;
+		*psearch_status |= TWIR_TOTALLY;
 	return TRUE;
 }
 
