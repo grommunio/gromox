@@ -3806,10 +3806,9 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	}
 	snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT value FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
-	auto pstmt3 = gx_sql_prep(pdb->tables.psqlite, sql_string);
-	if (pstmt3 == nullptr) {
+	auto stm_sel_vtx = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	if (stm_sel_vtx == nullptr)
 		return FALSE;
-	}
 	uint64_t inst_id1 = rop_util_get_replid(inst_id) == 2 ?
 	                    rop_util_get_gc_value(inst_id) | 0x100000000000000ULL : 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -3839,15 +3838,14 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		row_id = sqlite3_column_int64(pstmt, 0);
 		i = depth;
 		while (true) {
-			sqlite3_bind_int64(pstmt3, 1, row_id);
+			stm_sel_vtx.bind_int64(1, row_id);
 			type = ptnode->psorts->psort[i].type;
 			if ((type & MVI_FLAG) == MVI_FLAG)
 				type &= ~MVI_FLAG;
-			if (SQLITE_ROW != sqlite3_step(pstmt3)) {
+			if (stm_sel_vtx.step() != SQLITE_ROW)
 				return FALSE;
-			}
-			pvalue = common_util_column_sqlite_statement(pstmt3, 0, type);
-			sqlite3_reset(pstmt3);
+			pvalue = common_util_column_sqlite_statement(stm_sel_vtx, 0, type);
+			stm_sel_vtx.reset();
 			if (NULL == pvalue) {
 				sqlite3_bind_null(pstmt1, i + 2);
 			} else if (!common_util_bind_sqlite_statement(pstmt1, i + 2, type, pvalue)) {
@@ -3895,7 +3893,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	uint64_t message_id;
 	uint8_t header_stat;
 	uint64_t current_id;
-	xstmt pstmt1, pstmt2, pstmt3;
+	xstmt pstmt1, pstmt2, stm_upd_tx;
 	char tmp_buff[1024];
 	char sql_string[1024];
 	struct stat node_stat;
@@ -4036,10 +4034,9 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET "
 		"row_stat=? WHERE row_id=?", ptnode->table_id);
-	pstmt3 = gx_sql_prep(pdb->tables.psqlite, sql_string);
-	if (pstmt3 == nullptr) {
+	stm_upd_tx = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	if (stm_upd_tx == nullptr)
 		return FALSE;
-	}
 	current_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		current_id ++;
@@ -4079,17 +4076,16 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		} else {
 			row_stat = depth >= ptnode->psorts->cexpanded;
 		}
-		sqlite3_bind_int64(pstmt3, 1, row_stat);
-		sqlite3_bind_int64(pstmt3, 2, row_id);
-		if (SQLITE_DONE != sqlite3_step(pstmt3)) {
+		stm_upd_tx.bind_int64(1, row_stat);
+		stm_upd_tx.bind_int64(2, row_id);
+		if (stm_upd_tx.step() != SQLITE_DONE)
 			return FALSE;
-		}
-		sqlite3_reset(pstmt3);
+		stm_upd_tx.reset();
 	}
 	pstmt.finalize();
 	pstmt1.finalize();
 	pstmt2.finalize();
-	pstmt3.finalize();
+	stm_upd_tx.finalize();
 	sqlite3_close(psqlite);
 	cl_0.release();
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=NULL", ptnode->table_id);

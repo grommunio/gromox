@@ -4619,9 +4619,9 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	         "propval FROM attachment_properties WHERE attachment_id=?");
 	if (pstmt2 == nullptr)
 		return FALSE;
-	auto pstmt3 = gx_sql_prep(psqlite, "SELECT message_id"
+	auto stm_sel_mid = gx_sql_prep(psqlite, "SELECT message_id"
 	              " FROM messages WHERE parent_attid=?");
-	if (pstmt3 == nullptr)
+	if (stm_sel_mid == nullptr)
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		tmp_id = sqlite3_column_int64(pstmt, 0);
@@ -4633,10 +4633,10 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		if (sqlite3_step(pstmt2) != SQLITE_DONE)
 			return FALSE;
 		sqlite3_reset(pstmt2);
-		sqlite3_bind_int64(pstmt3, 1, tmp_id);
-		if (SQLITE_ROW == sqlite3_step(pstmt3)) {
+		stm_sel_mid.bind_int64(1, tmp_id);
+		if (stm_sel_mid.step() == SQLITE_ROW) {
 			if (!common_util_copy_message_internal(psqlite, TRUE,
-			    sqlite3_column_int64(pstmt3, 0), last_id, &tmp_mid,
+			    stm_sel_mid.col_int64(0), last_id, &tmp_mid,
 			    &b_result, nullptr, nullptr))
 				return FALSE;
 			if (!b_result) {
@@ -4644,7 +4644,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 				return TRUE;
 			}
 		}
-		sqlite3_reset(pstmt3);
+		stm_sel_mid.reset();
 	}
 	*pb_result = TRUE;
 	return TRUE;
