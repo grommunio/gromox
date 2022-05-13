@@ -14,6 +14,9 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
 			" NULL in tpropval_array_append");
 		return true;
 	}
+	if (parray->count == 0 && parray->ppropval == nullptr &&
+	    !tpropval_array_init_internal(parray))
+		return false;
 	auto count = strange_roundup(parray->count, SR_GROW_TAGGED_PROPVAL);
 	if (parray->count + 1U >= count) {
 		count += SR_GROW_TAGGED_PROPVAL;
