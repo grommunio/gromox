@@ -1,20 +1,21 @@
-1.22.10
-=======
+1.23 (2022-05-13)
+=================
 
 Fixes:
 
 * exmdb_provider: fix search opening the exmdb store with wrong flags
   and skipping 200 messages during the search operation
 * exmdb_provider: speed up Online Mode searches by 14 to 18-fold
+* mt2exm: avoid crash when an import message has no properties at all
 
 Enhancements:
 
-* exmdb_provider: add a config directive "exmdb_search_pacing"
+* exmdb_provider: add a config directive ``exmdb_search_pacing``
 
 Changes:
 
-* kdb2mt: skip IPM.Microsoft.FolderDesign.NamedView rather than
-  IPM.MessageManager
+* kdb2mt: skip ``IPM.Microsoft.FolderDesign.NamedView`` rather than
+  ``IPM.MessageManager`` messages
 
 
 1.22 (2022-05-12)
