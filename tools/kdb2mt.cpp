@@ -966,7 +966,8 @@ static bool is_problematic_message(const TPROPVAL_ARRAY &props)
 	auto flags = props.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	auto mcls  = props.get<const char>(PR_MESSAGE_CLASS);
 	return flags != nullptr && mcls != nullptr &&
-	       *flags & MSGFLAG_ASSOCIATED && strcmp(mcls, "IPM.MessageManager") == 0;
+	       *flags & MSGFLAG_ASSOCIATED &&
+	       strcmp(mcls, "IPM.Microsoft.FolderDesign.NamedView") == 0;
 }
 
 static int do_message(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)

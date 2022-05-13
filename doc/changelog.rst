@@ -1,5 +1,5 @@
-1.22.9
-======
+1.22.10
+=======
 
 Fixes:
 
@@ -10,6 +10,11 @@ Fixes:
 Enhancements:
 
 * exmdb_provider: add a config directive "exmdb_search_pacing"
+
+Changes:
+
+* kdb2mt: skip IPM.Microsoft.FolderDesign.NamedView rather than
+  IPM.MessageManager
 
 
 1.22 (2022-05-12)
