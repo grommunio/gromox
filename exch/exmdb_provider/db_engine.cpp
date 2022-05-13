@@ -1662,14 +1662,13 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 		if (pstmt3 == nullptr) {
 			continue;
 		}
-		xstmt pstmt4;
+		xstmt stm_set_ex;
 		if (0 != ptable->extremum_tag) {
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET "
 			         "extremum=? WHERE row_id=?", ptable->table_id);
-			pstmt4 = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt4 == nullptr) {
+			stm_set_ex = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			if (stm_set_ex == nullptr)
 				continue;
-			}
 		}
 		BOOL b_resorted = FALSE;
 		DOUBLE_LIST notify_list;
@@ -1818,16 +1817,14 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				continue;
 			}
 			pvalue = propvals[ptable->psorts->ccategories].pvalue;
-			if (NULL == pvalue) {
-				sqlite3_bind_null(pstmt4, 1);
-			} else if (!common_util_bind_sqlite_statement(pstmt4, 1, type, pvalue)) {
+			if (pvalue == nullptr)
+				stm_set_ex.bind_null(1);
+			else if (!common_util_bind_sqlite_statement(stm_set_ex, 1, type, pvalue))
 				return;
-			}
-			sqlite3_bind_int64(pstmt4, 2, row_id);
-			if (SQLITE_DONE != sqlite3_step(pstmt4)) {
+			stm_set_ex.bind_int64(2, row_id);
+			if (stm_set_ex.step() != SQLITE_DONE)
 				return;
-			}
-			sqlite3_reset(pstmt4);
+			stm_set_ex.reset();
 			table_sort = ptable->psorts->psort[
 			             ptable->psorts->ccategories - 1].table_sort;
 			auto prev_id = -static_cast<int64_t>(parent_id);
@@ -1906,7 +1903,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 		pstmt.finalize();
 		pstmt1.finalize();
 		pstmt2.finalize();
-		pstmt4.finalize();
+		stm_set_ex.finalize();
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=NULL", ptable->table_id);
 		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 			return;
@@ -2709,7 +2706,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		if (pstmt1 == nullptr) {
 			continue;
 		}
-		xstmt pstmt2, pstmt3, pstmt4;
+		xstmt pstmt2, pstmt3, stm_sel_ex;
 		if (0 != ptable->extremum_tag) {
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET "
 				"extremum=? WHERE row_id=?", ptable->table_id);
@@ -2725,10 +2722,9 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			}
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, inst_id, "
 				"extremum FROM t%u WHERE prev_id=?", ptable->table_id);
-			pstmt4 = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt4 == nullptr) {
+			stm_sel_ex = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			if (stm_sel_ex == nullptr)
 				continue;
-			}
 		}
 		double_list_init(&notify_list);
 		for (pnode1=double_list_get_head(&tmp_list); NULL!=pnode1;
@@ -2833,15 +2829,14 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			prev_id = -parent_id;
 			row_id1 = 0;
 			b_break = FALSE;
-			sqlite3_bind_int64(pstmt4, 1, prev_id);
-			while (SQLITE_ROW == sqlite3_step(pstmt4)) {
-				if (gx_sql_col_uint64(pstmt4, 0) != row_id &&
+			stm_sel_ex.bind_int64(1, prev_id);
+			while (stm_sel_ex.step() == SQLITE_ROW) {
+				if (stm_sel_ex.col_uint64(0) != row_id &&
 				    row_id1 != 0 && row_id != row_id1)
 					prev_id = row_id1;
-				row_id1 = sqlite3_column_int64(pstmt4, 0);
+				row_id1 = stm_sel_ex.col_int64(0);
 				if (row_id1 != row_id) {
-					pvalue = common_util_column_sqlite_statement(
-												pstmt4, 2, type);
+					pvalue = common_util_column_sqlite_statement(stm_sel_ex, 2, type);
 					result = db_engine_compare_propval(
 								type, pvalue, pvalue1);
 					auto asc = table_sort == TABLE_SORT_ASCEND;
@@ -2850,10 +2845,10 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 						break;
 					}
 				}
-				sqlite3_reset(pstmt4);
-				sqlite3_bind_int64(pstmt4, 1, row_id1);
+				stm_sel_ex.reset();
+				stm_sel_ex.bind_int64(1, row_id1);
 			}
-			sqlite3_reset(pstmt4);
+			stm_sel_ex.reset();
 			if (row_id == row_id1) {
 				continue;
 			}
@@ -2905,7 +2900,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		if (0 != ptable->extremum_tag) {
 			pstmt2.finalize();
 			pstmt3.finalize();
-			pstmt4.finalize();
+			stm_sel_ex.finalize();
 		}
 		if (NULL != pnode1) {
 			continue;
