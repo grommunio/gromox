@@ -38,10 +38,9 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
 int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 {
 	auto parray = this;
-	int i;
 	void *pvalue;
 	
-	for (i=0; i<parray->count; i++) {
+	for (size_t i = 0; i < count; ++i) {
 		if (parray->ppropval[i].proptag != tag)
 			continue;
 		pvalue = parray->ppropval[i].pvalue;
@@ -60,9 +59,8 @@ int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 void TPROPVAL_ARRAY::erase(uint32_t proptag)
 {
 	auto parray = this;
-	int i;
 	
-	for (i=0; i<parray->count; i++) {
+	for (size_t i = 0; i < count; ++i) {
 		if (proptag != parray->ppropval[i].proptag)
 			continue;
 		propval_free(PROP_TYPE(proptag), parray->ppropval[i].pvalue);
@@ -98,12 +96,9 @@ TPROPVAL_ARRAY* tpropval_array_init()
 
 void tpropval_array_free_internal(TPROPVAL_ARRAY *parray)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (size_t i = 0; i < parray->count; ++i)
 		propval_free(PROP_TYPE(parray->ppropval[i].proptag),
 			parray->ppropval[i].pvalue);
-	}
 	free(parray->ppropval);
 }
 
@@ -116,12 +111,11 @@ void tpropval_array_free(TPROPVAL_ARRAY *parray)
 TPROPVAL_ARRAY *TPROPVAL_ARRAY::dup() const
 {
 	auto parray = this;
-	int i;
 	auto parray1 = tpropval_array_init();
 	if (NULL == parray1) {
 		return NULL;
 	}
-	for (i=0; i<parray->count; i++) {
+	for (size_t i = 0; i < count; ++i) {
 		if (!tpropval_array_append(parray1, parray->ppropval[i].proptag,
 		    parray->ppropval[i].pvalue)) {
 			tpropval_array_free(parray1);
