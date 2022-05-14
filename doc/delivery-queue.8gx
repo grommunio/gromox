@@ -70,6 +70,16 @@ The TCP port to expose the implicit-TLS SMTP protocol service on.
 .br
 Default: (unset)
 .TP
+\fBlda_thread_charge_num\fP
+The maximum number of connections that each thread is allowed to process.
+.br
+Default: \fI40\fP
+.TP
+\fBlda_thread_init_num\fP
+The minimum number of client processing threads to keep around.
+.br
+Default: \fI1\fP
+.TP
 \fBmail_max_length\fP
 Maximum permitted length of a message.
 .br
@@ -150,16 +160,6 @@ Default: \fIfalse\fP
 Directory for runtime variadic data.
 .br
 Default: \fI/var/lib/gromox\fP
-.TP
-\fBthread_charge_num\fP
-The maximum number of connections that each thread is allowed to process.
-.br
-Default: \fI40\fP
-.TP
-\fBthread_init_num\fP
-The minimum number of client processing threads to keep around.
-.br
-Default: \fI1\fP
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/smtp_code.txt: Mapping from internal SMTP error codes to

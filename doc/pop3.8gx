@@ -124,6 +124,16 @@ This flag controls the offering of the STARTTLS extension/STLS command (RFC
 .br
 Default: \fIfalse\fP
 .TP
+\fBpop3_thread_charge_num\fP
+The maximum number of connections that each thread is allowed to process.
+.br
+Default: \fI40\fP
+.TP
+\fBpop3_thread_init_num\fP
+The minimum number of client processing threads to keep around.
+.br
+Default: \fI1\fP
+.TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.
 To inhibit the switch, assign the empty value.
@@ -152,16 +162,6 @@ Default: \fI/usr/lib/gromox\fP
 Directory for runtime variadic data.
 .br
 Default: \fI/var/lib/gromox\fP
-.TP
-\fBthread_charge_num\fP
-The maximum number of connections that each thread is allowed to process.
-.br
-Default: \fI40\fP
-.TP
-\fBthread_init_num\fP
-The minimum number of client processing threads to keep around.
-.br
-Default: \fI1\fP
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/pop3_code.txt: Mapping from internal POP3 error codes to

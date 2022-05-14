@@ -63,6 +63,7 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
 	{"lda_listen_port", "25"},
 	{"lda_listen_tls_port", "0"},
+	{"lda_thread_charge_num", "400", CFG_SIZE, "4"},
 	{"listen_port", "lda_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "lda_listen_tls_port", CFG_ALIAS},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
@@ -77,7 +78,7 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"smtp_support_pipeline", "true", CFG_BOOL},
 	{"smtp_support_starttls", "false", CFG_BOOL},
 	{"state_path", PKGSTATEDIR},
-	{"thread_charge_num", "400", CFG_SIZE, "4"},
+	{"thread_charge_num", "lda_thread_charge_num", CFG_ALIAS},
 	CFG_TABLE_END,
 };
 
@@ -144,18 +145,15 @@ int main(int argc, const char **argv) try
 	printf("[system]: default domain is %s\n", str_val);
 	
 	g_config_file->get_uint("context_num", &scfg.context_num);
-	unsigned int thread_charge_num = 20;
-	if (g_config_file->get_uint("thread_charge_num", &thread_charge_num)) {
+	unsigned int thread_charge_num = g_config_file->get_ll("lda_thread_charge_num");
 		if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
-			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
+			resource_set_integer("lda_thread_charge_num", thread_charge_num);
 		}
-	}
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 	
-	unsigned int thread_init_num = 5;
-	g_config_file->get_uint("thread_init_num", &thread_init_num);
+	unsigned int thread_init_num = g_config_file->get_ll("lda_thread_init_num");
 	if (thread_init_num * thread_charge_num > scfg.context_num) {
 		thread_init_num = scfg.context_num / thread_charge_num;
 		if (0 == thread_init_num) {
@@ -164,7 +162,7 @@ int main(int argc, const char **argv) try
 			resource_set_integer("CONTEXT_NUM", scfg.context_num);
 			printf("[system]: rectify contexts number %d\n", scfg.context_num);
 		}
-		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
+		resource_set_integer("lda_thread_init_num", thread_init_num);
 	}
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);

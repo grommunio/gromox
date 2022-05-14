@@ -145,6 +145,16 @@ clients.
 .br
 Default: \fIfalse\fP
 .TP
+\fBimap_thread_charge_num\fP
+The maximum number of connections that each thread is allowed to process.
+.br
+Default: \fI40\fP
+.TP
+\fBimap_thread_init_num\fP
+The minimum number of client processing threads to keep around.
+.br
+Default: \fI1\fP
+.TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.
 .br
@@ -172,16 +182,6 @@ Default: \fI/usr/lib/gromox\fP
 Directory for runtime variadic data.
 .br
 Default: \fI/var/lib/gromox\fP
-.TP
-\fBthread_charge_num\fP
-The maximum number of connections that each thread is allowed to process.
-.br
-Default: \fI40\fP
-.TP
-\fBthread_init_num\fP
-The minimum number of client processing threads to keep around.
-.br
-Default: \fI1\fP
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/imap_code.txt: Mapping from internal IMAP error codes to

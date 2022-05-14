@@ -166,6 +166,16 @@ is false because you need a certificate for this first.
 .br
 Default: \fIfalse\fP
 .TP
+\fBhttp_thread_charge_num\fP
+The maximum number of connections that each thread is allowed to process.
+.br
+Default: \fI20\fP
+.TP
+\fBhttp_thread_init_num\fP
+The minimum number of client processing threads to keep around.
+.br
+Default: \fI5\fP
+.TP
 \fBproc_plugin_ignore_errors\fP
 If set to yes, processor plugins that fail to load on startup are ignored. If
 set to no, the daemon will exit if any plugin cannot be loaded.
@@ -221,16 +231,6 @@ Sets the TCP_MAXSEG socket option with the given MSS value for the listening
 socket(s), cf. tcp(7).
 .br
 Default: \fI0\fP (do not limit the MSS)
-.TP
-\fBthread_charge_num\fP
-The maximum number of connections that each thread is allowed to process.
-.br
-Default: \fI20\fP
-.TP
-\fBthread_init_num\fP
-The minimum number of client processing threads to keep around.
-.br
-Default: \fI5\fP
 .TP
 \fBuser_default_lang\fP
 Default: \fIen\fP

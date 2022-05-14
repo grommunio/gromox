@@ -68,12 +68,14 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"pop3_listen_port", "110"},
 	{"pop3_listen_tls_port", "0"},
 	{"pop3_support_stls", "false", CFG_BOOL},
+	{"pop3_thread_charge_num", "20", CFG_SIZE, "4"},
+	{"pop3_thread_init_num", "5", CFG_SIZE},
 	{"running_identity", "gromox"},
 	{"service_plugin_ignore_errors", "false", CFG_BOOL},
 	{"service_plugin_path", PKGLIBDIR},
 	{"state_path", PKGSTATEDIR},
-	{"thread_charge_num", "20", CFG_SIZE, "4"},
-	{"thread_init_num", "5", CFG_SIZE},
+	{"thread_charge_num", "pop3_thread_charge_num", CFG_ALIAS},
+	{"thread_init_num", "pop3_threaD_init_num", CFG_ALIAS},
 	CFG_TABLE_END,
 };
 
@@ -151,15 +153,15 @@ int main(int argc, const char **argv) try
 	printf("[system]: default domain is %s\n", str_val);
 
 	unsigned int context_num = g_config_file->get_ll("context_num");
-	unsigned int thread_charge_num = g_config_file->get_ll("thread_charge_num");
+	unsigned int thread_charge_num = g_config_file->get_ll("pop3_thread_charge_num");
 	if (thread_charge_num % 4 != 0) {
 		thread_charge_num = thread_charge_num / 4 * 4;
-		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
+		resource_set_integer("pop3_thread_charge_num", thread_charge_num);
 	}
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 
-	unsigned int thread_init_num = g_config_file->get_ll("thread_init_num");
+	unsigned int thread_init_num = g_config_file->get_ll("pop3_thread_init_num");
 	if (thread_init_num * thread_charge_num > context_num) {
 		thread_init_num = context_num / thread_charge_num;
 		if (0 == thread_init_num) {
@@ -168,7 +170,7 @@ int main(int argc, const char **argv) try
 			resource_set_integer("CONTEXT_NUM", context_num);
 			printf("[system]: rectify contexts number %d\n", context_num);
 		}
-		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
+		resource_set_integer("pop3_thread_init_num", thread_init_num);
 	}
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);
