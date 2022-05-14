@@ -434,7 +434,7 @@ static int list_mail(const char *path, const char *folder,
 	auto cl_0 = make_scope_exit([&]() { parray.clear(); });
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-UIDL %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	}
 
 	*psize = 0;
@@ -447,11 +447,11 @@ static int list_mail(const char *path, const char *folder,
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
 		
@@ -464,7 +464,7 @@ static int list_mail(const char *path, const char *folder,
 					num_buff[i-5] = '\0';
 					lines = strtol(num_buff, nullptr, 0);
 					if (lines < 0) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 					*pnum = lines;
 					last_pos = i + 2;
@@ -478,7 +478,7 @@ static int list_mail(const char *path, const char *folder,
 			}
 			if (-1 == lines) {
 				if (offset > 1024) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 				continue;
 			}
@@ -491,11 +491,11 @@ static int list_mail(const char *path, const char *folder,
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				pspace = static_cast<char *>(memchr(temp_line, ' ', line_pos));
 				if (NULL == pspace) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 				*pspace = '\0';
 				if (strlen(temp_line) > 127) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 				pspace ++;
 				temp_line[line_pos] = '\0';
@@ -515,7 +515,7 @@ static int list_mail(const char *path, const char *folder,
 				temp_line[line_pos] = buff[i];
 				line_pos++;
 				if (line_pos >= 256) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 			}
 		}
@@ -539,9 +539,6 @@ static int list_mail(const char *path, const char *folder,
 			last_pos = 0;
 		}
 	}
-
- RDWR_ERROR:
-	return MIDB_RDWR_ERROR;
 }
 
 static int rw_command(int fd, char *buff, size_t olen, size_t ilen)
