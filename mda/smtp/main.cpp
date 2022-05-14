@@ -61,7 +61,8 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"context_average_mem", "256K", CFG_SIZE, "64K"},
 	{"context_max_mem", "2M", CFG_SIZE},
 	{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
-	{"listen_port", "25"},
+	{"lda_listen_port", "25"},
+	{"listen_port", "lda_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "0"},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"running_identity", "gromox"},
@@ -211,7 +212,7 @@ int main(int argc, const char **argv) try
 	scfg.force_starttls = parse_bool(g_config_file->get_value("smtp_force_starttls"));
 	if (scfg.support_starttls && scfg.force_starttls)
 		printf("[smtp]: smtp MUST running in TLS mode\n");
-	uint16_t listen_port = g_config_file->get_ll("listen_port");
+	uint16_t listen_port = g_config_file->get_ll("lda_listen_port");
 	uint16_t listen_ssl_port = g_config_file->get_ll("listen_ssl_port");
 	if (!scfg.support_starttls && listen_ssl_port > 0)
 		listen_ssl_port = 0;

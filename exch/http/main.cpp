@@ -94,8 +94,9 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_auth_times", "10", CFG_SIZE, "1"},
 	{"http_conn_timeout", "3min", CFG_TIME, "30s"},
 	{"http_debug", "0"},
+	{"http_listen_port", "80"},
 	{"http_support_ssl", "false", CFG_BOOL},
-	{"listen_port", "80"},
+	{"listen_port", "http_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "0"},
 	{"msrpc_debug", "0"},
 	{"proc_plugin_ignore_errors", "false", CFG_BOOL},
@@ -308,7 +309,7 @@ int main(int argc, const char **argv) try
 	std::chrono::seconds fastcgi_exec_timeout{g_config_file->get_ll("fastcgi_exec_timeout")};
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), fastcgi_exec_timeout.count(), 0);
 	printf("[http]: fastcgi execution timeout is %s\n", temp_buff);
-	uint16_t listen_port = g_config_file->get_ll("listen_port");
+	uint16_t listen_port = g_config_file->get_ll("http_listen_port");
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");
 	listener_init(listen_port, listen_ssl_port, mss_size);
 	auto cleanup_4 = make_scope_exit(listener_stop);

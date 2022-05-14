@@ -42,6 +42,11 @@ data on-the-fly from another of the available formats.
 .br
 Default: \fIon\fP
 .TP
+\fBexmdb_listen_port\fP
+The TCP port number for exposing the timer service on.
+.br
+Default: \fI5000\fP
+.TP
 \fBexmdb_pf_read_per_user\fP
 Keep public folder read states per user (1) or keep one state for all
 users (0).
@@ -90,11 +95,6 @@ Default: \fI0\fP
 An IPv6 address (or v4-mapped address) for exposing the timer service on.
 .br
 Default: \fI::1\fP
-.TP
-\fBlisten_port\fP
-The TCP port number for exposing the timer service on.
-.br
-Default: \fI5000\fP
 .TP
 \fBmax_ext_rule_number\fP
 Default: \fI20\fP

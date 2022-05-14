@@ -66,8 +66,9 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"imap_cmd_debug", "0"},
 	{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"imap_force_starttls", "false", CFG_BOOL},
+	{"imap_listen_port", "143"},
 	{"imap_support_starttls", "false", CFG_BOOL},
-	{"listen_port", "143"},
+	{"listen_port", "imap_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "0"},
 	{"running_identity", "gromox"},
 	{"service_plugin_ignore_errors", "false", CFG_BOOL},
@@ -123,8 +124,8 @@ int main(int argc, const char **argv) try
 	if (!imap_reload_config(g_config_file))
 		return EXIT_FAILURE;
 
-	int listen_port = 0, listen_ssl_port = 0;
-	g_config_file->get_int("LISTEN_PORT", &listen_port);
+	uint16_t listen_port = g_config_file->get_ll("imap_listen_port");
+	int listen_ssl_port = 0;
 	g_config_file->get_int("LISTEN_SSL_PORT", &listen_ssl_port);
 
 	auto str_val = g_config_file->get_value("host_id");

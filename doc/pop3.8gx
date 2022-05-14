@@ -66,12 +66,6 @@ allowed for hostnames.
 .br
 Default: (system hostname)
 .TP
-\fBlisten_port\fP
-The TCP port to expose the POP3 protocol service on. (The IP address is fixed
-to the wildcard address.)
-.br
-Default: \fI110\fP
-.TP
 \fBlisten_ssl_port\fP
 The TCP port to expose implicit-TLS POP3 protocol service (POP3S) on. (The IP
 address is fixed to the wildcard address.)
@@ -112,6 +106,12 @@ This flag controls whether clients must utilize TLS, either by way of implicit
 TLS (cf. \fBlisten_ssl_port\fP), or through the STLS command.
 .br
 Default: \fIfalse\fP
+.TP
+\fBpop3_listen_port\fP
+The TCP port to expose the POP3 protocol service on. (The IP address is fixed
+to the wildcard address.)
+.br
+Default: \fI110\fP
 .TP
 \fBpop3_private_key_path\fP
 Filesystem path to the key file needed to unlock the TLS certificate.

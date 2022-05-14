@@ -60,7 +60,7 @@ by delivery-queue on the network.
 .br
 Default: (system hostname)
 .TP
-\fBlisten_port\fP
+\fBlda_listen_port\fP
 The TCP port to export the SMTP protocol service on.
 .br
 Default: \fI25\fP

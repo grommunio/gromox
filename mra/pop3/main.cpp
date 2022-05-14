@@ -59,12 +59,13 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"context_max_mem", "2M", CFG_SIZE},
 	{"context_num", "400", CFG_SIZE},
 	{"data_file_path", PKGDATADIR "/pop3:" PKGDATADIR},
-	{"listen_port", "110"},
+	{"listen_port", "pop3_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "0"},
 	{"pop3_auth_times", "10", CFG_SIZE, "1"},
 	{"pop3_cmd_debug", "0"},
 	{"pop3_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"pop3_force_stls", "false", CFG_BOOL},
+	{"pop3_listen_port", "110"},
 	{"pop3_support_stls", "false", CFG_BOOL},
 	{"running_identity", "gromox"},
 	{"service_plugin_ignore_errors", "false", CFG_BOOL},
@@ -244,8 +245,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	auto cleanup_2 = make_scope_exit(resource_stop);
-	int listen_port = 110;
-	g_config_file->get_int("listen_port", &listen_port);
+	uint16_t listen_port = g_config_file->get_ll("pop3_listen_port");
 	listener_init(listen_port, listen_ssl_port);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");

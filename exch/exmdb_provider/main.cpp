@@ -35,13 +35,14 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"dbg_synthesize_content", "0"},
 	{"enable_dam", "1", CFG_BOOL},
 	{"exmdb_body_autosynthesis", "1", CFG_BOOL},
+	{"exmdb_listen_port", "5000"},
 	{"exmdb_pf_read_per_user", "1"},
 	{"exmdb_pf_read_states", "2"},
 	{"exmdb_schema_upgrades", "auto"},
 	{"exmdb_search_pacing", "2500", CFG_SIZE},
 	{"exrpc_debug", "0"},
 	{"listen_ip", "::1"},
-	{"listen_port", "5000"},
+	{"listen_port", "exmdb_listen_port", CFG_ALIAS},
 	{"max_ext_rule_number", "20", CFG_SIZE, "1", "100"},
 	{"max_router_connections", "4095M", CFG_SIZE},
 	{"max_rpc_stub_threads", "4095M", CFG_SIZE},
@@ -125,7 +126,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			return false;
 
 		auto listen_ip = pconfig->get_value("listen_ip");
-		uint16_t listen_port = pconfig->get_ll("listen_port");
+		uint16_t listen_port = pconfig->get_ll("exmdb_listen_port");
 		printf("[exmdb_provider]: listen address is [%s]:%hu\n",
 		       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
@@ -193,7 +194,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		bounce_producer_init(separator);
 		db_engine_init(table_size, cache_interval,
 			b_async ? TRUE : false, b_wal ? TRUE : false, mmap_size, populating_num);
-		uint16_t listen_port = pconfig->get_ll("listen_port");
+		uint16_t listen_port = pconfig->get_ll("exmdb_listen_port");
 		if (0 == listen_port) {
 			exmdb_parser_init(0, 0);
 		} else {
