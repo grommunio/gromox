@@ -92,7 +92,7 @@ class VCONN_REF {
 
 static size_t g_context_num;
 static gromox::atomic_bool g_async_stop;
-static BOOL g_support_ssl;
+static bool g_support_tls;
 static SSL_CTX *g_ssl_ctx;
 static int g_max_auth_times;
 static int g_block_auth_fail;
@@ -111,7 +111,7 @@ static std::mutex g_vconnection_lock;
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
 
 void http_parser_init(size_t context_num, time_duration timeout,
-	int max_auth_times, int block_auth_fail, BOOL support_ssl,
+	int max_auth_times, int block_auth_fail, bool support_tls,
 	const char *certificate_path, const char *cb_passwd,
 	const char *key_path, unsigned int xdebug)
 {
@@ -119,11 +119,11 @@ void http_parser_init(size_t context_num, time_duration timeout,
     g_timeout               = timeout;
 	g_max_auth_times        = max_auth_times;
 	g_block_auth_fail       = block_auth_fail;
-	g_support_ssl           = support_ssl;
+	g_support_tls = support_tls;
 	g_async_stop = false;
 	g_http_debug = xdebug;
 	
-	if (!support_ssl)
+	if (!support_tls)
 		return;
 	gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
 	if (NULL != cb_passwd) {
@@ -162,7 +162,7 @@ VIRTUAL_CONNECTION::~VIRTUAL_CONNECTION()
  */
 int http_parser_run()
 {
-	if (g_support_ssl) {
+	if (g_support_tls) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
 		SSL_load_error_strings();
@@ -225,11 +225,11 @@ void http_parser_stop()
 	g_context_list2.clear();
 	g_context_list.reset();
 	g_vconnection_hash.clear();
-	if (g_support_ssl && g_ssl_ctx != nullptr) {
+	if (g_support_tls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
 	}
-	if (g_support_ssl && g_ssl_mutex_buf != nullptr) {
+	if (g_support_tls && g_ssl_mutex_buf != nullptr) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
@@ -1864,8 +1864,8 @@ int http_parser_get_param(int param)
         return g_block_auth_fail;
     case HTTP_SESSION_TIMEOUT:
 		return std::chrono::duration_cast<std::chrono::seconds>(g_timeout).count();
-	case HTTP_SUPPORT_SSL:
-		return g_support_ssl;
+	case HTTP_SUPPORT_TLS:
+		return g_support_tls;
     default:
         return 0;
     }

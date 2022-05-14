@@ -96,7 +96,8 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_debug", "0"},
 	{"http_listen_port", "80"},
 	{"http_listen_tls_port", "0"},
-	{"http_support_ssl", "false", CFG_BOOL},
+	{"http_support_ssl", "http_support_tls", CFG_ALIAS},
+	{"http_support_tls", "false", CFG_BOOL},
 	{"listen_port", "http_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "http_listen_tls_port", CFG_ALIAS},
 	{"msrpc_debug", "0"},
@@ -231,13 +232,13 @@ int main(int argc, const char **argv) try
 	printf("[http]: block client %s when authentication failure count "
 			"is exceeded\n", temp_buff);
 	
-	auto http_support_ssl = parse_bool(g_config_file->get_value("http_support_ssl"));
+	auto http_support_tls = parse_bool(g_config_file->get_value("http_support_tls"));
 	auto certificate_path = g_config_file->get_value("http_certificate_path");
 	auto cb_passwd = g_config_file->get_value("http_certificate_passwd");
 	auto private_key_path = g_config_file->get_value("http_private_key_path");
-	if (http_support_ssl) {
+	if (http_support_tls) {
 		if (NULL == certificate_path || NULL == private_key_path) {
-			http_support_ssl = false;
+			http_support_tls = false;
 			printf("[http]: turn off TLS support because certificate or "
 				"private key path is empty\n");
 		} else {
@@ -248,7 +249,7 @@ int main(int argc, const char **argv) try
 	}
 
 	uint16_t listen_tls_port = g_config_file->get_ll("http_listen_tls_port");
-	if (!http_support_ssl && listen_tls_port > 0)
+	if (!http_support_tls && listen_tls_port > 0)
 		listen_tls_port = 0;
 	if (listen_tls_port > 0)
 		printf("[system]: system TLS listening port %hu\n", listen_tls_port);
@@ -431,7 +432,7 @@ int main(int argc, const char **argv) try
 	}
 
 	http_parser_init(context_num, http_conn_timeout,
-		http_auth_times, block_interval_auth, http_support_ssl ? TRUE : false,
+		http_auth_times, block_interval_auth, http_support_tls,
 		certificate_path, cb_passwd, private_key_path,
 		g_config_file->get_ll("http_debug"));
 	auto cleanup_22 = make_scope_exit(http_parser_stop);

@@ -127,7 +127,7 @@ cert and the key in the same file, if you wish to do so. Add to
 ``/etc/gromox/http.cfg``::
 
 	http_listen_tls_port = 443
-	http_support_ssl = true
+	http_support_tls = true
 	http_certificate_path = /etc/gromox/mydomain.pem
 	http_private_key_path = /etc/gromox/mydomain.key
 

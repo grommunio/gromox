@@ -24,7 +24,7 @@ enum {
 	MAX_AUTH_TIMES,
 	BLOCK_AUTH_FAIL,
 	HTTP_SESSION_TIMEOUT,
-	HTTP_SUPPORT_SSL
+	HTTP_SUPPORT_TLS,
 };
 
 enum {
@@ -107,7 +107,7 @@ struct RPC_OUT_CHANNEL {
 	int channel_stat = 0;
 };
 
-extern void http_parser_init(size_t context_num, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, BOOL support_ssl, const char *certificate_path, const char *cb_passwd, const char *key_path, unsigned int xdebug);
+extern void http_parser_init(size_t context_num, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, const char *certificate_path, const char *cb_passwd, const char *key_path, unsigned int xdebug);
 extern int http_parser_run();
 int http_parser_process(HTTP_CONTEXT *pcontext);
 extern void http_parser_stop();

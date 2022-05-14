@@ -160,7 +160,7 @@ Filesystem path to the key file needed to unlock the TLS certificate.
 .br
 Default: (unset)
 .TP
-\fBhttp_support_ssl\fP
+\fBhttp_support_tls\fP
 This flag controls whether (or not) the server offers TLS at all. The default
 is false because you need a certificate for this first.
 .br
