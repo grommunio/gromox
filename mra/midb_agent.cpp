@@ -499,14 +499,11 @@ static int list_mail(const char *path, const char *folder,
 				}
 				pspace ++;
 				temp_line[line_pos] = '\0';
-
-				MSG_UNIT msg;
-				gx_strlcpy(msg.file_name, temp_line, arsizeof(msg.file_name));
-				msg.size = strtol(pspace, nullptr, 0);
-				*psize += msg.size;
-				msg.b_deleted = FALSE;
 				try {
+					MSG_UNIT msg{temp_line};
+					msg.size = strtol(pspace, nullptr, 0);
 					parray.push_back(std::move(msg));
+					*psize += msg.size;
 				} catch (const std::bad_alloc &) {
 					b_fail = TRUE;
 				}
@@ -569,8 +566,8 @@ static int delete_mail(const char *path, const char *folder,
 	for (auto pmsg : plist) {
 		buff[length] = ' ';
 		length ++;
-		temp_len = strlen(pmsg->file_name);
-		memcpy(buff + length, pmsg->file_name, temp_len);
+		temp_len = pmsg->file_name.size();
+		memcpy(buff + length, pmsg->file_name.c_str(), temp_len);
 		length += temp_len;
 		if (length <= 128 * 1024)
 			continue;

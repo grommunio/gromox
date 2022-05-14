@@ -227,8 +227,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		auto count = pcontext->msg_array.size();
 		for (size_t i = 0; i < count; ++i) {
 			auto punit = sa_get_item(pcontext->msg_array, i);
-			string_length = sprintf(temp_buff, "%zu %s\r\n", i + 1,
-								punit->file_name);
+			string_length = sprintf(temp_buff, "%zu %s\r\n", i + 1, punit->file_name.c_str());
 			pcontext->stream.write(temp_buff, string_length);
 		}
 		pcontext->stream.write(".\r\n", 3);
@@ -252,9 +251,9 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	int n = strtol(temp_command + 5, nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->msg_array.size()) {
 		auto punit = sa_get_item(pcontext->msg_array, n - 1);
-		string_length = sprintf(temp_buff, "+OK %d %s\r\n", n,
-							punit->file_name);
-		pcontext->connection.write(temp_buff, string_length);
+		auto z = gx_snprintf(temp_buff, arsizeof(temp_buff),
+		         "+OK %d %s\r\n", n, punit->file_name.c_str());
+		pcontext->connection.write(temp_buff, z);
 		return DISPATCH_CONTINUE;
 	}
 	return 1707;
