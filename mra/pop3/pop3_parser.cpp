@@ -626,7 +626,7 @@ POP3_CONTEXT::POP3_CONTEXT() :
 	stream(blocks_allocator_get_allocator())
 {
 	auto pcontext = this;
-	single_list_init(&pcontext->list);
+	single_list_init(&pcontext->delmsg_list);
 }
 
 static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
@@ -636,8 +636,8 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
     }
 	pcontext->connection.reset();
 	pcontext->message_fd = -1;
-	pcontext->array.clear();
-	single_list_init(&pcontext->list);
+	single_list_init(&pcontext->delmsg_list);
+	pcontext->msg_array.clear();
 	pcontext->stream.clear();
 	memset(pcontext->read_buffer, 0, arsizeof(pcontext->read_buffer));
 	pcontext->read_offset = 0;
@@ -660,7 +660,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 POP3_CONTEXT::~POP3_CONTEXT()
 {
 	auto pcontext = this;
-	pcontext->array.clear();
+	pcontext->msg_array.clear();
 	if (-1 != pcontext->message_fd) {
 		close(pcontext->message_fd);
 	}

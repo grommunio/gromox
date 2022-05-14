@@ -44,8 +44,8 @@ struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	 * modified (specifically: only append). We also want O(1) random
 	 * access in @array. Therefore, deque is used.
 	 */
-	std::deque<gromox::MSG_UNIT> array; /* mailbox message list */
-	SINGLE_LIST list{}; /* deleted message list */
+	std::deque<gromox::MSG_UNIT> msg_array; /* mailbox message list */
+	SINGLE_LIST delmsg_list{}; /* deleted message list */
 	BOOL is_login = false; /* if user is logged in */
 	BOOL is_stls = false; /* if last command is STLS */
 	int auth_times = 0;
