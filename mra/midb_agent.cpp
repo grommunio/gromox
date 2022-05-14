@@ -31,6 +31,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/msg_unit.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
@@ -430,6 +431,7 @@ static int list_mail(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
+	auto cl_0 = make_scope_exit([&]() { parray.clear(); });
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-UIDL %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -470,6 +472,7 @@ static int list_mail(const char *path, const char *folder,
 					break;
 				} else if (0 == strncmp(buff, "FALSE ", 6)) {
 					pback.reset();
+					cl_0.release();
 					return MIDB_RESULT_ERROR;
 				}
 			}
@@ -519,9 +522,10 @@ static int list_mail(const char *path, const char *folder,
 
 		if (count >= lines) {
 			pback.reset();
-			if (!b_fail)
+			if (!b_fail) {
+				cl_0.release();
 				return MIDB_RESULT_OK;
-			parray.clear();
+			}
 			return MIDB_RESULT_ERROR;
 		}
 		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
@@ -537,7 +541,6 @@ static int list_mail(const char *path, const char *folder,
 	}
 
  RDWR_ERROR:
-	parray.clear();
 	return MIDB_RDWR_ERROR;
 }
 
