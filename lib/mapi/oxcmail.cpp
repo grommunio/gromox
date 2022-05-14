@@ -3951,7 +3951,7 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 		ep2.init(address_array.pbin[i].pb, address_array.pbin[i].cb, alloc, EXT_FLAG_UTF16);
 		if (ep2.g_oneoff_eid(&oo) != EXT_ERR_SUCCESS ||
 		    strcasecmp(oo.paddress_type, "SMTP") != 0) {
-			fprintf(stderr, "W-1965: skipping non-SMTP reply-to entry\n");
+			fprintf(stderr, "W-1964: skipping non-SMTP reply-to entry\n");
 			continue;
 		}
 		if (oo.pdisplay_name != nullptr && *oo.pdisplay_name != '\0') {
