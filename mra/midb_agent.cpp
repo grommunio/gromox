@@ -107,7 +107,7 @@ static int connect_midb(const char *host, uint16_t port);
 static BOOL get_digest_string(const char *src, int length, const char *tag, char *buff, int buff_len);
 static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger);
 static int list_mail(const char *path, const char *folder, std::vector<MSG_UNIT> &, int *num, uint64_t *size);
-static int delete_mail(const char *path, const char *folder, const SINGLE_LIST *);
+static int delete_mail(const char *path, const char *folder, const std::vector<MSG_UNIT *> &);
 static int get_mail_id(const char *path, const char *folder, const char *mid_string, unsigned int *id);
 static int get_mail_uid(const char *path, const char *folder, const char *mid_string, unsigned int *uid);
 static int summary_folder(const char *path, const char *folder, int *exists, int *recent, int *unseen, unsigned long *uidvalid, unsigned int *uidnext, int *first_seen, int *perrno);
@@ -552,24 +552,21 @@ static int rw_command(int fd, char *buff, size_t olen, size_t ilen)
 }
 
 static int delete_mail(const char *path, const char *folder,
-    const SINGLE_LIST *plist)
+    const std::vector<MSG_UNIT *> &plist)
 {
 	int cmd_len;
 	int temp_len;
 	char buff[128*1025];
 
-	if (0 == single_list_get_nodes_num(plist)) {
+	if (plist.size() == 0)
 		return MIDB_RESULT_OK;
-	}
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 	cmd_len = length;
 	
-	for (auto pnode = single_list_get_head(plist); pnode != nullptr;
-		pnode=single_list_get_after(plist, pnode)) {
-		auto pmsg = static_cast<const MSG_UNIT *>(pnode->pdata);
+	for (auto pmsg : plist) {
 		buff[length] = ' ';
 		length ++;
 		temp_len = strlen(pmsg->file_name);

@@ -7,7 +7,6 @@
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
 #include <gromox/msg_unit.hpp>
-#include <gromox/single_list.hpp>
 #include <gromox/stream.hpp>
 #define MAX_LINE_LENGTH    64*1024
 
@@ -45,7 +44,7 @@ struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	 * access in @array. Therefore, deque is used.
 	 */
 	std::vector<gromox::MSG_UNIT> msg_array; /* mailbox message list */
-	SINGLE_LIST delmsg_list{}; /* deleted message list */
+	std::vector<gromox::MSG_UNIT *> delmsg_list;
 	BOOL is_login = false; /* if user is logged in */
 	BOOL is_stls = false; /* if last command is STLS */
 	int auth_times = 0;

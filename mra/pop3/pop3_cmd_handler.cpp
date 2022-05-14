@@ -385,10 +385,12 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	int n = strtol(temp_command + 5, nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->msg_array.size()) {
 		auto punit = sa_get_item(pcontext->msg_array, n - 1);
-		if (!punit->b_deleted) {
+		if (!punit->b_deleted) try {
 			punit->b_deleted = TRUE;
-			punit->node.pdata = punit;
-			single_list_append_as_tail(&pcontext->delmsg_list, &punit->node);
+			pcontext->delmsg_list.push_back(punit);
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1961: ENOMEM\n");
+			return 1915;
 		}
 		return 1700;
 	}
@@ -457,15 +459,13 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
-	SINGLE_LIST_NODE *pnode;
     
 	if (4 != line_length) {
 		return 1704;
 	}
-	if (pcontext->is_login &&
-	    single_list_get_nodes_num(&pcontext->delmsg_list) > 0) {
+	if (pcontext->is_login && pcontext->delmsg_list.size() > 0) {
 		switch (system_services_delete_mail(pcontext->maildir, "inbox",
-			&pcontext->delmsg_list)) {
+			pcontext->delmsg_list)) {
 		case MIDB_RESULT_OK:
 			break;
 		case MIDB_NO_SERVER:
@@ -481,8 +481,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 			"FOLDER-TOUCH %s inbox", pcontext->username);
 		system_services_broadcast_event(temp_buff);
 
-		while ((pnode = single_list_pop_front(&pcontext->delmsg_list)) != nullptr) try {
-			auto punit = static_cast<MSG_UNIT *>(pnode->pdata);
+		for (auto punit : pcontext->delmsg_list) try {
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
 			if (remove(eml_path.c_str()) == 0)
 				pop3_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted",
@@ -490,6 +489,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 		} catch (const std::bad_alloc &) {
 			fprintf(stderr, "E-1471: ENOMEM\n");
 		}
+		pcontext->delmsg_list.clear();
 	}
 
 	pcontext->msg_array.clear();
@@ -504,14 +504,12 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-	SINGLE_LIST_NODE *pnode;
-            
 	if (4 != line_length) {
 		return 1704;
 	}
 	if (pcontext->is_login)
-		while ((pnode = single_list_pop_front(&pcontext->delmsg_list)) != nullptr)
-			static_cast<MSG_UNIT *>(pnode->pdata)->b_deleted = false;
+		for (auto m : pcontext->delmsg_list)
+			m->b_deleted = false;
 	return 1700;
 }    
 

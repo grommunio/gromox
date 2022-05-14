@@ -624,10 +624,7 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
 
 POP3_CONTEXT::POP3_CONTEXT() :
 	stream(blocks_allocator_get_allocator())
-{
-	auto pcontext = this;
-	single_list_init(&pcontext->delmsg_list);
-}
+{}
 
 static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 {
@@ -636,7 +633,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
     }
 	pcontext->connection.reset();
 	pcontext->message_fd = -1;
-	single_list_init(&pcontext->delmsg_list);
+	pcontext->delmsg_list.clear();
 	pcontext->msg_array.clear();
 	pcontext->stream.clear();
 	memset(pcontext->read_buffer, 0, arsizeof(pcontext->read_buffer));
