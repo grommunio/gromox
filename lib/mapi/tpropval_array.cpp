@@ -37,38 +37,30 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
 
 int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 {
-	auto parray = this;
-	void *pvalue;
-	
 	for (size_t i = 0; i < count; ++i) {
-		if (parray->ppropval[i].proptag != tag)
+		if (ppropval[i].proptag != tag)
 			continue;
-		pvalue = parray->ppropval[i].pvalue;
-		parray->ppropval[i].pvalue = propval_dup(
-			PROP_TYPE(tag), xpropval);
-		if (NULL == parray->ppropval[i].pvalue) {
-			parray->ppropval[i].pvalue = pvalue;
+		auto pvalue = ppropval[i].pvalue;
+		ppropval[i].pvalue = propval_dup(PROP_TYPE(tag), xpropval);
+		if (ppropval[i].pvalue == nullptr) {
+			ppropval[i].pvalue = pvalue;
 			return -ENOMEM;
 		}
 		propval_free(PROP_TYPE(tag), pvalue);
 		return 0;
 	}
-	return tpropval_array_append(parray, tag, xpropval) ? 0 : -ENOMEM;
+	return tpropval_array_append(this, tag, xpropval) ? 0 : -ENOMEM;
 }
 
 void TPROPVAL_ARRAY::erase(uint32_t proptag)
 {
-	auto parray = this;
-	
 	for (size_t i = 0; i < count; ++i) {
-		if (proptag != parray->ppropval[i].proptag)
+		if (ppropval[i].proptag != proptag)
 			continue;
-		propval_free(PROP_TYPE(proptag), parray->ppropval[i].pvalue);
-		parray->count--;
-		if (i < parray->count) {
-			memmove(parray->ppropval + i, parray->ppropval + i + 1,
-				(parray->count - i) * sizeof(TAGGED_PROPVAL));
-		}
+		propval_free(PROP_TYPE(proptag), ppropval[i].pvalue);
+		--count;
+		if (i < count)
+			memmove(&ppropval[i], &ppropval[i+1], (count - i) * sizeof(TAGGED_PROPVAL));
 		return;
 	}
 }
@@ -110,14 +102,13 @@ void tpropval_array_free(TPROPVAL_ARRAY *parray)
 
 TPROPVAL_ARRAY *TPROPVAL_ARRAY::dup() const
 {
-	auto parray = this;
 	auto parray1 = tpropval_array_init();
 	if (NULL == parray1) {
 		return NULL;
 	}
 	for (size_t i = 0; i < count; ++i) {
-		if (!tpropval_array_append(parray1, parray->ppropval[i].proptag,
-		    parray->ppropval[i].pvalue)) {
+		if (!tpropval_array_append(parray1, ppropval[i].proptag,
+		    ppropval[i].pvalue)) {
 			tpropval_array_free(parray1);
 			return NULL;
 		}
