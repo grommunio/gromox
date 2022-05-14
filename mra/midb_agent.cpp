@@ -537,7 +537,6 @@ static int list_mail(const char *path, const char *folder,
 	}
 
  RDWR_ERROR:
-	pback.reset(true);
 	parray.clear();
 	return MIDB_RDWR_ERROR;
 }
@@ -1412,7 +1411,6 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	}
 
  RDWR_ERROR:
-	pback.reset(true);
 	pxarray->clear();
 	return MIDB_RDWR_ERROR;
 }
@@ -1546,7 +1544,6 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	}
 
  RDWR_ERROR:
-	pback.reset(true);
 	pxarray->clear();
 	return MIDB_RDWR_ERROR;
 }
@@ -1681,7 +1678,6 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	}
 
  RDWR_ERROR:
-	pback.reset(true);
 	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
 		auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(i));
@@ -2014,7 +2010,6 @@ static int fetch_detail(const char *path, const char *folder,
 	return MIDB_RESULT_OK;
 
  RDWR_ERROR:
-	pback.reset(true);
 	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
 		auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(i));
@@ -2323,7 +2318,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	return MIDB_RESULT_OK;
 
  RDWR_ERROR:
-	pback.reset(true);
 	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
 		auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(i));
