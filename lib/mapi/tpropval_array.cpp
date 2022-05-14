@@ -42,17 +42,17 @@ int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 	void *pvalue;
 	
 	for (i=0; i<parray->count; i++) {
-		if (parray->ppropval[i].proptag == tag) {
-			pvalue = parray->ppropval[i].pvalue;
-			parray->ppropval[i].pvalue = propval_dup(
-				PROP_TYPE(tag), xpropval);
-			if (NULL == parray->ppropval[i].pvalue) {
-				parray->ppropval[i].pvalue = pvalue;
-				return -ENOMEM;
-			}
-			propval_free(PROP_TYPE(tag), pvalue);
-			return 0;
+		if (parray->ppropval[i].proptag != tag)
+			continue;
+		pvalue = parray->ppropval[i].pvalue;
+		parray->ppropval[i].pvalue = propval_dup(
+			PROP_TYPE(tag), xpropval);
+		if (NULL == parray->ppropval[i].pvalue) {
+			parray->ppropval[i].pvalue = pvalue;
+			return -ENOMEM;
 		}
+		propval_free(PROP_TYPE(tag), pvalue);
+		return 0;
 	}
 	return tpropval_array_append(parray, tag, xpropval) ? 0 : -ENOMEM;
 }
@@ -63,15 +63,15 @@ void TPROPVAL_ARRAY::erase(uint32_t proptag)
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
-		if (proptag == parray->ppropval[i].proptag) {
-			propval_free(PROP_TYPE(proptag), parray->ppropval[i].pvalue);
-			parray->count --;
-			if (i < parray->count) {
-				memmove(parray->ppropval + i, parray->ppropval + i + 1,
-					(parray->count - i) * sizeof(TAGGED_PROPVAL));
-			}
-			return;
+		if (proptag != parray->ppropval[i].proptag)
+			continue;
+		propval_free(PROP_TYPE(proptag), parray->ppropval[i].pvalue);
+		parray->count--;
+		if (i < parray->count) {
+			memmove(parray->ppropval + i, parray->ppropval + i + 1,
+				(parray->count - i) * sizeof(TAGGED_PROPVAL));
 		}
+		return;
 	}
 }
 
