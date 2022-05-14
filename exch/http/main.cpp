@@ -95,9 +95,10 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_conn_timeout", "3min", CFG_TIME, "30s"},
 	{"http_debug", "0"},
 	{"http_listen_port", "80"},
+	{"http_listen_tls_port", "0"},
 	{"http_support_ssl", "false", CFG_BOOL},
 	{"listen_port", "http_listen_port", CFG_ALIAS},
-	{"listen_ssl_port", "0"},
+	{"listen_ssl_port", "http_listen_tls_port", CFG_ALIAS},
 	{"msrpc_debug", "0"},
 	{"proc_plugin_ignore_errors", "false", CFG_BOOL},
 	{"proc_plugin_path", PKGLIBDIR},
@@ -246,12 +247,11 @@ int main(int argc, const char **argv) try
 		printf("[http]: http doesn't support TLS mode\n");
 	}
 
-	uint16_t listen_ssl_port = g_config_file->get_ll("listen_ssl_port");
-	if (!http_support_ssl && listen_ssl_port > 0)
-		listen_ssl_port = 0;
-	if (listen_ssl_port > 0) {
-		printf("[system]: system SSL listening port %hu\n", listen_ssl_port);
-	}
+	uint16_t listen_tls_port = g_config_file->get_ll("http_listen_tls_port");
+	if (!http_support_ssl && listen_tls_port > 0)
+		listen_tls_port = 0;
+	if (listen_tls_port > 0)
+		printf("[system]: system TLS listening port %hu\n", listen_tls_port);
 	
 	size_t max_request_mem = g_config_file->get_ll("request_max_mem");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), max_request_mem, 1024, 0);
@@ -311,7 +311,7 @@ int main(int argc, const char **argv) try
 	printf("[http]: fastcgi execution timeout is %s\n", temp_buff);
 	uint16_t listen_port = g_config_file->get_ll("http_listen_port");
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");
-	listener_init(listen_port, listen_ssl_port, mss_size);
+	listener_init(listen_port, listen_tls_port, mss_size);
 	auto cleanup_4 = make_scope_exit(listener_stop);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");

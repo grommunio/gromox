@@ -149,6 +149,12 @@ to the wildcard address.)
 .br
 Default: \fI80\fP
 .TP
+\fBhttp_listen_tls_port\fP
+The TCP port to expose implicit-TLS HTTP protocol service (HTTPS) on. (The IP
+address is fixed to the wildcard address.)
+.br
+Default: (unset)
+.TP
 \fBhttp_private_key_path\fP
 Filesystem path to the key file needed to unlock the TLS certificate.
 .br
@@ -159,12 +165,6 @@ This flag controls whether (or not) the server offers TLS at all. The default
 is false because you need a certificate for this first.
 .br
 Default: \fIfalse\fP
-.TP
-\fBlisten_ssl_port\fP
-The TCP port to expose implicit-TLS HTTP protocol service (HTTPS) on. (The IP
-address is fixed to the wildcard address.)
-.br
-Default: (unset)
 .TP
 \fBproc_plugin_ignore_errors\fP
 If set to yes, processor plugins that fail to load on startup are ignored. If

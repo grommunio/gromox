@@ -65,7 +65,7 @@ The TCP port to export the SMTP protocol service on.
 .br
 Default: \fI25\fP
 .TP
-\fBlisten_ssl_port\fP
+\fBlda_listen_tls_port\fP
 The TCP port to expose the implicit-TLS SMTP protocol service on.
 .br
 Default: (unset)
@@ -119,7 +119,7 @@ Default: \fI3 minutes\fP
 .TP
 \fBsmtp_force_starttls\fP
 This flag controls whether clients must utilize TLS, either by way of implicit
-TLS (cf. \fBlisten_ssl_port\fP), or through the STARTTLS command.
+TLS (cf. \fBlda_listen_tls_port\fP), or through the STARTTLS command.
 .br
 Default: \fIfalse\fP
 .TP

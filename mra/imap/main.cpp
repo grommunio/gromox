@@ -67,9 +67,10 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"imap_force_starttls", "false", CFG_BOOL},
 	{"imap_listen_port", "143"},
+	{"imap_listen_tls_port", "0"},
 	{"imap_support_starttls", "false", CFG_BOOL},
 	{"listen_port", "imap_listen_port", CFG_ALIAS},
-	{"listen_ssl_port", "0"},
+	{"listen_ssl_port", "imap_listen_tls_port", CFG_ALIAS},
 	{"running_identity", "gromox"},
 	{"service_plugin_ignore_errors", "false", CFG_BOOL},
 	{"service_plugin_path", PKGLIBDIR},
@@ -125,9 +126,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 
 	uint16_t listen_port = g_config_file->get_ll("imap_listen_port");
-	int listen_ssl_port = 0;
-	g_config_file->get_int("LISTEN_SSL_PORT", &listen_ssl_port);
-
+	uint16_t listen_tls_port = g_config_file->get_ll("imap_listen_tls_port");
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
@@ -227,11 +226,10 @@ int main(int argc, const char **argv) try
 	auto imap_force_stls = parse_bool(g_config_file->get_value("imap_force_starttls"));
 	if (imap_support_stls && imap_force_stls)
 		printf("[imap]: imap MUST running in TLS mode\n");
-	if (!imap_support_stls && listen_ssl_port > 0)
-		listen_ssl_port = 0;
-	if (listen_ssl_port > 0) {
-		printf("[system]: system SSL listening port %d\n", listen_ssl_port);
-	}
+	if (!imap_support_stls && listen_tls_port > 0)
+		listen_tls_port = 0;
+	if (listen_tls_port > 0)
+		printf("[system]: system TLS listening port %d\n", listen_tls_port);
 
 	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
 	char **service_plugin_list = nullptr;
@@ -249,7 +247,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	auto cleanup_2 = make_scope_exit(resource_stop);
-	listener_init(listen_port, listen_ssl_port);
+	listener_init(listen_port, listen_tls_port);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;

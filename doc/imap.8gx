@@ -111,7 +111,7 @@ Default: \fI3 minutes\fP
 .TP
 \fBimap_force_starttls\fP
 This flag controls whether clients must utilize TLS, either by way of implicit
-TLS (cf. \fBlisten_ssl_port\fP), or through the STARTTLS command.
+TLS (cf. \fBimap_listen_tls_port\fP), or through the STARTTLS command.
 .br
 Default: \fIfalse\fP
 .TP
@@ -128,6 +128,12 @@ to the wildcard address.)
 .br
 Default: \fI143\fP
 .TP
+\fBimap_listen_tls_port\fP
+The TCP port to expose implicit-TLS IMAP protocol service (IMAPS) on. (The IP
+address is fixed to the wildcard address.)
+.br
+Default: (unset)
+.TP
 \fBimap_private_key_path\fP
 Filesystem path to the key file needed to unlock the TLS certificate.
 .br
@@ -138,12 +144,6 @@ This flag controls the offering of the STARTTLS extension (RFC 2595) to
 clients.
 .br
 Default: \fIfalse\fP
-.TP
-\fBlisten_ssl_port\fP
-The TCP port to expose implicit-TLS IMAP protocol service (IMAPS) on. (The IP
-address is fixed to the wildcard address.)
-.br
-Default: (unset)
 .TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.

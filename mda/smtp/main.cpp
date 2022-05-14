@@ -62,8 +62,9 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"context_max_mem", "2M", CFG_SIZE},
 	{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
 	{"lda_listen_port", "25"},
+	{"lda_listen_tls_port", "0"},
 	{"listen_port", "lda_listen_port", CFG_ALIAS},
-	{"listen_ssl_port", "0"},
+	{"listen_ssl_port", "lda_listen_tls_port", CFG_ALIAS},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"running_identity", "gromox"},
 	{"service_plugin_ignore_errors", "false", CFG_BOOL},
@@ -213,12 +214,11 @@ int main(int argc, const char **argv) try
 	if (scfg.support_starttls && scfg.force_starttls)
 		printf("[smtp]: smtp MUST running in TLS mode\n");
 	uint16_t listen_port = g_config_file->get_ll("lda_listen_port");
-	uint16_t listen_ssl_port = g_config_file->get_ll("listen_ssl_port");
-	if (!scfg.support_starttls && listen_ssl_port > 0)
-		listen_ssl_port = 0;
-	if (listen_ssl_port > 0) {
-		printf("[system]: system SSL listening port %hu\n", listen_ssl_port);
-	}
+	uint16_t listen_tls_port = g_config_file->get_ll("lda_listen_tls_port");
+	if (!scfg.support_starttls && listen_tls_port > 0)
+		listen_tls_port = 0;
+	if (listen_tls_port > 0)
+		printf("[system]: system TLS listening port %hu\n", listen_tls_port);
 
 	scfg.need_auth = parse_bool(g_config_file->get_value("smtp_need_auth")) ? TRUE : false;
 	printf("[smtp]: auth_needed is %s\n", scfg.need_auth ? "ON" : "OFF");
@@ -263,7 +263,7 @@ int main(int argc, const char **argv) try
 	else
 		scfg.cmd_prot = 0;
 
-	listener_init(listen_port, listen_ssl_port);
+	listener_init(listen_port, listen_tls_port);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;
