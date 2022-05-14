@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <deque>
 #include <list>
 #include <mutex>
 #include <poll.h>
@@ -18,6 +17,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -106,7 +106,7 @@ static BOOL read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
 static BOOL get_digest_string(const char *src, int length, const char *tag, char *buff, int buff_len);
 static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger);
-static int list_mail(const char *path, const char *folder, std::deque<MSG_UNIT> &, int *num, uint64_t *size);
+static int list_mail(const char *path, const char *folder, std::vector<MSG_UNIT> &, int *num, uint64_t *size);
 static int delete_mail(const char *path, const char *folder, const SINGLE_LIST *);
 static int get_mail_id(const char *path, const char *folder, const char *mid_string, unsigned int *id);
 static int get_mail_uid(const char *path, const char *folder, const char *mid_string, unsigned int *uid);
@@ -411,7 +411,7 @@ BACK_CONN_floating::BACK_CONN_floating(BACK_CONN_floating &&o)
 }
 
 static int list_mail(const char *path, const char *folder,
-    std::deque<MSG_UNIT> &parray, int *pnum, uint64_t *psize)
+    std::vector<MSG_UNIT> &parray, int *pnum, uint64_t *psize)
 {
 	int i;
 	int lines;

@@ -1,7 +1,7 @@
 #pragma once
 #include <chrono>
 #include <cstdint>
-#include <deque>
+#include <vector>
 #include <openssl/ssl.h>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -44,7 +44,7 @@ struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	 * modified (specifically: only append). We also want O(1) random
 	 * access in @array. Therefore, deque is used.
 	 */
-	std::deque<gromox::MSG_UNIT> msg_array; /* mailbox message list */
+	std::vector<gromox::MSG_UNIT> msg_array; /* mailbox message list */
 	SINGLE_LIST delmsg_list{}; /* deleted message list */
 	BOOL is_login = false; /* if user is logged in */
 	BOOL is_stls = false; /* if last command is STLS */

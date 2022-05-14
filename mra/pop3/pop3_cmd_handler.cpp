@@ -36,7 +36,7 @@
 
 using namespace gromox;
 
-template<typename T> static inline T *sa_get_item(std::deque<T> &arr, size_t idx)
+template<typename T> static inline T *sa_get_item(std::vector<T> &arr, size_t idx)
 {
 	return idx < arr.size() ? &arr[idx] : nullptr;
 }
