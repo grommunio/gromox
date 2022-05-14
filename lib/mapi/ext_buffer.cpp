@@ -211,7 +211,7 @@ int EXT_PULL::g_bin(BINARY *r)
 		TRY(g_uint16(&cb));
 		r->cb = cb;
 	}
-	if (0 == r->cb) {
+	if (r->cb == 0) {
 		r->pb = NULL;
 		return EXT_ERR_SUCCESS;
 	}
@@ -229,7 +229,7 @@ int EXT_PULL::g_sbin(BINARY *r)
 	
 	TRY(g_uint16(&cb));
 	r->cb = cb;
-	if (0 == r->cb) {
+	if (r->cb == 0) {
 		r->pb = NULL;
 		return EXT_ERR_SUCCESS;
 	}
@@ -244,7 +244,7 @@ int EXT_PULL::g_sbin(BINARY *r)
 int EXT_PULL::g_exbin(BINARY *r)
 {
 	TRY(g_uint32(&r->cb));
-	if (0 == r->cb) {
+	if (r->cb == 0) {
 		r->pb = NULL;
 		return EXT_ERR_SUCCESS;
 	}
@@ -259,12 +259,12 @@ int EXT_PULL::g_exbin(BINARY *r)
 int EXT_PULL::g_uint16_a(SHORT_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->ps = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->ps = anew<uint16_t>(r->count);
-	if (NULL == r->ps) {
+	if (r->ps == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -276,12 +276,12 @@ int EXT_PULL::g_uint16_a(SHORT_ARRAY *r)
 int EXT_PULL::g_uint32_a(LONG_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->pl = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->pl = anew<uint32_t>(r->count);
-	if (NULL == r->pl) {
+	if (r->pl == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -293,12 +293,12 @@ int EXT_PULL::g_uint32_a(LONG_ARRAY *r)
 int EXT_PULL::g_uint64_a(LONGLONG_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->pll = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->pll = anew<uint64_t>(r->count);
-	if (NULL == r->pll) {
+	if (r->pll == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -313,12 +313,12 @@ int EXT_PULL::g_uint64_sa(LONGLONG_ARRAY *r)
 	
 	TRY(g_uint16(&count));
 	r->count = count;
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->pll = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->pll = anew<uint64_t>(r->count);
-	if (NULL == r->pll) {
+	if (r->pll == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -364,12 +364,12 @@ int EXT_PULL::g_double_a(DOUBLE_ARRAY *r)
 int EXT_PULL::g_bin_a(BINARY_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->pbin = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->pbin = anew<BINARY>(r->count);
-	if (NULL == r->pbin) {
+	if (r->pbin == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -393,12 +393,12 @@ int EXT_PULL::g_bin_a(BINARY_ARRAY *r)
 int EXT_PULL::g_str_a(STRING_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->ppstr = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->ppstr = anew<char *>(r->count);
-	if (NULL == r->ppstr) {
+	if (r->ppstr == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -421,12 +421,12 @@ int EXT_PULL::g_str_a(STRING_ARRAY *r)
 int EXT_PULL::g_wstr_a(STRING_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->ppstr = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->ppstr = anew<char *>(r->count);
-	if (NULL == r->ppstr) {
+	if (r->ppstr == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -449,12 +449,12 @@ int EXT_PULL::g_wstr_a(STRING_ARRAY *r)
 int EXT_PULL::g_guid_a(GUID_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->pguid = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->pguid = anew<GUID>(r->count);
-	if (NULL == r->pguid) {
+	if (r->pguid == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -475,12 +475,12 @@ static int ext_buffer_pull_restriction_and_or(
 		TRY(pext->g_uint16(&count));
 		r->count = count;
 	}
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->pres = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->pres = pext->anew<RESTRICTION>(r->count);
-	if (NULL == r->pres) {
+	if (r->pres == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -590,7 +590,7 @@ static int ext_buffer_pull_restriction_comment(
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
-	if (NULL == r->ppropval) {
+	if (r->ppropval == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -692,7 +692,7 @@ int EXT_PULL::g_svreid(SVREID *r)
 	
 	TRY(g_uint16(&length));
 	TRY(g_uint8(&ours));
-	if (0 == ours) {
+	if (!ours) {
 		r->folder_id = 0;
 		r->message_id = 0;
 		r->instance = 0;
@@ -747,7 +747,7 @@ static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 	
 	TRY(pext->g_uint8(&r->same_store));
 	TRY(pext->g_uint16(&eid_size));
-	if (0 == r->same_store) {
+	if (!r->same_store) {
 		r->pstore_eid = pext->anew<STORE_ENTRYID>();
 		if (r->pstore_eid == nullptr)
 			return EXT_ERR_ALLOC;
@@ -789,7 +789,7 @@ static int ext_buffer_pull_recipient_block(EXT_PULL *pext, RECIPIENT_BLOCK *r)
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
-	if (NULL == r->ppropval) {
+	if (r->ppropval == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -805,7 +805,7 @@ static int ext_buffer_pull_forwarddelegate_action(
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
 	r->pblock = pext->anew<RECIPIENT_BLOCK>(r->count);
-	if (NULL == r->pblock) {
+	if (r->pblock == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -891,7 +891,7 @@ int EXT_PULL::g_rule_actions(RULE_ACTIONS *r)
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
 	r->pblock = anew<ACTION_BLOCK>(r->count);
-	if (NULL == r->pblock) {
+	if (r->pblock == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -991,12 +991,12 @@ int EXT_PULL::g_longterm_rang(LONG_TERM_ID_RANGE *r)
 int EXT_PULL::g_proptag_a(PROPTAG_ARRAY *r)
 {
 	TRY(g_uint16(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->pproptag = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->pproptag = anew<uint32_t>(strange_roundup(r->count, SR_GROW_PROPTAG_ARRAY));
-	if (NULL == r->pproptag) {
+	if (r->pproptag == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1048,12 +1048,12 @@ int EXT_PULL::g_propname(PROPERTY_NAME *r)
 int EXT_PULL::g_propname_a(PROPNAME_ARRAY *r)
 {
 	TRY(g_uint16(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->ppropname = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->ppropname = anew<PROPERTY_NAME>(r->count);
-	if (NULL == r->ppropname) {
+	if (r->ppropname == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1065,12 +1065,12 @@ int EXT_PULL::g_propname_a(PROPNAME_ARRAY *r)
 int EXT_PULL::g_propid_a(PROPID_ARRAY *r)
 {
 	TRY(g_uint16(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->ppropid = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->ppropid = anew<uint16_t>(r->count);
-	if (NULL == r->ppropid) {
+	if (r->ppropid == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1082,12 +1082,12 @@ int EXT_PULL::g_propid_a(PROPID_ARRAY *r)
 int EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
 {
 	TRY(g_uint16(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->ppropval = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->ppropval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
-	if (NULL == r->ppropval) {
+	if (r->ppropval == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1116,12 +1116,12 @@ int EXT_PULL::g_tpropval_a(LTPROPVAL_ARRAY *r)
 int EXT_PULL::g_tarray_set(TARRAY_SET *r)
 {
 	TRY(g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->pparray = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->pparray = anew<TPROPVAL_ARRAY *>(strange_roundup(r->count, SR_GROW_TPROPVAL_ARRAY));
-	if (NULL == r->pparray) {
+	if (r->pparray == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1145,7 +1145,7 @@ int EXT_PULL::g_problem_a(PROBLEM_ARRAY *r)
 {
 	TRY(g_uint16(&r->count));
 	r->pproblem = anew<PROPERTY_PROBLEM>(r->count);
-	if (NULL == r->pproblem) {
+	if (r->pproblem == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1222,7 +1222,7 @@ static int ext_buffer_pull_ext_recipient_block(
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
-	if (NULL == r->ppropval) {
+	if (r->ppropval == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1238,7 +1238,7 @@ static int ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
 	r->pblock = pext->anew<EXT_RECIPIENT_BLOCK>(r->count);
-	if (NULL == r->pblock) {
+	if (r->pblock == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1307,7 +1307,7 @@ int EXT_PULL::g_ext_rule_actions(EXT_RULE_ACTIONS *r)
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
 	r->pblock = anew<EXT_ACTION_BLOCK>(r->count);
-	if (NULL == r->pblock) {
+	if (r->pblock == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1321,18 +1321,18 @@ int EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFOMATION *r)
 	uint32_t size;
 	
 	TRY(g_uint16(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->ppropid = NULL;
 		r->ppropname = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->ppropid = anew<uint16_t>(r->count);
-	if (NULL == r->ppropid) {
+	if (r->ppropid == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
 	r->ppropname = anew<PROPERTY_NAME>(r->count);
-	if (NULL == r->ppropname) {
+	if (r->ppropname == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1421,7 +1421,7 @@ int EXT_PULL::g_sortorder_set(SORTORDER_SET *r)
 	if (r->count == 0 || r->ccategories > r->count || r->cexpanded > r->ccategories)
 		return EXT_ERR_FORMAT;
 	r->psort = anew<SORT_ORDER>(r->count);
-	if (NULL == r->psort) {
+	if (r->psort == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1519,7 +1519,7 @@ int EXT_PULL::g_modrcpt_row(PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_ROW *r)
 	TRY(g_uint32(&r->row_id));
 	TRY(g_uint8(&r->recipient_type));
 	TRY(g_uint16(&row_size));
-	if (0 == row_size) {
+	if (row_size == 0) {
 		r->precipient_row = NULL;
 		return EXT_ERR_SUCCESS;
 	}
@@ -1607,12 +1607,12 @@ int EXT_PULL::g_flatentry_a(BINARY_ARRAY *r)
 int EXT_PULL::g_eid_a(EID_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
-	if (0 == r->count) {
+	if (r->count == 0) {
 		r->pids = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->pids = anew<uint64_t>(r->count);
-	if (NULL == r->pids) {
+	if (r->pids == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1685,7 +1685,7 @@ int EXT_PULL::g_tzdef(TIMEZONEDEFINITION *r)
 	strcpy(r->keyname, tmp_buff1);
 	TRY(g_uint16(&r->crules));
 	r->prules = anew<TZRULE>(r->crules);
-	if (NULL == r->prules) {
+	if (r->prules == nullptr) {
 		r->crules = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1732,11 +1732,11 @@ static int ext_buffer_pull_recurrencepattern(EXT_PULL *pext, RECURRENCE_PATTERN 
 	TRY(pext->g_uint32(&r->occurrencecount));
 	TRY(pext->g_uint32(&r->firstdow));
 	TRY(pext->g_uint32(&r->deletedinstancecount));
-	if (0 == r->deletedinstancecount) {
+	if (r->deletedinstancecount == 0) {
 		r->pdeletedinstancedates = NULL;
 	} else {
 		r->pdeletedinstancedates = pext->anew<uint32_t>(r->deletedinstancecount);
-		if (NULL == r->pdeletedinstancedates) {
+		if (r->pdeletedinstancedates == nullptr) {
 			r->deletedinstancecount = 0;
 			return EXT_ERR_ALLOC;
 		}
@@ -1744,11 +1744,11 @@ static int ext_buffer_pull_recurrencepattern(EXT_PULL *pext, RECURRENCE_PATTERN 
 	for (size_t i = 0; i < r->deletedinstancecount; ++i)
 		TRY(pext->g_uint32(&r->pdeletedinstancedates[i]));
 	TRY(pext->g_uint32(&r->modifiedinstancecount));
-	if (0 == r->modifiedinstancecount) {
+	if (r->modifiedinstancecount == 0) {
 		r->pmodifiedinstancedates = NULL;
 	} else {
 		r->pmodifiedinstancedates = pext->anew<uint32_t>(r->modifiedinstancecount);
-		if (NULL == r->pmodifiedinstancedates) {
+		if (r->pmodifiedinstancedates == nullptr) {
 			r->modifiedinstancecount = 0;
 			return EXT_ERR_ALLOC;
 		}
@@ -1819,7 +1819,7 @@ static int ext_buffer_pull_changehighlight(
 		return EXT_ERR_SUCCESS;
 	}
 	r->preserved = pext->anew<uint8_t>(r->size - sizeof(uint32_t));
-	if (NULL == r->preserved) {
+	if (r->preserved == nullptr) {
 		r->size = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1836,11 +1836,11 @@ static int ext_buffer_pull_extendedexception(
 	if (writerversion2 >= 0x00003009)
 		TRY(ext_buffer_pull_changehighlight(pext, &r->changehighlight));
 	TRY(pext->g_uint32(&r->reservedblockee1size));
-	if (0 == r->reservedblockee1size) {
+	if (r->reservedblockee1size == 0) {
 		r->preservedblockee1 = NULL;
 	} else {
 		r->preservedblockee1 = pext->anew<uint8_t>(r->reservedblockee1size);
-		if (NULL == r->preservedblockee1) {
+		if (r->preservedblockee1 == nullptr) {
 			r->reservedblockee1size = 0;
 			return EXT_ERR_ALLOC;
 		}
@@ -1893,11 +1893,11 @@ static int ext_buffer_pull_extendedexception(
 	}
 	if (overrideflags & (ARO_SUBJECT | ARO_LOCATION)) {
 		TRY(pext->g_uint32(&r->reservedblockee2size));
-		if (0 == r->reservedblockee2size) {
+		if (r->reservedblockee2size == 0) {
 			r->preservedblockee2 = NULL;
 		} else {
 			r->preservedblockee2 = pext->anew<uint8_t>(r->reservedblockee2size);
-			if (NULL == r->preservedblockee2) {
+			if (r->preservedblockee2 == nullptr) {
 				r->reservedblockee2size = 0;
 				return EXT_ERR_ALLOC;
 			}
@@ -1915,17 +1915,17 @@ int EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 	TRY(g_uint32(&r->starttimeoffset));
 	TRY(g_uint32(&r->endtimeoffset));
 	TRY(g_uint16(&r->exceptioncount));
-	if (0 == r->exceptioncount) {
+	if (r->exceptioncount == 0) {
 		r->pexceptioninfo = NULL;
 		r->pextendedexception = NULL;
 	} else {
 		r->pexceptioninfo = anew<EXCEPTIONINFO>(r->exceptioncount);
-		if (NULL == r->pexceptioninfo) {
+		if (r->pexceptioninfo == nullptr) {
 			r->exceptioncount = 0;
 			return EXT_ERR_ALLOC;
 		}
 		r->pextendedexception = anew<EXTENDEDEXCEPTION>(r->exceptioncount);
-		if (NULL == r->pextendedexception) {
+		if (r->pextendedexception == nullptr) {
 			r->exceptioncount = 0;
 			return EXT_ERR_ALLOC;
 		}
@@ -1933,11 +1933,11 @@ int EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 	for (size_t i = 0; i < r->exceptioncount; ++i)
 		TRY(ext_buffer_pull_exceptioninfo(this, &r->pexceptioninfo[i]));
 	TRY(g_uint32(&r->reservedblock1size));
-	if (0 == r->reservedblock1size) {
+	if (r->reservedblock1size == 0) {
 		r->preservedblock1 = NULL;
 	} else {
 		r->preservedblock1 = anew<uint8_t>(r->reservedblock1size);
-		if (NULL == r->preservedblock1) {
+		if (r->preservedblock1 == nullptr) {
 			r->reservedblock1size = 0;
 			return EXT_ERR_ALLOC;
 		}
@@ -1946,12 +1946,12 @@ int EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 	for (size_t i = 0; i < r->exceptioncount; ++i)
 		TRY(ext_buffer_pull_extendedexception(this, r->writerversion2, r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]));
 	TRY(g_uint32(&r->reservedblock2size));
-	if (0 == r->reservedblock2size) {
+	if (r->reservedblock2size == 0) {
 		r->preservedblock2 = NULL;
 		return EXT_ERR_SUCCESS;
 	}
 	r->preservedblock2 = anew<uint8_t>(r->reservedblock2size);
-	if (NULL == r->preservedblock2) {
+	if (r->preservedblock2 == nullptr) {
 		r->reservedblock2size = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -1981,7 +1981,7 @@ static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)
 	
 	TRY(pext->g_uint16(&r->count));
 	r->pplist = pext->anew<ATTACHMENT_CONTENT *>(strange_roundup(r->count, SR_GROW_ATTACHMENT_CONTENT));
-	if (NULL == r->pplist) {
+	if (r->pplist == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
@@ -2033,7 +2033,7 @@ BOOL EXT_PUSH::init(void *pdata, uint32_t alloc_size,
 {
 	const EXT_BUFFER_MGT default_mgt = {malloc, realloc, free};
 	m_mgt = mgt != nullptr ? *mgt : default_mgt;
-	if (NULL == pdata) {
+	if (pdata == nullptr) {
 		b_alloc = TRUE;
 		m_alloc_size = 8192;
 		m_udata = static_cast<uint8_t *>(m_mgt.alloc(m_alloc_size));
@@ -2538,7 +2538,7 @@ static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
 	uint16_t eid_size;
 	
 	TRY(pext->p_uint8(r->same_store));
-	if (0 == r->same_store) {
+	if (r->same_store == 0) {
 		uint32_t offset = ext.m_offset;
 		TRY(pext->advance(sizeof(uint16_t)));
 		if (r->pstore_eid == nullptr)
