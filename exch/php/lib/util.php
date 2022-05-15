@@ -192,9 +192,9 @@ function get_http_proxy($dir, $host_name)
 			continue;
 		# Support prefixes both with and without trailing slash
 		if ($dir_prefix[-1] == '/')
-			return $r.$server_name;
+			return $server_name;
 		if ($dir[strlen($dir_prefix)] == '/')
-			return $r.$server_name;
+			return $server_name;
 	}
 	return $host_name;
 }
