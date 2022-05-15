@@ -14,6 +14,7 @@
 #include <vector>
 #include <libHX/string.h>
 #include <openssl/err.h>
+#include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/threads_pool.hpp>
@@ -132,7 +133,11 @@ int pop3_parser_run()
 			ERR_print_errors_fp(stdout);
 			return -4;
 		}
-
+		auto mp = g_config_file->get_value("tls_min_proto");
+		if (mp != nullptr && tls_set_min_proto(g_ssl_ctx, mp) != 0) {
+			fprintf(stderr, "[pop3_parser]: tls_min_proto value \"%s\" not accepted\n", mp);
+			return -4;
+		}
 		try {
 			g_ssl_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
 		} catch (const std::bad_alloc &) {

@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
+#include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
@@ -190,6 +191,11 @@ int http_parser_run()
 		if (1 != SSL_CTX_check_private_key(g_ssl_ctx)) {
 			printf("[http_parser]: private key does not match certificate:");
 			ERR_print_errors_fp(stdout);
+			return -4;
+		}
+		auto mp = g_config_file->get_value("tls_min_proto");
+		if (mp != nullptr && tls_set_min_proto(g_ssl_ctx, mp) != 0) {
+			fprintf(stderr, "[http_parser]: tls_min_proto value \"%s\" not accepted\n", mp);
 			return -4;
 		}
 		try {

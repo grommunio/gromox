@@ -4,9 +4,10 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <openssl/ssl.h>
 #include <gromox/cryptoutil.hpp>
 
-using namespace gromox;
+namespace gromox {
 
 /* the microsoft version of hmac_md5 initialisation */
 HMACMD5_CTX::HMACMD5_CTX(const void *key, size_t key_len) :
@@ -45,4 +46,40 @@ bool HMACMD5_CTX::finish(void *digest)
 	    EVP_DigestFinal(ctx_o.get(), static_cast<uint8_t *>(digest), nullptr) <= 0)
 		return false;
 	return true;
+}
+
+int tls_set_min_proto(SSL_CTX *ctx, const char *p)
+{
+	if (p == nullptr)
+		return 0;
+#if defined(LIBRESSL_VERSION_NUMBER) || (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000L)
+	if (strcmp(p, "tls1.3") == 0)
+#ifdef TLS1_3_VERSION
+		SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
+#else
+		return -1;
+#endif
+	else if (strcmp(p, "tls1.2") == 0)
+		SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
+	else if (strcmp(p, "tls1.1") == 0)
+		SSL_CTX_set_min_proto_version(ctx, TLS1_1_VERSION);
+	else if (strcmp(p, "tls1.0") == 0)
+		SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION);
+	else
+		return -1;
+#else
+	if (strcmp(p, "tls1.0") == 0)
+		SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+	else if (strcmp(p, "tls1.1") == 0)
+		SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1);
+	else if (strcmp(p, "tls1.2") == 0)
+		SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
+	else if (strcmp(p, "tls1.3") == 0)
+		SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_TLSv1_2);
+	else
+		return -1;
+#endif
+	return 0;
+}
+
 }

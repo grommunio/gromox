@@ -79,6 +79,7 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "imap_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "imap_thread_init_num", CFG_ALIAS},
+	{"tls_min_proto", "tls1.2"},
 	CFG_TABLE_END,
 };
 static void term_handler(int signo);

@@ -113,6 +113,7 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"tcp_max_segment", "0", CFG_SIZE},
 	{"thread_charge_num", "http_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "http_thread_init_num", CFG_ALIAS},
+	{"tls_min_proto", "tls1.2"},
 	{"user_default_lang", "en"},
 	CFG_TABLE_END,
 };

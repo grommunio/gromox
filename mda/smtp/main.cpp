@@ -79,6 +79,7 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"smtp_support_starttls", "false", CFG_BOOL},
 	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "lda_thread_charge_num", CFG_ALIAS},
+	{"tls_min_proto", "tls1.2"},
 	CFG_TABLE_END,
 };
 

@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
+#include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
@@ -187,7 +188,11 @@ int imap_parser_run()
 			ERR_print_errors_fp(stdout);
 			return -4;
 		}
-
+		auto mp = g_config_file->get_value("tls_min_proto");
+		if (mp != nullptr && tls_set_min_proto(g_ssl_ctx, mp) != 0) {
+			fprintf(stderr, "[imap_parser]: tls_min_proto value \"%s\" not accepted\n", mp);
+			return -4;
+		}
 		try {
 			g_ssl_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
 		} catch (const std::bad_alloc &) {

@@ -197,6 +197,12 @@ Default: \fI/usr/libexec/gromox\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed
 (C706 §12.6.3.7, MS-RPCE v33 §2.2.2.6).
 .TP
+\fBtls_min_proto\fP
+The lowest TLS version to offer. Possible values are: \fBtls1.0\fP,
+\fBtls1.1\fP, \fBtls1.2\fP, and, if supported by the system, \fBtls1.3\fP.
+.PP
+Default: \fItls1.2\fP
+.TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.
 To inhibit the switch, assign the empty value.

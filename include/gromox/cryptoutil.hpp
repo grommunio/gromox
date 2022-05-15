@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <memory>
 #include <openssl/evp.h>
+#include <openssl/ssl.h>
 #include <gromox/defs.h>
 
 namespace gromox {
@@ -23,5 +24,7 @@ struct GX_EXPORT HMACMD5_CTX {
 	uint8_t k_ipad[65]{}, k_opad[65]{};
 	bool valid_flag = false;
 };
+
+extern GX_EXPORT int tls_set_min_proto(SSL_CTX *, const char *);
 
 }

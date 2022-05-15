@@ -76,6 +76,7 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "pop3_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "pop3_threaD_init_num", CFG_ALIAS},
+	{"tls_min_proto", "tls1.2"},
 	CFG_TABLE_END,
 };
 

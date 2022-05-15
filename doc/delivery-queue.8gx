@@ -160,6 +160,12 @@ Default: \fIfalse\fP
 Directory for runtime variadic data.
 .br
 Default: \fI/var/lib/gromox\fP
+.TP
+\fBtls_min_proto\fP
+The lowest TLS version to offer. Possible values are: \fBtls1.0\fP,
+\fBtls1.1\fP, \fBtls1.2\fP, and, if supported by the system, \fBtls1.3\fP.
+.PP
+Default: \fItls1.2\fP
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/smtp_code.txt: Mapping from internal SMTP error codes to
