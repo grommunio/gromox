@@ -1278,7 +1278,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 		if (!ntlmssp_calc_ntlm2_key(send_seal_buff, weak_key, send_seal_const))
 			return false;
 		arcfour_init(&pntlmssp->crypt.ntlm2.sending.seal_state,
-			     &send_seal_blob);
+		             send_seal_blob.pb, send_seal_blob.cb);
 
 		/* SEND: seq num */
 		pntlmssp->crypt.ntlm2.sending.seq_num = 0;
@@ -1293,7 +1293,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 			return false;
 
 		arcfour_init(&pntlmssp->crypt.ntlm2.receiving.seal_state,
-			     &recv_seal_blob);
+		             recv_seal_blob.pb, recv_seal_blob.cb);
 
 		/* RECV: seq num */
 		pntlmssp->crypt.ntlm2.receiving.seq_num = 0;
@@ -1324,8 +1324,8 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 			}
 		}
 
-		arcfour_init(&pntlmssp->crypt.ntlm.seal_state, &seal_key);
-		
+		arcfour_init(&pntlmssp->crypt.ntlm.seal_state,
+		             seal_key.data, seal_key.cb);
 		pntlmssp->crypt.ntlm.seq_num = 0;
 	}
 	return true;

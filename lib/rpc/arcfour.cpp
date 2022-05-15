@@ -21,10 +21,9 @@
 */
 #include <cstdint>
 #include <gromox/arcfour.hpp>
-#include <gromox/mapidefs.h>
 
 /* initialise the arcfour sbox with key */
-void arcfour_init(ARCFOUR_STATE *pstate, const DATA_BLOB *pkey) 
+void arcfour_init(ARCFOUR_STATE *pstate, const uint8_t *keydata, size_t keylen)
 {
 	uint8_t tc;
 	uint8_t j = 0;
@@ -32,8 +31,7 @@ void arcfour_init(ARCFOUR_STATE *pstate, const DATA_BLOB *pkey)
 	for (size_t i = 0; i < sizeof(pstate->sbox); ++i)
 		pstate->sbox[i] = (uint8_t)i;
 	for (size_t i = 0; i < sizeof(pstate->sbox); ++i) {
-		j += (pstate->sbox[i] + pkey->data[i%pkey->length]);
-		
+		j += pstate->sbox[i] + keydata[i%keylen];
 		tc = pstate->sbox[i];
 		pstate->sbox[i] = pstate->sbox[j];
 		pstate->sbox[j] = tc;
@@ -65,10 +63,7 @@ void arcfour_crypt_sbox(ARCFOUR_STATE *pstate, uint8_t *pdata, int len)
 
 void arcfour_crypt(uint8_t *pdata, const uint8_t keystr[16], int len)
 {
-	DATA_BLOB key;
-	key.data = (uint8_t*)keystr;
-	key.length = 16;
 	ARCFOUR_STATE state;
-	arcfour_init(&state, &key);
+	arcfour_init(&state, keystr, 16);
 	arcfour_crypt_sbox(&state, pdata, len);
 }
