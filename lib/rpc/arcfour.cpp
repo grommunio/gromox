@@ -68,29 +68,13 @@ void arcfour_crypt_sbox(ARCFOUR_STATE *pstate, uint8_t *pdata, int len)
 	}
 }
 
-/* arcfour encryption with a blob key */
-void arcfour_crypt_blob(uint8_t *pdata, int len, const DATA_BLOB *pkey) 
-{
-	ARCFOUR_STATE state;
-	
-	arcfour_init(&state, pkey);
-	arcfour_crypt_sbox(&state, pdata, len);
-	arcfour_destroy(&state);
-}
-
-/*
-  a variant that assumes a 16 byte key. This should be removed
-  when the last user is gone
-*/
 void arcfour_crypt(uint8_t *pdata, const uint8_t keystr[16], int len)
 {
 	DATA_BLOB key;
-
 	key.data = (uint8_t*)keystr;
 	key.length = 16;
-	
-	arcfour_crypt_blob(pdata, len, &key);
-	
+	ARCFOUR_STATE state;
+	arcfour_init(&state, &key);
+	arcfour_crypt_sbox(&state, pdata, len);
+	arcfour_destroy(&state);
 }
-
-
