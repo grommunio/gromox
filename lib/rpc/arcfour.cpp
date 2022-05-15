@@ -42,11 +42,6 @@ void arcfour_init(ARCFOUR_STATE *pstate, const DATA_BLOB *pkey)
 	pstate->index_j = 0;
 }
 
-void arcfour_destroy(ARCFOUR_STATE *pstate)
-{
-	/* do nothing */
-}
-
 /* crypt the data with arcfour */
 void arcfour_crypt_sbox(ARCFOUR_STATE *pstate, uint8_t *pdata, int len) 
 {
@@ -76,5 +71,4 @@ void arcfour_crypt(uint8_t *pdata, const uint8_t keystr[16], int len)
 	ARCFOUR_STATE state;
 	arcfour_init(&state, &key);
 	arcfour_crypt_sbox(&state, pdata, len);
-	arcfour_destroy(&state);
 }
