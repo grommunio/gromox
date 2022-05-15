@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
-#include <gromox/hmacmd5.hpp>
+#include <gromox/cryptoutil.hpp>
 
 using namespace gromox;
 

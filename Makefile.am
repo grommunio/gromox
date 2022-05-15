@@ -92,8 +92,8 @@ CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/alloc_context.cpp lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/xarray.cpp lib/mapi/ext_buffer.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
-libgromox_cplus_la_SOURCES = lib/dbhelper.cpp lib/fileio.cpp lib/fopen.cpp lib/oxoabkt.cpp lib/textmaps.cpp
-libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${zstd_LIBS} libgromox_common.la
+libgromox_cplus_la_SOURCES = lib/cryptoutil.cpp lib/dbhelper.cpp lib/fileio.cpp lib/fopen.cpp lib/oxoabkt.cpp lib/textmaps.cpp
+libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${crypto_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${zstd_LIBS} libgromox_common.la
 libgromox_dbop_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_dbop_la_SOURCES = lib/dbop_mysql.cpp lib/dbop_sqlite.cpp
 libgromox_dbop_la_LIBADD = ${fmt_LIBS} ${mysql_LIBS} ${sqlite_LIBS} libgromox_cplus.la
@@ -109,8 +109,8 @@ libgromox_mapi_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_mapi_la_SOURCES = lib/mapi/apple_util.cpp lib/mapi/applefile.cpp lib/mapi/binhex.cpp lib/mapi/eid_array.cpp lib/mapi/element_data.cpp lib/mapi/html.cpp lib/mapi/idset.cpp lib/mapi/macbinary.cpp lib/mapi/oxcical.cpp lib/mapi/oxcmail.cpp lib/mapi/oxvcard.cpp lib/mapi/pcl.cpp lib/mapi/proptag_array.cpp lib/mapi/propval.cpp lib/mapi/restriction.cpp lib/mapi/restriction2.cpp lib/mapi/rop_util.cpp lib/mapi/rtf.cpp lib/mapi/rtfcp.cpp lib/mapi/rule_actions.cpp lib/mapi/sortorder_set.cpp lib/mapi/tarray_set.cpp lib/mapi/tnef.cpp lib/mapi/tpropval_array.cpp
 libgromox_mapi_la_LIBADD = ${gumbo_LIBS} ${HX_LIBS} libgromox_common.la libgromox_email.la
 libgromox_rpc_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
-libgromox_rpc_la_SOURCES = lib/rpc/arcfour.cpp lib/rpc/crc32.cpp lib/rpc/hmacmd5.cpp lib/rpc/ndr.cpp lib/rpc/ntlmssp.cpp
-libgromox_rpc_la_LIBADD = ${crypto_LIBS} ${HX_LIBS} libgromox_common.la
+libgromox_rpc_la_SOURCES = lib/rpc/arcfour.cpp lib/rpc/crc32.cpp lib/rpc/ndr.cpp lib/rpc/ntlmssp.cpp
+libgromox_rpc_la_LIBADD = ${crypto_LIBS} ${HX_LIBS} libgromox_common.la libgromox_cplus.la
 
 delivery_SOURCES = exch/http/service.cpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/system_services.cpp mda/delivery_app/transporter.cpp
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la

@@ -13,9 +13,9 @@
 #include <openssl/md5.h>
 #include <gromox/arcfour.hpp>
 #include <gromox/crc32.hpp>
+#include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
-#include <gromox/hmacmd5.hpp>
 #include <gromox/ndr.hpp>
 #include <gromox/ntlmssp.hpp>
 #include <gromox/util.hpp>

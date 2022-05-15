@@ -27,9 +27,9 @@
 #include <sys/types.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/atomic.hpp>
+#include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/hmacmd5.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/proptags.hpp>

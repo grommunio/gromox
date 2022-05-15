@@ -17,11 +17,11 @@
 #include <openssl/md5.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/cryptoutil.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/hmacmd5.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/oxcmail.hpp>
 #include <gromox/proptag_array.hpp>

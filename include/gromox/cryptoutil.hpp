@@ -2,15 +2,16 @@
 #include <cstdint>
 #include <memory>
 #include <openssl/evp.h>
+#include <gromox/defs.h>
 
 namespace gromox {
 
-struct sslfree {
+struct GX_EXPORT sslfree {
 	inline void operator()(EVP_CIPHER_CTX *x) const { EVP_CIPHER_CTX_free(x); }
 	inline void operator()(EVP_MD_CTX *x) const { EVP_MD_CTX_free(x); }
 };
 
-struct HMACMD5_CTX {
+struct GX_EXPORT HMACMD5_CTX {
 	HMACMD5_CTX() = default;
 	HMACMD5_CTX(const void *key, size_t len);
 	bool update(const void *text, size_t len);
