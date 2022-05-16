@@ -64,6 +64,7 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"lda_listen_port", "25"},
 	{"lda_listen_tls_port", "0"},
 	{"lda_thread_charge_num", "400", CFG_SIZE, "4"},
+	{"lda_thread_init_num", "5", CFG_SIZE},
 	{"listen_port", "lda_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "lda_listen_tls_port", CFG_ALIAS},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
@@ -79,6 +80,7 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"smtp_support_starttls", "false", CFG_BOOL},
 	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "lda_thread_charge_num", CFG_ALIAS},
+	{"thread_init_num", "lda_thread_init_num", CFG_ALIAS},
 	{"tls_min_proto", "tls1.2"},
 	CFG_TABLE_END,
 };
