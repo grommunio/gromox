@@ -284,9 +284,10 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg,
 	if (strlen(temp_buf) == 0)
 		return;
 	HX_strlower(temp_buf);
-	auto d = key_desc != nullptr ? std::lower_bound(key_desc, kdend, temp_buf) : nullptr;
+	auto d = key_desc != nullptr ? std::lower_bound(key_desc, kdend, temp_buf) : kdend;
 	/* lower_bound always needs an equal compare afterwards */
-	if (d != kdend && strcmp(d->key, temp_buf) == 0 && d->flags & CFG_ALIAS)
+	if (d != kdend && d->key != nullptr && strcmp(d->key, temp_buf) == 0 &&
+	    d->flags & CFG_ALIAS)
 		cfg->set_value(d->deflt, equal_ptr);
 	else
 		cfg->set_value(temp_buf, equal_ptr);
