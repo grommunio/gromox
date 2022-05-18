@@ -536,9 +536,6 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		/* reach the maximum of mail transactions */
 		smtp_reply_str = resource_get_smtp_code(529, 1, &string_length);
 		pcontext->connection.write(smtp_reply_str, string_length);
-		if (system_services_add_ip_into_temp_list != nullptr)
-			system_services_add_ip_into_temp_list(pcontext->connection.client_ip,
-				g_param.blktime_sessions);
 		smtp_parser_log_info(pcontext, LV_NOTICE, "added %s into temporary list because"
 							" it exceeds the maximum mail number on session",
 							pcontext->connection.client_ip);

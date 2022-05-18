@@ -191,22 +191,6 @@ static void *smls_thrwork(void *arg)
 			continue;        
 		}
 		pcontext->type = CONTEXT_CONSTRUCTING;
-		/* pass the client ipaddr into the ipaddr filter */
-		if (system_services_judge_ip != nullptr &&
-		    !system_services_judge_ip(client_hostip)) {
-			/* access denied */
-			smtp_reply_str = resource_get_smtp_code(407, 1, &string_length);
-			smtp_reply_str2 = resource_get_smtp_code(407, 2, &string_length);
-			len = sprintf(buff, "%s%s%s", smtp_reply_str, client_hostip,
-				  smtp_reply_str2);
-			write(sockd2, buff, len);
-			system_services_log_info(LV_DEBUG, "Connection %s is denied by ipaddr filter",
-				client_hostip);
-			close(sockd2);
-			/* release the context */
-			contexts_pool_put_context(pcontext, CONTEXT_FREE);
-			continue;
-		}
 		/* 220 <domain> Service ready */
 		smtp_reply_str = resource_get_smtp_code(202, 1, &string_length);
 		smtp_reply_str2 = resource_get_smtp_code(202, 2, &string_length);
@@ -301,22 +285,6 @@ static void *smls_thrworkssl(void *arg)
 			continue;        
 		}
 		pcontext->type = CONTEXT_CONSTRUCTING;
-		/* pass the client ipaddr into the ipaddr filter */
-		if (system_services_judge_ip != nullptr &&
-		    !system_services_judge_ip(client_hostip)) {
-			/* access denied */
-			smtp_reply_str = resource_get_smtp_code(407, 1, &string_length);
-			smtp_reply_str2 = resource_get_smtp_code(407, 2, &string_length);
-			len = sprintf(buff, "%s%s%s", smtp_reply_str, client_hostip,
-				  smtp_reply_str2);
-			write(sockd2, buff, len);
-			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
-				client_hostip);
-			close(sockd2);
-			/* release the context */
-			contexts_pool_put_context(pcontext, CONTEXT_FREE);
-			continue;
-		}
 		/* construct the context object */
 		pcontext->connection.last_timestamp = time_point::clock::now();
 		pcontext->connection.sockd             = sockd2;

@@ -6,9 +6,7 @@
 #include "system_services.h"
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
-E(judge_ip)
 E(judge_user)
-E(add_ip_into_temp_list)
 E(add_user_into_temp_list)
 E(check_user)
 E(check_full)
@@ -26,8 +24,6 @@ int system_services_run()
 } while (false)
 #define E2(f, s) ((f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))))
 
-	E2(system_services_judge_ip, "ip_filter_judge");
-	E2(system_services_add_ip_into_temp_list, "ip_filter_add");
 	E(system_services_log_info, "log_info");
 	E2(system_services_judge_user, "user_filter_judge");
 	E2(system_services_add_user_into_temp_list, "user_filter_add");
