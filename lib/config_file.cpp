@@ -316,11 +316,6 @@ BOOL CONFIG_FILE::set_value(const char *key, const char *value)
 		}
 	}
 	len = strlen(value);
-	for (i=0; i<len; i++) {
-		if ('#' == value[i]) {
-			return FALSE;
-		}
-	}
 	for (i=0; i<cfg_file->num_entries; i++) {
 		if (0 == strcasecmp(key, cfg_file->config_table[i].keyname)) {
 			if (cfg_file->config_table[i].value != value) {
