@@ -927,7 +927,6 @@ static uint32_t zs_openentry_emsab(GUID hsession, BINARY entryid,
 	    address_type != DT_REMOTE_MAILUSER)
 		return ecInvalidParam;
 
-	auto pinfo = zarafa_server_query_session(hsession);
 	BOOL b_private;
 	int user_id;
 	uint64_t eid;
@@ -948,6 +947,9 @@ static uint32_t zs_openentry_emsab(GUID hsession, BINARY entryid,
 		return ecNotFound;
 	}
 	
+	auto pinfo = zarafa_server_query_session(hsession);
+	if (pinfo == nullptr)
+		return ecInvalidParam;
 	auto handle = pinfo->ptree->get_store_handle(b_private, user_id);
 	pinfo.reset();
 	return zarafa_server_openstoreentry(hsession,
