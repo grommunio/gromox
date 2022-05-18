@@ -10,7 +10,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
-#include "blocks_allocator.h"
 #include "resource.h"
 #include "smtp_cmd_handler.h"
 #include "system_services.h"
@@ -283,7 +282,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
         return DISPATCH_CONTINUE;
     }
 	/* fill the new stream the data after "data" command */
-	STREAM stream(blocks_allocator_get_allocator());
+	STREAM stream(&g_blocks_allocator);
 	unsigned int size2 = STREAM_BLOCK_SIZE;
 	void *pbuff2 = stream.get_write_buf(&size2);
 	/*

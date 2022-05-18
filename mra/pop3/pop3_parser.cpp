@@ -19,7 +19,6 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "blocks_allocator.h"
 #include "listener.h"
 #include "pop3_cmd_handler.h"
 #include "pop3_parser.h"
@@ -41,6 +40,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
 unsigned int g_popcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_stls, g_force_stls;
+LIB_BUFFER g_blocks_allocator;
 static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
 static std::unique_ptr<POP3_CONTEXT[]> g_context_list;
@@ -463,7 +463,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 		return POP3_RETRIEVE_TERM;
 	}
 
-	STREAM temp_stream(blocks_allocator_get_allocator());
+	STREAM temp_stream(&g_blocks_allocator);
 	while (temp_stream.get_total_length() < g_retrieving_size) {
 		size = STREAM_BLOCK_SIZE;
 		void *pbuff = temp_stream.get_write_buf(&size);
@@ -626,7 +626,7 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
 }
 
 POP3_CONTEXT::POP3_CONTEXT() :
-	stream(blocks_allocator_get_allocator())
+	stream(&g_blocks_allocator)
 {}
 
 static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)

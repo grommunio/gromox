@@ -18,7 +18,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
-#include "blocks_allocator.h"
 #include "pop3_cmd_handler.h"
 #include "resource.h"
 #include "system_services.h"

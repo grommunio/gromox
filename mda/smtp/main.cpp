@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "blocks_allocator.h" 
 #include <cerrno>
 #include <chrono>
 #include <csignal>
@@ -317,12 +316,7 @@ int main(int argc, const char **argv) try
 
 	size_t fa_blocks_num = scfg.context_num * 128;
 	g_files_allocator = LIB_BUFFER(FILE_ALLOC_SIZE, fa_blocks_num);
-	blocks_allocator_init(scfg.context_num * context_aver_mem);
-	if (0 != blocks_allocator_run()) { 
-		printf("[system]: can not run blocks allocator\n"); 
-		return EXIT_FAILURE;
-	}
-
+	g_blocks_allocator = LIB_BUFFER(STREAM_ALLOC_SIZE, scfg.context_num * context_aver_mem);
 	smtp_parser_init(scfg);
 	if (0 != smtp_parser_run()) { 
 		printf("[system]: failed to run smtp parser\n");

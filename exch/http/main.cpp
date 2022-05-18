@@ -25,7 +25,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "blocks_allocator.h"
 #include "hpm_processor.h"
 #include "http_parser.h"
 #include "listener.h"
@@ -372,12 +371,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
-	blocks_allocator_init(context_num * context_aver_mem);     
-	if (0 != blocks_allocator_run()) { 
-		printf("[system]: can not run blocks allocator\n"); 
-		return EXIT_FAILURE;
-	}
-
+	g_blocks_allocator = LIB_BUFFER(STREAM_ALLOC_SIZE, context_num * context_aver_mem);
 	pdu_processor_init(context_num, PDU_PROCESSOR_RATIO, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
 		g_config_file->get_value("proc_plugin_path"),

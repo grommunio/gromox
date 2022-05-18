@@ -107,5 +107,5 @@ extern SCHEDULE_CONTEXT **smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
 
-extern LIB_BUFFER g_files_allocator;
+extern LIB_BUFFER g_blocks_allocator, g_files_allocator;
 extern smtp_param g_param;

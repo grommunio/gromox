@@ -20,7 +20,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "blocks_allocator.h" 
 #include "imap_parser.h" 
 #include "listener.h" 
 #include "resource.h" 
@@ -300,14 +299,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
-
-	blocks_allocator_init(context_num * context_aver_mem);     
- 
-	if (0 != blocks_allocator_run()) { 
-		printf("[system]: can not run blocks allocator\n"); 
-		return EXIT_FAILURE;
-	}
-
+	g_blocks_allocator = LIB_BUFFER(STREAM_ALLOC_SIZE, context_num * context_aver_mem);
 	imap_parser_init(context_num, context_aver_mitem, context_max_mem,
 		imap_conn_timeout, autologout_time, imap_auth_times,
 		block_interval_auth, imap_support_stls ? TRUE : false,

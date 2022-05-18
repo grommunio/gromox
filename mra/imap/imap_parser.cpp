@@ -32,7 +32,6 @@
 #include <gromox/str_hash.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "blocks_allocator.h"
 #include "dir_tree.hpp"
 #include "imap_cmd_parser.h"
 #include "imap_parser.h"
@@ -70,6 +69,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_starttls, g_force_starttls;
+LIB_BUFFER g_blocks_allocator;
 static std::atomic<int> g_sequence_id;
 static int g_average_num;
 static size_t g_context_num, g_cache_size;
@@ -1461,7 +1461,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx)
 }
 
 IMAP_CONTEXT::IMAP_CONTEXT() :
-	stream(blocks_allocator_get_allocator())
+	stream(&g_blocks_allocator)
 {
 	auto pcontext = this;
 	pcontext->hash_node.pdata = pcontext;

@@ -21,7 +21,6 @@
 #include <gromox/threads_pool.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
-#include "blocks_allocator.h"
 #include "flusher.h"
 #include "listener.h"
 #include "resource.h"
@@ -66,6 +65,7 @@ static int g_block_ID;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 smtp_param g_param;
+LIB_BUFFER g_blocks_allocator;
 
 /* 
  * construct a smtp parser object
@@ -449,7 +449,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
 		case STREAM_EOM_DIRTY:
-			pcontext->stream_second.emplace(blocks_allocator_get_allocator());
+			pcontext->stream_second.emplace(&g_blocks_allocator);
 			pcontext->stream.split_eom(&*pcontext->stream_second);
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
@@ -609,7 +609,7 @@ void envelope_info::clear()
 }
 
 SMTP_CONTEXT::SMTP_CONTEXT() :
-	stream(blocks_allocator_get_allocator()), menv(&g_files_allocator)
+	stream(&g_blocks_allocator), menv(&g_files_allocator)
 {}
 
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)

@@ -33,7 +33,6 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "blocks_allocator.h"
 #include "hpm_processor.h"
 #include "http_parser.h"
 #include "mod_cache.h"
@@ -91,6 +90,7 @@ class VCONN_REF {
 };
 }
 
+LIB_BUFFER g_blocks_allocator;
 static size_t g_context_num;
 static gromox::atomic_bool g_async_stop;
 static bool g_support_tls;
@@ -331,7 +331,7 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 {
 	int size1;
 	int size1_used;
-	STREAM stream_dst(blocks_allocator_get_allocator());
+	STREAM stream_dst(&g_blocks_allocator);
 	auto pstream_src = &stream_src, pstream_dst = &stream_dst;
 	int size = STREAM_BLOCK_SIZE;
 	auto pbuff = pstream_src->get_read_buf(reinterpret_cast<unsigned int *>(&size));
@@ -1930,8 +1930,7 @@ void http_request::clear()
 }
 
 HTTP_CONTEXT::HTTP_CONTEXT() :
-	request(&g_file_allocator),
-	stream_in(blocks_allocator_get_allocator()),
+	request(&g_file_allocator), stream_in(&g_blocks_allocator),
 	stream_out(stream_in.allocator)
 {
 	auto pcontext = this;

@@ -114,7 +114,7 @@ libgromox_rpc_la_LIBADD = ${crypto_LIBS} ${HX_LIBS} libgromox_common.la libgromo
 
 delivery_SOURCES = exch/http/service.cpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/system_services.cpp mda/delivery_app/transporter.cpp
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-delivery_queue_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp mda/message_enqueue.cpp mda/smtp/flusher.cpp mda/smtp/listener.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_parser.cpp mda/smtp/system_services.cpp
+delivery_queue_SOURCES = exch/http/service.cpp mda/message_enqueue.cpp mda/smtp/flusher.cpp mda/smtp/listener.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_parser.cpp mda/smtp/system_services.cpp
 delivery_queue_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_cplus.la libgromox_epoll.la
 libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp
 libgxm_alias_resolve_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -133,9 +133,9 @@ libgxm_remote_delivery_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxm_remote_delivery_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
 EXTRA_libgxm_remote_delivery_la_DEPENDENCIES = ${default_sym}
 
-pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp mra/pop3/listener.cpp mra/pop3/main.cpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp mra/pop3/system_services.cpp
+pop3_SOURCES = exch/http/service.cpp mra/pop3/listener.cpp mra/pop3/main.cpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp mra/pop3/system_services.cpp
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_cplus.la libgromox_epoll.la
-imap_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp mra/imap/dir_tree.cpp mra/imap/imap_cmd_parser.cpp mra/imap/imap_parser.cpp mra/imap/listener.cpp mra/imap/main.cpp mra/imap/resource.cpp mra/imap/system_services.cpp
+imap_SOURCES = exch/http/service.cpp mra/imap/dir_tree.cpp mra/imap/imap_cmd_parser.cpp mra/imap/imap_parser.cpp mra/imap/listener.cpp mra/imap/main.cpp mra/imap/resource.cpp mra/imap/system_services.cpp
 imap_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_cplus.la libgromox_epoll.la libgromox_email.la
 libgxs_event_proxy_la_SOURCES = mra/event_proxy.cpp
 libgxs_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -150,7 +150,7 @@ libgxs_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_midb_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_midb_agent_la_DEPENDENCIES = ${default_sym}
 
-http_SOURCES = exch/http/blocks_allocator.cpp exch/http/hpm_processor.cpp exch/http/http_parser.cpp exch/http/listener.cpp exch/http/main.cpp exch/http/mod_cache.cpp exch/http/mod_fastcgi.cpp exch/http/mod_rewrite.cpp exch/http/pdu_ndr.cpp exch/http/pdu_processor.cpp exch/http/service.cpp exch/http/system_services.cpp
+http_SOURCES = exch/http/hpm_processor.cpp exch/http/http_parser.cpp exch/http/listener.cpp exch/http/main.cpp exch/http/mod_cache.cpp exch/http/mod_fastcgi.cpp exch/http/mod_rewrite.cpp exch/http/pdu_ndr.cpp exch/http/pdu_processor.cpp exch/http/service.cpp exch/http/system_services.cpp
 http_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_cplus.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la
 midb_SOURCES = exch/http/service.cpp exch/midb/cmd_parser.cpp exch/midb/common_util.cpp exch/midb/exmdb_client.cpp exch/midb/listener.cpp exch/midb/mail_engine.cpp exch/midb/main.cpp exch/midb/system_services.cpp
 midb_LDADD = -ldl -lpthread -lresolv ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
