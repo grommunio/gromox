@@ -276,8 +276,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		pcontext->connection.write(smtp_reply_str, string_length);
 		smtp_parser_log_info(pcontext, LV_ERR, "flushing queue permanent failure");
 		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-		if (system_services_container_remove_ip != nullptr)
-			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
 		return PROCESS_CLOSE;
 	}
@@ -291,8 +289,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
 				smtp_parser_log_info(pcontext, LV_ERR, "out of SSL object");
 				pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-				if (system_services_container_remove_ip != nullptr)
-					system_services_container_remove_ip(pcontext->connection.client_ip);
 		        smtp_parser_context_clear(pcontext);
 			    return PROCESS_CLOSE;        
 			}
@@ -316,8 +312,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			} else {
 				pcontext->connection.reset();
 			}
-			if (system_services_container_remove_ip != nullptr)
-				system_services_container_remove_ip(pcontext->connection.client_ip);
 			smtp_parser_context_clear(pcontext);
 			return PROCESS_CLOSE;
 		} else {
@@ -344,8 +338,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			flusher_cancel(pcontext);
 		}
 		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-		if (system_services_container_remove_ip != nullptr)
-			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
 		return PROCESS_CLOSE;
 	}
@@ -362,8 +354,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		}
 		smtp_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		pcontext->connection.reset();
-		if (system_services_container_remove_ip != nullptr)
-			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
 		return PROCESS_CLOSE;
 	} else if (actual_read > 0) {
@@ -384,8 +374,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				flusher_cancel(pcontext);
 			}
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-			if (system_services_container_remove_ip != nullptr)
-				system_services_container_remove_ip(pcontext->connection.client_ip);
 			smtp_parser_context_clear(pcontext);
 			return PROCESS_CLOSE;
 		} else {
@@ -402,8 +390,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			pcontext->connection.write(smtp_reply_str, string_length);
 			smtp_parser_log_info(pcontext, LV_DEBUG, "envelope line too long");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-			if (system_services_container_remove_ip != nullptr)
-				system_services_container_remove_ip(pcontext->connection.client_ip);
 			smtp_parser_context_clear(pcontext);
 			return PROCESS_CLOSE;        
 		}
@@ -417,8 +403,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 							pcontext)) {
 					case DISPATCH_SHOULD_CLOSE:
 						pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-						if (system_services_container_remove_ip != nullptr)
-							system_services_container_remove_ip(pcontext->connection.client_ip);
 						smtp_parser_context_clear(pcontext);
 						return PROCESS_CLOSE;
 					case DISPATCH_CONTINUE:
@@ -438,8 +422,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 						debug_info("[smtp_parser] :error occurs in "
 									"smtp_dispatch_cmd\n");
 						pcontext->connection.reset();
-						if (system_services_container_remove_ip != nullptr)
-							system_services_container_remove_ip(pcontext->connection.client_ip);
 						smtp_parser_context_clear(pcontext);
 						return PROCESS_CLOSE;
 					}
@@ -477,8 +459,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		}
 	}
 	pcontext->connection.reset();
-	if (system_services_container_remove_ip != nullptr)
-		system_services_container_remove_ip(pcontext->connection.client_ip);
 	smtp_parser_context_clear(pcontext);
 	return PROCESS_CLOSE;
 }
@@ -499,8 +479,6 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 			flusher_cancel(pcontext);
 		}
 		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-		if (system_services_container_remove_ip != nullptr)
-			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
 		return PROCESS_CLOSE;
 	}
