@@ -212,6 +212,22 @@ int smtp_parser_threads_event_proc(int action)
 	return 0;
 }
 
+static int smtp_parser_size_check(SMTP_CONTEXT &ctx)
+{
+	if (ctx.total_length < g_param.max_mail_length)
+		return PROCESS_CONTINUE;
+	/* 552 message exceeds fixed maximum message size */
+	size_t len = 0;
+	auto reply = resource_get_smtp_code(521, 1, &len);
+	ctx.connection.write(reply, len);
+	smtp_parser_log_info(&ctx, LV_NOTICE, "closing session because maximum message size exceeded");
+	if (ctx.flusher.flush_ID != 0)
+		flusher_cancel(&ctx);
+	ctx.connection.reset(SLEEP_BEFORE_CLOSE);
+	smtp_parser_context_clear(&ctx);
+	return PROCESS_CLOSE;
+}
+
 int smtp_parser_process(SMTP_CONTEXT *pcontext)
 {
 	char *line, reply_buf[1024];
@@ -454,7 +470,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
 		default:
-			return !b_should_flush ? PROCESS_CONTINUE :
+			return !b_should_flush ? smtp_parser_size_check(*pcontext) :
 			       smtp_parser_try_flush_mail(pcontext, false);
 		}
 	}
@@ -462,26 +478,13 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	smtp_parser_context_clear(pcontext);
 	return PROCESS_CLOSE;
 }
-	
 
 static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 {
-	size_t string_length = 0;
-	
 	pcontext->total_length += pcontext->stream.get_total_length() - pcontext->pre_rstlen;
-	if (pcontext->total_length >= g_param.max_mail_length && !is_whole) {
-		/* 552 message exceeds fixed maximum message size */
-		auto smtp_reply_str = resource_get_smtp_code(521, 1, &string_length);
-		pcontext->connection.write(smtp_reply_str, string_length);
-		smtp_parser_log_info(pcontext, LV_NOTICE, "close session because of exceeding "
-				 "maximum size of message");
-		if (0 != pcontext->flusher.flush_ID) {
-			flusher_cancel(pcontext);
-		}
-		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-		smtp_parser_context_clear(pcontext);
-		return PROCESS_CLOSE;
-	}
+	auto ret = smtp_parser_size_check(*pcontext);
+	if (ret != PROCESS_CONTINUE)
+		return ret;
 	smtp_parser_reset_stream_reading(pcontext);
 	pcontext->flusher.flush_action = is_whole ? FLUSH_WHOLE_MAIL : FLUSH_PART_MAIL;
 	pcontext->stream.reset_reading();
