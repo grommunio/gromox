@@ -297,11 +297,11 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 				ptag_node->ppropname->kind = MNID_ID;
 				ptag_node->ppropname->lid = strtol(ptoken + 4, nullptr, 0);
 				if (ptag_node->ppropname->lid == 0) {
-					free(ptag_node->ppropname);
-					free(ptag_node);
 					printf("[exchange_emsmdb]: lid \"%s\"/%u error "
 						"with guid \"%s\"\n", ptoken + 4,
 						ptag_node->ppropname->lid, pline + 5);
+					free(ptag_node->ppropname);
+					free(ptag_node);
 					return NULL;
 				}
 				ptag_node->ppropname->pname = NULL;
