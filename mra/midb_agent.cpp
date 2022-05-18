@@ -502,8 +502,9 @@ static int list_mail(const char *path, const char *folder,
 				try {
 					MSG_UNIT msg{temp_line};
 					msg.size = strtol(pspace, nullptr, 0);
+					auto msg_size = msg.size;
 					parray.push_back(std::move(msg));
-					*psize += msg.size;
+					*psize += msg_size;
 				} catch (const std::bad_alloc &) {
 					b_fail = TRUE;
 				}
