@@ -168,8 +168,6 @@ int main(int argc, const char **argv) try
 		temp_buff[arsizeof(temp_buff)-1] = '\0';
 		resource_set_string("HOST_ID", temp_buff);
 		str_val = temp_buff;
-		printf("[system]: warning! cannot find host ID, OS host name will be "
-			"used as host ID\n");
 	}
 	printf("[system]: host ID is %s\n", str_val);
 	gx_strlcpy(host_name, str_val, GX_ARRAY_SIZE(host_name));
