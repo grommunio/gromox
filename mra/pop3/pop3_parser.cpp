@@ -20,6 +20,7 @@
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "blocks_allocator.h"
+#include "listener.h"
 #include "pop3_cmd_handler.h"
 #include "pop3_parser.h"
 #include "resource.h"
@@ -42,7 +43,6 @@ int g_max_auth_times, g_block_auth_fail;
 bool g_support_stls, g_force_stls;
 static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
-static int g_ssl_port;
 static std::unique_ptr<POP3_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static char g_certificate_path[256];
@@ -161,8 +161,6 @@ int pop3_parser_run()
 		printf("[pop3_parser]: Failed to allocate POP3 contexts\n");
         return -4;
     }
-	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
-		g_ssl_port = 0;
     return 0;
 }
 
@@ -251,7 +249,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			return PROCESS_CLOSE;
 		} else {
 			pcontext->is_stls = FALSE;
-			if (pcontext->connection.server_port == g_ssl_port) {
+			if (pcontext->connection.server_port == g_listener_ssl_port) {
 				/* +OK <domain> Service ready */
 				auto pop3_reply_str = resource_get_pop3_code(1711, 1, &string_length);
 				auto pop3_reply_str2 = resource_get_pop3_code(1711, 2, &string_length);

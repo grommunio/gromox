@@ -36,6 +36,7 @@
 #include "dir_tree.hpp"
 #include "imap_cmd_parser.h"
 #include "imap_parser.h"
+#include "listener.h"
 #include "resource.h"
 #include "system_services.h"
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
@@ -73,7 +74,6 @@ static std::atomic<int> g_sequence_id;
 static int g_average_num;
 static size_t g_context_num, g_cache_size;
 static time_duration g_timeout, g_autologout_time;
-static int g_ssl_port;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop;
@@ -253,8 +253,6 @@ int imap_parser_run()
 		printf("[imap_parser]: Failed to allocate IMAP contexts\n");
         return -10;
     }
-	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
-		g_ssl_port = 0;
 	
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_thr_id, nullptr, imps_thrwork, nullptr);
@@ -376,7 +374,7 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 
 	if (SSL_accept(pcontext->connection.ssl) != -1) {
 		pcontext->sched_stat = SCHED_STAT_RDCMD;
-		if (pcontext->connection.server_port == g_ssl_port) {
+		if (pcontext->connection.server_port == g_listener_ssl_port) {
 			/* IMAP_CODE_2170000: OK <domain> Service ready */
 			size_t s1len = 0, s2len = 0;
 			auto imap_reply_str = resource_get_imap_code(1700, 1, &s1len);

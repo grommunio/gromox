@@ -23,6 +23,7 @@
 #include <gromox/util.hpp>
 #include "blocks_allocator.h"
 #include "flusher.h"
+#include "listener.h"
 #include "resource.h"
 #include "smtp_cmd_handler.h"
 #include "smtp_parser.h"
@@ -59,7 +60,6 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext);
 static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole);
 static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext);
 
-static int g_ssl_port;
 static std::unique_ptr<SMTP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static int g_block_ID;
@@ -164,8 +164,6 @@ int smtp_parser_run()
 		printf("[smtp_parser]: Failed to allocate SMTP contexts\n");
 		return -7;
 	}
-	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
-		g_ssl_port = 0;
 	return 0;
 }
 
@@ -324,7 +322,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			return PROCESS_CLOSE;
 		} else {
 			pcontext->last_cmd = T_NONE_CMD;
-			if (pcontext->connection.server_port == g_ssl_port) {
+			if (pcontext->connection.server_port == g_listener_ssl_port) {
 				/* 220 <domain> Service ready */
 				auto smtp_reply_str = resource_get_smtp_code(202, 1, &string_length);
 				auto smtp_reply_str2 = resource_get_smtp_code(202, 2, &string_length);

@@ -39,7 +39,7 @@ static void *smls_thrworkssl(void *);
 static pthread_t g_thr_id;
 static gromox::atomic_bool g_stop_accept;
 static int g_listener_sock = -1, g_listener_ssl_sock = -1;
-static uint16_t g_listener_port, g_listener_ssl_port;
+uint16_t g_listener_port, g_listener_ssl_port;
 static pthread_t g_ssl_thr_id;
 
 void listener_init(uint16_t port, uint16_t ssl_port)
