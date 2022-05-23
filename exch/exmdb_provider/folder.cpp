@@ -16,7 +16,7 @@
 #include "db_engine.h"
 #include "exmdb_server.h"
 #define MAXIMUM_RECIEVE_FOLDERS				2000
-#define MAXIMUM_STORE_FOLDERS				10000
+#define MAXIMUM_STORE_FOLDERS				100000
 #define SYSTEM_ALLOCATED_EID_RANGE			10000
 
 using namespace gromox;
