@@ -239,7 +239,7 @@ static void *p3ls_thrwork(void *arg)
 		gx_strlcpy(pcontext->connection.client_ip, client_hostip, arsizeof(pcontext->connection.client_ip));
 		gx_strlcpy(pcontext->connection.server_ip, server_hostip, arsizeof(pcontext->connection.server_ip));
 		/* 
-		valid the context and wake up one thread if there're some threads 
+		valid the context and wake up one thread if there are some threads
 		block on the condition variable 
 		*/
 		pcontext->polling_mask = POLLING_READ;
@@ -360,7 +360,7 @@ static void *p3ls_thrworkssl(void *arg)
 		gx_strlcpy(pcontext->connection.client_ip, client_hostip, arsizeof(pcontext->connection.client_ip));
 		gx_strlcpy(pcontext->connection.server_ip, server_hostip, arsizeof(pcontext->connection.server_ip));
 		/* 
-		valid the context and wake up one thread if there're some threads 
+		valid the context and wake up one thread if there are some threads
 		block on the condition variable 
 		*/
 		pcontext->polling_mask = POLLING_READ;

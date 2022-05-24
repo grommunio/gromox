@@ -238,7 +238,7 @@ static void *htls_thrwork(void *arg)
 		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
 		pcontext->sched_stat                = SCHED_STAT_RDHEAD;
 		/* 
-		valid the context and wake up one thread if there're some threads 
+		valid the context and wake up one thread if there are some threads
 		block on the condition variable 
 		*/
 		pcontext->polling_mask = POLLING_READ;
@@ -354,7 +354,7 @@ static void *htls_thrworkssl(void *arg)
 		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
 		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
 		/* 
-		valid the context and wake up one thread if there're some threads 
+		valid the context and wake up one thread if there are some threads
 		block on the condition variable 
 		*/
 		pcontext->polling_mask = POLLING_READ;

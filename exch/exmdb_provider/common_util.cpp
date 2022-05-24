@@ -4719,7 +4719,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
-		/* if there're too many property names in table, stop creating */
+		/* if there are too many property names in table, stop creating */
 		if (sqlite3_column_int64(pstmt, 0) + ppropnames->count >
 		    MAXIMUM_PROPNAME_NUMBER)
 			/* at some point we may want to return ecNPQuotaExceeded */
