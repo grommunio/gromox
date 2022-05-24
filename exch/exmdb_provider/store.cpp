@@ -14,7 +14,6 @@
 #include "common_util.h"
 #include "db_engine.h"
 #include "exmdb_server.h"
-#define ALLOCATION_INTERVAL						24*60*60
 
 using namespace gromox;
 
@@ -25,7 +24,7 @@ struct dlgitem {
 };
 }
 
-static constexpr uint64_t MAXIMUM_ALLOCATION_NUMBER = 0x7fffffffffff;
+static constexpr uint64_t GLOBCNT_MAX = 0x7fffffffffff;
 
 BOOL exmdb_server_ping_store(const char *dir)
 {
@@ -283,57 +282,27 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	uint32_t count, uint64_t *pbegin_eid)
 {
 	uint64_t tmp_eid;
-	uint64_t range_end;
-	uint64_t range_begin;
 	char sql_string[128];
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT range_begin, "
-				"range_end, is_system FROM allocated_eids"
-	         " WHERE allocate_time>=%lld",
-	         static_cast<long long>(time(nullptr)) - ALLOCATION_INTERVAL);
+	snprintf(sql_string, arsizeof(sql_string), "SELECT "
+		"max(range_end) FROM allocated_eids");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	}
-	range_begin = 0;
-	range_end = 0;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		if (1 == sqlite3_column_int64(pstmt, 2)) {
-			continue;
-		}
-		tmp_eid = sqlite3_column_int64(pstmt, 0);
-		if (0 == range_begin) {
-			range_begin = tmp_eid;
-		} else {
-			if (tmp_eid < range_begin) {
-				range_begin = tmp_eid;
-			}
-		}
-		tmp_eid = sqlite3_column_int64(pstmt, 1);
-		if (0 == range_end) {
-			range_end = tmp_eid;
-		} else {
-			if (tmp_eid > range_end) {
-				range_end = tmp_eid;
-			}
-		}
-	}
-	pstmt.finalize();
-	if (range_end - range_begin + count > MAXIMUM_ALLOCATION_NUMBER) {
+	tmp_eid = sqlite3_column_int64(pstmt, 0) + 1;
+	/*
+	 * Old versions of this function used to limit ID reservation per time.
+	 * Nowadays it's unlimited and we just check for final exhaustion.
+	 */
+	if (tmp_eid + count > GLOBCNT_MAX) {
 		fprintf(stderr, "E-1592: store \"%s\" has used up all local replica IDs. "
 		        "(Did you create too many Offline profiles?)\n", dir);
 		*pbegin_eid = 0;
 		return TRUE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT "
-		"max(range_end) FROM allocated_eids");
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return FALSE;
-	tmp_eid = sqlite3_column_int64(pstmt, 0) + 1;
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids "
 	          "VALUES (%llu, %llu, %lld, 0)",
