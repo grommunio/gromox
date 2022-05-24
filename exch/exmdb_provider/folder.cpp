@@ -16,7 +16,6 @@
 #include "db_engine.h"
 #include "exmdb_server.h"
 #define MAXIMUM_RECIEVE_FOLDERS				2000
-#define MAXIMUM_STORE_FOLDERS				100000
 #define SYSTEM_ALLOCATED_EID_RANGE			10000
 
 using namespace gromox;
@@ -463,17 +462,6 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT count(folder_id) FROM folders");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
-		return FALSE;
-	}
-	if (sqlite3_step(pstmt) != SQLITE_ROW ||
-	    sqlite3_column_int64(pstmt, 0) > MAXIMUM_STORE_FOLDERS) {
-		fprintf(stderr, "E-1586: create_folder_b_p: reached maximum folders in store\n");
-		return TRUE;
-	}
-	pstmt.finalize();
 	if (!common_util_get_folder_type(pdb->psqlite, parent_id, &parent_type))
 		return FALSE;
 	if (parent_type == FOLDER_SEARCH)
@@ -482,13 +470,12 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		tmp_val = rop_util_get_gc_value(tmp_fid);
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
 		          " folders WHERE folder_id=%llu", LLU(tmp_val));
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
 		if (sqlite3_step(pstmt) == SQLITE_ROW)
 			return TRUE;
-		pstmt.finalize();
 		if (!common_util_check_allocated_eid(pdb->psqlite, tmp_val, &b_result))
 			return FALSE;
 		if (!b_result)
@@ -496,7 +483,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
 	          "folders WHERE parent_id=%llu", LLU(parent_id));
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
