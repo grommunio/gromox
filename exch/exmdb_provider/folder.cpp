@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -481,31 +481,18 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		if (!b_result)
 			return TRUE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
-	          "folders WHERE parent_id=%llu", LLU(parent_id));
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto qstr = "SELECT 1 FROM folders AS f INNER JOIN folder_properties AS fp "
+	            "ON f.folder_id=fp.folder_id AND fp.proptag=? "
+	            "WHERE f.parent_id=? and fp.propval=? COLLATE NOCASE";
+	auto pstmt = gx_sql_prep(pdb->psqlite, qstr);
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-
-	/* Check whether name is already assigned to any folder */
-	snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
-		"FROM folder_properties WHERE folder_id=?"
-	        " AND proptag=%u", PR_DISPLAY_NAME);
-	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt1 == nullptr) {
-		return FALSE;
-	}
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		tmp_val = sqlite3_column_int64(pstmt, 0);
-		sqlite3_bind_int64(pstmt1, 1, tmp_val);
-		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			if (strcasecmp(pname, reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 0))) == 0)
-				return TRUE;
-		}
-		sqlite3_reset(pstmt1);
-	}
-	pstmt1.finalize();
+	pstmt.bind_int64(1, PR_DISPLAY_NAME);
+	pstmt.bind_int64(2, parent_id);
+	pstmt.bind_text(3, pname);
+	if (pstmt.step() == SQLITE_ROW)
+		return TRUE;
 	pstmt.finalize();
 
 	if (type == FOLDER_GENERIC) {
