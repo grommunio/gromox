@@ -745,7 +745,7 @@ int encode64(const void *vin, size_t inlen, char *out,
 }
 
 /*
- * @vout needs to have sufficient space, namely inlin*3/4+1.
+ * @vout needs to have sufficient space, namely inlen*3/4+1.
  * On success, @vout is NUL-terminated (@outlen count is without NUL).
  */
 int decode64(const char *in, size_t inlen, void *vout, size_t outmax, size_t *outlen)

@@ -1075,7 +1075,7 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
 	phook->hook_addr = func;
     double_list_append_as_tail(&g_cur_lib->list_hook, &phook->node_lib);
 	if (!found_hook) {
-    	/* aquire write lock when to modify the hooks list */
+    	/* acquire write lock when to modify the hooks list */
 		std::lock_guard ml_hold(g_mpc_list_lock);
     	double_list_append_as_tail(&g_hook_list, &phook->node_hook);
     	/* append also the hook into lib's hook list */
@@ -1090,7 +1090,7 @@ static BOOL transporter_register_local(HOOK_FUNCTION func)
 	if (g_local_path[0] != '\0') {
 		return FALSE;
 	}
-	/* do not need read aquire write lock */
+	/* do not need read acquire write lock */
 	g_local_hook = func;
 	strcpy(g_local_path, g_cur_lib->file_name);
 	return TRUE;

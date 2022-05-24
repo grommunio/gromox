@@ -332,7 +332,7 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 		return false;
 	/*
 	 * g-web touches PR_EC_WEBACCESS_SETTINGS_JSON every now and then even
-	 * if just browing one's store/settings panel. Occurrence seems still
+	 * if just browsing one's store/settings panel. Occurrence seems still
 	 * acceptable that we may not need to add an age check.
 	 */
 	object_tree_write_root(prootobj);

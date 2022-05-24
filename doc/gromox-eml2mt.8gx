@@ -18,7 +18,7 @@ calendaring and scheduling objects (.ics).
 When called as gromox\-vcf2mt, the input is treated as RFC4770/6530-formatted
 vCard objects.
 .PP
-eml2mt will resolve email adresses to Gromox objects already, so the emitted
+eml2mt will resolve email addresses to Gromox objects already, so the emitted
 data stream should be consumed by an mt2exm invocation on the \fIsame\fP Gromox
 cluster.
 .SH Options

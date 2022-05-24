@@ -794,7 +794,7 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 	if (!g_with_acl)
 		return yi;
 	/*
-	 * ECSecurity.cpp ECSecurity::GetObjectPermission never evalutes type=1
+	 * ECSecurity.cpp ECSecurity::GetObjectPermission never evaluates type=1
 	 * (ACCESS_TYPE_DENIED); but only 2 (ACCESS_TYPE_GRANT).
 	 */
 	qstr = fmt::format("SELECT id, rights FROM acl WHERE hierarchy_id={} AND type=2", hid);

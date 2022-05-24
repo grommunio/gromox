@@ -308,7 +308,7 @@ static int launch_notify_listener(remote_svr &srv) try
 	if (ret != 0)
 		fprintf(stderr, "pthread_setname_np: %s\n", strerror(ret));
 	/*
-	 * Wait for the notifiy thread to be up before allowing
+	 * Wait for the notify thread to be up before allowing
 	 * current thread to send any commands.
 	 */
 	while (ag.startup_wait) {

@@ -25,7 +25,7 @@ Fixes:
 
 * imap: add a default for the `imap_cmd_debug` directive
 * service_loader: resolve crash when first module is unloadable
-* eml2mt, exm2eml: rectify wrong serivce plugin search path
+* eml2mt, exm2eml: rectify wrong service plugin search path
 
 Enhancements:
 
@@ -163,7 +163,7 @@ Fixes:
   notification listeners
 * nsp: Fix janky row seeking and crashing when using the name search feature in
   Outlook's Address Book dialog.
-* mysql_adaptor: Lookup of rooms and equipments by maildir has been restored.
+* mysql_adaptor: Lookup of rooms and equipment by maildir has been restored.
 * midb had erroneously processed only the first command for every network read
 * exmdb_client again groups notify connections per PID
 
