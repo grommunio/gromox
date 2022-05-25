@@ -1594,7 +1594,7 @@ enum res_type {
 	RES_COUNT = 0x0b,
 	/* https://docs.microsoft.com/en-us/archive/blogs/stephen_griffin/new-restriction-types-seen-in-wrapped-psts */
 	RES_ANNOTATION = 0x0c,
-	RES_NULL = 0xff,
+	RES_NULL = 0xff, /* aka NULL_RESTRICTION */
 };
 
 enum {
