@@ -63,12 +63,10 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 	$Account = $Response->addChild('Account');
 	$Account->addChild('AccountType', 'email');
 	$Account->addChild('Action', 'settings');
-	$Protocol = $Account->addChild('Protocol');
 	$host_name = get_default_hostname();
 	$server_name = get_domain_server_guid($dinfo) . '@' . $dinfo['domain'];
-	if (get_mapihttp_supported() &&
-		0 == strncasecmp($_SERVER['HTTP_USER_AGENT'], "Microsoft Office/", 17)
-		&& floatval(substr($_SERVER['HTTP_USER_AGENT'], 17)) >= 16) {
+	if (advertise_mh($_SERVER["HTTP_USER_AGENT"])) {
+		$Protocol = $Account->addChild('Protocol');
 		$Protocol->addChild('Type', 'EXHTTP');
 		$Protocol->addChild('Server', get_http_proxy($dinfo['homedir'], $host_name));
 		$Protocol->addChild('SSL', 'On');
@@ -84,7 +82,9 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		$AddressBook = $Protocol->addChild('AddressBook');
 		$AddressBook->addChild('InternalUrl', 'https://' . get_http_proxy($dinfo['homedir'], $host_name) ."/mapi/nspi/?MailboxId=" . $server_name);
 		$AddressBook->addChild('ExternalUrl', 'https://' . get_http_proxy($dinfo['homedir'], $host_name) ."/mapi/nspi/?MailboxId=" . $server_name);
-	} else {
+	}
+	if (advertise_rpch($_SERVER["HTTP_USER_AGENT"])) {
+		$Protocol = $Account->addChild('Protocol');
 		$Protocol->addChild('Type', 'EXCH');
 		$Protocol->addChild('Server', $server_name);
 		$Protocol->addChild('ServerVersion', SERVER_VERSION);
@@ -106,6 +106,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		$Protocol->addChild('ServerExclusiveConnect', 'on');
 	}
 } else {
+	// Private mbox
 	if (!isset($_SERVER['REMOTE_USER'])) {
 		header("Status: 401 Unauthorized");
 		header("Content-Length: 0");
@@ -166,14 +167,12 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		$Account = $Response->addChild('Account');
 		$Account->addChild('AccountType', 'email');
 		$Account->addChild('Action', 'settings');
-		$Protocol = $Account->addChild('Protocol');
 		$host_name = get_default_hostname();
 		$server_name = get_user_server_guid($uinfo) . '@' . $uinfo['domain'];
-		$Protocol->addChild('OOFUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
-		$Protocol->addChild('OABUrl', 'https://' . $host_name . '/OAB/');
-		if (get_mapihttp_supported() &&
-			0 == strncasecmp($_SERVER['HTTP_USER_AGENT'], "Microsoft Office/", 17)
-			&& floatval(substr($_SERVER['HTTP_USER_AGENT'], 17)) >= 16) {
+		if (advertise_mh($_SERVER["HTTP_USER_AGENT"])) {
+			$Protocol = $Account->addChild('Protocol');
+			$Protocol->addChild('OOFUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
+			$Protocol->addChild('OABUrl', 'https://' . $host_name . '/OAB/');
 			$Protocol->addChild('Type', 'EXHTTP');
 			$Protocol->addChild('Server', get_http_proxy($uinfo['maildir'], $host_name));
 			$Protocol->addChild('SSL', 'On');
@@ -194,7 +193,11 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 			$AddressBook = $Protocol->addChild('AddressBook');
 			$AddressBook->addChild('InternalUrl', 'https://' . get_http_proxy($uinfo['maildir'], $host_name) ."/mapi/nspi/?MailboxId=" . $server_name);
 			$AddressBook->addChild('ExternalUrl', 'https://' . get_http_proxy($uinfo['maildir'], $host_name) ."/mapi/nspi/?MailboxId=" . $server_name);
-		} else {
+		}
+		if (advertise_rpch($_SERVER["HTTP_USER_AGENT"])) {
+			$Protocol = $Account->addChild('Protocol');
+			$Protocol->addChild('OOFUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
+			$Protocol->addChild('OABUrl', 'https://' . $host_name . '/OAB/');
 			$Protocol->addChild('Type', 'EXCH');
 			$Protocol->addChild('Server', $server_name);
 			$Protocol->addChild('ServerVersion', SERVER_VERSION);

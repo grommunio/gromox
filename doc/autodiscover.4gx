@@ -72,6 +72,22 @@ Database name.
 Default: inherit, \fIemail\fP.
 .SS [exchange]
 .TP
+\fBadvertise_mh\fP
+This setting controls whether the AutoDiscover response should include a EXHTTP
+Protocol section. Possible values: \fIyes\fP, \fIno\fP, \fInot_old_mso\fP,
+\fIonly_new_mso\fP. The latter two values can be used to finely control
+emission in case of clients other than Outlook.
+.br
+Default: \fIonly_new_mso\fP
+.TP
+\fBadvertise_rpch\fP
+This setting controls whether the AutoDiscover response should include
+EXCH/EXPR Protocol sections. Possible values: \fIyes\fP, \fIno\fP,
+\fIonly_old_mso\fP, \fInot_new_mso\fP. The latter two values can be used to
+finely control emission in case of clients other than Outlook.
+.br
+Default: \fInot_new_mso\fP
+.TP
 \fBhostname\fP
 The \fBglobally valid\fP hostname of this server for the purpose of
 AutoDisocvery referring to itself and other RPC and EWS endpoints. (The OXDSCLI
@@ -79,15 +95,6 @@ protocol requires URLs and Outlook would not do anything if we snuck in
 relative paths in violation of the spec.)
 .br
 Default: (system hostname).
-.TP
-\fBmapihttp\fP
-This setting controls which server types the Autodiscover handler should
-respond with. The two options are MAPI-in-DCERPC-in-HTTP (a.k.a. RPCH,
-RPC/HTTP, Outlook Anywhere) and simply MAPI-in-HTTP (a.k.a. MOH,
-MAPI-over-HTTP). MOH is supported from Outlook >= 2013 SP1 onwards. \fI0\fP
-selects RPC/HTTP, \fI1\fP selects MAPI/HTTP.
-.br
-Default: \fI0\fP.
 .SS [default]
 .TP
 \fBtimezone\fP

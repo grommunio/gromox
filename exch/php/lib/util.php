@@ -212,6 +212,46 @@ function get_mapihttp_supported()
 	return false;
 }
 
+function advertise_rpch($agent)
+{
+	$config = get_app_config();
+	$exc = $config["exchange"];
+	if (!isset($exc))
+		return true;
+	if (!isset($exc["advertise_rpch"]))
+		return !get_mapihttp_supported();
+	$v = $exc["advertise_rpch"];
+	if (strcmp($v, "no") == 0)
+		return false;
+	if (strcmp($v, "not_new_mso") == 0)
+		return strncasecmp($agent, "Microsoft Office/", 17) != 0 ||
+		       floatval(substr($agent, 17)) < 16;
+	if (strcmp($v, "old_mso_only") == 0)
+		return strncasecmp($agent, "Microsoft Office/", 17) == 0 &&
+		       floatval(substr($agent, 17)) < 16;
+	return true;
+}
+
+function advertise_mh($agent)
+{
+	$config = get_app_config();
+	$exc = $config["exchange"];
+	if (!isset($exc))
+		return true;
+	if (!isset($exc["advertise_mh"]))
+		return get_mapihttp_supported();
+	$v = $exc["advertise_mh"];
+	if (strcmp($v, "no") == 0)
+		return false;
+	if (strcmp($v, "not_old_mso") == 0)
+		return strncasecmp($agent, "Microsoft Office/", 17) != 0 ||
+		       floatval(substr($agent, 17)) >= 16;
+	if (strcmp($v, "new_mso_only") == 0)
+		return strncasecmp($agent, "Microsoft Office/", 17) == 0 &&
+		       floatval(substr($agent, 17)) >= 16;
+	return true;
+}
+
 function _log($from, $message, $exit=-1)
 {
 	error_log($from . ": " . $message);
