@@ -67,4 +67,4 @@ extern void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, const char *
 extern unsigned int g_popcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
 extern bool g_support_stls, g_force_stls;
-extern LIB_BUFFER g_blocks_allocator;
+extern alloc_limiter<stream_block> g_blocks_allocator;

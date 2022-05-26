@@ -371,7 +371,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
-	g_blocks_allocator = LIB_BUFFER(STREAM_ALLOC_SIZE, context_num * context_aver_mem);
+	g_blocks_allocator = alloc_limiter<stream_block>(context_num * context_aver_mem);
 	pdu_processor_init(context_num, PDU_PROCESSOR_RATIO, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
 		g_config_file->get_value("proc_plugin_path"),

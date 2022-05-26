@@ -297,7 +297,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
-	g_blocks_allocator = LIB_BUFFER(STREAM_ALLOC_SIZE, context_num * context_aver_mem);
+	g_blocks_allocator = alloc_limiter<stream_block>(context_num * context_aver_mem);
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_stls,
 		pop3_force_stls, certificate_path, cb_passwd,

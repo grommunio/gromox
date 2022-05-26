@@ -316,7 +316,7 @@ int main(int argc, const char **argv) try
 
 	size_t fa_blocks_num = scfg.context_num * 128;
 	g_files_allocator = alloc_limiter<file_block>(fa_blocks_num);
-	g_blocks_allocator = LIB_BUFFER(STREAM_ALLOC_SIZE, scfg.context_num * context_aver_mem);
+	g_blocks_allocator = alloc_limiter<stream_block>(scfg.context_num * context_aver_mem);
 	smtp_parser_init(scfg);
 	if (0 != smtp_parser_run()) { 
 		printf("[system]: failed to run smtp parser\n");

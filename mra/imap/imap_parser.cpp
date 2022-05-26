@@ -69,7 +69,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_starttls, g_force_starttls;
-LIB_BUFFER g_blocks_allocator;
+alloc_limiter<stream_block> g_blocks_allocator;
 static std::atomic<int> g_sequence_id;
 static int g_average_num;
 static size_t g_context_num, g_cache_size;

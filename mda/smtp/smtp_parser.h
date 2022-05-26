@@ -9,6 +9,7 @@
 #include <gromox/flusher_common.h>
 #include <gromox/mem_file.hpp>
 #include <gromox/stream.hpp>
+#include <gromox/util.hpp>
 #define MAX_BLOCK_MIME_LEN                  4096
 #define MAX_EXTRA_DATA_INDEX                8
 #define MAX_EXTRA_DATA_TAGLEN               16
@@ -107,6 +108,6 @@ extern SCHEDULE_CONTEXT **smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
 
-extern LIB_BUFFER g_blocks_allocator;
+extern alloc_limiter<stream_block> g_blocks_allocator;
 extern alloc_limiter<file_block> g_files_allocator;
 extern smtp_param g_param;

@@ -1,7 +1,6 @@
 #pragma once
 #include <gromox/double_list.hpp>
 #include <gromox/util.hpp>
-#define STREAM_BLOCK_SIZE    0x10000
 #define STREAM_ALLOC_SIZE    (STREAM_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
 
 /**
@@ -40,7 +39,7 @@ enum {
 };
 
 struct STREAM {
-	STREAM(LIB_BUFFER *);
+	STREAM(alloc_limiter<stream_block> *);
 	STREAM(STREAM &&) = delete;
 	STREAM &operator=(STREAM &&);
 	~STREAM();
@@ -71,7 +70,7 @@ struct STREAM {
 	size_t rd_total_pos = 0, wr_total_pos = 0;
 	size_t last_eom_parse = 0;
 	size_t block_line_parse = 0, block_line_pos = 0;
-	LIB_BUFFER *allocator = nullptr;
+	alloc_limiter<stream_block> *allocator = nullptr;
 	DOUBLE_LIST list{};
 
 	protected:

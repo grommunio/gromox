@@ -9,6 +9,8 @@
 #include <gromox/common_types.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
+#undef containerof
+#define containerof(var, T, member) reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, std::add_const<T>::type, T>::type *>(reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, const char, char>::type *>(var) - offsetof(T, member))
 
 #define CR			0x100
 #define LF			0x101
@@ -23,7 +25,7 @@ enum {
 static void stream_free(STREAM *);
 static BOOL stream_append_node(STREAM *pstream); 
 
-STREAM::STREAM(LIB_BUFFER *palloc) :
+STREAM::STREAM(alloc_limiter<stream_block> *palloc) :
 	allocator(palloc)
 {
 	auto pstream = this;
@@ -208,7 +210,7 @@ void STREAM::clear()
 		} else {
 			break;
 		}
-		pstream->allocator->put(pnode);
+		pstream->allocator->put(containerof(pnode, stream_block, list_node));
 		pnode = double_list_get_tail(&pstream->list);
 	}
 
@@ -243,7 +245,7 @@ void stream_free(STREAM *pstream)
 	pstream->clear();
 	phead = double_list_pop_front(&pstream->list);
 	if (phead != nullptr)
-		pstream->allocator->put(phead);
+		pstream->allocator->put(containerof(phead, stream_block, list_node));
 	pstream->allocator = NULL;
 	double_list_free(&pstream->list);
 }
@@ -269,10 +271,10 @@ static BOOL stream_append_node(STREAM *pstream)
 		pnode = double_list_get_after(&pstream->list,
 			pstream->pnode_wr);
 	} else {
-		pnode = pstream->allocator->get<DOUBLE_LIST_NODE>();
-		if (NULL == pnode) {
+		auto blk = pstream->allocator->get();
+		if (blk == nullptr)
 			return FALSE;
-		}
+		pnode = &blk->list_node;
 		pnode->pdata = (char*)pnode + sizeof(DOUBLE_LIST_NODE);
 		double_list_append_as_tail(&pstream->list, pnode);
 	}

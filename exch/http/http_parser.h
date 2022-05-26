@@ -135,4 +135,4 @@ void http_parser_vconnection_async_reply(const char *host,
 extern void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, gromox::time_duration keepalive);
 extern void http_parser_log_info(HTTP_CONTEXT *pcontext, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
-extern LIB_BUFFER g_blocks_allocator;
+extern alloc_limiter<stream_block> g_blocks_allocator;

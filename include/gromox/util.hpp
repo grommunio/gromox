@@ -8,6 +8,7 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #define FILE_BLOCK_SIZE 0x100
+#define STREAM_BLOCK_SIZE 0x10000
 
 #if defined(__OpenBSD__)
 #include <pthread.h>
@@ -27,6 +28,11 @@ enum {
 struct file_block {
 	DOUBLE_LIST_NODE list_node;
 	char buf[FILE_BLOCK_SIZE];
+};
+
+struct stream_block {
+	DOUBLE_LIST_NODE list_node;
+	char buf[STREAM_BLOCK_SIZE];
 };
 
 struct GX_EXPORT LIB_BUFFER {

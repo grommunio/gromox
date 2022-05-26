@@ -90,7 +90,7 @@ class VCONN_REF {
 };
 }
 
-LIB_BUFFER g_blocks_allocator;
+alloc_limiter<stream_block> g_blocks_allocator;
 static size_t g_context_num;
 static gromox::atomic_bool g_async_stop;
 static bool g_support_tls;
