@@ -220,9 +220,9 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		common_util_init(org_name, average_blocks, max_rcpt, max_mail,
 			max_length, max_rule_len, smtp_ip, smtp_port, submit_command);
 		msgchg_grouping_init(get_data_path());
+		rop_processor_init(average_handles, ping_interval);
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
-		rop_processor_init(average_handles, ping_interval);
 		if (bounce_producer_run(get_data_path()) != 0) {
 			printf("[exchange_emsmdb]: failed to run bounce producer\n");
 			return FALSE;
@@ -255,9 +255,9 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		rop_processor_stop();
 		asyncemsmdb_interface_stop();
 		emsmdb_interface_stop();
+		rop_processor_stop();
 		msgchg_grouping_stop();
 		common_util_stop();
 		asyncemsmdb_interface_free();
