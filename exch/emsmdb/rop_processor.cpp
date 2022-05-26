@@ -9,13 +9,13 @@
 #include <mutex>
 #include <pthread.h>
 #include <unistd.h>
+#include <unordered_map>
 #include <utility>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/int_hash.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/simple_tree.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
 #include "attachment_object.h"
 #include "aux_types.h"
@@ -55,7 +55,7 @@ static pthread_t g_scan_id;
 static int g_average_handles;
 static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
-static std::unique_ptr<STR_HASH_TABLE> g_logon_hash;
+static std::unordered_map<std::string, uint32_t> g_logon_hash;
 static LIB_BUFFER g_logmap_allocator, g_handle_allocator, g_logitem_allocator;
 
 unsigned int emsmdb_max_obh_per_session = 500;
@@ -147,13 +147,9 @@ static bool rop_processor_release_objnode(
 		auto proot = plogitem->tree.get_root();
 		auto pobject = static_cast<const logon_object *>(static_cast<const OBJECT_NODE *>(proot->pdata)->pobject);
 		std::lock_guard hl_hold(g_hash_lock);
-		auto pref = g_logon_hash->query<uint32_t>(pobject->get_dir());
-		if (pref != nullptr) {
-			(*pref) --;
-			if (0 == *pref) {
-				g_logon_hash->remove(pobject->get_dir());
-			}
-		}
+		auto pref = g_logon_hash.find(pobject->get_dir());
+		if (pref != g_logon_hash.end() && --pref->second == 0)
+			g_logon_hash.erase(pref);
 		b_root = TRUE;
 	} else {
 		b_root = FALSE;
@@ -197,7 +193,6 @@ void logmap_delete::operator()(LOGMAP *plogmap) const
 int rop_processor_create_logon_item(LOGMAP *plogmap,
     uint8_t logon_id, std::unique_ptr<logon_object> &&plogon)
 {
-	uint32_t tmp_ref;
 	auto plogitem = plogmap->p[logon_id];
 	/* MS-OXCROPS 3.1.4.2 */
 	if (NULL != plogitem) {
@@ -223,12 +218,13 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 		return -3;
 	}
 	std::lock_guard hl_hold(g_hash_lock);
-	auto pref = g_logon_hash->query<uint32_t>(rlogon->get_dir());
-	if (NULL == pref) {
-		tmp_ref = 1;
-		g_logon_hash->add(rlogon->get_dir(), &tmp_ref);
-	} else {
-		(*pref) ++;
+	auto pref = g_logon_hash.find(rlogon->get_dir());
+	if (pref != g_logon_hash.end()) {
+		++pref->second;
+	} else try {
+		g_logon_hash.emplace(rlogon->get_dir(), 1);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1974: ENOMEM\n");
 	}
 	return handle;
 }
@@ -354,13 +350,9 @@ logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
 static void *emsrop_scanwork(void *param)
 {
 	int count;
-	char tmp_dir[256];
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
 	
-	double_list_init(&temp_list);
 	count = 0;
-	while (!g_notify_stop) {
+	while (!g_notify_stop) try {
 		sleep(1);
 		count ++;
 		if (count < g_scan_interval) {
@@ -370,30 +362,17 @@ static void *emsrop_scanwork(void *param)
 			count = 0;
 		}
 		std::unique_lock hl_hold(g_hash_lock);
-		auto iter = g_logon_hash->make_iter();
-		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
-			str_hash_iter_forward(iter)) {
-			str_hash_iter_get_value(iter, tmp_dir);
-			pnode = gromox::me_alloc<DOUBLE_LIST_NODE>();
-			if (NULL == pnode) {
-				continue;
-			}
-			pnode->pdata = strdup(tmp_dir);
-			if (NULL == pnode->pdata) {
-				free(pnode);
-				continue;
-			}
-			double_list_append_as_tail(&temp_list, pnode);
-		}
-		str_hash_iter_free(iter);
+		std::vector<std::string> dirs;
+		for (const auto &pair : g_logon_hash)
+			dirs.push_back(pair.first);
 		hl_hold.unlock();
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
-			exmdb_client_ping_store(static_cast<char *>(pnode->pdata));
-			free(pnode->pdata);
-			free(pnode);
+		while (dirs.size() > 0) {
+			exmdb_client_ping_store(dirs.back().c_str());
+			dirs.pop_back();
 		}
+	} catch (const std::bad_alloc &) {
+		sleep(1);
 	}
-	double_list_free(&temp_list);
 	return nullptr;
 }
 
@@ -413,11 +392,6 @@ int rop_processor_run()
 	g_logitem_allocator = LIB_BUFFER(sizeof(LOGON_ITEM), 256 * context_num);
 	g_handle_allocator = LIB_BUFFER(sizeof(OBJECT_NODE),
 	                     g_average_handles * context_num);
-	g_logon_hash = STR_HASH_TABLE::create(get_context_num() * 256, sizeof(uint32_t), nullptr);
-	if (NULL == g_logon_hash) {
-		printf("[exchange_emsmdb]: Failed to init logon hash\n");
-		return -4;
-	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
 	if (ret != 0) {
@@ -439,7 +413,7 @@ void rop_processor_stop()
 			pthread_join(g_scan_id, NULL);
 		}
 	}
-	g_logon_hash.reset();
+	g_logon_hash.clear();
 }
 
 static int rop_processor_execute_and_push(uint8_t *pbuff,
