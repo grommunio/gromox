@@ -45,9 +45,6 @@
 #define BASE_STATUS_LIVING					1
 #define BASE_STATUS_DESTRUCTING				2
 
-#undef containerof
-#define containerof(var, T, member) reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, std::add_const<T>::type, T>::type *>(reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, const char, char>::type *>(var) - offsetof(T, member))
-
 /* 
 	PERSON: username, real_name, title, memo, cell, tel,
 			nickname, homeaddress, create_day, maildir

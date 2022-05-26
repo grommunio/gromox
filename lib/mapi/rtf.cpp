@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
@@ -21,8 +22,6 @@
 #include <gromox/simple_tree.hpp>
 #include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
-#undef containerof
-#define containerof(var, T, member) reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, std::add_const<T>::type, T>::type *>(reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, const char, char>::type *>(var) - offsetof(T, member))
 #define QRF(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return false; } while (false)
 
 #define MAX_ATTRS						10000

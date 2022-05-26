@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -35,8 +36,6 @@
 #include <gromox/single_list.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#undef containerof
-#define containerof(var, T, member) reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, std::add_const<T>::type, T>::type *>(reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, const char, char>::type *>(var) - offsetof(T, member))
 
 #define SELECT_INTERVAL			24*60*60
 

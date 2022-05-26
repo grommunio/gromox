@@ -6,11 +6,10 @@
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
-#undef containerof
-#define containerof(var, T, member) reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, std::add_const<T>::type, T>::type *>(reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, const char, char>::type *>(var) - offsetof(T, member))
 
 #define CR			0x100
 #define LF			0x101
