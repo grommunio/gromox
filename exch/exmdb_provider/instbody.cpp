@@ -134,6 +134,7 @@ static int instance_conv_htmlfromlower(MESSAGE_CONTENT *mc,
 	bin->pc = common_util_convert_copy(false, cpid, htmlout.get());
 	if (bin->pc == nullptr)
 		return -1;
+	/* instance_get_raw / instance_read_cid_content guaranteed trailing \0 */
 	bin->cb = strlen(bin->pc);
 	return 1;
 }

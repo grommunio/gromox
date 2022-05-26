@@ -684,6 +684,10 @@ static void *fake_read_cid(unsigned int mode, uint32_t tag, uint64_t cid, uint32
 	return nullptr;
 }
 
+/**
+ * Returns a buffer with the raw file content (including UTF-8 length marker,
+ * if any), plus a trailing NUL.
+ */
 void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag)
 {
 	struct stat node_stat;
@@ -709,10 +713,11 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag)
 	if (fstat(fd.get(), &node_stat) != 0) {
 		return NULL;
 	}
-	auto pbuff = cu_alloc<char>(node_stat.st_size);
+	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
 	if (pbuff == nullptr ||
 	    read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
 		return NULL;
+	pbuff[node_stat.st_size] = '\0';
 	if (NULL != plen) {
 		*plen = node_stat.st_size;
 	}
