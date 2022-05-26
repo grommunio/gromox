@@ -56,8 +56,8 @@ namespace {
 struct FIFO {
 	FIFO() = default;
 	FIFO(LIB_BUFFER *, size_t data_size, size_t max_size);
-	BOOL enqueue(void *);
-	void *get_front();
+	BOOL enqueue(const MEM_FILE &);
+	MEM_FILE *get_front();
 	void dequeue();
 
 	LIB_BUFFER *mbuf_pool = nullptr;
@@ -148,7 +148,7 @@ FIFO::FIFO(LIB_BUFFER *pbuf_pool, size_t ds, size_t ms) :
 }
 
 /* Returns TRUE on success, or FALSE if the FIFO is full. */
-BOOL FIFO::enqueue(void *pdata)
+BOOL FIFO::enqueue(const MEM_FILE &mf)
 {
 #ifdef _DEBUG_UMTA
 	if (pdata == nullptr)
@@ -158,7 +158,7 @@ BOOL FIFO::enqueue(void *pdata)
 		return false;
 	auto node = mbuf_pool->get<SINGLE_LIST_NODE>();
 	node->pdata = reinterpret_cast<char *>(node) + sizeof(SINGLE_LIST_NODE);
-	memcpy(node->pdata, pdata, data_size);
+	memcpy(node->pdata, &mf, data_size);
 	single_list_append_as_tail(&mlist, node);
 	++cur_size;
 	return TRUE;
@@ -181,12 +181,12 @@ void FIFO::dequeue()
  * Returns a pointer to the data at the front of the specified FIFO, or nullptr
  * if the FIFO is empty.
  */
-void *FIFO::get_front()
+MEM_FILE *FIFO::get_front()
 {
 	if (cur_size <= 0)
 		return nullptr;
 	auto node = single_list_get_head(&mlist);
-	return node != nullptr ? node->pdata : nullptr;
+	return node != nullptr ? static_cast<MEM_FILE *>(node->pdata) : nullptr;
 }
 
 DEQUEUE_NODE::~DEQUEUE_NODE()
@@ -617,7 +617,7 @@ static void *ev_enqwork(void *param)
 					mem_file_init(&temp_file, &g_file_alloc);
 					temp_file.write(penqueue->line, strlen(penqueue->line));
 					std::unique_lock dl_hold(pdequeue->lock);
-					b_result = pdequeue->fifo.enqueue(&temp_file);
+					b_result = pdequeue->fifo.enqueue(temp_file);
 					dl_hold.unlock();
 					if (!b_result)
 						mem_file_free(&temp_file);
@@ -669,7 +669,7 @@ static void *ev_deqwork(void *param)
 		if (g_notify_stop)
 			break;
 		dq_hold.lock();
-		auto pfile = static_cast<MEM_FILE *>(pdequeue->fifo.get_front());
+		auto pfile = pdequeue->fifo.get_front();
 		if (NULL != pfile) {
 			temp_file = *pfile;
 			pdequeue->fifo.dequeue();
@@ -688,7 +688,7 @@ static void *ev_deqwork(void *param)
 					hl_hold.unlock();
 					close(pdequeue->sockd);
 					pdequeue->sockd = -1;
-					while ((pfile = static_cast<MEM_FILE *>(pdequeue->fifo.get_front())) != nullptr) {
+					while ((pfile = pdequeue->fifo.get_front()) != nullptr) {
 						mem_file_free(pfile);
 						pdequeue->fifo.dequeue();
 					}
@@ -717,7 +717,7 @@ static void *ev_deqwork(void *param)
 			hl_hold.unlock();
 			close(pdequeue->sockd);
 			pdequeue->sockd = -1;
-			while ((pfile = static_cast<MEM_FILE *>(pdequeue->fifo.get_front())) != nullptr) {
+			while ((pfile = pdequeue->fifo.get_front()) != nullptr) {
 				mem_file_free(pfile);
 				pdequeue->fifo.dequeue();
 			}
