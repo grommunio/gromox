@@ -692,11 +692,13 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag)
 	try {
 		if (g_dbg_synth_content == 2)
 			return fake_read_cid(g_dbg_synth_content, tag, cid, plen);
-		path = exmdb_server_get_dir() + "/cid/"s + std::to_string(cid);
+		path = cu_cid_path(nullptr, cid);
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1588: ENOMEM\n");
 		return nullptr;
 	}
+	if (path.empty())
+		return nullptr;
 	wrapfd fd = open(path.c_str(), O_RDONLY);
 	if (fd.get() < 0) {
 		if (g_dbg_synth_content)
