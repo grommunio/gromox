@@ -46,7 +46,7 @@
 #define HGROWING_SIZE					250
 
 struct LOGON_ITEM {
-	std::unique_ptr<INT_HASH_TABLE> phash;
+	std::unordered_map<int, object_node *> phash;
 	SIMPLE_TREE tree;
 };
 
@@ -155,12 +155,12 @@ static bool rop_processor_release_objnode(
 		b_root = FALSE;
 	}
 	simple_tree_enum_from_node(&pobjnode->node, [&](const SIMPLE_TREE_NODE *pnode) {
-		plogitem->phash->remove(static_cast<const OBJECT_NODE *>(pnode->pdata)->handle);
+		plogitem->phash.erase(static_cast<const object_node *>(pnode->pdata)->handle);
 	});
 	plogitem->tree.destroy_node(&pobjnode->node, rop_processor_free_objnode);
 	if (b_root) {
 		plogitem->tree.clear();
-		plogitem->phash.reset();
+		plogitem->phash.clear();
 		g_logitem_allocator->put(plogitem);
 	}
 	return b_root;
@@ -203,11 +203,6 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 	if (NULL == plogitem) {
 		return -1;
 	}
-	plogitem->phash = INT_HASH_TABLE::create(HGROWING_SIZE, sizeof(OBJECT_NODE *));
-	if (NULL == plogitem->phash) {
-		g_logitem_allocator->put(plogitem);
-		return -2;
-	}
 	simple_tree_init(&plogitem->tree);
 	plogmap->p[logon_id] = plogitem;
 	auto rlogon = plogon.get();
@@ -232,9 +227,7 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	int parent_handle, object_node &&in_object)
 {
-	int tmp_handle;
-	OBJECT_NODE *ptmphanle;
-	OBJECT_NODE **ppparent;
+	object_node *parent = nullptr;
 	EMSMDB_INFO *pemsmdb_info;
 	
 	auto plogitem = plogmap->p[logon_id];
@@ -246,12 +239,11 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	if (parent_handle < 0) {
 		if (plogitem->tree.get_root() != nullptr)
 			return -4;
-		ppparent = NULL;
 	} else if (parent_handle >= 0 && parent_handle < INT32_MAX) {
-		ppparent = plogitem->phash->query<OBJECT_NODE *>(parent_handle);
-		if (NULL == ppparent) {
+		auto i = plogitem->phash.find(parent_handle);
+		if (i == plogitem->phash.end())
 			return -5;
-		}
+		parent = i->second;
 	} else {
 		return -6;
 	}
@@ -264,29 +256,22 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 		return -8;
 	}
 	*pobjnode = std::move(in_object);
-	if (plogitem->phash->add(pobjnode->handle, &pobjnode) != 1) {
-		auto phash = INT_HASH_TABLE::create(plogitem->phash->capacity +
-		                        HGROWING_SIZE, sizeof(OBJECT_NODE *));
-		if (NULL == phash) {
+	try {
+		auto xp = plogitem->phash.emplace(pobjnode->handle, pobjnode);
+		if (!xp.second) {
 			g_handle_allocator->put(pobjnode);
 			return -8;
 		}
-		auto iter = plogitem->phash->make_iter();
-		for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
-			int_hash_iter_forward(iter)) {
-			ptmphanle = static_cast<OBJECT_NODE *>(int_hash_iter_get_value(iter, &tmp_handle));
-			phash->add(tmp_handle, ptmphanle);
-		}
-		int_hash_iter_free(iter);
-		plogitem->phash = std::move(phash);
-		plogitem->phash->add(pobjnode->handle, &pobjnode);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1975: ENOMEM\n");
+		g_handle_allocator->put(pobjnode);
+		return -8;
 	}
-	if (NULL == ppparent) {
+	if (parent == nullptr)
 		plogitem->tree.set_root(&pobjnode->node);
-	} else {
-		plogitem->tree.add_child(&(*ppparent)->node,
+	else
+		plogitem->tree.add_child(&parent->node,
 			&pobjnode->node, SIMPLE_TREE_ADD_LAST);
-	}
 	if (pobjnode->type == OBJECT_TYPE_ICSUPCTX) {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref ++;
@@ -303,12 +288,11 @@ void *rop_processor_get_object(LOGMAP *plogmap,
 	if (NULL == plogitem) {
 		return NULL;
 	}
-	auto ppobjnode = plogitem->phash->query<OBJECT_NODE *>(obj_handle);
-	if (NULL == ppobjnode) {
+	auto i = plogitem->phash.find(obj_handle);
+	if (i == plogitem->phash.end())
 		return NULL;
-	}
-	*ptype = (*ppobjnode)->type;
-	return (*ppobjnode)->pobject;
+	*ptype = i->second->type;
+	return i->second->pobject;
 }
 
 void rop_processor_release_object_handle(LOGMAP *plogmap,
@@ -322,15 +306,15 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 	if (NULL == plogitem) {
 		return;
 	}
-	auto ppobjnode = plogitem->phash->query<OBJECT_NODE *>(obj_handle);
-	if (NULL == ppobjnode) {
+	auto i = plogitem->phash.find(obj_handle);
+	if (i == plogitem->phash.end())
 		return;
-	}
-	if (OBJECT_TYPE_ICSUPCTX == (*ppobjnode)->type) {
+	auto objnode = i->second;
+	if (objnode->type == OBJECT_TYPE_ICSUPCTX) {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref --;
 	}
-	if (rop_processor_release_objnode(plogitem, *ppobjnode))
+	if (rop_processor_release_objnode(plogitem, objnode))
 		plogmap->p[logon_id] = nullptr;
 }
 
