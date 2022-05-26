@@ -35,6 +35,8 @@
 #include <gromox/single_list.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
+#undef containerof
+#define containerof(var, T, member) reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, std::add_const<T>::type, T>::type *>(reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, const char, char>::type *>(var) - offsetof(T, member))
 
 #define SELECT_INTERVAL			24*60*60
 
@@ -52,15 +54,19 @@ using namespace gromox;
 
 namespace {
 
-#define EXTRA_FIFOITEM_SIZE sizeof(SINGLE_LIST)
+struct fifo_block {
+	SINGLE_LIST_NODE list_node;
+	MEM_FILE mem_file;
+};
+
 struct FIFO {
 	FIFO() = default;
-	FIFO(LIB_BUFFER *, size_t data_size, size_t max_size);
+	FIFO(alloc_limiter<fifo_block> *, size_t data_size, size_t max_size);
 	BOOL enqueue(const MEM_FILE &);
 	MEM_FILE *get_front();
 	void dequeue();
 
-	LIB_BUFFER *mbuf_pool = nullptr;
+	alloc_limiter<fifo_block> *mbuf_pool = nullptr;
 	SINGLE_LIST mlist{};
 	size_t data_size = 0, cur_size = 0, max_size = 0;
 };
@@ -97,7 +103,7 @@ struct HOST_NODE {
 
 static gromox::atomic_bool g_notify_stop;
 static unsigned int g_threads_num;
-static LIB_BUFFER g_fifo_alloc;
+static alloc_limiter<fifo_block> g_fifo_alloc;
 static alloc_limiter<file_block> g_file_alloc;
 static std::vector<std::string> g_acl_list;
 static std::list<ENQUEUE_NODE> g_enqueue_list, g_enqueue_list1;
@@ -139,7 +145,7 @@ static void term_handler(int signo);
  * outside the FIFO, but the FIFO will give back a node-sized memory every time
  * you call deque, unless the FIFO is empty.
  */
-FIFO::FIFO(LIB_BUFFER *pbuf_pool, size_t ds, size_t ms) :
+FIFO::FIFO(alloc_limiter<fifo_block> *pbuf_pool, size_t ds, size_t ms) :
 	mbuf_pool(pbuf_pool), data_size(ds), max_size(ms)
 {
 	if (pbuf_pool == nullptr)
@@ -156,9 +162,12 @@ BOOL FIFO::enqueue(const MEM_FILE &mf)
 #endif
 	if (cur_size >= max_size)
 		return false;
-	auto node = mbuf_pool->get<SINGLE_LIST_NODE>();
-	node->pdata = reinterpret_cast<char *>(node) + sizeof(SINGLE_LIST_NODE);
-	memcpy(node->pdata, &mf, data_size);
+	auto blk = mbuf_pool->get();
+	if (blk == nullptr)
+		return false;
+	blk->mem_file = mf;
+	auto node = &blk->list_node;
+	node->pdata = &blk->mem_file;
 	single_list_append_as_tail(&mlist, node);
 	++cur_size;
 	return TRUE;
@@ -173,7 +182,7 @@ void FIFO::dequeue()
 	if (cur_size <= 0)
 		return;
 	auto node = single_list_pop_front(&mlist);
-	mbuf_pool->put(node);
+	mbuf_pool->put(containerof(node, fifo_block, list_node));
 	--cur_size;
 }
 
@@ -238,8 +247,7 @@ int main(int argc, const char **argv) try
 		return 7;
 	
 	g_threads_num ++;
-	g_fifo_alloc = LIB_BUFFER(sizeof(MEM_FILE) + EXTRA_FIFOITEM_SIZE,
-	               g_threads_num * FIFO_AVERAGE_LENGTH);
+	g_fifo_alloc = alloc_limiter<fifo_block>(g_threads_num * FIFO_AVERAGE_LENGTH);
 	g_file_alloc = alloc_limiter<file_block>(g_threads_num * FIFO_AVERAGE_LENGTH);
 	g_dequeue_list1.reserve(g_threads_num);
 	pthread_attr_init(&thr_attr);
