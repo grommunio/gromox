@@ -8,7 +8,7 @@
 
 struct MIME_POOL;
 struct MIME_POOL_NODE {
-	MIME_POOL_NODE(LIB_BUFFER *b, MIME_POOL *p) : mime(b), pool(p) {}
+	MIME_POOL_NODE(alloc_limiter<file_block> *b, MIME_POOL *p) : mime(b), pool(p) {}
 
 	MIME mime;
 	MIME_POOL *pool = nullptr;
@@ -26,7 +26,7 @@ struct GX_EXPORT MIME_POOL {
 	MIME *get_mime();
 	static void put_mime(MIME *);
 
-	LIB_BUFFER allocator;
+	alloc_limiter<file_block> allocator;
 	std::list<MIME_POOL_NODE> pbegin;
 	std::list<MIME_POOL_NODE *> free_list; /* references pbegin nodes */
 	std::mutex mutex;

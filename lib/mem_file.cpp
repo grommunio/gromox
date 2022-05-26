@@ -6,10 +6,12 @@
 #include <cstring>
 #include <gromox/mem_file.hpp>
 #include <gromox/util.hpp>
+#undef containerof
+#define containerof(var, T, member) reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, std::add_const<T>::type, T>::type *>(reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, const char, char>::type *>(var) - offsetof(T, member))
 
 static DOUBLE_LIST_NODE* mem_file_append_node(MEM_FILE *pfile); 
 
-void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc)
+void mem_file_init(MEM_FILE *pfile, alloc_limiter<file_block> *palloc)
 {
 	DOUBLE_LIST_NODE *pnode;
 #ifdef _DEBUG_UMTA
@@ -625,7 +627,7 @@ void MEM_FILE::clear()
 		} else {
 			break;
 		}
-		pfile->allocator->put(pnode);
+		pfile->allocator->put(containerof(pnode, file_block, list_node));
 		pnode = double_list_get_tail(&pfile->list);
 	}
  CLEAR_RETRUN:
@@ -649,7 +651,7 @@ void mem_file_free(MEM_FILE *pfile)
 #endif
 	pfile->clear();
 	phead = double_list_pop_front(&pfile->list);
-	pfile->allocator->put(phead);
+	pfile->allocator->put(containerof(phead, file_block, list_node));
 	pfile->allocator = NULL;
 	double_list_free(&pfile->list);
 }
@@ -671,13 +673,12 @@ static DOUBLE_LIST_NODE* mem_file_append_node(MEM_FILE *pfile)
 		return NULL;
 	}
 #endif
-	auto pnode = pfile->allocator->get<DOUBLE_LIST_NODE>();
-	if (NULL == pnode) {
+	auto blk = pfile->allocator->get();
+	if (blk == nullptr)
 		return NULL;
-	}
-	pnode->pdata = (char*)pnode + sizeof(DOUBLE_LIST_NODE);
-	double_list_append_as_tail(&pfile->list, pnode);
-	return pnode;
+	blk->list_node.pdata = &blk->buf;
+	double_list_append_as_tail(&pfile->list, &blk->list_node);
+	return &blk->list_node;
 }
 
 /*

@@ -3,6 +3,7 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
+#include <gromox/util.hpp>
 #define VALUE_LEN	256
 
 enum{
@@ -24,7 +25,7 @@ using MIME_FIELD_ENUM = BOOL (*)(const char *, char *, void *);
 struct LIB_BUFFER;
 struct MAIL;
 struct GX_EXPORT MIME {
-	MIME(LIB_BUFFER *);
+	MIME(alloc_limiter<file_block> *);
 	NOMOVE(MIME);
 	~MIME();
 

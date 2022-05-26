@@ -6,6 +6,7 @@
 #include <gromox/generic_connection.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/plugin.hpp>
+#include <gromox/util.hpp>
 #define NDR_STACK_IN				0
 #define NDR_STACK_OUT				1
 
@@ -28,7 +29,7 @@ struct HPM_INTERFACE {
 };
 
 struct http_request {
-	http_request(LIB_BUFFER *);
+	http_request(alloc_limiter<file_block> *);
 	NOMOVE(http_request);
 	~http_request();
 	void clear();

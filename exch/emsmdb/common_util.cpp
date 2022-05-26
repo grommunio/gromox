@@ -61,7 +61,7 @@ static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static std::mutex g_id_lock;
 static char g_submit_command[1024];
-static LIB_BUFFER g_file_allocator;
+static alloc_limiter<file_block> g_file_allocator;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
 E(get_maildir)
@@ -2073,7 +2073,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	return TRUE;
 }
 
-LIB_BUFFER* common_util_get_allocator()
+alloc_limiter<file_block> *common_util_get_allocator()
 {
 	return &g_file_allocator;
 }
@@ -2144,7 +2144,7 @@ int common_util_run()
 		printf("[exchange_emsmdb]: Failed to init oxcmail library\n");
 		return -2;
 	}
-	g_file_allocator = LIB_BUFFER(FILE_ALLOC_SIZE, g_average_blocks * context_num);
+	g_file_allocator = alloc_limiter<file_block>(g_average_blocks * context_num);
 	mime_num = 16*context_num;
 	if (mime_num < 1024) {
 		mime_num = 1024;

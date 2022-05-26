@@ -143,7 +143,7 @@ static pthread_t g_scan_id;
 static std::list<BACK_CONN> g_lost_list;
 static std::list<BACK_SVR> g_server_list;
 static std::mutex g_server_lock;
-static LIB_BUFFER g_file_allocator;
+static alloc_limiter<file_block> g_file_allocator;
 static int g_file_ratio;
 
 static bool list_file_read_midb(const char *filename) try
@@ -233,8 +233,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		if (!list_file_read_midb("midb_list.txt"))
 			return false;
 		if (g_file_ratio > 0) {
-			g_file_allocator = LIB_BUFFER(FILE_ALLOC_SIZE,
-			                   get_context_num() * g_file_ratio);
+			g_file_allocator = alloc_limiter<file_block>(get_context_num() * g_file_ratio);
 		}
 
 		g_notify_stop = false;
@@ -1560,7 +1559,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	BOOL b_format_error;
 	struct pollfd pfd_read;
 
-	if (g_file_allocator.item_size == 0) {
+	if (g_file_allocator.internals().item_size == 0) {
 		*perrno = -2;
 		return MIDB_RESULT_ERROR;
 	}
@@ -1866,7 +1865,7 @@ static int fetch_detail(const char *path, const char *folder,
 	BOOL b_format_error;
 	struct pollfd pfd_read;
 
-	if (g_file_allocator.item_size == 0) {
+	if (g_file_allocator.internals().item_size == 0) {
 		*perrno = -2;
 		return MIDB_RESULT_ERROR;
 	}
@@ -2182,7 +2181,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	BOOL b_format_error;
 	struct pollfd pfd_read;
 
-	if (g_file_allocator.item_size == 0) {
+	if (g_file_allocator.internals().item_size == 0) {
 		*perrno = -2;
 		return MIDB_RESULT_ERROR;
 	}

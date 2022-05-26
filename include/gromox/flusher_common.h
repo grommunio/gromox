@@ -4,6 +4,7 @@
 #include <gromox/defs.h>
 #include <gromox/generic_connection.hpp>
 #include <gromox/mem_file.hpp>
+#include <gromox/util.hpp>
 
 enum {
 	FLUSH_WHOLE_MAIL = 0,
@@ -25,7 +26,7 @@ enum {
 struct STREAM;
 
 struct envelope_info {
-	envelope_info(LIB_BUFFER *);
+	envelope_info(alloc_limiter<file_block> *);
 	NOMOVE(envelope_info);
 	~envelope_info();
 	void clear();

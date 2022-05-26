@@ -114,7 +114,7 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string);
 void imap_parser_add_select(IMAP_CONTEXT *pcontext);
 void imap_parser_remove_select(IMAP_CONTEXT *pcontext);
 void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t count);
-extern LIB_BUFFER *imap_parser_get_allocator();
+extern alloc_limiter<file_block> *imap_parser_get_allocator();
 extern std::shared_ptr<MIME_POOL> imap_parser_get_mpool();
 /* get allocator for mjson mime */
 extern alloc_limiter<MJSON_MIME> *imap_parser_get_jpool();

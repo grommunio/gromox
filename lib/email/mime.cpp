@@ -35,7 +35,7 @@ bool MAIL::set_header(const char *hdr, const char *val)
 	return static_cast<MIME *>(node->pdata)->set_field(hdr, val);
 }
 
-MIME::MIME(LIB_BUFFER *palloc)
+MIME::MIME(alloc_limiter<file_block> *palloc)
 {
 	auto pmime = this;
 #ifdef _DEBUG_UMTA

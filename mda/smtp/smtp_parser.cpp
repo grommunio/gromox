@@ -593,7 +593,7 @@ static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
 	return ret & DISPATCH_ACTMASK;
 }
 
-envelope_info::envelope_info(LIB_BUFFER *b)
+envelope_info::envelope_info(alloc_limiter<file_block> *b)
 {
 	strcpy(parsed_domain, "unknown");
 	mem_file_init(&f_rcpt_to, b);

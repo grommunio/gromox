@@ -52,7 +52,7 @@ static int rd_starttls(rd_connection &&, MESSAGE_CONTEXT *, std::string &);
 static constexpr unsigned int network_timeout = 180;
 static std::unique_ptr<SSL_CTX, rd_delete> g_tls_ctx;
 static std::unique_ptr<std::mutex[]> g_tls_mutex_buf;
-static LIB_BUFFER g_files_allocator;
+static alloc_limiter<file_block> g_files_allocator;
 static std::string g_mx_host;
 static uint16_t g_mx_port;
 static bool g_enable_tls;
@@ -412,7 +412,7 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
-	g_files_allocator = LIB_BUFFER(FILE_ALLOC_SIZE, 256 * get_threads_num());
+	g_files_allocator = alloc_limiter<file_block>(256 * get_threads_num());
 	g_mx_host = cfg_file->get_value("mx_host");
 	g_mx_port = cfg_file->get_ll("mx_port");
 	g_enable_tls = cfg_file->get_ll("starttls_support");

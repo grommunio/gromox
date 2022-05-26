@@ -4,12 +4,12 @@
 #include <memory>
 #include <type_traits>
 #include <gromox/mapi_types.hpp>
+#include <gromox/util.hpp>
 #include "../mysql_adaptor/mysql_adaptor.h"
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
 #define MINIMUM_COMPRESS_SIZE						0x100
 
-struct LIB_BUFFER;
 struct logon_object;
 struct MAIL;
 struct MESSAGE_CONTENT;
@@ -127,7 +127,7 @@ extern bool (*common_util_verify_cpid)(uint32_t cpid);
 extern int (*common_util_add_timer)(const char *command, int interval);
 extern BOOL (*common_util_cancel_timer)(int timer_id);
 
-extern LIB_BUFFER *common_util_get_allocator();
+extern alloc_limiter<file_block> *common_util_get_allocator();
 extern void common_util_init(const char *org_name, int avg_blocks, unsigned int max_rcpt, unsigned int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, const char *smtp_host, uint16_t smtp_port, const char *submit_cmd);
 extern int common_util_run();
 extern void common_util_stop();

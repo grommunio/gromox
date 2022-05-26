@@ -100,7 +100,7 @@ static int g_block_auth_fail;
 static time_duration g_timeout;
 static unsigned int g_http_debug;
 static thread_local HTTP_CONTEXT *g_context_key;
-static LIB_BUFFER g_file_allocator;
+static alloc_limiter<file_block> g_file_allocator;
 static alloc_limiter<RPC_IN_CHANNEL> g_inchannel_allocator;
 static alloc_limiter<RPC_OUT_CHANNEL> g_outchannel_allocator;
 static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
@@ -211,7 +211,7 @@ int http_parser_run()
 		CRYPTO_set_locking_callback(http_parser_ssl_locking);
 #endif
 	}
-	g_file_allocator = LIB_BUFFER(FILE_ALLOC_SIZE, g_context_num * 16);
+	g_file_allocator = alloc_limiter<file_block>(g_context_num * 16);
 	try {
 		g_context_list = std::make_unique<HTTP_CONTEXT[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
@@ -1884,7 +1884,7 @@ SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-http_request::http_request(LIB_BUFFER *b)
+http_request::http_request(alloc_limiter<file_block> *b)
 {
 	mem_file_init(&f_request_uri, b);
 	mem_file_init(&f_host, b);

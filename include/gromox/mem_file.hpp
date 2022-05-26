@@ -36,9 +36,9 @@ struct MEM_FILE {
     size_t            rd_total_pos;   /* total reading position */
     size_t            wr_total_pos;   /* total writing position */
     size_t            file_total_len; /* total file length */
-    LIB_BUFFER        *allocator;     /* allocator for get blocks */
+	alloc_limiter<file_block> *allocator; /* allocator for get blocks */
     DOUBLE_LIST        list;          /* list of blocks */
 };
     
-void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc);
+extern GX_EXPORT void mem_file_init(MEM_FILE *, alloc_limiter<file_block> *);
 void mem_file_free(MEM_FILE *pfile);

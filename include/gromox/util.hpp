@@ -6,8 +6,8 @@
 #include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
+#include <gromox/double_list.hpp>
 #define FILE_BLOCK_SIZE 0x100
-#define FILE_ALLOC_SIZE (FILE_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
 
 #if defined(__OpenBSD__)
 #include <pthread.h>
@@ -22,6 +22,11 @@ static inline int _pthread_setname_np(pthread_t thread, const char *name)
 
 enum {
 	QP_MIME_HEADER = 1U << 0,
+};
+
+struct file_block {
+	DOUBLE_LIST_NODE list_node;
+	char buf[FILE_BLOCK_SIZE];
 };
 
 struct GX_EXPORT LIB_BUFFER {
@@ -55,6 +60,7 @@ template<typename T> struct GX_EXPORT alloc_limiter : private LIB_BUFFER {
 	inline T *get() { return LIB_BUFFER::get<T>(); }
 	inline void put(T *x) { LIB_BUFFER::put(x); }
 	alloc_limiter<T> *operator->() { return this; }
+	const LIB_BUFFER &internals() const { return *this; }
 };
 
 BOOL utf8_check(const char *str);
