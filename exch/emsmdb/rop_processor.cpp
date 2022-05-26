@@ -158,58 +158,38 @@ static bool rop_processor_release_objnode(
 		plogitem->phash.erase(static_cast<const object_node *>(pnode->pdata)->handle);
 	});
 	plogitem->tree.destroy_node(&pobjnode->node, rop_processor_free_objnode);
-	if (b_root) {
-		plogitem->tree.clear();
-		plogitem->phash.clear();
-		g_logitem_allocator->put(plogitem);
-	}
 	return b_root;
 }
 
-static void rop_processor_release_logon_item(LOGON_ITEM *plogitem)
+void logmap_delete::operator()(LOGON_ITEM *plogitem) const
 {
 	auto proot = plogitem->tree.get_root();
-	if (NULL == proot) {
-		debug_info("[exchange_emsmdb]: fatal error in"
-				" rop_processor_release_logon_item\n");
-	} else {
-		rop_processor_release_objnode(plogitem, static_cast<OBJECT_NODE *>(proot->pdata));
-	}
+	if (proot == nullptr)
+		return;
+	if (rop_processor_release_objnode(plogitem, static_cast<OBJECT_NODE *>(proot->pdata)))
+		g_logitem_allocator->put(plogitem);
 }
 
 void logmap_delete::operator()(LOGMAP *plogmap) const
 {
-	int i;
-	
-	for (i=0; i<256; i++) {
-		if (plogmap->p[i] != nullptr) {
-			rop_processor_release_logon_item(plogmap->p[i]);
-			plogmap->p[i] = nullptr;
-		}
-	}
 	g_logmap_allocator->put(plogmap);
 }
 
 int rop_processor_create_logon_item(LOGMAP *plogmap,
     uint8_t logon_id, std::unique_ptr<logon_object> &&plogon)
 {
-	auto plogitem = plogmap->p[logon_id];
 	/* MS-OXCROPS 3.1.4.2 */
-	if (NULL != plogitem) {
-		rop_processor_release_logon_item(plogitem);
-		plogmap->p[logon_id] = nullptr;
-	}
-	plogitem = g_logitem_allocator->get<LOGON_ITEM>();
+	plogmap->p[logon_id].reset();
+	logon_item_ptr plogitem(g_logitem_allocator->get<LOGON_ITEM>());
 	if (NULL == plogitem) {
 		return -1;
 	}
 	simple_tree_init(&plogitem->tree);
-	plogmap->p[logon_id] = plogitem;
+	plogmap->p[logon_id] = std::move(plogitem);
 	auto rlogon = plogon.get();
 	auto handle = rop_processor_add_object_handle(plogmap,
 				logon_id, -1, {OBJECT_TYPE_LOGON, std::move(plogon)});
 	if (handle < 0) {
-		g_logitem_allocator->put(plogitem);
 		return -3;
 	}
 	std::lock_guard hl_hold(g_hash_lock);
@@ -230,7 +210,7 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	object_node *parent = nullptr;
 	EMSMDB_INFO *pemsmdb_info;
 	
-	auto plogitem = plogmap->p[logon_id];
+	auto plogitem = plogmap->p[logon_id].get();
 	if (NULL == plogitem) {
 		return -1;
 	}
@@ -284,7 +264,7 @@ void *rop_processor_get_object(LOGMAP *plogmap,
 {
 	if (obj_handle >= INT32_MAX)
 		return NULL;
-	auto plogitem = plogmap->p[logon_id];
+	auto &plogitem = plogmap->p[logon_id];
 	if (NULL == plogitem) {
 		return NULL;
 	}
@@ -302,7 +282,7 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 	
 	if (obj_handle >= INT32_MAX)
 		return;
-	auto plogitem = plogmap->p[logon_id];
+	auto &plogitem = plogmap->p[logon_id];
 	if (NULL == plogitem) {
 		return;
 	}
@@ -314,13 +294,13 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref --;
 	}
-	if (rop_processor_release_objnode(plogitem, objnode))
-		plogmap->p[logon_id] = nullptr;
+	if (rop_processor_release_objnode(plogitem.get(), objnode))
+		plogmap->p[logon_id].reset();
 }
 
 logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
 {
-	auto plogitem = plogmap->p[logon_id];
+	auto &plogitem = plogmap->p[logon_id];
 	if (NULL == plogitem) {
 		return nullptr;
 	}

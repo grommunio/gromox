@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <ctime>
+#include <memory>
 #include <gromox/mapi_types.hpp>
 #include <gromox/simple_tree.hpp>
 #include "logon_object.h"
@@ -18,12 +19,15 @@
 #define OBJECT_TYPE_SUBSCRIPTION			11
 
 struct LOGON_ITEM;
-struct LOGMAP {
-	LOGON_ITEM *p[256]{};
-};
+struct LOGMAP;
 
 struct logmap_delete {
+	void operator()(LOGON_ITEM *) const;
 	void operator()(LOGMAP *) const;
+};
+
+struct LOGMAP {
+	std::unique_ptr<LOGON_ITEM, logmap_delete> p[256];
 };
 
 struct object_node {
@@ -45,6 +49,7 @@ struct object_node {
 };
 using OBJECT_NODE = object_node;
 using logmap_ptr = std::unique_ptr<LOGMAP, logmap_delete>;
+using logon_item_ptr = std::unique_ptr<LOGON_ITEM, logmap_delete>;
 
 extern logmap_ptr rop_processor_create_logmap();
 void rop_processor_init(int average_handles, int scan_interval);
