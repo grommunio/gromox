@@ -63,10 +63,13 @@ enum {
 
 namespace {
 
-struct ENVIRONMENT_CONTEXT {
-	ALLOC_CONTEXT allocator;
-	int clifd;
+struct env_context {
+	env_context() { alloc_context_init(&allocator); }
+	~env_context() { alloc_context_free(&allocator); }
+	alloc_context allocator{};
+	int clifd = -1;
 };
+using ENVIRONMENT_CONTEXT = env_context;
 
 struct LANGMAP_ITEM {
 	char lang[32];
@@ -439,17 +442,15 @@ const char* common_util_get_freebusy_path()
 	return g_freebusy_path;
 }
 
-BOOL common_util_build_environment()
+BOOL common_util_build_environment() try
 {
 	if (++g_env_refcount > 1)
 		return TRUE;
-	auto pctx = me_alloc<ENVIRONMENT_CONTEXT>();
-	if (pctx == nullptr)
-		return FALSE;
-	alloc_context_init(&pctx->allocator);
-	pctx->clifd = -1;
-	g_env_key = pctx;
+	g_env_key = new ENVIRONMENT_CONTEXT;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1977: ENOMEM\n");
+	return false;
 }
 
 void common_util_free_environment()
@@ -462,8 +463,7 @@ void common_util_free_environment()
 		fprintf(stderr, "W-1908: T%lu: g_env_key already unset\n", gx_gettid());
 		return;
 	}
-	alloc_context_free(&pctx->allocator);
-	free(pctx);
+	delete pctx;
 }
 
 void* common_util_alloc(size_t size)
