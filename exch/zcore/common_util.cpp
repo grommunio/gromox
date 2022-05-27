@@ -64,9 +64,7 @@ enum {
 namespace {
 
 struct env_context {
-	env_context() { alloc_context_init(&allocator); }
-	~env_context() { alloc_context_free(&allocator); }
-	alloc_context allocator{};
+	alloc_context allocator;
 	int clifd = -1;
 };
 using ENVIRONMENT_CONTEXT = env_context;

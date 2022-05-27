@@ -6,14 +6,13 @@
 #define ALLOC_FRAME_SIZE					64*1024
 
 
-void alloc_context_init(ALLOC_CONTEXT *pcontext)
+ALLOC_CONTEXT::ALLOC_CONTEXT()
 {
+	auto pcontext = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	/* init the ndr stack for ndr_pull and ndr_push */
 	double_list_init(&pcontext->list);
-	pcontext->offset = 0;
-	pcontext->total = 0;
 	pnode = (DOUBLE_LIST_NODE*)malloc(ALLOC_FRAME_SIZE);
 	if (NULL != pnode) {
 		pnode->pdata = reinterpret_cast<char *>(pnode) + sizeof(DOUBLE_LIST_NODE);
@@ -62,8 +61,9 @@ void *ALLOC_CONTEXT::alloc(size_t size)
 	return ptr;
 }
 
-void alloc_context_free(ALLOC_CONTEXT *pcontext)
+ALLOC_CONTEXT::~ALLOC_CONTEXT()
 {
+	auto pcontext = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_pop_front(&pcontext->list)) != nullptr)

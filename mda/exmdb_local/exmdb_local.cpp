@@ -365,7 +365,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	uint32_t tmp_int32;
 	uint32_t suppress_mask = 0;
 	BOOL b_bounce_delivered = false;
-	ALLOC_CONTEXT alloc_ctx;
 	char temp_buff[MAX_DIGLEN];
 	MESSAGE_CONTEXT *pcontext1;
 
@@ -463,7 +462,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	tmp_len ++;
 	temp_buff[tmp_len] = '\0';
 	
-	alloc_context_init(&alloc_ctx);
+	alloc_context alloc_ctx;
 	g_alloc_key = &alloc_ctx;
 	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
 	            exmdb_local_get_propids);
@@ -471,7 +470,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		put_context(pcontext1);
 	}
 	if (NULL == pmsg) {
-		alloc_context_free(&alloc_ctx);
 		g_alloc_key = nullptr;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1388: remove %s: %s\n",
@@ -480,7 +478,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			"to convert rfc5322 into MAPI message object");
 		return DELIVERY_OPERATION_ERROR;
 	}
-	alloc_context_free(&alloc_ctx);
 	g_alloc_key = nullptr;
 
 	nt_time = rop_util_current_nttime();

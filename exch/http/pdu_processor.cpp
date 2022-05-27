@@ -58,15 +58,7 @@ struct pdu_service_node {
 };
 
 struct ndr_stack_root {
-	ndr_stack_root() {
-		alloc_context_init(&in_stack);
-		alloc_context_init(&out_stack);
-	}
-	~ndr_stack_root() {
-		alloc_context_free(&in_stack);
-		alloc_context_free(&out_stack);
-	}
-	alloc_context in_stack{}, out_stack{};
+	alloc_context in_stack, out_stack;
 };
 using NDR_STACK_ROOT = ndr_stack_root;
 

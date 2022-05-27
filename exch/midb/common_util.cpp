@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <optional>
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <libHX/string.h>
@@ -20,16 +22,8 @@ using namespace gromox;
 
 namespace {
 struct cmd_context {
-	cmd_context() { alloc_context_init(&alloc_ctx); }
-	~cmd_context() {
-		alloc_context_free(&alloc_ctx);
-		if (ptmp_ctx != nullptr) {
-			alloc_context_free(ptmp_ctx);
-			free(ptmp_ctx);
-		}
-	}
-	alloc_context alloc_ctx{};
-	alloc_context *ptmp_ctx = nullptr;
+	alloc_context alloc_ctx;
+	std::optional<alloc_context> ptmp_ctx;
 	char maildir[256]{};
 };
 using COMMAND_CONTEXT = cmd_context;
@@ -52,7 +46,6 @@ BOOL common_util_build_environment(const char *maildir) try
 		return TRUE;
 	}
 	auto pctx = new cmd_context;
-	alloc_context_init(&pctx->alloc_ctx);
 	gx_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
 	g_ctx_key = pctx;
 	return TRUE;
@@ -81,10 +74,8 @@ void* common_util_alloc(size_t size)
 		fprintf(stderr, "E-1903: T%lu: g_ctx_key is unset, allocator is unset\n", gx_gettid());
 		return NULL;
 	}
-	if (NULL != pctx->ptmp_ctx) {
-		return pctx->ptmp_ctx->alloc(size);
-	}
-	return pctx->alloc_ctx.alloc(size);
+	return pctx->ptmp_ctx.has_value() ? pctx->ptmp_ctx->alloc(size) :
+	       pctx->alloc_ctx.alloc(size);
 }
 
 BOOL common_util_switch_allocator()
@@ -94,17 +85,10 @@ BOOL common_util_switch_allocator()
 		fprintf(stderr, "E-1904: T%lu: g_ctx_key is unset, allocator is unset\n", gx_gettid());
 		return FALSE;
 	}
-	if (NULL != pctx->ptmp_ctx) {
-		alloc_context_free(pctx->ptmp_ctx);
-		free(pctx->ptmp_ctx);
-		pctx->ptmp_ctx = NULL;
-	} else {
-		pctx->ptmp_ctx = me_alloc<ALLOC_CONTEXT>();
-		if (NULL == pctx->ptmp_ctx) {
-			return FALSE;
-		}
-		alloc_context_init(pctx->ptmp_ctx);
-	}
+	if (pctx->ptmp_ctx.has_value())
+		pctx->ptmp_ctx.reset();
+	else
+		pctx->ptmp_ctx.emplace();
 	return TRUE;
 }
 

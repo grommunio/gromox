@@ -8,9 +8,7 @@
 namespace {
 
 struct env_context {
-	env_context() { alloc_context_init(&alloc_ctx); }
-	~env_context() { alloc_context_free(&alloc_ctx); }
-	alloc_context alloc_ctx{};
+	alloc_context alloc_ctx;
 	const char *dir = nullptr;
 	int account_id = 0;
 	bool b_local = false, b_private = false;
