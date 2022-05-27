@@ -4,6 +4,7 @@
 #include <ctime>
 #include <memory>
 #include <string>
+#include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
@@ -68,6 +69,24 @@ template<typename T> struct GX_EXPORT alloc_limiter : private LIB_BUFFER {
 	alloc_limiter<T> *operator->() { return this; }
 	const LIB_BUFFER &internals() const { return *this; }
 };
+
+struct GX_EXPORT alloc_context {
+	alloc_context() = default;
+	NOMOVE(alloc_context);
+	void *alloc(size_t z) try {
+		auto p = std::make_unique<char[]>(z);
+		m_ptrs.push_back(std::move(p));
+		m_total_size += z;
+		return m_ptrs.back().get();
+	} catch (const std::bad_alloc &) {
+		return nullptr;
+	}
+	size_t get_total() const { return m_total_size; }
+
+	std::vector<std::unique_ptr<char[]>> m_ptrs;
+	size_t m_total_size = 0;
+};
+using ALLOC_CONTEXT = alloc_context;
 
 BOOL utf8_check(const char *str);
 extern GX_EXPORT bool utf8_count_codepoints(const char *str, size_t *numpoints);

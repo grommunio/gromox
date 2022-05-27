@@ -90,7 +90,7 @@ pkglibexec_SCRIPTS = tools/create_queue.sh
 BUILT_SOURCES = include/gromox/paths.h php_mapi/zrpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
-libgromox_common_la_SOURCES = lib/alloc_context.cpp lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/xarray.cpp lib/mapi/ext_buffer.cpp
+libgromox_common_la_SOURCES = lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/xarray.cpp lib/mapi/ext_buffer.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
 libgromox_cplus_la_SOURCES = lib/cryptoutil.cpp lib/dbhelper.cpp lib/fileio.cpp lib/fopen.cpp lib/oxoabkt.cpp lib/textmaps.cpp
 libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${crypto_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${ssl_LIBS} ${zstd_LIBS} libgromox_common.la

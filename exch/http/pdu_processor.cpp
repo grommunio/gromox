@@ -18,7 +18,6 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <gromox/alloc_context.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/int_hash.hpp>

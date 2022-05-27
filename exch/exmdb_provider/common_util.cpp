@@ -19,7 +19,6 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <gromox/alloc_context.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>

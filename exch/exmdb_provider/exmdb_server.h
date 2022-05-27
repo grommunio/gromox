@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
-#include <gromox/alloc_context.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/util.hpp>
 
 enum { /* exmdb_server_build_env flags */
 	EM_LOCAL = 0x1,

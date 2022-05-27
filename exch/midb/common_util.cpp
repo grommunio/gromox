@@ -10,12 +10,12 @@
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <gromox/alloc_context.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
 

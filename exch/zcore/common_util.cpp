@@ -20,7 +20,6 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <gromox/alloc_context.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
