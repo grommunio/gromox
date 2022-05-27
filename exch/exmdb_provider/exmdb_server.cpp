@@ -7,12 +7,15 @@
 
 namespace {
 
-struct ENVIRONMENT_CONTEXT {
-	bool b_local, b_private;
-	ALLOC_CONTEXT alloc_ctx;
-	const char *dir;
-	int account_id;
+struct env_context {
+	env_context() { alloc_context_init(&alloc_ctx); }
+	~env_context() { alloc_context_free(&alloc_ctx); }
+	alloc_context alloc_ctx{};
+	const char *dir = nullptr;
+	int account_id = 0;
+	bool b_local = false, b_private = false;
 };
+using ENVIRONMENT_CONTEXT = env_context;
 
 }
 
@@ -35,8 +38,6 @@ void exmdb_server_build_env(unsigned int flags, const char *dir)
 	common_util_build_tls();
 	auto pctx = g_ctx_allocator.get();
 	pctx->b_local = flags & EM_LOCAL;
-	if (!pctx->b_local)
-		alloc_context_init(&pctx->alloc_ctx);
 	pctx->b_private = flags & EM_PRIVATE;
 	pctx->dir = dir;
 	pctx->account_id = -1;
@@ -48,8 +49,6 @@ void exmdb_server_free_environment()
 	auto pctx = g_env_key;
 	if (pctx == nullptr)
 		return;
-	if (!pctx->b_local)
-		alloc_context_free(&pctx->alloc_ctx);
 	g_env_key = nullptr;
 	g_ctx_allocator.put(pctx);
 }
