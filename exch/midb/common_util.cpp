@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <pthread.h>
+#include <utility>
 #include <arpa/inet.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
@@ -29,7 +30,7 @@ struct cmd_context {
 using COMMAND_CONTEXT = cmd_context;
 }
 
-static thread_local COMMAND_CONTEXT *g_ctx_key;
+static thread_local std::unique_ptr<cmd_context> g_ctx_key;
 static thread_local unsigned int g_ctx_refcount;
 
 BOOL common_util_build_environment(const char *maildir) try
@@ -45,9 +46,9 @@ BOOL common_util_build_environment(const char *maildir) try
 			        gx_gettid(), g_ctx_key->maildir, maildir);
 		return TRUE;
 	}
-	auto pctx = new cmd_context;
+	auto pctx = std::make_unique<cmd_context>();
 	gx_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
-	g_ctx_key = pctx;
+	g_ctx_key = std::move(pctx);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1976: ENOMEM\n");
@@ -58,18 +59,16 @@ void common_util_free_environment()
 {
 	if (--g_ctx_refcount > 0)
 		return;
-	auto pctx = g_ctx_key;
-	if (NULL == pctx) {
+	if (g_ctx_key == nullptr) {
 		fprintf(stderr, "W-1902: T%lu: g_ctx_key already unset\n", gx_gettid());
 		return;
 	}
-	g_ctx_key = nullptr;
-	delete pctx;
+	g_ctx_key.reset();
 }
 
 void* common_util_alloc(size_t size)
 {
-	auto pctx = g_ctx_key;
+	auto pctx = g_ctx_key.get();
 	if (NULL == pctx) {
 		fprintf(stderr, "E-1903: T%lu: g_ctx_key is unset, allocator is unset\n", gx_gettid());
 		return NULL;
@@ -80,7 +79,7 @@ void* common_util_alloc(size_t size)
 
 BOOL common_util_switch_allocator()
 {
-	auto pctx = g_ctx_key;
+	auto pctx = g_ctx_key.get();
 	if (NULL == pctx) {
 		fprintf(stderr, "E-1904: T%lu: g_ctx_key is unset, allocator is unset\n", gx_gettid());
 		return FALSE;
@@ -94,7 +93,7 @@ BOOL common_util_switch_allocator()
 
 void common_util_set_maildir(const char *maildir)
 {
-	auto pctx = g_ctx_key;
+	auto pctx = g_ctx_key.get();
 	if (pctx == nullptr)
 		fprintf(stderr, "E-1905: T%lu: g_ctx_key is unset, cannot set maildir\n", gx_gettid());
 	else
@@ -103,7 +102,7 @@ void common_util_set_maildir(const char *maildir)
 
 const char* common_util_get_maildir()
 {
-	auto pctx = g_ctx_key;
+	auto pctx = g_ctx_key.get();
 	if (pctx != nullptr)
 		return pctx->maildir;
 	fprintf(stderr, "E-1906: T%lu: g_ctx_key is unset, maildir is unset\n", gx_gettid());
