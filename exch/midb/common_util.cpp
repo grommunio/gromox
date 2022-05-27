@@ -19,17 +19,26 @@
 using namespace gromox;
 
 namespace {
-struct COMMAND_CONTEXT {
-	ALLOC_CONTEXT alloc_ctx;
-	ALLOC_CONTEXT *ptmp_ctx;
-	char maildir[256];
+struct cmd_context {
+	cmd_context() { alloc_context_init(&alloc_ctx); }
+	~cmd_context() {
+		alloc_context_free(&alloc_ctx);
+		if (ptmp_ctx != nullptr) {
+			alloc_context_free(ptmp_ctx);
+			free(ptmp_ctx);
+		}
+	}
+	alloc_context alloc_ctx{};
+	alloc_context *ptmp_ctx = nullptr;
+	char maildir[256]{};
 };
+using COMMAND_CONTEXT = cmd_context;
 }
 
 static thread_local COMMAND_CONTEXT *g_ctx_key;
 static thread_local unsigned int g_ctx_refcount;
 
-BOOL common_util_build_environment(const char *maildir)
+BOOL common_util_build_environment(const char *maildir) try
 {
 	/*
 	 * cu_build_env is already called by midb, and then it _may_ occur
@@ -42,15 +51,14 @@ BOOL common_util_build_environment(const char *maildir)
 			        gx_gettid(), g_ctx_key->maildir, maildir);
 		return TRUE;
 	}
-	auto pctx = me_alloc<COMMAND_CONTEXT>();
-	if (NULL == pctx) {
-		return FALSE;
-	}
+	auto pctx = new cmd_context;
 	alloc_context_init(&pctx->alloc_ctx);
-	pctx->ptmp_ctx = NULL;
 	gx_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
 	g_ctx_key = pctx;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1976: ENOMEM\n");
+	return false;
 }
 
 void common_util_free_environment()
@@ -62,14 +70,8 @@ void common_util_free_environment()
 		fprintf(stderr, "W-1902: T%lu: g_ctx_key already unset\n", gx_gettid());
 		return;
 	}
-	alloc_context_free(&pctx->alloc_ctx);
-	if (NULL != pctx->ptmp_ctx) {
-		alloc_context_free(pctx->ptmp_ctx);
-		free(pctx->ptmp_ctx);
-		pctx->ptmp_ctx = NULL;
-	}
-	free(pctx);
 	g_ctx_key = nullptr;
+	delete pctx;
 }
 
 void* common_util_alloc(size_t size)
