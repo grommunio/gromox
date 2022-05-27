@@ -87,7 +87,7 @@ struct CIRCLE_NODE {
 
 struct ANTI_LOOP {
 	ANTI_LOOP();
-	DOUBLE_LIST free_list{}, throwed_list{};
+	DOUBLE_LIST free_list{}, thrown_list{};
 };
 
 struct THREAD_DATA {
@@ -160,7 +160,7 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level, const cha
 ANTI_LOOP::ANTI_LOOP()
 {
 	double_list_init(&free_list);
-	double_list_init(&throwed_list);
+	double_list_init(&thrown_list);
 }
 
 /*
@@ -981,9 +981,9 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 		return FALSE;
 	}	
 	/* check if this hook is throwing the second message */
-	for (pnode=double_list_get_head(&pthr_data->anti_loop.throwed_list);
+	for (pnode=double_list_get_head(&pthr_data->anti_loop.thrown_list);
 		NULL!=pnode; pnode=double_list_get_after(
-		&pthr_data->anti_loop.throwed_list, pnode)) {
+		&pthr_data->anti_loop.thrown_list, pnode)) {
 		if (((CIRCLE_NODE*)(pnode->pdata))->hook_addr ==
 			pthr_data->last_hook) {
 			break;
@@ -994,7 +994,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 		transporter_put_context(pcontext);
 		return FALSE;
 	}
-	/* append this hook into throwed list */
+	/* append this hook into thrown list */
 	pcircle = reinterpret_cast<CIRCLE_NODE *>(double_list_pop_front(&pthr_data->anti_loop.free_list));
 	if (NULL == pcircle) {
 		printf("[transporter]: exceed the maximum depth that one thread "
@@ -1007,7 +1007,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	last_thrower = pthr_data->last_thrower;
 	pcircle->hook_addr = pthr_data->last_hook;
 	pthr_data->last_thrower = pthr_data->last_hook;
-	double_list_append_as_tail(&pthr_data->anti_loop.throwed_list,
+	double_list_append_as_tail(&pthr_data->anti_loop.thrown_list,
 		&pcircle->node);
 	pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 	if (!pass_result) {
@@ -1017,7 +1017,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	} else {
 		ret_val = TRUE;
 	}
-	pnode = double_list_pop_back(&pthr_data->anti_loop.throwed_list);
+	pnode = double_list_pop_back(&pthr_data->anti_loop.thrown_list);
 	double_list_append_as_tail(&pthr_data->anti_loop.free_list, pnode);
 	transporter_put_context(pcontext);
 	/* recover last thrower and last hook, like function's return operation */
