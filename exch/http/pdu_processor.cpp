@@ -57,10 +57,18 @@ struct pdu_service_node {
 	char *service_name;
 };
 
-struct NDR_STACK_ROOT {
-	ALLOC_CONTEXT in_stack;
-	ALLOC_CONTEXT out_stack;
+struct ndr_stack_root {
+	ndr_stack_root() {
+		alloc_context_init(&in_stack);
+		alloc_context_init(&out_stack);
+	}
+	~ndr_stack_root() {
+		alloc_context_free(&in_stack);
+		alloc_context_free(&out_stack);
+	}
+	alloc_context in_stack{}, out_stack{};
 };
+using NDR_STACK_ROOT = ndr_stack_root;
 
 struct ASYNC_NODE {
 	DOUBLE_LIST_NODE node;
@@ -162,8 +170,6 @@ static NDR_STACK_ROOT* pdu_processor_new_stack_root()
 	if (NULL == pstack_root) {
 		return NULL;
 	}
-	alloc_context_init(&pstack_root->in_stack);
-	alloc_context_init(&pstack_root->out_stack);
 	return pstack_root;
 }
 
@@ -183,8 +189,6 @@ void* pdu_processor_ndr_stack_alloc(int type, size_t size)
 
 static void pdu_processor_free_stack_root(NDR_STACK_ROOT *pstack_root)
 {
-	alloc_context_free(&pstack_root->in_stack);
-	alloc_context_free(&pstack_root->out_stack);
 	if (g_stack_key == pstack_root)
 		g_stack_key = nullptr;
 	g_stack_allocator->put(pstack_root);
