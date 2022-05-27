@@ -21,8 +21,9 @@ void alloc_context_init(ALLOC_CONTEXT *pcontext)
 	}
 }
 
-void* alloc_context_alloc(ALLOC_CONTEXT *pcontext, size_t size)
+void *ALLOC_CONTEXT::alloc(size_t size)
 {
+	auto pcontext = this;
 	void *ptr;
 	
 	if (0 == double_list_get_nodes_num(&pcontext->list)) {
@@ -70,7 +71,8 @@ void alloc_context_free(ALLOC_CONTEXT *pcontext)
 	double_list_free(&pcontext->list);
 }
 
-size_t alloc_context_get_total(ALLOC_CONTEXT *pcontext)
+size_t ALLOC_CONTEXT::get_total() const
 {
+	auto pcontext = this;
 	return pcontext->total;
 }

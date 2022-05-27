@@ -180,9 +180,9 @@ void* pdu_processor_ndr_stack_alloc(int type, size_t size)
 		return NULL;
 	}
 	if (NDR_STACK_IN == type) {
-		return alloc_context_alloc(&proot->in_stack, size);
+		return proot->in_stack.alloc(size);
 	} else if (NDR_STACK_OUT == type) {
-		return alloc_context_alloc(&proot->out_stack, size);
+		return proot->out_stack.alloc(size);
 	}
 	return NULL;
 }
@@ -197,9 +197,9 @@ static void pdu_processor_free_stack_root(NDR_STACK_ROOT *pstack_root)
 static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type)
 {
 	if (NDR_STACK_IN == type) {
-		return alloc_context_get_total(&pstack_root->in_stack);
+		return pstack_root->in_stack.get_total();
 	} else if (NDR_STACK_OUT) {
-		return alloc_context_get_total(&pstack_root->out_stack);
+		return pstack_root->out_stack.get_total();
 	}
 	return 0;
 }

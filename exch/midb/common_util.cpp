@@ -82,9 +82,9 @@ void* common_util_alloc(size_t size)
 		return NULL;
 	}
 	if (NULL != pctx->ptmp_ctx) {
-		return alloc_context_alloc(pctx->ptmp_ctx, size);
+		return pctx->ptmp_ctx->alloc(size);
 	}
-	return alloc_context_alloc(&pctx->alloc_ctx, size);
+	return pctx->alloc_ctx.alloc(size);
 }
 
 BOOL common_util_switch_allocator()

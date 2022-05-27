@@ -245,7 +245,7 @@ void* common_util_alloc(size_t size)
 	
 	pctx = exmdb_server_get_alloc_context();
 	if (pctx != nullptr)
-		return alloc_context_alloc(pctx, size);
+		return pctx->alloc(size);
 	return ndr_stack_alloc(NDR_STACK_IN, size);
 }
 

@@ -473,7 +473,7 @@ void* common_util_alloc(size_t size)
 		fprintf(stderr, "E-1909: T%lu: g_env_key is unset, allocator is unset\n", gx_gettid());
 		return NULL;
 	}
-	return alloc_context_alloc(&pctx->allocator, size);
+	return pctx->allocator.alloc(size);
 }
 
 void common_util_set_clifd(int clifd)

@@ -320,7 +320,7 @@ static void* exmdb_local_alloc(size_t size)
 	if (NULL == pctx) {
 		return NULL;
 	}
-	return alloc_context_alloc(pctx, size);
+	return pctx->alloc(size);
 }
 
 static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
