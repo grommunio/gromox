@@ -2951,9 +2951,8 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 	}
 	for (i=0; i<psortset->count; i++) {
 		tmp_proptag = PROP_TAG(psortset->psort[i].type, psortset->psort[i].propid);
-		if (tmp_proptag == PR_DEPTH ||
-			PROP_TAG_INSTID == tmp_proptag ||
-			PROP_TAG_INSTANCENUM == tmp_proptag ||
+		if (tmp_proptag == PR_DEPTH || tmp_proptag == PidTagInstID ||
+		    tmp_proptag == PidTagInstanceNum ||
 		    tmp_proptag == PR_CONTENT_COUNT ||
 		    tmp_proptag == PR_CONTENT_UNREAD)
 			return ecInvalidParam;

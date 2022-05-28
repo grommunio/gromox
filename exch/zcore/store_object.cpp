@@ -349,7 +349,7 @@ static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t 
 	case PR_ACCESS:
 	case PR_ACCESS_LEVEL:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
-	case PROP_TAG_CODEPAGEID:
+	case PR_CODE_PAGE_ID:
 	case PR_CONTENT_COUNT:
 	case PR_DEFAULT_STORE:
 	case PR_DELETE_AFTER_SUBMIT:
@@ -363,7 +363,7 @@ static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t 
 	case PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED:
 	case PR_EMAIL_ADDRESS:
 	case PR_ENTRYID:
-	case PROP_TAG_EXTENDEDRULESIZELIMIT:
+	case PR_EXTENDED_RULE_SIZE_LIMIT:
 	case PR_INTERNET_ARTICLE_NUMBER:
 	case PR_LOCALE_ID:
 	case PR_MAPPING_SIGNATURE:
@@ -460,7 +460,7 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_MDB_PROVIDER;
 	pproptags->pproptag[pproptags->count++] = PR_DEFAULT_STORE;
 	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_NAME;
-	pproptags->pproptag[pproptags->count++] = PROP_TAG_EXTENDEDRULESIZELIMIT;
+	pproptags->pproptag[pproptags->count++] = PR_EXTENDED_RULE_SIZE_LIMIT;
 	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_CONTENT_COUNT;
 	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
@@ -739,7 +739,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		strcpy(tstr, temp_buff);
 		return TRUE;
 	}
-	case PROP_TAG_EXTENDEDRULESIZELIMIT: {
+	case PR_EXTENDED_RULE_SIZE_LIMIT: {
 		auto r = cu_alloc<uint32_t>();
 		*ppvalue = r;
 		if (NULL == *ppvalue) {

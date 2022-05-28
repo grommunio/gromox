@@ -237,7 +237,7 @@ BOOL attachment_object::check_readonly_property(uint32_t proptag) const
 	switch (proptag) {
 	case PidTagMid:
 	case PR_ACCESS_LEVEL:
-	case PROP_TAG_INCONFLICT:
+	case PR_IN_CONFLICT:
 	case PR_OBJECT_TYPE:
 	case PR_RECORD_KEY:
 	case PR_STORE_ENTRYID:

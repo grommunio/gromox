@@ -1762,7 +1762,7 @@ static BOOL table_column_content_tmptbl(
 			return TRUE;
 		}
 		break;
-	case PROP_TAG_INSTID:
+	case PidTagInstID:
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 3, PT_I8);
 		if (*ppvalue != NULL) {
 			*static_cast<uint64_t *>(*ppvalue) = row_type == CONTENT_ROW_MESSAGE ?
@@ -1770,7 +1770,7 @@ static BOOL table_column_content_tmptbl(
 				rop_util_make_eid_ex(2, *static_cast<uint64_t *>(*ppvalue) & NFID_LOWER_PART);
 		}
 		return TRUE;
-	case PROP_TAG_INSTANCENUM:
+	case PidTagInstanceNum:
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 10, PT_LONG);
 		return TRUE;
 	case PR_ROW_TYPE: {
@@ -2255,7 +2255,7 @@ static BOOL table_get_content_row_property(
 	CONTENT_ROW_PARAM *prow_param;
 	
 	prow_param = (CONTENT_ROW_PARAM*)pparam;
-	if (proptag == PROP_TAG_INSTANCESVREID) {
+	if (proptag == PR_INSTANCE_SVREID) {
 		auto eid = cu_alloc<SVREID>();
 		if (eid == nullptr)
 			return FALSE;
@@ -3221,8 +3221,8 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		tmp_proptags[pproptags->count++] = PR_DISPLAY_TO;
 		tmp_proptags[pproptags->count++] = PR_DISPLAY_CC;
 		tmp_proptags[pproptags->count++] = PR_DISPLAY_BCC;
-		tmp_proptags[pproptags->count++] = PROP_TAG_INSTID;
-		tmp_proptags[pproptags->count++] = PROP_TAG_INSTANCENUM;
+		tmp_proptags[pproptags->count++] = PidTagInstID;
+		tmp_proptags[pproptags->count++] = PidTagInstanceNum;
 		tmp_proptags[pproptags->count++] = PR_ROW_TYPE;
 		tmp_proptags[pproptags->count++] = PR_DEPTH;
 		tmp_proptags[pproptags->count++] = PR_CONTENT_COUNT;

@@ -146,9 +146,8 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 	}
 	for (i=0; i<psort_criteria->count; i++) {
 		tmp_proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
-		if (tmp_proptag == PR_DEPTH ||
-			PROP_TAG_INSTID == tmp_proptag ||
-			PROP_TAG_INSTANCENUM == tmp_proptag ||
+		if (tmp_proptag == PR_DEPTH || tmp_proptag == PidTagInstID ||
+		    tmp_proptag == PidTagInstanceNum ||
 		    tmp_proptag == PR_CONTENT_COUNT ||
 		    tmp_proptag == PR_CONTENT_UNREAD)
 			return ecInvalidParam;

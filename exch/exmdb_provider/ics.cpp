@@ -725,9 +725,9 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		uint32_t tmp_proptags[0x8000];
 		size_t count = 0;
 		for (size_t j = 0; j < proptags.count; ++j) {
-			if (PROP_TAG_HASRULES == proptags.pproptag[j] ||
+			if (proptags.pproptag[j] == PR_HAS_RULES ||
 			    proptags.pproptag[j] == PidTagChangeNumber ||
-				PROP_TAG_LOCALCOMMITTIME == proptags.pproptag[j] ||
+			    proptags.pproptag[j] == PR_LOCAL_COMMIT_TIME ||
 			    proptags.pproptag[j] == PR_DELETED_COUNT_TOTAL ||
 			    proptags.pproptag[j] == PR_NORMAL_MESSAGE_SIZE ||
 			    proptags.pproptag[j] == PR_LOCAL_COMMIT_TIME_MAX ||

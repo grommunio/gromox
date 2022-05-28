@@ -147,7 +147,7 @@ static BOOL aobj_check_readonly_property(const attachment_object *pattachment,
 	switch (proptag) {
 	case PidTagMid:
 	case PR_ACCESS_LEVEL:
-	case PROP_TAG_INCONFLICT:
+	case PR_IN_CONFLICT:
 	case PR_OBJECT_TYPE:
 	case PR_RECORD_KEY:
 	case PR_STORE_ENTRYID:

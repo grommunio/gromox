@@ -100,7 +100,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		}
 	}
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0, folder_id,
-	    PROP_TAG_HASRULES, &pvalue))
+	    PR_HAS_RULES, &pvalue))
 		return ecError;
 	*phas_rules = pvalue == nullptr ? 0 : *static_cast<uint8_t *>(pvalue);
 	auto pfolder = folder_object::create(plogon, folder_id, type, tag_access);

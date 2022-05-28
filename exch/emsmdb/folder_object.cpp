@@ -91,7 +91,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag)
 	case PR_ADDRESS_BOOK_ENTRYID:
 	case PROP_TAG_ARTICLENUMBERNEXT:
 	case PR_ASSOC_CONTENT_COUNT:
-	case PROP_TAG_ATTRIBUTEREADONLY:
+	case PR_ATTR_READONLY:
 	case PidTagChangeNumber:
 	case PR_CONTENT_COUNT:
 	case PR_CONTENT_UNREAD:
@@ -104,11 +104,11 @@ BOOL folder_object::check_readonly_property(uint32_t proptag)
 	case PROP_TAG_FOLDERFLAGS:
 	case PidTagFolderId:
 	case PR_FOLDER_TYPE:
-	case PROP_TAG_HASRULES:
+	case PR_HAS_RULES:
 	case PR_HIERARCHY_CHANGE_NUM:
 	case PROP_TAG_HIERREV:
 	case PR_INTERNET_ARTICLE_NUMBER:
-	case PROP_TAG_LOCALCOMMITTIME:
+	case PR_LOCAL_COMMIT_TIME:
 	case PR_LOCAL_COMMIT_TIME_MAX:
 	case PR_MESSAGE_SIZE:
 	case PR_MESSAGE_SIZE_EXTENDED:

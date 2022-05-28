@@ -322,7 +322,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_DELETED_MSG_COUNT;
 	pproptags->pproptag[pproptags->count++] = PR_DELETED_NORMAL_MESSAGE_SIZE;
 	pproptags->pproptag[pproptags->count++] = PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED;
-	pproptags->pproptag[pproptags->count++] = PROP_TAG_EXTENDEDRULESIZELIMIT;
+	pproptags->pproptag[pproptags->count++] = PR_EXTENDED_RULE_SIZE_LIMIT;
 	pproptags->pproptag[pproptags->count++] = PR_ASSOC_MESSAGE_SIZE;
 	pproptags->pproptag[pproptags->count++] = PR_MESSAGE_SIZE;
 	pproptags->pproptag[pproptags->count++] = PR_NORMAL_MESSAGE_SIZE;
@@ -341,7 +341,7 @@ static BOOL lo_check_readonly_property(const logon_object *plogon, uint32_t prop
 	case PR_ACCESS_LEVEL:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
-	case PROP_TAG_CODEPAGEID:
+	case PR_CODE_PAGE_ID:
 	case PR_CONTENT_COUNT:
 	case PR_DELETE_AFTER_SUBMIT:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE:
@@ -354,7 +354,7 @@ static BOOL lo_check_readonly_property(const logon_object *plogon, uint32_t prop
 	case PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED:
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A:
-	case PROP_TAG_EXTENDEDRULESIZELIMIT:
+	case PR_EXTENDED_RULE_SIZE_LIMIT:
 	case PR_INTERNET_ARTICLE_NUMBER:
 	case PR_LOCALE_ID:
 	case PR_MAX_SUBMIT_MESSAGE_SIZE:
@@ -461,7 +461,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		}
 		return TRUE;
 	}
-	case PROP_TAG_CODEPAGEID: {
+	case PR_CODE_PAGE_ID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->cpid;
 		return TRUE;
@@ -491,7 +491,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		strcpy(tstr, temp_buff);
 		return TRUE;
 	}
-	case PROP_TAG_EXTENDEDRULESIZELIMIT: {
+	case PR_EXTENDED_RULE_SIZE_LIMIT: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (NULL == *ppvalue) {

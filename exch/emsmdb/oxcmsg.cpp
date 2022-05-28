@@ -110,12 +110,12 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 		return ecMAPIOOM;
 	proptags.count = 3;
 	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_HASNAMEDPROPERTIES;
+	proptag_buff[0] = PR_HAS_NAMED_PROPERTIES;
 	proptag_buff[1] = PR_SUBJECT_PREFIX;
 	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	pvalue = propvals.getval(PROP_TAG_HASNAMEDPROPERTIES);
+	pvalue = propvals.getval(PR_HAS_NAMED_PROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
 	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
@@ -438,12 +438,12 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 		return ecNotSupported;
 	proptags.count = 3;
 	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_HASNAMEDPROPERTIES;
+	proptag_buff[0] = PR_HAS_NAMED_PROPERTIES;
 	proptag_buff[1] = PR_SUBJECT_PREFIX;
 	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	auto pvalue = propvals.getval(PROP_TAG_HASNAMEDPROPERTIES);
+	auto pvalue = propvals.getval(PR_HAS_NAMED_PROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
 	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
@@ -905,7 +905,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 	proptags.count = 4;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PidTagMid;
-	proptag_buff[1] = PROP_TAG_HASNAMEDPROPERTIES;
+	proptag_buff[1] = PR_HAS_NAMED_PROPERTIES;
 	proptag_buff[2] = PR_SUBJECT_PREFIX;
 	proptag_buff[3] = PR_NORMALIZED_SUBJECT;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
@@ -915,7 +915,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 		return ecError;
 	}
 	*pmessage_id = *(uint64_t*)pvalue;
-	pvalue = propvals.getval(PROP_TAG_HASNAMEDPROPERTIES);
+	pvalue = propvals.getval(PR_HAS_NAMED_PROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
 	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {

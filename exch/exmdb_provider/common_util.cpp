@@ -578,9 +578,9 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		proptags[i++] = PR_FOLDER_TYPE;
 		proptags[i++] = PR_CONTENT_UNREAD;
 		proptags[i++] = PR_SUBFOLDERS;
-		proptags[i++] = PROP_TAG_HASRULES;
+		proptags[i++] = PR_HAS_RULES;
 		proptags[i++] = PROP_TAG_FOLDERPATHNAME;
-		proptags[i++] = PROP_TAG_LOCALCOMMITTIME;
+		proptags[i++] = PR_LOCAL_COMMIT_TIME;
 		proptags[i++] = PidTagFolderId;
 		proptags[i++] = PidTagChangeNumber;
 		proptags[i++] = PROP_TAG_FOLDERFLAGS;
@@ -1722,7 +1722,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		return pv.pvalue != nullptr && common_util_get_folder_type(db,
 		       id, v) ? GP_ADV : GP_ERR;
 	}
-	case PROP_TAG_HASRULES: {
+	case PR_HAS_RULES: {
 		auto v = cu_alloc<uint8_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
@@ -1787,7 +1787,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		*v = rop_util_make_eid_ex(1, tmp_id);
 		return GP_ADV;
 	}
-	case PROP_TAG_INSTANCESVREID: {
+	case PR_INSTANCE_SVREID: {
 		uint64_t tmp_id;
 		if (!common_util_get_message_parent_folder(db, id, &tmp_id) || tmp_id == 0)
 			return GP_ERR;
@@ -1844,7 +1844,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		     true : !!common_util_check_message_read(db, id);
 		return GP_ADV;
 	}
-	case PROP_TAG_HASNAMEDPROPERTIES: {
+	case PR_HAS_NAMED_PROPERTIES: {
 		auto v = cu_alloc<uint8_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
@@ -2195,7 +2195,7 @@ static bool gp_prepare_default(sqlite3 *psqlite, db_table table_type,
 		sqlite3_bind_int64(pstmt, 1, tag);
 		break;
 	case db_table::folder_props:
-		if (tag == PROP_TAG_LOCALCOMMITTIME)
+		if (tag == PR_LOCAL_COMMIT_TIME)
 			tag = PR_LAST_MODIFICATION_TIME;
 		own_stmt = gx_sql_prep(psqlite, "SELECT propval FROM "
 		           "folder_properties WHERE folder_id=? AND proptag=?");
@@ -2810,7 +2810,7 @@ BOOL cu_set_properties(db_table table_type,
 			case PROP_TAG_FOLDERCHILDCOUNT:
 			case PR_CONTENT_UNREAD:
 			case PR_FOLDER_TYPE:
-			case PROP_TAG_HASRULES:
+			case PR_HAS_RULES:
 			case PROP_TAG_FOLDERPATHNAME:
 			case PR_PARENT_SOURCE_KEY:
 			case PR_MESSAGE_SIZE_EXTENDED:
@@ -2857,9 +2857,9 @@ BOOL cu_set_properties(db_table table_type,
 			case PR_ENTRYID:
 			case PidTagFolderId:
 			case PidTagParentFolderId:
-			case PROP_TAG_INSTANCESVREID:
+			case PR_INSTANCE_SVREID:
 			case PR_PARENT_SOURCE_KEY:
-			case PROP_TAG_HASNAMEDPROPERTIES:
+			case PR_HAS_NAMED_PROPERTIES:
 			case PidTagMid:
 			case PR_MESSAGE_SIZE:
 			case PR_ASSOCIATED:

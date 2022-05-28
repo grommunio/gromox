@@ -311,10 +311,10 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		}
 		if (!chg.has(PR_ATTR_HIDDEN))
 			cu_set_propval(&chg, PR_ATTR_HIDDEN, &fake_byte);
-		if (!chg.has(PROP_TAG_ATTRIBUTESYSTEM))
-			cu_set_propval(&chg, PROP_TAG_ATTRIBUTESYSTEM, &fake_byte);
-		if (!chg.has(PROP_TAG_ATTRIBUTEREADONLY))
-			cu_set_propval(&chg, PROP_TAG_ATTRIBUTEREADONLY, &fake_byte);
+		if (!chg.has(PR_ATTR_SYSTEM))
+			cu_set_propval(&chg, PR_ATTR_SYSTEM, &fake_byte);
+		if (!chg.has(PR_ATTR_READONLY))
+			cu_set_propval(&chg, PR_ATTR_READONLY, &fake_byte);
 		if (!chg.has(PR_CREATOR_SID)) {
 			tmp_bin.cb = 0;
 			tmp_bin.pb = NULL;
@@ -959,7 +959,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			return FALSE;
 		}
 		for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
-			if (!pmsgctnt->children.pattachments->pplist[i]->proplist.has(PROP_TAG_INCONFLICT))
+			if (!pmsgctnt->children.pattachments->pplist[i]->proplist.has(PR_IN_CONFLICT))
 				continue;
 			pembedded = pmsgctnt->children.pattachments->pplist[i]->pembedded;
 			if (NULL == pembedded) {

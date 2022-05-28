@@ -151,7 +151,7 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PR_DAM_ORIG_MSG_SVREID;
 	propval_buff[0].pvalue = deconst(pclient_entry_id);
-	propval_buff[1].proptag = PROP_TAG_DAMBACKPATCHED;
+	propval_buff[1].proptag = PR_DAM_BACK_PATCHED;
 	propval_buff[1].pvalue = &tmp_byte;
 	tmp_byte = 1;
 	

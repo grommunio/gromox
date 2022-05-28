@@ -3049,7 +3049,7 @@ static BOOL message_make_deferred_action_message(const char *username,
 	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Action") != 0 ||
-	    pmsg->proplist.set(PROP_TAG_DAMBACKPATCHED, &tmp_byte) != 0) {
+	    pmsg->proplist.set(PR_DAM_BACK_PATCHED, &tmp_byte) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -3106,7 +3106,7 @@ static BOOL message_make_deferred_action_message(const char *username,
 	BINARY tmp_bin;
 	tmp_bin.pb = ext_push.m_udata;
 	tmp_bin.cb = ext_push.m_offset;
-	if (pmsg->proplist.set(PROP_TAG_CLIENTACTIONS, &tmp_bin) != 0) {
+	if (pmsg->proplist.set(PR_CLIENT_ACTIONS, &tmp_bin) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -3386,7 +3386,7 @@ static bool op_delegate(const char *from_address, const char *account,
 	if (!message_read_message(psqlite, cpid, message_id, &pmsgctnt) ||
 	    pmsgctnt == nullptr)
 		return FALSE;
-	if (pmsgctnt->proplist.has(PROP_TAG_DELEGATEDBYRULE)) {
+	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU(message_id), LLU(folder_id));
@@ -3441,7 +3441,7 @@ static bool op_delegate(const char *from_address, const char *account,
 	}
 	static constexpr uint8_t fake_true = true;
 	TAGGED_PROPVAL propval;
-	propval.proptag = PROP_TAG_DELEGATEDBYRULE;
+	propval.proptag = PR_DELEGATED_BY_RULE;
 	propval.pvalue = deconst(&fake_true);
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	DOUBLE_LIST rcpt_list;
@@ -3789,7 +3789,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 	if (!message_read_message(psqlite, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	if (pmsgctnt->proplist.has(PROP_TAG_DELEGATEDBYRULE)) {
+	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU(message_id), LLU(folder_id));
@@ -3843,7 +3843,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 	}
 	static constexpr uint8_t fake_true = true;
 	TAGGED_PROPVAL propval;
-	propval.proptag = PROP_TAG_DELEGATEDBYRULE;
+	propval.proptag = PR_DELEGATED_BY_RULE;
 	propval.pvalue = deconst(&fake_true);
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	DOUBLE_LIST rcpt_list;
@@ -3977,9 +3977,8 @@ static bool opx_process(BOOL b_oof, const char *from_address,
 		return true;
 	void *pvalue = nullptr;
 	if (!cu_get_property(db_table::msg_props, prnode->id, 0, psqlite,
-	    PROP_TAG_EXTENDEDRULEMESSAGECONDITION, &pvalue)) {
+	    PR_EXTENDED_RULE_MSG_CONDITION, &pvalue))
 		return FALSE;
-	}
 	auto bv = static_cast<BINARY *>(pvalue);
 	if (pvalue == nullptr || bv->cb == 0)
 		return true;
@@ -3999,9 +3998,8 @@ static bool opx_process(BOOL b_oof, const char *from_address,
 		b_exit = TRUE;
 	}
 	if (!cu_get_property(db_table::msg_props, prnode->id, 0, psqlite,
-	    PROP_TAG_EXTENDEDRULEMESSAGEACTIONS, &pvalue)) {
+	    PR_EXTENDED_RULE_MSG_ACTIONS, &pvalue))
 		return FALSE;
-	}
 	if (NULL == pvalue) {
 		return true;
 	}

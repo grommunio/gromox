@@ -180,7 +180,7 @@ static BOOL table_object_get_store_table_all_proptags(
 		PR_MDB_PROVIDER, PR_MESSAGE_SIZE, PR_ASSOC_MESSAGE_SIZE,
 		PR_NORMAL_MESSAGE_SIZE, PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
 		PR_DEFAULT_STORE, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS,
-		PROP_TAG_EXTENDEDRULESIZELIMIT, PR_MAILBOX_OWNER_ENTRYID,
+		PR_EXTENDED_RULE_SIZE_LIMIT, PR_MAILBOX_OWNER_ENTRYID,
 		PR_MAILBOX_OWNER_NAME, PR_MAX_SUBMIT_MESSAGE_SIZE,
 		PR_OBJECT_TYPE, PR_PROVIDER_DISPLAY, PR_RESOURCE_FLAGS,
 		PR_RESOURCE_TYPE, PR_RECORD_KEY, PR_INSTANCE_KEY, PR_ENTRYID,
@@ -1064,8 +1064,8 @@ BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	proptags.count = 2;
 	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_INSTID;
-	proptag_buff[1] = PROP_TAG_INSTANCENUM;
+	proptag_buff[0] = PidTagInstID;
+	proptag_buff[1] = PidTagInstanceNum;
 	return exmdb_client::match_table(ptable->pstore->get_dir(), username,
 		pinfo->cpid, ptable->table_id, b_forward,
 		ptable->position, pres, &proptags, pposition,

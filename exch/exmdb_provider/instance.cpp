@@ -1081,10 +1081,10 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		case PidTagMid:
 		case PR_ENTRYID:
 		case PidTagFolderId:
-		case PROP_TAG_CODEPAGEID:
+		case PR_CODE_PAGE_ID:
 		case PidTagParentFolderId:
-		case PROP_TAG_INSTANCESVREID:
-		case PROP_TAG_HASNAMEDPROPERTIES:
+		case PR_INSTANCE_SVREID:
+		case PR_HAS_NAMED_PROPERTIES:
 		case PR_MESSAGE_SIZE:
 		case PR_HASATTACH:
 		case PR_DISPLAY_TO:
@@ -1706,7 +1706,7 @@ BOOL exmdb_server_get_instance_all_proptags(
 			}
 		}
 		pproptags->count = pmsgctnt->proplist.count;
-		pproptags->pproptag[pproptags->count++] = PROP_TAG_CODEPAGEID;
+		pproptags->pproptag[pproptags->count++] = PR_CODE_PAGE_ID;
 		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_SIZE;
 		pproptags->pproptag[pproptags->count++] = PR_HASATTACH;
 		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_TO;
@@ -2300,7 +2300,7 @@ BOOL exmdb_server_get_instance_properties(
 			ppropvals->count++;
 			continue;
 		}
-		case PROP_TAG_CODEPAGEID:
+		case PR_CODE_PAGE_ID:
 			vc.proptag = pproptags->pproptag[i];
 			vc.pvalue = &pinstance->cpid;
 			ppropvals->count ++;
@@ -2378,10 +2378,10 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 		case PidTagMid:
 		case PR_ENTRYID:
 		case PidTagFolderId:
-		case PROP_TAG_CODEPAGEID:
+		case PR_CODE_PAGE_ID:
 		case PidTagParentFolderId:
-		case PROP_TAG_INSTANCESVREID:
-		case PROP_TAG_HASNAMEDPROPERTIES:
+		case PR_INSTANCE_SVREID:
+		case PR_HAS_NAMED_PROPERTIES:
 		case PR_MESSAGE_SIZE:
 		case PR_HASATTACH:
 		case PR_DISPLAY_TO:
@@ -3243,7 +3243,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 			return FALSE;
 		}
 		tmp_byte = 1;
-		if (pattachment->proplist.set(PROP_TAG_INCONFLICT, &tmp_byte) != 0)
+		if (pattachment->proplist.set(PR_IN_CONFLICT, &tmp_byte) != 0)
 			/* ignore; reevaluate another time */;
 	} else if (pmsg->children.pattachments == nullptr) {
 		pattachments = attachment_list_init();
@@ -3270,7 +3270,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		return FALSE;
 	}
 	tmp_byte = 1;
-	if (pattachment->proplist.set(PROP_TAG_INCONFLICT, &tmp_byte) != 0)
+	if (pattachment->proplist.set(PR_IN_CONFLICT, &tmp_byte) != 0)
 		/* ignore; reevaluate */;
 	pvalue = pmsg->proplist.getval(PR_MSG_STATUS);
 	if (NULL == pvalue) {

@@ -289,8 +289,7 @@ gxerr_t message_object::save()
 		return GXERR_CALL_FAILED;
 	}
 	
-	tmp_propvals.ppropval[tmp_propvals.count].proptag =
-								PROP_TAG_LOCALCOMMITTIME;
+	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LOCAL_COMMIT_TIME;
 	auto modtime = cu_alloc<uint64_t>();
 	if (modtime == nullptr)
 		return GXERR_CALL_FAILED;
@@ -730,7 +729,7 @@ static BOOL msgo_check_readonly_property(const message_object *pmessage,
 	case PR_ENTRYID:
 	case PidTagFolderId:
 	case PR_HASATTACH:
-	case PROP_TAG_HASNAMEDPROPERTIES:
+	case PR_HAS_NAMED_PROPERTIES:
 	case PR_LAST_MODIFIER_ENTRYID:
 	case PidTagMid:
 	case PROP_TAG_MIMESKELETON:
@@ -939,8 +938,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 			if (msgo_check_readonly_property(pmessage, ppropvals->ppropval[i].proptag)) {
 				problems.pproblem[problems.count++].index = i;
 				continue;
-			} else if (PROP_TAG_EXTENDEDRULEMESSAGECONDITION
-				== ppropvals->ppropval[i].proptag) {
+			} else if (ppropvals->ppropval[i].proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
 				if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
 				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 					return FALSE;	
