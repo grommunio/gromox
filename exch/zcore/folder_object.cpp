@@ -101,7 +101,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag) const
 	switch (proptag) {
 	case PR_ACCESS:
 	case PR_ADDRESS_BOOK_ENTRYID:
-	case PROP_TAG_ARTICLENUMBERNEXT:
+	case PR_INTERNET_ARTICLE_NUMBER_NEXT:
 	case PR_ASSOC_CONTENT_COUNT:
 	case PR_ATTR_READONLY:
 	case PidTagChangeNumber:
@@ -112,13 +112,13 @@ BOOL folder_object::check_readonly_property(uint32_t proptag) const
 	case PR_DELETED_FOLDER_COUNT:
 	case PR_DELETED_ON:
 	case PR_ENTRYID:
-	case PROP_TAG_FOLDERCHILDCOUNT:
-	case PROP_TAG_FOLDERFLAGS:
+	case PR_FOLDER_CHILD_COUNT:
+	case PR_FOLDER_FLAGS:
 	case PidTagFolderId:
 	case PR_FOLDER_TYPE:
 	case PR_HAS_RULES:
 	case PR_HIERARCHY_CHANGE_NUM:
-	case PROP_TAG_HIERREV:
+	case PR_HIER_REV:
 	case PR_INTERNET_ARTICLE_NUMBER:
 	case PR_LOCAL_COMMIT_TIME:
 	case PR_LOCAL_COMMIT_TIME_MAX:
@@ -680,7 +680,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	uint32_t table_id;
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
-	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PROP_TAG_MEMBERRIGHTS};
+	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS};
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
@@ -711,7 +711,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 		if (NULL == pentry_id || 0 == pentry_id->cb) {
 			continue;
 		}
-		auto prights = permission_set.pparray[i]->get<uint32_t>(PROP_TAG_MEMBERRIGHTS);
+		auto prights = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_RIGHTS);
 		if (NULL == prights) {
 			continue;
 		}
@@ -729,7 +729,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	PERMISSION_DATA *pperm_data;
-	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PROP_TAG_MEMBERID};
+	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_ID};
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
@@ -763,7 +763,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 				}
 			}
 			if (j < permission_set.count) {
-				auto pmember_id = permission_set.pparray[j]->get<uint64_t>(PROP_TAG_MEMBERID);
+				auto pmember_id = permission_set.pparray[j]->get<uint64_t>(PR_MEMBER_ID);
 				if (NULL == pmember_id) {
 					continue;
 				}
@@ -773,12 +773,10 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 				if (NULL == pperm_data[i].propvals.ppropval) {
 					return FALSE;
 				}
-				pperm_data[count].propvals.ppropval[0].proptag =
-												PROP_TAG_MEMBERID;
+				pperm_data[count].propvals.ppropval[0].proptag = PR_MEMBER_ID;
 				pperm_data[count].propvals.ppropval[0].pvalue =
 													pmember_id;
-				pperm_data[count].propvals.ppropval[1].proptag =
-											PROP_TAG_MEMBERRIGHTS;
+				pperm_data[count].propvals.ppropval[1].proptag = PR_MEMBER_RIGHTS;
 				pperm_data[count].propvals.ppropval[1].pvalue =
 							&pperm_set->prows[i].member_rights;
 				count ++;
@@ -795,8 +793,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			pperm_data[count].propvals.ppropval[0].proptag = PR_ENTRYID;
 			pperm_data[count].propvals.ppropval[0].pvalue =
 								&pperm_set->prows[i].entryid;
-			pperm_data[count].propvals.ppropval[1].proptag =
-										PROP_TAG_MEMBERRIGHTS;
+			pperm_data[count].propvals.ppropval[1].proptag = PR_MEMBER_RIGHTS;
 			pperm_data[count].propvals.ppropval[1].pvalue =
 						&pperm_set->prows[i].member_rights;
 		} else if (pperm_set->prows[i].flags & RIGHT_DELETED) {
@@ -813,7 +810,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			if (j >= permission_set.count) {
 				continue;
 			}
-			auto pmember_id = permission_set.pparray[j]->get<uint64_t>(PROP_TAG_MEMBERID);
+			auto pmember_id = permission_set.pparray[j]->get<uint64_t>(PR_MEMBER_ID);
 			if (NULL == pmember_id) {
 				continue;
 			}
@@ -823,8 +820,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			if (NULL == pperm_data[i].propvals.ppropval) {
 				return FALSE;
 			}
-			pperm_data[count].propvals.ppropval[0].proptag =
-										PROP_TAG_MEMBERID;
+			pperm_data[count].propvals.ppropval[0].proptag = PR_MEMBER_ID;
 			pperm_data[count].propvals.ppropval[0].pvalue =
 												pmember_id;
 		} else {

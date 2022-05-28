@@ -32,7 +32,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
-#include <gromox/proptags.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zz_ndr_stack.hpp>

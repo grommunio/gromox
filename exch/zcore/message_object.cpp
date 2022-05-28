@@ -201,8 +201,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	*assocflag = !!b_fai;
 	propvals.ppropval[propvals.count++].pvalue = assocflag;
-	propvals.ppropval[propvals.count].proptag =
-							PROP_TAG_TRUSTSENDER;
+	propvals.ppropval[propvals.count].proptag = PR_TRUST_SENDER;
 	auto trustsender = cu_alloc<uint32_t>();
 	if (trustsender == nullptr)
 		return FALSE;
@@ -732,7 +731,7 @@ static BOOL msgo_check_readonly_property(const message_object *pmessage,
 	case PR_HAS_NAMED_PROPERTIES:
 	case PR_LAST_MODIFIER_ENTRYID:
 	case PidTagMid:
-	case PROP_TAG_MIMESKELETON:
+	case PidTagMimeSkeleton:
 	case PR_NATIVE_BODY_INFO:
 	case PR_OBJECT_TYPE:
 	case PR_PARENT_ENTRYID:

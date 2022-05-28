@@ -26,7 +26,6 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
-#include <gromox/proptags.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
@@ -116,7 +115,7 @@ static bool add_folderprop_iv(sqlite3_stmt *stmt,
 		sqlite3_reset(stmt);
 	}
 	if (add_next) {
-		sqlite3_bind_int64(stmt, 1, PROP_TAG_ARTICLENUMBERNEXT);
+		sqlite3_bind_int64(stmt, 1, PR_INTERNET_ARTICLE_NUMBER_NEXT);
 		sqlite3_bind_int64(stmt, 2, 1);
 		if (sqlite3_step(stmt) != SQLITE_DONE)
 			return false;
@@ -150,7 +149,7 @@ static bool add_folderprop_sv(sqlite3_stmt *stmt, const char *dispname,
 static bool add_folderprop_tv(sqlite3_stmt *stmt)
 {
 	static constexpr uint32_t tags[] = {
-		PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PROP_TAG_HIERREV,
+		PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PR_HIER_REV,
 		PR_LOCAL_COMMIT_TIME_MAX,
 	};
 	uint64_t nt_time = rop_util_unix_to_nttime(time(nullptr));

@@ -913,9 +913,8 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
 	uint32_t permission;
 	
 	/* MS-OXCPERM 3.1.4.1 */
-	if (PROP_TAG_SECURITYDESCRIPTORASXML == proptag) {
+	if (proptag == PR_NT_SECURITY_DESCRIPTOR_AS_XML)
 		return ecNotSupported;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;

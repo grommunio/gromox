@@ -2034,9 +2034,9 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 		PR_ASSOC_CONTENT_COUNT, PR_ATTR_READONLY,
 		PR_CONTENT_COUNT, PR_CONTENT_UNREAD,
 		PR_DELETED_COUNT_TOTAL, PR_DELETED_FOLDER_COUNT,
-		PROP_TAG_ARTICLENUMBERNEXT, PR_INTERNET_ARTICLE_NUMBER,
+		PR_INTERNET_ARTICLE_NUMBER_NEXT, PR_INTERNET_ARTICLE_NUMBER,
 		PR_DISPLAY_TYPE, PR_DELETED_ON, PR_ENTRYID,
-		PROP_TAG_FOLDERCHILDCOUNT, PROP_TAG_FOLDERFLAGS, PidTagFolderId,
+		PR_FOLDER_CHILD_COUNT, PR_FOLDER_FLAGS, PidTagFolderId,
 		PR_FOLDER_TYPE, PR_HAS_RULES, PR_HIERARCHY_CHANGE_NUM,
 		PR_LOCAL_COMMIT_TIME, PR_LOCAL_COMMIT_TIME_MAX,
 		PR_MESSAGE_SIZE, PR_MESSAGE_SIZE_EXTENDED, PR_NATIVE_BODY_INFO,
@@ -2090,9 +2090,9 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	permission_row.propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PR_ENTRYID;
 	propval_buff[0].pvalue = pentryid;
-	propval_buff[1].proptag = PROP_TAG_MEMBERID;
+	propval_buff[1].proptag = PR_MEMBER_ID;
 	propval_buff[1].pvalue = &tmp_id;
-	propval_buff[2].proptag = PROP_TAG_MEMBERRIGHTS;
+	propval_buff[2].proptag = PR_MEMBER_RIGHTS;
 	propval_buff[2].pvalue = &permission;
 	exmdb_client::update_folder_permission(pstore->get_dir(),
 		*pfolder_id, FALSE, 1, &permission_row);

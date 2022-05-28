@@ -384,7 +384,7 @@ static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t 
 	case PR_RECORD_KEY:
 	case PR_RIGHTS:
 	case PR_SEARCH_KEY:
-	case PROP_TAG_SORTLOCALEID:
+	case PR_SORT_LOCALE_ID:
 	case PR_STORAGE_QUOTA_LIMIT:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_OFFLINE:
@@ -1394,7 +1394,7 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	PERMISSION_ROW *pperm_row;
-	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PROP_TAG_MEMBERRIGHTS};
+	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS};
 	
 	if (!exmdb_client::load_permission_table(
 		pstore->dir, folder_id, 0, &table_id, &row_num)) {
@@ -1436,7 +1436,7 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 				break;	
 			}
 		}
-		auto prights = permission_set.pparray[i]->get<uint32_t>(PROP_TAG_MEMBERRIGHTS);
+		auto prights = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_RIGHTS);
 		if (NULL == prights) {
 			continue;
 		}

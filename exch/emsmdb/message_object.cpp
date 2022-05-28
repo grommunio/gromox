@@ -292,7 +292,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	*assocflag = !!b_fai;
 	propvals.ppropval[propvals.count++].pvalue = assocflag;
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_TRUSTSENDER;
+	propvals.ppropval[propvals.count].proptag = PR_TRUST_SENDER;
 	auto trustsender = cu_alloc<uint32_t>();
 	if (trustsender == nullptr)
 		return FALSE;
@@ -380,7 +380,7 @@ static gxerr_t message_object_save2(message_object *pmessage, bool b_fai,
 
 	void *rv;
 	if (!exmdb_client_get_folder_property(pmessage->plogon->get_dir(),
-	    0, pmessage->folder_id, PROP_TAG_RESOLVEMETHOD, &rv))
+	    0, pmessage->folder_id, PR_RESOLVE_METHOD, &rv))
 		return GXERR_CALL_FAILED;
 	uint32_t resolve_method = rv == nullptr ? RESOLVE_METHOD_DEFAULT :
 	                          *static_cast<uint32_t *>(rv);
@@ -977,7 +977,7 @@ BOOL message_object::check_readonly_property(uint32_t proptag) const
 	case PR_HAS_NAMED_PROPERTIES:
 	case PR_LAST_MODIFIER_ENTRYID:
 	case PidTagMid:
-	case PROP_TAG_MIMESKELETON:
+	case PidTagMimeSkeleton:
 	case PR_NATIVE_BODY_INFO:
 	case PR_OBJECT_TYPE:
 	case PR_PARENT_ENTRYID:

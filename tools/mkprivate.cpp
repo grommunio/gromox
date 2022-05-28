@@ -25,7 +25,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/pcl.hpp>
-#include <gromox/proptags.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>

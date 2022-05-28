@@ -212,7 +212,7 @@ int ace_list::emplace(std::string &&s, uint32_t r)
 		printf("error ACL: %d\n", ret);
 		return ret;
 	}
-	ret = props->set(PROP_TAG_MEMBERRIGHTS, &r);
+	ret = props->set(PR_MEMBER_RIGHTS, &r);
 	if (ret != 0) {
 		printf("error ACL: %d\n", ret);
 		return ret;

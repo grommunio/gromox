@@ -9,7 +9,7 @@
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/proptags.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include "common_util.h"
@@ -540,7 +540,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 			return FALSE;
 		}
 		next = 1;
-		tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;
+		tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER_NEXT;
 		tmp_propval.pvalue = &next;
 		cu_set_property(db_table::folder_props,
 			folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
@@ -597,7 +597,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		" propval=propval+1 WHERE folder_id=%llu AND "
 		"proptag=%u", LLU(parent_id), PR_HIERARCHY_CHANGE_NUM);
 	gx_sql_exec(pdb->psqlite, sql_string);
-	tmp_propval.proptag = PROP_TAG_HIERREV;
+	tmp_propval.proptag = PR_HIER_REV;
 	tmp_propval.pvalue = &nt_time;
 	cu_set_property(db_table::folder_props,
 		parent_id, 0, pdb->psqlite, &tmp_propval, &b_result);
@@ -1144,7 +1144,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	sqlite3_bind_int64(pstmt, 0, PROP_TAG_HIERREV);
+	sqlite3_bind_int64(pstmt, 0, PR_HIER_REV);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
@@ -1205,7 +1205,7 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 			return FALSE;
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
-			LLU(rop_util_current_nttime()), LLU(fid_val), PROP_TAG_HIERREV);
+		         LLU(rop_util_current_nttime()), LLU(fid_val), PR_HIER_REV);
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
@@ -1311,7 +1311,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, 1);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_ARTICLENUMBERNEXT);
+	sqlite3_bind_int64(pstmt, 2, PR_INTERNET_ARTICLE_NUMBER_NEXT);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
@@ -1335,7 +1335,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_HIERREV);
+	sqlite3_bind_int64(pstmt, 2, PR_HIER_REV);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
@@ -1418,7 +1418,7 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_HIERREV);
+	sqlite3_bind_int64(pstmt, 2, PR_HIER_REV);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
@@ -1757,7 +1757,7 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 			return FALSE;
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
-			LLU(rop_util_current_nttime()), LLU(dst_val), PROP_TAG_HIERREV);
+		         LLU(rop_util_current_nttime()), LLU(dst_val), PR_HIER_REV);
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
@@ -1874,7 +1874,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 			return FALSE;
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
-			LLU(nt_time), LLU(parent_val), PROP_TAG_HIERREV);
+		         LLU(nt_time), LLU(parent_val), PR_HIER_REV);
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 		fid_val = src_val;
@@ -1930,7 +1930,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		return FALSE;
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 		"propval=%llu WHERE folder_id=%llu AND proptag=%u",
-		LLU(nt_time), LLU(dst_val), PROP_TAG_HIERREV);
+	         LLU(nt_time), LLU(dst_val), PR_HIER_REV);
 	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	sql_transact.commit();
@@ -2236,7 +2236,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		}
 		gx_strlcpy(username, static_cast<char *>(pvalue), GX_ARRAY_SIZE(username));
 	}
-	pvalue = propvals.getval(PROP_TAG_MEMBERRIGHTS);
+	pvalue = propvals.getval(PR_MEMBER_RIGHTS);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2274,7 +2274,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     bool b_freebusy, uint64_t fid_val)
 {
 	static constexpr uint64_t DEFAULT = 0, ANONYMOUS = UINT64_MAX;
-	auto pvalue = propvals.getval(PROP_TAG_MEMBERID);
+	auto pvalue = propvals.getval(PR_MEMBER_ID);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2328,7 +2328,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 		return true;
 	pstmt1.finalize();
-	pvalue = propvals.getval(PROP_TAG_MEMBERRIGHTS);
+	pvalue = propvals.getval(PR_MEMBER_RIGHTS);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2354,7 +2354,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     uint64_t fid_val)
 {
-	auto pvalue = propvals.getval(PROP_TAG_MEMBERID);
+	auto pvalue = propvals.getval(PR_MEMBER_ID);
 	if (NULL == pvalue) {
 		return true;
 	}

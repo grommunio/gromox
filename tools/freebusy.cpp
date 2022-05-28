@@ -29,7 +29,6 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
-#include <gromox/proptags.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>

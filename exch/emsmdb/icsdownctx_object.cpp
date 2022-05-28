@@ -294,11 +294,11 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	for (size_t i = 0; i < fldchgs.count; ++i) {
 		auto &chg = fldchgs.pfldchgs[i];
 		static constexpr uint32_t tags[] = {
-			PROP_TAG_FOLDERPATHNAME, PR_NORMAL_MESSAGE_SIZE,
+			PR_FOLDER_PATHNAME, PR_NORMAL_MESSAGE_SIZE,
 			PR_NORMAL_MESSAGE_SIZE_EXTENDED, PR_MESSAGE_SIZE_EXTENDED,
 			PR_ASSOC_MESSAGE_SIZE, PR_ASSOC_MESSAGE_SIZE_EXTENDED,
-			PROP_TAG_FOLDERCHILDCOUNT, PR_DELETED_FOLDER_COUNT,
-			PROP_TAG_ARTICLENUMBERNEXT, PROP_TAG_FOLDERFLAGS,
+			PR_FOLDER_CHILD_COUNT, PR_DELETED_FOLDER_COUNT,
+			PR_INTERNET_ARTICLE_NUMBER_NEXT, PR_FOLDER_FLAGS,
 		};
 		for (auto t : tags)
 			common_util_remove_propvals(&chg, t);

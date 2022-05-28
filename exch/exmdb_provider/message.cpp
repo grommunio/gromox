@@ -2083,15 +2083,14 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		return FALSE;
 	}
 	if (!b_embedded) {
-		if (!cu_get_property(db_table::folder_props,
-			parent_id, 0, psqlite, PROP_TAG_ARTICLENUMBERNEXT, &pvalue)) {
+		if (!cu_get_property(db_table::folder_props, parent_id, 0,
+		    psqlite, PR_INTERNET_ARTICLE_NUMBER_NEXT, &pvalue))
 			return FALSE;
-		}
 		if (NULL == pvalue) {
 			pvalue = deconst(&fake_uid);
 		}
 		next = *(uint32_t*)pvalue + 1;
-		tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;
+		tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER_NEXT;
 		tmp_propval.pvalue = &next;
 		if (!cu_set_property(db_table::folder_props,
 			parent_id, 0, psqlite, &tmp_propval, &b_result)) {
@@ -2681,7 +2680,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	pvalue = pmsgctnt->proplist.getval(PROP_TAG_REPLYTEMPLATEID);
+	pvalue = pmsgctnt->proplist.getval(PR_REPLY_TEMPLATE_ID);
 	if (pvalue == nullptr || static_cast<BINARY *>(pvalue)->cb != 16) {
 		*pb_result = FALSE;
 		return TRUE;

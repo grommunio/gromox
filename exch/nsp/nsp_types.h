@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <gromox/mapidefs.h>
-#include <gromox/proptags.hpp>
 #include <gromox/rpc_types.hpp>
 #define MOD_FLAG_DELETE						0x000000001
 

@@ -2804,7 +2804,7 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 	auto val = row->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT);
 	if (val == nullptr)
 		return ecMAPIOOM;
-	val->proptag  = PROP_TAG_TEMPLATEDATA;
+	val->proptag  = PR_EMS_TEMPLATE_BLOB;
 	val->reserved = 0;
 	val->value.bin.cb = tpldata.size();
 	val->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, tpldata.size());

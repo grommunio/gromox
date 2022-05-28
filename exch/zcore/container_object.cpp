@@ -593,7 +593,7 @@ static BOOL container_object_fetch_folder_properties(
 			break;
 		}
 		case PR_DEPTH: {
-			auto pc = ppropvals->get<const char>(PROP_TAG_FOLDERPATHNAME);
+			auto pc = ppropvals->get<const char>(PR_FOLDER_PATHNAME);
 			if (pc == nullptr)
 				return FALSE;
 			count = 0;
@@ -639,7 +639,7 @@ static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 {
 	static constexpr uint32_t p[] = {
 		PidTagFolderId, PR_SUBFOLDERS, PR_DISPLAY_NAME,
-		PR_CONTAINER_CLASS, PROP_TAG_FOLDERPATHNAME,
+		PR_CONTAINER_CLASS, PR_FOLDER_PATHNAME,
 		PidTagParentFolderId, PR_ATTR_HIDDEN,
 	};
 	static constexpr PROPTAG_ARRAY proptags = {.count = arsizeof(p), .pproptag = deconst(p)};

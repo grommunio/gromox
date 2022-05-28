@@ -89,7 +89,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag)
 	switch (proptag) {
 	case PR_ACCESS:
 	case PR_ADDRESS_BOOK_ENTRYID:
-	case PROP_TAG_ARTICLENUMBERNEXT:
+	case PR_INTERNET_ARTICLE_NUMBER_NEXT:
 	case PR_ASSOC_CONTENT_COUNT:
 	case PR_ATTR_READONLY:
 	case PidTagChangeNumber:
@@ -100,13 +100,13 @@ BOOL folder_object::check_readonly_property(uint32_t proptag)
 	case PR_DELETED_FOLDER_COUNT:
 	case PR_DELETED_ON:
 	case PR_ENTRYID:
-	case PROP_TAG_FOLDERCHILDCOUNT:
-	case PROP_TAG_FOLDERFLAGS:
+	case PR_FOLDER_CHILD_COUNT:
+	case PR_FOLDER_FLAGS:
 	case PidTagFolderId:
 	case PR_FOLDER_TYPE:
 	case PR_HAS_RULES:
 	case PR_HIERARCHY_CHANGE_NUM:
-	case PROP_TAG_HIERREV:
+	case PR_HIER_REV:
 	case PR_INTERNET_ARTICLE_NUMBER:
 	case PR_LOCAL_COMMIT_TIME:
 	case PR_LOCAL_COMMIT_TIME_MAX:

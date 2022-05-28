@@ -2163,9 +2163,9 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 			permission_row.propvals.ppropval = propval_buff;
 			propval_buff[0].proptag = PR_ENTRYID;
 			propval_buff[0].pvalue = pentryid;
-			propval_buff[1].proptag = PROP_TAG_MEMBERID;
+			propval_buff[1].proptag = PR_MEMBER_ID;
 			propval_buff[1].pvalue = &tmp_id;
-			propval_buff[2].proptag = PROP_TAG_MEMBERRIGHTS;
+			propval_buff[2].proptag = PR_MEMBER_RIGHTS;
 			propval_buff[2].pvalue = &permission;
 			if (!exmdb_client::update_folder_permission(pstore->get_dir(),
 			    folder_id, false, 1, &permission_row))

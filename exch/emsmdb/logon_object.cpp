@@ -373,7 +373,7 @@ static BOOL lo_check_readonly_property(const logon_object *plogon, uint32_t prop
 	case PR_PROHIBIT_SEND_QUOTA:
 	case PR_RECORD_KEY:
 	case PR_SEARCH_KEY:
-	case PROP_TAG_SORTLOCALEID:
+	case PR_SORT_LOCALE_ID:
 	case PR_STORAGE_QUOTA_LIMIT:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_OFFLINE:
@@ -576,7 +576,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		*v = g_max_mail_len;
 		return TRUE;
 	}
-	case PROP_TAG_SORTLOCALEID: {
+	case PR_SORT_LOCALE_ID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->lcid_sort;
 		return TRUE;

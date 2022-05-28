@@ -2155,28 +2155,24 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			count = 0;
 			for (i=0; i<pproptags->count; i++) {
 				proptag = pproptags->pproptag[i];
-				if (PROP_TAG_MEMBERNAME_STRING8 == proptag) {
+				if (proptag == PR_MEMBER_NAME_A)
 					proptag = PR_MANAGER_NAME;
-				}
 				if (!common_util_get_permission_property(member_id,
 				    pdb->psqlite, proptag, &pvalue))
 					return FALSE;
-				if (PROP_TAG_MEMBERRIGHTS == pproptags->pproptag[i]
-					&& 0 == (ptnode->table_flags &
-					PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY)) {
+				if (pproptags->pproptag[i] == PR_MEMBER_RIGHTS &&
+				    !(ptnode->table_flags & PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY))
 					*static_cast<uint32_t *>(pvalue) &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
-				}
 				if (NULL == pvalue) {
 					continue;
 				}
 				pset->pparray[pset->count]->ppropval[count].proptag =
 													pproptags->pproptag[i];
-				if (PROP_TAG_MEMBERNAME_STRING8 == pproptags->pproptag[i]) {
+				if (pproptags->pproptag[i] == PR_MEMBER_NAME_A)
 					pset->pparray[pset->count]->ppropval[count++].pvalue =
 						common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
-				} else {
+				else
 					pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
-				}
 			}
 			pset->pparray[pset->count++]->count = count;
 		}
@@ -3243,9 +3239,9 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 			return FALSE;
 		}
 		pproptags->pproptag[0] = PR_ENTRYID;
-		pproptags->pproptag[1] = PROP_TAG_MEMBERID;
+		pproptags->pproptag[1] = PR_MEMBER_ID;
 		pproptags->pproptag[2] = PR_MANAGER_NAME;
-		pproptags->pproptag[3] = PROP_TAG_MEMBERRIGHTS;
+		pproptags->pproptag[3] = PR_MEMBER_RIGHTS;
 		return TRUE;
 	case TABLE_TYPE_RULE:
 		pproptags->count = 10;

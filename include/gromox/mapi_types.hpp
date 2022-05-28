@@ -9,7 +9,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/proptags.hpp>
 
 struct STORE_ENTRYID {
 	uint32_t flags;

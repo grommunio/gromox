@@ -574,16 +574,16 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		proptags[i++] = PR_MESSAGE_SIZE_EXTENDED;
 		proptags[i++] = PR_ASSOC_MESSAGE_SIZE_EXTENDED;
 		proptags[i++] = PR_NORMAL_MESSAGE_SIZE_EXTENDED;
-		proptags[i++] = PROP_TAG_FOLDERCHILDCOUNT;
+		proptags[i++] = PR_FOLDER_CHILD_COUNT;
 		proptags[i++] = PR_FOLDER_TYPE;
 		proptags[i++] = PR_CONTENT_UNREAD;
 		proptags[i++] = PR_SUBFOLDERS;
 		proptags[i++] = PR_HAS_RULES;
-		proptags[i++] = PROP_TAG_FOLDERPATHNAME;
+		proptags[i++] = PR_FOLDER_PATHNAME;
 		proptags[i++] = PR_LOCAL_COMMIT_TIME;
 		proptags[i++] = PidTagFolderId;
 		proptags[i++] = PidTagChangeNumber;
-		proptags[i++] = PROP_TAG_FOLDERFLAGS;
+		proptags[i++] = PR_FOLDER_FLAGS;
 		break;
 	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
@@ -1668,7 +1668,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		*v = common_util_get_folder_changenum(db, id);
 		return GP_ADV;
 	}
-	case PROP_TAG_FOLDERFLAGS: {
+	case PR_FOLDER_FLAGS: {
 		auto v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
@@ -1700,7 +1700,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		*v = common_util_get_folder_count(db, id, TRUE);
 		return GP_ADV;
 	}
-	case PROP_TAG_FOLDERCHILDCOUNT: {
+	case PR_FOLDER_CHILD_COUNT: {
 		auto v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
@@ -1730,7 +1730,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		*v = !!common_util_check_folder_rules(db, id);
 		return GP_ADV;
 	}
-	case PROP_TAG_FOLDERPATHNAME:
+	case PR_FOLDER_PATHNAME:
 		pv.pvalue = common_util_calculate_folder_path(id, db);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	case PR_MESSAGE_SIZE_EXTENDED: {
@@ -2803,15 +2803,15 @@ BOOL cu_set_properties(db_table table_type,
 			case PR_ENTRYID:
 			case PidTagFolderId:
 			case PidTagParentFolderId:
-			case PROP_TAG_FOLDERFLAGS:
+			case PR_FOLDER_FLAGS:
 			case PR_SUBFOLDERS:
 			case PR_CONTENT_COUNT:
 			case PR_ASSOC_CONTENT_COUNT:
-			case PROP_TAG_FOLDERCHILDCOUNT:
+			case PR_FOLDER_CHILD_COUNT:
 			case PR_CONTENT_UNREAD:
 			case PR_FOLDER_TYPE:
 			case PR_HAS_RULES:
-			case PROP_TAG_FOLDERPATHNAME:
+			case PR_FOLDER_PATHNAME:
 			case PR_PARENT_SOURCE_KEY:
 			case PR_MESSAGE_SIZE_EXTENDED:
 			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
@@ -3484,7 +3484,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT username FROM"
 		          " permissions WHERE member_id=%llu", LLU(member_id));
 		break;
-	case PROP_TAG_MEMBERID:
+	case PR_MEMBER_ID:
 		if (0 == member_id || -1 == (int64_t)member_id) {
 			auto v = cu_alloc<uint64_t>();
 			*ppvalue = v;
@@ -3496,7 +3496,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT username FROM"
 		          " permissions WHERE member_id=%llu", LLU(member_id));
 		break;
-	case PROP_TAG_MEMBERRIGHTS:
+	case PR_MEMBER_RIGHTS:
 		if (member_id == 0)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT config_value "
 					"FROM configurations WHERE config_id=%d",
@@ -3520,7 +3520,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		*ppvalue = NULL;
 		return TRUE;
 	}
-	if (proptag == PROP_TAG_MEMBERID) {
+	if (proptag == PR_MEMBER_ID) {
 		auto v = cu_alloc<uint64_t>();
 		*ppvalue = v;
 		if (v == nullptr)
@@ -3571,7 +3571,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return FALSE;
 		}
 		break;
-	case PROP_TAG_MEMBERRIGHTS: {
+	case PR_MEMBER_RIGHTS: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (v == nullptr)
@@ -4680,12 +4680,12 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 	if (!*pb_result)
 		return TRUE;
 	if (!cu_get_property(db_table::folder_props,
-	    folder_id, 0, psqlite, PROP_TAG_ARTICLENUMBERNEXT, &pvalue))
+	    folder_id, 0, psqlite, PR_INTERNET_ARTICLE_NUMBER_NEXT, &pvalue))
 		return FALSE;
 	if (pvalue == nullptr)
 		pvalue = deconst(&fake_uid);
 	next = *(uint32_t *)pvalue + 1;
-	tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;
+	tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER_NEXT;
 	tmp_propval.pvalue = &next;
 	if (!cu_set_property(db_table::folder_props,
 	    folder_id, 0, psqlite, &tmp_propval, &b_result))
