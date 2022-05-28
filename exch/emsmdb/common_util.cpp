@@ -2018,7 +2018,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	}
 	imail.clear();
 	
-	pvalue = pmsgctnt->proplist.getval(PROP_TAG_DELETEAFTERSUBMIT);
+	pvalue = pmsgctnt->proplist.getval(PR_DELETE_AFTER_SUBMIT);
 	b_delete = FALSE;
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_delete = TRUE;

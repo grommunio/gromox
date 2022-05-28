@@ -480,7 +480,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	g_alloc_key = nullptr;
 
 	nt_time = rop_util_current_nttime();
-	if (pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0)
+	if (pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
 		/* ignore */;
 	if (!pcontext->pcontrol->need_bounce) {
 		tmp_int32 = UINT32_MAX;

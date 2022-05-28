@@ -177,11 +177,9 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	*sens = SENSITIVITY_NONE;
 	propvals.ppropval[propvals.count++].pvalue = sens;
-	propvals.ppropval[propvals.count].proptag =
-					PROP_TAG_ORIGINALDISPLAYBCC;
+	propvals.ppropval[propvals.count].proptag   = PR_ORIGINAL_DISPLAY_BCC;
 	propvals.ppropval[propvals.count++].pvalue  = deconst("");
-	propvals.ppropval[propvals.count].proptag =
-					PROP_TAG_ORIGINALDISPLAYCC;
+	propvals.ppropval[propvals.count].proptag   = PR_ORIGINAL_DISPLAY_CC;
 	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	propvals.ppropval[propvals.count].proptag = PR_ORIGINAL_DISPLAY_TO;
 	propvals.ppropval[propvals.count++].pvalue  = deconst("");
@@ -744,7 +742,7 @@ static BOOL msgo_check_readonly_property(const message_object *pmessage,
 	case PR_STORE_RECORD_KEY:
 	case PR_RECORD_KEY:
 	case PR_MESSAGE_SIZE:
-	case PROP_TAG_MESSAGESTATUS:
+	case PR_MSG_STATUS:
 	case PR_TRANSPORT_MESSAGE_HEADERS:
 		return TRUE;
 	case PR_CHANGE_KEY:

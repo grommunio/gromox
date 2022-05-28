@@ -319,7 +319,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		uint64_t dtime = 0, mtime = 0;
 		if (b_ordered) {
 			sqlite3_reset(stm_select_mp);
-			sqlite3_bind_int64(stm_select_mp, 1, PROP_TAG_MESSAGEDELIVERYTIME);
+			sqlite3_bind_int64(stm_select_mp, 1, PR_MESSAGE_DELIVERY_TIME);
 			sqlite3_bind_int64(stm_select_mp, 2, mid_val);
 			dtime = sqlite3_step(stm_select_mp) == SQLITE_ROW ?
 			        sqlite3_column_int64(stm_select_mp, 0) : 0;

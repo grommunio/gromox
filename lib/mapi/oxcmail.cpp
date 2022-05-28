@@ -5574,7 +5574,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 
 enum oxcmail_body get_override_format(const MESSAGE_CONTENT &mc)
 {
-	auto v = mc.proplist.get<uint32_t>(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
+	auto v = mc.proplist.get<uint32_t>(PR_INETMAIL_OVERRIDE_FORMAT);
 	if (v == nullptr)
 		return oxcmail_body::plain_and_html;
 	else if (*v & MESSAGE_FORMAT_PLAIN_AND_HTML)

@@ -17,7 +17,7 @@ using namespace gromox;
 
 static constexpr uint32_t g_n_proptags[] = 
 	{PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
-	PR_DISPLAY_NAME_PREFIX, PROP_TAG_GENERATION};
+	PR_DISPLAY_NAME_PREFIX, PR_GENERATION};
 static constexpr uint32_t g_workaddr_proptags[] =
 	{0x8000001F, 0x8001001F, 0x8002001F, 0x8003001F, 0x8004001F, 0x8005001F};
 static constexpr uint32_t g_homeaddr_proptags[] =
@@ -648,7 +648,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			if (pmsg->proplist.set(PROP_TAG_MANAGERNAME, pstring) != 0)
+			if (pmsg->proplist.set(PR_MANAGER_NAME, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-ASSISTANT")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
@@ -690,7 +690,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				strings_array.ppstr[strings_array.count++] = static_cast<char *>(pnode2->pdata);
 			}
 			if (strings_array.count != 0 && strings_array.count < 128 &&
-			    pmsg->proplist.set(PROP_TAG_HOBBIES, &strings_array) != 0)
+			    pmsg->proplist.set(PR_HOBBIES, &strings_array) != 0)
 				goto IMPORT_FAILURE;
 		}
 	}
@@ -1289,7 +1289,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			goto EXPORT_FAILURE;
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_MANAGERNAME);
+	pvalue = pmsg->proplist.get<char>(PR_MANAGER_NAME);
 	if (NULL != pvalue) {
 		pvline = vcard_new_line("X-MS-MANAGER");
 		if (NULL == pvline) {
@@ -1358,7 +1358,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		vcard_append_line(pvcard, pvline);
 	}
 	
-	saval = pmsg->proplist.get<STRING_ARRAY>(PROP_TAG_HOBBIES);
+	saval = pmsg->proplist.get<STRING_ARRAY>(PR_HOBBIES);
 	if (NULL != pvalue) {
 		pvline = vcard_new_line("X-MS-INTERESTS");
 		if (NULL == pvline) {

@@ -364,7 +364,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 			return FALSE;
 		}
 		tmp_int32 = 0;
-		if (ict->proplist.set(PROP_TAG_MESSAGESTATUS, &tmp_int32) != 0) {
+		if (ict->proplist.set(PR_MSG_STATUS, &tmp_int32) != 0) {
 			message_content_free(ict);
 			if (pinstance->username != nullptr)
 				free(pinstance->username);
@@ -2406,7 +2406,7 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 			}
 			break;
 		}
-		case PROP_TAG_MESSAGESTATUS:
+		case PR_MSG_STATUS:
 			/* PidTagMessageStatus can only be
 				set by RopSetMessageStatus */
 			continue;
@@ -3211,7 +3211,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		return FALSE;
 	}
 	auto pmsg = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-	auto pvalue = pmsg->proplist.getval(PROP_TAG_MESSAGESTATUS);
+	auto pvalue = pmsg->proplist.getval(PR_MSG_STATUS);
 	b_inconflict = FALSE;
 	if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & MSGSTATUS_IN_CONFLICT)
 		b_inconflict = TRUE;
@@ -3272,14 +3272,14 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	tmp_byte = 1;
 	if (pattachment->proplist.set(PROP_TAG_INCONFLICT, &tmp_byte) != 0)
 		/* ignore; reevaluate */;
-	pvalue = pmsg->proplist.getval(PROP_TAG_MESSAGESTATUS);
+	pvalue = pmsg->proplist.getval(PR_MSG_STATUS);
 	if (NULL == pvalue) {
 		pvalue = &tmp_status;
 		tmp_status = MSGSTATUS_IN_CONFLICT;
 	} else {
 		*static_cast<uint32_t *>(pvalue) |= MSGSTATUS_IN_CONFLICT;
 	}
-	if (pmsg->proplist.set(PROP_TAG_MESSAGESTATUS, pvalue) != 0)
+	if (pmsg->proplist.set(PR_MSG_STATUS, pvalue) != 0)
 		/* ignore; reevaluate */;
 	return TRUE;
 }

@@ -1679,12 +1679,12 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	if (!ical_itime_to_utc(nullptr, start_itime, &tmp_time))
 		return FALSE;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (pattachment->proplist.set(PROP_TAG_EXCEPTIONSTARTTIME, &tmp_int64) != 0)
+	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0)
 		return FALSE;
 	if (!ical_itime_to_utc(nullptr, end_itime, &tmp_time))
 		return FALSE;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (pattachment->proplist.set(PROP_TAG_EXCEPTIONENDTIME, &tmp_int64) != 0)
+	if (pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
 		return FALSE;
 	tmp_bin.cb = 0;
 	tmp_bin.pb = NULL;
@@ -1778,8 +1778,8 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
 				return FALSE;
 			tmp_int64 = 0x0CB34557A3DD4000;
-			if (pattachment->proplist.set(PROP_TAG_EXCEPTIONSTARTTIME, &tmp_int64) != 0 ||
-			    pattachment->proplist.set(PROP_TAG_EXCEPTIONENDTIME, &tmp_int64) != 0)
+			if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
+			    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
 				return FALSE;
 			if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &indet_rendering_pos) != 0)
 				return FALSE;
@@ -1862,8 +1862,8 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
 			return FALSE;
 		tmp_int64 = 0x0CB34557A3DD4000;
-		if (pattachment->proplist.set(PROP_TAG_EXCEPTIONSTARTTIME, &tmp_int64) != 0 ||
-		    pattachment->proplist.set(PROP_TAG_EXCEPTIONENDTIME, &tmp_int64) != 0)
+		if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
+		    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
 			return FALSE;
 		if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &indet_rendering_pos) != 0)
 			return FALSE;

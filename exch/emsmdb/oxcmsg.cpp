@@ -502,7 +502,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 		not an important property for the message.
 		also, we don't know the message location */
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
-	    message_id, PROP_TAG_MESSAGESTATUS, &pvalue))
+	    message_id, PR_MSG_STATUS, &pvalue))
 		return ecError;
 	if (NULL == pvalue) {
 		return ecNotFound;
@@ -513,7 +513,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 		return ecAccessDenied;
 	new_status |= original_status & ~(status_mask & ~new_status);
 	*pmessage_status = new_status;
-	propval.proptag = PROP_TAG_MESSAGESTATUS;
+	propval.proptag = PR_MSG_STATUS;
 	propval.pvalue = &new_status;
 	if (!exmdb_client_set_message_property(plogon->get_dir(), nullptr, 0,
 	    message_id, &propval, &result))
@@ -535,7 +535,7 @@ uint32_t rop_getmessagestatus(uint64_t message_id, uint32_t *pmessage_status,
 	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
-	    message_id, PROP_TAG_MESSAGESTATUS, &pvalue))
+	    message_id, PR_MSG_STATUS, &pvalue))
 		return ecError;
 	if (NULL == pvalue) {
 		return ecNotFound;

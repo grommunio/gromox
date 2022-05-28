@@ -863,8 +863,7 @@ static void icsdownctx_object_trim_embedded(
 			}
 		}
 		common_util_remove_propvals(&pembedded->proplist, PidTagChangeNumber);
-		common_util_remove_propvals(
-			&pembedded->proplist, PROP_TAG_MESSAGESTATUS);
+		common_util_remove_propvals(&pembedded->proplist, PR_MSG_STATUS);
 		icsdownctx_object_trim_embedded(pembedded);
 	}
 }
@@ -939,7 +938,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	}
 	icsdownctx_object_trim_report_recipients(pmsgctnt);
 	auto folder_id = pctx->pfolder->folder_id;
-	auto pstatus = pmsgctnt->proplist.get<uint32_t>(PROP_TAG_MESSAGESTATUS);
+	auto pstatus = pmsgctnt->proplist.get<uint32_t>(PR_MSG_STATUS);
 	if (NULL == pstatus) {
 		return FALSE;
 	}
@@ -991,8 +990,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 				return FALSE;
 			common_util_remove_propvals(&pembedded->proplist, PR_READ);
 			common_util_remove_propvals(&pembedded->proplist, PR_CHANGE_KEY);
-			common_util_remove_propvals(
-				&pembedded->proplist, PROP_TAG_MESSAGESTATUS);
+			common_util_remove_propvals(&pembedded->proplist, PR_MSG_STATUS);
 			auto flags = pembedded->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
 			auto xbit = flags != nullptr && (*flags & MSGFLAG_RN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
@@ -1083,8 +1081,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_READ);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_CHANGE_KEY);
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS);
+	common_util_remove_propvals(&pmsgctnt->proplist, PR_MSG_STATUS);
 	auto flags = pmsgctnt->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
 	auto xbit = flags != nullptr && (*flags & MSGFLAG_RN_PENDING) ?
 	            deconst(&fake_true) : deconst(&fake_false);

@@ -3307,7 +3307,7 @@ BOOL cu_remove_properties(db_table table_type, uint64_t id,
 			break;
 		case db_table::msg_props:
 			switch (pproptags->pproptag[i]) {
-			case PROP_TAG_MESSAGESTATUS:
+			case PR_MSG_STATUS:
 			case PR_PREDECESSOR_CHANGE_LIST:
 				continue;
 			}
@@ -3472,7 +3472,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT username FROM"
 		          " permissions WHERE member_id=%llu", LLU(member_id));
 		break;
-	case PROP_TAG_MEMBERNAME:
+	case PR_MANAGER_NAME:
 	case PR_SMTP_ADDRESS:
 		if (0 == member_id) {
 			*ppvalue = deconst("default");
@@ -3551,7 +3551,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		}
 		*ppvalue = common_util_username_to_addressbook_entryid(pusername);
 		break;
-	case PROP_TAG_MEMBERNAME:
+	case PR_MANAGER_NAME:
 	case PR_SMTP_ADDRESS:
 		pusername = S2A(sqlite3_column_text(pstmt, 0));
 		if ('\0' == pusername[0]) {

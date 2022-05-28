@@ -284,7 +284,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	proptag_buff[2] = PR_DEFERRED_SEND_TIME;
 	proptag_buff[3] = PR_DEFERRED_SEND_NUMBER;
 	proptag_buff[4] = PR_DEFERRED_SEND_UNITS;
-	proptag_buff[5] = PROP_TAG_DELETEAFTERSUBMIT;
+	proptag_buff[5] = PR_DELETE_AFTER_SUBMIT;
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
 	pvalue = tmp_propvals.getval(PR_MESSAGE_SIZE);
@@ -302,7 +302,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (message_flags & MSGFLAG_SUBMITTED)
 		return ecAccessDenied;
 	BOOL b_unsent = (message_flags & MSGFLAG_UNSENT) ? TRUE : false;
-	pvalue = tmp_propvals.getval(PROP_TAG_DELETEAFTERSUBMIT);
+	pvalue = tmp_propvals.getval(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	/* we don't use spool queue, so disable the whole functionality */
 #if 0
@@ -476,13 +476,13 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		return ecError;
 	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_DELETEAFTERSUBMIT;
+	proptag_buff[0] = PR_DELETE_AFTER_SUBMIT;
 	proptag_buff[1] = PR_TARGET_ENTRYID;
 	proptag_buff[2] = PR_PARENT_ENTRYID;
 	if (!exmdb_client_get_message_properties(plogon->get_dir(), nullptr, 0,
 	    message_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	auto pvalue = tmp_propvals.getval(PROP_TAG_DELETEAFTERSUBMIT);
+	auto pvalue = tmp_propvals.getval(PR_DELETE_AFTER_SUBMIT);
 	b_delete = FALSE;
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_delete = TRUE;
@@ -564,11 +564,11 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		proptag_buff[3] = PR_SENT_REPRESENTING_NAME;
 		proptag_buff[4] = PR_SENT_REPRESENTING_ENTRYID;
 		proptag_buff[5] = PR_SENT_REPRESENTING_SEARCH_KEY;
-		proptag_buff[6] = PROP_TAG_PROVIDERSUBMITTIME;
+		proptag_buff[6] = PR_PROVIDER_SUBMIT_TIME;
 		if (!pmessage->get_properties(0, &proptags, *pppropvals))
 			*pppropvals = NULL;
-		if (!(**pppropvals).has(PROP_TAG_PROVIDERSUBMITTIME)) {
-			propval.proptag = PROP_TAG_PROVIDERSUBMITTIME;
+		if (!(**pppropvals).has(PR_PROVIDER_SUBMIT_TIME)) {
+			propval.proptag = PR_PROVIDER_SUBMIT_TIME;
 			propval.pvalue = cu_alloc<uint64_t>();
 			if (NULL != propval.pvalue) {
 				*(uint64_t*)propval.pvalue = rop_util_current_nttime();

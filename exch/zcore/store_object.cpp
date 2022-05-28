@@ -352,7 +352,7 @@ static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t 
 	case PROP_TAG_CODEPAGEID:
 	case PR_CONTENT_COUNT:
 	case PR_DEFAULT_STORE:
-	case PROP_TAG_DELETEAFTERSUBMIT:
+	case PR_DELETE_AFTER_SUBMIT:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED:
 	case PR_DELETED_ASSOC_MSG_COUNT:

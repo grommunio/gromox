@@ -1643,7 +1643,7 @@ static BOOL message_rectify_message(const char *account,
 		case PidTagMid:
 		case PR_ASSOCIATED:
 		case PidTagChangeNumber:
-		case PROP_TAG_MESSAGESTATUS:
+		case PR_MSG_STATUS:
 			continue;
 		case PR_SUBJECT:
 		case PR_SUBJECT_A:
@@ -1655,7 +1655,7 @@ static BOOL message_rectify_message(const char *account,
 		*vc++ = pmsgctnt->proplist.ppropval[i];
 		pmsgctnt1->proplist.count ++;
 	}
-	vc->proptag = PROP_TAG_MESSAGESTATUS;
+	vc->proptag = PR_MSG_STATUS;
 	vc->pvalue = deconst(&fake_int32);
 	pmsgctnt1->proplist.count ++;
 	++vc;
@@ -2505,7 +2505,7 @@ static BOOL message_make_deferred_error_message(const char *username,
 	if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0 ||
-	    pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0 ||
+	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Error") != 0 ||
 	    pmsg->proplist.set(PR_RULE_ACTION_TYPE, &action_type) != 0 ||
 	    pmsg->proplist.set(PR_RULE_ACTION_NUMBER, &block_index) != 0) {
@@ -3047,7 +3047,7 @@ static BOOL message_make_deferred_action_message(const char *username,
 	if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0 ||
-	    pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0 ||
+	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Action") != 0 ||
 	    pmsg->proplist.set(PROP_TAG_DAMBACKPATCHED, &tmp_byte) != 0) {
 		message_content_free(pmsg);
@@ -3399,7 +3399,7 @@ static bool op_delegate(const char *from_address, const char *account,
 		PR_ASSOCIATED, PidTagChangeNumber,
 		PR_CHANGE_KEY, PR_READ, PR_HASATTACH,
 		PR_PREDECESSOR_CHANGE_LIST,
-		PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME
+		PR_MESSAGE_TO_ME, PR_MESSAGE_CC_ME,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
@@ -3802,7 +3802,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 		PR_ASSOCIATED, PidTagChangeNumber,
 		PR_CHANGE_KEY, PR_READ, PR_HASATTACH,
 		PR_PREDECESSOR_CHANGE_LIST,
-		PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME,
+		PR_MESSAGE_TO_ME, PR_MESSAGE_CC_ME,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
@@ -4242,17 +4242,17 @@ BOOL exmdb_server_delivery_message(const char *dir,
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 		}
 		if (b_to_me) {
-			propval.proptag = PROP_TAG_MESSAGETOME;
+			propval.proptag = PR_MESSAGE_TO_ME;
 			propval.pvalue = deconst(&fake_true);
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 		} else if (b_cc_me) {
-			propval.proptag = PROP_TAG_MESSAGECCME;
+			propval.proptag = PR_MESSAGE_CC_ME;
 			propval.pvalue = deconst(&fake_true);
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 		}
 	}
 	nt_time = rop_util_current_nttime();
-	auto pvalue = tmp_msg.proplist.getval(PROP_TAG_MESSAGEDELIVERYTIME);
+	auto pvalue = tmp_msg.proplist.getval(PR_MESSAGE_DELIVERY_TIME);
 	if (NULL != pvalue) {
 		*(uint64_t*)pvalue = nt_time;
 	}

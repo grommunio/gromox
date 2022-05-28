@@ -3389,7 +3389,7 @@ static gxerr_t rectify_message(message_object *pmessage,
 	TAGGED_PROPVAL pv[] = {
 		{PR_READ, &tmp_byte},
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
-		{PROP_TAG_MESSAGEDELIVERYTIME, &nt_time},
+		{PR_MESSAGE_DELIVERY_TIME, &nt_time},
 		{PR_CONTENT_FILTER_SCL, &tmp_level},
 		{PR_SENDER_SMTP_ADDRESS, deconst(account)},
 		{PR_SENDER_ADDRTYPE, deconst("EX")},
@@ -3504,7 +3504,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	proptag_buff[2] = PR_DEFERRED_SEND_TIME;
 	proptag_buff[3] = PR_DEFERRED_SEND_NUMBER;
 	proptag_buff[4] = PR_DEFERRED_SEND_UNITS;
-	proptag_buff[5] = PROP_TAG_DELETEAFTERSUBMIT;
+	proptag_buff[5] = PR_DELETE_AFTER_SUBMIT;
 	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
 	pvalue = tmp_propvals.getval(PR_MESSAGE_SIZE);
@@ -3523,7 +3523,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		we always allow a submitted message
 		to be resubmitted */
 	BOOL b_unsent = (message_flags & MSGFLAG_UNSENT) ? TRUE : false;
-	pvalue = tmp_propvals.getval(PROP_TAG_DELETEAFTERSUBMIT);
+	pvalue = tmp_propvals.getval(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	if (!(message_flags & MSGFLAG_SUBMITTED)) {
 		if (!exmdb_client::try_mark_submit(pstore->get_dir(),
@@ -4041,7 +4041,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			b_sub = FALSE;
 		}
 		BOOL b_normal = !pexclude_proptags->has(PR_CONTAINER_CONTENTS) ? TRUE : false;
-		BOOL b_fai    = !pexclude_proptags->has(PROP_TAG_FOLDERASSOCIATEDCONTENTS) ? TRUE : false;
+		BOOL b_fai    = !pexclude_proptags->has(PR_FOLDER_ASSOCIATED_CONTENTS) ? TRUE : false;
 		if (!static_cast<folder_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
 		common_util_reduce_proptags(&proptags, pexclude_proptags);

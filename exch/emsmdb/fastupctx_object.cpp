@@ -709,7 +709,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 				return FALSE;	
 		}
 		break;
-	case PROP_TAG_FOLDERASSOCIATEDCONTENTS:
+	case PR_FOLDER_ASSOCIATED_CONTENTS:
 		if (ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element ||
 			(STARTSUBFLD != last_marker && 0 != last_marker)) {
 			return FALSE;	
@@ -748,7 +748,7 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 		case PR_MESSAGE_RECIPIENTS:
 		case PR_MESSAGE_ATTACHMENTS:
 		case PR_CONTAINER_CONTENTS:
-		case PROP_TAG_FOLDERASSOCIATEDCONTENTS:
+		case PR_FOLDER_ASSOCIATED_CONTENTS:
 		case PR_CONTAINER_HIERARCHY:
 			return fastupctx_object_del_props(pctx,
 			       *static_cast<uint32_t *>(ppropval->pvalue)) == TRUE ?

@@ -330,7 +330,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		sqlite3_bind_int64(pstmt1, 2, PR_LAST_MODIFICATION_TIME);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			pv->proptag = PROP_TAG_MESSAGEDELIVERYTIME;
+			pv->proptag = PR_MESSAGE_DELIVERY_TIME;
 			uv = cu_alloc<uint64_t>();
 			pv->pvalue = uv;
 			if (pv->pvalue == nullptr) {

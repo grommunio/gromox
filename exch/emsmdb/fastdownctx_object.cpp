@@ -50,7 +50,7 @@ bool fxdown_flow_list::record_foldermessages(const FOLDER_MESSAGES *pfldmsgs)
 {	
 	if (NULL != pfldmsgs->pfai_msglst) {
 		if (!record_tag(MetaTagFXDelProp) ||
-		    !record_tag(PROP_TAG_FOLDERASSOCIATEDCONTENTS) ||
+		    !record_tag(PR_FOLDER_ASSOCIATED_CONTENTS) ||
 		    !record_messagelist(pfldmsgs->pfai_msglst))
 			return false;
 	}

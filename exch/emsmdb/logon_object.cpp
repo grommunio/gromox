@@ -343,7 +343,7 @@ static BOOL lo_check_readonly_property(const logon_object *plogon, uint32_t prop
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
 	case PROP_TAG_CODEPAGEID:
 	case PR_CONTENT_COUNT:
-	case PROP_TAG_DELETEAFTERSUBMIT:
+	case PR_DELETE_AFTER_SUBMIT:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED:
 	case PR_DELETED_ASSOC_MSG_COUNT:
@@ -360,7 +360,7 @@ static BOOL lo_check_readonly_property(const logon_object *plogon, uint32_t prop
 	case PR_MAX_SUBMIT_MESSAGE_SIZE:
 	case PR_MAILBOX_OWNER_ENTRYID:
 	case PR_MAILBOX_OWNER_NAME:
-	case PROP_TAG_MAILBOXOWNERNAME_STRING8:
+	case PR_MAILBOX_OWNER_NAME_A:
 	case PR_MESSAGE_SIZE:
 	case PR_MESSAGE_SIZE_EXTENDED:
 	case PR_ASSOC_MESSAGE_SIZE:
@@ -548,7 +548,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 			strcpy(tstr, temp_buff);
 		}
 		return TRUE;
-	case PROP_TAG_MAILBOXOWNERNAME_STRING8: {
+	case PR_MAILBOX_OWNER_NAME_A: {
 		if (!plogon->check_private())
 			return FALSE;
 		if (!common_util_get_user_displayname(plogon->account,

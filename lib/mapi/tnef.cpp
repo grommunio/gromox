@@ -1330,7 +1330,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATEEND:
-			if (pmsg->proplist.set(PROP_TAG_ENDDATE, attribute.pvalue) != 0)
+			if (pmsg->proplist.set(PR_END_DATE, attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_AIDOWNER:
@@ -1367,7 +1367,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATERECD:
-			if (pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME,
+			if (pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME,
 			    attribute.pvalue) != 0)
 				return NULL;
 			break;
@@ -2268,12 +2268,12 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 		tmp_proptags.pproptag[tmp_proptags.count++] = PROP_TAG_STARTDATE;
 	}
 	/* ATTRIBUTE_ID_DATEEND */
-	stamp = pmsg->proplist.get<uint64_t>(PROP_TAG_ENDDATE);
+	stamp = pmsg->proplist.get<uint64_t>(PR_END_DATE);
 	if (stamp != nullptr) {
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATEEND,
 		    stamp) != EXT_ERR_SUCCESS)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PROP_TAG_ENDDATE;
+		tmp_proptags.pproptag[tmp_proptags.count++] = PR_END_DATE;
 	}
 	/* ATTRIBUTE_ID_AIDOWNER */
 	num = pmsg->proplist.get<uint32_t>(PROP_TAG_OWNERAPPOINTMENTID);
@@ -2299,12 +2299,12 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 		return FALSE;
 	/* ^ keep this property for attMsgProps */
 	/* ATTRIBUTE_ID_DATERECD */
-	stamp = pmsg->proplist.get<uint64_t>(PROP_TAG_MESSAGEDELIVERYTIME);
+	stamp = pmsg->proplist.get<uint64_t>(PR_MESSAGE_DELIVERY_TIME);
 	if (stamp != nullptr) {
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATERECD,
 		    stamp) != EXT_ERR_SUCCESS)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PROP_TAG_MESSAGEDELIVERYTIME;
+		tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_DELIVERY_TIME;
 	}
 	/* ATTRIBUTE_ID_PRIORITY */
 	num = pmsg->proplist.get<uint32_t>(PR_IMPORTANCE);
@@ -2327,7 +2327,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_PRIORITY,
 		    &tmp_int16) != EXT_ERR_SUCCESS)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PROP_TAG_MESSAGEDELIVERYTIME;
+		tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_DELIVERY_TIME;
 	}
 	/* ATTRIBUTE_ID_DATEMODIFY */
 	stamp = pmsg->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);

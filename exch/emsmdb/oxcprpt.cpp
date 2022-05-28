@@ -830,7 +830,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 			b_sub = FALSE;
 		}
 		BOOL b_normal = !pexcluded_proptags->has(PR_CONTAINER_CONTENTS) ? TRUE : false;
-		BOOL b_fai    = !pexcluded_proptags->has(PROP_TAG_FOLDERASSOCIATEDCONTENTS) ? TRUE : false;
+		BOOL b_fai    = !pexcluded_proptags->has(PR_FOLDER_ASSOCIATED_CONTENTS) ? TRUE : false;
 		if (!fldsrc->get_all_proptags(&proptags))
 			return ecError;
 		common_util_reduce_proptags(&proptags, pexcluded_proptags);

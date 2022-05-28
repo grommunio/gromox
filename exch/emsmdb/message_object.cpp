@@ -262,10 +262,10 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	*sens = SENSITIVITY_NONE;
 	propvals.ppropval[propvals.count++].pvalue = sens;
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_ORIGINALDISPLAYBCC;
+	propvals.ppropval[propvals.count].proptag = PR_ORIGINAL_DISPLAY_BCC;
 	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_ORIGINALDISPLAYCC;
+	propvals.ppropval[propvals.count].proptag = PR_ORIGINAL_DISPLAY_CC;
 	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	
 	propvals.ppropval[propvals.count].proptag = PR_ORIGINAL_DISPLAY_TO;
@@ -397,7 +397,7 @@ static gxerr_t message_object_save2(message_object *pmessage, bool b_fai,
 			return GXERR_CALL_FAILED;
 		}
 		if (NULL != pmsgctnt) {
-			auto mstatus = pmsgctnt->proplist.get<const uint32_t>(PROP_TAG_MESSAGESTATUS);
+			auto mstatus = pmsgctnt->proplist.get<const uint32_t>(PR_MSG_STATUS);
 			if (mstatus == nullptr)
 				return GXERR_CALL_FAILED;
 			if (!exmdb_client_set_message_instance_conflict(
@@ -408,7 +408,7 @@ static gxerr_t message_object_save2(message_object *pmessage, bool b_fai,
 			TAGGED_PROPVAL tmp_propval;
 			TPROPVAL_ARRAY tmp_propvals;
 			PROBLEM_ARRAY tmp_problems;
-			tmp_propval.proptag = PROP_TAG_MESSAGESTATUS;
+			tmp_propval.proptag = PR_MSG_STATUS;
 			tmp_propval.pvalue = &tmp_status;
 			tmp_propvals.count = 1;
 			tmp_propvals.ppropval = &tmp_propval;
@@ -987,7 +987,7 @@ BOOL message_object::check_readonly_property(uint32_t proptag) const
 	case PR_STORE_RECORD_KEY:
 	case PR_RECORD_KEY:
 	case PR_MESSAGE_SIZE:
-	case PROP_TAG_MESSAGESTATUS:
+	case PR_MSG_STATUS:
 	case PR_TRANSPORT_MESSAGE_HEADERS:
 	case PR_TRANSPORT_MESSAGE_HEADERS_A:
 		return TRUE;

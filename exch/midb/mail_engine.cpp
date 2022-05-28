@@ -1906,7 +1906,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		if (flags == nullptr)
 			continue;
 		auto mod_time = rows.pparray[i]->get<uint64_t>(PR_LAST_MODIFICATION_TIME);
-		auto recv_time = rows.pparray[i]->get<uint64_t>(PROP_TAG_MESSAGEDELIVERYTIME);
+		auto recv_time = rows.pparray[i]->get<uint64_t>(PR_MESSAGE_DELIVERY_TIME);
 		auto midstr = rows.pparray[i]->get<const char>(PidTagMidString);
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
@@ -2922,9 +2922,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	}
 	auto cl_msg = make_scope_exit([&]() { message_content_free(pmsgctnt); });
 	auto nt_time = rop_util_unix_to_nttime(strtol(argv[5], nullptr, 0));
-	if (pmsgctnt->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0) {
+	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
 		return MIDB_E_NO_MEMORY;
-	}
 	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0) {
 		return MIDB_E_NO_MEMORY;
 	}
@@ -3155,7 +3154,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	}
 	auto cl_msg = make_scope_exit([&]() { message_content_free(pmsgctnt); });
-	if (pmsgctnt->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0)
+	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
 		return MIDB_E_NO_MEMORY;
 	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0)
 		return MIDB_E_NO_MEMORY;
@@ -4882,7 +4881,7 @@ static void mail_engine_add_notification_message(
 	
 	proptags.count = 4;
 	proptags.pproptag = tmp_proptags;
-	tmp_proptags[0] = PROP_TAG_MESSAGEDELIVERYTIME;
+	tmp_proptags[0] = PR_MESSAGE_DELIVERY_TIME;
 	tmp_proptags[1] = PR_LAST_MODIFICATION_TIME;
 	tmp_proptags[2] = PidTagMidString;
 	tmp_proptags[3] = PR_MESSAGE_FLAGS;
@@ -4892,7 +4891,7 @@ static void mail_engine_add_notification_message(
 		return;		
 	const void *pvalue = propvals.getval(PR_LAST_MODIFICATION_TIME);
 	auto mod_time = pvalue != nullptr ? *static_cast<const uint64_t *>(pvalue) : 0;
-	pvalue = propvals.getval(PROP_TAG_MESSAGEDELIVERYTIME);
+	pvalue = propvals.getval(PR_MESSAGE_DELIVERY_TIME);
 	auto received_time = pvalue != nullptr ? *static_cast<const uint64_t *>(pvalue) : 0;
 	pvalue = propvals.getval(PR_MESSAGE_FLAGS);
 	auto message_flags = pvalue != nullptr ? *static_cast<const uint32_t *>(pvalue) : 0;

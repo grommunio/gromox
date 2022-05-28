@@ -536,7 +536,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 				case PR_CONTAINER_CONTENTS:
 					b_normal = FALSE;
 					break;
-				case PROP_TAG_FOLDERASSOCIATEDCONTENTS:
+				case PR_FOLDER_ASSOCIATED_CONTENTS:
 					b_fai = FALSE;
 					break;
 				}
@@ -671,7 +671,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 				case PR_CONTAINER_CONTENTS:
 					b_normal = TRUE;
 					break;
-				case PROP_TAG_FOLDERASSOCIATEDCONTENTS:
+				case PR_FOLDER_ASSOCIATED_CONTENTS:
 					b_fai = TRUE;
 					break;
 				}

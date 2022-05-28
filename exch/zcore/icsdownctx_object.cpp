@@ -326,7 +326,7 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	proptag_buff[1] = PR_DISPLAY_NAME;
 	proptag_buff[2] = PR_CONTAINER_CLASS;
 	proptag_buff[3] = PR_ATTR_HIDDEN;
-	proptag_buff[4] = PROP_TAG_EXTENDEDFOLDERFLAGS;
+	proptag_buff[4] = PR_EXTENDED_FOLDER_FLAGS;
 	proptag_buff[5] = PidTagChangeNumber;
 	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), 0,
 	    fid, &proptags, &tmp_propvals))
@@ -369,9 +369,8 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	pproplist->ppropval[pproplist->count++].pvalue =
 		pvalue != nullptr ? pvalue : deconst(&fake_false);
 
-	pproplist->ppropval[pproplist->count].proptag =
-						PROP_TAG_EXTENDEDFOLDERFLAGS;
-	pvalue = tmp_propvals.getval(PROP_TAG_EXTENDEDFOLDERFLAGS);
+	pproplist->ppropval[pproplist->count].proptag = PR_EXTENDED_FOLDER_FLAGS;
+	pvalue = tmp_propvals.getval(PR_EXTENDED_FOLDER_FLAGS);
 	if (NULL != pvalue) {
 		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
 	}
