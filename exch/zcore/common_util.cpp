@@ -86,7 +86,7 @@ static char g_hostname[UDOM_SIZE];
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
-static thread_local ENVIRONMENT_CONTEXT *g_env_key;
+static thread_local std::unique_ptr<env_context> g_env_key;
 static char g_default_zone[64];
 static char g_freebusy_path[256];
 static char g_default_charset[32];
@@ -444,7 +444,7 @@ BOOL common_util_build_environment() try
 {
 	if (++g_env_refcount > 1)
 		return TRUE;
-	g_env_key = new ENVIRONMENT_CONTEXT;
+	g_env_key = std::make_unique<env_context>();
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1977: ENOMEM\n");
@@ -455,18 +455,15 @@ void common_util_free_environment()
 {
 	if (--g_env_refcount > 0)
 		return;
-	auto pctx = g_env_key;
-	g_env_key = nullptr;
-	if (pctx == nullptr) {
+	if (g_env_key == nullptr)
 		fprintf(stderr, "W-1908: T%lu: g_env_key already unset\n", gx_gettid());
-		return;
-	}
-	delete pctx;
+	else
+		g_env_key.reset();
 }
 
 void* common_util_alloc(size_t size)
 {
-	auto pctx = g_env_key;
+	auto pctx = g_env_key.get();
 	if (pctx == nullptr) {
 		fprintf(stderr, "E-1909: T%lu: g_env_key is unset, allocator is unset\n", gx_gettid());
 		return NULL;
@@ -476,7 +473,7 @@ void* common_util_alloc(size_t size)
 
 void common_util_set_clifd(int clifd)
 {
-	auto pctx = g_env_key;
+	auto pctx = g_env_key.get();
 	if (pctx == nullptr)
 		fprintf(stderr, "E-1810: T%lu: g_env_key is unset, cannot set clifd\n", gx_gettid());
 	else
@@ -485,7 +482,7 @@ void common_util_set_clifd(int clifd)
 
 int common_util_get_clifd()
 {
-	auto pctx = g_env_key;
+	auto pctx = g_env_key.get();
 	if (pctx != nullptr)
 		return pctx->clifd;
 	fprintf(stderr, "E-1811: T%lu: g_env_key is unset, clifd is unset\n", gx_gettid());
