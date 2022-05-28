@@ -415,7 +415,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			if (pmsg->proplist.set(PROP_TAG_PROFESSION, pstring) != 0)
+			if (pmsg->proplist.set(PR_PROFESSION, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "ORG")) {
 			pnode1 = double_list_get_head(&pvline->value_list);
@@ -496,7 +496,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			uint32_t tag;
 			auto keyword = static_cast<char *>(pnode2->pdata);
 			if (strcasecmp(keyword, "home") == 0) {
-				tag = PROP_TAG_PERSONALHOMEPAGE;
+				tag = PR_PERSONAL_HOME_PAGE;
 			} else if (strcasecmp(keyword, "work") == 0) {
 				tag = PR_BUSINESS_HOME_PAGE;
 			} else {
@@ -541,7 +541,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			bin_array.pbin = &tmp_bin;
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
-			if (pmsg->proplist.set(PROP_TAG_USERX509CERTIFICATE, &bin_array) != 0)
+			if (pmsg->proplist.set(PR_USER_X509_CERTIFICATE, &bin_array) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-OL-DESIGN")) {
 			pstring = vcard_get_first_subvalue(pvline);
@@ -615,7 +615,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(
 							mktime(&tmp_tm) - timezone);
-				if (pmsg->proplist.set(PROP_TAG_WEDDINGANNIVERSARY, &tmp_int64) != 0)
+				if (pmsg->proplist.set(PR_WEDDING_ANNIVERSARY, &tmp_int64) != 0)
 					goto IMPORT_FAILURE;
 			}	
 		} else if (0 == strcasecmp(pvline->name, "X-MS-SPOUSE")) {
@@ -632,7 +632,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			if (pmsg->proplist.set(PROP_TAG_SPOUSENAME, pstring) != 0)
+			if (pmsg->proplist.set(PR_SPOUSE_NAME, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-MANAGER")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
@@ -1151,7 +1151,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 				goto EXPORT_FAILURE;
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_PROFESSION);
+	pvalue = pmsg->proplist.get<char>(PR_PROFESSION);
 	if (NULL != pvalue) {
 		pvline = vcard_new_simple_line("ROLE", pvalue);
 		if (NULL == pvline) {
@@ -1160,7 +1160,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		vcard_append_line(pvcard, pvline);
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_PERSONALHOMEPAGE);
+	pvalue = pmsg->proplist.get<char>(PR_PERSONAL_HOME_PAGE);
 	if (NULL != pvalue) {
 		pvline = vcard_new_line("URL");
 		if (NULL == pvline) {
@@ -1268,7 +1268,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			goto EXPORT_FAILURE;
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_SPOUSENAME);
+	pvalue = pmsg->proplist.get<char>(PR_SPOUSE_NAME);
 	if (NULL != pvalue) {
 		pvline = vcard_new_line("X-MS-SPOUSE");
 		if (NULL == pvline) {
@@ -1375,7 +1375,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 				goto EXPORT_FAILURE;
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_USERX509CERTIFICATE);
+	pvalue = pmsg->proplist.get<char>(PR_USER_X509_CERTIFICATE);
 	if (NULL != pvalue && 0 != ((BINARY_ARRAY*)pvalue)->count) {
 		pvline = vcard_new_line("KEY");
 		if (NULL == pvline) {
@@ -1472,7 +1472,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			goto EXPORT_FAILURE;
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_WEDDINGANNIVERSARY);
+	pvalue = pmsg->proplist.get<char>(PR_WEDDING_ANNIVERSARY);
 	if (NULL != pvalue) {
 		unix_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
 		gmtime_r(&unix_time, &tmp_tm);

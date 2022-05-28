@@ -4211,7 +4211,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
 		if (common_util_get_user_displayname(account, display_name,
 		    arsizeof(display_name))) {
-			propval.proptag = PROP_TAG_RECEIVEDBYNAME;
+			propval.proptag = PR_RECEIVED_BY_NAME;
 			propval.pvalue = display_name;
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 		} else {

@@ -1773,7 +1773,7 @@ static BOOL table_column_content_tmptbl(
 	case PROP_TAG_INSTANCENUM:
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 10, PT_LONG);
 		return TRUE;
-	case PROP_TAG_ROWTYPE: {
+	case PR_ROW_TYPE: {
 		if (NULL == psorts || 0 == psorts->ccategories) {
 			*ppvalue = NULL;
 			return TRUE;
@@ -3223,7 +3223,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		tmp_proptags[pproptags->count++] = PR_DISPLAY_BCC;
 		tmp_proptags[pproptags->count++] = PROP_TAG_INSTID;
 		tmp_proptags[pproptags->count++] = PROP_TAG_INSTANCENUM;
-		tmp_proptags[pproptags->count++] = PROP_TAG_ROWTYPE;
+		tmp_proptags[pproptags->count++] = PR_ROW_TYPE;
 		tmp_proptags[pproptags->count++] = PR_DEPTH;
 		tmp_proptags[pproptags->count++] = PR_CONTENT_COUNT;
 		tmp_proptags[pproptags->count++] = PR_CONTENT_UNREAD;

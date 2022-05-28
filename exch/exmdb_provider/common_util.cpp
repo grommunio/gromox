@@ -577,7 +577,7 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		proptags[i++] = PROP_TAG_FOLDERCHILDCOUNT;
 		proptags[i++] = PR_FOLDER_TYPE;
 		proptags[i++] = PR_CONTENT_UNREAD;
-		proptags[i++] = PROP_TAG_SUBFOLDERS;
+		proptags[i++] = PR_SUBFOLDERS;
 		proptags[i++] = PROP_TAG_HASRULES;
 		proptags[i++] = PROP_TAG_FOLDERPATHNAME;
 		proptags[i++] = PROP_TAG_LOCALCOMMITTIME;
@@ -1676,7 +1676,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		*v = common_util_get_folder_flags(db, id);
 		return GP_ADV;
 	}
-	case PROP_TAG_SUBFOLDERS: {
+	case PR_SUBFOLDERS: {
 		auto v = cu_alloc<uint8_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
@@ -2804,7 +2804,7 @@ BOOL cu_set_properties(db_table table_type,
 			case PidTagFolderId:
 			case PidTagParentFolderId:
 			case PROP_TAG_FOLDERFLAGS:
-			case PROP_TAG_SUBFOLDERS:
+			case PR_SUBFOLDERS:
 			case PR_CONTENT_COUNT:
 			case PR_ASSOC_CONTENT_COUNT:
 			case PROP_TAG_FOLDERCHILDCOUNT:

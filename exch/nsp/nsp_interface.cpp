@@ -401,7 +401,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_ACCOUNT:
 	case PR_ACCOUNT_A:
 	case PR_SMTP_ADDRESS:
-	case PROP_TAG_SMTPADDRESS_STRING8:
+	case PR_SMTP_ADDRESS_A:
 		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		else if (node_type == abnode_type::person ||

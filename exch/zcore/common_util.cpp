@@ -1702,8 +1702,7 @@ BOOL common_util_send_message(store_object *pstore,
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_delete = TRUE;
 	}
-	common_util_remove_propvals(&pmsgctnt->proplist,
-							PROP_TAG_SENTMAILSVREID);
+	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
 		if (!common_util_from_message_entryid(*ptarget,

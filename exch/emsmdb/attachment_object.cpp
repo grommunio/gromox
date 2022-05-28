@@ -65,7 +65,7 @@ BOOL attachment_object::init_attachment()
 	
 	propvals.ppropval[propvals.count].proptag = PR_ATTACH_NUM;
 	propvals.ppropval[propvals.count++].pvalue = &pattachment->attachment_num;
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_RENDERINGPOSITION;
+	propvals.ppropval[propvals.count].proptag = PR_RENDERING_POSITION;
 	auto rendpos = cu_alloc<uint32_t>();
 	propvals.ppropval[propvals.count].pvalue = rendpos;
 	if (NULL == propvals.ppropval[propvals.count].pvalue) {

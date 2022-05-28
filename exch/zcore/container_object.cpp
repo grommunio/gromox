@@ -580,7 +580,7 @@ static BOOL container_object_fetch_folder_properties(
 			break;
 		}
 		case PR_CONTAINER_FLAGS: {
-			auto pvalue = ppropvals->get<uint32_t>(PROP_TAG_SUBFOLDERS);
+			auto pvalue = ppropvals->get<uint32_t>(PR_SUBFOLDERS);
 			BOOL b_sub = pvalue == nullptr || *pvalue == 0 ? false : TRUE;
 			pvalue = cu_alloc<uint32_t>();
 			if (NULL == pvalue) {
@@ -638,7 +638,7 @@ static BOOL container_object_fetch_folder_properties(
 static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 {
 	static constexpr uint32_t p[] = {
-		PidTagFolderId, PROP_TAG_SUBFOLDERS, PR_DISPLAY_NAME,
+		PidTagFolderId, PR_SUBFOLDERS, PR_DISPLAY_NAME,
 		PR_CONTAINER_CLASS, PROP_TAG_FOLDERPATHNAME,
 		PidTagParentFolderId, PR_ATTR_HIDDEN,
 	};

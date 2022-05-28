@@ -310,7 +310,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->pproptag[pproptags->count++] = PR_EMAIL_ADDRESS;
 		pproptags->pproptag[pproptags->count++] = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
 	} else {
-		pproptags->pproptag[pproptags->count++] = PROP_TAG_HIERARCHYSERVER;
+		pproptags->pproptag[pproptags->count++] = PR_HIERARCHY_SERVER;
 		/* TODO: For PR_EMAIL_ADDRESS,
 		check if mail address of public folder exists. */
 	}
@@ -383,8 +383,8 @@ static BOOL lo_check_readonly_property(const logon_object *plogon, uint32_t prop
 	case PR_STORE_SUPPORT_MASK:
 	case PR_TEST_LINE_SPEED:
 	case PR_USER_ENTRYID:
-	case PROP_TAG_VALIDFOLDERMASK:
-	case PROP_TAG_HIERARCHYSERVER:
+	case PR_VALID_FOLDER_MASK:
+	case PR_HIERARCHY_SERVER:
 		return TRUE;
 	}
 	return FALSE;
@@ -500,7 +500,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		*v = g_max_extrule_len;
 		return TRUE;
 	}
-	case PROP_TAG_HIERARCHYSERVER: {
+	case PR_HIERARCHY_SERVER: {
 		if (plogon->check_private())
 			return FALSE;
 		common_util_get_domain_server(plogon->account, temp_buff);

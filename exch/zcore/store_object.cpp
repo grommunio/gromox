@@ -394,8 +394,8 @@ static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t 
 	case PR_STORE_SUPPORT_MASK:
 	case PR_TEST_LINE_SPEED:
 	case PR_USER_ENTRYID:
-	case PROP_TAG_VALIDFOLDERMASK:
-	case PROP_TAG_HIERARCHYSERVER:
+	case PR_VALID_FOLDER_MASK:
+	case PR_HIERARCHY_SERVER:
 	case PR_FINDER_ENTRYID:
 	case PR_IPM_FAVORITES_ENTRYID:
 	case PR_IPM_SUBTREE_ENTRYID:
@@ -448,7 +448,7 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_REPLY;
 		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_SUBJECT;
 	} else {
-		pproptags->pproptag[pproptags->count++] = PROP_TAG_HIERARCHYSERVER;
+		pproptags->pproptag[pproptags->count++] = PR_HIERARCHY_SERVER;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_PUBLIC_FOLDERS_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_NON_IPM_SUBTREE_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_EFORMS_REGISTRY_ENTRYID;

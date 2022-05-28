@@ -1206,7 +1206,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	auto str = ppropvals->get<const char>(PR_DISPLAY_NAME);
 	if (str == nullptr || *str == '\0' || strcmp(str, "''") == 0 ||
 	    strcmp(str, "\"\"") == 0) {
-		str = ppropvals->get<char>(PROP_TAG_RECIPIENTDISPLAYNAME);
+		str = ppropvals->get<char>(PR_RECIPIENT_DISPLAY_NAME);
 		if (str == nullptr)
 			str = ppropvals->get<char>(PR_SMTP_ADDRESS);
 		if (str == nullptr)
@@ -2023,8 +2023,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_delete = TRUE;
 	}
-	common_util_remove_propvals(&pmsgctnt->proplist,
-							PROP_TAG_SENTMAILSVREID);
+	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
 		if (!common_util_from_message_entryid(plogon,

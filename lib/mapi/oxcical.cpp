@@ -804,8 +804,8 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 	 * XXX: Value of tmp_byte is unclear, but it appears it coincides with
 	 * the presence of any recipients.
 	 */
-	if (pmsg->proplist.set(PROP_TAG_RESPONSEREQUESTED, &tmp_byte) != 0 ||
-	    pmsg->proplist.set(PROP_TAG_REPLYREQUESTED, &tmp_byte) != 0)
+	if (pmsg->proplist.set(PR_RESPONSE_REQUESTED, &tmp_byte) != 0 ||
+	    pmsg->proplist.set(PR_REPLY_REQUESTED, &tmp_byte) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -1472,7 +1472,7 @@ static BOOL oxcical_parse_ownerapptid(std::shared_ptr<ical_component> main_event
 		return TRUE;
 	}
 	uint32_t tmp_int32 = strtol(pvalue, nullptr, 0);
-	if (pmsg->proplist.set(PROP_TAG_OWNERAPPOINTMENTID, &tmp_int32) != 0)
+	if (pmsg->proplist.set(PR_OWNER_APPT_ID, &tmp_int32) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -1670,7 +1670,7 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	tmp_int32 = ATTACH_EMBEDDED_MSG;
 	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
 		return FALSE;
-	if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &indet_rendering_pos) != 0)
+	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
 		return FALSE;
 	auto newval = pattachment->pembedded->proplist.getval(PR_SUBJECT);
 	if (newval != nullptr &&
@@ -1781,7 +1781,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
 			    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
 				return FALSE;
-			if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &indet_rendering_pos) != 0)
+			if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
 				return FALSE;
 		}
 	} else if (0 == strcasecmp(pvalue, "BINARY")) {
@@ -1865,7 +1865,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
 		    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
 			return FALSE;
-		if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &indet_rendering_pos) != 0)
+		if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
 			return FALSE;
 	}
 	return TRUE;
@@ -3031,7 +3031,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			return false;
 		return pivalue->append_subval(tmp_value) ? TRUE : false;
 	}	
-	pvalue = pmsg->proplist.getval(PROP_TAG_RESPONSEREQUESTED);
+	pvalue = pmsg->proplist.getval(PR_RESPONSE_REQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_rsvp = TRUE;
 	} else {
@@ -4450,7 +4450,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return false;
 	}
 	
-	pvalue = pmsg->proplist.getval(PROP_TAG_OWNERAPPOINTMENTID);
+	pvalue = pmsg->proplist.getval(PR_OWNER_APPT_ID);
 	if (NULL != pvalue) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *(uint32_t*)pvalue);
 		piline = ical_new_simple_line(
