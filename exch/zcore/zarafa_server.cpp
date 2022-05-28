@@ -2951,7 +2951,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 	}
 	for (i=0; i<psortset->count; i++) {
 		tmp_proptag = PROP_TAG(psortset->psort[i].type, psortset->psort[i].propid);
-		if (PROP_TAG_DEPTH == tmp_proptag ||
+		if (tmp_proptag == PR_DEPTH ||
 			PROP_TAG_INSTID == tmp_proptag ||
 			PROP_TAG_INSTANCENUM == tmp_proptag ||
 		    tmp_proptag == PR_CONTENT_COUNT ||
@@ -4030,7 +4030,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 				return ecAccessDenied;
 		}
 		BOOL b_sub;
-		if (!pexclude_proptags->has(PROP_TAG_CONTAINERHIERARCHY)) {
+		if (!pexclude_proptags->has(PR_CONTAINER_HIERARCHY)) {
 			if (!exmdb_client::check_folder_cycle(pstore->get_dir(),
 			    folder->folder_id, fdst->folder_id, &b_cycle))
 				return ecError;
@@ -4040,7 +4040,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		} else {
 			b_sub = FALSE;
 		}
-		BOOL b_normal = !pexclude_proptags->has(PROP_TAG_CONTAINERCONTENTS) ? TRUE : false;
+		BOOL b_normal = !pexclude_proptags->has(PR_CONTAINER_CONTENTS) ? TRUE : false;
 		BOOL b_fai    = !pexclude_proptags->has(PROP_TAG_FOLDERASSOCIATEDCONTENTS) ? TRUE : false;
 		if (!static_cast<folder_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;

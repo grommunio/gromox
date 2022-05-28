@@ -286,7 +286,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(
 							mktime(&tmp_tm) - timezone);
-				if (pmsg->proplist.set(PROP_TAG_BIRTHDAY, &tmp_int64) != 0)
+				if (pmsg->proplist.set(PR_BIRTHDAY, &tmp_int64) != 0)
 					goto IMPORT_FAILURE;
 			}
 		} else if (0 == strcasecmp(pvline->name, "ADR")) {
@@ -664,7 +664,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			if (pmsg->proplist.set(PROP_TAG_ASSISTANT, pstring) != 0)
+			if (pmsg->proplist.set(PR_ASSISTANT, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "FBURL")) {
 			pstring = vcard_get_first_subvalue(pvline);
@@ -695,7 +695,7 @@ MESSAGE_CONTENT* oxvcard_import(
 		}
 	}
 	if (child_strings.count != 0 &&
-	    pmsg->proplist.set(PROP_TAG_CHILDRENSNAMES, &child_strings) != 0)
+	    pmsg->proplist.set(PR_CHILDRENS_NAMES, &child_strings) != 0)
 		goto IMPORT_FAILURE;
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;
@@ -1217,7 +1217,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		vcard_append_line(pvcard, pvline);
 	}
 	
-	saval = pmsg->proplist.get<STRING_ARRAY>(PROP_TAG_CHILDRENSNAMES);
+	saval = pmsg->proplist.get<STRING_ARRAY>(PR_CHILDRENS_NAMES);
 	if (NULL != pvalue) {
 		for (size_t i = 0; i < saval->count; ++i) {
 			pvline = vcard_new_simple_line("X-MS-CHILD", saval->ppstr[i]);
@@ -1310,7 +1310,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			goto EXPORT_FAILURE;
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_ASSISTANT);
+	pvalue = pmsg->proplist.get<char>(PR_ASSISTANT);
 	if (NULL != pvalue) {
 		pvline = vcard_new_line("X-MS-ASSISTANT");
 		if (NULL == pvline) {
@@ -1420,7 +1420,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	}
 	vcard_append_line(pvcard, pvline);
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_BIRTHDAY);
+	pvalue = pmsg->proplist.get<char>(PR_BIRTHDAY);
 	if (NULL != pvalue) {
 		unix_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
 		gmtime_r(&unix_time, &tmp_tm);

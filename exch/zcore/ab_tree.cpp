@@ -1261,7 +1261,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 	auto node_type = ab_tree_get_node_type(pnode);
 	/* Properties that need to be force-generated */
 	switch (proptag) {
-	case PROP_TAG_ABPROVIDERID: {
+	case PR_AB_PROVIDER_ID: {
 		auto bv = cu_alloc<BINARY>();
 		if (bv == nullptr)
 			return FALSE;
@@ -1270,7 +1270,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		bv->pv = deconst(&muidECSAB);
 		return TRUE;
 	}
-	case PROP_TAG_CONTAINERFLAGS:
+	case PR_CONTAINER_FLAGS:
 		if (node_type < abnode_type::containers)
 			return TRUE;
 		pvalue = cu_alloc<uint32_t>();
@@ -1282,7 +1282,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_DEPTH: {
+	case PR_DEPTH: {
 		if (node_type < abnode_type::containers)
 			return TRUE;
 		auto v = cu_alloc<uint32_t>();

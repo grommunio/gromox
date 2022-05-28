@@ -11,7 +11,7 @@
 #include <gromox/simple_tree.hpp>
 #include <gromox/single_list.hpp>
 
-/* PROP_TAG_CONTAINERFLAGS values */
+/* PR_CONTAINER_FLAGS values */
 #define	AB_RECIPIENTS						0x1
 #define	AB_SUBCONTAINERS					0x2
 #define	AB_UNMODIFIABLE						0x8

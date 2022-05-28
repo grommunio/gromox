@@ -819,7 +819,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		} else {
 			username = NULL;
 		}
-		if (!pexcluded_proptags->has(PROP_TAG_CONTAINERHIERARCHY)) {
+		if (!pexcluded_proptags->has(PR_CONTAINER_HIERARCHY)) {
 			if (!exmdb_client_check_folder_cycle(plogon->get_dir(),
 			    fldsrc->folder_id, flddst->folder_id, &b_cycle))
 				return ecError;
@@ -829,7 +829,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		} else {
 			b_sub = FALSE;
 		}
-		BOOL b_normal = !pexcluded_proptags->has(PROP_TAG_CONTAINERCONTENTS) ? TRUE : false;
+		BOOL b_normal = !pexcluded_proptags->has(PR_CONTAINER_CONTENTS) ? TRUE : false;
 		BOOL b_fai    = !pexcluded_proptags->has(PROP_TAG_FOLDERASSOCIATEDCONTENTS) ? TRUE : false;
 		if (!fldsrc->get_all_proptags(&proptags))
 			return ecError;

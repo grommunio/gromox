@@ -1788,7 +1788,7 @@ static BOOL table_column_content_tmptbl(
 			TBL_EXPANDED_CATEGORY;
 		return TRUE;
 	}
-	case PROP_TAG_DEPTH:
+	case PR_DEPTH:
 		if (NULL == psorts || 0 == psorts->ccategories) {
 			*ppvalue = NULL;
 			return TRUE;
@@ -1982,7 +1982,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			}
 			count = 0;
 			for (i=0; i<pproptags->count; i++) {
-				if (PROP_TAG_DEPTH == pproptags->pproptag[i]) {
+				if (pproptags->pproptag[i] == PR_DEPTH) {
 					auto v = cu_alloc<uint32_t>();
 					pvalue = v;
 					if (NULL == pvalue) {
@@ -2303,7 +2303,7 @@ static BOOL table_get_hierarchy_row_property(
 	HIERARCHY_ROW_PARAM *prow_param;
 	
 	prow_param = (HIERARCHY_ROW_PARAM*)pparam;
-	if (proptag != PROP_TAG_DEPTH)
+	if (proptag != PR_DEPTH)
 		return cu_get_property(db_table::folder_props, prow_param->folder_id,
 		       prow_param->cpid, prow_param->psqlite, proptag, ppvalue);
 	auto v = cu_alloc<uint32_t>();
@@ -2510,7 +2510,7 @@ static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 		}
 		for (i = 0; i < pproptags->count; i++) {
 			void *pvalue;
-			if (PROP_TAG_DEPTH == pproptags->pproptag[i]) {
+			if (pproptags->pproptag[i] == PR_DEPTH) {
 				auto v = cu_alloc<uint32_t>();
 				pvalue = v;
 				if (NULL == pvalue) {
@@ -2869,7 +2869,7 @@ static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
 		return FALSE;
 	}
 	for (i = 0; i < pproptags->count; i++) {
-		if (PROP_TAG_DEPTH == pproptags->pproptag[i]) {
+		if (pproptags->pproptag[i] == PR_DEPTH) {
 			auto v = cu_alloc<uint32_t>();
 			pvalue = v;
 			if (NULL == pvalue) {
@@ -3156,7 +3156,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		}
 		int_hash_iter_free(iter);
 		phash.reset();
-		tmp_proptags[pproptags->count++] = PROP_TAG_DEPTH;
+		tmp_proptags[pproptags->count++] = PR_DEPTH;
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
 			pproptags->count = 0;
@@ -3224,7 +3224,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		tmp_proptags[pproptags->count++] = PROP_TAG_INSTID;
 		tmp_proptags[pproptags->count++] = PROP_TAG_INSTANCENUM;
 		tmp_proptags[pproptags->count++] = PROP_TAG_ROWTYPE;
-		tmp_proptags[pproptags->count++] = PROP_TAG_DEPTH;
+		tmp_proptags[pproptags->count++] = PR_DEPTH;
 		tmp_proptags[pproptags->count++] = PR_CONTENT_COUNT;
 		tmp_proptags[pproptags->count++] = PR_CONTENT_UNREAD;
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);

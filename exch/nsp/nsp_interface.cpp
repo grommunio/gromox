@@ -2036,14 +2036,14 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 		prow->pprops[0].value.err = ecMAPIOOM;
 	}
 	
-	/* PROP_TAG_CONTAINERFLAGS */
-	prow->pprops[1].proptag = PROP_TAG_CONTAINERFLAGS;
+	/* PR_CONTAINER_FLAGS */
+	prow->pprops[1].proptag = PR_CONTAINER_FLAGS;
 	prow->pprops[1].reserved = 0;
 	prow->pprops[1].value.l = !has_child ? AB_RECIPIENTS | AB_UNMODIFIABLE :
 	                          AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 	
-	/* PROP_TAG_DEPTH */
-	prow->pprops[2].proptag = PROP_TAG_DEPTH;
+	/* PR_DEPTH */
+	prow->pprops[2].proptag = PR_DEPTH;
 	prow->pprops[2].reserved = 0;
 	prow->pprops[2].value.l = depth;
 	

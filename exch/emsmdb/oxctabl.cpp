@@ -146,7 +146,7 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 	}
 	for (i=0; i<psort_criteria->count; i++) {
 		tmp_proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
-		if (PROP_TAG_DEPTH == tmp_proptag ||
+		if (tmp_proptag == PR_DEPTH ||
 			PROP_TAG_INSTID == tmp_proptag ||
 			PROP_TAG_INSTANCENUM == tmp_proptag ||
 		    tmp_proptag == PR_CONTENT_COUNT ||

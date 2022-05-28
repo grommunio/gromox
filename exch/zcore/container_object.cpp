@@ -401,9 +401,8 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			}
 			tmp_bin.cb = sizeof(muidZCSAB);
 			tmp_bin.pv = deconst(&muidZCSAB);
-			if (ppropvals->set(PROP_TAG_ABPROVIDERID, &tmp_bin) != 0) {
+			if (ppropvals->set(PR_AB_PROVIDER_ID, &tmp_bin) != 0)
 				return FALSE;
-			}
 			tmp_int = MAPI_MAILUSER;
 			if (ppropvals->set(PR_OBJECT_TYPE, &tmp_int) != 0) {
 				return FALSE;
@@ -431,7 +430,7 @@ BOOL container_object_fetch_special_property(
 	EMSAB_ENTRYID ab_entryid;
 	
 	switch (proptag) {
-	case PROP_TAG_ABPROVIDERID: {
+	case PR_AB_PROVIDER_ID: {
 		auto bv = cu_alloc<BINARY>();
 		if (bv == nullptr)
 			return FALSE;
@@ -460,7 +459,7 @@ BOOL container_object_fetch_special_property(
 		*ppvalue = pvalue;
 		return TRUE;
 	}
-	case PROP_TAG_CONTAINERFLAGS:
+	case PR_CONTAINER_FLAGS:
 		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -469,7 +468,7 @@ BOOL container_object_fetch_special_property(
 			AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_DEPTH:
+	case PR_DEPTH:
 		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -541,7 +540,7 @@ static BOOL container_object_fetch_folder_properties(
 		pout_propvals->ppropval[pout_propvals->count].proptag =
 										pproptags->pproptag[i];
 		switch (pproptags->pproptag[i]) {
-		case PROP_TAG_ABPROVIDERID: {
+		case PR_AB_PROVIDER_ID: {
 			auto bv = cu_alloc<BINARY>();
 			if (bv == nullptr)
 				return FALSE;
@@ -580,7 +579,7 @@ static BOOL container_object_fetch_folder_properties(
 			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
 			break;
 		}
-		case PROP_TAG_CONTAINERFLAGS: {
+		case PR_CONTAINER_FLAGS: {
 			auto pvalue = ppropvals->get<uint32_t>(PROP_TAG_SUBFOLDERS);
 			BOOL b_sub = pvalue == nullptr || *pvalue == 0 ? false : TRUE;
 			pvalue = cu_alloc<uint32_t>();
@@ -593,7 +592,7 @@ static BOOL container_object_fetch_folder_properties(
 			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
 			break;
 		}
-		case PROP_TAG_DEPTH: {
+		case PR_DEPTH: {
 			auto pc = ppropvals->get<const char>(PROP_TAG_FOLDERPATHNAME);
 			if (pc == nullptr)
 				return FALSE;
@@ -696,9 +695,9 @@ void container_object_get_container_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
 	static constexpr uint32_t p[] = {
-		PR_ENTRYID, PROP_TAG_CONTAINERFLAGS, PROP_TAG_DEPTH, PR_INSTANCE_KEY,
+		PR_ENTRYID, PR_CONTAINER_FLAGS, PR_DEPTH, PR_INSTANCE_KEY,
 		PR_EMS_AB_CONTAINERID, PR_DISPLAY_NAME, PR_EMS_AB_IS_MASTER,
-		PR_EMS_AB_PARENT_ENTRYID, PROP_TAG_ABPROVIDERID,
+		PR_EMS_AB_PARENT_ENTRYID, PR_AB_PROVIDER_ID,
 	};
 	pproptags->count = arsizeof(p);
 	pproptags->pproptag = deconst(p);

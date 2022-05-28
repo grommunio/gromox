@@ -697,7 +697,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 			break;
 		}
 		break;
-	case PROP_TAG_CONTAINERCONTENTS:
+	case PR_CONTAINER_CONTENTS:
 		if (ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element ||
 			(STARTSUBFLD != last_marker && 0 != last_marker)) {
 			return FALSE;	
@@ -721,7 +721,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 				return FALSE;	
 		}
 		break;
-	case PROP_TAG_CONTAINERHIERARCHY:
+	case PR_CONTAINER_HIERARCHY:
 		if (ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element ||
 			(STARTSUBFLD != last_marker && 0 != last_marker)) {
 			return FALSE;	
@@ -747,9 +747,9 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 		switch (*(uint32_t*)ppropval->pvalue) {
 		case PR_MESSAGE_RECIPIENTS:
 		case PR_MESSAGE_ATTACHMENTS:
-		case PROP_TAG_CONTAINERCONTENTS:
+		case PR_CONTAINER_CONTENTS:
 		case PROP_TAG_FOLDERASSOCIATEDCONTENTS:
-		case PROP_TAG_CONTAINERHIERARCHY:
+		case PR_CONTAINER_HIERARCHY:
 			return fastupctx_object_del_props(pctx,
 			       *static_cast<uint32_t *>(ppropval->pvalue)) == TRUE ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;

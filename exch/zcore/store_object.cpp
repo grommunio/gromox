@@ -351,7 +351,7 @@ static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t 
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 	case PROP_TAG_CODEPAGEID:
 	case PR_CONTENT_COUNT:
-	case PROP_TAG_DEFAULTSTORE:
+	case PR_DEFAULT_STORE:
 	case PROP_TAG_DELETEAFTERSUBMIT:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED:
@@ -458,7 +458,7 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_IPM_FAVORITES_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_IPM_SUBTREE_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_MDB_PROVIDER;
-	pproptags->pproptag[pproptags->count++] = PROP_TAG_DEFAULTSTORE;
+	pproptags->pproptag[pproptags->count++] = PR_DEFAULT_STORE;
 	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_NAME;
 	pproptags->pproptag[pproptags->count++] = PROP_TAG_EXTENDEDRULESIZELIMIT;
 	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
@@ -664,7 +664,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		}
 		return TRUE;
 	}
-	case PROP_TAG_DEFAULTSTORE:
+	case PR_DEFAULT_STORE:
 		*ppvalue = cu_alloc<uint8_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;

@@ -530,10 +530,10 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			b_normal = TRUE;
 			for (i=0; i<pproptags->count; i++) {
 				switch (pproptags->pproptag[i]) {
-				case PROP_TAG_CONTAINERHIERARCHY:
+				case PR_CONTAINER_HIERARCHY:
 					b_sub = FALSE;
 					break;
-				case PROP_TAG_CONTAINERCONTENTS:
+				case PR_CONTAINER_CONTENTS:
 					b_normal = FALSE;
 					break;
 				case PROP_TAG_FOLDERASSOCIATEDCONTENTS:
@@ -665,10 +665,10 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			b_normal = FALSE;
 			for (i=0; i<pproptags->count; i++) {
 				switch (pproptags->pproptag[i]) {
-				case PROP_TAG_CONTAINERHIERARCHY:
+				case PR_CONTAINER_HIERARCHY:
 					b_sub = TRUE;
 					break;
-				case PROP_TAG_CONTAINERCONTENTS:
+				case PR_CONTAINER_CONTENTS:
 					b_normal = TRUE;
 					break;
 				case PROP_TAG_FOLDERASSOCIATEDCONTENTS:

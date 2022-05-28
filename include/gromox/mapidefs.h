@@ -437,7 +437,7 @@ enum {
 	PR_EMAIL_ADDRESS = PROP_TAG(PT_UNICODE, 0x3003), /* PidTagEmailAddress */
 	PR_EMAIL_ADDRESS_A = PROP_TAG(PT_STRING8, 0x3003),
 	PR_COMMENT = PROP_TAG(PT_UNICODE, 0x3004), /* PidTagComment */
-	// PR_DEPTH = PROP_TAG(PT_LONG, 0x3005), /* PidTagDepth */
+	PR_DEPTH = PROP_TAG(PT_LONG, 0x3005), /* PidTagDepth */
 	PR_PROVIDER_DISPLAY = PROP_TAG(PT_UNICODE, 0x3006), /* PidTagProviderDisplay */
 	PR_CREATION_TIME = PROP_TAG(PT_SYSTIME, 0x3007), /* PidTagCreationTime */
 	PR_LAST_MODIFICATION_TIME = PROP_TAG(PT_SYSTIME, 0x3008), /* PidTagLastModificationTime */
@@ -469,7 +469,7 @@ enum {
 	// PR_FORM_DESIGNER_NAME = PROP_TAG(PT_UNICODE, 0x3308), /* PidTagFormDesignerName */
 	// PR_FORM_DESIGNER_GUID = PROP_TAG(PT_CLSID, 0x3309), /* PidTagFormDesignerGuid */
 	// PR_FORM_MESSAGE_BEHAVIOR = PROP_TAG(PT_LONG, 0x330A), /* PidTagFormMessageBehavior */
-	// PR_DEFAULT_STORE = PROP_TAG(PT_BOOLEAN, 0x3400), /* PidTagDefaultStore */
+	PR_DEFAULT_STORE = PROP_TAG(PT_BOOLEAN, 0x3400), /* PidTagDefaultStore */
 	PR_STORE_SUPPORT_MASK = PROP_TAG(PT_LONG, 0x340D), /* PidTagStoreSupportMask */
 	PR_STORE_STATE = PROP_TAG(PT_LONG, 0x340E), /* PidTagStoreState */
 	// PR_STORE_UNICODE_MASK = PROP_TAG(PT_LONG, 0x340F), /* PidTagStoreUnicodeMask */
@@ -495,7 +495,7 @@ enum {
 	// ? = PROP_TAG(PT_BINARY, 0x35EE), /* entryid to "AllItems" folder (EXC2019) */
 	// ? = PROP_TAG(PT_BINARY, 0x35EF), /* entryid to "Sharing" folder (EXC2019) */
 	// ? = PROP_TAG(PT_BINARY, 0x35FD), /* entryid to some non-existing folder (EXC2019) */
-	// PR_CONTAINER_FLAGS = PROP_TAG(PT_LONG, 0x3600), /* PidTagContainerFlags */
+	PR_CONTAINER_FLAGS = PROP_TAG(PT_LONG, 0x3600), /* PidTagContainerFlags */
 	PR_FOLDER_TYPE = PROP_TAG(PT_LONG, 0x3601), /* PidTagFolderType */
 	PR_CONTENT_COUNT = PROP_TAG(PT_LONG, 0x3602), /* PidTagContentCount */
 	PR_CONTENT_UNREAD = PROP_TAG(PT_LONG, 0x3603), /* PidTagContentUnreadCount */
@@ -508,14 +508,14 @@ enum {
 	PR_ANR = PROP_TAG(PT_UNICODE, 0x360C), /* PidTagAnr */
 	PR_ANR_A = PROP_TAG(PT_STRING8, 0x360C),
 	// PR_CONTENTS_SORT_ORDER = PROP_TAG(PT_MV_LONG, 0x360D),
-	// PR_CONTAINER_HIERARCHY = PROP_TAG(PT_OBJECT, 0x360E), /* PidTagContainerHierarchy */
-	// PR_CONTAINER_CONTENTS = PROP_TAG(PT_OBJECT, 0x360F), /* PidTagContainerContents /*
+	PR_CONTAINER_HIERARCHY = PROP_TAG(PT_OBJECT, 0x360E), /* PidTagContainerHierarchy */
+	PR_CONTAINER_CONTENTS = PROP_TAG(PT_OBJECT, 0x360F), /* PidTagContainerContents */
 	// PR_FOLDER_ASSOCIATED_CONTENTS = PROP_TAG(PT_OBJECT, 0x3610), /* PidTagFolderAssociatedContents */
 	// PR_DEF_CREATE_DL = PROP_TAG(PT_BINARY, 0x3611), /* PidTagDefCreateDl */
 	// PR_DEF_CREATE_MAILUSER = PROP_TAG(PT_BINARY, 0x3612), /* PidTagDefCreateMailuser */
 	PR_CONTAINER_CLASS = PROP_TAG(PT_UNICODE, 0x3613), /* PidTagContainerClass */
 	// PR_CONTAINER_MODIFY_VERSION = PROP_TAG(PT_I8, 0x3614),
-	// PR_AB_PROVIDER_ID = PROP_TAG(PT_BINARY, 0x3615), /* PidTagAbProviderId */
+	PR_AB_PROVIDER_ID = PROP_TAG(PT_BINARY, 0x3615), /* PidTagAbProviderId */
 	// PR_DEFAULT_VIEW_ENTRYID = PROP_TAG(PT_BINARY, 0x3616), /* PidTagDefaultViewEntryId */
 	PR_ASSOC_CONTENT_COUNT = PROP_TAG(PT_LONG, 0x3617), /* PidTagAssociatedContentCount */
 	PR_IPM_APPOINTMENT_ENTRYID = PROP_TAG(PT_BINARY, 0x36D0), /* PidTagIpmAppointmentEntryId */
@@ -633,10 +633,10 @@ enum {
 	PR_ISDN_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2D), /* PidTagIsdnNumber */
 	PR_ASSISTANT_TELEPHONE_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2E), /* PidTagAssistantTelephoneNumber */
 	PR_HOME2_TELEPHONE_NUMBER = PROP_TAG(PT_UNICODE, 0x3A2F), /* PidTagHome2TelephoneNumber */
-	// PR_ASSISTANT = PROP_TAG(PT_UNICODE, 0x3A30), /* PidTagAssistant */
+	PR_ASSISTANT = PROP_TAG(PT_UNICODE, 0x3A30), /* PidTagAssistant */
 	PR_SEND_RICH_INFO = PROP_TAG(PT_BOOLEAN, 0x3A40), /* PidTagSendRichInfo */
 	// PR_WEDDING_ANNIVERSARY = PROP_TAG(PT_SYSTIME, 0x3A41), /* PidTagWeddingAnniversary */
-	// PR_BIRTHDAY = PROP_TAG(PT_SYSTIME, 0x3A42), /* PidTagBirthday */
+	PR_BIRTHDAY = PROP_TAG(PT_SYSTIME, 0x3A42), /* PidTagBirthday */
 	// PR_HOBBIES = PROP_TAG(PT_UNICODE, 0x3A43), /* PidTagHobbies */
 	PR_MIDDLE_NAME = PROP_TAG(PT_UNICODE, 0x3A44), /* PidTagMiddleName */
 	PR_DISPLAY_NAME_PREFIX = PROP_TAG(PT_UNICODE, 0x3A45), /* PidTagDisplayNamePrefix */
@@ -659,7 +659,7 @@ enum {
 	// PR_CONTACT_DEFAULT_ADDRESS_INDEX = PROP_TAG(PT_LONG, 0x3A55),
 	// PR_CONTACT_EMAIL_ADDRESSES = PROP_TAG(PT_MV_UNICODE, 0x3A56),
 	PR_COMPANY_MAIN_PHONE_NUMBER = PROP_TAG(PT_UNICODE, 0x3A57), /* PidTagCompanyMainTelephoneNumber */
-	// PR_CHILDRENS_NAMES = PROP_TAG(PT_MV_UNICODE, 0x3A58), /* PidTagChildrensNames */
+	PR_CHILDRENS_NAMES = PROP_TAG(PT_MV_UNICODE, 0x3A58), /* PidTagChildrensNames */
 	PR_HOME_ADDRESS_CITY = PROP_TAG(PT_UNICODE, 0x3A59), /* PidTagHomeAddressCity */
 	PR_HOME_ADDRESS_COUNTRY = PROP_TAG(PT_UNICODE, 0x3A5A), /* PidTagHomeAddressCountry */
 	PR_HOME_ADDRESS_POSTAL_CODE = PROP_TAG(PT_UNICODE, 0x3A5B), /* PidTagHomeAddressPostalCode */
