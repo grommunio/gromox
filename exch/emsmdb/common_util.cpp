@@ -1881,7 +1881,6 @@ BOOL common_util_send_message(logon_object *plogon,
 	void *pvalue;
 	BOOL b_result;
 	BOOL b_delete;
-	int body_type;
 	EID_ARRAY ids;
 	BOOL b_partial;
 	uint64_t new_id;
@@ -2005,15 +2004,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		log_err("W-1282: Empty converted recipients list while sending mid:0x%llx", LLU(message_id));
 		return FALSE;
 	}
-	pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
-	if (pvalue == nullptr)
-		body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-	else if (*static_cast<uint32_t *>(pvalue) & MESSAGE_FORMAT_PLAIN_AND_HTML)
-		body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-	else if (*static_cast<uint32_t *>(pvalue) & MESSAGE_FORMAT_HTML_ONLY)
-		body_type = OXCMAIL_BODY_HTML_ONLY;
-	else
-		body_type = OXCMAIL_BODY_PLAIN_ONLY;
+	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(plogon->get_dir());
 	/* try to avoid TNEF message */
 	if (!oxcmail_export(pmsgctnt, false, body_type, g_mime_pool, &imail,

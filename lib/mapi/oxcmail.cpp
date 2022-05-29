@@ -5570,3 +5570,15 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	oxcmail_free_mime_skeleton(&mime_skeleton);
 	return FALSE;
 }
+
+unsigned int get_override_format(const MESSAGE_CONTENT &mc)
+{
+	auto v = mc.proplist.get<uint32_t>(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
+	if (v == nullptr)
+		return OXCMAIL_BODY_PLAIN_AND_HTML;
+	else if (*v & MESSAGE_FORMAT_PLAIN_AND_HTML)
+		return OXCMAIL_BODY_PLAIN_AND_HTML;
+	else if (*v & MESSAGE_FORMAT_HTML_ONLY)
+		return OXCMAIL_BODY_HTML_ONLY;
+	return OXCMAIL_BODY_PLAIN_ONLY;
+}

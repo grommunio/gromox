@@ -2890,8 +2890,6 @@ static BOOL message_forward_message(const char *from_address,
 {
 	int i;
 	int offset;
-	void *pvalue;
-	int body_type;
 	const char *pdomain;
 	time_t cur_time;
 	char tmp_path[256];
@@ -2950,18 +2948,7 @@ static BOOL message_forward_message(const char *from_address,
 		if (!message_read_message(psqlite, cpid, message_id,
 		    &pmsgctnt) || pmsgctnt == nullptr)
 			return FALSE;
-		pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
-		if (NULL == pvalue) {
-			body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-		} else {
-			if (*(uint32_t*)pvalue & MESSAGE_FORMAT_PLAIN_AND_HTML) {
-				body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-			} else if (*(uint32_t*)pvalue & MESSAGE_FORMAT_HTML_ONLY) {
-				body_type = OXCMAIL_BODY_HTML_ONLY;
-			} else {
-				body_type = OXCMAIL_BODY_PLAIN_ONLY;
-			}
-		}
+		auto body_type = get_override_format(*pmsgctnt);
 		/* try to avoid TNEF message */
 		common_util_set_tls_var(psqlite);
 		if (!oxcmail_export(pmsgctnt, false, body_type,

@@ -1573,7 +1573,6 @@ BOOL common_util_send_message(store_object *pstore,
 	void *pvalue;
 	BOOL b_result;
 	BOOL b_delete;
-	int body_type;
 	EID_ARRAY ids;
 	BOOL b_private;
 	BOOL b_partial;
@@ -1686,18 +1685,7 @@ BOOL common_util_send_message(store_object *pstore,
 		double_list_append_as_tail(&temp_list, pnode);
 	}
 	if (double_list_get_nodes_num(&temp_list) > 0) {
-		pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
-		if (NULL == pvalue) {
-			body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-		} else {
-			if (*(uint32_t*)pvalue & MESSAGE_FORMAT_PLAIN_AND_HTML) {
-				body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-			} else if (*(uint32_t*)pvalue & MESSAGE_FORMAT_HTML_ONLY) {
-				body_type = OXCMAIL_BODY_HTML_ONLY;
-			} else {
-				body_type = OXCMAIL_BODY_PLAIN_ONLY;
-			}
-		}
+		auto body_type = get_override_format(*pmsgctnt);
 		common_util_set_dir(pstore->get_dir());
 		/* try to avoid TNEF message */
 		MAIL imail;
@@ -2229,7 +2217,6 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	int size;
 	void *ptr;
 	void *pvalue;
-	int body_type;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -2258,18 +2245,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
-	pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
-	if (NULL == pvalue) {
-		body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-	} else {
-		if (*(uint32_t*)pvalue & MESSAGE_FORMAT_PLAIN_AND_HTML) {
-			body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-		} else if (*(uint32_t*)pvalue & MESSAGE_FORMAT_HTML_ONLY) {
-			body_type = OXCMAIL_BODY_HTML_ONLY;
-		} else {
-			body_type = OXCMAIL_BODY_PLAIN_ONLY;
-		}
-	}
+	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(pstore->get_dir());
 	/* try to avoid TNEF message */
 	MAIL imail;
