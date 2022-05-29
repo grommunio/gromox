@@ -1027,7 +1027,6 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 {
 	auto output = static_cast<uint8_t *>(voutput);
 	size_t inpos, outpos, linelen;
-	int ch;
 
 	if (input == nullptr || output == nullptr)
 		return -1;
@@ -1035,8 +1034,8 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 	outpos = 0;
 	linelen = 0;
 	while (inpos < length) {
-		ch = input[inpos++] & 0xFF;
-		/* '.' at beginning of line (confuses some SMTPs) */
+		auto ch = static_cast<unsigned char>(input[inpos++]);
+		/* '.' at beginning of line (special meaning in SMTPs) */
 		if (linelen == 0 && ch == '.') {
 			if (outpos + 3 >= outlen)
 				return -1;
@@ -1045,10 +1044,10 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 			output[outpos++] = hextab[ch & 0x0F];
 			linelen += 3;
 		}
-		/* "From " at beginning of line (gets mangled in mbox folders) */
-		else if (linelen == 0 && inpos+3 < length && ch == 'F'
-				 && input[inpos	 ] == 'r' && input[inpos+1] == 'o'
-				 && input[inpos+2] == 'm' && input[inpos+3] == ' ') {
+		/* "From" at beginning of line (special meaning in mbox) */
+		else if (linelen == 0 && inpos + 2 < length && ch == 'F' &&
+		    input[inpos] == 'r' && input[inpos+1] == 'o' &&
+		    input[inpos+2] == 'm') {
 			if (outpos + 3 >= outlen)
 				return -1;
 			output[outpos++] = '=';
