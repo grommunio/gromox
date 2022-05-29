@@ -268,7 +268,7 @@ static int rd_data(rd_connection &&conn, MESSAGE_CONTEXT *ctx, std::string &resp
 		return ret;
 	if (ret != 0)
 		return ret;
-	bool did_data = conn.tls != nullptr ? ctx->pmail->to_ssl(conn.tls.get()) :
+	bool did_data = conn.tls != nullptr ? ctx->pmail->to_tls(conn.tls.get()) :
 	                ctx->pmail->to_file(conn.fd);
 	if (!did_data) {
 		ret = rd_get_response(conn, response);

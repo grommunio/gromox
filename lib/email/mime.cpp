@@ -1683,7 +1683,7 @@ BOOL MIME::to_tls(SSL *ssl)
 				if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
 					return FALSE;
 			} else {
-				if (!reinterpret_cast<MAIL *>(pmime->content_begin)->to_ssl(ssl))
+				if (!reinterpret_cast<MAIL *>(pmime->content_begin)->to_tls(ssl))
 					return FALSE;
 			}
 		} else {

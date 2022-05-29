@@ -251,7 +251,7 @@ BOOL MAIL::to_file(int fd)
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL MAIL::to_ssl(SSL *ssl)
+BOOL MAIL::to_tls(SSL *ssl)
 {
 	auto pmail = this;
 #ifdef _DEBUG_UMTA

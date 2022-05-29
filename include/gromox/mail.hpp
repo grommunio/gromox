@@ -28,7 +28,7 @@ struct GX_EXPORT MAIL {
 	BOOL retrieve(char *in_buff, size_t length);
 	BOOL serialize(STREAM *);
 	BOOL to_file(int fd);
-	BOOL to_ssl(SSL *ssl);
+	BOOL to_tls(SSL *);
 	BOOL check_dot();
 	BOOL transfer_dot(MAIL *dst);
 	ssize_t get_length();
