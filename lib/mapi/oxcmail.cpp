@@ -129,19 +129,13 @@ static constexpr addr_tags tags_read_rcpt = {
 
 }
 
-enum {
-	MAIL_TYPE_NORMAL,
-	MAIL_TYPE_SIGNED,
-	MAIL_TYPE_ENCRYPTED,
-	MAIL_TYPE_DSN,
-	MAIL_TYPE_MDN,
-	MAIL_TYPE_CALENDAR,
-	MAIL_TYPE_TNEF
+enum class oxcmail_type {
+	normal, xsigned, encrypted, dsn, mdn, calendar, tnef,
 };
 
 namespace {
 struct MIME_SKELETON {
-	int mail_type;
+	enum oxcmail_type mail_type;
 	enum oxcmail_body body_type;
 	char *pplain;
 	BINARY *phtml;
@@ -4046,32 +4040,32 @@ static BOOL oxcmail_export_content_class(
 	return TRUE;
 }
 
-static int oxcmail_get_mail_type(const char *pmessage_class)
+static enum oxcmail_type oxcmail_get_mail_type(const char *pmessage_class)
 {
 	int tmp_len;
 	
 	tmp_len = strlen(pmessage_class);
 	if (0 == strcasecmp( pmessage_class,
 		"IPM.Note.SMIME.MultipartSigned")) {
-		return MAIL_TYPE_SIGNED;
+		return oxcmail_type::xsigned;
 	}
 	if (0 == strncasecmp(pmessage_class, "IPM.InfoPathForm.",
 		17) && 0 == strcasecmp(pmessage_class + tmp_len - 22,
 		".SMIME.MultipartSigned")) {
-		return MAIL_TYPE_SIGNED;
+		return oxcmail_type::xsigned;
 	}
 	if (0 == strcasecmp(pmessage_class, "IPM.Note.SMIME")) {
-		return MAIL_TYPE_ENCRYPTED;
+		return oxcmail_type::encrypted;
 	}
 	if (0 == strncasecmp(pmessage_class, "IPM.InfoPathForm.",
 		17) && 0 == strcasecmp(pmessage_class + tmp_len - 6,
 		".SMIME")) {
-		return MAIL_TYPE_ENCRYPTED;
+		return oxcmail_type::encrypted;
 	}
 	if (0 == strcasecmp(pmessage_class, "IPM.Note") ||
 		0 == strncasecmp(pmessage_class, "IPM.Note.", 9) ||
 		0 == strncasecmp(pmessage_class, "IPM.InfoPathForm.", 17)) {
-		return MAIL_TYPE_NORMAL;
+		return oxcmail_type::normal;
 	}
 	if (0 == strncasecmp(pmessage_class, "REPORT.", 7) &&
 		(0 == strcasecmp(pmessage_class + tmp_len - 3, ".DR") ||
@@ -4079,12 +4073,12 @@ static int oxcmail_get_mail_type(const char *pmessage_class)
 		0 == strcasecmp(pmessage_class + tmp_len - 11, ".Relayed.DR") ||
 		0 == strcasecmp(pmessage_class + tmp_len - 11, ".Delayed.DR") ||
 		0 == strcasecmp(pmessage_class + tmp_len - 4, ".NDR"))) {
-		return MAIL_TYPE_DSN;
+		return oxcmail_type::dsn;
 	}
 	if (0 == strncasecmp(pmessage_class, "REPORT.", 7) &&
 		(0 == strcasecmp(pmessage_class + tmp_len - 6, ".IPNRN") ||
 		0 == strcasecmp(pmessage_class + tmp_len - 7, ".IPNNRN"))) {
-		return MAIL_TYPE_MDN;
+		return oxcmail_type::mdn;
 	}
 	if (0 == strcasecmp(pmessage_class, "IPM.Appointment") ||
 		0 == strcasecmp(pmessage_class, "IPM.Schedule.Meeting.Request") ||
@@ -4092,9 +4086,9 @@ static int oxcmail_get_mail_type(const char *pmessage_class)
 		0 == strcasecmp(pmessage_class, "IPM.Schedule.Meeting.Resp.Tent") ||
 		0 == strcasecmp(pmessage_class, "IPM.Schedule.Meeting.Resp.Neg") ||
 		0 == strcasecmp(pmessage_class, "IPM.Schedule.Meeting.Canceled")) {
-		return MAIL_TYPE_CALENDAR;
+		return oxcmail_type::calendar;
 	}
-	return MAIL_TYPE_TNEF;
+	return oxcmail_type::tnef;
 }
 
 static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
@@ -4117,18 +4111,17 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 	}
 	pskeleton->mail_type = oxcmail_get_mail_type(
 						pskeleton->pmessage_class);
-	if (MAIL_TYPE_SIGNED == pskeleton->mail_type ||
-		MAIL_TYPE_ENCRYPTED == pskeleton->mail_type) {
+	if (pskeleton->mail_type == oxcmail_type::xsigned ||
+	    pskeleton->mail_type == oxcmail_type::encrypted)
 		if (b_tnef)
 			b_tnef = FALSE;
-	}
 	if (b_tnef)
-		pskeleton->mail_type = MAIL_TYPE_TNEF;
+		pskeleton->mail_type = oxcmail_type::tnef;
 	pskeleton->body_type = body_type;
 	pskeleton->pplain = pmsg->proplist.get<char>(PR_BODY);
-	if (pskeleton->mail_type == MAIL_TYPE_SIGNED ||
-		MAIL_TYPE_ENCRYPTED == pskeleton->mail_type ||
-		MAIL_TYPE_TNEF == pskeleton->mail_type) {
+	if (pskeleton->mail_type == oxcmail_type::xsigned ||
+	    pskeleton->mail_type == oxcmail_type::encrypted ||
+	    pskeleton->mail_type == oxcmail_type::tnef) {
 		/* do nothing */
 	} else {
 		auto pvalue = pmsg->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
@@ -4170,11 +4163,11 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 						attachment_list_free(pskeleton->pattachments);
 						pskeleton->pattachments = NULL;
 						free(pbuff);
-						pskeleton->mail_type = MAIL_TYPE_TNEF;
+						pskeleton->mail_type = oxcmail_type::tnef;
 					}
 				} else {
 					free(pbuff);
-					pskeleton->mail_type = MAIL_TYPE_TNEF;
+					pskeleton->mail_type = oxcmail_type::tnef;
 				}
 			}
 		} else {
@@ -4615,7 +4608,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	if (MAIL_TYPE_TNEF == pskeleton->mail_type) {
+	if (pskeleton->mail_type == oxcmail_type::tnef) {
 		*tmp_field = '\0';
 		bv = pmsg->proplist.get<BINARY>(PR_TNEF_CORRELATION_KEY);
 		if (bv == nullptr) {
@@ -5138,7 +5131,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	}
 	
 	if (NULL != pattachment->pembedded) {
-		auto b_tnef = pskeleton->mail_type == MAIL_TYPE_TNEF;
+		auto b_tnef = pskeleton->mail_type == oxcmail_type::tnef;
 		MAIL imail;
 		if (!oxcmail_export(pattachment->pembedded,
 		    b_tnef ? TRUE : false, pskeleton->body_type, ppool, &imail,
@@ -5259,17 +5252,17 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	prelated = NULL;
 	pcalendar = NULL;
 	switch (mime_skeleton.mail_type) {
-	case MAIL_TYPE_DSN:
-	case MAIL_TYPE_MDN:
-	case MAIL_TYPE_NORMAL:
-	case MAIL_TYPE_CALENDAR:
-		if (MAIL_TYPE_DSN == mime_skeleton.mail_type) {
+	case oxcmail_type::dsn:
+	case oxcmail_type::mdn:
+	case oxcmail_type::normal:
+	case oxcmail_type::calendar:
+		if (mime_skeleton.mail_type == oxcmail_type::dsn) {
 			pmixed = pmime;
 			if (!pmime->set_content_type("multipart/report") ||
 			    !pmime->set_content_param("report-type", "delivery-status") ||
 			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				goto EXPORT_FAILURE;
-		} else if (MAIL_TYPE_MDN == mime_skeleton.mail_type) {
+		} else if (mime_skeleton.mail_type == oxcmail_type::mdn) {
 			pmixed = pmime;
 			if (!pmime->set_content_type("multipart/report") ||
 			    !pmime->set_content_param("report-type", "disposition-notification") ||
@@ -5298,7 +5291,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			if (pplain == nullptr || !pplain->set_content_type("text/plain") ||
 			    phtml == nullptr || !phtml->set_content_type("text/html"))
 				goto EXPORT_FAILURE;
-			if (MAIL_TYPE_CALENDAR == mime_skeleton.mail_type) {
+			if (mime_skeleton.mail_type == oxcmail_type::calendar) {
 				pcalendar = pmail->add_child(pmime, MIME_ADD_LAST);
 				if (pcalendar == nullptr ||
 				    !pcalendar->set_content_type("text/calendar"))
@@ -5307,7 +5300,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		} else if (mime_skeleton.body_type == oxcmail_body::plain_only &&
 		    mime_skeleton.pplain != nullptr) {
  PLAIN_ONLY:
-			if (MAIL_TYPE_CALENDAR != mime_skeleton.mail_type) {
+			if (mime_skeleton.mail_type != oxcmail_type::calendar) {
 				if (!pmime->set_content_type("text/plain"))
 					goto EXPORT_FAILURE;
 				pplain = pmime;
@@ -5323,7 +5316,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		} else if (mime_skeleton.body_type == oxcmail_body::html_only &&
 		    mime_skeleton.phtml != nullptr) {
  HTML_ONLY:
-			if (MAIL_TYPE_CALENDAR != mime_skeleton.mail_type) {
+			if (mime_skeleton.mail_type != oxcmail_type::calendar) {
 				if (!pmime->set_content_type("text/html"))
 					goto EXPORT_FAILURE;
 				phtml = pmime;
@@ -5344,12 +5337,15 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			goto PLAIN_ONLY;
 		}
 		break;
-	case MAIL_TYPE_TNEF:
+	case oxcmail_type::tnef:
 		if (!pmime->set_content_type("multipart/mixed"))
 			goto EXPORT_FAILURE;
 		if ((pplain = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr ||
 		    !pplain->set_content_type("text/plain"))
 			goto EXPORT_FAILURE;
+		break;
+	case oxcmail_type::xsigned:
+	case oxcmail_type::encrypted:
 		break;
 	}
 	
@@ -5357,7 +5353,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	    get_propids, get_propname, phead))
 		goto EXPORT_FAILURE;
 	
-	if (MAIL_TYPE_ENCRYPTED == mime_skeleton.mail_type) {
+	if (mime_skeleton.mail_type == oxcmail_type::encrypted) {
 		if (!pmime->set_content_type("application/pkcs7-mime"))
 			goto EXPORT_FAILURE;
 		if (NULL == pmsg->children.pattachments ||
@@ -5371,7 +5367,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		if (!pmime->write_content(pbin->pc, pbin->cb, MIME_ENCODING_BASE64))
 			goto EXPORT_FAILURE;
 		return TRUE;
-	} else if (MAIL_TYPE_SIGNED == mime_skeleton.mail_type) {
+	} else if (mime_skeleton.mail_type == oxcmail_type::xsigned) {
 		auto a = pmsg->children.pattachments;
 		if (a == nullptr || a->count != 1)
 			goto EXPORT_FAILURE;
@@ -5415,7 +5411,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		}
 	}
 	
-	if (MAIL_TYPE_TNEF == mime_skeleton.mail_type) {
+	if (mime_skeleton.mail_type == oxcmail_type::tnef) {
 		pmime = pmail->add_child(pmime, MIME_ADD_LAST);
 		BINARY *pbin = nullptr;
 		if (pmime == nullptr || !pmime->set_content_type("application/ms-tnef"))
@@ -5476,7 +5472,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		}
 	}
 	
-	if (MAIL_TYPE_DSN == mime_skeleton.mail_type) {
+	if (mime_skeleton.mail_type == oxcmail_type::dsn) {
 		char tmp_buff[1024*1024];
 		
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
@@ -5492,7 +5488,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			strlen(tmp_buff), MIME_ENCODING_NONE)) {
 			goto EXPORT_FAILURE;
 		}
-	} else if (MAIL_TYPE_MDN == mime_skeleton.mail_type) {
+	} else if (mime_skeleton.mail_type == oxcmail_type::mdn) {
 		char tmp_buff[1024*1024];
 		
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
