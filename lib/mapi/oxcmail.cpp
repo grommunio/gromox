@@ -134,18 +134,22 @@ enum class oxcmail_type {
 };
 
 namespace {
-struct MIME_SKELETON {
-	enum oxcmail_type mail_type;
-	enum oxcmail_body body_type;
-	char *pplain;
-	BINARY *phtml;
-	BOOL b_inline;
-	BINARY rtf_bin;
-	BOOL b_attachment;
-	const char *charset;
-	const char *pmessage_class;
-	ATTACHMENT_LIST *pattachments;
+struct mime_skeleton {
+	mime_skeleton() = default;
+	~mime_skeleton() { clear(); }
+	NOMOVE(mime_skeleton);
+	void clear();
+
+	enum oxcmail_type mail_type{};
+	enum oxcmail_body body_type{};
+	BOOL b_inline = false, b_attachment = false;
+	BINARY rtf_bin{};
+	char *pplain = nullptr;
+	BINARY *phtml = nullptr;
+	const char *charset = nullptr, *pmessage_class = nullptr;
+	ATTACHMENT_LIST *pattachments = nullptr;
 };
+using MIME_SKELETON = mime_skeleton;
 }
 
 static constexpr char
@@ -4099,7 +4103,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 	char *pbuff;
 	BINARY *prtf;
 	ATTACHMENT_CONTENT *pattachment;
-	memset(pskeleton, 0, sizeof(MIME_SKELETON));
+	pskeleton->clear();
 	pskeleton->charset = pcharset;
 	pskeleton->pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
 	if (NULL == pskeleton->pmessage_class) {
@@ -4199,13 +4203,16 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 	return TRUE;
 }
 
-static void oxcmail_free_mime_skeleton(MIME_SKELETON *pskeleton)
+void mime_skeleton::clear()
 {
+	auto pskeleton = this;
 	if (NULL != pskeleton->pattachments) {
 		attachment_list_free(pskeleton->pattachments);
+		pskeleton->pattachments = nullptr;
 	}
 	if (NULL != pskeleton->rtf_bin.pb) {
 		free(pskeleton->rtf_bin.pb);
+		pskeleton->rtf_bin.pb = nullptr;
 	}
 }
 
@@ -5225,7 +5232,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	char tmp_charset[32];
 	const char *pcharset;
 	MIME_FIELD mime_field;
-	MIME_SKELETON mime_skeleton;
 	ATTACHMENT_CONTENT *pattachment;
 	
 	*pmail = MAIL(ppool);
@@ -5238,6 +5244,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			pcharset = "utf-8";
 		}
 	}
+	mime_skeleton mime_skeleton;
 	if (!oxcmail_load_mime_skeleton(pmsg, pcharset, b_tnef,
 	    body_type, &mime_skeleton))
 		return FALSE;
@@ -5428,7 +5435,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		    !pmime->set_field("Content-Disposition",
 			"attachment; filename=\"winmail.dat\""))
 			goto EXPORT_FAILURE;
-		oxcmail_free_mime_skeleton(&mime_skeleton);
 		return TRUE;
 	}
 	
@@ -5521,7 +5527,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	}
 	
 	if (NULL == pmsg->children.pattachments) {
-		oxcmail_free_mime_skeleton(&mime_skeleton);
 		return TRUE;
 	}
 	for (i=0; i<pmsg->children.pattachments->count; i++) {
@@ -5562,10 +5567,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		    get_propname, ppool, pmime))
 			goto EXPORT_FAILURE;
 	}
-	oxcmail_free_mime_skeleton(&mime_skeleton);
 	return TRUE;
  EXPORT_FAILURE:
-	oxcmail_free_mime_skeleton(&mime_skeleton);
 	return FALSE;
 }
 
