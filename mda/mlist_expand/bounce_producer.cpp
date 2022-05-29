@@ -502,7 +502,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	rd_hold.unlock();
 	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(original_ptr,
-	    ptr - original_ptr, mime_encoding::base64)) {
+	    ptr - original_ptr, mime_encoding::automatic)) {
         printf("[mlist_expand]: fatal error, fail to write content\n");
         return;
 	}

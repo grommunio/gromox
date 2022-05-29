@@ -5124,7 +5124,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		if (pbuff != nullptr && vcard_serialize(&vcard, pbuff.get(),
 		    VCARD_MAX_BUFFER_LEN)) {
 			if (!pmime->write_content(pbuff.get(),
-			    strlen(pbuff.get()), mime_encoding::base64)) {
+			    strlen(pbuff.get()), mime_encoding::automatic)) {
 				vcard_free(&vcard);
 				return FALSE;
 			}
@@ -5399,12 +5399,12 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			    mime_skeleton.pplain, pbuff.get(), alloc_size)) {
 				pbuff.reset();
 				if (!pplain->write_content(mime_skeleton.pplain,
-				    strlen(mime_skeleton.pplain), mime_encoding::base64))
+				    strlen(mime_skeleton.pplain), mime_encoding::automatic))
 					goto EXPORT_FAILURE;
 				strcpy(tmp_charset, "\"utf-8\"");
 			} else {
 				if (!pplain->write_content(pbuff.get(),
-				    strlen(pbuff.get()), mime_encoding::base64))
+				    strlen(pbuff.get()), mime_encoding::automatic))
 					goto EXPORT_FAILURE;
 				snprintf(tmp_charset, arsizeof(tmp_charset), "\"%s\"", mime_skeleton.charset);
 			}
@@ -5435,7 +5435,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	
 	if (NULL != phtml) {
 		if (!phtml->write_content(mime_skeleton.phtml->pc,
-		    mime_skeleton.phtml->cb, mime_encoding::base64))
+		    mime_skeleton.phtml->cb, mime_encoding::automatic))
 			goto EXPORT_FAILURE;
 		snprintf(tmp_charset, arsizeof(tmp_charset), "\"%s\"", mime_skeleton.charset);
 		if (!phtml->set_content_param("charset", tmp_charset))
@@ -5461,7 +5461,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		if (!ical.serialize(tmp_buff, arsizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
 		if (!pcalendar->write_content(tmp_buff, strlen(tmp_buff),
-		    mime_encoding::base64))
+		    mime_encoding::automatic))
 			goto EXPORT_FAILURE;
 		if (!pcalendar->set_content_param("charset", "\"utf-8\""))
 			goto EXPORT_FAILURE;

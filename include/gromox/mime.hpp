@@ -11,7 +11,7 @@ enum class mime_type {
 };
 
 enum class mime_encoding {
-	none, base64, qp, uuencode, unknown,
+	none, base64, qp, uuencode, automatic, unknown,
 };
 
 using MIME_FIELD_ENUM = BOOL (*)(const char *, char *, void *);

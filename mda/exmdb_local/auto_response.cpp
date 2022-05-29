@@ -222,7 +222,7 @@ void auto_response_reply(const char *user_home,
 	pmime->set_field("Date", date_buff);
 	pmime->set_field("Subject", subject);
 	if (!pmime->write_content(pcontent,
-	    new_buff + j - pcontent, mime_encoding::base64)) {
+	    new_buff + j - pcontent, mime_encoding::automatic)) {
 		put_context(pcontext);
 		return;
 	}

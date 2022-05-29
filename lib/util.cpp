@@ -1023,6 +1023,24 @@ int decode64_ex(const char *_in, size_t inlen, void *vout,
 	return (is_err) ? -1 : 0;
 }
 
+static inline bool qp_nonprintable(unsigned char c)
+{
+	return c < 32 || c == '=' || c >= 127;
+}
+
+namespace gromox {
+
+size_t qp_encoded_size_estimate(const char *s, size_t n)
+{
+	size_t enc = n;
+	for (; n-- > 0; ++s)
+		if (qp_nonprintable(*s) && *s != '\t' && *s != '\n' && *s != '\r')
+			enc += 2;
+	return enc;
+}
+
+}
+
 ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t length)
 {
 	auto output = static_cast<uint8_t *>(voutput);
@@ -1091,12 +1109,7 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 			output[outpos++] = '\r';
 			output[outpos++] = '\n';
 			linelen = 0;
-		}
-		/* Non-printable char */
-		else if (ch & 0x80		  /* 8-bit char */
-				 || !(ch & 0xE0)  /* control char */
-				 || ch == 0x7F	  /* DEL */
-				 || ch == '=') {  /* special case */
+		} else if (qp_nonprintable(ch)) {
 			if (outpos + 3 >= outlen)
 				return -1;
 			output[outpos++] = '=';

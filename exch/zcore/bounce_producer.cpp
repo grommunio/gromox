@@ -552,7 +552,7 @@ BOOL bounce_producer_make(const char *username,
 	pmime->set_content_type(content_type);
 	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(content_buff,
-	    strlen(content_buff), mime_encoding::base64))
+	    strlen(content_buff), mime_encoding::automatic))
 		return FALSE;
 	dsn_init(&dsn);
 	pdsn_fields = dsn_get_message_fileds(&dsn);

@@ -264,6 +264,9 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 #endif
 	if (pmime->mime_type != mime_type::single)
 		return FALSE;
+	if (encoding_type == mime_encoding::automatic)
+		encoding_type = qp_encoded_size_estimate(pcontent, length) < (length / 3 + 1) * 4 ?
+		                mime_encoding::qp : mime_encoding::base64;
 	if (encoding_type != mime_encoding::base64 &&
 	    encoding_type != mime_encoding::qp &&
 	    encoding_type != mime_encoding::none) {
