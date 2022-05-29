@@ -2184,7 +2184,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	if (pmime->get_parent() != nullptr &&
 	    strcasecmp(pmime->get_parent()->content_type, "multipart/appledouble") == 0)
 		return;
-	if (pmime->mime_type == MULTIPLE_MIME) {
+	if (pmime->mime_type == mime_type::multiple) {
 		if (strcasecmp(pmime->content_type, "multipart/appledouble") != 0)
 			return;
 		pmime1 = pmime;
@@ -3562,7 +3562,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		if (strcasecmp(cttype, "text/calendar") == 0 &&
 		    mime_enum.pcalendar == nullptr)
 			mime_enum.pcalendar = pmime;
-		if (b_alternative && pmime->mime_type == MULTIPLE_MIME) {
+		if (b_alternative && pmime->mime_type == mime_type::multiple) {
 			pmime1 = pmime->get_child();
 			while (NULL != pmime1) {
 				cttype = pmime1->content_type;
@@ -5205,7 +5205,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 	free(origmime.content_begin);
 	origmime.content_begin = content;
 	origmime.content_length = sec->content_length;
-	origmime.mime_type = SINGLE_MIME;
+	origmime.mime_type = mime_type::single;
 	gx_strlcpy(origmime.content_type, "multipart/signed", arsizeof(origmime.content_type));
 	origmime.head_touched = origmime.content_touched = TRUE;
 	return true;

@@ -6,10 +6,8 @@
 #include <gromox/util.hpp>
 #define VALUE_LEN	256
 
-enum{
-	NONE_MIME = 0,
-	SINGLE_MIME,
-	MULTIPLE_MIME
+enum class mime_type {
+	none, single, multiple,
 };
 
 enum class mime_encoding {
@@ -55,7 +53,8 @@ struct GX_EXPORT MIME {
 	inline size_t get_children_num() const { return node.get_children_num(); }
 
 	SIMPLE_TREE_NODE node{};
-	int mime_type = NONE_MIME, boundary_len = 0;
+	enum mime_type mime_type = mime_type::none;
+	int boundary_len = 0;
 	char content_type[VALUE_LEN]{}, boundary_string[VALUE_LEN]{};
 	MEM_FILE f_type_params{}, f_other_fields{};
 	BOOL head_touched = false, content_touched = false;

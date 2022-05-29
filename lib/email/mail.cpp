@@ -76,14 +76,14 @@ BOOL MAIL::retrieve(char *in_buff, size_t length)
 		return FALSE;
 	}
 
-	if (SINGLE_MIME != pmime->mime_type &&
-		MULTIPLE_MIME != pmime->mime_type) {
+	if (pmime->mime_type != mime_type::single &&
+	    pmime->mime_type != mime_type::multiple) {
 		debug_info("[mail]: fatal error in mime_retrieve");
 		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
 	pmail->tree.set_root(&pmime->node);
-	if (pmime->mime_type != MULTIPLE_MIME ||
+	if (pmime->mime_type != mime_type::multiple ||
 	    mail_retrieve_to_mime(pmail, pmime, pmime->first_boundary +
 	    pmime->boundary_len + 4, pmime->last_boundary))
 		return TRUE;
@@ -99,7 +99,7 @@ BOOL MAIL::retrieve(char *in_buff, size_t length)
 		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
-	pmime->mime_type = SINGLE_MIME;
+	pmime->mime_type = mime_type::single;
 	pmail->tree.set_root(&pmime->node);
 	return TRUE;
 }
@@ -139,8 +139,8 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 				pmail->pmime_pool->put_mime(pmime);
 				return FALSE;
 			}
-			if (SINGLE_MIME != pmime->mime_type &&
-				MULTIPLE_MIME != pmime->mime_type) {
+			if (pmime->mime_type != mime_type::single &&
+			    pmime->mime_type != mime_type::multiple) {
 				debug_info("[mail]: fatal error in mime_retrieve_to_mime");
 				pmail->pmime_pool->put_mime(pmime);
 				return FALSE;
@@ -153,7 +153,7 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 					&pmime->node, SIMPLE_TREE_INSERT_AFTER);
             }
 			pmime_last = pmime;
-			if (pmime->mime_type == MULTIPLE_MIME &&
+			if (pmime->mime_type == mime_type::multiple &&
 			    !mail_retrieve_to_mime(pmail, pmime,
 			    pmime->first_boundary + pmime->boundary_len + 4,
 			    pmime->last_boundary))
@@ -185,8 +185,8 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
-	if (SINGLE_MIME != pmime->mime_type &&
-		MULTIPLE_MIME != pmime->mime_type) {
+	if (pmime->mime_type != mime_type::single &&
+	    pmime->mime_type != mime_type::multiple) {
 		debug_info("[mail]: fatal error in mime_retrieve_to_mime");
 		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
@@ -198,7 +198,7 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		pmail->tree.insert_sibling(&pmime_last->node,
 			&pmime->node, SIMPLE_TREE_INSERT_AFTER);
 	}
-	if (pmime->mime_type == MULTIPLE_MIME &&
+	if (pmime->mime_type == mime_type::multiple &&
 	    !mail_retrieve_to_mime(pmail, pmime,
 	    pmime->first_boundary + pmime->boundary_len + 4,
 	    pmime->last_boundary))
@@ -728,9 +728,8 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
         return NULL;
     }
 #endif
-	if (MULTIPLE_MIME != pmime_base->mime_type) {
+	if (pmime_base->mime_type != mime_type::multiple)
 		return NULL;
-	}
 	auto pmime = pmail->pmime_pool->get_mime();
     if (NULL == pmime) {
         return NULL;
