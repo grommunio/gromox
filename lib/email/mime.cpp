@@ -252,7 +252,7 @@ void MIME::clear()
  *		encoding_type		
  */
 BOOL MIME::write_content(const char *pcontent, size_t length,
-    int encoding_type) try
+    enum mime_encoding encoding_type) try
 {
 	auto pmime = this;
 	size_t i, j;
@@ -267,11 +267,11 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 	if (SINGLE_MIME != pmime->mime_type) {
 		return FALSE;
 	}
-	if (MIME_ENCODING_BASE64 != encoding_type &&
-		MIME_ENCODING_QP != encoding_type &&
-		MIME_ENCODING_NONE != encoding_type) {
+	if (encoding_type != mime_encoding::base64 &&
+	    encoding_type != mime_encoding::qp &&
+	    encoding_type != mime_encoding::none) {
 		debug_info("[mime]: encoding type should be one of "
-			"MIME_ENCODING_NONE, MIME_ENCODING_BASE64, MIME_ENCODING_QP");
+			"mime_encoding::none, mime_encoding::base64, mime_encoding::qp");
 		return FALSE;
 	}
 	if (pmime->content_touched && pmime->content_begin != nullptr &&
@@ -283,12 +283,12 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 	pmime->remove_field("Content-Transfer-Encoding");
 	if (0 == length) {
 		pmime->set_field("Content-Transfer-Encoding",
-			encoding_type == MIME_ENCODING_QP ?
+			encoding_type == mime_encoding::qp ?
 			"quoted-printable" : "base64");
 		return TRUE;
 	}
 	switch (encoding_type) {
-	case MIME_ENCODING_NONE: {
+	case mime_encoding::none: {
 		/* should add '\r\n' at the end of buffer if it misses */
 		bool added_crlf = pcontent[length-1] != '\n';
 		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
@@ -316,7 +316,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		}
 		return TRUE;
 	}
-	case MIME_ENCODING_QP: {
+	case mime_encoding::qp: {
 		size_t buff_length = strange_roundup(4 * length, 64 * 1024);
 		auto pbuff = std::make_unique<char[]>(buff_length);
 		pmime->content_begin = me_alloc<char>(buff_length);
@@ -351,7 +351,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		pmime->set_field("Content-Transfer-Encoding", "quoted-printable");
 		return TRUE;
 	}
-	case MIME_ENCODING_BASE64: {
+	case mime_encoding::base64: {
 		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
 		pmime->content_begin = me_alloc<char>(buff_length);
 		if (NULL == pmime->content_begin) {
@@ -362,6 +362,8 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		pmime->set_field("Content-Transfer-Encoding", "base64");
 		return TRUE;
 	}
+	default:
+		break;
 	}
 	return false;
 } catch (const std::bad_alloc &) {
@@ -1249,7 +1251,6 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 {
 	auto pmime = this;
 	void *ptr;
-	int encoding_type;
 	size_t i, offset, max_length;
 	unsigned int buff_size;
 	
@@ -1308,22 +1309,21 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 		return TRUE;
 	}
 	char encoding[256];
+	enum mime_encoding encoding_type = mime_encoding::unknown;
 	if (!pmime->get_field("Content-Transfer-Encoding", encoding, 256)) {
-		encoding_type = MIME_ENCODING_NONE;
+		encoding_type = mime_encoding::none;
 	} else {
 		HX_strrtrim(encoding);
 		HX_strltrim(encoding);
 		if (0 == strcasecmp(encoding, "base64")) {
-			encoding_type = MIME_ENCODING_BASE64;
+			encoding_type = mime_encoding::base64;
 		} else if (0 == strcasecmp(encoding, "quoted-printable")) {
-			encoding_type = MIME_ENCODING_QP;
+			encoding_type = mime_encoding::qp;
 		} else if (0 == strcasecmp(encoding, "uue") ||
 			0 == strcasecmp(encoding, "x-uue") ||
 			0 == strcasecmp(encoding, "uuencode") ||
 			0 == strcasecmp(encoding, "x-uuencode")) {
-			encoding_type = MIME_ENCODING_UUENCODE;
-		} else {
-			encoding_type = MIME_ENCODING_UNKNOWN;
+			encoding_type = mime_encoding::uuencode;
 		}
 	}
 	
@@ -1350,7 +1350,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 	}
 	
 	switch (encoding_type) {
-	case MIME_ENCODING_BASE64:
+	case mime_encoding::base64:
 		if (decode64_ex(pbuff.get(), size, out_buff, max_length, plength) != 0) {
 			debug_info("[mime]: fail to decode base64 mime content");
 			if (0 == *plength) {
@@ -1358,7 +1358,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 			}
 		}
 		return TRUE;
-	case MIME_ENCODING_QP: {
+	case mime_encoding::qp: {
 		auto qdlen = qp_decode_ex(out_buff, max_length, pbuff.get(), size);
 		if (qdlen < 0) {
 			goto COPY_RAW_DATA;
@@ -1367,7 +1367,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 			return TRUE;
 		}
 	}
-	case MIME_ENCODING_UUENCODE:
+	case mime_encoding::uuencode:
 		if (uudecode(pbuff.get(), size, nullptr, nullptr, 0, out_buff,
 		    max_length, plength) != 0) {
 			debug_info("[mime]: fail to decode uuencode mime content");

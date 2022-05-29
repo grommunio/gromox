@@ -480,7 +480,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	rd_hold.unlock();
 	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(original_ptr,
-		ptr - original_ptr, MIME_ENCODING_BASE64)) {
+	    ptr - original_ptr, mime_encoding::base64)) {
         printf("[exmdb_local]: fatal error, fail to write content\n");
         return;
 	}
@@ -513,7 +513,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		if (NULL != pmime) {
 			pmime->set_content_type("message/delivery-status");
 			pmime->write_content(original_ptr,
-				strlen(original_ptr), MIME_ENCODING_NONE);
+				strlen(original_ptr), mime_encoding::none);
 		}
 	}
 	dsn_free(&dsn);

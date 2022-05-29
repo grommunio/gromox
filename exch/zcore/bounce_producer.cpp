@@ -552,9 +552,8 @@ BOOL bounce_producer_make(const char *username,
 	pmime->set_content_type(content_type);
 	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(content_buff,
-		strlen(content_buff), MIME_ENCODING_BASE64)) {
+	    strlen(content_buff), mime_encoding::base64))
 		return FALSE;
-	}
 	dsn_init(&dsn);
 	pdsn_fields = dsn_get_message_fileds(&dsn);
 	try {
@@ -593,7 +592,7 @@ BOOL bounce_producer_make(const char *username,
 		if (NULL != pmime) {
 			pmime->set_content_type("message/disposition-notification");
 			pmime->write_content(content_buff,
-				strlen(content_buff), MIME_ENCODING_NONE);
+				strlen(content_buff), mime_encoding::none);
 		}
 	}
 	dsn_free(&dsn);

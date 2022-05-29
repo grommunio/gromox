@@ -12,12 +12,8 @@ enum{
 	MULTIPLE_MIME
 };
 
-enum{
-	MIME_ENCODING_NONE = 0,
-	MIME_ENCODING_BASE64,
-	MIME_ENCODING_QP,
-	MIME_ENCODING_UUENCODE,
-	MIME_ENCODING_UNKNOWN
+enum class mime_encoding {
+	none, base64, qp, uuencode, unknown,
 };
 
 using MIME_FIELD_ENUM = BOOL (*)(const char *, char *, void *);
@@ -31,7 +27,7 @@ struct GX_EXPORT MIME {
 
 	BOOL retrieve(MIME *parent, char *in_buf, size_t len);
 	void clear();
-	BOOL write_content(const char *content, size_t len, int encoding_type);
+	BOOL write_content(const char *content, size_t len, enum mime_encoding);
 	BOOL write_mail(MAIL *);
 	BOOL read_head(char *out_buf, size_t *len);
 	BOOL read_content(char *out_buf, size_t *len);
