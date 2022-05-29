@@ -2886,7 +2886,16 @@ BOOL cu_set_properties(db_table table_type,
 					*(uint8_t*)ppropvals->ppropval[i].pvalue);
 				continue;
 			case PR_MESSAGE_FLAGS:
-				/* XXX: Why no SQL update? */
+				/*
+				 * XXX: Why no SQL update?
+				 *
+				 * """Several of the flags are always
+				 * read-only. Some are read/write until the
+				 * first call to the IMAPIProp::SaveChanges
+				 * method and thereafter become read-only as
+				 * far as IMAPIProp::SetProps is concerned."""
+				 * (MSDN)
+				 */
 				*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) &=
 					~(MSGFLAG_READ | MSGFLAG_HASATTACH |
 					MSGFLAG_FROMME | MSGFLAG_ASSOCIATED |
