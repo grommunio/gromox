@@ -135,7 +135,7 @@ int main(int argc, const char **argv) try
 		fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
 		return EXIT_FAILURE;
 	}
-	if (!oxcmail_export(ctnt, false, OXCMAIL_BODY_PLAIN_AND_HTML, mimepool,
+	if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html, mimepool,
 	    &imail, malloc, cu_get_propids, cu_get_propname)) {
 		fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
 		return EXIT_FAILURE;

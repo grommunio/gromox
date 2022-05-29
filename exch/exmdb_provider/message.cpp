@@ -2769,7 +2769,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	}
 	common_util_set_tls_var(psqlite);
 	MAIL imail;
-	if (!oxcmail_export(pmsgctnt, false, OXCMAIL_BODY_PLAIN_AND_HTML,
+	if (!oxcmail_export(pmsgctnt, false, oxcmail_body::plain_and_html,
 	    common_util_get_mime_pool(), &imail, common_util_alloc,
 	    message_get_propids, message_get_propname)) {
 		common_util_set_tls_var(NULL);

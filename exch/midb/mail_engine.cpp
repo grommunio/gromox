@@ -1763,7 +1763,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 			return;
 		}
 		MAIL imail;
-		if (!oxcmail_export(pmsgctnt, false, OXCMAIL_BODY_PLAIN_AND_HTML,
+		if (!oxcmail_export(pmsgctnt, false, oxcmail_body::plain_and_html,
 		    g_mime_pool, &imail, common_util_alloc,
 		    common_util_get_propids, common_util_get_propname)) {
 			common_util_switch_allocator();

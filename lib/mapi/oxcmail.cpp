@@ -142,7 +142,7 @@ enum {
 namespace {
 struct MIME_SKELETON {
 	int mail_type;
-	int body_type;
+	enum oxcmail_body body_type;
 	char *pplain;
 	BINARY *phtml;
 	BOOL b_inline;
@@ -4098,7 +4098,8 @@ static int oxcmail_get_mail_type(const char *pmessage_class)
 }
 
 static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
-    const char *pcharset, BOOL b_tnef, int body_type, MIME_SKELETON *pskeleton)
+    const char *pcharset, BOOL b_tnef, enum oxcmail_body body_type,
+    MIME_SKELETON *pskeleton)
 {
 	int i;
 	char *pbuff;
@@ -5213,9 +5214,10 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 	return true;
 }
 
-BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
-    std::shared_ptr<MIME_POOL> ppool, MAIL *pmail, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids, GET_PROPNAME get_propname)
+BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
+    enum oxcmail_body body_type, std::shared_ptr<MIME_POOL> ppool,
+    MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+    GET_PROPNAME get_propname)
 {
 	int i;
 	ICAL ical;
@@ -5287,7 +5289,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				goto EXPORT_FAILURE;
 		}
-		if (OXCMAIL_BODY_PLAIN_AND_HTML == mime_skeleton.body_type &&
+		if (mime_skeleton.body_type == oxcmail_body::plain_and_html &&
 			NULL != mime_skeleton.pplain && NULL != mime_skeleton.phtml) {
 			if (!pmime->set_content_type("multipart/alternative"))
 				goto EXPORT_FAILURE;
@@ -5302,8 +5304,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 				    !pcalendar->set_content_type("text/calendar"))
 					goto EXPORT_FAILURE;
 			}
-		} else if (OXCMAIL_BODY_PLAIN_ONLY == mime_skeleton.body_type
-			&& NULL != mime_skeleton.pplain) {
+		} else if (mime_skeleton.body_type == oxcmail_body::plain_only &&
+		    mime_skeleton.pplain != nullptr) {
  PLAIN_ONLY:
 			if (MAIL_TYPE_CALENDAR != mime_skeleton.mail_type) {
 				if (!pmime->set_content_type("text/plain"))
@@ -5318,8 +5320,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 				    pcalendar == nullptr || !pcalendar->set_content_type("text/calendar"))
 					goto EXPORT_FAILURE;
 			}
-		} else if (OXCMAIL_BODY_HTML_ONLY == mime_skeleton.body_type
-			&& NULL != mime_skeleton.phtml) {
+		} else if (mime_skeleton.body_type == oxcmail_body::html_only &&
+		    mime_skeleton.phtml != nullptr) {
  HTML_ONLY:
 			if (MAIL_TYPE_CALENDAR != mime_skeleton.mail_type) {
 				if (!pmime->set_content_type("text/html"))
@@ -5335,10 +5337,10 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 					goto EXPORT_FAILURE;
 			}
 		} else if (NULL != mime_skeleton.phtml) {
-			mime_skeleton.body_type = OXCMAIL_BODY_HTML_ONLY;
+			mime_skeleton.body_type = oxcmail_body::html_only;
 			goto HTML_ONLY;
 		} else {
-			mime_skeleton.body_type = OXCMAIL_BODY_PLAIN_ONLY;
+			mime_skeleton.body_type = oxcmail_body::plain_only;
 			goto PLAIN_ONLY;
 		}
 		break;
@@ -5571,14 +5573,14 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	return FALSE;
 }
 
-unsigned int get_override_format(const MESSAGE_CONTENT &mc)
+enum oxcmail_body get_override_format(const MESSAGE_CONTENT &mc)
 {
 	auto v = mc.proplist.get<uint32_t>(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
 	if (v == nullptr)
-		return OXCMAIL_BODY_PLAIN_AND_HTML;
+		return oxcmail_body::plain_and_html;
 	else if (*v & MESSAGE_FORMAT_PLAIN_AND_HTML)
-		return OXCMAIL_BODY_PLAIN_AND_HTML;
+		return oxcmail_body::plain_and_html;
 	else if (*v & MESSAGE_FORMAT_HTML_ONLY)
-		return OXCMAIL_BODY_HTML_ONLY;
-	return OXCMAIL_BODY_PLAIN_ONLY;
+		return oxcmail_body::html_only;
+	return oxcmail_body::plain_only;
 }
