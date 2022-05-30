@@ -20,11 +20,9 @@
 
 using namespace gromox;
 
-static BOOL mime_parse_multiple(MIME *pmime);
-
+static bool mime_parse_multiple(MIME *);
 static void mime_produce_boundary(MIME *pmime);
-
-static BOOL mime_check_ascii_printable(const char *astring);
+static bool mime_check_ascii_printable(const char *s);
 
 bool MAIL::set_header(const char *hdr, const char *val)
 {
@@ -81,7 +79,7 @@ MIME::~MIME()
  *		TRUE				OK to parse mime buffer
  *		FALSE				fail to parse mime buffer, there's error inside
  */
-BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
+bool MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 {
 	auto pmime = this;
 	size_t current_offset = 0;
@@ -90,7 +88,7 @@ BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 #ifdef _DEBUG_UMTA
 	if (in_buff == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::retrieve");
-		return FALSE;
+		return false;
 	}
 #endif
 	
@@ -103,7 +101,7 @@ BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 		pmime->content_begin = NULL;
 		pmime->content_length = 0;
 		pmime->mime_type = mime_type::single;
-		return TRUE;
+		return true;
 	}
 	while (current_offset <= length) {
 		auto parsed_length = parse_mime_field(in_buff + current_offset,
@@ -141,7 +139,7 @@ BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 			current_offset += 2;
 			if (current_offset > length) {
 				pmime->clear();
-				return FALSE;
+				return false;
 			} else if (current_offset == length) {
 				pmime->content_begin = NULL;
 				pmime->content_length = 0;
@@ -163,7 +161,7 @@ BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 				strcpy(pmime->content_type, "text/plain");
 				pmime->mime_type = mime_type::single;
 			}
-			return TRUE;
+			return true;
 		}
 		if (0 == current_offset) {
 			pmime->head_touched = TRUE;
@@ -172,7 +170,7 @@ BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 			/* old simplest unix style mail */
 			strcpy(pmime->content_type, "text/plain");
 			pmime->mime_type = mime_type::single;
-			return TRUE;
+			return true;
 		}
 		pmime->head_begin = in_buff;
 		pmime->head_length = current_offset;
@@ -182,7 +180,7 @@ BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 		 */
 		if (current_offset > length) {
 			pmime->clear();
-			return FALSE;
+			return false;
 		} else if (current_offset == length) {
 			pmime->content_begin = NULL;
 			pmime->content_length = 0;
@@ -206,10 +204,10 @@ BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 			       "message/rfc822" : "text/plain");
 			pmime->mime_type = mime_type::single;
 		}
-		return TRUE;
+		return true;
 	}
 	pmime->clear();
-	return FALSE;
+	return false;
 }
 
 void MIME::clear()
@@ -249,7 +247,7 @@ void MIME::clear()
  *		length				length of the object
  *		encoding_type		
  */
-BOOL MIME::write_content(const char *pcontent, size_t length,
+bool MIME::write_content(const char *pcontent, size_t length,
     enum mime_encoding encoding_type) try
 {
 	auto pmime = this;
@@ -259,11 +257,11 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 #ifdef _DEBUG_UMTA
 	if (pcontent == nullptr && length != 0) {
 		debug_info("[mime]: NULL pointer found in MIME::write_content");
-		return FALSE;
+		return false;
 	}
 #endif
 	if (pmime->mime_type != mime_type::single)
-		return FALSE;
+		return false;
 	if (encoding_type == mime_encoding::automatic)
 		encoding_type = qp_encoded_size_estimate(pcontent, length) < (length / 3 + 1) * 4 ?
 		                mime_encoding::qp : mime_encoding::base64;
@@ -272,7 +270,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 	    encoding_type != mime_encoding::none) {
 		debug_info("[mime]: encoding type should be one of "
 			"mime_encoding::none, mime_encoding::base64, mime_encoding::qp");
-		return FALSE;
+		return false;
 	}
 	if (pmime->content_touched && pmime->content_begin != nullptr &&
 	    pmime->content_length != 0)
@@ -285,7 +283,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		pmime->set_field("Content-Transfer-Encoding",
 			encoding_type == mime_encoding::qp ?
 			"quoted-printable" : "base64");
-		return TRUE;
+		return true;
 	}
 	switch (encoding_type) {
 	case mime_encoding::none: {
@@ -294,7 +292,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
 		pmime->content_begin = me_alloc<char>(buff_length);
 		if (NULL == pmime->content_begin) {
-			return FALSE;
+			return false;
 		}
 		for (i=0,j=0; i<length; i++,j++) {
 			if ('.' == pcontent[i]) {
@@ -314,14 +312,14 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 			memcpy(pmime->content_begin + length, "\r\n", 2);
 			pmime->content_length += 2;
 		}
-		return TRUE;
+		return true;
 	}
 	case mime_encoding::qp: {
 		size_t buff_length = strange_roundup(4 * length, 64 * 1024);
 		auto pbuff = std::make_unique<char[]>(buff_length);
 		pmime->content_begin = me_alloc<char>(buff_length);
 		if (NULL == pmime->content_begin) {
-			return FALSE;
+			return false;
 		}
 		auto qdlen = qp_encode_ex(pbuff.get(), buff_length, pcontent, length);
 		if (qdlen < 0) {
@@ -349,18 +347,18 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		}
 		pmime->content_length = j;
 		pmime->set_field("Content-Transfer-Encoding", "quoted-printable");
-		return TRUE;
+		return true;
 	}
 	case mime_encoding::base64: {
 		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
 		pmime->content_begin = me_alloc<char>(buff_length);
 		if (NULL == pmime->content_begin) {
-			return FALSE;
+			return false;
 		}
 		encode64_ex(pcontent, length, pmime->content_begin, buff_length,
 				&pmime->content_length);
 		pmime->set_field("Content-Transfer-Encoding", "base64");
-		return TRUE;
+		return true;
 	}
 	default:
 		break;
@@ -380,17 +378,17 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL MIME::write_mail(MAIL *pmail)
+bool MIME::write_mail(MAIL *pmail)
 {
 	auto pmime = this;
 #ifdef _DEBUG_UMTA
 	if (pmail == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::write_mail");
-        return FALSE;
+		return false;
     }
 #endif
 	if (pmime->mime_type != mime_type::single)
-		return FALSE;
+		return false;
 	if (pmime->content_touched && pmime->content_begin != nullptr) {
 		if (0 != pmime->content_length) {
 			free(pmime->content_begin);
@@ -403,7 +401,7 @@ BOOL MIME::write_mail(MAIL *pmail)
 	pmime->content_length = 0;
 	pmime->content_touched = TRUE;
 	pmime->set_field("Content-Transfer-Encoding", "8bit");
-	return TRUE;
+	return true;
 }
 
 /*
@@ -412,7 +410,7 @@ BOOL MIME::write_mail(MAIL *pmail)
  *		pmime [in,out]		indicate the MIME object
  *		content_type [in]	buffer containing content type
  */
-BOOL MIME::set_content_type(const char *newtype)
+bool MIME::set_content_type(const char *newtype)
 {
 	auto pmime = this;
 	BOOL b_multiple;
@@ -420,7 +418,7 @@ BOOL MIME::set_content_type(const char *newtype)
 #ifdef _DEBUG_UMTA
 	if (newtype == nullptr) {
 		debug_info("[mime]: NULL pointer found in mime_set_content_type");
-		return FALSE;
+		return false;
 	}
 #endif
 	
@@ -429,7 +427,7 @@ BOOL MIME::set_content_type(const char *newtype)
 		b_multiple = TRUE;
 	if (pmime->mime_type == mime_type::single) {
 		if (b_multiple)
-			return FALSE;
+			return false;
 	} else if (pmime->mime_type == mime_type::none) {
 		if (b_multiple) {
 			mime_produce_boundary(pmime);
@@ -440,7 +438,7 @@ BOOL MIME::set_content_type(const char *newtype)
 	}
 	gx_strlcpy(content_type, newtype, arsizeof(content_type));
 	pmime->head_touched = TRUE;
-	return TRUE;
+	return true;
 }
 
 /*
@@ -453,7 +451,7 @@ BOOL MIME::set_content_type(const char *newtype)
  *		TRUE				OK to enumerate
  *		FALSE				fail to enumerate
  */		
-BOOL MIME::enum_field(MIME_FIELD_ENUM enum_func, void *pparam)
+bool MIME::enum_field(MIME_FIELD_ENUM enum_func, void *pparam)
 {
 	auto pmime = this;
 	int	tag_len, val_len;
@@ -461,7 +459,7 @@ BOOL MIME::enum_field(MIME_FIELD_ENUM enum_func, void *pparam)
 	char tmp_value[MIME_FIELD_LEN];
 	
 	if (!enum_func("Content-Type", pmime->content_type, pparam))
-		return FALSE;
+		return false;
 	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		pmime->f_other_fields.read(tmp_tag, tag_len);
@@ -470,12 +468,12 @@ BOOL MIME::enum_field(MIME_FIELD_ENUM enum_func, void *pparam)
 		pmime->f_other_fields.read(tmp_value, val_len);
 		tmp_value[val_len] = '\0';
 		if (!enum_func(tmp_tag, tmp_value, pparam))
-			return FALSE;
+			return false;
 	}
-	return TRUE;
+	return true;
 }
 
-static BOOL mime_get_content_type_field(MIME *pmime, char *value, int length)
+static bool mime_get_content_type_field(MIME *pmime, char *value, int length)
 {
 	int offset;
 	int tag_len;
@@ -484,14 +482,14 @@ static BOOL mime_get_content_type_field(MIME *pmime, char *value, int length)
 	
 	offset = strlen(pmime->content_type);
 	if (offset >= length) {
-		return FALSE;
+		return false;
 	}
 	memcpy(value, pmime->content_type, offset);
 	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		/* content-type: xxxxx"; "yyyyy */
 		if (offset + 4 + tag_len >= length) {
-			return FALSE;
+			return false;
 		}
 		memcpy(value + offset, "; ", 2);
 		offset += 2;
@@ -503,7 +501,7 @@ static BOOL mime_get_content_type_field(MIME *pmime, char *value, int length)
 		/* content_type: xxxxx; yyyyy=zzz */
 		if (0 != val_len) {
 			if (offset + val_len + 1 >= length) {
-				return FALSE;
+				return false;
 			}
 			value[offset] = '=';
 			offset ++;
@@ -512,7 +510,7 @@ static BOOL mime_get_content_type_field(MIME *pmime, char *value, int length)
 		}
 	}
 	value[offset] = '\0';
-	return TRUE;
+	return true;
 }
 
 /*
@@ -526,7 +524,7 @@ static BOOL mime_get_content_type_field(MIME *pmime, char *value, int length)
  *		TRUE				OK to get value
  *		FALSE				no such tag in fields
  */		
-BOOL MIME::get_field(const char *tag, char *value, int length)
+bool MIME::get_field(const char *tag, char *value, int length)
 {
 	auto pmime = this;
 	int tag_len, val_len;
@@ -535,7 +533,7 @@ BOOL MIME::get_field(const char *tag, char *value, int length)
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::get_field");
-		return FALSE;
+		return false;
 	}
 #endif
 	if (0 == strcasecmp(tag, "Content-Type")) {
@@ -550,11 +548,11 @@ BOOL MIME::get_field(const char *tag, char *value, int length)
 			length = (length > val_len)?val_len:(length - 1);
 			pmime->f_other_fields.read(value, length);
 			value[length] = '\0';
-			return TRUE;
+			return true;
 		} 
 		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -608,8 +606,7 @@ int MIME::get_field_num(const char *tag)
  *		TRUE				OK to get value
  *		FALSE				no such tag in fields
  */		
-BOOL MIME::search_field(const char *tag, int order, char *value,
-	int length)
+bool MIME::search_field(const char *tag, int order, char *value, int length)
 {
 	auto pmime = this;
 	int i;
@@ -619,18 +616,18 @@ BOOL MIME::search_field(const char *tag, int order, char *value,
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::search_field");
-		return FALSE;
+		return false;
 	}
 #endif
 	if (order < 0) {
-		return FALSE;
+		return false;
 	}
 	if (0 == strcasecmp(tag, "Content-Type")) {
 		if (0 == order) {
 			strncpy(value, pmime->content_type, length - 1);
 			value[length - 1] = '\0';
 		} else {
-			return FALSE;
+			return false;
 		}
 	}
 	i = -1;
@@ -645,12 +642,12 @@ BOOL MIME::search_field(const char *tag, int order, char *value,
 				length = (length > val_len)?val_len:(length - 1);
 				pmime->f_other_fields.read(value, length);
 				value[length] = '\0';
-				return TRUE;
+				return true;
 			}
 		} 
 		pmime->f_other_fields.read(tmp_buff, val_len);
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -664,7 +661,7 @@ BOOL MIME::search_field(const char *tag, int order, char *value,
  *		TRUE				OK
  *		FALSE				fail to det
  */
-BOOL MIME::set_field(const char *tag, const char *value)
+bool MIME::set_field(const char *tag, const char *value)
 {
 	auto pmime = this;
 	MEM_FILE file_tmp;
@@ -676,7 +673,7 @@ BOOL MIME::set_field(const char *tag, const char *value)
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::set_field");
-		return FALSE;
+		return false;
 	}
 #endif
 	if (0 == strcasecmp(tag, "Content-Type")) {
@@ -685,9 +682,9 @@ BOOL MIME::set_field(const char *tag, const char *value)
 			&pmime->f_type_params);
 		if (!pmime->set_content_type(tmp_buff)) {
 			pmime->f_type_params.clear();
-			return FALSE;
+			return false;
 		}
-		return TRUE;
+		return true;
 	}
 	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	mark = -1;
@@ -739,7 +736,7 @@ BOOL MIME::set_field(const char *tag, const char *value)
 		mem_file_free(&file_tmp);
 	}
 	pmime->head_touched = TRUE;
-	return TRUE;
+	return true;
 }
 
 /*
@@ -753,7 +750,7 @@ BOOL MIME::set_field(const char *tag, const char *value)
  *		TRUE				OK
  *		FALSE				fail to det
  */
-BOOL MIME::append_field(const char *tag, const char *value)
+bool MIME::append_field(const char *tag, const char *value)
 {
 	auto pmime = this;
 	int	tag_len, val_len;
@@ -761,11 +758,11 @@ BOOL MIME::append_field(const char *tag, const char *value)
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::append_field");
-		return FALSE;
+		return false;
 	}
 #endif
 	if (0 == strcasecmp(tag, "Content-Type")) {
-		return FALSE;
+		return false;
 	}
 	tag_len = strlen(tag);
 	val_len = strlen(value);
@@ -774,7 +771,7 @@ BOOL MIME::append_field(const char *tag, const char *value)
 	pmime->f_other_fields.write(&val_len, sizeof(uint32_t));
 	pmime->f_other_fields.write(value, val_len);
 	pmime->head_touched = TRUE;
-	return TRUE;
+	return true;
 }
 
 /*
@@ -786,7 +783,7 @@ BOOL MIME::append_field(const char *tag, const char *value)
  *		TRUE				OK
  *		FALSE				not found
  */
-BOOL MIME::remove_field(const char *tag)
+bool MIME::remove_field(const char *tag)
 {
 	auto pmime = this;
 	BOOL found_tag = false;
@@ -795,7 +792,7 @@ BOOL MIME::remove_field(const char *tag)
 	int tag_len, val_len;
 
 	if (0 == strcasecmp(tag, "Content-Type")) {
-		return FALSE;
+		return false;
 	}
 	mem_file_init(&file_tmp, pmime->f_other_fields.allocator);
 	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -829,8 +826,7 @@ BOOL MIME::remove_field(const char *tag)
  *		value [out]			buffer for retrieving value
  *		length				length of value
  */
-BOOL MIME::get_content_param(const char *tag, char *value,
-	int length)
+bool MIME::get_content_param(const char *tag, char *value, int length)
 {
 	auto pmime = this;
 	int	tag_len, val_len;
@@ -840,7 +836,7 @@ BOOL MIME::get_content_param(const char *tag, char *value,
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::get_content_param");
-		return FALSE;
+		return false;
 	}
 #endif
 	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -852,12 +848,12 @@ BOOL MIME::get_content_param(const char *tag, char *value,
 			distance = (val_len > length - 1)?(length - 1):val_len;
 			pmime->f_type_params.read(value, distance);
 			value[distance] = '\0';
-			return TRUE;
+			return true;
 		} 
 		pmime->f_type_params.read(&val_len, sizeof(uint32_t));
 		pmime->f_type_params.read(tmp_buff, val_len);
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -867,7 +863,7 @@ BOOL MIME::get_content_param(const char *tag, char *value,
  *		tag [in]			tag string
  *		value [in]			value string
  */
-BOOL MIME::set_content_param(const char *tag, const char *value)
+bool MIME::set_content_param(const char *tag, const char *value)
 {
 	auto pmime = this;
 	MEM_FILE file_tmp;
@@ -879,16 +875,16 @@ BOOL MIME::set_content_param(const char *tag, const char *value)
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::set_content_param");
-		return FALSE;
+		return false;
 	}
 #endif
 	if (0 == strcasecmp(tag, "boundary")) {
 		auto bdlen = strlen(value);
 		if (bdlen > VALUE_LEN - 3 || bdlen < 3)
-			return FALSE;
+			return false;
 		if ('"' == value[0]) {
 			if (value[bdlen-1] != '"')
-				return FALSE;
+				return false;
 			gx_strlcpy(boundary_string, value + 1, bdlen - 1);
 			boundary_len = bdlen - 2;
 		} else {
@@ -918,7 +914,7 @@ BOOL MIME::set_content_param(const char *tag, const char *value)
 		pmime->f_type_params.write(&val_len, sizeof(uint32_t));
 		pmime->f_type_params.write(value, val_len);
 		pmime->head_touched = TRUE;
-		return TRUE;
+		return true;
 	}
 	mem_file_init(&file_tmp, pmime->f_type_params.allocator);
 	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -947,7 +943,7 @@ BOOL MIME::set_content_param(const char *tag, const char *value)
 	file_tmp.copy_to(pmime->f_type_params);
 	mem_file_free(&file_tmp);
 	pmime->head_touched = TRUE;
-	return TRUE;
+	return true;
 }
 
 /*
@@ -959,7 +955,7 @@ BOOL MIME::set_content_param(const char *tag, const char *value)
  *		TRUE			OK to copy out the MIME
  *		FALSE			buffer is too short
  */
-BOOL MIME::serialize(STREAM *pstream)
+bool MIME::serialize(STREAM *pstream)
 {
 	auto pmime = this;
 	int		tag_len, val_len;
@@ -971,11 +967,11 @@ BOOL MIME::serialize(STREAM *pstream)
 #ifdef _DEBUG_UMTA
 	if (pstream == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::serialize");
-		return FALSE;
+		return false;
 	}
 #endif
 	if (pmime->mime_type == mime_type::none)
-		return FALSE;
+		return false;
 	if (!pmime->head_touched) {
 		/* the original buffer contains \r\n */
 		if (pmime->head_begin + pmime->head_length + 2 == pmime->content_begin){
@@ -1029,7 +1025,7 @@ BOOL MIME::serialize(STREAM *pstream)
 			pstream->write(pmime->content_begin, pmime->content_length);
 		else
 			reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream);
-		return TRUE;
+		return true;
 	}
 	if (NULL == pmime->first_boundary) {
 		pstream->write("This is a multi-part message in MIME format.\r\n\r\n", 48);
@@ -1045,7 +1041,7 @@ BOOL MIME::serialize(STREAM *pstream)
 		pstream->write("\r\n", 2);
 		pmime_child = (MIME*)pnode->pdata;
 		if (!pmime_child->serialize(pstream))
-			return FALSE;
+			return false;
 		pnode = pnode->get_sibling();
 	}
 	if (!has_submime) {
@@ -1058,7 +1054,7 @@ BOOL MIME::serialize(STREAM *pstream)
 	pstream->write("--", 2);
 	if (NULL == pmime->last_boundary) {
 		pstream->write("\r\n\r\n", 4);
-		return TRUE;
+		return true;
 	}
 	tmp_len = pmime->content_length -
 	          (pmime->last_boundary - pmime->content_begin);
@@ -1069,10 +1065,10 @@ BOOL MIME::serialize(STREAM *pstream)
 	} else {
 		debug_info("[mime]: fatal error in MIME::serialize");
 	}
-	return TRUE;
+	return true;
 }
 
-static BOOL mime_read_multipart_content(MIME *pmime,
+static bool mime_read_multipart_content(MIME *pmime,
 	char *out_buff, size_t *plength)
 {
 	void *ptr;
@@ -1102,7 +1098,7 @@ static BOOL mime_read_multipart_content(MIME *pmime,
 		tmp_stream.write("\r\n", 2);
 		pmime_child = (MIME*)pnode->pdata;
 		if (!pmime_child->serialize(&tmp_stream))
-			return FALSE;
+			return false;
 		pnode = pnode->get_sibling();
 	}
 	if (!has_submime) {
@@ -1134,7 +1130,7 @@ static BOOL mime_read_multipart_content(MIME *pmime,
 		buff_size = STREAM_BLOCK_SIZE;
 	}
 	*plength = offset;
-	return TRUE;
+	return true;
 }
 
 /*
@@ -1147,7 +1143,7 @@ static BOOL mime_read_multipart_content(MIME *pmime,
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL MIME::read_head(char *out_buff, size_t *plength)
+bool MIME::read_head(char *out_buff, size_t *plength)
 {
 	auto pmime = this;
 	uint32_t tag_len, val_len;
@@ -1158,17 +1154,17 @@ BOOL MIME::read_head(char *out_buff, size_t *plength)
 #ifdef _DEBUG_UMTA
 		debug_info("[mime]: mime content type is not set");
 #endif
-		return FALSE;
+		return false;
 	}
 	if (!pmime->head_touched){
 		if (pmime->head_length + 2 > *plength) {
 			*plength = 0;
-			return FALSE;
+			return false;
 		}
 		memcpy(out_buff, pmime->head_begin, pmime->head_length);
 		memcpy(out_buff + pmime->head_length, "\r\n", 2);
 		*plength = pmime->head_length + 2;
-		return TRUE;
+		return true;
 	}
 	offset = 0;
 	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -1185,7 +1181,7 @@ BOOL MIME::read_head(char *out_buff, size_t *plength)
 		len += 2;
 		if (offset + len > *plength) {
 			*plength = 0;
-			return FALSE;
+			return false;
 		}
 		memcpy(tmp_buff + offset, tmp_buff, len);
 		offset += len;
@@ -1201,7 +1197,7 @@ BOOL MIME::read_head(char *out_buff, size_t *plength)
 	while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		/* content-type: xxxxx"; \r\n\t"yyyyy */
 		if (len > MIME_FIELD_LEN + MIME_NAME_LEN - tag_len) {
-			return FALSE;
+			return false;
 		}
 		memcpy(tmp_buff + len, ";\r\n\t", 4);
 		len += 4;
@@ -1209,7 +1205,7 @@ BOOL MIME::read_head(char *out_buff, size_t *plength)
 		len += tag_len;
 		pmime->f_type_params.read(&val_len, sizeof(uint32_t));
 		if (len > MIME_FIELD_LEN + MIME_NAME_LEN + 3 - val_len) {
-			return FALSE;
+			return false;
 		}
 		/* content_type: xxxxx; \r\n\tyyyyy=zzz */
 		if (0 != val_len) {
@@ -1220,19 +1216,19 @@ BOOL MIME::read_head(char *out_buff, size_t *plength)
 		}
 	}
 	if (len > MIME_FIELD_LEN + MIME_NAME_LEN) {
-		return FALSE;
+		return false;
 	}
 	/* \r\n for separate head and content */
 	memcpy(tmp_buff + len, "\r\n\r\n", 4);
 	len += 4;
 	if (offset + len > *plength) {
 		*plength = 0;
-		return FALSE;
+		return false;
 	}
 	memcpy(tmp_buff + offset, tmp_buff, len);
 	offset += len;
 	*plength = offset;
-	return TRUE;
+	return true;
 }
 
 /*
@@ -1245,7 +1241,7 @@ BOOL MIME::read_head(char *out_buff, size_t *plength)
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL MIME::read_content(char *out_buff, size_t *plength) try
+bool MIME::read_content(char *out_buff, size_t *plength) try
 {
 	auto pmime = this;
 	void *ptr;
@@ -1255,7 +1251,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 #ifdef _DEBUG_UMTA
 	if (out_buff == nullptr || plength == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::read_content");
-		return FALSE;
+		return false;
 	}
 #endif
 	max_length = *plength;
@@ -1263,17 +1259,17 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 		*out_buff = '\0';
 	if (pmime->mime_type == mime_type::none) {
 		*plength = 0;
-		return FALSE;
+		return false;
 	}
 	if (pmime->mime_type == mime_type::multiple)
 		return mime_read_multipart_content(pmime, out_buff, plength);
 	if (*plength <= 0) {
 		*plength = 0;
-		return FALSE;
+		return false;
 	}
 	if (NULL == pmime->content_begin) {
 		*plength = 0;
-		return TRUE;
+		return true;
 	}
 	
 	/* content is an email object */
@@ -1282,17 +1278,17 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 		if (mail_len <= 0) {
 			debug_info("[mime]: Failed to get mail length in MIME::read_content");
 			*plength = 0;
-			return FALSE;
+			return false;
 		}
 		if (static_cast<size_t>(mail_len) >= max_length) {
 			*plength = 0;
-			return FALSE;
+			return false;
 		}
 		alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1);
 		STREAM tmp_stream(&pallocator);
 		if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(&tmp_stream)) {
 			*plength = 0;
-			return FALSE;
+			return false;
 		}
 		offset = 0;
 		buff_size = STREAM_BLOCK_SIZE;
@@ -1303,7 +1299,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 		}
 		out_buff[offset] = '\0';
 		*plength = offset;
-		return TRUE;
+		return true;
 	}
 	char encoding[256];
 	enum mime_encoding encoding_type = mime_encoding::unknown;
@@ -1351,17 +1347,17 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 		if (decode64_ex(pbuff.get(), size, out_buff, max_length, plength) != 0) {
 			debug_info("[mime]: fail to decode base64 mime content");
 			if (0 == *plength) {
-				return FALSE;
+				return false;
 			}
 		}
-		return TRUE;
+		return true;
 	case mime_encoding::qp: {
 		auto qdlen = qp_decode_ex(out_buff, max_length, pbuff.get(), size);
 		if (qdlen < 0) {
 			goto COPY_RAW_DATA;
 		} else {
 			*plength = qdlen;
-			return TRUE;
+			return true;
 		}
 	}
 	case mime_encoding::uuencode:
@@ -1370,16 +1366,16 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
 			debug_info("[mime]: fail to decode uuencode mime content");
 			goto COPY_RAW_DATA;
 		}
-		return TRUE;
+		return true;
 	default:
  COPY_RAW_DATA:
 		if (max_length >= size) {
 			memcpy(out_buff, pbuff.get(), size);
 			*plength = size;
-			return TRUE;
+			return true;
 		} else {
 			*plength = 0;
-			return FALSE;
+			return false;
 		}
 	}
 } catch (const std::bad_alloc &) {
@@ -1397,7 +1393,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength) try
  *		TRUE			OK to copy out the MIME
  *		FALSE			buffer is too short
  */
-BOOL MIME::to_file(int fd)
+bool MIME::to_file(int fd)
 {
 	auto pmime = this;
 	BOOL has_submime;
@@ -1410,7 +1406,7 @@ BOOL MIME::to_file(int fd)
 #ifdef _DEBUG_UMTA
 		debug_info("[mime]: mime content type is not set");
 #endif
-		return FALSE;
+		return false;
 	}
 	if (!pmime->head_touched) {
 		/* the original buffer contains \r\n */
@@ -1418,13 +1414,13 @@ BOOL MIME::to_file(int fd)
 			+ 2 == pmime->content_begin) {
 			auto wrlen = write(fd, pmime->head_begin, pmime->head_length + 2);
 			if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->head_length + 2)
-				return FALSE;
+				return false;
 		} else {
 			auto wrlen = write(fd, pmime->head_begin, pmime->head_length);
 			if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->head_length)
-				return FALSE;
+				return false;
 			if (2 != write(fd, "\r\n", 2)) {
-				return FALSE;
+				return false;
 			}
 		}
 	} else {	
@@ -1443,7 +1439,7 @@ BOOL MIME::to_file(int fd)
 			len += 2;
 			auto wrlen = write(fd, tmp_buff, len);
 			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-				return FALSE;
+				return false;
 		}
 
 		/* Content-Type: xxxxx */
@@ -1458,7 +1454,7 @@ BOOL MIME::to_file(int fd)
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
 			if (len > MIME_FIELD_LEN + MIME_NAME_LEN - tag_len) {
-				return FALSE;
+				return false;
 			}
 			memcpy(tmp_buff + len, ";\r\n\t", 4);
 			len += 4;
@@ -1466,7 +1462,7 @@ BOOL MIME::to_file(int fd)
 			len += tag_len;
 			pmime->f_type_params.read(&val_len, sizeof(uint32_t));
 			if (len > MIME_FIELD_LEN + MIME_NAME_LEN + 3 - val_len) {
-				return FALSE;
+				return false;
 			}
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
 			if (0 != val_len) {
@@ -1477,41 +1473,41 @@ BOOL MIME::to_file(int fd)
 			}
 		}
 		if (len > MIME_FIELD_LEN + MIME_NAME_LEN) {
-			return FALSE;
+			return false;
 		}
 		/* \r\n for separate head and content */
 		memcpy(tmp_buff + len, "\r\n\r\n", 4);
 		len += 4;
 		auto wrlen = write(fd, tmp_buff, len);
 		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-			return FALSE;
+			return false;
 	}
 	if (pmime->mime_type == mime_type::single) {
 		if (NULL != pmime->content_begin) {
 			if (0 != pmime->content_length) {
 				auto wrlen = write(fd, pmime->content_begin, pmime->content_length);
 				if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
-					return FALSE;
+					return false;
 			} else {
 				if (!reinterpret_cast<MAIL *>(pmime->content_begin)->to_file(fd))
-					return FALSE;
+					return false;
 			}
 		} else {
 			/* if there's nothing, just append an empty line */
 			if (2 != write(fd, "\r\n", 2)) {
-				return FALSE;
+				return false;
 			}
 		}
-		return TRUE;
+		return true;
 	}
 	if (NULL == pmime->first_boundary) {
 		if (48 != write(fd, "This is a multi-part message "
 		    "in MIME format.\r\n\r\n", 48)) {
-			return FALSE;
+			return false;
 		}
 	} else if (write(fd, pmime->content_begin, pmime->first_boundary - pmime->content_begin) !=
 	    pmime->first_boundary - pmime->content_begin) {
-		return FALSE;
+		return false;
 	}
 	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
@@ -1526,10 +1522,10 @@ BOOL MIME::to_file(int fd)
 		len += 2;
 		auto wrlen = write(fd, tmp_buff, len);
 		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-			return FALSE;
+			return false;
 		pmime_child = (MIME*)pnode->pdata;
 		if (!pmime_child->to_file(fd))
-			return FALSE;
+			return false;
 		pnode = pnode->get_sibling();
 	}
 	if (!has_submime) {
@@ -1542,7 +1538,7 @@ BOOL MIME::to_file(int fd)
 		len += 4;
 		auto wrlen = write(fd, tmp_buff, len);
 		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-			return FALSE;
+			return false;
 	}
 	memcpy(tmp_buff, "--", 2);
 	len = 2;
@@ -1564,13 +1560,13 @@ BOOL MIME::to_file(int fd)
 			len += 2;
 		} else {
 			debug_info("[mime]: E-1640");
-			return FALSE;
+			return false;
 		}
 	}
 	auto wrlen = write(fd, tmp_buff, len);
 	if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
 /*
@@ -1582,7 +1578,7 @@ BOOL MIME::to_file(int fd)
  *		TRUE			OK to copy out the MIME
  *		FALSE			buffer is too short
  */
-BOOL MIME::to_tls(SSL *ssl)
+bool MIME::to_tls(SSL *ssl)
 {
 	auto pmime = this;
 	BOOL has_submime;
@@ -1594,14 +1590,14 @@ BOOL MIME::to_tls(SSL *ssl)
 #ifdef _DEBUG_UMTA
 	if (tls == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::to_tls");
-		return FALSE;
+		return false;
 	}
 #endif
 	if (pmime->mime_type == mime_type::none) {
 #ifdef _DEBUG_UMTA
 		debug_info("[mime]: mime content type is not set");
 #endif
-		return FALSE;
+		return false;
 	}
 	if (!pmime->head_touched) {
 		/* the original buffer contains \r\n */
@@ -1609,13 +1605,13 @@ BOOL MIME::to_tls(SSL *ssl)
 			+ 2 == pmime->content_begin) {
 			auto wrlen = SSL_write(ssl, pmime->head_begin, pmime->head_length + 2);
 			if (wrlen < 0 || static_cast<size_t>(wrlen))
-				return FALSE;
+				return false;
 		} else {
 			auto wrlen = SSL_write(ssl, pmime->head_begin, pmime->head_length);
 			if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->head_length)
-				return FALSE;
+				return false;
 			if (2 != SSL_write(ssl, "\r\n", 2)) {
-				return FALSE;
+				return false;
 			}
 		}
 	} else {	
@@ -1633,7 +1629,7 @@ BOOL MIME::to_tls(SSL *ssl)
 			len += 2;
 			auto wrlen = SSL_write(ssl, tmp_buff, len);
 			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-				return FALSE;
+				return false;
 		}
 
 		/* Content-Type: xxxxx */
@@ -1648,7 +1644,7 @@ BOOL MIME::to_tls(SSL *ssl)
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
 			if (len > MIME_FIELD_LEN + MIME_NAME_LEN - tag_len) {
-				return FALSE;
+				return false;
 			}
 			memcpy(tmp_buff + len, ";\r\n\t", 4);
 			len += 4;
@@ -1656,7 +1652,7 @@ BOOL MIME::to_tls(SSL *ssl)
 			len += tag_len;
 			pmime->f_type_params.read(&val_len, sizeof(uint32_t));
 			if (len > MIME_FIELD_LEN + MIME_NAME_LEN + 3 - val_len) {
-				return FALSE;
+				return false;
 			}
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
 			if (0 != val_len) {
@@ -1667,41 +1663,41 @@ BOOL MIME::to_tls(SSL *ssl)
 			}
 		}
 		if (len > MIME_FIELD_LEN + MIME_NAME_LEN) {
-			return FALSE;
+			return false;
 		}
 		/* \r\n for separate head and content */
 		memcpy(tmp_buff + len, "\r\n\r\n", 4);
 		len += 4;
 		auto wrlen = SSL_write(ssl, tmp_buff, len);
 		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-			return FALSE;
+			return false;
 	}
 	if (pmime->mime_type == mime_type::single) {
 		if (NULL != pmime->content_begin) {
 			if (0 != pmime->content_length) {
 				auto wrlen = SSL_write(ssl, pmime->content_begin, pmime->content_length);
 				if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
-					return FALSE;
+					return false;
 			} else {
 				if (!reinterpret_cast<MAIL *>(pmime->content_begin)->to_tls(ssl))
-					return FALSE;
+					return false;
 			}
 		} else {
 			/* if there's nothing, just append an empty line */
 			if (2 != SSL_write(ssl, "\r\n", 2)) {
-				return FALSE;
+				return false;
 			}
 		}
-		return TRUE;
+		return true;
 	}
 	if (NULL == pmime->first_boundary) {
 		if (48 != SSL_write(ssl, "This is a multi-part message "
 		    "in MIME format.\r\n\r\n", 48)) {
-			return FALSE;
+			return false;
 		}
 	} else if (SSL_write(ssl, pmime->content_begin, pmime->first_boundary - pmime->content_begin) !=
 	    pmime->first_boundary - pmime->content_begin) {
-		return FALSE;
+		return false;
 	}
 	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
@@ -1716,10 +1712,10 @@ BOOL MIME::to_tls(SSL *ssl)
 		len += 2;
 		auto wrlen = SSL_write(ssl, tmp_buff, len);
 		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-			return FALSE;
+			return false;
 		pmime_child = (MIME*)pnode->pdata;
 		if (!pmime_child->to_tls(ssl))
-			return FALSE;
+			return false;
 		pnode = pnode->get_sibling();
 	}
 	if (!has_submime) {
@@ -1732,7 +1728,7 @@ BOOL MIME::to_tls(SSL *ssl)
 		len += 4;
 		auto wrlen = SSL_write(ssl, tmp_buff, len);
 		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-			return FALSE;
+			return false;
 	}
 	memcpy(tmp_buff, "--", 2);
 	len = 2;
@@ -1754,13 +1750,13 @@ BOOL MIME::to_tls(SSL *ssl)
 			len += 2;
 		} else {
 			debug_info("[mime]: E-1641");
-			return FALSE;
+			return false;
 		}
 	}
 	auto wrlen = SSL_write(ssl, tmp_buff, len);
 	if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
 /*
@@ -1771,7 +1767,7 @@ BOOL MIME::to_tls(SSL *ssl)
  *		TRUE			dot-stuffing in MIME
  *		FALSE			no dot-stuffing in MIME
  */
-BOOL MIME::check_dot()
+bool MIME::check_dot()
 {
 	auto pmime = this;
 	size_t	tmp_len;
@@ -1783,13 +1779,13 @@ BOOL MIME::check_dot()
 #ifdef _DEBUG_UMTA
 		debug_info("[mime]: mime content type is not set");
 #endif
-		return FALSE;
+		return false;
 	}
 	if (!pmime->head_touched) {
 		if (pmime->head_length >= 2 && (('.' == pmime->head_begin[0] &&
 			'.' == pmime->head_begin[1]) || NULL != memmem(
 			pmime->head_begin, pmime->head_length, "\r\n..", 4))) {
-			return TRUE;
+			return true;
 		}
 	} else {	
 		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -1797,7 +1793,7 @@ BOOL MIME::check_dot()
 			/* xxxxx: yyyyy */
 			pmime->f_other_fields.read(tmp_buff, tag_len);
 			if (tag_len >= 2 && '.' == tmp_buff[0] && '.' == tmp_buff[1]) {
-				return TRUE;
+				return true;
 			}
 			pmime->f_other_fields.read(&val_len, sizeof(uint32_t));
 			pmime->f_other_fields.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
@@ -1812,27 +1808,27 @@ BOOL MIME::check_dot()
 					'.' == pmime->content_begin[1]) ||
 					NULL != memmem(pmime->content_begin,
 					pmime->content_length, "\r\n..", 4))) {
-					return TRUE;
+					return true;
 				}
 			} else if (reinterpret_cast<MAIL *>(pmime->content_begin)->check_dot()) {
-				return TRUE;
+				return true;
 			}
 		} 
-		return TRUE;
+		return true;
 	}
 	if (NULL != pmime->first_boundary) {
 		tmp_len = pmime->first_boundary - pmime->content_begin;
 		if (tmp_len >= 2 && (('.' == pmime->first_boundary[0] &&
 		    '.' == pmime->first_boundary[1]) ||
 		    NULL != memmem(pmime->first_boundary, tmp_len, "\r\n..", 4))) {
-			return TRUE;
+			return true;
 		}
 	}
 	auto pnode = pmime->node.get_child();
 	while (NULL != pnode) {
 		pmime_child = (MIME *)pnode->pdata;
 		if (pmime_child->check_dot())
-			return TRUE;
+			return true;
 		pnode = pnode->get_sibling();
 	}
 	if (NULL != pmime->last_boundary) {
@@ -1841,10 +1837,10 @@ BOOL MIME::check_dot()
 		if (tmp_len >= 2 && (('.' == pmime->last_boundary[0] &&
 		    '.' == pmime->last_boundary[1]) ||
 		    NULL != memmem(pmime->last_boundary, tmp_len, "\r\n..", 4))) {
-			return TRUE;
+			return true;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -1948,7 +1944,7 @@ ssize_t MIME::get_length()
 	return mime_len;
 }
 
-BOOL MIME::get_filename(char *file_name)
+bool MIME::get_filename(char *file_name)
 {
 	auto pmime = this;
 	int i;
@@ -1975,14 +1971,14 @@ BOOL MIME::get_filename(char *file_name)
 			file_name[tmp_len] = '\0';
 			goto FIND_FILENAME;
 		}
-		return FALSE;
+		return false;
 	} else if (pmime->get_field("Content-Transfer-Encoding", encoding, 256)) {
 		if (0 == strcasecmp(encoding, "uue") ||
 			0 == strcasecmp(encoding, "x-uue") ||
 			0 == strcasecmp(encoding, "uuencode") ||
 			0 == strcasecmp(encoding, "x-uuencode")) {
 			if (0 == pmime->content_length) {
-				return FALSE;
+				return false;
 			}
 			if (pmime->content_length > 128) {
 				tmp_len = 128;
@@ -1993,14 +1989,14 @@ BOOL MIME::get_filename(char *file_name)
 				return false;
 			ptr = search_string(pmime->content_begin, "begin ", tmp_len);
 			if (NULL == ptr) {
-				return FALSE;
+				return false;
 			}
 			ptr += 6;
 			if (' ' != ptr[3]) {
-				return FALSE;
+				return false;
 			}
 			if (1 != sscanf(ptr, "%o ", &mode)) {
-				return FALSE;
+				return false;
 			}
 			ptr += 4;
 			for (i=0; i<256; i++,ptr++) {
@@ -2013,7 +2009,7 @@ BOOL MIME::get_filename(char *file_name)
 			}
 		}
 	}
-	return FALSE;
+	return false;
 	
  FIND_FILENAME:
 	HX_strrtrim(file_name);
@@ -2025,9 +2021,9 @@ BOOL MIME::get_filename(char *file_name)
 		memmove(file_name, file_name + 1, tmp_len - 1);
 	}
 	if ('\0' == file_name[0]) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 static ssize_t mime_get_digest_single(MIME *, const char *id, size_t *ofs, size_t head_ofs, size_t *cnt, char *buf, size_t len);
@@ -2462,7 +2458,7 @@ static ssize_t mime_get_struct_mul(MIME *pmime, const char *id_string,
 	return buff_len;
 }
 
-static BOOL mime_parse_multiple(MIME *pmime)
+static bool mime_parse_multiple(MIME *pmime)
 {
 	BOOL b_match;
 	int boundary_len;
@@ -2471,21 +2467,21 @@ static BOOL mime_parse_multiple(MIME *pmime)
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
 		debug_info("[mime]: NULL pointer found in mime_parse_multiple");
-		return FALSE;
+		return false;
 	}
 #endif
 	if (NULL == pmime->content_begin) {
-		return FALSE;
+		return false;
 	}
 	boundary_len = strlen(pmime->boundary_string);
 	if (boundary_len <= 2) {
-		return FALSE;
+		return false;
 	}
 	begin = strchr(pmime->boundary_string, '"');
 	if (NULL != begin) {
 		end = strchr(begin + 1, '"');
 		if (NULL == end) {
-			return FALSE;
+			return false;
 		}
 		boundary_len = end - begin - 1;
 		memmove(pmime->boundary_string, begin + 1, boundary_len);
@@ -2504,7 +2500,7 @@ static BOOL mime_parse_multiple(MIME *pmime)
 		}
 	}
 	if (ptr == end) {
-		return FALSE;
+		return false;
 	}	
 	pmime->first_boundary = ptr;
 
@@ -2526,12 +2522,12 @@ static BOOL mime_parse_multiple(MIME *pmime)
 		pmime->last_boundary = pmime->content_begin + pmime->content_length;
 		if (pmime->last_boundary < pmime->first_boundary +
 			pmime->boundary_len + 4) {
-			return FALSE;
+			return false;
 		}
 	} else {
 		pmime->last_boundary = ptr + 1;
 	}
-	return TRUE;
+	return true;
 }
 
 static void mime_produce_boundary(MIME *pmime)
@@ -2575,7 +2571,7 @@ static void mime_produce_boundary(MIME *pmime)
 	pmime->set_content_param("boundary", temp_boundary);
 }
 
-static BOOL mime_check_ascii_printable(const char *astring)
+static bool mime_check_ascii_printable(const char *astring)
 {
 	return std::all_of(astring, astring + strlen(astring),
 	       [&](uint8_t c) { return c >= 0x20 && c <= 0x7E; });
