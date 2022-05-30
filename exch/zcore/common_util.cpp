@@ -1360,6 +1360,12 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	char last_command[1024];
 	char last_response[1024];
 	
+	MAIL dot_encoded(pmail->pmime_pool);
+	if (pmail->check_dot()) {
+		if (!pmail->transfer_dot(&dot_encoded, true))
+			return false;
+		pmail = &dot_encoded;
+	}
 	int sockd = gx_inet_connect(g_smtp_ip, g_smtp_port, 0);
 	if (sockd < 0) {
 		log_err("Cannot connect to SMTP server [%s]:%hu: %s",

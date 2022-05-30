@@ -827,12 +827,12 @@ bool MAIL::dup(MAIL *pmail_dst)
 }
 
 /*
- *	apply or reverse-apply dot-stuffing mail object into a clean object
+ *	add or remove dot-stuffing; copies into a clean object
  *	@param
  *		pmail_src [in]			mail source object
  *		pmail_dst [in, out]		mail destination object
  */
-bool MAIL::transfer_dot(MAIL *pmail_dst, bool fwd)
+bool MAIL::transfer_dot(MAIL *pmail_dst, bool add_dot)
 {
 	auto pmail_src = this;
 	unsigned int size;
@@ -866,7 +866,7 @@ bool MAIL::transfer_dot(MAIL *pmail_dst, bool fwd)
 		size ++;
 		pbuff[offset + size] = '\n';
 		size ++;
-		if (fwd) {
+		if (add_dot) {
 			if (pbuff[offset] == '.') {
 				memmove(&pbuff[offset+1], &pbuff[offset], size);
 				++size;
