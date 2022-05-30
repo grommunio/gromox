@@ -25,20 +25,20 @@ struct GX_EXPORT MAIL {
 	MAIL &operator=(MAIL &&);
 
 	void clear();
-	BOOL retrieve(char *in_buff, size_t length);
-	BOOL serialize(STREAM *);
-	BOOL to_file(int fd);
-	BOOL to_tls(SSL *);
-	BOOL check_dot();
-	BOOL transfer_dot(MAIL *dst);
+	bool retrieve(char *in_buff, size_t length);
+	bool serialize(STREAM *);
+	bool to_file(int fd);
+	bool to_tls(SSL *);
+	bool check_dot();
+	bool transfer_dot(MAIL *dst);
 	ssize_t get_length();
 	MIME *add_head();
 	MIME *get_head();
-	BOOL get_charset(char *out);
+	bool get_charset(char *out);
 	int get_digest(size_t *offset, char *buf, int len);
 	MIME *add_child(MIME *base, int opt);
 	void enum_mime(MAIL_MIME_ENUM, void *);
-	BOOL dup(MAIL *dst);
+	bool dup(MAIL *dst);
 	bool set_header(const char *hdr, const char *val);
 
 	SIMPLE_TREE tree{};

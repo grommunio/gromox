@@ -20,10 +20,9 @@ enum {
 	TAG_NUM
 };
 
-static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME* pmime_parent,
-	char *ptr_begin, char *ptr_end);
+static bool mail_retrieve_to_mime(MAIL *, MIME *parent, char *begin, char *end);
 static void mail_enum_delete(SIMPLE_TREE_NODE *pnode);
-static BOOL mail_check_ascii_printable(const char *astring);
+static bool mail_check_ascii_printable(const char *astring);
 static void mail_enum_text_mime_charset(MIME *, void *);
 static void mail_enum_html_charset(MIME *, void *);
 
@@ -55,53 +54,53 @@ void MAIL::clear()
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL MAIL::retrieve(char *in_buff, size_t length)
+bool MAIL::retrieve(char *in_buff, size_t length)
 {
 	auto pmail = this;
 
 #ifdef _DEBUG_UMTA
 	if (in_buff == nullptr) {
 		debug_info("[mail]: NULL pointer in mail_retrieve");
-		return FALSE;
+		return false;
 	}
 #endif
 	clear();
 	auto pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
 		debug_info("[mail]: fail to get mime from pool");
-		return FALSE;
+		return false;
 	}
 	if (!pmime->retrieve(nullptr, in_buff, length)) {
 		pmail->pmime_pool->put_mime(pmime);
-		return FALSE;
+		return false;
 	}
 
 	if (pmime->mime_type != mime_type::single &&
 	    pmime->mime_type != mime_type::multiple) {
 		debug_info("[mail]: fatal error in mime_retrieve");
 		pmail->pmime_pool->put_mime(pmime);
-		return FALSE;
+		return false;
 	}
 	pmail->tree.set_root(&pmime->node);
 	if (pmime->mime_type != mime_type::multiple ||
 	    mail_retrieve_to_mime(pmail, pmime, pmime->first_boundary +
 	    pmime->boundary_len + 4, pmime->last_boundary))
-		return TRUE;
+		return true;
 
 	pmail->clear();
 	/* retrieve as single mail object */
 	pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
 		debug_info("[mail]: fail to get mime from pool");
-		return FALSE;
+		return false;
 	}
 	if (!pmime->retrieve(nullptr, in_buff, length)) {
 		pmail->pmime_pool->put_mime(pmime);
-		return FALSE;
+		return false;
 	}
 	pmime->mime_type = mime_type::single;
 	pmail->tree.set_root(&pmime->node);
-	return TRUE;
+	return true;
 }
 
 /*
@@ -115,7 +114,7 @@ BOOL MAIL::retrieve(char *in_buff, size_t length)
  *		TRUE				OK
  *		FALSE				fail
  */
-static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
+static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	char *ptr_begin, char *ptr_end)
 {
 	MIME *pmime, *pmime_last;
@@ -133,17 +132,17 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			pmime = pmail->pmime_pool->get_mime();
 			if (NULL == pmime) {
 				debug_info("[mail]: fail to get mime from pool");
-				return FALSE;
+				return false;
 			}
 			if (!pmime->retrieve(pmime_parent, ptr_last, ptr - ptr_last)) {
 				pmail->pmime_pool->put_mime(pmime);
-				return FALSE;
+				return false;
 			}
 			if (pmime->mime_type != mime_type::single &&
 			    pmime->mime_type != mime_type::multiple) {
 				debug_info("[mail]: fatal error in mime_retrieve_to_mime");
 				pmail->pmime_pool->put_mime(pmime);
-				return FALSE;
+				return false;
 			}
 			if (NULL == pmime_last) {
 				pmail->tree.add_child(&pmime_parent->node,
@@ -157,10 +156,10 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			    !mail_retrieve_to_mime(pmail, pmime,
 			    pmime->first_boundary + pmime->boundary_len + 4,
 			    pmime->last_boundary))
-				return FALSE;
+				return false;
 			if ('-' == ptr[2 + pmime_parent->boundary_len] &&
 				'-' == ptr[3 + pmime_parent->boundary_len]) {
-				return TRUE;
+				return true;
 			}
 			ptr += pmime_parent->boundary_len + 4;
 			ptr_last = ptr;
@@ -173,23 +172,23 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		}
 	}
 	if (ptr >= ptr_end) {
-		return TRUE;
+		return true;
 	}
 	/* some illegal multiple mimes haven't --boundary string-- */
 	pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
 		debug_info("[mail]: fail to get mime from pool");
-		return FALSE;
+		return false;
 	}
 	if (!pmime->retrieve(pmime_parent, ptr_last, ptr_end - ptr_last)) {
 		pmail->pmime_pool->put_mime(pmime);
-		return FALSE;
+		return false;
 	}
 	if (pmime->mime_type != mime_type::single &&
 	    pmime->mime_type != mime_type::multiple) {
 		debug_info("[mail]: fatal error in mime_retrieve_to_mime");
 		pmail->pmime_pool->put_mime(pmime);
-		return FALSE;
+		return false;
 	}
 	if (NULL == pmime_last) {
 		pmail->tree.add_child(&pmime_parent->node,
@@ -202,8 +201,8 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	    !mail_retrieve_to_mime(pmail, pmime,
 	    pmime->first_boundary + pmime->boundary_len + 4,
 	    pmime->last_boundary))
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
 /*
@@ -215,12 +214,12 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL MAIL::serialize(STREAM *pstream)
+bool MAIL::serialize(STREAM *pstream)
 {
 	auto pmail = this;
 #ifdef _DEBUG_UMTA
 	if (pstream == nullptr)
-		return FALSE;
+		return false;
 #endif
 	auto pnode = pmail->tree.get_root();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->serialize(pstream) : false;
@@ -235,7 +234,7 @@ BOOL MAIL::serialize(STREAM *pstream)
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL MAIL::to_file(int fd)
+bool MAIL::to_file(int fd)
 {
 	auto pmail = this;
 	auto pnode = pmail->tree.get_root();
@@ -251,12 +250,12 @@ BOOL MAIL::to_file(int fd)
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL MAIL::to_tls(SSL *ssl)
+bool MAIL::to_tls(SSL *ssl)
 {
 	auto pmail = this;
 #ifdef _DEBUG_UMTA
 	if (ssl == nullptr)
-		return FALSE;
+		return false;
 #endif
 	auto pnode = pmail->tree.get_root();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->to_tls(ssl) : false;
@@ -270,7 +269,7 @@ BOOL MAIL::to_tls(SSL *ssl)
  *		TRUE			dot-stuffing in mail
  *		FALSE			no dot-stuffing in mail
  */
-BOOL MAIL::check_dot()
+bool MAIL::check_dot()
 {
 	auto pmail = this;
 	auto pnode = pmail->tree.get_root();
@@ -337,7 +336,7 @@ MIME *MAIL::get_head()
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
-static BOOL mail_check_ascii_printable(const char *astring)
+static bool mail_check_ascii_printable(const char *astring)
 {
 	int i, len;
 	
@@ -345,13 +344,13 @@ static BOOL mail_check_ascii_printable(const char *astring)
 	
 	for (i=0; i<len; i++) {
 		if (astring[i] < 0x20 || astring[i] > 0x7E) {
-			return FALSE;
+			return false;
 		}
 	}
-	return TRUE;
+	return true;
 }
 
-BOOL MAIL::get_charset(char *charset)
+bool MAIL::get_charset(char *charset)
 {
 	auto pmail = this;
 	MIME *pmime;
@@ -361,13 +360,13 @@ BOOL MAIL::get_charset(char *charset)
 #ifdef _DEBUG_UMTA
 	if (charset == nullptr) {
 		debug_info("[mail]: NULL pointer in mail_get_charset");
-		return FALSE;
+		return false;
 	}
 #endif
 	charset[0] = '\0';
 	auto pnode = pmail->tree.get_root();
 	if (NULL == pnode) {
-		return FALSE;
+		return false;
 	}
 	pmime = (MIME*)pnode->pdata;
 	if (pmime->get_field("Subject", temp_buff, 512)) {
@@ -375,7 +374,7 @@ BOOL MAIL::get_charset(char *charset)
 			&encode_string);
 		if (0 != strcmp(encode_string.charset, "default")) {
 			strcpy(charset, encode_string.charset);
-			return TRUE;
+			return true;
 		}
 	}
 	if (pmime->get_field("From", temp_buff, 512)) {
@@ -383,18 +382,18 @@ BOOL MAIL::get_charset(char *charset)
 			&encode_string);
 		if (0 != strcmp(encode_string.charset, "default")) {
 			strcpy(charset, encode_string.charset);
-			return TRUE;
+			return true;
 		}
 	}
 	pmail->enum_mime(mail_enum_text_mime_charset, charset);
 	if ('\0' != charset[0]) {
-		return TRUE;
+		return true;
 	}
 	pmail->enum_mime(mail_enum_html_charset, charset);
 	if ('\0' != charset[0]) {
-		return TRUE;
+		return true;
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -783,7 +782,7 @@ static void mail_enum_delete(SIMPLE_TREE_NODE *pnode)
  *		pmail_src [in]			mail source object
  *		pmail_dst [in, out]		mail destination object
  */
-BOOL MAIL::dup(MAIL *pmail_dst)
+bool MAIL::dup(MAIL *pmail_dst)
 {
 	auto pmail_src = this;
 	unsigned int size;
@@ -792,7 +791,7 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 #ifdef _DEBUG_UMTA
 	if (pmail_dst == nullptr) {
 		debug_info("[mail]: NULL pointer in mail_dup");
-        return FALSE;
+		return false;
 	}
 #endif
 	pmail_dst->clear();
@@ -802,12 +801,12 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1);
 	STREAM tmp_stream(&pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
-		return FALSE;
+		return false;
 	}
 	auto pbuff = me_alloc<char>(strange_roundup(mail_len - 1, 64 * 1024));
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
-		return FALSE;
+		return false;
 	}
 			
 	size_t offset = 0;
@@ -820,10 +819,10 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 	tmp_stream.clear();
 	if (!pmail_dst->retrieve(pbuff, offset)) {
 		free(pbuff);
-		return FALSE;
+		return false;
 	} else {
 		pmail_dst->buffer = pbuff;
-		return TRUE;
+		return true;
 	}
 }
 
@@ -833,7 +832,7 @@ BOOL MAIL::dup(MAIL *pmail_dst)
  *		pmail_src [in]			mail source object
  *		pmail_dst [in, out]		mail destination object
  */
-BOOL MAIL::transfer_dot(MAIL *pmail_dst)
+bool MAIL::transfer_dot(MAIL *pmail_dst)
 {
 	auto pmail_src = this;
 	unsigned int size;
@@ -842,7 +841,7 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 #ifdef _DEBUG_UMTA
 	if (pmail_dst == nullptr) {
 		debug_info("[mail]: NULL pointer in mail_dup");
-        return FALSE;
+		return false;
 	}
 #endif
 	pmail_dst->clear();
@@ -852,12 +851,12 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1);
 	STREAM tmp_stream(&pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
-		return FALSE;
+		return false;
 	}
 	pbuff = me_alloc<char>(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
-		return FALSE;
+		return false;
 	}
 	
 	size_t offset = 0;
@@ -878,10 +877,10 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	tmp_stream.clear();
 	if (!pmail_dst->retrieve(pbuff,  offset)) {
 		free(pbuff);
-		return FALSE;
+		return false;
 	} else {
 		pmail_dst->buffer = pbuff;
-		return TRUE;
+		return true;
 	}
 }
 
