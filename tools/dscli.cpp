@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <tinyxml2.h>
 #include <curl/curl.h>
 #include <libHX/option.h>
@@ -14,6 +15,13 @@
 struct curl_del {
 	void operator()(CURL *x) const { curl_easy_cleanup(x); }
 	void operator()(curl_slist *x) const { curl_slist_free_all(x); }
+};
+
+struct swbuf {
+	swbuf(const char *s) : ptr(s) {}
+	swbuf(std::string &&s) : buf(std::move(s)), ptr(buf.c_str()) {}
+	std::string buf;
+	const char *ptr = nullptr;
 };
 
 using namespace std::string_literals;
@@ -165,6 +173,17 @@ static size_t oxd_write(char *ptr, size_t size, size_t nemb, void *udata)
 	return size * nemb;
 }
 
+static swbuf autodisc_url()
+{
+#define xmlpath "/Autodiscover/Autodiscover.xml"
+	if (g_disc_url)
+		return g_disc_url;
+	if (g_disc_host)
+		return "https://"s + g_disc_host + xmlpath;
+	return "https://localhost/" xmlpath;
+#undef xmlpath
+}
+
 static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
     tinyxml2::XMLPrinter &xml_request, std::string &xml_response)
 {
@@ -214,14 +233,7 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 	ret = curl_easy_setopt(ch, CURLOPT_USERAGENT, g_user_agent);
 	if (ret != CURLE_OK)
 		return ret;
-	if (g_disc_url != nullptr)
-		ret = curl_easy_setopt(ch, CURLOPT_URL, g_disc_url);
-	else if (g_disc_host != nullptr)
-		ret = curl_easy_setopt(ch, CURLOPT_URL, ("https://"s +
-		      g_disc_host + "/Autodiscover/Autodiscover.xml").c_str());
-	else
-		ret = curl_easy_setopt(ch, CURLOPT_URL,
-		      "https://localhost/Autodiscover/Autodiscover.xml");
+	ret = curl_easy_setopt(ch, CURLOPT_URL, autodisc_url().ptr);
 	if (ret != CURLE_OK)
 		return ret;
 	return CURLE_OK;
