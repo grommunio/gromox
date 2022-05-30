@@ -30,7 +30,7 @@ using namespace gromox;
 static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
 static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_password, *g_legacydn;
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'h', HXTYPE_STRING, &g_disc_host, nullptr, nullptr, 0, "Host to contact (in absence of -H; default: localhost)"},
+	{nullptr, 'h', HXTYPE_STRING, &g_disc_host, nullptr, nullptr, 0, "Host to contact (in absence of -e/-H)"},
 	{nullptr, 'H', HXTYPE_STRING, &g_disc_url, nullptr, nullptr, 0, "Full autodiscover URL to use"},
 	{nullptr, 'e', HXTYPE_STRING, &g_emailaddr, nullptr, nullptr, 0, "E-mail address for user lookup"},
 	{nullptr, 'p', HXTYPE_STRING, &g_password, nullptr, nullptr, 0, "Use the $PASS environment variable for password"},
@@ -180,6 +180,9 @@ static swbuf autodisc_url()
 		return g_disc_url;
 	if (g_disc_host)
 		return "https://"s + g_disc_host + xmlpath;
+	auto p = strchr(g_emailaddr, '@');
+	if (p != nullptr)
+		return "https://"s + (p + 1) + xmlpath;
 	return "https://localhost/" xmlpath;
 #undef xmlpath
 }

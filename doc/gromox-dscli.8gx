@@ -26,7 +26,7 @@ constructed as "https://\fIhost\fP/Autodiscover/Autodiscover.xml". There is no
 implied DNS SRV lookup based no the email address, so unless localhost is
 indeed your desired target, you need to specify \-h/\-H.
 .br
-Default: \fIlocalhost\fP
+Default: derive from -e argument, otherwise \fIlocalhost\fP
 .TP
 \fB\-x\fP \fI/o=1234578/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=username\fP
 LegacyDN field to send along in the request.
