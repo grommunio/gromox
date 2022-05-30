@@ -30,7 +30,7 @@ struct GX_EXPORT MAIL {
 	bool to_file(int fd);
 	bool to_tls(SSL *);
 	bool check_dot();
-	bool transfer_dot(MAIL *dst);
+	bool transfer_dot(MAIL *dst, bool add_dot = false);
 	ssize_t get_length();
 	MIME *add_head();
 	MIME *get_head();

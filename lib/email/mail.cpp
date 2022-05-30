@@ -827,12 +827,12 @@ bool MAIL::dup(MAIL *pmail_dst)
 }
 
 /*
- *	trim dot-stuffing mail object into a clean object
+ *	apply or reverse-apply dot-stuffing mail object into a clean object
  *	@param
  *		pmail_src [in]			mail source object
  *		pmail_dst [in, out]		mail destination object
  */
-bool MAIL::transfer_dot(MAIL *pmail_dst)
+bool MAIL::transfer_dot(MAIL *pmail_dst, bool fwd)
 {
 	auto pmail_src = this;
 	unsigned int size;
@@ -860,18 +860,23 @@ bool MAIL::transfer_dot(MAIL *pmail_dst)
 	}
 	
 	size_t offset = 0;
-	size = STREAM_BLOCK_SIZE;
+	size = STREAM_BLOCK_SIZE - 3;
 	while (tmp_stream.copyline(pbuff + offset, &size) != STREAM_COPY_END) {
 		pbuff[offset + size] = '\r';
 		size ++;
 		pbuff[offset + size] = '\n';
 		size ++;
-		if ('.' == pbuff[offset] && '.' == pbuff[offset + 1]) {
+		if (fwd) {
+			if (pbuff[offset] == '.') {
+				memmove(&pbuff[offset+1], &pbuff[offset], size);
+				++size;
+			}
+		} else if (pbuff[offset] == '.' && pbuff[offset+1] == '.') {
 			size --;
 			memmove(pbuff + offset, pbuff + offset + 1, size);
 		}
 		offset += size;
-		size = STREAM_BLOCK_SIZE;
+		size = STREAM_BLOCK_SIZE - 3;
 	}
 	
 	tmp_stream.clear();
