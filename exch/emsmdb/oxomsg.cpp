@@ -126,7 +126,14 @@ static BOOL oxomsg_check_delegate(message_object *pmessage, char *username, size
 	}
 	auto str = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
 	if (str != nullptr) {
-		if (strcasecmp(str, "EX") == 0) {
+		if (strcmp(str, "0") == 0) {
+			/*
+			 * PR_SENT_* is strangely reset when MFCMAPI
+			 * 21.2.21207.01 imports .msg files.
+			 */
+			username[0] = '\0';
+			return TRUE;
+		} else if (strcasecmp(str, "EX") == 0) {
 			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (str != nullptr) {
 				auto ret = common_util_essdn_to_username(str, username, ulen);
