@@ -215,12 +215,11 @@ function get_mapihttp_supported()
 function advertise_rpch($agent)
 {
 	$config = get_app_config();
-	$exc = $config["exchange"];
-	if (!isset($exc))
+	if (!isset($config["exchange"]))
 		return true;
-	if (!isset($exc["advertise_rpch"]))
+	if (!isset($config["exchange"]["advertise_rpch"]))
 		return !get_mapihttp_supported();
-	$v = $exc["advertise_rpch"];
+	$v = $config["exchange"]["advertise_rpch"];
 	if (strcmp($v, "no") == 0)
 		return false;
 	if (strcmp($v, "not_new_mso") == 0)
@@ -235,12 +234,11 @@ function advertise_rpch($agent)
 function advertise_mh($agent)
 {
 	$config = get_app_config();
-	$exc = $config["exchange"];
-	if (!isset($exc))
+	if (!isset($config["exchange"]))
 		return true;
-	if (!isset($exc["advertise_mh"]))
+	if (!isset($config["exchange"]["advertise_mh"]))
 		return get_mapihttp_supported();
-	$v = $exc["advertise_mh"];
+	$v = $config["exchange"]["advertise_mh"];
 	if (strcmp($v, "no") == 0)
 		return false;
 	if (strcmp($v, "not_old_mso") == 0)
