@@ -435,6 +435,9 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 	auto p2 = cfg->get_value("mysql_password_mode_id107");
 	if (p2 != nullptr)
 		par.pass = zstd_decompress(base64_decode(p2));
+	p2 = cfg->get_value("mysql_password_mode_id555");
+	if (p2 != nullptr)
+		par.pass = sss_obf_reverse(base64_decode(p2));
 	par.dbname = cfg->get_value("mysql_dbname");
 	par.timeout = cfg->get_ll("mysql_rdwr_timeout");
 	fprintf(stderr, "[mysql_adaptor]: host [%s]:%d, #conn=%d timeout=%d, db=%s\n",

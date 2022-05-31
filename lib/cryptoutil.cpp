@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <string_view>
+#include <openssl/evp.h>
 #include <openssl/ssl.h>
 #include <gromox/cryptoutil.hpp>
+#include <gromox/endian.hpp>
 
 namespace gromox {
 
@@ -80,6 +83,36 @@ int tls_set_min_proto(SSL_CTX *ctx, const char *p)
 		return -1;
 #endif
 	return 0;
+}
+
+std::string sss_obf_reverse(const std::string_view &x)
+{
+	std::string out;
+	auto z = x.size();
+	if (z < 6 || x[z-4] != '\0' || x[z-3] != '\1' ||
+	    x[z-2] != '\2' || x[z-1] != '\3')
+		return out;
+	auto meth = le16p_to_cpu(&x[0]);
+	if (meth != 0 || x.size() < 4+32+16+4)
+		return out;
+	std::unique_ptr<EVP_CIPHER_CTX, sslfree> ctx(EVP_CIPHER_CTX_new());
+
+#define CU(x) reinterpret_cast<const unsigned char *>(x)
+#define U(x) reinterpret_cast<unsigned char *>(x)
+	auto cipher = EVP_get_cipherbynid(NID_aes_256_cbc);
+	if (cipher == nullptr ||
+	    !EVP_DecryptInit_ex(ctx.get(), cipher, 0, CU(&x[4]), CU(&x[36])))
+		return out;
+	out.resize(x.size() - 56);
+	int plainlen = 0, digestlen = 0;
+	if (!EVP_DecryptUpdate(ctx.get(), U(&out[0]), &plainlen,
+	    CU(&x[52]), x.size() - 56) ||
+	    !EVP_DecryptFinal_ex(ctx.get(), U(&out[plainlen]), &digestlen))
+		return {};
+	out.resize(plainlen + digestlen);
+	return out;
+#undef U
+#undef CU
 }
 
 }

@@ -212,6 +212,9 @@ static bool ldap_adaptor_load() try
 	auto p2 = pfile->get_value("ldap_bind_pass_mode_id107");
 	if (p2 != nullptr)
 		g_bind_pass = zstd_decompress(base64_decode(p2));
+	p2 = pfile->get_value("ldap_bind_pass_mode_id555");
+	if (p2 != nullptr)
+		g_bind_pass = sss_obf_reverse(base64_decode(p2));
 	g_use_tls = pfile->get_ll("ldap_start_tls");
 	g_mail_attr = pfile->get_value("ldap_mail_attr");
 	g_search_base = pfile->get_value("ldap_search_base");

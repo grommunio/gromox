@@ -68,5 +68,6 @@ extern GX_EXPORT void gx_reexec_record(int);
 extern GX_EXPORT unsigned long gx_gettid();
 extern GX_EXPORT std::string zstd_decompress(std::string_view);
 extern GX_EXPORT std::string base64_decode(const std::string_view &);
+extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);
 
 }

@@ -26,5 +26,6 @@ struct GX_EXPORT HMACMD5_CTX {
 };
 
 extern GX_EXPORT int tls_set_min_proto(SSL_CTX *, const char *);
+extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);
 
 }
