@@ -766,9 +766,8 @@ BOOL common_util_check_message_class(const char *str_class)
 			return FALSE;
 		}
 	}
-	if ('.' == str_class[0] || '.' == str_class[len - 1]) {
+	if (str_class[0] == '.' || (len > 0 && str_class[len-1] == '.'))
 		return FALSE;
-	}
 	return TRUE;
 }
 
