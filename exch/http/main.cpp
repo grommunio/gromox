@@ -125,6 +125,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
+	g_http_debug = cfg->get_ll("http_debug");
 	return true;
 }
 
@@ -428,8 +429,7 @@ int main(int argc, const char **argv) try
 
 	http_parser_init(context_num, http_conn_timeout,
 		http_auth_times, block_interval_auth, http_support_tls,
-		certificate_path, cb_passwd, private_key_path,
-		g_config_file->get_ll("http_debug"));
+		certificate_path, cb_passwd, private_key_path);
 	auto cleanup_22 = make_scope_exit(http_parser_stop);
 	if (0 != http_parser_run()) { 
 		printf("[system]: failed to run http parser\n");

@@ -108,7 +108,7 @@ struct RPC_OUT_CHANNEL {
 	int channel_stat = 0;
 };
 
-extern void http_parser_init(size_t context_num, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, const char *certificate_path, const char *cb_passwd, const char *key_path, unsigned int xdebug);
+extern void http_parser_init(size_t context_num, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int http_parser_run();
 int http_parser_process(HTTP_CONTEXT *pcontext);
 extern void http_parser_stop();
@@ -136,3 +136,4 @@ extern void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, gromox::time_dura
 extern void http_parser_log_info(HTTP_CONTEXT *pcontext, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
 extern alloc_limiter<stream_block> g_blocks_allocator;
+extern unsigned int g_http_debug;

@@ -98,7 +98,7 @@ static SSL_CTX *g_ssl_ctx;
 static int g_max_auth_times;
 static int g_block_auth_fail;
 static time_duration g_timeout;
-static unsigned int g_http_debug;
+unsigned int g_http_debug;
 static thread_local HTTP_CONTEXT *g_context_key;
 static alloc_limiter<file_block> g_file_allocator;
 static alloc_limiter<RPC_IN_CHANNEL> g_inchannel_allocator;
@@ -116,7 +116,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
 void http_parser_init(size_t context_num, time_duration timeout,
 	int max_auth_times, int block_auth_fail, bool support_tls,
 	const char *certificate_path, const char *cb_passwd,
-	const char *key_path, unsigned int xdebug)
+	const char *key_path)
 {
     g_context_num           = context_num;
     g_timeout               = timeout;
@@ -124,7 +124,6 @@ void http_parser_init(size_t context_num, time_duration timeout,
 	g_block_auth_fail       = block_auth_fail;
 	g_support_tls = support_tls;
 	g_async_stop = false;
-	g_http_debug = xdebug;
 	
 	if (!support_tls)
 		return;
