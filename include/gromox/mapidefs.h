@@ -870,9 +870,14 @@ enum {
 	// PR_RULE_ERROR = PROP_TAG(PT_LONG, 0x6648), /* PidTagRuleError */
 	PR_RULE_ACTION_TYPE = PROP_TAG(PT_LONG, 0x6649), /* PidTagRuleActionType */
 	PR_HAS_NAMED_PROPERTIES = PROP_TAG(PT_BOOLEAN, 0x664A), /* PidTagHasNamedProperties */
+	// ? = PROP_TAG(PT_UNICODE, 0x664A), /* MSEMS service: Autodiscover URL (OL2013,2021) */
 	PR_RULE_ACTION_NUMBER = PROP_TAG(PT_LONG, 0x6650), /* PidTagRuleActionNumber */
 	PR_RULE_FOLDER_ENTRYID = PROP_TAG(PT_BINARY, 0x6651), /* PidTagRuleFolderEntryId */
-	// ? = PROP_TAG(PT_UNICODE, 0x6656), /* mh_emsmdb URL for the current store */
+	// ? = PROP_TAG(PT_UNICODE, 0x6652), /* MSEMS service: mh_emsmdb URL for the current store (OL2013) */
+	// ? = PROP_TAG(PT_UNICODE, 0x6653), /* MSEMS service: mh_emsmdb URL for the current store (OL2013) */
+	// ? = PROP_TAG(PT_UNICODE, 0x6654), /* MSEMS service: mh_nsp URL for the current store (OL2013) */
+	// ? = PROP_TAG(PT_UNICODE, 0x6655), /* MSEMS service: mh_nsp URL for the current store (OL2013) */
+	// ? = PROP_TAG(PT_UNICODE, 0x6656), /* MSEMS service: mh_emsmdb URL for the current store (OL2019) */
 	PR_PROHIBIT_RECEIVE_QUOTA = PROP_TAG(PT_LONG, 0x666A), /* PidTagProhibitReceiveQuota */
 	PR_IN_CONFLICT = PROP_TAG(PT_BOOLEAN, 0x666C), /* PidTagInConflict */
 	PR_MAX_SUBMIT_MESSAGE_SIZE = PROP_TAG(PT_LONG, 0x666D), /* PidTagMaximumSubmitMessageSize */
@@ -938,6 +943,7 @@ enum {
 	PidTagInstID = PROP_TAG(PT_I8, 0x674D),
 	PidTagInstanceNum = PROP_TAG(PT_LONG, 0x674E),
 	// PidTagAddressBookMessageId = PROP_TAG(PT_I8, 0x674F),
+	// ? = PROP_TAG(PT_STRING8, 0x6750), /* MSEMS service: MAPI profile name */
 	PR_INTERNET_ARTICLE_NUMBER_NEXT = PROP_TAG(PT_LONG, 0x6751),
 	PR_EC_OUTOFOFFICE = PROP_TAG(PT_LONG, 0x6760),
 	PR_EC_OUTOFOFFICE_MSG = PROP_TAG(PT_UNICODE, 0x6761), /* specific to zcore & grommunio-web */
