@@ -1,5 +1,8 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d351f3043a5e0ba2945f610a94d5e076180d3ffc */
+ * Stub hash: 708c975bb57babed8d0d9175754f21f9c7239490 */
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_load_mapidefs, 0, 0, IS_VOID, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_last_hresult, 0, 0, IS_LONG, 0)
 ZEND_END_ARG_INFO()

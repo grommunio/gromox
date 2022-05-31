@@ -1,4 +1,5 @@
 <?php
+function mapi_load_mapidefs() : void {}
 function mapi_last_hresult() : int {}
 function mapi_prop_type(int $proptag) : int|false {}
 function mapi_prop_id(int $proptag) : int|false {}

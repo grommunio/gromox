@@ -87,7 +87,7 @@ endif
 sbin_SCRIPTS = gromox-abktpull gromox-pffimport
 pkglibexec_SCRIPTS = tools/create_queue.sh
 
-BUILT_SOURCES = include/gromox/paths.h php_mapi/zrpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
+BUILT_SOURCES = include/gromox/paths.h php_mapi/mapidefs.cpp php_mapi/zrpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/xarray.cpp lib/mapi/ext_buffer.cpp
@@ -340,6 +340,9 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	 -e 's|#define DATADIR .*|#define DATADIR "${datadir}"|' \
 		<include/gromox/paths.h.in >"$@.tmp"
 	${AM_V_at}if ! cmp "$@" "$@.tmp" 2>/dev/null; then mv "$@.tmp" "$@"; fi; rm -f "$@.tmp"
+
+php_mapi/mapidefs.cpp: include/gromox/mapitags.hpp defs2php
+	${AM_V_GEN}${srcdir}/defs2php <$< >$@
 
 php_mapi/zrpc.cpp: php_mapi/zarafa_client.h zcidl
 	${AM_V_GEN}${top_srcdir}/zcidl <php_mapi/zarafa_client.h >"$@"

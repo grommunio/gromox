@@ -7,6 +7,7 @@
 #include <climits>
 #include <cstdint>
 #include <cstdio>
+#include <mutex>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
@@ -60,6 +61,7 @@ PHP_MSHUTDOWN_FUNCTION(mapi);
 PHP_RINIT_FUNCTION(mapi);
 PHP_RSHUTDOWN_FUNCTION(mapi);
 
+ZEND_FUNCTION(mapi_load_mapidefs);
 ZEND_FUNCTION(mapi_last_hresult);
 ZEND_FUNCTION(mapi_prop_type);
 ZEND_FUNCTION(mapi_prop_id);
@@ -260,6 +262,7 @@ static zend_function_entry mapi_functions[] = {
 #	define F(s) ZEND_FE(s, nullptr)
 #	define F7(s, x) ZEND_FE(s, x)
 #endif
+	F(mapi_load_mapidefs)
 	F(mapi_last_hresult)
 	F(mapi_prop_type)
 	F(mapi_prop_id)
@@ -803,6 +806,21 @@ PHP_RINIT_FUNCTION(mapi)
 PHP_RSHUTDOWN_FUNCTION(mapi)
 {
 	return SUCCESS;
+}
+
+static std::once_flag mapidefs_loaded;
+ZEND_FUNCTION(mapi_load_mapidefs)
+{
+	std::call_once(mapidefs_loaded, []() {
+	zend_constant c;
+	ZEND_CONSTANT_SET_FLAGS(&c, CONST_CS, PHP_USER_CONSTANT);
+#define C(PR_name, PR_val) \
+	c.name = zend_string_init(#PR_name, sizeof(#PR_name) - 1, 0); \
+	ZVAL_LONG(&c.value, PR_val); \
+	zend_register_constant(&c);
+#include "mapidefs.cpp"
+#undef C
+	});
 }
 
 ZEND_FUNCTION(mapi_last_hresult)
