@@ -17,7 +17,7 @@ function get_app_config()
 	$b["mysql_dbname"] ??= "email";
 
 	if (file_exists("/etc/gromox/autodiscover.ini")) {
-		$a = parse_ini_file("/etc/gromox/autodiscover.ini", true);
+		$a = parse_ini_file("/etc/gromox/autodiscover.ini", true, INI_SCANNER_RAW);
 		if ($a === false)
 			$a = [];
 	} else {
