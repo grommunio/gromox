@@ -186,7 +186,7 @@ Default: \fI/var/lib/gromox\fP
 \fBtls_min_proto\fP
 The lowest TLS version to offer. Possible values are: \fBtls1.0\fP,
 \fBtls1.1\fP, \fBtls1.2\fP, and, if supported by the system, \fBtls1.3\fP.
-.PP
+.br
 Default: \fItls1.2\fP
 .SH Files
 .IP \(bu 4
