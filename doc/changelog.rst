@@ -1,3 +1,32 @@
+1.24 (2022-06-01)
+=================
+
+Enhancements:
+
+* Added a config directive ``tls_min_proto`` so one can set a minimum TLS
+  standard when your distro doesn't have crypto-policies
+  (https://gitlab.com/redhat-crypto/fedora-crypto-policies )
+* autodiscover.ini: new directives ``advertise_mh`` and ``advertise_rpch``
+  for finer grained control over individual protocol advertisements;
+  replaces ``mapihttp``.
+* exmdb_provider: lifted the folder limit from 10k to 28 billion
+* oxcmail: cease excessive base64 encoding.
+* Messages are now preferably encoded as quoted-printable during conversion to
+  Internet Mail format. This might help with spam classification.
+* delivery-queue: the maximum mail size is now strictly enforced rather than
+  rounded up to the next 2 megabytes
+* gromox-dscli: the -h option is no longer strictly needed, it will be derived
+  from the -e argument if absent
+
+Fixes:
+
+* http: resolve a crash on shutdown due to wrong order of teardown
+* exmdb_provider: fix buffer overread (crash) when a truncated /cid/N file
+  is read.
+* emsmdb: fix buffer overread (crash) when common_util_check_message_class is
+  called with an empty string.
+
+
 1.23 (2022-05-13)
 =================
 
