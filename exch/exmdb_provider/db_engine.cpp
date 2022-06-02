@@ -198,12 +198,10 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 /* query or create DB_ITEM in hash table */
 db_item_ptr db_engine_get_db(const char *path)
 {
-	BOOL b_new;
 	char db_path[256];
 	char sql_string[256];
 	DB_ITEM *pdb;
 	
-	b_new = FALSE;
 	std::unique_lock hhold(g_hash_lock);
 	auto it = g_hash_table.find(path);
 	if (it != g_hash_table.end()) {
@@ -216,6 +214,15 @@ db_item_ptr db_engine_get_db(const char *path)
 		}
 		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_warning)
 			fprintf(stderr, "W-1620: contention on %s (%u uses)\n", path, refs);
+		++pdb->reference;
+		hhold.unlock();
+		if (!pdb->lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
+			hhold.lock();
+			--pdb->reference;
+			hhold.unlock();
+			return NULL;
+		}
+		return db_item_ptr(pdb);
 	} else {
 		if (g_hash_table.size() >= g_table_size) {
 			hhold.unlock();
@@ -231,18 +238,15 @@ db_item_ptr db_engine_get_db(const char *path)
 			return NULL;
 		}
 		time(&pdb->last_time);
-		b_new = TRUE;
-	}
-	pdb->reference ++;
-	hhold.unlock();
-	if (!pdb->lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
-		hhold.lock();
-		pdb->reference --;
+		pdb->reference++;
 		hhold.unlock();
-		return NULL;
+		if (!pdb->lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
+			hhold.lock();
+			pdb->reference--;
+			hhold.unlock();
+			return NULL;
+		}
 	}
-	if (!b_new)
-		return db_item_ptr(pdb);
 	double_list_init(&pdb->dynamic_list);
 	double_list_init(&pdb->tables.table_list);
 	double_list_init(&pdb->nsub_list);
