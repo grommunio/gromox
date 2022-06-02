@@ -2404,7 +2404,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 	b_load = FALSE;
 	std::unique_lock hhold(g_hash_lock);
 	if (g_hash_table.size() >= g_table_size) {
-		debug_info("[mail_engine]: W-1295: no room in idb hash table!");
+		debug_info("[mail_engine]: W-1295: too many sqlites referenced at once (midb.cfg:table_size=%u)\n", g_table_size);
 		return {};
 	}
 	decltype(g_hash_table.try_emplace(path)) xp;
