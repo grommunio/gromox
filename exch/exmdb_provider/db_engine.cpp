@@ -223,29 +223,28 @@ db_item_ptr db_engine_get_db(const char *path)
 			return NULL;
 		}
 		return db_item_ptr(pdb);
-	} else {
-		if (g_hash_table.size() >= g_table_size) {
-			hhold.unlock();
-			printf("[exmdb_provider]: W-1297: too many sqlites referenced at once (exmdb_provider.cfg:table_size=%zu)\n", g_table_size);
-			return NULL;
-		}
-		try {
-			auto xp = g_hash_table.try_emplace(path);
-			pdb = &xp.first->second;
-		} catch (const std::bad_alloc &) {
-			hhold.unlock();
-			printf("[exmdb_provider]: W-1296: ENOMEM\n");
-			return NULL;
-		}
-		time(&pdb->last_time);
-		pdb->reference++;
+	}
+	if (g_hash_table.size() >= g_table_size) {
 		hhold.unlock();
-		if (!pdb->lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
-			hhold.lock();
-			pdb->reference--;
-			hhold.unlock();
-			return NULL;
-		}
+		printf("[exmdb_provider]: W-1297: too many sqlites referenced at once (exmdb_provider.cfg:table_size=%zu)\n", g_table_size);
+		return NULL;
+	}
+	try {
+		auto xp = g_hash_table.try_emplace(path);
+		pdb = &xp.first->second;
+	} catch (const std::bad_alloc &) {
+		hhold.unlock();
+		printf("[exmdb_provider]: W-1296: ENOMEM\n");
+		return NULL;
+	}
+	time(&pdb->last_time);
+	pdb->reference ++;
+	hhold.unlock();
+	if (!pdb->lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
+		hhold.lock();
+		pdb->reference --;
+		hhold.unlock();
+		return NULL;
 	}
 	double_list_init(&pdb->dynamic_list);
 	double_list_init(&pdb->tables.table_list);
