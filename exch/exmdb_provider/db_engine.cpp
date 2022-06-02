@@ -206,7 +206,17 @@ db_item_ptr db_engine_get_db(const char *path)
 	b_new = FALSE;
 	std::unique_lock hhold(g_hash_lock);
 	auto it = g_hash_table.find(path);
-	if (it == g_hash_table.end()) {
+	if (it != g_hash_table.end()) {
+		pdb = &it->second;
+		auto refs = pdb->reference.load();
+		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_reject) {
+			hhold.unlock();
+			printf("E-1593: contention on %s (%u uses), rejecting db request\n", path, refs);
+			return NULL;
+		}
+		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_warning)
+			fprintf(stderr, "W-1620: contention on %s (%u uses)\n", path, refs);
+	} else {
 		if (g_hash_table.size() >= g_table_size) {
 			hhold.unlock();
 			printf("[exmdb_provider]: W-1297: too many sqlites referenced at once (exmdb_provider.cfg:table_size=%zu)\n", g_table_size);
@@ -222,16 +232,6 @@ db_item_ptr db_engine_get_db(const char *path)
 		}
 		time(&pdb->last_time);
 		b_new = TRUE;
-	} else {
-		pdb = &it->second;
-		auto refs = pdb->reference.load();
-		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_reject) {
-			hhold.unlock();
-			printf("E-1593: contention on %s (%u uses), rejecting db request\n", path, refs);
-			return NULL;
-		}
-		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_warning)
-			fprintf(stderr, "W-1620: contention on %s (%u uses)\n", path, refs);
 	}
 	pdb->reference ++;
 	hhold.unlock();
