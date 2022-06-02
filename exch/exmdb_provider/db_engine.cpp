@@ -209,7 +209,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	if (it == g_hash_table.end()) {
 		if (g_hash_table.size() >= g_table_size) {
 			hhold.unlock();
-			printf("[exmdb_provider]: W-1297: db hash table is full\n");
+			printf("[exmdb_provider]: W-1297: too many sqlites referenced at once (exmdb_provider.cfg:table_size=%zu)\n", g_table_size);
 			return NULL;
 		}
 		try {
