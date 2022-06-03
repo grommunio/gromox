@@ -131,7 +131,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		$User = $Response->addChild('User');
 		$host_name = get_default_hostname();
 		$server_url = "https://" . get_http_proxy($uinfo['maildir'], $host_name) . "/Microsoft-Server-ActiveSync";
-		$User->addChild('DisplayName', $uinfo['real_name']);
+		$User->addChild('DisplayName', htmlspecialchars($uinfo['real_name']));
 		$User->addChild('EMailAddress', $uinfo['username']);
 		$Action = $Response->addChild('Action');
 		$Settings = $Action->addChild('Settings');
@@ -160,7 +160,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		$Response->addAttribute('xmlns', RESPONSE_OUTLOOK_XMLNS);
 		$User = $Response->addChild('User');
 		$User->addChild('AutoDiscoverSMTPAddress', $uinfo['username']);
-		$User->addChild('DisplayName', $uinfo['real_name']);
+		$User->addChild('DisplayName', htmlspecialchars($uinfo['real_name']));
 		$User->addChild('LegacyDN', username_to_essdn($uinfo));
 		$User->addChild('EMailAddress', $uinfo['username']);
 		$User->addChild('DeploymentId', get_user_server_guid($uinfo));
@@ -231,7 +231,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		foreach ($altMailboxes as $altMailbox) {
 			$AlternativeMailbox = $Account->addChild('AlternativeMailbox');
 			$AlternativeMailbox->addChild('Type', 'Delegate');
-			$AlternativeMailbox->addChild('DisplayName', $altMailbox['DisplayName']);
+			$AlternativeMailbox->addChild('DisplayName', htmlspecialchars($altMailbox['DisplayName']));
 			$AlternativeMailbox->addChild('SmtpAddress', $altMailbox['SmtpAddress']);
 			$AlternativeMailbox->addChild('OwnerSmtpAddress', $altMailbox['SmtpAddress']);
 		}
