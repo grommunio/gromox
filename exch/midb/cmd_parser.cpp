@@ -165,10 +165,13 @@ static void cmd_write_x(unsigned int level, int fd, const char *buf, size_t z)
 	fprintf(stderr, "> %.*s\n", static_cast<int>(z), buf);
 } 
 
-void cmd_write(int fd, const void *vbuf, size_t z)
+int cmd_write(int fd, const char *sbuf, size_t z)
 {
+	if (z == static_cast<size_t>(-1))
+		z = strlen(sbuf);
 	/* Note: cmd_write is also only called for successful responses */
-	cmd_write_x(2, fd, static_cast<const char *>(vbuf), z);
+	cmd_write_x(2, fd, sbuf, z);
+	return 0;
 }
 
 static std::pair<bool, int> midcp_exec1(int argc, char **argv, MIDB_CONNECTION *conn)

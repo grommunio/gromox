@@ -2535,12 +2535,10 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 		quota = *pmax;
 		quota *= 1024;
 		if (*ptotal >= quota) {
-			cmd_write(sockd, "TRUE 1\r\n", 8);
-			return 0;
+			return cmd_write(sockd, "TRUE 1\r\n");
 		}
 	}
-	cmd_write(sockd, "TRUE 0\r\n", 8);
-	return 0;
+	return cmd_write(sockd, "TRUE 0\r\n");
 }
 
 static int mail_engine_mping(int argc, char **argv, int sockd)
@@ -2550,8 +2548,7 @@ static int mail_engine_mping(int argc, char **argv, int sockd)
 	}
 	mail_engine_get_idb(argv[1]);
 	exmdb_client::ping_store(argv[1]);
-	cmd_write(sockd, "TRUE\r\n", 6);
-	return 0;
+	return cmd_write(sockd, "TRUE\r\n");
 }
 
 static int mail_engine_menum(int argc, char **argv, int sockd)
@@ -2587,8 +2584,7 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	pidb.reset();
 	offset = gx_snprintf(temp_buff, 32, "TRUE %d\r\n", count);
 	memmove(temp_buff + 32 - offset, temp_buff, offset);
-	cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
-	return 0;
+	return cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
 }
 
 /*
@@ -2682,8 +2678,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 		} else {
 			if (offset >= total_mail) {
 				pidb.reset();
-				cmd_write(sockd, "TRUE 0\r\n", 8);
-				return 0;
+				return cmd_write(sockd, "TRUE 0\r\n");
 			}
 			idx1 = offset + 1;
 		}
@@ -2703,8 +2698,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 		} else {
 			if (offset >= total_mail) {
 				pidb.reset();
-				cmd_write(sockd, "TRUE 0\r\n", 8);
-				return 0;
+				return cmd_write(sockd, "TRUE 0\r\n");
 			}
 			idx2 = total_mail - offset;
 		}
@@ -2721,7 +2715,9 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	}
 	temp_len = sprintf(temp_buff, "TRUE %d\r\n", length);
-	cmd_write(sockd, temp_buff, temp_len);
+	auto ret = cmd_write(sockd, temp_buff, temp_len);
+	if (ret != 0)
+		return ret;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		if (mail_engine_get_digest(pidb->psqlite,
 		    S2A(sqlite3_column_text(pstmt, 0)),
@@ -2733,7 +2729,9 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 		temp_len ++;
 		temp_buff[temp_len] = '\n';
 		temp_len ++;
-		cmd_write(sockd, temp_buff, temp_len);
+		ret = cmd_write(sockd, temp_buff, temp_len);
+		if (ret != 0)
+			return ret;
 	}
 	return 0;
 }
@@ -2791,14 +2789,15 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 		temp_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line), "%s %u\r\n",
 						pinode->mid_string, pinode->size);
 		if (256*1024 - offset < temp_len) {
-			cmd_write(sockd, list_buff, offset);
+			auto ret = cmd_write(sockd, list_buff, offset);
+			if (ret != 0)
+				return ret;
 			offset = 0;
 		}
 		memcpy(list_buff + offset, temp_line, temp_len);
 		offset += temp_len;
 	}
-	cmd_write(sockd, list_buff, offset);
-	return 0;
+	return cmd_write(sockd, list_buff, offset);
 }
 
 static int mail_engine_minst(int argc, char **argv, int sockd)
@@ -2945,8 +2944,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	    e_result != GXERR_SUCCESS) {
 		return MIDB_E_NO_MEMORY;
 	}
-	cmd_write(sockd, "TRUE\r\n", 6);
-	return 0;
+	return cmd_write(sockd, "TRUE\r\n");
 }
 
 /*
@@ -2999,8 +2997,7 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 		&message_ids, TRUE, &b_partial)) {
 		return MIDB_E_NO_MEMORY;
 	}
-	cmd_write(sockd, "TRUE\r\n", 6);
-	return 0;
+	return cmd_write(sockd, "TRUE\r\n");
 }
 
 static int mail_engine_mcopy(int argc, char **argv, int sockd)
@@ -3198,8 +3195,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		fprintf(stderr, "E-1488: ENOMEM\n");
 		return MIDB_E_NO_MEMORY;
 	}
-	cmd_write(sockd, mid_string.c_str(), mid_string.size());
-	return 0;
+	return cmd_write(sockd, mid_string.c_str(), mid_string.size());
 }
 
 static int mail_engine_mrenf(int argc, char **argv, int sockd)
@@ -3339,8 +3335,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		&propvals, &problems)) {
 		return MIDB_E_NO_MEMORY;
 	}
-	cmd_write(sockd, "TRUE\r\n", 6);
-	return 0;
+	return cmd_write(sockd, "TRUE\r\n");
 }
 
 static int mail_engine_mmakf(int argc, char **argv, int sockd)
@@ -3406,8 +3401,7 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	    user_id, rop_util_make_eid_ex(1, folder_id1),
 	    ptoken, &folder_id2) || folder_id2 == 0)
 		return MIDB_E_NO_MEMORY;
-	cmd_write(sockd, "TRUE\r\n", 6);
-	return 0;
+	return cmd_write(sockd, "TRUE\r\n");
 }
 
 static int mail_engine_mremf(int argc, char **argv, int sockd)
@@ -3426,8 +3420,7 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
 		pidb.reset();
-		cmd_write(sockd, "TRUE\r\n", 6);
-		return 0;
+		return cmd_write(sockd, "TRUE\r\n");
 	}
 	pidb.reset();
 	folder_id = rop_util_make_eid_ex(1, folder_id);
@@ -3438,8 +3431,7 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	    !exmdb_client::delete_folder(argv[1], 0, folder_id, TRUE,
 	    &b_result) || !b_result)
 		return MIDB_E_NO_MEMORY;
-	cmd_write(sockd, "TRUE\r\n", 6);
-	return 0;
+	return cmd_write(sockd, "TRUE\r\n");
 }
 
 static int mail_engine_pofst(int argc, char **argv, int sockd)
@@ -3518,8 +3510,7 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	}
 	pidb.reset();
 	temp_len = sprintf(temp_buff, "TRUE %d\r\n", b_asc ? idx - 1 : total_mail - idx);
-	cmd_write(sockd, temp_buff, temp_len);
-	return 0;
+	return cmd_write(sockd, temp_buff, temp_len);
 }
 
 static int mail_engine_punid(int argc, char **argv, int sockd)
@@ -3552,8 +3543,7 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
 	pstmt.finalize();
 	pidb.reset();
 	temp_len = sprintf(temp_buff, "TRUE %u\r\n", uid);
-	cmd_write(sockd, temp_buff, temp_len);
-	return 0;
+	return cmd_write(sockd, temp_buff, temp_len);
 }
 
 /*
@@ -3652,8 +3642,7 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	uidvalid = folder_id;
 	temp_len = sprintf(temp_buff, "TRUE %u %u %u %llu %u %d\r\n",
 	           total, recents, unreads, LLU(uidvalid), uidnext + 1, offset);
-	cmd_write(sockd, temp_buff, temp_len);
-	return 0;
+	return cmd_write(sockd, temp_buff, temp_len);
 }
 
 static int mail_engine_psubf(int argc, char **argv, int sockd)
@@ -3674,8 +3663,7 @@ static int mail_engine_psubf(int argc, char **argv, int sockd)
 	        " WHERE folder_id=%llu", LLU(folder_id));
 	gx_sql_exec(pidb->psqlite, sql_string);
 	pidb.reset();
-	cmd_write(sockd, "TRUE\r\n", 6);
-	return 0;
+	return cmd_write(sockd, "TRUE\r\n");
 }
 
 static int mail_engine_punsf(int argc, char **argv, int sockd)
@@ -3696,8 +3684,7 @@ static int mail_engine_punsf(int argc, char **argv, int sockd)
 	        " WHERE folder_id=%llu", LLU(folder_id));
 	gx_sql_exec(pidb->psqlite, sql_string);
 	pidb.reset();
-	cmd_write(sockd, "TRUE\r\n", 6);
-	return 0;
+	return cmd_write(sockd, "TRUE\r\n");
 }
 
 static int mail_engine_psubl(int argc, char **argv, int sockd)
@@ -3731,8 +3718,7 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 	pidb.reset();
 	offset = gx_snprintf(temp_buff, 32, "TRUE %d\r\n", count);
 	memmove(temp_buff + 32 - offset, temp_buff, offset);
-	cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
-	return 0;
+	return cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
 }
 
 /*
@@ -3832,8 +3818,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 		} else {
 			if (offset >= total_mail) {
 				pidb.reset();
-				cmd_write(sockd, "TRUE 0\r\n", 8);
-				return 0;
+				return cmd_write(sockd, "TRUE 0\r\n");
 			}
 			idx1 = offset + 1;
 		}
@@ -3854,8 +3839,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 		} else {
 			if (offset >= total_mail) {
 				pidb.reset();
-				cmd_write(sockd, "TRUE 0\r\n", 8);
-				return 0;
+				return cmd_write(sockd, "TRUE 0\r\n");
 			}
 			idx2 = total_mail - offset;
 		}
@@ -3913,7 +3897,9 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 			"%s %u %s\r\n", mid_string, uid,
 			flags_buff);
 		if (256*1024 - temp_len < buff_len) {
-			cmd_write(sockd, temp_buff, temp_len);
+			auto ret = cmd_write(sockd, temp_buff, temp_len);
+			if (ret != 0)
+				return ret;
 			temp_len = 0;
 		}
 		memcpy(temp_buff + temp_len, temp_line, buff_len);
@@ -3921,8 +3907,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	}
 	pstmt.finalize();
 	pidb.reset();
-	cmd_write(sockd, temp_buff, temp_len);
-	return 0;
+	return cmd_write(sockd, temp_buff, temp_len);
 }
 
 static int mail_engine_psimu(int argc, char **argv, int sockd)
@@ -4120,15 +4105,16 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 					psm_node->idx - 1, psm_node->mid_string,
 					psm_node->uid, psm_node->flags_buff);
 		if (256*1024 - temp_len < buff_len) {
-			cmd_write(sockd, temp_buff, temp_len);
+			auto ret = cmd_write(sockd, temp_buff, temp_len);
+			if (ret != 0)
+				return ret;
 			temp_len = 0;
 		}
 		memcpy(temp_buff + temp_len, temp_line, buff_len);
 		temp_len += buff_len;
 	}
 	pidb.reset();
-	cmd_write(sockd, temp_buff, temp_len);
-	return 0;
+	return cmd_write(sockd, temp_buff, temp_len);
 }
 
 /*
@@ -4214,7 +4200,9 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 		buff_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line),
 			"%u %s %u\r\n", idx - 1, mid_string, uid);
 		if (256*1024 - temp_len < buff_len) {
-			cmd_write(sockd, temp_buff, temp_len);
+			auto ret = cmd_write(sockd, temp_buff, temp_len);
+			if (ret != 0)
+				return ret;
 			temp_len = 0;
 		}
 		memcpy(temp_buff + temp_len, temp_line, buff_len);
@@ -4222,8 +4210,7 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	}
 	pstmt.finalize();
 	pidb.reset();
-	cmd_write(sockd, temp_buff, temp_len);
-	return 0;
+	return cmd_write(sockd, temp_buff, temp_len);
 }
 
 static int mail_engine_pdtlu(int argc, char **argv, int sockd)
@@ -4354,7 +4341,9 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	pstmt.finalize();
 	temp_len = sprintf(temp_buff, "TRUE %zu\r\n",
 		double_list_get_nodes_num(&temp_list));
-	cmd_write(sockd, temp_buff, temp_len);
+	auto ret = cmd_write(sockd, temp_buff, temp_len);
+	if (ret != 0)
+		return ret;
 	for (pnode=double_list_get_head(&temp_list); NULL!=pnode;
 		pnode=double_list_get_after(&temp_list, pnode)) {
 		pdt_node = (DTLU_NODE*)pnode->pdata;
@@ -4367,7 +4356,9 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 		temp_len ++;
 		temp_buff[temp_len] = '\n';
 		temp_len ++;	
-		cmd_write(sockd, temp_buff, temp_len);
+		ret = cmd_write(sockd, temp_buff, temp_len);
+		if (ret != 0)
+			return ret;
 	}
 	return 0;
 }
@@ -4456,8 +4447,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	pidb.reset();
-	cmd_write(sockd, "TRUE\r\n", 6);
-	return 0;
+	return cmd_write(sockd, "TRUE\r\n");
 }
 
 /*
@@ -4543,8 +4533,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	pidb.reset();
-	cmd_write(sockd, "TRUE\r\n", 6);
-	return 0;
+	return cmd_write(sockd, "TRUE\r\n");
 }
 
 /*
@@ -4619,8 +4608,7 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd)
 	flags_len ++;
 	flags_buff[flags_len] = '\0';
 	temp_len = sprintf(temp_buff, "TRUE %s\r\n", flags_buff);
-	cmd_write(sockd, temp_buff, temp_len);
-	return 0;
+	return cmd_write(sockd, temp_buff, temp_len);
 }
 
 /*
@@ -4691,7 +4679,9 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 		tmp_len += gx_snprintf(list_buff + tmp_len,
 		           GX_ARRAY_SIZE(list_buff) - tmp_len, " %d", result);
 		if (tmp_len >= 255*1024) {
-			cmd_write(sockd, list_buff, tmp_len);
+			auto ret = cmd_write(sockd, list_buff, tmp_len);
+			if (ret != 0)
+				return ret;
 			tmp_len = 0;
 		}
     }
@@ -4699,8 +4689,7 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	tmp_len ++;
     list_buff[tmp_len] = '\n';
 	tmp_len ++;
-	cmd_write(sockd, list_buff, tmp_len);
-	return 0;
+	return cmd_write(sockd, list_buff, tmp_len);
 }
 
 /*
@@ -4767,7 +4756,9 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 		tmp_len += gx_snprintf(list_buff + tmp_len,
 		           GX_ARRAY_SIZE(list_buff) - tmp_len, " %d", result);
 		if (tmp_len >= 255*1024) {
-			cmd_write(sockd, list_buff, tmp_len);
+			auto ret = cmd_write(sockd, list_buff, tmp_len);
+			if (ret != 0)
+				return ret;
 			tmp_len = 0;
 		}
     }
@@ -4775,8 +4766,7 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	tmp_len ++;
     list_buff[tmp_len] = '\n';
 	tmp_len ++;
-	cmd_write(sockd, list_buff, tmp_len);
-	return 0;
+	return cmd_write(sockd, list_buff, tmp_len);
 }
 
 static int mail_engine_xunld(int argc, char **argv, int sockd)
@@ -4793,8 +4783,7 @@ static int mail_engine_xunld(int argc, char **argv, int sockd)
 	if (pidb->sub_id != 0)
 		exmdb_client::unsubscribe_notification(argv[1], pidb->sub_id);
 	g_hash_table.erase(it);
-	cmd_write(sockd, "TRUE 1\r\n", 8);
-	return 0;
+	return cmd_write(sockd, "TRUE 1\r\n");
 }
 
 static int mail_engine_xrsym(int argc, char **argv, int sockd)
@@ -4804,13 +4793,12 @@ static int mail_engine_xrsym(int argc, char **argv, int sockd)
 	auto idb = mail_engine_peek_idb(argv[1]);
 	if (idb == nullptr) {
 		mail_engine_get_idb(argv[1], true);
-		cmd_write(sockd, "TRUE 2\r\n", 8);
+		return cmd_write(sockd, "TRUE 2\r\n");
 	} else if (!mail_engine_sync_mailbox(idb.get(), true)) {
-		cmd_write(sockd, "TRUE 0\r\n", 8);
+		return cmd_write(sockd, "TRUE 0\r\n");
 	} else {
-		cmd_write(sockd, "TRUE 1\r\n", 8);
+		return cmd_write(sockd, "TRUE 1\r\n");
 	}
-	return 0;
 }
 
 static int mail_engine_xrsyf(int argc, char **argv, int sockd)
@@ -4821,10 +4809,9 @@ static int mail_engine_xrsyf(int argc, char **argv, int sockd)
 	if (idb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
 	if (!mail_engine_sync_contents(idb.get(), strtoul(argv[2], nullptr, 0)))
-		cmd_write(sockd, "FALSE 1\r\n", 9);
+		return cmd_write(sockd, "FALSE 1\r\n");
 	else
-		cmd_write(sockd, "TRUE 1\r\n", 8);
-	return 0;
+		return cmd_write(sockd, "TRUE 1\r\n");
 }
 
 static void mail_engine_add_notification_message(
