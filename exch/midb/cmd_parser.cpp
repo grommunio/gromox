@@ -36,8 +36,7 @@ static int g_timeout_interval;
 static std::vector<pthread_t> g_thread_ids;
 static std::mutex g_connection_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
-static DOUBLE_LIST g_connection_list;
-static DOUBLE_LIST g_connection_list1;
+static DOUBLE_LIST g_connlist_active, g_connlist_idle;
 static std::unordered_map<std::string, MIDB_CMD_HANDLER> g_cmd_entry;
 unsigned int g_cmd_debug;
 
@@ -52,23 +51,23 @@ void cmd_parser_init(unsigned int threads_num, int timeout, unsigned int debug)
 	g_thread_ids.reserve(g_threads_num);
 	g_timeout_interval = timeout;
 	g_cmd_debug = debug;
-	double_list_init(&g_connection_list);
-	double_list_init(&g_connection_list1);
+	double_list_init(&g_connlist_active);
+	double_list_init(&g_connlist_idle);
 }
 
 
 void cmd_parser_free()
 {
 
-	double_list_free(&g_connection_list);
-	double_list_free(&g_connection_list1);
+	double_list_free(&g_connlist_active);
+	double_list_free(&g_connlist_idle);
 }
 
 MIDB_CONNECTION *cmd_parser_get_connection()
 {
 	std::unique_lock chold(g_connection_lock);
-	if (double_list_get_nodes_num(&g_connection_list) + 1 +
-		double_list_get_nodes_num(&g_connection_list1) >= g_threads_num) {
+	if (double_list_get_nodes_num(&g_connlist_active) + 1 +
+		double_list_get_nodes_num(&g_connlist_idle) >= g_threads_num) {
 		return NULL;
 	}
 	chold.unlock();
@@ -81,7 +80,7 @@ MIDB_CONNECTION *cmd_parser_get_connection()
 void cmd_parser_put_connection(MIDB_CONNECTION *pconnection)
 {	
 	std::unique_lock chold(g_connection_lock);
-	double_list_append_as_tail(&g_connection_list1, &pconnection->node);
+	double_list_append_as_tail(&g_connlist_idle, &pconnection->node);
 	chold.unlock();
 	g_waken_cond.notify_one();
 }
@@ -119,8 +118,8 @@ void cmd_parser_stop()
 	g_notify_stop = true;
 	g_waken_cond.notify_all();
 	std::unique_lock chold(g_connection_lock);
-	for (pnode=double_list_get_head(&g_connection_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_connection_list, pnode)) {
+	for (pnode=double_list_get_head(&g_connlist_active); NULL!=pnode;
+		pnode=double_list_get_after(&g_connlist_active, pnode)) {
 		pconnection = static_cast<MIDB_CONNECTION *>(pnode->pdata);
 		if (pconnection->is_selecting) {
 			pthread_kill(pconnection->thr_id, SIGALRM);
@@ -135,7 +134,7 @@ void cmd_parser_stop()
 		pthread_join(tid, nullptr);
 	}
 	g_thread_ids.clear();
-	while ((pnode = double_list_pop_front(&g_connection_list)) != nullptr) {
+	while ((pnode = double_list_pop_front(&g_connlist_active)) != nullptr) {
 		pconnection = static_cast<MIDB_CONNECTION *>(pnode->pdata);
 		if (-1 != pconnection->sockd) {
 			close(pconnection->sockd);
@@ -143,7 +142,7 @@ void cmd_parser_stop()
 		free(pconnection);
 	}
 
-	while ((pnode = double_list_pop_front(&g_connection_list1)) != nullptr) {
+	while ((pnode = double_list_pop_front(&g_connlist_idle)) != nullptr) {
 		pconnection = static_cast<MIDB_CONNECTION *>(pnode->pdata);
 		close(pconnection->sockd);
 		free(pconnection);
@@ -237,9 +236,9 @@ static void *midcp_thrwork(void *param)
 	if (g_notify_stop)
 		return nullptr;
 	std::unique_lock co_hold(g_connection_lock);
-	pnode = double_list_pop_front(&g_connection_list1);
+	pnode = double_list_pop_front(&g_connlist_idle);
 	if (NULL != pnode) {
-		double_list_append_as_tail(&g_connection_list, pnode);
+		double_list_append_as_tail(&g_connlist_active, pnode);
 	}
 	co_hold.unlock();
 	if (NULL == pnode) {
@@ -257,7 +256,7 @@ static void *midcp_thrwork(void *param)
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			pconnection->is_selecting = FALSE;
 			co_hold.lock();
-			double_list_remove(&g_connection_list, &pconnection->node);
+			double_list_remove(&g_connlist_active, &pconnection->node);
 			co_hold.unlock();
 			close(pconnection->sockd);
 			free(pconnection);
@@ -268,7 +267,7 @@ static void *midcp_thrwork(void *param)
 					CONN_BUFFLEN - offset);
 		if (read_len <= 0) {
 			co_hold.lock();
-			double_list_remove(&g_connection_list, &pconnection->node);
+			double_list_remove(&g_connlist_active, &pconnection->node);
 			co_hold.unlock();
 			close(pconnection->sockd);
 			free(pconnection);
@@ -281,7 +280,7 @@ static void *midcp_thrwork(void *param)
 			if (4 == i && 0 == strncasecmp(buffer, "QUIT", 4)) {
 				write(pconnection->sockd, "BYE\r\n", 5);
 				co_hold.lock();
-				double_list_remove(&g_connection_list, &pconnection->node);
+				double_list_remove(&g_connlist_active, &pconnection->node);
 				co_hold.unlock();
 				close(pconnection->sockd);
 				free(pconnection);
@@ -307,7 +306,7 @@ static void *midcp_thrwork(void *param)
 
 		if (CONN_BUFFLEN == offset) {
 			co_hold.lock();
-			double_list_remove(&g_connection_list, &pconnection->node);
+			double_list_remove(&g_connlist_active, &pconnection->node);
 			co_hold.unlock();
 			close(pconnection->sockd);
 			free(pconnection);
