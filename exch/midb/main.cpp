@@ -218,7 +218,6 @@ int main(int argc, const char **argv) try
 	auto cl_5 = make_scope_exit(mail_engine_stop);
 
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);
-	auto cleanup_2 = make_scope_exit(cmd_parser_free);
 	auto cl_4 = make_scope_exit(cmd_parser_stop);
 
 	if (service_run_early() != 0) {

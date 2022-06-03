@@ -120,17 +120,18 @@ static void *midls_thrwork(void *param)
 			continue;
 		}
 
-		auto pconnection = cmd_parser_get_connection();
-		if (NULL == pconnection) {
+		auto holder = cmd_parser_get_connection();
+		if (holder.size() == 0) {
 			write(sockd, "FALSE Maximum Connection Reached!\r\n", 35);
 			close(sockd);
 			continue;
 
 		}
+		auto pconnection = &holder.front();
 		pconnection->sockd = sockd;
 		pconnection->is_selecting = FALSE;
 		write(sockd, "OK\r\n", 4);
-		cmd_parser_put_connection(pconnection);
+		cmd_parser_put_connection(std::move(holder));
 	}
 	return nullptr;
 }
