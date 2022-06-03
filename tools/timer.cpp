@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -47,6 +48,8 @@ struct CONNECTION_NODE {
 	CONNECTION_NODE(CONNECTION_NODE &&) noexcept;
 	~CONNECTION_NODE();
 	void operator=(CONNECTION_NODE &&) noexcept = delete;
+	ssize_t sk_write(const char *, size_t = -1);
+
 	int sockd = -1;
 	int offset = 0;
 	char buffer[1024]{};
@@ -122,12 +125,26 @@ CONNECTION_NODE::~CONNECTION_NODE()
 		close(sockd);
 }
 
+ssize_t CONNECTION_NODE::sk_write(const char *s, size_t z)
+{
+	if (z == static_cast<size_t>(-1))
+		z = strlen(s);
+	auto ret = HXio_fullwrite(sockd, s, z);
+	if (ret < 0 || static_cast<size_t>(ret) != z) {
+		close(sockd);
+		sockd = -1;
+	}
+	return ret;
+}
+
 static void save_timers(time_t &last_cltime, const time_t &cur_time)
 {
 	close(g_list_fd);
 	auto pfile = list_file_initd(g_list_path.c_str(), "/", "%d%l%s:512");
 	if (pfile == nullptr) {
 		g_list_fd = open(g_list_path.c_str(), O_APPEND | O_WRONLY);
+		if (g_list_fd < 0)
+			fprintf(stderr, "open %s: %s\n", g_list_path.c_str(), strerror(errno));
 		return;
 	}
 	auto item_num = pfile->get_size();
@@ -157,7 +174,8 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 			temp_len = strlen(temp_line);
 			temp_line[temp_len] = '\n';
 			++temp_len;
-			write(temp_fd, temp_line, temp_len);
+			if (HXio_fullwrite(temp_fd, temp_line, temp_len) != temp_len)
+				fprintf(stderr, "write %s: %s\n", temp_path.c_str(), strerror(errno));
 		}
 		close(temp_fd);
 		if (remove(g_list_path.c_str()) < 0 && errno != ENOENT)
@@ -169,6 +187,8 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 	}
 	last_cltime = cur_time;
 	g_list_fd = open(g_list_path.c_str(), O_APPEND | O_WRONLY);
+	if (g_list_fd < 0)
+		fprintf(stderr, "open %s: %s\n", g_list_path.c_str(), strerror(errno));
 }
 
 static TIMER *put_timer(TIMER &&ptimer)
@@ -382,25 +402,33 @@ static void *tmr_acceptwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
-			write(sockd2, "FALSE Access Deny\r\n", 19);
+			if (HXio_fullwrite(sockd2, "FALSE Access Deny\r\n", 19) != 19)
+				/* ignore */;
 			continue;
 		}
 
 		std::unique_lock co_hold(g_connection_lock);
 		if (g_connection_list.size() + 1 + g_connection_list1.size() >= g_threads_num) {
 			co_hold.unlock();
-			write(sockd2, "FALSE Maximum Connection Reached!\r\n", 35);
+			if (HXio_fullwrite(sockd2, "FALSE Maximum Connection Reached!\r\n", 35) != 35)
+				/* ignore */;
 			continue;
 		}
 
+		CONNECTION_NODE *cn;
 		try {
 			g_connection_list1.push_back(std::move(conn));
+			cn = &g_connection_list1.back();
 		} catch (const std::bad_alloc &) {
-			write(sockd2, "FALSE Not enough memory\r\n", 25);
+			if (HXio_fullwrite(sockd2, "FALSE Not enough memory\r\n", 25) != 25)
+				/* ignore */;
 			continue;
 		}
 		co_hold.unlock();
-		write(sockd2, "OK\r\n", 4);
+		if (HXio_fullwrite(cn->sockd, "OK\r\n", 4) != 4) {
+			close(cn->sockd);
+			cn->sockd = -1;
+		}
 		g_waken_cond.notify_one();
 	}
 	return nullptr;
@@ -436,8 +464,8 @@ static void execute_timer(TIMER *ptimer)
 	}
 
 	len = sprintf(temp_buff, "%d\t0\t%s\n", ptimer->t_id, result);
-
-	write(g_list_fd, temp_buff, len);
+	if (HXio_fullwrite(g_list_fd, temp_buff, len) != len)
+		fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 }
 
 static void *tmr_thrwork(void *param)
@@ -471,7 +499,7 @@ static void *tmr_thrwork(void *param)
 		if (0 == strncasecmp(pconnection->line, "CANCEL ", 7)) {
 			int t_id = strtol(pconnection->line + 7, nullptr, 0);
 			if (t_id <= 0) {
-				write(pconnection->sockd, "FALSE 1\r\n", 9);	
+				pconnection->sk_write("FALSE 1\r\n");
 				continue;
 			}
 			bool removed_timer = false;
@@ -483,19 +511,17 @@ static void *tmr_thrwork(void *param)
 								ptimer->t_id);
 					g_exec_list.erase(pos);
 					removed_timer = true;
-					write(g_list_fd, temp_line, temp_len);
+					if (HXio_fullwrite(g_list_fd, temp_line, temp_len) != temp_len)
+						fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 					break;
 				}
 			}
 			li_hold.unlock();
-			if (removed_timer)
-				write(pconnection->sockd, "TRUE\r\n", 6);
-			else
-				write(pconnection->sockd, "FALSE 2\r\n", 9);
+			pconnection->sk_write(removed_timer ? "TRUE\r\n" : "FALSE\r\n");
 		} else if (0 == strncasecmp(pconnection->line, "ADD ", 4)) {
 			pspace = strchr(pconnection->line + 4, ' ');
 			if (NULL == pspace) {
-				write(pconnection->sockd, "FALSE 1\r\n", 9);
+				pconnection->sk_write("FALSE 1\r\n");
 				continue;
 			}
 			*pspace = '\0';
@@ -503,7 +529,7 @@ static void *tmr_thrwork(void *param)
 
 			int exec_interval = strtol(pconnection->line + 4, nullptr, 0);
 			if (exec_interval <= 0 || strlen(pspace) >= COMMAND_LENGTH) {
-				write(pconnection->sockd, "FALSE 2\r\n", 9);
+				pconnection->sk_write("FALSE 2\r\n");
 				continue;
 			}
 
@@ -513,7 +539,7 @@ static void *tmr_thrwork(void *param)
 			try {
 				tmr.command = pspace;
 			} catch (const std::bad_alloc &) {
-				write(pconnection->sockd, "FALSE 3\r\n", 9);
+				pconnection->sk_write("FALSE 3\r\n");
 				continue;
 			}
 
@@ -526,21 +552,22 @@ static void *tmr_thrwork(void *param)
 			temp_len = strlen(temp_line);
 			temp_line[temp_len] = '\n';
 			temp_len ++;
-			write(g_list_fd, temp_line, temp_len);
+			if (HXio_fullwrite(g_list_fd, temp_line, temp_len) != temp_len)
+				fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 			li_hold.unlock();
 			temp_len = sprintf(temp_line, "TRUE %d\r\n", ptimer->t_id);
-			write(pconnection->sockd, temp_line, temp_len);
+			pconnection->sk_write(temp_line, temp_len);
 		} else if (0 == strcasecmp(pconnection->line, "QUIT")) {
-			write(pconnection->sockd, "BYE\r\n", 5);
+			pconnection->sk_write("BYE\r\n");
 			close(pconnection->sockd);
 			co_hold.lock();
 			g_connection_list.erase(pconnection);
 			co_hold.unlock();
 			goto NEXT_LOOP;
 		} else if (0 == strcasecmp(pconnection->line, "PING")) {
-			write(pconnection->sockd, "TRUE\r\n", 6);	
+			pconnection->sk_write("TRUE\r\n");
 		} else {
-			write(pconnection->sockd, "FALSE\r\n", 7);
+			pconnection->sk_write("FALSE\r\n");
 		}
 	}
 	return NULL;
