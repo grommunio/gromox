@@ -382,21 +382,21 @@ static void *tmr_acceptwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
-			write(sockd2, "Access Deny\r\n", 13);
+			write(sockd2, "FALSE Access Deny\r\n", 19);
 			continue;
 		}
 
 		std::unique_lock co_hold(g_connection_lock);
 		if (g_connection_list.size() + 1 + g_connection_list1.size() >= g_threads_num) {
 			co_hold.unlock();
-			write(sockd2, "Maximum Connection Reached!\r\n", 29);
+			write(sockd2, "FALSE Maximum Connection Reached!\r\n", 35);
 			continue;
 		}
 
 		try {
 			g_connection_list1.push_back(std::move(conn));
 		} catch (const std::bad_alloc &) {
-			write(sockd2, "Not enough memory\r\n", 19);
+			write(sockd2, "FALSE Not enough memory\r\n", 25);
 			continue;
 		}
 		co_hold.unlock();
