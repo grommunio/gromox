@@ -1,4 +1,10 @@
 <?php
+function remove_quotes_assocarray($a) {
+    foreach ($a as $k => $v) {
+        $a[$k] = str_replace("'","",$a[$k]);
+    }
+    return $a;
+}
 function get_app_config()
 {
 	static $appconf = NULL;
@@ -7,7 +13,7 @@ function get_app_config()
 		return $appconf;
 	}
 	if (file_exists("/etc/gromox/mysql_adaptor.cfg")) {
-		$b = parse_ini_file("/etc/gromox/mysql_adaptor.cfg", false, INI_SCANNER_RAW);
+		$b = remove_quotes_assocarray(parse_ini_file("/etc/gromox/mysql_adaptor.cfg", false, INI_SCANNER_RAW));
 		if ($b === false)
 			$b = [];
 	}
@@ -17,7 +23,7 @@ function get_app_config()
 	$b["mysql_dbname"] ??= "email";
 
 	if (file_exists("/etc/gromox/autodiscover.ini")) {
-		$a = parse_ini_file("/etc/gromox/autodiscover.ini", true, INI_SCANNER_RAW);
+		$a = remove_quotes_assocarray(parse_ini_file("/etc/gromox/autodiscover.ini", true, INI_SCANNER_RAW));
 		if ($a === false)
 			$a = [];
 	} else {
