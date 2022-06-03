@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
 #include <sys/socket.h>
@@ -988,7 +989,8 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 		if (g_http_debug) {
 			fprintf(stderr, "<< ctx %p recv %zd\n", pcontext, actual_read);
 			fflush(stderr);
-			write(STDERR_FILENO, pbuff, actual_read);
+			if (HXio_fullwrite(STDERR_FILENO, pbuff, actual_read) < 0)
+				/* ignore */;
 			fprintf(stderr, "\n<<-END\n");
 		}
 		pcontext->connection.last_timestamp = current_time;

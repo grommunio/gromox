@@ -176,7 +176,8 @@ int main(int argc, const char **argv) try
 	str_val = resource_get_string("DEFAULT_DOMAIN");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
-		getdomainname(temp_buff, arsizeof(temp_buff));
+		if (getdomainname(temp_buff, arsizeof(temp_buff)) < 0)
+			*temp_buff = '\0';
 		resource_set_string("DEFAULT_DOMAIN", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find default domain, OS domain name "

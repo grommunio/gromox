@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -193,7 +194,8 @@ static void *htls_thrwork(void *arg)
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
-			write(sockd2, buff, len);
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				fprintf(stderr, "W-1984: write: %s\n", strerror(errno));
 			close(sockd2);
 			continue;
 		}
@@ -205,7 +207,8 @@ static void *htls_thrwork(void *arg)
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
-			write(sockd2, buff, len);
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				fprintf(stderr, "W-1983: write: %s\n", strerror(errno));
 			system_services_log_info(LV_DEBUG, "Connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
@@ -220,7 +223,8 @@ static void *htls_thrwork(void *arg)
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
-			write(sockd2, buff, len);
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				fprintf(stderr, "W-1982: write: %s\n", strerror(errno));
 			system_services_log_info(LV_DEBUG, "Connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
@@ -309,7 +313,8 @@ static void *htls_thrworkssl(void *arg)
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
-			write(sockd2, buff, len);
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				fprintf(stderr, "W-1981: write: %s\n", strerror(errno));
 			close(sockd2);
 			continue;
 		}
@@ -321,7 +326,8 @@ static void *htls_thrworkssl(void *arg)
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
-			write(sockd2, buff, len);
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				fprintf(stderr, "W-1980: write: %s\n", strerror(errno));
 			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
@@ -336,7 +342,8 @@ static void *htls_thrworkssl(void *arg)
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
-			write(sockd2, buff, len);
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				fprintf(stderr, "W-1979: write: %s\n", strerror(errno));
 			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
