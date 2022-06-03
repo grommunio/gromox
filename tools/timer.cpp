@@ -447,7 +447,6 @@ static void execute_timer(TIMER *ptimer)
 	if (argc > 0) {
 		pid = fork();
 		if (0 == pid) {
-			chdir("../tools");
 			execve(argv[0], argv, NULL);
 			_exit(-1);
 		} else if (pid > 0) {
