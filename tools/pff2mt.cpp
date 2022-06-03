@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/endian.hpp>
@@ -745,8 +746,12 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	ep.p_tpropval_a(*props);
 	ep.p_uint64(0); /* ACL count */
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	write(STDOUT_FILENO, &xsize, sizeof(xsize));
-	write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
+	if (ret < 0)
+		throw YError("PF-1124: %s", strerror(errno));
+	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	if (ret < 0)
+		throw YError("PF-1126: %s", strerror(errno));
 	return 0;
 }
 
@@ -809,8 +814,12 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS)
 		throw YError("PF-1058");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	write(STDOUT_FILENO, &xsize, sizeof(xsize));
-	write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
+	if (ret < 0)
+		throw YError("PF-1128: %s", strerror(errno));
+	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	if (ret < 0)
+		throw YError("PF-1130: %s", strerror(errno));
 	return 0;
 }
 
@@ -1140,9 +1149,13 @@ static int do_file(const char *filename) try
 		return -1;
 	}
 
-	write(STDOUT_FILENO, "GXMT0002", 8);
 	uint8_t xsplice = g_splice;
-	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
+	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0002", 8);
+	if (ret < 0)
+		throw YError("PF-1132: %s", strerror(errno));
+	ret = HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice));
+	if (ret < 0)
+		throw YError("PF-1133: %s", strerror(errno));
 	/*
 	 * There seems to be no way to export a public store hierarchy from
 	 * EXC2019; you can only ever export individual "public folders"
@@ -1150,7 +1163,9 @@ static int do_file(const char *filename) try
 	 * hierarchy anymore that is worth thinking about.
 	 */
 	xsplice = false; /* <=> not public store. */
-	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
+	ret = HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice));
+	if (ret < 0)
+		throw YError("PF-1134: %s", strerror(errno));
 	g_folder_map.clear();
 	if (g_splice) {
 		az_fmap_splice_mst(file.get());

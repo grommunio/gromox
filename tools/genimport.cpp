@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/endian.hpp>
@@ -455,16 +456,12 @@ void gi_folder_map_write(const gi_folder_map_t &map)
 		    ep.p_str(tgt.create_name.c_str()) != EXT_ERR_SUCCESS)
 			throw YError("PG-1103");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	auto ret = write(STDOUT_FILENO, &xsize, sizeof(xsize));
+	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
 	if (ret < 0)
 		throw YError("PG-1104: %s", strerror(-ret));
-	else if (ret != sizeof(xsize))
-		throw YError("PG-1105");
-	ret = write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
 	if (ret < 0)
 		throw YError("PG-1106: %s", strerror(-ret));
-	else if (static_cast<size_t>(ret) != ep.m_offset)
-		throw YError("PG-1107");
 }
 
 void gi_name_map_read(const void *buf, size_t bufsize, gi_name_map &map)
@@ -506,16 +503,12 @@ void gi_name_map_write(const gi_name_map &map)
 			throw YError("PG-1111");
 	}
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	auto ret = write(STDOUT_FILENO, &xsize, sizeof(xsize));
+	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
 	if (ret < 0)
 		throw YError("PG-1112: %s", strerror(-ret));
-	else if (ret != sizeof(xsize))
-		throw YError("PG-1113");
-	ret = write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
 	if (ret < 0)
 		throw YError("PG-1114: %s", strerror(-ret));
-	else if (static_cast<size_t>(ret) != ep.m_offset)
-		throw YError("PG-1115");
 }
 
 uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &xpn_req)

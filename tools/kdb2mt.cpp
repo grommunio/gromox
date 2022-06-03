@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 #include <zlib.h>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <fmt/core.h>
 #include <gromox/database_mysql.hpp>
@@ -930,8 +931,12 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 	for (const auto &ace : item.m_acl.get_perms())
 		ep.p_permission_data(ace);
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	write(STDOUT_FILENO, &xsize, sizeof(xsize));
-	write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
+	if (ret < 0)
+		throw YError("PK-1024: %s", strerror(errno));
+	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	if (ret < 0)
+		throw YError("PK-1026: %s", strerror(errno));
 	return 0;
 }
 
@@ -992,8 +997,12 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS)
 		throw YError("PF-1058");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	write(STDOUT_FILENO, &xsize, sizeof(xsize));
-	write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
+	if (ret < 0)
+		throw YError("PK-1028: %s", strerror(errno));
+	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	if (ret < 0)
+		throw YError("PK-1030: %s", strerror(errno));
 	return 0;
 }
 
@@ -1161,11 +1170,17 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 
 static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 {
-	write(STDOUT_FILENO, "GXMT0002", 8);
 	uint8_t xsplice = g_splice;
-	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
+	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0002", 8);
+	if (ret < 0)
+		throw YError("PK-1032: %s", strerror(errno));
+	ret = HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice));
+	if (ret < 0)
+		throw YError("PK-1034: %s", strerror(errno));
 	xsplice = drv->m_public_store;
-	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
+	ret = HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice));
+	if (ret < 0)
+		throw YError("PK-1036: %s", strerror(errno));
 	if (g_splice && drv->m_public_store)
 		drv->fmap_setup_splice_public();
 	else if (g_splice)
