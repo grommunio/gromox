@@ -1,0 +1,2 @@
+#!/bin/sh
+grep -Po '\[\-W.*?\]' "$@" | sort | uniq -c | sort -k2
