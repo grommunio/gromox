@@ -115,14 +115,14 @@ static void *midls_thrwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
-			write(sockd, "Access Deny\r\n", 13);
+			write(sockd, "FALSE Access Deny\r\n", 19);
 			close(sockd);
 			continue;
 		}
 
 		auto pconnection = cmd_parser_get_connection();
 		if (NULL == pconnection) {
-			write(sockd, "Maximum Connection Reached!\r\n", 29);
+			write(sockd, "FALSE Maximum Connection Reached!\r\n", 35);
 			close(sockd);
 			continue;
 
