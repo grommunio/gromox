@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/defs.h>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -70,21 +71,25 @@ struct FIFO {
 	size_t data_size = 0, cur_size = 0, max_size = 0;
 };
 
-struct ENQUEUE_NODE {
-	~ENQUEUE_NODE() { if (sockd >= 0) close(sockd); }
-
-	char res_id[128]{};
+struct qsock {
 	int sockd = -1;
+	ssize_t sk_write(const char *, size_t = -1);
+	void sk_close();
+};
+
+struct ENQUEUE_NODE : public qsock {
+	~ENQUEUE_NODE() { sk_close(); }
+
 	int offset = 0;
+	char res_id[128]{};
 	char buffer[MAX_CMD_LENGTH]{};
 	char line[MAX_CMD_LENGTH]{};
 };
 
-struct DEQUEUE_NODE {
+struct DEQUEUE_NODE : public qsock {
 	~DEQUEUE_NODE();
 
 	char res_id[128]{};
-	int sockd = -1;
 	FIFO fifo{};
 	std::mutex lock, cond_mutex;
 	std::condition_variable waken_cond;
@@ -201,6 +206,26 @@ DEQUEUE_NODE::~DEQUEUE_NODE()
 {
 	if (sockd >= 0)
 		close(sockd);
+}
+
+ssize_t qsock::sk_write(const char *s, size_t z)
+{
+	if (z == static_cast<size_t>(-1))
+		z = strlen(s);
+	auto ret = HXio_fullwrite(sockd, s, z);
+	if (ret < 0 || static_cast<size_t>(ret) != z) {
+		close(sockd);
+		sockd = -1;
+	}
+	return ret;
+}
+
+void qsock::sk_close()
+{
+	if (sockd < 0)
+		return;
+	close(sockd);
+	sockd = -1;
 }
 
 int main(int argc, const char **argv) try
@@ -399,7 +424,8 @@ static void *ev_acceptwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
-			write(sockd2, "FALSE Access Deny\r\n", 19);
+			if (HXio_fullwrite(sockd2, "FALSE Access Deny\r\n", 19) != 19)
+				/* ignore */;
 			close(sockd2);
 			continue;
 		}
@@ -407,7 +433,8 @@ static void *ev_acceptwork(void *param)
 		std::unique_lock eq_hold(g_enqueue_lock);
 		if (g_enqueue_list.size() + 1 + g_enqueue_list1.size() >= g_threads_num) {
 			eq_hold.unlock();
-			write(sockd2, "FALSE Maximum Connection Reached!\r\n", 35);
+			if (HXio_fullwrite(sockd2, "FALSE Maximum Connection Reached!\r\n", 35) != 35)
+				/* ignore */;
 			close(sockd2);
 			continue;
 		}
@@ -416,14 +443,18 @@ static void *ev_acceptwork(void *param)
 			penqueue = &g_enqueue_list1.back();
 		} catch (const std::bad_alloc &) {
 			eq_hold.unlock();
-			write(sockd2, "FALSE Not enough memory\r\n", 25);
+			if (HXio_fullwrite(sockd2, "FALSE Not enough memory\r\n", 25) != 25)
+				/* ignore */;
 			close(sockd2);
 			continue;
 		}
 
 		penqueue->sockd = sockd2;
 		eq_hold.unlock();
-		write(sockd2, "OK\r\n", 4);
+		if (HXio_fullwrite(sockd2, "OK\r\n", 4) != 4) {
+			close(penqueue->sockd);
+			penqueue->sockd = -1;
+		}
 		g_enqueue_waken_cond.notify_one();
 	}
 	return nullptr;
@@ -465,7 +496,7 @@ static void *ev_enqwork(void *param)
 		
 		if (0 == strncasecmp(penqueue->line, "ID ", 3)) {
 			snprintf(penqueue->res_id, arsizeof(penqueue->res_id), "%s", penqueue->line + 3);
-			write(penqueue->sockd, "TRUE\r\n", 6);
+			penqueue->sk_write("TRUE\r\n");
 			continue;
 		} else if (0 == strncasecmp(penqueue->line, "LISTEN ", 7)) {
 			HOST_NODE *phost = nullptr;
@@ -473,7 +504,7 @@ static void *ev_enqwork(void *param)
 			try {
 				pdequeue = std::make_shared<DEQUEUE_NODE>();
 			} catch (const std::bad_alloc &) {
-				write(penqueue->sockd, "FALSE\r\n", 7);
+				penqueue->sk_write("FALSE\r\n");
 				continue;
 			}
 			snprintf(pdequeue->res_id, arsizeof(pdequeue->res_id), "%s", penqueue->line + 7);
@@ -487,7 +518,7 @@ static void *ev_enqwork(void *param)
 					phost = &g_host_list.back();
 				} catch (const std::bad_alloc &) {
 					hl_hold.unlock();
-					write(penqueue->sockd, "FALSE\r\n", 7);
+					penqueue->sk_write("FALSE\r\n");
 					continue;
 				}
 				gx_strlcpy(phost->res_id, penqueue->line + 7, arsizeof(phost->res_id));
@@ -498,7 +529,7 @@ static void *ev_enqwork(void *param)
 			try {
 				phost->list.push_back(pdequeue);
 			} catch (const std::bad_alloc &) {
-				write(pdequeue->sockd, "FALSE\r\n", 7);
+				pdequeue->sk_write("FALSE\r\n");
 				continue;
 			}
 			try {
@@ -506,13 +537,13 @@ static void *ev_enqwork(void *param)
 				g_dequeue_list1.push_back(pdequeue);
 			} catch (const std::bad_alloc &) {
 				phost->list.pop_back();
-				write(pdequeue->sockd, "FALSE\r\n", 7);
+				pdequeue->sk_write("FALSE\r\n");
 				continue;
 			}
 			pdequeue->sockd = penqueue->sockd;
 			penqueue->sockd = -1;
 			hl_hold.unlock();
-			write(pdequeue->sockd, "TRUE\r\n", 6);
+			pdequeue->sk_write("TRUE\r\n");
 			g_dequeue_waken_cond.notify_one();
 			eq_hold.lock();
 			g_enqueue_list.erase(eq_node);
@@ -521,7 +552,7 @@ static void *ev_enqwork(void *param)
 			pspace = strchr(penqueue->line + 7, ' ');
 			temp_len = pspace - (penqueue->line + 7);
 			if (NULL == pspace ||  temp_len > 127 || strlen(pspace + 1) > 63) {
-				write(penqueue->sockd, "FALSE\r\n", 7);
+				penqueue->sk_write("FALSE\r\n");
 				continue;
 			}
 			memcpy(temp_string, penqueue->line + 7, temp_len);
@@ -549,16 +580,13 @@ static void *ev_enqwork(void *param)
 				}
 			}
 			hl_hold.unlock();
-			if (b_result)
-				write(penqueue->sockd, "TRUE\r\n", 6);
-			else
-				write(penqueue->sockd, "FALSE\r\n", 7);
+			penqueue->sk_write(b_result ? "TRUE\r\n" : "FALSE\r\n");
 			continue;
 		} else if (0 == strncasecmp(penqueue->line, "UNSELECT ", 9)) {
 			pspace = strchr(penqueue->line + 9, ' ');
 			temp_len = pspace - (penqueue->line + 9);
 			if (NULL == pspace ||  temp_len > 127 || strlen(pspace + 1) > 63) {
-				write(penqueue->sockd, "FALSE\r\n", 7);
+				penqueue->sk_write("FALSE\r\n");
 				continue;
 			}
 			memcpy(temp_string, penqueue->line + 9, temp_len);
@@ -574,32 +602,32 @@ static void *ev_enqwork(void *param)
 			if (phost != g_host_list.end())
 				phost->hash.erase(temp_string);
 			hl_hold.unlock();
-			write(penqueue->sockd, "TRUE\r\n", 6);
+			penqueue->sk_write("TRUE\r\n");
 			continue;
 		} else if (0 == strcasecmp(penqueue->line, "QUIT")) {
-			write(penqueue->sockd, "BYE\r\n", 5);
+			penqueue->sk_write("BYE\r\n");
 			eq_hold.lock();
 			g_enqueue_list.erase(eq_node);
 			goto NEXT_LOOP;
 		} else if (0 == strcasecmp(penqueue->line, "PING")) {
-			write(penqueue->sockd, "TRUE\r\n", 6);	
+			penqueue->sk_write("TRUE\r\n");
 			continue;
 		} else {
 			pspace = strchr(penqueue->line, ' ');
 			if (NULL == pspace) {
-				write(penqueue->sockd, "FALSE\r\n", 7);
+				penqueue->sk_write("FALSE\r\n");
 				continue;
 			}
 			pspace1 = strchr(pspace + 1, ' ');
 			if (NULL == pspace1) {
-				write(penqueue->sockd, "FALSE\r\n", 7);
+				penqueue->sk_write("FALSE\r\n");
 				continue;
 			}
 			pspace2 = strchr(pspace1 + 1, ' ');
 			if (pspace2 == nullptr)
 				pspace2 = penqueue->line + strlen(penqueue->line);
 			if (pspace1 - pspace > 128 || pspace2 - pspace1 > 64) {
-				write(penqueue->sockd, "FALSE\r\n", 7);
+				penqueue->sk_write("FALSE\r\n");
 				continue;
 			}
 			temp_len = pspace1 - (pspace + 1);
@@ -634,7 +662,7 @@ static void *ev_enqwork(void *param)
 				}
 			}
 			hl_hold.unlock();
-			write(penqueue->sockd, "TRUE\r\n", 6);
+			penqueue->sk_write("TRUE\r\n");
 			continue;
 		}
 	}
@@ -686,7 +714,7 @@ static void *ev_deqwork(void *param)
 		
 		if (NULL == pfile) {	
 			if (cur_time - last_time >= SOCKET_TIMEOUT - 3) {
-				if (6 != write(pdequeue->sockd, "PING\r\n", 6) ||
+				if (pdequeue->sk_write("PING\r\n") != 6 ||
 				    !read_response(pdequeue->sockd)) {
 					hl_hold.lock();
 					auto it = std::find(phost->list.begin(), phost->list.end(), pdequeue);
@@ -715,7 +743,7 @@ static void *ev_deqwork(void *param)
 		buff[len] = '\n';
 		len ++;
 		mem_file_free(&temp_file);
-		if (len != write(pdequeue->sockd, buff, len) ||
+		if (pdequeue->sk_write(buff, len) != len ||
 		    !read_response(pdequeue->sockd)) {
 			hl_hold.lock();
 			auto it = std::find(phost->list.begin(), phost->list.end(), pdequeue);
