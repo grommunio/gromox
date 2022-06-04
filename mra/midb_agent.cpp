@@ -36,7 +36,7 @@
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
-#include <gromox/xarray.hpp>
+#include <gromox/xarray2.hpp>
 
 #define MIDB_RESULT_OK			0
 #define MIDB_NO_SERVER			1
@@ -1359,7 +1359,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 						mitem.id = count;
 						mitem.uid = strtol(pspace, nullptr, 0);
 						mitem.flag_bits = s_to_flagbits(pspace1);
-						pxarray->append(&mitem, mitem.uid);
+						pxarray->append(std::move(mitem), mitem.uid);
 					} else {
 						b_format_error = TRUE;
 					}
@@ -1492,7 +1492,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 						mitem.id = strtol(temp_line, nullptr, 0) + 1;
 						mitem.uid = strtol(pspace1, nullptr, 0);
 						mitem.flag_bits = FLAG_DELETED;
-						pxarray->append(&mitem, mitem.uid);
+						pxarray->append(std::move(mitem), mitem.uid);
 					} else {
 						b_format_error = TRUE;
 					}
@@ -1622,7 +1622,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 					mitem.flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
 					mem_file_init(&mitem.f_digest, &g_file_allocator);
 					mitem.f_digest.write(temp_line, line_pos);
-					pxarray->append(&mitem, mitem.uid);
+					pxarray->append(std::move(mitem), mitem.uid);
 				} else {
 					b_format_error = TRUE;
 				}
@@ -1790,7 +1790,7 @@ static int fetch_simple(const char *path, const char *folder,
 							pspace ++;
 							pspace1 ++;
 							int uid = strtol(pspace, nullptr, 0);
-							if (pxarray->append(&mitem, uid) >= 0) {
+							if (pxarray->append(std::move(mitem), uid) >= 0) {
 								auto num = pxarray->get_capacity();
 								assert(num > 0);
 								auto pitem = pxarray->get_item(num - 1);
@@ -1945,7 +1945,7 @@ static int fetch_detail(const char *path, const char *folder,
 					    "file", mitem.mid, sizeof(mitem.mid)) &&
 					    get_digest_integer(temp_line, line_pos,
 					    "uid", &mitem.uid)) {
-						if (pxarray->append(&mitem, mitem.uid) >= 0) {
+						if (pxarray->append(std::move(mitem), mitem.uid) >= 0) {
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);
@@ -2102,7 +2102,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 								pspace1 ++;
 								pspace2 ++;
 								int uid = strtol(pspace1, nullptr, 0);
-								if (pxarray->append(&mitem, uid) >= 0) {
+								if (pxarray->append(std::move(mitem), uid) >= 0) {
 									auto num = pxarray->get_capacity();
 									assert(num > 0);
 									auto pitem = pxarray->get_item(num - 1);
@@ -2253,7 +2253,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					    &mitem.uid)) {
 						*pspace = '\0';
 						pspace ++;
-						if (pxarray->append(&mitem, mitem.uid) >= 0) {
+						if (pxarray->append(std::move(mitem), mitem.uid) >= 0) {
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);

@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <cstdint>
 #include <ctime>
 #include <memory>
@@ -15,7 +16,6 @@
 #include <gromox/single_list.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
-#include <gromox/xarray.hpp>
 #include "../exch/authmgr.hpp"
 #define MAX_LINE_LENGTH (64 * 1024)
 
@@ -79,6 +79,7 @@ enum {
 };
 
 struct MJSON_MIME;
+struct XARRAY;
 struct XARRAY_UNIT;
 
 struct DIR_NODE {
@@ -150,7 +151,6 @@ extern alloc_limiter<file_block> *imap_parser_get_allocator();
 extern std::shared_ptr<MIME_POOL> imap_parser_get_mpool();
 /* get allocator for mjson mime */
 extern alloc_limiter<MJSON_MIME> *imap_parser_get_jpool();
-extern alloc_limiter<XARRAY_UNIT> *imap_parser_get_xpool();
 extern alloc_limiter<DIR_NODE> *imap_parser_get_dpool();
 extern int imap_parser_get_sequence_ID();
 extern void imap_parser_log_info(IMAP_CONTEXT *, int level, const char *format, ...);
@@ -256,4 +256,5 @@ extern uint16_t g_listener_ssl_port;
 extern unsigned int g_imapcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
 extern bool g_support_starttls, g_force_starttls;
+extern std::atomic<size_t> g_alloc_xarray;
 extern alloc_limiter<stream_block> g_blocks_allocator;

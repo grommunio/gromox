@@ -7,6 +7,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <atomic>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -26,7 +27,7 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/util.hpp>
-#include <gromox/xarray.hpp>
+#include <gromox/xarray2.hpp>
 #include "imap.hpp"
 #define MAX_DIGLEN		256*1024
 
@@ -2606,7 +2607,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (pcontext->b_readonly)
 		return 1806;
 	b_deleted = FALSE;
-	XARRAY xarray(imap_parser_get_xpool());
+	XARRAY xarray(g_alloc_xarray);
 	result = system_services_list_deleted(pcontext->maildir,
 	         pcontext->selected_folder, &xarray, &errnum);
 	switch(result) {
@@ -2750,7 +2751,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (!imap_cmd_parser_parse_fetch_args(&list_data, nodes, &b_detail,
 	    &b_data, argv[3], tmp_argv, arsizeof(tmp_argv)))
 		return 1800;
-	XARRAY xarray(imap_parser_get_xpool());
+	XARRAY xarray(g_alloc_xarray);
 	if (b_detail)
 		result = system_services_fetch_detail(pcontext->maildir,
 		         pcontext->selected_folder, &list_seq, &xarray, &errnum);
@@ -2847,7 +2848,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		else
 			return 1807;
 	}
-	XARRAY xarray(imap_parser_get_xpool());
+	XARRAY xarray(g_alloc_xarray);
 	result = system_services_fetch_simple(pcontext->maildir,
 	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
@@ -2896,7 +2897,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	    strlen(argv[3]) == 0 || strlen(argv[3]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[3], temp_name))
 		return 1800;
-	XARRAY xarray(imap_parser_get_xpool());
+	XARRAY xarray(g_alloc_xarray);
 	result = system_services_fetch_simple(pcontext->maildir,
 	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
@@ -3067,7 +3068,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		nodes[1023].pdata = deconst("UID");
 		double_list_insert_as_head(&list_data, &nodes[1023]);
 	}
-	XARRAY xarray(imap_parser_get_xpool());
+	XARRAY xarray(g_alloc_xarray);
 	if (b_detail)
 		result = system_services_fetch_detail_uid(pcontext->maildir,
 		         pcontext->selected_folder, &list_seq, &xarray, &errnum);
@@ -3153,7 +3154,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		else
 			return 1807;
 	}
-	XARRAY xarray(imap_parser_get_xpool());
+	XARRAY xarray(g_alloc_xarray);
 	result = system_services_fetch_simple_uid(pcontext->maildir,
 	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
@@ -3201,7 +3202,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	    strlen(argv[4]) == 0 || strlen(argv[4]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[4], temp_name))
 		return 1800;
-	XARRAY xarray(imap_parser_get_xpool());
+	XARRAY xarray(g_alloc_xarray);
 	result = system_services_fetch_simple_uid(pcontext->maildir,
 	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
@@ -3309,7 +3310,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	    sequence_nodes, argv[3]))
 		return 1800;
 	b_deleted = FALSE;
-	XARRAY xarray(imap_parser_get_xpool());
+	XARRAY xarray(g_alloc_xarray);
 	result = system_services_list_deleted(pcontext->maildir,
 	         pcontext->selected_folder, &xarray, &errnum);
 	switch(result) {
@@ -3402,7 +3403,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	pcontext->selected_folder[0] = '\0';
 	if (pcontext->b_readonly)
 		return;
-	XARRAY xarray(imap_parser_get_xpool());
+	XARRAY xarray(g_alloc_xarray);
 	result = system_services_list_deleted(pcontext->maildir,
 	         prev_selected, &xarray, &errnum);
 	switch(result) {

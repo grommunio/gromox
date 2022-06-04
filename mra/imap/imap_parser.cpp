@@ -65,6 +65,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_starttls, g_force_starttls;
+std::atomic<size_t> g_alloc_xarray;
 alloc_limiter<stream_block> g_blocks_allocator;
 static std::atomic<int> g_sequence_id;
 static int g_average_num;
@@ -76,7 +77,6 @@ static gromox::atomic_bool g_notify_stop;
 static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static alloc_limiter<file_block> g_alloc_file;
-static alloc_limiter<XARRAY_UNIT> g_alloc_xarray;
 static alloc_limiter<DIR_NODE> g_alloc_dir;
 static alloc_limiter<MJSON_MIME> g_alloc_mjson;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
@@ -88,11 +88,6 @@ static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
-
-alloc_limiter<XARRAY_UNIT> *imap_parser_get_xpool()
-{
-	return &g_alloc_xarray;
-}
 
 alloc_limiter<DIR_NODE> *imap_parser_get_dpool()
 {
@@ -228,7 +223,7 @@ int imap_parser_run()
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;
 	}
-	g_alloc_xarray = alloc_limiter<XARRAY_UNIT>(g_average_num * g_context_num);
+	g_alloc_xarray = g_average_num * g_context_num;
 	num = 10*g_context_num;
 	if (num < 1000) {
 		num = 1000;
