@@ -291,7 +291,8 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 			common_util_get_maildir(), mid_string);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() >= 0) {
-			write(fd.get(), digest_buff, tmp_len);
+			if (write(fd.get(), digest_buff, tmp_len) != tmp_len)
+				fprintf(stderr, "E-1979: write %s: %s\n", temp_path, strerror(errno));
 			fd.close();
 		}
 	} else {
@@ -2854,7 +2855,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (fd.get() < 0) {
 		return MIDB_E_NO_MEMORY;
 	}
-	write(fd.get(), temp_buff, tmp_len);
+	if (write(fd.get(), temp_buff, tmp_len) != tmp_len)
+		fprintf(stderr, "E-1982: write %s: %s\n", temp_path, strerror(errno));
 	fd.close();
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr) {
@@ -3134,10 +3136,16 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		             std::to_string(++g_sequence_id) + ".midb";
 		eml_path = argv[1] + "/eml/"s + argv[3];
 		auto eml_path1 = argv[1] + "/eml/"s + mid_string;
-		link(eml_path.c_str(), eml_path1.c_str());
+		if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
+			fprintf(stderr, "E-1980: link %s %s: %s\n",
+			        eml_path.c_str(), eml_path1.c_str(),
+			        strerror(errno));
 		eml_path = argv[1] + "/ext/"s + argv[3];
 		eml_path1 = argv[1] + "/ext/"s + mid_string;
-		link(eml_path.c_str(), eml_path1.c_str());
+		if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
+			fprintf(stderr, "E-1981: link %s %s: %s\n",
+			        eml_path.c_str(), eml_path1.c_str(),
+			        strerror(errno));
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1487: ENOMEM\n");
 		return MIDB_E_NO_MEMORY;

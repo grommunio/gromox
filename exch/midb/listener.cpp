@@ -11,6 +11,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -115,14 +116,16 @@ static void *midls_thrwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
-			write(sockd, "FALSE Access Deny\r\n", 19);
+			if (HXio_fullwrite(sockd, "FALSE Access Deny\r\n", 19) != 19)
+				/* ignore */;
 			close(sockd);
 			continue;
 		}
 
 		auto holder = cmd_parser_get_connection();
 		if (holder.size() == 0) {
-			write(sockd, "FALSE Maximum Connection Reached!\r\n", 35);
+			if (HXio_fullwrite(sockd, "FALSE Maximum Connection Reached!\r\n", 35) != 35)
+				/* ignore */;
 			close(sockd);
 			continue;
 
@@ -130,7 +133,8 @@ static void *midls_thrwork(void *param)
 		auto pconnection = &holder.front();
 		pconnection->sockd = sockd;
 		pconnection->is_selecting = FALSE;
-		write(sockd, "OK\r\n", 4);
+		if (HXio_fullwrite(sockd, "OK\r\n", 4) != 4)
+			continue;
 		cmd_parser_put_connection(std::move(holder));
 	}
 	return nullptr;
