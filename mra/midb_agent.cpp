@@ -54,17 +54,9 @@
 #define FLAG_LOADED				0x80
 
 using namespace gromox;
+using AGENT_MITEM = MITEM;
 
 namespace {
-
-struct AGENT_MITEM {
-	SINGLE_LIST_NODE node;
-	char mid[128];
-	int id;
-	int uid;
-	char flag_bits;
-	MEM_FILE f_digest;
-};
 
 struct SEQUENCE_NODE {
 	DOUBLE_LIST_NODE node;

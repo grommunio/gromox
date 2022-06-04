@@ -1,8 +1,19 @@
 #pragma once
 #include <gromox/double_list.hpp>
+#include <gromox/mem_file.hpp>
+#include <gromox/single_list.hpp>
 #include <gromox/util.hpp>
 #define XARRAY_CACHEITEM_NUMBER  (16*1024)
 #define XARRAY_HASHITEM_NUMBER   (4*1024)
+
+struct MITEM {
+	SINGLE_LIST_NODE node;
+	char mid[128];
+	int id;
+	int uid;
+	char flag_bits;
+	MEM_FILE f_digest;
+};
 
 struct XARRAY_UNIT {
 	DOUBLE_LIST_NODE    node;

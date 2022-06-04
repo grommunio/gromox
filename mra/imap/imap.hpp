@@ -100,15 +100,6 @@ struct dir_tree {
 using DIR_TREE = dir_tree;
 using DIR_TREE_ENUM = void (*)(DIR_NODE *, void*);
 
-struct MITEM {
-	SINGLE_LIST_NODE node;
-	char mid[128];
-	int id;
-	int uid;
-	char flag_bits;
-	MEM_FILE f_digest;
-};
-
 struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
 	IMAP_CONTEXT();
 	~IMAP_CONTEXT();
