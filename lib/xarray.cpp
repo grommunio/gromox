@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstring>
+#include <libHX/defs.h>
 #include <gromox/util.hpp>
 #include <gromox/xarray.hpp>
 
@@ -10,9 +11,8 @@
  *		pxarray		[in]	the xarray that will be init
  *		pbuf_pool	[in]	the outside allocator that manage the 
  *							memory core
- *		data_size			the data elements size
  */
-XARRAY::XARRAY(LIB_BUFFER *pbuf_pool, size_t dsize)
+XARRAY::XARRAY(alloc_limiter<XARRAY_UNIT> *pbuf_pool)
 {
 	auto pxarray = this;
 #ifdef _DEBUG_UMTA
@@ -23,10 +23,6 @@ XARRAY::XARRAY(LIB_BUFFER *pbuf_pool, size_t dsize)
 #endif
 	double_list_init(&pxarray->mlist);
 	pxarray->mbuf_pool	 = pbuf_pool;
-	pxarray->data_size = dsize;
-	if (dsize > pbuf_pool->item_size - EXTRA_XARRAYNODE_SIZE)
-		debug_info("[xarray]: xarray_init warning: xarray data"
-			" size larger than allocator item size");
 }
 
 XARRAY::~XARRAY()
@@ -49,7 +45,7 @@ XARRAY::~XARRAY()
  *		<0				fail to append
  *		>=0				index of the item
  */
-int XARRAY::append(void *pdata, unsigned int xtag)
+int XARRAY::append(MITEM *pdata, unsigned int xtag)
 {
 	auto pxarray = this;
 	int ret_index;
@@ -59,22 +55,20 @@ int XARRAY::append(void *pdata, unsigned int xtag)
 #endif
 	if (xtag == 0 || get_itemx(xtag))
 		return -1;
-	auto punit = pxarray->mbuf_pool->get<XARRAY_UNIT>();
-	if (NULL == punit) {
+	auto punit = pxarray->mbuf_pool->get();
+	if (punit == nullptr)
 		return -1;
-	}
 	punit->node.pdata = punit;
 	punit->node_hash.pdata = punit;
 	punit->xtag =  xtag;
-	void *pdata1 = reinterpret_cast<char *>(punit) + sizeof(XARRAY_UNIT);
-	memcpy(pdata1, pdata, pxarray->data_size);
+	punit->mitem = *pdata;
 
 	double_list_append_as_tail(&pxarray->mlist, &punit->node);
 	ret_index = pxarray->cur_size;
 	pxarray->cur_size ++;
 	/* cache the ptr in cache table */
 	if (ret_index < XARRAY_CACHEITEM_NUMBER) {
-		pxarray->cache_ptrs[ret_index] = pdata1;
+		pxarray->cache_ptrs[ret_index] = &punit->mitem;
 	}
 	punit->index = ret_index;
 
@@ -92,7 +86,7 @@ int XARRAY::append(void *pdata, unsigned int xtag)
  *	@return
  *		pointer to the item data
  */
-void *XARRAY::get_item(size_t index)
+MITEM *XARRAY::get_item(size_t index) const
 {
 	auto pxarray = this;
 	if (index + 1 > pxarray->cur_size)
@@ -100,11 +94,12 @@ void *XARRAY::get_item(size_t index)
 	if (index < XARRAY_CACHEITEM_NUMBER) {
 		return pxarray->cache_ptrs[index];
 	}
-	auto punit = reinterpret_cast<XARRAY_UNIT *>(static_cast<char *>(pxarray->cache_ptrs[XARRAY_CACHEITEM_NUMBER-1]) - sizeof(XARRAY_UNIT));
-	auto pnode = &punit->node;
+	auto mptr = pxarray->cache_ptrs[XARRAY_CACHEITEM_NUMBER-1];
+	auto punit = containerof(mptr, XARRAY_UNIT, mitem);
+	const DOUBLE_LIST_NODE *pnode = &punit->node;
 	for (size_t i = XARRAY_CACHEITEM_NUMBER; i <= index; ++i)
 		pnode = double_list_get_after(&pxarray->mlist, pnode);
-	return static_cast<char *>(pnode->pdata) + sizeof(XARRAY_UNIT);
+	return &static_cast<XARRAY_UNIT *>(pnode->pdata)->mitem;
 }
 
 /*
@@ -116,19 +111,16 @@ void *XARRAY::get_item(size_t index)
  *	@return
  *		pointer to the item data
  */
-void *XARRAY::get_itemx(unsigned int xtag)
+MITEM *XARRAY::get_itemx(unsigned int xtag) const
 {
 	auto pxarray = this;
-	DOUBLE_LIST_NODE   *pnode;
-	XARRAY_UNIT *punit;
-	DOUBLE_LIST		   *plist;
 	
-	plist = &pxarray->hash_lists[xtag%XARRAY_HASHITEM_NUMBER];
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
+	const DOUBLE_LIST *plist = &pxarray->hash_lists[xtag%XARRAY_HASHITEM_NUMBER];
+	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
 		pnode=double_list_get_after(plist, pnode)) {
-		punit = (XARRAY_UNIT*)pnode->pdata;
+		auto punit = static_cast<XARRAY_UNIT *>(pnode->pdata);
 		if (xtag == punit->xtag) {
-			return static_cast<char *>(pnode->pdata) + sizeof(XARRAY_UNIT);
+			return &punit->mitem;
 		}
 	}
 
@@ -148,7 +140,7 @@ void XARRAY::clear()
 	auto pxarray = this;
 	DOUBLE_LIST_NODE *pnode;
 	while ((pnode = double_list_pop_front(&pxarray->mlist)) != nullptr)
-		pxarray->mbuf_pool->put_raw(pnode->pdata);
+		pxarray->mbuf_pool->put(static_cast<XARRAY_UNIT *>(pnode->pdata));
 	pxarray->cur_size = 0;
 	memset(pxarray->cache_ptrs, 0, sizeof(pxarray->cache_ptrs));
 	memset(pxarray->hash_lists, 0, sizeof(pxarray->hash_lists));

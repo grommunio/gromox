@@ -76,7 +76,7 @@ static gromox::atomic_bool g_notify_stop;
 static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static alloc_limiter<file_block> g_alloc_file;
-static LIB_BUFFER g_alloc_xarray;
+static alloc_limiter<XARRAY_UNIT> g_alloc_xarray;
 static alloc_limiter<DIR_NODE> g_alloc_dir;
 static alloc_limiter<MJSON_MIME> g_alloc_mjson;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
@@ -89,7 +89,7 @@ static char g_certificate_passwd[1024];
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
-LIB_BUFFER* imap_parser_get_xpool()
+alloc_limiter<XARRAY_UNIT> *imap_parser_get_xpool()
 {
 	return &g_alloc_xarray;
 }
@@ -228,8 +228,7 @@ int imap_parser_run()
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;
 	}
-	g_alloc_xarray = LIB_BUFFER(sizeof(MITEM) + EXTRA_XARRAYNODE_SIZE,
-	                 g_average_num * g_context_num);
+	g_alloc_xarray = alloc_limiter<XARRAY_UNIT>(g_average_num * g_context_num);
 	num = 10*g_context_num;
 	if (num < 1000) {
 		num = 1000;

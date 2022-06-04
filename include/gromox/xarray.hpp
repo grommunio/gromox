@@ -20,23 +20,22 @@ struct XARRAY_UNIT {
 	DOUBLE_LIST_NODE    node_hash;
 	int                 index;
 	unsigned int        xtag;
+
+	struct MITEM mitem;
 };
 
-/* the extra memory ocupation for xarray node */
-#define EXTRA_XARRAYNODE_SIZE sizeof(XARRAY_UNIT)
-
 struct GX_EXPORT XARRAY {
-	XARRAY(LIB_BUFFER *, size_t ds);
+	XARRAY(alloc_limiter<XARRAY_UNIT> *);
 	~XARRAY();
-	int append(void *data, unsigned int xtag);
-	void *get_item(size_t index);
-	void *get_itemx(unsigned int xtag);
+	int append(MITEM *data, unsigned int xtag);
+	MITEM *get_item(size_t index) const;
+	MITEM *get_itemx(unsigned int xtag) const;
 	inline size_t get_capacity() const { return cur_size; }
 	void clear();
 
-	LIB_BUFFER *mbuf_pool = nullptr;
+	alloc_limiter<XARRAY_UNIT> *mbuf_pool = nullptr;
 	DOUBLE_LIST mlist{};
 	size_t data_size = 0, cur_size = 0;
-	void *cache_ptrs[XARRAY_CACHEITEM_NUMBER]{};
+	MITEM *cache_ptrs[XARRAY_CACHEITEM_NUMBER]{};
 	DOUBLE_LIST hash_lists[XARRAY_HASHITEM_NUMBER]{};
 };

@@ -1642,7 +1642,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 				return MIDB_RESULT_OK;
 			auto num = pxarray->get_capacity();
 			for (size_t i = 0; i < num; ++i) {
-				auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(i));
+				auto pitem = pxarray->get_item(i);
 				if (NULL != pitem) {
 					mem_file_free(&pitem->f_digest);
 				}
@@ -1666,7 +1666,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
  RDWR_ERROR:
 	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
-		auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(i));
+		auto pitem = pxarray->get_item(i);
 		if (NULL != pitem) {
 			mem_file_free(&pitem->f_digest);
 		}
@@ -1679,7 +1679,7 @@ static void free_result(XARRAY *pxarray)
 {
 	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
-		auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(i));
+		auto pitem = pxarray->get_item(i);
 		if (NULL != pitem) {
 			mem_file_free(&pitem->f_digest);
 		}
@@ -1793,7 +1793,7 @@ static int fetch_simple(const char *path, const char *folder,
 							if (pxarray->append(&mitem, uid) >= 0) {
 								auto num = pxarray->get_capacity();
 								assert(num > 0);
-								auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(num - 1));
+								auto pitem = pxarray->get_item(num - 1);
 								pitem->uid = uid;
 								pitem->id = pseq->min + count - 1;
 								gx_strlcpy(pitem->mid, temp_line, arsizeof(pitem->mid));
@@ -1922,7 +1922,7 @@ static int fetch_detail(const char *path, const char *folder,
 						*perrno = strtol(buff + 6, nullptr, 0);
 						auto num = pxarray->get_capacity();
 						for (size_t j = 0; j < num; ++j) {
-							auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(j));
+							auto pitem = pxarray->get_item(j);
 							mem_file_free(&pitem->f_digest);
 						}
 						pxarray->clear();
@@ -1948,7 +1948,7 @@ static int fetch_detail(const char *path, const char *folder,
 						if (pxarray->append(&mitem, mitem.uid) >= 0) {
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
-							auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(num - 1));
+							auto pitem = pxarray->get_item(num - 1);
 							pitem->id = pseq->min + count - 1;
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
 							mem_file_init(&pitem->f_digest, &g_file_allocator);
@@ -1972,7 +1972,7 @@ static int fetch_detail(const char *path, const char *folder,
 					*perrno = -1;
 					auto num = pxarray->get_capacity();
 					for (size_t i = 0; i < num; ++i) {
-						auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(i));
+						auto pitem = pxarray->get_item(i);
 						mem_file_free(&pitem->f_digest);
 					}
 					return MIDB_RESULT_ERROR;
@@ -1998,7 +1998,7 @@ static int fetch_detail(const char *path, const char *folder,
  RDWR_ERROR:
 	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
-		auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(i));
+		auto pitem = pxarray->get_item(i);
 		mem_file_free(&pitem->f_digest);
 	}
 	pxarray->clear();
@@ -2105,7 +2105,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 								if (pxarray->append(&mitem, uid) >= 0) {
 									auto num = pxarray->get_capacity();
 									assert(num > 0);
-									auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(num - 1));
+									auto pitem = pxarray->get_item(num - 1);
 									pitem->uid = uid;
 									pitem->id = strtol(temp_line, nullptr, 0) + 1;
 									gx_strlcpy(pitem->mid, pspace, arsizeof(pitem->mid));
@@ -2226,7 +2226,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 						*perrno = strtol(buff + 6, nullptr, 0);
 						auto num = pxarray->get_capacity();
 						for (size_t j = 0; j < num; ++j) {
-							auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(j));
+							auto pitem = pxarray->get_item(j);
 							mem_file_free(&pitem->f_digest);
 						}
 						pxarray->clear();
@@ -2256,7 +2256,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 						if (pxarray->append(&mitem, mitem.uid) >= 0) {
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
-							auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(num - 1));
+							auto pitem = pxarray->get_item(num - 1);
 							pitem->id = strtol(temp_line, nullptr, 0) + 1;
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pspace, temp_len);
 							mem_file_init(&pitem->f_digest, &g_file_allocator);
@@ -2282,7 +2282,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 				*perrno = -1;
 				auto num = pxarray->get_capacity();
 				for (size_t i = 0; i < num; ++i) {
-					auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(i));
+					auto pitem = pxarray->get_item(i);
 					mem_file_free(&pitem->f_digest);
 				}
 				return MIDB_RESULT_ERROR;
@@ -2306,7 +2306,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
  RDWR_ERROR:
 	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
-		auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(i));
+		auto pitem = pxarray->get_item(i);
 		mem_file_free(&pitem->f_digest);
 	}
 	pxarray->clear();
