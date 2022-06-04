@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -21,6 +22,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
+#include <gromox/midb.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "cmd_parser.h"
@@ -147,11 +149,12 @@ static void cmd_dump_argv(int argc, char **argv)
 	fprintf(stderr, "\n");
 }
 
-static void cmd_write_x(unsigned int level, int fd, const char *buf, size_t z)
+static ssize_t __attribute__((warn_unused_result))
+cmd_write_x(unsigned int level, int fd, const char *buf, size_t z)
 {
-	::write(fd, buf, z);
+	auto ret = HXio_fullwrite(fd, buf, z);
 	if (g_cmd_debug < level)
-		return;
+		return ret;
 	if (dbg_current_argv != nullptr) {
 		cmd_dump_argv(dbg_current_argc, dbg_current_argv);
 		dbg_current_argv = nullptr;
@@ -163,6 +166,7 @@ static void cmd_write_x(unsigned int level, int fd, const char *buf, size_t z)
 	if (z > INT_MAX)
 		z = INT_MAX;
 	fprintf(stderr, "> %.*s\n", static_cast<int>(z), buf);
+	return ret;
 } 
 
 int cmd_write(int fd, const char *sbuf, size_t z)
@@ -170,8 +174,7 @@ int cmd_write(int fd, const char *sbuf, size_t z)
 	if (z == static_cast<size_t>(-1))
 		z = strlen(sbuf);
 	/* Note: cmd_write is also only called for successful responses */
-	cmd_write_x(2, fd, sbuf, z);
-	return 0;
+	return cmd_write_x(2, fd, sbuf, z) < 0 ? MIDB_E_NETIO : 0;
 }
 
 static std::pair<bool, int> midcp_exec1(int argc, char **argv, MIDB_CONNECTION *conn)
@@ -190,16 +193,18 @@ static std::pair<bool, int> midcp_exec1(int argc, char **argv, MIDB_CONNECTION *
 	return {false, err};
 }
 
-static void midcp_exec(int argc, char **argv, MIDB_CONNECTION *conn)
+static int midcp_exec(int argc, char **argv, MIDB_CONNECTION *conn)
 {
 	dbg_current_argc = argc;
 	dbg_current_argv = argv;
 	auto [replied, result] = midcp_exec1(argc, argv, conn);
 	if (replied)
-		return;
+		return 0;
+	if (result == MIDB_E_NETIO)
+		return MIDB_E_NETIO;
 	char rsp[20];
 	auto len = snprintf(rsp, arsizeof(rsp), "FALSE %d\r\n", result);
-	cmd_write_x(1, conn->sockd, rsp, len);
+	return cmd_write_x(1, conn->sockd, rsp, len) < 0 ? MIDB_E_NETIO : 0;
 }
 
 static void *midcp_thrwork(void *param)
@@ -273,7 +278,11 @@ static void *midcp_thrwork(void *param)
 			}
 
 			HX_strupper(argv[0]);
-			midcp_exec(argc, argv, &*pconnection);
+			if (midcp_exec(argc, argv, &*pconnection) == MIDB_E_NETIO) {
+				co_hold.lock();
+				gc.splice(gc.end(), g_connlist_active, pconnection);
+				goto NEXT_LOOP;
+			}
 			offset -= i + 2;
 			memmove(buffer, buffer + i + 2, offset);
 			i = 0;
