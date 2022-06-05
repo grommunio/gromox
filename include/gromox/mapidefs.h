@@ -559,28 +559,33 @@ enum res_type {
 
 enum {
 	/* right bits */
-	frightsReadAny              = 1U << 0, /* 0x001 */
-	frightsCreate               = 1U << 1, /* 0x002 */
-	frightsGromoxSendAs         = 1U << 2, /* 0x004 */
-	frightsEditOwned            = 1U << 3, /* 0x008 */
-	frightsDeleteOwned          = 1U << 4, /* 0x010 */
-	frightsEditAny              = 1U << 5, /* 0x020 */
-	frightsDeleteAny            = 1U << 6, /* 0x040 */
-	frightsCreateSubfolder      = 1U << 7, /* 0x080 */
-	frightsOwner                = 1U << 8, /* 0x100, "all of the above 8" (i.e. redundant flag?) */
-	frightsContact              = 1U << 9, /* 0x200 */
-	frightsVisible              = 1U << 10, /* 0x400 */
-	frightsFreeBusySimple       = 1U << 11, /* 0x800, cf. IExchangeModifyTable */
-	frightsFreeBusyDetailed     = 1U << 12, /* 0x1000, cf. IExchangeModifyTable */
+	frightsReadAny              = 0x1U,
+	frightsCreate               = 0x2U,
+	frightsGromoxSendAs         = 0x4U,
+	frightsEditOwned            = 0x8U,
+	frightsDeleteOwned          = 0x10U,
+	frightsEditAny              = 0x20U,
+	frightsDeleteAny            = 0x40U,
+	frightsCreateSubfolder      = 0x80U,
+	/*
+	 * "All of the above 8". Kinda redundant, but then, Outlook uses it to
+	 * determine whether to show the "Permissions" tab for folders within a
+	 * public store.
+	 */
+	frightsOwner                = 0x100U,
+	frightsContact              = 0x200U,
+	frightsVisible              = 0x400U,
+	frightsFreeBusySimple       = 0x800U, /* cf. IExchangeModifyTable */
+	frightsFreeBusyDetailed     = 0x1000U, /* cf. IExchangeModifyTable */
 	/*
 	 * Special bit that can be set on *IPM_SUBTREE* to toggle the OWNER bit
 	 * on *store_object/logon_object* (since Outlook only shows
 	 * IPM_SUBTREE / and Gromox has no store-level permission bits really).
 	 */
-	frightsGromoxStoreOwner     = 1U << 13, /* 0x2000 */
+	frightsGromoxStoreOwner     = 0x2000U,
 
 	/* right sets as per edkmdb */
-	rightsNone = 0,
+	rightsNone = 0U,
 	rightsReadOnly = frightsReadAny,
 	rightsReadWrite = frightsReadAny | frightsEditAny,
 	/* (0x5fb/1531) */
