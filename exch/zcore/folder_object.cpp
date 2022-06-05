@@ -750,9 +750,11 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 		return FALSE;
 	}
 	uint16_t count = 0;
+	/* For each row in the new set... */
 	for (size_t i = 0; i < pperm_set->count; ++i) {
 		if (pperm_set->prows[i].flags & (RIGHT_NEW | RIGHT_MODIFY)) {
 			size_t j;
+			/* ... check against the old set rows. */
 			for (j=0; j<permission_set.count; j++) {
 				auto pentryid = permission_set.pparray[j]->get<BINARY>(PR_ENTRYID);
 				if (NULL != pentryid && pentryid->cb ==
@@ -770,9 +772,8 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 				pperm_data[count].flags = ROW_MODIFY;
 				pperm_data[count].propvals.count = 2;
 				pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(2);
-				if (NULL == pperm_data[i].propvals.ppropval) {
+				if (pperm_data[count].propvals.ppropval == nullptr)
 					return FALSE;
-				}
 				pperm_data[count].propvals.ppropval[0].proptag = PR_MEMBER_ID;
 				pperm_data[count].propvals.ppropval[0].pvalue =
 													pmember_id;
@@ -787,9 +788,8 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			pperm_data[count].flags = ROW_ADD;
 			pperm_data[count].propvals.count = 2;
 			pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(2);
-			if (NULL == pperm_data[i].propvals.ppropval) {
+			if (pperm_data[count].propvals.ppropval == nullptr)
 				return FALSE;
-			}
 			pperm_data[count].propvals.ppropval[0].proptag = PR_ENTRYID;
 			pperm_data[count].propvals.ppropval[0].pvalue =
 								&pperm_set->prows[i].entryid;
@@ -817,9 +817,8 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			pperm_data[count].flags = ROW_REMOVE;
 			pperm_data[count].propvals.count = 1;
 			pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>();
-			if (NULL == pperm_data[i].propvals.ppropval) {
+			if (pperm_data[count].propvals.ppropval == nullptr)
 				return FALSE;
-			}
 			pperm_data[count].propvals.ppropval[0].proptag = PR_MEMBER_ID;
 			pperm_data[count].propvals.ppropval[0].pvalue =
 												pmember_id;
