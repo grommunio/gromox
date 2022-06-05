@@ -55,6 +55,10 @@ static constexpr cfg_directive mkpublic_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
+static constexpr unsigned int rightsGromoxPubDefault = /* (0x41b/1051) */
+	frightsReadAny | frightsCreate | frightsVisible | frightsEditOwned |
+	frightsDeleteOwned;
+
 int main(int argc, const char **argv) try
 {
 	MYSQL_ROW myrow;
@@ -225,7 +229,7 @@ int main(int argc, const char **argv) try
 		{CONFIG_ID_LAST_CID, 0},
 		{CONFIG_ID_LAST_ARTICLE_NUMBER, g_last_art},
 		{CONFIG_ID_SEARCH_STATE, 0},
-		{CONFIG_ID_DEFAULT_PERMISSION, frightsReadAny | frightsCreate | frightsVisible | frightsEditOwned | frightsDeleteOwned},
+		{CONFIG_ID_DEFAULT_PERMISSION, rightsGromoxPubDefault},
 		{CONFIG_ID_ANONYMOUS_PERMISSION, 0},
 	};
 	for (const auto &e : confprops) {
