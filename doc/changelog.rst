@@ -1,3 +1,17 @@
+1.24.25
+
+Fixes:
+
+* exmdb_provider: repair PR_MEMBER_NAME transition
+* zcore: fix randomly occurring set_permission failures
+* autodiscover: resolve '&' being misrepresented
+* autodiscover: force-remove single quotes from ini values
+
+Changes:
+
+* midb: change mail_engine_ct_match to use stdlib containers
+
+
 1.24 (2022-06-01)
 =================
 
