@@ -2156,7 +2156,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			for (i=0; i<pproptags->count; i++) {
 				proptag = pproptags->pproptag[i];
 				if (proptag == PR_MEMBER_NAME_A)
-					proptag = PR_MANAGER_NAME;
+					proptag = PR_MEMBER_NAME;
 				if (!common_util_get_permission_property(member_id,
 				    pdb->psqlite, proptag, &pvalue))
 					return FALSE;
@@ -3240,7 +3240,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		}
 		pproptags->pproptag[0] = PR_ENTRYID;
 		pproptags->pproptag[1] = PR_MEMBER_ID;
-		pproptags->pproptag[2] = PR_MANAGER_NAME;
+		pproptags->pproptag[2] = PR_MEMBER_NAME;
 		pproptags->pproptag[3] = PR_MEMBER_RIGHTS;
 		return TRUE;
 	case TABLE_TYPE_RULE:
