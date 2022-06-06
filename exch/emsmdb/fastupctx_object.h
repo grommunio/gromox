@@ -13,15 +13,19 @@
 
 struct fxstream_parser;
 struct logon_object;
+struct ATTACHMENT_CONTENT;
 struct MESSAGE_CONTENT;
+struct TPROPVAL_ARRAY;
 
 struct fxup_marker_node {
 	uint32_t marker;
 	union {
-		void *pelement;
+		MESSAGE_CONTENT *msg;
+		ATTACHMENT_CONTENT *atx;
+		TPROPVAL_ARRAY *props;
 		uint32_t instance_id;
 		uint64_t folder_id;
-	} data;
+	};
 };
 
 struct fastupctx_object final {
