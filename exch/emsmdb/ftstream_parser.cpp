@@ -18,6 +18,7 @@
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include "common_util.h"
+#include "fastupctx_object.h"
 #include "ftstream_parser.h"
 #include "rop_processor.h"
 
@@ -825,8 +826,7 @@ static BOOL ftstream_parser_truncate_fd(
 	return TRUE;
 }
 
-gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
-    RECORD_PROPVAL record_propval, void *pparam)
+gxerr_t fxstream_parser::process(fastupctx_object &upctx)
 {
 	auto pstream = this;
 	uint32_t marker;
@@ -838,7 +838,7 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 		switch (ftstream_parser_read_element(*this, marker, propval)) {
 		case FTSTREAM_PARSER_READ_OK: {
 			if (0 != marker) {
-				gxerr_t err = record_marker(static_cast<fastupctx_object *>(pparam), marker);
+				gxerr_t err = upctx.record_marker(marker);
 				if (err != GXERR_SUCCESS)
 					return err;
 				break;
@@ -857,7 +857,7 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 					propval.pvalue = pvalue;
 				}
 			}
-			gxerr_t err = record_propval(static_cast<fastupctx_object *>(pparam), &propval);
+			gxerr_t err = upctx.record_propval(&propval);
 			if (err != GXERR_SUCCESS)
 				return err;
 			break;

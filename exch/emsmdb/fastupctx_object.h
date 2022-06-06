@@ -37,6 +37,8 @@ struct fastupctx_object final {
 	~fastupctx_object();
 	static std::unique_ptr<fastupctx_object> create(logon_object *, void *pobject, int root_element);
 	gxerr_t write_buffer(const BINARY *transfer_data);
+	gxerr_t record_marker(uint32_t marker);
+	gxerr_t record_propval(const TAGGED_PROPVAL *);
 
 	std::unique_ptr<fxstream_parser> pstream;
 	void *pobject = nullptr;

@@ -234,9 +234,9 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 	return GXERR_SUCCESS;
 }
 
-static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
-    uint32_t marker)
+gxerr_t fastupctx_object::record_marker(uint32_t marker)
 {
+	auto pctx = this;
 	uint32_t tmp_id;
 	uint32_t tmp_num;
 	TARRAY_SET *prcpts;
@@ -733,9 +733,9 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 	return TRUE;
 }
 
-static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
-    const TAGGED_PROPVAL *ppropval)
+gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 {
+	auto pctx = this;
 	uint32_t b_result;
 	
 	switch (ppropval->proptag) {
@@ -844,6 +844,5 @@ gxerr_t fastupctx_object::write_buffer(const BINARY *ptransfer_data)
 		return GXERR_CALL_FAILED;
 	if (!pstream->write_buffer(ptransfer_data))
 		return GXERR_CALL_FAILED;
-	return pstream->process(fastupctx_object_record_marker,
-	       fastupctx_object_record_propval, pctx);
+	return pstream->process(*this);
 }
