@@ -264,6 +264,11 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		if (0 == pctx->pproplist->count) {
 			return GXERR_CALL_FAILED;
 		}
+		/*
+		 * Normally there should be a TOPFLD in the stack (hence using
+		 * prev(node)->folder_id); but maybe there are cases when
+		 * SUBFLD is the first in the stack?
+		 */
 		uint64_t parent_id = pnode == pctx->marker_stack.begin() ?
 		                     static_cast<folder_object *>(pctx->pobject)->folder_id :
 		                     std::prev(pnode)->folder_id;
@@ -313,6 +318,7 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			return GXERR_CALL_FAILED;
 		}
 		pmarker->marker = marker;
+		pmarker->folder_id = static_cast<folder_object *>(pctx->pobject)->folder_id;
 		break;
 	case STARTSUBFLD:
 		if (ROOT_ELEMENT_TOPFOLDER != pctx->root_element &&
