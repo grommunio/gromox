@@ -13,7 +13,7 @@
 	x const char *(*get_config_path)(); \
 	x const char *(*get_data_path)(); \
 	x const char *(*get_state_path)(); \
-	x int (*get_context_num)(); \
+	x unsigned int (*get_context_num)(); \
 	x const char *(*get_host_ID)(); \
 	x const char *(*get_prog_id)(); \
 	x void *(*ndr_stack_alloc)(int, size_t);

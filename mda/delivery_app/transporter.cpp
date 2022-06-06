@@ -146,8 +146,8 @@ static const char *transporter_get_admin_mailbox();
 static const char *transporter_get_config_path();
 static const char *transporter_get_data_path();
 static const char *transporter_get_queue_path();
-static int transporter_get_threads_num();
-static int transporter_get_context_num();
+static unsigned int transporter_get_threads_num();
+static unsigned int transporter_get_context_num();
 static MESSAGE_CONTEXT *transporter_get_context();
 static void transporter_put_context(MESSAGE_CONTEXT *pcontext);
 
@@ -245,7 +245,7 @@ int transporter_run()
         return -4;
 	}
 	g_file_allocator = alloc_limiter<file_block>(FILENUM_PER_CONTROL * (g_free_num + g_threads_max));
-	for (size_t i = 0; i < g_threads_max; ++i) {
+	for (unsigned int i = 0; i < g_threads_max; ++i) {
 		mem_file_init(&g_data_ptr[i].fake_context.mail_control.f_rcpt_to, &g_file_allocator);
 		g_data_ptr[i].fake_context.mail = MAIL(g_mime_pool);
 		g_data_ptr[i].fake_context.context.pmail = &g_data_ptr[i].fake_context.mail;
@@ -279,7 +279,7 @@ int transporter_run()
 		return -1;
 	}
 
-	for (size_t i = g_threads_min; i < g_threads_max; ++i)
+	for (unsigned int i = g_threads_min; i < g_threads_max; ++i)
 		double_list_append_as_tail(&g_free_threads, &g_data_ptr[i].node);
 	for (size_t i = 0; i < g_threads_min; ++i) {
 		g_data_ptr[i].wait_on_event = TRUE;
@@ -1137,12 +1137,12 @@ static const char* transporter_get_data_path()
     return ret_value;
 }
 
-static int transporter_get_context_num()
+static unsigned int transporter_get_context_num()
 {
     return g_threads_max + g_free_num;
 }
 
-static int transporter_get_threads_num()
+static unsigned int transporter_get_threads_num()
 {
 	return g_threads_max;
 }

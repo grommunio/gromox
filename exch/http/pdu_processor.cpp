@@ -105,7 +105,7 @@ class interface_eq {
 }
 
 static BOOL g_bigendian;
-static int g_connection_num;
+static unsigned int g_connection_num;
 static char g_dns_name[128];
 static BOOL g_header_signing;
 static int g_connection_ratio;
@@ -3261,7 +3261,7 @@ static const char *pdu_processor_get_state_path()
 	return p != nullptr ? p : PKGSTATEDIR;
 }
 
-static int pdu_processor_get_context_num()
+static unsigned int pdu_processor_get_context_num()
 {
 	return g_connection_num;
 }

@@ -28,7 +28,7 @@ struct DCERPC_INTERFACE;
 	x const char *(*get_config_path)(); \
 	x const char *(*get_data_path)(); \
 	x const char *(*get_state_path)(); \
-	x int (*get_context_num)(); \
+	x unsigned int (*get_context_num)(); \
 	x uint64_t (*get_binding_handle)(); \
 	x DCERPC_INFO (*get_rpc_info)(); \
 	x BOOL (*is_rpc_bigendian)(); \

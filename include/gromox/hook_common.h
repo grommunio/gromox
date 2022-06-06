@@ -44,8 +44,8 @@ using HOOK_FUNCTION = BOOL (*)(MESSAGE_CONTEXT *);
 	x const char *(*get_data_path)(); \
 	x const char *(*get_state_path)(); \
 	x const char *(*get_queue_path)(); \
-	x int (*get_context_num)(); \
-	x int (*get_threads_num)(); \
+	x unsigned int (*get_context_num)(); \
+	x unsigned int (*get_threads_num)(); \
 	x MESSAGE_CONTEXT *(*get_context)(); \
 	x void (*put_context)(MESSAGE_CONTEXT *); \
 	x void (*enqueue_context)(MESSAGE_CONTEXT *); \

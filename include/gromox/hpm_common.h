@@ -65,7 +65,7 @@ struct HTTP_AUTH_INFO {
 	x const char *(*get_config_path)(); \
 	x const char *(*get_data_path)(); \
 	x const char *(*get_state_path)(); \
-	x int (*get_context_num)(); \
+	x unsigned int (*get_context_num)(); \
 	x void (*set_context)(int); \
 	x void (*set_ep_info)(int, const char *, int); \
 	x void *(*ndr_stack_alloc)(int, size_t); \
