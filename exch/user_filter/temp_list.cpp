@@ -11,15 +11,15 @@
 #include "str_filter.h"
 #include "temp_list.h"
 
-static int temp_list_collect_string_entry();
+static size_t temp_list_collect_string_entry();
 
 /* private global variable */
 static std::unique_ptr<STR_HASH_TABLE> g_string_hash;
 static std::mutex g_string_mutex_lock;
-static int				g_size;
+static size_t g_size;
 static BOOL				g_case_sensitive;
 
-void temp_list_init(BOOL case_sensitive, int size)
+void temp_list_init(BOOL case_sensitive, size_t size)
 {
 	g_size = size;
 	g_case_sensitive = case_sensitive;
@@ -146,14 +146,13 @@ BOOL temp_list_query(const char *str)
  *  @return
  *      the number of entries collected
  */
-static int temp_list_collect_string_entry()
+static size_t temp_list_collect_string_entry()
 {
 	time_t *pwhen;
-	int	collected_num;
 	time_t current_time;
 
 	time(&current_time);
-	collected_num = 0;
+	size_t collected_num = 0;
 	auto iter = g_string_hash->make_iter();
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {

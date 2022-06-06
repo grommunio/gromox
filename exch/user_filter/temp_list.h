@@ -3,7 +3,7 @@
 #include <ctime>
 #include <gromox/common_types.hpp>
 
-void temp_list_init(BOOL case_sensive, int size);
+extern void temp_list_init(BOOL case_sensitive, size_t max);
 extern int temp_list_run();
 extern void temp_list_free();
 BOOL temp_list_add_string(const char *str, int interval);
