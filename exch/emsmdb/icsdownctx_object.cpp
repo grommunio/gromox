@@ -142,8 +142,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 			return FALSE;	
 	}
 	
-	if ((pctx->sync_flags & SYNC_FLAG_FAI) ||
-		(pctx->sync_flags & SYNC_FLAG_NORMAL)) {
+	if (pctx->sync_flags & (SYNC_FLAG_FAI | SYNC_FLAG_NORMAL)) {
 		pctx->pmessages = eid_array_dup(&chg_messages);
 		if (NULL == pctx->pmessages) {
 			return FALSE;
@@ -186,8 +185,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 			return FALSE;
 	}
 	
-	if ((pctx->sync_flags & SYNC_FLAG_FAI) ||
-		(pctx->sync_flags & SYNC_FLAG_NORMAL)) {
+	if (pctx->sync_flags & (SYNC_FLAG_FAI | SYNC_FLAG_NORMAL)) {
 		for (size_t i = 0; i < pctx->pmessages->count; ++i) {
 			size_t j;
 			for (j=0; j<updated_messages.count; j++) {

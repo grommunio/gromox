@@ -362,7 +362,6 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	BOOL b_sub;
 	int object_type;
 	
 	if (send_options & ~(SEND_OPTIONS_UNICODE|
@@ -384,11 +383,8 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	b_sub = FALSE;
-	if (flags & FAST_COPY_FOLDER_FLAG_MOVE ||
-		flags & FAST_COPY_FOLDER_FLAG_COPYSUBFOLDERS) {
-		b_sub = TRUE;
-	}
+	BOOL b_sub = (flags & (FAST_COPY_FOLDER_FLAG_MOVE |
+	             FAST_COPY_FOLDER_FLAG_COPYSUBFOLDERS)) ? TRUE : false;
 	auto pfldctnt = oxcfxics_load_folder_content(plogon, pfolder->folder_id,
 	           TRUE, TRUE, b_sub);
 	if (NULL == pfldctnt) {

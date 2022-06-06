@@ -84,8 +84,7 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 	pctx->pgiven_eids = eid_array_dup(&given_messages);
 	if (pctx->pgiven_eids == nullptr)
 		return FALSE;
-	if ((sync_flags & SYNC_FLAG_FAI) ||
-		(sync_flags & SYNC_FLAG_NORMAL)) {
+	if (sync_flags & (SYNC_FLAG_FAI | SYNC_FLAG_NORMAL)) {
 		if (pctx->pchg_eids != nullptr)
 			eid_array_free(pctx->pchg_eids);
 		pctx->pchg_eids = eid_array_dup(&chg_messages);
