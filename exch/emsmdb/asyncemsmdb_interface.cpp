@@ -54,7 +54,7 @@ static std::unordered_map<std::string, ASYNC_WAIT *> g_tag_hash;
 static size_t g_tag_hash_max;
 static std::mutex g_list_lock, g_async_lock;
 static std::condition_variable g_waken_cond;
-static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
+static std::unordered_map<int, ASYNC_WAIT *> g_async_hash;
 static alloc_limiter<ASYNC_WAIT> g_wait_allocator;
 
 static void *aemsi_scanwork(void *);
@@ -80,11 +80,6 @@ int asyncemsmdb_interface_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_async_hash = INT_HASH_TABLE::create(2 * context_num, sizeof(ASYNC_WAIT *));
-	if (NULL == g_async_hash) {
-		printf("[exchange_emsmdb]: Failed to init async ID hash table\n");
-		return -2;
-	}
 	g_wait_allocator = alloc_limiter<ASYNC_WAIT>(2 * context_num);
 	g_tag_hash_max = context_num;
 	g_notify_stop = false;
@@ -129,7 +124,7 @@ void asyncemsmdb_interface_stop()
 	}
 	g_thread_ids.clear();
 	g_tag_hash.clear();
-	g_async_hash.reset();
+	g_async_hash.clear();
 }
 
 void asyncemsmdb_interface_free()
@@ -174,14 +169,18 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	         static_cast<int>(pwait->cxr));
 	HX_strlower(tmp_tag);
 	std::unique_lock as_hold(g_async_lock);
-	if (0 != async_id) {
-		if (g_async_hash->add(async_id, &pwait) != 1) {
-			as_hold.unlock();
-			g_wait_allocator.put(pwait);
-			pout->flags_out = 0;
-			pout->result = ecRejected;
-			return DISPATCH_SUCCESS;
-		}
+	if (async_id != 0) try {
+		if (g_async_hash.size() >= 2 * get_context_num())
+			throw std::bad_alloc();
+		auto pair = g_async_hash.emplace(async_id, pwait);
+		if (!pair.second)
+			throw std::bad_alloc();
+	} catch (const std::bad_alloc &) {
+		as_hold.unlock();
+		g_wait_allocator.put(pwait);
+		pout->flags_out = 0;
+		pout->result = ecRejected;
+		return DISPATCH_SUCCESS;
 	}
 	try {
 		if (g_tag_hash.size() < g_tag_hash_max &&
@@ -191,7 +190,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		fprintf(stderr, "W-1540: ENOMEM\n");
 	}
 	if (async_id != 0)
-		g_async_hash->remove(async_id);
+		g_async_hash.erase(async_id);
 	as_hold.unlock();
 	g_wait_allocator.put(pwait);
 	pout->flags_out = 0;
@@ -202,19 +201,17 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 void asyncemsmdb_interface_reclaim(uint32_t async_id)
 {
 	char tmp_tag[TAG_SIZE];
-	ASYNC_WAIT *pwait;
 	
 	std::unique_lock as_hold(g_async_lock);
-	auto ppwait = g_async_hash->query<ASYNC_WAIT *>(async_id);
-	if (NULL == ppwait) {
+	auto iter = g_async_hash.find(async_id);
+	if (iter == g_async_hash.end())
 		return;
-	}
-	pwait = *ppwait;
+	auto pwait = iter->second;
 	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d", pwait->username,
 	         static_cast<int>(pwait->cxr));
 	HX_strlower(tmp_tag);
 	g_tag_hash.erase(tmp_tag);
-	g_async_hash->remove(async_id);
+	g_async_hash.erase(async_id);
 	as_hold.unlock();
 	g_wait_allocator.put(pwait);
 }
@@ -236,7 +233,7 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 		return;
 	auto pwait = iter->second;
 	if (0 != pwait->async_id) {
-		g_async_hash->remove(pwait->async_id);
+		g_async_hash.erase(pwait->async_id);
 	}
 	g_tag_hash.erase(iter);
 	as_hold.unlock();
@@ -270,7 +267,7 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 	auto pwait = iter->second;
 	g_tag_hash.erase(iter);
 	if (0 != pwait->async_id) {
-		g_async_hash->remove(pwait->async_id);
+		g_async_hash.erase(pwait->async_id);
 	}
 	as_hold.unlock();
 	std::unique_lock ll_hold(g_list_lock);
@@ -322,7 +319,7 @@ static void *aemsi_scanwork(void *param)
 			}
 			iter = g_tag_hash.erase(iter);
 			if (pwait->async_id != 0)
-				g_async_hash->remove(pwait->async_id);
+				g_async_hash.erase(pwait->async_id);
 			double_list_append_as_tail(&temp_list, &pwait->node);
 		}
 		as_hold.unlock();
