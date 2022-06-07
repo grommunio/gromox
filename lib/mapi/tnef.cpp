@@ -9,7 +9,6 @@
 #include <unordered_map>
 #include <libHX/string.h>
 #include <gromox/defs.h>
-#include <gromox/int_hash.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
@@ -1028,7 +1027,8 @@ static BOOL tnef_convert_to_propname(const std::string &input_tag,
 	return FALSE;
 }
 
-static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash)
+static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist,
+    const std::unordered_map<uint16_t, uint16_t> &phash)
 {
 	int i;
 	uint16_t propid;
@@ -1039,14 +1039,14 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash
 		propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;
-		auto ppropid = phash->query<uint16_t>(propid);
-		if (NULL == ppropid || 0 == *ppropid) {
+		auto ppropid = phash.find(propid);
+		if (ppropid == phash.cend() || ppropid->second == 0) {
 			pproplist->erase(proptag);
 			i --;
 			continue;
 		}
 		pproplist->ppropval[i].proptag =
-			PROP_TAG(PROP_TYPE(pproplist->ppropval[i].proptag), *ppropid);
+			PROP_TAG(PROP_TYPE(pproplist->ppropval[i].proptag), ppropid->second);
 	}
 }
 
@@ -1622,23 +1622,22 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	
 	if (!get_propids(&propnames, &propids1))
 		return NULL;
-	auto phash1 = INT_HASH_TABLE::create(0x1000, sizeof(uint16_t));
-	if (NULL == phash1) {
-		return NULL;
+	std::unordered_map<uint16_t, uint16_t> phash1;
+	try { for (size_t i = 0; i < propids.count; ++i)
+		phash1.emplace(propids.ppropid[i], propids1.ppropid[i]);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1987: ENOMEM\n");
 	}
-	for (size_t i = 0; i < propids.count; ++i)
-		phash1->add(propids.ppropid[i], propids1.ppropid + i);
-	tnef_replace_propid(&pmsg->proplist, phash1.get());
+	tnef_replace_propid(&pmsg->proplist, phash1);
 	if (NULL != pmsg->children.prcpts) {
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
-			tnef_replace_propid(pmsg->children.prcpts->pparray[i], phash1.get());
+			tnef_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
 	}
 	if (NULL != pmsg->children.pattachments) {
 		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i)
 			tnef_replace_propid(
-				&pmsg->children.pattachments->pplist[i]->proplist, phash1.get());
+				&pmsg->children.pattachments->pplist[i]->proplist, phash1);
 	}
-	phash1.reset();
 	
 	if (!pmsg->proplist.has(PR_INTERNET_CPID)) {
 		pmsg->proplist.set(PR_INTERNET_CPID, &cpid);
