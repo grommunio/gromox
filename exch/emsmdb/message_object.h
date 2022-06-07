@@ -23,7 +23,7 @@ struct message_object {
 	uint32_t get_instance_id() const { return instance_id; }
 	BOOL check_original_touched(BOOL *touched);
 	BOOL check_importing() const;
-	BOOL init_message(bool fai, uint32_t cpid);
+	gromox::errno_t init_message(bool fai, uint32_t cpid);
 	uint64_t get_id() const { return message_id; }
 	uint32_t get_cpid() const { return cpid; }
 	uint32_t get_tag_access() const { return tag_access; }

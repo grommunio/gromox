@@ -973,7 +973,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 			return ecError;
 	} else {
 		BOOL b_fai = (import_flags & IMPORT_FLAG_ASSOCIATED) ? TRUE : false;
-		if (!pmessage->init_message(b_fai, pinfo->cpid))
+		if (pmessage->init_message(b_fai, pinfo->cpid) != 0)
 			return ecError;
 	}
 	tmp_propvals.count = 3;

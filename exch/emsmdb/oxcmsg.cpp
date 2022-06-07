@@ -240,7 +240,7 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 	if (pmessage == nullptr)
 		return ecMAPIOOM;
 	BOOL b_fai = associated_flag == 0 ? false : TRUE;
-	if (!pmessage->init_message(b_fai, cpid))
+	if (pmessage->init_message(b_fai, cpid) != 0)
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
@@ -872,7 +872,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 		           nullptr);
 		if (pmessage == nullptr)
 			return ecError;
-		if (!pmessage->init_message(false, cpid))
+		if (pmessage->init_message(false, cpid) != 0)
 			return ecError;
 		proptags.count = 1;
 		proptags.pproptag = proptag_buff;
