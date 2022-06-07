@@ -247,7 +247,7 @@ struct RTF_READER {
 	char default_encoding[32] = "windows-1252", current_encoding[32]{};
 	char html_charset[32]{};
 	int default_font_number = 0;
-	std::unique_ptr<INT_HASH_TABLE> pfont_hash;
+	std::unordered_map<int, FONTENTRY> pfont_hash;
 	DOUBLE_LIST attr_stack_list{};
 	EXT_PULL ext_pull{};
 	EXT_PUSH ext_push{};
@@ -495,7 +495,8 @@ static const FONTENTRY *rtf_lookup_font(RTF_READER *preader, int num)
 	if (num < 0) {
 		return &fake_entries[-num-1];
 	}
-	return preader->pfont_hash->query<FONTENTRY>(num);
+	auto i = preader->pfont_hash.find(num);
+	return i != preader->pfont_hash.cend() ? &i->second : nullptr;
 }
 
 static bool rtf_add_to_collection(DOUBLE_LIST *plist, int nr, const char *text)
@@ -563,10 +564,6 @@ static bool rtf_init_reader(RTF_READER *preader, const char *prtf_buff,
 {
 	double_list_init(&preader->attr_stack_list);
 	preader->ext_pull.init(prtf_buff, rtf_length, [](size_t) -> void * { return nullptr; }, 0);
-	preader->pfont_hash = INT_HASH_TABLE::create(MAX_FONTS, sizeof(FONTENTRY));
-	if (NULL == preader->pfont_hash) {
-		return false;
-	}
 	if (!preader->ext_push.init(nullptr, 0, 0) ||
 	    !preader->iconv_push.init(nullptr, 0, 0))
 		return false;
@@ -593,7 +590,6 @@ RTF_READER::~RTF_READER()
 	DOUBLE_LIST_NODE *pnode;
 	ATTRSTACK_NODE *pattrstack;
 	
-	preader->pfont_hash.reset();
 	while ((pnode = double_list_pop_front(&preader->attr_stack_list)) != nullptr) {
 		pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
 		free(pattrstack);
@@ -1641,7 +1637,12 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			*ptoken = '\0';
 		}
 		gx_strlcpy(tmp_entry.name, name, GX_ARRAY_SIZE(tmp_entry.name));
-		preader->pfont_hash->add(num, &tmp_entry);
+		try {
+			if (preader->pfont_hash.size() < MAX_FONTS)
+				preader->pfont_hash.emplace(num, std::move(tmp_entry));
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1986: ENOMEM\n");
+		}
 	} while ((pword = pword->get_sibling()) != nullptr);
 	if ('\0' == preader->default_encoding[0]) {
 		strcpy(preader->default_encoding, "windows-1252");
