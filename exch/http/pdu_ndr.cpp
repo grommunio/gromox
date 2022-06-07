@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
