@@ -266,8 +266,7 @@ int main(int argc, const char **argv) try
 	}
 	gx_reexec_record(sockd);
 	auto cl_2 = make_scope_exit([&]() { close(sockd); });
-	auto ret = switch_user_exec(*pconfig, argv);
-	if (ret < 0)
+	if (switch_user_exec(*pconfig, argv) != 0)
 		return 7;
 	
 	g_threads_num ++;
@@ -290,7 +289,7 @@ int main(int argc, const char **argv) try
 	});
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		ret = pthread_create(&tid, &thr_attr, ev_enqwork, nullptr);
+		auto ret = pthread_create(&tid, &thr_attr, ev_enqwork, nullptr);
 		if (ret != 0) {
 			g_notify_stop = true;
 			printf("[system]: failed to create enqueue pool thread: %s\n", strerror(ret));
@@ -312,7 +311,7 @@ int main(int argc, const char **argv) try
 		tidlist.push_back(tid);
 	}
 
-	ret = list_file_read_fixedstrings("event_acl.txt",
+	auto ret = list_file_read_fixedstrings("event_acl.txt",
 	           pconfig->get_value("config_file_path"), g_acl_list);
 	if (ret == -ENOENT) {
 		printf("[system]: defaulting to implicit access ACL containing ::1.\n");

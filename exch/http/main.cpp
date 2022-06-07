@@ -354,8 +354,7 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;
 	}
-	auto ret = switch_user_exec(*g_config_file, argv);
-	if (ret < 0)
+	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	if (0 != service_run()) { 
 		printf("---------------------------- service plugins end"

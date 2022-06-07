@@ -252,8 +252,7 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return 3;
 	}
-	auto ret = switch_user_exec(*g_config_file, argv);
-	if (ret < 0)
+	if (switch_user_exec(*g_config_file, argv) != 0)
 		return 3;
 	if (0 != service_run()) {
 		printf("[system]: failed to run service\n");

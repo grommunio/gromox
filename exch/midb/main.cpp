@@ -228,8 +228,7 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run tcp listener\n");
 		return 6;
 	}
-	auto ret = switch_user_exec(*pconfig, argv);
-	if (ret < 0)
+	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
 	if (0 != service_run()) {
 		printf("[system]: failed to run service\n");

@@ -436,7 +436,7 @@ void startup_banner(const char *prog)
  * file access errors that would occur before gx_reexec, and we can be sure
  * that privileged informationed does not escape into a dump.
  */
-int gx_reexec(const char *const *argv)
+errno_t gx_reexec(const char *const *argv)
 {
 	auto s = getenv("GX_REEXEC_DONE");
 	if (s != nullptr || argv == nullptr) {
@@ -457,14 +457,14 @@ int gx_reexec(const char *const *argv)
 	auto ret = HX_readlink(&resolved, "/proc/self/exe");
 	if (ret < 0) {
 		fprintf(stderr, "reexec: readlink: %s", strerror(-ret));
-		return ret;
+		return -ret;
 	}
 	fprintf(stderr, "Reexecing %s\n", resolved);
 	execv(resolved, const_cast<char **>(argv));
 	int saved_errno = errno;
 	perror("execv");
 	HXmc_free(resolved);
-	return -saved_errno;
+	return saved_errno;
 }
 
 void gx_reexec_record(int fd)
@@ -473,7 +473,7 @@ void gx_reexec_record(int fd)
 		gx_reexec_top_fd = fd;
 }
 
-int switch_user_exec(const CONFIG_FILE &cf, const char **argv)
+errno_t switch_user_exec(const CONFIG_FILE &cf, const char **argv)
 {
 	auto user = cf.get_value("running_identity");
 	if (user == nullptr)
@@ -499,7 +499,7 @@ int switch_user_exec(const CONFIG_FILE &cf, const char **argv)
 		fprintf(stderr, "initgroups for \"%s\" failed: %s\n", user, strerror(errno));
 		break;
 	}
-	return -errno;
+	return errno;
 }
 
 int setup_sigalrm()
