@@ -4,7 +4,6 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#define _GNU_SOURCE 1 /* unistd.h:environ */
 #include <cerrno>
 #include <csignal>
 #include <cstdarg>
@@ -38,6 +37,10 @@
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
+
+extern "C" {
+extern char **environ;
+}
 
 class hxmc_deleter {
 	public:
