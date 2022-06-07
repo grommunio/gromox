@@ -308,7 +308,7 @@ uint32_t props_to_defer_interval(const TPROPVAL_ARRAY &pv)
 	}
 }
 
-int make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
+errno_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
 {
 	if (bufsize < 77)
 		return ENOSPC;

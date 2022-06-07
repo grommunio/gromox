@@ -1069,7 +1069,7 @@ struct tarray_set {
 	TPROPVAL_ARRAY *emplace();
 	inline TPROPVAL_ARRAY *back() { return pparray[count-1]; }
 	inline const TPROPVAL_ARRAY *back() const { return pparray[count-1]; }
-	int append_move(tpropval_array_ptr &&);
+	gromox::errno_t append_move(tpropval_array_ptr &&);
 	tarray_set *dup() const;
 
 	uint32_t count;

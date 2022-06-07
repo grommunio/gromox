@@ -47,7 +47,7 @@ void tarray_set::erase(uint32_t index)
 	tpropval_array_free(parray);
 }
 
-int tarray_set::append_move(tpropval_array_ptr &&pproplist)
+gromox::errno_t tarray_set::append_move(tpropval_array_ptr &&pproplist)
 {
 	auto pset = this;
 	

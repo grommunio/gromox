@@ -26,6 +26,8 @@
 #include "table_object.h"
 #include "zarafa_server.h"
 
+using namespace gromox;
+
 static void table_object_reset(table_object *);
 static BOOL table_object_get_store_table_all_proptags(PROPTAG_ARRAY *);
 
@@ -37,7 +39,7 @@ static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 	ptable->table_id = table_id;
 }
 
-static int storetbl_add_row(table_object *tbl, const USER_INFO &info,
+static errno_t storetbl_add_row(table_object *tbl, const USER_INFO &info,
     const PROPTAG_ARRAY &tags, bool is_private, unsigned int user_id)
 {
 	uint32_t handle = info.ptree->get_store_handle(is_private ? TRUE : false, user_id);
@@ -57,7 +59,7 @@ static int storetbl_add_row(table_object *tbl, const USER_INFO &info,
 	return tbl->fixed_data->append_move(std::move(pdup));
 }
 
-static int storetbl_refresh(table_object *tbl)
+static errno_t storetbl_refresh(table_object *tbl)
 {
 	auto info = zarafa_server_get_info();
 	if (info == nullptr)
@@ -203,7 +205,7 @@ static BOOL table_object_get_store_table_all_proptags(
 			continue;	
 		pproptags->pproptag[pproptags->count++] = tmp_proptags2.pproptag[i];
 	}
-	for (size_t i = 0; i < gromox::arsizeof(proptag_buff); ++i) {
+	for (size_t i = 0; i < arsizeof(proptag_buff); ++i) {
 		if (tmp_proptags1.has(proptag_buff[i]) ||
 		    tmp_proptags2.has(proptag_buff[i]))
 			continue;	
@@ -734,7 +736,7 @@ std::unique_ptr<table_object> table_object::create(store_object *pstore,
 	}
 	ptable->pstore = pstore;
 	if (RULE_TABLE == table_type) {
-		ptable->pparent_obj = gromox::me_alloc<uint64_t>();
+		ptable->pparent_obj = me_alloc<uint64_t>();
 		if (NULL == ptable->pparent_obj) {
 			return NULL;
 		}

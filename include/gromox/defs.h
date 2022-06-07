@@ -2,6 +2,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#ifdef COMPILE_DIAG
+#	include <stdexcept>
+#endif
 #include <string>
 #include <type_traits>
 #define SOCKET_TIMEOUT 60
@@ -413,4 +416,23 @@ template<typename U, typename V> static int three_way_compare(U &&a, V &&b)
 {
 	return (a < b) ? -1 : (a == b) ? 0 : 1;
 }
+
+#ifdef COMPILE_DIAG
+struct errno_t {
+	constexpr errno_t(int x) : m_value(x) {
+#ifdef COVERITY
+		assert(x >= 0);
+#else
+		if (x < 0)
+			throw std::logic_error("errno_t value must be >=0");
+#endif
+	}
+	constexpr operator int() const { return m_value; }
+	private:
+	int m_value = 0;
+};
+#else
+using errno_t = int;
+#endif
+
 }

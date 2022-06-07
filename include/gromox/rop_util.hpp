@@ -34,5 +34,5 @@ void rop_util_free_binary(BINARY *pbin);
 namespace gromox {
 extern GX_EXPORT uint64_t apptime_to_nttime_approx(double);
 extern GX_EXPORT uint32_t props_to_defer_interval(const TPROPVAL_ARRAY &);
-extern GX_EXPORT int make_inet_msgid(char *, size_t, uint32_t);
+extern GX_EXPORT errno_t make_inet_msgid(char *, size_t, uint32_t);
 }

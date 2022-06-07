@@ -86,7 +86,7 @@ struct driver final {
 
 struct ace_list final {
 	ace_list();
-	int emplace(std::string &&, uint32_t);
+	errno_t emplace(std::string &&, uint32_t);
 	inline size_t size() const { return m_rows.size(); }
 	inline const std::vector<PERMISSION_DATA> &get_perms() const { return m_rows; }
 
@@ -202,7 +202,7 @@ static bool skip_property(uint16_t id)
 ace_list::ace_list() : m_rdata(tarray_set_init())
 {}
 
-int ace_list::emplace(std::string &&s, uint32_t r)
+errno_t ace_list::emplace(std::string &&s, uint32_t r)
 {
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
@@ -809,7 +809,7 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 		if (ret == ENOMEM)
 			throw std::bad_alloc();
 		else if (ret != 0)
-			throw YError("PK-1023: %d", ret);
+			throw YError("PK-1023: %d", static_cast<int>(ret));
 	}
 	return yi;
 }

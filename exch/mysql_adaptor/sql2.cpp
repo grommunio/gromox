@@ -358,7 +358,7 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	return false;
 }
 
-int mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
+errno_t mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
 {
 	char query[76];
 	snprintf(query, arsizeof(query), "SELECT `secondary` "

@@ -47,7 +47,7 @@ struct rd_connection {
 };
 }
 
-static int rd_starttls(rd_connection &&, MESSAGE_CONTEXT *, std::string &);
+static errno_t rd_starttls(rd_connection &&, MESSAGE_CONTEXT *, std::string &);
 
 static constexpr unsigned int network_timeout = 180;
 static std::unique_ptr<SSL_CTX, rd_delete> g_tls_ctx;
@@ -142,7 +142,7 @@ static bool rd_send_cmd(const rd_connection &conn,
 	return w == clen;
 }
 
-static int rd_get_response(const rd_connection &conn,
+static errno_t rd_get_response(const rd_connection &conn,
     std::string &response, char want_code = '2')
 {
 	size_t offset = 0;
@@ -197,7 +197,7 @@ static int rd_get_response(const rd_connection &conn,
 	return want_code != 0 && response[0] == want_code ? 0 : EBADMSG;
 }
 
-static int rd_hello(const rd_connection &conn, MESSAGE_CONTEXT *ctx,
+static errno_t rd_hello(const rd_connection &conn, MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	char cmd[1024];
@@ -218,7 +218,7 @@ static int rd_hello(const rd_connection &conn, MESSAGE_CONTEXT *ctx,
 	return ret;
 }
 
-static int rd_mailfrom(rd_connection &conn, MESSAGE_CONTEXT *ctx,
+static errno_t rd_mailfrom(rd_connection &conn, MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	char cmd[UADDR_SIZE+24];
@@ -234,7 +234,7 @@ static int rd_mailfrom(rd_connection &conn, MESSAGE_CONTEXT *ctx,
 	return ret;
 }
 
-static int rd_rcptto(rd_connection &conn, MESSAGE_CONTEXT *ctx,
+static errno_t rd_rcptto(rd_connection &conn, MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	bool any_success = false;
@@ -259,7 +259,7 @@ static int rd_rcptto(rd_connection &conn, MESSAGE_CONTEXT *ctx,
 	return 0;
 }
 
-static int rd_data(rd_connection &&conn, MESSAGE_CONTEXT *ctx, std::string &response)
+static errno_t rd_data(rd_connection &&conn, MESSAGE_CONTEXT *ctx, std::string &response)
 {
 	if (!rd_send_cmd(conn, "DATA\r\n", 6))
 		return ETIMEDOUT;
@@ -291,7 +291,7 @@ static int rd_data(rd_connection &&conn, MESSAGE_CONTEXT *ctx, std::string &resp
 	return 0;
 }
 
-static int rd_session_begin(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
+static errno_t rd_session_begin(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	auto ret = rd_hello(conn, ctx, response);
@@ -310,7 +310,7 @@ static int rd_session_begin(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
 	return rd_data(std::move(conn), ctx, response);
 }
 
-static int rd_starttls(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
+static errno_t rd_starttls(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	if (!rd_send_cmd(conn, "STARTTLS\r\n", 10))
@@ -336,7 +336,7 @@ static int rd_starttls(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
 	return rd_session_begin(std::move(conn), ctx, response);
 }
 
-static int rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
+static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 {
 	ctx->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	rd_connection conn;
