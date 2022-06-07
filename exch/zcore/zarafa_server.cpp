@@ -1710,7 +1710,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	if (pmessage == nullptr)
 		return ecError;
 	BOOL b_fai = (flags & FLAG_ASSOCIATED) ? TRUE : false;
-	if (!pmessage->init_message(b_fai, pinfo->cpid))
+	if (pmessage->init_message(b_fai, pinfo->cpid) != 0)
 		return ecError;
 	/* add the store handle as the parent object handle
 		because the caller normally will not keep the
@@ -3927,7 +3927,7 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		           pattachment, tag_access, TRUE, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
-		if (!pmessage->init_message(false, pinfo->cpid))
+		if (pmessage->init_message(false, pinfo->cpid) != 0)
 			return ecError;
 	}
 	/* add the store handle as the parent object handle
@@ -4490,7 +4490,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	                OPEN_MODE_FLAG_READWRITE, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
-	if (b_new && !pmessage->init_message(b_fai, pinfo->cpid))
+	if (b_new && pmessage->init_message(b_fai, pinfo->cpid) != 0)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hctx, {ZMG_MESSAGE, std::move(pmessage)});
 	if (*phobject == INVALID_HANDLE)

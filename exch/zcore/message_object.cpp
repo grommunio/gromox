@@ -142,7 +142,7 @@ message_object::~message_object()
 	}
 }
 
-BOOL message_object::init_message(bool fai, uint32_t new_cpid)
+errno_t message_object::init_message(bool fai, uint32_t new_cpid)
 {
 	auto pmessage = this;
 	EXT_PUSH ext_push;
@@ -150,23 +150,23 @@ BOOL message_object::init_message(bool fai, uint32_t new_cpid)
 	TPROPVAL_ARRAY propvals;
 	
 	if (!pmessage->b_new)
-		return FALSE;
+		return EINVAL;
 	propvals.count = 0;
 	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(20);
 	if (NULL == propvals.ppropval) {
-		return FALSE;
+		return ENOMEM;
 	}
 	
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_CODEPAGE;
 	auto msgcpid = cu_alloc<uint32_t>();
 	if (msgcpid == nullptr)
-		return FALSE;
+		return ENOMEM;
 	*msgcpid = new_cpid;
 	propvals.ppropval[propvals.count++].pvalue = msgcpid;
 	propvals.ppropval[propvals.count].proptag = PR_IMPORTANCE;
 	auto importance = cu_alloc<uint32_t>();
 	if (importance == nullptr)
-		return FALSE;
+		return ENOMEM;
 	*importance = IMPORTANCE_NORMAL;
 	propvals.ppropval[propvals.count++].pvalue = importance;
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_CLASS;
@@ -174,7 +174,7 @@ BOOL message_object::init_message(bool fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count].proptag = PR_SENSITIVITY;
 	auto sens = cu_alloc<uint32_t>();
 	if (sens == nullptr)
-		return FALSE;
+		return ENOMEM;
 	*sens = SENSITIVITY_NONE;
 	propvals.ppropval[propvals.count++].pvalue = sens;
 	propvals.ppropval[propvals.count].proptag   = PR_ORIGINAL_DISPLAY_BCC;
@@ -186,42 +186,42 @@ BOOL message_object::init_message(bool fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_FLAGS;
 	auto msgflags = cu_alloc<uint32_t>();
 	if (msgflags == nullptr)
-		return FALSE;
+		return ENOMEM;
 	*msgflags = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
 	propvals.ppropval[propvals.count++].pvalue = msgflags;
 	propvals.ppropval[propvals.count].proptag = PR_READ;
 	auto readflag = cu_alloc<uint8_t>();
 	if (readflag == nullptr)
-		return FALSE;
+		return ENOMEM;
 	*readflag = 1;
 	propvals.ppropval[propvals.count++].pvalue = readflag;
 	propvals.ppropval[propvals.count].proptag = PR_ASSOCIATED;
 	auto assocflag = cu_alloc<uint8_t>();
 	if (assocflag == nullptr)
-		return FALSE;
+		return ENOMEM;
 	*assocflag = fai;
 	propvals.ppropval[propvals.count++].pvalue = assocflag;
 	propvals.ppropval[propvals.count].proptag = PR_TRUST_SENDER;
 	auto trustsender = cu_alloc<uint32_t>();
 	if (trustsender == nullptr)
-		return FALSE;
+		return ENOMEM;
 	*trustsender = 1;
 	propvals.ppropval[propvals.count++].pvalue = trustsender;
 	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
 	auto crtime = cu_alloc<uint64_t>();
 	if (crtime == nullptr)
-		return FALSE;
+		return ENOMEM;
 	*crtime = rop_util_current_nttime();
 	propvals.ppropval[propvals.count++].pvalue = crtime;
 	propvals.ppropval[propvals.count].proptag = PR_SEARCH_KEY;
 	auto search_key = common_util_guid_to_binary(GUID::random_new());
 	if (search_key == nullptr)
-		return FALSE;
+		return ENOMEM;
 	propvals.ppropval[propvals.count++].pvalue = search_key;
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_LOCALE_ID;
 	auto msglcid = cu_alloc<uint32_t>();
 	if (msglcid == nullptr)
-		return FALSE;
+		return ENOMEM;
 	*msglcid = 0x0409;
 	propvals.ppropval[propvals.count++].pvalue = msglcid;
 	propvals.ppropval[propvals.count].proptag = PR_LOCALE_ID;
@@ -230,7 +230,7 @@ BOOL message_object::init_message(bool fai, uint32_t new_cpid)
 	static constexpr size_t dispnamesize = 1024;
 	auto dispname = cu_alloc<char>(1024);
 	if (dispname == nullptr)
-		return FALSE;
+		return ENOMEM;
 	auto pinfo = zarafa_server_get_info();
 	if (!system_services_get_user_displayname(pinfo->get_username(),
 	    dispname, dispnamesize) || *dispname == '\0')
@@ -240,18 +240,19 @@ BOOL message_object::init_message(bool fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count].proptag = PR_CREATOR_ENTRYID;
 	auto abk_eid = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (abk_eid == nullptr)
-		return FALSE;
+		return ENOMEM;
 	propvals.ppropval[propvals.count++].pvalue = abk_eid;
 	char id_string[UADDR_SIZE+2];
-	if (make_inet_msgid(id_string, arsizeof(id_string), 0x5a54) != 0)
-		return false;
+	auto ret = make_inet_msgid(id_string, arsizeof(id_string), 0x5a54);
+	if (ret != 0)
+		return ret;
 	propvals.ppropval[propvals.count].proptag = PR_INTERNET_MESSAGE_ID;
 	propvals.ppropval[propvals.count++].pvalue = id_string;
 	if (!exmdb_client::set_instance_properties(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &propvals, &problems))
-		return FALSE;	
+		return EIO;
 	pmessage->b_touched = TRUE;
-	return TRUE;
+	return 0;
 }
 
 gxerr_t message_object::save()

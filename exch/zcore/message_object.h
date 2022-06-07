@@ -23,7 +23,7 @@ struct message_object {
 	BOOL check_original_touched(BOOL *touched);
 	BOOL check_importing() const { return message_id != 0 && pstate != nullptr ? TRUE : false; }
 	BOOL check_writable() const { return b_writable; }
-	BOOL init_message(bool fai, uint32_t cpid);
+	gromox::errno_t init_message(bool fai, uint32_t cpid);
 	uint64_t get_id() const { return message_id; }
 	store_object *get_store() const { return pstore; }
 	gxerr_t save();
