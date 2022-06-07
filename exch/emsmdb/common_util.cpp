@@ -1049,29 +1049,23 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 {
 	memset(prow, 0, sizeof(RECIPIENT_ROW));
 	prow->flags |= RECIPIENT_ROW_FLAG_UNICODE;
-	auto pvalue = ppropvals->getval(PR_RESPONSIBILITY);
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+	auto flag = ppropvals->get<const uint8_t>(PR_RESPONSIBILITY);
+	if (flag != nullptr && *flag != 0)
 		prow->flags |= RECIPIENT_ROW_FLAG_RESPONSIBLE;
-	}
-	pvalue = ppropvals->getval(PR_SEND_RICH_INFO);
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+	flag = ppropvals->get<const uint8_t>(PR_SEND_RICH_INFO);
+	if (flag != nullptr && *flag != 0)
 		prow->flags |= RECIPIENT_ROW_FLAG_NONRICH;
-	}
 	prow->ptransmittable_name = ppropvals->get<char>(PR_TRANSMITABLE_DISPLAY_NAME);
 	if (NULL == prow->ptransmittable_name) {
-		pvalue = ppropvals->getval(PR_TRANSMITABLE_DISPLAY_NAME_A);
-		if (NULL != pvalue) {
-			prow->ptransmittable_name =
-				common_util_dup_mb_to_utf8(cpid, static_cast<char *>(pvalue));
-		}
+		auto name = ppropvals->get<const char>(PR_TRANSMITABLE_DISPLAY_NAME_A);
+		if (name != nullptr)
+			prow->ptransmittable_name = common_util_dup_mb_to_utf8(cpid, name);
 	}
 	prow->pdisplay_name = ppropvals->get<char>(PR_DISPLAY_NAME);
 	if (NULL == prow->pdisplay_name) {
-		pvalue = ppropvals->getval(PR_DISPLAY_NAME_A);
-		if (NULL != pvalue) {
-			prow->pdisplay_name =
-				common_util_dup_mb_to_utf8(cpid, static_cast<char *>(pvalue));
-		}
+		auto name = ppropvals->get<const char>(PR_DISPLAY_NAME_A);
+		if (name != nullptr)
+			prow->pdisplay_name = common_util_dup_mb_to_utf8(cpid, name);
 	}
 	if (NULL != prow->ptransmittable_name && NULL != prow->pdisplay_name &&
 		0 == strcasecmp(prow->pdisplay_name, prow->ptransmittable_name)) {
@@ -1086,26 +1080,24 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 	}
 	prow->psimple_name = ppropvals->get<char>(PR_EMS_AB_DISPLAY_NAME_PRINTABLE);
 	if (NULL == prow->psimple_name) {
-		pvalue = ppropvals->getval(PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A);
-		if (NULL != pvalue) {
-			prow->psimple_name =
-				common_util_dup_mb_to_utf8(cpid, static_cast<char *>(pvalue));
-		}
+		auto name = ppropvals->get<const char>(PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A);
+		if (name != nullptr)
+			prow->psimple_name = common_util_dup_mb_to_utf8(cpid, name);
 	}
 	if (NULL != prow->psimple_name) {
 		prow->flags |= RECIPIENT_ROW_FLAG_SIMPLE;
 	}
-	pvalue = ppropvals->getval(PR_ADDRTYPE);
-	if (NULL != pvalue) {
-		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
+	auto addrtype = ppropvals->get<const char>(PR_ADDRTYPE);
+	if (addrtype != nullptr) {
+		if (strcasecmp(addrtype, "EX") == 0) {
 			prow->flags |= RECIPIENT_ROW_TYPE_X500DN;
 			static constexpr uint8_t dummy_zero = 0;
 			prow->pprefix_used = deconst(&dummy_zero);
-			pvalue = ppropvals->getval(PR_DISPLAY_TYPE);
-			if (NULL == pvalue) {
+			auto disptype = ppropvals->get<const uint32_t>(PR_DISPLAY_TYPE);
+			if (disptype == nullptr) {
 				prow->display_type = DT_MAILUSER;
 			} else {
-				prow->display_type = *static_cast<uint32_t *>(pvalue);
+				prow->display_type = *disptype;
 				if (prow->display_type >= DT_ROOM)
 					prow->display_type = DT_MAILUSER;
 			}
@@ -1114,7 +1106,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 			if (NULL == prow->px500dn) {
 				return FALSE;
 			}
-		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
+		} else if (strcasecmp(addrtype, "SMTP") == 0) {
 			prow->flags |= RECIPIENT_ROW_TYPE_SMTP |
 							RECIPIENT_ROW_FLAG_EMAIL;
 			prow->pmail_address = ppropvals->get<char>(PR_EMAIL_ADDRESS);
@@ -1127,7 +1119,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 		} else {
 			prow->flags |= RECIPIENT_ROW_FLAG_EMAIL |
 					RECIPIENT_ROW_FLAG_OUTOFSTANDARD;
-			prow->paddress_type = static_cast<char *>(pvalue);
+			prow->paddress_type = deconst(addrtype);
 			prow->pmail_address = ppropvals->get<char>(PR_EMAIL_ADDRESS);
 			if (NULL == prow->pmail_address) {
 				return FALSE;
@@ -1887,7 +1879,6 @@ BOOL common_util_send_message(logon_object *plogon,
 	MAIL imail;
 	void *pvalue;
 	BOOL b_result;
-	BOOL b_delete;
 	EID_ARRAY ids;
 	BOOL b_partial;
 	uint64_t new_id;
@@ -1896,7 +1887,6 @@ BOOL common_util_send_message(logon_object *plogon,
 	uint64_t folder_id;
 	TARRAY_SET *prcpts;
 	DOUBLE_LIST temp_list;
-	uint32_t message_flags;
 	MESSAGE_CONTENT *pmsgctnt;
 	using LLU = unsigned long long;
 	
@@ -1924,13 +1914,12 @@ BOOL common_util_send_message(logon_object *plogon,
 		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
-	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
-	if (NULL == pvalue) {
+	auto message_flags = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	if (message_flags == nullptr) {
 		log_err("W-1287: Failed to get message_flag of mid:0x%llx", LLU(message_id));
 		return FALSE;
 	}
-	message_flags = *(uint32_t*)pvalue;
-	BOOL b_resend = (message_flags & MSGFLAG_RESEND) ? TRUE : false;
+	BOOL b_resend = (*message_flags & MSGFLAG_RESEND) ? TRUE : false;
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		log_err("W-1286: Missing recipients for message mid:0x%llx", LLU(message_id));
@@ -1943,35 +1932,34 @@ BOOL common_util_send_message(logon_object *plogon,
 			return FALSE;
 		}
 		if (b_resend) {
-			pvalue = prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
-			if (NULL == pvalue) {
+			auto rcpttype = prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
+			if (rcpttype == nullptr)
 				continue;
-			}
-			if (!(*static_cast<uint32_t *>(pvalue) & MAPI_P1))
+			if (!(*rcpttype & MAPI_P1))
 				continue;	
 		}
 		/*
 		if (!b_submit) {
-			pvalue = prcpts->pparray[i]->getval(PR_RESPONSIBILITY);
-			if (NULL == pvalue || 0 != *(uint8_t*)pvalue) {
+			auto resp = prcpts->pparray[i]->get<const uint32_t>(PR_RESPONSIBILITY);
+			if (resp == nullptr || *resp != 0)
 				continue;
-			}
 		}
 		*/
-		pnode->pdata = prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
-		if (NULL != pnode->pdata && '\0' != ((char*)pnode->pdata)[0]) {
+		auto str = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
+		pnode->pdata = deconst(str);
+		if (str != nullptr && *str != '\0') {
 			double_list_append_as_tail(&temp_list, pnode);
 			continue;
 		}
-		pvalue = prcpts->pparray[i]->getval(PR_ADDRTYPE);
-		if (NULL == pvalue) {
+		auto addrtype = prcpts->pparray[i]->get<const char>(PR_ADDRTYPE);
+		if (addrtype == nullptr) {
  CONVERT_ENTRYID:
-			pvalue = prcpts->pparray[i]->getval(PR_ENTRYID);
-			if (NULL == pvalue) {
+			auto entryid = prcpts->pparray[i]->get<const BINARY>(PR_ENTRYID);
+			if (entryid == nullptr) {
 				log_err("W-1285: Cannot get recipient entryid while sending mid:0x%llx", LLU(message_id));
 				return FALSE;
 			}
-			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
+			if (!common_util_entryid_to_username(entryid,
 			    username, GX_ARRAY_SIZE(username))) {
 				log_err("W-1284: Cannot convert recipient entryid to SMTP address while sending mid:0x%llx", LLU(message_id));
 				return FALSE;	
@@ -1982,18 +1970,17 @@ BOOL common_util_send_message(logon_object *plogon,
 				return FALSE;
 			}
 			memcpy(pnode->pdata, username, tmp_len);
-		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
+		} else if (strcasecmp(addrtype, "SMTP") == 0) {
 			pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
 			if (NULL == pnode->pdata) {
 				log_err("W-1283: Cannot get email address of recipient of SMTP address type while sending mid:0x%llx", LLU(message_id));
 				return FALSE;
 			}
-		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-			pvalue = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
-			if (NULL == pvalue) {
+		} else if (strcasecmp(addrtype, "EX") == 0) {
+			auto emaddr = prcpts->pparray[i]->get<const char>(PR_EMAIL_ADDRESS);
+			if (emaddr == nullptr)
 				goto CONVERT_ENTRYID;
-			}
-			if (!common_util_essdn_to_username(static_cast<char *>(pvalue),
+			if (!common_util_essdn_to_username(emaddr,
 			    username, GX_ARRAY_SIZE(username)))
 				goto CONVERT_ENTRYID;
 			auto tmp_len = strlen(username) + 1;
@@ -2025,11 +2012,8 @@ BOOL common_util_send_message(logon_object *plogon,
 	}
 	imail.clear();
 	
-	pvalue = pmsgctnt->proplist.getval(PR_DELETE_AFTER_SUBMIT);
-	b_delete = FALSE;
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		b_delete = TRUE;
-	}
+	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
+	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
