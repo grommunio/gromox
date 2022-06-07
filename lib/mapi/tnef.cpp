@@ -2105,7 +2105,7 @@ static bool serialize_rcpt(tnef_push &ep, const MESSAGE_CONTENT &msg,
 	auto dispname = msg.proplist.get<const char>(disptag);
 	auto addrtype = msg.proplist.get<const char>(addrtag);
 	auto mailaddr = msg.proplist.get<const char>(mailtag);
-	if (dispname == nullptr || addrtype != nullptr || mailaddr != nullptr)
+	if (dispname == nullptr || addrtype == nullptr || mailaddr == nullptr)
 		return true;
 	auto joint = addrtype + ":"s + mailaddr;
 	ATTR_ADDR addr = {deconst(dispname), deconst(joint.c_str())};
