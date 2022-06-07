@@ -573,13 +573,11 @@ BOOL exmdb_server_reload_message_instance(
 	}
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	if (0 == pinstance->parent_id) {
-		auto pvalue = ict->proplist.getval(PidTagMid);
-		if (NULL == pvalue) {
+		auto lnum = ict->proplist.get<const eid_t>(PidTagMid);
+		if (lnum == nullptr)
 			return FALSE;
-		}
 		last_id = 0;
-		if (!instance_load_message(pdb->psqlite,
-		    *static_cast<uint64_t *>(pvalue), &last_id, &pmsgctnt))
+		if (!instance_load_message(pdb->psqlite, *lnum, &last_id, &pmsgctnt))
 			return FALSE;	
 		if (NULL == pmsgctnt) {
 			*pb_result = FALSE;
@@ -632,15 +630,14 @@ BOOL exmdb_server_clear_message_instance(
 		return FALSE;
 	}
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-	auto pvalue = ict->proplist.getval(PidTagMid);
-	if (NULL == pvalue) {
+	auto lnum = ict->proplist.get<const eid_t>(PidTagMid);
+	if (lnum == nullptr)
 		return FALSE;
-	}
 	auto pmsgctnt = message_content_init();
 	if (NULL == pmsgctnt) {
 		return FALSE;
 	}
-	if (pmsgctnt->proplist.set(PidTagMid, pvalue) != 0) {
+	if (pmsgctnt->proplist.set(PidTagMid, lnum) != 0) {
 		message_content_free(pmsgctnt);
 		return FALSE;
 	}
@@ -1570,8 +1567,8 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	auto pbin = pmsgctnt->proplist.get<BINARY>(PR_SENT_REPRESENTING_ENTRYID);
 	if (pbin != nullptr &&
 	    !pmsgctnt->proplist.has(PR_SENT_REPRESENTING_EMAIL_ADDRESS)) {
-		auto pvalue = pmsgctnt->proplist.getval(PR_SENT_REPRESENTING_ADDRTYPE);
-		if (NULL == pvalue) {
+		auto sr_addrtype = pmsgctnt->proplist.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
+		if (sr_addrtype == nullptr) {
 			if (common_util_parse_addressbook_entryid(pbin,
 			    address_type, GX_ARRAY_SIZE(address_type),
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
@@ -1579,12 +1576,12 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 				    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
 					return FALSE;
 			}
-		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
+		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
 			if (common_util_addressbook_entryid_to_essdn(pbin,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
 				return FALSE;
-		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
+		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
 			if (common_util_addressbook_entryid_to_username(pbin,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
@@ -1593,8 +1590,8 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	}
 	pbin = pmsgctnt->proplist.get<BINARY>(PR_SENDER_ENTRYID);
 	if (pbin != nullptr && !pmsgctnt->proplist.has(PR_SENDER_EMAIL_ADDRESS)) {
-		auto pvalue = pmsgctnt->proplist.getval(PR_SENDER_ADDRTYPE);
-		if (NULL == pvalue) {
+		auto sr_addrtype = pmsgctnt->proplist.get<const char>(PR_SENDER_ADDRTYPE);
+		if (sr_addrtype == nullptr) {
 			if (common_util_parse_addressbook_entryid(pbin,
 			    address_type, GX_ARRAY_SIZE(address_type),
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
@@ -1602,12 +1599,12 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 				    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
 					return FALSE;
 			}
-		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
+		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
 			if (common_util_addressbook_entryid_to_essdn(pbin,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
 				return FALSE;
-		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
+		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
 			if (common_util_addressbook_entryid_to_username(pbin,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
@@ -1767,30 +1764,24 @@ static BOOL instance_get_message_display_recipients(
 	}
 	size_t offset = 0;
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto pvalue = prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
-		if (NULL == pvalue || *(uint32_t*)pvalue != recipient_type) {
+		auto rcpttype = prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rcpttype == nullptr || *rcpttype != recipient_type)
 			continue;
+		auto name = prcpts->pparray[i]->get<const char>(PR_DISPLAY_NAME);
+		if (name == nullptr) {
+			name = prcpts->pparray[i]->get<char>(PR_DISPLAY_NAME_A);
+			if (name != nullptr)
+				name = common_util_convert_copy(TRUE, cpid, name);
 		}
-		pvalue = prcpts->pparray[i]->getval(PR_DISPLAY_NAME);
-		if (NULL == pvalue) {
-			pvalue = prcpts->pparray[i]->getval(PR_DISPLAY_NAME_A);
-			if (NULL != pvalue) {
-				pvalue = static_cast<char *>(common_util_convert_copy(TRUE, cpid, static_cast<char *>(pvalue)));
-			}
-		}
-		if (NULL == pvalue) {
-			pvalue = prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
-		}
-		if (NULL == pvalue) {
+		if (name == nullptr)
+			name = prcpts->pparray[i]->get<char>(PR_SMTP_ADDRESS);
+		if (name == nullptr)
 			continue;
-		}
 		if (0 == offset) {
-			offset = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s",
-			         static_cast<const char *>(pvalue));
+			offset = gx_snprintf(tmp_buff, arsizeof(tmp_buff), "%s", name);
 		} else {
 			offset += gx_snprintf(tmp_buff + offset,
-			          GX_ARRAY_SIZE(tmp_buff) - offset, "; %s",
-			          static_cast<const char *>(pvalue));
+			          arsizeof(tmp_buff) - offset, "; %s", name);
 		}
 	}
 	if  (0 == offset) {
@@ -1807,31 +1798,27 @@ static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)
 	TPROPVAL_ARRAY *pproplist;
 	
 	pproplist = &pmsgctnt->proplist;
-	auto pvalue = pproplist->getval(PR_MESSAGE_FLAGS);
-	uint32_t message_flags = pvalue == nullptr ? 0 : *static_cast<uint32_t *>(pvalue);
+	auto flags_p = pproplist->get<const uint32_t>(PR_MESSAGE_FLAGS);
+	uint32_t message_flags = flags_p == nullptr ? 0 : *flags_p;
 	message_flags &= ~(MSGFLAG_READ | MSGFLAG_HASATTACH | MSGFLAG_FROMME |
 	                 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING |
 	                 MSGFLAG_NRN_PENDING);
-	pvalue = pproplist->getval(PR_READ);
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+	auto pbool = pproplist->get<const uint8_t>(PR_READ);
+	if (pbool != nullptr && *pbool)
 		message_flags |= MSGFLAG_READ;
-	}
 	if (NULL != pmsgctnt->children.pattachments &&
 		0 != pmsgctnt->children.pattachments->count) {
 		message_flags |= MSGFLAG_HASATTACH;
 	}
-	pvalue = pproplist->getval(PR_ASSOCIATED);
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+	pbool = pproplist->get<uint8_t>(PR_ASSOCIATED);
+	if (pbool != nullptr && *pbool)
 		message_flags |= MSGFLAG_ASSOCIATED;
-	}
-	pvalue = pproplist->getval(PR_READ_RECEIPT_REQUESTED);
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+	pbool = pproplist->get<uint8_t>(PR_READ_RECEIPT_REQUESTED);
+	if (pbool != nullptr && *pbool)
 		message_flags |= MSGFLAG_RN_PENDING;
-	}
-	pvalue = pproplist->getval(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+	pbool = pproplist->get<uint8_t>(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
+	if (pbool != nullptr && *pbool)
 		message_flags |= MSGFLAG_NRN_PENDING;
-	}
 	return message_flags;
 }
 
@@ -1908,35 +1895,31 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 		vc.pvalue = NULL;
 		if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
-			pvalue = pattachment->proplist.getval(proptag);
-			if (NULL != pvalue) {
+			auto str = pattachment->proplist.get<const char>(proptag);
+			if (str != nullptr) {
 				vc.proptag = pproptags->pproptag[i];
-				vc.pvalue = common_util_convert_copy(false,
-				            cpid, static_cast<char *>(pvalue));
+				vc.pvalue = common_util_convert_copy(false, cpid, str);
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNICODE) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
-			pvalue = pattachment->proplist.getval(proptag);
-			if (NULL != pvalue) {
+			auto str = pattachment->proplist.get<const char>(proptag);
+			if (str != nullptr) {
 				vc.proptag = pproptags->pproptag[i];
-				vc.pvalue = common_util_convert_copy(TRUE,
-				            cpid, static_cast<char *>(pvalue));
+				vc.pvalue = common_util_convert_copy(TRUE, cpid, str);
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_STRING8) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE);
-			pvalue = pattachment->proplist.getval(proptag);
-			if (NULL != pvalue) {
+			auto sa = pattachment->proplist.get<const STRING_ARRAY>(proptag);
+			if (sa != nullptr) {
 				vc.proptag = pproptags->pproptag[i];
-				vc.pvalue = common_util_convert_copy_string_array(false,
-				            cpid, static_cast<STRING_ARRAY *>(pvalue));
+				vc.pvalue = common_util_convert_copy_string_array(false, cpid, sa);
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_UNICODE) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8);
-			pvalue = pattachment->proplist.getval(proptag);
-			if (NULL != pvalue) {
+			auto sa = pattachment->proplist.get<const STRING_ARRAY>(proptag);
+			if (sa != nullptr) {
 				vc.proptag = pproptags->pproptag[i];
-				vc.pvalue = common_util_convert_copy_string_array(TRUE,
-				            cpid, static_cast<STRING_ARRAY *>(pvalue));
+				vc.pvalue = common_util_convert_copy_string_array(TRUE, cpid, sa);
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNSPECIFIED) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
@@ -1995,9 +1978,9 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 			proptype = PT_BINARY;
 			auto pbin = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 			if (NULL == pbin) {
-				pvalue = pattachment->proplist.getval(ID_TAG_ATTACHDATABINARY);
-				if (NULL != pvalue) {
-					pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), &length, 0);
+				auto lnum = pattachment->proplist.get<const uint64_t>(ID_TAG_ATTACHDATABINARY);
+				if (lnum != nullptr) {
+					pvalue = instance_read_cid_content(*lnum, &length, 0);
 					if (NULL == pvalue) {
 						return FALSE;
 					}
@@ -2013,9 +1996,9 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				proptype = PT_OBJECT;
 				pbin = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_OBJ);
 				if (NULL == pbin) {
-					pvalue = pattachment->proplist.getval(ID_TAG_ATTACHDATAOBJECT);
-					if (NULL != pvalue) {
-						pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), &length, 0);
+					auto lnum = pattachment->proplist.get<const uint64_t>(ID_TAG_ATTACHDATAOBJECT);
+					if (lnum != nullptr) {
+						pvalue = instance_read_cid_content(*lnum, &length, 0);
 						if (NULL == pvalue) {
 							return FALSE;
 						}
@@ -2042,13 +2025,12 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 		}
 		case PR_ATTACH_DATA_BIN:
 		case PR_ATTACH_DATA_OBJ: {
-			if (pproptags->pproptag[i] == PR_ATTACH_DATA_BIN)
-				pvalue = pattachment->proplist.getval(ID_TAG_ATTACHDATABINARY);
-			else
-				pvalue = pattachment->proplist.getval(ID_TAG_ATTACHDATAOBJECT);
-			if (pvalue == nullptr)
+			auto lnum = pattachment->proplist.get<const uint64_t>(
+			            pproptags->pproptag[i] == PR_ATTACH_DATA_BIN ?
+			            ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT);
+			if (lnum == nullptr)
 				break;
-			pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), &length, 0);
+			pvalue = instance_read_cid_content(*lnum, &length, 0);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -2189,9 +2171,9 @@ BOOL exmdb_server_get_instance_properties(
 			break;
 		}
 		case PR_TRANSPORT_MESSAGE_HEADERS_U: {
-			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS);
-			if (NULL != pvalue) {
-				pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, ID_TAG_BODY);
+			auto lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS);
+			if (lnum != nullptr) {
+				pvalue = instance_read_cid_content(*lnum, nullptr, ID_TAG_BODY);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
@@ -2205,10 +2187,10 @@ BOOL exmdb_server_get_instance_properties(
 				ppropvals->count ++;
 				continue;
 			}
-			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
-			if (pvalue == nullptr)
+			lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+			if (lnum == nullptr)
 				break;
-			pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, 0);
+			pvalue = instance_read_cid_content(*lnum, nullptr, 0);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -2233,10 +2215,10 @@ BOOL exmdb_server_get_instance_properties(
 			vc.pvalue = pvalue;
 			ppropvals->count++;
 			continue;
-		case PR_TRANSPORT_MESSAGE_HEADERS:
-			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS);
-			if (NULL != pvalue) {
-				pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, ID_TAG_BODY);
+		case PR_TRANSPORT_MESSAGE_HEADERS: {
+			auto lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS);
+			if (lnum != nullptr) {
+				pvalue = instance_read_cid_content(*lnum, nullptr, ID_TAG_BODY);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
@@ -2245,10 +2227,10 @@ BOOL exmdb_server_get_instance_properties(
 				ppropvals->count ++;
 				continue;
 			}
-			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
-			if (pvalue == nullptr)
+			lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+			if (lnum == nullptr)
 				break;
-			pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, 0);
+			pvalue = instance_read_cid_content(*lnum, nullptr, 0);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -2260,10 +2242,11 @@ BOOL exmdb_server_get_instance_properties(
 				continue;
 			}
 			break;
-		case PR_TRANSPORT_MESSAGE_HEADERS_A:
-			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
-			if (NULL != pvalue) {
-				pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, 0);
+		}
+		case PR_TRANSPORT_MESSAGE_HEADERS_A: {
+			auto lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+			if (lnum != nullptr) {
+				pvalue = instance_read_cid_content(*lnum, nullptr, 0);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
@@ -2272,10 +2255,10 @@ BOOL exmdb_server_get_instance_properties(
 				ppropvals->count ++;
 				continue;
 			}
-			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS);
-			if (pvalue == nullptr)
+			lnum = pmsgctnt->proplist.get<uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS);
+			if (lnum == nullptr)
 				break;
-			pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, ID_TAG_BODY);
+			pvalue = instance_read_cid_content(*lnum, nullptr, ID_TAG_BODY);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -2287,6 +2270,7 @@ BOOL exmdb_server_get_instance_properties(
 				continue;
 			}
 			break;
+		}
 		case PidTagFolderId: {
 			if (pinstance->parent_id != 0)
 				break;
@@ -2399,10 +2383,9 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 		case PR_READ: {
 			if (*static_cast<uint8_t *>(pproperties->ppropval[i].pvalue) == 0)
 				break;
-			auto pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
-			if (NULL != pvalue) {
-				*static_cast<uint32_t *>(pvalue) |= MSGFLAG_EVERREAD;
-			}
+			auto flags = pmsgctnt->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
+			if (flags != nullptr)
+				*flags |= MSGFLAG_EVERREAD;
 			break;
 		}
 		case PR_MSG_STATUS:
@@ -2623,7 +2606,6 @@ BOOL exmdb_server_remove_instance_properties(
 	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
 {
 	int i;
-	void *pvalue;
 	MESSAGE_CONTENT *pmsgctnt;
 	ATTACHMENT_CONTENT *pattachment;
 	
@@ -2641,30 +2623,33 @@ BOOL exmdb_server_remove_instance_properties(
 			switch (pproptags->pproptag[i]) {
 			case PR_BODY:
 			case PR_BODY_A:
-			case PR_BODY_U:
+			case PR_BODY_U: {
 				pmsgctnt->proplist.erase(ID_TAG_BODY);
 				pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
-				if ((pvalue = pmsgctnt->proplist.getval(PR_NATIVE_BODY_INFO)) != nullptr &&
-				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_PLAIN)
-					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
+				auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
+				if (num != nullptr && *num == NATIVE_BODY_PLAIN)
+					*num = NATIVE_BODY_UNDEFINED;
 				break;
+			}
 			case PR_HTML:
 			case PR_BODY_HTML:
 			case PR_BODY_HTML_A:
-			case PR_HTML_U:
+			case PR_HTML_U: {
 				pmsgctnt->proplist.erase(PR_BODY_HTML);
 				pmsgctnt->proplist.erase(PR_BODY_HTML_A);
 				pmsgctnt->proplist.erase(ID_TAG_HTML);
-				if ((pvalue = pmsgctnt->proplist.getval(PR_NATIVE_BODY_INFO)) != nullptr &&
-				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_HTML)
-					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
+				auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
+				if (num != nullptr && *num == NATIVE_BODY_HTML)
+					*num = NATIVE_BODY_UNDEFINED;
 				break;
-			case PR_RTF_COMPRESSED:
-				if ((pvalue = pmsgctnt->proplist.getval(PR_NATIVE_BODY_INFO)) != nullptr &&
-				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_RTF)
-					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
+			}
+			case PR_RTF_COMPRESSED: {
+				auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
+				if (num != nullptr && *num == NATIVE_BODY_RTF)
+					*num = NATIVE_BODY_UNDEFINED;
 				pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
 				break;
+			}
 			}
 			pmsgctnt->proplist.erase(pproptags->pproptag[i]);
 			switch (PROP_TYPE(pproptags->pproptag[i])) {
@@ -3141,7 +3126,7 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 		pset->pparray = NULL;
 		return TRUE;
 	}
-	auto pvalue = pmsgctnt->proplist.getval(PidTagMid);
+	auto msgidnum = pmsgctnt->proplist.get<const uint64_t>(PidTagMid);
 	auto pattachments = pmsgctnt->children.pattachments;
 	if (row_needed > 0) {
 		end_pos = start_pos + row_needed;
@@ -3159,7 +3144,7 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 				return FALSE;
 			}
 			if (!instance_get_attachment_properties(
-			    pinstance->cpid, static_cast<uint64_t *>(pvalue),
+			    pinstance->cpid, msgidnum,
 			    pattachments->pplist[i], pproptags,
 			    pset->pparray[pset->count]))
 				return FALSE;
@@ -3181,7 +3166,7 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 				return FALSE;
 			}
 			if (!instance_get_attachment_properties(
-			    pinstance->cpid, static_cast<uint64_t *>(pvalue),
+			    pinstance->cpid, msgidnum,
 			    pattachments->pplist[i],
 			    pproptags, pset->pparray[pset->count]))
 				return FALSE;
@@ -3210,9 +3195,9 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		return FALSE;
 	}
 	auto pmsg = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-	auto pvalue = pmsg->proplist.getval(PR_MSG_STATUS);
+	auto num = pmsg->proplist.get<uint32_t>(PR_MSG_STATUS);
 	b_inconflict = FALSE;
-	if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & MSGSTATUS_IN_CONFLICT)
+	if (num != nullptr && *num & MSGSTATUS_IN_CONFLICT)
 		b_inconflict = TRUE;
 	if (!b_inconflict) {
 		if (!instance_read_message(pmsg, &msgctnt))
@@ -3271,14 +3256,14 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	tmp_byte = 1;
 	if (pattachment->proplist.set(PR_IN_CONFLICT, &tmp_byte) != 0)
 		/* ignore; reevaluate */;
-	pvalue = pmsg->proplist.getval(PR_MSG_STATUS);
-	if (NULL == pvalue) {
-		pvalue = &tmp_status;
+	num = pmsg->proplist.get<uint32_t>(PR_MSG_STATUS);
+	if (num == nullptr) {
+		num = &tmp_status;
 		tmp_status = MSGSTATUS_IN_CONFLICT;
 	} else {
-		*static_cast<uint32_t *>(pvalue) |= MSGSTATUS_IN_CONFLICT;
+		*num |= MSGSTATUS_IN_CONFLICT;
 	}
-	if (pmsg->proplist.set(PR_MSG_STATUS, pvalue) != 0)
+	if (pmsg->proplist.set(PR_MSG_STATUS, num) != 0)
 		/* ignore; reevaluate */;
 	return TRUE;
 }
