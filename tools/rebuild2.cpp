@@ -23,50 +23,50 @@ struct sqlite_del {
 };
 }
 
-static int copy_perms(const char *old_file, const char *new_file)
+static errno_t copy_perms(const char *old_file, const char *new_file)
 {
 	struct stat sb;
 	if (stat(old_file, &sb) != 0 ||
 	    chmod(new_file, sb.st_mode) != 0 ||
 	    chown(new_file, sb.st_uid, sb.st_gid) != 0)
-		return -errno;
+		return errno;
 	return 0;
 }
 
-static int copy_skel(sqlite3 *db)
+static errno_t copy_skel(sqlite3 *db)
 {
 	auto stm = gx_sql_prep(db, "SELECT `type`, `tbl_name`, `sql` "
 	           "FROM `source`.`sqlite_schema` WHERE `sql` IS NOT NULL");
 	if (stm == nullptr)
-		return -EIO;
+		return EIO;
 	while (stm.step() == SQLITE_ROW) {
 		fprintf(stderr, "\t%s %s\n", stm.col_text(0), stm.col_text(1));
 		if (strncmp(stm.col_text(1), "sqlite_", 7) == 0)
 			continue;
 		auto ret = gx_sql_exec(db, stm.col_text(2));
 		if (ret != SQLITE_OK)
-			return -EIO;
+			return EIO;
 	}
 	return 0;
 }
 
-static int copy_contents(sqlite3 *db)
+static errno_t copy_contents(sqlite3 *db)
 {
 	auto stm = gx_sql_prep(db, "SELECT DISTINCT `tbl_name` FROM `sqlite_schema`");
 	if (stm == nullptr)
-		return -EIO;
+		return EIO;
 	while (stm.step() == SQLITE_ROW) {
 		fprintf(stderr, "\tcontents of %s...\n", stm.col_text(0));
 		std::unique_ptr<char[], stdlib_delete> qbuf;
 		auto qname = HX_strquote(stm.col_text(0), HXQUOTE_SQLBQUOTE,
 		             &unique_tie(qbuf));
 		if (qname == nullptr)
-			return -errno;
+			return errno;
 		auto qstr = "INSERT INTO `"s + qname + "` SELECT * "
 		            "FROM `source`.`" + qname + "`";
 		auto ret = gx_sql_exec(db, qstr.c_str());
 		if (ret != SQLITE_OK)
-			return -EIO;
+			return EIO;
 	}
 	return 0;
 }
