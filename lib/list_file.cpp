@@ -340,26 +340,26 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 	return b_terminate;
 }
 
-int list_file_read_fixedstrings(const char *filename, const char *sdlist,
+errno_t list_file_read_fixedstrings(const char *filename, const char *sdlist,
     std::vector<std::string> &out)
 {
 	struct item { char data[256]; };
 	auto plist = list_file_initd(filename, sdlist, "%s:256", ERROR_ON_ABSENCE);
 	if (plist == nullptr)
-		return -errno;
+		return errno;
 	auto num = plist->get_size();
 	auto pitem = static_cast<const item *>(plist->get_list());
 	for (decltype(num) i = 0; i < num; ++i) {
 		try {
 			out.emplace_back(pitem[i].data);
 		} catch (const std::bad_alloc &) {
-			return -ENOMEM;
+			return ENOMEM;
 		}
 	}
 	return 0;
 }
 
-int list_file_read_exmdb(const char *filename, const char *sdlist,
+errno_t list_file_read_exmdb(const char *filename, const char *sdlist,
     std::vector<EXMDB_ITEM> &out)
 {
 	struct raw {
@@ -379,7 +379,7 @@ int list_file_read_exmdb(const char *filename, const char *sdlist,
 		out.push_back(std::move(e));
 		return 0;
 	} else if (plist == nullptr) {
-		return -errno;
+		return errno;
 	}
 	auto num = plist->get_size();
 	auto item = static_cast<const raw *>(plist->get_list());

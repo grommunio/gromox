@@ -37,5 +37,5 @@ struct EXMDB_ITEM {
 };
 
 extern GX_EXPORT std::unique_ptr<LIST_FILE> list_file_initd(const char *filename, const char *sdlist, const char *format, unsigned int mode = EMPTY_ON_ABSENCE);
-extern GX_EXPORT int list_file_read_fixedstrings(const char *filename, const char *sdlist, std::vector<std::string> &out);
-extern GX_EXPORT int list_file_read_exmdb(const char *filename, const char *sdlist, std::vector<EXMDB_ITEM> &out);
+extern GX_EXPORT gromox::errno_t list_file_read_fixedstrings(const char *filename, const char *sdlist, std::vector<std::string> &out);
+extern GX_EXPORT gromox::errno_t list_file_read_exmdb(const char *filename, const char *sdlist, std::vector<EXMDB_ITEM> &out);

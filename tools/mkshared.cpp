@@ -224,12 +224,12 @@ int mbop_truncate_chown(const char *tool, const char *file, bool force_overwrite
 int mbop_insert_namedprops(sqlite3 *sdb, const char *datadir)
 {
 	std::vector<std::string> nplist;
-	auto ret = list_file_read_fixedstrings("propnames.txt", datadir, nplist);
-	if (ret == -ENOENT) {
+	auto err = list_file_read_fixedstrings("propnames.txt", datadir, nplist);
+	if (err == ENOENT) {
 		return 0;
-	} else if (ret < 0) {
-		printf("list_file_initd propnames.txt: %s\n", strerror(-ret));
-		return ret;
+	} else if (err != 0) {
+		printf("list_file_initd propnames.txt: %s\n", strerror(err));
+		return err;
 	}
 	auto stm = gx_sql_prep(sdb, "INSERT INTO `named_properties` VALUES (?, ?)");
 	if (stm == nullptr)
@@ -244,7 +244,7 @@ int mbop_insert_namedprops(sqlite3 *sdb, const char *datadir)
 		}
 		stm.bind_int64(1, propid);
 		stm.bind_text(2, name.c_str());
-		ret = stm.step();
+		auto ret = stm.step();
 		if (ret != SQLITE_DONE) {
 			fprintf(stderr, "insert_namedprop/sqlite3_step \"%s\": %s\n",
 			        name.c_str(), sqlite3_errstr(ret));

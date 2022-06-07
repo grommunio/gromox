@@ -332,8 +332,8 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	std::vector<EXMDB_ITEM> xmlist;
 
 	auto ret = list_file_read_exmdb("exmdb_list.txt", cfgdir, xmlist);
-	if (ret < 0) {
-		printf("exmdb_client: list_file_read_exmdb: %s\n", strerror(-ret));
+	if (ret != 0) {
+		printf("exmdb_client: list_file_read_exmdb: %s\n", strerror(ret));
 		return 1;
 	}
 	mdcl_notify_stop = false;

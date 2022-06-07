@@ -122,10 +122,10 @@ int exmdb_listener_run(const char *config_path)
 	gx_reexec_record(g_listen_sockd);
 
 	auto ret = list_file_read_fixedstrings("exmdb_acl.txt", config_path, g_acl_list);
-	if (ret == -ENOENT) {
+	if (ret == ENOENT) {
 		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
 		g_acl_list = {"::1"};
-	} else if (ret < 0) {
+	} else if (ret != 0) {
 		printf("[exmdb_provider]: Failed to read ACLs from exmdb_acl.txt: %s\n", strerror(errno));
 		close(g_listen_sockd);
 		return -5;

@@ -955,8 +955,8 @@ BOOL exmdb_parser_remove_router(const std::shared_ptr<ROUTER_CONNECTION> &pconne
 int exmdb_parser_run(const char *config_path)
 {
 	auto ret = list_file_read_exmdb("exmdb_list.txt", config_path, g_local_list);
-	if (ret < 0) {
-		printf("[exmdb_provider]: list_file_read_exmdb: %s\n", strerror(-ret));
+	if (ret != 0) {
+		printf("[exmdb_provider]: list_file_read_exmdb: %s\n", strerror(ret));
 		return 1;
 	}
 #if __cplusplus >= 202000L

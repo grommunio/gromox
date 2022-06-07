@@ -311,19 +311,19 @@ int main(int argc, const char **argv) try
 		tidlist.push_back(tid);
 	}
 
-	auto ret = list_file_read_fixedstrings("event_acl.txt",
+	auto err = list_file_read_fixedstrings("event_acl.txt",
 	           pconfig->get_value("config_file_path"), g_acl_list);
-	if (ret == -ENOENT) {
+	if (err == ENOENT) {
 		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
 		g_acl_list = {"::1"};
-	} else if (ret < 0) {
-		printf("[system]: list_file_initd event_acl.txt: %s\n", strerror(-ret));
+	} else if (err != 0) {
+		printf("[system]: list_file_initd event_acl.txt: %s\n", strerror(err));
 		g_notify_stop = true;
 		return 10;
 	}
 
 	pthread_t acc_thr{}, scan_thr{};
-	ret = pthread_create(&acc_thr, nullptr, ev_acceptwork,
+	auto ret = pthread_create(&acc_thr, nullptr, ev_acceptwork,
 	      reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
