@@ -359,26 +359,6 @@ std::string resource_parse_stcode_line(const char *src)
 	return out;
 }
 
-static constexpr struct {
-	const char *suffix = nullptr;
-	unsigned int len = 0, mult = 0;
-} time_suffix[] = {
-	{"seconds", 7, 1},
-	{"second", 6, 1},
-	{"sec", 3, 1},
-	{"s", 1, 1},
-	{"minutes", 7, 60},
-	{"minute", 6, 60},
-	{"min", 3, 60},
-	{"m", 1, 60},
-	{"hours", 5, 3600},
-	{"hour", 4, 3600},
-	{"h", 1, 3600},
-	{"days", 4, 86400},
-	{"day", 3, 86400},
-	{"d", 1, 86400},
-};
-
 bool parse_bool(const char *s)
 {
 	if (s == nullptr)
