@@ -2202,7 +2202,7 @@ ZEND_FUNCTION(mapi_table_getrowcount)
 
 ZEND_FUNCTION(mapi_table_restrict)
 {
-	ulong flags;
+	unsigned long flags;
 	uint32_t result;
 	zval *pzresource;
 	zval *pzrestrictarray;
@@ -2240,8 +2240,7 @@ ZEND_FUNCTION(mapi_table_restrict)
 
 ZEND_FUNCTION(mapi_table_findrow)
 {
-	ulong flags;
-	ulong bookmark;
+	unsigned long flags, bookmark;
 	uint32_t result;
 	uint32_t row_idx;
 	zval *pzresource;
