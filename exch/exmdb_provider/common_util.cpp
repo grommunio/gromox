@@ -4935,14 +4935,12 @@ BOOL common_util_recipients_to_list(
 			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
 			    static_cast<char *>(pnode->pdata), UADDR_SIZE))
 				return FALSE;
-		} else {
-			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
-				if (pnode->pdata == nullptr)
-					goto CONVERT_ENTRYID;
-			} else {
+		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
+			pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
+			if (pnode->pdata == nullptr)
 				goto CONVERT_ENTRYID;
-			}
+		} else {
+			goto CONVERT_ENTRYID;
 		}
 		double_list_append_as_tail(plist, pnode);
 	}
