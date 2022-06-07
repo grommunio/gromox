@@ -27,12 +27,12 @@ struct ob_desc {
 
 }
 
-using gi_thru_map = std::unordered_map<uint16_t, uint16_t>;
+using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
 
 static char *g_username;
 static gi_folder_map_t g_folder_map;
 static gi_name_map g_src_name_map;
-static gi_thru_map g_thru_name_map;
+static propididmap_t g_thru_name_map;
 static uint8_t g_splice;
 static unsigned int g_oexcl = 1, g_anchor_folder;
 
@@ -403,7 +403,7 @@ static int exm_packet(const void *buf, size_t bufsize)
 	throw YError("PG-1117: unknown obd.mapitype %u", obd.mapitype);
 }
 
-static void gi_dump_thru_map(const gi_thru_map &map)
+static void gi_dump_thru_map(const propididmap_t &map)
 {
 	if (!g_show_props)
 		return;

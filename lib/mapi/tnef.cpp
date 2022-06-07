@@ -84,6 +84,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 using propmap_t = std::unordered_map<std::string, uint16_t>;
+using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
 
 namespace {
 struct TNEF_ATTRIBUTE {
@@ -1028,7 +1029,7 @@ static BOOL tnef_convert_to_propname(const std::string &input_tag,
 }
 
 static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist,
-    const std::unordered_map<uint16_t, uint16_t> &phash)
+    const propididmap_t &phash)
 {
 	int i;
 	uint16_t propid;
@@ -1622,7 +1623,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	
 	if (!get_propids(&propnames, &propids1))
 		return NULL;
-	std::unordered_map<uint16_t, uint16_t> phash1;
+	propididmap_t phash1;
 	try { for (size_t i = 0; i < propids.count; ++i)
 		phash1.emplace(propids.ppropid[i], propids1.ppropid[i]);
 	} catch (const std::bad_alloc &) {

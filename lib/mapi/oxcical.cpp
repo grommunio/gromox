@@ -26,6 +26,7 @@
 #define MAX_TZDEFINITION_LENGTH					(68*MAX_TZRULE_NUMBER+270)
 
 using namespace gromox;
+using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
 
 namespace {
 struct UID_EVENTS {
@@ -1594,7 +1595,7 @@ static int oxcical_cmp_ext_exception(
 }
 
 static void oxcical_replace_propid(TPROPVAL_ARRAY *pproplist,
-    std::unordered_map<uint16_t, uint16_t> &phash)
+    const propididmap_t &phash)
 {
 	int i;
 	uint16_t propid;
@@ -1639,7 +1640,7 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	}
 	if (!get_propids(&propnames, &propids1))
 		return FALSE;
-	std::unordered_map<uint16_t, uint16_t> phash1;
+	propididmap_t phash1;
 	for (size_t i = 0; i < propids.count; ++i) try {
 		phash1.emplace(propids.ppropid[i], propids1.ppropid[i]);
 	} catch (const std::bad_alloc &) {
