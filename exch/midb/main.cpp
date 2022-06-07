@@ -184,10 +184,10 @@ int main(int argc, const char **argv) try
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[system]: fail to get file limitation\n");
 	} else {
-		if (rl.rlim_cur < 5*table_size ||
-			rl.rlim_max < 5*table_size) {
-			rl.rlim_cur = 5*table_size;
-			rl.rlim_max = 5*table_size;
+		rlim_t tb5 = 5 * table_size;
+		if (rl.rlim_cur < tb5 || rl.rlim_max < tb5) {
+			rl.rlim_cur = tb5;
+			rl.rlim_max = tb5;
 			if (setrlimit(RLIMIT_NOFILE, &rl) != 0)
 				printf("[system]: fail to set file limitation\n");
 			else
