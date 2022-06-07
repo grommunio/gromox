@@ -81,44 +81,35 @@ static BOOL container_object_match_contact_message(
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
-		auto pvalue = ppropvals->getval(rcon->proptag);
-		if (NULL == pvalue) {
+		auto str = ppropvals->get<const char>(rcon->proptag);
+		if (str == nullptr)
 			return FALSE;	
-		}
 		switch (rcon->fuzzy_level & 0xFFFF) {
 		case FL_FULLSTRING:
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
+				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue), str) == 0)
 					return TRUE;
 			} else {
-				if (strcmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
+				if (strcmp(static_cast<char *>(rcon->propval.pvalue), str) == 0)
 					return TRUE;
 			}
 			return FALSE;
 		case FL_SUBSTRING:
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
+				if (strcasestr(str, static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
 			} else {
-				if (strstr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
+				if (strstr(str, static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
 			return FALSE;
 		case FL_PREFIX: {
 			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
 			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue),
-				    len) == 0)
+				if (strncasecmp(str, static_cast<char *>(rcon->propval.pvalue), len) == 0)
 					return TRUE;
 			} else {
-				if (strncmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue),
-				    len) == 0)
+				if (strncmp(str, static_cast<char *>(rcon->propval.pvalue), len) == 0)
 					return TRUE;
 			}
 			return FALSE;
@@ -761,12 +752,11 @@ static BOOL container_object_query_folder_hierarchy(
 		return FALSE;
 	exmdb_client::unload_table(pinfo->get_maildir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pvalue = tmp_set.pparray[i]->getval(PR_ATTR_HIDDEN);
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+		auto pbool = tmp_set.pparray[i]->get<const uint8_t>(PR_ATTR_HIDDEN);
+		if (pbool != nullptr && *pbool != 0)
 			continue;
-		}
-		pvalue = tmp_set.pparray[i]->getval(PR_CONTAINER_CLASS);
-		if (pvalue == nullptr || strcasecmp(static_cast<char *>(pvalue), "IPF.Contact") != 0)
+		auto cnclass = tmp_set.pparray[i]->get<const char>(PR_CONTAINER_CLASS);
+		if (cnclass == nullptr || strcasecmp(cnclass, "IPF.Contact") != 0)
 			continue;
 		auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
 		if (pset->count + 1 >= count) {

@@ -147,30 +147,29 @@ BOOL common_util_check_delegate(message_object *pmessage, char *username, size_t
 		username[0] = '\0';
 		return TRUE;
 	}
-	auto pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_ADDRTYPE);
-	if (NULL != pvalue) {
-		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-			pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (pvalue != nullptr)
-				return common_util_essdn_to_username(static_cast<char *>(pvalue),
+	auto str = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
+	if (str != nullptr) {
+		if (strcasecmp(str, "EX") == 0) {
+			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			if (str != nullptr)
+				return common_util_essdn_to_username(str,
 				       username, ulen);
-		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-			pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (NULL != pvalue) {
-				gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
+		} else if (strcasecmp(str, "SMTP") == 0) {
+			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			if (str != nullptr) {
+				gx_strlcpy(username, str, ulen);
 				return TRUE;
 			}
 		}
 	}
-	pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-	if (NULL != pvalue) {
-		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
+	str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (str != nullptr) {
+		gx_strlcpy(username, str, ulen);
 		return TRUE;
 	}
-	pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_ENTRYID);
-	if (pvalue != nullptr)
-		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
-		       username, ulen);
+	auto bin = tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID);
+	if (bin != nullptr)
+		return common_util_entryid_to_username(bin, username, ulen);
 	username[0] = '\0';
 	return TRUE;
 }
@@ -1577,7 +1576,6 @@ BOOL common_util_send_message(store_object *pstore,
 {
 	void *pvalue;
 	BOOL b_result;
-	BOOL b_delete;
 	EID_ARRAY ids;
 	BOOL b_private;
 	BOOL b_partial;
@@ -1587,7 +1585,6 @@ BOOL common_util_send_message(store_object *pstore,
 	uint64_t folder_id;
 	TARRAY_SET *prcpts;
 	DOUBLE_LIST temp_list;
-	uint32_t message_flags;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -1611,12 +1608,10 @@ BOOL common_util_send_message(store_object *pstore,
 		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
-	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
-	if (NULL == pvalue) {
+	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	if (num == nullptr)
 		return FALSE;
-	}
-	message_flags = *(uint32_t*)pvalue;
-	BOOL b_resend = (message_flags & MSGFLAG_RESEND) ? TRUE : false;
+	BOOL b_resend = (*num & MSGFLAG_RESEND) ? TRUE : false;
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		return FALSE;
@@ -1631,56 +1626,53 @@ BOOL common_util_send_message(store_object *pstore,
 			return FALSE;
 		}
 		if (b_resend) {
-			pvalue = prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
-			if (NULL == pvalue) {
+			auto rcpttype = prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
+			if (rcpttype == nullptr)
 				return FALSE;
-			}
-			if (!(*static_cast<uint32_t *>(pvalue) & MAPI_P1))
+			if (!(*rcpttype & MAPI_P1))
 				continue;	
 		}
 		/*
 		if (!b_submit) {
-			pvalue = prcpts->pparray[i]->getval(PR_RESPONSIBILITY);
-			if (NULL == pvalue || 0 != *(uint8_t*)pvalue) {
+			auto resp = prcpts->pparray[i]->get<const uint32_t>(PR_RESPONSIBILITY);
+			if (resp == nullptr || *resp != 0)
 				continue;
-			}
 		}
 		*/
-		pnode->pdata = prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
-		if (NULL != pnode->pdata && '\0' != ((char*)pnode->pdata)[0]) {
+		auto str = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
+		pnode->pdata = deconst(str);
+		if (str != nullptr && *str != '\0') {
 			double_list_append_as_tail(&temp_list, pnode);
 			continue;
 		}
-		pvalue = prcpts->pparray[i]->getval(PR_ADDRTYPE);
-		if (NULL == pvalue) {
+		auto addrtype = prcpts->pparray[i]->get<const char>(PR_ADDRTYPE);
+		if (addrtype == nullptr) {
  CONVERT_ENTRYID:
-			pvalue = prcpts->pparray[i]->getval(PR_ENTRYID);
-			if (NULL == pvalue) {
+			auto entryid = prcpts->pparray[i]->get<const BINARY>(PR_ENTRYID);
+			if (entryid == nullptr)
 				return FALSE;
-			}
 			pnode->pdata = common_util_alloc(UADDR_SIZE);
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
+			if (!common_util_entryid_to_username(entryid,
 			    static_cast<char *>(pnode->pdata), UADDR_SIZE))
 				return FALSE;	
 		} else {
-			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
+			if (strcasecmp(addrtype, "SMTP") == 0) {
 				pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
 				if (NULL == pnode->pdata) {
 					return FALSE;
 				}
-			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-				pvalue = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
-				if (NULL == pvalue) {
+			} else if (strcasecmp(addrtype, "EX") == 0) {
+				auto emaddr = prcpts->pparray[i]->get<const char>(PR_EMAIL_ADDRESS);
+				if (emaddr == nullptr)
 					goto CONVERT_ENTRYID;
-				}
 				pnode->pdata = common_util_alloc(UADDR_SIZE);
 				if (NULL == pnode->pdata) {
 					return FALSE;
 				}
-				if (!common_util_essdn_to_username(static_cast<char *>(pvalue),
+				if (!common_util_essdn_to_username(emaddr,
 				    static_cast<char *>(pnode->pdata), UADDR_SIZE))
 					goto CONVERT_ENTRYID;
 			} else {
@@ -1702,11 +1694,8 @@ BOOL common_util_send_message(store_object *pstore,
 			return FALSE;
 		}
 	}
-	pvalue = pmsgctnt->proplist.getval(PR_DELETE_AFTER_SUBMIT);
-	b_delete = FALSE;
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		b_delete = TRUE;
-	}
+	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
+	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
