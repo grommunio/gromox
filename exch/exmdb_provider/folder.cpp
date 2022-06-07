@@ -401,50 +401,48 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 	uint64_t tmp_val;
 	uint64_t tmp_fid;
 	const char *pname;
-	uint64_t parent_id;
 	uint64_t folder_id;
-	uint64_t change_num;
 	char sql_string[128];
 	uint32_t parent_type;
 	TAGGED_PROPVAL tmp_propval;
 	PROBLEM_ARRAY tmp_problems;
-	
-	auto pvalue = pproperties->getval(PidTagFolderId);
-	if (NULL == pvalue) {
+
+	auto folder_id_p = pproperties->get<const eid_t>(PidTagFolderId);
+	if (folder_id_p == nullptr) {
 		tmp_fid = 0;
 	} else {
-		tmp_fid = *(uint64_t*)pvalue;
+		tmp_fid = *folder_id_p;
 		common_util_remove_propvals(pproperties, PidTagFolderId);
 	}
 	*pfolder_id = 0;
-	pvalue = pproperties->getval(PidTagParentFolderId);
-	if (pvalue == nullptr || rop_util_get_replid(*static_cast<uint64_t *>(pvalue)) != 1) {
+	auto parent_fid_p = pproperties->get<const eid_t>(PidTagParentFolderId);
+	if (parent_fid_p == nullptr || rop_util_get_replid(*parent_fid_p) != 1) {
 		fprintf(stderr, "E-1581: create_folder_b_p request with no parent or wrong EID\n");
 		return TRUE;
 	}
-	parent_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
+	auto parent_id = rop_util_get_gc_value(*parent_fid_p);
 	common_util_remove_propvals(pproperties, PidTagParentFolderId);
 	pname = pproperties->get<char>(PR_DISPLAY_NAME);
 	if (pname == nullptr) {
 		fprintf(stderr, "E-1582: create_folder_b_p request with no name\n");
 		return TRUE;
 	}
-	pvalue = pproperties->getval(PidTagChangeNumber);
-	if (pvalue == nullptr) {
+	auto cn_p = pproperties->get<const eid_t>(PidTagChangeNumber);
+	if (cn_p == nullptr) {
 		fprintf(stderr, "E-1583: create_folder_b_p request without CN\n");
 		return TRUE;
 	}
 	common_util_remove_propvals(pproperties, PidTagChangeNumber);
-	change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
+	auto change_num = rop_util_get_gc_value(*cn_p);
 	if (!pproperties->has(PR_PREDECESSOR_CHANGE_LIST)) {
 		fprintf(stderr, "E-1584: create_folder_b_p request without PCL\n");
 		return TRUE;
 	}
-	pvalue = pproperties->getval(PR_FOLDER_TYPE);
-	if (NULL == pvalue) {
+	auto folder_type_p = pproperties->get<const uint32_t>(PR_FOLDER_TYPE);
+	if (folder_type_p == nullptr) {
 		type = FOLDER_GENERIC;
 	} else {
-		type = *(uint32_t*)pvalue;
+		type = *folder_type_p;
 		switch (type) {
 		case FOLDER_GENERIC:
 			break;
@@ -2224,23 +2222,21 @@ BOOL exmdb_server_empty_folder_permission(
 static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     bool b_freebusy, uint64_t fid_val, xstmt &pstmt)
 {
-	auto pvalue = propvals.getval(PR_ENTRYID);
+	auto bin = propvals.get<const BINARY>(PR_ENTRYID);
 	char username[UADDR_SIZE];
-	if (NULL != pvalue) {
-		if (!common_util_addressbook_entryid_to_username(static_cast<BINARY *>(pvalue), username, GX_ARRAY_SIZE(username)))
+	if (bin != nullptr) {
+		if (!common_util_addressbook_entryid_to_username(bin, username, std::size(username)))
 			return true;
 	} else {
-		pvalue = propvals.getval(PR_SMTP_ADDRESS);
-		if (NULL == pvalue) {
+		auto str = propvals.get<const char>(PR_SMTP_ADDRESS);
+		if (str == nullptr)
 			return true;
-		}
-		gx_strlcpy(username, static_cast<char *>(pvalue), GX_ARRAY_SIZE(username));
+		gx_strlcpy(username, str, std::size(username));
 	}
-	pvalue = propvals.getval(PR_MEMBER_RIGHTS);
-	if (NULL == pvalue) {
+	auto num = propvals.get<const uint32_t>(PR_MEMBER_RIGHTS);
+	if (num == nullptr)
 		return true;
-	}
-	auto permission = *static_cast<uint32_t *>(pvalue);
+	auto permission = *num;
 	if (permission & frightsReadAny)
 		permission |= frightsVisible;
 	if (permission & frightsOwner)
@@ -2274,11 +2270,10 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     bool b_freebusy, uint64_t fid_val)
 {
 	static constexpr uint64_t DEFAULT = 0, ANONYMOUS = UINT64_MAX;
-	auto pvalue = propvals.getval(PR_MEMBER_ID);
-	if (NULL == pvalue) {
+	auto lnum = propvals.get<const uint64_t>(PR_MEMBER_ID);
+	if (lnum == nullptr)
 		return true;
-	}
-	auto member_id = *static_cast<uint64_t *>(pvalue);
+	auto member_id = *lnum;
 	if (member_id == DEFAULT || member_id == ANONYMOUS) {
 		char sql_string[128];
 		snprintf(sql_string, arsizeof(sql_string), "SELECT member_id "
@@ -2328,11 +2323,10 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 		return true;
 	pstmt1.finalize();
-	pvalue = propvals.getval(PR_MEMBER_RIGHTS);
-	if (NULL == pvalue) {
+	auto num = propvals.get<const uint32_t>(PR_MEMBER_RIGHTS);
+	if (num == nullptr)
 		return true;
-	}
-	auto permission = *static_cast<uint32_t *>(pvalue);
+	auto permission = *num;
 	if (permission & frightsReadAny)
 		permission |= frightsVisible;
 	if (permission & frightsOwner)
@@ -2354,18 +2348,16 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     uint64_t fid_val)
 {
-	auto pvalue = propvals.getval(PR_MEMBER_ID);
-	if (NULL == pvalue) {
+	auto member_id = propvals.get<const uint64_t>(PR_MEMBER_ID);
+	if (member_id == nullptr)
 		return true;
-	}
-	auto member_id = *static_cast<uint64_t *>(pvalue);
-	if (0 == member_id) {
+	if (*member_id == 0) {
 		char sql_string[128];
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"default\"", LLU(fid_val));
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return false;
-	} else if (member_id == UINT64_MAX) {
+	} else if (*member_id == UINT64_MAX) {
 		char sql_string[128];
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"\"", LLU(fid_val));
@@ -2446,10 +2438,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	const RULE_DATA *prow, BOOL *pb_exceed)
 {
 	int i;
-	uint32_t state;
-	uint32_t seq_id;
 	uint64_t fid_val;
-	uint64_t rule_id;
 	EXT_PUSH ext_push;
 	char sql_string[256];
 	char action_buff[256*1024];
@@ -2480,8 +2469,9 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			if (NULL == pprovider) {
 				continue;
 			}
-			auto pvalue = prow[i].propvals.getval(PR_RULE_SEQUENCE);
-			if (NULL == pvalue) {
+			uint32_t seq_id;
+			auto num = prow[i].propvals.get<const uint32_t>(PR_RULE_SEQUENCE);
+			if (num == nullptr) {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT max(sequence)"
 				          " FROM rules WHERE folder_id=%llu", LLU(fid_val));
 				auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
@@ -2492,10 +2482,10 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				pstmt1.finalize();
 				seq_id ++;
 			} else {
-				seq_id = *(uint32_t*)pvalue;
+				seq_id = *num;
 			}
-			pvalue = prow[i].propvals.getval(PR_RULE_STATE);
-			state = pvalue == nullptr ? 0 : *static_cast<uint32_t *>(pvalue);
+			num = prow[i].propvals.get<uint32_t>(PR_RULE_STATE);
+			uint32_t state = num == nullptr ? 0 : *num;
 			auto plevel = prow[i].propvals.get<const uint32_t>(PR_RULE_LEVEL);
 			auto puser_flags = prow[i].propvals.get<const uint32_t>(PR_RULE_USER_FLAGS);
 			auto pprovider_bin = prow[i].propvals.get<const BINARY>(PR_RULE_PROVIDER_DATA);
@@ -2555,11 +2545,10 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			break;
 		}
 		case ROW_MODIFY: {
-			auto pvalue = prow[i].propvals.getval(PR_RULE_ID);
-			if (NULL == pvalue) {
+			auto lnum = prow[i].propvals.get<const uint64_t>(PR_RULE_ID);
+			if (lnum == nullptr)
 				continue;
-			}
-			rule_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
+			auto rule_id = rop_util_get_gc_value(*lnum);
 			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
 			          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 			auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
@@ -2582,19 +2571,17 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				}
 				pstmt1.finalize();
 			}
-			pvalue = prow[i].propvals.getval(PR_RULE_SEQUENCE);
-			if (NULL != pvalue) {
-				seq_id = *(uint32_t*)pvalue;
+			auto num = prow[i].propvals.get<const uint32_t>(PR_RULE_SEQUENCE);
+			if (num != nullptr) {
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET sequence=%u"
-				        " WHERE rule_id=%llu", seq_id, LLU(rule_id));
+				        " WHERE rule_id=%llu", *num, LLU(rule_id));
 				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return false;
 			}
-			pvalue = prow[i].propvals.getval(PR_RULE_STATE);
-			if (NULL != pvalue) {
-				state = *(uint32_t*)pvalue;
+			num = prow[i].propvals.get<uint32_t>(PR_RULE_STATE);
+			if (num != nullptr) {
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET state=%u"
-				        " WHERE rule_id=%llu", state, LLU(rule_id));
+				        " WHERE rule_id=%llu", *num, LLU(rule_id));
 				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return false;
 			}
@@ -2666,11 +2653,10 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			break;
 		}
 		case ROW_REMOVE: {
-			auto pvalue = prow[i].propvals.getval(PR_RULE_ID);
-			if (NULL == pvalue) {
+			auto lnum = prow[i].propvals.get<const uint64_t>(PR_RULE_ID);
+			if (lnum == nullptr)
 				continue;
-			}
-			rule_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
+			auto rule_id = rop_util_get_gc_value(*lnum);
 			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
 			          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 			auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);

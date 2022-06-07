@@ -4912,8 +4912,6 @@ BOOL cu_adjust_store_size(sqlite3 *psqlite, bool subtract,
 BOOL common_util_recipients_to_list(
 	TARRAY_SET *prcpts, DOUBLE_LIST *plist)
 {
-	void *pvalue;
-	
 	for (size_t i = 0; i < prcpts->count; ++i) {
 		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (pnode == nullptr)
@@ -4923,19 +4921,19 @@ BOOL common_util_recipients_to_list(
 			double_list_append_as_tail(plist, pnode);
 			continue;
 		}
-		pvalue = prcpts->pparray[i]->getval(PR_ADDRTYPE);
-		if (NULL == pvalue) {
+		auto addrtype = prcpts->pparray[i]->get<const char>(PR_ADDRTYPE);
+		if (addrtype == nullptr) {
  CONVERT_ENTRYID:
-			pvalue = prcpts->pparray[i]->getval(PR_ENTRYID);
-			if (pvalue == nullptr)
+			auto entryid = prcpts->pparray[i]->get<const BINARY>(PR_ENTRYID);
+			if (entryid == nullptr)
 				return FALSE;
 			pnode->pdata = common_util_alloc(UADDR_SIZE);
 			if (pnode->pdata == nullptr)
 				return FALSE;
-			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
+			if (!common_util_entryid_to_username(entryid,
 			    static_cast<char *>(pnode->pdata), UADDR_SIZE))
 				return FALSE;
-		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
+		} else if (strcasecmp(addrtype, "SMTP") == 0) {
 			pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
 			if (pnode->pdata == nullptr)
 				goto CONVERT_ENTRYID;
