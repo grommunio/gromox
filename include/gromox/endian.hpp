@@ -1,7 +1,15 @@
 #pragma once
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <cstdint>
 #include <cstring>
-#include <endian.h>
+#ifdef HAVE_ENDIAN_H
+#	include <endian.h>
+#endif
+#ifdef HAVE_SYS_ENDIAN_H
+#	include <sys/endian.h>
+#endif
 
 #if (defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN) || \
     (defined(_BYTE_ORDER) && _BYTE_ORDER == _BIG_ENDIAN)
