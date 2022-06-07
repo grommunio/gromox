@@ -4394,7 +4394,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	
 	auto pvalue = pproplist->getval(PR_ASSOCIATED);
 	if (NULL != pvalue) {
-		b_fai = *static_cast<uint8_t *>(pvalue) == 0 ? TRUE : false;
+		b_fai = *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	} else {
 		pvalue = pproplist->getval(PR_MESSAGE_FLAGS);
 		b_fai = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MSGFLAG_ASSOCIATED) ?
