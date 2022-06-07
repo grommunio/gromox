@@ -142,7 +142,7 @@ message_object::~message_object()
 	}
 }
 
-BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
+BOOL message_object::init_message(bool fai, uint32_t new_cpid)
 {
 	auto pmessage = this;
 	EXT_PUSH ext_push;
@@ -199,7 +199,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	auto assocflag = cu_alloc<uint8_t>();
 	if (assocflag == nullptr)
 		return FALSE;
-	*assocflag = !!b_fai;
+	*assocflag = fai;
 	propvals.ppropval[propvals.count++].pvalue = assocflag;
 	propvals.ppropval[propvals.count].proptag = PR_TRUST_SENDER;
 	auto trustsender = cu_alloc<uint32_t>();
