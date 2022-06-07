@@ -1916,13 +1916,13 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	const TPROPVAL_ARRAY *pproplist;
 	
 	pproplist = &pmsgctnt->proplist;
-	auto pvalue = pproplist->getval(PidTagChangeNumber);
-	if (NULL == pvalue) {
+	auto cn_p = pproplist->get<const eid_t>(PidTagChangeNumber);
+	if (cn_p == nullptr) {
 		if (!common_util_allocate_cn(psqlite, &change_num))
 			return FALSE;
 		b_cn = FALSE;
 	} else {
-		change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
+		change_num = rop_util_get_gc_value(*cn_p);
 		b_cn = TRUE;
 	}
 	if (!b_internal) {
@@ -1941,13 +1941,13 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			}
 			memcpy(tmp_xid.local_id, rop_util_value_to_gc(change_num).ab, 6);
 			tmp_xid.size = 22;
-			pvalue = cu_xid_to_bin(std::move(tmp_xid));
+			auto pvalue = cu_xid_to_bin(std::move(tmp_xid));
 			if (NULL == pvalue) {
 				return FALSE;
 			}
 			msgctnt.proplist.ppropval[msgctnt.proplist.count].proptag = PR_CHANGE_KEY;
 			msgctnt.proplist.ppropval[msgctnt.proplist.count++].pvalue = pvalue;
-			pvalue = common_util_pcl_append(nullptr, static_cast<BINARY *>(pvalue));
+			pvalue = common_util_pcl_append(nullptr, pvalue);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -1959,8 +1959,8 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	original_size = 0;
 	message_size = common_util_calculate_message_size(pmsgctnt);
 	if (!b_embedded) {
-		pvalue = pproplist->getval(PR_ASSOCIATED);
-		is_associated = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
+		auto pbool = pproplist->get<const uint8_t>(PR_ASSOCIATED);
+		is_associated = pbool != nullptr && *pbool;
 		snprintf(sql_string, arsizeof(sql_string), exmdb_server_check_private() ?
 		         "SELECT is_search FROM folders WHERE folder_id=%llu" :
 		         "SELECT is_deleted FROM folders WHERE folder_id=%llu",
@@ -1979,13 +1979,13 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return TRUE;
 		}
 		b_exist = FALSE;
-		pvalue = pproplist->getval(PidTagMid);
-		if (NULL == pvalue) {
+		auto mid_p = pproplist->get<const eid_t>(PidTagMid);
+		if (mid_p == nullptr) {
 			if (!common_util_allocate_eid_from_folder(psqlite,
 			    parent_id, pmessage_id))
 				return FALSE;
 		} else {
-			*pmessage_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
+			*pmessage_id = rop_util_get_gc_value(*mid_p);
 			snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, message_size"
 			          " FROM messages WHERE message_id=%llu", LLU(*pmessage_id));
 			pstmt = gx_sql_prep(psqlite, sql_string);
@@ -2083,6 +2083,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		return FALSE;
 	}
 	if (!b_embedded) {
+		void *pvalue = nullptr;
 		if (!cu_get_property(db_table::folder_props, parent_id, 0,
 		    psqlite, PR_INTERNET_ARTICLE_NUMBER_NEXT, &pvalue))
 			return FALSE;
@@ -2657,35 +2658,34 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_CLASS);
-	if (NULL == pvalue) {
+	auto msgclass = pmsgctnt->proplist.get<const char>(PR_MESSAGE_CLASS);
+	if (msgclass == nullptr) {
 		*pb_result = FALSE;
 		return TRUE;
 	}
 	if (action_type == OP_REPLY) {
-		if (strncasecmp(static_cast<char *>(pvalue),
+		if (strncasecmp(msgclass,
 		    "IPM.Note.rules.ReplyTemplate.", 29) != 0) {
 			*pb_result = FALSE;
 			return TRUE;
 		}
 	} else {
-		if (strncasecmp(static_cast<char *>(pvalue),
-		    "IPM.Note.rules.", 15) != 0) {
+		if (strncasecmp(msgclass, "IPM.Note.rules.", 15) != 0) {
 			*pb_result = FALSE;
 			return TRUE;
 		}
 	}
-	pvalue = pmsgctnt->proplist.getval(PR_ASSOCIATED);
-	if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
+	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_ASSOCIATED);
+	if (flag == nullptr || *flag == 0) {
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	pvalue = pmsgctnt->proplist.getval(PR_REPLY_TEMPLATE_ID);
-	if (pvalue == nullptr || static_cast<BINARY *>(pvalue)->cb != 16) {
+	auto bin = pmsgctnt->proplist.get<const BINARY>(PR_REPLY_TEMPLATE_ID);
+	if (bin == nullptr || bin->cb != 16) {
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	tmp_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
+	tmp_guid = rop_util_binary_to_guid(bin);
 	if (tmp_guid != template_guid) {
 		*pb_result = FALSE;
 		return TRUE;
@@ -2755,10 +2755,10 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		} else if (0 == strcasecmp(content_type, "text/html")) {
 			propval.proptag = PR_HTML;
 			propval.pvalue = &tmp_bin;
-			pvalue = pmsgctnt->proplist.getval(PR_INTERNET_CPID);
-			if (NULL != pvalue && 1200 != *(uint32_t*)pvalue) {
+			auto num = pmsgctnt->proplist.get<const uint32_t>(PR_INTERNET_CPID);
+			if (num != nullptr && *num != 1200) {
 				tmp_bin.pc = common_util_convert_copy(
-					FALSE, *(uint32_t*)pvalue, tmp_buff);
+				             false, *num, tmp_buff);
 			} else {
 				tmp_bin.pc = tmp_buff;
 			}
@@ -4121,19 +4121,17 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	b_cc_me = FALSE;
 	if (NULL != pmsg->children.prcpts) {
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-			auto pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
-			if (NULL == pvalue) {
+			auto rcpttype = pmsg->children.prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
+			if (rcpttype == nullptr)
 				continue;
-			}
-			switch (*(uint32_t*)pvalue) {
+			auto smtpaddr = pmsg->children.prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
+			switch (*rcpttype) {
 			case MAPI_TO:
-				pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
-				if (pvalue != nullptr && strcasecmp(account, static_cast<char *>(pvalue)) == 0)
+				if (smtpaddr != nullptr && strcasecmp(account, smtpaddr) == 0)
 					b_to_me = TRUE;	
 				break;
 			case MAPI_CC:
-				pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
-				if (pvalue != nullptr && strcasecmp(account, static_cast<char *>(pvalue)) == 0)
+				if (smtpaddr != nullptr && strcasecmp(account, smtpaddr) == 0)
 					b_cc_me = TRUE;	
 				break;
 			}
@@ -4253,14 +4251,12 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		}
 	}
 	nt_time = rop_util_current_nttime();
-	auto pvalue = tmp_msg.proplist.getval(PR_MESSAGE_DELIVERY_TIME);
-	if (NULL != pvalue) {
-		*(uint64_t*)pvalue = nt_time;
-	}
-	pvalue = tmp_msg.proplist.getval(PR_LAST_MODIFICATION_TIME);
-	if (NULL != pvalue) {
-		*(uint64_t*)pvalue = nt_time;
-	}
+	auto ts = tmp_msg.proplist.get<uint64_t>(PR_MESSAGE_DELIVERY_TIME);
+	if (ts != nullptr)
+		*ts = nt_time;
+	ts = tmp_msg.proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
+	if (ts != nullptr)
+		*ts = nt_time;
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!message_write_message(FALSE, pdb->psqlite,
 	    paccount, cpid, false, fid_val, &tmp_msg, &message_id))
