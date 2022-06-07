@@ -1087,7 +1087,7 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 				|| (inpos < length-1	  /* End of line? */
 					&& input[inpos	] == '\r' 
 					&& input[inpos+1] == '\n') ) {
-				if (outlen + 3 >= outlen)
+				if (outpos + 3 >= outlen)
 					return -1;
 				output[outpos++] = '=';
 				output[outpos++] = '2';
