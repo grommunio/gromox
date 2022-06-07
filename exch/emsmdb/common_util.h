@@ -26,12 +26,9 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-int common_util_mb_from_utf8(uint32_t cpid,
-	const char *src, char *dst, size_t len);
-int common_util_mb_to_utf8(uint32_t cpid,
-	const char *src, char *dst, size_t len);
-int common_util_convert_string(BOOL to_utf8,
-	const char *src, char *dst, size_t len);
+extern ssize_t common_util_mb_from_utf8(uint32_t cpid, const char *src, char *dst, size_t len);
+extern ssize_t common_util_mb_to_utf8(uint32_t cpid, const char *src, char *dst, size_t len);
+extern ssize_t common_util_convert_string(bool to_utf8, const char *src, char *dst, size_t len);
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
 extern BOOL common_util_essdn_to_username(const char *pessdn, char *username, size_t);
 BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t);

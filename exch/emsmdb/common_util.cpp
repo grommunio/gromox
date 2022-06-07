@@ -98,8 +98,8 @@ void* common_util_alloc(size_t size)
 	return ndr_stack_alloc(NDR_STACK_IN, size);
 }
 
-int common_util_mb_from_utf8(uint32_t cpid,
-	const char *src, char *dst, size_t len)
+ssize_t common_util_mb_from_utf8(uint32_t cpid, const char *src,
+    char *dst, size_t len)
 {
 	size_t in_len;
 	size_t out_len;
@@ -124,8 +124,8 @@ int common_util_mb_from_utf8(uint32_t cpid,
 	return out_len - len;
 }
 
-int common_util_mb_to_utf8(uint32_t cpid,
-	const char *src, char *dst, size_t len)
+ssize_t common_util_mb_to_utf8(uint32_t cpid, const char *src,
+    char *dst, size_t len)
 {
 	size_t in_len;
 	size_t out_len;
@@ -165,8 +165,8 @@ static char* common_util_dup_mb_to_utf8(
 }
 
 /* only for being invoked under rop environment */
-int common_util_convert_string(BOOL to_utf8,
-	const char *src, char *dst, size_t len)
+ssize_t common_util_convert_string(bool to_utf8, const char *src,
+    char *dst, size_t len)
 {
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
