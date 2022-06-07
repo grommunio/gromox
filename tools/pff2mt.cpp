@@ -1131,13 +1131,13 @@ static void npg_item(gi_name_map &map, libpff_item_t *item)
 		npg_item(map, subitem.get());
 }
 
-static int do_file(const char *filename) try
+static errno_t do_file(const char *filename) try
 {
 	libpff_error_ptr err;
 	libpff_file_ptr file;
 	if (libpff_file_initialize(&unique_tie(file), &unique_tie(err)) < 1) {
 		fprintf(stderr, "%s\n", az_error("PF-1023", err).what());
-		return -EIO;
+		return EIO;
 	}
 	fprintf(stderr, "pff: Reading %s...\n", filename);
 	errno = 0;
@@ -1146,7 +1146,7 @@ static int do_file(const char *filename) try
 			fprintf(stderr, "pff: Could not open \"%s\": %s\n", filename, strerror(errno));
 		else
 			fprintf(stderr, "pff: \"%s\" not recognized as PFF\n", filename);
-		return -1;
+		return ECANCELED;
 	}
 
 	uint8_t xsplice = g_splice;
@@ -1202,13 +1202,13 @@ static int do_file(const char *filename) try
 	return 0;
 } catch (const char *e) {
 	fprintf(stderr, "pff: Exception: %s\n", e);
-	return -ECANCELED;
+	return ECANCELED;
 } catch (const std::string &e) {
 	fprintf(stderr, "pff: Exception: %s\n", e.c_str());
-	return -ECANCELED;
+	return ECANCELED;
 } catch (const std::exception &e) {
 	fprintf(stderr, "pff: Exception: %s\n", e.what());
-	return -ECANCELED;
+	return ECANCELED;
 }
 
 static void terse_help()
@@ -1235,7 +1235,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 	auto ret = do_file(argv[1]);
-	if (ret < 0) {
+	if (ret != 0) {
 		fprintf(stderr, "pff: Import unsuccessful.\n");
 		return EXIT_FAILURE;
 	}
