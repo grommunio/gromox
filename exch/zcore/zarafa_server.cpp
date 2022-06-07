@@ -4449,22 +4449,20 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 				tag_access |= MAPI_ACCESS_MODIFY;
 			if (permission & (frightsDeleteAny | frightsDeleteOwned))
 				tag_access |= MAPI_ACCESS_DELETE;
+		} else if (permission & frightsOwner) {
+			tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		} else {
-			if (permission & frightsOwner) {
-				tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
-			} else {
-				if (!exmdb_client_check_message_owner(pstore->get_dir(),
-				    message_id, pinfo->get_username(), &b_owner))
-					return ecError;
-				if (b_owner || (permission & frightsReadAny))
-					tag_access |= MAPI_ACCESS_READ;
-				if ((permission & frightsEditAny) ||
-				    (b_owner && (permission & frightsEditOwned)))
-					tag_access |= MAPI_ACCESS_MODIFY;
-				if ((permission & frightsDeleteAny) ||
-				    (b_owner && (permission & frightsDeleteOwned)))
-					tag_access |= MAPI_ACCESS_DELETE;
-			}
+			if (!exmdb_client_check_message_owner(pstore->get_dir(),
+			    message_id, pinfo->get_username(), &b_owner))
+				return ecError;
+			if (b_owner || (permission & frightsReadAny))
+				tag_access |= MAPI_ACCESS_READ;
+			if ((permission & frightsEditAny) ||
+			    (b_owner && (permission & frightsEditOwned)))
+				tag_access |= MAPI_ACCESS_MODIFY;
+			if ((permission & frightsDeleteAny) ||
+			    (b_owner && (permission & frightsDeleteOwned)))
+				tag_access |= MAPI_ACCESS_DELETE;
 		}
 	} else {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
