@@ -560,7 +560,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (common_util_convert_string(FALSE, temp_buff,
+		if (common_util_convert_string(false, temp_buff,
 		    tstr, temp_len) < 0)
 			return FALSE;	
 		if (*tstr == '\0')

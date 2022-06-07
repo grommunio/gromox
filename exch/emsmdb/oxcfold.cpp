@@ -161,11 +161,11 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	if (!plogon->check_private() && folder_type == FOLDER_SEARCH)
 		return ecNotSupported;
 	if (0 == use_unicode) {
-		if (common_util_convert_string(TRUE, pfolder_name,
+		if (common_util_convert_string(true, pfolder_name,
 			folder_name, sizeof(folder_name)) < 0) {
 			return ecInvalidParam;
 		}
-		if (common_util_convert_string(TRUE, pfolder_comment,
+		if (common_util_convert_string(true, pfolder_comment,
 			folder_comment, sizeof(folder_comment)) < 0) {
 			return ecInvalidParam;
 		}
@@ -548,7 +548,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	if (plogon == nullptr)
 		return ecError;
 	if (0 == use_unicode) {
-		if (common_util_convert_string(TRUE, pnew_name,
+		if (common_util_convert_string(true, pnew_name,
 			new_name, sizeof(new_name)) < 0) {
 			return ecInvalidParam;
 		}
@@ -657,7 +657,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	if (plogon == nullptr)
 		return ecError;
 	if (0 == use_unicode) {
-		if (common_util_convert_string(TRUE, pnew_name,
+		if (common_util_convert_string(true, pnew_name,
 			new_name, sizeof(new_name)) < 0) {
 			return ecInvalidParam;
 		}

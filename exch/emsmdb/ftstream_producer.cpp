@@ -345,7 +345,7 @@ static BOOL ftstream_producer_write_propvalue(
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				if (common_util_convert_string(TRUE,
+				if (common_util_convert_string(true,
 				    static_cast<char *>(ppropval->pvalue), pvalue, len) <= 0)
 					*pvalue = '\0';	
 				ppropval->pvalue = pvalue;
@@ -368,7 +368,7 @@ static BOOL ftstream_producer_write_propvalue(
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				if (common_util_convert_string(FALSE,
+				if (common_util_convert_string(false,
 				    static_cast<char *>(ppropval->pvalue), pvalue, len) <= 0)
 					*pvalue = '\0';	
 				ppropval->pvalue = pvalue;

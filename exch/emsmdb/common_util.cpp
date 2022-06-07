@@ -1300,7 +1300,7 @@ BOOL common_util_convert_tagged_propval(
 			if (NULL == pstring) {
 				return FALSE;
 			}
-			if (common_util_convert_string(TRUE,
+			if (common_util_convert_string(true,
 			    static_cast<char *>(ppropval->pvalue), pstring, len) < 0) {
 				return FALSE;	
 			}
@@ -1316,7 +1316,8 @@ BOOL common_util_convert_tagged_propval(
 				if (NULL == pstring) {
 					return FALSE;
 				}
-				if (common_util_convert_string(TRUE, sa->ppstr[i], pstring, len) < 0)
+				if (common_util_convert_string(true,
+				    sa->ppstr[i], pstring, len) < 0)
 					return FALSE;	
 				sa->ppstr[i] = pstring;
 			}
@@ -1342,7 +1343,7 @@ BOOL common_util_convert_tagged_propval(
 			if (NULL == pstring) {
 				return FALSE;
 			}
-			if (common_util_convert_string(FALSE,
+			if (common_util_convert_string(false,
 			    static_cast<char *>(ppropval->pvalue), pstring, len) < 0)
 				return FALSE;	
 			ppropval->pvalue = pstring;
@@ -1357,7 +1358,8 @@ BOOL common_util_convert_tagged_propval(
 				if (NULL == pstring) {
 					return FALSE;
 				}
-				if (common_util_convert_string(FALSE, sa->ppstr[i], pstring, len) < 0)
+				if (common_util_convert_string(false,
+				    sa->ppstr[i], pstring, len) < 0)
 					return FALSE;	
 				sa->ppstr[i] = pstring;
 			}
