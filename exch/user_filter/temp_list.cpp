@@ -6,6 +6,7 @@
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <gromox/util.hpp>
 #include "grey_list.h"
@@ -201,8 +202,7 @@ BOOL temp_list_echo(const char *str, time_t *puntil)
 
 BOOL temp_list_dump(const char *path)
 {
-	int fd, len;
-	char temp_string[512];
+	int fd;
 	struct tm time_buff;
 	time_t current_time;
 
@@ -220,14 +220,13 @@ BOOL temp_list_dump(const char *path)
 			iter = g_string_hash.erase(iter);
 			continue;
 		}
-		len = strlen(temp_string);
-		temp_string[len] = '\t';
-		len++;
-		len += strftime(temp_string + len, 512 - len, "%Y/%m/%d %H:%M:%S",
-		       localtime_r(&iter->second, &time_buff));
-		temp_string[len] = '\n';
-		len++;
-		write(fd, temp_string, len);
+		char ts[64];
+		strftime(ts, std::size(ts), "%Y-%m-%d %H:%M:%S", localtime_r(&iter->second, &time_buff));
+		if (HXio_fullwrite(fd, iter->first.c_str(), iter->first.size()) < 0 ||
+		    HXio_fullwrite(fd, "\t", 1) < 0 ||
+		    HXio_fullwrite(fd, ts, strlen(ts)) < 0 ||
+		    HXio_fullwrite(fd, "\n", 1) < 0)
+			break;
 	}
 	sm_hold.unlock();
 	close(fd);
