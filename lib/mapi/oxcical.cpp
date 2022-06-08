@@ -2936,38 +2936,36 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 	ESSDN_TO_USERNAME essdn_to_username,
     EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
 {
-	auto pvalue = prcpt->getval(PR_SMTP_ADDRESS);
-	if (pvalue != nullptr) {
-		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
+	auto smtpaddr = prcpt->get<const char>(PR_SMTP_ADDRESS);
+	if (smtpaddr != nullptr) {
+		gx_strlcpy(username, smtpaddr, ulen);
 		return TRUE;
 	}
-	pvalue = prcpt->getval(PR_ADDRTYPE);
-	if (NULL == pvalue) {
-		pvalue = prcpt->getval(PR_ENTRYID);
-		if (NULL == pvalue) {
+	auto addrtype = prcpt->get<const char>(PR_ADDRTYPE);
+	if (addrtype == nullptr) {
+		auto entryid = prcpt->get<const BINARY>(PR_ENTRYID);
+		if (entryid == nullptr)
 			return FALSE;
-		}
-		return entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
+		return entryid_to_username(entryid, alloc, username, ulen);
 	}
-	if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-		pvalue = prcpt->getval(PR_EMAIL_ADDRESS);
-	} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-		pvalue = prcpt->getval(PR_EMAIL_ADDRESS);
-		if (NULL != pvalue) {
-			if (essdn_to_username(static_cast<char *>(pvalue), username, ulen))
+	const char *emaddr = nullptr;
+	if (strcasecmp(addrtype, "SMTP") == 0) {
+		emaddr = prcpt->get<char>(PR_EMAIL_ADDRESS);
+	} else if (strcasecmp(addrtype, "EX") == 0) {
+		emaddr = prcpt->get<char>(PR_EMAIL_ADDRESS);
+		if (emaddr != nullptr) {
+			if (essdn_to_username(emaddr, username, ulen))
 				return TRUE;
-			pvalue = NULL;
+			emaddr = nullptr;
 		}
-	} else {
-		pvalue = NULL;
 	}
-	if (NULL == pvalue) {
-		pvalue = prcpt->getval(PR_ENTRYID);
-		if (pvalue == nullptr)
+	if (emaddr == nullptr) {
+		auto entryid = prcpt->get<const BINARY>(PR_ENTRYID);
+		if (entryid == nullptr)
 			return FALSE;
-		return entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
+		return entryid_to_username(entryid, alloc, username, ulen);
 	}
-	gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
+	gx_strlcpy(username, emaddr, ulen);
 	return TRUE;
 }
 
@@ -3037,14 +3035,13 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		b_rsvp = FALSE;
 	}
 	for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-		pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_RECIPIENT_FLAGS);
-		if (NULL == pvalue) {
+		auto rcptflags = pmsg->children.prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_FLAGS);
+		if (rcptflags == nullptr)
 			continue;
-		}
-		if (*static_cast<uint32_t *>(pvalue) & (recipExceptionalDeleted | recipOrganizer))
+		if (*rcptflags & (recipExceptionalDeleted | recipOrganizer))
 			continue;
-		pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
-		if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) == MAPI_ORIG)
+		auto rcpttype = pmsg->children.prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (rcpttype != nullptr && *rcpttype == MAPI_ORIG)
 			continue;
 		piline = ical_new_line("ATTENDEE");
 		if (NULL == piline) {
@@ -3088,15 +3085,15 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			if (!piparam->append_paramval("TRUE"))
 				return FALSE;
 		}
-		pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_DISPLAY_NAME);
-		if (NULL != pvalue) {
+		auto name = pmsg->children.prcpts->pparray[i]->get<const char>(PR_DISPLAY_NAME);
+		if (name != nullptr) {
 			piparam = ical_new_param("CN");
 			if (NULL == piparam) {
 				return FALSE;
 			}
 			if (piline->append_param(piparam) < 0)
 				return false;
-			if (!piparam->append_paramval(static_cast<char *>(pvalue)))
+			if (!piparam->append_paramval(name))
 				return FALSE;
 		}
 		if (!oxcical_get_smtp_address(pmsg->children.prcpts->pparray[i],
