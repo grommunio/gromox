@@ -89,9 +89,8 @@ uint32_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
 	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});
-	if (hnd < 0) {
+	if (hnd < 0)
 		return ecError;
-	}
 	rtable->set_handle(hnd);
 	*phout = hnd;
 	return ecSuccess;

@@ -155,9 +155,8 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
-	if (hnd < 0) {
+	if (hnd < 0)
 		return ecError;
-	}
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -244,9 +243,8 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
-	if (hnd < 0) {
+	if (hnd < 0)
 		return ecError;
-	}
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -726,9 +724,8 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 		return ecNotFound;
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
 	           hin, {OBJECT_TYPE_ATTACHMENT, std::move(pattachment)});
-	if (hnd < 0) {
+	if (hnd < 0)
 		return ecError;
-	}
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -761,9 +758,8 @@ uint32_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
 	           hin, {OBJECT_TYPE_ATTACHMENT, std::move(pattachment)});
-	if (hnd < 0) {
+	if (hnd < 0)
 		return ecError;
-	}
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -886,9 +882,8 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 		*pmessage_id = *(uint64_t*)pvalue;
 		auto hnd = rop_processor_add_object_handle(plogmap,
 		           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
-		if (hnd < 0) {
+		if (hnd < 0)
 			return ecError;
-		}
 		*phout = hnd;
 		*phas_named_properties = 0;
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
@@ -951,9 +946,8 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
-	if (hnd < 0) {
+	if (hnd < 0)
 		return ecError;
-	}
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -978,9 +972,8 @@ uint32_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
 	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});
-	if (hnd < 0) {
+	if (hnd < 0)
 		return ecError;
-	}
 	rtable->set_handle(hnd);
 	*phout = hnd;
 	return ecSuccess;
