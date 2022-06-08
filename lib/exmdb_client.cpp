@@ -331,9 +331,9 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	mdcl_event_proc = event_proc;
 	std::vector<EXMDB_ITEM> xmlist;
 
-	auto ret = list_file_read_exmdb("exmdb_list.txt", cfgdir, xmlist);
-	if (ret != 0) {
-		printf("exmdb_client: list_file_read_exmdb: %s\n", strerror(ret));
+	auto err = list_file_read_exmdb("exmdb_list.txt", cfgdir, xmlist);
+	if (err != 0) {
+		printf("exmdb_client: list_file_read_exmdb: %s\n", strerror(err));
 		return 1;
 	}
 	mdcl_notify_stop = false;
@@ -373,7 +373,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		return 0;
 	if (!(flags & EXMDB_CLIENT_ASYNC_CONNECT))
 		cl_pinger2();
-	ret = pthread_create(&mdcl_scan_id, nullptr, cl_pinger, nullptr);
+	auto ret = pthread_create(&mdcl_scan_id, nullptr, cl_pinger, nullptr);
 	if (ret != 0) {
 		printf("exmdb_client: failed to create proxy scan thread: %s\n", strerror(ret));
 		mdcl_notify_stop = true;
