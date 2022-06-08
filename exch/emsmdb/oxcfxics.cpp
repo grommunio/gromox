@@ -359,22 +359,25 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	return ecSuccess;
 }
 
+static bool send_options_ok(uint32_t f)
+{
+	if (f & ~(SEND_OPTIONS_UNICODE | SEND_OPTIONS_USECPID |
+	    SEND_OPTIONS_RECOVERMODE | SEND_OPTIONS_FORCEUNICODE |
+	    SEND_OPTIONS_PARTIAL | SEND_OPTIONS_RESERVED1 | SEND_OPTIONS_RESERVED2))
+		return false;
+	if ((f & SEND_OPTIONS_UNICODE) && (f & SEND_OPTIONS_USECPID) &&
+	    (f & SEND_OPTIONS_RECOVERMODE))
+		return false;
+	return true;
+}
+
 uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
 	
-	if (send_options & ~(SEND_OPTIONS_UNICODE|
-		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
-		SEND_OPTIONS_FORCEUNICODE|SEND_OPTIONS_PARTIAL|
-		SEND_OPTIONS_RESERVED1|SEND_OPTIONS_RESERVED2)) {
+	if (!send_options_ok(send_options))
 		return ecInvalidParam;
-	}
-	if ((send_options & SEND_OPTIONS_UNICODE) &&
-		(send_options & SEND_OPTIONS_USECPID) &&
-		(send_options & SEND_OPTIONS_RECOVERMODE)) {
-		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -413,17 +416,8 @@ uint32_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	EID_ARRAY *pmids;
 	uint32_t permission;
 	
-	if (send_options & ~(SEND_OPTIONS_UNICODE|
-		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
-		SEND_OPTIONS_FORCEUNICODE|SEND_OPTIONS_PARTIAL|
-		SEND_OPTIONS_RESERVED1|SEND_OPTIONS_RESERVED2)) {
+	if (!send_options_ok(send_options))
 		return ecInvalidParam;
-	}
-	if ((send_options & SEND_OPTIONS_UNICODE) &&
-		(send_options & SEND_OPTIONS_USECPID) &&
-		(send_options & SEND_OPTIONS_RECOVERMODE)) {
-		return ecInvalidParam;
-	}
 	/* we ignore the FAST_COPY_MESSAGE_FLAG_MOVE
 	   in flags just like exchange 2010 or later */
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -490,17 +484,8 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	MESSAGE_CONTENT msgctnt;
 	ATTACHMENT_CONTENT attctnt;
 	
-	if (send_options & ~(SEND_OPTIONS_UNICODE|
-		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
-		SEND_OPTIONS_FORCEUNICODE|SEND_OPTIONS_PARTIAL|
-		SEND_OPTIONS_RESERVED1|SEND_OPTIONS_RESERVED2)) {
+	if (!send_options_ok(send_options))
 		return ecInvalidParam;
-	}
-	if ((send_options & SEND_OPTIONS_UNICODE) &&
-		(send_options & SEND_OPTIONS_USECPID) &&
-		(send_options & SEND_OPTIONS_RECOVERMODE)) {
-		return ecInvalidParam;
-	}
 	/* just like exchange 2010 or later */
 	if (flags & FAST_COPY_TO_FLAG_MOVE) {
 		return ecInvalidParam;
@@ -625,17 +610,8 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	MESSAGE_CONTENT msgctnt;
 	ATTACHMENT_CONTENT attctnt;
 	
-	if (send_options & ~(SEND_OPTIONS_UNICODE|
-		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
-		SEND_OPTIONS_FORCEUNICODE|SEND_OPTIONS_PARTIAL|
-		SEND_OPTIONS_RESERVED1|SEND_OPTIONS_RESERVED2)) {
+	if (!send_options_ok(send_options))
 		return ecInvalidParam;
-	}
-	if ((send_options & SEND_OPTIONS_UNICODE) &&
-		(send_options & SEND_OPTIONS_USECPID) &&
-		(send_options & SEND_OPTIONS_RECOVERMODE)) {
-		return ecInvalidParam;
-	}
 	/* just like exchange 2010 or later */
 	if (flags & FAST_COPY_PROPERTIES_FLAG_MOVE) {
 		return ecInvalidParam;
@@ -772,17 +748,8 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 		SYNC_TYPE_HIERARCHY != sync_type) {
 		return ecInvalidParam;
 	}
-	if (send_options & ~(SEND_OPTIONS_UNICODE|
-		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
-		SEND_OPTIONS_FORCEUNICODE|SEND_OPTIONS_PARTIAL|
-		SEND_OPTIONS_RESERVED1|SEND_OPTIONS_RESERVED2)) {
+	if (!send_options_ok(send_options))
 		return ecInvalidParam;
-	}
-	if ((send_options & SEND_OPTIONS_UNICODE) &&
-		(send_options & SEND_OPTIONS_USECPID) &&
-		(send_options & SEND_OPTIONS_RECOVERMODE)) {
-		return ecInvalidParam;
-	}
 	if (SYNC_TYPE_HIERARCHY == sync_type && NULL != pres) {
 		return ecInvalidParam;
 	}
