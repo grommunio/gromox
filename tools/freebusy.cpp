@@ -783,7 +783,6 @@ static void output_event(time_t start_time, time_t end_time,
 
 static BOOL get_freebusy(const char *dir)
 {
-	void *pvalue;
 	BOOL b_first;
 	BOOL b_private1 = false, b_meeting1;
 	BOOL b_reminder1;
@@ -1058,42 +1057,39 @@ static BOOL get_freebusy(const char *dir)
 	printf("\"events\":[");
 	b_first = FALSE;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		pvalue = tmp_set.pparray[i]->getval(pidlidappointmentstartwhole);
-		if (pvalue == nullptr)
+		auto ts = tmp_set.pparray[i]->get<const uint64_t>(pidlidappointmentstartwhole);
+		if (ts == nullptr)
 			continue;
-		whole_start_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
-		pvalue = tmp_set.pparray[i]->getval(pidlidappointmentendwhole);
-		if (pvalue == nullptr)
+		whole_start_time = rop_util_nttime_to_unix(*ts);
+		ts = tmp_set.pparray[i]->get<uint64_t>(pidlidappointmentendwhole);
+		if (ts == nullptr)
 			continue;
-		whole_end_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
-		pvalue = tmp_set.pparray[i]->getval(pidlidglobalobjectid);
-		if (!make_ical_uid(static_cast<BINARY *>(pvalue), uid_buff))
+		whole_end_time = rop_util_nttime_to_unix(*ts);
+		if (!make_ical_uid(tmp_set.pparray[i]->get<BINARY>(pidlidglobalobjectid), uid_buff))
 			continue;
-		auto psubject = tmp_set.pparray[i]->get<char>(PR_SUBJECT);
-		auto plocation = tmp_set.pparray[i]->get<char>(pidlidlocation);
-		pvalue = tmp_set.pparray[i]->getval(pidlidreminderset);
-		BOOL b_reminder = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
-		pvalue = tmp_set.pparray[i]->getval(pidlidprivate);
-		BOOL b_private = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
-		pvalue = tmp_set.pparray[i]->getval(pidlidbusystatus);
-		if (NULL == pvalue) {
+		auto psubject = tmp_set.pparray[i]->get<const char>(PR_SUBJECT);
+		auto plocation = tmp_set.pparray[i]->get<const char>(pidlidlocation);
+		auto pflag = tmp_set.pparray[i]->get<const uint8_t>(pidlidreminderset);
+		BOOL b_reminder = pflag != nullptr && *pflag != 0 ? TRUE : false;
+		pflag = tmp_set.pparray[i]->get<uint8_t>(pidlidprivate);
+		BOOL b_private = pflag != nullptr && *pflag != 0 ? TRUE : false;
+		auto num = tmp_set.pparray[i]->get<const uint32_t>(pidlidbusystatus);
+		if (num == nullptr) {
 			busy_type = 0;
 		} else {
-			busy_type = *(uint32_t*)pvalue;
+			busy_type = *num;
 			if (busy_type > 4)
 				busy_type = 0;
 		}
-		pvalue = tmp_set.pparray[i]->getval(pidlidappointmentstateflags);
-		BOOL b_meeting = pvalue == nullptr ? false :
-		                 (*static_cast<uint32_t *>(pvalue) & asfMeeting) ? TRUE : false;
-		pvalue = tmp_set.pparray[i]->getval(pidlidrecurring);
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-			pvalue = tmp_set.pparray[i]->getval(pidlidtimezonestruct);
-			if (NULL == pvalue) {
+		num = tmp_set.pparray[i]->get<uint32_t>(pidlidappointmentstateflags);
+		BOOL b_meeting = (num != nullptr && *num & asfMeeting) ? TRUE : false;
+		pflag = tmp_set.pparray[i]->get<uint8_t>(pidlidrecurring);
+		if (pflag != nullptr && *pflag != 0) {
+			auto bin = tmp_set.pparray[i]->get<const BINARY>(pidlidtimezonestruct);
+			if (bin == nullptr) {
 				ptz_component = NULL;
 			} else {
-				ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
-					static_cast<BINARY *>(pvalue)->cb, malloc, EXT_FLAG_UTF16);
+				ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
 				if (ext_pull.g_tzstruct(&tzstruct) != EXT_ERR_SUCCESS)
 					continue;	
 				ptz_component = tzstruct_to_vtimezone(
@@ -1101,11 +1097,10 @@ static BOOL get_freebusy(const char *dir)
 				if (ptz_component == nullptr)
 					continue;
 			}
-			pvalue = tmp_set.pparray[i]->getval(pidlidappointmentrecur);
-			if (pvalue == nullptr)
+			bin = tmp_set.pparray[i]->get<BINARY>(pidlidappointmentrecur);
+			if (bin == nullptr)
 				continue;
-			ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
-				static_cast<BINARY *>(pvalue)->cb, malloc, EXT_FLAG_UTF16);
+			ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 				continue;
 			if (!find_recurrence_times(ptz_component, whole_start_time,
