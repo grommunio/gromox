@@ -428,6 +428,7 @@ struct errno_t {
 #endif
 	}
 	constexpr operator int() const { return m_value; }
+	constexpr operator bool() const = delete;
 	private:
 	int m_value = 0;
 };
