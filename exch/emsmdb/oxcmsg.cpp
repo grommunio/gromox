@@ -116,7 +116,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
 	pvalue = propvals.getval(PR_HAS_NAMED_PROPERTIES);
-	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
+	*phas_named_properties = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
 	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
@@ -444,7 +444,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
 	auto pvalue = propvals.getval(PR_HAS_NAMED_PROPERTIES);
-	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
+	*phas_named_properties = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
 	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
@@ -916,7 +916,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 	}
 	*pmessage_id = *(uint64_t*)pvalue;
 	pvalue = propvals.getval(PR_HAS_NAMED_PROPERTIES);
-	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
+	*phas_named_properties = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
 	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
