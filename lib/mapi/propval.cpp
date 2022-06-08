@@ -576,8 +576,8 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 		      *static_cast<const uint32_t *>(pvalue2));
 		break;
 	case PT_BOOLEAN:
-		cmp = three_way_compare(*static_cast<const uint8_t *>(pvalue1),
-		      *static_cast<const uint8_t *>(pvalue2));
+		cmp = three_way_compare(!!*static_cast<const uint8_t *>(pvalue1),
+		      !!*static_cast<const uint8_t *>(pvalue2));
 		break;
 	case PT_CURRENCY:
 	case PT_I8:
