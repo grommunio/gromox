@@ -35,6 +35,12 @@
 #include <gromox/util.hpp>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
+enum { /* for PidLidAppointmentStateFlags */
+	asfMeeting = 0x1U,
+	asfReceived = 0x2U,
+	asfCanceled = 0x4U,
+};
+
 namespace {
 
 struct EVENT_NODE {
@@ -1079,7 +1085,7 @@ static BOOL get_freebusy(const char *dir)
 		}
 		pvalue = tmp_set.pparray[i]->getval(pidlidappointmentstateflags);
 		BOOL b_meeting = pvalue == nullptr ? false :
-		                 (*static_cast<uint32_t *>(pvalue) & 1) ? TRUE : false;
+		                 (*static_cast<uint32_t *>(pvalue) & asfMeeting) ? TRUE : false;
 		pvalue = tmp_set.pparray[i]->getval(pidlidrecurring);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			pvalue = tmp_set.pparray[i]->getval(pidlidtimezonestruct);
