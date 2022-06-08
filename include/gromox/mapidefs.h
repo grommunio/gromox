@@ -24,10 +24,9 @@ enum {
 	 * have a contradiction, saying PT_LONG is "signed or unsigned", yet
 	 * also "This property type is the same as […] the OLE type VT_I4".
 	 *
-	 * MS-OAUT clearly distinguishes signed and unsigned types, and since
-	 * MAPI shares the same enum values, there is ample reason to treat
-	 * PT_LONG etc. as signed throughout — especially when comparing values
-	 * in restrictions.
+	 * MS-OAUT clearly distinguishes signed and unsigned types. MAPI shares
+	 * the same enum values, and Exchange treats it as signed too during
+	 * rop_sorttable.
 	 */
 	PT_UNSPECIFIED = 0x0000, /* VT_EMPTY, PtypUnspecified */
 	PT_NULL = 0x0001, /* VT_NULL, PtypNull */
@@ -892,12 +891,12 @@ struct GUID_ARRAY {
 
 struct LONG_ARRAY {
 	uint32_t count;
-	uint32_t *pl;
+	uint32_t *pl; // XXX: should be int32_t
 };
 
 struct LONGLONG_ARRAY {
 	uint32_t count;
-	uint64_t *pll;
+	uint64_t *pll; // XXX: should be int64_t
 };
 
 struct LPROPTAG_ARRAY {
@@ -980,7 +979,7 @@ struct PROPTAG_ARRAY {
 
 struct SHORT_ARRAY {
 	uint32_t count;
-	uint16_t *ps;
+	uint16_t *ps; // XXX: should be int16_t
 };
 
 struct SORT_ORDER {

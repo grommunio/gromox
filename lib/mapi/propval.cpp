@@ -552,6 +552,17 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 		if (cmp == 0) \
 			cmp = memcmp(a->field, b->field, sizeof(a->field[0]) * a->count); \
 	} while (false)
+#define MVCOMPARE2(field, retype) do { \
+		cmp = three_way_compare(a->count, b->count); \
+		if (cmp != 0) \
+			break; \
+		for (size_t jj = 0; jj < a->count; ++jj) { \
+			cmp = three_way_compare(static_cast<retype>((a->field)[jj]), \
+			                        static_cast<retype>((b->field)[jj])); \
+			if (cmp != 0) \
+				break; \
+		} \
+	} while (false)
 
 	int cmp = -2;
 	switch (relop) {
@@ -611,13 +622,13 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 	case PT_MV_SHORT: {
 		auto a = static_cast<const SHORT_ARRAY *>(pvalue1);
 		auto b = static_cast<const SHORT_ARRAY *>(pvalue2);
-		MVCOMPARE(ps);
+		MVCOMPARE2(ps, int16_t);
 		break;
 	}
 	case PT_MV_LONG: {
 		auto a = static_cast<const LONG_ARRAY *>(pvalue1);
 		auto b = static_cast<const LONG_ARRAY *>(pvalue2);
-		MVCOMPARE(pl);
+		MVCOMPARE2(pl, int32_t);
 		break;
 	}
 	case PT_MV_CURRENCY:
@@ -625,7 +636,7 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 	case PT_MV_SYSTIME: {
 		auto a = static_cast<const LONGLONG_ARRAY *>(pvalue1);
 		auto b = static_cast<const LONGLONG_ARRAY *>(pvalue2);
-		MVCOMPARE(pll);
+		MVCOMPARE2(pll, int64_t);
 		break;
 	}
 	case PT_MV_FLOAT: {
@@ -684,6 +695,7 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 	}
 	return three_way_eval(relop, cmp);
 #undef MVCOMPARE
+#undef MVCOMPARE2
 }
 
 namespace gromox {
