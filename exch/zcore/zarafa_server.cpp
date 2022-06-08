@@ -4471,13 +4471,9 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		if (!exmdb_client_get_message_property(pstore->get_dir(),
 		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
-		if (b_fai) {
-			if (pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0)
-				return ecInvalidParam;
-		} else {
-			if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
-				return ecInvalidParam;
-		}
+		bool orig_is_fai = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
+		if (b_fai != orig_is_fai)
+			return ecInvalidParam;
 	} else {
 		if (!exmdb_client::allocate_message_id(pstore->get_dir(),
 		    folder_id, &message_id))
