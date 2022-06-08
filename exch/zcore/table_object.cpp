@@ -293,27 +293,25 @@ static BOOL rcpttable_query_rows(const table_object *ptable,
 	for (size_t i = 0; i < pset->count; ++i) {
 		if (pset->pparray[i]->has(PR_ENTRYID))
 			continue;
-		auto pvalue = pset->pparray[i]->getval(PR_ADDRTYPE);
-		if (pvalue == nullptr ||
-		    strcasecmp(static_cast<char *>(pvalue), "EX") != 0)
+		auto addrtype = pset->pparray[i]->get<const char>(PR_ADDRTYPE);
+		if (addrtype == nullptr || strcasecmp(addrtype, "EX") != 0)
 			continue;
-		pvalue = pset->pparray[i]->getval(PR_EMAIL_ADDRESS);
-		if (NULL == pvalue) {
+		auto emaddr = pset->pparray[i]->get<const char>(PR_EMAIL_ADDRESS);
+		if (emaddr == nullptr)
 			continue;
-		}
 		auto pentryid = cu_alloc<BINARY>();
 		if (NULL == pentryid) {
 			return FALSE;
 		}
-		if (!common_util_essdn_to_entryid(static_cast<char *>(pvalue), pentryid))
+		if (!common_util_essdn_to_entryid(emaddr, pentryid))
 			return FALSE;
-		pvalue = cu_alloc<TAGGED_PROPVAL>(pset->pparray[i]->count + 1);
+		auto pvalue = cu_alloc<TAGGED_PROPVAL>(pset->pparray[i]->count + 1);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		memcpy(pvalue, pset->pparray[i]->ppropval,
 			sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
-		pset->pparray[i]->ppropval = static_cast<TAGGED_PROPVAL *>(pvalue);
+		pset->pparray[i]->ppropval = pvalue;
 		pset->pparray[i]->ppropval[pset->pparray[i]->count].proptag = PR_ENTRYID;
 		pset->pparray[i]->ppropval[pset->pparray[i]->count++].pvalue = pentryid;
 	}
