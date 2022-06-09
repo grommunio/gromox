@@ -115,23 +115,23 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	pvalue = propvals.getval(PR_HAS_NAMED_PROPERTIES);
-	*phas_named_properties = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
-	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
-	if (NULL == pvalue) {
+	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
+	*phas_named_properties = *flag != 0;
+	auto str = propvals.get<const char>(PR_SUBJECT_PREFIX);
+	if (str == nullptr) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
 		psubject_prefix->pstring = NULL;
 	} else {
 		psubject_prefix->string_type = STRING_TYPE_UNICODE;
-		psubject_prefix->pstring = static_cast<char *>(pvalue);
+		psubject_prefix->pstring = deconst(str);
 	}
-	pvalue = propvals.getval(PR_NORMALIZED_SUBJECT);
-	if (NULL == pvalue) {
+	str = propvals.get<char>(PR_NORMALIZED_SUBJECT);
+	if (str == nullptr) {
 		pnormalized_subject->string_type = STRING_TYPE_EMPTY;
 		pnormalized_subject->pstring = NULL;
 	} else {
 		pnormalized_subject->string_type = STRING_TYPE_UNICODE;
-		pnormalized_subject->pstring = static_cast<char *>(pvalue);
+		pnormalized_subject->pstring = deconst(str);
 	}
 	if (!pmessage->get_recipient_num(precipient_count))
 		return ecError;
@@ -208,22 +208,21 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 	proptag_buff[3] = PR_CONTENT_COUNT;
 	if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	auto pvalue = tmp_propvals.getval(PR_STORAGE_QUOTA_LIMIT);
+	auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 	uint64_t max_quota = ULLONG_MAX;
-	if (pvalue != nullptr) {
-		max_quota = *static_cast<uint32_t *>(pvalue);
+	if (num != nullptr) {
+		max_quota = *num;
 		max_quota = max_quota >= ULLONG_MAX / 1024 ? ULLONG_MAX : max_quota * 1024ULL;
 	}
-	pvalue = tmp_propvals.getval(PR_MESSAGE_SIZE_EXTENDED);
-	uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
+	auto lnum = tmp_propvals.get<const uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
+	uint64_t total_size = lnum != nullptr ? *lnum : 0;
 	if (total_size > max_quota)
 		return ecQuotaExceeded;
-	pvalue = tmp_propvals.getval(PR_ASSOC_CONTENT_COUNT);
-	uint32_t total_mail = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
-	pvalue = tmp_propvals.getval(PR_CONTENT_COUNT);
-	if (NULL != pvalue) {
-		total_mail += *(uint32_t*)pvalue;
-	}
+	num = tmp_propvals.get<uint32_t>(PR_ASSOC_CONTENT_COUNT);
+	uint32_t total_mail = num != nullptr ? *num : 0;
+	num = tmp_propvals.get<uint32_t>(PR_CONTENT_COUNT);
+	if (num != nullptr)
+		total_mail += *num;
 	if (total_mail > g_max_message)
 		return ecQuotaExceeded;
 	*ppmessage_id = cu_alloc<uint64_t>();
@@ -441,23 +440,23 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	auto pvalue = propvals.getval(PR_HAS_NAMED_PROPERTIES);
-	*phas_named_properties = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
-	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
-	if (NULL == pvalue) {
+	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
+	*phas_named_properties = flag != nullptr && *flag != 0;
+	auto str = propvals.get<const char>(PR_SUBJECT_PREFIX);
+	if (str == nullptr) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
 		psubject_prefix->pstring = NULL;
 	} else {
 		psubject_prefix->string_type = STRING_TYPE_UNICODE;
-		psubject_prefix->pstring = static_cast<char *>(pvalue);
+		psubject_prefix->pstring = deconst(str);
 	}
-	pvalue = propvals.getval(PR_NORMALIZED_SUBJECT);
-	if (NULL == pvalue) {
+	str = propvals.get<char>(PR_NORMALIZED_SUBJECT);
+	if (str == nullptr) {
 		pnormalized_subject->string_type = STRING_TYPE_EMPTY;
 		pnormalized_subject->pstring = NULL;
 	} else {
 		pnormalized_subject->string_type = STRING_TYPE_UNICODE;
-		pnormalized_subject->pstring = static_cast<char *>(pvalue);
+		pnormalized_subject->pstring = deconst(str);
 	}
 	if (!pmessage->get_recipient_num(precipient_count))
 		return ecError;
@@ -875,11 +874,10 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 		proptag_buff[0] = PidTagMid;
 		if (!pmessage->get_properties(0, &proptags, &propvals))
 			return ecError;
-		auto pvalue = propvals.getval(PidTagMid);
-		if (NULL == pvalue) {
+		auto mid_p = propvals.get<const eid_t>(PidTagMid);
+		if (mid_p == nullptr)
 			return ecError;
-		}
-		*pmessage_id = *(uint64_t*)pvalue;
+		*pmessage_id = *mid_p;
 		auto hnd = rop_processor_add_object_handle(plogmap,
 		           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
 		if (hnd < 0)
@@ -905,28 +903,27 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 	proptag_buff[3] = PR_NORMALIZED_SUBJECT;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	auto pvalue = propvals.getval(PidTagMid);
-	if (NULL == pvalue) {
+	auto mid_p = propvals.get<const eid_t>(PidTagMid);
+	if (mid_p == nullptr)
 		return ecError;
-	}
-	*pmessage_id = *(uint64_t*)pvalue;
-	pvalue = propvals.getval(PR_HAS_NAMED_PROPERTIES);
-	*phas_named_properties = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
-	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
-	if (NULL == pvalue) {
+	*pmessage_id = *mid_p;
+	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
+	*phas_named_properties = flag != nullptr && *flag != 0;
+	auto str = propvals.get<const char>(PR_SUBJECT_PREFIX);
+	if (str == nullptr) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
 		psubject_prefix->pstring = NULL;
 	} else {
 		psubject_prefix->string_type = STRING_TYPE_UNICODE;
-		psubject_prefix->pstring = static_cast<char *>(pvalue);
+		psubject_prefix->pstring = deconst(str);
 	}
-	pvalue = propvals.getval(PR_NORMALIZED_SUBJECT);
-	if (NULL == pvalue) {
+	str = propvals.get<char>(PR_NORMALIZED_SUBJECT);
+	if (str == nullptr) {
 		pnormalized_subject->string_type = STRING_TYPE_EMPTY;
 		pnormalized_subject->pstring = NULL;
 	} else {
 		pnormalized_subject->string_type = STRING_TYPE_UNICODE;
-		pnormalized_subject->pstring = static_cast<char *>(pvalue);
+		pnormalized_subject->pstring = deconst(str);
 	}
 	if (!pmessage->get_recipient_num(precipient_count))
 		return ecError;

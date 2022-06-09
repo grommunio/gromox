@@ -205,9 +205,6 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	int object_type;
 	uint16_t rcpt_num;
 	char username[UADDR_SIZE];
-	int32_t max_length;
-	uint32_t mail_length;
-	uint32_t message_flags;
 	char command_buff[1024];
 	uint32_t proptag_buff[6];
 	PROPTAG_ARRAY tmp_proptags;
@@ -246,11 +243,10 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	proptag_buff[0] = PR_ASSOCIATED;
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	auto pvalue = tmp_propvals.getval(PR_ASSOCIATED);
+	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+	if (flag != nullptr && *flag != 0)
 		return ecAccessDenied;
-	}
 	
 	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
@@ -279,11 +275,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize)
 		return ecQuotaExceeded;
 
-	pvalue = tmp_propvals.getval(PR_MAX_SUBMIT_MESSAGE_SIZE);
-	max_length = -1;
-	if (NULL != pvalue) {
-		max_length = *(int32_t*)pvalue;
-	}
+	auto inum = tmp_propvals.get<const int32_t>(PR_MAX_SUBMIT_MESSAGE_SIZE);
+	int32_t max_length = inum != nullptr ? *inum : -1;
 	tmp_proptags.count = (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : 6;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_MESSAGE_SIZE;
@@ -294,23 +287,19 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	proptag_buff[5] = PR_DELETE_AFTER_SUBMIT;
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	pvalue = tmp_propvals.getval(PR_MESSAGE_SIZE);
-	if (NULL == pvalue) {
+	auto num = tmp_propvals.get<const uint32_t>(PR_MESSAGE_SIZE);
+	if (num == nullptr)
 		return ecError;
-	}
-	mail_length = *(uint32_t*)pvalue;
-	if (max_length > 0 && mail_length > static_cast<uint32_t>(max_length))
+	if (max_length > 0 && *num > static_cast<uint32_t>(max_length))
 		return EC_EXCEEDED_SIZE;
-	pvalue = tmp_propvals.getval(PR_MESSAGE_FLAGS);
-	if (NULL == pvalue) {
+	auto message_flags = tmp_propvals.get<uint32_t>(PR_MESSAGE_FLAGS);
+	if (message_flags == nullptr)
 		return ecError;
-	}
-	message_flags = *(uint32_t*)pvalue;
-	if (message_flags & MSGFLAG_SUBMITTED)
+	if (*message_flags & MSGFLAG_SUBMITTED)
 		return ecAccessDenied;
-	BOOL b_unsent = (message_flags & MSGFLAG_UNSENT) ? TRUE : false;
-	pvalue = tmp_propvals.getval(PR_DELETE_AFTER_SUBMIT);
-	BOOL b_delete = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
+	BOOL b_unsent = (*message_flags & MSGFLAG_UNSENT) ? TRUE : false;
+	flag = tmp_propvals.get<uint8_t>(PR_DELETE_AFTER_SUBMIT);
+	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	/* we don't use spool queue, so disable the whole functionality */
 #if 0
 	/* check if it is already in spooler queue */
@@ -449,7 +438,6 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 {
 	BOOL b_exist;
 	BOOL b_result;
-	BOOL b_delete;
 	uint64_t new_id;
 	uint64_t parent_id;
 	uint64_t folder_id;
@@ -489,18 +477,13 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	if (!exmdb_client_get_message_properties(plogon->get_dir(), nullptr, 0,
 	    message_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	auto pvalue = tmp_propvals.getval(PR_DELETE_AFTER_SUBMIT);
-	b_delete = FALSE;
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		b_delete = TRUE;
-	}
-	
-	auto ptarget = tmp_propvals.get<BINARY>(PR_TARGET_ENTRYID);
-	pvalue = tmp_propvals.getval(PR_PARENT_ENTRYID);
-	if (NULL == pvalue) {
+	auto flag = tmp_propvals.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
+	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
+	auto ptarget = tmp_propvals.get<const BINARY>(PR_TARGET_ENTRYID);
+	auto bin = tmp_propvals.get<const BINARY>(PR_PARENT_ENTRYID);
+	if (bin == nullptr)
 		return ecError;
-	}
-	if (!cu_from_folder_entryid(plogon, static_cast<BINARY *>(pvalue), &parent_id))
+	if (!cu_from_folder_entryid(plogon, bin, &parent_id))
 		return ecError;
 	if (NULL != ptarget) {
 		if (!cu_from_message_entryid(plogon, ptarget, &folder_id, &new_id))
