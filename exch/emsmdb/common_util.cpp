@@ -507,8 +507,8 @@ BINARY *common_util_calculate_message_sourcekey(logon_object *plogon, uint64_t m
 	return pbin;
 }
 
-BOOL common_util_from_folder_entryid(logon_object *plogon,
-	BINARY *pbin, uint64_t *pfolder_id)
+BOOL cu_from_folder_entryid(logon_object *plogon, const BINARY *pbin,
+    uint64_t *pfolder_id)
 {
 	BOOL b_found;
 	uint16_t replid;
@@ -554,8 +554,8 @@ BOOL common_util_from_folder_entryid(logon_object *plogon,
 	}
 }
 
-BOOL common_util_from_message_entryid(logon_object *plogon,
-	BINARY *pbin, uint64_t *pfolder_id, uint64_t *pmessage_id)
+BOOL cu_from_message_entryid(logon_object *plogon, const BINARY *pbin,
+    uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
 	BOOL b_found;
 	uint16_t replid;
@@ -2033,7 +2033,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
-		if (!common_util_from_message_entryid(plogon,
+		if (!cu_from_message_entryid(plogon,
 		    ptarget, &folder_id, &new_id)) {
 			log_err("W-1279: Failed to retrieve target entryid while sending mid:0x%llx", LLU(message_id));
 			return FALSE;	
