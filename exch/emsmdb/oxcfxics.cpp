@@ -251,22 +251,21 @@ uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
 		proptag_buff[3] = PR_CONTENT_COUNT;
 		if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 			return ecError;
-		auto pvalue = tmp_propvals.getval(PR_STORAGE_QUOTA_LIMIT);
+		auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 		uint64_t max_quota = ULLONG_MAX;
-		if (pvalue != nullptr) {
-			max_quota = *static_cast<uint32_t *>(pvalue);
+		if (num != nullptr) {
+			max_quota = *num;
 			max_quota = max_quota >= ULLONG_MAX / 1024 ? ULLONG_MAX : max_quota * 1024ULL;
 		}
-		pvalue = tmp_propvals.getval(PR_MESSAGE_SIZE_EXTENDED);
-		uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
+		auto lnum = tmp_propvals.get<const uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
+		uint64_t total_size = lnum != nullptr ? *lnum : 0;
 		if (total_size > max_quota)
 			return ecQuotaExceeded;
-		pvalue = tmp_propvals.getval(PR_ASSOC_CONTENT_COUNT);
-		uint32_t total_mail = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
-		pvalue = tmp_propvals.getval(PR_CONTENT_COUNT);
-		if (NULL != pvalue) {
-			total_mail += *(uint32_t*)pvalue;
-		}
+		num = tmp_propvals.get<uint32_t>(PR_ASSOC_CONTENT_COUNT);
+		uint32_t total_mail = num != nullptr ? *num : 0;
+		num = tmp_propvals.get<uint32_t>(PR_CONTENT_COUNT);
+		if (num != nullptr)
+			total_mail += *num;
 		if (total_mail > g_max_message)
 			return ecQuotaExceeded;
 	}
@@ -912,11 +911,10 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
 		if (!pmessage->get_properties(0, &proptags, &tmp_propvals))
 			return ecError;
-		pvalue = tmp_propvals.getval(PR_PREDECESSOR_CHANGE_LIST);
-		if (NULL == pvalue) {
+		auto bin = tmp_propvals.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+		if (bin == nullptr)
 			return ecError;
-		}
-		if (!common_util_pcl_compare(static_cast<BINARY *>(pvalue),
+		if (!common_util_pcl_compare(bin,
 		    static_cast<BINARY *>(ppropvals->ppropval[3].pvalue), &result)) {
 			return ecError;
 		}
@@ -957,7 +955,6 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	int i;
 	XID tmp_xid;
 	BOOL b_owner;
-	void *pvalue;
 	int object_type;
 	uint64_t read_cn;
 	uint64_t folder_id;
@@ -1010,12 +1007,11 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 		if (!exmdb_client_get_message_properties(plogon->get_dir(),
 		    nullptr, 0, message_id, &tmp_proptags, &tmp_propvals))
 			return ecError;
-		pvalue = tmp_propvals.getval(PR_ASSOCIATED);
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+		auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
+		if (flag != nullptr && *flag != 0)
 			continue;
-		}
-		pvalue = tmp_propvals.getval(PR_READ);
-		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
+		flag = tmp_propvals.get<uint8_t>(PR_READ);
+		if (flag == nullptr || *flag == 0) {
 			if (0 == pread_stat[i].mark_as_read) {
 				continue;
 			}

@@ -80,15 +80,13 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	proptag_buff[1] = PR_OOF_STATE;
 	if (!exmdb_client_get_store_properties(maildir, 0, &proptags, &propvals))
 		return ecError;
-	auto pvalue = propvals.getval(PR_STORE_RECORD_KEY);
-	if (NULL == pvalue) {
+	auto bin = propvals.get<const BINARY>(PR_STORE_RECORD_KEY);
+	if (bin == nullptr)
 		return ecError;
-	}
-	*pmailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
-	pvalue = propvals.getval(PR_OOF_STATE);
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+	*pmailbox_guid = rop_util_binary_to_guid(bin);
+	auto flag = propvals.get<const uint8_t>(PR_OOF_STATE);
+	if (flag != nullptr && *flag != 0)
 		*presponse_flags |= RESPONSE_FLAG_OOF;
-	}
 	
 	pfolder_id[0]  = rop_util_make_eid_ex(1, PRIVATE_FID_ROOT);
 	pfolder_id[1]  = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);

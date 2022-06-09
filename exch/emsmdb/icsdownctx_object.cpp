@@ -255,8 +255,6 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	BINARY *pbin = nullptr;
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
-	uint64_t folder_id;
-	uint64_t parent_fid;
 	const char *username;
 	DCERPC_INFO rpc_info;
 	char temp_buff[1024];
@@ -318,19 +316,17 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			tmp_bin.pb = NULL;
 			cu_set_propval(&chg, PR_CREATOR_SID, &tmp_bin);
 		}
-		auto pvalue = chg.getval(PidTagFolderId);
-		if (NULL == pvalue) {
+		auto lnum = chg.get<const uint64_t>(PidTagFolderId);
+		if (lnum == nullptr)
 			return FALSE;
-		}
-		folder_id = *(uint64_t*)pvalue;
+		auto folder_id = *lnum;
 		if (0 == (SYNC_EXTRA_FLAG_EID & pctx->extra_flags)) {
 			common_util_remove_propvals(&chg, PidTagFolderId);
 		}
-		pvalue = chg.getval(PidTagParentFolderId);
-		if (NULL == pvalue) {
+		lnum = chg.get<uint64_t>(PidTagParentFolderId);
+		if (lnum == nullptr)
 			return FALSE;
-		}
-		parent_fid = *(uint64_t*)pvalue;
+		auto parent_fid = *lnum;
 		if (SYNC_FLAG_NOFOREIGNIDENTIFIERS & pctx->sync_flags) {
 			common_util_remove_propvals(&chg, PR_SOURCE_KEY);
 			auto psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
@@ -622,73 +618,65 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 		return FALSE;
 	}
 	pchgheader->count = 0;
-	auto pvalue = pmsgctnt->proplist.getval(PR_SOURCE_KEY);
-	if (NULL == pvalue) {
+	auto bin = pmsgctnt->proplist.get<const BINARY>(PR_SOURCE_KEY);
+	if (bin == nullptr)
 		return FALSE;
-	}
 	pchgheader->ppropval[pchgheader->count].proptag = PR_SOURCE_KEY;
-	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
+	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(bin);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY);
 	
-	pvalue = pmsgctnt->proplist.getval(PR_LAST_MODIFICATION_TIME);
-	if (NULL == pvalue) {
+	auto ts = pmsgctnt->proplist.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
+	if (ts == nullptr)
 		return FALSE;
-	}
 	pchgheader->ppropval[pchgheader->count].proptag = PR_LAST_MODIFICATION_TIME;
-	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
+	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(ts);
 	
-	pvalue = pmsgctnt->proplist.getval(PR_CHANGE_KEY);
-	if (NULL == pvalue) {
+	bin = pmsgctnt->proplist.get<BINARY>(PR_CHANGE_KEY);
+	if (bin == nullptr)
 		return FALSE;
-	}
 	pchgheader->ppropval[pchgheader->count].proptag = PR_CHANGE_KEY;
-	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
+	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(bin);
 	
-	pvalue = pmsgctnt->proplist.getval(PR_PREDECESSOR_CHANGE_LIST);
-	if (NULL == pvalue) {
+	bin = pmsgctnt->proplist.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+	if (bin == nullptr)
 		return FALSE;
-	}
 	pchgheader->ppropval[pchgheader->count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
+	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(bin);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST);
 	
-	pvalue = pmsgctnt->proplist.getval(PR_ASSOCIATED);
-	if (NULL == pvalue) {
+	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_ASSOCIATED);
+	if (flag == nullptr)
 		return FALSE;
-	}
-	pprogmsg->b_fai = *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
+	pprogmsg->b_fai = *flag != 0 ? TRUE : false;
 	pchgheader->ppropval[pchgheader->count].proptag = PR_ASSOCIATED;
-	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
+	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(flag);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 	
 	if (SYNC_EXTRA_FLAG_EID & extra_flags) {
-		pvalue = pmsgctnt->proplist.getval(PidTagMid);
-		if (NULL == pvalue) {
+		auto lnum = pmsgctnt->proplist.get<const uint64_t>(PidTagMid);
+		if (lnum == nullptr)
 			return FALSE;
-		}
 		pchgheader->ppropval[pchgheader->count].proptag = PidTagMid;
-		pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
+		pchgheader->ppropval[pchgheader->count++].pvalue = deconst(lnum);
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagMid);
 	
-	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_SIZE);
-	if (NULL == pvalue) {
+	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_SIZE);
+	if (num == nullptr)
 		return FALSE;
-	}
-	pprogmsg->message_size = *(uint32_t*)pvalue;
+	pprogmsg->message_size = *num;
 	if (SYNC_EXTRA_FLAG_MESSAGESIZE & extra_flags) {
 		pchgheader->ppropval[pchgheader->count].proptag = PR_MESSAGE_SIZE;
-		pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
+		pchgheader->ppropval[pchgheader->count++].pvalue = deconst(num);
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
 	
 	if (SYNC_EXTRA_FLAG_CN & extra_flags) {
-		pvalue = pmsgctnt->proplist.getval(PidTagChangeNumber);
-		if (NULL == pvalue) {
+		auto cn = pmsgctnt->proplist.get<const eid_t>(PidTagChangeNumber);
+		if (cn == nullptr)
 			return FALSE;
-		}
 		pchgheader->ppropval[pchgheader->count].proptag = PidTagChangeNumber;
-		pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
+		pchgheader->ppropval[pchgheader->count++].pvalue = deconst(cn);
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagChangeNumber);
 	return TRUE;
