@@ -218,16 +218,16 @@ BOOL temp_list_dump(const char *path)
 	for (auto iter = g_string_hash.begin(); iter != g_string_hash.end(); ) {
 		if (current_time >= iter->second) {
 			iter = g_string_hash.erase(iter);
-		} else {
-			len = strlen(temp_string);
-			temp_string[len] = '\t';
-			len ++;
-			len += strftime(temp_string + len, 512 - len, "%Y/%m/%d %H:%M:%S",
-			       localtime_r(&iter->second, &time_buff));
-			temp_string[len] = '\n';
-			len ++;
-			write(fd, temp_string, len);
+			continue;
 		}
+		len = strlen(temp_string);
+		temp_string[len] = '\t';
+		len++;
+		len += strftime(temp_string + len, 512 - len, "%Y/%m/%d %H:%M:%S",
+		       localtime_r(&iter->second, &time_buff));
+		temp_string[len] = '\n';
+		len++;
+		write(fd, temp_string, len);
 	}
 	sm_hold.unlock();
 	close(fd);
