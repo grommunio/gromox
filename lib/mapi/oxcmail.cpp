@@ -3985,7 +3985,7 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 	
 	offset = 0;
 	auto pvalue = pmsg->proplist.get<char>(tags.pr_name);
-	if (NULL != pvalue) {
+	if (pvalue != nullptr && *pvalue != '\0') {
 		if (strlen(pvalue) >= GX_ARRAY_SIZE(address)) {
 			goto EXPORT_ADDRESS;
 		}
