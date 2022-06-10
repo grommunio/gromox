@@ -29,6 +29,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/mjson.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/str_hash.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
@@ -1443,8 +1444,16 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pconte
     }
 }
 
-static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx)
+static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx) try
 {
+	/* cmd2 can/will further tokenize and thus modify argv */
+	std::vector<std::string> argv_copy;
+	auto ac_clean = make_scope_exit([&]() {
+		for (size_t i = 0; i < argv_copy.size(); ++i)
+			safe_memset(argv_copy[i].data(), 0, argv_copy[i].size());
+	});
+	if (g_imapcmd_debug != 0)
+		argv_copy.assign(&argv[0], &argv[argc]);
 	auto ret = imap_parser_dispatch_cmd2(argc, argv, ctx);
 	auto code = ret & DISPATCH_VALMASK;
 	if (g_imapcmd_debug >= 2 || (g_imapcmd_debug >= 1 && code != 0 && code != 1700)) {
@@ -1457,11 +1466,13 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx)
 		} else {
 			fprintf(stderr, "<");
 			for (int i = 0; i < argc; ++i)
-				fprintf(stderr, " %s", argv[i]);
+				fprintf(stderr, " %s", argv_copy[i].c_str());
 			fprintf(stderr, ": ret=%xh code=%u\n", ret, code);
 		}
 	}
 	return imap_cmd_parser_dval(argc, argv, ctx, ret);
+} catch (const std::bad_alloc &) {
+	return imap_cmd_parser_dval(argc, argv, ctx, 1915);
 }
 
 IMAP_CONTEXT::IMAP_CONTEXT() :
