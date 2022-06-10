@@ -3993,19 +3993,22 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 		offset ++;
 		offset += oxcmail_encode_mime_string(charset,
 		          pvalue, field + offset, fdsize - offset);
-		field[offset] = '"';
-		offset ++;
+		field[offset++] = '"';
+		field[offset++] = ' ';
 		field[offset] = '\0';
 	}
  EXPORT_ADDRESS:
 	if (oxcmail_get_smtp_address(&pmsg->proplist, alloc, tags,
 	    address, arsizeof(address))) {
-		if (0 == offset) {
-			offset = gx_snprintf(field, fdsize, "<%s>", address);
-		} else {
-			offset += gx_snprintf(field + offset,
-			          fdsize - offset, " <%s>", address);
-		}
+		offset += gx_snprintf(field + offset, fdsize - offset, "<%s>", address);
+	} else {
+		/*
+		 * RFC 5322 §3.4's ABNF mandates an address at all times.
+		 * If we only emitted "Display Name", parsers can
+		 * preferentially treat that as the email address, so let's add
+		 * <> to nudge them.
+		 */
+		offset += gx_snprintf(field + offset, fdsize - offset, "<>");
 	}
 	if (0 == offset) {
 		return FALSE;
