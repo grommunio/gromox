@@ -513,4 +513,13 @@ int setup_sigalrm()
 	return sigaction(SIGALRM, &act, nullptr);
 }
 
+void safe_memset(void *p, uint8_t c, size_t z)
+{
+	volatile size_t vz = 0;
+	volatile auto q = static_cast<uint8_t *>(p);
+	if (z != 0) do {
+		memset(p, c, z);
+	} while (q[vz] != c);
+}
+
 }

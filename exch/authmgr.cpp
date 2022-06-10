@@ -11,11 +11,13 @@
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/util.hpp>
 #include "authmgr.hpp"
 #include "ldap_adaptor.hpp"
 #include "mysql_adaptor/mysql_adaptor.h"
 
 using namespace std::string_literals;
+using namespace gromox;
 enum { A_DENY_ALL, A_ALLOW_ALL, A_MYSQL, A_LDAP, A_EXTERNID };
 
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
@@ -53,6 +55,7 @@ static bool login_gen(const char *username, const char *password,
 	auth = auth && meta;
 	if (!auth && *reason == '\0')
 		gx_strlcpy(reason, "Authentication rejected", length);
+	safe_memset(ep, 0, std::size(ep));
 	return auth;
 }
 

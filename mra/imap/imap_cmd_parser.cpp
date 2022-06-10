@@ -1386,6 +1386,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 	    pcontext->maildir, arsizeof(pcontext->maildir), pcontext->lang,
 	    arsizeof(pcontext->lang), reason, arsizeof(reason),
 	    USER_PRIVILEGE_IMAP)) {
+		safe_memset(temp_password, 0, std::size(temp_password));
 		if (*pcontext->maildir == '\0')
 			return 1902 | DISPATCH_TAG;
 		if (*pcontext->lang == '\0')
@@ -1394,6 +1395,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
 		return 1705 | DISPATCH_TAG;
 	}
+	safe_memset(temp_password, 0, std::size(temp_password));
 	imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s", reason);
 	pcontext->auth_times ++;
 	if (pcontext->auth_times >= g_max_auth_times) {

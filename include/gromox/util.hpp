@@ -132,5 +132,6 @@ extern GX_EXPORT std::string hex2bin(const char *);
 extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
 extern GX_EXPORT int setup_sigalrm();
 extern GX_EXPORT size_t qp_encoded_size_estimate(const char *, size_t);
+extern GX_EXPORT void safe_memset(void *, uint8_t, size_t);
 
 }

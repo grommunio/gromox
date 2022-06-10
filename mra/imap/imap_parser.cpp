@@ -655,6 +655,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 				return ps_end_processing(pcontext);
 			}
 			pcontext->command_len = 0;
+			safe_memset(pcontext->command_buffer, 0, std::size(pcontext->command_buffer));
 			return X_LITERAL_PROCESSING;
 		}
 
