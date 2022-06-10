@@ -1548,6 +1548,7 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
 	}
 	i = 0;
 	std::optional<std::vector<int>> presult;
+	presult.emplace();
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		mid_string = S2A(sqlite3_column_text(pstmt, 0));
 		uid = sqlite3_column_int64(pstmt, 1);
