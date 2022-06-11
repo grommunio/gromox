@@ -834,6 +834,11 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	last_space = cmdline;
 	is_quoted = FALSE;
 	while (ptr - cmdline < cmdlen && argc < argmax - 1) {
+		/*
+		 * After any memmove, we must immediately reevaluate *ptr,
+		 * because we may have introduced the same kind of control char
+		 * again.
+		 */
 		if (*ptr == '{' && last_quote == nullptr) {
 			last_brace = static_cast<char *>(memchr(ptr + 1, '}', 16));
 			if (last_brace != nullptr) {
@@ -842,6 +847,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 				memmove(ptr, last_brace + 1, cmdline + cmdlen - 1 - last_brace);
 				cmdlen -= last_brace + 1 - ptr;
 				ptr += length;
+				continue;
 			} else {
 				argv[0] = NULL;
 				return -1;
