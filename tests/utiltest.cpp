@@ -17,11 +17,9 @@ static int t_emailaddr()
 {
 	EMAIL_ADDR em;
 	for (const auto s : {"u@d.at", "<u@d.at>", "\"u@d.at\"", "U D <u@d.at>",
-	     "\"U D\" <u@d.at>", "\"U\\\"D\" <u@d.at>"}) {
+	     "\"U D\" <u@d.at>", "\"U\\\"D\" <u@d.at>", "=?utf-8?Q?=C3=A5 D?= <u@d.at>"}) {
 		printf("%s:\n", s);
 		em = {};
-		parse_email_addr(&em, s);
-		printf("\temail: <%s> <%s> <%s>\n", em.display_name, em.local_part, em.domain);
 		parse_mime_addr(&em, s);
 		printf("\tmime: <%s> <%s> <%s>\n", em.display_name, em.local_part, em.domain);
 	}

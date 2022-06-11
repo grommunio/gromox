@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
+#include <vmime/mailbox.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
@@ -181,123 +182,9 @@ const char *extract_ip(const char *buff_in, char *buff_out)
 	return nullptr;
 }
 
-/*
- *	  parse email as "John Honey" <john@mail.com> into e_addr
- *	  @param
- *		  email	 [in]	  string contain the address
- *		  e_addr [out]	  for retrieving parsed address
- */
 void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 {
-	int i;
-	int tokenloc;
-	int bgettoken;
-	int lasttokenloc;
-	const char *tmp_ptr;
-	const char *loc_ptr;
-	
-	tokenloc = 0;
-	bgettoken = 0;
-	lasttokenloc = -1;
-	tmp_ptr = email;
-	loc_ptr = email;
-	/* first get the display name, begin with token " */
-	while (*tmp_ptr != '\0') {
-		if ('"' == *tmp_ptr) {
-			if (-1 == lasttokenloc){
-				lasttokenloc = tmp_ptr - email;
-				loc_ptr = tmp_ptr;
-			} else {
-				bgettoken = 1;
-				tokenloc = tmp_ptr - email;
-				break;
-			}
-		}
-		if ('<' == *tmp_ptr && -1 == lasttokenloc) {
-			bgettoken = 1;
-			tokenloc = tmp_ptr - email;
-			break;
-		}
-		tmp_ptr ++;
-	}
-	
-	/* check if two quotation marks are found */
-	size_t j = 0;
-	if (bgettoken == 0 || (tokenloc - lasttokenloc >= 0 &&
-	    static_cast<size_t>(tokenloc - lasttokenloc) > sizeof(e_addr->display_name))) {
-		tmp_ptr = loc_ptr;
-		e_addr->display_name[0] = '\0';
-	} else {
-		for (i=lasttokenloc+1, j=0; i<tokenloc; i++, j++) {
-			e_addr->display_name[j] = email[i];
-		}
-		e_addr->display_name[j] = '\0';
-		HX_strrtrim(e_addr->display_name);
-		HX_strltrim(e_addr->display_name);
-	}
-	/* get the first < token */
-	loc_ptr = tmp_ptr;
-	bgettoken = 0;
-	tokenloc = 0;
-	while (*tmp_ptr != '\0') {
-		if ('<' == *tmp_ptr) {
-			lasttokenloc = tokenloc;
-			tokenloc = tmp_ptr - email;
-			bgettoken = 1;
-			break;
-		}
-		tmp_ptr ++;
-	}
-	
-	if (0 == bgettoken) {
-		tmp_ptr = loc_ptr;
-	}
-	/* get the local part in the string */
-	bgettoken = 0;
-	if (lasttokenloc != -1){
-		lasttokenloc = tokenloc;
-	}
-	loc_ptr = tmp_ptr;
-	tokenloc = 0;
-	while (*tmp_ptr != '\0') {
-		if ('@' == *tmp_ptr) { 
-			bgettoken = 1;
-			tokenloc = tmp_ptr - email;
-			break;
-		}
-		tmp_ptr ++;
-	}
-	
-	/* check if at token is found */
-	if (bgettoken == 0 || (tokenloc - lasttokenloc >= 0 &&
-	    static_cast<size_t>(tokenloc - lasttokenloc) > sizeof(e_addr->local_part))) {
-		e_addr->local_part[0] = '\0';
-		tmp_ptr = loc_ptr;
-	} else {
-		for (i=lasttokenloc+1, j=0; i<tokenloc; i++, j++) {
-			e_addr->local_part[j] = email[i];
-		}
-		e_addr->local_part[j] = '\0';
-		HX_strrtrim(e_addr->local_part);
-		HX_strltrim(e_addr->local_part);
-	}
-
-	/* get the domain */
-	lasttokenloc = tokenloc;
-	if (bgettoken != 0) {
-		tmp_ptr ++;
-	}
-	for (i = lasttokenloc + 1, j = 0; tmp_ptr[j] != '\0' && tmp_ptr[j] != '>'; 
-		 i++, j++) {
-		if (j >= GX_ARRAY_SIZE(e_addr->domain) - 1) {
-			j = 0;
-			break;
-		}
-		e_addr->domain[j] = tmp_ptr[j];
-	}
-	e_addr->domain[j] = '\0';
-	HX_strrtrim(e_addr->domain);
-	HX_strltrim(e_addr->domain);
+	parse_mime_addr(e_addr, email);
 }
 
 BOOL parse_uri(const char *uri_buff, char *parsed_uri)
@@ -514,136 +401,17 @@ BOOL parse_uri(const char *uri_buff, char *parsed_uri)
  *		  email	 [in]	  string contain the address
  *		  e_addr [out]	  for retrieving parsed address
  */
-void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
+void parse_mime_addr(EMAIL_ADDR *e_addr, const char *input) try
 {
-	int i, tmp_len;
-	int bquoted;
-	int tokenloc;
-	int bgettoken;
-	int lasttokenloc;
-	const char *tmp_ptr;
-	
-	tmp_ptr = email;
-	tokenloc = 0;
-	bquoted = 0;
-	bgettoken = 0;
-	while (*tmp_ptr != '\0') {
-		if ('"' == *tmp_ptr) {
-			if (0 == bquoted) {
-				bquoted = 1;
-			} else {
-				bquoted = 0;
-			}
-		} else if ('<' == *tmp_ptr && (0 == bquoted
-			|| NULL == strchr(tmp_ptr + 1, '"'))) {
-			bgettoken = 1;
-			tokenloc = tmp_ptr - email;
-			break;
-		}
-		tmp_ptr ++;
-	}
-	if (0 == bgettoken || 0 == tokenloc || (tokenloc >= 0 &&
-	    static_cast<size_t>(tokenloc) >= sizeof(e_addr->display_name))) {
-		tmp_ptr = email;
-		e_addr->display_name[0] = '\0';
-	} else {
-		memcpy(e_addr->display_name, email, tokenloc);
-		e_addr->display_name[tokenloc] = '\0';
-		HX_strrtrim(e_addr->display_name);
-		HX_strltrim(e_addr->display_name);
-		tmp_len = strlen(e_addr->display_name);
-		if (tmp_len > 1 && '"' == e_addr->display_name[0]
-			&& '"' == e_addr->display_name[tmp_len - 1]) {
-			tmp_len --;
-			e_addr->display_name[tmp_len] = '\0';
-			memmove(e_addr->display_name,
-				e_addr->display_name + 1, tmp_len);
-			tmp_len --;
-		}
-		if (tmp_len > 1 && '\'' == e_addr->display_name[0]
-			&& '\'' == e_addr->display_name[tmp_len - 1]) {
-			tmp_len --;
-			e_addr->display_name[tmp_len] = '\0';
-			memmove(e_addr->display_name,
-				e_addr->display_name + 1, tmp_len);
-			tmp_len --;
-		}
-		for (i=0; i<tmp_len; i++) {
-			if ('\\' == e_addr->display_name[i]) {
-				memmove(e_addr->display_name + i,
-					e_addr->display_name + i + 1,
-					tmp_len - i);
-				tmp_len --;
-				i ++;
-			}
-			
-		}
-	}
-	/* get the first < token */
-	const char *loc_ptr = tmp_ptr;
-	bgettoken = 0;
-	tokenloc = 0;
-	lasttokenloc = -1;
-	while (*tmp_ptr != '\0') {
-		if ('<' == *tmp_ptr) {
-			lasttokenloc = tokenloc;
-			tokenloc = tmp_ptr - email;
-			bgettoken = 1;
-			break;
-		}
-		tmp_ptr ++;
-	}
-	
-	if (0 == bgettoken) {
-		tmp_ptr = loc_ptr;
-	}
-	/* get the local part in the string */
-	bgettoken = 0;
-	if (lasttokenloc != -1){
-		lasttokenloc = tokenloc;
-	}
-	loc_ptr = tmp_ptr;
-	tokenloc = 0;
-	while (*tmp_ptr != '\0') {
-		if ('@' == *tmp_ptr) { 
-			bgettoken = 1;
-			tokenloc = tmp_ptr - email;
-			break;
-		}
-		tmp_ptr ++;
-	}
-	
-	/* check if at token is found */
-	size_t j = 0;
-	if (bgettoken == 0 || (tokenloc - lasttokenloc >= 0 &&
-	    static_cast<size_t>(tokenloc - lasttokenloc) > sizeof(e_addr->local_part))) {
-		e_addr->local_part[0] = '\0';
-		tmp_ptr = loc_ptr;
-	} else {
-		for (i=lasttokenloc+1, j=0; i<tokenloc; i++, j++) {
-			e_addr->local_part[j] = email[i];
-		}
-		e_addr->local_part[j] = '\0';
-		HX_strrtrim(e_addr->local_part);
-		HX_strltrim(e_addr->local_part);
-	}
+	vmime::mailbox mb;
+	mb.parse(input);
 
-	/* get the domain */
-	lasttokenloc = tokenloc;
-	if (bgettoken != 0) {
-		tmp_ptr ++;
-	}
-	for (i = lasttokenloc + 1, j = 0; tmp_ptr[j] != '\0' && tmp_ptr[j] != '>';
-		 i++, j++) {
-		if (j >= GX_ARRAY_SIZE(e_addr->domain) - 1) {
-			j = 0;
-			break;
-		}
-		e_addr->domain[j] = tmp_ptr[j];
-	}
-	e_addr->domain[j] = '\0';
-	HX_strrtrim(e_addr->domain);
-	HX_strltrim(e_addr->domain);
+	gx_strlcpy(e_addr->display_name, mb.getName().getConvertedText("utf-8").c_str(), std::size(e_addr->display_name));
+	auto &emp = mb.getEmail();
+	gx_strlcpy(e_addr->local_part, emp.getLocalName().getConvertedText("utf-8").c_str(), std::size(e_addr->local_part));
+	gx_strlcpy(e_addr->domain, emp.getDomainName().getConvertedText("utf-8").c_str(), std::size(e_addr->domain));
+} catch (const std::bad_alloc &) {
+	*e_addr = {};
 }
 
 /*
