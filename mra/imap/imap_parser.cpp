@@ -512,6 +512,12 @@ static int ps_literal_checking(IMAP_CONTEXT *pcontext)
 
 static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 {
+	/*
+	 * Minus 3 is just a mundane microoptimization to short-circuit to the
+	 * exit if we don't even have a chance of finding an opening brace and
+	 * the mandatory CRLF (which the line breaker in ps_cmd_processing has
+	 * left us with).
+	 */
 	for (ssize_t i = 0; i < pcontext->read_offset - 3; ++i) {
 		char *ptr;
 		if (pcontext->read_buffer[i] != '{' ||
@@ -617,6 +623,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 
 static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 {
+	/* Minus 1 is a microoptimization (see above) */
 	for (ssize_t i = 0; i < pcontext->read_offset - 1; ++i) {
 		if (pcontext->read_buffer[i] != '\r' ||
 		    pcontext->read_buffer[i+1] != '\n') {

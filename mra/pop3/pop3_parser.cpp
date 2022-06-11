@@ -386,6 +386,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	
 	pcontext->connection.last_timestamp = current_time;	
 	pcontext->read_offset += read_len;
+	/* Microoptimization (cf. imap_parser for the same) */
 	ub = pcontext->read_offset > 0 ? pcontext->read_offset - 1 : 0;
 	for (size_t i = 0; i < ub; ++i) {
 		if ('\r' == pcontext->read_buffer[i] &&
