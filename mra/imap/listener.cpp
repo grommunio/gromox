@@ -122,10 +122,15 @@ void listener_stop_accept()
 	}
 }
 
-char *capability_list(char *dst, size_t z, bool tls)
+char *capability_list(char *dst, size_t z, IMAP_CONTEXT *ctx)
 {
 	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE AUTH=LOGIN", z);
-	if (tls)
+	bool offer_tls = g_support_starttls;
+	if (ctx != nullptr) {
+		if (ctx->connection.ssl != nullptr || ctx->is_authed())
+			offer_tls = false;
+	}
+	if (offer_tls)
 		HX_strlcat(dst, " STARTTLS", z);
 	if (parse_bool(resource_get_string("enable_rfc2971_commands")))
 		HX_strlcat(dst, " ID", z);
@@ -234,10 +239,11 @@ static void *imls_thrwork(void *arg)
 			continue;
 		}
 
-		/* IMAP_CODE_2170000: OK <domain> Service ready */
-		imap_reply_str = resource_get_imap_code(1700, 1, &string_length);
-		if (HXio_fullwrite(sockd2, "* ", 2) < 0 ||
-		    HXio_fullwrite(sockd2, imap_reply_str, string_length) < 0)
+		char caps[128];
+		capability_list(caps, std::size(caps), pcontext);
+		if (HXio_fullwrite(sockd2, "* OK [CAPABILITY ", 17) < 0 ||
+		    HXio_fullwrite(sockd2, caps, strlen(caps)) < 0 ||
+		    HXio_fullwrite(sockd2, "] Service ready\r\n", 17) < 0)
 			/* ignore - error will be on next write (again) */;
 		/* construct the context object */
 		pcontext->connection.last_timestamp = time_point::clock::now();

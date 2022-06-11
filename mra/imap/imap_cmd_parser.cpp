@@ -1253,10 +1253,7 @@ int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170001: OK CAPABILITY completed */
 	auto imap_reply_str = resource_get_imap_code(1701, 1, &string_length);
 	char ext_str[128];
-	auto already_using_tls = pcontext->connection.ssl != nullptr;
-	capability_list(ext_str, std::size(ext_str),
-		g_support_starttls && !already_using_tls &&
-		!pcontext->is_authed());
+	capability_list(ext_str, std::size(ext_str), pcontext);
 	string_length = gx_snprintf(buff, arsizeof(buff),
 	                "* CAPABILITY %s\r\n%s %s",
 	                ext_str, argv[0], imap_reply_str);

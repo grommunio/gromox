@@ -379,11 +379,11 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 	if (SSL_accept(pcontext->connection.ssl) != -1) {
 		pcontext->sched_stat = SCHED_STAT_RDCMD;
 		if (pcontext->connection.server_port == g_listener_ssl_port) {
-			/* IMAP_CODE_2170000: OK Service ready */
-			size_t s1len = 0;
-			auto imap_reply_str = resource_get_imap_code(1700, 1, &s1len);
-			SSL_write(pcontext->connection.ssl, "* ", 2);
-			SSL_write(pcontext->connection.ssl, imap_reply_str, s1len);
+			char caps[128];
+			capability_list(caps, std::size(caps), pcontext);
+			SSL_write(pcontext->connection.ssl, "* OK [CAPABILITY ", 17);
+			SSL_write(pcontext->connection.ssl, caps, strlen(caps));
+			SSL_write(pcontext->connection.ssl, "] Service ready\r\n", 17);
 		}
 		return PROCESS_CONTINUE;
 	}
