@@ -1252,7 +1252,9 @@ int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170001: OK CAPABILITY completed */
 	auto imap_reply_str = resource_get_imap_code(1701, 1, &string_length);
 	char ext_str[16]{};
-	if (g_support_starttls)
+	auto already_using_tls = pcontext->connection.ssl != nullptr;
+	if (g_support_starttls && !already_using_tls &&
+	    !pcontext->is_authed())
 		HX_strlcat(ext_str, " STARTTLS", arsizeof(ext_str));
 	if (parse_bool(resource_get_string("enable_rfc2971_commands")))
 		HX_strlcat(ext_str, " ID", arsizeof(ext_str));
