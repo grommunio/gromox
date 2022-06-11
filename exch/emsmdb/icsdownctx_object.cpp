@@ -647,7 +647,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_ASSOCIATED);
 	if (flag == nullptr)
 		return FALSE;
-	pprogmsg->b_fai = *flag != 0 ? TRUE : false;
+	pprogmsg->b_fai = flag != nullptr && *flag != 0 ? TRUE : false;
 	pchgheader->ppropval[pchgheader->count].proptag = PR_ASSOCIATED;
 	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(flag);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);

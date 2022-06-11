@@ -116,7 +116,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
 	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
-	*phas_named_properties = *flag != 0;
+	*phas_named_properties = flag != nullptr && *flag != 0;
 	auto str = propvals.get<const char>(PR_SUBJECT_PREFIX);
 	if (str == nullptr) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
