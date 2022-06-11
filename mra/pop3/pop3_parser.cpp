@@ -389,32 +389,32 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	/* Microoptimization (cf. imap_parser for the same) */
 	ub = pcontext->read_offset > 0 ? pcontext->read_offset - 1 : 0;
 	for (size_t i = 0; i < ub; ++i) {
-		if ('\r' == pcontext->read_buffer[i] &&
-			'\n' == pcontext->read_buffer[i + 1]) {
-			memcpy(temp_command, pcontext->read_buffer, i);
-			temp_command[i] = '\0';
-			HX_strrtrim(temp_command);
-			HX_strltrim(temp_command);
-			pcontext->read_offset -= i + 2;
-			memmove(pcontext->read_buffer, &pcontext->read_buffer[i+2],
-				pcontext->read_offset);
-			switch (pop3_parser_dispatch_cmd(temp_command,
-				strlen(temp_command), pcontext)) {
-			case DISPATCH_CONTINUE:
-				return PROCESS_CONTINUE;
-			case DISPATCH_SHOULD_CLOSE:
-				pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-				if (system_services_container_remove_ip != nullptr)
-					system_services_container_remove_ip(pcontext->connection.client_ip);
-				pop3_parser_context_clear(pcontext);
-				return PROCESS_CLOSE;
-			case DISPATCH_DATA:
-				pcontext->data_stat = TRUE;
-				return PROCESS_CONTINUE;
-			case DISPATCH_LIST:
-				pcontext->list_stat = TRUE;
-				return PROCESS_CONTINUE;
-			}
+		if (pcontext->read_buffer[i] != '\r' ||
+		    pcontext->read_buffer[i+1] != '\n')
+			continue;
+		memcpy(temp_command, pcontext->read_buffer, i);
+		temp_command[i] = '\0';
+		HX_strrtrim(temp_command);
+		HX_strltrim(temp_command);
+		pcontext->read_offset -= i + 2;
+		memmove(pcontext->read_buffer, &pcontext->read_buffer[i+2],
+			pcontext->read_offset);
+		switch (pop3_parser_dispatch_cmd(temp_command,
+			strlen(temp_command), pcontext)) {
+		case DISPATCH_CONTINUE:
+			return PROCESS_CONTINUE;
+		case DISPATCH_SHOULD_CLOSE:
+			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
+			if (system_services_container_remove_ip != nullptr)
+				system_services_container_remove_ip(pcontext->connection.client_ip);
+			pop3_parser_context_clear(pcontext);
+			return PROCESS_CLOSE;
+		case DISPATCH_DATA:
+			pcontext->data_stat = TRUE;
+			return PROCESS_CONTINUE;
+		case DISPATCH_LIST:
+			pcontext->list_stat = TRUE;
+			return PROCESS_CONTINUE;
 		}
 	}
 	if (1024 == pcontext->read_offset) {
