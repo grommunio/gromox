@@ -29,7 +29,6 @@ struct ENCODE_STRING {
     char title[1024];
 };
 
-extern const char *extract_ip(const char *in, char *out);
 void parse_email_addr(EMAIL_ADDR *e_addr, const char *email);
 void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email);
 BOOL parse_uri(const char *uri_buff, char *parsed_uri);
