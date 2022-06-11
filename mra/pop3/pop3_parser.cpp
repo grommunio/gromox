@@ -389,15 +389,15 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	/* Microoptimization (cf. imap_parser for the same) */
 	ub = pcontext->read_offset > 0 ? pcontext->read_offset - 1 : 0;
 	for (size_t i = 0; i < ub; ++i) {
-		if (pcontext->read_buffer[i] != '\r' ||
-		    pcontext->read_buffer[i+1] != '\n')
+		auto nl_len = newline_size(&pcontext->read_buffer[i], ub - i);
+		if (nl_len == 0)
 			continue;
 		memcpy(temp_command, pcontext->read_buffer, i);
 		temp_command[i] = '\0';
 		HX_strrtrim(temp_command);
 		HX_strltrim(temp_command);
-		pcontext->read_offset -= i + 2;
-		memmove(pcontext->read_buffer, &pcontext->read_buffer[i+2],
+		pcontext->read_offset -= i + nl_len;
+		memmove(pcontext->read_buffer, &pcontext->read_buffer[i+nl_len],
 			pcontext->read_offset);
 		switch (pop3_parser_dispatch_cmd(temp_command,
 			strlen(temp_command), pcontext)) {
