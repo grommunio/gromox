@@ -838,7 +838,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 							"INTERNALDATE \"%d-%b-%Y %T %z\"", &tmp_tm);
 		} else if (strcasecmp(kw, "RFC822") == 0) {
 			buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
-			            "RFC822 ({%zd}\r\n<<{file}%s|0|%zd\r\n)",
+			            "RFC822 {%zd}\r\n<<{file}%s|0|%zd\r\n",
 			            mjson.get_mail_length(),
 			            mjson.get_mail_filename(),
 			            mjson.get_mail_length());
@@ -854,7 +854,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			auto pmime = mjson.get_mime("");
 			if (pmime != nullptr)
 				buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
-				            "RFC822.HEADER ({%zd}\r\n<<{file}%s|0|%zd\r\n)",
+				            "RFC822.HEADER {%zd}\r\n<<{file}%s|0|%zd\r\n",
 				            pmime->get_length(MJSON_MIME_HEAD),
 				            mjson.get_mail_filename(),
 				            pmime->get_length(MJSON_MIME_HEAD));
@@ -870,7 +870,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			if (pmime != nullptr)
 				buff_len += gx_snprintf(buff + buff_len,
 				            arsizeof(buff) - buff_len,
-				            "RFC822.TEXT ({%zd}\r\n<<{file}%s|%zd|%zd\r\n)",
+				            "RFC822.TEXT {%zd}\r\n<<{file}%s|%zd|%zd\r\n",
 				            pmime->get_length(MJSON_MIME_CONTENT),
 				            mjson.get_mail_filename(),
 				            pmime->get_offset(MJSON_MIME_CONTENT),
