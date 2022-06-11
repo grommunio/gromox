@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -129,7 +130,7 @@ static void *imls_thrwork(void *arg)
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
 	IMAP_CONTEXT *pcontext;
-	const char *imap_reply_str, *imap_reply_str2, *host_ID;
+	const char *imap_reply_str, *imap_reply_str2;
 	char buff[1024];
 	
 	for (;;) {
@@ -180,13 +181,12 @@ static void *imls_thrwork(void *arg)
 		pcontext = (IMAP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
-			/* IMAP_CODE_2180015: BAD <host> Service not available */
+			/* IMAP_CODE_2180015: BAD Service not available */
 			imap_reply_str = resource_get_imap_code(1815, 1, &string_length);
-			imap_reply_str2 = resource_get_imap_code(1815, 2, &string_length);
-			host_ID = resource_get_string("HOST_ID");
-			len = sprintf(buff, "* %s%s%s", imap_reply_str, host_ID,
-				  imap_reply_str2);
-			write(sockd2, buff, len);
+			if (HXio_fullwrite(sockd2, "* ", 2) < 0 ||
+			    HXio_fullwrite(sockd2, imap_reply_str, string_length) < 0 ||
+			    HXio_fullwrite(sockd2, "\r\n", 2) < 0)
+				/* ignore */;
 			close(sockd2);
 			continue;        
 		}
@@ -226,11 +226,9 @@ static void *imls_thrwork(void *arg)
 
 		/* IMAP_CODE_2170000: OK <domain> Service ready */
 		imap_reply_str = resource_get_imap_code(1700, 1, &string_length);
-		imap_reply_str2 = resource_get_imap_code(1700, 2, &string_length);
-		host_ID = resource_get_string("HOST_ID");
-		len = sprintf(buff, "* %s%s%s", imap_reply_str, host_ID,
-			  imap_reply_str2);
-		write(sockd2, buff, len);
+		if (HXio_fullwrite(sockd2, "* ", 2) < 0 ||
+		    HXio_fullwrite(sockd2, imap_reply_str, string_length) < 0)
+			/* ignore - error will be on next write (again) */;
 		/* construct the context object */
 		pcontext->connection.last_timestamp = time_point::clock::now();
 		pcontext->connection.sockd          = sockd2;

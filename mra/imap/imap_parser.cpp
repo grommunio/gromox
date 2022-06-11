@@ -379,15 +379,11 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 	if (SSL_accept(pcontext->connection.ssl) != -1) {
 		pcontext->sched_stat = SCHED_STAT_RDCMD;
 		if (pcontext->connection.server_port == g_listener_ssl_port) {
-			/* IMAP_CODE_2170000: OK <domain> Service ready */
-			size_t s1len = 0, s2len = 0;
+			/* IMAP_CODE_2170000: OK Service ready */
+			size_t s1len = 0;
 			auto imap_reply_str = resource_get_imap_code(1700, 1, &s1len);
-			auto imap_reply_str2 = resource_get_imap_code(1700, 2, &s2len);
-			auto host_ID = resource_get_string("HOST_ID");
 			SSL_write(pcontext->connection.ssl, "* ", 2);
 			SSL_write(pcontext->connection.ssl, imap_reply_str, s1len);
-			SSL_write(pcontext->connection.ssl, host_ID, strlen(host_ID));
-			SSL_write(pcontext->connection.ssl, imap_reply_str2, s2len);
 		}
 		return PROCESS_CONTINUE;
 	}
