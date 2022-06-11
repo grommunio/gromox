@@ -28,6 +28,7 @@
 #include <gromox/util.hpp>
 #include "dir_tree.hpp"
 #include "imap_cmd_parser.h"
+#include "listener.h"
 #include "resource.h"
 #include "system_services.h"
 #define MAX_DIGLEN		256*1024
@@ -1251,16 +1252,13 @@ int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170001: OK CAPABILITY completed */
 	auto imap_reply_str = resource_get_imap_code(1701, 1, &string_length);
-	char ext_str[16]{};
+	char ext_str[128];
 	auto already_using_tls = pcontext->connection.ssl != nullptr;
-	if (g_support_starttls && !already_using_tls &&
-	    !pcontext->is_authed())
-		HX_strlcat(ext_str, " STARTTLS", arsizeof(ext_str));
-	if (parse_bool(resource_get_string("enable_rfc2971_commands")))
-		HX_strlcat(ext_str, " ID", arsizeof(ext_str));
+	capability_list(ext_str, std::size(ext_str),
+		g_support_starttls && !already_using_tls &&
+		!pcontext->is_authed());
 	string_length = gx_snprintf(buff, arsizeof(buff),
-	                "* CAPABILITY IMAP4rev1 XLIST SPECIAL-USE "
-	                "UNSELECT UIDPLUS IDLE AUTH=LOGIN%s\r\n%s %s",
+	                "* CAPABILITY %s\r\n%s %s",
 	                ext_str, argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;

@@ -122,6 +122,16 @@ void listener_stop_accept()
 	}
 }
 
+char *capability_list(char *dst, size_t z, bool tls)
+{
+	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE AUTH=LOGIN", z);
+	if (tls)
+		HX_strlcat(dst, " STARTTLS", z);
+	if (parse_bool(resource_get_string("enable_rfc2971_commands")))
+		HX_strlcat(dst, " ID", z);
+	return dst;
+}
+
 static void *imls_thrwork(void *arg)
 {
 	socklen_t addrlen;
