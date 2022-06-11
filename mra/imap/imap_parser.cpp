@@ -514,18 +514,21 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 {
 	auto &ctx = *pcontext;
 	/*
-	 * Minus 3 is just a mundane microoptimization to short-circuit to the
+	 * Minus 2 is just a mundane microoptimization to short-circuit to the
 	 * exit if we don't even have a chance of finding an opening brace and
-	 * the mandatory CRLF (which the line breaker in ps_cmd_processing has
-	 * left us with).
+	 * the mandatory newline (which the line breaker in ps_cmd_processing
+	 * has left us with).
 	 */
-	for (ssize_t i = 0; i < pcontext->read_offset - 3; ++i) {
-		char *ptr;
-		if (pcontext->read_buffer[i] != '{' ||
-		    (ptr = static_cast<char *>(memchr(pcontext->read_buffer + i, '}', pcontext->read_offset - 2 - i))) == nullptr ||
-		    ptr[1] != '\r' || ptr[2] != '\n') {
+	for (ssize_t i = 0; i < pcontext->read_offset - 2; ++i) {
+		if (pcontext->read_buffer[i] != '{' /* } */)
 			continue;
-		}
+		auto ptr = static_cast<char *>(memchr(&pcontext->read_buffer[i],
+		           /* { */ '}', pcontext->read_offset - 1 - i));
+		if (ptr == nullptr)
+			continue;
+		auto nl_len = newline_size(&ptr[1], pcontext->read_offset - 1 - i);
+		if (nl_len == 0)
+			continue;
 		if (ptr - pcontext->read_buffer - i > 16) {
 			/* IMAP_CODE_2180017: BAD literal size too large */
 			size_t string_length = 0;
@@ -539,8 +542,8 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		memcpy(temp_buff, &ctx.read_buffer[i+1], temp_len);
 		temp_buff[temp_len] = '\0';
 		pcontext->literal_len = strtol(temp_buff, nullptr, 0);
-		temp_len = 64 * 1024 - (&ctx.literal_ptr[2] - ctx.read_buffer) -
-		           pcontext->command_len - 2;
+		temp_len = 64 * 1024 - (&ctx.literal_ptr[nl_len] - ctx.read_buffer) -
+		           pcontext->command_len - nl_len;
 		if (temp_len <= 0 || temp_len >= 64 * 1024) {
 			imap_parser_log_info(pcontext, LV_WARN, "error in command buffer length");
 			/* IMAP_CODE_2180017: BAD literal size too large */
@@ -549,10 +552,10 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
 		if (pcontext->literal_len < temp_len) {
-			pcontext->read_offset -= 2;
+			pcontext->read_offset -= nl_len;
 			temp_len = ctx.read_offset - (ctx.literal_ptr - ctx.read_buffer);
 			if (temp_len > 0 && temp_len < 64 * 1024) {
-				memmove(ctx.literal_ptr, &ctx.literal_ptr[2], temp_len);
+				memmove(ctx.literal_ptr, &ctx.literal_ptr[nl_len], temp_len);
 			}
 			/* IMAP_CODE_2160003: + ready for additional command text */
 			size_t string_length = 0;
@@ -569,7 +572,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		if (argc >= 4 && 0 == strcasecmp(argv[1], "APPEND")) {
 			switch (imap_cmd_parser_append_begin(argc, argv, pcontext)) {
 			case DISPATCH_CONTINUE: {
-				ctx.current_len = &ctx.read_buffer[ctx.read_offset] - &ctx.literal_ptr[2];
+				ctx.current_len = &ctx.read_buffer[ctx.read_offset] - &ctx.literal_ptr[nl_len];
 				if (pcontext->current_len < 0) {
 					imap_parser_log_info(pcontext, LV_WARN, "error in read buffer length");
 					/* IMAP_CODE_2180017: BAD literal size too large */
@@ -577,7 +580,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 					auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 					return ps_end_processing(pcontext, imap_reply_str, string_length);
 				}
-				pcontext->stream.write(&ctx.literal_ptr[2], ctx.current_len);
+				pcontext->stream.write(&ctx.literal_ptr[nl_len], ctx.current_len);
 				pcontext->sched_stat = SCHED_STAT_APPENDING;
 				pcontext->read_offset = 0;
 				pcontext->command_len = 0;
@@ -590,9 +593,9 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 			case DISPATCH_SHOULD_CLOSE:
 				return ps_end_processing(pcontext);
 			case DISPATCH_BREAK:
-				ctx.read_offset -= &ctx.literal_ptr[2] - ctx.read_buffer;
+				ctx.read_offset -= &ctx.literal_ptr[nl_len] - ctx.read_buffer;
 				if (pcontext->read_offset > 0 && pcontext->read_offset < 64*1024) {
-					memmove(ctx.read_buffer, &ctx.literal_ptr[2], ctx.read_offset);
+					memmove(ctx.read_buffer, &ctx.literal_ptr[nl_len], ctx.read_offset);
 				} else {
 					pcontext->read_offset = 0;
 				}
@@ -608,9 +611,9 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 		pcontext->connection.write("* ", 2);
 		pcontext->connection.write(imap_reply_str, string_length);
-		ctx.read_offset -= &ctx.literal_ptr[2] - ctx.read_buffer;
+		ctx.read_offset -= &ctx.literal_ptr[nl_len] - ctx.read_buffer;
 		if (pcontext->read_offset > 0 && pcontext->read_offset < 64*1024) {
-			memmove(ctx.read_buffer, &ctx.literal_ptr[2], ctx.read_offset);
+			memmove(ctx.read_buffer, &ctx.literal_ptr[nl_len], ctx.read_offset);
 		} else {
 			pcontext->read_offset = 0;
 		}
@@ -622,14 +625,18 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 	return X_CMD_PROCESSING;
 }
 
+/*
+ * This function tries to mark off a whole line (i.e. find the newline). If
+ * none is there yet, ps_cmd_processing will soon be invoked again, with a
+ * read_buffer that has been _appended_ to -- so we will see the same leading
+ * string in pcontext->read_buffer.
+ */
 static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 {
-	/* Minus 1 is a microoptimization (see above) */
-	for (ssize_t i = 0; i < pcontext->read_offset - 1; ++i) {
-		if (pcontext->read_buffer[i] != '\r' ||
-		    pcontext->read_buffer[i+1] != '\n') {
+	for (ssize_t i = 0; i < pcontext->read_offset; ++i) {
+		auto nl_len = newline_size(&pcontext->read_buffer[i], pcontext->read_offset - i);
+		if (nl_len == 0)
 			continue;
-		}
 		if (i >= 64 * 1024 || pcontext->command_len + i >= 64 * 1024) {
 			imap_parser_log_info(pcontext, LV_WARN, "error in command buffer length");
 			/* IMAP_CODE_2180017: BAD literal size too large */
@@ -641,9 +648,9 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 		       pcontext->read_buffer, i);
 		pcontext->command_len += i;
 		pcontext->command_buffer[pcontext->command_len] = '\0';
-		pcontext->read_offset -= i + 2;
+		pcontext->read_offset -= i + nl_len;
 		if (pcontext->read_offset > 0 && pcontext->read_offset < 64 * 1024) {
-			memmove(pcontext->read_buffer, &pcontext->read_buffer[i+2],
+			memmove(pcontext->read_buffer, &pcontext->read_buffer[i+nl_len],
 			        pcontext->read_offset);
 		} else {
 			pcontext->read_offset = 0;

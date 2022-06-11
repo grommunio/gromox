@@ -522,4 +522,13 @@ void safe_memset(void *p, uint8_t c, size_t z)
 	} while (q[vz] != c);
 }
 
+unsigned int newline_size(const char *s, size_t z)
+{
+	if (z >= 1 && s[0] == '\n')
+		return 1;
+	if (z >= 2 && s[0] == '\r' && s[1] == '\n')
+		return 2;
+	return 0;
+}
+
 }
