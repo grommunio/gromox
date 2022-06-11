@@ -1331,7 +1331,7 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1802;
 	if (argc != 3 || strcasecmp(argv[2], "LOGIN") != 0)
 		return 1800;
-	if (pcontext->proto_stat >= PROTO_STAT_AUTH)
+	if (pcontext->is_authed())
 		return 1803;
 	gx_strlcpy(pcontext->tag_string, argv[0], arsizeof(pcontext->tag_string));
 	pcontext->proto_stat = PROTO_STAT_USERNAME;
@@ -1424,7 +1424,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc != 4 || strlen(argv[2]) >= arsizeof(pcontext->username) ||
 	    strlen(argv[3]) > 255)
 		return 1800;
-	if (pcontext->proto_stat >= PROTO_STAT_AUTH)
+	if (pcontext->is_authed())
 		return 1803;
 	gx_strlcpy(pcontext->username, argv[2], arsizeof(pcontext->username));
 	HX_strltrim(pcontext->username);
@@ -1462,7 +1462,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc != 2)
 		return 1800;
@@ -1483,7 +1483,7 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_name[1024];
 	char buff[1024];
     
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], temp_name))
@@ -1547,7 +1547,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_name[1024];
 	char buff[1024];
     
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], temp_name))
@@ -1609,7 +1609,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_folder[1024];
 	char converted_name[1024];
 
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], temp_name))
@@ -1693,7 +1693,7 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	char encoded_name[1024];
 
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], encoded_name))
@@ -1722,7 +1722,7 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char encoded_name[1024];
 	char encoded_name1[1024];
 
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
 		|| 0 == strlen(argv[3]) || strlen(argv[3]) >= 1024 ||
@@ -1754,7 +1754,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	char temp_name[1024];
 
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], temp_name))
@@ -1780,7 +1780,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	char temp_name[1024];
 
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], temp_name))
@@ -1811,7 +1811,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_name[1024];
 	char search_pattern[1024];
 	
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4 || (strcasecmp(argv[2], "(SPECIAL-USE)") == 0 && argc < 5))
 		return 1800;
@@ -1929,7 +1929,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_name[1024];
 	char search_pattern[1024];
 	
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4)
 		return 1800;
@@ -2017,7 +2017,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_name[1024];
 	char search_pattern[1024];
 	
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4)
 		return 1800;
@@ -2104,7 +2104,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char *temp_argv[16];
 	char temp_name[1024];
     
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], temp_name) ||
@@ -2182,7 +2182,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_name[1024];
 	char buff[1024];
 	
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4 || argc > 6 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], temp_name))
@@ -2324,7 +2324,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 	char str_flags[128];
 	char temp_name[1024];
 	
-	if (pcontext->proto_stat < PROTO_STAT_AUTH)
+	if (!pcontext->is_authed())
 		return 1804 | DISPATCH_BREAK;
 	if (argc < 3 || argc > 5 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], temp_name))

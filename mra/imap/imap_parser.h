@@ -75,6 +75,8 @@ struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
 	IMAP_CONTEXT();
 	~IMAP_CONTEXT();
 	NOMOVE(IMAP_CONTEXT);
+	/* a.k.a. is_login in pop3 */
+	inline bool is_authed() const { return proto_stat >= PROTO_STAT_AUTH; }
 
 	GENERIC_CONNECTION connection;
 	std::string mid, file_path;

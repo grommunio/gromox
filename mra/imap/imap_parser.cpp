@@ -453,7 +453,7 @@ static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 		    pcontext->connection.last_timestamp) < g_timeout) {
 			return PROCESS_POLLING_RDONLY;
 		}
-		if (pcontext->proto_stat >= PROTO_STAT_AUTH) {
+		if (pcontext->is_authed()) {
 			std::unique_lock ll_hold(g_list_lock);
 			double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
 			return PROCESS_SLEEPING;
