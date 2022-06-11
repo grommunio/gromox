@@ -4,6 +4,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mail_func.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
@@ -11,6 +12,21 @@
 #undef assert
 #define assert(x) do { if (!(x)) return EXIT_FAILURE; } while (false)
 using namespace gromox;
+
+static int t_emailaddr()
+{
+	EMAIL_ADDR em;
+	for (const auto s : {"u@d.at", "<u@d.at>", "\"u@d.at\"", "U D <u@d.at>",
+	     "\"U D\" <u@d.at>", "\"U\\\"D\" <u@d.at>"}) {
+		printf("%s:\n", s);
+		em = {};
+		parse_email_addr(&em, s);
+		printf("\temail: <%s> <%s> <%s>\n", em.display_name, em.local_part, em.domain);
+		parse_mime_addr(&em, s);
+		printf("\tmime: <%s> <%s> <%s>\n", em.display_name, em.local_part, em.domain);
+	}
+	return EXIT_SUCCESS;
+}
 
 static int t_id1()
 {
@@ -266,6 +282,8 @@ static int t_cmp_icaltime()
 
 int main()
 {
+	if (t_emailaddr() != 0)
+		return EXIT_FAILURE;
 	if (t_base64() != 0)
 		return EXIT_FAILURE;
 	using fpt = decltype(&t_interval);
