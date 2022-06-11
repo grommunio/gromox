@@ -396,7 +396,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			HX_strrtrim(temp_command);
 			HX_strltrim(temp_command);
 			pcontext->read_offset -= i + 2;
-			memmove(pcontext->read_buffer, pcontext->read_buffer + i + 2,
+			memmove(pcontext->read_buffer, &pcontext->read_buffer[i+2],
 				pcontext->read_offset);
 			switch (pop3_parser_dispatch_cmd(temp_command,
 				strlen(temp_command), pcontext)) {
@@ -509,7 +509,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 				pcontext->cur_line = 0;
 			}
 			if ('.' == line_buff[0] && STREAM_COPY_OK == last_result) {
-				memmove(line_buff + 1, line_buff, line_length);
+				memmove(&line_buff[1], line_buff, line_length);
 				line_length ++;
 			}
 			if (STREAM_COPY_OK == copy_result) {
