@@ -207,7 +207,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	const char *host_ID;
 	char temp_command[1024];
 	char reply_buf[1024];
-	size_t ub, string_length = 0;
+	size_t string_length = 0;
 	
 	if (pcontext->is_stls) {
 		if (NULL == pcontext->connection.ssl) {
@@ -386,10 +386,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	
 	pcontext->connection.last_timestamp = current_time;	
 	pcontext->read_offset += read_len;
-	/* Microoptimization (cf. imap_parser for the same) */
-	ub = pcontext->read_offset > 0 ? pcontext->read_offset - 1 : 0;
-	for (size_t i = 0; i < ub; ++i) {
-		auto nl_len = newline_size(&pcontext->read_buffer[i], ub - i);
+	for (size_t i = 0; i < pcontext->read_offset; ++i) {
+		auto nl_len = newline_size(&pcontext->read_buffer[i], pcontext->read_offset - i);
 		if (nl_len == 0)
 			continue;
 		memcpy(temp_command, pcontext->read_buffer, i);
