@@ -1,4 +1,5 @@
-1.24.25
+1.25 (2022-06-12)
+=================
 
 Fixes:
 
@@ -6,10 +7,27 @@ Fixes:
 * zcore: fix randomly occurring set_permission failures
 * autodiscover: resolve '&' being misrepresented
 * autodiscover: force-remove single quotes from ini values
+* imap: improved the tokenization for unusual values found
+  in the From/To/Reply-To etc. headers
+* imap: stop emitting excess parenthesis pairs for "RFC822" field
+  values during FETCH
+* imap: stop offering STARTTLS capability keyword when the STARTTLS command
+  can, at the same time, not be issued anyway
+* imap: IMAP commands emitted to the log (under ``imap_cmd_debug``) were
+  truncated sometimes
+* midb: resolve potential crash when the IMAP ``SEARCH`` command is used
+
+Enhancements:
+
+* imap: emit gratuitous CAPABILITY lines upon connect and login
+* imap, pop3: support recognizing LF as a line terminator as well
+  (other than CRLF)
 
 Changes:
 
 * midb: change mail_engine_ct_match to use stdlib containers
+* oxcmail: stop emitting zero-length display-names
+* oxcmail: always generate angle brackets for exported addresses
 
 
 1.24 (2022-06-01)
