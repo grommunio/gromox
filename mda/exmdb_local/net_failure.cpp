@@ -7,7 +7,7 @@
 #include <gromox/util.hpp>
 #include <libHX/string.h>
 #include <mutex>
-#include "net_failure.h"
+#include "exmdb_local.hpp"
 #define HTML_01 \
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\r\n\
 <HTML><HEAD>\

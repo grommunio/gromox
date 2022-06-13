@@ -12,7 +12,7 @@
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
-#include "bounce_audit.h"
+#include "exmdb_local.hpp"
 
 /* private global variable */
 static int g_audit_num;

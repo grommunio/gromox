@@ -22,8 +22,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
-#include "bounce_producer.h"
-#include "exmdb_local.h"
+#include "exmdb_local.hpp"
 
 using namespace gromox;
 

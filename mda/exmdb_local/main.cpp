@@ -10,11 +10,7 @@
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>
 #include <gromox/util.hpp>
-#include "bounce_audit.h"
-#include "bounce_producer.h"
-#include "cache_queue.h"
-#include "exmdb_local.h"
-#include "net_failure.h"
+#include "exmdb_local.hpp"
 
 using namespace gromox;
 

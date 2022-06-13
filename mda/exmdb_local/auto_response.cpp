@@ -15,9 +15,7 @@
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
-#include "auto_response.h"
-#include "bounce_audit.h"
-#include "exmdb_local.h"
+#include "exmdb_local.hpp"
 
 using namespace gromox;
 

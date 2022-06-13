@@ -21,12 +21,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
-#include "auto_response.h"
-#include "bounce_audit.h"
-#include "cache_queue.h"
-#include "exmdb_local.h"
-#include "net_failure.h"
-
+#include "exmdb_local.hpp"
 #define MAX_DIGLEN				256*1024
 
 #define DEF_MODE				S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH

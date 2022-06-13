@@ -19,11 +19,7 @@
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
-#include "bounce_audit.h"
-#include "bounce_producer.h"
-#include "cache_queue.h"
-#include "exmdb_local.h"
-#include "net_failure.h"
+#include "exmdb_local.hpp"
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
 using namespace std::string_literals;
