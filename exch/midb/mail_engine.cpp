@@ -4688,7 +4688,7 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 		tmp_len += gx_snprintf(list_buff + tmp_len,
 		           GX_ARRAY_SIZE(list_buff) - tmp_len, " %d", result);
 		if (tmp_len >= 255*1024) {
-			auto ret = cmd_write(sockd, list_buff, tmp_len);
+			ret = cmd_write(sockd, list_buff, tmp_len);
 			if (ret != 0)
 				return ret;
 			tmp_len = 0;
@@ -4765,7 +4765,7 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 		tmp_len += gx_snprintf(list_buff + tmp_len,
 		           GX_ARRAY_SIZE(list_buff) - tmp_len, " %d", result);
 		if (tmp_len >= 255*1024) {
-			auto ret = cmd_write(sockd, list_buff, tmp_len);
+			ret = cmd_write(sockd, list_buff, tmp_len);
 			if (ret != 0)
 				return ret;
 			tmp_len = 0;

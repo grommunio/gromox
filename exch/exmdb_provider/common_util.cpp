@@ -2030,7 +2030,7 @@ BOOL cu_get_properties(db_table table_type,
 				return false;
 		}
 		if (sqlite3_step(pstmt) != SQLITE_ROW) {
-			auto ret = gp_fallbackprop(psqlite, table_type, pproptags->pproptag[i], own_stmt);
+			ret = gp_fallbackprop(psqlite, table_type, pproptags->pproptag[i], own_stmt);
 			if (ret == GP_UNHANDLED)
 				continue;
 			pstmt = own_stmt;

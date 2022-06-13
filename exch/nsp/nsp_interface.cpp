@@ -2322,8 +2322,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		if (-1 == fd) {
 			return ecError;
 		}
-		for (const auto &username : tmp_list) {
-			write(fd, username.c_str(), username.size());
+		for (const auto &u : tmp_list) {
+			write(fd, u.c_str(), u.size());
 			write(fd, "\r\n", 2);
 		}
 		close(fd);
