@@ -1352,7 +1352,7 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 				break;
 			std::string pic_path;
 			try {
-				auto pic_path = pstore->dir + "/config/portrait.jpg"s;
+				pic_path = pstore->dir + "/config/portrait.jpg"s;
 			} catch (const std::bad_alloc &) {
 				fprintf(stderr, "E-1494: ENOMEM\n");
 			}
