@@ -31,9 +31,7 @@
 #include <gromox/int_hash.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
-#include "message_dequeue.h"
-#include "system_services.h"
-#include "transporter.h"
+#include "delivery.hpp"
 #define DEF_MODE    S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 #define TOKEN_MESSAGE_QUEUE		1
 #define BLOCK_SIZE				64*1024*2

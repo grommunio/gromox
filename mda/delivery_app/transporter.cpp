@@ -17,6 +17,7 @@
 #include <libHX/string.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/hook_common.h>
@@ -26,9 +27,7 @@
 #include <gromox/single_list.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
-#include "resource.h"
-#include "system_services.h"
-#include "transporter.h"
+#include "delivery.hpp"
 #define FILENUM_PER_CONTROL		32
 #define FILENUM_PER_MIME		32
 #define MAX_THROWING_NUM		16

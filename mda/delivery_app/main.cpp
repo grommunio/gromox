@@ -17,10 +17,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
-#include "message_dequeue.h" 
-#include "resource.h" 
-#include "system_services.h"
-#include "transporter.h" 
+#include "delivery.hpp"
 
 using namespace gromox;
 
