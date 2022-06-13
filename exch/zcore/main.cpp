@@ -27,13 +27,13 @@
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "ab_tree.h"
-#include "bounce_producer.h"
+#include "bounce_producer.hpp"
 #include "common_util.h"
 #include "exmdb_client.h"
-#include "listener.h"
+#include "listener.hpp"
 #include "object_tree.h"
-#include "rpc_parser.h"
-#include "system_services.h"
+#include "rpc_parser.hpp"
+#include "system_services.hpp"
 #include "zarafa_server.h"
 
 using namespace gromox;

@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <gromox/ndr.hpp>
-#include "pdu_ndr_ids.h"
+#include "pdu_ndr_ids.hpp"
 
 struct DCERPC_CTX_LIST {
 	uint16_t context_id;

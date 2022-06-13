@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
-#include "system_services.h"
+#include "system_services.hpp"
 #include "../authmgr.hpp"
 
 BOOL (*system_services_judge_ip)(const char*);

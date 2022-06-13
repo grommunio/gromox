@@ -47,8 +47,8 @@
 #include "cmd_parser.h"
 #include "common_util.h"
 #include "exmdb_client.h"
-#include "mail_engine.h"
-#include "system_services.h"
+#include "mail_engine.hpp"
+#include "system_services.hpp"
 #define S2A(x) reinterpret_cast<const char *>(x)
 
 #define FILENUM_PER_MIME				8

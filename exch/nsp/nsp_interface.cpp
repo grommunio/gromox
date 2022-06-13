@@ -32,7 +32,7 @@
 #include <gromox/zz_ndr_stack.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
-#include "nsp_interface.h"
+#include "nsp_interface.hpp"
 #include "../mysql_adaptor/mysql_adaptor.h"
 
 using namespace std::string_literals;

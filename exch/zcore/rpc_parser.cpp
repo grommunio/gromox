@@ -18,7 +18,7 @@
 #include <gromox/zcore_rpc.hpp>
 #include "common_util.h"
 #include "rpc_ext.h"
-#include "rpc_parser.h"
+#include "rpc_parser.hpp"
 #include "zarafa_server.h"
 
 using RPC_REQUEST = ZCORE_RPC_REQUEST;

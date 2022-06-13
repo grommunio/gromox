@@ -29,12 +29,12 @@
 #include "hpm_processor.h"
 #include "http_parser.h"
 #include "listener.h"
-#include "mod_cache.h"
+#include "mod_cache.hpp"
 #include "mod_fastcgi.h"
 #include "mod_rewrite.h"
 #include "pdu_processor.h"
 #include "resource.h"
-#include "system_services.h"
+#include "system_services.hpp"
 #define PDU_PROCESSOR_RATIO			10
 
 using namespace gromox;

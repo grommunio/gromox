@@ -9,7 +9,7 @@
 #include "emsmdb_interface.h"
 #include "rop_dispatch.h"
 #include "rop_funcs.hpp"
-#include "rop_ids.h"
+#include "rop_ids.hpp"
 
 using namespace gromox;
 

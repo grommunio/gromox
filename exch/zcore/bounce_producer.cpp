@@ -26,9 +26,9 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
-#include "bounce_producer.h"
+#include "bounce_producer.hpp"
 #include "common_util.h"
-#include "system_services.h"
+#include "system_services.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;

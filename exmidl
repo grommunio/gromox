@@ -6,7 +6,7 @@ my $provider = grep("-p", @ARGV);
 
 print "#include <$_>\n" for qw(cstring gromox/exmdb_client.hpp gromox/exmdb_rpc.hpp);
 if ($provider) {
-	print "#include \"$_\"\n" for qw(common_util.h exmdb_client.h exmdb_ext.h);
+	print "#include \"$_\"\n" for qw(common_util.h exmdb_client.h exmdb_ext.hpp);
 	print "#include \"exmdb_server.h\"\n";
 }
 print "using namespace gromox;\n";

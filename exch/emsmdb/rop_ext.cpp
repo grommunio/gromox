@@ -10,7 +10,7 @@
 #include "emsmdb_interface.h"
 #include "logon_object.h"
 #include "rop_ext.h"
-#include "rop_ids.h"
+#include "rop_ids.hpp"
 #include "rop_processor.h"
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 

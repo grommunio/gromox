@@ -7,7 +7,7 @@
 #include <gromox/fileio.h>
 #include "common_util.h"
 #include "exmdb_client.h"
-#include "exmdb_ext.h"
+#include "exmdb_ext.hpp"
 
 using namespace gromox;
 

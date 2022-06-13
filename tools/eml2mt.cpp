@@ -24,7 +24,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include "genimport.hpp"
-#include "exch/midb/system_services.h"
+#include "exch/midb/system_services.hpp"
 
 using namespace gromox;
 

@@ -39,12 +39,12 @@
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
-#include "bounce_producer.h"
+#include "bounce_producer.hpp"
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "objects.hpp"
 #include "store_object.h"
-#include "system_services.h"
+#include "system_services.hpp"
 #include "zarafa_server.h"
 
 using namespace std::string_literals;

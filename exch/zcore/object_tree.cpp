@@ -22,7 +22,7 @@
 #include "object_tree.h"
 #include "objects.hpp"
 #include "store_object.h"
-#include "system_services.h"
+#include "system_services.hpp"
 #include "table_object.h"
 #include "zarafa_server.h"
 

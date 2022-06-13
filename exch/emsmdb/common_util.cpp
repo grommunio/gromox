@@ -33,7 +33,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#include "bounce_producer.h"
+#include "bounce_producer.hpp"
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"

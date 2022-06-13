@@ -3,7 +3,7 @@
 #include <cstring>
 #include <gromox/lzxpress.hpp>
 #include <gromox/proc_common.h>
-#include "aux_ext.h"
+#include "aux_ext.hpp"
 #include "aux_types.h"
 #include "common_util.h"
 #define AUX_ALIGN_SIZE									4

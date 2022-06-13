@@ -29,7 +29,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
-#include "bounce_producer.h"
+#include "bounce_producer.hpp"
 #include "common_util.h"
 #include "db_engine.h"
 #include "exmdb_client.h"

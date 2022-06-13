@@ -32,7 +32,7 @@
 #include "processor_types.h"
 #include "rop_dispatch.h"
 #include "rop_ext.h"
-#include "rop_ids.h"
+#include "rop_ids.hpp"
 #include "rop_processor.h"
 #include "stream_object.h"
 #include "subscription_object.h"

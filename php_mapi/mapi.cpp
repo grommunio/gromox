@@ -13,7 +13,6 @@
 #include <gromox/safeint.hpp>
 #include "php.h"
 #include "zarafa_client.h"
-#include "type_conversion.h"
 #include <memory>
 #include <unistd.h>
 #include <cstdlib>
@@ -23,8 +22,9 @@
 #include <sys/wait.h>
 #include "ext.hpp"
 #if PHP_MAJOR_VERSION >= 8
-#	include "mapi_arginfo.h"
+#	include "mapi_arginfo.hpp"
 #endif
+#include "type_conversion.hpp"
 #define PR_CONTENTS_SYNCHRONIZER					0x662D000D
 #define PR_HIERARCHY_SYNCHRONIZER					0x662C000D
 #define PR_COLLECTOR								0x662E000D

@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <gromox/defs.h>
-#include "rop_ids.h"
+#include "rop_ids.hpp"
 
 using namespace gromox;
 

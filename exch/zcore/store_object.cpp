@@ -32,7 +32,7 @@
 #include "exmdb_client.h"
 #include "object_tree.h"
 #include "store_object.h"
-#include "system_services.h"
+#include "system_services.hpp"
 #include "zarafa_server.h"
 #define PROP_TAG_USERNAME								0x661A001F
 

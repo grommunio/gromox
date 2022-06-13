@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
-#include "system_services.h"
+#include "system_services.hpp"
 #include "../exch/authmgr.hpp"
 
 BOOL (*system_services_lang_to_charset)(const char*, char*);

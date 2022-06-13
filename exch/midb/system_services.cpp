@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
-#include "system_services.h"
+#include "system_services.hpp"
 
 bool (*system_services_get_user_lang)(const char *, char *, size_t);
 bool (*system_services_get_timezone)(const char *, char *, size_t);

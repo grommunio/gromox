@@ -9,7 +9,7 @@
 #include "logon_object.h"
 #include "processor_types.h"
 #include "rop_funcs.hpp"
-#include "rop_ids.h"
+#include "rop_ids.hpp"
 #include "rop_processor.h"
 #include "table_object.h"
 

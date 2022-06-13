@@ -36,11 +36,11 @@
 #include <gromox/util.hpp>
 #include "hpm_processor.h"
 #include "http_parser.h"
-#include "mod_cache.h"
+#include "mod_cache.hpp"
 #include "mod_rewrite.h"
 #include "pdu_ndr.h"
 #include "resource.h"
-#include "system_services.h"
+#include "system_services.hpp"
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
     (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
 #	define OLD_SSL 1

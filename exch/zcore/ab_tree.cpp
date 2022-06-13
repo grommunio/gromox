@@ -38,7 +38,7 @@
 #include "ab_tree.h"
 #include "common_util.h"
 #include "objects.hpp"
-#include "system_services.h"
+#include "system_services.hpp"
 #include "zarafa_server.h"
 #include "../mysql_adaptor/mysql_adaptor.h"
 

@@ -7,7 +7,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/zz_ndr_stack.hpp>
-#include "nsp_ndr.h"
+#include "nsp_ndr.hpp"
 #define FLAG_HEADER			0x1
 #define FLAG_CONTENT		0x2
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)

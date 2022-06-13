@@ -21,7 +21,7 @@
 #include "ics_state.h"
 #include "objects.hpp"
 #include "store_object.h"
-#include "system_services.h"
+#include "system_services.hpp"
 #include "zarafa_server.h"
 
 using namespace gromox;

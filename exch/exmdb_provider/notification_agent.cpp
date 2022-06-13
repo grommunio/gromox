@@ -9,7 +9,7 @@
 #include <utility>
 #include <gromox/exmdb_rpc.hpp>
 #include "common_util.h"
-#include "exmdb_ext.h"
+#include "exmdb_ext.hpp"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
 #include "notification_agent.h"

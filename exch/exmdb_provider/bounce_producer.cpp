@@ -24,7 +24,7 @@
 #include <gromox/svc_common.h>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
-#include "bounce_producer.h"
+#include "bounce_producer.hpp"
 #include "common_util.h"
 
 using namespace gromox;

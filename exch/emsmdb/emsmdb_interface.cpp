@@ -23,13 +23,13 @@
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
-#include "aux_ext.h"
+#include "aux_ext.hpp"
 #include "aux_types.h"
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "notify_response.h"
 #include "processor_types.h"
-#include "rop_ids.h"
+#include "rop_ids.hpp"
 #include "rop_processor.h"
 #define	EMSMDB_PCMSPOLLMAX				60000
 #define	EMSMDB_PCRETRY					6

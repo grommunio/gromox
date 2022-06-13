@@ -28,8 +28,8 @@
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "listener.h"
-#include "mail_engine.h"
-#include "system_services.h"
+#include "mail_engine.hpp"
+#include "system_services.hpp"
 
 using namespace gromox;
 

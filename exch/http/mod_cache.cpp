@@ -29,9 +29,9 @@
 #include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
 #include "http_parser.h"
-#include "mod_cache.h"
+#include "mod_cache.hpp"
 #include "resource.h"
-#include "system_services.h"
+#include "system_services.hpp"
 #define HASH_GROWING_NUM			1000
 
 #define BOUNDARY_STRING				"00000000000000000001"
