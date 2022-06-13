@@ -6,6 +6,7 @@
 #include <cstring>
 #include <dlfcn.h>
 #include <list>
+#include <memory>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -13,14 +14,16 @@
 #include <vector>
 #include <libHX/string.h>
 #include <sys/types.h>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
-#include "resource.h"
 
 using namespace std::string_literals;
 using namespace gromox;
+
+extern std::shared_ptr<CONFIG_FILE> g_config_file;
 
 namespace {
 
