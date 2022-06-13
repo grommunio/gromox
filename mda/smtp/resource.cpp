@@ -13,10 +13,10 @@
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
 #include <libHX/string.h>
-#include "resource.h"
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include "smtp_aux.hpp"
 #define MAX_FILE_LINE_LEN       1024
 
 using namespace gromox;

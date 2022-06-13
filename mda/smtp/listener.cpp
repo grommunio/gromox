@@ -20,17 +20,15 @@
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include <libHX/string.h>
-#include "listener.h"
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <pthread.h>
-#include "resource.h"
 #include "smtp_parser.h"
 #include <sys/socket.h>
-#include "system_services.h"
 #include <sys/types.h>
 #include <unistd.h>
+#include "smtp_aux.hpp"
 
 using namespace gromox;
 

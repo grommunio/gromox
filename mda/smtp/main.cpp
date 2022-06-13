@@ -5,7 +5,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include "flusher.h" 
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -18,15 +17,13 @@
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
-#include "listener.h" 
 #include <memory>
-#include "resource.h" 
 #include "smtp_parser.h" 
 #include <sys/resource.h>
-#include "system_services.h"
 #include <sys/types.h>
 #include <unistd.h>
 #include <utility>
+#include "smtp_aux.hpp"
 
 using namespace gromox;
 

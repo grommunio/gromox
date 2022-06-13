@@ -3,7 +3,7 @@
 #include <typeinfo>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
-#include "system_services.h"
+#include "smtp_aux.hpp"
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
 E(judge_user)
