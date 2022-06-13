@@ -1195,7 +1195,7 @@ static errno_t do_file(const char *filename) try
 		if (libpff_file_get_item_by_identifier(file.get(), nid,
 		    &~unique_tie(root), &~unique_tie(err)) < 1)
 			throw az_error("PF-1026", err);
-		auto ret = do_item(0, pd, root.get());
+		ret = do_item(0, pd, root.get());
 		if (ret < 0)
 			return ret;
 	}

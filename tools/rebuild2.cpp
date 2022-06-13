@@ -123,7 +123,7 @@ int main(int argc, const char **argv)
 	auto cl_0 = make_scope_exit(sqlite3_shutdown);
 	int main_ret = EXIT_SUCCESS;
 	while (*++argv != nullptr) {
-		auto ret = do_file(*argv);
+		ret = do_file(*argv);
 		if (ret != EXIT_SUCCESS)
 			main_ret = ret;
 	}

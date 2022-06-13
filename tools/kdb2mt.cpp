@@ -1202,7 +1202,7 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 	auto pd = parent_desc::as_folder(~0ULL);
 	for (const auto hid : g_only_objs) {
 		auto item = kdb_item::load_hid_base(*drv, hid);
-		auto ret = do_item(*drv, 0, pd, *item);
+		ret = do_item(*drv, 0, pd, *item);
 		if (ret < 0)
 			throw YError("PK-1015: %s", strerror(-ret));
 	}

@@ -313,7 +313,7 @@ int main(int argc, const char **argv) try
 			return EXIT_FAILURE;
 		}
 		uint64_t xsize = cpu_to_le64(ep.m_offset);
-		auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
+		ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
 		if (ret < 0)
 			throw YError("PG-1017: %s", strerror(errno));
 		ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
