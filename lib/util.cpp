@@ -17,6 +17,7 @@
 #include <ctime>
 #include <iconv.h>
 #include <unistd.h>
+#include <json/reader.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -440,59 +441,6 @@ BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 		iconv_close(conv_id);
 		return TRUE;
 	}
-}
-
-BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len)
-{
-	size_t len;
-	size_t length;
-	const char *ptr1, *ptr2;
-	char temp_tag[256];
-
-	length = strlen(src);
-	len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
-	ptr1 = search_string(src, temp_tag, length);
-	if (ptr1 == nullptr)
-		return FALSE;
-
-	ptr1 += len;
-	ptr1 = static_cast<const char *>(memchr(ptr1, ':', length - (ptr1 - src)));
-	if (ptr1 == nullptr)
-		return FALSE;
-	ptr1 ++;
-	while (' ' == *ptr1 || '\t' == *ptr1) {
-		ptr1 ++;
-		if (static_cast<size_t>(ptr1 - src) >= length)
-			return FALSE;
-	}
-	ptr2 = ptr1;
-	if ('"' == *ptr2) {
-		do {
-			ptr2 ++;
-			if (static_cast<size_t>(ptr2 - src) >= length)
-				return FALSE;
-		} while ('"' != *ptr2 || '\\' == *(ptr2 - 1));
-	}
-	while (',' != *ptr2 && '}' != *ptr2) {
-		ptr2 ++;
-		if (static_cast<size_t>(ptr2 - src) >= length)
-			return FALSE;
-	}
-
-	if (static_cast<size_t>(ptr2 - ptr1) <= buff_len - 1)
-		len = ptr2 - ptr1;
-	else
-		len = buff_len - 1;
-	memcpy(buff, ptr1, len);
-	buff[len] = '\0';
-	if ('"' == buff[0]) {
-		len --;
-		memmove(buff, buff + 1, len);
-		buff[len] = '\0';
-	}
-	if (buff[len-1] == '"')
-		buff[len - 1] = '\0';
-	return TRUE;
 }
 
 BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
