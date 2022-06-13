@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <typeinfo>
 #include <gromox/defs.h>
-#include "service.h"
+#include <gromox/svc_loader.hpp>
 #include "system_services.h"
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;

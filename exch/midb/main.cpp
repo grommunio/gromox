@@ -22,13 +22,13 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "cmd_parser.h"
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "listener.h"
 #include "mail_engine.h"
-#include "service.h"
 #include "system_services.h"
 
 using namespace gromox;

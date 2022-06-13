@@ -15,9 +15,9 @@
 #include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "resource.h"
-#include "service.h"
 
 using namespace std::string_literals;
 using namespace gromox;

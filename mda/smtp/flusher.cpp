@@ -8,12 +8,12 @@
 #include <gromox/flusher_common.h>
 #include <gromox/paths.h>
 #include <gromox/single_list.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include <libHX/string.h>
 #include <list>
 #include <mutex>
 #include "resource.h"
-#include "service.h"
 #include <sys/types.h>
 #include <utility>
 #define FLUSHER_VERSION     0x00000001

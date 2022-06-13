@@ -24,9 +24,9 @@
 #include <gromox/paths.h>
 #include <gromox/plugin.hpp>
 #include <gromox/single_list.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "resource.h"
-#include "service.h"
 #include "system_services.h"
 #include "transporter.h"
 #define FILENUM_PER_CONTROL		32

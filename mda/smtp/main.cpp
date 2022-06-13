@@ -12,6 +12,7 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include <libHX/misc.h>
@@ -20,7 +21,6 @@
 #include "listener.h" 
 #include <memory>
 #include "resource.h" 
-#include "service.h" 
 #include "smtp_parser.h" 
 #include <sys/resource.h>
 #include "system_services.h"

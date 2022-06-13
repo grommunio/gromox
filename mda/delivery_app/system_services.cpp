@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdio>
-#include "service.h"
+#include <gromox/svc_loader.hpp>
 #include "system_services.h"
 
 void (*system_services_log_info)(unsigned int, const char *, ...);

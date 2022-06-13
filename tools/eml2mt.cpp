@@ -22,9 +22,9 @@
 #include <gromox/oxvcard.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/svc_loader.hpp>
 #include "genimport.hpp"
 #include "exch/midb/system_services.h"
-#include "../exch/midb/service.h"
 
 using namespace gromox;
 

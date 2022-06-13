@@ -18,12 +18,12 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "imap_parser.h" 
 #include "listener.h" 
 #include "resource.h" 
-#include "service.h" 
 #include "system_services.h"
 
 using namespace gromox;

@@ -23,6 +23,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "ab_tree.h"
 #include "bounce_producer.h"
@@ -32,7 +33,6 @@
 #include "msgchg_grouping.h"
 #include "object_tree.h"
 #include "rpc_parser.h"
-#include "service.h"
 #include "system_services.h"
 #include "zarafa_server.h"
 

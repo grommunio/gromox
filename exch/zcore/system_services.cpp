@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdio>
 #include <gromox/defs.h>
-#include "service.h"
+#include <gromox/svc_loader.hpp>
 #include "system_services.h"
 #include "../exch/authmgr.hpp"
 

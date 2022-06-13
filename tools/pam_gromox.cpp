@@ -16,10 +16,10 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "../exch/authmgr.hpp"
-#include "../exch/http/service.h"
 #ifndef PAM_EXTERN
 #	define PAM_EXTERN
 #endif

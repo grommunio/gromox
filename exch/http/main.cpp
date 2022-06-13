@@ -23,6 +23,7 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "hpm_processor.h"
@@ -33,7 +34,6 @@
 #include "mod_rewrite.h"
 #include "pdu_processor.h"
 #include "resource.h"
-#include "service.h"
 #include "system_services.h"
 #define PDU_PROCESSOR_RATIO			10
 
