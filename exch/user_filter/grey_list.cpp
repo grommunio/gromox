@@ -15,8 +15,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
-#include "grey_list.h"
-#include "str_filter.h"
+#include "user_filter.hpp"
 
 using namespace gromox;
 

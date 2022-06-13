@@ -15,10 +15,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
-#include "audit_filter.h"
-#include "grey_list.h"
-#include "str_filter.h"
-#include "temp_list.h"
+#include "user_filter.hpp"
 
 using namespace gromox;
 

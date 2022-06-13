@@ -17,8 +17,7 @@
 #include <libHX/string.h>
 #include <sys/time.h>
 #include <gromox/util.hpp>
-#include "audit_filter.h"
-#include "str_filter.h"
+#include "user_filter.hpp"
 
 namespace {
 struct STR_AUDIT {

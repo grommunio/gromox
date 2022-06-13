@@ -9,9 +9,7 @@
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <gromox/util.hpp>
-#include "grey_list.h"
-#include "str_filter.h"
-#include "temp_list.h"
+#include "user_filter.hpp"
 
 static size_t temp_list_collect_string_entry();
 

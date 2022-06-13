@@ -12,7 +12,7 @@
 #include <gromox/defs.h>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
-#include "str_filter.h"
+#include "user_filter.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;
