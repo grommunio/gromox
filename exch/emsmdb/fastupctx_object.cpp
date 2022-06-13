@@ -36,10 +36,9 @@ std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
 		return NULL;
 	switch (root_element) {
 	case ROOT_ELEMENT_FOLDERCONTENT:
-		pctx->pproplist = tpropval_array_init();
-		if (NULL == pctx->pproplist) {
+		pctx->m_props = tpropval_array_init();
+		if (pctx->m_props == nullptr)
 			return NULL;
-		}
 		break;
 	case ROOT_ELEMENT_TOPFOLDER:
 	case ROOT_ELEMENT_MESSAGECONTENT:
@@ -54,14 +53,10 @@ std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
 
 fastupctx_object::~fastupctx_object()
 {
-	auto pctx = this;
-	
-	if (NULL != pctx->pproplist) {
-		tpropval_array_free(pctx->pproplist);
-	}
-	if (NULL != pctx->pmsgctnt) {
-		message_content_free(pctx->pmsgctnt);
-	}
+	if (m_props != nullptr)
+		tpropval_array_free(m_props);
+	if (m_content != nullptr)
+		message_content_free(m_content);
 }
 
 static uint64_t fastupctx_object_get_last_folder(fastupctx_object *pctx)
@@ -196,9 +191,7 @@ static gxerr_t
 fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 {
 	uint64_t change_num;
-	TPROPVAL_ARRAY *pproplist;
-	
-	pproplist = message_content_get_proplist(pctx->pmsgctnt);
+	auto pproplist = message_content_get_proplist(pctx->m_content);
 	static constexpr uint32_t tags[] = {
 		PR_CONVERSATION_ID, PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A, PR_DISPLAY_BCC,
@@ -229,7 +222,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client_write_message(pctx->pstream->plogon->get_dir(),
 	    pctx->pstream->plogon->get_account(), pinfo->cpid,
-	    folder_id, pctx->pmsgctnt, &e_result) || e_result != GXERR_SUCCESS)
+	    folder_id, pctx->m_content, &e_result) || e_result != GXERR_SUCCESS)
 		return e_result;
 	return GXERR_SUCCESS;
 }
@@ -258,12 +251,10 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 	}
 	switch (last_marker) {
 	case STARTSUBFLD: {
-		if (NULL == pctx->pproplist) {
+		if (m_props == nullptr)
 			break;
-		}
-		if (0 == pctx->pproplist->count) {
+		if (m_props->count == 0)
 			return GXERR_CALL_FAILED;
-		}
 		/*
 		 * Normally there should be a TOPFLD in the stack (hence using
 		 * prev(node)->folder_id); but maybe there are cases when
@@ -273,35 +264,32 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		                     static_cast<folder_object *>(pctx->pobject)->folder_id :
 		                     std::prev(pnode)->folder_id;
 		if (!fastupctx_object_create_folder(pctx, parent_id,
-		    pctx->pproplist, &folder_id))
+		    m_props, &folder_id))
 			return GXERR_CALL_FAILED;
-		tpropval_array_free(pctx->pproplist);
-		pctx->pproplist = NULL;
+		tpropval_array_free(m_props);
+		m_props = nullptr;
 		pnode->folder_id = folder_id;
 		break;
 	}
 	case STARTTOPFLD:
-		if (NULL == pctx->pproplist) {
+		if (m_props == nullptr)
 			break;
-		}
-		if (pctx->pproplist->count > 0) {
-			if (!static_cast<folder_object *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
-				return GXERR_CALL_FAILED;
-		}
-		tpropval_array_free(pctx->pproplist);
-		pctx->pproplist = NULL;
+		if (m_props->count > 0 &&
+		    !static_cast<folder_object *>(pctx->pobject)->set_properties(m_props, &tmp_problems))
+			return GXERR_CALL_FAILED;
+		tpropval_array_free(m_props);
+		m_props = nullptr;
 		break;
 	case 0:
 		if (pctx->root_element != ROOT_ELEMENT_FOLDERCONTENT)
 			break;
-		if (NULL == pctx->pproplist) {
+		if (m_props == nullptr)
 			break;
-		}
-		if (pctx->pproplist->count > 0 &&
-		    !static_cast<folder_object *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
+		if (m_props->count > 0 &&
+		    !static_cast<folder_object *>(pctx->pobject)->set_properties(m_props, &tmp_problems))
 			return GXERR_CALL_FAILED;
-		tpropval_array_free(pctx->pproplist);
-		pctx->pproplist = NULL;
+		tpropval_array_free(m_props);
+		m_props = nullptr;
 		break;
 	}
 	switch (marker) {
@@ -310,13 +298,11 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			pctx->root_element || 0 != last_marker) {
 			return GXERR_CALL_FAILED;
 		}
-		if (NULL != pctx->pproplist) {
+		if (m_props != nullptr)
 			return GXERR_CALL_FAILED;
-		}
-		pctx->pproplist = tpropval_array_init();
-		if (NULL == pctx->pproplist) {
+		m_props = tpropval_array_init();
+		if (m_props == nullptr)
 			return GXERR_CALL_FAILED;
-		}
 		pmarker->marker = marker;
 		pmarker->folder_id = static_cast<folder_object *>(pctx->pobject)->folder_id;
 		break;
@@ -325,13 +311,11 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element) {
 			return GXERR_CALL_FAILED;
 		}
-		if (NULL != pctx->pproplist) {
+		if (m_props != nullptr)
 			return GXERR_CALL_FAILED;
-		}
-		pctx->pproplist = tpropval_array_init();
-		if (NULL == pctx->pproplist) {
+		m_props = tpropval_array_init();
+		if (m_props == nullptr)
 			return GXERR_CALL_FAILED;
-		}
 		pmarker->marker = marker;
 		break;
 	case ENDFOLDER:
@@ -364,30 +348,27 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		default:
 			return GXERR_CALL_FAILED;
 		}
-		if (NULL != pctx->pmsgctnt) {
+		if (m_content != nullptr)
 			return GXERR_CALL_FAILED;
-		}
-		pctx->pmsgctnt = message_content_init();
-		if (NULL == pctx->pmsgctnt) {
+		m_content = message_content_init();
+		if (m_content == nullptr)
 			return GXERR_CALL_FAILED;
-		}
 		prcpts = tarray_set_init();
 		if (NULL == prcpts) {
 			return GXERR_CALL_FAILED;
 		}
-		message_content_set_rcpts_internal(pctx->pmsgctnt, prcpts);
+		message_content_set_rcpts_internal(m_content, prcpts);
 		pattachments = attachment_list_init();
 		if (NULL == pattachments) {
 			return GXERR_CALL_FAILED;
 		}
-		message_content_set_attachments_internal(
-					pctx->pmsgctnt, pattachments);
-		pproplist = message_content_get_proplist(pctx->pmsgctnt);
+		message_content_set_attachments_internal(m_content, pattachments);
+		pproplist = message_content_get_proplist(m_content);
 		uint8_t tmp_byte = marker == STARTFAIMSG;
 		if (pproplist->set(PR_ASSOCIATED, &tmp_byte) != 0)
 			return GXERR_CALL_FAILED;
 		pmarker->marker = marker;
-		pmarker->msg = pctx->pmsgctnt;
+		pmarker->msg = m_content;
 		break;
 	}
 	case ENDMESSAGE: {
@@ -395,15 +376,15 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			STARTFAIMSG != last_marker) {
 			return GXERR_CALL_FAILED;
 		}
-		if (pctx->pmsgctnt == nullptr || pctx->pmsgctnt != pnode->msg)
+		if (m_content == nullptr || m_content != pnode->msg)
 			return GXERR_CALL_FAILED;
 		pctx->marker_stack.erase(pnode);
 		folder_id = fastupctx_object_get_last_folder(pctx);
 		gxerr_t err = fastupctx_object_write_message(pctx, folder_id);
 		if (err != GXERR_SUCCESS)
 			return err;
-		message_content_free(pctx->pmsgctnt);
-		pctx->pmsgctnt = NULL;
+		message_content_free(m_content);
+		m_content = nullptr;
 		return GXERR_SUCCESS;
 	}
 	case STARTRECIP:
@@ -432,13 +413,11 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
-			if (NULL != pctx->pproplist) {
+			if (m_props != nullptr)
 				return GXERR_CALL_FAILED;
-			}
-			pctx->pproplist = tpropval_array_init();
-			if (NULL == pctx->pproplist) {
+			m_props = tpropval_array_init();
+			if (m_props == nullptr)
 				return GXERR_CALL_FAILED;
-			}
 		} else {
 			pmsgctnt = pnode->msg;
 			prcpt = pmsgctnt->children.prcpts->emplace();
@@ -460,12 +439,12 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			tmp_rcpts.count = 1;
-			tmp_rcpts.pparray = &pctx->pproplist;
+			tmp_rcpts.pparray = &m_props;
 			if (!exmdb_client_update_message_instance_rcpts(pctx->pstream->plogon->get_dir(),
 			    pnode->instance_id, &tmp_rcpts))
 				return GXERR_CALL_FAILED;
-			tpropval_array_free(pctx->pproplist);
-			pctx->pproplist = NULL;
+			tpropval_array_free(m_props);
+			m_props = nullptr;
 		}
 		pctx->marker_stack.erase(pnode);
 		return GXERR_SUCCESS;
@@ -791,7 +770,7 @@ gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 	case 0:
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_FOLDERCONTENT:
-			return pctx->pproplist->set(*ppropval) == 0 ?
+			return m_props->set(*ppropval) == 0 ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_MESSAGECONTENT: {
 			auto msg = static_cast<message_object *>(pctx->pobject);
@@ -816,7 +795,7 @@ gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 		return GXERR_CALL_FAILED;
 	case STARTTOPFLD:
 	case STARTSUBFLD:
-		return pctx->pproplist->set(*ppropval) == 0 ?
+		return m_props->set(*ppropval) == 0 ?
 		       GXERR_SUCCESS : GXERR_CALL_FAILED;
 	case STARTMESSAGE:
 	case STARTFAIMSG:
@@ -833,7 +812,7 @@ gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 	case STARTRECIP:
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
-			return pctx->pproplist->set(*ppropval) == 0 ?
+			return m_props->set(*ppropval) == 0 ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
 		return pnode->props->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;

@@ -44,7 +44,7 @@ struct fastupctx_object final {
 	void *pobject = nullptr;
 	BOOL b_ended = false;
 	int root_element = 0;
-	TPROPVAL_ARRAY *pproplist = nullptr;
-	MESSAGE_CONTENT *pmsgctnt = nullptr;
+	TPROPVAL_ARRAY *m_props = nullptr;
+	MESSAGE_CONTENT *m_content = nullptr;
 	std::list<fxup_marker_node> marker_stack;
 };
