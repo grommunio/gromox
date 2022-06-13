@@ -28,6 +28,7 @@
 #	include <sys/random.h>
 #endif
 #include <json/reader.h>
+#include <json/writer.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/proc.h>
@@ -647,6 +648,38 @@ bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1988: ENOMEM\n");
 	return false;
+}
+
+template<typename T> static bool
+set_digest2(char *json, size_t iomax, const char *key, T &&val) try
+{
+	Json::Value jval;
+	std::istringstream jstream(json);
+	auto valid = Json::parseFromStream(Json::CharReaderBuilder(), jstream, &jval, nullptr);
+	if (!valid)
+                return false;
+	jval[key] = val;
+	Json::StreamWriterBuilder swb;
+	swb["indentation"] = "";
+	gx_strlcpy(json, Json::writeString(swb, std::move(jval)).c_str(), iomax);
+	return true;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1989: ENOMEM\n");
+	return false;
+}
+
+bool set_digest(char *json, size_t iomax, const char *key, const char *val)
+{
+	return set_digest2(json, iomax, key, val);
+}
+
+bool set_digest(char *json, size_t iomax, const char *key, uint64_t val)
+{
+	/*
+	 * jsoncpp 1.7 has an ambiguous conversion at
+	 * `jval[key]=val`, so force a particular json type now.
+	 */
+	return set_digest2(json, iomax, key, Json::Value::UInt64(val));
 }
 
 }

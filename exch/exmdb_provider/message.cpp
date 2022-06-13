@@ -3213,9 +3213,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 	    common_util_get_mid_string(psqlite, dst_mid, &pmid_string) &&
 	    pmid_string != nullptr) {
 		strcpy(tmp_buff, pdigest);
-		char mid_string[128];
-		sprintf(mid_string, "\"%s\"", pmid_string);
-		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string);
+		set_digest(tmp_buff, MAX_DIGLEN, "file", pmid_string);
 		pdigest1 = tmp_buff;
 	} else {
 		pdigest1 = NULL;
@@ -3422,8 +3420,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 		}
 		char tmp_buff[MAX_DIGLEN];
 		strcpy(tmp_buff, pdigest);
-		auto mid_string2 = "\"" + mid_string + "\"";
-		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string2.c_str());
+		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string.c_str());
 		const char *pdigest1 = tmp_buff;
 		uint32_t result = 0;
 		if (!exmdb_client_relay_delivery(maildir, from_address,
@@ -3640,9 +3637,7 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 	    common_util_get_mid_string(psqlite, dst_mid, &pmid_string) &&
 	    pmid_string != nullptr) {
 		strcpy(tmp_buff, pdigest);
-		char mid_string[128];
-		sprintf(mid_string, "\"%s\"", pmid_string);
-		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string);
+		set_digest(tmp_buff, MAX_DIGLEN, "file", pmid_string);
 		pdigest1 = tmp_buff;
 	} else {
 		pdigest1 = NULL;
@@ -3801,8 +3796,7 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 		}
 		char tmp_buff[MAX_DIGLEN];
 		strcpy(tmp_buff, pdigest);
-		auto mid_string2 = "\"" + mid_string + "\"";
-		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string2.c_str());
+		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string.c_str());
 		const char *pdigest1 = tmp_buff;
 		uint32_t result = 0;
 		if (!exmdb_client_relay_delivery(maildir, from_address,
@@ -4175,7 +4169,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	if (pdigest != nullptr &&
 	    get_digest(pdigest, "file", mid_string, arsizeof(mid_string))) {
 		strcpy(digest_buff, pdigest);
-		set_digest(digest_buff, MAX_DIGLEN, "file", "\"\"");
+		set_digest(digest_buff, MAX_DIGLEN, "file", "");
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/ext/%s", exmdb_server_get_dir(), mid_string);
 		fd = open(tmp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (-1 != fd) {

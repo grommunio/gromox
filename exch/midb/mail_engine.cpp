@@ -253,7 +253,6 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 	char *ptoken;
 	const char *pext;
 	uint64_t folder_id;
-	char tmp_buff[128];
 	char temp_path[256];
 	struct stat node_stat;
 	
@@ -316,24 +315,15 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 	if (sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
 	folder_id = sqlite3_column_int64(pstmt, 9);
-	snprintf(tmp_buff, arsizeof(tmp_buff), "\"%s\"", mid_string);
-	set_digest(digest_buff, MAX_DIGLEN, "file", tmp_buff);
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 0));
-	set_digest(digest_buff, MAX_DIGLEN, "uid", tmp_buff);
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 1));
-	set_digest(digest_buff, MAX_DIGLEN, "recent", tmp_buff);
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 2));
-	set_digest(digest_buff, MAX_DIGLEN, "read", tmp_buff);
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 3));
-	set_digest(digest_buff, MAX_DIGLEN, "unsent", tmp_buff);
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 4));
-	set_digest(digest_buff, MAX_DIGLEN, "flag", tmp_buff);
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 5));
-	set_digest(digest_buff, MAX_DIGLEN, "replied", tmp_buff);
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 6));
-	set_digest(digest_buff, MAX_DIGLEN, "forwarded", tmp_buff);
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%llu", sqlite3_column_int64(pstmt, 7));
-	set_digest(digest_buff, MAX_DIGLEN, "deleted", tmp_buff);
+	set_digest(digest_buff, MAX_DIGLEN, "file", mid_string);
+	set_digest(digest_buff, MAX_DIGLEN, "uid", pstmt.col_int64(0));
+	set_digest(digest_buff, MAX_DIGLEN, "recent", pstmt.col_int64(1));
+	set_digest(digest_buff, MAX_DIGLEN, "read", pstmt.col_int64(2));
+	set_digest(digest_buff, MAX_DIGLEN, "unsent", pstmt.col_int64(3));
+	set_digest(digest_buff, MAX_DIGLEN, "flag", pstmt.col_int64(4));
+	set_digest(digest_buff, MAX_DIGLEN, "replied", pstmt.col_int64(5));
+	set_digest(digest_buff, MAX_DIGLEN, "forwarded", pstmt.col_int64(6));
+	set_digest(digest_buff, MAX_DIGLEN, "deleted", pstmt.col_int64(7));
 	if (sqlite3_column_type(pstmt, 8) == SQLITE_NULL)
 		return folder_id;
 	pext = S2A(sqlite3_column_text(pstmt, 8));
