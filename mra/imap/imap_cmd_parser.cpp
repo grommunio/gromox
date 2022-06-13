@@ -1362,6 +1362,11 @@ int imap_cmd_parser_username(int argc, char **argv, IMAP_CONTEXT *ctx)
 	       imap_cmd_parser_username2(argc, argv, ctx));
 }
 
+static inline const char *tag_or_bug(const char *s)
+{
+	return *s != '\0' ? s : "BUG";
+}
+
 static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	size_t temp_len;
@@ -1394,8 +1399,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		capability_list(caps, std::size(caps), pcontext);
 		auto z = gx_snprintf(buff, std::size(buff),
 		         "%s OK [CAPABILITY %s] Logged in\r\n",
-		         pcontext->tag_string != nullptr ? pcontext->tag_string : "BUG",
-		         caps);
+		         tag_or_bug(pcontext->tag_string), caps);
 		imap_parser_safe_write(pcontext, buff, z);
 		return DISPATCH_CONTINUE;
 	}
@@ -3506,11 +3510,8 @@ int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, unsigned int 
 		code = 1907;
 	auto str = resource_get_imap_code(code, 1, &len);
 	char buff[1024];
-	const char *tag = nullptr;
-	if (ret & DISPATCH_TAG)
-		tag = *ctx->tag_string != '\0' ? ctx->tag_string : "BUG";
-	else
-		tag = argc > 0 ? argv[0] : "*";
+	const char *tag = (ret & DISPATCH_TAG) ? tag_or_bug(ctx->tag_string) :
+	                  argc == 0 ? "*" : tag_or_bug(argv[0]);
 	len = gx_snprintf(buff, arsizeof(buff), "%s %s%s", tag, str, znul(estr));
 	imap_parser_safe_write(ctx, buff, len);
 	return ret & DISPATCH_ACTMASK;
