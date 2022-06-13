@@ -22,6 +22,7 @@
 #include <gromox/int_hash.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/msgchg_grouping.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/str_hash.hpp>
@@ -29,7 +30,6 @@
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
-#include "msgchg_grouping.h"
 #include "object_tree.h"
 #include "store_object.h"
 #include "system_services.h"

@@ -12,11 +12,10 @@
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/msgchg_grouping.hpp>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "msgchg_grouping.h"
 
 using namespace std::string_literals;
 using namespace gromox;

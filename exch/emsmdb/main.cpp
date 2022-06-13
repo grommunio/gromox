@@ -11,6 +11,7 @@
 #include <gromox/defs.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/msgchg_grouping.hpp>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
@@ -23,7 +24,6 @@
 #include "emsmdb_ndr.h"
 #include "exmdb_client.h"
 #include "logon_object.h"
-#include "msgchg_grouping.h"
 #include "rop_dispatch.h"
 #include "rop_processor.h"
 

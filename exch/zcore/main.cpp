@@ -21,6 +21,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/msgchg_grouping.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
@@ -30,7 +31,6 @@
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "listener.h"
-#include "msgchg_grouping.h"
 #include "object_tree.h"
 #include "rpc_parser.h"
 #include "system_services.h"

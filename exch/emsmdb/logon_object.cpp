@@ -11,6 +11,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/msgchg_grouping.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
@@ -18,7 +19,6 @@
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
 #include "logon_object.h"
-#include "msgchg_grouping.h"
 
 using namespace std::string_literals;
 using namespace gromox;
