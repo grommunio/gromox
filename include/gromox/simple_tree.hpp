@@ -29,7 +29,7 @@ using SIMPLE_TREE_ENUM = void (*)(SIMPLE_TREE_NODE *, void *);
 using SIMPLE_TREE_DELETE = void (*)(SIMPLE_TREE_NODE *);
 using SIMPLE_TREE_DUPLICATE = SIMPLE_TREE_NODE *(*)(SIMPLE_TREE_NODE *, void *);
 
-struct GX_EXPORT tree {
+struct GX_EXPORT mtree {
 	inline tree_node *get_root() { return root; }
 	inline const tree_node *get_root() const { return root; }
 	inline size_t get_nodes_num() const { return nodes_num; }
@@ -42,7 +42,7 @@ struct GX_EXPORT tree {
 	SIMPLE_TREE_NODE *root;
 	size_t	nodes_num;
 };
-using SIMPLE_TREE = tree;
+using SIMPLE_TREE = mtree;
 
 void simple_tree_init(SIMPLE_TREE *ptree);
 template<typename C, typename F> void simple_tree_node_enum(C *n, F &&f)

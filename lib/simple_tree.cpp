@@ -18,12 +18,12 @@ void simple_tree_init(SIMPLE_TREE *ptree)
 	memset(ptree, 0, sizeof(SIMPLE_TREE));
 }
 
-BOOL tree::set_root(SIMPLE_TREE_NODE *pnode)
+BOOL mtree::set_root(SIMPLE_TREE_NODE *pnode)
 {
 	auto ptree = this;
 #ifdef _DEBUG_UMTA
 	if (pnode == nullptr) {
-		debug_info("[simple_tree]: NULL pointer in tree::set_root");
+		debug_info("[simple_tree]: NULL pointer in mtree::set_root");
 		return FALSE;
 	}
 #endif
@@ -53,7 +53,7 @@ BOOL tree::set_root(SIMPLE_TREE_NODE *pnode)
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL tree::insert_sibling(tree_node *pnode_base, tree_node *pnode, int opt)
+BOOL mtree::insert_sibling(tree_node *pnode_base, tree_node *pnode, int opt)
 {
 	auto ptree = this;
 	SIMPLE_TREE_NODE *pnode_temp;
@@ -112,7 +112,7 @@ BOOL tree::insert_sibling(tree_node *pnode_base, tree_node *pnode, int opt)
  *		FALSE				fail
  *
  */
-BOOL tree::add_child(tree_node *pnode_base, tree_node *pnode, int opt)
+BOOL mtree::add_child(tree_node *pnode_base, tree_node *pnode, int opt)
 {
 	auto ptree = this;
 	SIMPLE_TREE_NODE *pnode_temp;
@@ -120,7 +120,7 @@ BOOL tree::add_child(tree_node *pnode_base, tree_node *pnode, int opt)
 
 #ifdef _DEBUG_UMTA
 	if (pnode == nullptr || pnode_base == nullptr) {
-		debug_info("[simple_tree]: NULL pointer in tree::add_child");
+		debug_info("[simple_tree]: NULL pointer in mtree::add_child");
 		return FALSE;
 	}
 #endif
@@ -171,7 +171,7 @@ BOOL tree::add_child(tree_node *pnode_base, tree_node *pnode, int opt)
  *		pnode [in]		node to be destroyed
  *		del_func		callback function to free held resource
  */
-void tree::destroy_node(tree_node *pnode, SIMPLE_TREE_DELETE del_func)
+void mtree::destroy_node(tree_node *pnode, SIMPLE_TREE_DELETE del_func)
 {
 	auto ptree = this;
 	SIMPLE_TREE_NODE *pnode_temp;
@@ -179,7 +179,7 @@ void tree::destroy_node(tree_node *pnode, SIMPLE_TREE_DELETE del_func)
 
 #ifdef _DEBUG_UMTA
 	if (pnode == nullptr || del_func == nullptr) {
-		debug_info("[simple_tree]: NULL pointer in tree::destroy_node");
+		debug_info("[simple_tree]: NULL pointer in mtree::destroy_node");
 		return;
 	}
 #endif
