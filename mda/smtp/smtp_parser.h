@@ -1,13 +1,10 @@
 #pragma once
-#include <memory>
 #include <optional>
 #include <string>
-#include <openssl/ssl.h>
 #include <gromox/clock.hpp>
-#include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/flusher_common.h>
-#include <gromox/mem_file.hpp>
+#include <gromox/generic_connection.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
 #define MAX_BLOCK_MIME_LEN                  4096

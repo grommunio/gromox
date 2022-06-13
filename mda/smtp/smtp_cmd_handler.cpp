@@ -6,12 +6,14 @@
 #include <unistd.h>
 #include <utility>
 #include <libHX/string.h>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
 #include "resource.h"
 #include "smtp_cmd_handler.h"
+#include "smtp_parser.h"
 #include "system_services.h"
 
 using namespace gromox;

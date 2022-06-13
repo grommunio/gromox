@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "flusher.h"
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/flusher_common.h>
 #include <gromox/paths.h>
@@ -16,6 +17,7 @@
 #include "resource.h"
 #include <sys/types.h>
 #include <utility>
+#include "smtp_parser.h"
 #define FLUSHER_VERSION     0x00000001
 #define MAX_CIRCLE_NUMBER   0x7FFFFFFF
 

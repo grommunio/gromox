@@ -1,5 +1,4 @@
 #pragma once
-#include "smtp_parser.h"
 
 /* enumeration for the return value of smtp_parser_dispatch_cmd */
 enum{
@@ -10,6 +9,8 @@ enum{
 	DISPATCH_VALMASK = 0x0000FFFFU,
 	DISPATCH_ACTMASK = 0xFF000000U,
 };
+
+struct SMTP_CONTEXT;
 
 int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext);

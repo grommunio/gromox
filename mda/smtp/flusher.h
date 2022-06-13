@@ -1,12 +1,13 @@
 #pragma once
-#include <gromox/plugin.hpp>
-#include "smtp_parser.h"
+#include <gromox/common_types.hpp>
 #define FLUSHING_INVALID_FD -1
 
 enum {
     FLUSHER_MODE_DISK,
     FLUSHER_MODE_GATEWAY    
 };
+
+struct SMTP_CONTEXT;
 
 extern void flusher_init(size_t queue_len);
 extern int flusher_run();

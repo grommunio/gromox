@@ -13,6 +13,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <gromox/atomic.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
