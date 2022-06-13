@@ -443,58 +443,6 @@ BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 	}
 }
 
-BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
-{
-	size_t len;
-	size_t temp_len;
-	size_t temp_len1;
-	char *ptr1, *ptr2;
-	char temp_tag[256];
-
-	temp_len = strlen(src) + 1;
-	len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
-	ptr1 = search_string(src, temp_tag, temp_len);
-	if (ptr1 == nullptr)
-		return FALSE;
-
-	ptr1 += len;
-	ptr1 = static_cast<char *>(memchr(ptr1, ':', temp_len - (ptr1 - src)));
-	if (ptr1 == nullptr)
-		return FALSE;
-	ptr1 ++;
-	
-	while (' ' == *ptr1 || '\t' == *ptr1) {
-		if (static_cast<size_t>(ptr1 - src) >= temp_len)
-			return FALSE;
-		ptr1 ++;
-	}
-	ptr2 = ptr1;
-	if ('"' == *ptr2) {
-		do {
-			ptr2 ++;
-			if (static_cast<size_t>(ptr2 - src) >= temp_len)
-				return FALSE;
-		} while ('"' != *ptr2 || '\\' == *(ptr2 - 1));
-	}
-	while (',' != *ptr2 && '}' != *ptr2) {
-		ptr2 ++;
-		if (static_cast<size_t>(ptr2 - src) >= temp_len)
-			return FALSE;
-	}
-
-	len = strlen(value);
-	
-	temp_len1 = temp_len + len - (ptr2 - ptr1);
-	if (temp_len1 > length)
-		return FALSE;
-	if (static_cast<size_t>(ptr2 - ptr1) < len)
-		memmove(ptr1 + len, ptr2, temp_len1 - (ptr1 - src + len));
-	else if (static_cast<size_t>(ptr2 - ptr1) > len)
-		memmove(ptr1 + len, ptr2, src + temp_len - ptr2);
-	memcpy(ptr1, value, len);
-	return TRUE;
-}
-
 /*
  *	search a substring in a string
  *	@param

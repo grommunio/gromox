@@ -105,7 +105,6 @@ extern GX_EXPORT BOOL string_to_utf8(const char *charset, const char *in_string,
 extern BOOL string_from_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
 extern ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len);
 extern BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len);
-extern BOOL set_digest(char *src, size_t length, const char *tag, const char *value);
 char* search_string(const char *haystack, const char *needle, 
     size_t haystacklen);
 extern GX_EXPORT const char *crypt_wrapper(const char *);
@@ -148,5 +147,7 @@ inline size_t utf16_to_utf8_len(size_t z) { return z / 2 * 3 + 1; }
 extern GX_EXPORT int iconv_validate();
 extern GX_EXPORT const std::string *ianatz_to_tzdef(const char *, const char * = nullptr);
 extern GX_EXPORT bool get_digest(const char *src, const char *tag, char *out, size_t outmax);
+extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, const char *v);
+extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, uint64_t v);
 
 }

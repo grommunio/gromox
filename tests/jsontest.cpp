@@ -31,7 +31,7 @@ static char tdata1[] =
 
 static int t_digest()
 {
-	static constexpr char line[] = "{\"foo\": \"bar\", \"OH\": \"NO\", \"bar\": \"result\", \"xy\": 15}";
+	static char line[] = "{\"foo\": \"bar\", \"OH\": \"NO\", \"bar\": \"result\", \"xy\": 15}";
 	char out[128];
 	out[0] = '\0';
 	if (!get_digest(line, "bar", out, std::size(out)))
@@ -43,6 +43,14 @@ static int t_digest()
 		return EXIT_FAILURE;
 	printf("digest test >%s<\n", out);
 	if (strcmp(out, "15") != 0)
+		printf("test failure\n");
+
+	if (!set_digest(line, std::size(line), "bar", "YA"))
+		return EXIT_FAILURE;
+	if (!get_digest(line, "bar", out, std::size(out)))
+		return EXIT_FAILURE;
+	printf("digest test >%s<\n", out);
+	if (strcmp(out, "YA") != 0)
 		printf("test failure\n");
 	return EXIT_SUCCESS;
 }
