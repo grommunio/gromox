@@ -17,6 +17,7 @@
 #include <list>
 #include <memory>
 #include <spawn.h>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <unistd.h>
@@ -26,6 +27,7 @@
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
+#include <json/reader.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/proc.h>
@@ -625,6 +627,26 @@ int iconv_validate()
 		iconv_close(k);
 	}
 	return 0;
+}
+
+bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
+{
+	Json::Value jval;
+	std::istringstream jstream(json);
+	auto valid = Json::parseFromStream(Json::CharReaderBuilder(), jstream, &jval, nullptr);
+	if (!valid)
+                return false;
+	if (!jval.isMember(key))
+		return false;
+	auto &memb = jval[key];
+	if (memb.isString())
+		gx_strlcpy(out, memb.asCString(), outmax);
+	else
+		gx_strlcpy(out, memb.asString().c_str(), outmax);
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1988: ENOMEM\n");
+	return false;
 }
 
 }
