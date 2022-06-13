@@ -1,16 +1,11 @@
 #pragma once
-#include <chrono>
 #include <cstdint>
 #include <ctime>
+#include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #define RESPONSE_TIMEOUT				-1
 #define RESPONSE_WAITING				0
 #define RESPONSE_AVAILABLE				1
-
-namespace gromox {
-using time_duration = std::chrono::steady_clock::duration;
-using time_point = std::chrono::time_point<std::chrono::system_clock>;
-}
 
 struct FASTCGI_NODE;
 

@@ -1,9 +1,9 @@
 #pragma once
-#include <chrono>
 #include <memory>
 #include <optional>
 #include <string>
 #include <openssl/ssl.h>
+#include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/flusher_common.h>
@@ -14,10 +14,6 @@
 #define MAX_EXTRA_DATA_INDEX                8
 #define MAX_EXTRA_DATA_TAGLEN               16
 #define MAX_EXTRA_DATA_DATALEN              48
-
-namespace gromox {
-using time_point = std::chrono::time_point<std::chrono::system_clock>;
-}
 
 /* enum for state of context */
 enum{

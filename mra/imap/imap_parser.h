@@ -1,8 +1,8 @@
 #pragma once
-#include <chrono>
 #include <ctime>
 #include <memory>
 #include <string>
+#include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
@@ -27,11 +27,6 @@ means mem_file is not initialized. */
 
 struct DIR_NODE;
 struct MJSON_MIME;
-
-namespace gromox {
-using time_duration = std::chrono::steady_clock::duration;
-using time_point = std::chrono::time_point<std::chrono::system_clock>;
-}
 
 enum {
 	PROTO_STAT_NONE = 0,

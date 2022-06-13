@@ -1,13 +1,8 @@
 #pragma once
-#include <chrono>
+#include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
 #define MAX_TURN_COUNTS     0x7FFFFFFF
-
-namespace gromox {
-using time_duration = std::chrono::steady_clock::duration;
-using time_point = std::chrono::time_point<std::chrono::system_clock>;
-}
 
 enum{
 	CONTEXT_BEGIN = 0,

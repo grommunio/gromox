@@ -1,8 +1,8 @@
 #pragma once
-#include <chrono>
 #include <cstdint>
 #include <vector>
 #include <openssl/ssl.h>
+#include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
@@ -10,11 +10,6 @@
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
 #define MAX_LINE_LENGTH    64*1024
-
-namespace gromox {
-using time_duration = std::chrono::steady_clock::duration;
-using time_point = std::chrono::time_point<std::chrono::system_clock>;
-}
 
 enum {
 	POP3_RETRIEVE_TERM,

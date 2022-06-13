@@ -4,6 +4,7 @@
 #include <ctime>
 #include <vector>
 #include <openssl/ssl.h>
+#include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
@@ -14,11 +15,6 @@
 #include <gromox/util.hpp>
 #include "mod_fastcgi.h"
 #include "pdu_processor.h"
-
-namespace gromox {
-using time_duration = std::chrono::steady_clock::duration;
-using time_point = std::chrono::time_point<std::chrono::system_clock>;
-}
 
 /* enumeration of http_parser */
 enum {
