@@ -42,7 +42,7 @@
 #include "bounce_producer.h"
 #include "common_util.h"
 #include "exmdb_client.h"
-#include "message_object.h"
+#include "objects.hpp"
 #include "store_object.h"
 #include "system_services.h"
 #include "zarafa_server.h"

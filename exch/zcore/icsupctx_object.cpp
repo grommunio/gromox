@@ -4,9 +4,8 @@
 #include <memory>
 #include <gromox/mapi_types.hpp>
 #include "common_util.h"
-#include "folder_object.h"
 #include "ics_state.h"
-#include "icsupctx_object.h"
+#include "objects.hpp"
 
 std::unique_ptr<icsupctx_object>
 icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)

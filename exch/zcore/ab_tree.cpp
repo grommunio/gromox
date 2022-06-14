@@ -37,7 +37,7 @@
 #include <gromox/util.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
-#include "container_object.h"
+#include "objects.hpp"
 #include "system_services.h"
 #include "zarafa_server.h"
 #include "../mysql_adaptor/mysql_adaptor.h"

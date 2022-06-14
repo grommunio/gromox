@@ -30,21 +30,15 @@
 #include <gromox/util.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include "ab_tree.h"
-#include "attachment_object.h"
 #include "common_util.h"
-#include "container_object.h"
 #include "exmdb_client.h"
-#include "folder_object.h"
 #include "ics_state.h"
-#include "icsdownctx_object.h"
-#include "icsupctx_object.h"
-#include "message_object.h"
 #include "object_tree.h"
+#include "objects.hpp"
 #include "rpc_ext.h"
 #include "store_object.h"
 #include "system_services.h"
 #include "table_object.h"
-#include "user_object.h"
 #include "zarafa_server.h"
 
 using namespace std::string_literals;

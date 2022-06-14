@@ -11,9 +11,8 @@
 #include <gromox/rop_util.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
-#include "folder_object.h"
 #include "ics_state.h"
-#include "icsdownctx_object.h"
+#include "objects.hpp"
 #include "store_object.h"
 #include "zarafa_server.h"
 

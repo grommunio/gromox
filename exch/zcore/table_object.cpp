@@ -16,11 +16,9 @@
 #include <gromox/restriction.hpp>
 #include <gromox/sortorder_set.hpp>
 #include "common_util.h"
-#include "container_object.h"
 #include "exmdb_client.h"
-#include "folder_object.h"
-#include "message_object.h"
 #include "object_tree.h"
+#include "objects.hpp"
 #include "store_object.h"
 #include "system_services.h"
 #include "table_object.h"

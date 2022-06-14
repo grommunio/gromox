@@ -15,9 +15,9 @@
 #include <gromox/safeint.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
-#include "container_object.h"
 #include "exmdb_client.h"
 #include "object_tree.h"
+#include "objects.hpp"
 #include "store_object.h"
 #include "zarafa_server.h"
 

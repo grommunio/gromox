@@ -18,18 +18,12 @@
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
-#include "attachment_object.h"
 #include "common_util.h"
-#include "container_object.h"
-#include "folder_object.h"
-#include "icsdownctx_object.h"
-#include "icsupctx_object.h"
-#include "message_object.h"
 #include "object_tree.h"
+#include "objects.hpp"
 #include "store_object.h"
 #include "system_services.h"
 #include "table_object.h"
-#include "user_object.h"
 #include "zarafa_server.h"
 
 enum {

@@ -16,11 +16,10 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
-#include "attachment_object.h"
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "ics_state.h"
-#include "message_object.h"
+#include "objects.hpp"
 #include "store_object.h"
 #include "system_services.h"
 #include "zarafa_server.h"
