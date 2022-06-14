@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
-#include "system_services.h"
+#include "pop3.hpp"
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
 E(judge_ip)

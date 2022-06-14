@@ -15,7 +15,7 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
-#include "resource.h"
+#include "pop3.hpp"
 #define MAX_FILE_LINE_LEN       1024
 
 using namespace gromox;

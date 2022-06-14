@@ -21,10 +21,7 @@
 #include <gromox/svc_loader.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "listener.h" 
-#include "pop3_parser.h" 
-#include "resource.h" 
-#include "system_services.h"
+#include "pop3.hpp"
 
 using namespace gromox;
 

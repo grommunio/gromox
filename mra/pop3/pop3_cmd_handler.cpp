@@ -18,9 +18,7 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
-#include "pop3_cmd_handler.h"
-#include "resource.h"
-#include "system_services.h"
+#include "pop3.hpp"
 #include "../../exch/authmgr.hpp"
 
 #define MIDB_RESULT_OK          0

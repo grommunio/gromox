@@ -26,10 +26,7 @@
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#include "listener.h"
-#include "pop3_parser.h"
-#include "resource.h"
-#include "system_services.h"
+#include "pop3.hpp"
 
 using namespace gromox;
 
