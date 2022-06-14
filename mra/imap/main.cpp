@@ -21,10 +21,7 @@
 #include <gromox/svc_loader.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "imap_parser.h" 
-#include "listener.h" 
-#include "resource.h" 
-#include "system_services.h"
+#include "imap.hpp"
 
 using namespace gromox;
 

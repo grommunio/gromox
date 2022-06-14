@@ -19,7 +19,7 @@
 #include <gromox/midb.hpp>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
-#include "resource.h"
+#include "imap.hpp"
 #define MAX_FILE_LINE_LEN       1024
 
 using namespace gromox;

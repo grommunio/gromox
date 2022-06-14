@@ -33,12 +33,7 @@
 #include <gromox/str_hash.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "dir_tree.hpp"
-#include "imap_cmd_parser.h"
-#include "imap_parser.h"
-#include "listener.h"
-#include "resource.h"
-#include "system_services.h"
+#include "imap.hpp"
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
     (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
 #	define OLD_SSL 1

@@ -26,11 +26,7 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/util.hpp>
-#include "dir_tree.hpp"
-#include "imap_cmd_parser.h"
-#include "listener.h"
-#include "resource.h"
-#include "system_services.h"
+#include "imap.hpp"
 #define MAX_DIGLEN		256*1024
 
 using namespace std::string_literals;

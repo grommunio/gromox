@@ -4,7 +4,7 @@
 #include <gromox/defs.h>
 #include <gromox/mem_file.hpp>
 #include <gromox/simple_tree.hpp>
-#include "dir_tree.hpp"
+#include "imap.hpp"
 
 static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 {

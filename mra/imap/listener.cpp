@@ -27,10 +27,7 @@
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#include "imap_parser.h"
-#include "listener.h"
-#include "resource.h"
-#include "system_services.h"
+#include "imap.hpp"
 
 using namespace gromox;
 
