@@ -6,7 +6,6 @@
 #undef vsnprintf
 #undef vasprintf
 #undef asprintf
-#include "types.h"
 #include <cstdint>
 
 struct ZCORE_RPC_REQUEST;

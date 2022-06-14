@@ -6,7 +6,6 @@
 #undef vsnprintf
 #undef vasprintf
 #undef asprintf
-#include "types.h"
 
 uint64_t unix_to_nttime(time_t unix_time);
 time_t nttime_to_unix(uint64_t nt_time);

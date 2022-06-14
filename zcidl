@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 print "#include <$_>\n" for qw(gromox/defs.h gromox/zcore_rpc.hpp);
-print "#include \"$_\"\n" for qw(php.h rpc_ext.h types.h zarafa_client.h);
+print "#include \"$_\"\n" for qw(php.h zarafa_client.h);
 
 while (<STDIN>) {
 	next if (!m{^\s*ZCIDL\(\s*(\w+)\s*,\s*\((.*)\)\)});

@@ -3,7 +3,6 @@
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
 #include "ext.hpp"
-#include "rpc_ext.h"
 #define TRY(expr) do { if ((expr) != EXT_ERR_SUCCESS) return false; } while (false)
 
 using RPC_REQUEST = ZCORE_RPC_REQUEST;
