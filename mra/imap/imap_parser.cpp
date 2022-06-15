@@ -209,7 +209,8 @@ int imap_parser_run()
 	if (num < 1024*1024) {
 		num = 1024*1024;
 	}
-	g_alloc_file = alloc_limiter<file_block>(num);
+	g_alloc_file = alloc_limiter<file_block>(num,
+	               "imap_alloc_file", "imap.cfg:context_num");
 	num = 4*g_context_num;
 	if (num < 200) {
 		num = 200;
@@ -218,7 +219,7 @@ int imap_parser_run()
 	if (num > 800) {
 		num = 800;
 	}
-	g_mime_pool = MIME_POOL::create(num, FILENUM_PER_MIME);
+	g_mime_pool = MIME_POOL::create(num, FILENUM_PER_MIME, "imap_mime_pool");
 	if (NULL == g_mime_pool) {
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;
@@ -228,7 +229,8 @@ int imap_parser_run()
 	if (num < 1000) {
 		num = 1000;
 	}
-	g_alloc_dir = alloc_limiter<DIR_NODE>(num);
+	g_alloc_dir = alloc_limiter<DIR_NODE>(num, "imap_alloc_dir",
+	              "imap.cfg:g_context_num");
 	num = 4*g_context_num;
 	if (num < 400) {
 		num = 400;

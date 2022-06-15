@@ -353,9 +353,12 @@ int rop_processor_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_logmap_allocator = alloc_limiter<LOGMAP>(context_num * emsmdb_max_hoc);
-	g_logitem_allocator = alloc_limiter<LOGON_ITEM>(256 * context_num);
-	g_handle_allocator = alloc_limiter<OBJECT_NODE>(g_average_handles * context_num);
+	g_logmap_allocator = alloc_limiter<LOGMAP>(context_num * emsmdb_max_hoc,
+	                     "emsmdb_logmap_allocator", "http.cfg:context_num");
+	g_logitem_allocator = alloc_limiter<LOGON_ITEM>(256 * context_num,
+	                      "emsmdb_logitem_allocator", "http.cfg:context_num");
+	g_handle_allocator = alloc_limiter<OBJECT_NODE>(g_average_handles * context_num,
+	                     "emsmdb_handle_allocator", "http.cfg:context_num");
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
 	if (ret != 0) {

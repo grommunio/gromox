@@ -371,7 +371,9 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
-	g_blocks_allocator = alloc_limiter<stream_block>(context_num * context_aver_mem);
+	g_blocks_allocator = alloc_limiter<stream_block>(context_num * context_aver_mem,
+	                     "http_blocks_allocator",
+	                     "http.cfg:context_num,context_average_mem");
 	pdu_processor_init(context_num, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
 		g_config_file->get_value("proc_plugin_path"),
@@ -449,7 +451,7 @@ int main(int argc, const char **argv) try
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(http_parser_process));
 	auto cleanup_28 = make_scope_exit(threads_pool_stop);
 	threads_pool_register_event_proc(http_parser_threads_event_proc);
-	if (0 != threads_pool_run()) {
+	if (threads_pool_run("http.cfg:http_thread_init_num") != 0) {
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}

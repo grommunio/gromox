@@ -295,7 +295,8 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
-	g_blocks_allocator = alloc_limiter<stream_block>(context_num * context_aver_mem);
+	g_blocks_allocator = alloc_limiter<stream_block>(context_num * context_aver_mem,
+	                     "imap_blocks_alloc", "imap.cfg:context_num,context_average_mem");
 	imap_parser_init(context_num, context_aver_mitem, context_max_mem,
 		imap_conn_timeout, autologout_time, imap_auth_times,
 		block_interval_auth, imap_support_stls ? TRUE : false,
@@ -322,7 +323,7 @@ int main(int argc, const char **argv) try
 
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(imap_parser_process));
 	threads_pool_register_event_proc(imap_parser_threads_event_proc);
-	if (0 != threads_pool_run()) {
+	if (threads_pool_run("imap.cfg:imap_thread_init_num") != 0) {
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}

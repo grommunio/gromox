@@ -408,7 +408,8 @@ void common_util_init(const char *org_name, const char *hostname,
 
 int common_util_run(const char *data_path)
 {
-	g_mime_pool = MIME_POOL::create(g_mime_num, 16);
+	g_mime_pool = MIME_POOL::create(g_mime_num, 16,
+	              "zcore_mime_pool (zcore.cfg:g_mime_num)");
 	if (NULL == g_mime_pool) {
 		printf("[common_util]: Failed to init MIME pool\n");
 		return -1;
@@ -2259,7 +2260,8 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	if (mail_len < 0) {
 		return false;
 	}
-	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1);
+	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
+		"zcu_msgtorfc822", "(dynamic)");
 	STREAM tmp_stream(&pallocator);
 	if (!imail.serialize(&tmp_stream)) {
 		return FALSE;

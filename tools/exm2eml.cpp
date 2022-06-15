@@ -113,7 +113,7 @@ int main(int argc, const char **argv) try
 	E(system_services_extension_to_mime, "extension_to_mime");
 #undef E
 
-	auto mimepool = MIME_POOL::create(4096, 8);
+	auto mimepool = MIME_POOL::create(4096, 8, "mime_pool");
 	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
 	    system_services_get_user_ids, system_services_get_username_from_id,
 	    system_services_ltag_to_lcid, system_services_lcid_to_ltag,

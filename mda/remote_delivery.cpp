@@ -412,7 +412,8 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
-	g_files_allocator = alloc_limiter<file_block>(256 * get_threads_num());
+	g_files_allocator = alloc_limiter<file_block>(256 * get_threads_num(),
+	                    "rd_files_alloc", "delivery.cfg:threads_num");
 	g_mx_host = cfg_file->get_value("mx_host");
 	g_mx_port = cfg_file->get_ll("mx_port");
 	g_enable_tls = cfg_file->get_ll("starttls_support");

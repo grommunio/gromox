@@ -293,7 +293,9 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
-	g_blocks_allocator = alloc_limiter<stream_block>(context_num * context_aver_mem);
+	g_blocks_allocator = alloc_limiter<stream_block>(context_num * context_aver_mem,
+	                     "pop3_blocks_allocator",
+	                     "pop3.cfg:context_num,context_average_mem");
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_stls,
 		pop3_force_stls, certificate_path, cb_passwd,
@@ -318,7 +320,7 @@ int main(int argc, const char **argv) try
 
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(pop3_parser_process));
 	threads_pool_register_event_proc(pop3_parser_threads_event_proc);
-	if (0 != threads_pool_run()) {
+	if (threads_pool_run("pop3.cfg:pop3_thread_init_num") != 0) {
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}

@@ -89,4 +89,4 @@ enum {
 	MJSON_MIME_ENTIRE
 };
 
-extern GX_EXPORT alloc_limiter<MJSON_MIME> mjson_allocator_init(size_t max_size);
+extern GX_EXPORT alloc_limiter<MJSON_MIME> mjson_allocator_init(size_t max_size, const char *name = nullptr, const char *hint = nullptr);

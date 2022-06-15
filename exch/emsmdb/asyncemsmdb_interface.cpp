@@ -80,7 +80,8 @@ int asyncemsmdb_interface_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_wait_allocator = alloc_limiter<ASYNC_WAIT>(2 * context_num);
+	g_wait_allocator = alloc_limiter<ASYNC_WAIT>(2 * context_num,
+	                   "wait_allocator", "http.cfg:context_num");
 	g_tag_hash_max = context_num;
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, aemsi_scanwork, nullptr);

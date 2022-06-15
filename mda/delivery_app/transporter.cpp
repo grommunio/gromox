@@ -237,13 +237,14 @@ int transporter_run()
 		single_list_append_as_tail(&g_free_list, &pcontext->node);
 	}
 
-	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME);
+	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME, "transporter_mime_pool");
 	if (NULL == g_mime_pool) {
 		transporter_collect_resource();
 		printf("[transporter]: Failed to init MIME pool\n");
         return -4;
 	}
-	g_file_allocator = alloc_limiter<file_block>(FILENUM_PER_CONTROL * (g_free_num + g_threads_max));
+	g_file_allocator = alloc_limiter<file_block>(FILENUM_PER_CONTROL * (g_free_num + g_threads_max),
+	                   "transporter_file_alloc", "delivery.cfg:threads_num,free_contexts");
 	for (unsigned int i = 0; i < g_threads_max; ++i) {
 		mem_file_init(&g_data_ptr[i].fake_context.mail_control.f_rcpt_to, &g_file_allocator);
 		g_data_ptr[i].fake_context.mail = MAIL(g_mime_pool);

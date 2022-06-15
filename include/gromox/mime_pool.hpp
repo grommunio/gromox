@@ -20,9 +20,9 @@ struct MIME_POOL_NODE {
  * resource_pool<T>::get().
  */
 struct GX_EXPORT MIME_POOL {
-	MIME_POOL(size_t number, int ratio);
+	MIME_POOL(size_t number, int ratio, const char *name = nullptr, const char *hint = nullptr);
 
-	static std::shared_ptr<MIME_POOL> create(size_t number, int ratio);
+	static std::shared_ptr<MIME_POOL> create(size_t number, int ratio, const char *name = nullptr, const char *hint = nullptr);
 	MIME *get_mime();
 	static void put_mime(MIME *);
 

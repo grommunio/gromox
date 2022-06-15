@@ -798,7 +798,8 @@ bool MAIL::dup(MAIL *pmail_dst)
 	auto mail_len = get_length();
 	if (mail_len < 0)
 		return false;
-	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1);
+	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
+		"mail::dup");
 	STREAM tmp_stream(&pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return false;
@@ -848,7 +849,8 @@ bool MAIL::transfer_dot(MAIL *pmail_dst, bool add_dot)
 	auto mail_len = get_length();
 	if (mail_len < 0)
 		return false;
-	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1);
+	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
+		"mail_transfer_dot");
 	STREAM tmp_stream(&pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return false;

@@ -270,8 +270,10 @@ int main(int argc, const char **argv) try
 		return 7;
 	
 	g_threads_num ++;
-	g_fifo_alloc = alloc_limiter<fifo_block>(g_threads_num * FIFO_AVERAGE_LENGTH);
-	g_file_alloc = alloc_limiter<file_block>(g_threads_num * FIFO_AVERAGE_LENGTH);
+	g_fifo_alloc = alloc_limiter<fifo_block>(g_threads_num * FIFO_AVERAGE_LENGTH,
+	               "fifo_alloc", "event.cfg:threads_num");
+	g_file_alloc = alloc_limiter<file_block>(g_threads_num * FIFO_AVERAGE_LENGTH,
+	               "file_alloc", "event.cfg:threads_num");
 	g_dequeue_list1.reserve(g_threads_num);
 	pthread_attr_init(&thr_attr);
 	auto cl_3 = make_scope_exit([&]() { pthread_attr_destroy(&thr_attr); });

@@ -35,7 +35,8 @@ void (*exmdb_server_event_proc)(const char *dir,
 
 int exmdb_server_run()
 {
-	g_ctx_allocator = alloc_limiter<ENVIRONMENT_CONTEXT>(2 * get_context_num());
+	g_ctx_allocator = alloc_limiter<ENVIRONMENT_CONTEXT>(2 * get_context_num(),
+	                  "exmdb_envctx_allocator", "http.cfg:context_num");
 	return 0;
 }
 

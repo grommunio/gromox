@@ -64,13 +64,14 @@ void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_
 	double_list_init(&g_threads_data_list);
 }
 
-int threads_pool_run()
+int threads_pool_run(const char *hint)
 {
 	int created_thr_num;
 	pthread_attr_t attr;
 	
 	/* g_threads_data_buff is protected by g_threads_pool_data_lock */
-	g_threads_data_buff = alloc_limiter<THR_DATA>(g_threads_pool_max_num);
+	g_threads_data_buff = alloc_limiter<THR_DATA>(g_threads_pool_max_num,
+	                      "threads_data_buff", hint);
 	/* list is also protected by g_threads_pool_data_lock */
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, tpol_scanwork, nullptr);

@@ -97,9 +97,10 @@ static void mjson_enum_build(MJSON_MIME *, void *);
 static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length);
 
-alloc_limiter<MJSON_MIME> mjson_allocator_init(size_t max_size)
+alloc_limiter<MJSON_MIME> mjson_allocator_init(size_t max_size,
+    const char *name, const char *hint)
 {
-	return alloc_limiter<MJSON_MIME>(max_size);
+	return alloc_limiter<MJSON_MIME>(max_size, name, hint);
 }
 
 /*

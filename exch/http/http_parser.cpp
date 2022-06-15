@@ -211,7 +211,8 @@ int http_parser_run()
 		CRYPTO_set_locking_callback(http_parser_ssl_locking);
 #endif
 	}
-	g_file_allocator = alloc_limiter<file_block>(g_context_num * 16);
+	g_file_allocator = alloc_limiter<file_block>(16 * g_context_num,
+	                   "http_file_allocator", "http.cfg:context_num");
 	try {
 		g_context_list = std::make_unique<HTTP_CONTEXT[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
@@ -223,8 +224,12 @@ int http_parser_run()
 		printf("[http_parser]: Failed to allocate HTTP contexts\n");
         return -8;
     }
-	g_inchannel_allocator = alloc_limiter<RPC_IN_CHANNEL>(g_context_num);
-	g_outchannel_allocator = alloc_limiter<RPC_OUT_CHANNEL>(g_context_num);
+	g_inchannel_allocator = alloc_limiter<RPC_IN_CHANNEL>(g_context_num,
+	                        "http_inchannel_allocator",
+	                        "http.cfg:context_num");
+	g_outchannel_allocator = alloc_limiter<RPC_OUT_CHANNEL>(g_context_num,
+	                         "http_outchannel_allocator",
+	                         "http.cfg:context_num");
     return 0;
 }
 

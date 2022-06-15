@@ -229,13 +229,19 @@ int pdu_processor_run()
 {
 	int context_num;
 	
-	g_call_allocator = alloc_limiter<DCERPC_CALL>(g_connection_num * g_connection_ratio);
+	g_call_allocator = alloc_limiter<DCERPC_CALL>(g_connection_num * g_connection_ratio,
+	                   "pdu_call_allocator", "http.cfg:context_num");
 	context_num = g_connection_num*g_connection_ratio;
-	g_context_allocator = alloc_limiter<DCERPC_CONTEXT>(context_num);
-	g_auth_allocator = alloc_limiter<DCERPC_AUTH_CONTEXT>(context_num);
-	g_bnode_allocator = alloc_limiter<BLOB_NODE>(g_connection_num * 32);
-	g_async_allocator = alloc_limiter<ASYNC_NODE>(context_num * 2);
-	g_stack_allocator = alloc_limiter<NDR_STACK_ROOT>(context_num * 4);
+	g_context_allocator = alloc_limiter<DCERPC_CONTEXT>(context_num,
+	                      "pdu_ctx_allocator", "http.cfg:context_num");
+	g_auth_allocator = alloc_limiter<DCERPC_AUTH_CONTEXT>(context_num,
+	                   "pdu_auth_allocator", "http.cfg:context_num");
+	g_bnode_allocator = alloc_limiter<BLOB_NODE>(32 * g_connection_num,
+	                    "pdu_bnode_allocator", "http.cfg:context_num");
+	g_async_allocator = alloc_limiter<ASYNC_NODE>(2 * context_num,
+	                    "pdu_async_allocator", "http.cfg:context_num");
+	g_stack_allocator = alloc_limiter<NDR_STACK_ROOT>(4 * context_num,
+	                    "pdu_stack_allocator", "http.cfg:context_num");
 	g_async_hash = INT_HASH_TABLE::create(context_num * 2, sizeof(ASYNC_NODE *));
 	if (NULL == g_async_hash) {
 		return -8;

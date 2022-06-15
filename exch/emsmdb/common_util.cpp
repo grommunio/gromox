@@ -2125,14 +2125,16 @@ int common_util_run()
 		printf("[exchange_emsmdb]: Failed to init oxcmail library\n");
 		return -2;
 	}
-	g_file_allocator = alloc_limiter<file_block>(g_average_blocks * context_num);
+	g_file_allocator = alloc_limiter<file_block>(g_average_blocks * context_num,
+	                   "emsmdb_file_allocator", "http.cfg:context_num");
 	mime_num = 16*context_num;
 	if (mime_num < 1024) {
 		mime_num = 1024;
 	} else if (mime_num > 16*1024) {
 		mime_num = 16*1024;
 	}
-	g_mime_pool = MIME_POOL::create(mime_num, 16);
+	g_mime_pool = MIME_POOL::create(mime_num, 16,
+	              "emsmdb_mime_pool (http.cfg:context_num)");
 	if (NULL == g_mime_pool) {
 		printf("[exchange_emsmdb]: Failed to init MIME pool\n");
 		return -4;

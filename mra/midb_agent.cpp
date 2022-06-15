@@ -225,7 +225,9 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		if (!list_file_read_midb("midb_list.txt"))
 			return false;
 		if (g_file_ratio > 0) {
-			g_file_allocator = alloc_limiter<file_block>(get_context_num() * g_file_ratio);
+			g_file_allocator = alloc_limiter<file_block>(get_context_num() * g_file_ratio,
+			                   "midb_agent_file_alloc",
+			                   "midb.cfg:context_num,context_average_mem");
 		}
 
 		g_notify_stop = false;

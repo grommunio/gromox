@@ -252,7 +252,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
-	auto mime_pool = MIME_POOL::create(4096, 8);	
+	auto mime_pool = MIME_POOL::create(4096, 8, "mime_pool");
 	std::vector<std::unique_ptr<MESSAGE_CONTENT, gi_delete>> msgs;
 
 	for (int i = 1; i < argc; ++i) {

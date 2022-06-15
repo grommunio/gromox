@@ -1082,7 +1082,8 @@ static bool mime_read_multipart_content(MIME *pmime,
 		*plength = 0;
 		return false;
 	}
-	alloc_limiter<stream_block> pallocator(tmp_size / STREAM_BLOCK_SIZE + 1);
+	alloc_limiter<stream_block> pallocator(tmp_size / STREAM_BLOCK_SIZE + 1,
+		"mime_read_multipart");
 	STREAM tmp_stream(&pallocator);
 	if (NULL == pmime->first_boundary) {
 		tmp_stream.write("This is a multi-part message in MIME format.\r\n\r\n", 48);
@@ -1284,7 +1285,8 @@ bool MIME::read_content(char *out_buff, size_t *plength) try
 			*plength = 0;
 			return false;
 		}
-		alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1);
+		alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
+			"mime::read_content");
 		STREAM tmp_stream(&pallocator);
 		if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(&tmp_stream)) {
 			*plength = 0;

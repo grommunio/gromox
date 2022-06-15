@@ -52,8 +52,9 @@ using namespace gromox;
 
 static int gx_reexec_top_fd = -1;
 
-LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum) :
-	item_size(isize), max_items(inum)
+LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum, const char *name,
+    const char *hint) :
+	item_size(isize), max_items(inum), m_name(name), m_hint(hint)
 {
 	if (isize == 0 || inum == 0)
 		fprintf(stderr, "E-1669: Invalid parameters passed to LIB_BUFFER ctor\n");
@@ -73,6 +74,14 @@ void *LIB_BUFFER::get_raw()
 	do {
 		auto exp = allocated_num.load();
 		if (exp >= max_items) {
+			fprintf(stderr, "E-1992: The buffer pool \"%s\" is full (%zu items). "
+			        "This either means a memory leak, or the pool sizes "
+			        "have been configured too low.\n",
+			        znul(m_name), max_items);
+			if (m_hint != nullptr)
+				fprintf(stderr, "I-1993: Config directives that could be tuned: %s\n", m_hint);
+			else
+				fprintf(stderr, "I-1994: Size is dynamic but not tunable.\n");
 			errno = ENOMEM;
 			return nullptr;
 		}

@@ -13,7 +13,7 @@
  *	@return
  *		mime pool object
  */
-MIME_POOL::MIME_POOL(size_t num, int ratio)
+MIME_POOL::MIME_POOL(size_t num, int ratio, const char *name, const char *hint)
 {
 	auto pmime_pool = this;
 
@@ -22,16 +22,17 @@ MIME_POOL::MIME_POOL(size_t num, int ratio)
 	} else if (ratio > 256) {
 		ratio = 256;
 	}
-	pmime_pool->allocator = alloc_limiter<file_block>(num * ratio);
+	pmime_pool->allocator = alloc_limiter<file_block>(num * ratio, name, hint);
 	for (size_t i = 0; i < num; ++i) {
 		pbegin.emplace_back(&pmime_pool->allocator, this);
 		free_list.push_back(&pbegin.back());
 	}
 }
 
-std::shared_ptr<MIME_POOL> MIME_POOL::create(size_t number, int ratio) try
+std::shared_ptr<MIME_POOL> MIME_POOL::create(size_t number, int ratio,
+    const char *name, const char *hint) try
 {
-	return std::make_unique<MIME_POOL>(number, ratio);
+	return std::make_unique<MIME_POOL>(number, ratio, name, hint);
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1546: ENOMEM\n");
 	return nullptr;

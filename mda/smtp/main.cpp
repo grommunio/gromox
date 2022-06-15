@@ -311,8 +311,10 @@ int main(int argc, const char **argv) try
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 
 	size_t fa_blocks_num = scfg.context_num * 128;
-	g_files_allocator = alloc_limiter<file_block>(fa_blocks_num);
-	g_blocks_allocator = alloc_limiter<stream_block>(scfg.context_num * context_aver_mem);
+	g_files_allocator = alloc_limiter<file_block>(fa_blocks_num,
+	                    "smtp_files_alloc", "smtp.cfg:context_num");
+	g_blocks_allocator = alloc_limiter<stream_block>(scfg.context_num * context_aver_mem,
+	                     "smtp_blocks_alloc", "smtp.cfg:context_num,context_aver_mem");
 	smtp_parser_init(scfg);
 	if (0 != smtp_parser_run()) { 
 		printf("[system]: failed to run smtp parser\n");
@@ -340,7 +342,7 @@ int main(int argc, const char **argv) try
 
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(smtp_parser_process));
 	threads_pool_register_event_proc(smtp_parser_threads_event_proc);
-	if (0 != threads_pool_run()) {
+	if (threads_pool_run("smtp.cfg:lda_thread_init_num")) {
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}

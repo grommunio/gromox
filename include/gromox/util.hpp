@@ -39,7 +39,7 @@ struct stream_block {
 struct GX_EXPORT LIB_BUFFER {
 	LIB_BUFFER() = default;
 	LIB_BUFFER(LIB_BUFFER &&) noexcept = delete;
-	LIB_BUFFER(size_t size, size_t items);
+	LIB_BUFFER(size_t size, size_t items, const char *name = nullptr, const char *hint = nullptr);
 	LIB_BUFFER &operator=(LIB_BUFFER &&) noexcept;
 	inline LIB_BUFFER *operator->() { return this; }
 	void *get_raw();
@@ -59,11 +59,13 @@ struct GX_EXPORT LIB_BUFFER {
 
 	std::atomic<size_t> allocated_num{0};
 	size_t item_size = 0, max_items = 0;
+	const char *m_name = nullptr, *m_hint = nullptr;
 };
 
 template<typename T> struct GX_EXPORT alloc_limiter : private LIB_BUFFER {
-	alloc_limiter() = default;
-	alloc_limiter(size_t max) : LIB_BUFFER(sizeof(T), max) {}
+	constexpr alloc_limiter() = default;
+	constexpr alloc_limiter(size_t max, const char *name = nullptr, const char *hint = nullptr) :
+		LIB_BUFFER(sizeof(T), max, name, hint) {}
 	inline T *get() { return LIB_BUFFER::get<T>(); }
 	inline void put(T *x) { LIB_BUFFER::put(x); }
 	alloc_limiter<T> *operator->() { return this; }
