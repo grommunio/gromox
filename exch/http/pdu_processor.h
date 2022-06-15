@@ -97,10 +97,7 @@ struct BLOB_NODE {
 	DATA_BLOB blob;
 };
 
-extern void pdu_processor_init(int connection_num, int connection_ratio,
-	const char *netbios_name, const char *dns_name, const char *dns_domain,
-	BOOL header_signing, size_t max_request_mem, const char *plugins_path,
-	const char *const *names, bool ignerr);
+extern void pdu_processor_init(int connection_num, const char *netbios_name, const char *dns_name, const char *dns_domain, BOOL header_signing, size_t max_request_mem, const char *plugins_path, const char *const *names, bool ignerr);
 extern int pdu_processor_run();
 extern void pdu_processor_stop();
 extern std::unique_ptr<PDU_PROCESSOR> pdu_processor_create(const char *host, uint16_t tcp_port);

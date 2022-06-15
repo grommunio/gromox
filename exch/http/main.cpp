@@ -35,7 +35,6 @@
 #include "pdu_processor.h"
 #include "resource.h"
 #include "system_services.hpp"
-#define PDU_PROCESSOR_RATIO			10
 
 using namespace gromox;
 
@@ -373,7 +372,7 @@ int main(int argc, const char **argv) try
 	}
 
 	g_blocks_allocator = alloc_limiter<stream_block>(context_num * context_aver_mem);
-	pdu_processor_init(context_num, PDU_PROCESSOR_RATIO, netbios_name,
+	pdu_processor_init(context_num, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
 		g_config_file->get_value("proc_plugin_path"),
 		proc_plugin_list != NULL ? proc_plugin_list : g_dfl_proc_plugins,
