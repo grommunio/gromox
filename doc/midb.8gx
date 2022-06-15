@@ -38,9 +38,6 @@ Default: \fI/usr/share/gromox/midb\fP
 \fBdefault_charset\fP
 Default: \fIwindows-1252\fP
 .TP
-\fBdefault_timezone\fP
-Default: (unspecified)
-.TP
 \fBmidb_cache_interval\fP
 Default: \fI30minutes\fP
 .TP

@@ -32,7 +32,6 @@ static char g_org_name[256];
 static thread_local ALLOC_CONTEXT *g_alloc_key;
 static std::unique_ptr<STR_HASH_TABLE> g_str_hash;
 static char g_default_charset[32];
-static char g_default_timezone[64];
 static std::atomic<int> g_sequence_id;
 
 int (*exmdb_local_check_domain)(const char *domainname);
@@ -70,12 +69,10 @@ static int exmdb_local_sequence_ID()
 }
 
 
-void exmdb_local_init(const char *org_name, const char *default_charset,
-    const char *default_timezone)
+void exmdb_local_init(const char *org_name, const char *default_charset)
 {
 	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
-	gx_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
 }
 
 int exmdb_local_run()
@@ -377,7 +374,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		return DELIVERY_NO_USER;
 	}
 	if (tmzone[0] == '\0')
-		strcpy(tmzone, g_default_timezone);
+		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
 	
 	pmail = pcontext->pmail;
 	if (pcontext->pmail->check_dot()) {

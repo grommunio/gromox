@@ -19,11 +19,6 @@ Default: 3min
 \fBdefault_charset\fP
 Default: \fIwindows-1252\fP
 .TP
-\fBdefault_timezone\fP
-Fallback timezone to use for system-generated mail.
-.br
-Default: (unspecified)
-.TP
 \fBexmdb_connection_num\fP
 Default: \fI5\fP
 .TP

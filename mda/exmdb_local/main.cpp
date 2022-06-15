@@ -19,15 +19,11 @@ DECLARE_HOOK_API();
 static BOOL hook_exmdb_local(int reason, void **ppdata)
 {
 	int conn_num;
-	char charset[32], tmzone[64];
-	char org_name[256];
-	char separator[16];
-	char temp_buff[45];
+	char charset[32], org_name[256], separator[16], temp_buff[45], cache_path[256];
 	int cache_interval;
 	int retrying_times;
 	int alarm_interval;
 	int times, interval;
-	char cache_path[256];
 	int response_capacity;
 	int response_interval;
 	 
@@ -65,10 +61,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		str_value = pfile->get_value("DEFAULT_CHARSET");
 		gx_strlcpy(charset, str_value != nullptr ? str_value : "windows-1252", arsizeof(charset));
 		printf("[exmdb_local]: default charset is \"%s\"\n", charset);
-		
-		str_value = pfile->get_value("DEFAULT_TIMEZONE");
-		gx_strlcpy(tmzone, str_value != nullptr ? str_value : "Asia/Shanghai", arsizeof(tmzone));
-		printf("[exmdb_local]: default timezone is \"%s\"\n", tmzone);
 		
 		str_value = pfile->get_value("EXMDB_CONNECTION_NUM");
 		conn_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 5;
@@ -145,7 +137,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
 		exmdb_client_init(conn_num, 0);
-		exmdb_local_init(org_name, charset, tmzone);
+		exmdb_local_init(org_name, charset);
 		
 		if (0 != net_failure_run()) {
 			printf("[exmdb_local]: failed to run net failure\n");

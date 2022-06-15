@@ -44,7 +44,7 @@ extern void cache_queue_stop();
 extern void cache_queue_free();
 extern int cache_queue_put(MESSAGE_CONTEXT *, const char *rcpt, time_t orig_time);
 
-extern void exmdb_local_init(const char *org_name, const char *default_charset, const char *default_timezone);
+extern void exmdb_local_init(const char *org_name, const char *default_charset);
 extern int exmdb_local_run();
 BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext);
 int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address);

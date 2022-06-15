@@ -59,7 +59,6 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR},
 	{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
 	{"default_charset", "windows-1252"},
-	{"default_timezone", "Asia/Shanghai"},
 	{"midb_cache_interval", "30min", CFG_TIME, "1min", "30min"},
 	{"midb_cmd_debug", "0"},
 	{"midb_listen_ip", "::1"},
@@ -210,7 +209,6 @@ int main(int argc, const char **argv) try
 	listener_init(listen_ip, listen_port);
 	auto cl_3 = make_scope_exit(listener_stop);
 	mail_engine_init(g_config_file->get_value("default_charset"),
-		g_config_file->get_value("default_timezone"),
 		g_config_file->get_value("x500_org_name"), table_size,
 		parse_bool(g_config_file->get_value("sqlite_synchronous")) ? TRUE : false,
 		parse_bool(g_config_file->get_value("sqlite_wal_mode")) ? TRUE : false,

@@ -17,6 +17,13 @@ template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { retu
 	K(K &&) = delete; \
 	void operator=(K &&) = delete;
 
+/*
+ * The timezone column in the user database ought to be never empty. Having an
+ * unusual fallback offset means that missing TZ problems will readily be
+ * visible in UIs.
+ */
+#define GROMOX_FALLBACK_TIMEZONE "Pacific/Chatham"
+
 enum gxerr_t {
 	GXERR_SUCCESS = 0,
 	GXERR_CALL_FAILED,

@@ -45,9 +45,6 @@ Default: \fI/usr/share/gromox/zcore\fP
 \fBdefault_charset\fP
 Default: \fIwindows-1252\fP
 .TP
-\fBdefault_timezone\fP
-Default: (unspecified)
-.TP
 \fBfreebusy_tool_path\fP
 Default: \fI/usr/libexec/gromox/freebusy\fP
 .TP

@@ -69,7 +69,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR},
 	{"data_file_path", PKGDATADIR "/zcore:" PKGDATADIR},
 	{"default_charset", "windows-1252"},
-	{"default_timezone", "Asia/Shanghai"},
 	{"freebusy_tool_path", PKGLIBEXECDIR "/freebusy"},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "1min", "1h"},
@@ -217,8 +216,7 @@ int main(int argc, const char **argv) try
 	       g_config_file->get_value("smtp_server_ip"), smtp_port);
 	
 	common_util_init(g_config_file->get_value("x500_org_name"), host_name,
-		g_config_file->get_value("default_charset"),
-		g_config_file->get_value("default_timezone"), mime_num,
+		g_config_file->get_value("default_charset"), mime_num,
 		max_rcpt, max_mail, max_length, max_rule_len,
 		g_config_file->get_value("smtp_server_ip"), smtp_port,
 		g_config_file->get_value("freebusy_tool_path"),

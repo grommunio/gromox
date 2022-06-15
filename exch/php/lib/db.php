@@ -59,7 +59,8 @@ function get_user_info_by_name($email_address)
 		$config = get_app_config();
 		$data_array["timezone"] = $config['default']['timezone'];
 		if (!$data_array["timezone"])
-			$data_array["timezone"] = "Asia/Shanghai";
+			/* see gromox/defs.h */
+			$data_array["timezone"] = "Pacific/Chatham";
 	} else {
 		$data_array["timezone"] = $row[5];
 	}
@@ -100,7 +101,7 @@ function get_user_info_by_id($user_id)
 		$config = get_app_config();
 		$data_array["timezone"] = $config['default']['timezone'];
 		if (!$data_array["timezone"])
-			$data_array["timezone"] = "Asia/Shanghai";
+			$data_array["timezone"] = "Pacific/Chatham"; /* gromox/defs.h */
 	} else {
 		$data_array["timezone"] = $row[5];
 	}

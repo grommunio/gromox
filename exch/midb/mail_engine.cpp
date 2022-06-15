@@ -185,7 +185,6 @@ static char g_org_name[256];
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static alloc_limiter<MJSON_MIME> g_alloc_mjson;
 static char g_default_charset[32];
-static char g_default_timezone[64];
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
 
@@ -2877,7 +2876,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		strcpy(charset, g_default_charset);
 	if (!system_services_get_timezone(pidb->username.c_str(), tmzone,
 	    arsizeof(tmzone)) || tmzone[0] == '\0')
-		strcpy(tmzone, g_default_timezone);
+		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
 	imail.clear();
@@ -3108,7 +3107,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		strcpy(charset, g_default_charset);
 	if (!system_services_get_timezone(pidb->username.c_str(), tmzone,
 	    arsizeof(tmzone)) || tmzone[0] == '\0')
-		strcpy(tmzone, g_default_timezone);
+		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
 	imail.clear();
@@ -5341,14 +5340,12 @@ static void mail_engine_notification_proc(const char *dir,
 	}
 }
 
-void mail_engine_init(const char *default_charset,
-	const char *default_timezone, const char *org_name,
+void mail_engine_init(const char *default_charset, const char *org_name,
 	size_t table_size, BOOL b_async, BOOL b_wal,
 	uint64_t mmap_size, int cache_interval, int mime_num)
 {
 	g_sequence_id = 0;
 	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
-	gx_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
 	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	g_async = b_async;
 	g_wal = b_wal;

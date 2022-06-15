@@ -86,7 +86,6 @@ static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
 static thread_local std::unique_ptr<env_context> g_env_key;
-static char g_default_zone[64];
 static char g_freebusy_path[256];
 static char g_default_charset[32];
 static char g_submit_command[1024];
@@ -388,7 +387,7 @@ BOOL common_util_exmdb_locinfo_from_string(
 }
 
 void common_util_init(const char *org_name, const char *hostname,
-	const char *default_charset, const char *default_zone, int mime_num,
+	const char *default_charset, int mime_num,
     unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
     unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
 	const char *freebusy_path, const char *submit_command)
@@ -396,7 +395,6 @@ void common_util_init(const char *org_name, const char *hostname,
 	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	gx_strlcpy(g_hostname, hostname, GX_ARRAY_SIZE(g_hostname));
 	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
-	gx_strlcpy(g_default_zone, default_zone, GX_ARRAY_SIZE(g_default_zone));
 	g_mime_num = mime_num;
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
@@ -2296,7 +2294,7 @@ MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *pstore,
 		strcpy(charset, g_default_charset);
 	if (!system_services_get_timezone(pinfo->get_username(), tmzone,
 	    arsizeof(tmzone)) || tmzone[0] == '\0')
-		strcpy(tmzone, g_default_zone);
+		strcpy(tmzone, common_util_get_default_timezone());
 	common_util_set_dir(pstore->get_dir());
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
@@ -2340,7 +2338,7 @@ MESSAGE_CONTENT *common_util_ical_to_message(store_object *pstore,
 	auto pinfo = zarafa_server_get_info();
 	if (!system_services_get_timezone(pinfo->get_username(), tmzone,
 	    arsizeof(tmzone)) || tmzone[0] == '\0')
-		strcpy(tmzone, g_default_zone);
+		strcpy(tmzone, common_util_get_default_timezone());
 	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
 	if (NULL == pbuff) {
 		return nullptr;
@@ -2410,7 +2408,7 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 
 const char* common_util_get_default_timezone()
 {
-	return g_default_zone;
+	return GROMOX_FALLBACK_TIMEZONE;
 }
 
 const char* common_util_get_submit_command()
