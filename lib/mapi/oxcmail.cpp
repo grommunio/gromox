@@ -66,7 +66,7 @@ struct FIELD_ENUM_PARAM {
 	namemap &phash;
 	uint16_t last_propid = 0;
 	const char *charset = nullptr;
-	BOOL b_classified = false, b_flag_del = false;
+	bool b_classified = false, b_flag_del = false;
 	MAIL *pmail = nullptr;
 };
 
@@ -75,7 +75,7 @@ struct MIME_ENUM_PARAM {
 	MIME_ENUM_PARAM(MIME_ENUM_PARAM &&) = delete;
 	void operator=(MIME_ENUM_PARAM &&) = delete;
 
-	BOOL b_result = false;
+	bool b_result = false;
 	int attach_id = 0;
 	const char *charset = nullptr, *str_zone = nullptr;
 	GET_PROPIDS get_propids{};
@@ -1464,7 +1464,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, char *field, void *pparam)
 		    &penum_param->last_propid, penum_param->phash,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
-		penum_param->b_flag_del = TRUE;
+		penum_param->b_flag_del = true;
 	} else if (strcasecmp(key, "List-Help") == 0 ||
 		strcasecmp(key, "X-List-Help") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
@@ -2380,7 +2380,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					attachment_content_set_embedded_internal(pattachment, pmsg);
 					tmp_int32 = ATTACH_EMBEDDED_MSG;
 					if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) == 0)
-						pmime_enum->b_result = TRUE;
+						pmime_enum->b_result = true;
 					vcard_free(&vcard);
 					return;
 				}
@@ -2393,7 +2393,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			}
 			tmp_bin.cb = content_len;
 			tmp_bin.pc = pcontent.get();
-			pmime_enum->b_result = pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) == 0 ? TRUE : false;
+			pmime_enum->b_result = pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) == 0;
 			return;
 		}
 	}
@@ -2435,7 +2435,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 				return;
 			}
 			attachment_content_set_embedded_internal(pattachment, pmsg);
-			pmime_enum->b_result = TRUE;
+			pmime_enum->b_result = true;
 			return;
 		}
 	}
@@ -2467,7 +2467,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		}
 		uint32_t tag = b_unifn ? PR_ATTACH_LONG_FILENAME : PR_ATTACH_LONG_FILENAME_A;
 		if (pattachment->proplist.set(tag, file_name) == 0)
-			pmime_enum->b_result = TRUE;
+			pmime_enum->b_result = true;
 		return;
 	}
 	tmp_int32 = ATTACH_BY_VALUE;
@@ -2483,7 +2483,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		if (oxcmail_parse_applesingle(pmime, pattachment, b_filename,
 		    b_description, pmime_enum->alloc, &pmime_enum->last_propid,
 		    pmime_enum->phash)) {
-			pmime_enum->b_result = TRUE;
+			pmime_enum->b_result = true;
 			return;
 		}
 	}
@@ -2511,8 +2511,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	}
 	tmp_bin.cb = content_len;
 	tmp_bin.pc = pcontent.get();
-	pmime_enum->b_result = pattachment->proplist.set(PR_ATTACH_DATA_BIN,
-	                       &tmp_bin) == 0 ? TRUE : false;
+	pmime_enum->b_result = pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) == 0;
 }
 
 static MESSAGE_CONTENT* oxcmail_parse_tnef(MIME *pmime,
@@ -3307,13 +3306,11 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	ICAL ical;
 	MIME *pmime;
 	MIME *pmime1;
-	BOOL b_smime;
 	char *pcontent;
 	uint8_t tmp_byte;
 	TARRAY_SET *prcpts;
 	uint32_t tmp_int32;
 	char tmp_buff[256];
-	BOOL b_alternative;
 	PROPID_ARRAY propids;
 	const char *encoding;
 	char mime_charset[64];
@@ -3324,7 +3321,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	FIELD_ENUM_PARAM field_param{phash};
 	ATTACHMENT_LIST *pattachments;
 	
-	b_smime = FALSE;
 	pmsg = message_content_init();
 	if (NULL == pmsg) {
 		return NULL;
@@ -3347,7 +3343,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	field_param.pmsg = pmsg;
 	field_param.charset = default_charset;
 	field_param.last_propid = 0x8000;
-	field_param.b_flag_del = FALSE;
+	field_param.b_flag_del = false;
 	const auto phead = pmail->get_head();
 	if (NULL == phead) {
 		message_content_free(pmsg);
@@ -3452,6 +3448,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	    strcasecmp("disposition-notification", tmp_buff) == 0) ||
 	    strcasecmp("message/disposition-notification", head_ct) == 0)
 		mime_enum.preport = oxcmail_parse_mdn(pmail, pmsg);
+
+	bool b_alternative = false, b_smime = false;
 	if (strcasecmp(head_ct, "multipart/mixed") == 0) {
 		if (phead->get_children_num() == 2 &&
 		    (pmime = phead->get_child()) != nullptr &&
@@ -3489,7 +3487,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			message_content_free(pmsg);
 			return NULL;
 		}
-		b_smime = TRUE;
+		b_smime = true;
 	} else if (strcasecmp(head_ct, "application/pkcs7-mime") == 0 ||
 	    strcasecmp(head_ct, "application/x-pkcs7-mime") == 0) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME") != 0 ||
@@ -3497,9 +3495,9 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			message_content_free(pmsg);
 			return NULL;
 		}
-		b_smime = TRUE;
+		b_smime = true;
 	}
-	mime_enum.b_result = TRUE;
+	mime_enum.b_result = true;
 	mime_enum.attach_id = 0;
 	mime_enum.charset = default_charset;
 	mime_enum.str_zone = str_zone;
@@ -3516,11 +3514,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		}
 		pmime = pmime1;
 	}
-	b_alternative = FALSE;
 	pmime1 = pmime->get_parent();
 	if (pmime1 != nullptr &&
 	    strcasecmp(pmime1->content_type, "multipart/alternative") == 0)
-		b_alternative = TRUE;
+		b_alternative = true;
 	do {
 		auto cttype = pmime->content_type;
 		if (strcasecmp(cttype, "text/plain") == 0 &&
