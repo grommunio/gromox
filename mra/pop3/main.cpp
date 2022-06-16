@@ -61,6 +61,7 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"pop3_cmd_debug", "0"},
 	{"pop3_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"pop3_force_stls", "false", CFG_BOOL},
+	{"pop3_listen_addr", "::"},
 	{"pop3_listen_port", "110"},
 	{"pop3_listen_tls_port", "0"},
 	{"pop3_support_stls", "false", CFG_BOOL},
@@ -242,7 +243,8 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_2 = make_scope_exit(resource_stop);
 	uint16_t listen_port = g_config_file->get_ll("pop3_listen_port");
-	listener_init(listen_port, listen_tls_port);
+	listener_init(g_config_file->get_value("pop3_listen_addr"),
+		listen_port, listen_tls_port);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;

@@ -101,6 +101,11 @@ TLS (cf. \fBpop3_listen_tls_port\fP), or through the STLS command.
 .br
 Default: \fIfalse\fP
 .TP
+\fBpop3_listen_addr\fP
+AF_INET6 socket address to bind the POP3 service to.
+.br
+Default: \fI::\fP
+.TP
 \fBpop3_listen_port\fP
 The TCP port to expose the POP3 protocol service on. (The IP address is fixed
 to the wildcard address.)
