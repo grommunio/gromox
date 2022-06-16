@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdint>
+#include <memory>
 #include <gromox/common_types.hpp>
 #define FLUSHING_INVALID_FD -1
 
@@ -14,17 +16,13 @@ extern int flusher_run();
 extern void flusher_stop();
 BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext);
 void flusher_cancel(SMTP_CONTEXT *pcontext);
-#pragma once
-#include <cstdint>
-extern void listener_init(uint16_t port, uint16_t ssl_port);
+extern void listener_init(const char *addr, uint16_t port, uint16_t ssl_port);
 extern int listener_run();
 extern int listener_trigger_accept();
 extern void listener_stop_accept();
 extern void listener_stop();
 
 extern uint16_t g_listener_ssl_port;
-#pragma once
-#include <memory>
 
 struct CONFIG_FILE;
 
@@ -33,8 +31,6 @@ extern void resource_stop();
 extern const char *resource_get_smtp_code(unsigned int code_type, unsigned int n, size_t *len);
 
 extern std::shared_ptr<CONFIG_FILE> g_config_file;
-#pragma once
-#include <gromox/common_types.hpp>
 
 enum{
     SERVICE_AUTH_ERROR,       /* auth session fail  */

@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
+#include <string>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -37,12 +38,14 @@ static void *smls_thrworkssl(void *);
 
 static pthread_t g_thr_id;
 static gromox::atomic_bool g_stop_accept;
+static std::string g_listener_addr;
 static int g_listener_sock = -1, g_listener_ssl_sock = -1;
 uint16_t g_listener_port, g_listener_ssl_port;
 static pthread_t g_ssl_thr_id;
 
-void listener_init(uint16_t port, uint16_t ssl_port)
+void listener_init(const char *addr, uint16_t port, uint16_t ssl_port)
 {
+	g_listener_addr = addr;
 	g_listener_port = port;
 	g_listener_ssl_port = ssl_port;
 	g_stop_accept = false;
@@ -58,7 +61,7 @@ void listener_init(uint16_t port, uint16_t ssl_port)
  */
 int listener_run()
 {
-	g_listener_sock = gx_inet_listen("::", g_listener_port);
+	g_listener_sock = gx_inet_listen(g_listener_addr.c_str(), g_listener_port);
 	if (g_listener_sock < 0) {
 		printf("[listener]: failed to create socket [*]:%hu: %s\n",
 		       g_listener_port, strerror(-g_listener_sock));
@@ -66,7 +69,7 @@ int listener_run()
 	}
 	gx_reexec_record(g_listener_sock);
 	if (g_listener_ssl_port > 0) {
-		g_listener_ssl_sock = gx_inet_listen("::", g_listener_ssl_port);
+		g_listener_ssl_sock = gx_inet_listen(g_listener_addr.c_str(), g_listener_ssl_port);
 		if (g_listener_ssl_sock < 0) {
 			printf("[listener]: failed to create socket [*]:%hu: %s\n",
 			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));

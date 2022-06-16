@@ -57,6 +57,7 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"context_average_mem", "256K", CFG_SIZE, "64K"},
 	{"context_max_mem", "2M", CFG_SIZE},
 	{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
+	{"lda_listen_addr", "::"},
 	{"lda_listen_port", "25"},
 	{"lda_listen_tls_port", "0"},
 	{"lda_thread_charge_num", "400", CFG_SIZE, "4"},
@@ -258,7 +259,8 @@ int main(int argc, const char **argv) try
 	else
 		scfg.cmd_prot = 0;
 
-	listener_init(listen_port, listen_tls_port);
+	listener_init(g_config_file->get_value("lda_listen_addr"),
+		listen_port, listen_tls_port);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;

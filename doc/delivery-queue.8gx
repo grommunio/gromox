@@ -60,6 +60,11 @@ by delivery-queue on the network.
 .br
 Default: (system hostname)
 .TP
+\fBlda_listen_addr\fP
+AF_INET6 socket address to bind the LDA service to.
+.br
+Default: \fI::\fP
+.TP
 \fBlda_listen_port\fP
 The TCP port to export the SMTP protocol service on.
 .br
