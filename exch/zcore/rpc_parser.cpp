@@ -589,6 +589,7 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 		presponse->result = zarafa_server_rfc822tomessage(
 			prequest->payload.rfc822tomessage.hsession,
 			prequest->payload.rfc822tomessage.hmessage,
+			prequest->payload.rfc822tomessage.mxf_flags,
 			prequest->payload.rfc822tomessage.peml_bin);
 		break;
 	case zcore_callid::messagetoical:

@@ -85,7 +85,7 @@ enum class zcore_callid : uint8_t {
 	getsearchcriteria = 0x49,
 	setsearchcriteria = 0x4a,
 	messagetorfc822 = 0x4b,
-	rfc822tomessage = 0x4c,
+	// rfc822tomessagev1 = 0x4c,
 	messagetoical = 0x4d,
 	icaltomessage = 0x4e,
 	messagetovcf = 0x4f,
@@ -95,6 +95,7 @@ enum class zcore_callid : uint8_t {
 	getuseravailability = 0x53,
 	setpasswd = 0x54,
 	linkmessage = 0x55,
+	rfc822tomessage = 0x56,
 };
 
 struct ZCREQ_LOGON {
@@ -552,7 +553,7 @@ struct ZCREQ_MESSAGETORFC822 {
 
 struct ZCREQ_RFC822TOMESSAGE {
 	GUID hsession;
-	uint32_t hmessage;
+	uint32_t hmessage, mxf_flags;
 	BINARY *peml_bin;
 };
 

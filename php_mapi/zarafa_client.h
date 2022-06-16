@@ -93,7 +93,7 @@ ZCIDL(importreadstates, (GUID hsession, uint32_t hctx, const STATE_ARRAY *pstate
 ZCIDL(getsearchcriteria, (GUID hsession, uint32_t hfolder, IDLOUT BINARY_ARRAY *folder_array, RESTRICTION **prestriction, uint32_t *search_stat))
 ZCIDL(setsearchcriteria, (GUID hsession, uint32_t hfolder, uint32_t flags, const BINARY_ARRAY *pfolder_array, const RESTRICTION *prestriction))
 ZCIDL(messagetorfc822, (GUID hsession, uint32_t hmessage, IDLOUT BINARY *eml_bin))
-ZCIDL(rfc822tomessage, (GUID hsession, uint32_t hmessage, const BINARY *peml_bin))
+ZCIDL(rfc822tomessage, (GUID hsession, uint32_t hmessage, uint32_t mxf_flags, const BINARY *peml_bin))
 ZCIDL(messagetoical, (GUID hsession, uint32_t hmessage, IDLOUT BINARY *ical_bin))
 ZCIDL(icaltomessage, (GUID hsession, uint32_t hmessage, const BINARY *pical_bin))
 ZCIDL(messagetovcf, (GUID hsession, uint32_t hmessage, IDLOUT BINARY *vcf_bin))

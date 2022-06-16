@@ -992,6 +992,7 @@ static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_RFC822TOMESSAGE &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
+	TRY(x.p_uint32(d.mxf_flags));
 	TRY(x.p_bin(*d.peml_bin));
 	return true;
 }

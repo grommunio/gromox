@@ -86,7 +86,7 @@ static constexpr const char *zcore_rpc_names[] = {
 	E(GETSEARCHCRITERIA),
 	E(SETSEARCHCRITERIA),
 	E(MESSAGETORFC822),
-	E(RFC822TOMESSAGE),
+	"RFC822TOMESSAGE(V1)",
 	E(MESSAGETOICAL),
 	E(ICALTOMESSAGE),
 	E(MESSAGETOVCF),
@@ -96,6 +96,7 @@ static constexpr const char *zcore_rpc_names[] = {
 	E(GETUSERAVAILABILITY),
 	E(SETPASSWD),
 	E(LINKMESSAGE),
+	E(RFC822TOMESSAGE),
 };
 #undef E
 #undef EXP
@@ -103,7 +104,7 @@ static constexpr const char *zcore_rpc_names[] = {
 const char *zcore_rpc_idtoname(zcore_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(arsizeof(zcore_rpc_names) == static_cast<uint8_t>(zcore_callid::linkmessage) + 1);
+	static_assert(arsizeof(zcore_rpc_names) == static_cast<uint8_t>(zcore_callid::rfc822tomessage) + 1);
 	const char *s = j < arsizeof(zcore_rpc_names) ? zcore_rpc_names[j] : nullptr;
 	return znul(s);
 }

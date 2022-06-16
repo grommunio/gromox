@@ -1450,7 +1450,8 @@ static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_MESSAGETORFC822 &d)
 static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_RFC822TOMESSAGE &d)
 {
 	QRF(x.g_guid(&d.hsession));
-	if (x.g_uint32(&d.hmessage) != EXT_ERR_SUCCESS)
+	if (x.g_uint32(&d.hmessage) != EXT_ERR_SUCCESS ||
+	    x.g_uint32(&d.mxf_flags) != EXT_ERR_SUCCESS)
 		return FALSE;
 	d.peml_bin = x.anew<BINARY>();
 	if (d.peml_bin == nullptr)

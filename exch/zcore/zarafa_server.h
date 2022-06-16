@@ -198,8 +198,7 @@ uint32_t zarafa_server_setsearchcriteria(
 	const RESTRICTION *prestriction);
 uint32_t zarafa_server_messagetorfc822(GUID hsession,
 	uint32_t hmessage, BINARY *peml_bin);
-uint32_t zarafa_server_rfc822tomessage(GUID hsession,
-	uint32_t hmessage, const BINARY *peml_bin);
+extern uint32_t zarafa_server_rfc822tomessage(GUID hsession, uint32_t hmessage, uint32_t mxf_flags, const BINARY *peml_bin);
 uint32_t zarafa_server_messagetoical(GUID hsession,
 	uint32_t hmessage, BINARY *pical_bin);
 uint32_t zarafa_server_icaltomessage(GUID hsession,

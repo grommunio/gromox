@@ -5184,9 +5184,8 @@ ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 	}
 	eml_bin.pb = reinterpret_cast<uint8_t *>(szstring);
 	eml_bin.cb = cbstring;
-	result = zarafa_client_rfc822tomessage(
-		pmessage->hsession, pmessage->hobject,
-		&eml_bin);
+	result = zarafa_client_rfc822tomessage(pmessage->hsession,
+	         pmessage->hobject, 0, &eml_bin);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
