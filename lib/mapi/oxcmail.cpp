@@ -2198,22 +2198,20 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		else
 			pmime = pmime->get_sibling();
 	}
+	pmime_enum->b_result = false;
 	pattachment = attachment_content_init();
 	if (NULL == pattachment) {
-		pmime_enum->b_result = FALSE;
 		return;
 	}
 	if (!attachment_list_append_internal(
 		pmime_enum->pmsg->children.pattachments, pattachment)) {
 		attachment_content_free(pattachment);
-		pmime_enum->b_result = FALSE;
 		return;
 	}
 	auto cttype = pmime->content_type;
 	auto newval = strcasecmp(cttype, "application/ms-tnef") == 0 ?
 	              "application/octet-stream" : cttype;
 	if (pattachment->proplist.set(PR_ATTACH_MIME_TAG, newval) != 0) {
-		pmime_enum->b_result = FALSE;
 		return;
 	}
 	auto b_filename = pmime->get_filename(tmp_buff);
@@ -2249,12 +2247,10 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	}
 	if (extension[0] != '\0' &&
 	    pattachment->proplist.set(PR_ATTACH_EXTENSION, extension) != 0) {
-		pmime_enum->b_result = FALSE;
 		return;
 	}
 	if (pattachment->proplist.set(b_unifn ? PR_ATTACH_LONG_FILENAME :
 	    PR_ATTACH_LONG_FILENAME_A, file_name) != 0) {
-		pmime_enum->b_result = FALSE;
 		return;
 	}
 	auto b_description = pmime->get_field("Content-Description", tmp_buff, 256);
@@ -2267,7 +2263,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			strcpy(display_name, tmp_buff);
 		}
 		if (pattachment->proplist.set(tag, display_name) != 0) {
-			pmime_enum->b_result = FALSE;
 			return;
 		}
 	}
@@ -2278,7 +2273,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		    parse_rfc822_timestamp(date_buff, &tmp_time)) {
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 			if (pattachment->proplist.set(PR_CREATION_TIME, &tmp_int64) != 0) {
-				pmime_enum->b_result = FALSE;
 				return;
 			}
 		}
@@ -2286,19 +2280,16 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		    parse_rfc822_timestamp(date_buff, &tmp_time)) {
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 			if (pattachment->proplist.set(PR_LAST_MODIFICATION_TIME, &tmp_int64) != 0) {
-				pmime_enum->b_result = FALSE;
 				return;
 			}
 		}
 	}
 	if (!pattachment->proplist.has(PR_CREATION_TIME) &&
 	    pattachment->proplist.set(PR_CREATION_TIME, &pmime_enum->nttime_stamp) != 0) {
-		pmime_enum->b_result = FALSE;
 		return;
 	}
 	if (!pattachment->proplist.has(PR_LAST_MODIFICATION_TIME) &&
 	    pattachment->proplist.set(PR_LAST_MODIFICATION_TIME, &pmime_enum->nttime_stamp) != 0) {
-		pmime_enum->b_result = FALSE;
 		return;
 	}
 	if (pmime->get_field("Content-ID", tmp_buff, 128)) {
@@ -2315,7 +2306,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			uint32_t tag = oxcmail_check_ascii(newval) ?
 			                  PR_ATTACH_CONTENT_ID : PR_ATTACH_CONTENT_ID_A;
 			if (pattachment->proplist.set(tag, newval) != 0) {
-				pmime_enum->b_result = FALSE;
 				return;
 			}
 		}
@@ -2325,7 +2315,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		                  PR_ATTACH_CONTENT_LOCATION :
 		                  PR_ATTACH_CONTENT_LOCATION_A;
 		if (pattachment->proplist.set(tag, tmp_buff) != 0) {
-			pmime_enum->b_result = FALSE;
 			return;
 		}
 	}
@@ -2333,7 +2322,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		uint32_t tag = oxcmail_check_ascii(tmp_buff) ?
 		                  PR_ATTACH_CONTENT_BASE : PR_ATTACH_CONTENT_BASE_A;
 		if (pattachment->proplist.set(tag, tmp_buff) != 0) {
-			pmime_enum->b_result = FALSE;
 			return;
 		}
 	}
@@ -2348,7 +2336,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	if (b_inline) {
 		tmp_int32 = ATT_MHTML_REF;
 		if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0) {
-			pmime_enum->b_result = FALSE;
 			return;
 		}
 	}
@@ -2356,7 +2343,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	if (NULL != pmime1) {
 		tmp_int32 = ATTACH_BY_VALUE;
 		if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0) {
-			pmime_enum->b_result = FALSE;
 			return;
 		}
 		pmime_enum->b_result = oxcmail_parse_appledouble(
@@ -2369,18 +2355,15 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		auto rdlength = pmime->get_length();
 		if (rdlength < 0) {
 			printf("%s:MIME::get_length:%u: unsuccessful\n", __func__, __LINE__);
-			pmime_enum->b_result = false;
 			return;
 		}
 		size_t content_len = rdlength;
 		if (content_len < VCARD_MAX_BUFFER_LEN) {
 			std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(3 * content_len + 2));
 			if (NULL == pcontent) {
-				pmime_enum->b_result = FALSE;
 				return;
 			}
 			if (!pmime->read_content(pcontent.get(), &content_len)) {
-				pmime_enum->b_result = FALSE;
 				return;
 			}
 			pcontent[content_len] = '\0';
@@ -2396,10 +2379,9 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 				    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
 					attachment_content_set_embedded_internal(pattachment, pmsg);
 					tmp_int32 = ATTACH_EMBEDDED_MSG;
-					if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
-						pmime_enum->b_result = FALSE;
+					if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) == 0)
+						pmime_enum->b_result = TRUE;
 					vcard_free(&vcard);
-					/* parsed successfully */
 					return;
 				}
 				vcard_free(&vcard);
@@ -2407,7 +2389,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			/* parsing as vcard failed */
 			tmp_int32 = ATTACH_BY_VALUE;
 			if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0) {
-				pmime_enum->b_result = FALSE;
 				return;
 			}
 			tmp_bin.cb = content_len;
@@ -2421,17 +2402,14 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		auto rdlength = pmime->get_length();
 		if (rdlength < 0) {
 			printf("%s:MIME::get_length:%u: unsuccessful\n", __func__, __LINE__);
-			pmime_enum->b_result = false;
 			return;
 		}
 		size_t content_len = rdlength;
 		std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(content_len));
 		if (NULL == pcontent) {
-			pmime_enum->b_result = FALSE;
 			return;
 		}
 		if (!pmime->read_content(pcontent.get(), &content_len)) {
-			pmime_enum->b_result = FALSE;
 			return;
 		}
 		MAIL mail(pmime_enum->pmime_pool);
@@ -2444,22 +2422,20 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			    mail.get_head()->get_field("Subject", tmp_buff, 256) &&
 			    mime_string_to_utf8(pmime_enum->charset, tmp_buff, file_name) &&
 			    pattachment->proplist.set(PR_DISPLAY_NAME, file_name) != 0) {
-				pmime_enum->b_result = FALSE;
 				return;
 			}
 			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0) {
-				pmime_enum->b_result = FALSE;
 				return;
 			}
 			pmsg = oxcmail_import(pmime_enum->charset,
 				pmime_enum->str_zone, &mail,
 				pmime_enum->alloc, pmime_enum->get_propids);
 			if (NULL == pmsg) {
-				pmime_enum->b_result = FALSE;
 				return;
 			}
 			attachment_content_set_embedded_internal(pattachment, pmsg);
+			pmime_enum->b_result = TRUE;
 			return;
 		}
 	}
@@ -2481,7 +2457,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					file_name, mode_buff);
 		tmp_bin.pc = mode_buff;
 		if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0) {
-			pmime_enum->b_result = FALSE;
 			return;
 		}
 		ptoken = strrchr(file_name, '.');
@@ -2491,13 +2466,12 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			strcat(file_name, ".URL");
 		}
 		uint32_t tag = b_unifn ? PR_ATTACH_LONG_FILENAME : PR_ATTACH_LONG_FILENAME_A;
-		if (pattachment->proplist.set(tag, file_name) != 0)
-			pmime_enum->b_result = FALSE;
+		if (pattachment->proplist.set(tag, file_name) == 0)
+			pmime_enum->b_result = TRUE;
 		return;
 	}
 	tmp_int32 = ATTACH_BY_VALUE;
 	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0) {
-		pmime_enum->b_result = FALSE;
 		return;
 	}
 	if (strcasecmp(cttype, "application/mac-binhex40") == 0) {
@@ -2508,8 +2482,10 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	} else if (strcasecmp(cttype, "application/applefile") == 0) {
 		if (oxcmail_parse_applesingle(pmime, pattachment, b_filename,
 		    b_description, pmime_enum->alloc, &pmime_enum->last_propid,
-		    pmime_enum->phash))
+		    pmime_enum->phash)) {
+			pmime_enum->b_result = TRUE;
 			return;
+		}
 	}
 	if (strncasecmp(cttype, "text/", 5) == 0 &&
 	    oxcmail_get_content_param(pmime, "charset", tmp_buff, 32)) {
@@ -2517,24 +2493,20 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		               PidTagTextAttachmentCharset :
 		               PidTagTextAttachmentCharset_A;
 		if (pattachment->proplist.set(tag, tmp_buff) != 0) {
-			pmime_enum->b_result = FALSE;
 			return;
 		}
 	}
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
 		printf("%s:MIME::get_length:%u: unsuccessful\n", __func__, __LINE__);
-		pmime_enum->b_result = false;
 		return;
 	}
 	size_t content_len = rdlength;
 	std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(content_len));
 	if (NULL == pcontent) {
-		pmime_enum->b_result = FALSE;
 		return;
 	}
 	if (!pmime->read_content(pcontent.get(), &content_len)) {
-		pmime_enum->b_result = FALSE;
 		return;
 	}
 	tmp_bin.cb = content_len;
