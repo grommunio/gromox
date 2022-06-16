@@ -92,6 +92,7 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_auth_times", "10", CFG_SIZE, "1"},
 	{"http_conn_timeout", "3min", CFG_TIME, "30s"},
 	{"http_debug", "0"},
+	{"http_listen_addr", "::"},
 	{"http_listen_port", "80"},
 	{"http_listen_tls_port", "0"},
 	{"http_support_ssl", "http_support_tls", CFG_ALIAS},
@@ -313,7 +314,8 @@ int main(int argc, const char **argv) try
 	printf("[http]: fastcgi execution timeout is %s\n", temp_buff);
 	uint16_t listen_port = g_config_file->get_ll("http_listen_port");
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");
-	listener_init(listen_port, listen_tls_port, mss_size);
+	listener_init(g_config_file->get_value("http_listen_addr"),
+		listen_port, listen_tls_port, mss_size);
 	auto cleanup_4 = make_scope_exit(listener_stop);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");

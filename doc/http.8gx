@@ -143,15 +143,18 @@ If set to \fB1\fP, prints all incoming and outgoing HTTP traffic to stderr.
 .br
 Default: \fI0\fP
 .TP
+\fBhttp_listen_addr\fP
+AF_INET6 socket address to bind the HTTP service to.
+.br
+Default: \fI::\fP
+.TP
 \fBhttp_listen_port\fP
-The TCP port to expose the HTTP protocol service on. (The IP address is fixed
-to the wildcard address.)
+The TCP port to expose the HTTP protocol service on.
 .br
 Default: \fI80\fP
 .TP
 \fBhttp_listen_tls_port\fP
-The TCP port to expose implicit-TLS HTTP protocol service (HTTPS) on. (The IP
-address is fixed to the wildcard address.)
+The TCP port to expose implicit-TLS HTTP protocol service (HTTPS) on.
 .br
 Default: (unset)
 .TP
