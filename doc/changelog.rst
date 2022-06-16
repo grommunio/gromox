@@ -1,3 +1,22 @@
+1.25.34
+=======
+
+Fixes:
+
+* imap: sender/recipient umlauts were not represented correctly,
+  which has been fixed
+* zcore: repair retrieval of PR_EMS_AB_THUMBNAIL_PHOTO
+
+Enhancements:
+
+* http, imap, pop3, delivery-queue: new config directives "http_listen_addr",
+  "imap_listen_addr", "pop3_listen_addr" and "lda_listen_addr"
+
+Changes:
+
+* midb, zcore, exmdb_local: remove config directive "default_timezone"
+
+
 1.25 (2022-06-12)
 =================
 
