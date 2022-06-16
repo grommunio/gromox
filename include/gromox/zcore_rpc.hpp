@@ -978,3 +978,7 @@ struct ZCORE_RPC_RESPONSE {
 	uint32_t result;
 	ZCORE_RESPONSE_PAYLOAD payload;
 };
+
+enum {
+	MXF_UNWRAP_SMIME_CLEARSIGNED = 0x1U,
+};

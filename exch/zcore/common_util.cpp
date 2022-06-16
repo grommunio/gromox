@@ -2282,8 +2282,37 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	return TRUE;
 }
 
-MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *pstore,
-    const BINARY *peml_bin)
+static void zc_unwrap_smime(MAIL &ma) try
+{
+	auto part = ma.get_head();
+	if (part == nullptr ||
+	    strcasecmp(part->content_type, "multipart/signed") != 0)
+		return;
+	part = part->get_child();
+	if (part == nullptr)
+		return;
+	auto partlen = part->get_length();
+	if (partlen < 0)
+		return;
+	size_t len = partlen;
+	auto ctbuf = std::make_unique<char[]>(len);
+	if (!part->read_head(ctbuf.get(), &len))
+		return;
+	size_t written_so_far = len;
+	len = partlen - len;
+	if (!part->read_content(&ctbuf[written_so_far], &len))
+		return;
+	written_so_far += len;
+	MAIL m2(g_mime_pool);
+	if (!m2.retrieve(ctbuf.get(), written_so_far))
+		return;
+	ma = std::move(m2);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1996: ENOMEM\n");
+}
+
+MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
+    unsigned int mxf_flags, const BINARY *peml_bin)
 {
 	char charset[32], tmzone[64];
 	
@@ -2291,6 +2320,8 @@ MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *pstore,
 	MAIL imail(g_mime_pool);
 	if (!imail.retrieve(peml_bin->pc, peml_bin->cb))
 		return NULL;
+	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
+		zc_unwrap_smime(imail);
 	if (!system_services_lang_to_charset(pinfo->get_lang(), charset) ||
 	    charset[0] == '\0')
 		strcpy(charset, g_default_charset);

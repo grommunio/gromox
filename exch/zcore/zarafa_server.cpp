@@ -5076,7 +5076,7 @@ uint32_t zarafa_server_rfc822tomessage(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	auto pmsgctnt = common_util_rfc822_to_message(pmessage->get_store(), peml_bin);
+	auto pmsgctnt = cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;

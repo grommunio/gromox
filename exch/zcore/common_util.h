@@ -170,7 +170,7 @@ extern gxerr_t common_util_remote_copy_message(store_object *s0, uint64_t messag
 extern gxerr_t common_util_remote_copy_folder(store_object *s0, uint64_t folder_id, store_object *s1, uint64_t folder_id1, const char *new_name);
 extern BOOL common_util_send_message(store_object *, uint64_t msg_id, BOOL submit);
 extern BOOL common_util_message_to_rfc822(store_object *, uint64_t msg_id, BINARY *eml);
-extern MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *, const BINARY *eml);
+extern MESSAGE_CONTENT *cu_rfc822_to_message(store_object *, unsigned int mxf_flags, const BINARY *eml);
 extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY *ical);
 extern MESSAGE_CONTENT *common_util_ical_to_message(store_object *, const BINARY *ical);
 extern BOOL common_util_message_to_vcf(message_object *, BINARY *vcfout);
