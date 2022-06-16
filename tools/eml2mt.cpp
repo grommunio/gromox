@@ -287,7 +287,7 @@ int main(int argc, const char **argv) try
 	gi_folder_map_t fmap;
 	if (g_import_mode == IMPORT_ICAL)
 		fmap.emplace(~0ULL, tgt_folder{false, PRIVATE_FID_CALENDAR, ""});
-	else
+	else if (g_import_mode == IMPORT_VCARD)
 		fmap.emplace(~0ULL, tgt_folder{false, PRIVATE_FID_CONTACTS, ""});
 	gi_folder_map_write(fmap);
 	gi_dump_name_map(name_map);
