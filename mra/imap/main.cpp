@@ -62,6 +62,7 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"imap_cmd_debug", "0"},
 	{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"imap_force_starttls", "false", CFG_BOOL},
+	{"imap_listen_addr", "::"},
 	{"imap_listen_port", "143"},
 	{"imap_listen_tls_port", "0"},
 	{"imap_support_starttls", "false", CFG_BOOL},
@@ -244,7 +245,8 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	auto cleanup_2 = make_scope_exit(resource_stop);
-	listener_init(listen_port, listen_tls_port);
+	listener_init(g_config_file->get_value("imap_listen_addr"),
+		listen_port, listen_tls_port);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;

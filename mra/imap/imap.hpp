@@ -195,7 +195,7 @@ extern int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *);
 extern int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *);
 extern int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *, unsigned int res);
 
-extern void listener_init(uint16_t port, uint16_t port_ssl);
+extern void listener_init(const char *addr, uint16_t port, uint16_t port_ssl);
 extern int listener_run();
 extern int listener_trigger_accept();
 extern void listener_stop_accept();

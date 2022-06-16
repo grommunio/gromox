@@ -122,6 +122,11 @@ basename is specified, the file will be searched in
 .br
 Default: \fIimap_lang.txt\fP
 .TP
+\fBimap_listen_addr\fP
+AF_INET6 socket address to bind the IMAP service to.
+.br
+Default: \fI::\fP
+.TP
 \fBimap_listen_port\fP
 The TCP port to expose the IMAP protocol service on. (The IP address is fixed
 to the wildcard address.)
