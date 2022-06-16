@@ -2,7 +2,7 @@
 .SH Name
 gromox\-mt2exm \(em Utility for importing various mail items
 .SH Synopsis
-\fBgromox\-mt2exm\fP [...] [\fB\-pt\fP] \fB-u\fP
+\fBgromox\-mt2exm\fP [...] [\fB\-dpt\fP] \fB-u\fP
 [\fIuser\fP]\fB@\fP\fIdomain.de\fP
 .SH Description
 gromox\-mt2exm reads a Gromox-specific mailbox transfer format data stream from
@@ -23,6 +23,11 @@ accepted names are: \fIinbox\fP, \fIdraft\fP, \fIcalendar\fP, \fIjournal\fP,
 \fItrash\fP.
 .br
 Default: \fIdraft\fP
+.TP
+\fB\-D\fP
+Use delivery mode, i.e. treat messages as if they were sent through the mail
+system rather than being imported. As such, messages are subject to inbox
+rules, and folders will be ignored altogether.
 .TP
 \fB\-p\fP
 Show properties in detail (enhances \fB\-t\fP).

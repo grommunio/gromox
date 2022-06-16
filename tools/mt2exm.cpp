@@ -33,7 +33,7 @@ static char *g_username;
 static gi_folder_map_t g_folder_map;
 static gi_name_map g_src_name_map;
 static propididmap_t g_thru_name_map;
-static uint8_t g_splice;
+static uint8_t g_do_delivery, g_splice;
 static unsigned int g_oexcl = 1, g_anchor_folder;
 
 static void cb_anchor_folder(const HXoptcb *cb)
@@ -65,6 +65,7 @@ static void cb_anchor_folder(const HXoptcb *cb)
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'B', HXTYPE_STRING, nullptr, nullptr, cb_anchor_folder, 0, "Placement position for unanchored messages", "NAME"},
+	{nullptr, 'D', HXTYPE_NONE, &g_do_delivery, nullptr, nullptr, 0, "Use delivery mode"},
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
@@ -354,7 +355,8 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 		tlog("adjusted properties:\n");
 		gi_dump_msgctnt(0, ctnt);
 	}
-	return exm_create_msg(folder_it->second.fid_to, &ctnt);
+	return g_do_delivery ? exm_deliver_msg(g_username, &ctnt) :
+	       exm_create_msg(folder_it->second.fid_to, &ctnt);
 }
 
 static int exm_packet(const void *buf, size_t bufsize)
@@ -371,7 +373,9 @@ static int exm_packet(const void *buf, size_t bufsize)
 	    ep.g_uint64(&obd.parent.folder_id) != EXT_ERR_SUCCESS)
 		throw YError("PG-1116");
 	obd.parent.type = static_cast<enum mapi_object_type>(type);
-	if (obd.mapitype == MAPI_FOLDER) {
+	if (obd.mapitype == MAPI_FOLDER && g_do_delivery) {
+		return 0;
+	} else if (obd.mapitype == MAPI_FOLDER) {
 		TPROPVAL_ARRAY props{};
 		auto cl_0 = make_scope_exit([&]() { tpropval_array_free_internal(&props); });
 		if (ep.g_tpropval_a(&props) != EXT_ERR_SUCCESS)

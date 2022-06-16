@@ -626,6 +626,33 @@ int exm_permissions(eid_t fid, const std::vector<PERMISSION_DATA> &perms)
 	return 0;
 }
 
+int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct)
+{
+	ct->proplist.erase(PidTagChangeNumber);
+	auto ts = rop_util_current_nttime();
+	if (ct->proplist.set(PR_MESSAGE_DELIVERY_TIME, &ts) != 0)
+		/* ignore */;
+	uint32_t r32 = 0;
+	if (!exmdb_client::delivery_message(g_storedir, "none@none", target,
+	    0, ct, "", &r32)) {
+		fprintf(stderr, "exm: delivery_message RPC failed: code %u\n",
+		        r32);
+		return -EIO;
+	}
+	auto dm_status = static_cast<delivery_message_result>(r32);
+	switch (dm_status) {
+	case delivery_message_result::result_ok:
+		break;
+	case delivery_message_result::mailbox_full:
+		fprintf(stderr, "Message rejected - mailbox is full\n");
+		return EXIT_FAILURE;
+	case delivery_message_result::result_error:
+		fprintf(stderr, "Message rejected - unspecified reason\n");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 {
 	uint64_t msg_id = 0, change_num = 0;
