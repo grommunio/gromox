@@ -1,7 +1,0 @@
-#!/bin/bash
-echo -e "\e[1m""This former utility has been split into multiple programs"
-echo -e "so that we can offer a more varied set of conversion formats.""\e[0m"
-echo -e "	gromox-pffimport [-s] [-t] [-p] -u mbox@target.de input.pst "
-echo -e "is now"
-echo -e "	gromox-pff2mt [-s] [-t] [-p] input.pst | gromox-mt2exm -u mbox@target.de"
-exit 1

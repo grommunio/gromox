@@ -84,7 +84,7 @@ sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-dscli gromox-e2ghelper gromox
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
-sbin_SCRIPTS = gromox-abktpull gromox-pffimport
+sbin_SCRIPTS = gromox-abktpull
 pkglibexec_SCRIPTS = tools/create_queue.sh
 
 BUILT_SOURCES = include/gromox/paths.h php_mapi/mapidefs.cpp php_mapi/zrpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
