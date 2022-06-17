@@ -78,7 +78,7 @@ Protocol section. Possible values: \fIyes\fP, \fIno\fP, \fInot_old_mso\fP,
 \fIonly_new_mso\fP. The latter two values can be used to finely control
 emission in case of clients other than Outlook.
 .br
-Default: \fIonly_new_mso\fP
+Default: \fIyes\fP
 .TP
 \fBadvertise_rpch\fP
 This setting controls whether the AutoDiscover response should include
@@ -86,7 +86,7 @@ EXCH/EXPR Protocol sections. Possible values: \fIyes\fP, \fIno\fP,
 \fIonly_old_mso\fP, \fInot_new_mso\fP. The latter two values can be used to
 finely control emission in case of clients other than Outlook.
 .br
-Default: \fInot_new_mso\fP
+Default: \fIyes\fP
 .TP
 \fBhostname\fP
 The \fBglobally valid\fP hostname of this server for the purpose of

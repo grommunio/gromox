@@ -218,7 +218,7 @@ function advertise_rpch($agent)
 	if (!isset($config["exchange"]))
 		return true;
 	if (!isset($config["exchange"]["advertise_rpch"]))
-		return !get_mapihttp_supported();
+		return true;
 	$v = $config["exchange"]["advertise_rpch"];
 	if (strcmp($v, "no") == 0)
 		return false;
@@ -237,7 +237,7 @@ function advertise_mh($agent)
 	if (!isset($config["exchange"]))
 		return true;
 	if (!isset($config["exchange"]["advertise_mh"]))
-		return get_mapihttp_supported();
+		return true;
 	$v = $config["exchange"]["advertise_mh"];
 	if (strcmp($v, "no") == 0)
 		return false;
