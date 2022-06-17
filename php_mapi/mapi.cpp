@@ -12,6 +12,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/safeint.hpp>
+#include <gromox/zcore_rpc.hpp>
 #include "php.h"
 #include "zarafa_client.h"
 #include <memory>
@@ -5182,10 +5183,25 @@ ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
+	unsigned int mxf_flags = 0;
+	auto opthash = HASH_OF(pzresoptions);
+	if (opthash != nullptr) {
+		zend_string *key = nullptr;
+		zend_ulong num __attribute__((unused)) = 0;
+		zval *entry __attribute__((unused)) = nullptr;
+		ZEND_HASH_FOREACH_KEY_VAL(opthash, num, key, entry) {
+			if (key == nullptr)
+				php_error_docref(nullptr, E_WARNING, "imtomapi: options array ought to use string keys");
+			else if (strcmp(key->val, "parse_smime_signed") == 0)
+				mxf_flags |= MXF_UNWRAP_SMIME_CLEARSIGNED;
+			else
+				php_error_docref(nullptr, E_WARNING, "Unknown imtomapi option: \"%s\"", key->val);
+		} ZEND_HASH_FOREACH_END();
+	}
 	eml_bin.pb = reinterpret_cast<uint8_t *>(szstring);
 	eml_bin.cb = cbstring;
 	result = zarafa_client_rfc822tomessage(pmessage->hsession,
-	         pmessage->hobject, 0, &eml_bin);
+	         pmessage->hobject, mxf_flags, &eml_bin);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
