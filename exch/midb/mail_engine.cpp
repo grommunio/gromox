@@ -2096,6 +2096,16 @@ static uint64_t mail_engine_get_top_folder_id(
 	}
 }
 
+static bool skip_folder_class(const char *c)
+{
+	if (c == nullptr)
+		/* Absent class means it's IPF.Note */
+		return false;
+	if (strncasecmp(c, "IPF.Note", 8) == 0 && (c[8] == '\0' || c[8] == '.'))
+		return false;
+	return true;
+}
+
 static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 {
 	BOOL b_new;
@@ -2165,8 +2175,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 			        dir, LLU(folder_id));
 			continue;
 		}
-		auto str = rows.pparray[i]->get<const char>(PR_CONTAINER_CLASS);
-		if (str == nullptr || strcasecmp(str, "IPF.Note") != 0) {
+		if (skip_folder_class(rows.pparray[i]->get<const char>(PR_CONTAINER_CLASS))) {
 			fprintf(stderr, "sync_mailbox %s fld %llu skipped: PR_CONTAINER_CLASS not IPF.Note\n",
 			        dir, LLU(folder_id));
 			continue;
@@ -2178,7 +2187,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 			continue;
 		parent_fid = rop_util_get_gc_value(*num);
 		sqlite3_bind_int64(pstmt, 2, parent_fid);
-		str = spfid_to_name(folder_id);
+		auto str = spfid_to_name(folder_id);
 		if (str == nullptr) {
 			str = rows.pparray[i]->get<char>(PR_DISPLAY_NAME);
 			if (str == nullptr || strlen(str) >= 256)
@@ -4940,7 +4949,6 @@ static void mail_engine_delete_notification_message(
 static BOOL mail_engine_add_notification_folder(
 	IDB_ITEM *pidb, uint64_t parent_id, uint64_t folder_id)
 {
-	BOOL b_wait;
 	int tmp_len;
 	char sql_string[1280];
 	char decoded_name[512];
@@ -4967,7 +4975,7 @@ static BOOL mail_engine_add_notification_folder(
 	tmp_proptags[1] = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_proptags[2] = PR_CONTAINER_CLASS;
 	tmp_proptags[3] = PR_ATTR_HIDDEN;
-	b_wait = FALSE;
+	bool b_waited = false;
  REQUERY_FOLDER:
 	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), 0,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
@@ -4975,16 +4983,15 @@ static BOOL mail_engine_add_notification_folder(
 	auto pvalue = propvals.getval(PR_ATTR_HIDDEN);
 	if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 		return FALSE;
-	pvalue = propvals.getval(PR_CONTAINER_CLASS);
-	if (pvalue == nullptr && !b_wait) {
+	auto cont_class = propvals.get<const char>(PR_CONTAINER_CLASS);
+	if (cont_class == nullptr && !b_waited) {
 		/* outlook will set the PR_CONTAINER_CLASS
 			after RopCreateFolder, so try to wait! */
 		sleep(1);
-		b_wait = TRUE;
+		b_waited = true;
 		goto REQUERY_FOLDER;
 	}
-	if (pvalue == nullptr ||
-	    strcasecmp(static_cast<char *>(pvalue), "IPF.Note") != 0)
+	if (skip_folder_class(cont_class))
 		return FALSE;
 	pvalue = propvals.getval(PR_LOCAL_COMMIT_TIME_MAX);
 	auto commit_max = pvalue != nullptr ? *static_cast<uint64_t *>(pvalue) : 0;
