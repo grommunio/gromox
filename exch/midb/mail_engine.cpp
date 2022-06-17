@@ -2155,17 +2155,23 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 		return FALSE;
 	}
 	for (size_t i = 0; i < rows.count; ++i) {
-		auto flag = rows.pparray[i]->get<const uint8_t>(PR_ATTR_HIDDEN);
-		if (flag != nullptr && *flag != 0)
-			continue;
-		auto str = rows.pparray[i]->get<const char>(PR_CONTAINER_CLASS);
-		if (str == nullptr || strcasecmp(str, "IPF.Note") != 0)
-			continue;
-		sqlite3_reset(pstmt);
 		auto num = rows.pparray[i]->get<const uint64_t>(PidTagFolderId);
 		if (num == nullptr)
 			continue;
 		auto folder_id = rop_util_get_gc_value(*num);
+		auto flag = rows.pparray[i]->get<const uint8_t>(PR_ATTR_HIDDEN);
+		if (flag != nullptr && *flag != 0) {
+			fprintf(stderr, "sync_mailbox %s fld %llu skipped: PR_ATTR_HIDDEN=1\n",
+			        dir, LLU(folder_id));
+			continue;
+		}
+		auto str = rows.pparray[i]->get<const char>(PR_CONTAINER_CLASS);
+		if (str == nullptr || strcasecmp(str, "IPF.Note") != 0) {
+			fprintf(stderr, "sync_mailbox %s fld %llu skipped: PR_CONTAINER_CLASS not IPF.Note\n",
+			        dir, LLU(folder_id));
+			continue;
+		}
+		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, folder_id);
 		num = rows.pparray[i]->get<uint64_t>(PidTagParentFolderId);
 		if (num == nullptr)
