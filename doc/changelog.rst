@@ -1,4 +1,4 @@
-1.25.34
+1.25.48
 =======
 
 Fixes:
@@ -6,15 +6,21 @@ Fixes:
 * imap: sender/recipient umlauts were not represented correctly,
   which has been fixed
 * zcore: repair retrieval of PR_EMS_AB_THUMBNAIL_PHOTO
+* eml2mt: avoid putting non-vcard messages into Contacts by default
 
 Enhancements:
 
-* http, imap, pop3, delivery-queue: new config directives "http_listen_addr",
-  "imap_listen_addr", "pop3_listen_addr" and "lda_listen_addr"
+* http, imap, pop3, delivery-queue: new config directives ``http_listen_addr``,
+  ``imap_listen_addr``, ``pop3_listen_addr`` and ``lda_listen_addr``
+* php_mapi: support imtomapi ``parse_smime_signed`` option
+* midb: treat folders with absent ``PR_CONTAINER_CLASS`` like ``IPF.Note``
+* mt2exm: added a ``-D`` option that will do a delivery rather than import
 
 Changes:
 
-* midb, zcore, exmdb_local: remove config directive "default_timezone"
+* autodiscover: enable default advertisement of RPCH & MH irrespective
+  of User-Agent
+* midb, zcore, exmdb_local: remove config directive ``default_timezone``
 
 
 1.25 (2022-06-12)
