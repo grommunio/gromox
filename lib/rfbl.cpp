@@ -74,10 +74,10 @@ void *LIB_BUFFER::get_raw()
 	do {
 		auto exp = allocated_num.load();
 		if (exp >= max_items) {
-			fprintf(stderr, "E-1992: The buffer pool \"%s\" is full (%zu items). "
+			fprintf(stderr, "E-1992: The buffer pool \"%s\" is full. "
 			        "This either means a memory leak, or the pool sizes "
 			        "have been configured too low.\n",
-			        znul(m_name), max_items);
+			        znul(m_name));
 			if (m_hint != nullptr)
 				fprintf(stderr, "I-1993: Config directives that could be tuned: %s\n", m_hint);
 			else
