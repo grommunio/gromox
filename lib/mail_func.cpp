@@ -536,33 +536,33 @@ void parse_field_value(const char *in_buff, long buff_len, char *value,
 		value[paratag_len] = '\0';
 		HX_strrtrim(value);
 		HX_strltrim(value);
+		return;
+	}
+	ptr_equal = static_cast<const char *>(memchr(prev_section, '=', ptr - prev_section));
+	if (NULL == ptr_equal) {
+		paratag_len = ptr - prev_section;
+		memcpy(param_tag, prev_section, paratag_len);
+		paraval_len = 0;
 	} else {
-		ptr_equal = static_cast<const char *>(memchr(prev_section, '=', ptr - prev_section));
-		if (NULL == ptr_equal) {
-			paratag_len = ptr - prev_section;
-			memcpy(param_tag, prev_section, paratag_len);
-			paraval_len = 0;
-		} else {
-			paratag_len = ptr_equal - prev_section;
-			memcpy(param_tag, prev_section, paratag_len);
-			ptr_equal ++;
-			paraval_len = ptr - ptr_equal;
-			memcpy(param_value, ptr_equal, paraval_len);
-		}
-		param_tag[paratag_len] = '\0';
-		param_value[paraval_len] = '\0';
-		HX_strrtrim(param_tag);
-		HX_strltrim(param_tag);
-		HX_strrtrim(param_value);
-		HX_strltrim(param_value);
-		paratag_len = strlen(param_tag);
-		paraval_len = strlen(param_value);
-		if (0 != paratag_len || 0 != paraval_len) {
-			pfile->write(&paratag_len, sizeof(uint32_t));
-			pfile->write(param_tag, paratag_len);
-			pfile->write(&paraval_len, sizeof(uint32_t));
-			pfile->write(param_value, paraval_len);
-		}
+		paratag_len = ptr_equal - prev_section;
+		memcpy(param_tag, prev_section, paratag_len);
+		ptr_equal ++;
+		paraval_len = ptr - ptr_equal;
+		memcpy(param_value, ptr_equal, paraval_len);
+	}
+	param_tag[paratag_len] = '\0';
+	param_value[paraval_len] = '\0';
+	HX_strrtrim(param_tag);
+	HX_strltrim(param_tag);
+	HX_strrtrim(param_value);
+	HX_strltrim(param_value);
+	paratag_len = strlen(param_tag);
+	paraval_len = strlen(param_value);
+	if (0 != paratag_len || 0 != paraval_len) {
+		pfile->write(&paratag_len, sizeof(uint32_t));
+		pfile->write(param_tag, paratag_len);
+		pfile->write(&paraval_len, sizeof(uint32_t));
+		pfile->write(param_value, paraval_len);
 	}
 }
 
