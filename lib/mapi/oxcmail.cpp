@@ -364,7 +364,7 @@ static inline bool oxcmail_check_crlf(const char *s)
 	       [](char c) { return c == '\n' || c == '\r'; });
 }
 
-static BOOL oxcmail_get_content_param(MIME *pmime,
+static BOOL oxcmail_get_content_param(const MIME *pmime,
 	const char *tag, char *value, int length)
 {
 	int tmp_len;
@@ -1739,7 +1739,7 @@ static BOOL oxcmail_set_mac_attachname(TPROPVAL_ARRAY *pproplist,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_binhex(MIME *pmime, ATTACHMENT_CONTENT *pattachment,
+static BOOL oxcmail_parse_binhex(const MIME *pmime, ATTACHMENT_CONTENT *pattachment,
     BOOL b_filename, BOOL b_description, uint16_t *plast_propid, namemap &phash)
 {
 	BINARY *pbin;
@@ -1816,14 +1816,12 @@ static BOOL oxcmail_parse_binhex(MIME *pmime, ATTACHMENT_CONTENT *pattachment,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_appledouble(MIME *pmime,
+static BOOL oxcmail_parse_appledouble(const MIME *pmime,
     ATTACHMENT_CONTENT *pattachment, BOOL b_filename, BOOL b_description,
     EXT_BUFFER_ALLOC alloc, uint16_t *plast_propid, namemap &phash)
 {
 	int i;
-	MIME *psub;
-	MIME *phmime;
-	MIME *pdmime;
+	const MIME *phmime, *pdmime;
 	BINARY *pbin;
 	BINARY tmp_bin;
 	EXT_PULL ext_pull;
@@ -1832,7 +1830,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	
 	phmime = NULL;
 	pdmime = NULL;
-	psub = pmime->get_child();
+	auto psub = pmime->get_child();
 	if (NULL == psub) {
 		return FALSE;
 	}
@@ -1953,7 +1951,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_macbinary(MIME *pmime,
+static BOOL oxcmail_parse_macbinary(const MIME *pmime,
     ATTACHMENT_CONTENT *pattachment, BOOL b_filename, BOOL b_description,
     EXT_BUFFER_ALLOC alloc, uint16_t *plast_propid, namemap &phash)
 {	
@@ -2032,7 +2030,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_applesingle(MIME *pmime,
+static BOOL oxcmail_parse_applesingle(const MIME *pmime,
     ATTACHMENT_CONTENT *pattachment, BOOL b_filename, BOOL b_description,
     EXT_BUFFER_ALLOC alloc, uint16_t *plast_propid, namemap &phash)
 {
@@ -2126,10 +2124,10 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 	return TRUE;
 }
 
-static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
+static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 {
 	VCARD vcard;
-	MIME *pmime1;
+	const MIME *pmime1 = nullptr;
 	BOOL b_unifn;
 	char *ptoken;
 	BINARY tmp_bin;
@@ -2148,7 +2146,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	char display_name[512];
 	ATTACHMENT_CONTENT *pattachment;
 	
-	pmime1 = NULL;
 	auto pmime_enum = static_cast<MIME_ENUM_PARAM *>(pparam);
 	if (!pmime_enum->b_result)
 		return;

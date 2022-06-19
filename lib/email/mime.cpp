@@ -2620,3 +2620,7 @@ MIME *MIME::get_sibling()
 	auto pnode = pmime->node.get_sibling();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
+
+const MIME *MIME::get_child() const { return deconst(this)->get_child(); }
+const MIME *MIME::get_parent() const { return deconst(this)->get_parent(); }
+const MIME *MIME::get_sibling() const { return deconst(this)->get_sibling(); }

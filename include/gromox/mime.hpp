@@ -48,8 +48,11 @@ struct GX_EXPORT MIME {
 	ssize_t get_length() const;
 	bool get_filename(char *file_name) const;
 	MIME *get_child();
+	const MIME *get_child() const;
 	MIME *get_parent();
+	const MIME *get_parent() const;
 	MIME *get_sibling();
+	const MIME *get_sibling() const;
 	inline size_t get_children_num() const { return node.get_children_num(); }
 
 	SIMPLE_TREE_NODE node{};

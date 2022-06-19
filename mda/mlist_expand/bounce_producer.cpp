@@ -103,8 +103,8 @@ int (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
 bool (*bounce_producer_get_timezone)(const char *username, char *timezone, size_t);
 BOOL (*bounce_producer_lang_to_charset)(const char *lang, char *charset);
-static void bounce_producer_enum_parts(MIME *, void *);
-static void bounce_producer_enum_charset(MIME *, void *);
+static void bounce_producer_enum_parts(const MIME *, void *);
+static void bounce_producer_enum_charset(const MIME *, void *);
 static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff);
 
 static int bounce_producer_get_mail_subject(MAIL *pmail, char *subject,
@@ -541,7 +541,7 @@ static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 /*
  *	enum the mail attachment
  */
-static void bounce_producer_enum_parts(MIME *pmime, void *param)
+static void bounce_producer_enum_parts(const MIME *pmime, void *param)
 {
 	auto penum = static_cast<ENUM_PARTS *>(param);
 	int attach_len;
@@ -598,7 +598,7 @@ static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset)
 	return strlen(charset);
 }
 
-static void bounce_producer_enum_charset(MIME *pmime, void *param)
+static void bounce_producer_enum_charset(const MIME *pmime, void *param)
 {
 	auto penum = static_cast<ENUM_CHARSET *>(param);
 	char charset[32];

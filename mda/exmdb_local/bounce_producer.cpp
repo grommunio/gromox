@@ -96,8 +96,8 @@ static constexpr TAG_ITEM g_tags[] = {
 	{"<length>", 8}
 };
 
-static void bounce_producer_enum_parts(MIME *, void *);
-static void bounce_producer_enum_charset(MIME *, void *);
+static void bounce_producer_enum_parts(const MIME *, void *);
+static void bounce_producer_enum_charset(const MIME *, void *);
 static int bounce_producer_get_mail_subject(MAIL *pmail, char *subject,
 	char *charset);
 
@@ -521,7 +521,7 @@ static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 	return enum_parts.offset;
 }
 
-static void bounce_producer_enum_parts(MIME *pmime, void *param)
+static void bounce_producer_enum_parts(const MIME *pmime, void *param)
 {
 	auto penum = static_cast<ENUM_PARTS *>(param);
 	int attach_len;
@@ -578,7 +578,7 @@ static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset)
 	return strlen(charset);
 }
 
-static void bounce_producer_enum_charset(MIME *pmime, void *param)
+static void bounce_producer_enum_charset(const MIME *pmime, void *param)
 {
 	auto penum = static_cast<ENUM_CHARSET *>(param);
 	char charset[32];

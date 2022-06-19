@@ -23,8 +23,8 @@ enum {
 static bool mail_retrieve_to_mime(MAIL *, MIME *parent, char *begin, char *end);
 static void mail_enum_delete(SIMPLE_TREE_NODE *pnode);
 static bool mail_check_ascii_printable(const char *astring);
-static void mail_enum_text_mime_charset(MIME *, void *);
-static void mail_enum_html_charset(MIME *, void *);
+static void mail_enum_text_mime_charset(const MIME *, void *);
+static void mail_enum_html_charset(const MIME *, void *);
 
 MAIL::MAIL(std::shared_ptr<MIME_POOL> p) : pmime_pool(std::move(p))
 {
@@ -214,7 +214,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
  *		TRUE				OK
  *		FALSE				fail
  */
-bool MAIL::serialize(STREAM *pstream)
+bool MAIL::serialize(STREAM *pstream) const
 {
 	auto pmail = this;
 #ifdef _DEBUG_UMTA
@@ -222,7 +222,9 @@ bool MAIL::serialize(STREAM *pstream)
 		return false;
 #endif
 	auto pnode = pmail->tree.get_root();
-	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->serialize(pstream) : false;
+	if (pnode == nullptr)
+		return false;
+	return static_cast<const MIME *>(pnode->pdata)->serialize(pstream);
 }
 
 /*
@@ -234,11 +236,13 @@ bool MAIL::serialize(STREAM *pstream)
  *		TRUE			OK
  *		FALSE			fail
  */
-bool MAIL::to_file(int fd)
+bool MAIL::to_file(int fd) const
 {
 	auto pmail = this;
 	auto pnode = pmail->tree.get_root();
-	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->to_file(fd) : false;
+	if (pnode == nullptr)
+		return false;
+	return static_cast<const MIME *>(pnode->pdata)->to_file(fd);
 }
 
 /*
@@ -250,7 +254,7 @@ bool MAIL::to_file(int fd)
  *		TRUE			OK
  *		FALSE			fail
  */
-bool MAIL::to_tls(SSL *ssl)
+bool MAIL::to_tls(SSL *ssl) const
 {
 	auto pmail = this;
 #ifdef _DEBUG_UMTA
@@ -258,7 +262,9 @@ bool MAIL::to_tls(SSL *ssl)
 		return false;
 #endif
 	auto pnode = pmail->tree.get_root();
-	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->to_tls(ssl) : false;
+	if (pnode == nullptr)
+		return false;
+	return static_cast<const MIME *>(pnode->pdata)->to_tls(ssl);
 }
 
 /*
@@ -269,11 +275,13 @@ bool MAIL::to_tls(SSL *ssl)
  *		TRUE			dot-stuffing in mail
  *		FALSE			no dot-stuffing in mail
  */
-bool MAIL::check_dot()
+bool MAIL::check_dot() const
 {
 	auto pmail = this;
 	auto pnode = pmail->tree.get_root();
-	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->check_dot() : false;
+	if (pnode == nullptr)
+		return false;
+	return static_cast<const MIME *>(pnode->pdata)->check_dot();
 }
 
 /*
@@ -283,11 +291,13 @@ bool MAIL::check_dot()
  *	@return
  *		length of mail in bytes
  */
-ssize_t MAIL::get_length()
+ssize_t MAIL::get_length() const
 {
 	auto pmail = this;
 	auto pnode = pmail->tree.get_root();
-	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->get_length() : -1;
+	if (pnode == nullptr)
+		return -1;
+	return static_cast<const MIME *>(pnode->pdata)->get_length();
 }
 
 MAIL::~MAIL()
@@ -336,6 +346,8 @@ MIME *MAIL::get_head()
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
+const MIME *MAIL::get_head() const { return deconst(this)->get_head(); }
+
 static bool mail_check_ascii_printable(const char *astring)
 {
 	int i, len;
@@ -350,10 +362,9 @@ static bool mail_check_ascii_printable(const char *astring)
 	return true;
 }
 
-bool MAIL::get_charset(char *charset)
+bool MAIL::get_charset(char *charset) const
 {
 	auto pmail = this;
-	MIME *pmime;
 	char temp_buff[1024];
 	ENCODE_STRING encode_string;
 	
@@ -368,7 +379,7 @@ bool MAIL::get_charset(char *charset)
 	if (NULL == pnode) {
 		return false;
 	}
-	pmime = (MIME*)pnode->pdata;
+	auto pmime = static_cast<const MIME *>(pnode->pdata);
 	if (pmime->get_field("Subject", temp_buff, 512)) {
 		parse_mime_encode_string(temp_buff, strlen(temp_buff),
 			&encode_string);
@@ -408,11 +419,10 @@ bool MAIL::get_charset(char *charset)
  *		0					buffer length insufficient
  *		1					digest mail OK
  */
-int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
+int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 {
 	auto pmail = this;
 	char *ptr;
-	MIME *pmime;
 	int priority;
 	size_t count;
 	ssize_t gmd;
@@ -449,7 +459,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 		return -1;
 	}
 
-	pmime = (MIME*)pnode->pdata;
+	auto pmime = static_cast<const MIME *>(pnode->pdata);
 	if (!pmime->get_field("Message-ID", temp_buff, 128))
 		mime_msgid[0] = '\0';
 	else
@@ -589,9 +599,9 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	b_tags[TAG_SIGNED] = FALSE;
 	b_tags[TAG_ENCRYPT] = FALSE;
 	
-	simple_tree_enum_from_node(pmail->tree.get_root(), [&](SIMPLE_TREE_NODE *n) {
+	simple_tree_enum_from_node(pmail->tree.get_root(), [&](const SIMPLE_TREE_NODE *n) {
 		char buf[1024];
-		auto m = static_cast<MIME *>(n->pdata);
+		auto m = static_cast<const MIME *>(n->pdata);
 		if (strcasecmp(m->content_type, "multipart/signed") == 0)
 			b_tags[TAG_SIGNED] = TRUE;
 		if (m->get_content_param("smime-type", buf, arsizeof(buf)))
@@ -644,7 +654,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	return 0;
 }
 
-static void mail_enum_text_mime_charset(MIME *pmime, void *param)
+static void mail_enum_text_mime_charset(const MIME *pmime, void *param)
 {
 	auto email_charset = static_cast<char *>(param);
 	int i, tmp_len;
@@ -666,7 +676,7 @@ static void mail_enum_text_mime_charset(MIME *pmime, void *param)
 	}
 }
 
-static void mail_enum_html_charset(MIME *pmime, void *param)
+static void mail_enum_html_charset(const MIME *pmime, void *param)
 {
 	auto email_charset = static_cast<char *>(param);
 	int i;
@@ -741,14 +751,7 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
     return pmime;
 }
 
-/*
- *  enumerating the mime in the mail tree
- *  @param
- *      pmail [in]      indicate the mail object
- *      enum_func       callback function
- *		param [in]		parameter pointer for enum_func
- */
-void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param)
+void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param) const
 {
 	auto pmail = this;
 #ifdef _DEBUG_UMTA
@@ -757,8 +760,8 @@ void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param)
         return;
     }
 #endif
-	simple_tree_enum_from_node(pmail->tree.get_root(), [&](SIMPLE_TREE_NODE *stn) {
-		auto m = containerof(stn, MIME, node);
+	simple_tree_enum_from_node(pmail->tree.get_root(), [&](const SIMPLE_TREE_NODE *stn) {
+		auto m = containerof(stn, const MIME, node);
 		enum_func(m, param);
 	});
 }

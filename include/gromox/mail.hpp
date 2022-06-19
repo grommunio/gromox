@@ -9,7 +9,7 @@
 #define MIME_ADD_FIRST		SIMPLE_TREE_ADD_FIRST
 #define	MIME_ADD_LAST		SIMPLE_TREE_ADD_LAST
 
-using MAIL_MIME_ENUM = void (*)(MIME *, void*);
+using MAIL_MIME_ENUM = void (*)(const MIME *, void*);
 
 struct MIME_POOL;
 struct GX_EXPORT MAIL {
@@ -26,18 +26,19 @@ struct GX_EXPORT MAIL {
 
 	void clear();
 	bool retrieve(char *in_buff, size_t length);
-	bool serialize(STREAM *);
-	bool to_file(int fd);
-	bool to_tls(SSL *);
-	bool check_dot();
+	bool serialize(STREAM *) const;
+	bool to_file(int fd) const;
+	bool to_tls(SSL *) const;
+	bool check_dot() const;
 	bool transfer_dot(MAIL *dst, bool add_dot = false);
-	ssize_t get_length();
+	ssize_t get_length() const;
 	MIME *add_head();
 	MIME *get_head();
-	bool get_charset(char *out);
-	int get_digest(size_t *offset, char *buf, int len);
+	const MIME *get_head() const;
+	bool get_charset(char *out) const;
+	int get_digest(size_t *offset, char *buf, int len) const;
 	MIME *add_child(MIME *base, int opt);
-	void enum_mime(MAIL_MIME_ENUM, void *);
+	void enum_mime(MAIL_MIME_ENUM, void *) const;
 	bool dup(MAIL *dst);
 	bool set_header(const char *hdr, const char *val);
 
