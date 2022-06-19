@@ -514,9 +514,7 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	       &mime_field)) != 0) {
 		b_hit = FALSE;
 		for (i=0; i<tmp_argc; i++) {
-			auto tag_len = strlen(tmp_argv[i]);
-			if (tag_len != mime_field.field_name_len ||
-			    strncasecmp(tmp_argv[i], mime_field.field_name, tag_len) != 0)
+			if (strcasecmp(tmp_argv[i], mime_field.name.c_str()) != 0)
 				continue;
 			if (!b_not) {
 				memcpy(buff1 + len1, buff + buff_len, len);

@@ -519,15 +519,12 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 	if (!stat_head)
 		return FALSE;
 
-	auto tag_len = strlen(tag);
 	while ((len = parse_mime_field(head_buff + offset,
 	       head_offset - offset, &mime_field)) != 0) {
 		offset += len;
-		if (tag_len != mime_field.field_name_len ||
-		    strncasecmp(tag, mime_field.field_name, tag_len) != 0)
+		if (strcasecmp(tag, mime_field.name.c_str()) != 0)
 			continue;
-		mime_field.field_value[mime_field.field_value_len] = '\0';
-		auto rs = mail_engine_ct_decode_mime(charset, mime_field.field_value);
+		auto rs = mail_engine_ct_decode_mime(charset, mime_field.value.c_str());
 		if (rs != nullptr &&
 		    search_string(rs.get(), value, strlen(rs.get())))
 			return TRUE;

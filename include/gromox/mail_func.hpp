@@ -18,9 +18,7 @@ struct EMAIL_ADDR {
 };
 
 struct MIME_FIELD {
-	unsigned int field_name_len, field_value_len;
-    char field_name[MIME_NAME_LEN];
-    char field_value[MIME_FIELD_LEN];
+	std::string name, value;
 };
 
 struct ENCODE_STRING {

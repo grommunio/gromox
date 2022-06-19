@@ -46,8 +46,6 @@ bool dsn_retrieve(DSN *pdsn, char *in_buff, size_t length)
 {
 	DSN_FIELDS *pfields;
 	MIME_FIELD mime_field;
-	char tag[MIME_NAME_LEN + 1];
-	char value[MIME_FIELD_LEN + 1];
 	size_t current_offset = 0;
 
 	dsn_clear(pdsn);
@@ -70,11 +68,8 @@ bool dsn_retrieve(DSN *pdsn, char *in_buff, size_t length)
 		if (0 == parsed_length) {
 			break;
 		}
-		memcpy(tag, mime_field.field_name, mime_field.field_name_len);
-		tag[mime_field.field_name_len] = '\0';
-		memcpy(value, mime_field.field_value, mime_field.field_value_len);
-		value[mime_field.field_value_len] = '\0';
-		if (!dsn_append_field(pfields, tag, value)) {
+		if (!dsn_append_field(pfields, mime_field.name.c_str(),
+		    mime_field.value.c_str())) {
 			dsn_clear(pdsn);
 			return false;
 		}

@@ -544,13 +544,10 @@ static void* store_object_get_oof_property(
 		size_t parsed_length;
 		while ((parsed_length = parse_mime_field(pbuff + offset, buff_len - offset, &mime_field)) != 0) {
 			offset += parsed_length;
-			if (0 == strncasecmp("Subject", mime_field.field_name, 7)
-				&& mime_field.field_value_len < sizeof(subject)) {
-				mime_field.field_value[mime_field.field_value_len] = '\0';
-				if (mime_string_to_utf8("utf-8",
-				    mime_field.field_value, subject))
+			if (strcasecmp(mime_field.name.c_str(), "Subject") == 0 &&
+			    mime_field.value.size() < std::size(subject) &&
+			    mime_string_to_utf8("utf-8", mime_field.value.c_str(), subject))
 					return common_util_dup(subject);
-			}
 			if ('\r' == pbuff[offset] && '\n' == pbuff[offset + 1]) {
 				return NULL;
 			}

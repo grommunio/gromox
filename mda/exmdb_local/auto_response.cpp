@@ -144,13 +144,8 @@ void auto_response_reply(const char *user_home,
 		auto parsed_length = parse_mime_field(new_buff + i, j - i, &mime_field);
 		i += parsed_length;
 		if (0 != parsed_length) {
-			if (0 == strncasecmp("Content-Type", mime_field.field_name, 12)) {
-				if (mime_field.field_value_len > sizeof(content_type) - 1) {
-					return;
-				}
-				memcpy(content_type, mime_field.field_value,
-					mime_field.field_value_len);
-				content_type[mime_field.field_value_len] = '\0';
+			if (strcasecmp(mime_field.name.c_str(), "Content-Type") == 0) {
+				gx_strlcpy(content_type, mime_field.value.c_str(), std::size(content_type));
 				charset[0] = '\0';
 				auto ptoken2 = strchr(content_type, ';');
 				if (ptoken2 != nullptr) {
@@ -174,13 +169,8 @@ void auto_response_reply(const char *user_home,
 						}
 					}
 				}
-			} else if (0 == strncasecmp("Subject", mime_field.field_name, 7)) {
-				if (mime_field.field_value_len > sizeof(subject) - 1) {
-					return;
-				}
-				memcpy(subject, mime_field.field_value,
-					mime_field.field_value_len);
-				subject[mime_field.field_value_len] = '\0';
+			} else if (strcasecmp(mime_field.name.c_str(), "Subject") == 0) {
+				gx_strlcpy(subject, mime_field.value.c_str(), std::size(subject));
 			}
 			if ('\r' == new_buff[i] && '\n' == new_buff[i + 1]) {
 				pcontent = new_buff + i + 2;

@@ -293,7 +293,8 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *input) try
  *		  end of mime field information, including the last "\r\n", if the last
  *		  two byte in buff_in is "\r\n", it is also considered as a mime field 
  */
-size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
+size_t parse_mime_field(char *in_buff, size_t buff_len,
+    MIME_FIELD *pmime_field) try
 {
 	BOOL meet_slash;
 	
@@ -302,22 +303,19 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 	}
 	/* parse the first line the get the field name and part of value*/
 	auto tmp_ptr = in_buff;
-	char *dest_ptr = pmime_field->field_name;
 
 	size_t i = 0, value_length = 0;
 	while (*tmp_ptr != ':' && i < buff_len &&
 		i <= MIME_NAME_LEN && *tmp_ptr != '\r'
 		&& *tmp_ptr != '\n') {
-		*dest_ptr = *tmp_ptr;
 		tmp_ptr ++; 
-		dest_ptr ++;
 		i ++;
 	}
 	if (i == buff_len || MIME_NAME_LEN + 1 == i ||
 		'\r' == *tmp_ptr || '\n' == *tmp_ptr) {
 		return 0;
 	}
-	pmime_field->field_name_len = i;
+	pmime_field->name.assign(in_buff, tmp_ptr - in_buff);
 	tmp_ptr ++;	   /* skip ':' */
 	i ++;
 	while (i < buff_len && (' ' == *tmp_ptr || '\t' == *tmp_ptr)) { 
@@ -327,7 +325,8 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 	if (i == buff_len) {
 		return 0;
 	}
-	dest_ptr = pmime_field->field_value;
+	char field_value[MIME_FIELD_LEN];
+	auto dest_ptr = field_value;
 	while (true) {
 		meet_slash = FALSE;
 		while (i < buff_len && *tmp_ptr != '\r' && *tmp_ptr != '\n') {
@@ -343,7 +342,7 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 		}
 		if (i == buff_len) {
 			if ('\r' == *tmp_ptr || '\n' == *tmp_ptr) {
-				pmime_field->field_value_len = value_length;
+				pmime_field->value.assign(field_value, value_length);
 				return buff_len;
 			} else {
 				return 0;
@@ -355,7 +354,7 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 		}
 		if (i == buff_len) {
 			if (*tmp_ptr == '\n') {
-				pmime_field->field_value_len = value_length;
+				pmime_field->value.assign(field_value, value_length);
 				return buff_len;
 			}
 			if (*tmp_ptr == ' ' || *tmp_ptr == '\t' || meet_slash)
@@ -368,7 +367,7 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 			}
 		}
 		if (*tmp_ptr != ' ' && *tmp_ptr != '\t' && !meet_slash) {
-			pmime_field->field_value_len = value_length;
+			pmime_field->value.assign(field_value, value_length);
 			return i;
 		} else {
 			while (i < buff_len && (' ' == *tmp_ptr || '\t' == *tmp_ptr)) {
@@ -382,6 +381,9 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 			value_length ++;
 		}
 	}
+	return 0;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2025: ENOMEM\n");
 	return 0;
 }
 

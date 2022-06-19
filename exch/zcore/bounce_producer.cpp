@@ -226,17 +226,10 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 			                     node_stat.st_size - j, &mime_field);
 			j += parsed_length;
 			if (0 != parsed_length) {
-				if (0 == strncasecmp("Content-Type", 
-					mime_field.field_name, 12)) {
-					memcpy(presource->content_type[i],
-						mime_field.field_value, mime_field.field_value_len);
-					presource->content_type[i][mime_field.field_value_len] = 0;
-				} else if (0 == strncasecmp("Subject",
-					mime_field.field_name, 7)) {
-					memcpy(presource->subject[i],
-						mime_field.field_value, mime_field.field_value_len);
-					presource->subject[i][mime_field.field_value_len] = 0;
-				}
+				if (strcasecmp(mime_field.name.c_str(), "Content-Type") == 0)
+					gx_strlcpy(presource->content_type[i], mime_field.value.c_str(), std::size(presource->content_type[i]));
+				else if (strcasecmp(mime_field.name.c_str(), "Subject") == 0)
+					gx_strlcpy(presource->subject[i], mime_field.value.c_str(), std::size(presource->subject[i]));
 				if (presource->content[i][j] == '\n') {
 					++j;
 					break;

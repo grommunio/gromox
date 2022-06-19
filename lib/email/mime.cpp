@@ -112,20 +112,20 @@ bool MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 			 * record the content-type value and parse the param list of
 			 * content-type
 			 */
-			if (12 == mime_field.field_name_len &&
-				0 == strncasecmp("Content-Type", mime_field.field_name, 12)) {
-				parse_field_value(mime_field.field_value,
-						mime_field.field_value_len, pmime->content_type, 256,
+			if (strcasecmp(mime_field.name.c_str(), "Content-Type") == 0) {
+				parse_field_value(mime_field.value.c_str(),
+					mime_field.value.size(), pmime->content_type,
+					std::size(pmime->content_type),
 						&pmime->f_type_params);
 				pmime->mime_type = strncasecmp(pmime->content_type, "multipart/", 10) == 0 ?
 				                   mime_type::multiple : mime_type::single;
 			} else {
-				static_assert(sizeof(mime_field.field_name_len) == sizeof(uint32_t));
-				static_assert(sizeof(mime_field.field_value_len) == sizeof(uint32_t));
-				pmime->f_other_fields.write(&mime_field.field_name_len, sizeof(mime_field.field_name_len));
-				pmime->f_other_fields.write(mime_field.field_name, mime_field.field_name_len);
-				pmime->f_other_fields.write(&mime_field.field_value_len, sizeof(mime_field.field_value_len));
-				pmime->f_other_fields.write(mime_field.field_value, mime_field.field_value_len);
+				uint32_t v = mime_field.name.size();
+				pmime->f_other_fields.write(&v, sizeof(v));
+				pmime->f_other_fields.write(mime_field.name.c_str(), v);
+				v = std::min(static_cast<size_t>(UINT32_MAX), mime_field.value.size());
+				pmime->f_other_fields.write(&v, sizeof(v));
+				pmime->f_other_fields.write(mime_field.value.c_str(), v);
 			}
 			if ('\r' != in_buff[current_offset])
 				continue;
