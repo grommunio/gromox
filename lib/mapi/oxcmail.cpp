@@ -908,27 +908,28 @@ static BOOL oxcmail_parse_keywords(const char *charset,
 	return pproplist->set(tag, &strings) == 0 ? TRUE : false;
 }
 
-static BOOL oxcmail_parse_response_suppress(
-	char *field, TPROPVAL_ARRAY *pproplist)
+static BOOL oxcmail_parse_response_suppress(const char *unfield,
+    TPROPVAL_ARRAY *pproplist)
 {
-	int i, len;
 	BOOL b_start;
 	char *ptoken_prev;
 	uint32_t tmp_int32;
 	
-	if (0 == strcasecmp(field, "NONE")) {
+	if (strcasecmp(unfield, "NONE") == 0) {
 		return TRUE;
-	} else if (0 == strcasecmp(field, "ALL")) {
+	} else if (strcasecmp(unfield, "ALL") == 0) {
 		tmp_int32 = UINT32_MAX;
 		return pproplist->set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) == 0 ? TRUE : false;
 	}
-	len = strlen(field);
+	char field[MIME_FIELD_LEN];
+	gx_strlcpy(field, unfield, std::size(field));
+	auto len = strlen(field);
 	field[len] = ';';
 	len ++;
 	ptoken_prev = field;
 	b_start = FALSE;
 	tmp_int32 = 0;
-	for (i=0; i<len; i++) {
+	for (size_t i = 0; i < len; ++i) {
 		if (!b_start && (field[i] == ' ' || field[i] == '\t')) {
 			ptoken_prev = field + i + 1;
 			continue;
