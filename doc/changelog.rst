@@ -1,4 +1,4 @@
-1.25.48
+1.25.51
 =======
 
 Fixes:
@@ -7,6 +7,8 @@ Fixes:
   which has been fixed
 * zcore: repair retrieval of PR_EMS_AB_THUMBNAIL_PHOTO
 * eml2mt: avoid putting non-vcard messages into Contacts by default
+* oxcmail: better handle To/Cc/Bcc/Reply-To fields when the target
+  mailbox display name contains a U+002C character.
 
 Enhancements:
 

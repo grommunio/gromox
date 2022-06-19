@@ -578,42 +578,32 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	return pproplist->set(PR_RECIPIENT_TYPE, &rcpt_type) == 0 ? TRUE : false;
 }
 
-static BOOL oxcmail_parse_addresses(const char *charset,
-	char *field, uint32_t rcpt_type, TARRAY_SET *pset)
+static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
+    uint32_t rcpt_type, TARRAY_SET *pset)
 {
-	int i, len;
-	char *ptoken;
-	BOOL b_quote;
-	char *ptoken_prev;
 	EMAIL_ADDR email_addr;
-	char temp_address[1024];
-	
-	len = strlen(field);
-	field[len] = ';';
-	len ++;
-	ptoken_prev = field;
-	b_quote = FALSE;
-	for (i=0; i<len; i++) {
-		if ('"' == field[i]) {
-			b_quote = b_quote ? false : TRUE;
-		}
-		if (field[i] != ',' && field[i] != ';')
+
+	vmime::mailboxList mblist;
+	try {
+		mblist.parse(field);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-2023: ENOMEM\n");
+		return false;
+	}
+	for (const auto &compo : mblist.getChildComponents()) {
+		auto mb = vmime::dynamicCast<vmime::mailbox>(compo);
+		if (mb == nullptr)
 			continue;
-		ptoken = field + i;
-		if (ptoken - ptoken_prev >= 1024) {
-			ptoken_prev = ptoken + 1;
-			continue;
-		}
-		memcpy(temp_address, ptoken_prev, ptoken - ptoken_prev);
-		temp_address[ptoken - ptoken_prev] = '\0';
-		parse_mime_addr(&email_addr, temp_address);
-		if (*email_addr.local_part == '\0' && b_quote)
+		gx_strlcpy(email_addr.display_name, mb->getName().getWholeBuffer().c_str(), std::size(email_addr.display_name));
+		auto &emp = mb->getEmail();
+		gx_strlcpy(email_addr.local_part, emp.getLocalName().getBuffer().c_str(), std::size(email_addr.local_part));
+		gx_strlcpy(email_addr.domain, emp.getDomainName().getBuffer().c_str(), std::size(email_addr.domain));
+
+		if (*email_addr.local_part == '\0')
 			continue;
 		if (!oxcmail_parse_recipient(charset,
 		    &email_addr, rcpt_type, pset))
 			return FALSE;
-		ptoken_prev = ptoken + 1;
-		b_quote = FALSE;
 	}
 	return TRUE;
 }
