@@ -19,6 +19,7 @@
 #include <utility>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
+#include <vmime/mailboxList.hpp>
 #include <gromox/apple_util.hpp>
 #include <gromox/defs.h>
 #include <gromox/dsn.hpp>
@@ -675,32 +676,23 @@ static BOOL oxcmail_parse_address(const char *charset,
 	return pproplist->set(pr_entryid, &tmp_bin) == 0 ? TRUE : false;
 }
 
-static BOOL oxcmail_parse_reply_to(const char *charset,
-	char *field, TPROPVAL_ARRAY *pproplist)
+static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
+    TPROPVAL_ARRAY *pproplist)
 {
-	int i, len;
 	int status;
-	char *ptoken;
-	BOOL b_quote;
 	uint32_t count;
 	BINARY tmp_bin;
 	int str_offset;
 	uint8_t pad_len;
 	EXT_PUSH ext_push;
-	char *ptoken_prev;
 	char tmp_buff[UADDR_SIZE];
 	char utf8_field[512];
 	EMAIL_ADDR email_addr;
-	char temp_address[1024];
 	ONEOFF_ENTRYID tmp_entry;
 	uint8_t bin_buff[256*1024];
 	char str_buff[MIME_FIELD_LEN];
 	static constexpr uint8_t pad_bytes[3]{};
 	
-	len = strlen(field);
-	field[len] = ';';
-	len ++;
-	ptoken_prev = field;
 	count = 0;
 	if (!ext_push.init(bin_buff, sizeof(bin_buff), EXT_FLAG_UTF16))
 		return false;
@@ -715,22 +707,24 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 	tmp_entry.pdisplay_name = utf8_field;
 	tmp_entry.paddress_type = deconst("SMTP");
 	tmp_entry.pmail_address = tmp_buff;
-	b_quote = FALSE;
-	for (i=0; i<len; i++) {
-		if ('"' == field[i]) {
-			b_quote = b_quote ? false : TRUE;
-		}
-		if (field[i] != ',' && field[i] != ';')
+
+	vmime::mailboxList mblist;
+	try {
+		mblist.parse(field);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-2022: ENOMEM\n");
+		return false;
+	}
+	for (const auto &compo : mblist.getChildComponents()) {
+		auto mb = vmime::dynamicCast<vmime::mailbox>(compo);
+		if (mb == nullptr)
 			continue;
-		ptoken = field + i;
-		if (ptoken - ptoken_prev >= 1024) {
-			ptoken_prev = ptoken + 1;
-			continue;
-		}
-		memcpy(temp_address, ptoken_prev, ptoken - ptoken_prev);
-		temp_address[ptoken - ptoken_prev] = '\0';
-		parse_mime_addr(&email_addr, temp_address);
-		if (*email_addr.local_part == '\0' && b_quote)
+		gx_strlcpy(email_addr.display_name, mb->getName().getWholeBuffer().c_str(), std::size(email_addr.display_name));
+		auto &emp = mb->getEmail();
+		gx_strlcpy(email_addr.local_part, emp.getLocalName().getBuffer().c_str(), std::size(email_addr.local_part));
+		gx_strlcpy(email_addr.domain, emp.getDomainName().getBuffer().c_str(), std::size(email_addr.domain));
+
+		if (*email_addr.local_part == '\0')
 			continue;
 		if ('\0' == email_addr.display_name[0] ||
 		    !mime_string_to_utf8(charset, email_addr.display_name, utf8_field))
@@ -771,8 +765,6 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 				return FALSE;
 			count++;
 		}
-		ptoken_prev = ptoken + 1;
-		b_quote = FALSE;
 	}
 	if (0 != count) {
 		tmp_bin.cb = ext_push.m_offset;
