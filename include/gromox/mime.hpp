@@ -14,7 +14,7 @@ enum class mime_encoding {
 	none, base64, qp, uuencode, automatic, unknown,
 };
 
-using MIME_FIELD_ENUM = BOOL (*)(const char *, char *, void *);
+using MIME_FIELD_ENUM = BOOL (*)(const char *, const char *, void *);
 
 struct LIB_BUFFER;
 struct MAIL;

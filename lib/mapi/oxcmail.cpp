@@ -775,8 +775,8 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_subject(const char *charset,
-	char *field, TPROPVAL_ARRAY *pproplist)
+static BOOL oxcmail_parse_subject(const char *charset, const char *field,
+    TPROPVAL_ARRAY *pproplist)
 {
 	int i;
 	int tmp_len;
@@ -840,7 +840,7 @@ static BOOL oxcmail_parse_subject(const char *charset,
 }
 
 static BOOL oxcmail_parse_thread_topic(const char *charset,
-	char *field, TPROPVAL_ARRAY *pproplist)
+    const char *field, TPROPVAL_ARRAY *pproplist)
 {
 	char utf8_field[MIME_FIELD_LEN];
 	
@@ -865,8 +865,8 @@ static BOOL oxcmail_parse_thread_index(const char *charset, const char *field,
 	return pproplist->set(PR_CONVERSATION_INDEX, &tmp_bin) == 0 ? TRUE : false;
 }
 
-static BOOL oxcmail_parse_keywords(const char *charset,
-	char *field, uint16_t propid, TPROPVAL_ARRAY *pproplist)
+static BOOL oxcmail_parse_keywords(const char *charset, const char *field,
+    uint16_t propid, TPROPVAL_ARRAY *pproplist)
 {
 	int i, len;
 	BOOL b_start;
@@ -1038,10 +1038,9 @@ static inline unsigned int om_parse_senderidresult(const char *s)
 	return 0;
 }
 
-static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
+static BOOL oxcmail_parse_content_class(const char *field, MAIL *pmail,
     uint16_t *plast_propid, namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
-	char *ptoken;
 	GUID tmp_guid;
 	char tmp_class[1024];
 	const char *mclass;
@@ -1093,11 +1092,11 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 		snprintf(tmp_class, arsizeof(tmp_class), "IPM.Note.Custom.%s", field + 25);
 		mclass = tmp_class;
 	} else if (0 == strncasecmp(field, "InfoPathForm.", 13)) {
-		ptoken = strchr(field + 13, '.');
+		auto ptoken = strchr(field + 13, '.');
 		if (NULL != ptoken) {
-			*ptoken = '\0';
-			ptoken ++;
-			if (tmp_guid.from_str(field + 13)) {
+			snprintf(tmp_class, std::size(tmp_class), "%.*s",
+			         static_cast<int>(ptoken - (field + 13)), field + 13);
+			if (tmp_guid.from_str(tmp_class)) {
 				PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON,
 				                         PidLidInfoPathFromName};
 				if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1124,8 +1123,8 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 	return pproplist->set(PR_MESSAGE_CLASS, mclass) == 0 ? TRUE : false;
 }
 
-static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
-    namemap &phash, TPROPVAL_ARRAY *pproplist)
+static BOOL oxcmail_parse_message_flag(const char *field,
+    uint16_t *plast_propid, namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
 	BOOL b_unicode;
 	uint8_t tmp_byte;
@@ -1187,7 +1186,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 	return pproplist->set(PR_TODO_ITEM_FLAGS, &tmp_int32) == 0 ? TRUE : false;
 }
 
-static BOOL oxcmail_parse_classified(char *field, uint16_t *plast_propid,
+static BOOL oxcmail_parse_classified(const char *field, uint16_t *plast_propid,
     namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
 	uint8_t tmp_byte;
@@ -1204,7 +1203,7 @@ static BOOL oxcmail_parse_classified(char *field, uint16_t *plast_propid,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_classkeep(char *field, uint16_t *plast_propid,
+static BOOL oxcmail_parse_classkeep(const char *field, uint16_t *plast_propid,
     namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
 	uint8_t tmp_byte;
@@ -1225,8 +1224,8 @@ static BOOL oxcmail_parse_classkeep(char *field, uint16_t *plast_propid,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_classification(char *field, uint16_t *plast_propid,
-    namemap &phash, TPROPVAL_ARRAY *pproplist)
+static BOOL oxcmail_parse_classification(const char *field,
+    uint16_t *plast_propid, namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
 	PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON, PidLidClassification};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1238,7 +1237,7 @@ static BOOL oxcmail_parse_classification(char *field, uint16_t *plast_propid,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_classdesc(char *field, uint16_t *plast_propid,
+static BOOL oxcmail_parse_classdesc(const char *field, uint16_t *plast_propid,
     namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
 	PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON, PidLidClassificationDescription};
@@ -1251,7 +1250,7 @@ static BOOL oxcmail_parse_classdesc(char *field, uint16_t *plast_propid,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_classid(char *field, uint16_t *plast_propid,
+static BOOL oxcmail_parse_classid(const char *field, uint16_t *plast_propid,
     namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
 	PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON, PidLidClassificationGuid};
@@ -1264,7 +1263,7 @@ static BOOL oxcmail_parse_classid(char *field, uint16_t *plast_propid,
 	return TRUE;
 }
 
-static BOOL oxcmail_enum_mail_head(const char *key, char *field, void *pparam)
+static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *pparam)
 {
 	time_t tmp_time;
 	uint8_t tmp_byte;
@@ -1541,13 +1540,15 @@ static BOOL oxcmail_enum_mail_head(const char *key, char *field, void *pparam)
 	} else if (strcasecmp(key, "Content-ID") == 0) {
 		tmp_int32 = strlen(field);
 		if (tmp_int32 > 0) {
-			if ('>' == field[tmp_int32 - 1]) {
-				field[tmp_int32 - 1] = '\0';
+			char rw[MIME_FIELD_LEN];
+			if (field[0] == '<' && field[tmp_int32-1] == '>') {
+				snprintf(rw, std::size(rw), "%.*s",
+				         static_cast<int>(tmp_int32 - 1), &field[1]);
+				field = rw;
 			}
-			auto str = field[0] == '<' ? field + 1 : field;
-			uint32_t tag = oxcmail_check_ascii(str) ?
+			uint32_t tag = oxcmail_check_ascii(field) ?
 			               PR_BODY_CONTENT_ID : PR_BODY_CONTENT_ID_A;
-			if (penum_param->pmsg->proplist.set(tag, str) != 0)
+			if (penum_param->pmsg->proplist.set(tag, field) != 0)
 				return FALSE;
 		}
 	} else if (strcasecmp(key, "Content-Base") == 0) {
