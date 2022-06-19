@@ -849,22 +849,15 @@ static BOOL oxcmail_parse_thread_topic(const char *charset,
 	return pproplist->set(PR_CONVERSATION_TOPIC_A, field) == 0 ? TRUE : false;
 }
 
-static BOOL oxcmail_parse_thread_index(
-	char *field,  TPROPVAL_ARRAY *pproplist)
+static BOOL oxcmail_parse_thread_index(const char *charset, const char *field,
+    TPROPVAL_ARRAY *pproplist)
 {
 	BINARY tmp_bin;
 	char tmp_buff[MIME_FIELD_LEN];
 	
-	/* remove space(s) produced by mime lib */
-	auto len = strlen(field);
-	for (size_t i = 0; i < len; ++i) {
-		if (' ' == field[i]) {
-			memmove(field + i, field + i + 1, len - i);
-			len --;
-			i --;
-		}
-	}
-	len = sizeof(tmp_buff);
+	if (!mime_string_to_utf8(charset, field, tmp_buff))
+		return TRUE;
+	auto len = sizeof(tmp_buff);
 	if (decode64(field, strlen(field), tmp_buff, arsizeof(tmp_buff), &len) != 0)
 		return TRUE;
 	tmp_bin.pc = tmp_buff;
@@ -1385,7 +1378,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, char *field, void *pparam)
 		    &penum_param->pmsg->proplist))
 			return FALSE;
 	} else if (strcasecmp(key, "Thread-Index") == 0) {
-		if (!oxcmail_parse_thread_index(field,
+		if (!oxcmail_parse_thread_index(penum_param->charset, field,
 		    &penum_param->pmsg->proplist))
 				return FALSE;
 	} else if (strcasecmp(key, "In-Reply-To") == 0) {
