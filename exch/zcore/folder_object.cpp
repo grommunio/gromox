@@ -684,7 +684,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
-	uint32_t flags = !pfolder->pstore->b_private &&
+	uint32_t flags = pfolder->pstore->b_private &&
 	                 rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
 		         PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY : 0;
 	if (!exmdb_client::load_permission_table(dir,
@@ -827,7 +827,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 		}
 		count ++;
 	}
-	BOOL b_freebusy = !pfolder->pstore->b_private &&
+	BOOL b_freebusy = pfolder->pstore->b_private &&
 	                  rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
 	                  TRUE : false;
 	return exmdb_client::update_folder_permission(dir,
