@@ -19,6 +19,7 @@ struct MITEM {
 
 struct GX_EXPORT XARRAY {
 	XARRAY(std::atomic<size_t> &m) : m_limit(m) {}
+	~XARRAY();
 
 	std::vector<MITEM> m_vec;
 	std::unordered_map<unsigned int, size_t> m_hash;

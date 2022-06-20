@@ -578,3 +578,8 @@ void XARRAY::clear()
 	m_hash.clear();
 	m_limit += z;
 }
+
+XARRAY::~XARRAY()
+{
+	m_limit += m_vec.size();
+}
