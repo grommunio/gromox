@@ -1968,18 +1968,18 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 			continue;
 		}
 		switch (pproptags->pproptag[i]) {
-		case PidTagMid:
-			if (NULL != pmessage_id) {
-				auto pv = cu_alloc<uint64_t>();
-				vc.pvalue = pv;
-				if (pv == nullptr)
-					return FALSE;
-				*pv = rop_util_make_eid_ex(1, *pmessage_id);
-				vc.proptag = pproptags->pproptag[i];
-				ppropvals->count ++;
-				continue;
-			}
-			break;
+		case PidTagMid: {
+			if (pmessage_id == nullptr)
+				break;
+			auto pv = cu_alloc<uint64_t>();
+			vc.pvalue = pv;
+			if (pv == nullptr)
+				return FALSE;
+			*pv = rop_util_make_eid_ex(1, *pmessage_id);
+			vc.proptag = pproptags->pproptag[i];
+			ppropvals->count ++;
+			continue;
+		}
 		case PR_ATTACH_SIZE: {
 			vc.proptag = pproptags->pproptag[i];
 			length = common_util_calculate_attachment_size(pattachment);
@@ -2028,42 +2028,41 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 					}
 				}
 			}
-			if (NULL != pbin) {
-				vc.proptag = pproptags->pproptag[i];
-				auto tp = cu_alloc<TYPED_PROPVAL>();
-				vc.pvalue = tp;
-				if (tp == nullptr)
-					return FALSE;	
-				tp->type = proptype;
-				tp->pvalue = pbin;
-				ppropvals->count ++;
-				continue;
-			}
-			break;
+			if (pbin == nullptr)
+				break;
+			vc.proptag = pproptags->pproptag[i];
+			auto tp = cu_alloc<TYPED_PROPVAL>();
+			vc.pvalue = tp;
+			if (tp == nullptr)
+				return FALSE;
+			tp->type = proptype;
+			tp->pvalue = pbin;
+			ppropvals->count ++;
+			continue;
 		}
 		case PR_ATTACH_DATA_BIN:
-		case PR_ATTACH_DATA_OBJ:
+		case PR_ATTACH_DATA_OBJ: {
 			if (pproptags->pproptag[i] == PR_ATTACH_DATA_BIN)
 				pvalue = pattachment->proplist.getval(ID_TAG_ATTACHDATABINARY);
 			else
 				pvalue = pattachment->proplist.getval(ID_TAG_ATTACHDATAOBJECT);
-			if (NULL != pvalue) {
-				pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), &length, 0);
-				if (NULL == pvalue) {
-					return FALSE;
-				}
-				auto pbin = cu_alloc<BINARY>();
-				if (NULL == pbin) {
-					return FALSE;
-				}
-				pbin->cb = length;
-				pbin->pv = pvalue;
-				vc.proptag = pproptags->pproptag[i];
-				vc.pvalue = pbin;
-				ppropvals->count ++;
-				continue;
+			if (pvalue == nullptr)
+				break;
+			pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), &length, 0);
+			if (NULL == pvalue) {
+				return FALSE;
 			}
-			break;
+			auto pbin = cu_alloc<BINARY>();
+			if (NULL == pbin) {
+				return FALSE;
+			}
+			pbin->cb = length;
+			pbin->pv = pvalue;
+			vc.proptag = pproptags->pproptag[i];
+			vc.pvalue = pbin;
+			ppropvals->count++;
+			continue;
+		}
 		}
 	}
 	return TRUE;
