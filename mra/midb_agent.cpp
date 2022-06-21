@@ -1282,7 +1282,6 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	int line_pos;
 	char *pspace;
 	char *pspace1;
-	AGENT_MITEM mitem;
 	int tv_msec;
 	char num_buff[32];
 	char temp_line[512];
@@ -1357,11 +1356,13 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 						*pspace1 = '\0';
 						pspace ++;
 						pspace1 ++;
+						MITEM mitem;
 						gx_strlcpy(mitem.mid, temp_line, arsizeof(mitem.mid));
 						mitem.id = count;
 						mitem.uid = strtol(pspace, nullptr, 0);
 						mitem.flag_bits = s_to_flagbits(pspace1);
-						pxarray->append(std::move(mitem), mitem.uid);
+						auto mitem_uid = mitem.uid;
+						pxarray->append(std::move(mitem), mitem_uid);
 					} else {
 						b_format_error = TRUE;
 					}
@@ -1415,7 +1416,6 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	int line_pos;
 	char *pspace;
 	char *pspace1;
-	AGENT_MITEM mitem;
 	int tv_msec;
 	char num_buff[32];
 	char temp_line[512];
@@ -1490,11 +1490,13 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 						*pspace1 = '\0';
 						pspace ++;
 						pspace1 ++;
+						MITEM mitem;
 						gx_strlcpy(mitem.mid, pspace, arsizeof(mitem.mid));
 						mitem.id = strtol(temp_line, nullptr, 0) + 1;
 						mitem.uid = strtol(pspace1, nullptr, 0);
 						mitem.flag_bits = FLAG_DELETED;
-						pxarray->append(std::move(mitem), mitem.uid);
+						auto mitem_uid = mitem.uid;
+						pxarray->append(std::move(mitem), mitem_uid);
 					} else {
 						b_format_error = TRUE;
 					}
@@ -1545,7 +1547,6 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	int last_pos;
 	int read_len;
 	int line_pos;
-	AGENT_MITEM mitem;
 	int tv_msec;
 	char num_buff[32];
 	char buff[64*1025];
@@ -1616,6 +1617,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
+				MITEM mitem;
 				if (get_digest_string(temp_line, line_pos,
 				    "file", mitem.mid, sizeof(mitem.mid)) &&
 				    get_digest_integer(temp_line, line_pos,
@@ -1624,7 +1626,8 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 					mitem.flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
 					mem_file_init(&mitem.f_digest, &g_file_allocator);
 					mitem.f_digest.write(temp_line, line_pos);
-					pxarray->append(std::move(mitem), mitem.uid);
+					auto mitem_uid = mitem.uid;
+					pxarray->append(std::move(mitem), mitem_uid);
 				} else {
 					b_format_error = TRUE;
 				}
@@ -1699,7 +1702,6 @@ static int fetch_simple(const char *path, const char *folder,
 	int read_len;
 	int line_pos;
 	int tv_msec;
-	AGENT_MITEM mitem;
 	char *pspace;
 	char *pspace1;
 	char num_buff[32];
@@ -1792,7 +1794,7 @@ static int fetch_simple(const char *path, const char *folder,
 							pspace ++;
 							pspace1 ++;
 							int uid = strtol(pspace, nullptr, 0);
-							if (pxarray->append(std::move(mitem), uid) >= 0) {
+							if (pxarray->append(MITEM{}, uid) >= 0) {
 								auto num = pxarray->get_capacity();
 								assert(num > 0);
 								auto pitem = pxarray->get_item(num - 1);
@@ -1852,7 +1854,6 @@ static int fetch_detail(const char *path, const char *folder,
 	int read_len;
 	int line_pos;
 	int tv_msec;
-	AGENT_MITEM mitem;
 	char num_buff[32];
 	char buff[64*1025];
 	char temp_line[257*1024];
@@ -1943,11 +1944,13 @@ static int fetch_detail(const char *path, const char *folder,
 				if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
+					MITEM mitem;
 					if (get_digest_string(temp_line, line_pos,
 					    "file", mitem.mid, sizeof(mitem.mid)) &&
 					    get_digest_integer(temp_line, line_pos,
 					    "uid", &mitem.uid)) {
-						if (pxarray->append(std::move(mitem), mitem.uid) >= 0) {
+						auto mitem_uid = mitem.uid;
+						if (pxarray->append(std::move(mitem), mitem_uid) >= 0) {
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);
@@ -2017,7 +2020,6 @@ static int fetch_simple_uid(const char *path, const char *folder,
 	int read_len;
 	int line_pos;
 	int tv_msec;
-	AGENT_MITEM mitem;
 	char *pspace;
 	char *pspace1;
 	char *pspace2;
@@ -2104,7 +2106,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 								pspace1 ++;
 								pspace2 ++;
 								int uid = strtol(pspace1, nullptr, 0);
-								if (pxarray->append(std::move(mitem), uid) >= 0) {
+								if (pxarray->append(MITEM{}, uid) >= 0) {
 									auto num = pxarray->get_capacity();
 									assert(num > 0);
 									auto pitem = pxarray->get_item(num - 1);
@@ -2168,7 +2170,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	int temp_len;
 	char *pspace;
 	int tv_msec;
-	AGENT_MITEM mitem;
 	char num_buff[32];
 	char buff[64*1025];
 	char temp_line[257*1024];
@@ -2249,13 +2250,15 @@ static int fetch_detail_uid(const char *path, const char *folder,
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 					pspace = search_string(temp_line, " ", 16);
 					temp_len = line_pos - (pspace + 1 - temp_line);
+					MITEM mitem;
 					if (pspace != nullptr && get_digest_string(pspace,
 					    temp_len, "file", mitem.mid, sizeof(mitem.mid)) && 
 					    get_digest_integer(pspace, temp_len, "uid",
 					    &mitem.uid)) {
 						*pspace = '\0';
 						pspace ++;
-						if (pxarray->append(std::move(mitem), mitem.uid) >= 0) {
+						auto mitem_uid = mitem.uid;
+						if (pxarray->append(std::move(mitem), mitem_uid) >= 0) {
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);

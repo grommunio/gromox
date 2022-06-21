@@ -9,12 +9,11 @@
 #include <gromox/single_list.hpp>
 
 struct MITEM {
-	SINGLE_LIST_NODE node;
-	char mid[128];
-	int id;
-	int uid;
-	char flag_bits;
-	MEM_FILE f_digest;
+	SINGLE_LIST_NODE node{};
+	char mid[128]{};
+	int id = 0, uid = 0;
+	char flag_bits = 0;
+	MEM_FILE f_digest{};
 };
 
 struct GX_EXPORT XARRAY {
