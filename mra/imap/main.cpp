@@ -52,7 +52,7 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"block_interval_auths", "1min", CFG_TIME, "1s"},
 	{"config_file_path", PKGSYSCONFDIR "/imap:" PKGSYSCONFDIR},
 	{"context_average_mem", "128K", CFG_SIZE, "128K"},
-	{"context_average_mitem", "512", CFG_SIZE, "128"},
+	{"context_average_mitem", "64K", CFG_SIZE, "1"},
 	{"context_max_mem", "2M", CFG_SIZE},
 	{"context_num", "400", CFG_SIZE},
 	{"data_file_path", PKGDATADIR "/imap:" PKGDATADIR},

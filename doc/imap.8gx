@@ -33,9 +33,10 @@ Default: \fI/etc/gromox/imap:/etc/gromox\fP
 Default: \fI128K\fP
 .TP
 \fBcontext_average_mitem\fP
-Lower clamp is at 128.
+The expected average upper bound of number of mails for a folder. Together with
+context_num, this directive controls the size of the memory pool for listings.
 .br
-Default: \fI512\fP
+Default: \fI64K\fP
 .TP
 \fBcontext_max_mem\fP
 Default: \fI2M\fP

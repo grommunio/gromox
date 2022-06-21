@@ -1,4 +1,4 @@
-1.25.55
+1.25.60
 =======
 
 Fixes:
@@ -18,6 +18,7 @@ Enhancements:
 * php_mapi: support imtomapi ``parse_smime_signed`` option
 * midb: treat folders with absent ``PR_CONTAINER_CLASS`` like ``IPF.Note``
 * mt2exm: added a ``-D`` option that will do a delivery rather than import
+* imap: raised the default value for ``context_average_mitem`` to 64K
 
 Changes:
 
