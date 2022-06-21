@@ -56,7 +56,7 @@ static constexpr cfg_directive nsp_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static bool exch_nsp_reload(std::shared_ptr<CONFIG_FILE> cfg) try
+static bool exch_nsp_reload(std::shared_ptr<CONFIG_FILE> cfg)
 {
 	if (cfg == nullptr)
 		cfg = config_file_initd("exchange_nsp.cfg", get_config_path(),
@@ -67,8 +67,6 @@ static bool exch_nsp_reload(std::shared_ptr<CONFIG_FILE> cfg) try
 		return false;
 	}
 	return true;
-} catch (const cfg_error &) {
-	return false;
 }
 
 static constexpr DCERPC_INTERFACE interface = {
@@ -79,7 +77,7 @@ static constexpr DCERPC_INTERFACE interface = {
 	exchange_nsp_unbind,
 };
 
-static BOOL proc_exchange_nsp(int reason, void **ppdata)
+static BOOL proc_exchange_nsp(int reason, void **ppdata) try
 {
 	BOOL b_check;
 	const char *org_name;
@@ -183,6 +181,8 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		return TRUE;
 	}
 	return TRUE;
+} catch (const cfg_error &) {
+	return false;
 }
 PROC_ENTRY(proc_exchange_nsp);
 
