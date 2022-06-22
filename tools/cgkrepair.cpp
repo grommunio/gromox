@@ -95,7 +95,8 @@ static int repair_mbox()
 	 * Might want to refine later.
 	 */
 	if (!exmdb_client::load_hierarchy_table(g_storedir, root_fld,
-	    nullptr, TABLE_FLAG_DEPTH, nullptr, &table_id, &row_num)) {
+	    nullptr, TABLE_FLAG_DEPTH | TABLE_FLAG_NONOTIFICATIONS,
+	    nullptr, &table_id, &row_num)) {
 		fprintf(stderr, "exm: load_hierarchy_table RPC failed\n");
 		return -EIO;
 	}
