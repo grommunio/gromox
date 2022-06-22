@@ -4142,6 +4142,8 @@ BOOL exmdb_client_read_socket(int fd, BINARY &bin, long timeout_ms)
 					return TRUE;
 				continue;
 			} else {
+				exmdb_rpc_free(bin.pb);
+				bin.pb = nullptr;
 				return false;
 			}
 		}

@@ -135,6 +135,7 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	if (!exmdb_client_read_socket(sockd, bin, mdcl_socket_timeout * 1000))
 		return -1;
 	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
+	exmdb_rpc_free(bin.pb);
 	if (response_code != exmdb_response::success) {
 		printf("exmdb_client: Failed to connect to [%s]:%hu/%s: %s\n",
 		       srv.host.c_str(), srv.port, srv.prefix.c_str(),
@@ -450,14 +451,17 @@ BOOL exmdb_client_do_rpc(EXMDB_REQUEST &&rq, EXMDB_RESPONSE *rsp)
 		return false;
 	time(&conn->last_time);
 	conn.reset();
-	if (bin.cb < 5 || static_cast<exmdb_response>(bin.pb[0]) != exmdb_response::success)
+	if (bin.cb < 5 || static_cast<exmdb_response>(bin.pb[0]) != exmdb_response::success) {
+		exmdb_rpc_free(bin.pb);
 		return false;
+	}
 	rsp->call_id = rq.call_id;
 	bin.cb -= 5;
 	bin.pb += 5;
-	if (exmdb_ext_pull_response(&bin, rsp) != EXT_ERR_SUCCESS)
-		return false;
-	return TRUE;
+	auto ret = exmdb_ext_pull_response(&bin, rsp);
+	bin.pb -= 5;
+	exmdb_rpc_free(bin.pb);
+	return ret == EXT_ERR_SUCCESS ? TRUE : false;
 }
 
 }
