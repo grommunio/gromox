@@ -1193,7 +1193,7 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 			*plength = 0;
 			return false;
 		}
-		memcpy(tmp_buff + offset, tmp_buff, len);
+		memcpy(&out_buff[offset], tmp_buff, len);
 		offset += len;
 	}
 	/* Content-Type: xxxxx */
@@ -1236,7 +1236,7 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 		*plength = 0;
 		return false;
 	}
-	memcpy(tmp_buff + offset, tmp_buff, len);
+	memcpy(&out_buff[offset], tmp_buff, len);
 	offset += len;
 	*plength = offset;
 	return true;
