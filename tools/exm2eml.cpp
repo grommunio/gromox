@@ -140,7 +140,6 @@ int main(int argc, const char **argv) try
 		fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
 		return EXIT_FAILURE;
 	}
-	imail.set_header("X-Mailer", "gromox-exm2eml " PACKAGE_VERSION);
 	if (!imail.to_file(STDOUT_FILENO)) {
 		fprintf(stderr, "Writeout failed for an unspecified reason.\n");
 		return EXIT_FAILURE;
