@@ -1822,14 +1822,17 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 
 int http_parser_process(HTTP_CONTEXT *pcontext)
 {
-	static constexpr int (*func[])(HTTP_CONTEXT *) = {
-		htparse_initssl, htparse_rdhead, htparse_rdbody, htparse_wrrep,
-		htparse_wait, htparse_socket,
-	};
 	int ret = X_RUNOFF;
 	do {
-		if (pcontext->sched_stat < GX_ARRAY_SIZE(func))
-			ret = func[pcontext->sched_stat](pcontext);
+		switch (pcontext->sched_stat) {
+		case SCHED_STAT_INITSSL: ret = htparse_initssl(pcontext); break;
+		case SCHED_STAT_RDHEAD: ret = htparse_rdhead(pcontext); break;
+		case SCHED_STAT_RDBODY: ret = htparse_rdbody(pcontext); break;
+		case SCHED_STAT_WRREP: ret = htparse_wrrep(pcontext); break;
+		case SCHED_STAT_WAIT: ret = htparse_wait(pcontext); break;
+		case SCHED_STAT_SOCKET: ret = htparse_socket(pcontext); break;
+		default: continue;
+		}
 	} while (ret == X_LOOP);
 	if (ret != X_RUNOFF)
 		return ret;
