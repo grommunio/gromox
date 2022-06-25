@@ -1055,8 +1055,12 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 		if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
 			decompressed_len = lzxpress_decompress(pdata,
 				rpc_header_ext.size, buff, sizeof(buff));
-			if (decompressed_len != rpc_header_ext.size_actual)
+			if (decompressed_len != rpc_header_ext.size_actual) {
+				fprintf(stderr, "W-1098: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)\n",
+				        rpc_header_ext.size, rpc_header_ext.size_actual,
+				        decompressed_len);
 				return EXT_ERR_LZXPRESS;
+			}
 			pdata = buff;
 		}
 		subext.init(pdata, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);

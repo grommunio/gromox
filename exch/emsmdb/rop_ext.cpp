@@ -3034,8 +3034,12 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
 		decompressed_len = lzxpress_decompress(pdata,
 					rpc_header_ext.size, pbuff, 0x8000);
-		if (decompressed_len < rpc_header_ext.size_actual)
+		if (decompressed_len < rpc_header_ext.size_actual) {
+			fprintf(stderr, "W-1097: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)\n",
+				rpc_header_ext.size, rpc_header_ext.size_actual,
+				decompressed_len);
 			return EXT_ERR_LZXPRESS;
+		}
 	} else {
 		memcpy(pbuff, pdata, rpc_header_ext.size_actual);
 	}

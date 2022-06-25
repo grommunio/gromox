@@ -189,6 +189,8 @@ uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
 	indicator_bit = 0;
 	do {
 		if (0 == indicator_bit) {
+			if (input_index + sizeof(uint32_t) > input_size)
+				return 0;
 			indicator = le32p_to_cpu(&input[input_index]);
 			input_index += sizeof(uint32_t);
 			indicator_bit = 32;
@@ -200,11 +202,15 @@ uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
 		 * check whether the 4th bit of the value in indicator is set
 		 */
 		if (0 == ((indicator >> indicator_bit) & 1)) {
+			if (output_index > max_output_size)
+				break;
 			output[output_index] = input[input_index];
 			input_index += sizeof(uint8_t);
 			output_index += sizeof(uint8_t);
 			continue;
 		}
+		if (input_index + sizeof(uint16_t) > input_size)
+			return 0;
 		length = le16p_to_cpu(&input[input_index]);
 		input_index += sizeof(uint16_t);
 		offset = length / 8;
@@ -212,16 +218,24 @@ uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
 		if (7 == length) {
 			if (0 == nibble_index) {
 				nibble_index = input_index;
+				if (input_index >= input_size)
+					return 0;
 				length = input[input_index] % 16;
 				input_index += sizeof(uint8_t);
 			} else {
+				if (nibble_index >= input_size)
+					return 0;
 				length = input[nibble_index] / 16;
 				nibble_index = 0;
 			}
 			if (15 == length) {
+				if (input_index >= input_size)
+					return 0;
 				length = input[input_index];
 				input_index += sizeof(uint8_t);
 				if (255 == length) {
+					if (input_index + sizeof(uint16_t) > input_size)
+						return 0;
 					length = le16p_to_cpu(&input[input_index]);
 					input_index += sizeof(uint16_t);
 					length -= (15 + 7);
