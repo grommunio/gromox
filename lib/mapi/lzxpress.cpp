@@ -203,43 +203,43 @@ uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
 			output[output_index] = input[input_index];
 			input_index += sizeof(uint8_t);
 			output_index += sizeof(uint8_t);
-		} else {
-			length = le16p_to_cpu(&input[input_index]);
-			input_index += sizeof(uint16_t);
-			offset = length / 8;
-			length = length % 8;
-			if (7 == length) {
-				if (0 == nibble_index) {
-					nibble_index = input_index;
-					length = input[input_index] % 16;
-					input_index += sizeof(uint8_t);
-				} else {
-					length = input[nibble_index] / 16;
-					nibble_index = 0;
-				}
-				if (15 == length) {
-					length = input[input_index];
-					input_index += sizeof(uint8_t);
-					if (255 == length) {
-						length = le16p_to_cpu(&input[input_index]);
-						input_index += sizeof(uint16_t);
-						length -= (15 + 7);
-					}
-					length += 15;
-				}
-				length += 7;
-			}
-			length += 3;
-			do {
-				if ((output_index >= max_output_size) ||
-					((offset + 1) > output_index)) {
-					break;
-				}
-				output[output_index] = output[output_index - offset - 1];
-				output_index += sizeof(uint8_t);
-				length -= sizeof(uint8_t);
-			} while (length != 0);
+			continue;
 		}
+		length = le16p_to_cpu(&input[input_index]);
+		input_index += sizeof(uint16_t);
+		offset = length / 8;
+		length = length % 8;
+		if (7 == length) {
+			if (0 == nibble_index) {
+				nibble_index = input_index;
+				length = input[input_index] % 16;
+				input_index += sizeof(uint8_t);
+			} else {
+				length = input[nibble_index] / 16;
+				nibble_index = 0;
+			}
+			if (15 == length) {
+				length = input[input_index];
+				input_index += sizeof(uint8_t);
+				if (255 == length) {
+					length = le16p_to_cpu(&input[input_index]);
+					input_index += sizeof(uint16_t);
+					length -= (15 + 7);
+				}
+				length += 15;
+			}
+			length += 7;
+		}
+		length += 3;
+		do {
+			if ((output_index >= max_output_size) ||
+				((offset + 1) > output_index)) {
+				break;
+			}
+			output[output_index] = output[output_index - offset - 1];
+			output_index += sizeof(uint8_t);
+			length -= sizeof(uint8_t);
+		} while (length != 0);
 	} while (output_index < max_output_size && input_index < (input_size));
 	return output_index;
 }
