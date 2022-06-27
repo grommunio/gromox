@@ -15,10 +15,11 @@
 
 #define MIN(a,b)					((a)<(b)?(a):(b))
 
-
-uint32_t lzxpress_compress(const uint8_t *uncompressed,
-	uint32_t uncompressed_size, uint8_t *compressed)
+uint32_t lzxpress_compress(const void *uncompressedv,
+    uint32_t uncompressed_size, void *compressedv)
 {
+	auto uncompressed = static_cast<const uint8_t *>(uncompressedv);
+	auto compressed   = static_cast<uint8_t *>(compressedv);
 	BOOL b_found;
 	uint32_t indic;
 	uint32_t offset;
@@ -169,9 +170,11 @@ uint32_t lzxpress_compress(const uint8_t *uncompressed,
 	return compressed_pos;
 }
 
-uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
-	uint8_t *output, uint32_t max_output_size)
+uint32_t lzxpress_decompress(const void *inputv, uint32_t input_size,
+    void *outputv, uint32_t max_output_size)
 {
+	auto input  = static_cast<const uint8_t *>(inputv);
+	auto output = static_cast<uint8_t *>(outputv);
 	uint32_t length;
 	uint32_t offset;
 	uint32_t indicator;

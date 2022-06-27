@@ -1,7 +1,5 @@
 #pragma once
 #include <cstdint>
-
-uint32_t lzxpress_compress(const uint8_t *uncompressed,
-	uint32_t uncompressed_size, uint8_t *compressed);
-uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
-	uint8_t *output, uint32_t max_output_size);
+#include <gromox/defs.h>
+extern GX_EXPORT uint32_t lzxpress_compress(const void *uncompressed, uint32_t uncompressed_size, void *compressed);
+extern GX_EXPORT uint32_t lzxpress_decompress(const void *input, uint32_t input_size, void *output, uint32_t max_output_size);
