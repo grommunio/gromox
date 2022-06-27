@@ -94,35 +94,33 @@ uint32_t lzxpress_compress(const void *uncompressedv,
 						compressed[nibble_index] &= 0xF;
 						compressed[nibble_index] |= (length - (3 + 7)) * 16;
 					}
-				} else {
-					if (length <= MAX_MATCH_LENGTH) {
-						/* shared byte */
-						if (0 == nibble_index) {
-							compressed[compressed_pos + metadata_size] = 15;
-							metadata_size += sizeof(uint8_t);
-						} else {
-							compressed[nibble_index] &= 0xF;
-							compressed[nibble_index] |= (15 * 16);
-						}
-						/* additional length */
-						compressed[compressed_pos + metadata_size] =
-												length - (3 + 7 + 15);
+				} else if (length <= MAX_MATCH_LENGTH) {
+					/* shared byte */
+					if (0 == nibble_index) {
+						compressed[compressed_pos + metadata_size] = 15;
 						metadata_size += sizeof(uint8_t);
 					} else {
-						if (0 == nibble_index) {
-							compressed[compressed_pos + metadata_size] |= 15;
-							metadata_size += sizeof(uint8_t);
-						} else {
-							compressed[nibble_index] |= 15 << 4;
-						}
-						compressed[compressed_pos + metadata_size] = 255;
-						metadata_size += sizeof(uint8_t);
-						compressed[compressed_pos + metadata_size] =
-													(length - 3) & 0xFF;
-						compressed[compressed_pos + metadata_size + 1] =
-												((length - 3) >> 8) & 0xFF;
-						metadata_size += sizeof(uint16_t);
+						compressed[nibble_index] &= 0xF;
+						compressed[nibble_index] |= (15 * 16);
 					}
+					/* additional length */
+					compressed[compressed_pos + metadata_size] =
+						length - (3 + 7 + 15);
+					metadata_size += sizeof(uint8_t);
+				} else {
+					if (0 == nibble_index) {
+						compressed[compressed_pos + metadata_size] |= 15;
+						metadata_size += sizeof(uint8_t);
+					} else {
+						compressed[nibble_index] |= 15 << 4;
+					}
+					compressed[compressed_pos + metadata_size] = 255;
+					metadata_size += sizeof(uint8_t);
+					compressed[compressed_pos + metadata_size] =
+						(length - 3) & 0xFF;
+					compressed[compressed_pos + metadata_size + 1] =
+						((length - 3) >> 8) & 0xFF;
+					metadata_size += sizeof(uint16_t);
 				}
 			}
 			indic |= 1U << (32 - (indic_bit % 32 + 1));
