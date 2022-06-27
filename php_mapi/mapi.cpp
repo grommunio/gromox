@@ -7,7 +7,6 @@
 #include <climits>
 #include <cstdint>
 #include <cstdio>
-#include <mutex>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
@@ -809,19 +808,24 @@ PHP_RSHUTDOWN_FUNCTION(mapi)
 	return SUCCESS;
 }
 
-static std::once_flag mapidefs_loaded;
 ZEND_FUNCTION(mapi_load_mapidefs)
 {
-	std::call_once(mapidefs_loaded, []() {
 	zend_constant c;
-	ZEND_CONSTANT_SET_FLAGS(&c, CONST_CS, PHP_USER_CONSTANT);
+	ZEND_CONSTANT_SET_FLAGS(&c, CONST_CS, 0);
+	c.name = zend_string_init(ZEND_STRL("MAPIDEFS_LOADED"), 0);
+	if (zend_get_constant(c.name) != nullptr) {
+		zstr_delete()(c.name);
+		return;
+	}
+	ZVAL_LONG(&c.value, 1);
+	zend_register_constant(&c);
+
 #define C(PR_name, PR_val) \
 	c.name = zend_string_init(#PR_name, sizeof(#PR_name) - 1, 0); \
 	ZVAL_LONG(&c.value, PR_val); \
 	zend_register_constant(&c);
 #include "mapidefs.cpp"
 #undef C
-	});
 }
 
 ZEND_FUNCTION(mapi_last_hresult)
