@@ -2366,7 +2366,7 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	} else {
 		char sql_string[128];
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
-			  " permissions WHERE member_id=%llu", LLU(member_id));
+			  " permissions WHERE member_id=%llu", LLU(*member_id));
 		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return false;
@@ -2375,7 +2375,7 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 			return true;
 		pstmt1.finalize();
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM permissions"
-			" WHERE member_id=%llu", LLU(member_id));
+			" WHERE member_id=%llu", LLU(*member_id));
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return false;
 	}
