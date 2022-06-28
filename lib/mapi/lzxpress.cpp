@@ -53,38 +53,21 @@ uint32_t lzxpress_compress(const void *uncompressedv,
 {
 	auto uncompressed = static_cast<const uint8_t *>(uncompressedv);
 	auto compressed   = static_cast<uint8_t *>(compressedv);
-	BOOL b_found;
-	uint32_t indic;
-	uint32_t offset;
-	uint32_t length;
-	uint16_t *pdest;
-	uint32_t byte_left;
-	uint8_t *ptr_indic;
-	uint32_t indic_bit;
-	uint32_t coding_pos;
-	uint32_t match_offset;
-	uint32_t nibble_index;
-	uint32_t metadata_size;
-	uint32_t compressed_pos;
-	
 	
 	if (0 == uncompressed_size) {
 		return 0;
 	}
 	
-	coding_pos = 0;
-	indic = 0;
+	uint32_t indic = 0, indic_bit = 0, length = 0;
+	uint32_t coding_pos = 0, compressed_pos = sizeof(uint32_t);
+	uint32_t byte_left = uncompressed_size, nibble_index = 0;
 	*(uint32_t *)compressed = 0;
-	compressed_pos = sizeof(uint32_t);
-	ptr_indic = compressed;
-	byte_left = uncompressed_size;
-	indic_bit = 0;
-	nibble_index = 0;
+	auto ptr_indic = compressed;
 	
 	do {
-		b_found = FALSE;
-		match_offset = 0;
-		offset = coding_pos - MIN(WINDOWS_SIZE, coding_pos);
+		bool b_found = false;
+		uint32_t match_offset = 0;
+		uint32_t offset = coding_pos - MIN(WINDOWS_SIZE, coding_pos);
 		if (0 == offset) {
 			offset ++;
 		}
@@ -100,14 +83,14 @@ uint32_t lzxpress_compress(const void *uncompressedv,
 				offset ++;
 				continue;
 			}
-			b_found = TRUE;
+			b_found = true;
 			match_offset = coding_pos - offset;
 			break;
 		}
 		
 		if (b_found) {
-			metadata_size = 0;
-			pdest = (uint16_t *)&compressed[compressed_pos];
+			uint32_t metadata_size = 0;
+			auto pdest = &compressed[compressed_pos];
 			if (length <= CLASSIC_MATCH_LENGTH) {
 				/* classical meta-data */
 				uint16_t metadata = ((match_offset - 1) << 3) | (length - 3);
@@ -206,21 +189,9 @@ uint32_t lzxpress_decompress(const void *inputv, uint32_t input_size,
 {
 	auto input  = static_cast<const uint8_t *>(inputv);
 	auto output = static_cast<uint8_t *>(outputv);
-	uint32_t length;
-	uint32_t offset;
-	uint32_t indicator;
-	uint32_t input_index;
-	uint32_t output_index;
-	uint32_t nibble_index;
-	uint32_t indicator_bit;
 	
-	length = 0;
-	offset = 0;
-	indicator = 0;
-	input_index = 0;
-	nibble_index = 0;
-	output_index = 0;
-	indicator_bit = 0;
+	uint32_t length = 0, offset = 0, indicator = 0, input_index = 0;
+	uint32_t nibble_index = 0, output_index = 0, indicator_bit = 0;
 	do {
 		if (0 == indicator_bit) {
 			if (input_index + sizeof(uint32_t) > input_size)
