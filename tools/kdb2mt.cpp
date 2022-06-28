@@ -490,6 +490,18 @@ kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 	return std::move(drv);
 }
 
+static int setup_charset(MYSQL *m)
+{
+	auto ret = mysql_set_character_set(m, "utf8mb4");
+	if (ret == 0)
+		return 0;
+	ret = mysql_set_character_set(m, "utf8");
+	if (ret == 0)
+		return 0;
+	/* Restore previous error state. */
+	return mysql_set_character_set(m, "utf8mb4");
+}
+
 static std::unique_ptr<driver>
 kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
 {
@@ -501,8 +513,8 @@ kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
 	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
 		throw YError("PK-1018: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
-	if (mysql_set_character_set(drv->m_conn, "utf8mb4") != 0)
-		throw YError("PK-1021: \"utf8mb4\" not available: %s",
+	if (setup_charset(drv->m_conn) != 0)
+		throw YError("PK-1021: charset utf8mb4/utf8mb3 not available: %s",
 		      mysql_error(drv->m_conn));
 	return kdb_open_by_guid_1(std::move(drv), guid);
 }
@@ -536,8 +548,8 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
 		throw YError("PK-1019: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
-	if (mysql_set_character_set(drv->m_conn, "utf8mb4") != 0)
-		throw YError("PK-1020: \"utf8mb4\" not available: %s",
+	if (setup_charset(drv->m_conn) != 0)
+		throw YError("PK-1020: charset utf8mb4/utf8mb3 not available: %s",
 		      mysql_error(drv->m_conn));
 
 	auto qstr = *storeuser == '\0' ?
