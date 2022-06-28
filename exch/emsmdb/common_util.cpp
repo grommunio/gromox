@@ -1888,7 +1888,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	TARRAY_SET *prcpts;
 	DOUBLE_LIST temp_list;
 	MESSAGE_CONTENT *pmsgctnt;
-	using LLU = unsigned long long;
+#define LLU(x) static_cast<unsigned long long>(x)
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;

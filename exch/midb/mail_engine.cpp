@@ -49,6 +49,7 @@
 #include "exmdb_client.h"
 #include "mail_engine.hpp"
 #include "system_services.hpp"
+#define LLU(x) static_cast<unsigned long long>(x)
 #define S2A(x) reinterpret_cast<const char *>(x)
 
 #define FILENUM_PER_MIME				8
@@ -56,7 +57,6 @@
 #define RELOAD_INTERVAL					3600
 #define MAX_DB_WAITING_THREADS			5
 
-using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 

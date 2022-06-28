@@ -23,6 +23,8 @@
 #include "common_util.h"
 #include "db_engine.h"
 #include "exmdb_server.h"
+#define UI(x) static_cast<unsigned int>(x)
+#define LLU(x) static_cast<unsigned long long>(x)
 
 enum {
 	PR_BODY_U = CHANGE_PROP_TYPE(PR_BODY, PT_UNSPECIFIED),
@@ -34,8 +36,6 @@ enum {
 #define MAX_RECIPIENT_NUMBER							4096
 #define MAX_ATTACHMENT_NUMBER							1024
 
-using UI = unsigned int;
-using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 

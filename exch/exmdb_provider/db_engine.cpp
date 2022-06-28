@@ -35,11 +35,12 @@
 #include "db_engine.h"
 #include "exmdb_server.h"
 #include "notification_agent.h"
+#define LLD(x) static_cast<long long>(x)
+#define LLU(x) static_cast<unsigned long long>(x)
+
 #define DB_LOCK_TIMEOUT					60
 #define MAX_DYNAMIC_NODES				100
 
-using LLD = long long;
-using LLU = unsigned long long;
 using namespace gromox;
 
 namespace {

@@ -19,8 +19,8 @@
 #define SYSTEM_ALLOCATED_EID_RANGE			10000
 
 using namespace gromox;
-using LLD = long long;
-using LLU = unsigned long long;
+#define LLD(x) static_cast<long long>(x)
+#define LLU(x) static_cast<unsigned long long>(x)
 
 unsigned int exmdb_pf_read_per_user, exmdb_pf_read_states;
 

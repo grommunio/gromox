@@ -25,8 +25,8 @@
 #include "db_engine.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
+#define LLU(x) static_cast<unsigned long long>(x)
 
-using LLU = unsigned long long;
 using namespace gromox;
 
 namespace {

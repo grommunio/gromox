@@ -33,6 +33,9 @@
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_server.h"
+#define UI(x) static_cast<unsigned int>(x)
+#define LLD(x) static_cast<long long>(x)
+#define LLU(x) static_cast<unsigned long long>(x)
 #define S2A(x) reinterpret_cast<const char *>(x)
 
 #define SERVICE_ID_LANG_TO_CHARSET							1
@@ -53,9 +56,6 @@
 #define SERVICE_ID_LOG_INFO									16
 #define SERVICE_ID_GET_HANDLE								17
 
-using UI = unsigned int;
-using LLD = long long;
-using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 

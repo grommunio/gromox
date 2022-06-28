@@ -30,6 +30,7 @@
 #include <gromox/textmaps.hpp>
 #include "mkshared.hpp"
 #include "exch/mysql_adaptor/mysql_adaptor.h"
+#define LLU(x) static_cast<unsigned long long>(x)
 
 using namespace std::string_literals;
 using namespace gromox;
