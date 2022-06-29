@@ -315,6 +315,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		out->result = nsp_interface_bind(handle, in->flags, &in->stat,
 		              in->pserver_guid, &out->handle);
 		out->pserver_guid = in->pserver_guid;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiUnbind: {
@@ -325,6 +326,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		*ppout = out;
 		out->result = nsp_interface_unbind(&in->handle, in->reserved);
 		out->handle = in->handle;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiUpdateStat: {
@@ -337,6 +339,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		              in->reserved, &in->stat, in->pdelta);
 		out->stat = in->stat;
 		out->pdelta = in->pdelta;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiQueryRows: {
@@ -349,6 +352,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		              &in->stat, in->table_count, in->ptable, in->count,
 		              in->pproptags, &out->prows);
 		out->stat = in->stat;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiSeekEntries: {
@@ -361,6 +365,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		              in->reserved, &in->stat, &in->target, in->ptable,
 		              in->pproptags, &out->prows);
 		out->stat = in->stat;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiGetMatches: {
@@ -375,6 +380,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		              in->requested, &out->poutmids, in->pproptags,
 		              &out->prows);
 		out->stat = in->stat;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiResortRestriction: {
@@ -388,6 +394,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		              &in->poutmids);
 		out->stat = in->stat;
 		out->poutmids = in->poutmids;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiDNToMId: {
@@ -398,6 +405,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		*ppout = out;
 		out->result = nsp_interface_dntomid(in->handle, in->reserved,
 		              &in->names, &out->poutmids);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiGetPropList: {
@@ -408,6 +416,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		*ppout = out;
 		out->result = nsp_interface_get_proplist(in->handle, in->flags,
 		              in->mid, in->codepage, &out->pproptags);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiGetProps: {
@@ -418,6 +427,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		*ppout = out;
 		out->result = nsp_interface_get_props(in->handle, in->flags,
 		              &in->stat, in->pproptags, &out->prows);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiCompareMIds: {
@@ -429,6 +439,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		out->result1 = nsp_interface_compare_mids(in->handle,
 		               in->reserved, &in->stat, in->mid1, in->mid2,
 		               &out->result);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiModProps: {
@@ -439,6 +450,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		*ppout = out;
 		out->result = nsp_interface_mod_props(in->handle, in->reserved,
 		              &in->stat, in->pproptags, &in->row);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiGetSpecialTable: {
@@ -450,6 +462,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		out->result = nsp_interface_get_specialtable(in->handle,
 		              in->flags, &in->stat, &in->version, &out->prows);
 		out->version = in->version;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiGetTemplateInfo: {
@@ -461,6 +474,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		out->result = nsp_interface_get_templateinfo(in->handle,
 		              in->flags, in->type, in->pdn, in->codepage,
 		              in->locale_id, &out->pdata);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiModLinkAtt: {
@@ -471,6 +485,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		*ppout = out;
 		out->result = nsp_interface_mod_linkatt(in->handle, in->flags,
 		              in->proptag, in->mid, &in->entry_ids);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiQueryColumns: {
@@ -481,6 +496,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		*ppout = out;
 		out->result = nsp_interface_query_columns(in->handle,
 		              in->reserved, in->flags, &out->pcolumns);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiResolveNames: {
@@ -492,6 +508,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		out->result = nsp_interface_resolve_names(in->handle,
 		              in->reserved, &in->stat, in->pproptags, &in->strs,
 		              &out->pmids, &out->prows);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case nspiResolveNamesW: {
@@ -503,6 +520,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		out->result = nsp_interface_resolve_namesw(in->handle,
 		              in->reserved, &in->stat, in->pproptags, &in->strs,
 		              &out->pmids, &out->prows);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	default:
