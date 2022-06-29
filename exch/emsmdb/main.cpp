@@ -318,6 +318,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		*ppout = out;
 		out->result = emsmdb_interface_disconnect(&in->cxh);
 		out->cxh = in->cxh;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case ecRRegisterPushNotification: {
@@ -330,6 +331,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		              in->rpc, in->pctx, in->cb_ctx, in->advise_bits,
 		              in->paddr, in->cb_addr, &out->hnotification);
 		out->cxh = in->cxh;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case ecDummyRpc:
@@ -356,6 +358,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		              in->cb_auxin, out->pauxout, &in->cb_auxout);
 		out->timestamp = in->timestamp;
 		out->cb_auxout = in->cb_auxout;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case ecDoRpcExt2: {
@@ -372,6 +375,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		out->flags = in->flags;
 		out->cb_out = in->cb_out;
 		out->cb_auxout = in->cb_auxout;
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	case ecDoAsyncConnectEx: {
@@ -381,6 +385,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 			return DISPATCH_FAIL;
 		*ppout = out;
 		out->result = emsmdb_interface_async_connect_ex(in->cxh, &out->acxh);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
 	default:
@@ -451,6 +456,7 @@ static int exchange_async_emsmdb_dispatch(unsigned int opnum, const GUID *pobjec
 		} else {
 			cancel_async_id(async_id);
 		}
+		*ecode = result;
 		return result;
 	default:
 		return DISPATCH_FAIL;
