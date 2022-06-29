@@ -3350,26 +3350,26 @@ static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
 	return ecServerOOM;
 }
 
-static bool op_forward(const char *from_address, const char *account,
+static ec_error_t op_forward(const char *from_address, const char *account,
     uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const char *pdigest, DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block,
     size_t rule_idx, const RULE_NODE *prnode)
 {
 	if (!exmdb_server_check_private())
-		return true;
+		return ecSuccess;
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
 			block.type, rule_idx, prnode->provider.c_str(), pmsg_list);
-		return message_disable_rule(psqlite, false, prnode->id) == ecSuccess;
+		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	return message_forward_message(from_address, account, psqlite, cpid,
 	       message_id, pdigest, block.flavor, false, pfwddlgt->count,
-	       pfwddlgt->pblock);
+	       pfwddlgt->pblock) ? ecSuccess : ecError;
 }
 
-static bool op_delegate(const char *from_address, const char *account,
+static ec_error_t op_delegate(const char *from_address, const char *account,
     uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const char *pdigest, DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block,
     size_t rule_idx, const RULE_NODE *prnode)
@@ -3377,22 +3377,22 @@ static bool op_delegate(const char *from_address, const char *account,
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (!exmdb_server_check_private() ||
 	    pdigest == nullptr || pfwddlgt->count == 0)
-		return true;
+		return ecSuccess;
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
 			block.type, rule_idx, prnode->provider.c_str(), pmsg_list);
-		return message_disable_rule(psqlite, false, prnode->id) == ecSuccess;
+		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 	if (!message_read_message(psqlite, cpid, message_id, &pmsgctnt) ||
 	    pmsgctnt == nullptr)
-		return FALSE;
+		return ecError;
 	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU{message_id}, LLU{folder_id});
-		return true;
+		return ecSuccess;
 	}
 	static constexpr uint32_t tags[] = {
 		PR_DISPLAY_TO, PR_DISPLAY_TO_A,
@@ -3410,11 +3410,11 @@ static bool op_delegate(const char *from_address, const char *account,
 		strcpy(essdn_buff, "EX:");
 		if (!common_util_username_to_essdn(account,
 		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
-			return FALSE;
+			return ecError;
 		HX_strupper(essdn_buff);
 		auto pvalue = common_util_username_to_addressbook_entryid(account);
 		if (NULL == pvalue) {
-			return FALSE;
+			return ecError;
 		}
 		TAGGED_PROPVAL propval;
 		propval.proptag = PR_RCVD_REPRESENTING_ENTRYID;
@@ -3449,7 +3449,7 @@ static bool op_delegate(const char *from_address, const char *account,
 	DOUBLE_LIST rcpt_list;
 	if (!message_recipient_blocks_to_list(pfwddlgt->count,
 	    pfwddlgt->pblock, &rcpt_list))
-		return FALSE;
+		return ecError;
 	char mid_string1[128], tmp_path1[256];
 	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
@@ -3480,9 +3480,9 @@ static bool op_delegate(const char *from_address, const char *account,
 		if (!exmdb_client_relay_delivery(maildir,
 		    from_address, static_cast<char *>(pnode1->pdata),
 		    cpid, pmsgctnt, pdigest1, &result))
-			return FALSE;
+			return ecError;
 	}
-	return true;
+	return ecSuccess;
 }
 
 static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
@@ -3519,16 +3519,13 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 			LLU{message_id}, LLU{folder_id});
 		break;
 	case OP_FORWARD:
-		if (!op_forward(from_address, account, cpid, psqlite, folder_id,
-		    message_id, pdigest, pmsg_list, block, rule_idx, prnode))
-			return ecError;
-		break;
+		return op_forward(from_address, account, cpid, psqlite,
+		       folder_id, message_id, pdigest, pmsg_list, block,
+		       rule_idx, prnode);
 	case OP_DELEGATE:
-		if (!op_delegate(from_address, account, cpid, psqlite,
-		    folder_id, message_id, pdigest, pmsg_list, block,
-		    rule_idx, prnode))
-			return ecError;
-		break;
+		return op_delegate(from_address, account, cpid, psqlite,
+		       folder_id, message_id, pdigest, pmsg_list, block,
+		       rule_idx, prnode);
 	case OP_TAG: {
 		BOOL b_result = false;
 		if (!cu_set_property(db_table::msg_props,
@@ -3769,26 +3766,26 @@ static ec_error_t opx_reply(const char *from_address, const char *account,
 	return ecSuccess;
 }
 
-static bool opx_delegate(const char *from_address, const char *account,
+static ec_error_t opx_delegate(const char *from_address, const char *account,
     uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const char *pdigest, const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode)
 {
 	auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (!exmdb_server_check_private() ||
 	    pdigest == nullptr || pextfwddlgt->count == 0)
-		return true;
+		return ecSuccess;
 	if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
-		return message_disable_rule(psqlite, TRUE, prnode->id) == ecSuccess;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 	if (!message_read_message(psqlite, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
-		return FALSE;
+		return ecError;
 	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU{message_id}, LLU{folder_id});
-		return true;
+		return ecSuccess;
 	}
 	static constexpr uint32_t tags[] = {
 		PR_DISPLAY_TO, PR_DISPLAY_TO_A,
@@ -3806,10 +3803,10 @@ static bool opx_delegate(const char *from_address, const char *account,
 		strcpy(essdn_buff, "EX:");
 		if (!common_util_username_to_essdn(account,
 		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
-			return FALSE;
+			return ecError;
 		auto pvalue = common_util_username_to_addressbook_entryid(account);
 		if (NULL == pvalue) {
-			return FALSE;
+			return ecError;
 		}
 		TAGGED_PROPVAL propval;
 		propval.proptag = PR_RCVD_REPRESENTING_ENTRYID;
@@ -3844,7 +3841,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 	DOUBLE_LIST rcpt_list;
 	if (!message_ext_recipient_blocks_to_list(pextfwddlgt->count,
 	    pextfwddlgt->pblock, &rcpt_list))
-		return FALSE;
+		return ecError;
 	char mid_string1[128], tmp_path1[256];
 	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
@@ -3875,9 +3872,9 @@ static bool opx_delegate(const char *from_address, const char *account,
 		if (!exmdb_client_relay_delivery(maildir,
 		    from_address, static_cast<char *>(pnode1->pdata),
 		    cpid, pmsgctnt, pdigest1, &result))
-			return FALSE;
+			return ecError;
 	}
-	return true;
+	return ecSuccess;
 }
 
 static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
@@ -3922,10 +3919,8 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 		break;
 	}
 	case OP_DELEGATE:
-		if (!opx_delegate(from_address, account, cpid, psqlite,
-		    folder_id, message_id, pdigest, block, prnode))
-			return ecError;
-		break;
+		return opx_delegate(from_address, account, cpid, psqlite,
+		       folder_id, message_id, pdigest, block, prnode);
 	case OP_TAG: {
 		BOOL b_result = false;
 		if (!cu_set_property(db_table::msg_props,
