@@ -597,7 +597,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 			}  catch (std::bad_alloc&) {
 				hl_hold.unlock();
 				emsmdb_bridge_disconnect(ctx.session_guid);
-				return ctx.failure_response(ecMAPIOOM);
+				return ctx.failure_response(ecServerOOM);
 			}
 		}
 	}
@@ -655,7 +655,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 		try {
 			pending.emplace(&nctx);
 		}  catch (std::bad_alloc&) {
-			return ctx.failure_response(ecMAPIOOM);
+			return ctx.failure_response(ecServerOOM);
 		}
 		ll_hold.unlock();
 		return TRUE;

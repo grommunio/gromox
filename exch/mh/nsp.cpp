@@ -418,7 +418,7 @@ uint32_t MhNspContext::getmailboxurl() try
 	         "https://%s/mapi/emsmdb/?MailboxId=%s", get_host_ID(), token + 4);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	return ecMAPIOOM;
+	return ecServerOOM;
 }
 
 static void produce_session(const char *tag, char *session)
@@ -544,7 +544,7 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 		}  catch (std::bad_alloc&) {
 			hl_hold.unlock();
 			nsp_bridge_unbind(ctx.session_guid, 0);
-			return ctx.failure_response(ecMAPIOOM);
+			return ctx.failure_response(ecServerOOM);
 		}
 	}
 	if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
