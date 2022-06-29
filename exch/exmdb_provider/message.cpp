@@ -3599,28 +3599,28 @@ static ec_error_t op_process(BOOL b_oof, const char *from_address,
 	return ecSuccess;
 }
 
-static bool opx_move_private(const char *account, sqlite3 *psqlite,
+static ec_error_t opx_move_private(const char *account, sqlite3 *psqlite,
     const RULE_NODE *prnode, const EXT_MOVECOPY_ACTION *pextmvcp)
 {
 	if (EITLT_PRIVATE_FOLDER !=
 	    pextmvcp->folder_eid.folder_type) {
-		return message_disable_rule(psqlite, TRUE, prnode->id) == ecSuccess;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	int tmp_id = 0;
 	if (!common_util_get_id_from_username(account, &tmp_id))
-		return true;
+		return ecSuccess;
 	auto tmp_guid = rop_util_make_user_guid(tmp_id);
 	if (tmp_guid != pextmvcp->folder_eid.database_guid)
-		return message_disable_rule(psqlite, TRUE, prnode->id) == ecSuccess;
-	return true;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
+	return ecSuccess;
 }
 
-static bool opx_move_public(const char *account, sqlite3 *psqlite,
+static ec_error_t opx_move_public(const char *account, sqlite3 *psqlite,
     const RULE_NODE *prnode, const EXT_MOVECOPY_ACTION *pextmvcp)
 {
 	if (EITLT_PUBLIC_FOLDER !=
 	    pextmvcp->folder_eid.folder_type) {
-		return message_disable_rule(psqlite, TRUE, prnode->id) == ecSuccess;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	auto pc = strchr(account, '@');
 	if (pc == nullptr)
@@ -3629,25 +3629,25 @@ static bool opx_move_public(const char *account, sqlite3 *psqlite,
 		++pc;
 	int tmp_id = 0, tmp_id1 = 0;
 	if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
-		return true;
+		return ecSuccess;
 	auto tmp_guid = rop_util_make_domain_guid(tmp_id);
 	if (tmp_guid != pextmvcp->folder_eid.database_guid)
-		return message_disable_rule(psqlite, TRUE, prnode->id) == ecSuccess;
-	return true;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
+	return ecSuccess;
 }
 
-static bool opx_move(BOOL b_oof, const char *from_address,
+static ec_error_t opx_move(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
     DOUBLE_LIST *pmsg_list, const EXT_ACTION_BLOCK &block,
     const RULE_NODE *prnode, BOOL &b_del)
 {
 	auto pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(block.pdata);
-	auto ret = exmdb_server_check_private() ?
-	           opx_move_private(account, psqlite, prnode, pextmvcp) :
-	           opx_move_public(account, psqlite, prnode, pextmvcp);
-	if (!ret)
-		return false;
+	auto ec = exmdb_server_check_private() ?
+	          opx_move_private(account, psqlite, prnode, pextmvcp) :
+	          opx_move_public(account, psqlite, prnode, pextmvcp);
+	if (ec != ecSuccess)
+		return ec;
 	auto dst_fid = rop_util_gc_to_value(
 		       pextmvcp->folder_eid.global_counter);
 	DOUBLE_LIST_NODE *pnode1;
@@ -3659,30 +3659,30 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 		}
 	}
 	if (NULL != pnode1) {
-		return true;
+		return ecSuccess;
 	}
 	BOOL b_exist = false;
 	if (!common_util_check_folder_id(psqlite, dst_fid, &b_exist))
-		return FALSE;
+		return ecError;
 	if (!b_exist)
-		return message_disable_rule(psqlite, TRUE, prnode->id) == ecSuccess;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	int tmp_id = 0, tmp_id1 = 0;
 	auto is_pvt = exmdb_server_check_private();
 	if (is_pvt) {
 		if (!common_util_get_id_from_username(account, &tmp_id))
-			return FALSE;
+			return ecError;
 	} else {
 		if (!common_util_get_domain_ids(account, &tmp_id, &tmp_id1))
-			return FALSE;
+			return ecError;
 	}
 	uint64_t dst_mid = 0;
 	uint32_t message_size = 0;
 	BOOL b_result = 0;
 	if (!common_util_copy_message(psqlite, tmp_id, message_id, dst_fid,
 	    &dst_mid, &b_result, &message_size))
-		return FALSE;
+		return ecError;
 	if (!b_result)
-		return true;
+		return ecSuccess;
 	auto nt_time = rop_util_current_nttime();
 	TAGGED_PROPVAL propval;
 	propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
@@ -3690,15 +3690,15 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 	cu_set_property(db_table::folder_props,
 		dst_fid, 0, psqlite, &propval, &b_result);
 	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
-		return FALSE;
+		return ecError;
 	pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode1) {
-		return FALSE;
+		return ecServerOOM;
 	}
 	auto uv = cu_alloc<uint64_t>();
 	pnode1->pdata = uv;
 	if (NULL == pnode1->pdata) {
-		return FALSE;
+		return ecServerOOM;
 	}
 	*uv = dst_fid;
 	double_list_append_as_tail(pfolder_list, pnode1);
@@ -3715,11 +3715,11 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 	} else {
 		pdigest1 = NULL;
 	}
-	auto ec = message_rule_new_message(b_oof, from_address, account,
-	          cpid, psqlite, dst_fid, dst_mid, pdigest1,
-	          pfolder_list, pmsg_list);
+	ec = message_rule_new_message(b_oof, from_address, account,
+	     cpid, psqlite, dst_fid, dst_mid, pdigest1,
+	     pfolder_list, pmsg_list);
 	if (ec != ecSuccess)
-		return FALSE;
+		return ec;
 	if (block.type == OP_MOVE) {
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
@@ -3734,7 +3734,7 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 			"ext rule", account, LLU{message_id},
 			LLU{folder_id}, LLU{dst_mid}, LLU{dst_fid});
 	}
-	return true;
+	return ecSuccess;
 }
 
 static bool opx_reply(const char *from_address, const char *account,
@@ -3894,11 +3894,9 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY:
-		if (!opx_move(b_oof, from_address, account, cpid, psqlite,
-		    folder_id, message_id, pdigest, pfolder_list, pmsg_list,
-		    block, prnode, b_del))
-			return ecError;
-		break;
+		return opx_move(b_oof, from_address, account, cpid, psqlite,
+		       folder_id, message_id, pdigest, pfolder_list,
+		       pmsg_list, block, prnode, b_del);
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		if (!opx_reply(from_address, account, psqlite, message_id,
