@@ -11,6 +11,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/evp.h>
@@ -56,15 +57,18 @@ struct DAM_NODE {
 	const ACTION_BLOCK *pblock = nullptr;
 };
 
-struct MESSAGE_NODE {
-	DOUBLE_LIST_NODE node;
-	uint64_t folder_id;
-	uint64_t message_id;
+struct message_node {
+	uint64_t folder_id = 0, message_id = 0;
+};
+
+struct seen_list {
+	std::vector<uint64_t> fld;
+	std::vector<message_node> msg;
 };
 
 }
 
-static ec_error_t message_rule_new_message(BOOL, const char *, const char *, uint32_t, sqlite3 *, uint64_t, uint64_t, const char *, DOUBLE_LIST *, DOUBLE_LIST *);
+static ec_error_t message_rule_new_message(BOOL, const char *, const char *, uint32_t, sqlite3 *, uint64_t, uint64_t, const char *, seen_list &);
 
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
 static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
@@ -2484,7 +2488,7 @@ static BOOL message_replace_actions_propid(sqlite3 *psqlite,
 static BOOL message_make_deferred_error_message(const char *username,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id, uint64_t rule_id,
     uint32_t rule_error, uint32_t action_type, uint32_t block_index,
-    const char *provider, DOUBLE_LIST *pmsg_list)
+    const char *provider, seen_list &seen) try
 {
 	if (!g_enable_dam)
 		return TRUE;
@@ -2543,15 +2547,11 @@ static BOOL message_make_deferred_error_message(const char *username,
 	cu_set_property(db_table::folder_props,
 		PRIVATE_FID_DEFERRED_ACTION, 0, psqlite,
 		&propval, &b_result);
-	auto pmnode = cu_alloc<MESSAGE_NODE>();
-	if (NULL == pmnode) {
-		return FALSE;
-	}
-	pmnode->node.pdata = pmnode;
-	pmnode->folder_id = PRIVATE_FID_DEFERRED_ACTION;
-	pmnode->message_id = mid_val;
-	double_list_append_as_tail(pmsg_list, &pmnode->node);
+	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2026: ENOMEM\n");
+	return false;
 }
 
 static ec_error_t message_disable_rule(sqlite3 *psqlite,
@@ -3018,8 +3018,7 @@ static ec_error_t message_forward_message(const char *from_address,
 
 static BOOL message_make_deferred_action_message(const char *username,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const char *provider, std::list<DAM_NODE> &&dam_list,
-    DOUBLE_LIST *pmsg_list)
+    const char *provider, std::list<DAM_NODE> &&dam_list, seen_list &seen) try
 {
 	if (!g_enable_dam)
 		return TRUE;
@@ -3123,20 +3122,16 @@ static BOOL message_make_deferred_action_message(const char *username,
 	cu_set_property(db_table::folder_props,
 		PRIVATE_FID_DEFERRED_ACTION, 0, psqlite,
 		&propval, &b_result);
-	auto pmnode = cu_alloc<MESSAGE_NODE>();
-	if (NULL == pmnode) {
-		return FALSE;
-	}
-	pmnode->node.pdata = pmnode;
-	pmnode->folder_id = PRIVATE_FID_DEFERRED_ACTION;
-	pmnode->message_id = mid_val;
-	double_list_append_as_tail(pmsg_list, &pmnode->node);
+	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2027: ENOMEM\n");
+	return false;
 }
 
 static BOOL message_make_deferred_action_messages(const char *username,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    std::list<DAM_NODE> &&dam_list, DOUBLE_LIST *pmsg_list)
+    std::list<DAM_NODE> &&dam_list, seen_list &seen) try
 {
 	if (!g_enable_dam)
 		return TRUE;
@@ -3169,7 +3164,7 @@ static BOOL message_make_deferred_action_messages(const char *username,
 		if (pdnode == tail) {
 			if (!message_make_deferred_action_message(username,
 			    psqlite, folder_id, message_id, provider,
-			    std::move(tmp_list), pmsg_list))
+			    std::move(tmp_list), seen))
 				return FALSE;
 			provider = NULL;
 			tmp_list.clear();
@@ -3177,28 +3172,23 @@ static BOOL message_make_deferred_action_messages(const char *username,
 		}
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2028: ENOMEM\n");
+	return false;
 }
 
 static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
-    DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
+    uint64_t message_id, const char *pdigest, seen_list &seen,
+    const ACTION_BLOCK &block, size_t rule_idx,
     const RULE_NODE *prnode, BOOL &b_del)
 {
 	auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 	auto dst_fid = rop_util_get_gc_value(static_cast<SVREID *>(
 		       pmovecopy->pfolder_eid)->folder_id);
-	DOUBLE_LIST_NODE *pnode1;
-	for (pnode1 = double_list_get_head(pfolder_list);
-	     NULL != pnode1; pnode1 = double_list_get_after(
-	     pfolder_list, pnode1)) {
-		if (dst_fid == *(uint64_t *)pnode1->pdata) {
-			break;
-		}
-	}
-	if (NULL != pnode1) {
+	if (std::find(seen.fld.cbegin(), seen.fld.cend(), dst_fid) != seen.fld.cend())
+		/* Already moved to this folder once. */
 		return ecSuccess;
-	}
 	BOOL b_exist = false;
 	if (!common_util_check_folder_id(psqlite, dst_fid, &b_exist))
 		return ecError;
@@ -3210,7 +3200,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		message_make_deferred_error_message(account,
 			psqlite, folder_id, message_id, prnode->id,
 			RULE_ERROR_MOVECOPY, block.type,
-			rule_idx, prnode->provider.c_str(), pmsg_list);
+			rule_idx, prnode->provider.c_str(), seen);
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	int tmp_id = 0, tmp_id1 = 0;
@@ -3231,7 +3221,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 	if (!b_result) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_MOVECOPY, block.type,
-			rule_idx, prnode->provider.c_str(), pmsg_list);
+			rule_idx, prnode->provider.c_str(), seen);
 		return ecSuccess;
 	}
 	auto nt_time = rop_util_current_nttime();
@@ -3242,17 +3232,12 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		dst_fid, 0, psqlite, &propval, &b_result);
 	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
 		return ecError;
-	pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
-	if (NULL == pnode1) {
+	try {
+		seen.fld.emplace_back(dst_fid);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-2033: ENOMEM\n");
 		return ecServerOOM;
 	}
-	auto uv = cu_alloc<uint64_t>();
-	pnode1->pdata = uv;
-	if (NULL == pnode1->pdata) {
-		return ecServerOOM;
-	}
-	*uv = dst_fid;
-	double_list_append_as_tail(pfolder_list, pnode1);
 	char tmp_buff[MAX_DIGLEN];
 	char *pmid_string = nullptr, *pdigest1 = nullptr;
 	if (is_pvt && pdigest != nullptr &&
@@ -3267,8 +3252,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		pdigest1 = NULL;
 	}
 	auto ec = message_rule_new_message(b_oof, from_address, account,
-	          cpid, psqlite, dst_fid, dst_mid, pdigest1,
-	          pfolder_list, pmsg_list);
+	          cpid, psqlite, dst_fid, dst_mid, pdigest1, seen);
 	if (ec != ecSuccess)
 		return ec;
 	if (block.type == OP_MOVE) {
@@ -3310,9 +3294,8 @@ static ec_error_t op_move_across(uint64_t folder_id, uint64_t message_id,
 }
 
 static ec_error_t op_reply(const char *from_address, const char *account,
-    sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
-    const RULE_NODE *prnode)
+    sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id, seen_list &seen,
+    const ACTION_BLOCK &block, size_t rule_idx, const RULE_NODE *prnode)
 {
 	auto preply = static_cast<REPLY_ACTION *>(block.pdata);
 	BOOL b_result = false;
@@ -3325,8 +3308,7 @@ static ec_error_t op_reply(const char *from_address, const char *account,
 	if (!b_result) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
-			block.type, rule_idx, prnode->provider.c_str(),
-			pmsg_list);
+			block.type, rule_idx, prnode->provider.c_str(), seen);
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	return ecSuccess;
@@ -3352,7 +3334,7 @@ static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
 
 static ec_error_t op_forward(const char *from_address, const char *account,
     uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const char *pdigest, DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block,
+    const char *pdigest, seen_list &seen, const ACTION_BLOCK &block,
     size_t rule_idx, const RULE_NODE *prnode)
 {
 	if (!exmdb_server_check_private())
@@ -3361,7 +3343,7 @@ static ec_error_t op_forward(const char *from_address, const char *account,
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
-			block.type, rule_idx, prnode->provider.c_str(), pmsg_list);
+			block.type, rule_idx, prnode->provider.c_str(), seen);
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	return message_forward_message(from_address, account, psqlite, cpid,
@@ -3371,7 +3353,7 @@ static ec_error_t op_forward(const char *from_address, const char *account,
 
 static ec_error_t op_delegate(const char *from_address, const char *account,
     uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const char *pdigest, DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block,
+    const char *pdigest, seen_list &seen, const ACTION_BLOCK &block,
     size_t rule_idx, const RULE_NODE *prnode)
 {
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
@@ -3381,7 +3363,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
-			block.type, rule_idx, prnode->provider.c_str(), pmsg_list);
+			block.type, rule_idx, prnode->provider.c_str(), seen);
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
@@ -3487,8 +3469,8 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 
 static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
-    DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
+    uint64_t message_id, const char *pdigest, seen_list &seen,
+    const ACTION_BLOCK &block, size_t rule_idx,
     const RULE_NODE *prnode, BOOL &b_del, std::list<DAM_NODE> &dam_list)
 {
 	static const uint8_t fake_true = 1;
@@ -3497,15 +3479,15 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 	case OP_COPY: {
 		auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 		return pmovecopy->same_store ?
-		       op_move_same(b_oof, from_address, account, cpid,
-		       psqlite, folder_id, message_id, pdigest, pfolder_list,
-		       pmsg_list, block, rule_idx, prnode, b_del) :
+		       op_move_same(b_oof, from_address, account, cpid, psqlite,
+		       folder_id, message_id, pdigest, seen, block, rule_idx,
+		       prnode, b_del) :
 		       op_move_across(folder_id, message_id, prnode, block, dam_list);
 	}
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		return op_reply(from_address, account, psqlite, folder_id,
-		       message_id, pmsg_list, block, rule_idx, prnode);
+		       message_id, seen, block, rule_idx, prnode);
 	case OP_DEFER_ACTION:
 		return op_defer(folder_id, message_id, block, prnode, dam_list);
 	case OP_BOUNCE: {
@@ -3522,11 +3504,11 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 	}
 	case OP_FORWARD:
 		return op_forward(from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, pmsg_list, block,
+		       folder_id, message_id, pdigest, seen, block,
 		       rule_idx, prnode);
 	case OP_DELEGATE:
 		return op_delegate(from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, pmsg_list, block,
+		       folder_id, message_id, pdigest, seen, block,
 		       rule_idx, prnode);
 	case OP_TAG: {
 		BOOL b_result = false;
@@ -3563,8 +3545,8 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 
 static ec_error_t op_process(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
-    DOUBLE_LIST *pmsg_list, const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit,
+    uint64_t message_id, const char *pdigest, seen_list &seen,
+    const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit,
     std::list<DAM_NODE> &dam_list)
 {
 	if (b_exit && !(prnode->state & RULE_STATE_ONLY_WHEN_OOF))
@@ -3588,8 +3570,8 @@ static ec_error_t op_process(BOOL b_oof, const char *from_address,
 	}
 	for (size_t i = 0; i < pactions->count; ++i)
 		if (!op_switcheroo(b_oof, from_address, account, cpid, psqlite,
-		    folder_id, message_id, pdigest, pfolder_list,
-		    pmsg_list, pactions->pblock[i], i, prnode, b_del, dam_list))
+		    folder_id, message_id, pdigest, seen, pactions->pblock[i],
+		    i, prnode, b_del, dam_list))
 			return ecError;
 	return ecSuccess;
 }
@@ -3633,9 +3615,9 @@ static ec_error_t opx_move_public(const char *account, sqlite3 *psqlite,
 
 static ec_error_t opx_move(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
-    DOUBLE_LIST *pmsg_list, const EXT_ACTION_BLOCK &block,
-    const RULE_NODE *prnode, BOOL &b_del)
+    uint64_t message_id, const char *pdigest, seen_list &seen,
+    const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode,
+    BOOL &b_del)
 {
 	auto pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(block.pdata);
 	auto ec = exmdb_server_check_private() ?
@@ -3645,17 +3627,9 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 		return ec;
 	auto dst_fid = rop_util_gc_to_value(
 		       pextmvcp->folder_eid.global_counter);
-	DOUBLE_LIST_NODE *pnode1;
-	for (pnode1 = double_list_get_head(pfolder_list);
-	     NULL != pnode1; pnode1 = double_list_get_after(
-	     pfolder_list, pnode1)) {
-		if (dst_fid == *(uint64_t *)pnode1->pdata) {
-			break;
-		}
-	}
-	if (NULL != pnode1) {
+	if (std::find(seen.fld.cbegin(), seen.fld.cend(), dst_fid) != seen.fld.cend())
+		/* Already moved to this folder once. */
 		return ecSuccess;
-	}
 	BOOL b_exist = false;
 	if (!common_util_check_folder_id(psqlite, dst_fid, &b_exist))
 		return ecError;
@@ -3686,17 +3660,12 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 		dst_fid, 0, psqlite, &propval, &b_result);
 	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
 		return ecError;
-	pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
-	if (NULL == pnode1) {
+	try {
+		seen.fld.emplace_back(dst_fid);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-2031: ENOMEM\n");
 		return ecServerOOM;
 	}
-	auto uv = cu_alloc<uint64_t>();
-	pnode1->pdata = uv;
-	if (NULL == pnode1->pdata) {
-		return ecServerOOM;
-	}
-	*uv = dst_fid;
-	double_list_append_as_tail(pfolder_list, pnode1);
 	char tmp_buff[MAX_DIGLEN];
 	char *pmid_string = nullptr, *pdigest1 = nullptr;
 	if (is_pvt && pdigest != nullptr &&
@@ -3711,8 +3680,7 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 		pdigest1 = NULL;
 	}
 	ec = message_rule_new_message(b_oof, from_address, account,
-	     cpid, psqlite, dst_fid, dst_mid, pdigest1,
-	     pfolder_list, pmsg_list);
+	     cpid, psqlite, dst_fid, dst_mid, pdigest1, seen);
 	if (ec != ecSuccess)
 		return ec;
 	if (block.type == OP_MOVE) {
@@ -3881,17 +3849,17 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 
 static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
-    DOUBLE_LIST *pmsg_list, const EXT_ACTION_BLOCK &block,
-    size_t rule_idx, const RULE_NODE *prnode, BOOL &b_del)
+    uint64_t message_id, const char *pdigest, seen_list &seen,
+    const EXT_ACTION_BLOCK &block, size_t rule_idx,
+    const RULE_NODE *prnode, BOOL &b_del)
 {
 	static constexpr uint8_t fake_true = 1;
 	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY:
 		return opx_move(b_oof, from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, pfolder_list,
-		       pmsg_list, block, prnode, b_del);
+		       folder_id, message_id, pdigest, seen, block,
+		       prnode, b_del);
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		return opx_reply(from_address, account, psqlite, message_id,
@@ -3957,8 +3925,8 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 
 static ec_error_t opx_process(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
-    DOUBLE_LIST *pmsg_list, const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit)
+    uint64_t message_id, const char *pdigest, seen_list &seen,
+    const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit)
 {
 	if (b_exit && !(prnode->state & RULE_STATE_ONLY_WHEN_OOF))
 		return ecSuccess;
@@ -4003,18 +3971,16 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 		return ecError;
 	for (size_t i = 0; i < ext_actions.count; ++i)
 		if (!opx_switcheroo(b_oof, from_address, account, cpid, psqlite,
-		    folder_id, message_id, pdigest, pfolder_list,
-		    pmsg_list, ext_actions.pblock[i], i, prnode, b_del))
+		    folder_id, message_id, pdigest, seen, ext_actions.pblock[i],
+		    i, prnode, b_del))
 			return ecError;
 	return ecSuccess;
 }
 
 /* extended rules do not produce DAM or DEM */
-static ec_error_t message_rule_new_message(BOOL b_oof,
-	const char *from_address, const char *account,
-	uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-	uint64_t message_id, const char *pdigest,
-	DOUBLE_LIST *pfolder_list, DOUBLE_LIST *pmsg_list)
+static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
+    const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+    uint64_t message_id, const char *pdigest, seen_list &seen)
 {
 	std::list<RULE_NODE> rule_list, ext_rule_list;
 	std::list<DAM_NODE> dam_list;
@@ -4025,31 +3991,27 @@ static ec_error_t message_rule_new_message(BOOL b_oof,
 	BOOL b_del = false, b_exit = false;
 	for (const auto &rnode : rule_list) {
 		auto ec = op_process(b_oof, from_address, account, cpid,
-		          psqlite, folder_id, message_id, pdigest, pfolder_list,
-		          pmsg_list, &rnode, b_del, b_exit, dam_list);
+		          psqlite, folder_id, message_id, pdigest, seen,
+		          &rnode, b_del, b_exit, dam_list);
 		if (ec != ecSuccess)
 			return ec;
 	}
 	if (dam_list.size() > 0 && !message_make_deferred_action_messages(account,
-	    psqlite, folder_id, message_id, std::move(dam_list), pmsg_list))
+	    psqlite, folder_id, message_id, std::move(dam_list), seen))
 		return ecError;
 	for (const auto &rnode : ext_rule_list) {
 		auto ec = opx_process(b_oof, from_address, account, cpid,
-		          psqlite, folder_id, message_id, pdigest,
-		          pfolder_list, pmsg_list, &rnode, b_del, b_exit);
+		          psqlite, folder_id, message_id, pdigest, seen,
+		          &rnode, b_del, b_exit);
 		if (ec != ecSuccess)
 			return ec;
 	}
-	if (!b_del) {
-		auto pmnode = cu_alloc<MESSAGE_NODE>();
-		if (NULL == pmnode) {
-			return ecServerOOM;
-		}
-		pmnode->node.pdata = pmnode;
-		pmnode->folder_id = folder_id;
-		pmnode->message_id = message_id;
-		double_list_append_as_tail(pmsg_list, &pmnode->node);
+	if (!b_del) try {
+		seen.msg.emplace_back(message_node{folder_id, message_id});
 		return ecSuccess;
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-2029: ENOMEM\n");
+		return ecServerOOM;
 	}
 	void *pvalue = nullptr;
 	if (!cu_get_property(db_table::msg_props,
@@ -4089,14 +4051,11 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	char tmp_path[256];
 	uint64_t message_id;
 	BINARY searchkey_bin;
-	DOUBLE_LIST msg_list;
-	MESSAGE_NODE *pmnode;
 	const char *paccount;
 	char mid_string[128];
 	char essdn_buff[1280];
 	TAGGED_PROPVAL propval;
 	char display_name[1024];
-	DOUBLE_LIST folder_list;
 	MESSAGE_CONTENT tmp_msg;
 	char digest_buff[MAX_DIGLEN];
 	static const uint8_t fake_true = 1;
@@ -4156,19 +4115,13 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		fprintf(stderr, "%s - public folder not implemented\n", __func__);
 		return false;
 	}
-	double_list_init(&msg_list);
-	double_list_init(&folder_list);
-	auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-	if (NULL == pnode) {
-		return FALSE;
+	seen_list seen;
+	try {
+		seen.fld.emplace_back(fid_val);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-2032: ENOMEM\n");
+		return false;
 	}
-	auto uv = cu_alloc<uint64_t>();
-	pnode->pdata = uv;
-	if (NULL == pnode->pdata) {
-		return FALSE;
-	}
-	*uv = fid_val;
-	double_list_append_as_tail(&folder_list, pnode);
 	tmp_msg = *pmsg;
 	if (exmdb_server_check_private()) {
 		tmp_msg.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsg->proplist.count + 15);
@@ -4270,24 +4223,20 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		"Message %llu is delivered into folder "
 		"%llu", account, LLU{message_id}, LLU{fid_val});
 	auto ec = message_rule_new_message(b_oof, from_address, account,
-	          cpid, pdb->psqlite, fid_val, message_id, pdigest,
-	          &folder_list, &msg_list);
+	          cpid, pdb->psqlite, fid_val, message_id, pdigest, seen);
 	if (ec != ecSuccess)
 		return FALSE;
 	sql_transact.commit();
-	for (pnode=double_list_get_head(&msg_list); NULL!=pnode;
-		pnode=double_list_get_after(&msg_list, pnode)) {
-		pmnode = (MESSAGE_NODE*)pnode->pdata;
+	for (const auto &mn : seen.msg) {
 		db_engine_proc_dynamic_event(
 			pdb, cpid, DYNAMIC_EVENT_NEW_MESSAGE,
-			pmnode->folder_id, pmnode->message_id, 0);
-		if (message_id == pmnode->message_id) {
-			db_engine_notify_new_mail(pdb, 
-				pmnode->folder_id, pmnode->message_id);
-		} else {
+			mn.folder_id, mn.message_id, 0);
+		if (message_id == mn.message_id)
+			db_engine_notify_new_mail(pdb,
+				mn.folder_id, mn.message_id);
+		else
 			db_engine_notify_message_creation(pdb,
-				pmnode->folder_id, pmnode->message_id);
-		}
+				mn.folder_id, mn.message_id);
 	}
 	*presult = static_cast<uint32_t>(delivery_message_result::result_ok);
 	return TRUE;
@@ -4396,9 +4345,6 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	uint64_t fid_val;
 	uint64_t mid_val;
 	char *pmid_string = nullptr, tmp_path[256];
-	DOUBLE_LIST msg_list;
-	MESSAGE_NODE *pmnode;
-	DOUBLE_LIST folder_list;
 	char digest_buff[MAX_DIGLEN];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -4426,37 +4372,27 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 			close(fd);
 		}
 	}
-	double_list_init(&msg_list);
-	double_list_init(&folder_list);
-	auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-	if (NULL == pnode) {
-		return FALSE;
+	seen_list seen;
+	try {
+		seen.fld.emplace_back(fid_val);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-2034: ENOMEM\n");
+		return false;
 	}
-	auto uv = cu_alloc<uint64_t>();
-	pnode->pdata = uv;
-	if (NULL == pnode->pdata) {
-		return FALSE;
-	}
-	*uv = fid_val;
-	double_list_append_as_tail(&folder_list, pnode);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	auto ec = message_rule_new_message(false, "none@none", account,
-	          cpid, pdb->psqlite, fid_val, mid_val, pdigest,
-	          &folder_list, &msg_list);
+	          cpid, pdb->psqlite, fid_val, mid_val, pdigest, seen);
 	if (ec != ecSuccess)
 		return FALSE;
 	sql_transact.commit();
-	for (pnode=double_list_get_head(&msg_list); NULL!=pnode;
-		pnode=double_list_get_after(&msg_list, pnode)) {
-		pmnode = (MESSAGE_NODE*)pnode->pdata;
-		if (mid_val == pmnode->message_id) {
+	for (const auto &mn : seen.msg) {
+		if (mid_val == mn.message_id)
 			continue;
-		}
 		db_engine_proc_dynamic_event(
 			pdb, cpid, DYNAMIC_EVENT_NEW_MESSAGE,
-			pmnode->folder_id, pmnode->message_id, 0);
+			mn.folder_id, mn.message_id, 0);
 		db_engine_notify_message_creation(pdb,
-			pmnode->folder_id, pmnode->message_id);
+			mn.folder_id, mn.message_id);
 	}
 	return TRUE;
 }
