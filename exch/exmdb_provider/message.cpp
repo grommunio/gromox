@@ -2789,7 +2789,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static BOOL message_bounce_message(const char *from_address,
+static ec_error_t message_bounce_message(const char *from_address,
 	const char *account, sqlite3 *psqlite,
 	uint64_t message_id, uint32_t bounce_code)
 {
@@ -2800,7 +2800,7 @@ static BOOL message_bounce_message(const char *from_address,
 	
 	if (0 == strcasecmp(from_address, "none@none") ||
 		NULL == strchr(account, '@')) {
-		return TRUE;
+		return ecSuccess;
 	}
 	switch (bounce_code) {
 	case BOUNCE_CODE_MESSAGE_TOO_LARGE:
@@ -2813,28 +2813,28 @@ static BOOL message_bounce_message(const char *from_address,
 		bounce_type = BOUNCE_GENERIC_ERROR;
 		break;
 	default:
-		return TRUE;
+		return ecSuccess;
 	}
 	double_list_init(&tmp_list);
 	auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
-		return FALSE;
+		return ecServerOOM;
 	}
 	double_list_append_as_tail(&tmp_list, pnode);
 	if (!cu_get_property(db_table::msg_props, message_id, 0,
 	    psqlite, PR_SENT_REPRESENTING_SMTP_ADDRESS, &pvalue))
-		return FALSE;
+		return ecServerOOM;
 	pnode->pdata = pvalue == nullptr ? deconst(from_address) : pvalue;
 
 	MAIL imail(common_util_get_mime_pool());
 	if (!bounce_producer_make(from_address, account, psqlite, message_id,
 	    bounce_type, &imail))
-		return FALSE;
+		return ecServerOOM;
 	const char *pvalue2 = strchr(account, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "postmaster@%s",
 	         pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
 	common_util_send_mail(&imail, tmp_buff, &tmp_list);
-	return TRUE;
+	return ecSuccess;
 }
 
 static BOOL message_recipient_blocks_to_list(uint32_t count,
@@ -3508,16 +3508,18 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 		       message_id, pmsg_list, block, rule_idx, prnode);
 	case OP_DEFER_ACTION:
 		return op_defer(folder_id, message_id, block, prnode, dam_list);
-	case OP_BOUNCE:
-		if (!message_bounce_message(from_address, account, psqlite,
-		    message_id, *static_cast<uint32_t *>(block.pdata)))
-			return ecError;
+	case OP_BOUNCE: {
+		auto ec = message_bounce_message(from_address, account, psqlite,
+		          message_id, *static_cast<uint32_t *>(block.pdata));
+		if (ec != ecSuccess)
+			return ec;
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be deleted by rule", account,
 			LLU{message_id}, LLU{folder_id});
 		break;
+	}
 	case OP_FORWARD:
 		return op_forward(from_address, account, cpid, psqlite,
 		       folder_id, message_id, pdigest, pmsg_list, block,
@@ -3896,16 +3898,18 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 		       block, prnode);
 	case OP_DEFER_ACTION:
 		break;
-	case OP_BOUNCE:
-		if (!message_bounce_message(from_address, account, psqlite,
-		    message_id, *static_cast<uint32_t *>(block.pdata)))
-			return ecError;
+	case OP_BOUNCE: {
+		auto ec = message_bounce_message(from_address, account, psqlite,
+		          message_id, *static_cast<uint32_t *>(block.pdata));
+		if (ec != ecSuccess)
+			return ec;
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be deleted by ext rule", account,
 			LLU{message_id}, LLU{folder_id});
 		break;
+	}
 	case OP_FORWARD: {
 		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
