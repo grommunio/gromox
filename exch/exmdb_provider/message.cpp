@@ -64,7 +64,7 @@ struct MESSAGE_NODE {
 
 }
 
-static BOOL message_rule_new_message(BOOL, const char *, const char *, uint32_t, sqlite3 *, uint64_t, uint64_t, const char *, DOUBLE_LIST *, DOUBLE_LIST *);
+static ec_error_t message_rule_new_message(BOOL, const char *, const char *, uint32_t, sqlite3 *, uint64_t, uint64_t, const char *, DOUBLE_LIST *, DOUBLE_LIST *);
 
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
 static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
@@ -3266,10 +3266,10 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
 	} else {
 		pdigest1 = NULL;
 	}
-	if (!message_rule_new_message(b_oof,
-	    from_address, account, cpid, psqlite,
-	    dst_fid, dst_mid, pdigest1, pfolder_list,
-	    pmsg_list))
+	auto ec = message_rule_new_message(b_oof, from_address, account,
+	          cpid, psqlite, dst_fid, dst_mid, pdigest1,
+	          pfolder_list, pmsg_list);
+	if (ec != ecSuccess)
 		return FALSE;
 	if (block.type == OP_MOVE) {
 		b_del = TRUE;
@@ -3718,10 +3718,10 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 	} else {
 		pdigest1 = NULL;
 	}
-	if (!message_rule_new_message(b_oof,
-	    from_address, account, cpid, psqlite,
-	    dst_fid, dst_mid, pdigest1, pfolder_list,
-	    pmsg_list))
+	auto ec = message_rule_new_message(b_oof, from_address, account,
+	          cpid, psqlite, dst_fid, dst_mid, pdigest1,
+	          pfolder_list, pmsg_list);
+	if (ec != ecSuccess)
 		return FALSE;
 	if (block.type == OP_MOVE) {
 		b_del = TRUE;
@@ -4024,7 +4024,7 @@ static bool opx_process(BOOL b_oof, const char *from_address,
 	return true;
 }
 /* extended rules do not produce DAM or DEM */
-static BOOL message_rule_new_message(BOOL b_oof,
+static ec_error_t message_rule_new_message(BOOL b_oof,
 	const char *from_address, const char *account,
 	uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
 	uint64_t message_id, const char *pdigest,
@@ -4035,46 +4035,45 @@ static BOOL message_rule_new_message(BOOL b_oof,
 	
 	if (!message_load_folder_rules(b_oof, psqlite, folder_id, rule_list) ||
 	    !message_load_folder_ext_rules(b_oof, psqlite, folder_id, ext_rule_list))
-		return FALSE;
+		return ecError;
 	BOOL b_del = false, b_exit = false;
 	for (const auto &rnode : rule_list)
 		if (!op_process(b_oof, from_address, account, cpid, psqlite,
 		    folder_id, message_id, pdigest, pfolder_list, pmsg_list,
 		    &rnode, b_del, b_exit, dam_list))
-			return false;
+			return ecError;
 	if (dam_list.size() > 0 && !message_make_deferred_action_messages(account,
 	    psqlite, folder_id, message_id, std::move(dam_list), pmsg_list))
-		return FALSE;
+		return ecError;
 	for (const auto &rnode : ext_rule_list)
 		if (!opx_process(b_oof, from_address, account, cpid, psqlite,
 		    folder_id, message_id, pdigest, pfolder_list, pmsg_list,
 		    &rnode, b_del, b_exit))
-			return false;
+			return ecError;
 
 	if (!b_del) {
 		auto pmnode = cu_alloc<MESSAGE_NODE>();
 		if (NULL == pmnode) {
-			return FALSE;
+			return ecServerOOM;
 		}
 		pmnode->node.pdata = pmnode;
 		pmnode->folder_id = folder_id;
 		pmnode->message_id = message_id;
 		double_list_append_as_tail(pmsg_list, &pmnode->node);
-		return TRUE;
+		return ecSuccess;
 	}
 	void *pvalue = nullptr;
 	if (!cu_get_property(db_table::msg_props,
 	    message_id, 0, psqlite, PR_MESSAGE_SIZE, &pvalue) ||
 	    pvalue == nullptr)
-		return FALSE;
+		return ecError;
 	auto message_size = *static_cast<uint32_t *>(pvalue);
 	char sql_string[128];
 	snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
 		" WHERE message_id=%llu", LLU{message_id});
-	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
-		return FALSE;
-	if (!cu_adjust_store_size(psqlite, ADJ_DECREASE, message_size, 0))
-		return FALSE;
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK ||
+	    !cu_adjust_store_size(psqlite, ADJ_DECREASE, message_size, 0))
+		return ecError;
 	if (NULL != pdigest) {
 		char mid_string1[128], tmp_path1[256];
 		get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
@@ -4082,7 +4081,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		         exmdb_server_get_dir(), mid_string1);
 		remove(tmp_path1);
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
 /* 0 means success, 1 means mailbox full, other unknown error */
@@ -4281,8 +4280,10 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
 		"Message %llu is delivered into folder "
 		"%llu", account, LLU{message_id}, LLU{fid_val});
-	if (!message_rule_new_message(b_oof, from_address, account, cpid,
-	    pdb->psqlite, fid_val, message_id, pdigest, &folder_list, &msg_list))
+	auto ec = message_rule_new_message(b_oof, from_address, account,
+	          cpid, pdb->psqlite, fid_val, message_id, pdigest,
+	          &folder_list, &msg_list);
+	if (ec != ecSuccess)
 		return FALSE;
 	sql_transact.commit();
 	for (pnode=double_list_get_head(&msg_list); NULL!=pnode;
@@ -4450,9 +4451,10 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	*uv = fid_val;
 	double_list_append_as_tail(&folder_list, pnode);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!message_rule_new_message(false, "none@none",
-	    account, cpid, pdb->psqlite, fid_val, mid_val,
-	    pdigest, &folder_list, &msg_list))
+	auto ec = message_rule_new_message(false, "none@none", account,
+	          cpid, pdb->psqlite, fid_val, mid_val, pdigest,
+	          &folder_list, &msg_list);
+	if (ec != ecSuccess)
 		return FALSE;
 	sql_transact.commit();
 	for (pnode=double_list_get_head(&msg_list); NULL!=pnode;
