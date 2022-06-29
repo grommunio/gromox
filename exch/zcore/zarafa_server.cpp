@@ -760,7 +760,7 @@ uint32_t zarafa_server_logon(const char *username,
 		tmp_info.maildir = maildir;
 		tmp_info.homedir = homedir;
 	} catch (const std::bad_alloc &) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	tmp_info.cpid = !system_services_lang_to_charset(lang, charset) ? 1252 :
 	                system_services_charset_to_cpid(charset);
@@ -1336,7 +1336,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 				std::make_move_iterator(temp_list.end()));
 		} catch (const std::bad_alloc &) {
 			fprintf(stderr, "E-1679: ENOMEM\n");
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 	}
 	presult_set->count = 0;
@@ -2608,7 +2608,7 @@ uint32_t zarafa_server_unadvise(GUID hsession, uint32_t hstore,
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1498: ENOMEM\n");
-	return ecMAPIOOM;
+	return ecServerOOM;
 }
 
 uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,

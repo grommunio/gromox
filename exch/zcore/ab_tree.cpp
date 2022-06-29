@@ -1212,33 +1212,33 @@ static ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node,
 	case PT_UNICODE:
 		*prop = common_util_alloc(strlen(it->second.c_str()) + 1);
 		if (*prop == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		strcpy(static_cast<char *>(*prop), it->second.c_str());
 		return ecSuccess;
 	case PT_BINARY: {
 		*prop = cu_alloc<BINARY>();
 		if (*prop == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		auto bv = static_cast<BINARY *>(*prop);
 		bv->cb = it->second.size();
 		bv->pv = common_util_alloc(it->second.size());
 		if (bv->pv == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		memcpy(bv->pv, it->second.data(), bv->cb);
 		return ecSuccess;
 	}
 	case PT_MV_UNICODE: {
 		*prop = cu_alloc<STRING_ARRAY>();
 		if (*prop == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		auto sa = static_cast<STRING_ARRAY *>(*prop);
 		sa->count = 1;
 		sa->ppstr = cu_alloc<char *>();
 		if (sa->ppstr == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		sa->ppstr[0] = cu_alloc<char>(it->second.size() + 1);
 		if (sa->ppstr[0] == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		strcpy(sa->ppstr[0], it->second.c_str());
 		return ecSuccess;
 	}
