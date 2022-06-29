@@ -1950,8 +1950,9 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	handle |= pcall->pcontext->context_id;
 	*pb_async = false;
 	/* call the dispatch function */
-	switch (pcontext->pinterface->dispatch(prequest->opnum,
-			pobject, handle, pin, &pout)) {
+	uint32_t ecode = 0;
+	switch (pcontext->pinterface->dispatch(prequest->opnum, pobject, handle,
+	    pin, &pout, &ecode)) {
 	case DISPATCH_FAIL:
 		pdu_processor_free_stack_root(pstack_root);
 		debug_info("[pdu_processor]: RPC execution fault in call %s:%02x\n",

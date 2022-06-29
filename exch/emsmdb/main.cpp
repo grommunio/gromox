@@ -44,19 +44,14 @@ enum {
 };
 
 static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **pin);
-
-static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
-	uint64_t handle, void *pin, void **ppout);
-
+static int exchange_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
 static int exchange_emsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 
 static void exchange_emsmdb_unbind(uint64_t handle);
 
 static int exchange_async_emsmdb_ndr_pull(int opnum,
 	NDR_PULL* pndr, void **pin);
-
-static int exchange_async_emsmdb_dispatch(int opnum, const GUID *pobject,
-	uint64_t handle, void *pin, void **ppout);
+static int exchange_async_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
 
 static int exchange_async_emsmdb_ndr_push(int opnum,
 	NDR_PUSH *pndr, void *pout);
@@ -311,8 +306,8 @@ static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 	}
 }
 
-static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
-	uint64_t handle, void *pin, void **ppout)
+static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
+    uint64_t handle, void *pin, void **ppout, uint32_t *ecode)
 {
 	switch (opnum) {
 	case ecDoDisconnect: {
@@ -433,8 +428,8 @@ static int exchange_async_emsmdb_ndr_pull(int opnum,
 	}
 }
 
-static int exchange_async_emsmdb_dispatch(int opnum, const GUID *pobject,
-	uint64_t handle, void *pin, void **ppout)
+static int exchange_async_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
+    uint64_t handle, void *pin, void **ppout, uint32_t *ecode)
 {
 	int result;
 	uint32_t async_id;

@@ -48,10 +48,7 @@ struct RFRGETFQDNFROMLEGACYDN_OUT {
 }
 
 static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **pin);
-
-static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
-	uint64_t handle, void *pin, void **pout);
-
+static int exchange_rfr_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
 static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 
 static BOOL (*get_id_from_username)(const char *username, int *puser_id);
@@ -233,8 +230,8 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 	}
 }
 
-static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
-	uint64_t handle, void *pin, void **ppout)
+static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
+    uint64_t handle, void *pin, void **ppout, uint32_t *ecode)
 {
 	RFRGETNEWDSA_IN *prfr_in;
 	RFRGETNEWDSA_OUT *prfr_out;
