@@ -3309,7 +3309,7 @@ static ec_error_t op_move_across(uint64_t folder_id, uint64_t message_id,
 	return ecServerOOM;
 }
 
-static bool op_reply(const char *from_address, const char *account,
+static ec_error_t op_reply(const char *from_address, const char *account,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
     const RULE_NODE *prnode)
@@ -3321,23 +3321,23 @@ static bool op_reply(const char *from_address, const char *account,
 	    block.flavor, rop_util_get_gc_value(
 	    preply->template_message_id), preply->template_guid,
 	    &b_result))
-		return FALSE;
+		return ecError;
 	if (!b_result) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
 			block.type, rule_idx, prnode->provider.c_str(),
 			pmsg_list);
-		return message_disable_rule(psqlite, false, prnode->id) == ecSuccess;
+		return message_disable_rule(psqlite, false, prnode->id);
 	}
-	return true;
+	return ecSuccess;
 }
 
-static bool op_defer(uint64_t folder_id, uint64_t message_id,
+static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
     const ACTION_BLOCK &block, const RULE_NODE *prnode,
     std::list<DAM_NODE> &dam_list) try
 {
 	if (!exmdb_server_check_private())
-		return true;
+		return ecSuccess;
 	dam_list.emplace_back();
 	auto pdnode = &dam_list.back();
 	pdnode->rule_id = prnode->id;
@@ -3345,9 +3345,9 @@ static bool op_defer(uint64_t folder_id, uint64_t message_id,
 	pdnode->message_id = message_id;
 	pdnode->provider = prnode->provider.c_str();
 	pdnode->pblock = &block;
-	return true;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	return false;
+	return ecServerOOM;
 }
 
 static bool op_forward(const char *from_address, const char *account,
@@ -3504,14 +3504,10 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 	}
 	case OP_REPLY:
 	case OP_OOF_REPLY:
-		if (!op_reply(from_address, account, psqlite, folder_id,
-		    message_id, pmsg_list, block, rule_idx, prnode))
-			return ecError;
-		break;
+		return op_reply(from_address, account, psqlite, folder_id,
+		       message_id, pmsg_list, block, rule_idx, prnode);
 	case OP_DEFER_ACTION:
-		if (!op_defer(folder_id, message_id, block, prnode, dam_list))
-			return ecError;
-		break;
+		return op_defer(folder_id, message_id, block, prnode, dam_list);
 	case OP_BOUNCE:
 		if (!message_bounce_message(from_address, account, psqlite,
 		    message_id, *static_cast<uint32_t *>(block.pdata)))
@@ -3737,7 +3733,7 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 	return ecSuccess;
 }
 
-static bool opx_reply(const char *from_address, const char *account,
+static ec_error_t opx_reply(const char *from_address, const char *account,
     sqlite3 *psqlite, uint64_t message_id, const EXT_ACTION_BLOCK &block,
     const RULE_NODE *prnode)
 {
@@ -3745,21 +3741,21 @@ static bool opx_reply(const char *from_address, const char *account,
 	if (exmdb_server_check_private()) {
 		int tmp_id = 0;
 		if (!common_util_get_id_from_username(account, &tmp_id))
-			return true;
+			return ecSuccess;
 		auto tmp_guid = rop_util_make_user_guid(tmp_id);
 		if (tmp_guid != pextreply->message_eid.message_database_guid)
-			return message_disable_rule(psqlite, TRUE, prnode->id) == ecSuccess;
+			return message_disable_rule(psqlite, TRUE, prnode->id);
 	} else {
 		auto pc = strchr(account, '@');
 		if (pc == nullptr)
-			return true;
+			return ecSuccess;
 		++pc;
 		int tmp_id = 0, tmp_id1 = 0;
 		if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
-			return true;
+			return ecSuccess;
 		auto tmp_guid = rop_util_make_domain_guid(tmp_id);
 		if (tmp_guid != pextreply->message_eid.message_database_guid)
-			return message_disable_rule(psqlite, TRUE, prnode->id) == ecSuccess;
+			return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	auto dst_mid = rop_util_gc_to_value(
 		       pextreply->message_eid.message_global_counter);
@@ -3767,10 +3763,10 @@ static bool opx_reply(const char *from_address, const char *account,
 	if (!message_auto_reply(psqlite, message_id, from_address, account,
 	    block.type, block.flavor,
 	    dst_mid, pextreply->template_guid, &b_result))
-		return FALSE;
+		return ecError;
 	if (!b_result)
-		return message_disable_rule(psqlite, TRUE, prnode->id) == ecSuccess;
-	return true;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
+	return ecSuccess;
 }
 
 static bool opx_delegate(const char *from_address, const char *account,
@@ -3899,10 +3895,8 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 		       pmsg_list, block, prnode, b_del);
 	case OP_REPLY:
 	case OP_OOF_REPLY:
-		if (!opx_reply(from_address, account, psqlite, message_id,
-		    block, prnode))
-			return ecError;
-		break;
+		return opx_reply(from_address, account, psqlite, message_id,
+		       block, prnode);
 	case OP_DEFER_ACTION:
 		break;
 	case OP_BOUNCE:
