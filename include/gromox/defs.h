@@ -146,7 +146,7 @@ enum ec_error_t {
 	ecQuotaExceeded = 0x000004D9,
 	// ecMaxSubmissionExceeded = 0x000004DA,
 	ecMaxAttachmentExceeded = 0x000004DB,
-	// ecSendAsDenied = 0x000004DC,
+	ecSendAsDenied = 0x000004DC,
 	// ecShutoffQuotaExceeded = 0x000004DD,
 	// ecMaxObjsExceeded = 0x000004DE,
 	// ecClientVerDisallowed = 0x000004DF,
@@ -327,7 +327,7 @@ enum ec_error_t {
 	ecDuplicateName = 0x80040604, /* MAPI_E_COLLISION */
 	ecNotInitialized = 0x80040605, /* MAPI_E_NOT_INITIALIZED */
 	// MAPI_E_NON_STANDARD = 0x80040606,
-	// MAPI_E_NO_RECIPIENTS = 0x80040607,
+	MAPI_E_NO_RECIPIENTS = 0x80040607,
 	// ecSubmitted = 0x80040608, /* MAPI_E_SUBMITTED */
 	// ecFolderHasChildren = 0x80040609, /* MAPI_E_HAS_FOLDERS */
 	// ecFolderHasContents = 0x8004060A, /* MAPI_E_HAS_MESSAGES */

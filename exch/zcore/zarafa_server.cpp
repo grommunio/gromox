@@ -3441,8 +3441,8 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		return ecNotSupported;
 	if (pmessage->check_importing() || !pmessage->check_writable())
 		return ecAccessDenied;
-	if (!pmessage->get_recipient_num(&rcpt_num))
-		return ecError;
+	if (pmessage->get_recipient_num(&rcpt_num) == 0)
+		return MAPI_E_NO_RECIPIENTS;
 	if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
 
@@ -3456,7 +3456,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 		return ecAccessDenied;
 	if (!common_util_check_delegate(pmessage, username, GX_ARRAY_SIZE(username))) {
-		return ecError;
+		return ecSendAsDenied;
 	}
 	auto account = pstore->get_account();
 	if ('\0' == username[0]) {
@@ -3546,7 +3546,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (!common_util_send_message(pstore, pmessage->get_id(), TRUE)) {
 		exmdb_client::clear_submit(pstore->get_dir(),
 			pmessage->get_id(), b_unsent);
-		return ecError;
+		return ecRpcFailed;
 	}
 	if (!b_delete)
 		pmessage->reload();
