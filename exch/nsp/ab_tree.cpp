@@ -1322,7 +1322,7 @@ ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, unsigned int codepage
 	case PT_STRING8: {
 		auto tg = ndr_stack_anew<char>(NDR_STACK_OUT, it->second.size() + 1);
 		if (tg == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		auto ret = common_util_from_utf8(codepage, it->second.c_str(), tg, it->second.size());
 		if (ret < 0)
 			return ecError;
@@ -1333,7 +1333,7 @@ ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, unsigned int codepage
 	case PT_UNICODE: {
 		auto tg = ndr_stack_anew<char>(NDR_STACK_OUT, it->second.size() + 1);
 		if (tg == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		strcpy(tg, it->second.c_str());
 		prop->value.pstr = tg;
 		return ecSuccess;
@@ -1342,7 +1342,7 @@ ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, unsigned int codepage
 		prop->value.bin.cb = it->second.size();
 		prop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, it->second.size());
 		if (prop->value.bin.pv == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		memcpy(prop->value.bin.pv, it->second.data(), prop->value.bin.cb);
 		return ecSuccess;
 	}
@@ -1351,10 +1351,10 @@ ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, unsigned int codepage
 		x.count = 1;
 		x.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT);
 		if (x.ppstr == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		auto tg = ndr_stack_anew<char>(NDR_STACK_OUT, it->second.size() + 1);
 		if (tg == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		strcpy(tg, it->second.c_str());
 		x.ppstr[0] = tg;
 		return ecSuccess;

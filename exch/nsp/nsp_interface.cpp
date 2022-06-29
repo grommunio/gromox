@@ -126,7 +126,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			strcpy(static_cast<char *>(pprop->value.pv), dn);
 		} else {
@@ -136,11 +136,11 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	case PR_EMS_AB_OBJECT_GUID:
 		if (!ab_tree_node_to_guid(pnode, &temp_guid))
-			return ecMAPIOOM;
+			return ecServerOOM;
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
 			if (pprop->value.bin.pv == nullptr)
-				return ecMAPIOOM;
+				return ecServerOOM;
 		} else {
 			pprop->value.bin.pv = deconst(pbuff);
 		}
@@ -162,7 +162,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.pv = pbuff;
@@ -187,7 +187,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
 			if (NULL == pprop->value.bin.pb) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.bin.pv = pbuff;
@@ -200,7 +200,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		if (!common_util_set_permanententryid(display_type, nullptr, dn, &permeid) ||
 		    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
-			return ecMAPIOOM;
+			return ecServerOOM;
 		return ecSuccess;
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
@@ -212,13 +212,13 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			if (!common_util_set_permanententryid(display_type,
 			    nullptr, dn, &permeid) ||
 			    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
-				return ecMAPIOOM;
+				return ecServerOOM;
 		} else {
 			common_util_set_ephemeralentryid(display_type,
 				ab_tree_get_node_minid(pnode), &ephid);
 			if (!common_util_ephemeral_entryid_to_binary(&ephid,
 			    &pprop->value.bin))
-				return ecMAPIOOM;
+				return ecServerOOM;
 		}
 		return ecSuccess;
 	case PR_SEARCH_KEY:
@@ -229,7 +229,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			pprop->value.bin.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, pprop->value.bin.cb);
 			if (pprop->value.bin.pc == nullptr)
-				return ecMAPIOOM;
+				return ecServerOOM;
 		} else {
 			pprop->value.bin.pv = pbuff;
 		}
@@ -240,7 +240,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 4);
 			if (NULL == pprop->value.bin.pb) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.bin.pv = pbuff;
@@ -268,7 +268,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.pv = pbuff;
@@ -292,7 +292,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = ndr_stack_alloc(
 						NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.pv = pbuff;
@@ -309,7 +309,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.pv = pbuff;
@@ -325,7 +325,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			temp_len = 2*strlen(dn) + 1;
 			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.pv = pbuff;
@@ -342,7 +342,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.pv = pbuff;
@@ -358,7 +358,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			temp_len = 2*strlen(dn) + 1;
 			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.pv = pbuff;
@@ -375,7 +375,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.pv = pbuff;
@@ -391,7 +391,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			temp_len = 2*strlen(dn) + 1;
 			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.pv = pbuff;
@@ -418,7 +418,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.pv = pbuff;
@@ -446,18 +446,18 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		pprop->value.string_array.count = 1 + alias_list.size();
 		pprop->value.string_array.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT, pprop->value.string_array.count);
 		if (NULL == pprop->value.string_array.ppstr) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		pprop->value.string_array.ppstr[0] = ndr_stack_anew<char>(NDR_STACK_OUT, strlen(dn) + 6);
 		if (NULL == pprop->value.string_array.ppstr[0]) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		sprintf(pprop->value.string_array.ppstr[0], "SMTP:%s", dn);
 		size_t i = 1;
 		for (const auto &a : alias_list) {
 			pprop->value.string_array.ppstr[i] = ndr_stack_anew<char>(NDR_STACK_OUT, a.size() + 6);
 			if (pprop->value.string_array.ppstr[i] == nullptr)
-				return ecMAPIOOM;
+				return ecServerOOM;
 			strcpy(pprop->value.string_array.ppstr[i], "smtp:");
 			strcat(pprop->value.string_array.ppstr[i++], a.c_str());
 		}
@@ -471,15 +471,15 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		if (NULL == pbuff) {
 			pprop->value.string_array.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT, 2);
 			if (NULL == pprop->value.string_array.ppstr) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			pprop->value.string_array.ppstr[0] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len + 14);
 			if (NULL == pprop->value.string_array.ppstr[0]) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			pprop->value.string_array.ppstr[1] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len - 12);
 			if (NULL == pprop->value.string_array.ppstr[1]) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 		} else {
 			pprop->value.string_array.ppstr = (char**)pbuff;
@@ -537,13 +537,13 @@ static uint32_t nsp_interface_fetch_row(const SIMPLE_TREE_NODE *pnode,
 	for (size_t i = 0; i < pproptags->cvalues; ++i) {
 		pprop = common_util_propertyrow_enlarge(prow);
 		if (NULL == pprop) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		err_val = nsp_interface_fetch_property(pnode, b_ephid, codepage,
 		          pproptags->pproptag[i], pprop, nullptr, 0);
 		if (err_val != ecSuccess) {
 			pprop->proptag = CHANGE_PROP_TYPE(pprop->proptag, PT_ERROR);
-			pprop->value.err = err_val;
+			pprop->value.err = err_val != ecServerOOM ? err_val : ecMAPIOOM;
 		}
 	}
 	return ecSuccess;
@@ -830,14 +830,14 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (nt == nullptr) {
 			*pprows = NULL;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		pproptags = nt;
 		nt->cvalues = 7;
 		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
 		if (nt->pproptag == nullptr) {
 			*pprows = NULL;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
 		nt->pproptag[1] = PR_OBJECT_TYPE;
@@ -860,7 +860,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	*pprows = common_util_proprowset_init();
 	if (NULL == *pprows) {
 		*pprows = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
@@ -875,7 +875,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			if (NULL == prow || NULL ==
 				common_util_propertyrow_init(prow)) {
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			auto pnode = ab_tree_minid_to_node(pbase.get(), ptable[i]);
 			if (NULL == pnode) {
@@ -942,7 +942,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			result = nsp_interface_fetch_row(ptr,
 				 b_ephid, pstat->codepage, pproptags, prow);
@@ -966,7 +966,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			result = nsp_interface_fetch_row(pnode1,
 				 b_ephid, pstat->codepage, pproptags, prow);
@@ -998,7 +998,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		auto prow = common_util_proprowset_enlarge(*pprows);
 		if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr) {
 			*pprows = nullptr;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		nsp_interface_make_ptyperror_row(pproptags, prow);
 	}
@@ -1046,14 +1046,14 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (nt == nullptr) {
 			*pprows = NULL;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		pproptags = nt;
 		nt->cvalues = 7;
 		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
 		if (nt->pproptag == nullptr) {
 			*pprows = NULL;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
 		nt->pproptag[1] = PR_OBJECT_TYPE;
@@ -1076,7 +1076,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	*pprows = common_util_proprowset_init();
 	if (NULL == *pprows) {
 		*pprows = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
@@ -1107,7 +1107,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			if (NULL == prow || NULL ==
 				common_util_propertyrow_init(prow)) {
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			result = nsp_interface_fetch_row(pnode1, TRUE,
 			         pstat->codepage, pproptags, prow);
@@ -1164,7 +1164,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			if (NULL == prow ||
 			    NULL == common_util_propertyrow_init(prow)) {
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			if (nsp_interface_fetch_row(ptr,
 			    TRUE, pstat->codepage, pproptags,
@@ -1198,7 +1198,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			if (NULL == prow ||
 			    NULL == common_util_propertyrow_init(prow)) {
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			if (nsp_interface_fetch_row(pnode1,
 			    TRUE, pstat->codepage, pproptags,
@@ -1380,7 +1380,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	*ppoutmids = common_util_proptagarray_init();
 	if (NULL == *ppoutmids) {
 		*pprows = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	if (NULL == pproptags) {
 		*pprows = NULL;
@@ -1393,7 +1393,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		*pprows = common_util_proprowset_init();
 		if (NULL == *pprows) {
 			*ppoutmids = NULL;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 	}
 	
@@ -1426,7 +1426,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			*ppoutmids = nullptr;
 			*pprows = nullptr;
 			fprintf(stderr, "E-1525: ENOMEM\n");
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		auto pfile = list_file_initd(dlg_path.c_str(), nullptr, dlgitem_format);
 		if (NULL == pfile) {
@@ -1453,7 +1453,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (NULL == pproptag) {
 				*ppoutmids = nullptr;
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
 		}
@@ -1469,7 +1469,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (NULL == pproptag) {
 				*ppoutmids = nullptr;
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
 		}
@@ -1486,7 +1486,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				if (NULL == pproptag) {
 					*ppoutmids = nullptr;
 					*pprows = nullptr;
-					return ecMAPIOOM;
+					return ecServerOOM;
 				}
 				*pproptag = ab_tree_get_node_minid(ptr);
 			}
@@ -1521,7 +1521,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				if (NULL == pproptag) {
 					*ppoutmids = nullptr;
 					*pprows = nullptr;
-					return ecMAPIOOM;
+					return ecServerOOM;
 				}
 				*pproptag = ab_tree_get_node_minid(pnode);
 			}
@@ -1537,7 +1537,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				common_util_propertyrow_init(prow)) {
 				*ppoutmids = nullptr;
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			auto pnode = ab_tree_minid_to_node(pbase.get(), (*ppoutmids)->pproptag[i]);
 			if (NULL == pnode) {
@@ -1577,16 +1577,16 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 	auto parray = ndr_stack_anew<nsp_sort_item>(NDR_STACK_IN, pinmids->cvalues);
 	if (NULL == parray) {
 		*ppoutmids = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	*ppoutmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == *ppoutmids) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	(*ppoutmids)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pinmids->cvalues);
 	if (NULL == (*ppoutmids)->pproptag) {
 		*ppoutmids = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
@@ -1614,7 +1614,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 			NDR_STACK_IN, strlen(temp_buff) + 1);
 		if (NULL == parray[count].string) {
 			*ppoutmids = NULL;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		strcpy(parray[count++].string, temp_buff);
 	}
@@ -1649,12 +1649,12 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	*ppoutmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == *ppoutmids) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	(*ppoutmids)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pnames->count);
 	if (NULL == (*ppoutmids)->pproptag) {
 		*ppoutmids = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	(*ppoutmids)->cvalues = pnames->count;
 	memset((*ppoutmids)->pproptag, 0, sizeof(uint32_t) * pnames->count);
@@ -1683,7 +1683,7 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 	pproptags->cvalues  = 0;
 	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, UPPER_LIMIT);
 	if (pproptags->pproptag == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 
 	auto &t = pproptags->pproptag;
 	t[z++] = U(PR_DISPLAY_NAME);
@@ -1767,7 +1767,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	BOOL b_unicode = codepage == CP_WINUNICODE ? TRUE : false;
 	*ppproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == *ppproptags) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
@@ -1886,7 +1886,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (nt == nullptr) {
 			*pprows = nullptr;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		pproptags = nt;
 		result = nsp_interface_get_default_proptags(
@@ -1903,7 +1903,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	*pprows = common_util_propertyrow_init(NULL);
 	if (NULL == *pprows) {
 		*pprows = nullptr;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	/* MS-OXNSPI 3.1.4.1.7.11 */
 	if (NULL == pnode1) {
@@ -2121,16 +2121,16 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	
 	auto ppermeid = ndr_stack_anew<PERMANENT_ENTRYID>(NDR_STACK_OUT);
 	if (NULL == ppermeid) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	if (!ab_tree_node_to_guid(pnode, &tmp_guid))
-		return ecMAPIOOM;
+		return ecServerOOM;
 	if (!common_util_set_permanententryid(DT_CONTAINER, &tmp_guid,
 	    nullptr, ppermeid))
-		return ecMAPIOOM;
+		return ecServerOOM;
 	prow = common_util_proprowset_enlarge(prows);
 	if (NULL == prow) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	has_child = nsp_interface_has_child(pnode);
 	container_id = ab_tree_get_node_minid(pnode);
@@ -2141,7 +2141,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage, has_child,
 	    pnode->get_depth(), container_id,
 	    str_dname, ppermeid_parent, ppermeid))
-		return ecMAPIOOM;
+		return ecServerOOM;
 	if (!has_child)
 		return ecSuccess;
 	auto pnode1 = pnode->get_child();
@@ -2199,24 +2199,24 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	
 	*pprows = common_util_proprowset_init();
 	if (NULL == *pprows) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	
 	/* build the gal root */
 	prow = common_util_proprowset_enlarge(*pprows);
 	if (NULL == prow) {
 		*pprows = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	if (!common_util_set_permanententryid(DT_CONTAINER,
 	    nullptr, nullptr, &permeid)) {
 		*pprows = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage,
 	    false, 0, 0, nullptr, nullptr, &permeid)) {
 		*pprows = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
@@ -2284,7 +2284,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		dlg_path = maildir + "/config/delegates.txt"s;
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1526: ENOMEM\n");
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	std::unordered_set<std::string> tmp_list;
 	pfile = list_file_initd(dlg_path.c_str(), nullptr, dlgitem_format);
@@ -2332,7 +2332,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1919: ENOMEM\n");
-	return ecMAPIOOM;
+	return ecServerOOM;
 }
 
 int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
@@ -2344,13 +2344,13 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	pcolumns = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == pcolumns) {
 		*ppcolumns = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	pcolumns->cvalues = 31;
 	pcolumns->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pcolumns->cvalues);
 	if (NULL == pcolumns->pproptag) {
 		*ppcolumns = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	static constexpr uint32_t utags[] = {
 		PR_DISPLAY_NAME, PR_NICKNAME, PR_TITLE,
@@ -2389,7 +2389,7 @@ int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 		if (NULL == pstr) {
 			*ppmids = NULL;
 			*pprows = NULL;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		if (common_util_to_utf8(pstat->codepage, pstrs->ppstr[i], pstr, temp_len) == -1)
 			pstrs->ppstr[i] = nullptr;
@@ -2495,7 +2495,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		pprop->value.pv = ndr_stack_alloc(
 			NDR_STACK_OUT, strlen(paddress) + 1);
 		if (NULL == pprop->value.pstr) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		strcpy(pprop->value.pstr, paddress);
 		break;
@@ -2513,7 +2513,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		pprop->value.bin.pv = ndr_stack_alloc(
 			NDR_STACK_OUT, pprop->value.bin.cb);
 		if (pprop->value.bin.pc == nullptr)
-			return ecMAPIOOM;
+			return ecServerOOM;
 		sprintf(pprop->value.bin.pc, "SMTP:%s", paddress);
 		HX_strupper(pprop->value.bin.pc);
 		break;
@@ -2526,7 +2526,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		pprop->value.pv = ndr_stack_alloc(
 			NDR_STACK_OUT, strlen(paddress) + 1);
 		if (NULL == pprop->value.pstr) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		strcpy(pprop->value.pstr, paddress);
 		break;
@@ -2545,13 +2545,13 @@ static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
 	for (size_t i = 0; i < pproptags->cvalues; ++i) {
 		pprop = common_util_propertyrow_enlarge(prow);
 		if (NULL == pprop) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		err_val = nsp_interface_fetch_smtp_property(
 			paddress, pproptags->pproptag[i], pprop);
 		if (err_val != ecSuccess) {
 			pprop->proptag = CHANGE_PROP_TYPE(pprop->proptag, PT_ERROR);
-			pprop->value.err = err_val;
+			pprop->value.err = err_val != ecServerOOM ? err_val : ecMAPIOOM;
 		}
 	}
 	return ecSuccess;
@@ -2592,7 +2592,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		if (nt == nullptr) {
 			*ppmids = NULL;
 			*pprows = NULL;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		pproptags = nt;
 		nt->cvalues = 7;
@@ -2600,7 +2600,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		if (nt->pproptag == nullptr) {
 			*ppmids = NULL;
 			*pprows = NULL;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
 		nt->pproptag[1] = PR_OBJECT_TYPE;
@@ -2619,12 +2619,12 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	*ppmids = common_util_proptagarray_init();
 	if (NULL == *ppmids) {
 		*pprows = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	*pprows = common_util_proprowset_init();
 	if (NULL == *pprows) {
 		*ppmids = NULL;
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
@@ -2639,7 +2639,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			if (NULL == pproptag) {
 				*ppmids = nullptr;
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			if (pstrs->ppstr[i] == nullptr) {
 				*pproptag = MID_UNRESOLVED;
@@ -2663,7 +2663,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 					    common_util_propertyrow_init(prow)) {
 						*ppmids = nullptr;
 						*pprows = nullptr;
-						return ecMAPIOOM;
+						return ecServerOOM;
 					}
 					result = nsp_interface_fetch_smtp_row(pstrs->ppstr[i] + 6, pproptags, prow);
 					if (result != ecSuccess) {
@@ -2683,7 +2683,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			    common_util_propertyrow_init(prow)) {
 				*ppmids = nullptr;
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			result = nsp_interface_fetch_row(pnode, TRUE,
 			         pstat->codepage, pproptags, prow);
@@ -2709,7 +2709,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		if (NULL == pproptag) {
 			*ppmids = nullptr;
 			*pprows = nullptr;
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		if (pstrs->ppstr[i] == nullptr) {
 			*pproptag = MID_UNRESOLVED;
@@ -2748,7 +2748,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			    common_util_propertyrow_init(prow)) {
 				*ppmids = nullptr;
 				*pprows = nullptr;
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			result = nsp_interface_fetch_row(pnode2, TRUE,
 			         pstat->codepage, pproptags, prow);
@@ -2799,18 +2799,18 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 
 	auto row = *ppdata = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT);
 	if (row == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	row->reserved = 0;
 	row->cvalues  = 1;
 	auto val = row->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT);
 	if (val == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	val->proptag  = PR_EMS_TEMPLATE_BLOB;
 	val->reserved = 0;
 	val->value.bin.cb = tpldata.size();
 	val->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, tpldata.size());
 	if (val->value.bin.pv == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	memcpy(val->value.bin.pv, tpldata.data(), tpldata.size());
 	return 0;
 }
