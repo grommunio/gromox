@@ -2881,7 +2881,7 @@ static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
 	return common_util_recipients_to_list(&rcpts, prcpt_list);
 }
 
-static BOOL message_forward_message(const char *from_address,
+static ec_error_t message_forward_message(const char *from_address,
 	const char *username, sqlite3 *psqlite, uint32_t cpid,
 	uint64_t message_id, const char *pdigest, uint32_t action_flavor,
 	BOOL b_extended, uint32_t count, void *pblock)
@@ -2908,11 +2908,11 @@ static BOOL message_forward_message(const char *from_address,
 	if (!b_extended) {
 		if (!message_recipient_blocks_to_list(count,
 		    static_cast<RECIPIENT_BLOCK *>(pblock), &rcpt_list))
-			return FALSE;
+			return ecError;
 	} else {
 		if (!message_ext_recipient_blocks_to_list(count,
 		    static_cast<EXT_RECIPIENT_BLOCK *>(pblock), &rcpt_list))
-			return FALSE;
+			return ecError;
 	}
 	std::unique_ptr<char[], stdlib_delete> pbuff;
 	MAIL imail;
@@ -2922,30 +2922,30 @@ static BOOL message_forward_message(const char *from_address,
 			exmdb_server_get_dir(), mid_string);
 		wrapfd fd = open(tmp_path, O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
-			return false;
+			return ecError;
 		pbuff.reset(me_alloc<char>(node_stat.st_size));
 		if (NULL == pbuff) {
-			return FALSE;
+			return ecServerOOM;
 		}
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
-			return FALSE;
+			return ecError;
 		imail = MAIL(common_util_get_mime_pool());
 		if (!imail.retrieve(pbuff.get(), node_stat.st_size))
-			return FALSE;
+			return ecError;
 		auto pmime = imail.get_head();
 		if (NULL == pmime) {
-			return FALSE;
+			return ecError;
 		}
 		auto num = pmime->get_field_num("Delivered-To");
 		for (i=0; i<num; i++) {
 			if (pmime->search_field("Delivered-To", i, tmp_buff, 256) &&
 			    strcasecmp(tmp_buff, username) == 0)
-				return TRUE;
+				return ecSuccess;
 		}
 	} else {
 		if (!message_read_message(psqlite, cpid, message_id,
 		    &pmsgctnt) || pmsgctnt == nullptr)
-			return FALSE;
+			return ecError;
 		auto body_type = get_override_format(*pmsgctnt);
 		/* try to avoid TNEF message */
 		common_util_set_tls_var(psqlite);
@@ -2953,7 +2953,7 @@ static BOOL message_forward_message(const char *from_address,
 		    common_util_get_mime_pool(), &imail, common_util_alloc,
 		    message_get_propids, message_get_propname)) {
 			common_util_set_tls_var(NULL);
-			return FALSE;
+			return ecError;
 		}
 		common_util_set_tls_var(NULL);
 	}
@@ -2961,7 +2961,7 @@ static BOOL message_forward_message(const char *from_address,
 		MAIL imail1(common_util_get_mime_pool());
 		auto pmime = imail1.add_head();
 		if (NULL == pmime) {
-			return FALSE;
+			return ecServerOOM;
 		}
 		pmime->set_content_type("message/rfc822");
 		if (action_flavor & ACTION_FLAVOR_PR) {
@@ -3000,7 +3000,7 @@ static BOOL message_forward_message(const char *from_address,
 	} else {
 		auto pmime = imail.get_head();
 		if (NULL == pmime) {
-			return FALSE;
+			return ecError;
 		}
 		for (pnode=double_list_get_head(&rcpt_list); NULL!=pnode;
 			pnode=double_list_get_after(&rcpt_list, pnode)) {
@@ -3013,7 +3013,7 @@ static BOOL message_forward_message(const char *from_address,
 		}
 		common_util_send_mail(&imail, tmp_buff, &rcpt_list);
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
 static BOOL message_make_deferred_action_message(const char *username,
@@ -3366,7 +3366,7 @@ static ec_error_t op_forward(const char *from_address, const char *account,
 	}
 	return message_forward_message(from_address, account, psqlite, cpid,
 	       message_id, pdigest, block.flavor, false, pfwddlgt->count,
-	       pfwddlgt->pblock) ? ecSuccess : ecError;
+	       pfwddlgt->pblock);
 }
 
 static ec_error_t op_delegate(const char *from_address, const char *account,
@@ -3915,12 +3915,9 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
 			return message_disable_rule(psqlite, TRUE, prnode->id);
 		}
-		if (!message_forward_message(from_address,
-		    account, psqlite, cpid, message_id, pdigest,
-		    block.flavor, TRUE,
-		    pextfwddlgt->count, pextfwddlgt->pblock))
-			return ecError;
-		break;
+		return message_forward_message(from_address, account, psqlite,
+		       cpid, message_id, pdigest, block.flavor, TRUE,
+		       pextfwddlgt->count, pextfwddlgt->pblock);
 	}
 	case OP_DELEGATE:
 		return opx_delegate(from_address, account, cpid, psqlite,
