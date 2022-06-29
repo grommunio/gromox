@@ -126,6 +126,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 		return false;
 	}
 	g_http_debug = cfg->get_ll("http_debug");
+	g_msrpc_debug = cfg->get_ll("msrpc_debug");
 	return true;
 }
 

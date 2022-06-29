@@ -68,8 +68,8 @@ Default: \fI256\fP
 .TP
 \fBrop_debug\fP
 Log every incoming OXCROP call and the return code of the operation in a
-minimal fashion to stderr. Level 1 emits RPCs with a failure return code, level
-2 emits all RPCs.
+minimal fashion to stderr. Level 1 emits ROPs with a failure return code, level
+2 emits all ROPs.
 .br
 Default: \fI0\fP
 .TP

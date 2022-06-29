@@ -104,6 +104,7 @@ class interface_eq {
 
 }
 
+unsigned int g_msrpc_debug;
 static BOOL g_bigendian;
 static unsigned int g_connection_num;
 static char g_dns_name[128];
@@ -1951,8 +1952,17 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	*pb_async = false;
 	/* call the dispatch function */
 	uint32_t ecode = 0;
-	switch (pcontext->pinterface->dispatch(prequest->opnum, pobject, handle,
-	    pin, &pout, &ecode)) {
+	auto ret = pcontext->pinterface->dispatch(prequest->opnum,
+	           pobject, handle, pin, &pout, &ecode);
+	bool dbg = g_msrpc_debug >= 2;
+	if (g_msrpc_debug >= 1 &&
+	    (ret != DISPATCH_SUCCESS || ecode != ecSuccess))
+		dbg = true;
+	if (dbg)
+		fprintf(stderr, "rpc_dispatch(%s, %u) EC=%xh RS=%d\n",
+		        pcontext->pinterface->name, prequest->opnum,
+		        static_cast<unsigned int>(ecode), ret);
+	switch (ret) {
 	case DISPATCH_FAIL:
 		pdu_processor_free_stack_root(pstack_root);
 		debug_info("[pdu_processor]: RPC execution fault in call %s:%02x\n",

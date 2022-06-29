@@ -132,4 +132,4 @@ extern void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, gromox::time_dura
 extern void http_parser_log_info(HTTP_CONTEXT *pcontext, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
 extern alloc_limiter<stream_block> g_blocks_allocator;
-extern unsigned int g_http_debug;
+extern unsigned int g_http_debug, g_msrpc_debug;

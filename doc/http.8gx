@@ -179,6 +179,13 @@ The minimum number of client processing threads to keep around.
 .br
 Default: \fI5\fP
 .TP
+\fBmsrpc_debug\fP
+Log every completed RPC call and the return code of the operation in a minimal
+fashion to stderr. Level 1 emits RPCs with a failure return code, level 2 emits
+all RPCs.
+.br
+Default: \fI0\fP
+.TP
 \fBproc_plugin_ignore_errors\fP
 If set to yes, processor plugins that fail to load on startup are ignored. If
 set to no, the daemon will exit if any plugin cannot be loaded.
