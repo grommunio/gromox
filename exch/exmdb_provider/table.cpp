@@ -25,8 +25,8 @@
 #include "db_engine.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
-#define LLU(x) static_cast<unsigned long long>(x)
 
+using LLU = unsigned long long;
 using namespace gromox;
 
 namespace {
@@ -86,7 +86,7 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 	if (!b_depth) {
 		if (NULL == username) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM"
-			          " folders WHERE parent_id=%llu", LLU(folder_id));
+			          " folders WHERE parent_id=%llu", LLU{folder_id});
 			auto pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 				return 0;
@@ -94,7 +94,7 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 		} else {
 			count = 0;
 			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
-			          "folders WHERE parent_id=%llu", LLU(folder_id));
+			          "folders WHERE parent_id=%llu", LLU{folder_id});
 			auto pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr)
 				return 0;
@@ -111,7 +111,7 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 	} else {
 		count = 0;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
-		          "folders WHERE parent_id=%llu", LLU(folder_id));
+		          "folders WHERE parent_id=%llu", LLU{folder_id});
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return 0;
@@ -143,13 +143,13 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	if (!exmdb_server_check_private()) {
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT folder_id FROM"
 		         " folders WHERE parent_id=%llu AND is_deleted=%u",
-		         LLU(folder_id), !!(table_flags & TABLE_FLAG_SOFTDELETES));
+		         LLU{folder_id}, !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	} else if (table_flags & TABLE_FLAG_SOFTDELETES) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT"
 		        " folder_id FROM folders WHERE 0");
 	} else {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
-		        "FROM folders WHERE parent_id=%llu", LLU(folder_id));
+		        "FROM folders WHERE parent_id=%llu", LLU{folder_id});
 	}
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr)
@@ -313,12 +313,12 @@ BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 	if (exmdb_server_check_private())
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu AND "
-			"is_associated=%u", LLU(fid_val), !!b_fai);
+			"is_associated=%u", LLU{fid_val}, !!b_fai);
 	else
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu AND "
 			"(is_associated=%u AND is_deleted=%u)",
-			LLU(fid_val), !!b_fai, !!b_deleted);
+			LLU{fid_val}, !!b_fai, !!b_deleted);
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
@@ -637,7 +637,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		exmdb_server_set_public_username(username);
 	} else {
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT is_search FROM"
-		          " folders WHERE folder_id=%llu", LLU(fid_val));
+		          " folders WHERE folder_id=%llu", LLU{fid_val});
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -884,14 +884,14 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			if (!b_search) {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 				        "FROM messages WHERE parent_fid=%llu "
-				        "AND is_associated=1", LLU(fid_val));
+				        "AND is_associated=1", LLU{fid_val});
 			} else {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT "
 				        "messages.message_id FROM messages"
 				        " JOIN search_result ON "
 				        "search_result.folder_id=%llu AND "
 				        "search_result.message_id=messages.message_id"
-				        " AND messages.is_associated=1", LLU(fid_val));
+				        " AND messages.is_associated=1", LLU{fid_val});
 			}
 		} else if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
 			if (conv_id != nullptr) {
@@ -909,21 +909,21 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		} else if (!b_search) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 			        "FROM messages WHERE parent_fid=%llu "
-			        "AND is_associated=0", LLU(fid_val));
+			        "AND is_associated=0", LLU{fid_val});
 		} else {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			        "messages.message_id FROM messages"
 			        " JOIN search_result ON "
 			        "search_result.folder_id=%llu AND "
 			        "search_result.message_id=messages.message_id"
-			        " AND messages.is_associated=0", LLU(fid_val));
+			        " AND messages.is_associated=0", LLU{fid_val});
 		}
 	} else if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
 		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 		            "SELECT message_id "
 		            "FROM messages WHERE parent_fid=%llu "
 		            " AND is_deleted=%u AND is_associated=%u",
-		            LLU(fid_val),
+		            LLU{fid_val},
 		            !!(table_flags & TABLE_FLAG_SOFTDELETES),
 		            !!(table_flags & TABLE_FLAG_ASSOCIATED));
 	} else if (conv_id != nullptr) {
@@ -1316,7 +1316,7 @@ static BOOL table_load_permissions(sqlite3 *psqlite,
 	const char *pusername;
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT member_id, username"
-	          " FROM permissions WHERE folder_id=%llu", LLU(folder_id));
+	          " FROM permissions WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
@@ -1586,7 +1586,7 @@ static BOOL table_load_rules(sqlite3 *psqlite, uint64_t folder_id,
 	char sql_string[80];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT rule_id FROM "
-	          "rules WHERE folder_id=%llu", LLU(folder_id));
+	          "rules WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
@@ -2790,7 +2790,7 @@ BOOL exmdb_server_locate_table(const char *dir,
 			inst_id |= rop_util_get_gc_value(inst_id);
 		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u "
-		          "WHERE folder_id=%llu", ptnode->table_id, LLU(inst_id));
+		          "WHERE folder_id=%llu", ptnode->table_id, LLU{inst_id});
 		break;
 	case TABLE_TYPE_CONTENT:
 		inst_id = rop_util_get_replid(inst_id) == 1 ?
@@ -2798,16 +2798,16 @@ BOOL exmdb_server_locate_table(const char *dir,
 		          rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, row_type "
 				"FROM t%u WHERE inst_id=%llu AND inst_num=%u",
-				ptnode->table_id, LLU(inst_id), inst_num);
+				ptnode->table_id, LLU{inst_id}, inst_num);
 		break;
 	case TABLE_TYPE_PERMISSION:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u "
-			"WHERE member_id=%llu", ptnode->table_id, LLU(inst_id));
+			"WHERE member_id=%llu", ptnode->table_id, LLU{inst_id});
 		break;
 	case TABLE_TYPE_RULE:
 		inst_id = rop_util_get_gc_value(inst_id);
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u "
-		          "WHERE rule_id=%llu", ptnode->table_id, LLU(inst_id));
+		          "WHERE rule_id=%llu", ptnode->table_id, LLU{inst_id});
 		break;
 	default:
 		return FALSE;
@@ -2847,7 +2847,7 @@ static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
 		folder_id |= rop_util_get_gc_value(inst_id);
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT depth FROM t%u"
-	         " WHERE folder_id=%llu", table_id, LLU(folder_id));
+	         " WHERE folder_id=%llu", table_id, LLU{folder_id});
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -2914,7 +2914,7 @@ static BOOL read_tblrow_ctnt(uint32_t cpid, uint32_t table_id,
 		  rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u"
 	         " WHERE inst_id=%llu AND inst_num=%u",
-	         table_id, LLU(inst_id), inst_num);
+	         table_id, LLU{inst_id}, inst_num);
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -3379,7 +3379,7 @@ BOOL exmdb_server_expand_table(const char *dir,
 	inst_id = rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, row_type, "
 			"row_stat, depth, idx FROM t%u WHERE inst_id=%llu"
-			" AND inst_num=0", ptnode->table_id, LLU(inst_id));
+			" AND inst_num=0", ptnode->table_id, LLU{inst_id});
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -3425,7 +3425,7 @@ BOOL exmdb_server_expand_table(const char *dir,
 	}
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET row_stat=1 "
-	        "WHERE row_id=%llu", ptnode->table_id, LLU(row_id));
+	        "WHERE row_id=%llu", ptnode->table_id, LLU{row_id});
 	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	if (0 == *prow_count) {
@@ -3504,7 +3504,7 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	inst_id = rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, row_type, "
 		"row_stat, depth, idx FROM t%u WHERE inst_id=%llu AND"
-		" inst_num=0", ptnode->table_id, LLU(inst_id));
+		" inst_num=0", ptnode->table_id, LLU{inst_id});
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -3525,7 +3525,7 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	*pposition = idx - 1;
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET row_stat=0 "
-	        "WHERE row_id=%llu", ptnode->table_id, LLU(row_id));
+	        "WHERE row_id=%llu", ptnode->table_id, LLU{row_id});
 	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	*prow_count = 0;
@@ -3721,7 +3721,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE "
 			"state_info SET message_id=%llu, "
 			"inst_num=%u WHERE state_id=%u",
-			LLU(rop_util_get_gc_value(inst_id)),
+			LLU{rop_util_get_gc_value(inst_id)},
 			inst_num, *pstate_id);
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
@@ -3815,8 +3815,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		if (gx_sql_col_uint64(pstmt, 1) == inst_id1) {
 			last_id = sqlite3_last_insert_rowid(psqlite);
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE state_info SET header_id=%llu,"
-				" header_stat=%llu WHERE state_id=%u", LLU(last_id + 1),
-				LLU(sqlite3_column_int64(pstmt, 2)), *pstate_id);
+				" header_stat=%llu WHERE state_id=%u", LLU{last_id + 1},
+				LLU{pstmt.col_uint64(2)}, *pstate_id);
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
 		} else {
@@ -4113,10 +4113,10 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	if (0 != message_id) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u WHERE "
 				"inst_id=%llu AND inst_num=%llu", ptnode->table_id,
-				LLU(message_id), LLU(inst_num));
+				LLU{message_id}, LLU{inst_num});
 	} else {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u WHERE"
-		          " row_id=%llu", ptnode->table_id, LLU(row_id1));
+		          " row_id=%llu", ptnode->table_id, LLU{row_id1});
 	}
 	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr) {

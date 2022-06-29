@@ -23,8 +23,6 @@
 #include "common_util.h"
 #include "db_engine.h"
 #include "exmdb_server.h"
-#define UI(x) static_cast<unsigned int>(x)
-#define LLU(x) static_cast<unsigned long long>(x)
 
 enum {
 	PR_BODY_U = CHANGE_PROP_TYPE(PR_BODY, PT_UNSPECIFIED),
@@ -36,6 +34,8 @@ enum {
 #define MAX_RECIPIENT_NUMBER							4096
 #define MAX_ATTACHMENT_NUMBER							1024
 
+using XUI = unsigned int;
+using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 
@@ -74,7 +74,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	ATTACHMENT_CONTENT *pattachment;
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM"
-	          " messages WHERE message_id=%llu", LLU(message_id));
+	          " messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -109,8 +109,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PR_BODY_A: {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval FROM "
 				"message_properties WHERE (message_id=%llu AND proptag=%u)"
-				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
-				PR_BODY, LLU(message_id), PR_BODY_A);
+				" OR (message_id=%llu AND proptag=%u)", LLU{message_id},
+				PR_BODY, LLU{message_id}, PR_BODY_A);
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
 				return FALSE;
@@ -128,7 +128,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PR_RTF_COMPRESSED: {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
 				"message_properties WHERE message_id=%llu AND "
-				"proptag=%u", LLU(message_id), UI(proptags.pproptag[i]));
+				"proptag=%u", LLU{message_id}, XUI{proptags.pproptag[i]});
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
 				return FALSE;
@@ -146,8 +146,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PR_TRANSPORT_MESSAGE_HEADERS_A: {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval FROM "
 				"message_properties WHERE (message_id=%llu AND proptag=%u)"
-				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
-			         PR_TRANSPORT_MESSAGE_HEADERS, LLU(message_id),
+				" OR (message_id=%llu AND proptag=%u)", LLU{message_id},
+			         PR_TRANSPORT_MESSAGE_HEADERS, LLU{message_id},
 			         PR_TRANSPORT_MESSAGE_HEADERS_A);
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
@@ -182,7 +182,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	}
 	message_content_set_rcpts_internal(pmsgctnt, prcpts);
 	snprintf(sql_string, arsizeof(sql_string), "SELECT recipient_id FROM"
-	          " recipients WHERE message_id=%llu", LLU(message_id));
+	          " recipients WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -232,7 +232,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	}
 	message_content_set_attachments_internal(pmsgctnt, pattachments);
 	snprintf(sql_string, arsizeof(sql_string), "SELECT attachment_id FROM "
-	          "attachments WHERE message_id=%llu", LLU(message_id));
+	          "attachments WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -664,7 +664,7 @@ static void *fake_read_cid(unsigned int mode, uint32_t tag, uint64_t cid, uint32
 		snprintf(buf + strlen(buf), bmaxsize - strlen(buf),
 		         mode <= 1 ? "[CID=%llu Tag=%xh] Property/Attachment absent" :
 		         "[CID=%llu Tag=%xh] Filler text for debugging",
-		         LLU(cid), tag);
+		         LLU{cid}, tag);
 	if (tag == ID_TAG_HTML)
 		snprintf(buf + strlen(buf), bmaxsize - strlen(buf),
 		         "</tt></p></body></html>");

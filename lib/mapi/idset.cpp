@@ -733,8 +733,8 @@ void idset::dump() const
 			else
 				fprintf(stderr, "\t#%u ", repl_node.replid);
 			using LLU = unsigned long long;
-			fprintf(stderr, "%llxh--%llxh\n", LLU(range.low_value),
-			        LLU(range.high_value));
+			fprintf(stderr, "%llxh--%llxh\n", LLU{range.low_value},
+			        LLU{range.high_value});
 		}
 	}
 	fprintf(stderr, "}\n");

@@ -35,12 +35,11 @@
 #include "db_engine.h"
 #include "exmdb_server.h"
 #include "notification_agent.h"
-#define LLD(x) static_cast<long long>(x)
-#define LLU(x) static_cast<unsigned long long>(x)
-
 #define DB_LOCK_TIMEOUT					60
 #define MAX_DYNAMIC_NODES				100
 
+using LLD = long long;
+using LLU = unsigned long long;
 using namespace gromox;
 
 namespace {
@@ -271,7 +270,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	gx_sql_exec(pdb->psqlite, g_async ? "PRAGMA synchronous=ON" : "PRAGMA synchronous=OFF");
 	gx_sql_exec(pdb->psqlite, g_wal ? "PRAGMA journal_mode=WAL" : "PRAGMA journal_mode=DELETE");
 	if (0 != g_mmap_size) {
-		snprintf(sql_string, sizeof(sql_string), "PRAGMA mmap_size=%llu", LLU(g_mmap_size));
+		snprintf(sql_string, sizeof(sql_string), "PRAGMA mmap_size=%llu", LLU{g_mmap_size});
 		gx_sql_exec(pdb->psqlite, sql_string);
 	}
 	if (exmdb_server_check_private())
@@ -419,7 +418,7 @@ static BOOL db_engine_search_folder(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT is_search "
-	          "FROM folders WHERE folder_id=%llu", LLU(scope_fid));
+	          "FROM folders WHERE folder_id=%llu", LLU{scope_fid});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -472,7 +471,7 @@ static BOOL db_engine_search_folder(const char *dir,
 			continue;
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO search_result "
 		         "(folder_id, message_id) VALUES (%llu, %llu)",
-		         LLU(search_fid), LLU(pmessage_ids->pids[i]));
+		         LLU{search_fid}, LLU{pmessage_ids->pids[i]});
 		auto ret = gx_sql_exec(pdb->psqlite, sql_string, SQLEXEC_SILENT_CONSTRAINT);
 		if (ret == SQLITE_CONSTRAINT)
 			/*
@@ -498,7 +497,7 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
-	          "folders WHERE parent_id=%llu", LLU(folder_id));
+	          "folders WHERE parent_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -899,7 +898,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 	}
 	snprintf(sql_string, arsizeof(sql_string), folder_type == FOLDER_SEARCH ?
 		 "SELECT message_id FROM search_result WHERE folder_id=%llu" :
-		 "SELECT message_id FROM messages WHERE parent_fid=%llu", LLU(id3));
+		 "SELECT message_id FROM messages WHERE parent_fid=%llu", LLU{id3});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return;
@@ -922,7 +921,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 				pdynamic->folder_id, message_id, 0);
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_result "
 				"WHERE folder_id=%llu AND message_id=%llu",
-				LLU(pdynamic->folder_id), LLU(message_id));
+				LLU{pdynamic->folder_id}, LLU{message_id});
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				debug_info("[db_engine]: fail to "
 					"delete from search_result\n");
@@ -933,7 +932,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 			return;
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result "
 			"(folder_id, message_id) VALUES (%llu, %llu)",
-			LLU(pdynamic->folder_id), LLU(message_id));
+			LLU{pdynamic->folder_id}, LLU{message_id});
 		if (gx_sql_exec(pdb->psqlite, sql_string) == SQLITE_OK) {
 			db_engine_notify_link_creation(pdb,
 				pdynamic->folder_id, message_id);
@@ -980,7 +979,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 			return;
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result "
 			"(folder_id, message_id) VALUES (%llu, %llu)",
-			LLU(pdynamic->folder_id), LLU(id2));
+			LLU{pdynamic->folder_id}, LLU{id2});
 		if (gx_sql_exec(pdb->psqlite, sql_string) == SQLITE_OK) {
 			db_engine_notify_link_creation(pdb,
 				pdynamic->folder_id, id2);
@@ -1008,7 +1007,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 			pdynamic->folder_id, id2, 0);
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_result "
 			"WHERE folder_id=%llu AND message_id=%llu",
-			LLU(pdynamic->folder_id), LLU(id2));
+			LLU{pdynamic->folder_id}, LLU{id2});
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			debug_info("[db_engine]: fail to "
 				"delete from search_result\n");
@@ -1033,7 +1032,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 			}
 			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result "
 				"(folder_id, message_id) VALUES (%llu, %llu)",
-				LLU(pdynamic->folder_id), LLU(id2));
+				LLU{pdynamic->folder_id}, LLU{id2});
 			if (gx_sql_exec(pdb->psqlite, sql_string) == SQLITE_OK) {
 				db_engine_notify_link_creation(pdb,
 					pdynamic->folder_id, id2);
@@ -1054,7 +1053,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 				pdynamic->folder_id, id2, 0);
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_result "
 				"WHERE folder_id=%llu AND message_id=%llu",
-				LLU(pdynamic->folder_id), LLU(id2));
+				LLU{pdynamic->folder_id}, LLU{id2});
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				debug_info("[db_engine]: fail to "
 					"delete from search_result\n");
@@ -1455,7 +1454,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				inst_id = 0;
 				snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (inst_id, prev_id,"
 					" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
-					"%u, 0, 0, 1)", ptable->table_id, LLU(message_id),
+					"%u, 0, 0, 1)", ptable->table_id, LLU{message_id},
 					CONTENT_ROW_MESSAGE);
 			} else {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, inst_id "
@@ -1468,7 +1467,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				pstmt.finalize();
 				snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (inst_id, prev_id, "
 					"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
-					" %u, 0, 0, %u)", ptable->table_id, LLU(message_id), LLU(row_id),
+					" %u, 0, 0, %u)", ptable->table_id, LLU{message_id}, LLU{row_id},
 					CONTENT_ROW_MESSAGE, idx + 1);
 			}
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
@@ -1536,7 +1535,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			if (0 == idx) {
 				snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (inst_id, prev_id,"
 					" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
-					"%u, 0, 0, 1)", ptable->table_id, LLU(message_id),
+					"%u, 0, 0, 1)", ptable->table_id, LLU{message_id},
 					CONTENT_ROW_MESSAGE);
 				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 					continue;
@@ -1544,8 +1543,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			} else if (!b_break) {
 				snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (inst_id, prev_id, "
 					"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
-					" %u, 0, 0, %u)", ptable->table_id, LLU(message_id),
-					LLU(row_id1), CONTENT_ROW_MESSAGE, idx + 1);
+					" %u, 0, 0, %u)", ptable->table_id, LLU{message_id},
+					LLU{row_id1}, CONTENT_ROW_MESSAGE, idx + 1);
 				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 					continue;
 				padded_row->after_row_id = inst_id1;
@@ -1557,25 +1556,25 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 					continue;
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=NULL "
-					"WHERE row_id=%llu", ptable->table_id, LLU(row_id1));
+					"WHERE row_id=%llu", ptable->table_id, LLU{row_id1});
 				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 					continue;
 				if (0 == row_id) {
 					snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (inst_id, prev_id,"
 						" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
-						"%u, 0, 0, 1)", ptable->table_id, LLU(message_id),
+						"%u, 0, 0, 1)", ptable->table_id, LLU{message_id},
 						CONTENT_ROW_MESSAGE);
 				} else {
 					snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (inst_id, prev_id, "
 						"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
-						" %u, 0, 0, %u)", ptable->table_id, LLU(message_id),
-						LLU(row_id), CONTENT_ROW_MESSAGE, idx);
+						" %u, 0, 0, %u)", ptable->table_id, LLU{message_id},
+						LLU{row_id}, CONTENT_ROW_MESSAGE, idx);
 				}
 				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 					continue;
 				row_id = sqlite3_last_insert_rowid(pdb->tables.psqlite);
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=%llu WHERE"
-				        " row_id=%llu", ptable->table_id, LLU(row_id), LLU(row_id1));
+				        " row_id=%llu", ptable->table_id, LLU{row_id}, LLU{row_id1});
 				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 					continue;
 				sql_transact.commit();
@@ -1784,7 +1783,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				snprintf(sql_string, arsizeof(sql_string), b_read ?
 				         "UPDATE t%u SET count=count+1 WHERE row_id=%llu" :
 				         "UPDATE t%u SET count=count+1, unread=unread+1 WHERE row_id=%llu",
-				         ptable->table_id, LLU(row_id));
+				         ptable->table_id, LLU{row_id});
 				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 					return;
 				db_engine_append_rowinfo_node(&notify_list, row_id);
@@ -1887,8 +1886,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			}
 			sqlite3_reset(pstmt2);
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=%lld"
-			         " WHERE prev_id=%lld", ptable->table_id,
-			         LLD(prev_id1), LLD(row_id));
+			         " WHERE prev_id=%llu", ptable->table_id,
+			         LLD{prev_id1}, LLU{row_id});
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				return;
 			if (0 != row_id1) {
@@ -2363,7 +2362,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			sql_transact.commit();
 			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (idx, "
 				"folder_id, depth) VALUES (%u, %llu, %u)",
-				ptable->table_id, idx + 1, LLU(folder_id), depth);
+				ptable->table_id, idx + 1, LLU{folder_id}, depth);
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
@@ -2380,7 +2379,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
  APPEND_END_OF_TABLE:
 			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (folder_id,"
 				" depth) VALUES (%llu, %u)", ptable->table_id,
-				LLU(folder_id), depth);
+				LLU{folder_id}, depth);
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
@@ -2493,7 +2492,7 @@ static void* db_engine_get_extremum_value(db_item_ptr &pdb,
 	char sql_string[256];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT inst_id FROM t%u "
-				"WHERE parent_id=%llu", table_id, LLU(parent_id));
+				"WHERE parent_id=%llu", table_id, LLU{parent_id});
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr)
 		return NULL;
@@ -2569,11 +2568,11 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		if (0 == ptable->instance_tag) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id "
 				"FROM t%u WHERE inst_id=%llu AND inst_num=0",
-				ptable->table_id, LLU(message_id));
+				ptable->table_id, LLU{message_id});
 		} else {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id"
 							" FROM t%u WHERE inst_id=%llu",
-							ptable->table_id, LLU(message_id));
+							ptable->table_id, LLU{message_id});
 		}
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
@@ -2607,7 +2606,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		if (NULL == ptable->psorts || 0 == ptable->psorts->ccategories) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, idx,"
 					" prev_id FROM t%u WHERE inst_id=%llu AND "
-					"inst_num=0", ptable->table_id, LLU(message_id));
+					"inst_num=0", ptable->table_id, LLU{message_id});
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 				continue;
@@ -2617,11 +2616,11 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pstmt.finalize();
 			auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM t%u WHERE "
-				"row_id=%llu", ptable->table_id, LLU(row_id));
+				"row_id=%llu", ptable->table_id, LLU{row_id});
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				continue;
-			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=%llu WHERE"
-					" idx=%u", ptable->table_id, LLU(prev_id), idx + 1);
+			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=%lld WHERE"
+					" idx=%u", ptable->table_id, LLD{prev_id}, idx + 1);
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				continue;
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx-1)"
@@ -2657,11 +2656,11 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		if (0 == ptable->instance_tag) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u"
 						" WHERE inst_id=%llu AND inst_num=0",
-						ptable->table_id, LLU(message_id));
+						ptable->table_id, LLU{message_id});
 		} else {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u "
 						"WHERE inst_id=%llu", ptable->table_id,
-						LLU(message_id));
+						LLU{message_id});
 		}
 		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr)
@@ -2734,8 +2733,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			}
 			sqlite3_reset(pstmt1);
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=%lld"
-				" WHERE prev_id=%lld", ptable->table_id,
-				LLD(pdelnode->prev_id), LLD(pdelnode->row_id));
+				" WHERE prev_id=%llu", ptable->table_id,
+				LLD{pdelnode->prev_id}, LLU{pdelnode->row_id});
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				break;
 			if (pdelnode->depth == ptable->psorts->ccategories
@@ -2774,7 +2773,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			snprintf(sql_string, arsizeof(sql_string), pdelnode->b_read ?
 			         "UPDATE t%u SET count=count-1 WHERE row_id=%llu" :
 			         "UPDATE t%u SET count=count-1, unread=unread-1 WHERE row_id=%llu",
-			         ptable->table_id, LLU(pdelnode->parent_id));
+			         ptable->table_id, LLU{pdelnode->parent_id});
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				break;
 			prnode = cu_alloc<ROWINFO_NODE>();
@@ -2873,8 +2872,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				break;
 			stm_upd_previd.reset();
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=%lld"
-					" WHERE prev_id=%lld", ptable->table_id,
-					LLD(prev_id1), LLD(row_id));
+					" WHERE prev_id=%llu", ptable->table_id,
+					LLD{prev_id1}, LLU{row_id});
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				break;
 			if (0 != row_id1) {
@@ -3157,14 +3156,14 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 			}
 		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u "
-			"WHERE folder_id=%llu", ptable->table_id, LLU(folder_id));
+			"WHERE folder_id=%llu", ptable->table_id, LLU{folder_id});
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			continue;	
 		idx = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM t%u WHERE "
-			"folder_id=%llu", ptable->table_id, LLU(folder_id));
+			"folder_id=%llu", ptable->table_id, LLU{folder_id});
 		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 			continue;
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx-1)"
@@ -3294,11 +3293,11 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 		if (0 == ptable->instance_tag) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) "
 				"FROM t%u WHERE inst_id=%llu AND inst_num=0",
-				ptable->table_id, LLU(message_id));
+				ptable->table_id, LLU{message_id});
 		} else {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
 							" FROM t%u WHERE inst_id=%llu",
-							ptable->table_id, LLU(message_id));
+							ptable->table_id, LLU{message_id});
 		}
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ||
@@ -3328,7 +3327,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			pmodified_row->row_instance = 0;
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM "
 					"t%u WHERE inst_id=%llu AND inst_num=0",
-					ptable->table_id, LLU(message_id));
+					ptable->table_id, LLU{message_id});
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 				continue;
@@ -3371,7 +3370,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			}
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM "
 					"t%u WHERE inst_id=%llu AND inst_num=0",
-					ptable->table_id, LLU(message_id));
+					ptable->table_id, LLU{message_id});
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 				continue;
@@ -3478,7 +3477,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				}
 				snprintf(sql_string, arsizeof(sql_string), "SELECT value, "
 						"inst_num FROM t%u WHERE inst_id=%llu",
-						ptable->table_id, LLU(message_id));
+						ptable->table_id, LLU{message_id});
 				pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 				if (pstmt == nullptr)
 					continue;
@@ -3529,7 +3528,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				continue;
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, prev_id,"
 						" extremum FROM t%u WHERE inst_id=%llu AND"
-						" inst_num=?", ptable->table_id, LLU(message_id));
+						" inst_num=?", ptable->table_id, LLU{message_id});
 			auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt1 == nullptr) {
 				continue;
@@ -3582,7 +3581,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					break;
 				if (0 != ptable->extremum_tag) {
 					snprintf(sql_string, arsizeof(sql_string), "SELECT extremum FROM t%u"
-					          " WHERE row_id=%llu", ptable->table_id, LLU(parent_id));
+					          " WHERE row_id=%llu", ptable->table_id, LLU{parent_id});
 					auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 					if (pstmt2 == nullptr || sqlite3_step(pstmt2) != SQLITE_ROW) {
 						b_error = TRUE;
@@ -3615,7 +3614,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 						inst_id = 0;
 					} else {
 						snprintf(sql_string, arsizeof(sql_string), "SELECT inst_id FROM"
-						          " t%u WHERE row_id=%lld", ptable->table_id, LLD(prev_id));
+						          " t%u WHERE row_id=%lld", ptable->table_id, LLD{prev_id});
 						auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 						if (pstmt2 == nullptr  || sqlite3_step(pstmt2) != SQLITE_ROW) {
 							b_error = TRUE;
@@ -3624,7 +3623,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 						inst_id = sqlite3_column_int64(pstmt2, 0);
 					}
 					snprintf(sql_string, arsizeof(sql_string), "SELECT inst_id FROM t%u"
-					          " WHERE prev_id=%llu", ptable->table_id, LLU(row_id1));
+					          " WHERE prev_id=%llu", ptable->table_id, LLU{row_id1});
 					auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 					if (pstmt2 == nullptr) {
 						b_error = TRUE;
@@ -3691,11 +3690,11 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				if (0 == *(uint8_t*)pvalue && 0 != read_byte) {
 					unread_delta = 1;
 					snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET extremum=0 "
-					        "WHERE row_id=%llu", ptable->table_id, LLU(row_id1));
+					        "WHERE row_id=%llu", ptable->table_id, LLU{row_id1});
 				} else if (0 != *(uint8_t*)pvalue && 0 == read_byte) {
 					unread_delta = -1;
 					snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET extremum=1 "
-					        "WHERE row_id=%llu", ptable->table_id, LLU(row_id1));
+					        "WHERE row_id=%llu", ptable->table_id, LLU{row_id1});
 				} else {
 					unread_delta = 0;
 				}
@@ -3718,10 +3717,10 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					}
 					if (unread_delta > 0) {
 						snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET unread=unread+1"
-						        " WHERE row_id=%llu", ptable->table_id, LLU(row_id));
+						        " WHERE row_id=%llu", ptable->table_id, LLU{row_id});
 					} else {
 						snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET unread=unread-1"
-						        " WHERE row_id=%llu", ptable->table_id, LLU(row_id));
+						        " WHERE row_id=%llu", ptable->table_id, LLU{row_id});
 					}
 					if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK) {
 						b_error = TRUE;
@@ -3958,7 +3957,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 			}
 		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u "
-		          "WHERE folder_id=%llu", ptable->table_id, LLU(folder_id));
+		          "WHERE folder_id=%llu", ptable->table_id, LLU{folder_id});
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr)
 			continue;
@@ -3980,7 +3979,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 					datagram2.db_notify.pdata = padded_row;
 				}
 				snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (folder_id)"
-				        " VALUES (%llu)", ptable->table_id, LLU(folder_id));
+				        " VALUES (%llu)", ptable->table_id, LLU{folder_id});
 				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 					continue;
 				if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
@@ -4018,7 +4017,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 		    !cu_eval_folder_restriction(pdb->psqlite,
 		    folder_id, ptable->prestriction)) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM t%u WHERE "
-			        "folder_id=%llu", ptable->table_id, LLU(folder_id));
+			        "folder_id=%llu", ptable->table_id, LLU{folder_id});
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				continue;
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx-1)"

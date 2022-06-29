@@ -1888,19 +1888,19 @@ BOOL common_util_send_message(logon_object *plogon,
 	TARRAY_SET *prcpts;
 	DOUBLE_LIST temp_list;
 	MESSAGE_CONTENT *pmsgctnt;
-#define LLU(x) static_cast<unsigned long long>(x)
+	using LLU = unsigned long long;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {
-		log_err("W-1289: Cannot get parent folder_id of mid:0x%llx", LLU(message_id));
+		log_err("W-1289: Cannot get parent folder_id of mid:0x%llx", LLU{message_id});
 		return FALSE;
 	}
 	parent_id = *(uint64_t*)pvalue;
 	if (!exmdb_client_read_message(plogon->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr) {
-		log_err("W-1288: Failed to read mid:0x%llx from exmdb", LLU(message_id));
+		log_err("W-1288: Failed to read mid:0x%llx from exmdb", LLU{message_id});
 		return FALSE;
 	}
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
@@ -1916,13 +1916,13 @@ BOOL common_util_send_message(logon_object *plogon,
 	}
 	auto message_flags = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (message_flags == nullptr) {
-		log_err("W-1287: Failed to get message_flag of mid:0x%llx", LLU(message_id));
+		log_err("W-1287: Failed to get message_flag of mid:0x%llx", LLU{message_id});
 		return FALSE;
 	}
 	BOOL b_resend = (*message_flags & MSGFLAG_RESEND) ? TRUE : false;
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
-		log_err("W-1286: Missing recipients for message mid:0x%llx", LLU(message_id));
+		log_err("W-1286: Missing recipients for message mid:0x%llx", LLU{message_id});
 		return FALSE;
 	}
 	double_list_init(&temp_list);
@@ -1956,12 +1956,12 @@ BOOL common_util_send_message(logon_object *plogon,
  CONVERT_ENTRYID:
 			auto entryid = prcpts->pparray[i]->get<const BINARY>(PR_ENTRYID);
 			if (entryid == nullptr) {
-				log_err("W-1285: Cannot get recipient entryid while sending mid:0x%llx", LLU(message_id));
+				log_err("W-1285: Cannot get recipient entryid while sending mid:0x%llx", LLU{message_id});
 				return FALSE;
 			}
 			if (!common_util_entryid_to_username(entryid,
 			    username, GX_ARRAY_SIZE(username))) {
-				log_err("W-1284: Cannot convert recipient entryid to SMTP address while sending mid:0x%llx", LLU(message_id));
+				log_err("W-1284: Cannot convert recipient entryid to SMTP address while sending mid:0x%llx", LLU{message_id});
 				return FALSE;	
 			}
 			auto tmp_len = strlen(username) + 1;
@@ -1973,7 +1973,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		} else if (strcasecmp(addrtype, "SMTP") == 0) {
 			pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
 			if (NULL == pnode->pdata) {
-				log_err("W-1283: Cannot get email address of recipient of SMTP address type while sending mid:0x%llx", LLU(message_id));
+				log_err("W-1283: Cannot get email address of recipient of SMTP address type while sending mid:0x%llx", LLU{message_id});
 				return FALSE;
 			}
 		} else if (strcasecmp(addrtype, "EX") == 0) {
@@ -1995,7 +1995,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		double_list_append_as_tail(&temp_list, pnode);
 	}
 	if (0 == double_list_get_nodes_num(&temp_list)) {
-		log_err("W-1282: Empty converted recipients list while sending mid:0x%llx", LLU(message_id));
+		log_err("W-1282: Empty converted recipients list while sending mid:0x%llx", LLU{message_id});
 		return FALSE;
 	}
 	auto body_type = get_override_format(*pmsgctnt);
@@ -2003,11 +2003,11 @@ BOOL common_util_send_message(logon_object *plogon,
 	/* try to avoid TNEF message */
 	if (!oxcmail_export(pmsgctnt, false, body_type, g_mime_pool, &imail,
 	    common_util_alloc, common_util_get_propids, common_util_get_propname)) {
-		log_err("W-1281: Failed to export to RFC5322 mail while sending mid:0x%llx", LLU(message_id));
+		log_err("W-1281: Failed to export to RFC5322 mail while sending mid:0x%llx", LLU{message_id});
 		return FALSE;	
 	}
 	if (!common_util_send_mail(&imail, plogon->get_account(), &temp_list)) {
-		log_err("W-1280: Failed to send mid:0x%llx via SMTP", LLU(message_id));
+		log_err("W-1280: Failed to send mid:0x%llx via SMTP", LLU{message_id});
 		return FALSE;
 	}
 	imail.clear();
@@ -2019,17 +2019,17 @@ BOOL common_util_send_message(logon_object *plogon,
 	if (NULL != ptarget) {
 		if (!cu_from_message_entryid(plogon,
 		    ptarget, &folder_id, &new_id)) {
-			log_err("W-1279: Failed to retrieve target entryid while sending mid:0x%llx", LLU(message_id));
+			log_err("W-1279: Failed to retrieve target entryid while sending mid:0x%llx", LLU{message_id});
 			return FALSE;	
 		}
 		if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, false)) {
-			log_err("W-1278: Failed to clear submit flag while sending mid:0x%llx", LLU(message_id));
+			log_err("W-1278: Failed to clear submit flag while sending mid:0x%llx", LLU{message_id});
 			return FALSE;
 		}
 		if (!exmdb_client_movecopy_message(plogon->get_dir(),
 		    plogon->account_id, cpid, message_id, folder_id,
 		    new_id, TRUE, &b_result)) {
-			log_err("W-1277: Failed to move to target folder while sending mid:0x%llx", LLU(message_id));
+			log_err("W-1277: Failed to move to target folder while sending mid:0x%llx", LLU{message_id});
 			return FALSE;
 		}
 	} else if (b_delete) {
@@ -2038,7 +2038,7 @@ BOOL common_util_send_message(logon_object *plogon,
 			TRUE, &b_result);
 	} else {
 		if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, false)) {
-			log_err("W-1276: Failed to clear submit flag while sending mid:0x%llx", LLU(message_id));
+			log_err("W-1276: Failed to clear submit flag while sending mid:0x%llx", LLU{message_id});
 			return FALSE;
 		}
 		ids.count = 1;
@@ -2047,7 +2047,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		    plogon->account_id, cpid, false, nullptr, parent_id,
 		    rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
 		    false, &ids, &b_partial)) {
-			log_err("W-1275: Failed to move to \"Sent\" folder while sending mid:0x%llx", LLU(message_id));
+			log_err("W-1275: Failed to move to \"Sent\" folder while sending mid:0x%llx", LLU{message_id});
 			return FALSE;	
 		}
 	}

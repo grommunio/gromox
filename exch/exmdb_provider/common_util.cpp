@@ -33,9 +33,6 @@
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_server.h"
-#define UI(x) static_cast<unsigned int>(x)
-#define LLD(x) static_cast<long long>(x)
-#define LLU(x) static_cast<unsigned long long>(x)
 #define S2A(x) reinterpret_cast<const char *>(x)
 
 #define SERVICE_ID_LANG_TO_CHARSET							1
@@ -56,6 +53,9 @@
 #define SERVICE_ID_LOG_INFO									16
 #define SERVICE_ID_GET_HANDLE								17
 
+using XUI = unsigned int;
+using LLD = long long;
+using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 
@@ -350,12 +350,12 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 		pstmt.finalize();
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %lld, 1)",
-		        LLU(cur_eid + 1), LLU(max_eid), LLD(time(nullptr)));
+		        LLU{cur_eid + 1}, LLU{max_eid}, LLD{time(nullptr)});
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE configurations SET"
 			" config_value=%llu WHERE config_id=%u",
-			LLU(max_eid), CONFIG_ID_MAXIMUM_EID);
+			LLU{max_eid}, CONFIG_ID_MAXIMUM_EID);
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	} else {
@@ -363,7 +363,7 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE configurations SET"
 		" config_value=%llu WHERE config_id=%u",
-		LLU(cur_eid), CONFIG_ID_CURRENT_EID);
+		LLU{cur_eid}, CONFIG_ID_CURRENT_EID);
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	return TRUE;
@@ -377,7 +377,7 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT cur_eid, max_eid "
-	          "FROM folders WHERE folder_id=%llu", LLU(folder_id));
+	          "FROM folders WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
@@ -394,14 +394,14 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 		max_eid = *peid + ALLOCATED_EID_RANGE;
 		cur_eid = *peid + 1;
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
-			" VALUES (%llu, %llu, %llu, 1)", LLU(cur_eid),
-			LLU(max_eid), LLD(time(nullptr)));
+			" VALUES (%llu, %llu, %llu, 1)", LLU{cur_eid},
+			LLU{max_eid}, LLD{time(nullptr)});
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET cur_eid=%llu,"
-		" max_eid=%llu WHERE folder_id=%llu", LLU(cur_eid),
-		LLU(max_eid), LLU(folder_id));
+		" max_eid=%llu WHERE folder_id=%llu", LLU{cur_eid},
+		LLU{max_eid}, LLU{folder_id});
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	return TRUE;
@@ -469,7 +469,7 @@ BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT range_begin,"
 				" range_end FROM allocated_eids WHERE "
 				"range_begin<=%llu AND range_end>=%llu",
-				LLU(eid_val), LLU(eid_val));
+				LLU{eid_val}, LLU{eid_val});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -568,7 +568,7 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		break;
 	case db_table::folder_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
-		        "folder_properties WHERE folder_id=%llu", LLU(id));
+		        "folder_properties WHERE folder_id=%llu", LLU{id});
 		proptags[i++] = PR_ASSOC_CONTENT_COUNT;
 		proptags[i++] = PR_CONTENT_COUNT;
 		proptags[i++] = PR_MESSAGE_SIZE_EXTENDED;
@@ -587,7 +587,7 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		break;
 	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
-		        "message_properties WHERE message_id=%llu AND proptag NOT IN (0x0e05001e,0x0e05001f)", LLU(id));
+		        "message_properties WHERE message_id=%llu AND proptag NOT IN (0x0e05001e,0x0e05001f)", LLU{id});
 		proptags[i++] = PidTagMid;
 		proptags[i++] = PR_MESSAGE_SIZE;
 		proptags[i++] = PR_ASSOCIATED;
@@ -601,11 +601,11 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		break;
 	case db_table::rcpt_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
-		        "recipients_properties WHERE recipient_id=%llu", LLU(id));
+		        "recipients_properties WHERE recipient_id=%llu", LLU{id});
 		break;
 	case db_table::atx_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
-		        "attachment_properties WHERE attachment_id=%llu", LLU(id));
+		        "attachment_properties WHERE attachment_id=%llu", LLU{id});
 		proptags[i++] = PR_RECORD_KEY;
 		break;
 	}
@@ -721,7 +721,7 @@ static uint32_t common_util_calculate_childcount(
 	
 	count = 0;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
-	          "folders WHERE parent_id=%llu", LLU(folder_id));
+	          "folders WHERE parent_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return 0;
@@ -740,11 +740,11 @@ static BOOL common_util_check_subfolders(
 	
 	if (exmdb_server_check_private())
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
-		          "folders WHERE parent_id=%llu", LLU(folder_id));
+		          "folders WHERE parent_id=%llu", LLU{folder_id});
 	else
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
 			" folders WHERE parent_id=%llu AND is_deleted=0",
-			LLU(folder_id));
+			LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW ? TRUE : false;
 }
@@ -764,7 +764,7 @@ static char* common_util_calculate_folder_path(
 	while (true) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM"
 				" folder_properties WHERE proptag=%u AND "
-		        "folder_id=%llu", PR_DISPLAY_NAME, LLU(tmp_fid));
+		        "folder_id=%llu", PR_DISPLAY_NAME, LLU{tmp_fid});
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return NULL;
@@ -780,7 +780,7 @@ static char* common_util_calculate_folder_path(
 		    (!b_private && tmp_fid == PUBLIC_FID_ROOT))
 			break;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT parent_id FROM "
-		          "folders WHERE folder_id=%llu", LLU(tmp_fid));
+		          "folders WHERE folder_id=%llu", LLU{tmp_fid});
 		pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return NULL;
@@ -860,16 +860,16 @@ static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 			"search_result.folder_id=%llu AND "
 			"search_result.message_id=messages.message_id"
 			" AND messages.is_associated=%u",
-			LLU(folder_id), !!b_associated);
+			LLU{folder_id}, !!b_associated);
 	else if (exmdb_server_check_private())
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu "
-			"AND is_associated=%u", LLU(folder_id), !!b_associated);
+			"AND is_associated=%u", LLU{folder_id}, !!b_associated);
 	else
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu "
 			"AND is_deleted=0 AND is_associated=%u",
-			LLU(folder_id), !!b_associated);
+			LLU{folder_id}, !!b_associated);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 	       sqlite3_column_int64(pstmt, 0);
@@ -889,11 +889,11 @@ uint32_t common_util_get_folder_unread_count(
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id AND "
 				"messages.read_state=0 AND messages.is_associated=0",
-				LLU(folder_id));
+				LLU{folder_id});
 		else
 			gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
 				" FROM messages WHERE parent_fid=%llu AND "
-				"read_state=0 AND is_associated=0", LLU(folder_id));
+				"read_state=0 AND is_associated=0", LLU{folder_id});
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 		       sqlite3_column_int64(pstmt, 0);
@@ -903,28 +903,28 @@ uint32_t common_util_get_folder_unread_count(
 		return 0;
 	gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM messages WHERE"
 				" parent_fid=%llu AND is_deleted=0 AND is_associated=0",
-				LLU(folder_id));
+				LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
-	int64_t count = sqlite3_column_int64(pstmt, 0);
+	auto count = pstmt.col_uint64(0);
 	pstmt.finalize();
 	gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM read_states"
 				" JOIN messages ON read_states.username=?"
 				" AND messages.parent_fid=%llu AND "
 				"messages.message_id=read_states.message_id"
 				" AND messages.is_deleted=0"
-				" AND messages.is_associated=0", LLU(folder_id));
+				" AND messages.is_associated=0", LLU{folder_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return 0;
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 	if (sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
-	int64_t have_read = sqlite3_column_int64(pstmt, 0);
+	auto have_read = pstmt.col_uint64(0);
 	if (have_read > count)
 		fprintf(stderr, "W-1665: fid %llxh inconsistent read states for %s: %lld > %lld\n",
-		        LLU(folder_id), username, LLU(have_read), LLU(count));
+		        LLU{folder_id}, username, LLU{have_read}, LLU{count});
 	return count - std::min(count, have_read);
 }
 
@@ -943,36 +943,36 @@ static uint64_t common_util_get_folder_message_size(
 				"messages JOIN search_result ON "
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id",
-				LLU(folder_id));
+				LLU{folder_id});
 		else if (b_normal)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT "
 				"sum(messages.message_size) FROM "
 				"messages JOIN search_result ON "
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id"
-				" AND messages.is_associated=0", LLU(folder_id));
+				" AND messages.is_associated=0", LLU{folder_id});
 		else if (b_associated)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT "
 				"sum(messages.message_size) FROM "
 				"messages JOIN search_result ON "
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id"
-				" AND messages.is_associated=1", LLU(folder_id));
+				" AND messages.is_associated=1", LLU{folder_id});
 		else
 			return 0;
 	} else {
 		if (b_normal && b_associated)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT sum(message_size) "
-			          "FROM messages WHERE parent_fid=%llu", LLU(folder_id));
+			          "FROM messages WHERE parent_fid=%llu", LLU{folder_id});
 		else if (b_normal)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT sum(message_size) "
 						"FROM messages WHERE parent_fid=%llu AND "
-						"is_associated=0", LLU(folder_id));
+						"is_associated=0", LLU{folder_id});
 						
 		else if (b_associated)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT sum(message_size) "
 						"FROM messages WHERE parent_fid=%llu AND "
-						"is_associated=1", LLU(folder_id));
+						"is_associated=1", LLU{folder_id});
 		else
 			return 0;
 	}
@@ -995,7 +995,7 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
 		return TRUE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT is_search "
-	         "FROM folders WHERE folder_id=%llu", LLU(folder_id));
+	         "FROM folders WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -1016,7 +1016,7 @@ static BOOL common_util_check_folder_rules(
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM "
-	          "rules WHERE folder_id=%llu", LLU(folder_id));
+	          "rules WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW &&
 	       sqlite3_column_int64(pstmt, 0) > 0 ? TRUE : false;
@@ -1052,7 +1052,7 @@ static uint64_t common_util_get_message_size(
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_size FROM "
-	          "messages WHERE message_id=%llu", LLU(message_id));
+	          "messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 	       sqlite3_column_int64(pstmt, 0);
@@ -1065,7 +1065,7 @@ uint64_t common_util_get_folder_parent_fid(
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_id FROM "
-	          "folders WHERE folder_id=%llu", LLU(folder_id));
+	          "folders WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
@@ -1080,7 +1080,7 @@ static uint64_t common_util_get_folder_changenum(
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT change_number FROM "
-	          "folders WHERE folder_id=%llu", LLU(folder_id));
+	          "folders WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
@@ -1096,7 +1096,7 @@ BOOL common_util_get_folder_by_name(
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
-	          "FROM folders WHERE parent_id=%llu", LLU(parent_id));
+	          "FROM folders WHERE parent_id=%llu", LLU{parent_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -1219,7 +1219,7 @@ BOOL common_util_check_message_associated(
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT is_associated FROM "
-	          "messages WHERE message_id=%llu", LLU(message_id));
+	          "messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW &&
 	       sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
@@ -1232,7 +1232,7 @@ static BOOL common_util_check_message_named_properties(
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag"
 				" FROM message_properties WHERE "
-				"message_id=%llu", LLU(message_id));
+				"message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -1248,7 +1248,7 @@ static BOOL common_util_check_message_has_attachments(
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM "
-	          "attachments WHERE message_id=%llu", LLU(message_id));
+	          "attachments WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW &&
 	       sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
@@ -1265,7 +1265,7 @@ static BOOL common_util_check_message_read(
 			return FALSE;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
 				" FROM read_states WHERE username=? AND "
-				"message_id=%llu", LLU(message_id));
+				"message_id=%llu", LLU{message_id});
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -1273,7 +1273,7 @@ static BOOL common_util_check_message_read(
 		return sqlite3_step(pstmt) == SQLITE_ROW ? TRUE : false;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT read_state FROM "
-	          "messages WHERE message_id=%llu", LLU(message_id));
+	          "messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW &&
 	       sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
@@ -1286,7 +1286,7 @@ static uint64_t common_util_get_message_changenum(
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT change_number FROM "
-	          "messages WHERE message_id=%llu", LLU(message_id));
+	          "messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
@@ -1453,7 +1453,7 @@ static BOOL common_util_get_message_display_recipients(
 		break;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT recipient_id FROM"
-	          " recipients WHERE message_id=%llu", LLU(message_id));
+	          " recipients WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -1516,22 +1516,22 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval "
 		         "FROM message_properties WHERE message_id=%llu AND"
 		         " proptag IN (%u,%u)",
-		         LLU(message_id), PR_BODY, PR_BODY_A);
+		         LLU{message_id}, PR_BODY, PR_BODY_A);
 	else if (proptag == PR_TRANSPORT_MESSAGE_HEADERS ||
 	    proptag == PR_TRANSPORT_MESSAGE_HEADERS_A)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval "
 		         "FROM message_properties WHERE message_id=%llu AND"
 		         " proptag IN (%u,%u)",
-		         LLU(message_id), PR_TRANSPORT_MESSAGE_HEADERS,
+		         LLU{message_id}, PR_TRANSPORT_MESSAGE_HEADERS,
 		         PR_TRANSPORT_MESSAGE_HEADERS_A);
 	else if (proptag == PR_HTML || proptag == PR_RTF_COMPRESSED)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval FROM "
 		         "message_properties WHERE message_id=%llu AND "
-		         "proptag=%u", LLU(message_id), UI(proptag));
+		         "proptag=%u", LLU{message_id}, XUI{proptag});
 	else if (proptag == PR_ATTACH_DATA_BIN || proptag == PR_ATTACH_DATA_OBJ)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval FROM "
 		         "attachment_properties WHERE attachment_id=%llu"
-		         " AND proptag=%u", LLU(message_id), UI(proptag));
+		         " AND proptag=%u", LLU{message_id}, XUI{proptag});
 	else
 		return nullptr;
 
@@ -2491,7 +2491,7 @@ static void common_util_set_folder_changenum(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET change_number=%llu"
-	        " WHERE folder_id=%llu", LLU(change_num), LLU(folder_id));
+	        " WHERE folder_id=%llu", LLU{change_num}, LLU{folder_id});
 	gx_sql_exec(psqlite, sql_string);
 }
 
@@ -2501,7 +2501,7 @@ static void common_util_set_message_changenum(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET change_number=%llu"
-	        " WHERE message_id=%llu", LLU(change_num), LLU(message_id));
+	        " WHERE message_id=%llu", LLU{change_num}, LLU{message_id});
 	gx_sql_exec(psqlite, sql_string);
 }
 
@@ -2514,20 +2514,20 @@ void common_util_set_message_read(sqlite3 *psqlite,
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE message_properties "
 			"SET propval=propval|%u WHERE message_id=%llu"
 			" AND proptag=%u", MSGFLAG_EVERREAD,
-		        LLU(message_id), PR_MESSAGE_FLAGS);
+		        LLU{message_id}, PR_MESSAGE_FLAGS);
 	else
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE message_properties "
 			"SET propval=propval&(~%u) WHERE message_id=%llu"
 			" AND proptag=%u", MSGFLAG_EVERREAD,
-		        LLU(message_id), PR_MESSAGE_FLAGS);
+		        LLU{message_id}, PR_MESSAGE_FLAGS);
 	gx_sql_exec(psqlite, sql_string);
 	if (exmdb_server_check_private()) {
 		if (!is_read)
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
-				"read_state=0 WHERE message_id=%llu", LLU(message_id));
+				"read_state=0 WHERE message_id=%llu", LLU{message_id});
 		else
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
-				"read_state=1 WHERE message_id=%llu", LLU(message_id));
+				"read_state=1 WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(psqlite, sql_string);
 		return;
 	}
@@ -2536,11 +2536,11 @@ void common_util_set_message_read(sqlite3 *psqlite,
 		return;
 	if (is_read)
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
-			"read_states VALUES (%llu, ?)", LLU(message_id));
+			"read_states VALUES (%llu, ?)", LLU{message_id});
 	else
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
 			"read_states WHERE message_id=%llu AND "
-			"username=?", LLU(message_id));
+			"username=?", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return;
@@ -2557,10 +2557,10 @@ static BOOL cu_update_object_cid(sqlite3 *psqlite, db_table table_type,
 	
 	if (table_type == db_table::msg_props)
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO message_properties"
-		         " VALUES (%llu, %u, ?)", LLU(object_id), UI(proptag));
+		         " VALUES (%llu, %u, ?)", LLU{object_id}, XUI{proptag});
 	else if (table_type == db_table::atx_props)
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO attachment_properties"
-		          " VALUES (%llu, %u, ?)", LLU(object_id), UI(proptag));
+		          " VALUES (%llu, %u, ?)", LLU{object_id}, XUI{proptag});
 	else
 		return false;
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
@@ -2749,19 +2749,19 @@ BOOL cu_set_properties(db_table table_type,
 		break;
 	case db_table::folder_props:
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
-		          "folder_properties VALUES (%llu, ?, ?)", LLU(id));
+		          "folder_properties VALUES (%llu, ?, ?)", LLU{id});
 		break;
 	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
-		          "message_properties VALUES (%llu, ?, ?)", LLU(id));
+		          "message_properties VALUES (%llu, ?, ?)", LLU{id});
 		break;
 	case db_table::rcpt_props:
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
-		          "recipients_properties VALUES (%llu, ?, ?)", LLU(id));
+		          "recipients_properties VALUES (%llu, ?, ?)", LLU{id});
 		break;
 	case db_table::atx_props:
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
-		          "attachment_properties VALUES (%llu, ?, ?)", LLU(id));
+		          "attachment_properties VALUES (%llu, ?, ?)", LLU{id});
 		break;
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
@@ -3268,17 +3268,17 @@ BOOL cu_remove_properties(db_table table_type, uint64_t id,
 	case db_table::folder_props:
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
 			"folder_properties WHERE folder_id=%llu"
-			" AND proptag=?", LLU(id));
+			" AND proptag=?", LLU{id});
 		break;
 	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
 			"message_properties WHERE message_id=%llu"
-			" AND proptag=?", LLU(id));
+			" AND proptag=?", LLU{id});
 		break;
 	case db_table::atx_props:
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
 			"attachment_properties WHERE attachment_id=%llu"
-			" AND proptag=?", LLU(id));
+			" AND proptag=?", LLU{id});
 		break;
 	default:
 		fprintf(stderr, "W-1594: %s undiscovered case\n", __func__);
@@ -3375,7 +3375,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 	
 	if (auto x = rule_tag_to_col(proptag)) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT %s "
-		         "FROM rules WHERE rule_id=%llu", x, LLU(rule_id));
+		         "FROM rules WHERE rule_id=%llu", x, LLU{rule_id});
 	} else if (proptag == PR_RULE_ID) {
 		auto v = cu_alloc<uint64_t>();
 		*ppvalue = v;
@@ -3470,7 +3470,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT username FROM"
-		          " permissions WHERE member_id=%llu", LLU(member_id));
+		          " permissions WHERE member_id=%llu", LLU{member_id});
 		break;
 	case PR_MEMBER_NAME:
 	case PR_SMTP_ADDRESS:
@@ -3482,7 +3482,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT username FROM"
-		          " permissions WHERE member_id=%llu", LLU(member_id));
+		          " permissions WHERE member_id=%llu", LLU{member_id});
 		break;
 	case PR_MEMBER_ID:
 		if (0 == member_id || -1 == (int64_t)member_id) {
@@ -3494,7 +3494,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT username FROM"
-		          " permissions WHERE member_id=%llu", LLU(member_id));
+		          " permissions WHERE member_id=%llu", LLU{member_id});
 		break;
 	case PR_MEMBER_RIGHTS:
 		if (member_id == 0)
@@ -3507,7 +3507,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 					CONFIG_ID_ANONYMOUS_PERMISSION);
 		else
 			snprintf(sql_string, arsizeof(sql_string), "SELECT permission FROM "
-			          "permissions WHERE member_id=%llu", LLU(member_id));
+			          "permissions WHERE member_id=%llu", LLU{member_id});
 		break;
 	default:
 		*ppvalue = NULL;
@@ -3730,7 +3730,7 @@ BOOL common_util_check_folder_permission(
 	*ppermission = rightsNone;
 	snprintf(sql_string, 1024, "SELECT permission"
 				" FROM permissions WHERE folder_id=%llu AND"
-				" username=?", LLU(folder_id));
+				" username=?", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -3741,7 +3741,7 @@ BOOL common_util_check_folder_permission(
 	}
 	if (NULL != username && '\0' != username[0]) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT username, permission"
-		         " FROM permissions WHERE folder_id=%llu", LLU(folder_id));
+		         " FROM permissions WHERE folder_id=%llu", LLU{folder_id});
 		auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return FALSE;
@@ -3841,7 +3841,7 @@ BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 	char sql_string[256];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid FROM"
-	          " messages WHERE message_id=%llu", LLU(message_id));
+	          " messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;	
@@ -3873,7 +3873,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM "
-	          "search_scopes WHERE folder_id=%llu", LLU(folder_id));
+	          "search_scopes WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
@@ -3883,7 +3883,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	if (pfolder_ids->pll == nullptr)
 		return FALSE;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT included_fid FROM"
-	          " search_scopes WHERE folder_id=%llu", LLU(folder_id));
+	          " search_scopes WHERE folder_id=%llu", LLU{folder_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -4028,11 +4028,11 @@ static bool cu_eval_msgsubs_restriction(
 	if (proptag == PR_MESSAGE_RECIPIENTS) {
 		table_type = db_table::rcpt_props;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT recipient_id FROM "
-				"recipients WHERE message_id=%llu", LLU(message_id));
+				"recipients WHERE message_id=%llu", LLU{message_id});
 	} else {
 		table_type = db_table::atx_props;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT attachment_id FROM"
-				" attachments WHERE message_id=%llu", LLU(message_id));
+				" attachments WHERE message_id=%llu", LLU{message_id});
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -4406,7 +4406,7 @@ BOOL common_util_check_search_result(sqlite3 *psqlite,
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM"
 				" search_result WHERE folder_id=%llu AND "
-				"message_id=%llu", LLU(folder_id), LLU(message_id));
+				"message_id=%llu", LLU{folder_id}, LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -4420,7 +4420,7 @@ BOOL common_util_get_mid_string(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT mid_string FROM"
-	          " messages WHERE message_id=%llu", LLU(message_id));
+	          " messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
@@ -4438,7 +4438,7 @@ BOOL common_util_set_mid_string(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE messages set "
-	          "mid_string=? WHERE message_id=%llu", LLU(message_id));
+	          "mid_string=? WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -4508,11 +4508,11 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	if (b_private)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT is_associated, message_size,"
 			" read_state, mid_string FROM messages WHERE message_id=%llu",
-		          LLU(message_id));
+		          LLU{message_id});
 	else
 		snprintf(sql_string, arsizeof(sql_string), "SELECT is_associated, "
 			"message_size FROM messages WHERE message_id=%llu",
-		          LLU(message_id));
+		          LLU{message_id});
 
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -4530,7 +4530,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		} else {
 			gx_strlcpy(mid_string1, S2A(sqlite3_column_text(pstmt, 3)), sizeof(mid_string1));
 			snprintf(mid_string, arsizeof(mid_string), "%lld.%u.%s",
-			         LLD(time(nullptr)), common_util_sequence_ID(), get_host_ID());
+			         LLD{time(nullptr)}, common_util_sequence_ID(), get_host_ID());
 			snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
 				exmdb_server_get_dir(), mid_string);
 			snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
@@ -4549,16 +4549,16 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	if (b_embedded) {
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id, parent_fid,"
 			" parent_attid, is_associated, change_number, message_size) "
-			"VALUES (%llu, NULL, %llu, %d, %llu, %u)", LLU(*pdst_mid),
-			LLU(parent_id), 0, LLU(change_num), message_size);
+			"VALUES (%llu, NULL, %llu, %d, %llu, %u)", LLU{*pdst_mid},
+			LLU{parent_id}, 0, LLU{change_num}, message_size);
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	} else if (b_private) {
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id, "
 		         "parent_fid, parent_attid, is_associated, change_number, "
 		         "read_state, message_size, mid_string) VALUES (%llu, %llu,"
-		         " NULL, %d, %llu, %d, %u, ?)", LLU(*pdst_mid), LLU(parent_id),
-		         is_associated, LLU(change_num), read_state, message_size);
+		         " NULL, %d, %llu, %d, %u, ?)", LLU{*pdst_mid}, LLU{parent_id},
+		         is_associated, LLU{change_num}, read_state, message_size);
 		pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -4572,24 +4572,24 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	} else {
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id, parent_fid,"
 		         " parent_attid, is_associated, change_number, message_size) "
-		         "VALUES (%llu, %llu, NULL, %d, %llu, %u)", LLU(*pdst_mid),
-		         LLU(parent_id), is_associated, LLU(change_num), message_size);
+		         "VALUES (%llu, %llu, NULL, %d, %llu, %u)", LLU{*pdst_mid},
+		         LLU{parent_id}, is_associated, LLU{change_num}, message_size);
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO message_properties (message_id,"
 			" proptag, propval) SELECT %llu, proptag, propval FROM "
 			"message_properties WHERE message_id=%llu",
-			LLU(*pdst_mid), LLU(message_id));
+			LLU{*pdst_mid}, LLU{message_id});
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT recipient_id FROM"
-	          " recipients WHERE message_id=%llu", LLU(message_id));
+	          " recipients WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO recipients"
-	          " (message_id) VALUES (%llu)", LLU(*pdst_mid));
+	          " (message_id) VALUES (%llu)", LLU{*pdst_mid});
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
@@ -4613,12 +4613,12 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	pstmt1.finalize();
 	pstmt2.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "SELECT attachment_id FROM"
-	          " attachments WHERE message_id=%llu", LLU(message_id));
+	          " attachments WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO attachments"
-	          " (message_id) VALUES (%llu)", LLU(*pdst_mid));
+	          " (message_id) VALUES (%llu)", LLU{*pdst_mid});
 	pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
@@ -4858,7 +4858,7 @@ BOOL common_util_check_folder_id(sqlite3 *psqlite,
 	char sql_string[256];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
-	          "FROM folders WHERE folder_id=%llu", LLU(folder_id));
+	          "FROM folders WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -4874,7 +4874,7 @@ BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties"
 		" SET propval=propval+%u WHERE proptag=%u"
 		" AND folder_id=%llu", del_count,
-	        PR_DELETED_COUNT_TOTAL, LLU(folder_id));
+	        PR_DELETED_COUNT_TOTAL, LLU{folder_id});
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	return TRUE;
