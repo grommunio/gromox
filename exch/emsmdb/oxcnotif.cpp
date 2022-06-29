@@ -35,7 +35,7 @@ uint32_t rop_registernotification(uint8_t notification_types, uint8_t reserved,
 	auto psub = subscription_object::create(plogon, logon_id,
 	            notification_types, b_whole, folder_id, message_id);
 	if (psub == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	auto rsub = psub.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_SUBSCRIPTION, std::move(psub)});

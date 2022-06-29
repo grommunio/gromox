@@ -602,7 +602,7 @@ uint32_t rop_optionsdata(const char *paddress_type, uint8_t want_win32,
 	poptions_info->cb = 300;
 	poptions_info->pv = common_util_alloc(poptions_info->cb);
 	if (poptions_info->pv == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	memset(poptions_info->pv, 0, poptions_info->cb);
 	phelp_file->cb = 0;
 	*ppfile_name = NULL;

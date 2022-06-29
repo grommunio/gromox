@@ -132,7 +132,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	auto plogon = logon_object::create(logon_flags, open_flags, logon_mode,
 	              user_id, username, maildir, *pmailbox_guid);
 	if (plogon == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	/* create logon map and logon object */
 	auto handle = rop_processor_create_logon_item(plogmap, logon_id, std::move(plogon));
 	if (handle < 0) {
@@ -227,7 +227,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	auto plogon = logon_object::create(logon_flags, open_flags,
 	              LOGON_MODE_GUEST, domain_id, pdomain, homedir, mailbox_guid);
 	if (plogon == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	/* create logon map and logon object */
 	auto handle = rop_processor_create_logon_item(plogmap, logon_id, std::move(plogon));
 	if (handle < 0) {
@@ -253,7 +253,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
 		return ecNotSupported;
 	*ppstr_explicit = cu_alloc<char>(256);
 	if (NULL == *ppstr_explicit) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	if (!exmdb_client_get_folder_by_class(plogon->get_dir(), pstr_class,
 	    pfolder_id, *ppstr_explicit))
@@ -329,12 +329,12 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 	prows->count = class_table.count;
 	prows->prows = cu_alloc<PROPERTY_ROW>(class_table.count);
 	if (NULL == prows->prows) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	for (size_t i = 0; i < class_table.count; ++i) {
 		if (!common_util_propvals_to_row(class_table.pparray[i],
 		    &columns, &prows->prows[i]))
-			return ecMAPIOOM;
+			return ecServerOOM;
 	}
 	return ecSuccess;
 }
@@ -366,7 +366,7 @@ uint32_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 	pghost->cheap_server_count = 1;
 	pghost->ppservers = cu_alloc<char *>();
 	if (NULL == pghost->ppservers) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	replid = rop_util_get_replid(folder_id);
 	if (1 != replid) {
@@ -388,7 +388,7 @@ uint32_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 	static constexpr size_t dnmax = 256;
 	pghost->ppservers[0] = cu_alloc<char>(dnmax);
 	if (NULL == pghost->ppservers[0]) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	common_util_domain_to_essdn(plogon->get_account(), pghost->ppservers[0], dnmax);
 	return ecSuccess;
@@ -416,7 +416,7 @@ uint32_t rop_publicfolderisghosted(uint64_t folder_id, GHOST_SERVER **ppghost,
 	}
 	*ppghost = cu_alloc<GHOST_SERVER>();
 	if (NULL == *ppghost) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	return rop_getowningservers(folder_id,
 			*ppghost, plogmap, logon_id, hin);

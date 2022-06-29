@@ -412,7 +412,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	tmp_len = *pbuff_len - 5*sizeof(uint16_t)
 			- sizeof(uint32_t)*prop_buff->hnum;
 	if (!ext_push.init(ext_buff, tmp_len, EXT_FLAG_UTF16))
-		return ecMAPIOOM;
+		return ecServerOOM;
 	rop_num = double_list_get_nodes_num(&prop_buff->rop_list);
 	emsmdb_interface_set_rop_num(rop_num);
 	b_icsup = FALSE;
@@ -421,7 +421,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		pnode=double_list_get_after(&prop_buff->rop_list, pnode)) {
 		auto pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode1) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.m_offset);
 		auto req = static_cast<ROP_REQUEST *>(pnode->pdata);
@@ -454,7 +454,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			rsp->rop_id = ropBufferTooSmall;
 			rsp->ppayload = cu_alloc<BUFFERTOOSMALL_RESPONSE>();
 			if (rsp->ppayload == nullptr)
-				return ecMAPIOOM;
+				return ecServerOOM;
 			auto bts = static_cast<BUFFERTOOSMALL_RESPONSE *>(rsp->ppayload);
 			bts->size_needed = 0x8000;
 			bts->buffer = req->bookmark;
@@ -490,7 +490,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			static_cast<ROP_RESPONSE *>(pnode1->pdata)->rop_id = ropBufferTooSmall;
 			static_cast<ROP_RESPONSE *>(pnode1->pdata)->ppayload = cu_alloc<BUFFERTOOSMALL_RESPONSE>();
 			if (NULL == ((ROP_RESPONSE*)pnode1->pdata)->ppayload) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			((BUFFERTOOSMALL_RESPONSE*)((ROP_RESPONSE*)
 				pnode1->pdata)->ppayload)->size_needed = 0x8000;
@@ -504,7 +504,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				return ecBufferTooSmall;
 			goto MAKE_RPC_EXT;
 		case EXT_ERR_ALLOC:
-			return ecMAPIOOM;
+			return ecServerOOM;
 		default:
 			return ecRpcFailed;
 		}
@@ -602,7 +602,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	case EXT_ERR_SUCCESS:
 		break;
 	case EXT_ERR_ALLOC:
-		return ecMAPIOOM;
+		return ecServerOOM;
 	default:
 		return ecRpcFormat;
 	}

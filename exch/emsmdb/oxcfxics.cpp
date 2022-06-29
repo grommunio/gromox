@@ -336,7 +336,7 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	}
 	ptransfer_data->pv = common_util_alloc(len);
 	if (ptransfer_data->pv == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	if (OBJECT_TYPE_FASTDOWNCTX == object_type) {
 		if (!static_cast<fastdownctx_object *>(pobject)->get_buffer(
 		    ptransfer_data->pv, &len, &b_last, pin_progress_count, ptotal_step_count))
@@ -442,12 +442,12 @@ uint32_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	}
 	pmids = eid_array_init();
 	if (NULL == pmids) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	if (!eid_array_batch_append(pmids, pmessage_ids->count,
 	    pmessage_ids->pll)) {
 		eid_array_free(pmids);
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	BOOL b_chginfo = (flags & FAST_COPY_MESSAGE_FLAG_SENDENTRYID) ? TRUE : false;
 	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
@@ -785,7 +785,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 		pproptags = &new_pta;
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1610: ENOMEM\n");
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	auto pctx = icsdownctx_object::create(plogon, pfolder, sync_type,
 	            send_options, sync_flags, pres, extra_flags, pproptags);
@@ -1163,7 +1163,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.count = 0;
 		tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8 + ppropvals->count);
 		if (NULL == tmp_propvals.ppropval) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		tmp_propvals.ppropval[0].proptag = PidTagFolderId;
 		tmp_propvals.ppropval[0].pvalue = &folder_id;
@@ -1252,7 +1252,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5 + ppropvals->count);
 	if (NULL == tmp_propvals.ppropval) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	tmp_propvals.ppropval[0].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[0].pvalue = phichyvals->ppropval[2].pvalue;
@@ -1332,7 +1332,7 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		message_ids.count = 0;
 		message_ids.pids = cu_alloc<uint64_t>(pbins->count);
 		if (NULL == message_ids.pids) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 	}
 	for (size_t i = 0; i < pbins->count; ++i) {

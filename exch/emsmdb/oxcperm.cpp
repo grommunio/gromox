@@ -85,7 +85,7 @@ uint32_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
 	auto ptable = table_object::create(plogon, pfolder, flags,
 	              ropGetPermissionsTable, logon_id);
 	if (ptable == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});

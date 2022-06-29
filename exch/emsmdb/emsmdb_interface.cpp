@@ -540,7 +540,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	DCERPC_INFO rpc_info;
 	if (!ext_push.init(pauxout, 0x1008, EXT_FLAG_UTF16)) {
 		double_list_free(&aux_out.aux_list);
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	*pcb_auxout = aux_ext_push_aux_info(&ext_push, &aux_out) != EXT_ERR_SUCCESS ?
 	              0 : ext_push.m_offset;

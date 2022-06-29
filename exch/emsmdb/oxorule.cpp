@@ -62,7 +62,7 @@ uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	    pfolder->folder_id, count, prow, &b_exceed))
 		return ecError;
 	if (b_exceed)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	return ecSuccess;
 }
 
@@ -82,7 +82,7 @@ uint32_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
 	auto ptable = table_object::create(plogon, pfolder,
 	              flags, ropGetRulesTable, logon_id);
 	if (ptable == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});

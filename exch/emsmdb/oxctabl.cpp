@@ -107,7 +107,7 @@ uint32_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 	if (psorts != nullptr && !oxctable_verify_columns_and_sorts(pproptags, psorts))
 		return ecNotSupported;
 	if (!ptable->set_columns(pproptags))
-		return ecMAPIOOM;
+		return ecServerOOM;
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	return ecSuccess;
 }
@@ -193,7 +193,7 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 	    !oxctable_verify_columns_and_sorts(pcolumns, psort_criteria))
 		return ecNotSupported;
 	if (!ptable->set_sorts(psort_criteria))
-		return ecMAPIOOM;
+		return ecServerOOM;
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	ptable->unload();
 	/* MS-OXCTABL 3.2.5.3 */
@@ -223,7 +223,7 @@ uint32_t rop_restrict(uint8_t res_flags, RESTRICTION *pres,
 	if (pres != nullptr && !common_util_convert_restriction(TRUE, pres))
 		return ecError;
 	if (!ptable->set_restriction(pres))
-		return ecMAPIOOM;
+		return ecServerOOM;
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	ptable->unload();
 	/* MS-OXCTABL 3.2.5.4 */
@@ -263,7 +263,7 @@ uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
 		for (i=0; i<tmp_set.count; i++) {
 			if (!common_util_propvals_to_row(tmp_set.pparray[i],
 			    ptable->get_columns(), &tmp_row))
-				return ecMAPIOOM;
+				return ecServerOOM;
 			uint32_t last_offset = ext.m_offset;
 			if (pext->p_proprow(*ptable->get_columns(), tmp_row) != EXT_ERR_SUCCESS) {
 				ext.m_offset = last_offset;
@@ -458,7 +458,7 @@ uint32_t rop_createbookmark(BINARY *pbookmark, LOGMAP *plogmap,
 	pbookmark->cb = sizeof(uint32_t);
 	pbookmark->pv = cu_alloc<uint32_t>();
 	if (pbookmark->pb == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	if (!ptable->create_bookmark(static_cast<uint32_t *>(pbookmark->pv)))
 		return ecError;
 	return ecSuccess;
@@ -545,10 +545,10 @@ uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	ptable->set_position(position);
 	*pprow = cu_alloc<PROPERTY_ROW>();
 	if (NULL == *pprow) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	if (!common_util_propvals_to_row(&propvals, *ppcolumns, *pprow))
-		return ecMAPIOOM;
+		return ecServerOOM;
 	return ecSuccess;
 }
 
@@ -639,7 +639,7 @@ uint32_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 	for (i = 0; i < tmp_set.count; ++i) {
 		if (!common_util_propvals_to_row(tmp_set.pparray[i],
 		    ptable->get_columns(), &tmp_row))
-			return ecMAPIOOM;
+			return ecServerOOM;
 		uint32_t last_offset = ext.m_offset;
 		if (pext->p_proprow(*ptable->get_columns(), tmp_row) != EXT_ERR_SUCCESS) {
 			ext.m_offset = last_offset;
@@ -703,7 +703,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id, uint32_t row_instance,
 	pcollapse_state->cb = sizeof(uint32_t);
 	pcollapse_state->pv = cu_alloc<uint32_t>();
 	if (pcollapse_state->pv == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	if (!ptable->store_state(row_id, row_instance,
 	    static_cast<uint32_t *>(pcollapse_state->pv)))
 		return ecError;
@@ -732,7 +732,7 @@ uint32_t rop_setcollapsestate(const BINARY *pcollapse_state, BINARY *pbookmark,
 	pbookmark->cb = sizeof(uint32_t);
 	pbookmark->pv = cu_alloc<uint32_t>();
 	if (pbookmark->pv == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	if (!ptable->restore_state(*static_cast<uint32_t *>(pcollapse_state->pv),
 	    static_cast<uint32_t *>(pbookmark->pv)))
 		return ecError;

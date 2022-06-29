@@ -107,7 +107,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	auto pmessage = message_object::create(plogon, false, cpid, message_id,
 	                &folder_id, tag_access, open_mode_flags, nullptr);
 	if (pmessage == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	proptags.count = 3;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_HAS_NAMED_PROPERTIES;
@@ -145,13 +145,13 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	if (rcpts.count > 0) {
 		*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
 		if (NULL == *pprecipient_row) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
 		if (!common_util_propvals_to_openrecipient(cpid,
 		    rcpts.pparray[i], pcolumns, &(*pprecipient_row)[i]))
-			return ecMAPIOOM;
+			return ecServerOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
@@ -227,7 +227,7 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 		return ecQuotaExceeded;
 	*ppmessage_id = cu_alloc<uint64_t>();
 	if (NULL == *ppmessage_id) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	if (!exmdb_client_allocate_message_id(plogon->get_dir(),
 	    folder_id, *ppmessage_id))
@@ -236,7 +236,7 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 	                **ppmessage_id, &folder_id, tag_access,
 	                OPEN_MODE_FLAG_READWRITE, nullptr);
 	if (pmessage == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	BOOL b_fai = associated_flag == 0 ? false : TRUE;
 	if (pmessage->init_message(b_fai, cpid) != 0)
 		return ecError;
@@ -351,25 +351,25 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 	tmp_set.count = count;
 	tmp_set.pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 	if (NULL == tmp_set.pparray) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	for (i=0; i<count; i++) {
 		ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == ppropvals) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		if (NULL == prow[i].precipient_row) {
 			ppropvals->count = 1;
 			ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>();
 			if (NULL == ppropvals->ppropval) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			ppropvals->ppropval->proptag = PR_ROWID;
 			ppropvals->ppropval->pvalue = deconst(&prow[i].row_id);
 		} else {
 			if (!common_util_modifyrecipient_to_propvals(pinfo->cpid,
 			    &prow[i], pproptags, ppropvals))
-				return ecMAPIOOM;
+				return ecServerOOM;
 		}
 		tmp_set.pparray[i] = ppropvals;
 	}
@@ -400,7 +400,7 @@ uint32_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcount,
 	for (i = 0; i < tmp_set.count; ++i) {
 		if (!common_util_propvals_to_readrecipient(pmessage->get_cpid(),
 		    tmp_set.pparray[i], pmessage->get_rcpt_columns(), &tmp_row))
-			return ecMAPIOOM;
+			return ecServerOOM;
 		uint32_t last_offset = ext.m_offset;
 		if (pext->p_readrecipient_row(*pmessage->get_rcpt_columns(),
 		    tmp_row) != EXT_ERR_SUCCESS) {
@@ -467,12 +467,12 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	*prow_count = rcpts.count;
 	*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
 	if (NULL == *pprecipient_row) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
 		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
 		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
-			return ecMAPIOOM;
+			return ecServerOOM;
 	}
 	return ecSuccess;
 }
@@ -934,12 +934,12 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 	*prow_count = rcpts.count;
 	*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
 	if (NULL == *pprecipient_row) {
-		return ecMAPIOOM;
+		return ecServerOOM;
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
 		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
 		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
-			return ecMAPIOOM;
+			return ecServerOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
@@ -965,7 +965,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
 	auto ptable = table_object::create(plogon, pmessage, table_flags,
 	              ropGetAttachmentTable, logon_id);
 	if (ptable == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});

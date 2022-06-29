@@ -46,7 +46,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 			*phas_rules = 0;
 			*ppghost = cu_alloc<GHOST_SERVER>();
 			if (*ppghost == nullptr)
-				return ecMAPIOOM;
+				return ecServerOOM;
 			return rop_getowningservers(folder_id,
 					*ppghost, plogmap, logon_id, hin);
 		}
@@ -105,7 +105,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	*phas_rules = pvalue == nullptr ? 0 : *static_cast<uint8_t *>(pvalue);
 	auto pfolder = folder_object::create(plogon, folder_id, type, tag_access);
 	if (pfolder == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_FOLDER, std::move(pfolder)});
 	if (hnd < 0)
@@ -218,13 +218,13 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		propval_buff[7].proptag = PR_CHANGE_KEY;
 		propval_buff[7].pvalue = cu_xid_to_bin({plogon->guid(), change_num});
 		if (NULL == propval_buff[7].pvalue) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		propval_buff[8].pvalue = common_util_pcl_append(
 		                         NULL, static_cast<BINARY *>(propval_buff[7].pvalue));
 		if (NULL == propval_buff[8].pvalue) {
-			return ecMAPIOOM;
+			return ecServerOOM;
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (!exmdb_client_create_folder_by_properties(plogon->get_dir(),
@@ -237,7 +237,7 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 			pentryid = common_util_username_to_addressbook_entryid(
 												rpc_info.username);
 			if (NULL == pentryid) {
-				return ecMAPIOOM;
+				return ecServerOOM;
 			}
 			tmp_id = 1;
 			permission = rightsGromox7;
@@ -258,7 +258,7 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	uint32_t tag_access = MAPI_ACCESS_AllSix;
 	auto pfolder = folder_object::create(plogon, folder_id, folder_type, tag_access);
 	if (pfolder == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_FOLDER, std::move(pfolder)});
 	if (hnd < 0)
@@ -906,7 +906,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 	auto ptable = table_object::create(plogon, pfolder, table_flags,
 	              ropGetHierarchyTable, logon_id);
 	if (ptable == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});
@@ -972,7 +972,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	auto ptable = table_object::create(plogon, pfolder, table_flags,
 	              ropGetContentsTable, logon_id);
 	if (ptable == nullptr)
-		return ecMAPIOOM;
+		return ecServerOOM;
 	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});
