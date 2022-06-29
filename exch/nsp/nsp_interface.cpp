@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -2239,11 +2240,10 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
     uint32_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids) try
 {
-	int base_id, fd;
+	int base_id;
 	uint32_t tmp_mid;
 	char maildir[256];
 	char username[UADDR_SIZE];
-	char temp_path[256];
 	std::unique_ptr<LIST_FILE> pfile;
 	size_t item_num = 0;
 	
@@ -2318,15 +2318,16 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		}
 	}
 	if (tmp_list.size() != item_num) {
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-		if (-1 == fd) {
+		wrapfd fd = open(dlg_path.c_str(), O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		if (fd.get() < 0) {
+			fprintf(stderr, "E-2024: open %s: %s\n",
+			        dlg_path.c_str(), strerror(errno));
 			return ecError;
 		}
 		for (const auto &u : tmp_list) {
-			write(fd, u.c_str(), u.size());
-			write(fd, "\r\n", 2);
+			write(fd.get(), u.c_str(), u.size());
+			write(fd.get(), "\r\n", 2);
 		}
-		close(fd);
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
