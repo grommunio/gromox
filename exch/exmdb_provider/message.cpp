@@ -3485,7 +3485,7 @@ static bool op_delegate(const char *from_address, const char *account,
 	return true;
 }
 
-static bool op_switcheroo(BOOL b_oof, const char *from_address,
+static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
     DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
@@ -3502,23 +3502,23 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 		           pmsg_list, block, rule_idx, prnode, b_del) :
 		           op_move_across(folder_id, message_id, prnode, block, dam_list);
 		if (!ret)
-			return false;
+			return ecError;
 		break;
 	}
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		if (!op_reply(from_address, account, psqlite, folder_id,
 		    message_id, pmsg_list, block, rule_idx, prnode))
-			return false;
+			return ecError;
 		break;
 	case OP_DEFER_ACTION:
 		if (!op_defer(folder_id, message_id, block, prnode, dam_list))
-			return false;
+			return ecError;
 		break;
 	case OP_BOUNCE:
 		if (!message_bounce_message(from_address, account, psqlite,
 		    message_id, *static_cast<uint32_t *>(block.pdata)))
-			return FALSE;
+			return ecError;
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
@@ -3528,13 +3528,13 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 	case OP_FORWARD:
 		if (!op_forward(from_address, account, cpid, psqlite, folder_id,
 		    message_id, pdigest, pmsg_list, block, rule_idx, prnode))
-			return false;
+			return ecError;
 		break;
 	case OP_DELEGATE:
 		if (!op_delegate(from_address, account, cpid, psqlite,
 		    folder_id, message_id, pdigest, pmsg_list, block,
 		    rule_idx, prnode))
-			return false;
+			return ecError;
 		break;
 	case OP_TAG: {
 		BOOL b_result = false;
@@ -3542,7 +3542,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 		    message_id, cpid, psqlite,
 		    static_cast<TAGGED_PROPVAL *>(block.pdata),
 		    &b_result))
-			return FALSE;
+			return ecError;
 		break;
 	}
 	case OP_DELETE:
@@ -3554,19 +3554,19 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 		break;
 	case OP_MARK_AS_READ: {
 		if (!exmdb_server_check_private())
-			return true;
+			return ecSuccess;
 		TAGGED_PROPVAL propval;
 		propval.proptag = PR_READ;
 		propval.pvalue = deconst(&fake_true);
 		BOOL b_result = false;
 		if (!cu_set_property(db_table::msg_props, message_id,
 		    0, psqlite, &propval, &b_result)) {
-			return FALSE;
+			return ecError;
 		}
 		break;
 	}
 	}
-	return true;
+	return ecSuccess;
 }
 
 static ec_error_t op_process(BOOL b_oof, const char *from_address,
@@ -3887,7 +3887,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 	return true;
 }
 
-static bool opx_switcheroo(BOOL b_oof, const char *from_address,
+static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
     DOUBLE_LIST *pmsg_list, const EXT_ACTION_BLOCK &block,
@@ -3900,20 +3900,20 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 		if (!opx_move(b_oof, from_address, account, cpid, psqlite,
 		    folder_id, message_id, pdigest, pfolder_list, pmsg_list,
 		    block, prnode, b_del))
-			return false;
+			return ecError;
 		break;
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		if (!opx_reply(from_address, account, psqlite, message_id,
 		    block, prnode))
-			return false;
+			return ecError;
 		break;
 	case OP_DEFER_ACTION:
 		break;
 	case OP_BOUNCE:
 		if (!message_bounce_message(from_address, account, psqlite,
 		    message_id, *static_cast<uint32_t *>(block.pdata)))
-			return FALSE;
+			return ecError;
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
@@ -3923,19 +3923,19 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 	case OP_FORWARD: {
 		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
-			return message_disable_rule(psqlite, TRUE, prnode->id) == ecSuccess;
+			return message_disable_rule(psqlite, TRUE, prnode->id);
 		}
 		if (!message_forward_message(from_address,
 		    account, psqlite, cpid, message_id, pdigest,
 		    block.flavor, TRUE,
 		    pextfwddlgt->count, pextfwddlgt->pblock))
-			return FALSE;
+			return ecError;
 		break;
 	}
 	case OP_DELEGATE:
 		if (!opx_delegate(from_address, account, cpid, psqlite,
 		    folder_id, message_id, pdigest, block, prnode))
-			return false;
+			return ecError;
 		break;
 	case OP_TAG: {
 		BOOL b_result = false;
@@ -3943,7 +3943,7 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 		    message_id, cpid, psqlite,
 		    static_cast<TAGGED_PROPVAL *>(block.pdata),
 		    &b_result))
-			return FALSE;
+			return ecError;
 		break;
 	}
 	case OP_DELETE:
@@ -3955,19 +3955,19 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 		break;
 	case OP_MARK_AS_READ: {
 		if (!exmdb_server_check_private())
-			return true;
+			return ecSuccess;
 		TAGGED_PROPVAL propval;
 		propval.proptag = PR_READ;
 		propval.pvalue = deconst(&fake_true);
 		BOOL b_result = false;
 		if (!cu_set_property(db_table::msg_props, message_id,
 		    0, psqlite, &propval, &b_result)) {
-			return FALSE;
+			return ecError;
 		}
 		break;
 	}
 	}
-	return true;
+	return ecSuccess;
 }
 
 static ec_error_t opx_process(BOOL b_oof, const char *from_address,
