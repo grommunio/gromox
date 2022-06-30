@@ -2,8 +2,8 @@
 .SH Name
 \fBdelmsg\fP \(em MAPI message deletion from the command-line
 .SH Synopsis
-\fB/usr/libexec/gromox/delmsg \-u\fP \fIu@d.de\fP \fB\-f\fP \fIfolder_id
-message_id\fP[,...]
+\fB/usr/libexec/gromox/delmsg {\fB\-d\fP \fImailboxdir\fP|\fB\-u\fP
+\fIu@d.de\fP} \fB\-f\fP \fIfolder_id message_id\fP[,...]
 .SH Description
 \fBdelmsg\fP deletes messages from a store. This utility does not perform a
 "surgical" operation on the SQLite database directly, but connects to an exmdb
@@ -19,7 +19,10 @@ Perform a soft deletion. Soft deletion is not the same as moving to
 wastebasket; soft deletion sets a deleted flag and the mail stays in its folder
 (albeit invisibly).
 .TP
+\fB\-d\fP \fI/var/lib/gromox/user/1/2\fP
+Lookup the mailbox parameters from the associated filesystem location.
+.TP
 \fB\-u\fP \fIu@d.de\fP
-Mailbox to operate on.
+Lookup the mailbox parameters from the associated username.
 .SH See also
 \fBgromox\fP(7)

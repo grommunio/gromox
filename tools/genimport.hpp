@@ -97,4 +97,5 @@ extern int exm_deliver_msg(const char *target, MESSAGE_CONTENT *);
 extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);
 extern void gi_setup_early(const char *dstmbox);
 extern int gi_setup();
+extern int gi_setup_from_dir();
 extern void gi_shutdown();

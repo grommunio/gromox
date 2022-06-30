@@ -9,8 +9,9 @@
 #include "genimport.hpp"
 
 static uint64_t g_folderid;
-static char *g_username;
+static char *g_username, *g_userdir;
 static constexpr HXoption g_options_table[] = {
+	{nullptr, 'd', HXTYPE_STRING, &g_userdir, nullptr, nullptr, 0, "Directory of the mailbox", "DIR"},
 	{nullptr, 'f', HXTYPE_UINT64, &g_folderid, nullptr, nullptr, 0, "Folder ID"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	HXOPT_AUTOHELP,
@@ -27,13 +28,25 @@ int main(int argc, const char **argv)
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (g_username == nullptr || g_folderid == 0) {
+	if (g_username != nullptr && g_userdir != nullptr) {
+		fprintf(stderr, "Can only specify one of -d or -u\n");
+		return EXIT_FAILURE;
+	} else if (g_username == nullptr && g_userdir == nullptr) {
+		fprintf(stderr, "Must specify either -d or -u\n");
+		return EXIT_FAILURE;
+	} else if (g_folderid == 0) {
 		terse_help();
 		return EXIT_FAILURE;
 	}
-	gi_setup_early(g_username);
-	if (gi_setup() != EXIT_SUCCESS)
-		return EXIT_FAILURE;
+	if (g_username != nullptr) {
+		gi_setup_early(g_username);
+		if (gi_setup() != EXIT_SUCCESS)
+			return EXIT_FAILURE;
+	} else if (g_userdir != nullptr) {
+		g_storedir = g_userdir;
+		if (gi_setup_from_dir() != EXIT_SUCCESS)
+			return EXIT_FAILURE;
+	}
 	std::vector<uint64_t> eids;
 	while (*++argv != nullptr)
 		eids.push_back(rop_util_make_eid_ex(1, strtoull(*argv, nullptr, 0)));

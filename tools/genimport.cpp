@@ -785,6 +785,29 @@ static int sql_meta(MYSQL *sqh, const char *username, bool is_domain,
 	return -ENOMEM;
 }
 
+static int sql_dir_to_user(MYSQL *sqh, const char *dir,
+    unsigned int &user_id, std::string &username) try
+{
+	auto query = "SELECT `id`, `username` FROM `users` WHERE `maildir`='"s + sql_escape(sqh, dir) + "'";
+	if (mysql_real_query(sqh, query.c_str(), query.size()) != 0) {
+		fprintf(stderr, "exm: mysql_query: %s\n", mysql_error(sqh));
+		return -EINVAL;
+	}
+	DB_RESULT result = mysql_store_result(sqh);
+	if (result == nullptr) {
+		fprintf(stderr, "exm: mysql_store: %s\n", mysql_error(sqh));
+		return -ENOENT;
+	}
+	auto row = result.fetch_row();
+	if (row == nullptr || row[0] == nullptr || row[1] == nullptr)
+		return -ENOENT;
+	user_id = strtoul(row[0], nullptr, 0);
+	username = row[1];
+	return 0;
+} catch (const std::bad_alloc &) {
+	return -ENOMEM;
+}
+
 void gi_setup_early(const char *username)
 {
 	if (*username == '@') {
@@ -792,6 +815,26 @@ void gi_setup_early(const char *username)
 		++username;
 	}
 	g_dstuser = username;
+}
+
+int gi_setup_from_dir()
+{
+	auto sqh = sql_login();
+	if (sqh == nullptr)
+		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([&]() { mysql_close(sqh); });
+	auto ret = sql_dir_to_user(sqh, g_storedir, g_user_id, g_dstuser);
+	if (ret == -ENOENT) {
+		fprintf(stderr, "exm: No user with homedir \"%s\"\n", g_storedir);
+		fprintf(stderr, "exm: (No attempt was made to locate a domain mailbox)\n");
+		return EXIT_FAILURE;
+	} else if (ret < 0) {
+		fprintf(stderr, "get_id_from_maildir(\"%s\"): %s\n",
+		        g_storedir, strerror(-ret));
+		return EXIT_FAILURE;
+	}
+	exmdb_client_init(1, 0);
+	return exmdb_client_run(PKGSYSCONFDIR);
 }
 
 int gi_setup()
