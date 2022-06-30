@@ -1061,7 +1061,7 @@ static std::string slurp_file_gz(const char *file)
 }
 
 static void do_attach_byval(driver &drv, unsigned int depth, unsigned int hid,
-    TPROPVAL_ARRAY *props)
+    TPROPVAL_ARRAY *props, bool is_optional)
 {
 	char qstr[96];
 	snprintf(qstr, arsizeof(qstr), drv.schema_vers >= 71 ?
@@ -1070,7 +1070,8 @@ static void do_attach_byval(driver &drv, unsigned int depth, unsigned int hid,
 	auto res = drv.query(qstr);
 	auto row = res.fetch_row();
 	if (row == nullptr || row[0] == nullptr) {
-		fprintf(stderr, "PK-1012: attachment %u is missing from \"singleinstances\" table and is lost\n", hid);
+		if (!is_optional)
+			fprintf(stderr, "PK-1012: attachment %u is missing from \"singleinstances\" table and is lost\n", hid);
 		return;
 	}
 	std::string filename;
@@ -1101,11 +1102,12 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	auto &props = item.get_props();
 	auto mode = props->get<uint32_t>(PR_ATTACH_METHOD);
 
-	if (mode == nullptr)
-		fprintf(stderr, "PK-1005: Attachment %u without PR_ATTACH_METHOD.\n",
-		        static_cast<unsigned int>(item.m_hid));
-	else if (*mode == ATTACH_BY_VALUE && *g_atxdir != '\0')
-		do_attach_byval(drv, depth, item.m_hid, props.get());
+	/*
+	 * Scrape all attachments that are in the database, irrespective
+	 * of PR_ATTACH_METHOD. Because we can.
+	 */
+	if ((mode == nullptr || *mode == ATTACH_BY_VALUE) && *g_atxdir != '\0')
+		do_attach_byval(drv, depth, item.m_hid, props.get(), mode == nullptr);
 
 	auto saved_show_tree = g_show_tree;
 	g_show_tree = false;
@@ -1223,7 +1225,7 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 
 static void terse_help()
 {
-	fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kdb2mt --src-sql kdb.lan "
+	fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kdb2mt --src-host kdb.lan "
 	        "--src-attach /tmp/at --src-mbox jdoe\n");
 	fprintf(stderr, "Option overview: gromox-kdb2mt -?\n");
 	fprintf(stderr, "Documentation: man gromox-kdb2mt\n");
