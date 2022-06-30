@@ -2623,7 +2623,6 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	void *pvalue;
 	GUID tmp_guid;
 	BINARY tmp_bin;
-	DOUBLE_LIST tmp_list;
 	char content_type[128];
 	TAGGED_PROPVAL propval;
 	char tmp_buff[256*1024];
@@ -2781,10 +2780,10 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	pmime->set_field("X-Auto-Response-Suppress", "All");
 	const char *pvalue2 = strchr(from_address, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "auto-reply@%s", pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
-	double_list_init(&tmp_list);
-	if (!common_util_recipients_to_list(pmsgctnt->children.prcpts, &tmp_list))
+	std::vector<std::string> rcpt_list;
+	if (!cu_rcpts_to_list(pmsgctnt->children.prcpts, rcpt_list))
 		return FALSE;
-	common_util_send_mail(&imail, tmp_buff, &tmp_list);
+	cu_send_mail(&imail, tmp_buff, rcpt_list);
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -2796,7 +2795,6 @@ static ec_error_t message_bounce_message(const char *from_address,
 	void *pvalue;
 	int bounce_type;
 	char tmp_buff[256];
-	DOUBLE_LIST tmp_list;
 	
 	if (0 == strcasecmp(from_address, "none@none") ||
 		NULL == strchr(account, '@')) {
@@ -2815,16 +2813,16 @@ static ec_error_t message_bounce_message(const char *from_address,
 	default:
 		return ecSuccess;
 	}
-	double_list_init(&tmp_list);
-	auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-	if (NULL == pnode) {
-		return ecServerOOM;
-	}
-	double_list_append_as_tail(&tmp_list, pnode);
 	if (!cu_get_property(db_table::msg_props, message_id, 0,
 	    psqlite, PR_SENT_REPRESENTING_SMTP_ADDRESS, &pvalue))
 		return ecServerOOM;
-	pnode->pdata = pvalue == nullptr ? deconst(from_address) : pvalue;
+	std::vector<std::string> rcpt_list;
+	try {
+		rcpt_list.emplace_back(pvalue == nullptr ? from_address : static_cast<char *>(pvalue));
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-2037: ENOMEM\n");
+		return ecServerOOM;
+	}
 
 	MAIL imail(common_util_get_mime_pool());
 	if (!bounce_producer_make(from_address, account, psqlite, message_id,
@@ -2833,16 +2831,16 @@ static ec_error_t message_bounce_message(const char *from_address,
 	const char *pvalue2 = strchr(account, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "postmaster@%s",
 	         pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
-	common_util_send_mail(&imail, tmp_buff, &tmp_list);
+	cu_send_mail(&imail, tmp_buff, rcpt_list);
 	return ecSuccess;
 }
 
 static BOOL message_recipient_blocks_to_list(uint32_t count,
-	RECIPIENT_BLOCK *pblock, DOUBLE_LIST *prcpt_list)
+    RECIPIENT_BLOCK *pblock, std::vector<std::string> &prcpt_list)
 {
 	TARRAY_SET rcpts;
-	
-	double_list_init(prcpt_list);
+
+	prcpt_list.clear();
 	rcpts.count = count;
 	rcpts.pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 	if (NULL == rcpts.pparray) {
@@ -2856,15 +2854,15 @@ static BOOL message_recipient_blocks_to_list(uint32_t count,
 		rcpts.pparray[i]->count = pblock[i].count;
 		rcpts.pparray[i]->ppropval = pblock[i].ppropval;
 	}
-	return common_util_recipients_to_list(&rcpts, prcpt_list);
+	return cu_rcpts_to_list(&rcpts, prcpt_list);
 }
 
 static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
-	EXT_RECIPIENT_BLOCK *pblock, DOUBLE_LIST *prcpt_list)
+	EXT_RECIPIENT_BLOCK *pblock, std::vector<std::string> &prcpt_list)
 {
 	TARRAY_SET rcpts;
 	
-	double_list_init(prcpt_list);
+	prcpt_list.clear();
 	rcpts.count = count;
 	rcpts.pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 	if (NULL == rcpts.pparray) {
@@ -2878,7 +2876,7 @@ static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
 		rcpts.pparray[i]->count = pblock[i].count;
 		rcpts.pparray[i]->ppropval = pblock[i].ppropval;
 	}
-	return common_util_recipients_to_list(&rcpts, prcpt_list);
+	return cu_rcpts_to_list(&rcpts, prcpt_list);
 }
 
 static ec_error_t message_forward_message(const char *from_address,
@@ -2894,9 +2892,7 @@ static ec_error_t message_forward_message(const char *from_address,
 	struct tm time_buff;
 	char mid_string[128];
 	struct stat node_stat;
-	DOUBLE_LIST rcpt_list;
 	char tmp_buff[64*1024];
-	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	pdomain = strchr(username, '@');
@@ -2905,13 +2901,15 @@ static ec_error_t message_forward_message(const char *from_address,
 	} else {
 		pdomain = "system.mail";
 	}
+
+	std::vector<std::string> rcpt_list;
 	if (!b_extended) {
 		if (!message_recipient_blocks_to_list(count,
-		    static_cast<RECIPIENT_BLOCK *>(pblock), &rcpt_list))
+		    static_cast<RECIPIENT_BLOCK *>(pblock), rcpt_list))
 			return ecError;
 	} else {
 		if (!message_ext_recipient_blocks_to_list(count,
-		    static_cast<EXT_RECIPIENT_BLOCK *>(pblock), &rcpt_list))
+		    static_cast<EXT_RECIPIENT_BLOCK *>(pblock), rcpt_list))
 			return ecError;
 	}
 	std::unique_ptr<char[], stdlib_delete> pbuff;
@@ -2971,17 +2969,16 @@ static ec_error_t message_forward_message(const char *from_address,
 		}
 		pmime->set_field("From", tmp_buff);
 		offset = 0;
-		for (pnode=double_list_get_head(&rcpt_list); NULL!=pnode;
-			pnode=double_list_get_after(&rcpt_list, pnode)) {
+		for (const auto &eaddr : rcpt_list) {
 			if (0 == offset) {
 				offset = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
-				         "<%s>", static_cast<const char *>(pnode->pdata));
+				         "<%s>", eaddr.c_str());
 			} else {
 				offset += gx_snprintf(tmp_buff + offset,
 				          GX_ARRAY_SIZE(tmp_buff) - offset, ", <%s>",
-				          static_cast<const char *>(pnode->pdata));
+				          eaddr.c_str());
 			}
-			pmime->append_field("Delivered-To", static_cast<char *>(pnode->pdata));
+			pmime->append_field("Delivered-To", eaddr.c_str());
 		}
 		pmime->set_field("To", tmp_buff);
 		snprintf(tmp_buff, arsizeof(tmp_buff), "Automatic forwarded message from %s", username);
@@ -2996,22 +2993,20 @@ static ec_error_t message_forward_message(const char *from_address,
 		} else {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
 		}
-		common_util_send_mail(&imail1, tmp_buff, &rcpt_list);
+		cu_send_mail(&imail1, tmp_buff, rcpt_list);
 	} else {
 		auto pmime = imail.get_head();
 		if (NULL == pmime) {
 			return ecError;
 		}
-		for (pnode=double_list_get_head(&rcpt_list); NULL!=pnode;
-			pnode=double_list_get_after(&rcpt_list, pnode)) {
-			pmime->append_field("Delivered-To", static_cast<char *>(pnode->pdata));
-		}
+		for (const auto &eaddr : rcpt_list)
+			pmime->append_field("Delivered-To", eaddr.c_str());
 		if (action_flavor & ACTION_FLAVOR_PR) {
 			strcpy(tmp_buff, from_address);
 		} else {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
 		}
-		common_util_send_mail(&imail, tmp_buff, &rcpt_list);
+		cu_send_mail(&imail, tmp_buff, rcpt_list);
 	}
 	return ecSuccess;
 }
@@ -3428,20 +3423,18 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	propval.proptag = PR_DELEGATED_BY_RULE;
 	propval.pvalue = deconst(&fake_true);
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	DOUBLE_LIST rcpt_list;
+
+	std::vector<std::string> rcpt_list;
 	if (!message_recipient_blocks_to_list(pfwddlgt->count,
-	    pfwddlgt->pblock, &rcpt_list))
+	    pfwddlgt->pblock, rcpt_list))
 		return ecError;
 	char mid_string1[128], tmp_path1[256];
 	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 		 exmdb_server_get_dir(), mid_string1);
-	for (auto pnode1 = double_list_get_head(&rcpt_list);
-	     NULL != pnode1; pnode1 = double_list_get_after(
-	     &rcpt_list, pnode1)) {
+	for (const auto &eaddr : rcpt_list) {
 		char maildir[256];
-		if (!common_util_get_maildir(static_cast<char *>(pnode1->pdata),
-		    maildir, arsizeof(maildir)))
+		if (!common_util_get_maildir(eaddr.c_str(), maildir, arsizeof(maildir)))
 			continue;
 		auto mid_string = std::to_string(time(nullptr)) + "." +
 				  std::to_string(common_util_sequence_ID()) + "." +
@@ -3459,9 +3452,8 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string2.c_str());
 		const char *pdigest1 = tmp_buff;
 		uint32_t result = 0;
-		if (!exmdb_client_relay_delivery(maildir,
-		    from_address, static_cast<char *>(pnode1->pdata),
-		    cpid, pmsgctnt, pdigest1, &result))
+		if (!exmdb_client_relay_delivery(maildir, from_address,
+		    eaddr.c_str(), cpid, pmsgctnt, pdigest1, &result))
 			return ecError;
 	}
 	return ecSuccess;
@@ -3808,20 +3800,18 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 	propval.proptag = PR_DELEGATED_BY_RULE;
 	propval.pvalue = deconst(&fake_true);
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	DOUBLE_LIST rcpt_list;
+
+	std::vector<std::string> rcpt_list;
 	if (!message_ext_recipient_blocks_to_list(pextfwddlgt->count,
-	    pextfwddlgt->pblock, &rcpt_list))
+	    pextfwddlgt->pblock, rcpt_list))
 		return ecError;
 	char mid_string1[128], tmp_path1[256];
 	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 		exmdb_server_get_dir(), mid_string1);
-	for (auto pnode1 = double_list_get_head(&rcpt_list);
-	     NULL != pnode1; pnode1 = double_list_get_after(
-	     &rcpt_list, pnode1)) {
+	for (const auto &eaddr : rcpt_list) {
 		char maildir[256];
-		if (!common_util_get_maildir(static_cast<char *>(pnode1->pdata),
-		    maildir, arsizeof(maildir)))
+		if (!common_util_get_maildir(eaddr.c_str(), maildir, arsizeof(maildir)))
 			continue;
 		auto mid_string = std::to_string(time(nullptr)) + "." +
 				  std::to_string(common_util_sequence_ID()) + "." +
@@ -3839,9 +3829,8 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string2.c_str());
 		const char *pdigest1 = tmp_buff;
 		uint32_t result = 0;
-		if (!exmdb_client_relay_delivery(maildir,
-		    from_address, static_cast<char *>(pnode1->pdata),
-		    cpid, pmsgctnt, pdigest1, &result))
+		if (!exmdb_client_relay_delivery(maildir, from_address,
+		    eaddr.c_str(), cpid, pmsgctnt, pdigest1, &result))
 			return ecError;
 	}
 	return ecSuccess;

@@ -51,7 +51,7 @@ static void *mdpls_thrwork(void *param)
 		NULL == common_util_get_maildir ||
 		NULL == common_util_get_id_from_username ||
 		NULL == common_util_get_domain_ids ||
-		NULL == common_util_send_mail ||
+	    cu_send_mail == nullptr ||
 		NULL == common_util_get_mime_pool ||
 		NULL == common_util_log_info) {
 		if (g_notify_stop)

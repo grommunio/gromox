@@ -4,6 +4,7 @@
 #include <sqlite3.h>
 #include <string>
 #include <type_traits>
+#include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
@@ -50,8 +51,7 @@ E(get_timezone)
 E(get_user_displayname)
 E(get_user_lang)
 #undef E
-extern BOOL (*common_util_send_mail)(MAIL *pmail,
-	const char *sender, DOUBLE_LIST *prcpt_list);
+extern BOOL (*cu_send_mail)(MAIL *, const char *sender, std::vector<std::string> &rcpts);
 extern std::shared_ptr<MIME_POOL> (*common_util_get_mime_pool)();
 extern void (*common_util_log_info)(unsigned int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
 extern const GUID *(*common_util_get_handle)();
@@ -168,8 +168,7 @@ BOOL common_util_check_folder_id(sqlite3 *psqlite,
 BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	uint64_t folder_id, uint32_t del_count);
 extern BOOL cu_adjust_store_size(sqlite3 *psqlite, bool sub, uint64_t normal_size, uint64_t fai_size);
-BOOL common_util_recipients_to_list(
-	TARRAY_SET *prcpts, DOUBLE_LIST *plist);
+extern BOOL cu_rcpts_to_list(TARRAY_SET *, std::vector<std::string> &);
 extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,

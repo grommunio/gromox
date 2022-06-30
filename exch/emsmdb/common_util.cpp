@@ -13,8 +13,10 @@
 #include <iconv.h>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
@@ -1503,23 +1505,21 @@ BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions)
 	return TRUE;
 }
 
-void common_util_notify_receipt(const char *username,
-	int type, MESSAGE_CONTENT *pbrief)
+void common_util_notify_receipt(const char *username, int type,
+    MESSAGE_CONTENT *pbrief) try
 {
-	DOUBLE_LIST_NODE node;
-	DOUBLE_LIST rcpt_list;
-	
-	node.pdata = pbrief->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-	if (NULL == node.pdata) {
+	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (str == nullptr)
 		return;
-	}
-	double_list_init(&rcpt_list);
-	double_list_append_as_tail(&rcpt_list, &node);
+	std::vector<std::string> rcpt_list;
+	rcpt_list.emplace_back(str);
 	MAIL imail(g_mime_pool);
 	int bounce_type = type == NOTIFY_RECEIPT_READ ? BOUNCE_NOTIFY_READ : BOUNCE_NOTIFY_NON_READ;
 	if (!bounce_producer_make(username, pbrief, bounce_type, &imail))
 		return;
-	common_util_send_mail(&imail, username, &rcpt_list);
+	cu_send_mail(&imail, username, rcpt_list);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2035: ENOMEM\n");
 }
 
 BOOL common_util_save_message_ics(logon_object *plogon,
@@ -1660,12 +1660,11 @@ static int common_util_get_response(int sockd,
 	return SMTP_UNKOWN_RESPONSE;
 }
 
-BOOL common_util_send_mail(MAIL *pmail,
-	const char *sender, DOUBLE_LIST *prcpt_list)
+BOOL cu_send_mail(MAIL *pmail, const char *sender,
+    const std::vector<std::string> &rcpt_list)
 {
 	int res_val;
 	int command_len;
-	DOUBLE_LIST_NODE *pnode;
 	char last_command[1024];
 	char last_response[1024];
 	
@@ -1751,11 +1750,10 @@ BOOL common_util_send_mail(MAIL *pmail,
 		return FALSE;
 	}
 
-	for (pnode=double_list_get_head(prcpt_list); NULL!=pnode;
-		pnode=double_list_get_after(prcpt_list, pnode)) {
-		bool have_at = strchr(static_cast<char *>(pnode->pdata), '@') != nullptr;
+	for (const auto &eaddr : rcpt_list) {
+		bool have_at = strchr(eaddr.c_str(), '@') != nullptr;
 		command_len = sprintf(last_command, have_at ? "rcpt to:<%s>\r\n" :
-		              "rcpt to:<%s@none>\r\n", static_cast<const char *>(pnode->pdata));
+		              "rcpt to:<%s@none>\r\n", eaddr.c_str());
 		if (!common_util_send_command(sockd, last_command, command_len)) {
 			close(sockd);
 			log_err("Failed to send \"RCPT TO\" command");
@@ -1882,11 +1880,9 @@ BOOL common_util_send_message(logon_object *plogon,
 	EID_ARRAY ids;
 	BOOL b_partial;
 	uint64_t new_id;
-	char username[UADDR_SIZE];
 	uint64_t parent_id;
 	uint64_t folder_id;
 	TARRAY_SET *prcpts;
-	DOUBLE_LIST temp_list;
 	MESSAGE_CONTENT *pmsgctnt;
 	using LLU = unsigned long long;
 	
@@ -1925,12 +1921,9 @@ BOOL common_util_send_message(logon_object *plogon,
 		log_err("W-1286: Missing recipients for message mid:0x%llx", LLU{message_id});
 		return FALSE;
 	}
-	double_list_init(&temp_list);
+
+	std::vector<std::string> rcpt_list;
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (NULL == pnode) {
-			return FALSE;
-		}
 		if (b_resend) {
 			auto rcpttype = prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
 			if (rcpttype == nullptr)
@@ -1946,9 +1939,8 @@ BOOL common_util_send_message(logon_object *plogon,
 		}
 		*/
 		auto str = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
-		pnode->pdata = deconst(str);
 		if (str != nullptr && *str != '\0') {
-			double_list_append_as_tail(&temp_list, pnode);
+			rcpt_list.emplace_back(str);
 			continue;
 		}
 		auto addrtype = prcpts->pparray[i]->get<const char>(PR_ADDRTYPE);
@@ -1959,42 +1951,34 @@ BOOL common_util_send_message(logon_object *plogon,
 				log_err("W-1285: Cannot get recipient entryid while sending mid:0x%llx", LLU{message_id});
 				return FALSE;
 			}
+			char username[UADDR_SIZE];
 			if (!common_util_entryid_to_username(entryid,
 			    username, GX_ARRAY_SIZE(username))) {
 				log_err("W-1284: Cannot convert recipient entryid to SMTP address while sending mid:0x%llx", LLU{message_id});
 				return FALSE;	
 			}
-			auto tmp_len = strlen(username) + 1;
-			pnode->pdata = common_util_alloc(tmp_len);
-			if (NULL == pnode->pdata) {
-				return FALSE;
-			}
-			memcpy(pnode->pdata, username, tmp_len);
+			rcpt_list.emplace_back(username);
 		} else if (strcasecmp(addrtype, "SMTP") == 0) {
-			pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
-			if (NULL == pnode->pdata) {
+			str = prcpts->pparray[i]->get<char>(PR_EMAIL_ADDRESS);
+			if (str == nullptr) {
 				log_err("W-1283: Cannot get email address of recipient of SMTP address type while sending mid:0x%llx", LLU{message_id});
 				return FALSE;
 			}
+			rcpt_list.emplace_back(str);
 		} else if (strcasecmp(addrtype, "EX") == 0) {
 			auto emaddr = prcpts->pparray[i]->get<const char>(PR_EMAIL_ADDRESS);
 			if (emaddr == nullptr)
 				goto CONVERT_ENTRYID;
+			char username[UADDR_SIZE];
 			if (!common_util_essdn_to_username(emaddr,
 			    username, GX_ARRAY_SIZE(username)))
 				goto CONVERT_ENTRYID;
-			auto tmp_len = strlen(username) + 1;
-			pnode->pdata = common_util_alloc(tmp_len);
-			if (NULL == pnode->pdata) {
-				return FALSE;
-			}
-			memcpy(pnode->pdata, username, tmp_len);
+			rcpt_list.emplace_back(username);
 		} else {
 			goto CONVERT_ENTRYID;
 		}
-		double_list_append_as_tail(&temp_list, pnode);
 	}
-	if (0 == double_list_get_nodes_num(&temp_list)) {
+	if (rcpt_list.size() == 0) {
 		log_err("W-1282: Empty converted recipients list while sending mid:0x%llx", LLU{message_id});
 		return FALSE;
 	}
@@ -2006,7 +1990,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		log_err("W-1281: Failed to export to RFC5322 mail while sending mid:0x%llx", LLU{message_id});
 		return FALSE;	
 	}
-	if (!common_util_send_mail(&imail, plogon->get_account(), &temp_list)) {
+	if (!cu_send_mail(&imail, plogon->get_account(), rcpt_list)) {
 		log_err("W-1280: Failed to send mid:0x%llx via SMTP", LLU{message_id});
 		return FALSE;
 	}

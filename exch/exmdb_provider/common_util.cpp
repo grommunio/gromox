@@ -84,11 +84,11 @@ E(get_id_from_username)
 E(get_domain_ids)
 E(get_id_from_maildir)
 E(get_id_from_homedir)
-E(send_mail)
 E(get_mime_pool)
 E(log_info)
 E(get_handle)
 #undef E
+decltype(cu_send_mail) cu_send_mail;
 
 static BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
 static BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum display_type *);
@@ -198,7 +198,7 @@ void common_util_pass_service(int service_id, void *func)
 	E(SERVICE_ID_GET_DOMAIN_IDS, common_util_get_domain_ids);
 	E(SERVICE_ID_GET_ID_FROM_MAILDIR, common_util_get_id_from_maildir);
 	E(SERVICE_ID_GET_ID_FROM_HOMEDIR, common_util_get_id_from_homedir);
-	E(SERVICE_ID_SEND_MAIL, common_util_send_mail);
+	E(SERVICE_ID_SEND_MAIL, cu_send_mail);
 	E(SERVICE_ID_GET_MIME_POOL, common_util_get_mime_pool);
 	E(SERVICE_ID_LOG_INFO, common_util_log_info);
 	E(SERVICE_ID_GET_HANDLE, common_util_get_handle);
@@ -4909,16 +4909,12 @@ BOOL cu_adjust_store_size(sqlite3 *psqlite, bool subtract,
 	return TRUE;
 }
 
-BOOL common_util_recipients_to_list(
-	TARRAY_SET *prcpts, DOUBLE_LIST *plist)
+BOOL cu_rcpts_to_list(TARRAY_SET *prcpts, std::vector<std::string> &plist) try
 {
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (pnode == nullptr)
-			return FALSE;
-		pnode->pdata = prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
-		if (NULL != pnode->pdata) {
-			double_list_append_as_tail(plist, pnode);
+		auto str = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
+		if (str != nullptr) {
+			plist.emplace_back(str);
 			continue;
 		}
 		auto addrtype = prcpts->pparray[i]->get<const char>(PR_ADDRTYPE);
@@ -4927,22 +4923,23 @@ BOOL common_util_recipients_to_list(
 			auto entryid = prcpts->pparray[i]->get<const BINARY>(PR_ENTRYID);
 			if (entryid == nullptr)
 				return FALSE;
-			pnode->pdata = common_util_alloc(UADDR_SIZE);
-			if (pnode->pdata == nullptr)
+			char ua[UADDR_SIZE];
+			if (!common_util_entryid_to_username(entryid, ua, UADDR_SIZE))
 				return FALSE;
-			if (!common_util_entryid_to_username(entryid,
-			    static_cast<char *>(pnode->pdata), UADDR_SIZE))
-				return FALSE;
+			plist.emplace_back(ua);
 		} else if (strcasecmp(addrtype, "SMTP") == 0) {
-			pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
-			if (pnode->pdata == nullptr)
+			str = prcpts->pparray[i]->get<char>(PR_EMAIL_ADDRESS);
+			if (str == nullptr)
 				goto CONVERT_ENTRYID;
+			plist.emplace_back(str);
 		} else {
 			goto CONVERT_ENTRYID;
 		}
-		double_list_append_as_tail(plist, pnode);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2036: ENOMEM\n");
+	return false;
 }
 
 BINARY *cu_xid_to_bin(const XID &xid)
