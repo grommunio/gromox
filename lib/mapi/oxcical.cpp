@@ -2636,26 +2636,24 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		order = -1;
 	if (0 == ptzstruct->daylightdate.month) {
 		strcpy(tmp_buff, "16010101T000000");
+	} else if (ptzstruct->standarddate.year == 0) {
+		day = ical_get_dayofmonth(year,
+			ptzstruct->standarddate.month, order,
+			ptzstruct->standarddate.dayofweek);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
+			year, (int)ptzstruct->standarddate.month,
+			day, (int)ptzstruct->standarddate.hour,
+			(int)ptzstruct->standarddate.minute,
+			(int)ptzstruct->standarddate.second);
+	} else if (1 == ptzstruct->standarddate.year) {
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
+			year, (int)ptzstruct->standarddate.month,
+			(int)ptzstruct->standarddate.day,
+			(int)ptzstruct->standarddate.hour,
+			(int)ptzstruct->standarddate.minute,
+			(int)ptzstruct->standarddate.second);
 	} else {
-		if (0 == ptzstruct->standarddate.year) {
-			day = ical_get_dayofmonth(year,
-				ptzstruct->standarddate.month, order,
-				ptzstruct->standarddate.dayofweek);
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
-				year, (int)ptzstruct->standarddate.month,
-				day, (int)ptzstruct->standarddate.hour,
-				(int)ptzstruct->standarddate.minute,
-				(int)ptzstruct->standarddate.second);
-		} else if (1 == ptzstruct->standarddate.year) {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
-				year, (int)ptzstruct->standarddate.month,
-				(int)ptzstruct->standarddate.day,
-				(int)ptzstruct->standarddate.hour,
-				(int)ptzstruct->standarddate.minute,
-				(int)ptzstruct->standarddate.second);
-		} else {
-			return NULL;
-		}
+		return NULL;
 	}
 	piline = ical_new_simple_line("DTSTART", tmp_buff);
 	if (NULL == piline) {
