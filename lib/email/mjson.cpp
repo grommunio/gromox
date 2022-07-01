@@ -1279,8 +1279,7 @@ static int mjson_convert_address(char *address, const char *charset,
 		offset += gx_snprintf(buff + offset, length - offset,
 		          "(\"%s\"", temp_buff);
 	} else {
-		offset += gx_snprintf(buff + offset, length - offset, "(\"=?%s?b?",
-		          ('\0' != email_charset[0]) ? email_charset : charset);
+		offset += gx_snprintf(buff + offset, length - offset, "(\"=?utf-8?b?");
 		if (0 != encode64(email_addr.display_name,
 		    strlen(email_addr.display_name), buff + offset,
 		    length - offset, &ecode_len)) {

@@ -467,17 +467,19 @@ static void oxcmail_split_filename(char *file_name, char *extension)
 	}
 }
 
+/**
+ * @charset:	charset of the MAPI session
+ * @paddr:	always has UTF-8 display name in it
+ */
 static BOOL oxcmail_parse_recipient(const char *charset,
-	EMAIL_ADDR *paddr, uint32_t rcpt_type, TARRAY_SET *pset)
+    const EMAIL_ADDR *paddr, uint32_t rcpt_type, TARRAY_SET *pset)
 {
-	int tmp_len;
 	BINARY tmp_bin;
 	char essdn[1024];
 	uint8_t tmp_byte;
 	uint32_t tmp_int32;
-	char username[UADDR_SIZE], display_name[UADDR_SIZE];
+	char username[UADDR_SIZE];
 	char tmp_buff[1280];
-	char utf8_field[512];
 	
 	if (!paddr->has_value())
 		return TRUE;
@@ -485,45 +487,10 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	if (NULL == pproplist) {
 		return FALSE;
 	}
-	utf8_field[0] = '\0';
-	if (paddr->has_dispname())
-		gx_strlcpy(display_name, paddr->display_name, GX_ARRAY_SIZE(display_name));
-	else
-		snprintf(display_name, GX_ARRAY_SIZE(display_name), "%s@%s",
-			paddr->local_part, paddr->domain);
 
-	if (mime_string_to_utf8(charset, display_name, utf8_field)) {
-		tmp_len = strlen(utf8_field);
-		if (tmp_len > 1 && '"' == utf8_field[0]
-			&& '"' == utf8_field[tmp_len - 1]) {
-			tmp_len --;
-			utf8_field[tmp_len] = '\0';
-			memmove(utf8_field, utf8_field + 1, tmp_len);
-			tmp_len --;
-		}
-		if (tmp_len > 1 && '\'' == utf8_field[0]
-			&& '\'' == utf8_field[tmp_len - 1]) {
-			tmp_len --;
-			utf8_field[tmp_len] = '\0';
-			memmove(utf8_field, utf8_field + 1, tmp_len);
-			tmp_len --;
-		}
-		const char *newval;
-		if (0 == tmp_len) {
-			snprintf(display_name, arsizeof(display_name), "%s@%s",
-				paddr->local_part, paddr->domain);
-			newval = display_name;
-		} else {
-			newval = utf8_field;
-		}
-		if (pproplist->set(PR_DISPLAY_NAME, newval) != 0 ||
-		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, utf8_field) != 0)
-			return FALSE;
-	} else {
-		if (pproplist->set(PR_DISPLAY_NAME_A, display_name) != 0 ||
-		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME_A, display_name) != 0)
-			return FALSE;
-	}
+	if (pproplist->set(PR_DISPLAY_NAME, paddr->display_name) != 0 ||
+	    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, paddr->display_name) != 0)
+		return FALSE;
 	if (paddr->has_addr() && oxcmail_check_ascii(paddr->local_part) &&
 	    oxcmail_check_ascii(paddr->domain)) {
 		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
@@ -549,7 +516,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		tmp_bin.cb = 0;
 		tmp_bin.pc = tmp_buff;
 		if ('\0' == essdn[0]) {
-			if (!oxcmail_username_to_oneoff(username, utf8_field, &tmp_bin))
+			if (!oxcmail_username_to_oneoff(username, paddr->display_name, &tmp_bin))
 				return FALSE;
 		} else {
 			if (!oxcmail_essdn_to_entryid(essdn, &tmp_bin))
@@ -594,10 +561,10 @@ static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
 		auto mb = vmime::dynamicCast<vmime::mailbox>(compo);
 		if (mb == nullptr)
 			continue;
-		gx_strlcpy(email_addr.display_name, mb->getName().getWholeBuffer().c_str(), std::size(email_addr.display_name));
+		gx_strlcpy(email_addr.display_name, mb->getName().getConvertedText("utf-8").c_str(), std::size(email_addr.display_name));
 		auto &emp = mb->getEmail();
-		gx_strlcpy(email_addr.local_part, emp.getLocalName().getBuffer().c_str(), std::size(email_addr.local_part));
-		gx_strlcpy(email_addr.domain, emp.getDomainName().getBuffer().c_str(), std::size(email_addr.domain));
+		gx_strlcpy(email_addr.local_part, emp.getLocalName().getConvertedText("utf-8").c_str(), std::size(email_addr.local_part));
+		gx_strlcpy(email_addr.domain, emp.getDomainName().getConvertedText("utf-8").c_str(), std::size(email_addr.domain));
 
 		if (*email_addr.local_part == '\0')
 			continue;
@@ -609,7 +576,7 @@ static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
 }
 
 static BOOL oxcmail_parse_address(const char *charset,
-    EMAIL_ADDR *paddr, uint32_t pr_name, uint32_t pr_addrtype,
+    const EMAIL_ADDR *paddr, uint32_t pr_name, uint32_t pr_addrtype,
     uint32_t pr_emaddr, uint32_t pr_smtpaddr, uint32_t pr_searchkey,
     uint32_t pr_entryid, TPROPVAL_ARRAY *pproplist)
 {
@@ -617,22 +584,13 @@ static BOOL oxcmail_parse_address(const char *charset,
 	char essdn[1024];
 	char username[UADDR_SIZE];
 	char tmp_buff[1280];
-	char utf8_field[512];
 	
 	if (paddr->has_dispname()) {
-		if (mime_string_to_utf8(charset, paddr->display_name, utf8_field)) {
-			if (pproplist->set(pr_name, utf8_field) != 0)
-				return false;
-		} else {
-			if (pproplist->set(CHANGE_PROP_TYPE(pr_name, PT_STRING8),
-			    paddr->display_name) != 0)
-				return false;
-		}
+		if (pproplist->set(pr_name, paddr->display_name) != 0)
+			return false;
 	} else if (paddr->has_addr()) {
 		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
-		uint32_t tag = oxcmail_check_ascii(username) ? pr_name :
-		               CHANGE_PROP_TYPE(pr_name, PT_STRING8);
-		if (pproplist->set(tag, username) != 0)
+		if (pproplist->set(pr_name, username) != 0)
 			return FALSE;
 	}
 	bool ok = paddr->has_addr() && oxcmail_check_ascii(paddr->local_part) &&
@@ -657,7 +615,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 	tmp_bin.cb = 0;
 	tmp_bin.pc = tmp_buff;
 	if ('\0' == essdn[0]) {
-		if (!oxcmail_username_to_oneoff(username, utf8_field, &tmp_bin))
+		if (!oxcmail_username_to_oneoff(username, paddr->display_name, &tmp_bin))
 			return FALSE;
 	} else {
 		if (!oxcmail_essdn_to_entryid(essdn, &tmp_bin))
@@ -676,7 +634,6 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 	uint8_t pad_len;
 	EXT_PUSH ext_push;
 	char tmp_buff[UADDR_SIZE];
-	char utf8_field[512];
 	EMAIL_ADDR email_addr;
 	ONEOFF_ENTRYID tmp_entry;
 	uint8_t bin_buff[256*1024];
@@ -694,7 +651,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 	str_offset = 0;
 	tmp_entry.flags = 0;
 	tmp_entry.version = 0;
-	tmp_entry.pdisplay_name = utf8_field;
+	tmp_entry.pdisplay_name = email_addr.display_name;
 	tmp_entry.paddress_type = deconst("SMTP");
 	tmp_entry.pmail_address = tmp_buff;
 
@@ -709,24 +666,26 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 		auto mb = vmime::dynamicCast<vmime::mailbox>(compo);
 		if (mb == nullptr)
 			continue;
-		gx_strlcpy(email_addr.display_name, mb->getName().getWholeBuffer().c_str(), std::size(email_addr.display_name));
+		gx_strlcpy(email_addr.display_name, mb->getName().getConvertedText("utf-8").c_str(), std::size(email_addr.display_name));
 		auto &emp = mb->getEmail();
-		gx_strlcpy(email_addr.local_part, emp.getLocalName().getBuffer().c_str(), std::size(email_addr.local_part));
-		gx_strlcpy(email_addr.domain, emp.getDomainName().getBuffer().c_str(), std::size(email_addr.domain));
+		gx_strlcpy(email_addr.local_part, emp.getLocalName().getConvertedText("utf-8").c_str(), std::size(email_addr.local_part));
+		gx_strlcpy(email_addr.domain, emp.getDomainName().getConvertedText("utf-8").c_str(), std::size(email_addr.domain));
 
 		if (*email_addr.local_part == '\0')
 			continue;
-		if ('\0' == email_addr.display_name[0] ||
-		    !mime_string_to_utf8(charset, email_addr.display_name, utf8_field))
-			sprintf(utf8_field, "%s@%s",
-			        email_addr.local_part, email_addr.domain);
-		if (0 == str_offset) {
-			str_offset = sprintf(str_buff, "%s", utf8_field);
-		} else {
-			str_offset += gx_snprintf(str_buff + str_offset,
-			              sizeof(str_buff) - str_offset, ";%s", utf8_field);
-		}
-		if (email_addr.local_part[0] != '\0' && email_addr.domain[0] != '\0' &&
+		if (str_offset != 0)
+			str_offset += gx_snprintf(&str_buff[str_offset],
+			              std::size(str_buff) - str_offset, ";");
+		if (*email_addr.display_name != '\0')
+			str_offset += gx_snprintf(&str_buff[str_offset],
+			              std::size(str_buff) - str_offset, "%s",
+			              email_addr.display_name);
+		else
+			str_offset += gx_snprintf(&str_buff[str_offset],
+			              std::size(str_buff) - str_offset, "%s@%s",
+			              email_addr.local_part, email_addr.domain);
+
+		if (email_addr.has_addr() &&
 		    oxcmail_check_ascii(email_addr.local_part) &&
 		    oxcmail_check_ascii(email_addr.domain)) {
 			uint32_t offset1 = ext_push.m_offset;

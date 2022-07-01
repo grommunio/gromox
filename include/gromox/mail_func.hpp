@@ -9,6 +9,9 @@
 #define MIME_NAME_LEN 80U
 #define MIME_FIELD_LEN (64U * 1024)
 
+/**
+ * All fields are always UTF-8 for consistency.
+ */
 struct EMAIL_ADDR {
 	inline bool has_dispname() const { return *display_name != '\0'; }
 	inline bool has_addr() const { return *local_part != '\0' && *domain != '\0'; }
