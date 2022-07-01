@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -87,9 +88,6 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 
 static int mjson_convert_address(char *address, const char *charset,
 	const char *email_charset, char *buff, int length);
-
-static BOOL mjson_check_ascii_printable(const char *astring);
-
 static void mjson_convert_quoted_printable(const char *astring,
 	char *out_stirng);
 static void mjson_emum_rfc822(MJSON_MIME *, void *);
@@ -937,6 +935,13 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff, int length)
 	return ret_len;
 }
 
+static bool mjson_check_ascii_printable(const char *astring)
+{
+	/* copy of mime_check_ascii_printable */
+	return std::all_of(astring, astring + strlen(astring),
+	       [&](uint8_t c) { return c >= 0x20 && c <= 0x7E; });
+}
+
 static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	const char *storage_path, const char *msg_filename, const char *charset,
 	const char *email_charset, BOOL b_ext, char *buff, int length)
@@ -1530,20 +1535,6 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	}
 	
 	return offset;
-}
-
-static BOOL mjson_check_ascii_printable(const char *astring)
-{
-	int i, len;
-	
-	len = strlen(astring);
-	
-	for (i=0; i<len; i++) {
-		if (astring[i] < 0x20 || astring[i] > 0x7E) {
-			return FALSE;
-		}
-	}
-	return TRUE;
 }
 
 static void mjson_convert_quoted_printable(const char *astring,
