@@ -1265,26 +1265,24 @@ static int mjson_convert_address(char *address, const char *charset,
 	}
 	
 	parse_mime_addr(&email_addr, temp_address);
-	if ('\0' != email_addr.display_name[0]) {
-		if (mjson_check_ascii_printable(email_addr.display_name)) {
-			mjson_convert_quoted_printable(email_addr.display_name, temp_buff);
-			offset += gx_snprintf(buff + offset, length - offset,
-						"(\"%s\"", temp_buff);
-		} else {
-			offset += gx_snprintf(buff + offset, length - offset, "(\"=?%s?b?",
-						('\0' != email_charset[0])?email_charset:charset);
-			if (0 != encode64(email_addr.display_name,
-				strlen(email_addr.display_name), buff + offset,
-				length - offset, &ecode_len)) {
-				return -1;
-			}
-			offset += ecode_len;
-			memcpy(buff + offset, "?=\"", 3);
-			offset += 3;
-		}
-	} else {
+	if (*email_addr.display_name == '\0') {
 		memcpy(buff + offset, "(NIL", 4);
 		offset += 4;
+	} else if (mjson_check_ascii_printable(email_addr.display_name)) {
+		mjson_convert_quoted_printable(email_addr.display_name, temp_buff);
+		offset += gx_snprintf(buff + offset, length - offset,
+		          "(\"%s\"", temp_buff);
+	} else {
+		offset += gx_snprintf(buff + offset, length - offset, "(\"=?%s?b?",
+		          ('\0' != email_charset[0]) ? email_charset : charset);
+		if (0 != encode64(email_addr.display_name,
+		    strlen(email_addr.display_name), buff + offset,
+		    length - offset, &ecode_len)) {
+			return -1;
+		}
+		offset += ecode_len;
+		memcpy(buff + offset, "?=\"", 3);
+		offset += 3;
 	}
 	
 	/* at-domain-list */
