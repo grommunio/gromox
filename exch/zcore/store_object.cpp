@@ -86,10 +86,9 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 		printf("get_store_properties %s: failed\n", dir);
 		return NULL;	
 	}
-	auto pvalue = propvals.getval(PR_STORE_RECORD_KEY);
-	if (NULL == pvalue) {
+	auto bin = propvals.get<const BINARY>(PR_STORE_RECORD_KEY);
+	if (bin == nullptr)
 		return NULL;
-	}
 	std::unique_ptr<store_object> pstore;
 	try {
 		pstore.reset(new store_object);
@@ -100,7 +99,7 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	pstore->account_id = account_id;
 	gx_strlcpy(pstore->account, account, GX_ARRAY_SIZE(pstore->account));
 	gx_strlcpy(pstore->dir, dir, GX_ARRAY_SIZE(pstore->dir));
-	pstore->mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
+	pstore->mailbox_guid = rop_util_binary_to_guid(bin);
 	return pstore;
 }
 

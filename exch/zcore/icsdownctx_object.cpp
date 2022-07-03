@@ -288,8 +288,6 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
     TPROPVAL_ARRAY *pproplist)
 {
 	auto pctx = this;
-	uint64_t parent_fid;
-	uint64_t change_num;
 	PROPTAG_ARRAY proptags;
 	uint32_t proptag_buff[6];
 	TPROPVAL_ARRAY tmp_propvals;
@@ -329,15 +327,15 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), 0,
 	    fid, &proptags, &tmp_propvals))
 		return FALSE;
-	pvalue = tmp_propvals.getval(PidTagChangeNumber);
-	if (NULL == pvalue) {
+	auto lnum = tmp_propvals.get<const uint64_t>(PidTagChangeNumber);
+	if (lnum == nullptr) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	change_num = *(uint64_t*)pvalue;
-	pvalue = tmp_propvals.getval(PidTagParentFolderId);
-	if (NULL != pvalue) {
-		parent_fid = *(uint64_t*)pvalue;
+	auto change_num = *lnum;
+	lnum = tmp_propvals.get<uint64_t>(PidTagParentFolderId);
+	if (lnum != nullptr) {
+		auto parent_fid = *lnum;
 		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_SOURCE_KEY;
 		pvalue = common_util_calculate_folder_sourcekey(
 								pctx->pstore, parent_fid);
