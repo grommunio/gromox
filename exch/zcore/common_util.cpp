@@ -1349,12 +1349,11 @@ static void log_err(const char *format, ...)
 	system_services_log_info(LV_ERR, "user=%s  %s", pinfo->get_username(), log_buf);
 }
 
-static BOOL common_util_send_mail(MAIL *pmail,
-	const char *sender, DOUBLE_LIST *prcpt_list)
+static BOOL cu_send_mail(MAIL *pmail, const char *sender,
+    const std::vector<std::string> &rcpt_list)
 {
 	int res_val;
 	int command_len;
-	DOUBLE_LIST_NODE *pnode;
 	char last_command[1024];
 	char last_response[1024];
 	
@@ -1438,17 +1437,10 @@ static BOOL common_util_send_mail(MAIL *pmail,
 		return FALSE;
 	}
 
-	for (pnode=double_list_get_head(prcpt_list); NULL!=pnode;
-		pnode=double_list_get_after(prcpt_list, pnode)) {
-		if (strchr(static_cast<char *>(pnode->pdata), '@') == nullptr) {
-			command_len = sprintf(last_command,
-				"rcpt to:<%s@none>\r\n",
-			              static_cast<const char *>(pnode->pdata));
-		} else {
-			command_len = sprintf(last_command,
-				"rcpt to:<%s>\r\n",
-			              static_cast<const char *>(pnode->pdata));
-		}
+	for (const auto &eaddr : rcpt_list) {
+		auto have_at = strchr(eaddr.c_str(), '@') != nullptr;
+		command_len = sprintf(last_command, have_at ? "rcpt to:<%s>\r\n" :
+		              "rcpt to:<%s@none>\r\n", eaddr.c_str());
 		if (!common_util_send_command(sockd, last_command, command_len)) {
 			close(sockd);
 			log_err("Failed to send \"RCPT TO\" command");
@@ -1469,7 +1461,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 			log_err("SMTP server responded \"%s\" "
 				"after sending \"RCPT TO\" command", last_response);
 			return FALSE;
-		}						
+		}		
 	}
 	/* send data */
 	strcpy(last_command, "data\r\n");
@@ -1584,7 +1576,6 @@ BOOL common_util_send_message(store_object *pstore,
 	uint64_t parent_id;
 	uint64_t folder_id;
 	TARRAY_SET *prcpts;
-	DOUBLE_LIST temp_list;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -1616,15 +1607,12 @@ BOOL common_util_send_message(store_object *pstore,
 	if (NULL == prcpts) {
 		return FALSE;
 	}
-	double_list_init(&temp_list);
 	if (prcpts->count == 0)
 		fprintf(stderr, "I-1504: Store %s attempted to send message %llxh to 0 recipients\n",
 		        pstore->get_account(), static_cast<unsigned long long>(message_id));
+
+	std::vector<std::string> rcpt_list;
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (NULL == pnode) {
-			return FALSE;
-		}
 		if (b_resend) {
 			auto rcpttype = prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
 			if (rcpttype == nullptr)
@@ -1640,9 +1628,8 @@ BOOL common_util_send_message(store_object *pstore,
 		}
 		*/
 		auto str = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
-		pnode->pdata = deconst(str);
 		if (str != nullptr && *str != '\0') {
-			double_list_append_as_tail(&temp_list, pnode);
+			rcpt_list.emplace_back(str);
 			continue;
 		}
 		auto addrtype = prcpts->pparray[i]->get<const char>(PR_ADDRTYPE);
@@ -1651,35 +1638,29 @@ BOOL common_util_send_message(store_object *pstore,
 			auto entryid = prcpts->pparray[i]->get<const BINARY>(PR_ENTRYID);
 			if (entryid == nullptr)
 				return FALSE;
-			pnode->pdata = common_util_alloc(UADDR_SIZE);
-			if (NULL == pnode->pdata) {
-				return FALSE;
-			}
+			char username[UADDR_SIZE];
 			if (!common_util_entryid_to_username(entryid,
-			    static_cast<char *>(pnode->pdata), UADDR_SIZE))
+			    username, std::size(username)))
 				return FALSE;	
 		} else if (strcasecmp(addrtype, "SMTP") == 0) {
-			pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
-			if (NULL == pnode->pdata) {
+			str = prcpts->pparray[i]->get<char>(PR_EMAIL_ADDRESS);
+			if (str == nullptr)
 				return FALSE;
-			}
+			rcpt_list.emplace_back(str);
 		} else if (strcasecmp(addrtype, "EX") == 0) {
 			auto emaddr = prcpts->pparray[i]->get<const char>(PR_EMAIL_ADDRESS);
 			if (emaddr == nullptr)
 				goto CONVERT_ENTRYID;
-			pnode->pdata = common_util_alloc(UADDR_SIZE);
-			if (NULL == pnode->pdata) {
-				return FALSE;
-			}
+			char username[UADDR_SIZE];
 			if (!common_util_essdn_to_username(emaddr,
-			    static_cast<char *>(pnode->pdata), UADDR_SIZE))
+			    username, std::size(username)))
 				goto CONVERT_ENTRYID;
+			rcpt_list.emplace_back(username);
 		} else {
 			goto CONVERT_ENTRYID;
 		}
-		double_list_append_as_tail(&temp_list, pnode);
 	}
-	if (double_list_get_nodes_num(&temp_list) > 0) {
+	if (rcpt_list.size() > 0) {
 		auto body_type = get_override_format(*pmsgctnt);
 		common_util_set_dir(pstore->get_dir());
 		/* try to avoid TNEF message */
@@ -1688,9 +1669,8 @@ BOOL common_util_send_message(store_object *pstore,
 		    &imail, common_util_alloc, common_util_get_propids,
 		    common_util_get_propname))
 			return FALSE;	
-		if (!common_util_send_mail(&imail, pstore->get_account(), &temp_list)) {
+		if (!cu_send_mail(&imail, pstore->get_account(), rcpt_list))
 			return FALSE;
-		}
 	}
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
@@ -1723,23 +1703,20 @@ BOOL common_util_send_message(store_object *pstore,
 	return TRUE;
 }
 
-void common_util_notify_receipt(const char *username,
-	int type, MESSAGE_CONTENT *pbrief)
+void common_util_notify_receipt(const char *username, int type,
+    MESSAGE_CONTENT *pbrief) try
 {
-	DOUBLE_LIST_NODE node;
-	DOUBLE_LIST rcpt_list;
-	
-	node.pdata = pbrief->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-	if (NULL == node.pdata) {
+	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (str == nullptr)
 		return;
-	}
-	double_list_init(&rcpt_list);
-	double_list_append_as_tail(&rcpt_list, &node);
+	std::vector<std::string> rcpt_list = {str};
 	MAIL imail(g_mime_pool);
 	int bounce_type = type == NOTIFY_RECEIPT_READ ? BOUNCE_NOTIFY_READ : BOUNCE_NOTIFY_NON_READ;
 	if (!bounce_producer_make(username, pbrief, bounce_type, &imail))
 		return;
-	common_util_send_mail(&imail, username, &rcpt_list);
+	cu_send_mail(&imail, username, rcpt_list);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2038: ENOMEM\n");
 }
 
 static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
