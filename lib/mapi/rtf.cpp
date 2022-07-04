@@ -484,7 +484,7 @@ static uint32_t rtf_fcharset_to_cpid(int num)
 	return 1252;
 }
 
-static const FONTENTRY *rtf_lookup_font(RTF_READER *preader, int num)
+static const FONTENTRY *rtf_lookup_font(const RTF_READER *preader, int num)
 {
 	static constexpr FONTENTRY fake_entries[] =
 		{{FONTNIL_STR, ""}, {FONTROMAN_STR, ""},
@@ -532,14 +532,13 @@ static bool rtf_add_to_collection(DOUBLE_LIST *plist, int nr, const char *text)
 	return true;
 }
 
-static const char * rtf_get_from_collection(DOUBLE_LIST *plist, int nr)
+static const char *rtf_get_from_collection(const DOUBLE_LIST *plist, int nr)
 {
-	DOUBLE_LIST_NODE *pnode;
-	COLLECTION_NODE *pcollection;
+	const DOUBLE_LIST_NODE *pnode;
 
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		pcollection = (COLLECTION_NODE*)pnode->pdata;
+		auto pcollection = static_cast<const COLLECTION_NODE *>(pnode->pdata);
 		if (nr == pcollection->nr) {
 			return pcollection->text;
 		}
@@ -769,21 +768,18 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 	return true;
 }
 
-static int* rtf_stack_list_find_attr(RTF_READER *preader, int attr)
+static const int *rtf_stack_list_find_attr(const RTF_READER *preader, int attr)
 {
 	int i;
-	DOUBLE_LIST_NODE *pnode;
-	ATTRSTACK_NODE *pattrstack;
-	
-	pnode = double_list_get_tail(&preader->attr_stack_list);
-	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
+	auto pnode = double_list_get_tail(&preader->attr_stack_list);
+	auto pattrstack = static_cast<const ATTRSTACK_NODE *>(pnode->pdata);
 	for (i=pattrstack->tos-1; i>=0; i--) {
 		if (attr == pattrstack->attr_stack[i]) {
 			return &pattrstack->attr_params[i];
 		}
 	}
 	while ((pnode = double_list_get_before(&preader->attr_stack_list, pnode)) != NULL) {
-		pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
+		pattrstack = static_cast<const ATTRSTACK_NODE *>(pnode->pdata);
 		for (i=pattrstack->tos; i>=0; i--) {
 			if (attr == pattrstack->attr_stack[i]) {
 				return &pattrstack->attr_params[i];
@@ -795,7 +791,6 @@ static int* rtf_stack_list_find_attr(RTF_READER *preader, int attr)
 
 static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
 {
-	int *pparam;
 	const char *encoding;
 	
 	switch (attr) {
@@ -825,11 +820,11 @@ static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
 			QRF(preader->ext_push.p_bytes(TAG_FONT_END, sizeof(TAG_FONT_END) - 1));
 		}
 		/* Caution: no BREAK here */
-	case ATTR_HTMLTAG:
+	case ATTR_HTMLTAG: {
 		if (ATTR_HTMLTAG == attr) {
 			preader->is_within_htmltag = false;
 		}
-		pparam = rtf_stack_list_find_attr(preader, ATTR_FONTFACE);
+		auto pparam = rtf_stack_list_find_attr(preader, ATTR_FONTFACE);
 		if (NULL == pparam) {
 			encoding = preader->default_encoding;
 		} else {
@@ -843,6 +838,7 @@ static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
 		if (!rtf_iconv_open(preader, encoding))
 			return false;
 		return true;
+	}
 	case ATTR_FOREGROUND:
 		QRF(preader->ext_push.p_bytes(TAG_FOREGROUND_END, sizeof(TAG_FOREGROUND_END) - 1));
 		return true;
@@ -972,17 +968,14 @@ static bool rtf_attrstack_pop_express(RTF_READER *preader, int attr)
 	return true;
 }
 
-static int rtf_attrstack_peek(RTF_READER *preader)
+static int rtf_attrstack_peek(const RTF_READER *preader)
 {
-	DOUBLE_LIST_NODE *pnode;
-	ATTRSTACK_NODE *pattrstack;
-	
-	pnode = double_list_get_tail(&preader->attr_stack_list);
+	auto pnode = double_list_get_tail(&preader->attr_stack_list);
 	if (NULL == pnode) {
 		debug_info("[rtf]: cannot find stack node for peeking attribute");
 		return ATTR_NONE;
 	}
-	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
+	auto pattrstack = static_cast<const ATTRSTACK_NODE *>(pnode->pdata);
 	if(pattrstack->tos >= 0) {
 		return pattrstack->attr_stack[pattrstack->tos];
 	}
@@ -1018,15 +1011,13 @@ static bool rtf_attrstack_pop_express_all(RTF_READER *preader)
 static bool rtf_attrstack_find_pop_express(RTF_READER *preader, int attr)
 {
 	int i;
-	DOUBLE_LIST_NODE *pnode;
-	ATTRSTACK_NODE *pattrstack;
 	
-	pnode = double_list_get_tail(&preader->attr_stack_list);
+	auto pnode = double_list_get_tail(&preader->attr_stack_list);
 	if (NULL == pnode) {
 		debug_info("[rtf]: cannot find stack node for finding attribute");
 		return true;
 	}
-	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
+	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
 	bool b_found = false;
 	for (i=0; i<=pattrstack->tos; i++) {
 		if (pattrstack->attr_stack[i] == attr) {
