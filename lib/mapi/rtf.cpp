@@ -2918,14 +2918,12 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 							return -ENOMEM;
 						b_picture_push = true;
 					}
-					if (' ' != string[0]) {
-						if (0 != preader->picture_width &&
-							0 != preader->picture_height &&
-							0 != preader->picture_bits_per_pixel) {
-							if (picture_push.p_bytes(string, strlen(string)) != EXT_ERR_SUCCESS)
-								return -ENOBUFS;
-						}
-					}
+					if (string[0] != ' ' &&
+					    preader->picture_width != 0 &&
+					    preader->picture_height != 0 &&
+					    preader->picture_bits_per_pixel != 0 &&
+					    picture_push.p_bytes(string, strlen(string)) != EXT_ERR_SUCCESS)
+						return -ENOBUFS;
 				} else {
 					rtf_unescape_string(string);
 					preader->total_chars_in_line += strlen(string);
@@ -3042,18 +3040,13 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	}
 	if (!rtf_flush_iconv_cache(preader))
 		return -EINVAL;
-	if (b_hyperlinked) {
-		if (preader->ext_push.p_bytes(TAG_HYPERLINK_END,
-		    sizeof(TAG_HYPERLINK_END) - 1) != EXT_ERR_SUCCESS)
-			return -EINVAL;
-	}
-	if (!is_cell_group)
-		if (!rtf_attrstack_pop_express_all(preader))
-			return -EINVAL;
-	if (b_paragraph_begun) {
-		if (!rtf_ending_paragraph_align(preader, paragraph_align))
-			return -EINVAL;
-	}
+	if (b_hyperlinked && preader->ext_push.p_bytes(TAG_HYPERLINK_END,
+	    sizeof(TAG_HYPERLINK_END) - 1) != EXT_ERR_SUCCESS)
+		return -EINVAL;
+	if (!is_cell_group && !rtf_attrstack_pop_express_all(preader))
+		return -EINVAL;
+	if (b_paragraph_begun && !rtf_ending_paragraph_align(preader, paragraph_align))
+		return -EINVAL;
 	rtf_stack_list_free_node(preader);
 	return 0;
 }
