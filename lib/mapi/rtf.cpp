@@ -2788,6 +2788,30 @@ static void rtf_unescape_string(char *string)
 	}
 }
 
+static void pictype_to(unsigned int t, const char *m, const char *x)
+{
+	switch (t) {
+	case PICT_WB: m = "image/bmp"; x = "bmp"; break;
+	case PICT_WM: m = "application/x-msmetafile"; x = "wmf"; break;
+	case PICT_MAC: m = "image/x-pict"; x = "pict"; break;
+	case PICT_JPEG: m = "image/jpeg"; x = "jpg"; break;
+	case PICT_PNG: m = "image/png"; x = "png"; break;
+	case PICT_DI: m = "image/bmp"; x = "dib"; break;
+	case PICT_PM: m = "application/octet-stream"; x = "pmm"; break;
+	case PICT_EMF: m = "image/x-emf"; x = "emf"; break;
+	}
+}
+
+static CMD_PROC_FUNC rtf_find_fromhtml_func(const char *s)
+{
+	for (const auto x : {"par", "tab", "lquote", "rquote", "ldblquote",
+	     "rdblquote", "bullet", "endash", "emdash", "colortbl", "fonttbl",
+	     "htmltag", "uc", "u", "f", "~", "_"})
+		if (strcmp(s, x) == 0)
+			return rtf_find_cmd_function(s);
+	return nullptr;
+}
+
 static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 {
 	int ch;
@@ -2848,40 +2872,7 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 					if (!rtf_starting_body(preader))
 						return -EINVAL;
 					if (!b_picture_push) {
-						switch (preader->picture_type) {
-							case PICT_WB:
-								img_ctype = "image/bmp";
-								pext = "bmp";
-								break;
-							case PICT_WM:
-								img_ctype = "application/x-msmetafile";
-								pext = "wmf";
-								break;
-							case PICT_MAC:
-								img_ctype = "image/x-pict";
-								pext = "pict";
-								break;
-							case PICT_JPEG:
-								img_ctype = "image/jpeg";
-								 pext = "jpg";
-								break;
-							case PICT_PNG:
-								img_ctype = "image/png";
-								pext = "png";
-								break;
-							case PICT_DI:
-								img_ctype = "image/bmp";
-								pext = "dib";
-								break;
-							case PICT_PM:
-								img_ctype = "application/octet-stream";
-								pext = "pmm";
-								break;
-							case PICT_EMF:
-								img_ctype = "image/x-emf";
-								pext = "emf";
-								break;
-						}
+						pictype_to(preader->picture_type, img_ctype, pext);
 						sprintf(picture_name, "picture%04d.%s",
 							preader->picture_file_number, pext);
 						sprintf(cid_name, "\"cid:picture%04d@rtf\"", 
@@ -2966,31 +2957,9 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 						/* \b is like \b1 */
 						num = 1;
 					}
-					if (preader->have_fromhtml) {
-						if (0 == strcmp("par", name) ||
-							0 == strcmp("tab", name) ||
-							0 == strcmp("lquote", name) ||
-							0 == strcmp("rquote", name) ||
-							0 == strcmp("ldblquote", name) ||
-							0 == strcmp("rdblquote", name) ||
-							0 == strcmp("bullet", name) ||
-							0 == strcmp("endash", name) ||
-							0 == strcmp("emdash", name) ||
-							0 == strcmp("colortbl", name) ||
-							0 == strcmp("fonttbl", name) ||
-							0 == strcmp("htmltag", name) ||
-							0 == strcmp("uc", name) ||
-							0 == strcmp("u", name) ||
-							0 == strcmp("f", name) ||
-							0 == strcmp("~", name) ||
-							0 == strcmp("_", name)) {
-							func = rtf_find_cmd_function(name);
-						} else {
-							func = NULL;
-						}
-					} else {
-						func = rtf_find_cmd_function(name);
-					}
+
+
+					func = preader->have_fromhtml ? rtf_find_fromhtml_func(name) : rtf_find_cmd_function(name);
 					if (NULL != func) {
 						switch (func(preader, pnode,
 							paragraph_align, have_param, num)) {
