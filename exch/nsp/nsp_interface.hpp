@@ -23,8 +23,8 @@ extern int nsp_interface_get_templateinfo(NSPI_HANDLE, uint32_t flags, uint32_t 
 extern int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags, uint32_t proptag, uint32_t mid, const BINARY_ARRAY *entry_ids);
 int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t flags, LPROPTAG_ARRAY **ppcolumns);
-extern int nsp_interface_resolve_names(NSPI_HANDLE, uint32_t reserved, const STAT *, const LPROPTAG_ARRAY *, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
-extern int nsp_interface_resolve_namesw(NSPI_HANDLE, uint32_t reserved, const STAT *, const LPROPTAG_ARRAY *, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
+extern int nsp_interface_resolve_names(NSPI_HANDLE, uint32_t reserved, const STAT *, LPROPTAG_ARRAY *&, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
+extern int nsp_interface_resolve_namesw(NSPI_HANDLE, uint32_t reserved, const STAT *, LPROPTAG_ARRAY *&, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
 /* clean NSPI_HANDLE by system, not operation of interface */
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc);
 

@@ -43,4 +43,4 @@ extern int (*nsp_interface_get_specialtable)(NSP_HANDLE, uint32_t flags, const S
 extern int (*nsp_interface_get_templateinfo)(NSP_HANDLE, uint32_t flags, uint32_t type, const char *dn, uint32_t codepage, uint32_t locale_id, NSP_PROPROW **);
 extern int (*nsp_interface_mod_linkatt)(NSP_HANDLE, uint32_t flags, uint32_t proptag, uint32_t mid, const BINARY_ARRAY *entry_ids);
 extern int (*nsp_interface_query_columns)(NSP_HANDLE, uint32_t resv, uint32_t flags, LPROPTAG_ARRAY **cols);
-extern int (*nsp_interface_resolve_namesw)(NSP_HANDLE, uint32_t resv, const STAT *, const LPROPTAG_ARRAY *, const STRING_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
+extern int (*nsp_interface_resolve_namesw)(NSP_HANDLE, uint32_t resv, const STAT *, LPROPTAG_ARRAY *&, const STRING_ARRAY *, MID_ARRAY **, NSP_ROWSET **);

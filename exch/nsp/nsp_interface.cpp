@@ -2375,7 +2375,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 }
 
 int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
-    const STAT *pstat, const LPROPTAG_ARRAY *pproptags,
+    const STAT *pstat, LPROPTAG_ARRAY *&pproptags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
 	char *pstr;
@@ -2558,7 +2558,7 @@ static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
 }
 
 int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
-    const STAT *pstat, const LPROPTAG_ARRAY *pproptags,
+    const STAT *pstat, LPROPTAG_ARRAY *&pproptags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
 	nsp_trace(__func__, 0, pstat);

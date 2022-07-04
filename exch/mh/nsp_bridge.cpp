@@ -66,7 +66,7 @@ uint32_t nsp_bridge_run(const GUID& session_guid, const dntomid_request& request
 uint32_t nsp_bridge_run(const GUID& session_guid, const getmatches_request& request, getmatches_response& response)
 {
 	NSPRES *nspres = nullptr;
-	NSP_ROWSET *outrows;
+	NSP_ROWSET *outrows = nullptr;
 	NSP_PROPNAME *nspname = nullptr;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	if (request.filter != nullptr) {
@@ -91,7 +91,7 @@ uint32_t nsp_bridge_run(const GUID& session_guid, const getmatches_request& requ
 	if (Failed(result))
 		return result;
 	if (outrows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(*request.columns, *outrows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(request.columns, *outrows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }
@@ -230,7 +230,7 @@ uint32_t nsp_bridge_run(const GUID& session_guid, const querycolumns_request& re
 
 uint32_t nsp_bridge_run(const GUID& session_guid, const queryrows_request& request, queryrows_response& response)
 {
-	NSP_ROWSET *rows;
+	NSP_ROWSET *rows = nullptr;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	uint32_t result = nsp_interface_query_rows(ses, request.flags, request.stat,
 	                  request.explicit_table.cvalues, request.explicit_table.pproptag,
@@ -238,21 +238,22 @@ uint32_t nsp_bridge_run(const GUID& session_guid, const queryrows_request& reque
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(*request.columns, *rows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(request.columns, *rows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }
 
 uint32_t nsp_bridge_run(const GUID& session_guid, const resolvenames_request& request, resolvenames_response& response)
 {
-	NSP_ROWSET *rows;
+	NSP_ROWSET *rows = nullptr;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
+	auto tags = request.proptags;
 	uint32_t result = nsp_interface_resolve_namesw(ses, request.reserved, request.stat,
-	                  request.proptags, request.names, &response.mids, &rows);
+	                  tags, request.names, &response.mids, &rows);
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(*request.proptags, *rows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(request.proptags, *rows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }
@@ -266,7 +267,7 @@ uint32_t nsp_bridge_run(const GUID& session_guid, const resortrestriction_reques
 
 uint32_t nsp_bridge_run(const GUID& session_guid, const seekentries_request& request, seekentries_response& response)
 {
-	NSP_ROWSET *rows;
+	NSP_ROWSET *rows = nullptr;
 	PROPERTY_VALUE *target_val = nullptr;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 
@@ -281,7 +282,7 @@ uint32_t nsp_bridge_run(const GUID& session_guid, const seekentries_request& req
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(*request.columns, *rows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(request.columns, *rows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }

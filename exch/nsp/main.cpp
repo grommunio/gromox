@@ -505,8 +505,9 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out == nullptr)
 			return DISPATCH_FAIL;
 		*ppout = out;
+		auto tags = in->pproptags;
 		out->result = nsp_interface_resolve_names(in->handle,
-		              in->reserved, &in->stat, in->pproptags, &in->strs,
+		              in->reserved, &in->stat, tags, &in->strs,
 		              &out->pmids, &out->prows);
 		*ecode = out->result;
 		return DISPATCH_SUCCESS;
@@ -517,8 +518,9 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out == nullptr)
 			return DISPATCH_FAIL;
 		*ppout = out;
+		auto tags = in->pproptags;
 		out->result = nsp_interface_resolve_namesw(in->handle,
-		              in->reserved, &in->stat, in->pproptags, &in->strs,
+		              in->reserved, &in->stat, tags, &in->strs,
 		              &out->pmids, &out->prows);
 		*ecode = out->result;
 		return DISPATCH_SUCCESS;

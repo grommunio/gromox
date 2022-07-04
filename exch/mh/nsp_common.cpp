@@ -309,7 +309,7 @@ static BOOL cu_nsp_proprow_to_proprow(const LPROPTAG_ARRAY &cols,
 				*static_cast<uint32_t *>(ap->pvalue) = nsprop.value.err;
 			}
 		} else if (abrow.flag == PROPERTY_ROW_FLAG_NONE) {
-			if (PROP_TYPE(cols.pproptag[i]) == PT_UNSPECIFIED) {
+			if (i < cols.cvalues && PROP_TYPE(cols.pproptag[i]) == PT_UNSPECIFIED) {
 				auto ap = cu_alloc<TYPED_PROPVAL>();
 				if (ap == nullptr)
 					return false;
@@ -322,7 +322,7 @@ static BOOL cu_nsp_proprow_to_proprow(const LPROPTAG_ARRAY &cols,
 			    &nsprop.value, &abrow.pppropval[i])) {
 				return false;
 			}
-		} else if (PROP_TYPE(cols.pproptag[i]) == PT_UNSPECIFIED) {
+		} else if (i < cols.cvalues && PROP_TYPE(cols.pproptag[i]) == PT_UNSPECIFIED) {
 			auto tp = cu_alloc<TYPED_PROPVAL>();
 			if (tp == nullptr)
 				return false;
@@ -350,16 +350,19 @@ static BOOL cu_nsp_proprow_to_proprow(const LPROPTAG_ARRAY &cols,
 	return TRUE;
 }
 
-BOOL cu_nsp_rowset_to_colrow(const LPROPTAG_ARRAY &cols,
+BOOL cu_nsp_rowset_to_colrow(const LPROPTAG_ARRAY *cols,
     const NSP_ROWSET &set, nsp_rowset2 &row)
 {
-	row.columns = cols;
+	if (cols != nullptr)
+		row.columns = *cols;
+	else
+		row.columns = {};
 	row.row_count = set.crows;
 	row.rows = cu_alloc<PROPERTY_ROW>(set.crows);
 	if (row.rows == nullptr)
 		return false;
 	for (size_t i = 0; i < set.crows; ++i)
-		if (!cu_nsp_proprow_to_proprow(cols, set.prows[i], row.rows[i]))
+		if (!cu_nsp_proprow_to_proprow(row.columns, set.prows[i], row.rows[i]))
 			return false;
 	return TRUE;
 }
