@@ -2812,15 +2812,52 @@ static CMD_PROC_FUNC rtf_find_fromhtml_func(const char *s)
 	return nullptr;
 }
 
+static errno_t push_da_pic(RTF_READER *reader, EXT_PUSH &picture_push,
+    const char *img_ctype, const char *pext, const char *cid_name,
+    const char *picture_name)
+{
+	BINARY bin;
+
+	bin.cb = picture_push.m_offset / 2;
+	bin.pv = malloc(bin.cb);
+	if (bin.pv == nullptr ||
+	    picture_push.p_uint8(0) != EXT_ERR_SUCCESS ||
+	    !decode_hex_binary(picture_push.m_cdata, bin.pv, bin.cb)) {
+		free(bin.pv);
+		return EINVAL;
+	}
+	auto atx = attachment_content_init();
+	if (atx == nullptr ||
+	    !attachment_list_append_internal(reader->pattachments, atx)) {
+		free(bin.pv);
+		return EINVAL;
+	}
+	int ret;
+	uint32_t flags = ATT_MHTML_REF;
+	if ((ret = atx->proplist.set(PR_ATTACH_MIME_TAG, img_ctype)) != 0 ||
+	    (ret = atx->proplist.set(PR_ATTACH_CONTENT_ID, cid_name)) != 0 ||
+	    (ret = atx->proplist.set(PR_ATTACH_EXTENSION, pext)) != 0 ||
+	    (ret = atx->proplist.set(PR_ATTACH_LONG_FILENAME, picture_name)) != 0 ||
+	    (ret = atx->proplist.set(PR_ATTACH_FLAGS, &flags)) != 0 ||
+	    (ret = atx->proplist.set(PR_ATTACH_DATA_BIN, &bin)) != 0) {
+		free(bin.pv);
+		return ret;
+	}
+	free(bin.pv);
+	if (reader->ext_push.p_bytes(TAG_IMAGELINK_BEGIN, sizeof(TAG_IMAGELINK_BEGIN) - 1) != EXT_ERR_SUCCESS ||
+	    reader->ext_push.p_bytes(cid_name, strlen(cid_name)) != EXT_ERR_SUCCESS ||
+	    reader->ext_push.p_bytes(TAG_IMAGELINK_END, sizeof(TAG_IMAGELINK_END) - 1) != EXT_ERR_SUCCESS)
+		return EINVAL;
+	return 0;
+}
+
 static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 {
 	int ch;
 	int num;
 	int ret_val;
 	char *string;
-	BINARY tmp_bin;
 	char cid_name[64];
-	uint32_t tmp_int32;
 	CMD_PROC_FUNC func;
 	int paragraph_align;
 	char picture_name[64];
@@ -2828,7 +2865,6 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	const char *img_ctype = nullptr, *pext = nullptr;
 	bool b_paragraph_begun = false, b_hyperlinked = false;
 	char name[MAX_CONTROL_LEN];
-	ATTACHMENT_CONTENT *pattachment;
 	bool have_param = false, is_cell_group = false, b_picture_push = false;
 	
 	paragraph_align = ALIGN_LEFT;
@@ -2997,43 +3033,10 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	}
 	if (preader->is_within_picture && b_picture_push) {
 		if (picture_push.m_offset > 0) {
-			tmp_bin.cb = picture_push.m_offset / 2;
-			tmp_bin.pv = malloc(tmp_bin.cb);
-			if (tmp_bin.pv == nullptr)
-				return -EINVAL;
-			if (picture_push.p_uint8(0) != EXT_ERR_SUCCESS) {
-				free(tmp_bin.pv);
-				return -EINVAL;
-			}
-			if (!decode_hex_binary(picture_push.m_cdata, tmp_bin.pv, tmp_bin.cb)) {
-				free(tmp_bin.pv);
-				return -EINVAL;
-			}
-			pattachment = attachment_content_init();
-			if (NULL == pattachment) {
-				free(tmp_bin.pv);
-				return -EINVAL;
-			}
-			if (!attachment_list_append_internal(preader->pattachments, pattachment)) {
-				free(tmp_bin.pv);
-				return -EINVAL;
-			}
-			int ret;
-			tmp_int32 = ATT_MHTML_REF;
-			if ((ret = pattachment->proplist.set(PR_ATTACH_MIME_TAG, img_ctype)) != 0 ||
-			    (ret = pattachment->proplist.set(PR_ATTACH_CONTENT_ID, cid_name)) != 0 ||
-			    (ret = pattachment->proplist.set(PR_ATTACH_EXTENSION, pext)) != 0 ||
-			    (ret = pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, picture_name)) != 0 ||
-			    (ret = pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32)) != 0 ||
-			    (ret = pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin)) != 0) {
-				free(tmp_bin.pv);
-				return ret;
-			}
-			free(tmp_bin.pv);
-			if (preader->ext_push.p_bytes(TAG_IMAGELINK_BEGIN, sizeof(TAG_IMAGELINK_BEGIN) - 1) != EXT_ERR_SUCCESS ||
-			    preader->ext_push.p_bytes(cid_name, strlen(cid_name)) != EXT_ERR_SUCCESS ||
-			    preader->ext_push.p_bytes(TAG_IMAGELINK_END, sizeof(TAG_IMAGELINK_END) - 1) != EXT_ERR_SUCCESS)
-				return -EINVAL;
+			auto ret = push_da_pic(preader, picture_push, img_ctype,
+			           pext, cid_name, picture_name);
+			if (ret != 0)
+				return -ret;
 		}
 		preader->is_within_picture = false;
 	}
