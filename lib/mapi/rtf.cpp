@@ -1835,14 +1835,7 @@ static void rtf_process_color_table(
 	} while ((pword = pword->get_sibling()) != nullptr);
 }
 
-static int rtf_cmd_rtf(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
-    bool have_param, int num)
-{
-	return CMD_RESULT_CONTINUE;
-}
-
-static int rtf_cmd_fromhtml(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
-    int align, bool have_param, int num)
+static int rtf_cmd_continue(RTF_READER *, SIMPLE_TREE_NODE *, int, bool, int)
 {
 	return CMD_RESULT_CONTINUE;
 }
@@ -2208,12 +2201,6 @@ static int rtf_cmd_soft_hyphen(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_optional_hyphen(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
-    int align, bool have_param, int num)
-{
-	return CMD_RESULT_CONTINUE;
-}
-
 static int rtf_cmd_emdash(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
@@ -2439,12 +2426,6 @@ static int rtf_cmd_striked(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_shppict(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
-    int align, bool have_param, int num)
-{
-	return CMD_RESULT_CONTINUE;
-}
-
 static int rtf_cmd_up(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
@@ -2566,24 +2547,12 @@ static int rtf_cmd_i(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_s(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
-    bool have_param, int num)
-{
-	return CMD_RESULT_CONTINUE;
-}
-
 static int rtf_cmd_sect(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	if (preader->ext_push.p_bytes(TAG_PARAGRAPH_BEGIN,
 	    sizeof(TAG_PARAGRAPH_BEGIN) - 1) != EXT_ERR_SUCCESS)
 		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
-}
-
-static int rtf_cmd_shp(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
-    bool have_param, int num)
-{
 	return CMD_RESULT_CONTINUE;
 }
 
@@ -2704,12 +2673,6 @@ static int rtf_cmd_pict(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 	return CMD_RESULT_CONTINUE;
 }
 
-static int rtf_cmd_bin(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
-    int align, bool have_param, int num)
-{
-	return CMD_RESULT_CONTINUE;
-}
-
 static int rtf_cmd_macpict(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
@@ -2806,24 +2769,6 @@ static int rtf_cmd_pich(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 	if (preader->is_within_picture && have_param)
 		preader->picture_height = num;
 	return CMD_RESULT_CONTINUE;
-}
-
-static int rtf_cmd_xe(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
-    bool have_param, int num)
-{
-	return CMD_RESULT_CONTINUE;
-}
-
-static int rtf_cmd_tc(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
-    bool have_param, int num)
-{
-	return CMD_RESULT_CONTINUE;
-}
-
-static int rtf_cmd_tcn(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
-    bool have_param, int num)
-{
-	return CMD_RESULT_IGNORE_REST;
 }
 
 static int rtf_cmd_htmltag(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
@@ -3236,14 +3181,14 @@ bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 {
 	static constexpr std::pair<const char *, CMD_PROC_FUNC> cmd_map[] = {
 		{"*",				rtf_cmd_maybe_ignore},
-		{"-",				rtf_cmd_optional_hyphen},
+		{"-", rtf_cmd_continue},
 		{"_",				rtf_cmd_soft_hyphen},
 		{"~",				rtf_cmd_nonbreaking_space},
 		{"ansi",			rtf_cmd_ansi},
 		{"ansicpg",			rtf_cmd_ansicpg},
 		{"b",				rtf_cmd_b},
 		{"bullet",			rtf_cmd_bullet},
-		{"bin",				rtf_cmd_bin},
+		{"bin", rtf_cmd_continue},
 		{"blipuid",			rtf_cmd_ignore},
 		{"caps",			rtf_cmd_caps},
 		{"cb",				rtf_cmd_cb},
@@ -3263,7 +3208,7 @@ bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 		{"fnil",			rtf_cmd_fnil},
 		{"fonttbl",			rtf_cmd_fonttbl},
 		{"froman",			rtf_cmd_froman},
-		{"fromhtml",		rtf_cmd_fromhtml},
+		{"fromhtml", rtf_cmd_continue},
 		{"fs",				rtf_cmd_fs},
 		{"fscript",			rtf_cmd_fscript},
 		{"fswiss",			rtf_cmd_fswiss},
@@ -3307,8 +3252,8 @@ bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 		{"emfblip",			rtf_cmd_emfblip},
 		{"rdblquote",		rtf_cmd_rdblquote},
 		{"rquote",			rtf_cmd_rquote},
-		{"rtf",				rtf_cmd_rtf},
-		{"s",				rtf_cmd_s},
+		{"rtf", rtf_cmd_continue},
+		{"s", rtf_cmd_continue},
 		{"sect",			rtf_cmd_sect},
 		{"scaps",			rtf_cmd_scaps},
 		{"super",			rtf_cmd_super},
@@ -3318,11 +3263,11 @@ bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 		{"striked",			rtf_cmd_striked},
 		{"strikedl",		rtf_cmd_strikedl},
 		{"stylesheet",		rtf_cmd_ignore},
-		{"shp",				rtf_cmd_shp},
-		{"shppict",			rtf_cmd_shppict},
+		{"shp", rtf_cmd_continue},
+		{"shppict", rtf_cmd_continue},
 		{"tab",				rtf_cmd_tab},
-		{"tc",				rtf_cmd_tc},
-		{"tcn",				rtf_cmd_tcn},
+		{"tc", rtf_cmd_continue},
+		{"tcn", rtf_cmd_ignore},
 		{"u",				rtf_cmd_u},
 		{"uc",				rtf_cmd_uc},
 		{"ul",				rtf_cmd_ul},
@@ -3340,7 +3285,8 @@ bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 		{"ulwave",			rtf_cmd_ulwave},
 		{"wbmbitspixel",	rtf_cmd_wbmbitspixel},
 		{"wmetafile",		rtf_cmd_wmetafile},
-		{"xe",				rtf_cmd_xe}};
+		{"xe", rtf_cmd_continue}
+	};
 	
 	if (g_cmd_hash.size() > 0)
 		return true;
