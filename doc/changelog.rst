@@ -1,3 +1,23 @@
+1.26.33
+=======
+
+Fixes:
+
+* nsp: repaired a nullptr deref with the resolvenamesw RPC
+* nsp: fix erroneous writeout to path "/delegates.txt" (would always fail due
+  to absence of filesystem permission)
+* oxcmail: avoid running the encoded-word decoder in sender/recipient
+  names twice (umlaut breakage)
+
+Enhancements:
+
+* kdb2mt: support recovering broken attachments lacking PR_ATTACH_METHOD
+* kdb2mt: remove PK-1005 warning since now implemented
+* delmsg: support mailbox lookup using just the mailbox directory name
+* http: added the "msrpc_debug" config directive
+* nsp: added the "nsp_trace" config directive
+
+
 1.26 (2022-06-28)
 =================
 

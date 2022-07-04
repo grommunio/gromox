@@ -832,6 +832,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			*pprows = NULL;
 			return ecServerOOM;
 		}
+		/* OXNSPI v13.1 §3.1.4.1.8 bp 6.2 / NSPI v15 §3.1.4.8 bp 6.2 */
 		pproptags = nt;
 		nt->cvalues = 7;
 		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
