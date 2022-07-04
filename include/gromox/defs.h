@@ -31,7 +31,7 @@ enum gxerr_t {
 };
 
 enum ec_error_t {
-	ecSuccess = 0,
+	ecSuccess = 0, // ecNone
 	// MAPI_E_USER_ABORT = 0x1,
 	// MAPI_E_FAILURE = 0x2,
 	// MAPI_E_LOGON_FAILURE = 0x3,

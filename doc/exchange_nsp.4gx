@@ -15,6 +15,11 @@ Default: \fI5 minutes\fP
 \fBhash_table_size\fP
 Default: \fI3000\fP
 .TP
+\fBnsp_trace\fP
+Log entry into and exit out of NSP functions, with their parameter values. Log
+data dumps of select calls.
+Default: \fIno\fP
+.TP
 \fBsession_check\fP
 Default: \fIfalse\fP
 .TP

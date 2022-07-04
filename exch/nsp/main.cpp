@@ -49,6 +49,7 @@ static DCERPC_ENDPOINT *ep_6001, *ep_6004;
 static constexpr cfg_directive nsp_cfg_defaults[] = {
 	{"cache_interval", "5min", CFG_TIME, "1s", "1d"},
 	{"hash_table_size", "3000", CFG_SIZE, "1"},
+	{"nsp_trace", "0", CFG_BOOL},
 	{"session_check", "1", CFG_BOOL},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
@@ -64,6 +65,7 @@ static bool exch_nsp_reload(std::shared_ptr<CONFIG_FILE> cfg)
 		        strerror(errno));
 		return false;
 	}
+	g_nsp_trace = cfg->get_ll("nsp_trace");
 	return true;
 }
 

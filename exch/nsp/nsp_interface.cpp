@@ -1430,7 +1430,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 		auto pfile = list_file_initd(dlg_path.c_str(), nullptr, dlgitem_format);
 		if (NULL == pfile) {
-			pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
+			pstat->container_id = pstat->cur_rec; /* MS-OXNSPI §3.1.4.1.10 bp 16 */
 			nsp_trace(__func__, 1, pstat);
 			return ecSuccess;
 		}
@@ -1551,7 +1551,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 	}
 	
-	pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
+	pstat->container_id = pstat->cur_rec; /* MS-OXNSPI §3.1.4.1.10 bp 16 */
 	nsp_trace(__func__, 1, pstat);
 	return ecSuccess;
 }
