@@ -1658,26 +1658,24 @@ BOOL common_util_send_message(store_object *pstore,
 			if (!common_util_entryid_to_username(entryid,
 			    static_cast<char *>(pnode->pdata), UADDR_SIZE))
 				return FALSE;	
-		} else {
-			if (strcasecmp(addrtype, "SMTP") == 0) {
-				pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
-				if (NULL == pnode->pdata) {
-					return FALSE;
-				}
-			} else if (strcasecmp(addrtype, "EX") == 0) {
-				auto emaddr = prcpts->pparray[i]->get<const char>(PR_EMAIL_ADDRESS);
-				if (emaddr == nullptr)
-					goto CONVERT_ENTRYID;
-				pnode->pdata = common_util_alloc(UADDR_SIZE);
-				if (NULL == pnode->pdata) {
-					return FALSE;
-				}
-				if (!common_util_essdn_to_username(emaddr,
-				    static_cast<char *>(pnode->pdata), UADDR_SIZE))
-					goto CONVERT_ENTRYID;
-			} else {
-				goto CONVERT_ENTRYID;
+		} else if (strcasecmp(addrtype, "SMTP") == 0) {
+			pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
+			if (NULL == pnode->pdata) {
+				return FALSE;
 			}
+		} else if (strcasecmp(addrtype, "EX") == 0) {
+			auto emaddr = prcpts->pparray[i]->get<const char>(PR_EMAIL_ADDRESS);
+			if (emaddr == nullptr)
+				goto CONVERT_ENTRYID;
+			pnode->pdata = common_util_alloc(UADDR_SIZE);
+			if (NULL == pnode->pdata) {
+				return FALSE;
+			}
+			if (!common_util_essdn_to_username(emaddr,
+			    static_cast<char *>(pnode->pdata), UADDR_SIZE))
+				goto CONVERT_ENTRYID;
+		} else {
+			goto CONVERT_ENTRYID;
 		}
 		double_list_append_as_tail(&temp_list, pnode);
 	}
