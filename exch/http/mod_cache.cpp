@@ -104,13 +104,12 @@ static void *mod_cache_scanwork(void *pparam)
 			if (0 != pitem->reference) {
 				continue;
 			}
-			if (0 == stat(tmp_key, &node_stat) &&
-				0 != S_ISREG(node_stat.st_mode) &&
-				node_stat.st_ino == pitem->ino &&
-				node_stat.st_size == pitem->blob.length &&
-				node_stat.st_mtime == pitem->mtime) {
+			if (stat(tmp_key, &node_stat) == 0 &&
+			    S_ISREG(node_stat.st_mode) &&
+			    node_stat.st_ino == pitem->ino &&
+			    static_cast<unsigned long long>(node_stat.st_size) == pitem->blob.length &&
+			    node_stat.st_mtime == pitem->mtime)
 				continue;
-			}
 			str_hash_iter_remove(iter);
 			free(pitem->blob.data);
 			free(pitem);
@@ -692,16 +691,15 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 	    !S_ISREG(node_stat.st_mode))
 		return FALSE;
-	if (node_stat.st_size >= UINT32_MAX)
+	if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
 		return FALSE;
 	if (mod_cache_get_others_field(&phttp->request.f_others,
 	    "If-None-Match", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 	    mod_cache_retrieve_etag(tmp_buff, &ino, &size, &mtime)) {
 		if (ino == node_stat.st_ino &&
-			size == node_stat.st_size &&
-			mtime == node_stat.st_mtime) {
+		    size == static_cast<unsigned long long>(node_stat.st_size) &&
+		    mtime == node_stat.st_mtime)
 			return mod_cache_response_unmodified(phttp);
-		}
 	} else {
 		if (mod_cache_get_others_field(&phttp->request.f_others,
 		    "If-Modified-Since", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
@@ -730,8 +728,8 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	if (NULL != ppitem) {
 		pitem = *ppitem;
 		if (pitem->ino != node_stat.st_ino ||
-			pitem->blob.length != node_stat.st_size ||
-			pitem->mtime != node_stat.st_mtime) {
+		    pitem->blob.length != static_cast<unsigned long long>(node_stat.st_size) ||
+		    pitem->mtime != node_stat.st_mtime) {
 			g_cache_hash->remove(tmp_path);
 			if (pitem->reference > 0) {
 				pitem->b_expired = TRUE;
