@@ -27,9 +27,7 @@ static void mail_enum_text_mime_charset(const MIME *, void *);
 static void mail_enum_html_charset(const MIME *, void *);
 
 MAIL::MAIL(std::shared_ptr<MIME_POOL> p) : pmime_pool(std::move(p))
-{
-	simple_tree_init(&tree);
-}
+{}
 
 void MAIL::clear()
 {

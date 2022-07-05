@@ -186,7 +186,6 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 	if (NULL == plogitem) {
 		return -1;
 	}
-	simple_tree_init(&plogitem->tree);
 	plogmap->p[logon_id] = std::move(plogitem);
 	auto rlogon = plogon.get();
 	auto handle = rop_processor_add_object_handle(plogmap,

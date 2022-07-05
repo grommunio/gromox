@@ -15,10 +15,7 @@ static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 }
 
 dir_tree::dir_tree(alloc_limiter<DIR_NODE> *a) : ppool(a)
-{
-	auto ptree = this;
-	simple_tree_init(&ptree->tree);
-}
+{}
 
 void dir_tree::retrieve(MEM_FILE *pfile)
 {

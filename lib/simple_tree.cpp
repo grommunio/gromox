@@ -7,17 +7,6 @@
 static void simple_tree_destroy_group(SIMPLE_TREE *ptree, 
 	SIMPLE_TREE_NODE *pnode, SIMPLE_TREE_DELETE del_func);
 
-void simple_tree_init(SIMPLE_TREE *ptree)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == ptree) {
-		debug_info("[simple_tree]: NULL pointer in simple_tree_init");
-		return;
-	}
-#endif
-	memset(ptree, 0, sizeof(SIMPLE_TREE));
-}
-
 BOOL mtree::set_root(SIMPLE_TREE_NODE *pnode)
 {
 	auto ptree = this;

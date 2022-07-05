@@ -39,12 +39,11 @@ struct GX_EXPORT mtree {
 	BOOL add_child(tree_node *base, tree_node *, int opt);
 	void destroy_node(tree_node *, SIMPLE_TREE_DELETE);
 
-	SIMPLE_TREE_NODE *root;
-	size_t	nodes_num;
+	SIMPLE_TREE_NODE *root = nullptr;
+	size_t nodes_num = 0;
 };
 using SIMPLE_TREE = mtree;
 
-void simple_tree_init(SIMPLE_TREE *ptree);
 template<typename C, typename F> void simple_tree_node_enum(C *n, F &&f)
 {
 	do {

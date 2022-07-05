@@ -566,7 +566,6 @@ static bool rtf_init_reader(RTF_READER *preader, const char *prtf_buff,
 	if (!preader->ext_push.init(nullptr, 0, 0) ||
 	    !preader->iconv_push.init(nullptr, 0, 0))
 		return false;
-	simple_tree_init(&preader->element_tree);
 	preader->pattachments = pattachments;
 	return true;
 }

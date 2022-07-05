@@ -112,7 +112,6 @@ MJSON::MJSON(alloc_limiter<MJSON_MIME> *p) : ppool(p)
 	if (p == nullptr)
 		throw std::invalid_argument("[mail]: NULL pointer in mjson_init");
 #endif
-	simple_tree_init(&tree);
 }
 
 /*
