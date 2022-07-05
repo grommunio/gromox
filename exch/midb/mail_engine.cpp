@@ -4854,15 +4854,15 @@ static void mail_engine_add_notification_message(
 	    nullptr, 0, rop_util_make_eid_ex(1, message_id),
 	    &proptags, &propvals))
 		return;		
-	const void *pvalue = propvals.getval(PR_LAST_MODIFICATION_TIME);
-	auto mod_time = pvalue != nullptr ? *static_cast<const uint64_t *>(pvalue) : 0;
-	pvalue = propvals.getval(PR_MESSAGE_DELIVERY_TIME);
-	auto received_time = pvalue != nullptr ? *static_cast<const uint64_t *>(pvalue) : 0;
-	pvalue = propvals.getval(PR_MESSAGE_FLAGS);
-	auto message_flags = pvalue != nullptr ? *static_cast<const uint32_t *>(pvalue) : 0;
+	auto lnum = propvals.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
+	auto mod_time = lnum != nullptr ? *lnum : 0;
+	lnum = propvals.get<uint64_t>(PR_MESSAGE_DELIVERY_TIME);
+	auto received_time = lnum != nullptr ? *lnum : 0;
+	auto num = propvals.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	auto message_flags = num != nullptr ? *num : 0;
 	flags_buff[0] = '\0';
-	pvalue = propvals.getval(PidTagMidString);
-	if (NULL == pvalue) {
+	auto str = propvals.get<const char>(PidTagMidString);
+	if (str == nullptr) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT mid_string, flag_string"
 		          " FROM mapping WHERE message_id=%llu", LLU{message_id});
 		auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -4870,13 +4870,13 @@ static void mail_engine_add_notification_message(
 			return;
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			gx_strlcpy(mid_string, S2A(sqlite3_column_text(pstmt, 0)), sizeof(mid_string));
-			pvalue = sqlite3_column_text(pstmt, 1);
-			if (pvalue != nullptr)
-				gx_strlcpy(flags_buff, static_cast<const char *>(pvalue), GX_ARRAY_SIZE(flags_buff));
-			pvalue = mid_string;
+			str = S2A(sqlite3_column_text(pstmt, 1));
+			if (str != nullptr)
+				gx_strlcpy(flags_buff, str, std::size(flags_buff));
+			str = mid_string;
 		}
 		pstmt.finalize();
-		if (NULL != pvalue) {
+		if (str != nullptr) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM mapping"
 			        " WHERE message_id=%llu", LLU{message_id});
 			gx_sql_exec(pidb->psqlite, sql_string);
@@ -4902,8 +4902,8 @@ static void mail_engine_add_notification_message(
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return;	
-	mail_engine_insert_message(pstmt, &uidnext, message_id,
-		static_cast<const char *>(pvalue), message_flags, received_time, mod_time);
+	mail_engine_insert_message(pstmt, &uidnext, message_id, str,
+		message_flags, received_time, mod_time);
 	pstmt.finalize();
 	if (NULL != strchr(flags_buff, 'F')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
@@ -4945,7 +4945,6 @@ static void mail_engine_delete_notification_message(
 static BOOL mail_engine_add_notification_folder(
 	IDB_ITEM *pidb, uint64_t parent_id, uint64_t folder_id)
 {
-	int tmp_len;
 	char sql_string[1280];
 	char decoded_name[512];
 	PROPTAG_ARRAY proptags;
@@ -4976,8 +4975,8 @@ static BOOL mail_engine_add_notification_folder(
 	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), 0,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return FALSE;		
-	auto pvalue = propvals.getval(PR_ATTR_HIDDEN);
-	if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
+	auto flag = propvals.get<const uint8_t>(PR_ATTR_HIDDEN);
+	if (flag != nullptr && *flag != 0)
 		return FALSE;
 	auto cont_class = propvals.get<const char>(PR_CONTAINER_CLASS);
 	if (cont_class == nullptr && !b_waited) {
@@ -4989,23 +4988,22 @@ static BOOL mail_engine_add_notification_folder(
 	}
 	if (skip_folder_class(cont_class))
 		return FALSE;
-	pvalue = propvals.getval(PR_LOCAL_COMMIT_TIME_MAX);
-	auto commit_max = pvalue != nullptr ? *static_cast<uint64_t *>(pvalue) : 0;
-	pvalue = propvals.getval(PR_DISPLAY_NAME);
-	if (pvalue == nullptr)
+	auto lnum = propvals.get<const uint64_t>(PR_LOCAL_COMMIT_TIME_MAX);
+	auto commit_max = lnum != nullptr ? *lnum : 0;
+	auto str = propvals.get<const char>(PR_DISPLAY_NAME);
+	if (str == nullptr)
 		return FALSE;
-	tmp_len = strlen(static_cast<char *>(pvalue));
+	auto tmp_len = strlen(str);
 	if (tmp_len >= 256)
 		return FALSE;
 	std::string temp_name;
 	try {
 		if (parent_id == PRIVATE_FID_IPMSUBTREE) {
-			temp_name.assign(static_cast<const char *>(pvalue), tmp_len);
+			temp_name.assign(str, tmp_len);
 		} else {
 			if (tmp_len + strlen(decoded_name) >= 511)
 				return FALSE;
-			temp_name = decoded_name + "/"s +
-			            static_cast<const char *>(pvalue);
+			temp_name = decoded_name + "/"s + str;
 		}
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1477: ENOMEM\n");
@@ -5067,8 +5065,6 @@ static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
 static void mail_engine_move_notification_folder(
 	IDB_ITEM *pidb, uint64_t parent_id, uint64_t folder_id)
 {
-	int tmp_len;
-	void *pvalue;
 	uint32_t tmp_proptag;
 	char sql_string[1280];
 	char decoded_name[512];
@@ -5108,21 +5104,20 @@ static void mail_engine_move_notification_folder(
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return;		
 
-	pvalue = propvals.getval(PR_DISPLAY_NAME);
-	if (pvalue == nullptr)
+	auto str = propvals.get<const char>(PR_DISPLAY_NAME);
+	if (str == nullptr)
 		return;
-	tmp_len = strlen(static_cast<char *>(pvalue));
+	auto tmp_len = strlen(str);
 	if (tmp_len >= 256)
 		return;
 	std::string temp_name;
 	try {
 		if (parent_id == PRIVATE_FID_IPMSUBTREE) {
-			temp_name.assign(static_cast<const char *>(pvalue), tmp_len);
+			temp_name.assign(str, tmp_len);
 		} else {
 			if (tmp_len + strlen(decoded_name) >= 511)
 				return;
-			temp_name = decoded_name + "/"s +
-			            static_cast<const char *>(pvalue);
+			temp_name = decoded_name + "/"s + str;
 		}
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1478: ENOMEM\n");
@@ -5137,8 +5132,6 @@ static void mail_engine_move_notification_folder(
 static void mail_engine_modify_notification_folder(
 	IDB_ITEM *pidb, uint64_t folder_id)
 {
-	int tmp_len;
-	void *pvalue;
 	char *pdisplayname;
 	uint32_t tmp_proptag;
 	char sql_string[1280];
@@ -5163,8 +5156,8 @@ static void mail_engine_modify_notification_folder(
 	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), 0,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return;		
-	pvalue = propvals.getval(PR_DISPLAY_NAME);
-	if (pvalue == nullptr)
+	auto str = propvals.get<const char>(PR_DISPLAY_NAME);
+	if (str == nullptr)
 		return;
 	pdisplayname = strrchr(decoded_name, '/');
 	if (pdisplayname == nullptr)
@@ -5172,17 +5165,17 @@ static void mail_engine_modify_notification_folder(
 	else
 		pdisplayname ++;
 
-	if (strcmp(pdisplayname, static_cast<char *>(pvalue)) == 0)
+	if (strcmp(pdisplayname, str) == 0)
 		return;
-	tmp_len = strlen(static_cast<char* >(pvalue));
+	auto tmp_len = strlen(str);
 	if (tmp_len >= 256)
 		return;
 	if (pdisplayname == decoded_name) {
-		memcpy(decoded_name, pvalue, tmp_len);
+		memcpy(decoded_name, str, tmp_len);
 	} else {
 		if (pdisplayname - decoded_name + tmp_len >= 512)
 			return;
-		strcpy(pdisplayname, static_cast<char *>(pvalue));
+		strcpy(pdisplayname, str);
 		tmp_len = strlen(decoded_name);
 	}
 	encode_hex_binary(decoded_name, tmp_len, encoded_name, 1024);
@@ -5211,10 +5204,10 @@ static void mail_engine_modify_notification_message(
 	    nullptr, 0, rop_util_make_eid_ex(1, message_id),
 	    &proptags, &propvals))
 		return;	
-	auto pvalue = propvals.getval(PR_MESSAGE_FLAGS);
-	auto message_flags = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
-	pvalue = propvals.getval(PidTagMidString);
-	if (NULL != pvalue) {
+	auto num = propvals.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	auto message_flags = num != nullptr ? *num : 0;
+	auto str = propvals.get<const char>(PidTagMidString);
+	if (str != nullptr) {
  UPDATE_MESSAGE_FLAGS:
 		b_unsent = !!(message_flags & MSGFLAG_UNSENT);
 		b_read   = !!(message_flags & MSGFLAG_READ);
@@ -5223,8 +5216,8 @@ static void mail_engine_modify_notification_message(
 		gx_sql_exec(pidb->psqlite, sql_string);
 		return;
 	}
-	pvalue = propvals.getval(PR_LAST_MODIFICATION_TIME);
-	auto mod_time = pvalue != nullptr ? *static_cast<uint64_t *>(pvalue) : 0;
+	auto ts = propvals.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
+	auto mod_time = ts != nullptr ? *ts : 0;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT mod_time FROM"
 	          " messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
