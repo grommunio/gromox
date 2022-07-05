@@ -25,7 +25,7 @@
 struct PROPERTY_VALUE;
 
 struct domain_node {
-	domain_node(int);
+	domain_node(int d) : domain_id(d) {}
 	domain_node(domain_node &&) noexcept;
 	~domain_node();
 	int domain_id = -1;

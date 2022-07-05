@@ -260,9 +260,6 @@ AB_BASE::AB_BASE()
 	single_list_init(&remote_list);
 }
 
-domain_node::domain_node(int id) : domain_id(id)
-{}
-
 domain_node::domain_node(domain_node &&o) noexcept :
 	domain_id(o.domain_id), tree(std::move(o.tree))
 {
