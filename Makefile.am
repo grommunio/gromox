@@ -69,7 +69,7 @@ BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.
 	lib/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES} dldcheck.stamp
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
-libgromox_common_la_SOURCES = lib/bounce_gen.cpp lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/stream.cpp lib/timezone.cpp lib/tzfile.hpp lib/tzprivate.hpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
+libgromox_common_la_SOURCES = lib/bounce_gen.cpp lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/fopen.cpp lib/guid2.cpp lib/list_file.cpp lib/mail_func.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/stream.cpp lib/timezone.cpp lib/tzfile.hpp lib/tzprivate.hpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
 libgromox_common_la_LIBADD = -lpthread ${crypt_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${tinyxml_LIBS} ${vmime_LIBS} ${zstd_LIBS}
 libgromox_cplus_la_SOURCES = lib/cryptoutil.cpp lib/dbhelper.cpp lib/fileio.cpp lib/fopen.cpp lib/oxoabkt.cpp lib/textmaps.cpp
 libgromox_cplus_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${ssl_LIBS} libgromox_common.la
