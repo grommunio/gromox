@@ -608,7 +608,6 @@ MhNspPlugin::ProcRes MhNspPlugin::getAddressBookUrl(MhNspContext& ctx)
 
 BOOL MhNspPlugin::process(int context_id, const void *content, uint64_t length)
 {
-	ProcRes result;
 	MhNspContext ctx(context_id);
 	if (!ctx.auth_info.b_authed)
 		return ctx.unauthed();
@@ -618,7 +617,8 @@ BOOL MhNspPlugin::process(int context_id, const void *content, uint64_t length)
 		return ctx.error_responsecode(RC_INVALID_VERB);
 	if (ctx.request_id[0] == '\0' || ctx.client_info[0] == '\0')
 		return ctx.error_responsecode(RC_MISSING_HEADER);
-	if ((result = loadCookies(ctx)))
+	auto result = loadCookies(ctx);
+	if (result.has_value())
 		return result.value();
 	set_context(context_id);
 	rpc_new_stack();
@@ -630,12 +630,11 @@ BOOL MhNspPlugin::process(int context_id, const void *content, uint64_t length)
 	            ctx.request_value, [](const auto &a, const char *b) -> bool {
 	            	return strcmp(a.first, b) < 0;
 	            });
-	if (proc != cend(reqProcessors)) {
-		if ((result = (this->*proc->second)(ctx)))
-			return result.value();
-	} else {
+	if (proc == cend(reqProcessors))
 		return false;
-	}
+	result = (this->*proc->second)(ctx);
+	if (result.has_value())
+		return result.value();
 	return ctx.normal_response();
 }
 
