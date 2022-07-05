@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -7,12 +8,12 @@
 #include <fcntl.h>
 #include <iconv.h>
 #include <unistd.h>
+#include <vector>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/database.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/int_hash.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
@@ -3087,13 +3088,11 @@ BOOL exmdb_server_mark_table(const char *dir,
 }
 
 BOOL exmdb_server_get_table_all_proptags(const char *dir,
-	uint32_t table_id, PROPTAG_ARRAY *pproptags)
+    uint32_t table_id, PROPTAG_ARRAY *pproptags) try
 {
-	uint32_t proptag;
 	TABLE_NODE *ptnode;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
-	uint32_t tmp_proptags[0x1000];
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -3112,17 +3111,14 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	switch (ptnode->type) {
 	case TABLE_TYPE_HIERARCHY: {
-		auto phash = INT_HASH_TABLE::create(0x1000, sizeof(int));
-		if (NULL == phash) {
-			return FALSE;
-		}
+		std::vector<uint32_t> tags;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			"folder_id FROM t%u", ptnode->table_id);
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT proptag "
+		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT DISTINCT proptag "
 		              "FROM folder_properties WHERE folder_id=?");
 		if (pstmt1 == nullptr) {
 			return FALSE;
@@ -3131,49 +3127,32 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 			sqlite3_bind_int64(pstmt1, 1,
 				sqlite3_column_int64(pstmt, 0));
 			while (SQLITE_ROW == sqlite3_step(pstmt1)) {
-				proptag = sqlite3_column_int64(pstmt1, 0);
-				if (phash->query1(proptag) != nullptr)
-					continue;	
-				phash->add(proptag, &proptag);
+				tags.push_back(pstmt1.col_int64(0));
 			}
 			sqlite3_reset(pstmt1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
-		auto iter = phash->make_iter();
-		if (NULL == iter) {
-			return FALSE;
-		}
-		pproptags->count = 0;
-		 for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
-			int_hash_iter_forward(iter)) {
-			int_hash_iter_get_value(iter, reinterpret_cast<int *>(&proptag));
-			tmp_proptags[pproptags->count++] = proptag;
-		}
-		int_hash_iter_free(iter);
-		phash.reset();
-		tmp_proptags[pproptags->count++] = PR_DEPTH;
-		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
+		tags.push_back(PR_DEPTH);
+		std::sort(tags.begin(), tags.end());
+		tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
+		pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
 		if (NULL == pproptags->pproptag) {
-			pproptags->count = 0;
 			return FALSE;
 		}
-		memcpy(pproptags->pproptag, tmp_proptags,
-			sizeof(uint32_t)*pproptags->count);
+		pproptags->count = tags.size();
+		memcpy(pproptags->pproptag, tags.data(), sizeof(uint32_t) * tags.size());
 		return TRUE;
 	}
 	case TABLE_TYPE_CONTENT:	 {
-		auto phash = INT_HASH_TABLE::create(0x1000, sizeof(int));
-		if (NULL == phash) {
-			return FALSE;
-		}
+		std::vector<uint32_t> tags;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT inst_id,"
 				" row_type FROM t%u", ptnode->table_id);
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT proptag "
+		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT DISTINCT proptag "
 		              "FROM message_properties WHERE message_id=?");
 		if (pstmt1 == nullptr) {
 			return FALSE;
@@ -3186,50 +3165,27 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 			sqlite3_bind_int64(pstmt1, 1,
 				sqlite3_column_int64(pstmt, 0));
 			while (SQLITE_ROW == sqlite3_step(pstmt1)) {
-				proptag = sqlite3_column_int64(pstmt1, 0);
-				if (phash->query1(proptag) != nullptr)
-					continue;	
-				phash->add(proptag, &proptag);
+				tags.push_back(pstmt1.col_int64(0));
 			}
 			sqlite3_reset(pstmt1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
-		auto iter = phash->make_iter();
-		if (NULL == iter) {
-			return FALSE;
-		}
 		pproptags->count = 0;
-		 for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
-			int_hash_iter_forward(iter)) {
-			int_hash_iter_get_value(iter, reinterpret_cast<int *>(&proptag));
-			tmp_proptags[pproptags->count++] = proptag;
-		}
-		int_hash_iter_free(iter);
-		phash.reset();
-		tmp_proptags[pproptags->count++] = PidTagMid;
-		tmp_proptags[pproptags->count++] = PR_MESSAGE_SIZE;
-		tmp_proptags[pproptags->count++] = PR_ASSOCIATED;
-		tmp_proptags[pproptags->count++] = PidTagChangeNumber;
-		tmp_proptags[pproptags->count++] = PR_READ;
-		tmp_proptags[pproptags->count++] = PR_HASATTACH;
-		tmp_proptags[pproptags->count++] = PR_MESSAGE_FLAGS;
-		tmp_proptags[pproptags->count++] = PR_DISPLAY_TO;
-		tmp_proptags[pproptags->count++] = PR_DISPLAY_CC;
-		tmp_proptags[pproptags->count++] = PR_DISPLAY_BCC;
-		tmp_proptags[pproptags->count++] = PidTagInstID;
-		tmp_proptags[pproptags->count++] = PidTagInstanceNum;
-		tmp_proptags[pproptags->count++] = PR_ROW_TYPE;
-		tmp_proptags[pproptags->count++] = PR_DEPTH;
-		tmp_proptags[pproptags->count++] = PR_CONTENT_COUNT;
-		tmp_proptags[pproptags->count++] = PR_CONTENT_UNREAD;
-		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
+		tags.insert(tags.end(), {PidTagMid, PR_MESSAGE_SIZE,
+			PR_ASSOCIATED, PidTagChangeNumber, PR_READ,
+			PR_HASATTACH, PR_MESSAGE_FLAGS, PR_DISPLAY_TO,
+			PR_DISPLAY_CC, PR_DISPLAY_BCC, PidTagInstID,
+			PidTagInstanceNum, PR_ROW_TYPE, PR_DEPTH,
+			PR_CONTENT_COUNT, PR_CONTENT_UNREAD});
+		std::sort(tags.begin(), tags.end());
+		tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
+		pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
 		if (NULL == pproptags->pproptag) {
-			pproptags->count = 0;
 			return FALSE;
 		}
-		memcpy(pproptags->pproptag, tmp_proptags,
-			sizeof(uint32_t)*pproptags->count);
+		pproptags->count = tags.size();
+		memcpy(pproptags->pproptag, tags.data(), sizeof(uint32_t) * tags.size());
 		return TRUE;
 	}
 	case TABLE_TYPE_PERMISSION:
@@ -3262,6 +3218,9 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		return TRUE;
 	}
 	return FALSE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2042: ENOMEM\n");
+	return false;
 }
 
 static BOOL table_traverse_sub_contents(uint32_t step,
