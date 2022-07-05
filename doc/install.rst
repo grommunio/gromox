@@ -7,10 +7,13 @@ dependencies are needed:
 
 * autotools
 * C++17/C++20 compiler
+* cURL library
 * gumbo-parser
 * fmt >= 8
 * jsoncpp
 * libHX
+* libvmime
+* libzstd
 * Linux-PAM
 * MariaDB Connector/C or compatible
 * OpenLDAP or similar headers
