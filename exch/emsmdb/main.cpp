@@ -440,8 +440,9 @@ static int exchange_async_emsmdb_dispatch(unsigned int opnum, const GUID *pobjec
 	uint32_t async_id;
 	
 	switch (opnum) {
-	case ecDoAsyncWaitEx:
-		*ppout = ndr_stack_anew<ECDOASYNCWAITEX_OUT>(NDR_STACK_OUT);
+	case ecDoAsyncWaitEx: {
+		auto pout = ndr_stack_anew<ECDOASYNCWAITEX_OUT>(NDR_STACK_OUT);
+		*ppout = pout;
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
@@ -449,15 +450,15 @@ static int exchange_async_emsmdb_dispatch(unsigned int opnum, const GUID *pobjec
 		if (0 == async_id) {
 			return DISPATCH_FAIL;
 		}
-		result = asyncemsmdb_interface_async_wait(async_id, static_cast<ECDOASYNCWAITEX_IN *>(pin),
-		         static_cast<ECDOASYNCWAITEX_OUT *>(*ppout));
+		result = asyncemsmdb_interface_async_wait(async_id, static_cast<ECDOASYNCWAITEX_IN *>(pin), pout);
 		if (DISPATCH_PENDING == result) {
 			activate_async_id(async_id);
 		} else {
 			cancel_async_id(async_id);
 		}
-		*ecode = result;
+		*ecode = pout->result;
 		return result;
+	}
 	default:
 		return DISPATCH_FAIL;
 	}
