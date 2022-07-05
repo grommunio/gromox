@@ -19,6 +19,7 @@
 #include <mutex>
 #include <pthread.h>
 #include <string>
+#include <unordered_map>
 #include <unistd.h>
 #include <vector>
 #include <libHX/io.h>
@@ -31,7 +32,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
-#include <gromox/int_hash.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "delivery.hpp"
@@ -58,7 +58,7 @@ static size_t			g_message_units;/* allocated message units number */
 static size_t			g_max_memory;   /* maximum allocated memory for mess*/
 static size_t			g_current_mem;  /*current allocated memory */
 static std::unique_ptr<MESSAGE[]> g_message_ptr;
-static std::unique_ptr<INT_HASH_TABLE> g_mess_hash;
+static std::unordered_map<int, MESSAGE *> g_mess_hash;
 static std::vector<MESSAGE *> g_free_list, g_used_list;
 static std::mutex g_hash_mutex, g_used_mutex, g_free_mutex, g_mess_mutex;
 static pthread_t		g_thread_id;
@@ -89,7 +89,6 @@ void message_dequeue_init(const char *path, size_t max_memory)
 	g_current_mem = 0;
 	g_msg_id = -1;
 	g_message_ptr.reset();
-	g_mess_hash = NULL;
 	g_notify_stop = false;
 	g_dequeued_num = 0;
 }
@@ -138,7 +137,7 @@ static BOOL message_dequeue_check()
 static void message_dequeue_collect_resource()
 {
 	g_message_ptr.reset();
-	g_mess_hash.reset();
+	g_mess_hash.clear();
 }
 
 int message_dequeue_run()
@@ -173,12 +172,6 @@ int message_dequeue_run()
 	/* append rest of message node into free list */
 	for (size_t i = 0; i < g_message_units; ++i) {
 		g_free_list.push_back(&g_message_ptr[i]);
-	}
-	g_mess_hash = INT_HASH_TABLE::create(2 * g_message_units + 1, sizeof(void *));
-	if (g_mess_hash == nullptr) {
-		mlog(LV_ERR, "mdq: failed to initialize hash table");
-		message_dequeue_collect_resource();
-		return -8;
 	}
 	auto ret = pthread_create4(&g_thread_id, nullptr, mdq_thrwork, nullptr);
 	if (ret != 0) {
@@ -218,7 +211,7 @@ void message_dequeue_put(MESSAGE *pmessage) try
 	if (remove(name.c_str()) < 0 && errno != ENOENT)
 		mlog(LV_WARN, "W-1352: remove %s: %s", name.c_str(), strerror(errno));
 	std::unique_lock h(g_hash_mutex);
-	g_mess_hash->remove(pmessage->message_data);
+	g_mess_hash.erase(pmessage->message_data);
 	h.unlock();
 	message_dequeue_put_to_free(pmessage);
 	g_dequeued_num ++;
@@ -340,18 +333,17 @@ static void message_dequeue_load_from_mess(int mess) try
 	struct stat node_stat;
 
 	std::unique_lock h(g_hash_mutex);
-	auto pmessage = g_mess_hash->query<MESSAGE>(mess);
+	auto msg_iter = g_mess_hash.find(mess);
 	h.unlock();
-	if (NULL != pmessage) {
+	if (msg_iter != g_mess_hash.end())
 		return;
-	}
 	auto name = g_path_mess + "/"s + std::to_string(mess);
 	wrapfd fd = open(name.c_str(), O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 	    !S_ISREG(node_stat.st_mode))
 		return;
 	uint64_t size = ((node_stat.st_size - 1) / (64 * 1024) + 1) * 64 * 1024;
-	pmessage = message_dequeue_get_from_free(MESSAGE_MESS, size);
+	auto pmessage = message_dequeue_get_from_free(MESSAGE_MESS, size);
 	if (NULL == pmessage) {
 		return;
 	}
@@ -377,7 +369,12 @@ static void message_dequeue_load_from_mess(int mess) try
 	message_dequeue_retrieve_to_message(pmessage, std::move(ptr));
 	message_dequeue_put_to_used(pmessage);
 	h.lock();
-	g_mess_hash->add(mess, pmessage);
+	if (g_mess_hash.size() >= 2 * g_message_units + 1)
+		fprintf(stderr, "E-2043: Too many messages loaded (%zu;"
+		        " derived from delivery.cfg:dequeue_maximum_mem)\n",
+		        2 * g_message_units);
+	else
+		g_mess_hash.emplace(mess, pmessage);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1940: ENOMEM");
 	return;
