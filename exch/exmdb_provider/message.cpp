@@ -3560,11 +3560,13 @@ static ec_error_t op_process(BOOL b_oof, const char *from_address,
 	if (NULL == pactions) {
 		return ecSuccess;
 	}
-	for (size_t i = 0; i < pactions->count; ++i)
-		if (!op_switcheroo(b_oof, from_address, account, cpid, psqlite,
-		    folder_id, message_id, pdigest, seen, pactions->pblock[i],
-		    i, prnode, b_del, dam_list))
-			return ecError;
+	for (size_t i = 0; i < pactions->count; ++i) {
+		auto ret = op_switcheroo(b_oof, from_address, account, cpid,
+		           psqlite, folder_id, message_id, pdigest, seen,
+		           pactions->pblock[i], i, prnode, b_del, dam_list);
+		if (ret != ecSuccess)
+			return ret;
+	}
 	return ecSuccess;
 }
 
@@ -3958,11 +3960,13 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 		return ecSuccess;
 	if (!message_replace_actions_propid(psqlite, &propname_info, &ext_actions))
 		return ecError;
-	for (size_t i = 0; i < ext_actions.count; ++i)
-		if (!opx_switcheroo(b_oof, from_address, account, cpid, psqlite,
-		    folder_id, message_id, pdigest, seen, ext_actions.pblock[i],
-		    i, prnode, b_del))
-			return ecError;
+	for (size_t i = 0; i < ext_actions.count; ++i) {
+		auto ret = opx_switcheroo(b_oof, from_address, account, cpid,
+		           psqlite, folder_id, message_id, pdigest, seen,
+		           ext_actions.pblock[i], i, prnode, b_del);
+		if (ret != ecSuccess)
+			return ret;
+	}
 	return ecSuccess;
 }
 
