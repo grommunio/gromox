@@ -472,7 +472,7 @@ static void oxcmail_split_filename(char *file_name, char *extension)
  * @paddr:	always has UTF-8 display name in it
  */
 static BOOL oxcmail_parse_recipient(const char *charset,
-    const EMAIL_ADDR *paddr, uint32_t rcpt_type, TARRAY_SET *pset)
+    const EMAIL_ADDR *paddr, uint32_t rcpt_type, TARRAY_SET *pset) try
 {
 	BINARY tmp_bin;
 	char essdn[1024];
@@ -487,10 +487,17 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	if (NULL == pproplist) {
 		return FALSE;
 	}
-
-	if (pproplist->set(PR_DISPLAY_NAME, paddr->display_name) != 0 ||
-	    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, paddr->display_name) != 0)
-		return FALSE;
+	if (paddr->has_dispname()) {
+		if (pproplist->set(PR_DISPLAY_NAME, paddr->display_name) != 0 ||
+		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, paddr->display_name) != 0)
+			return FALSE;
+	} else {
+		char dispname[UADDR_SIZE];
+		snprintf(dispname, std::size(dispname), "%s@%s", paddr->local_part, paddr->domain);
+		if (pproplist->set(PR_DISPLAY_NAME, dispname) != 0 ||
+		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, dispname) != 0)
+			return FALSE;
+	}
 	if (paddr->has_addr() && oxcmail_check_ascii(paddr->local_part) &&
 	    oxcmail_check_ascii(paddr->domain)) {
 		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
@@ -543,6 +550,9 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != 0)
 		return FALSE;
 	return pproplist->set(PR_RECIPIENT_TYPE, &rcpt_type) == 0 ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2049: ENOMEM\n");
+	return false;
 }
 
 static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
