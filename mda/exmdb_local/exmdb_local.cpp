@@ -343,7 +343,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 {
 	MAIL *pmail;
 	int tmp_len;
-	void *pvalue;
 	size_t mess_len;
 	int sequence_ID;
 	time_t cur_time;
@@ -483,12 +482,11 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		return DELIVERY_OPERATION_ERROR;
 	auto dm_status = static_cast<delivery_message_result>(r32);
 	if (dm_status == delivery_message_result::result_ok) {
-		pvalue = pmsg->proplist.getval(PR_AUTO_RESPONSE_SUPPRESS);
-		if (pvalue != nullptr) {
-			suppress_mask = *(uint32_t*)pvalue;
-		}
-		pvalue = pmsg->proplist.getval(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+		auto num = pmsg->proplist.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
+		if (num != nullptr)
+			suppress_mask = *num;
+		auto flag = pmsg->proplist.get<const uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
+		if (flag != nullptr && *flag != 0) {
 			b_bounce_delivered = TRUE;
 			if (suppress_mask & AUTO_RESPONSE_SUPPRESS_DR) {
 				b_bounce_delivered = FALSE;
