@@ -388,6 +388,28 @@ enum mapi_sensitivity {
 	SENSITIVITY_COMPANY_CONFIDENTIAL = 3,
 };
 
+enum { /* ENTRYID flags byte 0 */
+	MAPI_X_EMSAB     = 0x04U,
+	MAPI_NOTRESERVED = 0x08U,
+	MAPI_NOW         = 0x10U,
+	MAPI_THISSESSION = 0x20U,
+	MAPI_NOTRECIP    = 0x40U,
+	MAPI_SHORTTERM   = 0x80U,
+};
+#if 0
+enum { /* ENTRYID flags byte 1 */
+	MAPI_COMPOUND = 0x80U,
+};
+enum { /* ENTRYID flags byte 3 */
+	ZC6_FAVORITE = 0x01U, // provider-specific extension, not exposed to MSMAPI32
+};
+#endif
+enum {
+	ENTRYID_TYPE_PERMANENT = 0U,
+	ENTRYID_TYPE_EPHEMERAL = MAPI_SHORTTERM | MAPI_X_EMSAB | 0x03U, /* 0x87 */
+	ENTRYID_TYPE_NESTED    = MAPI_SHORTTERM | MAPI_NOTRESERVED | MAPI_X_EMSAB, /* 0x8C */
+};
+
 enum {
 	MNID_ID = 0,
 	MNID_STRING = 1,

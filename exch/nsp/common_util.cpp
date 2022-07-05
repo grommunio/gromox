@@ -114,7 +114,7 @@ void common_util_guid_to_binary(GUID *pguid, BINARY *pbin)
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid)
 {
-	pephid->id_type = 0x87;
+	pephid->id_type = ENTRYID_TYPE_EPHEMERAL;
 	pephid->r1 = 0x0;
 	pephid->r2 = 0x0;
 	pephid->r3 = 0x0;
@@ -149,7 +149,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 	int len;
 	char buff[128];
 	
-	ppermeid->id_type = 0x0;
+	ppermeid->id_type = ENTRYID_TYPE_PERMANENT;
 	ppermeid->r1 = 0x0;
 	ppermeid->r2 = 0x0;
 	ppermeid->r3 = 0x0;
@@ -198,6 +198,8 @@ BOOL common_util_permanent_entryid_to_binary(
 	if (pbin->pv == nullptr)
 		return FALSE;
 	memset(pbin->pb, 0, pbin->cb);
+	if (ppermeid->id_type != ENTRYID_TYPE_PERMANENT)
+		fprintf(stderr, "W-2040: %s: conversion of a non-permanent entryid attempted\n", __func__);
 	pbin->pb[0] = ppermeid->id_type;
 	pbin->pb[1] = ppermeid->r1;
 	pbin->pb[2] = ppermeid->r2;
@@ -223,6 +225,8 @@ BOOL common_util_ephemeral_entryid_to_binary(
 	if (pbin->pv == nullptr)
 		return FALSE;
 	memset(pbin->pb, 0, pbin->cb);
+	if (pephid->id_type != ENTRYID_TYPE_EPHEMERAL)
+		fprintf(stderr, "W-2041: %s: conversion of a non-permanent entryid attempted\n", __func__);
 	pbin->pb[0] = pephid->id_type;
 	pbin->pb[1] = pephid->r1;
 	pbin->pb[2] = pephid->r2;

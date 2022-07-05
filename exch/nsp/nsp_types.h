@@ -163,7 +163,7 @@ struct NSPRES {
 };
 
 struct PERMANENT_ENTRYID {
-	uint8_t id_type;	/* constant: 0x0	*/
+	uint8_t id_type; /* constant: ENTRYID_TYPE_PERMANENT */
 	uint8_t r1;			/* reserved: 0x0	*/
 	uint8_t r2;			/* reserved: 0x0	*/
 	uint8_t r3;			/* reserved: 0x0	*/
@@ -175,7 +175,7 @@ struct PERMANENT_ENTRYID {
 
 
 struct EPHEMERAL_ENTRYID {
-	uint8_t id_type;	/* constant: 0x87	*/
+	uint8_t id_type; /* constant: ENTRYID_TYPE_EPHEMERAL */
 	uint8_t r1;			/* reserved: 0x0	*/
 	uint8_t r2;			/* reserved: 0x0	*/
 	uint8_t r3;			/* reserved: 0x0	*/

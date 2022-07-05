@@ -15,7 +15,7 @@ struct nsp_rowset2 {
 };
 
 struct nsp_entryid {
-	uint8_t id_type = 0; ///< constant: 0x87, 0x00
+	uint8_t id_type = 0; ///< cf. %ENTRYID_TYPE_*
 	uint8_t r1 = 0, r2 = 0, r3 = 0; ///< reserved: 0x0
 	GUID provider_uid{}; ///< NSPI server GUID
 	uint32_t r4 = 0x1; ///< constant: 0x1
