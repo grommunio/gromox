@@ -183,8 +183,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			}
 			if (!bounce_audit_check(rcpt_buff)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-					"will not produce bounce message, "
-					"because of too many mails to %s", rcpt_buff);
+					"DELIVERY_OPERATION_DELIVERED %s", rcpt_buff);
 				put_context(pbounce_context);
 				break;
 			}
@@ -211,8 +210,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			}
 			if (!bounce_audit_check(rcpt_buff)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-					"will not produce bounce message, "
-					"because of too many mails to %s", rcpt_buff);
+					"No such user %s", rcpt_buff);
 				put_context(pbounce_context);
 				break;
 			}
@@ -238,8 +236,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			}
 			if (!bounce_audit_check(rcpt_buff)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-					"will not produce bounce message, "
-					"because of too many mails to %s", rcpt_buff);
+					"Mailbox is chock-full for %s", rcpt_buff);
 				put_context(pbounce_context);
 				break;
 			}
@@ -266,8 +263,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			}
 			if (!bounce_audit_check(rcpt_buff)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-					"will not produce bounce message, "
-					"because of too many mails to %s", rcpt_buff);
+					"Unspecified error during delivery to %s", rcpt_buff);
 				put_context(pbounce_context);
 				break;
 			}
