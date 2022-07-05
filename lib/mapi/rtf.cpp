@@ -2787,7 +2787,7 @@ static void rtf_unescape_string(char *string)
 	}
 }
 
-static void pictype_to(unsigned int t, const char *m, const char *x)
+static void pictype_to(unsigned int t, const char *&m, const char *&x)
 {
 	switch (t) {
 	case PICT_WB: m = "image/bmp"; x = "bmp"; break;
