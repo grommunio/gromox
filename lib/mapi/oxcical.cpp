@@ -3055,10 +3055,10 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		}
 		if (piline->append_param(piparam) < 0)
 			return false;
-		if (NULL != pvalue && 0x00000002 == *(uint32_t*)pvalue) {
+		if (rcpttype != nullptr && *rcpttype == MAPI_CC) {
 			if (!piparam->append_paramval("OPT-PARTICIPANT"))
 				return FALSE;
-		} else if (NULL != pvalue && 0x00000003 == *(uint32_t*)pvalue) {
+		} else if (rcpttype != nullptr && *rcpttype == MAPI_BCC) {
 			if (!piparam->append_paramval("NON-PARTICIPANT"))
 				return FALSE;
 		} else {
