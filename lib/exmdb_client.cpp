@@ -26,7 +26,7 @@
 
 namespace gromox {
 
-static constexpr unsigned int mdcl_socket_timeout = 60;
+static constexpr int mdcl_socket_timeout = 60;
 static std::list<agent_thread> mdcl_agent_list;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock;
