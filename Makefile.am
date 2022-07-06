@@ -343,17 +343,17 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 		<include/gromox/paths.h.in >"$@.tmp"
 	${AM_V_at}if ! cmp "$@" "$@.tmp" 2>/dev/null; then mv "$@.tmp" "$@"; fi; rm -f "$@.tmp"
 
-php_mapi/mapidefs.cpp: include/gromox/mapitags.hpp defs2php
-	${AM_V_GEN}${srcdir}/defs2php <include/gromox/mapitags.hpp >$@
+php_mapi/mapidefs.cpp: include/gromox/mapitags.hpp tools/defs2php.pl
+	${AM_V_GEN}${top_srcdir}/tools/defs2php.pl <include/gromox/mapitags.hpp >$@
 
-php_mapi/zrpc.cpp: php_mapi/zarafa_client.h zcidl
-	${AM_V_GEN}${top_srcdir}/zcidl <php_mapi/zarafa_client.h >"$@"
+php_mapi/zrpc.cpp: php_mapi/zarafa_client.h tools/zcidl.pl
+	${AM_V_GEN}${top_srcdir}/tools/zcidl.pl <php_mapi/zarafa_client.h >"$@"
 
-lib/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
-	${AM_V_GEN}${top_srcdir}/exmidl <include/gromox/exmdb_idef.hpp >"$@"
+lib/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.pl
+	${AM_V_GEN}${top_srcdir}/tools/exmidl.pl <include/gromox/exmdb_idef.hpp >"$@"
 
-exch/exmdb_provider/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp exmidl
-	${AM_V_GEN}${top_srcdir}/exmidl -p <include/gromox/exmdb_idef.hpp >$@
+exch/exmdb_provider/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.pl
+	${AM_V_GEN}${top_srcdir}/tools/exmidl.pl -p <include/gromox/exmdb_idef.hpp >$@
 
 install-exec-hook:
 	${MKDIR_P} ${DESTDIR}${sbindir}
