@@ -344,10 +344,10 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	${AM_V_at}if ! cmp "$@" "$@.tmp" 2>/dev/null; then mv "$@.tmp" "$@"; fi; rm -f "$@.tmp"
 
 php_mapi/mapierr.cpp: include/gromox/mapierr.hpp tools/defs2php.sh tools/defs2php.pl
-	${AM_V_GEN}${top_srcdir}/tools/defs2php.sh <include/gromox/mapierr.hpp >$@
+	${AM_V_GEN}${top_srcdir}/tools/defs2php.sh -e <include/gromox/mapierr.hpp >$@
 
 php_mapi/mapitags.cpp: include/gromox/mapitags.hpp tools/defs2php.sh tools/defs2php.pl
-	${AM_V_GEN}${top_srcdir}/tools/defs2php.sh <include/gromox/mapitags.hpp >$@
+	${AM_V_GEN}${top_srcdir}/tools/defs2php.sh -t <include/gromox/mapitags.hpp >$@
 
 php_mapi/zrpc.cpp: php_mapi/zarafa_client.h tools/zcidl.sh tools/zcidl.pl
 	${AM_V_GEN}${top_srcdir}/tools/zcidl.sh <php_mapi/zarafa_client.h >"$@"

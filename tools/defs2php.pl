@@ -1,9 +1,12 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+my $mode = 0;
+if (scalar(@ARGV) > 0 && $ARGV[0] eq "-t") { $mode = 1; shift(@ARGV); }
+if (scalar(@ARGV) > 0 && $ARGV[0] eq "-e") { $mode = 2; shift(@ARGV); }
 while (<>) {
-	&proptag() if (m{^\s*(// )?(PR_\w+) = PROP_TAG\((\w+), (\S+)\)});
-	&errcode() if (m{^\s+(// )?(ec\w+|MAPI_\w+) = ([^,]+),(.*)});
+	&proptag() if ($mode == 1 && m{^\s*(// )?(PR_\w+) = PROP_TAG\((\w+), (\S+)\)});
+	&errcode() if ($mode == 2 && m{^\s+(// )?(ec\w+|[A-Z]{2}\w+) = ([^,]+),(.*)});
 }
 
 sub proptag
@@ -33,9 +36,8 @@ sub proptag
 
 sub errcode
 {
-	my($value, $aliases) = ($3, $4);
-	printf("C(%s, %s)\n", $2, $value);
-	while ($aliases =~ m{\b(ec\w+|MAPI_\w+)}g) {
-		printf("C(%s, %s)\n", $&, $value);
+	my($aliases, $value) = ("$2 $4", $3);
+	while ($aliases =~ m{\b([A-Z]{2}\w*_[WEX]_\w+)}g) {
+		print "C($&, $value)\n";
 	}
 }
