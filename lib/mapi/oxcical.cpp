@@ -466,7 +466,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		itime.month = ((itime_base.year - 1601) * 12 + itime_base.month - 1) %
 		              irrule.interval + 1;
 		itime.year += itime.month/12;
-		itime.month %= 12;
+		itime.month = (itime.month - 1) % 12 + 1;
 		itime.day = 1;
 		memset(&itime1, 0, sizeof(ICAL_TIME));
 		itime1.year = 1601;
@@ -522,7 +522,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		itime.year = 1601;
 		itime.month = (itime_first.month - 1) % (12 * irrule.interval) + 1;
 		itime.year += itime.month/12;
-		itime.month %= 12;
+		itime.month = (itime.month - 1) % 12 + 1;
 		itime.day = 1;
 		memset(&itime1, 0, sizeof(ICAL_TIME));
 		itime1.year = 1601;

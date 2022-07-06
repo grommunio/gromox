@@ -936,6 +936,10 @@ unsigned int ical_get_monthdays(unsigned int year, unsigned int month)
 	static const int days[2][12] = {
 		{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
 		{31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
+	if (month < 1 || month > 12) {
+		fprintf(stderr, "E-2051: invalid parameter given to ical_get_monthdays (%u)\n", month);
+		return 0;
+	}
 	if (ical_check_leap_year(year))
 		return days[1][month - 1];
 	return days[0][month - 1];
@@ -1154,18 +1158,22 @@ int ICAL_TIME::delta_day(ICAL_TIME itime2) const
 	int yearday;
 	int monthdays;
 	int delta_days;
-	
+
+	if (month < 1 || month > 12 || day < 1 || day > 31) {
+		fprintf(stderr, "E-2052: illegal paremeters to ICAL_TIME::delta_day (%u,%u)\n", month, day);
+		return 0;
+	}
 	if (itime1 < itime2)
 		return itime2.delta_day(itime1);
 	delta_days = 0;
-	while (itime2.year != itime1.year) {
+	while (itime2.year < itime1.year) {
 		yearday = ical_get_dayofyear(itime2.year, itime2.month, itime2.day); 
 		delta_days += 365 + ical_check_leap_year(itime2.year) + 1 - yearday;
 		itime2.year ++;
 		itime2.month = 1;
 		itime2.day = 1;
 	}
-	while (itime2.month != itime1.month) {
+	while (itime2.month < itime1.month) {
 		monthdays = ical_get_monthdays(itime2.year, itime2.month);
 		delta_days += monthdays + 1 - itime2.day;
 		itime2.month ++;
