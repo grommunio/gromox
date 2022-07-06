@@ -239,7 +239,7 @@ BOOL cu_tpropval_to_propval(const TAGGED_PROPVAL &p, PROPERTY_VALUE &x)
 {
 	x.proptag = p.proptag;
 	x.reserved = 0;
-	return cu_propval_to_valunion(PROP_TYPE(p.proptag), &p.pvalue, x.value);
+	return cu_propval_to_valunion(PROP_TYPE(p.proptag), p.pvalue, x.value);
 }
 
 BOOL cu_nsp_proprow_to_proplist(const NSP_PROPROW &row, LTPROPVAL_ARRAY &proplist)
