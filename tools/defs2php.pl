@@ -2,7 +2,12 @@
 use strict;
 use warnings;
 while (<>) {
-	if (!m{^\s*(// )?(PR_\w+) = PROP_TAG\((\w+), (\S+)\)}) { next; }
+	&proptag() if (m{^\s*(// )?(PR_\w+) = PROP_TAG\((\w+), (\S+)\)});
+	&errcode() if (m{^\s+(// )?(ec\w+|MAPI_\w+) = ([^,]+),(.*)});
+}
+
+sub proptag
+{
 	my $t;
 	if ($3 eq "PT_NULL") { $t = 0; }
 	elsif ($3 eq "PT_ACTIONS") { $t = 0xfe; }
@@ -24,4 +29,13 @@ while (<>) {
 	elsif ($3 eq "PT_UNICODE") { $t = 0x1e; } # php_mapi always operates in non-wide mode (w/UTF-8)
 	else { die "Unknown $3"; }
 	printf("C(%s, 0x%08x)\n", $2, hex($4) << 16 | $t);
+}
+
+sub errcode
+{
+	my($value, $aliases) = ($3, $4);
+	printf("C(%s, %s)\n", $2, $value);
+	while ($aliases =~ m{\b(ec\w+|MAPI_\w+)}g) {
+		printf("C(%s, %s)\n", $&, $value);
+	}
 }

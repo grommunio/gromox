@@ -57,7 +57,8 @@ Makefile.in
 
 /include/gromox/paths.h
 /lib/exmdb_rpc.cpp
-/php_mapi/mapidefs.cpp
+/php_mapi/mapierr.cpp
+/php_mapi/mapitags.cpp
 /php_mapi/zrpc.cpp
 /exch/exmdb_provider/exmdb_rpc.cpp
 /system/*.service

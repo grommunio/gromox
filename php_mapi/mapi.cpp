@@ -810,6 +810,10 @@ PHP_RSHUTDOWN_FUNCTION(mapi)
 
 ZEND_FUNCTION(mapi_load_mapidefs)
 {
+	long level = 0;
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|l", &level) == FAILURE)
+		;
+
 	zend_constant c;
 	ZEND_CONSTANT_SET_FLAGS(&c, CONST_CS, 0);
 	c.name = zend_string_init(ZEND_STRL("MAPIDEFS_LOADED"), 0);
@@ -824,7 +828,10 @@ ZEND_FUNCTION(mapi_load_mapidefs)
 	c.name = zend_string_init(#PR_name, sizeof(#PR_name) - 1, 0); \
 	ZVAL_LONG(&c.value, PR_val); \
 	zend_register_constant(&c);
-#include "mapidefs.cpp"
+#include "mapitags.cpp"
+	if (level < 1)
+		return;
+#include "mapierr.cpp"
 #undef C
 }
 
