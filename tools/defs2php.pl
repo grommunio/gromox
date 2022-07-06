@@ -6,6 +6,7 @@ if (scalar(@ARGV) > 0 && $ARGV[0] eq "-t") { $mode = 1; shift(@ARGV); }
 if (scalar(@ARGV) > 0 && $ARGV[0] eq "-e") { $mode = 2; shift(@ARGV); }
 while (<>) {
 	&proptag() if ($mode == 1 && m{^\s*(// )?(PR_\w+) = PROP_TAG\((\w+), (\S+)\)});
+	&simpledef() if ($mode == 1 && m{^\s*(// )?(PidLid\w+) = (\w+),});
 	&errcode() if ($mode == 2 && m{^\s+(// )?(ec\w+|[A-Z]{2}\w+) = ([^,]+),(.*)});
 }
 
@@ -40,4 +41,9 @@ sub errcode
 	while ($aliases =~ m{\b([A-Z]{2}\w*_[WEX]_\w+)}g) {
 		print "C($&, $value)\n";
 	}
+}
+
+sub simpledef
+{
+	print "C($2, $3)\n";
 }
