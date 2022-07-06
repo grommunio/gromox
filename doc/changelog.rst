@@ -1,4 +1,4 @@
-1.26.33
+1.26.72
 =======
 
 Fixes:
@@ -6,8 +6,11 @@ Fixes:
 * nsp: repaired a nullptr deref with the resolvenamesw RPC
 * nsp: fix erroneous writeout to path "/delegates.txt" (would always fail due
   to absence of filesystem permission)
+* mh_nsp: fix seekentries RPC performing garbage ANR matching
 * oxcmail: avoid running the encoded-word decoder in sender/recipient
   names twice (umlaut breakage)
+* oxcical: avoid crash when RRULE:BYMONTH=12 is used
+* exmdb_local: reword duplicate error strings for delivery failures
 
 Enhancements:
 
@@ -16,6 +19,7 @@ Enhancements:
 * delmsg: support mailbox lookup using just the mailbox directory name
 * http: added the "msrpc_debug" config directive
 * nsp: added the "nsp_trace" config directive
+* mh_nsp: make the addition of delegates functional
 
 
 1.26 (2022-06-28)
