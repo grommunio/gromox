@@ -284,8 +284,8 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
-				tmp_int64 = rop_util_unix_to_nttime(
-							mktime(&tmp_tm) - timezone);
+				/* Conversion is not exact */
+				tmp_int64 = rop_util_unix_to_nttime(mktime(&tmp_tm));
 				if (pmsg->proplist.set(PR_BIRTHDAY, &tmp_int64) != 0)
 					goto IMPORT_FAILURE;
 			}
@@ -470,8 +470,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL != strptime(pstring, "%Y-%m-%dT%H:%M:%S", &tmp_tm)) {
-				tmp_int64 = rop_util_unix_to_nttime(
-						mktime(&tmp_tm) - timezone);
+				/* Conversion is not exact */
+				tmp_int64 = rop_util_unix_to_nttime(mktime(&tmp_tm));
 				if (pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &tmp_int64) != 0)
 					goto IMPORT_FAILURE;
 			}
@@ -613,8 +613,8 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
-				tmp_int64 = rop_util_unix_to_nttime(
-							mktime(&tmp_tm) - timezone);
+				/* Conversion is not exact */
+				tmp_int64 = rop_util_unix_to_nttime(mktime(&tmp_tm));
 				if (pmsg->proplist.set(PR_WEDDING_ANNIVERSARY, &tmp_int64) != 0)
 					goto IMPORT_FAILURE;
 			}	
