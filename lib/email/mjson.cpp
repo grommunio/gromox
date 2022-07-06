@@ -85,9 +85,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type);
 static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	const char *storage_path, const char *msg_filename, const char* charset,
 	const char *email_charset, BOOL b_ext, char *buff, int length);
-
-static int mjson_convert_address(char *address, const char *charset,
-	const char *email_charset, char *buff, int length);
+static int mjson_convert_address(char *address, const char *charset, char *buff, int length);
 static void mjson_convert_quoted_printable(const char *astring,
 	char *out_stirng);
 static void mjson_emum_rfc822(MJSON_MIME *, void *);
@@ -1233,7 +1231,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 }
 
 static int mjson_convert_address(char *address, const char *charset,
-	const char *email_charset, char *buff, int length)
+    char *buff, int length)
 {
 	int offset;
 	size_t temp_len;
@@ -1252,7 +1250,7 @@ static int mjson_convert_address(char *address, const char *charset,
 			0 != strcasecmp(encode_string.charset, "default")) {
 			if (decode64(encode_string.title, strlen(encode_string.title),
 			    temp_address, arsizeof(temp_address), &temp_len) == 0)
-				email_charset = encode_string.charset;
+				; // email_charset = encode_string.charset;
 			else
 				gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
 		} else if (0 == strcasecmp(encode_string.encoding,
@@ -1261,7 +1259,7 @@ static int mjson_convert_address(char *address, const char *charset,
 			if (qp_decode_ex(temp_address, arsizeof(temp_address),
 			    encode_string.title, strlen(encode_string.title)) < 0)
 				temp_address[0] = '\0';
-			email_charset = encode_string.charset;
+			// email_charset = encode_string.charset;
 		} else {
 			gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
 		}
@@ -1380,7 +1378,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	offset ++;
 	buff[offset] = '(';
 	offset ++;
-	ret_len = mjson_convert_address(pjson->from, charset, pjson->charset,
+	ret_len = mjson_convert_address(pjson->from, charset,
 				buff + offset, length - offset);
 	if (-1 == ret_len) {
 		return -1;
@@ -1394,10 +1392,10 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	buff[offset] = '(';
 	offset ++;
 	if (strlen(pjson->sender) > 0) { 
-		ret_len = mjson_convert_address(pjson->sender, charset, pjson->charset,
+		ret_len = mjson_convert_address(pjson->sender, charset,
 					buff + offset, length - offset);
 	} else {
-		ret_len = mjson_convert_address(pjson->from, charset, pjson->charset,
+		ret_len = mjson_convert_address(pjson->from, charset,
 					buff + offset, length - offset);
 	}
 	if (-1 == ret_len) {
@@ -1412,10 +1410,10 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	buff[offset] = '(';
 	offset ++;
 	if (strlen(pjson->sender) > 0) { 
-		ret_len = mjson_convert_address(pjson->reply, charset, pjson->charset,
+		ret_len = mjson_convert_address(pjson->reply, charset,
 					buff + offset, length - offset);
 	} else {
-		ret_len = mjson_convert_address(pjson->from, charset, pjson->charset,
+		ret_len = mjson_convert_address(pjson->from, charset,
 					buff + offset, length - offset);
 	}
 	if (-1 == ret_len) {
@@ -1446,7 +1444,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 				memcpy(temp_buff, pjson->to + last_pos, tmp_len);
 				temp_buff[tmp_len] = '\0';
 				ret_len = mjson_convert_address(temp_buff, charset,
-							pjson->charset, buff + offset, length - offset);
+				          &buff[offset], length - offset);
 				if (-1 == ret_len) {
 					return -1;
 				}
@@ -1486,7 +1484,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 				memcpy(temp_buff, pjson->cc + last_pos, tmp_len);
 				temp_buff[tmp_len] = '\0';
 				ret_len = mjson_convert_address(temp_buff, charset,
-							pjson->charset, buff + offset, length - offset);
+				          &buff[offset], length - offset);
 				if (-1 == ret_len) {
 					return -1;
 				}
