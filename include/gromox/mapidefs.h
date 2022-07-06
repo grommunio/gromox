@@ -53,6 +53,9 @@ enum {
 	PT_SRESTRICTION = 0x00FD, /* PtypRestriction; edkmdb.h extension */
 	PT_ACTIONS = 0x00FE, /* PtypRuleAction; edkmdb.h extension */
 	PT_BINARY = 0x0102, /* PtypBinary */
+	// PT_FILE_HANDLE = 0x0103, /* edkmdb.h extension; (SPropValue::Value.l has a file handle) */
+	// PT_FILE_EA = 0x0104, /* edkmdb.h extension; (SPropValue::Value.bin has extended attribute data for locating the file) */
+	// PT_VIRTUAL = 0x0105, /* edkmdb.h extension; (SPropValue::Value.bin has arbitrary data; store-internal; not externally visible) */
 	PT_MV_SHORT = 0x1002, /* PT_MV_I2, PtypMultipleInteger16 */
 	PT_MV_LONG = 0x1003, /* PT_MV_I4, PtypMultipleInteger32 */
 	PT_MV_FLOAT = 0x1004, /* PT_MV_R4, PtypMultipleFloating32 */
@@ -70,7 +73,7 @@ enum {
 #include "mapitags.hpp"
 
 enum {
-	MV_FLAG = 0x1000,
+	MV_FLAG = 0x1000, /* VT_VECTOR */
 	MV_INSTANCE = 0x2000,
 	MVI_FLAG = MV_FLAG | MV_INSTANCE,
 	FXICS_CODEPAGE_FLAG = 0x8000U,
