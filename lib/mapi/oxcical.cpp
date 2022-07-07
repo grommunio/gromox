@@ -1040,6 +1040,10 @@ static BOOL oxcical_parse_dtvalue(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return FALSE;
+	time_t dummy_time;
+	if (putc_time == nullptr)
+		/* Caller does not care about result */
+		putc_time = &dummy_time;
 	pvalue1 = piline->get_first_paramval("VALUE");
 	if (NULL == pvalue1 || 0 == strcasecmp(pvalue1, "DATE-TIME")) {
 		if (!ical_parse_datetime(pvalue, b_utc, pitime)) {
@@ -2083,11 +2087,11 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			return FALSE;
 		if (NULL != pvalue) { 
 			if (!oxcical_parse_dtvalue(ptz_component,
-			    piline, &b_utc, &itime, &tmp_time))
+			    piline, &b_utc, &itime, nullptr))
 				return FALSE;
 		} else {
 			if (!oxcical_parse_dtvalue(nullptr,
-			    piline, &b_utc, &itime, &tmp_time))
+			    piline, &b_utc, &itime, nullptr))
 				return FALSE;
 			if (!b_utc && (itime.hour != 0 || itime.minute != 0 ||
 			    itime.second != 0 || itime.leap_second != 0))
