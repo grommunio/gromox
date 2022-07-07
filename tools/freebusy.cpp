@@ -1051,75 +1051,74 @@ static BOOL get_freebusy(const char *dir)
 		num = tmp_set.pparray[i]->get<uint32_t>(pidlidappointmentstateflags);
 		BOOL b_meeting = (num != nullptr && *num & asfMeeting) ? TRUE : false;
 		pflag = tmp_set.pparray[i]->get<uint8_t>(pidlidrecurring);
-		if (pflag != nullptr && *pflag != 0) {
-			EXT_PULL ext_pull;
-			std::shared_ptr<ICAL_COMPONENT> ptz_component;
-			auto bin = tmp_set.pparray[i]->get<const BINARY>(pidlidtimezonestruct);
-			if (bin == nullptr) {
-				ptz_component = NULL;
-			} else {
-				TIMEZONESTRUCT tzstruct;
-				ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
-				if (ext_pull.g_tzstruct(&tzstruct) != EXT_ERR_SUCCESS)
-					continue;	
-				ptz_component = tzstruct_to_vtimezone(
-						1600, "timezone", &tzstruct);
-				if (ptz_component == nullptr)
-					continue;
-			}
-			bin = tmp_set.pparray[i]->get<BINARY>(pidlidappointmentrecur);
-			if (bin == nullptr)
-				continue;
-			APPOINTMENT_RECUR_PAT apprecurr;
-			ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
-			if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
-				continue;
-			DOUBLE_LIST tmp_list;
-			if (!find_recurrence_times(ptz_component, whole_start_time,
-			    &apprecurr, g_start_time, g_end_time, &tmp_list))
-				continue;	
-			DOUBLE_LIST_NODE *pnode;
-			while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
-				auto pevnode = static_cast<EVENT_NODE *>(pnode->pdata);
-				if (NULL != pevnode->pexception &&
-					NULL != pevnode->pex_exception) {
-					BOOL b_meeting1, b_reminder1;
-					if (pevnode->pexception->overrideflags & ARO_MEETINGTYPE)
-						b_meeting1 = (pevnode->pexception->meetingtype & 1) ? TRUE : false;
-					else
-						b_meeting1 = b_meeting;
-					if (pevnode->pexception->overrideflags & ARO_REMINDER)
-						b_reminder1 = pevnode->pexception->reminderset == 0 ? false : TRUE;
-					else
-						b_reminder1 = b_reminder;
-					uint32_t busy_type1 = (pevnode->pexception->overrideflags & ARO_BUSYSTATUS) ?
-					                      pevnode->pexception->busystatus : busy_type;
-					auto psubject1  = (pevnode->pexception->overrideflags & ARO_SUBJECT) ?
-					                  pevnode->pex_exception->subject : psubject;
-					auto plocation1 = (pevnode->pexception->overrideflags & ARO_LOCATION) ?
-					                  pevnode->pex_exception->location : plocation;
-					if (b_first)
-						printf(",");
-					b_first = TRUE;
-					output_event(pevnode->start_time, pevnode->end_time,
-						busy_type1, uid_buff, psubject1, plocation1,
-						b_meeting1, TRUE, TRUE, b_reminder1, b_private);
-				} else {
-					if (b_first)
-						printf(",");
-					b_first = TRUE;
-					output_event(pevnode->start_time, pevnode->end_time,
-						busy_type, uid_buff, psubject, plocation,
-						b_meeting, TRUE, FALSE, b_reminder, b_private);
-				}
-			}
-		} else {
+		if (pflag == nullptr || *pflag == 0) {
 			if (b_first)
 				printf(",");
 			b_first = TRUE;
 			output_event(whole_start_time, whole_end_time,
 				busy_type, uid_buff, psubject, plocation,
 				b_meeting, FALSE, FALSE, b_reminder, b_private);
+			continue;
+		}
+		EXT_PULL ext_pull;
+		std::shared_ptr<ICAL_COMPONENT> ptz_component;
+		auto bin = tmp_set.pparray[i]->get<const BINARY>(pidlidtimezonestruct);
+		if (bin == nullptr) {
+			ptz_component = NULL;
+		} else {
+			TIMEZONESTRUCT tzstruct;
+			ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+			if (ext_pull.g_tzstruct(&tzstruct) != EXT_ERR_SUCCESS)
+				continue;
+			ptz_component = tzstruct_to_vtimezone(
+					1600, "timezone", &tzstruct);
+			if (ptz_component == nullptr)
+				continue;
+		}
+		bin = tmp_set.pparray[i]->get<BINARY>(pidlidappointmentrecur);
+		if (bin == nullptr)
+			continue;
+		APPOINTMENT_RECUR_PAT apprecurr;
+		ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
+			continue;
+		DOUBLE_LIST tmp_list;
+		if (!find_recurrence_times(ptz_component, whole_start_time,
+		    &apprecurr, g_start_time, g_end_time, &tmp_list))
+			continue;
+		DOUBLE_LIST_NODE *pnode;
+		while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
+			auto pevnode = static_cast<EVENT_NODE *>(pnode->pdata);
+			if (pevnode->pexception == nullptr || pevnode->pex_exception == nullptr) {
+				if (b_first)
+					printf(",");
+				b_first = TRUE;
+				output_event(pevnode->start_time, pevnode->end_time,
+					busy_type, uid_buff, psubject, plocation,
+					b_meeting, TRUE, FALSE, b_reminder, b_private);
+				continue;
+			}
+			BOOL b_meeting1, b_reminder1;
+			if (pevnode->pexception->overrideflags & ARO_MEETINGTYPE)
+				b_meeting1 = (pevnode->pexception->meetingtype & 1) ? TRUE : false;
+			else
+				b_meeting1 = b_meeting;
+			if (pevnode->pexception->overrideflags & ARO_REMINDER)
+				b_reminder1 = pevnode->pexception->reminderset == 0 ? false : TRUE;
+			else
+				b_reminder1 = b_reminder;
+			uint32_t busy_type1 = (pevnode->pexception->overrideflags & ARO_BUSYSTATUS) ?
+			                      pevnode->pexception->busystatus : busy_type;
+			auto psubject1  = (pevnode->pexception->overrideflags & ARO_SUBJECT) ?
+			                  pevnode->pex_exception->subject : psubject;
+			auto plocation1 = (pevnode->pexception->overrideflags & ARO_LOCATION) ?
+			                  pevnode->pex_exception->location : plocation;
+			if (b_first)
+				printf(",");
+			b_first = TRUE;
+			output_event(pevnode->start_time, pevnode->end_time,
+				busy_type1, uid_buff, psubject1, plocation1,
+				b_meeting1, TRUE, TRUE, b_reminder1, b_private);
 		}
 	}
 	printf("]}\n");
