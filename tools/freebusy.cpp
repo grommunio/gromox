@@ -784,7 +784,7 @@ static void output_event(time_t start_time, time_t end_time,
 static BOOL get_freebusy(const char *dir)
 {
 	BOOL b_first;
-	BOOL b_private1 = false, b_meeting1;
+	BOOL b_meeting1;
 	BOOL b_reminder1;
 	uint8_t tmp_true;
 	uint32_t table_id;
@@ -1129,7 +1129,7 @@ static BOOL get_freebusy(const char *dir)
 					b_first = TRUE;
 					output_event(pevnode->start_time, pevnode->end_time,
 						busy_type1, uid_buff, psubject1, plocation1,
-						b_meeting1, TRUE, TRUE, b_reminder1, b_private1);
+						b_meeting1, TRUE, TRUE, b_reminder1, b_private);
 				} else {
 					if (b_first)
 						printf(",");
