@@ -642,20 +642,20 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		ICAL_TIME itime;
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
 		ical_itime_to_utc(ptz_component, itime, &tmp_time);
-		if (tmp_time >= start_time && tmp_time <= end_time) {
-			pevnode = me_alloc<EVENT_NODE>();
-			pevnode->node.pdata = pevnode;
-			pevnode->start_time = tmp_time;
-			nt_time = apr->pexceptioninfo[i].enddatetime;
-			nt_time *= 600000000;
-			tmp_time = rop_util_nttime_to_unix(nt_time);
-			ical_utc_to_datetime(NULL, tmp_time, &itime);
-			ical_itime_to_utc(ptz_component, itime, &tmp_time);
-			pevnode->end_time = tmp_time;
-			pevnode->pexception = apr->pexceptioninfo + i;
-			pevnode->pex_exception = apr->pextendedexception + i;
-			double_list_append_as_tail(plist, &pevnode->node);
-		}
+		if (tmp_time < start_time || tmp_time > end_time)
+			continue;
+		pevnode = me_alloc<EVENT_NODE>();
+		pevnode->node.pdata = pevnode;
+		pevnode->start_time = tmp_time;
+		nt_time = apr->pexceptioninfo[i].enddatetime;
+		nt_time *= 600000000;
+		tmp_time = rop_util_nttime_to_unix(nt_time);
+		ical_utc_to_datetime(NULL, tmp_time, &itime);
+		ical_itime_to_utc(ptz_component, itime, &tmp_time);
+		pevnode->end_time = tmp_time;
+		pevnode->pexception = apr->pexceptioninfo + i;
+		pevnode->pex_exception = apr->pextendedexception + i;
+		double_list_append_as_tail(plist, &pevnode->node);
 	}
 	return TRUE;
 }
