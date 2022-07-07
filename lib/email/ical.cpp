@@ -1661,19 +1661,18 @@ bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	if (!ical_parse_datetime(str_datetime, &b_utc, &itime))
 		return false;
 	tmp_tm.tm_sec = itime.leap_second >= 60 ? itime.leap_second : itime.second;
-	if (b_utc) {
-		tmp_tm.tm_min = itime.minute;
-		tmp_tm.tm_hour = itime.hour;
-		tmp_tm.tm_mday = itime.day;
-		tmp_tm.tm_mon = itime.month - 1;
-		tmp_tm.tm_year = itime.year - 1900;
-		tmp_tm.tm_wday = 0;
-		tmp_tm.tm_yday = 0;
-		tmp_tm.tm_isdst = 0;
-		*ptime = make_gmtime(&tmp_tm);
-		return true;
-	}
-	return ical_itime_to_utc(ptz_component, itime, ptime);
+	if (!b_utc)
+		return ical_itime_to_utc(ptz_component, itime, ptime);
+	tmp_tm.tm_min = itime.minute;
+	tmp_tm.tm_hour = itime.hour;
+	tmp_tm.tm_mday = itime.day;
+	tmp_tm.tm_mon = itime.month - 1;
+	tmp_tm.tm_year = itime.year - 1900;
+	tmp_tm.tm_wday = 0;
+	tmp_tm.tm_yday = 0;
+	tmp_tm.tm_isdst = 0;
+	*ptime = make_gmtime(&tmp_tm);
+	return true;
 }
 
 bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT> ptz_component,
