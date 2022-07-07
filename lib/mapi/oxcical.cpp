@@ -33,6 +33,11 @@ struct UID_EVENTS {
 	const char *puid;
 	std::list<std::shared_ptr<ICAL_COMPONENT>> list;
 };
+
+struct ic_delete {
+	inline void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
+};
+
 }
 
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
@@ -2442,11 +2447,10 @@ MESSAGE_CONTENT* oxcical_import(
 	BOOL b_proposal;
 	const char *pvalue = nullptr, *pvalue1 = nullptr;
 	uint16_t calendartype;
-	MESSAGE_CONTENT *pmsg;
 	std::list<std::shared_ptr<UID_EVENTS>> events_list;
 	
 	b_proposal = FALSE;
-	pmsg = message_content_init();
+	std::unique_ptr<MESSAGE_CONTENT, ic_delete> pmsg(message_content_init());
 	if (pmsg == nullptr)
 		return NULL;
 	auto piline = const_cast<ICAL *>(pical)->get_line("X-MICROSOFT-CALSCALE");
@@ -2454,7 +2458,7 @@ MESSAGE_CONTENT* oxcical_import(
 	auto mclass = "IPM.Appointment";
 	if (!oxcical_classify_calendar(pical, events_list) ||
 	    events_list.size() == 0)
-		goto IMPORT_FAILURE;
+		return nullptr;
 	piline = const_cast<ICAL *>(pical)->get_line("METHOD");
 	if (NULL != piline) {
 		pvalue = piline->get_first_subvalue();
@@ -2464,18 +2468,18 @@ MESSAGE_CONTENT* oxcical_import(
 					if (!oxcical_import_events(str_zone,
 					    calendartype, deconst(pical),
 					    events_list, alloc, get_propids,
-					    username_to_entryid, pmsg))
-						goto IMPORT_FAILURE;
-					return pmsg;
+					    username_to_entryid, pmsg.get()))
+						return nullptr;
+					return pmsg.release();
 				}
 				mclass = "IPM.Appointment";
 			} else if (0 == strcasecmp(pvalue, "REQUEST")) {
 				if (events_list.size() != 1)
-					goto IMPORT_FAILURE;
+					return nullptr;
 				mclass = "IPM.Schedule.Meeting.Request";
 			} else if (0 == strcasecmp(pvalue, "REPLY")) {
 				if (events_list.size() != 1)
-					goto IMPORT_FAILURE;
+					return nullptr;
 				pvalue1 = oxcical_get_partstat(events_list);
 				if (NULL != pvalue1) {
 					if (strcasecmp(pvalue1, "ACCEPTED") == 0)
@@ -2487,7 +2491,7 @@ MESSAGE_CONTENT* oxcical_import(
 				}
 			} else if (0 == strcasecmp(pvalue, "COUNTER")) {
 				if (events_list.size() != 1)
-					goto IMPORT_FAILURE;
+					return nullptr;
 				pvalue1 = oxcical_get_partstat(events_list);
 				if (NULL != pvalue1 && 0 == strcasecmp(pvalue1, "TENTATIVE")) {
 					mclass = "IPM.Schedule.Meeting.Resp.Tent";
@@ -2501,20 +2505,17 @@ MESSAGE_CONTENT* oxcical_import(
 		if (events_list.size() > 1) {
 			if (!oxcical_import_events(str_zone, calendartype,
 			    deconst(pical), events_list, alloc, get_propids,
-			    username_to_entryid, pmsg))
-				goto IMPORT_FAILURE;
-			return pmsg;
+			    username_to_entryid, pmsg.get()))
+				return nullptr;
+			return pmsg.release();
 		}
 	}
-	if (pmsg->proplist.set(PR_MESSAGE_CLASS, mclass) != 0)
-		goto IMPORT_FAILURE;
-	if (oxcical_import_internal(str_zone, pvalue, b_proposal, calendartype,
+	if (pmsg->proplist.set(PR_MESSAGE_CLASS, mclass) != 0 ||
+	    !oxcical_import_internal(str_zone, pvalue, b_proposal, calendartype,
 	    deconst(pical), events_list.front()->list, alloc, get_propids,
-	    username_to_entryid, pmsg, nullptr, nullptr, nullptr, nullptr))
-		return pmsg;
- IMPORT_FAILURE:
-	message_content_free(pmsg);
-	return NULL;
+	    username_to_entryid, pmsg.get(), nullptr, nullptr, nullptr, nullptr))
+		return nullptr;
+	return pmsg.release();
 }
 
 static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
