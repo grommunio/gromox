@@ -231,21 +231,17 @@ static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_compo
 	for (i=0; i<ptz_definition->crules; i++) {
 		if (0 != ptz_definition->prules[i].standarddate.month) {
 			pstandard_rule = ptz_definition->prules + i;
-		} else {
-			if (NULL != pstandard_rule) {
-				ptz_definition->prules[i].standarddate =
-							pstandard_rule->standarddate;
-				ptz_definition->prules[i].bias =
-							pstandard_rule->bias;
-			}
+		} else if (pstandard_rule != nullptr) {
+			ptz_definition->prules[i].standarddate =
+				pstandard_rule->standarddate;
+			ptz_definition->prules[i].bias =
+				pstandard_rule->bias;
 		}
 		if (0 != ptz_definition->prules[i].daylightdate.month) {
 			pdaylight_rule = ptz_definition->prules + i;
-		} else {
-			if (NULL != pdaylight_rule) {
-				ptz_definition->prules[i].daylightdate = pdaylight_rule->daylightdate;
-				ptz_definition->prules[i].daylightbias = pdaylight_rule->daylightbias;
-			}
+		} else if (pdaylight_rule != nullptr) {
+			ptz_definition->prules[i].daylightdate = pdaylight_rule->daylightdate;
+			ptz_definition->prules[i].daylightbias = pdaylight_rule->daylightbias;
 		}
 		/* ignore the definition which has only STANDARD component 
 			or with the same STANDARD and DAYLIGHT component */
