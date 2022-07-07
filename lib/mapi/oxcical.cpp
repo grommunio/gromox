@@ -1940,28 +1940,6 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
     ICAL_TIME *pstart_itime, ICAL_TIME *pend_itime,
     EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception)
 {
-	BOOL b_alarm;
-	long duration;
-	time_t tmp_time;
-	time_t end_time;
-	ICAL_TIME itime;
-	const char *ptzid;
-	time_t start_time;
-	const char *pvalue;
-	const char *pvalue1;
-	ICAL_TIME end_itime;
-	uint16_t last_propid;
-	ICAL_TIME start_itime;
-	MESSAGE_CONTENT *pembedded;
-	uint32_t deleted_dates[1024];
-	uint32_t modified_dates[1024];
-	std::shared_ptr<ICAL_COMPONENT> ptz_component;
-	ATTACHMENT_LIST *pattachments = nullptr;
-	EXCEPTIONINFO exceptions[1024];
-	ATTACHMENT_CONTENT *pattachment = nullptr;
-	EXTENDEDEXCEPTION ext_exceptions[1024];
-	APPOINTMENT_RECUR_PAT apr;
-
 	auto pmain_event = oxcical_main_event(pevent_list);
 	if (pmain_event == nullptr)
 		return FALSE;
@@ -1973,7 +1951,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	}
 	if (!oxcical_parse_recipients(pmain_event, username_to_entryid, pmsg))
 		return FALSE;
-	last_propid = 0x8000;
+	uint16_t last_propid = 0x8000;
 	namemap phash;
 	if (b_proposal && !oxcical_parse_proposal(phash, &last_propid, pmsg))
 		return FALSE;
@@ -1992,11 +1970,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		printf("GW-2741: oxcical_import_internal: no DTSTART\n");
 		return FALSE;
 	}
-	pvalue1 = piline->get_first_paramval("VALUE");
-	ptzid = piline->get_first_paramval("TZID");
-	if (NULL == ptzid) {
-		ptz_component = NULL;
-	} else {
+	auto pvalue1 = piline->get_first_paramval("VALUE");
+	auto ptzid = piline->get_first_paramval("TZID");
+	std::shared_ptr<ICAL_COMPONENT> ptz_component;
+	if (ptzid != nullptr) {
 		ptz_component = oxcical_find_vtimezone(pical, ptzid);
 		if (ptz_component == nullptr)
 			return FALSE;
@@ -2006,6 +1983,8 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	}
 
 	bool b_utc, b_utc_start, b_utc_end;
+	time_t start_time = 0, end_time = 0;
+	ICAL_TIME start_itime, end_itime;
 	if (!oxcical_parse_dtvalue(ptz_component,
 	    piline, &b_utc_start, &start_itime, &start_time))
 		return FALSE;
@@ -2014,10 +1993,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		return FALSE;
 	if (pstart_itime != nullptr)
 		*pstart_itime = start_itime;
-	
+
 	piline = pmain_event->get_line("DTEND");
 	if (NULL != piline) {
-		pvalue = piline->get_first_paramval("TZID");
+		auto pvalue = piline->get_first_paramval("TZID");
 		bool parse_dtv = (pvalue == nullptr && ptzid == nullptr) ||
 		                 (pvalue != nullptr && ptzid != nullptr &&
 		                 strcasecmp(pvalue, ptzid) == 0);
@@ -2043,7 +2022,8 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			}
 			ical_itime_to_utc(ptz_component, end_itime, &end_time);
 		} else {
-			pvalue = piline->get_first_subvalue();
+			long duration;
+			auto pvalue = piline->get_first_subvalue();
 			if (pvalue == nullptr ||
 			    !ical_parse_duration(pvalue, &duration) || duration < 0)
 				return FALSE;
@@ -2074,14 +2054,14 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	if (b_allday && !oxcical_parse_subtype(phash, &last_propid, pmsg, pexception))
 		return FALSE;
 	
-	memset(&itime, 0, sizeof(ICAL_TIME));
+	ICAL_TIME itime{};
 	piline = pmain_event->get_line("RECURRENCE-ID");
 	if (NULL != piline) {
 		if (pexception != nullptr && pext_exception != nullptr &&
 		    !oxcical_parse_recurrence_id(ptz_component, piline,
 		    phash, &last_propid, pmsg))
 			return FALSE;
-		pvalue = piline->get_first_paramval("TZID");
+		auto pvalue = piline->get_first_paramval("TZID");
 		if (pvalue != nullptr && ptzid != nullptr &&
 		    strcasecmp(pvalue, ptzid) != 0)
 			return FALSE;
@@ -2162,7 +2142,12 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		    !oxcical_parse_recurring_timezone(ptz_component,
 		    phash, &last_propid, pmsg))
 			return FALSE;
-		memset(&apr, 0, sizeof(apr));
+
+		uint32_t deleted_dates[1024], modified_dates[1024];
+		EXCEPTIONINFO exceptions[1024];
+		EXTENDEDEXCEPTION ext_exceptions[1024];
+		APPOINTMENT_RECUR_PAT apr{};
+
 		apr.recur_pat.deletedinstancecount = 0;
 		apr.recur_pat.pdeletedinstancedates = deleted_dates;
 		apr.recur_pat.modifiedinstancecount = 0;
@@ -2200,6 +2185,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			apr.exceptioncount = 0;
 		}
 		
+		ATTACHMENT_LIST *pattachments = nullptr;
 		if (pevent_list.size() > 1) {
 			pattachments = attachment_list_init();
 			if (pattachments == nullptr)
@@ -2209,14 +2195,14 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		for (auto event : pevent_list) {
 			if (event == pmain_event)
 				continue;
-			pattachment = attachment_content_init();
+			auto pattachment = attachment_content_init();
 			if (pattachment == nullptr)
 				return FALSE;
 			if (!attachment_list_append_internal(pattachments, pattachment)) {
 				attachment_content_free(pattachment);
 				return FALSE;
 			}
-			pembedded = message_content_init();
+			auto pembedded = message_content_init();
 			if (pembedded == nullptr)
 				return FALSE;
 			attachment_content_set_embedded_internal(pattachment, pembedded);
@@ -2240,6 +2226,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				return FALSE;
 			
 			piline = event->get_line("RECURRENCE-ID");
+			time_t tmp_time;
 			if (!oxcical_parse_dtvalue(ptz_component,
 			    piline, &b_utc, &itime, &tmp_time))
 				return FALSE;
@@ -2284,25 +2271,28 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			return FALSE;
 	}
 	
-	b_alarm = FALSE;
+	BOOL b_alarm = FALSE;
 	uint32_t alarmdelta = 0;
 	if (pmain_event->component_list.size() > 0) {
 		auto palarm_component = pmain_event->component_list.front();
 		if (strcasecmp(palarm_component->m_name.c_str(), "VALARM") == 0) {
 			b_alarm = TRUE;
 			piline = palarm_component->get_line("TRIGGER");
+			const char *pvalue = nullptr;
 			if (piline == nullptr ||
 			    (pvalue = piline->get_first_subvalue()) == nullptr) {
 				alarmdelta = dfl_alarm_offset(b_allday);
 			} else {
 				pvalue1 = piline->get_first_paramval("RELATED");
 				if (NULL == pvalue1) {
+					time_t tmp_time;
 					pvalue1 = piline->get_first_paramval("VALUE");
 					alarmdelta = (pvalue1 == nullptr || strcasecmp(pvalue1, "DATE-TIME") == 0) &&
 					            ical_datetime_to_utc(ptz_component, pvalue, &tmp_time) ?
 					            llabs(start_time - tmp_time) / 60 :
 					            dfl_alarm_offset(b_allday);
 				} else {
+					long duration;
 					alarmdelta = strcasecmp(pvalue1, "START") == 0 &&
 					            ical_parse_duration(pvalue, &duration) ?
 					            labs(duration) / 60 :
