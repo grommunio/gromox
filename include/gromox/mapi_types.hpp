@@ -559,6 +559,8 @@ struct TZRULE {
 	int32_t daylightbias;
 	SYSTEMTIME standarddate;
 	SYSTEMTIME daylightdate;
+
+	inline bool operator<(const TZRULE &o) const { return year < o.year; }
 };
 
 struct TIMEZONEDEFINITION {
@@ -658,6 +660,9 @@ struct EXCEPTIONINFO {
 	uint32_t attachment;
 	uint32_t subtype;
 	uint32_t appointmentcolor;
+
+	inline bool operator<(const EXCEPTIONINFO &o) const
+		{ return startdatetime < o.startdatetime; }
 };
 
 struct CHANGEHIGHLIGHT {
@@ -677,6 +682,9 @@ struct EXTENDEDEXCEPTION {
 	char *location;
 	uint32_t reservedblockee2size;
 	uint8_t *preservedblockee2;
+
+	inline bool operator<(const EXTENDEDEXCEPTION &o) const
+		{ return startdatetime < o.startdatetime; }
 };
 
 struct APPOINTMENT_RECUR_PAT {

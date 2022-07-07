@@ -149,13 +149,6 @@ static BOOL oxcical_parse_vtsubcomponent(std::shared_ptr<ICAL_COMPONENT> psub_co
 	return TRUE;
 }
 
-static int oxcical_cmp_tzrule(const void *prule1, const void *prule2)
-{
-	auto a = static_cast<const TZRULE *>(prule1);
-	auto b = static_cast<const TZRULE *>(prule2);
-	return a->year == b->year ? 0 : a->year < b->year ? -1 : 1;
-}
-
 static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_component,
 	TIMEZONEDEFINITION *ptz_definition)
 {
@@ -214,8 +207,7 @@ static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_compo
 	}
 	if (ptz_definition->crules == 0)
 		return FALSE;
-	qsort(ptz_definition->prules, ptz_definition->crules,
-		sizeof(TZRULE), oxcical_cmp_tzrule);
+	std::sort(ptz_definition->prules, ptz_definition->prules + ptz_definition->crules);
 	pstandard_rule = NULL;
 	pdaylight_rule = NULL;
 	for (i=0; i<ptz_definition->crules; i++) {
@@ -1468,13 +1460,6 @@ static BOOL oxcical_parse_disallow_counter(std::shared_ptr<ical_component> main_
 	return TRUE;
 }
 
-static int oxcical_cmp_date(const void *pdate1, const void *pdate2)
-{
-	auto a = *static_cast<const uint32_t *>(pdate1);
-	auto b = *static_cast<const uint32_t *>(pdate2);
-	return a == b ? 0 : a < b ? -1 : 1;
-}
-
 static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
@@ -1513,24 +1498,6 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
-}
-
-static int oxcical_cmp_exception(
-	const void *pexception1, const void *pexception2)
-{
-	auto a = static_cast<const EXCEPTIONINFO *>(pexception1);
-	auto b = static_cast<const EXCEPTIONINFO *>(pexception2);
-	return a->startdatetime == b->startdatetime ? 0 :
-	       a->startdatetime < b->startdatetime ? -1 : 1;
-}
-
-static int oxcical_cmp_ext_exception(
-	const void *pext_exception1, const void *pext_exception2)
-{
-	auto a = static_cast<const EXTENDEDEXCEPTION *>(pext_exception1);
-	auto b = static_cast<const EXTENDEDEXCEPTION *>(pext_exception2);
-	return a->startdatetime == b->startdatetime ? 0 :
-	       a->startdatetime < b->startdatetime ? -1 : 1;
 }
 
 static void oxcical_replace_propid(TPROPVAL_ARRAY *pproplist,
@@ -2258,10 +2225,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			ext_exceptions[apr.exceptioncount].enddatetime = minutes;
 			++apr.exceptioncount;
 		}
-		qsort(deleted_dates, apr.recur_pat.deletedinstancecount, sizeof(uint32_t), oxcical_cmp_date);
-		qsort(modified_dates, apr.recur_pat.modifiedinstancecount, sizeof(uint32_t), oxcical_cmp_date);
-		qsort(exceptions, apr.exceptioncount, sizeof(EXCEPTIONINFO), oxcical_cmp_exception);
-		qsort(ext_exceptions, apr.exceptioncount, sizeof(EXTENDEDEXCEPTION), oxcical_cmp_ext_exception);
+		std::sort(deleted_dates, deleted_dates + apr.recur_pat.deletedinstancecount);
+		std::sort(modified_dates, modified_dates + apr.recur_pat.modifiedinstancecount);
+		std::sort(exceptions, exceptions + apr.exceptioncount);
+		std::sort(ext_exceptions, ext_exceptions + apr.exceptioncount);
 		if (!oxcical_parse_appointment_recurrence(&apr, phash,
 		    &last_propid, pmsg))
 			return FALSE;
