@@ -3480,17 +3480,15 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 			return false;
 		if (!piparam->append_paramval("DATE"))
 			return FALSE;
-	} else {
-		if (NULL != tzid) {
-			piparam = ical_new_param("TZID");
-			if (NULL == piparam) {
-				return FALSE;
-			}
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval(tzid))
-				return FALSE;
+	} else if (tzid != nullptr) {
+		piparam = ical_new_param("TZID");
+		if (NULL == piparam) {
+			return FALSE;
 		}
+		if (piline->append_param(piparam) < 0)
+			return false;
+		if (!piparam->append_paramval(tzid))
+			return FALSE;
 	}
 	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
 		b_found = FALSE;
@@ -3509,16 +3507,14 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 		if (b_date) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
+		} else if (tzid == nullptr) {
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
+			         itime.year, itime.month, itime.day,
+			         itime.hour, itime.minute, itime.second);
 		} else {
-			if (NULL == tzid) {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
-							itime.year, itime.month, itime.day,
-							itime.hour, itime.minute, itime.second);
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
-							itime.year, itime.month, itime.day,
-							itime.hour, itime.minute, itime.second);
-			}
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
+			         itime.year, itime.month, itime.day,
+			         itime.hour, itime.minute, itime.second);
 		}
 		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
@@ -3576,17 +3572,15 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 			return false;
 		if (!piparam->append_paramval("DATE"))
 			return FALSE;
-	} else {
-		if (NULL != tzid) {
-			piparam = ical_new_param("TZID");
-			if (NULL == piparam) {
-				return FALSE;
-			}
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval(tzid))
-				return FALSE;
+	} else if (tzid != nullptr) {
+		piparam = ical_new_param("TZID");
+		if (NULL == piparam) {
+			return FALSE;
 		}
+		if (piline->append_param(piparam) < 0)
+			return false;
+		if (!piparam->append_paramval(tzid))
+			return FALSE;
 	}
 	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
 		b_found = FALSE;
@@ -3605,16 +3599,14 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 		if (b_date) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
+		} else if (tzid == nullptr) {
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
+			         itime.year, itime.month, itime.day,
+			         itime.hour, itime.minute, itime.second);
 		} else {
-			if (NULL == tzid) {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
-							itime.year, itime.month, itime.day,
-							itime.hour, itime.minute, itime.second);
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
-							itime.year, itime.month, itime.day,
-							itime.hour, itime.minute, itime.second);
-			}
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
+			         itime.year, itime.month, itime.day,
+			         itime.hour, itime.minute, itime.second);
 		}
 		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
