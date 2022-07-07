@@ -1703,12 +1703,11 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	return TRUE;
 }
 
-static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_atx_value(std::shared_ptr<ICAL_LINE> piline,
     int count, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
 	uint8_t tmp_byte;
-	size_t decode_len;
 	uint32_t tmp_int32;
 	uint64_t tmp_int64;
 	const char *pvalue;
@@ -1717,8 +1716,6 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
 	
-	pvalue = piline->get_first_paramval("VALUE");
-	if (NULL == pvalue) {
 		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue && 0 != strncasecmp(pvalue, "CID:", 4)) {
 			if (NULL == pmsg->children.pattachments) {
@@ -1781,7 +1778,22 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
 				return FALSE;
 		}
-	} else if (0 == strcasecmp(pvalue, "BINARY")) {
+		return TRUE;
+}
+
+static BOOL oxcical_parse_atx_binary(std::shared_ptr<ICAL_LINE> piline,
+    int count, MESSAGE_CONTENT *pmsg)
+{
+	BINARY tmp_bin;
+	size_t decode_len;
+	uint8_t tmp_byte;
+	uint32_t tmp_int32;
+	uint64_t tmp_int64;
+	const char *pvalue, *pvalue1;
+	char tmp_buff[1024];
+	ATTACHMENT_LIST *pattachments;
+	ATTACHMENT_CONTENT *pattachment;
+
 		pvalue = piline->get_first_paramval("ENCODING");
 		if (NULL == pvalue || 0 != strcasecmp(pvalue, "BASE64")) {
 			return FALSE;
@@ -1864,7 +1876,17 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			return FALSE;
 		if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
 			return FALSE;
-	}
+		return TRUE;
+}
+
+static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
+    int count, MESSAGE_CONTENT *pmsg)
+{
+	auto v = piline->get_first_paramval("VALUE");
+	if (v == nullptr)
+		return oxcical_parse_atx_value(piline, count, pmsg);
+	else if (strcasecmp(v, "BINARY") == 0)
+		return oxcical_parse_atx_binary(piline, count, pmsg);
 	return TRUE;
 }
 
