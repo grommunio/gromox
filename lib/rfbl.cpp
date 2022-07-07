@@ -16,6 +16,7 @@
 #include <iconv.h>
 #include <list>
 #include <memory>
+#include <shared_mutex>
 #include <spawn.h>
 #include <sstream>
 #include <string>
@@ -60,6 +61,10 @@ class hxmc_deleter {
 };
 
 static int gx_reexec_top_fd = -1;
+static unsigned int g_max_loglevel = LV_NOTICE;
+static std::shared_mutex g_log_mutex;
+static std::unique_ptr<FILE, file_deleter> g_logfp;
+static bool g_log_direct = true;
 
 LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum, const char *name,
     const char *hint) :
@@ -779,6 +784,52 @@ int open_tmpfile(const char *dir, std::string *fullname, unsigned int flags,
 	return -errno;
 } catch (const std::bad_alloc &) {
 	return -ENOMEM;
+}
+
+void mlog_init(const char *filename, unsigned int max_level)
+{
+	g_max_loglevel = max_level;
+	g_log_direct = filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0;
+	if (g_log_direct) {
+		setvbuf(stdout, nullptr, _IOLBF, 0);
+		return;
+	}
+	std::lock_guard hold(g_log_mutex);
+	g_logfp.reset(fopen(filename, "a"));
+	g_log_direct = g_logfp == nullptr;
+	if (g_log_direct) {
+		fprintf(stderr, "Could not open %s for writing: %s. Using stdout.\n",
+		        filename, strerror(errno));
+		setvbuf(stdout, nullptr, _IOLBF, 0);
+	} else {
+		setvbuf(g_logfp.get(), nullptr, _IOLBF, 0);
+	}
+}
+
+void mlog(unsigned int level, const char *fmt, ...)
+{
+	if (level > g_max_loglevel)
+		return;
+	va_list args;
+	va_start(args, fmt);
+	if (g_log_direct) {
+		vprintf(fmt, args);
+		fputc('\n', stdout);
+		va_end(args);
+		return;
+	}
+	char buf[64];
+	buf[0] = '<';
+	buf[1] = '0' + level;
+	buf[2] = '>';
+	auto now = time(nullptr);
+	struct tm tmbuf;
+	strftime(buf + 3, std::size(buf) - 3, "%FT%T ", localtime_r(&now, &tmbuf));
+	std::shared_lock hold(g_log_mutex);
+	fputs(buf, g_logfp.get());
+	vfprintf(g_logfp.get(), fmt, args);
+	fputc('\n', g_logfp.get());
+	va_end(args);
 }
 
 }

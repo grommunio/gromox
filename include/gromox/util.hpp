@@ -150,5 +150,7 @@ extern GX_EXPORT const std::string *ianatz_to_tzdef(const char *, const char * =
 extern GX_EXPORT bool get_digest(const char *src, const char *tag, char *out, size_t outmax);
 extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, const char *v);
 extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, uint64_t v);
+extern GX_EXPORT void mlog_init(const char *file, unsigned int level);
+extern GX_EXPORT void mlog(unsigned int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 
 }
