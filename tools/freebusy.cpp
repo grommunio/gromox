@@ -783,53 +783,19 @@ static void output_event(time_t start_time, time_t end_time,
 
 static BOOL get_freebusy(const char *dir)
 {
-	BOOL b_first;
-	BOOL b_meeting1;
-	BOOL b_reminder1;
-	uint8_t tmp_true;
 	uint32_t table_id;
-	EXT_PULL ext_pull;
-	char uid_buff[256];
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
-	uint32_t busy_type;
-	EVENT_NODE *pevnode;
-	uint64_t end_nttime;
 	uint32_t permission;
 	PROPID_ARRAY propids;
-	DOUBLE_LIST tmp_list;
-	time_t whole_end_time;
-	uint64_t start_nttime;
 	PROPTAG_ARRAY proptags;
-	uint32_t pidlidclipend;
-	uint32_t pidlidprivate;
-	TIMEZONESTRUCT tzstruct;
-	DOUBLE_LIST_NODE *pnode;
-	time_t whole_start_time;
-	uint32_t pidlidlocation;
 	RESTRICTION restriction;
-	uint32_t pidlidrecurring;
 	PROPERTY_NAME tmp_propnames[13];
 	PROPNAME_ARRAY propnames;
 	uint32_t tmp_proptags[13];
-	uint32_t pidlidbusystatus;
-	RESTRICTION *prestriction;
-	RESTRICTION *prestriction1;
-	RESTRICTION *prestriction2;
-	RESTRICTION *prestriction3;
-	uint32_t pidlidreminderset;
-	std::shared_ptr<ICAL_COMPONENT> ptz_component;
-	uint32_t pidlidtimezonestruct;
-	uint32_t pidlidglobalobjectid;
-	uint32_t pidlidappointmentrecur;
-	uint32_t pidlidappointmentsubtype;
-	uint32_t pidlidappointmentendwhole;
-	uint32_t pidlidappointmentstateflags;
-	uint32_t pidlidappointmentstartwhole;
-	APPOINTMENT_RECUR_PAT apprecurr;
 	
-	start_nttime = rop_util_unix_to_nttime(g_start_time);
-	end_nttime = rop_util_unix_to_nttime(g_end_time);
+	auto start_nttime = rop_util_unix_to_nttime(g_start_time);
+	auto end_nttime = rop_util_unix_to_nttime(g_end_time);
 	propnames.count = 13;
 	propnames.ppropname = tmp_propnames;
 	for (size_t i = 0; i < arsizeof(tmp_propnames); ++i)
@@ -862,19 +828,19 @@ static BOOL get_freebusy(const char *dir)
 		return FALSE;
 	if (propids.count != propnames.count)
 		return FALSE;
-	pidlidappointmentstartwhole = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
-	pidlidappointmentendwhole = PROP_TAG(PT_SYSTIME, propids.ppropid[1]);
-	pidlidbusystatus = PROP_TAG(PT_LONG, propids.ppropid[2]);
-	pidlidrecurring = PROP_TAG(PT_BOOLEAN, propids.ppropid[3]);
-	pidlidappointmentrecur = PROP_TAG(PT_BINARY, propids.ppropid[4]);
-	pidlidappointmentsubtype = PROP_TAG(PT_BOOLEAN, propids.ppropid[5]);
-	pidlidprivate = PROP_TAG(PT_BOOLEAN, propids.ppropid[6]);
-	pidlidappointmentstateflags = PROP_TAG(PT_LONG, propids.ppropid[7]);
-	pidlidclipend = PROP_TAG(PT_SYSTIME, propids.ppropid[8]);
-	pidlidlocation = PROP_TAG(PT_UNICODE, propids.ppropid[9]);
-	pidlidreminderset = PROP_TAG(PT_BOOLEAN, propids.ppropid[10]);
-	pidlidglobalobjectid = PROP_TAG(PT_BINARY, propids.ppropid[11]);
-	pidlidtimezonestruct = PROP_TAG(PT_BINARY, propids.ppropid[12]);
+	uint32_t pidlidappointmentstartwhole = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
+	uint32_t pidlidappointmentendwhole = PROP_TAG(PT_SYSTIME, propids.ppropid[1]);
+	uint32_t pidlidbusystatus = PROP_TAG(PT_LONG, propids.ppropid[2]);
+	uint32_t pidlidrecurring = PROP_TAG(PT_BOOLEAN, propids.ppropid[3]);
+	uint32_t pidlidappointmentrecur = PROP_TAG(PT_BINARY, propids.ppropid[4]);
+	uint32_t pidlidappointmentsubtype = PROP_TAG(PT_BOOLEAN, propids.ppropid[5]);
+	uint32_t pidlidprivate = PROP_TAG(PT_BOOLEAN, propids.ppropid[6]);
+	uint32_t pidlidappointmentstateflags = PROP_TAG(PT_LONG, propids.ppropid[7]);
+	uint32_t pidlidclipend = PROP_TAG(PT_SYSTIME, propids.ppropid[8]);
+	uint32_t pidlidlocation = PROP_TAG(PT_UNICODE, propids.ppropid[9]);
+	uint32_t pidlidreminderset = PROP_TAG(PT_BOOLEAN, propids.ppropid[10]);
+	uint32_t pidlidglobalobjectid = PROP_TAG(PT_BINARY, propids.ppropid[11]);
+	uint32_t pidlidtimezonestruct = PROP_TAG(PT_BINARY, propids.ppropid[12]);
 	
 	if (NULL != g_username) {
 		if (!exmdb_client::check_folder_permission(dir,
@@ -889,19 +855,19 @@ static BOOL get_freebusy(const char *dir)
 	} else {
 		permission = frightsFreeBusyDetailed | frightsReadAny;
 	}
-	tmp_true = 1;
+	uint8_t tmp_true = 1;
 	restriction.rt = RES_OR;
 	restriction.pres = me_alloc<RESTRICTION_AND_OR>();
 	auto andor = restriction.andor;
 	andor->count = 4;
-	prestriction = me_alloc<RESTRICTION>(4);
+	auto prestriction = me_alloc<RESTRICTION>(4);
 	andor->pres = prestriction;
 	/*OR (pidlidappointmentstartwhole >= start
 		&& pidlidappointmentstartwhole <= end) */
 	prestriction[0].rt = RES_AND;
 	prestriction[0].pres = me_alloc<RESTRICTION_AND_OR>();
 	andor = prestriction[0].andor;
-	prestriction1 = me_alloc<RESTRICTION>(2);
+	auto prestriction1 = me_alloc<RESTRICTION>(2);
 	andor->count = 2;
 	andor->pres = prestriction1;
 	prestriction1[0].rt = RES_PROPERTY;
@@ -976,7 +942,7 @@ static BOOL get_freebusy(const char *dir)
 	prestriction1[0].pres = me_alloc<RESTRICTION_AND_OR>();
 	andor = prestriction1[0].andor;
 	andor->count = 3;
-	prestriction2 = me_alloc<RESTRICTION>(3);
+	auto prestriction2 = me_alloc<RESTRICTION>(3);
 	andor->pres = prestriction2;
 	prestriction2[0].rt = RES_EXIST;
 	prestriction2[0].pres = me_alloc<RESTRICTION_EXIST>();
@@ -1006,7 +972,7 @@ static BOOL get_freebusy(const char *dir)
 	prestriction2 = me_alloc<RESTRICTION>(3);
 	andor->pres = prestriction2;
 	prestriction2[0].rt = RES_NOT;
-	prestriction3 = me_alloc<RESTRICTION>();
+	auto prestriction3 = me_alloc<RESTRICTION>();
 	prestriction2[0].pres = prestriction3;
 	prestriction3->rt = RES_EXIST;
 	prestriction3->pres = me_alloc<RESTRICTION_EXIST>();
@@ -1055,16 +1021,18 @@ static BOOL get_freebusy(const char *dir)
 	printf((permission & (frightsFreeBusyDetailed | frightsReadAny)) ?
 	       "\"detailed\", " : "\"simple\", ");
 	printf("\"events\":[");
-	b_first = FALSE;
+
+	BOOL b_first = FALSE;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto ts = tmp_set.pparray[i]->get<const uint64_t>(pidlidappointmentstartwhole);
 		if (ts == nullptr)
 			continue;
-		whole_start_time = rop_util_nttime_to_unix(*ts);
+		auto whole_start_time = rop_util_nttime_to_unix(*ts);
 		ts = tmp_set.pparray[i]->get<uint64_t>(pidlidappointmentendwhole);
 		if (ts == nullptr)
 			continue;
-		whole_end_time = rop_util_nttime_to_unix(*ts);
+		auto whole_end_time = rop_util_nttime_to_unix(*ts);
+		char uid_buff[256];
 		if (!make_ical_uid(tmp_set.pparray[i]->get<BINARY>(pidlidglobalobjectid), uid_buff))
 			continue;
 		auto psubject = tmp_set.pparray[i]->get<const char>(PR_SUBJECT);
@@ -1074,21 +1042,23 @@ static BOOL get_freebusy(const char *dir)
 		pflag = tmp_set.pparray[i]->get<uint8_t>(pidlidprivate);
 		BOOL b_private = pflag != nullptr && *pflag != 0 ? TRUE : false;
 		auto num = tmp_set.pparray[i]->get<const uint32_t>(pidlidbusystatus);
-		if (num == nullptr) {
-			busy_type = 0;
-		} else {
+		uint32_t busy_type = 0;
+		if (num != nullptr) {
 			busy_type = *num;
-			if (busy_type > 4)
+			if (busy_type > olWorkingElsewhere)
 				busy_type = 0;
 		}
 		num = tmp_set.pparray[i]->get<uint32_t>(pidlidappointmentstateflags);
 		BOOL b_meeting = (num != nullptr && *num & asfMeeting) ? TRUE : false;
 		pflag = tmp_set.pparray[i]->get<uint8_t>(pidlidrecurring);
 		if (pflag != nullptr && *pflag != 0) {
+			EXT_PULL ext_pull;
+			std::shared_ptr<ICAL_COMPONENT> ptz_component;
 			auto bin = tmp_set.pparray[i]->get<const BINARY>(pidlidtimezonestruct);
 			if (bin == nullptr) {
 				ptz_component = NULL;
 			} else {
+				TIMEZONESTRUCT tzstruct;
 				ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
 				if (ext_pull.g_tzstruct(&tzstruct) != EXT_ERR_SUCCESS)
 					continue;	
@@ -1100,16 +1070,20 @@ static BOOL get_freebusy(const char *dir)
 			bin = tmp_set.pparray[i]->get<BINARY>(pidlidappointmentrecur);
 			if (bin == nullptr)
 				continue;
+			APPOINTMENT_RECUR_PAT apprecurr;
 			ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 				continue;
+			DOUBLE_LIST tmp_list;
 			if (!find_recurrence_times(ptz_component, whole_start_time,
 			    &apprecurr, g_start_time, g_end_time, &tmp_list))
 				continue;	
+			DOUBLE_LIST_NODE *pnode;
 			while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
-				pevnode = (EVENT_NODE*)pnode->pdata;
+				auto pevnode = static_cast<EVENT_NODE *>(pnode->pdata);
 				if (NULL != pevnode->pexception &&
 					NULL != pevnode->pex_exception) {
+					BOOL b_meeting1, b_reminder1;
 					if (pevnode->pexception->overrideflags & ARO_MEETINGTYPE)
 						b_meeting1 = (pevnode->pexception->meetingtype & 1) ? TRUE : false;
 					else
