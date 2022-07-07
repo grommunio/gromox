@@ -2771,11 +2771,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		}
 	}
 	int utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
-	if (utc_offset >= 0) {
-		tmp_buff[0] = '+';
-	} else {
-		tmp_buff[0] = '-';
-	}
+	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
@@ -2784,11 +2780,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
-	if (utc_offset >= 0) {
-		tmp_buff[0] = '+';
-	} else {
-		tmp_buff[0] = '-';
-	}
+	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
@@ -2921,11 +2913,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			return NULL;
 	}
 	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
-	if (utc_offset >= 0) {
-		tmp_buff[0] = '+';
-	} else {
-		tmp_buff[0] = '-';
-	}
+	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
@@ -2934,11 +2922,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
-	if (utc_offset >= 0) {
-		tmp_buff[0] = '+';
-	} else {
-		tmp_buff[0] = '-';
-	}
+	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
@@ -2998,7 +2982,6 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
     ENTRYID_TO_USERNAME entryid_to_username, ESSDN_TO_USERNAME essdn_to_username,
     EXT_BUFFER_ALLOC alloc, const char *partstat, const MESSAGE_CONTENT *pmsg)
 {
-	BOOL b_rsvp;
 	std::shared_ptr<ICAL_LINE> piline;
 	char username[UADDR_SIZE];
 	char tmp_value[334];
@@ -3047,11 +3030,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		return pivalue->append_subval(tmp_value) ? TRUE : false;
 	}	
 	pvalue = pmsg->proplist.getval(PR_RESPONSE_REQUESTED);
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		b_rsvp = TRUE;
-	} else {
-		b_rsvp = FALSE;
-	}
+	BOOL b_rsvp = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
 		auto rcptflags = pmsg->children.prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_FLAGS);
 		if (rcptflags == nullptr)
@@ -3460,10 +3439,7 @@ static BOOL oxcical_check_exdate(APPOINTMENT_RECUR_PAT *apr)
 		if (!b_found)
 			count ++;
 	}
-	if (0 == count) {
-		return FALSE;
-	}
-	return TRUE;
+	return count != 0 ? TRUE : false;
 }
 
 static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
@@ -3568,10 +3544,7 @@ static BOOL oxcical_check_rdate(APPOINTMENT_RECUR_PAT *apr)
 		if (!b_found)
 			count ++;
 	}
-	if (0 == count) {
-		return FALSE;
-	}
-	return TRUE;
+	return count != 0 ? TRUE : false;
 }
 
 static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
@@ -3689,7 +3662,6 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	PROPID_ARRAY propids;
 	const char *partstat;
 	const char *str_value;
-	const char *planguage;
 	TIMEZONESTRUCT tz_struct;
 	MESSAGE_CONTENT *pembedded;
 	GLOBALOBJECTID globalobjectid;
@@ -3697,12 +3669,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	APPOINTMENT_RECUR_PAT apprecurr;
 	
 	auto pvalue = pmsg->proplist.getval(PR_MESSAGE_LOCALE_ID);
-	if (NULL == pvalue) {
-		planguage = NULL;
-	} else {
-		planguage = lcid_to_ltag(*(uint32_t*)pvalue);
-	}
-	
+	auto planguage = pvalue != nullptr ? lcid_to_ltag(*static_cast<uint32_t *>(pvalue)) : nullptr;
 	pvalue = pmsg->proplist.getval(PR_MESSAGE_CLASS);
 	if (NULL == pvalue) {
 		pvalue = pmsg->proplist.getval(PR_MESSAGE_CLASS_A);
