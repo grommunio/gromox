@@ -28,4 +28,4 @@ extern int nsp_interface_resolve_namesw(NSPI_HANDLE, uint32_t reserved, const ST
 /* clean NSPI_HANDLE by system, not operation of interface */
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc);
 
-extern unsigned int g_nsp_trace;
+extern unsigned int g_nsp_trace, g_nsp_synthesize_oneoff;

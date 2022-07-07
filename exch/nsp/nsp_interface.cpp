@@ -63,7 +63,7 @@ enum {
 	TI_SCRIPT = 0x4,
 };
 
-unsigned int g_nsp_trace;
+unsigned int g_nsp_trace, g_nsp_synthesize_oneoff;
 static BOOL g_session_check;
 static bool (*verify_cpid)(uint32_t cpid);
 static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
@@ -2493,6 +2493,8 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		break;
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A:
+	case PR_SMTP_ADDRESS:
+	case PR_SMTP_ADDRESS_A:
 		pprop->value.pv = ndr_stack_alloc(
 			NDR_STACK_OUT, strlen(paddress) + 1);
 		if (NULL == pprop->value.pstr) {
@@ -2658,7 +2660,8 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			if (NULL == pnode) {
 				if (b_ambiguous) {
 					*pproptag = MID_AMBIGUOUS;
-				} else if (strncasecmp(pstrs->ppstr[i], "=SMTP:", 6) == 0) {
+				} else if (g_nsp_synthesize_oneoff &&
+				    strncasecmp(pstrs->ppstr[i], "=SMTP:", 6) == 0) {
 					prow = common_util_proprowset_enlarge(*pprows);
 					if (NULL == prow || NULL ==
 					    common_util_propertyrow_init(prow)) {
