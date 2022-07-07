@@ -1716,69 +1716,69 @@ static BOOL oxcical_parse_atx_value(std::shared_ptr<ICAL_LINE> piline,
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
 	
-		pvalue = piline->get_first_subvalue();
-		if (NULL != pvalue && 0 != strncasecmp(pvalue, "CID:", 4)) {
-			if (NULL == pmsg->children.pattachments) {
-				pattachments = attachment_list_init();
-				if (NULL == pattachments) {
-					return FALSE;
-				}
-				message_content_set_attachments_internal(
-					pmsg, pattachments);
-			} else {
-				pattachments = pmsg->children.pattachments;
-			}
-			pattachment = attachment_content_init();
-			if (NULL == pattachment) {
-				return FALSE;
-			}
-			if (!attachment_list_append_internal(pattachments, pattachment)) {
-				attachment_content_free(pattachment);
-				return FALSE;
-			}
-			tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
-				"[InternetShortcut]\r\nURL=%s", pvalue);
-			tmp_bin.pc = tmp_buff;
-			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
-				return FALSE;
-			tmp_bin.cb = 0;
-			tmp_bin.pb = NULL;
-			if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
-				return FALSE;
-			if (pattachment->proplist.set(PR_ATTACH_EXTENSION, ".URL") != 0)
-				return FALSE;
-			pvalue1 = strrchr(pvalue, '/');
-			if (NULL == pvalue1) {
-				pvalue1 = pvalue;
-			}
-			snprintf(tmp_buff, 256, "%s.url", pvalue1);
-			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != 0 ||
-			    pattachment->proplist.set(PR_DISPLAY_NAME, tmp_buff) != 0)
-				return FALSE;
-			tmp_int32 = ATTACH_BY_VALUE;
-			if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
-				return FALSE;
-			pvalue1 = piline->get_first_paramval("FMTYPE");
-			if (pvalue1 != nullptr &&
-			    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != 0)
-					return FALSE;
-			tmp_int32 = 0;
-			if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0)
-				return FALSE;
-			tmp_int32 = 0;
-			if (pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0)
-				return FALSE;
-			tmp_byte = 0;
-			if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
-				return FALSE;
-			tmp_int64 = 0x0CB34557A3DD4000;
-			if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
-			    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
-				return FALSE;
-			if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
-				return FALSE;
-		}
+	pvalue = piline->get_first_subvalue();
+	if (pvalue == nullptr || strncasecmp(pvalue, "CID:", 4) == 0)
 		return TRUE;
+	if (NULL == pmsg->children.pattachments) {
+		pattachments = attachment_list_init();
+		if (NULL == pattachments) {
+			return FALSE;
+		}
+		message_content_set_attachments_internal(
+			pmsg, pattachments);
+	} else {
+		pattachments = pmsg->children.pattachments;
+	}
+	pattachment = attachment_content_init();
+	if (NULL == pattachment) {
+		return FALSE;
+	}
+	if (!attachment_list_append_internal(pattachments, pattachment)) {
+		attachment_content_free(pattachment);
+		return FALSE;
+	}
+	tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+		"[InternetShortcut]\r\nURL=%s", pvalue);
+	tmp_bin.pc = tmp_buff;
+	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
+		return FALSE;
+	tmp_bin.cb = 0;
+	tmp_bin.pb = NULL;
+	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
+		return FALSE;
+	if (pattachment->proplist.set(PR_ATTACH_EXTENSION, ".URL") != 0)
+		return FALSE;
+	pvalue1 = strrchr(pvalue, '/');
+	if (NULL == pvalue1) {
+		pvalue1 = pvalue;
+	}
+	snprintf(tmp_buff, 256, "%s.url", pvalue1);
+	if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != 0 ||
+	    pattachment->proplist.set(PR_DISPLAY_NAME, tmp_buff) != 0)
+		return FALSE;
+	tmp_int32 = ATTACH_BY_VALUE;
+	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
+		return FALSE;
+	pvalue1 = piline->get_first_paramval("FMTYPE");
+	if (pvalue1 != nullptr &&
+	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != 0)
+		return FALSE;
+	tmp_int32 = 0;
+	if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0)
+		return FALSE;
+	tmp_int32 = 0;
+	if (pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0)
+		return FALSE;
+	tmp_byte = 0;
+	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
+		return FALSE;
+	tmp_int64 = 0x0CB34557A3DD4000;
+	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
+	    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
+		return FALSE;
+	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
+		return FALSE;
+	return TRUE;
 }
 
 static BOOL oxcical_parse_atx_binary(std::shared_ptr<ICAL_LINE> piline,
@@ -1794,89 +1794,89 @@ static BOOL oxcical_parse_atx_binary(std::shared_ptr<ICAL_LINE> piline,
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
 
-		pvalue = piline->get_first_paramval("ENCODING");
-		if (NULL == pvalue || 0 != strcasecmp(pvalue, "BASE64")) {
+	pvalue = piline->get_first_paramval("ENCODING");
+	if (NULL == pvalue || 0 != strcasecmp(pvalue, "BASE64")) {
+		return FALSE;
+	}
+	if (NULL == pmsg->children.pattachments) {
+		pattachments = attachment_list_init();
+		if (NULL == pattachments) {
 			return FALSE;
 		}
-		if (NULL == pmsg->children.pattachments) {
-			pattachments = attachment_list_init();
-			if (NULL == pattachments) {
-				return FALSE;
-			}
-			message_content_set_attachments_internal(
-								pmsg, pattachments);
-		} else {
-			pattachments = pmsg->children.pattachments;
-		}
-		pattachment = attachment_content_init();
-		if (NULL == pattachment) {
+		message_content_set_attachments_internal(
+			pmsg, pattachments);
+	} else {
+		pattachments = pmsg->children.pattachments;
+	}
+	pattachment = attachment_content_init();
+	if (NULL == pattachment) {
+		return FALSE;
+	}
+	if (!attachment_list_append_internal(pattachments, pattachment)) {
+		attachment_content_free(pattachment);
+		return FALSE;
+	}
+	pvalue = piline->get_first_subvalue();
+	if (NULL != pvalue) {
+		tmp_int32 = strlen(pvalue);
+		tmp_bin.pv = malloc(tmp_int32);
+		if (tmp_bin.pv == nullptr)
 			return FALSE;
-		}
-		if (!attachment_list_append_internal(pattachments, pattachment)) {
-			attachment_content_free(pattachment);
-			return FALSE;
-		}
-		pvalue = piline->get_first_subvalue();
-		if (NULL != pvalue) {
-			tmp_int32 = strlen(pvalue);
-			tmp_bin.pv = malloc(tmp_int32);
-			if (tmp_bin.pv == nullptr)
-				return FALSE;
-			if (decode64(pvalue, tmp_int32, tmp_bin.pv, tmp_int32, &decode_len) != 0) {
-				free(tmp_bin.pb);
-				return FALSE;
-			}
-			tmp_bin.cb = decode_len;
-		} else {
-			tmp_bin.cb = 0;
-			tmp_bin.pb = NULL;
-		}
-		if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
-			return FALSE;
-		if (NULL != tmp_bin.pb) {
+		if (decode64(pvalue, tmp_int32, tmp_bin.pv, tmp_int32, &decode_len) != 0) {
 			free(tmp_bin.pb);
+			return FALSE;
 		}
+		tmp_bin.cb = decode_len;
+	} else {
 		tmp_bin.cb = 0;
 		tmp_bin.pb = NULL;
-		if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
-			return FALSE;
-		pvalue = piline->get_first_paramval("X-FILENAME");
-		if (NULL == pvalue) {
-			pvalue = piline->get_first_paramval("FILENAME");
-		}
-		if (NULL == pvalue) {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "calendar_attachment%d.dat", count);
-			pvalue = tmp_buff;
-		}
-		pvalue1 = strrchr(pvalue, '.');
-		if (NULL == pvalue1) {
-			pvalue1 = ".dat";
-		}
-		if (pattachment->proplist.set(PR_ATTACH_EXTENSION, pvalue1) != 0 ||
-		    pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, pvalue) != 0 ||
-		    pattachment->proplist.set(PR_DISPLAY_NAME, pvalue) != 0)
-			return FALSE;
-		tmp_int32 = ATTACH_BY_VALUE;
-		if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
-			return FALSE;
-		pvalue1 = piline->get_first_paramval("FMTYPE");
-		if (pvalue1 != nullptr &&
-		    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != 0)
-			return FALSE;
-		tmp_int32 = 0;
-		if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0 ||
-		    pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0)
-			return FALSE;
-		tmp_byte = 0;
-		if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
-			return FALSE;
-		tmp_int64 = 0x0CB34557A3DD4000;
-		if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
-		    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
-			return FALSE;
-		if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
-			return FALSE;
-		return TRUE;
+	}
+	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
+		return FALSE;
+	if (NULL != tmp_bin.pb) {
+		free(tmp_bin.pb);
+	}
+	tmp_bin.cb = 0;
+	tmp_bin.pb = NULL;
+	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
+		return FALSE;
+	pvalue = piline->get_first_paramval("X-FILENAME");
+	if (NULL == pvalue) {
+		pvalue = piline->get_first_paramval("FILENAME");
+	}
+	if (NULL == pvalue) {
+		snprintf(tmp_buff, arsizeof(tmp_buff), "calendar_attachment%d.dat", count);
+		pvalue = tmp_buff;
+	}
+	pvalue1 = strrchr(pvalue, '.');
+	if (NULL == pvalue1) {
+		pvalue1 = ".dat";
+	}
+	if (pattachment->proplist.set(PR_ATTACH_EXTENSION, pvalue1) != 0 ||
+	    pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, pvalue) != 0 ||
+	    pattachment->proplist.set(PR_DISPLAY_NAME, pvalue) != 0)
+		return FALSE;
+	tmp_int32 = ATTACH_BY_VALUE;
+	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
+		return FALSE;
+	pvalue1 = piline->get_first_paramval("FMTYPE");
+	if (pvalue1 != nullptr &&
+	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != 0)
+		return FALSE;
+	tmp_int32 = 0;
+	if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0 ||
+	    pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0)
+		return FALSE;
+	tmp_byte = 0;
+	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
+		return FALSE;
+	tmp_int64 = 0x0CB34557A3DD4000;
+	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
+	    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
+		return FALSE;
+	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
+		return FALSE;
+	return TRUE;
 }
 
 static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
