@@ -745,10 +745,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	ATTACHMENT_CONTENT *pattachment;
 	char tmp_buff[VCARD_MAX_BUFFER_LEN];
 	std::string vcarduid;
-	const char* tel_types[] =
+	static constexpr const char *tel_types[] =
 		{"HOME", "HOME", "VOICE", "WORK", "WORK",
 		"CELL", "PAGER", "CAR", "ISDN", "PREF"};
-	const char* ms_tel_types[] =
+	static constexpr const char *ms_tel_types[] =
 		{"ASSISTANT", "CALLBACK", "COMPANY", "RADIO", "TTYTTD"};
 	static constexpr uint32_t tel_proptags[] =
 		{PR_HOME_TELEPHONE_NUMBER, PR_HOME2_TELEPHONE_NUMBER,
