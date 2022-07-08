@@ -63,7 +63,7 @@ enum {
 	TI_SCRIPT = 0x4,
 };
 
-unsigned int g_nsp_trace, g_nsp_synthesize_oneoff;
+unsigned int g_nsp_trace;
 static BOOL g_session_check;
 static bool (*verify_cpid)(uint32_t cpid);
 static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
@@ -2658,27 +2658,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			auto pnode = nsp_interface_resolve_gal(pbase->gal_list,
 						pstat->codepage, ptoken, &b_ambiguous);
 			if (NULL == pnode) {
-				if (b_ambiguous) {
-					*pproptag = MID_AMBIGUOUS;
-				} else if (g_nsp_synthesize_oneoff &&
-				    strncasecmp(pstrs->ppstr[i], "=SMTP:", 6) == 0) {
-					prow = common_util_proprowset_enlarge(*pprows);
-					if (NULL == prow || NULL ==
-					    common_util_propertyrow_init(prow)) {
-						*ppmids = nullptr;
-						*pprows = nullptr;
-						return ecServerOOM;
-					}
-					result = nsp_interface_fetch_smtp_row(pstrs->ppstr[i] + 6, pproptags, prow);
-					if (result != ecSuccess) {
-						*ppmids = nullptr;
-						*pprows = nullptr;
-						return result;
-					}
-					*pproptag = MID_RESOLVED;
-				} else {
-					*pproptag = MID_UNRESOLVED;
-				}
+				*pproptag = b_ambiguous ? MID_AMBIGUOUS : MID_UNRESOLVED;
 				continue;
 			}
 			*pproptag = MID_RESOLVED;
