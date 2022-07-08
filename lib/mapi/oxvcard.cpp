@@ -113,6 +113,13 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	return get_propids(&propnames, ppropids);
 }
 
+static bool is_photo(const char *t)
+{
+	return strcasecmp(t, "jpeg") == 0 || strcasecmp(t, "jpg") == 0 ||
+	       strcasecmp(t, "png") == 0 || strcasecmp(t, "gif") == 0 ||
+	       strcasecmp(t, "bmp") == 0;
+}
+
 MESSAGE_CONTENT* oxvcard_import(
 	const VCARD *pvcard, GET_PROPIDS get_propids)
 {
@@ -239,13 +246,9 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			if (!b_encoding || photo_type == nullptr)
 				goto IMPORT_FAILURE;
-			if (0 != strcasecmp(photo_type, "jpeg") &&
-				0 != strcasecmp(photo_type, "jpg") &&
-				0 != strcasecmp(photo_type, "bmp") &&
-				0 != strcasecmp(photo_type, "gif") &&
-				0 != strcasecmp(photo_type, "png")) {
+
+			if (!is_photo(photo_type))
 				goto IMPORT_FAILURE;
-			}
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
 				goto IMPORT_FAILURE;
@@ -863,13 +866,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			if (NULL == pvalue) {
 				continue;
 			}
-			if (0 != strcasecmp(pvalue, "jpeg") &&
-				0 != strcasecmp(pvalue, "jpg") &&
-				0 != strcasecmp(pvalue, "bmp") &&
-				0 != strcasecmp(pvalue, "gif") &&
-				0 != strcasecmp(pvalue, "png")) {
+			if (!is_photo(pvalue))
 				continue;
-			}
 			photo_type = pvalue;
 			auto bv = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 			if (bv == nullptr)
