@@ -37,9 +37,15 @@ sub proptag
 
 sub errcode
 {
-	my($aliases, $value) = ("$2 $4", $3);
-	while ($aliases =~ m{\b([A-Z]{2}\w*_[WEX]_\w+)}g) {
-		print "C($&, $value)\n";
+	my($key, $value) = ($2, $3);
+	my @aliases = "$2 $4" =~ m{\b([A-Z]{2}\w*_[WEX]_\w+)}g;
+	if (scalar(@aliases) == 0 && defined($key) && substr($key, 0, 2) eq "ec") {
+		# ec* is the only name available for $value
+		print "C($key, $value)\n";
+		return;
+	}
+	for my $a (@aliases) {
+		print "C($a, $value)\n";
 	}
 }
 
