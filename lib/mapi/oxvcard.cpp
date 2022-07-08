@@ -601,7 +601,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				tag = PR_CALLBACK_TELEPHONE_NUMBER;
 			} else if (0 == strcasecmp(pvparam->name, "COMPANY")) {
 				tag = PR_COMPANY_MAIN_PHONE_NUMBER;
-			} else if (0 != strcasecmp(pvparam->name, "RADIO")) {
+			} else if (strcasecmp(pvparam->name, "RADIO") == 0) {
 				tag = PR_RADIO_TELEPHONE_NUMBER;
 			} else if (0 == strcasecmp(pvparam->name, "TTYTTD")) {
 				tag = PR_TTYTDD_PHONE_NUMBER;
