@@ -51,16 +51,16 @@ static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
 		pvline = (VCARD_LINE*)pnode->pdata;
-		if (0 == strcasecmp(pvline->name, "VERSION")) {
-			pstring = vcard_get_first_subvalue(pvline);
-			if (NULL == pstring) {
-				return FALSE;
-			}
-			if (strcmp(pstring, "3.0") != 0 &&
-			    strcmp(pstring, "4.0") != 0)
-				return FALSE;
-			b_version = TRUE;
+		if (strcasecmp(pvline->name, "VERSION") != 0)
+			continue;
+		pstring = vcard_get_first_subvalue(pvline);
+		if (NULL == pstring) {
+			return FALSE;
 		}
+		if (strcmp(pstring, "3.0") != 0 &&
+		    strcmp(pstring, "4.0") != 0)
+			return FALSE;
+		b_version = TRUE;
 	}
 	return b_version ? TRUE : FALSE;
 }
