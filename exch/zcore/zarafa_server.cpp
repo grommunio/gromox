@@ -5107,10 +5107,10 @@ uint32_t zarafa_server_icaltomessage(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	auto pmsgctnt = common_util_ical_to_message(pmessage->get_store(), pical_bin);
+	auto pmsgctnt = cu_ical_to_message(pmessage->get_store(), pical_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(pmsgctnt.get()) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_messagetovcf(GUID hsession,

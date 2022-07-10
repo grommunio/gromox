@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <type_traits>
 #include <gromox/defs.h>
+#include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/zcore_rpc.hpp>
 
@@ -172,7 +173,7 @@ extern BOOL common_util_send_message(store_object *, uint64_t msg_id, BOOL submi
 extern BOOL common_util_message_to_rfc822(store_object *, uint64_t msg_id, BINARY *eml);
 extern MESSAGE_CONTENT *cu_rfc822_to_message(store_object *, unsigned int mxf_flags, const BINARY *eml);
 extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY *ical);
-extern MESSAGE_CONTENT *common_util_ical_to_message(store_object *, const BINARY *ical);
+extern std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete> cu_ical_to_message(store_object *, const BINARY *ical);
 extern BOOL common_util_message_to_vcf(message_object *, BINARY *vcfout);
 extern MESSAGE_CONTENT *common_util_vcf_to_message(store_object *, const BINARY *vcf);
 extern const char *common_util_get_default_timezone();

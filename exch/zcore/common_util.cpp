@@ -2326,8 +2326,8 @@ BOOL common_util_message_to_ical(store_object *pstore,
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
 }
 
-MESSAGE_CONTENT *common_util_ical_to_message(store_object *pstore,
-    const BINARY *pical_bin)
+std::unique_ptr<MESSAGE_CONTENT, mc_delete>
+cu_ical_to_message(store_object *pstore, const BINARY *pical_bin)
 {
 	ICAL ical;
 	char tmzone[64];

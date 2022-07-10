@@ -3557,7 +3557,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				mime_enum.pcalendar = nullptr;
 			} else {
 				pmsg1 = oxcical_import(str_zone, &ical, alloc,
-				        get_propids, oxcmail_username_to_entryid);
+				        get_propids, oxcmail_username_to_entryid).release();
 				if (pmsg1 == nullptr)
 					mime_enum.pcalendar = NULL;
 			}

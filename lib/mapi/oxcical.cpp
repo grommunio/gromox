@@ -2402,10 +2402,9 @@ static uint32_t oxcical_get_calendartype(std::shared_ptr<ICAL_LINE> piline)
 	return it != std::end(cal_scale_names) ? it->first : CAL_DEFAULT;
 }
 
-MESSAGE_CONTENT* oxcical_import(
-	const char *str_zone, const ICAL *pical,
-	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-	USERNAME_TO_ENTRYID username_to_entryid)
+std::unique_ptr<MESSAGE_CONTENT, mc_delete> oxcical_import(const char *str_zone,
+    const ICAL *pical, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+    USERNAME_TO_ENTRYID username_to_entryid)
 {
 	BOOL b_proposal;
 	const char *pvalue = nullptr, *pvalue1 = nullptr;
@@ -2433,7 +2432,7 @@ MESSAGE_CONTENT* oxcical_import(
 					    events_list, alloc, get_propids,
 					    username_to_entryid, pmsg.get()))
 						return nullptr;
-					return pmsg.release();
+					return pmsg;
 				}
 				mclass = "IPM.Appointment";
 			} else if (0 == strcasecmp(pvalue, "REQUEST")) {
@@ -2470,7 +2469,7 @@ MESSAGE_CONTENT* oxcical_import(
 			    deconst(pical), events_list, alloc, get_propids,
 			    username_to_entryid, pmsg.get()))
 				return nullptr;
-			return pmsg.release();
+			return pmsg;
 		}
 	}
 	if (pmsg->proplist.set(PR_MESSAGE_CLASS, mclass) != 0 ||
@@ -2478,7 +2477,7 @@ MESSAGE_CONTENT* oxcical_import(
 	    deconst(pical), events_list.front()->list, alloc, get_propids,
 	    username_to_entryid, pmsg.get(), nullptr, nullptr, nullptr, nullptr))
 		return nullptr;
-	return pmsg.release();
+	return pmsg;
 }
 
 static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
