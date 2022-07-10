@@ -39,12 +39,6 @@ using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 
-namespace {
-struct msg_delete {
-	inline void operator()(MESSAGE_CONTENT *msg) const { message_content_free(msg); }
-};
-}
-
 static BOOL instance_read_message(
 	const MESSAGE_CONTENT *pmsgctnt1, MESSAGE_CONTENT *pmsgctnt);
 
@@ -1563,7 +1557,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	if (NULL == pmsgctnt) {
 		return FALSE;	
 	}
-	std::unique_ptr<MESSAGE_CONTENT, msg_delete> upmsgctnt(pmsgctnt);
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> upmsgctnt(pmsgctnt);
 	auto pbin = pmsgctnt->proplist.get<BINARY>(PR_SENT_REPRESENTING_ENTRYID);
 	if (pbin != nullptr &&
 	    !pmsgctnt->proplist.has(PR_SENT_REPRESENTING_EMAIL_ADDRESS)) {

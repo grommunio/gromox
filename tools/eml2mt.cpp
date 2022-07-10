@@ -109,7 +109,7 @@ static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 	return TRUE;
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, gi_delete>
+static std::unique_ptr<MESSAGE_CONTENT, mc_delete>
 do_mail(const char *file, std::shared_ptr<MIME_POOL> mime_pool)
 {
 	size_t slurp_len = 0;
@@ -125,14 +125,14 @@ do_mail(const char *file, std::shared_ptr<MIME_POOL> mime_pool)
 		fprintf(stderr, "Unable to parse %s\n", file);
 		return nullptr;
 	}
-	std::unique_ptr<MESSAGE_CONTENT, gi_delete> msg(oxcmail_import("utf-8",
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxcmail_import("utf-8",
 		"UTC", &imail, malloc, ee_get_propids));
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 	return msg;
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, gi_delete> do_ical(const char *file)
+static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_ical(const char *file)
 {
 	size_t slurp_len = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
@@ -150,14 +150,14 @@ static std::unique_ptr<MESSAGE_CONTENT, gi_delete> do_ical(const char *file)
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return nullptr;
 	}
-	std::unique_ptr<MESSAGE_CONTENT, gi_delete> msg(oxcical_import("UTC",
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxcical_import("UTC",
 		&ical, malloc, ee_get_propids, oxcmail_username_to_entryid));
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 	return msg;
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, gi_delete> do_vcard(const char *file)
+static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_vcard(const char *file)
 {
 	size_t slurp_len = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
@@ -173,7 +173,7 @@ static std::unique_ptr<MESSAGE_CONTENT, gi_delete> do_vcard(const char *file)
 		fprintf(stderr, "vcard_parse %s unsuccessful\n", file);
 		return nullptr;
 	}
-	std::unique_ptr<MESSAGE_CONTENT, gi_delete> msg(oxvcard_import(&card, ee_get_propids));
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxvcard_import(&card, ee_get_propids));
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 	return msg;
@@ -254,10 +254,10 @@ int main(int argc, const char **argv) try
 	}
 
 	auto mime_pool = MIME_POOL::create(4096, 8, "mime_pool");
-	std::vector<std::unique_ptr<MESSAGE_CONTENT, gi_delete>> msgs;
+	std::vector<std::unique_ptr<MESSAGE_CONTENT, mc_delete>> msgs;
 
 	for (int i = 1; i < argc; ++i) {
-		std::unique_ptr<MESSAGE_CONTENT, gi_delete> msg;
+		std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg;
 		if (g_import_mode == IMPORT_MAIL)
 			msg = do_mail(argv[i], mime_pool);
 		else if (g_import_mode == IMPORT_ICAL)

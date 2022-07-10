@@ -34,11 +34,6 @@ struct UID_EVENTS {
 	const char *puid;
 	std::list<std::shared_ptr<ICAL_COMPONENT>> list;
 };
-
-struct ic_delete {
-	inline void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
-};
-
 }
 
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
@@ -2418,7 +2413,7 @@ MESSAGE_CONTENT* oxcical_import(
 	std::list<std::shared_ptr<UID_EVENTS>> events_list;
 	
 	b_proposal = FALSE;
-	std::unique_ptr<MESSAGE_CONTENT, ic_delete> pmsg(message_content_init());
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> pmsg(message_content_init());
 	if (pmsg == nullptr)
 		return NULL;
 	auto piline = const_cast<ICAL *>(pical)->get_line("X-MICROSOFT-CALSCALE");

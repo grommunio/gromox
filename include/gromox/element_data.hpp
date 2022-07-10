@@ -116,3 +116,9 @@ void message_content_free_internal(MESSAGE_CONTENT *pmsgctnt);
 void message_content_free(MESSAGE_CONTENT *pmsgctnt);
 extern MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *);
 uint32_t message_content_get_size(const MESSAGE_CONTENT *pmsgctnt);
+
+namespace gromox {
+struct mc_delete {
+	inline void operator()(MESSAGE_CONTENT *x) { message_content_free(x); }
+};
+}
