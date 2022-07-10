@@ -10,6 +10,7 @@
 #include <ctime>
 #include <list>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <libHX/string.h>
@@ -28,15 +29,9 @@
 
 using namespace gromox;
 using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
-
-namespace {
-struct UID_EVENTS {
-	const char *puid;
-	std::list<std::shared_ptr<ICAL_COMPONENT>> list;
-};
-}
-
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
+using event_list = std::list<std::shared_ptr<ical_component>>;
+using uidxevent_list = std::unordered_map<std::string, event_list>;
 
 static constexpr char
 	PidNameKeywords[] = "Keywords",
@@ -1821,8 +1816,7 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	return TRUE;
 }
 
-static std::shared_ptr<ical_component>
-oxcical_main_event(const std::list<std::shared_ptr<ical_component>> &evlist)
+static std::shared_ptr<ical_component> oxcical_main_event(const event_list &evlist)
 {
 	if (evlist.size() == 1)
 		return evlist.front();
@@ -1902,10 +1896,9 @@ static inline unsigned int dfl_alarm_offset(bool allday)
 
 static BOOL oxcical_import_internal(const char *str_zone, const char *method,
     BOOL b_proposal, uint16_t calendartype, ICAL *pical,
-    std::list<std::shared_ptr<ICAL_COMPONENT>> &pevent_list,
-    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-    USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg,
-    ICAL_TIME *pstart_itime, ICAL_TIME *pend_itime,
+    const event_list &pevent_list, EXT_BUFFER_ALLOC alloc,
+    GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
+    MESSAGE_CONTENT *pmsg, ICAL_TIME *pstart_itime, ICAL_TIME *pend_itime,
     EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception)
 {
 	auto pmain_event = oxcical_main_event(pevent_list);
@@ -2177,7 +2170,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}") != 0)
 				return FALSE;
 			
-			std::list<std::shared_ptr<ICAL_COMPONENT>> tmp_list;
+			event_list tmp_list;
 			try {
 				tmp_list.push_back(event);
 			} catch (...) {
@@ -2286,9 +2279,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 }
 
 static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
-    ICAL *pical, std::list<std::shared_ptr<UID_EVENTS>> &pevents_list,
-    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-    USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
+    ICAL *pical, uidxevent_list &uid_list, EXT_BUFFER_ALLOC alloc,
+    GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
+    MESSAGE_CONTENT *pmsg)
 {
 	MESSAGE_CONTENT *pembedded;
 	ATTACHMENT_LIST *pattachments;
@@ -2298,7 +2291,7 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 	if (pattachments == nullptr)
 		return FALSE;
 	message_content_set_attachments_internal(pmsg, pattachments);
-	for (auto puid_events : pevents_list) {
+	for (auto &&[le_uid, event_list] : uid_list) {
 		pattachment = attachment_content_init();
 		if (pattachment == nullptr)
 			return FALSE;
@@ -2313,7 +2306,7 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
 			return FALSE;
 		if (!oxcical_import_internal(str_zone, "PUBLISH", false,
-		    calendartype, pical, puid_events->list, alloc, get_propids,
+		    calendartype, pical, event_list, alloc, get_propids,
 		    username_to_entryid, pembedded, nullptr, nullptr, nullptr,
 		    nullptr))
 			return FALSE;
@@ -2321,42 +2314,26 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 	return TRUE;
 }
 
-static BOOL oxcical_classify_calendar(const ICAL *pical,
-    std::list<std::shared_ptr<UID_EVENTS>> &pevent_uid_list)
+static BOOL oxcical_classify_calendar(const ICAL *pical, uidxevent_list &ul) try
 {
 	for (auto pcomponent : pical->component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "VEVENT") != 0)
 			continue;
-		std::shared_ptr<UID_EVENTS> puid_events;
 		auto piline = pcomponent->get_line("UID");
-		auto puid = piline != nullptr ? piline->get_first_subvalue() : nullptr;
-		if (puid != nullptr) {
-			auto i = std::find_if(pevent_uid_list.cbegin(), pevent_uid_list.cend(),
-			         [=](const auto &e) { return e->puid != nullptr && strcmp(e->puid, puid) == 0; });
-			if (i != pevent_uid_list.cend())
-				puid_events = *i;
-		}
-		if (puid_events == nullptr) try {
-			puid_events = std::make_shared<UID_EVENTS>();
-			puid_events->puid = puid;
-			pevent_uid_list.push_back(puid_events);
-		} catch (...) {
-			return false;
-		}
-		try {
-			puid_events->list.push_back(pcomponent);
-		} catch (...) {
-			return false;
-		}
+		auto puid = piline != nullptr ? piline->get_first_subvalue() : "";
+		ul[puid].push_back(pcomponent);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2053: ENOMEM\n");
+	return false;
 }
 
-static const char *oxcical_get_partstat(const std::list<std::shared_ptr<UID_EVENTS>> &pevents_list)
+static const char *oxcical_get_partstat(const uidxevent_list &uid_list)
 {
-	if (pevents_list.size() == 0)
+	if (uid_list.size() == 0)
 		return nullptr;
-	for (auto event : pevents_list.front()->list) {
+	for (auto event : uid_list.cbegin()->second) {
 		auto piline = event->get_line("ATTENDEE");
 		if (piline != nullptr)
 			return piline->get_first_paramval("PARTSTAT");
@@ -2409,7 +2386,6 @@ std::unique_ptr<MESSAGE_CONTENT, mc_delete> oxcical_import(const char *str_zone,
 	BOOL b_proposal;
 	const char *pvalue = nullptr, *pvalue1 = nullptr;
 	uint16_t calendartype;
-	std::list<std::shared_ptr<UID_EVENTS>> events_list;
 	
 	b_proposal = FALSE;
 	std::unique_ptr<MESSAGE_CONTENT, mc_delete> pmsg(message_content_init());
@@ -2418,31 +2394,32 @@ std::unique_ptr<MESSAGE_CONTENT, mc_delete> oxcical_import(const char *str_zone,
 	auto piline = const_cast<ICAL *>(pical)->get_line("X-MICROSOFT-CALSCALE");
 	calendartype = oxcical_get_calendartype(piline);
 	auto mclass = "IPM.Appointment";
-	if (!oxcical_classify_calendar(pical, events_list) ||
-	    events_list.size() == 0)
+	uidxevent_list uid_list;
+	if (!oxcical_classify_calendar(pical, uid_list) ||
+	    uid_list.size() == 0)
 		return nullptr;
 	piline = const_cast<ICAL *>(pical)->get_line("METHOD");
 	if (NULL != piline) {
 		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue) {
 			if (0 == strcasecmp(pvalue, "PUBLISH")) {
-				if (events_list.size() > 1) {
+				if (uid_list.size() > 1) {
 					if (!oxcical_import_events(str_zone,
 					    calendartype, deconst(pical),
-					    events_list, alloc, get_propids,
+					    uid_list, alloc, get_propids,
 					    username_to_entryid, pmsg.get()))
 						return nullptr;
 					return pmsg;
 				}
 				mclass = "IPM.Appointment";
 			} else if (0 == strcasecmp(pvalue, "REQUEST")) {
-				if (events_list.size() != 1)
+				if (uid_list.size() != 1)
 					return nullptr;
 				mclass = "IPM.Schedule.Meeting.Request";
 			} else if (0 == strcasecmp(pvalue, "REPLY")) {
-				if (events_list.size() != 1)
+				if (uid_list.size() != 1)
 					return nullptr;
-				pvalue1 = oxcical_get_partstat(events_list);
+				pvalue1 = oxcical_get_partstat(uid_list);
 				if (NULL != pvalue1) {
 					if (strcasecmp(pvalue1, "ACCEPTED") == 0)
 						mclass = "IPM.Schedule.Meeting.Resp.Pos";
@@ -2452,9 +2429,9 @@ std::unique_ptr<MESSAGE_CONTENT, mc_delete> oxcical_import(const char *str_zone,
 						mclass = "IPM.Schedule.Meeting.Resp.Neg";
 				}
 			} else if (0 == strcasecmp(pvalue, "COUNTER")) {
-				if (events_list.size() != 1)
+				if (uid_list.size() != 1)
 					return nullptr;
-				pvalue1 = oxcical_get_partstat(events_list);
+				pvalue1 = oxcical_get_partstat(uid_list);
 				if (NULL != pvalue1 && 0 == strcasecmp(pvalue1, "TENTATIVE")) {
 					mclass = "IPM.Schedule.Meeting.Resp.Tent";
 					b_proposal = TRUE;
@@ -2464,9 +2441,9 @@ std::unique_ptr<MESSAGE_CONTENT, mc_delete> oxcical_import(const char *str_zone,
 			}
 		}
 	} else {
-		if (events_list.size() > 1) {
+		if (uid_list.size() > 1) {
 			if (!oxcical_import_events(str_zone, calendartype,
-			    deconst(pical), events_list, alloc, get_propids,
+			    deconst(pical), uid_list, alloc, get_propids,
 			    username_to_entryid, pmsg.get()))
 				return nullptr;
 			return pmsg;
@@ -2474,7 +2451,7 @@ std::unique_ptr<MESSAGE_CONTENT, mc_delete> oxcical_import(const char *str_zone,
 	}
 	if (pmsg->proplist.set(PR_MESSAGE_CLASS, mclass) != 0 ||
 	    !oxcical_import_internal(str_zone, pvalue, b_proposal, calendartype,
-	    deconst(pical), events_list.front()->list, alloc, get_propids,
+	    deconst(pical), uid_list.begin()->second, alloc, get_propids,
 	    username_to_entryid, pmsg.get(), nullptr, nullptr, nullptr, nullptr))
 		return nullptr;
 	return pmsg;
