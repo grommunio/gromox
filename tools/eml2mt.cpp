@@ -16,6 +16,7 @@
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/ical.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/oxcical.hpp>
 #include <gromox/oxcmail.hpp>
