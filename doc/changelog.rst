@@ -1,11 +1,12 @@
-1.26.72
-=======
+1.27 (2022-07-11)
+=================
 
 Fixes:
 
 * nsp: repaired a nullptr deref with the resolvenamesw RPC
 * nsp: fix erroneous writeout to path "/delegates.txt" (would always fail due
   to absence of filesystem permission)
+* nsp: disable OneOff synthesis for non-existing GAL objects
 * mh_nsp: fix seekentries RPC performing garbage ANR matching
 * oxcmail: avoid running the encoded-word decoder in sender/recipient
   names twice (umlaut breakage)
