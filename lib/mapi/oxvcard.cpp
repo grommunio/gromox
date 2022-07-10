@@ -15,6 +15,12 @@
 
 using namespace gromox;
 
+namespace {
+struct vc_delete {
+	inline void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
+};
+}
+
 static constexpr uint32_t g_n_proptags[] = 
 	{PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 	PR_DISPLAY_NAME_PREFIX, PR_GENERATION};
@@ -144,7 +150,6 @@ MESSAGE_CONTENT* oxvcard_import(
 	VCARD_VALUE *pvvalue;
 	VCARD_PARAM *pvparam;
 	PROPID_ARRAY propids;
-	MESSAGE_CONTENT *pmsg;
 	BINARY_ARRAY bin_array;
 	const char *photo_type;
 	DOUBLE_LIST_NODE *pnode;
@@ -163,11 +168,11 @@ MESSAGE_CONTENT* oxvcard_import(
 	child_strings.ppstr = child_buff;
 	if (!oxvcard_check_compatible(pvcard))
 		return NULL;
-	pmsg = message_content_init();
+	std::unique_ptr<MESSAGE_CONTENT, vc_delete> pmsg(message_content_init());
 	if (pmsg == nullptr)
 		return NULL;
 	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Contact") != 0)
-		goto IMPORT_FAILURE;
+		return nullptr;
 	plist = (DOUBLE_LIST*)pvcard;
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
@@ -176,17 +181,17 @@ MESSAGE_CONTENT* oxvcard_import(
 			/* Deviation from MS-OXVCARD v8.3 §2.1.3.7.7 */
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			if (pmsg->proplist.set(g_vcarduid_proptag, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "FN")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			if (pmsg->proplist.set(PR_DISPLAY_NAME, pstring) != 0 ||
 			    pmsg->proplist.set(PR_NORMALIZED_SUBJECT, tmp_buff) != 0 ||
 			    pmsg->proplist.set(PR_CONVERSATION_TOPIC, tmp_buff) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "N")) {
 			count = 0;
 			for (pnode1=double_list_get_head(&pvline->value_list);
@@ -197,21 +202,21 @@ MESSAGE_CONTENT* oxvcard_import(
 				pvvalue = (VCARD_VALUE*)pnode1->pdata;
 				list_count = double_list_get_nodes_num(&pvvalue->subval_list);
 				if (list_count > 1)
-					goto IMPORT_FAILURE;
+					return nullptr;
 				pnode2 = double_list_get_head(&pvvalue->subval_list);
 				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
 				    pmsg->proplist.set(g_n_proptags[count], pnode2->pdata) != 0)
-					goto IMPORT_FAILURE;
+					return nullptr;
 				count ++;
 			}
 		} else if (0 == strcasecmp(pvline->name, "NICKNAME")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring != nullptr &&
 			    pmsg->proplist.set(PR_NICKNAME, pstring) != 0)
-					goto IMPORT_FAILURE;
+					return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "PHOTO")) {
 			if (pmsg->children.pattachments != nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			b_encoding = FALSE;
 			photo_type = NULL;
 			for (pnode1=double_list_get_head(&pvline->param_list);
@@ -220,55 +225,55 @@ MESSAGE_CONTENT* oxvcard_import(
 				pvparam = (VCARD_PARAM*)pnode1->pdata;
 				if (0 == strcasecmp(pvparam->name, "ENCODING")) {
 					if (pvparam->pparamval_list == nullptr)
-						goto IMPORT_FAILURE;
+						return nullptr;
 					pnode2 = double_list_get_head(pvparam->pparamval_list);
 					if (pnode2 == nullptr || pnode2->pdata == nullptr ||
 					    strcasecmp(static_cast<char *>(pnode2->pdata), "b") != 0)
-						goto IMPORT_FAILURE;
+						return nullptr;
 					b_encoding = TRUE;
 				} else if (0 == strcasecmp(pvparam->name, "TYPE")) {
 					if (pvparam->pparamval_list == nullptr)
-						goto IMPORT_FAILURE;
+						return nullptr;
 					pnode2 = double_list_get_head(pvparam->pparamval_list);
 					if (pnode2 == nullptr || pnode2->pdata == nullptr)
-						goto IMPORT_FAILURE;
+						return nullptr;
 					photo_type = static_cast<char *>(pnode2->pdata);
 				}
 			}
 			if (!b_encoding || photo_type == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 
 			if (!is_photo(photo_type))
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pattachments = attachment_list_init();
 			if (pattachments == nullptr)
-				goto IMPORT_FAILURE;
-			message_content_set_attachments_internal(pmsg, pattachments);
+				return nullptr;
+			message_content_set_attachments_internal(pmsg.get(), pattachments);
 			pattachment = attachment_content_init();
 			if (pattachment == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			if (!attachment_list_append_internal(pattachments, pattachment)) {
 				attachment_content_free(pattachment);
-				goto IMPORT_FAILURE;
+				return nullptr;
 			}
 			tmp_len = strlen(pstring);
 			if (decode64(pstring, tmp_len, tmp_buff,
 			    arsizeof(tmp_buff), &decode_len) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
 			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0 ||
 			    pattachment->proplist.set(PR_ATTACH_EXTENSION, photo_type) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "ContactPhoto.%s", photo_type);
 			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			tmp_byte = 1;
 			if (pmsg->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "BDAY")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
@@ -278,16 +283,16 @@ MESSAGE_CONTENT* oxvcard_import(
 				/* Conversion is not exact */
 				tmp_int64 = rop_util_unix_to_nttime(mktime(&tmp_tm));
 				if (pmsg->proplist.set(PR_BIRTHDAY, &tmp_int64) != 0)
-					goto IMPORT_FAILURE;
+					return nullptr;
 			}
 		} else if (0 == strcasecmp(pvline->name, "ADR")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (pnode1 == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name, "TYPE") != 0 ||
 			    pvparam->pparamval_list == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pnode2 = double_list_get_head(pvparam->pparamval_list);
 			address_type = pnode2 != nullptr && pnode2->pdata != nullptr ? static_cast<char *>(pnode2->pdata) : "";
 			count = 0;
@@ -299,7 +304,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				pvvalue = (VCARD_VALUE*)pnode1->pdata;
 				list_count = double_list_get_nodes_num(&pvvalue->subval_list);
 				if (list_count > 1)
-					goto IMPORT_FAILURE;
+					return nullptr;
 				pnode2 = double_list_get_head(&pvvalue->subval_list);
 				if (NULL != pnode2) {
 					if (pnode2->pdata == nullptr)
@@ -312,21 +317,21 @@ MESSAGE_CONTENT* oxvcard_import(
 					else
 						tag = g_otheraddr_proptags[count];
 					if (pmsg->proplist.set(tag, pnode2->pdata) != 0)
-						goto IMPORT_FAILURE;
+						return nullptr;
 				}
 				count ++;
 			}
 		} else if (0 == strcasecmp(pvline->name, "TEL")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (pnode1 == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name, "TYPE") != 0 ||
 			    pvparam->pparamval_list == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pnode2 = double_list_get_head(pvparam->pparamval_list);
 			if (pnode2 == nullptr || pnode2->pdata == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
@@ -342,7 +347,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				else if (strcasecmp(static_cast<VCARD_PARAM *>(pnode1->pdata)->name, "fax") == 0)
 					tag = PR_HOME_FAX_NUMBER;
 				else
-					goto IMPORT_FAILURE;
+					return nullptr;
 			} else if (strcasecmp(keyword, "voice") == 0) {
 				tag = PR_OTHER_TELEPHONE_NUMBER;
 			} else if (strcasecmp(keyword, "work") == 0) {
@@ -355,7 +360,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				else if (strcasecmp(static_cast<VCARD_PARAM *>(pnode1->pdata)->name, "fax") == 0)
 					tag = PR_BUSINESS_FAX_NUMBER;
 				else
-					goto IMPORT_FAILURE;
+					return nullptr;
 			} else if (strcasecmp(keyword, "cell") == 0) {
 				tag = PR_MOBILE_TELEPHONE_NUMBER;
 			} else if (strcasecmp(keyword, "pager") == 0) {
@@ -370,7 +375,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			}
 			if (pmsg->proplist.set(tag, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "EMAIL")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
@@ -378,19 +383,19 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (mail_count > 2)
 				continue;
 			if (pmsg->proplist.set(g_email_proptags[mail_count++], pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "TITLE")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
 			if (pmsg->proplist.set(PR_TITLE, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "ROLE")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
 			if (pmsg->proplist.set(PR_PROFESSION, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "ORG")) {
 			pnode1 = double_list_get_head(&pvline->value_list);
 			if (pnode1 == nullptr)
@@ -400,7 +405,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				pnode2 = double_list_get_head(&pvvalue->subval_list);
 				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
 				    pmsg->proplist.set(PR_COMPANY_NAME, pnode2->pdata) != 0)
-					goto IMPORT_FAILURE;
+					return nullptr;
 			}
 			pnode1 = double_list_get_after(&pvline->value_list, pnode1);
 			if (NULL != pnode1 && NULL != pnode1->pdata) {
@@ -408,7 +413,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				pnode2 = double_list_get_head(&pvvalue->subval_list);
 				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
 				    pmsg->proplist.set(PR_DEPARTMENT_NAME, pnode2->pdata) != 0)
-					goto IMPORT_FAILURE;
+					return nullptr;
 			}
 		} else if (strcasecmp(pvline->name, "CATEGORIES") == 0) {
 			pnode1 = double_list_get_head(&pvline->value_list);
@@ -426,13 +431,13 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			if (strings_array.count != 0 && strings_array.count < 128 &&
 			    pmsg->proplist.set(g_categories_proptag, &strings_array) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "NOTE")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
 			if (pmsg->proplist.set(PR_BODY, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "REV")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
@@ -442,19 +447,19 @@ MESSAGE_CONTENT* oxvcard_import(
 				/* Conversion is not exact */
 				tmp_int64 = rop_util_unix_to_nttime(mktime(&tmp_tm));
 				if (pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &tmp_int64) != 0)
-					goto IMPORT_FAILURE;
+					return nullptr;
 			}
 		} else if (0 == strcasecmp(pvline->name, "URL")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (pnode1 == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name, "TYPE") != 0 ||
 			    pvparam->pparamval_list == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pnode2 = double_list_get_head(pvparam->pparamval_list);
 			if (pnode2 == nullptr || pnode2->pdata == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
@@ -467,7 +472,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			else
 				continue;
 			if (pmsg->proplist.set(tag, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (strcasecmp(pvline->name, "CLASS") == 0 &&
 		    (pstring = vcard_get_first_subvalue(pvline)) != nullptr) {
 			if (strcasecmp(pstring, "PRIVATE") == 0)
@@ -477,32 +482,32 @@ MESSAGE_CONTENT* oxvcard_import(
 			else
 				tmp_int32 = SENSITIVITY_NONE;
 			if (pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "KEY")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (pnode1 == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name, "ENCODING") != 0 ||
 			    pvparam->pparamval_list == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pnode2 = double_list_get_head(pvparam->pparamval_list);
 			if (pnode2 == nullptr || pnode2->pdata == nullptr ||
 			    strcasecmp(static_cast<char *>(pnode2->pdata), "b") != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			tmp_len = strlen(pstring);
 			if (decode64(pstring, tmp_len, tmp_buff,
 			    arsizeof(tmp_buff), &decode_len) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			bin_array.count = 1;
 			bin_array.pbin = &tmp_bin;
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
 			if (pmsg->proplist.set(PR_USER_X509_CERTIFICATE, &bin_array) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-OL-DESIGN")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
@@ -510,36 +515,36 @@ MESSAGE_CONTENT* oxvcard_import(
 			tmp_bin.cb = strlen(pstring);
 			tmp_bin.pv = deconst(pstring);
 			if (pmsg->proplist.set(g_bcd_proptag, &tmp_bin) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-CHILD")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
 			if (child_strings.count >= GX_ARRAY_SIZE(child_buff))
-				goto IMPORT_FAILURE;
+				return nullptr;
 			child_strings.ppstr[child_strings.count++] = deconst(pstring);
 		} else if (0 == strcasecmp(pvline->name, "X-MS-TEXT")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
 			if (ufld_count > 3)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			if (pmsg->proplist.set(g_ufld_proptags[ufld_count++], pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-IMADDRESS") ||
 			0 == strcasecmp(pvline->name, "X-MS-RM-IMACCOUNT")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
 			if (pmsg->proplist.set(g_im_proptag, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-TEL")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (pnode1 == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (pvparam->pparamval_list != nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
@@ -555,9 +560,9 @@ MESSAGE_CONTENT* oxvcard_import(
 			else if (strcasecmp(pvparam->name, "TTYTTD") == 0)
 				tag = PR_TTYTDD_PHONE_NUMBER;
 			else
-				goto IMPORT_FAILURE;
+				return nullptr;
 			if (pmsg->proplist.set(tag, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-ANNIVERSARY")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
@@ -567,53 +572,53 @@ MESSAGE_CONTENT* oxvcard_import(
 				/* Conversion is not exact */
 				tmp_int64 = rop_util_unix_to_nttime(mktime(&tmp_tm));
 				if (pmsg->proplist.set(PR_WEDDING_ANNIVERSARY, &tmp_int64) != 0)
-					goto IMPORT_FAILURE;
+					return nullptr;
 			}	
 		} else if (0 == strcasecmp(pvline->name, "X-MS-SPOUSE")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (pnode1 == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name, "N") != 0 ||
 			    pvparam->pparamval_list != nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
 			if (pmsg->proplist.set(PR_SPOUSE_NAME, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-MANAGER")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (pnode1 == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name, "N") != 0 ||
 			    pvparam->pparamval_list != nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
 			if (pmsg->proplist.set(PR_MANAGER_NAME, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-ASSISTANT")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (pnode1 == nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name, "N") != 0 ||
 			    pvparam->pparamval_list != nullptr)
-				goto IMPORT_FAILURE;
+				return nullptr;
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
 			if (pmsg->proplist.set(PR_ASSISTANT, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "FBURL")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				continue;
 			if (pmsg->proplist.set(g_fbl_proptag, pstring) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-INTERESTS")) {
 			pnode1 = double_list_get_head(&pvline->value_list);
 			if (pnode1 == nullptr)
@@ -630,12 +635,12 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			if (strings_array.count != 0 && strings_array.count < 128 &&
 			    pmsg->proplist.set(PR_HOBBIES, &strings_array) != 0)
-				goto IMPORT_FAILURE;
+				return nullptr;
 		}
 	}
 	if (child_strings.count != 0 &&
 	    pmsg->proplist.set(PR_CHILDRENS_NAMES, &child_strings) != 0)
-		goto IMPORT_FAILURE;
+		return nullptr;
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;
 		propid = PROP_ID(proptag);
@@ -643,9 +648,9 @@ MESSAGE_CONTENT* oxvcard_import(
 			break;
 	}
 	if (i >= pmsg->proplist.count)
-		return pmsg;
+		return pmsg.release();
 	if (!oxvcard_get_propids(&propids, get_propids))
-		goto IMPORT_FAILURE;
+		return nullptr;
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;
 		propid = PROP_ID(proptag);
@@ -655,11 +660,7 @@ MESSAGE_CONTENT* oxvcard_import(
 		pmsg->proplist.ppropval[i].proptag =
 			PROP_TAG(PROP_TYPE(pmsg->proplist.ppropval[i].proptag), proptag);
 	}
-	return pmsg;
-	
- IMPORT_FAILURE:
-	message_content_free(pmsg);
-	return NULL;
+	return pmsg.release();
 }
 
 BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propids)
