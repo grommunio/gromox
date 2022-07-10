@@ -31,10 +31,19 @@ static BOOL un_to_eid(const char *username, const char *dispname, BINARY *bv,
 int main(int argc, const char **argv)
 {
 	std::unique_ptr<char[], stdlib_delete> data;
-	if (argc >= 2)
+	if (argc >= 2) {
 		data.reset(HX_slurp_file(argv[1], nullptr));
-	else
+		if (data == nullptr) {
+			fprintf(stderr, "Error reading %s: %s\n", argv[1], strerror(errno));
+			return EXIT_FAILURE;
+		}
+	} else {
 		data.reset(HX_slurp_fd(STDIN_FILENO, nullptr));
+		if (data == nullptr) {
+			fprintf(stderr, "Error reading from stdin: %s\n", strerror(errno));
+			return EXIT_FAILURE;
+		}
+	}
 	ICAL ical;
 	if (ical.init() < 0) {
 		printf("BAD ical_init\n");
