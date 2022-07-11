@@ -2304,7 +2304,9 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 		if (pembedded == nullptr)
 			return FALSE;
 		attachment_content_set_embedded_internal(pattachment, pembedded);
-		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
+		uint32_t attype = ATTACH_EMBEDDED_MSG;
+		if (pattachment->proplist.set(PR_ATTACH_METHOD, &attype) != 0 ||
+		    pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
 			return FALSE;
 		if (!oxcical_import_internal(str_zone, "PUBLISH", false,
 		    calendartype, pical, event_list, alloc, get_propids,
