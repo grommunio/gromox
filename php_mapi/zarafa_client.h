@@ -102,5 +102,6 @@ ZCIDL(getuseravailability, (GUID hsession, BINARY entryid, uint64_t starttime, u
 ZCIDL(setpasswd, (const char *username, const char *passwd, const char *new_passwd))
 ZCIDL(linkmessage, (GUID hsession, BINARY search_entryid, BINARY message_entryid))
 ZCIDL(checksession, (GUID hsession))
+ZCIDL(icaltomessage2, (GUID session, uint32_t folder, const char *ical_data, IDLOUT LONG_ARRAY *msg_handles))
 #undef ZCIDL
 #undef IDLOUT

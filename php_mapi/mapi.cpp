@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -163,6 +163,7 @@ ZEND_FUNCTION(mapi_wrap_importhierarchychanges);
 ZEND_FUNCTION(mapi_inetmapi_imtoinet);
 ZEND_FUNCTION(mapi_inetmapi_imtomapi);
 ZEND_FUNCTION(mapi_icaltomapi);
+ZEND_FUNCTION(mapi_icaltomapi2);
 ZEND_FUNCTION(mapi_mapitoical);
 ZEND_FUNCTION(mapi_vcftomapi);
 ZEND_FUNCTION(mapi_mapitovcf);
@@ -363,6 +364,7 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_inetmapi_imtoinet)
 	F(mapi_inetmapi_imtomapi)
 	F(mapi_icaltomapi)
+	F(mapi_icaltomapi2)
 	F(mapi_mapitoical)
 	F(mapi_vcftomapi)
 	F(mapi_mapitovcf)
@@ -5257,6 +5259,59 @@ ZEND_FUNCTION(mapi_icaltomapi)
 		THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
+	MAPI_G(hr) = ecSuccess;
+}
+
+/**
+ * mapi_icaltomapi2(resource $abook, resource $folder,
+ *                  string $ics_data) : array|false|throw;
+ *
+ * @abook:	address book (has reference to session object in Gromox)
+ * @folder:	target folder for event messages (usually the calendar)
+ *
+ * Returns an array of message resource objects. On error, the function throws.
+ * For compatibility reasons, you must check the return value for the value
+ * "false" as well.
+ */
+ZEND_FUNCTION(mapi_icaltomapi2)
+{
+	zval *resabook, *resfolder;
+	char *icsdata = nullptr;
+	size_t icsdatalen = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rrs", &resabook, &resfolder,
+	    &icsdata, &icsdatalen) == FAILURE || resabook == nullptr) {
+		MAPI_G(hr) = ecInvalidParam;
+		THROW_EXCEPTION;
+	}
+
+	MAPI_RESOURCE *fld, *abk;
+	ZEND_FETCH_RESOURCE(abk, MAPI_RESOURCE *, &resabook, -1,
+		name_mapi_addressbook, le_mapi_addressbook);
+	ZEND_FETCH_RESOURCE(fld, MAPI_RESOURCE *, &resfolder, -1,
+		name_mapi_folder, le_mapi_folder);
+	LONG_ARRAY msg_handles{};
+	auto ret = zarafa_client_icaltomessage2(abk->hsession, fld->hobject,
+	           icsdata, &msg_handles);
+	if (ret != ecSuccess) {
+		MAPI_G(hr) = ret;
+		THROW_EXCEPTION;
+	}
+
+	array_init(return_value);
+	for (size_t i = 0; i < msg_handles.count; ++i) {
+		auto res = st_malloc<MAPI_RESOURCE>();
+		if (res == nullptr) {
+			MAPI_G(hr) = ecMAPIOOM;
+			THROW_EXCEPTION;
+		}
+		res->type = ZMG_MESSAGE;
+		res->hsession = fld->hsession;
+		res->hobject = msg_handles.pl[i];
+		zval mres;
+		ZEND_REGISTER_RESOURCE(&mres, res, le_mapi_message);
+		add_index_zval(return_value, i, &mres);
+	}
 	MAPI_G(hr) = ecSuccess;
 }
 

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: f2841340cf70ad7f372f86814d073c3d3db10af9 */
+ * Stub hash: c2d10ac0c46519378bc14714479891d7b878648c */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_load_mapidefs, 0, 1, IS_VOID, 0)
 	ZEND_ARG_TYPE_INFO(0, level, IS_LONG, 1)
@@ -528,6 +528,12 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_icaltomapi, 0, 6, _IS_BOOL,
 	ZEND_ARG_OBJ_INFO(0, msg, resource, 0)
 	ZEND_ARG_TYPE_INFO(0, str, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, norecip, _IS_BOOL, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_icaltomapi2, 0, 3, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_OBJ_INFO(0, abk, resource, 0)
+	ZEND_ARG_OBJ_INFO(0, fld, resource, 0)
+	ZEND_ARG_TYPE_INFO(0, ics, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_mapitoical, 0, 4, MAY_BE_STRING|MAY_BE_FALSE)

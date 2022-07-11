@@ -100,6 +100,7 @@ function mapi_wrap_importhierarchychanges(object &$object) : resource|false {}
 function mapi_inetmapi_imtoinet(resource $ses, resource $abk, resource $msg, array $opts) : resource|false {}
 function mapi_inetmapi_imtomapi(resource $ses, resource $store, resource $abk, resource $msg, string $str, array $opts) : bool {}
 function mapi_icaltomapi(resource $ses, resource $store, resource $abk, resource $msg, string $str, bool $norecip) : bool {}
+function mapi_icaltomapi2(resource $abk, resource $fld, string $ics) : array|false {}
 function mapi_mapitoical(resource $ses, resource $abk, resource $msg, array $opts) : string|false {}
 function mapi_vcftomapi(resource $ses, resource $store, resource $msg, string $str) : bool {}
 function mapi_mapitovcf(resource $ses, res $abk, res $msg, array $opts) : string|false {}
