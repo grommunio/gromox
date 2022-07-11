@@ -1,48 +1,42 @@
 #pragma once
 #include <string>
+#include <utility>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/mapierr.hpp>
 #include <gromox/double_list.hpp>
-#define VCARD_NAME_LEN		32
 
 struct GX_EXPORT vcard_param {
 	vcard_param(const char *);
-	NOMOVE(vcard_param);
 	ec_error_t append_paramval(const char *paramval);
 	inline const char *name() const { return m_name.c_str(); }
 
-	DOUBLE_LIST_NODE node{};
 	std::string m_name;
 	std::vector<std::string> m_paramvals;
 };
 using VCARD_PARAM = vcard_param;
 
 struct GX_EXPORT vcard_value {
-	vcard_value();
 	ec_error_t append_subval(const char *);
-
-	DOUBLE_LIST_NODE node{};
 	std::vector<std::string> m_subvals;
 };
 using VCARD_VALUE = vcard_value;
 
 struct GX_EXPORT vcard_line {
+	vcard_line() = default;
 	vcard_line(const char *);
-	~vcard_line();
-	NOMOVE(vcard_line);
-	ec_error_t append_param(VCARD_PARAM *);
-	vcard_param &append_param(const char *);
-	vcard_param &append_param(const char *, const char *);
-	vcard_value &append_value();
-	ec_error_t append_value(VCARD_VALUE *);
+	inline vcard_param &append_param(vcard_param &&o) { m_params.push_back(std::move(o)); return m_params.back(); }
+	vcard_param &append_param(const char *p, const char *pv);
+	inline vcard_value &append_value(vcard_value &&o) { m_values.push_back(std::move(o)); return m_values.back(); }
+	inline vcard_value &append_value() { return m_values.emplace_back(); }
 	vcard_value &append_value(const char *);
 	const char *get_first_subval() const;
-	inline const char *name() const { return m_name; }
+	inline const char *name() const { return m_name.c_str(); }
 
 	DOUBLE_LIST_NODE node{};
-	char m_name[VCARD_NAME_LEN]{};
-	DOUBLE_LIST param_list{}, value_list{};
+	std::string m_name;
+	std::vector<vcard_param> m_params;
+	std::vector<vcard_value> m_values;
 };
 using VCARD_LINE = vcard_line;
 
@@ -64,6 +58,4 @@ struct GX_EXPORT vcard {
 using VCARD = vcard;
 
 VCARD_LINE* vcard_new_line(const char *name);
-VCARD_PARAM* vcard_new_param(const char*name);
-extern VCARD_VALUE *vcard_new_value();
 extern GX_EXPORT ec_error_t vcard_retrieve_multi(char *input, std::vector<vcard> &, size_t limit = 0);

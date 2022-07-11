@@ -83,19 +83,6 @@ vcard &vcard::operator=(vcard &&o)
 	return *this;
 }
 
-vcard_line::~vcard_line()
-{
-	auto pvline = this;
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(&pvline->param_list)) != nullptr)
-		delete static_cast<vcard_param *>(pnode->pdata);
-	double_list_free(&pvline->param_list);
-	while ((pnode = double_list_pop_front(&pvline->value_list)) != nullptr)
-		delete static_cast<vcard_value *>(pnode->pdata);
-	double_list_free(&pvline->value_list);
-}
-
 vcard::~vcard()
 {
 	clear();
@@ -271,39 +258,31 @@ static BOOL vcard_check_empty_line(const char *pline)
 	return TRUE;
 }
 
-static VCARD_PARAM* vcard_retrieve_param(char *ptag)
+static vcard_param vcard_retrieve_param(char *ptag)
 {
 	char *ptr;
 	char *pnext;
-	VCARD_PARAM *pvparam;
 	
 	ptr = strchr(ptag, '=');
 	if (NULL != ptr) {
 		*ptr = '\0';
 	}
-	pvparam = vcard_new_param(ptag);
-	if (pvparam == nullptr)
-		return NULL;
+	vcard_param pvparam(ptag);
 	if (ptr == nullptr)
 		return pvparam;
 	ptr ++;
 	do {
 		pnext = vcard_get_comma(ptr);
-		auto ret = pvparam->append_paramval(ptr);
-		if (ret != ecSuccess) {
-			delete pvparam;
-			return nullptr;
-		}
+		pvparam.append_paramval(ptr);
 	} while ((ptr = pnext) != NULL);
 	return pvparam;
 }
 
-static VCARD_LINE* vcard_retrieve_tag(char *ptag)
+static VCARD_LINE* vcard_retrieve_tag(char *ptag) try
 {
 	char *ptr;
 	char *pnext;
 	VCARD_LINE *pvline;
-	VCARD_PARAM *pvparam;
 	
 	ptr = strchr(ptag, ';');
 	if (NULL != ptr) {
@@ -317,14 +296,11 @@ static VCARD_LINE* vcard_retrieve_tag(char *ptag)
 	ptr ++;
 	do {
 		pnext = vcard_get_semicolon(ptr);
-		pvparam = vcard_retrieve_param(ptr);
-		if (pvparam == nullptr)
-			return nullptr;
-		auto ret = pvline->append_param(pvparam);
-		if (ret != ecSuccess)
-			return nullptr;
+		pvline->append_param(vcard_retrieve_param(ptr));
 	} while ((ptr = pnext) != NULL);
 	return pvline;
+} catch (const std::bad_alloc &) {
+	return nullptr;
 }
 
 static ec_error_t vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
@@ -333,22 +309,16 @@ static ec_error_t vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 	char *ptr1;
 	char *pnext;
 	char *pnext1;
-	VCARD_VALUE *pvvalue;
 	
 	ptr = pvalue;
 	do {
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return ecServerOOM;
-		auto ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return ret;
+		auto &va = pvline->append_value();
 		pnext = vcard_get_semicolon(ptr);
 		ptr1 = ptr;
 		do {
 			pnext1 = vcard_get_comma(ptr1);
 			{
-				ret = pvvalue->append_subval(ptr1);
+				auto ret = va.append_subval(ptr1);
 				if (ret != ecSuccess)
 					return ret;
 			}
@@ -399,7 +369,6 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 	size_t length;
 	VCARD_LINE *pvline;
 	LINE_ITEM tmp_item;
-	VCARD_VALUE *pvvalue;
 	std::vector<vcard> cardvec;
 	vcard *pvcard = nullptr;
 
@@ -445,16 +414,8 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 				break;
 			continue;
 		}
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return ecServerOOM;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return ret;
 		vcard_unescape_string(tmp_item.pvalue);
-		ret = pvvalue->append_subval(tmp_item.pvalue);
-		if (ret != ecSuccess)
-			return ret;
+		pvline->append_value(tmp_item.pvalue);
 	} while ((pline = pnext) != NULL);
 	finalvec = std::move(cardvec);
 	return ecSuccess;
@@ -538,9 +499,6 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 	size_t line_begin;
 	VCARD_LINE *pvline;
 	BOOL need_semicolon;
-	VCARD_PARAM *pvparam;
-	VCARD_VALUE *pvvalue;
-	DOUBLE_LIST_NODE *pnode1;
 	
 	if (max_length <= 13) {
 		return FALSE;
@@ -556,15 +514,14 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 		if (offset >= max_length) {
 			return FALSE;
 		}
-		for (pnode1=double_list_get_head(&pvline->param_list); NULL!=pnode1;
-			pnode1=double_list_get_after(&pvline->param_list, pnode1)) {
-			pvparam = (VCARD_PARAM*)pnode1->pdata;
+		for (const auto &vparam : pvline->m_params) {
+			auto pvparam = &vparam;
 			if (offset + 1 >= max_length) {
 				return FALSE;
 			}
 			out_buff[offset] = ';';
 			offset ++;
-			if (pvparam->m_paramvals.size() == 0) {
+			if (vparam.m_paramvals.size() == 0) {
 				offset += gx_snprintf(out_buff + offset,
 				          max_length - offset, "%s", pvparam->name());
 				if (offset >= max_length) {
@@ -578,7 +535,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 				return FALSE;
 			}
 			need_comma = FALSE;
-			for (const auto &pv : pvparam->m_paramvals) {
+			for (const auto &pv : vparam.m_paramvals) {
 				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
@@ -601,9 +558,8 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 			return FALSE;
 		}
 		need_semicolon = FALSE;
-		for (pnode1=double_list_get_head(&pvline->value_list); NULL!=pnode1;
-			pnode1=double_list_get_after(&pvline->value_list, pnode1)) {
-			pvvalue = (VCARD_VALUE*)pnode1->pdata;
+		for (const auto &vvalue : pvline->m_values) {
+			auto pvvalue = &vvalue;
 			if (!need_semicolon) {
 				need_semicolon = TRUE;
 			} else {
@@ -649,13 +605,10 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 	return TRUE;
 }
 
-vcard_line::vcard_line(const char *name)
+vcard_line::vcard_line(const char *n) : m_name(n)
 {
 	auto pvline = this;
 	pvline->node.pdata = pvline;
-	gx_strlcpy(pvline->m_name, name, std::size(pvline->m_name));
-	double_list_init(&pvline->param_list);
-	double_list_init(&pvline->value_list);
 }
 
 vcard_line *vcard_new_line(const char *name) try
@@ -672,18 +625,7 @@ ec_error_t vcard::append_line(VCARD_LINE *pvline)
 }
 
 vcard_param::vcard_param(const char *n) : m_name(n)
-{
-	auto pvparam = this;
-	pvparam->node.pdata = pvparam;
-}
-
-vcard_param *vcard_new_param(const char *name) try
-{
-	return new vcard_param(name);
-} catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2061: ENOMEM\n");
-	return nullptr;
-}
+{}
 
 ec_error_t vcard_param::append_paramval(const char *paramval) try
 {
@@ -694,47 +636,18 @@ ec_error_t vcard_param::append_paramval(const char *paramval) try
 	return ecServerOOM;
 }
 
-ec_error_t vcard_line::append_param(VCARD_PARAM *pvparam)
-{
-	double_list_append_as_tail(&param_list, &pvparam->node);
-	return ecSuccess;
-}
-
-vcard_param &vcard_line::append_param(const char *k)
-{
-	auto param = vcard_new_param(k);
-	if (param == nullptr)
-		throw std::bad_alloc();
-	append_param(param);
-	return *param;
-}
-
 vcard_param &vcard_line::append_param(const char *k, const char *v)
 {
-	auto param = vcard_new_param(k);
-	if (param == nullptr)
-		throw std::bad_alloc();
-	auto ret = append_param(param);
-	if (ret != ecSuccess)
-		throw std::bad_alloc();
-	ret = param->append_paramval(v);
-	if (ret != ecSuccess)
-		throw std::bad_alloc();
-	return *param;
+	auto &param = append_param(k);
+	param.append_paramval(v);
+	return param;
 }
 
-vcard_value::vcard_value()
+vcard_value &vcard_line::append_value(const char *v)
 {
-	auto pvvalue = this;
-	pvvalue->node.pdata = pvvalue;
-}
-
-vcard_value *vcard_new_value() try
-{
-	return new vcard_value;
-} catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2062: ENOMEM\n");
-	return nullptr;
+	auto &value = append_value();
+	value.append_subval(v);
+	return value;
 }
 
 ec_error_t vcard_value::append_subval(const char *subval) try
@@ -746,43 +659,11 @@ ec_error_t vcard_value::append_subval(const char *subval) try
 	return ecServerOOM;
 }
 
-ec_error_t vcard_line::append_value(VCARD_VALUE *pvvalue)
-{
-	double_list_append_as_tail(&value_list, &pvvalue->node);
-	return ecSuccess;
-}
-
-vcard_value &vcard_line::append_value()
-{
-	auto value = vcard_new_value();
-	if (value == nullptr)
-		throw std::bad_alloc();
-	auto ret = append_value(value);
-	if (ret != ecSuccess)
-		throw std::bad_alloc();
-	return *value;
-}
-
-vcard_value &vcard_line::append_value(const char *text)
-{
-	auto value = vcard_new_value();
-	if (value == nullptr)
-		throw std::bad_alloc();
-	auto ret = append_value(value);
-	if (ret != ecSuccess)
-		throw std::bad_alloc();
-	ret = value->append_subval(text);
-	if (ret != ecSuccess)
-		throw std::bad_alloc();
-	return *value;
-}
-
 const char *vcard_line::get_first_subval() const
 {
-	auto pnode = double_list_get_head(&value_list);
-	if (pnode == nullptr)
+	auto pvvalue = m_values.cbegin();
+	if (pvvalue == m_values.cend())
 		return NULL;
-	auto pvvalue = static_cast<const VCARD_VALUE *>(pnode->pdata);
 	return pvvalue->m_subvals.size() > 0 ? pvvalue->m_subvals[0].c_str() : nullptr;
 }
 
@@ -791,17 +672,7 @@ vcard_line &vcard::append_line(const char *name)
 	auto line = vcard_new_line(name);
 	if (line == nullptr)
 		throw std::bad_alloc();
-	auto value = vcard_new_value();
-	if (value == nullptr) {
-		delete line;
-		throw std::bad_alloc();
-	}
-	auto ret = line->append_value(value);
-	if (ret != ecSuccess) {
-		delete line;
-		throw std::bad_alloc();
-	}
-	ret = append_line(line);
+	auto ret = append_line(line);
 	if (ret != ecSuccess) {
 		delete line;
 		throw std::bad_alloc();
@@ -811,31 +682,7 @@ vcard_line &vcard::append_line(const char *name)
 
 vcard_line &vcard::append_line(const char *name, const char *value)
 {
-	VCARD_LINE *pvline;
-	VCARD_VALUE *pvvalue;
-	
-	pvline = vcard_new_line(name);
-	if (pvline == nullptr)
-		throw std::bad_alloc();
-	pvvalue = vcard_new_value();
-	if (NULL == pvvalue) {
-		delete pvline;
-		throw std::bad_alloc();
-	}
-	auto ret = pvline->append_value(pvvalue);
-	if (ret != ecSuccess) {
-		delete pvline;
-		throw std::bad_alloc();
-	}
-	ret = pvvalue->append_subval(value);
-	if (ret != ecSuccess) {
-		delete pvline;
-		throw std::bad_alloc();
-	}
-	ret = append_line(pvline);
-	if (ret != ecSuccess) {
-		delete pvline;
-		throw std::bad_alloc();
-	}
-	return *pvline;
+	auto &line = append_line(name);
+	line.append_value(value);
+	return line;
 }
