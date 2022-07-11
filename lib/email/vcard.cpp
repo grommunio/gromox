@@ -63,42 +63,6 @@ static char* vcard_get_semicolon(char *pstring)
 	return NULL;
 }
 
-vcard::vcard()
-{
-	double_list_init(&line_list);
-}
-
-vcard::vcard(vcard &&o) :
-	line_list(o.line_list)
-{
-	o.line_list = {};
-}
-
-vcard &vcard::operator=(vcard &&o)
-{
-	clear();
-	double_list_free(&line_list);
-	line_list = o.line_list;
-	o.line_list = {};
-	return *this;
-}
-
-vcard::~vcard()
-{
-	clear();
-	double_list_free(&line_list);
-}
-
-void vcard::clear()
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(&line_list)) != nullptr)
-		delete static_cast<vcard_line *>(pnode->pdata);
-	double_list_free(&line_list);
-	double_list_init(&line_list);
-}
-
 static BOOL vcard_retrieve_line_item(char *pline, LINE_ITEM *pitem)
 {
 	BOOL b_value;
@@ -278,25 +242,22 @@ static vcard_param vcard_retrieve_param(char *ptag)
 	return pvparam;
 }
 
-static VCARD_LINE* vcard_retrieve_tag(char *ptag) try
+static vcard_line vcard_retrieve_tag(char *ptag) try
 {
 	char *ptr;
 	char *pnext;
-	VCARD_LINE *pvline;
 	
 	ptr = strchr(ptag, ';');
 	if (NULL != ptr) {
 		*ptr = '\0';
 	}
-	pvline = vcard_new_line(ptag);
-	if (pvline == nullptr)
-		return NULL;
+	vcard_line pvline;
 	if (ptr == nullptr)
 		return pvline;
 	ptr ++;
 	do {
 		pnext = vcard_get_semicolon(ptr);
-		pvline->append_param(vcard_retrieve_param(ptr));
+		pvline.append_param(vcard_retrieve_param(ptr));
 	} while ((ptr = pnext) != NULL);
 	return pvline;
 } catch (const std::bad_alloc &) {
@@ -367,7 +328,6 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 	char *pnext;
 	BOOL b_begin;
 	size_t length;
-	VCARD_LINE *pvline;
 	LINE_ITEM tmp_item;
 	std::vector<vcard> cardvec;
 	vcard *pvcard = nullptr;
@@ -400,12 +360,7 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 			b_begin = false;
 			continue;
 		}
-		pvline = vcard_retrieve_tag(tmp_item.ptag);
-		if (pvline == nullptr)
-			break;
-		auto ret = pvcard->append_line(pvline);
-		if (ret != ecSuccess)
-			return ret;
+		auto pvline = &pvcard->append_line(vcard_retrieve_tag(tmp_item.ptag));
 		if (tmp_item.pvalue == nullptr)
 			continue;
 		if (!vcard_std_keyword(pvline->name())) {
@@ -493,11 +448,9 @@ static size_t vcard_serialize_string(char *pbuff,
 
 BOOL vcard::serialize(char *out_buff, size_t max_length)
 {
-	auto pvcard = this;
 	size_t offset;
 	BOOL need_comma;
 	size_t line_begin;
-	VCARD_LINE *pvline;
 	BOOL need_semicolon;
 	
 	if (max_length <= 13) {
@@ -505,10 +458,9 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 	}
 	memcpy(out_buff, "BEGIN:VCARD\r\n", 13);
 	offset = 13;
-	for (auto pnode = double_list_get_head(&pvcard->line_list); pnode != nullptr;
-	     pnode = double_list_get_after(&pvcard->line_list, pnode)) {
+	for (const auto &line : m_lines) {
 		line_begin = offset;
-		pvline = (VCARD_LINE*)pnode->pdata;
+		auto pvline = &line;
 		offset += gx_snprintf(out_buff + offset,
 		          max_length - offset, "%s", pvline->name());
 		if (offset >= max_length) {
@@ -606,23 +558,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 }
 
 vcard_line::vcard_line(const char *n) : m_name(n)
-{
-	auto pvline = this;
-	pvline->node.pdata = pvline;
-}
-
-vcard_line *vcard_new_line(const char *name) try
-{
-	return new vcard_line(name);
-} catch (const std::bad_alloc &) {
-	return nullptr;
-}
-
-ec_error_t vcard::append_line(VCARD_LINE *pvline)
-{
-	double_list_append_as_tail(&line_list, &pvline->node);
-	return ecSuccess;
-}
+{}
 
 vcard_param::vcard_param(const char *n) : m_name(n)
 {}
@@ -669,15 +605,7 @@ const char *vcard_line::get_first_subval() const
 
 vcard_line &vcard::append_line(const char *name)
 {
-	auto line = vcard_new_line(name);
-	if (line == nullptr)
-		throw std::bad_alloc();
-	auto ret = append_line(line);
-	if (ret != ecSuccess) {
-		delete line;
-		throw std::bad_alloc();
-	}
-	return *line;
+	return m_lines.emplace_back(name);
 }
 
 vcard_line &vcard::append_line(const char *name, const char *value)

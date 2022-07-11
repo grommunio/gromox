@@ -3,8 +3,8 @@
 #include <utility>
 #include <vector>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/mapierr.hpp>
-#include <gromox/double_list.hpp>
 
 struct GX_EXPORT vcard_param {
 	vcard_param(const char *);
@@ -33,7 +33,6 @@ struct GX_EXPORT vcard_line {
 	const char *get_first_subval() const;
 	inline const char *name() const { return m_name.c_str(); }
 
-	DOUBLE_LIST_NODE node{};
 	std::string m_name;
 	std::vector<vcard_param> m_params;
 	std::vector<vcard_value> m_values;
@@ -41,21 +40,15 @@ struct GX_EXPORT vcard_line {
 using VCARD_LINE = vcard_line;
 
 struct GX_EXPORT vcard {
-	vcard();
-	vcard(vcard &&o);
-	~vcard();
-	vcard &operator=(vcard &&);
-
-	void clear();
+	inline void clear() { m_lines.clear(); }
 	ec_error_t retrieve_single(char *in_buff);
 	BOOL serialize(char *out_buff, size_t max_length);
-	ec_error_t append_line(vcard_line *);
+	inline vcard_line &append_line(vcard_line &&o) { m_lines.push_back(std::move(o)); return m_lines.back(); }
 	vcard_line &append_line(const char *);
 	vcard_line &append_line(const char *, const char *);
 
-	DOUBLE_LIST line_list{};
+	std::vector<vcard_line> m_lines;
 };
 using VCARD = vcard;
 
-VCARD_LINE* vcard_new_line(const char *name);
 extern GX_EXPORT ec_error_t vcard_retrieve_multi(char *input, std::vector<vcard> &, size_t limit = 0);
