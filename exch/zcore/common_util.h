@@ -5,6 +5,7 @@
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mapierr.hpp>
 #include <gromox/zcore_rpc.hpp>
 
 /* defined by zarafa */
@@ -174,6 +175,7 @@ extern BOOL common_util_message_to_rfc822(store_object *, uint64_t msg_id, BINAR
 extern MESSAGE_CONTENT *cu_rfc822_to_message(store_object *, unsigned int mxf_flags, const BINARY *eml);
 extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY *ical);
 extern std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete> cu_ical_to_message(store_object *, const BINARY *ical);
+extern ec_error_t cu_ical_to_message2(store_object *, char *ical_data, std::vector<std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>> &);
 extern BOOL common_util_message_to_vcf(message_object *, BINARY *vcfout);
 extern MESSAGE_CONTENT *common_util_vcf_to_message(store_object *, const BINARY *vcf);
 extern const char *common_util_get_default_timezone();

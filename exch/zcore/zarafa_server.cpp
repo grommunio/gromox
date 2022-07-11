@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <csignal>
@@ -26,6 +26,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zcore_rpc.hpp>
@@ -44,6 +45,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 using LLU = unsigned long long;
+using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 namespace {
 
@@ -5111,6 +5113,47 @@ uint32_t zarafa_server_icaltomessage(GUID hsession,
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(pmsgctnt.get()) ? ecSuccess : ecError;
+}
+
+uint32_t zarafa_server_icaltomessage2(GUID session, uint32_t fld_handle,
+    char *ical_data, LONG_ARRAY &outhandles)
+{
+	auto info = zarafa_server_query_session(session);
+	if (info == nullptr)
+		return ecError;
+	uint8_t mapi_type;
+	auto fld = info->ptree->get_object<folder_object>(fld_handle, &mapi_type);
+	if (fld == nullptr)
+		return ecNullObject;
+	if (mapi_type != ZMG_FOLDER)
+		return ecNotSupported;
+	std::vector<message_ptr> msgvec;
+	auto ret = cu_ical_to_message2(fld->pstore, ical_data, msgvec);
+	if (ret != ecSuccess)
+		return ret;
+
+	outhandles.count = 0;
+	outhandles.pl = cu_alloc<uint32_t>(msgvec.size());
+	if (outhandles.pl == nullptr)
+		return ecServerOOM;
+	auto cl_0 = make_scope_exit([&]() {
+		for (size_t i = 0; i < outhandles.count; ++i)
+			zarafa_server_unloadobject(session, outhandles.pl[i]);
+	});
+	for (auto &&msgctnt : msgvec) {
+		uint32_t msg_handle = 0;
+		auto ret = zarafa_server_createmessage(session, fld_handle,
+		           0, &msg_handle);
+		if (ret != ecSuccess)
+			return ret;
+		auto zmo = info->ptree->get_object<message_object>(msg_handle, &mapi_type);
+		if (zmo == nullptr || mapi_type != ZMG_MESSAGE ||
+		    !zmo->write_message(msgctnt.get()))
+			return ecError;
+		outhandles.pl[outhandles.count++] = msg_handle;
+	}
+	cl_0.release();
+	return ecSuccess;
 }
 
 uint32_t zarafa_server_messagetovcf(GUID hsession,

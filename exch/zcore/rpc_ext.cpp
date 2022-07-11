@@ -1530,6 +1530,12 @@ static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETUSERAVAILABILITY &d)
 	return TRUE;
 }
 
+static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_ICALTOMESSAGE2 &d)
+{
+	QRF(x.p_uint32_a(d.msg_handles));
+	return TRUE;
+}
+
 static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETPASSWD &d)
 {
 	QRF(x.g_str(&d.username));
@@ -1543,6 +1549,14 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LINKMESSAGE &d)
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_bin(&d.search_entryid));
 	QRF(x.g_bin(&d.message_entryid));
+	return TRUE;
+}
+
+static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_ICALTOMESSAGE2 &d)
+{
+	QRF(x.g_guid(&d.session));
+	QRF(x.g_uint32(&d.folder));
+	QRF(x.g_str(&d.ical_data));
 	return TRUE;
 }
 
@@ -1641,6 +1655,7 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	E(getuseravailability)
 	E(setpasswd)
 	E(linkmessage)
+	E(icaltomessage2)
 #undef E
 	default:
 		return FALSE;
@@ -1755,6 +1770,7 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	E(messagetoical)
 	E(messagetovcf)
 	E(getuseravailability)
+	E(icaltomessage2)
 #undef E
 	default:
 		return FALSE;

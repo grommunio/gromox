@@ -96,6 +96,7 @@ enum class zcore_callid : uint8_t {
 	setpasswd = 0x54,
 	linkmessage = 0x55,
 	rfc822tomessage = 0x56,
+	icaltomessage2 = 0x57,
 };
 
 struct ZCREQ_LOGON {
@@ -568,6 +569,12 @@ struct ZCREQ_ICALTOMESSAGE {
 	BINARY *pical_bin;
 };
 
+struct ZCREQ_ICALTOMESSAGE2 {
+	GUID session;
+	uint32_t folder;
+	char *ical_data;
+};
+
 struct ZCREQ_MESSAGETOVCF {
 	GUID hsession;
 	uint32_t hmessage;
@@ -691,6 +698,7 @@ union ZCORE_REQUEST_PAYLOAD {
 	ZCREQ_GETUSERAVAILABILITY getuseravailability;
 	ZCREQ_SETPASSWD setpasswd;
 	ZCREQ_LINKMESSAGE linkmessage;
+	ZCREQ_ICALTOMESSAGE2 icaltomessage2;
 };
 
 struct ZCORE_RPC_REQUEST {
@@ -919,6 +927,10 @@ struct ZCRESP_GETUSERAVAILABILITY {
 	char *result_string;
 };
 
+struct ZCRESP_ICALTOMESSAGE2 {
+	LONG_ARRAY msg_handles;
+};
+
 union ZCORE_RESPONSE_PAYLOAD {
 	ZCRESP_LOGON logon;
 	ZCRESP_UINFO uinfo;
@@ -971,6 +983,7 @@ union ZCORE_RESPONSE_PAYLOAD {
 	ZCRESP_MESSAGETOICAL messagetoical;
 	ZCRESP_MESSAGETOVCF messagetovcf;
 	ZCRESP_GETUSERAVAILABILITY getuseravailability;
+	ZCRESP_ICALTOMESSAGE2 icaltomessage2;
 };
 
 struct ZCORE_RPC_RESPONSE {

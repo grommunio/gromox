@@ -30,7 +30,8 @@ struct USER_INFO {
 	std::unique_ptr<OBJECT_TREE> ptree;
 	DOUBLE_LIST sink_list{};
 	std::unordered_map<int, long> extra_owner;
-	std::mutex eowner_lock, lock;
+	std::mutex eowner_lock;
+	std::recursive_mutex lock;
 };
 
 extern void zarafa_server_init(size_t table_size, int cache_interval, int ping_interval);
@@ -203,6 +204,7 @@ uint32_t zarafa_server_messagetoical(GUID hsession,
 	uint32_t hmessage, BINARY *pical_bin);
 uint32_t zarafa_server_icaltomessage(GUID hsession,
 	uint32_t hmessage, const BINARY *pical_bin);
+extern uint32_t zarafa_server_icaltomessage2(GUID session, uint32_t folder, char *ical_data, LONG_ARRAY &outhandles);
 uint32_t zarafa_server_messagetovcf(GUID hsession,
 	uint32_t hmessage, BINARY *pvcf_bin);
 uint32_t zarafa_server_vcftomessage(GUID hsession,

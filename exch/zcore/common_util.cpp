@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -2347,6 +2347,25 @@ cu_ical_to_message(store_object *pstore, const BINARY *pical_bin)
 	common_util_set_dir(pstore->get_dir());
 	return oxcical_import_single(tmzone, &ical, common_util_alloc,
 	       common_util_get_propids_create, common_util_username_to_entryid);
+}
+
+ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
+    std::vector<std::unique_ptr<MESSAGE_CONTENT, mc_delete>> &msgvec)
+{
+	auto info = zarafa_server_get_info();
+	char tmzone[64];
+	if (!system_services_get_timezone(info->get_username(), tmzone,
+	    arsizeof(tmzone)) || tmzone[0] == '\0')
+		gx_strlcpy(tmzone, common_util_get_default_timezone(), std::size(tmzone));
+
+	ICAL icobj;
+	if (icobj.init() < 0 || !icobj.retrieve(ical_data))
+		return ecError;
+	common_util_set_dir(store->get_dir());
+	if (!oxcical_import_multi(tmzone, &icobj, common_util_alloc,
+	    common_util_get_propids_create, common_util_username_to_entryid, msgvec))
+		return ecError;
+	return ecSuccess;
 }
 
 BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)

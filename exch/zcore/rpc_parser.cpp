@@ -636,6 +636,13 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.linkmessage.search_entryid,
 			prequest->payload.linkmessage.message_entryid);
 		break;
+	case zcore_callid::icaltomessage2: {
+		auto &rq = prequest->payload.icaltomessage2;
+		auto &rs = presponse->payload.icaltomessage2;
+		presponse->result = zarafa_server_icaltomessage2(rq.session,
+		                    rq.folder, rq.ical_data, rs.msg_handles);
+		break;
+	}
 	default:
 		return DISPATCH_FALSE;
 	}
