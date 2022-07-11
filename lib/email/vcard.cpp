@@ -464,7 +464,7 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 		pvline = vcard_retrieve_tag(tmp_item.ptag);
 		if (pvline == nullptr)
 			break;
-		auto ret = pvcard->append_line2(pvline);
+		auto ret = pvcard->append_line(pvline);
 		if (ret != ecSuccess)
 			return ret;
 		if (tmp_item.pvalue == nullptr)
@@ -697,7 +697,7 @@ vcard_line *vcard_new_line(const char *name) try
 	return nullptr;
 }
 
-ec_error_t vcard::append_line2(VCARD_LINE *pvline)
+ec_error_t vcard::append_line(VCARD_LINE *pvline)
 {
 	double_list_append_as_tail(&line_list, &pvline->node);
 	return ecSuccess;
@@ -739,23 +739,27 @@ ec_error_t vcard_line::append_param(VCARD_PARAM *pvparam)
 	return ecSuccess;
 }
 
-ec_error_t vcard_line::append_param(const char *k)
+vcard_param &vcard_line::append_param(const char *k)
 {
 	auto param = vcard_new_param(k);
 	if (param == nullptr)
-		return ecServerOOM;
-	return append_param(param);
+		throw std::bad_alloc();
+	append_param(param);
+	return *param;
 }
 
-ec_error_t vcard_line::append_param(const char *k, const char *v)
+vcard_param &vcard_line::append_param(const char *k, const char *v)
 {
 	auto param = vcard_new_param(k);
 	if (param == nullptr)
-		return ecServerOOM;
+		throw std::bad_alloc();
 	auto ret = append_param(param);
 	if (ret != ecSuccess)
-		return ret;
-	return param->append_paramval(v);
+		throw std::bad_alloc();
+	ret = param->append_paramval(v);
+	if (ret != ecSuccess)
+		throw std::bad_alloc();
+	return *param;
 }
 
 vcard_value *vcard_new_value() try
@@ -796,23 +800,29 @@ ec_error_t vcard_line::append_value(VCARD_VALUE *pvvalue)
 	return ecSuccess;
 }
 
-ec_error_t vcard_line::append_value()
+vcard_value &vcard_line::append_value()
 {
 	auto value = vcard_new_value();
 	if (value == nullptr)
-		return ecServerOOM;
-	return append_value(value);
-}
-
-ec_error_t vcard_line::append_value(const char *text)
-{
-	auto value = vcard_new_value();
-	if (value == nullptr)
-		return ecServerOOM;
+		throw std::bad_alloc();
 	auto ret = append_value(value);
 	if (ret != ecSuccess)
-		return ret;
-	return value->append_subval(text);
+		throw std::bad_alloc();
+	return *value;
+}
+
+vcard_value &vcard_line::append_value(const char *text)
+{
+	auto value = vcard_new_value();
+	if (value == nullptr)
+		throw std::bad_alloc();
+	auto ret = append_value(value);
+	if (ret != ecSuccess)
+		throw std::bad_alloc();
+	ret = value->append_subval(text);
+	if (ret != ecSuccess)
+		throw std::bad_alloc();
+	return *value;
 }
 
 const char *vcard_line::get_first_subval() const
@@ -827,33 +837,51 @@ const char *vcard_line::get_first_subval() const
 	return static_cast<const char *>(pnode1->pdata);
 }
 
-ec_error_t vcard::append_line2(const char *name, const char *value)
+vcard_line &vcard::append_line(const char *name)
+{
+	auto line = vcard_new_line(name);
+	if (line == nullptr)
+		throw std::bad_alloc();
+	auto value = vcard_new_value();
+	if (value == nullptr) {
+		vcard_free_line(line);
+		throw std::bad_alloc();
+	}
+	auto ret = line->append_value(value);
+	if (ret != ecSuccess) {
+		vcard_free_line(line);
+		throw std::bad_alloc();
+	}
+	return *line;
+}
+
+vcard_line &vcard::append_line(const char *name, const char *value)
 {
 	VCARD_LINE *pvline;
 	VCARD_VALUE *pvvalue;
 	
 	pvline = vcard_new_line(name);
 	if (pvline == nullptr)
-		return ecServerOOM;
+		throw std::bad_alloc();
 	pvvalue = vcard_new_value();
 	if (NULL == pvvalue) {
 		vcard_free_line(pvline);
-		return ecServerOOM;
+		throw std::bad_alloc();
 	}
 	auto ret = pvline->append_value(pvvalue);
 	if (ret != ecSuccess) {
 		vcard_free_line(pvline);
-		return ret;
+		throw std::bad_alloc();
 	}
 	ret = pvvalue->append_subval(value);
 	if (ret != ecSuccess) {
 		vcard_free_line(pvline);
-		return ret;
+		throw std::bad_alloc();
 	}
-	ret = append_line2(std::move(pvline));
+	ret = append_line(std::move(pvline));
 	if (ret != ecSuccess) {
 		vcard_free_line(pvline);
-		return ret;
+		throw std::bad_alloc();
 	}
-	return ecSuccess;
+	return *pvline;
 }

@@ -6,4 +6,4 @@
 
 MESSAGE_CONTENT* oxvcard_import(
 	const VCARD *pvcard, GET_PROPIDS get_propids);
-extern GX_EXPORT BOOL oxvcard_export(MESSAGE_CONTENT *, VCARD *, GET_PROPIDS);
+extern GX_EXPORT BOOL oxvcard_export(MESSAGE_CONTENT *, vcard &, GET_PROPIDS);

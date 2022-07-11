@@ -5035,7 +5035,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	
 	{
 	vcard vcard;
-	if (b_vcard && oxvcard_export(pattachment->pembedded, &vcard, get_propids)) {
+	if (b_vcard && oxvcard_export(pattachment->pembedded, vcard, get_propids)) {
 		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(VCARD_MAX_BUFFER_LEN));
 		if (pbuff != nullptr && vcard.serialize(pbuff.get(),
 		    VCARD_MAX_BUFFER_LEN)) {

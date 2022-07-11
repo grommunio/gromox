@@ -2377,7 +2377,7 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 		return FALSE;
 	common_util_set_dir(pstore->get_dir());
 	vcard vcard;
-	if (!oxvcard_export(pmsgctnt, &vcard, common_util_get_propids))
+	if (!oxvcard_export(pmsgctnt, vcard, common_util_get_propids))
 		return FALSE;
 	pvcf_bin->pv = common_util_alloc(VCARD_MAX_BUFFER_LEN);
 	if (pvcf_bin->pv == nullptr) {
