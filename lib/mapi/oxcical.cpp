@@ -8,11 +8,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <list>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
@@ -30,7 +30,7 @@
 using namespace gromox;
 using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
-using event_list = std::list<std::shared_ptr<ical_component>>;
+using event_list = std::vector<std::shared_ptr<ical_component>>;
 using uidxevent_list = std::unordered_map<std::string, event_list>;
 
 static constexpr char
@@ -2279,7 +2279,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 }
 
 static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
-    ICAL *pical, uidxevent_list &uid_list, EXT_BUFFER_ALLOC alloc,
+    ICAL *pical, const uidxevent_list &uid_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
     MESSAGE_CONTENT *pmsg)
 {
@@ -2291,7 +2291,8 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 	if (pattachments == nullptr)
 		return FALSE;
 	message_content_set_attachments_internal(pmsg, pattachments);
-	for (auto &&[le_uid, event_list] : uid_list) {
+	for (const auto &listentry : uid_list) {
+		auto &event_list = listentry.second;
 		pattachment = attachment_content_init();
 		if (pattachment == nullptr)
 			return FALSE;
