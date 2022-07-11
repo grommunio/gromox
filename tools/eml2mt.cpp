@@ -150,7 +150,7 @@ static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_ical(const char *file)
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return nullptr;
 	}
-	auto msg = oxcical_import("UTC", &ical, malloc, ee_get_propids,
+	auto msg = oxcical_import_single("UTC", &ical, malloc, ee_get_propids,
 	           oxcmail_username_to_entryid);
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);

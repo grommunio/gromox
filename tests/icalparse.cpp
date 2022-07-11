@@ -51,8 +51,9 @@ int main(int argc, const char **argv)
 	}
 	if (!ical.retrieve(data.get()))
 		printf("BAD retrieve\n");
-	auto msg = oxcical_import("UTC", &ical, malloc, get_propids, un_to_eid);
-	if (msg == nullptr)
+	std::vector<std::unique_ptr<MESSAGE_CONTENT, mc_delete>> msgvec;
+	if (!oxcical_import_multi("UTC", &ical, malloc, get_propids, un_to_eid, msgvec))
 		printf("BAD import\n");
+	printf("%zu logical events present\n", msgvec.size());
 	return 0;
 }

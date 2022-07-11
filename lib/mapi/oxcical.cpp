@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
@@ -32,6 +34,7 @@ using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
 using event_list = std::vector<std::shared_ptr<ical_component>>;
 using uidxevent_list = std::unordered_map<std::string, event_list>;
+using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 static constexpr char
 	PidNameKeywords[] = "Keywords",
@@ -2281,32 +2284,16 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
     ICAL *pical, const uidxevent_list &uid_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
-    MESSAGE_CONTENT *pmsg)
+    std::vector<message_ptr> &msgvec)
 {
-	MESSAGE_CONTENT *pembedded;
-	ATTACHMENT_LIST *pattachments;
-	ATTACHMENT_CONTENT *pattachment;
-	
-	pattachments = attachment_list_init();
-	if (pattachments == nullptr)
-		return FALSE;
-	message_content_set_attachments_internal(pmsg, pattachments);
 	for (const auto &listentry : uid_list) {
 		auto &event_list = listentry.second;
-		pattachment = attachment_content_init();
-		if (pattachment == nullptr)
+		message_ptr msg(message_content_init());
+		if (msg == nullptr)
 			return FALSE;
-		if (!attachment_list_append_internal(pattachments, pattachment)) {
-			attachment_content_free(pattachment);
-			return FALSE;
-		}
-		pembedded = message_content_init();
-		if (pembedded == nullptr)
-			return FALSE;
-		attachment_content_set_embedded_internal(pattachment, pembedded);
-		uint32_t attype = ATTACH_EMBEDDED_MSG;
-		if (pattachment->proplist.set(PR_ATTACH_METHOD, &attype) != 0 ||
-		    pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
+		msgvec.push_back(std::move(msg));
+		auto pembedded = msgvec.back().get();
+		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
 			return FALSE;
 		if (!oxcical_import_internal(str_zone, "PUBLISH", false,
 		    calendartype, pical, event_list, alloc, get_propids,
@@ -2382,25 +2369,23 @@ static uint32_t oxcical_get_calendartype(std::shared_ptr<ICAL_LINE> piline)
 	return it != std::end(cal_scale_names) ? it->first : CAL_DEFAULT;
 }
 
-std::unique_ptr<MESSAGE_CONTENT, mc_delete> oxcical_import(const char *str_zone,
-    const ICAL *pical, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-    USERNAME_TO_ENTRYID username_to_entryid)
+BOOL oxcical_import_multi(const char *str_zone, const ICAL *pical,
+    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+    USERNAME_TO_ENTRYID username_to_entryid, std::vector<message_ptr> &finalvec)
 {
 	BOOL b_proposal;
 	const char *pvalue = nullptr, *pvalue1 = nullptr;
 	uint16_t calendartype;
 	
 	b_proposal = FALSE;
-	std::unique_ptr<MESSAGE_CONTENT, mc_delete> pmsg(message_content_init());
-	if (pmsg == nullptr)
-		return NULL;
 	auto piline = const_cast<ICAL *>(pical)->get_line("X-MICROSOFT-CALSCALE");
 	calendartype = oxcical_get_calendartype(piline);
 	auto mclass = "IPM.Appointment";
+	std::vector<message_ptr> msgvec;
 	uidxevent_list uid_list;
 	if (!oxcical_classify_calendar(pical, uid_list) ||
 	    uid_list.size() == 0)
-		return nullptr;
+		return false;
 	piline = const_cast<ICAL *>(pical)->get_line("METHOD");
 	if (NULL != piline) {
 		pvalue = piline->get_first_subvalue();
@@ -2410,18 +2395,19 @@ std::unique_ptr<MESSAGE_CONTENT, mc_delete> oxcical_import(const char *str_zone,
 					if (!oxcical_import_events(str_zone,
 					    calendartype, deconst(pical),
 					    uid_list, alloc, get_propids,
-					    username_to_entryid, pmsg.get()))
-						return nullptr;
-					return pmsg;
+					    username_to_entryid, msgvec))
+						return false;
+					finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
+					return TRUE;
 				}
 				mclass = "IPM.Appointment";
 			} else if (0 == strcasecmp(pvalue, "REQUEST")) {
 				if (uid_list.size() != 1)
-					return nullptr;
+					return false;
 				mclass = "IPM.Schedule.Meeting.Request";
 			} else if (0 == strcasecmp(pvalue, "REPLY")) {
 				if (uid_list.size() != 1)
-					return nullptr;
+					return false;
 				pvalue1 = oxcical_get_partstat(uid_list);
 				if (NULL != pvalue1) {
 					if (strcasecmp(pvalue1, "ACCEPTED") == 0)
@@ -2433,7 +2419,7 @@ std::unique_ptr<MESSAGE_CONTENT, mc_delete> oxcical_import(const char *str_zone,
 				}
 			} else if (0 == strcasecmp(pvalue, "COUNTER")) {
 				if (uid_list.size() != 1)
-					return nullptr;
+					return false;
 				pvalue1 = oxcical_get_partstat(uid_list);
 				if (NULL != pvalue1 && 0 == strcasecmp(pvalue1, "TENTATIVE")) {
 					mclass = "IPM.Schedule.Meeting.Resp.Tent";
@@ -2444,20 +2430,55 @@ std::unique_ptr<MESSAGE_CONTENT, mc_delete> oxcical_import(const char *str_zone,
 			}
 		}
 	} else {
-		if (uid_list.size() > 1) {
-			if (!oxcical_import_events(str_zone, calendartype,
-			    deconst(pical), uid_list, alloc, get_propids,
-			    username_to_entryid, pmsg.get()))
-				return nullptr;
-			return pmsg;
-		}
+		if (!oxcical_import_events(str_zone, calendartype,
+		    deconst(pical), uid_list, alloc, get_propids,
+		    username_to_entryid, msgvec))
+			return false;
+		finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
+		return TRUE;
 	}
+	message_ptr msg(message_content_init());
+	if (msg == nullptr)
+		return false;
+	msgvec.push_back(std::move(msg));
+	auto pmsg = msgvec.back().get();
 	if (pmsg->proplist.set(PR_MESSAGE_CLASS, mclass) != 0 ||
 	    !oxcical_import_internal(str_zone, pvalue, b_proposal, calendartype,
 	    deconst(pical), uid_list.begin()->second, alloc, get_propids,
-	    username_to_entryid, pmsg.get(), nullptr, nullptr, nullptr, nullptr))
+	    username_to_entryid, pmsg, nullptr, nullptr, nullptr, nullptr))
+		return false;
+	finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
+	return TRUE;
+}
+
+message_ptr oxcical_import_single(const char *str_zone,
+    const ICAL *pical, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+    USERNAME_TO_ENTRYID username_to_entryid)
+{
+	std::vector<message_ptr> vec;
+	if (!oxcical_import_multi(str_zone, pical, alloc, get_propids,
+	    username_to_entryid, vec) || vec.size() == 0)
 		return nullptr;
-	return pmsg;
+	if (vec.size() == 1)
+		return std::move(vec.front());
+	message_ptr cmsg(message_content_init());
+	if (cmsg == nullptr)
+		return nullptr;
+	auto atlist = attachment_list_init();
+	if (atlist == nullptr)
+		return nullptr;
+	message_content_set_attachments_internal(cmsg.get(), atlist);
+	for (auto &&emb : vec) {
+		auto at = attachment_content_init();
+		if (at == nullptr)
+			return nullptr;
+		if (!attachment_list_append_internal(atlist, at)) {
+			attachment_content_free(at);
+			return nullptr;
+		}
+		attachment_content_set_embedded_internal(at, emb.release());
+	}
+	return cmsg;
 }
 
 static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,

@@ -2345,7 +2345,7 @@ cu_ical_to_message(store_object *pstore, const BINARY *pical_bin)
 	if (ical.init() < 0 || !ical.retrieve(pbuff))
 		return NULL;
 	common_util_set_dir(pstore->get_dir());
-	return oxcical_import(tmzone, &ical, common_util_alloc,
+	return oxcical_import_single(tmzone, &ical, common_util_alloc,
 	       common_util_get_propids_create, common_util_username_to_entryid);
 }
 
