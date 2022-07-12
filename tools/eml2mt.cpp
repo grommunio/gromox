@@ -160,25 +160,31 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 	return 0;
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_vcard(const char *file)
+static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 {
 	size_t slurp_len = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
 		HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(file, &slurp_len));
 	if (slurp_data == nullptr) {
 		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
-		return nullptr;
+		return errno;
 	}
-	VCARD card;
-	auto ret = card.retrieve_single(slurp_data.get());
+	std::vector<vcard> cardvec;
+	auto ret = vcard_retrieve_multi(slurp_data.get(), cardvec);
 	if (ret != ecSuccess) {
-		fprintf(stderr, "vcard_parse %s unsuccessful (ecode=%d)\n", file, ret);
-		return nullptr;
+		fprintf(stderr, "vcard_parse %s unsuccessful (ecode=%xh)\n", file, ret);
+		return EIO;
 	}
-	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxvcard_import(&card, ee_get_propids));
-	if (msg == nullptr)
-		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
-	return msg;
+	mv.reserve(mv.size() + cardvec.size());
+	for (const auto &card : cardvec) {
+		message_ptr mc(oxvcard_import(&card, ee_get_propids));
+		if (mc == nullptr) {
+			fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
+			return EIO;
+		}
+		mv.push_back(std::move(mc));
+	}
+	return 0;
 }
 
 int main(int argc, const char **argv) try
@@ -268,10 +274,8 @@ int main(int argc, const char **argv) try
 			if (do_ical(argv[i], msgs) != 0)
 				continue;
 		} else if (g_import_mode == IMPORT_VCARD) {
-			auto msg = do_vcard(argv[i]);
-			if (msg == nullptr)
+			if (do_vcard(argv[i], msgs) != 0)
 				continue;
-			msgs.push_back(std::move(msg));
 		}
 	}
 
