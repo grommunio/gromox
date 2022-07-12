@@ -5131,6 +5131,8 @@ uint32_t zarafa_server_imtomessage2(GUID session, uint32_t fld_handle,
 	ec_error_t ret = ecInvalidParam;
 	if (data_type == IMTOMESSAGE_ICAL)
 		ret = cu_ical_to_message2(fld->pstore, im_data, msgvec);
+	else if (data_type == IMTOMESSAGE_VCARD)
+		ret = cu_vcf_to_message2(fld->pstore, im_data, msgvec);
 	if (ret != ecSuccess)
 		return ret;
 

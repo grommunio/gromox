@@ -49,6 +49,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 enum {
 	SMTP_SEND_OK = 0,
@@ -2326,8 +2327,7 @@ BOOL common_util_message_to_ical(store_object *pstore,
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
 }
 
-std::unique_ptr<MESSAGE_CONTENT, mc_delete>
-cu_ical_to_message(store_object *pstore, const BINARY *pical_bin)
+message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin)
 {
 	ICAL ical;
 	char tmzone[64];
@@ -2350,7 +2350,7 @@ cu_ical_to_message(store_object *pstore, const BINARY *pical_bin)
 }
 
 ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
-    std::vector<std::unique_ptr<MESSAGE_CONTENT, mc_delete>> &msgvec)
+    std::vector<message_ptr> &msgvec)
 {
 	auto info = zarafa_server_get_info();
 	char tmzone[64];
@@ -2413,6 +2413,27 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	common_util_set_dir(pstore->get_dir());
 	pmsgctnt = oxvcard_import(&vcard, common_util_get_propids_create);
 	return pmsgctnt;
+}
+
+ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
+    std::vector<message_ptr> &msgvec) try
+{
+	std::vector<vcard> cardvec;
+	auto ret = vcard_retrieve_multi(vcf_data, cardvec);
+	if (ret != ecSuccess)
+		return ret;
+	common_util_set_dir(store->get_dir());
+	msgvec.reserve(msgvec.size() + cardvec.size());
+	for (const auto &vcard : cardvec) {
+		message_ptr mc(oxvcard_import(&vcard, common_util_get_propids_create));
+		if (mc == nullptr)
+			return ecError;
+		msgvec.push_back(std::move(mc));
+	}
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2048: ENOMEM\n");
+	return ecServerOOM;
 }
 
 const char* common_util_get_default_timezone()

@@ -178,6 +178,7 @@ extern std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete> cu_ical_to_message(st
 extern ec_error_t cu_ical_to_message2(store_object *, char *ical_data, std::vector<std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>> &);
 extern BOOL common_util_message_to_vcf(message_object *, BINARY *vcfout);
 extern MESSAGE_CONTENT *common_util_vcf_to_message(store_object *, const BINARY *vcf);
+extern ec_error_t cu_vcf_to_message2(store_object *, char *vcf_data, std::vector<std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>> &);
 extern const char *common_util_get_default_timezone();
 extern const char *common_util_get_submit_command();
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);

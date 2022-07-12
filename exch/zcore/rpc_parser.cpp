@@ -645,7 +645,8 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 		break;
 	}
 	default:
-		fprintf(stderr, "E-2046: unknown zrpc request type %u\n", prequest->call_id);
+		fprintf(stderr, "E-2046: unknown zrpc request type %u\n",
+		        static_cast<unsigned int>(prequest->call_id));
 		return DISPATCH_FALSE;
 	}
 	if (g_zrpc_debug == 0)

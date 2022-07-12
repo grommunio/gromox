@@ -572,6 +572,7 @@ struct ZCREQ_ICALTOMESSAGE {
 
 enum imtomessage2_type {
 	IMTOMESSAGE_ICAL = 0,
+	IMTOMESSAGE_VCARD,
 };
 
 struct ZCREQ_IMTOMESSAGE2 {
