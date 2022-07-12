@@ -352,7 +352,9 @@ static VCARD_LINE* vcard_retrieve_tag(char *ptag)
 		pvparam = vcard_retrieve_param(ptr);
 		if (pvparam == nullptr)
 			return nullptr;
-		pvline->append_param(pvparam);
+		auto ret = pvline->append_param(pvparam);
+		if (ret != ecSuccess)
+			return nullptr;
 	} while ((ptr = pnext) != NULL);
 	return pvline;
 }
@@ -736,9 +738,10 @@ ec_error_t vcard_param::append_paramval(const char *paramval)
 	return ecSuccess;
 }
 
-void vcard_line::append_param(VCARD_PARAM *pvparam)
+ec_error_t vcard_line::append_param(VCARD_PARAM *pvparam)
 {
 	double_list_append_as_tail(&param_list, &pvparam->node);
+	return ecSuccess;
 }
 
 VCARD_VALUE* vcard_new_value()

@@ -21,7 +21,7 @@ struct GX_EXPORT vcard_value {
 using VCARD_VALUE = vcard_value;
 
 struct GX_EXPORT vcard_line {
-	void append_param(VCARD_PARAM *);
+	ec_error_t append_param(VCARD_PARAM *);
 	ec_error_t append_value(VCARD_VALUE *);
 	const char *get_first_subval() const;
 
