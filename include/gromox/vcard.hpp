@@ -1,5 +1,6 @@
 #pragma once
 #include <gromox/common_types.hpp>
+#include <gromox/mapierr.hpp>
 #include <gromox/double_list.hpp>
 #define VCARD_NAME_LEN		32
 
@@ -37,7 +38,7 @@ struct GX_EXPORT vcard {
 	~vcard();
 	NOMOVE(vcard);
 	void clear();
-	BOOL retrieve(char *in_buff);
+	ec_error_t retrieve_single(char *in_buff);
 	BOOL serialize(char *out_buff, size_t max_length);
 	ec_error_t append_line2(VCARD_LINE *);
 	ec_error_t append_line2(const char *, const char *);

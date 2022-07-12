@@ -170,8 +170,9 @@ static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_vcard(const char *file)
 		return nullptr;
 	}
 	VCARD card;
-	if (!card.retrieve(slurp_data.get())) {
-		fprintf(stderr, "vcard_parse %s unsuccessful\n", file);
+	auto ret = card.retrieve_single(slurp_data.get());
+	if (ret != ecSuccess) {
+		fprintf(stderr, "vcard_parse %s unsuccessful (ecode=%d)\n", file, ret);
 		return nullptr;
 	}
 	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxvcard_import(&card, ee_get_propids));

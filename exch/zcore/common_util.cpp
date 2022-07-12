@@ -2407,7 +2407,8 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	memcpy(pbuff, pvcf_bin->pb, pvcf_bin->cb);
 	pbuff[pvcf_bin->cb] = '\0';
 	vcard vcard;
-	if (!vcard.retrieve(pbuff))
+	auto ret = vcard.retrieve_single(pbuff);
+	if (ret != ecSuccess)
 		return nullptr;
 	common_util_set_dir(pstore->get_dir());
 	pmsgctnt = oxvcard_import(&vcard, common_util_get_propids_create);

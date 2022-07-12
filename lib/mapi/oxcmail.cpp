@@ -2318,7 +2318,8 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 				if (!utf8_check(pcontent.get() + content_len + 1))
 					utf8_filter(pcontent.get() + content_len + 1);
 				vcard vcard;
-				if (vcard.retrieve(pcontent.get() + content_len + 1) &&
+				auto ret = vcard.retrieve_single(pcontent.get() + content_len + 1);
+				if (ret == ecSuccess &&
 				    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
 					attachment_content_set_embedded_internal(pattachment, pmsg);
 					tmp_int32 = ATTACH_EMBEDDED_MSG;

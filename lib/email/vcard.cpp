@@ -414,7 +414,7 @@ static void vcard_unescape_string(char *pstring)
 	}
 }
 
-BOOL vcard::retrieve(char *in_buff)
+ec_error_t vcard::retrieve_single(char *in_buff)
 {
 	auto pvcard = this;
 	char *pline;
@@ -450,7 +450,7 @@ BOOL vcard::retrieve(char *in_buff)
 		if (0 == strcasecmp(tmp_item.ptag, "END") &&
 			(NULL != tmp_item.pvalue &&
 			0 == strcasecmp(tmp_item.pvalue, "VCARD"))) {
-			return TRUE;
+			return ecSuccess;
 		}
 		pvline = vcard_retrieve_tag(tmp_item.ptag);
 		if (pvline == nullptr)
@@ -474,14 +474,14 @@ BOOL vcard::retrieve(char *in_buff)
 				0 == strcasecmp(pvline->name, "VERSION")) {
 				pvvalue = vcard_new_value();
 				if (pvvalue == nullptr)
-					break;
+					return ecServerOOM;
 				ret = pvline->append_value(pvvalue);
 				if (ret != ecSuccess)
-					return false;
+					return ret;
 				vcard_unescape_string(tmp_item.pvalue);
 				ret = pvvalue->append_subval(tmp_item.pvalue);
 				if (ret != ecSuccess)
-					break;
+					return ret;
 			} else {
 				auto rv = vcard_retrieve_value(pvline, tmp_item.pvalue);
 				if (rv != ecSuccess)
@@ -492,7 +492,7 @@ BOOL vcard::retrieve(char *in_buff)
 	} while ((pline = pnext) != NULL);
 	while ((pnode = double_list_pop_front(&pvcard->line_list)) != nullptr)
 		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
-	return FALSE;
+	return ecError;
 }
 
 static size_t vcard_serialize_string(char *pbuff,
