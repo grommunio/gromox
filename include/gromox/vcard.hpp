@@ -4,7 +4,7 @@
 #define VCARD_NAME_LEN		32
 
 struct GX_EXPORT vcard_param {
-	BOOL append_paramval(const char *paramval);
+	ec_error_t append_paramval(const char *paramval);
 
 	DOUBLE_LIST_NODE node;
 	char name[VCARD_NAME_LEN];

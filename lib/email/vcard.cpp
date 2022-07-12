@@ -321,7 +321,8 @@ static VCARD_PARAM* vcard_retrieve_param(char *ptag)
 	ptr ++;
 	do {
 		pnext = vcard_get_comma(ptr);
-		if (!pvparam->append_paramval(ptr)) {
+		auto ret = pvparam->append_paramval(ptr);
+		if (ret != ecSuccess) {
 			vcard_free_param(pvparam);
 			return nullptr;
 		}
@@ -690,7 +691,7 @@ VCARD_PARAM* vcard_new_param(const char*name)
 	return pvparam;
 }
 
-BOOL vcard_param::append_paramval(const char *paramval)
+ec_error_t vcard_param::append_paramval(const char *paramval)
 {
 	auto pvparam = this;
 	BOOL b_list;
@@ -699,7 +700,7 @@ BOOL vcard_param::append_paramval(const char *paramval)
 		b_list = TRUE;
 		pvparam->pparamval_list = me_alloc<DOUBLE_LIST>();
 		if (pvparam->pparamval_list == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		double_list_init(pvparam->pparamval_list);
 	} else {
 		b_list = FALSE;
@@ -711,7 +712,7 @@ BOOL vcard_param::append_paramval(const char *paramval)
 			free(pvparam->pparamval_list);
 			pvparam->pparamval_list = NULL;
 		}
-		return FALSE;
+		return ecServerOOM;
 	}
 	pnode->pdata = strdup(paramval);
 	if (NULL == pnode->pdata) {
@@ -721,10 +722,10 @@ BOOL vcard_param::append_paramval(const char *paramval)
 			free(pvparam->pparamval_list);
 			pvparam->pparamval_list = NULL;
 		}
-		return FALSE;
+		return ecServerOOM;
 	}
 	double_list_append_as_tail(pvparam->pparamval_list, pnode);
-	return TRUE;
+	return ecSuccess;
 }
 
 void vcard_line::append_param(VCARD_PARAM *pvparam)
