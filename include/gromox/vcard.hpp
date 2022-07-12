@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/mapierr.hpp>
 #include <gromox/double_list.hpp>
@@ -35,8 +36,10 @@ using VCARD_LINE = vcard_line;
 
 struct GX_EXPORT vcard {
 	vcard();
+	vcard(vcard &&o);
 	~vcard();
-	NOMOVE(vcard);
+	vcard &operator=(vcard &&);
+
 	void clear();
 	ec_error_t retrieve_single(char *in_buff);
 	BOOL serialize(char *out_buff, size_t max_length);
@@ -50,3 +53,4 @@ using VCARD = vcard;
 VCARD_LINE* vcard_new_line(const char *name);
 VCARD_PARAM* vcard_new_param(const char*name);
 extern VCARD_VALUE *vcard_new_value();
+extern GX_EXPORT ec_error_t vcard_retrieve_multi(char *input, std::vector<vcard> &, size_t limit = 0);

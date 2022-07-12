@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -65,6 +66,21 @@ static char* vcard_get_semicolon(char *pstring)
 vcard::vcard()
 {
 	double_list_init(&line_list);
+}
+
+vcard::vcard(vcard &&o) :
+	line_list(o.line_list)
+{
+	o.line_list = {};
+}
+
+vcard &vcard::operator=(vcard &&o)
+{
+	clear();
+	double_list_free(&line_list);
+	line_list = o.line_list;
+	o.line_list = {};
+	return *this;
 }
 
 static void vcard_free_param(VCARD_PARAM *pvparam)
@@ -414,9 +430,9 @@ static void vcard_unescape_string(char *pstring)
 	}
 }
 
-ec_error_t vcard::retrieve_single(char *in_buff)
+ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
+    size_t limit) try
 {
-	auto pvcard = this;
 	char *pline;
 	char *pnext;
 	BOOL b_begin;
@@ -424,10 +440,9 @@ ec_error_t vcard::retrieve_single(char *in_buff)
 	VCARD_LINE *pvline;
 	LINE_ITEM tmp_item;
 	VCARD_VALUE *pvvalue;
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(&pvcard->line_list)) != nullptr)
-		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
+	std::vector<vcard> cardvec;
+	vcard *pvcard = nullptr;
+
 	b_begin = FALSE;
 	pline = in_buff;
 	length = strlen(in_buff);
@@ -442,6 +457,7 @@ ec_error_t vcard::retrieve_single(char *in_buff)
 				(NULL != tmp_item.pvalue &&
 				0 == strcasecmp(tmp_item.pvalue, "VCARD"))) {
 				b_begin = TRUE;
+				pvcard = &cardvec.emplace_back();
 				continue;
 			} else {
 				break;
@@ -450,7 +466,11 @@ ec_error_t vcard::retrieve_single(char *in_buff)
 		if (0 == strcasecmp(tmp_item.ptag, "END") &&
 			(NULL != tmp_item.pvalue &&
 			0 == strcasecmp(tmp_item.pvalue, "VCARD"))) {
-			return ecSuccess;
+			if (limit > 0 && --limit == 0)
+				break;
+			pvcard = nullptr;
+			b_begin = false;
+			continue;
 		}
 		pvline = vcard_retrieve_tag(tmp_item.ptag);
 		if (pvline == nullptr)
@@ -490,11 +510,24 @@ ec_error_t vcard::retrieve_single(char *in_buff)
 		}
 		
 	} while ((pline = pnext) != NULL);
-	while ((pnode = double_list_pop_front(&pvcard->line_list)) != nullptr)
-		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
-	return ecError;
+	finalvec = std::move(cardvec);
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2042: ENOMEM\n");
+	return ecServerOOM;
 }
 
+ec_error_t vcard::retrieve_single(char *in_buff)
+{
+	std::vector<vcard> cardvec;
+	auto ret = vcard_retrieve_multi(in_buff, cardvec, 1);
+	if (ret != ecSuccess)
+		return ret;
+	if (cardvec.size() == 0)
+		return ecError;
+	*this = std::move(cardvec[0]);
+	return ecSuccess;
+}
 static size_t vcard_serialize_string(char *pbuff,
 	size_t max_length, int line_offset, const char *string)
 {
