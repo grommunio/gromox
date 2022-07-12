@@ -376,10 +376,12 @@ static BOOL vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 		do {
 			pnext1 = vcard_get_comma(ptr1);
 			if ('\0' == *ptr1) {
-				if (!pvvalue->append_subval(nullptr))
+				auto ret = pvvalue->append_subval(nullptr);
+				if (ret != ecSuccess)
 					return FALSE;
 			} else {
-				if (!pvvalue->append_subval(ptr1))
+				auto ret = pvvalue->append_subval(ptr1);
+				if (ret != ecSuccess)
 					return FALSE;
 			}
 		} while ((ptr1 = pnext1) != NULL);
@@ -469,10 +471,12 @@ BOOL vcard::retrieve(char *in_buff)
 					break;
 				pvline->append_value(pvvalue);
 				vcard_unescape_string(tmp_item.pvalue);
-				if (!pvvalue->append_subval(tmp_item.pvalue))
+				auto ret = pvvalue->append_subval(tmp_item.pvalue);
+				if (ret != ecSuccess)
 					break;
 			} else {
-				if (!vcard_retrieve_value(pvline, tmp_item.pvalue))
+				auto ret = vcard_retrieve_value(pvline, tmp_item.pvalue);
+				if (ret != ecSuccess)
 					break;
 			}
 		}
@@ -743,23 +747,23 @@ VCARD_VALUE* vcard_new_value()
 	return pvvalue;
 }
 
-BOOL vcard_value::append_subval(const char *subval)
+ec_error_t vcard_value::append_subval(const char *subval)
 {
 	auto pvvalue = this;
 	auto pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (pnode == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	if (NULL != subval) {
 		pnode->pdata = strdup(subval);
 		if (NULL == pnode->pdata) {
 			free(pnode);
-			return FALSE;
+			return ecServerOOM;
 		}
 	} else {
 		pnode->pdata = NULL;
 	}
 	double_list_append_as_tail(&pvvalue->subval_list, pnode);
-	return TRUE;
+	return ecSuccess;
 }
 
 void vcard_line::append_value(VCARD_VALUE *pvvalue)
@@ -793,7 +797,8 @@ bool vcard::append_line(const char *name, const char *value)
 		return false;
 	}
 	pvline->append_value(pvvalue);
-	if (!pvvalue->append_subval(value)) {
+	auto ret = pvvalue->append_subval(value);
+	if (ret != ecSuccess) {
 		vcard_free_line(pvline);
 		return false;
 	}

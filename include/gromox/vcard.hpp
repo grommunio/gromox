@@ -13,7 +13,7 @@ struct GX_EXPORT vcard_param {
 using VCARD_PARAM = vcard_param;
 
 struct GX_EXPORT vcard_value {
-	BOOL append_subval(const char *);
+	ec_error_t append_subval(const char *);
 
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST subval_list;
