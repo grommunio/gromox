@@ -359,7 +359,7 @@ static VCARD_LINE* vcard_retrieve_tag(char *ptag)
 	return pvline;
 }
 
-static BOOL vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
+static ec_error_t vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 {
 	char *ptr;
 	char *ptr1;
@@ -371,10 +371,10 @@ static BOOL vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 	do {
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		auto ret = pvline->append_value(pvvalue);
 		if (ret != ecSuccess)
-			return false;
+			return ret;
 		pnext = vcard_get_semicolon(ptr);
 		ptr1 = ptr;
 		do {
@@ -382,15 +382,15 @@ static BOOL vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 			if ('\0' == *ptr1) {
 				ret = pvvalue->append_subval(nullptr);
 				if (ret != ecSuccess)
-					return FALSE;
+					return ret;
 			} else {
 				ret = pvvalue->append_subval(ptr1);
 				if (ret != ecSuccess)
-					return FALSE;
+					return ret;
 			}
 		} while ((ptr1 = pnext1) != NULL);
 	} while ((ptr = pnext) != NULL);
-	return TRUE;
+	return ecSuccess;
 }
 
 static void vcard_unescape_string(char *pstring)
