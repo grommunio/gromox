@@ -155,10 +155,8 @@ MESSAGE_CONTENT* oxvcard_import(
 	DOUBLE_LIST_NODE *pnode2;
 	const char *address_type;
 	STRING_ARRAY child_strings;
-	STRING_ARRAY strings_array;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
-	char tmp_buff[VCARD_MAX_BUFFER_LEN];
 	
 	mail_count = 0;
 	ufld_count = 0;
@@ -187,8 +185,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (pstring == nullptr)
 				return nullptr;
 			if (pmsg->proplist.set(PR_DISPLAY_NAME, pstring) != 0 ||
-			    pmsg->proplist.set(PR_NORMALIZED_SUBJECT, tmp_buff) != 0 ||
-			    pmsg->proplist.set(PR_CONVERSATION_TOPIC, tmp_buff) != 0)
+			    pmsg->proplist.set(PR_NORMALIZED_SUBJECT, pstring) != 0 ||
+			    pmsg->proplist.set(PR_CONVERSATION_TOPIC, pstring) != 0)
 				return nullptr;
 		} else if (0 == strcasecmp(pvline->name, "N")) {
 			count = 0;
@@ -258,6 +256,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				return nullptr;
 			}
 			tmp_len = strlen(pstring);
+			char tmp_buff[VCARD_MAX_BUFFER_LEN];
 			if (decode64(pstring, tmp_len, tmp_buff,
 			    arsizeof(tmp_buff), &decode_len) != 0)
 				return nullptr;
@@ -418,6 +417,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (pnode1 == nullptr)
 				continue;
 			pvvalue = (VCARD_VALUE*)pnode1->pdata;
+			char tmp_buff[VCARD_MAX_BUFFER_LEN];
+			STRING_ARRAY strings_array;
 			strings_array.count = 0;
 			strings_array.ppstr = (char**)tmp_buff;
 			for (pnode2=double_list_get_head(&pvvalue->subval_list);
@@ -499,6 +500,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (pstring == nullptr)
 				return nullptr;
 			tmp_len = strlen(pstring);
+			char tmp_buff[VCARD_MAX_BUFFER_LEN];
 			if (decode64(pstring, tmp_len, tmp_buff,
 			    arsizeof(tmp_buff), &decode_len) != 0)
 				return nullptr;
@@ -624,6 +626,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (pnode1 == nullptr)
 				continue;
 			pvvalue = (VCARD_VALUE*)pnode1->pdata;
+			char tmp_buff[VCARD_MAX_BUFFER_LEN];
+			STRING_ARRAY strings_array;
 			strings_array.count = 0;
 			strings_array.ppstr = (char**)tmp_buff;
 			for (pnode2=double_list_get_head(&pvvalue->subval_list);
