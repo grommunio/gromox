@@ -720,11 +720,13 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		auto ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		pvalue = pmsg->proplist.get<char>(g_n_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
-		auto ret = pvvalue->append_subval(pvalue);
+		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -758,7 +760,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
@@ -799,7 +803,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			pvvalue = vcard_new_value();
 			if (pvvalue == nullptr)
 				return false;
-			pvline->append_value(pvvalue);
+			ret = pvline->append_value(pvvalue);
+			if (ret != ecSuccess)
+				return false;
 			if (encode64(bv->pb, bv->cb, tmp_buff, VCARD_MAX_BUFFER_LEN - 1, &out_len) != 0)
 				return false;
 			tmp_buff[out_len] = '\0';
@@ -821,15 +827,19 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvvalue = vcard_new_value();
 	if (pvvalue == nullptr)
 		return false;
-	pvline->append_value(pvvalue);
+	auto ret = pvline->append_value(pvvalue);
+	if (ret != ecSuccess)
+		return false;
 	pvalue = pmsg->proplist.get<char>(PR_COMPANY_NAME);
-	auto ret = pvvalue->append_subval(pvalue);
+	ret = pvvalue->append_subval(pvalue);
 	if (ret != ecSuccess)
 		return false;
 	pvvalue = vcard_new_value();
 	if (pvvalue == nullptr)
 		return false;
-	pvline->append_value(pvvalue);
+	ret = pvline->append_value(pvvalue);
+	if (ret != ecSuccess)
+		return false;
 	pvalue = pmsg->proplist.get<char>(PR_DEPARTMENT_NAME);
 	ret = pvvalue->append_subval(pvalue);
 	if (ret != ecSuccess)
@@ -869,7 +879,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		propid = PROP_ID(g_workaddr_proptags[i]);
 		proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[i]), propids.ppropid[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
@@ -882,7 +894,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvvalue = vcard_new_value();
 	if (pvvalue == nullptr)
 		return false;
-	pvline->append_value(pvvalue);
+	ret = pvline->append_value(pvvalue);
+	if (ret != ecSuccess)
+		return false;
 	
 	pvline = vcard_new_line("ADR");
 	if (pvline == nullptr)
@@ -899,7 +913,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		pvalue = pmsg->proplist.get<char>(g_homeaddr_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
@@ -910,7 +926,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvvalue = vcard_new_value();
 	if (pvvalue == nullptr)
 		return false;
-	pvline->append_value(pvvalue);
+	ret = pvline->append_value(pvvalue);
+	if (ret != ecSuccess)
+		return false;
 	
 	pvline = vcard_new_line("ADR");
 	if (pvline == nullptr)
@@ -927,7 +945,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		pvalue = pmsg->proplist.get<char>(g_otheraddr_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
@@ -938,7 +958,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvvalue = vcard_new_value();
 	if (pvvalue == nullptr)
 		return false;
-	pvline->append_value(pvvalue);
+	ret = pvline->append_value(pvvalue);
+	if (ret != ecSuccess)
+		return false;
 	
 	for (size_t i = 0; i < 10; ++i) {
 		pvalue = pmsg->proplist.get<char>(tel_proptags[i]);
@@ -958,7 +980,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
@@ -984,7 +1008,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
@@ -1010,7 +1036,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
@@ -1027,7 +1055,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		for (size_t i = 0; i < saval->count; ++i) {
 			ret = pvvalue->append_subval(saval->ppstr[i]);
 			if (ret != ecSuccess)
@@ -1055,7 +1085,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
@@ -1077,7 +1109,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
@@ -1125,7 +1159,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
@@ -1144,7 +1180,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
@@ -1163,7 +1201,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
@@ -1182,7 +1222,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(pvalue);
 		if (ret != ecSuccess)
 			return false;
@@ -1215,7 +1257,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		for (size_t i = 0; i < saval->count; ++i) {
 			ret = pvvalue->append_subval(saval->ppstr[i]);
 			if (ret != ecSuccess)
@@ -1239,7 +1283,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		pbin = ((BINARY_ARRAY*)pvalue)->pbin;
 		if (0 != encode64(pbin->pb, pbin->cb, tmp_buff,
 		    VCARD_MAX_BUFFER_LEN - 1, &out_len))
@@ -1279,7 +1325,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(tmp_buff);
 		if (ret != ecSuccess)
 			return false;
@@ -1304,7 +1352,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(tmp_buff);
 		if (ret != ecSuccess)
 			return false;
@@ -1329,7 +1379,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return false;
-		pvline->append_value(pvvalue);
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		ret = pvvalue->append_subval(tmp_buff);
 		if (ret != ecSuccess)
 			return false;

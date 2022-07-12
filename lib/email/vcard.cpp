@@ -370,17 +370,19 @@ static BOOL vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return FALSE;
-		pvline->append_value(pvvalue);
+		auto ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return false;
 		pnext = vcard_get_semicolon(ptr);
 		ptr1 = ptr;
 		do {
 			pnext1 = vcard_get_comma(ptr1);
 			if ('\0' == *ptr1) {
-				auto ret = pvvalue->append_subval(nullptr);
+				ret = pvvalue->append_subval(nullptr);
 				if (ret != ecSuccess)
 					return FALSE;
 			} else {
-				auto ret = pvvalue->append_subval(ptr1);
+				ret = pvvalue->append_subval(ptr1);
 				if (ret != ecSuccess)
 					return FALSE;
 			}
@@ -469,9 +471,11 @@ BOOL vcard::retrieve(char *in_buff)
 				pvvalue = vcard_new_value();
 				if (pvvalue == nullptr)
 					break;
-				pvline->append_value(pvvalue);
+				auto ret = pvline->append_value(pvvalue);
+				if (ret != ecSuccess)
+					return false;
 				vcard_unescape_string(tmp_item.pvalue);
-				auto ret = pvvalue->append_subval(tmp_item.pvalue);
+				ret = pvvalue->append_subval(tmp_item.pvalue);
 				if (ret != ecSuccess)
 					break;
 			} else {
@@ -766,9 +770,10 @@ ec_error_t vcard_value::append_subval(const char *subval)
 	return ecSuccess;
 }
 
-void vcard_line::append_value(VCARD_VALUE *pvvalue)
+ec_error_t vcard_line::append_value(VCARD_VALUE *pvvalue)
 {
 	double_list_append_as_tail(&value_list, &pvvalue->node);
+	return ecSuccess;
 }
 
 const char *vcard_line::get_first_subval() const
@@ -796,8 +801,12 @@ bool vcard::append_line(const char *name, const char *value)
 		vcard_free_line(pvline);
 		return false;
 	}
-	pvline->append_value(pvvalue);
-	auto ret = pvvalue->append_subval(value);
+	auto ret = pvline->append_value(pvvalue);
+	if (ret != ecSuccess) {
+		vcard_free_line(pvline);
+		return false;
+	}
+	ret = pvvalue->append_subval(value);
 	if (ret != ecSuccess) {
 		vcard_free_line(pvline);
 		return false;

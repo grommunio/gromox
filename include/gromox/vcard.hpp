@@ -22,7 +22,7 @@ using VCARD_VALUE = vcard_value;
 
 struct GX_EXPORT vcard_line {
 	void append_param(VCARD_PARAM *);
-	void append_value(VCARD_VALUE *);
+	ec_error_t append_value(VCARD_VALUE *);
 	const char *get_first_subval() const;
 
 	DOUBLE_LIST_NODE node;
