@@ -39,8 +39,8 @@ struct GX_EXPORT vcard {
 	void clear();
 	BOOL retrieve(char *in_buff);
 	BOOL serialize(char *out_buff, size_t max_length);
-	void append_line(VCARD_LINE *);
-	bool append_line(const char *, const char *);
+	ec_error_t append_line2(VCARD_LINE *);
+	ec_error_t append_line2(const char *, const char *);
 
 	DOUBLE_LIST line_list{};
 };

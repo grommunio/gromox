@@ -455,7 +455,9 @@ BOOL vcard::retrieve(char *in_buff)
 		pvline = vcard_retrieve_tag(tmp_item.ptag);
 		if (pvline == nullptr)
 			break;
-		pvcard->append_line(pvline);
+		auto ret = pvcard->append_line2(pvline);
+		if (ret != ecSuccess)
+			return ret;
 		if (NULL != tmp_item.pvalue) {
 			if (0 == strcasecmp(pvline->name, "ORG") ||
 				0 == strcasecmp(pvline->name, "UID") ||
@@ -473,7 +475,7 @@ BOOL vcard::retrieve(char *in_buff)
 				pvvalue = vcard_new_value();
 				if (pvvalue == nullptr)
 					break;
-				auto ret = pvline->append_value(pvvalue);
+				ret = pvline->append_value(pvvalue);
 				if (ret != ecSuccess)
 					return false;
 				vcard_unescape_string(tmp_item.pvalue);
@@ -481,8 +483,8 @@ BOOL vcard::retrieve(char *in_buff)
 				if (ret != ecSuccess)
 					break;
 			} else {
-				auto ret = vcard_retrieve_value(pvline, tmp_item.pvalue);
-				if (ret != ecSuccess)
+				auto rv = vcard_retrieve_value(pvline, tmp_item.pvalue);
+				if (rv != ecSuccess)
 					break;
 			}
 		}
@@ -685,9 +687,10 @@ VCARD_LINE* vcard_new_line(const char *name)
 	return pvline;
 }
 
-void vcard::append_line(VCARD_LINE *pvline)
+ec_error_t vcard::append_line2(VCARD_LINE *pvline)
 {
 	double_list_append_as_tail(&line_list, &pvline->node);
+	return ecSuccess;
 }
 
 VCARD_PARAM* vcard_new_param(const char*name)
@@ -791,29 +794,33 @@ const char *vcard_line::get_first_subval() const
 	return static_cast<const char *>(pnode1->pdata);
 }
 
-bool vcard::append_line(const char *name, const char *value)
+ec_error_t vcard::append_line2(const char *name, const char *value)
 {
 	VCARD_LINE *pvline;
 	VCARD_VALUE *pvvalue;
 	
 	pvline = vcard_new_line(name);
 	if (pvline == nullptr)
-		return false;
+		return ecServerOOM;
 	pvvalue = vcard_new_value();
 	if (NULL == pvvalue) {
 		vcard_free_line(pvline);
-		return false;
+		return ecServerOOM;
 	}
 	auto ret = pvline->append_value(pvvalue);
 	if (ret != ecSuccess) {
 		vcard_free_line(pvline);
-		return false;
+		return ret;
 	}
 	ret = pvvalue->append_subval(value);
 	if (ret != ecSuccess) {
 		vcard_free_line(pvline);
-		return false;
+		return ret;
 	}
-	append_line(std::move(pvline));
-	return true;
+	ret = append_line2(std::move(pvline));
+	if (ret != ecSuccess) {
+		vcard_free_line(pvline);
+		return ret;
+	}
+	return ecSuccess;
 }
