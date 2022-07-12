@@ -28,6 +28,7 @@
 #include "exch/midb/system_services.hpp"
 
 using namespace gromox;
+using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 enum {
 	IMPORT_MAIL,
@@ -132,29 +133,31 @@ do_mail(const char *file, std::shared_ptr<MIME_POOL> mime_pool)
 	return msg;
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_ical(const char *file)
+static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 {
 	size_t slurp_len = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
 		HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(file, &slurp_len));
 	if (slurp_data == nullptr) {
 		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
-		return nullptr;
+		return errno;
 	}
 	ICAL ical;
 	auto ret = ical.init();
 	if (ret < 0) {
 		fprintf(stderr, "ical_init: %s\n", strerror(-ret));
-		return nullptr;
+		return -ret;
 	} else if (!ical.retrieve(slurp_data.get())) {
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
-		return nullptr;
+		return EIO;
 	}
-	auto msg = oxcical_import_single("UTC", &ical, malloc, ee_get_propids,
-	           oxcmail_username_to_entryid);
-	if (msg == nullptr)
+	auto err = oxcical_import_multi("UTC", &ical, malloc, ee_get_propids,
+	           oxcmail_username_to_entryid, mv);
+	if (err != ecSuccess) {
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
-	return msg;
+		return EIO;
+	}
+	return 0;
 }
 
 static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_vcard(const char *file)
@@ -254,19 +257,23 @@ int main(int argc, const char **argv) try
 	}
 
 	auto mime_pool = MIME_POOL::create(4096, 8, "mime_pool");
-	std::vector<std::unique_ptr<MESSAGE_CONTENT, mc_delete>> msgs;
+	std::vector<message_ptr> msgs;
 
 	for (int i = 1; i < argc; ++i) {
-		std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg;
-		if (g_import_mode == IMPORT_MAIL)
-			msg = do_mail(argv[i], mime_pool);
-		else if (g_import_mode == IMPORT_ICAL)
-			msg = do_ical(argv[i]);
-		else if (g_import_mode == IMPORT_VCARD)
-			msg = do_vcard(argv[i]);
-		if (msg == nullptr)
-			continue;
-		msgs.push_back(std::move(msg));
+		if (g_import_mode == IMPORT_MAIL) {
+			auto msg = do_mail(argv[i], mime_pool);
+			if (msg == nullptr)
+				continue;
+			msgs.push_back(std::move(msg));
+		} else if (g_import_mode == IMPORT_ICAL) {
+			if (do_ical(argv[i], msgs) != 0)
+				continue;
+		} else if (g_import_mode == IMPORT_VCARD) {
+			auto msg = do_vcard(argv[i]);
+			if (msg == nullptr)
+				continue;
+			msgs.push_back(std::move(msg));
+		}
 	}
 
 	if (isatty(STDOUT_FILENO)) {
