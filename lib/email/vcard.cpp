@@ -198,12 +198,10 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 					pbuff[max_length-1] = '\0';
 					max_length --;
 					i --;
+				} else if (pbuff[i+1] == '\n') {
+					return i + 2 < max_length ? pbuff + i + 2 : nullptr;
 				} else {
-					if ('\n' == pbuff[i + 1]) {
-						return i + 2 < max_length ? pbuff + i + 2 : nullptr;
-					} else {
-						return i + 1 < max_length ? pbuff + i + 1 : nullptr;
-					}
+					return i + 1 < max_length ? pbuff + i + 1 : nullptr;
 				}
 			}
 			if (i + 1 < max_length && '\n' == pbuff[i + 1]) {
@@ -264,10 +262,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 					pbuff[max_length-1] = '\0';
 					max_length --;
 					i --;
-				} else {
-					if (i + 1 < max_length) {
-						return pbuff + i + 1;
-					}
+				} else if (i + 1 < max_length) {
+					return pbuff + i + 1;
 				}
 			}
 			pnext = pbuff + i + 1;
@@ -403,16 +399,16 @@ static void vcard_unescape_string(char *pstring)
 	
 	tmp_len = strlen(pstring);
 	for (i=0; i<tmp_len; i++) {
-		if ('\\' == pstring[i]) {
-			if ('\\' == pstring[i + 1] || ';' == pstring[i + 1] ||
-				',' == pstring[i + 1]) {
-				memmove(pstring + i, pstring + i + 1, tmp_len - i);
-				pstring[tmp_len] = '\0';
-				tmp_len --;
-			} else if ('n' == pstring[i + 1] || 'N' == pstring[i + 1]) {
-				pstring[i] = '\r';
-				pstring[i + 1] = '\n';
-			}
+		if (pstring[i] != '\\')
+			continue;
+		if ('\\' == pstring[i+1] || ';' == pstring[i+1] ||
+		    ',' == pstring[i+1]) {
+			memmove(pstring + i, pstring + i + 1, tmp_len - i);
+			pstring[tmp_len] = '\0';
+			tmp_len--;
+		} else if ('n' == pstring[i+1] || 'N' == pstring[i+1]) {
+			pstring[i] = '\r';
+			pstring[i+1] = '\n';
 		}
 	}
 }
@@ -456,11 +452,10 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 			    tmp_item.pvalue == nullptr ||
 			    strcasecmp(tmp_item.pvalue, "VCARD") != 0) {
 				break;
-			} else {
-				b_begin = TRUE;
-				pvcard = &cardvec.emplace_back();
-				continue;
 			}
+			b_begin = TRUE;
+			pvcard = &cardvec.emplace_back();
+			continue;
 		}
 		if (0 == strcasecmp(tmp_item.ptag, "END") &&
 			(NULL != tmp_item.pvalue &&
@@ -477,25 +472,24 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 		auto ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return ret;
-		if (NULL != tmp_item.pvalue) {
-			if (!vcard_std_keyword(pvline->name)) {
-				auto rv = vcard_retrieve_value(pvline, tmp_item.pvalue);
-				if (rv != ecSuccess)
-					break;
-			} else {
-				pvvalue = vcard_new_value();
-				if (pvvalue == nullptr)
-					return ecServerOOM;
-				ret = pvline->append_value(pvvalue);
-				if (ret != ecSuccess)
-					return ret;
-				vcard_unescape_string(tmp_item.pvalue);
-				ret = pvvalue->append_subval(tmp_item.pvalue);
-				if (ret != ecSuccess)
-					return ret;
-			}
+		if (tmp_item.pvalue == nullptr)
+			continue;
+		if (!vcard_std_keyword(pvline->name)) {
+			auto rv = vcard_retrieve_value(pvline, tmp_item.pvalue);
+			if (rv != ecSuccess)
+				break;
+			continue;
 		}
-		
+		pvvalue = vcard_new_value();
+		if (pvvalue == nullptr)
+			return ecServerOOM;
+		ret = pvline->append_value(pvvalue);
+		if (ret != ecSuccess)
+			return ret;
+		vcard_unescape_string(tmp_item.pvalue);
+		ret = pvvalue->append_subval(tmp_item.pvalue);
+		if (ret != ecSuccess)
+			return ret;
 	} while ((pline = pnext) != NULL);
 	finalvec = std::move(cardvec);
 	return ecSuccess;
