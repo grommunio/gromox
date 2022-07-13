@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
@@ -178,19 +179,14 @@ static BOOL oxomsg_check_permission(const char *account,
 	if (!common_util_get_maildir(account_representing, maildir, arsizeof(maildir)))
 		return FALSE;
 	auto dlg_path = maildir + "/config/delegates.txt"s;
-	struct srcitem { char a[324]; };
-	auto pfile = list_file_initd(dlg_path.c_str(), nullptr, "%s:324");
-	if (NULL == pfile) {
-		return FALSE;
-	}
-	auto item_num = pfile->get_size();
-	auto pitem = static_cast<srcitem *>(pfile->get_list());
-	for (decltype(item_num) i = 0; i < item_num; ++i) {
-		if (strcasecmp(pitem[i].a, account) == 0 ||
-		    common_util_check_mlist_include(pitem[i].a, account)) {
+	std::vector<std::string> delegate_list;
+	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
+	if (ret != 0 && ret != ENOENT)
+		fprintf(stderr, "E-2045: %s: %s\n", dlg_path.c_str(), strerror(ret));
+	for (const auto &deleg : delegate_list)
+		if (strcasecmp(deleg.c_str(), account) == 0 ||
+		    common_util_check_mlist_include(deleg.c_str(), account))
 			return TRUE;
-		}
-	}
 	return FALSE;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1500: ENOMEM\n");

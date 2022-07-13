@@ -49,13 +49,6 @@ struct nsp_sort_item {
 	};
 };
 
-struct dlgitem {
-	/* This is used by list_file_*, don't switch to UADDR_SIZE */
-	char user[324];
-};
-
-static constexpr char dlgitem_format[] = "%s:324";
-
 }
 
 enum {
@@ -1429,20 +1422,16 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			fprintf(stderr, "E-1525: ENOMEM\n");
 			return ecServerOOM;
 		}
-		auto pfile = list_file_initd(dlg_path.c_str(), nullptr, dlgitem_format);
-		if (NULL == pfile) {
-			pstat->container_id = pstat->cur_rec; /* MS-OXNSPI §3.1.4.1.10 bp 16 */
-			nsp_trace(__func__, 1, pstat);
-			return ecSuccess;
-		}
-		auto item_num = pfile->get_size();
-		auto pitem = static_cast<const dlgitem *>(pfile->get_list());
-		for (size_t i = 0; i < item_num; ++i) {
+		std::vector<std::string> delegate_list;
+		auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
+		if (ret != 0 && ret != ENOENT)
+			fprintf(stderr, "E-2054: %s: %s\n", dlg_path.c_str(), strerror(ret));
+		for (const auto &deleg : delegate_list) {
 			if ((*ppoutmids)->cvalues > requested) {
 				break;
 			}
 			int user_id;
-			if (!get_id_from_username(pitem[i].user, &user_id))
+			if (!get_id_from_username(deleg.c_str(), &user_id))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
 			if (pnode == nullptr)
@@ -2245,8 +2234,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	uint32_t tmp_mid;
 	char maildir[256];
 	char username[UADDR_SIZE];
-	std::unique_ptr<LIST_FILE> pfile;
-	size_t item_num = 0;
 	
 	if (0 == mid) {
 		return ecInvalidObject;
@@ -2261,7 +2248,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid))
 		return ecError;
-	std::string dlg_path;
 	auto ptnode = ab_tree_minid_to_node(pbase.get(), mid);
 	if (NULL == ptnode) {
 		return ecInvalidObject;
@@ -2281,20 +2267,21 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	if (!get_maildir(username, maildir, arsizeof(maildir))) {
 		return ecError;
 	}
+	std::string dlg_path;
 	try {
 		dlg_path = maildir + "/config/delegates.txt"s;
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1526: ENOMEM\n");
 		return ecServerOOM;
 	}
-	std::unordered_set<std::string> tmp_list;
-	pfile = list_file_initd(dlg_path.c_str(), nullptr, dlgitem_format);
-	if (NULL != pfile) {
-		item_num = pfile->get_size();
-		auto pitem = static_cast<const dlgitem *>(pfile->get_list());
-		for (size_t i = 0; i < item_num; ++i)
-			tmp_list.emplace(pitem[i].user);
+	std::vector<std::string> delegate_list;
+	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
+	if (ret != 0 && ret != ENOENT) {
+		fprintf(stderr, "E-2043: %s: %s\n", dlg_path.c_str(), strerror(ret));
+		return ecError;
 	}
+	std::unordered_set<std::string> tmp_list{std::make_move_iterator(delegate_list.begin()), std::make_move_iterator(delegate_list.end())};
+	size_t item_num = tmp_list.size();
 	for (size_t i = 0; i < pentry_ids->count; ++i) {
 		if (pentry_ids->pbin[i].cb < 20) {
 			continue;

@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <string>
+#include <vector>
 #include <gromox/database.h>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
@@ -15,14 +17,8 @@
 #include "db_engine.h"
 #include "exmdb_server.h"
 
+using namespace std::string_literals;
 using namespace gromox;
-
-namespace {
-struct dlgitem {
-	/* This is used by list_file_*, don't switch to UADDR_SIZE */
-	char user[324];
-};
-}
 
 static constexpr uint64_t GLOBCNT_MAX = 0x7fffffffffff;
 
@@ -197,9 +193,8 @@ BOOL exmdb_server_remove_store_properties(
 
 /* private only */
 BOOL exmdb_server_check_mailbox_permission(const char *dir,
-	const char *username, uint32_t *ppermission)
+    const char *username, uint32_t *ppermission) try
 {
-	char temp_path[256];
 	char sql_string[128];
 	
 	if (!exmdb_server_check_private())
@@ -248,20 +243,22 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	pdb.reset();
 
 	/* Delegate bit */
-	sprintf(temp_path, "%s/config/delegates.txt", dir);
-	auto pfile = list_file_initd(temp_path, nullptr, "%s:324");
-	if (NULL != pfile) {
-		auto item_num = pfile->get_size();
-		auto pitem = static_cast<dlgitem *>(pfile->get_list());
-		for (decltype(item_num) i = 0; i < item_num; ++i) {
-			if (strcasecmp(pitem[i].user, username) == 0 ||
-			    common_util_check_mlist_include(pitem[i].user, username)) {
-				*ppermission |= frightsGromoxSendAs;
-				break;
-			}
+	auto dlg_path = dir + "/config/delegates.txt"s;
+	std::vector<std::string> delegate_list;
+	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
+	if (ret != 0 && ret != ENOENT)
+		fprintf(stderr, "E-2050: %s: %s\n", dlg_path.c_str(), strerror(ret));
+	for (const auto &d : delegate_list) {
+		if (strcasecmp(d.c_str(), username) == 0 ||
+		    common_util_check_mlist_include(d.c_str(), username)) {
+			*ppermission |= frightsGromoxSendAs;
+			break;
 		}
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2044: ENOMEM\n");
+	return false;
 }
 
 BOOL exmdb_server_allocate_cn(const char *dir, uint64_t *pcn)

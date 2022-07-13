@@ -15,6 +15,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
@@ -178,17 +179,12 @@ BOOL common_util_check_delegate(message_object *pmessage, char *username, size_t
 BOOL common_util_check_delegate_permission(
 	const char *account, const char *maildir)
 {
-	struct srcitem { char user[324]; };
-	char temp_path[256];
-	
-	sprintf(temp_path, "%s/config/delegates.txt", maildir);
-	auto pfile = list_file_initd(temp_path, nullptr, "%s:324");
-	if (pfile == nullptr)
+	std::vector<std::string> delegate_list;
+	auto ret = read_file_by_line((maildir + "/config/delegates.txt"s).c_str(), delegate_list);
+	if (ret != 0)
 		return FALSE;
-	auto item_num = pfile->get_size();
-	auto pitem = static_cast<const srcitem *>(pfile->get_list());
-	for (decltype(item_num) i = 0; i < item_num; ++i)
-		if (strcasecmp(pitem[i].user, account) == 0)
+	for (const auto &d : delegate_list)
+		if (strcasecmp(d.c_str(), account) == 0)
 			return TRUE;
 	return FALSE;
 }
