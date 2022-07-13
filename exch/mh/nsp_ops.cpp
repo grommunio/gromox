@@ -33,48 +33,6 @@ static int nsp_ext_g_propname(nsp_ext_pull &ext, nsp_propname2 *propname)
 	return ext.g_uint32(&propname->id);
 }
 
-static int nsp_ext_g_entryid(nsp_ext_pull &ext, nsp_entryid *entryid)
-{
-	TRY(ext.g_uint8(&entryid->id_type));
-	switch (entryid->id_type) {
-	case ENTRYID_TYPE_PERMANENT:
-	case ENTRYID_TYPE_EPHEMERAL:
-	case ENTRYID_TYPE_NESTED:
-		break;
-	default:
-		fprintf(stderr, "E-2039: Unknown NSPI entry ID type %xh\n", entryid->id_type);
-		return EXT_ERR_FORMAT;
-	}
-	TRY(ext.g_uint8(&entryid->r1));
-	TRY(ext.g_uint8(&entryid->r2));
-	TRY(ext.g_uint8(&entryid->r3));
-	if (entryid->id_type == ENTRYID_TYPE_NESTED) {
-		EMSAB_ENTRYID ae;
-		TRY(ext.g_abk_eid(&ae));
-		entryid->provider_uid = cu_flatuid_to_guid(muidEMSAB);
-		entryid->display_type = ae.type;
-		entryid->payload.dn = ae.px500dn;
-		return EXT_ERR_SUCCESS;
-	}
-	TRY(ext.g_uint32(&entryid->display_type));
-	if (entryid->id_type == ENTRYID_TYPE_PERMANENT)
-		return ext.g_str(&entryid->payload.dn);
-	return ext.g_uint32(&entryid->payload.mid);
-}
-
-static int nsp_ext_g_entryids(nsp_ext_pull &ext, nsp_entryids *entryids)
-{
-	TRY(ext.g_uint32(&entryids->count));
-	entryids->entryid = ext.anew<nsp_entryid>(entryids->count);
-	if (entryids->entryid == nullptr) {
-		entryids->count = 0;
-		return EXT_ERR_ALLOC;
-	}
-	for (size_t i = 0; i < entryids->count; ++i)
-		TRY(nsp_ext_g_entryid(ext, &entryids->entryid[i]));
-	return EXT_ERR_SUCCESS;
-}
-
 int nsp_ext_pull::g_nsp_request(bind_request &req)
 {
 	uint8_t tmp_byte;
@@ -368,9 +326,9 @@ int nsp_ext_pull::g_nsp_request(modlinkatt_request &req)
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
 		req.entryids.count = 0;
-		req.entryids.entryid = nullptr;
+		req.entryids.pbin = nullptr;
 	} else {
-		TRY(nsp_ext_g_entryids(*this, &req.entryids));
+		TRY(g_bin_a(&req.entryids));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {

@@ -138,7 +138,7 @@ struct gettemplateinfo_response {
 
 struct modlinkatt_request {
 	uint32_t flags = 0, proptag = 0, mid = 0, cb_auxin = 0;
-	nsp_entryids entryids{};
+	BINARY_ARRAY entryids{};
 	uint8_t *auxin = nullptr;
 };
 

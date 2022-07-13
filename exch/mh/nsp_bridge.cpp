@@ -190,21 +190,9 @@ uint32_t nsp_bridge_run(const GUID& session_guid, const gettemplateinfo_request&
 
 uint32_t nsp_bridge_run(const GUID& session_guid, const modlinkatt_request& request, modlinkatt_response&)
 {
-	BINARY_ARRAY entryid_array;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	entryid_array.count = request.entryids.count;
-	if (request.entryids.count == 0) {
-		entryid_array.pbin = nullptr;
-	} else {
-		entryid_array.pbin = cu_alloc<BINARY>(request.entryids.count);
-		if (entryid_array.pbin == nullptr)
-			return ecRpcFailed;
-	}
-	for (size_t i = 0; i < request.entryids.count; ++i)
-		if (!cu_entryid_to_binary(request.entryids.entryid[i],
-		    entryid_array.pbin[i]))
-			return ecRpcFailed;
-	return nsp_interface_mod_linkatt(ses, request.flags, request.proptag, request.mid, &entryid_array);
+	return nsp_interface_mod_linkatt(ses, request.flags, request.proptag,
+	       request.mid, &request.entryids);
 }
 
 uint32_t nsp_bridge_run(const GUID& session_guid, const modprops_request& request, modprops_response&)

@@ -21,4 +21,3 @@ extern BOOL cu_nsp_proprow_to_proplist(const NSP_PROPROW &, LTPROPVAL_ARRAY &);
 extern BOOL cu_proplist_to_nsp_proprow(const LTPROPVAL_ARRAY &, NSP_PROPROW &);
 extern BOOL cu_nsp_rowset_to_colrow(const LPROPTAG_ARRAY *cols, const NSP_ROWSET &, nsp_rowset2 &);
 extern BOOL cu_restriction_to_nspres(const RESTRICTION &, NSPRES &);
-extern BOOL cu_entryid_to_binary(const nsp_entryid &, BINARY &);
