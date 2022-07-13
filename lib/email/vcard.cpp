@@ -88,16 +88,16 @@ static void vcard_free_param(VCARD_PARAM *pvparam)
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (NULL == pvparam->pparamval_list) {
-		free(pvparam);
+		delete pvparam;
 		return;
 	}
 	while ((pnode = double_list_pop_front(pvparam->pparamval_list)) != nullptr) {
 		free(pnode->pdata);
-		free(pnode);
+		delete pnode;
 	}
 	double_list_free(pvparam->pparamval_list);
-	free(pvparam->pparamval_list);
-	free(pvparam);
+	delete pvparam->pparamval_list;
+	delete pvparam;
 }
 
 static void vcard_free_value(VCARD_VALUE *pvvalue)
@@ -108,10 +108,10 @@ static void vcard_free_value(VCARD_VALUE *pvvalue)
 		if (NULL != pnode->pdata) {
 			free(pnode->pdata);
 		}
-		free(pnode);
+		delete pnode;
 	}
 	double_list_free(&pvvalue->subval_list);
-	free(pvvalue);
+	delete pvvalue;
 }
 
 static void vcard_free_line(VCARD_LINE *pvline)
@@ -124,7 +124,7 @@ static void vcard_free_line(VCARD_LINE *pvline)
 	while ((pnode = double_list_pop_front(&pvline->value_list)) != nullptr)
 		vcard_free_value(static_cast<VCARD_VALUE *>(pnode->pdata));
 	double_list_free(&pvline->value_list);
-	free(pvline);
+	delete pvline;
 }
 
 vcard::~vcard()
@@ -689,9 +689,9 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 	return TRUE;
 }
 
-VCARD_LINE* vcard_new_line(const char *name)
+vcard_line *vcard_new_line(const char *name) try
 {
-	auto pvline = me_alloc<VCARD_LINE>();
+	auto pvline = new vcard_line();
 	if (pvline == nullptr)
 		return NULL;
 	pvline->node.pdata = pvline;
@@ -699,6 +699,8 @@ VCARD_LINE* vcard_new_line(const char *name)
 	double_list_init(&pvline->param_list);
 	double_list_init(&pvline->value_list);
 	return pvline;
+} catch (const std::bad_alloc &) {
+	return nullptr;
 }
 
 ec_error_t vcard::append_line2(VCARD_LINE *pvline)
@@ -707,15 +709,18 @@ ec_error_t vcard::append_line2(VCARD_LINE *pvline)
 	return ecSuccess;
 }
 
-VCARD_PARAM* vcard_new_param(const char*name)
+vcard_param *vcard_new_param(const char *name) try
 {
-	auto pvparam = me_alloc<VCARD_PARAM>();
+	auto pvparam = new vcard_param;
 	if (pvparam == nullptr)
 		return NULL;
 	pvparam->node.pdata = pvparam;
 	gx_strlcpy(pvparam->name, name, GX_ARRAY_SIZE(pvparam->name));
 	pvparam->pparamval_list = NULL;
 	return pvparam;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2061: ENOMEM\n");
+	return nullptr;
 }
 
 ec_error_t vcard_param::append_paramval(const char *paramval)
@@ -725,28 +730,28 @@ ec_error_t vcard_param::append_paramval(const char *paramval)
 	
 	if (NULL == pvparam->pparamval_list) {
 		b_list = TRUE;
-		pvparam->pparamval_list = me_alloc<DOUBLE_LIST>();
+		pvparam->pparamval_list = new DOUBLE_LIST;
 		if (pvparam->pparamval_list == nullptr)
 			return ecServerOOM;
 		double_list_init(pvparam->pparamval_list);
 	} else {
 		b_list = FALSE;
 	}
-	auto pnode = me_alloc<DOUBLE_LIST_NODE>();
+	auto pnode = new DOUBLE_LIST_NODE;
 	if (NULL == pnode) {
 		if (b_list) {
 			double_list_free(pvparam->pparamval_list);
-			free(pvparam->pparamval_list);
+			delete pvparam->pparamval_list;
 			pvparam->pparamval_list = NULL;
 		}
 		return ecServerOOM;
 	}
 	pnode->pdata = strdup(paramval);
 	if (NULL == pnode->pdata) {
-		free(pnode);
+		delete pnode;
 		if (b_list) {
 			double_list_free(pvparam->pparamval_list);
-			free(pvparam->pparamval_list);
+			delete pvparam->pparamval_list;
 			pvparam->pparamval_list = NULL;
 		}
 		return ecServerOOM;
@@ -780,26 +785,29 @@ ec_error_t vcard_line::append_param(const char *k, const char *v)
 	return param->append_paramval(v);
 }
 
-VCARD_VALUE* vcard_new_value()
+vcard_value *vcard_new_value() try
 {
-	auto pvvalue = me_alloc<VCARD_VALUE>();
+	auto pvvalue = new vcard_value;
 	if (pvvalue == nullptr)
 		return NULL;
 	pvvalue->node.pdata = pvvalue;
 	double_list_init(&pvvalue->subval_list);
 	return pvvalue;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2062: ENOMEM\n");
+	return nullptr;
 }
 
 ec_error_t vcard_value::append_subval(const char *subval)
 {
 	auto pvvalue = this;
-	auto pnode = me_alloc<DOUBLE_LIST_NODE>();
+	auto pnode = new DOUBLE_LIST_NODE;
 	if (pnode == nullptr)
 		return ecServerOOM;
 	if (NULL != subval) {
 		pnode->pdata = strdup(subval);
 		if (NULL == pnode->pdata) {
-			free(pnode);
+			delete pnode;
 			return ecServerOOM;
 		}
 	} else {
