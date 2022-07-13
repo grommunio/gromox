@@ -2296,17 +2296,23 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			tmp_list.emplace(pitem[i].user);
 	}
 	for (size_t i = 0; i < pentry_ids->count; ++i) {
-		if (pentry_ids->pbin[i].cb < 32) {
+		if (pentry_ids->pbin[i].cb < 20) {
 			continue;
 		}
-		if (32 == pentry_ids->pbin[i].cb) {
+		if (pentry_ids->pbin[i].cb == 32 &&
+		    pentry_ids->pbin[i].pb[0] == ENTRYID_TYPE_EPHEMERAL) {
 			tmp_mid = pentry_ids->pbin[i].pb[28];
 			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[29]) << 8;
 			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[30]) << 16;
 			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[31]) << 24;
 			ptnode = ab_tree_minid_to_node(pbase.get(), tmp_mid);
-		} else {
+		} else if (pentry_ids->pbin[i].cb >= 28 &&
+		    pentry_ids->pbin[i].pb[0] == ENTRYID_TYPE_PERMANENT) {
 			ptnode = ab_tree_dn_to_node(pbase.get(), pentry_ids->pbin[i].pc + 28);
+		} else {
+			fprintf(stderr, "E-2039: Unknown NSPI entry ID type %xh\n",
+			        pentry_ids->pbin[i].pb[0]);
+			ptnode = nullptr;
 		}
 		if (NULL == ptnode) {
 			continue;
