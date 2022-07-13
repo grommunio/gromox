@@ -102,11 +102,11 @@ BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria);
 BOOL common_util_check_message_class(const char *str_class);
-extern BOOL common_util_check_delegate(message_object *, char *username, size_t);
-BOOL common_util_check_delegate_permission(
-	const char *account, const char *maildir);
-BOOL common_util_check_delegate_permission_ex(
-	const char *account, const char *account_representing);
+extern bool cu_extract_delegate(message_object *, char *username, size_t);
+extern bool cu_test_delegate_perm_MD(const char *account, const char *maildir, bool send_as);
+extern bool cu_test_delegate_perm_AA(const char *account, const char *account_representing, bool send_as);
+extern bool cu_get_delegate_perm_MD(const char *account, const char *maildir, bool &send_as);
+extern bool cu_get_delegate_perm_AA(const char *account, const char *account_representing, bool &send_as);
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval);
 void common_util_remove_propvals(

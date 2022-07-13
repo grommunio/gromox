@@ -3342,8 +3342,12 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	return pmessage->set_rcpts(prcpt_list) ? ecSuccess : ecError;
 }
 
+/**
+ * @send_as:	mangle message for Send-As (true) or just
+ * 		Send-On-Behalf/No-Change (false)
+ */
 static gxerr_t rectify_message(message_object *pmessage,
-    const char *representing_username)
+    const char *representing_username, bool send_as)
 {
 	auto account = pmessage->pstore->get_account();
 	uint8_t tmp_byte = 1;
@@ -3386,12 +3390,12 @@ static gxerr_t rectify_message(message_object *pmessage,
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
 		{PR_MESSAGE_DELIVERY_TIME, &nt_time},
 		{PR_CONTENT_FILTER_SCL, &tmp_level},
-		{PR_SENDER_SMTP_ADDRESS, deconst(account)},
+		{PR_SENDER_SMTP_ADDRESS, deconst(send_as ? representing_username : account)},
 		{PR_SENDER_ADDRTYPE, deconst("EX")},
-		{PR_SENDER_EMAIL_ADDRESS, essdn},
-		{PR_SENDER_NAME, dispname},
-		{PR_SENDER_ENTRYID, entryid},
-		{PR_SENDER_SEARCH_KEY, &search_bin},
+		{PR_SENDER_EMAIL_ADDRESS, send_as ? essdn1 : essdn},
+		{PR_SENDER_NAME, send_as ? dispname1 : dispname},
+		{PR_SENDER_ENTRYID, send_as ? entryid1 : entryid},
+		{PR_SENDER_SEARCH_KEY, send_as ? &search_bin1 : &search_bin},
 		{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(representing_username)},
 		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("EX")},
 		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn1},
@@ -3455,18 +3459,18 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0)
 		return ecAccessDenied;
-	if (!common_util_check_delegate(pmessage, username, GX_ARRAY_SIZE(username))) {
+	if (!cu_extract_delegate(pmessage, username, std::size(username)))
 		return ecSendAsDenied;
-	}
 	auto account = pstore->get_account();
+	bool send_as = false;
 	if ('\0' == username[0]) {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
-	} else if (!common_util_check_delegate_permission_ex(account, username)) {
-		fprintf(stderr, "I-1334: uid %s tried to send with from=<%s>, but no delegate permission.\n",
+	} else if (!cu_get_delegate_perm_AA(account, username, send_as)) {
+		fprintf(stderr, "I-1334: uid %s tried to send with from=<%s>, but no delegate/sendas permission.\n",
 		        account, username);
 		return ecAccessDenied;
 	}
-	auto err = rectify_message(pmessage, username);
+	auto err = rectify_message(pmessage, username, send_as);
 	if (err != GXERR_SUCCESS) {
 		return gxerr_to_hresult(err);
 	}

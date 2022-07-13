@@ -823,7 +823,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		}
 		*(uint32_t *)(*ppvalue) = EC_SUPPORTMASK_OTHER;
 		auto pinfo = zarafa_server_get_info();
-		if (common_util_check_delegate_permission(pinfo->get_username(), pstore->dir))
+		bool unused_sendas = false;
+		if (cu_get_delegate_perm_MD(pinfo->get_username(), pstore->dir, unused_sendas))
 			*(uint32_t *)(*ppvalue) |= STORE_SUBMIT_OK;
 		return TRUE;
 	}

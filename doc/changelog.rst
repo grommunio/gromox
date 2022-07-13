@@ -1,9 +1,10 @@
-1.27.57
+1.27.79
 =======
 
 Enhancements:
 
 * php_mapi: add mapi_icaltomapi2 and mapi_vcftomapi2
+* emsmdb, zcore: Send-As support
 
 
 1.27 (2022-07-11)

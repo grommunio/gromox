@@ -131,7 +131,7 @@ BOOL common_util_check_message_class(const char *str_class)
 	return str_class[0] == '.' || str_class[len-1] == '.' ? false : TRUE;
 }
 
-BOOL common_util_check_delegate(message_object *pmessage, char *username, size_t ulen)
+bool cu_extract_delegate(message_object *pmessage, char *username, size_t ulen)
 {
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
@@ -176,21 +176,36 @@ BOOL common_util_check_delegate(message_object *pmessage, char *username, size_t
 	return TRUE;
 }
 
-BOOL common_util_check_delegate_permission(
-	const char *account, const char *maildir)
+/**
+ * Check whether @account (secretary) is allowed to represent @maildir
+ * (this is the filesystem variant of cu_get_delegate_perm_AA.)
+ * @send_as:	whether to evaluate either the Send-As or Send-On-Behalf list
+ */
+bool cu_test_delegate_perm_MD(const char *account,
+    const char *maildir, bool send_as) try
 {
 	std::vector<std::string> delegate_list;
-	auto ret = read_file_by_line((maildir + "/config/delegates.txt"s).c_str(), delegate_list);
-	if (ret != 0)
+	auto path = maildir + std::string(send_as ? "/config/sendas.txt" : "/config/delegates.txt");
+	auto ret = read_file_by_line(path.c_str(), delegate_list);
+	if (ret != 0 && ret != ENOENT) {
+		fprintf(stderr, "W-2057: %s: %s\n", path.c_str(), strerror(errno));
 		return FALSE;
+	}
 	for (const auto &d : delegate_list)
 		if (strcasecmp(d.c_str(), account) == 0)
 			return TRUE;
 	return FALSE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2056: ENOMEM\n");
+	return false;
 }
 
-BOOL common_util_check_delegate_permission_ex(
-	const char *account, const char *account_representing)
+/**
+ * Check whether @account (secretary) is allowed to represent @account_repr.
+ * @send_as:	whether to evaluate either the Send-As or Send-On-Behalf list
+ */
+bool cu_test_delegate_perm_AA(const char *account,
+    const char *account_representing, bool send_as)
 {
 	char maildir[256];	
 	
@@ -199,7 +214,42 @@ BOOL common_util_check_delegate_permission_ex(
 	if (!system_services_get_maildir(account_representing,
 	    maildir, arsizeof(maildir)))
 		return FALSE;
-	return common_util_check_delegate_permission(account, maildir);
+	return cu_get_delegate_perm_MD(account, maildir, send_as);
+}
+
+/**
+ * @account:	"secretary account"
+ * @maildir:	"boss account"
+ *
+ * Return value(s):
+ * - rv false: Only send as yourself
+ * - rv true, send_as false: Send-On-Behalf
+ * - rv true, send_as true: Send-As
+ */
+bool cu_get_delegate_perm_MD(const char *account, const char *maildir, bool &send_as)
+{
+	if (cu_test_delegate_perm_MD(account, maildir, true)) {
+		send_as = true;
+		return true;
+	}
+	if (cu_test_delegate_perm_MD(account, maildir, false)) {
+		send_as = false;
+		return true;
+	}
+	return false;
+}
+
+bool cu_get_delegate_perm_AA(const char *account, const char *repr, bool &send_as)
+{
+	if (cu_test_delegate_perm_AA(account, repr, true)) {
+		send_as = true;
+		return true;
+	}
+	if (cu_test_delegate_perm_AA(account, repr, false)) {
+		send_as = false;
+		return true;
+	}
+	return false;
 }
 
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,
