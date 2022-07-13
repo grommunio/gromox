@@ -190,11 +190,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 			pbuff[i] = '\0';
 			if (!b_searched) {
 				b_searched = TRUE;
-				if (NULL != strcasestr(pbuff, "QUOTED-PRINTABLE")) {
-					b_quoted = TRUE;
-				} else {
-					b_quoted = FALSE;
-				}
+				b_quoted = strcasestr(pbuff, "QUOTED-PRINTABLE") != nullptr ? TRUE : false;
 			}
 			if (b_quoted) {
 				if ('=' == pbuff[i - 1]) {
@@ -204,15 +200,10 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 					i --;
 				} else {
 					if ('\n' == pbuff[i + 1]) {
-						if (i + 2 < max_length) {
-							return pbuff + i + 2;
-						}
+						return i + 2 < max_length ? pbuff + i + 2 : nullptr;
 					} else {
-						if (i + 1 < max_length) {
-							return pbuff + i + 1;
-						}
+						return i + 1 < max_length ? pbuff + i + 1 : nullptr;
 					}
-					return NULL;
 				}
 			}
 			if (i + 1 < max_length && '\n' == pbuff[i + 1]) {
@@ -265,11 +256,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 			pbuff[i] = '\0';
 			if (!b_searched) {
 				b_searched = TRUE;
-				if (NULL != strcasestr(pbuff, "QUOTED-PRINTABLE")) {
-					b_quoted = TRUE;
-				} else {
-					b_quoted = FALSE;
-				}
+				b_quoted = strcasestr(pbuff, "QUOTED-PRINTABLE") != nullptr ? TRUE : false;
 			}
 			if (b_quoted) {
 				if ('=' == pbuff[i - 1]) {
