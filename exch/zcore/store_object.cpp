@@ -34,11 +34,6 @@
 #include "store_object.h"
 #include "system_services.hpp"
 #include "zarafa_server.h"
-#define PROP_TAG_USERNAME								0x661A001F
-
-#define PROP_TAG_ECSERVERVERSION						0x6716001F
-#define PROP_TAG_ECUSERLANGUAGE							0x6770001F
-#define PROP_TAG_ECUSERTIMEZONE							0x6771001F
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -473,7 +468,7 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_SUPPORT_MASK;
-	pproptags->pproptag[pproptags->count++] = PROP_TAG_ECSERVERVERSION;
+	pproptags->pproptag[pproptags->count++] = PR_EC_SERVER_VERSION;
 	return TRUE;
 }
 
@@ -845,7 +840,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_USERNAME: {
+	case PR_USER_NAME: {
 		auto pinfo = zarafa_server_get_info();
 		*ppvalue = deconst(pinfo->get_username());
 		return TRUE;
@@ -947,7 +942,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_ECSERVERVERSION:
+	case PR_EC_SERVER_VERSION:
 		*ppvalue = deconst(PACKAGE_VERSION);
 		return TRUE;
 	case PR_EC_OUTOFOFFICE:
@@ -966,7 +961,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_ECUSERLANGUAGE:
+	case PR_EC_USER_LANGUAGE:
 		if (!pstore->b_private)
 			return FALSE;
 		if (!system_services_get_user_lang(pstore->account, temp_buff,
@@ -975,7 +970,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		HX_strlcat(temp_buff, ".UTF-8", sizeof(temp_buff));
 		*ppvalue = common_util_dup(temp_buff);
 		return TRUE;
-	case PROP_TAG_ECUSERTIMEZONE:
+	case PR_EC_USER_TIMEZONE:
 		if (!pstore->b_private)
 			return FALSE;
 		if (!system_services_get_timezone(pstore->account, temp_buff,
@@ -1335,10 +1330,10 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			    ppropvals->ppropval[i].pvalue))
 				return FALSE;	
 			break;
-		case PROP_TAG_ECUSERLANGUAGE:
+		case PR_EC_USER_LANGUAGE:
 			set_store_lang(pstore, static_cast<char *>(ppropvals->ppropval[i].pvalue));
 			break;
-		case PROP_TAG_ECUSERTIMEZONE:
+		case PR_EC_USER_TIMEZONE:
 			if (pstore->b_private)
 				system_services_set_timezone(pstore->account,
 					static_cast<char *>(ppropvals->ppropval[i].pvalue));
