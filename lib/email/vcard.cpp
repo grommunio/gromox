@@ -430,6 +430,18 @@ static void vcard_unescape_string(char *pstring)
 	}
 }
 
+static bool vcard_std_keyword(const char *name)
+{
+	static constexpr char keywords[][8] = {
+		"ORG", "UID", "KEY", "ADDR", "NOTE", "LOGO", "ROLE", "LABEL",
+		"PHOTO", "SOUND", "TITLE", "PRODID", "VERSION",
+	};
+	for (const char *k : keywords)
+		if (strcasecmp(name, k) == 0)
+			return true;
+	return false;
+}
+
 ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
     size_t limit) try
 {
@@ -479,19 +491,7 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 		if (ret != ecSuccess)
 			return ret;
 		if (NULL != tmp_item.pvalue) {
-			if (0 == strcasecmp(pvline->name, "ORG") ||
-				0 == strcasecmp(pvline->name, "UID") ||
-				0 == strcasecmp(pvline->name, "KEY") ||
-				0 == strcasecmp(pvline->name, "ADDR") ||
-				0 == strcasecmp(pvline->name, "NOTE") ||
-				0 == strcasecmp(pvline->name, "LOGO") ||
-				0 == strcasecmp(pvline->name, "ROLE") ||
-				0 == strcasecmp(pvline->name, "LABEL") ||
-				0 == strcasecmp(pvline->name, "PHOTO") ||
-				0 == strcasecmp(pvline->name, "SOUND") ||
-				0 == strcasecmp(pvline->name, "TITLE") ||
-				0 == strcasecmp(pvline->name, "PRODID") ||
-				0 == strcasecmp(pvline->name, "VERSION")) {
+			if (vcard_std_keyword(pvline->name)) {
 				pvvalue = vcard_new_value();
 				if (pvvalue == nullptr)
 					return ecServerOOM;
