@@ -96,7 +96,8 @@ enum class zcore_callid : uint8_t {
 	setpasswd = 0x54,
 	linkmessage = 0x55,
 	rfc822tomessage = 0x56,
-	icaltomessage2 = 0x57,
+	// icaltomessage2 = 0x57,
+	imtomessage2 = 0x58,
 };
 
 struct ZCREQ_LOGON {
@@ -569,10 +570,15 @@ struct ZCREQ_ICALTOMESSAGE {
 	BINARY *pical_bin;
 };
 
-struct ZCREQ_ICALTOMESSAGE2 {
+enum imtomessage2_type {
+	IMTOMESSAGE_ICAL = 0,
+};
+
+struct ZCREQ_IMTOMESSAGE2 {
 	GUID session;
 	uint32_t folder;
-	char *ical_data;
+	uint32_t data_type;
+	char *im_data;
 };
 
 struct ZCREQ_MESSAGETOVCF {
@@ -698,7 +704,7 @@ union ZCORE_REQUEST_PAYLOAD {
 	ZCREQ_GETUSERAVAILABILITY getuseravailability;
 	ZCREQ_SETPASSWD setpasswd;
 	ZCREQ_LINKMESSAGE linkmessage;
-	ZCREQ_ICALTOMESSAGE2 icaltomessage2;
+	ZCREQ_IMTOMESSAGE2 imtomessage2;
 };
 
 struct ZCORE_RPC_REQUEST {
@@ -927,7 +933,7 @@ struct ZCRESP_GETUSERAVAILABILITY {
 	char *result_string;
 };
 
-struct ZCRESP_ICALTOMESSAGE2 {
+struct ZCRESP_IMTOMESSAGE2 {
 	LONG_ARRAY msg_handles;
 };
 
@@ -983,7 +989,7 @@ union ZCORE_RESPONSE_PAYLOAD {
 	ZCRESP_MESSAGETOICAL messagetoical;
 	ZCRESP_MESSAGETOVCF messagetovcf;
 	ZCRESP_GETUSERAVAILABILITY getuseravailability;
-	ZCRESP_ICALTOMESSAGE2 icaltomessage2;
+	ZCRESP_IMTOMESSAGE2 imtomessage2;
 };
 
 struct ZCORE_RPC_RESPONSE {

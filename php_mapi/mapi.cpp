@@ -5291,8 +5291,8 @@ ZEND_FUNCTION(mapi_icaltomapi2)
 	ZEND_FETCH_RESOURCE(fld, MAPI_RESOURCE *, &resfolder, -1,
 		name_mapi_folder, le_mapi_folder);
 	LONG_ARRAY msg_handles{};
-	auto ret = zarafa_client_icaltomessage2(abk->hsession, fld->hobject,
-	           icsdata, &msg_handles);
+	auto ret = zarafa_client_imtomessage2(abk->hsession, fld->hobject,
+	           IMTOMESSAGE_ICAL, icsdata, &msg_handles);
 	if (ret != ecSuccess) {
 		MAPI_G(hr) = ret;
 		THROW_EXCEPTION;

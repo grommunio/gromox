@@ -5115,8 +5115,8 @@ uint32_t zarafa_server_icaltomessage(GUID hsession,
 	return pmessage->write_message(pmsgctnt.get()) ? ecSuccess : ecError;
 }
 
-uint32_t zarafa_server_icaltomessage2(GUID session, uint32_t fld_handle,
-    char *ical_data, LONG_ARRAY &outhandles)
+uint32_t zarafa_server_imtomessage2(GUID session, uint32_t fld_handle,
+    uint32_t data_type, char *im_data, LONG_ARRAY &outhandles)
 {
 	auto info = zarafa_server_query_session(session);
 	if (info == nullptr)
@@ -5128,7 +5128,9 @@ uint32_t zarafa_server_icaltomessage2(GUID session, uint32_t fld_handle,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	std::vector<message_ptr> msgvec;
-	auto ret = cu_ical_to_message2(fld->pstore, ical_data, msgvec);
+	ec_error_t ret = ecInvalidParam;
+	if (data_type == IMTOMESSAGE_ICAL)
+		ret = cu_ical_to_message2(fld->pstore, im_data, msgvec);
 	if (ret != ecSuccess)
 		return ret;
 

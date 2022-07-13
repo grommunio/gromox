@@ -98,6 +98,7 @@ static constexpr const char *zcore_rpc_names[] = {
 	E(LINKMESSAGE),
 	E(RFC822TOMESSAGE),
 	E(ICALTOMESSAGE2),
+	E(IMTOMESSAGE2),
 };
 #undef E
 #undef EXP
@@ -105,7 +106,7 @@ static constexpr const char *zcore_rpc_names[] = {
 const char *zcore_rpc_idtoname(zcore_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(arsizeof(zcore_rpc_names) == static_cast<uint8_t>(zcore_callid::icaltomessage2) + 1);
+	static_assert(arsizeof(zcore_rpc_names) == static_cast<uint8_t>(zcore_callid::imtomessage2) + 1);
 	const char *s = j < arsizeof(zcore_rpc_names) ? zcore_rpc_names[j] : nullptr;
 	return znul(s);
 }

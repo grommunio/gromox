@@ -1018,11 +1018,12 @@ static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_ICALTOMESSAGE &d)
 	return true;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_ICALTOMESSAGE2 &d)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_IMTOMESSAGE2 &d)
 {
 	TRY(x.p_guid(d.session));
 	TRY(x.p_uint32(d.folder));
-	TRY(x.p_str(d.ical_data));
+	TRY(x.p_uint32(d.data_type));
+	TRY(x.p_str(d.im_data));
 	return true;
 }
 
@@ -1069,7 +1070,7 @@ static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETUSERAVAILABILITY &d)
 	return true;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_ICALTOMESSAGE2 &d)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_IMTOMESSAGE2 &d)
 {
 	TRY(x.g_uint32_a(&d.msg_handles));
 	return true;
@@ -1187,7 +1188,7 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	E(getuseravailability)
 	E(setpasswd)
 	E(linkmessage)
-	E(icaltomessage2)
+	E(imtomessage2)
 #undef E
 	default:
 		return 0;
@@ -1298,7 +1299,7 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 	E(messagetoical)
 	E(messagetovcf)
 	E(getuseravailability)
-	E(icaltomessage2)
+	E(imtomessage2)
 #undef E
 	default:
 		return 0;

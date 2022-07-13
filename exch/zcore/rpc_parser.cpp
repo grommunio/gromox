@@ -636,14 +636,16 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.linkmessage.search_entryid,
 			prequest->payload.linkmessage.message_entryid);
 		break;
-	case zcore_callid::icaltomessage2: {
-		auto &rq = prequest->payload.icaltomessage2;
-		auto &rs = presponse->payload.icaltomessage2;
-		presponse->result = zarafa_server_icaltomessage2(rq.session,
-		                    rq.folder, rq.ical_data, rs.msg_handles);
+	case zcore_callid::imtomessage2: {
+		auto &rq = prequest->payload.imtomessage2;
+		auto &rs = presponse->payload.imtomessage2;
+		presponse->result = zarafa_server_imtomessage2(rq.session,
+		                    rq.folder, rq.data_type, rq.im_data,
+		                    rs.msg_handles);
 		break;
 	}
 	default:
+		fprintf(stderr, "E-2046: unknown zrpc request type %u\n", prequest->call_id);
 		return DISPATCH_FALSE;
 	}
 	if (g_zrpc_debug == 0)
