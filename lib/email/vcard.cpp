@@ -452,14 +452,14 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 		if (!vcard_retrieve_line_item(pline, &tmp_item))
 			break;
 		if (!b_begin) {
-			if (0 == strcasecmp(tmp_item.ptag, "BEGIN") &&
-				(NULL != tmp_item.pvalue &&
-				0 == strcasecmp(tmp_item.pvalue, "VCARD"))) {
+			if (strcasecmp(tmp_item.ptag, "BEGIN") != 0 ||
+			    tmp_item.pvalue == nullptr ||
+			    strcasecmp(tmp_item.pvalue, "VCARD") != 0) {
+				break;
+			} else {
 				b_begin = TRUE;
 				pvcard = &cardvec.emplace_back();
 				continue;
-			} else {
-				break;
 			}
 		}
 		if (0 == strcasecmp(tmp_item.ptag, "END") &&
@@ -478,7 +478,11 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 		if (ret != ecSuccess)
 			return ret;
 		if (NULL != tmp_item.pvalue) {
-			if (vcard_std_keyword(pvline->name)) {
+			if (!vcard_std_keyword(pvline->name)) {
+				auto rv = vcard_retrieve_value(pvline, tmp_item.pvalue);
+				if (rv != ecSuccess)
+					break;
+			} else {
 				pvvalue = vcard_new_value();
 				if (pvvalue == nullptr)
 					return ecServerOOM;
@@ -489,10 +493,6 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 				ret = pvvalue->append_subval(tmp_item.pvalue);
 				if (ret != ecSuccess)
 					return ret;
-			} else {
-				auto rv = vcard_retrieve_value(pvline, tmp_item.pvalue);
-				if (rv != ecSuccess)
-					break;
 			}
 		}
 		
