@@ -5,7 +5,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <unistd.h>
+#include <utility>
+#include <vector>
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -46,13 +49,12 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static constexpr const char *g_dfl_svc_plugins[] = {
+static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_event_proxy.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
 	"libgxs_textmaps.so",
 	"libgxs_authmgr.so",
-	NULL,
 };
 
 static constexpr cfg_directive midb_cfg_defaults[] = {
@@ -136,16 +138,11 @@ int main(int argc, const char **argv) try
 	if (!midb_reload_config(pconfig))
 		return EXIT_FAILURE;
 
-	auto str_value = pconfig->get_value("SERVICE_PLUGIN_LIST");
-	char **service_plugin_list = nullptr;
-	auto cl_0c = make_scope_exit([&]() { HX_zvecfree(service_plugin_list); });
-	if (str_value != NULL) {
-		service_plugin_list = read_file_by_line(str_value);
-		if (service_plugin_list == NULL) {
-			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			return 2;
-		}
-	}
+	std::vector<std::string> service_plugin_list;
+	auto ret = read_plugin_list_file(pconfig->get_value("service_plugin_list"),
+	           std::move(g_dfl_svc_plugins), service_plugin_list);
+	if (ret != 0)
+		return EXIT_FAILURE;
 
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
@@ -199,7 +196,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
 		g_config_file->get_value("state_path"),
-		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
+		std::move(service_plugin_list),
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		threads_num});
 	auto cl_0 = make_scope_exit(service_stop);

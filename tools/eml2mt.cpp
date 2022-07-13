@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -49,8 +50,8 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static constexpr const char *g_svc_plugins[] =
-	{"libgxs_mysql_adaptor.so", "libgxs_textmaps.so", nullptr};
+static std::vector<std::string> g_svc_plugins =
+	{"libgxs_mysql_adaptor.so", "libgxs_textmaps.so"};
 
 static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR},
@@ -216,7 +217,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
 		g_config_file->get_value("state_path"),
-		g_svc_plugins, false, 1});
+		std::move(g_svc_plugins), false, 1});
 	auto cl_0 = make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");

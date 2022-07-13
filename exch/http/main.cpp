@@ -9,8 +9,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <typeinfo>
 #include <unistd.h>
+#include <utility>
+#include <vector>
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -49,18 +52,16 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static constexpr const char *g_dfl_hpm_plugins[] = {
+static std::vector<std::string> g_dfl_hpm_plugins = {
 	"libgxh_mh_emsmdb.so",
 	"libgxh_mh_nsp.so",
-	NULL,
 };
-static constexpr const char *g_dfl_proc_plugins[] = {
+static std::vector<std::string> g_dfl_proc_plugins = {
 	"libgxp_exchange_emsmdb.so",
 	"libgxp_exchange_nsp.so",
 	"libgxp_exchange_rfr.so",
-	NULL,
 };
-static constexpr const char *g_dfl_svc_plugins[] = {
+static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_abktplug.so",
 	"libgxs_codepage_lang.so",
 	"libgxs_exmdb_provider.so",
@@ -71,7 +72,6 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 	"libgxs_textmaps.so",
 	"libgxs_timer_agent.so",
 	"libgxs_user_filter.so",
-	NULL,
 };
 
 static void term_handler(int signo);
@@ -261,29 +261,19 @@ int main(int argc, const char **argv) try
 	HX_unit_size(temp_buff, arsizeof(temp_buff), max_request_mem, 1024, 0);
 	printf("[pdu_processor]: maximum request memory is %s\n", temp_buff);
 
-	auto str_value = g_config_file->get_value("service_plugin_list");
-	char **proc_plugin_list = nullptr, **hpm_plugin_list = nullptr, **service_plugin_list = nullptr;
-	auto cl_0 = make_scope_exit([&]() {
-		HX_zvecfree(service_plugin_list);
-		HX_zvecfree(hpm_plugin_list);
-		HX_zvecfree(proc_plugin_list);
-	});
-	if (str_value != NULL) {
-		proc_plugin_list = read_file_by_line(str_value);
-		if (proc_plugin_list == NULL) {
-			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			return EXIT_FAILURE;
-		}
-	}
-	
-	str_value = resource_get_string("HPM_PLUGIN_LIST");
-	if (str_value != NULL) {
-		hpm_plugin_list = read_file_by_line(str_value);
-		if (hpm_plugin_list == NULL) {
-			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			return EXIT_FAILURE;
-		}
-	}
+	std::vector<std::string> proc_plugin_list, hpm_plugin_list, service_plugin_list;
+	auto ret = read_plugin_list_file(g_config_file->get_value("proc_plugin_list"),
+	           std::move(g_dfl_proc_plugins), proc_plugin_list);
+	if (ret != 0)
+		return EXIT_FAILURE;
+	ret = read_plugin_list_file(resource_get_string("hpm_plugin_list"),
+	      std::move(g_dfl_hpm_plugins), hpm_plugin_list);
+	if (ret != 0)
+		return EXIT_FAILURE;
+	ret = read_plugin_list_file(resource_get_string("service_plugin_list"),
+	      std::move(g_dfl_svc_plugins), service_plugin_list);
+	if (ret != 0)
+		return EXIT_FAILURE;
 	
 	uint64_t hpm_cache_size = g_config_file->get_ll("hpm_cache_size");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), hpm_cache_size, 1024, 0);
@@ -292,15 +282,6 @@ int main(int argc, const char **argv) try
 	uint64_t hpm_max_size = g_config_file->get_ll("hpm_max_size");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), hpm_max_size, 1024, 0);
 	printf("[hpm_processor]: hpm maximum size is %s\n", temp_buff);
-
-	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
-	if (str_value != NULL) {
-		service_plugin_list = read_file_by_line(str_value);
-		if (service_plugin_list == NULL) {
-			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			return EXIT_FAILURE;
-		}
-	}
 
 	uint64_t fastcgi_cache_size = g_config_file->get_ll("fastcgi_cache_size");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), fastcgi_cache_size, 1024, 0);
@@ -340,7 +321,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
+		std::move(service_plugin_list),
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		context_num, "http"});
 	auto cleanup_6 = make_scope_exit(service_stop);
@@ -380,7 +361,7 @@ int main(int argc, const char **argv) try
 	pdu_processor_init(context_num, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
 		g_config_file->get_value("proc_plugin_path"),
-		proc_plugin_list != NULL ? proc_plugin_list : g_dfl_proc_plugins,
+		std::move(proc_plugin_list),
 		parse_bool(g_config_file->get_value("proc_plugin_ignore_errors")));
 	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 	printf("---------------------------- proc plugins begin "
@@ -396,8 +377,7 @@ int main(int argc, const char **argv) try
 	}
 
 	hpm_processor_init(context_num, g_config_file->get_value("hpm_plugin_path"),
-		hpm_plugin_list != NULL ? hpm_plugin_list : g_dfl_hpm_plugins,
-		hpm_cache_size, hpm_max_size,
+		std::move(hpm_plugin_list), hpm_cache_size, hpm_max_size,
 		parse_bool(g_config_file->get_value("hpm_plugin_ignore_errors")));
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 	printf("---------------------------- hpm plugins begin "

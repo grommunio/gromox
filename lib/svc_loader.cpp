@@ -70,7 +70,8 @@ static std::list<SVC_PLUG_ENTITY> g_list_plug;
 static std::vector<std::shared_ptr<service_entry>> g_list_service;
 static SVC_PLUG_ENTITY *g_cur_plug;
 static unsigned int g_context_num;
-static const char *const *g_plugin_names, *g_program_identifier;
+static std::vector<std::string> g_plugin_names;
+static const char *g_program_identifier;
 static bool g_ign_loaderr;
 static SVC_PLUG_ENTITY g_system_image;
 
@@ -80,14 +81,14 @@ static const char *service_get_prog_id() { return g_program_identifier; }
  *  init the service module with the path specified where
  *  we can load the .svc plug-in
  */
-void service_init(const struct service_init_param &parm)
+void service_init(service_init_param &&parm)
 {
 	g_context_num = parm.context_num;
 	gx_strlcpy(g_init_path, parm.plugin_dir, sizeof(g_init_path));
 	gx_strlcpy(g_config_dir, parm.config_dir, sizeof(g_config_dir));
 	gx_strlcpy(g_data_dir, parm.data_dir, sizeof(g_data_dir));
 	gx_strlcpy(g_state_dir, parm.state_dir, sizeof(g_state_dir));
-	g_plugin_names = parm.plugin_list;
+	g_plugin_names = std::move(parm.plugin_list);
 	g_ign_loaderr = parm.plugin_ignloaderr;
 	g_program_identifier = parm.prog_id;
 }
@@ -96,8 +97,8 @@ static void *const server_funcs[] = {reinterpret_cast<void *>(service_query_serv
 
 int service_run_early()
 {
-	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
-		int ret = service_load_library(*i);
+	for (const auto &i : g_plugin_names) {
+		int ret = service_load_library(i.c_str());
 		if (ret == PLUGIN_LOAD_OK) {
 			if (g_cur_plug->lib_main(PLUGIN_EARLY_INIT, const_cast<void **>(server_funcs))) {
 				g_cur_plug = nullptr;
@@ -140,7 +141,6 @@ void service_stop()
 {
 	g_list_plug.clear();
 	g_init_path[0] = '\0';
-	g_plugin_names = NULL;
 }
 
 /*

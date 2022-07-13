@@ -8,7 +8,10 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <typeinfo>
+#include <utility>
+#include <vector>
 #include <libHX/misc.h>
 #include <security/pam_modules.h>
 #include <gromox/config_file.hpp>
@@ -28,11 +31,10 @@ using namespace gromox;
 
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static std::mutex g_svc_once;
-static constexpr const char *g_dfl_svc_plugins[] = {
+static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
 	"libgxs_authmgr.so",
-	nullptr,
 };
 
 static int converse(pam_handle_t *pamh, int nargs,
@@ -96,13 +98,13 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	if (svc_plugin_path == nullptr)
 		svc_plugin_path = PKGLIBDIR;
 	struct strvecfree { void operator()(char **s) { HX_zvecfree(s); } };
-	char **svc_plugin_list = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HX_zvecfree(svc_plugin_list); });
+	std::vector<std::string> svc_plugin_list;
 	auto val = cfg->get_value("service_plugin_list");
 	if (val != nullptr) {
-		svc_plugin_list = read_file_by_line(val);
-		if (svc_plugin_list == nullptr)
+		if (read_file_by_line(val, svc_plugin_list) != 0)
 			return PAM_AUTH_ERR;
+	} else {
+		svc_plugin_list = std::move(g_dfl_svc_plugins);
 	}
 
 	bool svcplug_ignerr = parse_bool(cfg->get_value("service_plugin_ignore_errors"));
@@ -112,8 +114,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 	std::lock_guard<std::mutex> holder(g_svc_once);
 	service_init({svc_plugin_path, config_dir, "", "",
-		svc_plugin_list != nullptr ? svc_plugin_list : g_dfl_svc_plugins,
-		svcplug_ignerr, 1});
+		std::move(svc_plugin_list), svcplug_ignerr, 1});
 	if (service_run_early() != 0)
 		return PAM_AUTH_ERR;
 	if (service_run() != 0)

@@ -101,38 +101,40 @@ void LIB_BUFFER::put_raw(void *item)
 	--allocated_num;
 }
 
-char **read_file_by_line(const char *file)
+errno_t read_file_by_line(const char *file, std::vector<std::string> &out)
 {
 	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
 	if (fp == nullptr)
-		return nullptr;
+		return errno;
 
 	hxmc_t *line = nullptr;
 	try {
-		std::list<std::unique_ptr<char[], stdlib_delete>> dq;
 		while (HX_getl(&line, fp.get()) != nullptr) {
 			HX_chomp(line);
-			decltype(dq)::value_type s(strdup(line));
-			if (s == nullptr)
-				return nullptr;
-			dq.push_back(std::move(s));
+			out.emplace_back(line);
 		}
 		HXmc_free(line);
-		line = nullptr;
-		auto ret = me_alloc<char *>(dq.size() + 1);
-		if (ret == nullptr)
-			return ret;
-		size_t i = 0;
-		for (auto &e : dq)
-			ret[i++] = e.release();
-		return ret;
+		return 0;
 	} catch (const std::bad_alloc &) {
-		errno = ENOMEM;
-		return nullptr;
+		HXmc_free(line);
+		return ENOMEM;
 	} catch (...) {
 		HXmc_free(line);
 		throw;
 	}
+}
+
+errno_t read_plugin_list_file(const char *file,
+    std::vector<std::string> &&defaults, std::vector<std::string> &out)
+{
+	if (file == nullptr) {
+		out = std::move(defaults);
+		return 0;
+	}
+	auto ret = read_file_by_line(file, out);
+	if (ret != 0)
+		fprintf(stderr, "read_file_by_line %s: %s\n", file, strerror(ret));
+	return ret;
 }
 
 int gx_vsnprintf1(char *buf, size_t sz, const char *file, unsigned int line,
@@ -583,3 +585,4 @@ XARRAY::~XARRAY()
 {
 	m_limit += m_vec.size();
 }
+

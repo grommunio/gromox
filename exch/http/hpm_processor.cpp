@@ -58,16 +58,16 @@ static char g_plugins_path[256];
 static HPM_PLUGIN *g_cur_plugin;
 static std::list<HPM_PLUGIN> g_plugin_list;
 static HPM_CONTEXT *g_context_list;
-static const char *const *g_plugin_names;
+static std::vector<std::string> g_plugin_names;
 static bool g_ign_loaderr;
 
 void hpm_processor_init(int context_num, const char *plugins_path,
-    const char *const *names, uint64_t cache_size, uint64_t max_size,
+    std::vector<std::string> &&names, uint64_t cache_size, uint64_t max_size,
     bool ignerr)
 {
 	g_context_num = context_num;
 	gx_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
-	g_plugin_names = names;
+	g_plugin_names = std::move(names);
 	g_cache_size = cache_size;
 	g_max_size = max_size;
 	g_ign_loaderr = ignerr;
@@ -367,9 +367,8 @@ int hpm_processor_run()
 		return -1;
 	}
 	memset(g_context_list, 0, sizeof(HPM_CONTEXT)*g_context_num);
-
-	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
-		int ret = hpm_processor_load_library(*i);
+	for (const auto &i : g_plugin_names) {
+		int ret = hpm_processor_load_library(i.c_str());
 		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
@@ -384,7 +383,6 @@ void hpm_processor_stop()
 		g_context_list = NULL;
 	}
 	g_plugins_path[0] = '\0';
-	g_plugin_names = NULL;
 }
 
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)

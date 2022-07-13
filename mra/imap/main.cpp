@@ -6,7 +6,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <unistd.h>
+#include <utility>
+#include <vector>
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -36,7 +39,7 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static constexpr const char *g_dfl_svc_plugins[] = {
+static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_event_proxy.so",
 	"libgxs_event_stub.so",
 	"libgxs_logthru.so",
@@ -45,7 +48,6 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 	"libgxs_mysql_adaptor.so",
 	"libgxs_authmgr.so",
 	"libgxs_user_filter.so",
-	NULL,
 };
 
 static constexpr cfg_directive imap_cfg_defaults[] = {
@@ -229,16 +231,11 @@ int main(int argc, const char **argv) try
 	if (listen_tls_port > 0)
 		printf("[system]: system TLS listening port %d\n", listen_tls_port);
 
-	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
-	char **service_plugin_list = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HX_zvecfree(service_plugin_list); });
-	if (str_value != NULL) {
-		service_plugin_list = read_file_by_line(str_value);
-		if (service_plugin_list == NULL) {
-			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			return EXIT_FAILURE;
-		}
-	}
+	std::vector<std::string> service_plugin_list;
+	auto ret = read_plugin_list_file(resource_get_string("SERVICE_PLUGIN_LIST"),
+	           std::move(g_dfl_svc_plugins), service_plugin_list);
+	if (ret != 0)
+		return EXIT_FAILURE;
 
 	if (resource_run() != 0) {
 		printf("[system]: Failed to load resource\n");
@@ -270,7 +267,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
+		std::move(service_plugin_list),
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		context_num});
 	printf("--------------------------- service plugins begin"

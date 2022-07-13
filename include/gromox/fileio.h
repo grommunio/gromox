@@ -22,7 +22,8 @@
 #endif
 extern GX_EXPORT int gx_snprintf1(char *, size_t, const char *, unsigned int, const char *, ...) __attribute__((format(printf, 5, 6)));
 extern GX_EXPORT int gx_vsnprintf1(char *, size_t, const char *, unsigned int, const char *, va_list);
-extern char **read_file_by_line(const char *file);
+extern GX_EXPORT gromox::errno_t read_file_by_line(const char *file, std::vector<std::string> &);
+extern GX_EXPORT gromox::errno_t read_plugin_list_file(const char *file, std::vector<std::string> &&, std::vector<std::string> &);
 
 namespace gromox {
 

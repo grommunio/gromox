@@ -7,7 +7,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <string>
 #include <unistd.h>
+#include <utility>
+#include <vector>
 #include <libHX/option.h>
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -57,8 +60,8 @@ static void terse_help()
 	fprintf(stderr, "Usage: gromox-exm2eml -u source@mbox.de msgid >dump.eml\n");
 }
 
-static constexpr const char *g_svc_plugins[] =
-	{"libgxs_mysql_adaptor.so", "libgxs_textmaps.so", nullptr};
+static std::vector<std::string> g_svc_plugins =
+	{"libgxs_mysql_adaptor.so", "libgxs_textmaps.so"};
 
 static constexpr cfg_directive exm2eml_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR},
@@ -89,7 +92,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
 		g_config_file->get_value("state_path"),
-		g_svc_plugins, false, 1});
+		std::move(g_svc_plugins), false, 1});
 	auto cl_0 = make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");

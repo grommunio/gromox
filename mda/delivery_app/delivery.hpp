@@ -1,5 +1,7 @@
 #pragma once
 #include <memory>
+#include <string>
+#include <vector>
 #include <gromox/single_list.hpp>
 
 enum {
@@ -47,7 +49,7 @@ extern int system_services_run();
 extern void system_services_stop();
 extern void (*system_services_log_info)(unsigned int, const char *, ...);
 
-extern void transporter_init(const char *path, const char *const *names, unsigned int threads_min, unsigned int threads_max, unsigned int free_num, unsigned int mime_ratio, bool ignerr);
+extern void transporter_init(const char *path, std::vector<std::string> &&names, unsigned int threads_min, unsigned int threads_max, unsigned int free_num, unsigned int mime_ratio, bool ignerr);
 extern int transporter_run();
 extern void transporter_stop();
 extern void transporter_wakeup_one_thread();

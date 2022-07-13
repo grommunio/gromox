@@ -5,6 +5,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <utility>
+#include <vector>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -39,14 +42,13 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static constexpr const char *g_dfl_svc_plugins[] = {
+static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_logthru.so",
 	"libgxs_midb_agent.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
 	"libgxs_authmgr.so",
 	"libgxs_user_filter.so",
-	NULL,
 };
 
 static constexpr cfg_directive smtp_cfg_defaults[] = {
@@ -238,16 +240,11 @@ int main(int argc, const char **argv) try
 	printf("[smtp]: block remote side %s when mails number is exceed for one "
 			"session\n", temp_buff);
 	
-	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
-	char **service_plugin_list = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HX_zvecfree(service_plugin_list); });
-	if (str_value != NULL) {
-		service_plugin_list = read_file_by_line(str_value);
-		if (service_plugin_list == NULL) {
-			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			return EXIT_FAILURE;
-		}
-	}
+	std::vector<std::string> service_plugin_list;
+	auto ret = read_plugin_list_file(resource_get_string("SERVICE_PLUGIN_LIST"),
+	           std::move(g_dfl_svc_plugins), service_plugin_list);
+	if (ret != 0)
+		return EXIT_FAILURE;
 
 	str_val = resource_get_string("command_protocol");
 	if (strcasecmp(str_val, "both") == 0)
@@ -284,7 +281,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
+		std::move(service_plugin_list),
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		scfg.context_num});
 	printf("--------------------------- service plugins begin"

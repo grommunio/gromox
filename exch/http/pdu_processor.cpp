@@ -131,7 +131,7 @@ static alloc_limiter<ASYNC_NODE> g_async_allocator;
 static alloc_limiter<BLOB_NODE> g_bnode_allocator;
 static alloc_limiter<NDR_STACK_ROOT> g_stack_allocator;
 static alloc_limiter<DCERPC_CONTEXT> g_context_allocator;
-static const char *const *g_plugin_names;
+static std::vector<std::string> g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
 	{{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8}, {0x08,0x00,0x2b,0x10,0x48,0x60}}, 2};
@@ -196,10 +196,10 @@ static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type
 	return 0;
 }
 
-void pdu_processor_init(int connection_num,
-	const char *netbios_name, const char *dns_name, const char *dns_domain,
-    BOOL header_signing, size_t max_request_mem, const char *plugins_path,
-    const char *const *names, bool ignerr)
+void pdu_processor_init(int connection_num, const char *netbios_name,
+    const char *dns_name, const char *dns_domain, BOOL header_signing,
+    size_t max_request_mem, const char *plugins_path,
+    std::vector<std::string> &&names, bool ignerr)
 {
 	static constexpr unsigned int connection_ratio = 10;
 	union {
@@ -222,7 +222,7 @@ void pdu_processor_init(int connection_num,
 	gx_strlcpy(g_dns_domain, dns_domain, GX_ARRAY_SIZE(g_dns_domain));
 	g_header_signing = header_signing;
 	gx_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
-	g_plugin_names = names;
+	g_plugin_names = std::move(names);
 	g_ign_loaderr = ignerr;
 }
 
@@ -247,9 +247,8 @@ int pdu_processor_run()
 	if (NULL == g_async_hash) {
 		return -8;
 	}
-
-	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
-		int ret = pdu_processor_load_library(*i);
+	for (const auto &i : g_plugin_names) {
+		int ret = pdu_processor_load_library(i.c_str());
 		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
@@ -313,7 +312,6 @@ void pdu_processor_stop()
 	g_endpoint_list.clear();
 	g_async_hash.reset();
 	g_plugins_path[0] = '\0';
-	g_plugin_names = NULL;
 }
 
 static uint16_t pdu_processor_find_secondary(const char *host,

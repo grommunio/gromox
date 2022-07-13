@@ -12,6 +12,7 @@
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -102,7 +103,7 @@ struct THREAD_DATA {
 }
 
 static char				g_path[256];
-static const char *const *g_plugin_names;
+static std::vector<std::string> g_plugin_names;
 static char g_local_path[256], g_remote_path[256];
 static HOOK_FUNCTION g_local_hook, g_remote_hook;
 static unsigned int g_threads_max, g_threads_min, g_mime_num, g_free_num;
@@ -170,12 +171,12 @@ ANTI_LOOP::ANTI_LOOP()
  *		free_num				free contexts number for hooks to throw out
  *		mime_ratio				how many mimes will be allocated per context
  */
-void transporter_init(const char *path, const char *const *names,
+void transporter_init(const char *path, std::vector<std::string> &&names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
     unsigned int mime_radito, bool ignerr)
 {
 	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
-	g_plugin_names = names;
+	g_plugin_names = std::move(names);
 	g_local_path[0] = '\0';
 	*g_remote_path = '\0';
 	g_notify_stop = false;
@@ -258,8 +259,8 @@ int transporter_run()
 		g_free_ptr[i].context.pcontrol = &g_free_ptr[i].mail_control;
 	}
 
-	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
-		int ret = transporter_load_library(*i);
+	for (const auto &i : g_plugin_names) {
+		int ret = transporter_load_library(i.c_str());
 		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK) {
 			transporter_collect_hooks();
 			transporter_collect_resource();
@@ -373,7 +374,6 @@ void transporter_stop()
 	transporter_collect_hooks();
 	transporter_collect_resource();
 	g_path[0] = '\0';
-	g_plugin_names = NULL;
 	g_threads_min = 0;
 	g_threads_max = 0;
 	g_mime_num = 0;
