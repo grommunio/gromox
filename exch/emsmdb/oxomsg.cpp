@@ -29,8 +29,12 @@ enum { /* for PR_SUBMIT_FLAGS (unused in Gromox) */
 	SUBMITFLAG_PREPROCESS = 0x2U,
 };
 
+/**
+ * @send_as:	mangle message for Send-As (true) or just
+ * 		Send-On-Behalf/No-Change (false)
+ */
 static gxerr_t oxomsg_rectify_message(message_object *pmessage,
-    const char *representing_username)
+    const char *representing_username, bool send_as)
 {
 	BINARY *pentryid;
 	uint64_t nt_time;
@@ -87,12 +91,12 @@ static gxerr_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
 		{PR_CONTENT_FILTER_SCL, &tmp_level},
 		{PR_MESSAGE_LOCALE_ID, &pinfo->lcid_string},
-		{PR_SENDER_SMTP_ADDRESS, deconst(account)},
+		{PR_SENDER_SMTP_ADDRESS, deconst(send_as ? representing_username : account)},
 		{PR_SENDER_ADDRTYPE, deconst("EX")},
-		{PR_SENDER_EMAIL_ADDRESS, essdn_buff},
-		{PR_SENDER_NAME, tmp_display},
-		{PR_SENDER_ENTRYID, pentryid},
-		{PR_SENDER_SEARCH_KEY, &search_bin},
+		{PR_SENDER_EMAIL_ADDRESS, send_as ? essdn_buff1 : essdn_buff},
+		{PR_SENDER_NAME, send_as ? tmp_display1 : tmp_display},
+		{PR_SENDER_ENTRYID, send_as ? pentryid1 : pentryid},
+		{PR_SENDER_SEARCH_KEY, send_as ? &search_bin1 : &search_bin},
 		{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(representing_username)},
 		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("EX")},
 		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn_buff1},
@@ -107,7 +111,8 @@ static gxerr_t oxomsg_rectify_message(message_object *pmessage,
 	return pmessage->save();
 }
 
-static BOOL oxomsg_check_delegate(message_object *pmessage, char *username, size_t ulen)
+static bool oxomsg_extract_delegate(message_object *pmessage,
+    char *username, size_t ulen)
 {
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
@@ -168,8 +173,11 @@ static BOOL oxomsg_check_delegate(message_object *pmessage, char *username, size
 	return TRUE;
 }
 
-static BOOL oxomsg_check_permission(const char *account,
-	const char *account_representing) try
+/**
+ * @send_as:	whether to evaluate either the Send-As or Send-On-Behalf list
+ */
+static bool oxomsg_test_perm(const char *account,
+    const char *account_representing, bool send_as) try
 {
 	char maildir[256];
 	
@@ -178,7 +186,7 @@ static BOOL oxomsg_check_permission(const char *account,
 	}
 	if (!common_util_get_maildir(account_representing, maildir, arsizeof(maildir)))
 		return FALSE;
-	auto dlg_path = maildir + "/config/delegates.txt"s;
+	auto dlg_path = maildir + std::string(send_as ? "/config/sendas.txt" : "/config/delegates.txt");
 	std::vector<std::string> delegate_list;
 	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
 	if (ret != 0 && ret != ENOENT)
@@ -190,6 +198,29 @@ static BOOL oxomsg_check_permission(const char *account,
 	return FALSE;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1500: ENOMEM\n");
+	return false;
+}
+
+/**
+ * @account:	"secretary account"
+ * @repr:	"boss account"
+ *
+ * Return value(s):
+ * - rv false: Only send as yourself
+ * - rv true, send_as false: Send-On-Behalf
+ * - rv true, send_as true: Send-As
+ */
+static bool oxomsg_get_perm(const char *account,
+    const char *account_representing, bool send_as)
+{
+	if (oxomsg_test_perm(account, account_representing, true)) {
+		send_as = true;
+		return TRUE;
+	}
+	if (oxomsg_test_perm(account, account_representing, false)) {
+		send_as = false;
+		return TRUE;
+	}
 	return false;
 }
 
@@ -244,15 +275,15 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (flag != nullptr && *flag != 0)
 		return ecAccessDenied;
 	
-	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
+	if (!oxomsg_extract_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
 	auto account = plogon->get_account();
+	bool send_as = false;
 	if (*username == '\0')
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
-	else if (!oxomsg_check_permission(account, username))
+	else if (!oxomsg_get_perm(account, username, send_as))
 		return ecAccessDenied;
-
-	gxerr_t err = oxomsg_rectify_message(pmessage, username);
+	gxerr_t err = oxomsg_rectify_message(pmessage, username, send_as);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
 	
@@ -527,15 +558,15 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecError;
 	if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & MSGFLAG_SUBMITTED)
 		return ecAccessDenied;
-	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
+	if (!oxomsg_extract_delegate(pmessage, username, std::size(username)))
 		return ecError;
 	auto account = plogon->get_account();
+	bool send_as = false;
 	if (*username == '\0')
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
-	else if (!oxomsg_check_permission(account, username))
+	else if (!oxomsg_get_perm(account, username, send_as))
 		return ecAccessDenied;
-
-	gxerr_t err = oxomsg_rectify_message(pmessage, username);
+	gxerr_t err = oxomsg_rectify_message(pmessage, username, send_as);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
 	*pppropvals = cu_alloc<TPROPVAL_ARRAY>();
