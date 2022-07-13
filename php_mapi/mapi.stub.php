@@ -103,6 +103,7 @@ function mapi_icaltomapi(resource $ses, resource $store, resource $abk, resource
 function mapi_icaltomapi2(resource $abk, resource $fld, string $ics) : array|false {}
 function mapi_mapitoical(resource $ses, resource $abk, resource $msg, array $opts) : string|false {}
 function mapi_vcftomapi(resource $ses, resource $store, resource $msg, string $str) : bool {}
+function mapi_vcftomapi2(resource $fld, string $vcard) : array|false {}
 function mapi_mapitovcf(resource $ses, res $abk, res $msg, array $opts) : string|false {}
 function mapi_enable_exceptions(string $cls) : bool {}
 function mapi_feature(string $ft) : bool {}

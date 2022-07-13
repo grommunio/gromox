@@ -166,6 +166,7 @@ ZEND_FUNCTION(mapi_icaltomapi);
 ZEND_FUNCTION(mapi_icaltomapi2);
 ZEND_FUNCTION(mapi_mapitoical);
 ZEND_FUNCTION(mapi_vcftomapi);
+ZEND_FUNCTION(mapi_vcftomapi2);
 ZEND_FUNCTION(mapi_mapitovcf);
 ZEND_FUNCTION(mapi_enable_exceptions);
 ZEND_FUNCTION(mapi_feature);
@@ -367,6 +368,7 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_icaltomapi2)
 	F(mapi_mapitoical)
 	F(mapi_vcftomapi)
+	F(mapi_vcftomapi2)
 	F(mapi_mapitovcf)
 	F(mapi_enable_exceptions)
 	F(mapi_feature)
@@ -5262,6 +5264,8 @@ ZEND_FUNCTION(mapi_icaltomapi)
 	MAPI_G(hr) = ecSuccess;
 }
 
+static void imtomapi2_proc(INTERNAL_FUNCTION_PARAMETERS, GUID, LONG_ARRAY &);
+
 /**
  * mapi_icaltomapi2(resource $abook, resource $folder,
  *                  string $ics_data) : array|false|throw;
@@ -5297,7 +5301,13 @@ ZEND_FUNCTION(mapi_icaltomapi2)
 		MAPI_G(hr) = ret;
 		THROW_EXCEPTION;
 	}
+	imtomapi2_proc(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+		fld->hsession, msg_handles);
+}
 
+static void imtomapi2_proc(INTERNAL_FUNCTION_PARAMETERS,
+    GUID session, LONG_ARRAY &msg_handles)
+{
 	array_init(return_value);
 	for (size_t i = 0; i < msg_handles.count; ++i) {
 		auto res = st_malloc<MAPI_RESOURCE>();
@@ -5306,13 +5316,49 @@ ZEND_FUNCTION(mapi_icaltomapi2)
 			THROW_EXCEPTION;
 		}
 		res->type = ZMG_MESSAGE;
-		res->hsession = fld->hsession;
+		res->hsession = session;
 		res->hobject = msg_handles.pl[i];
 		zval mres;
 		ZEND_REGISTER_RESOURCE(&mres, res, le_mapi_message);
 		add_index_zval(return_value, i, &mres);
 	}
 	MAPI_G(hr) = ecSuccess;
+}
+
+/**
+ * mapi_vcftomapi2(resource $folder, string $ics_data) : array|false|throw;
+ *
+ * @folder:	target folder for event messages
+ * 		(usually the private contacts folder)
+ *
+ * Returns an array of message resource objects. On error, the function throws.
+ * For compatibility reasons, you must check the return value for the value
+ * "false" as well.
+ */
+ZEND_FUNCTION(mapi_vcftomapi2)
+{
+	zval *resfolder;
+	char *vcdata = nullptr;
+	size_t vcdatalen = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs", &resfolder,
+	    &vcdata, &vcdatalen) == FAILURE || resfolder == nullptr) {
+		MAPI_G(hr) = ecInvalidParam;
+		THROW_EXCEPTION;
+	}
+
+	MAPI_RESOURCE *fld;
+	ZEND_FETCH_RESOURCE(fld, MAPI_RESOURCE *, &resfolder, -1,
+		name_mapi_folder, le_mapi_folder);
+	LONG_ARRAY msg_handles{};
+	auto ret = zarafa_client_imtomessage2(fld->hsession, fld->hobject,
+	           IMTOMESSAGE_VCARD, vcdata, &msg_handles);
+	if (ret != ecSuccess) {
+		MAPI_G(hr) = ret;
+		THROW_EXCEPTION;
+	}
+	imtomapi2_proc(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+		fld->hsession, msg_handles);
 }
 
 ZEND_FUNCTION(mapi_mapitoical)
