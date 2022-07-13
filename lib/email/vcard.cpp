@@ -761,6 +761,25 @@ ec_error_t vcard_line::append_param(VCARD_PARAM *pvparam)
 	return ecSuccess;
 }
 
+ec_error_t vcard_line::append_param(const char *k)
+{
+	auto param = vcard_new_param(k);
+	if (param == nullptr)
+		return ecServerOOM;
+	return append_param(param);
+}
+
+ec_error_t vcard_line::append_param(const char *k, const char *v)
+{
+	auto param = vcard_new_param(k);
+	if (param == nullptr)
+		return ecServerOOM;
+	auto ret = append_param(param);
+	if (ret != ecSuccess)
+		return ret;
+	return param->append_paramval(v);
+}
+
 VCARD_VALUE* vcard_new_value()
 {
 	auto pvvalue = me_alloc<VCARD_VALUE>();
@@ -794,6 +813,25 @@ ec_error_t vcard_line::append_value(VCARD_VALUE *pvvalue)
 {
 	double_list_append_as_tail(&value_list, &pvvalue->node);
 	return ecSuccess;
+}
+
+ec_error_t vcard_line::append_value()
+{
+	auto value = vcard_new_value();
+	if (value == nullptr)
+		return ecServerOOM;
+	return append_value(value);
+}
+
+ec_error_t vcard_line::append_value(const char *text)
+{
+	auto value = vcard_new_value();
+	if (value == nullptr)
+		return ecServerOOM;
+	auto ret = append_value(value);
+	if (ret != ecSuccess)
+		return ret;
+	return value->append_subval(text);
 }
 
 const char *vcard_line::get_first_subval() const

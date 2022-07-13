@@ -24,7 +24,11 @@ using VCARD_VALUE = vcard_value;
 
 struct GX_EXPORT vcard_line {
 	ec_error_t append_param(VCARD_PARAM *);
+	ec_error_t append_param(const char *);
+	ec_error_t append_param(const char *, const char *);
+	ec_error_t append_value();
 	ec_error_t append_value(VCARD_VALUE *);
+	ec_error_t append_value(const char *);
 	const char *get_first_subval() const;
 
 	DOUBLE_LIST_NODE node;

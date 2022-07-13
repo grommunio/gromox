@@ -733,16 +733,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	if (ret != ecSuccess)
 		return false;
 	for (size_t i = 0; i < 5; ++i) {
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
 		pvalue = pmsg->proplist.get<char>(g_n_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -780,13 +774,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			if (ret != ecSuccess)
 				return false;
 		}
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -811,34 +799,16 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			ret = pvcard->append_line2(pvline);
 			if (ret != ecSuccess)
 				return false;
-			pvparam = vcard_new_param("TYPE");
-			if (pvparam == nullptr)
-				return false;
-			ret = pvline->append_param(pvparam);
+			ret = pvline->append_param("TYPE", photo_type);
 			if (ret != ecSuccess)
 				return false;
-			ret = pvparam->append_paramval(photo_type);
-			if (ret != ecSuccess)
-				return false;
-			pvparam = vcard_new_param("ENCODING");
-			if (pvparam == nullptr)
-				return false;
-			ret = pvline->append_param(pvparam);
-			if (ret != ecSuccess)
-				return false;
-			ret = pvparam->append_paramval("B");
-			if (ret != ecSuccess)
-				return false;
-			pvvalue = vcard_new_value();
-			if (pvvalue == nullptr)
-				return false;
-			ret = pvline->append_value(pvvalue);
+			ret = pvline->append_param("ENCODING", "B");
 			if (ret != ecSuccess)
 				return false;
 			if (encode64(bv->pb, bv->cb, tmp_buff, VCARD_MAX_BUFFER_LEN - 1, &out_len) != 0)
 				return false;
 			tmp_buff[out_len] = '\0';
-			ret = pvvalue->append_subval(tmp_buff);
+			ret = pvline->append_value(tmp_buff);
 			if (ret != ecSuccess)
 				return false;
 			break;
@@ -858,24 +828,12 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	ret = pvcard->append_line2(pvline);
 	if (ret != ecSuccess)
 		return false;
-	pvvalue = vcard_new_value();
-	if (pvvalue == nullptr)
-		return false;
-	ret = pvline->append_value(pvvalue);
-	if (ret != ecSuccess)
-		return false;
 	pvalue = pmsg->proplist.get<char>(PR_COMPANY_NAME);
-	ret = pvvalue->append_subval(pvalue);
-	if (ret != ecSuccess)
-		return false;
-	pvvalue = vcard_new_value();
-	if (pvvalue == nullptr)
-		return false;
-	ret = pvline->append_value(pvvalue);
+	ret = pvline->append_value(pvalue);
 	if (ret != ecSuccess)
 		return false;
 	pvalue = pmsg->proplist.get<char>(PR_DEPARTMENT_NAME);
-	ret = pvvalue->append_subval(pvalue);
+	ret = pvline->append_value(pvalue);
 	if (ret != ecSuccess)
 		return false;
 	
@@ -905,35 +863,20 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	ret = pvcard->append_line2(pvline);
 	if (ret != ecSuccess)
 		return false;
-	pvparam = vcard_new_param("TYPE");
-	if (pvparam == nullptr)
-		return false;
-	ret = pvline->append_param(pvparam);
-	if (ret != ecSuccess)
-		return false;
-	ret = pvparam->append_paramval("WORK");
+	ret = pvline->append_param("TYPE", "WORK");
 	if (ret != ecSuccess)
 		return false;
 	for (size_t i = 0; i < 6; ++i) {
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
 		propid = PROP_ID(g_workaddr_proptags[i]);
 		proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[i]), propids.ppropid[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
 		if (pvalue == nullptr)
 			continue;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
-	pvvalue = vcard_new_value();
-	if (pvvalue == nullptr)
-		return false;
-	ret = pvline->append_value(pvvalue);
+	ret = pvline->append_value();
 	if (ret != ecSuccess)
 		return false;
 	
@@ -943,33 +886,18 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	ret = pvcard->append_line2(pvline);
 	if (ret != ecSuccess)
 		return false;
-	pvparam = vcard_new_param("TYPE");
-	if (pvparam == nullptr)
-		return false;
-	ret = pvline->append_param(pvparam);
-	if (ret != ecSuccess)
-		return false;
-	ret = pvparam->append_paramval("HOME");
+	ret = pvline->append_param("TYPE", "HOME");
 	if (ret != ecSuccess)
 		return false;
 	for (size_t i = 0; i < 6; ++i) {
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
 		pvalue = pmsg->proplist.get<char>(g_homeaddr_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
-	pvvalue = vcard_new_value();
-	if (pvvalue == nullptr)
-		return false;
-	ret = pvline->append_value(pvvalue);
+	ret = pvline->append_value();
 	if (ret != ecSuccess)
 		return false;
 	
@@ -979,33 +907,18 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	ret = pvcard->append_line2(pvline);
 	if (ret != ecSuccess)
 		return false;
-	pvparam = vcard_new_param("TYPE");
-	if (pvparam == nullptr)
-		return false;
-	ret = pvline->append_param(pvparam);
-	if (ret != ecSuccess)
-		return false;
-	ret = pvparam->append_paramval("POSTAL");
+	ret = pvline->append_param("TYPE", "POSTAL");
 	if (ret != ecSuccess)
 		return false;
 	for (size_t i = 0; i < 6; ++i) {
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
 		pvalue = pmsg->proplist.get<char>(g_otheraddr_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
-	pvvalue = vcard_new_value();
-	if (pvvalue == nullptr)
-		return false;
-	ret = pvline->append_value(pvvalue);
+	ret = pvline->append_value();
 	if (ret != ecSuccess)
 		return false;
 	
@@ -1019,22 +932,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("TYPE");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("TYPE", tel_types[i]);
 		if (ret != ecSuccess)
 			return false;
-		ret = pvparam->append_paramval(tel_types[i]);
-		if (ret != ecSuccess)
-			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1047,28 +948,13 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("TYPE");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("TYPE", "HOME");
 		if (ret != ecSuccess)
 			return false;
-		ret = pvparam->append_paramval("HOME");
+		ret = pvline->append_param("FAX");
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("FAX");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
-		if (ret != ecSuccess)
-			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1081,28 +967,13 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("TYPE");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("TYPE", "WORK");
 		if (ret != ecSuccess)
 			return false;
-		ret = pvparam->append_paramval("WORK");
+		ret = pvline->append_param("FAX");
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("FAX");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
-		if (ret != ecSuccess)
-			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1145,22 +1016,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("TYPE");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("TYPE", "HOME");
 		if (ret != ecSuccess)
 			return false;
-		ret = pvparam->append_paramval("HOME");
-		if (ret != ecSuccess)
-			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1173,22 +1032,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("TYPE");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("TYPE", "WORK");
 		if (ret != ecSuccess)
 			return false;
-		ret = pvparam->append_paramval("WORK");
-		if (ret != ecSuccess)
-			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1232,22 +1079,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("TYPE");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("TYPE", ms_tel_types[i]);
 		if (ret != ecSuccess)
 			return false;
-		ret = pvparam->append_paramval(ms_tel_types[i]);
-		if (ret != ecSuccess)
-			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1260,17 +1095,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("N");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
+		ret = pvline->append_param("N");
 		if (ret != ecSuccess)
 			return false;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1283,19 +1111,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("N");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("N");
 		if (ret != ecSuccess)
 			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1308,19 +1127,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("N");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("N");
 		if (ret != ecSuccess)
 			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(pvalue);
+		ret = pvline->append_value(pvalue);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1378,19 +1188,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("ENCODING");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvparam->append_paramval("B");
-		if (ret != ecSuccess)
-			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
+		ret = pvline->append_param("ENCODING", "B");
 		if (ret != ecSuccess)
 			return false;
 		pbin = ((BINARY_ARRAY*)pvalue)->pbin;
@@ -1398,7 +1196,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		    VCARD_MAX_BUFFER_LEN - 1, &out_len))
 			return false;
 		tmp_buff[out_len] = '\0';
-		ret = pvvalue->append_subval(tmp_buff);
+		ret = pvline->append_value(tmp_buff);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1426,22 +1224,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("VALUE");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("VALUE", "DATE");
 		if (ret != ecSuccess)
 			return false;
-		ret = pvparam->append_paramval("DATE");
-		if (ret != ecSuccess)
-			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(tmp_buff);
+		ret = pvline->append_value(tmp_buff);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1457,22 +1243,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("VALUE");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("VALUE", "DATE-TIME");
 		if (ret != ecSuccess)
 			return false;
-		ret = pvparam->append_paramval("DATE-TIME");
-		if (ret != ecSuccess)
-			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(tmp_buff);
+		ret = pvline->append_value(tmp_buff);
 		if (ret != ecSuccess)
 			return false;
 	}
@@ -1488,22 +1262,10 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		ret = pvcard->append_line2(pvline);
 		if (ret != ecSuccess)
 			return false;
-		pvparam = vcard_new_param("VALUE");
-		if (pvparam == nullptr)
-			return false;
-		ret = pvline->append_param(pvparam);
+		ret = pvline->append_param("VALUE", "DATE");
 		if (ret != ecSuccess)
 			return false;
-		ret = pvparam->append_paramval("DATE");
-		if (ret != ecSuccess)
-			return false;
-		pvvalue = vcard_new_value();
-		if (pvvalue == nullptr)
-			return false;
-		ret = pvline->append_value(pvvalue);
-		if (ret != ecSuccess)
-			return false;
-		ret = pvvalue->append_subval(tmp_buff);
+		ret = pvline->append_value(tmp_buff);
 		if (ret != ecSuccess)
 			return false;
 	}
