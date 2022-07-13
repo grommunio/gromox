@@ -1338,6 +1338,18 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 	return false;
 }
 
+static std::unordered_set<std::string> delegates_for(const char *dir) try
+{
+	std::vector<std::string> dl;
+	auto path = dir + "/config/delegates.txt"s;
+	auto ret = read_file_by_line(path.c_str(), dl);
+	if (ret != 0 && ret != ENOENT)
+		fprintf(stderr, "E-2054: %s: %s\n", path.c_str(), strerror(ret));
+	return std::unordered_set<std::string>{std::make_move_iterator(dl.begin()), std::make_move_iterator(dl.end())};
+} catch (const std::bad_alloc &) {
+	return {};
+}
+
 int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
     STAT *pstat, const MID_ARRAY *preserved, uint32_t reserved2,
     const NSPRES *pfilter, const NSP_PROPNAME *ppropname,
@@ -1413,19 +1425,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			*pprows = nullptr;
 			return ecError;
 		}
-		std::string dlg_path;
-		try {
-			dlg_path = maildir + "/config/delegates.txt"s;
-		} catch (const std::bad_alloc &) {
-			*ppoutmids = nullptr;
-			*pprows = nullptr;
-			fprintf(stderr, "E-1525: ENOMEM\n");
-			return ecServerOOM;
-		}
-		std::vector<std::string> delegate_list;
-		auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
-		if (ret != 0 && ret != ENOENT)
-			fprintf(stderr, "E-2054: %s: %s\n", dlg_path.c_str(), strerror(ret));
+		auto delegate_list = delegates_for(maildir);
 		for (const auto &deleg : delegate_list) {
 			if ((*ppoutmids)->cvalues > requested) {
 				break;
@@ -2267,20 +2267,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	if (!get_maildir(username, maildir, arsizeof(maildir))) {
 		return ecError;
 	}
-	std::string dlg_path;
-	try {
-		dlg_path = maildir + "/config/delegates.txt"s;
-	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1526: ENOMEM\n");
-		return ecServerOOM;
-	}
-	std::vector<std::string> delegate_list;
-	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
-	if (ret != 0 && ret != ENOENT) {
-		fprintf(stderr, "E-2043: %s: %s\n", dlg_path.c_str(), strerror(ret));
-		return ecError;
-	}
-	std::unordered_set<std::string> tmp_list{std::make_move_iterator(delegate_list.begin()), std::make_move_iterator(delegate_list.end())};
+	auto tmp_list = delegates_for(maildir);
 	size_t item_num = tmp_list.size();
 	for (size_t i = 0; i < pentry_ids->count; ++i) {
 		if (pentry_ids->pbin[i].cb < 20) {
@@ -2312,7 +2299,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		}
 	}
 	if (tmp_list.size() != item_num) {
-		wrapfd fd = open(dlg_path.c_str(), O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		auto dlg_path = maildir + "/config/delegates.txt"s;
+		wrapfd fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
 		if (fd.get() < 0) {
 			fprintf(stderr, "E-2024: open %s: %s\n",
 			        dlg_path.c_str(), strerror(errno));
