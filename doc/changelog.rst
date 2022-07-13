@@ -1,3 +1,11 @@
+1.27.57
+=======
+
+Enhancements:
+
+* php_mapi: add mapi_icaltomapi2 and mapi_vcftomapi2
+
+
 1.27 (2022-07-11)
 =================
 
