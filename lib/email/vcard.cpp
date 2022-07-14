@@ -87,16 +87,11 @@ static void vcard_free_param(VCARD_PARAM *pvparam)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (NULL == pvparam->pparamval_list) {
-		delete pvparam;
-		return;
-	}
-	while ((pnode = double_list_pop_front(pvparam->pparamval_list)) != nullptr) {
+	while ((pnode = double_list_pop_front(&pvparam->pparamval_list)) != nullptr) {
 		free(pnode->pdata);
 		delete pnode;
 	}
-	double_list_free(pvparam->pparamval_list);
-	delete pvparam->pparamval_list;
+	double_list_free(&pvparam->pparamval_list);
 	delete pvparam;
 }
 
@@ -576,7 +571,6 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 	VCARD_PARAM *pvparam;
 	VCARD_VALUE *pvvalue;
 	DOUBLE_LIST_NODE *pnode1;
-	DOUBLE_LIST_NODE *pnode2;
 	
 	if (max_length <= 13) {
 		return FALSE;
@@ -600,7 +594,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 			}
 			out_buff[offset] = ';';
 			offset ++;
-			if (NULL == pvparam->pparamval_list) {
+			if (double_list_get_nodes_num(&pvparam->pparamval_list) == 0) {
 				offset += gx_snprintf(out_buff + offset,
 					max_length - offset, "%s", pvparam->name);
 				if (offset >= max_length) {
@@ -614,9 +608,9 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 				return FALSE;
 			}
 			need_comma = FALSE;
-			for (pnode2=double_list_get_head(pvparam->pparamval_list);
-				NULL!=pnode2; pnode2=double_list_get_after(
-				pvparam->pparamval_list, pnode2)) {
+			for (auto pnode2 = double_list_get_head(&pvparam->pparamval_list);
+			     pnode2 != nullptr;
+			     pnode2 = double_list_get_after(&pvparam->pparamval_list, pnode2)) {
 				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
@@ -652,7 +646,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 				offset ++;
 			}
 			need_comma = FALSE;
-			for (pnode2=double_list_get_head(&pvvalue->subval_list);
+			for (auto pnode2 = double_list_get_head(&pvvalue->subval_list);
 				NULL!=pnode2; pnode2=double_list_get_after(
 				&pvvalue->subval_list, pnode2)) {
 				if (!need_comma) {
@@ -716,7 +710,7 @@ vcard_param *vcard_new_param(const char *name) try
 		return NULL;
 	pvparam->node.pdata = pvparam;
 	gx_strlcpy(pvparam->name, name, GX_ARRAY_SIZE(pvparam->name));
-	pvparam->pparamval_list = NULL;
+	double_list_init(&pvparam->pparamval_list);
 	return pvparam;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-2061: ENOMEM\n");
@@ -726,37 +720,16 @@ vcard_param *vcard_new_param(const char *name) try
 ec_error_t vcard_param::append_paramval(const char *paramval)
 {
 	auto pvparam = this;
-	BOOL b_list;
-	
-	if (NULL == pvparam->pparamval_list) {
-		b_list = TRUE;
-		pvparam->pparamval_list = new DOUBLE_LIST;
-		if (pvparam->pparamval_list == nullptr)
-			return ecServerOOM;
-		double_list_init(pvparam->pparamval_list);
-	} else {
-		b_list = FALSE;
-	}
 	auto pnode = new DOUBLE_LIST_NODE;
 	if (NULL == pnode) {
-		if (b_list) {
-			double_list_free(pvparam->pparamval_list);
-			delete pvparam->pparamval_list;
-			pvparam->pparamval_list = NULL;
-		}
 		return ecServerOOM;
 	}
 	pnode->pdata = strdup(paramval);
 	if (NULL == pnode->pdata) {
 		delete pnode;
-		if (b_list) {
-			double_list_free(pvparam->pparamval_list);
-			delete pvparam->pparamval_list;
-			pvparam->pparamval_list = NULL;
-		}
 		return ecServerOOM;
 	}
-	double_list_append_as_tail(pvparam->pparamval_list, pnode);
+	double_list_append_as_tail(&pvparam->pparamval_list, pnode);
 	return ecSuccess;
 }
 

@@ -10,7 +10,7 @@ struct GX_EXPORT vcard_param {
 
 	DOUBLE_LIST_NODE node;
 	char name[VCARD_NAME_LEN];
-	DOUBLE_LIST *pparamval_list;
+	DOUBLE_LIST pparamval_list;
 };
 using VCARD_PARAM = vcard_param;
 
