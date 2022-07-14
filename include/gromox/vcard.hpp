@@ -6,23 +6,29 @@
 #define VCARD_NAME_LEN		32
 
 struct GX_EXPORT vcard_param {
+	vcard_param(const char *);
+	~vcard_param();
 	ec_error_t append_paramval(const char *paramval);
 
-	DOUBLE_LIST_NODE node;
-	char name[VCARD_NAME_LEN];
-	DOUBLE_LIST pparamval_list;
+	DOUBLE_LIST_NODE node{};
+	char name[VCARD_NAME_LEN]{};
+	DOUBLE_LIST pparamval_list{};
 };
 using VCARD_PARAM = vcard_param;
 
 struct GX_EXPORT vcard_value {
+	vcard_value();
+	~vcard_value();
 	ec_error_t append_subval(const char *);
 
-	DOUBLE_LIST_NODE node;
-	DOUBLE_LIST subval_list;
+	DOUBLE_LIST_NODE node{};
+	DOUBLE_LIST subval_list{};
 };
 using VCARD_VALUE = vcard_value;
 
 struct GX_EXPORT vcard_line {
+	vcard_line(const char *);
+	~vcard_line();
 	ec_error_t append_param(VCARD_PARAM *);
 	vcard_param &append_param(const char *);
 	vcard_param &append_param(const char *, const char *);
@@ -31,10 +37,9 @@ struct GX_EXPORT vcard_line {
 	vcard_value &append_value(const char *);
 	const char *get_first_subval() const;
 
-	DOUBLE_LIST_NODE node;
-	char name[VCARD_NAME_LEN];
-	DOUBLE_LIST param_list;
-	DOUBLE_LIST value_list;
+	DOUBLE_LIST_NODE node{};
+	char name[VCARD_NAME_LEN]{};
+	DOUBLE_LIST param_list{}, value_list{};
 };
 using VCARD_LINE = vcard_line;
 
