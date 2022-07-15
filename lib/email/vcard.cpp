@@ -83,20 +83,6 @@ vcard &vcard::operator=(vcard &&o)
 	return *this;
 }
 
-vcard_value::~vcard_value()
-{
-	auto pvvalue = this;
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(&pvvalue->subval_list)) != nullptr) {
-		if (NULL != pnode->pdata) {
-			free(pnode->pdata);
-		}
-		delete pnode;
-	}
-	double_list_free(&pvvalue->subval_list);
-}
-
 vcard_line::~vcard_line()
 {
 	auto pvline = this;
@@ -361,11 +347,7 @@ static ec_error_t vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 		ptr1 = ptr;
 		do {
 			pnext1 = vcard_get_comma(ptr1);
-			if ('\0' == *ptr1) {
-				ret = pvvalue->append_subval(nullptr);
-				if (ret != ecSuccess)
-					return ret;
-			} else {
+			{
 				ret = pvvalue->append_subval(ptr1);
 				if (ret != ecSuccess)
 					return ret;
@@ -632,9 +614,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 				offset ++;
 			}
 			need_comma = FALSE;
-			for (auto pnode2 = double_list_get_head(&pvvalue->subval_list);
-				NULL!=pnode2; pnode2=double_list_get_after(
-				&pvvalue->subval_list, pnode2)) {
+			for (const auto &sv : pvvalue->m_subvals) {
 				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
@@ -644,10 +624,10 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 					out_buff[offset] = ',';
 					offset ++;
 				}
-				if (NULL != pnode2->pdata) {
+				if (!sv.empty()) {
 					offset += vcard_serialize_string(out_buff + offset,
 					          max_length - offset, offset - line_begin,
-					          static_cast<char *>(pnode2->pdata));
+					          sv.c_str());
 					if (offset >= max_length) {
 						return FALSE;
 					}
@@ -747,7 +727,6 @@ vcard_value::vcard_value()
 {
 	auto pvvalue = this;
 	pvvalue->node.pdata = pvvalue;
-	double_list_init(&pvvalue->subval_list);
 }
 
 vcard_value *vcard_new_value() try
@@ -758,23 +737,13 @@ vcard_value *vcard_new_value() try
 	return nullptr;
 }
 
-ec_error_t vcard_value::append_subval(const char *subval)
+ec_error_t vcard_value::append_subval(const char *subval) try
 {
-	auto pvvalue = this;
-	auto pnode = new DOUBLE_LIST_NODE;
-	if (pnode == nullptr)
-		return ecServerOOM;
-	if (NULL != subval) {
-		pnode->pdata = strdup(subval);
-		if (NULL == pnode->pdata) {
-			delete pnode;
-			return ecServerOOM;
-		}
-	} else {
-		pnode->pdata = NULL;
-	}
-	double_list_append_as_tail(&pvvalue->subval_list, pnode);
+	m_subvals.emplace_back(znul(subval));
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2063: ENOMEM\n");
+	return ecServerOOM;
 }
 
 ec_error_t vcard_line::append_value(VCARD_VALUE *pvvalue)
@@ -814,10 +783,7 @@ const char *vcard_line::get_first_subval() const
 	if (pnode == nullptr)
 		return NULL;
 	auto pvvalue = static_cast<const VCARD_VALUE *>(pnode->pdata);
-	auto pnode1 = double_list_get_head(&pvvalue->subval_list);
-	if (pnode1 == nullptr)
-		return NULL;
-	return static_cast<const char *>(pnode1->pdata);
+	return pvvalue->m_subvals.size() > 0 ? pvvalue->m_subvals[0].c_str() : nullptr;
 }
 
 vcard_line &vcard::append_line(const char *name)

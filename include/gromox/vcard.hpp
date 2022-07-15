@@ -20,12 +20,10 @@ using VCARD_PARAM = vcard_param;
 
 struct GX_EXPORT vcard_value {
 	vcard_value();
-	~vcard_value();
-	NOMOVE(vcard_value);
 	ec_error_t append_subval(const char *);
 
 	DOUBLE_LIST_NODE node{};
-	DOUBLE_LIST subval_list{};
+	std::vector<std::string> m_subvals;
 };
 using VCARD_VALUE = vcard_value;
 

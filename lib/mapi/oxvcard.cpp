@@ -132,7 +132,6 @@ MESSAGE_CONTENT* oxvcard_import(
 	int tmp_len;
 	int ufld_count;
 	int mail_count;
-	int list_count;
 	BINARY tmp_bin;
 	uint16_t propid;
 	BOOL b_encoding;
@@ -196,12 +195,12 @@ MESSAGE_CONTENT* oxvcard_import(
 				if (count > 4)
 					break;
 				pvvalue = (VCARD_VALUE*)pnode1->pdata;
-				list_count = double_list_get_nodes_num(&pvvalue->subval_list);
+				auto list_count = pvvalue->m_subvals.size();
 				if (list_count > 1)
 					return nullptr;
-				auto pnode2 = double_list_get_head(&pvvalue->subval_list);
-				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
-				    pmsg->proplist.set(g_n_proptags[count], pnode2->pdata) != 0)
+				if (list_count > 0 &&
+				    !pvvalue->m_subvals[0].empty() &&
+				    pmsg->proplist.set(g_n_proptags[count], pvvalue->m_subvals[0].c_str()) != 0)
 					return nullptr;
 				count ++;
 			}
@@ -295,13 +294,11 @@ MESSAGE_CONTENT* oxvcard_import(
 				if (count > 5)
 					break;
 				pvvalue = (VCARD_VALUE*)pnode1->pdata;
-				list_count = double_list_get_nodes_num(&pvvalue->subval_list);
+				auto list_count = pvvalue->m_subvals.size();
 				if (list_count > 1)
 					return nullptr;
-				auto pnode2 = double_list_get_head(&pvvalue->subval_list);
-				if (NULL != pnode2) {
-					if (pnode2->pdata == nullptr)
-						continue;
+				if (list_count > 0 &&
+				    !pvvalue->m_subvals[0].empty()) {
 					uint32_t tag;
 					if (strcasecmp(address_type, "work") == 0)
 						tag = g_workaddr_proptags[count];
@@ -309,7 +306,7 @@ MESSAGE_CONTENT* oxvcard_import(
 						tag = g_homeaddr_proptags[count];
 					else
 						tag = g_otheraddr_proptags[count];
-					if (pmsg->proplist.set(tag, pnode2->pdata) != 0)
+					if (pmsg->proplist.set(tag, pvvalue->m_subvals[0].c_str()) != 0)
 						return nullptr;
 				}
 				count ++;
@@ -394,17 +391,17 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			if (NULL != pnode1->pdata) {
 				pvvalue = (VCARD_VALUE*)pnode1->pdata;
-				auto pnode2 = double_list_get_head(&pvvalue->subval_list);
-				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
-				    pmsg->proplist.set(PR_COMPANY_NAME, pnode2->pdata) != 0)
+				if (pvvalue->m_subvals.size() > 0 &&
+				    !pvvalue->m_subvals[0].empty() &&
+				    pmsg->proplist.set(PR_COMPANY_NAME, pvvalue->m_subvals[0].c_str()) != 0)
 					return nullptr;
 			}
 			pnode1 = double_list_get_after(&pvline->value_list, pnode1);
 			if (NULL != pnode1 && NULL != pnode1->pdata) {
 				pvvalue = (VCARD_VALUE*)pnode1->pdata;
-				auto pnode2 = double_list_get_head(&pvvalue->subval_list);
-				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
-				    pmsg->proplist.set(PR_DEPARTMENT_NAME, pnode2->pdata) != 0)
+				if (pvvalue->m_subvals.size() > 0 &&
+				    !pvvalue->m_subvals[0].empty() &&
+				    pmsg->proplist.set(PR_DEPARTMENT_NAME, pvvalue->m_subvals[0].c_str()) != 0)
 					return nullptr;
 			}
 		} else if (strcasecmp(pvline_name, "CATEGORIES") == 0) {
@@ -416,12 +413,10 @@ MESSAGE_CONTENT* oxvcard_import(
 			STRING_ARRAY strings_array;
 			strings_array.count = 0;
 			strings_array.ppstr = (char**)tmp_buff;
-			for (auto pnode2 = double_list_get_head(&pvvalue->subval_list);
-				NULL!=pnode2; pnode2=double_list_get_after(
-				&pvvalue->subval_list, pnode2)) {
-				if (pnode2->pdata == nullptr)
+			for (const auto &sv : pvvalue->m_subvals) {
+				if (sv.empty())
 					continue;
-				strings_array.ppstr[strings_array.count++] = static_cast<char *>(pnode2->pdata);
+				strings_array.ppstr[strings_array.count++] = deconst(sv.c_str());
 			}
 			if (strings_array.count != 0 && strings_array.count < 128 &&
 			    pmsg->proplist.set(g_categories_proptag, &strings_array) != 0)
@@ -622,12 +617,10 @@ MESSAGE_CONTENT* oxvcard_import(
 			STRING_ARRAY strings_array;
 			strings_array.count = 0;
 			strings_array.ppstr = (char**)tmp_buff;
-			for (auto pnode2 = double_list_get_head(&pvvalue->subval_list);
-				NULL!=pnode2; pnode2=double_list_get_after(
-				&pvvalue->subval_list, pnode2)) {
-				if (pnode2->pdata == nullptr)
+			for (const auto &sv : pvvalue->m_subvals) {
+				if (sv.empty())
 					continue;
-				strings_array.ppstr[strings_array.count++] = static_cast<char *>(pnode2->pdata);
+				strings_array.ppstr[strings_array.count++] = deconst(sv.c_str());
 			}
 			if (strings_array.count != 0 && strings_array.count < 128 &&
 			    pmsg->proplist.set(PR_HOBBIES, &strings_array) != 0)
