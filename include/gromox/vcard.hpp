@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/mapierr.hpp>
@@ -7,14 +8,13 @@
 
 struct GX_EXPORT vcard_param {
 	vcard_param(const char *);
-	~vcard_param();
 	NOMOVE(vcard_param);
 	ec_error_t append_paramval(const char *paramval);
-	inline const char *name() const { return m_name; }
+	inline const char *name() const { return m_name.c_str(); }
 
 	DOUBLE_LIST_NODE node{};
-	char m_name[VCARD_NAME_LEN]{};
-	DOUBLE_LIST pparamval_list{};
+	std::string m_name;
+	std::vector<std::string> m_paramvals;
 };
 using VCARD_PARAM = vcard_param;
 

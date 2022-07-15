@@ -220,20 +220,17 @@ MESSAGE_CONTENT* oxvcard_import(
 				&pvline->param_list, pnode1)) {
 				pvparam = (VCARD_PARAM*)pnode1->pdata;
 				if (strcasecmp(pvparam->name(), "ENCODING") == 0) {
-					if (double_list_get_nodes_num(&pvparam->pparamval_list) == 0)
-						return nullptr;
-					auto pnode2 = double_list_get_head(&pvparam->pparamval_list);
-					if (pnode2 == nullptr || pnode2->pdata == nullptr ||
-					    strcasecmp(static_cast<char *>(pnode2->pdata), "b") != 0)
+					if (pvparam->m_paramvals.size() == 0 ||
+					    strcasecmp(pvparam->m_paramvals[0].c_str(), "b") != 0)
 						return nullptr;
 					b_encoding = TRUE;
 				} else if (strcasecmp(pvparam->name(), "TYPE") == 0) {
-					if (double_list_get_nodes_num(&pvparam->pparamval_list) == 0)
+					if (pvparam->m_paramvals.size() == 0)
 						return nullptr;
-					auto pnode2 = double_list_get_head(&pvparam->pparamval_list);
-					if (pnode2 == nullptr || pnode2->pdata == nullptr)
+					auto &s = pvparam->m_paramvals[0];
+					if (s.empty())
 						return nullptr;
-					photo_type = static_cast<char *>(pnode2->pdata);
+					photo_type = s.c_str();
 				}
 			}
 			if (!b_encoding || photo_type == nullptr)
@@ -288,10 +285,9 @@ MESSAGE_CONTENT* oxvcard_import(
 				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name(), "TYPE") != 0 ||
-			    double_list_get_nodes_num(&pvparam->pparamval_list) == 0)
+			    pvparam->m_paramvals.size() == 0)
 				return nullptr;
-			auto pnode2 = double_list_get_head(&pvparam->pparamval_list);
-			address_type = pnode2 != nullptr && pnode2->pdata != nullptr ? static_cast<char *>(pnode2->pdata) : "";
+			address_type = pvparam->m_paramvals[0].c_str();
 			count = 0;
 			for (pnode1=double_list_get_head(&pvline->value_list);
 				NULL!=pnode1; pnode1=double_list_get_after(
@@ -302,7 +298,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				list_count = double_list_get_nodes_num(&pvvalue->subval_list);
 				if (list_count > 1)
 					return nullptr;
-				pnode2 = double_list_get_head(&pvvalue->subval_list);
+				auto pnode2 = double_list_get_head(&pvvalue->subval_list);
 				if (NULL != pnode2) {
 					if (pnode2->pdata == nullptr)
 						continue;
@@ -324,16 +320,15 @@ MESSAGE_CONTENT* oxvcard_import(
 				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name(), "TYPE") != 0 ||
-			    double_list_get_nodes_num(&pvparam->pparamval_list) == 0)
+			    pvparam->m_paramvals.size() == 0)
 				return nullptr;
-			auto pnode2 = double_list_get_head(&pvparam->pparamval_list);
-			if (pnode2 == nullptr || pnode2->pdata == nullptr)
+			auto keyword = pvparam->m_paramvals[0].c_str();
+			if (*keyword == '\0')
 				return nullptr;
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
 			uint32_t tag = 0;
-			auto keyword = static_cast<char *>(pnode2->pdata);
 			if (strcasecmp(keyword, "home") == 0) {
 				pnode1 = double_list_get_after(
 					&pvline->param_list, pnode1);
@@ -454,16 +449,15 @@ MESSAGE_CONTENT* oxvcard_import(
 				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name(), "TYPE") != 0 ||
-			    double_list_get_nodes_num(&pvparam->pparamval_list) == 0)
+			    pvparam->m_paramvals.size() == 0)
 				return nullptr;
-			auto pnode2 = double_list_get_head(&pvparam->pparamval_list);
-			if (pnode2 == nullptr || pnode2->pdata == nullptr)
+			auto keyword = pvparam->m_paramvals[0].c_str();
+			if (*keyword == '\0')
 				return nullptr;
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
 			uint32_t tag;
-			auto keyword = static_cast<char *>(pnode2->pdata);
 			if (strcasecmp(keyword, "home") == 0)
 				tag = PR_PERSONAL_HOME_PAGE;
 			else if (strcasecmp(keyword, "work") == 0)
@@ -490,11 +484,8 @@ MESSAGE_CONTENT* oxvcard_import(
 				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name(), "ENCODING") != 0 ||
-			    double_list_get_nodes_num(&pvparam->pparamval_list) == 0)
-				return nullptr;
-			auto pnode2 = double_list_get_head(&pvparam->pparamval_list);
-			if (pnode2 == nullptr || pnode2->pdata == nullptr ||
-			    strcasecmp(static_cast<char *>(pnode2->pdata), "b") != 0)
+			    pvparam->m_paramvals.size() == 0 ||
+			    strcasecmp(pvparam->m_paramvals[0].c_str(), "b") != 0)
 				return nullptr;
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
@@ -545,7 +536,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (pnode1 == nullptr)
 				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
-			if (double_list_get_nodes_num(&pvparam->pparamval_list) != 0)
+			if (pvparam->m_paramvals.size() != 0)
 				return nullptr;
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
@@ -583,7 +574,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name(), "N") != 0 ||
-			    double_list_get_nodes_num(&pvparam->pparamval_list) != 0)
+			    pvparam->m_paramvals.size() != 0)
 				return nullptr;
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
@@ -596,7 +587,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name(), "N") != 0 ||
-			    double_list_get_nodes_num(&pvparam->pparamval_list) != 0)
+			    pvparam->m_paramvals.size() != 0)
 				return nullptr;
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
@@ -609,7 +600,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				return nullptr;
 			pvparam = (VCARD_PARAM*)pnode1->pdata;
 			if (strcasecmp(pvparam->name(), "N") != 0 ||
-			    double_list_get_nodes_num(&pvparam->pparamval_list) != 0)
+			    pvparam->m_paramvals.size() != 0)
 				return nullptr;
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
