@@ -469,7 +469,7 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 			return ret;
 		if (tmp_item.pvalue == nullptr)
 			continue;
-		if (!vcard_std_keyword(pvline->name)) {
+		if (!vcard_std_keyword(pvline->name())) {
 			auto rv = vcard_retrieve_value(pvline, tmp_item.pvalue);
 			if (rv != ecSuccess)
 				break;
@@ -582,7 +582,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 		line_begin = offset;
 		pvline = (VCARD_LINE*)pnode->pdata;
 		offset += gx_snprintf(out_buff + offset,
-			max_length - offset, "%s", pvline->name);
+		          max_length - offset, "%s", pvline->name());
 		if (offset >= max_length) {
 			return FALSE;
 		}
@@ -596,14 +596,14 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 			offset ++;
 			if (double_list_get_nodes_num(&pvparam->pparamval_list) == 0) {
 				offset += gx_snprintf(out_buff + offset,
-					max_length - offset, "%s", pvparam->name);
+				          max_length - offset, "%s", pvparam->name());
 				if (offset >= max_length) {
 					return FALSE;
 				}
 				continue;
 			}
 			offset += gx_snprintf(out_buff + offset,
-				max_length - offset, "%s=", pvparam->name);
+			          max_length - offset, "%s=", pvparam->name());
 			if (offset >= max_length) {
 				return FALSE;
 			}
@@ -687,7 +687,7 @@ vcard_line::vcard_line(const char *name)
 {
 	auto pvline = this;
 	pvline->node.pdata = pvline;
-	gx_strlcpy(pvline->name, name, GX_ARRAY_SIZE(pvline->name));
+	gx_strlcpy(pvline->m_name, name, std::size(pvline->m_name));
 	double_list_init(&pvline->param_list);
 	double_list_init(&pvline->value_list);
 }
@@ -709,7 +709,7 @@ vcard_param::vcard_param(const char *n)
 {
 	auto pvparam = this;
 	pvparam->node.pdata = pvparam;
-	gx_strlcpy(pvparam->name, n, std::size(pvparam->name));
+	gx_strlcpy(pvparam->m_name, n, std::size(pvparam->m_name));
 	double_list_init(&pvparam->pparamval_list);
 }
 
