@@ -15,6 +15,15 @@ Enables and sets the size of a memory pool (in object count; the actual size is
 this to be non-zero for full functionality.
 .br
 Default: \fI1024\fP
+.TP
+\fBmidb_agent_command_buffer_size\fP
+Certain midb commands can produce large results (such as P-SHRU with "ALL"). To
+avoid unbounded memory allocation, the result set is limited in size. If midb
+responds with a larger result, the midb connection is terminated and midb_agent
+returns an error to e.g. IMAP/POP. The default of 256K is good for a result set
+of around 24000 to 32000 messages.
+.br
+Default: \fI256K\fP
 .SH Multiserver map
 The SQL column \fBusers.homedir\fP specifies a home directory location in an
 abstract namespace. This abstract namespace is shared between all Gromox

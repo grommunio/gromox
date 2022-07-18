@@ -2686,20 +2686,17 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
 	int result;
-	int buff_len;
 	size_t string_length = 0;
-	char buff[256*1024];
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
 	if (argc < 3 || argc > 1024)
 		return 1800;
-	strcpy(buff, "* SEARCH ");
-	buff_len = sizeof(buff) - 11;
+	std::string buff;
 	result = system_services_search(pcontext->maildir,
 		pcontext->selected_folder, resource_get_default_charset(
-		pcontext->lang), argc - 2, &argv[2], buff + 9, &buff_len,
-		&errnum);
+		pcontext->lang), argc - 2, &argv[2], buff, &errnum);
+	buff.insert(0, "* SEARCH ");
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -2710,18 +2707,15 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
-	buff_len += 9;
-	buff[buff_len] = '\r';
-	buff_len ++;
-	buff[buff_len] = '\n';
-	buff_len ++;
+	buff.append("\r\n");
 	pcontext->stream.clear();
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170019: OK SEARCH completed */
 	auto imap_reply_str = resource_get_imap_code(1719, 1, &string_length);
-	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
-	            "%s %s", argv[0], imap_reply_str);
-	pcontext->stream.write(buff, buff_len);
+	buff += argv[0];
+	buff += " ";
+	buff += imap_reply_str;
+	pcontext->stream.write(buff.c_str(), buff.size());
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
@@ -2994,19 +2988,17 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
 	int result;
-	int buff_len;
 	size_t string_length = 0;
-	char buff[256*1024];
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
 	if (argc < 3 || argc > 1024)
 		return 1800;
-	strcpy(buff, "* SEARCH ");
-	buff_len = sizeof(buff) - 11;
+	std::string buff;
 	result = system_services_search_uid(pcontext->maildir,
 	         pcontext->selected_folder, resource_get_default_charset(pcontext->lang),
-	         argc - 3, &argv[3], buff + 9, &buff_len, &errnum);
+	         argc - 3, &argv[3], buff, &errnum);
+	buff.insert(0, "* SEARCH ");
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -3017,18 +3009,15 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	default:
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
-	buff_len += 9;
-	buff[buff_len] = '\r';
-	buff_len ++;
-	buff[buff_len] = '\n';
-	buff_len ++;
+	buff.append("\r\n");
 	pcontext->stream.clear();
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170023: OK UID SEARCH completed */
 	auto imap_reply_str = resource_get_imap_code(1723, 1, &string_length);
-	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
-	            "%s %s", argv[0], imap_reply_str);
-	pcontext->stream.write(buff, buff_len);
+	buff += argv[0];
+	buff += " ";
+	buff += imap_reply_str;
+	pcontext->stream.write(buff.c_str(), buff.size());
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;

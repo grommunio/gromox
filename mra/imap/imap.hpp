@@ -243,8 +243,8 @@ extern int (*system_services_set_flags)(const char *, const char *, const char *
 extern int (*system_services_unset_flags)(const char *, const char *, const char *, int, int *);
 extern int (*system_services_get_flags)(const char *, const char *, const char *, int *, int *);
 extern int (*system_services_copy_mail)(const char *, const char *, const char *, const char *, char *, int *);
-extern int (*system_services_search)(const char *, const char *, const char *, int, char **, char *, int *, int *);
-extern int (*system_services_search_uid)(const char *, const char *, const char *, int, char **, char *, int *, int *);
+extern int (*system_services_search)(const char *, const char *, const char *, int, char **, std::string &, int *);
+extern int (*system_services_search_uid)(const char *, const char *, const char *, int, char **, std::string &, int *);
 extern void (*system_services_install_event_stub)(void (*)(char *));
 extern void (*system_services_broadcast_event)(const char *);
 extern void (*system_services_broadcast_select)(const char *, const char *);

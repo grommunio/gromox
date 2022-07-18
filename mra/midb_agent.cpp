@@ -125,10 +125,11 @@ static int set_mail_flags(const char *path, const char *folder, const char *mid_
 static int unset_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
 static int get_mail_flags(const char *path, const char *folder, const char *mid_string, int *pflag_bits, int *perrno);
 static int copy_mail(const char *path, const char *src_folder, const char *mid_string, const char *dst_folder, char *dst_mid, int *perrno);
-static int imap_search(const char *path, const char *folder, const char *charset, int argc, char **argv, char *ret_buff, int *plen, int *perrno);
-static int imap_search_uid(const char *path, const char *folder, const char *charset, int argc, char **argv, char *ret_buff, int *plen, int *perrno);
+static int imap_search(const char *path, const char *folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
+static int imap_search_uid(const char *path, const char *folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
 static BOOL check_full(const char *path);
 
+size_t g_midb_command_buffer_size = 256 * 1024;
 static int g_conn_num;
 static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
@@ -141,6 +142,7 @@ static int g_file_ratio;
 static constexpr cfg_directive midb_agent_cfg_defaults[] = {
 	{"connection_num", "5", CFG_SIZE, "2", "100"},
 	{"context_average_mem", "1024", CFG_SIZE},
+	{"midb_agent_command_buffer_size", "256K", CFG_SIZE},
 	CFG_TABLE_END,
 };
 
@@ -198,6 +200,7 @@ static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> cfg) try
 	g_file_ratio = cfg->get_ll("context_average_mem");
 	if (g_file_ratio == 0)
 		fprintf(stderr, "[midb_agent]: memory pool is switched off through config\n");
+	g_midb_command_buffer_size = cfg->get_ll("midb_agent_command_buffer_size");
 	return true;
 } catch (const cfg_error &) {
 	return false;
@@ -613,116 +616,110 @@ static int delete_mail(const char *path, const char *folder,
 }
 
 static int imap_search(const char *path, const char *folder,
-    const char *charset, int argc, char **argv, char *ret_buff,
-    int *plen, int *perrno)
+    const char *charset, int argc, char **argv, std::string &ret_buff,
+    int *perrno) try
 {
 	int i;
 	size_t encode_len;
-	char buff[256*1025];
-	char buff1[16*1024];
 
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-SRHL %s %s %s ",
-				path, folder, charset);
+	auto buff   = std::make_unique<char[]>(g_midb_command_buffer_size);
+	auto buff1  = std::make_unique<char[]>(g_midb_command_buffer_size);
+	auto length = gx_snprintf(buff.get(), g_midb_command_buffer_size,
+	              "P-SRHL %s %s %s ", path, folder, charset);
 	int length1 = 0;
 	for (i=0; i<argc; i++) {
-		length1 += gx_snprintf(buff1 + length1, arsizeof(buff1) - length1,
+		length1 += gx_snprintf(&buff1[length1], g_midb_command_buffer_size - length1,
 					"%s", argv[i]) + 1;
 	}
 	buff1[length1] = '\0';
 	length1 ++;
-	encode64(buff1, length1, buff + length, sizeof(buff) - length,
+	encode64(buff1.get(), length1, &buff[length], g_midb_command_buffer_size - length,
 		&encode_len);
 	length += encode_len;
+	buff1.reset();
 	
 	buff[length] = '\r';
 	length ++;
 	buff[length] = '\n';
 	length ++;
 	
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
+	if (rw_command(pback->sockd, buff.get(), length, g_midb_command_buffer_size) < 0)
 		return MIDB_RDWR_ERROR;
-	if (0 == strncmp(buff, "TRUE", 4)) {
+	if (strncmp(buff.get(), "TRUE", 4) == 0) {
 		pback.reset();
-		length = strlen(buff + 4);
+		length = strlen(&buff[4]);
 		if (0 == length) {
-			*plen = 0;
+			ret_buff.clear();
 			return MIDB_RESULT_OK;
 		}
 		/* trim the first space */
 		length--;
-		if (length > *plen) {
-			length = *plen;
-		} else {
-			*plen = length;
-		}
-		/* ignore the first space */
-		memcpy(ret_buff, buff + 4 + 1, length);
+		ret_buff.assign(&buff[5], length);
 		return MIDB_RESULT_OK;
-	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+	} else if (strncmp(buff.get(), "FALSE ", 6) == 0) {
 		pback.reset();
-		*perrno = strtol(buff + 6, nullptr, 0);
+		*perrno = strtol(&buff[6], nullptr, 0);
 		return MIDB_RESULT_ERROR;
 	}
+	return MIDB_RDWR_ERROR;
+} catch (const std::bad_alloc &) {
 	return MIDB_RDWR_ERROR;
 }
 
 static int imap_search_uid(const char *path, const char *folder,
-   const char *charset, int argc, char **argv, char *ret_buff,
-   int *plen, int *perrno)
+   const char *charset, int argc, char **argv, std::string &ret_buff,
+   int *perrno) try
 {
 	int i;
 	size_t encode_len;
-	char buff[256*1025];
-	char buff1[16*1024];
 
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-SRHU %s %s %s ",
-				path, folder, charset);
+	auto buff   = std::make_unique<char[]>(g_midb_command_buffer_size);
+	auto buff1  = std::make_unique<char[]>(g_midb_command_buffer_size);
+	auto length = gx_snprintf(buff.get(), g_midb_command_buffer_size,
+	              "P-SRHU %s %s %s ", path, folder, charset);
 	int length1 = 0;
 	for (i=0; i<argc; i++) {
-		length1 += gx_snprintf(buff1 + length1, arsizeof(buff1) - length1,
+		length1 += gx_snprintf(&buff1[length1], g_midb_command_buffer_size - length1,
 					"%s", argv[i]) + 1;
 	}
 	buff1[length1] = '\0';
 	length1 ++;
-	encode64(buff1, length1, buff + length, sizeof(buff) - length,
+	encode64(buff1.get(), length1, &buff[length], g_midb_command_buffer_size - length,
 		&encode_len);
 	length += encode_len;
+	buff1.reset();
 	
 	buff[length] = '\r';
 	length ++;
 	buff[length] = '\n';
 	length ++;
 	
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
+	if (rw_command(pback->sockd, buff.get(), length, g_midb_command_buffer_size) < 0)
 		return MIDB_RDWR_ERROR;
-	if (0 == strncmp(buff, "TRUE", 4)) {
+	if (strncmp(buff.get(), "TRUE", 4) == 0) {
 		pback.reset();
-		length = strlen(buff + 4);
+		length = strlen(&buff[4]);
 		if (0 == length) {
-			*plen = 0;
+			ret_buff.clear();
 			return MIDB_RESULT_OK;
 		}
 		/* trim the first space */
 		length--;
-		if (length > *plen) {
-			length = *plen;
-		} else {
-			*plen = length;
-		}
-		/* ignore the first space */
-		memcpy(ret_buff, buff + 4 + 1, length);
+		ret_buff.assign(&buff[5], length);
 		return MIDB_RESULT_OK;
-	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+	} else if (strncmp(buff.get(), "FALSE ", 6) == 0) {
 		pback.reset();
-		*perrno = strtol(buff + 6, nullptr, 0);
+		*perrno = strtol(&buff[6], nullptr, 0);
 		return MIDB_RESULT_ERROR;
 	}
+	return MIDB_RDWR_ERROR;
+} catch (const std::bad_alloc &) {
 	return MIDB_RDWR_ERROR;
 }
 
