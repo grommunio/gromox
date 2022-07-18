@@ -138,6 +138,12 @@ static std::mutex g_server_lock;
 static alloc_limiter<file_block> g_file_allocator;
 static int g_file_ratio;
 
+static constexpr cfg_directive midb_agent_cfg_defaults[] = {
+	{"connection_num", "5", CFG_SIZE, "2", "100"},
+	{"context_average_mem", "1024", CFG_SIZE},
+	CFG_TABLE_END,
+};
+
 static bool list_file_read_midb(const char *filename) try
 {
 	struct MIDB_ITEM {
@@ -180,9 +186,29 @@ static bool list_file_read_midb(const char *filename) try
 	return false;
 }
 
+static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> cfg) try
+{
+	if (cfg == nullptr)
+		cfg = config_file_initd("midb_agent.cfg", get_config_path(), midb_agent_cfg_defaults);
+	if (cfg == nullptr) {
+		fprintf(stderr, "[midb_agent]: config_file_initd midb_agent.cfg: %s\n", strerror(errno));
+		return false;
+	}
+	g_conn_num = cfg->get_ll("connection_num");
+	g_file_ratio = cfg->get_ll("context_average_mem");
+	if (g_file_ratio == 0)
+		fprintf(stderr, "[midb_agent]: memory pool is switched off through config\n");
+	return true;
+} catch (const cfg_error &) {
+	return false;
+}
+
 static BOOL svc_midb_agent(int reason, void **ppdata)
 {
 	switch(reason) {
+	case PLUGIN_RELOAD:
+		midb_agent_reload(nullptr);
+		return TRUE;
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
 		g_notify_stop = true;
@@ -197,31 +223,14 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 			return false;
 		}
 		auto pconfig = config_file_initd(filename.c_str(),
-		               get_config_path(), nullptr);
+		               get_config_path(), midb_agent_cfg_defaults);
 		if (NULL == pconfig) {
 			printf("[midb_agent]: config_file_initd %s: %s\n",
 			       filename.c_str(), strerror(errno));
 			return FALSE;
 		}
-		
-		auto str_value = pconfig->get_value("CONNECTION_NUM");
-		if (NULL == str_value) {
-			g_conn_num = 5;
-		} else {
-			g_conn_num = strtol(str_value, nullptr, 0);
-			if (g_conn_num < 2 || g_conn_num > 100)
-				g_conn_num = 5;
-		}
-		printf("[midb_agent]: midb connection number is %d\n", g_conn_num);
-		
-		str_value = pconfig->get_value("CONTEXT_AVERAGE_MEM");
-		g_file_ratio = str_value == nullptr ? 1024 : strtoul(str_value, nullptr, 0);
-		if (g_file_ratio > 0) {
-			printf("[midb_agent]: context average number is %d\n", g_file_ratio);
-		} else {
-			printf("[midb_agent]: memory pool is switched off\n");
-		}
-
+		if (!midb_agent_reload(pconfig))
+			return false;
 		if (!list_file_read_midb("midb_list.txt"))
 			return false;
 		if (g_file_ratio > 0) {
