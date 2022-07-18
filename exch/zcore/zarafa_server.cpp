@@ -3359,6 +3359,7 @@ static gxerr_t rectify_message(message_object *pmessage,
 	auto entryid = common_util_username_to_addressbook_entryid(account);
 	if (entryid == nullptr)
 		return GXERR_CALL_FAILED;
+	auto entryid1 = entryid;
 	BINARY search_bin, search_bin1;
 	search_bin.cb = gx_snprintf(search_buff, arsizeof(search_buff), "EX:%s", essdn) + 1;
 	search_bin.pv = search_buff;
@@ -3369,8 +3370,8 @@ static gxerr_t rectify_message(message_object *pmessage,
 		if (!system_services_get_user_displayname(representing_username,
 		    dispname1, arsizeof(dispname1)))
 			return GXERR_CALL_FAILED;
-		entryid = common_util_username_to_addressbook_entryid(representing_username);
-		if (entryid == nullptr)
+		entryid1 = common_util_username_to_addressbook_entryid(representing_username);
+		if (entryid1 == nullptr)
 			return GXERR_CALL_FAILED;
 	} else {
 		strcpy(essdn1, essdn);
@@ -3395,7 +3396,7 @@ static gxerr_t rectify_message(message_object *pmessage,
 		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("EX")},
 		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn1},
 		{PR_SENT_REPRESENTING_NAME, dispname1},
-		{PR_SENT_REPRESENTING_ENTRYID, entryid},
+		{PR_SENT_REPRESENTING_ENTRYID, entryid1},
 		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_bin1},
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};

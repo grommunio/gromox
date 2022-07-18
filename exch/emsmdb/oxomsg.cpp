@@ -60,6 +60,7 @@ static gxerr_t oxomsg_rectify_message(message_object *pmessage,
 	if (NULL == pentryid) {
 		return GXERR_CALL_FAILED;
 	}
+	auto pentryid1 = pentryid;
 	search_bin.cb = gx_snprintf(search_buff, GX_ARRAY_SIZE(search_buff), "EX:%s", essdn_buff) + 1;
 	search_bin.pv = search_buff;
 	if (0 != strcasecmp(account, representing_username)) {
@@ -69,11 +70,10 @@ static gxerr_t oxomsg_rectify_message(message_object *pmessage,
 		if (!common_util_get_user_displayname(representing_username,
 		    tmp_display1, arsizeof(tmp_display1)))
 			return GXERR_CALL_FAILED;
-		pentryid = common_util_username_to_addressbook_entryid(
+		pentryid1 = common_util_username_to_addressbook_entryid(
 										representing_username);
-		if (NULL == pentryid) {
+		if (pentryid1 == nullptr)
 			return GXERR_CALL_FAILED;
-		}
 	} else {
 		strcpy(essdn_buff1, essdn_buff);
 		strcpy(tmp_display1, tmp_display);
@@ -97,7 +97,7 @@ static gxerr_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("EX")},
 		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn_buff1},
 		{PR_SENT_REPRESENTING_NAME, tmp_display1},
-		{PR_SENT_REPRESENTING_ENTRYID, pentryid},
+		{PR_SENT_REPRESENTING_ENTRYID, pentryid1},
 		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_bin1},
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
