@@ -98,9 +98,7 @@ static constexpr TAG_ITEM g_tags[] = {
 
 static void bounce_producer_enum_parts(const MIME *, void *);
 static void bounce_producer_enum_charset(const MIME *, void *);
-static int bounce_producer_get_mail_subject(MAIL *pmail, char *subject,
-	char *charset);
-
+static int bp_get_subject(MAIL *, char *subject, size_t sbsize, const char *charset);
 static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset);
 
 static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
@@ -409,7 +407,8 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
         	ptr += strlen(rcpt_to);
 			break;
     	case TAG_SUBJECT:
-			len = bounce_producer_get_mail_subject(pmail_original, ptr, mcharset);
+			len = bp_get_subject(pmail_original, ptr,
+			      std::size(original_ptr) - (ptr - original_ptr), mcharset);
             ptr += len;
             break;
     	case TAG_PARTS:
@@ -544,8 +543,8 @@ static void bounce_producer_enum_parts(const MIME *pmime, void *param)
 	penum->b_first = TRUE;
 }
 
-static int bounce_producer_get_mail_subject(MAIL *pmail, char *subject,
-	char *charset)
+static int bp_get_subject(MAIL *pmail, char *subject, size_t sbsize,
+    const char *charset)
 {
 	char tmp_buff[1024];
 	auto pmime = pmail->get_head();
