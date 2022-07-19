@@ -1056,8 +1056,8 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 	return TRUE;
 }
 
-static BOOL encode_strings_to_utf8(
-	const char *mime_string, char *out_string)
+static BOOL encode_strings_to_utf8(const char *mime_string, char *out_string,
+    size_t out_len)
 {
 	int i, buff_len;
 	char last_charset[32];
@@ -1172,7 +1172,8 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 				temp_buff[decode_len] = '\0';
 				if (!string_to_utf8(encode_string.charset, temp_buff,
 				    out_buff + offset))
-					return encode_strings_to_utf8(mime_string, out_string);
+					return encode_strings_to_utf8(mime_string,
+					       out_string, out_len);
 			} else if (0 == strcmp(encode_string.encoding,
 				"quoted-printable")){
 				auto xl = qp_decode_ex(temp_buff, arsizeof(temp_buff),
@@ -1183,7 +1184,8 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 				temp_buff[decode_len] = '\0';
 				if (!string_to_utf8(encode_string.charset, temp_buff,
 				    out_buff + offset))
-					return encode_strings_to_utf8(mime_string, out_string);
+					return encode_strings_to_utf8(mime_string,
+					       out_string, out_len);
 			} else {
 				if (!string_to_utf8(charset, encode_string.title,
 				    out_buff + offset))
