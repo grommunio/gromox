@@ -304,15 +304,12 @@ const char* replace_iconv_charset(const char *charset)
 	return charset;
 }
 
-BOOL string_to_utf8(const char *charset,
-	const char *in_string, char *out_string)
+BOOL string_to_utf8(const char *charset, const char *in_string,
+    char *out_string, size_t out_len)
 {
-	int length;
 	iconv_t conv_id;
 	char *pin, *pout;
 	char tmp_charset[64];
-	size_t in_len, out_len;
-	
 	
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
@@ -321,7 +318,7 @@ BOOL string_to_utf8(const char *charset,
 		return TRUE;
 	}
 	
-	length = strlen(in_string);
+	auto length = strlen(in_string);
 	if (0 == length) {
 		out_string[0] = '\0';
 		return TRUE;
@@ -334,7 +331,7 @@ BOOL string_to_utf8(const char *charset,
 		return FALSE;
 	pin = (char*)in_string;
 	pout = out_string;
-	in_len = length;
+	auto in_len = length;
 	out_len = 2*length;
 	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);

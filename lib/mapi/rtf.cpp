@@ -1618,7 +1618,8 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 		if (-1 == cpid) {
 			cpid = 1252;
 		}
-		if (!string_to_utf8(rtf_cpid_to_encoding(cpid), tmp_buff, name)) {
+		if (!string_to_utf8(rtf_cpid_to_encoding(cpid), tmp_buff,
+		    name, std::size(name))) {
 			debug_info("[rtf]: invalid font name");
 			strcpy(name, DEFAULT_FONT_STR);
 		}

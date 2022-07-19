@@ -1054,11 +1054,12 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist,
 static char *tnef_duplicate_string_to_unicode(const char *charset,
     const char *pstring)
 {
-	auto pstr_out = me_alloc<char>(2 * strlen(pstring) + 2);
+	auto z = 2 * strlen(pstring) + 2;
+	auto pstr_out = me_alloc<char>(z);
 	if (NULL == pstr_out) {
 		return NULL;
 	}
-	if (!string_to_utf8(charset, pstring, pstr_out)) {
+	if (!string_to_utf8(charset, pstring, pstr_out, z)) {
 		free(pstr_out);
 		return NULL;
 	}

@@ -97,8 +97,7 @@ BOOL utf8_truncate(char *str, int length);
 void utf8_filter(char *string);
 extern void wchar_to_utf8(uint32_t wchar, char *string);
 const char* replace_iconv_charset(const char *charset);
-BOOL string_to_utf8(const char *charset,
-	const char *in_string, char *out_string);
+extern GX_EXPORT BOOL string_to_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
 extern BOOL string_from_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
 extern int utf8_to_utf16le(const char *src, void *dst, size_t len);
 extern BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len);

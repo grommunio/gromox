@@ -1592,7 +1592,8 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		return false;
 	}
 	size_t length = rdlength;
-	auto pcontent = me_alloc<char>(3 * length + 2);
+	auto content_size = 3 * length + 2;
+	auto pcontent = me_alloc<char>(content_size);
 	if (NULL == pcontent) {
 		return FALSE;
 	}
@@ -1620,7 +1621,8 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	} else if (0 == strcasecmp(content_type, "text/plain")) {
 		pcontent[length] = '\0';
 		TAGGED_PROPVAL propval;
-		if (string_to_utf8(best_charset, pcontent, pcontent + length + 1)) {
+		if (string_to_utf8(best_charset, pcontent, pcontent + length + 1,
+		    content_size - length - 1)) {
 			auto s = pcontent + length + 1;
 			propval.proptag = PR_BODY;
 			propval.pvalue = s;
@@ -2017,7 +2019,8 @@ static BOOL oxcmail_parse_applesingle(const MIME *pmime,
 		return false;
 	}
 	size_t content_len = rdlength;
-	auto pcontent = me_alloc<char>(content_len);
+	size_t contallocsz = content_len;
+	auto pcontent = me_alloc<char>(contallocsz);
 	if (NULL == pcontent) {
 		return FALSE;
 	}
@@ -2304,7 +2307,8 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		}
 		size_t content_len = rdlength;
 		if (content_len < VCARD_MAX_BUFFER_LEN) {
-			std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(3 * content_len + 2));
+			auto contallocsz = 3 * content_len + 2;
+			std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(contallocsz));
 			if (NULL == pcontent) {
 				return;
 			}
@@ -2316,7 +2320,8 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			    mime_charset, arsizeof(mime_charset)))
 				gx_strlcpy(mime_charset, !utf8_check(pcontent.get()) ?
 					pmime_enum->charset : "utf-8", GX_ARRAY_SIZE(mime_charset));
-			if (string_to_utf8(mime_charset, pcontent.get(), pcontent.get() + content_len + 1)) {
+			if (string_to_utf8(mime_charset, pcontent.get(),
+			    &pcontent[content_len+1], contallocsz - content_len - 1)) {
 				if (!utf8_check(pcontent.get() + content_len + 1))
 					utf8_filter(pcontent.get() + content_len + 1);
 				vcard vcard;
@@ -3530,7 +3535,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			return nullptr;
 		}
 		content_len = rdlength;
-		pcontent = me_alloc<char>(3 * content_len + 2);
+		auto contoutsize = 3 * content_len + 2;
+		pcontent = me_alloc<char>(contoutsize);
 		if (NULL == pcontent) {
 			message_content_free(pmsg);
 			return NULL;
@@ -3546,7 +3552,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			gx_strlcpy(mime_charset, !utf8_check(pcontent) ?
 				default_charset : "utf-8", arsizeof(mime_charset));
 		if (!string_to_utf8(mime_charset, pcontent,
-			pcontent + content_len + 1)) {
+		    &pcontent[content_len+1], contoutsize - content_len - 1)) {
 			mime_enum.pcalendar = NULL;
 		} else {
 			if (!utf8_check(pcontent + content_len + 1))
@@ -3653,7 +3659,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			if (ret == 65001) {
 				pmsg->proplist.set(PR_BODY_W, plainbuf.data());
 			} else {
-				auto s = static_cast<char *>(alloc(3 * plainbuf.size() + 1));
+				auto z = 3 * plainbuf.size() + 1;
+				auto s = static_cast<char *>(alloc(z));
 				if (s == nullptr) {
 					message_content_free(pmsg);
 					return NULL;
@@ -3662,8 +3669,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				if (NULL == encoding) {
 					encoding = "windows-1252";
 				}
-				if (string_to_utf8(encoding, plainbuf.c_str(), s) &&
-				    utf8_check(s))
+				if (string_to_utf8(encoding, plainbuf.c_str(),
+				    s, z) && utf8_check(s))
 					pmsg->proplist.set(PR_BODY_W, s);
 			}
 		}

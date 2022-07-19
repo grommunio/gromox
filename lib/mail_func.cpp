@@ -1125,7 +1125,7 @@ static BOOL encode_strings_to_utf8(const char *mime_string, char *out_string,
 		return FALSE;
 	} 
 	temp_buff[buff_offset] = '\0';
-	if (!string_to_utf8(last_charset, temp_buff, out_string))
+	if (!string_to_utf8(last_charset, temp_buff, out_string, out_len))
 		return FALSE;	
 	return utf8_check(out_string);
 }
@@ -1150,7 +1150,8 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 				memcpy(temp_buff, in_buff + last_pos, begin_pos - last_pos);
 				temp_buff[begin_pos - last_pos] = '\0';
 				HX_strltrim(temp_buff);
-				if (!string_to_utf8(charset, temp_buff, out_buff + offset))
+				if (!string_to_utf8(charset, temp_buff,
+				    out_buff + offset, out_len - offset))
 					return FALSE;
 				offset += strlen(out_buff + offset);
 				last_pos = i;
@@ -1171,7 +1172,7 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 				         arsizeof(temp_buff), &decode_len);
 				temp_buff[decode_len] = '\0';
 				if (!string_to_utf8(encode_string.charset, temp_buff,
-				    out_buff + offset))
+				    out_buff + offset, out_len - offset))
 					return encode_strings_to_utf8(mime_string,
 					       out_string, out_len);
 			} else if (0 == strcmp(encode_string.encoding,
@@ -1183,12 +1184,12 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 				decode_len = xl;
 				temp_buff[decode_len] = '\0';
 				if (!string_to_utf8(encode_string.charset, temp_buff,
-				    out_buff + offset))
+				    out_buff + offset, out_len - offset))
 					return encode_strings_to_utf8(mime_string,
 					       out_string, out_len);
 			} else {
 				if (!string_to_utf8(charset, encode_string.title,
-				    out_buff + offset))
+				    out_buff + offset, out_len - offset))
 					return FALSE;
 			}
 			
@@ -1203,7 +1204,7 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 	}
 	if (i > last_pos || 1 == buff_len) {
 		if (!string_to_utf8(charset, in_buff + last_pos,
-		    out_buff + offset))
+		    out_buff + offset, out_len - offset))
 			return FALSE;
 		offset += strlen(out_buff + offset);
 	} 
