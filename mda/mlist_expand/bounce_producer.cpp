@@ -550,18 +550,18 @@ static void bounce_producer_enum_parts(const MIME *pmime, void *param)
 	
 	if (!pmime->get_filename(name))
 		return;
-	if (mime_string_to_utf8(penum->charset, name, temp_name)) {
-		attach_len = strlen(temp_name);
-		if (penum->offset + attach_len < 128*1024) {
-			if (penum->b_first) {
-				strcpy(penum->ptr + penum->offset, g_separator);
-				penum->offset += strlen(g_separator);
-			}
-			memcpy(penum->ptr + penum->offset, temp_name, attach_len);
-			penum->offset += attach_len;
-			penum->b_first = TRUE;
-		}
+	if (!mime_string_to_utf8(penum->charset, name, temp_name))
+		return;
+	attach_len = strlen(temp_name);
+	if (penum->offset + attach_len >= 128 * 1024)
+		return;
+	if (penum->b_first) {
+		strcpy(penum->ptr + penum->offset, g_separator);
+		penum->offset += strlen(g_separator);
 	}
+	memcpy(penum->ptr + penum->offset, temp_name, attach_len);
+	penum->offset += attach_len;
+	penum->b_first = TRUE;
 }
 
 static int bounce_producer_get_mail_subject(MAIL *pmail, char *subject,
@@ -607,25 +607,25 @@ static void bounce_producer_enum_charset(const MIME *pmime, void *param)
 	
 	if (penum->b_found)
 		return;
-	if (pmime->get_content_param("charset", charset, 32)) {
-		len = strlen(charset);
-		if (len <= 2) {
+	if (!pmime->get_content_param("charset", charset, 32))
+		return;
+	len = strlen(charset);
+	if (len <= 2) {
+		return;
+	}
+	begin = strchr(charset, '"');
+	if (NULL != begin) {
+		end = strchr(begin + 1, '"');
+		if (NULL == end) {
 			return;
 		}
-		begin = strchr(charset, '"');
-		if (NULL != begin) {
-			end = strchr(begin + 1, '"');
-			if (NULL == end) {
-				return;
-			}
-			len = end - begin - 1;
-			memcpy(penum->charset, begin + 1, len);
-			penum->charset[len] = '\0';
-		} else {
-			strcpy(penum->charset, charset);
-		}
-		penum->b_found = TRUE;
+		len = end - begin - 1;
+		memcpy(penum->charset, begin + 1, len);
+		penum->charset[len] = '\0';
+	} else {
+		strcpy(penum->charset, charset);
 	}
+	penum->b_found = TRUE;
 }
 
 static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff)
