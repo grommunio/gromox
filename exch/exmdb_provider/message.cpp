@@ -692,7 +692,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 			ptr->pvalue = deconst(&dummy_rcpttype);
 		}
 		ptr = drcpt.find(PR_DISPLAY_NAME);
-		if (ptr == nullptr) {
+		if (ptr == nullptr && drcpt.find(PR_DISPLAY_NAME_A) == nullptr) {
 			ptr = &drcpt.ppropval[drcpt.count++];
 			ptr->proptag = PR_DISPLAY_NAME;
 			ptr->pvalue = deconst(dummy_string);

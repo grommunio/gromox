@@ -211,7 +211,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		sqlite3_reset(pstmt1);
 		if (!pproplist->has(PR_RECIPIENT_TYPE))
 			pproplist->set(PR_RECIPIENT_TYPE, &dummy_rcpttype);
-		if (!pproplist->has(PR_DISPLAY_NAME))
+		if (!pproplist->has(PR_DISPLAY_NAME) &&
+		    !pproplist->has(PR_DISPLAY_NAME_A))
 			pproplist->set(PR_DISPLAY_NAME, dummy_string);
 		if (!pproplist->has(PR_ADDRTYPE))
 			pproplist->set(PR_ADDRTYPE, &dummy_addrtype);
