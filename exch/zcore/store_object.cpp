@@ -540,7 +540,8 @@ static void* store_object_get_oof_property(
 			offset += parsed_length;
 			if (strcasecmp(mime_field.name.c_str(), "Subject") == 0 &&
 			    mime_field.value.size() < std::size(subject) &&
-			    mime_string_to_utf8("utf-8", mime_field.value.c_str(), subject))
+			    mime_string_to_utf8("utf-8", mime_field.value.c_str(), subject,
+			    std::size(subject)))
 					return common_util_dup(subject);
 			if ('\r' == pbuff[offset] && '\n' == pbuff[offset + 1]) {
 				return NULL;

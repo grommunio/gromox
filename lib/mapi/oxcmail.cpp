@@ -758,7 +758,7 @@ static BOOL oxcmail_parse_subject(const char *charset, const char *field,
 	char utf8_field[MIME_FIELD_LEN];
 	static constexpr uint8_t seperator[] = {':', 0x00, ' ', 0x00};
 	
-	if (!mime_string_to_utf8(charset, field, utf8_field))
+	if (!mime_string_to_utf8(charset, field, utf8_field, std::size(utf8_field)))
 		return pproplist->set(PR_SUBJECT_A, field) == 0 ? TRUE : false;
 
 	subject_len = utf8_to_utf16le(utf8_field,
@@ -814,7 +814,7 @@ static BOOL oxcmail_parse_thread_topic(const char *charset,
 {
 	char utf8_field[MIME_FIELD_LEN];
 	
-	if (mime_string_to_utf8(charset, field, utf8_field))
+	if (mime_string_to_utf8(charset, field, utf8_field, std::size(utf8_field)))
 		return pproplist->set(PR_CONVERSATION_TOPIC, utf8_field) == 0 ? TRUE : false;
 	return pproplist->set(PR_CONVERSATION_TOPIC_A, field) == 0 ? TRUE : false;
 }
@@ -825,7 +825,7 @@ static BOOL oxcmail_parse_thread_index(const char *charset, const char *field,
 	BINARY tmp_bin;
 	char tmp_buff[MIME_FIELD_LEN];
 	
-	if (!mime_string_to_utf8(charset, field, tmp_buff))
+	if (!mime_string_to_utf8(charset, field, tmp_buff, std::size(tmp_buff)))
 		return TRUE;
 	auto len = sizeof(tmp_buff);
 	if (decode64(field, strlen(field), tmp_buff, arsizeof(tmp_buff), &len) != 0)
@@ -846,7 +846,7 @@ static BOOL oxcmail_parse_keywords(const char *charset, const char *field,
 	char tmp_buff[MIME_FIELD_LEN];
 	uint32_t tag;
 	
-	if (!mime_string_to_utf8(charset, field, tmp_buff)) {
+	if (!mime_string_to_utf8(charset, field, tmp_buff, std::size(tmp_buff))) {
 		tag = PROP_TAG(PT_MV_STRING8, propid);
 		gx_strlcpy(tmp_buff, field, GX_ARRAY_SIZE(tmp_buff));
 	} else {
@@ -2159,7 +2159,8 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	}
 	auto b_filename = pmime->get_filename(tmp_buff);
 	if (b_filename) {
-		if (mime_string_to_utf8(pmime_enum->charset, tmp_buff, file_name)) {
+		if (mime_string_to_utf8(pmime_enum->charset, tmp_buff,
+		    file_name, std::size(file_name))) {
 			b_unifn = TRUE;
 		} else {
 			b_unifn = FALSE;
@@ -2199,7 +2200,8 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	auto b_description = pmime->get_field("Content-Description", tmp_buff, 256);
 	if (b_description) {
 		uint32_t tag;
-		if (mime_string_to_utf8(pmime_enum->charset, tmp_buff, display_name)) {
+		if (mime_string_to_utf8(pmime_enum->charset, tmp_buff,
+		    display_name, std::size(display_name))) {
 			tag = PR_DISPLAY_NAME;
 		} else {
 			tag = PR_DISPLAY_NAME_A;
@@ -2362,7 +2364,8 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION_A);
 			if (!b_description &&
 			    mail.get_head()->get_field("Subject", tmp_buff, 256) &&
-			    mime_string_to_utf8(pmime_enum->charset, tmp_buff, file_name) &&
+			    mime_string_to_utf8(pmime_enum->charset, tmp_buff,
+			    file_name, std::size(file_name)) &&
 			    pattachment->proplist.set(PR_DISPLAY_NAME, file_name) != 0) {
 				return;
 			}
@@ -2818,7 +2821,8 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		return false;
 	if (f_info.x_display_name != nullptr &&
 	    strlen(f_info.x_display_name) < 256 &&
-	    mime_string_to_utf8("utf-8", f_info.x_display_name, display_name) &&
+	    mime_string_to_utf8("utf-8", f_info.x_display_name, display_name,
+	    std::size(display_name)) &&
 	    pproplist->set(PR_DISPLAY_NAME, display_name) != 0)
 		return false;
 	auto dtypx = DT_MAILUSER;
@@ -3043,7 +3047,8 @@ static bool oxcmail_enum_mdn(const char *tag,
 		return mcparam->proplist.set(PidTagOriginalMessageId, value) == 0 &&
 		       mcparam->proplist.set(PR_INTERNET_REFERENCES, value) == 0;
 	} else if (0 == strcasecmp(tag, "X-Display-Name")) {
-		if (mime_string_to_utf8("utf-8", value, tmp_buff))
+		if (mime_string_to_utf8("utf-8", value, tmp_buff,
+		    std::size(tmp_buff)))
 			return mcparam->proplist.set(PR_DISPLAY_NAME, tmp_buff) == 0;
 		return mcparam->proplist.set(PR_DISPLAY_NAME_A, value) == 0;
 	}

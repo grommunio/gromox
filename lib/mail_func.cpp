@@ -1130,8 +1130,8 @@ static BOOL encode_strings_to_utf8(
 	return utf8_check(out_string);
 }
 
-BOOL mime_string_to_utf8(const char *charset,
-	const char *mime_string, char *out_string)
+BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
+    char *out_string, size_t out_len)
 {
 	size_t i;
 	ENCODE_STRING encode_string;

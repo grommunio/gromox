@@ -548,7 +548,8 @@ static void bounce_producer_enum_parts(const MIME *pmime, void *param)
 	
 	if (!pmime->get_filename(name))
 		return;
-	if (!mime_string_to_utf8(penum->charset, name, temp_name))
+	if (!mime_string_to_utf8(penum->charset, name, temp_name,
+	    std::size(temp_name)))
 		return;
 	attach_len = strlen(temp_name);
 	if (penum->offset + attach_len >= 128 * 1024)
@@ -571,7 +572,7 @@ static int bp_get_subject(MAIL *pmail, char *subject, size_t sbsize,
 		*subject = '\0';
 		return 0;
 	}
-	if (!mime_string_to_utf8(charset, tmp_buff, subject))
+	if (!mime_string_to_utf8(charset, tmp_buff, subject, sbsize))
 		return 0;
 	return strlen(subject);
 }

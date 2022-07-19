@@ -44,8 +44,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax);
 time_t make_gmtime(struct tm *ptm);
 void make_gmtm(time_t gm_time, struct tm *ptm);
 BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime);
-BOOL mime_string_to_utf8(const char *charset,
-	const char *mime_string, char *out_string);
+extern GX_EXPORT BOOL mime_string_to_utf8(const char *charset, const char *mime_string, char *out_string, size_t out_len);
 void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
 extern GX_EXPORT int html_to_plain(const void *inbuf, int inlen, std::string &outbuf);
