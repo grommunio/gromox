@@ -17,7 +17,7 @@ this to be non-zero for full functionality.
 Default: \fI1024\fP
 .TP
 \fBmidb_agent_command_buffer_size\fP
-Certain midb commands can produce large results (such as P-SHRU with "ALL"). To
+Certain midb commands can produce large results (such as P-SRHU with "ALL"). To
 avoid unbounded memory allocation, the result set is limited in size. If midb
 responds with a larger result, the midb connection is terminated and midb_agent
 returns an error to e.g. IMAP/POP. The default of 256K is good for a result set

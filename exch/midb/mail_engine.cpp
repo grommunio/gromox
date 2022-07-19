@@ -4715,7 +4715,7 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
  * Search by UIDs
  *
  * Request:
- * 	P-SHRU <dir> <folder> <charset> <uid...>
+ * 	P-SRHU <dir> <folder> <charset> <uid...>
  */
 static int mail_engine_psrhu(int argc, char **argv, int sockd)
 {
