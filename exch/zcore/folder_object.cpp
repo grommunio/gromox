@@ -164,7 +164,6 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	void *pvalue;
 	EXT_PUSH ext_push;
 	char temp_buff[1024];
-	PERSISTDATA *ppersistdata;
 	static constexpr uint8_t bin_buff[22]{};
 	static constexpr uint32_t fake_del = 0;
 	PERSISTDATA_ARRAY persistdatas;
@@ -419,17 +418,12 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			*ppvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = cu_alloc<BINARY>();
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-		auto bv = static_cast<BINARY *>(*ppvalue);
 		persistdatas.count = 3;
 		persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
 		if (NULL == persistdatas.ppitems) {
 			return FALSE;
 		}
-		ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
+		auto ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
 		if (NULL == ppersistdata) {
 			return FALSE;
 		}
@@ -454,6 +448,11 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 		    ext_push.p_persistdata_a(persistdatas) != EXT_ERR_SUCCESS)
 			return FALSE;	
+		*ppvalue = cu_alloc<BINARY>();
+		if (NULL == *ppvalue) {
+			return FALSE;
+		}
+		auto bv = static_cast<BINARY *>(*ppvalue);
 		bv->cb = ext_push.m_offset;
 		bv->pv = common_util_alloc(bv->cb);
 		if (bv->pv == nullptr) {
