@@ -365,26 +365,22 @@ BOOL string_from_utf8(const char *charset, const char *in_string,
 		return TRUE;
 	}
 	
-	length ++;
-	
+	auto orig_outlen = out_len;
+	if (out_len > 0)
+		/* Leave room for \0 */
+		--out_len;
 	conv_id = iconv_open(replace_iconv_charset(charset), "UTF-8");
 	if (conv_id == iconv_t(-1))
 		return FALSE;
 	pin = (char*)in_string;
 	pout = out_string;
 	in_len = length;
-	out_len = 2*length;
 	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return FALSE;
 	}
 	iconv_close(conv_id);
-	/*
-	 * U+0000 converts to nothing in UTF-7. But we still need that string
-	 * terminator. Because no \x00 that the caller planned for was emitted
-	 * yet, there should still be room in out_len.
-	 */
-	if (out_len > 0)
+	if (orig_outlen > 0)
 		*pout = '\0';
 	return TRUE;
 }

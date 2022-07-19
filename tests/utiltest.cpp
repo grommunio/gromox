@@ -13,6 +13,12 @@
 #define assert(x) do { if (!(x)) return EXIT_FAILURE; } while (false)
 using namespace gromox;
 
+static void t_convert()
+{
+	char out[1];
+	string_from_utf8("cp1252", "foo", out, std::size(out));
+}
+
 static int t_emailaddr()
 {
 	EMAIL_ADDR em;
@@ -281,6 +287,7 @@ static int t_cmp_icaltime()
 
 int main()
 {
+	t_convert();
 	if (t_emailaddr() != 0)
 		return EXIT_FAILURE;
 	if (t_base64() != 0)
@@ -306,5 +313,6 @@ int main()
 	ret = t_cmp_icaltime();
 	if (ret != 0)
 		return ret;
+	t_convert();
 	return EXIT_SUCCESS;
 }
