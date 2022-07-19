@@ -46,7 +46,7 @@ void common_util_day_to_filetime(const char *day, FILETIME *pftime)
 	pftime->high_datetime = file_time >> 32;
 }
 
-int common_util_from_utf8(cpid_t codepage, const char *src, char *dst, size_t len)
+int cu_utf8_to_mb(cpid_t codepage, const char *src, char *dst, size_t len)
 {
 	size_t in_len;
 	size_t out_len;
@@ -72,7 +72,7 @@ int common_util_from_utf8(cpid_t codepage, const char *src, char *dst, size_t le
 	}
 }
 
-int common_util_to_utf8(cpid_t codepage, const char *src, char *dst, size_t len)
+int cu_mb_to_utf8(cpid_t codepage, const char *src, char *dst, size_t len)
 {
 	size_t in_len;
 	size_t out_len;

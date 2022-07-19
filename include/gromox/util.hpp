@@ -45,8 +45,8 @@ extern GX_EXPORT BOOL utf8_truncate(char *str, int length);
 extern GX_EXPORT void utf8_filter(char *string);
 extern GX_EXPORT void wchar_to_utf8(uint32_t wchar, char *string);
 extern GX_EXPORT const char *replace_iconv_charset(const char *charset);
-extern GX_EXPORT BOOL string_to_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
-extern GX_EXPORT BOOL string_from_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
+extern GX_EXPORT BOOL string_mb_to_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
+extern GX_EXPORT BOOL string_utf8_to_mb(const char *charset, const char *in_string, char *out_string, size_t out_len);
 extern GX_EXPORT ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len);
 extern GX_EXPORT BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len);
 extern GX_EXPORT char *search_string(const char *haystack, const char *needle,

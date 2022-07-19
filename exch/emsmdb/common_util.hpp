@@ -35,8 +35,8 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-extern ssize_t common_util_mb_from_utf8(cpid_t cpid, const char *src, char *dst, size_t len);
-extern ssize_t common_util_mb_to_utf8(cpid_t cpid, const char *src, char *dst, size_t len);
+extern ssize_t cu_utf8_to_mb(cpid_t cpid, const char *src, char *dst, size_t len);
+extern ssize_t cu_mb_to_utf8(cpid_t cpid, const char *src, char *dst, size_t len);
 extern ssize_t common_util_convert_string(bool to_utf8, const char *src, char *dst, size_t len);
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
 BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);

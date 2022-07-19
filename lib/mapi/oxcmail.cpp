@@ -1615,7 +1615,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 				mime_charset = utf8_valid(pcontent.get()) ?
 				               "utf-8" : pmime_enum->charset;
 
-			if (string_to_utf8(mime_charset.c_str(), pcontent.get(),
+			if (string_mb_to_utf8(mime_charset.c_str(), pcontent.get(),
 			    &pcontent[content_len+1], contallocsz - content_len - 1)) {
 				utf8_filter(&pcontent[content_len+1]);
 				vcard vcard;
@@ -2659,7 +2659,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		    mime_charset))
 			mime_charset = utf8_valid(pcontent.get()) ?
 			               "utf-8" : default_charset;
-		if (!string_to_utf8(mime_charset.c_str(), pcontent.get(),
+		if (!string_mb_to_utf8(mime_charset.c_str(), pcontent.get(),
 		    &pcontent[content_len+1], contoutsize - content_len - 1)) {
 			mime_enum.pcalendar = NULL;
 		} else {
@@ -2728,7 +2728,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 				auto encoding = cpid_to_cset(cpid);
 				if (encoding == nullptr)
 					encoding = "windows-1252";
-				if (string_to_utf8(encoding, plainbuf.c_str(),
+				if (string_mb_to_utf8(encoding, plainbuf.c_str(),
 				    s, z) && utf8_valid(s))
 					pmsg->proplist.set(PR_BODY_W, s);
 			}
@@ -2795,7 +2795,7 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 		memcpy(pout_string, pstring, string_len + 1);
 		return string_len;
 	}
-	if (string_from_utf8(charset, pstring, tmp_buff.get(), alloc_size)) {
+	if (string_utf8_to_mb(charset, pstring, tmp_buff.get(), alloc_size)) {
 		auto string_len = strlen(tmp_buff.get());
 		offset = std::max(0, gx_snprintf(pout_string,
 		         max_length, "=?%s?B?", charset));
@@ -4208,7 +4208,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 				mlog(LV_ERR, "E-1508: ENOMEM");
 				return exp_false;
 			}
-			if (!string_from_utf8(mime_skeleton.charset,
+			if (!string_utf8_to_mb(mime_skeleton.charset,
 			    mime_skeleton.pplain, pbuff.get(), alloc_size)) {
 				pbuff.reset();
 				if (!pplain->write_content(mime_skeleton.pplain,

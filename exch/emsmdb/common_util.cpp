@@ -76,7 +76,7 @@ void* common_util_alloc(size_t size)
 	return ndr_stack_alloc(NDR_STACK_IN, size);
 }
 
-ssize_t common_util_mb_from_utf8(cpid_t cpid, const char *src,
+ssize_t cu_utf8_to_mb(cpid_t cpid, const char *src,
     char *dst, size_t len)
 {
 	size_t in_len;
@@ -102,7 +102,7 @@ ssize_t common_util_mb_from_utf8(cpid_t cpid, const char *src,
 	return out_len - len;
 }
 
-ssize_t common_util_mb_to_utf8(cpid_t cpid, const char *src,
+ssize_t cu_mb_to_utf8(cpid_t cpid, const char *src,
     char *dst, size_t len)
 {
 	size_t in_len;
@@ -134,7 +134,7 @@ static char *common_util_dup_mb_to_utf8(cpid_t cpid, const char *src)
 	auto pdst = cu_alloc<char>(len);
 	if (pdst == nullptr)
 		return NULL;
-	return common_util_mb_to_utf8(cpid, src, pdst, len) >= 0 ? pdst : nullptr;
+	return cu_mb_to_utf8(cpid, src, pdst, len) >= 0 ? pdst : nullptr;
 }
 
 /* only for being invoked under rop environment */
@@ -144,8 +144,8 @@ ssize_t common_util_convert_string(bool to_utf8, const char *src,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return -1;
-	return to_utf8 ? common_util_mb_to_utf8(pinfo->cpid, src, dst, len) :
-	       common_util_mb_from_utf8(pinfo->cpid, src, dst, len);
+	return to_utf8 ? cu_mb_to_utf8(pinfo->cpid, src, dst, len) :
+	       cu_utf8_to_mb(pinfo->cpid, src, dst, len);
 }
 
 void common_util_obfuscate_data(uint8_t *data, uint32_t size)
@@ -720,7 +720,7 @@ BOOL common_util_convert_unspecified(cpid_t cpid,
 		auto pvalue = common_util_alloc(tmp_len);
 		if (pvalue == nullptr)
 			return FALSE;
-		if (common_util_mb_to_utf8(cpid, static_cast<char *>(ptyped->pvalue),
+		if (cu_mb_to_utf8(cpid, static_cast<char *>(ptyped->pvalue),
 		    static_cast<char *>(pvalue), tmp_len) < 0)
 			return FALSE;	
 		ptyped->pvalue = pvalue;
@@ -732,7 +732,7 @@ BOOL common_util_convert_unspecified(cpid_t cpid,
 	auto pvalue = common_util_alloc(tmp_len);
 	if (pvalue == nullptr)
 		return FALSE;
-	if (common_util_mb_from_utf8(cpid, static_cast<char *>(ptyped->pvalue),
+	if (cu_utf8_to_mb(cpid, static_cast<char *>(ptyped->pvalue),
 	    static_cast<char *>(pvalue), tmp_len) < 0)
 		return FALSE;
 	ptyped->pvalue = pvalue;

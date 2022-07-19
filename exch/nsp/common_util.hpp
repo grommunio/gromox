@@ -60,8 +60,8 @@ enum {
 
 extern GUID common_util_get_server_guid();
 void common_util_day_to_filetime(const char *day, FILETIME *pftime);
-extern int common_util_from_utf8(cpid_t, const char *src, char *dst, size_t len);
-extern int common_util_to_utf8(cpid_t, const char *src, char *dst, size_t len);
+extern int cu_utf8_to_mb(cpid_t, const char *src, char *dst, size_t len);
+extern int cu_mb_to_utf8(cpid_t, const char *src, char *dst, size_t len);
 void common_util_guid_to_binary(GUID *pguid, BINARY *pbin);
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid);

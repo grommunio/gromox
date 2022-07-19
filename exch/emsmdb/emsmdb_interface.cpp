@@ -597,7 +597,7 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 	if (strcasecmp(username.c_str(), rpc_info.username) != 0)
 		return ecAccessDenied;
 	if (!mysql_adaptor_get_user_displayname(username.c_str(), temp_buff, std::size(temp_buff)) ||
-	    common_util_mb_from_utf8(cpid, temp_buff, pdisplayname, 1024) < 0)
+	    cu_utf8_to_mb(cpid, temp_buff, pdisplayname, 1024) < 0)
 		return ecRpcFailed;
 	if (*pdisplayname == '\0')
 		strcpy(pdisplayname, rpc_info.username);

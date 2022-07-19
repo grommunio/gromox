@@ -1429,7 +1429,7 @@ bool rtf_reader::build_font_table(SIMPLE_TREE_NODE *pword)
 				cpid_t tmp_cpid = cpid != CP_UNSET ? cpid :
 				                   fcharsetcp != CP_UNSET ? fcharsetcp :
 				                   static_cast<cpid_t>(1252);
-				if (!string_from_utf8(rtf_cpid_to_encoding(tmp_cpid),
+				if (!string_utf8_to_mb(rtf_cpid_to_encoding(tmp_cpid),
 				    tmp_name, name, std::size(name))) {
 					mlog(LV_DEBUG, "rtf: invalid font name");
 					return false;
@@ -1463,7 +1463,7 @@ bool rtf_reader::build_font_table(SIMPLE_TREE_NODE *pword)
 			strcpy(tmp_entry.encoding, "windows-1252");
 		if (cpid == CP_UNSET)
 			cpid = static_cast<cpid_t>(1252);
-		if (!string_to_utf8(rtf_cpid_to_encoding(cpid), tmp_buff,
+		if (!string_mb_to_utf8(rtf_cpid_to_encoding(cpid), tmp_buff,
 		    name, std::size(name))) {
 			mlog(LV_DEBUG, "rtf: invalid font name");
 			strcpy(name, DEFAULT_FONT_STR);

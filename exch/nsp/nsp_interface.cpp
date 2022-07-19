@@ -145,7 +145,7 @@ static ec_error_t nsp_fetchprop(const ab_tree::ab_node &node, cpid_t codepage, u
 		auto tg = ndr_stack_anew<char>(NDR_STACK_OUT, it->second.size() + 1);
 		if (tg == nullptr)
 			return ecServerOOM;
-		auto ret = common_util_from_utf8(codepage, it->second.c_str(), tg, it->second.size());
+		auto ret = cu_utf8_to_mb(codepage, it->second.c_str(), tg, it->second.size());
 		if (ret < 0)
 			return ecError;
 		tg[ret] = '\0';
@@ -369,7 +369,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		} else {
 			pprop->value.pv = pbuff;
 		}
-		common_util_from_utf8(codepage, dn.c_str(),
+		cu_utf8_to_mb(codepage, dn.c_str(),
 				pprop->value.pstr, temp_len);
 		return ecSuccess;
 	case PR_COMPANY_NAME:
@@ -396,7 +396,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		} else {
 			pprop->value.pv = pbuff;
 		}
-		common_util_from_utf8(codepage,
+		cu_utf8_to_mb(codepage,
 			dn.c_str(), pprop->value.pstr, temp_len);
 		return ecSuccess;
 	case PR_DEPARTMENT_NAME:
@@ -426,7 +426,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		} else {
 			pprop->value.pv = pbuff;
 		}
-		common_util_from_utf8(codepage, dn.c_str(),
+		cu_utf8_to_mb(codepage, dn.c_str(),
 				pprop->value.pstr, temp_len);
 		return ecSuccess;
 	case PR_ACCOUNT:
@@ -1766,7 +1766,7 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 				ndr_stack_alloc(NDR_STACK_OUT, tmp_len);
 			memcpy(prow->pprops[4].value.pstr, str_dname, tmp_len);
 		} else {
-			tmp_len = common_util_from_utf8(codepage,
+			tmp_len = cu_utf8_to_mb(codepage,
 				str_dname, tmp_title, sizeof(tmp_title));
 			if (-1 == tmp_len) {
 				prow->pprops[4].value.pstr = NULL;
@@ -2012,7 +2012,7 @@ ec_error_t nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 		pstr = ndr_stack_anew<char>(NDR_STACK_IN, temp_len);
 		if (pstr == nullptr)
 			return ecServerOOM;
-		if (common_util_to_utf8(pstat->codepage, pstrs->ppstr[i], pstr, temp_len) == -1)
+		if (cu_mb_to_utf8(pstat->codepage, pstrs->ppstr[i], pstr, temp_len) == -1)
 			pstrs->ppstr[i] = nullptr;
 		else
 			pstrs->ppstr[i] = pstr;

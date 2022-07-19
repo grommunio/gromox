@@ -238,7 +238,7 @@ static bool have_jpms()
  * charset=, or to postprocess cpid_to_cset() results.
  *
  * Used by:
- * < string_to_utf8 < oxcmail_parse_message_body
+ * < string_mb_to_utf8 < oxcmail_parse_message_body
  * < html_string_to_utf8 [cpid_to_cset]
  */
 const char* replace_iconv_charset(const char *charset)
@@ -267,7 +267,7 @@ const char* replace_iconv_charset(const char *charset)
 	return charset;
 }
 
-BOOL string_to_utf8(const char *charset, const char *in_string,
+BOOL string_mb_to_utf8(const char *charset, const char *in_string,
     char *out_string, size_t out_len)
 {
 	iconv_t conv_id;
@@ -312,7 +312,7 @@ BOOL string_to_utf8(const char *charset, const char *in_string,
 	return TRUE;
 }
 
-BOOL string_from_utf8(const char *charset, const char *in_string,
+BOOL string_utf8_to_mb(const char *charset, const char *in_string,
     char *out_string, size_t out_len)
 {
 	if (out_len == 0)

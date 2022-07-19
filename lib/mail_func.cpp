@@ -1051,7 +1051,7 @@ static BOOL encode_strings_to_utf8(const char *mime_string, char *out_string,
 	if (i > last_pos)
 		return FALSE;
 	temp_buff[buff_offset] = '\0';
-	if (!string_to_utf8(last_charset, temp_buff, out_string, out_len))
+	if (!string_mb_to_utf8(last_charset, temp_buff, out_string, out_len))
 		return FALSE;	
 	return utf8_valid(out_string);
 }
@@ -1076,7 +1076,7 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 				memcpy(temp_buff, in_buff + last_pos, begin_pos - last_pos);
 				temp_buff[begin_pos - last_pos] = '\0';
 				HX_strltrim(temp_buff);
-				if (!string_to_utf8(charset, temp_buff,
+				if (!string_mb_to_utf8(charset, temp_buff,
 				    out_buff + offset, out_len - offset))
 					return FALSE;
 				offset += strlen(out_buff + offset);
@@ -1097,7 +1097,7 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 				decode64(encode_string.title, tmp_len, temp_buff,
 				         std::size(temp_buff), &decode_len);
 				temp_buff[decode_len] = '\0';
-				if (!string_to_utf8(encode_string.charset, temp_buff,
+				if (!string_mb_to_utf8(encode_string.charset, temp_buff,
 				    out_buff + offset, out_len - offset))
 					return encode_strings_to_utf8(mime_string,
 					       out_string, out_len);
@@ -1109,12 +1109,12 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 					return false;
 				decode_len = xl;
 				temp_buff[decode_len] = '\0';
-				if (!string_to_utf8(encode_string.charset, temp_buff,
+				if (!string_mb_to_utf8(encode_string.charset, temp_buff,
 				    out_buff + offset, out_len - offset))
 					return encode_strings_to_utf8(mime_string,
 					       out_string, out_len);
 			} else {
-				if (!string_to_utf8(charset, encode_string.title,
+				if (!string_mb_to_utf8(charset, encode_string.title,
 				    out_buff + offset, out_len - offset))
 					return FALSE;
 			}
@@ -1129,7 +1129,7 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 		}
 	}
 	if (i > last_pos || 1 == buff_len) {
-		if (!string_to_utf8(charset, in_buff + last_pos,
+		if (!string_mb_to_utf8(charset, in_buff + last_pos,
 		    out_buff + offset, out_len - offset))
 			return FALSE;
 		offset += strlen(out_buff + offset);

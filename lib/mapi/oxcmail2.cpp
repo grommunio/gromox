@@ -123,11 +123,11 @@ errno_t bodyset_plain(TPROPVAL_ARRAY &props, std::string &&rawbody,
 	utfbody.resize(mb_to_utf8_xlen(rawbody.size()));
 	TAGGED_PROPVAL pv;
 	/*
-	 * string_to_utf8() may or may not(!) call iconv. Thus, we have
+	 * string_mb_to_utf8() may or may not(!) call iconv. Thus, we have
 	 * an unconditional utf8_filter call in case the message
 	 * declared charset=utf-8 and still included garbage.
 	 */
-	if (string_to_utf8(charset, rawbody.c_str(),
+	if (string_mb_to_utf8(charset, rawbody.c_str(),
 	    utfbody.data(), utfbody.size() + 1)) {
 		utf8_filter(utfbody.data());
 		pv.proptag = PR_BODY;
@@ -415,7 +415,7 @@ errno_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
 				mime_charset = utf8_valid(rawbody.c_str()) ?
 				               "utf-8" : epar.charset;
 			utfbody.resize(mb_to_utf8_xlen(rawbody.size()));
-			if (!string_to_utf8(mime_charset.c_str(), rawbody.c_str(),
+			if (!string_mb_to_utf8(mime_charset.c_str(), rawbody.c_str(),
 			    utfbody.data(), utfbody.size() + 1))
 				utfbody = std::move(rawbody);
 			utf8_filter(utfbody.data());

@@ -61,12 +61,12 @@ static int t_extpp()
 static int t_convert()
 {
 	char out[1];
-	if (!string_to_utf8("cp1252", "foo", out, std::size(out)))
+	if (!string_mb_to_utf8("cp1252", "foo", out, std::size(out)))
 		/* ignore */;
-	if (!string_from_utf8("cp1252", "foo", out, std::size(out)))
+	if (!string_utf8_to_mb("cp1252", "foo", out, std::size(out)))
 		/* ignore */;
 	char largeout[1024] = "foo";
-	if (!string_to_utf8("utf-8", "utf-8", largeout, std::size(largeout)))
+	if (!string_mb_to_utf8("utf-8", "utf-8", largeout, std::size(largeout)))
 		return EXIT_FAILURE;
 	strcpy(largeout, "\xef\xbb\xff foo \xef\xbb\xbf");
 	if (utf8_valid(&largeout[0]))

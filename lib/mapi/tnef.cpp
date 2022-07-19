@@ -1034,7 +1034,7 @@ static char *tnef_duplicate_string_to_unicode(const char *charset,
 	auto pstr_out = me_alloc<char>(z);
 	if (pstr_out == nullptr)
 		return NULL;
-	if (!string_to_utf8(charset, pstring, pstr_out, z)) {
+	if (!string_mb_to_utf8(charset, pstring, pstr_out, z)) {
 		free(pstr_out);
 		return NULL;
 	}
