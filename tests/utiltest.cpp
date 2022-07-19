@@ -16,6 +16,7 @@ using namespace gromox;
 static void t_convert()
 {
 	char out[1];
+	string_to_utf8("cp1252", "foo", out, std::size(out));
 	string_from_utf8("cp1252", "foo", out, std::size(out));
 }
 

@@ -323,23 +323,24 @@ BOOL string_to_utf8(const char *charset, const char *in_string,
 		out_string[0] = '\0';
 		return TRUE;
 	}
+	auto orig_outlen = out_len;
+	if (out_len > 0)
+		/* Leave room for \0 */
+		--out_len;
 	gx_strlcpy(tmp_charset, replace_iconv_charset(charset), GX_ARRAY_SIZE(tmp_charset));
-	if (strcasecmp("utf-7", tmp_charset) != 0)
-		length ++;
 	conv_id = iconv_open("UTF-8", tmp_charset);
 	if (conv_id == iconv_t(-1))
 		return FALSE;
 	pin = (char*)in_string;
 	pout = out_string;
 	auto in_len = length;
-	out_len = 2*length;
 	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return FALSE;
 	}
 	iconv_close(conv_id);
-	if (strcasecmp("utf-7", tmp_charset) == 0)
-		out_string[2*length - out_len] = '\0';	
+	if (orig_outlen > 0)
+		*pout = '\0';
 	return TRUE;
 }
 
