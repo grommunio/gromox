@@ -823,6 +823,11 @@ BOOL ftstream_producer::write_progresspermessage(const PROGRESS_MESSAGE *pprogms
 
 BOOL ftstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtotal)
 {
+	/*
+	 * We are sending 64-bit values. It's Outlook's fault for not
+	 * displaying them.
+	 * https://docs.microsoft.com/en-us/outlook/troubleshoot/synchronization/status-bar-never-shows-more-than-3-99-gb
+	 */
 	auto pstream = this;
 	if (!write_uint32(INCRSYNCPROGRESSMODE))
 		return FALSE;
