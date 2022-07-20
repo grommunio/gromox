@@ -152,10 +152,13 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return EIO;
 	}
-	auto ok  = oxcical_import_multi("UTC", &ical, malloc, ee_get_propids,
+	auto err = oxcical_import_multi("UTC", &ical, malloc, ee_get_propids,
 	           oxcmail_username_to_entryid, mv);
-	if (!ok) {
-		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
+	if (err == ecNotFound) {
+		fprintf(stderr, "%s: Not an iCalendar object, or an incomplete one.\n", file);
+		return EIO;
+	} else if (err != ecSuccess) {
+		fprintf(stderr, "%s: Import rejected for an unspecified reason (usually a too-strict parser).\n", file);
 		return EIO;
 	}
 	return 0;

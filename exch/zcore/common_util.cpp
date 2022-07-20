@@ -2408,10 +2408,9 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 	if (icobj.init() < 0 || !icobj.retrieve(ical_data))
 		return ecError;
 	common_util_set_dir(store->get_dir());
-	if (!oxcical_import_multi(tmzone, &icobj, common_util_alloc,
-	    common_util_get_propids_create, common_util_username_to_entryid, msgvec))
-		return ecError;
-	return ecSuccess;
+	return oxcical_import_multi(tmzone, &icobj, common_util_alloc,
+	       common_util_get_propids_create,
+	       common_util_username_to_entryid, msgvec);
 }
 
 BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
