@@ -1939,8 +1939,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	std::shared_ptr<ICAL_COMPONENT> ptz_component;
 	if (ptzid != nullptr) {
 		ptz_component = oxcical_find_vtimezone(pical, ptzid);
-		if (ptz_component == nullptr)
+		if (ptz_component == nullptr) {
+			fprintf(stderr, "D-2070: %s: timezone \"%s\" not found\n", __func__, znul(ptzid));
 			return FALSE;
+		}
 		if (!oxcical_parse_tzdisplay(TRUE,
 		    ptz_component, phash, &last_propid, pmsg))
 			return FALSE;
