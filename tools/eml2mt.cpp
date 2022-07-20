@@ -152,9 +152,9 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return EIO;
 	}
-	auto err = oxcical_import_multi("UTC", &ical, malloc, ee_get_propids,
+	auto ok  = oxcical_import_multi("UTC", &ical, malloc, ee_get_propids,
 	           oxcmail_username_to_entryid, mv);
-	if (err != ecSuccess) {
+	if (!ok) {
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 		return EIO;
 	}
