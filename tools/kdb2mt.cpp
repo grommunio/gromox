@@ -128,6 +128,7 @@ static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
 static unsigned int g_with_acl;
 static int g_with_hidden = -1;
 static std::vector<uint32_t> g_only_objs;
+static uint32_t g_proptag_stubbed;
 
 static void cb_only_obj(const HXoptcb *cb) {
 		g_only_objs.push_back(cb->data_long);
@@ -893,6 +894,11 @@ static void do_namemap_table(driver &drv, gi_name_map &map)
 		pnstr.release();
 		pn_req.pname = nullptr;
 	}
+
+	for (const auto &[tag, mn] : map)
+		if (mn.kind == MNID_STRING && mn.guid == PSETID_KCARCHIVE &&
+		    strcasecmp(mn.name.c_str(), "stubbed") == 0)
+			g_proptag_stubbed = CHANGE_PROP_TYPE(tag, PT_BOOLEAN);
 }
 
 static gi_name_map do_namemap(driver &drv)
@@ -1006,19 +1012,25 @@ static message_content_ptr build_message(driver &drv, unsigned int depth,
 	return ctnt;
 }
 
-static bool is_problematic_message(const TPROPVAL_ARRAY &props)
+static bool skip_message(const TPROPVAL_ARRAY &props)
 {
 	auto flags = props.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	auto mcls  = props.get<const char>(PR_MESSAGE_CLASS);
-	return flags != nullptr && mcls != nullptr &&
-	       *flags & MSGFLAG_ASSOCIATED &&
-	       strcmp(mcls, "IPM.Microsoft.FolderDesign.NamedView") == 0;
+	if (flags != nullptr && mcls != nullptr && *flags & MSGFLAG_ASSOCIATED &&
+	    strcmp(mcls, "IPM.Microsoft.FolderDesign.NamedView") == 0)
+		return true;
+	if (g_proptag_stubbed != 0) {
+		auto flag = props.get<uint8_t>(g_proptag_stubbed);
+		if (flag != nullptr && *flag != 0)
+			return true;
+	}
+	return false;
 }
 
 static int do_message(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	auto ctnt = build_message(drv, depth, item);
-	if (is_problematic_message(ctnt->proplist))
+	if (skip_message(ctnt->proplist))
 		return 0;
 	if (parent.type == MAPI_ATTACH)
 		attachment_content_set_embedded_internal(parent.attach, ctnt.release());
