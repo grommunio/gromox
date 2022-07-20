@@ -1,0 +1,11 @@
+#!/usr/bin/perl -lp
+s{^\s*(.+)\s*=\s*(\S+)[,;]?$}{"$1 = ".&repl($2).","}eg;
+sub repl
+{
+	my $v = $2;
+	if (substr($v, 0, 2) eq "0x") {
+		return sprintf("0x%08x", hex($v));
+	} else {
+		return sprintf("0x%08x", $v & 0xFFFFFFFF);
+	}
+}
