@@ -1,6 +1,7 @@
 .TH gromox\-eml2mt 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-eml2mt \(em Utility to import Internet Mail messages
+gromox\-eml2mt \(em Utility to import Internet Mail messages,
+iCalendar and vCard objects
 .SH Synopsis
 \fBgromox\-eml2mt\fP \fIfile.eml\fP[...]
 .PP
@@ -16,7 +17,7 @@ When called as gromox\-ical2mt, the input is treated as RFC5545-formatted
 calendaring and scheduling objects (.ics).
 .PP
 When called as gromox\-vcf2mt, the input is treated as RFC4770/6530-formatted
-vCard objects.
+vCard objects (.vcf).
 .PP
 eml2mt will resolve email addresses to Gromox objects already, so the emitted
 data stream should be consumed by an mt2exm invocation on the \fIsame\fP Gromox
@@ -25,15 +26,17 @@ cluster.
 .TP
 \fB\-\-ical\fP
 Treat all file arguments as iCalendar input. This is the default if the program
-was invoked as gromox\-ical2mt.
+was invoked as gromox\-ical2mt. Messages will be anchored to the calendar
+folder.
 .TP
 \fB\-\-mail\fP
 Treat all file arguments as Internet Mail input. This is the default if the
-program was invoked as gromox\-eml2mt.
+program was invoked as gromox\-eml2mt. Messages remain unanchored, and you can
+use the mt2exm \-B option.
 .TP
 \fB\-\-vcard\fP
 Treat all file arguments as vCard input. This is the default if the program was
-invoked as gromox\-vcf2mt.
+invoked as gromox\-vcf2mt. Messages will be anchored to the contacts folder.
 .TP
 \fB\-\-oneoff\fP
 Do not resolve email addresses to EX addresses, but to ONEOFF instead. This
