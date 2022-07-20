@@ -31,11 +31,20 @@ using namespace std::string_literals;
 using namespace gromox;
 
 enum {
+	// ecDoConnect = 0,
 	ecDoDisconnect = 1,
+	// ecDoRpc = 2,
+	// ecGetMoreRpc = 3,
 	ecRRegisterPushNotification = 4,
+	// ecRUnregisterPushNotification = 5,
 	ecDummyRpc = 6,
+	// ecRGetDCName = 7,
+	// ecRNetGetDCName = 8,
+	// ecDoRpcExt = 9,
 	ecDoConnectEx = 10,
 	ecDoRpcExt2 = 11,
+	// ecDoAsyncConnect = 12,
+	// ecDoAsyncWait = 13,
 	ecDoAsyncConnectEx = 14,
 };
 
