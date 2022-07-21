@@ -2912,7 +2912,6 @@ static bool table_acceptable_type(uint16_t type)
 uint32_t zarafa_server_sorttable(GUID hsession,
 	uint32_t htable, const SORTORDER_SET *psortset)
 {
-	int i, j;
 	BOOL b_max;
 	uint16_t type;
 	uint8_t mapi_type;
@@ -2934,17 +2933,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		return ecSuccess;
 	b_max = FALSE;
 	b_multi_inst = FALSE;
-	for (i=0; i<psortset->ccategories; i++) {
-		for (j=i+1; j<psortset->count; j++) {
-			if (psortset->psort[i].propid ==
-				psortset->psort[j].propid &&
-				psortset->psort[i].type ==
-				psortset->psort[j].type) {
-				return ecInvalidParam;
-			}
-		}
-	}
-	for (i=0; i<psortset->count; i++) {
+	for (unsigned int i = 0; i < psortset->count; ++i) {
 		tmp_proptag = PROP_TAG(psortset->psort[i].type, psortset->psort[i].propid);
 		if (tmp_proptag == PR_DEPTH || tmp_proptag == PidTagInstID ||
 		    tmp_proptag == PidTagInstanceNum ||

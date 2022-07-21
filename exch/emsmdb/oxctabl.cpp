@@ -115,7 +115,6 @@ uint32_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
     uint8_t *ptable_status, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i, j;
 	BOOL b_max;
 	uint16_t type;
 	int object_type;
@@ -134,17 +133,7 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 		return ecNotSupported;
 	b_max = FALSE;
 	b_multi_inst = FALSE;
-	for (i=0; i<psort_criteria->ccategories; i++) {
-		for (j=i+1; j<psort_criteria->count; j++) {
-			if (psort_criteria->psort[i].propid ==
-				psort_criteria->psort[j].propid &&
-				psort_criteria->psort[i].type ==
-				psort_criteria->psort[j].type) {
-				return ecInvalidParam;
-			}
-		}
-	}
-	for (i=0; i<psort_criteria->count; i++) {
+	for (unsigned int i = 0; i < psort_criteria->count; ++i) {
 		tmp_proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		if (tmp_proptag == PR_DEPTH || tmp_proptag == PidTagInstID ||
 		    tmp_proptag == PidTagInstanceNum ||

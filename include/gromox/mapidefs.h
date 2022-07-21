@@ -702,6 +702,7 @@ enum mapi_access { /* for PR_ACCESS */
 };
 
 enum {
+	/* The OL UI only offers 4 categories and 4 sorts, so we just don't need more ATM. */
 	MAXIMUM_SORT_COUNT = 8,
 };
 
