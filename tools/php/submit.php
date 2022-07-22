@@ -9,7 +9,8 @@
         printf("Usage: %s account exmdb_id\n", $argv[0]);
         exit();
 	}
-	require_once "db.php";
+	require_once __DIR__ . "/../http/php/lib/conf.php";
+	require_once __DIR__ . "/../http/php/lib/db.php";
 	$user_id = get_user_id($argv[1]);
 	if (empty($user_id)) {
 		die("cannot find " . $argv[1] . "'s information from database"); 
