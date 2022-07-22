@@ -25,6 +25,7 @@
 #include <unordered_map>
 #include <vector>
 #include <libHX/ctype_helper.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -272,7 +273,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
 		if (pbuff == nullptr)
 			return 0;
-		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
+		if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return 0;
 		fd.close();
 		MAIL imail(g_mime_pool);
@@ -291,7 +292,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 			common_util_get_maildir(), mid_string);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() >= 0) {
-			if (write(fd.get(), digest_buff, tmp_len) != tmp_len)
+			if (HXio_fullwrite(fd.get(), digest_buff, tmp_len) != tmp_len)
 				fprintf(stderr, "E-1979: write %s: %s\n", temp_path, strerror(errno));
 			fd.close();
 		}
@@ -300,7 +301,8 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		    node_stat.st_size >= MAX_DIGLEN)
 			return 0;
 		fd = open(temp_path, O_RDONLY);
-		if (fd.get() < 0 || read(fd.get(), digest_buff, node_stat.st_size) != node_stat.st_size)
+		if (fd.get() < 0 || HXio_fullread(fd.get(), digest_buff,
+		    node_stat.st_size) != node_stat.st_size)
 			return 0;
 		digest_buff[node_stat.st_size] = '\0';
 		fd.close();
@@ -461,7 +463,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	if (-1 == fd) {
 		return;
 	}
-	auto read_len = read(fd, pbuff.get(), length);
+	auto read_len = HXio_fullread(fd, pbuff.get(), length);
 	if (read_len < 0 || static_cast<size_t>(read_len) != length) {
 		return;
 	}
@@ -1668,7 +1670,8 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		wrapfd fd = open(temp_path, O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 		    node_stat.st_size >= MAX_DIGLEN ||
-		    read(fd.get(), temp_buff, node_stat.st_size) != node_stat.st_size)
+		    HXio_fullread(fd.get(), temp_buff,
+		    node_stat.st_size) != node_stat.st_size)
 			return;
 		temp_buff[node_stat.st_size] = '\0';
 	} else {
@@ -1705,7 +1708,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() < 0)
 			return;
-		if (write(fd.get(), temp_buff, tmp_len) != tmp_len)
+		if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len)
 			return;
 		fd.close();
 		sprintf(temp_path1, "%s/eml/%s", dir, mid_string1);
@@ -2808,7 +2811,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (NULL == pbuff) {
 		return MIDB_E_NO_MEMORY;
 	}
-	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
+	if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return MIDB_E_NO_MEMORY;
 	fd.close();
 
@@ -2827,7 +2830,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (fd.get() < 0) {
 		return MIDB_E_NO_MEMORY;
 	}
-	if (write(fd.get(), temp_buff, tmp_len) != tmp_len)
+	if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len)
 		fprintf(stderr, "E-1982: write %s: %s\n", temp_path, strerror(errno));
 	fd.close();
 	auto pidb = mail_engine_get_idb(argv[1]);
@@ -3011,7 +3014,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (NULL == pbuff) {
 		return MIDB_E_NO_MEMORY;
 	}
-	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
+	if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return MIDB_E_NO_MEMORY;
 	fd.close();
 
