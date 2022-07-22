@@ -620,34 +620,35 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
-				if (temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff)) {
-					keyword_enum.pjson = &temp_mjson;
-					keyword_enum.b_result = FALSE;
-					keyword_enum.charset = charset;
-					keyword_enum.keyword = ptree_node->ct_keyword;
-					temp_mjson.enum_mime(mail_engine_ct_enum_mime, &keyword_enum);
-					if (keyword_enum.b_result)
-						b_result1 = TRUE;
-				}
+				if (!temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff))
+					break;
+				keyword_enum.pjson = &temp_mjson;
+				keyword_enum.b_result = FALSE;
+				keyword_enum.charset = charset;
+				keyword_enum.keyword = ptree_node->ct_keyword;
+				temp_mjson.enum_mime(mail_engine_ct_enum_mime, &keyword_enum);
+				if (keyword_enum.b_result)
+					b_result1 = TRUE;
 				break;
 			}
-			case midb_cond::cc:
+			case midb_cond::cc: {
 				if (!b_loaded) {
 					if (mail_engine_get_digest(psqlite, mid_string, digest_buff) == 0)
 						break;
 					b_loaded = TRUE;
 				}
-				if (get_digest(digest_buff, "cc", temp_buff, arsizeof(temp_buff)) &&
+				if (!get_digest(digest_buff, "cc", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
-					temp_buff1[temp_len] = '\0';
-					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
-					if (rs != nullptr &&
-					    search_string(rs.get(), ptree_node->ct_keyword,
-					    strlen(rs.get())) != nullptr)
-						b_result1 = TRUE;
-				}
+				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
+					break;
+				temp_buff1[temp_len] = '\0';
+				auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+				if (rs != nullptr &&
+				    search_string(rs.get(), ptree_node->ct_keyword,
+				    strlen(rs.get())) != nullptr)
+					b_result1 = TRUE;
 				break;
+			}
 			case midb_cond::deleted:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
@@ -675,23 +676,24 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (sqlite3_column_int64(pstmt_message, 6) != 0)
 					b_result1 = TRUE;
 				break;
-			case midb_cond::from:
+			case midb_cond::from: {
 				if (!b_loaded) {
 					if (mail_engine_get_digest(psqlite, mid_string, digest_buff) == 0)
 						break;
 					b_loaded = TRUE;
 				}
-				if (get_digest(digest_buff, "from", temp_buff, arsizeof(temp_buff)) &&
+				if (!get_digest(digest_buff, "from", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
-					temp_buff1[temp_len] = '\0';
-					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
-					if (rs != nullptr &&
-					    search_string(rs.get(), ptree_node->ct_keyword,
-					    strlen(rs.get())) != nullptr)
-						b_result1 = TRUE;
-				}
+				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
+					break;
+				temp_buff1[temp_len] = '\0';
+				auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+				if (rs != nullptr &&
+				    search_string(rs.get(), ptree_node->ct_keyword,
+				    strlen(rs.get())) != nullptr)
+					b_result1 = TRUE;
 				break;
+			}
 			case midb_cond::header:
 				snprintf(temp_buff1, 256, "%s/eml/%s",
 					common_util_get_maildir(), mid_string);
@@ -817,7 +819,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_col_uint64(pstmt_message, 13) < ptree_node->ct_size)
 					b_result1 = TRUE;
 				break;
-			case midb_cond::subject:
+			case midb_cond::subject: {
 				if (!b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
@@ -825,17 +827,18 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					}
 					b_loaded = TRUE;
 				}
-				if (get_digest(digest_buff, "subject", temp_buff, arsizeof(temp_buff)) &&
+				if (!get_digest(digest_buff, "subject", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
-					temp_buff1[temp_len] = '\0';
-					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
-					if (rs != nullptr &&
-					    search_string(rs.get(), ptree_node->ct_keyword,
-					    strlen(rs.get())) != nullptr)
-						b_result1 = TRUE;
-				}
+				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
+					break;
+				temp_buff1[temp_len] = '\0';
+				auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+				if (rs != nullptr &&
+				    search_string(rs.get(), ptree_node->ct_keyword,
+				    strlen(rs.get())) != nullptr)
+					b_result1 = TRUE;
 				break;
+			}
 			case midb_cond::text: {
 				if (!b_loaded) {
 					if (0 == mail_engine_get_digest(
@@ -895,18 +898,18 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
-				if (temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff)) {
-					keyword_enum.pjson = &temp_mjson;
-					keyword_enum.b_result = FALSE;
-					keyword_enum.charset = charset;
-					keyword_enum.keyword = ptree_node->ct_keyword;
-					temp_mjson.enum_mime(mail_engine_ct_enum_mime, &keyword_enum);
-					if (keyword_enum.b_result)
-						b_result1 = TRUE;
-				}
+				if (!temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff))
+					break;
+				keyword_enum.pjson = &temp_mjson;
+				keyword_enum.b_result = FALSE;
+				keyword_enum.charset = charset;
+				keyword_enum.keyword = ptree_node->ct_keyword;
+				temp_mjson.enum_mime(mail_engine_ct_enum_mime, &keyword_enum);
+				if (keyword_enum.b_result)
+					b_result1 = TRUE;
 				break;
 			}
-			case midb_cond::to:
+			case midb_cond::to: {
 				if (!b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
@@ -914,17 +917,18 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					}
 					b_loaded = TRUE;
 				}
-				if (get_digest(digest_buff, "to", temp_buff, arsizeof(temp_buff)) &&
+				if (!get_digest(digest_buff, "to", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
-				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
-					temp_buff1[temp_len] = '\0';
-					auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
-					if (rs != nullptr &&
-					    search_string(rs.get(), ptree_node->ct_keyword,
-					    strlen(rs.get())) != nullptr)
-						b_result1 = TRUE;
-				}
+				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
+					break;
+				temp_buff1[temp_len] = '\0';
+				auto rs = mail_engine_ct_decode_mime(charset, temp_buff1);
+				if (rs != nullptr &&
+				    search_string(rs.get(), ptree_node->ct_keyword,
+				    strlen(rs.get())) != nullptr)
+					b_result1 = TRUE;
 				break;
+			}
 			case midb_cond::unanswered:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
