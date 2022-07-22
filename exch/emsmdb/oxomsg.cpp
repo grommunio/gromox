@@ -265,24 +265,33 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
 	
-	tmp_proptags.count = 1;
+	tmp_proptags.count = 2;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_ASSOCIATED;
+	proptag_buff[1] = PR_MESSAGE_CLASS;
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0)
 		return ecAccessDenied;
-	
 	if (!oxomsg_extract_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
 	auto account = plogon->get_account();
 	bool send_as = false;
-	if (*username == '\0')
+	if (*username == '\0') {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
-	else if (!oxomsg_get_perm(account, username, send_as))
-		return ecAccessDenied;
+	} else if (!oxomsg_get_perm(account, username, send_as)) {
+		/* This models EXC behavior. It's silly. */
+		auto cls = tmp_propvals.get<const char>(PR_MESSAGE_CLASS);
+		if (cls == nullptr || strncasecmp(cls, "IPM.Schedule.", 13) != 0) {
+			fprintf(stderr, "I-2081: %s tried to send with repr/from=<%s>, but no delegate/sendas permission.\n",
+			        account, username);
+			return ecAccessDenied;
+		}
+		/* Unlike EXC, do not allow representation. */
+		gx_strlcpy(username, account, std::size(username));
+	}
 	gxerr_t err = oxomsg_rectify_message(pmessage, username, send_as);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
@@ -530,7 +539,6 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	void *pvalue;
 	int object_type;
 	char username[UADDR_SIZE];
 	PROPTAG_ARRAY proptags;
@@ -553,19 +561,33 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecNotSupported;
 	if (pmessage->check_importing())
 		return ecAccessDenied;
-	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
-	    pmessage->get_id(), PR_MESSAGE_FLAGS, &pvalue))
+
+	static constexpr uint32_t rq_tags1[] = {PR_MESSAGE_FLAGS, PR_MESSAGE_CLASS};
+	static constexpr PROPTAG_ARRAY rq_tags = {2, deconst(rq_tags1)};
+	TPROPVAL_ARRAY outvalues{};
+	if (!exmdb_client_get_message_properties(plogon->get_dir(), nullptr, 0,
+	    pmessage->get_id(), &rq_tags, &outvalues))
 		return ecError;
-	if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & MSGFLAG_SUBMITTED)
+	auto msgflags = outvalues.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	if (msgflags != nullptr && *msgflags & MSGFLAG_SUBMITTED)
 		return ecAccessDenied;
 	if (!oxomsg_extract_delegate(pmessage, username, std::size(username)))
 		return ecError;
 	auto account = plogon->get_account();
 	bool send_as = false;
-	if (*username == '\0')
+	if (*username == '\0') {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
-	else if (!oxomsg_get_perm(account, username, send_as))
-		return ecAccessDenied;
+	} else if (!oxomsg_get_perm(account, username, send_as)) {
+		/* This models EXC behavior. It's silly. */
+		auto cls = outvalues.get<const char>(PR_MESSAGE_CLASS);
+		if (cls == nullptr || strncasecmp(cls, "IPM.Schedule.", 13) != 0) {
+			fprintf(stderr, "I-2080: %s tried to send with repr/from=<%s>, but no delegate/sendas permission.\n",
+			        account, username);
+			return ecAccessDenied;
+		}
+		/* Unlike EXC, do not allow representation. */
+		gx_strlcpy(username, account, std::size(username));
+	}
 	gxerr_t err = oxomsg_rectify_message(pmessage, username, send_as);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
