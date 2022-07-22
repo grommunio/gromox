@@ -190,4 +190,20 @@ function get_secondary_store_hints($email_address)
 	return $secondaryStores;
 }
 
+function get_user_id($account)
+{
+	$db_conn = get_db_connection();
+
+	$sql_string = "SELECT id FROM users WHERE username='" . $db_conn->real_escape_string($account) . "'";
+	$results = $db_conn->query($sql_string);
+	if (!$results) {
+		die("fail to query database: " . $dbconn->error);
+	}
+	if (1 != mysqli_num_rows($results)) {
+		return false;
+	}
+	$row = $results->fetch_row();
+	return $row[0];
+}
+
 ?>
