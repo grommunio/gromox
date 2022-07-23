@@ -195,8 +195,6 @@ static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
 static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *);
 static BOOL ct_hint_seq(const std::vector<seq_node> &plist, unsigned int num, unsigned int max_uid);
 
-static constexpr const char *special_folders[] = {"inbox", "draft", "sent", "trash", "junk"};
-
 template<typename T> static inline bool
 array_find_str(const T &kwlist, const char *s)
 {
@@ -1974,6 +1972,16 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	return TRUE;
 }
 
+static unsigned int spname_to_fid(const char *s)
+{
+	if (strcasecmp(s, "inbox") == 0) return PRIVATE_FID_INBOX;
+	if (strcasecmp(s, "draft") == 0) return PRIVATE_FID_DRAFT;
+	if (strcasecmp(s, "sent") == 0) return PRIVATE_FID_SENT_ITEMS;
+	if (strcasecmp(s, "trash") == 0) return PRIVATE_FID_DELETED_ITEMS;
+	if (strcasecmp(s, "junk") == 0) return PRIVATE_FID_JUNK;
+	return 0;
+}
+
 static const char *spfid_to_name(unsigned int z)
 {
 	switch (z) {
@@ -3210,7 +3218,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		|| strlen(argv[3]) >= 1024 || 0 == strcmp(argv[2], argv[3])) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (array_find_str(special_folders, argv[2]))
+	if (spname_to_fid(argv[2]) != 0)
 		return MIDB_E_PARAMETER_ERROR;
 	if (!decode_hex_binary(argv[3], decoded_name, arsizeof(decoded_name)))
 		return MIDB_E_PARAMETER_ERROR;
@@ -3242,16 +3250,9 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		}
 		memcpy(temp_name, ptoken, ptoken1 - ptoken);
 		temp_name[ptoken1 - ptoken] = '\0';
-		if (0 == strcmp(temp_name, "inbox")) {
-			folder_id1 = PRIVATE_FID_INBOX;
-		} else if (0 == strcmp(temp_name, "draft")) {
-			folder_id1 = PRIVATE_FID_DRAFT;
-		} else if (0 == strcmp(temp_name, "sent")) {
-			folder_id1 = PRIVATE_FID_SENT_ITEMS;
-		} else if (0 == strcmp(temp_name, "trash")) {
-			folder_id1 = PRIVATE_FID_DELETED_ITEMS;
-		} else if (0 == strcmp(temp_name, "junk")) {
-			folder_id1 = PRIVATE_FID_JUNK;
+		auto next_fid = spname_to_fid(temp_name);
+		if (next_fid != 0) {
+			folder_id1 = next_fid;
 		} else {
 			encode_hex_binary(decoded_name, ptoken1 - decoded_name,
 				encoded_name, 1024);
@@ -3355,16 +3356,9 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 		}
 		memcpy(temp_name, ptoken, ptoken1 - ptoken);
 		temp_name[ptoken1 - ptoken] = '\0';
-		if (0 == strcmp(temp_name, "inbox")) {
-			folder_id1 = PRIVATE_FID_INBOX;
-		} else if (0 == strcmp(temp_name, "draft")) {
-			folder_id1 = PRIVATE_FID_DRAFT;
-		} else if (0 == strcmp(temp_name, "sent")) {
-			folder_id1 = PRIVATE_FID_SENT_ITEMS;
-		} else if (0 == strcmp(temp_name, "trash")) {
-			folder_id1 = PRIVATE_FID_DELETED_ITEMS;
-		} else if (0 == strcmp(temp_name, "junk")) {
-			folder_id1 = PRIVATE_FID_JUNK;
+		auto next_fid = spname_to_fid(temp_name);
+		if (next_fid != 0) {
+			folder_id1 = next_fid;
 		} else {
 			encode_hex_binary(decoded_name, ptoken1 - decoded_name,
 				encoded_name, 1024);
@@ -3397,7 +3391,7 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (array_find_str(special_folders, argv[2]))
+	if (spname_to_fid(argv[2]) != 0)
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
