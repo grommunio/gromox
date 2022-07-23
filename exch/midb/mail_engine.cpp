@@ -80,6 +80,8 @@ namespace {
 
 struct seq_node {
 	unsigned int min = -1, max = -1;
+	constexpr bool has_min() const { return min != static_cast<unsigned int>(-1) && min != 0; }
+	constexpr bool has_max() const { return max != static_cast<unsigned int>(-1) && max != 0; }
 };
 
 struct CONDITION_TREE : DOUBLE_LIST {
@@ -1401,27 +1403,25 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 				if (0 == strcmp(last_break, "*")) {
 					if (strcmp(last_colon + 1, "*") != 0) {
 						pseq->min = strtol(last_colon + 1, nullptr, 0);
-						if (pseq->min <= 0) {
+						if (!pseq->has_min())
 							return NULL;
-						}
 					}
 				} else {
 					pseq->min = strtol(last_break, nullptr, 0);
-					if (pseq->min <= 0) {
+					if (!pseq->has_min())
 						return NULL;
-					}
 					if (strcmp(last_colon + 1, "*") != 0) {
 						pseq->max = strtol(last_colon + 1, nullptr, 0);
-						if (pseq->max <= 0) {
+						if (!pseq->has_max())
 							return NULL;
-						}
 					}
 				}
 				last_colon = NULL;
 			} else {
-				if (*last_break == '*' ||
-				    (pseq->min = strtol(last_break, nullptr, 0)) <= 0) {
-					return NULL;
+				if (*last_break == '*') {
+					pseq->min = strtol(last_break, nullptr, 0);
+					if (!pseq->has_min())
+						return NULL;
 				}
 				pseq->max = pseq->min;
 			}
