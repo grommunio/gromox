@@ -226,9 +226,8 @@ static std::unique_ptr<char[]> mail_engine_ct_to_utf8(const char *charset,
 	length = strlen(string) + 1;
 	auto ret_string = std::make_unique<char[]>(2 * length);
 	conv_id = iconv_open("UTF-8", charset);
-	if ((iconv_t)-1 == conv_id) {
+	if (conv_id == (iconv_t)-1)
 		return NULL;
-	}
 	auto pin = deconst(string);
 	auto pout = ret_string.get();
 	in_len = length;
@@ -456,13 +455,11 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	length = pmime->get_length(MJSON_MIME_CONTENT);
 	auto pbuff = std::make_unique<char[]>(2 * length + 1);
 	auto fd = penum->pjson->seek_fd(pmime->get_id(), MJSON_MIME_CONTENT);
-	if (-1 == fd) {
+	if (fd == -1)
 		return;
-	}
 	auto read_len = HXio_fullread(fd, pbuff.get(), length);
-	if (read_len < 0 || static_cast<size_t>(read_len) != length) {
+	if (read_len < 0 || static_cast<size_t>(read_len) != length)
 		return;
-	}
 	if (strcasecmp(pmime->get_encoding(), "base64") == 0) {
 		if (decode64_ex(pbuff.get(), length, &pbuff[length],
 		    length, &temp_len) != 0)
@@ -1023,62 +1020,51 @@ static int mail_engine_ct_compile_criteria(int argc,
 	int tmp_argc1;
 	
 	i = offset;
-	if (argc < i + 1) {
+	if (argc < i + 1)
 		return -1;
-	}
 	argv_out[0] = argv[i];
 	if (0 == strcasecmp(argv[i], "OR")) {
 		i ++;
-		if (argc < i + 1) {
+		if (argc < i + 1)
 			return -1;
-		}
 		tmp_argc = mail_engine_ct_compile_criteria(
 						argc, argv, i, argv_out + 1);
-		if (-1 == tmp_argc) {
+		if (tmp_argc == -1)
 			return -1;
-		}
-		
 		i += tmp_argc;
-		if (argc < i + 1) {
+		if (argc < i + 1)
 			return -1;
-		}
 		tmp_argc1 = mail_engine_ct_compile_criteria(
 			argc, argv, i, argv_out + 1 + tmp_argc);
-		if (-1 == tmp_argc1) {
+		if (tmp_argc1 == -1)
 			return -1;
-		}
 		return tmp_argc + tmp_argc1 + 1;
 	} else if (array_find_istr(kwlist1, argv[i])) {
 		return 1;
 	} else if (array_find_istr(kwlist2, argv[i])) {
 		i ++;
-		if (argc < i + 1) {
+		if (argc < i + 1)
 			return -1;
-		}
 		argv_out[1] = argv[i];
 		return 2;
 	} else if (0 == strcasecmp(argv[i], "HEADER")) {
 		i ++;
-		if (argc < i + 1) {
+		if (argc < i + 1)
 			return -1;
-		}
 		argv_out[1] = argv[i];
 		i++;
-		if (argc < i + 1) {
+		if (argc < i + 1)
 			return -1;
-		}
 		argv_out[2] = argv[i];
 		return 3;
 	} else if (0 == strcasecmp(argv[i], "NOT")) {
 		i ++;
-		if (argc < i + 1) {
+		if (argc < i + 1)
 			return -1;
-		}
 		tmp_argc = mail_engine_ct_compile_criteria(
 						argc, argv, i, argv_out + 1);
-		if (-1 == tmp_argc) {
+		if (-1 == tmp_argc)
 			return -1;
-		}
 		return tmp_argc + 1;
 	} else {
 		/* <sequence set> or () as default */
@@ -1359,11 +1345,10 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 	char *last_break;
 	
 	auto len = strlen(string);
-	if (',' == string[len - 1]) {
+	if (string[len-1] == ',')
 		len --;
-	} else {
+	else
 		string[len] = ',';
-	}
 	auto plist = std::make_unique<std::vector<seq_node>>();
 	last_break = string;
 	last_colon = NULL;
@@ -1428,18 +1413,15 @@ static BOOL ct_hint_seq(const std::vector<seq_node> &list,
 		auto pseq = &seq;
 		if (pseq->max == seq_node::unset) {
 			if (pseq->min == seq_node::unset) {
-				if (num == max_uid) {
+				if (num == max_uid)
 					return TRUE;
-				}
 			} else {
-				if (num >= pseq->min) {
+				if (num >= pseq->min)
 					return TRUE;
-				}
 			}
 		} else {
-			if (pseq->max >= num && pseq->min <= num) {
+			if (pseq->max >= num && pseq->min <= num)
 				return TRUE;
-			}
 		}
 	}
 	return FALSE;
@@ -1757,10 +1739,9 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	dir = common_util_get_maildir();
 	fprintf(stderr, "Running sync_contents for %s, folder %llu\n",
 	        dir, LLU{folder_id});
-	if (!exmdb_client::query_folder_messages(
-		dir, rop_util_make_eid_ex(1, folder_id), &rows)) {
+	if (!exmdb_client::query_folder_messages(dir,
+	    rop_util_make_eid_ex(1, folder_id), &rows))
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT uidnext FROM"
 	          " folders WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -1985,16 +1966,14 @@ static BOOL mail_engine_get_encoded_name(sqlite3_stmt *pstmt,
 	for (pnode=double_list_get_head(&temp_list); NULL!=pnode;
 		pnode=double_list_get_after(&temp_list, pnode)) {
 		length = strlen(static_cast<char *>(pnode->pdata));
-		if (length >= 256) {
+		if (length >= 256)
 			return FALSE;
-		}
 		if (0 != offset) {
 			temp_name[offset] = '/';
 			offset ++;
 		}
-		if (offset + length >= 512) {
+		if (offset + length >= 512)
 			return FALSE;
-		}
 		memcpy(temp_name + offset, pnode->pdata, length);
 		offset += length;
 	}
@@ -2013,9 +1992,8 @@ static uint64_t mail_engine_get_top_folder_id(
 		if (sqlite3_step(pstmt) != SQLITE_ROW)
 			return 0;
 		parent_fid = sqlite3_column_int64(pstmt, 0);
-		if (PRIVATE_FID_IPMSUBTREE == parent_fid) {
+		if (parent_fid == PRIVATE_FID_IPMSUBTREE)
 			return folder_id;
-		}
 		folder_id = parent_fid;
 	}
 }
@@ -2050,11 +2028,10 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	dir = common_util_get_maildir();
 	fprintf(stderr, "Running sync_mailbox for %s\n", dir);
 	if (!exmdb_client::load_hierarchy_table(dir,
-		rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
-		NULL, TABLE_FLAG_DEPTH|TABLE_FLAG_NONOTIFICATIONS,
-		NULL, &table_id, &row_count)) {
+	    rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+	    NULL, TABLE_FLAG_DEPTH|TABLE_FLAG_NONOTIFICATIONS,
+	    NULL, &table_id, &row_count))
 		return FALSE;	
-	}
 	proptags.count = 6;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PidTagFolderId;
@@ -2232,12 +2209,11 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	pidb_transact.commit();
 	}
 	if (!exmdb_client::subscribe_notification(dir,
-		NOTIFICATION_TYPE_OBJECTCREATED|NOTIFICATION_TYPE_OBJECTDELETED|
-		NOTIFICATION_TYPE_OBJECTMODIFIED|NOTIFICATION_TYPE_OBJECTMOVED|
-		NOTIFICATION_TYPE_OBJECTCOPIED|NOTIFICATION_TYPE_NEWMAIL, TRUE,
-		0, 0, &pidb->sub_id)) {
+	    NOTIFICATION_TYPE_OBJECTCREATED | NOTIFICATION_TYPE_OBJECTDELETED |
+	    NOTIFICATION_TYPE_OBJECTMODIFIED | NOTIFICATION_TYPE_OBJECTMOVED |
+	    NOTIFICATION_TYPE_OBJECTCOPIED | NOTIFICATION_TYPE_NEWMAIL, TRUE,
+	    0, 0, &pidb->sub_id))
 		pidb->sub_id = 0;	
-	}
 	time(&pidb->load_time);
 	fprintf(stderr, "Ended sync_mailbox for %s\n", dir);
 	return TRUE;
@@ -2443,34 +2419,29 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 	TPROPVAL_ARRAY propvals;
 	uint32_t tmp_proptags[2];
 	
-	if (2 != argc || strlen(argv[1]) >= 256) {
+	if (argc != 2 || strlen(argv[1]) >= 256)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	proptags.count = 2;
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PR_PROHIBIT_RECEIVE_QUOTA;
 	tmp_proptags[1] = PR_MESSAGE_SIZE_EXTENDED;
-	if (!exmdb_client::get_store_properties(
-		argv[1], 0, &proptags, &propvals)) {
+	if (!exmdb_client::get_store_properties(argv[1], 0, &proptags, &propvals))
 		return MIDB_E_MDB_GETSTOREPROPS;
-	}
 	auto ptotal = propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	auto pmax   = propvals.get<uint32_t>(PR_PROHIBIT_RECEIVE_QUOTA);
 	if (NULL != ptotal && NULL != pmax) {
 		quota = *pmax;
 		quota *= 1024;
-		if (*ptotal >= quota) {
+		if (*ptotal >= quota)
 			return cmd_write(sockd, "TRUE 1\r\n");
-		}
 	}
 	return cmd_write(sockd, "TRUE 0\r\n");
 }
 
 static int mail_engine_mping(int argc, char **argv, int sockd)
 {
-	if (2 != argc || strlen(argv[1]) >= 256) {
+	if (argc != 2 || strlen(argv[1]) >= 256)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	mail_engine_get_idb(argv[1]);
 	exmdb_client::ping_store(argv[1]);
 	return cmd_write(sockd, "TRUE\r\n");
@@ -2484,9 +2455,8 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if (2 != argc || strlen(argv[1]) >= 256) {
+	if (argc != 2 || strlen(argv[1]) >= 256)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2551,10 +2521,9 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	char temp_buff[MAX_DIGLEN];
 	
-	if ((5 != argc && 7 != argc) || strlen(argv[1]) >= 256
-		|| strlen(argv[2]) >= 1024) {
+	if ((argc != 5 && argc != 7) || strlen(argv[1]) >= 256 ||
+	    strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto sort_field = kw_to_sort_field(argv[3]);
 	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
@@ -2564,9 +2533,8 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	if (7 == argc) {
 		offset = strtol(argv[5], nullptr, 0);
 		length = strtol(argv[6], nullptr, 0);
-		if (length < 0) {
+		if (length < 0)
 			length = 0;
-		}
 	} else {
 		offset = 0;
 		length = 0;
@@ -2631,9 +2599,8 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		if (mail_engine_get_digest(pidb->psqlite,
 		    S2A(sqlite3_column_text(pstmt, 0)),
-		    temp_buff) == 0) {
+		    temp_buff) == 0)
 			return MIDB_E_DIGEST;
-		}
 		temp_len = strlen(temp_buff);
 		temp_buff[temp_len] = '\r';
 		temp_len ++;
@@ -2658,9 +2625,8 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	DOUBLE_LIST_NODE *pnode;
 	char list_buff[256*1024];
 	
-	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2721,10 +2687,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	struct stat node_stat;
 	char temp_buff[MAX_DIGLEN];
 	
-	if (6 != argc || strlen(argv[1]) >= 256
-		|| strlen(argv[2]) >= 1024) {
+	if (argc != 6 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	uint8_t b_unsent = strchr(argv[4], 'U') != nullptr;
 	uint8_t b_read = strchr(argv[4], 'S') != nullptr;
 	if (strcmp(argv[2], "draft") == 0)
@@ -2771,9 +2735,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
+	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return MIDB_E_SSGETID;
-	}
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
 	    arsizeof(lang)) || lang[0] == '\0' ||
 	    !system_services_lang_to_charset(lang, charset) ||
@@ -2792,14 +2755,12 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	auto nt_time = rop_util_unix_to_nttime(strtol(argv[5], nullptr, 0));
 	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
 		return MIDB_E_NO_MEMORY;
-	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0) {
+	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0)
 		return MIDB_E_NO_MEMORY;
-	}
 	if (0 != b_unsent) {
 		tmp_flags = MSGFLAG_UNSENT;
-		if (pmsgctnt->proplist.set(PR_MESSAGE_FLAGS, &tmp_flags) != 0) {
+		if (pmsgctnt->proplist.set(PR_MESSAGE_FLAGS, &tmp_flags) != 0)
 			return MIDB_E_NO_MEMORY;
-		}
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
@@ -2825,28 +2786,24 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	}
 	pidb.reset();
 	if (pmsgctnt->proplist.set(PidTagMid, &message_id) != 0 ||
-	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != 0) {
+	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != 0)
 		return MIDB_E_NO_MEMORY;
-	}
 	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
 	if (pbin == nullptr ||
-	    pmsgctnt->proplist.set(PR_CHANGE_KEY, pbin) != 0) {
+	    pmsgctnt->proplist.set(PR_CHANGE_KEY, pbin) != 0)
 		return MIDB_E_NO_MEMORY;
-	}
 	auto newval = common_util_pcl_append(NULL, pbin);
 	if (newval == nullptr ||
-	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0) {
+	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
 		return MIDB_E_NO_MEMORY;
-	}
 	cpid = system_services_charset_to_cpid(charset);
 	if (cpid == 0)
 		cpid = 1252;
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
-	    e_result != GXERR_SUCCESS) {
+	    e_result != GXERR_SUCCESS)
 		return MIDB_E_MDB_WRITEMESSAGE;
-	}
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
@@ -2862,9 +2819,8 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	BOOL b_partial;
 	EID_ARRAY message_ids;
 
-	if (argc < 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc < 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	message_ids.count = 0;
 	message_ids.pids = cu_alloc<uint64_t>(argc - 3);
 	if (message_ids.pids == nullptr)
@@ -2893,10 +2849,9 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	pstmt.finalize();
 	pidb.reset();
 	if (!exmdb_client::delete_messages(argv[1],
-		user_id, 0, NULL, rop_util_make_eid_ex(1, folder_id),
-		&message_ids, TRUE, &b_partial)) {
+	    user_id, 0, NULL, rop_util_make_eid_ex(1, folder_id),
+	    &message_ids, TRUE, &b_partial))
 		return MIDB_E_MDB_DELETEMESSAGES;
-	}
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
@@ -2917,10 +2872,9 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	struct stat node_stat;
 
-	if (5 != argc || strlen(argv[1]) >= 256 ||
-		strlen(argv[2]) >= 1024 || strlen(argv[4]) >= 1024) {
+	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024 ||
+	    strlen(argv[4]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	std::string eml_path;
 	try {
 		eml_path = argv[1] + "/eml/"s + argv[3];
@@ -2991,9 +2945,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		b_read = 1;
 	nt_time = sqlite3_column_int64(pstmt, 10);
 	pstmt.finalize();
-	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
+	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return MIDB_E_SSGETID;
-	}
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
 	    arsizeof(lang)) || lang[0] == '\0' ||
 	    !system_services_lang_to_charset(lang, charset) ||
@@ -3062,28 +3015,24 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	}
 	pidb.reset();
 	if (pmsgctnt->proplist.set(PidTagMid, &message_id) != 0 ||
-	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != 0) {
+	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != 0)
 		return MIDB_E_NO_MEMORY;
-	}
 	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
 	if (pbin == nullptr ||
-	    pmsgctnt->proplist.set(PR_CHANGE_KEY, pbin) != 0) {
+	    pmsgctnt->proplist.set(PR_CHANGE_KEY, pbin) != 0)
 		return MIDB_E_NO_MEMORY;
-	}
 	auto newval = common_util_pcl_append(NULL, pbin);
 	if (newval == nullptr ||
-	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0) {
+	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
 		return MIDB_E_NO_MEMORY;
-	}
 	cpid = system_services_charset_to_cpid(charset);
 	if (cpid == 0)
 		cpid = 1252;
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &e_result) ||
-	    e_result != GXERR_SUCCESS) {
+	    e_result != GXERR_SUCCESS)
 		return MIDB_E_MDB_WRITEMESSAGE;
-	}
 	cl_msg.release();
 	message_content_free(pmsgctnt);
 	try {
@@ -3119,10 +3068,9 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	TPROPVAL_ARRAY propvals;
 	TAGGED_PROPVAL propval_buff[5];
 
-	if (4 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024
-		|| strlen(argv[3]) >= 1024 || 0 == strcmp(argv[2], argv[3])) {
+	if (argc != 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024 ||
+	    strlen(argv[3]) >= 1024 || strcmp(argv[2], argv[3]) == 0)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (spname_to_fid(argv[2]) != 0)
 		return MIDB_E_PARAMETER_ERROR;
 	if (!decode_hex_binary(argv[3], decoded_name, arsizeof(decoded_name)))
@@ -3147,9 +3095,8 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	ptoken = decoded_name;
 	folder_id1 = PRIVATE_FID_IPMSUBTREE;
 	while ((ptoken1 = strchr(ptoken, '/')) != NULL) {
-		if (static_cast<size_t>(ptoken1 - ptoken) >= sizeof(temp_name)) {
+		if (static_cast<size_t>(ptoken1 - ptoken) >= sizeof(temp_name))
 			return MIDB_E_PARAMETER_ERROR;
-		}
 		memcpy(temp_name, ptoken, ptoken1 - ptoken);
 		temp_name[ptoken1 - ptoken] = '\0';
 		auto next_fid = spname_to_fid(temp_name);
@@ -3174,13 +3121,12 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	pidb.reset();
 	if (parent_id != folder_id1) {
 		if (!exmdb_client::movecopy_folder(
-			argv[1], user_id, 0, FALSE, NULL,
-			rop_util_make_eid_ex(1, parent_id),
-			rop_util_make_eid_ex(1, folder_id),
-			rop_util_make_eid_ex(1, folder_id1),
-			ptoken, FALSE, &b_exist, &b_partial)) {
+		    argv[1], user_id, 0, FALSE, NULL,
+		    rop_util_make_eid_ex(1, parent_id),
+		    rop_util_make_eid_ex(1, folder_id),
+		    rop_util_make_eid_ex(1, folder_id1),
+		    ptoken, FALSE, &b_exist, &b_partial))
 			return MIDB_E_MDB_MOVECOPY;
-		}
 		if (b_exist)
 			return MIDB_E_FOLDER_EXISTS;
 		if (b_partial)
@@ -3193,9 +3139,8 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		return MIDB_E_MDB_ALLOCID;
 	if (!exmdb_client::get_folder_properties(argv[1], 0,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals) ||
-	     (pbin1 = propvals.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST)) == nullptr) {
+	     (pbin1 = propvals.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST)) == nullptr)
 		return MIDB_E_MDB_GETFOLDERPROPS;
-	}
 	propvals.count = parent_id == folder_id1 ? 5 : 4;
 	propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PidTagChangeNumber;
@@ -3216,11 +3161,9 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		propval_buff[4].proptag = PR_DISPLAY_NAME;
 		propval_buff[4].pvalue = ptoken;
 	}
-	if (!exmdb_client::set_folder_properties(
-		argv[1], 0, rop_util_make_eid_ex(1, folder_id),
-		&propvals, &problems)) {
+	if (!exmdb_client::set_folder_properties(argv[1], 0,
+	    rop_util_make_eid_ex(1, folder_id), &propvals, &problems))
 		return MIDB_E_MDB_SETFOLDERPROPS;
-	}
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
@@ -3235,9 +3178,8 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	char decoded_name[512];
 	char encoded_name[1024];
 
-	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (!decode_hex_binary(argv[2], decoded_name, arsizeof(decoded_name)))
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
@@ -3250,9 +3192,8 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	ptoken = decoded_name;
 	folder_id1 = PRIVATE_FID_IPMSUBTREE;
 	while ((ptoken1 = strchr(ptoken, '/')) != NULL) {
-		if (static_cast<size_t>(ptoken1 - ptoken) >= sizeof(temp_name)) {
+		if (static_cast<size_t>(ptoken1 - ptoken) >= sizeof(temp_name))
 			return MIDB_E_PARAMETER_ERROR;
-		}
 		memcpy(temp_name, ptoken, ptoken1 - ptoken);
 		temp_name[ptoken1 - ptoken] = '\0';
 		auto next_fid = spname_to_fid(temp_name);
@@ -3287,9 +3228,8 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	BOOL b_result;
 	BOOL b_partial;
 	
-	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (spname_to_fid(argv[2]) != 0)
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
@@ -3319,9 +3259,8 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	char temp_buff[1024];
 	char sql_string[1024];
 	
-	if (6 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc != 6 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto sort_field = kw_to_sort_field(argv[4]);
 	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
@@ -3368,9 +3307,8 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
 	uint32_t uid;
 	char temp_buff[1024];
 
-	if (4 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc != 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3411,9 +3349,8 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	char temp_buff[1024];
 	char sql_string[1024];
 	
-	if (5 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (kw_to_sort_field(argv[3]) < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
 	bool b_asc;
@@ -3481,9 +3418,8 @@ static int mail_engine_psubf(int argc, char **argv, int sockd)
 {
 	char sql_string[1024];
 
-	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3501,9 +3437,8 @@ static int mail_engine_punsf(int argc, char **argv, int sockd)
 {
 	char sql_string[1024];
 
-	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3525,9 +3460,8 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if (2 != argc || strlen(argv[1]) >= 256) {
+	if (argc != 2 || strlen(argv[1]) >= 256)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3574,10 +3508,9 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	const char *mid_string;
 	char temp_buff[256*1024];
 	
-	if ((5 != argc && 7 != argc) || strlen(argv[1]) >= 256
-		|| strlen(argv[2]) >= 1024) {
+	if ((argc != 5 && argc != 7) || strlen(argv[1]) >= 256 ||
+	    strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto sort_field = kw_to_sort_field(argv[3]);
 	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
@@ -3587,9 +3520,8 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	if (7 == argc) {
 		offset = strtol(argv[5], nullptr, 0);
 		length = strtol(argv[6], nullptr, 0);
-		if (length < 0) {
+		if (length < 0)
 			length = 0;
-		}
 	} else {
 		offset = 0;
 		length = 0;
@@ -3715,9 +3647,8 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	DOUBLE_LIST_NODE *pnode;
 	char temp_buff[256*1024];
 	
-	if (7 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc != 7 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto sort_field = kw_to_sort_field(argv[3]);
 	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
@@ -3742,31 +3673,30 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
 		return MIDB_E_MNG_SORTFOLDER;
 	if (b_asc) {
-		if (first == seq_node::unset && last == seq_node::unset) {
+		if (first == seq_node::unset && last == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu ORDER BY idx", LLU{folder_id});
-		} else if (first == seq_node::unset) {
+		else if (first == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid<=%u ORDER BY idx",
 				LLU{folder_id}, last);
-		} else if (last == seq_node::unset) {
+		else if (last == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY idx",
 				LLU{folder_id}, first);
-		} else if (last == first) {
+		else if (last == first)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid=%u",
 				LLU{folder_id}, first);
-		} else {
+		else
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid>=%u AND uid<=%u "
 				"ORDER BY idx", LLU{folder_id}, first, last);
-		}
 	} else {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) "
 			"FROM messages WHERE folder_id=%llu", LLU{folder_id});
@@ -3777,32 +3707,31 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 			return MIDB_E_NO_FOLDER;
 		total_mail = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
-		if (first == seq_node::unset && last == seq_node::unset) {
+		if (first == seq_node::unset && last == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded"
 				" FROM messages WHERE folder_id=%llu ORDER BY idx DESC",
 				LLU{folder_id});
-		} else if (first == seq_node::unset) {
+		else if (first == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid<=%u ORDER BY idx"
 				" DESC", LLU{folder_id}, last);
-		} else if (last == seq_node::unset) {
+		else if (last == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY idx"
 				" DESC", LLU{folder_id}, first);
-		} else if (last == first) {
+		else if (last == first)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid=%u",
 				LLU{folder_id}, first);
-		} else {
+		else
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid>=%u AND uid<=%u "
 				"ORDER BY idx DESC", LLU{folder_id}, first, last);
-		}
 	}
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -3897,9 +3826,8 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	const char *mid_string;
 	char temp_buff[256*1024];
 	
-	if (5 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
+	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto sort_field = kw_to_sort_field(argv[3]);
 	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
