@@ -371,9 +371,8 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 				temp_buff[begin_pos - last_pos] = '\0';
 				HX_strltrim(temp_buff);
 				auto tmp_string = mail_engine_ct_to_utf8(charset, temp_buff);
-				if (NULL == tmp_string) {
+				if (tmp_string == nullptr)
 					return NULL;
-				}
 				auto tmp_len = strlen(tmp_string.get());
 				memcpy(out_buff + offset, tmp_string.get(), tmp_len);
 				offset += tmp_len;
@@ -405,9 +404,8 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 			} else {
 				tmp_string = mail_engine_ct_to_utf8(charset, encode_string.title);
 			}
-			if (NULL == tmp_string) {
+			if (tmp_string == nullptr)
 				return NULL;
-			}
 			tmp_len = strlen(tmp_string.get());
 			memcpy(out_buff + offset, tmp_string.get(), tmp_len);
 			offset += tmp_len;
@@ -421,9 +419,8 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 	}
 	if (i > last_pos) {
 		auto tmp_string = mail_engine_ct_to_utf8(charset, in_buff + last_pos);
-		if (NULL == tmp_string) {
+		if (tmp_string == nullptr)
 			return NULL;
-		}
 		auto tmp_len = strlen(tmp_string.get());
 		memcpy(out_buff + offset, tmp_string.get(), tmp_len);
 		offset += tmp_len;
@@ -1211,9 +1208,8 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 
 	for (i=0; i<argc; i++) {
 		ptree_node = me_alloc<CONDITION_TREE_NODE>();
-		if (NULL == ptree_node) {
+		if (ptree_node == nullptr)
 			return {};
-		}
 		ptree_node->node.pdata = ptree_node;
 		ptree_node->pbranch = NULL;
 		if (0 == strcasecmp(argv[i], "NOT")) {
@@ -1922,13 +1918,11 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 			pnode = cu_alloc<DOUBLE_LIST_NODE>();
-			if (NULL == pnode) {
+			if (pnode == nullptr)
 				return FALSE;
-			}
 			pnode->pdata = cu_alloc<uint64_t>();
-			if (NULL == pnode->pdata) {
+			if (pnode->pdata == nullptr)
 				return FALSE;
-			}
 			*(uint64_t*)pnode->pdata = message_id;
 			double_list_append_as_tail(&temp_list, pnode);
 		}
@@ -2005,14 +1999,12 @@ static BOOL mail_engine_get_encoded_name(sqlite3_stmt *pstmt,
 			return FALSE;
 		}
 		pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (NULL == pnode) {
+		if (pnode == nullptr)
 			return FALSE;
-		}
 		folder_id = sqlite3_column_int64(pstmt, 0);
 		pnode->pdata = static_cast<char *>(common_util_dup(S2A(sqlite3_column_text(pstmt, 1))));
-		if (NULL == pnode->pdata) {
+		if (pnode->pdata == nullptr)
 			return FALSE;
-		}
 		double_list_insert_as_head(&temp_list, pnode);
 	} while (PRIVATE_FID_IPMSUBTREE != folder_id);
 	offset = 0;
@@ -2243,13 +2235,11 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 		sqlite3_bind_int64(pstmt1, 1, folder_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 			pnode = cu_alloc<DOUBLE_LIST_NODE>();
-			if (NULL == pnode) {
+			if (pnode == nullptr)
 				return false;
-			}
 			pnode->pdata = cu_alloc<uint64_t>();
-			if (NULL == pnode->pdata) {
+			if (pnode->pdata == nullptr)
 				return false;
-			}
 			*(uint64_t*)pnode->pdata = folder_id;
 			double_list_append_as_tail(&temp_list, pnode);
 		}
@@ -2722,14 +2712,12 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	double_list_init(&tmp_list);
 	while (SQLITE_ROW == (result = sqlite3_step(pstmt))) {
 		pinode = cu_alloc<IDL_NODE>();
-		if (NULL == pinode) {
+		if (pinode == nullptr)
 			return MIDB_E_NO_MEMORY;
-		}
 		pinode->node.pdata = pinode;
 		pinode->mid_string = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
-		if (NULL == pinode->mid_string) {
+		if (pinode->mid_string == nullptr)
 			return MIDB_E_NO_MEMORY;
-		}
 		pinode->size = sqlite3_column_int64(pstmt, 1);
 		double_list_append_as_tail(&tmp_list, &pinode->node);
 	}
@@ -2791,9 +2779,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return MIDB_E_DISK_ERROR;
 	}
 	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return MIDB_E_NO_MEMORY;
-	}
 	if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return MIDB_E_SHORT_READ;
 	fd.close();
@@ -2839,9 +2826,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	                common_util_alloc, common_util_get_propids_create);
 	imail.clear();
 	pbuff.reset();
-	if (NULL == pmsgctnt) {
+	if (pmsgctnt == nullptr)
 		return MIDB_E_OXCMAIL_IMPORT;
-	}
 	auto cl_msg = make_scope_exit([&]() { message_content_free(pmsgctnt); });
 	auto nt_time = rop_util_unix_to_nttime(strtol(argv[5], nullptr, 0));
 	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
@@ -2923,9 +2909,8 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	}
 	message_ids.count = 0;
 	message_ids.pids = cu_alloc<uint64_t>(argc - 3);
-	if (NULL == message_ids.pids) {
+	if (message_ids.pids == nullptr)
 		return MIDB_E_NO_MEMORY;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2996,9 +2981,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_DISK_ERROR;
 	}
 	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return MIDB_E_NO_MEMORY;
-	}
 	if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return MIDB_E_SHORT_READ;
 	fd.close();
@@ -3070,9 +3054,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	                common_util_alloc, common_util_get_propids_create);
 	imail.clear();
 	pbuff.reset();
-	if (NULL == pmsgctnt) {
+	if (pmsgctnt == nullptr)
 		return MIDB_E_OXCMAIL_IMPORT;
-	}
 	auto cl_msg = make_scope_exit([&]() { message_content_free(pmsgctnt); });
 	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
 		return MIDB_E_NO_MEMORY;
@@ -3270,16 +3253,14 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	propval_buff[0].proptag = PidTagChangeNumber;
 	propval_buff[0].pvalue = &change_num;
 	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return MIDB_E_NO_MEMORY;
-	}
 	propval_buff[1].proptag = PR_CHANGE_KEY;
 	propval_buff[1].pvalue = pbin;
 	propval_buff[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[2].pvalue = common_util_pcl_append(pbin1, pbin);
-	if (NULL == propval_buff[2].pvalue) {
+	if (propval_buff[2].pvalue == nullptr)
 		return MIDB_E_NO_MEMORY;
-	}
 	nt_time = rop_util_current_nttime();
 	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &nt_time;
@@ -3897,16 +3878,14 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	double_list_init(&temp_list);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		auto psm_node = cu_alloc<SIMU_NODE>();
-		if (NULL == psm_node) {
+		if (psm_node == nullptr)
 			return MIDB_E_NO_MEMORY;
-		}
 		psm_node->node.pdata = psm_node;
 		psm_node->idx = b_asc ? sqlite3_column_int64(pstmt, 0) :
 		                total_mail - sqlite3_column_int64(pstmt, 0) + 1;
 		psm_node->mid_string = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
-		if (NULL == psm_node->mid_string) {
+		if (psm_node->mid_string == nullptr)
 			return MIDB_E_NO_MEMORY;
-		}
 		psm_node->uid = sqlite3_column_int64(pstmt, 2);
 		flags_buff[0] = '(';
 		flags_len = 1;
@@ -3942,9 +3921,8 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 		flags_len ++;
 		flags_buff[flags_len] = '\0';
 		psm_node->flags_buff = common_util_dup(flags_buff);
-		if (NULL == psm_node->flags_buff) {
+		if (psm_node->flags_buff == nullptr)
 			return MIDB_E_NO_MEMORY;
-		}
 		double_list_append_as_tail(&temp_list, &psm_node->node);
 	}
 	pstmt.finalize();
