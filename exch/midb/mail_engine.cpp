@@ -2229,15 +2229,14 @@ static IDB_REF mail_engine_peek_idb(const char *path)
 	pidb->reference ++;
 	hhold.unlock();
 	pidb->lock.lock();
-	if (NULL == pidb->psqlite) {
-		pidb->last_time = 0;
-		pidb->lock.unlock();
-		hhold.lock();
-		pidb->reference --;
-		hhold.unlock();
-		return {};
-	}
-	return IDB_REF(pidb);
+	if (pidb->psqlite != nullptr)
+		return IDB_REF(pidb);
+	pidb->last_time = 0;
+	pidb->lock.unlock();
+	hhold.lock();
+	pidb->reference --;
+	hhold.unlock();
+	return {};
 }
 
 static int mail_engine_autoupgrade(sqlite3 *db, const char *filedesc)
