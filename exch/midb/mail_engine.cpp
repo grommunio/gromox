@@ -78,6 +78,10 @@ enum class midb_conj {
 
 namespace {
 
+struct seq_node {
+	unsigned int min, max;
+};
+
 struct CONDITION_TREE : DOUBLE_LIST {
 	CONDITION_TREE() { double_list_init(this); }
 	~CONDITION_TREE();
@@ -94,14 +98,8 @@ struct CONDITION_TREE_NODE {
 		char *ct_keyword;
 		time_t ct_time;
 		size_t ct_size;
-		DOUBLE_LIST *ct_seq;
+		std::vector<seq_node> *ct_seq;
 	};
-};
-
-struct SEQUENCE_NODE {
-	DOUBLE_LIST_NODE node;
-	unsigned int min;
-	unsigned int max;
 };
 
 struct KEYWORD_ENUM {
@@ -188,9 +186,8 @@ static char g_default_charset[32];
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
 
-static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string);
-static BOOL mail_engine_ct_hint_sequence(DOUBLE_LIST *plist, unsigned int num, unsigned int max_uid);
-static void mail_engine_ct_free_sequence(DOUBLE_LIST *plist);
+static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *);
+static BOOL ct_hint_seq(const std::vector<seq_node> &plist, unsigned int num, unsigned int max_uid);
 
 static constexpr const char *special_folders[] = {"inbox", "draft", "sent", "trash", "junk"};
 
@@ -697,8 +694,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					ptree_node->ct_headers[1]);
 				break;
 			case midb_cond::id:
-				b_result1 = mail_engine_ct_hint_sequence(
-					ptree_node->ct_seq, id, total_mail);
+				b_result1 = ct_hint_seq(*ptree_node->ct_seq, id, total_mail);
 				break;
 			case midb_cond::larger:
 				sqlite3_reset(pstmt_message);
@@ -941,8 +937,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (SQLITE_ROW != sqlite3_step(pstmt_message)) {
 					break;
 				}
-				b_result1 = mail_engine_ct_hint_sequence(
-					ptree_node->ct_seq,
+				b_result1 = ct_hint_seq(*ptree_node->ct_seq,
 					sqlite3_column_int64(pstmt_message, 2),
 					uidnext);
 				break;
@@ -1125,7 +1120,7 @@ CONDITION_TREE::~CONDITION_TREE()
 		if (NULL != ptree_node->pbranch) {
 			ptree_node->pbranch = NULL;
 		} else if (cond_is_id(ptree_node->condition)) {
-			mail_engine_ct_free_sequence(ptree_node->ct_seq);
+			delete ptree_node->ct_seq;
 			ptree_node->ct_seq = nullptr;
 		} else if (cond_w_stmt(ptree_node->condition)) {
 			free(ptree_node->ct_keyword);
@@ -1337,20 +1332,20 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 				free(ptree_node);
 				return {};
 			}
-			auto plist1 = mail_engine_ct_parse_sequence(argv[i]);
+			auto plist1 = ct_parse_seq(argv[i]);
 			if (NULL == plist1) {
 				free(ptree_node);
 				return {};
 			}
-			ptree_node->ct_seq = plist1;
+			ptree_node->ct_seq = plist1.release();
 		} else {
-			auto plist1 = mail_engine_ct_parse_sequence(argv[i]);
+			auto plist1 = ct_parse_seq(argv[i]);
 			if (NULL == plist1) {
 				free(ptree_node);
 				return {};
 			}
 			ptree_node->condition = midb_cond::id;
-			ptree_node->ct_seq = plist1;
+			ptree_node->ct_seq = plist1.release();
 		}
 		double_list_append_as_tail(plist.get(), &ptree_node->node);
 	}
@@ -1369,12 +1364,11 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build(int argc, char **arg
 	return mail_engine_ct_build_internal(argv[1], argc - 2, argv + 2);
 }
 
-static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
+static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 {
 	int i, len, temp;
 	char *last_colon;
 	char *last_break;
-	SEQUENCE_NODE *pseq;
 	
 	len = strlen(string);
 	if (',' == string[len - 1]) {
@@ -1382,22 +1376,16 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 	} else {
 		string[len] = ',';
 	}
-	auto plist = me_alloc<DOUBLE_LIST>();
-	if (NULL == plist) {
-		return NULL;
-	}
-	double_list_init(plist);
+	auto plist = std::make_unique<std::vector<seq_node>>();
 	last_break = string;
 	last_colon = NULL;
 	for (i=0; i<=len; i++) {
 		if (!HX_isdigit(string[i]) && string[i] != '*'
 			&& ',' != string[i] && ':' != string[i]) {
-			mail_engine_ct_free_sequence(plist);
 			return NULL;
 		}
 		if (':' == string[i]) {
 			if (NULL != last_colon) {
-				mail_engine_ct_free_sequence(plist);
 				return NULL;
 			} else {
 				last_colon = string + i;
@@ -1405,16 +1393,10 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 			}
 		} else if (',' == string[i]) {
 			if (0 == string + i - last_break) {
-				mail_engine_ct_free_sequence(plist);
 				return NULL;
 			}
 			string[i] = '\0';
-			pseq = me_alloc<SEQUENCE_NODE>();
-			if (NULL == pseq) {
-				mail_engine_ct_free_sequence(plist);
-				return NULL;
-			}
-			pseq->node.pdata = pseq;
+			seq_node seq, *pseq = &seq;
 			if (NULL != last_colon) {
 				if (0 == strcmp(last_break, "*")) {
 					pseq->max = -1;
@@ -1423,16 +1405,12 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 					} else {
 						pseq->min = strtol(last_colon + 1, nullptr, 0);
 						if (pseq->min <= 0) {
-							free(pseq);
-							mail_engine_ct_free_sequence(plist);
 							return NULL;
 						}
 					}
 				} else {
 					pseq->min = strtol(last_break, nullptr, 0);
 					if (pseq->min <= 0) {
-						free(pseq);
-						mail_engine_ct_free_sequence(plist);
 						return NULL;
 					}
 					if (0 == strcmp(last_colon + 1, "*")) {
@@ -1440,8 +1418,6 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 					} else {
 						pseq->max = strtol(last_colon + 1, nullptr, 0);
 						if (pseq->max <= 0) {
-							free(pseq);
-							mail_engine_ct_free_sequence(plist);
 							return NULL;
 						}
 					}
@@ -1450,8 +1426,6 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 			} else {
 				if (*last_break == '*' ||
 				    (pseq->min = strtol(last_break, nullptr, 0)) <= 0) {
-					free(pseq);
-					mail_engine_ct_free_sequence(plist);
 					return NULL;
 				}
 				pseq->max = pseq->min;
@@ -1462,30 +1436,19 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 				pseq->min = temp;
 			}
 			last_break = string + i + 1;
-			double_list_append_as_tail(plist, &pseq->node);
+			plist->push_back(seq_node{seq.min, seq.max});
 		}
 	}
 	return plist;
+} catch (const std::bad_alloc &) {
+	return nullptr;
 }
 
-static void mail_engine_ct_free_sequence(DOUBLE_LIST *plist)
+static BOOL ct_hint_seq(const std::vector<seq_node> &list,
+    unsigned int num, unsigned int max_uid)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(plist)) != nullptr)
-		free(pnode->pdata);
-	double_list_free(plist);
-	free(plist);
-}
-
-static BOOL mail_engine_ct_hint_sequence(DOUBLE_LIST *plist,
-	unsigned int num, unsigned int max_uid)
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
+	for (const auto &seq : list) {
+		auto pseq = &seq;
 		if (pseq->max == static_cast<unsigned int>(-1)) {
 			if (pseq->min == static_cast<unsigned int>(-1)) {
 				if (num == max_uid) {
