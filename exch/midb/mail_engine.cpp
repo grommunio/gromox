@@ -2578,6 +2578,14 @@ static int kw_to_sort_field(const char *s)
 	return -1;
 }
 
+static bool kw_to_sort_order(const char *s, bool &out)
+{
+	out = strcasecmp(s, "ASC") == 0;
+	if (out)
+		return true;
+	return strcasecmp(s, "DSC") == 0;
+}
+
 /*
  * List mails in folder, returning the digests.
  * Request:
@@ -2588,7 +2596,6 @@ static int kw_to_sort_field(const char *s)
  */
 static int mail_engine_mlist(int argc, char **argv, int sockd)
 {
-	BOOL b_asc;
 	int offset;
 	int length;
 	int temp_len;
@@ -2604,13 +2611,9 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	auto sort_field = kw_to_sort_field(argv[3]);
 	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	if (0 == strcasecmp(argv[4], "ASC")) {
-		b_asc = TRUE;
-	} else if (0 == strcasecmp(argv[4], "DSC")) {
-		b_asc = FALSE;
-	} else {
+	bool b_asc;
+	if (!kw_to_sort_order(argv[4], b_asc))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (7 == argc) {
 		offset = strtol(argv[5], nullptr, 0);
 		length = strtol(argv[6], nullptr, 0);
@@ -3419,7 +3422,6 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 static int mail_engine_pofst(int argc, char **argv, int sockd)
 {
 	int idx;
-	BOOL b_asc;
 	int temp_len, total_mail = 0;
 	char temp_buff[1024];
 	char sql_string[1024];
@@ -3430,13 +3432,9 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	auto sort_field = kw_to_sort_field(argv[4]);
 	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	if (0 == strcasecmp(argv[5], "ASC")) {
-		b_asc = TRUE;
-	} else if (0 == strcasecmp(argv[5], "DSC")) {
-		b_asc = FALSE;
-	} else {
+	bool b_asc;
+	if (!kw_to_sort_order(argv[5], b_asc))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3519,7 +3517,6 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
  */
 static int mail_engine_pfddt(int argc, char **argv, int sockd)
 {
-	BOOL b_asc;
 	int offset;
 	int temp_len;
 	uint32_t total;
@@ -3534,13 +3531,9 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	}
 	if (kw_to_sort_field(argv[3]) < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	if (0 == strcasecmp(argv[4], "ASC")) {
-		b_asc = TRUE;
-	} else if (0 == strcasecmp(argv[4], "DSC")) {
-		b_asc = FALSE;
-	} else {
+	bool b_asc;
+	if (!kw_to_sort_order(argv[4], b_asc))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3692,7 +3685,6 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
  */
 static int mail_engine_psiml(int argc, char **argv, int sockd)
 {
-	BOOL b_asc;
 	int offset;
 	int length;
 	int temp_len;
@@ -3714,13 +3706,9 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	auto sort_field = kw_to_sort_field(argv[3]);
 	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	if (0 == strcasecmp(argv[4], "ASC")) {
-		b_asc = TRUE;
-	} else if (0 == strcasecmp(argv[4], "DSC")) {
-		b_asc = FALSE;
-	} else {
+	bool b_asc;
+	if (!kw_to_sort_order(argv[4], b_asc))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (7 == argc) {
 		offset = strtol(argv[5], nullptr, 0);
 		length = strtol(argv[6], nullptr, 0);
@@ -3848,7 +3836,6 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 
 static int mail_engine_psimu(int argc, char **argv, int sockd)
 {
-	BOOL b_asc;
 	int buff_len;
 	int temp_len;
 	int flags_len, total_mail = 0;
@@ -3865,13 +3852,9 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	auto sort_field = kw_to_sort_field(argv[3]);
 	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	if (0 == strcasecmp(argv[4], "ASC")) {
-		b_asc = TRUE;
-	} else if (0 == strcasecmp(argv[4], "DSC")) {
-		b_asc = FALSE;
-	} else {
+	bool b_asc;
+	if (!kw_to_sort_order(argv[4], b_asc))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	seq_node::value_type first = strtol(argv[5], nullptr, 0), last = strtol(argv[6], nullptr, 0);
 	if (first < 1 && first != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
@@ -4034,6 +4017,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 
+
 /*
  * List Deleted-flagged mails
  *
@@ -4041,7 +4025,6 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
  */
 static int mail_engine_pdell(int argc, char **argv, int sockd)
 {
-	BOOL b_asc;
 	int length;
 	int temp_len;
 	int buff_len;
@@ -4058,13 +4041,9 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	auto sort_field = kw_to_sort_field(argv[3]);
 	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	if (0 == strcasecmp(argv[4], "ASC")) {
-		b_asc = TRUE;
-	} else if (0 == strcasecmp(argv[4], "DSC")) {
-		b_asc = FALSE;
-	} else {
+	bool b_asc;
+	if (!kw_to_sort_order(argv[4], b_asc))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
