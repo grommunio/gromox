@@ -79,7 +79,7 @@ enum class midb_conj {
 namespace {
 
 struct seq_node {
-	unsigned int min, max;
+	unsigned int min = -1, max = -1;
 };
 
 struct CONDITION_TREE : DOUBLE_LIST {
@@ -1399,10 +1399,7 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 			seq_node seq, *pseq = &seq;
 			if (NULL != last_colon) {
 				if (0 == strcmp(last_break, "*")) {
-					pseq->max = -1;
-					if (0 == strcmp(last_colon + 1, "*")) {
-						pseq->min = -1;
-					} else {
+					if (strcmp(last_colon + 1, "*") != 0) {
 						pseq->min = strtol(last_colon + 1, nullptr, 0);
 						if (pseq->min <= 0) {
 							return NULL;
@@ -1413,9 +1410,7 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 					if (pseq->min <= 0) {
 						return NULL;
 					}
-					if (0 == strcmp(last_colon + 1, "*")) {
-						pseq->max = -1;
-					} else {
+					if (strcmp(last_colon + 1, "*") != 0) {
 						pseq->max = strtol(last_colon + 1, nullptr, 0);
 						if (pseq->max <= 0) {
 							return NULL;
