@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <climits>
@@ -1376,11 +1377,10 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build(int argc, char **arg
 
 static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 {
-	int i, len, temp;
 	char *last_colon;
 	char *last_break;
 	
-	len = strlen(string);
+	auto len = strlen(string);
 	if (',' == string[len - 1]) {
 		len --;
 	} else {
@@ -1389,7 +1389,7 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 	auto plist = std::make_unique<std::vector<seq_node>>();
 	last_break = string;
 	last_colon = NULL;
-	for (i=0; i<=len; i++) {
+	for (size_t i = 0; i <= len; ++i) {
 		if (!HX_isdigit(string[i]) && string[i] != '*'
 			&& ',' != string[i] && ':' != string[i]) {
 			return NULL;
@@ -1433,11 +1433,8 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 				}
 				pseq->max = pseq->min;
 			}
-			if (pseq->max < pseq->min) {
-				temp = pseq->max;
-				pseq->max = pseq->min;
-				pseq->min = temp;
-			}
+			if (pseq->max < pseq->min)
+				std::swap(pseq->min, pseq->max);
 			last_break = string + i + 1;
 			plist->push_back(seq_node{seq.min, seq.max});
 		}
@@ -2651,10 +2648,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	pstmt.finalize();
 	if (b_asc) {
 		if (offset < 0) {
-			idx1 = total_mail + 1 + offset;
-			if (idx1 < 1) {
-				idx1 = 1;
-			}
+			idx1 = std::max(1, total_mail + 1 + offset);
 		} else {
 			if (offset >= total_mail) {
 				pidb.reset();
@@ -2671,10 +2665,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 			LLU{folder_id}, idx1, idx2);
 	} else {
 		if (offset < 0) {
-			idx2 = -offset;
-			if (idx2 > total_mail) {
-				idx2 = total_mail;
-			}
+			idx2 = std::min(-offset, total_mail);
 		} else {
 			if (offset >= total_mail) {
 				pidb.reset();
@@ -3807,10 +3798,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	pstmt.finalize();
 	if (b_asc) {
 		if (offset < 0) {
-			idx1 = total_mail + 1 + offset;
-			if (idx1 < 1) {
-				idx1 = 1;
-			}
+			idx1 = std::max(1, total_mail + 1 + offset);
 		} else {
 			if (offset >= total_mail) {
 				pidb.reset();
@@ -3828,10 +3816,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 				"ORDER BY idx", LLU{folder_id}, idx1, idx2);
 	} else {
 		if (offset < 0) {
-			idx2 = offset*(-1);
-			if (idx2 > total_mail) {
-				idx2 = total_mail;
-			}
+			idx2 = std::min(-offset, total_mail);
 		} else {
 			if (offset >= total_mail) {
 				pidb.reset();
