@@ -1732,7 +1732,8 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 	sqlite3_bind_text(pstmt, 9, rcpt, -1, SQLITE_STATIC);
 	sqlite3_bind_int64(pstmt, 10, size);
 	sqlite3_bind_int64(pstmt, 11, received_time);
-	sqlite3_step(pstmt);
+	if (sqlite3_step(pstmt) != SQLITE_DONE)
+		fprintf(stderr, "E-2075: sqlite_step not finished\n");
 }
 
 static void mail_engine_sync_message(IDB_ITEM *pidb,
