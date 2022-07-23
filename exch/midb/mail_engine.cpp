@@ -4222,7 +4222,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	
 	if (argc != 7 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	if (strcasecmp(argv[3], "RCV"))
+	if (strcasecmp(argv[3], "RCV") == 0)
 		sort_field = FIELD_RECEIVED;
 	else if (strcasecmp(argv[3], "SUB") == 0)
 		sort_field = FIELD_SUBJECT;	
