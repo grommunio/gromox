@@ -2564,6 +2564,20 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
 }
 
+static int kw_to_sort_field(const char *s)
+{
+	if (strcasecmp(s, "RCV") == 0) return FIELD_RECEIVED;
+	if (strcasecmp(s, "SUB") == 0) return FIELD_SUBJECT;
+	if (strcasecmp(s, "FRM") == 0) return FIELD_FROM;
+	if (strcasecmp(s, "RCP") == 0) return FIELD_RCPT;
+	if (strcasecmp(s, "SIZ") == 0) return FIELD_SIZE;
+	if (strcasecmp(s, "RED") == 0) return FIELD_READ;
+	if (strcasecmp(s, "FLG") == 0) return FIELD_FLAG;
+	if (strcasecmp(s, "UID") == 0) return FIELD_UID;
+	if (strcasecmp(s, "NON") == 0) return FIELD_NONE;
+	return -1;
+}
+
 /*
  * List mails in folder, returning the digests.
  * Request:
@@ -2580,7 +2594,6 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	int temp_len;
 	int idx1, idx2;
 	int total_mail;
-	int sort_field;
 	char sql_string[1024];
 	char temp_buff[MAX_DIGLEN];
 	
@@ -2588,27 +2601,9 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 		|| strlen(argv[2]) >= 1024) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (0 == strcasecmp(argv[3], "RCV")) {
-		sort_field = FIELD_RECEIVED;
-	} else if (0 == strcasecmp(argv[3], "SUB")) {
-		sort_field = FIELD_SUBJECT;	
-	} else if (0 == strcasecmp(argv[3], "FRM")) {
-		sort_field = FIELD_FROM;
-	} else if (0 == strcasecmp(argv[3], "RCP")) {
-		sort_field = FIELD_RCPT;
-	} else if (0 == strcasecmp(argv[3], "SIZ")) {
-		sort_field = FIELD_SIZE;
-	} else if (0 == strcasecmp(argv[3], "RED")) {
-		sort_field = FIELD_READ;
-	} else if (0 == strcasecmp(argv[3], "FLG")) {
-		sort_field = FIELD_FLAG;
-	} else if (0 == strcasecmp(argv[3], "UID")) {
-		sort_field = FIELD_UID;
-	} else if (0 == strcasecmp(argv[3], "NON")) {
-		sort_field = FIELD_NONE;
-	} else {
+	auto sort_field = kw_to_sort_field(argv[3]);
+	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (0 == strcasecmp(argv[4], "ASC")) {
 		b_asc = TRUE;
 	} else if (0 == strcasecmp(argv[4], "DSC")) {
@@ -3425,35 +3420,16 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 {
 	int idx;
 	BOOL b_asc;
-	int temp_len;
-	int sort_field, total_mail = 0;
+	int temp_len, total_mail = 0;
 	char temp_buff[1024];
 	char sql_string[1024];
 	
 	if (6 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (0 == strcasecmp(argv[4], "RCV")) {
-		sort_field = FIELD_RECEIVED;
-	} else if (0 == strcasecmp(argv[4], "SUB")) {
-		sort_field = FIELD_SUBJECT;	
-	} else if (0 == strcasecmp(argv[4], "FRM")) {
-		sort_field = FIELD_FROM;
-	} else if (0 == strcasecmp(argv[4], "RCP")) {
-		sort_field = FIELD_RCPT;
-	} else if (0 == strcasecmp(argv[4], "SIZ")) {
-		sort_field = FIELD_SIZE;
-	} else if (0 == strcasecmp(argv[4], "RED")) {
-		sort_field = FIELD_READ;
-	} else if (0 == strcasecmp(argv[4], "FLG")) {
-		sort_field = FIELD_FLAG;
-	} else if (0 == strcasecmp(argv[4], "UID")) {
-		sort_field = FIELD_UID;
-	} else if (0 == strcasecmp(argv[4], "NON")) {
-		sort_field = FIELD_NONE;
-	} else {
+	auto sort_field = kw_to_sort_field(argv[4]);
+	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (0 == strcasecmp(argv[5], "ASC")) {
 		b_asc = TRUE;
 	} else if (0 == strcasecmp(argv[5], "DSC")) {
@@ -3556,9 +3532,7 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	if (5 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	static constexpr char accept_kw[][4] =
-		{"RCV", "SUB", "FRM", "RCP", "SIZ", "RED", "FLG", "UID", "NON"};
-	if (!array_find_istr(accept_kw, argv[3]))
+	if (kw_to_sort_field(argv[3]) < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
 	if (0 == strcasecmp(argv[4], "ASC")) {
 		b_asc = TRUE;
@@ -3727,7 +3701,6 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	int flags_len;
 	int idx1, idx2;
 	int total_mail;
-	int sort_field;
 	char flags_buff[16];
 	char temp_line[1024];
 	char sql_string[1024];
@@ -3738,27 +3711,9 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 		|| strlen(argv[2]) >= 1024) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (0 == strcasecmp(argv[3], "RCV")) {
-		sort_field = FIELD_RECEIVED;
-	} else if (0 == strcasecmp(argv[3], "SUB")) {
-		sort_field = FIELD_SUBJECT;	
-	} else if (0 == strcasecmp(argv[3], "FRM")) {
-		sort_field = FIELD_FROM;
-	} else if (0 == strcasecmp(argv[3], "RCP")) {
-		sort_field = FIELD_RCPT;
-	} else if (0 == strcasecmp(argv[3], "SIZ")) {
-		sort_field = FIELD_SIZE;
-	} else if (0 == strcasecmp(argv[3], "RED")) {
-		sort_field = FIELD_READ;
-	} else if (0 == strcasecmp(argv[3], "FLG")) {
-		sort_field = FIELD_FLAG;
-	} else if (0 == strcasecmp(argv[3], "UID")) {
-		sort_field = FIELD_UID;
-	} else if (0 == strcasecmp(argv[3], "NON")) {
-		sort_field = FIELD_NONE;
-	} else {
+	auto sort_field = kw_to_sort_field(argv[3]);
+	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (0 == strcasecmp(argv[4], "ASC")) {
 		b_asc = TRUE;
 	} else if (0 == strcasecmp(argv[4], "DSC")) {
@@ -3897,7 +3852,6 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	int buff_len;
 	int temp_len;
 	int flags_len, total_mail = 0;
-	int sort_field;
 	char flags_buff[16];
 	char temp_line[1024];
 	char sql_string[1024];
@@ -3908,27 +3862,9 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	if (7 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (0 == strcasecmp(argv[3], "RCV")) {
-		sort_field = FIELD_RECEIVED;
-	} else if (0 == strcasecmp(argv[3], "SUB")) {
-		sort_field = FIELD_SUBJECT;	
-	} else if (0 == strcasecmp(argv[3], "FRM")) {
-		sort_field = FIELD_FROM;
-	} else if (0 == strcasecmp(argv[3], "RCP")) {
-		sort_field = FIELD_RCPT;
-	} else if (0 == strcasecmp(argv[3], "SIZ")) {
-		sort_field = FIELD_SIZE;
-	} else if (0 == strcasecmp(argv[3], "RED")) {
-		sort_field = FIELD_READ;
-	} else if (0 == strcasecmp(argv[3], "FLG")) {
-		sort_field = FIELD_FLAG;
-	} else if (0 == strcasecmp(argv[3], "UID")) {
-		sort_field = FIELD_UID;
-	} else if (0 == strcasecmp(argv[3], "NON")) {
-		sort_field = FIELD_NONE;
-	} else {
+	auto sort_field = kw_to_sort_field(argv[3]);
+	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (0 == strcasecmp(argv[4], "ASC")) {
 		b_asc = TRUE;
 	} else if (0 == strcasecmp(argv[4], "DSC")) {
@@ -4111,7 +4047,6 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	int buff_len;
 	uint32_t uid;
 	uint32_t idx;
-	int sort_field;
 	char temp_line[1024];
 	char sql_string[1024];
 	const char *mid_string;
@@ -4120,27 +4055,9 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	if (5 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (0 == strcasecmp(argv[3], "RCV")) {
-		sort_field = FIELD_RECEIVED;
-	} else if (0 == strcasecmp(argv[3], "SUB")) {
-		sort_field = FIELD_SUBJECT;	
-	} else if (0 == strcasecmp(argv[3], "FRM")) {
-		sort_field = FIELD_FROM;
-	} else if (0 == strcasecmp(argv[3], "RCP")) {
-		sort_field = FIELD_RCPT;
-	} else if (0 == strcasecmp(argv[3], "SIZ")) {
-		sort_field = FIELD_SIZE;
-	} else if (0 == strcasecmp(argv[3], "RED")) {
-		sort_field = FIELD_READ;
-	} else if (0 == strcasecmp(argv[3], "FLG")) {
-		sort_field = FIELD_FLAG;
-	} else if (0 == strcasecmp(argv[3], "UID")) {
-		sort_field = FIELD_UID;
-	} else if (0 == strcasecmp(argv[3], "NON")) {
-		sort_field = FIELD_NONE;
-	} else {
+	auto sort_field = kw_to_sort_field(argv[3]);
+	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (0 == strcasecmp(argv[4], "ASC")) {
 		b_asc = TRUE;
 	} else if (0 == strcasecmp(argv[4], "DSC")) {
@@ -4198,7 +4115,6 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 {
 	BOOL b_asc;
 	int temp_len, total_mail = 0;
-	int sort_field;
 	DTLU_NODE *pdt_node;
 	char sql_string[1024];
 	DOUBLE_LIST temp_list;
@@ -4207,25 +4123,8 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	
 	if (argc != 7 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	if (strcasecmp(argv[3], "RCV") == 0)
-		sort_field = FIELD_RECEIVED;
-	else if (strcasecmp(argv[3], "SUB") == 0)
-		sort_field = FIELD_SUBJECT;	
-	else if (strcasecmp(argv[3], "FRM") == 0)
-		sort_field = FIELD_FROM;
-	else if (strcasecmp(argv[3], "RCP") == 0)
-		sort_field = FIELD_RCPT;
-	else if (strcasecmp(argv[3], "SIZ") == 0)
-		sort_field = FIELD_SIZE;
-	else if (strcasecmp(argv[3], "RED") == 0)
-		sort_field = FIELD_READ;
-	else if (strcasecmp(argv[3], "FLG") == 0)
-		sort_field = FIELD_FLAG;
-	else if (strcasecmp(argv[3], "UID") == 0)
-		sort_field = FIELD_UID;
-	else if (strcasecmp(argv[3], "NON") == 0)
-		sort_field = FIELD_NONE;
-	else
+	auto sort_field = kw_to_sort_field(argv[3]);
+	if (sort_field < FIELD_NONE)
 		return MIDB_E_PARAMETER_ERROR;
 	if (strcasecmp(argv[4], "ASC") == 0)
 		b_asc = TRUE;
