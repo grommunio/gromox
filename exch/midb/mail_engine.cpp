@@ -79,9 +79,11 @@ enum class midb_conj {
 namespace {
 
 struct seq_node {
-	unsigned int min = -1, max = -1;
-	constexpr bool has_min() const { return min != static_cast<unsigned int>(-1) && min != 0; }
-	constexpr bool has_max() const { return max != static_cast<unsigned int>(-1) && max != 0; }
+	using value_type = unsigned int;
+	static constexpr value_type unset = UINT_MAX;
+	value_type min = unset, max = unset;
+	constexpr bool has_min() const { return min != unset && min != 0; }
+	constexpr bool has_max() const { return max != unset && max != 0; }
 };
 
 struct CONDITION_TREE : DOUBLE_LIST {
@@ -1444,8 +1446,8 @@ static BOOL ct_hint_seq(const std::vector<seq_node> &list,
 {
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		if (pseq->max == static_cast<unsigned int>(-1)) {
-			if (pseq->min == static_cast<unsigned int>(-1)) {
+		if (pseq->max == seq_node::unset) {
+			if (pseq->min == seq_node::unset) {
 				if (num == max_uid) {
 					return TRUE;
 				}
@@ -3932,14 +3934,14 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	} else {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	int first = strtol(argv[5], nullptr, 0), last = strtol(argv[6], nullptr, 0);
-	if (first < 1 && first != -1)
+	seq_node::value_type first = strtol(argv[5], nullptr, 0), last = strtol(argv[6], nullptr, 0);
+	if (first < 1 && first != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
-	if (last < 1 && last != -1)
+	if (last < 1 && last != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
-	if (first == -1 && last != -1)
+	if (first == seq_node::unset && last != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
-	if (last != -1 && last < first)
+	if (last != seq_node::unset && last < first)
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3951,16 +3953,16 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
 		return MIDB_E_NO_MEMORY;
 	if (b_asc) {
-		if (-1 == first && -1 == last) {
+		if (first == seq_node::unset && last == seq_node::unset) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu ORDER BY idx", LLU{folder_id});
-		} else if (-1 == first) {
+		} else if (first == seq_node::unset) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid<=%u ORDER BY idx",
 				LLU{folder_id}, last);
-		} else if (-1 == last) {
+		} else if (last == seq_node::unset) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY idx",
@@ -3988,17 +3990,17 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 		}
 		total_mail = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
-		if (-1 == first && -1 == last) {
+		if (first == seq_node::unset && last == seq_node::unset) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded"
 				" FROM messages WHERE folder_id=%llu ORDER BY idx DESC",
 				LLU{folder_id});
-		} else if (-1 == first) {
+		} else if (first == seq_node::unset) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid<=%u ORDER BY idx"
 				" DESC", LLU{folder_id}, last);
-		} else if (-1 == last) {
+		} else if (last == seq_node::unset) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY idx"
@@ -4230,14 +4232,14 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	else
 		return MIDB_E_PARAMETER_ERROR;
 
-	int first = strtol(argv[5], nullptr, 0), last = strtol(argv[6], nullptr, 0);
-	if (first < 1 && first != -1)
+	seq_node::value_type first = strtol(argv[5], nullptr, 0), last = strtol(argv[6], nullptr, 0);
+	if (first < 1 && first != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
-	if (last < 1 && last != -1)
+	if (last < 1 && last != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
-	if (first == -1 && last != -1)
+	if (first == seq_node::unset && last != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
-	if (last != -1 && last < first)
+	if (last != seq_node::unset && last < first)
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -4248,15 +4250,15 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
 		return MIDB_E_NO_MEMORY;
 	if (b_asc) {
-		if (first == -1 && last ==- 1)
+		if (first == seq_node::unset && last == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string"
 				" FROM messages WHERE folder_id=%llu ORDER BY idx",
 				LLU{folder_id});
-		else if (first == -1)
+		else if (first == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string "
 					"FROM messages WHERE folder_id=%llu AND uid<=%u"
 					" ORDER BY idx", LLU{folder_id}, last);
-		else if (last == -1)
+		else if (last == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string "
 					"FROM messages WHERE folder_id=%llu AND uid>=%u"
 					" ORDER BY idx", LLU{folder_id}, first);
@@ -4278,15 +4280,15 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 			return MIDB_E_NO_FOLDER;
 		total_mail = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
-		if (first == -1 && last == -1)
+		if (first == seq_node::unset && last == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string"
 				" FROM messages WHERE folder_id=%llu ORDER BY idx"
 				" DESC", LLU{folder_id});
-		else if (first == -1)
+		else if (first == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string "
 					"FROM messages WHERE folder_id=%llu AND uid<=%u"
 					" ORDER BY idx DESC", LLU{folder_id}, last);
-		else if (last == -1)
+		else if (last == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string "
 					"FROM messages WHERE folder_id=%llu AND uid>=%u"
 					" ORDER BY idx", LLU{folder_id}, first);
