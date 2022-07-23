@@ -8,6 +8,7 @@
 struct GX_EXPORT vcard_param {
 	vcard_param(const char *);
 	~vcard_param();
+	NOMOVE(vcard_param);
 	ec_error_t append_paramval(const char *paramval);
 	inline const char *name() const { return m_name; }
 
@@ -20,6 +21,7 @@ using VCARD_PARAM = vcard_param;
 struct GX_EXPORT vcard_value {
 	vcard_value();
 	~vcard_value();
+	NOMOVE(vcard_value);
 	ec_error_t append_subval(const char *);
 
 	DOUBLE_LIST_NODE node{};
@@ -30,6 +32,7 @@ using VCARD_VALUE = vcard_value;
 struct GX_EXPORT vcard_line {
 	vcard_line(const char *);
 	~vcard_line();
+	NOMOVE(vcard_line);
 	ec_error_t append_param(VCARD_PARAM *);
 	vcard_param &append_param(const char *);
 	vcard_param &append_param(const char *, const char *);

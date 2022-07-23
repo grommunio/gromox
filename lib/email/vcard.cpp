@@ -858,6 +858,11 @@ vcard_line &vcard::append_line(const char *name)
 		delete line;
 		throw std::bad_alloc();
 	}
+	ret = append_line(line);
+	if (ret != ecSuccess) {
+		delete line;
+		throw std::bad_alloc();
+	}
 	return *line;
 }
 
@@ -884,7 +889,7 @@ vcard_line &vcard::append_line(const char *name, const char *value)
 		delete pvline;
 		throw std::bad_alloc();
 	}
-	ret = append_line(std::move(pvline));
+	ret = append_line(pvline);
 	if (ret != ecSuccess) {
 		delete pvline;
 		throw std::bad_alloc();

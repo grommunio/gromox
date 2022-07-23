@@ -66,6 +66,7 @@ Makefile.in
 /tests/cryptest
 /tests/lzxpress
 /tests/utiltest
+/tests/vcard
 /tests/zendfake
 /tests/*.log
 /tests/*.trs

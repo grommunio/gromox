@@ -290,7 +290,7 @@ mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
 mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
-noinst_PROGRAMS = tests/bodyconv tests/cryptest tests/lzxpress tests/utiltest tests/zendfake
+noinst_PROGRAMS = tests/bodyconv tests/cryptest tests/lzxpress tests/utiltest tests/vcard tests/zendfake
 TESTS = tests/utiltest
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
@@ -300,6 +300,8 @@ tests_lzxpress_SOURCES = tests/lzxpress.cpp
 tests_lzxpress_LDADD = ${HX_LIBS} libgromox_mapi.la
 tests_utiltest_SOURCES = tests/utiltest.cpp
 tests_utiltest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+tests_vcard_SOURCES = tests/vcard.cpp
+tests_vcard_LDADD = ${HX_LIBS} libgromox_email.la
 tests_zendfake_SOURCES = tests/zendfake.cpp
 tests_zendfake_LDADD = libmapi4zf.la
 
