@@ -211,7 +211,7 @@ static bool oxomsg_test_perm(const char *account,
  * - rv true, send_as true: Send-As
  */
 static bool oxomsg_get_perm(const char *account,
-    const char *account_representing, bool send_as)
+    const char *account_representing, bool &send_as)
 {
 	if (oxomsg_test_perm(account, account_representing, true)) {
 		send_as = true;
