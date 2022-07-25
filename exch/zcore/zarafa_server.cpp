@@ -4038,7 +4038,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		if (!b_force && !fdst->get_all_proptags(&proptags1))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
-			if (fdst->check_readonly_property(proptags.pproptag[i]))
+			if (fdst->is_readonly_prop(proptags.pproptag[i]))
 				continue;
 			if (!b_force && proptags1.has(proptags.pproptag[i]))
 				continue;

@@ -709,7 +709,7 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-static BOOL msgo_check_readonly_property(const message_object *pmessage,
+static BOOL msgo_is_readonly_prop(const message_object *pmessage,
    uint32_t proptag)
 { 
 	if (PROP_TYPE(proptag) == PT_OBJECT)
@@ -934,7 +934,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	}
 	for (i=0; i<ppropvals->count; i++) {
 		if (b_check) {
-			if (msgo_check_readonly_property(pmessage, ppropvals->ppropval[i].proptag)) {
+			if (msgo_is_readonly_prop(pmessage, ppropvals->ppropval[i].proptag)) {
 				problems.pproblem[problems.count++].index = i;
 				continue;
 			} else if (ppropvals->ppropval[i].proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
@@ -1055,7 +1055,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	}
 	for (i=0; i<pproptags->count; i++) {
-		if (msgo_check_readonly_property(pmessage, pproptags->pproptag[i])) {
+		if (msgo_is_readonly_prop(pmessage, pproptags->pproptag[i])) {
 			problems.pproblem[problems.count++].index = i;
 			continue;
 		}

@@ -93,11 +93,11 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-BOOL folder_object::check_readonly_property(uint32_t proptag) const
+bool folder_object::is_readonly_prop(uint32_t proptag) const
 {
 	auto pfolder = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT)
-		return TRUE;
+		return true;
 	switch (proptag) {
 	case PR_ACCESS:
 	case PR_ADDRESS_BOOK_ENTRYID:
@@ -137,7 +137,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag) const
 	case PR_PARENT_SOURCE_KEY:
 	case PR_PREDECESSOR_CHANGE_LIST:
 	case PR_LAST_MODIFICATION_TIME:
-		return TRUE;
+		return true;
 	case PR_IPM_DRAFTS_ENTRYID:
 	case PR_IPM_CONTACT_ENTRYID:
 	case PR_IPM_APPOINTMENT_ENTRYID:
@@ -152,7 +152,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag) const
 			1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		return TRUE;
+		return true;
 	}
 	return FALSE;
 }
@@ -632,7 +632,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	}
 	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (pfolder->check_readonly_property(pproptags->pproptag[i]))
+		if (pfolder->is_readonly_prop(pproptags->pproptag[i]))
 			continue;
 		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 	}

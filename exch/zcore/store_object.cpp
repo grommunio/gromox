@@ -335,7 +335,7 @@ store_object::get_property_groupinfo(uint32_t group_id) try
 	return nullptr;
 }
 
-static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t proptag)
+static BOOL store_object_is_readonly_prop(store_object *pstore, uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
@@ -1314,7 +1314,7 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	auto pinfo = zarafa_server_get_info();
 	auto pstore = this;
 	for (i=0; i<ppropvals->count; i++) {
-		if (store_object_check_readonly_property(
+		if (store_object_is_readonly_prop(
 		    pstore, ppropvals->ppropval[i].proptag))
 			continue;
 		switch (ppropvals->ppropval[i].proptag) {
@@ -1371,7 +1371,7 @@ BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	int i;
 	auto pinfo = zarafa_server_get_info();
 	for (i=0; i<pproptags->count; i++) {
-		if (store_object_check_readonly_property(pstore, pproptags->pproptag[i]))
+		if (store_object_is_readonly_prop(pstore, pproptags->pproptag[i]))
 			continue;
 		pinfo->ptree->remove_zstore_propval(pproptags->pproptag[i]);
 	}

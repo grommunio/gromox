@@ -139,7 +139,7 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-static BOOL aobj_check_readonly_property(const attachment_object *pattachment,
+static BOOL aobj_is_readonly_prop(const attachment_object *pattachment,
     uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT && proptag != PR_ATTACH_DATA_OBJ)
@@ -260,7 +260,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		return FALSE;
 	}
 	for (i=0; i<ppropvals->count; i++) {
-		if (aobj_check_readonly_property(pattachment,
+		if (aobj_is_readonly_prop(pattachment,
 		    ppropvals->ppropval[i].proptag))
 			continue;
 		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
@@ -290,7 +290,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	}
 	for (i=0; i<pproptags->count; i++) {
-		if (aobj_check_readonly_property(pattachment,
+		if (aobj_is_readonly_prop(pattachment,
 		    pproptags->pproptag[i]))
 			continue;
 		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
