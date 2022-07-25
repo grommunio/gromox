@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/io.h>
+#include <libHX/misc.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
 #include <sys/socket.h>
@@ -911,7 +912,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 			continue;
 		}
 
-		/* meet the end of request header */
+		/* met the end of request header */
 		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 			http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 			http_5xx(pcontext, "Resources exhausted", 503);
@@ -974,6 +975,36 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 	return X_RUNOFF;
 }
 
+static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
+    void *pbuff, unsigned int size)
+{
+	ssize_t actual_read = pcontext->connection.ssl != nullptr ?
+	                      SSL_read(pcontext->connection.ssl, pbuff, size) :
+	                      read(pcontext->connection.sockd, pbuff, size);
+	if (actual_read <= 0)
+		return actual_read;
+	if (g_http_debug) {
+		fprintf(stderr, "<< ctx %p recv %zd\n", pcontext, actual_read);
+		fflush(stderr);
+		bool ascii = true;
+		for (ssize_t i = 0; i < actual_read; ++i) {
+			auto c = static_cast<const uint8_t *>(pbuff)[i];
+			if (!isprint(c) && c != '\r' && c != '\n') {
+				ascii = false;
+				break;
+			}
+		}
+		if (ascii) {
+			if (HXio_fullwrite(STDERR_FILENO, pbuff, actual_read) < 0)
+				/* ignore */;
+		} else {
+			HX_hexdump(stderr, pbuff, actual_read);
+		}
+		fprintf(stderr, "\n<<-%s\n", tag);
+	}
+	return actual_read;
+}
+
 static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 {
 	unsigned int size = STREAM_BLOCK_SIZE;
@@ -983,21 +1014,12 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
-	ssize_t actual_read = pcontext->connection.ssl != nullptr ?
-			      SSL_read(pcontext->connection.ssl, pbuff, size) :
-			      read(pcontext->connection.sockd, pbuff, size);
+	auto actual_read = htparse_readsock(pcontext, "EOH", pbuff, size);
 	auto current_time = time_point::clock::now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
 	} else if (actual_read > 0) {
-		if (g_http_debug) {
-			fprintf(stderr, "<< ctx %p recv %zd\n", pcontext, actual_read);
-			fflush(stderr);
-			if (HXio_fullwrite(STDERR_FILENO, pbuff, actual_read) < 0)
-				/* ignore */;
-			fprintf(stderr, "\n<<-END\n");
-		}
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
 		return htparse_rdhead_st(pcontext, actual_read);
@@ -1280,9 +1302,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 		http_5xx(pcontext);
 		return X_LOOP;
 	}
-	ssize_t actual_read = pcontext->connection.ssl != nullptr ?
-			      SSL_read(pcontext->connection.ssl, pbuff, size) :
-			      read(pcontext->connection.sockd, pbuff, size);
+	auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
 	auto current_time = time_point::clock::now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
@@ -1414,9 +1434,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			return X_LOOP;
 		}
 
-		ssize_t actual_read = pcontext->connection.ssl != nullptr ?
-				      SSL_read(pcontext->connection.ssl, pbuff, size) :
-				      read(pcontext->connection.sockd, pbuff, size);
+		auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
 		auto current_time = time_point::clock::now();
 		if (0 == actual_read) {
 			http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
@@ -1791,9 +1809,7 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 		}
 	}
 	char tmp_buff[2048];
-	ssize_t actual_read = pcontext->connection.ssl == nullptr ?
-			      read(pcontext->connection.sockd, tmp_buff, sizeof(tmp_buff)) :
-			      SSL_read(pcontext->connection.ssl, tmp_buff, sizeof(tmp_buff));
+	auto actual_read = htparse_readsock(pcontext, "EOX", tmp_buff, std::size(tmp_buff));
 	auto current_time = time_point::clock::now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
