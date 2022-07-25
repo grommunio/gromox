@@ -1060,24 +1060,6 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			pcontext->sched_stat = SCHED_STAT_RDHEAD;
 			pcontext->stream_out.clear();
 			return PROCESS_CONTINUE;
-		case HPM_RETRIEVE_SOCKET: {
-			unsigned int size = STREAM_BLOCK_SIZE;
-			auto pbuff = pcontext->stream_in.get_read_buf(&size);
-			if (pbuff != nullptr && !hpm_processor_send(pcontext, pbuff, size)) {
-				http_parser_log_info(pcontext, LV_DEBUG,
-					"connection closed by hpm");
-				return X_RUNOFF;
-			}
-			pcontext->stream_in.clear();
-			pcontext->stream_out.clear();
-			pcontext->request.clear();
-			unsigned int tmp_len = STREAM_BLOCK_SIZE;
-			pcontext->write_buff = pcontext->stream_out.get_write_buf(&tmp_len);
-			pcontext->write_length = 0;
-			pcontext->write_offset = 0;
-			pcontext->sched_stat = SCHED_STAT_SOCKET;
-			return PROCESS_POLLING_RDWR;
-		}
 		}
 	} else if (NULL != pcontext->pfast_context) {
 		switch (mod_fastcgi_check_response(pcontext)) {
@@ -1757,85 +1739,6 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 	return X_LOOP;
 }
 
-static int htparse_socket(HTTP_CONTEXT *pcontext)
-{
-	if (0 == pcontext->write_length) {
-		auto tmp_len = hpm_processor_receive(pcontext,
-			static_cast<char *>(pcontext->write_buff),
-			STREAM_BLOCK_SIZE);
-		if (0 == tmp_len) {
-			http_parser_log_info(pcontext, LV_DEBUG,
-				"connection closed by hpm");
-			return X_RUNOFF;
-		} else if (tmp_len > 0) {
-			pcontext->write_length = tmp_len;
-			pcontext->write_offset = 0;
-		}
-	}
-	if (pcontext->write_length > pcontext->write_offset) {
-		ssize_t written_len = pcontext->write_length - pcontext->write_offset;
-		if (NULL != pcontext->connection.ssl) {
-			written_len = SSL_write(pcontext->connection.ssl,
-				      static_cast<char *>(pcontext->write_buff) + pcontext->write_offset,
-				written_len);
-		} else {
-			written_len = write(pcontext->connection.sockd,
-				      static_cast<char *>(pcontext->write_buff) + pcontext->write_offset,
-				written_len);
-		}
-
-		auto current_time = time_point::clock::now();
-		if (0 == written_len) {
-			http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
-			return X_RUNOFF;
-		} else if (written_len > 0) {
-			pcontext->connection.last_timestamp = current_time;
-			pcontext->write_offset += written_len;
-			if (pcontext->write_offset >= pcontext->write_length) {
-				pcontext->write_offset = 0;
-				pcontext->write_length = 0;
-			}
-		} else {
-			if (EAGAIN != errno) {
-				http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
-				return X_RUNOFF;
-			}
-			/* check if context is timed out */
-			if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) < g_timeout) {
-				return PROCESS_POLLING_WRONLY;
-			}
-			http_parser_log_info(pcontext, LV_DEBUG, "timeout");
-			return X_RUNOFF;
-		}
-	}
-	char tmp_buff[2048];
-	auto actual_read = htparse_readsock(pcontext, "EOX", tmp_buff, std::size(tmp_buff));
-	auto current_time = time_point::clock::now();
-	if (0 == actual_read) {
-		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
-		return X_RUNOFF;
-	} else if (actual_read > 0) {
-		pcontext->connection.last_timestamp = current_time;
-		if (!hpm_processor_send(
-		    pcontext, tmp_buff, actual_read)) {
-			http_parser_log_info(pcontext, LV_DEBUG,
-				"connection closed by hpm");
-			return X_RUNOFF;
-		}
-		return PROCESS_POLLING_RDONLY;
-	}
-	if (EAGAIN != errno) {
-		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
-		return X_RUNOFF;
-	}
-	/* check if context is timed out */
-	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) < g_timeout) {
-		return PROCESS_POLLING_RDONLY;
-	}
-	http_parser_log_info(pcontext, LV_DEBUG, "timeout");
-	return X_RUNOFF;
-}
-
 int http_parser_process(HTTP_CONTEXT *pcontext)
 {
 	int ret = X_RUNOFF;
@@ -1846,7 +1749,6 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 		case SCHED_STAT_RDBODY: ret = htparse_rdbody(pcontext); break;
 		case SCHED_STAT_WRREP: ret = htparse_wrrep(pcontext); break;
 		case SCHED_STAT_WAIT: ret = htparse_wait(pcontext); break;
-		case SCHED_STAT_SOCKET: ret = htparse_socket(pcontext); break;
 		default: continue;
 		}
 	} while (ret == X_LOOP);

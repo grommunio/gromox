@@ -15,7 +15,6 @@
 #define HPM_RETRIEVE_NONE			2
 #define HPM_RETRIEVE_WAIT			3
 #define HPM_RETRIEVE_DONE			4
-#define HPM_RETRIEVE_SOCKET			5
 
 struct LIB_BUFFER;
 
