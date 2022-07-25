@@ -138,12 +138,6 @@ int main(int argc, const char **argv) try
 	if (!midb_reload_config(pconfig))
 		return EXIT_FAILURE;
 
-	std::vector<std::string> service_plugin_list;
-	auto ret = read_plugin_list_file(pconfig->get_value("service_plugin_list"),
-	           std::move(g_dfl_svc_plugins), service_plugin_list);
-	if (ret != 0)
-		return EXIT_FAILURE;
-
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
 	
@@ -196,7 +190,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
 		g_config_file->get_value("state_path"),
-		std::move(service_plugin_list),
+		std::move(g_dfl_svc_plugins),
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		threads_num});
 	auto cl_0 = make_scope_exit(service_stop);

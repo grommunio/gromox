@@ -124,19 +124,6 @@ errno_t read_file_by_line(const char *file, std::vector<std::string> &out)
 	}
 }
 
-errno_t read_plugin_list_file(const char *file,
-    std::vector<std::string> &&defaults, std::vector<std::string> &out)
-{
-	if (file == nullptr) {
-		out = std::move(defaults);
-		return 0;
-	}
-	auto ret = read_file_by_line(file, out);
-	if (ret != 0)
-		fprintf(stderr, "read_file_by_line %s: %s\n", file, strerror(ret));
-	return ret;
-}
-
 int gx_vsnprintf1(char *buf, size_t sz, const char *file, unsigned int line,
     const char *fmt, va_list args)
 {

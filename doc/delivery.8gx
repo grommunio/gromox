@@ -57,12 +57,6 @@ no, the daemon will exit if any plugin cannot be loaded.
 .br
 Default: \fIno\fP
 .TP
-\fBmpc_plugin_list\fP
-Path to a text file which lists the filenames of MPC plugins to load, one per
-line.
-.br
-Default: (built-in list)
-.TP
 \fBmpc_plugin_path\fP
 Path to a secondary directory where MPC plugins will be loaded from if a
 primary search in standard directories (as per ld.so(8)) was unsuccessful.
@@ -79,12 +73,6 @@ If set to yes, service plugins that fail to load on startup are ignored. If set
 to no, the daemon will exit if any plugin cannot be loaded.
 .br
 Default: \fIno\fP
-.TP
-\fBservice_plugin_list\fP
-Path to a text file which lists the filenames of service plugins to load,
-one per line.
-.br
-Default: (built-in list)
 .TP
 \fBservice_plugin_path\fP
 Path to a secondary directory where service plugins will be loaded from if a

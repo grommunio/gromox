@@ -158,12 +158,6 @@ int main(int argc, const char **argv) try
 	}
 	printf("[system]: hostname is %s\n", host_name);
 	
-	std::vector<std::string> service_plugin_list;
-	auto ret = read_plugin_list_file(pconfig->get_value("service_plugin_list"),
-	           std::move(g_dfl_svc_plugins), service_plugin_list);
-	if (ret != 0)
-		return EXIT_FAILURE;
-	
 	msgchg_grouping_init(g_config_file->get_value("data_file_path"));
 	auto cl_0c = make_scope_exit(msgchg_grouping_free);
 	auto cl_4 = make_scope_exit(msgchg_grouping_stop);
@@ -174,7 +168,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(service_plugin_list),
+		std::move(g_dfl_svc_plugins),
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		threads_num});
 	auto cl_0 = make_scope_exit(service_stop);

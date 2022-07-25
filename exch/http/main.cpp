@@ -261,20 +261,6 @@ int main(int argc, const char **argv) try
 	HX_unit_size(temp_buff, arsizeof(temp_buff), max_request_mem, 1024, 0);
 	printf("[pdu_processor]: maximum request memory is %s\n", temp_buff);
 
-	std::vector<std::string> proc_plugin_list, hpm_plugin_list, service_plugin_list;
-	auto ret = read_plugin_list_file(g_config_file->get_value("proc_plugin_list"),
-	           std::move(g_dfl_proc_plugins), proc_plugin_list);
-	if (ret != 0)
-		return EXIT_FAILURE;
-	ret = read_plugin_list_file(resource_get_string("hpm_plugin_list"),
-	      std::move(g_dfl_hpm_plugins), hpm_plugin_list);
-	if (ret != 0)
-		return EXIT_FAILURE;
-	ret = read_plugin_list_file(resource_get_string("service_plugin_list"),
-	      std::move(g_dfl_svc_plugins), service_plugin_list);
-	if (ret != 0)
-		return EXIT_FAILURE;
-	
 	uint64_t hpm_cache_size = g_config_file->get_ll("hpm_cache_size");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), hpm_cache_size, 1024, 0);
 	printf("[hpm_processor]: fastcgi cache size is %s\n", temp_buff);
@@ -321,7 +307,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(service_plugin_list),
+		std::move(g_dfl_svc_plugins),
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		context_num, "http"});
 	auto cleanup_6 = make_scope_exit(service_stop);
@@ -361,7 +347,7 @@ int main(int argc, const char **argv) try
 	pdu_processor_init(context_num, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
 		g_config_file->get_value("proc_plugin_path"),
-		std::move(proc_plugin_list),
+		std::move(g_dfl_proc_plugins),
 		parse_bool(g_config_file->get_value("proc_plugin_ignore_errors")));
 	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 	printf("---------------------------- proc plugins begin "
@@ -377,7 +363,7 @@ int main(int argc, const char **argv) try
 	}
 
 	hpm_processor_init(context_num, g_config_file->get_value("hpm_plugin_path"),
-		std::move(hpm_plugin_list), hpm_cache_size, hpm_max_size,
+		std::move(g_dfl_hpm_plugins), hpm_cache_size, hpm_max_size,
 		parse_bool(g_config_file->get_value("hpm_plugin_ignore_errors")));
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 	printf("---------------------------- hpm plugins begin "

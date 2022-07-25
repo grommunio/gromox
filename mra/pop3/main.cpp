@@ -228,18 +228,6 @@ int main(int argc, const char **argv) try
 	if (listen_tls_port > 0)
 		printf("[system]: system TLS listening port %d\n", listen_tls_port);
 
-	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
-	std::vector<std::string> service_plugin_list;
-	if (str_value != NULL) {
-		auto ret = read_file_by_line(str_value, service_plugin_list);
-		if (ret != 0) {
-			printf("read_file_by_line %s: %s\n", str_value, strerror(ret));
-			return EXIT_FAILURE;
-		}
-	} else {
-		service_plugin_list = std::move(g_dfl_svc_plugins);
-	}
-
 	if (resource_run() != 0) {
 		printf("[system]: Failed to load resource\n");
 		return EXIT_FAILURE;
@@ -271,7 +259,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(service_plugin_list),
+		std::move(g_dfl_svc_plugins),
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		context_num});
 	printf("--------------------------- service plugins begin"

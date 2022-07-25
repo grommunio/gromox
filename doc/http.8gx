@@ -25,7 +25,7 @@ stream is handed off to the exchange_emsmdb(4gx) plugin.
 .IP \(bu 4
 Otherwise, HTTP processing modules (HPM) are invoked. Processing ends when
 one module signals that the request was handled. The order depends on the HPM
-list (cf. http.cfg(5gx):\fBhpm_plugin_list\fP).
+list (which is fixed): mh_emsmdb, mh_nsp.
 .IP \(bu 4
 Otherwise, the mod_fastcgi(4gx) module (built-in) is invoked. Processing ends
 if the module handled the request.
@@ -110,12 +110,6 @@ ignored. If set to no, the daemon will exit if any plugin cannot be loaded.
 .br
 Default: \fIno\fP
 .TP
-\fBhpm_plugin_list\fP
-Path to a text file which lists the filenames of HTTP processing modules
-(plugins) to load, one per line.
-.br
-Default: (built-in list)
-.TP
 \fBhttp_auth_times\fP
 The number of login tries a user is allowed before the account is blocked.
 .br
@@ -192,12 +186,6 @@ set to no, the daemon will exit if any plugin cannot be loaded.
 .br
 Default: \fIno\fP
 .TP
-\fBproc_plugin_list\fP
-Path to a text file which lists the filenames of processor plugins to load, one
-per line.
-.br
-Default: (built-in list)
-.TP
 \fBproc_plugin_path\fP
 Filesystem path for processor plugins.
 .br
@@ -224,12 +212,6 @@ If set to yes, service plugins that fail to load on startup are ignored. If set
 to no, the daemon will exit if any plugin cannot be loaded.
 .br
 Default: \fIno\fP
-.TP
-\fBservice_plugin_list\fP
-Path to a text file which lists the filenames of service plugins to load,
-one per line.
-.br
-Default: (built-in list)
 .TP
 \fBservice_plugin_path\fP
 Path to a secondary directory where service plugins will be loaded from if a

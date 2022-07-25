@@ -145,21 +145,11 @@ int main(int argc, const char **argv) try
 	HX_unit_size(temp_buff, arsizeof(temp_buff), max_mem, 1024, 0);
     printf("[message_dequeue]: maximum allocated memory is %s\n", temp_buff);
     
-	std::vector<std::string> mpc_plugin_list, service_plugin_list;
-	auto ret = read_plugin_list_file(resource_get_string("MPC_PLUGIN_LIST"),
-	           std::move(g_dfl_mpc_plugins), mpc_plugin_list);
-	if (ret != 0)
-		return EXIT_FAILURE;
-	ret = read_plugin_list_file(resource_get_string("SERVICE_PLUGIN_LIST"),
-	      std::move(g_dfl_svc_plugins), service_plugin_list);
-	if (ret != 0)
-		return EXIT_FAILURE;
-
 	service_init({g_config_file->get_value("service_plugin_path"),
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(service_plugin_list),
+		std::move(g_dfl_svc_plugins),
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		threads_max + free_contexts});
 	printf("--------------------------- service plugins begin"
@@ -195,7 +185,7 @@ int main(int argc, const char **argv) try
 	auto cleanup_8 = make_scope_exit(message_dequeue_stop);
 
 	transporter_init(g_config_file->get_value("mpc_plugin_path"),
-		std::move(mpc_plugin_list), threads_min, threads_max,
+		std::move(g_dfl_mpc_plugins), threads_min, threads_max,
 		free_contexts, mime_ratio,
 		parse_bool(g_config_file->get_value("mpc_plugin_ignore_errors")));
 

@@ -240,12 +240,6 @@ int main(int argc, const char **argv) try
 	printf("[smtp]: block remote side %s when mails number is exceed for one "
 			"session\n", temp_buff);
 	
-	std::vector<std::string> service_plugin_list;
-	auto ret = read_plugin_list_file(resource_get_string("SERVICE_PLUGIN_LIST"),
-	           std::move(g_dfl_svc_plugins), service_plugin_list);
-	if (ret != 0)
-		return EXIT_FAILURE;
-
 	str_val = resource_get_string("command_protocol");
 	if (strcasecmp(str_val, "both") == 0)
 		scfg.cmd_prot = HT_LMTP | HT_SMTP;
@@ -281,7 +275,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(service_plugin_list),
+		std::move(g_dfl_svc_plugins),
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		scfg.context_num});
 	printf("--------------------------- service plugins begin"
