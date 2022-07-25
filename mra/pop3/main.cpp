@@ -71,7 +71,6 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"pop3_thread_init_num", "5", CFG_SIZE},
 	{"running_identity", "gromox"},
 	{"service_plugin_ignore_errors", "false", CFG_BOOL},
-	{"service_plugin_path", PKGLIBDIR},
 	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "pop3_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "pop3_threaD_init_num", CFG_ALIAS},
@@ -255,7 +254,7 @@ int main(int argc, const char **argv) try
 		else
 			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
 	}
-	service_init({g_config_file->get_value("service_plugin_path"),
+	service_init({PKGLIBDIR,
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),

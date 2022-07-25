@@ -80,7 +80,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
 	{"separator_for_bounce", ";"},
-	{"service_plugin_path", PKGLIBDIR},
 	{"smtp_server_ip", "::1"},
 	{"smtp_server_port", "25"},
 	{"state_path", PKGSTATEDIR},
@@ -164,7 +163,7 @@ int main(int argc, const char **argv) try
 	unsigned int threads_num = pconfig->get_ll("zarafa_threads_num");
 	printf("[system]: connection threads number is %d\n", threads_num);
 
-	service_init({g_config_file->get_value("service_plugin_path"),
+	service_init({PKGLIBDIR,
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),

@@ -52,11 +52,5 @@ If set to yes, service plugins that fail to load on startup are ignored. If set
 to no, the daemon will exit if any plugin cannot be loaded.
 .br
 Default: \fIno\fP
-.TP
-\fBservice_plugin_path\fP
-Path to a secondary directory where service plugins will be loaded from if a
-primary search in standard directories (as per ld.so(8)) was unsuccessful.
-.br
-Default: \fI/usr/lib/gromox\fP
 .SH See also
 \fBgromox\fP(7)

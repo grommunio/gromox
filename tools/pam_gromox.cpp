@@ -94,10 +94,6 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 			return ret;
 	}
 
-	auto svc_plugin_path = cfg->get_value("service_plugin_path");
-	if (svc_plugin_path == nullptr)
-		svc_plugin_path = PKGLIBDIR;
-
 	bool svcplug_ignerr = parse_bool(cfg->get_value("service_plugin_ignore_errors"));
 	const char *val;
 	auto config_dir = val = cfg->get_value("config_file_path");
@@ -105,7 +101,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		config_dir = PKGSYSCONFDIR "/pam:" PKGSYSCONFDIR;
 
 	std::lock_guard<std::mutex> holder(g_svc_once);
-	service_init({svc_plugin_path, config_dir, "", "",
+	service_init({PKGLIBDIR, config_dir, "", "",
 		std::move(g_dfl_svc_plugins), svcplug_ignerr, 1});
 	if (service_run_early() != 0)
 		return PAM_AUTH_ERR;

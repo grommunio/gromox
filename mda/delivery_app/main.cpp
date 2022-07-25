@@ -56,9 +56,7 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 	{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
 	{"dequeue_path", PKGSTATEQUEUEDIR},
 	{"mpc_plugin_ignore_errors", "false", CFG_BOOL},
-	{"mpc_plugin_path", PKGLIBDIR},
 	{"running_identity", "gromox"},
-	{"service_plugin_path", PKGLIBDIR},
 	{"state_path", PKGSTATEDIR},
 	{"work_threads_min", "16", CFG_SIZE, "1"},
 	CFG_TABLE_END,
@@ -145,7 +143,7 @@ int main(int argc, const char **argv) try
 	HX_unit_size(temp_buff, arsizeof(temp_buff), max_mem, 1024, 0);
     printf("[message_dequeue]: maximum allocated memory is %s\n", temp_buff);
     
-	service_init({g_config_file->get_value("service_plugin_path"),
+	service_init({PKGLIBDIR,
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
@@ -184,7 +182,7 @@ int main(int argc, const char **argv) try
     }
 	auto cleanup_8 = make_scope_exit(message_dequeue_stop);
 
-	transporter_init(g_config_file->get_value("mpc_plugin_path"),
+	transporter_init(PKGLIBDIR,
 		std::move(g_dfl_mpc_plugins), threads_min, threads_max,
 		free_contexts, mime_ratio,
 		parse_bool(g_config_file->get_value("mpc_plugin_ignore_errors")));

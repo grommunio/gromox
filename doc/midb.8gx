@@ -85,12 +85,6 @@ Default: \fI10\fP
 .br
 Default: \fI10\fP
 .TP
-\fBservice_plugin_path\fP
-Path to a secondary directory where service plugins will be loaded from if a
-primary search in standard directories (as per ld.so(8)) was unsuccessful.
-.br
-Default: \fI/usr/lib/gromox\fP
-.TP
 \fBsqlite_debug\fP
 If set to 1, every query given to SQLite prepare/execute is logged.
 If set to 0, only failed queries are logged. (It cannot be made completely

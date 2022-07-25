@@ -88,7 +88,6 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"hpm_cache_size", "512K", CFG_SIZE, "64K"},
 	{"hpm_max_size", "4M", CFG_SIZE, "64K"},
 	{"hpm_plugin_ignore_errors", "false", CFG_BOOL},
-	{"hpm_plugin_path", PKGLIBDIR},
 	{"http_auth_times", "10", CFG_SIZE, "1"},
 	{"http_conn_timeout", "3min", CFG_TIME, "30s"},
 	{"http_debug", "0"},
@@ -103,11 +102,9 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"listen_ssl_port", "http_listen_tls_port", CFG_ALIAS},
 	{"msrpc_debug", "0"},
 	{"proc_plugin_ignore_errors", "false", CFG_BOOL},
-	{"proc_plugin_path", PKGLIBDIR},
 	{"request_max_mem", "4M", CFG_SIZE, "1M"},
 	{"running_identity", "gromox"},
 	{"service_plugin_ignore_errors", "false", CFG_BOOL},
-	{"service_plugin_path", PKGLIBDIR},
 	{"state_path", PKGSTATEDIR},
 	{"tcp_max_segment", "0", CFG_SIZE},
 	{"thread_charge_num", "http_thread_charge_num", CFG_ALIAS},
@@ -303,7 +300,7 @@ int main(int argc, const char **argv) try
 		else
 			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
 	}
-	service_init({g_config_file->get_value("service_plugin_path"),
+	service_init({PKGLIBDIR,
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
@@ -346,8 +343,7 @@ int main(int argc, const char **argv) try
 	                     "http.cfg:context_num,context_average_mem");
 	pdu_processor_init(context_num, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
-		g_config_file->get_value("proc_plugin_path"),
-		std::move(g_dfl_proc_plugins),
+		PKGLIBDIR, std::move(g_dfl_proc_plugins),
 		parse_bool(g_config_file->get_value("proc_plugin_ignore_errors")));
 	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 	printf("---------------------------- proc plugins begin "
@@ -362,7 +358,7 @@ int main(int argc, const char **argv) try
 		   "-----------------------------\n");
 	}
 
-	hpm_processor_init(context_num, g_config_file->get_value("hpm_plugin_path"),
+	hpm_processor_init(context_num, PKGLIBDIR,
 		std::move(g_dfl_hpm_plugins), hpm_cache_size, hpm_max_size,
 		parse_bool(g_config_file->get_value("hpm_plugin_ignore_errors")));
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);

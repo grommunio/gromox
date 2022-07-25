@@ -186,11 +186,6 @@ set to no, the daemon will exit if any plugin cannot be loaded.
 .br
 Default: \fIno\fP
 .TP
-\fBproc_plugin_path\fP
-Filesystem path for processor plugins.
-.br
-Default: \fI/usr/libexec/gromox\fP
-.TP
 \fBrequest_max_mem\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed
 (C706 §12.6.3.7, MS-RPCE v33 §2.2.2.6).
@@ -212,12 +207,6 @@ If set to yes, service plugins that fail to load on startup are ignored. If set
 to no, the daemon will exit if any plugin cannot be loaded.
 .br
 Default: \fIno\fP
-.TP
-\fBservice_plugin_path\fP
-Path to a secondary directory where service plugins will be loaded from if a
-primary search in standard directories (as per ld.so(8)) was unsuccessful.
-.br
-Default: \fI/usr/lib/gromox\fP
 .TP
 \fBstate_path\fP
 Directory for runtime variadic data.

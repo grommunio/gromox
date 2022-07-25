@@ -71,7 +71,6 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"midb_threads_num", "100", CFG_SIZE, "20", "1000"},
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "200"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "200"},
-	{"service_plugin_path", PKGLIBDIR},
 	{"sqlite_debug", "0"},
 	{"sqlite_mmap_size", "0", CFG_SIZE},
 	{"sqlite_synchronous", "off", CFG_BOOL},
@@ -186,7 +185,7 @@ int main(int argc, const char **argv) try
 	}
 
 	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
-	service_init({g_config_file->get_value("service_plugin_path"),
+	service_init({PKGLIBDIR,
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
 		g_config_file->get_value("state_path"),

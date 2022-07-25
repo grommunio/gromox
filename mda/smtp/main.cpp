@@ -69,7 +69,6 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"running_identity", "gromox"},
 	{"service_plugin_ignore_errors", "false", CFG_BOOL},
-	{"service_plugin_path", PKGLIBDIR},
 	{"smtp_auth_times", "3", CFG_SIZE, "1"},
 	{"smtp_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"smtp_force_starttls", "false", CFG_BOOL},
@@ -271,7 +270,7 @@ int main(int argc, const char **argv) try
 		else
 			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
 	}
-	service_init({g_config_file->get_value("service_plugin_path"),
+	service_init({PKGLIBDIR,
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),

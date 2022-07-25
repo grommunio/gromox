@@ -74,7 +74,6 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"listen_ssl_port", "imap_listen_tls_port", CFG_ALIAS},
 	{"running_identity", "gromox"},
 	{"service_plugin_ignore_errors", "false", CFG_BOOL},
-	{"service_plugin_path", PKGLIBDIR},
 	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "imap_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "imap_thread_init_num", CFG_ALIAS},
@@ -257,7 +256,7 @@ int main(int argc, const char **argv) try
 		else
 			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
 	}
-	service_init({g_config_file->get_value("service_plugin_path"),
+	service_init({PKGLIBDIR,
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
