@@ -269,11 +269,10 @@ int main(int argc, const char **argv) try
 		else
 			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
 	}
-	service_init({PKGLIBDIR,
-		g_config_file->get_value("config_file_path"),
+	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins), false, scfg.context_num});
+		std::move(g_dfl_svc_plugins), scfg.context_num});
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (service_run_early() != 0) {

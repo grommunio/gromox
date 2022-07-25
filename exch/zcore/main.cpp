@@ -163,11 +163,10 @@ int main(int argc, const char **argv) try
 	unsigned int threads_num = pconfig->get_ll("zarafa_threads_num");
 	printf("[system]: connection threads number is %d\n", threads_num);
 
-	service_init({PKGLIBDIR,
-		g_config_file->get_value("config_file_path"),
+	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins), false, threads_num});
+		std::move(g_dfl_svc_plugins), threads_num});
 	auto cl_0 = make_scope_exit(service_stop);
 	
 	unsigned int table_size = pconfig->get_ll("address_table_size");

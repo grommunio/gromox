@@ -100,8 +100,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		config_dir = PKGSYSCONFDIR "/pam:" PKGSYSCONFDIR;
 
 	std::lock_guard<std::mutex> holder(g_svc_once);
-	service_init({PKGLIBDIR, config_dir, "", "",
-		std::move(g_dfl_svc_plugins), false, 1});
+	service_init({config_dir, "", "", std::move(g_dfl_svc_plugins), 1});
 	if (service_run_early() != 0)
 		return PAM_AUTH_ERR;
 	if (service_run() != 0)

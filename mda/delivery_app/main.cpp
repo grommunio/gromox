@@ -142,12 +142,10 @@ int main(int argc, const char **argv) try
 	HX_unit_size(temp_buff, arsizeof(temp_buff), max_mem, 1024, 0);
     printf("[message_dequeue]: maximum allocated memory is %s\n", temp_buff);
     
-	service_init({PKGLIBDIR,
-		g_config_file->get_value("config_file_path"),
+	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins), false,
-		threads_max + free_contexts});
+		std::move(g_dfl_svc_plugins), threads_max + free_contexts});
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (service_run_early() != 0) {

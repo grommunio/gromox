@@ -54,18 +54,15 @@ struct HPM_CONTEXT {
 static int g_context_num;
 static uint64_t g_max_size;
 static uint64_t g_cache_size;
-static char g_plugins_path[256];
 static HPM_PLUGIN *g_cur_plugin;
 static std::list<HPM_PLUGIN> g_plugin_list;
 static HPM_CONTEXT *g_context_list;
 static std::vector<std::string> g_plugin_names;
 
-void hpm_processor_init(int context_num, const char *plugins_path,
-    std::vector<std::string> &&names, uint64_t cache_size, uint64_t max_size,
-    bool ignerr)
+void hpm_processor_init(int context_num, std::vector<std::string> &&names,
+    uint64_t cache_size, uint64_t max_size)
 {
 	g_context_num = context_num;
-	gx_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
 	g_plugin_names = std::move(names);
 	g_cache_size = cache_size;
 	g_max_size = max_size;
@@ -324,7 +321,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 
 	plug.handle = dlopen(plugin_name, RTLD_LAZY);
 	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
-		plug.handle = dlopen((g_plugins_path + "/"s + plugin_name).c_str(), RTLD_LAZY);
+		plug.handle = dlopen((PKGLIBDIR + "/"s + plugin_name).c_str(), RTLD_LAZY);
 	if (plug.handle == nullptr) {
 		printf("[hpm_processor]: error loading %s: %s\n", fake_path, dlerror());
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
@@ -380,7 +377,6 @@ void hpm_processor_stop()
 		free(g_context_list);
 		g_context_list = NULL;
 	}
-	g_plugins_path[0] = '\0';
 }
 
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)

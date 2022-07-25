@@ -185,11 +185,10 @@ int main(int argc, const char **argv) try
 	}
 
 	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
-	service_init({PKGLIBDIR,
-		g_config_file->get_value("config_file_path"),
+	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins), false, threads_num});
+		std::move(g_dfl_svc_plugins), threads_num});
 	auto cl_0 = make_scope_exit(service_stop);
 	
 	exmdb_client_init(proxy_num, stub_num);

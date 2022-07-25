@@ -112,7 +112,6 @@ static BOOL g_header_signing;
 static int g_connection_ratio;
 static char g_dns_domain[128];
 static char g_netbios_name[128];
-static char g_plugins_path[256];
 static size_t g_max_request_mem;
 static uint32_t g_last_async_id;
 static thread_local DCERPC_CALL *g_call_key;
@@ -197,8 +196,7 @@ static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type
 
 void pdu_processor_init(int connection_num, const char *netbios_name,
     const char *dns_name, const char *dns_domain, BOOL header_signing,
-    size_t max_request_mem, const char *plugins_path,
-    std::vector<std::string> &&names, bool ignerr)
+    size_t max_request_mem, std::vector<std::string> &&names)
 {
 	static constexpr unsigned int connection_ratio = 10;
 	union {
@@ -220,7 +218,6 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
 	gx_strlcpy(g_dns_name, dns_name, GX_ARRAY_SIZE(g_dns_name));
 	gx_strlcpy(g_dns_domain, dns_domain, GX_ARRAY_SIZE(g_dns_domain));
 	g_header_signing = header_signing;
-	gx_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
 	g_plugin_names = std::move(names);
 }
 
@@ -309,7 +306,6 @@ void pdu_processor_stop()
 	g_plugin_list.clear();
 	g_endpoint_list.clear();
 	g_async_hash.reset();
-	g_plugins_path[0] = '\0';
 }
 
 static uint16_t pdu_processor_find_secondary(const char *host,
@@ -3473,7 +3469,7 @@ static int pdu_processor_load_library(const char* plugin_name)
 
 	plug.handle = dlopen(plugin_name, RTLD_LAZY);
 	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
-		plug.handle = dlopen((g_plugins_path + "/"s + plugin_name).c_str(), RTLD_LAZY);
+		plug.handle = dlopen((PKGLIBDIR + "/"s + plugin_name).c_str(), RTLD_LAZY);
 	if (plug.handle == nullptr) {
 		printf("[pdu_processor]: error loading %s: %s\n", fake_path,
 			dlerror());

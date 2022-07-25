@@ -26,7 +26,7 @@ struct HPM_PLUGIN {
 	bool completed_init = false;
 };
 
-extern void hpm_processor_init(int context_num, const char *plugins_path, std::vector<std::string> &&names, uint64_t cache_size, uint64_t max_size, bool ignerr);
+extern void hpm_processor_init(int context_num, std::vector<std::string> &&names, uint64_t cache_size, uint64_t max_size);
 extern int hpm_processor_run();
 extern void hpm_processor_stop();
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp);

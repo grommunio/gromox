@@ -65,7 +65,7 @@ static const char *service_get_data_path();
 static unsigned int service_get_context_num();
 static const char *service_get_host_ID();
 
-static char g_init_path[256], g_config_dir[256], g_data_dir[256], g_state_dir[256];
+static char g_config_dir[256], g_data_dir[256], g_state_dir[256];
 static std::list<SVC_PLUG_ENTITY> g_list_plug;
 static std::vector<std::shared_ptr<service_entry>> g_list_service;
 static SVC_PLUG_ENTITY *g_cur_plug;
@@ -83,7 +83,6 @@ static const char *service_get_prog_id() { return g_program_identifier; }
 void service_init(service_init_param &&parm)
 {
 	g_context_num = parm.context_num;
-	gx_strlcpy(g_init_path, parm.plugin_dir, sizeof(g_init_path));
 	gx_strlcpy(g_config_dir, parm.config_dir, sizeof(g_config_dir));
 	gx_strlcpy(g_data_dir, parm.data_dir, sizeof(g_data_dir));
 	gx_strlcpy(g_state_dir, parm.state_dir, sizeof(g_state_dir));
@@ -134,7 +133,6 @@ int service_run()
 void service_stop()
 {
 	g_list_plug.clear();
-	g_init_path[0] = '\0';
 }
 
 /*
@@ -165,7 +163,7 @@ static int service_load_library(const char *path)
 	SVC_PLUG_ENTITY plug;
 	plug.handle = dlopen(path, RTLD_LAZY);
 	if (plug.handle == nullptr && strchr(path, '/') == nullptr)
-		plug.handle = dlopen((g_init_path + "/"s + path).c_str(), RTLD_LAZY);
+		plug.handle = dlopen((PKGLIBDIR + "/"s + path).c_str(), RTLD_LAZY);
 	if (plug.handle == nullptr) {
 		fprintf(stderr, "[service]: error loading %s: %s\n", fake_path, dlerror());
 		fprintf(stderr, "[service]: the plugin %s is not loaded\n", fake_path);
