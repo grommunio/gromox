@@ -385,9 +385,9 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	}
 	
 	if('\0' != time_zone[0]) {
-		auto sp = tz::tz_alloc(time_zone);
-		tz::tz_localtime_r(sp, &cur_time, &time_buff);
-		tz::tz_free(sp);
+		auto sp = tz::tzalloc(time_zone);
+		tz::localtime_rz(sp, &cur_time, &time_buff);
+		tz::tzfree(sp);
 	} else {
 		localtime_r(&cur_time, &time_buff);
 	}

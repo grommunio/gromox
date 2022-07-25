@@ -1,11 +1,14 @@
 #pragma once
 #include <ctime>
+#include <memory>
+#include <gromox/defs.h>
 
 namespace tz {
 struct state;
-extern const struct state *tz_alloc(const char *name);
-void tz_free(const struct state* const sp);
-struct tm* tz_localtime_r(const struct state* const sp,
-	const time_t* const timep, struct tm* tmp);
-time_t tz_mktime(const struct state* const sp, struct tm* const tmp);
+using timezone_t = state *;
+extern GX_EXPORT timezone_t tzalloc(const char *);
+extern GX_EXPORT void tzfree(timezone_t);
+extern GX_EXPORT void tzset();
+extern GX_EXPORT struct tm *localtime_rz(timezone_t, const time_t *, tm *);
+extern GX_EXPORT time_t mktime_z(timezone_t, tm *);
 }

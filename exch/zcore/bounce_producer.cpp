@@ -366,12 +366,12 @@ static BOOL bounce_producer_make_content(const char *username,
 		system_services_get_timezone(from, time_zone, arsizeof(time_zone));
 	}
 	if('\0' != time_zone[0]) {
-		auto sp = tz::tz_alloc(time_zone);
+		auto sp = tz::tzalloc(time_zone);
 		if (NULL == sp) {
 			return FALSE;
 		}
-		tz::tz_localtime_r(sp, &tmp_time, &time_buff);
-		tz::tz_free(sp);
+		tz::localtime_rz(sp, &tmp_time, &time_buff);
+		tz::tzfree(sp);
 	} else {
 		localtime_r(&tmp_time, &time_buff);
 	}
