@@ -265,7 +265,7 @@ static void *tpol_scanwork(void *pparam)
 	not_empty_times = 0;
 	while (!g_notify_stop) {
 		sleep(1);
-		if (contexts_pool_get_param(CUR_SCHEDUING_CONTEXTS) > 1) {
+		if (contexts_pool_get_param(CUR_SCHEDULING_CONTEXTS) > 1) {
 			not_empty_times ++;
 			if (not_empty_times < MAX_NOT_EMPTY_TIMES) {
 				continue;

@@ -1060,7 +1060,7 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 	int context_num;
 	struct pollfd pfd_read;
 	
-	context_num = contexts_pool_get_param(CUR_SCHEDUING_CONTEXTS)
+	context_num = contexts_pool_get_param(CUR_SCHEDULING_CONTEXTS)
 				+ threads_pool_get_param(THREADS_POOL_CUR_THR_NUM);
 	tv_msec = POLL_MILLISECONDS_FOR_CHECK *
 			(g_unavailable_times / context_num);

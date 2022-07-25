@@ -65,7 +65,7 @@ int contexts_pool_get_param(int type)
 	case CUR_SLEEPING_CONTEXTS:
 		return double_list_get_nodes_num(
 			&g_context_lists[CONTEXT_SLEEPING]);
-	case CUR_SCHEDUING_CONTEXTS:
+	case CUR_SCHEDULING_CONTEXTS:
 		return double_list_get_nodes_num(
 			&g_context_lists[CONTEXT_TURNING]);
 	default:
