@@ -71,3 +71,4 @@ Makefile.in
 /tests/*.log
 /tests/*.trs
 /test-suite.log
+/tools/tzdump

@@ -1,8 +1,10 @@
 #pragma once
 #include <ctime>
 #include <memory>
+#include <string>
 #include <gromox/defs.h>
 
+struct BINARY;
 namespace tz {
 struct state;
 using timezone_t = state *;
