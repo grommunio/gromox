@@ -86,8 +86,8 @@ pkglibexec_SCRIPTS = tools/create_queue.sh
 BUILT_SOURCES = include/gromox/paths.h php_mapi/mapierr.cpp php_mapi/mapitags.cpp php_mapi/zrpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
-libgromox_common_la_SOURCES = lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/mapi/ext_buffer.cpp
-libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS} ${vmime_LIBS}
+libgromox_common_la_SOURCES = lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
+libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS} ${tinyxml_LIBS} ${vmime_LIBS}
 libgromox_cplus_la_SOURCES = lib/cryptoutil.cpp lib/dbhelper.cpp lib/fileio.cpp lib/fopen.cpp lib/oxoabkt.cpp lib/textmaps.cpp
 libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${crypto_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${ssl_LIBS} ${zstd_LIBS} libgromox_common.la
 libgromox_dbop_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
@@ -278,7 +278,7 @@ mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
 mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
-noinst_PROGRAMS = tests/bodyconv tests/cryptest tests/lzxpress tests/utiltest tests/vcard tests/zendfake
+noinst_PROGRAMS = tests/bodyconv tests/cryptest tests/lzxpress tests/utiltest tests/vcard tests/zendfake tools/tzdump
 TESTS = tests/utiltest
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
@@ -292,6 +292,8 @@ tests_vcard_SOURCES = tests/vcard.cpp
 tests_vcard_LDADD = ${HX_LIBS} libgromox_email.la
 tests_zendfake_SOURCES = tests/zendfake.cpp
 tests_zendfake_LDADD = libmapi4zf.la
+tools_tzdump_SOURCES = tools/tzdump.cpp
+tools_tzdump_LDADD = ${HX_LIBS} libgromox_common.la
 
 man_MANS = \
 	doc/alias_resolve.4gx \

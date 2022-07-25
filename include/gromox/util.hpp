@@ -143,5 +143,6 @@ extern GX_EXPORT size_t utf8_to_mb_len(const char *);
 extern GX_EXPORT size_t utf8_to_utf16_len(const char *);
 inline size_t utf16_to_utf8_len(size_t z) { return z / 2 * 3 + 1; }
 extern GX_EXPORT int iconv_validate();
+extern GX_EXPORT const std::string *ianatz_to_tzdef(const char *, const char * = nullptr);
 
 }

@@ -11,12 +11,16 @@
 #include <fcntl.h>
 #include <libintl.h>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/ext_buffer.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/timezone.hpp>
 #define register
 #define ALL_STATE 1 /* threaded environments have limited automatic space */

@@ -11,6 +11,8 @@
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/safeint.hpp>
+#include <gromox/timezone.hpp>
+#include <gromox/util.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include "php.h"
 #include "zarafa_client.h"
@@ -5382,6 +5384,32 @@ static ZEND_FUNCTION(mapi_linkmessage)
 	MAPI_G(hr) = ecSuccess;
 }
 
+/**
+ * mapi_ianatz_to_struct(string $tz) : string|false|throw;
+ *
+ * @tz:		Timezone name within IANA tzdb
+ *
+ * Returns a TIMEZONEDEFINITION blob for the timezone. This can be put into
+ * PidLidAppointmentTimeZoneDefinition{Start,End}Display.
+ */
+static ZEND_FUNCTION(mapi_ianatz_to_tzdef)
+{
+	char *izone = nullptr;
+	size_t izone_len;
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &izone,
+	    &izone_len) == FAILURE || izone == nullptr) {
+		MAPI_G(hr) = ecInvalidParam;
+		THROW_EXCEPTION;
+	}
+	auto def = ianatz_to_tzdef(izone);
+	if (def == nullptr) {
+		MAPI_G(hr) = ecNotFound;
+		THROW_EXCEPTION;
+	}
+	RETVAL_STRINGL(def->data(), def->size());
+	MAPI_G(hr) = ecSuccess;
+}
+
 static zend_function_entry mapi_functions[] = {
 #if PHP_MAJOR_VERSION >= 8
 #	define A(a, s) ZEND_FALIAS(a, s, arginfo_ ## s)
@@ -5514,6 +5542,7 @@ static zend_function_entry mapi_functions[] = {
 	F(nsp_getuserinfo)
 	F(nsp_setuserpasswd)
 	F(mapi_linkmessage)
+	F(mapi_ianatz_to_tzdef)
 	{NULL, NULL, NULL}
 #undef A
 #undef F

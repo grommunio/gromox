@@ -112,3 +112,4 @@ function kc_session_restore(mixed $data, mixed &$res) : int {}
 function nsp_getuserinfo(string $username) : array|false {}
 function nsp_setuserpasswd(string $username, string $oldpass, string $newpass) : bool {}
 function mapi_linkmessage(resource $ses, ?string $srcheid = null, ?string $msgeid = null) : mixed {}
+function mapi_ianatz_to_tzdef(string $tz) : string|false {}
