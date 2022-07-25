@@ -26,4 +26,4 @@ The TCP port number for contacting the timer daemon.
 .br
 Default: \fI6666\fP
 .SH See also
-\fBgromox\fP(7), \fBtimer\fP(8gx), \fBat_client\fP(4gx)
+\fBgromox\fP(7), \fBtimer\fP(8gx)

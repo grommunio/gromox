@@ -127,8 +127,6 @@ rebuild(8gx) \(em Tool for rebuilding a message store
 Service plugins can be used by various processes (i.e. from different
 subsystems), as such, we have put them in this general category.
 .IP \(bu 4
-at_client(4gx) \(em Service plugin for deferred command execution with at(1)
-.IP \(bu 4
 authmgr(4gx) \(em Demultiplexer for authentication requests
 .IP \(bu 4
 ip6_container(4gx) \(em trivial source connection counter
@@ -176,8 +174,6 @@ A list of components and the config files they potentially use.
 .IP \(bu 4
 alias_resolve(4gx) inside delivery(8gx): /etc/gromox/alias_resolve.cfg,
 /etc/gromox/mysql_adaptor.cfg
-.IP \(bu 4
-at_client(4gx) inside (no process by default): no config file
 .IP \(bu 4
 authmgr(4gx) inside delivery(8gx), delivery-queue(8gx), http(8gx), imap(8gx),
 midb(8gx), pam_gromox(4gx), pop3(8gx), zcore(8gx): /etc/gromox/authmgr.cfg
