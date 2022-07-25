@@ -1,10 +1,34 @@
-1.27.79
-=======
+1.28 (2022-07-25)
+=================
 
 Enhancements:
 
-* php_mapi: add mapi_icaltomapi2 and mapi_vcftomapi2
+* oxcmail: add support for multi-iCal and multi-vCard support
+* php_mapi: add ``mapi_icaltomapi2`` and ``mapi_vcftomapi2`` APIs
 * emsmdb, zcore: Send-As support
+* midb_agent: make midb command buffer size for SRHL/SRHU configurable
+
+Fixes:
+
+* freebusy: do not publicize private recurrence exceptions
+* Delayed Sending had left messages in Outbox
+* midb: P-DTLU command incorrectly sorted by received date
+* emsmdb: the contact folder list erroneously rejected sort requests
+  that grouped and sorted by the same column
+* oxcical: add missing ``PR_ATTACH_METHOD`` to iCal appointment
+  collection members
+* oxvcard: do not map unrecognized types of telephone numbers to
+  ``PR_RADIO_TELEPHONE_NUMBER`` on import
+* oxvcard: avoid filing ``PR_NORMALIZED_SUBJECT`` with garbage
+* exch: ``PR_SENDER_ENTRYID`` was filled with the wrong value in
+  delegate mail sending
+* exmdb_provider: avoid sending ``PR_DISPLAY_NAME`` to clients twice
+
+Changes:
+
+* The config directives "service_plugin_list", "service_plugin_path",
+  "hpm_plugin_list", "hpm_plugin_path", "proc_plugin_list", "proc_plugin_path",
+  "mpc_plugin_list", "mpc_plugin_path" have been removed.
 
 
 1.27 (2022-07-11)
