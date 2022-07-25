@@ -157,18 +157,18 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	static constexpr BINARY fake_bin = {gromox::arsizeof(bin_buff), {deconst(bin_buff)}};
 	
 	switch (proptag) {
-	case PR_CONTENT_UNREAD:
-		if (!pfolder->plogon->check_private()) {
-			auto v = cu_alloc<uint32_t>();
-			*outvalue = v;
-			if (*outvalue == nullptr)
-				return FALSE;
-			auto rpc_info = get_rpc_info();
-			return exmdb_client_get_public_folder_unread_count(
-			       pfolder->plogon->get_dir(),
-			       rpc_info.username, pfolder->folder_id, v);
-		}
-		return FALSE;
+	case PR_CONTENT_UNREAD: {
+		if (pfolder->plogon->check_private())
+			return false;
+		auto v = cu_alloc<uint32_t>();
+		*outvalue = v;
+		if (*outvalue == nullptr)
+			return FALSE;
+		auto rpc_info = get_rpc_info();
+		return exmdb_client_get_public_folder_unread_count(
+		       pfolder->plogon->get_dir(),
+		       rpc_info.username, pfolder->folder_id, v);
+	}
 	case PR_MESSAGE_SIZE: {
 		auto v = cu_alloc<uint32_t>();
 		*outvalue = v;
