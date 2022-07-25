@@ -213,13 +213,13 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 	return NULL;
 }
 
-static BOOL vcard_check_empty_line(const char *pline)
+static bool empty_line(const char *pline)
 {	
 	for (; *pline != '\0'; ++pline)
 		if (' ' != *pline && '\t' != *pline) {
-			return FALSE;
+			return false;
 		}
-	return TRUE;
+	return true;
 }
 
 static vcard_param vcard_retrieve_param(char *ptag)
@@ -332,7 +332,7 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 	length = strlen(in_buff);
 	do {
 		pnext = vcard_get_line(pline, length - (pline - in_buff));
-		if (vcard_check_empty_line(pline))
+		if (empty_line(pline))
 			continue;
 		if (!vcard_retrieve_line_item(pline, &tmp_item))
 			break;

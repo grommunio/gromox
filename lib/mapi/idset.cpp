@@ -63,11 +63,6 @@ idset::~idset()
 		free(pset->pparam);
 }
 
-BOOL idset::check_empty() const
-{
-	return repl_list.empty() ? TRUE : false;
-}
-
 BOOL idset::append_internal(uint16_t replid, uint64_t value) try
 {
 	auto pset = this;

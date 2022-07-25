@@ -776,7 +776,7 @@ class idset {
 
 	BOOL register_mapping(BINARY *, REPLICA_MAPPING);
 	void clear() { repl_list.clear(); }
-	BOOL check_empty() const;
+	bool empty() const { return repl_list.empty(); }
 	BOOL append(uint64_t eid);
 	BOOL append_range(uint16_t replid, uint64_t low_value, uint64_t high_value);
 	void remove(uint64_t eid);

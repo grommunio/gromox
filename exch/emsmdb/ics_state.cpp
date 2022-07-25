@@ -113,7 +113,7 @@ BOOL ics_state::append_idset(uint32_t state_property, std::unique_ptr<idset> &&p
 		if (NULL != pstate->pseen) {
 			if ((ICS_STATE_CONTENTS_UP == pstate->type ||
 				ICS_STATE_HIERARCHY_UP == pstate->type) &&
-			    !pstate->pseen->check_empty() &&
+			    !pstate->pseen->empty() &&
 			    !pset->concatenate(pstate->pseen.get()))
 				return FALSE;
 		}
@@ -122,7 +122,7 @@ BOOL ics_state::append_idset(uint32_t state_property, std::unique_ptr<idset> &&p
 	case MetaTagCnsetSeenFAI:
 		if (NULL != pstate->pseen_fai) {
 			if (ICS_STATE_CONTENTS_UP == pstate->type &&
-			    !pstate->pseen_fai->check_empty() &&
+			    !pstate->pseen_fai->empty() &&
 			    !pset->concatenate(pstate->pseen_fai.get()))
 				return FALSE;
 		}
@@ -131,7 +131,7 @@ BOOL ics_state::append_idset(uint32_t state_property, std::unique_ptr<idset> &&p
 	case MetaTagCnsetRead:
 		if (NULL != pstate->pread) {
 			if (ICS_STATE_CONTENTS_UP == pstate->type &&
-			    !pstate->pread->check_empty() &&
+			    !pstate->pread->empty() &&
 			    !pset->concatenate(pstate->pread.get()))
 				return FALSE;
 		}
@@ -156,7 +156,7 @@ TPROPVAL_ARRAY *ics_state::serialize()
 	if (ICS_STATE_CONTENTS_DOWN == pstate->type ||
 		ICS_STATE_HIERARCHY_DOWN == pstate->type ||
 		(ICS_STATE_CONTENTS_UP == pstate->type &&
-	    !pstate->pgiven->check_empty())) {
+	    !pstate->pgiven->empty())) {
 		auto pbin = pstate->pgiven->serialize();
 		if (NULL == pbin) {
 			return NULL;
@@ -182,7 +182,7 @@ TPROPVAL_ARRAY *ics_state::serialize()
 	
 	if (ICS_STATE_CONTENTS_DOWN == pstate->type ||
 		(ICS_STATE_CONTENTS_UP == pstate->type &&
-	    !pstate->pread->check_empty())) {
+	    !pstate->pread->empty())) {
 		decltype(ser) s(pstate->pread->serialize());
 		if (s == nullptr ||
 		    pproplist->set(MetaTagCnsetRead, s.get()) != 0)

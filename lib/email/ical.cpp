@@ -257,7 +257,7 @@ static char* ical_get_string_line(char *pbuff, size_t max_length)
 	return NULL;
 }
 
-static bool ical_check_empty_line(const char *pline)
+static bool empty_line(const char *pline)
 {	
 	for (; *pline != '\0'; ++pline)
 		if (' ' != *pline && '\t' != *pline) {
@@ -408,7 +408,7 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 	length = strlen(in_buff);
 	do {
 		pnext = ical_get_string_line(pline, length - (pline - in_buff));
-		if (ical_check_empty_line(pline))
+		if (empty_line(pline))
 			continue;
 		if (!ical_retrieve_line_item(pline, &tmp_item))
 			break;
@@ -478,7 +478,7 @@ bool ical::retrieve(char *in_buff)
 			ical_clear_component(pical);
 			return false;
 		}
-	} while (ical_check_empty_line(pline));
+	} while (empty_line(pline));
 	if (!ical_retrieve_line_item(pline, &tmp_item)) {
 		ical_clear_component(pical);
 		return false;

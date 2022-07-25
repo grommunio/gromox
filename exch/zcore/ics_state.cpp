@@ -72,14 +72,11 @@ BINARY *ics_state::serialize()
 	auto pstate = this;
 	
 	if (ICS_TYPE_CONTENTS == pstate->type) {
-		if (pstate->pgiven->check_empty() &&
-		    pstate->pseen->check_empty() &&
-		    pstate->pseen_fai->check_empty() &&
-		    pstate->pread->check_empty())
+		if (pstate->pgiven->empty() && pstate->pseen->empty() &&
+		    pstate->pseen_fai->empty() && pstate->pread->empty())
 			return deconst(&fake_bin);
 	} else {
-		if (pstate->pgiven->check_empty() &&
-		    pstate->pseen->check_empty())
+		if (pstate->pgiven->empty() && pstate->pseen->empty())
 			return deconst(&fake_bin);
 	}
 	std::unique_ptr<TPROPVAL_ARRAY, mdel> pproplist(tpropval_array_init());
@@ -101,7 +98,7 @@ BINARY *ics_state::serialize()
 	}
 	
 	if (ICS_TYPE_CONTENTS == pstate->type &&
-	    !pstate->pread->check_empty()) {
+	    !pstate->pread->empty()) {
 		decltype(ser) s(pstate->pread->serialize());
 		if (s == nullptr || pproplist->set(MetaTagCnsetRead, s.get()) != 0)
 			return NULL;
