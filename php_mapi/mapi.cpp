@@ -48,134 +48,6 @@ ZEND_END_MODULE_GLOBALS(mapi)
 #endif
 #define PHP_MAPI_EXTNAME "mapi"
 
-PHP_MINIT_FUNCTION(mapi);
-PHP_MINFO_FUNCTION(mapi);
-PHP_MSHUTDOWN_FUNCTION(mapi);
-PHP_RINIT_FUNCTION(mapi);
-PHP_RSHUTDOWN_FUNCTION(mapi);
-
-/* All the functions that will be exported (available) must be declared */
-PHP_MINIT_FUNCTION(mapi);
-PHP_MINFO_FUNCTION(mapi);
-PHP_MSHUTDOWN_FUNCTION(mapi);
-PHP_RINIT_FUNCTION(mapi);
-PHP_RSHUTDOWN_FUNCTION(mapi);
-
-ZEND_FUNCTION(mapi_load_mapidefs);
-ZEND_FUNCTION(mapi_last_hresult);
-ZEND_FUNCTION(mapi_prop_type);
-ZEND_FUNCTION(mapi_prop_id);
-ZEND_FUNCTION(mapi_is_error);
-ZEND_FUNCTION(mapi_make_scode);
-ZEND_FUNCTION(mapi_prop_tag);
-ZEND_FUNCTION(mapi_createoneoff);
-ZEND_FUNCTION(mapi_parseoneoff);
-ZEND_FUNCTION(mapi_logon_zarafa);
-ZEND_FUNCTION(mapi_logon_ex);
-ZEND_FUNCTION(mapi_getmsgstorestable);
-ZEND_FUNCTION(mapi_openmsgstore);
-ZEND_FUNCTION(mapi_openprofilesection);
-ZEND_FUNCTION(mapi_openentry);
-ZEND_FUNCTION(mapi_openaddressbook);
-ZEND_FUNCTION(mapi_ab_openentry);
-ZEND_FUNCTION(mapi_ab_resolvename);
-ZEND_FUNCTION(mapi_ab_getdefaultdir);
-ZEND_FUNCTION(mapi_msgstore_createentryid);
-ZEND_FUNCTION(mapi_msgstore_getarchiveentryid);
-ZEND_FUNCTION(mapi_msgstore_openentry);
-ZEND_FUNCTION(mapi_msgstore_getreceivefolder);
-ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey);
-ZEND_FUNCTION(mapi_msgstore_advise);
-ZEND_FUNCTION(mapi_msgstore_unadvise);
-ZEND_FUNCTION(mapi_msgstore_abortsubmit);
-ZEND_FUNCTION(mapi_sink_create);
-ZEND_FUNCTION(mapi_sink_timedwait);
-ZEND_FUNCTION(mapi_table_queryallrows);
-ZEND_FUNCTION(mapi_table_queryrows);
-ZEND_FUNCTION(mapi_table_getrowcount);
-ZEND_FUNCTION(mapi_table_setcolumns);
-ZEND_FUNCTION(mapi_table_seekrow);
-ZEND_FUNCTION(mapi_table_sort);
-ZEND_FUNCTION(mapi_table_restrict);
-ZEND_FUNCTION(mapi_table_findrow);
-ZEND_FUNCTION(mapi_table_createbookmark);
-ZEND_FUNCTION(mapi_table_freebookmark);
-ZEND_FUNCTION(mapi_folder_gethierarchytable);
-ZEND_FUNCTION(mapi_folder_getcontentstable);
-ZEND_FUNCTION(mapi_folder_getrulestable);
-ZEND_FUNCTION(mapi_folder_createmessage);
-ZEND_FUNCTION(mapi_folder_createfolder);
-ZEND_FUNCTION(mapi_folder_deletefolder);
-ZEND_FUNCTION(mapi_folder_deletemessages);
-ZEND_FUNCTION(mapi_folder_copymessages);
-ZEND_FUNCTION(mapi_folder_copyfolder);
-ZEND_FUNCTION(mapi_folder_emptyfolder);
-ZEND_FUNCTION(mapi_folder_setreadflags);
-ZEND_FUNCTION(mapi_folder_getsearchcriteria);
-ZEND_FUNCTION(mapi_folder_setsearchcriteria);
-ZEND_FUNCTION(mapi_folder_modifyrules);
-ZEND_FUNCTION(mapi_message_getattachmenttable);
-ZEND_FUNCTION(mapi_message_getrecipienttable);
-ZEND_FUNCTION(mapi_message_openattach);
-ZEND_FUNCTION(mapi_message_createattach);
-ZEND_FUNCTION(mapi_message_deleteattach);
-ZEND_FUNCTION(mapi_message_modifyrecipients);
-ZEND_FUNCTION(mapi_message_submitmessage);
-ZEND_FUNCTION(mapi_message_setreadflag);
-ZEND_FUNCTION(mapi_attach_openbin);
-ZEND_FUNCTION(mapi_attach_openobj);
-ZEND_FUNCTION(mapi_getnamesfromids);
-ZEND_FUNCTION(mapi_getidsfromnames);
-ZEND_FUNCTION(mapi_decompressrtf);
-ZEND_FUNCTION(mapi_stream_write);
-ZEND_FUNCTION(mapi_stream_read);
-ZEND_FUNCTION(mapi_openpropertytostream);
-ZEND_FUNCTION(mapi_stream_stat);
-ZEND_FUNCTION(mapi_stream_seek);
-ZEND_FUNCTION(mapi_stream_commit);
-ZEND_FUNCTION(mapi_stream_setsize);
-ZEND_FUNCTION(mapi_stream_create);
-ZEND_FUNCTION(mapi_getprops);
-ZEND_FUNCTION(mapi_setprops);
-ZEND_FUNCTION(mapi_copyto);
-ZEND_FUNCTION(mapi_openproperty);
-ZEND_FUNCTION(mapi_deleteprops);
-ZEND_FUNCTION(mapi_savechanges);
-ZEND_FUNCTION(mapi_zarafa_getpermissionrules);
-ZEND_FUNCTION(mapi_zarafa_setpermissionrules);
-ZEND_FUNCTION(mapi_getuseravailability);
-ZEND_FUNCTION(mapi_exportchanges_config);
-ZEND_FUNCTION(mapi_exportchanges_synchronize);
-ZEND_FUNCTION(mapi_exportchanges_updatestate);
-ZEND_FUNCTION(mapi_exportchanges_getchangecount);
-ZEND_FUNCTION(mapi_importcontentschanges_config);
-ZEND_FUNCTION(mapi_importcontentschanges_updatestate);
-ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange);
-ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion);
-ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange);
-ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove);
-ZEND_FUNCTION(mapi_importhierarchychanges_config);
-ZEND_FUNCTION(mapi_importhierarchychanges_updatestate);
-ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange);
-ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion);
-ZEND_FUNCTION(mapi_wrap_importcontentschanges);
-ZEND_FUNCTION(mapi_wrap_importhierarchychanges);
-ZEND_FUNCTION(mapi_inetmapi_imtoinet);
-ZEND_FUNCTION(mapi_inetmapi_imtomapi);
-ZEND_FUNCTION(mapi_icaltomapi);
-ZEND_FUNCTION(mapi_icaltomapi2);
-ZEND_FUNCTION(mapi_mapitoical);
-ZEND_FUNCTION(mapi_vcftomapi);
-ZEND_FUNCTION(mapi_vcftomapi2);
-ZEND_FUNCTION(mapi_mapitovcf);
-ZEND_FUNCTION(mapi_enable_exceptions);
-ZEND_FUNCTION(mapi_feature);
-ZEND_FUNCTION(kc_session_save);
-ZEND_FUNCTION(kc_session_restore);
-ZEND_FUNCTION(nsp_getuserinfo);
-ZEND_FUNCTION(nsp_setuserpasswd);
-ZEND_FUNCTION(mapi_linkmessage);
-
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry
 
@@ -577,7 +449,7 @@ static void ics_export_ctx_dtor(zend_resource *rsrc)
 	efree(pctx);
 }
 
-PHP_MINIT_FUNCTION(mapi)
+static PHP_MINIT_FUNCTION(mapi)
 {
 	le_mapi_session = zend_register_list_destructors_ex(
 		mapi_resource_dtor, NULL, name_mapi_session, module_number);
@@ -618,7 +490,7 @@ PHP_MINIT_FUNCTION(mapi)
 	return SUCCESS;
 }
 
-PHP_MINFO_FUNCTION(mapi)
+static PHP_MINFO_FUNCTION(mapi)
 {
 	php_info_print_table_start();
 	php_info_print_table_row(2, "MAPI Support", "enabled");
@@ -626,12 +498,12 @@ PHP_MINFO_FUNCTION(mapi)
 	php_info_print_table_end();
 }
 
-PHP_MSHUTDOWN_FUNCTION(mapi)
+static PHP_MSHUTDOWN_FUNCTION(mapi)
 {
 	return SUCCESS;
 }
 
-PHP_RINIT_FUNCTION(mapi)
+static PHP_RINIT_FUNCTION(mapi)
 {
 	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
 	zstrplus str_user(zend_string_init(ZEND_STRL("REMOTE_USER"), 0));
@@ -651,12 +523,12 @@ PHP_RINIT_FUNCTION(mapi)
 	return SUCCESS;
 }
 
-PHP_RSHUTDOWN_FUNCTION(mapi)
+static PHP_RSHUTDOWN_FUNCTION(mapi)
 {
 	return SUCCESS;
 }
 
-ZEND_FUNCTION(mapi_load_mapidefs)
+static ZEND_FUNCTION(mapi_load_mapidefs)
 {
 	long level = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|l", &level) == FAILURE)
@@ -683,12 +555,12 @@ ZEND_FUNCTION(mapi_load_mapidefs)
 #undef C
 }
 
-ZEND_FUNCTION(mapi_last_hresult)
+static ZEND_FUNCTION(mapi_last_hresult)
 {
 	RETURN_LONG(MAPI_G(hr));
 }
 
-ZEND_FUNCTION(mapi_prop_type)
+static ZEND_FUNCTION(mapi_prop_type)
 {
 	long proptag;
 
@@ -701,7 +573,7 @@ ZEND_FUNCTION(mapi_prop_type)
 	}
 }
 
-ZEND_FUNCTION(mapi_prop_id)
+static ZEND_FUNCTION(mapi_prop_id)
 {
 	long proptag;
 
@@ -714,7 +586,7 @@ ZEND_FUNCTION(mapi_prop_id)
 	}
 }
 
-ZEND_FUNCTION(mapi_is_error)
+static ZEND_FUNCTION(mapi_is_error)
 {
 	long errcode;
 
@@ -727,7 +599,7 @@ ZEND_FUNCTION(mapi_is_error)
 	}
 }
 
-ZEND_FUNCTION(mapi_make_scode)
+static ZEND_FUNCTION(mapi_make_scode)
 {
 	long sev, code;
 	uint32_t scode;
@@ -746,7 +618,7 @@ ZEND_FUNCTION(mapi_make_scode)
 	}
 }
 
-ZEND_FUNCTION(mapi_prop_tag)
+static ZEND_FUNCTION(mapi_prop_tag)
 {
 	long propid;
 	long proptype;
@@ -762,7 +634,7 @@ ZEND_FUNCTION(mapi_prop_tag)
 	}
 }
 
-ZEND_FUNCTION(mapi_createoneoff)
+static ZEND_FUNCTION(mapi_createoneoff)
 {
 	long flags;
 	char *ptype;
@@ -800,7 +672,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_parseoneoff)
+static ZEND_FUNCTION(mapi_parseoneoff)
 {
 	size_t cbentryid = 0;
 	char *pentryid;
@@ -824,7 +696,7 @@ ZEND_FUNCTION(mapi_parseoneoff)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_logon_zarafa)
+static ZEND_FUNCTION(mapi_logon_zarafa)
 {
 	long flags;
 	size_t wa_len = 0, misc_len = 0;
@@ -877,7 +749,7 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_logon_ex)
+static ZEND_FUNCTION(mapi_logon_ex)
 {
 	long flags;
 	char *username;
@@ -931,7 +803,7 @@ ZEND_FUNCTION(mapi_logon_ex)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_openentry)
+static ZEND_FUNCTION(mapi_openentry)
 {
 	long flags;
 	BINARY entryid;
@@ -986,7 +858,7 @@ ZEND_FUNCTION(mapi_openentry)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_openaddressbook)
+static ZEND_FUNCTION(mapi_openaddressbook)
 {
 	zval *pzresource;
 	MAPI_RESOURCE *psession;
@@ -1015,7 +887,7 @@ ZEND_FUNCTION(mapi_openaddressbook)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_ab_openentry)
+static ZEND_FUNCTION(mapi_ab_openentry)
 {
 	long flags;
 	BINARY entryid;
@@ -1076,7 +948,7 @@ ZEND_FUNCTION(mapi_ab_openentry)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_ab_resolvename)
+static ZEND_FUNCTION(mapi_ab_resolvename)
 {
 	long flags;
 	zval *pzarray;
@@ -1121,7 +993,7 @@ ZEND_FUNCTION(mapi_ab_resolvename)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_ab_getdefaultdir)
+static ZEND_FUNCTION(mapi_ab_getdefaultdir)
 {
 	BINARY entryid;
 	uint32_t result;
@@ -1149,7 +1021,7 @@ ZEND_FUNCTION(mapi_ab_getdefaultdir)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_getmsgstorestable)
+static ZEND_FUNCTION(mapi_getmsgstorestable)
 {
 	uint32_t result;
 	uint32_t hobject;
@@ -1185,7 +1057,7 @@ ZEND_FUNCTION(mapi_getmsgstorestable)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_openmsgstore)
+static ZEND_FUNCTION(mapi_openmsgstore)
 {
 	BINARY entryid;
 	size_t eid_size = 0;
@@ -1227,7 +1099,7 @@ ZEND_FUNCTION(mapi_openmsgstore)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_openprofilesection)
+static ZEND_FUNCTION(mapi_openprofilesection)
 {
 	size_t uidlen = 0;
 	FLATUID *puid;
@@ -1274,7 +1146,7 @@ ZEND_FUNCTION(mapi_openprofilesection)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_gethierarchytable)
+static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 {
 	long flags;
 	uint32_t result;
@@ -1329,7 +1201,7 @@ ZEND_FUNCTION(mapi_folder_gethierarchytable)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_getcontentstable)
+static ZEND_FUNCTION(mapi_folder_getcontentstable)
 {
 	long flags;
 	uint32_t result;
@@ -1384,7 +1256,7 @@ ZEND_FUNCTION(mapi_folder_getcontentstable)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_createmessage)
+static ZEND_FUNCTION(mapi_folder_createmessage)
 {
 	long flags;
 	uint32_t result;
@@ -1424,7 +1296,7 @@ ZEND_FUNCTION(mapi_folder_createmessage)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_deletemessages)
+static ZEND_FUNCTION(mapi_folder_deletemessages)
 {
 	long flags;
 	zval *pzarray;
@@ -1461,7 +1333,7 @@ ZEND_FUNCTION(mapi_folder_deletemessages)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_copymessages)
+static ZEND_FUNCTION(mapi_folder_copymessages)
 {
 	long flags;
 	zval *pzarray;
@@ -1506,7 +1378,7 @@ ZEND_FUNCTION(mapi_folder_copymessages)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_setreadflags)
+static ZEND_FUNCTION(mapi_folder_setreadflags)
 {
 	long flags;
 	zval *pzarray;
@@ -1543,7 +1415,7 @@ ZEND_FUNCTION(mapi_folder_setreadflags)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_createfolder)
+static ZEND_FUNCTION(mapi_folder_createfolder)
 {
 	int flags;
 	char *pfname;
@@ -1596,7 +1468,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_deletefolder)
+static ZEND_FUNCTION(mapi_folder_deletefolder)
 {
 	long flags;
 	BINARY entryid;
@@ -1630,7 +1502,7 @@ ZEND_FUNCTION(mapi_folder_deletefolder)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_emptyfolder)
+static ZEND_FUNCTION(mapi_folder_emptyfolder)
 {
 	long flags;
 	uint32_t result;
@@ -1660,7 +1532,7 @@ ZEND_FUNCTION(mapi_folder_emptyfolder)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_copyfolder)
+static ZEND_FUNCTION(mapi_folder_copyfolder)
 {
 	long flags;
 	char *pname;
@@ -1707,7 +1579,7 @@ ZEND_FUNCTION(mapi_folder_copyfolder)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_msgstore_createentryid)
+static ZEND_FUNCTION(mapi_msgstore_createentryid)
 {
 	size_t dn_len = 0;
 	BINARY entryid;
@@ -1730,7 +1602,7 @@ ZEND_FUNCTION(mapi_msgstore_createentryid)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_msgstore_getarchiveentryid)
+static ZEND_FUNCTION(mapi_msgstore_getarchiveentryid)
 {
 	MAPI_G(hr) = ecNotFound;
 	if (MAPI_G(exceptions_enabled)) {
@@ -1740,7 +1612,7 @@ ZEND_FUNCTION(mapi_msgstore_getarchiveentryid)
 	RETVAL_FALSE;
 }
 
-ZEND_FUNCTION(mapi_msgstore_openentry)
+static ZEND_FUNCTION(mapi_msgstore_openentry)
 {
 	long flags;
 	BINARY entryid;
@@ -1792,7 +1664,7 @@ ZEND_FUNCTION(mapi_msgstore_openentry)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
+static ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 {
 	BINARY entryid;
 	size_t skey_size = 0, skmsg_size = 0;
@@ -1833,7 +1705,7 @@ ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_msgstore_advise)
+static ZEND_FUNCTION(mapi_msgstore_advise)
 {
 	BINARY entryid;
 	size_t eid_size = 0;
@@ -1885,7 +1757,7 @@ ZEND_FUNCTION(mapi_msgstore_advise)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_msgstore_unadvise)
+static ZEND_FUNCTION(mapi_msgstore_unadvise)
 {
 	long sub_id;
 	uint32_t result;
@@ -1914,7 +1786,7 @@ ZEND_FUNCTION(mapi_msgstore_unadvise)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_sink_create)
+static ZEND_FUNCTION(mapi_sink_create)
 {
 	NOTIF_SINK *psink;
     
@@ -1932,7 +1804,7 @@ ZEND_FUNCTION(mapi_sink_create)
 	}	
 }
 
-ZEND_FUNCTION(mapi_sink_timedwait)
+static ZEND_FUNCTION(mapi_sink_timedwait)
 {
 	long tmp_time;
 	uint32_t result;
@@ -1977,7 +1849,7 @@ ZEND_FUNCTION(mapi_sink_timedwait)
 	sleep(1);
 }
 
-ZEND_FUNCTION(mapi_table_queryallrows)
+static ZEND_FUNCTION(mapi_table_queryallrows)
 {
 	zval pzrowset;
 	uint32_t result;
@@ -2038,7 +1910,7 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_table_queryrows)
+static ZEND_FUNCTION(mapi_table_queryrows)
 {
 	zval pzrowset;
 	uint32_t result;
@@ -2087,7 +1959,7 @@ ZEND_FUNCTION(mapi_table_queryrows)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_table_setcolumns)
+static ZEND_FUNCTION(mapi_table_setcolumns)
 {
 	long flags;
 	uint32_t result;
@@ -2124,7 +1996,7 @@ ZEND_FUNCTION(mapi_table_setcolumns)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_table_seekrow)
+static ZEND_FUNCTION(mapi_table_seekrow)
 {
 	long bookmark;
 	long row_count;
@@ -2157,7 +2029,7 @@ ZEND_FUNCTION(mapi_table_seekrow)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_table_sort)
+static ZEND_FUNCTION(mapi_table_sort)
 {
 	long flags;
 	uint32_t result;
@@ -2193,7 +2065,7 @@ ZEND_FUNCTION(mapi_table_sort)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_table_getrowcount)
+static ZEND_FUNCTION(mapi_table_getrowcount)
 {
 	uint32_t count;
 	uint32_t result;
@@ -2222,7 +2094,7 @@ ZEND_FUNCTION(mapi_table_getrowcount)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_table_restrict)
+static ZEND_FUNCTION(mapi_table_restrict)
 {
 	unsigned long flags;
 	uint32_t result;
@@ -2260,7 +2132,7 @@ ZEND_FUNCTION(mapi_table_restrict)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_table_findrow)
+static ZEND_FUNCTION(mapi_table_findrow)
 {
 	unsigned long flags, bookmark;
 	uint32_t result;
@@ -2300,7 +2172,7 @@ ZEND_FUNCTION(mapi_table_findrow)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_table_createbookmark)
+static ZEND_FUNCTION(mapi_table_createbookmark)
 {
 	uint32_t result;
 	zval *pzresource;
@@ -2329,7 +2201,7 @@ ZEND_FUNCTION(mapi_table_createbookmark)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_table_freebookmark)
+static ZEND_FUNCTION(mapi_table_freebookmark)
 {
 	long bookmark;
 	uint32_t result;
@@ -2358,7 +2230,7 @@ ZEND_FUNCTION(mapi_table_freebookmark)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
+static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 {
 	BINARY entryid;
 	uint32_t result;
@@ -2405,7 +2277,7 @@ ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_message_modifyrecipients)
+static ZEND_FUNCTION(mapi_message_modifyrecipients)
 {
 	long flags;
 	uint32_t result;
@@ -2442,7 +2314,7 @@ ZEND_FUNCTION(mapi_message_modifyrecipients)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_message_submitmessage)
+static ZEND_FUNCTION(mapi_message_submitmessage)
 {
 	uint32_t result;
 	zval *pzresource;
@@ -2469,7 +2341,7 @@ ZEND_FUNCTION(mapi_message_submitmessage)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_message_getattachmenttable)
+static ZEND_FUNCTION(mapi_message_getattachmenttable)
 {
 	uint32_t result;
 	uint32_t hobject;
@@ -2507,7 +2379,7 @@ ZEND_FUNCTION(mapi_message_getattachmenttable)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_message_openattach)
+static ZEND_FUNCTION(mapi_message_openattach)
 {
 	long attach_id;
 	uint32_t result;
@@ -2546,7 +2418,7 @@ ZEND_FUNCTION(mapi_message_openattach)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_message_createattach)
+static ZEND_FUNCTION(mapi_message_createattach)
 {
 	long flags;
 	uint32_t result;
@@ -2586,7 +2458,7 @@ ZEND_FUNCTION(mapi_message_createattach)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_message_deleteattach)
+static ZEND_FUNCTION(mapi_message_deleteattach)
 {	
 	long flags;
 	long attach_id;
@@ -2618,7 +2490,7 @@ ZEND_FUNCTION(mapi_message_deleteattach)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_stream_read)
+static ZEND_FUNCTION(mapi_stream_read)
 {
 	void *pbuff;
 	zval *pzresource;
@@ -2643,7 +2515,7 @@ ZEND_FUNCTION(mapi_stream_read)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_stream_seek)
+static ZEND_FUNCTION(mapi_stream_seek)
 {
 	long flags;
 	zval *pzresource;
@@ -2667,7 +2539,7 @@ ZEND_FUNCTION(mapi_stream_seek)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_stream_setsize)
+static ZEND_FUNCTION(mapi_stream_setsize)
 {
 	long newsize;
 	zval *pzresource;
@@ -2689,7 +2561,7 @@ ZEND_FUNCTION(mapi_stream_setsize)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_stream_commit)
+static ZEND_FUNCTION(mapi_stream_commit)
 {
 	uint32_t result;
 	zval *pzresource;
@@ -2711,7 +2583,7 @@ ZEND_FUNCTION(mapi_stream_commit)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_stream_write)
+static ZEND_FUNCTION(mapi_stream_write)
 {
 	zval *pzresource;
 	size_t dblk_size = 0;
@@ -2734,7 +2606,7 @@ ZEND_FUNCTION(mapi_stream_write)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_stream_stat)
+static ZEND_FUNCTION(mapi_stream_stat)
 {
 	zval *pzresource;
 	uint32_t stream_size;
@@ -2753,7 +2625,7 @@ ZEND_FUNCTION(mapi_stream_stat)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_stream_create)
+static ZEND_FUNCTION(mapi_stream_create)
 {
 	STREAM_OBJECT *pstream;
 	
@@ -2766,7 +2638,7 @@ ZEND_FUNCTION(mapi_stream_create)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_openpropertytostream)
+static ZEND_FUNCTION(mapi_openpropertytostream)
 {
 	long flags;
 	size_t guidlen = 0;
@@ -2863,7 +2735,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_message_getrecipienttable)
+static ZEND_FUNCTION(mapi_message_getrecipienttable)
 {
 	uint32_t result;
 	uint32_t hobject;
@@ -2901,7 +2773,7 @@ ZEND_FUNCTION(mapi_message_getrecipienttable)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_message_setreadflag)
+static ZEND_FUNCTION(mapi_message_setreadflag)
 {
 	long flags;
 	uint32_t result;
@@ -2931,7 +2803,7 @@ ZEND_FUNCTION(mapi_message_setreadflag)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_attach_openobj)
+static ZEND_FUNCTION(mapi_attach_openobj)
 {
 	long flags;
 	uint32_t result;
@@ -2972,7 +2844,7 @@ ZEND_FUNCTION(mapi_attach_openobj)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_getidsfromnames)
+static ZEND_FUNCTION(mapi_getidsfromnames)
 {
 	int i;
 	zval *pzstore;
@@ -3014,7 +2886,7 @@ ZEND_FUNCTION(mapi_getidsfromnames)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_setprops)
+static ZEND_FUNCTION(mapi_setprops)
 {
 	uint32_t result;
 	zval *pzpropvals;
@@ -3084,7 +2956,7 @@ ZEND_FUNCTION(mapi_setprops)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_copyto)
+static ZEND_FUNCTION(mapi_copyto)
 {
 	long flags;
 	zval *pzsrc;
@@ -3176,7 +3048,7 @@ ZEND_FUNCTION(mapi_copyto)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_savechanges)
+static ZEND_FUNCTION(mapi_savechanges)
 {
 	long flags;
 	uint32_t result;
@@ -3246,7 +3118,7 @@ ZEND_FUNCTION(mapi_savechanges)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_deleteprops)
+static ZEND_FUNCTION(mapi_deleteprops)
 {
 	uint32_t result;
 	zval *pzresource;
@@ -3309,7 +3181,7 @@ ZEND_FUNCTION(mapi_deleteprops)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_openproperty)
+static ZEND_FUNCTION(mapi_openproperty)
 {
 	int type = -1;
 	int flags;
@@ -3555,7 +3427,7 @@ ZEND_FUNCTION(mapi_openproperty)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_getprops)
+static ZEND_FUNCTION(mapi_getprops)
 {
 	uint32_t result;
 	zval *pzresource;
@@ -3678,7 +3550,7 @@ ZEND_FUNCTION(mapi_getprops)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_getnamesfromids)
+static ZEND_FUNCTION(mapi_getnamesfromids)
 {
 	int i;
 	zval *pzarray;
@@ -3743,7 +3615,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_decompressrtf)
+static ZEND_FUNCTION(mapi_decompressrtf)
 {
 	pid_t pid;
 	int status;
@@ -3829,7 +3701,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_getrulestable)
+static ZEND_FUNCTION(mapi_folder_getrulestable)
 {
 	uint32_t result;
 	uint32_t hobject;
@@ -3868,7 +3740,7 @@ ZEND_FUNCTION(mapi_folder_getrulestable)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_getsearchcriteria)
+static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 {
 	long flags;
 	uint32_t result;
@@ -3917,7 +3789,7 @@ ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_setsearchcriteria)
+static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 {
 	long flags;
 	uint32_t result;
@@ -3974,7 +3846,7 @@ ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_folder_modifyrules)
+static ZEND_FUNCTION(mapi_folder_modifyrules)
 {
 	long flags;
 	zval *pzrows;
@@ -4010,7 +3882,7 @@ ZEND_FUNCTION(mapi_folder_modifyrules)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
+static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 {
 	int i;
 	long acl_type;
@@ -4075,7 +3947,7 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
+static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 {
 	int i, j;
 	zval *pzperms;
@@ -4180,7 +4052,7 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 						means false). ismeeting, isrecurring,
 						isexception, isreminderset, isprivate
 */
-ZEND_FUNCTION(mapi_getuseravailability)
+static ZEND_FUNCTION(mapi_getuseravailability)
 {
 	long endtime;
 	long starttime;
@@ -4219,7 +4091,7 @@ ZEND_FUNCTION(mapi_getuseravailability)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_exportchanges_config)
+static ZEND_FUNCTION(mapi_exportchanges_config)
 {
 	long flags;
 	long buffersize;
@@ -4442,7 +4314,7 @@ static zend_bool import_folder_deletion(zval *pztarget_obj,
 }
 
 
-ZEND_FUNCTION(mapi_exportchanges_synchronize)
+static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 {
 	uint32_t flags;
 	zend_bool b_new;
@@ -4558,7 +4430,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_exportchanges_updatestate)
+static ZEND_FUNCTION(mapi_exportchanges_updatestate)
 {
 	uint32_t result;
 	BINARY state_bin;
@@ -4589,7 +4461,7 @@ ZEND_FUNCTION(mapi_exportchanges_updatestate)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_exportchanges_getchangecount)
+static ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 {
 	zval *pzresource;
 	ICS_EXPORT_CTX *pctx;
@@ -4609,7 +4481,7 @@ ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_importcontentschanges_config)
+static ZEND_FUNCTION(mapi_importcontentschanges_config)
 {
 	long flags;
 	uint32_t result;
@@ -4640,7 +4512,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_config)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
+static ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 {
 	uint32_t result;
 	BINARY state_bin;
@@ -4671,7 +4543,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
+static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 {
 	long flags;
 	uint32_t result;
@@ -4717,7 +4589,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
+static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 {
 	long flags;
 	uint32_t result;
@@ -4757,7 +4629,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
+static ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 {
 	uint32_t result;
 	zval *pzresimport;
@@ -4788,7 +4660,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove)
+static ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove)
 {
 	MAPI_G(hr) = NotImplemented;
 	if (MAPI_G(exceptions_enabled)) {
@@ -4798,7 +4670,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove)
 	RETVAL_FALSE;
 }
 
-ZEND_FUNCTION(mapi_importhierarchychanges_config)
+static ZEND_FUNCTION(mapi_importhierarchychanges_config)
 {
 	long flags;
 	uint32_t result;
@@ -4828,7 +4700,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_config)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
+static ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 {
 	uint32_t result;
 	BINARY state_bin;
@@ -4861,7 +4733,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
+static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 {
 	uint32_t result;
 	zval *pzresprops;
@@ -4894,7 +4766,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
+static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 {
 	long flags;
 	uint32_t result;
@@ -4927,7 +4799,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_wrap_importcontentschanges)
+static ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 {
 	zval *pzobject;
 	ICS_IMPORT_CTX *pctx;
@@ -4951,7 +4823,7 @@ ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
+static ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 {
 	zval *pzobject;
     ICS_IMPORT_CTX *pctx;
@@ -4975,7 +4847,7 @@ ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_inetmapi_imtoinet)
+static ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 {
 	BINARY eml_bin;
 	uint32_t result;
@@ -5016,7 +4888,7 @@ ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_inetmapi_imtomapi)
+static ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 {
 	size_t cbstring = 0;
 	char *szstring;
@@ -5069,7 +4941,7 @@ ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 	MAPI_G(hr) = ecSuccess;
 }    
 
-ZEND_FUNCTION(mapi_icaltomapi)
+static ZEND_FUNCTION(mapi_icaltomapi)
 {
 	size_t cbstring = 0;
 	char *szstring;
@@ -5121,7 +4993,7 @@ static void imtomapi2_proc(INTERNAL_FUNCTION_PARAMETERS, GUID, LONG_ARRAY &);
  * For compatibility reasons, you must check the return value for the value
  * "false" as well.
  */
-ZEND_FUNCTION(mapi_icaltomapi2)
+static ZEND_FUNCTION(mapi_icaltomapi2)
 {
 	zval *resabook, *resfolder;
 	char *icsdata = nullptr;
@@ -5179,7 +5051,7 @@ static void imtomapi2_proc(INTERNAL_FUNCTION_PARAMETERS,
  * For compatibility reasons, you must check the return value for the value
  * "false" as well.
  */
-ZEND_FUNCTION(mapi_vcftomapi2)
+static ZEND_FUNCTION(mapi_vcftomapi2)
 {
 	zval *resfolder;
 	char *vcdata = nullptr;
@@ -5205,7 +5077,7 @@ ZEND_FUNCTION(mapi_vcftomapi2)
 		fld->hsession, msg_handles);
 }
 
-ZEND_FUNCTION(mapi_mapitoical)
+static ZEND_FUNCTION(mapi_mapitoical)
 {
 	BINARY ical_bin;
 	uint32_t result;
@@ -5238,7 +5110,7 @@ ZEND_FUNCTION(mapi_mapitoical)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_vcftomapi)
+static ZEND_FUNCTION(mapi_vcftomapi)
 {
 	size_t cbstring = 0;
 	char *szstring;
@@ -5274,7 +5146,7 @@ ZEND_FUNCTION(mapi_vcftomapi)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_mapitovcf)
+static ZEND_FUNCTION(mapi_mapitovcf)
 {
 	BINARY vcf_bin;
 	uint32_t result;
@@ -5307,7 +5179,7 @@ ZEND_FUNCTION(mapi_mapitovcf)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(mapi_enable_exceptions)
+static ZEND_FUNCTION(mapi_enable_exceptions)
 {
 	zend_string *clsname;
 	
@@ -5326,7 +5198,7 @@ ZEND_FUNCTION(mapi_enable_exceptions)
 	}
 }
 
-ZEND_FUNCTION(mapi_feature)
+static ZEND_FUNCTION(mapi_feature)
 {
 	size_t cbfeature = 0;
 	const char *szfeature;
@@ -5348,12 +5220,12 @@ ZEND_FUNCTION(mapi_feature)
 	}
 }
 
-ZEND_FUNCTION(mapi_msgstore_abortsubmit)
+static ZEND_FUNCTION(mapi_msgstore_abortsubmit)
 {
 	RETVAL_TRUE;
 }
 
-ZEND_FUNCTION(kc_session_save)
+static ZEND_FUNCTION(kc_session_save)
 {
 	zval *pzres;
 	zval *pzoutstr;
@@ -5381,7 +5253,7 @@ ZEND_FUNCTION(kc_session_save)
 	RETVAL_LONG(ecSuccess);
 }
 
-ZEND_FUNCTION(kc_session_restore)
+static ZEND_FUNCTION(kc_session_restore)
 {
 	zval *pzres;
 	zval *pzdata;
@@ -5422,7 +5294,7 @@ ZEND_FUNCTION(kc_session_restore)
 }
 
 
-ZEND_FUNCTION(nsp_getuserinfo)
+static ZEND_FUNCTION(nsp_getuserinfo)
 {
 	char *px500dn;
 	BINARY entryid;
@@ -5453,7 +5325,7 @@ ZEND_FUNCTION(nsp_getuserinfo)
 	MAPI_G(hr) = ecSuccess;
 }
 
-ZEND_FUNCTION(nsp_setuserpasswd)
+static ZEND_FUNCTION(nsp_setuserpasswd)
 {
 	char *username;
 	uint32_t result;
@@ -5476,7 +5348,7 @@ ZEND_FUNCTION(nsp_setuserpasswd)
 	RETVAL_TRUE;
 }
 
-ZEND_FUNCTION(mapi_linkmessage)
+static ZEND_FUNCTION(mapi_linkmessage)
 {
 	uint32_t result;
 	size_t srcheid_size = 0, msgeid_size = 0;
