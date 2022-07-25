@@ -249,7 +249,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	*ppstr_explicit = cu_alloc<char>(256);
 	if (NULL == *ppstr_explicit) {
@@ -282,7 +282,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	if (0 != folder_id) {
 		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
@@ -319,7 +319,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	if (!exmdb_client_get_folder_class_table(plogon->get_dir(), &class_table))
 		return ecError;
@@ -360,7 +360,7 @@ uint32_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	if (plogon->check_private())
+	if (plogon->is_private())
 		return ecNotSupported;
 	pghost->server_count = 1;
 	pghost->cheap_server_count = 1;
@@ -405,7 +405,7 @@ uint32_t rop_publicfolderisghosted(uint64_t folder_id, GHOST_SERVER **ppghost,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		*ppghost = NULL;
 		return ecSuccess;
 	}
@@ -435,7 +435,7 @@ uint32_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
 	memset(plong_term_id, 0, sizeof(LONG_TERM_ID));
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		if (1 != rop_util_get_replid(id)) {
 			return ecInvalidParam;
 		}
@@ -468,7 +468,7 @@ uint32_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 		if (0 != memcmp(&tmp_guid, &plong_term_id->guid, sizeof(GUID))) {
 			return ecInvalidParam;
@@ -506,7 +506,7 @@ uint32_t rop_getperuserlongtermids(const GUID *pguid,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		plong_term_ids->count = 0;
 		return ecSuccess;
 	}
@@ -523,9 +523,7 @@ uint32_t rop_getperuserguid(const LONG_TERM_ID *plong_term_id, GUID *pguid,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	if (plogon->check_private())
-		return ecNotFound;
-	return ecNotSupported;
+	return plogon->is_private() ? ecNotFound : ecNotSupported;
 }
 
 uint32_t rop_readperuserinformation(const LONG_TERM_ID *plong_folder_id,

@@ -73,7 +73,7 @@ std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 
 GUID logon_object::guid() const
 {
-	return check_private() ? rop_util_make_user_guid(account_id) :
+	return is_private() ? rop_util_make_user_guid(account_id) :
 	       rop_util_make_domain_guid(account_id);
 }
 
@@ -303,7 +303,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_NAME;
 		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
@@ -440,7 +440,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 	}
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A: {
-		if (!plogon->check_private())
+		if (!plogon->is_private())
 			return FALSE;
 		auto dispname = cu_alloc<char>(256);
 		*ppvalue = dispname;
@@ -478,7 +478,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		return TRUE;
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A: {
-		bool ok = plogon->check_private() ?
+		bool ok = plogon->is_private() ?
 		          common_util_username_to_essdn(plogon->account, temp_buff, arsizeof(temp_buff)) :
 		          common_util_public_to_essdn(plogon->account, temp_buff, arsizeof(temp_buff));
 		if (!ok)
@@ -501,7 +501,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		return TRUE;
 	}
 	case PR_HIERARCHY_SERVER: {
-		if (plogon->check_private())
+		if (plogon->is_private())
 			return FALSE;
 		common_util_get_domain_server(plogon->account, temp_buff);
 		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
@@ -518,7 +518,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		return TRUE;
 	}
 	case PR_MAILBOX_OWNER_ENTRYID:
-		if (!plogon->check_private())
+		if (!plogon->is_private())
 			return FALSE;
 		*ppvalue = common_util_username_to_addressbook_entryid(
 												plogon->account);
@@ -527,7 +527,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		}
 		return TRUE;
 	case PR_MAILBOX_OWNER_NAME:
-		if (!plogon->check_private())
+		if (!plogon->is_private())
 			return FALSE;
 		if (!common_util_get_user_displayname(plogon->account,
 		    temp_buff, arsizeof(temp_buff)))
@@ -549,7 +549,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		}
 		return TRUE;
 	case PR_MAILBOX_OWNER_NAME_A: {
-		if (!plogon->check_private())
+		if (!plogon->is_private())
 			return FALSE;
 		if (!common_util_get_user_displayname(plogon->account,
 		    temp_buff, arsizeof(temp_buff)))

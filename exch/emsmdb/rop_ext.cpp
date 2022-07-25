@@ -1975,7 +1975,7 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_INVALID_OBJECT;
 		return rop_ext_pull_writeperuserinformation_request(pext,
 		       static_cast<WRITEPERUSERINFORMATION_REQUEST *>(r->ppayload),
-		       plogon->check_private());
+		       plogon->is_private());
 	}
 	case ropOpenFolder:
 		r->ppayload = pext->anew<OPENFOLDER_REQUEST>();
@@ -2221,7 +2221,7 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_INVALID_OBJECT;
 		return rop_ext_pull_setmessagereadflag_request(pext,
 		       static_cast<SETMESSAGEREADFLAG_REQUEST *>(r->ppayload),
-		       plogon->check_private());
+		       plogon->is_private());
 	}
 	case ropOpenAttachment:
 		r->ppayload = pext->anew<OPENATTACHMENT_REQUEST>();
@@ -2664,12 +2664,11 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap.get(), logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
-		if (plogon->check_private())
-			return rop_ext_push_logon_pmb_response(pext,
-			       static_cast<LOGON_PMB_RESPONSE *>(r->ppayload));
-		else
-			return rop_ext_push_logon_pf_response(pext,
-			       static_cast<LOGON_PF_RESPONSE *>(r->ppayload));
+		return plogon->is_private() ?
+		       rop_ext_push_logon_pmb_response(pext,
+		       static_cast<LOGON_PMB_RESPONSE *>(r->ppayload)) :
+		       rop_ext_push_logon_pf_response(pext,
+		       static_cast<LOGON_PF_RESPONSE *>(r->ppayload));
 	}
 	case ropGetReceiveFolder:
 		return rop_ext_push_getreceivefolder_response(pext,

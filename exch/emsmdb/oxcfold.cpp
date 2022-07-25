@@ -37,7 +37,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	if (object_type != OBJECT_TYPE_LOGON && object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
 	replid = rop_util_get_replid(folder_id);
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		if (1 != replid) {
 			return ecInvalidParam;
 		}
@@ -55,7 +55,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		return ecError;
 	if (!b_exist)
 		return ecNotFound;
-	if (!plogon->check_private()) {
+	if (!plogon->is_private()) {
 		if (!exmdb_client_check_folder_deleted(plogon->get_dir(),
 		    folder_id, &b_del))
 			return ecError;
@@ -75,7 +75,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 			return ecError;
 		if (permission == rightsNone) {
 			fid_val = rop_util_get_gc_value(folder_id);
-			if (plogon->check_private()) {
+			if (plogon->is_private()) {
 				if (PRIVATE_FID_ROOT == fid_val ||
 					PRIVATE_FID_IPMSUBTREE == fid_val) {
 					permission = frightsVisible;
@@ -157,7 +157,7 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->check_private() && folder_type == FOLDER_SEARCH)
+	if (!plogon->is_private() && folder_type == FOLDER_SEARCH)
 		return ecNotSupported;
 	if (0 == use_unicode) {
 		if (common_util_convert_string(true, pfolder_name,
@@ -291,7 +291,7 @@ uint32_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	 if (plogon->check_private()) {
+	 if (plogon->is_private()) {
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
 			return ecAccessDenied;
 		}
@@ -322,7 +322,7 @@ uint32_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	BOOL b_fai    = b_normal;
 	BOOL b_sub    = (flags & DEL_FOLDERS) ? TRUE : false;
 	BOOL b_hard   = (flags & DELETE_HARD_DELETE) ? TRUE : false;
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
 		    folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
@@ -370,7 +370,7 @@ uint32_t rop_setsearchcriteria(RESTRICTION *pres,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
@@ -433,7 +433,7 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
@@ -557,7 +557,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 		strcpy(new_name, pnew_name);
 	}
 	auto rpc_info = get_rpc_info();
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
 			return ecAccessDenied;
 		}
@@ -666,7 +666,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 		strcpy(new_name, pnew_name);
 	}
 	auto rpc_info = get_rpc_info();
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		if (PRIVATE_FID_ROOT == rop_util_get_gc_value(folder_id)) {
 			return ecAccessDenied;
 		}
@@ -726,7 +726,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associated,
 		return ecError;
 	BOOL b_fai = want_delete_associated == 0 ? false : TRUE;
 	auto rpc_info = get_rpc_info();
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		/* just like Exchange 2013 or later */
 		return ecNotSupported;
 	auto fid_val = rop_util_get_gc_value(pfolder->folder_id);
@@ -934,7 +934,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
 	b_conversation = FALSE;
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		if (pfolder->folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 		    (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS))
 			b_conversation = TRUE;

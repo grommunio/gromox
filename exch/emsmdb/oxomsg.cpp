@@ -243,7 +243,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
@@ -403,7 +403,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
@@ -452,7 +452,7 @@ uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	paddress_types->count = 2;
 	paddress_types->ppstr = const_cast<char **>(address_types);
@@ -464,9 +464,7 @@ uint32_t rop_setspooler(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->check_private())
-		return ecNotSupported;
-	return ecSuccess;
+	return plogon->is_private() ? ecSuccess : ecNotSupported;
 }
 
 uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
@@ -488,7 +486,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
@@ -548,7 +546,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
@@ -637,7 +635,7 @@ uint32_t rop_gettransportfolder(uint64_t *pfolder_id, LOGMAP *plogmap,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecNullObject;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	*pfolder_id = rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX);
 	return ecSuccess;

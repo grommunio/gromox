@@ -55,7 +55,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
 	if (!tmp_proptags.has(PR_SOURCE_KEY))
 		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
-	if (!pfolder->plogon->check_private())
+	if (!pfolder->plogon->is_private())
 		return TRUE;
 	auto basic_fld = pfolder->folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
 	                 pfolder->folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
@@ -132,7 +132,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag)
 	case PR_IPM_NOTE_ENTRYID:
 	case PR_IPM_TASK_ENTRYID: {
 		auto pfolder = this;
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
@@ -158,7 +158,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	
 	switch (proptag) {
 	case PR_CONTENT_UNREAD: {
-		if (pfolder->plogon->check_private())
+		if (pfolder->plogon->is_private())
 			return false;
 		auto v = cu_alloc<uint32_t>();
 		*outvalue = v;
@@ -245,7 +245,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			pfolder->plogon, *(uint64_t*)pvalue);
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
-		if (pfolder->plogon->check_private()) {
+		if (pfolder->plogon->is_private()) {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PRIVATE_FID_ROOT)) {
 				*outvalue = deconst(&fake_bin);
@@ -282,7 +282,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*outvalue = deconst(&fake_del);
 		return TRUE;
 	case PR_IPM_DRAFTS_ENTRYID:
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
@@ -292,7 +292,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		return TRUE;
 	case PR_IPM_CONTACT_ENTRYID:
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
@@ -302,7 +302,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		return TRUE;
 	case PR_IPM_APPOINTMENT_ENTRYID:
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
@@ -312,7 +312,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		return TRUE;
 	case PR_IPM_JOURNAL_ENTRYID:
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
@@ -322,7 +322,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		return TRUE;
 	case PR_IPM_NOTE_ENTRYID:
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
@@ -332,7 +332,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		return TRUE;
 	case PR_IPM_TASK_ENTRYID:
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
@@ -342,7 +342,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
 	case PR_REM_ONLINE_ENTRYID:
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT)) {
 			return FALSE;
@@ -354,7 +354,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*outvalue = pvalue;
 		return TRUE;
 	case PR_ADDITIONAL_REN_ENTRYIDS: {
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
@@ -411,7 +411,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		return TRUE;
 	}
 	case PR_ADDITIONAL_REN_ENTRYIDS_EX: {
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
@@ -467,7 +467,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		return TRUE;
 	}
 	case PR_FREEBUSY_ENTRYIDS: {
-		if (!pfolder->plogon->check_private())
+		if (!pfolder->plogon->is_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {

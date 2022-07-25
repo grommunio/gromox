@@ -366,7 +366,7 @@ BINARY *common_util_to_folder_entryid(logon_object *plogon, uint64_t folder_id)
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		tmp_bin.cb = 0;
 		tmp_bin.pv = &tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
@@ -416,7 +416,7 @@ BINARY *common_util_calculate_folder_sourcekey(logon_object *plogon, uint64_t fo
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		longid.guid = rop_util_make_user_guid(plogon->account_id);
 	} else {
 		replid = rop_util_get_replid(folder_id);
@@ -448,7 +448,7 @@ BINARY *common_util_to_message_entryid(logon_object *plogon,
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (plogon->check_private()) {
+	if (plogon->is_private()) {
 		tmp_bin.cb = 0;
 		tmp_bin.pv = &tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
@@ -522,7 +522,7 @@ BOOL cu_from_folder_entryid(logon_object *plogon, const BINARY *pbin,
 		return FALSE;	
 	switch (tmp_entryid.folder_type) {
 	case EITLT_PRIVATE_FOLDER: {
-		if (!plogon->check_private())
+		if (!plogon->is_private())
 			return FALSE;
 		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 		if (0 != memcmp(&tmp_entryid.database_guid,
@@ -534,7 +534,7 @@ BOOL cu_from_folder_entryid(logon_object *plogon, const BINARY *pbin,
 		return TRUE;
 	}
 	case EITLT_PUBLIC_FOLDER: {
-		if (plogon->check_private())
+		if (plogon->is_private())
 			return FALSE;
 		auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 		if (0 == memcmp(&tmp_entryid.database_guid,
@@ -573,7 +573,7 @@ BOOL cu_from_message_entryid(logon_object *plogon, const BINARY *pbin,
 	}
 	switch (tmp_entryid.message_type) {
 	case EITLT_PRIVATE_MESSAGE: {
-		if (!plogon->check_private())
+		if (!plogon->is_private())
 			return FALSE;
 		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 		if (0 != memcmp(&tmp_entryid.folder_database_guid,
@@ -587,7 +587,7 @@ BOOL cu_from_message_entryid(logon_object *plogon, const BINARY *pbin,
 		return TRUE;
 	}
 	case EITLT_PUBLIC_MESSAGE: {
-		if (plogon->check_private())
+		if (plogon->is_private())
 			return FALSE;
 		auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 		if (0 == memcmp(&tmp_entryid.folder_database_guid,
@@ -765,7 +765,7 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 	auto plogon = *static_cast<logon_object **>(pparam);
 
 	if (to_guid) {
-		if (plogon->check_private()) {
+		if (plogon->is_private()) {
 			if (1 != *preplid) {
 				return FALSE;
 			}
@@ -779,7 +779,7 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 			}
 		}
 	} else {
-		if (plogon->check_private()) {
+		if (plogon->is_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 			if (0 != memcmp(pguid, &tmp_guid, sizeof(GUID))) {
 				return FALSE;

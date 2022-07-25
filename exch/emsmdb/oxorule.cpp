@@ -114,7 +114,7 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->check_private())
+	if (!plogon->is_private())
 		return ecNotSupported;
 	fid_deferred = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);
 	auto rpc_info = get_rpc_info();

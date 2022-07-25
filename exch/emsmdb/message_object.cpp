@@ -121,7 +121,7 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 			return pmessage;
 	} else {
 		pmessage->folder_id = *(uint64_t*)pparent;
-		if (pmessage->plogon->check_private()) {
+		if (pmessage->plogon->is_private()) {
 			if (!exmdb_client_load_message_instance(plogon->get_dir(),
 			    nullptr, cpid, b_new, pmessage->folder_id, message_id,
 			    &pmessage->instance_id))
@@ -387,7 +387,7 @@ static gxerr_t message_object_save2(message_object *pmessage, bool b_fai,
 	                          *static_cast<uint32_t *>(rv);
 	if (!b_fai && resolve_method == RESOLVE_METHOD_DEFAULT) {
 		MESSAGE_CONTENT *pmsgctnt = nullptr;
-		if (pmessage->plogon->check_private()) {
+		if (pmessage->plogon->is_private()) {
 			if (!exmdb_client_read_message(pmessage->plogon->get_dir(),
 			    nullptr, pmessage->cpid,
 			    pmessage->message_id, &pmsgctnt))
@@ -661,7 +661,7 @@ gxerr_t message_object::save()
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&
-	    !pmessage->plogon->check_private())
+	    !pmessage->plogon->is_private())
 		exmdb_client_rule_new_message(pmessage->plogon->get_dir(),
 			rpc_info.username, pmessage->plogon->get_account(),
 			pmessage->cpid, pmessage->folder_id,
@@ -1501,7 +1501,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	TAGGED_PROPVAL propval_buff[2];
 	
 	auto rpc_info = get_rpc_info();
-	auto username = pmessage->plogon->check_private() ? nullptr : rpc_info.username;
+	auto username = pmessage->plogon->is_private() ? nullptr : rpc_info.username;
 	b_notify = FALSE;
 	*pb_changed = FALSE;
 	switch (read_flag) {
