@@ -21,7 +21,7 @@ extern const char *exmdb_server_get_remote_id();
 void exmdb_server_set_public_username(const char *username);
 extern const char *exmdb_server_get_public_username();
 extern ALLOC_CONTEXT *exmdb_server_get_alloc_context();
-extern BOOL exmdb_server_check_private();
+extern bool exmdb_server_is_private();
 extern const char *exmdb_server_get_dir();
 void exmdb_server_set_dir(const char *dir);
 extern int exmdb_server_get_account_id();

@@ -87,7 +87,7 @@ const char* exmdb_server_get_public_username()
 
 /* can not be called in local rpc thread without
 	invoking exmdb_server_build_environment before! */
-BOOL exmdb_server_check_private()
+bool exmdb_server_is_private()
 {
 	return g_env_key->b_private;
 }

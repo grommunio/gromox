@@ -331,7 +331,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	pinstance->cpid = cpid;
 	mid_val = rop_util_get_gc_value(message_id);
 	pinstance->type = INSTANCE_TYPE_MESSAGE;
-	if (!exmdb_server_check_private()) {
+	if (!exmdb_server_is_private()) {
 		pinstance->username = strdup(username);
 		if (NULL == pinstance->username) {
 			free(pinstance);
@@ -370,7 +370,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		*pinstance_id = instance_id;
 		return TRUE;
 	}
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
@@ -1608,7 +1608,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	}
 	pinstance->b_new = FALSE;
 	folder_id = rop_util_make_eid_ex(1, pinstance->folder_id);
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(pinstance->username);
 	pdb.reset();
 	common_util_set_tls_var(pmsgctnt);

@@ -97,7 +97,7 @@ BOOL exmdb_server_get_named_propnames(const char *dir,
 BOOL exmdb_server_get_mapping_guid(const char *dir,
 	uint16_t replid, BOOL *pb_found, GUID *pguid)
 {
-	if (exmdb_server_check_private())
+	if (exmdb_server_is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -112,7 +112,7 @@ BOOL exmdb_server_get_mapping_guid(const char *dir,
 BOOL exmdb_server_get_mapping_replid(const char *dir,
 	GUID guid, BOOL *pb_found, uint16_t *preplid)
 {
-	if (exmdb_server_check_private())
+	if (exmdb_server_is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -197,7 +197,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 {
 	char sql_string[128];
 	
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -347,7 +347,7 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	pnsub->b_whole = b_whole;
 	if (0 == folder_id) {
 		pnsub->folder_id = 0;
-	} else if (exmdb_server_check_private()) {
+	} else if (exmdb_server_is_private()) {
 		pnsub->folder_id = rop_util_get_gc_value(folder_id);
 	} else {
 		replid = rop_util_get_replid(folder_id);

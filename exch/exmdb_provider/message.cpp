@@ -162,7 +162,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		fid_val, dst_val, parent_fid, mid_val);
 	b_update = TRUE;
 	if (b_move) {
-		if (exmdb_server_check_private()) {
+		if (exmdb_server_is_private()) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
 			        " WHERE message_id=%llu", LLU{mid_val});
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
@@ -193,7 +193,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		tmp_propvals[0].pvalue = &tmp_cn;
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
 		tmp_propvals[1].pvalue = cu_xid_to_bin({
-			exmdb_server_check_private() ?
+			exmdb_server_is_private() ?
 				rop_util_make_user_guid(account_id) :
 				rop_util_make_domain_guid(account_id),
 			change_num});
@@ -291,7 +291,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	}
 	b_update = TRUE;
 	if (!b_copy) {
-		if (exmdb_server_check_private()) {
+		if (exmdb_server_is_private()) {
 			strcpy(sql_string, "DELETE FROM messages WHERE message_id=?");
 			b_update = FALSE;
 		} else {
@@ -374,7 +374,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 				goto MVCP_FAILURE;
 			}
 			sqlite3_reset(pstmt1);
-			if (!exmdb_server_check_private()) {
+			if (!exmdb_server_is_private()) {
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 				        " WHERE message_id=%llu", LLU{tmp_val});
 				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
@@ -399,7 +399,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		tmp_propvals[0].pvalue = &tmp_cn;
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
 		tmp_propvals[1].pvalue = cu_xid_to_bin({
-			exmdb_server_check_private() ?
+			exmdb_server_is_private() ?
 				rop_util_make_user_guid(account_id) :
 				rop_util_make_domain_guid(account_id),
 			change_num});
@@ -468,7 +468,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	*pb_partial = FALSE;
-	if (exmdb_server_check_private())
+	if (exmdb_server_is_private())
 		b_hard = TRUE;
 	src_val = rop_util_get_gc_value(folder_id);
 	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type))
@@ -582,7 +582,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	tmp_propvals[0].pvalue = &tmp_cn;
 	tmp_propvals[1].proptag = PR_CHANGE_KEY;
 	tmp_propvals[1].pvalue = cu_xid_to_bin({
-		exmdb_server_check_private() ?
+		exmdb_server_is_private() ?
 			rop_util_make_user_guid(account_id) :
 			rop_util_make_domain_guid(account_id),
 		change_num});
@@ -853,7 +853,7 @@ BOOL exmdb_server_check_message_deleted(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
-	if (exmdb_server_check_private())
+	if (exmdb_server_is_private())
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 		          "FROM messages WHERE message_id=%llu", LLU{mid_val});
 	else
@@ -864,7 +864,7 @@ BOOL exmdb_server_check_message_deleted(const char *dir,
 		return FALSE;
 	}
 	*pb_del = sqlite3_step(pstmt) != SQLITE_ROW ||
-	          (!exmdb_server_check_private() &&
+	          (!exmdb_server_is_private() &&
 	          sqlite3_column_int64(pstmt, 0) != 0) ? TRUE : false;
 	return TRUE;
 }
@@ -887,7 +887,7 @@ BOOL exmdb_server_get_message_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	return cu_get_properties(db_table::msg_props,
@@ -909,7 +909,7 @@ BOOL exmdb_server_set_message_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	mid_val = rop_util_get_gc_value(message_id);
@@ -990,7 +990,7 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!common_util_allocate_cn(pdb->psqlite, &read_cn))
 		return false;
-	if (!exmdb_server_check_private()) {
+	if (!exmdb_server_is_private()) {
 		exmdb_server_set_public_username(username);
 		auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 		common_util_set_message_read(pdb->psqlite,
@@ -1363,7 +1363,7 @@ BOOL exmdb_server_link_message(const char *dir, uint32_t cpid,
 	char sql_string[256];
 	uint32_t folder_type;
 	
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1407,7 +1407,7 @@ BOOL exmdb_server_unlink_message(const char *dir,
 	uint64_t mid_val;
 	char sql_string[256];
 	
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1432,7 +1432,7 @@ BOOL exmdb_server_set_message_timer(const char *dir,
 {
 	char sql_string[256];
 	
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1452,7 +1452,7 @@ BOOL exmdb_server_get_message_timer(const char *dir,
 	uint64_t mid_val;
 	char sql_string[256];
 	
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1933,7 +1933,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return FALSE;
 		if (!b_embedded && !b_cn) {
 			XID tmp_xid;
-			if (exmdb_server_check_private()) {
+			if (exmdb_server_is_private()) {
 				if (!common_util_get_id_from_username(account, &tmp_int))
 					return FALSE;
 				tmp_xid.guid = rop_util_make_user_guid(tmp_int);
@@ -1964,7 +1964,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	if (!b_embedded) {
 		auto pbool = pproplist->get<const uint8_t>(PR_ASSOCIATED);
 		is_associated = pbool != nullptr && *pbool;
-		snprintf(sql_string, arsizeof(sql_string), exmdb_server_check_private() ?
+		snprintf(sql_string, arsizeof(sql_string), exmdb_server_is_private() ?
 		         "SELECT is_search FROM folders WHERE folder_id=%llu" :
 		         "SELECT is_deleted FROM folders WHERE folder_id=%llu",
 		         LLU{parent_id});
@@ -2272,7 +2272,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 {
 	char sql_string[256];
 	
-	if (exmdb_server_check_private())
+	if (exmdb_server_is_private())
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 				"FROM messages WHERE parent_fid=%llu AND "
 				"is_associated=1", LLU{folder_id});
@@ -2498,7 +2498,7 @@ static BOOL message_make_deferred_error_message(const char *username,
 	uint64_t nt_time;
 	MESSAGE_CONTENT *pmsg;
 	
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		return TRUE;
 	pmsg = message_content_init();
 	if (NULL == pmsg) {
@@ -3132,7 +3132,7 @@ static BOOL message_make_deferred_action_messages(const char *username,
 		return TRUE;
 	const char *provider;
 	
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		return TRUE;
 	if (dam_list.size() > MAX_DAMS_PER_RULE_FOLDER) {
 		common_util_log_info(LV_NOTICE, "user=%s host=unknown  "
@@ -3199,7 +3199,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	int tmp_id = 0, tmp_id1 = 0;
-	auto is_pvt = exmdb_server_check_private();
+	auto is_pvt = exmdb_server_is_private();
 	if (is_pvt) {
 		if (!common_util_get_id_from_username(account, &tmp_id))
 			return ecError;
@@ -3274,7 +3274,7 @@ static ec_error_t op_move_across(uint64_t folder_id, uint64_t message_id,
     const RULE_NODE *prnode, const ACTION_BLOCK &block,
     std::list<DAM_NODE> &dam_list) try
 {
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		return ecSuccess;
 	dam_list.emplace_back();
 	auto pdnode = &dam_list.back();
@@ -3313,7 +3313,7 @@ static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
     const ACTION_BLOCK &block, const RULE_NODE *prnode,
     std::list<DAM_NODE> &dam_list) try
 {
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		return ecSuccess;
 	dam_list.emplace_back();
 	auto pdnode = &dam_list.back();
@@ -3332,7 +3332,7 @@ static ec_error_t op_forward(const char *from_address, const char *account,
     const char *pdigest, seen_list &seen, const ACTION_BLOCK &block,
     size_t rule_idx, const RULE_NODE *prnode)
 {
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		return ecSuccess;
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
@@ -3352,7 +3352,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
     size_t rule_idx, const RULE_NODE *prnode)
 {
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
-	if (!exmdb_server_check_private() ||
+	if (!exmdb_server_is_private() ||
 	    pdigest == nullptr || pfwddlgt->count == 0)
 		return ecSuccess;
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
@@ -3519,7 +3519,7 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 			LLU{message_id}, LLU{folder_id});
 		break;
 	case OP_MARK_AS_READ: {
-		if (!exmdb_server_check_private())
+		if (!exmdb_server_is_private())
 			return ecSuccess;
 		TAGGED_PROPVAL propval;
 		propval.proptag = PR_READ;
@@ -3614,7 +3614,7 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
     BOOL &b_del)
 {
 	auto pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(block.pdata);
-	auto ec = exmdb_server_check_private() ?
+	auto ec = exmdb_server_is_private() ?
 	          opx_move_private(account, psqlite, prnode, pextmvcp) :
 	          opx_move_public(account, psqlite, prnode, pextmvcp);
 	if (ec != ecSuccess)
@@ -3630,7 +3630,7 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 	if (!b_exist)
 		return message_disable_rule(psqlite, TRUE, prnode->id);
 	int tmp_id = 0, tmp_id1 = 0;
-	auto is_pvt = exmdb_server_check_private();
+	auto is_pvt = exmdb_server_is_private();
 	if (is_pvt) {
 		if (!common_util_get_id_from_username(account, &tmp_id))
 			return ecError;
@@ -3699,7 +3699,7 @@ static ec_error_t opx_reply(const char *from_address, const char *account,
     const RULE_NODE *prnode)
 {
 	auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
-	if (exmdb_server_check_private()) {
+	if (exmdb_server_is_private()) {
 		int tmp_id = 0;
 		if (!common_util_get_id_from_username(account, &tmp_id))
 			return ecSuccess;
@@ -3735,7 +3735,7 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
     const char *pdigest, const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode)
 {
 	auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
-	if (!exmdb_server_check_private() ||
+	if (!exmdb_server_is_private() ||
 	    pdigest == nullptr || pextfwddlgt->count == 0)
 		return ecSuccess;
 	if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
@@ -3898,7 +3898,7 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 			LLU{message_id}, LLU{folder_id});
 		break;
 	case OP_MARK_AS_READ: {
-		if (!exmdb_server_check_private())
+		if (!exmdb_server_is_private())
 			return ecSuccess;
 		TAGGED_PROPVAL propval;
 		propval.proptag = PR_READ;
@@ -4078,7 +4078,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 				break;
 		}
 	}
-	if (exmdb_server_check_private()) {
+	if (exmdb_server_is_private()) {
 		paccount = account;
 	} else {
 		paccount = strchr(account, '@');
@@ -4095,7 +4095,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		*presult = static_cast<uint32_t>(delivery_message_result::mailbox_full);
 		return TRUE;
 	}
-	if (exmdb_server_check_private()) {
+	if (exmdb_server_is_private()) {
 		void *pvalue;
 		if (!cu_get_property(db_table::store_props, 0, 0,
 		    pdb->psqlite, PR_OOF_STATE, &pvalue))
@@ -4116,7 +4116,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		return false;
 	}
 	tmp_msg = *pmsg;
-	if (exmdb_server_check_private()) {
+	if (exmdb_server_is_private()) {
 		tmp_msg.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsg->proplist.count + 15);
 		if (NULL == tmp_msg.proplist.ppropval) {
 			return FALSE;
@@ -4313,7 +4313,7 @@ BOOL exmdb_server_read_message(const char *dir, const char *username,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	mid_val = rop_util_get_gc_value(message_id);
@@ -4343,7 +4343,7 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto is_pvt = exmdb_server_check_private();
+	auto is_pvt = exmdb_server_is_private();
 	if (!is_pvt)
 		exmdb_server_set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });

@@ -172,7 +172,7 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 {
 	if (g_exmdb_schema_upgrades != EXMDB_UPGRADE_YES)
 		return 0;
-	auto is_pvt = exmdb_server_check_private();
+	auto is_pvt = exmdb_server_is_private();
 	auto kind = is_pvt ? sqlite_kind::pvt : sqlite_kind::pub;
 	auto recent = dbop_sqlite_recentversion(kind);
 	auto current = dbop_sqlite_schemaversion(db, kind);
@@ -273,7 +273,7 @@ db_item_ptr db_engine_get_db(const char *path)
 		snprintf(sql_string, sizeof(sql_string), "PRAGMA mmap_size=%llu", LLU{g_mmap_size});
 		gx_sql_exec(pdb->psqlite, sql_string);
 	}
-	if (exmdb_server_check_private())
+	if (exmdb_server_is_private())
 		db_engine_load_dynamic_list(pdb);
 	return db_item_ptr(pdb);
 }

@@ -738,7 +738,7 @@ static BOOL common_util_check_subfolders(
 {
 	char sql_string[80];
 	
-	if (exmdb_server_check_private())
+	if (exmdb_server_is_private())
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
 		          "folders WHERE parent_id=%llu", LLU{folder_id});
 	else
@@ -754,13 +754,12 @@ static char* common_util_calculate_folder_path(
 {
 	int len;
 	int len1;
-	BOOL b_private;
 	uint64_t tmp_fid;
 	char sql_string[128], temp_path[4096]{};
 	
 	len = 0;
 	tmp_fid = folder_id;
-	b_private = exmdb_server_check_private();
+	auto b_private = exmdb_server_is_private();
 	while (true) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM"
 				" folder_properties WHERE proptag=%u AND "
@@ -861,7 +860,7 @@ static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 			"search_result.message_id=messages.message_id"
 			" AND messages.is_associated=%u",
 			LLU{folder_id}, !!b_associated);
-	else if (exmdb_server_check_private())
+	else if (exmdb_server_is_private())
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu "
 			"AND is_associated=%u", LLU{folder_id}, !!b_associated);
@@ -881,7 +880,7 @@ uint32_t common_util_get_folder_unread_count(
 	uint32_t folder_type;
 	char sql_string[220];
 	
-	if (exmdb_server_check_private()) {
+	if (exmdb_server_is_private()) {
 		if (common_util_get_folder_type(psqlite, folder_id, &folder_type) &&
 		    folder_type == FOLDER_SEARCH)
 			gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
@@ -986,7 +985,7 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
 {
 	char sql_string[128];
 	
-	if (!exmdb_server_check_private()) {
+	if (!exmdb_server_is_private()) {
 		*pfolder_type = folder_id == PUBLIC_FID_ROOT ? FOLDER_ROOT : FOLDER_GENERIC;
 		return TRUE;
 	}
@@ -1034,7 +1033,7 @@ static uint32_t common_util_get_folder_flags(
 		folder_flags |= folder_type == FOLDER_SEARCH ? FOLDER_FLAGS_SEARCH : FOLDER_FLAGS_NORMAL;
 	if (common_util_check_folder_rules(psqlite, folder_id))
 		folder_flags |= FOLDER_FLAGS_RULES;
-	if (exmdb_server_check_private()) {
+	if (exmdb_server_is_private()) {
 		if (common_util_check_descendant(psqlite, folder_id,
 		    PRIVATE_FID_IPMSUBTREE, &b_included) && b_included)
 			folder_flags |= FOLDER_FLAGS_IPM;
@@ -1134,7 +1133,7 @@ static BINARY* common_util_to_folder_entryid(
 	if (account_id < 0)
 		return NULL;
 	tmp_entryid.flags = 0;
-	if (exmdb_server_check_private()) {
+	if (exmdb_server_is_private()) {
 		auto pbin = common_util_get_mailbox_guid(psqlite);
 		if (pbin == nullptr)
 			return NULL;
@@ -1181,7 +1180,7 @@ static BINARY* common_util_to_message_entryid(
 	if (account_id < 0)
 		return NULL;
 	tmp_entryid.flags = 0;
-	if (exmdb_server_check_private()) {
+	if (exmdb_server_is_private()) {
 		auto pbin = common_util_get_mailbox_guid(psqlite);
 		if (pbin == nullptr)
 			return NULL;
@@ -1259,7 +1258,7 @@ static BOOL common_util_check_message_read(
 {
 	char sql_string[128];
 	
-	if (!exmdb_server_check_private()) {
+	if (!exmdb_server_is_private()) {
 		auto username = exmdb_pf_read_per_user ? exmdb_server_get_public_username() : "";
 		if (username == nullptr)
 			return FALSE;
@@ -1840,7 +1839,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = exmdb_pf_read_states == 0 && !exmdb_server_check_private() ?
+		*v = exmdb_pf_read_states == 0 && !exmdb_server_is_private() ?
 		     true : !!common_util_check_message_read(db, id);
 		return GP_ADV;
 	}
@@ -1872,7 +1871,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		if (!common_util_get_message_flags(db, id, false,
 		    reinterpret_cast<uint32_t **>(&pv.pvalue)))
 			return GP_ERR;
-		if (exmdb_pf_read_states == 0 && !exmdb_server_check_private())
+		if (exmdb_pf_read_states == 0 && !exmdb_server_is_private())
 			*static_cast<uint32_t *>(pv.pvalue) |= MSGFLAG_READ;
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PR_SUBJECT:
@@ -2521,7 +2520,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 			" AND proptag=%u", MSGFLAG_EVERREAD,
 		        LLU{message_id}, PR_MESSAGE_FLAGS);
 	gx_sql_exec(psqlite, sql_string);
-	if (exmdb_server_check_private()) {
+	if (exmdb_server_is_private()) {
 		if (!is_read)
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
 				"read_state=0 WHERE message_id=%llu", LLU{message_id});
@@ -3804,7 +3803,6 @@ BINARY* common_util_username_to_addressbook_entryid(
 BOOL common_util_check_descendant(sqlite3 *psqlite,
 	uint64_t inner_fid, uint64_t outer_fid, BOOL *pb_included)
 {
-	BOOL b_private;
 	uint64_t folder_id;
 	
 	if (inner_fid == outer_fid) {
@@ -3812,7 +3810,7 @@ BOOL common_util_check_descendant(sqlite3 *psqlite,
 		return TRUE;
 	}
 	folder_id = inner_fid;
-	b_private = exmdb_server_check_private();
+	auto b_private = exmdb_server_is_private();
 	auto pstmt = gx_sql_prep(psqlite, "SELECT parent_id"
 	             " FROM folders WHERE folder_id=?");
 	if (pstmt == nullptr)
@@ -4492,7 +4490,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	char mid_string[128];
 	char mid_string1[128];
 	uint32_t message_size;
-	auto b_private = exmdb_server_check_private();
+	auto b_private = exmdb_server_is_private();
 	
 	if (!b_embedded) {
 		if (*pdst_mid == 0 &&
@@ -4692,7 +4690,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		return FALSE;
 	propval_buff[0].proptag = PR_CHANGE_KEY;
 	propval_buff[0].pvalue = cu_xid_to_bin({
-		exmdb_server_check_private() ?
+		exmdb_server_is_private() ?
 			rop_util_make_user_guid(account_id) :
 			rop_util_make_domain_guid(account_id),
 		change_num});

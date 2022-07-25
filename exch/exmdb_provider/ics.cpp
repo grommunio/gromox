@@ -155,7 +155,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	*pfai_total = 0;
 	*pnormal_count = 0;
 	*pnormal_total = 0;
-	auto b_private = exmdb_server_check_private();
+	auto b_private = exmdb_server_is_private();
 
 	/* Setup of scratch space db */
 	if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
@@ -661,7 +661,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 
 	/* Query section 1 */
 	{
-	auto stm_select_fld = gx_sql_prep(pdb->psqlite, exmdb_server_check_private() ?
+	auto stm_select_fld = gx_sql_prep(pdb->psqlite, exmdb_server_is_private() ?
 	                      "SELECT folder_id, change_number FROM folders WHERE parent_id=?" :
 	                      "SELECT folder_id, change_number FROM folders WHERE parent_id=? AND is_deleted=0");
 	if (stm_select_fld == nullptr)

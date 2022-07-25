@@ -141,7 +141,7 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	uint32_t permission;
 	char sql_string[256];
 	
-	if (!exmdb_server_check_private()) {
+	if (!exmdb_server_is_private()) {
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT folder_id FROM"
 		         " folders WHERE parent_id=%llu AND is_deleted=%u",
 		         LLU{folder_id}, !!(table_flags & TABLE_FLAG_SOFTDELETES));
@@ -213,7 +213,7 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -311,7 +311,7 @@ BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (exmdb_server_check_private())
+	if (exmdb_server_is_private())
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu AND "
 			"is_associated=%u", LLU{fid_val}, !!b_fai);
@@ -634,7 +634,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		return FALSE;	
 	}
 	b_search = FALSE;
-	if (!exmdb_server_check_private()) {
+	if (!exmdb_server_is_private()) {
 		exmdb_server_set_public_username(username);
 	} else {
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT is_search FROM"
@@ -733,7 +733,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	ptnode->table_flags = table_flags;
 	ptnode->b_search = b_search;
 	ptnode->cpid = cpid;
-	if (!exmdb_server_check_private()) {
+	if (!exmdb_server_is_private()) {
 		ptnode->username = strdup(username);
 		if (NULL == ptnode->username) {
 			return false;
@@ -877,7 +877,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		if (pstmt1 == nullptr)
 			return false;
 	}
-	if (exmdb_server_check_private()) {
+	if (exmdb_server_is_private()) {
 		if ((table_flags & TABLE_FLAG_SOFTDELETES) ||
 		    (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION)) {
 			strcpy(sql_string, "SELECT message_id FROM messages WHERE 0");
@@ -1940,7 +1940,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 	if (NULL == pnode) {
 		return TRUE;
 	}
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	ptnode = (TABLE_NODE*)pnode->pdata;
@@ -2740,7 +2740,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	ppropvals->count = 0;
@@ -3006,7 +3006,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		return TRUE;
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
-	if (!exmdb_server_check_private())
+	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_1 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
 	if (TABLE_TYPE_HIERARCHY == ptnode->type) {
