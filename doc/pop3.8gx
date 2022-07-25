@@ -145,12 +145,6 @@ To inhibit the switch, assign the empty value.
 .br
 Default: \fIgromox\fP
 .TP
-\fBservice_plugin_ignore_errors\fP
-If set to yes, service plugins that fail to load on startup are ignored. If set
-to no, the daemon will exit if any plugin cannot be loaded.
-.br
-Default: \fIno\fP
-.TP
 \fBstate_path\fP
 Directory for runtime variadic data.
 .br

@@ -46,11 +46,5 @@ conversation function, it will attempt to retrieve the password that way, and
 in doing so, will show this label just ahead of the nonechoing password prompt.
 .br
 Default: \fIPassword: \fP
-.TP
-\fBservice_plugin_ignore_errors\fP
-If set to yes, service plugins that fail to load on startup are ignored. If set
-to no, the daemon will exit if any plugin cannot be loaded.
-.br
-Default: \fIno\fP
 .SH See also
 \fBgromox\fP(7)

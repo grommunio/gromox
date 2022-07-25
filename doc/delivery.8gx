@@ -51,22 +51,10 @@ to an SMTP service (e.g. inbox rules that do forwarding).
 .br
 Default: (system hostname)
 .TP
-\fBmpc_plugin_ignore_errors\fP
-If set to yes, MPC plugins that fail to load on startup are ignored. If set to
-no, the daemon will exit if any plugin cannot be loaded.
-.br
-Default: \fIno\fP
-.TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.
 .br
 Default: \fIgromox\fP
-.TP
-\fBservice_plugin_ignore_errors\fP
-If set to yes, service plugins that fail to load on startup are ignored. If set
-to no, the daemon will exit if any plugin cannot be loaded.
-.br
-Default: \fIno\fP
 .TP
 \fBstate_path\fP
 Directory for runtime variadic data.

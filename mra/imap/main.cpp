@@ -73,7 +73,6 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"listen_port", "imap_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "imap_listen_tls_port", CFG_ALIAS},
 	{"running_identity", "gromox"},
-	{"service_plugin_ignore_errors", "false", CFG_BOOL},
 	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "imap_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "imap_thread_init_num", CFG_ALIAS},
@@ -260,9 +259,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins),
-		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
-		context_num});
+		std::move(g_dfl_svc_plugins), false, context_num});
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (service_run_early() != 0) {

@@ -59,7 +59,6 @@ static HPM_PLUGIN *g_cur_plugin;
 static std::list<HPM_PLUGIN> g_plugin_list;
 static HPM_CONTEXT *g_context_list;
 static std::vector<std::string> g_plugin_names;
-static bool g_ign_loaderr;
 
 void hpm_processor_init(int context_num, const char *plugins_path,
     std::vector<std::string> &&names, uint64_t cache_size, uint64_t max_size,
@@ -70,7 +69,6 @@ void hpm_processor_init(int context_num, const char *plugins_path,
 	g_plugin_names = std::move(names);
 	g_cache_size = cache_size;
 	g_max_size = max_size;
-	g_ign_loaderr = ignerr;
 }
 
 
@@ -369,7 +367,7 @@ int hpm_processor_run()
 	memset(g_context_list, 0, sizeof(HPM_CONTEXT)*g_context_num);
 	for (const auto &i : g_plugin_names) {
 		int ret = hpm_processor_load_library(i.c_str());
-		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
+		if (ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
 	return 0;

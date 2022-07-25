@@ -72,7 +72,6 @@ static SVC_PLUG_ENTITY *g_cur_plug;
 static unsigned int g_context_num;
 static std::vector<std::string> g_plugin_names;
 static const char *g_program_identifier;
-static bool g_ign_loaderr;
 static SVC_PLUG_ENTITY g_system_image;
 
 static const char *service_get_prog_id() { return g_program_identifier; }
@@ -89,7 +88,6 @@ void service_init(service_init_param &&parm)
 	gx_strlcpy(g_data_dir, parm.data_dir, sizeof(g_data_dir));
 	gx_strlcpy(g_state_dir, parm.state_dir, sizeof(g_state_dir));
 	g_plugin_names = std::move(parm.plugin_list);
-	g_ign_loaderr = parm.plugin_ignloaderr;
 	g_program_identifier = parm.prog_id;
 }
 
@@ -107,8 +105,6 @@ int service_run_early()
 			g_list_plug.pop_back();
 		}
 		g_cur_plug = nullptr;
-		if (g_ign_loaderr)
-			continue;
 		service_stop();
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
@@ -129,8 +125,6 @@ int service_run()
 		        g_cur_plug->file_name.c_str());
 		it = g_list_plug.erase(it);
 		g_cur_plug = nullptr;
-		if (g_ign_loaderr)
-			continue;
 		service_stop();
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}

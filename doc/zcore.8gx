@@ -87,12 +87,6 @@ Default: \fI10\fP
 \fBseparator_for_bounce\fP
 Default: \fI;\fP
 .TP
-\fBservice_plugin_ignore_errors\fP
-If set to yes, service plugins that fail to load on startup are ignored. If set
-to no, the daemon will exit if any plugin cannot be loaded.
-.br
-Default: \fIno\fP
-.TP
 \fBsmtp_server_ip\fP
 SMTP server hostname or address to contact for outgoing mail.
 .br

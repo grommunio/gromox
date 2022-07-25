@@ -87,7 +87,6 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"fastcgi_max_size", "4M", CFG_SIZE, "64K"},
 	{"hpm_cache_size", "512K", CFG_SIZE, "64K"},
 	{"hpm_max_size", "4M", CFG_SIZE, "64K"},
-	{"hpm_plugin_ignore_errors", "false", CFG_BOOL},
 	{"http_auth_times", "10", CFG_SIZE, "1"},
 	{"http_conn_timeout", "3min", CFG_TIME, "30s"},
 	{"http_debug", "0"},
@@ -101,10 +100,8 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"listen_port", "http_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "http_listen_tls_port", CFG_ALIAS},
 	{"msrpc_debug", "0"},
-	{"proc_plugin_ignore_errors", "false", CFG_BOOL},
 	{"request_max_mem", "4M", CFG_SIZE, "1M"},
 	{"running_identity", "gromox"},
-	{"service_plugin_ignore_errors", "false", CFG_BOOL},
 	{"state_path", PKGSTATEDIR},
 	{"tcp_max_segment", "0", CFG_SIZE},
 	{"thread_charge_num", "http_thread_charge_num", CFG_ALIAS},
@@ -305,7 +302,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
 		std::move(g_dfl_svc_plugins),
-		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
+		false,
 		context_num, "http"});
 	auto cleanup_6 = make_scope_exit(service_stop);
 	if (!service_register_service("ndr_stack_alloc",
@@ -343,8 +340,7 @@ int main(int argc, const char **argv) try
 	                     "http.cfg:context_num,context_average_mem");
 	pdu_processor_init(context_num, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
-		PKGLIBDIR, std::move(g_dfl_proc_plugins),
-		parse_bool(g_config_file->get_value("proc_plugin_ignore_errors")));
+		PKGLIBDIR, std::move(g_dfl_proc_plugins), false);
 	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 	printf("---------------------------- proc plugins begin "
 		   "----------------------------\n");
@@ -360,7 +356,7 @@ int main(int argc, const char **argv) try
 
 	hpm_processor_init(context_num, PKGLIBDIR,
 		std::move(g_dfl_hpm_plugins), hpm_cache_size, hpm_max_size,
-		parse_bool(g_config_file->get_value("hpm_plugin_ignore_errors")));
+		false);
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 	printf("---------------------------- hpm plugins begin "
 		   "----------------------------\n");

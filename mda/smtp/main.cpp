@@ -68,7 +68,6 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"listen_ssl_port", "lda_listen_tls_port", CFG_ALIAS},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"running_identity", "gromox"},
-	{"service_plugin_ignore_errors", "false", CFG_BOOL},
 	{"smtp_auth_times", "3", CFG_SIZE, "1"},
 	{"smtp_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"smtp_force_starttls", "false", CFG_BOOL},
@@ -274,9 +273,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins),
-		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
-		scfg.context_num});
+		std::move(g_dfl_svc_plugins), false, scfg.context_num});
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (service_run_early() != 0) {

@@ -121,7 +121,6 @@ static PROC_PLUGIN *g_cur_plugin;
 static std::list<PROC_PLUGIN> g_plugin_list;
 static std::mutex g_list_lock, g_async_lock;
 static std::list<DCERPC_ENDPOINT> g_endpoint_list;
-static bool g_ign_loaderr;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
@@ -223,7 +222,6 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
 	g_header_signing = header_signing;
 	gx_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
 	g_plugin_names = std::move(names);
-	g_ign_loaderr = ignerr;
 }
 
 int pdu_processor_run()
@@ -249,7 +247,7 @@ int pdu_processor_run()
 	}
 	for (const auto &i : g_plugin_names) {
 		int ret = pdu_processor_load_library(i.c_str());
-		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
+		if (ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
 	return 0;

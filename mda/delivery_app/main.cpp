@@ -55,7 +55,6 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 	{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
 	{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
 	{"dequeue_path", PKGSTATEQUEUEDIR},
-	{"mpc_plugin_ignore_errors", "false", CFG_BOOL},
 	{"running_identity", "gromox"},
 	{"state_path", PKGSTATEDIR},
 	{"work_threads_min", "16", CFG_SIZE, "1"},
@@ -147,8 +146,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins),
-		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
+		std::move(g_dfl_svc_plugins), false,
 		threads_max + free_contexts});
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
@@ -184,8 +182,7 @@ int main(int argc, const char **argv) try
 
 	transporter_init(PKGLIBDIR,
 		std::move(g_dfl_mpc_plugins), threads_min, threads_max,
-		free_contexts, mime_ratio,
-		parse_bool(g_config_file->get_value("mpc_plugin_ignore_errors")));
+		free_contexts, mime_ratio, false);
 
 	printf("--------------------------- mpc plugins begin"
 		"---------------------------\n");

@@ -126,7 +126,6 @@ static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
 static std::unique_ptr<FREE_CONTEXT[]> g_free_ptr;
 static HOOK_PLUG_ENTITY *g_cur_lib;
 static std::unique_ptr<CIRCLE_NODE[]> g_circles_ptr;
-static bool g_ign_loaderr;
 
 static void transporter_collect_resource();
 static void transporter_collect_hooks();
@@ -184,7 +183,6 @@ void transporter_init(const char *path, std::vector<std::string> &&names,
 	g_threads_max = threads_max;
 	g_free_num = free_num;
 	g_mime_num = mime_radito*(threads_max + free_num);
-	g_ign_loaderr = ignerr;
 	single_list_init(&g_free_list);
 	double_list_init(&g_hook_list);
 	double_list_init(&g_lib_list);
@@ -261,7 +259,7 @@ int transporter_run()
 
 	for (const auto &i : g_plugin_names) {
 		int ret = transporter_load_library(i.c_str());
-		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK) {
+		if (ret != PLUGIN_LOAD_OK) {
 			transporter_collect_hooks();
 			transporter_collect_resource();
 			return -7;

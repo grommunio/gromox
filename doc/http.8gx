@@ -104,12 +104,6 @@ value, the request is rejected.
 .br
 Default: \fI4M\fP
 .TP
-\fBhpm_plugin_ignore_errors\fP
-If set to yes, HTTP processing modules that fail to load on startup are
-ignored. If set to no, the daemon will exit if any plugin cannot be loaded.
-.br
-Default: \fIno\fP
-.TP
 \fBhttp_auth_times\fP
 The number of login tries a user is allowed before the account is blocked.
 .br
@@ -180,12 +174,6 @@ all RPCs.
 .br
 Default: \fI0\fP
 .TP
-\fBproc_plugin_ignore_errors\fP
-If set to yes, processor plugins that fail to load on startup are ignored. If
-set to no, the daemon will exit if any plugin cannot be loaded.
-.br
-Default: \fIno\fP
-.TP
 \fBrequest_max_mem\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed
 (C706 §12.6.3.7, MS-RPCE v33 §2.2.2.6).
@@ -201,12 +189,6 @@ An unprivileged user account to switch the process to after startup.
 To inhibit the switch, assign the empty value.
 .br
 Default: \fIgromox\fP
-.TP
-\fBservice_plugin_ignore_errors\fP
-If set to yes, service plugins that fail to load on startup are ignored. If set
-to no, the daemon will exit if any plugin cannot be loaded.
-.br
-Default: \fIno\fP
 .TP
 \fBstate_path\fP
 Directory for runtime variadic data.
