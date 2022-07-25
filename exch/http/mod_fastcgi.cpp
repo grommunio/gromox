@@ -388,7 +388,7 @@ static int mod_fastcgi_connect_backend(const char *path)
 	return sockd;
 }
 
-BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
+bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 {
 	BOOL b_index;
 	char *ptoken;
@@ -527,7 +527,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	pcontext->cli_sockd = -1;
 	pcontext->b_header = FALSE;
 	phttp->pfast_context = pcontext;
-	return TRUE;
+	return true;
 }
 
 BOOL mod_fastcgi_check_end_of_read(HTTP_CONTEXT *phttp)

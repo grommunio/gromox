@@ -92,7 +92,7 @@ identifier should only use characters allowed for hostnames.
 Default: (system hostname)
 .TP
 \fBhpm_cache_size\fP
-If the HTTP request to a HPM endpoint uses Chunked Transfer Encoding and the
+If the HTTP request to a HPM endpoint uses Chunked Transfer Encoding or the
 Content-Length field contains a larger value than this limit, the data is
 buffered in a file \fI/tmp/http-\fP%d (%d replaced by internal context id).
 .br
@@ -115,7 +115,7 @@ The password to unlock TLS certificates.
 Default: (unset)
 .TP
 \fBhttp_certificate_path\fP
-Filesystem path to a certificate file for use with encrypted connection. The
+Filesystem path to a certificate file for use with encrypted connections. The
 complete certificate chain should be present (as there is no other config
 directive to pull CA certs in).
 .br

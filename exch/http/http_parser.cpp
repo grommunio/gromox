@@ -382,11 +382,11 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
     unsigned int code = 400)
 {
-	if (hpm_processor_check_context(ctx))
+	if (hpm_processor_is_in_charge(ctx))
 		hpm_processor_put_context(ctx);
 	else if (ctx->pfast_context != nullptr)
 		mod_fastcgi_put_context(ctx);
-	else if (mod_cache_check_caching(ctx))
+	else if (mod_cache_is_in_charge(ctx))
 		mod_cache_put_context(ctx);
 
 	char dstring[128], response_buff[1024];
@@ -407,11 +407,11 @@ static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
 static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error",
     unsigned int code = 500)
 {
-	if (hpm_processor_check_context(ctx))
+	if (hpm_processor_is_in_charge(ctx))
 		hpm_processor_put_context(ctx);
 	else if (ctx->pfast_context != nullptr)
 		mod_fastcgi_put_context(ctx);
-	else if (mod_cache_check_caching(ctx))
+	else if (mod_cache_is_in_charge(ctx))
 		mod_cache_put_context(ctx);
 
 	char dstring[128], response_buff[1024];
@@ -431,11 +431,11 @@ static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error
 
 static int http_end(HTTP_CONTEXT *ctx)
 {
-	if (hpm_processor_check_context(ctx))
+	if (hpm_processor_is_in_charge(ctx))
 		hpm_processor_put_context(ctx);
 	else if (ctx->pfast_context != nullptr)
 		mod_fastcgi_put_context(ctx);
-	else if (mod_cache_check_caching(ctx))
+	else if (mod_cache_is_in_charge(ctx))
 		mod_cache_put_context(ctx);
 
 	if (ctx->pchannel != nullptr) {
@@ -807,7 +807,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 
 static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 {
-	/* let mod_fastcgi decide the read/write bytes */
+	/* let HPMs decide the read/write bytes */
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
@@ -942,13 +942,11 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		    0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
 			return htp_delegate_rpc(pcontext, stream_1_written);
 		}
-		/* try to make hpm_processor take over the request */
-		if (hpm_processor_get_context(pcontext))
+		if (hpm_processor_take_request(pcontext))
 			return htp_delegate_hpm(pcontext);
-		/* try to make mod_fastcgi process the request */
-		if (mod_fastcgi_get_context(pcontext))
+		if (mod_fastcgi_take_request(pcontext))
 			return htp_delegate_fcgi(pcontext);
-		if (mod_cache_get_context(pcontext))
+		if (mod_cache_take_request(pcontext))
 			return htp_delegate_cache(pcontext);
 		/* other http request here if wanted */
 		char dstring[128], response_buff[1024];
@@ -1040,7 +1038,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 
 static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 {
-	if (hpm_processor_check_context(pcontext)) {
+	if (hpm_processor_is_in_charge(pcontext)) {
 		switch (hpm_processor_retrieve_response(pcontext)) {
 		case HPM_RETRIEVE_ERROR:
 			http_5xx(pcontext);
@@ -1085,7 +1083,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 			return X_LOOP;
 		}
-	} else if (mod_cache_check_caching(pcontext) &&
+	} else if (mod_cache_is_in_charge(pcontext) &&
 	    !mod_cache_read_response(pcontext)) {
 		if (!mod_cache_check_responded(pcontext)) {
 			http_5xx(pcontext);
@@ -1261,8 +1259,8 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			out channel handshaking */
 		pcontext->sched_stat = SCHED_STAT_WAIT;
 	} else if (NULL != pcontext->pfast_context ||
-	    hpm_processor_check_context(pcontext) ||
-	    mod_cache_check_caching(pcontext)) {
+	    hpm_processor_is_in_charge(pcontext) ||
+	    mod_cache_is_in_charge(pcontext)) {
 		pcontext->stream_out.clear();
 		return PROCESS_CONTINUE;
 	} else {
@@ -1292,7 +1290,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
-		if (hpm_processor_check_context(pcontext)) {
+		if (hpm_processor_is_in_charge(pcontext)) {
 			if (!hpm_processor_write_request(pcontext)) {
 				http_5xx(pcontext);
 				return X_LOOP;
@@ -1703,7 +1701,7 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 
 static int htparse_wait(HTTP_CONTEXT *pcontext)
 {
-	if (hpm_processor_check_context(pcontext))
+	if (hpm_processor_is_in_charge(pcontext))
 		return PROCESS_IDLE;
 	/* only hpm_processor or out channel can be set to SCHED_STAT_WAIT */
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
@@ -1894,11 +1892,11 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 HTTP_CONTEXT::~HTTP_CONTEXT()
 {
 	auto pcontext = this;
-	if (hpm_processor_check_context(pcontext))
+	if (hpm_processor_is_in_charge(pcontext))
 		hpm_processor_put_context(pcontext);
 	else if (pcontext->pfast_context != nullptr)
 		mod_fastcgi_put_context(pcontext);
-	else if (mod_cache_check_caching(pcontext))
+	else if (mod_cache_is_in_charge(pcontext))
 		mod_cache_put_context(pcontext);
 }
 

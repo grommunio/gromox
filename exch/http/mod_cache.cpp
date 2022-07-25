@@ -267,7 +267,7 @@ static CACHE_CONTEXT* mod_cache_get_cache_context(HTTP_CONTEXT *phttp)
 	return &g_context_list[phttp->context_id];
 }
 
-BOOL mod_cache_check_caching(HTTP_CONTEXT *phttp)
+bool mod_cache_is_in_charge(HTTP_CONTEXT *phttp)
 {
 	CACHE_CONTEXT *pcontext;
 	
@@ -569,7 +569,7 @@ static BOOL mod_cache_parse_range_value(char *value,
 	return TRUE;
 }
 
-BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
+bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 {
 	char *ptoken;
 	char suffix[16];

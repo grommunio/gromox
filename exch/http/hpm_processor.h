@@ -29,9 +29,9 @@ struct HPM_PLUGIN {
 extern void hpm_processor_init(int context_num, std::vector<std::string> &&names, uint64_t cache_size, uint64_t max_size);
 extern int hpm_processor_run();
 extern void hpm_processor_stop();
-BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp);
+extern bool hpm_processor_take_request(HTTP_CONTEXT *);
 void hpm_processor_put_context(HTTP_CONTEXT *phttp);
-BOOL hpm_processor_check_context(HTTP_CONTEXT *phttp);
+extern bool hpm_processor_is_in_charge(HTTP_CONTEXT *);
 BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp);
 BOOL hpm_processor_check_end_of_request(HTTP_CONTEXT *phttp);
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp);

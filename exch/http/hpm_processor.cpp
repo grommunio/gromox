@@ -37,6 +37,10 @@ namespace {
 
 /* structure for describing service reference */
 
+/**
+ * @b_preproc:	one module has signalled interest (has completed preprocessing)
+ * @b_end:	the end of the request body has been seen
+ */
 struct HPM_CONTEXT {
 	const HPM_INTERFACE *pinterface;
 	BOOL b_preproc;
@@ -379,7 +383,7 @@ void hpm_processor_stop()
 	}
 }
 
-BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
+bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 {
 	int tmp_len;
 	BOOL b_chunked;
@@ -447,18 +451,21 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 		phpm_ctx->b_end = FALSE;
 		phpm_ctx->b_preproc = TRUE;
 		phpm_ctx->pinterface = &pplugin->interface;
-		return TRUE;
+		return true;
 	}
 	phpm_ctx->b_preproc = FALSE;
 	return FALSE;
 }
 
-BOOL hpm_processor_check_context(HTTP_CONTEXT *phttp)
+bool hpm_processor_is_in_charge(HTTP_CONTEXT *phttp)
 {
 	auto phpm_ctx = &g_context_list[phttp->context_id];
 	return phpm_ctx->b_preproc;
 }
 
+/**
+ * Move the HTTP request body to cache_fd, depending on size.
+ */
 BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 {
 	int size;
@@ -516,6 +523,10 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			phpm_ctx->b_end = TRUE;
 			return TRUE;
 		}
+		/*
+		 * This is crap. It fails if the client sends the chunk length
+		 * one byte at a time...
+		 */
 		ptoken = static_cast<char *>(memmem(tmp_buff, size, "\r\n", 2));
 		if (NULL == ptoken) {
 			if (1024 == size) {
@@ -566,6 +577,10 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			goto CHUNK_BEGIN;
 		}
 	}
+	/*
+	 * This is crap. Breaks processing of the next request if the client
+	 * sent two requests with one network packet.
+	 */
 	phttp->stream_in.clear();
 	return TRUE;
 }
