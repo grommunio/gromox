@@ -3147,7 +3147,7 @@ uint32_t zarafa_server_getreceivefolder(GUID hsession,
 	
 	if (pstrclass == nullptr)
 		pstrclass = "";
-	if (!common_util_check_message_class(pstrclass))
+	if (!cu_validate_msgclass(pstrclass))
 		return ecInvalidParam;
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)

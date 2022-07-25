@@ -750,28 +750,6 @@ BINARY* common_util_to_folder_replica(
 	return pbin;
 }
 
-/* [MS-OXCSTOR] section 2.2.1.2.1.1 and 2.2.1.3.1.2 */
-BOOL common_util_check_message_class(const char *str_class)
-{
-	int i;
-	int len;
-	
-	len = strlen(str_class);
-	if (len + 1 > 255) {
-		return FALSE;
-	}
-	for (i=0; i<len; i++) {
-		if (str_class[i] < 32 || str_class[i] > 126) {
-			return FALSE;
-		}
-		if ('.' == str_class[i] && '.' == str_class[i + 1]) {
-			return FALSE;
-		}
-	}
-	if (str_class[0] == '.' || (len > 0 && str_class[len-1] == '.'))
-		return FALSE;
-	return TRUE;
-}
 
 GUID common_util_get_mapping_guid(BOOL b_private, int account_id)
 {

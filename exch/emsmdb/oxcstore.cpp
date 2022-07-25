@@ -242,7 +242,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
 {
 	int object_type;
 	
-	if (!common_util_check_message_class(pstr_class))
+	if (!cu_validate_msgclass(pstr_class))
 		return ecInvalidParam;
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
@@ -268,7 +268,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 	BOOL b_result;
 	int object_type;
 	
-	if (!common_util_check_message_class(pstr_class))
+	if (!cu_validate_msgclass(pstr_class))
 		return ecInvalidParam;
 	if ('\0' == pstr_class[0] && 0 == folder_id) {
 		return ecError;
