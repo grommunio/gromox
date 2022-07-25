@@ -5500,7 +5500,6 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_mapitovcf)
 	F(mapi_enable_exceptions)
 	F(mapi_feature)
-	A(mapi_attach_openbin, mapi_openproperty)
 	A(mapi_msgstore_getprops, mapi_getprops)
 	A(mapi_folder_getprops, mapi_getprops)
 	A(mapi_message_getprops, mapi_getprops)
