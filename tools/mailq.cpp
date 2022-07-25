@@ -18,15 +18,6 @@
 
 using namespace gromox;
 
-namespace {
-
-struct io_deleter {
-	void operator()(DIR *d) { closedir(d); }
-	void operator()(FILE *f) { fclose(f); }
-};
-
-}
-
 int main()
 {
 	bool tty = isatty(STDOUT_FILENO);
@@ -35,7 +26,7 @@ int main()
 	auto c_reset = tty ? "\e[0m" : "";
 
 	std::string msg_dir = PKGSTATEQUEUEDIR "/mess";
-	std::unique_ptr<DIR, io_deleter> dh(opendir(msg_dir.c_str()));
+	std::unique_ptr<DIR, file_deleter> dh(opendir(msg_dir.c_str()));
 	if (dh == nullptr) {
 		fprintf(stderr, "Could not open %s: %s\n", msg_dir.c_str(), strerror(errno));
 		return EXIT_FAILURE;

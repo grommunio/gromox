@@ -299,8 +299,7 @@ ssize_t feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 	randstring_k(&filename[pos+1], 12, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
 	filename[pos+13] = '.';
 
-	struct xclose { void operator()(FILE *f) { fclose(f); } };
-	std::unique_ptr<FILE, xclose> fp(fopen(filename.c_str(), "w"));
+	std::unique_ptr<FILE, file_deleter> fp(fopen(filename.c_str(), "w"));
 	if (fp == nullptr || fwrite(inbuf, len, 1, fp.get()) != 1)
 		return -1;
 	auto cl1 = make_scope_exit([&]() { unlink(filename.c_str()); });
