@@ -12,7 +12,7 @@ struct folder_object {
 	public:
 	static std::unique_ptr<folder_object> create(logon_object *, uint64_t folder_id, uint8_t type, uint32_t tag_access);
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
-	BOOL check_readonly_property(uint32_t proptag);
+	bool is_readonly_prop(uint32_t proptag);
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 	BOOL remove_properties(const PROPTAG_ARRAY *, PROBLEM_ARRAY *);

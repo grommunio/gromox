@@ -333,10 +333,10 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-static BOOL lo_check_readonly_property(const logon_object *plogon, uint32_t proptag)
+static bool lo_is_readonly_prop(const logon_object *plogon, uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
-		return TRUE;
+		return true;
 	switch (proptag) {
 	case PR_ACCESS_LEVEL:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
@@ -687,7 +687,7 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	}
 	auto plogon = this;
 	for (i=0; i<ppropvals->count; i++) {
-		if (lo_check_readonly_property(plogon, ppropvals->ppropval[i].proptag)) {
+		if (lo_is_readonly_prop(plogon, ppropvals->ppropval[i].proptag)) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
@@ -730,7 +730,7 @@ BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	auto plogon = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (lo_check_readonly_property(plogon, pproptags->pproptag[i])) {
+		if (lo_is_readonly_prop(plogon, pproptags->pproptag[i])) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];

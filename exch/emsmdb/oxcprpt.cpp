@@ -605,7 +605,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 				return ecError;
 		}
 		for (i=0; i<pproptags->count; i++) {
-			if (flddst->check_readonly_property(pproptags->pproptag[i])) {
+			if (flddst->is_readonly_prop(pproptags->pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 										pproptags->pproptag[i];
@@ -670,7 +670,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 				}
 				continue;
 			}
-			if (msgdst->check_readonly_property(pproptags->pproptag[i])) {
+			if (msgdst->is_readonly_prop(pproptags->pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 										pproptags->pproptag[i];
@@ -714,7 +714,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 				return ecError;
 		}
 		for (i=0; i<pproptags->count; i++) {
-			if (atdst->check_readonly_property(pproptags->pproptag[i])) {
+			if (atdst->is_readonly_prop(pproptags->pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 										pproptags->pproptag[i];
@@ -842,7 +842,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		if (!b_force && !flddst->get_all_proptags(&proptags1))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
-			if (flddst->check_readonly_property(proptags.pproptag[i]))
+			if (flddst->is_readonly_prop(proptags.pproptag[i]))
 				continue;
 			if (!b_force && proptags1.has(proptags.pproptag[i]))
 				continue;

@@ -956,11 +956,11 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-BOOL message_object::check_readonly_property(uint32_t proptag) const
+bool message_object::is_readonly_prop(uint32_t proptag) const
 {
 	auto pmessage = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT)
-		return TRUE;
+		return true;
 	switch (proptag) {
 	case PR_ACCESS:
 	case PR_ACCESS_LEVEL:
@@ -990,7 +990,7 @@ BOOL message_object::check_readonly_property(uint32_t proptag) const
 	case PR_MSG_STATUS:
 	case PR_TRANSPORT_MESSAGE_HEADERS:
 	case PR_TRANSPORT_MESSAGE_HEADERS_A:
-		return TRUE;
+		return true;
 	case PR_CHANGE_KEY:
 	case PR_CREATION_TIME:
 	case PR_LAST_MODIFICATION_TIME:
@@ -998,12 +998,12 @@ BOOL message_object::check_readonly_property(uint32_t proptag) const
 	case PR_SOURCE_KEY:
 		if (pmessage->b_new || pmessage->pstate != nullptr)
 			return FALSE;
-		return TRUE;
+		return true;
 	case PR_READ:
 		if (NULL == pmessage->pembedding) {
 			return FALSE;
 		}
-		return TRUE;
+		return true;
 	}
 	return FALSE;
 }
@@ -1238,7 +1238,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	for (i=0; i<ppropvals->count; i++) {
 		/* if property is being open as stream object, can not be modified */
 		if (b_check) {
-			if (pmessage->check_readonly_property(ppropvals->ppropval[i].proptag) ||
+			if (pmessage->is_readonly_prop(ppropvals->ppropval[i].proptag) ||
 			    message_object_check_stream_property(pmessage, ppropvals->ppropval[i].proptag)) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
@@ -1356,7 +1356,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	/* if property is being open as stream object, can not be removed */
 	for (i=0; i<pproptags->count; i++) {
-		if (check_readonly_property(pproptags->pproptag[i]) ||
+		if (is_readonly_prop(pproptags->pproptag[i]) ||
 		    message_object_check_stream_property(pmessage, pproptags->pproptag[i])) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =

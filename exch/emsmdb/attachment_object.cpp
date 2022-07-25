@@ -229,11 +229,11 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-BOOL attachment_object::check_readonly_property(uint32_t proptag) const
+bool attachment_object::is_readonly_prop(uint32_t proptag) const
 {
 	auto pattachment = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT && proptag != PR_ATTACH_DATA_OBJ)
-		return TRUE;
+		return true;
 	switch (proptag) {
 	case PidTagMid:
 	case PR_ACCESS_LEVEL:
@@ -242,11 +242,11 @@ BOOL attachment_object::check_readonly_property(uint32_t proptag) const
 	case PR_RECORD_KEY:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_RECORD_KEY:
-		return TRUE;
+		return true;
 	case PR_ATTACH_SIZE:
 	case PR_CREATION_TIME:
 	case PR_LAST_MODIFICATION_TIME:
-		return !pattachment->b_new ? TRUE : false;
+		return !pattachment->b_new;
 	}
 	return FALSE;
 }
@@ -395,7 +395,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 		return FALSE;
 	}
 	for (i=0; i<ppropvals->count; i++) {
-		if (check_readonly_property(ppropvals->ppropval[i].proptag) ||
+		if (is_readonly_prop(ppropvals->ppropval[i].proptag) ||
 		    attachment_object_check_stream_property(
 			pattachment, ppropvals->ppropval[i].proptag)) {
 			pproblems->pproblem[pproblems->count].index = i;
@@ -457,7 +457,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	}
 	for (i=0; i<pproptags->count; i++) {
-		if (check_readonly_property(pproptags->pproptag[i]) ||
+		if (is_readonly_prop(pproptags->pproptag[i]) ||
 		    attachment_object_check_stream_property(
 			pattachment, pproptags->pproptag[i])) {
 			pproblems->pproblem[pproblems->count].index = i;
