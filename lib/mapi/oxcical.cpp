@@ -36,6 +36,10 @@ using event_list = std::vector<std::shared_ptr<ical_component>>;
 using uidxevent_list = std::unordered_map<std::string, event_list>;
 using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
+namespace gromox {
+bool g_oxcical_allday_ymd = true;
+}
+
 static constexpr char
 	PidNameKeywords[] = "Keywords",
 	PidNameLocationUrl[] = "urn:schemas:calendar:locationurl";
@@ -3722,10 +3726,12 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (!oxcical_export_rrule(ptz_component, pcomponent, &apprecurr))
 			return FALSE;
 		if (oxcical_check_exdate(&apprecurr) &&
-		    !oxcical_export_exdate(tzid, b_allday, pcomponent, &apprecurr))
+		    !oxcical_export_exdate(tzid, g_oxcical_allday_ymd,
+		    pcomponent, &apprecurr))
 			return FALSE;
 		if (oxcical_check_rdate(&apprecurr) &&
-		    !oxcical_export_rdate(tzid, b_allday, pcomponent, &apprecurr))
+		    !oxcical_export_rdate(tzid, g_oxcical_allday_ymd,
+		    pcomponent, &apprecurr))
 			return FALSE;
 	}
 	
@@ -3883,7 +3889,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	if (ptz_component != nullptr)
 		sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-	else if (b_allday)
+	else if (g_oxcical_allday_ymd)
 		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 	else
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
@@ -3893,7 +3899,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	if (pcomponent->append_line(piline) < 0)
 		return false;
-	if (ptz_component == nullptr && b_allday) {
+	if (ptz_component == nullptr && g_oxcical_allday_ymd) {
 		piparam = ical_new_param("VALUE");
 		if (piparam == nullptr)
 			return FALSE;
@@ -3917,7 +3923,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		if (ptz_component != nullptr)
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		else if (b_allday)
+		else if (g_oxcical_allday_ymd)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
@@ -3926,7 +3932,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		if (pcomponent->append_line(piline) < 0)
 			return false;
-		if (ptz_component == nullptr && b_allday) {
+		if (ptz_component == nullptr && g_oxcical_allday_ymd) {
 			piparam = ical_new_param("VALUE");
 			if (piparam == nullptr)
 				return FALSE;

@@ -24,6 +24,7 @@
 #include <gromox/contexts_pool.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/oxcical.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
@@ -100,6 +101,7 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"listen_port", "http_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "http_listen_tls_port", CFG_ALIAS},
 	{"msrpc_debug", "0"},
+	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"request_max_mem", "4M", CFG_SIZE, "1M"},
 	{"running_identity", "gromox"},
 	{"state_path", PKGSTATEDIR},
@@ -121,6 +123,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 	}
 	g_http_debug = cfg->get_ll("http_debug");
 	g_msrpc_debug = cfg->get_ll("msrpc_debug");
+	g_oxcical_allday_ymd = cfg->get_ll("oxcical_allday_ymd");
 	return true;
 }
 

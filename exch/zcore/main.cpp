@@ -25,6 +25,7 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/msgchg_grouping.hpp>
+#include <gromox/oxcical.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
@@ -78,6 +79,7 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"max_mail_num", "1000000", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
+	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
 	{"separator_for_bounce", ";"},
 	{"smtp_server_ip", "::1"},
@@ -111,6 +113,7 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		return false;
 	}
 	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
+	g_oxcical_allday_ymd = pconfig->get_ll("oxcical_allday_ymd");
 	zcore_max_obh_per_session = pconfig->get_ll("zcore_max_obh_per_session");
 	return true;
 }
