@@ -502,11 +502,16 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	pcontext->last_time = time_point::clock::now();
 	pcontext->pfnode = pfnode;
 	if (b_chunked || content_length > g_cache_size) {
-		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
-		pcontext->cache_fd = open(tmp_buff,
-			O_CREAT|O_TRUNC|O_RDWR, 0666);
-		if (pcontext->cache_fd == -1)
+		auto path = LOCAL_DISK_TMPDIR;
+		if (mkdir(path, 0777) < 0 && errno != EEXIST) {
+			fprintf(stderr, "E-2077: mkdir %s: %s\n", path, strerror(errno));
+			return false;
+		}
+		pcontext->cache_fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
+		if (pcontext->cache_fd == -1) {
+			fprintf(stderr, "E-2078: open %s: %s\n", path, strerror(errno));
 			return FALSE;
+		}
 		pcontext->cache_size = 0;
 	} else {
 		pcontext->cache_fd = -1;
@@ -763,7 +768,6 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	int cli_sockd;
 	int ndr_length;
 	NDR_PUSH ndr_push;
-	char tmp_path[256];
 	char tmp_buff[65535];
 	uint8_t ndr_buff[65800];
 	
@@ -849,9 +853,6 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			} else if (0 == tmp_len) {
 				close(phttp->pfast_context->cache_fd);
 				phttp->pfast_context->cache_fd = -1;
-				snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "/tmp/http-%u", phttp->context_id);
-				if (remove(tmp_path) < 0 && errno != ENOENT)
-					fprintf(stderr, "W-1362: remove %s: %s\n", tmp_path, strerror(errno));
 				break;
 			}
 			ndr_push_init(&ndr_push, ndr_buff, sizeof(ndr_buff),
@@ -899,13 +900,8 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 
 void mod_fastcgi_put_context(HTTP_CONTEXT *phttp)
 {
-	char tmp_path[256];
-	
 	if (-1 != phttp->pfast_context->cache_fd) {
 		close(phttp->pfast_context->cache_fd);
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "/tmp/http-%u", phttp->context_id);
-		if (remove(tmp_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1361: remove %s: %s\n", tmp_path, strerror(errno));
 	}
 	if (phttp->pfast_context->cli_sockd != -1)
 		close(phttp->pfast_context->cli_sockd);

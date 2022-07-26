@@ -423,10 +423,14 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 			}
 		}
 		if (b_chunked || content_length > g_cache_size) {
-			snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
-			phpm_ctx->cache_fd = open(tmp_buff,
-				O_CREAT|O_TRUNC|O_RDWR, 0666);
-			if (-1 == phpm_ctx->cache_fd) {
+			auto path = LOCAL_DISK_TMPDIR;
+			if (mkdir(path, 0777) < 0 && errno != EEXIST) {
+				fprintf(stderr, "E-2079: mkdir %s: %s\n", path, strerror(errno));
+				return false;
+			}
+			phpm_ctx->cache_fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
+			if (phpm_ctx->cache_fd == -1) {
+				fprintf(stderr, "E-2080: open %s: %s\n", path, strerror(errno));
 				phpm_ctx->b_preproc = FALSE;
 				return FALSE;
 			}
@@ -575,7 +579,6 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 {
 	BOOL b_result;
 	void *pcontent;
-	char tmp_path[256];
 	struct stat node_stat;
 	
 	auto phpm_ctx = &g_context_list[phttp->context_id];
@@ -611,9 +614,6 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 		close(phpm_ctx->cache_fd);
 		phpm_ctx->cache_fd = -1;
 		phpm_ctx->content_length = node_stat.st_size;
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "/tmp/http-%u", phttp->context_id);
-		if (remove(tmp_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1347: remove %s: %s\n", tmp_path, strerror(errno));
 	}
 	b_result = phpm_ctx->pinterface->proc(phttp->context_id,
 				pcontent, phpm_ctx->content_length);
@@ -646,7 +646,6 @@ int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp)
 
 void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 {
-	char tmp_path[256];
 	auto phpm_ctx = &g_context_list[phttp->context_id];
 	if (NULL != phpm_ctx->pinterface->term) {
 		phpm_ctx->pinterface->term(phttp->context_id);
@@ -654,9 +653,6 @@ void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 	if (-1 != phpm_ctx->cache_fd) {
 		close(phpm_ctx->cache_fd);
 		phpm_ctx->cache_fd = -1;
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "/tmp/http-%u", phttp->context_id);
-		if (remove(tmp_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1369: remove %s: %s\n", tmp_path, strerror(errno));
 	}
 	phpm_ctx->content_length = 0;
 	phpm_ctx->b_preproc = FALSE;
