@@ -43,8 +43,7 @@ struct CACHE_ITEM {
 	DOUBLE_LIST_NODE node;
 	char extention[16];
 	DATA_BLOB blob;
-	ino_t ino;
-	time_t mtime;
+	struct stat sb;
 	BOOL b_expired;
 	int reference;
 };
@@ -79,6 +78,16 @@ static std::vector<DIRECTORY_NODE> g_directory_list;
 static std::unique_ptr<STR_HASH_TABLE> g_cache_hash;
 static CACHE_CONTEXT *g_context_list;
 
+static bool stat3_eq(const struct stat &a, const struct stat &b)
+{
+	return a.st_dev == b.st_dev && a.st_ino == b.st_ino &&
+	       a.st_mtime == b.st_mtime;
+}
+
+static bool stat4_eq(const struct stat &a, const struct stat &b)
+{
+	return stat3_eq(a, b) && a.st_size == b.st_size;
+}
 
 static void *mod_cache_scanwork(void *pparam)
 {
@@ -106,9 +115,8 @@ static void *mod_cache_scanwork(void *pparam)
 			}
 			if (stat(tmp_key, &node_stat) == 0 &&
 			    S_ISREG(node_stat.st_mode) &&
-			    node_stat.st_ino == pitem->ino &&
 			    static_cast<unsigned long long>(node_stat.st_size) == pitem->blob.length &&
-			    node_stat.st_mtime == pitem->mtime)
+			    stat3_eq(node_stat, pitem->sb))
 				continue;
 			str_hash_iter_remove(iter);
 			free(pitem->blob.data);
@@ -270,61 +278,26 @@ BOOL mod_cache_check_caching(HTTP_CONTEXT *phttp)
 	return FALSE;
 }
 
-static BOOL mod_cache_retrieve_etag(const char *etag,
-	ino_t *pino, uint32_t *plength, time_t *pmtime)
+static bool mod_cache_retrieve_etag(const char *etag, struct stat &sb)
 {
-	char *ptoken;
-	char *ptoken1;
-	char tmp_buff[128];
-	
-	auto tmp_len = strlen(etag);
-	if (tmp_len >= sizeof(tmp_buff)) {
-		return FALSE;
-	}
-	if ('"' == etag[0]) {
-		etag ++;
-		tmp_len --;
-	}
-	memcpy(tmp_buff, etag, tmp_len + 1);
-	if ('"' == tmp_buff[tmp_len - 1]) {
-		tmp_buff[tmp_len - 1] = '\0';
-	}
-	ptoken = strchr(tmp_buff, '-');
-	if (NULL == ptoken) {
-		return FALSE;
-	}
-	*ptoken = '\0';
-	ptoken ++;
-	if (!decode_hex_binary(tmp_buff, pino, sizeof(ino_t)))
-		return FALSE;
-	ptoken1 = strchr(ptoken, '-');
-	if (NULL == ptoken1) {
-		return FALSE;
-	}
-	*ptoken1 = '\0';
-	ptoken1 ++;
-	if (!decode_hex_binary(ptoken, plength, sizeof(uint32_t)))
-		return FALSE;
-	return decode_hex_binary(ptoken1, pmtime, sizeof(time_t));
+	unsigned int dev, ino;
+	unsigned long long size, mtim;
+	if (sscanf(etag, "%x-%x-%llx-%llx", &dev, &ino, &size, &mtim) != 4)
+		return false;
+	sb.st_dev = dev;
+	sb.st_ino = ino;
+	sb.st_size = size;
+	sb.st_mtime = mtim;
+	return true;
 }
 
-static void mod_cache_serialize_etag(ino_t ino,
-	uint32_t length, time_t mtime, char *etag)
+static void mod_cache_serialize_etag(const struct stat &sb, char *etag, size_t len)
 {
-	int offset;
-	
-	offset = 0;
-	encode_hex_binary(&ino, sizeof(ino_t), etag + offset, 32);
-	offset += 2*sizeof(ino_t);
-	etag[offset] = '-';
-	offset ++;
-	encode_hex_binary(&length, sizeof(uint32_t), etag + offset, 32);
-	offset += 2*sizeof(uint32_t);
-	etag[offset] = '-';
-	offset ++;
-	encode_hex_binary(&mtime, sizeof(time_t), etag + offset, 32);
-	offset += 2*sizeof(time_t);
-	etag[offset] = '\0';
+	snprintf(etag, len, "%x-%llx-%llx-%llx",
+	         static_cast<unsigned int>(sb.st_dev),
+	         static_cast<unsigned long long>(sb.st_ino),
+	         static_cast<unsigned long long>(sb.st_size),
+	         static_cast<unsigned long long>(sb.st_mtime));
 }
 
 static BOOL mod_cache_get_others_field(MEM_FILE *pf_others,
@@ -400,10 +373,9 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	time(&cur_time);
 	gmtime_r(&cur_time, &tmp_tm);
 	strftime(date_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
-	gmtime_r(&pcontext->pitem->mtime, &tmp_tm);
+	gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm);
 	strftime(modified_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
-	mod_cache_serialize_etag(pcontext->pitem->ino,
-		pcontext->pitem->blob.length, pcontext->pitem->mtime, etag);
+	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	pcontent_type = system_services_extension_to_mime(
 							pcontext->pitem->extention);
 	if (NULL == pcontent_type) {
@@ -488,10 +460,9 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 	time(&cur_time);
 	gmtime_r(&cur_time, &tmp_tm);
 	strftime(date_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
-	gmtime_r(&pcontext->pitem->mtime, &tmp_tm);
+	gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm);
 	strftime(modified_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
-	mod_cache_serialize_etag(pcontext->pitem->ino,
-		pcontext->pitem->blob.length, pcontext->pitem->mtime, etag);
+	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	content_length =  mod_cache_calculate_content_length(pcontext);	
 	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 206 Partial Content\r\n"
@@ -600,10 +571,7 @@ static BOOL mod_cache_parse_range_value(char *value,
 
 BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 {
-	ino_t ino;
 	char *ptoken;
-	time_t mtime;
-	uint32_t size;
 	char suffix[16];
 	char domain[256];
 	CACHE_ITEM *pitem;
@@ -693,21 +661,17 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		return FALSE;
 	if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
 		return FALSE;
+	struct stat sb;
 	if (mod_cache_get_others_field(&phttp->request.f_others,
 	    "If-None-Match", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
-	    mod_cache_retrieve_etag(tmp_buff, &ino, &size, &mtime)) {
-		if (ino == node_stat.st_ino &&
-		    size == static_cast<unsigned long long>(node_stat.st_size) &&
-		    mtime == node_stat.st_mtime)
+	    mod_cache_retrieve_etag(tmp_buff, sb)) {
+		if (stat4_eq(sb, node_stat))
 			return mod_cache_response_unmodified(phttp);
-	} else {
-		if (mod_cache_get_others_field(&phttp->request.f_others,
-		    "If-Modified-Since", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
-		    mod_cache_parse_rfc1123_dstring(tmp_buff, &mtime)) {
-			if (mtime == node_stat.st_mtime) {
-				return mod_cache_response_unmodified(phttp);
-			}
-		}
+	} else if (mod_cache_get_others_field(&phttp->request.f_others,
+	    "If-Modified-Since", tmp_buff, std::size(tmp_buff)) &&
+	    mod_cache_parse_rfc1123_dstring(tmp_buff, &sb.st_mtime)) {
+		if (sb.st_mtime == node_stat.st_mtime)
+			return mod_cache_response_unmodified(phttp);
 	}
 	pcontext = mod_cache_get_cache_context(phttp);
 	memset(pcontext, 0, sizeof(CACHE_CONTEXT));
@@ -727,9 +691,8 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	auto ppitem = g_cache_hash->query<CACHE_ITEM *>(tmp_path);
 	if (NULL != ppitem) {
 		pitem = *ppitem;
-		if (pitem->ino != node_stat.st_ino ||
-		    pitem->blob.length != static_cast<unsigned long long>(node_stat.st_size) ||
-		    pitem->mtime != node_stat.st_mtime) {
+		if (!stat3_eq(pitem->sb, node_stat) ||
+		    pitem->blob.length != static_cast<unsigned long long>(node_stat.st_size)) {
 			g_cache_hash->remove(tmp_path);
 			if (pitem->reference > 0) {
 				pitem->b_expired = TRUE;
@@ -757,9 +720,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	}
 	strcpy(pitem->extention, suffix);
 	pitem->reference = 1;
-	pitem->ino = node_stat.st_ino;
-	pitem->blob.length = node_stat.st_size;
-	pitem->mtime = node_stat.st_mtime;
+	pitem->sb = node_stat;
 	pitem->blob.data = me_alloc<uint8_t>(node_stat.st_size);
 	if (NULL == pitem->blob.data) {
 		free(pitem);
