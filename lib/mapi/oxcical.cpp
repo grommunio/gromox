@@ -2610,6 +2610,8 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
+			if (!pivalue->append_subval(tmp_buff))
+				return NULL;
 			pivalue = ical_new_value("BYMONTH");
 			if (pivalue == nullptr)
 				return NULL;
@@ -2721,6 +2723,8 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
+		if (!pivalue->append_subval(tmp_buff))
+			return NULL;
 		pivalue = ical_new_value("BYMONTH");
 		if (pivalue == nullptr)
 			return NULL;

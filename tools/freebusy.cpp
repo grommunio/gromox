@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// A fugly copy of oxcical.cpp
 #include <algorithm>
 #include <cerrno>
 #include <csignal>
@@ -165,6 +166,8 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
+			if (!pivalue->append_subval(tmp_buff))
+				return NULL;
 			pivalue = ical_new_value("BYMONTH");
 			if (pivalue == nullptr)
 				return NULL;
@@ -280,6 +283,8 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
+		if (!pivalue->append_subval(tmp_buff))
+			return NULL;
 		pivalue = ical_new_value("BYMONTH");
 		if (pivalue == nullptr)
 			return NULL;
