@@ -117,3 +117,13 @@ int ICAL_COMPONENT::append_comp(std::shared_ptr<ICAL_COMPONENT> c)
 	}
 	return -ENOMEM;
 }
+
+/**
+ * @tag may be nullptr.
+ */
+void ical_line::append_value(const char *tag, const char *s)
+{
+	auto v = ical_new_value(tag);
+	if (v == nullptr || !v->append_subval(s) || append_value(v) != 0)
+		throw std::bad_alloc();
+}

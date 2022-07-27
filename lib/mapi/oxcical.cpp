@@ -2565,61 +2565,25 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 				return NULL;
 			if (pcomponent1->append_line(piline) < 0)
 				return nullptr;
-			pivalue = ical_new_value("FREQ");
-			if (pivalue == nullptr)
-				return NULL;
-			if (piline->append_value(pivalue) < 0)
-				return nullptr;
-			if (!pivalue->append_subval("YEARLY"))
-				return NULL;
-			pivalue = ical_new_value("BYDAY");
-			if (pivalue == nullptr)
-				return NULL;
-			if (piline->append_value(pivalue) < 0)
-				return nullptr;
+			piline->append_value("FREQ", "YEARLY");
 			auto dow = weekday_to_str(ptzstruct->standarddate.dayofweek);
 			if (dow == nullptr)
 				return nullptr;
 			snprintf(tmp_buff, std::size(tmp_buff), "%d%s", order, dow);
-			if (!pivalue->append_subval(tmp_buff))
-				return NULL;
-			pivalue = ical_new_value("BYMONTH");
-			if (pivalue == nullptr)
-				return NULL;
-			if (piline->append_value(pivalue) < 0)
-				return nullptr;
+			piline->append_value("BYDAY", tmp_buff);
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
-			if (!pivalue->append_subval(tmp_buff))
-				return NULL;
+			piline->append_value("BYMONTH", tmp_buff);
 		} else if (1 == ptzstruct->standarddate.year) {
 			piline = ical_new_line("RRULE");
 			if (piline == nullptr)
 				return NULL;
 			if (pcomponent1->append_line(piline) < 0)
 				return nullptr;
-			pivalue = ical_new_value("FREQ");
-			if (pivalue == nullptr)
-				return NULL;
-			if (piline->append_value(pivalue) < 0)
-				return nullptr;
-			if (!pivalue->append_subval("YEARLY"))
-				return NULL;
-			pivalue = ical_new_value("BYMONTHDAY");
-			if (pivalue == nullptr)
-				return NULL;
-			if (piline->append_value(pivalue) < 0)
-				return nullptr;
+			piline->append_value("FREQ", "YEARLY");
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
-			if (!pivalue->append_subval(tmp_buff))
-				return NULL;
-			pivalue = ical_new_value("BYMONTH");
-			if (pivalue == nullptr)
-				return NULL;
-			if (piline->append_value(pivalue) < 0)
-				return nullptr;
+			piline->append_value("BYMONTHDAY", tmp_buff);
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
-			if (!pivalue->append_subval(tmp_buff))
-				return NULL;
+			piline->append_value("BYMONTH", tmp_buff);
 		}
 	}
 	int utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
@@ -2678,61 +2642,25 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 			return NULL;
 		if (pcomponent1->append_line(piline) < 0)
 			return nullptr;
-		pivalue = ical_new_value("FREQ");
-		if (pivalue == nullptr)
-			return NULL;
-		if (piline->append_value(pivalue) < 0)
-			return nullptr;
-		if (!pivalue->append_subval("YEARLY"))
-			return NULL;
-		pivalue = ical_new_value("BYDAY");
-		if (pivalue == nullptr)
-			return NULL;
-		if (piline->append_value(pivalue) < 0)
-			return nullptr;
+		piline->append_value("FREQ", "YEARLY");
 		auto dow = weekday_to_str(ptzstruct->daylightdate.dayofweek);
 		if (dow == nullptr)
 			return nullptr;
 		snprintf(tmp_buff, std::size(tmp_buff), "%d%s", order, dow);
-		if (!pivalue->append_subval(tmp_buff))
-			return NULL;
-		pivalue = ical_new_value("BYMONTH");
-		if (pivalue == nullptr)
-			return NULL;
-		if (piline->append_value(pivalue) < 0)
-			return nullptr;
+		piline->append_value("BYDAY", tmp_buff);
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
-		if (!pivalue->append_subval(tmp_buff))
-			return NULL;
+		piline->append_value("BYMONTH", tmp_buff);
 	} else if (1 == ptzstruct->daylightdate.year) {
 		piline = ical_new_line("RRULE");
 		if (piline == nullptr)
 			return NULL;
 		if (pcomponent1->append_line(piline) < 0)
 			return nullptr;
-		pivalue = ical_new_value("FREQ");
-		if (pivalue == nullptr)
-			return NULL;
-		if (piline->append_value(pivalue) < 0)
-			return nullptr;
-		if (!pivalue->append_subval("YEARLY"))
-			return NULL;
-		pivalue = ical_new_value("BYMONTHDAY");
-		if (pivalue == nullptr)
-			return NULL;
-		if (piline->append_value(pivalue) < 0)
-			return nullptr;
+		piline->append_value("FREQ", "YEARLY");
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
-		if (!pivalue->append_subval(tmp_buff))
-			return NULL;
-		pivalue = ical_new_value("BYMONTH");
-		if (pivalue == nullptr)
-			return NULL;
-		if (piline->append_value(pivalue) < 0)
-			return nullptr;
+		piline->append_value("BYMONTHDAY", tmp_buff);
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
-		if (!pivalue->append_subval(tmp_buff))
-			return NULL;
+		piline->append_value("BYMONTH", tmp_buff);
 	}
 	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
@@ -2802,7 +2730,8 @@ static bool is_meeting_response(const char *s)
 
 static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> pevent_component,
     ENTRYID_TO_USERNAME entryid_to_username, ESSDN_TO_USERNAME essdn_to_username,
-    EXT_BUFFER_ALLOC alloc, const char *partstat, const MESSAGE_CONTENT *pmsg)
+    EXT_BUFFER_ALLOC alloc, const char *partstat,
+    const MESSAGE_CONTENT *pmsg) try
 {
 	std::shared_ptr<ICAL_LINE> piline;
 	char username[UADDR_SIZE];
@@ -2837,12 +2766,8 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		if (!piparam->append_paramval(partstat))
 			return FALSE;
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
-		pivalue = ical_new_value(NULL);
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
-		return pivalue->append_subval(tmp_value) ? TRUE : false;
+		piline->append_value(nullptr, tmp_value);
+		return TRUE;
 	}	
 	auto flag = pmsg->proplist.get<const uint8_t>(PR_RESPONSE_REQUESTED);
 	auto b_rsvp = flag != nullptr && *flag != 0;
@@ -2908,19 +2833,16 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		    GX_ARRAY_SIZE(username)))
 			return FALSE;
 		snprintf(tmp_value, GX_ARRAY_SIZE(tmp_value), "MAILTO:%s", username);
-		pivalue = ical_new_value(NULL);
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
-		if (!pivalue->append_subval(tmp_value))
-			return FALSE;
+		piline->append_value(nullptr, tmp_value);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2094: ENOMEM\n");
+	return false;
 }
 
 static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
-    std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr)
+    std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	ICAL_TIME itime;
 	time_t unix_time;
@@ -2976,38 +2898,14 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		return false;
 	switch (apr->recur_pat.patterntype) {
 	case PATTERNTYPE_DAY:
-		pivalue = ical_new_value("FREQ");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
-		if (!pivalue->append_subval("DAILY"))
-			return FALSE;
+		piline->append_value("FREQ", "DAILY");
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 1440);
-		pivalue = ical_new_value("INTERVAL");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
-		if (!pivalue->append_subval(tmp_buff))
-			return FALSE;
+		piline->append_value("INTERVAL", tmp_buff);
 		break;
 	case PATTERNTYPE_WEEK:
-		pivalue = ical_new_value("FREQ");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
-		if (!pivalue->append_subval("WEEKLY"))
-			return FALSE;
+		piline->append_value("FREQ", "WEEKLY");
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
-		pivalue = ical_new_value("INTERVAL");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
-		if (!pivalue->append_subval(tmp_buff))
-			return FALSE;
+		piline->append_value("INTERVAL", tmp_buff);
 		pivalue = ical_new_value("BYDAY");
 		if (pivalue == nullptr)
 			return FALSE;
@@ -3019,85 +2917,38 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				return false;
 		break;
 	case PATTERNTYPE_MONTH:
-	case PATTERNTYPE_HJMONTH:
-		pivalue = ical_new_value("FREQ");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
-		if (apr->recur_pat.period % 12 != 0) {
-			if (!pivalue->append_subval("MONTHLY"))
-				return FALSE;
+	case PATTERNTYPE_HJMONTH: {
+		auto monthly = apr->recur_pat.period % 12 != 0;
+		piline->append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
+		if (monthly) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
-			pivalue = ical_new_value("INTERVAL");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
-			if (!pivalue->append_subval(tmp_buff))
-				return FALSE;
-			pivalue = ical_new_value("BYMONTHDAY");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
+			piline->append_value("INTERVAL", tmp_buff);
 			if (apr->recur_pat.pts.dayofmonth == 31)
 				strcpy(tmp_buff, "-1");
 			else
 				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.dayofmonth);
-			if (!pivalue->append_subval(tmp_buff))
-				return FALSE;
+			piline->append_value("BYMONTHDAY", tmp_buff);
 		} else {
-			if (!pivalue->append_subval("YEARLY"))
-				return FALSE;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
-			pivalue = ical_new_value("INTERVAL");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
-			if (!pivalue->append_subval(tmp_buff))
-				return FALSE;
-			pivalue = ical_new_value("BYMONTHDAY");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
+			piline->append_value("INTERVAL", tmp_buff);
 			if (apr->recur_pat.pts.dayofmonth == 31)
 				strcpy(tmp_buff, "-1");
 			else
 				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.dayofmonth);
-			if (!pivalue->append_subval(tmp_buff))
-				return FALSE;
-			pivalue = ical_new_value("BYMONTH");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
+			piline->append_value("BYMONTHDAY", tmp_buff);
 			ical_get_itime_from_yearday(1601, apr->recur_pat.firstdatetime / 1440 + 1, &itime);
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", itime.month);
-			if (!pivalue->append_subval(tmp_buff))
-				return FALSE;
+			piline->append_value("BYMONTH", tmp_buff);
 		}
 		break;
+	}
 	case PATTERNTYPE_MONTHNTH:
-	case PATTERNTYPE_HJMONTHNTH:
-		pivalue = ical_new_value("FREQ");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
-		if (apr->recur_pat.period % 12 != 0) {
-			if (!pivalue->append_subval("MONTHLY"))
-				return FALSE;
+	case PATTERNTYPE_HJMONTHNTH: {
+		auto monthly = apr->recur_pat.period % 12 != 0;
+		piline->append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
+		if (monthly) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
-			pivalue = ical_new_value("INTERVAL");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
-			if (!pivalue->append_subval(tmp_buff))
-				return FALSE;
+			piline->append_value("INTERVAL", tmp_buff);
 			pivalue = ical_new_value("BYDAY");
 			if (pivalue == nullptr)
 				return FALSE;
@@ -3107,28 +2958,14 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd) &&
 				    !pivalue->append_subval(weekday_to_str(wd)))
 					return false;
-			pivalue = ical_new_value("BYSETPOS");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
 			else
 				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.monthnth.recurnum);
-			if (!pivalue->append_subval(tmp_buff))
-				return FALSE;
+			piline->append_value("BYSETPOS", tmp_buff);
 		} else {
-			if (!pivalue->append_subval("YEARLY"))
-				return FALSE;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
-			pivalue = ical_new_value("INTERVAL");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
-			if (!pivalue->append_subval(tmp_buff))
-				return FALSE;
+			piline->append_value("INTERVAL", tmp_buff);
 			pivalue = ical_new_value("BYDAY");
 			if (pivalue == nullptr)
 				return FALSE;
@@ -3138,27 +2975,16 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd) &&
 				    !pivalue->append_subval(weekday_to_str(wd)))
 					return false;
-			pivalue = ical_new_value("BYSETPOS");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
 			else
 				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.monthnth.recurnum);
-			if (!pivalue->append_subval(tmp_buff))
-				return FALSE;
-			pivalue = ical_new_value("BYMONTH");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
+			piline->append_value("BYSETPOS", tmp_buff);
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.firstdatetime);
-			if (!pivalue->append_subval(tmp_buff))
-				return FALSE;
+			piline->append_value("BYMONTH", tmp_buff);
 		}
 		break;
+	}
 	default:
 		return FALSE;
 	}
@@ -3166,13 +2992,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		apr->recur_pat.endtype) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
 			apr->recur_pat.occurrencecount);
-		pivalue = ical_new_value("COUNT");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
-		if (!pivalue->append_subval(tmp_buff))
-			return FALSE;
+		piline->append_value("COUNT", tmp_buff);
 	} else if (ENDTYPE_AFTER_DATE ==
 		apr->recur_pat.endtype) {
 		nt_time = apr->recur_pat.enddate
@@ -3184,25 +3004,18 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			return FALSE;
 		ical_utc_to_datetime(NULL, unix_time, &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-		pivalue = ical_new_value("UNTIL");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
-		if (!pivalue->append_subval(tmp_buff))
-			return FALSE;
+		piline->append_value("UNTIL", tmp_buff);
 	}
 	if (PATTERNTYPE_WEEK == apr->recur_pat.patterntype) {
-		pivalue = ical_new_value("WKST");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
 		auto wd = weekday_to_str(apr->recur_pat.firstdow);
-		if (wd == nullptr || !pivalue->append_subval(wd))
+		if (wd == nullptr)
 			return FALSE;
+		piline->append_value("WKST", wd);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2091: ENOMEM\n");
+	return false;
 }
 
 static BOOL oxcical_check_exdate(APPOINTMENT_RECUR_PAT *apr)

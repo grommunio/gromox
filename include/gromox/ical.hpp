@@ -42,10 +42,11 @@ struct GX_EXPORT ICAL_VALUE {
 
 using ical_vlist = std::list<std::shared_ptr<ICAL_VALUE>>;
 
-struct GX_EXPORT ICAL_LINE {
+struct GX_EXPORT ical_line {
 	public:
 	int append_param(std::shared_ptr<ICAL_PARAM>);
 	int append_value(std::shared_ptr<ICAL_VALUE>);
+	void append_value(const char *v, const char *sv);
 	const char *get_first_paramval(const char *name);
 	const char *get_first_subvalue();
 	const char *get_first_subvalue_by_name(const char *name);
@@ -55,6 +56,7 @@ struct GX_EXPORT ICAL_LINE {
 	std::list<std::shared_ptr<ICAL_PARAM>> param_list;
 	ical_vlist value_list;
 };
+using ICAL_LINE = ical_line;
 
 struct GX_EXPORT ical_component {
 	public:
