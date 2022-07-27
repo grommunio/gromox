@@ -1733,21 +1733,21 @@ BOOL common_util_send_message(store_object *pstore,
 		    pstore->account_id, cpid, message_id, folder_id, new_id,
 		    TRUE, &b_result))
 			return FALSE;
+		return TRUE;
 	} else if (b_delete) {
 		exmdb_client_delete_message(pstore->get_dir(),
 			pstore->account_id, cpid, parent_id, message_id,
 			TRUE, &b_result);
-	} else {
-		if (!exmdb_client::clear_submit(pstore->get_dir(), message_id, false))
-			return FALSE;
-		ids.count = 1;
-		ids.pids = &message_id;
-		return exmdb_client::movecopy_messages(pstore->get_dir(),
-		       pstore->account_id, cpid, false, nullptr, parent_id,
-			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
-			FALSE, &ids, &b_partial);
+		return TRUE;
 	}
-	return TRUE;
+	if (!exmdb_client::clear_submit(pstore->get_dir(), message_id, false))
+		return FALSE;
+	ids.count = 1;
+	ids.pids = &message_id;
+	return exmdb_client::movecopy_messages(pstore->get_dir(),
+	       pstore->account_id, cpid, false, nullptr, parent_id,
+		rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
+		FALSE, &ids, &b_partial);
 }
 
 void common_util_notify_receipt(const char *username, int type,

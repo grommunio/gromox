@@ -2016,24 +2016,25 @@ BOOL common_util_send_message(logon_object *plogon,
 			log_err("W-1277: Failed to move to target folder while sending mid:0x%llx", LLU{message_id});
 			return FALSE;
 		}
+		return TRUE;
 	} else if (b_delete) {
 		exmdb_client_delete_message(plogon->get_dir(),
 			plogon->account_id, cpid, parent_id, message_id,
 			TRUE, &b_result);
-	} else {
-		if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, false)) {
-			log_err("W-1276: Failed to clear submit flag while sending mid:0x%llx", LLU{message_id});
-			return FALSE;
-		}
-		ids.count = 1;
-		ids.pids = &message_id;
-		if (!exmdb_client_movecopy_messages(plogon->get_dir(),
-		    plogon->account_id, cpid, false, nullptr, parent_id,
-		    rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
-		    false, &ids, &b_partial)) {
-			log_err("W-1275: Failed to move to \"Sent\" folder while sending mid:0x%llx", LLU{message_id});
-			return FALSE;	
-		}
+		return TRUE;
+	}
+	if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, false)) {
+		log_err("W-1276: Failed to clear submit flag while sending mid:0x%llx", LLU{message_id});
+		return FALSE;
+	}
+	ids.count = 1;
+	ids.pids = &message_id;
+	if (!exmdb_client_movecopy_messages(plogon->get_dir(),
+	    plogon->account_id, cpid, false, nullptr, parent_id,
+	    rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
+	    false, &ids, &b_partial)) {
+		log_err("W-1275: Failed to move to \"Sent\" folder while sending mid:0x%llx", LLU{message_id});
+		return FALSE;
 	}
 	return TRUE;
 }
