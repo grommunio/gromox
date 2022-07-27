@@ -3343,7 +3343,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				continue;
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-2031: remove %s: %s\n",
+				fprintf(stderr, "W-2086: remove %s: %s\n",
 				        eml_path.c_str(), strerror(errno));
 			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 			string_length = gx_snprintf(buff, arsizeof(buff),
@@ -3446,7 +3446,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 				continue;
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-2032: remove %s: %s\n",
+				fprintf(stderr, "W-2087: remove %s: %s\n",
 				        eml_path.c_str(), strerror(errno));
 			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 			b_deleted = TRUE;

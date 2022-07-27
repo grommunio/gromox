@@ -434,7 +434,7 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 			}
 			phpm_ctx->cache_fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
 			if (phpm_ctx->cache_fd == -1) {
-				fprintf(stderr, "E-2080: open %s: %s\n", path, strerror(errno));
+				fprintf(stderr, "E-2090: open %s: %s\n", path, strerror(errno));
 				phpm_ctx->b_preproc = FALSE;
 				return FALSE;
 			}

@@ -375,7 +375,7 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 	finalvec = std::move(cardvec);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2042: ENOMEM\n");
+	fprintf(stderr, "E-2088: ENOMEM\n");
 	return ecServerOOM;
 }
 

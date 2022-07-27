@@ -291,7 +291,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() >= 0) {
 			if (HXio_fullwrite(fd.get(), digest_buff, tmp_len) != tmp_len)
-				fprintf(stderr, "E-1979: write %s: %s\n", temp_path, strerror(errno));
+				fprintf(stderr, "E-2082: write %s: %s\n", temp_path, strerror(errno));
 			fd.close();
 		}
 	} else {
@@ -2726,7 +2726,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return MIDB_E_DISK_ERROR;
 	}
 	if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len)
-		fprintf(stderr, "E-1982: write %s: %s\n", temp_path, strerror(errno));
+		fprintf(stderr, "E-2085: write %s: %s\n", temp_path, strerror(errno));
 	fd.close();
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -2887,7 +2887,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_DISK_ERROR;
 	}
 	if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode)) {
-		fprintf(stderr, "E-2075: fstat/type mismatch\n");
+		fprintf(stderr, "E-2089: fstat/type mismatch\n");
 		return MIDB_E_DISK_ERROR;
 	}
 	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
@@ -2982,13 +2982,13 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		eml_path = argv[1] + "/eml/"s + argv[3];
 		auto eml_path1 = argv[1] + "/eml/"s + mid_string;
 		if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
-			fprintf(stderr, "E-1980: link %s %s: %s\n",
+			fprintf(stderr, "E-2083: link %s %s: %s\n",
 			        eml_path.c_str(), eml_path1.c_str(),
 			        strerror(errno));
 		eml_path = argv[1] + "/ext/"s + argv[3];
 		eml_path1 = argv[1] + "/ext/"s + mid_string;
 		if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
-			fprintf(stderr, "E-1981: link %s %s: %s\n",
+			fprintf(stderr, "E-2084: link %s %s: %s\n",
 			        eml_path.c_str(), eml_path1.c_str(),
 			        strerror(errno));
 	} catch (const std::bad_alloc &) {
