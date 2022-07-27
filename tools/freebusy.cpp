@@ -61,6 +61,14 @@ static time_t g_end_time;
 static time_t g_start_time;
 static const char *g_username;
 static std::shared_ptr<ICAL_COMPONENT> g_tz_component;
+static constexpr char fmt_datetimelcl[] = "%04d%02d%02dT%02d%02d%02d",
+	fmt_datetimeutc[] = "%04d%02d%02dT%02d%02d%02dZ";
+
+static int sprintf_dtutc(char *b, size_t z, const ICAL_TIME &t)
+{
+	return snprintf(b, z, fmt_datetimeutc, t.year, t.month, t.day, t.hour,
+	       t.minute, t.second);
+}
 
 static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	const char *tzid, TIMEZONESTRUCT *ptzstruct)
@@ -91,13 +99,13 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			ptzstruct->standarddate.month,
 			ptzstruct->standarddate.day,
 			ptzstruct->standarddate.dayofweek);
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
+		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->standarddate.month,
 			day, (int)ptzstruct->standarddate.hour,
 			(int)ptzstruct->standarddate.minute,
 			(int)ptzstruct->standarddate.second);
 	} else if (1 == ptzstruct->standarddate.year) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
+		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->standarddate.month,
 			(int)ptzstruct->standarddate.day,
 			(int)ptzstruct->standarddate.hour,
@@ -209,13 +217,13 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			ptzstruct->daylightdate.month,
 			ptzstruct->daylightdate.day,
 			ptzstruct->daylightdate.dayofweek);
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
+		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->daylightdate.month,
 			day, (int)ptzstruct->daylightdate.hour,
 			(int)ptzstruct->daylightdate.minute,
 			(int)ptzstruct->daylightdate.second);
 	} else if (1 == ptzstruct->daylightdate.year) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
+		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->daylightdate.month,
 			(int)ptzstruct->daylightdate.day,
 			(int)ptzstruct->daylightdate.hour,
@@ -531,9 +539,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		nt_time *= 600000000;
 		unix_time = rop_util_nttime_to_unix(nt_time);
 		ical_utc_to_datetime(ptz_component, unix_time, &itime);
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
-			itime.year, itime.month, itime.day,
-			itime.hour, itime.minute, itime.second);
+		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		pivalue = ical_new_value("UNTIL");
 		if (pivalue == nullptr)
 			return FALSE;
