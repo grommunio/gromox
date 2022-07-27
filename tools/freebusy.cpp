@@ -132,31 +132,10 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			order = ptzstruct->standarddate.day;
 			if (order == 5)
 				order = -1;
-			switch (ptzstruct->standarddate.dayofweek) {
-			case 0:
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%dSU", order);
-				break;
-			case 1:
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%dMO", order);
-				break;
-			case 2:
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%dTU", order);
-				break;
-			case 3:
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%dWE", order);
-				break;
-			case 4:
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%dTH", order);
-				break;
-			case 5:
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%dFR", order);
-				break;
-			case 6:
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%dSA", order);
-				break;
-			default:
-				return NULL;
-			}
+			auto dow = weekday_to_str(ptzstruct->standarddate.dayofweek);
+			if (dow == nullptr)
+				return nullptr;
+			snprintf(tmp_buff, std::size(tmp_buff), "%d%s", order, dow);
 			if (!pivalue->append_subval(tmp_buff))
 				return NULL;
 			pivalue = ical_new_value("BYMONTH");
@@ -268,31 +247,10 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		order = ptzstruct->daylightdate.day;
 		if (order == 5)
 			order = -1;
-		switch (ptzstruct->daylightdate.dayofweek) {
-		case 0:
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%dSU", order);
-			break;
-		case 1:
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%dMO", order);
-			break;
-		case 2:
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%dTU", order);
-			break;
-		case 3:
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%dWE", order);
-			break;
-		case 4:
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%dTH", order);
-			break;
-		case 5:
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%dFR", order);
-			break;
-		case 6:
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%dSA", order);
-			break;
-		default:
-			return NULL;
-		}
+		auto dow = weekday_to_str(ptzstruct->daylightdate.dayofweek);
+		if (dow == nullptr)
+			return nullptr;
+		snprintf(tmp_buff, std::size(tmp_buff), "%d%s", order, dow);
 		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 		pivalue = ical_new_value("BYMONTH");
