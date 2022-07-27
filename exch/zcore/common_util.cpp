@@ -1618,7 +1618,7 @@ BOOL common_util_send_message(store_object *pstore,
 	EID_ARRAY ids;
 	BOOL b_private;
 	BOOL b_partial;
-	int accound_id;
+	int account_id;
 	uint64_t new_id;
 	uint64_t parent_id;
 	uint64_t folder_id;
@@ -1725,7 +1725,7 @@ BOOL common_util_send_message(store_object *pstore,
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
 		if (!common_util_from_message_entryid(*ptarget,
-		    &b_private, &accound_id, &folder_id, &new_id))
+		    &b_private, &account_id, &folder_id, &new_id))
 			return FALSE;	
 		if (!exmdb_client::clear_submit(pstore->get_dir(), message_id, false))
 			return FALSE;
@@ -1746,7 +1746,7 @@ BOOL common_util_send_message(store_object *pstore,
 	ids.pids = &message_id;
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
 	if (ptarget == nullptr || !common_util_from_folder_entryid(*ptarget,
-	    &b_private, &accound_id, &folder_id))
+	    &b_private, &account_id, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 	return exmdb_client::movecopy_messages(pstore->get_dir(),
 	       pstore->account_id, cpid, false, nullptr, parent_id, folder_id,
