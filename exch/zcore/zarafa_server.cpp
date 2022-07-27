@@ -5140,10 +5140,10 @@ uint32_t zarafa_server_imtomessage2(GUID session, uint32_t fld_handle,
 	});
 	for (auto &&msgctnt : msgvec) {
 		uint32_t msg_handle = 0;
-		auto ret = zarafa_server_createmessage(session, fld_handle,
+		auto rt2 = zarafa_server_createmessage(session, fld_handle,
 		           0, &msg_handle);
-		if (ret != ecSuccess)
-			return ret;
+		if (rt2 != ecSuccess)
+			return rt2;
 		auto zmo = info->ptree->get_object<message_object>(msg_handle, &mapi_type);
 		if (zmo == nullptr || mapi_type != ZMG_MESSAGE ||
 		    !zmo->write_message(msgctnt.get()))
