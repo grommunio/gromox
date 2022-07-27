@@ -1744,9 +1744,12 @@ BOOL common_util_send_message(store_object *pstore,
 		return FALSE;
 	ids.count = 1;
 	ids.pids = &message_id;
+	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
+	if (ptarget == nullptr || !common_util_from_folder_entryid(*ptarget,
+	    &b_private, &accound_id, &folder_id))
+		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 	return exmdb_client::movecopy_messages(pstore->get_dir(),
-	       pstore->account_id, cpid, false, nullptr, parent_id,
-		rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
+	       pstore->account_id, cpid, false, nullptr, parent_id, folder_id,
 		FALSE, &ids, &b_partial);
 }
 
