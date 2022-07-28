@@ -1,8 +1,9 @@
 #include <cstring>
 #include <utility>
+#include <gromox/ical.hpp>
 #include <gromox/vcard.hpp>
 
-int main()
+static void t_card()
 {
 	vcard C;
 	auto &l = C.append_line("ADR");
@@ -26,4 +27,29 @@ int main()
 
 	strcpy(buf, "BEGIN:VCARD\n\nEND:VCARD\n");
 	C.retrieve_single(buf);
+}
+
+static void t_ical()
+{
+	ical ic;
+	ic.init();
+	auto c = ical_new_component("COMPX");
+	ic.append_comp(c);
+	auto l = ical_new_simple_line("KEY", "VALUE1");
+	c->append_line(l);
+	auto v = ical_new_value(nullptr);
+	l->append_value(v);
+	v->append_subval("SUBVAL");
+	v->append_subval("SUBVAL");
+
+	char buf[4096];
+	ic.serialize(buf, std::size(buf));
+	printf("%s\n", buf);
+}
+
+int main()
+{
+	t_card();
+	t_ical();
+	return EXIT_SUCCESS;
 }
