@@ -251,7 +251,7 @@ static vcard_line vcard_retrieve_tag(char *ptag) try
 	if (NULL != ptr) {
 		*ptr = '\0';
 	}
-	vcard_line pvline;
+	vcard_line pvline(ptag);
 	if (ptr == nullptr)
 		return pvline;
 	ptr ++;

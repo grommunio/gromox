@@ -23,7 +23,6 @@ struct GX_EXPORT vcard_value {
 using VCARD_VALUE = vcard_value;
 
 struct GX_EXPORT vcard_line {
-	vcard_line() = default;
 	vcard_line(const char *n) : m_name(n) {}
 	inline vcard_param &append_param(vcard_param &&o) { m_params.push_back(std::move(o)); return m_params.back(); }
 	vcard_param &append_param(const char *p, const char *pv);
