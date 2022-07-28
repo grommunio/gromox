@@ -75,7 +75,6 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 {
 	int day;
 	int order;
-	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	
 	auto pcomponent = ical_new_component("VTIMEZONE");
@@ -283,9 +282,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		for (unsigned int wd = 0; wd < 7; ++wd)
-			if (apr->recur_pat.pts.weekrecur & (1 << wd) &&
-			    !pivalue->append_subval(weekday_to_str(wd)))
-				return false;
+			if (apr->recur_pat.pts.weekrecur & (1 << wd))
+				pivalue->append_subval(weekday_to_str(wd));
 		break;
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_HJMONTH: {
@@ -326,9 +324,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			for (unsigned int wd = 0; wd < 7; ++wd)
-				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd) &&
-				    !pivalue->append_subval(weekday_to_str(wd)))
-					return false;
+				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
+					pivalue->append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
 			else
@@ -343,9 +340,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			for (unsigned int wd = 0; wd < 7; ++wd)
-				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd) &&
-				    !pivalue->append_subval(weekday_to_str(wd)))
-					return false;
+				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
+					pivalue->append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
 			else

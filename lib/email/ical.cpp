@@ -282,8 +282,7 @@ static std::shared_ptr<ICAL_PARAM> ical_retrieve_param(char *ptag)
 	}
 	do {
 		pnext = ical_get_tag_comma(ptr);
-		if (!piparam->append_paramval(ptr))
-			return NULL;
+		piparam->append_paramval(ptr);
 	} while ((ptr = pnext) != NULL);
 	return piparam;
 }
@@ -324,7 +323,7 @@ static bool ical_check_base64(ICAL_LINE *piline)
 	       piline->param_list.cend();
 }
 
-static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
+static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue) try
 {
 	char *ptr;
 	char *ptr1;
@@ -357,11 +356,13 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
 			return false;
 		do {
 			pnext1 = ical_get_value_sep(ptr1, ',');
-			if (!pivalue->append_subval(*ptr1 == '\0' ? nullptr : ptr1))
-				return FALSE;
+			pivalue->append_subval(*ptr1 == '\0' ? nullptr : ptr1);
 		} while ((ptr1 = pnext1) != NULL);
 	} while ((ptr = pnext) != NULL);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2099: ENOMEM\n");
+	return false;
 }
 
 static void ical_unescape_string(char *pstring)
@@ -397,7 +398,7 @@ static inline bool r1something(const char *s)
 }
 
 static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
-    char *in_buff, char **ppnext)
+    char *in_buff, char **ppnext) try
 {
 	char *pline;
 	char *pnext;
@@ -454,14 +455,16 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 				if (piline->append_value(pivalue) < 0)
 					break;
 				ical_unescape_string(tmp_item.pvalue);
-				if (!pivalue->append_subval(tmp_item.pvalue))
-					break;
+				pivalue->append_subval(tmp_item.pvalue);
 			} else if (!ical_retrieve_value(piline.get(), tmp_item.pvalue)) {
 				break;
 			}
 		}
 	} while ((pline = pnext) != NULL);
 	ical_clear_component(pcomponent);
+	return false;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2098: ENOMEM\n");
 	return false;
 }
 
@@ -708,16 +711,6 @@ bool ical::serialize(char *out_buff, size_t max_length)
 	return ical_serialize_component(this, out_buff, max_length) != 0;
 }
 
-bool ICAL_PARAM::append_paramval(const char *paramval)
-{
-	try {
-		paramval_list.push_back(paramval);
-		return true;
-	} catch (...) {
-	}
-	return false;
-}
-
 static ical_svlist *ical_get_subval_list_internal(const ical_vlist *pvalue_list, const char *name)
 {
 	auto end = pvalue_list->cend();
@@ -778,8 +771,7 @@ std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *va
 	}
 	if (piline->append_value(pivalue) < 0)
 		return nullptr;
-	if (!pivalue->append_subval(value))
-		return NULL;
+	pivalue->append_subval(value);
 	return piline;
 }
 

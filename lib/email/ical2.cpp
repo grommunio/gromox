@@ -10,16 +10,6 @@
 #include <gromox/defs.h>
 #include <gromox/ical.hpp>
 
-bool ICAL_VALUE::append_subval(const char *subval)
-{
-	try {
-		subval_list.emplace_back(gromox::znul(subval));
-		return true;
-	} catch (...) {
-		return false;
-	}
-}
-
 const char *ICAL_LINE::get_first_paramval(const char *name)
 {
 	auto it = std::find_if(param_list.cbegin(), param_list.cend(),
@@ -118,7 +108,10 @@ int ICAL_COMPONENT::append_comp(std::shared_ptr<ICAL_COMPONENT> c)
 void ical_line::append_param(const char *tag, const char *s)
 {
 	auto p = ical_new_param(tag);
-	if (p == nullptr || !p->append_paramval(s) || append_param(p) != 0)
+	if (p == nullptr)
+		throw std::bad_alloc();
+	p->append_paramval(s);
+	if (append_param(p) != 0)
 		throw std::bad_alloc();
 }
 
@@ -128,6 +121,9 @@ void ical_line::append_param(const char *tag, const char *s)
 void ical_line::append_value(const char *tag, const char *s)
 {
 	auto v = ical_new_value(tag);
-	if (v == nullptr || !v->append_subval(s) || append_value(v) != 0)
+	if (v == nullptr)
+		throw std::bad_alloc();
+	v->append_subval(s);
+	if (append_value(v) != 0)
 		throw std::bad_alloc();
 }

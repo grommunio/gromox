@@ -25,7 +25,7 @@ using ical_svlist = std::list<std::string>;
 
 struct GX_EXPORT ICAL_PARAM {
 	public:
-	bool append_paramval(const char *paramval);
+	void append_paramval(const char *s) { paramval_list.emplace_back(gromox::znul(s)); }
 
 	std::string name;
 	ical_svlist paramval_list;
@@ -33,7 +33,7 @@ struct GX_EXPORT ICAL_PARAM {
 
 struct GX_EXPORT ICAL_VALUE {
 	public:
-	bool append_subval(const char *subval);
+	void append_subval(const char *s) { subval_list.emplace_back(gromox::znul(s)); }
 
 	std::string name;
 	ical_svlist subval_list;

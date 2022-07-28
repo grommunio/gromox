@@ -2879,9 +2879,8 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		for (unsigned int wd = 0; wd < 7; ++wd)
-			if (apr->recur_pat.pts.weekrecur & (1 << wd) &&
-			    !pivalue->append_subval(weekday_to_str(wd)))
-				return false;
+			if (apr->recur_pat.pts.weekrecur & (1 << wd))
+				pivalue->append_subval(weekday_to_str(wd));
 		break;
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_HJMONTH: {
@@ -2922,9 +2921,8 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			for (unsigned int wd = 0; wd < 7; ++wd)
-				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd) &&
-				    !pivalue->append_subval(weekday_to_str(wd)))
-					return false;
+				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
+					pivalue->append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
 			else
@@ -2939,9 +2937,8 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			for (unsigned int wd = 0; wd < 7; ++wd)
-				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd) &&
-				    !pivalue->append_subval(weekday_to_str(wd)))
-					return false;
+				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
+					pivalue->append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
 			else
@@ -3054,8 +3051,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		if (!pivalue->append_subval(tmp_buff))
-			return FALSE;
+		pivalue->append_subval(tmp_buff);
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -3127,8 +3123,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		if (!pivalue->append_subval(tmp_buff))
-			return FALSE;
+		pivalue->append_subval(tmp_buff);
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -3643,8 +3638,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		for (size_t i = 0; i < sa->count; ++i)
-			if (!pivalue->append_subval(sa->ppstr[i]))
-				return FALSE;
+			pivalue->append_subval(sa->ppstr[i]);
 	}
 	
 	num = pmsg->proplist.get<uint32_t>(PR_SENSITIVITY);
