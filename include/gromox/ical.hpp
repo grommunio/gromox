@@ -45,6 +45,7 @@ using ical_vlist = std::list<std::shared_ptr<ICAL_VALUE>>;
 struct GX_EXPORT ical_line {
 	public:
 	int append_param(std::shared_ptr<ICAL_PARAM>);
+	void append_param(const char *v, const char *pv);
 	int append_value(std::shared_ptr<ICAL_VALUE>);
 	void append_value(const char *v, const char *sv);
 	const char *get_first_paramval(const char *name);

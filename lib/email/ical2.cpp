@@ -118,6 +118,13 @@ int ICAL_COMPONENT::append_comp(std::shared_ptr<ICAL_COMPONENT> c)
 	return -ENOMEM;
 }
 
+void ical_line::append_param(const char *tag, const char *s)
+{
+	auto p = ical_new_param(tag);
+	if (p == nullptr || !p->append_paramval(s) || append_param(p) != 0)
+		throw std::bad_alloc();
+}
+
 /**
  * @tag may be nullptr.
  */

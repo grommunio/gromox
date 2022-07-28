@@ -2758,13 +2758,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			return FALSE;
 		if (pevent_component->append_line(piline) < 0)
 			return false;
-		piparam = ical_new_param("PARTSTAT");
-		if (piparam == nullptr)
-			return FALSE;
-		if (piline->append_param(piparam) < 0)
-			return false;
-		if (!piparam->append_paramval(partstat))
-			return FALSE;
+		piline->append_param("PARTSTAT", partstat);
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
 		piline->append_value(nullptr, tmp_value);
 		return TRUE;
@@ -2785,48 +2779,21 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			return FALSE;
 		if (pevent_component->append_line(piline) < 0)
 			return false;
-		piparam = ical_new_param("ROLE");
-		if (piparam == nullptr)
-			return FALSE;
-		if (piline->append_param(piparam) < 0)
-			return false;
-		if (rcpttype != nullptr && *rcpttype == MAPI_CC) {
-			if (!piparam->append_paramval("OPT-PARTICIPANT"))
-				return FALSE;
-		} else if (rcpttype != nullptr && *rcpttype == MAPI_BCC) {
-			if (!piparam->append_paramval("NON-PARTICIPANT"))
-				return FALSE;
-		} else {
-			if (!piparam->append_paramval("REQ-PARTICIPANT"))
-				return FALSE;
-		}
+		const char *role =
+			rcpttype == nullptr ? "REQ-PARTICIPANT" :
+			*rcpttype == MAPI_CC ? "OPT-PARTICIPANT" :
+			*rcpttype == MAPI_BCC ? "NON-PARTICIPANT" :
+			"REQ-PARTICIPANT";
+		piline->append_param("ROLE", role);
 		if (NULL != partstat) {
-			piparam = ical_new_param("PARTSTAT");
-			if (piparam == nullptr)
-				return FALSE;
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval(partstat))
-				return FALSE;
+			piline->append_param("PARTSTAT", partstat);
 		}
 		if (b_rsvp) {
-			piparam = ical_new_param("RSVP");
-			if (piparam == nullptr)
-				return FALSE;
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval("TRUE"))
-				return FALSE;
+			piline->append_param("RSVP", "TRUE");
 		}
 		auto name = pmsg->children.prcpts->pparray[i]->get<const char>(PR_DISPLAY_NAME);
 		if (name != nullptr) {
-			piparam = ical_new_param("CN");
-			if (piparam == nullptr)
-				return FALSE;
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval(name))
-				return FALSE;
+			piline->append_param("CN", name);
 		}
 		if (!oxcical_get_smtp_address(pmsg->children.prcpts->pparray[i],
 		    entryid_to_username, essdn_to_username, alloc, username,
@@ -3039,7 +3006,7 @@ static BOOL oxcical_check_exdate(APPOINTMENT_RECUR_PAT *apr)
 }
 
 static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
-    std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr)
+    std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	BOOL b_found;
 	ICAL_TIME itime;
@@ -3063,21 +3030,9 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 	if (piline->append_value(pivalue) < 0)
 		return false;
 	if (b_date) {
-		piparam = ical_new_param("VALUE");
-		if (piparam == nullptr)
-			return FALSE;
-		if (piline->append_param(piparam) < 0)
-			return false;
-		if (!piparam->append_paramval("DATE"))
-			return FALSE;
+		piline->append_param("VALUE", "DATE");
 	} else if (tzid != nullptr) {
-		piparam = ical_new_param("TZID");
-		if (piparam == nullptr)
-			return FALSE;
-		if (piline->append_param(piparam) < 0)
-			return false;
-		if (!piparam->append_paramval(tzid))
-			return FALSE;
+		piline->append_param("TZID", tzid);
 	}
 	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
 		b_found = FALSE;
@@ -3103,6 +3058,9 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 			return FALSE;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2095: ENOMEM\n");
+	return false;
 }
 
 static BOOL oxcical_check_rdate(APPOINTMENT_RECUR_PAT *apr)
@@ -3127,7 +3085,7 @@ static BOOL oxcical_check_rdate(APPOINTMENT_RECUR_PAT *apr)
 }
 
 static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
-     std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr)
+     std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	BOOL b_found;
 	ICAL_TIME itime;
@@ -3145,21 +3103,9 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	if (piline->append_value(pivalue) < 0)
 		return false;
 	if (b_date) {
-		piparam = ical_new_param("VALUE");
-		if (piparam == nullptr)
-			return FALSE;
-		if (piline->append_param(piparam) < 0)
-			return false;
-		if (!piparam->append_paramval("DATE"))
-			return FALSE;
+		piline->append_param("VALUE", "DATE");
 	} else if (tzid != nullptr) {
-		piparam = ical_new_param("TZID");
-		if (piparam == nullptr)
-			return FALSE;
-		if (piline->append_param(piparam) < 0)
-			return false;
-		if (!piparam->append_paramval(tzid))
-			return FALSE;
+		piline->append_param("TZID", tzid);
 	}
 	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
 		b_found = FALSE;
@@ -3185,6 +3131,9 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 			return FALSE;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2096: ENOMEM\n");
+	return false;
 }
 
 static bool busystatus_to_line(ol_busy_status status, const char *key,
@@ -3202,9 +3151,8 @@ static bool busystatus_to_line(ol_busy_status status, const char *key,
 static BOOL oxcical_export_internal(const char *method, const char *tzid,
     std::shared_ptr<ICAL_COMPONENT> ptz_component, const MESSAGE_CONTENT *pmsg,
     ICAL *pical, ENTRYID_TO_USERNAME entryid_to_username,
-	ESSDN_TO_USERNAME essdn_to_username,
-	LCID_TO_LTAG lcid_to_ltag, EXT_BUFFER_ALLOC alloc,
-	GET_PROPIDS get_propids)
+    ESSDN_TO_USERNAME essdn_to_username, LCID_TO_LTAG lcid_to_ltag,
+    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
 	int year;
 	GUID guid;
@@ -3461,13 +3409,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				return false;
 			str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
 			if (str != nullptr) {
-				piparam = ical_new_param("CN");
-				if (piparam == nullptr)
-					return FALSE;
-				if (piline->append_param(piparam) < 0)
-					return false;
-				if (!piparam->append_paramval(str))
-					return FALSE;
+				piline->append_param("CN", str);
 			}
 		}
 	}
@@ -3487,13 +3429,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (pcomponent->append_line(piline) < 0)
 			return false;
 		if (NULL != planguage) {
-			piparam = ical_new_param("LANGUAGE");
-			if (piparam == nullptr)
-				return FALSE;
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval(planguage))
-				return FALSE;
+			piline->append_param("LANGUAGE", planguage);
 		}
 	}
 	
@@ -3625,13 +3561,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (pcomponent->append_line(piline) < 0)
 			return false;
 		if (NULL != ptz_component) {
-			piparam = ical_new_param("TZID");
-			if (piparam == nullptr)
-				return FALSE;
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval(tzid))
-				return FALSE;
+			piline->append_param("TZID", tzid);
 		}
 	} else {
 		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
@@ -3650,13 +3580,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (pcomponent->append_line(piline) < 0)
 			return false;
 		if (NULL != planguage) {
-			piparam = ical_new_param("LANGUAGE");
-			if (piparam == nullptr)
-				return FALSE;
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval(planguage))
-				return FALSE;
+			piline->append_param("LANGUAGE", planguage);
 		}
 	}
 	
@@ -3675,22 +3599,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (pcomponent->append_line(piline) < 0)
 		return false;
 	if (ptz_component == nullptr && g_oxcical_allday_ymd) {
-		piparam = ical_new_param("VALUE");
-		if (piparam == nullptr)
-			return FALSE;
-		if (piline->append_param(piparam) < 0)
-			return false;
-		if (!piparam->append_paramval("DATE"))
-			return FALSE;
+		piline->append_param("VALUE", "DATE");
 	}
 	if (NULL != ptz_component) {
-		piparam = ical_new_param("TZID");
-		if (piparam == nullptr)
-			return FALSE;
-		if (piline->append_param(piparam) < 0)
-			return false;
-		if (!piparam->append_paramval(tzid))
-			return FALSE;
+		piline->append_param("TZID", tzid);
 	}
 	
 	if (start_time != end_time) {
@@ -3708,22 +3620,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (pcomponent->append_line(piline) < 0)
 			return false;
 		if (ptz_component == nullptr && g_oxcical_allday_ymd) {
-			piparam = ical_new_param("VALUE");
-			if (piparam == nullptr)
-				return FALSE;
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval("DATE"))
-				return FALSE;
+			piline->append_param("VALUE", "DATE");
 		}
 		if (NULL != ptz_component) {
-			piparam = ical_new_param("TZID");
-			if (piparam == nullptr)
-				return FALSE;
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval(tzid))
-				return FALSE;
+			piline->append_param("TZID", tzid);
 		}
 	}
 	
@@ -3863,22 +3763,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
 		if (str != nullptr) {
-			piparam = ical_new_param("ALTREP");
-			if (piparam == nullptr)
-				return FALSE;
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval(str))
-				return FALSE;
+			piline->append_param("ALTREP", str);
 		}
 		if (NULL != planguage) {
-			piparam = ical_new_param("LANGUAGE");
-			if (piparam == nullptr)
-				return FALSE;
-			if (piline->append_param(piparam) < 0)
-				return false;
-			if (!piparam->append_paramval(planguage))
-				return FALSE;
+			piline->append_param("LANGUAGE", planguage);
 		}
 	}
 	
@@ -4024,13 +3912,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		if (pcomponent->append_line(piline) < 0)
 			return false;
-		piparam = ical_new_param("RELATED");
-		if (piparam == nullptr)
-			return FALSE;
-		if (piline->append_param(piparam) < 0)
-			return false;
-		if (!piparam->append_paramval("START"))
-			return FALSE;
+		piline->append_param("RELATED", "START");
 		piline = ical_new_simple_line("ACTION", "DISPLAY");
 		if (piline == nullptr)
 			return FALSE;
@@ -4038,6 +3920,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return false;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2097: ENOMEM\n");
+	return false;
 }
 
 BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ICAL *pical,
