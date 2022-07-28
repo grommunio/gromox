@@ -550,12 +550,6 @@ BOOL vcard::serialize(char *out_buff, size_t max_length)
 	return TRUE;
 }
 
-vcard_line::vcard_line(const char *n) : m_name(n)
-{}
-
-vcard_param::vcard_param(const char *n) : m_name(n)
-{}
-
 vcard_param &vcard_line::append_param(const char *k, const char *v)
 {
 	auto &param = append_param(k);

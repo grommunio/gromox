@@ -7,7 +7,7 @@
 #include <gromox/mapierr.hpp>
 
 struct GX_EXPORT vcard_param {
-	vcard_param(const char *);
+	vcard_param(const char *n) : m_name(n) {}
 	void append_paramval(const char *s) { m_paramvals.emplace_back(s); }
 	inline const char *name() const { return m_name.c_str(); }
 
@@ -24,7 +24,7 @@ using VCARD_VALUE = vcard_value;
 
 struct GX_EXPORT vcard_line {
 	vcard_line() = default;
-	vcard_line(const char *);
+	vcard_line(const char *n) : m_name(n) {}
 	inline vcard_param &append_param(vcard_param &&o) { m_params.push_back(std::move(o)); return m_params.back(); }
 	vcard_param &append_param(const char *p, const char *pv);
 	inline vcard_value &append_value(vcard_value &&o) { m_values.push_back(std::move(o)); return m_values.back(); }
