@@ -417,7 +417,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
-				auto wd = weekday_to_int(pnv2.has_value() ? pnv2->c_str() : "");
+				auto wd = weekday_to_int(pnv2.c_str());
 				if (wd < 0)
 					continue;
 				apr->recur_pat.pts.weekrecur |= 1 << wd;
@@ -452,7 +452,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
-				auto wd = weekday_to_int(pnv2.has_value() ? pnv2->c_str() : "");
+				auto wd = weekday_to_int(pnv2.c_str());
 				if (wd < 0)
 					continue;
 				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
@@ -509,7 +509,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
-				auto wd = weekday_to_int(pnv2.has_value() ? pnv2->c_str() : "");
+				auto wd = weekday_to_int(pnv2.c_str());
 				if (wd < 0)
 					continue;
 				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
@@ -784,9 +784,9 @@ static BOOL oxcical_parse_categories(std::shared_ptr<ical_component> main_event,
 	strings_array.count = 0;
 	strings_array.ppstr = tmp_buff;
 	for (const auto &pnv2 : pivalue->subval_list) {
-		if (!pnv2.has_value())
+		if (pnv2.empty())
 			continue;
-		strings_array.ppstr[strings_array.count++] = deconst(pnv2->c_str());
+		strings_array.ppstr[strings_array.count++] = deconst(pnv2.c_str());
 		if (strings_array.count >= 128)
 			break;
 	}
@@ -976,9 +976,9 @@ static BOOL oxcical_parse_dates(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	pvalue = piline->get_first_paramval("VALUE");
 	if (NULL == pvalue || 0 == strcasecmp(pvalue, "DATE-TIME")) {
 		for (const auto &pnv2 : pivalue->subval_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				continue;
-			if (!ical_parse_datetime(pnv2->c_str(), &b_utc, &itime))
+			if (!ical_parse_datetime(pnv2.c_str(), &b_utc, &itime))
 				continue;
 			if (b_utc && ptz_component != nullptr) {
 				ical_itime_to_utc(NULL, itime, &tmp_time);
@@ -999,10 +999,10 @@ static BOOL oxcical_parse_dates(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		}
 	} else if (0 == strcasecmp(pvalue, "DATE")) {
 		for (const auto &pnv2 : pivalue->subval_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				continue;
 			memset(&itime, 0, sizeof(ICAL_TIME));
-			if (!ical_parse_date(pnv2->c_str(), &itime.year, &itime.month, &itime.day))
+			if (!ical_parse_date(pnv2.c_str(), &itime.year, &itime.month, &itime.day))
 				continue;
 			ical_itime_to_utc(NULL, itime, &tmp_time);
 			pdates[*pcount] = rop_util_unix_to_nttime(tmp_time)/600000000;

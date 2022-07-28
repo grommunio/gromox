@@ -5,18 +5,15 @@
 #include <cerrno>
 #include <cstring>
 #include <memory>
-#include <optional>
 #include <string>
 #include <utility>
+#include <gromox/defs.h>
 #include <gromox/ical.hpp>
 
 bool ICAL_VALUE::append_subval(const char *subval)
 {
 	try {
-		if (subval == nullptr)
-			subval_list.emplace_back();
-		else
-			subval_list.emplace_back(std::make_optional<std::string>(subval));
+		subval_list.emplace_back(gromox::znul(subval));
 		return true;
 	} catch (...) {
 		return false;

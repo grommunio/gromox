@@ -2,7 +2,6 @@
 #include <ctime>
 #include <list>
 #include <memory>
-#include <optional>
 #include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -22,15 +21,15 @@ enum class ical_frequency {
 #define RRULE_BY_WEEKNO					7
 #define RRULE_BY_MONTH					8
 
+using ical_svlist = std::list<std::string>;
+
 struct GX_EXPORT ICAL_PARAM {
 	public:
 	bool append_paramval(const char *paramval);
 
 	std::string name;
-	std::list<std::string> paramval_list;
+	ical_svlist paramval_list;
 };
-
-using ical_svlist = std::list<std::optional<std::string>>;
 
 struct GX_EXPORT ICAL_VALUE {
 	public:

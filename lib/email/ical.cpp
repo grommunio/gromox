@@ -7,7 +7,6 @@
 #include <list>
 #include <memory>
 #include <new>
-#include <optional>
 #include <string>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
@@ -671,13 +670,13 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 					out_buff[offset] = ',';
 					offset ++;
 				}
-				if (pnv2.has_value()) {
-					offset += ical_serialize_value_string(
-						out_buff + offset, max_length - offset,
-					          offset - line_begin, pnv2->c_str());
-					if (offset >= max_length) {
-						return 0;
-					}
+				if (pnv2.empty())
+					continue;
+				offset += ical_serialize_value_string(&out_buff[offset],
+				          max_length - offset,
+					  offset - line_begin, pnv2.c_str());
+				if (offset >= max_length) {
+					return 0;
 				}
 			}
 		}
@@ -741,8 +740,7 @@ static const char *ical_get_first_subvalue_by_name_internal(
 	}
 	if (plist->size() != 1)
 		return NULL;
-	const auto &pnode = plist->front();
-	return pnode.has_value() ? pnode->c_str() : nullptr;
+	return plist->front().c_str();
 }
 
 const char *ICAL_LINE::get_first_subvalue_by_name(const char *name)
@@ -760,8 +758,7 @@ const char *ICAL_LINE::get_first_subvalue()
 	}
 	if (pivalue->subval_list.size() != 1)
 		return NULL;
-	const auto &pnv2 = pivalue->subval_list.front();
-	return pnv2.has_value() ? pnv2->c_str() : nullptr;
+	return pivalue->subval_list.front().c_str();
 }
 
 ical_svlist *ICAL_LINE::get_subval_list(const char *name)
@@ -2183,9 +2180,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	auto pbysecond_list = ical_get_subval_list_internal(pvalue_list, "BYSECOND");
 	if (NULL != pbysecond_list) {
 		for (const auto &pnv2 : *pbysecond_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
+			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59) {
 				return false;
 			}
@@ -2199,9 +2196,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	auto pbyminute_list = ical_get_subval_list_internal(pvalue_list, "BYMINUTE");
 	if (NULL != pbyminute_list) {
 		for (const auto &pnv2 : *pbyminute_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
+			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59) {
 				return false;
 			}
@@ -2215,9 +2212,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	auto pbyhour_list = ical_get_subval_list_internal(pvalue_list, "BYHOUR");
 	if (NULL != pbyhour_list) {
 		for (const auto &pnv2 : *pbyhour_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
+			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 23) {
 				return false;
 			}
@@ -2231,9 +2228,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	auto pbymday_list = ical_get_subval_list_internal(pvalue_list, "BYMONTHDAY");
 	if (NULL != pbymday_list) {
 		for (const auto &pnv2 : *pbymday_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
+			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -31 || 0 == tmp_int || tmp_int > 31) {
 				return false;
 			}
@@ -2251,9 +2248,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	auto pbyyday_list = ical_get_subval_list_internal(pvalue_list, "BYYEARDAY");
 	if (NULL != pbyyday_list) {
 		for (const auto &pnv2 : *pbyyday_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
+			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366) {
 				return false;
 			}	
@@ -2276,9 +2273,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			return false;
 		}
 		for (const auto &pnv2 : *pbywday_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				return false;
-			if (!ical_parse_byday(pnv2->c_str(), &dayofweek, &weekorder))
+			if (!ical_parse_byday(pnv2.c_str(), &dayofweek, &weekorder))
 				return false;
 			if (ical_frequency::month == pirrule->frequency) {
 				if (weekorder > 5 || weekorder < -5) {
@@ -2321,9 +2318,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	auto pbywnum_list = ical_get_subval_list_internal(pvalue_list, "BYWEEKNO");
 	if (NULL != pbywnum_list) {
 		for (const auto &pnv2 : *pbywnum_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
+			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -53 || 0 == tmp_int || tmp_int > 53) {
 				return false;
 			}	
@@ -2341,9 +2338,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	auto pbymonth_list = ical_get_subval_list_internal(pvalue_list, "BYMONTH");
 	if (NULL != pbymonth_list) {
 		for (const auto &pnv2 : *pbymonth_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
+			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 1 || tmp_int > 12) {
 				return false;
 			}
@@ -2425,9 +2422,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			break;
 		}
 		for (const auto &pnv2 : *psetpos_list) {
-			if (!pnv2.has_value())
+			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2->c_str(), nullptr, 0);
+			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366) {
 				return false;
 			}
