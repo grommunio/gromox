@@ -780,10 +780,10 @@ static BOOL oxcical_parse_categories(std::shared_ptr<ical_component> main_event,
 	
 	if (piline->value_list.size() == 0)
 		return TRUE;
-	auto pivalue = piline->value_list.front();
+	auto &pivalue = piline->value_list.front();
 	strings_array.count = 0;
 	strings_array.ppstr = tmp_buff;
-	for (const auto &pnv2 : pivalue->subval_list) {
+	for (const auto &pnv2 : pivalue.subval_list) {
 		if (pnv2.empty())
 			continue;
 		strings_array.ppstr[strings_array.count++] = deconst(pnv2.c_str());
@@ -972,10 +972,10 @@ static BOOL oxcical_parse_dates(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	if (piline->value_list.size() == 0)
 		return TRUE;
 	*pcount = 0;
-	auto pivalue = piline->value_list.front();
+	auto &pivalue = piline->value_list.front();
 	pvalue = piline->get_first_paramval("VALUE");
 	if (NULL == pvalue || 0 == strcasecmp(pvalue, "DATE-TIME")) {
-		for (const auto &pnv2 : pivalue->subval_list) {
+		for (const auto &pnv2 : pivalue.subval_list) {
 			if (pnv2.empty())
 				continue;
 			if (!ical_parse_datetime(pnv2.c_str(), &b_utc, &itime))
@@ -998,7 +998,7 @@ static BOOL oxcical_parse_dates(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				return TRUE;
 		}
 	} else if (0 == strcasecmp(pvalue, "DATE")) {
-		for (const auto &pnv2 : pivalue->subval_list) {
+		for (const auto &pnv2 : pivalue.subval_list) {
 			if (pnv2.empty())
 				continue;
 			memset(&itime, 0, sizeof(ICAL_TIME));
@@ -2815,7 +2815,6 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	time_t unix_time;
 	uint64_t nt_time;
 	const char *str_tag;
-	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	
 	str_tag = NULL;
@@ -2869,19 +2868,16 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 1440);
 		piline->append_value("INTERVAL", tmp_buff);
 		break;
-	case PATTERNTYPE_WEEK:
+	case PATTERNTYPE_WEEK: {
 		piline->append_value("FREQ", "WEEKLY");
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 		piline->append_value("INTERVAL", tmp_buff);
-		pivalue = ical_new_value("BYDAY");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
+		auto &pivalue = piline->append_value("BYDAY");
 		for (unsigned int wd = 0; wd < 7; ++wd)
 			if (apr->recur_pat.pts.weekrecur & (1 << wd))
-				pivalue->append_subval(weekday_to_str(wd));
+				pivalue.append_subval(weekday_to_str(wd));
 		break;
+	}
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_HJMONTH: {
 		auto monthly = apr->recur_pat.period % 12 != 0;
@@ -2915,14 +2911,10 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (monthly) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 			piline->append_value("INTERVAL", tmp_buff);
-			pivalue = ical_new_value("BYDAY");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
+			auto &pivalue = piline->append_value("BYDAY");
 			for (unsigned int wd = 0; wd < 7; ++wd)
 				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
-					pivalue->append_subval(weekday_to_str(wd));
+					pivalue.append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
 			else
@@ -2931,14 +2923,10 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		} else {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
 			piline->append_value("INTERVAL", tmp_buff);
-			pivalue = ical_new_value("BYDAY");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
+			auto &pivalue = piline->append_value("BYDAY");
 			for (unsigned int wd = 0; wd < 7; ++wd)
 				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
-					pivalue->append_subval(weekday_to_str(wd));
+					pivalue.append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
 			else
@@ -3021,11 +3009,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 		return FALSE;
 	if (pcomponent->append_line(piline) < 0)
 		return false;
-	auto pivalue = ical_new_value(nullptr);
-	if (pivalue == nullptr)
-		return FALSE;
-	if (piline->append_value(pivalue) < 0)
-		return false;
+	auto &pivalue = piline->append_value();
 	if (b_date) {
 		piline->append_param("VALUE", "DATE");
 	} else if (tzid != nullptr) {
@@ -3051,7 +3035,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		pivalue->append_subval(tmp_buff);
+		pivalue.append_subval(tmp_buff);
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -3093,11 +3077,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 		return FALSE;
 	if (pcomponent->append_line(piline) < 0)
 		return false;
-	auto pivalue = ical_new_value(nullptr);
-	if (pivalue == nullptr)
-		return FALSE;
-	if (piline->append_value(pivalue) < 0)
-		return false;
+	auto &pivalue = piline->append_value();
 	if (b_date) {
 		piline->append_param("VALUE", "DATE");
 	} else if (tzid != nullptr) {
@@ -3123,7 +3103,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		pivalue->append_subval(tmp_buff);
+		pivalue.append_subval(tmp_buff);
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -3160,7 +3140,6 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	EXT_PUSH ext_push;
 	time_t start_time;
 	BOOL b_exceptional, b_recurrence = false;
-	std::shared_ptr<ICAL_VALUE> pivalue;
 	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	char tmp_buff1[2048];
@@ -3632,13 +3611,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		if (pical->append_line(piline) < 0)
 			return false;
-		pivalue = ical_new_value(NULL);
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
+		auto &pivalue = piline->append_value();
 		for (size_t i = 0; i < sa->count; ++i)
-			pivalue->append_subval(sa->ppstr[i]);
+			pivalue.append_subval(sa->ppstr[i]);
 	}
 	
 	num = pmsg->proplist.get<uint32_t>(PR_SENSITIVITY);

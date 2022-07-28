@@ -7,6 +7,7 @@
 #include <list>
 #include <memory>
 #include <new>
+#include <optional>
 #include <string>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
@@ -265,21 +266,19 @@ static bool ical_check_empty_line(const char *pline)
 	return true;
 }
 
-static std::shared_ptr<ICAL_PARAM> ical_retrieve_param(char *ptag)
+static std::optional<ical_param> ical_retrieve_param(char *ptag)
 {
 	char *ptr;
 	char *pnext;
 	
 	ptr = strchr(ptag, '=');
 	if (NULL == ptr) {
-		return NULL;
+		return {};
 	}
 	*ptr = '\0';
 	ptr ++;
-	auto piparam = ical_new_param(ptag);
-	if (NULL == piparam) {
-		return NULL;
-	}
+	std::optional<ical_param> piparam;
+	piparam.emplace(ptag);
 	do {
 		pnext = ical_get_tag_comma(ptr);
 		piparam->append_paramval(ptr);
@@ -287,7 +286,7 @@ static std::shared_ptr<ICAL_PARAM> ical_retrieve_param(char *ptag)
 	return piparam;
 }
 
-static std::shared_ptr<ICAL_LINE> ical_retrieve_tag(char *ptag)
+static std::shared_ptr<ICAL_LINE> ical_retrieve_tag(char *ptag) try
 {
 	char *ptr;
 	char *pnext;
@@ -306,20 +305,21 @@ static std::shared_ptr<ICAL_LINE> ical_retrieve_tag(char *ptag)
 	ptr ++;
 	do {
 		pnext = ical_get_tag_semicolon(ptr);
-		auto piparam = ical_retrieve_param(ptr);
-		if (NULL == piparam) {
+		auto op = ical_retrieve_param(ptr);
+		if (!op.has_value())
 			return nullptr;
-		}
-		if (piline->append_param(piparam) < 0)
-			return nullptr;
+		piline->append_param(std::move(*op));
 	} while ((ptr = pnext) != NULL);
 	return piline;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2101: ENOMEM\n");
+	return nullptr;
 }
 
 static bool ical_check_base64(ICAL_LINE *piline)
 {
 	return std::find_if(piline->param_list.cbegin(), piline->param_list.cend(),
-	       [](const auto &e) { return strcasecmp(e->name.c_str(), "ENCODING") == 0; }) !=
+	       [](const auto &e) { return strcasecmp(e.name.c_str(), "ENCODING") == 0; }) !=
 	       piline->param_list.cend();
 }
 
@@ -343,17 +343,14 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue) try
 		} else {
 			ptr1 = NULL;
 		}
+		ical_value *pivalue;
 		if (NULL == ptr1) {
-			pivalue = ical_new_value(NULL);
+			pivalue = &piline->append_value();
 			ptr1 = ptr;
 		} else {
-			pivalue = ical_new_value(ptr);
+			pivalue = &piline->append_value(ptr);
 			ptr1 ++;
 		}
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
 		do {
 			pnext1 = ical_get_value_sep(ptr1, ',');
 			pivalue->append_subval(*ptr1 == '\0' ? nullptr : ptr1);
@@ -448,14 +445,9 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 
 		if (NULL != tmp_item.pvalue) {
 			if (r1something(piline->m_name.c_str())) {
-				auto pivalue = ical_new_value(nullptr);
-				if (NULL == pivalue) {
-					break;
-				}
-				if (piline->append_value(pivalue) < 0)
-					break;
+				auto &pivalue = piline->append_value();
 				ical_unescape_string(tmp_item.pvalue);
-				pivalue->append_subval(tmp_item.pvalue);
+				pivalue.append_subval(tmp_item.pvalue);
 			} else if (!ical_retrieve_value(piline.get(), tmp_item.pvalue)) {
 				break;
 			}
@@ -617,12 +609,12 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 			out_buff[offset] = ';';
 			offset ++;
 			offset += gx_snprintf(out_buff + offset,
-			          max_length - offset, "%s=", piparam->name.c_str());
+			          max_length - offset, "%s=", piparam.name.c_str());
 			if (offset >= max_length) {
 				return 0;
 			}
 			need_comma = FALSE;
-			for (const auto &pdata2 : piparam->paramval_list) {
+			for (const auto &pdata2 : piparam.paramval_list) {
 				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
@@ -655,15 +647,15 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 				out_buff[offset] = ';';
 				offset ++;
 			}
-			if ('\0' != pivalue->name[0]) {
+			if (pivalue.name[0] != '\0') {
 				offset += gx_snprintf(out_buff + offset,
-				          max_length - offset, "%s=", pivalue->name.c_str());
+				          max_length - offset, "%s=", pivalue.name.c_str());
 				if (offset >= max_length) {
 					return 0;
 				}
 			}
 			need_comma = FALSE;
-			for (const auto &pnv2 : pivalue->subval_list) {
+			for (const auto &pnv2 : pivalue.subval_list) {
 				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
@@ -711,14 +703,14 @@ bool ical::serialize(char *out_buff, size_t max_length)
 	return ical_serialize_component(this, out_buff, max_length) != 0;
 }
 
-static ical_svlist *ical_get_subval_list_internal(const ical_vlist *pvalue_list, const char *name)
+static const ical_svlist *ical_get_subval_list_internal(const ical_vlist *pvalue_list, const char *name)
 {
 	auto end = pvalue_list->cend();
 	auto it  = std::find_if(pvalue_list->cbegin(), end,
-	           [=](const auto &e) { return strcasecmp(e->name.c_str(), name) == 0; });
+	           [=](const auto &e) { return strcasecmp(e.name.c_str(), name) == 0; });
 	if (it == end)
 		return nullptr;
-	return &it->get()->subval_list;
+	return &it->subval_list;
 }
 
 static const char *ical_get_first_subvalue_by_name_internal(
@@ -746,33 +738,29 @@ const char *ICAL_LINE::get_first_subvalue()
 	if (value_list.size() == 0)
 		return NULL;
 	const auto &pivalue = value_list.front();
-	if ('\0' != pivalue->name[0]) {
+	if (pivalue.name[0] != '\0' || pivalue.subval_list.size() != 1)
 		return NULL;
-	}
-	if (pivalue->subval_list.size() != 1)
-		return NULL;
-	return pivalue->subval_list.front().c_str();
+	return pivalue.subval_list.front().c_str();
 }
 
-ical_svlist *ICAL_LINE::get_subval_list(const char *name)
+const std::list<std::string> *ICAL_LINE::get_subval_list(const char *name)
 {
 	return ical_get_subval_list_internal(&value_list, name);
 }
 
-std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *value)
+std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name,
+    const char *value) try
 {
 	auto piline = ical_new_line(name);
 	if (NULL == piline) {
 		return NULL;
 	}
-	auto pivalue = ical_new_value(nullptr);
-	if (NULL == pivalue) {
-		return NULL;
-	}
-	if (piline->append_value(pivalue) < 0)
-		return nullptr;
-	pivalue->append_subval(value);
+	auto &pivalue = piline->append_value();
+	pivalue.append_subval(value);
 	return piline;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2100: ENOMEM\n");
+	return nullptr;
 }
 
 bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)

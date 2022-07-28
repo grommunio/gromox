@@ -37,10 +37,9 @@ static void t_ical()
 	ic.append_comp(c);
 	auto l = ical_new_simple_line("KEY", "VALUE1");
 	c->append_line(l);
-	auto v = ical_new_value(nullptr);
-	l->append_value(v);
-	v->append_subval("SUBVAL");
-	v->append_subval("SUBVAL");
+	auto &v = l->append_value();
+	v.append_subval("SUBVAL");
+	v.append_subval("SUBVAL");
 
 	char buf[4096];
 	ic.serialize(buf, std::size(buf));

@@ -23,37 +23,44 @@ enum class ical_frequency {
 
 using ical_svlist = std::list<std::string>;
 
-struct GX_EXPORT ICAL_PARAM {
+struct GX_EXPORT ical_param {
 	public:
+	ical_param(const char *n) : name(n) {}
 	void append_paramval(const char *s) { paramval_list.emplace_back(gromox::znul(s)); }
 
 	std::string name;
 	ical_svlist paramval_list;
 };
+using ICAL_PARAM = ical_param;
 
-struct GX_EXPORT ICAL_VALUE {
+struct GX_EXPORT ical_value {
 	public:
+	ical_value() = default;
+	ical_value(const char *n) : name(n) {}
 	void append_subval(const char *s) { subval_list.emplace_back(gromox::znul(s)); }
 
 	std::string name;
 	ical_svlist subval_list;
 };
+using ICAL_VALUE = ical_value;
 
-using ical_vlist = std::list<std::shared_ptr<ICAL_VALUE>>;
+using ical_vlist = std::list<ical_value>;
 
 struct GX_EXPORT ical_line {
 	public:
-	int append_param(std::shared_ptr<ICAL_PARAM>);
+	ical_param &append_param(ical_param &&o) { param_list.push_back(std::move(o)); return param_list.back(); }
 	void append_param(const char *v, const char *pv);
-	int append_value(std::shared_ptr<ICAL_VALUE>);
+	ical_value &append_value(ical_value &&o) { value_list.push_back(std::move(o)); return value_list.back(); }
+	ical_value &append_value() { return value_list.emplace_back(); }
+	ical_value &append_value(const char *v) { value_list.push_back(ical_value(v)); return value_list.back(); }
 	void append_value(const char *v, const char *sv);
 	const char *get_first_paramval(const char *name);
 	const char *get_first_subvalue();
 	const char *get_first_subvalue_by_name(const char *name);
-	ical_svlist *get_subval_list(const char *name);
+	const std::list<std::string> *get_subval_list(const char *name);
 
 	std::string m_name;
-	std::list<std::shared_ptr<ICAL_PARAM>> param_list;
+	std::list<ical_param> param_list;
 	ical_vlist value_list;
 };
 using ICAL_LINE = ical_line;
@@ -140,8 +147,6 @@ using ICAL_RRULE = ical_rrule;
 
 extern GX_EXPORT std::shared_ptr<ICAL_COMPONENT> ical_new_component(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_line(const char *name);
-extern GX_EXPORT std::shared_ptr<ICAL_PARAM> ical_new_param(const char *name);
-extern GX_EXPORT std::shared_ptr<ICAL_VALUE> ical_new_value(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *value);
 extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
 extern GX_EXPORT bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday);

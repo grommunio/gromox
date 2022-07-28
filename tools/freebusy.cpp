@@ -260,7 +260,6 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 	ICAL_TIME itime;
 	time_t unix_time;
 	uint64_t nt_time;
-	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	
 	auto piline = ical_new_line("RRULE");
@@ -272,19 +271,16 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period/1440);
 		piline->append_value("INTERVAL", tmp_buff);
 		break;
-	case PATTERNTYPE_WEEK:
+	case PATTERNTYPE_WEEK: {
 		piline->append_value("FREQ", "WEEKLY");
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 		piline->append_value("INTERVAL", tmp_buff);
-		pivalue = ical_new_value("BYDAY");
-		if (pivalue == nullptr)
-			return FALSE;
-		if (piline->append_value(pivalue) < 0)
-			return false;
+		auto &pivalue = piline->append_value("BYDAY");
 		for (unsigned int wd = 0; wd < 7; ++wd)
 			if (apr->recur_pat.pts.weekrecur & (1 << wd))
-				pivalue->append_subval(weekday_to_str(wd));
+				pivalue.append_subval(weekday_to_str(wd));
 		break;
+	}
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_HJMONTH: {
 		auto monthly = apr->recur_pat.period % 12 != 0;
@@ -318,14 +314,10 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		if (monthly) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 			piline->append_value("INTERVAL", tmp_buff);
-			pivalue = ical_new_value("BYDAY");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
+			auto &pivalue = piline->append_value("BYDAY");
 			for (unsigned int wd = 0; wd < 7; ++wd)
 				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
-					pivalue->append_subval(weekday_to_str(wd));
+					pivalue.append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
 			else
@@ -334,14 +326,10 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		} else {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
 			piline->append_value("INTERVAL", tmp_buff);
-			pivalue = ical_new_value("BYDAY");
-			if (pivalue == nullptr)
-				return FALSE;
-			if (piline->append_value(pivalue) < 0)
-				return false;
+			auto &pivalue = piline->append_value("BYDAY");
 			for (unsigned int wd = 0; wd < 7; ++wd)
 				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
-					pivalue->append_subval(weekday_to_str(wd));
+					pivalue.append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
 			else
