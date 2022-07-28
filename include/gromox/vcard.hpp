@@ -8,7 +8,7 @@
 
 struct GX_EXPORT vcard_param {
 	vcard_param(const char *);
-	ec_error_t append_paramval(const char *paramval);
+	void append_paramval(const char *s) { m_paramvals.emplace_back(s); }
 	inline const char *name() const { return m_name.c_str(); }
 
 	std::string m_name;
@@ -17,7 +17,7 @@ struct GX_EXPORT vcard_param {
 using VCARD_PARAM = vcard_param;
 
 struct GX_EXPORT vcard_value {
-	ec_error_t append_subval(const char *);
+	void append_subval(const char *s) { m_subvals.emplace_back(gromox::znul(s)); }
 	std::vector<std::string> m_subvals;
 };
 using VCARD_VALUE = vcard_value;

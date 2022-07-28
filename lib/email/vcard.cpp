@@ -264,7 +264,7 @@ static vcard_line vcard_retrieve_tag(char *ptag) try
 	return nullptr;
 }
 
-static ec_error_t vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
+static void vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 {
 	char *ptr;
 	char *ptr1;
@@ -278,14 +278,9 @@ static ec_error_t vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 		ptr1 = ptr;
 		do {
 			pnext1 = vcard_get_comma(ptr1);
-			{
-				auto ret = va.append_subval(ptr1);
-				if (ret != ecSuccess)
-					return ret;
-			}
+			va.append_subval(ptr1);
 		} while ((ptr1 = pnext1) != NULL);
 	} while ((ptr = pnext) != NULL);
-	return ecSuccess;
 }
 
 static void vcard_unescape_string(char *pstring)
@@ -364,9 +359,7 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 		if (tmp_item.pvalue == nullptr)
 			continue;
 		if (!vcard_std_keyword(pvline->name())) {
-			auto rv = vcard_retrieve_value(pvline, tmp_item.pvalue);
-			if (rv != ecSuccess)
-				break;
+			vcard_retrieve_value(pvline, tmp_item.pvalue);
 			continue;
 		}
 		vcard_unescape_string(tmp_item.pvalue);
@@ -563,15 +556,6 @@ vcard_line::vcard_line(const char *n) : m_name(n)
 vcard_param::vcard_param(const char *n) : m_name(n)
 {}
 
-ec_error_t vcard_param::append_paramval(const char *paramval) try
-{
-	m_paramvals.emplace_back(znul(paramval));
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2064: ENOMEM\n");
-	return ecServerOOM;
-}
-
 vcard_param &vcard_line::append_param(const char *k, const char *v)
 {
 	auto &param = append_param(k);
@@ -584,15 +568,6 @@ vcard_value &vcard_line::append_value(const char *v)
 	auto &value = append_value();
 	value.append_subval(v);
 	return value;
-}
-
-ec_error_t vcard_value::append_subval(const char *subval) try
-{
-	m_subvals.emplace_back(znul(subval));
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2063: ENOMEM\n");
-	return ecServerOOM;
 }
 
 const char *vcard_line::get_first_subval() const
