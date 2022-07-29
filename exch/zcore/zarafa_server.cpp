@@ -2715,7 +2715,7 @@ uint32_t zarafa_server_queryrows(
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	auto table_type = ptable->get_table_type();
 	if (start != UINT32_MAX)
@@ -2833,7 +2833,7 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
@@ -3002,7 +3002,7 @@ uint32_t zarafa_server_getrowcount(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	*pcount = ptable->get_total();
 	return ecSuccess;
@@ -3062,7 +3062,7 @@ uint32_t zarafa_server_findrow(GUID hsession, uint32_t htable,
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
@@ -3109,7 +3109,7 @@ uint32_t zarafa_server_createbookmark(GUID hsession,
 	default:
 		return ecNotSupported;
 	}
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	return ptable->create_bookmark(pbookmark) ? ecSuccess : ecError;
 }

@@ -19,8 +19,8 @@ struct table_object {
 	BOOL set_columns(const PROPTAG_ARRAY *);
 	const SORTORDER_SET *get_sorts() const { return m_sorts; }
 	BOOL set_sorts(const SORTORDER_SET *);
-	BOOL check_loaded();
-	BOOL check_to_load();
+	BOOL is_loaded();
+	BOOL load();
 	void unload();
 	BOOL query_rows(BOOL forward, uint16_t row_count, TARRAY_SET *);
 	BOOL set_restriction(const RESTRICTION *);

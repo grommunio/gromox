@@ -50,7 +50,7 @@ static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 	ptable->m_table_id = table_id;
 }
 
-BOOL table_object::check_loaded()
+BOOL table_object::is_loaded()
 {
 	auto ptable = this;
 	if (ptable->rop_id == ropGetAttachmentTable)
@@ -58,7 +58,7 @@ BOOL table_object::check_loaded()
 	return m_table_id == 0 ? false : TRUE;
 }
 
-BOOL table_object::check_to_load()
+BOOL table_object::load()
 {
 	auto ptable = this;
 	uint32_t row_num;
@@ -68,6 +68,7 @@ BOOL table_object::check_to_load()
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return TRUE;
 	if (m_table_id != 0)
+		/* Already done */
 		return TRUE;
 	switch (ptable->rop_id) {
 	case ropGetHierarchyTable: {

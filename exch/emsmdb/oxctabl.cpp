@@ -237,7 +237,7 @@ uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
 		return ecNotSupported;
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	BOOL b_forward = forward_read == 0 ? false : TRUE;
 	if (ptable->rop_id == ropGetContentsTable &&
@@ -315,7 +315,7 @@ uint32_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	*pnumerator = ptable->get_position();
 	*pdenominator = ptable->get_total();
@@ -334,7 +334,7 @@ uint32_t rop_seekrow(uint8_t seek_pos, int32_t offset, uint8_t want_moved_count,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	int8_t clamped = 0;
 	switch (seek_pos) {
@@ -392,7 +392,7 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark, int32_t offset,
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (!ptable->check_loaded())
+	if (!ptable->is_loaded())
 		return ecInvalidBookmark;
 	uint32_t bm = 0;
 	memcpy(&bm, pbookmark->pb, sizeof(bm));
@@ -416,7 +416,7 @@ uint32_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	auto position = numerator * ptable->get_total() / denominator;
 	ptable->set_position(position);
@@ -442,7 +442,7 @@ uint32_t rop_createbookmark(BINARY *pbookmark, LOGMAP *plogmap,
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	pbookmark->cb = sizeof(uint32_t);
 	pbookmark->pv = cu_alloc<uint32_t>();
@@ -463,7 +463,7 @@ uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	if (!ptable->get_all_columns(pproptags))
 		return ecError;
@@ -496,7 +496,7 @@ uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	BOOL b_forward = (flags & FIND_ROW_FLAG_BACKWARD) ? false : TRUE;
 	*pbookmark_invisible = 0;
@@ -603,7 +603,7 @@ uint32_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 		return ecNotSupported;
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	if (!ptable->expand(category_id, &b_found, &position, pexpanded_count))
 		return ecError;
@@ -655,7 +655,7 @@ uint32_t rop_collapserow(uint64_t category_id, uint32_t *pcollapsed_count,
 		return ecNotSupported;
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	if (!ptable->collapse(category_id, &b_found, &position, pcollapsed_count))
 		return ecError;
@@ -687,7 +687,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id, uint32_t row_instance,
 		return ecNotSupported;
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	pcollapse_state->cb = sizeof(uint32_t);
 	pcollapse_state->pv = cu_alloc<uint32_t>();
@@ -716,7 +716,7 @@ uint32_t rop_setcollapsestate(const BINARY *pcollapse_state, BINARY *pbookmark,
 	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
-	if (!ptable->check_to_load())
+	if (!ptable->load())
 		return ecError;
 	pbookmark->cb = sizeof(uint32_t);
 	pbookmark->pv = cu_alloc<uint32_t>();

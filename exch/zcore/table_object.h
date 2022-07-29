@@ -37,7 +37,7 @@ struct table_object {
 	const PROPTAG_ARRAY *get_columns() const { return pcolumns; }
 	BOOL set_columns(const PROPTAG_ARRAY *);
 	BOOL set_sorts(const SORTORDER_SET *);
-	BOOL check_to_load();
+	BOOL load();
 	void unload();
 	BOOL query_rows(const PROPTAG_ARRAY *cols, uint32_t row_count, TARRAY_SET *);
 	BOOL set_restriction(const RESTRICTION *);

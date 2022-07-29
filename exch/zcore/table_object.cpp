@@ -81,7 +81,7 @@ static errno_t storetbl_refresh(table_object *tbl)
 	return 0;
 }
 
-BOOL table_object::check_to_load()
+BOOL table_object::load()
 {
 	auto ptable = this;
 	uint32_t row_num, permission, new_table_id, new_table_flags;
