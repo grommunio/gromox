@@ -4652,6 +4652,8 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 	} else if (0 == strcasecmp(pmessage_class
 		+ tmp_len - 4, ".NDR")) {
 		strcpy(action, "failed");
+	} else {
+		*action = '\0';
 	}
 	if (NULL == pmsg->children.prcpts) {
 		goto SERIALIZE_DSN;
@@ -4669,7 +4671,11 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 			dsn_free(&dsn);
 			return FALSE;
 		}
-		if (!dsn_append_field(pdsn_fields, "Final-Recipient", tmp_buff) ||
+		if (!dsn_append_field(pdsn_fields, "Final-Recipient", tmp_buff)) {
+			dsn_free(&dsn);
+			return FALSE;
+		}
+		if (*action != '\0' &&
 		    !dsn_append_field(pdsn_fields, "Action", action)) {
 			dsn_free(&dsn);
 			return FALSE;
