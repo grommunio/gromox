@@ -82,6 +82,16 @@ clients a chance to perform an action.
 .br
 Default: \fI250\fP
 .TP
+\fBexmdb_search_nice\fP
+Run the search folder population thread with adjusted niceness, which affects
+process scheduling. This is not an absolute priority as the nice(1) command
+would use, but a relative one, as per the nice(2) syscall. The allowed range in
+Gromox is 0 .. 19; negative values are not supported (and not meaningful,
+because Gromox will usually be running in an unprivileged setting where it is
+not possible to raise the priority).
+.br
+Default: \fI0\fP
+.TP
 \fBexmdb_search_yield\fP
 Make the search folder population thread not only give up the lock on the
 sqlite database temporarily, but also invoke pthread_yield(3) after every work
