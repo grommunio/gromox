@@ -189,7 +189,7 @@ void* MhNspPlugin::scanWork(void* ptr)
 {
 	MhNspPlugin& plugin = *static_cast<MhNspPlugin*>(ptr);
 	while (!plugin.stop) {
-		auto cur_time = time_point::clock::now();
+		auto cur_time = tp_now();
 		std::unique_lock hl_hold(plugin.hashLock);
 		for (auto entry = plugin.sessions.begin(); entry != plugin.sessions.end(); ) {
 			if (entry->second.expire_time < cur_time)
@@ -530,7 +530,7 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 	} else {
 		produce_session(ctx.auth_info.username, ctx.session_string);
 		ctx.sequence_guid = GUID::random_new();
-		auto exptime = time_point::clock::now() + session_valid_interval + std::chrono::seconds(60);
+		auto exptime = tp_now() + session_valid_interval + std::chrono::seconds(60);
 		std::unique_lock hl_hold(hashLock);
 		try {
 			auto emplaced = sessions.try_emplace(ctx.session_string, ctx.session_guid, ctx.sequence_guid, ctx.auth_info.username, exptime);

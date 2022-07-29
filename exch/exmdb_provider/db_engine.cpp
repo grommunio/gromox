@@ -181,14 +181,14 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	auto c = is_pvt ? 'V' : 'B';
 	fprintf(stderr, "[dbop_sqlite]: %s: current schema E%c-%d; upgrading to E%c-%d.\n",
 		filedesc, c, current, c, recent);
-	auto start = time_point::clock::now();
+	auto start = tp_now();
 	auto ret = dbop_sqlite_upgrade(db, filedesc, kind, DBOP_VERBOSE);
 	if (ret != 0) {
 		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n",
 		        filedesc, strerror(-ret));
 		return -1;
 	}
-	auto d1 = time_point::clock::now() - start;
+	auto d1 = tp_now() - start;
 	auto d2 = std::chrono::duration<double>(d1).count();
 	fprintf(stderr, "[dbop_sqlite]: Completed upgrade of %s in %.2fs.\n",
 	        filedesc, d2);

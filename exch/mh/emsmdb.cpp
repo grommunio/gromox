@@ -287,7 +287,7 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 {
 	MhEmsmdbPlugin& plugin = *static_cast<MhEmsmdbPlugin*>(ptr);
 	while (!plugin.stop) {
-		auto now = time_point::clock::now();
+		auto now = tp_now();
 		std::unique_lock hl_hold(plugin.hashLock);
 		for (auto entry = plugin.sessions.begin(); entry != plugin.sessions.end();) {
 			if (entry->second.expire_time < now)
@@ -416,7 +416,7 @@ static BOOL notification_response(int ID, time_point start_time, uint32_t result
 	response.notificationwait.flags_out = flags_out;
 	ext_push.p_notificationwait_rsp(response.notificationwait);
 
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	auto text_len = render_content(text_buff, current_time, start_time);
 	auto tmp_len = sprintf(chunk_string, "%x\r\n", text_len + ext_push.m_offset);
 	if (!write_response(ID, chunk_string, tmp_len) ||
@@ -430,7 +430,7 @@ static BOOL notification_response(int ID, time_point start_time, uint32_t result
 BOOL MhEmsmdbContext::notification_response() const
 {
 	char response_buff[4096];
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	size_t response_len = StringRenderer(response_buff, sizeof(response_buff))
 	                      .add(commonHeader, "NotificationWait", request_id, client_info, session_string, current_time)
 	                      .add("Transfer-Encoding: chunked\r\n");
@@ -584,7 +584,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 			produce_session(ctx.auth_info.username, ctx.session_string);
 			ctx.sequence_guid = GUID::random_new();
 			std::unique_lock hl_hold(hashLock);
-			auto exptime = time_point::clock::now() + session_valid_interval + std::chrono::seconds(60);
+			auto exptime = tp_now() + session_valid_interval + std::chrono::seconds(60);
 			try {
 				auto emplaced = sessions.try_emplace(ctx.session_string, ctx.session_guid, ctx.sequence_guid, ctx.auth_info.username, exptime);
 				if (!emplaced.second) {
@@ -650,7 +650,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 		nctx.notification_status = NOTIFICATION_STATUS_NONE;
 		nctx.session_guid = ctx.session_guid;
 		nctx.start_time = ctx.start_time;
-		nctx.pending_time = time_point::clock::now();
+		nctx.pending_time = tp_now();
 		std::unique_lock ll_hold(listLock);
 		try {
 			pending.emplace(&nctx);

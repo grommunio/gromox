@@ -232,7 +232,7 @@ static void *p3ls_thrwork(void *arg)
 			  pop3_reply_str2);
 		write(sockd2, buff, len);
 		/* construct the context object */
-		pcontext->connection.last_timestamp = time_point::clock::now();
+		pcontext->connection.last_timestamp = tp_now();
 		pcontext->connection.sockd             = sockd2;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_port;
@@ -352,7 +352,7 @@ static void *p3ls_thrworkssl(void *arg)
 		}
 
 		/* construct the context object */
-		pcontext->connection.last_timestamp = time_point::clock::now();
+		pcontext->connection.last_timestamp = tp_now();
 		pcontext->connection.sockd          = sockd2;
 		pcontext->is_stls                   = TRUE;
 		pcontext->connection.client_port    = client_port;

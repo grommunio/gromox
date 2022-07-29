@@ -505,7 +505,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 				" SSL connection, errno is %d", ssl_errno);
 		return X_RUNOFF;
 	}
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	if (CALCULATE_INTERVAL(current_time,
 	    pcontext->connection.last_timestamp) < g_timeout) {
 		return PROCESS_POLLING_RDONLY;
@@ -1013,7 +1013,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 		return X_LOOP;
 	}
 	auto actual_read = htparse_readsock(pcontext, "EOH", pbuff, size);
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
@@ -1173,7 +1173,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			      reinterpret_cast<char *>(pcontext->write_buff) + pcontext->write_offset,
 			written_len);
 
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	if (0 == written_len) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
@@ -1283,7 +1283,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 		return X_LOOP;
 	}
 	auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
@@ -1415,7 +1415,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		}
 
 		auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
-		auto current_time = time_point::clock::now();
+		auto current_time = tp_now();
 		if (0 == actual_read) {
 			http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			return X_RUNOFF;
@@ -1651,7 +1651,7 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 		pvconnection.put();
 	}
 
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	/* check if context is timed out */
 	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
 	    OUT_CHANNEL_MAX_WAIT) {
@@ -1688,7 +1688,7 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 		pvconnection.put();
 	}
 
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	/* check if context is timed out */
 	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
 	    OUT_CHANNEL_MAX_WAIT) {
@@ -1719,7 +1719,7 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 		return X_RUNOFF;
 	}
 
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	/* check keep alive */
 	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
 	    pchannel_out->client_keepalive / 2)

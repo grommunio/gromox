@@ -381,7 +381,7 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 	auto ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 	if (SSL_ERROR_WANT_READ == ssl_errno ||
 	    SSL_ERROR_WANT_WRITE == ssl_errno) {
-		auto current_time = time_point::clock::now();
+		auto current_time = tp_now();
 		if (CALCULATE_INTERVAL(current_time,
 		    pcontext->connection.last_timestamp) < g_timeout) {
 			return PROCESS_POLLING_RDONLY;
@@ -430,7 +430,7 @@ static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 		read_len = read(pcontext->connection.sockd, pcontext->read_buffer +
 		           pcontext->read_offset, 64*1024 - pcontext->read_offset);
 	}
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	if (0 == read_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
@@ -773,7 +773,7 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 	} else {
 		read_len = read(pcontext->connection.sockd, pbuff, len);
 	}
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	if (0 == read_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
@@ -832,7 +832,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 	}
 	auto written_len = pcontext->connection.write(&pcontext->write_buff[pcontext->write_offset],
 	                   pcontext->write_length - pcontext->write_offset);
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	if (0 == written_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
@@ -920,7 +920,7 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 	}
 	auto written_len = pcontext->connection.write(&pcontext->write_buff[pcontext->write_offset],
 	                   pcontext->write_length - pcontext->write_offset);
-	auto current_time = time_point::clock::now();
+	auto current_time = tp_now();
 	if (0 == written_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
@@ -1574,7 +1574,7 @@ static void *imps_thrwork(void *argp)
 			if (1 == peek_len) {
 				contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 			} else if (peek_len < 0) {
-				auto current_time = time_point::clock::now();
+				auto current_time = tp_now();
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) >= g_autologout_time) {
 					pcontext->sched_stat = SCHED_STAT_AUTOLOGOUT;

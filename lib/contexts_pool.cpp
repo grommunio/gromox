@@ -123,7 +123,7 @@ static void *ctxp_scanwork(void *pparam)
 	double_list_init(&temp_list);
 	while (!g_notify_stop) {
 		std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
-		auto current_time = time_point::clock::now();
+		auto current_time = tp_now();
 		ptail = double_list_get_tail(
 			&g_context_lists[CONTEXT_POLLING]);
 		while ((pnode = double_list_pop_front(&g_context_lists[CONTEXT_POLLING])) != nullptr) {

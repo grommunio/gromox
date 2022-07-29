@@ -130,7 +130,7 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 		return false;
 	auto phandle = &iter->second;
 	if (b_touch)
-		phandle->last_time = time_point::clock::now();
+		phandle->last_time = tp_now();
 	strcpy(username, phandle->username);
 	*pcxr = phandle->cxr;
 	return TRUE;
@@ -158,7 +158,7 @@ void emsmdb_interface_touch_handle(CXH *pcxh)
 	std::lock_guard gl_hold(g_lock);
 	auto iter = g_handle_hash.find(pcxh->guid);
 	if (iter != g_handle_hash.end())
-		iter->second.last_time = time_point::clock::now();
+		iter->second.last_time = tp_now();
 }
 
 static HANDLE_DATA* emsmdb_interface_get_handle_data(CXH *pcxh)
@@ -237,7 +237,7 @@ static BOOL emsmdb_interface_alloc_cxr(std::vector<HANDLE_DATA *> &plist,
 }
 
 HANDLE_DATA::HANDLE_DATA() :
-	guid(GUID::random_new()), last_time(time_point::clock::now())
+	guid(GUID::random_new()), last_time(tp_now())
 {
 	double_list_init(&notify_list);
 }
@@ -648,7 +648,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		memset(pcxh, 0, sizeof(CXH));
 		return RPC_X_BAD_STUB_DATA;
 	}
-	auto first_time = time_point::clock::now();
+	auto first_time = tp_now();
 	phandle = emsmdb_interface_get_handle_data(pcxh);
 	if (NULL == phandle) {
 		*pflags = 0;
@@ -678,7 +678,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		memset(pcxh, 0, sizeof(CXH));
 		return ecError;
 	}
-	phandle->last_time = time_point::clock::now();
+	phandle->last_time = tp_now();
 	g_handle_key = phandle;
 	if (cb_auxin > 0) {
 		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
@@ -698,7 +698,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	if (result == ecSuccess) {
 		*pflags = 0;
 		*pcb_auxout = 0;
-		*ptrans_time = std::chrono::duration_cast<std::chrono::milliseconds>(time_point::clock::now() - first_time).count();
+		*ptrans_time = std::chrono::duration_cast<std::chrono::milliseconds>(tp_now() - first_time).count();
 		return ecSuccess;
 	} else {
 		*pflags = 0;
@@ -1181,7 +1181,7 @@ static void *emsi_scanwork(void *pparam)
 	
 	while (!g_notify_stop) {
 		std::vector<GUID> temp_list;
-		auto cur_time = time_point::clock::now();
+		auto cur_time = tp_now();
 		std::unique_lock gl_hold(g_lock);
 		for (const auto &[guid, handle] : g_handle_hash) {
 			auto phandle = &handle;

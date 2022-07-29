@@ -246,7 +246,7 @@ static void *imls_thrwork(void *arg)
 		    HXio_fullwrite(sockd2, "] Service ready\r\n", 17) < 0)
 			/* ignore - error will be on next write (again) */;
 		/* construct the context object */
-		pcontext->connection.last_timestamp = time_point::clock::now();
+		pcontext->connection.last_timestamp = tp_now();
 		pcontext->connection.sockd          = sockd2;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_port;
@@ -367,7 +367,7 @@ static void *imls_thrworkssl(void *arg)
 		}
 
 		/* construct the context object */
-		pcontext->connection.last_timestamp = time_point::clock::now();
+		pcontext->connection.last_timestamp = tp_now();
 		pcontext->connection.sockd          = sockd2;
 		pcontext->sched_stat                = SCHED_STAT_STLS;
 		pcontext->connection.client_port    = client_port;

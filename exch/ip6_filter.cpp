@@ -78,7 +78,7 @@ static BOOL ip6flt_add(const char *addr, int fwd)
 {
 	if (addr == nullptr)
 		return false;
-	auto tpoint = time_point::clock::now() + std::chrono::seconds(fwd);
+	auto tpoint = tp_now() + std::chrono::seconds(fwd);
 	try {
 		std::lock_guard guard(g_templist_lock);
 		if (g_templist.size() >= g_templist_maxsize)
@@ -99,7 +99,7 @@ static bool ip6tl_query(const char *addr)
 	auto i = g_templist.find(addr);
 	if (i == g_templist.end())
 		return false;
-	if (time_point::clock::now() <= i->second)
+	if (tp_now() <= i->second)
 		return true;
 	g_templist.erase(i);
 	return false;
@@ -112,7 +112,7 @@ static BOOL ip6flt_judge(const char *addr)
 	if (ip6tl_query(addr))
 		return TRUE;
 	std::lock_guard guard(g_auditlist_lock);
-	auto current = time_point::clock::now();
+	auto current = tp_now();
 	auto i = g_auditlist.find(addr);
 	if (i == g_auditlist.end()) {
 		IP_AUDIT au{current, current, 1};

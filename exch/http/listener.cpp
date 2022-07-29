@@ -238,7 +238,7 @@ static void *htls_thrwork(void *arg)
 		}
 
 		/* construct the context object */
-		pcontext->connection.last_timestamp = time_point::clock::now();
+		pcontext->connection.last_timestamp = tp_now();
 		pcontext->connection.sockd          = sockd2;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_port;
@@ -357,7 +357,7 @@ static void *htls_thrworkssl(void *arg)
 		}
 		
 		/* construct the context object */
-		pcontext->connection.last_timestamp = time_point::clock::now();
+		pcontext->connection.last_timestamp = tp_now();
 		pcontext->connection.sockd          = sockd2;
 		pcontext->sched_stat                = SCHED_STAT_INITSSL;
 		pcontext->connection.client_port    = client_port;

@@ -499,7 +499,7 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 			b_chunked = TRUE;
 	}
 	auto pcontext = &g_context_list[phttp->context_id];
-	pcontext->last_time = time_point::clock::now();
+	pcontext->last_time = tp_now();
 	pcontext->pfnode = pfnode;
 	if (b_chunked || content_length > g_cache_size) {
 		auto path = LOCAL_DISK_TMPDIR;
@@ -1048,7 +1048,7 @@ static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
 			return FALSE;
 		offset += read_len;
 		if (length == offset) {
-			pfast_context->last_time = time_point::clock::now();
+			pfast_context->last_time = tp_now();
 			return TRUE;
 		}
 	}
@@ -1073,7 +1073,7 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 		return RESPONSE_AVAILABLE;
 	}
 	g_unavailable_times ++;
-	if (time_point::clock::now() - phttp->pfast_context->last_time > g_exec_timeout)
+	if (tp_now() - phttp->pfast_context->last_time > g_exec_timeout)
 		return RESPONSE_TIMEOUT;
 	return RESPONSE_WAITING;
 }

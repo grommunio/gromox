@@ -314,7 +314,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 			if (SSL_ERROR_WANT_READ == ssl_errno ||
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
-				current_time = time_point::clock::now();
+				current_time = tp_now();
 				if (CALCULATE_INTERVAL(current_time,
 				    pcontext->connection.last_timestamp) < g_param.timeout)
 					return PROCESS_POLLING_RDONLY;
@@ -360,7 +360,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	} else {
 		actual_read = read(pcontext->connection.sockd, pbuff, size);
 	}
-	current_time = time_point::clock::now();
+	current_time = tp_now();
 	if (0 == actual_read) {
  LOST_READ:
 		if (0 != pcontext->flusher.flush_ID) {

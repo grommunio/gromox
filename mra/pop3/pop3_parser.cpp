@@ -226,7 +226,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 			if (SSL_ERROR_WANT_READ == ssl_errno ||
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
-				auto current_time = time_point::clock::now();
+				auto current_time = tp_now();
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) < g_timeout) {
 					return PROCESS_POLLING_RDONLY;
@@ -262,7 +262,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	if (pcontext->data_stat) {
 		written_len = pcontext->connection.write(&pcontext->write_buff[pcontext->write_offset],
 		              pcontext->write_length - pcontext->write_offset);
-		current_time = time_point::clock::now();
+		current_time = tp_now();
 		if (0 == written_len) {
 			pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			goto END_TRANSPORT;
@@ -306,7 +306,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	if (pcontext->list_stat) {
 		written_len = pcontext->connection.write(&pcontext->write_buff[pcontext->write_offset],
 		              pcontext->write_length - pcontext->write_offset);
-		current_time = time_point::clock::now();
+		current_time = tp_now();
 		if (0 == written_len) {
 			pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			goto END_TRANSPORT;
@@ -351,7 +351,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		read_len = read(pcontext->connection.sockd, pcontext->read_buffer +
 					pcontext->read_offset, 1024 - pcontext->read_offset);
 	}
-	current_time = time_point::clock::now();
+	current_time = tp_now();
 	if (0 == read_len) {
  LOST_READ:
 		pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
