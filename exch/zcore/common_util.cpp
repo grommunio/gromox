@@ -1174,7 +1174,7 @@ int cu_calc_msg_access(store_object *pstore, const char *user,
 	uint32_t permission = 0;
 
 	tag_access = 0;
-	if (pstore->check_owner_mode()) {
+	if (pstore->owner_mode()) {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
@@ -2080,7 +2080,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
 	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
 		return FALSE;
-	if (pstore->check_owner_mode())
+	if (pstore->owner_mode())
 		return TRUE;
 	pentryid = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (pentryid == nullptr)
@@ -2168,7 +2168,7 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 		return GXERR_CALL_FAILED;
 	auto pinfo = zarafa_server_get_info();
 	const char *username = nullptr;
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		username = pinfo->get_username();
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, username, &permission))
@@ -2187,7 +2187,7 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 		if (err != GXERR_SUCCESS)
 			return err;
 	}
-	username = pstore->check_owner_mode() ? nullptr : pinfo->get_username();
+	username = pstore->owner_mode() ? nullptr : pinfo->get_username();
 	if (!exmdb_client::load_hierarchy_table(pstore->get_dir(), folder_id,
 	    username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))

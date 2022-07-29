@@ -1071,10 +1071,10 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		           folder_id, message_id, tag_access);
 		if (ret != ecSuccess)
 			return ret;
-		BOOL b_writable = !(tag_access & MAPI_ACCESS_MODIFY) ? false : TRUE;
+		bool b_writable = tag_access & MAPI_ACCESS_MODIFY;
 		auto pmessage = message_object::create(pstore, false,
 		                pinfo->cpid, message_id, &folder_id, tag_access,
-		                b_writable, nullptr);
+		                b_writable ? TRUE : false, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
 		*phobject = pinfo->ptree->add_object_handle(hobject, {ZMG_MESSAGE, std::move(pmessage)});
@@ -1098,7 +1098,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
 		folder_type = *(uint32_t*)pvalue;
-		if (pstore->check_owner_mode()) {
+		if (pstore->owner_mode()) {
 			tag_access = MAPI_ACCESS_AllSix;
 		} else {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
@@ -1263,7 +1263,7 @@ static uint32_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_
 		auto userobj = user_object::create(base_id, minid);
 		if (userobj == nullptr)
 			return ecError;
-		if (!userobj->check_valid())
+		if (!userobj->valid())
 			return ecNotFound;
 		*pmapi_type = address_type == DT_DISTLIST ?
 			      ZMG_DISTLIST : ZMG_MAILUSER;
@@ -1571,7 +1571,7 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 	case ZMG_FOLDER: {
 		auto folder = static_cast<folder_object *>(pobject);
 		pstore = folder->pstore;
-		if (!pstore->check_owner_mode()) {
+		if (!pstore->owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->get_username(), &permission))
 				return ecNotFound;
@@ -1663,7 +1663,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
@@ -1747,7 +1747,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	const char *username = nullptr;
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
@@ -1855,7 +1855,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 	if (pstore != pstore1) {
 		if (!b_copy) {
 			b_guest = FALSE;
-			if (!pstore->check_owner_mode()) {
+			if (!pstore->owner_mode()) {
 				if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 				    psrc_folder->folder_id, pinfo->get_username(), &permission))
 					return ecError;
@@ -1867,7 +1867,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 					return ecAccessDenied;
 			}
 		}
-		if (!pstore1->check_owner_mode()) {
+		if (!pstore1->owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore1->get_dir(),
 			    pdst_folder->folder_id, pinfo->get_username(), &permission))
 				return ecError;
@@ -1917,7 +1917,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 			continue;
 		ids.pids[ids.count++] = message_id;
 	}
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pdst_folder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
@@ -1971,7 +1971,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
-	auto username = pstore->check_owner_mode() ? nullptr : pinfo->get_username();
+	auto username = pstore->owner_mode() ? nullptr : pinfo->get_username();
 	if (0 == pentryids->count) {
 		restriction.rt = RES_PROPERTY;
 		restriction.pres = &res_prop;
@@ -2096,7 +2096,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	auto pstore = pparent->pstore;
 	if (!pstore->b_private && folder_type == FOLDER_SEARCH)
 		return ecNotSupported;
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pparent->folder_id, pinfo->get_username(), &permission))
 			return ecError;
@@ -2147,7 +2147,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
 		    pinfo->cpid, &tmp_propvals, &folder_id) || folder_id == 0)
 			return ecError;
-		if (!pstore->check_owner_mode()) {
+		if (!pstore->owner_mode()) {
 			auto pentryid = common_util_username_to_addressbook_entryid(pinfo->get_username());
 			if (pentryid == nullptr)
 				return ecError;
@@ -2226,7 +2226,7 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 		}
 	}
 	const char *username = nullptr;
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
@@ -2289,7 +2289,7 @@ uint32_t zarafa_server_emptyfolder(GUID hsession,
 		return ecAccessDenied;
 	}
 	const char *username = nullptr;
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
@@ -2352,7 +2352,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	}
 	BOOL b_guest = false;
 	const char *username = nullptr;
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, pinfo->get_username(), &permission))
 			return ecError;
@@ -2367,7 +2367,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 		b_guest = TRUE;
 	}
 	if (pstore != pstore1) {
-		if (!b_copy && !pstore->check_owner_mode()) {
+		if (!b_copy && !pstore->owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    psrc_parent->folder_id, pinfo->get_username(), &permission))
 				return ecError;
@@ -3422,7 +3422,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	auto pstore = pmessage->get_store();
 	if (!pstore->b_private)
 		return ecNotSupported;
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		uint32_t permission = 0;
 		if (!exmdb_client::check_mailbox_permission(pstore->get_dir(),
 		    pinfo->get_username(), &permission))
@@ -3432,7 +3432,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	}
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
-	if (pmessage->check_importing() || !pmessage->check_writable())
+	if (pmessage->importing() || !pmessage->writable())
 		return ecAccessDenied;
 	if (pmessage->get_recipient_num(&rcpt_num) == 0)
 		return MAPI_E_NO_RECIPIENTS;
@@ -3605,7 +3605,7 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	if (!pmessage->check_writable())
+	if (!pmessage->writable())
 		return ecAccessDenied;
 	auto pattachment = attachment_object::create(pmessage, ATTACHMENT_NUM_INVALID);
 	if (pattachment == nullptr)
@@ -3632,7 +3632,7 @@ uint32_t zarafa_server_deleteattachment(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	if (!pmessage->check_writable())
+	if (!pmessage->writable())
 		return ecAccessDenied;
 	return pmessage->delete_attachment(attach_id) ? ecSuccess : ecError;
 }
@@ -3660,7 +3660,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession, uint32_t hobject,
 		return ecSuccess;
 	case ZMG_STORE: {
 		auto store = static_cast<store_object *>(pobject);
-		if (!store->check_owner_mode())
+		if (!store->owner_mode())
 			return ecAccessDenied;
 		if (!store->set_properties(ppropvals))
 			return ecError;
@@ -3669,7 +3669,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession, uint32_t hobject,
 	case ZMG_FOLDER: {
 		auto folder = static_cast<folder_object *>(pobject);
 		auto pstore = folder->pstore;
-		if (!pstore->check_owner_mode()) {
+		if (!pstore->owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->get_username(), &permission))
 				return ecError;
@@ -3682,7 +3682,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession, uint32_t hobject,
 	}
 	case ZMG_MESSAGE: {
 		auto msg = static_cast<message_object *>(pobject);
-		if (!msg->check_writable())
+		if (!msg->writable())
 			return ecAccessDenied;
 		if (!msg->set_properties(ppropvals))
 			return ecError;
@@ -3690,7 +3690,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession, uint32_t hobject,
 	}
 	case ZMG_ATTACH: {
 		auto atx = static_cast<attachment_object *>(pobject);
-		if (!atx->check_writable())
+		if (!atx->writable())
 			return ecAccessDenied;
 		if (!atx->set_properties(ppropvals))
 			return ecError;
@@ -3822,7 +3822,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 		return ecSuccess;
 	case ZMG_STORE: {
 		auto store = static_cast<store_object *>(pobject);
-		if (!store->check_owner_mode())
+		if (!store->owner_mode())
 			return ecAccessDenied;
 		if (!store->remove_properties(pproptags))
 			return ecError;
@@ -3831,7 +3831,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	case ZMG_FOLDER: {
 		auto folder = static_cast<folder_object *>(pobject);
 		auto pstore = folder->pstore;
-		if (!pstore->check_owner_mode()) {
+		if (!pstore->owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->get_username(), &permission))
 				return ecError;
@@ -3844,7 +3844,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	}
 	case ZMG_MESSAGE: {
 		auto msg = static_cast<message_object *>(pobject);
-		if (!msg->check_writable())
+		if (!msg->writable())
 			return ecAccessDenied;
 		if (!msg->remove_properties(pproptags))
 			return ecError;
@@ -3852,7 +3852,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	}
 	case ZMG_ATTACH: {
 		auto atx = static_cast<attachment_object *>(pobject);
-		if (!atx->check_writable())
+		if (!atx->writable())
 			return ecAccessDenied;
 		if (!atx->remove_properties(pproptags))
 			return ecError;
@@ -3896,12 +3896,12 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
-	auto b_writable = pattachment->check_writable();
+	auto b_writable = pattachment->writable();
 	auto tag_access = pattachment->get_tag_access();
 	if ((flags & FLAG_CREATE) && !b_writable)
 		return ecAccessDenied;
 	auto pmessage = message_object::create(pstore, false, pinfo->cpid, 0,
-	                pattachment, tag_access, b_writable, nullptr);
+	                pattachment, tag_access, b_writable ? TRUE : false, nullptr);
 	if (pmessage == nullptr)
 		return ecError;
 	if (pmessage->get_instance_id() == 0) {
@@ -3998,7 +3998,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		if (!pstore->b_private)
 			return ecNotSupported;
 		const char *username = nullptr;
-		if (!pstore->check_owner_mode()) {
+		if (!pstore->owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder->folder_id, pinfo->get_username(), &permission))
 				return ecError;
@@ -4066,7 +4066,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 	}
 	case ZMG_MESSAGE: {
 		auto mdst = static_cast<message_object *>(pobject_dst);
-		if (!mdst->check_writable())
+		if (!mdst->writable())
 			return ecAccessDenied;
 		if (!mdst->copy_to(static_cast<message_object *>(pobject),
 		    pexclude_proptags, b_force, &b_cycle))
@@ -4075,7 +4075,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 	}
 	case ZMG_ATTACH: {
 		auto adst = static_cast<attachment_object *>(pobject_dst);
-		if (!adst->check_writable())
+		if (!adst->writable())
 			return ecAccessDenied;
 		if (!adst->copy_properties(static_cast<attachment_object *>(pobject),
 		    pexclude_proptags, b_force, &b_cycle))
@@ -4099,7 +4099,7 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 		return ecNullObject;
 	if (mapi_type == ZMG_MESSAGE) {
 		auto msg = static_cast<message_object *>(pobject);
-		if (!msg->check_writable())
+		if (!msg->writable())
 			return ecAccessDenied;
 		if (!msg->check_original_touched(&b_touched))
 			return ecError;
@@ -4111,7 +4111,7 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 		return ecSuccess;
 	} else if (mapi_type == ZMG_ATTACH) {
 		auto atx = static_cast<attachment_object *>(pobject);
-		if (!atx->check_writable())
+		if (!atx->writable())
 			return ecAccessDenied;
 		auto err = atx->save();
 		if (err != GXERR_SUCCESS)
@@ -4423,7 +4423,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		if (!b_exist)
 			return ecNotFound;
 	}
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, pinfo->get_username(), &permission))
 			return ecError;
@@ -4601,7 +4601,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	if (!exmdb_client::check_folder_id(pstore->get_dir(), folder_id, &b_exist))
 		return ecError;
 	if (!b_exist) {
-		if (!pstore->check_owner_mode()) {
+		if (!pstore->owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    parent_id1, pinfo->get_username(), &permission))
 				return ecError;
@@ -4647,7 +4647,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		pctx->pstate->pseen->append(change_num);
 		return ecSuccess;
 	}
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, pinfo->get_username(), &permission))
 			return ecError;
@@ -4666,7 +4666,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
 			return ecAccessDenied;
 		}
-		if (!pstore->check_owner_mode()) {
+		if (!pstore->owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    parent_id1, pinfo->get_username(), &permission))
 				return ecError;
@@ -4743,7 +4743,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 		return ecNotSupported;
 	auto folder_id = pctx->get_parent_folder_id();
 	auto username = pinfo->get_username();
-	if (pstore->check_owner_mode()) {
+	if (pstore->owner_mode()) {
 		username = NULL;
 	} else if (sync_type == SYNC_TYPE_CONTENTS &&
 	    !exmdb_client::check_folder_permission(pstore->get_dir(),
@@ -4873,7 +4873,7 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 	if (pctx->get_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
 	const char *username = nullptr;
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		folder_id = pctx->get_parent_folder_id();
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, pinfo->get_username(), &permission))
@@ -4999,7 +4999,7 @@ uint32_t zarafa_server_setsearchcriteria(
 	auto pstore = pfolder->pstore;
 	if (!pstore->b_private)
 		return ecNotSupported;
-	if (!pstore->check_owner_mode()) {
+	if (!pstore->owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
@@ -5027,7 +5027,7 @@ uint32_t zarafa_server_setsearchcriteria(
 			return ecError;
 		if (!b_private || db_id != pstore->account_id)
 			return ecSearchFolderScopeViolation;
-		if (!pstore->check_owner_mode()) {
+		if (!pstore->owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder_ids.pll[i], pinfo->get_username(), &permission))
 				return ecError;

@@ -140,8 +140,8 @@ struct message_object {
 	static std::unique_ptr<message_object> create(store_object *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, BOOL b_writable, std::shared_ptr<ics_state>);
 	uint32_t get_instance_id() const { return instance_id; }
 	BOOL check_original_touched(BOOL *touched);
-	BOOL check_importing() const { return message_id != 0 && pstate != nullptr ? TRUE : false; }
-	BOOL check_writable() const { return b_writable; }
+	bool importing() const { return message_id != 0 && pstate != nullptr; }
+	bool writable() const { return b_writable; }
 	gromox::errno_t init_message(bool fai, uint32_t cpid);
 	uint64_t get_id() const { return message_id; }
 	store_object *get_store() const { return pstore; }
@@ -198,7 +198,7 @@ struct attachment_object {
 	BOOL remove_properties(const PROPTAG_ARRAY *);
 	BOOL copy_properties(attachment_object *src, const PROPTAG_ARRAY *exclprop, BOOL force, BOOL *cycle);
 	store_object *get_store() const { return pparent->pstore; }
-	BOOL check_writable() const { return b_writable; }
+	bool writable() const { return b_writable; }
 
 	BOOL b_new = false, b_writable = false, b_touched = false;
 	message_object *pparent = nullptr;
@@ -211,7 +211,7 @@ struct user_object {
 
 	public:
 	static std::unique_ptr<user_object> create(int base_id, uint32_t minid);
-	BOOL check_valid();
+	bool valid();
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 
 	int base_id = 0;

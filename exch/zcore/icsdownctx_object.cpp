@@ -145,7 +145,7 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
 	if (!pctx->pstate->deserialize(state))
 		return FALSE;
 	auto pinfo = zarafa_server_get_info();
-	auto username = pctx->pstore->check_owner_mode() ? nullptr : pinfo->get_username();
+	auto username = pctx->pstore->owner_mode() ? nullptr : pinfo->get_username();
 	if (!exmdb_client::get_hierarchy_sync(pctx->pstore->get_dir(),
 	    pctx->folder_id, username, pctx->pstate->pgiven.get(),
 	    pctx->pstate->pseen.get(), &fldchgs, &pctx->last_changenum,

@@ -102,7 +102,7 @@ BOOL table_object::load()
 	switch (ptable->table_type) {
 	case HIERARCHY_TABLE: {
 		auto pinfo = zarafa_server_get_info();
-		auto username = ptable->pstore->check_owner_mode() ?
+		auto username = ptable->pstore->owner_mode() ?
 		                nullptr : pinfo->get_username();
 		new_table_flags = TABLE_FLAG_NONOTIFICATIONS;
 		if (ptable->table_flags & FLAG_SOFT_DELETE) {
@@ -121,7 +121,7 @@ BOOL table_object::load()
 	case CONTENT_TABLE: {
 		auto pinfo = zarafa_server_get_info();
 		const char *username = nullptr;
-		if (!ptable->pstore->check_owner_mode()) {
+		if (!ptable->pstore->owner_mode()) {
 			if (!ptable->pstore->b_private) {
 				username = pinfo->get_username();
 			} else {
@@ -239,7 +239,7 @@ static uint32_t table_object_get_folder_tag_access(store_object *pstore,
 {
 	uint32_t permission;
 	
-	if (pstore->check_owner_mode()) {
+	if (pstore->owner_mode()) {
 		return MAPI_ACCESS_AllSix;
 	}
 	if (!exmdb_client::check_folder_permission(pstore->get_dir(),
@@ -261,7 +261,7 @@ static uint32_t table_object_get_folder_permission_rights(store_object *pstore,
 {
 	uint32_t permission;
 	
-	if (pstore->check_owner_mode()) {
+	if (pstore->owner_mode()) {
 		return rightsAll | frightsContact;
 	}
 	if (!exmdb_client::check_folder_permission(pstore->get_dir(),

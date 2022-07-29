@@ -104,21 +104,21 @@ GUID store_object::guid() const
 	       rop_util_make_domain_guid(account_id);
 }
 
-BOOL store_object::check_owner_mode() const
+bool store_object::owner_mode() const
 {
 	auto pstore = this;
 	if (!pstore->b_private)
 		return FALSE;
 	auto pinfo = zarafa_server_get_info();
 	if (pinfo->user_id == pstore->account_id)
-		return TRUE;
+		return true;
 	std::unique_lock lk(pinfo->eowner_lock);
 	auto i = pinfo->extra_owner.find(pstore->account_id);
 	if (i == pinfo->extra_owner.end())
 		return false;
 	auto age = time(nullptr) - i->second;
 	if (age < 60)
-		return TRUE;
+		return true;
 	lk.unlock();
 	uint32_t perm = rightsNone;
 	if (!exmdb_client::check_mailbox_permission(pstore->dir,
@@ -131,10 +131,10 @@ BOOL store_object::check_owner_mode() const
 	if (i == pinfo->extra_owner.end())
 		return false;
 	i->second = time(nullptr);
-	return TRUE;
+	return true;
 }
 
-bool store_object::check_primary_mode() const
+bool store_object::primary_mode() const
 {
 	if (!b_private)
 		return false;
@@ -613,8 +613,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*ppvalue = bv;
 		bv->cb = 16;
 		bv->pb = deconst(!pstore->b_private ? pbExchangeProviderPublicGuid :
-		         pstore->check_primary_mode() ?
-		         pbExchangeProviderPrimaryUserGuid :
+		         pstore->primary_mode() ? pbExchangeProviderPrimaryUserGuid :
 		         pbExchangeProviderDelegateGuid);
 		return TRUE;
 	}
@@ -661,7 +660,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*static_cast<uint8_t *>(*ppvalue) = pstore->check_primary_mode();
+		*static_cast<uint8_t *>(*ppvalue) = pstore->primary_mode();
 		return TRUE;
 	case PR_ACCESS: {
 		auto acval = cu_alloc<uint32_t>();
@@ -669,7 +668,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (pstore->check_owner_mode()) {
+		if (pstore->owner_mode()) {
 			*acval = MAPI_ACCESS_AllSix;
 			return TRUE;
 		}
@@ -698,7 +697,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (pstore->check_owner_mode()) {
+		if (pstore->owner_mode()) {
 			*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
 			return TRUE;
 		}
@@ -796,7 +795,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (pstore->check_owner_mode())
+		if (pstore->owner_mode())
 			*(uint32_t*)(*ppvalue) = STATUS_PRIMARY_IDENTITY|
 					STATUS_DEFAULT_STORE|STATUS_PRIMARY_STORE;
 		else
@@ -818,7 +817,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			*static_cast<uint32_t *>(*ppvalue) = EC_SUPPORTMASK_PUBLIC;
 			return TRUE;
 		}
-		if (pstore->check_owner_mode()) {
+		if (pstore->owner_mode()) {
 			*(uint32_t*)(*ppvalue) = EC_SUPPORTMASK_OWNER;
 			return TRUE;
 		}

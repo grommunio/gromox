@@ -163,15 +163,6 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	return pmessage;
 }
 
-BOOL message_object::check_importing() const
-{
-	auto pmessage = this;
-	if (0 != pmessage->message_id && NULL != pmessage->pstate) {
-		return TRUE;
-	}
-	return FALSE;
-}
-
 BOOL message_object::check_original_touched(BOOL *pb_touched)
 {
 	auto pmessage = this;

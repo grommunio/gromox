@@ -24,7 +24,7 @@ std::unique_ptr<user_object> user_object::create(int base_id, uint32_t minid)
 	return puser;
 }
 
-BOOL user_object::check_valid()
+bool user_object::valid()
 {
 	auto puser = this;
 	char username[UADDR_SIZE];
@@ -34,12 +34,12 @@ BOOL user_object::check_valid()
 	auto pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
 	pbase.reset();
 	if (pnode != nullptr)
-		return TRUE;
+		return true;
 	if (ab_tree_get_minid_type(puser->minid) != minid_type::address ||
 	    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
 	    username, GX_ARRAY_SIZE(username)))
 		return FALSE;
-	return TRUE;
+	return true;
 }
 
 BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,

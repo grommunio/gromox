@@ -197,7 +197,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (pfolder->pstore->check_owner_mode()) {
+		if (pfolder->pstore->owner_mode()) {
 			*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
 			return TRUE;
 		}

@@ -255,7 +255,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecNotSupported;
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
-	if (pmessage->check_importing())
+	if (pmessage->importing())
 		return ecAccessDenied;
 	auto tag_access = pmessage->get_tag_access();
 	if (!(tag_access & MAPI_ACCESS_MODIFY))
@@ -557,7 +557,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecNotSupported;
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
-	if (pmessage->check_importing())
+	if (pmessage->importing())
 		return ecAccessDenied;
 
 	static constexpr uint32_t rq_tags1[] = {PR_MESSAGE_FLAGS, PR_MESSAGE_CLASS};
