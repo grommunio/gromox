@@ -1,3 +1,21 @@
+1.28.51
+=======
+
+Enhancements:
+
+* exmdb_provider: added the "exmdb_search_yield" and "exmdb_search_nice" config
+  directives
+
+Fixes:
+
+* oxcical: oxcical_export_timezone had missed emitting BYMONTHDAY subvalues
+
+Changes:
+
+* The default value for "exmdb_search_pacing" was changed to 250 to improve
+  interactivity with OL during online search.
+
+
 1.28 (2022-07-25)
 =================
 
