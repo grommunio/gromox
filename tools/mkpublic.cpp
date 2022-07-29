@@ -62,7 +62,6 @@ static constexpr unsigned int rightsGromoxPubDefault = /* (0x41b/1051) */
 int main(int argc, const char **argv) try
 {
 	MYSQL_ROW myrow;
-	uint64_t nt_time;
 	sqlite3 *psqlite;
 	MYSQL_RES *pmyres;
 	char mysql_string[1024];
@@ -182,7 +181,8 @@ int main(int argc, const char **argv) try
 	ret = mbop_insert_namedprops(psqlite, datadir);
 	if (ret != 0)
 		return EXIT_FAILURE;
-	
+
+	auto nt_time = rop_util_unix_to_nttime(time(nullptr));
 	std::pair<uint32_t, uint64_t> storeprops[] = {
 		{PR_CREATION_TIME, nt_time},
 		{PR_MESSAGE_SIZE_EXTENDED, 0},
