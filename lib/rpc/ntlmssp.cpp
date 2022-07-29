@@ -18,6 +18,7 @@
 #include <gromox/endian.hpp>
 #include <gromox/ndr.hpp>
 #include <gromox/ntlmssp.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 #define MSVAVEOL					0
@@ -290,7 +291,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	char *s;
 	int i, j;
 	uint8_t *b;
-	va_list ap;
+	va_list ap, aq;
 	uint32_t length;
 	int intargs[64];
 	uint8_t buffs[64][1024];
@@ -308,6 +309,11 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	data_size = 0;
 	/* first scan the format to work out the header and body size */
 	va_start(ap, format);
+	va_copy(aq, ap);
+	auto cl_0 = make_scope_exit([&]() {
+		va_end(aq);
+		va_end(ap);
+	});
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
 		case 'U': {
@@ -315,7 +321,6 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			head_size += 8;
 			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], arsizeof(buffs[i]));
 			if (ret < 0) {
-				va_end(ap);
 				return false;
 			}
 			blobs[i].length = ret;
@@ -336,7 +341,6 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			s = va_arg(ap, char*);
 			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], arsizeof(buffs[i]));
 			if (ret < 0) {
-				va_end(ap);
 				return false;
 			}
 			blobs[i].length = ret;
@@ -369,11 +373,9 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			head_size += blobs[i].length;
 			break;
 		default:
-			va_end(ap);
 			return false;
 		}
 	}
-	va_end(ap);
 
 	if (head_size + data_size == 0) {
 		return false;
@@ -382,7 +384,6 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	head_ofs = 0;
 	data_ofs = head_size;
 
-	va_start(ap, format);
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
 		case 'U':
@@ -428,16 +429,12 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			head_ofs += length;
 			break;
 		default:
-			va_end(ap);
 			return false;
 		}
 	}
-	va_end(ap);
-	
 	pblob->length = head_size + data_size;
 	return true;
 }
-
 
 /*
   format specifiers are:
