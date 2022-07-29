@@ -103,6 +103,7 @@ static std::unordered_map<std::string, DB_ITEM> g_hash_table;
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
 unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
+unsigned int g_exmdb_search_yield;
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_t);
 static void db_engine_notify_content_table_modify_row(db_item_ptr &, uint64_t folder_id, uint64_t message_id);
@@ -458,7 +459,8 @@ static BOOL db_engine_search_folder(const char *dir,
 		if (count == g_exmdb_search_pacing) {
 			pdb.reset();
 			exmdb_server_free_environment();
-			// std::this_thread::yield(); // +2~3% walltime
+			if (g_exmdb_search_yield)
+				std::this_thread::yield(); /* +2 to +3% walltime */
 			exmdb_server_build_env(EM_PRIVATE, dir);
 			pdb = db_engine_get_db(dir);
 			if (pdb == nullptr || pdb->psqlite == nullptr) {

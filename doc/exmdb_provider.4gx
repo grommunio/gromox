@@ -82,6 +82,13 @@ clients a chance to perform an action.
 .br
 Default: \fI250\fP
 .TP
+\fBexmdb_search_yield\fP
+Make the search folder population thread not only give up the lock on the
+sqlite database temporarily, but also invoke pthread_yield(3) after every work
+block (cf. exmdb_search_pacing).
+.br
+Default: \fIno\fP
+.TP
 \fBexrpc_debug\fP
 Log every incoming exmdb network RPC and the return code of the operation in a
 minimal fashion to stderr. Level 1 emits RPCs with a failure return code, level

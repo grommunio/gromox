@@ -40,6 +40,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"exmdb_pf_read_states", "2"},
 	{"exmdb_schema_upgrades", "auto"},
 	{"exmdb_search_pacing", "250", CFG_SIZE},
+	{"exmdb_search_yield", "0", CFG_BOOL},
 	{"exrpc_debug", "0"},
 	{"listen_ip", "::1"},
 	{"listen_port", "exmdb_listen_port", CFG_ALIAS},
@@ -86,6 +87,7 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	exmdb_pf_read_per_user = pconfig->get_ll("exmdb_pf_read_per_user");
 	exmdb_pf_read_states = pconfig->get_ll("exmdb_pf_read_states");
 	g_exmdb_search_pacing = pconfig->get_ll("exmdb_search_pacing");
+	g_exmdb_search_yield = pconfig->get_ll("exmdb_search_yield");
 	auto s = pconfig->get_value("exmdb_schema_upgrades");
 	if (strcmp(s, "auto") == 0)
 		g_exmdb_schema_upgrades = EXMDB_UPGRADE_AUTO;
