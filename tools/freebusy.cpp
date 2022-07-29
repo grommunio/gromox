@@ -921,7 +921,7 @@ int main(int argc, const char **argv)
 	const char *pstdmonth;
 	const char *pdtlmonth;
 	const char *pstarttime;
-	TIMEZONESTRUCT tzstruct;
+	TIMEZONESTRUCT tzstruct{};
 	const char *pstddayorder;
 	const char *pdtldayorder;
 	const char *pstddayofweek;
