@@ -216,7 +216,7 @@ db_item_ptr db_engine_get_db(const char *path)
 			fprintf(stderr, "W-1620: contention on %s (%u uses)\n", path, refs);
 		++pdb->reference;
 		hhold.unlock();
-		if (!pdb->lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
+		if (!pdb->giant_lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
 			hhold.lock();
 			--pdb->reference;
 			hhold.unlock();
@@ -240,7 +240,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	time(&pdb->last_time);
 	pdb->reference ++;
 	hhold.unlock();
-	if (!pdb->lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
+	if (!pdb->giant_lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
 		hhold.lock();
 		pdb->reference --;
 		hhold.unlock();
@@ -281,7 +281,7 @@ db_item_ptr db_engine_get_db(const char *path)
 void db_engine_put_db(DB_ITEM *pdb)
 {
 	time(&pdb->last_time);
-	pdb->lock.unlock();
+	pdb->giant_lock.unlock();
 	std::lock_guard hhold(g_hash_lock);
 	pdb->reference --;
 }

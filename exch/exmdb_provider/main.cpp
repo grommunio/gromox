@@ -39,7 +39,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"exmdb_pf_read_per_user", "1"},
 	{"exmdb_pf_read_states", "2"},
 	{"exmdb_schema_upgrades", "auto"},
-	{"exmdb_search_pacing", "2500", CFG_SIZE},
+	{"exmdb_search_pacing", "250", CFG_SIZE},
 	{"exrpc_debug", "0"},
 	{"listen_ip", "::1"},
 	{"listen_port", "exmdb_listen_port", CFG_ALIAS},

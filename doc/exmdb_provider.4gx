@@ -80,7 +80,7 @@ When initially populating a search folder (static or dynamic), yield the lock
 on the sqlite database (file descriptor) after so many messages to give other
 clients a chance to perform an action.
 .br
-Default: \fI2500\fP
+Default: \fI250\fP
 .TP
 \fBexrpc_debug\fP
 Log every incoming exmdb network RPC and the return code of the operation in a

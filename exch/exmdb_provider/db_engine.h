@@ -97,7 +97,7 @@ struct DB_ITEM {
 	/* client reference count, item can be flushed into file system only count is 0 */
 	std::atomic<int> reference{0};
 	time_t last_time = 0;
-	std::timed_mutex lock;
+	std::timed_mutex giant_lock; /* should be broken up */
 	sqlite3 *psqlite = nullptr;
 	DOUBLE_LIST dynamic_list{};	/* dynamic search list */
 	DOUBLE_LIST nsub_list{};
