@@ -180,9 +180,11 @@ static swbuf autodisc_url()
 		return g_disc_url;
 	if (g_disc_host)
 		return "https://"s + g_disc_host + xmlpath;
-	auto p = strchr(g_emailaddr, '@');
-	if (p != nullptr)
-		return "https://"s + (p + 1) + xmlpath;
+	if (g_emailaddr != nullptr) {
+		auto p = strchr(g_emailaddr, '@');
+		if (p != nullptr)
+			return "https://"s + (p + 1) + xmlpath;
+	}
 	return "https://localhost/" xmlpath;
 #undef xmlpath
 }
