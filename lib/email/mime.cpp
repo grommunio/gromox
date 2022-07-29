@@ -1927,7 +1927,7 @@ ssize_t MIME::get_length() const
 			/* if there's nothing, just append an empty line */
 			mime_len += 2;
 		}
-		return mime_len;
+		return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 	}
 	if (NULL == pmime->first_boundary) {
 		mime_len += 48;
@@ -1960,7 +1960,7 @@ ssize_t MIME::get_length() const
 			mime_len += 2;
 		}
 	}
-	return mime_len;
+	return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 }
 
 bool MIME::get_filename(char *file_name) const
