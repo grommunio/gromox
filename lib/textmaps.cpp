@@ -142,8 +142,9 @@ static void folder_namedb_read(const char *file, const char *dirs, folder_name_m
 		if (value == nullptr)
 			continue;
 		*value++ = '\0';
-		auto id = strtoul(line, nullptr, 16);
-		if (id < 0)
+		char *end;
+		auto id = strtoul(line, &end, 16);
+		if (end == line)
 			continue;
 		current_locale->emplace(id, value);
 	}
