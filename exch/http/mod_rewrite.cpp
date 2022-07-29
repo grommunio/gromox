@@ -131,10 +131,9 @@ static int mod_rewrite_default()
 	}
 	node.reg_set = true;
 	g_rewrite_list.push_back(std::move(node));
-	}
 
 	node.replace_string = "\\0/EWS/exchange.php";
-	auto ret = regcomp(&node.search_pattern, "/EWS/Exchange.asmx", REG_ICASE);
+	ret = regcomp(&node.search_pattern, "/EWS/Exchange.asmx", REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
 		mlog(LV_ERR, "mod_rewrite: regcomp: %s", errbuf.get());
@@ -143,7 +142,6 @@ static int mod_rewrite_default()
 	node.reg_set = true;
 	g_rewrite_list.push_back(std::move(node));
 
-	if (g_http_php) {
 	node.replace_string = "\\0/EWS/oab.php";
 	ret = regcomp(&node.search_pattern, "/OAB/oab.xml", REG_ICASE);
 	if (ret != 0) {
@@ -156,7 +154,7 @@ static int mod_rewrite_default()
 	}
 
 	node.replace_string = "\\1/grommunio-sync/index.php";
-	ret = regcomp(&node.search_pattern, "\\(/Microsoft-Server-ActiveSync\\)", REG_ICASE);
+	auto ret = regcomp(&node.search_pattern, "\\(/Microsoft-Server-ActiveSync\\)", REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
 		mlog(LV_ERR, "mod_rewrite: regcomp: %s", errbuf.get());

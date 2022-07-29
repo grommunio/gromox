@@ -51,6 +51,22 @@ struct tMailbox
 };
 
 /**
+ * @brief      Message reply body
+ *
+ * Type.xsd:6538
+ */
+struct tReplyBody
+{
+	template<typename T>
+	explicit inline tReplyBody(T&& Message) : Message(std::forward<T>(Message)) {}
+
+	std::optional<std::string> Message;
+	std::optional<std::string> lang;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * @brief      User out-of-office settings
  *
  * Types.xsd:6551
@@ -63,10 +79,10 @@ struct tUserOofSettings
 
 	std::string OofState; ///< ["Disabled", "Enabled", "Scheduled"], Types.xsd:6522
 	std::string ExternalAudience; ///< ["None", "Known", "All"], Types.xsd:6530
-	std::optional<tDuration> Duration; ///< Excution duration
+	std::optional<tDuration> Duration; ///< Out-of-office duration
+	std::optional<tReplyBody> InternalReply; ///< Internal reply message
+	std::optional<tReplyBody> ExternalReply; ///< External reply message
 
-	//<xs:element minOccurs="0" maxOccurs="1" name="InternalReply" type="t:ReplyBody" />
-	//<xs:element minOccurs="0" maxOccurs="1" name="ExternalReply" type="t:ReplyBody" />
 	//<xs:element minOccurs="0" maxOccurs="1" name="DeclineMeetingReply" type="t:ReplyBody" />
 	//<xs:element minOccurs="0" maxOccurs="1" name="DeclineEventsForScheduledOOF" type="xs:boolean" />
 	//<xs:element minOccurs="0" maxOccurs="1" name="DeclineAllEventsForScheduledOOF" type="xs:boolean" />

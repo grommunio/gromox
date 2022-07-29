@@ -12,15 +12,15 @@ using namespace gromox::EWS::Structures;
 using namespace tinyxml2;
 
 //Shortcuts to call toXML* and fromXML* functions on members
-#define XMLINIT(name) name(fromXMLNode<decltype(name)>(xml, getName<BaseType_t<decltype(name)>>(# name)))
-#define XMLDUMP(name) toXMLNode(xml, getName<BaseType_t<decltype(name)>>(# name), name)
-#define XMLINITA(name) name(fromXMLAttr<decltype(name)>(xml, getName<BaseType_t<decltype(name)>>(# name)))
-#define XMLDUMPA(name) toXMLAttr(xml, getName<BaseType_t<decltype(name)>>(# name), name)
+#define XMLINIT(name) name(fromXMLNode<decltype(name)>(xml, # name))
+#define XMLDUMP(name) toXMLNode(xml, # name, name)
+#define XMLINITA(name) name(fromXMLAttr<decltype(name)>(xml, # name))
+#define XMLDUMPA(name) toXMLAttr(xml, # name, name)
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void tDuration::serialize(tinyxml2::XMLElement* xml) const
+void tDuration::serialize(XMLElement* xml) const
 {
     XMLDUMP(StartTime);
     XMLDUMP(EndTime);
@@ -30,11 +30,20 @@ tMailbox::tMailbox(const XMLElement* xml) :
     XMLINIT(Name), XMLINIT(Address), XMLINIT(RoutingType)
 {}
 
+
+void tReplyBody::serialize(XMLElement* xml) const
+{
+	XMLDUMP(Message);
+	XMLDUMPA(lang);
+}
+
 void tUserOofSettings::serialize(XMLElement* xml) const
 {
     XMLDUMP(OofState);
     XMLDUMP(ExternalAudience);
     XMLDUMP(Duration);
+    XMLDUMP(InternalReply);
+    XMLDUMP(ExternalReply);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

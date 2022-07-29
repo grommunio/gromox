@@ -11,15 +11,15 @@
 namespace gromox::EWS::SOAP
 {
 
+static constexpr char NS_SOAP[] = "http://www.w3.org/2003/05/soap-envelope/";
+static constexpr char NS_MSGS[] = "https://schemas.microsoft.com/exchange/services/2006/messages";
+static constexpr char NS_TYPS[] = "https://schemas.microsoft.com/exchange/services/2006/types";
+
 /**
  * @brief      Basic class to manage SOAP Envelopes
  */
 class Envelope {
 	public:
-	static constexpr char NS_SOAP[] = "http://www.w3.org/2003/05/soap-envelope/";
-	static constexpr char NS_MSGS[] = "https://schemas.microsoft.com/exchange/services/2006/messages";
-	static constexpr char NS_TYPS[] = "https://schemas.microsoft.com/exchange/services/2006/types";
-
 	Envelope();
 	explicit Envelope(const char*, size_t=static_cast< size_t >(-1));
 

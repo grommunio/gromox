@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
 
+#include <algorithm>
 #include <cstring>
 #include <functional>
 #include <iostream>
@@ -11,6 +12,7 @@
 
 #include <tinyxml2.h>
 #include <fmt/core.h>
+#include <gromox/config_file.hpp>
 #include <gromox/hpm_common.h>
 
 #include "exceptions.hpp"
@@ -23,28 +25,9 @@ using namespace gromox;
 using namespace gromox::EWS;
 using namespace tinyxml2;
 
-namespace {
+using Exceptions::DispatchError;
 
 ///////////////////////////////////////////////////////////////////////////////
-
-/**
- * @brief      Aggregation of plugin data and functions
- */
-struct EWSPlugin
-{
-	using Handler = std::function<void(const XMLElement*, XMLElement*, const EWSContext&)>;
-
-	static BOOL preproc(int);
-	static void writeheader(int, int, size_t);
-
-	std::pair<std::string, int> dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t);
-
-	BOOL proc(int, const void*, uint64_t);
-	int retr(int);
-	void term(int);
-
-	static const std::unordered_map<std::string, Handler> requestMap;
-};
 
 /**
  * @brief      Deserialize request data and call processing function
@@ -115,15 +98,6 @@ void EWSPlugin::writeheader(int ctx_id, int code, size_t content_length)
 	write_response(ctx_id, rs.c_str(), rs.size());
 }
 
-int EWSPlugin::retr(int)
-{return HPM_RETRIEVE_DONE;}
-
-/**
- * @brief      Handle connection lost
- */
-void EWSPlugin::term(int)
-{}
-
 /**
  * @brief      Return authentication error
  *
@@ -182,7 +156,7 @@ BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len) try
 {
 	using namespace std::string_literals;
-	EWSContext context(ctx_id, auth_info, static_cast<const char*>(data), len);
+	EWSContext context(ctx_id, auth_info, static_cast<const char*>(data), len, *this);
 	for(XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
 	{
 		XMLElement* responseContainer = context.response.body->InsertNewChildElement(xml->Name());
@@ -204,6 +178,69 @@ catch(std::exception& err)
 	return {SOAP::Envelope::fault("Server", err.what()), 500};
 }
 
+EWSPlugin::EWSPlugin()
+{loadConfig();}
+
+/**
+ * @brief      Initialize mysql adaptor function pointers
+ */
+EWSPlugin::_mysql::_mysql()
+{
+#define getService(f) \
+	if (query_service2(# f, f) == nullptr) \
+		throw std::runtime_error("[ews]: failed to get the \""# f"\" service")
+
+	getService(get_maildir);
+	getService(get_username_from_id);
+#undef getService
+}
+
+static constexpr cfg_directive x500_defaults[] = {
+	{"x500_org_name", "Gromox default"},
+	CFG_TABLE_END,
+};
+
+/**
+ * @brief      Load configuration file
+ */
+void EWSPlugin::loadConfig()
+{
+	auto cfg = config_file_initd("exmdb_provider.cfg", get_config_path(), x500_defaults);
+	x500_org_name = cfg->get_value("x500_org_name");
+	mlog(LV_INFO, "[ews]: x500 org name is \"%s\"", x500_org_name.c_str());
+}
+
+/**
+ * @brief      Convert ESSDN to username
+ *
+ * @param      essdn   ESSDN to convert
+ *
+ * @throw      DispatchError   Conversion failed
+ *
+ * @return     Username
+ *
+ * @todo       This should probably verify the domain id as well (currently ignored)
+ */
+std::string EWSPlugin::essdn_to_username(const std::string& essdn) const
+{
+	int user_id;
+	auto ess_tpl = fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=", x500_org_name.c_str());
+	if (strncasecmp(essdn.c_str(), ess_tpl.c_str(), ess_tpl.size()) != 0)
+		throw DispatchError("Failed to resolve essdn: invalid essdn");
+	if (essdn.size() > ess_tpl.size() + 16 && essdn[ess_tpl.size()+16] != '-')
+		throw DispatchError("Failed to resolve essdn: malformed essdn");
+	const char *lcl = essdn.c_str() + ess_tpl.size() + 17;
+	user_id = decode_hex_int(essdn.c_str() + ess_tpl.size() + 8);
+	std::string username(UADDR_SIZE, 0);
+	if (!mysql.get_username_from_id(user_id, username.data(), UADDR_SIZE))
+		throw DispatchError("Failed to resolve essdn: user not found");
+	username.resize(username.find('\0'));
+	size_t at = username.find('@');
+	if (at == username.npos)
+		throw DispatchError("Failed to resolve essdn: invalid user");
+	if (strncasecmp(username.data(), lcl, at) != 0)
+		throw DispatchError("Failed to resolve essdn: username mismatch");
+	return username;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -224,11 +261,17 @@ static BOOL ews_init(void **apidata)
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
 	ifc.proc    = [](int ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
-	ifc.retr    = [](int ctx) {return g_ews_plugin->retr(ctx);};
-	ifc.term    = [](int ctx) {g_ews_plugin->term(ctx);};
+	ifc.retr    = [](int) {return HPM_RETRIEVE_DONE;};
+	ifc.term    = [](int) {};
 	if (!register_interface(&ifc))
 		return false;
-	g_ews_plugin.reset(new EWSPlugin());
+	try {
+		g_ews_plugin.reset(new EWSPlugin());
+	}  catch (std::exception& e) {
+		printf("[ews] failed to initialize plugin: %s\n", e.what());
+		return false;
+	}
+	printf("[ews]: plugin is loaded into system\n");
 	return TRUE;
 }
 
@@ -246,6 +289,8 @@ static BOOL ews_main(int reason, void **data)
 {
 	if (reason == PLUGIN_INIT)
 		return ews_init(data);
+	else if(reason == PLUGIN_FREE)
+		g_ews_plugin.reset();
 	return TRUE;
 }
 
