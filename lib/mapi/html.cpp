@@ -960,7 +960,6 @@ static BOOL html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 {
 	int i;
 	int length;
-	double percell;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\trowd\\trgaph10 ");
@@ -968,7 +967,7 @@ static BOOL html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 	if (0 == cell_num) {
 		return TRUE;
 	}
-	percell = 8503/cell_num;
+	auto percell = 8503.0 / cell_num;
 	for (i=0; i<cell_num; i++) {
 		length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\clbrdrt\\brdrw15\\brdrs"
 				"\\clbrdrl\\brdrw15\\brdrs\\clbrdrb\\brdrw15"
