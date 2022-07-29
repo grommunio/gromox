@@ -259,6 +259,8 @@ const char *folder_namedb_get(const char *locale, unsigned int tid)
 
 void textmaps_init(const char *datapath)
 {
+	if (datapath == nullptr)
+		datapath = PKGDATADIR;
 	std::call_once(g_textmaps_done, [=]() {
 		xmap_read("cpid.txt", datapath, g_cpid2name_map, g_cpname2id_map);
 		fprintf(stderr, "[textmaps]: cpid: %zu IDs, %zu names\n",

@@ -3,7 +3,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 namespace gromox {
-extern GX_EXPORT void textmaps_init(const char *datapath);
+extern GX_EXPORT void textmaps_init(const char *datapath = nullptr);
 extern GX_EXPORT bool verify_cpid(uint32_t);
 extern GX_EXPORT const char *cpid_to_cset(uint32_t);
 extern GX_EXPORT uint32_t cset_to_cpid(const char *);
