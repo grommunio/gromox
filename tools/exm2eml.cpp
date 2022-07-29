@@ -25,7 +25,6 @@
 using namespace gromox;
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 decltype(system_services_get_user_ids) system_services_get_user_ids;
-decltype(system_services_charset_to_cpid) system_services_charset_to_cpid;
 decltype(system_services_lcid_to_ltag) system_services_lcid_to_ltag;
 decltype(system_services_ltag_to_lcid) system_services_ltag_to_lcid;
 decltype(system_services_mime_to_extension) system_services_mime_to_extension;
@@ -105,7 +104,6 @@ int main(int argc, const char **argv) try
 } while (false)
 	E(system_services_get_username_from_id, "get_username_from_id");
 	E(system_services_get_user_ids, "get_user_ids");
-	E(system_services_charset_to_cpid, "charset_to_cpid");
 	E(system_services_lcid_to_ltag, "lcid_to_ltag");
 	E(system_services_ltag_to_lcid, "ltag_to_lcid");
 	E(system_services_mime_to_extension, "mime_to_extension");
@@ -116,7 +114,6 @@ int main(int argc, const char **argv) try
 	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
 	    system_services_get_user_ids, system_services_get_username_from_id,
 	    system_services_ltag_to_lcid, system_services_lcid_to_ltag,
-	    system_services_charset_to_cpid,
 	    system_services_mime_to_extension, system_services_extension_to_mime)) {
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
 		return EXIT_FAILURE;

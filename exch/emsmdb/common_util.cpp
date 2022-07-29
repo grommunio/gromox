@@ -88,7 +88,6 @@ E(cancel_timer)
 #undef E
 
 static const char *(*common_util_lcid_to_ltag)(uint32_t lcid);
-static uint32_t (*common_util_charset_to_cpid)(const char *charset);
 static uint32_t (*common_util_ltag_to_lcid)(const char *ltag);
 static const char* (*common_util_mime_to_extension)(const char *ptype);
 
@@ -2073,7 +2072,6 @@ int common_util_run()
 	E(common_util_get_id_from_homedir, "get_id_from_homedir");
 	E(common_util_lang_to_charset, "lang_to_charset");
 	E(common_util_cpid_to_charset, "cpid_to_charset");
-	E(common_util_charset_to_cpid, "charset_to_cpid");
 	E(common_util_lcid_to_ltag, "lcid_to_ltag");
 	E(common_util_ltag_to_lcid, "ltag_to_lcid");
 	E(common_util_verify_cpid, "verify_cpid");
@@ -2086,7 +2084,6 @@ int common_util_run()
 	if (!oxcmail_init_library(g_emsmdb_org_name,
 		common_util_get_user_ids, common_util_get_username_from_id,
 		common_util_ltag_to_lcid, common_util_lcid_to_ltag,
-		common_util_charset_to_cpid,
 		common_util_mime_to_extension, common_util_extension_to_mime)) {
 		printf("[exchange_emsmdb]: Failed to init oxcmail library\n");
 		return -2;

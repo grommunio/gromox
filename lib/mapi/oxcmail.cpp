@@ -167,7 +167,6 @@ static GET_USER_IDS oxcmail_get_user_ids;
 static GET_USERNAME oxcmail_get_username;
 static LTAG_TO_LCID oxcmail_ltag_to_lcid;
 static LCID_TO_LTAG oxcmail_lcid_to_ltag;
-static CHARSET_TO_CPID oxcmail_charset_to_cpid;
 static MIME_TO_EXTENSION oxcmail_mime_to_extension;
 static EXTENSION_TO_MIME oxcmail_extension_to_mime;
 
@@ -199,7 +198,7 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 BOOL oxcmail_init_library(const char *org_name,
 	GET_USER_IDS get_user_ids, GET_USERNAME get_username,
 	LTAG_TO_LCID ltag_to_lcid, LCID_TO_LTAG lcid_to_ltag,
-	CHARSET_TO_CPID charset_to_cpid, MIME_TO_EXTENSION mime_to_extension,
+	MIME_TO_EXTENSION mime_to_extension,
 	EXTENSION_TO_MIME extension_to_mime)
 {
 	gx_strlcpy(g_oxcmail_org_name, org_name, arsizeof(g_oxcmail_org_name));
@@ -207,7 +206,6 @@ BOOL oxcmail_init_library(const char *org_name,
 	oxcmail_get_username = get_username;
 	oxcmail_ltag_to_lcid = ltag_to_lcid;
 	oxcmail_lcid_to_ltag = lcid_to_ltag;
-	oxcmail_charset_to_cpid = charset_to_cpid;
 	oxcmail_mime_to_extension = mime_to_extension;
 	oxcmail_extension_to_mime = extension_to_mime;
 	textmaps_init();
@@ -1578,7 +1576,6 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	MIME *pmime, TPROPVAL_ARRAY *pproplist)
 {
 	BINARY tmp_bin;
-	uint32_t tmp_int32;
 	char best_charset[32];
 	char temp_charset[32];
 	const char *content_type;
@@ -1604,7 +1601,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		gx_strlcpy(best_charset, charset, GX_ARRAY_SIZE(best_charset));
 	content_type = pmime->content_type;
 	if (0 == strcasecmp(content_type, "text/html")) {
-		tmp_int32 = oxcmail_charset_to_cpid(best_charset);
+		uint32_t tmp_int32 = cset_to_cpid(best_charset);
 		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0) {
 			free(pcontent);
 			return FALSE;
@@ -1636,7 +1633,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	} else if (0 == strcasecmp(content_type, "text/enriched")) {
 		pcontent[length] = '\0';
 		enriched_to_html(pcontent, pcontent + length + 1, 2*length);
-		tmp_int32 = oxcmail_charset_to_cpid(best_charset);
+		uint32_t tmp_int32 = cset_to_cpid(best_charset);
 		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0) {
 			free(pcontent);
 			return FALSE;
