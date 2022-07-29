@@ -448,7 +448,6 @@ int common_util_run(const char *data_path)
 		system_services_ltag_to_lcid,
 		system_services_lcid_to_ltag,
 		system_services_charset_to_cpid,
-		system_services_cpid_to_charset,
 		system_services_mime_to_extension,
 		system_services_extension_to_mime)) {
 		printf("[common_util]: Failed to init oxcmail library\n");

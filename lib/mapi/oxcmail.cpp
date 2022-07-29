@@ -37,6 +37,7 @@
 #include <gromox/rtf.hpp>
 #include <gromox/rtfcp.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>
 #include <gromox/util.hpp>
 
@@ -167,7 +168,6 @@ static GET_USERNAME oxcmail_get_username;
 static LTAG_TO_LCID oxcmail_ltag_to_lcid;
 static LCID_TO_LTAG oxcmail_lcid_to_ltag;
 static CHARSET_TO_CPID oxcmail_charset_to_cpid;
-static CPID_TO_CHARSET oxcmail_cpid_to_charset;
 static MIME_TO_EXTENSION oxcmail_mime_to_extension;
 static EXTENSION_TO_MIME oxcmail_extension_to_mime;
 
@@ -199,8 +199,7 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 BOOL oxcmail_init_library(const char *org_name,
 	GET_USER_IDS get_user_ids, GET_USERNAME get_username,
 	LTAG_TO_LCID ltag_to_lcid, LCID_TO_LTAG lcid_to_ltag,
-	CHARSET_TO_CPID charset_to_cpid, CPID_TO_CHARSET
-	cpid_to_charset, MIME_TO_EXTENSION mime_to_extension,
+	CHARSET_TO_CPID charset_to_cpid, MIME_TO_EXTENSION mime_to_extension,
 	EXTENSION_TO_MIME extension_to_mime)
 {
 	gx_strlcpy(g_oxcmail_org_name, org_name, arsizeof(g_oxcmail_org_name));
@@ -209,12 +208,11 @@ BOOL oxcmail_init_library(const char *org_name,
 	oxcmail_ltag_to_lcid = ltag_to_lcid;
 	oxcmail_lcid_to_ltag = lcid_to_ltag;
 	oxcmail_charset_to_cpid = charset_to_cpid;
-	oxcmail_cpid_to_charset = cpid_to_charset;
 	oxcmail_mime_to_extension = mime_to_extension;
 	oxcmail_extension_to_mime = extension_to_mime;
-	tnef_init_library(cpid_to_charset);
-	if (!rtf_init_library(cpid_to_charset) ||
-	    !html_init_library(cpid_to_charset))
+	textmaps_init();
+	tnef_init_library();
+	if (!rtf_init_library() || !html_init_library())
 		return FALSE;	
 	return TRUE;
 }
@@ -3263,7 +3261,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	uint32_t tmp_int32;
 	char tmp_buff[256];
 	PROPID_ARRAY propids;
-	const char *encoding;
 	char mime_charset[64];
 	MESSAGE_CONTENT *pmsg;
 	char default_charset[64];
@@ -3664,7 +3661,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 					message_content_free(pmsg);
 					return NULL;
 				}
-				encoding = oxcmail_cpid_to_charset(tmp_int32);
+				auto encoding = cpid_to_cset(tmp_int32);
 				if (NULL == encoding) {
 					encoding = "windows-1252";
 				}
@@ -5168,7 +5165,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	if (num == nullptr || *num == 1200) {
 		pcharset = "utf-8";
 	} else {
-		pcharset = oxcmail_cpid_to_charset(*num);
+		pcharset = cpid_to_cset(*num);
 		if (NULL == pcharset) {
 			pcharset = "utf-8";
 		}

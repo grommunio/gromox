@@ -20,6 +20,7 @@
 #include <gromox/html.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/str_hash.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #define QRF(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return false; } while (false)
 #define RTF_PARAGRAPHALIGN_DEFAULT			0
@@ -46,11 +47,10 @@ struct RTF_WRITER {
 
 static iconv_t g_conv_id;
 static std::map<std::string, rgb_t> g_color_hash;
-static CPID_TO_CHARSET html_cpid_to_charset;
 
 static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode);
 
-BOOL html_init_library(CPID_TO_CHARSET cpid_to_charset)
+BOOL html_init_library()
 {
 	static constexpr std::pair<const char *, rgb_t> color_map[] =
 		{{"black",				0x000000},
@@ -201,7 +201,8 @@ BOOL html_init_library(CPID_TO_CHARSET cpid_to_charset)
 		{"whitesmoke",			0xf5f5f5},
 		{"yellowgreen",			0x9acd32},
 		{"rebeccapurple",		0x663399}};
-	
+
+	textmaps_init();
 	if (g_color_hash.size() > 0)
 		return TRUE;
 	try {
@@ -215,7 +216,6 @@ BOOL html_init_library(CPID_TO_CHARSET cpid_to_charset)
 	if ((iconv_t)-1 == g_conv_id) {
 		return FALSE;
 	}
-	html_cpid_to_charset = cpid_to_charset;
 	return TRUE;
 }
 
@@ -1286,9 +1286,8 @@ static void html_string_to_utf8(uint32_t cpid,
 {
 	size_t in_len;
 	iconv_t conv_id;
-	const char *charset;
 	
-	charset = html_cpid_to_charset(cpid);
+	auto charset = cpid_to_cset(cpid);
 	if (NULL == charset) {
 		charset = "windows-1252";
 	}

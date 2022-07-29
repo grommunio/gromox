@@ -14,6 +14,7 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>
 #include <gromox/util.hpp>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
@@ -159,12 +160,11 @@ struct tnef_push : public EXT_PUSH {
 
 static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 static const uint8_t g_pad_bytes[3]{};
-static const char* (*tnef_cpid_to_charset)(uint32_t cpid);
 static BOOL tnef_serialize_internal(tnef_push &, BOOL b_embedded, const MESSAGE_CONTENT *);
 
-void tnef_init_library(CPID_TO_CHARSET cpid_to_charset)
+void tnef_init_library()
 {
-	tnef_cpid_to_charset = cpid_to_charset;
+	textmaps_init();
 }
 	
 static BOOL tnef_username_to_oneoff(const char *username,
@@ -1130,9 +1130,7 @@ static void tnef_tpropval_array_to_unicode(
 static void tnef_message_to_unicode(
 	uint32_t cpid, MESSAGE_CONTENT *pmsg)
 {
-	const char *charset;
-	
-	charset = tnef_cpid_to_charset(cpid);
+	auto charset = cpid_to_cset(cpid);
 	if (NULL == charset) {
 		charset = "CP1252";
 	}

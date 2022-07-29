@@ -49,9 +49,6 @@ static uint32_t (*exmdb_local_ltag_to_lcid)(const char*);
 static const char* (*exmdb_local_lcid_to_ltag)(uint32_t);
 
 static uint32_t (*exmdb_local_charset_to_cpid)(const char*);
-
-static const char* (*exmdb_local_cpid_to_charset)(uint32_t);
-
 static const char* (*exmdb_local_mime_to_extension)(const char*);
 
 static const char* (*exmdb_local_extension_to_mime)(const char*);
@@ -97,7 +94,6 @@ int exmdb_local_run()
 	E(exmdb_local_ltag_to_lcid, "ltag_to_lcid");
 	E(exmdb_local_lcid_to_ltag, "lcid_to_ltag");
 	E(exmdb_local_charset_to_cpid, "charset_to_cpid");
-	E(exmdb_local_cpid_to_charset, "cpid_to_charset");
 	E(exmdb_local_mime_to_extension, "mime_to_extension");
 	E(exmdb_local_extension_to_mime, "extension_to_mime");
 	E(exmdb_local_get_user_ids, "get_user_ids");
@@ -107,7 +103,7 @@ int exmdb_local_run()
 	if (!oxcmail_init_library(g_org_name,
 		exmdb_local_get_user_ids, exmdb_local_get_username,
 		exmdb_local_ltag_to_lcid, exmdb_local_lcid_to_ltag,
-		exmdb_local_charset_to_cpid, exmdb_local_cpid_to_charset,
+		exmdb_local_charset_to_cpid,
 		exmdb_local_mime_to_extension, exmdb_local_extension_to_mime)) {
 		printf("[exmdb_local]: Failed to init oxcmail library\n");
 		return -2;

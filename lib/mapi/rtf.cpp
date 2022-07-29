@@ -21,6 +21,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/str_hash.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #define QRF(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return false; } while (false)
 
@@ -275,7 +276,6 @@ enum {
 using CMD_PROC_FUNC = int (*)(RTF_READER *, SIMPLE_TREE_NODE *, int, bool, int);
 
 static std::unordered_map<std::string_view, CMD_PROC_FUNC> g_cmd_hash;
-static const char* (*rtf_cpid_to_charset)(uint32_t cpid);
 static bool rtf_starting_body(RTF_READER *preader);
 static bool rtf_starting_text(RTF_READER *preader);
 
@@ -410,8 +410,7 @@ static bool rtf_flush_iconv_cache(RTF_READER *preader)
 
 static const char *rtf_cpid_to_encoding(uint32_t num)
 {
-	const char *encoding;
-	encoding = rtf_cpid_to_charset(num);
+	auto encoding = cpid_to_cset(num);
 	return encoding != nullptr ? encoding : "windows-1252";
 }
 
@@ -3133,7 +3132,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	return true;
 }
 
-bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
+bool rtf_init_library()
 {
 	static constexpr std::pair<const char *, CMD_PROC_FUNC> cmd_map[] = {
 		{"*",				rtf_cmd_maybe_ignore},
@@ -3243,10 +3242,10 @@ bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 		{"wmetafile",		rtf_cmd_wmetafile},
 		{"xe", rtf_cmd_continue}
 	};
-	
+
+	textmaps_init();
 	if (g_cmd_hash.size() > 0)
 		return true;
-	rtf_cpid_to_charset = cpid_to_charset;
 	try {
 		g_cmd_hash.insert(cbegin(cmd_map), cend(cmd_map));
 	} catch (const std::bad_alloc &) {

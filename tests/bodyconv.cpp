@@ -25,19 +25,14 @@ static void help()
 	std::cout << "       Will read from stdin and output to stdout" << std::endl;
 }
 
-static const char *cs_to_cp(uint32_t x)
-{
-	return x == 65001 ? "utf-8" : nullptr;
-}
-
 int main(int argc, const char **argv)
 {
 	if (argc < 2) {
 		help();
 		return EXIT_FAILURE;
 	}
-	html_init_library(cs_to_cp);
-	rtf_init_library(cs_to_cp);
+	html_init_library();
+	rtf_init_library();
 	std::string all;
 	char buf[4096];
 	ssize_t have_read;

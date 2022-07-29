@@ -1086,7 +1086,6 @@ using GET_PROPNAME = BOOL (*)(uint16_t, PROPERTY_NAME **);
 using LTAG_TO_LCID = uint32_t (*)(const char *);
 using LCID_TO_LTAG = const char *(*)(uint32_t);
 using CHARSET_TO_CPID = uint32_t (*)(const char *);
-using CPID_TO_CHARSET = const char *(*)(uint32_t);
 using MIME_TO_EXTENSION = const char *(*)(const char *);
 using EXTENSION_TO_MIME = const char *(*)(const char *);
 using GET_USER_IDS = BOOL (*)(const char *, int *, int *, enum display_type *);

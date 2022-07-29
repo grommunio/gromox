@@ -32,16 +32,6 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static const char* cpid_to_charset_to(uint32_t cpid)
-{
-	auto item_num = g_list_file->get_size();
-	auto pitem = static_cast<const srcitem *>(g_list_file->get_list());
-	for (decltype(item_num) i = 0; i < item_num; ++i)
-		if (pitem[i].cpid == cpid)
-			return pitem[i].s;
-	return "us-ascii";
-}
-
 int main(int argc, const char **argv)
 {
 	int offset;
@@ -104,7 +94,7 @@ int main(int argc, const char **argv)
 	if (NULL == pattachments) {
 		return 1;
 	}
-	if (!rtf_init_library(cpid_to_charset_to)) {
+	if (!rtf_init_library()) {
 		fprintf(stderr, "Failed to init RTF library\n");
 		return 4;
 	}

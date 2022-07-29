@@ -2086,7 +2086,7 @@ int common_util_run()
 	if (!oxcmail_init_library(g_emsmdb_org_name,
 		common_util_get_user_ids, common_util_get_username_from_id,
 		common_util_ltag_to_lcid, common_util_lcid_to_ltag,
-		common_util_charset_to_cpid, common_util_cpid_to_charset,
+		common_util_charset_to_cpid,
 		common_util_mime_to_extension, common_util_extension_to_mime)) {
 		printf("[exchange_emsmdb]: Failed to init oxcmail library\n");
 		return -2;

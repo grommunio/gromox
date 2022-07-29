@@ -11,7 +11,6 @@ BOOL (*system_services_get_id_from_username)(const char*, int*);
 decltype(system_services_get_id_from_maildir) system_services_get_id_from_maildir;
 BOOL (*system_services_get_user_ids)(const char *, int *, int *, enum display_type *);
 BOOL (*system_services_lang_to_charset)(const char*, char*);
-const char* (*system_services_cpid_to_charset)(uint32_t);
 uint32_t (*system_services_charset_to_cpid)(const char*);
 const char* (*system_services_lcid_to_ltag)(uint32_t);
 uint32_t (*system_services_ltag_to_lcid)(const char*);
@@ -36,7 +35,6 @@ int system_services_run()
 	E(system_services_get_id_from_maildir, "get_id_from_maildir");
 	E(system_services_get_user_ids, "get_user_ids");
 	E(system_services_lang_to_charset, "lang_to_charset");
-	E(system_services_cpid_to_charset, "cpid_to_charset");
 	E(system_services_charset_to_cpid, "charset_to_cpid");
 	E(system_services_lcid_to_ltag, "lcid_to_ltag");
 	E(system_services_ltag_to_lcid, "ltag_to_lcid");
@@ -56,7 +54,6 @@ void system_services_stop()
 	service_release("get_id_from_maildir", "system");
 	service_release("get_user_ids", "system");
 	service_release("lang_to_charset", "system");
-	service_release("cpid_to_charset", "system");
 	service_release("charset_to_cpid", "system");
 	service_release("lcid_to_ltag", "system");
 	service_release("ltag_to_lcid", "system");
