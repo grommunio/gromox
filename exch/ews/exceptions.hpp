@@ -32,4 +32,18 @@ class SOAPError : public InputError
 class UnknownRequestError : public std::runtime_error
 {using std::runtime_error::runtime_error;};
 
+/**
+ * @brief      Generic error during request processing
+ */
+class DispatchError : public std::runtime_error
+{using std::runtime_error::runtime_error;};
+
+/**
+ * @brief      Generic error to signal missing functionality
+ *
+ * Provides an easily searchable marker.
+ */
+class NotImplementedError : public std::runtime_error
+{using std::runtime_error::runtime_error;};
+
 }
