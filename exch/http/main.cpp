@@ -28,6 +28,7 @@
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "hpm_processor.h"
@@ -70,7 +71,6 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
 	"libgxs_authmgr.so",
-	"libgxs_textmaps.so",
 	"libgxs_timer_agent.so",
 	"libgxs_user_filter.so",
 };
@@ -329,6 +329,7 @@ int main(int argc, const char **argv) try
 		   "----------------------------\n");
 	}
 
+	textmaps_init();
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) { 
 		printf("[system]: failed to run system service\n");

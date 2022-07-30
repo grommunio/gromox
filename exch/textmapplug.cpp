@@ -30,7 +30,6 @@ static BOOL svc_textmaps(int reason, void **apidata)
 	if (!E("verify_cpid", verify_cpid) ||
 	    !E("cpid_to_charset", cpid_to_cset) ||
 	    !E("charset_to_cpid", cset_to_cpid) ||
-	    !E("extension_to_mime", extension_to_mime) ||
 	    !E("lang_to_charset", lang_to_charset_b)) {
 		fprintf(stderr, "[textmaps]: failed to register services\n");
 		return FALSE;

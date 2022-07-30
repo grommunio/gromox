@@ -27,6 +27,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
 #include <gromox/str_hash.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "http_parser.h"
 #include "mod_cache.hpp"
@@ -367,7 +368,6 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	CACHE_CONTEXT *pcontext;
 	char response_buff[1024];
 	char modified_string[128];
-	const char *pcontent_type;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	time(&cur_time);
@@ -376,8 +376,7 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm);
 	strftime(modified_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
 	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
-	pcontent_type = system_services_extension_to_mime(
-							pcontext->pitem->extention);
+	auto pcontent_type = extension_to_mime(pcontext->pitem->extention);
 	if (NULL == pcontent_type) {
 		pcontent_type = "application/octet-stream";
 	}
@@ -415,10 +414,8 @@ static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
 	int ctype_len;
 	char num_buff[64];
 	uint32_t content_length;
-	const char *pcontent_type;
 	
-	pcontent_type = system_services_extension_to_mime(
-							pcontext->pitem->extention);
+	auto pcontent_type = extension_to_mime(pcontext->pitem->extention);
 	if (NULL == pcontent_type) {
 		pcontent_type = "application/octet-stream";
 	}
@@ -798,7 +795,6 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 	int tmp_len;
 	char tmp_buff[1024];
 	CACHE_CONTEXT *pcontext;
-	const char *pcontent_type;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	if (NULL == pcontext->pitem) {
@@ -842,8 +838,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 						pcontext->range_pos].begin;
 				pcontext->until = pcontext->prange[
 						pcontext->range_pos].end + 1;
-				pcontent_type = system_services_extension_to_mime(
-							pcontext->pitem->extention);
+				auto pcontent_type = extension_to_mime(pcontext->pitem->extention);
 				if (NULL == pcontent_type) {
 					pcontent_type = "application/octet-stream";
 				}
