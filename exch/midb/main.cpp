@@ -26,6 +26,7 @@
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "cmd_parser.h"
 #include "common_util.h"
@@ -53,7 +54,6 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_event_proxy.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
-	"libgxs_textmaps.so",
 	"libgxs_authmgr.so",
 };
 
@@ -215,6 +215,7 @@ int main(int argc, const char **argv) try
 	}
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
+	textmaps_init();
 	if (0 != service_run()) {
 		printf("[system]: failed to run service\n");
 		return 3;

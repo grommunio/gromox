@@ -63,7 +63,6 @@ static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 decltype(system_services_get_user_ids) system_services_get_user_ids;
-decltype(system_services_lang_to_charset) system_services_lang_to_charset;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static const char g_default_timezone[] = "UTC";
 static gi_name_map name_map;
@@ -232,8 +231,6 @@ int main(int argc, const char **argv) try
 	if (g_oneoff)
 		system_services_get_user_ids = [](const char *, int *, int *, display_type *) -> BOOL { return false; };
 	auto cl_2 = make_scope_exit([]() { service_release("get_user_ids", "system"); });
-	E(system_services_lang_to_charset, "lang_to_charset");
-	auto cl_9 = make_scope_exit([]() { service_release("lang_to_charset", "system"); });
 #undef E
 
 	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),

@@ -45,6 +45,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/single_list.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "cmd_parser.h"
 #include "common_util.h"
@@ -2670,12 +2671,20 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	return cmd_write(sockd, list_buff, offset);
 }
 
+static bool system_services_lang_to_charset(const char *lang, char (&charset)[32])
+{
+	auto c = lang_to_charset(lang);
+	if (c == nullptr)
+		return false;
+	gx_strlcpy(charset, lang, std::size(charset));
+	return true;
+}
+
 static int mail_engine_minst(int argc, char **argv, int sockd)
 {
 	int tmp_len;
 	int user_id;
 	char lang[32];
-	uint32_t cpid;
 	size_t mess_len;
 	char charset[32], tmzone[64];
 	uint32_t tmp_flags;
@@ -2795,7 +2804,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (newval == nullptr ||
 	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
 		return MIDB_E_NO_MEMORY;
-	cpid = system_services_charset_to_cpid(charset);
+	auto cpid = cset_to_cpid(charset);
 	if (cpid == 0)
 		cpid = 1252;
 	gxerr_t e_result = GXERR_CALL_FAILED;
@@ -2858,7 +2867,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 {
 	int user_id;
 	char lang[32];
-	uint32_t cpid;
 	int flags_len;
 	uint8_t b_read;
 	uint64_t nt_time;
@@ -3024,7 +3032,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (newval == nullptr ||
 	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
 		return MIDB_E_NO_MEMORY;
-	cpid = system_services_charset_to_cpid(charset);
+	auto cpid = cset_to_cpid(charset);
 	if (cpid == 0)
 		cpid = 1252;
 	gxerr_t e_result = GXERR_CALL_FAILED;

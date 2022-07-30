@@ -14,6 +14,4 @@ E(get_user_lang)
 E(get_username_from_id)
 E(get_id_from_maildir)
 #undef E
-extern BOOL (*system_services_lang_to_charset)(const char*, char*);
-extern uint32_t (*system_services_charset_to_cpid)(const char*);
 extern void (*system_services_broadcast_event)(const char*);
