@@ -117,10 +117,6 @@ E(get_user_ids)
 E(get_user_lang)
 E(get_username_from_id)
 #undef E
-extern BOOL (*common_util_lang_to_charset)(
-	const char *lang, char *charset);
-extern const char* (*common_util_cpid_to_charset)(uint32_t cpid);
-extern bool (*common_util_verify_cpid)(uint32_t cpid);
 extern int (*common_util_add_timer)(const char *command, int interval);
 extern BOOL (*common_util_cancel_timer)(int timer_id);
 

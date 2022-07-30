@@ -77,8 +77,6 @@ int exmdb_client_run()
 #undef E
 	/* pass the service functions to exmdb_provider */
 #define E(s) reinterpret_cast<void *>(s)
-	pass_service(SERVICE_ID_LANG_TO_CHARSET, E(common_util_lang_to_charset));
-	pass_service(SERVICE_ID_CPID_TO_CHARSET, E(common_util_cpid_to_charset));
 	pass_service(SERVICE_ID_GET_USER_DISPLAYNAME, E(common_util_get_user_displayname));
 	pass_service(SERVICE_ID_CHECK_MLIST_INCLUDE, E(common_util_check_mlist_include));
 	pass_service(SERVICE_ID_GET_USER_LANG, E(common_util_get_user_lang));

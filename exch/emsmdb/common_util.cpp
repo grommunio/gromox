@@ -34,6 +34,7 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/socket.h>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 #include "common_util.h"
@@ -80,9 +81,6 @@ E(check_same_org)
 E(get_homedir_by_id)
 E(get_id_from_maildir)
 E(get_id_from_homedir)
-E(lang_to_charset)
-E(cpid_to_charset)
-E(verify_cpid)
 E(add_timer)
 E(cancel_timer)
 #undef E
@@ -100,10 +98,9 @@ ssize_t common_util_mb_from_utf8(uint32_t cpid, const char *src,
 	size_t in_len;
 	size_t out_len;
 	iconv_t conv_id;
-	const char *charset;
 	char temp_charset[256];
 	
-	charset = common_util_cpid_to_charset(cpid);
+	auto charset = cpid_to_cset(cpid);
 	if (NULL == charset) {
 		return -1;
 	}
@@ -126,9 +123,8 @@ ssize_t common_util_mb_to_utf8(uint32_t cpid, const char *src,
 	size_t in_len;
 	size_t out_len;
 	iconv_t conv_id;
-	const char *charset;
 	
-	charset = common_util_cpid_to_charset(cpid);
+	auto charset = cpid_to_cset(cpid);
 	if (NULL == charset) {
 		return -1;
 	}
@@ -2065,9 +2061,6 @@ int common_util_run()
 	E(common_util_get_homedir_by_id, "get_homedir_by_id");
 	E(common_util_get_id_from_maildir, "get_id_from_maildir");
 	E(common_util_get_id_from_homedir, "get_id_from_homedir");
-	E(common_util_lang_to_charset, "lang_to_charset");
-	E(common_util_cpid_to_charset, "cpid_to_charset");
-	E(common_util_verify_cpid, "verify_cpid");
 	E(common_util_add_timer, "add_timer");
 	E(common_util_cancel_timer, "cancel_timer");
 #undef E

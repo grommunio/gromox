@@ -15,6 +15,7 @@
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
 #include "asyncemsmdb_ndr.h"
@@ -151,6 +152,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		return TRUE;
 	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
+		textmaps_init();
 		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {

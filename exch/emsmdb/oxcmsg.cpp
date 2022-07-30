@@ -6,6 +6,7 @@
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/textmaps.hpp>
 #include "attachment_object.h"
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -17,6 +18,8 @@
 #include "rop_ids.hpp"
 #include "rop_processor.h"
 #include "table_object.h"
+
+using namespace gromox;
 
 uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
     uint8_t open_mode_flags, uint64_t message_id,
@@ -45,7 +48,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 			return ecError;
 		cpid = pinfo->cpid;
 	}
-	if (!common_util_verify_cpid(cpid))
+	if (!verify_cpid(cpid))
 		return MAPI_E_UNKNOWN_CPID;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -178,7 +181,7 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 			return ecError;
 		cpid = pinfo->cpid;
 	}
-	if (!common_util_verify_cpid(cpid))
+	if (!verify_cpid(cpid))
 		return MAPI_E_UNKNOWN_CPID;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -838,7 +841,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 			return ecError;
 		cpid = pinfo->cpid;
 	}
-	if (!common_util_verify_cpid(cpid))
+	if (!verify_cpid(cpid))
 		return MAPI_E_UNKNOWN_CPID;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)

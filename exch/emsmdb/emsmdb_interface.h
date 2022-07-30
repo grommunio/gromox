@@ -17,7 +17,6 @@ struct emsmdb_info {
 };
 using EMSMDB_INFO = emsmdb_info;
 
-extern const char* (*emsmdb_interface_cpid_to_charset)(uint32_t cpid);
 extern void emsmdb_interface_init();
 extern int emsmdb_interface_run();
 extern void emsmdb_interface_stop();

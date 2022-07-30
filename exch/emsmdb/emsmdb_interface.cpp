@@ -21,6 +21,7 @@
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
 #include "aux_ext.hpp"
@@ -263,7 +264,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 {
 	HANDLE_DATA temp_handle;
 	
-	if (!common_util_verify_cpid(cpid))
+	if (!verify_cpid(cpid))
 		return FALSE;
 	temp_handle.info.cpid = cpid;
 	temp_handle.info.lcid_string = lcid_string;
