@@ -9,7 +9,6 @@ BOOL (*system_services_lang_to_charset)(const char*, char*);
 const char* (*system_services_cpid_to_charset)(uint32_t);
 uint32_t (*system_services_charset_to_cpid)(const char*);
 const char* (*system_services_mime_to_extension)(const char*);
-const char* (*system_services_extension_to_mime)(const char*);
 decltype(system_services_auth_login) system_services_auth_login;
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
 E(check_same_org)
@@ -65,7 +64,6 @@ int system_services_run()
 	E(system_services_cpid_to_charset, "cpid_to_charset");
 	E(system_services_charset_to_cpid, "charset_to_cpid");
 	E(system_services_mime_to_extension, "mime_to_extension");
-	E(system_services_extension_to_mime, "extension_to_mime");
 	E(system_services_auth_login, "auth_login_gen");
 	E(system_services_get_user_displayname, "get_user_displayname");
 	E(system_services_get_org_domains, "get_org_domains");
@@ -105,7 +103,6 @@ void system_services_stop()
 	E("cpid_to_charset");
 	E("charset_to_cpid");
 	E("mime_to_extension");
-	E("extension_to_mime");
 	E("auth_login_gen");
 	E("get_user_displayname");
 	E("get_org_domains");

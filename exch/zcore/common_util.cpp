@@ -445,8 +445,7 @@ int common_util_run(const char *data_path)
 	}
 	if (!oxcmail_init_library(g_org_name, system_services_get_user_ids,
 		system_services_get_username_from_id,
-		system_services_mime_to_extension,
-		system_services_extension_to_mime)) {
+		system_services_mime_to_extension)) {
 		printf("[common_util]: Failed to init oxcmail library\n");
 		return -2;
 	}

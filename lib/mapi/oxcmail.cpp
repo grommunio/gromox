@@ -166,7 +166,6 @@ static char g_oxcmail_org_name[256];
 static GET_USER_IDS oxcmail_get_user_ids;
 static GET_USERNAME oxcmail_get_username;
 static MIME_TO_EXTENSION oxcmail_mime_to_extension;
-static EXTENSION_TO_MIME oxcmail_extension_to_mime;
 
 static inline size_t worst_encoding_overhead(size_t in)
 {
@@ -195,14 +194,12 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 
 BOOL oxcmail_init_library(const char *org_name,
 	GET_USER_IDS get_user_ids, GET_USERNAME get_username,
-	MIME_TO_EXTENSION mime_to_extension,
-	EXTENSION_TO_MIME extension_to_mime)
+	MIME_TO_EXTENSION mime_to_extension)
 {
 	gx_strlcpy(g_oxcmail_org_name, org_name, arsizeof(g_oxcmail_org_name));
 	oxcmail_get_user_ids = get_user_ids;
 	oxcmail_get_username = get_username;
 	oxcmail_mime_to_extension = mime_to_extension;
-	oxcmail_extension_to_mime = extension_to_mime;
 	textmaps_init();
 	tnef_init_library();
 	if (!rtf_init_library() || !html_init_library())
@@ -4946,7 +4943,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		if (NULL == pcontent_type) {
 			auto str = pattachment->proplist.get<const char>(PR_ATTACH_EXTENSION);
 			if (str != nullptr)
-				pcontent_type = oxcmail_extension_to_mime(str + 1);
+				pcontent_type = extension_to_mime(str + 1);
 			if (NULL == pcontent_type) {
 				pcontent_type = "application/octet-stream";
 			}

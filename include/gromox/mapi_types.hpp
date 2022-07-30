@@ -1084,7 +1084,6 @@ using GET_PROPIDS = BOOL (*)(const PROPNAME_ARRAY *, PROPID_ARRAY *);
 /* if it returns TRUE, PROPERTY_NAME must be available */
 using GET_PROPNAME = BOOL (*)(uint16_t, PROPERTY_NAME **);
 using MIME_TO_EXTENSION = const char *(*)(const char *);
-using EXTENSION_TO_MIME = const char *(*)(const char *);
 using GET_USER_IDS = BOOL (*)(const char *, int *, int *, enum display_type *);
 using GET_USERNAME = BOOL (*)(int, char *, size_t);
 using USERNAME_TO_ENTRYID = BOOL (*)(const char *, const char *, BINARY *, enum display_type *);
