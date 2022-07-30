@@ -1237,7 +1237,6 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 {
 	time_t tmp_time;
 	uint8_t tmp_byte;
-	uint64_t tmp_int32;
 	uint64_t tmp_int64;
 	EMAIL_ADDR email_addr;
 	FIELD_ENUM_PARAM *penum_param;
@@ -1309,20 +1308,20 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "Sensitivity") == 0) {
-		tmp_int32 = om_parse_sensitivity(field);
+		uint32_t tmp_int32 = om_parse_sensitivity(field);
 		if (penum_param->pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "Importance") == 0 ||
 		strcasecmp(key, "X-MSMail-Priority") == 0) {
-		tmp_int32 = om_parse_importance(field);
+		uint32_t tmp_int32 = om_parse_importance(field);
 		if (penum_param->pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "Priority") == 0) {
-		tmp_int32 = om_parse_priority(field);
+		uint32_t tmp_int32 = om_parse_priority(field);
 		if (penum_param->pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-Priority") == 0) {
-		tmp_int32 = om_parse_xpriority(field);
+		uint32_t tmp_int32 = om_parse_xpriority(field);
 		if (penum_param->pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "Subject") == 0) {
@@ -1363,7 +1362,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 				return FALSE;
 		}
 	} else if (strcasecmp(key, "Content-Language") == 0) {
-		tmp_int32 = oxcmail_ltag_to_lcid(field);
+		uint32_t tmp_int32 = oxcmail_ltag_to_lcid(field);
 		if (tmp_int32 != 0 &&
 		    penum_param->pmsg->proplist.set(PR_MESSAGE_LOCALE_ID, &tmp_int32) != 0)
 			return FALSE;
@@ -1439,12 +1438,12 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-MS-Exchange-Organization-SenderIdResult") == 0) {
-		tmp_int32 = om_parse_senderidresult(field);
+		uint32_t tmp_int32 = om_parse_senderidresult(field);
 		if (tmp_int32 != 0 &&
 		    penum_param->pmsg->proplist.set(PR_SENDER_ID_STATUS, &tmp_int32) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-MS-Exchange-Organization-SCL") == 0) {
-		tmp_int32 = strtol(field, nullptr, 0);
+		int32_t tmp_int32 = strtol(field, nullptr, 0);
 		if (penum_param->pmsg->proplist.set(PR_CONTENT_FILTER_SCL, &tmp_int32) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-Microsoft-Classified") == 0) {
@@ -1500,15 +1499,15 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-VoiceMessageDuration") == 0) {
-		tmp_int32 = strtol(field, nullptr, 0);
+		uint32_t tmp_int32 = strtoul(field, nullptr, 0);
 		if (penum_param->pmsg->proplist.set(PidTagVoiceMessageDuration, &tmp_int32) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-FaxNumberOfPages") == 0) {
-		tmp_int32 = strtol(field, nullptr, 0);
+		uint32_t tmp_int32 = strtoul(field, nullptr, 0);
 		if (penum_param->pmsg->proplist.set(PidTagFaxNumberOfPages, &tmp_int32) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "Content-ID") == 0) {
-		tmp_int32 = strlen(field);
+		size_t tmp_int32 = strlen(field);
 		if (tmp_int32 > 0) {
 			char rw[MIME_FIELD_LEN];
 			if (field[0] == '<' && field[tmp_int32-1] == '>') {
