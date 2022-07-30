@@ -21,6 +21,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/sortorder_set.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "db_engine.h"
@@ -1878,7 +1879,6 @@ static void table_truncate_string(uint32_t cpid, char *pstring)
 	iconv_t conv_id;
 	char *pin, *pout;
 	char tmp_buff[512];
-	const char *charset;
 	char tmp_charset[256];
 	
 	string_len = strlen(pstring);
@@ -1887,7 +1887,7 @@ static void table_truncate_string(uint32_t cpid, char *pstring)
 	}
 	string_len ++;
 	pstring[510] = '\0';
-	charset = common_util_cpid_to_charset(cpid);
+	auto charset = cpid_to_cset(cpid);
 	if (NULL == charset) {
 		return;
 	}

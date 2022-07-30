@@ -42,9 +42,7 @@ static void *mdpls_thrwork(void *param)
 	char client_hostip[40];
 	struct sockaddr_storage peer_name;
 	
-	while (NULL == common_util_lang_to_charset ||
-		NULL == common_util_cpid_to_charset ||
-		NULL == common_util_get_user_displayname ||
+	while (NULL == common_util_get_user_displayname ||
 		NULL == common_util_check_mlist_include ||
 		NULL == common_util_get_user_lang ||
 		NULL == common_util_get_timezone ||

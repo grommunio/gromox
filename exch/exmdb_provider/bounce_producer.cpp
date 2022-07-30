@@ -22,6 +22,7 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/textmaps.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
@@ -332,7 +333,6 @@ BOOL bounce_producer_make_content(const char *from,
 	char charset[32];
 	char date_buff[128];
 	struct tm time_buff;
-	const char *pcharset;
 	int i, len, until_tag;
 	uint32_t message_size;
 	char lang[32], time_zone[64];
@@ -342,7 +342,7 @@ BOOL bounce_producer_make_content(const char *from,
 	charset[0] = '\0';
 	time_zone[0] = '\0';
 	if (common_util_get_user_lang(from, lang, arsizeof(lang))) {
-		common_util_lang_to_charset(lang, charset);
+		gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
 		common_util_get_timezone(from, time_zone, arsizeof(time_zone));
 	}
 	if('\0' != time_zone[0]) {
@@ -370,7 +370,7 @@ BOOL bounce_producer_make_content(const char *from,
 		if (NULL == pvalue) {
 			strcpy(charset, "ascii");
 		} else {
-			pcharset = common_util_cpid_to_charset(*(uint32_t*)pvalue);
+			auto pcharset = cpid_to_cset(*static_cast<uint32_t *>(pvalue));
 			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", arsizeof(charset));
 		}
 	}

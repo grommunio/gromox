@@ -14,6 +14,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
 #include <gromox/svc_common.h>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 #include "common_util.h"
@@ -112,6 +113,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		return TRUE;
 	case PLUGIN_EARLY_INIT: {
 		LINK_SVC_API(ppdata);
+		textmaps_init();
 		exmdb_rpc_alloc = common_util_alloc;
 		exmdb_rpc_free = [](void *) {};
 		std::string cfg_path = get_plugin_name();

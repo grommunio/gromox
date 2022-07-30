@@ -36,9 +36,6 @@ enum {
 
 struct MAIL;
 struct MIME_POOL;
-extern BOOL (*common_util_lang_to_charset)(
-	const char *lang, char *charset);
-extern const char* (*common_util_cpid_to_charset)(uint32_t cpid);
 #define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
 E(check_mlist_include)
 E(get_domain_ids)

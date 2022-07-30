@@ -30,6 +30,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_server.h"
@@ -73,8 +74,6 @@ unsigned int g_max_rule_num, g_max_extrule_num;
 static std::atomic<unsigned int> g_sequence_id;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
-E(lang_to_charset)
-E(cpid_to_charset)
 E(get_user_displayname)
 E(check_mlist_include)
 E(get_user_lang)
@@ -185,8 +184,6 @@ void common_util_pass_service(int service_id, void *func)
 {
 #define E(v, ptr) case (v): (ptr) = reinterpret_cast<decltype(ptr)>(func); break;
 	switch (service_id) {
-	E(SERVICE_ID_LANG_TO_CHARSET, common_util_lang_to_charset);
-	E(SERVICE_ID_CPID_TO_CHARSET, common_util_cpid_to_charset);
 	E(SERVICE_ID_GET_USER_DISPLAYNAME, common_util_get_user_displayname);
 	E(SERVICE_ID_CHECK_MLIST_INCLUDE, common_util_check_mlist_include);
 	E(SERVICE_ID_GET_USER_LANG, common_util_get_user_lang);
@@ -266,10 +263,9 @@ char* common_util_convert_copy(BOOL to_utf8,
 	size_t in_len;
 	size_t out_len;
 	iconv_t conv_id;
-	const char *charset;
 	char temp_charset[256];
 	
-	charset = common_util_cpid_to_charset(cpid);
+	auto charset = cpid_to_cset(cpid);
 	if (charset == nullptr)
 		charset = "windows-1252";
 	in_len = strlen(pstring) + 1;
