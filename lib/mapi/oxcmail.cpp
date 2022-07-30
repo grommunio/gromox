@@ -1503,7 +1503,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		tmp_int32 = strtol(field, nullptr, 0);
 		if (penum_param->pmsg->proplist.set(PidTagVoiceMessageDuration, &tmp_int32) != 0)
 			return FALSE;
-	} else if (strcasecmp(key, "X-FaxNumverOfPages") == 0) {
+	} else if (strcasecmp(key, "X-FaxNumberOfPages") == 0) {
 		tmp_int32 = strtol(field, nullptr, 0);
 		if (penum_param->pmsg->proplist.set(PidTagFaxNumberOfPages, &tmp_int32) != 0)
 			return FALSE;
@@ -4327,7 +4327,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	num = pmsg->proplist.get<uint32_t>(PidTagFaxNumberOfPages);
 	if (num != nullptr) {
 		snprintf(tmp_field, arsizeof(tmp_field), "%lu", static_cast<unsigned long>(*num));
-		if (!phead->set_field("X-FaxNumverOfPages", tmp_field))
+		if (!phead->set_field("X-FaxNumberOfPages", tmp_field))
 			return FALSE;
 	}
 	str = pmsg->proplist.get<char>(PidTagVoiceMessageAttachmentOrder);
