@@ -29,6 +29,7 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zz_ndr_stack.hpp>
 #include "ab_tree.h"
@@ -58,7 +59,6 @@ enum {
 
 unsigned int g_nsp_trace;
 static BOOL g_session_check;
-static bool (*verify_cpid)(uint32_t cpid);
 static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
 static decltype(mysql_adaptor_get_id_from_username) *get_id_from_username;
 static decltype(mysql_adaptor_get_maildir) *get_maildir;
@@ -560,7 +560,6 @@ int nsp_interface_run()
 	E(get_domain_ids, "get_domain_ids");
 	E(get_maildir, "get_maildir");
 	E(get_id_from_username, "get_id_from_username");
-	E(verify_cpid, "verify_cpid");
 	query_service2("abkt_tojson", nsp_abktojson);
 	query_service2("abkt_tobinary", nsp_abktobinary);
 	if (nsp_abktojson == nullptr || nsp_abktobinary == nullptr)

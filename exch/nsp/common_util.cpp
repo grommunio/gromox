@@ -13,6 +13,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/zz_ndr_stack.hpp>
 #include "common_util.h"
 
@@ -20,8 +21,6 @@ using namespace gromox;
 
 static constexpr unsigned int SR_GROW_NSP_PROPROW = 40, SR_GROW_NSP_ROWSET = 100;
 static GUID g_server_guid;
-
-static const char* (*cpid_to_charset)(uint32_t cpid);
 
 GUID common_util_get_server_guid()
 {
@@ -48,9 +47,8 @@ int common_util_from_utf8(uint32_t codepage,
 	size_t in_len;
 	size_t out_len;
 	iconv_t conv_id;
-	const char *charset;
 	
-	charset = cpid_to_charset(codepage);
+	auto charset = cpid_to_cset(codepage);
 	if (NULL == charset) {
 		return -1;
 	}
@@ -75,9 +73,8 @@ int common_util_to_utf8(uint32_t codepage,
 	size_t in_len;
 	size_t out_len;
 	iconv_t conv_id;
-	const char *charset;
 	
-	charset = cpid_to_charset(codepage);
+	auto charset = cpid_to_cset(codepage);
 	if (NULL == charset) {
 		return -1;
 	}
@@ -364,11 +361,6 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 
 int common_util_run()
 {
-	query_service1(cpid_to_charset);
-	if (NULL == cpid_to_charset) {
-		printf("[exchange_nsp]: failed to get service \"cpid_to_charset\"\n");
-		return -1;
-	}
 	g_server_guid = GUID::random_new();
 	return 0;
 }

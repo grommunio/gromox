@@ -8,6 +8,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zz_ndr_stack.hpp>
 #include "ab_tree.h"
@@ -89,6 +90,7 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata) try
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
+		textmaps_init();
 		/* get the plugin name from system api */
 		std::string plugname = get_plugin_name();
 		auto pos = plugname.find('.');
