@@ -9,8 +9,6 @@ extern int system_services_run();
 extern void system_services_stop();
 
 extern BOOL (*system_services_lang_to_charset)(const char*, char*);
-extern const char* (*system_services_cpid_to_charset)(uint32_t);
-extern uint32_t (*system_services_charset_to_cpid)(const char*);
 extern authmgr_login_t system_services_auth_login;
 #define E(s) extern decltype(mysql_adaptor_ ## s) *system_services_ ## s;
 E(check_same_org)

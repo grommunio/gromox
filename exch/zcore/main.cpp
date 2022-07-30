@@ -29,6 +29,7 @@
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "ab_tree.h"
 #include "bounce_producer.hpp"
@@ -61,7 +62,6 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
 	"libgxs_authmgr.so",
-	"libgxs_textmaps.so",
 	"libgxs_timer_agent.so",
 };
 
@@ -242,6 +242,7 @@ int main(int argc, const char **argv) try
 	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return 3;
+	textmaps_init();
 	if (0 != service_run()) {
 		printf("[system]: failed to run service\n");
 		return 3;

@@ -37,6 +37,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
+#include <gromox/textmaps.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
@@ -2313,8 +2314,10 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 		return NULL;
 	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
 		zc_unwrap_smime(imail);
-	if (!system_services_lang_to_charset(pinfo->get_lang(), charset) ||
-	    charset[0] == '\0')
+	auto c = lang_to_charset(pinfo->get_lang());
+	if (c != nullptr && *c != '\0')
+		gx_strlcpy(charset, c, std::size(charset));
+	else
 		strcpy(charset, g_default_charset);
 	if (!system_services_get_timezone(pinfo->get_username(), tmzone,
 	    arsizeof(tmzone)) || tmzone[0] == '\0')

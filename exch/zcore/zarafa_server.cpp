@@ -28,6 +28,7 @@
 #include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/str_hash.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include "ab_tree.h"
@@ -707,7 +708,6 @@ uint32_t zarafa_server_logon(const char *username,
 	int user_id;
 	int domain_id;
 	char lang[32];
-	char charset[64];
 	char reason[256];
 	char homedir[256];
 	char maildir[256];
@@ -764,8 +764,8 @@ uint32_t zarafa_server_logon(const char *username,
 	} catch (const std::bad_alloc &) {
 		return ecServerOOM;
 	}
-	tmp_info.cpid = !system_services_lang_to_charset(lang, charset) ? 1252 :
-	                system_services_charset_to_cpid(charset);
+	auto c = lang_to_charset(lang);
+	tmp_info.cpid = c != nullptr ? cset_to_cpid(c) : 1252;
 	tmp_info.flags = flags;
 	time(&tmp_info.last_time);
 	tmp_info.reload_time = tmp_info.last_time;
