@@ -13,6 +13,7 @@
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include <libHX/string.h>
@@ -102,7 +103,6 @@ static constexpr TAG_ITEM g_tags[] = {
 int (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
 bool (*bounce_producer_get_timezone)(const char *username, char *timezone, size_t);
-BOOL (*bounce_producer_lang_to_charset)(const char *lang, char *charset);
 static void bounce_producer_enum_parts(const MIME *, void *);
 static void bounce_producer_enum_charset(const MIME *, void *);
 static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff);
@@ -138,7 +138,6 @@ int bounce_producer_run(const char *datadir)
 	E(bounce_producer_check_domain, "domain_list_query");
 	E(bounce_producer_get_lang, "get_user_lang");
 	E(bounce_producer_get_timezone, "get_timezone");
-	E(bounce_producer_lang_to_charset, "lang_to_charset");
 #undef E
 	if (!bounce_producer_refresh(datadir))
 		return -5;
@@ -379,7 +378,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		}
 		if (lcldom > 0) {
 			if (bounce_producer_get_lang(from, lang, arsizeof(lang)))
-				bounce_producer_lang_to_charset(lang, charset);
+				gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
 			bounce_producer_get_timezone(from, time_zone, arsizeof(time_zone));
 		}
 	}
