@@ -43,7 +43,6 @@ BOOL (*exmdb_local_check_same_org2)(
 	const char *domainname1, const char *domainname2);
 
 BOOL (*exmdb_local_lang_to_charset)(const char *lang, char *charset);
-static const char* (*exmdb_local_mime_to_extension)(const char*);
 static BOOL (*exmdb_local_get_user_ids)(const char *, int *, int *, enum display_type *);
 static BOOL (*exmdb_local_get_username)(int, char *, size_t);
 
@@ -83,14 +82,12 @@ int exmdb_local_run()
 	E(exmdb_local_get_timezone, "get_timezone");
 	E(exmdb_local_check_same_org2, "check_same_org2");
 	E(exmdb_local_lang_to_charset, "lang_to_charset");
-	E(exmdb_local_mime_to_extension, "mime_to_extension");
 	E(exmdb_local_get_user_ids, "get_user_ids");
 	E(exmdb_local_get_username, "get_username_from_id");
 #undef E
 
 	if (!oxcmail_init_library(g_org_name,
-		exmdb_local_get_user_ids, exmdb_local_get_username,
-		exmdb_local_mime_to_extension)) {
+		exmdb_local_get_user_ids, exmdb_local_get_username)) {
 		printf("[exmdb_local]: Failed to init oxcmail library\n");
 		return -2;
 	}

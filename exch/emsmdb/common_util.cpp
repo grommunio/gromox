@@ -87,7 +87,6 @@ E(add_timer)
 E(cancel_timer)
 #undef E
 
-static const char* (*common_util_mime_to_extension)(const char *ptype);
 static void log_err(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
 void* common_util_alloc(size_t size)
@@ -2071,12 +2070,10 @@ int common_util_run()
 	E(common_util_verify_cpid, "verify_cpid");
 	E(common_util_add_timer, "add_timer");
 	E(common_util_cancel_timer, "cancel_timer");
-	E(common_util_mime_to_extension, "mime_to_extension");
 #undef E
 
 	if (!oxcmail_init_library(g_emsmdb_org_name,
-		common_util_get_user_ids, common_util_get_username_from_id,
-		common_util_mime_to_extension)) {
+		common_util_get_user_ids, common_util_get_username_from_id)) {
 		printf("[exchange_emsmdb]: Failed to init oxcmail library\n");
 		return -2;
 	}

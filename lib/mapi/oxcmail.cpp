@@ -165,7 +165,6 @@ static constexpr size_t namemap_limit = 0x1000;
 static char g_oxcmail_org_name[256];
 static GET_USER_IDS oxcmail_get_user_ids;
 static GET_USERNAME oxcmail_get_username;
-static MIME_TO_EXTENSION oxcmail_mime_to_extension;
 
 static inline size_t worst_encoding_overhead(size_t in)
 {
@@ -193,13 +192,11 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 }
 
 BOOL oxcmail_init_library(const char *org_name,
-	GET_USER_IDS get_user_ids, GET_USERNAME get_username,
-	MIME_TO_EXTENSION mime_to_extension)
+	GET_USER_IDS get_user_ids, GET_USERNAME get_username)
 {
 	gx_strlcpy(g_oxcmail_org_name, org_name, arsizeof(g_oxcmail_org_name));
 	oxcmail_get_user_ids = get_user_ids;
 	oxcmail_get_username = get_username;
-	oxcmail_mime_to_extension = mime_to_extension;
 	textmaps_init();
 	tnef_init_library();
 	if (!rtf_init_library() || !html_init_library())
@@ -2157,7 +2154,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		}
 		oxcmail_split_filename(file_name, extension);
 		if ('\0' == extension[0]) {
-			auto pext = oxcmail_mime_to_extension(cttype);
+			auto pext = mime_to_extension(cttype);
 			if (pext != NULL) {
 				sprintf(extension, ".%s", pext);
 				HX_strlcat(file_name, extension, sizeof(file_name));
@@ -2166,7 +2163,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	} else {
 		b_unifn = TRUE;
 		if ('\0' != extension[0]) {
-			auto pext = oxcmail_mime_to_extension(cttype);
+			auto pext = mime_to_extension(cttype);
 			if (NULL != pext) {
 				sprintf(extension, ".%s", pext);
 				HX_strlcat(file_name, extension, sizeof(file_name));

@@ -4990,8 +4990,7 @@ int mail_engine_run()
 		printf("[mail_engine]: warning! fail to close"
 			" memory statistic for sqlite engine\n");
 	if (!oxcmail_init_library(g_org_name,
-		system_services_get_user_ids, system_services_get_username_from_id,
-		system_services_mime_to_extension)) {
+		system_services_get_user_ids, system_services_get_username_from_id)) {
 		printf("[mail_engine]: Failed to init oxcmail library\n");
 		return -1;
 	}

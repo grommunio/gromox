@@ -13,7 +13,7 @@ enum class oxcmail_body {
 struct MESSAGE_CONTENT;
 struct MIME_POOL;
 
-extern BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS, GET_USERNAME, MIME_TO_EXTENSION);
+extern BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS, GET_USERNAME);
 MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	const char *str_zone, MAIL *pmail,
 	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids);
