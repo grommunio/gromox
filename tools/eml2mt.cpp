@@ -63,7 +63,6 @@ static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 decltype(system_services_get_user_ids) system_services_get_user_ids;
-decltype(system_services_ltag_to_lcid) system_services_ltag_to_lcid;
 decltype(system_services_mime_to_extension) system_services_mime_to_extension;
 decltype(system_services_extension_to_mime) system_services_extension_to_mime;
 decltype(system_services_lang_to_charset) system_services_lang_to_charset;
@@ -235,8 +234,6 @@ int main(int argc, const char **argv) try
 	if (g_oneoff)
 		system_services_get_user_ids = [](const char *, int *, int *, display_type *) -> BOOL { return false; };
 	auto cl_2 = make_scope_exit([]() { service_release("get_user_ids", "system"); });
-	E(system_services_ltag_to_lcid, "ltag_to_lcid");
-	auto cl_6 = make_scope_exit([]() { service_release("ltag_to_lcid", "system"); });
 	E(system_services_mime_to_extension, "mime_to_extension");
 	auto cl_7 = make_scope_exit([]() { service_release("mime_to_extension", "system"); });
 	E(system_services_extension_to_mime, "extension_to_mime");
@@ -247,7 +244,6 @@ int main(int argc, const char **argv) try
 
 	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
 	    system_services_get_user_ids, system_services_get_username_from_id,
-	    system_services_ltag_to_lcid,
 	    system_services_mime_to_extension, system_services_extension_to_mime)) {
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
 		return EXIT_FAILURE;

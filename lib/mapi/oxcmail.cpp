@@ -165,7 +165,6 @@ static constexpr size_t namemap_limit = 0x1000;
 static char g_oxcmail_org_name[256];
 static GET_USER_IDS oxcmail_get_user_ids;
 static GET_USERNAME oxcmail_get_username;
-static LTAG_TO_LCID oxcmail_ltag_to_lcid;
 static MIME_TO_EXTENSION oxcmail_mime_to_extension;
 static EXTENSION_TO_MIME oxcmail_extension_to_mime;
 
@@ -196,14 +195,12 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 
 BOOL oxcmail_init_library(const char *org_name,
 	GET_USER_IDS get_user_ids, GET_USERNAME get_username,
-	LTAG_TO_LCID ltag_to_lcid,
 	MIME_TO_EXTENSION mime_to_extension,
 	EXTENSION_TO_MIME extension_to_mime)
 {
 	gx_strlcpy(g_oxcmail_org_name, org_name, arsizeof(g_oxcmail_org_name));
 	oxcmail_get_user_ids = get_user_ids;
 	oxcmail_get_username = get_username;
-	oxcmail_ltag_to_lcid = ltag_to_lcid;
 	oxcmail_mime_to_extension = mime_to_extension;
 	oxcmail_extension_to_mime = extension_to_mime;
 	textmaps_init();
@@ -1356,7 +1353,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 				return FALSE;
 		}
 	} else if (strcasecmp(key, "Content-Language") == 0) {
-		uint32_t tmp_int32 = oxcmail_ltag_to_lcid(field);
+		uint32_t tmp_int32 = ltag_to_lcid(field);
 		if (tmp_int32 != 0 &&
 		    penum_param->pmsg->proplist.set(PR_MESSAGE_LOCALE_ID, &tmp_int32) != 0)
 			return FALSE;

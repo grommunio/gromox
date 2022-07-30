@@ -25,7 +25,6 @@
 using namespace gromox;
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 decltype(system_services_get_user_ids) system_services_get_user_ids;
-decltype(system_services_ltag_to_lcid) system_services_ltag_to_lcid;
 decltype(system_services_mime_to_extension) system_services_mime_to_extension;
 decltype(system_services_extension_to_mime) system_services_extension_to_mime;
 std::shared_ptr<CONFIG_FILE> g_config_file;
@@ -103,7 +102,6 @@ int main(int argc, const char **argv) try
 } while (false)
 	E(system_services_get_username_from_id, "get_username_from_id");
 	E(system_services_get_user_ids, "get_user_ids");
-	E(system_services_ltag_to_lcid, "ltag_to_lcid");
 	E(system_services_mime_to_extension, "mime_to_extension");
 	E(system_services_extension_to_mime, "extension_to_mime");
 #undef E
@@ -111,7 +109,6 @@ int main(int argc, const char **argv) try
 	auto mimepool = MIME_POOL::create(4096, 8, "mime_pool");
 	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
 	    system_services_get_user_ids, system_services_get_username_from_id,
-	    system_services_ltag_to_lcid,
 	    system_services_mime_to_extension, system_services_extension_to_mime)) {
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
 		return EXIT_FAILURE;

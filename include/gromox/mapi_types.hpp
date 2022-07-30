@@ -1083,7 +1083,6 @@ enum sqlite_config_id {
 using GET_PROPIDS = BOOL (*)(const PROPNAME_ARRAY *, PROPID_ARRAY *);
 /* if it returns TRUE, PROPERTY_NAME must be available */
 using GET_PROPNAME = BOOL (*)(uint16_t, PROPERTY_NAME **);
-using LTAG_TO_LCID = uint32_t (*)(const char *);
 using MIME_TO_EXTENSION = const char *(*)(const char *);
 using EXTENSION_TO_MIME = const char *(*)(const char *);
 using GET_USER_IDS = BOOL (*)(const char *, int *, int *, enum display_type *);
