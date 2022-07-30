@@ -20,6 +20,7 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/str_hash.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
 #define MAX_DIGLEN				256*1024
@@ -41,8 +42,6 @@ bool (*exmdb_local_get_lang)(const char *username, char *lang, size_t);
 bool (*exmdb_local_get_timezone)(const char *username, char *timezone, size_t);
 BOOL (*exmdb_local_check_same_org2)(
 	const char *domainname1, const char *domainname2);
-
-BOOL (*exmdb_local_lang_to_charset)(const char *lang, char *charset);
 static BOOL (*exmdb_local_get_user_ids)(const char *, int *, int *, enum display_type *);
 static BOOL (*exmdb_local_get_username)(int, char *, size_t);
 
@@ -81,7 +80,6 @@ int exmdb_local_run()
 	E(exmdb_local_get_lang, "get_user_lang");
 	E(exmdb_local_get_timezone, "get_timezone");
 	E(exmdb_local_check_same_org2, "check_same_org2");
-	E(exmdb_local_lang_to_charset, "lang_to_charset");
 	E(exmdb_local_get_user_ids, "get_user_ids");
 	E(exmdb_local_get_username, "get_username_from_id");
 #undef E
@@ -317,6 +315,14 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 	return TRUE;
 }
 
+static bool exmdb_local_lang_to_charset(const char *lang, char (&charset)[32])
+{
+	auto c = lang_to_charset(lang);
+	if (c == nullptr)
+		return false;
+	gx_strlcpy(charset, c, std::size(charset));
+	return true;
+}
 
 int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 {
@@ -339,6 +345,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			"to get user information from data source!");
 		return DELIVERY_OPERATION_FAILURE;
 	}
+
 	if (*lang == '\0' ||
 	    !exmdb_local_lang_to_charset(lang, charset) || *charset == '\0')
 		strcpy(charset, g_default_charset);

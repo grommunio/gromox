@@ -9,6 +9,7 @@
 #include <gromox/exmdb_client.hpp>
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
 
@@ -31,6 +32,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
     switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_HOOK_API(ppdata);
+		textmaps_init();
 		std::string plugname, filename;
 		try {
 			plugname = get_plugin_name();

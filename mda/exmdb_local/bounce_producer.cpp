@@ -20,6 +20,7 @@
 #include <gromox/dsn.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
@@ -355,7 +356,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		pdomain ++;
 		if (exmdb_local_check_domain(pdomain) >= 1) {
 			if (exmdb_local_get_lang(from, lang, arsizeof(lang)))
-				exmdb_local_lang_to_charset(lang, charset);
+				gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
 			exmdb_local_get_timezone(from, time_zone, arsizeof(time_zone));
 		}
 	}
