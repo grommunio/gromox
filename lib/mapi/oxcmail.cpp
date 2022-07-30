@@ -166,7 +166,6 @@ static char g_oxcmail_org_name[256];
 static GET_USER_IDS oxcmail_get_user_ids;
 static GET_USERNAME oxcmail_get_username;
 static LTAG_TO_LCID oxcmail_ltag_to_lcid;
-static LCID_TO_LTAG oxcmail_lcid_to_ltag;
 static MIME_TO_EXTENSION oxcmail_mime_to_extension;
 static EXTENSION_TO_MIME oxcmail_extension_to_mime;
 
@@ -197,7 +196,7 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 
 BOOL oxcmail_init_library(const char *org_name,
 	GET_USER_IDS get_user_ids, GET_USERNAME get_username,
-	LTAG_TO_LCID ltag_to_lcid, LCID_TO_LTAG lcid_to_ltag,
+	LTAG_TO_LCID ltag_to_lcid,
 	MIME_TO_EXTENSION mime_to_extension,
 	EXTENSION_TO_MIME extension_to_mime)
 {
@@ -205,7 +204,6 @@ BOOL oxcmail_init_library(const char *org_name,
 	oxcmail_get_user_ids = get_user_ids;
 	oxcmail_get_username = get_username;
 	oxcmail_ltag_to_lcid = ltag_to_lcid;
-	oxcmail_lcid_to_ltag = lcid_to_ltag;
 	oxcmail_mime_to_extension = mime_to_extension;
 	oxcmail_extension_to_mime = extension_to_mime;
 	textmaps_init();
@@ -4414,7 +4412,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		return FALSE;
 	num = pmsg->proplist.get<uint32_t>(PR_MESSAGE_LOCALE_ID);
 	if (num != nullptr) {
-		str = deconst(oxcmail_lcid_to_ltag(*num));
+		str = deconst(lcid_to_ltag(*num));
 		if (str != nullptr && !phead->set_field("Content-Language", str))
 			return FALSE;
 	}
@@ -5375,7 +5373,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			goto EXPORT_FAILURE;
 		if (!oxcical_export(pmsg, &ical, alloc,
 		    get_propids, oxcmail_entryid_to_username,
-		    oxcmail_essdn_to_username, oxcmail_lcid_to_ltag))
+		    oxcmail_essdn_to_username))
 			goto EXPORT_FAILURE;
 		tmp_method[0] = '\0';
 		auto piline = ical.get_line("METHOD");

@@ -12,7 +12,6 @@ decltype(system_services_get_id_from_maildir) system_services_get_id_from_maildi
 BOOL (*system_services_get_user_ids)(const char *, int *, int *, enum display_type *);
 BOOL (*system_services_lang_to_charset)(const char*, char*);
 uint32_t (*system_services_charset_to_cpid)(const char*);
-const char* (*system_services_lcid_to_ltag)(uint32_t);
 uint32_t (*system_services_ltag_to_lcid)(const char*);
 const char* (*system_services_mime_to_extension)(const char*);
 const char* (*system_services_extension_to_mime)(const char*);
@@ -36,7 +35,6 @@ int system_services_run()
 	E(system_services_get_user_ids, "get_user_ids");
 	E(system_services_lang_to_charset, "lang_to_charset");
 	E(system_services_charset_to_cpid, "charset_to_cpid");
-	E(system_services_lcid_to_ltag, "lcid_to_ltag");
 	E(system_services_ltag_to_lcid, "ltag_to_lcid");
 	E(system_services_mime_to_extension, "mime_to_extension");
 	E(system_services_extension_to_mime, "extension_to_mime");
@@ -55,7 +53,6 @@ void system_services_stop()
 	service_release("get_user_ids", "system");
 	service_release("lang_to_charset", "system");
 	service_release("charset_to_cpid", "system");
-	service_release("lcid_to_ltag", "system");
 	service_release("ltag_to_lcid", "system");
 	service_release("mime_to_extension", "system");
 	service_release("extension_to_mime", "system");

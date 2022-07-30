@@ -446,7 +446,6 @@ int common_util_run(const char *data_path)
 	if (!oxcmail_init_library(g_org_name, system_services_get_user_ids,
 		system_services_get_username_from_id,
 		system_services_ltag_to_lcid,
-		system_services_lcid_to_ltag,
 		system_services_mime_to_extension,
 		system_services_extension_to_mime)) {
 		printf("[common_util]: Failed to init oxcmail library\n");
@@ -2347,8 +2346,7 @@ BOOL common_util_message_to_ical(store_object *pstore,
 	if (!oxcical_export(pmsgctnt, &ical,
 		common_util_alloc, common_util_get_propids,
 		common_util_entryid_to_username_internal,
-		common_util_essdn_to_username,
-		system_services_lcid_to_ltag))
+		common_util_essdn_to_username))
 		return FALSE;
 	if (!ical.serialize(tmp_buff, arsizeof(tmp_buff)))
 		return FALSE;	

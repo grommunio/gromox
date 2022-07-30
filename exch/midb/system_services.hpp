@@ -16,7 +16,6 @@ E(get_id_from_maildir)
 #undef E
 extern BOOL (*system_services_lang_to_charset)(const char*, char*);
 extern uint32_t (*system_services_charset_to_cpid)(const char*);
-extern const char* (*system_services_lcid_to_ltag)(uint32_t);
 extern uint32_t (*system_services_ltag_to_lcid)(const char*);
 extern const char* (*system_services_mime_to_extension)(const char*);
 extern const char* (*system_services_extension_to_mime)(const char*);
