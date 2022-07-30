@@ -60,7 +60,6 @@ exchange_plugins = \
 	libgxs_ldap_adaptor.la \
 	libgxs_logthru.la \
 	libgxs_mysql_adaptor.la \
-	libgxs_textmaps.la \
 	libgxs_user_filter.la
 noinst_DATA += \
 	libgxs_codepage_lang.ldd \
@@ -76,7 +75,6 @@ noinst_DATA += \
 	libgxs_ldap_adaptor.ldd \
 	libgxs_logthru.ldd \
 	libgxs_mysql_adaptor.ldd \
-	libgxs_textmaps.ldd \
 	libgxs_user_filter.ldd
 sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_PFF
@@ -214,10 +212,6 @@ libgxs_mysql_adaptor_la_SOURCES = exch/mysql_adaptor/mysql_adaptor.cpp exch/mysq
 libgxs_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la
 EXTRA_libgxs_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
-libgxs_textmaps_la_SOURCES = exch/textmapplug.cpp
-libgxs_textmaps_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxs_textmaps_la_LIBADD = ${HX_LIBS} libgromox_cplus.la
-EXTRA_libgxs_textmaps_la_DEPENDENCIES = ${default_sym}
 libgxs_user_filter_la_SOURCES = exch/user_filter/audit_filter.cpp exch/user_filter/grey_list.cpp exch/user_filter/main.cpp exch/user_filter/str_filter.cpp exch/user_filter/temp_list.cpp
 libgxs_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -321,7 +315,7 @@ man_MANS = \
 	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_rewrite.4gx \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.4gx doc/pop3.8gx doc/rebuild.8gx doc/rtf2html.1gx \
-	doc/textmaps.4gx doc/user_filter.4gx \
+	doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 if HAVE_PFF
 man_MANS += doc/gromox-pff2mt.8gx
