@@ -22,6 +22,8 @@ static int32_t nsp_ndr_to_utf16(int ndr_flag, const char *src, char *dst, size_t
 	iconv_t conv_id = (ndr_flag & NDR_FLAG_BIGENDIAN) ?
 	                  iconv_open("UTF-16", "UTF-8") :
 	                  iconv_open("UTF-16LE", "UTF-8");
+	if (conv_id == (iconv_t)-1)
+		return -1;
 	auto pin = deconst(src);
 	auto pout = dst;
 	in_len = strlen(src) + 1;
@@ -42,6 +44,8 @@ static BOOL nsp_ndr_to_utf8(int ndr_flag, const char *src,
 	iconv_t conv_id = (ndr_flag & NDR_FLAG_BIGENDIAN) ?
 	                  iconv_open("UTF-8", "UTF-16") :
 	                  iconv_open("UTF-8", "UTF-16LE");
+	if (conv_id == (iconv_t)-1)
+		return false;
 	auto pin = deconst(src);
 	auto pout = dst;
 	memset(dst, 0, len);

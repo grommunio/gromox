@@ -107,6 +107,8 @@ ssize_t common_util_mb_from_utf8(uint32_t cpid, const char *src,
 	sprintf(temp_charset, "%s//IGNORE",
 		replace_iconv_charset(charset));
 	conv_id = iconv_open(temp_charset, "UTF-8");
+	if (conv_id == (iconv_t)-1)
+		return -1;
 	auto pin = deconst(src);
 	auto pout = dst;
 	in_len = strlen(src) + 1;
@@ -130,6 +132,8 @@ ssize_t common_util_mb_to_utf8(uint32_t cpid, const char *src,
 	}
 	conv_id = iconv_open("UTF-8//IGNORE",
 		replace_iconv_charset(charset));
+	if (conv_id == (iconv_t)-1)
+		return -1;
 	auto pin = deconst(src);
 	auto pout = dst;
 	in_len = strlen(src) + 1;

@@ -53,6 +53,8 @@ int common_util_from_utf8(uint32_t codepage,
 		return -1;
 	}
 	conv_id = iconv_open(charset, "UTF-8");
+	if (conv_id == (iconv_t)-1)
+		return -1;
 	auto pin = deconst(src);
 	auto pout = dst;
 	in_len = strlen(src) + 1;
@@ -79,6 +81,8 @@ int common_util_to_utf8(uint32_t codepage,
 		return -1;
 	}
 	conv_id = iconv_open("UTF-8", charset);
+	if (conv_id == (iconv_t)-1)
+		return -1;
 	auto pin = deconst(src);
 	auto pout = dst;
 	in_len = strlen(src) + 1;

@@ -283,6 +283,10 @@ char* common_util_convert_copy(BOOL to_utf8,
 		if (conv_id == (iconv_t)-1)
 			conv_id = iconv_open("windows-1252//IGNORE", "UTF-8");
 	}
+	if (conv_id == (iconv_t)-1) {
+		free(pstr_out);
+		return NULL;
+	}
 	auto pin = deconst(pstring);
 	auto pout = pstr_out;
 	memset(pstr_out, 0, out_len);

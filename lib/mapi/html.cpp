@@ -1293,6 +1293,10 @@ static void html_string_to_utf8(uint32_t cpid,
 	}
 	conv_id = iconv_open("UTF-8//IGNORE",
 		replace_iconv_charset(charset));
+	if (conv_id == (iconv_t)-1) {
+		snprintf(dst, len, "ICONV_ERROR");
+		return;
+	}
 	auto pin = deconst(src);
 	auto pout = dst;
 	in_len = strlen(src);

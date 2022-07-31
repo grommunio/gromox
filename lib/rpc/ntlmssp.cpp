@@ -203,6 +203,8 @@ static int ntlmssp_utf8_to_utf16le(const char *src, void *dst, size_t len)
 	iconv_t conv_id;
 
 	conv_id = iconv_open("UTF-16LE", "UTF-8");
+	if (conv_id == (iconv_t)-1)
+		return -1;
 	auto pin  = deconst(src);
 	auto pout = static_cast<char *>(dst);
 	in_len = strlen(src);
@@ -224,6 +226,8 @@ static bool ntlmssp_utf16le_to_utf8(const void *src, size_t src_len,
 	iconv_t conv_id;
 
 	conv_id = iconv_open("UTF-8", "UTF-16LE");
+	if (conv_id == (iconv_t)-1)
+		return false;
 	pin = (char*)src;
 	pout = dst;
 	memset(dst, 0, len);

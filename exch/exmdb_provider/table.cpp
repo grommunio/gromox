@@ -1898,6 +1898,8 @@ static void table_truncate_string(uint32_t cpid, char *pstring)
 	memset(tmp_buff, 0, sizeof(tmp_buff));
 	snprintf(tmp_charset, arsizeof(tmp_charset), "%s//IGNORE", charset);
 	conv_id = iconv_open(tmp_charset, charset);
+	if (conv_id == (iconv_t)-1)
+		return;
 	iconv(conv_id, &pin, &in_len, &pout, &out_len);
 	iconv_close(conv_id);
 	if (out_len < sizeof(tmp_buff)) {
