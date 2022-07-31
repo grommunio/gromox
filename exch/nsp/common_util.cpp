@@ -14,6 +14,7 @@
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/util.hpp>
 #include <gromox/zz_ndr_stack.hpp>
 #include "common_util.h"
 
@@ -76,6 +77,7 @@ int common_util_to_utf8(uint32_t codepage,
 	size_t out_len;
 	iconv_t conv_id;
 	
+	cpid_cstr_compatible(codepage);
 	auto charset = cpid_to_cset(codepage);
 	if (NULL == charset) {
 		return -1;

@@ -1287,6 +1287,7 @@ static void html_string_to_utf8(uint32_t cpid,
 	size_t in_len;
 	iconv_t conv_id;
 	
+	cpid_cstr_compatible(cpid);
 	auto charset = cpid_to_cset(cpid);
 	if (NULL == charset) {
 		charset = "windows-1252";

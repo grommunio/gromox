@@ -265,6 +265,8 @@ char* common_util_convert_copy(BOOL to_utf8,
 	iconv_t conv_id;
 	char temp_charset[256];
 	
+	if (to_utf8)
+		cpid_cstr_compatible(cpid);
 	auto charset = cpid_to_cset(cpid);
 	if (charset == nullptr)
 		charset = "windows-1252";

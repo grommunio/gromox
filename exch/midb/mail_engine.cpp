@@ -224,6 +224,7 @@ static std::unique_ptr<char[]> mail_engine_ct_to_utf8(const char *charset,
 	if (strcasecmp(charset, "UTF-8") == 0||
 	    strcasecmp(charset, "US-ASCII") == 0)
 		return std::unique_ptr<char[]>(strdup(string));
+	cset_cstr_compatible(charset);
 	length = strlen(string) + 1;
 	auto ret_string = std::make_unique<char[]>(2 * length);
 	conv_id = iconv_open("UTF-8", charset);

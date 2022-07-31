@@ -544,6 +544,25 @@ bool cu_validate_msgclass(const char *k)
 	return true;
 }
 
+bool cpid_cstr_compatible(uint32_t cpid)
+{
+	if (cpid == 1200 || cpid == 1201 || cpid == 12000 || cpid == 12001) {
+		fprintf(stderr, "E-2103: CString conversion routine called with cpid %u\n", cpid);
+		return false;
+	}
+	return true;
+}
+
+bool cset_cstr_compatible(const char *s)
+{
+	if (strncasecmp(s, "utf16", 5) == 0 || strncasecmp(s, "utf32", 5) == 0 ||
+	    strncasecmp(s, "utf-16", 6) == 0 || strncasecmp(s, "utf-32", 6) == 0) {
+		fprintf(stderr, "E-2104: CString conversion routine called with charset %s\n", s);
+		return false;
+	}
+	return true;
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try

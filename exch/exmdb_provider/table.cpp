@@ -1881,6 +1881,7 @@ static void table_truncate_string(uint32_t cpid, char *pstring)
 	char tmp_buff[512];
 	char tmp_charset[256];
 	
+	cpid_cstr_compatible(cpid);
 	string_len = strlen(pstring);
 	if (string_len <= 510) {
 		return;

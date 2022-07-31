@@ -304,13 +304,6 @@ const char* replace_iconv_charset(const char *charset)
 	return charset;
 }
 
-/**
- * @charset:	Character set for @in_string; must be an ASCII-compatible encoding.
- *
- * As a special exception, @charset may be UTF-7. (Nonwithstanding UTF-7's use
- * of ASCII for representation, UTF-7 is not a superset of ASCII, hence not
- * compatible.)
- */
 BOOL string_to_utf8(const char *charset, const char *in_string,
     char *out_string, size_t out_len)
 {
@@ -324,7 +317,7 @@ BOOL string_to_utf8(const char *charset, const char *in_string,
 		strcpy(out_string, in_string);
 		return TRUE;
 	}
-	
+	cset_cstr_compatible(charset);
 	auto length = strlen(in_string);
 	if (0 == length) {
 		out_string[0] = '\0';
@@ -351,7 +344,6 @@ BOOL string_to_utf8(const char *charset, const char *in_string,
 	return TRUE;
 }
 
-/* Same argument condtions as for string_to_utf8. */
 BOOL string_from_utf8(const char *charset, const char *in_string,
     char *out_string, size_t out_len)
 {

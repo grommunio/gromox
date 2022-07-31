@@ -125,7 +125,8 @@ ssize_t common_util_mb_to_utf8(uint32_t cpid, const char *src,
 	size_t in_len;
 	size_t out_len;
 	iconv_t conv_id;
-	
+
+	cpid_cstr_compatible(cpid);
 	auto charset = cpid_to_cset(cpid);
 	if (NULL == charset) {
 		return -1;
@@ -147,6 +148,7 @@ ssize_t common_util_mb_to_utf8(uint32_t cpid, const char *src,
 static char* common_util_dup_mb_to_utf8(
 	uint32_t cpid, const char *src)
 {
+	cpid_cstr_compatible(cpid);
 	int len;
 	
 	len = 2*strlen(src) + 1;
