@@ -1054,7 +1054,7 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist,
 static char *tnef_duplicate_string_to_unicode(const char *charset,
     const char *pstring)
 {
-	auto z = 2 * strlen(pstring) + 2;
+	auto z = mb_to_utf8_len(pstring);
 	auto pstr_out = me_alloc<char>(z);
 	if (NULL == pstr_out) {
 		return NULL;

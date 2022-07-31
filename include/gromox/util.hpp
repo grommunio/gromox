@@ -138,5 +138,9 @@ extern GX_EXPORT unsigned int newline_size(const char *, size_t);
 extern GX_EXPORT bool cu_validate_msgclass(const char *);
 extern GX_EXPORT bool cpid_cstr_compatible(unsigned int);
 extern GX_EXPORT bool cset_cstr_compatible(const char *);
+extern GX_EXPORT size_t mb_to_utf8_len(const char *);
+extern GX_EXPORT size_t utf8_to_mb_len(const char *);
+extern GX_EXPORT size_t utf8_to_utf16_len(const char *);
+inline size_t utf16_to_utf8_len(size_t z) { return z / 2 * 3 + 1; }
 
 }

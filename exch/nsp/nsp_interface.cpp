@@ -276,12 +276,13 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		[[fallthrough]];
 	case PR_DISPLAY_NAME_A:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
+		/* @codepage is used to select a translation; it's not for charsets */
 		ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			temp_len = 2*strlen(dn) + 1;
+			temp_len = utf8_to_mb_len(dn);
 			pprop->value.pv = ndr_stack_alloc(
 						NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
@@ -315,7 +316,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			temp_len = 2*strlen(dn) + 1;
+			temp_len = utf8_to_mb_len(dn);
 			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecServerOOM;
@@ -348,7 +349,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			temp_len = 2*strlen(dn) + 1;
+			temp_len = utf8_to_mb_len(dn);
 			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecServerOOM;
@@ -381,7 +382,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			temp_len = 2*strlen(dn) + 1;
+			temp_len = utf8_to_mb_len(dn);
 			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecServerOOM;
@@ -2360,12 +2361,11 @@ int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
 	char *pstr;
-	int temp_len;
 	
 	for (size_t i = 0; i < pstrs->count; ++i) {
 		if (pstrs->ppstr[i] == nullptr)
 			continue;
-		temp_len = 2 * strlen(pstrs->ppstr[i]) + 1;
+		auto temp_len = mb_to_utf8_len(pstrs->ppstr[i]);
 		pstr = ndr_stack_anew<char>(NDR_STACK_IN, temp_len);
 		if (NULL == pstr) {
 			*ppmids = NULL;

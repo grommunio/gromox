@@ -563,6 +563,47 @@ bool cset_cstr_compatible(const char *s)
 	return true;
 }
 
+/**
+ * Return an upper bound of bytes needed to represent an arbitrary MBCS string
+ * @s, with trailing NUL, as UTF-8. @s must be C string compatible, so it won't
+ * be UTF-16/32; but it could be UTF-8 already.
+ */
+size_t mb_to_utf8_len(const char *s)
+{
+	/*
+	 * The assumption here is that all classic codepages won't map
+	 * something to outside the Basic Multilingual Plane.
+	 */
+	return 3 * strlen(s) + 1;
+}
+
+/**
+ * Return an upper bound of bytes needed to represent the UTF-8 string @s (with
+ * its trailing NUL character) in some other MBCS.
+ */
+size_t utf8_to_mb_len(const char *s)
+{
+	auto z = strlen(s);
+	auto utf32 = 4 * z + 4;
+	/*
+	 * Shift states... yuck. Anyway, if you look at all values of @utf32,
+	 * @isojp and @utf7, @utf32 is always largest, which means we need not
+	 * calculate max(utf32,utf7,isojp).
+	 */
+	// auto isojp = (z + 1) / 4 * 9 - 1 + (z - 3) % 4 + 1;
+	// auto utf7  = (z + 1) / 2 * 6 - (z % 2) + 1;
+	return utf32;
+}
+
+/**
+ * Return an upper bound of bytes needed to represent the UTF-8 string @s (with
+ * its trailing NUL character) as UTF-16.
+ */
+size_t utf8_to_utf16_len(const char *s)
+{
+	return 2 * strlen(s) + 2;
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try

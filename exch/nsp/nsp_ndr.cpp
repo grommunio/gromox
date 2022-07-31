@@ -6,11 +6,14 @@
 #include <memory>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
+#include <gromox/util.hpp>
 #include <gromox/zz_ndr_stack.hpp>
 #include "nsp_ndr.hpp"
 #define FLAG_HEADER			0x1
 #define FLAG_CONTENT		0x2
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
+
+using namespace gromox;
 
 static int nsp_ndr_pull_restriction(NDR_PULL *pndr, unsigned int flag, NSPRES *r);
 static int nsp_ndr_push_restriction(NDR_PUSH *pndr, unsigned int flag, const NSPRES *r);
@@ -342,8 +345,6 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, unsigned int flag, STRING_
 
 static int nsp_ndr_push_wstring_array(NDR_PUSH *pndr, unsigned int flag, const STRING_ARRAY *r)
 {
-	uint32_t length;
-	
 	if (flag & FLAG_HEADER) {
 		TRY(ndr_push_align(pndr, 5));
 		TRY(ndr_push_uint32(pndr, r->count));
@@ -359,7 +360,7 @@ static int nsp_ndr_push_wstring_array(NDR_PUSH *pndr, unsigned int flag, const S
 	for (size_t cnt = 0; cnt < r->count; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
-		length = 2*strlen(r->ppstr[cnt]) + 2;
+		uint32_t length = utf8_to_utf16_len(r->ppstr[cnt]);
 		std::unique_ptr<char[]> pwstring;
 		try {
 			pwstring = std::make_unique<char[]>(length);

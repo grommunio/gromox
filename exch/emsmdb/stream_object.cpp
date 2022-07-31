@@ -17,6 +17,8 @@
 #include "stream_object.h"
 #define STREAM_INIT_BUFFER_LENGTH						4096
 
+using namespace gromox;
+
 std::unique_ptr<stream_object> stream_object::create(void *pparent,
     int object_type, uint32_t open_flags, uint32_t proptag, uint32_t max_length)
 {
@@ -111,7 +113,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		       pstream->content_bin.cb);
 		return pstream;
 	case PT_UNICODE:
-		buff_len = 2 * strlen(static_cast<char *>(pvalue)) + 2;
+		buff_len = utf8_to_utf16_len(static_cast<char *>(pvalue));
 		pstream->content_bin.pv = malloc(buff_len);
 		if (pstream->content_bin.pv == nullptr) {
 			return NULL;

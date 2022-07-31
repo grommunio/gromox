@@ -164,24 +164,25 @@ int EXT_PULL::g_str(char **ppstr)
 
 int EXT_PULL::g_wstr(char **ppstr)
 {
-	int i, len;
+	/* Everything is measured in octects */
+	size_t i;
 	
 	if (!(m_flags & EXT_FLAG_UTF16))
 		return g_str(ppstr);
 	if (m_offset >= m_data_size)
 		return EXT_ERR_BUFSIZE;
-	int max_len = m_data_size - m_offset;
+	size_t max_len = m_data_size - m_offset;
 	for (i = 0; i < max_len - 1; i += 2)
 		if (m_udata[m_offset+i] == '\0' && m_udata[m_offset+i+1] == '\0')
 			break;
 	if (i >= max_len - 1)
 		return EXT_ERR_BUFSIZE;
-	len = i + 2; /* octets */
-	/* Going from UTF-16 (2 octets) to UTF-8 (up to 4 octets) */
-	*ppstr = anew<char>(2 * len);
+	auto len = i + 2;
+	auto bufsize = utf16_to_utf8_len(len);
+	*ppstr = anew<char>(bufsize);
 	if (*ppstr == nullptr)
 		return EXT_ERR_ALLOC;
-	if (!utf16le_to_utf8(&m_cdata[m_offset], len, *ppstr, 2 * len))
+	if (!utf16le_to_utf8(&m_cdata[m_offset], len, *ppstr, bufsize))
 		return EXT_ERR_CHARCNV;
 	return advance(len);
 }
@@ -2236,11 +2237,9 @@ int EXT_PUSH::p_str(const char *pstr)
 
 int EXT_PUSH::p_wstr(const char *pstr)
 {
-	int len;
-	
 	if (!(m_flags & EXT_FLAG_UTF16))
 		return p_str(pstr);
-	len = 2*strlen(pstr) + 2;
+	auto len = utf8_to_utf16_len(pstr);
 	std::unique_ptr<char[]> pbuff;
 	try {
 		pbuff = std::make_unique<char[]>(len);
@@ -2248,11 +2247,6 @@ int EXT_PUSH::p_wstr(const char *pstr)
 		return EXT_ERR_ALLOC;
 	}
 	len = utf8_to_utf16le(pstr, pbuff.get(), len);
-	if (len < 2) {
-		pbuff[0] = '\0';
-		pbuff[1] = '\0';
-		len = 2;
-	}
 	if (m_flags & EXT_FLAG_TBLLMT) {
 		if (len > 510) {
 			len = 510;

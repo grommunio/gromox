@@ -22,6 +22,7 @@
 #include "logon_object.h"
 
 using namespace std::string_literals;
+using namespace gromox;
 
 static void ftstream_producer_try_recode_nbp(FTSTREAM_PRODUCER *pstream) try
 {
@@ -179,10 +180,8 @@ static BOOL ftstream_producer_write_double(
 static BOOL ftstream_producer_write_wstring(
 	FTSTREAM_PRODUCER *pstream, const char *pstr)
 {
-	int len;
 	uint32_t position;
-	
-	len = 2*strlen(pstr) + 2;
+	auto len = utf8_to_utf16_len(pstr);
 	auto pbuff = gromox::me_alloc<char>(len);
 	if (NULL == pbuff) {
 		return FALSE;
@@ -340,7 +339,7 @@ static BOOL ftstream_producer_write_propvalue(
 			if (proptype == PT_STRING8) {
 				proptype = PT_UNICODE;
 				write_type = PT_UNICODE;
-				auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
+				auto len = mb_to_utf8_len(static_cast<char *>(ppropval->pvalue));
 				auto pvalue = cu_alloc<char>(len);
 				if (NULL == pvalue) {
 					return FALSE;
@@ -363,7 +362,7 @@ static BOOL ftstream_producer_write_propvalue(
 			if (proptype == PT_UNICODE) {
 				proptype = PT_STRING8;
 				write_type = PT_STRING8;
-				auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
+				auto len = utf8_to_mb_len(static_cast<char *>(ppropval->pvalue));
 				auto pvalue = cu_alloc<char>(len);
 				if (NULL == pvalue) {
 					return FALSE;

@@ -149,9 +149,7 @@ static char* common_util_dup_mb_to_utf8(
 	uint32_t cpid, const char *src)
 {
 	cpid_cstr_compatible(cpid);
-	int len;
-	
-	len = 2*strlen(src) + 1;
+	auto len = mb_to_utf8_len(src);
 	auto pdst = cu_alloc<char>(len);
 	if (NULL == pdst) {
 		return NULL;
@@ -922,12 +920,10 @@ BOOL common_util_propvals_to_row(
 BOOL common_util_convert_unspecified(uint32_t cpid,
 	BOOL b_unicode, TYPED_PROPVAL *ptyped)
 {
-	size_t tmp_len;
-	
 	if (b_unicode) {
 		if (ptyped->type != PT_STRING8)
 			return TRUE;
-		tmp_len = 2 * strlen(static_cast<char *>(ptyped->pvalue)) + 1;
+		auto tmp_len = mb_to_utf8_len(static_cast<char *>(ptyped->pvalue));
 		auto pvalue = common_util_alloc(tmp_len);
 		if (NULL == pvalue) {
 			return FALSE;
@@ -940,7 +936,7 @@ BOOL common_util_convert_unspecified(uint32_t cpid,
 	}
 	if (ptyped->type != PT_UNICODE)
 		return TRUE;
-	tmp_len = 2 * strlen(static_cast<char *>(ptyped->pvalue)) + 1;
+	auto tmp_len = utf8_to_mb_len(static_cast<char *>(ptyped->pvalue));
 	auto pvalue = common_util_alloc(tmp_len);
 	if (NULL == pvalue) {
 		return FALSE;
@@ -1263,7 +1259,7 @@ BOOL common_util_convert_tagged_propval(
 	if (to_unicode) {
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_STRING8: {
-			auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
+			auto len = mb_to_utf8_len(static_cast<char *>(ppropval->pvalue));
 			auto pstring = cu_alloc<char>(len);
 			if (NULL == pstring) {
 				return FALSE;
@@ -1279,7 +1275,7 @@ BOOL common_util_convert_tagged_propval(
 		case PT_MV_STRING8: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
 			for (size_t i = 0; i < sa->count; ++i) {
-				auto len = 2 * strlen(sa->ppstr[i]) + 1;
+				auto len = mb_to_utf8_len(sa->ppstr[i]);
 				auto pstring = cu_alloc<char>(len);
 				if (NULL == pstring) {
 					return FALSE;
@@ -1306,7 +1302,7 @@ BOOL common_util_convert_tagged_propval(
 	} else {
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_UNICODE: {
-			auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
+			auto len = utf8_to_mb_len(static_cast<char *>(ppropval->pvalue));
 			auto pstring = cu_alloc<char>(len);
 			if (NULL == pstring) {
 				return FALSE;
@@ -1321,7 +1317,7 @@ BOOL common_util_convert_tagged_propval(
 		case PT_MV_UNICODE: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
 			for (size_t i = 0; i < sa->count; ++i) {
-				auto len = 2 * strlen(sa->ppstr[i]) + 1;
+				auto len = utf8_to_mb_len(sa->ppstr[i]);
 				auto pstring = cu_alloc<char>(len);
 				if (NULL == pstring) {
 					return FALSE;

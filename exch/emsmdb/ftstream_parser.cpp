@@ -23,6 +23,7 @@
 #include "rop_processor.h"
 
 using namespace std::string_literals;
+using namespace gromox;
 
 enum {
 	FTSTREAM_PARSER_READ_FAIL = -1,
@@ -846,7 +847,7 @@ gxerr_t fxstream_parser::process(fastupctx_object &upctx)
 			auto proptype = PROP_TYPE(propval.proptag);
 			if (proptype & FXICS_CODEPAGE_FLAG) {
 				auto codepage = proptype & ~FXICS_CODEPAGE_FLAG;
-				auto len = 2 * strlen(static_cast<char *>(propval.pvalue)) + 2;
+				auto len = mb_to_utf8_len(static_cast<char *>(propval.pvalue));
 				auto pvalue = common_util_alloc(len);
 				if (pvalue == nullptr || common_util_mb_to_utf8(codepage,
 				    static_cast<char *>(propval.pvalue),

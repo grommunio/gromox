@@ -554,7 +554,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (!common_util_get_user_displayname(plogon->account,
 		    temp_buff, arsizeof(temp_buff)))
 			return FALSE;	
-		auto temp_len = 2 * strlen(temp_buff) + 1;
+		auto temp_len = utf8_to_mb_len(temp_buff);
 		auto tstr = cu_alloc<char>(temp_len);
 		*ppvalue = tstr;
 		if (NULL == *ppvalue) {
