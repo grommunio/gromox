@@ -125,6 +125,7 @@ class db_item_deleter {
 using db_item_ptr = std::unique_ptr<DB_ITEM, db_item_deleter>;
 
 extern db_item_ptr db_engine_get_db(const char *dir);
+extern BOOL db_engine_vacuum(const char *path);
 BOOL db_engine_unload_db(const char *path);
 BOOL db_engine_enqueue_populating_criteria(
 	const char *dir, uint32_t cpid, uint64_t folder_id,

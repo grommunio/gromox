@@ -492,6 +492,11 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	       PRIVATE_FID_CONTACTS, paddress, pb_found);
 }
 
+BOOL exmdb_server_vacuum(const char *dir)
+{
+	return db_engine_vacuum(dir);
+}
+
 BOOL exmdb_server_unload_store(const char *dir)
 {
 	return db_engine_unload_db(dir);

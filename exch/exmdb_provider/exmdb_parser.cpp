@@ -714,6 +714,8 @@ static BOOL exmdb_parser_dispatch2(const EXMDB_REQUEST *prequest,
 				prequest->payload.get_public_folder_unread_count.username,
 				prequest->payload.get_public_folder_unread_count.folder_id,
 				&presponse->payload.get_public_folder_unread_count.count);
+	case exmdb_callid::vacuum:
+		return exmdb_server_vacuum(prequest->dir);
 	case exmdb_callid::unload_store:
 		return exmdb_server_unload_store(prequest->dir);
 	default:

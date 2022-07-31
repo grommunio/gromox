@@ -7,5 +7,8 @@ gromox\-mbop \(em Mailbox operations utility
 .SS unload
 Issue the UNLOAD RPC to exmdb_provider(4gx). Takes the mailbox directory as
 argument, e.g. `\fBgromox\-mbop unload /var/lib/gromox/user/0/1\fP`.
+.SS vacuum
+Issue the VACUUM RPC to exmdb_provider(4gx). Takes the mailbox directory as
+argument.
 .SH See also
 \fBgromox\fP(7)

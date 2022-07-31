@@ -2319,6 +2319,7 @@ int exmdb_ext_pull_request(const BINARY *pbin_in,
 	case exmdb_callid::get_store_all_proptags:
 	case exmdb_callid::get_folder_class_table:
 	case exmdb_callid::allocate_cn:
+	case exmdb_callid::vacuum:
 	case exmdb_callid::unload_store:
 		return EXT_ERR_SUCCESS;
 #define E(t) case exmdb_callid::t: return exmdb_pull(ext_pull, prequest->payload.t);
@@ -2357,6 +2358,7 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	case exmdb_callid::get_store_all_proptags:
 	case exmdb_callid::get_folder_class_table:
 	case exmdb_callid::allocate_cn:
+	case exmdb_callid::vacuum:
 	case exmdb_callid::unload_store:
 		status = EXT_ERR_SUCCESS;
 		break;
@@ -3549,6 +3551,7 @@ static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_PUBLIC_FOLDER_UNREAD_COUNT &
 	E(empty_folder_rule) \
 	E(unsubscribe_notification) \
 	E(transport_new_mail) \
+	E(vacuum) \
 	E(unload_store)
 #define RSP_WITH_ARGS \
 	E(get_all_named_propids) \

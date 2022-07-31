@@ -287,6 +287,18 @@ void db_engine_put_db(DB_ITEM *pdb)
 	pdb->reference --;
 }
 
+BOOL db_engine_vacuum(const char *path)
+{
+	auto db = db_engine_get_db(path);
+	if (db == nullptr || db->psqlite == nullptr)
+		return false;
+	fprintf(stderr, "I-2102: Vacuuming %s (exchange.sqlite3)\n", path);
+	if (gx_sql_exec(db->psqlite, "VACUUM") != SQLITE_OK)
+		return false;
+	fprintf(stderr, "I-2102: Vacuuming %s ended\n", path);
+	return TRUE;
+}
+
 BOOL db_engine_unload_db(const char *path)
 {
 	int i;

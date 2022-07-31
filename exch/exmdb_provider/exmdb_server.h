@@ -339,6 +339,7 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 BOOL exmdb_server_get_public_folder_unread_count(const char *dir,
 	const char *username, uint64_t folder_id, uint32_t *pcount);
 void exmdb_server_register_proc(void *pproc);
+extern BOOL exmdb_server_vacuum(const char *dir);
 BOOL exmdb_server_unload_store(const char *dir);
 extern void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag);
 extern int instance_get_message_body(MESSAGE_CONTENT *, unsigned int tag, unsigned int cpid, TPROPVAL_ARRAY *);

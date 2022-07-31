@@ -143,6 +143,7 @@ enum class exmdb_callid : uint8_t {
 	copy_instance_attachments = 0x78,
 	check_contact_address = 0x79,
 	get_public_folder_unread_count = 0x7a,
+	vacuum = 0x7b,
 	unload_store = 0x80,
 };
 

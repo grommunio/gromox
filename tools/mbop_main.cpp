@@ -19,9 +19,9 @@ static int help(const char *argv0)
 	return EXIT_FAILURE;
 }
 
-static int do_unload(const char *dir)
+static int do_simple_rpc(BOOL (*f)(const char *), const char *dir)
 {
-	if (!exmdb_client::unload_store(dir)) {
+	if (!f(dir)) {
 		fprintf(stderr, "unload: the operation failed\n");
 		return EXIT_FAILURE;
 	}
@@ -37,10 +37,14 @@ int main(int argc, const char **argv)
 	auto ret = exmdb_client_run(PKGSYSCONFDIR, 0);
 	if (ret < 0)
 		return EXIT_FAILURE;
-	if (strcmp(argv[1], "unload") == 0) {
+	if (strcmp(argv[1], "vacuum") == 0) {
 		if (argc < 3)
 			return help(*argv);
-		do_unload(argv[2]);
+		do_simple_rpc(&exmdb_client::vacuum, argv[2]);
+	} else if (strcmp(argv[1], "unload") == 0) {
+		if (argc < 3)
+			return help(*argv);
+		do_simple_rpc(&exmdb_client::unload_store, argv[2]);
 	} else {
 		help(*argv);
 	}
