@@ -221,7 +221,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*outvalue = v;
 		if (*outvalue == nullptr)
 			return FALSE;
-		if (pfolder->plogon->logon_mode == LOGON_MODE_OWNER) {
+		if (pfolder->plogon->logon_mode == logon_mode::owner) {
 			*v = rightsAll | frightsContact;
 		} else {
 			auto rpc_info = get_rpc_info();

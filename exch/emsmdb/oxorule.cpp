@@ -35,7 +35,7 @@ uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
 	auto rpc_info = get_rpc_info();
-	if (plogon->logon_mode != LOGON_MODE_OWNER) {
+	if (plogon->logon_mode != logon_mode::owner) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
@@ -118,7 +118,7 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 		return ecNotSupported;
 	fid_deferred = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);
 	auto rpc_info = get_rpc_info();
-	if (plogon->logon_mode != LOGON_MODE_OWNER) {
+	if (plogon->logon_mode != logon_mode::owner) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    fid_deferred, rpc_info.username, &permission))
 			return ecError;

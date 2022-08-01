@@ -73,7 +73,7 @@ BOOL table_object::load()
 	switch (ptable->rop_id) {
 	case ropGetHierarchyTable: {
 		auto rpc_info = get_rpc_info();
-		auto username = ptable->plogon->logon_mode == LOGON_MODE_OWNER ?
+		auto username = ptable->plogon->logon_mode == logon_mode::owner ?
 		                nullptr : rpc_info.username;
 		if (!exmdb_client_load_hierarchy_table(ptable->plogon->get_dir(),
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
@@ -88,7 +88,7 @@ BOOL table_object::load()
 		if (pinfo == nullptr)
 			return FALSE;
 		const char *username = nullptr;
-		if (ptable->plogon->logon_mode != LOGON_MODE_OWNER) {
+		if (ptable->plogon->logon_mode != logon_mode::owner) {
 			if (!ptable->plogon->is_private()) {
 				username = rpc_info.username;
 			} else {

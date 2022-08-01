@@ -245,7 +245,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecError;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	if (plogon->logon_mode == LOGON_MODE_GUEST)
+	if (plogon->logon_mode == logon_mode::guest)
 		return ecAccessDenied;
 
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
@@ -405,7 +405,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecError;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	if (plogon->logon_mode == LOGON_MODE_GUEST)
+	if (plogon->logon_mode == logon_mode::guest)
 		return ecAccessDenied;
 	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
@@ -488,7 +488,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		return ecError;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	if (plogon->logon_mode == LOGON_MODE_GUEST)
+	if (plogon->logon_mode == logon_mode::guest)
 		return ecAccessDenied;
 	if (LOCK_STAT_1STFINISHED != lock_stat) {
 		return ecSuccess;
@@ -548,7 +548,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecError;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	if (plogon->logon_mode == LOGON_MODE_GUEST)
+	if (plogon->logon_mode == logon_mode::guest)
 		return ecAccessDenied;
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (pmessage == nullptr)

@@ -19,7 +19,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
     uint32_t *pstore_stat, LOGMAP *plogmap, uint8_t logon_id, uint32_t *phout)
 {
 	int user_id;
-	int logon_mode;
+	enum logon_mode logon_mode;
 	struct tm *ptm;
 	time_t cur_time;
 	struct tm tmp_tm;
@@ -58,21 +58,21 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		*presponse_flags = RESPONSE_FLAG_RESERVED;
 		if (permission & frightsGromoxSendAs) {
 			*presponse_flags |= RESPONSE_FLAG_SENDASRIGHT;
-			logon_mode = LOGON_MODE_DELEGATE;
+			logon_mode = logon_mode::delegate;
 		} else {
-			logon_mode = LOGON_MODE_GUEST;
+			logon_mode = logon_mode::guest;
 		}
 		if (permission & frightsGromoxStoreOwner) {
 			permission ^= frightsGromoxStoreOwner;
 			*presponse_flags |= RESPONSE_FLAG_OWNERRIGHT;
-			logon_mode = LOGON_MODE_OWNER;
+			logon_mode = logon_mode::owner;
 		}
 	} else {
 		*presponse_flags = RESPONSE_FLAG_RESERVED |
 							RESPONSE_FLAG_OWNERRIGHT |
 							RESPONSE_FLAG_SENDASRIGHT;
 		gx_strlcpy(maildir, rpc_info.maildir, GX_ARRAY_SIZE(maildir));
-		logon_mode = LOGON_MODE_OWNER;
+		logon_mode = logon_mode::owner;
 	}
 	proptags.count = 2;
 	proptags.pproptag = proptag_buff;
@@ -225,7 +225,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	}
 	mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
 	auto plogon = logon_object::create(logon_flags, open_flags,
-	              LOGON_MODE_GUEST, domain_id, pdomain, homedir, mailbox_guid);
+	              logon_mode::guest, domain_id, pdomain, homedir, mailbox_guid);
 	if (plogon == nullptr)
 		return ecServerOOM;
 	/* create logon map and logon object */
@@ -294,7 +294,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 		if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 			return ecNotSupported;
 	}
-	if (plogon->logon_mode != LOGON_MODE_OWNER)
+	if (plogon->logon_mode != logon_mode::owner)
 		return ecAccessDenied;
 	if (!exmdb_client_set_folder_by_class(plogon->get_dir(),
 	    folder_id, pstr_class, &b_result))

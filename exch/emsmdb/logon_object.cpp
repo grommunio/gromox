@@ -52,7 +52,7 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 }
 
 std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
-	uint32_t open_flags, int logon_mode, int account_id,
+	uint32_t open_flags, enum logon_mode logon_mode, int account_id,
 	const char *account, const char *dir, GUID mailbox_guid)
 {
 	std::unique_ptr<logon_object> plogon;

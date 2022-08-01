@@ -271,7 +271,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	if (SYNC_TYPE_HIERARCHY != pctx->sync_type) {
 		return FALSE;
 	}
-	if (pctx->pstream->plogon->logon_mode == LOGON_MODE_OWNER) {
+	if (pctx->pstream->plogon->logon_mode == logon_mode::owner) {
 		username = NULL;
 	} else {
 		rpc_info = get_rpc_info();

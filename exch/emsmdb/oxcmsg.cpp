@@ -73,7 +73,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	
 	tag_access = 0;
 	auto rpc_info = get_rpc_info();
-	if (plogon->logon_mode == LOGON_MODE_OWNER) {
+	if (plogon->logon_mode == logon_mode::owner) {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
@@ -191,7 +191,7 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 	if (object_type != OBJECT_TYPE_LOGON && object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
 	auto rpc_info = get_rpc_info();
-	if (plogon->logon_mode != LOGON_MODE_OWNER) {
+	if (plogon->logon_mode != logon_mode::owner) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
 			return ecError;

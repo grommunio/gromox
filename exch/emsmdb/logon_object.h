@@ -5,9 +5,10 @@
 #include <unordered_map>
 #include <vector>
 #include <gromox/mapi_types.hpp>
-#define LOGON_MODE_OWNER				0
-#define LOGON_MODE_DELEGATE				1
-#define LOGON_MODE_GUEST				2
+
+enum class logon_mode {
+	owner, delegate, guest,
+};
 
 struct property_groupinfo;
 
@@ -17,7 +18,7 @@ struct logon_object {
 	NOMOVE(logon_object);
 
 	public:
-	static std::unique_ptr<logon_object> create(uint8_t logon_flags, uint32_t open_flags, int logon_mode, int account_id, const char *account, const char *dir, GUID mailbox_guid);
+	static std::unique_ptr<logon_object> create(uint8_t logon_flags, uint32_t open_flags, enum logon_mode, int account_id, const char *account, const char *dir, GUID mailbox_guid);
 	bool is_private() const { return logon_flags & LOGON_FLAG_PRIVATE; }
 	GUID guid() const;
 	const char *get_account() const { return account; }
@@ -41,7 +42,8 @@ struct logon_object {
 
 	uint8_t logon_flags = 0;
 	uint32_t open_flags = 0;
-	int logon_mode = 0, account_id = 0;
+	enum logon_mode logon_mode = logon_mode::owner;
+	int account_id = 0;
 	char account[UADDR_SIZE]{};
 	char dir[256]{};
 	GUID mailbox_guid{};
