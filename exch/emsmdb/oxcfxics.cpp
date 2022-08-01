@@ -799,11 +799,82 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	return ecSuccess;
 }
 
+static uint32_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
+    unsigned int import_flags, icsupctx_object *ctx,
+    const TPROPVAL_ARRAY *props, uint64_t *msg_idp,
+    uint32_t hnd_in, uint32_t *hnd_out)
+{
+	auto logon = rop_processor_get_logon_object(logmap, logon_id);
+	if (logon == nullptr)
+		return ecError;
+	auto folder = ctx->get_parent_object();
+	auto folder_id = folder->folder_id;
+	uint32_t tag_access = 0;
+
+	if (logon->logon_mode != logon_mode::owner) {
+		auto rpc = get_rpc_info();
+		uint32_t permission = 0;
+		if (!exmdb_client_check_folder_permission(logon->get_dir(),
+		    folder_id, rpc.username, &permission))
+			return ecError;
+		if (!(permission & frightsCreate))
+			return ecAccessDenied;
+		tag_access = MAPI_ACCESS_READ;
+		if (permission & (frightsEditAny | frightsEditOwned))
+			tag_access |= MAPI_ACCESS_MODIFY;
+		if (permission & (frightsDeleteAny | frightsDeleteOwned))
+			tag_access |= MAPI_ACCESS_DELETE;
+	} else {
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
+	}
+
+	uint64_t message_id = 0;
+	if (!exmdb_client_allocate_message_id(logon->get_dir(),
+	    folder_id, &message_id))
+		return ecError;
+	auto info = emsmdb_interface_get_emsmdb_info();
+	auto msg = message_object::create(logon, TRUE, info->cpid, message_id,
+	           &folder_id, tag_access, OPEN_MODE_FLAG_READWRITE, ctx->pstate);
+	if (msg == nullptr)
+		return ecError;
+
+	/* Retain PCL and assign a new CN */
+	uint64_t change_num;
+	if (!exmdb_client_allocate_cn(logon->get_dir(), &change_num))
+		return ecError;
+	auto new_ck = cu_xid_to_bin({logon->guid(), change_num});
+	if (new_ck == nullptr)
+		return ecServerOOM;
+	auto new_pcl = common_util_pcl_append(static_cast<BINARY *>(props->ppropval[3].pvalue), new_ck);
+	if (new_pcl == nullptr)
+		return ecServerOOM;
+
+	BOOL b_fai = (import_flags & IMPORT_FLAG_ASSOCIATED) ? TRUE : false;
+	if (msg->init_message(b_fai, info->cpid) != 0)
+		return ecError;
+
+	TAGGED_PROPVAL nupropd[2];
+	nupropd[0].proptag = PR_CHANGE_KEY;
+	nupropd[0].pvalue = new_ck;
+	nupropd[1].proptag = PR_PREDECESSOR_CHANGE_LIST;
+	nupropd[1].pvalue = new_pcl;
+	const TPROPVAL_ARRAY nuprops = {std::size(nupropd), deconst(nupropd)};
+	PROBLEM_ARRAY problems{};
+	if (!exmdb_client_set_instance_properties(logon->get_dir(),
+	    msg->get_instance_id(), &nuprops, &problems))
+		return ecError;
+	auto hnd = rop_processor_add_object_handle(logmap, logon_id, hnd_in,
+	           {OBJECT_TYPE_MESSAGE, std::move(msg)});
+	if (hnd < 0)
+		return ecError;
+	*hnd_out = hnd;
+	return ecSuccess;
+}
+
 uint32_t rop_syncimportmessagechange(uint8_t import_flags,
     const TPROPVAL_ARRAY *ppropvals, uint64_t *pmessage_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	BOOL b_new;
 	XID tmp_xid;
 	BOOL b_exist;
 	BOOL b_owner;
@@ -845,20 +916,21 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		return ecError;
 	auto tmp_guid = plogon->guid();
 	if (tmp_guid != tmp_xid.guid) {
-		fprintf(stderr, "E-1664: message has GUID of another store, cannot import\n");
-		return ecInvalidParam;
+		return simc_otherstore(plogmap, logon_id, import_flags, pctx, ppropvals,
+		       pmessage_id, hin, phout);
 	}
 	auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
+	BOOL b_new = !b_exist ? TRUE : false;
 	*pmessage_id = message_id;
 	if (plogon->logon_mode != logon_mode::owner) {
 		auto rpc_info = get_rpc_info();
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
 			return ecError;
-		if (!b_exist) {
+		if (b_new) {
 			if (!(permission & frightsCreate))
 				return ecAccessDenied;
 			tag_access = MAPI_ACCESS_READ;
@@ -884,7 +956,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	} else {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
-	if (b_exist) {
+	if (!b_new) {
 		if (!exmdb_client_get_message_property(plogon->get_dir(),
 		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
@@ -901,7 +973,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	                OPEN_MODE_FLAG_READWRITE, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
-	if (b_exist) {
+	if (!b_new) {
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
 		tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
