@@ -88,7 +88,7 @@ BOOL table_object::load()
 		if (pinfo == nullptr)
 			return FALSE;
 		const char *username = nullptr;
-		if (ptable->plogon != LOGON_MODE_OWNER) {
+		if (ptable->plogon->logon_mode != LOGON_MODE_OWNER) {
 			if (!ptable->plogon->is_private()) {
 				username = rpc_info.username;
 			} else {
