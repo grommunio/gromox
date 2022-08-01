@@ -262,12 +262,9 @@ gxerr_t message_object::save()
 	BINARY *pbin_pcl;
 	uint32_t tmp_index;
 	uint32_t *pgroup_id;
-	INDEX_ARRAY *pindices;
 	INDEX_ARRAY tmp_indices;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
-	PROPTAG_ARRAY *pungroup_proptags;
-	
 	
 	if (!pmessage->b_new && !pmessage->b_touched)
 		return GXERR_SUCCESS;
@@ -405,63 +402,47 @@ gxerr_t message_object::save()
 		return GXERR_CALL_FAILED;
 	}
 	
-	pindices = proptag_array_init();
+	{
+	std::unique_ptr<INDEX_ARRAY, pta_delete> pindices(proptag_array_init());
 	if (NULL == pindices) {
 		return GXERR_CALL_FAILED;
 	}
-	pungroup_proptags = proptag_array_init();
+	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pungroup_proptags(proptag_array_init());
 	if (NULL == pungroup_proptags) {
-		proptag_array_free(pindices);
 		return GXERR_CALL_FAILED;
 	}
 	/* always mark PR_MESSAGE_FLAGS as changed */
 	if (!proptag_array_append(pmessage->pchanged_proptags,
 	    PR_MESSAGE_FLAGS)) {
-		proptag_array_free(pindices);
-		proptag_array_free(pungroup_proptags);
 		return GXERR_CALL_FAILED;
 	}
 	for (i=0; i<pmessage->pchanged_proptags->count; i++) {
 		if (!pgpinfo->get_partial_index(pmessage->pchanged_proptags->pproptag[i], &tmp_index)) {
-			if (!proptag_array_append(pungroup_proptags,
+			if (!proptag_array_append(pungroup_proptags.get(),
 			    pmessage->pchanged_proptags->pproptag[i])) {
-				proptag_array_free(pindices);
-				proptag_array_free(pungroup_proptags);
 				return GXERR_CALL_FAILED;
 			}
 		} else {
-			if (!proptag_array_append(pindices, tmp_index)) {
-				proptag_array_free(pindices);
-				proptag_array_free(pungroup_proptags);
+			if (!proptag_array_append(pindices.get(), tmp_index))
 				return GXERR_CALL_FAILED;
-			}
 		}
 	}
 	for (i=0; i<pmessage->premoved_proptags->count; i++) {
 		if (!pgpinfo->get_partial_index(pmessage->premoved_proptags->pproptag[i], &tmp_index)) {
-			proptag_array_free(pindices);
-			proptag_array_free(pungroup_proptags);
 			goto SAVE_FULL_CHANGE;
 		} else {
-			if (!proptag_array_append(pindices, tmp_index)) {
-				proptag_array_free(pindices);
-				proptag_array_free(pungroup_proptags);
+			if (!proptag_array_append(pindices.get(), tmp_index))
 				return GXERR_CALL_FAILED;
-			}
 		}
 	}
 	if (!exmdb_client::save_change_indices(
 		dir, pmessage->message_id, pmessage->change_num,
-		pindices, pungroup_proptags)) {
-		proptag_array_free(pindices);
-		proptag_array_free(pungroup_proptags);
+	    pindices.get(), pungroup_proptags.get()))
 		return GXERR_CALL_FAILED;
-	}
-	proptag_array_free(pindices);
-	proptag_array_free(pungroup_proptags);
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
 	return GXERR_SUCCESS;
+	}
 	
  SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);

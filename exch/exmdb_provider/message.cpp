@@ -1151,22 +1151,19 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 	EXT_PULL ext_pull;
 	char sql_string[128];
 	INDEX_ARRAY tmp_indices;
-	INDEX_ARRAY *ptmp_indices;
 	PROPTAG_ARRAY tmp_proptags;
-	PROPTAG_ARRAY *ptmp_proptags;
 	
 	cn_val = rop_util_get_gc_value(cn);
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
-	ptmp_indices = proptag_array_init();
+	std::unique_ptr<INDEX_ARRAY, pta_delete> ptmp_indices(proptag_array_init());
 	if (NULL == ptmp_indices) {
 		return FALSE;
 	}
-	ptmp_proptags = proptag_array_init();
+	std::unique_ptr<PROPTAG_ARRAY, pta_delete> ptmp_proptags(proptag_array_init());
 	if (NULL == ptmp_proptags) {
-		proptag_array_free(ptmp_indices);
 		return FALSE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT change_number,"
@@ -1174,8 +1171,6 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 				" WHERE message_id=%llu", LLU{mid_val});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		proptag_array_free(ptmp_indices);
-		proptag_array_free(ptmp_proptags);
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -1186,15 +1181,11 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 				sqlite3_column_bytes(pstmt, 1),
 				common_util_alloc, 0);
 			if (ext_pull.g_proptag_a(&tmp_indices) != EXT_ERR_SUCCESS) {
-				proptag_array_free(ptmp_indices);
-				proptag_array_free(ptmp_proptags);
 				return FALSE;
 			}
 			for (i=0; i<tmp_indices.count; i++) {
-				if (!proptag_array_append(ptmp_indices,
+				if (!proptag_array_append(ptmp_indices.get(),
 				    tmp_indices.pproptag[i])) {
-					proptag_array_free(ptmp_indices);
-					proptag_array_free(ptmp_proptags);
 					return FALSE;
 				}
 			}
@@ -1204,15 +1195,11 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 				sqlite3_column_bytes(pstmt, 2),
 				common_util_alloc, 0);
 			if (ext_pull.g_proptag_a(&tmp_proptags) != EXT_ERR_SUCCESS) {
-				proptag_array_free(ptmp_indices);
-				proptag_array_free(ptmp_proptags);
 				return FALSE;
 			}
 			for (i=0; i<tmp_proptags.count; i++) {
-				if (!proptag_array_append(ptmp_proptags,
+				if (!proptag_array_append(ptmp_proptags.get(),
 				    tmp_proptags.pproptag[i])) {
-					proptag_array_free(ptmp_indices);
-					proptag_array_free(ptmp_proptags);
 					return FALSE;
 				}
 			}
@@ -1224,19 +1211,16 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 	if (ptmp_indices->count > 0) {
 		pindices->pproptag = cu_alloc<uint32_t>(ptmp_indices->count);
 		if (NULL == pindices->pproptag) {
-			proptag_array_free(ptmp_indices);
-			proptag_array_free(ptmp_proptags);
 			return FALSE;
 		}
 		memcpy(pindices->pproptag, ptmp_indices->pproptag,
 			sizeof(uint32_t)*ptmp_indices->count);
 	}
-	proptag_array_free(ptmp_indices);
+	ptmp_indices.reset();
 	if (ptmp_proptags->count > 0) {
 		pungroup_proptags->count = ptmp_proptags->count;
 		pungroup_proptags->pproptag = cu_alloc<uint32_t>(ptmp_proptags->count);
 		if (NULL == pungroup_proptags->pproptag) {
-			proptag_array_free(ptmp_proptags);
 			return FALSE;
 		}
 		memcpy(pungroup_proptags->pproptag, ptmp_proptags->pproptag,
@@ -1245,7 +1229,6 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 		pungroup_proptags->count = 0;
 		pungroup_proptags->pproptag = NULL;
 	}
-	proptag_array_free(ptmp_proptags);
 	return TRUE;
 }
 

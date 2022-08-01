@@ -1499,11 +1499,9 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	uint32_t tmp_index;
 	uint32_t *pgroup_id;
 	uint64_t change_num;
-	PROPTAG_ARRAY *pindices;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[2];
-	PROPTAG_ARRAY *pungroup_proptags;
 	
 	if (!exmdb_client_allocate_cn(plogon->get_dir(), &change_num))
 		return FALSE;	
@@ -1538,56 +1536,37 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 		}
 	}
 	/* memory format of PROPTAG_ARRAY is identical to LONG_ARRAY */
-	pindices = proptag_array_init();
+	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pindices(proptag_array_init());
 	if (NULL == pindices) {
 		return FALSE;
 	}
-	pungroup_proptags = proptag_array_init();
+	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pungroup_proptags(proptag_array_init());
 	if (NULL == pungroup_proptags) {
-		proptag_array_free(pindices);
 		return FALSE;
 	}
 	if (!pgpinfo->get_partial_index(PR_CHANGE_KEY, &tmp_index)) {
-		if (!proptag_array_append(pungroup_proptags, PR_CHANGE_KEY)) {
-			proptag_array_free(pindices);
-			proptag_array_free(pungroup_proptags);
+		if (!proptag_array_append(pungroup_proptags.get(), PR_CHANGE_KEY))
 			return FALSE;
-		}
 	} else {
-		if (!proptag_array_append(pindices, tmp_index)) {
-			proptag_array_free(pindices);
-			proptag_array_free(pungroup_proptags);
+		if (!proptag_array_append(pindices.get(), tmp_index))
 			return FALSE;
-		}
 	}
 	if (NULL != pchanged_proptags) {
 		for (i=0; i<pchanged_proptags->count; i++) {
 			if (!pgpinfo->get_partial_index(pchanged_proptags->pproptag[i], &tmp_index)) {
-				if (!proptag_array_append(pungroup_proptags,
+				if (!proptag_array_append(pungroup_proptags.get(),
 				    pchanged_proptags->pproptag[i])) {
-					proptag_array_free(pindices);
-					proptag_array_free(pungroup_proptags);
 					return FALSE;
 				}
 			} else {
-				if (!proptag_array_append(pindices, tmp_index)) {
-					proptag_array_free(pindices);
-					proptag_array_free(pungroup_proptags);
+				if (!proptag_array_append(pindices.get(), tmp_index))
 					return FALSE;
-				}
 			}
 		}
 		
 	}
-	if (!exmdb_client_save_change_indices(plogon->get_dir(), message_id,
-	    change_num, pindices, pungroup_proptags)) {
-		proptag_array_free(pindices);
-		proptag_array_free(pungroup_proptags);
-		return FALSE;
-	}
-	proptag_array_free(pindices);
-	proptag_array_free(pungroup_proptags);
-	return TRUE;
+	return exmdb_client_save_change_indices(plogon->get_dir(), message_id,
+	       change_num, pindices.get(), pungroup_proptags.get());
 }
 
 static BOOL common_util_send_command(int sockd,

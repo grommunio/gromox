@@ -2753,7 +2753,6 @@ BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
 	const char *dir, uint32_t instance_id, PROPTAG_ARRAY *pproptags)
 {
 	TARRAY_SET *prcpts;
-	PROPTAG_ARRAY *pproptags1;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2768,33 +2767,29 @@ BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
 		pproptags->pproptag = NULL;
 		return TRUE;
 	}
-	pproptags1 = proptag_array_init();
+	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pproptags1(proptag_array_init());
 	if (NULL == pproptags1) {
 		return FALSE;
 	}
 	prcpts = pmsgctnt->children.prcpts;
 	for (size_t i = 0; i < prcpts->count; ++i)
 		for (size_t j = 0; j < prcpts->pparray[i]->count; ++j)
-			if (!proptag_array_append(pproptags1,
+			if (!proptag_array_append(pproptags1.get(),
 			    prcpts->pparray[i]->ppropval[j].proptag)) {
-				proptag_array_free(pproptags1);
 				return FALSE;
 			}
 	/* MSMAPI expects to always see these four tags, even if no rows are sent later. */
-	proptag_array_append(pproptags1, PR_RECIPIENT_TYPE);
-	proptag_array_append(pproptags1, PR_DISPLAY_NAME);
-	proptag_array_append(pproptags1, PR_ADDRTYPE);
-	proptag_array_append(pproptags1, PR_EMAIL_ADDRESS);
-
+	proptag_array_append(pproptags1.get(), PR_RECIPIENT_TYPE);
+	proptag_array_append(pproptags1.get(), PR_DISPLAY_NAME);
+	proptag_array_append(pproptags1.get(), PR_ADDRTYPE);
+	proptag_array_append(pproptags1.get(), PR_EMAIL_ADDRESS);
 	pproptags->count = pproptags1->count;
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
 	if (NULL == pproptags->pproptag) {
-		proptag_array_free(pproptags1);
 		return FALSE;
 	}
 	memcpy(pproptags->pproptag, pproptags1->pproptag,
 				sizeof(uint32_t)*pproptags1->count);
-	proptag_array_free(pproptags1);
 	return TRUE;
 }
 
@@ -3035,16 +3030,15 @@ BOOL exmdb_server_get_message_instance_attachment_table_all_proptags(
 		pproptags->pproptag = NULL;
 		return TRUE;
 	}
-	auto pproptags1 = proptag_array_init();
+	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pproptags1(proptag_array_init());
 	if (NULL == pproptags1) {
 		return FALSE;
 	}
 	auto pattachments = pmsgctnt->children.pattachments;
 	for (i=0; i<pattachments->count; i++) {
 		for (j=0; j<pattachments->pplist[i]->proplist.count; j++) {
-			if (!proptag_array_append(pproptags1,
+			if (!proptag_array_append(pproptags1.get(),
 			    pattachments->pplist[i]->proplist.ppropval[j].proptag)) {
-				proptag_array_free(pproptags1);
 				return FALSE;
 			}
 		}
@@ -3052,12 +3046,10 @@ BOOL exmdb_server_get_message_instance_attachment_table_all_proptags(
 	pproptags->count = pproptags1->count;
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
 	if (NULL == pproptags->pproptag) {
-		proptag_array_free(pproptags1);
 		return FALSE;
 	}
 	memcpy(pproptags->pproptag, pproptags1->pproptag,
 				sizeof(uint32_t)*pproptags1->count);
-	proptag_array_free(pproptags1);
 	return TRUE;
 }
 
