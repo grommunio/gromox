@@ -2166,17 +2166,9 @@ int EXT_PUSH::p_double(double v)
 
 int EXT_PUSH::p_bool(BOOL v)
 {
-	uint8_t tmp_byte;
-	
-	if (v)
-		tmp_byte = 1;
-	else if (!v)
-		tmp_byte = 0;
-	else
-		return EXT_ERR_FORMAT;
 	if (!check_ovf(sizeof(uint8_t)))
 		return EXT_ERR_BUFSIZE;
-	m_udata[m_offset] = tmp_byte;
+	m_udata[m_offset] = !!v;
 	m_offset += sizeof(uint8_t);
 	return EXT_ERR_SUCCESS;
 	
