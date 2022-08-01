@@ -186,11 +186,13 @@ static BOOL ftstream_producer_write_wstring(
 	if (NULL == pbuff) {
 		return FALSE;
 	}
-	len = utf8_to_utf16le(pstr, pbuff, len);
-	if (len < 2) {
+	auto utf16_len = utf8_to_utf16le(pstr, pbuff, len);
+	if (utf16_len < 2) {
 		pbuff[0] = '\0';
 		pbuff[1] = '\0';
 		len = 2;
+	} else {
+		len = utf16_len;
 	}
 	if (!pstream->write_uint32(len)) {
 		free(pbuff);

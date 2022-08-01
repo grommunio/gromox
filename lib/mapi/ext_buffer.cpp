@@ -2246,7 +2246,14 @@ int EXT_PUSH::p_wstr(const char *pstr)
 	} catch (const std::bad_alloc &) {
 		return EXT_ERR_ALLOC;
 	}
-	len = utf8_to_utf16le(pstr, pbuff.get(), len);
+	auto utf16_len = utf8_to_utf16le(pstr, pbuff.get(), len);
+	if (utf16_len < 2) {
+		pbuff[0] = '\0';
+		pbuff[1] = '\0';
+		len = 2;
+	} else {
+		len = utf16_len;
+	}
 	if (m_flags & EXT_FLAG_TBLLMT) {
 		if (len > 510) {
 			len = 510;
@@ -3179,7 +3186,7 @@ int EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION &r)
 	
 	TRY(p_uint8(r.major));
 	TRY(p_uint8(r.minor));
-	int len = utf8_to_utf16le(r.keyname, tmp_buff, 262);
+	auto len = utf8_to_utf16le(r.keyname, tmp_buff, std::size(tmp_buff));
 	if (len < 2)
 		return EXT_ERR_CHARCNV;
 	len -= 2;
@@ -3295,9 +3302,6 @@ static int ext_buffer_push_extendedexception(
 	EXT_PUSH *pext, uint32_t writerversion2,
 	uint16_t overrideflags, const EXTENDEDEXCEPTION *r)
 {
-	int string_len;
-	uint16_t tmp_len;
-	
 	if (writerversion2 >= 0x00003009)
 		TRY(ext_buffer_push_changehighlight(pext, &r->changehighlight));
 	TRY(pext->p_uint32(r->reservedblockee1size));
@@ -3310,32 +3314,36 @@ static int ext_buffer_push_extendedexception(
 	}
 	if (overrideflags & ARO_SUBJECT) {
 		auto subj = r->subject != nullptr ? r->subject : "";
-		tmp_len = strlen(subj) + 1;
+		auto tmp_len = strlen(subj) + 1;
 		std::unique_ptr<char[]> pbuff;
 		try {
 			pbuff = std::make_unique<char[]>(2 * tmp_len);
 		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		string_len = utf8_to_utf16le(subj, pbuff.get(), 2 * tmp_len);
+		auto string_len = utf8_to_utf16le(subj, pbuff.get(), 2 * tmp_len);
 		if (string_len < 2)
 			return EXT_ERR_CHARCNV;
+		if (string_len > UINT16_MAX)
+			string_len = UINT16_MAX;
 		string_len -= 2;
 		TRY(pext->p_uint16(string_len / 2));
 		TRY(pext->p_bytes(pbuff.get(), string_len));
 	}
 	if (overrideflags & ARO_LOCATION) {
 		auto loc = r->location != nullptr ? r->location : "";
-		tmp_len = strlen(loc) + 1;
+		auto tmp_len = strlen(loc) + 1;
 		std::unique_ptr<char[]> pbuff;
 		try {
 			pbuff = std::make_unique<char[]>(2 * tmp_len);
 		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		string_len = utf8_to_utf16le(loc, pbuff.get(), 2 * tmp_len);
+		auto string_len = utf8_to_utf16le(loc, pbuff.get(), 2 * tmp_len);
 		if (string_len < 2)
 			return EXT_ERR_CHARCNV;
+		if (string_len > UINT16_MAX)
+			string_len = UINT16_MAX;
 		string_len -= 2;
 		TRY(pext->p_uint16(string_len / 2));
 		TRY(pext->p_bytes(pbuff.get(), string_len));

@@ -22,8 +22,6 @@ using namespace gromox;
 std::unique_ptr<stream_object> stream_object::create(void *pparent,
     int object_type, uint32_t open_flags, uint32_t proptag, uint32_t max_length)
 {
-	int buff_len;
-	int utf16_len;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[2];
@@ -112,13 +110,13 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		memcpy(pstream->content_bin.pv, static_cast<BINARY *>(pvalue)->pv,
 		       pstream->content_bin.cb);
 		return pstream;
-	case PT_UNICODE:
-		buff_len = utf8_to_utf16_len(static_cast<char *>(pvalue));
+	case PT_UNICODE: {
+		auto buff_len = utf8_to_utf16_len(static_cast<char *>(pvalue));
 		pstream->content_bin.pv = malloc(buff_len);
 		if (pstream->content_bin.pv == nullptr) {
 			return NULL;
 		}
-		utf16_len = utf8_to_utf16le(static_cast<char *>(pvalue),
+		auto utf16_len = utf8_to_utf16le(static_cast<char *>(pvalue),
 			pstream->content_bin.pb, buff_len);
 		if (utf16_len < 2) {
 			pstream->content_bin.pb[0] = '\0';
@@ -127,6 +125,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		}
 		pstream->content_bin.cb = utf16_len;
 		return pstream;
+	}
 	default:
 		return NULL;
 	}

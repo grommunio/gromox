@@ -736,7 +736,6 @@ static BOOL oxcmail_parse_subject(const char *charset, const char *field,
 	int i;
 	int tmp_len;
 	char *ptoken;
-	int subject_len;
 	char tmp_buff1[4096];
 	char prefix_buff[32];
 	char tmp_buff[MIME_FIELD_LEN];
@@ -746,7 +745,7 @@ static BOOL oxcmail_parse_subject(const char *charset, const char *field,
 	if (!mime_string_to_utf8(charset, field, utf8_field, std::size(utf8_field)))
 		return pproplist->set(PR_SUBJECT_A, field) == 0 ? TRUE : false;
 
-	subject_len = utf8_to_utf16le(utf8_field,
+	auto subject_len = utf8_to_utf16le(utf8_field,
 	              tmp_buff, sizeof(tmp_buff));
 	if (subject_len < 0) {
 		utf8_truncate(utf8_field, 255);

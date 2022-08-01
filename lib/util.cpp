@@ -6,6 +6,7 @@
 #if defined(HAVE_CRYPT_H)
 #include <crypt.h>
 #endif
+#include <climits>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -386,12 +387,14 @@ BOOL string_from_utf8(const char *charset, const char *in_string,
 	return TRUE;
 }
 
-int utf8_to_utf16le(const char *src, void *dst, size_t len)
+ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len)
 {
 	size_t in_len;
 	size_t out_len;
 	iconv_t conv_id;
 
+	if (len > SSIZE_MAX)
+		len = SSIZE_MAX;
 	conv_id = iconv_open("UTF-16LE", "UTF-8");
 	if (conv_id == (iconv_t)-1)
 		return -1;

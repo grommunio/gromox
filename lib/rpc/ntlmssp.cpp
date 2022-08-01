@@ -196,12 +196,14 @@ static bool ntlmssp_calc_ntlm2_key(uint8_t subkey[MD5_DIGEST_LENGTH],
 	return true;
 }
 
-static int ntlmssp_utf8_to_utf16le(const char *src, void *dst, size_t len)
+static ssize_t ntlmssp_utf8_to_utf16le(const char *src, void *dst, size_t len)
 {
 	size_t in_len;
 	size_t out_len;
 	iconv_t conv_id;
 
+	if (len > SSIZE_MAX)
+		len = SSIZE_MAX;
 	conv_id = iconv_open("UTF-16LE", "UTF-8");
 	if (conv_id == (iconv_t)-1)
 		return -1;
@@ -243,11 +245,10 @@ static bool ntlmssp_utf16le_to_utf8(const void *src, size_t src_len,
 static bool ntlmssp_md4hash(const char *passwd, void *p16v)
 {
 	auto p16 = static_cast<uint8_t *>(p16v);
-	int passwd_len;
 	char upasswd[256];
 
 	memset(p16, 0, MD4_DIGEST_LENGTH);
-	passwd_len = ntlmssp_utf8_to_utf16le(passwd, upasswd, sizeof(upasswd));
+	auto passwd_len = ntlmssp_utf8_to_utf16le(passwd, upasswd, sizeof(upasswd));
 	if (passwd_len < 0) {
 		return false;
 	}
@@ -967,8 +968,6 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 	const uint8_t *part_passwd, const DATA_BLOB *psec_blob,
 	const char *user, const char *domain, DATA_BLOB *puser_key)
 {
-	int user_len;
-	int domain_len;
 	uint8_t kr[16]; /* Finish the encryption of part_passwd. */
 	char user_in[256];
 	char tmp_user[UADDR_SIZE];
@@ -992,8 +991,8 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 	client_key.length = pntv2_response->length - 16;
 	gx_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
 	HX_strupper(tmp_user);
-	user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, sizeof(user_in));
-	domain_len = ntlmssp_utf8_to_utf16le(domain, domain_in, sizeof(domain_in));
+	auto user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, sizeof(user_in));
+	auto domain_len = ntlmssp_utf8_to_utf16le(domain, domain_in, sizeof(domain_in));
 	if (user_len < 0 || domain_len < 0) {
 		return false;
 	}
@@ -1028,8 +1027,6 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	const uint8_t *part_passwd, const DATA_BLOB *psec_blob,
 	const char *user, const char *domain, DATA_BLOB *puser_key)
 {
-	int user_len;
-	int domain_len;
 	uint8_t kr[16]; /* Finish the encryption of part_passwd. */
 	char user_in[256];
 	char tmp_user[UADDR_SIZE];
@@ -1055,10 +1052,8 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 
 	gx_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
 	HX_strupper(tmp_user);
-	user_len = ntlmssp_utf8_to_utf16le(
-		tmp_user, user_in, sizeof(user_in));
-	domain_len = ntlmssp_utf8_to_utf16le(
-		domain, domain_in, sizeof(domain_in));
+	auto user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, std::size(user_in));
+	auto domain_len = ntlmssp_utf8_to_utf16le(domain, domain_in, std::size(domain_in));
 	if (user_len < 0 || domain_len < 0) {
 		return false;
 	}
