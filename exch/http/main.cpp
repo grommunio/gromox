@@ -329,6 +329,8 @@ int main(int argc, const char **argv) try
 		   "----------------------------\n");
 	}
 
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
 	textmaps_init();
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) { 

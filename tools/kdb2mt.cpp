@@ -1293,6 +1293,8 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
 	int ret = EXIT_SUCCESS;
 	sql_login_param sqp;
 	if (g_sqlhost != nullptr)

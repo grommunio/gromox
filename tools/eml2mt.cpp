@@ -25,6 +25,7 @@
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
+#include <gromox/util.hpp>
 #include "genimport.hpp"
 #include "exch/midb/system_services.hpp"
 
@@ -203,6 +204,8 @@ int main(int argc, const char **argv) try
 		terse_help();
 		return EXIT_FAILURE;
 	}
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
 	g_config_file = config_file_prg(nullptr, "midb.cfg", eml2mt_cfg_defaults);
 	if (g_config_file == nullptr) {
 		fprintf(stderr, "Something went wrong with config files\n");

@@ -242,6 +242,8 @@ int main(int argc, const char **argv) try
 	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return 3;
+	if (iconv_validate() != EXIT_SUCCESS)
+		return 3;
 	textmaps_init();
 	if (0 != service_run()) {
 		printf("[system]: failed to run service\n");

@@ -276,6 +276,8 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_6 = make_scope_exit(service_stop);
 	
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
 	if (0 != system_services_run()) { 
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;

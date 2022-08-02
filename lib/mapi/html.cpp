@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cassert>
 #include <cctype>
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -214,6 +215,7 @@ BOOL html_init_library()
 	}
 	g_conv_id = iconv_open("UTF-16LE", "UTF-8");
 	if ((iconv_t)-1 == g_conv_id) {
+		fprintf(stderr, "E-2107: iconv_open: %s\n", strerror(errno));
 		return FALSE;
 	}
 	return TRUE;
@@ -1285,16 +1287,16 @@ static void html_string_to_utf8(uint32_t cpid,
 	const char *src, char *dst, size_t len)
 {
 	size_t in_len;
-	iconv_t conv_id;
 	
 	cpid_cstr_compatible(cpid);
 	auto charset = cpid_to_cset(cpid);
 	if (NULL == charset) {
 		charset = "windows-1252";
 	}
-	conv_id = iconv_open("UTF-8//IGNORE",
-		replace_iconv_charset(charset));
+	auto cs = replace_iconv_charset(charset);
+	auto conv_id = iconv_open("UTF-8//IGNORE", cs);
 	if (conv_id == (iconv_t)-1) {
+		fprintf(stderr, "E-2106: iconv_open %s: %s\n", cs, strerror(errno));
 		snprintf(dst, len, "ICONV_ERROR");
 		return;
 	}

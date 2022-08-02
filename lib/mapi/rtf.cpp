@@ -324,9 +324,10 @@ static bool rtf_iconv_open(RTF_READER *preader, const char *fromcode)
 		iconv_close(preader->conv_id);
 		preader->conv_id = (iconv_t)-1;
 	}
-	preader->conv_id = iconv_open("UTF-8//TRANSLIT",
-			replace_iconv_charset(fromcode));
+	auto cs = replace_iconv_charset(fromcode);
+	preader->conv_id = iconv_open("UTF-8//TRANSLIT", cs);
 	if ((iconv_t)-1 == preader->conv_id) {
+		fprintf(stderr, "E-2114: iconv_open %s: %s\n", cs, strerror(errno));
 		return false;
 	}
 	gx_strlcpy(preader->current_encoding, fromcode, GX_ARRAY_SIZE(preader->current_encoding));
@@ -3110,6 +3111,8 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		replace_iconv_charset(charset));
 	conv_id = iconv_open(tmp_buff, "UTF-8");
 	if ((iconv_t)-1 == conv_id) {
+		fprintf(stderr, "E-2115: iconv_open %s: %s\n",
+		        tmp_buff, strerror(errno));
 		return false;
 	}
 	auto pin = reader.ext_push.m_cdata;

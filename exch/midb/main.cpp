@@ -215,6 +215,8 @@ int main(int argc, const char **argv) try
 	}
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
 	textmaps_init();
 	if (0 != service_run()) {
 		printf("[system]: failed to run service\n");

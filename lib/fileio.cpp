@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1
+#include <cerrno>
 #include <cmath>
 #include <cstring>
 #include <iconv.h>
@@ -43,9 +44,13 @@ std::string iconvtext(const char *src, size_t src_size,
 {
 	if (strcasecmp(from, to) == 0)
 		return {reinterpret_cast<const char *>(src), src_size};
-	auto cd = iconv_open((to + "//IGNORE"s).c_str(), from);
-	if (cd == reinterpret_cast<iconv_t>(-1))
+	auto cs = to + "//IGNORE"s;
+	auto cd = iconv_open(cs.c_str(), from);
+	if (cd == reinterpret_cast<iconv_t>(-1)) {
+		fprintf(stderr, "E-2116: iconv_open %s: %s\n",
+		        cs.c_str(), strerror(errno));
 		return "UNKNOWN_CHARSET";
+	}
 	auto cleanup = make_scope_exit([&]() { iconv_close(cd); });
 	char buffer[4096];
 	std::string out;

@@ -6,6 +6,7 @@
 #if defined(HAVE_CRYPT_H)
 #include <crypt.h>
 #endif
+#include <cerrno>
 #include <climits>
 #include <cstdarg>
 #include <cstdint>
@@ -330,8 +331,11 @@ BOOL string_to_utf8(const char *charset, const char *in_string,
 		--out_len;
 	gx_strlcpy(tmp_charset, replace_iconv_charset(charset), GX_ARRAY_SIZE(tmp_charset));
 	conv_id = iconv_open("UTF-8", tmp_charset);
-	if (conv_id == iconv_t(-1))
+	if (conv_id == iconv_t(-1)) {
+		fprintf(stderr, "E-2108: iconv_open %s: %s\n",
+		        tmp_charset, strerror(errno));
 		return FALSE;
+	}
 	pin = (char*)in_string;
 	pout = out_string;
 	auto in_len = length;
@@ -349,7 +353,6 @@ BOOL string_from_utf8(const char *charset, const char *in_string,
     char *out_string, size_t out_len)
 {
 	int length;
-	iconv_t conv_id;
 	char *pin, *pout;
 	size_t in_len;
 	
@@ -371,9 +374,12 @@ BOOL string_from_utf8(const char *charset, const char *in_string,
 	if (out_len > 0)
 		/* Leave room for \0 */
 		--out_len;
-	conv_id = iconv_open(replace_iconv_charset(charset), "UTF-8");
-	if (conv_id == iconv_t(-1))
+	auto cs = replace_iconv_charset(charset);
+	auto conv_id = iconv_open(cs, "UTF-8");
+	if (conv_id == iconv_t(-1)) {
+		fprintf(stderr, "E-2109: iconv_open %s: %s\n", cs, strerror(errno));
 		return FALSE;
+	}
 	pin = (char*)in_string;
 	pout = out_string;
 	in_len = length;
@@ -396,8 +402,10 @@ ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len)
 	if (len > SSIZE_MAX)
 		len = SSIZE_MAX;
 	conv_id = iconv_open("UTF-16LE", "UTF-8");
-	if (conv_id == (iconv_t)-1)
+	if (conv_id == (iconv_t)-1) {
+		fprintf(stderr, "E-2110: iconv_open: %s\n", strerror(errno));
 		return -1;
+	}
 	auto pin  = deconst(src);
 	auto pout = static_cast<char *>(dst);
 	in_len = strlen(src) + 1;
@@ -418,8 +426,10 @@ BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 	iconv_t conv_id;
 	
 	conv_id = iconv_open("UTF-8", "UTF-16LE");
-	if (conv_id == (iconv_t)-1)
+	if (conv_id == (iconv_t)-1) {
+		fprintf(stderr, "E-2111: iconv_open: %s\n", strerror(errno));
 		return false;
+	}
 	pin = (char*)src;
 	pout = dst;
 	memset(dst, 0, len);

@@ -13,6 +13,7 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
+#include <iconv.h>
 #include <list>
 #include <memory>
 #include <spawn.h>
@@ -602,6 +603,21 @@ size_t utf8_to_mb_len(const char *s)
 size_t utf8_to_utf16_len(const char *s)
 {
 	return 2 * strlen(s) + 2;
+}
+
+int iconv_validate()
+{
+	for (const auto s : {"UTF-7", "UTF-16LE", "UNICODE", "windows-1252",
+	     "iso-8859-1", "iso-2022-jp"}) {
+		auto k = iconv_open("UTF-8", "UTF-16LE");
+		if (k == (iconv_t)-1) {
+			fprintf(stderr, "I can't work like this! iconv lacks support for the essential character set %s. "
+			        "Perhaps you need to install some libc locale package.\n", s);
+			return -errno;
+		}
+		iconv_close(k);
+	}
+	return 0;
 }
 
 }

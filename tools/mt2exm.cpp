@@ -13,6 +13,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
+#include <gromox/util.hpp>
 #include "genimport.hpp"
 
 using namespace gromox;
@@ -433,6 +434,8 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
 	gi_setup_early(g_username);
 	exm_read_base_maps();
 	if (gi_setup() != EXIT_SUCCESS)

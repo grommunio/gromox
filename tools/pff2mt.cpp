@@ -1234,6 +1234,8 @@ int main(int argc, const char **argv)
 			"You probably wanted to redirect output into a file or pipe.\n");
 		return EXIT_FAILURE;
 	}
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
 	auto ret = do_file(argv[1]);
 	if (ret != 0) {
 		fprintf(stderr, "pff: Import unsuccessful.\n");
