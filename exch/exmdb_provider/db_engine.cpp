@@ -26,6 +26,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
+#include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
@@ -1115,62 +1116,7 @@ static int db_engine_compare_propval(
 	if (NULL != pvalue1 && NULL == pvalue2) {
 		return 1;
 	}
-	switch (proptype) {
-	case PT_SHORT:
-		if (*(uint16_t*)pvalue1 > *(uint16_t*)pvalue2) {
-			return 1;
-		} else if (*(uint16_t*)pvalue1 < *(uint16_t*)pvalue2) {
-			return -1;
-		}
-		return 0;
-	case PT_LONG:
-	case PT_ERROR:
-		if (*(uint32_t*)pvalue1 > *(uint32_t*)pvalue2) {
-			return 1;
-		} else if (*(uint32_t*)pvalue1 < *(uint32_t*)pvalue2) {
-			return -1;
-		}
-		return 0;
-	case PT_BOOLEAN:
-		if (*(uint8_t*)pvalue1 > *(uint8_t*)pvalue2) {
-			return 1;
-		} else if (*(uint8_t*)pvalue1 < *(uint8_t*)pvalue2) {
-			return -1;
-		}
-		return 0;
-	case PT_CURRENCY:
-	case PT_I8:
-	case PT_SYSTIME:
-		if (*(uint64_t*)pvalue1 > *(uint64_t*)pvalue2) {
-			return 1;
-		} else if (*(uint64_t*)pvalue1 < *(uint64_t*)pvalue2) {
-			return -1;
-		}
-		return 0;
-	case PT_FLOAT:
-		if (*(float*)pvalue1 > *(float*)pvalue2) {
-			return 1;
-		} else if (*(float*)pvalue1 < *(float*)pvalue2) {
-			return -1;
-		}
-		return 0;
-	case PT_DOUBLE:
-	case PT_APPTIME:
-		if (*(double*)pvalue1 > *(double*)pvalue2) {
-			return 1;
-		} else if (*(double*)pvalue1 < *(double*)pvalue2) {
-			return -1;
-		}
-		return 0;
-	case PT_STRING8:
-	case PT_UNICODE:
-		return strcasecmp(static_cast<char *>(pvalue1), static_cast<char *>(pvalue2));
-	case PT_CLSID:
-		return static_cast<GUID *>(pvalue1)->compare(*static_cast<GUID *>(pvalue2));
-	case PT_BINARY:
-		return static_cast<BINARY *>(pvalue1)->compare(*static_cast<BINARY *>(pvalue2));
-	}
-	return 0;
+	return propval_compare(proptype, pvalue1, pvalue2);
 }
 
 static BOOL db_engine_insert_categories(sqlite3 *psqlite,
