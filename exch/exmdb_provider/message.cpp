@@ -2569,9 +2569,7 @@ static ec_error_t message_disable_rule(sqlite3 *psqlite,
 static BOOL message_get_propids(const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids)
 {
-	sqlite3 *psqlite;
-	
-	psqlite = (sqlite3*)common_util_get_tls_var();
+	auto psqlite = g_sqlite_for_oxcmail;
 	if (NULL == psqlite) {
 		return FALSE;
 	}
@@ -2581,11 +2579,10 @@ static BOOL message_get_propids(const PROPNAME_ARRAY *ppropnames,
 static BOOL message_get_propname(uint16_t propid,
 	PROPERTY_NAME **pppropname)
 {
-	sqlite3 *psqlite;
 	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
 	
-	psqlite = (sqlite3*)common_util_get_tls_var();
+	auto psqlite = g_sqlite_for_oxcmail;
 	if (NULL == psqlite) {
 		return FALSE;
 	}
@@ -2747,15 +2744,15 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			common_util_set_propvals(&pmsgctnt->proplist, &propval);
 		}
 	}
-	common_util_set_tls_var(psqlite);
+	g_sqlite_for_oxcmail = psqlite;
 	MAIL imail;
 	if (!oxcmail_export(pmsgctnt, false, oxcmail_body::plain_and_html,
 	    common_util_get_mime_pool(), &imail, common_util_alloc,
 	    message_get_propids, message_get_propname)) {
-		common_util_set_tls_var(NULL);
+		g_sqlite_for_oxcmail = nullptr;
 		return FALSE;
 	}
-	common_util_set_tls_var(NULL);
+	g_sqlite_for_oxcmail = nullptr;
 	auto pmime = imail.get_head();
 	if (NULL == pmime) {
 		return FALSE;
@@ -2929,14 +2926,14 @@ static ec_error_t message_forward_message(const char *from_address,
 			return ecError;
 		auto body_type = get_override_format(*pmsgctnt);
 		/* try to avoid TNEF message */
-		common_util_set_tls_var(psqlite);
+		g_sqlite_for_oxcmail = psqlite;
 		if (!oxcmail_export(pmsgctnt, false, body_type,
 		    common_util_get_mime_pool(), &imail, common_util_alloc,
 		    message_get_propids, message_get_propname)) {
-			common_util_set_tls_var(NULL);
+			g_sqlite_for_oxcmail = nullptr;
 			return ecError;
 		}
-		common_util_set_tls_var(NULL);
+		g_sqlite_for_oxcmail = nullptr;
 	}
 	if (action_flavor & ACTION_FLAVOR_AT) {
 		MAIL imail1(common_util_get_mime_pool());
