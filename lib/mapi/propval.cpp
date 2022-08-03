@@ -544,8 +544,7 @@ int SVREID_compare(const SVREID *a, const SVREID *b)
 	return a->compare(*b);
 }
 
-bool propval_compare_relop(enum relop relop, uint16_t proptype,
-    const void *pvalue1, const void *pvalue2)
+int propval_compare(uint16_t proptype, const void *pvalue1, const void *pvalue2)
 {
 #define MVCOMPARE(field) do { \
 		cmp = three_way_compare(a->count, b->count); \
@@ -565,17 +564,6 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 	} while (false)
 
 	int cmp = -2;
-	switch (relop) {
-	case RELOP_LT:
-	case RELOP_LE:
-	case RELOP_GT:
-	case RELOP_GE:
-	case RELOP_EQ:
-	case RELOP_NE:
-		break;
-	default: /* RE, DL - not implemented */
-		return false;
-	}
 	switch (proptype) {
 	case PT_SHORT:
 		cmp = three_way_compare(*static_cast<const uint16_t *>(pvalue1),
@@ -693,9 +681,26 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 		break;
 	}
 	}
-	return three_way_eval(relop, cmp);
+	return cmp;
 #undef MVCOMPARE
 #undef MVCOMPARE2
+}
+
+bool propval_compare_relop(enum relop relop, uint16_t proptype,
+    const void *pvalue1, const void *pvalue2)
+{
+	switch (relop) {
+	case RELOP_LT:
+	case RELOP_LE:
+	case RELOP_GT:
+	case RELOP_GE:
+	case RELOP_EQ:
+	case RELOP_NE:
+		break;
+	default: /* RE, DL - not implemented */
+		return false;
+	}
+	return three_way_eval(relop, propval_compare(proptype, pvalue1, pvalue2));
 }
 
 namespace gromox {
