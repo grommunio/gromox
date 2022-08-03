@@ -47,15 +47,10 @@ static constexpr uint32_t g_vcarduid_proptag = 0x8011001F;
 static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 {
 	BOOL b_version;
-	DOUBLE_LIST *plist;
-	VCARD_LINE *pvline;
-	DOUBLE_LIST_NODE *pnode;
 	
 	b_version = FALSE;
-	plist = (DOUBLE_LIST*)pvcard;
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		pvline = (VCARD_LINE*)pnode->pdata;
+	for (const auto &line : pvcard->m_lines) {
+		auto pvline = &line;
 		if (strcasecmp(pvline->name(), "VERSION") != 0)
 			continue;
 		auto pstring = pvline->get_first_subval();
@@ -141,13 +136,10 @@ MESSAGE_CONTENT* oxvcard_import(
 	size_t decode_len;
 	uint32_t tmp_int32;
 	uint64_t tmp_int64;
-	DOUBLE_LIST *plist;
-	VCARD_LINE *pvline;
 	char* child_buff[16];
 	PROPID_ARRAY propids;
 	BINARY_ARRAY bin_array;
 	const char *photo_type;
-	DOUBLE_LIST_NODE *pnode;
 	const char *address_type;
 	STRING_ARRAY child_strings;
 	ATTACHMENT_LIST *pattachments;
@@ -164,10 +156,8 @@ MESSAGE_CONTENT* oxvcard_import(
 		return NULL;
 	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Contact") != 0)
 		return nullptr;
-	plist = (DOUBLE_LIST*)pvcard;
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		pvline = (VCARD_LINE*)pnode->pdata;
+	for (const auto &line : pvcard->m_lines) {
+		auto pvline = &line;
 		auto pvline_name = pvline->name();
 		if (strcasecmp(pvline_name, "UID") == 0) {
 			/* Deviation from MS-OXVCARD v8.3 §2.1.3.7.7 */
