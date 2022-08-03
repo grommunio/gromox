@@ -585,12 +585,16 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	pnode = double_list_get_tail(&rop_buff.rop_list);
 	pnode1 = double_list_get_tail(&response_list);
 	if (NULL == pnode || NULL == pnode1) {
-		goto PROC_SUCCESS;
+		rop_ext_set_rhe_flag_last(pout, last_offset);
+		*pcb_out = offset;
+		return ecSuccess;
 	}
 	prequest = (ROP_REQUEST*)pnode->pdata;
 	presponse = (ROP_RESPONSE*)pnode1->pdata;
 	if (prequest->rop_id != presponse->rop_id) {
-		goto PROC_SUCCESS;
+		rop_ext_set_rhe_flag_last(pout, last_offset);
+		*pcb_out = offset;
+		return ecSuccess;
 	}
 	double_list_free(&rop_buff.rop_list);
 	double_list_init(&rop_buff.rop_list);
@@ -601,8 +605,11 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	if (presponse->rop_id == ropQueryRows) {
 		auto req = static_cast<QUERYROWS_REQUEST *>(prequest->ppayload);
 		auto rsp = static_cast<QUERYROWS_RESPONSE *>(presponse->ppayload);
-		if (req->flags == QUERY_ROWS_FLAGS_ENABLEPACKEDBUFFERS)
-			goto PROC_SUCCESS;
+		if (req->flags == QUERY_ROWS_FLAGS_ENABLEPACKEDBUFFERS) {
+			rop_ext_set_rhe_flag_last(pout, last_offset);
+			*pcb_out = offset;
+			return ecSuccess;
+		}
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (presponse->result == ecSuccess &&
 			*pcb_out - offset >= 0x8000 && count < MAX_ROP_PAYLOADS) {
@@ -689,7 +696,6 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		}
 	}
 	
- PROC_SUCCESS:
 	rop_ext_set_rhe_flag_last(pout, last_offset);
 	*pcb_out = offset;
 	return ecSuccess;
