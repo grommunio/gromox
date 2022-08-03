@@ -62,15 +62,14 @@ struct TABLE_NODE {
 	BOOL b_hint;		/* is table touched in batch-mode */
 };
 
-struct NSUB_NODE {
-	DOUBLE_LIST_NODE node;
-	char *remote_id;
-	uint32_t sub_id;
-	uint8_t notificaton_type;
-	BOOL b_whole;
-	uint64_t folder_id;
-	uint64_t message_id;
+struct nsub_node {
+	char *remote_id = nullptr;
+	uint32_t sub_id = 0;
+	uint8_t notificaton_type = 0;
+	BOOL b_whole = false;
+	uint64_t folder_id = 0, message_id = 0;
 };
+using NSUB_NODE = nsub_node;
 
 #define CHANGE_MASK_HTML						0x01
 #define CHANGE_MASK_BODY						0x02
@@ -100,7 +99,7 @@ struct DB_ITEM {
 	std::timed_mutex giant_lock; /* should be broken up */
 	sqlite3 *psqlite = nullptr;
 	DOUBLE_LIST dynamic_list{};	/* dynamic search list */
-	DOUBLE_LIST nsub_list{};
+	std::vector<nsub_node> nsub_list;
 	DOUBLE_LIST instance_list{};
 
 	/* memory database for holding rop table objects instance */

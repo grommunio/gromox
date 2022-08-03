@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -313,25 +314,18 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 }
 
 BOOL exmdb_server_subscribe_notification(const char *dir,
-	uint16_t notificaton_type, BOOL b_whole, uint64_t folder_id,
-	uint64_t message_id, uint32_t *psub_id)
+   uint16_t notificaton_type, BOOL b_whole, uint64_t folder_id,
+   uint64_t message_id, uint32_t *psub_id) try
 {
 	uint16_t replid;
-	NSUB_NODE *pnsub;
 	const char *remote_id;
-	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	pnode = double_list_get_tail(&pdb->nsub_list);
-	uint32_t last_id = pnode == nullptr ? 0 :
-	                   static_cast<NSUB_NODE *>(pnode->pdata)->sub_id;
-	pnsub = me_alloc<NSUB_NODE>();
-	if (NULL == pnsub) {
-		return FALSE;
-	}
-	pnsub->node.pdata = pnsub;
+	uint32_t last_id = pdb->nsub_list.size() == 0 ? 0 :
+	                   pdb->nsub_list.back().sub_id;
+	nsub_node sub, *pnsub = &sub;
 	pnsub->sub_id = last_id + 1;
 	remote_id = exmdb_server_get_remote_id();
 	if (NULL == remote_id) {
@@ -339,7 +333,6 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	} else {
 		pnsub->remote_id = strdup(remote_id);
 		if (NULL == pnsub->remote_id) {
-			free(pnsub);
 			return FALSE;
 		}
 	}
@@ -361,32 +354,24 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	}
 	pnsub->message_id = message_id == 0 ? 0 :
 	                    rop_util_get_gc_value(message_id);
-	double_list_append_as_tail(&pdb->nsub_list, &pnsub->node);
+	pdb->nsub_list.push_back(std::move(sub));
 	*psub_id = last_id + 1;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2130: ENOMEM\n");
+	return false;
 }
 
 BOOL exmdb_server_unsubscribe_notification(
 	const char *dir, uint32_t sub_id)
 {
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (sub_id == pnsub->sub_id) {
-			double_list_remove(&pdb->nsub_list, pnode);
-			if (NULL != pnsub->remote_id) {
-				free(pnsub->remote_id);
-			}
-			free(pnsub);
-			break;
-		}
-	}
+	auto i = std::find_if(pdb->nsub_list.begin(), pdb->nsub_list.end(),
+		[&](const nsub_node &n) { return n.sub_id == sub_id; });
+	if (i != pdb->nsub_list.end())
+		pdb->nsub_list.erase(i);
 	return TRUE;
 }
 

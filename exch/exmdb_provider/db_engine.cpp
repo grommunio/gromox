@@ -250,7 +250,6 @@ db_item_ptr db_engine_get_db(const char *path)
 	}
 	double_list_init(&pdb->dynamic_list);
 	double_list_init(&pdb->tables.table_list);
-	double_list_init(&pdb->nsub_list);
 	double_list_init(&pdb->instance_list);
 	pdb->tables.last_id = 0;
 	pdb->tables.b_batch = FALSE;
@@ -340,9 +339,6 @@ DB_ITEM::~DB_ITEM()
 		free(pinstance);
 	}
 	double_list_free(&pdb->instance_list);
-	while ((pnode = double_list_pop_front(&pdb->nsub_list)) != nullptr)
-		free(pnode->pdata);
-	double_list_free(&pdb->nsub_list);
 	while ((pnode = double_list_pop_front(&pdb->dynamic_list)) != nullptr) {
 		pdynamic = (DYNAMIC_NODE*)pnode->pdata;
 		restriction_free(pdynamic->prestriction);
@@ -381,7 +377,7 @@ static bool remove_from_hash(const decltype(g_hash_table)::value_type &it, time_
 	if (double_list_get_nodes_num(&pdb.tables.table_list) > 0)
 		/* emsmdb still references in-memory tables */
 		return false;
-	if (double_list_get_nodes_num(&pdb.nsub_list) > 0)
+	if (pdb.nsub_list.size() > 0)
 		/* there is still a client wanting notifications */
 		return false;
 	if (pdb.reference == 0 && pdb.psqlite == nullptr)
@@ -587,16 +583,12 @@ static std::vector<ID_NODE> collect_nsub(db_item_ptr &pdb, unsigned int bits,
     uint64_t folder_id, uint64_t message_id)
 {
 	std::vector<ID_NODE> tmp_list;
-	DOUBLE_LIST_NODE *pnode;
-	NSUB_NODE *pnsub;
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (!(pnsub->notificaton_type & bits))
+	for (const auto &sub : pdb->nsub_list) {
+		if (!(sub.notificaton_type & bits))
 			continue;
-		if (pnsub->b_whole || (pnsub->folder_id == folder_id &&
-		    pnsub->message_id == message_id))
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
+		if (sub.b_whole || (sub.folder_id == folder_id &&
+		    sub.message_id == message_id))
+			tmp_list.push_back(ID_NODE{sub.remote_id, sub.sub_id});
 	}
 	return tmp_list;
 }
@@ -3975,15 +3967,12 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 	uint64_t old_fid, uint64_t old_mid)
 {
 	int i;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
+	for (const auto &sub : pdb->nsub_list) {
+		auto pnsub = &sub;
 		if (b_copy) {
 			if (0 == (pnsub->notificaton_type &
 				NOTIFICATION_TYPE_OBJECTCOPIED)) {
@@ -4046,15 +4035,12 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 	uint64_t old_pid, uint64_t old_fid)
 {
 	int i;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
+	for (const auto &sub : pdb->nsub_list) {
+		auto pnsub = &sub;
 		if (b_copy) {
 			if (0 == (pnsub->notificaton_type &
 				NOTIFICATION_TYPE_OBJECTCOPIED)) {
