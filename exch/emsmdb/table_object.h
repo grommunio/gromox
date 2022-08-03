@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <vector>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rpc_types.hpp>
 
@@ -9,7 +10,12 @@ struct logon_object;
 struct LOGMAP;
 struct table_object {
 	protected:
-	table_object();
+	struct bookmark_node {
+		uint32_t index = 0, row_type = 0, inst_num = 0, position = 0;
+		uint64_t inst_id = 0;
+	};
+
+	table_object() = default;
 	NOMOVE(table_object)
 
 	public:
@@ -32,7 +38,7 @@ struct table_object {
 	uint32_t get_total() const;
 	BOOL create_bookmark(uint32_t *pindex);
 	void remove_bookmark(uint32_t index);
-	void clear_bookmarks();
+	void clear_bookmarks() { bookmark_list.clear(); }
 	BOOL retrieve_bookmark(uint32_t index, BOOL *exist);
 	void reset();
 	BOOL get_all_columns(PROPTAG_ARRAY *cols);
@@ -54,5 +60,5 @@ struct table_object {
 	SORTORDER_SET *m_sorts = nullptr;
 	RESTRICTION *m_restriction = nullptr;
 	uint32_t m_position = 0, m_table_id = 0, bookmark_index = 0;
-	DOUBLE_LIST bookmark_list{};
+	std::vector<bookmark_node> bookmark_list;
 };

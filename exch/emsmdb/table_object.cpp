@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -17,19 +18,6 @@
 #include "rop_ids.hpp"
 #include "rop_processor.h"
 #include "table_object.h"
-
-namespace {
-
-struct BOOKMARK_NODE {
-	DOUBLE_LIST_NODE node;
-	uint32_t index;
-	uint64_t inst_id;
-	uint32_t row_type;
-	uint32_t inst_num;
-	uint32_t position;
-};
-
-}
 
 static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 {
@@ -248,11 +236,6 @@ uint32_t table_object::get_total() const
 	return total_rows;
 }
 
-table_object::table_object()
-{
-	double_list_init(&bookmark_list);
-}
-
 std::unique_ptr<table_object> table_object::create(logon_object *plogon,
 	void *pparent_obj, uint8_t table_flags,
 	uint8_t rop_id, uint8_t logon_id)
@@ -277,10 +260,9 @@ table_object::~table_object()
 {
 	auto ptable = this;
 	ptable->reset();
-	double_list_free(&ptable->bookmark_list);
 }
 
-BOOL table_object::create_bookmark(uint32_t *pindex)
+BOOL table_object::create_bookmark(uint32_t *pindex) try
 {
 	auto ptable = this;
 	uint64_t inst_id;
@@ -290,57 +272,35 @@ BOOL table_object::create_bookmark(uint32_t *pindex)
 	if (!exmdb_client_mark_table(ptable->plogon->get_dir(), m_table_id,
 	    m_position, &inst_id, &inst_num, &row_type))
 		return FALSE;
-	auto pbookmark = gromox::me_alloc<BOOKMARK_NODE>();
-	if (NULL == pbookmark) {
-		return FALSE;
-	}
-	pbookmark->node.pdata = pbookmark;
-	pbookmark->index = ptable->bookmark_index++;
-	pbookmark->inst_id = inst_id;
-	pbookmark->row_type = row_type;
-	pbookmark->inst_num = inst_num;
-	pbookmark->position = m_position;
-	double_list_append_as_tail(&ptable->bookmark_list, &pbookmark->node);
-	*pindex = pbookmark->index;
+	bookmark_list.emplace_back(bookmark_index, row_type, inst_num,
+		m_position, inst_id);
+	*pindex = bookmark_index++;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2117: ENOMEM\n");
+	return false;
 }
 
 BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 {
 	auto ptable = this;
-	uint64_t inst_id;
-	uint32_t row_type;
-	uint32_t inst_num;
-	uint32_t position;
 	uint32_t tmp_type;
 	int32_t tmp_position;
-	DOUBLE_LIST_NODE *pnode;
 	
-	for (pnode=double_list_get_head(&ptable->bookmark_list); NULL!=pnode;
-		pnode=double_list_get_after(&ptable->bookmark_list, pnode)) {
-		auto bn = static_cast<const BOOKMARK_NODE *>(pnode->pdata);
-		if (index == bn->index) {
-			inst_id = bn->inst_id;
-			row_type = bn->row_type;
-			inst_num = bn->inst_num;
-			position = bn->position;
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto bm = std::find_if(bookmark_list.cbegin(), bookmark_list.cend(),
+	          [&](const bookmark_node &bn) { return bn.index == index; });
+	if (bm == bookmark_list.end())
 		return FALSE;
-	}
 	if (!exmdb_client_locate_table(ptable->plogon->get_dir(),
-	    m_table_id, inst_id, inst_num, &tmp_position, &tmp_type))
+	    m_table_id, bm->inst_id, bm->inst_num, &tmp_position, &tmp_type))
 		return FALSE;
 	*pb_exist = FALSE;
 	if (tmp_position >= 0) {
-		if (tmp_type == row_type) {
+		if (tmp_type == bm->row_type)
 			*pb_exist = TRUE;
-		}
 		m_position = tmp_position;
 	} else {
-		m_position = position;
+		m_position = bm->position;
 	}
 	auto total_rows = ptable->get_total();
 	if (m_position > total_rows)
@@ -350,26 +310,10 @@ BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 
 void table_object::remove_bookmark(uint32_t index)
 {
-	auto ptable = this;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&ptable->bookmark_list); NULL!=pnode;
-		pnode=double_list_get_after(&ptable->bookmark_list, pnode)) {
-		auto bn = static_cast<const BOOKMARK_NODE *>(pnode->pdata);
-		if (index == bn->index) {
-			double_list_remove(&ptable->bookmark_list, pnode);
-			free(pnode->pdata);
-			break;
-		}
-	}
-}
-
-void table_object::clear_bookmarks()
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(&bookmark_list)) != nullptr)
-		free(pnode->pdata);
+	auto bm = std::find_if(bookmark_list.begin(), bookmark_list.end(),
+	          [&](const bookmark_node &bn) { return bn.index == index; });
+	if (bm != bookmark_list.end())
+		bookmark_list.erase(bm);
 }
 
 void table_object::reset()
