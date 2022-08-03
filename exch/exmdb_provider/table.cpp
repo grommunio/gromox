@@ -1908,6 +1908,18 @@ static void table_truncate_string(uint32_t cpid, char *pstring)
 	}
 }
 
+static const TABLE_NODE *find_table(db_item_ptr &pdb, uint32_t table_id)
+{
+	auto tl = &pdb->tables.table_list;
+	for (auto n = double_list_get_head(tl); n != nullptr;
+	     n = double_list_get_after(tl, n)) {
+		auto t = static_cast<TABLE_NODE *>(n->pdata);
+		if (t->table_id == table_id)
+			return t;
+	}
+	return nullptr;
+}
+
 /* every property value returned in a row MUST
 be less than or equal to 510 bytes in size. */
 BOOL exmdb_server_query_table(const char *dir, const char *username,
@@ -1924,29 +1936,20 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 	uint64_t inst_id;
 	uint64_t member_id;
 	uint64_t folder_id;
-	TABLE_NODE *ptnode;
 	xstmt pstmt1, pstmt2;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	pset->count = 0;
 	pset->pparray = NULL;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto ptnode = find_table(pdb, table_id);
+	if (ptnode == nullptr)
 		return TRUE;
-	}
 	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
-	ptnode = (TABLE_NODE*)pnode->pdata;
 	switch (ptnode->type) {
 	case TABLE_TYPE_HIERARCHY: {
 		if (row_needed > 0) {
@@ -2552,7 +2555,7 @@ static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 static BOOL match_tbl_ctnt(uint32_t cpid, uint32_t table_id, BOOL b_forward,
     uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb,
-    TABLE_NODE *ptnode)
+    const TABLE_NODE *ptnode)
 {
 	char sql_string[1024];
 	int i, count, row_type, idx = 0;
@@ -2726,23 +2729,14 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
 {
-	TABLE_NODE *ptnode;
-	DOUBLE_LIST_NODE *pnode;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto ptnode = find_table(pdb, table_id);
+	if (ptnode == nullptr) {
 		*pposition = -1;
 		return TRUE;
 	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
@@ -2766,24 +2760,16 @@ BOOL exmdb_server_locate_table(const char *dir,
 	int32_t *pposition, uint32_t *prow_type)
 {
 	int idx;
-	TABLE_NODE *ptnode;
 	char sql_string[256];
-	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto ptnode = find_table(pdb, table_id);
+	if (ptnode == nullptr) {
 		*pposition = -1;
 		return TRUE;
 	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
 	switch (ptnode->type) {
 	case TABLE_TYPE_HIERARCHY:
 		if (1 == rop_util_get_replid(inst_id)) {
@@ -2907,7 +2893,7 @@ static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
 
 static BOOL read_tblrow_ctnt(uint32_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
-    TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, TABLE_NODE *ptnode)
+    TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, const TABLE_NODE *ptnode)
 {
 	int i, count, row_type;
 	void *pvalue;
@@ -2992,23 +2978,14 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 	uint32_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals)
 {
-	TABLE_NODE *ptnode;
-	DOUBLE_LIST_NODE *pnode;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto ptnode = find_table(pdb, table_id);
+	if (ptnode == nullptr) {
 		ppropvals->count = 0;
 		return TRUE;
 	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(username);
 	auto cl_1 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
@@ -3026,26 +3003,16 @@ BOOL exmdb_server_mark_table(const char *dir,
 	uint32_t table_id, uint32_t position, uint64_t *pinst_id,
 	uint32_t *pinst_num, uint32_t *prow_type)
 {
-	TABLE_NODE *ptnode;
 	char sql_string[256];
-	DOUBLE_LIST_NODE *pnode;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	*pinst_id = 0;
 	*pinst_num = 0;
 	*prow_type = 0;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto ptnode = find_table(pdb, table_id);
+	if (ptnode == nullptr)
 		return TRUE;
-	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
 	switch (ptnode->type) {
 	case TABLE_TYPE_HIERARCHY:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM t%u"
@@ -3093,25 +3060,16 @@ BOOL exmdb_server_mark_table(const char *dir,
 BOOL exmdb_server_get_table_all_proptags(const char *dir,
     uint32_t table_id, PROPTAG_ARRAY *pproptags) try
 {
-	TABLE_NODE *ptnode;
 	char sql_string[256];
-	DOUBLE_LIST_NODE *pnode;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto ptnode = find_table(pdb, table_id);
+	if (ptnode == nullptr) {
 		pproptags->count = 0;
 		pproptags->pproptag = NULL;
 		return TRUE;
 	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
 	switch (ptnode->type) {
 	case TABLE_TYPE_HIERARCHY: {
 		std::vector<uint32_t> tags;
@@ -3315,24 +3273,16 @@ BOOL exmdb_server_expand_table(const char *dir,
 	int depth;
 	uint32_t idx;
 	uint64_t row_id;
-	TABLE_NODE *ptnode;
 	char sql_string[256];
-	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto ptnode = find_table(pdb, table_id);
+	if (ptnode == nullptr) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (TABLE_TYPE_CONTENT != ptnode->type ||
 		2 != rop_util_get_replid(inst_id)) {
 		*pb_found = FALSE;
@@ -3440,24 +3390,16 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	uint32_t idx;
 	uint64_t row_id;
 	uint64_t prev_id;
-	TABLE_NODE *ptnode;
 	char sql_string[256];
-	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto ptnode = find_table(pdb, table_id);
+	if (ptnode == nullptr) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (TABLE_TYPE_CONTENT != ptnode->type ||
 		2 != rop_util_get_replid(inst_id)) {
 		*pb_found = FALSE;
@@ -3544,26 +3486,17 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	sqlite3 *psqlite;
 	EXT_PUSH ext_push;
 	char tmp_path[256];
-	TABLE_NODE *ptnode;
 	char tmp_buff[1024];
 	uint32_t tmp_proptag;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
-			break;
-		}
-	}
+	auto ptnode = find_table(pdb, table_id);
 	*pstate_id = 0;
-	if (NULL == pnode) {
+	if (ptnode == nullptr)
 		return TRUE;
-	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (TABLE_TYPE_CONTENT != ptnode->type) {
 		return TRUE;
 	}
@@ -3846,7 +3779,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	uint64_t inst_num;
 	EXT_PUSH ext_push;
 	char tmp_path[256];
-	TABLE_NODE *ptnode;
 	uint64_t header_id;
 	uint64_t message_id;
 	uint8_t header_stat;
@@ -3855,7 +3787,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	char tmp_buff[1024];
 	char sql_string[1024];
 	struct stat node_stat;
-	DOUBLE_LIST_NODE *pnode;
 	
 	row_id1 = 0;
 	*pposition = -1;
@@ -3865,16 +3796,9 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto ptnode = find_table(pdb, table_id);
+	if (ptnode == nullptr)
 		return TRUE;
-	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
 	if (TABLE_TYPE_CONTENT != ptnode->type) {
 		return TRUE;
 	}
