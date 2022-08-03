@@ -55,7 +55,7 @@ static void terse_help()
 }
 
 static std::vector<std::string> g_svc_plugins =
-	{"libgxs_mysql_adaptor.so", "libgxs_textmaps.so"};
+	{"libgxs_mysql_adaptor.so"};
 
 static constexpr cfg_directive exm2eml_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR},
