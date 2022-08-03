@@ -318,11 +318,12 @@ BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 	
 	for (pnode=double_list_get_head(&ptable->bookmark_list); NULL!=pnode;
 		pnode=double_list_get_after(&ptable->bookmark_list, pnode)) {
-		if (index == ((BOOKMARK_NODE*)pnode->pdata)->index) {
-			inst_id = ((BOOKMARK_NODE*)pnode->pdata)->inst_id;
-			row_type = ((BOOKMARK_NODE*)pnode->pdata)->row_type;
-			inst_num = ((BOOKMARK_NODE*)pnode->pdata)->inst_num;
-			position = ((BOOKMARK_NODE*)pnode->pdata)->position;
+		auto bn = static_cast<const BOOKMARK_NODE *>(pnode->pdata);
+		if (index == bn->index) {
+			inst_id = bn->inst_id;
+			row_type = bn->row_type;
+			inst_num = bn->inst_num;
+			position = bn->position;
 			break;
 		}
 	}
@@ -354,7 +355,8 @@ void table_object::remove_bookmark(uint32_t index)
 	
 	for (pnode=double_list_get_head(&ptable->bookmark_list); NULL!=pnode;
 		pnode=double_list_get_after(&ptable->bookmark_list, pnode)) {
-		if (index == ((BOOKMARK_NODE*)pnode->pdata)->index) {
+		auto bn = static_cast<const BOOKMARK_NODE *>(pnode->pdata);
+		if (index == bn->index) {
 			double_list_remove(&ptable->bookmark_list, pnode);
 			free(pnode->pdata);
 			break;

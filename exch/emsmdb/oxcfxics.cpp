@@ -1049,7 +1049,6 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	uint64_t tmp_fid;
 	uint32_t tmp_type;
 	uint64_t folder_id;
-	uint64_t parent_id;
 	uint64_t parent_id1;
 	uint64_t change_num;
 	uint32_t permission;
@@ -1104,7 +1103,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (NULL == pvalue) {
 			return SYNC_E_NO_PARENT;
 		}
-		parent_type = *(uint32_t*)pvalue;
+		parent_type = *static_cast<uint32_t *>(pvalue);
 	}
 	if (parent_type == FOLDER_SEARCH)
 		return ecNotSupported;
@@ -1211,7 +1210,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0, folder_id,
 	    PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
-	parent_id = *(uint64_t*)pvalue;
+	auto parent_id = *static_cast<uint64_t *>(pvalue);
 	if (parent_id != parent_id1) {
 		/* MS-OXCFXICS 3.3.5.8.8 move folders
 		within public mailbox is not supported */

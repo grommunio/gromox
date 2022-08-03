@@ -606,7 +606,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 			propval.proptag = PR_PROVIDER_SUBMIT_TIME;
 			propval.pvalue = cu_alloc<uint64_t>();
 			if (NULL != propval.pvalue) {
-				*(uint64_t*)propval.pvalue = rop_util_current_nttime();
+				*static_cast<uint64_t *>(propval.pvalue) = rop_util_current_nttime();
 				common_util_set_propvals(*pppropvals, &propval);
 			}
 		}
