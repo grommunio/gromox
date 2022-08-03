@@ -332,13 +332,12 @@ static void table_condition_list_to_where_clause(
 	DOUBLE_LIST *pcondition_list, char *where_clause, int length)
 {
 	int offset;
-	CONDITION_NODE *pcnode;
 	DOUBLE_LIST_NODE *pnode;
 	
 	offset = 0;
 	for (pnode=double_list_get_head(pcondition_list); NULL!=pnode;
 		pnode=double_list_get_after(pcondition_list, pnode)) {
-		pcnode = (CONDITION_NODE*)pnode->pdata;
+		auto pcnode = static_cast<const CONDITION_NODE *>(pnode->pdata);
 		if (0 == offset) {
 			offset = gx_snprintf(where_clause, length, "WHERE ");
 		} else {
@@ -1266,7 +1265,6 @@ BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
 {
 	BOOL b_result;
 	uint32_t row_count;
-	TABLE_NODE *ptnode;
 	char sql_string[128];
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -1275,8 +1273,8 @@ BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
 		return FALSE;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (TABLE_TYPE_CONTENT == ((TABLE_NODE*)pnode->pdata)->type
-			&& table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
+		auto t = static_cast<const TABLE_NODE *>(pnode->pdata);
+		if (t->type == TABLE_TYPE_CONTENT && t->table_id == table_id) {
 			double_list_remove(&pdb->tables.table_list, pnode);
 			break;
 		}
@@ -1284,7 +1282,7 @@ BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
 	if (NULL == pnode) {
 		return TRUE;
 	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
+	auto ptnode = static_cast<TABLE_NODE *>(pnode->pdata);
 	snprintf(sql_string, arsizeof(sql_string), "DROP TABLE t%u", table_id);
 	gx_sql_exec(pdb->tables.psqlite, sql_string);
 	b_result = table_load_content_table(pdb, ptnode->cpid,
@@ -1697,7 +1695,6 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 
 BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 {
-	TABLE_NODE *ptnode;
 	char sql_string[128];
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -1706,7 +1703,8 @@ BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 		return FALSE;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
+		auto t = static_cast<const TABLE_NODE *>(pnode->pdata);
+		if (t->table_id == table_id) {
 			double_list_remove(&pdb->tables.table_list, pnode);
 			break;
 		}
@@ -1714,7 +1712,7 @@ BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 	if (NULL == pnode) {
 		return TRUE;
 	}
-	ptnode = (TABLE_NODE*)pnode->pdata;
+	auto ptnode = static_cast<TABLE_NODE *>(pnode->pdata);
 	snprintf(sql_string, arsizeof(sql_string), "DROP TABLE t%u", table_id);
 	gx_sql_exec(pdb->tables.psqlite, sql_string);
 	if (NULL != ptnode->remote_id) {
@@ -2255,9 +2253,8 @@ static BOOL table_get_content_row_property(
 {
 	uint32_t *pinst_num;
 	uint64_t parent_fid;
-	CONTENT_ROW_PARAM *prow_param;
 	
-	prow_param = (CONTENT_ROW_PARAM*)pparam;
+	auto prow_param = static_cast<CONTENT_ROW_PARAM *>(pparam);
 	if (proptag == PR_INSTANCE_SVREID) {
 		auto eid = cu_alloc<SVREID>();
 		if (eid == nullptr)
@@ -2303,9 +2300,7 @@ static BOOL table_get_content_row_property(
 static BOOL table_get_hierarchy_row_property(
 	 void *pparam, uint32_t proptag, void **ppvalue)
 {
-	HIERARCHY_ROW_PARAM *prow_param;
-	
-	prow_param = (HIERARCHY_ROW_PARAM*)pparam;
+	auto prow_param = static_cast<HIERARCHY_ROW_PARAM *>(pparam);
 	if (proptag != PR_DEPTH)
 		return cu_get_property(db_table::folder_props, prow_param->folder_id,
 		       prow_param->cpid, prow_param->psqlite, proptag, ppvalue);

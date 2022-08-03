@@ -1574,7 +1574,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		if (NULL == ppropval->pvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)ppropval->pvalue = attach_num;
+		*static_cast<uint32_t *>(ppropval->pvalue) = attach_num;
 		attach_num ++;
 		sqlite3_bind_int64(pstmt1, 1, attachment_id);
 		if (sqlite3_step(pstmt1) != SQLITE_ROW)
@@ -1886,7 +1886,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	int tmp_int, tmp_int1, is_associated = 0;
 	BOOL b_exist;
 	BOOL b_result;
-	uint32_t next;
 	uint64_t tmp_id;
 	uint64_t nt_time;
 	uint8_t tmp_byte;
@@ -2076,7 +2075,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		if (NULL == pvalue) {
 			pvalue = deconst(&fake_uid);
 		}
-		next = *(uint32_t*)pvalue + 1;
+		auto next = *static_cast<uint32_t *>(pvalue) + 1;
 		tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER_NEXT;
 		tmp_propval.pvalue = &next;
 		if (!cu_set_property(db_table::folder_props,
@@ -2556,7 +2555,7 @@ static ec_error_t message_disable_rule(sqlite3 *psqlite,
 			NULL == pvalue) {
 			return ecError;
 		}
-		*(uint32_t*)pvalue |= RULE_STATE_ERROR;
+		*static_cast<uint32_t *>(pvalue) |= RULE_STATE_ERROR;
 		propval.proptag = PR_RULE_MSG_STATE;
 		propval.pvalue = pvalue;
 		if (!cu_set_property(db_table::msg_props, id, 0,
@@ -2617,14 +2616,12 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		return FALSE;
 	if (NULL != pvalue) {
 		if (action_type == OP_REPLY) {
-			if ((*(uint32_t*)pvalue) &
-				AUTO_RESPONSE_SUPPRESS_AUTOREPLY) {
+			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_AUTOREPLY) {
 				*pb_result = TRUE;
 				return TRUE;
 			}
 		} else {
-			if ((*(uint32_t*)pvalue) &
-				AUTO_RESPONSE_SUPPRESS_OOF) {
+			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_OOF) {
 				*pb_result = TRUE;
 				return TRUE;
 			}

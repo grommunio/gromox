@@ -321,13 +321,10 @@ BOOL db_engine_unload_db(const char *path)
 DB_ITEM::~DB_ITEM()
 {
 	auto pdb = this;
-	TABLE_NODE *ptable;
-	DYNAMIC_NODE *pdynamic;
 	DOUBLE_LIST_NODE *pnode;
-	INSTANCE_NODE *pinstance;
 	
 	while ((pnode = double_list_pop_front(&pdb->instance_list)) != nullptr) {
-		pinstance = (INSTANCE_NODE*)pnode->pdata;
+		auto pinstance = static_cast<INSTANCE_NODE *>(pnode->pdata);
 		if (NULL != pinstance->username) {
 			free(pinstance->username);
 		}
@@ -340,14 +337,14 @@ DB_ITEM::~DB_ITEM()
 	}
 	double_list_free(&pdb->instance_list);
 	while ((pnode = double_list_pop_front(&pdb->dynamic_list)) != nullptr) {
-		pdynamic = (DYNAMIC_NODE*)pnode->pdata;
+		auto pdynamic = static_cast<DYNAMIC_NODE *>(pnode->pdata);
 		restriction_free(pdynamic->prestriction);
 		free(pdynamic->folder_ids.pll);
 		free(pdynamic);
 	}
 	double_list_free(&pdb->dynamic_list);
 	while ((pnode = double_list_pop_front(&pdb->tables.table_list)) != nullptr) {
-		ptable = (TABLE_NODE*)pnode->pdata;
+		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
 		if (NULL != ptable->remote_id) {
 			free(ptable->remote_id);
 		}
@@ -630,7 +627,6 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 static void *mdpeng_thrwork(void *param)
 {
 	nice(g_exmdb_search_nice);
-	TABLE_NODE *ptable;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while (!g_notify_stop) {
@@ -694,7 +690,7 @@ static void *mdpeng_thrwork(void *param)
 		     &pdb->tables.table_list); NULL != pnode;
 		     pnode = double_list_get_after(
 		     &pdb->tables.table_list, pnode)) {
-			ptable = (TABLE_NODE *)pnode->pdata;
+			auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
 			if (TABLE_TYPE_CONTENT == ptable->type &&
 			    psearch->folder_id == ptable->folder_id) {
 				table_ids.push_back(ptable->table_id);
@@ -835,7 +831,7 @@ void db_engine_update_dynamic(db_item_ptr &pdb, uint64_t folder_id,
 	
 	for (pnode=double_list_get_head(&pdb->dynamic_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->dynamic_list, pnode)) {
-		pdynamic = (DYNAMIC_NODE*)pnode->pdata;
+		pdynamic = static_cast<DYNAMIC_NODE *>(pnode->pdata);
 		if (pdynamic->folder_id == folder_id) {
 			break;
 		}
@@ -872,12 +868,11 @@ void db_engine_update_dynamic(db_item_ptr &pdb, uint64_t folder_id,
 
 void db_engine_delete_dynamic(db_item_ptr &pdb, uint64_t folder_id)
 {
-	DYNAMIC_NODE *pdynamic;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pdb->dynamic_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->dynamic_list, pnode)) {
-		pdynamic = (DYNAMIC_NODE*)pnode->pdata;
+		auto pdynamic = static_cast<DYNAMIC_NODE *>(pnode->pdata);
 		if (pdynamic->folder_id == folder_id) {
 			double_list_remove(&pdb->dynamic_list, pnode);
 			restriction_free(pdynamic->prestriction);
@@ -889,7 +884,8 @@ void db_engine_delete_dynamic(db_item_ptr &pdb, uint64_t folder_id)
 }
 
 static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
-    uint64_t id2, uint64_t id3, uint32_t folder_type, DYNAMIC_NODE *pdynamic, size_t i)
+    uint64_t id2, uint64_t id3, uint32_t folder_type,
+    const DYNAMIC_NODE *pdynamic, size_t i)
 {
 	BOOL b_exist, b_included, b_included1;
 	uint64_t message_id;
@@ -957,7 +953,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 }
 
 static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
-    uint64_t id1, uint64_t id2, DYNAMIC_NODE *pdynamic, size_t i)
+    uint64_t id1, uint64_t id2, const DYNAMIC_NODE *pdynamic, size_t i)
 {
 	BOOL b_exist;
 	BOOL b_included;
@@ -1079,7 +1075,6 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 	int event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
 	uint32_t folder_type;
-	DYNAMIC_NODE *pdynamic;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (event_type == DYNAMIC_EVENT_MOVE_FOLDER &&
@@ -1090,7 +1085,7 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 	}
 	for (pnode=double_list_get_head(&pdb->dynamic_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->dynamic_list, pnode)) {
-		pdynamic = (DYNAMIC_NODE*)pnode->pdata;
+		auto pdynamic = static_cast<const DYNAMIC_NODE *>(pnode->pdata);
 		for (size_t i = 0; i < pdynamic->folder_ids.count; ++i) {
 			if (DYNAMIC_EVENT_MOVE_FOLDER == event_type) {
 				dbeng_dynevt_1(pdb, cpid, id1, id2, id3, folder_type, pdynamic, i);
@@ -1254,7 +1249,7 @@ static void db_engine_append_rowinfo_node(
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto prnode = (ROWINFO_NODE*)pnode->pdata;
+		auto prnode = static_cast<const ROWINFO_NODE *>(pnode->pdata);
 		if (row_id == prnode->row_id) {
 			return;
 		}
@@ -1271,12 +1266,11 @@ static void db_engine_append_rowinfo_node(
 static BOOL db_engine_check_new_header(
 	DOUBLE_LIST *pnotify_list, uint64_t row_id)
 {
-	ROWINFO_NODE *prnode;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		prnode = (ROWINFO_NODE*)pnode->pdata;
+		auto prnode = static_cast<const ROWINFO_NODE *>(pnode->pdata);
 		if (row_id == prnode->row_id && prnode->b_added)
 			return TRUE;
 	}
@@ -2037,7 +2031,7 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		    message_id, 0, pdb->psqlite, PR_MESSAGE_FLAGS,
 		    &pvalue) || pvalue == nullptr)
 			return;
-		pnew_mail->message_flags = *(uint32_t*)pvalue;
+		pnew_mail->message_flags = *static_cast<uint32_t *>(pvalue);
 		if (!cu_get_property(db_table::msg_props,
 		    message_id, 0, pdb->psqlite, PR_MESSAGE_CLASS, &pvalue) ||
 		    pvalue == nullptr)
@@ -2155,7 +2149,6 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 	uint32_t idx;
 	uint32_t depth;
 	BOOL b_included;
-	TABLE_NODE *ptable;
 	uint64_t folder_id1;
 	xstmt pstmt;
 	char sql_string[256];
@@ -2166,7 +2159,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 	padded_row = NULL;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		ptable = (TABLE_NODE*)pnode->pdata;
+		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
 		if (TABLE_TYPE_HIERARCHY != ptable->type) {
 			continue;
 		}
@@ -2302,7 +2295,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				padded_row->after_folder_id = sqlite3_column_int64(pstmt1, 0);
 			}
 		}
-		datagram.id_array.pl = &ptable->table_id;
+		datagram.id_array.pl = deconst(&ptable->table_id);
 		padded_row->row_folder_id = folder_id;
 		notification_agent_backward_notify(
 			ptable->remote_id, &datagram);
@@ -2353,12 +2346,11 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
 static void db_engine_update_prev_id(DOUBLE_LIST *plist,
 	int64_t prev_id, uint64_t original_prev_id)
 {
-	ROWDEL_NODE *pdelnode;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		pdelnode = (ROWDEL_NODE*)pnode->pdata;
+		auto pdelnode = static_cast<ROWDEL_NODE *>(pnode->pdata);
 		if (original_prev_id == static_cast<uint64_t>(pdelnode->prev_id)) {
 			pdelnode->prev_id = prev_id;
 			break;
@@ -2421,17 +2413,13 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 	void *pvalue1;
 	BOOL b_resorted;
 	int64_t prev_id;
-	uint64_t row_id;
 	int64_t prev_id1;
-	uint64_t row_id1;
 	uint64_t inst_id;
 	uint32_t inst_num;
 	uint8_t table_sort;
 	uint64_t parent_id;
-	TABLE_NODE *ptable;
 	DOUBLE_LIST tmp_list;
 	ROWINFO_NODE *prnode;
-	ROWDEL_NODE *pdelnode;
 	char sql_string[1024];
 	DOUBLE_LIST notify_list;
 	DOUBLE_LIST_NODE *pnode;
@@ -2444,7 +2432,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 	pdeleted_row = NULL;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		ptable = (TABLE_NODE*)pnode->pdata;
+		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
 		if (TABLE_TYPE_CONTENT != ptable->type ||
 			folder_id != ptable->folder_id) {
 			continue;
@@ -2496,7 +2484,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 				continue;
-			row_id = sqlite3_column_int64(pstmt, 0);
+			uint64_t row_id = sqlite3_column_int64(pstmt, 0);
 			idx = sqlite3_column_int64(pstmt, 1);
 			prev_id = sqlite3_column_int64(pstmt, 2);
 			pstmt.finalize();
@@ -2523,7 +2511,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 				continue;
 			}
-			datagram.id_array.pl = &ptable->table_id;
+			datagram.id_array.pl = deconst(&ptable->table_id);
 			if (!common_util_get_message_parent_folder(pdb->psqlite,
 			    message_id, &pdeleted_row->row_folder_id))
 				continue;
@@ -2552,7 +2540,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		if (pstmt == nullptr)
 			continue;
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			pdelnode = cu_alloc<ROWDEL_NODE>();
+			auto pdelnode = cu_alloc<ROWDEL_NODE>();
 			if (NULL == pdelnode) {
 				return;
 			}
@@ -2607,7 +2595,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		double_list_init(&notify_list);
 		for (pnode1=double_list_get_head(&tmp_list); NULL!=pnode1;
 			pnode1=double_list_get_after(&tmp_list, pnode1)) {
-			pdelnode = (ROWDEL_NODE*)pnode1->pdata;
+			auto pdelnode = static_cast<ROWDEL_NODE *>(pnode1->pdata);
 			if (0 != ptable->extremum_tag && pdelnode->depth
 				== ptable->psorts->ccategories) {
 				
@@ -2651,7 +2639,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				pdelnode->parent_id = sqlite3_column_int64(pstmt, 6);
 				pdelnode->depth = sqlite3_column_int64(pstmt, 7);
 				pdelnode->inst_num = 0;
-				pdelnode->b_read = ((ROWDEL_NODE*)pnode1->pdata)->b_read;
+				pdelnode->b_read = static_cast<ROWDEL_NODE *>(pnode1->pdata)->b_read;
 				double_list_append_as_tail(&tmp_list, &pdelnode->node);
 				sqlite3_reset(pstmt);
 				continue;
@@ -2677,7 +2665,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			}
 			/* compare the extremum value of header
 				row and message property value */
-			row_id = pdelnode->parent_id;
+			auto row_id = pdelnode->parent_id;
 			type = ptable->psorts->psort[
 				ptable->psorts->ccategories].type;
 			parent_id = sqlite3_column_int64(pstmt, 6);
@@ -2705,7 +2693,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			table_sort = ptable->psorts->psort[
 				ptable->psorts->ccategories - 1].table_sort;
 			prev_id = -parent_id;
-			row_id1 = 0;
+			uint64_t row_id1 = 0;
 			b_break = FALSE;
 			stm_sel_ex.bind_int64(1, prev_id);
 			while (stm_sel_ex.step() == SQLITE_ROW) {
@@ -2810,7 +2798,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (b_resorted) {
-			datagram1.id_array.pl = &ptable->table_id;
+			datagram1.id_array.pl = deconst(&ptable->table_id);
 			datagram1.db_notify.type = ptable->b_search ?
 			                           DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED :
 			                           DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
@@ -2820,11 +2808,11 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		}
 		for (pnode1 = double_list_get_head(&tmp_list); NULL != pnode1;
 		     pnode1 = double_list_get_after(&tmp_list, pnode1)) {
-			pdelnode = (ROWDEL_NODE *)pnode1->pdata;
+			auto pdelnode = static_cast<const ROWDEL_NODE *>(pnode1->pdata);
 			if (0 == pdelnode->idx) {
 				continue;
 			}
-			datagram.id_array.pl = &ptable->table_id;
+			datagram.id_array.pl = deconst(&ptable->table_id);
 			if (!ptable->b_search) {
 				pdeleted_row->row_folder_id = folder_id;
 			} else if ((pdelnode->inst_id & NFID_UPPER_PART) == 0) {
@@ -2858,7 +2846,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			continue;
 		}
 		while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
-			row_id = ((ROWINFO_NODE *)pnode1->pdata)->row_id;
+			auto row_id = static_cast<ROWINFO_NODE *>(pnode1->pdata)->row_id;
 			sqlite3_bind_int64(pstmt1, 1, row_id);
 			if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 				sqlite3_reset(pstmt1);
@@ -2883,7 +2871,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				inst_num = sqlite3_column_int64(pstmt, 10);
 				sqlite3_reset(pstmt);
 			}
-			datagram1.id_array.pl = &ptable->table_id;
+			datagram1.id_array.pl = deconst(&ptable->table_id);
 			pmodified_row->row_message_id =
 				sqlite3_column_int64(pstmt1, 3);
 			pmodified_row->after_row_id = inst_id;
@@ -2988,7 +2976,6 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 {
 	int idx;
 	BOOL b_included;
-	TABLE_NODE *ptable;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
@@ -2998,7 +2985,7 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 	for (pnode=double_list_get_head(&pdb->tables.table_list);
 		NULL!=pnode; pnode=double_list_get_after(
 		&pdb->tables.table_list, pnode)) {
-		ptable = (TABLE_NODE*)pnode->pdata;
+		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
 		if (TABLE_TYPE_HIERARCHY != ptable->type) {
 			continue;
 		}
@@ -3053,7 +3040,7 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 			datagram.db_notify.pdata = pdeleted_row;
 			pdeleted_row->row_folder_id = folder_id;
 		}
-		datagram.id_array.pl = &ptable->table_id;
+		datagram.id_array.pl = deconst(&ptable->table_id);
 		notification_agent_backward_notify(
 			ptable->remote_id, &datagram);
 	}
@@ -3107,11 +3094,10 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 	uint16_t type;
 	void *pmultival;
 	int64_t prev_id;
-	uint64_t row_id, row_id1, inst_id = 0, inst_id1 = 0;
+	uint64_t row_id1, inst_id = 0, inst_id1 = 0;
 	uint8_t read_byte;
 	uint32_t inst_num, multi_num = 0;
 	uint64_t parent_id;
-	TABLE_NODE *ptable;
 	int8_t unread_delta;
 	DOUBLE_LIST tmp_list;
 	DOUBLE_LIST tmp_list1;
@@ -3128,7 +3114,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 	double_list_init(&tmp_list);
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		ptable = (TABLE_NODE*)pnode->pdata;
+		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
 		if (TABLE_TYPE_CONTENT != ptable->type ||
 			folder_id != ptable->folder_id) {
 			continue;
@@ -3164,7 +3150,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 				continue;
 			}
-			datagram.id_array.pl = &ptable->table_id;
+			datagram.id_array.pl = deconst(&ptable->table_id);
 			pmodified_row->row_folder_id = row_folder_id;
 			pmodified_row->row_message_id = message_id;
 			pmodified_row->row_instance = 0;
@@ -3279,7 +3265,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			}
 			if (b_error)
 				continue;
-			datagram.id_array.pl = &ptable->table_id;
+			datagram.id_array.pl = deconst(&ptable->table_id);
 			pmodified_row->row_folder_id = row_folder_id;
 			pmodified_row->row_message_id = message_id;
 			pmodified_row->row_instance = 0;
@@ -3385,7 +3371,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					b_error = TRUE;
 					break;
 				}
-				row_id = sqlite3_column_int64(pstmt1, 0);
+				uint64_t row_id = sqlite3_column_int64(pstmt1, 0);
 				prev_id = sqlite3_column_int64(pstmt1, 1);
 				read_byte = sqlite3_column_int64(pstmt1, 2);
 				sqlite3_reset(pstmt1);
@@ -3530,11 +3516,11 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					b_error = TRUE;
 					break;
 				}
-				if (0 == *(uint8_t*)pvalue && 0 != read_byte) {
+				if (*static_cast<uint8_t *>(pvalue) == 0 && read_byte != 0) {
 					unread_delta = 1;
 					snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET extremum=0 "
 					        "WHERE row_id=%llu", ptable->table_id, LLU{row_id1});
-				} else if (0 != *(uint8_t*)pvalue && 0 == read_byte) {
+				} else if (*static_cast<uint8_t *>(pvalue) != 0 && read_byte == 0) {
 					unread_delta = -1;
 					snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET extremum=1 "
 					        "WHERE row_id=%llu", ptable->table_id, LLU{row_id1});
@@ -3605,7 +3591,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				continue;
 			}
 			while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
-				row_id = ((ROWINFO_NODE*)pnode1->pdata)->row_id;
+				auto row_id = static_cast<ROWINFO_NODE *>(pnode1->pdata)->row_id;
 				sqlite3_bind_int64(pstmt1, 1, row_id);
 				if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 					sqlite3_reset(pstmt1);
@@ -3632,7 +3618,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					inst_num = sqlite3_column_int64(pstmt, 10);
 					sqlite3_reset(pstmt);
 				}
-				datagram.id_array.pl = &ptable->table_id;
+				datagram.id_array.pl = deconst(&ptable->table_id);
 				pmodified_row->row_message_id =
 					sqlite3_column_int64(pstmt1, 3);
 				pmodified_row->row_instance =
@@ -3685,12 +3671,12 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 	pdb->tables.table_list = tmp_list1;
 	for (pnode = double_list_get_head(&tmp_list); NULL != pnode;
 	     pnode = double_list_get_after(&tmp_list, pnode)) {
-		ptable = (TABLE_NODE *)pnode->pdata;
+		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
 		for (pnode1 = double_list_get_head(
 		     &pdb->tables.table_list); NULL != pnode1;
 		     pnode1 = double_list_get_after(
 		     &pdb->tables.table_list, pnode1)) {
-			auto ptnode = (TABLE_NODE *)pnode1->pdata;
+			auto ptnode = static_cast<TABLE_NODE *>(pnode1->pdata);
 			if (ptable->table_id != ptnode->table_id)
 				continue;
 			ptnode->header_id = ptable->header_id;
@@ -3700,7 +3686,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			datagram.db_notify.type = ptnode->b_search ?
 			                          DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED :
 			                          DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
-			datagram.id_array.pl = &ptable->table_id;
+			datagram.id_array.pl = deconst(&ptable->table_id);
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			break;
@@ -3754,7 +3740,6 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 {
 	int idx;
 	BOOL b_included;
-	TABLE_NODE *ptable;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
@@ -3770,7 +3755,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 	for (pnode=double_list_get_head(&pdb->tables.table_list);
 		NULL!=pnode; pnode=double_list_get_after(
 		&pdb->tables.table_list, pnode)) {
-		ptable = (TABLE_NODE*)pnode->pdata;
+		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
 		if (TABLE_TYPE_HIERARCHY != ptable->type) {
 			continue;
 		}
@@ -3833,7 +3818,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 						sqlite3_column_int64(pstmt, 0);
 					pstmt.finalize();
 				}
-				datagram2.id_array.pl = &ptable->table_id;
+				datagram2.id_array.pl = deconst(&ptable->table_id);
 				padded_row->row_folder_id = folder_id;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram2);
@@ -3879,7 +3864,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 				datagram1.db_notify.pdata = pdeleted_row;
 				pdeleted_row->row_folder_id = folder_id;
 			}
-			datagram1.id_array.pl = &ptable->table_id;
+			datagram1.id_array.pl = deconst(&ptable->table_id);
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram1);
 			continue;
@@ -3917,7 +3902,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 				sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
 		}
-		datagram.id_array.pl = &ptable->table_id;
+		datagram.id_array.pl = deconst(&ptable->table_id);
 		notification_agent_backward_notify(
 			ptable->remote_id, &datagram);
 	}
@@ -4101,20 +4086,18 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 
 void db_engine_notify_content_table_reload(db_item_ptr &pdb, uint32_t table_id)
 {
-	TABLE_NODE *ptable;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (table_id == ((TABLE_NODE*)pnode->pdata)->table_id) {
+		if (static_cast<TABLE_NODE *>(pnode->pdata)->table_id == table_id)
 			break;
-		}
 	}
 	if (NULL == pnode) {
 		return;
 	}
-	ptable = (TABLE_NODE*)pnode->pdata;
+	auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
 	datagram.dir = deconst(exmdb_server_get_dir());
 	datagram.db_notify.type = !ptable->b_search ?
 		DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED :
@@ -4136,7 +4119,6 @@ void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 {
 	int table_num;
 	const char *dir;
-	TABLE_NODE *ptable;
 	DOUBLE_LIST_NODE *pnode;
 	
 	table_num = double_list_get_nodes_num(&pdb->tables.table_list);
@@ -4144,7 +4126,7 @@ void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 	table_num = 0;
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		ptable = (TABLE_NODE*)pnode->pdata;
+		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
 		if (ptable->b_hint) {
 			if (NULL != ptable_ids) {
 				ptable_ids[table_num++] = ptable->table_id;
@@ -4164,12 +4146,11 @@ void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 
 void db_engine_cancel_batch_mode(db_item_ptr &pdb)
 {
-	TABLE_NODE *ptable;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		ptable = (TABLE_NODE*)pnode->pdata;
+		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
 		ptable->b_hint = FALSE;
 	}
 	pdb->tables.b_batch = FALSE;

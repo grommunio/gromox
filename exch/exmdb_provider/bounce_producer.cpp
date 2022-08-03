@@ -334,7 +334,6 @@ BOOL bounce_producer_make_content(const char *from,
 	char date_buff[128];
 	struct tm time_buff;
 	int i, len, until_tag;
-	uint32_t message_size;
 	char lang[32], time_zone[64];
 
 	time(&cur_time);
@@ -362,7 +361,7 @@ BOOL bounce_producer_make_content(const char *from,
 	if (!cu_get_property(db_table::msg_props, message_id, 0,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
 		return FALSE;
-	message_size = *(uint32_t*)pvalue;
+	auto message_size = *static_cast<uint32_t *>(pvalue);
 	if ('\0' == charset[0]) {
 		if (!cu_get_property(db_table::msg_props,
 		    message_id, 0, psqlite, PR_INTERNET_CPID, &pvalue))

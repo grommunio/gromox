@@ -2707,11 +2707,7 @@ BOOL cu_set_property(db_table table_type,
 	const TAGGED_PROPVAL *ppropval, BOOL *pb_result)
 {
 	PROBLEM_ARRAY tmp_problems;
-	TPROPVAL_ARRAY tmp_propvals;
-	
-	tmp_propvals.count = 1;
-	tmp_propvals.ppropval = (TAGGED_PROPVAL*)ppropval;
-	
+	const TPROPVAL_ARRAY tmp_propvals = {1, deconst(ppropval)};
 	if (!cu_set_properties(table_type,
 	    id, cpid, psqlite, &tmp_propvals, &tmp_problems))
 		return FALSE;
@@ -2816,8 +2812,7 @@ BOOL cu_set_properties(db_table table_type,
 				continue;
 			case PidTagChangeNumber:
 				common_util_set_folder_changenum(psqlite, id,
-					rop_util_get_gc_value(*(uint64_t*)
-					ppropvals->ppropval[i].pvalue));
+					rop_util_get_gc_value(*static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)));
 				continue;
 			case PR_DISPLAY_NAME:
 			case PR_DISPLAY_NAME_A:
@@ -2871,12 +2866,11 @@ BOOL cu_set_properties(db_table table_type,
 				continue;
 			case PidTagChangeNumber:
 				common_util_set_message_changenum(psqlite, id,
-					rop_util_get_gc_value(*(uint64_t*)
-					ppropvals->ppropval[i].pvalue));
+					rop_util_get_gc_value(*static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)));
 				continue;
 			case PR_READ:
 				common_util_set_message_read(psqlite, id,
-					*(uint8_t*)ppropvals->ppropval[i].pvalue);
+					*static_cast<uint8_t *>(ppropvals->ppropval[i].pvalue));
 				continue;
 			case PR_MESSAGE_FLAGS:
 				/*
@@ -3038,35 +3032,35 @@ BOOL cu_set_properties(db_table table_type,
 			break;
 		case PT_FLOAT:
 			sqlite3_bind_double(pstmt, 2,
-				*(float*)ppropvals->ppropval[i].pvalue);
+				*static_cast<float *>(ppropvals->ppropval[i].pvalue));
 			s_result = sqlite3_step(pstmt);
 			break;
 		case PT_DOUBLE:
 		case PT_APPTIME:
 			sqlite3_bind_double(pstmt, 2,
-				*(double*)ppropvals->ppropval[i].pvalue);
+				*static_cast<double *>(ppropvals->ppropval[i].pvalue));
 			s_result = sqlite3_step(pstmt);
 			break;
 		case PT_CURRENCY:
 		case PT_I8:
 		case PT_SYSTIME:
 			sqlite3_bind_int64(pstmt, 2,
-				*(uint64_t*)ppropvals->ppropval[i].pvalue);
+				*static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue));
 			s_result = sqlite3_step(pstmt);
 			break;
 		case PT_SHORT:
 			sqlite3_bind_int64(pstmt, 2,
-				*(uint16_t*)ppropvals->ppropval[i].pvalue);
+				*static_cast<uint16_t *>(ppropvals->ppropval[i].pvalue));
 			s_result = sqlite3_step(pstmt);
 			break;
 		case PT_LONG:
 			sqlite3_bind_int64(pstmt, 2,
-				*(uint32_t*)ppropvals->ppropval[i].pvalue);
+				*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue));
 			s_result = sqlite3_step(pstmt);
 			break;
 		case PT_BOOLEAN:
 			sqlite3_bind_int64(pstmt, 2,
-				*(uint8_t*)ppropvals->ppropval[i].pvalue);
+				*static_cast<uint8_t *>(ppropvals->ppropval[i].pvalue));
 			s_result = sqlite3_step(pstmt);
 			break;
 		case PT_CLSID: {
@@ -3165,15 +3159,14 @@ BOOL cu_set_properties(db_table table_type,
 		}
 		case PT_MV_STRING8: {
 			if (0 != cpid) {
-				tmp_strings.count = ((STRING_ARRAY*)
-					ppropvals->ppropval[i].pvalue)->count;
+				auto arr = static_cast<const STRING_ARRAY *>(ppropvals->ppropval[i].pvalue);
+				tmp_strings.count = arr->count;
 				tmp_strings.ppstr = cu_alloc<char *>(tmp_strings.count);
 				if (tmp_strings.ppstr == nullptr)
 					return FALSE;
 				for (size_t j = 0; j < tmp_strings.count; ++j) {
 					tmp_strings.ppstr[j] = common_util_convert_copy(
-						TRUE, cpid, ((STRING_ARRAY*)
-						ppropvals->ppropval[i].pvalue)->ppstr[j]);
+						TRUE, cpid, arr->ppstr[j]);
 					if (tmp_strings.ppstr[j] == nullptr)
 						return FALSE;
 				}
@@ -4655,7 +4648,6 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 	BOOL *pb_result, uint32_t *pmessage_size)
 {
 	void *pvalue;
-	uint32_t next;
 	BOOL b_result;
 	uint64_t nt_time;
 	uint64_t change_num;
@@ -4676,7 +4668,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		return FALSE;
 	if (pvalue == nullptr)
 		pvalue = deconst(&fake_uid);
-	next = *(uint32_t *)pvalue + 1;
+	auto next = *static_cast<uint32_t *>(pvalue) + 1;
 	tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER_NEXT;
 	tmp_propval.pvalue = &next;
 	if (!cu_set_property(db_table::folder_props,
@@ -5003,25 +4995,25 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 		sqlite3_bind_text(pstmt, bind_index, static_cast<char *>(pvalue), -1, SQLITE_STATIC);
 		break;
 	case PT_FLOAT:
-		sqlite3_bind_double(pstmt, bind_index, *(float*)pvalue);
+		sqlite3_bind_double(pstmt, bind_index, *static_cast<float *>(pvalue));
 		break;
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		sqlite3_bind_double(pstmt, bind_index, *(double*)pvalue);
+		sqlite3_bind_double(pstmt, bind_index, *static_cast<double *>(pvalue));
 		break;
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
-		sqlite3_bind_int64(pstmt, bind_index, *(uint64_t*)pvalue);
+		sqlite3_bind_int64(pstmt, bind_index, *static_cast<uint64_t *>(pvalue));
 		break;
 	case PT_SHORT:
-		sqlite3_bind_int64(pstmt, bind_index, *(uint16_t*)pvalue);
+		sqlite3_bind_int64(pstmt, bind_index, *static_cast<uint16_t *>(pvalue));
 		break;
 	case PT_LONG:
-		sqlite3_bind_int64(pstmt, bind_index, *(uint32_t*)pvalue);
+		sqlite3_bind_int64(pstmt, bind_index, *static_cast<uint32_t *>(pvalue));
 		break;
 	case PT_BOOLEAN:
-		sqlite3_bind_int64(pstmt, bind_index, *(uint8_t*)pvalue);
+		sqlite3_bind_int64(pstmt, bind_index, *static_cast<uint8_t *>(pvalue));
 		break;
 	case PT_CLSID:
 		if (!ext_push.init(temp_buff, 16, 0) ||
@@ -5248,26 +5240,26 @@ uint32_t common_util_calculate_message_size(
 			continue;
 		case ID_TAG_BODY:
 			message_size += common_util_get_cid_string_length(
-								*(uint64_t*)ppropval->pvalue);
+			                *static_cast<uint64_t *>(ppropval->pvalue));
 			break;
 		case ID_TAG_BODY_STRING8:
 			tmp_len = common_util_get_cid_length(
-					*(uint64_t*)ppropval->pvalue);
+			          *static_cast<uint64_t *>(ppropval->pvalue));
 			if (tmp_len > 0)
 				message_size += tmp_len - 1;
 			break;
 		case ID_TAG_HTML:
 		case ID_TAG_RTFCOMPRESSED:
 			message_size += common_util_get_cid_length(
-						*(uint64_t*)ppropval->pvalue);
+			                *static_cast<uint64_t *>(ppropval->pvalue));
 			break;
 		case ID_TAG_TRANSPORTMESSAGEHEADERS:
 			message_size += common_util_get_cid_string_length(
-								*(uint64_t*)ppropval->pvalue);
+			                *static_cast<uint64_t *>(ppropval->pvalue));
 			break;
 		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
 			tmp_len = common_util_get_cid_length(
-					*(uint64_t*)ppropval->pvalue);
+			          *static_cast<uint64_t *>(ppropval->pvalue));
 			if (tmp_len > 0)
 				message_size += tmp_len - 1;
 			break;
@@ -5297,7 +5289,7 @@ uint32_t common_util_calculate_message_size(
 				case ID_TAG_ATTACHDATABINARY:
 				case ID_TAG_ATTACHDATAOBJECT:
 					message_size += common_util_get_cid_length(
-								*(uint64_t*)ppropval->pvalue);
+					                *static_cast<uint64_t *>(ppropval->pvalue));
 					break;
 				default:
 					message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
@@ -5327,7 +5319,7 @@ uint32_t common_util_calculate_attachment_size(
 		case ID_TAG_ATTACHDATABINARY:
 		case ID_TAG_ATTACHDATAOBJECT:
 			attachment_size += common_util_get_cid_length(
-						*(uint64_t*)ppropval->pvalue);
+			                   *static_cast<uint64_t *>(ppropval->pvalue));
 			break;
 		default:
 			attachment_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
