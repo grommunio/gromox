@@ -995,11 +995,10 @@ BOOL common_util_row_to_propvals(
 		if (PROPERTY_ROW_FLAG_NONE == prow->flag) {
 			pvalue = prow->pppropval[i];
 		} else {
-			if (FLAGGED_PROPVAL_FLAG_AVAILABLE !=
-				((FLAGGED_PROPVAL*)prow->pppropval[i])->flag) {
+			auto p = static_cast<FLAGGED_PROPVAL *>(prow->pppropval[i]);
+			if (p->flag != FLAGGED_PROPVAL_FLAG_AVAILABLE)
 				continue;	
-			}
-			pvalue = ((FLAGGED_PROPVAL*)prow->pppropval[i])->pvalue;
+			pvalue = p->pvalue;
 		}
 		cu_set_propval(ppropvals, pcolumns->pproptag[i], pvalue);
 	}
@@ -1820,7 +1819,6 @@ BOOL common_util_send_message(logon_object *plogon,
 	EID_ARRAY ids;
 	BOOL b_partial;
 	uint64_t new_id;
-	uint64_t parent_id;
 	uint64_t folder_id;
 	TARRAY_SET *prcpts;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -1833,7 +1831,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		log_err("W-1289: Cannot get parent folder_id of mid:0x%llx", LLU{message_id});
 		return FALSE;
 	}
-	parent_id = *(uint64_t*)pvalue;
+	auto parent_id = *static_cast<uint64_t *>(pvalue);
 	if (!exmdb_client_read_message(plogon->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr) {
 		log_err("W-1288: Failed to read mid:0x%llx from exmdb", LLU{message_id});

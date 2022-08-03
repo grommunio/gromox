@@ -22,7 +22,6 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	BOOL b_del;
-	uint8_t type;
 	BOOL b_exist;
 	void *pvalue;
 	uint16_t replid;
@@ -67,7 +66,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0, folder_id,
 	    PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 		return ecError;
-	type = *(uint32_t*)pvalue;
+	uint8_t type = *static_cast<uint32_t *>(pvalue);
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode == logon_mode::owner) {
 		tag_access = MAPI_ACCESS_AllSix;
@@ -192,9 +191,9 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
 		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
-		if (0 == open_existing || folder_type != *(uint32_t*)pvalue) {
+		if (open_existing == 0 ||
+		    *static_cast<uint32_t *>(pvalue) != folder_type)
 			return ecDuplicateName;
-		}
 	} else {
 		parent_id = pparent->folder_id;
 		if (!exmdb_client_allocate_cn(plogon->get_dir(), &change_num))

@@ -844,7 +844,7 @@ static void icsdownctx_object_trim_embedded(
 		pembedded = pattachment->pembedded;
 		for (j=0; j<pembedded->proplist.count; j++) {
 			if (pembedded->proplist.ppropval[j].proptag == PidTagMid) {
-				*(uint64_t*)pembedded->proplist.ppropval[j].pvalue = 0;
+				*static_cast<uint64_t *>(pembedded->proplist.ppropval[j].pvalue) = 0;
 				break;
 			}
 		}

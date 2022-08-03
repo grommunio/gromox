@@ -523,7 +523,6 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
 	char username[UADDR_SIZE];
-	AUX_HEADER *pheader;
 	char temp_buff[1024];
 	uint16_t client_mode;
 	AUX_HEADER header_cap;
@@ -641,11 +640,11 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 		} else {
 			for (pnode=double_list_get_head(&aux_in.aux_list); NULL!=pnode;
 				pnode=double_list_get_after(&aux_in.aux_list, pnode)) {
-				pheader = (AUX_HEADER*)pnode->pdata;
+				auto pheader = static_cast<const AUX_HEADER *>(pnode->pdata);
 				if (AUX_VERSION_1 == pheader->version &&
 					AUX_TYPE_PERF_CLIENTINFO == pheader->type) {
-					client_mode = ((AUX_PERF_CLIENTINFO*)
-						pheader->ppayload)->client_mode;
+					auto ci = static_cast<const AUX_PERF_CLIENTINFO *>(pheader->ppayload);
+					client_mode = ci->client_mode;
 				}
 			}
 		}
@@ -1193,28 +1192,27 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		free(pnode);
 		return;
 	}
-	static_cast<ROP_RESPONSE *>(pnode->pdata)->rop_id = ropRegisterNotify;
-	((ROP_RESPONSE*)pnode->pdata)->hindex = 0; /* ignore by system */
-	((ROP_RESPONSE*)pnode->pdata)->result = 0; /* ignore by system */
-	((ROP_RESPONSE*)pnode->pdata)->ppayload =
-			notify_response_init(obj_handle, logon_id);
-	if (NULL == ((ROP_RESPONSE*)pnode->pdata)->ppayload) {
+	auto rsp = static_cast<ROP_RESPONSE *>(pnode->pdata);
+	rsp->rop_id = ropRegisterNotify;
+	rsp->hindex = 0; /* ignore by system */
+	rsp->result = 0; /* ignore by system */
+	auto nfr = notify_response_init(obj_handle, logon_id);
+	rsp->ppayload = nfr;
+	if (rsp->ppayload == nullptr) {
 		emsmdb_interface_put_handle_notify_list(phandle);
 		free(pnode->pdata);
 		free(pnode);
 		return;
 	}
 	BOOL b_cache = phandle->info.client_mode == CLIENT_MODE_CACHED ? TRUE : false;
-	if (notify_response_retrieve(
-	    static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload),
-	    b_cache, pdb_notify)) {
+	if (notify_response_retrieve(nfr, b_cache, pdb_notify)) {
 		double_list_append_as_tail(&phandle->notify_list, pnode);
 		b_processing = phandle->b_processing;
 		emsmdb_interface_put_handle_notify_list(phandle);
 	} else {
 		b_processing = phandle->b_processing;
 		emsmdb_interface_put_handle_notify_list(phandle);
-		notify_response_free(static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload));
+		notify_response_free(nfr);
 		free(pnode->pdata);
 		free(pnode);
 	}

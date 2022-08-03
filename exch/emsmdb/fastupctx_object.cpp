@@ -725,7 +725,7 @@ gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 	
 	switch (ppropval->proptag) {
 	case MetaTagFXDelProp:
-		switch (*(uint32_t*)ppropval->pvalue) {
+		switch (*static_cast<uint32_t *>(ppropval->pvalue)) {
 		case PR_MESSAGE_RECIPIENTS:
 		case PR_MESSAGE_ATTACHMENTS:
 		case PR_CONTAINER_CONTENTS:

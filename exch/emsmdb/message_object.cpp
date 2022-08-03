@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+	// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -120,7 +120,7 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 		if (!b_new && pmessage->instance_id == 0)
 			return pmessage;
 	} else {
-		pmessage->folder_id = *(uint64_t*)pparent;
+		pmessage->folder_id = *static_cast<uint64_t *>(pparent);
 		if (pmessage->plogon->is_private()) {
 			if (!exmdb_client_load_message_instance(plogon->get_dir(),
 			    nullptr, cpid, b_new, pmessage->folder_id, message_id,
@@ -1514,8 +1514,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		break;
 	case MSG_READ_FLAG_CLEAR_NOTIFY_READ:
 	case MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
-	case MSG_READ_FLAG_CLEAR_NOTIFY_READ |
-		MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
+	case MSG_READ_FLAG_CLEAR_NOTIFY_READ | MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD: {
 		if (read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_READ) {
 			if (!exmdb_client_remove_instance_property(pmessage->plogon->get_dir(),
 			    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED, &result))
@@ -1546,9 +1545,10 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		    pmessage->instance_id, PR_MESSAGE_FLAGS, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		if (!(*static_cast<uint32_t *>(pvalue) & MSGFLAG_UNMODIFIED))
+		auto v = static_cast<uint32_t *>(pvalue);
+		if (!(*v & MSGFLAG_UNMODIFIED))
 			return TRUE;
-		*static_cast<uint32_t *>(pvalue) &= ~MSGFLAG_UNMODIFIED;
+		*v &= ~MSGFLAG_UNMODIFIED;
 		propval.proptag = PR_MESSAGE_FLAGS;
 		propval.pvalue = pvalue;
 		if (!exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
@@ -1558,6 +1558,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		    pmessage->message_id))
 			return FALSE;
 		return TRUE;
+	}
 	default:
 		return TRUE;
 	}

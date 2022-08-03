@@ -242,7 +242,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
 		*outvalue = common_util_to_folder_entryid(
-			pfolder->plogon, *(uint64_t*)pvalue);
+		            pfolder->plogon, *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
 		if (pfolder->plogon->is_private()) {
@@ -268,7 +268,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			return FALSE;
 		if (*outvalue == nullptr) {
 			*outvalue = common_util_calculate_folder_sourcekey(
-						pfolder->plogon, *(uint64_t*)pvalue);
+			            pfolder->plogon, *static_cast<uint64_t *>(pvalue));
 			if (*outvalue == nullptr)
 				return FALSE;
 		}

@@ -354,7 +354,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
 		}
-		*(int32_t*)*ppout = emsmdb_interface_dummy_rpc(handle);
+		*static_cast<int32_t *>(*ppout) = emsmdb_interface_dummy_rpc(handle);
 		return DISPATCH_SUCCESS;
 	case ecDoConnectEx: {
 		auto in  = static_cast<ECDOCONNECTEX_IN *>(pin);

@@ -320,7 +320,6 @@ static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
 static BOOL ftstream_producer_write_propvalue(
 	FTSTREAM_PRODUCER *pstream, TAGGED_PROPVAL *ppropval)
 {
-	uint32_t count;
 	uint16_t propid;
 	uint16_t proptype;
 	uint16_t write_type;
@@ -385,25 +384,25 @@ static BOOL ftstream_producer_write_propvalue(
 	switch (proptype) {
 	case PT_SHORT:
 		return ftstream_producer_write_uint16(pstream,
-						*(uint16_t*)ppropval->pvalue);
+		       *static_cast<uint16_t *>(ppropval->pvalue));
 	case PT_ERROR:
 	case PT_LONG:
 		return pstream->write_uint32(*static_cast<uint32_t *>(ppropval->pvalue));
 	case PT_FLOAT:
 		return ftstream_producer_write_float(pstream,
-						*(float*)ppropval->pvalue);
+		       *static_cast<float *>(ppropval->pvalue));
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		return ftstream_producer_write_double(pstream,
-						*(double*)ppropval->pvalue);
+		       *static_cast<double *>(ppropval->pvalue));
 	case PT_BOOLEAN:
 		return ftstream_producer_write_uint16(pstream,
-						*(uint8_t*)ppropval->pvalue);
+		       *static_cast<uint8_t *>(ppropval->pvalue));
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
 		return ftstream_producer_write_uint64(pstream,
-						*(uint64_t*)ppropval->pvalue);
+		       *static_cast<uint64_t *>(ppropval->pvalue));
 	case PT_STRING8:
 		return ftstream_producer_write_string(pstream, static_cast<char *>(ppropval->pvalue));
 	case PT_UNICODE:
@@ -418,37 +417,35 @@ static BOOL ftstream_producer_write_propvalue(
 	case PT_OBJECT:
 	case PT_BINARY:
 		return ftstream_producer_write_binary(pstream, static_cast<BINARY *>(ppropval->pvalue));
-	case PT_MV_SHORT:
-		count = ((SHORT_ARRAY*)ppropval->pvalue)->count;
-		if (!pstream->write_uint32(count))
+	case PT_MV_SHORT: {
+		auto ar = static_cast<const SHORT_ARRAY *>(ppropval->pvalue);
+		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (size_t i = 0; i < count; ++i) {
-			if (!ftstream_producer_write_uint16(pstream,
-			    static_cast<SHORT_ARRAY *>(ppropval->pvalue)->ps[i]))
+		for (uint32_t i = 0; i < ar->count; ++i)
+			if (!ftstream_producer_write_uint16(pstream, ar->ps[i]))
 				return FALSE;
-		}
 		return TRUE;
-	case PT_MV_LONG:
-		count = ((LONG_ARRAY*)ppropval->pvalue)->count;
-		if (!pstream->write_uint32(count))
+	}
+	case PT_MV_LONG: {
+		auto ar = static_cast<const LONG_ARRAY *>(ppropval->pvalue);
+		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (size_t i = 0; i < count; ++i) {
-			if (!pstream->write_uint32(static_cast<LONG_ARRAY *>(ppropval->pvalue)->pl[i]))
+		for (uint32_t i = 0; i < ar->count; ++i)
+			if (!pstream->write_uint32(ar->pl[i]))
 				return FALSE;
-		}
 		return TRUE;
+	}
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
-	case PT_MV_SYSTIME:
-		count = ((LONGLONG_ARRAY*)ppropval->pvalue)->count;
-		if (!pstream->write_uint32(count))
+	case PT_MV_SYSTIME: {
+		auto ar = static_cast<const LONGLONG_ARRAY *>(ppropval->pvalue);
+		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (size_t i = 0; i < count; ++i) {
-			if (!ftstream_producer_write_uint64(pstream,
-			    static_cast<LONGLONG_ARRAY *>(ppropval->pvalue)->pll[i]))
+		for (uint32_t i = 0; i < ar->count; ++i)
+			if (!ftstream_producer_write_uint64(pstream, ar->pll[i]))
 				return FALSE;
-		}
 		return TRUE;
+	}
 	case PT_MV_FLOAT: {
 		auto fa = static_cast<FLOAT_ARRAY *>(ppropval->pvalue);
 		if (!pstream->write_uint32(fa->count))
@@ -468,46 +465,42 @@ static BOOL ftstream_producer_write_propvalue(
 				return false;
 		return TRUE;
 	}
-	case PT_MV_STRING8:
-		count = ((STRING_ARRAY*)ppropval->pvalue)->count;
-		if (!pstream->write_uint32(count))
+	case PT_MV_STRING8: {
+		auto ar = static_cast<const STRING_ARRAY *>(ppropval->pvalue);
+		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (size_t i = 0; i < count; ++i) {
-			if (!ftstream_producer_write_string(pstream,
-			    static_cast<STRING_ARRAY *>(ppropval->pvalue)->ppstr[i]))
+		for (uint32_t i = 0; i < ar->count; ++i)
+			if (!ftstream_producer_write_string(pstream, ar->ppstr[i]))
 				return FALSE;
-		}
 		return TRUE;
-	case PT_MV_UNICODE:
-		count = ((STRING_ARRAY*)ppropval->pvalue)->count;
-		if (!pstream->write_uint32(count))
+	}
+	case PT_MV_UNICODE: {
+		auto ar = static_cast<const STRING_ARRAY *>(ppropval->pvalue);
+		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (size_t i = 0; i < count; ++i) {
-			if (!ftstream_producer_write_wstring(pstream,
-			    static_cast<STRING_ARRAY *>(ppropval->pvalue)->ppstr[i]))
+		for (uint32_t i = 0; i < ar->count; ++i)
+			if (!ftstream_producer_write_wstring(pstream, ar->ppstr[i]))
 				return FALSE;
-		}
 		return TRUE;
-	case PT_MV_CLSID:
-		count = ((GUID_ARRAY*)ppropval->pvalue)->count;
-		if (!pstream->write_uint32(count))
+	}
+	case PT_MV_CLSID: {
+		auto ar = static_cast<const GUID_ARRAY *>(ppropval->pvalue);
+		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (size_t i = 0; i < count; ++i) {
-			if (!ftstream_producer_write_guid(pstream,
-			    &static_cast<GUID_ARRAY *>(ppropval->pvalue)->pguid[i]))
+		for (uint32_t i = 0; i < ar->count; ++i)
+			if (!ftstream_producer_write_guid(pstream, &ar->pguid[i]))
 				return FALSE;
-		}
 		return TRUE;
-	case PT_MV_BINARY:
-		count = ((BINARY_ARRAY*)ppropval->pvalue)->count;
-		if (!pstream->write_uint32(count))
+	}
+	case PT_MV_BINARY: {
+		auto ar = static_cast<const BINARY_ARRAY *>(ppropval->pvalue);
+		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (size_t i = 0; i < count; ++i) {
-			if (!ftstream_producer_write_binary(pstream,
-			    &static_cast<BINARY_ARRAY *>(ppropval->pvalue)->pbin[i]))
+		for (uint32_t i = 0; i < ar->count; ++i)
+			if (!ftstream_producer_write_binary(pstream, &ar->pbin[i]))
 				return FALSE;
-		}
 		return TRUE;
+	}
 	}
 	return FALSE;
 }

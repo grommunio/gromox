@@ -65,7 +65,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
 	    message_id, PidTagFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
-	folder_id = *(uint64_t*)pvalue;
+	folder_id = *static_cast<uint64_t *>(pvalue);
 	if (!exmdb_client_check_message_deleted(plogon->get_dir(), message_id, &b_del))
 		return ecError;
 	if (b_del && !(open_mode_flags & OPEN_MODE_FLAG_OPENSOFTDELETE))
@@ -489,7 +489,6 @@ uint32_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 	int object_type;
 	uint32_t new_status;
 	TAGGED_PROPVAL propval;
-	uint32_t original_status;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -507,7 +506,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 	if (NULL == pvalue) {
 		return ecNotFound;
 	}
-	original_status = *(uint32_t*)pvalue;
+	auto original_status = *static_cast<uint32_t *>(pvalue);
 	new_status = message_status & status_mask;
 	if (new_status & MSGSTATUS_IN_CONFLICT)
 		return ecAccessDenied;
@@ -540,7 +539,7 @@ uint32_t rop_getmessagestatus(uint64_t message_id, uint32_t *pmessage_status,
 	if (NULL == pvalue) {
 		return ecNotFound;
 	}
-	*pmessage_status = *(uint32_t*)pvalue;
+	*pmessage_status = *static_cast<uint32_t *>(pvalue);
 	return ecSuccess;
 }
 
