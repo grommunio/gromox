@@ -68,7 +68,8 @@ struct prepared_statements {
 
 static char g_exmdb_org_name[256];
 static unsigned int g_max_msg;
-static thread_local const void *g_var_key;
+thread_local unsigned int g_inside_flush_instance;
+thread_local sqlite3 *g_sqlite_for_oxcmail;
 static thread_local prepared_statements *g_opt_key;
 unsigned int g_max_rule_num, g_max_extrule_num;
 static std::atomic<unsigned int> g_sequence_id;
@@ -214,18 +215,9 @@ void common_util_init(const char *org_name, uint32_t max_msg,
 
 void common_util_build_tls()
 {
-	g_var_key = nullptr;
+	g_inside_flush_instance = false;
+	g_sqlite_for_oxcmail = nullptr;
 	g_opt_key = nullptr;
-}
-
-void common_util_set_tls_var(const void *pvar)
-{
-	g_var_key = pvar;
-}
-
-const void* common_util_get_tls_var()
-{
-	return g_var_key;
 }
 
 unsigned int common_util_sequence_ID()
@@ -2912,7 +2904,7 @@ BOOL cu_set_properties(db_table table_type,
 					return FALSE;	
 				continue;
 			case ID_TAG_BODY:
-				if (common_util_get_tls_var() == nullptr)
+				if (!g_inside_flush_instance)
 					break;
 				if (!cu_update_object_cid(psqlite,
 				    table_type, id, PR_BODY,
@@ -2920,7 +2912,7 @@ BOOL cu_set_properties(db_table table_type,
 					return FALSE;	
 				continue;
 			case ID_TAG_BODY_STRING8:
-				if (common_util_get_tls_var() == nullptr)
+				if (!g_inside_flush_instance)
 					break;
 				if (!cu_update_object_cid(psqlite,
 				    table_type, id, PR_BODY_A,
@@ -2939,14 +2931,14 @@ BOOL cu_set_properties(db_table table_type,
 				}
 				continue;
 			case ID_TAG_HTML:
-				if (common_util_get_tls_var() == nullptr)
+				if (!g_inside_flush_instance)
 					break;
 				if (!cu_update_object_cid(psqlite, table_type, id, PR_HTML,
 				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
 				continue;
 			case ID_TAG_RTFCOMPRESSED:
-				if (common_util_get_tls_var() == nullptr)
+				if (!g_inside_flush_instance)
 					break;
 				if (!cu_update_object_cid(psqlite, table_type, id, PR_RTF_COMPRESSED,
 				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
@@ -2963,7 +2955,7 @@ BOOL cu_set_properties(db_table table_type,
 				}
 				continue;
 			case ID_TAG_TRANSPORTMESSAGEHEADERS:
-				if (common_util_get_tls_var() == nullptr)
+				if (!g_inside_flush_instance)
 					break;
 				if (!cu_update_object_cid(psqlite, table_type,
 				    id, PR_TRANSPORT_MESSAGE_HEADERS,
@@ -2971,7 +2963,7 @@ BOOL cu_set_properties(db_table table_type,
 					return FALSE;	
 				continue;
 			case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
-				if (common_util_get_tls_var() == nullptr)
+				if (!g_inside_flush_instance)
 					break;
 				if (!cu_update_object_cid(psqlite, table_type,
 				    id, PR_TRANSPORT_MESSAGE_HEADERS_A,
@@ -2992,7 +2984,7 @@ BOOL cu_set_properties(db_table table_type,
 			case PR_ATTACH_NUM:
 				continue;
 			case ID_TAG_ATTACHDATABINARY:
-				if (common_util_get_tls_var() == nullptr)
+				if (!g_inside_flush_instance)
 					break;
 				if (!cu_update_object_cid(psqlite,
 				    table_type, id, PR_ATTACH_DATA_BIN,
@@ -3000,7 +2992,7 @@ BOOL cu_set_properties(db_table table_type,
 					return FALSE;	
 				continue;
 			case ID_TAG_ATTACHDATAOBJECT:
-				if (common_util_get_tls_var() == nullptr)
+				if (!g_inside_flush_instance)
 					break;
 				if (!cu_update_object_cid(psqlite,
 				    table_type, id, PR_ATTACH_DATA_OBJ,

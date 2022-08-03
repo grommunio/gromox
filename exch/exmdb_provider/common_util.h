@@ -63,8 +63,6 @@ void common_util_pass_service(int service_id, void *func);
 void common_util_init(const char *org_name, unsigned int max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num);
 extern void common_util_build_tls();
-void common_util_set_tls_var(const void *pvar);
-extern const void *common_util_get_tls_var();
 extern unsigned int common_util_sequence_ID();
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc()
@@ -184,3 +182,5 @@ uint32_t common_util_calculate_attachment_size(
 extern const char *exmdb_rpc_idtoname(exmdb_callid);
 
 extern unsigned int g_max_rule_num, g_max_extrule_num;
+extern thread_local unsigned int g_inside_flush_instance;
+extern thread_local sqlite3 *g_sqlite_for_oxcmail;

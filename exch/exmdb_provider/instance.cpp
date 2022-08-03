@@ -1611,10 +1611,10 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	if (!exmdb_server_is_private())
 		exmdb_server_set_public_username(pinstance->username);
 	pdb.reset();
-	common_util_set_tls_var(pmsgctnt);
+	g_inside_flush_instance = true;
 	BOOL b_result = exmdb_server_write_message(dir, account, 0, folder_id,
 	                pmsgctnt, pe_result);
-	common_util_set_tls_var(NULL);
+	g_inside_flush_instance = false;
 	exmdb_server_set_public_username(nullptr);
 	return b_result;
 }
