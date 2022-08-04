@@ -1164,6 +1164,7 @@ enum {
 	PidLidReminderSignalTime = 0x8560,
 	PidLidToDoTitle = 0x85A4,
 	PidLidInfoPathFromName = 0x85B1,
+	// ? = 0x85B3, /* some codepage identifier (PSETID_Common) */
 	PidLidClassified = 0x85B5,
 	PidLidClassification = 0x85B6,
 	PidLidClassificationDescription = 0x85B7,
