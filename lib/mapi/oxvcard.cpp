@@ -142,6 +142,20 @@ static bool is_fax_param(const vcard_param &p)
 	return strcasecmp(p.name(), "fax") == 0;
 }
 
+static std::string join(const char *gn, const char *mn, const char *sn)
+{
+	std::string r = znul(gn);
+	if (mn != nullptr) {
+		r += " ";
+		r += mn;
+	}
+	if (sn != nullptr) {
+		r +=" ";
+		r += sn;
+	}
+	return r;
+}
+
 MESSAGE_CONTENT* oxvcard_import(
 	const VCARD *pvcard, GET_PROPIDS get_propids)
 {
@@ -625,6 +639,23 @@ MESSAGE_CONTENT* oxvcard_import(
 	if (child_strings.count != 0 &&
 	    pmsg->proplist.set(PR_CHILDRENS_NAMES, &child_strings) != 0)
 		return nullptr;
+	if (!pmsg->proplist.has(PR_DISPLAY_NAME)) {
+		auto dn = join(pmsg->proplist.get<char>(PR_GIVEN_NAME),
+		          pmsg->proplist.get<char>(PR_MIDDLE_NAME),
+		          pmsg->proplist.get<char>(PR_SURNAME));
+		if (pmsg->proplist.set(PR_DISPLAY_NAME, dn.c_str()) != 0)
+			return nullptr;
+	}
+	if (!pmsg->proplist.has(PR_NORMALIZED_SUBJECT)) {
+		auto dn = pmsg->proplist.get<const char>(PR_DISPLAY_NAME);
+		if (dn != nullptr && pmsg->proplist.set(PR_NORMALIZED_SUBJECT, dn) != 0)
+			return nullptr;
+	}
+	if (!pmsg->proplist.has(PR_CONVERSATION_TOPIC)) {
+		auto dn = pmsg->proplist.get<const char>(PR_DISPLAY_NAME);
+		if (dn != nullptr && pmsg->proplist.set(PR_CONVERSATION_TOPIC, dn) != 0)
+			return nullptr;
+	}
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;
 		propid = PROP_ID(proptag);
@@ -632,6 +663,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			break;
 	}
 	if (i >= pmsg->proplist.count)
+		/* If no namedprops were set, we can exit early */
 		return pmsg.release();
 	if (!oxvcard_get_propids(&propids, get_propids))
 		return nullptr;
