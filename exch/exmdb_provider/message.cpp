@@ -4083,7 +4083,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		if (!cu_get_property(db_table::store_props, 0, 0,
 		    pdb->psqlite, PR_OOF_STATE, &pvalue))
 			return FALSE;
-		b_oof = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
+		b_oof = pvb_disabled(pvalue) ? false : TRUE;
 		fid_val = PRIVATE_FID_INBOX;
 	} else {
 		b_oof = FALSE;

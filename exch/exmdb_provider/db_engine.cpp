@@ -1412,7 +1412,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 		if (b_optimize)
 			common_util_end_message_optimize();
 	});
-	BOOL b_fai = pvalue0 != nullptr && *static_cast<uint8_t *>(pvalue0) != 0 ? TRUE : false;
+	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	for (auto pnode = double_list_get_head(&pdb->tables.table_list); pnode != nullptr;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);

@@ -987,7 +987,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				    mid_val, 0, pdb->psqlite, PR_READ, &pvalue))
 					return false;
 				sqlite3_bind_int64(pstmt1, tag_count + 2,
-					pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? 0 : 1);
+					pvb_disabled(pvalue) ? 0 : 1);
 			}
 			/* inssert all instances into stbl */
 			if (0 != ptnode->instance_tag) {

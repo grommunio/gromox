@@ -15,6 +15,8 @@
 #include "rop_processor.h"
 #include "table_object.h"
 
+using namespace gromox;
+
 uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
     uint8_t *phas_rules, GHOST_SERVER **ppghost, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
@@ -102,7 +104,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0, folder_id,
 	    PR_HAS_RULES, &pvalue))
 		return ecError;
-	*phas_rules = pvalue == nullptr ? 0 : *static_cast<uint8_t *>(pvalue);
+	*phas_rules = pvb_enabled(pvalue);
 	auto pfolder = folder_object::create(plogon, folder_id, type, tag_access);
 	if (pfolder == nullptr)
 		return ecServerOOM;

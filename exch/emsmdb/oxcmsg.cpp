@@ -569,7 +569,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		if (!exmdb_client_get_message_property(plogon->get_dir(),
 		    username, 0, message_id, PR_READ, &pvalue))
 			return FALSE;	
-		if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
+		if (pvb_enabled(pvalue))
 			break;
 		tmp_byte = 1;
 		b_changed = TRUE;
@@ -579,15 +579,14 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		    username, 0, message_id,
 		    PR_READ_RECEIPT_REQUESTED, &pvalue))
 			return FALSE;
-		if (NULL != pvalue && 0 != *(uint8_t *)pvalue) {
+		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
-		}
 		break;
 	case MSG_READ_FLAG_CLEAR_READ_FLAG:
 		if (!exmdb_client_get_message_property(plogon->get_dir(),
 		    username, 0, message_id, PR_READ, &pvalue))
-			return FALSE;	
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+			return FALSE;
+		if (pvb_enabled(pvalue)) {
 			tmp_byte = 0;
 			b_changed = TRUE;
 		}
@@ -597,9 +596,8 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		    username, 0, message_id, PR_READ_RECEIPT_REQUESTED,
 		    &pvalue))
 			return FALSE;
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
-		}
 		break;
 	case MSG_READ_FLAG_CLEAR_NOTIFY_READ:
 	case MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
@@ -609,7 +607,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		    exmdb_client_get_message_property(plogon->get_dir(),
 		    username, 0, message_id,
 		    PR_READ_RECEIPT_REQUESTED, &pvalue) &&
-		    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
+		    pvb_enabled(pvalue) &&
 		    !exmdb_client_remove_message_property(plogon->get_dir(),
 		    pinfo->cpid, message_id, PR_READ_RECEIPT_REQUESTED))
 			return FALSE;
@@ -617,7 +615,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		    exmdb_client_get_message_property(plogon->get_dir(),
 		    username, 0, message_id,
 		    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &pvalue) &&
-		    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
+		    pvb_enabled(pvalue) &&
 		    !exmdb_client_remove_message_property(plogon->get_dir(),
 		    pinfo->cpid, message_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED))
 			return FALSE;

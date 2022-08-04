@@ -25,6 +25,8 @@
 #include "rop_funcs.hpp"
 #include "rop_processor.h"
 
+using namespace gromox;
+
 static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
     uint64_t folder_id, const char *username, BOOL b_fai)
 {
@@ -887,13 +889,11 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
 		if (IMPORT_FLAG_ASSOCIATED & import_flags) {
-			if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
+			if (pvb_disabled(pvalue))
 				return ecInvalidParam;
-			}
 		} else {
-			if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+			if (pvb_enabled(pvalue))
 				return ecInvalidParam;
-			}
 		}
 		b_new = FALSE;
 	} else {
