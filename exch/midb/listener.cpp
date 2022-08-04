@@ -94,7 +94,6 @@ void listener_stop() {
 
 static void *midls_thrwork(void *param)
 {
-	int sockd;
 	socklen_t addrlen;
 	char client_hostip[40];
 	struct sockaddr_storage peer_name;
@@ -102,7 +101,7 @@ static void *midls_thrwork(void *param)
 	while (!g_notify_stop) {
 		/* wait for an incoming connection */
         addrlen = sizeof(peer_name);
-        sockd = accept(g_listen_sockd, (struct sockaddr*)&peer_name, &addrlen);
+		auto sockd = accept(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&peer_name), &addrlen);
 		if (-1 == sockd) {
 			continue;
 		}
