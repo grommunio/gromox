@@ -208,20 +208,20 @@ int contexts_pool_run()
 {    
 	g_epoll_fd = epoll_create(g_context_num);
 	if (-1 == g_epoll_fd) {
-		printf("[contexts_pool]: failed to create epoll instance: %s\n", strerror(errno));
+		fprintf(stderr, "[contexts_pool]: failed to create epoll instance: %s\n", strerror(errno));
 		return -1;
 	}
 	g_events = me_alloc<epoll_event>(g_context_num);
 	if (NULL == g_events) {
 		close(g_epoll_fd);
 		g_epoll_fd = -1;
-		printf("[contexts_pool]: Failed to allocate memory for events\n");
+		fprintf(stderr, "[contexts_pool]: Failed to allocate memory for events\n");
 		return -2;
 	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_thread_id, nullptr, ctxp_thrwork, nullptr);
 	if (ret != 0) {
-		printf("[contexts_pool]: failed to create epoll thread: %s\n", strerror(ret));
+		fprintf(stderr, "[contexts_pool]: failed to create epoll thread: %s\n", strerror(ret));
 		g_notify_stop = true;
 		free(g_events);
 		g_events = NULL;
@@ -232,7 +232,7 @@ int contexts_pool_run()
 	pthread_setname_np(g_thread_id, "epollctx/work");
 	ret = pthread_create(&g_scan_id, nullptr, ctxp_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[contexts_pool]: failed to create scan thread: %s\n", strerror(ret));
+		fprintf(stderr, "[contexts_pool]: failed to create scan thread: %s\n", strerror(ret));
 		g_notify_stop = true;
 		if (!pthread_equal(g_thread_id, {})) {
 			pthread_kill(g_thread_id, SIGALRM);

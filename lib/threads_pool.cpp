@@ -76,7 +76,7 @@ int threads_pool_run(const char *hint)
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, tpol_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[threads_pool]: failed to create scan thread: %s\n", strerror(ret));
+		fprintf(stderr, "[threads_pool]: failed to create scan thread: %s\n", strerror(ret));
 		return -2;
 	}
 	pthread_setname_np(g_scan_id, "ep_pool/scan");
@@ -90,7 +90,7 @@ int threads_pool_run(const char *hint)
 		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 		ret = pthread_create(&pdata->id, &attr, tpol_thrwork, pdata);
 		if (ret != 0) {
-			printf("[threads_pool]: failed to create a pool thread: %s\n", strerror(ret));
+			fprintf(stderr, "[threads_pool]: failed to create a pool thread: %s\n", strerror(ret));
 		} else {
 			char buf[32];
 			snprintf(buf, sizeof(buf), "ep_pool/%zu", i);

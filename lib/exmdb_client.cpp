@@ -137,12 +137,12 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
 	exmdb_rpc_free(bin.pb);
 	if (response_code != exmdb_response::success) {
-		printf("exmdb_client: Failed to connect to [%s]:%hu/%s: %s\n",
+		fprintf(stderr, "exmdb_client: Failed to connect to [%s]:%hu/%s: %s\n",
 		       srv.host.c_str(), srv.port, srv.prefix.c_str(),
 		       exmdb_rpc_strerror(response_code));
 		return -1;
 	} else if (bin.cb != 5) {
-		printf("[exmdb_client]: response format error "
+		fprintf(stderr, "[exmdb_client]: response format error "
 		       "during connect to [%s]:%hu/%s\n",
 		       srv.host.c_str(), srv.port, srv.prefix.c_str());
 		return -1;
@@ -293,7 +293,7 @@ static int launch_notify_listener(remote_svr &srv) try
 	ag.startup_wait = true;
 	auto ret = pthread_create(&ag.thr_id, nullptr, cl_notif_reader, &ag);
 	if (ret != 0) {
-		printf("exmdb_client: E-1449: pthread_create: %s\n", strerror(ret));
+		fprintf(stderr, "exmdb_client: E-1449: pthread_create: %s\n", strerror(ret));
 		mdcl_agent_list.pop_back();
 		return 8;
 	}
@@ -319,7 +319,7 @@ static int launch_notify_listener(remote_svr &srv) try
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	printf("exmdb_client: failed to allocate memory for exmdb\n");
+	fprintf(stderr, "exmdb_client: failed to allocate memory for exmdb\n");
 	return 7;
 }
 
@@ -334,7 +334,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 
 	auto err = list_file_read_exmdb("exmdb_list.txt", cfgdir, xmlist);
 	if (err != 0) {
-		printf("exmdb_client: list_file_read_exmdb: %s\n", strerror(err));
+		fprintf(stderr, "exmdb_client: list_file_read_exmdb: %s\n", strerror(err));
 		return 1;
 	}
 	mdcl_notify_stop = false;
@@ -351,12 +351,12 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 			mdcl_server_list.emplace_back(std::move(item));
 			continue; /* do not start notify agent for locals */
 		} catch (const std::bad_alloc &) {
-			printf("exmdb_client: Failed to allocate memory\n");
+			fprintf(stderr, "exmdb_client: Failed to allocate memory\n");
 			mdcl_notify_stop = true;
 			return 3;
 		}
 		if (mdcl_conn_max == 0) {
-			printf("exmdb_client: there's remote store media "
+			fprintf(stderr, "exmdb_client: there's remote store media "
 				"in exmdb list, but rpc proxy connection number is 0\n");
 			mdcl_notify_stop = true;
 			return 4;
@@ -365,7 +365,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		try {
 			mdcl_server_list.emplace_back(std::move(item));
 		} catch (const std::bad_alloc &) {
-			printf("exmdb_client: Failed to allocate memory for exmdb\n");
+			fprintf(stderr, "exmdb_client: Failed to allocate memory for exmdb\n");
 			mdcl_notify_stop = true;
 			return 5;
 		}
@@ -376,7 +376,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		cl_pinger2();
 	auto ret = pthread_create(&mdcl_scan_id, nullptr, cl_pinger, nullptr);
 	if (ret != 0) {
-		printf("exmdb_client: failed to create proxy scan thread: %s\n", strerror(ret));
+		fprintf(stderr, "exmdb_client: failed to create proxy scan thread: %s\n", strerror(ret));
 		mdcl_notify_stop = true;
 		return 9;
 	}
@@ -404,7 +404,7 @@ remote_conn_ref exmdb_client_get_connection(const char *dir)
 	auto i = std::find_if(mdcl_server_list.begin(), mdcl_server_list.end(),
 	         [&](const remote_svr &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
 	if (i == mdcl_server_list.end()) {
-		printf("exmdb_client: cannot find remote server for %s\n", dir);
+		fprintf(stderr, "exmdb_client: cannot find remote server for %s\n", dir);
 		return fc;
 	}
 	if (i->conn_list.size() > 0) {
@@ -479,18 +479,18 @@ int main(int argc, const char **argv)
 	{
 		auto fc1 = exmdb_client_get_connection(dir);
 		assert(fc1 != nullptr);
-		printf("C#1a: fd %d\n", fc1->sockd);
+		fprintf(stderr, "C#1a: fd %d\n", fc1->sockd);
 		//sleep(1);
 		{
 			auto fc2 = exmdb_client_get_connection(dir);
 			assert(fc2 != nullptr);
-			printf("C#2a: fd %d\n", fc2->sockd);
+			fprintf(stderr, "C#2a: fd %d\n", fc2->sockd);
 			auto fc3 = exmdb_client_get_connection(dir);
-			printf("C#3: fd %d\n", fc3 != nullptr ? fc3->sockd : -1);
+			fprintf(stderr, "C#3: fd %d\n", fc3 != nullptr ? fc3->sockd : -1);
 		}
 		auto fc2 = exmdb_client_get_connection(dir);
 		assert(fc2 != nullptr);
-		printf("C#2b: fd %d\n", fc2->sockd);
+		fprintf(stderr, "C#2b: fd %d\n", fc2->sockd);
 		fc2.reset();
 		sleep(64);
 		// fc1 should now be dead (server-side timeout of 60)
@@ -499,10 +499,10 @@ int main(int argc, const char **argv)
 		sleep(2);
 		auto fc3 = exmdb_client_get_connection(dir);
 		assert(fc3 != nullptr);
-		printf("C#3: fd %d\n", fc3->sockd);
+		fprintf(stderr, "C#3: fd %d\n", fc3->sockd);
 		auto fc4 = exmdb_client_get_connection(dir);
 		assert(fc4 != nullptr);
-		printf("C#4: fd %d\n", fc4->sockd);
+		fprintf(stderr, "C#4: fd %d\n", fc4->sockd);
 	}
 	return EXIT_SUCCESS;
 }
@@ -514,12 +514,12 @@ int main()
 	exmdb_client_run(PKGSYSCONFDIR);
 	{
 		auto fc = exmdb_client_get_connection("/var/lib/gromox/user/test@grammm.com");
-		printf("%s\n", fc != nullptr ? "OK" : "FAIL");
-		printf("fd %d\n", fc != nullptr ? fc->sockd : -1);
+		fprintf(stderr, "%s\n", fc != nullptr ? "OK" : "FAIL");
+		fprintf(stderr, "fd %d\n", fc != nullptr ? fc->sockd : -1);
 		fc.reset();
 	}
 	sleep(64);
-	printf("check state\n");
+	fprintf(stderr, "check state\n");
 	sleep(9000);
 }
 #endif

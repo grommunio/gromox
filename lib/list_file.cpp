@@ -139,8 +139,7 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 				list_file->format[num] = 's';
 				ptr ++;
 				if (':' != *ptr) {
-					printf("[list_file]: invalid format, should have a "
-							"\":\" after \"s\"\n");
+					fprintf(stderr, "[list_file]: invalid format, should have a \":\" after \"s\"\n");
 					return FALSE;
 				}
 				ptr ++;
@@ -156,14 +155,12 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 					ptr = temp_ptr - 1;
 				}
 				if (strlen(temp_buf) == 0) {
-					printf("[list_file]: invalid format, should have a "
-							"number after \":\"\n");
+					fprintf(stderr, "[list_file]: invalid format, should have a number after \":\"\n");
 					return FALSE;
 				}
 				list_file->type_size[num] = strtol(temp_buf, nullptr, 0);
 				if (list_file->type_size[num] <= 0) {
-					printf("[list_file]: invalid format, length follows "
-							"should be larger than 0\n");
+					fprintf(stderr, "[list_file]: invalid format, length follows should be larger than 0\n");
 					return FALSE;
 				}
 				num ++;
@@ -213,7 +210,7 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 	rewind(list_file->file_ptr.get());
 	auto ptr = gromox::me_alloc<char>(table_size * list_file->item_size);
 	if (NULL == ptr) {
-		printf("[list_file]: allocate memory fail\n");
+		fprintf(stderr, "[list_file]: memory allocation failed\n");
 		return FALSE;
 	}
 	list_file->pfile = ptr;

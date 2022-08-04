@@ -1153,7 +1153,7 @@ void debug_info(const char *format, ...)
 	va_start(ap, format);
 	vsprintf(msg, format, ap);
 	va_end(ap);
-	printf("%s\n", msg);
+	fprintf(stderr, "%s\n", msg);
 #endif
 }
 

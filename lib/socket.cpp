@@ -123,7 +123,7 @@ gx_inet_lookup(const char *host, uint16_t port, unsigned int xflags)
 	snprintf(portbuf, sizeof(portbuf), "%hu", port);
 	int ret = getaddrinfo(host, port == 0 ? nullptr : portbuf, &hints, &unique_tie(aires));
 	if (ret != 0) {
-		printf("Could not resolve [%s]:%s: %s\n",
+		fprintf(stderr, "Could not resolve [%s]:%s: %s\n",
 		       host, portbuf, gai_strerror(ret));
 		return nullptr;
 	}
