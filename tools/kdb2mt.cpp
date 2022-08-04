@@ -239,12 +239,12 @@ errno_t ace_list::emplace(std::string &&s, uint32_t r)
 	m_strs.push_back(std::move(s));
 	auto ret = props->set(PR_SMTP_ADDRESS, m_strs.back().c_str());
 	if (ret != 0) {
-		printf("error ACL: %d\n", ret);
+		fprintf(stderr, "error ACL: %d\n", ret);
 		return ret;
 	}
 	ret = props->set(PR_MEMBER_RIGHTS, &r);
 	if (ret != 0) {
-		printf("error ACL: %d\n", ret);
+		fprintf(stderr, "error ACL: %d\n", ret);
 		return ret;
 	}
 	PERMISSION_DATA d = {ROW_ADD, {2, props->ppropval}};
