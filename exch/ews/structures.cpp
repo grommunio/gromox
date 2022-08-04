@@ -22,8 +22,8 @@ using namespace tinyxml2;
 
 void tDuration::serialize(XMLElement* xml) const
 {
-    XMLDUMP(StartTime);
-    XMLDUMP(EndTime);
+	XMLDUMP(StartTime);
+	XMLDUMP(EndTime);
 }
 
 tMailbox::tMailbox(const XMLElement* xml) :
@@ -39,11 +39,11 @@ void tReplyBody::serialize(XMLElement* xml) const
 
 void tUserOofSettings::serialize(XMLElement* xml) const
 {
-    XMLDUMP(OofState);
-    XMLDUMP(ExternalAudience);
-    XMLDUMP(Duration);
-    XMLDUMP(InternalReply);
-    XMLDUMP(ExternalReply);
+	XMLDUMP(OofState);
+	XMLDUMP(ExternalAudience);
+	XMLDUMP(Duration);
+	XMLDUMP(InternalReply);
+	XMLDUMP(ExternalReply);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,21 +54,21 @@ mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
 
 void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
 {
-    XMLDUMP(ResponseMessage);
-    XMLDUMP(UserOofSettings);
-    XMLDUMP(AllowExternalOof);
+	XMLDUMP(ResponseMessage);
+	XMLDUMP(UserOofSettings);
+	XMLDUMP(AllowExternalOof);
 }
 
 void mResponseMessageType::success()
 {
-    ResponseClass = "Success";
-    ResponseCode = "NoError";
+	ResponseClass = "Success";
+	ResponseCode = "NoError";
 }
 
 void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
 {
-    XMLDUMPA(ResponseClass);
-    XMLDUMP(MessageText);
-    XMLDUMP(ResponseCode);
-    XMLDUMP(DescriptiveLinkKey);
+	XMLDUMPA(ResponseClass);
+	XMLDUMP(MessageText);
+	XMLDUMP(ResponseCode);
+	XMLDUMP(DescriptiveLinkKey);
 }

@@ -23,18 +23,18 @@ namespace gromox::EWS::SOAP
  */
 Envelope::Envelope()
 {
-        XMLElement* root = doc.NewElement("SOAP:Envelope");
-        doc.InsertFirstChild(root);
-        root->SetAttribute("xmlns:SOAP", NS_SOAP);
-        header = root->InsertNewChildElement("SOAP:Header");
-        body = root->InsertNewChildElement("SOAP:Body");
+	XMLElement* root = doc.NewElement("SOAP:Envelope");
+	doc.InsertFirstChild(root);
+	root->SetAttribute("xmlns:SOAP", NS_SOAP);
+	header = root->InsertNewChildElement("SOAP:Header");
+	body = root->InsertNewChildElement("SOAP:Body");
 
-        XMLElement* ServerVersionInfo = header->InsertNewChildElement("t:ServerVersionInfo");
-        ServerVersionInfo->SetAttribute("MajorVersion", "15");
-		ServerVersionInfo->SetAttribute("MinorVersion", "0");
-		ServerVersionInfo->SetAttribute("MajorBuildNumber", "847");
-		ServerVersionInfo->SetAttribute("MinorBuildNumber", "4040");
-		ServerVersionInfo->SetAttribute("xmlns:t", "http://schemas.microsoft.com/exchange/services/2006/types");
+	XMLElement* ServerVersionInfo = header->InsertNewChildElement("t:ServerVersionInfo");
+	ServerVersionInfo->SetAttribute("MajorVersion", "15");
+	ServerVersionInfo->SetAttribute("MinorVersion", "0");
+	ServerVersionInfo->SetAttribute("MajorBuildNumber", "847");
+	ServerVersionInfo->SetAttribute("MinorBuildNumber", "4040");
+	ServerVersionInfo->SetAttribute("xmlns:t", "http://schemas.microsoft.com/exchange/services/2006/types");
 }
 
 /**
@@ -44,18 +44,18 @@ Envelope::Envelope()
  */
 Envelope::Envelope(const char* content, size_t nBytes)
 {
-    using namespace string_literals;
-    doc.Parse(content, nBytes);
-    XMLElement* envelope = doc.RootElement();
-    if(!envelope)
-        throw SOAPError("Invalid XML");
-    clean(envelope);
-    if(envelope->Name() != "Envelope"s)
-        throw SOAPError("Invalid SOAP envelope");
-    header = envelope->FirstChildElement("Header");
-    body = envelope->FirstChildElement("Body");
-    if(!body)
-        throw SOAPError("Missing body");
+	using namespace string_literals;
+	doc.Parse(content, nBytes);
+	XMLElement* envelope = doc.RootElement();
+	if(!envelope)
+		throw SOAPError("Invalid XML");
+	clean(envelope);
+	if(envelope->Name() != "Envelope"s)
+		throw SOAPError("Invalid SOAP envelope");
+	header = envelope->FirstChildElement("Header");
+	body = envelope->FirstChildElement("Body");
+	if(!body)
+		throw SOAPError("Missing body");
 }
 
 /**
@@ -67,11 +67,11 @@ Envelope::Envelope(const char* content, size_t nBytes)
  */
 void Envelope::clean(XMLElement* element)
 {
-    const char* prefix = strchr(element->Name(), ':');
-    if(prefix)
-        element->SetName(prefix+1);
-    for(XMLElement* child = element->FirstChildElement(); child; child = child->NextSiblingElement())
-        clean(child);
+	const char* prefix = strchr(element->Name(), ':');
+	if(prefix)
+		element->SetName(prefix+1);
+	for(XMLElement* child = element->FirstChildElement(); child; child = child->NextSiblingElement())
+		clean(child);
 }
 
 /**

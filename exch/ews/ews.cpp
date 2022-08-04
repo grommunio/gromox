@@ -210,39 +210,6 @@ void EWSPlugin::loadConfig()
 	mlog(LV_INFO, "[ews]: x500 org name is \"%s\"", x500_org_name.c_str());
 }
 
-/**
- * @brief      Convert ESSDN to username
- *
- * @param      essdn   ESSDN to convert
- *
- * @throw      DispatchError   Conversion failed
- *
- * @return     Username
- *
- * @todo       This should probably verify the domain id as well (currently ignored)
- */
-std::string EWSPlugin::essdn_to_username(const std::string& essdn) const
-{
-	int user_id;
-	auto ess_tpl = fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=", x500_org_name.c_str());
-	if (strncasecmp(essdn.c_str(), ess_tpl.c_str(), ess_tpl.size()) != 0)
-		throw DispatchError("Failed to resolve essdn: invalid essdn");
-	if (essdn.size() > ess_tpl.size() + 16 && essdn[ess_tpl.size()+16] != '-')
-		throw DispatchError("Failed to resolve essdn: malformed essdn");
-	const char *lcl = essdn.c_str() + ess_tpl.size() + 17;
-	user_id = decode_hex_int(essdn.c_str() + ess_tpl.size() + 8);
-	std::string username(UADDR_SIZE, 0);
-	if (!mysql.get_username_from_id(user_id, username.data(), UADDR_SIZE))
-		throw DispatchError("Failed to resolve essdn: user not found");
-	username.resize(username.find('\0'));
-	size_t at = username.find('@');
-	if (at == username.npos)
-		throw DispatchError("Failed to resolve essdn: invalid user");
-	if (strncasecmp(username.data(), lcl, at) != 0)
-		throw DispatchError("Failed to resolve essdn: username mismatch");
-	return username;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 //Plugin management
 

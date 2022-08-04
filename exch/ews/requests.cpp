@@ -27,18 +27,11 @@ using gromox::EWS::Exceptions::NotImplementedError;
 
 using Clock = time_point::clock;
 
-/**
- * @brief      Convert string to lower case
- *
- * @param      str     String to convert
- *
- * @return     Reference to the string
- */
-inline string& tolower(string& str)
+///////////////////////////////////////////////////////////////////////////////
+//Helper functions
+
+namespace
 {
-	transform(str.begin(), str.end(), str.begin(), ::tolower);
-	return str;
-}
 
 /**
  * @brief      Read message body from reply file
@@ -47,7 +40,7 @@ inline string& tolower(string& str)
  *
  * @return     Body content or empty optional on error
  */
-static optional<string> readMessageBody(const std::string& path) try
+optional<string> readMessageBody(const std::string& path) try
 {
 	ifstream ifs(path, ios::in | ios::ate | ios::binary);
 	if(!ifs.is_open())
@@ -71,6 +64,10 @@ static optional<string> readMessageBody(const std::string& path) try
 	printf("[ews] %s\n", e.what());
 	return nullopt;
 }
+
+}
+///////////////////////////////////////////////////////////////////////
+//Request implementations
 
 /**
  * @brief      Process GetUserOofSettingsRequest
@@ -96,20 +93,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 	data.UserOofSettings.emplace();
 
 	//Get OOF state
-	string RoutingType = request.Mailbox.RoutingType.value_or("smtp");
-	string maildir;
-	if(tolower(RoutingType) == "ex"){
-		request.Mailbox.Address = ctx.plugin.essdn_to_username(request.Mailbox.Address);
-		RoutingType = "smtp";
-	}
-	if(RoutingType == "smtp") {
-		char temp[256];
-		if(!ctx.plugin.mysql.get_maildir(request.Mailbox.Address.c_str(), temp, arsizeof(temp)))
-			throw DispatchError("Failed to get user maildir");
-		maildir = temp;
-	} else
-		throw DispatchError("E-2011: unrecognized RoutingType '"+RoutingType+"'");
-
+	std::string maildir = ctx.get_maildir(request.Mailbox);
 	string configPath = maildir+"/config/autoreply.cfg";
 	auto configFile = config_file_init(configPath.c_str(), nullptr);
 	if(configFile) {
