@@ -783,6 +783,10 @@ BOOL emsmdb_interface_alloc_handle_number(uint32_t *pnum)
 	if (NULL == phandle) {
 		return FALSE;
 	}
+	if (phandle->last_handle >= INT32_MAX) {
+		fprintf(stderr, "E-2139: Very long lived connection, awkward situation - I am not implemented!\n");
+		return false;
+	}
 	*pnum = phandle->last_handle++;
 	return TRUE;
 }
