@@ -63,7 +63,8 @@ static bool authmgr_reload()
 {
 	auto pfile = config_file_initd("authmgr.cfg", get_config_path(), nullptr);
 	if (pfile == nullptr) {
-		printf("[authmgr]: confing_file_initd authmgr.cfg: %s\n", strerror(errno));
+		fprintf(stderr, "[authmgr]: confing_file_initd authmgr.cfg: %s\n",
+		        strerror(errno));
 		return false;
 	}
 
@@ -80,12 +81,13 @@ static bool authmgr_reload()
 		am_choice = A_LDAP;
 	else if (strcmp(val, "externid") == 0)
 		am_choice = A_EXTERNID;
-	printf("[authmgr]: backend selection %s\n", val != nullptr ? val : "none");
+	fprintf(stderr, "[authmgr]: backend selection %s\n",
+	        val != nullptr ? val : "none");
 
 	if (fptr_ldap_login == nullptr && am_choice >= A_LDAP) {
 		query_service2("ldap_auth_login2", fptr_ldap_login);
 		if (fptr_ldap_login == nullptr) {
-			printf("[authmgr]: ldap_adaptor plugin not loaded yet\n");
+			fprintf(stderr, "[authmgr]: ldap_adaptor plugin not loaded yet\n");
 			return false;
 		}
 	}
@@ -100,11 +102,11 @@ static bool authmgr_init()
 	query_service2("mysql_auth_login2", fptr_mysql_login);
 	if (fptr_mysql_meta == nullptr ||
 	    fptr_mysql_login == nullptr) {
-		printf("[authmgr]: mysql_adaptor plugin not loaded yet\n");
+		fprintf(stderr, "[authmgr]: mysql_adaptor plugin not loaded yet\n");
 		return false;
 	}
 	if (!register_service("auth_login_gen", login_gen)) {
-		printf("[authmgr]: failed to register auth services\n");
+		fprintf(stderr, "[authmgr]: failed to register auth services\n");
 		return false;
 	}
 	return true;

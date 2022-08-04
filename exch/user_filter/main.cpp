@@ -36,31 +36,31 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		auto cfg_path = plugname + ".cfg";
 		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path(), nullptr);
 		if (NULL == pfile) {
-			printf("[%s]: config_file_initd %s: %s\n",
+			fprintf(stderr, "[%s]: config_file_initd %s: %s\n",
 			       plugname.c_str(), cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
 		auto str_value = pfile->get_value("IS_CASE_SENSITIVE");
 		if (NULL == str_value) {
 			case_sensitive = FALSE;
-			printf("[%s]: case-insensitive\n", plugname.c_str());
+			fprintf(stderr, "[%s]: case-insensitive\n", plugname.c_str());
 		} else {
 			if (0 == strcasecmp(str_value, "FALSE")) {
 				case_sensitive=FALSE;
-				printf("[%s]: case-insensitive\n", plugname.c_str());
+				fprintf(stderr, "[%s]: case-insensitive\n", plugname.c_str());
 			} else if (0 == strcasecmp(str_value, "TRUE")) {
 				case_sensitive=TRUE;
-				printf("[%s]: case-sensitive\n", plugname.c_str());
+				fprintf(stderr, "[%s]: case-sensitive\n", plugname.c_str());
 			} else {
 				case_sensitive = FALSE;
-				printf("[%s]: case-insensitive\n", plugname.c_str());
+				fprintf(stderr, "[%s]: case-insensitive\n", plugname.c_str());
 			}
 		}				
 		str_value = pfile->get_value("AUDIT_MAX_NUM");
 		audit_max = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (audit_max < 0)
 			audit_max = 0;
-		printf("[%s]: audit capacity is %d\n", plugname.c_str(), audit_max);
+		fprintf(stderr, "[%s]: audit capacity is %d\n", plugname.c_str(), audit_max);
 		str_value = pfile->get_value("AUDIT_INTERVAL");
 		if (NULL == str_value) {
 			audit_interval = 60;
@@ -70,23 +70,23 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 				audit_interval = 60;
 		}
 		HX_unit_seconds(temp_buff, arsizeof(temp_buff), audit_interval, 0);
-		printf("[%s]: audit interval is %s\n", plugname.c_str(), temp_buff);
+		fprintf(stderr, "[%s]: audit interval is %s\n", plugname.c_str(), temp_buff);
 		str_value = pfile->get_value("AUDIT_TIMES");
 		audit_times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;
 		if (audit_times <= 0)
 			audit_times = 10;
-		printf("[%s]: audit times is %d\n", plugname.c_str(), audit_times);
+		fprintf(stderr, "[%s]: audit times is %d\n", plugname.c_str(), audit_times);
 		str_value = pfile->get_value("TEMP_LIST_SIZE");
 		temp_list_size = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (temp_list_size < 0)
 			temp_list_size = 0;
-		printf("[%s]: temporary list capacity is %d\n", plugname.c_str(),
+		fprintf(stderr, "[%s]: temporary list capacity is %d\n", plugname.c_str(),
 			temp_list_size);
 		str_value = pfile->get_value("GREY_GROWING_NUM");
 		growing_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (growing_num < 0)
 			growing_num = 0;
-		printf("[%s]: grey list growing number is %d\n", plugname.c_str(),
+		fprintf(stderr, "[%s]: grey list growing number is %d\n", plugname.c_str(),
 			growing_num);
 		str_value = pfile->get_value("JUDGE_SERVICE_NAME");
 		std::string judge_name = str_value != nullptr ? str_value : plugname.c_str() + "_judge"s;
@@ -98,21 +98,21 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		str_filter_init(plugname.c_str(), case_sensitive, audit_max,
 		   audit_interval, audit_times, temp_list_size, list_path, growing_num);
 		if (0 != str_filter_run()) {
-			printf("[%s]: failed to run the module\n", plugname.c_str());
+			fprintf(stderr, "[%s]: failed to run the module\n", plugname.c_str());
 			return FALSE;
 		}
 		if (judge_name.size() > 0 && !register_service(judge_name.c_str(), str_filter_judge)) {
-			printf("[%s]: failed to register \"%s\" service\n",
+			fprintf(stderr, "[%s]: failed to register \"%s\" service\n",
 			       plugname.c_str(), judge_name.c_str());
 			return FALSE;
 		}
 		if (query_name.size() > 0 && !register_service(query_name.c_str(), str_filter_query)) {
-			printf("[%s]: failed to register \"%s\" service\n",
+			fprintf(stderr, "[%s]: failed to register \"%s\" service\n",
 			       plugname.c_str(), query_name.c_str());
 			return FALSE;
 		}
 		if (add_name.size() > 0 && !register_service(add_name.c_str(), str_filter_add_string_into_temp_list)) {
-			printf("[%s]: failed to register \"%s\" service\n",
+			fprintf(stderr, "[%s]: failed to register \"%s\" service\n",
 			       plugname.c_str(), add_name.c_str());
 			return FALSE;
 		}

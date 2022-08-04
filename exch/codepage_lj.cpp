@@ -56,14 +56,14 @@ static BOOL svc_codepage_lang(int reason, void **data)
 	auto filename = plugname + std::string(".json");
 	auto filp = fopen_sd(filename.c_str(), get_data_path());
 	if (filp == nullptr) {
-		printf("[codepage_lang]: fopen_sd %s: %s\n",
+		fprintf(stderr, "[codepage_lang]: fopen_sd %s: %s\n",
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
 	size_t sl = 0;
 	std::unique_ptr<char[], stdlib_delete> sd(HX_slurp_fd(fileno(filp.get()), &sl));
 	if (sd == nullptr) {
-		printf("[codepage_lang]: slurp %s: %s\n",
+		fprintf(stderr, "[codepage_lang]: slurp %s: %s\n",
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
@@ -71,11 +71,11 @@ static BOOL svc_codepage_lang(int reason, void **data)
 	sd.reset();
 	std::istringstream ss(sd2);
 	if (!Json::parseFromStream(Json::CharReaderBuilder(), ss, &g_cpl_dict, nullptr)) {
-		printf("[codepage_lang]: invalid json in %s\n", filename.c_str());
+		fprintf(stderr, "[codepage_lang]: invalid json in %s\n", filename.c_str());
 		return false;
 	}
 	if (!register_service("get_lang", cpl_get_string)) {
-		printf("[codepage_lang]: failed to register \"get_lang\" service\n");
+		fprintf(stderr, "[codepage_lang]: failed to register \"get_lang\" service\n");
 		return false;
 	}
 	return TRUE;

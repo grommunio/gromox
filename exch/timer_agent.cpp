@@ -74,17 +74,17 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 		auto pfile = config_file_initd(cfg_path.c_str(),
 		             get_config_path(), timer_agent_cfg_defaults);
 		if (NULL == pfile) {
-			printf("[timer_agent]: config_file_initd %s: %s\n",
+			fprintf(stderr, "[timer_agent]: config_file_initd %s: %s\n",
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
 
 		size_t conn_num = pfile->get_ll("connection_num");
-		printf("[timer_agent]: timer connection number is %zu\n", conn_num);
+		fprintf(stderr, "[timer_agent]: timer connection number is %zu\n", conn_num);
 
 		gx_strlcpy(g_timer_ip, pfile->get_value("timer_host"), arsizeof(g_timer_ip));
 		g_timer_port = pfile->get_ll("timer_port");
-		printf("[timer_agent]: timer address is [%s]:%hu\n",
+		fprintf(stderr, "[timer_agent]: timer address is [%s]:%hu\n",
 		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);
 
 		for (size_t i = 0; i < conn_num; ++i) try {
@@ -98,14 +98,15 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 		if (ret != 0) {
 			g_notify_stop = true;
 			g_back_list.clear();
-			printf("[timer_agent]: failed to create scan thread: %s\n", strerror(ret));
+			fprintf(stderr, "[timer_agent]: failed to create scan thread: %s\n",
+			        strerror(ret));
 			return FALSE;
 		}
 		pthread_setname_np(g_scan_id, "timer_agent");
 		if (!register_service("add_timer", add_timer))
-			printf("[timer_agent]: failed to register add_timer\n");
+			fprintf(stderr, "[timer_agent]: failed to register add_timer\n");
 		if (!register_service("cancel_timer", cancel_timer))
-			printf("[timer_agent]: failed to register cancel_timer\n");
+			fprintf(stderr, "[timer_agent]: failed to register cancel_timer\n");
 		return TRUE;
 	}
 	case PLUGIN_FREE:
