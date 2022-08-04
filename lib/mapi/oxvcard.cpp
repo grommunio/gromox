@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <string>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/oxvcard.hpp>
@@ -16,11 +17,25 @@
 using namespace gromox;
 
 namespace {
+
 struct vc_delete {
 	inline void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
 };
+
+struct unrecog {
+	unrecog(const vcard_line &l) :
+		m_what("Line " + std::to_string(l.m_lnum)) {}
+	unrecog(const vcard_line &l, const vcard_param &p) :
+		m_what("Line " + std::to_string(l.m_lnum) + " Param {" + p.name() + "}") {}
+	unrecog(const vcard_line &l, const vcard_value &v) :
+		m_what("Line " + std::to_string(l.m_lnum) + " Value {}") {}
+	const char *what() const noexcept { return m_what.c_str(); }
+	std::string m_what;
+};
+
 }
 
+unsigned int g_oxvcard_pedantic;
 static constexpr uint32_t g_n_proptags[] = 
 	{PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 	PR_DISPLAY_NAME_PREFIX, PR_GENERATION};
@@ -164,20 +179,20 @@ MESSAGE_CONTENT* oxvcard_import(
 		return NULL;
 	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Contact") != 0)
 		return nullptr;
-	for (const auto &line : pvcard->m_lines) {
+	for (const auto &line : pvcard->m_lines) try {
 		auto pvline = &line;
 		auto pvline_name = pvline->name();
 		if (strcasecmp(pvline_name, "UID") == 0) {
 			/* Deviation from MS-OXVCARD v8.3 §2.1.3.7.7 */
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
-				return nullptr;
+				throw unrecog(line);
 			if (pmsg->proplist.set(g_vcarduid_proptag, pstring) != 0)
 				return nullptr;
 		} else if (strcasecmp(pvline_name, "FN") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
-				return nullptr;
+				throw unrecog(line);
 			if (pmsg->proplist.set(PR_DISPLAY_NAME, pstring) != 0 ||
 			    pmsg->proplist.set(PR_NORMALIZED_SUBJECT, pstring) != 0 ||
 			    pmsg->proplist.set(PR_CONVERSATION_TOPIC, pstring) != 0)
@@ -190,7 +205,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				auto pvvalue = &vnode;
 				auto list_count = pvvalue->m_subvals.size();
 				if (list_count > 1)
-					return nullptr;
+					throw unrecog(line, vnode);
 				if (list_count > 0 &&
 				    !pvvalue->m_subvals[0].empty() &&
 				    pmsg->proplist.set(g_n_proptags[count], pvvalue->m_subvals[0].c_str()) != 0)
@@ -204,7 +219,7 @@ MESSAGE_CONTENT* oxvcard_import(
 					return nullptr;
 		} else if (strcasecmp(pvline_name, "PHOTO") == 0) {
 			if (pmsg->children.pattachments != nullptr)
-				return nullptr;
+				throw unrecog(line);
 			b_encoding = FALSE;
 			photo_type = NULL;
 			for (const auto &prnode : pvline->m_params) {
@@ -212,25 +227,25 @@ MESSAGE_CONTENT* oxvcard_import(
 				if (strcasecmp(pvparam->name(), "ENCODING") == 0) {
 					if (pvparam->m_paramvals.size() == 0 ||
 					    strcasecmp(pvparam->m_paramvals[0].c_str(), "b") != 0)
-						return nullptr;
+						throw unrecog(line, prnode);
 					b_encoding = TRUE;
 				} else if (strcasecmp(pvparam->name(), "TYPE") == 0) {
 					if (pvparam->m_paramvals.size() == 0)
-						return nullptr;
+						throw unrecog(line, prnode);
 					auto &s = pvparam->m_paramvals[0];
 					if (s.empty())
-						return nullptr;
+						throw unrecog(line, prnode);
 					photo_type = s.c_str();
 				}
 			}
 			if (!b_encoding || photo_type == nullptr)
-				return nullptr;
+				throw unrecog(line);
 
 			if (!is_photo(photo_type))
-				return nullptr;
+				throw unrecog(line);
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
-				return nullptr;
+				throw unrecog(line);
 			pattachments = attachment_list_init();
 			if (pattachments == nullptr)
 				return nullptr;
@@ -246,7 +261,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			char tmp_buff[VCARD_MAX_BUFFER_LEN];
 			if (decode64(pstring, tmp_len, tmp_buff,
 			    arsizeof(tmp_buff), &decode_len) != 0)
-				return nullptr;
+				throw unrecog(line);
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
 			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0 ||
@@ -272,10 +287,10 @@ MESSAGE_CONTENT* oxvcard_import(
 		} else if (strcasecmp(pvline_name, "ADR") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
 			if (pvparam == pvline->m_params.cend())
-				return nullptr;
+				throw unrecog(line);
 			if (strcasecmp(pvparam->name(), "TYPE") != 0 ||
 			    pvparam->m_paramvals.size() == 0)
-				return nullptr;
+				throw unrecog(line, *pvparam);
 			address_type = pvparam->m_paramvals[0].c_str();
 			count = 0;
 			for (const auto &vnode : pvline->m_values) {
@@ -284,7 +299,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				auto pvvalue = &vnode;
 				auto list_count = pvvalue->m_subvals.size();
 				if (list_count > 1)
-					return nullptr;
+					throw unrecog(line);
 				if (list_count > 0 &&
 				    !pvvalue->m_subvals[0].empty()) {
 					uint32_t tag;
@@ -302,13 +317,13 @@ MESSAGE_CONTENT* oxvcard_import(
 		} else if (strcasecmp(pvline_name, "TEL") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
 			if (pvparam == pvline->m_params.cend())
-				return nullptr;
+				throw unrecog(line);
 			if (strcasecmp(pvparam->name(), "TYPE") != 0 ||
 			    pvparam->m_paramvals.size() == 0)
-				return nullptr;
+				throw unrecog(line);
 			auto keyword = pvparam->m_paramvals[0].c_str();
 			if (*keyword == '\0')
-				return nullptr;
+				throw unrecog(line, *pvparam);
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
@@ -322,7 +337,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				else if (is_fax_param(*pvparam))
 					tag = PR_HOME_FAX_NUMBER;
 				else
-					return nullptr;
+					throw unrecog(line, *pvparam);
 			} else if (strcasecmp(keyword, "voice") == 0) {
 				tag = PR_OTHER_TELEPHONE_NUMBER;
 			} else if (strcasecmp(keyword, "work") == 0) {
@@ -334,7 +349,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				else if (is_fax_param(*pvparam))
 					tag = PR_BUSINESS_FAX_NUMBER;
 				else
-					return nullptr;
+					throw unrecog(line, *pvparam);
 			} else if (strcasecmp(keyword, "cell") == 0) {
 				tag = PR_MOBILE_TELEPHONE_NUMBER;
 			} else if (strcasecmp(keyword, "pager") == 0) {
@@ -423,13 +438,13 @@ MESSAGE_CONTENT* oxvcard_import(
 		} else if (strcasecmp(pvline_name, "URL") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
 			if (pvparam == pvline->m_params.cend())
-				return nullptr;
+				throw unrecog(line);
 			if (strcasecmp(pvparam->name(), "TYPE") != 0 ||
 			    pvparam->m_paramvals.size() == 0)
-				return nullptr;
+				throw unrecog(line);
 			auto keyword = pvparam->m_paramvals[0].c_str();
 			if (*keyword == '\0')
-				return nullptr;
+				throw unrecog(line, *pvparam);
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
@@ -457,19 +472,19 @@ MESSAGE_CONTENT* oxvcard_import(
 		} else if (strcasecmp(pvline_name, "KEY") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
 			if (pvparam == pvline->m_params.cend())
-				return nullptr;
+				throw unrecog(line);
 			if (strcasecmp(pvparam->name(), "ENCODING") != 0 ||
 			    pvparam->m_paramvals.size() == 0 ||
 			    strcasecmp(pvparam->m_paramvals[0].c_str(), "b") != 0)
-				return nullptr;
+				throw unrecog(line, *pvparam);
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
-				return nullptr;
+				throw unrecog(line);
 			tmp_len = strlen(pstring);
 			char tmp_buff[VCARD_MAX_BUFFER_LEN];
 			if (decode64(pstring, tmp_len, tmp_buff,
 			    arsizeof(tmp_buff), &decode_len) != 0)
-				return nullptr;
+				throw unrecog(line);
 			bin_array.count = 1;
 			bin_array.pbin = &tmp_bin;
 			tmp_bin.pc = tmp_buff;
@@ -489,14 +504,14 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (pstring == nullptr)
 				continue;
 			if (child_strings.count >= GX_ARRAY_SIZE(child_buff))
-				return nullptr;
+				throw unrecog(line);
 			child_strings.ppstr[child_strings.count++] = deconst(pstring);
 		} else if (strcasecmp(pvline_name, "X-MS-TEXT") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
 			if (ufld_count > 3)
-				return nullptr;
+				throw unrecog(line);
 			if (pmsg->proplist.set(g_ufld_proptags[ufld_count++], pstring) != 0)
 				return nullptr;
 		} else if (strcasecmp(pvline_name, "X-MS-IMADDRESS") == 0 ||
@@ -509,9 +524,9 @@ MESSAGE_CONTENT* oxvcard_import(
 		} else if (strcasecmp(pvline_name, "X-MS-TEL") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
 			if (pvparam == pvline->m_params.cend())
-				return nullptr;
+				throw unrecog(line);
 			if (pvparam->m_paramvals.size() != 0)
-				return nullptr;
+				throw unrecog(line, *pvparam);
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
@@ -528,7 +543,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			else if (strcasecmp(pvparam_name, "TTYTTD") == 0)
 				tag = PR_TTYTDD_PHONE_NUMBER;
 			else
-				return nullptr;
+				throw unrecog(line, *pvparam);
 			if (pmsg->proplist.set(tag, pstring) != 0)
 				return nullptr;
 		} else if (strcasecmp(pvline_name, "X-MS-ANNIVERSARY") == 0) {
@@ -545,10 +560,10 @@ MESSAGE_CONTENT* oxvcard_import(
 		} else if (strcasecmp(pvline_name, "X-MS-SPOUSE") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
 			if (pvparam == pvline->m_params.cend())
-				return nullptr;
+				throw unrecog(line);
 			if (strcasecmp(pvparam->name(), "N") != 0 ||
 			    pvparam->m_paramvals.size() != 0)
-				return nullptr;
+				throw unrecog(line, *pvparam);
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
@@ -557,10 +572,10 @@ MESSAGE_CONTENT* oxvcard_import(
 		} else if (strcasecmp(pvline_name, "X-MS-MANAGER") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
 			if (pvparam == pvline->m_params.cend())
-				return nullptr;
+				throw unrecog(line);
 			if (strcasecmp(pvparam->name(), "N") != 0 ||
 			    pvparam->m_paramvals.size() != 0)
-				return nullptr;
+				throw unrecog(line, *pvparam);
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
@@ -569,10 +584,10 @@ MESSAGE_CONTENT* oxvcard_import(
 		} else if (strcasecmp(pvline_name, "X-MS-ASSISTANT") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
 			if (pvparam == pvline->m_params.cend())
-				return nullptr;
+				throw unrecog(line);
 			if (strcasecmp(pvparam->name(), "N") != 0 ||
 			    pvparam->m_paramvals.size() != 0)
-				return nullptr;
+				throw unrecog(line, *pvparam);
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
@@ -600,6 +615,11 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (strings_array.count != 0 && strings_array.count < 128 &&
 			    pmsg->proplist.set(PR_HOBBIES, &strings_array) != 0)
 				return nullptr;
+		}
+	} catch (const unrecog &e) {
+		if (g_oxvcard_pedantic) {
+			fprintf(stderr, "E-2140: oxvcard_import stopped parsing that vcard due to pedantry: %s\n", e.what());
+			return nullptr;
 		}
 	}
 	if (child_strings.count != 0 &&

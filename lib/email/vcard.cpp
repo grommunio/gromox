@@ -572,9 +572,19 @@ const char *vcard_line::get_first_subval() const
 	return pvvalue->m_subvals.size() > 0 ? pvvalue->m_subvals[0].c_str() : nullptr;
 }
 
+vcard_line &vcard::append_line(vcard_line &&o)
+{
+	m_lines.push_back(std::move(o));
+	auto &r = m_lines.back();
+	r.m_lnum = m_lines.size();
+	return r;
+}
+
 vcard_line &vcard::append_line(const char *name)
 {
-	return m_lines.emplace_back(name);
+	auto &r = m_lines.emplace_back(name);
+	r.m_lnum = m_lines.size();
+	return r;
 }
 
 vcard_line &vcard::append_line(const char *name, const char *value)

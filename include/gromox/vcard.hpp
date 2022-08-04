@@ -35,6 +35,7 @@ struct GX_EXPORT vcard_line {
 	std::string m_name;
 	std::vector<vcard_param> m_params;
 	std::vector<vcard_value> m_values;
+	unsigned int m_lnum = 0;
 };
 using VCARD_LINE = vcard_line;
 
@@ -42,7 +43,7 @@ struct GX_EXPORT vcard {
 	inline void clear() { m_lines.clear(); }
 	ec_error_t retrieve_single(char *in_buff);
 	BOOL serialize(char *out_buff, size_t max_length);
-	inline vcard_line &append_line(vcard_line &&o) { m_lines.push_back(std::move(o)); return m_lines.back(); }
+	vcard_line &append_line(vcard_line &&o);
 	vcard_line &append_line(const char *);
 	vcard_line &append_line(const char *, const char *);
 
