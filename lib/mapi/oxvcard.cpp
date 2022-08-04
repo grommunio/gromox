@@ -119,6 +119,14 @@ static bool is_photo(const char *t)
 	       strcasecmp(t, "bmp") == 0;
 }
 
+static bool is_fax_param(const vcard_param &p)
+{
+	if (strcasecmp(p.name(), "type") == 0 && p.m_paramvals.size() > 0 &&
+	    strcasecmp(p.m_paramvals[0].c_str(), "fax") == 0)
+		return true;
+	return strcasecmp(p.name(), "fax") == 0;
+}
+
 MESSAGE_CONTENT* oxvcard_import(
 	const VCARD *pvcard, GET_PROPIDS get_propids)
 {
@@ -311,7 +319,7 @@ MESSAGE_CONTENT* oxvcard_import(
 					tag = pmsg->proplist.has(PR_HOME_TELEPHONE_NUMBER) ?
 					      PR_HOME2_TELEPHONE_NUMBER :
 					      PR_HOME_TELEPHONE_NUMBER;
-				else if (strcasecmp(pvparam->name(), "fax") == 0)
+				else if (is_fax_param(*pvparam))
 					tag = PR_HOME_FAX_NUMBER;
 				else
 					return nullptr;
@@ -323,7 +331,7 @@ MESSAGE_CONTENT* oxvcard_import(
 					tag = pmsg->proplist.has(PR_BUSINESS_TELEPHONE_NUMBER) ?
 					      PR_BUSINESS2_TELEPHONE_NUMBER :
 					      PR_BUSINESS_TELEPHONE_NUMBER;
-				else if (strcasecmp(pvparam->name(), "fax") == 0)
+				else if (is_fax_param(*pvparam))
 					tag = PR_BUSINESS_FAX_NUMBER;
 				else
 					return nullptr;
