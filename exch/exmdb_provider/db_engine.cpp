@@ -583,30 +583,33 @@ static ID_ARRAYS *db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	return nullptr;
 }
 
-static void db_engine_notify_search_completion(db_item_ptr &pdb, uint64_t folder_id)
+static std::vector<ID_NODE> collect_nsub(db_item_ptr &pdb, unsigned int bits,
+    uint64_t folder_id, uint64_t message_id)
 {
-	int i;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
-	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
-
+	DOUBLE_LIST_NODE *pnode;
+	NSUB_NODE *pnsub;
 	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
 		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (pnsub->notificaton_type &
-			NOTIFICATION_TYPE_SEARCHCOMPLETE)) {
+		if (!(pnsub->notificaton_type & bits))
 			continue;
-		}
 		if (pnsub->b_whole || (pnsub->folder_id == folder_id &&
-		    pnsub->message_id == 0)) try {
+		    pnsub->message_id == message_id))
 			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1562: ENOMEM\n");
-			return;
-		}
 	}
+	return tmp_list;
+}
+
+static void db_engine_notify_search_completion(db_item_ptr &pdb,
+    uint64_t folder_id) try
+{
+	int i;
+	DB_NOTIFY_DATAGRAM datagram;
+	auto dir = exmdb_server_get_dir();
+
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_SEARCHCOMPLETE,
+	                folder_id, 0);
 	if (tmp_list.size() == 0)
 		return;
 	datagram.dir = deconst(dir);
@@ -628,6 +631,8 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb, uint64_t folder
 		notification_agent_backward_notify(
 			parrays->remote_ids[i], &datagram);
 	}
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2118: ENOMEM\n");
 }
 
 static void *mdpeng_thrwork(void *param)
@@ -1980,30 +1985,13 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 }
 
 void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
-	uint64_t message_id, uint32_t message_flags, const char *pstr_class)
+    uint64_t message_id, uint32_t message_flags, const char *pstr_class) try
 {
 	int i;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server_get_dir();
-	std::vector<ID_NODE> tmp_list;
 
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (NOTIFICATION_TYPE_NEWMAIL
-			&pnsub->notificaton_type)) {
-			continue;
-		}
-		if (pnsub->b_whole || (pnsub->folder_id == folder_id &&
-		    pnsub->message_id == 0)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1511: ENOMEM\n");
-			return;
-		}
-	}
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_NEWMAIL, folder_id, 0);
 	if (tmp_list.size() == 0)
 		return;
 	datagram.dir = deconst(dir);
@@ -2028,34 +2016,19 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		notification_agent_backward_notify(
 			parrays->remote_ids[i], &datagram);
 	}
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2119: ENOMEM\n");
 }
 	
-void db_engine_notify_new_mail(db_item_ptr &pdb,
-	uint64_t folder_id, uint64_t message_id)
+void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
+    uint64_t message_id) try
 {
 	int i;
 	void *pvalue;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server_get_dir();
-	std::vector<ID_NODE> tmp_list;
 
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (NOTIFICATION_TYPE_NEWMAIL
-			&pnsub->notificaton_type)) {
-			continue;
-		}
-		if (pnsub->b_whole || (pnsub->folder_id == folder_id &&
-		    pnsub->message_id == 0)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1512: ENOMEM\n");
-			return;
-		}
-	}
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_NEWMAIL, folder_id, 0);
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
@@ -2093,33 +2066,19 @@ void db_engine_notify_new_mail(db_item_ptr &pdb,
 	db_engine_notify_folder_modification(
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2120: ENOMEM\n");
 }
 
-void db_engine_notify_message_creation(db_item_ptr &pdb,
-	uint64_t folder_id, uint64_t message_id)
+void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
+    uint64_t message_id) try
 {
 	int i;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server_get_dir();
-	std::vector<ID_NODE> tmp_list;
 
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (pnsub->notificaton_type &
-			NOTIFICATION_TYPE_OBJECTCREATED)) {
-			continue;
-		}
-		if (pnsub->b_whole || (pnsub->folder_id == folder_id &&
-		    pnsub->message_id == 0)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1513: ENOMEM\n");
-			return;
-		}
-	}
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTCREATED,
+	                folder_id, 0);
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
@@ -2148,37 +2107,23 @@ void db_engine_notify_message_creation(db_item_ptr &pdb,
 	db_engine_notify_folder_modification(
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2121: ENOMEM\n");
 }
 
-void db_engine_notify_link_creation(db_item_ptr &pdb,
-	uint64_t parent_id, uint64_t message_id)
+void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
+    uint64_t message_id) try
 {
 	int i;
-	NSUB_NODE *pnsub;
 	uint64_t folder_id;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	
 	if (!common_util_get_message_parent_folder(pdb->psqlite, message_id, &folder_id))
 		return;
 
 	auto dir = exmdb_server_get_dir();
-	std::vector<ID_NODE> tmp_list;
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (pnsub->notificaton_type &
-			NOTIFICATION_TYPE_OBJECTCREATED)) {
-			continue;
-		}
-		if (pnsub->b_whole || (pnsub->folder_id == folder_id &&
-		    pnsub->message_id == 0)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1514: ENOMEM\n");
-			return;
-		}
-	}
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTCREATED,
+	                folder_id, 0);
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
@@ -2208,6 +2153,8 @@ void db_engine_notify_link_creation(db_item_ptr &pdb,
 	db_engine_notify_folder_modification(
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2122: ENOMEM\n");
 }
 
 static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
@@ -2370,31 +2317,15 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 	}
 }
 
-void db_engine_notify_folder_creation(db_item_ptr &pdb,
-	uint64_t parent_id, uint64_t folder_id)
+void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
+    uint64_t folder_id) try
 {
 	int i;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server_get_dir();
-	std::vector<ID_NODE> tmp_list;
 
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (pnsub->notificaton_type &
-			NOTIFICATION_TYPE_OBJECTCREATED)) {
-			continue;
-		}
-		if (pnsub->b_whole || (pnsub->folder_id == parent_id &&
-		    pnsub->message_id == 0)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1515: ENOMEM\n");
-			return;
-		}
-	}
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTCREATED,
+	                parent_id, 0);
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
@@ -2423,6 +2354,8 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb,
 	db_engine_notify_folder_modification(
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2123: ENOMEM\n");
 }
 
 static void db_engine_update_prev_id(DOUBLE_LIST *plist,
@@ -2973,31 +2906,15 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 	}
 }
 
-void db_engine_notify_message_deletion(db_item_ptr &pdb,
-	uint64_t folder_id, uint64_t message_id)
+void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
+    uint64_t message_id) try
 {
 	int i;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server_get_dir();
-	std::vector<ID_NODE> tmp_list;
 
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (pnsub->notificaton_type &
-			NOTIFICATION_TYPE_OBJECTDELETED)) {
-			continue;
-		}
-		if (pnsub->b_whole || (pnsub->folder_id == folder_id &&
-		    pnsub->message_id == message_id)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1516: ENOMEM\n");
-			return;
-		}
-	}
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTDELETED,
+	                folder_id, message_id);
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
@@ -3025,15 +2942,15 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb,
 	db_engine_notify_folder_modification(
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2124: ENOMEM\n");
 }
 
-void db_engine_notify_link_deletion(db_item_ptr &pdb,
-	uint64_t parent_id, uint64_t message_id)
+void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
+    uint64_t message_id) try
 {
 	int i;
-	NSUB_NODE *pnsub;
 	uint64_t folder_id;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	
 	if (!common_util_get_message_parent_folder(pdb->psqlite,
@@ -3041,22 +2958,7 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb,
 		return;
 
 	auto dir = exmdb_server_get_dir();
-	std::vector<ID_NODE> tmp_list;
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (pnsub->notificaton_type &
-			NOTIFICATION_TYPE_OBJECTDELETED)) {
-			continue;
-		}
-		if (pnsub->b_whole || (pnsub->folder_id == folder_id &&
-		    pnsub->message_id == message_id)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1517: ENOMEM\n");
-			return;
-		}
-	}
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTDELETED, folder_id, message_id);
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
@@ -3085,6 +2987,8 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb,
 	db_engine_notify_folder_modification(
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2125: ENOMEM\n");
 }
 
 static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
@@ -3163,31 +3067,15 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 	}
 }	
 
-void db_engine_notify_folder_deletion(db_item_ptr &pdb,
-	uint64_t parent_id, uint64_t folder_id)
+void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
+    uint64_t folder_id) try
 {
 	int i;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server_get_dir();
-	std::vector<ID_NODE> tmp_list;
 
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (pnsub->notificaton_type &
-			NOTIFICATION_TYPE_OBJECTDELETED)) {
-			continue;
-		}
-		if (pnsub->b_whole || (pnsub->folder_id == parent_id &&
-		    pnsub->message_id == 0)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1518: ENOMEM\n");
-			return;
-		}
-	}
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTDELETED,
+	                parent_id, 0);
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
@@ -3212,6 +3100,8 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb,
 	}
 	db_engine_notify_hierarchy_table_delete_row(
 		pdb, parent_id, folder_id);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2126: ENOMEM\n");
 }
 
 static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
@@ -3826,31 +3716,15 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 	}
 }
 
-void db_engine_notify_message_modification(db_item_ptr &pdb,
-	uint64_t folder_id, uint64_t message_id)
+void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
+    uint64_t message_id) try
 {
 	int i;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server_get_dir();
-	std::vector<ID_NODE> tmp_list;
 
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (pnsub->notificaton_type &
-			NOTIFICATION_TYPE_OBJECTMODIFIED)) {
-			continue;
-		}
-		if (pnsub->b_whole || (pnsub->folder_id == folder_id &&
-		    pnsub->message_id == message_id)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1519: ENOMEM\n");
-			return;
-		}
-	}
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTMODIFIED,
+	                folder_id, message_id);
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
@@ -3879,6 +3753,8 @@ void db_engine_notify_message_modification(db_item_ptr &pdb,
 	db_engine_notify_folder_modification(
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2127: ENOMEM\n");
 }
 
 static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
@@ -4055,31 +3931,15 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 	}
 }
 
-void db_engine_notify_folder_modification(db_item_ptr &pdb,
-	uint64_t parent_id, uint64_t folder_id)
+void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
+    uint64_t folder_id) try
 {
 	int i;
-	NSUB_NODE *pnsub;
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server_get_dir();
-	std::vector<ID_NODE> tmp_list;
 
-	for (pnode=double_list_get_head(&pdb->nsub_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->nsub_list, pnode)) {
-		pnsub = (NSUB_NODE*)pnode->pdata;
-		if (0 == (pnsub->notificaton_type &
-			NOTIFICATION_TYPE_OBJECTMODIFIED)) {
-			continue;
-		}
-		if (pnsub->b_whole || (pnsub->folder_id == folder_id &&
-		    pnsub->message_id == 0)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1520: ENOMEM\n");
-			return;
-		}
-	}
+	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTMODIFIED,
+	                folder_id, 0);
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
@@ -4106,6 +3966,8 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb,
 	}
 	db_engine_notify_hierarchy_table_modify_row(
 		pdb, parent_id, folder_id);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2128: ENOMEM\n");
 }
 
 void db_engine_notify_message_movecopy(db_item_ptr &pdb,
