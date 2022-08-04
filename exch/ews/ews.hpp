@@ -14,6 +14,12 @@
 
 namespace gromox::EWS {
 
+namespace Structures
+{
+struct tMailbox;
+}
+
+
 struct EWSContext;
 
 /**
@@ -28,8 +34,6 @@ public:
 
 	BOOL proc(int, const void*, uint64_t);
 
-	std::string essdn_to_username(const std::string&) const;
-
 	static BOOL preproc(int);
 
 	struct _mysql {
@@ -38,12 +42,12 @@ public:
 		decltype(mysql_adaptor_get_maildir)* get_maildir;
 		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
 	} mysql; ///< mysql adaptor function pointers
+
+	std::string x500_org_name; ///< organization name or empty string if not configured
 private:
 	static const std::unordered_map<std::string, Handler> requestMap;
 
 	static void writeheader(int, int, size_t);
-
-	std::string x500_org_name; ///< organization name or empty string if not configured
 
 	std::pair<std::string, int> dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t);
 	void loadConfig();
@@ -58,12 +62,15 @@ struct EWSContext
 		ID(ID), orig(*get_request(ID)), auth_info(auth_info), request(data, length), plugin(plugin)
 	{}
 
+	std::string essdn_to_username(const std::string&) const;
+	std::string get_maildir(const Structures::tMailbox&) const;
+
 	int ID = 0;
-	HTTP_REQUEST &orig;
+	HTTP_REQUEST& orig;
 	HTTP_AUTH_INFO auth_info{};
 	SOAP::Envelope request;
 	SOAP::Envelope response;
-	EWSPlugin &plugin;
+	EWSPlugin& plugin;
 };
 
 }

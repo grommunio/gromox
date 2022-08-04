@@ -299,9 +299,9 @@ template<typename T>
 static T fromXMLNodeDispatch(const tinyxml2::XMLElement* child)
 {
 	if constexpr(BaseType<T>::container == LIST)
-	    return fromXMLNodeList<T>(child);
+		return fromXMLNodeList<T>(child);
 	else
-	    return fromXMLNode<T>(child);
+		return fromXMLNode<T>(child);
 }
 
 /**
@@ -383,11 +383,11 @@ template<typename T>
 static void toXMLNode(tinyxml2::XMLElement* xml, const T& value)
 {
 	if constexpr(explicit_convert<T>(EC_IMP_OUT))
-	    xml->SetText(value);
+		xml->SetText(value);
 	else if constexpr(explicit_convert<T>(EC_OUT))
-	    ExplicitConvert<BaseType_t<T>>::serialize(value, [xml](const char* data){xml->SetText(data);});
+		ExplicitConvert<BaseType_t<T>>::serialize(value, [xml](const char* data){xml->SetText(data);});
 	else
-	    value.serialize(xml);
+		value.serialize(xml);
 }
 
 /**
@@ -430,11 +430,11 @@ template<typename T>
 static void toXMLNodeDispatch(tinyxml2::XMLElement* xml, const T& value)
 {
 	if constexpr(BaseType<T>::container == OPTIONAL)
-	    toXmlNodeOpt<T>(xml, value);
+		toXmlNodeOpt<T>(xml, value);
 	else if constexpr(BaseType<T>::container == LIST)
-	    toXMLNodeList<T>(xml, value);
+		toXMLNodeList<T>(xml, value);
 	else
-	    toXMLNode(xml, value);
+		toXMLNode(xml, value);
 }
 
 /**
@@ -450,8 +450,8 @@ template<typename T>
 static void toXMLNode(tinyxml2::XMLElement* parent, const char* name, const T& value)
 {
 	if constexpr(BaseType<T>::container == OPTIONAL)
-	    if(!value)
-	        return;
+		if(!value)
+		return;
 	tinyxml2::XMLElement* xml = parent->InsertNewChildElement(name);
 	toXMLNodeDispatch(xml, value);
 }
@@ -477,8 +477,8 @@ static void toXMLAttr(tinyxml2::XMLElement* parent, const char* name, const T& v
 		pvalue = &value.value();
 	}
 	else
-	    pvalue = &value;
-		if constexpr(explicit_convert<T>(EC_OUT))
+		pvalue = &value;
+	if constexpr(explicit_convert<T>(EC_OUT))
 		ExplicitConvert<BaseType_t<T>>::serialize(*pvalue, [parent, name](const char* data){parent->SetAttribute(name, data);});
 	else
 		parent->SetAttribute(name, value);
