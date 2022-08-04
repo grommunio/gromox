@@ -550,7 +550,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	const CONDITION_TREE *trees[1024];
 	char digest_buff[MAX_DIGLEN];
 	const DOUBLE_LIST_NODE *nodes[1024];
-	const CONDITION_TREE_NODE *ptree_node;
 	
 #define PUSH_MATCH(TREE, NODE, CONJUNCTION, RESULT) \
 		{trees[sp]=TREE;nodes[sp]=NODE;conjunctions[sp]=CONJUNCTION;results[sp]=RESULT;sp++;}
@@ -565,7 +564,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	b_loaded = FALSE;
 	for (pnode=double_list_get_head(ptree);	NULL!=pnode;
 		pnode=double_list_get_after(ptree, pnode)) {
-		ptree_node = (CONDITION_TREE_NODE*)pnode->pdata;
+		{
+		auto ptree_node = static_cast<const CONDITION_TREE_NODE *>(pnode->pdata);
 		conjunction = ptree_node->conjunction;
 		if ((b_result && conjunction == midb_conj::c_or) ||
 		    (!b_result && conjunction == midb_conj::c_and))
@@ -980,6 +980,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			}
 		}
+		}
 		
  RECURSION_POINT:
 		switch (conjunction) {
@@ -1091,10 +1092,9 @@ static inline bool cond_w_stmt(enum midb_cond x)
 CONDITION_TREE::~CONDITION_TREE()
 {
 	DOUBLE_LIST_NODE *pnode;
-	CONDITION_TREE_NODE *ptree_node;
 	
 	while ((pnode = double_list_pop_front(this)) != nullptr) {
-		ptree_node = (CONDITION_TREE_NODE*)pnode->pdata;
+		auto ptree_node = static_cast<CONDITION_TREE_NODE *>(pnode->pdata);
 		if (NULL != ptree_node->pbranch) {
 			ptree_node->pbranch = NULL;
 		} else if (cond_is_id(ptree_node->condition)) {
@@ -1882,7 +1882,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			pnode->pdata = cu_alloc<uint64_t>();
 			if (pnode->pdata == nullptr)
 				return FALSE;
-			*(uint64_t*)pnode->pdata = message_id;
+			*static_cast<uint64_t *>(pnode->pdata) = message_id;
 			double_list_append_as_tail(&temp_list, pnode);
 		}
 	}
@@ -1895,7 +1895,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			return FALSE;
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, *(uint64_t*)pnode->pdata);
+			sqlite3_bind_int64(pstmt, 1, *static_cast<uint64_t *>(pnode->pdata));
 			if (sqlite3_step(pstmt) != SQLITE_DONE)
 				return FALSE;
 		}
@@ -2189,7 +2189,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 			pnode->pdata = cu_alloc<uint64_t>();
 			if (pnode->pdata == nullptr)
 				return false;
-			*(uint64_t*)pnode->pdata = folder_id;
+			*static_cast<uint64_t *>(pnode->pdata) = folder_id;
 			double_list_append_as_tail(&temp_list, pnode);
 		}
 	}
@@ -2202,7 +2202,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 			return false;
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, *(uint64_t*)pnode->pdata);
+			sqlite3_bind_int64(pstmt, 1, *static_cast<uint64_t *>(pnode->pdata));
 			if (sqlite3_step(pstmt) != SQLITE_DONE)
 				return false;
 		}
@@ -2619,7 +2619,6 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	int result;
 	int offset;
 	int temp_len;
-	IDL_NODE *pinode;
 	char temp_line[512];
 	DOUBLE_LIST tmp_list;
 	char sql_string[1024];
@@ -2641,7 +2640,7 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 		return MIDB_E_SQLPREP;
 	double_list_init(&tmp_list);
 	while (SQLITE_ROW == (result = sqlite3_step(pstmt))) {
-		pinode = cu_alloc<IDL_NODE>();
+		auto pinode = cu_alloc<IDL_NODE>();
 		if (pinode == nullptr)
 			return MIDB_E_NO_MEMORY;
 		pinode->node.pdata = pinode;
@@ -2657,7 +2656,7 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	offset = sprintf(list_buff, "TRUE %zu\r\n",
 		double_list_get_nodes_num(&tmp_list));
 	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
-		pinode = (IDL_NODE*)pnode->pdata;
+		auto pinode = static_cast<const IDL_NODE *>(pnode->pdata);
 		temp_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line), "%s %u\r\n",
 						pinode->mid_string, pinode->size);
 		if (256*1024 - offset < temp_len) {
@@ -3891,7 +3890,6 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 {
 	BOOL b_asc;
 	int temp_len, total_mail = 0;
-	DTLU_NODE *pdt_node;
 	char sql_string[1024];
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
@@ -3983,7 +3981,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 		return MIDB_E_SQLPREP;
 	double_list_init(&temp_list);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		pdt_node = cu_alloc<DTLU_NODE>();
+		auto pdt_node = cu_alloc<DTLU_NODE>();
 		if (pdt_node == nullptr)
 			return MIDB_E_NO_MEMORY;
 		pdt_node->node.pdata = pdt_node;
@@ -4002,7 +4000,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 		return ret;
 	for (pnode=double_list_get_head(&temp_list); NULL!=pnode;
 		pnode=double_list_get_after(&temp_list, pnode)) {
-		pdt_node = (DTLU_NODE*)pnode->pdata;
+		auto pdt_node = static_cast<const DTLU_NODE *>(pnode->pdata);
 		temp_len = sprintf(temp_buff, "%d ", pdt_node->idx - 1);
 		if (mail_engine_get_digest(pidb->psqlite, pdt_node->mid_string,
 		    temp_buff + temp_len) == 0)
@@ -4032,7 +4030,6 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 	uint64_t message_id;
 	uint32_t tmp_proptag;
 	char sql_string[1024];
-	uint32_t message_flags;
 	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
@@ -4068,7 +4065,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 		    0, rop_util_make_eid_ex(1, message_id),
 		    &proptags, &propvals) || propvals.count == 0)
 			return MIDB_E_MDB_GETMSGPROPS;
-		message_flags = *(uint32_t*)propvals.ppropval[0].pvalue;
+		auto message_flags = *static_cast<uint32_t *>(propvals.ppropval[0].pvalue);
 		if (!(message_flags & MSGFLAG_UNSENT)) {
 			message_flags |= MSGFLAG_UNSENT;
 			propvals.ppropval[0].pvalue = &message_flags;
@@ -4118,7 +4115,6 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 	uint64_t message_id;
 	uint32_t tmp_proptag;
 	char sql_string[1024];
-	uint32_t message_flags;
 	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
@@ -4154,7 +4150,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 		    0, rop_util_make_eid_ex(1, message_id),
 		    &proptags, &propvals) || propvals.count == 0)
 			return MIDB_E_MDB_GETMSGPROPS;
-		message_flags = *(uint32_t*)propvals.ppropval[0].pvalue;
+		auto message_flags = *static_cast<uint32_t *>(propvals.ppropval[0].pvalue);
 		if (message_flags & MSGFLAG_UNSENT) {
 			message_flags &= ~MSGFLAG_UNSENT;
 			propvals.ppropval[0].pvalue = &message_flags;
