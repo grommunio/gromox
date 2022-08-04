@@ -46,7 +46,7 @@
 #define HGROWING_SIZE					250
 
 struct LOGON_ITEM {
-	std::unordered_map<int, object_node *> phash;
+	std::unordered_map<uint32_t, object_node *> phash;
 	SIMPLE_TREE tree;
 };
 
@@ -177,7 +177,7 @@ void logmap_delete::operator()(LOGMAP *plogmap) const
 	g_logmap_allocator.put(plogmap);
 }
 
-int rop_processor_create_logon_item(LOGMAP *plogmap,
+int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
     uint8_t logon_id, std::unique_ptr<logon_object> &&plogon)
 {
 	/* MS-OXCROPS 3.1.4.2 */
@@ -205,8 +205,8 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 	return handle;
 }
 
-int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
-	int parent_handle, object_node &&in_object)
+int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
+    int32_t parent_handle, object_node &&in_object)
 {
 	object_node *parent = nullptr;
 	EMSMDB_INFO *pemsmdb_info;
