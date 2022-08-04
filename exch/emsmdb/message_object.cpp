@@ -444,7 +444,7 @@ gxerr_t message_object::save()
 	    pmessage->instance_id, PR_ASSOCIATED, &assoc))
 		return GXERR_CALL_FAILED;
 
-	BOOL b_fai = assoc == nullptr || *static_cast<uint8_t *>(assoc) == 0 ? false : TRUE;
+	BOOL b_fai = pvb_disabled(assoc) ? false : TRUE;
 	if (NULL != pmessage->pstate) {
 		if (!pmessage->b_new) {
 			auto ret = message_object_save2(pmessage, b_fai,
@@ -1222,7 +1222,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 				if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 					return FALSE;	
-				if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
+				if (pvb_disabled(pvalue)) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
@@ -1483,7 +1483,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;	
-		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
+		if (pvb_disabled(pvalue)) {
 			tmp_byte = 1;
 			*pb_changed = TRUE;
 			if (MSG_READ_FLAG_DEFAULT == read_flag) {
@@ -1491,17 +1491,16 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 				    pmessage->plogon->get_dir(), pmessage->instance_id,
 				    PR_READ_RECEIPT_REQUESTED, &pvalue))
 					return FALSE;
-				if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+				if (pvb_enabled(pvalue))
 					b_notify = TRUE;
-				}
 			}
 		}
 		break;
 	case MSG_READ_FLAG_CLEAR_READ_FLAG:
 		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, PR_READ, &pvalue))
-			return FALSE;	
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+			return FALSE;
+		if (pvb_enabled(pvalue)) {
 			tmp_byte = 0;
 			*pb_changed = TRUE;
 		}
@@ -1510,9 +1509,8 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED, &pvalue))
 			return FALSE;
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
-		}
 		break;
 	case MSG_READ_FLAG_CLEAR_NOTIFY_READ:
 	case MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
@@ -1525,7 +1523,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			if (exmdb_client_get_message_property(pmessage->plogon->get_dir(),
 			    username, 0, pmessage->message_id,
 			    PR_READ_RECEIPT_REQUESTED, &pvalue) &&
-			    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
+			    pvb_enabled(pvalue) &&
 			    !exmdb_client_remove_message_property(pmessage->plogon->get_dir(),
 			    pmessage->cpid, pmessage->message_id, PR_READ_RECEIPT_REQUESTED))
 				return FALSE;
@@ -1538,7 +1536,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			if (exmdb_client_get_message_property(pmessage->plogon->get_dir(),
 			    username, 0, pmessage->message_id,
 			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &pvalue) &&
-			    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
+			    pvb_enabled(pvalue) &&
 			    !exmdb_client_remove_message_property(pmessage->plogon->get_dir(),
 			    pmessage->cpid, pmessage->message_id,
 			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED))

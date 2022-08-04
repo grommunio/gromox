@@ -126,4 +126,14 @@ struct errno_t {
 using errno_t = int;
 #endif
 
+constexpr inline bool pvb_disabled(const void *z)
+{
+	return z == nullptr || *static_cast<const uint8_t *>(z) == 0;
+}
+
+constexpr inline bool pvb_enabled(const void *z)
+{
+	return z != nullptr && *static_cast<const uint8_t *>(z) != 0;
+}
+
 }

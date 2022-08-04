@@ -2020,7 +2020,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
 			    username, 0, message_id, PR_READ, &pvalue))
 				return ecError;
-			if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+			if (pvb_enabled(pvalue)) {
 				tmp_byte = 0;
 				b_changed = TRUE;
 			}
@@ -2028,14 +2028,14 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
 			    username, 0, message_id, PR_READ, &pvalue))
 				return ecError;
-			if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
+			if (pvb_disabled(pvalue)) {
 				tmp_byte = 1;
 				b_changed = TRUE;
 				if (!exmdb_client_get_message_property(pstore->get_dir(),
 				    username, 0, message_id,
 				    PR_READ_RECEIPT_REQUESTED, &pvalue))
 					return ecError;
-				if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
+				if (pvb_enabled(pvalue))
 					b_notify = TRUE;
 			}
 		}
@@ -4456,7 +4456,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		if (!exmdb_client_get_message_property(pstore->get_dir(),
 		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
-		bool orig_is_fai = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
+		bool orig_is_fai = pvb_enabled(pvalue);
 		if (b_fai != orig_is_fai)
 			return ecInvalidParam;
 	} else {
