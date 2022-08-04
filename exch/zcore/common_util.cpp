@@ -544,17 +544,14 @@ ZNOTIFICATION* common_util_dup_znotification(
 	ZNOTIFICATION *pnotification, BOOL b_temp)
 {
 	OBJECT_ZNOTIFICATION *pobj_notify;
-	OBJECT_ZNOTIFICATION *pobj_notify1;
 	NEWMAIL_ZNOTIFICATION *pnew_notify;
-	NEWMAIL_ZNOTIFICATION *pnew_notify1;
 	ZNOTIFICATION *pnotification1 = !b_temp ? me_alloc<ZNOTIFICATION>() : cu_alloc<ZNOTIFICATION>();
 	
 	if (pnotification1 == nullptr)
 		return NULL;
 	pnotification1->event_type = pnotification->event_type;
 	if (EVENT_TYPE_NEWMAIL == pnotification->event_type) {
-		pnew_notify1 = (NEWMAIL_ZNOTIFICATION*)
-			pnotification->pnotification_data;
+		auto pnew_notify1 = static_cast<const NEWMAIL_ZNOTIFICATION *>(pnotification->pnotification_data);
 		if (!b_temp) {
 			pnew_notify = me_alloc<NEWMAIL_ZNOTIFICATION>();
 			if (NULL == pnew_notify) {
@@ -618,8 +615,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		pnew_notify->message_flags = pnew_notify1->message_flags;
 		return pnotification1;
 	}
-	pobj_notify1 = (OBJECT_ZNOTIFICATION *)
-	               pnotification->pnotification_data;
+	auto pobj_notify1 = static_cast<OBJECT_ZNOTIFICATION *>(pnotification->pnotification_data);
 	if (!b_temp) {
 		pobj_notify = me_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
@@ -722,12 +718,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 
 void common_util_free_znotification(ZNOTIFICATION *pnotification)
 {
-	OBJECT_ZNOTIFICATION *pobj_notify;
-	NEWMAIL_ZNOTIFICATION *pnew_notify;
-	
 	if (EVENT_TYPE_NEWMAIL == pnotification->event_type) {
-		pnew_notify = (NEWMAIL_ZNOTIFICATION*)
-			pnotification->pnotification_data;
+		auto pnew_notify = static_cast<NEWMAIL_ZNOTIFICATION *>(pnotification->pnotification_data);
 		if (pnew_notify->entryid.pb != nullptr)
 			free(pnew_notify->entryid.pb);
 		if (pnew_notify->parentid.pb != nullptr)
@@ -736,8 +728,7 @@ void common_util_free_znotification(ZNOTIFICATION *pnotification)
 			free(pnew_notify->message_class);
 		free(pnew_notify);
 	} else {
-		pobj_notify = (OBJECT_ZNOTIFICATION*)
-			pnotification->pnotification_data;
+		auto pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(pnotification->pnotification_data);
 		if (pobj_notify->pentryid != nullptr)
 			rop_util_free_binary(pobj_notify->pentryid);
 		if (pobj_notify->pparentid != nullptr)
@@ -1596,7 +1587,6 @@ BOOL common_util_send_message(store_object *pstore,
 	BOOL b_partial;
 	int account_id;
 	uint64_t new_id;
-	uint64_t parent_id;
 	uint64_t folder_id;
 	TARRAY_SET *prcpts;
 	TAGGED_PROPVAL *ppropval;
@@ -1607,7 +1597,7 @@ BOOL common_util_send_message(store_object *pstore,
 	if (!exmdb_client_get_message_property(pstore->get_dir(), nullptr, 0,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return FALSE;
-	parent_id = *(uint64_t*)pvalue;
+	auto parent_id = *static_cast<uint64_t *>(pvalue);
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
@@ -1882,7 +1872,6 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 static ZMOVECOPY_ACTION *common_util_convert_to_zmovecopy(store_object *pstore,
     MOVECOPY_ACTION *pmovecopy)
 {
-	BINARY *pbin;
 	EXT_PUSH ext_push;
 	
 	auto pmovecopy1 = cu_alloc<ZMOVECOPY_ACTION>();
@@ -1896,15 +1885,15 @@ static ZMOVECOPY_ACTION *common_util_convert_to_zmovecopy(store_object *pstore,
 		    ext_push.p_store_eid(*pmovecopy->pstore_eid) != EXT_ERR_SUCCESS)
 			return NULL;	
 		pmovecopy1->store_eid.cb = ext_push.m_offset;
-		pmovecopy1->folder_eid = *(BINARY*)pmovecopy->pfolder_eid;
+		pmovecopy1->folder_eid = *static_cast<BINARY *>(pmovecopy->pfolder_eid);
 	} else {
-		pbin = common_util_to_store_entryid(pstore);
+		auto pbin = common_util_to_store_entryid(pstore);
 		if (NULL == pbin) {
 			return NULL;
 		}
 		pmovecopy1->store_eid = *pbin;
-		pbin = common_util_to_folder_entryid(
-			pstore, ((SVREID*)pmovecopy->pfolder_eid)->folder_id);
+		pbin = common_util_to_folder_entryid(pstore,
+		       static_cast<SVREID *>(pmovecopy->pfolder_eid)->folder_id);
 		if (NULL == pbin) {
 			return NULL;
 		}

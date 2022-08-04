@@ -388,7 +388,6 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	auto pobjtree = this;
 	char dir[256];
 	char account[UADDR_SIZE];
-	OBJECT_NODE *pobjnode;
 	
 	auto pnode = pobjtree->tree.get_root();
 	if (NULL == pnode) {
@@ -397,10 +396,12 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	pnode = pnode->get_child();
 	if (NULL != pnode) {
 		do {
-			pobjnode = (OBJECT_NODE*)pnode->pdata;
-			if (pobjnode->type == ZMG_STORE &&
-			    static_cast<store_object *>(pobjnode->pobject)->b_private == b_private &&
-			    static_cast<store_object *>(pobjnode->pobject)->account_id == account_id)
+			auto pobjnode = static_cast<OBJECT_NODE *>(pnode->pdata);
+			if (pobjnode->type != ZMG_STORE)
+				continue;
+			auto store = static_cast<store_object *>(pobjnode->pobject);
+			if (store->b_private == b_private &&
+			    store->account_id == account_id)
 				return pobjnode->handle;	
 		} while ((pnode = pnode->get_sibling()) != nullptr);
 	}

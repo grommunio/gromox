@@ -189,7 +189,6 @@ static void *zcorezs_scanwork(void *param)
 	uint8_t tmp_byte;
 	struct pollfd fdpoll;
 	ZCORE_RPC_RESPONSE response;
-	SINK_NODE *psink_node;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST temp_list1;
 	DOUBLE_LIST_NODE *pnode;
@@ -218,7 +217,7 @@ static void *zcorezs_scanwork(void *param)
 			}
 			ptail = double_list_get_tail(&pinfo->sink_list);
 			while ((pnode = double_list_pop_front(&pinfo->sink_list)) != nullptr) {
-				psink_node = (SINK_NODE*)pnode->pdata;
+				auto psink_node = static_cast<const SINK_NODE *>(pnode->pdata);
 				if (cur_time >= psink_node->until_time) {
 					double_list_append_as_tail(&temp_list1, pnode);
 				} else {
@@ -280,7 +279,7 @@ static void *zcorezs_scanwork(void *param)
 			free(pnode);
 		}
 		while ((pnode = double_list_pop_front(&temp_list1)) != nullptr) {
-			psink_node = (SINK_NODE*)pnode->pdata;
+			auto psink_node = static_cast<SINK_NODE *>(pnode->pdata);
 			if (rpc_ext_push_response(&response, &tmp_bin)) {
 				tv_msec = SOCKET_TIMEOUT * 1000;
 				fdpoll.fd = psink_node->clifd;
@@ -336,7 +335,6 @@ static void zarafa_server_notification_proc(const char *dir,
 	uint64_t message_id;
 	struct pollfd fdpoll;
 	ZCORE_RPC_RESPONSE response;
-	SINK_NODE *psink_node;
 	uint64_t old_parentid;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
@@ -617,7 +615,7 @@ static void zarafa_server_notification_proc(const char *dir,
 	}
 	for (pnode=double_list_get_head(&pinfo->sink_list); NULL!=pnode;
 		pnode=double_list_get_after(&pinfo->sink_list, pnode)) {
-		psink_node = (SINK_NODE*)pnode->pdata;
+		auto psink_node = static_cast<SINK_NODE *>(pnode->pdata);
 		for (i=0; i<psink_node->sink.count; i++) {
 			if (psink_node->sink.padvise[i].sub_id != notify_id ||
 			    hstore != psink_node->sink.padvise[i].hstore)
@@ -980,7 +978,6 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 	uint64_t message_id;
 	uint32_t tag_access;
 	uint32_t permission;
-	uint32_t folder_type;
 	uint32_t address_type;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -1054,7 +1051,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			    nullptr, 0, message_id, PidTagParentFolderId,
 			    &pvalue) || pvalue == nullptr)
 				return ecError;
-			folder_id = *(uint64_t*)pvalue;
+			folder_id = *static_cast<uint64_t *>(pvalue);
 		}
  CHECK_LOC:
 		if (b_private != pstore->b_private ||
@@ -1097,7 +1094,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
 		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
-		folder_type = *(uint32_t*)pvalue;
+		auto folder_type = *static_cast<uint32_t *>(pvalue);
 		if (pstore->owner_mode()) {
 			tag_access = MAPI_ACCESS_AllSix;
 		} else {
@@ -2110,10 +2107,9 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
 		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
-		if (0 == (flags & FLAG_OPEN_IF_EXISTS) ||
-			folder_type != *(uint32_t*)pvalue) {
+		if (!(flags & FLAG_OPEN_IF_EXISTS) ||
+		    folder_type != *static_cast<uint32_t *>(pvalue))
 			return ecDuplicateName;
-		}
 	} else {
 		parent_id = pparent->folder_id;
 		if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
@@ -3716,7 +3712,7 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 	switch (mapi_type) {
 	case ZMG_PROFPROPERTY:
 		if (NULL == pproptags) {
-			*ppropvals = *(TPROPVAL_ARRAY*)pobject;
+			*ppropvals = *static_cast<TPROPVAL_ARRAY *>(pobject);
 		} else {
 			ppropvals->count = 0;
 			ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
@@ -4494,7 +4490,6 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	uint8_t mapi_type;
 	uint32_t tmp_type;
 	uint64_t folder_id;
-	uint64_t parent_id;
 	uint64_t parent_id1;
 	uint64_t change_num;
 	uint32_t permission;
@@ -4655,7 +4650,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	if (!exmdb_client_get_folder_property(pstore->get_dir(), 0, folder_id,
 	    PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
-	parent_id = *(uint64_t*)pvalue;
+	auto parent_id = *static_cast<uint64_t *>(pvalue);
 	if (parent_id != parent_id1) {
 		/* MS-OXCFXICS 3.3.5.8.8 move folders
 		within public mailbox is not supported */

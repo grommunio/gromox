@@ -190,7 +190,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint64_t*)(*ppvalue) = pfolder->folder_id;
+		*static_cast<uint64_t *>(*ppvalue) = pfolder->folder_id;
 		return TRUE;
 	case PR_RIGHTS: {
 		*ppvalue = cu_alloc<uint32_t>();
@@ -216,8 +216,8 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		    0, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*ppvalue = common_util_to_folder_entryid(
-			pfolder->pstore, *(uint64_t*)pvalue);
+		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
+		           *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_SOURCE_KEY:
 		*ppvalue = common_util_calculate_folder_sourcekey(
@@ -241,8 +241,8 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		    0, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*ppvalue = common_util_calculate_folder_sourcekey(
-					pfolder->pstore, *(uint64_t*)pvalue);
+		*ppvalue = common_util_calculate_folder_sourcekey(pfolder->pstore,
+		           *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
 	case PR_MAPPING_SIGNATURE:

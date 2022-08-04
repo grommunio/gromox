@@ -70,7 +70,7 @@ BOOL attachment_object::init_attachment()
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	*(uint64_t*)pvalue = rop_util_current_nttime();
+	*static_cast<uint64_t *>(pvalue) = rop_util_current_nttime();
 	
 	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
 	propvals.ppropval[propvals.count++].pvalue = pvalue;

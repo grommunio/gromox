@@ -30,10 +30,7 @@ BOOL exmdb_client_get_named_propid(const char *dir,
 	uint16_t *ppropid)
 {
 	PROPID_ARRAY tmp_propids;
-	PROPNAME_ARRAY tmp_propnames;
-	
-	tmp_propnames.count = 1;
-	tmp_propnames.ppropname = (PROPERTY_NAME*)ppropname;
+	const PROPNAME_ARRAY tmp_propnames = {1, deconst(ppropname)};
 	if (!exmdb_client::get_named_propids(dir,
 		b_create, &tmp_propnames, &tmp_propids)) {
 		return FALSE;	
@@ -116,10 +113,7 @@ BOOL exmdb_client_set_instance_property(
 	const TAGGED_PROPVAL *ppropval, uint32_t *presult)
 {
 	PROBLEM_ARRAY tmp_problems;
-	TPROPVAL_ARRAY tmp_propvals;
-	
-	tmp_propvals.count = 1;
-	tmp_propvals.ppropval = (TAGGED_PROPVAL*)ppropval;
+	const TPROPVAL_ARRAY tmp_propvals = {1, deconst(ppropval)};
 	if (!exmdb_client::set_instance_properties(dir,
 		instance_id, &tmp_propvals, &tmp_problems)) {
 		return FALSE;	

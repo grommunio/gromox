@@ -661,7 +661,6 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 
 static void *zcrp_thrwork(void *param)
 {
-	int clifd;
 	void *pbuff;
 	int tv_msec;
 	int read_len;
@@ -687,7 +686,7 @@ static void *zcrp_thrwork(void *param)
 			return nullptr;
 		goto WAIT_CLIFD;
 	}
-	clifd = ((CLIENT_NODE*)pnode->pdata)->clifd;
+	auto clifd = static_cast<CLIENT_NODE *>(pnode->pdata)->clifd;
 	free(pnode->pdata);
 	
 	offset = 0;
