@@ -3,11 +3,11 @@
 gromox\-eml2mt \(em Utility to import Internet Mail messages,
 iCalendar and vCard objects
 .SH Synopsis
-\fBgromox\-eml2mt\fP \fIfile.eml\fP[...]
+\fBgromox\-eml2mt\fP [\fB\-pt\fP] \fIfile.eml\fP[...]
 .PP
-\fBgromox\-ical2mt\fP \fIfile.ics\fP[...]
+\fBgromox\-ical2mt\fP [\fB\-pt\fP] \fIfile.ics\fP[...]
 .PP
-\fBgromox\-vcf2mt\fP \fIfile.vcf\fP[...]
+\fBgromox\-vcf2mt\fP [\fB\-pt\fP] \fIfile.vcf\fP[...]
 .SH Description
 gromox\-eml2mt reads one or more RFC5322-formatted e-mail messages and
 re-exports the data in a Gromox-specific mailbox transfer format to stdout for
@@ -42,6 +42,12 @@ invoked as gromox\-vcf2mt. Messages will be anchored to the contacts folder.
 Do not resolve email addresses to EX addresses, but to ONEOFF instead. This
 way, streams created by eml2mt can be imported into \fIother\fP Gromox
 clusters that do not have the same user set.
+.TP
+\fB\-p\fP
+Show properties in detail (enhances \fB\-t\fP).
+.TP
+\fB\-t\fP
+Show a diagnostic tree view of the source data as it is being read.
 .SH Examples
 Import of an RFC5322 message (sometimes with .eml file extension) to drafts:
 .PP
