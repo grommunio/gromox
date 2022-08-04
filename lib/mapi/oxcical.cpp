@@ -1480,6 +1480,12 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
 		return FALSE;
 	(*plast_propid) ++;
+	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidRecurring};
+	uint8_t flag = 1;
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0 ||
+	    pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &flag) != 0)
+		return false;
+	++*plast_propid;
 	nt_time = apr->recur_pat.endtype == ENDTYPE_NEVER_END ||
 	          apr->recur_pat.endtype == ENDTYPE_NEVER_END1 ?
 	          1525076159 : /* 31 August 4500, 11:59 P.M */
