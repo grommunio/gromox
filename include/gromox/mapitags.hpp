@@ -1142,6 +1142,8 @@ enum {
 	PidLidRecurring = 0x8223,
 	PidLidIntendedBusyStatus = 0x8224,
 	PidLidExceptionReplaceTime = 0x8228,
+	PidLidRecurrenceType = 0x8231,
+	PidLidRecurrencePattern = 0x8232,
 	PidLidTimeZoneStruct = 0x8233,
 	PidLidTimeZoneDescription = 0x8234,
 	PidLidClipStart = 0x8235,

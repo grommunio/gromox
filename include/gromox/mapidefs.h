@@ -1231,6 +1231,21 @@ enum { /* for SetSearchCriteria */
 	STATIC_SEARCH              = 0x40000,
 };
 
+enum { /* for APPOINTMENT_RECUR_PAT::recurfrequency */
+	RECURFREQUENCY_DAILY = 0x200a,
+	RECURFREQUENCY_WEEKLY,
+	RECURFREQUENCY_MONTHLY,
+	RECURFREQUENCY_YEARLY,
+};
+
+enum { /* for PidLidRecurrenceType */
+	rectypeNone = 0,
+	rectypeDaily,
+	rectypeWeekly,
+	rectypeMonthly,
+	rectypeYearly,
+};
+
 extern const FLATUID
 	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,

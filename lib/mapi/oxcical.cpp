@@ -1462,6 +1462,17 @@ static BOOL oxcical_parse_disallow_counter(std::shared_ptr<ical_component> main_
 	return TRUE;
 }
 
+static uint32_t aptrecur_to_recurtype(const APPOINTMENT_RECUR_PAT &apr)
+{
+	switch (apr.recur_pat.recurfrequency) {
+	case RECURFREQUENCY_DAILY: return rectypeDaily;
+	case RECURFREQUENCY_WEEKLY: return rectypeWeekly;
+	case RECURFREQUENCY_MONTHLY: return rectypeMonthly;
+	case RECURFREQUENCY_YEARLY: return rectypeYearly;
+	default: return rectypeNone;
+	}
+}
+
 static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
@@ -1484,6 +1495,12 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	uint8_t flag = 1;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0 ||
 	    pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &flag) != 0)
+		return false;
+	++*plast_propid;
+	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidRecurrenceType};
+	uint32_t num = aptrecur_to_recurtype(*apr);
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0 ||
+	    pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &num) != 0)
 		return false;
 	++*plast_propid;
 	nt_time = apr->recur_pat.endtype == ENDTYPE_NEVER_END ||
