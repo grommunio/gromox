@@ -3,7 +3,6 @@
 #include <ctime>
 #include <memory>
 #include <gromox/mapi_types.hpp>
-#include <gromox/simple_tree.hpp>
 #include "logon_object.h"
 #define OBJECT_TYPE_NONE					0
 #define OBJECT_TYPE_LOGON					1
@@ -18,40 +17,40 @@
 #define OBJECT_TYPE_ICSUPCTX				10
 #define OBJECT_TYPE_SUBSCRIPTION			11
 
-struct LOGON_ITEM;
-struct LOGMAP;
+struct object_node;
 
-struct logmap_delete {
-	void operator()(LOGON_ITEM *) const;
-	void operator()(LOGMAP *) const;
+/**
+ * We cannot fixate the root to id 0, because alloc_handle_number could
+ * yield *any* number for that matter; therefore it is not possible
+ * to do without a member indicating the root (whether pointer or integer).
+ */
+struct LOGON_ITEM {
+	std::unordered_map<uint32_t, std::shared_ptr<object_node>> phash;
+	std::shared_ptr<object_node> root;
 };
 
 struct LOGMAP {
-	std::unique_ptr<LOGON_ITEM, logmap_delete> p[256];
+	std::unique_ptr<LOGON_ITEM> p[256];
 };
 
 struct object_node {
-	object_node() { node.pdata = this; }
+	object_node() = default;
 	template<typename T> object_node(uint8_t t, std::unique_ptr<T> &&p) :
 		type(t), pobject(p.release())
-	{
-		node.pdata = this;
-	}
+	{}
 	object_node(object_node &&) noexcept;
 	~object_node() { clear(); }
 	void operator=(object_node &&) noexcept;
 	void clear() noexcept;
 
-	tree_node node{};
 	uint32_t handle = 0;
 	uint8_t type = OBJECT_TYPE_NONE;
 	void *pobject = nullptr;
+	std::shared_ptr<object_node> parent;
 };
 using OBJECT_NODE = object_node;
-using logmap_ptr = std::unique_ptr<LOGMAP, logmap_delete>;
-using logon_item_ptr = std::unique_ptr<LOGON_ITEM, logmap_delete>;
 
-extern logmap_ptr rop_processor_create_logmap();
+extern std::unique_ptr<LOGMAP> rop_processor_create_logmap();
 void rop_processor_init(int average_handles, int scan_interval);
 extern int rop_processor_run();
 extern void rop_processor_stop();

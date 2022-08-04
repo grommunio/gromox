@@ -15,7 +15,6 @@
 #include <gromox/defs.h>
 #include <gromox/int_hash.hpp>
 #include <gromox/proc_common.h>
-#include <gromox/simple_tree.hpp>
 #include <gromox/util.hpp>
 #include "attachment_object.h"
 #include "aux_types.h"
@@ -45,35 +44,29 @@
 
 #define HGROWING_SIZE					250
 
-struct LOGON_ITEM {
-	std::unordered_map<uint32_t, object_node *> phash;
-	SIMPLE_TREE tree;
-};
-
 static int g_scan_interval;
 static pthread_t g_scan_id;
 static int g_average_handles;
 static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, uint32_t> g_logon_hash;
-static alloc_limiter<LOGMAP> g_logmap_allocator;
-static alloc_limiter<LOGON_ITEM> g_logitem_allocator;
-static alloc_limiter<OBJECT_NODE> g_handle_allocator;
+static unsigned int g_emsmdb_full_parenting;
 
 unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
 unsigned int emsmdb_max_hoc = 10;
 
-logmap_ptr rop_processor_create_logmap()
+std::unique_ptr<LOGMAP> rop_processor_create_logmap() try
 {
-	return logmap_ptr(g_logmap_allocator.get());
+	return std::make_unique<LOGMAP>();
+} catch (const std::bad_alloc &) {
+	return nullptr;
 }
 
 object_node::object_node(object_node &&o) noexcept :
-	node(std::move(o.node)), handle(std::move(o.handle)),
+	handle(std::move(o.handle)),
 	type(std::move(o.type)), pobject(std::move(o.pobject))
 {
-	o.node = {};
 	o.handle = 0;
 	o.type = OBJECT_TYPE_NONE;
 	o.pobject = nullptr;
@@ -82,9 +75,18 @@ object_node::object_node(object_node &&o) noexcept :
 void object_node::clear() noexcept
 {
 	switch (type) {
-	case OBJECT_TYPE_LOGON:
-		delete static_cast<logon_object *>(pobject);
+	case OBJECT_TYPE_LOGON: {
+		auto logon = static_cast<logon_object *>(pobject);
+		{
+			/* Remove from pinger list */
+			std::lock_guard hl_hold(g_hash_lock);
+			auto ref = g_logon_hash.find(logon->get_dir());
+			if (ref != g_logon_hash.end() && --ref->second == 0)
+				g_logon_hash.erase(ref);
+		}
+		delete logon;
 		break;
+	}
 	case OBJECT_TYPE_FOLDER:
 		delete static_cast<folder_object *>(pobject);
 		break;
@@ -129,64 +131,11 @@ void object_node::operator=(object_node &&o) noexcept
 	o.pobject = nullptr;
 }
 
-static void rop_processor_free_objnode(SIMPLE_TREE_NODE *pnode)
-{
-	OBJECT_NODE *pobjnode;
-
-	pobjnode = (OBJECT_NODE*)pnode->pdata;
-	g_handle_allocator.put(pobjnode);
-}
-
-static bool rop_processor_release_objnode(
-	LOGON_ITEM *plogitem, OBJECT_NODE *pobjnode)
-{
-	BOOL b_root;
-	
-	/* root is the logon object, free logon object
-		will cause the logon item to be released
-	*/
-	if (plogitem->tree.get_root() == &pobjnode->node) {
-		auto proot = plogitem->tree.get_root();
-		auto pobject = static_cast<const logon_object *>(static_cast<const OBJECT_NODE *>(proot->pdata)->pobject);
-		std::lock_guard hl_hold(g_hash_lock);
-		auto pref = g_logon_hash.find(pobject->get_dir());
-		if (pref != g_logon_hash.end() && --pref->second == 0)
-			g_logon_hash.erase(pref);
-		b_root = TRUE;
-	} else {
-		b_root = FALSE;
-	}
-	simple_tree_enum_from_node(&pobjnode->node, [&](const SIMPLE_TREE_NODE *pnode) {
-		plogitem->phash.erase(static_cast<const object_node *>(pnode->pdata)->handle);
-	});
-	plogitem->tree.destroy_node(&pobjnode->node, rop_processor_free_objnode);
-	return b_root;
-}
-
-void logmap_delete::operator()(LOGON_ITEM *plogitem) const
-{
-	auto proot = plogitem->tree.get_root();
-	if (proot == nullptr)
-		return;
-	if (rop_processor_release_objnode(plogitem, static_cast<OBJECT_NODE *>(proot->pdata)))
-		g_logitem_allocator.put(plogitem);
-}
-
-void logmap_delete::operator()(LOGMAP *plogmap) const
-{
-	g_logmap_allocator.put(plogmap);
-}
-
 int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
-    uint8_t logon_id, std::unique_ptr<logon_object> &&plogon)
+    uint8_t logon_id, std::unique_ptr<logon_object> &&plogon) try
 {
 	/* MS-OXCROPS 3.1.4.2 */
-	plogmap->p[logon_id].reset();
-	logon_item_ptr plogitem(g_logitem_allocator.get());
-	if (NULL == plogitem) {
-		return -1;
-	}
-	plogmap->p[logon_id] = std::move(plogitem);
+	plogmap->p[logon_id] = std::make_unique<LOGON_ITEM>();
 	auto rlogon = plogon.get();
 	auto handle = rop_processor_add_object_handle(plogmap,
 				logon_id, -1, {OBJECT_TYPE_LOGON, std::move(plogon)});
@@ -195,30 +144,61 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 	}
 	std::lock_guard hl_hold(g_hash_lock);
 	auto pref = g_logon_hash.find(rlogon->get_dir());
-	if (pref != g_logon_hash.end()) {
+	if (pref != g_logon_hash.end())
 		++pref->second;
-	} else try {
+	else
 		g_logon_hash.emplace(rlogon->get_dir(), 1);
-	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1974: ENOMEM\n");
-	}
 	return handle;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1974: ENOMEM\n");
+	return -1;
+}
+
+static bool object_dep(uint8_t p, uint8_t c)
+{
+	if (p == OBJECT_TYPE_LOGON)
+		/* emsmdb special */
+		return c == OBJECT_TYPE_FASTDOWNCTX || c == OBJECT_TYPE_FASTUPCTX ||
+		       c == OBJECT_TYPE_FOLDER || c == OBJECT_TYPE_MESSAGE ||
+		       c == OBJECT_TYPE_ICSDOWNCTX || c == OBJECT_TYPE_ICSUPCTX ||
+		       c == OBJECT_TYPE_SUBSCRIPTION || c == OBJECT_TYPE_TABLE;
+
+	if (p == OBJECT_TYPE_ATTACHMENT)
+		return c == OBJECT_TYPE_STREAM || c == OBJECT_TYPE_MESSAGE ||
+		       c == OBJECT_TYPE_FASTDOWNCTX ||
+		       c == OBJECT_TYPE_FASTUPCTX;
+	if (p == OBJECT_TYPE_MESSAGE)
+		return c == OBJECT_TYPE_ATTACHMENT || c == OBJECT_TYPE_STREAM ||
+		       c == OBJECT_TYPE_TABLE ||
+		       c == OBJECT_TYPE_FASTDOWNCTX ||
+		       c == OBJECT_TYPE_FASTUPCTX ||
+		       /* emsmdb special */
+		       c == OBJECT_TYPE_LOGON;
+
+	if (p != OBJECT_TYPE_FOLDER)
+		return false;
+	return c == OBJECT_TYPE_STREAM || c == OBJECT_TYPE_TABLE ||
+	       c == OBJECT_TYPE_FASTDOWNCTX || c == OBJECT_TYPE_FASTUPCTX ||
+	       c == OBJECT_TYPE_ICSDOWNCTX || c == OBJECT_TYPE_ICSUPCTX ||
+	       /* emsmdb special */
+	       c == OBJECT_TYPE_LOGON;
 }
 
 int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
-    int32_t parent_handle, object_node &&in_object)
+    int32_t parent_handle, object_node &&in_object) try
 {
-	object_node *parent = nullptr;
 	EMSMDB_INFO *pemsmdb_info;
 	
 	auto plogitem = plogmap->p[logon_id].get();
 	if (NULL == plogitem) {
 		return -1;
 	}
-	if (plogitem->tree.get_nodes_num() > emsmdb_max_obh_per_session)
+	if (plogitem->phash.size() >= emsmdb_max_obh_per_session)
 		return -3;
+
+	std::shared_ptr<object_node> parent;
 	if (parent_handle < 0) {
-		if (plogitem->tree.get_root() != nullptr)
+		if (plogitem->root != nullptr)
 			return -4;
 	} else if (parent_handle >= 0 && parent_handle < INT32_MAX) {
 		auto i = plogitem->phash.find(parent_handle);
@@ -228,36 +208,25 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	} else {
 		return -6;
 	}
-	auto pobjnode = g_handle_allocator.get();
-	if (NULL == pobjnode) {
-		return -7;
-	}
-	if (!emsmdb_interface_alloc_handle_number(&pobjnode->handle)) {
-		g_handle_allocator.put(pobjnode);
+	auto pobjnode = std::make_shared<object_node>(std::move(in_object));
+	if (!emsmdb_interface_alloc_handle_number(&pobjnode->handle))
 		return -8;
-	}
-	*pobjnode = std::move(in_object);
-	try {
-		auto xp = plogitem->phash.emplace(pobjnode->handle, pobjnode);
-		if (!xp.second) {
-			g_handle_allocator.put(pobjnode);
-			return -8;
-		}
-	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1975: ENOMEM\n");
-		g_handle_allocator.put(pobjnode);
+	auto xp = plogitem->phash.emplace(pobjnode->handle, pobjnode);
+	if (!xp.second) {
 		return -8;
 	}
 	if (parent == nullptr)
-		plogitem->tree.set_root(&pobjnode->node);
-	else
-		plogitem->tree.add_child(&parent->node,
-			&pobjnode->node, SIMPLE_TREE_ADD_LAST);
+		plogitem->root = pobjnode;
+	else if (g_emsmdb_full_parenting || object_dep(parent->type, pobjnode->type))
+		pobjnode->parent = parent;
 	if (pobjnode->type == OBJECT_TYPE_ICSUPCTX) {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref ++;
 	}
 	return pobjnode->handle;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1975: ENOMEM\n");
+	return -1;
 }
 
 void *rop_processor_get_object(LOGMAP *plogmap,
@@ -295,8 +264,7 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref --;
 	}
-	if (rop_processor_release_objnode(plogitem.get(), objnode))
-		plogmap->p[logon_id].reset();
+	plogitem->phash.erase(objnode->handle);
 }
 
 logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
@@ -305,11 +273,11 @@ logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
 	if (NULL == plogitem) {
 		return nullptr;
 	}
-	auto proot = plogitem->tree.get_root();
+	auto proot = plogitem->root;
 	if (NULL == proot) {
 		return nullptr;
 	}
-	return static_cast<logon_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	return static_cast<logon_object *>(proot->pobject);
 }
 
 static void *emsrop_scanwork(void *param)
@@ -349,15 +317,6 @@ void rop_processor_init(int average_handles, int scan_interval)
 
 int rop_processor_run()
 {
-	int context_num;
-	
-	context_num = get_context_num();
-	g_logmap_allocator = alloc_limiter<LOGMAP>(context_num * emsmdb_max_hoc,
-	                     "emsmdb_logmap_allocator", "http.cfg:context_num");
-	g_logitem_allocator = alloc_limiter<LOGON_ITEM>(256 * context_num,
-	                      "emsmdb_logitem_allocator", "http.cfg:context_num");
-	g_handle_allocator = alloc_limiter<OBJECT_NODE>(g_average_handles * context_num,
-	                     "emsmdb_handle_allocator", "http.cfg:context_num");
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
 	if (ret != 0) {
