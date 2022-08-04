@@ -12,7 +12,7 @@ struct emsmdb_info {
 
 	uint32_t cpid = 0, lcid_string = 0, lcid_sort = 0;
 	uint16_t client_version[4]{}, client_mode = 0;
-	logmap_ptr plogmap;
+	std::unique_ptr<LOGMAP> plogmap;
 	std::atomic<int> upctx_ref{0};
 };
 using EMSMDB_INFO = emsmdb_info;
