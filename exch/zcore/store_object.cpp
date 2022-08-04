@@ -790,42 +790,45 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_PROVIDER_DISPLAY:
 		*ppvalue = deconst("Exchange Message Store");
 		return TRUE;
-	case PR_RESOURCE_FLAGS:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PR_RESOURCE_FLAGS: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (pstore->owner_mode())
-			*(uint32_t*)(*ppvalue) = STATUS_PRIMARY_IDENTITY|
-					STATUS_DEFAULT_STORE|STATUS_PRIMARY_STORE;
-		else
-			*(uint32_t*)(*ppvalue) = STATUS_NO_DEFAULT_STORE;
+		*v = pstore->owner_mode() ?
+		     STATUS_PRIMARY_IDENTITY | STATUS_DEFAULT_STORE | STATUS_PRIMARY_STORE :
+		     STATUS_NO_DEFAULT_STORE;
 		return TRUE;
-	case PR_RESOURCE_TYPE:
-		*ppvalue = cu_alloc<uint32_t>();
+	}
+	case PR_RESOURCE_TYPE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = MAPI_STORE_PROVIDER;
+		*v = MAPI_STORE_PROVIDER;
 		return TRUE;
+	}
 	case PR_STORE_SUPPORT_MASK: {
-		*ppvalue = cu_alloc<uint32_t>();
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		if (!pstore->b_private) {
-			*static_cast<uint32_t *>(*ppvalue) = EC_SUPPORTMASK_PUBLIC;
+			*v = EC_SUPPORTMASK_PUBLIC;
 			return TRUE;
 		}
 		if (pstore->owner_mode()) {
-			*(uint32_t*)(*ppvalue) = EC_SUPPORTMASK_OWNER;
+			*v = EC_SUPPORTMASK_OWNER;
 			return TRUE;
 		}
-		*(uint32_t *)(*ppvalue) = EC_SUPPORTMASK_OTHER;
+		*v = EC_SUPPORTMASK_OTHER;
 		auto pinfo = zarafa_server_get_info();
 		bool unused_sendas = false;
 		if (cu_get_delegate_perm_MD(pinfo->get_username(), pstore->dir, unused_sendas))
-			*(uint32_t *)(*ppvalue) |= STORE_SUBMIT_OK;
+			*v |= STORE_SUBMIT_OK;
 		return TRUE;
 	}
 	case PR_RECORD_KEY:
@@ -1084,17 +1087,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		if (NULL == pconfig) {
 			return FALSE;
 		}
-		switch (*(uint32_t*)pvalue) {
-		case 1:
-			pconfig->set_value("OOF_STATE", "1");
-			break;
-		case 2:
-			pconfig->set_value("OOF_STATE", "2");
-			break;
-		default:
-			pconfig->set_value("OOF_STATE", "0");
-			break;
-		}
+		auto v = *static_cast<const uint32_t *>(pvalue);
+		pconfig->set_value("OOF_STATE", v == 1 ? "1" : v == 2 ? "2" : "0");
 		return pconfig->save();
 	}
 	case PR_EC_OUTOFOFFICE_FROM:

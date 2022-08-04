@@ -65,7 +65,7 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 		if (!b_new && pmessage->instance_id == 0)
 			return pmessage;
 	} else {
-		pmessage->folder_id = *(uint64_t*)pparent;
+		pmessage->folder_id = *static_cast<uint64_t *>(pparent);
 		if (pmessage->pstore->b_private) {
 			if (!exmdb_client::load_message_instance(pstore->get_dir(),
 			    nullptr, cpid, b_new, pmessage->folder_id, message_id,
@@ -451,9 +451,8 @@ gxerr_t message_object::save()
 	tmp_indices.pproptag = NULL;
 	if (!exmdb_client::save_change_indices(
 		dir, pmessage->message_id, pmessage->change_num,
-		&tmp_indices, (PROPTAG_ARRAY*)&tmp_indices)) {
+	    &tmp_indices, static_cast<PROPTAG_ARRAY *>(&tmp_indices)))
 		return GXERR_CALL_FAILED;
-	}
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&

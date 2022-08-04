@@ -1294,7 +1294,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		*(uint8_t*)pvalue = 0;
+		*static_cast<uint8_t *>(pvalue) = 0;
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_EMS_AB_HOME_MDB:
@@ -1323,14 +1323,11 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		if (node_type >= abnode_type::containers) {
-			*(uint32_t*)pvalue = ab_tree_get_node_minid(pnode);
+			*static_cast<uint32_t *>(pvalue) = ab_tree_get_node_minid(pnode);
 		} else {
 			pnode = pnode->get_parent();
-			if (NULL == pnode) {
-				*(uint32_t*)pvalue = 0;
-			} else {
-				*(uint32_t*)pvalue = ab_tree_get_node_minid(pnode);
-			}
+			*static_cast<uint32_t *>(pvalue) = pnode == nullptr ? 0 :
+				ab_tree_get_node_minid(pnode);
 		}
 		*ppvalue = pvalue;
 		return TRUE;
@@ -1600,7 +1597,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		*(uint8_t*)pvalue = 1;
+		*static_cast<uint8_t *>(pvalue) = 1;
 		*ppvalue = pvalue;
 		return TRUE;
 	}

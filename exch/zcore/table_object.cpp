@@ -732,11 +732,12 @@ std::unique_ptr<table_object> table_object::create(store_object *pstore,
 	}
 	ptable->pstore = pstore;
 	if (RULE_TABLE == table_type) {
-		ptable->pparent_obj = me_alloc<uint64_t>();
+		auto v = me_alloc<uint64_t>();
+		ptable->pparent_obj = v;
 		if (NULL == ptable->pparent_obj) {
 			return NULL;
 		}
-		*(uint64_t*)ptable->pparent_obj = *(uint64_t*)pparent_obj;
+		*v = *static_cast<uint64_t *>(pparent_obj);
 	} else {
 		ptable->pparent_obj = pparent_obj;
 	}

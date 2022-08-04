@@ -455,7 +455,7 @@ BOOL container_object_fetch_special_property(
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)pvalue = AB_RECIPIENTS |
+		*static_cast<uint32_t *>(pvalue) = AB_RECIPIENTS |
 			AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 		*ppvalue = pvalue;
 		return TRUE;
@@ -464,7 +464,7 @@ BOOL container_object_fetch_special_property(
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)pvalue = 0;
+		*static_cast<uint32_t *>(pvalue) = 0;
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_DISPLAY_NAME:
@@ -477,7 +477,7 @@ BOOL container_object_fetch_special_property(
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		*(uint8_t*)pvalue = 0;
+		*static_cast<uint8_t *>(pvalue) = 0;
 		*ppvalue = pvalue;
 		return TRUE;
 	}
