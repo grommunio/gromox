@@ -888,13 +888,9 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		if (!exmdb_client_get_message_property(plogon->get_dir(),
 		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
-		if (IMPORT_FLAG_ASSOCIATED & import_flags) {
-			if (pvb_disabled(pvalue))
-				return ecInvalidParam;
-		} else {
-			if (pvb_enabled(pvalue))
-				return ecInvalidParam;
-		}
+		bool orig_is_fai = pvb_enabled(pvalue);
+		if (!!(import_flags & IMPORT_FLAG_ASSOCIATED) != orig_is_fai)
+			return ecInvalidParam;
 		b_new = FALSE;
 	} else {
 		b_new = TRUE;
