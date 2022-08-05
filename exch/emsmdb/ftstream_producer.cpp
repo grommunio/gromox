@@ -21,6 +21,10 @@
 #include "ftstream_producer.h"
 #include "logon_object.h"
 
+#if defined(__OpenBSD__)
+#include <sys/mman.h>
+#endif
+
 using namespace std::string_literals;
 using namespace gromox;
 
@@ -85,7 +89,15 @@ static bool fxstream_producer_open(fxstream_producer &p)
 	if (p.fd >= 0)
 		return true; /* already open */
 	auto path = LOCAL_DISK_TMPDIR;
+#if defined(__OpenBSD__)
+	char tpath[PATH_MAX];
+	snprintf(tpath, sizeof(tpath), "%s/%s", LOCAL_DISK_TMPDIR, "XXXXXX");
+	p.fd = shm_mkstemp(tpath);
+	if (p.fd != -1)
+		shm_unlink(tpath);
+#else
 	p.fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
+#endif
 	if (p.fd >= 0) {
 		p.path.clear();
 		return true;

@@ -32,6 +32,11 @@
 #include "http_parser.h"
 #include "mod_fastcgi.h"
 #include "resource.h"
+
+#if defined(__OpenBSD__)
+#include <sys/mman.h>
+#endif
+
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
 #define QRF(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return FALSE; } while (false)
 #define SERVER_SOFTWARE							"medusa/1.0"
@@ -507,7 +512,15 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 			fprintf(stderr, "E-2077: mkdir %s: %s\n", path, strerror(errno));
 			return false;
 		}
+#if defined(__OpenBSD__)
+		char tpath[PATH_MAX];
+		snprintf(tpath, sizeof(tpath), "%s/%s", path, "XXXXXX");
+		pcontext->cache_fd = shm_mkstemp(tpath);
+		if (pcontext->cache_fd != -1)
+			shm_unlink(tpath);
+#else
 		pcontext->cache_fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
+#endif
 		if (pcontext->cache_fd == -1) {
 			fprintf(stderr, "E-2078: open %s: %s\n", path, strerror(errno));
 			return FALSE;

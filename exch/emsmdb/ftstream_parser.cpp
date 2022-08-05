@@ -22,6 +22,10 @@
 #include "ftstream_parser.h"
 #include "rop_processor.h"
 
+#if defined(__OpenBSD__)
+#include <sys/mman.h>
+#endif
+
 using namespace std::string_literals;
 using namespace gromox;
 
@@ -881,7 +885,15 @@ std::unique_ptr<ftstream_parser> ftstream_parser::create(logon_object *plogon) t
 		return nullptr;
 	}
 	std::unique_ptr<ftstream_parser> pstream(new ftstream_parser);
+#if defined(__OpenBSD__)
+	char tpath[PATH_MAX];
+	snprintf(tpath, sizeof(tpath), "%s/%s", path, "XXXXXX");
+	pstream->fd = shm_mkstemp(tpath);
+	if (pstream->fd != -1)
+		shm_unlink(tpath);
+#else
 	pstream->fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
+#endif
 	if (pstream->fd < 0) {
 		if (errno != EISDIR && errno != EOPNOTSUPP) {
 			fprintf(stderr, "E-1668: open %s: %s\n", path, strerror(errno));

@@ -23,6 +23,10 @@
 #include "pdu_processor.h"
 #include "resource.h"
 
+#if defined(__OpenBSD__)
+#include <sys/mman.h>
+#endif
+
 using namespace std::string_literals;
 using namespace gromox;
 
@@ -432,7 +436,15 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 				fprintf(stderr, "E-2079: mkdir %s: %s\n", path, strerror(errno));
 				return false;
 			}
+#if defined(__OpenBSD__)
+			char tpath[PATH_MAX];
+			snprintf(tpath, sizeof(tpath), "%s/%s", LOCAL_DISK_TMPDIR, "XXXXXX");
+			phpm_ctx->cache_fd = shm_mkstemp(tpath);
+			if (phpm_ctx->cache_fd != -1)
+				shm_unlink(tpath);
+#else
 			phpm_ctx->cache_fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
+#endif
 			if (phpm_ctx->cache_fd == -1) {
 				fprintf(stderr, "E-2090: open %s: %s\n", path, strerror(errno));
 				phpm_ctx->b_preproc = FALSE;
