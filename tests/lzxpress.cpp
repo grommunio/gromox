@@ -1,3 +1,4 @@
+#include "config.h"
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -6,7 +7,7 @@
 #include <unistd.h>
 #include <libHX/io.h>
 #include <libHX/misc.h>
-#if !defined(__OpenBSD__)
+#ifdef HAVE_SYS_RANDOM_H
 #include <sys/random.h>
 #endif
 #include <gromox/defs.h>
