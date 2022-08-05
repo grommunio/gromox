@@ -6,7 +6,9 @@
 #include <unistd.h>
 #include <libHX/io.h>
 #include <libHX/misc.h>
+#if !defined(__OpenBSD__)
 #include <sys/random.h>
+#endif
 #include <gromox/defs.h>
 #include <gromox/lzxpress.hpp>
 
@@ -27,7 +29,11 @@ int main(int argc, char **argv)
 		char b1[1], b2[512];
 		size_t z = 0;
 		while (1) {
+#if defined(__OpenBSD__)
+			arc4random_buf(b1, std::size(b1));
+#else
 			getrandom(b1, std::size(b1), 0);
+#endif
 			auto complen = lzxpress_compress(b1, std::size(b1), b2);
 			auto ucomplen = lzxpress_decompress(b2, complen, outbuf, std::size(outbuf));
 			if (ucomplen != std::size(b1)) {
