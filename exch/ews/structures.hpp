@@ -59,6 +59,7 @@ struct tReplyBody
 {
 	template<typename T>
 	explicit inline tReplyBody(T&& Message) : Message(std::forward<T>(Message)) {}
+	explicit tReplyBody(const tinyxml2::XMLElement*);
 
 	std::optional<std::string> Message;
 	std::optional<std::string> lang;
@@ -74,6 +75,9 @@ struct tReplyBody
 struct tUserOofSettings
 {
 	static constexpr char NAME[] = "UserOofSettings";
+
+	tUserOofSettings() = default;
+	explicit tUserOofSettings(const tinyxml2::XMLElement*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -134,6 +138,31 @@ struct mGetUserOofSettingsResponse
 	mResponseMessageType ResponseMessage;
 	std::optional<tUserOofSettings> UserOofSettings;
 	std::optional<std::string> AllowExternalOof;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * @brief      Out-of-office settings set request
+ *
+ * Messages.xsd:2239
+ */
+struct mSetUserOofSettingsRequest
+{
+	explicit mSetUserOofSettingsRequest(const tinyxml2::XMLElement*);
+
+	tMailbox Mailbox;
+	tUserOofSettings UserOofSettings;
+};
+
+/**
+ * @brief      Out-of-office settings set response
+ *
+ * Messages.xsd:2254
+ */
+struct mSetUserOofSettingsResponse
+{
+	mResponseMessageType ResponseMessage;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

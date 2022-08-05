@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <fstream>
 
+#include <sys/stat.h>
 #include <tinyxml2.h>
 
 #include <gromox/clock.hpp>
@@ -18,12 +19,10 @@ namespace gromox::EWS::Requests
 {
 
 using namespace gromox;
+using namespace gromox::EWS::Exceptions;
 using namespace gromox::EWS::Structures;
 using namespace std;
 using namespace tinyxml2;
-
-using gromox::EWS::Exceptions::DispatchError;
-using gromox::EWS::Exceptions::NotImplementedError;
 
 using Clock = time_point::clock;
 
@@ -32,6 +31,19 @@ using Clock = time_point::clock;
 
 namespace
 {
+
+/**
+ * @brief      Convert string to lower case
+ *
+ * @param      str     String to convert
+ *
+ * @return     Reference to the string
+ */
+inline std::string& tolower(std::string& str)
+{
+	transform(str.begin(), str.end(), str.begin(), ::tolower);
+	return str;
+}
 
 /**
  * @brief      Read message body from reply file
@@ -65,6 +77,27 @@ optional<string> readMessageBody(const std::string& path) try
 	return nullopt;
 }
 
+/**
+ * @brief      Write message body to reply file
+ *
+ * If either the ReplyBody or its Message field are empty, the file is deleted instead.
+ *
+ * @param      path    Path to the file
+ * @param      reply   Reply body
+ */
+void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply)
+{
+	if(!reply || !reply->Message)
+		return (void) unlink(path.c_str());
+	static const char header[] = "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n\r\n";
+	auto& content = *reply->Message;
+	ofstream file(path, ios::binary);
+	file.write(header, std::size(header)-1);
+	file.write(content.c_str(), content.size());
+	file.close();
+	chmod(path.c_str(), 0666);
+}
+
 }
 ///////////////////////////////////////////////////////////////////////
 //Request implementations
@@ -72,7 +105,7 @@ optional<string> readMessageBody(const std::string& path) try
 /**
  * @brief      Process GetUserOofSettingsRequest
  *
- * Provides most of the functionality of GetUserOofSettingsRequest
+ * Provides the functionality of GetUserOofSettingsRequest
  * (../php/ews/exchange.php:16).
  *
  * @todo       Check permissions?
@@ -133,6 +166,64 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 	}
 
 	//Finalize response
+	data.ResponseMessage.success();
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process SetUserOofSettingsRequest
+ *
+ * Provides functionality of SetUserOofSettingsRequest
+ * (../php/ews/exchange.php:134).
+ *
+ * @todo       Check permissions?
+ * @todo       Check if error handling can be improved
+ *             (using the response message instead of SOAP faults)
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName("SetUserOofSettingsResponse");
+
+	std::string maildir = ctx.get_maildir(request.Mailbox);
+
+	tUserOofSettings& OofSettings = request.UserOofSettings;
+	int oof_state, allow_external_oof, external_audience;
+
+	if(tolower(OofSettings.OofState) == "disabled")
+		oof_state = 0;
+	else if(OofSettings.OofState == "enabled")
+		oof_state = 1;
+	else if(OofSettings.OofState == "scheduled")
+		oof_state = 2;
+	else
+		throw DispatchError(E3008(OofSettings.OofState));
+
+	allow_external_oof = !(tolower(OofSettings.ExternalAudience) == "none");
+	//Note: counterintuitive but intentional: known -> 1, all -> 0
+	external_audience = OofSettings.ExternalAudience == "known";
+	if(allow_external_oof && !external_audience && OofSettings.ExternalAudience != "all")
+		throw DispatchError(E3009(OofSettings.ExternalAudience));
+
+	std::string filename = maildir+"/config/autoreply.cfg";
+	ofstream file(filename);
+	file << "oof_state = " << oof_state << "\n"
+	     << "allow_external_oof = " << allow_external_oof << "\n";
+	if(allow_external_oof)
+		file << "external_audience = " << external_audience << "\n";
+	if(OofSettings.Duration)
+		file << "start_time = " << Clock::to_time_t(OofSettings.Duration->StartTime) << "\n"
+		     << "end_time = " << Clock::to_time_t(OofSettings.Duration->EndTime) << "\n";
+	file.close();
+	chmod(filename.c_str(), 0666);
+
+	writeMessageBody(maildir+"/config/internal-reply", OofSettings.InternalReply);
+	writeMessageBody(maildir+"/config/external-reply", OofSettings.ExternalReply);
+
+	mSetUserOofSettingsResponse data;
 	data.ResponseMessage.success();
 	data.serialize(response);
 }

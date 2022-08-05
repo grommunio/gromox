@@ -57,8 +57,10 @@ E(3002, "failed to resolve essdn - user not found");
 E(3003, "Failed to resolve essdn - invalid user");
 E(3004, "Failed to resolve essdn - username mismatch");
 E(3005, "Failed to get user maildir");
-inline std::string E3006(const std::string& RoutingType) {return "E-2011: unrecognized RoutingType '"+RoutingType+"'";}
+inline std::string E3006(const std::string& RoutingType) {return "E-3006: unrecognized RoutingType '"+RoutingType+"'";}
 E(3007, "Failed to get user maildir");
+inline std::string E3008(const std::string& OofState) {return "E-3008: unrecognized OofState '"+OofState+"'";}
+inline std::string E3009(const std::string& ExAud) {return "E-3009: unrecognized ExternalAudience '"+ExAud+"'";}
 
 #undef E
 }

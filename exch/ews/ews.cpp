@@ -49,6 +49,7 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
  */
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap = {
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
+	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////
