@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdio>
+#include <cmath>
 #include <ctime>
 #include <functional>
 #include <optional>
@@ -106,13 +108,18 @@ struct ExplicitConvert<gromox::time_point>
 {
 	static constexpr uint8_t value = EC_IN | EC_OUT;
 
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement*, gromox::time_point&);
+
 	static inline void serialize(const gromox::time_point& value, SetterFunc setter)
 	{
 		tm t;
 		char timestr[64];
-		time_t timespamp = gromox::time_point::clock::to_time_t(value);
-		gmtime_r(&timespamp, &t);
-		strftime(timestr, 64, "%Y-%m-%dT%H:%M:%SZ", &t);
+		time_t timestamp = gromox::time_point::clock::to_time_t(value);
+		gmtime_r(&timestamp, &t);
+		auto frac = value.time_since_epoch() % std::chrono::seconds(1);
+		long fsec = std::chrono::duration_cast<std::chrono::microseconds>(frac).count();
+		snprintf(timestr, 64, fsec? "%04d-%02d-%02dT%02d:%02d:%02d.%06ldZ" : "%04d-%02d-%02dT%02d:%02d:%02dZ",
+		         t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, fsec);
 		setter(timestr);
 	}
 };
