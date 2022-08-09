@@ -674,8 +674,11 @@ void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 	phpm_ctx->pinterface = NULL;
 }
 
-void hpm_processor_reload()
+void hpm_processor_trigger(unsigned int ev)
 {
-	for (const auto &p : g_plugin_list)
-		p.lib_main(PLUGIN_RELOAD, nullptr);
+	for (auto &p : g_plugin_list) {
+		g_cur_plugin = &p;
+		p.lib_main(ev, nullptr);
+	}
+	g_cur_plugin = nullptr;
 }

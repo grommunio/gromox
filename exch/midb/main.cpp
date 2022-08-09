@@ -252,7 +252,7 @@ int main(int argc, const char **argv) try
 		sleep(1);
 		if (g_hup_signalled.exchange(false)) {
 			midb_reload_config(nullptr);
-			service_reload_all();
+			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}
 	return 0;

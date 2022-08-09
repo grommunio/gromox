@@ -349,7 +349,7 @@ int main(int argc, const char **argv) try
 	while (!g_notify_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false))
-			service_reload_all();
+			service_trigger_all(PLUGIN_RELOAD);
 	}
 	listener_stop_accept();
 	return retcode;

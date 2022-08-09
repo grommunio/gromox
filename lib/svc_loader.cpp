@@ -407,8 +407,11 @@ void service_release(const char *service_name, const char *module)
 	pservice->plib->ref_count --;
 }
 
-void service_reload_all()
+void service_trigger_all(unsigned int ev)
 {
-	for (const auto &p : g_list_plug)
-		p.lib_main(PLUGIN_RELOAD, nullptr);
+	for (auto &p : g_list_plug) {
+		g_cur_plug = &p;
+		p.lib_main(ev, nullptr);
+	}
+	g_cur_plug = nullptr;
 }
