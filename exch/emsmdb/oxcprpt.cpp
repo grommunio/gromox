@@ -522,10 +522,8 @@ uint32_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 		if (KIND_NONE == propnames.ppropname[i].kind) {
 			continue;
 		}
-		if (NULL != pguid && 0 != memcmp(pguid,
-			&propnames.ppropname[i].guid, sizeof(GUID))) {
+		if (pguid != nullptr && *pguid != propnames.ppropname[i].guid)
 			continue;
-		}
 		if ((query_flags & QUERY_FLAG_NOSTRINGS) &&
 		    propnames.ppropname[i].kind == MNID_STRING)
 			continue;

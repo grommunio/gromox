@@ -986,10 +986,8 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
 	if (ext_pull.g_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	if (0 != memcmp(&tmp_entryid.folder_database_guid,
-		&tmp_entryid.message_database_guid, sizeof(GUID))) {
+	if (tmp_entryid.folder_database_guid != tmp_entryid.message_database_guid)
 		return FALSE;
-	}
 	switch (tmp_entryid.message_type) {
 	case EITLT_PRIVATE_MESSAGE:
 		*pb_private = TRUE;

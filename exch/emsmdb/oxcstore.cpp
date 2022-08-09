@@ -470,9 +470,8 @@ uint32_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
 		return ecNotSupported;
 	if (plogon->is_private()) {
 		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
-		if (0 != memcmp(&tmp_guid, &plong_term_id->guid, sizeof(GUID))) {
+		if (tmp_guid != plong_term_id->guid)
 			return ecInvalidParam;
-		}
 		*pid = rop_util_make_eid(1, plong_term_id->global_counter);
 		return ecSuccess;
 	}

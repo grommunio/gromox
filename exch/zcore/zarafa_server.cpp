@@ -2470,9 +2470,8 @@ uint32_t zarafa_server_entryidfromsourcekey(
 		return ecNotSupported;
 	if (pstore->b_private) {
 		auto tmp_guid = rop_util_make_user_guid(pstore->account_id);
-		if (0 != memcmp(&tmp_guid, &tmp_xid.guid, sizeof(GUID))) {
+		if (tmp_guid != tmp_xid.guid)
 			return ecInvalidParam;
-		}
 		folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	} else {
 		auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
@@ -2499,9 +2498,8 @@ uint32_t zarafa_server_entryidfromsourcekey(
 			return ecNotSupported;
 		if (pstore->b_private) {
 			auto tmp_guid = rop_util_make_user_guid(pstore->account_id);
-			if (0 != memcmp(&tmp_guid, &tmp_xid.guid, sizeof(GUID))) {
+			if (tmp_guid != tmp_xid.guid)
 				return ecInvalidParam;
-			}
 			message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
 			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
