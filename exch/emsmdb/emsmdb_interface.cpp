@@ -131,9 +131,9 @@ void emsmdb_report()
 				continue;
 			}
 			auto lo = static_cast<logon_object *>(root->pobject);
-			fprintf(stderr, "  %-32s  %-32s\n",
+			fprintf(stderr, "  %-32s  %s(%u)\n",
 			        bin2hex(&lo->mailbox_guid, sizeof(lo->mailbox_guid)).c_str(),
-			        lo->account);
+			        lo->account, lo->account_id);
 		}
 	}
 	}

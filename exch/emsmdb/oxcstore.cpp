@@ -436,6 +436,12 @@ uint32_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 		return ecNotSupported;
 	memset(plong_term_id, 0, sizeof(LONG_TERM_ID));
 	if (plogon->is_private()) {
+		/*
+		 * As per OXCSTOR v25 §3.2.1 ¶3, we are supposed to consult a
+		 * mapping table; the implementation is just this trivial
+		 * check, and that "table" has an implicit entry with
+		 * replid{1} <=> replguid{user_guid}.
+		 */
 		if (1 != rop_util_get_replid(id)) {
 			return ecInvalidParam;
 		}
@@ -445,6 +451,12 @@ uint32_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 		if (1 == replid) {
 			plong_term_id->guid = rop_util_make_domain_guid(plogon->account_id);
 		} else {
+			/*
+			 * While the mapping table can be queried, there is no
+			 * way to add entries. At what time do entries vivify
+			 * anyway?
+			 */
+			fprintf(stderr, "E-2141: public folder LT/REPL mapping not really implemented\n");
 			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
 			    replid, &b_found, &plong_term_id->guid))
 				return ecError;
@@ -469,9 +481,10 @@ uint32_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
 	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
 	if (plogon->is_private()) {
-		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
-		if (tmp_guid != plong_term_id->guid)
-			return ecInvalidParam;
+		/*
+		 * We are getting REPLGUIDs from other logons too, unclear if
+		 * legit, but let it pass.
+		 */
 		*pid = rop_util_make_eid(1, plong_term_id->global_counter);
 		return ecSuccess;
 	}
@@ -482,6 +495,7 @@ uint32_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
 	if (domain_id == plogon->account_id) {
 		replid = 1;
 	} else {
+		fprintf(stderr, "E-2142: public folder LT/REPL mapping not really implemented\n");
 		if (!common_util_check_same_org(domain_id, plogon->account_id))
 			return ecInvalidParam;
 		if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
