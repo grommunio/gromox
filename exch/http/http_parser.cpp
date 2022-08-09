@@ -115,6 +115,38 @@ static std::mutex g_vconnection_lock;
 
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
 
+static void httpctx_report(const HTTP_CONTEXT &ctx, size_t i)
+{
+	auto &cn = ctx.connection;
+	if (cn.sockd < 0)
+		return;
+	fprintf(stderr, "%-3zu  %-2d  ", i, cn.sockd);
+	fprintf(stderr, "[%s]:%hu->[%s]:%hu\n",
+	        cn.client_ip, cn.client_port, cn.server_ip, cn.server_port);
+	const char *chtyp = "NONE";
+	switch (ctx.channel_type) {
+	case CHANNEL_TYPE_NONE: chtyp = "NONE"; break;
+	case CHANNEL_TYPE_IN: chtyp = "IN"; break;
+	case CHANNEL_TYPE_OUT: chtyp = "OUT"; break;
+	default: chtyp = "?"; break;
+	}
+	fprintf(stderr, "   %4s  [%s]:%hu  %s\n",
+		chtyp, ctx.host, ctx.port, ctx.username);
+}
+
+void http_report()
+{
+	/* There is no lock surrounding these structures, and they can be in an undefined state */
+	fprintf(stderr, "HTTP Contexts:\n");
+	fprintf(stderr, "Ctx  fd  src->host\n");
+	fprintf(stderr, "   ChTy  RPCEndpoint, Username\n");
+	fprintf(stderr, "-------------------------------------------------------------------------------\n");
+	for (size_t i = 0; i < g_context_num; ++i) {
+		httpctx_report(g_context_list[i], i);
+	}
+	fprintf(stderr, "\n");
+}
+
 void http_parser_init(size_t context_num, time_duration timeout,
 	int max_auth_times, int block_auth_fail, bool support_tls,
 	const char *certificate_path, const char *cb_passwd,

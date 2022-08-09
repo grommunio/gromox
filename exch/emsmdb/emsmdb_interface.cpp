@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cassert>
 #include <algorithm>
 #include <chrono>
 #include <climits>
@@ -103,6 +104,41 @@ static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
 static size_t g_handle_hash_max, g_user_hash_max, g_notify_hash_max;
 
 static void *emsi_scanwork(void *);
+
+void emsmdb_report()
+{
+	std::lock_guard gl_hold(g_lock);
+	fprintf(stderr, "EMSMDB Sessions:\n");
+	fprintf(stderr, "%-32s  %-32s  CXR CPID LCID\n", "GUID", "USERNAME");
+	fprintf(stderr, "LOGON  %-32s  MBOXUSER\n", "MBOXGUID");
+	fprintf(stderr, "--------------------------------------------------------------------------------\n");
+	/* Sort display by CXR. */
+	for (const auto &e1 : g_user_hash) {
+	for (const auto hp : e1.second) {
+		auto &h = *hp;
+		auto &ei = h.info;
+		fprintf(stderr, "%-32s  %-32s  /%-2u %-4u %-4u\n",
+			bin2hex(&h.guid, sizeof(GUID)).c_str(), h.username, h.cxr,
+			ei.cpid, ei.lcid_string);
+		for (unsigned int i = 0; i < std::size(ei.plogmap->p); ++i) {
+			auto li = ei.plogmap->p[i].get();
+			if (li == nullptr)
+				continue;
+			fprintf(stderr, "%5u", i);
+			auto root = li->root.get();
+			if (root == nullptr || root->type != OBJECT_TYPE_LOGON) {
+				fprintf(stderr, "  null\n");
+				continue;
+			}
+			auto lo = static_cast<logon_object *>(root->pobject);
+			fprintf(stderr, "  %-32s  %-32s\n",
+			        bin2hex(&lo->mailbox_guid, sizeof(lo->mailbox_guid)).c_str(),
+			        lo->account);
+		}
+	}
+	}
+	fprintf(stderr, "\n");
+}
 
 emsmdb_info::emsmdb_info(emsmdb_info &&o) noexcept :
 	cpid(o.cpid), lcid_string(o.lcid_string), lcid_sort(o.lcid_sort),
@@ -466,6 +502,12 @@ static void emsmdb_interface_encode_version(BOOL high_bit,
 	}
 }
 
+/**
+ * @flags:	this is related to PR_PROFILE_CONNECT_FLAGS.
+ * 		OXCRPC only specifies a handful,
+ * 		CONNECT_USE_ADMIN_PRIVILEGE = 0x1U,
+ * 		CONNECT_IGNORE_NO_PF = 0x8000U,
+ */
 int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	const char *puser_dn, uint32_t flags, uint32_t con_mode,
 	uint32_t limit, uint32_t cpid, uint32_t lcid_string,

@@ -126,6 +126,7 @@ static constexpr DCERPC_INTERFACE interface_async_emsmdb = {
 	exchange_async_emsmdb_ndr_push, nullptr, exchange_async_emsmdb_reclaim,
 };
 
+extern void emsmdb_report();
 static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 {
 	int max_mail;
@@ -149,6 +150,9 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 	switch (reason) {
 	case PLUGIN_RELOAD:
 		exch_emsmdb_reload(nullptr);
+		return TRUE;
+	case PLUGIN_USR1:
+		emsmdb_report();
 		return TRUE;
 	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
