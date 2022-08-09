@@ -432,9 +432,9 @@ int main(int argc, const char **argv) try
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {
 			http_reload_config(nullptr);
-			service_reload_all();
-			hpm_processor_reload();
-			pdu_processor_reload();
+			service_trigger_all(PLUGIN_RELOAD);
+			hpm_processor_trigger(PLUGIN_RELOAD);
+			pdu_processor_trigger(PLUGIN_RELOAD);
 		}
 	}
 	return retcode;

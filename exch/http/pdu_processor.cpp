@@ -3502,8 +3502,11 @@ static int pdu_processor_load_library(const char* plugin_name)
 	return PLUGIN_LOAD_OK;
 }
 
-void pdu_processor_reload()
+void pdu_processor_trigger(unsigned int ev)
 {
-	for (const auto &p : g_plugin_list)
-		p.lib_main(PLUGIN_RELOAD, nullptr);
+	for (auto &p : g_plugin_list) {
+		g_cur_plugin = &p;
+		p.lib_main(ev, nullptr);
+	}
+	g_cur_plugin = nullptr;
 }

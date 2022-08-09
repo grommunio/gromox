@@ -331,7 +331,7 @@ int main(int argc, const char **argv) try
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {
 			imap_reload_config(nullptr);
-			service_reload_all();
+			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}
 	listener_stop_accept();
