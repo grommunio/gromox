@@ -67,3 +67,4 @@ void emsmdb_interface_remove_subscription_notify(
 	const char *dir, uint32_t sub_id);
 void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	uint32_t notify_id, const DB_NOTIFY *pdb_notify);
+extern void emsmdb_report();

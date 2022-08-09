@@ -46,7 +46,7 @@ using namespace gromox;
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
-static gromox::atomic_bool g_hup_signalled;
+static gromox::atomic_bool g_hup_signalled, g_usr_signalled;
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -144,6 +144,8 @@ int main(int argc, const char **argv) try
 	setup_sigalrm();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
+	sact.sa_handler = [](int) { g_usr_signalled = true; };
+	sigaction(SIGUSR1, &sact, nullptr);
 	sact.sa_handler = [](int) { g_hup_signalled = true; };
 	sigaction(SIGHUP, &sact, nullptr);
 	sact.sa_handler = term_handler;
@@ -435,6 +437,13 @@ int main(int argc, const char **argv) try
 			service_trigger_all(PLUGIN_RELOAD);
 			hpm_processor_trigger(PLUGIN_RELOAD);
 			pdu_processor_trigger(PLUGIN_RELOAD);
+		}
+		if (g_usr_signalled.exchange(false)) {
+			extern void http_report();
+			http_report();
+			service_trigger_all(PLUGIN_USR1);
+			hpm_processor_trigger(PLUGIN_USR1);
+			pdu_processor_trigger(PLUGIN_USR1);
 		}
 	}
 	return retcode;
