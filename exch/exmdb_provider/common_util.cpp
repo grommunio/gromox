@@ -1114,8 +1114,7 @@ BOOL common_util_get_folder_by_name(
 	return TRUE;
 }
 
-static BINARY* common_util_to_folder_entryid(
-	sqlite3 *psqlite, uint64_t folder_id)
+static BINARY *cu_fid_to_entryid(sqlite3 *psqlite, uint64_t folder_id)
 {
 	BOOL b_found;
 	int account_id;
@@ -1160,8 +1159,7 @@ static BINARY* common_util_to_folder_entryid(
 	return pbin;
 }
 
-static BINARY* common_util_to_message_entryid(
-	sqlite3 *psqlite, uint64_t message_id)
+static BINARY *cu_mid_to_entryid(sqlite3 *psqlite, uint64_t message_id)
 {
 	int account_id;
 	EXT_PUSH ext_push;
@@ -1625,7 +1623,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 {
 	switch (tag) {
 	case PR_ENTRYID:
-		pv.pvalue = common_util_to_folder_entryid(db, id);
+		pv.pvalue = cu_fid_to_entryid(db, id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	case PidTagFolderId: {
 		auto v = cu_alloc<uint64_t>();
@@ -1650,7 +1648,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		auto tmp_id = common_util_get_folder_parent_fid(db, id);
 		if (tmp_id == 0)
 			return GP_SKIP;
-		pv.pvalue = common_util_to_folder_entryid(db, tmp_id);
+		pv.pvalue = cu_fid_to_entryid(db, tmp_id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
 	case PidTagChangeNumber: {
@@ -1759,13 +1757,13 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 {
 	switch (tag) {
 	case PR_ENTRYID:
-		pv.pvalue = common_util_to_message_entryid(db, id);
+		pv.pvalue = cu_mid_to_entryid(db, id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	case PR_PARENT_ENTRYID: {
 		uint64_t tmp_id;
 		if (!common_util_get_message_parent_folder(db, id, &tmp_id) || tmp_id == 0)
 			return GP_ERR;
-		pv.pvalue = common_util_to_folder_entryid(db, tmp_id);
+		pv.pvalue = cu_fid_to_entryid(db, tmp_id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
 	case PidTagFolderId:

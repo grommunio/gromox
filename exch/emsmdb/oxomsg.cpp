@@ -517,10 +517,10 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	auto bin = tmp_propvals.get<const BINARY>(PR_PARENT_ENTRYID);
 	if (bin == nullptr)
 		return ecError;
-	if (!cu_from_folder_entryid(plogon, bin, &parent_id))
+	if (!cu_entryid_to_fid(plogon, bin, &parent_id))
 		return ecError;
 	if (NULL != ptarget) {
-		if (!cu_from_message_entryid(plogon, ptarget, &folder_id, &new_id))
+		if (!cu_entryid_to_mid(plogon, ptarget, &folder_id, &new_id))
 			return ecError;
 		if (!exmdb_client_movecopy_message(plogon->get_dir(),
 		    plogon->account_id, pinfo->cpid, message_id, folder_id,

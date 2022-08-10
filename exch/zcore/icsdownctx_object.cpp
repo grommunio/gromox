@@ -312,7 +312,7 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	pproplist->ppropval[pproplist->count++].pvalue = pvalue;
 
 	pproplist->ppropval[pproplist->count].proptag = PR_ENTRYID;
-	pvalue = common_util_to_folder_entryid(pctx->pstore, fid);
+	pvalue = cu_fid_to_entryid(pctx->pstore, fid);
 	if (pvalue == nullptr)
 		return FALSE;
 	pproplist->ppropval[pproplist->count++].pvalue = pvalue;
@@ -344,8 +344,7 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
 
 		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_ENTRYID;
-		pvalue = common_util_to_folder_entryid(
-						pctx->pstore, parent_fid);
+		pvalue = cu_fid_to_entryid(pctx->pstore, parent_fid);
 		if (pvalue == nullptr)
 			return FALSE;
 		pproplist->ppropval[pproplist->count++].pvalue = pvalue;

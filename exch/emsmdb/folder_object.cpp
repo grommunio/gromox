@@ -233,16 +233,15 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		return TRUE;
 	}
 	case PR_ENTRYID:
-		*outvalue = common_util_to_folder_entryid(
-			pfolder->plogon, pfolder->folder_id);
+		*outvalue = cu_fid_to_entryid(pfolder->plogon, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
 		    0, pfolder->folder_id, PidTagParentFolderId,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		*outvalue = common_util_to_folder_entryid(
-		            pfolder->plogon, *static_cast<uint64_t *>(pvalue));
+		*outvalue = cu_fid_to_entryid(pfolder->plogon,
+		            *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
 		if (pfolder->plogon->is_private()) {
@@ -288,7 +287,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		return TRUE;
 	case PR_IPM_CONTACT_ENTRYID:
@@ -298,7 +297,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		return TRUE;
 	case PR_IPM_APPOINTMENT_ENTRYID:
@@ -308,7 +307,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		return TRUE;
 	case PR_IPM_JOURNAL_ENTRYID:
@@ -318,7 +317,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		return TRUE;
 	case PR_IPM_NOTE_ENTRYID:
@@ -328,7 +327,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		return TRUE;
 	case PR_IPM_TASK_ENTRYID:
@@ -338,7 +337,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
 	case PR_REM_ONLINE_ENTRYID:
@@ -378,31 +377,31 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			ba->count = 0;
 			return FALSE;
 		}
-		pbin = common_util_to_folder_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 		if (NULL == pbin) {
 			return FALSE;
 		}
 		ba->pbin[0] = *pbin;
-		pbin = common_util_to_folder_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
 		if (NULL == pbin) {
 			return FALSE;
 		}
 		ba->pbin[1] = *pbin;
-		pbin = common_util_to_folder_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
 		if (NULL == pbin) {
 			return FALSE;
 		}
 		ba->pbin[2] = *pbin;
-		pbin = common_util_to_folder_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
 		if (NULL == pbin) {
 			return FALSE;
 		}
 		ba->pbin[3] = *pbin;
-		pbin = common_util_to_folder_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
 		if (NULL == pbin) {
 			return FALSE;
@@ -442,19 +441,19 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		persistdatas.ppitems[0]->persist_id = RSF_PID_CONV_ACTIONS;
 		persistdatas.ppitems[0]->element.element_id = RSF_ELID_ENTRYID;
 		persistdatas.ppitems[0]->element.pentry_id =
-			common_util_to_folder_entryid(pfolder->plogon,
+			cu_fid_to_entryid(pfolder->plogon,
 			rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS));
 		persistdatas.ppitems[1] = ppersistdata + 1;
 		persistdatas.ppitems[1]->persist_id = RSF_PID_BUDDYLIST_PDLS;
 		persistdatas.ppitems[1]->element.element_id = RSF_ELID_ENTRYID;
 		persistdatas.ppitems[1]->element.pentry_id =
-			common_util_to_folder_entryid(pfolder->plogon,
+			cu_fid_to_entryid(pfolder->plogon,
 			rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST));
 		persistdatas.ppitems[2] = ppersistdata + 2;
 		persistdatas.ppitems[2]->persist_id = RSF_PID_BUDDYLIST_CONTACTS;
 		persistdatas.ppitems[2]->element.element_id = RSF_ELID_ENTRYID;
 		persistdatas.ppitems[2]->element.pentry_id =
-			common_util_to_folder_entryid(pfolder->plogon,
+			cu_fid_to_entryid(pfolder->plogon,
 			rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS));
 		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 		    ext_push.p_persistdata_a(persistdatas) != EXT_ERR_SUCCESS)
@@ -497,7 +496,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		ba->pbin[1].pb = nullptr;
 		ba->pbin[2].cb = 0;
 		ba->pbin[2].pb = nullptr;
-		pbin = common_util_to_folder_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
 		if (NULL == pbin) {
 			return FALSE;

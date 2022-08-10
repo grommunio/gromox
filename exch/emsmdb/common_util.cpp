@@ -351,7 +351,7 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 	return pbin;
 }
 
-BINARY *common_util_to_folder_entryid(logon_object *plogon, uint64_t folder_id)
+BINARY *cu_fid_to_entryid(logon_object *plogon, uint64_t folder_id)
 {
 	BOOL b_found;
 	BINARY tmp_bin;
@@ -432,7 +432,7 @@ BINARY *common_util_calculate_folder_sourcekey(logon_object *plogon, uint64_t fo
 	return pbin;
 }
 
-BINARY *common_util_to_message_entryid(logon_object *plogon,
+BINARY *cu_mid_to_entryid(logon_object *plogon,
 	uint64_t folder_id, uint64_t message_id)
 {
 	BOOL b_found;
@@ -503,7 +503,7 @@ BINARY *common_util_calculate_message_sourcekey(logon_object *plogon, uint64_t m
 	return pbin;
 }
 
-BOOL cu_from_folder_entryid(logon_object *plogon, const BINARY *pbin,
+BOOL cu_entryid_to_fid(logon_object *plogon, const BINARY *pbin,
     uint64_t *pfolder_id)
 {
 	BOOL b_found;
@@ -547,7 +547,7 @@ BOOL cu_from_folder_entryid(logon_object *plogon, const BINARY *pbin,
 	}
 }
 
-BOOL cu_from_message_entryid(logon_object *plogon, const BINARY *pbin,
+BOOL cu_entryid_to_mid(logon_object *plogon, const BINARY *pbin,
     uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
 	BOOL b_found;
@@ -1939,7 +1939,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
-		if (!cu_from_message_entryid(plogon,
+		if (!cu_entryid_to_mid(plogon,
 		    ptarget, &folder_id, &new_id)) {
 			log_err("W-1279: Failed to retrieve target entryid while sending mid:0x%llx", LLU{message_id});
 			return FALSE;	
@@ -1969,7 +1969,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	ids.pids = &message_id;
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
 	if (ptarget == nullptr ||
-	    !cu_from_folder_entryid(plogon, ptarget, &folder_id))
+	    !cu_entryid_to_fid(plogon, ptarget, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 	if (!exmdb_client_movecopy_messages(plogon->get_dir(),
 	    plogon->account_id, cpid, false, nullptr, parent_id, folder_id,

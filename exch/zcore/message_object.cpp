@@ -759,7 +759,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		if (0 == pmessage->message_id) {
 			return FALSE;
 		}
-		*ppvalue = common_util_to_message_entryid(pmessage->pstore,
+		*ppvalue = cu_mid_to_entryid(pmessage->pstore,
 						pmessage->folder_id, pmessage->message_id);
 		return TRUE;
 	case PR_SOURCE_KEY:
@@ -780,8 +780,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		if (0 == pmessage->message_id) {
 			return FALSE;
 		}
-		*ppvalue = common_util_to_folder_entryid(
-			pmessage->pstore, pmessage->folder_id);
+		*ppvalue = cu_fid_to_entryid(pmessage->pstore, pmessage->folder_id);
 		return TRUE;
 	case PidTagFolderId:
 	case PidTagParentFolderId:
@@ -807,8 +806,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		if (0 == pmessage->message_id) {
 			return FALSE;
 		}
-		*ppvalue = common_util_to_folder_entryid(
-			pmessage->pstore, pmessage->message_id);
+		*ppvalue = cu_fid_to_entryid(pmessage->pstore, pmessage->message_id);
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
 	case PR_MAPPING_SIGNATURE:

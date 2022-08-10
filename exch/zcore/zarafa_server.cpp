@@ -323,7 +323,6 @@ static void zarafa_server_notification_proc(const char *dir,
 {
 	int i;
 	int tv_msec;
-	BINARY *pbin;
 	GUID hsession;
 	BINARY tmp_bin;
 	uint32_t hstore;
@@ -375,12 +374,11 @@ static void zarafa_server_notification_proc(const char *dir,
 		auto nt = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pbin = common_util_to_message_entryid(
-				pstore, folder_id, message_id);
+		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
 		if (pbin == nullptr)
 			return;
 		pnew_mail->entryid = *pbin;
-		pbin = common_util_to_folder_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pnew_mail->parentid = *pbin;
@@ -413,11 +411,11 @@ static void zarafa_server_notification_proc(const char *dir,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
 		pobj_notify->object_type = MAPI_FOLDER;
-		pbin = common_util_to_folder_entryid(pstore, folder_id);
+		auto pbin = cu_fid_to_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = common_util_to_folder_entryid(pstore, parent_id);
+		pbin = cu_fid_to_entryid(pstore, parent_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
@@ -434,10 +432,9 @@ static void zarafa_server_notification_proc(const char *dir,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		pobj_notify->object_type = MAPI_MESSAGE;
-		pbin = common_util_to_message_entryid(
-				pstore, folder_id, message_id);
+		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
 		pobj_notify->pentryid = pbin;
-		pbin = common_util_to_folder_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
@@ -454,11 +451,11 @@ static void zarafa_server_notification_proc(const char *dir,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
 		pobj_notify->object_type = MAPI_FOLDER;
-		pbin = common_util_to_folder_entryid(pstore, folder_id);
+		auto pbin = cu_fid_to_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = common_util_to_folder_entryid(pstore, parent_id);
+		pbin = cu_fid_to_entryid(pstore, parent_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
@@ -475,12 +472,11 @@ static void zarafa_server_notification_proc(const char *dir,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		pobj_notify->object_type = MAPI_MESSAGE;
-		pbin = common_util_to_message_entryid(
-				pstore, folder_id, message_id);
+		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = common_util_to_folder_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
@@ -496,7 +492,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		pobj_notify->object_type = MAPI_FOLDER;
-		pbin = common_util_to_folder_entryid(pstore, folder_id);
+		auto pbin = cu_fid_to_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
@@ -513,12 +509,11 @@ static void zarafa_server_notification_proc(const char *dir,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		pobj_notify->object_type = MAPI_MESSAGE;
-		pbin = common_util_to_message_entryid(
-				pstore, folder_id, message_id);
+		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = common_util_to_folder_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
@@ -539,19 +534,19 @@ static void zarafa_server_notification_proc(const char *dir,
 		old_eid = rop_util_nfid_to_eid(nt->old_folder_id);
 		old_parentid = rop_util_nfid_to_eid(nt->old_parent_id);
 		pobj_notify->object_type = MAPI_FOLDER;
-		pbin = common_util_to_folder_entryid(pstore, folder_id);
+		auto pbin = cu_fid_to_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = common_util_to_folder_entryid(pstore, parent_id);
+		pbin = cu_fid_to_entryid(pstore, parent_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
-		pbin = common_util_to_folder_entryid(pstore, old_eid);
+		pbin = cu_fid_to_entryid(pstore, old_eid);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pold_entryid = pbin;
-		pbin = common_util_to_folder_entryid(pstore, old_parentid);
+		pbin = cu_fid_to_entryid(pstore, old_parentid);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pold_parentid = pbin;
@@ -572,23 +567,19 @@ static void zarafa_server_notification_proc(const char *dir,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		pobj_notify->object_type = MAPI_MESSAGE;
-		pbin = common_util_to_message_entryid(
-				pstore, folder_id, message_id);
+		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = common_util_to_folder_entryid(
-							pstore, folder_id);
+		pbin = cu_fid_to_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
-		pbin = common_util_to_message_entryid(
-				pstore, old_parentid, old_eid);
+		pbin = cu_mid_to_entryid(pstore, old_parentid, old_eid);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pold_entryid = pbin;
-		pbin = common_util_to_folder_entryid(
-						pstore, old_parentid);
+		pbin = cu_fid_to_entryid(pstore, old_parentid);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pold_parentid = pbin;
@@ -604,7 +595,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		auto nt = static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		pobj_notify->object_type = MAPI_FOLDER;
-		pbin = common_util_to_folder_entryid(pstore, folder_id);
+		auto pbin = cu_fid_to_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
@@ -882,7 +873,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	switch (type) {
 	case EITLT_PRIVATE_FOLDER:
 	case EITLT_PUBLIC_FOLDER: {
-		if (!common_util_from_folder_entryid(entryid,
+		if (!cu_entryid_to_fid(entryid,
 		    &b_private, &account_id, &folder_id))
 			break;
 		auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
@@ -894,7 +885,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	}
 	case EITLT_PRIVATE_MESSAGE:
 	case EITLT_PUBLIC_MESSAGE: {
-		if (!common_util_from_message_entryid(entryid,
+		if (!cu_entryid_to_mid(entryid,
 		    &b_private, &account_id, &folder_id, &message_id))
 			break;
 		auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
@@ -997,7 +988,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		switch (type) {
 		case EITLT_PRIVATE_FOLDER:
 		case EITLT_PUBLIC_FOLDER:
-			if (common_util_from_folder_entryid(entryid,
+			if (cu_entryid_to_fid(entryid,
 			    &b_private, &account_id, &folder_id)) {
 				message_id = 0;
 				goto CHECK_LOC;
@@ -1005,7 +996,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			break;
 		case EITLT_PRIVATE_MESSAGE:
 		case EITLT_PUBLIC_MESSAGE:
-			if (common_util_from_message_entryid(entryid,
+			if (cu_entryid_to_mid(entryid,
 			    &b_private, &account_id, &folder_id, &message_id))
 				goto CHECK_LOC;
 			break;
@@ -1760,7 +1751,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 	if (ids.pids == nullptr)
 		return ecError;
 	for (size_t i = 0; i < pentryids->count; ++i) {
-		if (!common_util_from_message_entryid(pentryids->pbin[i],
+		if (!cu_entryid_to_mid(pentryids->pbin[i],
 		    &b_private, &account_id, &folder_id, &message_id))
 			return ecError;
 		if (b_private != pstore->b_private ||
@@ -1872,7 +1863,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 				return ecAccessDenied;
 		}
 		for (size_t i = 0; i < pentryids->count; ++i) {
-			if (!common_util_from_message_entryid(pentryids->pbin[i],
+			if (!cu_entryid_to_mid(pentryids->pbin[i],
 			    &b_private, &account_id, &folder_id, &message_id))
 				return ecError;
 			if (b_private != pstore->b_private ||
@@ -1905,7 +1896,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 	if (ids.pids == nullptr)
 		return ecError;
 	for (size_t i = 0; i < pentryids->count; ++i) {
-		if (!common_util_from_message_entryid(pentryids->pbin[i],
+		if (!cu_entryid_to_mid(pentryids->pbin[i],
 		    &b_private, &account_id, &folder_id, &message_id))
 			return ecError;
 		if (b_private != pstore->b_private ||
@@ -2004,7 +1995,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		}
 	}
 	for (size_t i = 0; i < pentryids->count; ++i) {
-		if (!common_util_from_message_entryid(pentryids->pbin[i],
+		if (!cu_entryid_to_mid(pentryids->pbin[i],
 		    &b_private, &account_id, &folder_id, &message_id))
 			return ecError;
 		if (b_private != pstore->b_private ||
@@ -2206,7 +2197,7 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
-	if (!common_util_from_folder_entryid(entryid,
+	if (!cu_entryid_to_fid(entryid,
 	    &b_private, &account_id, &folder_id))
 		return ecError;
 	if (b_private != pstore->b_private || account_id != pstore->account_id)
@@ -2326,7 +2317,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore = psrc_parent->pstore;
-	if (!common_util_from_folder_entryid(entryid,
+	if (!cu_entryid_to_fid(entryid,
 	    &b_private, &account_id, &folder_id))
 		return ecError;
 	if (b_private != pstore->b_private || account_id != pstore->account_id)
@@ -2506,10 +2497,9 @@ uint32_t zarafa_server_entryidfromsourcekey(
 				return ecInvalidParam;
 			message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		}
-		pbin = common_util_to_message_entryid(
-				pstore, folder_id, message_id);
+		pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
 	} else {
-		pbin = common_util_to_folder_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(pstore, folder_id);
 	}
 	if (pbin == nullptr)
 		return ecError;
@@ -2544,13 +2534,13 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 		switch (type) {
 		case EITLT_PRIVATE_FOLDER:
 		case EITLT_PUBLIC_FOLDER:
-			if (!common_util_from_folder_entryid(*pentryid,
+			if (!cu_entryid_to_fid(*pentryid,
 			    &b_private, &account_id, &folder_id))
 				return ecError;
 			break;
 		case EITLT_PRIVATE_MESSAGE:
 		case EITLT_PUBLIC_MESSAGE:
-			if (!common_util_from_message_entryid(*pentryid,
+			if (!cu_entryid_to_mid(*pentryid,
 			    &b_private, &account_id, &folder_id, &message_id))
 				return ecError;
 			break;
@@ -3156,7 +3146,7 @@ uint32_t zarafa_server_getreceivefolder(GUID hsession,
 	if (!exmdb_client::get_folder_by_class(pstore->get_dir(), pstrclass,
 	    &folder_id, temp_class))
 		return ecError;
-	pbin = common_util_to_folder_entryid(pstore, folder_id);
+	pbin = cu_fid_to_entryid(pstore, folder_id);
 	if (pbin == nullptr)
 		return ecError;
 	*pentryid = *pbin;
@@ -4926,7 +4916,6 @@ uint32_t zarafa_server_getsearchcriteria(GUID hsession,
 	uint32_t hfolder, BINARY_ARRAY *pfolder_array,
 	RESTRICTION **pprestriction, uint32_t *psearch_stat)
 {
-	BINARY *pbin;
 	uint8_t mapi_type;
 	LONGLONG_ARRAY folder_ids;
 	
@@ -4953,8 +4942,7 @@ uint32_t zarafa_server_getsearchcriteria(GUID hsession,
 	if (pfolder_array->pbin == nullptr)
 		return ecError;
 	for (size_t i = 0; i < folder_ids.count; ++i) {
-		pbin = common_util_to_folder_entryid(
-				pstore, folder_ids.pll[i]);
+		auto pbin = cu_fid_to_entryid(pstore, folder_ids.pll[i]);
 		if (pbin == nullptr)
 			return ecError;
 		pfolder_array->pbin[i] = *pbin;
@@ -5015,7 +5003,7 @@ uint32_t zarafa_server_setsearchcriteria(
 	if (folder_ids.pll == nullptr)
 		return ecError;
 	for (size_t i = 0; i < pfolder_array->count; ++i) {
-		if (!common_util_from_folder_entryid(pfolder_array->pbin[i],
+		if (!cu_entryid_to_fid(pfolder_array->pbin[i],
 		    &b_private, &db_id, &folder_ids.pll[i]))
 			return ecError;
 		if (!b_private || db_id != pstore->account_id)
@@ -5298,12 +5286,12 @@ uint32_t zarafa_server_linkmessage(GUID hsession,
 	uint32_t account_id1;
 	
 	if (common_util_get_messaging_entryid_type(search_entryid) != EITLT_PRIVATE_FOLDER ||
-	    !common_util_from_folder_entryid(search_entryid, &b_private,
+	    !cu_entryid_to_fid(search_entryid, &b_private,
 	    reinterpret_cast<int *>(&account_id), &folder_id) ||
 	    b_private != TRUE)
 		return ecInvalidParam;
 	if (common_util_get_messaging_entryid_type(message_entryid) != EITLT_PRIVATE_MESSAGE ||
-	    !common_util_from_message_entryid(message_entryid, &b_private1,
+	    !cu_entryid_to_mid(message_entryid, &b_private1,
 	    reinterpret_cast<int *>(&account_id1), &folder_id1, &message_id) ||
 	    b_private1 != TRUE || account_id != account_id1)
 		return ecInvalidParam;

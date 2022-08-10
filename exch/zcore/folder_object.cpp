@@ -208,15 +208,14 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	}
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
-		*ppvalue = common_util_to_folder_entryid(
-			pfolder->pstore, pfolder->folder_id);
+		*ppvalue = cu_fid_to_entryid(pfolder->pstore, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 		    0, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 		           *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_SOURCE_KEY:
@@ -264,7 +263,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		return TRUE;
 	case PR_IPM_CONTACT_ENTRYID:
@@ -276,7 +275,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		return TRUE;
 	case PR_IPM_APPOINTMENT_ENTRYID:
@@ -288,7 +287,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		return TRUE;
 	case PR_IPM_JOURNAL_ENTRYID:
@@ -300,7 +299,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		return TRUE;
 	case PR_IPM_NOTE_ENTRYID:
@@ -312,7 +311,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		return TRUE;
 	case PR_IPM_TASK_ENTRYID:
@@ -324,7 +323,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
 	case PR_REM_ONLINE_ENTRYID:
@@ -369,31 +368,31 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			ba->count = 0;
 			return FALSE;
 		}
-		pbin = common_util_to_folder_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(pfolder->pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 		if (NULL == pbin) {
 			return FALSE;
 		}
 		ba->pbin[0] = *pbin;
-		pbin = common_util_to_folder_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
 		if (NULL == pbin) {
 			return FALSE;
 		}
 		ba->pbin[1] = *pbin;
-		pbin = common_util_to_folder_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
 		if (NULL == pbin) {
 			return FALSE;
 		}
 		ba->pbin[2] = *pbin;
-		pbin = common_util_to_folder_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
 		if (NULL == pbin) {
 			return FALSE;
 		}
 		ba->pbin[3] = *pbin;
-		pbin = common_util_to_folder_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(pfolder->pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
 		if (NULL == pbin) {
 			return FALSE;
@@ -431,19 +430,19 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		persistdatas.ppitems[0]->persist_id = RSF_PID_CONV_ACTIONS;
 		persistdatas.ppitems[0]->element.element_id = RSF_ELID_ENTRYID;
 		persistdatas.ppitems[0]->element.pentry_id =
-			common_util_to_folder_entryid(pfolder->pstore,
+			cu_fid_to_entryid(pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS));
 		persistdatas.ppitems[1] = ppersistdata + 1;
 		persistdatas.ppitems[1]->persist_id = RSF_PID_BUDDYLIST_PDLS;
 		persistdatas.ppitems[1]->element.element_id = RSF_ELID_ENTRYID;
 		persistdatas.ppitems[1]->element.pentry_id =
-			common_util_to_folder_entryid(pfolder->pstore,
+			cu_fid_to_entryid(pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST));
 		persistdatas.ppitems[2] = ppersistdata + 2;
 		persistdatas.ppitems[2]->persist_id = RSF_PID_BUDDYLIST_CONTACTS;
 		persistdatas.ppitems[2]->element.element_id = RSF_ELID_ENTRYID;
 		persistdatas.ppitems[2]->element.pentry_id =
-			common_util_to_folder_entryid(pfolder->pstore,
+			cu_fid_to_entryid(pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS));
 		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 		    ext_push.p_persistdata_a(persistdatas) != EXT_ERR_SUCCESS)
@@ -496,7 +495,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		ba->pbin[1].pb = NULL;
 		ba->pbin[2].cb = 0;
 		ba->pbin[2].pb = NULL;
-		pbin = common_util_to_folder_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(pfolder->pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
 		if (NULL == pbin) {
 			return FALSE;

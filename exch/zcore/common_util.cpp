@@ -923,7 +923,7 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 	return folder_type;
 }
 
-BOOL common_util_from_folder_entryid(BINARY bin,
+BOOL cu_entryid_to_fid(BINARY bin,
 	BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id)
 {
 	BOOL b_found;
@@ -966,7 +966,7 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 	}
 }
 
-BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
+BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 	int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
 	BOOL b_found;
@@ -1020,7 +1020,7 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 	}
 }
 
-BINARY *common_util_to_folder_entryid(store_object *pstore, uint64_t folder_id)
+BINARY *cu_fid_to_entryid(store_object *pstore, uint64_t folder_id)
 {
 	BOOL b_found;
 	BINARY tmp_bin;
@@ -1102,7 +1102,7 @@ BINARY *common_util_calculate_folder_sourcekey(store_object *pstore,
 	return pbin;
 }
 
-BINARY *common_util_to_message_entryid(store_object *pstore,
+BINARY *cu_mid_to_entryid(store_object *pstore,
 	uint64_t folder_id, uint64_t message_id)
 {
 	BOOL b_found;
@@ -1690,7 +1690,7 @@ BOOL common_util_send_message(store_object *pstore,
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
-		if (!common_util_from_message_entryid(*ptarget,
+		if (!cu_entryid_to_mid(*ptarget,
 		    &b_private, &account_id, &folder_id, &new_id))
 			return FALSE;	
 		if (!exmdb_client::clear_submit(pstore->get_dir(), message_id, false))
@@ -1711,7 +1711,7 @@ BOOL common_util_send_message(store_object *pstore,
 	ids.count = 1;
 	ids.pids = &message_id;
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
-	if (ptarget == nullptr || !common_util_from_folder_entryid(*ptarget,
+	if (ptarget == nullptr || !cu_entryid_to_fid(*ptarget,
 	    &b_private, &account_id, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 	return exmdb_client::movecopy_messages(pstore->get_dir(),
@@ -1771,7 +1771,7 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 			return NULL;
 		}
 		psvreid->pbin = NULL;
-		if (!common_util_from_folder_entryid(pmovecopy->folder_eid,
+		if (!cu_entryid_to_fid(pmovecopy->folder_eid,
 		    &b_private, &db_id, &psvreid->folder_id))
 			return NULL;	
 		psvreid->message_id = 0;
@@ -1790,7 +1790,7 @@ static REPLY_ACTION* common_util_convert_from_zreply(ZREPLY_ACTION *preply)
 	if (NULL == preply1) {
 		return NULL;
 	}
-	if (!common_util_from_message_entryid(preply->message_eid, &b_private,
+	if (!cu_entryid_to_mid(preply->message_eid, &b_private,
 	    &db_id, &preply1->template_folder_id, &preply1->template_message_id))
 		return NULL;	
 	preply1->template_guid = preply->template_guid;
@@ -1892,8 +1892,7 @@ static ZMOVECOPY_ACTION *common_util_convert_to_zmovecopy(store_object *pstore,
 			return NULL;
 		}
 		pmovecopy1->store_eid = *pbin;
-		pbin = common_util_to_folder_entryid(pstore,
-		       static_cast<SVREID *>(pmovecopy->pfolder_eid)->folder_id);
+		pbin = cu_fid_to_entryid(pstore, static_cast<SVREID *>(pmovecopy->pfolder_eid)->folder_id);
 		if (NULL == pbin) {
 			return NULL;
 		}
@@ -1909,7 +1908,7 @@ static ZREPLY_ACTION *common_util_convert_to_zreply(store_object *pstore,
 	if (NULL == preply1) {
 		return NULL;
 	}
-	if (common_util_to_message_entryid(pstore, preply->template_folder_id,
+	if (cu_mid_to_entryid(pstore, preply->template_folder_id,
 	    preply->template_message_id) == nullptr)
 		return NULL;	
 	preply1->template_guid = preply->template_guid;

@@ -42,11 +42,11 @@ extern BOOL common_util_entryid_to_username(const BINARY *, char *username, size
 void common_util_get_domain_server(const char *account_name, char *pserver);
 BINARY* common_util_username_to_addressbook_entryid(const char *username);
 BINARY* common_util_public_to_addressbook_entryid(const char *domainname);
-extern BINARY *common_util_to_folder_entryid(logon_object *, uint64_t folder_id);
+extern BINARY *cu_fid_to_entryid(logon_object *, uint64_t folder_id);
 extern BINARY *common_util_calculate_folder_sourcekey(logon_object *, uint64_t folder_id);
-extern BINARY *common_util_to_message_entryid(logon_object *, uint64_t folder_id, uint64_t msg_id);
-extern BOOL cu_from_folder_entryid(logon_object *, const BINARY *, uint64_t *folder_id);
-extern BOOL cu_from_message_entryid(logon_object *, const BINARY *, uint64_t *folder_id, uint64_t *msg_id);
+extern BINARY *cu_mid_to_entryid(logon_object *, uint64_t folder_id, uint64_t msg_id);
+extern BOOL cu_entryid_to_fid(logon_object *, const BINARY *, uint64_t *folder_id);
+extern BOOL cu_entryid_to_mid(logon_object *, const BINARY *, uint64_t *folder_id, uint64_t *msg_id);
 extern BINARY *common_util_calculate_message_sourcekey(logon_object *, uint64_t msg_id);
 extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
