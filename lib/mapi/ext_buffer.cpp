@@ -984,7 +984,7 @@ int EXT_PULL::g_longterm(LONG_TERM_ID *r)
 	return g_uint16(&r->padding);
 }
 
-int EXT_PULL::g_longterm_rang(LONG_TERM_ID_RANGE *r)
+int EXT_PULL::g_longterm_range(LONG_TERM_ID_RANGE *r)
 {
 	TRY(g_longterm(&r->min));
 	return g_longterm(&r->max);

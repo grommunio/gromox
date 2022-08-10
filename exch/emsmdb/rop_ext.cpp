@@ -1779,7 +1779,7 @@ static int rop_ext_pull_setlocalreplicamidsetdeleted_request(
 		return EXT_ERR_ALLOC;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->g_longterm_rang(&r->prange[i]));
+		TRY(pext->g_longterm_range(&r->prange[i]));
 	if (ext.m_offset > offset)
 		return EXT_ERR_FORMAT;
 	ext.m_offset = offset;
