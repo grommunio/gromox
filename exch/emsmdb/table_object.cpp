@@ -272,8 +272,8 @@ BOOL table_object::create_bookmark(uint32_t *pindex) try
 	if (!exmdb_client_mark_table(ptable->plogon->get_dir(), m_table_id,
 	    m_position, &inst_id, &inst_num, &row_type))
 		return FALSE;
-	bookmark_list.emplace_back(bookmark_index, row_type, inst_num,
-		m_position, inst_id);
+	bookmark_list.push_back(bookmark_node{bookmark_index, row_type,
+		inst_num, m_position, inst_id});
 	*pindex = bookmark_index++;
 	return TRUE;
 } catch (const std::bad_alloc &) {
