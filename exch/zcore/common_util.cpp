@@ -1064,7 +1064,7 @@ BINARY *cu_fid_to_entryid(store_object *pstore, uint64_t folder_id)
 	return pbin;
 }
 
-BINARY *common_util_calculate_folder_sourcekey(store_object *pstore,
+BINARY *cu_fid_to_sk(store_object *pstore,
     uint64_t folder_id)
 {
 	BOOL b_found;
@@ -1188,7 +1188,7 @@ int cu_calc_msg_access(store_object *pstore, const char *user,
 	return 0;
 }
 
-BINARY *common_util_calculate_message_sourcekey(store_object *pstore,
+BINARY *cu_mid_to_sk(store_object *pstore,
     uint64_t message_id)
 {
 	EXT_PUSH ext_push;

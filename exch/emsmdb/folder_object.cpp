@@ -266,8 +266,8 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		    outvalue))
 			return FALSE;
 		if (*outvalue == nullptr) {
-			*outvalue = common_util_calculate_folder_sourcekey(
-			            pfolder->plogon, *static_cast<uint64_t *>(pvalue));
+			*outvalue = cu_fid_to_sk(pfolder->plogon,
+			            *static_cast<uint64_t *>(pvalue));
 			if (*outvalue == nullptr)
 				return FALSE;
 		}
@@ -561,7 +561,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (pproptags->has(PR_SOURCE_KEY) && !ppropvals->has(PR_SOURCE_KEY)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_SOURCE_KEY;
-		pv.pvalue = common_util_calculate_folder_sourcekey(pfolder->plogon, pfolder->folder_id);
+		pv.pvalue = cu_fid_to_sk(pfolder->plogon, pfolder->folder_id);
 		if (pv.pvalue == nullptr)
 			return FALSE;
 		ppropvals->count ++;

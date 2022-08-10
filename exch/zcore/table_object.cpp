@@ -350,7 +350,7 @@ static bool conttbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 			if (r.proptag != PidTagMid)
 				continue;
 			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
-			r.pvalue = common_util_calculate_message_sourcekey(ptable->pstore, tmp_eid);
+			r.pvalue = cu_mid_to_sk(ptable->pstore, tmp_eid);
 			if (r.pvalue == nullptr)
 				return FALSE;
 			r.proptag = PR_SOURCE_KEY;
@@ -394,7 +394,7 @@ static bool hiertbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 			if (r.proptag != PidTagFolderId)
 				continue;
 			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
-			r.pvalue = common_util_calculate_folder_sourcekey(ptable->pstore, tmp_eid);
+			r.pvalue = cu_fid_to_sk(ptable->pstore, tmp_eid);
 			if (r.pvalue == nullptr)
 				return false;
 			r.proptag = PR_SOURCE_KEY;

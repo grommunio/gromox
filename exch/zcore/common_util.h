@@ -151,10 +151,10 @@ extern BOOL cu_entryid_to_fid(BINARY bin, BOOL *pb_private, int *pdb_id, uint64_
 extern BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id);
 extern BINARY *common_util_to_store_entryid(store_object *);
 extern BINARY *cu_fid_to_entryid(store_object *, uint64_t folder_id);
-extern BINARY *common_util_calculate_folder_sourcekey(store_object *, uint64_t folder_id);
+extern BINARY *cu_fid_to_sk(store_object *, uint64_t folder_id);
 extern BINARY *cu_mid_to_entryid(store_object *, uint64_t folder_id, uint64_t msg_id);
 extern int cu_calc_msg_access(store_object *, const char *user, uint64_t folder_id, uint64_t msg_id, uint32_t &access);
-extern BINARY *common_util_calculate_message_sourcekey(store_object *, uint64_t msg_id);
+extern BINARY *cu_mid_to_sk(store_object *, uint64_t msg_id);
 extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_guid_to_binary(GUID guid);

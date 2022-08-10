@@ -1033,8 +1033,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 			return FALSE;	
 		if (*ppvalue != nullptr)
 			return TRUE;
-		*ppvalue = common_util_calculate_folder_sourcekey(
-		           pmessage->plogon, pmessage->folder_id);
+		*ppvalue = cu_fid_to_sk(pmessage->plogon, pmessage->folder_id);
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -1135,7 +1134,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	    !ppropvals->has(PR_SOURCE_KEY)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_SOURCE_KEY;
-		pv.pvalue = common_util_calculate_message_sourcekey(pmessage->plogon, pmessage->message_id);
+		pv.pvalue = cu_mid_to_sk(pmessage->plogon, pmessage->message_id);
 		if (pv.pvalue == nullptr)
 			return FALSE;
 		ppropvals->count ++;

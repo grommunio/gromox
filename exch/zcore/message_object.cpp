@@ -764,8 +764,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		return TRUE;
 	case PR_SOURCE_KEY:
 		if (NULL == pmessage->pembedding) {
-			*ppvalue = common_util_calculate_message_sourcekey(
-						pmessage->pstore, pmessage->message_id);
+			*ppvalue = cu_mid_to_sk(pmessage->pstore, pmessage->message_id);
 			return TRUE;
 		}
 		return FALSE;
@@ -790,8 +789,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		*ppvalue = &pmessage->folder_id;
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
-		*ppvalue = common_util_calculate_folder_sourcekey(
-					pmessage->pstore, pmessage->folder_id);
+		*ppvalue = cu_fid_to_sk(pmessage->pstore, pmessage->folder_id);
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
