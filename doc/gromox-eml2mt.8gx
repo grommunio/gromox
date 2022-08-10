@@ -11,7 +11,9 @@ iCalendar and vCard objects
 .SH Description
 gromox\-eml2mt reads one or more RFC5322-formatted e-mail messages and
 re-exports the data in a Gromox-specific mailbox transfer format to stdout for
-consumption by pipe by the gromox-mt2exm(8gx) program.
+consumption by pipe by the gromox-mt2exm(8gx) program. Each file must contain
+at most one RFC5322 message; mailboxes of type Unix mbox are not supported at
+this time.
 .PP
 When called as gromox\-ical2mt, the input is treated as RFC5545-formatted
 calendaring and scheduling objects (.ics).
