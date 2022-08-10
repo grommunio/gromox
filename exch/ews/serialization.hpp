@@ -57,17 +57,32 @@ struct ExplicitConvert
 {static const uint8_t value = 0;};
 
 /**
- * @brief      Conversion specialization for integer
+ * @brief      Conversion specialization for boolean
  */
 template<>
-struct ExplicitConvert<int>
+struct ExplicitConvert<bool>
 {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, int& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, bool& value)
+	{return xml->QueryBoolText(&value);}
+
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, bool& value)
+	{return xml->QueryBoolValue(&value);}
+};
+
+/**
+ * @brief      Conversion specialization for integer
+ */
+template<>
+struct ExplicitConvert<int32_t>
+{
+	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
+
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, int32_t& value)
 	{return xml->QueryIntText(&value);}
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, int& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, int32_t& value)
 	{return xml->QueryIntValue(&value);}
 };
 
