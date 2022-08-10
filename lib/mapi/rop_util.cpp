@@ -98,11 +98,11 @@ uint64_t rop_util_gc_to_value(GLOBCNT gc)
  * MFCMAPI does not treat PR_RECORD_KEY's gc part in any way (leaves it as
  * bytes), and does the same to replid. It is not clear if replid should be
  * big-endian. However, given the replid is replaced by a replguid in
- * message_object.cpp:common_util_to_folder_entryid and zeroed, it probably
+ * message_object.cpp:cu_fid_to_entryid and zeroed, it probably
  * does not matter which way.
  *
  * The return value is mixed endianness and mildly useless when printed as a
- * number. Consumers such as message_object.cpp:common_util_to_folder_entryid
+ * number. Consumers such as message_object.cpp:cu_fid_to_entryid
  * just deconstruct it again for PR_RECORD_KEY.
  */
 eid_t rop_util_make_eid(uint16_t replid, GLOBCNT gc)

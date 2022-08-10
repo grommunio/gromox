@@ -316,7 +316,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 		if (!exmdb_client::query_table(pinfo->get_maildir(), nullptr,
 		    pinfo->cpid, table_id, &proptags, 0, row_num, &tmp_set))
 			return FALSE;
-		pparent_entryid = zcsab_prepend(common_util_to_folder_entryid(pstore,
+		pparent_entryid = zcsab_prepend(cu_fid_to_entryid(pstore,
 		                  pcontainer->id.exmdb_id.folder_id), MAPI_ABCONT, UINT32_MAX);
 		if (NULL == pparent_entryid) {
 			return FALSE;
@@ -381,7 +381,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			auto msgid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
 			if (msgid == nullptr)
 				return FALSE;
-			auto pvalue = zcsab_prepend(common_util_to_message_entryid(pstore,
+			auto pvalue = zcsab_prepend(cu_mid_to_entryid(pstore,
 			              pcontainer->id.exmdb_id.folder_id, *msgid), MAPI_MAILUSER, 3*i+j);
 			if (pvalue == nullptr ||
 			    ppropvals->set(PR_ENTRYID, pvalue) != 0 ||
@@ -550,8 +550,8 @@ static BOOL container_object_fetch_folder_properties(
 				return false;
 			void *pvalue = nullptr;
 			if (pproptags->pproptag[i] != PR_PARENT_ENTRYID) {
-				pvalue = zcsab_prepend(common_util_to_folder_entryid(
-				         store, folder_id), MAPI_ABCONT, UINT32_MAX);
+				pvalue = zcsab_prepend(cu_fid_to_entryid(store, folder_id),
+				         MAPI_ABCONT, UINT32_MAX);
 			} else if (folder_id == rop_util_make_eid_ex(
 			    1, PRIVATE_FID_CONTACTS)) {
 				if (!container_object_fetch_special_property(SPECIAL_CONTAINER_PROVIDER,
@@ -561,8 +561,8 @@ static BOOL container_object_fetch_folder_properties(
 				auto fid = ppropvals->get<uint64_t>(PidTagParentFolderId);
 				if (fid == nullptr)
 					return FALSE;
-				pvalue = zcsab_prepend(common_util_to_folder_entryid(
-				         store, *fid), MAPI_ABCONT, UINT32_MAX);
+				pvalue = zcsab_prepend(cu_fid_to_entryid(store, *fid),
+				         MAPI_ABCONT, UINT32_MAX);
 			}
 			if (NULL == pvalue) {
 				return FALSE;

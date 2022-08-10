@@ -379,49 +379,43 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		memcpy(ppropval, chg.ppropval, sizeof(TAGGED_PROPVAL) * chg.count);
 		chg.ppropval = ppropval;
 		tmp_propval.proptag = PR_IPM_DRAFTS_ENTRYID;
-		tmp_propval.pvalue = common_util_to_folder_entryid(
-			pctx->pstream->plogon, rop_util_make_eid_ex(1,
-			PRIVATE_FID_DRAFT));
+		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
+		                     rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		if (NULL == tmp_propval.pvalue) {
 			return FALSE;
 		}
 		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		tmp_propval.proptag = PR_IPM_CONTACT_ENTRYID;
-		tmp_propval.pvalue = common_util_to_folder_entryid(
-			pctx->pstream->plogon, rop_util_make_eid_ex(1,
-			PRIVATE_FID_CONTACTS));
+		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
+		                     rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		if (NULL == tmp_propval.pvalue) {
 			return FALSE;
 		}
 		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		tmp_propval.proptag = PR_IPM_APPOINTMENT_ENTRYID;
-		tmp_propval.pvalue = common_util_to_folder_entryid(
-			pctx->pstream->plogon, rop_util_make_eid_ex(1,
-			PRIVATE_FID_CALENDAR));
+		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
+		                     rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		if (NULL == tmp_propval.pvalue) {
 			return FALSE;
 		}
 		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		tmp_propval.proptag = PR_IPM_JOURNAL_ENTRYID;
-		tmp_propval.pvalue = common_util_to_folder_entryid(
-			pctx->pstream->plogon, rop_util_make_eid_ex(1,
-			PRIVATE_FID_JOURNAL));
+		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
+		                     rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		if (NULL == tmp_propval.pvalue) {
 			return FALSE;
 		}
 		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		tmp_propval.proptag = PR_IPM_NOTE_ENTRYID;
-		tmp_propval.pvalue = common_util_to_folder_entryid(
-			pctx->pstream->plogon, rop_util_make_eid_ex(1,
-			PRIVATE_FID_NOTES));
+		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
+		                     rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		if (NULL == tmp_propval.pvalue) {
 			return FALSE;
 		}
 		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		tmp_propval.proptag = PR_IPM_TASK_ENTRYID;
-		tmp_propval.pvalue = common_util_to_folder_entryid(
-			pctx->pstream->plogon, rop_util_make_eid_ex(1,
-			PRIVATE_FID_TASKS));
+		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
+		                     rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		if (NULL == tmp_propval.pvalue) {
 			return FALSE;
 		}
@@ -437,31 +431,31 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (ba->pbin == nullptr) {
 				return FALSE;
 			}
-			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			pbin = cu_fid_to_entryid(pctx->pstream->plogon,
 			       rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 			if (NULL == pbin) {
 				return FALSE;
 			}
 			ba->pbin[0] = *pbin;
-			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			pbin = cu_fid_to_entryid(pctx->pstream->plogon,
 			       rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
 			if (NULL == pbin) {
 				return FALSE;
 			}
 			ba->pbin[1] = *pbin;
-			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			pbin = cu_fid_to_entryid(pctx->pstream->plogon,
 			       rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
 			if (NULL == pbin) {
 				return FALSE;
 			}
 			ba->pbin[2] = *pbin;
-			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			pbin = cu_fid_to_entryid(pctx->pstream->plogon,
 			       rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
 			if (NULL == pbin) {
 				return FALSE;
 			}
 			ba->pbin[3] = *pbin;
-			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			pbin = cu_fid_to_entryid(pctx->pstream->plogon,
 			       rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
 			if (NULL == pbin) {
 				return FALSE;
@@ -489,19 +483,19 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			persistdatas.ppitems[0]->persist_id = RSF_PID_CONV_ACTIONS;
 			persistdatas.ppitems[0]->element.element_id = RSF_ELID_ENTRYID;
 			persistdatas.ppitems[0]->element.pentry_id =
-				common_util_to_folder_entryid(pctx->pstream->plogon,
+				cu_fid_to_entryid(pctx->pstream->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS));
 			persistdatas.ppitems[1] = ppersistdata + 1;
 			persistdatas.ppitems[1]->persist_id = RSF_PID_BUDDYLIST_PDLS;
 			persistdatas.ppitems[1]->element.element_id = RSF_ELID_ENTRYID;
 			persistdatas.ppitems[1]->element.pentry_id =
-				common_util_to_folder_entryid(pctx->pstream->plogon,
+				cu_fid_to_entryid(pctx->pstream->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST));
 			persistdatas.ppitems[2] = ppersistdata + 2;
 			persistdatas.ppitems[2]->persist_id = RSF_PID_BUDDYLIST_CONTACTS;
 			persistdatas.ppitems[2]->element.element_id = RSF_ELID_ENTRYID;
 			persistdatas.ppitems[2]->element.pentry_id =
-				common_util_to_folder_entryid(pctx->pstream->plogon,
+				cu_fid_to_entryid(pctx->pstream->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS));
 			if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 			    ext_push.p_persistdata_a(persistdatas) != EXT_ERR_SUCCESS)
@@ -530,7 +524,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			ba->pbin[1].pb = nullptr;
 			ba->pbin[2].cb = 0;
 			ba->pbin[2].pb = nullptr;
-			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			pbin = cu_fid_to_entryid(pctx->pstream->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
 			if (NULL == pbin) {
 				return FALSE;
