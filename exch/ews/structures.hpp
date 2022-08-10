@@ -99,6 +99,36 @@ struct tMailTips
 };
 
 /**
+ * Types.xsd:6982
+ */
+struct tSmtpDomain
+{
+	static constexpr char NAME[] = "Domain";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::string Name;
+	std::optional<bool> IncludeSubdomains;
+};
+
+/**
+ * Types.xsd:7040
+ */
+struct tMailTipsServiceConfiguration
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::vector<tSmtpDomain> InternalDomains;
+	int32_t MaxRecipientsPerGetMailTipsRequest = std::numeric_limits<int32_t>::max();
+	int32_t MaxMessageSize = std::numeric_limits<int32_t>::max();
+	int32_t LargeAudienceThreshold = std::numeric_limits<int32_t>::max();
+	int32_t LargeAudienceCap = std::numeric_limits<int32_t>::max();
+	bool MailTipsEnabled = false;
+	bool PolicyTipsEnabled = false;
+	bool ShowExternalRecipientCount = false;
+};
+
+/**
  * @brief      Message reply body
  *
  * Type.xsd:6538
@@ -202,6 +232,44 @@ struct mGetMailTipsResponse
 	std::vector<mMailTipsResponseMessageType> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2815
+ */
+struct mGetServiceConfigurationRequest
+{
+	explicit mGetServiceConfigurationRequest(const tinyxml2::XMLElement*);
+
+	std::optional<tEmailAddressType> ActingAs;
+	std::vector<std::string> RequestedConfiguration; ///< Types.xsd:7019
+	//<xs:element minOccurs="0" maxOccurs="1" name="ConfigurationRequestDetails" type="t:ConfigurationRequestDetailsType" />
+};
+
+/**
+ * Messages.xsd:2831
+ */
+struct mGetServiceConfigurationResponseMessageType
+{
+	static constexpr char NAME[] = "ServiceConfigurationResponseMessageType";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<tMailTipsServiceConfiguration> MailTipsConfiguration;
+	//<xs:element name="UnifiedMessagingConfiguration" type="t:UnifiedMessageServiceConfiguration" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="ProtectionRulesConfiguration" type="t:ProtectionRulesServiceConfiguration" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="PolicyNudgeRulesConfiguration" type="t:PolicyNudgeRulesServiceConfiguration" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="SharePointURLsConfiguration" type="t:SharePointURLsServiceConfiguration" minOccurs="0" maxOccurs="1"/>)
+};
+
+/**
+ * Messages.xsd:2831
+ */
+struct mGetServiceConfigurationResponse
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::vector<mGetServiceConfigurationResponseMessageType> ResponseMessages;
 };
 
 /**

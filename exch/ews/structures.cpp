@@ -96,6 +96,20 @@ void tMailTips::serialize(XMLElement* xml) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void tMailTipsServiceConfiguration::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMP(MailTipsEnabled);
+	XMLDUMP(MaxRecipientsPerGetMailTipsRequest);
+	XMLDUMP(MaxMessageSize);
+	XMLDUMP(LargeAudienceThreshold);
+	XMLDUMP(ShowExternalRecipientCount);
+	XMLDUMP(InternalDomains);
+	XMLDUMP(PolicyTipsEnabled);
+	XMLDUMP(LargeAudienceCap);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 tReplyBody::tReplyBody(const XMLElement* xml):
     XMLINIT(Message), XMLINITA(lang)
 {}
@@ -104,6 +118,14 @@ void tReplyBody::serialize(XMLElement* xml) const
 {
 	XMLDUMP(Message);
 	XMLDUMPA(lang);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void tSmtpDomain::serialize(XMLElement* xml) const
+{
+	XMLDUMP(Name);
+	XMLDUMP(IncludeSubdomains);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,18 +150,6 @@ void tUserOofSettings::serialize(XMLElement* xml) const
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Message implementation
 
-mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
-    XMLINIT(Mailbox)
-{}
-
-void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
-{
-	XMLDUMP(ResponseMessage);
-	XMLDUMP(UserOofSettings);
-	XMLDUMP(AllowExternalOof);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 
 mGetMailTipsRequest::mGetMailTipsRequest(const XMLElement* xml) :
     XMLINIT(SendingAs),
@@ -153,6 +163,32 @@ void mMailTipsResponseMessageType::serialize(XMLElement* xml) const
 void mGetMailTipsResponse::serialize(XMLElement* xml) const
 {XMLDUMP(ResponseMessages);}
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+mGetServiceConfigurationRequest::mGetServiceConfigurationRequest(const XMLElement* xml) :
+    XMLINIT(ActingAs), XMLINIT(RequestedConfiguration)
+{}
+
+void mGetServiceConfigurationResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMP(ResponseMessages);}
+
+
+void mGetServiceConfigurationResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMP(MailTipsConfiguration);}
+
+///////////////////////////////////////////////////////////////////////////////
+
+mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
+    XMLINIT(Mailbox)
+{}
+
+void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
+{
+	XMLDUMP(ResponseMessage);
+	XMLDUMP(UserOofSettings);
+	XMLDUMP(AllowExternalOof);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

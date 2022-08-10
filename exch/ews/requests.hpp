@@ -13,8 +13,9 @@ namespace tinyxml2
 namespace gromox::EWS::Requests
 {
 
+extern void process(gromox::EWS::Structures::mGetMailTipsRequest&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
+extern void process(gromox::EWS::Structures::mGetServiceConfigurationRequest&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
 extern void process(gromox::EWS::Structures::mGetUserOofSettingsRequest&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
 extern void process(gromox::EWS::Structures::mSetUserOofSettingsRequest&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
-extern void process(gromox::EWS::Structures::mGetMailTipsRequest&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
 
 }

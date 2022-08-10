@@ -51,6 +51,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"GetMailTips", process<Structures::mGetMailTipsRequest>},
+	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -133,6 +133,30 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
 }
 
 /**
+ * @brief      Process GetServiceConfigurationRequest
+ *
+ * Provides the functionality of GetServiceConfiguration
+ * (../php/ews/exchange.php:450).
+ *
+ * Current implementation is basically a stub and only delivers static data;
+ *
+ * @todo       This function lacks most of its functionality.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetServiceConfigurationRequest&&, XMLElement* response, const EWSContext&)
+{
+	response->SetName("GetMailTipsResponse");
+
+	mGetServiceConfigurationResponse data;
+	data.ResponseMessages.emplace_back().MailTipsConfiguration.emplace();
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetUserOofSettingsRequest
  *
  * Provides the functionality of GetUserOofSettingsRequest
