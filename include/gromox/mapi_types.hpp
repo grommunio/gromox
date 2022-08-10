@@ -698,6 +698,7 @@ struct APPOINTMENT_RECUR_PAT {
 	uint8_t *preservedblock2;
 };
 
+/* GOID is not to be confused with GID (MS-OXCPRPT v25 §1.1) */
 struct GLOBALOBJECTID {
 	FLATUID arrayid; /* SHOULD be EncodedGlobalId */
 	uint16_t year;
