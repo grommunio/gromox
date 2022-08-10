@@ -1,19 +1,28 @@
-1.28.51
-=======
+1.28.131
+========
 
 Enhancements:
 
 * exmdb_provider: added the "exmdb_search_yield" and "exmdb_search_nice" config
   directives
+* exmdb_provider: add a vacuum RPC (and expose via gromox-mbop(8gx))
+* emsmdb: implement cached mode cross-store move support
 
 Fixes:
 
 * oxcical: oxcical_export_timezone had missed emitting BYMONTHDAY subvalues
+* dscli: fix nullptr deref when -x option is used
+* nsp: show DT_DISTLIST icon for mlists
+* oxcical: set PidLidRecurring and PidLidRecurrenceType tags when importing
+  recurring events
+* Check for iconv capabilities on startup so that we do not start on containers
+  with too few libc components installed
 
 Changes:
 
 * The default value for "exmdb_search_pacing" was changed to 250 to improve
   interactivity with OL during online search.
+* oxvcard: disable pedantic behavior on import
 
 
 1.28 (2022-07-25)
