@@ -395,7 +395,7 @@ BINARY *cu_fid_to_entryid(logon_object *plogon, uint64_t folder_id)
 	return pbin;
 }
 
-BINARY *common_util_calculate_folder_sourcekey(logon_object *plogon, uint64_t folder_id)
+BINARY *cu_fid_to_sk(logon_object *plogon, uint64_t folder_id)
 {
 	BOOL b_found;
 	uint16_t replid;
@@ -481,7 +481,7 @@ BINARY *cu_mid_to_entryid(logon_object *plogon,
 	return pbin;
 }
 
-BINARY *common_util_calculate_message_sourcekey(logon_object *plogon, uint64_t message_id)
+BINARY *cu_mid_to_sk(logon_object *plogon, uint64_t message_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;

@@ -219,8 +219,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		           *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_SOURCE_KEY:
-		*ppvalue = common_util_calculate_folder_sourcekey(
-					pfolder->pstore, pfolder->folder_id);
+		*ppvalue = cu_fid_to_sk(pfolder->pstore, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
 		if (pfolder->pstore->b_private) {
@@ -240,7 +239,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		    0, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*ppvalue = common_util_calculate_folder_sourcekey(pfolder->pstore,
+		*ppvalue = cu_fid_to_sk(pfolder->pstore,
 		           *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_STORE_RECORD_KEY:

@@ -329,7 +329,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		auto parent_fid = *lnum;
 		if (SYNC_FLAG_NOFOREIGNIDENTIFIERS & pctx->sync_flags) {
 			common_util_remove_propvals(&chg, PR_SOURCE_KEY);
-			auto psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
+			auto psk = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
 			if (psk == nullptr)
 				return FALSE;
 			cu_set_propval(&chg, PR_SOURCE_KEY, psk);
@@ -338,14 +338,14 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				tmp_bin.pb = NULL;
 				psk = &tmp_bin;
 			} else {
-				psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, parent_fid);
+				psk = cu_fid_to_sk(pctx->pstream->plogon, parent_fid);
 				if (psk == nullptr)
 					return FALSE;
 			}
 			cu_set_propval(&chg, PR_PARENT_SOURCE_KEY, psk);
 		} else {
 			if (!chg.has(PR_SOURCE_KEY)) {
-				auto psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
+				auto psk = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
 				if (psk == nullptr)
 					return FALSE;
 				cu_set_propval(&chg, PR_SOURCE_KEY, psk);
@@ -360,7 +360,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				    0, parent_fid, PR_SOURCE_KEY, &psk))
 					return FALSE;	
 				if (psk == nullptr) {
-					psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, parent_fid);
+					psk = cu_fid_to_sk(pctx->pstream->plogon, parent_fid);
 					if (psk == nullptr)
 						return FALSE;
 				}
@@ -928,12 +928,10 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			    0, folder_id, PR_SOURCE_KEY, &pvalue))
 				return FALSE;	
 			if (NULL == pvalue) {
-				pvalue = common_util_calculate_folder_sourcekey(
-								pctx->pstream->plogon, folder_id);
+				pvalue = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
 			}
 		} else {
-			pvalue = common_util_calculate_folder_sourcekey(
-							pctx->pstream->plogon, folder_id);
+			pvalue = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
 		}
 		if (NULL == pvalue) {
 			return FALSE;
@@ -956,7 +954,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			cu_set_propval(&pembedded->proplist, PidTagMid, &message_id);
 			cu_set_propval(&pembedded->proplist, PR_PARENT_SOURCE_KEY, pvalue);
 			if (!pembedded->proplist.has(PR_SOURCE_KEY)) {
-				auto psk = common_util_calculate_message_sourcekey(pctx->pstream->plogon, message_id);
+				auto psk = cu_mid_to_sk(pctx->pstream->plogon, message_id);
 				if (psk == nullptr)
 					return FALSE;
 				cu_set_propval(&pembedded->proplist, PR_SOURCE_KEY, psk);
@@ -996,23 +994,23 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		    0, folder_id, PR_SOURCE_KEY, &pvalue))
 			return FALSE;	
 		if (NULL == pvalue) {
-			pvalue = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
+			pvalue = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
 			if (pvalue == nullptr)
 				return FALSE;
 		}
 		cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY, pvalue);
 		if (!pmsgctnt->proplist.has(PR_SOURCE_KEY)) {
-			pvalue = common_util_calculate_message_sourcekey(pctx->pstream->plogon, message_id);
+			pvalue = cu_mid_to_sk(pctx->pstream->plogon, message_id);
 			if (pvalue == nullptr)
 				return FALSE;
 			cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue);
 		}
 	} else {
-		pvalue = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
+		pvalue = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
 		if (pvalue == nullptr)
 			return FALSE;
 		cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY, pvalue);
-		pvalue = common_util_calculate_message_sourcekey(pctx->pstream->plogon, message_id);
+		pvalue = cu_mid_to_sk(pctx->pstream->plogon, message_id);
 		if (pvalue == nullptr)
 			return FALSE;
 		cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue);
