@@ -128,7 +128,7 @@ struct EXT_PULL {
 	int g_ext_rule_actions(EXT_RULE_ACTIONS *);
 	int g_namedprop_info(NAMEDPROPERTY_INFOMATION *);
 	int g_longterm(LONG_TERM_ID *);
-	int g_longterm_rang(LONG_TERM_ID_RANGE *);
+	int g_longterm_range(LONG_TERM_ID_RANGE *);
 	int g_typed_pv(TYPED_PROPVAL *);
 	int g_propval(uint16_t type, void **);
 	int g_tagged_pv(TAGGED_PROPVAL *);
