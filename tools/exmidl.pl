@@ -1,15 +1,24 @@
 #!/usr/bin/perl
 
+use Getopt::Long;
 use strict;
 use warnings;
-my $provider = grep("-p", @ARGV);
+our $gen_mode;
+&Getopt::Long::Configure(qw(bundling));
+&GetOptions(
+	"c" => sub { $gen_mode = "CLN"; },
+	"d" => sub { $gen_mode = "SDF"; },
+	"p" => sub { $gen_mode = "SDP"; },
+);
 
-print "#include <$_>\n" for qw(cstring gromox/exmdb_client.hpp gromox/exmdb_rpc.hpp);
-if ($provider) {
-	print "#include \"$_\"\n" for qw(common_util.h exmdb_client.h exmdb_ext.hpp);
-	print "#include \"exmdb_server.h\"\n";
+if ($gen_mode eq "CLN" || $gen_mode eq "SDP") {
+	print "#include <$_>\n" for qw(cstring gromox/exmdb_client.hpp gromox/exmdb_rpc.hpp);
+	if ($gen_mode eq "SDP") {
+		print "#include \"$_\"\n" for qw(common_util.h exmdb_client.h exmdb_ext.hpp);
+		print "#include \"exmdb_server.h\"\n";
+	}
+	print "using namespace gromox;\n";
 }
-print "using namespace gromox;\n";
 
 while (<STDIN>) {
 	next if (!m{^\s*EXMIDL\(\s*(\w+)\s*,\s*\(const\s+char\s*\*dir(.*)\)\)});
@@ -22,7 +31,8 @@ while (<STDIN>) {
 	$iargf = [&split_argl($iargs)];
 	$iargs = [&split_adcl(@$iargf)];
 	my $rbsig = join(", ", "const char *dir", @$iargf, @$oargf);
-	if ($provider) {
+
+	if ($gen_mode eq "SDP") {
 		my @anames = ("dir", map { $_->[1] } (@$iargs, @$oargs));
 		print "BOOL exmdb_client_local::$func($rbsig)\n{\n";
 		print "\tBOOL xb_private;\n\n";
@@ -35,6 +45,21 @@ while (<STDIN>) {
 		print "}\n\n";
 		next;
 	}
+	if ($gen_mode eq "SDF") {
+		print "case exmdb_callid::$func: {\n";
+		if (scalar(@$iargs) > 0) {
+			print "\tauto &q = prequest->payload.$func;\n";
+		}
+		if (scalar(@$oargs) > 0) {
+			print "\tauto &r = presponse->payload.$func;\n";
+		}
+		print "\treturn exmdb_server_$func(", join(", ", "prequest->dir",
+			(map { my($type, $field) = @$_; "q.$field"; } @$iargs),
+			(map { my($type, $field) = @$_; "&r.$field"; } @$oargs),
+		), ");\n}\n";
+		next;
+	}
+
 	print "BOOL exmdb_client_remote::$func($rbsig)\n{\n";
 	print "\tEXMDB_REQUEST request;\n\tEXMDB_RESPONSE response;\n";
 	print "\n";
