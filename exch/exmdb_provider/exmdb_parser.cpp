@@ -130,14 +130,10 @@ static BOOL exmdb_parser_dispatch2(const EXMDB_REQUEST *prequest,
 			prequest->payload.check_mailbox_permission.username,
 			&presponse->payload.check_mailbox_permission.permission);
 	case exmdb_callid::get_folder_by_class:
-		presponse->payload.get_folder_by_class.str_explicit = cu_alloc<char>(256);
-		if (NULL == presponse->payload.get_folder_by_class.str_explicit) {
-			return FALSE;
-		}
 		return exmdb_server_get_folder_by_class(prequest->dir,
 			prequest->payload.get_folder_by_class.str_class,
 			&presponse->payload.get_folder_by_class.id,
-			presponse->payload.get_folder_by_class.str_explicit);
+			&presponse->payload.get_folder_by_class.str_explicit);
 	case exmdb_callid::set_folder_by_class:
 		return exmdb_server_set_folder_by_class(prequest->dir,
 			prequest->payload.set_folder_by_class.folder_id,

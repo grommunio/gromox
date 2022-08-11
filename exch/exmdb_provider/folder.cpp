@@ -26,7 +26,7 @@ unsigned int exmdb_pf_read_per_user, exmdb_pf_read_states;
 
 /* private only */
 BOOL exmdb_server_get_folder_by_class(const char *dir,
-	const char *str_class, uint64_t *pid, char *str_explicit)
+    const char *str_class, uint64_t *pid, char **str_explicit)
 {
 	char *pdot;
 	char tmp_class[256];
@@ -52,7 +52,10 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			*pid = rop_util_make_eid_ex(1,
 				sqlite3_column_int64(pstmt, 0));
-			strcpy(str_explicit, tmp_class);
+			*str_explicit = cu_alloc<char>(strlen(tmp_class) + 1);
+			if (*str_explicit == nullptr)
+				return false;
+			strcpy(*str_explicit, tmp_class);
 			return TRUE;
 		}
 		sqlite3_reset(pstmt);
@@ -60,6 +63,9 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
 				"FROM receive_table WHERE class=''");
+	*str_explicit = cu_alloc<char>(1);
+	if (*str_explicit == nullptr)
+		return false;
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -67,7 +73,7 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 	*pid = sqlite3_step(pstmt) == SQLITE_ROW ?
 	       rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 0)) :
 	       rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
-	str_explicit[0] = '\0';
+	**str_explicit = '\0';
 	return TRUE;
 }
 
