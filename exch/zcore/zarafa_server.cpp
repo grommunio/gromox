@@ -3127,7 +3127,7 @@ uint32_t zarafa_server_getreceivefolder(GUID hsession,
 	BINARY *pbin;
 	uint8_t mapi_type;
 	uint64_t folder_id;
-	char temp_class[256];
+	char *temp_class = nullptr;
 	
 	if (pstrclass == nullptr)
 		pstrclass = "";
@@ -3144,7 +3144,7 @@ uint32_t zarafa_server_getreceivefolder(GUID hsession,
 	if (!pstore->b_private)
 		return ecNotSupported;
 	if (!exmdb_client::get_folder_by_class(pstore->get_dir(), pstrclass,
-	    &folder_id, temp_class))
+	    &folder_id, &temp_class))
 		return ecError;
 	pbin = cu_fid_to_entryid(pstore, folder_id);
 	if (pbin == nullptr)

@@ -51,11 +51,7 @@ while (<STDIN>) {
 	print "\tif (!exmdb_client_do_rpc(std::move(request), &response))\n\t\treturn false;\n";
 	for (@$oargs) {
 		my($type, $field) = @$_;
-		if ($type =~ m{^char\s*\*}) {
-			print "\tstrcpy($field, response.payload.$func.$field);\n";
-		} else {
-			print "\t*$field = response.payload.$func.$field;\n";
-		}
+		print "\t*$field = response.payload.$func.$field;\n";
 	}
 	print "\treturn TRUE;\n}\n\n";
 }

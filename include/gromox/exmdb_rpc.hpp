@@ -33,7 +33,7 @@ enum class exmdb_callid : uint8_t {
 	set_store_properties = 0x0a,
 	remove_store_properties = 0x0b,
 	check_mailbox_permission = 0x0c,
-	get_folder_by_class = 0x0d,
+	// get_folder_by_class (v1) = 0x0d,
 	set_folder_by_class = 0x0e,
 	get_folder_class_table = 0x0f,
 	check_folder_id = 0x10,
@@ -144,6 +144,7 @@ enum class exmdb_callid : uint8_t {
 	check_contact_address = 0x79,
 	get_public_folder_unread_count = 0x7a,
 	vacuum = 0x7b,
+	get_folder_by_class /* v2 */ = 0x7c,
 	unload_store = 0x80,
 };
 

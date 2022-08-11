@@ -251,12 +251,9 @@ uint32_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
 		return ecNotSupported;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	*ppstr_explicit = cu_alloc<char>(256);
-	if (NULL == *ppstr_explicit) {
-		return ecServerOOM;
-	}
+	char *expl = nullptr;
 	if (!exmdb_client_get_folder_by_class(plogon->get_dir(), pstr_class,
-	    pfolder_id, *ppstr_explicit))
+	    pfolder_id, &expl))
 		return ecError;
 	return ecSuccess;
 }

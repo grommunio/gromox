@@ -50,8 +50,7 @@ BOOL exmdb_server_remove_store_properties(
 	const char *dir, const PROPTAG_ARRAY *pproptags);
 BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	const char *username, uint32_t *ppermission);
-BOOL exmdb_server_get_folder_by_class(const char *dir,
-	const char *str_class, uint64_t *pid, char *str_explicit);
+extern BOOL exmdb_server_get_folder_by_class(const char *dir, const char *str_class, uint64_t *pid, char **str_explicit);
 BOOL exmdb_server_set_folder_by_class(const char *dir,
 	uint64_t folder_id, const char *str_class, BOOL *pb_result);
 BOOL exmdb_server_get_folder_class_table(
