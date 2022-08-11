@@ -8,8 +8,5 @@
 
 namespace exmdb_client = exmdb_client_remote;
 
-struct EXMDB_REQUEST;
-struct EXMDB_RESPONSE;
-
 extern int exmdb_client_run_front(const char *);
 void exmdb_client_register_proc(void *pproc);

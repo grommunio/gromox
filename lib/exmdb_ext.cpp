@@ -17,8 +17,6 @@
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 
 using namespace gromox;
-using REQUEST_PAYLOAD = EXMDB_REQUEST_PAYLOAD;
-using RESPONSE_PAYLOAD = EXMDB_RESPONSE_PAYLOAD;
 
 void *(*exmdb_rpc_alloc)(size_t) = malloc;
 void (*exmdb_rpc_free)(void *) = free;
@@ -2298,40 +2296,72 @@ static int exmdb_push(EXT_PUSH &x, const exreq_get_public_folder_unread_count &d
 	E(check_contact_address) \
 	E(get_public_folder_unread_count)
 
-int exmdb_ext_pull_request(const BINARY *pbin_in,
-	EXMDB_REQUEST *prequest)
+/**
+ * This uses *& because we do not know which request type we are going to get
+ * (cf. exmdb_ext_pull_response).
+ */
+int exmdb_ext_pull_request(const BINARY *pbin_in, exreq *&prequest)
 {
 	EXT_PULL ext_pull;
-	uint8_t call_id;
+	uint8_t raw_call_id;
 	
 	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
-	TRY(ext_pull.g_uint8(&call_id));
-	prequest->call_id = static_cast<exmdb_callid>(call_id);
-	if (prequest->call_id == exmdb_callid::connect)
-		return exmdb_pull(ext_pull, prequest->payload.connect);
-	else if (prequest->call_id == exmdb_callid::listen_notification)
-		return exmdb_pull(ext_pull, prequest->payload.listen_notification);
+	TRY(ext_pull.g_uint8(&raw_call_id));
+	auto call_id = static_cast<exmdb_callid>(raw_call_id);
+	if (call_id == exmdb_callid::connect) {
+		auto r = cu_alloc<exreq_connect>();
+		prequest = r;
+		if (r == nullptr)
+			return EXT_ERR_ALLOC;
+		auto xret = exmdb_pull(ext_pull, *r);
+		prequest->call_id = call_id;
+		return xret;
+	} else if (call_id == exmdb_callid::listen_notification) {
+		auto r = cu_alloc<exreq_listen_notification>();
+		prequest = r;
+		if (r == nullptr)
+			return EXT_ERR_ALLOC;
+		auto xret = exmdb_pull(ext_pull, *r);
+		prequest->call_id = call_id;
+		return xret;
+	}
 
-	TRY(ext_pull.g_str(&prequest->dir));
-	switch (prequest->call_id) {
+	char *dir = nullptr;
+	TRY(ext_pull.g_str(&dir));
+	int xret;
+	switch (call_id) {
 	case exmdb_callid::ping_store:
 	case exmdb_callid::get_all_named_propids:
 	case exmdb_callid::get_store_all_proptags:
 	case exmdb_callid::get_folder_class_table:
 	case exmdb_callid::allocate_cn:
 	case exmdb_callid::vacuum:
-	case exmdb_callid::unload_store:
-		return EXT_ERR_SUCCESS;
-#define E(t) case exmdb_callid::t: return exmdb_pull(ext_pull, prequest->payload.t);
+	case exmdb_callid::unload_store: {
+		prequest = cu_alloc<exreq>();
+		if (prequest == nullptr)
+			return EXT_ERR_ALLOC;
+		xret = EXT_ERR_SUCCESS;
+		break;
+	}
+#define E(t) case exmdb_callid::t: { \
+		auto r = cu_alloc<exreq_ ## t >(); \
+		prequest = r; \
+		if (r == nullptr) \
+			return EXT_ERR_ALLOC; \
+		xret = exmdb_pull(ext_pull, *r); \
+		break; \
+	}
 	RQ_WITH_ARGS
 #undef E
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
+	prequest->call_id = call_id;
+	prequest->dir = dir;
+	return xret;
 }
 
-int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
-	BINARY *pbin_out)
+int exmdb_ext_push_request(const exreq *prequest, BINARY *pbin_out)
 {
 	int status;
 	EXT_PUSH ext_push;
@@ -2345,9 +2375,9 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 	if (prequest->call_id == exmdb_callid::connect) {
-		status = exmdb_push(ext_push, prequest->payload.connect);
+		status = exmdb_push(ext_push, *static_cast<const exreq_connect *>(prequest));
 	} else if (prequest->call_id == exmdb_callid::listen_notification) {
-		status = exmdb_push(ext_push, prequest->payload.listen_notification);
+		status = exmdb_push(ext_push, *static_cast<const exreq_listen_notification *>(prequest));
 	} else {
 	status = ext_push.p_str(prequest->dir);
 	if (status != EXT_ERR_SUCCESS)
@@ -2362,7 +2392,7 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	case exmdb_callid::unload_store:
 		status = EXT_ERR_SUCCESS;
 		break;
-#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, prequest->payload.t); break;
+#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exreq_ ## t *>(prequest)); break;
 	RQ_WITH_ARGS
 #undef E
 	default:
@@ -3652,8 +3682,11 @@ static int exmdb_push(EXT_PUSH &x, const exresp_get_public_folder_unread_count &
 	E(get_public_folder_unread_count)
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
-int exmdb_ext_pull_response(const BINARY *pbin_in,
-	EXMDB_RESPONSE *presponse)
+/*
+ * This uses just *presponse, because the caller expects to receive the
+ * same response type as the request type.
+ */
+int exmdb_ext_pull_response(const BINARY *pbin_in, exresp *presponse)
 {
 	EXT_PULL ext_pull;
 	
@@ -3663,7 +3696,7 @@ int exmdb_ext_pull_response(const BINARY *pbin_in,
 	RSP_WITHOUT_ARGS
 		return EXT_ERR_SUCCESS;
 #undef E
-#define E(t) case exmdb_callid::t: return exmdb_pull(ext_pull, presponse->payload.t);
+#define E(t) case exmdb_callid::t: return exmdb_pull(ext_pull, *static_cast<exresp_ ## t *>(presponse));
 	RSP_WITH_ARGS
 #undef E
 	default:
@@ -3672,8 +3705,7 @@ int exmdb_ext_pull_response(const BINARY *pbin_in,
 }
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
-int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
-	BINARY *pbin_out)
+int exmdb_ext_push_response(const exresp *presponse, BINARY *pbin_out)
 {
 	int status;
 	EXT_PUSH ext_push;
@@ -3693,7 +3725,7 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 		status = EXT_ERR_SUCCESS;
 		break;
 #undef E
-#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, presponse->payload.t); break;
+#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exresp_ ## t *>(presponse)); break;
 	RSP_WITH_ARGS
 #undef E
 	default:

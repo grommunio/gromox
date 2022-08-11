@@ -10,8 +10,8 @@
 #include <gromox/list_file.hpp>
 
 struct DB_NOTIFY;
-struct EXMDB_REQUEST;
-struct EXMDB_RESPONSE;
+struct exreq;
+struct exresp;
 
 namespace gromox {
 
@@ -76,6 +76,6 @@ extern GX_EXPORT void exmdb_client_stop();
 extern GX_EXPORT int exmdb_client_run(const char *dir, unsigned int fl = EXMDB_CLIENT_NO_FLAGS, void (*)(const remote_svr &) = nullptr, void (*)() = nullptr, void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr);
 extern GX_EXPORT bool exmdb_client_check_local(const char *pfx, BOOL *pvt);
 extern GX_EXPORT remote_conn_ref exmdb_client_get_connection(const char *dir);
-extern GX_EXPORT BOOL exmdb_client_do_rpc(EXMDB_REQUEST &&, EXMDB_RESPONSE *);
+extern GX_EXPORT BOOL exmdb_client_do_rpc(const exreq *, exresp *);
 
 }

@@ -8,9 +8,6 @@
 
 namespace exmdb_client = exmdb_client_remote;
 
-struct EXMDB_REQUEST;
-struct EXMDB_RESPONSE;
-
 extern int exmdb_client_run_front(const char *);
 BOOL exmdb_client_get_named_propid(const char *dir,
 	BOOL b_create, const PROPERTY_NAME *ppropname,

@@ -34,8 +34,6 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 {
 	BOOL b_result;
 	BOOL b_private;
-	EXMDB_REQUEST request;
-	EXMDB_RESPONSE response;
 	
 	if (exmdb_client_check_local(dir, &b_private)) {
 		auto original_dir = exmdb_server_get_dir();
@@ -46,15 +44,17 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 		exmdb_server_set_dir(original_dir);
 		return b_result;
 	}
-	request.call_id = exmdb_callid::delivery_message;
-	request.dir = deconst(dir);
-	request.payload.delivery_message.from_address = deconst(from_address);
-	request.payload.delivery_message.account = deconst(account);
-	request.payload.delivery_message.cpid = cpid;
-	request.payload.delivery_message.pmsg = deconst(pmsg);
-	request.payload.delivery_message.pdigest = deconst(pdigest);
-	if (!exmdb_client_do_rpc(std::move(request), &response))
+	exreq_delivery_message q{};
+	exresp_delivery_message r{};
+	q.call_id = exmdb_callid::delivery_message;
+	q.dir = deconst(dir);
+	q.from_address = deconst(from_address);
+	q.account = deconst(account);
+	q.cpid = cpid;
+	q.pmsg = deconst(pmsg);
+	q.pdigest = deconst(pdigest);
+	if (!exmdb_client_do_rpc(&q, &r))
 		return FALSE;
-	*presult = response.payload.delivery_message.result;
+	*presult = r.result;
 	return TRUE;
 }
