@@ -21,9 +21,6 @@
 #include "rpc_parser.hpp"
 #include "zarafa_server.h"
 
-using RPC_REQUEST = ZCORE_RPC_REQUEST;
-using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
-
 enum {
 	DISPATCH_TRUE,
 	DISPATCH_FALSE,
@@ -67,24 +64,23 @@ BOOL rpc_parser_activate_connection(int clifd)
 	return TRUE;
 }
 
-static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
-	RPC_RESPONSE *presponse)
+static int rpc_parser_dispatch(const zcreq *q0, zcresp *&r0)
 {
-	presponse->call_id = prequest->call_id;
-	switch (prequest->call_id) {
+	switch (q0->call_id) {
 #include "rpc_dispatch.cpp"
 	default:
 		fprintf(stderr, "E-2046: unknown zrpc request type %u\n",
-		        static_cast<unsigned int>(prequest->call_id));
+		        static_cast<unsigned int>(r0->call_id));
 		return DISPATCH_FALSE;
 	}
+	r0->call_id = q0->call_id;
 	if (g_zrpc_debug == 0)
 		return DISPATCH_TRUE;
-	if (presponse->result != 0 || g_zrpc_debug == 2)
+	if (r0->result != 0 || g_zrpc_debug == 2)
 		fprintf(stderr, "ZRPC %s %8xh %s\n",
-		        presponse->result == 0 ? "ok  " : "FAIL",
-		        presponse->result,
-		        zcore_rpc_idtoname(prequest->call_id));
+		        r0->result == 0 ? "ok  " : "FAIL",
+		        r0->result,
+		        zcore_rpc_idtoname(q0->call_id));
 	return DISPATCH_TRUE;
 }
 
@@ -96,11 +92,8 @@ static void *zcrp_thrwork(void *param)
 	BINARY tmp_bin;
 	uint32_t offset;
 	uint32_t buff_len;
-	RPC_REQUEST request;
 	struct pollfd fdpoll;
-	RPC_RESPONSE response;
 	DOUBLE_LIST_NODE *pnode;
-
 
  WAIT_CLIFD:
 	std::unique_lock cm_hold(g_cond_mutex);
@@ -163,7 +156,8 @@ static void *zcrp_thrwork(void *param)
 	common_util_build_environment();
 	tmp_bin.pv = pbuff;
 	tmp_bin.cb = buff_len;
-	if (!rpc_ext_pull_request(&tmp_bin, &request)) {
+	zcreq *request = nullptr;
+	if (!rpc_ext_pull_request(&tmp_bin, request)) {
 		free(pbuff);
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::pull_error;
@@ -175,10 +169,10 @@ static void *zcrp_thrwork(void *param)
 		goto NEXT_CLIFD;
 	}
 	free(pbuff);
-	if (zcore_callid::notifdequeue == request.call_id) {
+	if (request->call_id == zcore_callid::notifdequeue)
 		common_util_set_clifd(clifd);
-	}
-	switch (rpc_parser_dispatch(&request, &response)) {
+	zcresp *response = nullptr;
+	switch (rpc_parser_dispatch(request, response)) {
 	case DISPATCH_FALSE: {
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::dispatch_error;
@@ -194,7 +188,7 @@ static void *zcrp_thrwork(void *param)
 		/* clifd will be maintained by zarafa_server */
 		goto NEXT_CLIFD;
 	}
-	if (!rpc_ext_push_response(&response, &tmp_bin)) {
+	if (!rpc_ext_push_response(response, &tmp_bin)) {
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::push_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;

@@ -5,11 +5,6 @@
 #include "ext.hpp"
 #define TRY(expr) do { if ((expr) != EXT_ERR_SUCCESS) return false; } while (false)
 
-using RPC_REQUEST = ZCORE_RPC_REQUEST;
-using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
-using REQUEST_PAYLOAD = ZCORE_REQUEST_PAYLOAD;
-using RESPONSE_PAYLOAD = ZCORE_RESPONSE_PAYLOAD;
-
 static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_logon &d)
 {
 	TRY(x.p_str(d.username));
@@ -1092,8 +1087,7 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_linkmessage &d)
 	return true;
 }
 
-zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
-	BINARY *pbin_out)
+zend_bool rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 {
 	PUSH_CTX push_ctx;
 	zend_bool b_result;
@@ -1103,7 +1097,7 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	TRY(push_ctx.advance(sizeof(uint32_t)));
 	TRY(push_ctx.p_uint8(static_cast<uint8_t>(prequest->call_id)));
 	switch (prequest->call_id) {
-#define E(t) case zcore_callid::t: b_result = zrpc_push(push_ctx, prequest->payload.t); break;
+#define E(t) case zcore_callid::t: b_result = zrpc_push(push_ctx, *static_cast<const zcreq_ ## t *>(prequest)); break;
 	E(logon)
 	E(checksession)
 	E(uinfo)
@@ -1203,8 +1197,7 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	return 1;
 }
 
-zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
-	RPC_RESPONSE *presponse)
+zend_bool rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 {
 	PULL_CTX pull_ctx;
 	
@@ -1248,7 +1241,7 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 	case zcore_callid::setpasswd:
 	case zcore_callid::linkmessage:
 		return 1;
-#define E(t) case zcore_callid::t: return zrpc_pull(pull_ctx, presponse->payload.t);
+#define E(t) case zcore_callid::t: return zrpc_pull(pull_ctx, *static_cast<zcresp_ ## t *>(presponse));
 	E(logon)
 	E(uinfo)
 	E(openentry)
