@@ -82,8 +82,6 @@ struct tMailTips
 	tEmailAddressType RecipientAddress;
 	std::string PendingMailTips; ///< MailTipTypes, Types.xsd:6947
 
-	//<xs:element minOccurs="1" maxOccurs="1" name="RecipientAddress" type="t:EmailAddressType" />
-	//<xs:element minOccurs="1" maxOccurs="1" name="PendingMailTips" type="t:MailTipTypes" />
 	//<xs:element minOccurs="0" maxOccurs="1" name="OutOfOffice" type="t:OutOfOfficeMailTip" />
 	//<xs:element minOccurs="0" maxOccurs="1" name="MailboxFull" type="xs:boolean" />
 	//<xs:element minOccurs="0" maxOccurs="1" name="CustomMailTip" type="xs:string" />
@@ -189,7 +187,7 @@ struct mResponseMessageType
 	std::optional<std::string> ResponseCode;
 	std::optional<int> DescriptiveLinkKey;
 
-	void success();
+	mResponseMessageType& success();
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
@@ -213,9 +211,11 @@ struct mGetMailTipsRequest
 /**
  * Messages.xsd:1776
  */
-struct mMailTipsResponseMessageType
+struct mMailTipsResponseMessageType : mResponseMessageType
 {
 	static constexpr char NAME[] = "MailTipsResponseMessageType";
+
+	using mResponseMessageType::success;
 
 	std::optional<tMailTips> MailTips;
 
@@ -227,8 +227,10 @@ struct mMailTipsResponseMessageType
  *
  * Messages.xsg:1760
  */
-struct mGetMailTipsResponse
+struct mGetMailTipsResponse : mResponseMessageType
 {
+	using mResponseMessageType::success;
+
 	std::vector<mMailTipsResponseMessageType> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -249,9 +251,11 @@ struct mGetServiceConfigurationRequest
 /**
  * Messages.xsd:2831
  */
-struct mGetServiceConfigurationResponseMessageType
+struct mGetServiceConfigurationResponseMessageType : mResponseMessageType
 {
 	static constexpr char NAME[] = "ServiceConfigurationResponseMessageType";
+
+	using mResponseMessageType::success;
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -265,8 +269,10 @@ struct mGetServiceConfigurationResponseMessageType
 /**
  * Messages.xsd:2831
  */
-struct mGetServiceConfigurationResponse
+struct mGetServiceConfigurationResponse : mResponseMessageType
 {
+	using mResponseMessageType::success;
+
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::vector<mGetServiceConfigurationResponseMessageType> ResponseMessages;

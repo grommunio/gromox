@@ -110,7 +110,10 @@ struct ExplicitConvert<std::string>
 	}
 
 	static inline void serialize(const std::string& value, SetterFunc setter)
-	{setter(value.c_str());}
+	{
+		if(value.length())
+			setter(value.c_str());
+	}
 };
 
 /**
