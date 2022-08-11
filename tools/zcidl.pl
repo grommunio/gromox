@@ -1,10 +1,19 @@
 #!/usr/bin/perl
 
+use Getopt::Long;
 use strict;
 use warnings;
+our $gen_mode;
+&Getopt::Long::Configure(qw(bundling));
+&GetOptions(
+	"c" => sub { $gen_mode = "CLN"; },
+	"d" => sub { $gen_mode = "SDF"; },
+);
 
-print "#include <$_>\n" for qw(gromox/defs.h gromox/zcore_rpc.hpp);
-print "#include \"$_\"\n" for qw(php.h zarafa_client.h);
+if ($gen_mode eq "CLN") {
+	print "#include <$_>\n" for qw(gromox/defs.h gromox/zcore_rpc.hpp);
+	print "#include \"$_\"\n" for qw(php.h zarafa_client.h);
+}
 
 while (<STDIN>) {
 	next if (!m{^\s*ZCIDL\(\s*(\w+)\s*,\s*\((.*)\)\)});
@@ -17,6 +26,23 @@ while (<STDIN>) {
 	$iargf = [&split_argl($iargs)];
 	$iargs = [&split_adcl(@$iargf)];
 	my $rbsig = join(", ", @$iargf, @$oargf);
+
+	if ($gen_mode eq "SDF") {
+		print "case zcore_callid::$func: {\n";
+		if (scalar(@$iargs) > 0) {
+			print "\tauto &q = prequest->payload.$func;\n";
+		}
+		if (scalar(@$oargs) > 0) {
+			print "\tauto &r = presponse->payload.$func;\n";
+		}
+		print "\tpresponse->result = zarafa_server_$func(", join(", ",
+			(map { my($type, $field) = @$_; "q.$field"; } @$iargs),
+			(map { my($type, $field) = @$_; "&r.$field"; } @$oargs),
+		), ");\n";
+		print "\tbreak;\n}\n";
+		next;
+	}
+
 	print "uint32_t zarafa_client_$func($rbsig)\n{\n";
 	print "\tZCORE_RPC_REQUEST request;\n\tZCORE_RPC_RESPONSE response;\n\n";
 	print "\trequest.call_id = zcore_callid::".lc($func).";\n";
