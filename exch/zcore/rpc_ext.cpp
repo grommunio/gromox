@@ -361,7 +361,7 @@ static BOOL rpc_ext_push_znotification_array(
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LOGON &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_logon &d)
 {
 	uint8_t tmp_byte;
 	
@@ -375,25 +375,25 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LOGON &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_LOGON &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_logon &d)
 {
 	QRF(x.p_guid(d.hsession));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CHECKSESSION &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_checksession &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_UINFO &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_uinfo &d)
 {
 	QRF(x.g_str(&d.username));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_UINFO &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_uinfo &d)
 {
 	QRF(x.p_bin(d.entryid));
 	QRF(x.p_str(d.pdisplay_name));
@@ -402,14 +402,14 @@ static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_UINFO &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_UNLOADOBJECT &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_unloadobject &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENENTRY &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_openentry &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_bin(&d.entryid));
@@ -417,14 +417,14 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENENTRY &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_OPENENTRY &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_openentry &d)
 {
 	QRF(x.p_uint8(d.mapi_type));
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENSTOREENTRY &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_openstoreentry &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hobject));
@@ -433,28 +433,28 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENSTOREENTRY &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_OPENSTOREENTRY &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_openstoreentry &d)
 {
 	QRF(x.p_uint8(d.mapi_type));
 	QRF(x.p_uint32(d.hxobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENABENTRY &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_openabentry &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_bin(&d.entryid));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_OPENABENTRY &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_openabentry &d)
 {
 	QRF(x.p_uint8(d.mapi_type));
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_RESOLVENAME &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_resolvename &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	d.pcond_set = x.anew<TARRAY_SET>();
@@ -464,25 +464,25 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_RESOLVENAME &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_RESOLVENAME &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_resolvename &d)
 {
 	QRF(x.p_tarray_set(d.result_set));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETPERMISSIONS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_getpermissions &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETPERMISSIONS &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_getpermissions &d)
 {
 	return rpc_ext_push_permission_set(&x, &d.perm_set);
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_MODIFYPERMISSIONS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_modifypermissions &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
@@ -492,7 +492,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_MODIFYPERMISSIONS &d)
 	return rpc_ext_pull_permission_set(&x, d.pset);
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_MODIFYRULES &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_modifyrules &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
@@ -503,44 +503,44 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_MODIFYRULES &d)
 	return rpc_ext_pull_rule_list(&x, d.plist);
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETABGAL &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_getabgal &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETABGAL &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_getabgal &d)
 {
 	QRF(x.p_bin(d.entryid));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LOADSTORETABLE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_loadstoretable &d)
 {	
 	QRF(x.g_guid(&d.hsession));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_LOADSTORETABLE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_loadstoretable &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENSTORE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_openstore &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_bin(&d.entryid));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_OPENSTORE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_openstore &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENPROFILESEC &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_openprofilesec &d)
 {
 	uint8_t tmp_byte;
 	
@@ -557,13 +557,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENPROFILESEC &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_OPENPROFILESEC &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_openprofilesec &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LOADHIERARCHYTABLE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_loadhierarchytable &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
@@ -571,13 +571,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LOADHIERARCHYTABLE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_LOADHIERARCHYTABLE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_loadhierarchytable &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LOADCONTENTTABLE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_loadcontenttable &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
@@ -585,39 +585,39 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LOADCONTENTTABLE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_LOADCONTENTTABLE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_loadcontenttable &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LOADRECIPIENTTABLE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_loadrecipienttable &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_LOADRECIPIENTTABLE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_loadrecipienttable &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LOADRULETABLE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_loadruletable &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_LOADRULETABLE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_loadruletable &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CREATEMESSAGE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_createmessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
@@ -625,13 +625,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CREATEMESSAGE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_CREATEMESSAGE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_createmessage &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_DELETEMESSAGES &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_deletemessages &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
@@ -643,7 +643,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_DELETEMESSAGES &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_COPYMESSAGES &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_copymessages &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hsrcfolder));
@@ -656,7 +656,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_COPYMESSAGES &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETREADFLAGS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_setreadflags &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
@@ -668,7 +668,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETREADFLAGS &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CREATEFOLDER &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_createfolder &d)
 {	
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hparent_folder));
@@ -679,13 +679,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CREATEFOLDER &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_CREATEFOLDER &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_createfolder &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_DELETEFOLDER &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_deletefolder &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hparent_folder));
@@ -694,7 +694,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_DELETEFOLDER &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_EMPTYFOLDER &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_emptyfolder &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
@@ -702,7 +702,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_EMPTYFOLDER &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_COPYFOLDER &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_copyfolder &d)
 {
 	uint8_t tmp_byte;
 	
@@ -719,19 +719,19 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_COPYFOLDER &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETSTOREENTRYID &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_getstoreentryid &d)
 {
 	QRF(x.g_str(&d.mailbox_dn));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETSTOREENTRYID &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_getstoreentryid &d)
 {
 	QRF(x.p_bin(d.entryid));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_ENTRYIDFROMSOURCEKEY &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_entryidfromsourcekey &d)
 {
 	uint8_t tmp_byte;
 	
@@ -750,13 +750,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_ENTRYIDFROMSOURCEKEY &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_ENTRYIDFROMSOURCEKEY &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_entryidfromsourcekey &d)
 {
 	QRF(x.p_bin(d.entryid));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_STOREADVISE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_storeadvise &d)
 {
 	uint8_t tmp_byte;
 	
@@ -775,13 +775,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_STOREADVISE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_STOREADVISE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_storeadvise &d)
 {
 	QRF(x.p_uint32(d.sub_id));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_UNADVISE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_unadvise &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hstore));
@@ -789,7 +789,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_UNADVISE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_NOTIFDEQUEUE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_notifdequeue &d)
 {
 	int i;
 	
@@ -811,12 +811,12 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_NOTIFDEQUEUE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_NOTIFDEQUEUE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_notifdequeue &d)
 {
 	return rpc_ext_push_znotification_array(&x, &d.notifications);
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_QUERYROWS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_queryrows &d)
 {
 	uint8_t tmp_byte;
 	
@@ -845,12 +845,12 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_QUERYROWS &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_QUERYROWS &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_queryrows &d)
 {
 	return rpc_ext_push_tarray_set(&x, &d.rowset);
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETCOLUMNS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_setcolumns &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
@@ -862,7 +862,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETCOLUMNS &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SEEKROW &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_seekrow &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
@@ -871,13 +871,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SEEKROW &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_SEEKROW &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_seekrow &d)
 {
 	QRF(x.p_int32(d.sought_rows));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SORTTABLE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_sorttable &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
@@ -888,20 +888,20 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SORTTABLE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETROWCOUNT &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_getrowcount &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETROWCOUNT &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_getrowcount &d)
 {
 	QRF(x.p_uint32(d.count));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_RESTRICTTABLE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_restricttable &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
@@ -913,7 +913,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_RESTRICTTABLE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_FINDROW &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_findrow &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
@@ -926,26 +926,26 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_FINDROW &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_FINDROW &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_findrow &d)
 {
 	QRF(x.p_uint32(d.row_idx));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CREATEBOOKMARK &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_createbookmark &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_CREATEBOOKMARK &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_createbookmark &d)
 {
 	QRF(x.p_uint32(d.bookmark));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_FREEBOOKMARK &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_freebookmark &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
@@ -953,7 +953,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_FREEBOOKMARK &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETRECEIVEFOLDER &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_getreceivefolder &d)
 {
 	uint8_t tmp_byte;
 	
@@ -967,13 +967,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETRECEIVEFOLDER &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETRECEIVEFOLDER &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_getreceivefolder &d)
 {
 	QRF(x.p_bin(d.entryid));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_MODIFYRECIPIENTS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_modifyrecipients &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
@@ -985,27 +985,27 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_MODIFYRECIPIENTS &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SUBMITMESSAGE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_submitmessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LOADATTACHMENTTABLE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_loadattachmenttable &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_LOADATTACHMENTTABLE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_loadattachmenttable &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENATTACHMENT &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_openattachment &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
@@ -1013,26 +1013,26 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENATTACHMENT &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_OPENATTACHMENT &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_openattachment &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CREATEATTACHMENT &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_createattachment &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_CREATEATTACHMENT &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_createattachment &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_DELETEATTACHMENT &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_deleteattachment &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
@@ -1040,7 +1040,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_DELETEATTACHMENT &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETPROPVALS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_setpropvals &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hobject));
@@ -1051,7 +1051,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETPROPVALS &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETPROPVALS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_getpropvals &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1069,13 +1069,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETPROPVALS &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETPROPVALS &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_getpropvals &d)
 {
 	QRF(x.p_tpropval_a(d.propvals));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_DELETEPROPVALS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_deletepropvals &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hobject));
@@ -1086,7 +1086,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_DELETEPROPVALS &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETMESSAGEREADFLAG &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_setmessagereadflag &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
@@ -1094,7 +1094,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETMESSAGEREADFLAG &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENEMBEDDED &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_openembedded &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hattachment));
@@ -1102,13 +1102,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_OPENEMBEDDED &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_OPENEMBEDDED &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_openembedded &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETNAMEDPROPIDS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_getnamedpropids &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hstore));
@@ -1119,13 +1119,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETNAMEDPROPIDS &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETNAMEDPROPIDS &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_getnamedpropids &d)
 {
 	QRF(x.p_propid_a(d.propids));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETPROPNAMES &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_getpropnames &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hstore));
@@ -1136,13 +1136,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETPROPNAMES &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETPROPNAMES &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_getpropnames &d)
 {
 	QRF(x.p_propname_a(d.propnames));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_COPYTO &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_copyto &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hsrcobject));
@@ -1155,40 +1155,40 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_COPYTO &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SAVECHANGES &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_savechanges &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_HIERARCHYSYNC &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_hierarchysync &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_HIERARCHYSYNC &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_hierarchysync &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CONTENTSYNC &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_contentsync &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_CONTENTSYNC &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_contentsync &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CONFIGSYNC &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_configsync &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1211,66 +1211,66 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CONFIGSYNC &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_CONFIGSYNC &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_configsync &d)
 {
 	QRF(x.p_uint8(d.b_changed));
 	QRF(x.p_uint32(d.count));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_STATESYNC &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_statesync &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hctx));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_STATESYNC &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_statesync &d)
 {
 	QRF(x.p_bin(d.state));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SYNCMESSAGECHANGE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_syncmessagechange &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hctx));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_SYNCMESSAGECHANGE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_syncmessagechange &d)
 {
 	QRF(x.p_uint8(d.b_new));
 	QRF(x.p_tpropval_a(d.proplist));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SYNCFOLDERCHANGE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_syncfolderchange &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hctx));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_SYNCFOLDERCHANGE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_syncfolderchange &d)
 {
 	QRF(x.p_tpropval_a(d.proplist));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SYNCREADSTATECHANGES &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_syncreadstatechanges &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hctx));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_SYNCREADSTATECHANGES &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_syncreadstatechanges &d)
 {
 	return rpc_ext_push_state_array(&x, &d.states);
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SYNCDELETIONS &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_syncdeletions &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hctx));
@@ -1278,39 +1278,39 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SYNCDELETIONS &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_SYNCDELETIONS &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_syncdeletions &d)
 {
 	QRF(x.p_bin_a(d.bins));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_HIERARCHYIMPORT &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_hierarchyimport &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_HIERARCHYIMPORT &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_hierarchyimport &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CONTENTIMPORT &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_contentimport &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_CONTENTIMPORT &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_contentimport &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CONFIGIMPORT &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_configimport &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hctx));
@@ -1322,20 +1322,20 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_CONFIGIMPORT &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_STATEIMPORT &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_stateimport &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hctx));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_STATEIMPORT &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_stateimport &d)
 {
 	QRF(x.p_bin(d.state));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_IMPORTMESSAGE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_importmessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	if (x.g_uint32(&d.hctx) != EXT_ERR_SUCCESS)
@@ -1349,13 +1349,13 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_IMPORTMESSAGE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_IMPORTMESSAGE &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_importmessage &d)
 {
 	QRF(x.p_uint32(d.hobject));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_IMPORTFOLDER &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_importfolder &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	if (x.g_uint32(&d.hctx) != EXT_ERR_SUCCESS)
@@ -1367,7 +1367,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_IMPORTFOLDER &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_IMPORTDELETION &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_importdeletion &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	if (x.g_uint32(&d.hctx) != EXT_ERR_SUCCESS)
@@ -1381,7 +1381,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_IMPORTDELETION &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_IMPORTREADSTATES &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_importreadstates &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hctx));
@@ -1391,14 +1391,14 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_IMPORTREADSTATES &d)
 	return rpc_ext_pull_state_array(&x, d.pstates);
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETSEARCHCRITERIA &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_getsearchcriteria &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hfolder));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETSEARCHCRITERIA &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_getsearchcriteria &d)
 {	
 	QRF(x.p_bin_a(d.folder_array));
 	if (d.prestriction == nullptr) {
@@ -1411,7 +1411,7 @@ static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETSEARCHCRITERIA &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETSEARCHCRITERIA &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_setsearchcriteria &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1434,20 +1434,20 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETSEARCHCRITERIA &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_MESSAGETORFC822 &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_messagetorfc822 &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_MESSAGETORFC822 &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_messagetorfc822 &d)
 {
 	QRF(x.p_bin(d.eml_bin));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_RFC822TOMESSAGE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_rfc822tomessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	if (x.g_uint32(&d.hmessage) != EXT_ERR_SUCCESS ||
@@ -1460,20 +1460,20 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_RFC822TOMESSAGE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_MESSAGETOICAL &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_messagetoical &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_MESSAGETOICAL &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_messagetoical &d)
 {
 	QRF(x.p_bin(d.ical_bin));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_ICALTOMESSAGE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_icaltomessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	if (x.g_uint32(&d.hmessage) != EXT_ERR_SUCCESS)
@@ -1485,20 +1485,20 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_ICALTOMESSAGE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_MESSAGETOVCF &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_messagetovcf &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hmessage));
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_MESSAGETOVCF &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_messagetovcf &d)
 {
 	QRF(x.p_bin(d.vcf_bin));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_VCFTOMESSAGE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_vcftomessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	if (x.g_uint32(&d.hmessage) != EXT_ERR_SUCCESS)
@@ -1510,7 +1510,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_VCFTOMESSAGE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETUSERAVAILABILITY &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_getuseravailability &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_bin(&d.entryid));
@@ -1519,7 +1519,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_GETUSERAVAILABILITY &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETUSERAVAILABILITY &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_getuseravailability &d)
 {
 	if (d.result_string == nullptr) {
 		QRF(x.p_uint8(0));
@@ -1530,13 +1530,13 @@ static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_GETUSERAVAILABILITY &d)
 	return TRUE;
 }
 
-static BOOL zrpc_push(EXT_PUSH &x, const ZCRESP_IMTOMESSAGE2 &d)
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_imtomessage2 &d)
 {
 	QRF(x.p_uint32_a(d.msg_handles));
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETPASSWD &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_setpasswd &d)
 {
 	QRF(x.g_str(&d.username));
 	QRF(x.g_str(&d.passwd));
@@ -1544,7 +1544,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_SETPASSWD &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LINKMESSAGE &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_linkmessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_bin(&d.search_entryid));
@@ -1552,7 +1552,7 @@ static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_LINKMESSAGE &d)
 	return TRUE;
 }
 
-static BOOL zrpc_pull(EXT_PULL &x, ZCREQ_IMTOMESSAGE2 &d)
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_imtomessage2 &d)
 {
 	QRF(x.g_guid(&d.session));
 	QRF(x.g_uint32(&d.folder));
