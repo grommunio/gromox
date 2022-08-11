@@ -5,9 +5,6 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapi_types.hpp>
 
-struct EXMDB_REQUEST;
-struct EXMDB_RESPONSE;
-
 extern int exmdb_client_run_front(const char *);
 BOOL exmdb_client_relay_delivery(const char *dir,
 	const char *from_address, const char *account,

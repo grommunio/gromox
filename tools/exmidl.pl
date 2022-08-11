@@ -48,12 +48,15 @@ while (<STDIN>) {
 	if ($gen_mode eq "SDF") {
 		print "case exmdb_callid::$func: {\n";
 		if (scalar(@$iargs) > 0) {
-			print "\tauto &q = prequest->payload.$func;\n";
+			print "\tauto &q = *static_cast<const exreq_$func *>(q0);\n";
 		}
+		print "\tauto r1 = cu_alloc<exresp_$func>();\n";
+		print "\tr0 = r1;\n";
+		print "\tif (r1 == nullptr) return false;\n";
 		if (scalar(@$oargs) > 0) {
-			print "\tauto &r = presponse->payload.$func;\n";
+			print "\tauto &r = *r1;\n";
 		}
-		print "\treturn exmdb_server_$func(", join(", ", "prequest->dir",
+		print "\treturn exmdb_server_$func(", join(", ", "q0->dir",
 			(map { my($type, $field) = @$_; "q.$field"; } @$iargs),
 			(map { my($type, $field) = @$_; "&r.$field"; } @$oargs),
 		), ");\n}\n";
@@ -61,22 +64,22 @@ while (<STDIN>) {
 	}
 
 	print "BOOL exmdb_client_remote::$func($rbsig)\n{\n";
-	print "\tEXMDB_REQUEST request;\n\tEXMDB_RESPONSE response;\n";
+	print "\texreq_$func q{};\n\texresp_$func r{};\n";
 	print "\n";
-	print "\trequest.call_id = exmdb_callid::".lc($func).";\n";
-	print "\trequest.dir = deconst(dir);\n";
+	print "\tq.call_id = exmdb_callid::$func;\n";
+	print "\tq.dir = deconst(dir);\n";
 	for (@$iargs) {
 		my($type, $field) = @$_;
 		if (substr($type, -1, 1) eq "*") {
-			print "\trequest.payload.$func.$field = deconst($field);\n";
+			print "\tq.$field = deconst($field);\n";
 		} else {
-			print "\trequest.payload.$func.$field = $field;\n";
+			print "\tq.$field = $field;\n";
 		}
 	}
-	print "\tif (!exmdb_client_do_rpc(std::move(request), &response))\n\t\treturn false;\n";
+	print "\tif (!exmdb_client_do_rpc(&q, &r))\n\t\treturn false;\n";
 	for (@$oargs) {
 		my($type, $field) = @$_;
-		print "\t*$field = response.payload.$func.$field;\n";
+		print "\t*$field = r.$field;\n";
 	}
 	print "\treturn TRUE;\n}\n\n";
 }

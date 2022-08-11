@@ -79,18 +79,16 @@ static BOOL exmdb_parser_check_local(const char *prefix, BOOL *pb_private)
 	return TRUE;
 }
 
-static BOOL exmdb_parser_dispatch3(const EXMDB_REQUEST *prequest,
-	EXMDB_RESPONSE *presponse)
+static BOOL exmdb_parser_dispatch3(const exreq *q0, exresp *&r0)
 {
-	switch (prequest->call_id) {
+	switch (q0->call_id) {
 #include "exmdb_dispatch.cpp"
 	default:
 		return FALSE;
 	}
 }
 
-static BOOL exmdb_parser_dispatch2(const EXMDB_REQUEST *prequest,
-	EXMDB_RESPONSE *presponse)
+static BOOL exmdb_parser_dispatch2(const exreq *prequest, exresp *&r0)
 {
 	BOOL b_return;
 	
@@ -100,8 +98,12 @@ static BOOL exmdb_parser_dispatch2(const EXMDB_REQUEST *prequest,
 	 */
 	switch (prequest->call_id) {
 	case exmdb_callid::get_content_sync: {
-		auto &q = prequest->payload.get_content_sync;
-		auto &r = presponse->payload.get_content_sync;
+		auto &q = *static_cast<const exreq_get_content_sync *>(prequest);
+		auto r1 = cu_alloc<exresp_get_content_sync>();
+		r0 = r1;
+		if (r1 == nullptr)
+			return false;
+		auto &r = *r1;
 		b_return = exmdb_server_get_content_sync(prequest->dir,
 		           q.folder_id, q.username, q.pgiven, q.pseen,
 		           q.pseen_fai, q.pread, q.cpid, q.prestriction,
@@ -117,8 +119,12 @@ static BOOL exmdb_parser_dispatch2(const EXMDB_REQUEST *prequest,
 		return b_return;
 	}
 	case exmdb_callid::get_hierarchy_sync: {
-		auto &q = prequest->payload.get_hierarchy_sync;
-		auto &r = presponse->payload.get_hierarchy_sync;
+		auto &q = *static_cast<const exreq_get_hierarchy_sync *>(prequest);
+		auto r1 = cu_alloc<exresp_get_hierarchy_sync>();
+		r0 = r1;
+		if (r1 == nullptr)
+			return false;
+		auto &r = *r1;
 		b_return = exmdb_server_get_hierarchy_sync(prequest->dir,
 		           q.folder_id, q.username, q.pgiven, q.pseen,
 		           &r.fldchgs, &r.last_cn, &r.given_fids,
@@ -128,19 +134,19 @@ static BOOL exmdb_parser_dispatch2(const EXMDB_REQUEST *prequest,
 		return b_return;
 	}
 	default:
-		return exmdb_parser_dispatch3(prequest, presponse);
+		return exmdb_parser_dispatch3(prequest, r0);
 	}
 }
 
-static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
-	EXMDB_RESPONSE *presponse)
+static BOOL exmdb_parser_dispatch(const exreq *prequest, exresp *&presponse)
 {
-	presponse->call_id = prequest->call_id;
 	if (access(prequest->dir, R_OK | X_OK) < 0)
 		printf("exmdb rpc %s accessing %s: %s\n", exmdb_rpc_idtoname(prequest->call_id),
 		       prequest->dir, strerror(errno));
 	exmdb_server_set_dir(prequest->dir);
 	auto ret = exmdb_parser_dispatch2(prequest, presponse);
+	if (ret)
+		presponse->call_id = prequest->call_id;
 	if (g_exrpc_debug == 0)
 		return ret;
 	if (!ret || g_exrpc_debug == 2)
@@ -152,7 +158,6 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 
 static void *mdpps_thrwork(void *pparam)
 {
-	int status;
 	int tv_msec;
 	void *pbuff;
 	int read_len;
@@ -164,9 +169,7 @@ static void *mdpps_thrwork(void *pparam)
 	BOOL is_connected;
 	uint32_t buff_len;
 	uint8_t resp_buff[5]{};
-	EXMDB_REQUEST request;
 	struct pollfd pfd_read;
-	EXMDB_RESPONSE response;
 	
 	b_private = FALSE; /* whatever for connect request */
 	/* unordered_set currently owns it, now take another ref */
@@ -236,21 +239,23 @@ static void *mdpps_thrwork(void *pparam)
 		exmdb_server_build_env(b_private ? EM_PRIVATE : 0, nullptr);
 		tmp_bin.pv = pbuff;
 		tmp_bin.cb = buff_len;
-		status = exmdb_ext_pull_request(&tmp_bin, &request);
+		exreq *request = nullptr;
+		auto status = exmdb_ext_pull_request(&tmp_bin, request);
 		free(pbuff);
 		pbuff = NULL;
 		exmdb_response tmp_byte;
+		exresp *response = nullptr;
 		if (EXT_ERR_SUCCESS != status) {
 			tmp_byte = exmdb_response::pull_error;
 		} else if (!is_connected) {
-			if (request.call_id == exmdb_callid::connect) {
-				if (!exmdb_parser_check_local(
-					request.payload.connect.prefix, &b_private)) {
+			if (request->call_id == exmdb_callid::connect) {
+				auto &q = *static_cast<const exreq_connect *>(request);
+				if (!exmdb_parser_check_local(q.prefix, &b_private)) {
 					tmp_byte = exmdb_response::misconfig_prefix;
-				} else if (b_private != request.payload.connect.b_private) {
+				} else if (b_private != q.b_private) {
 					tmp_byte = exmdb_response::misconfig_mode;
 				} else {
-					pconnection->remote_id = request.payload.connect.remote_id;
+					pconnection->remote_id = q.remote_id;
 					exmdb_server_free_environment();
 					exmdb_server_set_remote_id(pconnection->remote_id.c_str());
 					is_connected = TRUE;
@@ -261,11 +266,12 @@ static void *mdpps_thrwork(void *pparam)
 					buff_len = 0;
 					continue;
 				}
-			} else if (request.call_id == exmdb_callid::listen_notification) {
+			} else if (request->call_id == exmdb_callid::listen_notification) {
+				auto &q = *static_cast<const exreq_listen_notification *>(request);
 				std::shared_ptr<ROUTER_CONNECTION> prouter;
 				try {
 					prouter = std::make_shared<ROUTER_CONNECTION>();
-					prouter->remote_id.reserve(strlen(request.payload.listen_notification.remote_id));
+					prouter->remote_id.reserve(strlen(q.remote_id));
 				} catch (const std::bad_alloc &) {
 				}
 				if (NULL == prouter) {
@@ -273,7 +279,7 @@ static void *mdpps_thrwork(void *pparam)
 				} else if (g_max_routers != 0 && g_router_list.size() >= g_max_routers) {
 					tmp_byte = exmdb_response::max_reached;
 				} else {
-					prouter->remote_id = request.payload.listen_notification.remote_id;
+					prouter->remote_id = q.remote_id;
 					exmdb_server_free_environment();
 					if (5 != write(pconnection->sockd, resp_buff, 5)) {
 						break;
@@ -295,9 +301,9 @@ static void *mdpps_thrwork(void *pparam)
 			} else {
 				tmp_byte = exmdb_response::connect_incomplete;
 			}
-		} else if (!exmdb_parser_dispatch(&request, &response)) {
+		} else if (!exmdb_parser_dispatch(request, response)) {
 			tmp_byte = exmdb_response::dispatch_error;
-		} else if (EXT_ERR_SUCCESS != exmdb_ext_push_response(&response, &tmp_bin)) {
+		} else if (EXT_ERR_SUCCESS != exmdb_ext_push_response(response, &tmp_bin)) {
 			tmp_byte = exmdb_response::push_error;
 		} else {
 			exmdb_server_free_environment();

@@ -111,19 +111,25 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	        return -2;
 	}
 	auto cl_sock = make_scope_exit([&]() { close(sockd); });
-	EXMDB_REQUEST rq;
+	exreq_connect rqc;
+	exreq_listen_notification rql;
 	if (!b_listen) {
-		rq.call_id = exmdb_callid::connect;
-		rq.payload.connect.prefix = deconst(srv.prefix.c_str());
-		rq.payload.connect.remote_id = mdcl_remote_id;
-		rq.payload.connect.b_private = srv.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
+		rqc.call_id = exmdb_callid::connect;
+		rqc.prefix = deconst(srv.prefix.c_str());
+		rqc.remote_id = mdcl_remote_id;
+		rqc.b_private = srv.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 	} else {
-		rq.call_id = exmdb_callid::listen_notification;
-		rq.payload.listen_notification.remote_id = mdcl_remote_id;
+		rql.call_id = exmdb_callid::listen_notification;
+		rql.remote_id = mdcl_remote_id;
 	}
 	BINARY bin;
-	if (exmdb_ext_push_request(&rq, &bin) != EXT_ERR_SUCCESS)
-		return -1;
+	if (b_listen) {
+		if (exmdb_ext_push_request(&rql, &bin) != EXT_ERR_SUCCESS)
+			return -1;
+	} else {
+		if (exmdb_ext_push_request(&rqc, &bin) != EXT_ERR_SUCCESS)
+			return -1;
+	}
 	if (!exmdb_client_write_socket(sockd, bin, mdcl_socket_timeout * 1000)) {
 		free(bin.pb);
 		return -1;
@@ -434,13 +440,13 @@ remote_conn_ref exmdb_client_get_connection(const char *dir)
 	return fc;
 }
 
-BOOL exmdb_client_do_rpc(EXMDB_REQUEST &&rq, EXMDB_RESPONSE *rsp)
+BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 {
 	BINARY bin;
 
-	if (exmdb_ext_push_request(&rq, &bin) != EXT_ERR_SUCCESS)
+	if (exmdb_ext_push_request(rq, &bin) != EXT_ERR_SUCCESS)
 		return false;
-	auto conn = exmdb_client_get_connection(rq.dir);
+	auto conn = exmdb_client_get_connection(rq->dir);
 	if (conn == nullptr || !exmdb_client_write_socket(conn->sockd,
 	    bin, mdcl_socket_timeout * 1000)) {
 		free(bin.pb);
@@ -455,7 +461,7 @@ BOOL exmdb_client_do_rpc(EXMDB_REQUEST &&rq, EXMDB_RESPONSE *rsp)
 		exmdb_rpc_free(bin.pb);
 		return false;
 	}
-	rsp->call_id = rq.call_id;
+	rsp->call_id = rq->call_id;
 	bin.cb -= 5;
 	bin.pb += 5;
 	auto ret = exmdb_ext_pull_response(&bin, rsp);
