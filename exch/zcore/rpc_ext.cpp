@@ -7,11 +7,6 @@
 #include "rpc_ext.h"
 #define QRF(expr) do { if ((expr) != EXT_ERR_SUCCESS) return false; } while (false)
 
-using RPC_REQUEST = ZCORE_RPC_REQUEST;
-using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
-using REQUEST_PAYLOAD = ZCORE_REQUEST_PAYLOAD;
-using RESPONSE_PAYLOAD = ZCORE_RESPONSE_PAYLOAD;
-
 static BOOL rpc_ext_pull_propval(
 	EXT_PULL *pext, uint16_t type, void **ppval)
 {
@@ -1561,17 +1556,23 @@ static BOOL zrpc_pull(EXT_PULL &x, zcreq_imtomessage2 &d)
 	return TRUE;
 }
 
-BOOL rpc_ext_pull_request(const BINARY *pbin_in,
-	RPC_REQUEST *prequest)
+BOOL rpc_ext_pull_request(const BINARY *pbin_in, zcreq *&prequest)
 {
 	EXT_PULL ext_pull;
 	uint8_t call_id;
+	BOOL b_ret = false;
 	
 	ext_pull.init(pbin_in->pb, pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
 	QRF(ext_pull.g_uint8(&call_id));
-	prequest->call_id = static_cast<zcore_callid>(call_id);
-	switch (prequest->call_id) {
-#define E(t) case zcore_callid::t: return zrpc_pull(ext_pull, prequest->payload.t);
+	switch (static_cast<zcore_callid>(call_id)) {
+#define E(t) case zcore_callid::t: { \
+		auto r = cu_alloc<zcreq_ ## t>(); \
+		prequest = r; \
+		if (r == nullptr) \
+			return false; \
+		b_ret = zrpc_pull(ext_pull, *r); \
+		break; \
+	}
 	E(logon)
 	E(checksession)
 	E(uinfo)
@@ -1661,10 +1662,11 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	default:
 		return FALSE;
 	}
+	prequest->call_id = static_cast<zcore_callid>(call_id);
+	return b_ret;
 }
 
-BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
-	BINARY *pbin_out)
+BOOL rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 {
 	BOOL b_result;
 	EXT_PUSH ext_push;
@@ -1719,7 +1721,7 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	case zcore_callid::linkmessage:
 		b_result = TRUE;
 		break;
-#define E(t) case zcore_callid::t: b_result = zrpc_push(ext_push, presponse->payload.t); break;
+#define E(t) case zcore_callid::t: b_result = zrpc_push(ext_push, *static_cast<const zcresp_ ## t *>(presponse)); break;
 	E(logon)
 	E(uinfo)
 	E(openentry)

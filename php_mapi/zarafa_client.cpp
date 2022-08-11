@@ -21,9 +21,6 @@
 #include <cerrno>
 #include <cstdint>
 
-using RPC_REQUEST = ZCORE_RPC_REQUEST;
-using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
-
 static int zarafa_client_connect()
 {
 	int sockd, len;
@@ -107,12 +104,12 @@ static zend_bool zarafa_client_write_socket(int sockd, const BINARY &pbin)
 	}
 }
 
-zend_bool zarafa_client_do_rpc(RPC_REQUEST &&prequest, RPC_RESPONSE *presponse)
+zend_bool zarafa_client_do_rpc(const zcreq *prequest, zcresp *presponse)
 {
 	int sockd;
 	BINARY tmp_bin;
 	
-	if (!rpc_ext_push_request(&prequest, &tmp_bin)) {
+	if (!rpc_ext_push_request(prequest, &tmp_bin)) {
 		return 0;
 	}
 	sockd = zarafa_client_connect();
@@ -138,7 +135,7 @@ zend_bool zarafa_client_do_rpc(RPC_REQUEST &&prequest, RPC_RESPONSE *presponse)
 		}
 		return 0;
 	}
-	presponse->call_id = prequest.call_id;
+	presponse->call_id = prequest->call_id;
 	tmp_bin.cb -= 5;
 	tmp_bin.pb += 5;
 	if (!rpc_ext_pull_response(&tmp_bin, presponse)) {

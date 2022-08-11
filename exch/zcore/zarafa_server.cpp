@@ -188,7 +188,6 @@ static void *zcorezs_scanwork(void *param)
 	time_t cur_time;
 	uint8_t tmp_byte;
 	struct pollfd fdpoll;
-	ZCORE_RPC_RESPONSE response;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST temp_list1;
 	DOUBLE_LIST_NODE *pnode;
@@ -197,10 +196,7 @@ static void *zcorezs_scanwork(void *param)
 	count = 0;
 	double_list_init(&temp_list);
 	double_list_init(&temp_list1);
-	response.call_id = zcore_callid::notifdequeue;
-	response.result = ecSuccess;
-	response.payload.notifdequeue.notifications.count = 0;
-	response.payload.notifdequeue.notifications.ppnotification = NULL;
+	const zcresp_notifdequeue response{zcore_callid::notifdequeue, ecSuccess};
 	while (!g_notify_stop) {
 		sleep(1);
 		count ++;
@@ -333,7 +329,6 @@ static void zarafa_server_notification_proc(const char *dir,
 	uint64_t parent_id;
 	uint64_t message_id;
 	struct pollfd fdpoll;
-	ZCORE_RPC_RESPONSE response;
 	uint64_t old_parentid;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
@@ -612,11 +607,7 @@ static void zarafa_server_notification_proc(const char *dir,
 			    hstore != psink_node->sink.padvise[i].hstore)
 				continue;
 			double_list_remove(&pinfo->sink_list, pnode);
-			response.call_id = zcore_callid::notifdequeue;
-			response.result = ecSuccess;
-			response.payload.notifdequeue.notifications.count = 1;
-			response.payload.notifdequeue.notifications.ppnotification =
-				&pnotification;
+			const zcresp_notifdequeue response = {zcore_callid::notifdequeue, ecSuccess, {1, &pnotification}};
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			fdpoll.fd = psink_node->clifd;
 			fdpoll.events = POLLOUT | POLLWRBAND;

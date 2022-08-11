@@ -16,8 +16,8 @@
 #define SYNC_NEW_MESSAGE 0x800
 #define SYNC_SOFT_DELETE 0x01
 
-struct ZCORE_RPC_REQUEST;
-struct ZCORE_RPC_RESPONSE;
+struct zcreq;
+struct zcresp;
 
 struct zstr_delete {
 	inline void operator()(zend_string *s) const { zend_string_release(s); };
@@ -49,8 +49,8 @@ struct PUSH_CTX : public EXT_PUSH {
 	int p_state_a(const STATE_ARRAY *);
 };
 
-extern zend_bool rpc_ext_push_request(const ZCORE_RPC_REQUEST *, BINARY *);
-extern zend_bool rpc_ext_pull_response(const BINARY *, ZCORE_RPC_RESPONSE *);
+extern zend_bool rpc_ext_push_request(const zcreq *, BINARY *);
+extern zend_bool rpc_ext_pull_response(const BINARY *, zcresp *);
 
 template<typename T> T *st_malloc() { return static_cast<T *>(emalloc(sizeof(T))); }
 template<typename T> T *sta_malloc(size_t elem) { return static_cast<T *>(emalloc(sizeof(T) * elem)); }
