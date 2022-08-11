@@ -5091,7 +5091,7 @@ uint32_t zarafa_server_icaltomessage(GUID hsession,
 }
 
 uint32_t zarafa_server_imtomessage2(GUID session, uint32_t fld_handle,
-    uint32_t data_type, char *im_data, LONG_ARRAY &outhandles)
+    uint32_t data_type, char *im_data, LONG_ARRAY *outhandles)
 {
 	auto info = zarafa_server_query_session(session);
 	if (info == nullptr)
@@ -5111,13 +5111,13 @@ uint32_t zarafa_server_imtomessage2(GUID session, uint32_t fld_handle,
 	if (ret != ecSuccess)
 		return ret;
 
-	outhandles.count = 0;
-	outhandles.pl = cu_alloc<uint32_t>(msgvec.size());
-	if (outhandles.pl == nullptr)
+	outhandles->count = 0;
+	outhandles->pl = cu_alloc<uint32_t>(msgvec.size());
+	if (outhandles->pl == nullptr)
 		return ecServerOOM;
 	auto cl_0 = make_scope_exit([&]() {
-		for (size_t i = 0; i < outhandles.count; ++i)
-			zarafa_server_unloadobject(session, outhandles.pl[i]);
+		for (size_t i = 0; i < outhandles->count; ++i)
+			zarafa_server_unloadobject(session, outhandles->pl[i]);
 	});
 	for (auto &&msgctnt : msgvec) {
 		uint32_t msg_handle = 0;
@@ -5129,7 +5129,7 @@ uint32_t zarafa_server_imtomessage2(GUID session, uint32_t fld_handle,
 		if (zmo == nullptr || mapi_type != ZMG_MESSAGE ||
 		    !zmo->write_message(msgctnt.get()))
 			return ecError;
-		outhandles.pl[outhandles.count++] = msg_handle;
+		outhandles->pl[outhandles->count++] = msg_handle;
 	}
 	cl_0.release();
 	return ecSuccess;

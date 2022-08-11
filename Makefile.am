@@ -83,7 +83,7 @@ endif
 sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
 pkglibexec_SCRIPTS = tools/create_queue.sh
 
-BUILT_SOURCES = include/gromox/paths.h php_mapi/mapierr.cpp php_mapi/mapitags.cpp php_mapi/zrpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
+BUILT_SOURCES = include/gromox/paths.h php_mapi/mapierr.cpp php_mapi/mapitags.cpp php_mapi/zrpc.cpp exch/exmdb_provider/exmdb_rpc.cpp exch/zcore/rpc_dispatch.cpp lib/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
@@ -342,7 +342,10 @@ php_mapi/mapitags.cpp: include/gromox/mapitags.hpp tools/defs2php.sh tools/defs2
 	${AM_V_GEN}${top_srcdir}/tools/defs2php.sh -t <include/gromox/mapitags.hpp >$@
 
 php_mapi/zrpc.cpp: php_mapi/zarafa_client.h tools/zcidl.sh tools/zcidl.pl
-	${AM_V_GEN}${top_srcdir}/tools/zcidl.sh <php_mapi/zarafa_client.h >"$@"
+	${AM_V_GEN}${top_srcdir}/tools/zcidl.sh -c <php_mapi/zarafa_client.h >"$@"
+
+exch/zcore/rpc_dispatch.cpp: php_mapi/zrpc.cpp
+	${AM_V_GEN}${top_srcdir}/tools/zcidl.sh -d <php_mapi/zarafa_client.h >"$@"
 
 lib/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.pl
 	${AM_V_GEN}${top_srcdir}/tools/exmidl.sh <include/gromox/exmdb_idef.hpp >"$@"

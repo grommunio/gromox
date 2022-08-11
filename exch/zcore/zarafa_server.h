@@ -204,7 +204,7 @@ uint32_t zarafa_server_messagetoical(GUID hsession,
 	uint32_t hmessage, BINARY *pical_bin);
 uint32_t zarafa_server_icaltomessage(GUID hsession,
 	uint32_t hmessage, const BINARY *pical_bin);
-extern uint32_t zarafa_server_imtomessage2(GUID session, uint32_t folder, uint32_t data_type, char *im_data, LONG_ARRAY &outhandles);
+extern uint32_t zarafa_server_imtomessage2(GUID session, uint32_t folder, uint32_t data_type, char *im_data, LONG_ARRAY *outhandles);
 uint32_t zarafa_server_messagetovcf(GUID hsession,
 	uint32_t hmessage, BINARY *pvcf_bin);
 uint32_t zarafa_server_vcftomessage(GUID hsession,
