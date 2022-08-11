@@ -147,115 +147,115 @@ enum class exmdb_callid : uint8_t {
 	unload_store = 0x80,
 };
 
-struct EXREQ_CONNECT {
+struct exreq_connect {
 	char *prefix;
 	char *remote_id;
 	BOOL b_private;
 };
 
-struct EXREQ_LISTEN_NOTIFICATION {
+struct exreq_listen_notification {
 	char *remote_id;
 };
 
-struct EXREQ_GET_NAMED_PROPIDS {
+struct exreq_get_named_propids {
 	BOOL b_create;
 	PROPNAME_ARRAY *ppropnames;
 };
 
-struct EXREQ_GET_NAMED_PROPNAMES {
+struct exreq_get_named_propnames {
 	PROPID_ARRAY *ppropids;
 };
 
-struct EXREQ_GET_MAPPING_GUID {
+struct exreq_get_mapping_guid {
 	uint16_t replid;
 };
 
-struct EXREQ_GET_MAPPING_REPLID {
+struct exreq_get_mapping_replid {
 	GUID guid;
 };
 
-struct EXREQ_GET_STORE_PROPERTIES {
+struct exreq_get_store_properties {
 	uint32_t cpid;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct EXREQ_SET_STORE_PROPERTIES {
+struct exreq_set_store_properties {
 	uint32_t cpid;
 	TPROPVAL_ARRAY *ppropvals;
 };
 
-struct EXREQ_REMOVE_STORE_PROPERTIES {
+struct exreq_remove_store_properties {
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct EXREQ_CHECK_MAILBOX_PERMISSION {
+struct exreq_check_mailbox_permission {
 	char *username;
 };
 
-struct EXREQ_GET_FOLDER_BY_CLASS {
+struct exreq_get_folder_by_class {
 	char *str_class;
 };
 
-struct EXREQ_SET_FOLDER_BY_CLASS {
+struct exreq_set_folder_by_class {
 	uint64_t folder_id;
 	char *str_class;
 };
 
-struct EXREQ_CHECK_FOLDER_ID {
+struct exreq_check_folder_id {
 	uint64_t folder_id;
 };
 
-struct EXREQ_QUERY_FOLDER_MESSAGES {
+struct exreq_query_folder_messages {
 	uint64_t folder_id;
 };
 
-struct EXREQ_CHECK_FOLDER_DELETED {
+struct exreq_check_folder_deleted {
 	uint64_t folder_id;
 };
 
-struct EXREQ_GET_FOLDER_BY_NAME {
+struct exreq_get_folder_by_name {
 	uint64_t parent_id;
 	char *str_name;
 };
 
-struct EXREQ_CHECK_FOLDER_PERMISSION {
+struct exreq_check_folder_permission {
 	uint64_t folder_id;
 	char *username;
 };
 
-struct EXREQ_CREATE_FOLDER_BY_PROPERTIES {
+struct exreq_create_folder_by_properties {
 	uint32_t cpid;
 	TPROPVAL_ARRAY *pproperties;
 };
 
-struct EXREQ_DELETE_FOLDER {
+struct exreq_delete_folder {
 	uint32_t cpid;
 	uint64_t folder_id;
 	BOOL b_hard;
 };
 
-struct EXREQ_GET_FOLDER_ALL_PROPTAGS {
+struct exreq_get_folder_all_proptags {
 	uint64_t folder_id;
 };
 
-struct EXREQ_GET_FOLDER_PROPERTIES {
+struct exreq_get_folder_properties {
 	uint32_t cpid;
 	uint64_t folder_id;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct EXREQ_SET_FOLDER_PROPERTIES {
+struct exreq_set_folder_properties {
 	uint32_t cpid;
 	uint64_t folder_id;
 	TPROPVAL_ARRAY *pproperties;
 };
 
-struct EXREQ_REMOVE_FOLDER_PROPERTIES {
+struct exreq_remove_folder_properties {
 	uint64_t folder_id;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct EXREQ_EMPTY_FOLDER {
+struct exreq_empty_folder {
 	uint32_t cpid;
 	char *username;
 	uint64_t folder_id;
@@ -265,12 +265,12 @@ struct EXREQ_EMPTY_FOLDER {
 	BOOL b_sub;
 };
 
-struct EXREQ_CHECK_FOLDER_CYCLE {
+struct exreq_check_folder_cycle {
 	uint64_t src_fid;
 	uint64_t dst_fid;
 };
 
-struct EXREQ_COPY_FOLDER_INTERNAL {
+struct exreq_copy_folder_internal {
 	uint32_t account_id;
 	uint32_t cpid;
 	BOOL b_guest;
@@ -282,11 +282,11 @@ struct EXREQ_COPY_FOLDER_INTERNAL {
 	uint64_t dst_fid;
 };
 
-struct EXREQ_GET_SEARCH_CRITERIA {
+struct exreq_get_search_criteria {
 	uint64_t folder_id;
 };
 
-struct EXREQ_SET_SEARCH_CRITERIA {
+struct exreq_set_search_criteria {
 	uint32_t cpid;
 	uint64_t folder_id;
 	uint32_t search_flags;
@@ -294,7 +294,7 @@ struct EXREQ_SET_SEARCH_CRITERIA {
 	LONGLONG_ARRAY *pfolder_ids;
 };
 
-struct EXREQ_MOVECOPY_MESSAGE {
+struct exreq_movecopy_message {
 	uint32_t account_id;
 	uint32_t cpid;
 	uint64_t message_id;
@@ -303,7 +303,7 @@ struct EXREQ_MOVECOPY_MESSAGE {
 	BOOL b_move;
 };
 
-struct EXREQ_MOVECOPY_MESSAGES {
+struct exreq_movecopy_messages {
 	uint32_t account_id;
 	uint32_t cpid;
 	BOOL b_guest;
@@ -314,7 +314,7 @@ struct EXREQ_MOVECOPY_MESSAGES {
 	EID_ARRAY *pmessage_ids;
 };
 
-struct EXREQ_MOVECOPY_FOLDER {
+struct exreq_movecopy_folder {
 	uint32_t account_id;
 	uint32_t cpid;
 	BOOL b_guest;
@@ -326,7 +326,7 @@ struct EXREQ_MOVECOPY_FOLDER {
 	BOOL b_copy;
 };
 
-struct EXREQ_DELETE_MESSAGES {
+struct exreq_delete_messages {
 	uint32_t account_id;
 	uint32_t cpid;
 	char *username;
@@ -335,31 +335,31 @@ struct EXREQ_DELETE_MESSAGES {
 	BOOL b_hard;
 };
 
-struct EXREQ_GET_MESSAGE_BRIEF {
+struct exreq_get_message_brief {
 	uint32_t cpid;
 	uint64_t message_id;
 };
 
-struct EXREQ_SUM_HIERARCHY {
+struct exreq_sum_hierarchy {
 	uint64_t folder_id;
 	char *username;
 	BOOL b_depth;
 };
 
-struct EXREQ_SUM_CONTENT {
+struct exreq_sum_content {
 	uint64_t folder_id;
 	BOOL b_fai;
 	BOOL b_deleted;
 };
 
-struct EXREQ_LOAD_HIERARCHY_TABLE {
+struct exreq_load_hierarchy_table {
 	uint64_t folder_id;
 	char *username;
 	uint8_t table_flags;
 	RESTRICTION *prestriction;
 };
 
-struct EXREQ_LOAD_CONTENT_TABLE {
+struct exreq_load_content_table {
 	uint32_t cpid;
 	uint64_t folder_id;
 	char *username;
@@ -368,30 +368,30 @@ struct EXREQ_LOAD_CONTENT_TABLE {
 	SORTORDER_SET *psorts;
 };
 
-struct EXREQ_RELOAD_CONTENT_TABLE {
+struct exreq_reload_content_table {
 	uint32_t table_id;
 };
 
-struct EXREQ_LOAD_PERMISSION_TABLE {
+struct exreq_load_permission_table {
 	uint64_t folder_id;
 	uint8_t table_flags;
 };
 
-struct EXREQ_LOAD_RULE_TABLE {
+struct exreq_load_rule_table {
 	uint64_t folder_id;
 	uint8_t table_flags;
 	RESTRICTION *prestriction;
 };
 
-struct EXREQ_UNLOAD_TABLE {
+struct exreq_unload_table {
 	uint32_t table_id;
 };
 
-struct EXREQ_SUM_TABLE {
+struct exreq_sum_table {
 	uint32_t table_id;
 };
 
-struct EXREQ_QUERY_TABLE {
+struct exreq_query_table {
 	char *username;
 	uint32_t cpid;
 	uint32_t table_id;
@@ -400,7 +400,7 @@ struct EXREQ_QUERY_TABLE {
 	int32_t row_needed;
 };
 
-struct EXREQ_MATCH_TABLE {
+struct exreq_match_table {
 	char *username;
 	uint32_t cpid;
 	uint32_t table_id;
@@ -410,13 +410,13 @@ struct EXREQ_MATCH_TABLE {
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct EXREQ_LOCATE_TABLE {
+struct exreq_locate_table {
 	uint32_t table_id;
 	uint64_t inst_id;
 	uint32_t inst_num;
 };
 
-struct EXREQ_READ_TABLE_ROW {
+struct exreq_read_table_row {
 	char *username;
 	uint32_t cpid;
 	uint32_t table_id;
@@ -425,46 +425,46 @@ struct EXREQ_READ_TABLE_ROW {
 	uint32_t inst_num;
 };
 
-struct EXREQ_MARK_TABLE {
+struct exreq_mark_table {
 	uint32_t table_id;
 	uint32_t position;
 };
 
-struct EXREQ_GET_TABLE_ALL_PROPTAGS {
+struct exreq_get_table_all_proptags {
 	uint32_t table_id;
 };
 
-struct EXREQ_EXPAND_TABLE {
-	uint32_t table_id;
-	uint64_t inst_id;
-};
-
-struct EXREQ_COLLAPSE_TABLE {
+struct exreq_expand_table {
 	uint32_t table_id;
 	uint64_t inst_id;
 };
 
-struct EXREQ_STORE_TABLE_STATE {
+struct exreq_collapse_table {
+	uint32_t table_id;
+	uint64_t inst_id;
+};
+
+struct exreq_store_table_state {
 	uint32_t table_id;
 	uint64_t inst_id;
 	uint32_t inst_num;
 };
 
-struct EXREQ_RESTORE_TABLE_STATE {
+struct exreq_restore_table_state {
 	uint32_t table_id;
 	uint32_t state_id;
 };
 
-struct EXREQ_CHECK_MESSAGE {
+struct exreq_check_message {
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 
-struct EXREQ_CHECK_MESSAGE_DELETED {
+struct exreq_check_message_deleted {
 	uint64_t message_id;
 };
 
-struct EXREQ_LOAD_MESSAGE_INSTANCE {
+struct exreq_load_message_instance {
 	char *username;
 	uint32_t cpid;
 	BOOL b_new;
@@ -472,231 +472,231 @@ struct EXREQ_LOAD_MESSAGE_INSTANCE {
 	uint64_t message_id;
 };
 
-struct EXREQ_LOAD_EMBEDDED_INSTANCE {
+struct exreq_load_embedded_instance {
 	BOOL b_new;
 	uint32_t attachment_instance_id;
 };
 
-struct EXREQ_GET_EMBEDDED_CN {
+struct exreq_get_embedded_cn {
 	uint32_t instance_id;
 };
 
-struct EXREQ_RELOAD_MESSAGE_INSTANCE {
+struct exreq_reload_message_instance {
 	uint32_t instance_id;
 };
 
-struct EXREQ_CLEAR_MESSAGE_INSTANCE {
+struct exreq_clear_message_instance {
 	uint32_t instance_id;
 };
 
-struct EXREQ_READ_MESSAGE_INSTANCE {
+struct exreq_read_message_instance {
 	uint32_t instance_id;
 };
 
-struct EXREQ_WRITE_MESSAGE_INSTANCE {
+struct exreq_write_message_instance {
 	uint32_t instance_id;
 	MESSAGE_CONTENT *pmsgctnt;
 	BOOL b_force;
 };
 
-struct EXREQ_LOAD_ATTACHMENT_INSTANCE {
+struct exreq_load_attachment_instance {
 	uint32_t message_instance_id;
 	uint32_t attachment_num;
 };
 
-struct EXREQ_CREATE_ATTACHMENT_INSTANCE {
+struct exreq_create_attachment_instance {
 	uint32_t message_instance_id;
 };
 
-struct EXREQ_READ_ATTACHMENT_INSTANCE {
+struct exreq_read_attachment_instance {
 	uint32_t instance_id;
 };
 
-struct EXREQ_WRITE_ATTACHMENT_INSTANCE {
+struct exreq_write_attachment_instance {
 	uint32_t instance_id;
 	ATTACHMENT_CONTENT *pattctnt;
 	BOOL b_force;
 };
 
-struct EXREQ_DELETE_MESSAGE_INSTANCE_ATTACHMENT {
+struct exreq_delete_message_instance_attachment {
 	uint32_t message_instance_id;
 	uint32_t attachment_num;
 };
 
-struct EXREQ_FLUSH_INSTANCE {
+struct exreq_flush_instance {
 	uint32_t instance_id;
 	char *account;
 };
 
-struct EXREQ_UNLOAD_INSTANCE {
+struct exreq_unload_instance {
 	uint32_t instance_id;
 };
 
-struct EXREQ_GET_INSTANCE_ALL_PROPTAGS {
+struct exreq_get_instance_all_proptags {
 	uint32_t instance_id;
 };
 
-struct EXREQ_GET_INSTANCE_PROPERTIES {
+struct exreq_get_instance_properties {
 	uint32_t size_limit;
 	uint32_t instance_id;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct EXREQ_SET_INSTANCE_PROPERTIES {
+struct exreq_set_instance_properties {
 	uint32_t instance_id;
 	TPROPVAL_ARRAY *pproperties;
 };
 
-struct EXREQ_REMOVE_INSTANCE_PROPERTIES {
+struct exreq_remove_instance_properties {
 	uint32_t instance_id;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct EXREQ_CHECK_INSTANCE_CYCLE {
+struct exreq_check_instance_cycle {
 	uint32_t src_instance_id;
 	uint32_t dst_instance_id;
 };
 
-struct EXREQ_EMPTY_MESSAGE_INSTANCE_RCPTS {
+struct exreq_empty_message_instance_rcpts {
 	uint32_t instance_id;
 };
 
-struct EXREQ_GET_MESSAGE_INSTANCE_RCPTS_NUM {
+struct exreq_get_message_instance_rcpts_num {
 	uint32_t instance_id;
 };
 
-struct EXREQ_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS {
+struct exreq_get_message_instance_rcpts_all_proptags {
 	uint32_t instance_id;
 };
 
-struct EXREQ_GET_MESSAGE_INSTANCE_RCPTS {
+struct exreq_get_message_instance_rcpts {
 	uint32_t instance_id;
 	uint32_t row_id;
 	uint16_t need_count;
 };
 
-struct EXREQ_UPDATE_MESSAGE_INSTANCE_RCPTS {
+struct exreq_update_message_instance_rcpts {
 	uint32_t instance_id;
 	TARRAY_SET *pset;
 };
 
-struct EXREQ_COPY_INSTANCE_RCPTS {
+struct exreq_copy_instance_rcpts {
 	BOOL b_force;
 	uint32_t src_instance_id;
 	uint32_t dst_instance_id;
 };
 
-struct EXREQ_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS {
+struct exreq_empty_message_instance_attachments {
 	uint32_t instance_id;
 };
 
-struct EXREQ_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM {
+struct exreq_get_message_instance_attachments_num {
 	uint32_t instance_id;
 };
 
-struct EXREQ_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS {
+struct exreq_get_message_instance_attachment_table_all_proptags {
 	uint32_t instance_id;
 };
 
-struct EXREQ_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE {
+struct exreq_query_message_instance_attachment_table {
 	uint32_t instance_id;
 	PROPTAG_ARRAY *pproptags;
 	uint32_t start_pos;
 	int32_t row_needed;
 };
 
-struct EXREQ_COPY_INSTANCE_ATTACHMENTS {
+struct exreq_copy_instance_attachments {
 	BOOL b_force;
 	uint32_t src_instance_id;
 	uint32_t dst_instance_id;
 };
 
-struct EXREQ_SET_MESSAGE_INSTANCE_CONFLICT {
+struct exreq_set_message_instance_conflict {
 	uint32_t instance_id;
 	MESSAGE_CONTENT *pmsgctnt;
 };
 
-struct EXREQ_GET_MESSAGE_RCPTS {
+struct exreq_get_message_rcpts {
 	uint64_t message_id;
 };
 
-struct EXREQ_GET_MESSAGE_PROPERTIES {
+struct exreq_get_message_properties {
 	char *username;
 	uint32_t cpid;
 	uint64_t message_id;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct EXREQ_SET_MESSAGE_PROPERTIES {
+struct exreq_set_message_properties {
 	char *username;
 	uint32_t cpid;
 	uint64_t message_id;
 	TPROPVAL_ARRAY *pproperties;
 };
 
-struct EXREQ_SET_MESSAGE_READ_STATE {
+struct exreq_set_message_read_state {
 	char *username;
 	uint64_t message_id;
 	uint8_t mark_as_read;
 };
 
-struct EXREQ_REMOVE_MESSAGE_PROPERTIES {
+struct exreq_remove_message_properties {
 	uint32_t cpid;
 	uint64_t message_id;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct EXREQ_ALLOCATE_MESSAGE_ID {
+struct exreq_allocate_message_id {
 	uint64_t folder_id;
 };
 
-struct EXREQ_GET_MESSAGE_GROUP_ID {
+struct exreq_get_message_group_id {
 	uint64_t message_id;
 };
 
-struct EXREQ_SET_MESSAGE_GROUP_ID {
+struct exreq_set_message_group_id {
 	uint64_t message_id;
 	uint32_t group_id;
 };
 
-struct EXREQ_SAVE_CHANGE_INDICES {
+struct exreq_save_change_indices {
 	uint64_t message_id;
 	uint64_t cn;
 	INDEX_ARRAY *pindices;
 	PROPTAG_ARRAY *pungroup_proptags;
 };
 
-struct EXREQ_GET_CHANGE_INDICES {
+struct exreq_get_change_indices {
 	uint64_t message_id;
 	uint64_t cn;
 };
 
-struct EXREQ_MARK_MODIFIED {
+struct exreq_mark_modified {
 	uint64_t message_id;
 };
 
-struct EXREQ_TRY_MARK_SUBMIT {
+struct exreq_try_mark_submit {
 	uint64_t message_id;
 };
 
-struct EXREQ_CLEAR_SUBMIT {
+struct exreq_clear_submit {
 	uint64_t message_id;
 	BOOL b_unsent;
 };
 
-struct EXREQ_LINK_MESSAGE {
+struct exreq_link_message {
 	uint32_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 
-struct EXREQ_UNLINK_MESSAGE {
+struct exreq_unlink_message {
 	uint32_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 
-struct EXREQ_RULE_NEW_MESSAGE {
+struct exreq_rule_new_message {
 	char *username;
 	char *account;
 	uint32_t cpid;
@@ -704,37 +704,37 @@ struct EXREQ_RULE_NEW_MESSAGE {
 	uint64_t message_id;
 };
 
-struct EXREQ_SET_MESSAGE_TIMER {
+struct exreq_set_message_timer {
 	uint64_t message_id;
 	uint32_t timer_id;
 };
 
-struct EXREQ_GET_MESSAGE_TIMER {
+struct exreq_get_message_timer {
 	uint64_t message_id;
 };
 
-struct EXREQ_EMPTY_FOLDER_PERMISSION {
+struct exreq_empty_folder_permission {
 	uint64_t folder_id;
 };
 
-struct EXREQ_UPDATE_FOLDER_PERMISSION {
+struct exreq_update_folder_permission {
 	uint64_t folder_id;
 	BOOL b_freebusy;
 	uint16_t count;
 	PERMISSION_DATA *prow;
 };
 
-struct EXREQ_EMPTY_FOLDER_RULE {
+struct exreq_empty_folder_rule {
 	uint64_t folder_id;
 };
 
-struct EXREQ_UPDATE_FOLDER_RULE {
+struct exreq_update_folder_rule {
 	uint64_t folder_id;
 	uint16_t count;
 	RULE_DATA *prow;
 };
 
-struct EXREQ_DELIVERY_MESSAGE {
+struct exreq_delivery_message {
 	char *from_address;
 	char *account;
 	uint32_t cpid;
@@ -742,20 +742,20 @@ struct EXREQ_DELIVERY_MESSAGE {
 	char *pdigest;
 };
 
-struct EXREQ_WRITE_MESSAGE {
+struct exreq_write_message {
 	char *account;
 	uint32_t cpid;
 	uint64_t folder_id;
 	MESSAGE_CONTENT *pmsgctnt;
 };
 
-struct EXREQ_READ_MESSAGE {
+struct exreq_read_message {
 	char *username;
 	uint32_t cpid;
 	uint64_t message_id;
 };
 
-struct EXREQ_GET_CONTENT_SYNC {
+struct exreq_get_content_sync {
 	uint64_t folder_id;
 	char *username;
 	IDSET *pgiven;
@@ -767,163 +767,163 @@ struct EXREQ_GET_CONTENT_SYNC {
 	BOOL b_ordered;
 };
 
-struct EXREQ_GET_HIERARCHY_SYNC {
+struct exreq_get_hierarchy_sync {
 	uint64_t folder_id;
 	char *username;
 	IDSET *pgiven;
 	IDSET *pseen;
 };
 
-struct EXREQ_ALLOCATE_IDS {
+struct exreq_allocate_ids {
 	uint32_t count;
 };
 
-struct EXREQ_SUBSCRIBE_NOTIFICATION {
+struct exreq_subscribe_notification {
 	uint16_t notificaton_type;
 	BOOL b_whole;
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 
-struct EXREQ_UNSUBSCRIBE_NOTIFICATION {
+struct exreq_unsubscribe_notification {
 	uint32_t sub_id;
 };
 
-struct EXREQ_TRANSPORT_NEW_MAIL {
+struct exreq_transport_new_mail {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t message_flags;
 	char *pstr_class;
 };
 
-struct EXREQ_CHECK_CONTACT_ADDRESS {
+struct exreq_check_contact_address {
 	char *paddress;
 };
 
-struct EXREQ_GET_PUBLIC_FOLDER_UNREAD_COUNT {
+struct exreq_get_public_folder_unread_count {
 	char *username;
 	uint64_t folder_id;
 };
 
 union EXMDB_REQUEST_PAYLOAD {
-	EXREQ_CONNECT connect;
-	EXREQ_GET_NAMED_PROPIDS get_named_propids;
-	EXREQ_GET_NAMED_PROPNAMES get_named_propnames;
-	EXREQ_GET_MAPPING_GUID get_mapping_guid;
-	EXREQ_GET_MAPPING_REPLID get_mapping_replid;
-	EXREQ_LISTEN_NOTIFICATION	listen_notification;
-	EXREQ_GET_STORE_PROPERTIES get_store_properties;
-	EXREQ_SET_STORE_PROPERTIES set_store_properties;
-	EXREQ_REMOVE_STORE_PROPERTIES remove_store_properties;
-	EXREQ_CHECK_MAILBOX_PERMISSION check_mailbox_permission;
-	EXREQ_GET_FOLDER_BY_CLASS get_folder_by_class;
-	EXREQ_SET_FOLDER_BY_CLASS set_folder_by_class;
-	EXREQ_CHECK_FOLDER_ID check_folder_id;
-	EXREQ_QUERY_FOLDER_MESSAGES query_folder_messages;
-	EXREQ_CHECK_FOLDER_DELETED check_folder_deleted;
-	EXREQ_GET_FOLDER_BY_NAME get_folder_by_name;
-	EXREQ_CHECK_FOLDER_PERMISSION check_folder_permission;
-	EXREQ_CREATE_FOLDER_BY_PROPERTIES create_folder_by_properties;
-	EXREQ_GET_FOLDER_ALL_PROPTAGS get_folder_all_proptags;
-	EXREQ_GET_FOLDER_PROPERTIES get_folder_properties;
-	EXREQ_SET_FOLDER_PROPERTIES set_folder_properties;
-	EXREQ_REMOVE_FOLDER_PROPERTIES remove_folder_properties;
-	EXREQ_DELETE_FOLDER delete_folder;
-	EXREQ_EMPTY_FOLDER empty_folder;
-	EXREQ_CHECK_FOLDER_CYCLE check_folder_cycle;
-	EXREQ_COPY_FOLDER_INTERNAL copy_folder_internal;
-	EXREQ_GET_SEARCH_CRITERIA get_search_criteria;
-	EXREQ_SET_SEARCH_CRITERIA set_search_criteria;
-	EXREQ_MOVECOPY_MESSAGE movecopy_message;
-	EXREQ_MOVECOPY_MESSAGES movecopy_messages;
-	EXREQ_MOVECOPY_FOLDER movecopy_folder;
-	EXREQ_DELETE_MESSAGES delete_messages;
-	EXREQ_GET_MESSAGE_BRIEF get_message_brief;
-	EXREQ_SUM_HIERARCHY sum_hierarchy;
-	EXREQ_LOAD_HIERARCHY_TABLE load_hierarchy_table;
-	EXREQ_SUM_CONTENT sum_content;
-	EXREQ_LOAD_CONTENT_TABLE load_content_table;
-	EXREQ_RELOAD_CONTENT_TABLE reload_content_table;
-	EXREQ_LOAD_PERMISSION_TABLE load_permission_table;
-	EXREQ_LOAD_RULE_TABLE load_rule_table;
-	EXREQ_UNLOAD_TABLE unload_table;
-	EXREQ_SUM_TABLE sum_table;
-	EXREQ_QUERY_TABLE query_table;
-	EXREQ_MATCH_TABLE match_table;
-	EXREQ_LOCATE_TABLE locate_table;
-	EXREQ_READ_TABLE_ROW read_table_row;
-	EXREQ_MARK_TABLE mark_table;
-	EXREQ_GET_TABLE_ALL_PROPTAGS get_table_all_proptags;
-	EXREQ_EXPAND_TABLE expand_table;
-	EXREQ_COLLAPSE_TABLE collapse_table;
-	EXREQ_STORE_TABLE_STATE store_table_state;
-	EXREQ_RESTORE_TABLE_STATE restore_table_state;
-	EXREQ_CHECK_MESSAGE check_message;
-	EXREQ_CHECK_MESSAGE_DELETED check_message_deleted;
-	EXREQ_LOAD_MESSAGE_INSTANCE load_message_instance;
-	EXREQ_LOAD_EMBEDDED_INSTANCE load_embedded_instance;
-	EXREQ_GET_EMBEDDED_CN get_embedded_cn;
-	EXREQ_RELOAD_MESSAGE_INSTANCE reload_message_instance;
-	EXREQ_CLEAR_MESSAGE_INSTANCE clear_message_instance;
-	EXREQ_READ_MESSAGE_INSTANCE read_message_instance;
-	EXREQ_WRITE_MESSAGE_INSTANCE write_message_instance;
-	EXREQ_LOAD_ATTACHMENT_INSTANCE load_attachment_instance;
-	EXREQ_CREATE_ATTACHMENT_INSTANCE create_attachment_instance;
-	EXREQ_READ_ATTACHMENT_INSTANCE read_attachment_instance;
-	EXREQ_WRITE_ATTACHMENT_INSTANCE write_attachment_instance;
-	EXREQ_DELETE_MESSAGE_INSTANCE_ATTACHMENT delete_message_instance_attachment;
-	EXREQ_FLUSH_INSTANCE flush_instance;
-	EXREQ_UNLOAD_INSTANCE unload_instance;
-	EXREQ_GET_INSTANCE_ALL_PROPTAGS get_instance_all_proptags;
-	EXREQ_GET_INSTANCE_PROPERTIES get_instance_properties;
-	EXREQ_SET_INSTANCE_PROPERTIES set_instance_properties;
-	EXREQ_REMOVE_INSTANCE_PROPERTIES remove_instance_properties;
-	EXREQ_CHECK_INSTANCE_CYCLE check_instance_cycle;
-	EXREQ_EMPTY_MESSAGE_INSTANCE_RCPTS empty_message_instance_rcpts;
-	EXREQ_GET_MESSAGE_INSTANCE_RCPTS_NUM get_message_instance_rcpts_num;
-	EXREQ_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS get_message_instance_rcpts_all_proptags;
-	EXREQ_GET_MESSAGE_INSTANCE_RCPTS get_message_instance_rcpts;
-	EXREQ_UPDATE_MESSAGE_INSTANCE_RCPTS update_message_instance_rcpts;
-	EXREQ_COPY_INSTANCE_RCPTS copy_instance_rcpts;
-	EXREQ_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS empty_message_instance_attachments;
-	EXREQ_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM get_message_instance_attachments_num;
-	EXREQ_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS get_message_instance_attachment_table_all_proptags;
-	EXREQ_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE query_message_instance_attachment_table;
-	EXREQ_COPY_INSTANCE_ATTACHMENTS copy_instance_attachments;
-	EXREQ_SET_MESSAGE_INSTANCE_CONFLICT set_message_instance_conflict;
-	EXREQ_GET_MESSAGE_RCPTS get_message_rcpts;
-	EXREQ_GET_MESSAGE_PROPERTIES get_message_properties;
-	EXREQ_SET_MESSAGE_PROPERTIES set_message_properties;
-	EXREQ_SET_MESSAGE_READ_STATE set_message_read_state;
-	EXREQ_REMOVE_MESSAGE_PROPERTIES remove_message_properties;
-	EXREQ_ALLOCATE_MESSAGE_ID allocate_message_id;
-	EXREQ_GET_MESSAGE_GROUP_ID get_message_group_id;
-	EXREQ_SET_MESSAGE_GROUP_ID set_message_group_id;
-	EXREQ_SAVE_CHANGE_INDICES save_change_indices;
-	EXREQ_GET_CHANGE_INDICES get_change_indices;
-	EXREQ_MARK_MODIFIED mark_modified;
-	EXREQ_TRY_MARK_SUBMIT try_mark_submit;
-	EXREQ_CLEAR_SUBMIT clear_submit;
-	EXREQ_LINK_MESSAGE link_message;
-	EXREQ_UNLINK_MESSAGE unlink_message;
-	EXREQ_RULE_NEW_MESSAGE rule_new_message;
-	EXREQ_SET_MESSAGE_TIMER set_message_timer;
-	EXREQ_GET_MESSAGE_TIMER get_message_timer;
-	EXREQ_EMPTY_FOLDER_PERMISSION empty_folder_permission;
-	EXREQ_UPDATE_FOLDER_PERMISSION update_folder_permission;
-	EXREQ_EMPTY_FOLDER_RULE empty_folder_rule;
-	EXREQ_UPDATE_FOLDER_RULE update_folder_rule;
-	EXREQ_DELIVERY_MESSAGE delivery_message;
-	EXREQ_WRITE_MESSAGE write_message;
-	EXREQ_READ_MESSAGE read_message;
-	EXREQ_GET_CONTENT_SYNC get_content_sync;
-	EXREQ_GET_HIERARCHY_SYNC get_hierarchy_sync;
-	EXREQ_ALLOCATE_IDS allocate_ids;
-	EXREQ_SUBSCRIBE_NOTIFICATION subscribe_notification;
-	EXREQ_UNSUBSCRIBE_NOTIFICATION unsubscribe_notification;
-	EXREQ_CHECK_CONTACT_ADDRESS check_contact_address;
-	EXREQ_TRANSPORT_NEW_MAIL transport_new_mail;
-	EXREQ_GET_PUBLIC_FOLDER_UNREAD_COUNT get_public_folder_unread_count;
+	exreq_connect connect;
+	exreq_get_named_propids get_named_propids;
+	exreq_get_named_propnames get_named_propnames;
+	exreq_get_mapping_guid get_mapping_guid;
+	exreq_get_mapping_replid get_mapping_replid;
+	exreq_listen_notification	listen_notification;
+	exreq_get_store_properties get_store_properties;
+	exreq_set_store_properties set_store_properties;
+	exreq_remove_store_properties remove_store_properties;
+	exreq_check_mailbox_permission check_mailbox_permission;
+	exreq_get_folder_by_class get_folder_by_class;
+	exreq_set_folder_by_class set_folder_by_class;
+	exreq_check_folder_id check_folder_id;
+	exreq_query_folder_messages query_folder_messages;
+	exreq_check_folder_deleted check_folder_deleted;
+	exreq_get_folder_by_name get_folder_by_name;
+	exreq_check_folder_permission check_folder_permission;
+	exreq_create_folder_by_properties create_folder_by_properties;
+	exreq_get_folder_all_proptags get_folder_all_proptags;
+	exreq_get_folder_properties get_folder_properties;
+	exreq_set_folder_properties set_folder_properties;
+	exreq_remove_folder_properties remove_folder_properties;
+	exreq_delete_folder delete_folder;
+	exreq_empty_folder empty_folder;
+	exreq_check_folder_cycle check_folder_cycle;
+	exreq_copy_folder_internal copy_folder_internal;
+	exreq_get_search_criteria get_search_criteria;
+	exreq_set_search_criteria set_search_criteria;
+	exreq_movecopy_message movecopy_message;
+	exreq_movecopy_messages movecopy_messages;
+	exreq_movecopy_folder movecopy_folder;
+	exreq_delete_messages delete_messages;
+	exreq_get_message_brief get_message_brief;
+	exreq_sum_hierarchy sum_hierarchy;
+	exreq_load_hierarchy_table load_hierarchy_table;
+	exreq_sum_content sum_content;
+	exreq_load_content_table load_content_table;
+	exreq_reload_content_table reload_content_table;
+	exreq_load_permission_table load_permission_table;
+	exreq_load_rule_table load_rule_table;
+	exreq_unload_table unload_table;
+	exreq_sum_table sum_table;
+	exreq_query_table query_table;
+	exreq_match_table match_table;
+	exreq_locate_table locate_table;
+	exreq_read_table_row read_table_row;
+	exreq_mark_table mark_table;
+	exreq_get_table_all_proptags get_table_all_proptags;
+	exreq_expand_table expand_table;
+	exreq_collapse_table collapse_table;
+	exreq_store_table_state store_table_state;
+	exreq_restore_table_state restore_table_state;
+	exreq_check_message check_message;
+	exreq_check_message_deleted check_message_deleted;
+	exreq_load_message_instance load_message_instance;
+	exreq_load_embedded_instance load_embedded_instance;
+	exreq_get_embedded_cn get_embedded_cn;
+	exreq_reload_message_instance reload_message_instance;
+	exreq_clear_message_instance clear_message_instance;
+	exreq_read_message_instance read_message_instance;
+	exreq_write_message_instance write_message_instance;
+	exreq_load_attachment_instance load_attachment_instance;
+	exreq_create_attachment_instance create_attachment_instance;
+	exreq_read_attachment_instance read_attachment_instance;
+	exreq_write_attachment_instance write_attachment_instance;
+	exreq_delete_message_instance_attachment delete_message_instance_attachment;
+	exreq_flush_instance flush_instance;
+	exreq_unload_instance unload_instance;
+	exreq_get_instance_all_proptags get_instance_all_proptags;
+	exreq_get_instance_properties get_instance_properties;
+	exreq_set_instance_properties set_instance_properties;
+	exreq_remove_instance_properties remove_instance_properties;
+	exreq_check_instance_cycle check_instance_cycle;
+	exreq_empty_message_instance_rcpts empty_message_instance_rcpts;
+	exreq_get_message_instance_rcpts_num get_message_instance_rcpts_num;
+	exreq_get_message_instance_rcpts_all_proptags get_message_instance_rcpts_all_proptags;
+	exreq_get_message_instance_rcpts get_message_instance_rcpts;
+	exreq_update_message_instance_rcpts update_message_instance_rcpts;
+	exreq_copy_instance_rcpts copy_instance_rcpts;
+	exreq_empty_message_instance_attachments empty_message_instance_attachments;
+	exreq_get_message_instance_attachments_num get_message_instance_attachments_num;
+	exreq_get_message_instance_attachment_table_all_proptags get_message_instance_attachment_table_all_proptags;
+	exreq_query_message_instance_attachment_table query_message_instance_attachment_table;
+	exreq_copy_instance_attachments copy_instance_attachments;
+	exreq_set_message_instance_conflict set_message_instance_conflict;
+	exreq_get_message_rcpts get_message_rcpts;
+	exreq_get_message_properties get_message_properties;
+	exreq_set_message_properties set_message_properties;
+	exreq_set_message_read_state set_message_read_state;
+	exreq_remove_message_properties remove_message_properties;
+	exreq_allocate_message_id allocate_message_id;
+	exreq_get_message_group_id get_message_group_id;
+	exreq_set_message_group_id set_message_group_id;
+	exreq_save_change_indices save_change_indices;
+	exreq_get_change_indices get_change_indices;
+	exreq_mark_modified mark_modified;
+	exreq_try_mark_submit try_mark_submit;
+	exreq_clear_submit clear_submit;
+	exreq_link_message link_message;
+	exreq_unlink_message unlink_message;
+	exreq_rule_new_message rule_new_message;
+	exreq_set_message_timer set_message_timer;
+	exreq_get_message_timer get_message_timer;
+	exreq_empty_folder_permission empty_folder_permission;
+	exreq_update_folder_permission update_folder_permission;
+	exreq_empty_folder_rule empty_folder_rule;
+	exreq_update_folder_rule update_folder_rule;
+	exreq_delivery_message delivery_message;
+	exreq_write_message write_message;
+	exreq_read_message read_message;
+	exreq_get_content_sync get_content_sync;
+	exreq_get_hierarchy_sync get_hierarchy_sync;
+	exreq_allocate_ids allocate_ids;
+	exreq_subscribe_notification subscribe_notification;
+	exreq_unsubscribe_notification unsubscribe_notification;
+	exreq_check_contact_address check_contact_address;
+	exreq_transport_new_mail transport_new_mail;
+	exreq_get_public_folder_unread_count get_public_folder_unread_count;
 };
 
 struct EXMDB_REQUEST {
@@ -932,373 +932,373 @@ struct EXMDB_REQUEST {
 	EXMDB_REQUEST_PAYLOAD payload;
 };
 
-struct EXRESP_GET_ALL_NAMED_PROPIDS {
+struct exresp_get_all_named_propids {
 	PROPID_ARRAY propids;
 };
 
-struct EXRESP_GET_NAMED_PROPIDS {
+struct exresp_get_named_propids {
 	PROPID_ARRAY propids;
 };
 
-struct EXRESP_GET_NAMED_PROPNAMES {
+struct exresp_get_named_propnames {
 	PROPNAME_ARRAY propnames;
 };
 
-struct EXRESP_GET_MAPPING_GUID {
+struct exresp_get_mapping_guid {
 	BOOL b_found;
 	GUID guid;
 };
 
-struct EXRESP_GET_MAPPING_REPLID {
+struct exresp_get_mapping_replid {
 	BOOL b_found;
 	uint16_t replid;
 };
 
-struct EXRESP_GET_STORE_ALL_PROPTAGS {
+struct exresp_get_store_all_proptags {
 	PROPTAG_ARRAY proptags;
 };
 
-struct EXRESP_GET_STORE_PROPERTIES {
+struct exresp_get_store_properties {
 	TPROPVAL_ARRAY propvals;
 };
 
-struct EXRESP_SET_STORE_PROPERTIES {
+struct exresp_set_store_properties {
 	PROBLEM_ARRAY problems;
 };
 
-struct EXRESP_CHECK_MAILBOX_PERMISSION {
+struct exresp_check_mailbox_permission {
 	uint32_t permission;
 };
 
-struct EXRESP_GET_FOLDER_BY_CLASS {
+struct exresp_get_folder_by_class {
 	uint64_t id;
 	char *str_explicit;
 };
 
-struct EXRESP_SET_FOLDER_BY_CLASS {
+struct exresp_set_folder_by_class {
 	BOOL b_result;
 };
 
-struct EXRESP_GET_FOLDER_CLASS_TABLE {
+struct exresp_get_folder_class_table {
 	TARRAY_SET table;
 };
 
-struct EXRESP_CHECK_FOLDER_ID {
+struct exresp_check_folder_id {
 	BOOL b_exist;
 };
 
-struct EXRESP_QUERY_FOLDER_MESSAGES {
+struct exresp_query_folder_messages {
 	TARRAY_SET set;
 };
 
-struct EXRESP_CHECK_FOLDER_DELETED {
+struct exresp_check_folder_deleted {
 	BOOL b_del;
 };
 
-struct EXRESP_GET_FOLDER_BY_NAME {
+struct exresp_get_folder_by_name {
 	uint64_t folder_id;
 };
 
-struct EXRESP_CHECK_FOLDER_PERMISSION {
+struct exresp_check_folder_permission {
 	uint32_t permission;
 };
 
-struct EXRESP_CREATE_FOLDER_BY_PROPERTIES {
+struct exresp_create_folder_by_properties {
 	uint64_t folder_id;
 };
 
-struct EXRESP_GET_FOLDER_ALL_PROPTAGS {
+struct exresp_get_folder_all_proptags {
 	PROPTAG_ARRAY proptags;
 };
 
-struct EXRESP_GET_FOLDER_PROPERTIES {
+struct exresp_get_folder_properties {
 	TPROPVAL_ARRAY propvals;
 };
 
-struct EXRESP_SET_FOLDER_PROPERTIES {
+struct exresp_set_folder_properties {
 	PROBLEM_ARRAY problems;
 };
 
-struct EXRESP_DELETE_FOLDER {
+struct exresp_delete_folder {
 	BOOL b_result;
 };
 
-struct EXRESP_EMPTY_FOLDER {
+struct exresp_empty_folder {
 	BOOL b_partial;
 };
 
-struct EXRESP_CHECK_FOLDER_CYCLE {
+struct exresp_check_folder_cycle {
 	BOOL b_cycle;
 };
 
-struct EXRESP_COPY_FOLDER_INTERNAL {
+struct exresp_copy_folder_internal {
 	BOOL b_collid;
 	BOOL b_partial;
 };
 
-struct EXRESP_GET_SEARCH_CRITERIA {
+struct exresp_get_search_criteria {
 	uint32_t search_status;
 	RESTRICTION *prestriction;
 	LONGLONG_ARRAY folder_ids;
 };
 
-struct EXRESP_SET_SEARCH_CRITERIA {
+struct exresp_set_search_criteria {
 	BOOL b_result;
 };
 
-struct EXRESP_MOVECOPY_MESSAGE {
+struct exresp_movecopy_message {
 	BOOL b_result;
 };
 
-struct EXRESP_MOVECOPY_MESSAGES {
+struct exresp_movecopy_messages {
 	BOOL b_partial;
 };
 
-struct EXRESP_MOVECOPY_FOLDER {
+struct exresp_movecopy_folder {
 	BOOL b_exist;
 	BOOL b_partial;
 };
 
-struct EXRESP_DELETE_MESSAGES {
+struct exresp_delete_messages {
 	BOOL b_partial;
 };
 
-struct EXRESP_GET_MESSAGE_BRIEF {
+struct exresp_get_message_brief {
 	MESSAGE_CONTENT *pbrief;
 };
 
-struct EXRESP_SUM_HIERARCHY {
+struct exresp_sum_hierarchy {
 	uint32_t count;
 };
 
-struct EXRESP_LOAD_HIERARCHY_TABLE {
+struct exresp_load_hierarchy_table {
 	uint32_t table_id;
 	uint32_t row_count;
 };
 
-struct EXRESP_SUM_CONTENT {
+struct exresp_sum_content {
 	uint32_t count;
 };
 
-struct EXRESP_LOAD_CONTENT_TABLE {
+struct exresp_load_content_table {
 	uint32_t table_id;
 	uint32_t row_count;
 };
 
-struct EXRESP_LOAD_PERMISSION_TABLE {
+struct exresp_load_permission_table {
 	uint32_t table_id;
 	uint32_t row_count;
 };
 
-struct EXRESP_LOAD_RULE_TABLE {
+struct exresp_load_rule_table {
 	uint32_t table_id;
 	uint32_t row_count;
 };
 
-struct EXRESP_SUM_TABLE {
+struct exresp_sum_table {
 	uint32_t rows;
 };
 
-struct EXRESP_QUERY_TABLE {
+struct exresp_query_table {
 	TARRAY_SET set;
 };
 
-struct EXRESP_MATCH_TABLE {
+struct exresp_match_table {
 	int32_t position;
 	TPROPVAL_ARRAY propvals;
 };
 
-struct EXRESP_LOCATE_TABLE {
+struct exresp_locate_table {
 	int32_t position;
 	uint32_t row_type;
 };
 
-struct EXRESP_READ_TABLE_ROW {
+struct exresp_read_table_row {
 	TPROPVAL_ARRAY propvals;
 };
 
-struct EXRESP_MARK_TABLE {
+struct exresp_mark_table {
 	uint64_t inst_id;
 	uint32_t inst_num;
 	uint32_t row_type;
 };
 
-struct EXRESP_GET_TABLE_ALL_PROPTAGS {
+struct exresp_get_table_all_proptags {
 	PROPTAG_ARRAY proptags;
 };
 
-struct EXRESP_EXPAND_TABLE {
+struct exresp_expand_table {
 	BOOL b_found;
 	int32_t position;
 	uint32_t row_count;
 };
 
-struct EXRESP_COLLAPSE_TABLE {
+struct exresp_collapse_table {
 	BOOL b_found;
 	int32_t position;
 	uint32_t row_count;
 };
 
-struct EXRESP_STORE_TABLE_STATE {
+struct exresp_store_table_state {
 	uint32_t state_id;
 };
 
-struct EXRESP_RESTORE_TABLE_STATE {
+struct exresp_restore_table_state {
 	int32_t position;
 };
 
-struct EXRESP_CHECK_MESSAGE {
+struct exresp_check_message {
 	BOOL b_exist;
 };
 
-struct EXRESP_CHECK_MESSAGE_DELETED {
+struct exresp_check_message_deleted {
 	BOOL b_del;
 };
 
-struct EXRESP_LOAD_MESSAGE_INSTANCE {
+struct exresp_load_message_instance {
 	uint32_t instance_id;
 };
 
-struct EXRESP_LOAD_EMBEDDED_INSTANCE {
+struct exresp_load_embedded_instance {
 	uint32_t instance_id;
 };
 
-struct EXRESP_GET_EMBEDDED_CN {
+struct exresp_get_embedded_cn {
 	uint64_t *pcn;
 };
 
-struct EXRESP_RELOAD_MESSAGE_INSTANCE {
+struct exresp_reload_message_instance {
 	BOOL b_result;
 };
 
-struct EXRESP_READ_MESSAGE_INSTANCE {
+struct exresp_read_message_instance {
 	MESSAGE_CONTENT msgctnt;
 };
 
-struct EXRESP_WRITE_MESSAGE_INSTANCE {
+struct exresp_write_message_instance {
 	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY problems;
 };
 
-struct EXRESP_LOAD_ATTACHMENT_INSTANCE {
+struct exresp_load_attachment_instance {
 	uint32_t instance_id;
 };
 
-struct EXRESP_CREATE_ATTACHMENT_INSTANCE {
+struct exresp_create_attachment_instance {
 	uint32_t instance_id;
 	uint32_t attachment_num;
 };
 
-struct EXRESP_READ_ATTACHMENT_INSTANCE {
+struct exresp_read_attachment_instance {
 	ATTACHMENT_CONTENT attctnt;
 };
 
-struct EXRESP_WRITE_ATTACHMENT_INSTANCE {
+struct exresp_write_attachment_instance {
 	PROBLEM_ARRAY problems;
 };
 
-struct EXRESP_FLUSH_INSTANCE {
+struct exresp_flush_instance {
 	gxerr_t e_result;
 };
 
-struct EXRESP_GET_INSTANCE_ALL_PROPTAGS {
+struct exresp_get_instance_all_proptags {
 	PROPTAG_ARRAY proptags;
 };
 
-struct EXRESP_GET_INSTANCE_PROPERTIES {
+struct exresp_get_instance_properties {
 	TPROPVAL_ARRAY propvals;
 };
 
-struct EXRESP_SET_INSTANCE_PROPERTIES {
+struct exresp_set_instance_properties {
 	PROBLEM_ARRAY problems;
 };
 
-struct EXRESP_REMOVE_INSTANCE_PROPERTIES {
+struct exresp_remove_instance_properties {
 	PROBLEM_ARRAY problems;
 };
 
-struct EXRESP_CHECK_INSTANCE_CYCLE {
+struct exresp_check_instance_cycle {
 	BOOL b_cycle;
 };
 
-struct EXRESP_GET_MESSAGE_INSTANCE_RCPTS_NUM {
+struct exresp_get_message_instance_rcpts_num {
 	uint16_t num;
 };
 
-struct EXRESP_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS {
+struct exresp_get_message_instance_rcpts_all_proptags {
 	PROPTAG_ARRAY proptags;
 };
 
-struct EXRESP_GET_MESSAGE_INSTANCE_RCPTS {
+struct exresp_get_message_instance_rcpts {
 	TARRAY_SET set;
 };
 
-struct EXRESP_COPY_INSTANCE_RCPTS {
+struct exresp_copy_instance_rcpts {
 	BOOL b_result;
 };
 
-struct EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM {
+struct exresp_get_message_instance_attachments_num {
 	uint16_t num;
 };
 
-struct EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS {
+struct exresp_get_message_instance_attachment_table_all_proptags {
 	PROPTAG_ARRAY proptags;
 };
 
-struct EXRESP_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE {
+struct exresp_query_message_instance_attachment_table {
 	TARRAY_SET set;
 };
 
-struct EXRESP_COPY_INSTANCE_ATTACHMENTS {
+struct exresp_copy_instance_attachments {
 	BOOL b_result;
 };
 
-struct EXRESP_GET_MESSAGE_RCPTS {
+struct exresp_get_message_rcpts {
 	TARRAY_SET set;
 };
 
-struct EXRESP_GET_MESSAGE_PROPERTIES {
+struct exresp_get_message_properties {
 	TPROPVAL_ARRAY propvals;
 };
 
-struct EXRESP_SET_MESSAGE_PROPERTIES {
+struct exresp_set_message_properties {
 	PROBLEM_ARRAY problems;
 };
 
-struct EXRESP_SET_MESSAGE_READ_STATE {
+struct exresp_set_message_read_state {
 	uint64_t read_cn;
 };
 
-struct EXRESP_ALLOCATE_MESSAGE_ID {
+struct exresp_allocate_message_id {
 	uint64_t message_id;
 };
 
-struct EXRESP_ALLOCATE_CN {
+struct exresp_allocate_cn {
 	uint64_t cn;
 };
 
-struct EXRESP_GET_MESSAGE_GROUP_ID {
+struct exresp_get_message_group_id {
 	uint32_t *pgroup_id;
 };
 
-struct EXRESP_GET_CHANGE_INDICES {
+struct exresp_get_change_indices {
 	INDEX_ARRAY indices;
 	PROPTAG_ARRAY ungroup_proptags;
 };
 
-struct EXRESP_TRY_MARK_SUBMIT {
+struct exresp_try_mark_submit {
 	BOOL b_marked;
 };
 
-struct EXRESP_LINK_MESSAGE {
+struct exresp_link_message {
 	BOOL b_result;
 };
 
-struct EXRESP_GET_MESSAGE_TIMER {
+struct exresp_get_message_timer {
 	uint32_t *ptimer_id;
 };
 
-struct EXRESP_UPDATE_FOLDER_RULE {
+struct exresp_update_folder_rule {
 	BOOL b_exceed;
 };
 
@@ -1308,19 +1308,19 @@ enum delivery_message_result {
 	result_error = 2,
 };
 
-struct EXRESP_DELIVERY_MESSAGE {
+struct exresp_delivery_message {
 	uint32_t result;
 };
 
-struct EXRESP_WRITE_MESSAGE {
+struct exresp_write_message {
 	gxerr_t e_result;
 };
 
-struct EXRESP_READ_MESSAGE {
+struct exresp_read_message {
 	MESSAGE_CONTENT *pmsgctnt;
 };
 
-struct EXRESP_GET_CONTENT_SYNC {
+struct exresp_get_content_sync {
 	uint32_t fai_count;
 	uint64_t fai_total;
 	uint32_t normal_count;
@@ -1336,126 +1336,126 @@ struct EXRESP_GET_CONTENT_SYNC {
 	uint64_t last_readcn;
 };
 
-struct EXRESP_GET_HIERARCHY_SYNC {
+struct exresp_get_hierarchy_sync {
 	FOLDER_CHANGES fldchgs;
 	uint64_t last_cn;
 	EID_ARRAY given_fids;
 	EID_ARRAY deleted_fids;
 };
 
-struct EXRESP_ALLOCATE_IDS {
+struct exresp_allocate_ids {
 	uint64_t begin_eid;
 };
 
-struct EXRESP_SUBSCRIBE_NOTIFICATION {
+struct exresp_subscribe_notification {
 	uint32_t sub_id;
 };
 
-struct EXRESP_CHECK_CONTACT_ADDRESS {
+struct exresp_check_contact_address {
 	BOOL b_found;
 };
 
-struct EXRESP_GET_PUBLIC_FOLDER_UNREAD_COUNT {
+struct exresp_get_public_folder_unread_count {
 	uint32_t count;
 };
 
 union EXMDB_RESPONSE_PAYLOAD {
-	EXRESP_GET_ALL_NAMED_PROPIDS get_all_named_propids;
-	EXRESP_GET_NAMED_PROPIDS get_named_propids;
-	EXRESP_GET_NAMED_PROPNAMES get_named_propnames;
-	EXRESP_GET_MAPPING_GUID get_mapping_guid;
-	EXRESP_GET_MAPPING_REPLID get_mapping_replid;
-	EXRESP_GET_STORE_ALL_PROPTAGS get_store_all_proptags;
-	EXRESP_GET_STORE_PROPERTIES get_store_properties;
-	EXRESP_SET_STORE_PROPERTIES set_store_properties;
-	EXRESP_CHECK_MAILBOX_PERMISSION check_mailbox_permission;
-	EXRESP_GET_FOLDER_BY_CLASS get_folder_by_class;
-	EXRESP_SET_FOLDER_BY_CLASS set_folder_by_class;
-	EXRESP_GET_FOLDER_CLASS_TABLE get_folder_class_table;
-	EXRESP_CHECK_FOLDER_ID check_folder_id;
-	EXRESP_QUERY_FOLDER_MESSAGES query_folder_messages;
-	EXRESP_CHECK_FOLDER_DELETED check_folder_deleted;
-	EXRESP_GET_FOLDER_BY_NAME get_folder_by_name;
-	EXRESP_CHECK_FOLDER_PERMISSION check_folder_permission;
-	EXRESP_CREATE_FOLDER_BY_PROPERTIES create_folder_by_properties;
-	EXRESP_GET_FOLDER_ALL_PROPTAGS get_folder_all_proptags;
-	EXRESP_GET_FOLDER_PROPERTIES get_folder_properties;
-	EXRESP_SET_FOLDER_PROPERTIES set_folder_properties;
-	EXRESP_DELETE_FOLDER delete_folder;
-	EXRESP_EMPTY_FOLDER empty_folder;
-	EXRESP_CHECK_FOLDER_CYCLE check_folder_cycle;
-	EXRESP_COPY_FOLDER_INTERNAL copy_folder_internal;
-	EXRESP_GET_SEARCH_CRITERIA get_search_criteria;
-	EXRESP_SET_SEARCH_CRITERIA set_search_criteria;
-	EXRESP_MOVECOPY_MESSAGE movecopy_message;
-	EXRESP_MOVECOPY_MESSAGES movecopy_messages;
-	EXRESP_MOVECOPY_FOLDER movecopy_folder;
-	EXRESP_DELETE_MESSAGES delete_messages;
-	EXRESP_GET_MESSAGE_BRIEF get_message_brief;
-	EXRESP_SUM_HIERARCHY sum_hierarchy;
-	EXRESP_LOAD_HIERARCHY_TABLE load_hierarchy_table;
-	EXRESP_SUM_CONTENT sum_content;
-	EXRESP_LOAD_CONTENT_TABLE load_content_table;
-	EXRESP_LOAD_PERMISSION_TABLE load_permission_table;
-	EXRESP_LOAD_RULE_TABLE load_rule_table;
-	EXRESP_SUM_TABLE sum_table;
-	EXRESP_QUERY_TABLE query_table;
-	EXRESP_MATCH_TABLE match_table;
-	EXRESP_LOCATE_TABLE locate_table;
-	EXRESP_READ_TABLE_ROW read_table_row;
-	EXRESP_MARK_TABLE mark_table;
-	EXRESP_GET_TABLE_ALL_PROPTAGS get_table_all_proptags;
-	EXRESP_EXPAND_TABLE expand_table;
-	EXRESP_COLLAPSE_TABLE collapse_table;
-	EXRESP_STORE_TABLE_STATE store_table_state;
-	EXRESP_RESTORE_TABLE_STATE restore_table_state;
-	EXRESP_CHECK_MESSAGE check_message;
-	EXRESP_CHECK_MESSAGE_DELETED check_message_deleted;
-	EXRESP_LOAD_MESSAGE_INSTANCE load_message_instance;
-	EXRESP_LOAD_EMBEDDED_INSTANCE load_embedded_instance;
-	EXRESP_GET_EMBEDDED_CN get_embedded_cn;
-	EXRESP_RELOAD_MESSAGE_INSTANCE reload_message_instance;
-	EXRESP_READ_MESSAGE_INSTANCE read_message_instance;
-	EXRESP_WRITE_MESSAGE_INSTANCE write_message_instance;
-	EXRESP_LOAD_ATTACHMENT_INSTANCE load_attachment_instance;
-	EXRESP_CREATE_ATTACHMENT_INSTANCE create_attachment_instance;
-	EXRESP_READ_ATTACHMENT_INSTANCE read_attachment_instance;
-	EXRESP_WRITE_ATTACHMENT_INSTANCE write_attachment_instance;
-	EXRESP_FLUSH_INSTANCE flush_instance;
-	EXRESP_GET_INSTANCE_ALL_PROPTAGS get_instance_all_proptags;
-	EXRESP_GET_INSTANCE_PROPERTIES get_instance_properties;
-	EXRESP_SET_INSTANCE_PROPERTIES set_instance_properties;
-	EXRESP_REMOVE_INSTANCE_PROPERTIES remove_instance_properties;
-	EXRESP_CHECK_INSTANCE_CYCLE check_instance_cycle;
-	EXRESP_GET_MESSAGE_INSTANCE_RCPTS_NUM get_message_instance_rcpts_num;
-	EXRESP_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS get_message_instance_rcpts_all_proptags;
-	EXRESP_GET_MESSAGE_INSTANCE_RCPTS get_message_instance_rcpts;
-	EXRESP_COPY_INSTANCE_RCPTS copy_instance_rcpts;
-	EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM get_message_instance_attachments_num;
-	EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS get_message_instance_attachment_table_all_proptags;
-	EXRESP_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE query_message_instance_attachment_table;
-	EXRESP_COPY_INSTANCE_ATTACHMENTS copy_instance_attachments;
-	EXRESP_GET_MESSAGE_RCPTS get_message_rcpts;
-	EXRESP_GET_MESSAGE_PROPERTIES get_message_properties;
-	EXRESP_SET_MESSAGE_PROPERTIES set_message_properties;
-	EXRESP_SET_MESSAGE_READ_STATE set_message_read_state;
-	EXRESP_ALLOCATE_MESSAGE_ID allocate_message_id;
-	EXRESP_ALLOCATE_CN allocate_cn;
-	EXRESP_GET_MESSAGE_GROUP_ID get_message_group_id;
-	EXRESP_GET_CHANGE_INDICES get_change_indices;
-	EXRESP_TRY_MARK_SUBMIT try_mark_submit;
-	EXRESP_LINK_MESSAGE link_message;
-	EXRESP_GET_MESSAGE_TIMER get_message_timer;
-	EXRESP_UPDATE_FOLDER_RULE update_folder_rule;
-	EXRESP_DELIVERY_MESSAGE delivery_message;
-	EXRESP_WRITE_MESSAGE write_message;
-	EXRESP_READ_MESSAGE read_message;
-	EXRESP_GET_CONTENT_SYNC get_content_sync;
-	EXRESP_GET_HIERARCHY_SYNC get_hierarchy_sync;
-	EXRESP_ALLOCATE_IDS allocate_ids;
-	EXRESP_SUBSCRIBE_NOTIFICATION subscribe_notification;
-	EXRESP_CHECK_CONTACT_ADDRESS check_contact_address;
-	EXRESP_GET_PUBLIC_FOLDER_UNREAD_COUNT get_public_folder_unread_count;
+	exresp_get_all_named_propids get_all_named_propids;
+	exresp_get_named_propids get_named_propids;
+	exresp_get_named_propnames get_named_propnames;
+	exresp_get_mapping_guid get_mapping_guid;
+	exresp_get_mapping_replid get_mapping_replid;
+	exresp_get_store_all_proptags get_store_all_proptags;
+	exresp_get_store_properties get_store_properties;
+	exresp_set_store_properties set_store_properties;
+	exresp_check_mailbox_permission check_mailbox_permission;
+	exresp_get_folder_by_class get_folder_by_class;
+	exresp_set_folder_by_class set_folder_by_class;
+	exresp_get_folder_class_table get_folder_class_table;
+	exresp_check_folder_id check_folder_id;
+	exresp_query_folder_messages query_folder_messages;
+	exresp_check_folder_deleted check_folder_deleted;
+	exresp_get_folder_by_name get_folder_by_name;
+	exresp_check_folder_permission check_folder_permission;
+	exresp_create_folder_by_properties create_folder_by_properties;
+	exresp_get_folder_all_proptags get_folder_all_proptags;
+	exresp_get_folder_properties get_folder_properties;
+	exresp_set_folder_properties set_folder_properties;
+	exresp_delete_folder delete_folder;
+	exresp_empty_folder empty_folder;
+	exresp_check_folder_cycle check_folder_cycle;
+	exresp_copy_folder_internal copy_folder_internal;
+	exresp_get_search_criteria get_search_criteria;
+	exresp_set_search_criteria set_search_criteria;
+	exresp_movecopy_message movecopy_message;
+	exresp_movecopy_messages movecopy_messages;
+	exresp_movecopy_folder movecopy_folder;
+	exresp_delete_messages delete_messages;
+	exresp_get_message_brief get_message_brief;
+	exresp_sum_hierarchy sum_hierarchy;
+	exresp_load_hierarchy_table load_hierarchy_table;
+	exresp_sum_content sum_content;
+	exresp_load_content_table load_content_table;
+	exresp_load_permission_table load_permission_table;
+	exresp_load_rule_table load_rule_table;
+	exresp_sum_table sum_table;
+	exresp_query_table query_table;
+	exresp_match_table match_table;
+	exresp_locate_table locate_table;
+	exresp_read_table_row read_table_row;
+	exresp_mark_table mark_table;
+	exresp_get_table_all_proptags get_table_all_proptags;
+	exresp_expand_table expand_table;
+	exresp_collapse_table collapse_table;
+	exresp_store_table_state store_table_state;
+	exresp_restore_table_state restore_table_state;
+	exresp_check_message check_message;
+	exresp_check_message_deleted check_message_deleted;
+	exresp_load_message_instance load_message_instance;
+	exresp_load_embedded_instance load_embedded_instance;
+	exresp_get_embedded_cn get_embedded_cn;
+	exresp_reload_message_instance reload_message_instance;
+	exresp_read_message_instance read_message_instance;
+	exresp_write_message_instance write_message_instance;
+	exresp_load_attachment_instance load_attachment_instance;
+	exresp_create_attachment_instance create_attachment_instance;
+	exresp_read_attachment_instance read_attachment_instance;
+	exresp_write_attachment_instance write_attachment_instance;
+	exresp_flush_instance flush_instance;
+	exresp_get_instance_all_proptags get_instance_all_proptags;
+	exresp_get_instance_properties get_instance_properties;
+	exresp_set_instance_properties set_instance_properties;
+	exresp_remove_instance_properties remove_instance_properties;
+	exresp_check_instance_cycle check_instance_cycle;
+	exresp_get_message_instance_rcpts_num get_message_instance_rcpts_num;
+	exresp_get_message_instance_rcpts_all_proptags get_message_instance_rcpts_all_proptags;
+	exresp_get_message_instance_rcpts get_message_instance_rcpts;
+	exresp_copy_instance_rcpts copy_instance_rcpts;
+	exresp_get_message_instance_attachments_num get_message_instance_attachments_num;
+	exresp_get_message_instance_attachment_table_all_proptags get_message_instance_attachment_table_all_proptags;
+	exresp_query_message_instance_attachment_table query_message_instance_attachment_table;
+	exresp_copy_instance_attachments copy_instance_attachments;
+	exresp_get_message_rcpts get_message_rcpts;
+	exresp_get_message_properties get_message_properties;
+	exresp_set_message_properties set_message_properties;
+	exresp_set_message_read_state set_message_read_state;
+	exresp_allocate_message_id allocate_message_id;
+	exresp_allocate_cn allocate_cn;
+	exresp_get_message_group_id get_message_group_id;
+	exresp_get_change_indices get_change_indices;
+	exresp_try_mark_submit try_mark_submit;
+	exresp_link_message link_message;
+	exresp_get_message_timer get_message_timer;
+	exresp_update_folder_rule update_folder_rule;
+	exresp_delivery_message delivery_message;
+	exresp_write_message write_message;
+	exresp_read_message read_message;
+	exresp_get_content_sync get_content_sync;
+	exresp_get_hierarchy_sync get_hierarchy_sync;
+	exresp_allocate_ids allocate_ids;
+	exresp_subscribe_notification subscribe_notification;
+	exresp_check_contact_address check_contact_address;
+	exresp_get_public_folder_unread_count get_public_folder_unread_count;
 };
 
 struct EXMDB_RESPONSE {

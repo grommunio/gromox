@@ -33,31 +33,31 @@ template<typename T> T *cu_alloc(size_t elem)
 	return static_cast<T *>(exmdb_rpc_alloc(sizeof(T) * elem));
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CONNECT &d)
+static int exmdb_pull(EXT_PULL &x, exreq_connect &d)
 {
 	TRY(x.g_str(&d.prefix));
 	TRY(x.g_str(&d.remote_id));
 	return x.g_bool(&d.b_private);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CONNECT &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_connect &d)
 {
 	TRY(x.p_str(d.prefix));
 	TRY(x.p_str(d.remote_id));
 	return x.p_bool(d.b_private);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_LISTEN_NOTIFICATION &d)
+static int exmdb_pull(EXT_PULL &x, exreq_listen_notification &d)
 {
 	return x.g_str(&d.remote_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_LISTEN_NOTIFICATION &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_listen_notification &d)
 {
 	return x.p_str(d.remote_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_NAMED_PROPIDS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_named_propids &d)
 {
 	TRY(x.g_bool(&d.b_create));
 	d.ppropnames = cu_alloc<PROPNAME_ARRAY>();
@@ -66,13 +66,13 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_GET_NAMED_PROPIDS &d)
 	return x.g_propname_a(d.ppropnames);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_NAMED_PROPIDS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_named_propids &d)
 {
 	TRY(x.p_bool(d.b_create));
 	return x.p_propname_a(*d.ppropnames);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_NAMED_PROPNAMES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_named_propnames &d)
 {
 	d.ppropids = cu_alloc<PROPID_ARRAY>();
 	if (d.ppropids == nullptr)
@@ -80,32 +80,32 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_GET_NAMED_PROPNAMES &d)
 	return x.g_propid_a(d.ppropids);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_NAMED_PROPNAMES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_named_propnames &d)
 {
 	return x.p_propid_a(*d.ppropids);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MAPPING_GUID &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_mapping_guid &d)
 {
 	return x.g_uint16(&d.replid);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MAPPING_GUID &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_mapping_guid &d)
 {
 	return x.p_uint16(d.replid);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MAPPING_REPLID &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_mapping_replid &d)
 {
 	return x.g_guid(&d.guid);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MAPPING_REPLID &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_mapping_replid &d)
 {
 	return x.p_guid(d.guid);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_STORE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_store_properties &d)
 {
 	TRY(x.g_uint32(&d.cpid));
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
@@ -114,13 +114,13 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_GET_STORE_PROPERTIES &d)
 	return x.g_proptag_a(d.pproptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_STORE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_store_properties &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SET_STORE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_set_store_properties &d)
 {
 	TRY(x.g_uint32(&d.cpid));
 	d.ppropvals = cu_alloc<TPROPVAL_ARRAY>();
@@ -129,13 +129,13 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_SET_STORE_PROPERTIES &d)
 	return x.g_tpropval_a(d.ppropvals);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_STORE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_set_store_properties &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	return x.p_tpropval_a(*d.ppropvals);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_REMOVE_STORE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_remove_store_properties &d)
 {
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
 	if (d.pproptags == nullptr)
@@ -143,98 +143,98 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_REMOVE_STORE_PROPERTIES &d)
 	return x.g_proptag_a(d.pproptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_REMOVE_STORE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_remove_store_properties &d)
 {
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CHECK_MAILBOX_PERMISSION &d)
+static int exmdb_pull(EXT_PULL &x, exreq_check_mailbox_permission &d)
 {
 	return x.g_str(&d.username);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CHECK_MAILBOX_PERMISSION &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_check_mailbox_permission &d)
 {
 	return x.p_str(d.username);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_FOLDER_BY_CLASS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_folder_by_class &d)
 {
 	return x.g_str(&d.str_class);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_FOLDER_BY_CLASS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_folder_by_class &d)
 {
 	return x.p_str(d.str_class);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SET_FOLDER_BY_CLASS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_set_folder_by_class &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_str(&d.str_class);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_FOLDER_BY_CLASS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_set_folder_by_class &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_str(d.str_class);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CHECK_FOLDER_ID &d)
+static int exmdb_pull(EXT_PULL &x, exreq_check_folder_id &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CHECK_FOLDER_ID &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_check_folder_id &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_QUERY_FOLDER_MESSAGES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_query_folder_messages &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_QUERY_FOLDER_MESSAGES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_query_folder_messages &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CHECK_FOLDER_DELETED &d)
+static int exmdb_pull(EXT_PULL &x, exreq_check_folder_deleted &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CHECK_FOLDER_DELETED &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_check_folder_deleted &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_FOLDER_BY_NAME &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_folder_by_name &d)
 {
 	TRY(x.g_uint64(&d.parent_id));
 	return x.g_str(&d.str_name);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_FOLDER_BY_NAME &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_folder_by_name &d)
 {
 	TRY(x.p_uint64(d.parent_id));
 	return x.p_str(d.str_name);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CHECK_FOLDER_PERMISSION &d)
+static int exmdb_pull(EXT_PULL &x, exreq_check_folder_permission &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_str(&d.username);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CHECK_FOLDER_PERMISSION &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_check_folder_permission &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_str(d.username);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CREATE_FOLDER_BY_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_create_folder_by_properties &d)
 {
 	TRY(x.g_uint32(&d.cpid));
 	d.pproperties = cu_alloc<TPROPVAL_ARRAY>();
@@ -243,23 +243,23 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_CREATE_FOLDER_BY_PROPERTIES &d)
 	return x.g_tpropval_a(d.pproperties);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CREATE_FOLDER_BY_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_create_folder_by_properties &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	return x.p_tpropval_a(*d.pproperties);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_FOLDER_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_folder_all_proptags &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_FOLDER_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_folder_all_proptags &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_FOLDER_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_folder_properties &d)
 {
 	TRY(x.g_uint32(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
@@ -269,14 +269,14 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_GET_FOLDER_PROPERTIES &d)
 	return x.g_proptag_a(d.pproptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_FOLDER_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_folder_properties &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SET_FOLDER_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_set_folder_properties &d)
 {
 	TRY(x.g_uint32(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
@@ -286,14 +286,14 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_SET_FOLDER_PROPERTIES &d)
 	return x.g_tpropval_a(d.pproperties);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_FOLDER_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_set_folder_properties &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_tpropval_a(*d.pproperties);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_REMOVE_FOLDER_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_remove_folder_properties &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
@@ -302,27 +302,27 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_REMOVE_FOLDER_PROPERTIES &d)
 	return x.g_proptag_a(d.pproptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_REMOVE_FOLDER_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_remove_folder_properties &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_DELETE_FOLDER &d)
+static int exmdb_pull(EXT_PULL &x, exreq_delete_folder &d)
 {
 	TRY(x.g_uint32(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_bool(&d.b_hard);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_DELETE_FOLDER &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_delete_folder &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_bool(d.b_hard);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_EMPTY_FOLDER &d)
+static int exmdb_pull(EXT_PULL &x, exreq_empty_folder &d)
 {
 	uint8_t tmp_byte;
 	
@@ -339,7 +339,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_EMPTY_FOLDER &d)
 	return x.g_bool(&d.b_sub);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_EMPTY_FOLDER &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_empty_folder &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	if (d.username == nullptr) {
@@ -355,19 +355,19 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_EMPTY_FOLDER &d)
 	return x.p_bool(d.b_sub);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CHECK_FOLDER_CYCLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_check_folder_cycle &d)
 {
 	TRY(x.g_uint64(&d.src_fid));
 	return x.g_uint64(&d.dst_fid);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CHECK_FOLDER_CYCLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_check_folder_cycle &d)
 {
 	TRY(x.p_uint64(d.src_fid));
 	return x.p_uint64(d.dst_fid);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_COPY_FOLDER_INTERNAL &d)
+static int exmdb_pull(EXT_PULL &x, exreq_copy_folder_internal &d)
 {
 	uint8_t tmp_byte;
 	
@@ -386,7 +386,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_COPY_FOLDER_INTERNAL &d)
 	return x.g_uint64(&d.dst_fid);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_COPY_FOLDER_INTERNAL &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_copy_folder_internal &d)
 {
 	TRY(x.p_uint32(d.account_id));
 	TRY(x.p_uint32(d.cpid));
@@ -404,17 +404,17 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_COPY_FOLDER_INTERNAL &d)
 	return x.p_uint64(d.dst_fid);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_SEARCH_CRITERIA &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_search_criteria &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_SEARCH_CRITERIA &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_search_criteria &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SET_SEARCH_CRITERIA &d)
+static int exmdb_pull(EXT_PULL &x, exreq_set_search_criteria &d)
 {
 	uint8_t tmp_byte;
 	
@@ -436,7 +436,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_SET_SEARCH_CRITERIA &d)
 	return x.g_uint64_a(d.pfolder_ids);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_SEARCH_CRITERIA &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_set_search_criteria &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
@@ -450,7 +450,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_SEARCH_CRITERIA &d)
 	return x.p_uint64_a(*d.pfolder_ids);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_MOVECOPY_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_movecopy_message &d)
 {
 	TRY(x.g_uint32(&d.account_id));
 	TRY(x.g_uint32(&d.cpid));
@@ -460,7 +460,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_MOVECOPY_MESSAGE &d)
 	return x.g_bool(&d.b_move);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_MOVECOPY_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_movecopy_message &d)
 {
 	TRY(x.p_uint32(d.account_id));
 	TRY(x.p_uint32(d.cpid));
@@ -470,7 +470,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_MOVECOPY_MESSAGE &d)
 	return x.p_bool(d.b_move);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_MOVECOPY_MESSAGES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_movecopy_messages &d)
 {
 	uint8_t tmp_byte;
 	
@@ -491,7 +491,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_MOVECOPY_MESSAGES &d)
 	return x.g_eid_a(d.pmessage_ids);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_MOVECOPY_MESSAGES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_movecopy_messages &d)
 {
 	TRY(x.p_uint32(d.account_id));
 	TRY(x.p_uint32(d.cpid));
@@ -508,7 +508,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_MOVECOPY_MESSAGES &d)
 	return x.p_eid_a(*d.pmessage_ids);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_MOVECOPY_FOLDER &d)
+static int exmdb_pull(EXT_PULL &x, exreq_movecopy_folder &d)
 {
 	uint8_t tmp_byte;
 	
@@ -527,7 +527,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_MOVECOPY_FOLDER &d)
 	return x.g_bool(&d.b_copy);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_MOVECOPY_FOLDER &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_movecopy_folder &d)
 {
 	TRY(x.p_uint32(d.account_id));
 	TRY(x.p_uint32(d.cpid));
@@ -545,7 +545,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_MOVECOPY_FOLDER &d)
 	return x.p_bool(d.b_copy);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_DELETE_MESSAGES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_delete_messages &d)
 {
 	uint8_t tmp_byte;
 	
@@ -564,7 +564,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_DELETE_MESSAGES &d)
 	return x.g_bool(&d.b_hard);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_DELETE_MESSAGES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_delete_messages &d)
 {
 	TRY(x.p_uint32(d.account_id));
 	TRY(x.p_uint32(d.cpid));
@@ -579,19 +579,19 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_DELETE_MESSAGES &d)
 	return x.p_bool(d.b_hard);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_BRIEF &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_message_brief &d)
 {
 	TRY(x.g_uint32(&d.cpid));
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_BRIEF &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_message_brief &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SUM_HIERARCHY &d)
+static int exmdb_pull(EXT_PULL &x, exreq_sum_hierarchy &d)
 {
 	uint8_t tmp_byte;
 	
@@ -604,7 +604,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_SUM_HIERARCHY &d)
 	return x.g_bool(&d.b_depth);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SUM_HIERARCHY &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_sum_hierarchy &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	if (d.username == nullptr) {
@@ -616,7 +616,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_SUM_HIERARCHY &d)
 	return x.p_bool(d.b_depth);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_HIERARCHY_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_load_hierarchy_table &d)
 {
 	uint8_t tmp_byte;
 	
@@ -639,7 +639,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_HIERARCHY_TABLE &d)
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_HIERARCHY_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_load_hierarchy_table &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	if (d.username == nullptr) {
@@ -655,21 +655,21 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_HIERARCHY_TABLE &d)
 	return x.p_restriction(*d.prestriction);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SUM_CONTENT &d)
+static int exmdb_pull(EXT_PULL &x, exreq_sum_content &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	TRY(x.g_bool(&d.b_fai));
 	return x.g_bool(&d.b_deleted);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SUM_CONTENT &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_sum_content &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	TRY(x.p_bool(d.b_fai));
 	return x.p_bool(d.b_deleted);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_CONTENT_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_load_content_table &d)
 {
 	uint8_t tmp_byte;
 	
@@ -701,7 +701,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_CONTENT_TABLE &d)
 	return x.g_sortorder_set(d.psorts);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_CONTENT_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_load_content_table &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
@@ -724,29 +724,29 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_CONTENT_TABLE &d)
 	return x.p_sortorder_set(*d.psorts);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_RELOAD_CONTENT_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_reload_content_table &d)
 {
 	return x.g_uint32(&d.table_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_RELOAD_CONTENT_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_reload_content_table &d)
 {
 	return x.p_uint32(d.table_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_PERMISSION_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_load_permission_table &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint8(&d.table_flags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_PERMISSION_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_load_permission_table &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_uint8(d.table_flags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_RULE_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_load_rule_table &d)
 {
 	uint8_t tmp_byte;
 	
@@ -763,7 +763,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_RULE_TABLE &d)
 	return x.g_restriction(d.prestriction);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_RULE_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_load_rule_table &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	TRY(x.p_uint8(d.table_flags));
@@ -773,27 +773,27 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_RULE_TABLE &d)
 	return x.p_restriction(*d.prestriction);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_UNLOAD_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_unload_table &d)
 {
 	return x.g_uint32(&d.table_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_UNLOAD_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_unload_table &d)
 {
 	return x.p_uint32(d.table_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SUM_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_sum_table &d)
 {
 	return x.g_uint32(&d.table_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SUM_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_sum_table &d)
 {
 	return x.p_uint32(d.table_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_QUERY_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_query_table &d)
 {
 	uint8_t tmp_byte;
 	
@@ -812,7 +812,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_QUERY_TABLE &d)
 	return x.g_int32(&d.row_needed);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_QUERY_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_query_table &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -827,7 +827,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_QUERY_TABLE &d)
 	return x.p_int32(d.row_needed);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_MATCH_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_match_table &d)
 {
 	uint8_t tmp_byte;
 	
@@ -850,7 +850,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_MATCH_TABLE &d)
 	return x.g_proptag_a(d.pproptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_MATCH_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_match_table &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -866,21 +866,21 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_MATCH_TABLE &d)
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_LOCATE_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_locate_table &d)
 {
 	TRY(x.g_uint32(&d.table_id));
 	TRY(x.g_uint64(&d.inst_id));
 	return x.g_uint32(&d.inst_num);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_LOCATE_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_locate_table &d)
 {
 	TRY(x.p_uint32(d.table_id));
 	TRY(x.p_uint64(d.inst_id));
 	return x.p_uint32(d.inst_num);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_READ_TABLE_ROW &d)
+static int exmdb_pull(EXT_PULL &x, exreq_read_table_row &d)
 {
 	uint8_t tmp_byte;
 	
@@ -899,7 +899,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_READ_TABLE_ROW &d)
 	return x.g_uint32(&d.inst_num);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_READ_TABLE_ROW &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_read_table_row &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -914,101 +914,101 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_READ_TABLE_ROW &d)
 	return x.p_uint32(d.inst_num);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_MARK_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_mark_table &d)
 {
 	TRY(x.g_uint32(&d.table_id));
 	return x.g_uint32(&d.position);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_MARK_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_mark_table &d)
 {
 	TRY(x.p_uint32(d.table_id));
 	return x.p_uint32(d.position);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_TABLE_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_table_all_proptags &d)
 {
 	return x.g_uint32(&d.table_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_TABLE_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_table_all_proptags &d)
 {
 	return x.p_uint32(d.table_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_EXPAND_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_expand_table &d)
 {
 	TRY(x.g_uint32(&d.table_id));
 	return x.g_uint64(&d.inst_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_EXPAND_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_expand_table &d)
 {
 	TRY(x.p_uint32(d.table_id));
 	return x.p_uint64(d.inst_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_COLLAPSE_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_collapse_table &d)
 {
 	TRY(x.g_uint32(&d.table_id));
 	return x.g_uint64(&d.inst_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_COLLAPSE_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_collapse_table &d)
 {
 	TRY(x.p_uint32(d.table_id));
 	return x.p_uint64(d.inst_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_STORE_TABLE_STATE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_store_table_state &d)
 {
 	TRY(x.g_uint32(&d.table_id));
 	TRY(x.g_uint64(&d.inst_id));
 	return x.g_uint32(&d.inst_num);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_STORE_TABLE_STATE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_store_table_state &d)
 {
 	TRY(x.p_uint32(d.table_id));
 	TRY(x.p_uint64(d.inst_id));
 	return x.p_uint32(d.inst_num);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_RESTORE_TABLE_STATE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_restore_table_state &d)
 {
 	TRY(x.g_uint32(&d.table_id));
 	return x.g_uint32(&d.state_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_RESTORE_TABLE_STATE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_restore_table_state &d)
 {
 	TRY(x.p_uint32(d.table_id));
 	return x.p_uint32(d.state_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CHECK_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_check_message &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CHECK_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_check_message &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CHECK_MESSAGE_DELETED &d)
+static int exmdb_pull(EXT_PULL &x, exreq_check_message_deleted &d)
 {
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CHECK_MESSAGE_DELETED &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_check_message_deleted &d)
 {
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_MESSAGE_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_load_message_instance &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1023,7 +1023,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_MESSAGE_INSTANCE &d)
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_MESSAGE_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_load_message_instance &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -1037,59 +1037,59 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_MESSAGE_INSTANCE &d)
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_EMBEDDED_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_load_embedded_instance &d)
 {
 	TRY(x.g_bool(&d.b_new));
 	return x.g_uint32(&d.attachment_instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_EMBEDDED_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_load_embedded_instance &d)
 {
 	TRY(x.p_bool(d.b_new));
 	return x.p_uint32(d.attachment_instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_EMBEDDED_CN &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_embedded_cn &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_EMBEDDED_CN &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_embedded_cn &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_RELOAD_MESSAGE_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_reload_message_instance &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_RELOAD_MESSAGE_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_reload_message_instance &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CLEAR_MESSAGE_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_clear_message_instance &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CLEAR_MESSAGE_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_clear_message_instance &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_READ_MESSAGE_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_read_message_instance &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_READ_MESSAGE_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_read_message_instance &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_WRITE_MESSAGE_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_write_message_instance &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
 	d.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
@@ -1099,46 +1099,46 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_WRITE_MESSAGE_INSTANCE &d)
 	return x.g_bool(&d.b_force);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_WRITE_MESSAGE_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_write_message_instance &d)
 {
 	TRY(x.p_uint32(d.instance_id));
 	TRY(x.p_msgctnt(*d.pmsgctnt));
 	return x.p_bool(d.b_force);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_LOAD_ATTACHMENT_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_load_attachment_instance &d)
 {
 	TRY(x.g_uint32(&d.message_instance_id));
 	return x.g_uint32(&d.attachment_num);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_LOAD_ATTACHMENT_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_load_attachment_instance &d)
 {
 	TRY(x.p_uint32(d.message_instance_id));
 	return x.p_uint32(d.attachment_num);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CREATE_ATTACHMENT_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_create_attachment_instance &d)
 {
 	return x.g_uint32(&d.message_instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CREATE_ATTACHMENT_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_create_attachment_instance &d)
 {
 	return x.p_uint32(d.message_instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_READ_ATTACHMENT_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_read_attachment_instance &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_READ_ATTACHMENT_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_read_attachment_instance &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_WRITE_ATTACHMENT_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_write_attachment_instance &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1159,7 +1159,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_WRITE_ATTACHMENT_INSTANCE &d)
 	return x.g_bool(&d.b_force);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_WRITE_ATTACHMENT_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_write_attachment_instance &d)
 {
 	TRY(x.p_uint32(d.instance_id));
 	TRY(x.p_tpropval_a(d.pattctnt->proplist));
@@ -1172,19 +1172,19 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_WRITE_ATTACHMENT_INSTANCE &d)
 	return x.p_bool(d.b_force);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_DELETE_MESSAGE_INSTANCE_ATTACHMENT &d)
+static int exmdb_pull(EXT_PULL &x, exreq_delete_message_instance_attachment &d)
 {
 	TRY(x.g_uint32(&d.message_instance_id));
 	return x.g_uint32(&d.attachment_num);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_DELETE_MESSAGE_INSTANCE_ATTACHMENT &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_delete_message_instance_attachment &d)
 {
 	TRY(x.p_uint32(d.message_instance_id));
 	return x.p_uint32(d.attachment_num);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_FLUSH_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_flush_instance &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1197,7 +1197,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_FLUSH_INSTANCE &d)
 	return x.g_str(&d.account);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_FLUSH_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_flush_instance &d)
 {
 	TRY(x.p_uint32(d.instance_id));
 	if (d.account == nullptr)
@@ -1206,27 +1206,27 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_FLUSH_INSTANCE &d)
 	return x.p_str(d.account);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_UNLOAD_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_unload_instance &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_UNLOAD_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_unload_instance &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_INSTANCE_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_instance_all_proptags &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_INSTANCE_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_instance_all_proptags &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_INSTANCE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_instance_properties &d)
 {
 	TRY(x.g_uint32(&d.size_limit));
 	TRY(x.g_uint32(&d.instance_id));
@@ -1236,14 +1236,14 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_GET_INSTANCE_PROPERTIES &d)
 	return x.g_proptag_a(d.pproptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_INSTANCE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_instance_properties &d)
 {
 	TRY(x.p_uint32(d.size_limit));
 	TRY(x.p_uint32(d.instance_id));
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SET_INSTANCE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_set_instance_properties &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
 	d.pproperties = cu_alloc<TPROPVAL_ARRAY>();
@@ -1252,13 +1252,13 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_SET_INSTANCE_PROPERTIES &d)
 	return x.g_tpropval_a(d.pproperties);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_INSTANCE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_set_instance_properties &d)
 {
 	TRY(x.p_uint32(d.instance_id));
 	return x.p_tpropval_a(*d.pproperties);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_REMOVE_INSTANCE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_remove_instance_properties &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
@@ -1267,69 +1267,69 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_REMOVE_INSTANCE_PROPERTIES &d)
 	return x.g_proptag_a(d.pproptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_REMOVE_INSTANCE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_remove_instance_properties &d)
 {
 	TRY(x.p_uint32(d.instance_id));
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CHECK_INSTANCE_CYCLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_check_instance_cycle &d)
 {
 	TRY(x.g_uint32(&d.src_instance_id));
 	return x.g_uint32(&d.dst_instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CHECK_INSTANCE_CYCLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_check_instance_cycle &d)
 {
 	TRY(x.p_uint32(d.src_instance_id));
 	return x.p_uint32(d.dst_instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_EMPTY_MESSAGE_INSTANCE_RCPTS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_empty_message_instance_rcpts &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_EMPTY_MESSAGE_INSTANCE_RCPTS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_empty_message_instance_rcpts &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_INSTANCE_RCPTS_NUM &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_message_instance_rcpts_num &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_INSTANCE_RCPTS_NUM &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_message_instance_rcpts_num &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_message_instance_rcpts_all_proptags &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_message_instance_rcpts_all_proptags &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_INSTANCE_RCPTS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_message_instance_rcpts &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
 	TRY(x.g_uint32(&d.row_id));
 	return x.g_uint16(&d.need_count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_INSTANCE_RCPTS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_message_instance_rcpts &d)
 {
 	TRY(x.p_uint32(d.instance_id));
 	TRY(x.p_uint32(d.row_id));
 	return x.p_uint16(d.need_count);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_UPDATE_MESSAGE_INSTANCE_RCPTS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_update_message_instance_rcpts &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
 	d.pset = cu_alloc<TARRAY_SET>();
@@ -1338,57 +1338,57 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_UPDATE_MESSAGE_INSTANCE_RCPTS &d)
 	return x.g_tarray_set(d.pset);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_UPDATE_MESSAGE_INSTANCE_RCPTS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_update_message_instance_rcpts &d)
 {
 	TRY(x.p_uint32(d.instance_id));
 	return x.p_tarray_set(*d.pset);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_COPY_INSTANCE_RCPTS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_copy_instance_rcpts &d)
 {
 	TRY(x.g_bool(&d.b_force));
 	TRY(x.g_uint32(&d.src_instance_id));
 	return x.g_uint32(&d.dst_instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_COPY_INSTANCE_RCPTS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_copy_instance_rcpts &d)
 {
 	TRY(x.p_bool(d.b_force));
 	TRY(x.p_uint32(d.src_instance_id));
 	return x.p_uint32(d.dst_instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_empty_message_instance_attachments &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_empty_message_instance_attachments &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_message_instance_attachments_num &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_message_instance_attachments_num &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_message_instance_attachment_table_all_proptags &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_message_instance_attachment_table_all_proptags &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_query_message_instance_attachment_table &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
@@ -1399,7 +1399,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE
 	return x.g_int32(&d.row_needed);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_query_message_instance_attachment_table &d)
 {
 	TRY(x.p_uint32(d.instance_id));
 	TRY(x.p_proptag_a(*d.pproptags));
@@ -1407,21 +1407,21 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_QUERY_MESSAGE_INSTANCE_ATTACHMENT
 	return x.p_int32(d.row_needed);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_COPY_INSTANCE_ATTACHMENTS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_copy_instance_attachments &d)
 {
 	TRY(x.g_bool(&d.b_force));
 	TRY(x.g_uint32(&d.src_instance_id));
 	return x.g_uint32(&d.dst_instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_COPY_INSTANCE_ATTACHMENTS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_copy_instance_attachments &d)
 {
 	TRY(x.p_bool(d.b_force));
 	TRY(x.p_uint32(d.src_instance_id));
 	return x.p_uint32(d.dst_instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SET_MESSAGE_INSTANCE_CONFLICT &d)
+static int exmdb_pull(EXT_PULL &x, exreq_set_message_instance_conflict &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
 	d.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
@@ -1430,23 +1430,23 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_SET_MESSAGE_INSTANCE_CONFLICT &d)
 	return x.g_msgctnt(d.pmsgctnt);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_MESSAGE_INSTANCE_CONFLICT &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_set_message_instance_conflict &d)
 {
 	TRY(x.p_uint32(d.instance_id));
 	return x.p_msgctnt(*d.pmsgctnt);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_RCPTS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_message_rcpts &d)
 {
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_RCPTS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_message_rcpts &d)
 {
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_message_properties &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1463,7 +1463,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_PROPERTIES &d)
 	return x.g_proptag_a(d.pproptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_message_properties &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -1476,7 +1476,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_PROPERTIES &d)
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SET_MESSAGE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_set_message_properties &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1493,7 +1493,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_SET_MESSAGE_PROPERTIES &d)
 	return x.g_tpropval_a(d.pproperties);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_MESSAGE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_set_message_properties &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -1506,7 +1506,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_MESSAGE_PROPERTIES &d)
 	return x.p_tpropval_a(*d.pproperties);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SET_MESSAGE_READ_STATE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_set_message_read_state &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1519,7 +1519,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_SET_MESSAGE_READ_STATE &d)
 	return x.g_uint8(&d.mark_as_read);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_MESSAGE_READ_STATE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_set_message_read_state &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -1531,7 +1531,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_MESSAGE_READ_STATE &d)
 	return x.p_uint8(d.mark_as_read);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_REMOVE_MESSAGE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_remove_message_properties &d)
 {
 	TRY(x.g_uint32(&d.cpid));
 	TRY(x.g_uint64(&d.message_id));
@@ -1541,46 +1541,46 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_REMOVE_MESSAGE_PROPERTIES &d)
 	return x.g_proptag_a(d.pproptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_REMOVE_MESSAGE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_remove_message_properties &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.message_id));
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_ALLOCATE_MESSAGE_ID &d)
+static int exmdb_pull(EXT_PULL &x, exreq_allocate_message_id &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_ALLOCATE_MESSAGE_ID &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_allocate_message_id &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_GROUP_ID &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_message_group_id &d)
 {
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_GROUP_ID &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_message_group_id &d)
 {
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SET_MESSAGE_GROUP_ID &d)
+static int exmdb_pull(EXT_PULL &x, exreq_set_message_group_id &d)
 {
 	TRY(x.g_uint64(&d.message_id));
 	return x.g_uint32(&d.group_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_MESSAGE_GROUP_ID &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_set_message_group_id &d)
 {
 	TRY(x.p_uint64(d.message_id));
 	return x.p_uint32(d.group_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SAVE_CHANGE_INDICES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_save_change_indices &d)
 {
 	TRY(x.g_uint64(&d.message_id));
 	TRY(x.g_uint64(&d.cn));
@@ -1594,7 +1594,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_SAVE_CHANGE_INDICES &d)
 	return x.g_proptag_a(d.pungroup_proptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SAVE_CHANGE_INDICES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_save_change_indices &d)
 {
 	TRY(x.p_uint64(d.message_id));
 	TRY(x.p_uint64(d.cn));
@@ -1602,79 +1602,79 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_SAVE_CHANGE_INDICES &d)
 	return x.p_proptag_a(*d.pungroup_proptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_CHANGE_INDICES &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_change_indices &d)
 {
 	TRY(x.g_uint64(&d.message_id));
 	return x.g_uint64(&d.cn);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_CHANGE_INDICES &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_change_indices &d)
 {
 	TRY(x.p_uint64(d.message_id));
 	return x.p_uint64(d.cn);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_MARK_MODIFIED &d)
+static int exmdb_pull(EXT_PULL &x, exreq_mark_modified &d)
 {
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_MARK_MODIFIED &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_mark_modified &d)
 {
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_TRY_MARK_SUBMIT &d)
+static int exmdb_pull(EXT_PULL &x, exreq_try_mark_submit &d)
 {
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_TRY_MARK_SUBMIT &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_try_mark_submit &d)
 {
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CLEAR_SUBMIT &d)
+static int exmdb_pull(EXT_PULL &x, exreq_clear_submit &d)
 {
 	TRY(x.g_uint64(&d.message_id));
 	return x.g_bool(&d.b_unsent);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CLEAR_SUBMIT &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_clear_submit &d)
 {
 	TRY(x.p_uint64(d.message_id));
 	return x.p_bool(d.b_unsent);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_LINK_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_link_message &d)
 {
 	TRY(x.g_uint32(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_LINK_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_link_message &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_UNLINK_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_unlink_message &d)
 {
 	TRY(x.g_uint32(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_UNLINK_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_unlink_message &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_RULE_NEW_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_rule_new_message &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1689,7 +1689,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_RULE_NEW_MESSAGE &d)
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_RULE_NEW_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_rule_new_message &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -1703,39 +1703,39 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_RULE_NEW_MESSAGE &d)
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SET_MESSAGE_TIMER &d)
+static int exmdb_pull(EXT_PULL &x, exreq_set_message_timer &d)
 {
 	TRY(x.g_uint64(&d.message_id));
 	return x.g_uint32(&d.timer_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SET_MESSAGE_TIMER &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_set_message_timer &d)
 {
 	TRY(x.p_uint64(d.message_id));
 	return x.p_uint32(d.timer_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_MESSAGE_TIMER &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_message_timer &d)
 {
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_MESSAGE_TIMER &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_message_timer &d)
 {
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_EMPTY_FOLDER_PERMISSION &d)
+static int exmdb_pull(EXT_PULL &x, exreq_empty_folder_permission &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_EMPTY_FOLDER_PERMISSION &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_empty_folder_permission &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_UPDATE_FOLDER_PERMISSION &d)
+static int exmdb_pull(EXT_PULL &x, exreq_update_folder_permission &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	TRY(x.g_bool(&d.b_freebusy));
@@ -1754,7 +1754,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_UPDATE_FOLDER_PERMISSION &d)
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_UPDATE_FOLDER_PERMISSION &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_update_folder_permission &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	TRY(x.p_bool(d.b_freebusy));
@@ -1764,17 +1764,17 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_UPDATE_FOLDER_PERMISSION &d)
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_EMPTY_FOLDER_RULE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_empty_folder_rule &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_EMPTY_FOLDER_RULE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_empty_folder_rule &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_UPDATE_FOLDER_RULE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_update_folder_rule &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	TRY(x.g_uint16(&d.count));
@@ -1792,7 +1792,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_UPDATE_FOLDER_RULE &d)
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_UPDATE_FOLDER_RULE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_update_folder_rule &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	TRY(x.p_uint16(d.count));
@@ -1801,7 +1801,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_UPDATE_FOLDER_RULE &d)
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_DELIVERY_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_delivery_message &d)
 {
 	TRY(x.g_str(&d.from_address));
 	TRY(x.g_str(&d.account));
@@ -1813,7 +1813,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_DELIVERY_MESSAGE &d)
 	return x.g_str(&d.pdigest);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_DELIVERY_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_delivery_message &d)
 {
 	TRY(x.p_str(d.from_address));
 	TRY(x.p_str(d.account));
@@ -1822,7 +1822,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_DELIVERY_MESSAGE &d)
 	return x.p_str(d.pdigest);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_WRITE_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_write_message &d)
 {
 	TRY(x.g_str(&d.account));
 	TRY(x.g_uint32(&d.cpid));
@@ -1833,7 +1833,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_WRITE_MESSAGE &d)
 	return x.g_msgctnt(d.pmsgctnt);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_WRITE_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_write_message &d)
 {
 	TRY(x.p_str(d.account));
 	TRY(x.p_uint32(d.cpid));
@@ -1841,7 +1841,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_WRITE_MESSAGE &d)
 	return x.p_msgctnt(*d.pmsgctnt);
 }
 	
-static int exmdb_pull(EXT_PULL &x, EXREQ_READ_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exreq_read_message &d)
 {
 	uint8_t tmp_byte;
 	
@@ -1854,7 +1854,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_READ_MESSAGE &d)
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_READ_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_read_message &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -1866,7 +1866,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_READ_MESSAGE &d)
 	return x.p_uint64(d.message_id);
 }
 
-static int gcsr_failure(int status, EXREQ_GET_CONTENT_SYNC &d)
+static int gcsr_failure(int status, exreq_get_content_sync &d)
 {
 	delete d.pgiven;
 	delete d.pseen;
@@ -1875,7 +1875,7 @@ static int gcsr_failure(int status, EXREQ_GET_CONTENT_SYNC &d)
 	return status;
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_CONTENT_SYNC &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 {
 	int status;
 	BINARY tmp_bin;
@@ -1953,7 +1953,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_GET_CONTENT_SYNC &d)
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_CONTENT_SYNC &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_content_sync &d)
 {
 	int status;
 	
@@ -2025,7 +2025,7 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_CONTENT_SYNC &d)
 	return x.p_bool(d.b_ordered);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_HIERARCHY_SYNC &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_hierarchy_sync &d)
 {
 	int status;
 	BINARY tmp_bin;
@@ -2069,7 +2069,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_GET_HIERARCHY_SYNC &d)
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_HIERARCHY_SYNC &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_hierarchy_sync &d)
 {
 	int status;
 	
@@ -2106,17 +2106,17 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_HIERARCHY_SYNC &d)
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_ALLOCATE_IDS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_allocate_ids &d)
 {
 	return x.g_uint32(&d.count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_ALLOCATE_IDS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_allocate_ids &d)
 {
 	return x.p_uint32(d.count);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_SUBSCRIBE_NOTIFICATION &d)
+static int exmdb_pull(EXT_PULL &x, exreq_subscribe_notification &d)
 {
 	TRY(x.g_uint16(&d.notificaton_type));
 	TRY(x.g_bool(&d.b_whole));
@@ -2124,7 +2124,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_SUBSCRIBE_NOTIFICATION &d)
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_SUBSCRIBE_NOTIFICATION &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_subscribe_notification &d)
 {
 	TRY(x.p_uint16(d.notificaton_type));
 	TRY(x.p_bool(d.b_whole));
@@ -2132,17 +2132,17 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_SUBSCRIBE_NOTIFICATION &d)
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_UNSUBSCRIBE_NOTIFICATION &d)
+static int exmdb_pull(EXT_PULL &x, exreq_unsubscribe_notification &d)
 {
 	return x.g_uint32(&d.sub_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_UNSUBSCRIBE_NOTIFICATION &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_unsubscribe_notification &d)
 {
 	return x.p_uint32(d.sub_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_TRANSPORT_NEW_MAIL &d)
+static int exmdb_pull(EXT_PULL &x, exreq_transport_new_mail &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	TRY(x.g_uint64(&d.message_id));
@@ -2150,7 +2150,7 @@ static int exmdb_pull(EXT_PULL &x, EXREQ_TRANSPORT_NEW_MAIL &d)
 	return x.g_str(&d.pstr_class);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_TRANSPORT_NEW_MAIL &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_transport_new_mail &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	TRY(x.p_uint64(d.message_id));
@@ -2158,23 +2158,23 @@ static int exmdb_push(EXT_PUSH &x, const EXREQ_TRANSPORT_NEW_MAIL &d)
 	return x.p_str(d.pstr_class);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_CHECK_CONTACT_ADDRESS &d)
+static int exmdb_pull(EXT_PULL &x, exreq_check_contact_address &d)
 {
 	return x.g_str(&d.paddress);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_CHECK_CONTACT_ADDRESS &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_check_contact_address &d)
 {
 	return x.p_str(d.paddress);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXREQ_GET_PUBLIC_FOLDER_UNREAD_COUNT &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_public_folder_unread_count &d)
 {
 	TRY(x.g_str(&d.username));
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXREQ_GET_PUBLIC_FOLDER_UNREAD_COUNT &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_public_folder_unread_count &d)
 {
 	TRY(x.p_str(d.username));
 	return x.p_uint64(d.folder_id);
@@ -2381,265 +2381,265 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_ALL_NAMED_PROPIDS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_all_named_propids &d)
 {
 	return x.g_propid_a(&d.propids);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_ALL_NAMED_PROPIDS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_all_named_propids &d)
 {
 	return x.p_propid_a(d.propids);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_NAMED_PROPIDS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_named_propids &d)
 {
 	return x.g_propid_a(&d.propids);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_NAMED_PROPIDS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_named_propids &d)
 {
 	return x.p_propid_a(d.propids);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_NAMED_PROPNAMES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_named_propnames &d)
 {
 	return x.g_propname_a(&d.propnames);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_NAMED_PROPNAMES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_named_propnames &d)
 {
 	return x.p_propname_a(d.propnames);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MAPPING_GUID &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_mapping_guid &d)
 {
 	TRY(x.g_bool(&d.b_found));
 	return x.g_guid(&d.guid);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MAPPING_GUID &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_mapping_guid &d)
 {
 	TRY(x.p_bool(d.b_found));
 	return x.p_guid(d.guid);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MAPPING_REPLID &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_mapping_replid &d)
 {
 	TRY(x.g_bool(&d.b_found));
 	return x.g_uint16(&d.replid);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MAPPING_REPLID &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_mapping_replid &d)
 {
 	TRY(x.p_bool(d.b_found));
 	return x.p_uint16(d.replid);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_STORE_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_store_all_proptags &d)
 {
 	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_STORE_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_store_all_proptags &d)
 {
 	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_STORE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_store_properties &d)
 {
 	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_STORE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_store_properties &d)
 {
 	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SET_STORE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_set_store_properties &d)
 {
 	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_STORE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_set_store_properties &d)
 {
 	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_MAILBOX_PERMISSION &d)
+static int exmdb_pull(EXT_PULL &x, exresp_check_mailbox_permission &d)
 {
 	return x.g_uint32(&d.permission);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_MAILBOX_PERMISSION &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_check_mailbox_permission &d)
 {
 	return x.p_uint32(d.permission);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_FOLDER_BY_CLASS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_folder_by_class &d)
 {
 	TRY(x.g_uint64(&d.id));
 	return x.g_str(&d.str_explicit);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_FOLDER_BY_CLASS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_folder_by_class &d)
 {
 	TRY(x.p_uint64(d.id));
 	return x.p_str(d.str_explicit);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SET_FOLDER_BY_CLASS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_set_folder_by_class &d)
 {
 	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_FOLDER_BY_CLASS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_set_folder_by_class &d)
 {
 	return x.p_bool(d.b_result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_FOLDER_CLASS_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_folder_class_table &d)
 {
 	return x.g_tarray_set(&d.table);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_FOLDER_CLASS_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_folder_class_table &d)
 {
 	return x.p_tarray_set(d.table);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_FOLDER_ID &d)
+static int exmdb_pull(EXT_PULL &x, exresp_check_folder_id &d)
 {
 	return x.g_bool(&d.b_exist);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_FOLDER_ID &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_check_folder_id &d)
 {
 	return x.p_bool(d.b_exist);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_QUERY_FOLDER_MESSAGES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_query_folder_messages &d)
 {
 	return x.g_tarray_set(&d.set);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_QUERY_FOLDER_MESSAGES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_query_folder_messages &d)
 {
 	return x.p_tarray_set(d.set);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_FOLDER_DELETED &d)
+static int exmdb_pull(EXT_PULL &x, exresp_check_folder_deleted &d)
 {
 	return x.g_bool(&d.b_del);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_FOLDER_DELETED &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_check_folder_deleted &d)
 {
 	return x.p_bool(d.b_del);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_FOLDER_BY_NAME &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_folder_by_name &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_FOLDER_BY_NAME &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_folder_by_name &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_FOLDER_PERMISSION &d)
+static int exmdb_pull(EXT_PULL &x, exresp_check_folder_permission &d)
 {
 	return x.g_uint32(&d.permission);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_FOLDER_PERMISSION &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_check_folder_permission &d)
 {
 	return x.p_uint32(d.permission);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CREATE_FOLDER_BY_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_create_folder_by_properties &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CREATE_FOLDER_BY_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_create_folder_by_properties &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_FOLDER_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_folder_all_proptags &d)
 {
 	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_FOLDER_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_folder_all_proptags &d)
 {
 	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_FOLDER_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_folder_properties &d)
 {
 	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_FOLDER_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_folder_properties &d)
 {
 	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SET_FOLDER_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_set_folder_properties &d)
 {
 	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_FOLDER_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_set_folder_properties &d)
 {
 	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_DELETE_FOLDER &d)
+static int exmdb_pull(EXT_PULL &x, exresp_delete_folder &d)
 {
 	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_DELETE_FOLDER &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_delete_folder &d)
 {
 	return x.p_bool(d.b_result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_EMPTY_FOLDER &d)
+static int exmdb_pull(EXT_PULL &x, exresp_empty_folder &d)
 {
 	return x.g_bool(&d.b_partial);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_EMPTY_FOLDER &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_empty_folder &d)
 {
 	return x.p_bool(d.b_partial);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_FOLDER_CYCLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_check_folder_cycle &d)
 {
 	return x.g_bool(&d.b_cycle);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_FOLDER_CYCLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_check_folder_cycle &d)
 {
 	return x.p_bool(d.b_cycle);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_COPY_FOLDER_INTERNAL &d)
+static int exmdb_pull(EXT_PULL &x, exresp_copy_folder_internal &d)
 {
 	TRY(x.g_bool(&d.b_collid));
 	return x.g_bool(&d.b_partial);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_COPY_FOLDER_INTERNAL &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_copy_folder_internal &d)
 {
 	TRY(x.p_bool(d.b_collid));
 	return x.p_bool(d.b_partial);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_SEARCH_CRITERIA &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_search_criteria &d)
 {
 	uint8_t tmp_byte;
 	
@@ -2656,7 +2656,7 @@ static int exmdb_pull(EXT_PULL &x, EXRESP_GET_SEARCH_CRITERIA &d)
 	return x.g_uint64_a(&d.folder_ids);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_SEARCH_CRITERIA &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_search_criteria &d)
 {
 	TRY(x.p_uint32(d.search_status));
 	if (d.prestriction == nullptr) {
@@ -2668,59 +2668,59 @@ static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_SEARCH_CRITERIA &d)
 	return x.p_uint64_a(d.folder_ids);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SET_SEARCH_CRITERIA &d)
+static int exmdb_pull(EXT_PULL &x, exresp_set_search_criteria &d)
 {
 	return x.g_bool(&d.b_result);
 }
 	
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_SEARCH_CRITERIA &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_set_search_criteria &d)
 {
 	return x.p_bool(d.b_result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_MOVECOPY_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_movecopy_message &d)
 {
 	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_MOVECOPY_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_movecopy_message &d)
 {
 	return x.p_bool(d.b_result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_MOVECOPY_MESSAGES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_movecopy_messages &d)
 {
 	return x.g_bool(&d.b_partial);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_MOVECOPY_MESSAGES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_movecopy_messages &d)
 {
 	return x.p_bool(d.b_partial);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_MOVECOPY_FOLDER &d)
+static int exmdb_pull(EXT_PULL &x, exresp_movecopy_folder &d)
 {
 	TRY(x.g_bool(&d.b_exist));
 	return x.g_bool(&d.b_partial);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_MOVECOPY_FOLDER &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_movecopy_folder &d)
 {
 	TRY(x.p_bool(d.b_exist));
 	return x.p_bool(d.b_partial);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_DELETE_MESSAGES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_delete_messages &d)
 {
 	return x.g_bool(&d.b_partial);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_DELETE_MESSAGES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_delete_messages &d)
 {
 	return x.p_bool(d.b_partial);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_BRIEF &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_message_brief &d)
 {
 	int status;
 	uint8_t tmp_byte;
@@ -2736,7 +2736,7 @@ static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_BRIEF &d)
 	return x.g_msgctnt(d.pbrief);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_BRIEF &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_message_brief &d)
 {
 	if (d.pbrief == nullptr)
 		return x.p_uint8(0);
@@ -2744,241 +2744,241 @@ static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_BRIEF &d)
 	return x.p_msgctnt(*d.pbrief);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SUM_HIERARCHY &d)
+static int exmdb_pull(EXT_PULL &x, exresp_sum_hierarchy &d)
 {
 	return x.g_uint32(&d.count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SUM_HIERARCHY &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_sum_hierarchy &d)
 {
 	return x.p_uint32(d.count);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_HIERARCHY_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_load_hierarchy_table &d)
 {
 	TRY(x.g_uint32(&d.table_id));
 	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_HIERARCHY_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_load_hierarchy_table &d)
 {
 	TRY(x.p_uint32(d.table_id));
 	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SUM_CONTENT &d)
+static int exmdb_pull(EXT_PULL &x, exresp_sum_content &d)
 {
 	return x.g_uint32(&d.count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SUM_CONTENT &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_sum_content &d)
 {
 	return x.p_uint32(d.count);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_CONTENT_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_load_content_table &d)
 {
 	TRY(x.g_uint32(&d.table_id));
 	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_CONTENT_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_load_content_table &d)
 {
 	TRY(x.p_uint32(d.table_id));
 	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_PERMISSION_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_load_permission_table &d)
 {
 	TRY(x.g_uint32(&d.table_id));
 	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_PERMISSION_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_load_permission_table &d)
 {
 	TRY(x.p_uint32(d.table_id));
 	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_RULE_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_load_rule_table &d)
 {
 	TRY(x.g_uint32(&d.table_id));
 	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_RULE_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_load_rule_table &d)
 {
 	TRY(x.p_uint32(d.table_id));
 	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SUM_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_sum_table &d)
 {
 	return x.g_uint32(&d.rows);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SUM_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_sum_table &d)
 {
 	return x.p_uint32(d.rows);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_QUERY_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_query_table &d)
 {
 	return x.g_tarray_set(&d.set);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_QUERY_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_query_table &d)
 {
 	return x.p_tarray_set(d.set);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_MATCH_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_match_table &d)
 {
 	TRY(x.g_int32(&d.position));
 	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_MATCH_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_match_table &d)
 {
 	TRY(x.p_int32(d.position));
 	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_LOCATE_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_locate_table &d)
 {
 	TRY(x.g_int32(&d.position));
 	return x.g_uint32(&d.row_type);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_LOCATE_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_locate_table &d)
 {
 	TRY(x.p_int32(d.position));
 	return x.p_uint32(d.row_type);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_READ_TABLE_ROW &d)
+static int exmdb_pull(EXT_PULL &x, exresp_read_table_row &d)
 {
 	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_READ_TABLE_ROW &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_read_table_row &d)
 {
 	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_MARK_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_mark_table &d)
 {
 	TRY(x.g_uint64(&d.inst_id));
 	TRY(x.g_uint32(&d.inst_num));
 	return x.g_uint32(&d.row_type);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_MARK_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_mark_table &d)
 {
 	TRY(x.p_uint64(d.inst_id));
 	TRY(x.p_uint32(d.inst_num));
 	return x.p_uint32(d.row_type);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_TABLE_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_table_all_proptags &d)
 {
 	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_TABLE_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_table_all_proptags &d)
 {
 	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_EXPAND_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_expand_table &d)
 {
 	TRY(x.g_bool(&d.b_found));
 	TRY(x.g_int32(&d.position));
 	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_EXPAND_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_expand_table &d)
 {
 	TRY(x.p_bool(d.b_found));
 	TRY(x.p_int32(d.position));
 	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_COLLAPSE_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_collapse_table &d)
 {
 	TRY(x.g_bool(&d.b_found));
 	TRY(x.g_int32(&d.position));
 	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_COLLAPSE_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_collapse_table &d)
 {
 	TRY(x.p_bool(d.b_found));
 	TRY(x.p_int32(d.position));
 	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_STORE_TABLE_STATE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_store_table_state &d)
 {
 	return x.g_uint32(&d.state_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_STORE_TABLE_STATE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_store_table_state &d)
 {
 	return x.p_uint32(d.state_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_RESTORE_TABLE_STATE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_restore_table_state &d)
 {
 	return x.g_int32(&d.position);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_RESTORE_TABLE_STATE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_restore_table_state &d)
 {
 	return x.p_int32(d.position);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_check_message &d)
 {
 	return x.g_bool(&d.b_exist);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_check_message &d)
 {
 	return x.p_bool(d.b_exist);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_MESSAGE_DELETED &d)
+static int exmdb_pull(EXT_PULL &x, exresp_check_message_deleted &d)
 {
 	return x.g_bool(&d.b_del);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_MESSAGE_DELETED &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_check_message_deleted &d)
 {
 	return x.p_bool(d.b_del);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_MESSAGE_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_load_message_instance &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_MESSAGE_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_load_message_instance &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_EMBEDDED_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_load_embedded_instance &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_EMBEDDED_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_load_embedded_instance &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_EMBEDDED_CN &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_embedded_cn &d)
 {
 	uint8_t tmp_byte;
 	
@@ -2993,7 +2993,7 @@ static int exmdb_pull(EXT_PULL &x, EXRESP_GET_EMBEDDED_CN &d)
 	return x.g_uint64(d.pcn);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_EMBEDDED_CN &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_embedded_cn &d)
 {
 	if (d.pcn == nullptr)
 		return x.p_uint8(0);
@@ -3001,61 +3001,61 @@ static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_EMBEDDED_CN &d)
 	return x.p_uint64(*static_cast<uint64_t *>(d.pcn));
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_RELOAD_MESSAGE_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_reload_message_instance &d)
 {
 	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_RELOAD_MESSAGE_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_reload_message_instance &d)
 {
 	return x.p_bool(d.b_result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_READ_MESSAGE_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_read_message_instance &d)
 {
 	return x.g_msgctnt(&d.msgctnt);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_READ_MESSAGE_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_read_message_instance &d)
 {
 	return x.p_msgctnt(d.msgctnt);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_WRITE_MESSAGE_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_write_message_instance &d)
 {
 	TRY(x.g_proptag_a(&d.proptags));
 	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_WRITE_MESSAGE_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_write_message_instance &d)
 {
 	TRY(x.p_proptag_a(d.proptags));
 	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_ATTACHMENT_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_load_attachment_instance &d)
 {
 	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_ATTACHMENT_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_load_attachment_instance &d)
 {
 	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CREATE_ATTACHMENT_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_create_attachment_instance &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
 	return x.g_uint32(&d.attachment_num);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CREATE_ATTACHMENT_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_create_attachment_instance &d)
 {
 	TRY(x.p_uint32(d.instance_id));
 	return x.p_uint32(d.attachment_num);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_READ_ATTACHMENT_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_read_attachment_instance &d)
 {
 	uint8_t tmp_byte;
 	
@@ -3071,7 +3071,7 @@ static int exmdb_pull(EXT_PULL &x, EXRESP_READ_ATTACHMENT_INSTANCE &d)
 	return x.g_msgctnt(d.attctnt.pembedded);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_READ_ATTACHMENT_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_read_attachment_instance &d)
 {
 	TRY(x.p_tpropval_a(d.attctnt.proplist));
 	if (d.attctnt.pembedded == nullptr)
@@ -3080,217 +3080,217 @@ static int exmdb_push(EXT_PUSH &x, const EXRESP_READ_ATTACHMENT_INSTANCE &d)
 	return x.p_msgctnt(*d.attctnt.pembedded);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_WRITE_ATTACHMENT_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_write_attachment_instance &d)
 {
 	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_WRITE_ATTACHMENT_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_write_attachment_instance &d)
 {
 	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_FLUSH_INSTANCE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_flush_instance &d)
 {
 	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_FLUSH_INSTANCE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_flush_instance &d)
 {
 	return x.p_uint32(d.e_result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_INSTANCE_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_instance_all_proptags &d)
 {
 	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_INSTANCE_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_instance_all_proptags &d)
 {
 	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_INSTANCE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_instance_properties &d)
 {
 	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_INSTANCE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_instance_properties &d)
 {
 	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SET_INSTANCE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_set_instance_properties &d)
 {
 	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_INSTANCE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_set_instance_properties &d)
 {
 	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_REMOVE_INSTANCE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_remove_instance_properties &d)
 {
 	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_REMOVE_INSTANCE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_remove_instance_properties &d)
 {
 	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_INSTANCE_CYCLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_check_instance_cycle &d)
 {
 	return x.g_bool(&d.b_cycle);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_INSTANCE_CYCLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_check_instance_cycle &d)
 {
 	return x.p_bool(d.b_cycle);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_INSTANCE_RCPTS_NUM &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_message_instance_rcpts_num &d)
 {
 	return x.g_uint16(&d.num);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_INSTANCE_RCPTS_NUM &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_message_instance_rcpts_num &d)
 {
 	return x.p_uint16(d.num);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_message_instance_rcpts_all_proptags &d)
 {
 	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_message_instance_rcpts_all_proptags &d)
 {
 	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_INSTANCE_RCPTS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_message_instance_rcpts &d)
 {
 	return x.g_tarray_set(&d.set);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_INSTANCE_RCPTS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_message_instance_rcpts &d)
 {
 	return x.p_tarray_set(d.set);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_COPY_INSTANCE_RCPTS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_copy_instance_rcpts &d)
 {
 	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_COPY_INSTANCE_RCPTS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_copy_instance_rcpts &d)
 {
 	return x.p_bool(d.b_result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_message_instance_attachments_num &d)
 {
 	return x.g_uint16(&d.num);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_message_instance_attachments_num &d)
 {
 	return x.p_uint16(d.num);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_message_instance_attachment_table_all_proptags &d)
 {
 	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_message_instance_attachment_table_all_proptags &d)
 {
 	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_query_message_instance_attachment_table &d)
 {
 	return x.g_tarray_set(&d.set);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_query_message_instance_attachment_table &d)
 {
 	return x.p_tarray_set(d.set);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_COPY_INSTANCE_ATTACHMENTS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_copy_instance_attachments &d)
 {
 	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_COPY_INSTANCE_ATTACHMENTS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_copy_instance_attachments &d)
 {
 	return x.p_bool(d.b_result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_RCPTS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_message_rcpts &d)
 {
 	return x.g_tarray_set(&d.set);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_RCPTS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_message_rcpts &d)
 {
 	return x.p_tarray_set(d.set);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_message_properties &d)
 {
 	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_message_properties &d)
 {
 	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SET_MESSAGE_PROPERTIES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_set_message_properties &d)
 {
 	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_MESSAGE_PROPERTIES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_set_message_properties &d)
 {
 	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SET_MESSAGE_READ_STATE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_set_message_read_state &d)
 {
 	return x.g_uint64(&d.read_cn);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_MESSAGE_READ_STATE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_set_message_read_state &d)
 {
 	return x.p_uint64(d.read_cn);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_ALLOCATE_MESSAGE_ID &d)
+static int exmdb_pull(EXT_PULL &x, exresp_allocate_message_id &d)
 {
 	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_ALLOCATE_MESSAGE_ID &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_allocate_message_id &d)
 {
 	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_ALLOCATE_CN &d)
+static int exmdb_pull(EXT_PULL &x, exresp_allocate_cn &d)
 {
 	return x.g_uint64(&d.cn);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_ALLOCATE_CN &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_allocate_cn &d)
 {
 	return x.p_uint64(d.cn);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_GROUP_ID &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_message_group_id &d)
 {
 	uint8_t tmp_byte;
 	
@@ -3305,7 +3305,7 @@ static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_GROUP_ID &d)
 	return x.g_uint32(d.pgroup_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_GROUP_ID &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_message_group_id &d)
 {
 	if (d.pgroup_id == nullptr)
 		return x.p_uint8(0);
@@ -3313,39 +3313,39 @@ static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_GROUP_ID &d)
 	return x.p_uint32(*d.pgroup_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_CHANGE_INDICES &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_change_indices &d)
 {
 	TRY(x.g_proptag_a(&d.indices));
 	return x.g_proptag_a(&d.ungroup_proptags);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_CHANGE_INDICES &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_change_indices &d)
 {
 	TRY(x.p_proptag_a(d.indices));
 	return x.p_proptag_a(d.ungroup_proptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_TRY_MARK_SUBMIT &d)
+static int exmdb_pull(EXT_PULL &x, exresp_try_mark_submit &d)
 {
 	return x.g_bool(&d.b_marked);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_TRY_MARK_SUBMIT &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_try_mark_submit &d)
 {
 	return x.p_bool(d.b_marked);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_LINK_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_link_message &d)
 {
 	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_LINK_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_link_message &d)
 {
 	return x.p_bool(d.b_result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_TIMER &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_message_timer &d)
 {
 	uint8_t tmp_byte;
 	
@@ -3360,7 +3360,7 @@ static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_TIMER &d)
 	return x.g_uint32(d.ptimer_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_TIMER &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_message_timer &d)
 {
 	if (d.ptimer_id == nullptr)
 		return x.p_uint8(0);
@@ -3368,37 +3368,37 @@ static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_TIMER &d)
 	return x.p_uint32(*d.ptimer_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_UPDATE_FOLDER_RULE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_update_folder_rule &d)
 {
 	return x.g_bool(&d.b_exceed);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_UPDATE_FOLDER_RULE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_update_folder_rule &d)
 {
 	return x.p_bool(d.b_exceed);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_DELIVERY_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_delivery_message &d)
 {
 	return x.g_uint32(&d.result);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_DELIVERY_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_delivery_message &d)
 {
 	return x.p_uint32(d.result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_WRITE_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_write_message &d)
 {
 	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_WRITE_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_write_message &d)
 {
 	return x.p_uint32(d.e_result);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_READ_MESSAGE &d)
+static int exmdb_pull(EXT_PULL &x, exresp_read_message &d)
 {
 	uint8_t tmp_byte;
 	
@@ -3413,7 +3413,7 @@ static int exmdb_pull(EXT_PULL &x, EXRESP_READ_MESSAGE &d)
 	return x.g_msgctnt(d.pmsgctnt);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_READ_MESSAGE &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_read_message &d)
 {
 	if (d.pmsgctnt == nullptr)
 		return x.p_uint8(0);
@@ -3421,7 +3421,7 @@ static int exmdb_push(EXT_PUSH &x, const EXRESP_READ_MESSAGE &d)
 	return x.p_msgctnt(*d.pmsgctnt);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_CONTENT_SYNC &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_content_sync &d)
 {
 	TRY(x.g_uint32(&d.fai_count));
 	TRY(x.g_uint64(&d.fai_total));
@@ -3438,7 +3438,7 @@ static int exmdb_pull(EXT_PULL &x, EXRESP_GET_CONTENT_SYNC &d)
 	return x.g_uint64(&d.last_readcn);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_CONTENT_SYNC &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_content_sync &d)
 {
 	
 	TRY(x.p_uint32(d.fai_count));
@@ -3456,7 +3456,7 @@ static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_CONTENT_SYNC &d)
 	return x.p_uint64(d.last_readcn);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_HIERARCHY_SYNC &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_hierarchy_sync &d)
 {
 	TRY(x.g_uint32(&d.fldchgs.count));
 	if (0 == d.fldchgs.count) {
@@ -3475,7 +3475,7 @@ static int exmdb_pull(EXT_PULL &x, EXRESP_GET_HIERARCHY_SYNC &d)
 	return x.g_eid_a(&d.deleted_fids);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_HIERARCHY_SYNC &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_hierarchy_sync &d)
 {
 	TRY(x.p_uint32(d.fldchgs.count));
 	for (size_t i = 0; i < d.fldchgs.count; ++i)
@@ -3485,42 +3485,42 @@ static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_HIERARCHY_SYNC &d)
 	return x.p_eid_a(d.deleted_fids);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_ALLOCATE_IDS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_allocate_ids &d)
 {
 	return x.g_uint64(&d.begin_eid);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_ALLOCATE_IDS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_allocate_ids &d)
 {
 	return x.p_uint64(d.begin_eid);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_SUBSCRIBE_NOTIFICATION &d)
+static int exmdb_pull(EXT_PULL &x, exresp_subscribe_notification &d)
 {
 	return x.g_uint32(&d.sub_id);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_SUBSCRIBE_NOTIFICATION &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_subscribe_notification &d)
 {
 	return x.p_uint32(d.sub_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_CONTACT_ADDRESS &d)
+static int exmdb_pull(EXT_PULL &x, exresp_check_contact_address &d)
 {
 	return x.g_bool(&d.b_found);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_CONTACT_ADDRESS &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_check_contact_address &d)
 {
 	return x.p_bool(d.b_found);
 }
 
-static int exmdb_pull(EXT_PULL &x, EXRESP_GET_PUBLIC_FOLDER_UNREAD_COUNT &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_public_folder_unread_count &d)
 {
 	return x.g_uint32(&d.count);
 }
 
-static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_PUBLIC_FOLDER_UNREAD_COUNT &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_public_folder_unread_count &d)
 {
 	return x.p_uint32(d.count);
 }
