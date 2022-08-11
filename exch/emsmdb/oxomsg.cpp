@@ -245,8 +245,10 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecError;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	if (plogon->logon_mode == logon_mode::guest)
+	if (plogon->logon_mode == logon_mode::guest) {
+		fprintf(stderr, "I-2145: submitmessage denied because %s is guest\n", plogon->account);
 		return ecAccessDenied;
+	}
 
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (pmessage == nullptr)
@@ -255,11 +257,20 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecNotSupported;
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
-	if (pmessage->importing())
+	if (pmessage->importing()) {
+		fprintf(stderr, "I-2146: submitmessage denied because "
+		        "message %llxh is under construction\n",
+		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
+	}
 	auto tag_access = pmessage->get_tag_access();
-	if (!(tag_access & MAPI_ACCESS_MODIFY))
+	if (!(tag_access & MAPI_ACCESS_MODIFY)) {
+		fprintf(stderr, "I-2147: submitmessage denied because "
+		        "%s has no MAPI_ACCESS_MODIFY on message %llxh\n",
+		        plogon->account,
+		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
+	}
 	if (!pmessage->get_recipient_num(&rcpt_num))
 		return ecError;
 	if (rcpt_num > g_max_rcpt)
@@ -273,8 +284,12 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecError;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
-	if (flag != nullptr && *flag != 0)
+	if (flag != nullptr && *flag != 0) {
+		fprintf(stderr, "I-2147: submitmessage denied because "
+		        "message %llxh is FAI\n",
+		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
+	}
 	if (!oxomsg_extract_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
 	auto account = plogon->get_account();
@@ -331,8 +346,12 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	auto message_flags = tmp_propvals.get<uint32_t>(PR_MESSAGE_FLAGS);
 	if (message_flags == nullptr)
 		return ecError;
-	if (*message_flags & MSGFLAG_SUBMITTED)
+	if (*message_flags & MSGFLAG_SUBMITTED) {
+		fprintf(stderr, "I-2148: submitmessage denied because "
+		        "message %llxh is already submitted\n",
+		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
+	}
 	BOOL b_unsent = (*message_flags & MSGFLAG_UNSENT) ? TRUE : false;
 	flag = tmp_propvals.get<uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
@@ -356,8 +375,12 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (!exmdb_client_try_mark_submit(plogon->get_dir(),
 	    pmessage->get_id(), &b_marked))
 		return ecError;
-	if (!b_marked)
+	if (!b_marked) {
+		fprintf(stderr, "I-2149: submitmessage denied because "
+		        "message %llxh failed try_mark_submit\n",
+		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
+	}
 	
 	auto deferred_time = props_to_defer_interval(tmp_propvals);
 	if (deferred_time > 0) {
@@ -548,8 +571,10 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecError;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	if (plogon->logon_mode == logon_mode::guest)
+	if (plogon->logon_mode == logon_mode::guest) {
+		fprintf(stderr, "I-2143: transportsend disallowed because %s is guest\n", plogon->account);
 		return ecAccessDenied;
+	}
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
@@ -557,8 +582,12 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecNotSupported;
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
-	if (pmessage->importing())
+	if (pmessage->importing()) {
+		fprintf(stderr, "I-2144: transportsend disallowed because "
+		        "message %llxh is under construction\n",
+		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
+	}
 
 	static constexpr uint32_t rq_tags1[] = {PR_MESSAGE_FLAGS, PR_MESSAGE_CLASS};
 	static constexpr PROPTAG_ARRAY rq_tags = {2, deconst(rq_tags1)};
@@ -567,8 +596,12 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	    pmessage->get_id(), &rq_tags, &outvalues))
 		return ecError;
 	auto msgflags = outvalues.get<const uint32_t>(PR_MESSAGE_FLAGS);
-	if (msgflags != nullptr && *msgflags & MSGFLAG_SUBMITTED)
+	if (msgflags != nullptr && *msgflags & MSGFLAG_SUBMITTED) {
+		fprintf(stderr, "I-2144: transportsend disallowed because "
+		        "message %llxh was already submitted once\n",
+		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
+	}
 	if (!oxomsg_extract_delegate(pmessage, username, std::size(username)))
 		return ecError;
 	auto account = plogon->get_account();
