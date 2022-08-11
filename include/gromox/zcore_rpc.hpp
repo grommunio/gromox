@@ -100,120 +100,120 @@ enum class zcore_callid : uint8_t {
 	imtomessage2 = 0x58,
 };
 
-struct ZCREQ_LOGON {
+struct zcreq_logon {
 	char *username;
 	char *password;
 	uint32_t flags;
 };
 
-struct ZCREQ_CHECKSESSION {
+struct zcreq_checksession {
 	GUID hsession;
 };
 
-struct ZCREQ_UINFO {
+struct zcreq_uinfo {
 	char *username;
 };
 
-struct ZCREQ_UNLOADOBJECT {
+struct zcreq_unloadobject {
 	GUID hsession;
 	uint32_t hobject;
 };
 
-struct ZCREQ_OPENENTRY {
+struct zcreq_openentry {
 	GUID hsession;
 	BINARY entryid;
 	uint32_t flags;
 };
 
-struct ZCREQ_OPENSTOREENTRY {
+struct zcreq_openstoreentry {
 	GUID hsession;
 	uint32_t hobject;
 	BINARY entryid;
 	uint32_t flags;
 };
 
-struct ZCREQ_OPENABENTRY {
+struct zcreq_openabentry {
 	GUID hsession;
 	BINARY entryid;
 };
 
-struct ZCREQ_RESOLVENAME {
+struct zcreq_resolvename {
 	GUID hsession;
 	TARRAY_SET *pcond_set;
 };
 
-struct ZCREQ_GETPERMISSIONS {
+struct zcreq_getpermissions {
 	GUID hsession;
 	uint32_t hobject;
 };
 
-struct ZCREQ_MODIFYPERMISSIONS {
+struct zcreq_modifypermissions {
 	GUID hsession;
 	uint32_t hfolder;
 	PERMISSION_SET *pset;
 };
 
-struct ZCREQ_MODIFYRULES {
+struct zcreq_modifyrules {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 	RULE_LIST *plist;
 };
 
-struct ZCREQ_GETABGAL {
+struct zcreq_getabgal {
 	GUID hsession;
 };
 
-struct ZCREQ_LOADSTORETABLE {
+struct zcreq_loadstoretable {
 	GUID hsession;
 };
 
-struct ZCREQ_OPENSTORE {
+struct zcreq_openstore {
 	GUID hsession;
 	BINARY entryid;
 };
 
-struct ZCREQ_OPENPROFILESEC {
+struct zcreq_openprofilesec {
 	GUID hsession;
 	const FLATUID *puid;
 };
 
-struct ZCREQ_LOADHIERARCHYTABLE {
+struct zcreq_loadhierarchytable {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 };
 
-struct ZCREQ_LOADCONTENTTABLE {
+struct zcreq_loadcontenttable {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 };
 
-struct ZCREQ_LOADRECIPIENTTABLE {
+struct zcreq_loadrecipienttable {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct ZCREQ_LOADRULETABLE {
+struct zcreq_loadruletable {
 	GUID hsession;
 	uint32_t hfolder;
 };
 	
-struct ZCREQ_CREATEMESSAGE {
+struct zcreq_createmessage {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 };
 
-struct ZCREQ_DELETEMESSAGES {
+struct zcreq_deletemessages {
 	GUID hsession;
 	uint32_t hfolder;
 	BINARY_ARRAY *pentryids;
 	uint32_t flags;
 };
 
-struct ZCREQ_COPYMESSAGES {
+struct zcreq_copymessages {
 	GUID hsession;
 	uint32_t hsrcfolder;
 	uint32_t hdstfolder;
@@ -221,14 +221,14 @@ struct ZCREQ_COPYMESSAGES {
 	uint32_t flags;
 };
 
-struct ZCREQ_SETREADFLAGS {
+struct zcreq_setreadflags {
 	GUID hsession;
 	uint32_t hfolder;
 	BINARY_ARRAY *pentryids;
 	uint32_t flags;
 };
 
-struct ZCREQ_CREATEFOLDER {
+struct zcreq_createfolder {
 	GUID hsession;
 	uint32_t hparent_folder;
 	uint32_t folder_type;
@@ -237,20 +237,20 @@ struct ZCREQ_CREATEFOLDER {
 	uint32_t flags;
 };
 
-struct ZCREQ_DELETEFOLDER {
+struct zcreq_deletefolder {
 	GUID hsession;
 	uint32_t hparent_folder;
 	BINARY entryid;
 	uint32_t flags;
 };
 
-struct ZCREQ_EMPTYFOLDER {
+struct zcreq_emptyfolder {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 };
 
-struct ZCREQ_COPYFOLDER {
+struct zcreq_copyfolder {
 	GUID hsession;
 	uint32_t hsrc_folder;
 	BINARY entryid;
@@ -259,36 +259,36 @@ struct ZCREQ_COPYFOLDER {
 	uint32_t flags;
 };
 
-struct ZCREQ_GETSTOREENTRYID {
+struct zcreq_getstoreentryid {
 	char *mailbox_dn;
 };
 
-struct ZCREQ_ENTRYIDFROMSOURCEKEY {
+struct zcreq_entryidfromsourcekey {
 	GUID hsession;
 	uint32_t hstore;
 	BINARY folder_key;
 	BINARY *pmessage_key;
 };
 
-struct ZCREQ_STOREADVISE {
+struct zcreq_storeadvise {
 	GUID hsession;
 	uint32_t hstore;
 	BINARY *pentryid;
 	uint32_t event_mask;
 };
 
-struct ZCREQ_UNADVISE {
+struct zcreq_unadvise {
 	GUID hsession;
 	uint32_t hstore;
 	uint32_t sub_id;
 };
 
-struct ZCREQ_NOTIFDEQUEUE {
+struct zcreq_notifdequeue {
 	NOTIF_SINK *psink;
 	uint32_t timeval;
 };
 
-struct ZCREQ_QUERYROWS {
+struct zcreq_queryrows {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t start;
@@ -297,39 +297,39 @@ struct ZCREQ_QUERYROWS {
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct ZCREQ_SETCOLUMNS {
+struct zcreq_setcolumns {
 	GUID hsession;
 	uint32_t htable;
 	PROPTAG_ARRAY *pproptags;
 	uint32_t flags;
 };
 
-struct ZCREQ_SEEKROW {
+struct zcreq_seekrow {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t bookmark;
 	int32_t seek_rows;
 };
 
-struct ZCREQ_SORTTABLE {
+struct zcreq_sorttable {
 	GUID hsession;
 	uint32_t htable;
 	SORTORDER_SET *psortset;
 };
 
-struct ZCREQ_GETROWCOUNT {
+struct zcreq_getrowcount {
 	GUID hsession;
 	uint32_t htable;
 };
 
-struct ZCREQ_RESTRICTTABLE {
+struct zcreq_restricttable {
 	GUID hsession;
 	uint32_t htable;
 	RESTRICTION *prestriction;
 	uint32_t flags;
 };
 
-struct ZCREQ_FINDROW {
+struct zcreq_findrow {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t bookmark;
@@ -337,100 +337,100 @@ struct ZCREQ_FINDROW {
 	uint32_t flags;
 };
 
-struct ZCREQ_CREATEBOOKMARK {
+struct zcreq_createbookmark {
 	GUID hsession;
 	uint32_t htable;
 };
 
-struct ZCREQ_FREEBOOKMARK {
+struct zcreq_freebookmark {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t bookmark;
 };
 
-struct ZCREQ_GETRECEIVEFOLDER {
+struct zcreq_getreceivefolder {
 	GUID hsession;
 	uint32_t hstore;
 	char *pstrclass;
 };
 
-struct ZCREQ_MODIFYRECIPIENTS {
+struct zcreq_modifyrecipients {
 	GUID hsession;
 	uint32_t hmessage;
 	uint32_t flags;
 	TARRAY_SET *prcpt_list;
 };
 
-struct ZCREQ_SUBMITMESSAGE {
+struct zcreq_submitmessage {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct ZCREQ_LOADATTACHMENTTABLE {
+struct zcreq_loadattachmenttable {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct ZCREQ_OPENATTACHMENT {
-	GUID hsession;
-	uint32_t hmessage;
-	uint32_t attach_id;
-};
-
-struct ZCREQ_CREATEATTACHMENT {
-	GUID hsession;
-	uint32_t hmessage;
-};
-
-struct ZCREQ_DELETEATTACHMENT {
+struct zcreq_openattachment {
 	GUID hsession;
 	uint32_t hmessage;
 	uint32_t attach_id;
 };
 
-struct ZCREQ_SETPROPVALS {
+struct zcreq_createattachment {
+	GUID hsession;
+	uint32_t hmessage;
+};
+
+struct zcreq_deleteattachment {
+	GUID hsession;
+	uint32_t hmessage;
+	uint32_t attach_id;
+};
+
+struct zcreq_setpropvals {
 	GUID hsession;
 	uint32_t hobject;
 	TPROPVAL_ARRAY *ppropvals;
 };
 
-struct ZCREQ_GETPROPVALS {
+struct zcreq_getpropvals {
 	GUID hsession;
 	uint32_t hobject;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct ZCREQ_DELETEPROPVALS {
+struct zcreq_deletepropvals {
 	GUID hsession;
 	uint32_t hobject;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct ZCREQ_SETMESSAGEREADFLAG {
+struct zcreq_setmessagereadflag {
 	GUID hsession;
 	uint32_t hmessage;
 	uint32_t flags;
 };
 
-struct ZCREQ_OPENEMBEDDED {
+struct zcreq_openembedded {
 	GUID hsession;
 	uint32_t hattachment;
 	uint32_t flags;
 };
 
-struct ZCREQ_GETNAMEDPROPIDS {
+struct zcreq_getnamedpropids {
 	GUID hsession;
 	uint32_t hstore;
 	PROPNAME_ARRAY *ppropnames;
 };
 
-struct ZCREQ_GETPROPNAMES {
+struct zcreq_getpropnames {
 	GUID hsession;
 	uint32_t hstore;
 	PROPID_ARRAY *ppropids;
 };
 
-struct ZCREQ_COPYTO {
+struct zcreq_copyto {
 	GUID hsession;
 	uint32_t hsrcobject;
 	PROPTAG_ARRAY *pexclude_proptags;
@@ -438,22 +438,22 @@ struct ZCREQ_COPYTO {
 	uint32_t flags;
 };
 
-struct ZCREQ_SAVECHANGES {
+struct zcreq_savechanges {
 	GUID hsession;
 	uint32_t hobject;
 };
 
-struct ZCREQ_HIERARCHYSYNC {
+struct zcreq_hierarchysync {
 	GUID hsession;
 	uint32_t hfolder;
 };
 
-struct ZCREQ_CONTENTSYNC {
+struct zcreq_contentsync {
 	GUID hsession;
 	uint32_t hfolder;
 };
 
-struct ZCREQ_CONFIGSYNC {
+struct zcreq_configsync {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
@@ -461,86 +461,86 @@ struct ZCREQ_CONFIGSYNC {
 	RESTRICTION *prestriction;
 };
 
-struct ZCREQ_STATESYNC {
+struct zcreq_statesync {
 	GUID hsession;
 	uint32_t hctx;
 };
 
-struct ZCREQ_SYNCMESSAGECHANGE {
+struct zcreq_syncmessagechange {
 	GUID hsession;
 	uint32_t hctx;
 };
 
-struct ZCREQ_SYNCFOLDERCHANGE {
+struct zcreq_syncfolderchange {
 	GUID hsession;
 	uint32_t hctx;
 };
 
-struct ZCREQ_SYNCREADSTATECHANGES {
+struct zcreq_syncreadstatechanges {
 	GUID hsession;
 	uint32_t hctx;
 };
 
-struct ZCREQ_SYNCDELETIONS {
+struct zcreq_syncdeletions {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
 };
 
-struct ZCREQ_HIERARCHYIMPORT {
+struct zcreq_hierarchyimport {
 	GUID hsession;
 	uint32_t hfolder;
 };
 
-struct ZCREQ_CONTENTIMPORT {
+struct zcreq_contentimport {
 	GUID hsession;
 	uint32_t hfolder;
 };
 
-struct ZCREQ_CONFIGIMPORT {
+struct zcreq_configimport {
 	GUID hsession;
 	uint32_t hctx;
 	uint8_t sync_type;
 	BINARY *pstate;
 };
 	
-struct ZCREQ_STATEIMPORT {
+struct zcreq_stateimport {
 	GUID hsession;
 	uint32_t hctx;
 };
 
-struct ZCREQ_IMPORTMESSAGE {
+struct zcreq_importmessage {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
 	TPROPVAL_ARRAY *pproplist;
 };
 	
-struct ZCREQ_IMPORTFOLDER {
+struct zcreq_importfolder {
 	GUID hsession;
 	uint32_t hctx;
 	TPROPVAL_ARRAY *pproplist;
 };
 
-struct ZCREQ_IMPORTDELETION {
+struct zcreq_importdeletion {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
 	BINARY_ARRAY *pbins;
 };
 
-struct ZCREQ_IMPORTREADSTATES {
+struct zcreq_importreadstates {
 	GUID hsession;
 	uint32_t hctx;
 	STATE_ARRAY *pstates;
 };
 
-struct ZCREQ_GETSEARCHCRITERIA {
+struct zcreq_getsearchcriteria {
 	GUID hsession;
 	uint32_t hfolder;
 };
 	
-struct ZCREQ_SETSEARCHCRITERIA {
+struct zcreq_setsearchcriteria {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
@@ -548,23 +548,23 @@ struct ZCREQ_SETSEARCHCRITERIA {
 	RESTRICTION *prestriction;
 };
 
-struct ZCREQ_MESSAGETORFC822 {
+struct zcreq_messagetorfc822 {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct ZCREQ_RFC822TOMESSAGE {
+struct zcreq_rfc822tomessage {
 	GUID hsession;
 	uint32_t hmessage, mxf_flags;
 	BINARY *peml_bin;
 };
 
-struct ZCREQ_MESSAGETOICAL {
+struct zcreq_messagetoical {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct ZCREQ_ICALTOMESSAGE {
+struct zcreq_icaltomessage {
 	GUID hsession;
 	uint32_t hmessage;
 	BINARY *pical_bin;
@@ -575,137 +575,137 @@ enum imtomessage2_type {
 	IMTOMESSAGE_VCARD,
 };
 
-struct ZCREQ_IMTOMESSAGE2 {
+struct zcreq_imtomessage2 {
 	GUID session;
 	uint32_t folder;
 	uint32_t data_type;
 	char *im_data;
 };
 
-struct ZCREQ_MESSAGETOVCF {
+struct zcreq_messagetovcf {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct ZCREQ_VCFTOMESSAGE {
+struct zcreq_vcftomessage {
 	GUID hsession;
 	uint32_t hmessage;
 	BINARY *pvcf_bin;
 };
 
-struct ZCREQ_GETUSERAVAILABILITY {
+struct zcreq_getuseravailability {
 	GUID hsession;
 	BINARY entryid;
 	uint64_t starttime;
 	uint64_t endtime;
 };
 
-struct ZCREQ_SETPASSWD {
+struct zcreq_setpasswd {
 	char *username;
 	char *passwd;
 	char *new_passwd;
 };
 
-struct ZCREQ_LINKMESSAGE {
+struct zcreq_linkmessage {
 	GUID hsession;
 	BINARY search_entryid;
 	BINARY message_entryid;
 };
 
-struct ZCREQ_SAVESESSION {
+struct zcreq_savesession {
 	GUID hsession;
 };
 
-struct ZCREQ_RESTORESESSION {
+struct zcreq_restoresession {
 	BINARY *pdata_bin;
 };
 
 union ZCORE_REQUEST_PAYLOAD {
-	ZCREQ_LOGON logon;
-	ZCREQ_CHECKSESSION checksession;
-	ZCREQ_UINFO uinfo;
-	ZCREQ_UNLOADOBJECT unloadobject;
-	ZCREQ_OPENENTRY openentry;
-	ZCREQ_OPENSTOREENTRY openstoreentry;
-	ZCREQ_OPENABENTRY openabentry;
-	ZCREQ_RESOLVENAME resolvename;
-	ZCREQ_GETPERMISSIONS getpermissions;
-	ZCREQ_MODIFYPERMISSIONS modifypermissions;
-	ZCREQ_MODIFYRULES modifyrules;
-	ZCREQ_GETABGAL getabgal;
-	ZCREQ_LOADSTORETABLE loadstoretable;
-	ZCREQ_OPENSTORE openstore;
-	ZCREQ_OPENPROFILESEC openprofilesec;
-	ZCREQ_LOADHIERARCHYTABLE loadhierarchytable;
-	ZCREQ_LOADCONTENTTABLE loadcontenttable;
-	ZCREQ_LOADRECIPIENTTABLE loadrecipienttable;
-	ZCREQ_LOADRULETABLE loadruletable;
-	ZCREQ_CREATEMESSAGE createmessage;
-	ZCREQ_DELETEMESSAGES deletemessages;
-	ZCREQ_COPYMESSAGES copymessages;
-	ZCREQ_SETREADFLAGS setreadflags;
-	ZCREQ_CREATEFOLDER createfolder;
-	ZCREQ_DELETEFOLDER deletefolder;
-	ZCREQ_EMPTYFOLDER emptyfolder;
-	ZCREQ_COPYFOLDER copyfolder;
-	ZCREQ_GETSTOREENTRYID getstoreentryid;
-	ZCREQ_ENTRYIDFROMSOURCEKEY entryidfromsourcekey;
-	ZCREQ_STOREADVISE storeadvise;
-	ZCREQ_UNADVISE unadvise;
-	ZCREQ_NOTIFDEQUEUE notifdequeue;
-	ZCREQ_QUERYROWS queryrows;
-	ZCREQ_SETCOLUMNS setcolumns;
-	ZCREQ_SEEKROW seekrow;
-	ZCREQ_SORTTABLE sorttable;
-	ZCREQ_GETROWCOUNT getrowcount;
-	ZCREQ_RESTRICTTABLE restricttable;
-	ZCREQ_FINDROW findrow;
-	ZCREQ_CREATEBOOKMARK createbookmark;
-	ZCREQ_FREEBOOKMARK freebookmark;
-	ZCREQ_GETRECEIVEFOLDER getreceivefolder;
-	ZCREQ_MODIFYRECIPIENTS modifyrecipients;
-	ZCREQ_SUBMITMESSAGE submitmessage;
-	ZCREQ_LOADATTACHMENTTABLE loadattachmenttable;
-	ZCREQ_OPENATTACHMENT openattachment;
-	ZCREQ_CREATEATTACHMENT createattachment;
-	ZCREQ_DELETEATTACHMENT deleteattachment;
-	ZCREQ_SETPROPVALS setpropvals;
-	ZCREQ_GETPROPVALS getpropvals;
-	ZCREQ_DELETEPROPVALS deletepropvals;
-	ZCREQ_SETMESSAGEREADFLAG setmessagereadflag;
-	ZCREQ_OPENEMBEDDED openembedded;
-	ZCREQ_GETNAMEDPROPIDS getnamedpropids;
-	ZCREQ_GETPROPNAMES getpropnames;
-	ZCREQ_COPYTO copyto;
-	ZCREQ_SAVECHANGES savechanges;
-	ZCREQ_HIERARCHYSYNC hierarchysync;
-	ZCREQ_CONTENTSYNC contentsync;
-	ZCREQ_CONFIGSYNC configsync;
-	ZCREQ_STATESYNC statesync;
-	ZCREQ_SYNCMESSAGECHANGE syncmessagechange;
-	ZCREQ_SYNCFOLDERCHANGE syncfolderchange;
-	ZCREQ_SYNCREADSTATECHANGES syncreadstatechanges;
-	ZCREQ_SYNCDELETIONS syncdeletions;
-	ZCREQ_HIERARCHYIMPORT hierarchyimport;
-	ZCREQ_CONTENTIMPORT contentimport;
-	ZCREQ_CONFIGIMPORT configimport;
-	ZCREQ_STATEIMPORT stateimport;
-	ZCREQ_IMPORTMESSAGE importmessage;
-	ZCREQ_IMPORTFOLDER importfolder;
-	ZCREQ_IMPORTDELETION importdeletion;
-	ZCREQ_IMPORTREADSTATES importreadstates;
-	ZCREQ_GETSEARCHCRITERIA getsearchcriteria;
-	ZCREQ_SETSEARCHCRITERIA setsearchcriteria;
-	ZCREQ_MESSAGETORFC822 messagetorfc822;
-	ZCREQ_RFC822TOMESSAGE rfc822tomessage;
-	ZCREQ_MESSAGETOICAL messagetoical;
-	ZCREQ_ICALTOMESSAGE icaltomessage;
-	ZCREQ_MESSAGETOVCF messagetovcf;
-	ZCREQ_VCFTOMESSAGE vcftomessage;
-	ZCREQ_GETUSERAVAILABILITY getuseravailability;
-	ZCREQ_SETPASSWD setpasswd;
-	ZCREQ_LINKMESSAGE linkmessage;
-	ZCREQ_IMTOMESSAGE2 imtomessage2;
+	zcreq_logon logon;
+	zcreq_checksession checksession;
+	zcreq_uinfo uinfo;
+	zcreq_unloadobject unloadobject;
+	zcreq_openentry openentry;
+	zcreq_openstoreentry openstoreentry;
+	zcreq_openabentry openabentry;
+	zcreq_resolvename resolvename;
+	zcreq_getpermissions getpermissions;
+	zcreq_modifypermissions modifypermissions;
+	zcreq_modifyrules modifyrules;
+	zcreq_getabgal getabgal;
+	zcreq_loadstoretable loadstoretable;
+	zcreq_openstore openstore;
+	zcreq_openprofilesec openprofilesec;
+	zcreq_loadhierarchytable loadhierarchytable;
+	zcreq_loadcontenttable loadcontenttable;
+	zcreq_loadrecipienttable loadrecipienttable;
+	zcreq_loadruletable loadruletable;
+	zcreq_createmessage createmessage;
+	zcreq_deletemessages deletemessages;
+	zcreq_copymessages copymessages;
+	zcreq_setreadflags setreadflags;
+	zcreq_createfolder createfolder;
+	zcreq_deletefolder deletefolder;
+	zcreq_emptyfolder emptyfolder;
+	zcreq_copyfolder copyfolder;
+	zcreq_getstoreentryid getstoreentryid;
+	zcreq_entryidfromsourcekey entryidfromsourcekey;
+	zcreq_storeadvise storeadvise;
+	zcreq_unadvise unadvise;
+	zcreq_notifdequeue notifdequeue;
+	zcreq_queryrows queryrows;
+	zcreq_setcolumns setcolumns;
+	zcreq_seekrow seekrow;
+	zcreq_sorttable sorttable;
+	zcreq_getrowcount getrowcount;
+	zcreq_restricttable restricttable;
+	zcreq_findrow findrow;
+	zcreq_createbookmark createbookmark;
+	zcreq_freebookmark freebookmark;
+	zcreq_getreceivefolder getreceivefolder;
+	zcreq_modifyrecipients modifyrecipients;
+	zcreq_submitmessage submitmessage;
+	zcreq_loadattachmenttable loadattachmenttable;
+	zcreq_openattachment openattachment;
+	zcreq_createattachment createattachment;
+	zcreq_deleteattachment deleteattachment;
+	zcreq_setpropvals setpropvals;
+	zcreq_getpropvals getpropvals;
+	zcreq_deletepropvals deletepropvals;
+	zcreq_setmessagereadflag setmessagereadflag;
+	zcreq_openembedded openembedded;
+	zcreq_getnamedpropids getnamedpropids;
+	zcreq_getpropnames getpropnames;
+	zcreq_copyto copyto;
+	zcreq_savechanges savechanges;
+	zcreq_hierarchysync hierarchysync;
+	zcreq_contentsync contentsync;
+	zcreq_configsync configsync;
+	zcreq_statesync statesync;
+	zcreq_syncmessagechange syncmessagechange;
+	zcreq_syncfolderchange syncfolderchange;
+	zcreq_syncreadstatechanges syncreadstatechanges;
+	zcreq_syncdeletions syncdeletions;
+	zcreq_hierarchyimport hierarchyimport;
+	zcreq_contentimport contentimport;
+	zcreq_configimport configimport;
+	zcreq_stateimport stateimport;
+	zcreq_importmessage importmessage;
+	zcreq_importfolder importfolder;
+	zcreq_importdeletion importdeletion;
+	zcreq_importreadstates importreadstates;
+	zcreq_getsearchcriteria getsearchcriteria;
+	zcreq_setsearchcriteria setsearchcriteria;
+	zcreq_messagetorfc822 messagetorfc822;
+	zcreq_rfc822tomessage rfc822tomessage;
+	zcreq_messagetoical messagetoical;
+	zcreq_icaltomessage icaltomessage;
+	zcreq_messagetovcf messagetovcf;
+	zcreq_vcftomessage vcftomessage;
+	zcreq_getuseravailability getuseravailability;
+	zcreq_setpasswd setpasswd;
+	zcreq_linkmessage linkmessage;
+	zcreq_imtomessage2 imtomessage2;
 };
 
 struct ZCORE_RPC_REQUEST {
@@ -713,284 +713,284 @@ struct ZCORE_RPC_REQUEST {
 	ZCORE_REQUEST_PAYLOAD payload;
 };
 
-struct ZCRESP_LOGON {
+struct zcresp_logon {
 	GUID hsession;
 };
 
-struct ZCRESP_UINFO {
+struct zcresp_uinfo {
 	BINARY entryid;
 	char *pdisplay_name;
 	char *px500dn;
 	uint32_t privilege_bits;
 };
 
-struct ZCRESP_OPENENTRY {
+struct zcresp_openentry {
 	uint8_t mapi_type;
 	uint32_t hobject;
 };
 
-struct ZCRESP_OPENSTOREENTRY {
+struct zcresp_openstoreentry {
 	uint8_t mapi_type;
 	uint32_t hxobject;
 };
 
-struct ZCRESP_OPENABENTRY {
+struct zcresp_openabentry {
 	uint8_t mapi_type;
 	uint32_t hobject;
 };
 
-struct ZCRESP_RESOLVENAME {
+struct zcresp_resolvename {
 	TARRAY_SET result_set;
 };
 
-struct ZCRESP_GETPERMISSIONS {
+struct zcresp_getpermissions {
 	PERMISSION_SET perm_set;
 };
 
-struct ZCRESP_GETABGAL {
+struct zcresp_getabgal {
 	BINARY entryid;
 };
 
-struct ZCRESP_LOADSTORETABLE {
+struct zcresp_loadstoretable {
 	uint32_t hobject;
 };
 
-struct ZCRESP_OPENSTORE {
+struct zcresp_openstore {
 	uint32_t hobject;
 };
 
-struct ZCRESP_OPENPROFILESEC {
+struct zcresp_openprofilesec {
 	uint32_t hobject;
 };
 
-struct ZCRESP_LOADHIERARCHYTABLE {
+struct zcresp_loadhierarchytable {
 	uint32_t hobject;
 };
 
-struct ZCRESP_LOADCONTENTTABLE {
+struct zcresp_loadcontenttable {
 	uint32_t hobject;
 };
 
-struct ZCRESP_LOADRECIPIENTTABLE {
+struct zcresp_loadrecipienttable {
 	uint32_t hobject;
 };
 
-struct ZCRESP_LOADRULETABLE {
+struct zcresp_loadruletable {
 	uint32_t hobject;
 };
 	
-struct ZCRESP_CREATEMESSAGE {
+struct zcresp_createmessage {
 	uint32_t hobject;
 };
 
-struct ZCRESP_CREATEFOLDER {
+struct zcresp_createfolder {
 	uint32_t hobject;
 };
 
-struct ZCRESP_GETSTOREENTRYID {
+struct zcresp_getstoreentryid {
 	BINARY entryid;
 };
 
-struct ZCRESP_ENTRYIDFROMSOURCEKEY {
+struct zcresp_entryidfromsourcekey {
 	BINARY entryid;
 };
 
-struct ZCRESP_STOREADVISE {
+struct zcresp_storeadvise {
 	uint32_t sub_id;
 };
 
-struct ZCRESP_NOTIFDEQUEUE {
+struct zcresp_notifdequeue {
 	ZNOTIFICATION_ARRAY notifications;
 };
 
-struct ZCRESP_QUERYROWS {
+struct zcresp_queryrows {
 	TARRAY_SET rowset;
 };
 
-struct ZCRESP_SETCOLUMNS {
+struct zcresp_setcolumns {
 	GUID hsession;
 	uint32_t htable;
 	PROPTAG_ARRAY *pproptags;
 	uint32_t flags;
 };
 
-struct ZCRESP_SEEKROW {
+struct zcresp_seekrow {
 	int32_t sought_rows;
 };
 
-struct ZCRESP_GETROWCOUNT {
+struct zcresp_getrowcount {
 	uint32_t count;
 };
 
-struct ZCRESP_FINDROW {
+struct zcresp_findrow {
 	uint32_t row_idx;
 };
 
-struct ZCRESP_CREATEBOOKMARK {
+struct zcresp_createbookmark {
 	uint32_t bookmark;
 };
 
-struct ZCRESP_GETRECEIVEFOLDER {
+struct zcresp_getreceivefolder {
 	BINARY entryid;
 };
 
-struct ZCRESP_LOADATTACHMENTTABLE {
+struct zcresp_loadattachmenttable {
 	uint32_t hobject;
 };
 
-struct ZCRESP_OPENATTACHMENT {
+struct zcresp_openattachment {
 	uint32_t hobject;
 };
 
-struct ZCRESP_CREATEATTACHMENT {
+struct zcresp_createattachment {
 	uint32_t hobject;
 };
 
-struct ZCRESP_GETPROPVALS {
+struct zcresp_getpropvals {
 	TPROPVAL_ARRAY propvals;
 };
 
-struct ZCRESP_OPENEMBEDDED {
+struct zcresp_openembedded {
 	uint32_t hobject;
 };
 
-struct ZCRESP_GETNAMEDPROPIDS {
+struct zcresp_getnamedpropids {
 	PROPID_ARRAY propids;
 };
 
-struct ZCRESP_GETPROPNAMES {
+struct zcresp_getpropnames {
 	PROPNAME_ARRAY propnames;
 };
 
-struct ZCRESP_HIERARCHYSYNC {
+struct zcresp_hierarchysync {
 	uint32_t hobject;
 };
 
-struct ZCRESP_CONTENTSYNC {
+struct zcresp_contentsync {
 	uint32_t hobject;
 };
 
-struct ZCRESP_CONFIGSYNC {
+struct zcresp_configsync {
 	uint8_t b_changed;
 	uint32_t count;
 };
 
-struct ZCRESP_STATESYNC {
+struct zcresp_statesync {
 	BINARY state;
 };
 
-struct ZCRESP_SYNCMESSAGECHANGE {
+struct zcresp_syncmessagechange {
 	uint8_t b_new;
 	TPROPVAL_ARRAY proplist;
 };
 
-struct ZCRESP_SYNCFOLDERCHANGE {
+struct zcresp_syncfolderchange {
 	TPROPVAL_ARRAY proplist;
 };
 
-struct ZCRESP_SYNCREADSTATECHANGES {
+struct zcresp_syncreadstatechanges {
 	STATE_ARRAY states;
 };
 
-struct ZCRESP_SYNCDELETIONS {
+struct zcresp_syncdeletions {
 	BINARY_ARRAY bins;
 };
 
-struct ZCRESP_HIERARCHYIMPORT {
+struct zcresp_hierarchyimport {
 	uint32_t hobject;
 };
 
-struct ZCRESP_CONTENTIMPORT {
+struct zcresp_contentimport {
 	uint32_t hobject;
 };
 	
-struct ZCRESP_STATEIMPORT {
+struct zcresp_stateimport {
 	BINARY state;
 };
 
-struct ZCRESP_IMPORTMESSAGE {
+struct zcresp_importmessage {
 	uint32_t hobject;
 };
 
-struct ZCRESP_GETSEARCHCRITERIA {
+struct zcresp_getsearchcriteria {
 	BINARY_ARRAY folder_array;
 	RESTRICTION *prestriction;
 	uint32_t search_stat;
 };
 
-struct ZCRESP_MESSAGETORFC822 {
+struct zcresp_messagetorfc822 {
 	BINARY eml_bin;
 };
 
-struct ZCRESP_MESSAGETOICAL {
+struct zcresp_messagetoical {
 	BINARY ical_bin;
 };
 
-struct ZCRESP_MESSAGETOVCF {
+struct zcresp_messagetovcf {
 	BINARY vcf_bin;
 };
 
-struct ZCRESP_GETUSERAVAILABILITY {
+struct zcresp_getuseravailability {
 	char *result_string;
 };
 
-struct ZCRESP_IMTOMESSAGE2 {
+struct zcresp_imtomessage2 {
 	LONG_ARRAY msg_handles;
 };
 
 union ZCORE_RESPONSE_PAYLOAD {
-	ZCRESP_LOGON logon;
-	ZCRESP_UINFO uinfo;
-	ZCRESP_OPENENTRY openentry;
-	ZCRESP_OPENSTOREENTRY openstoreentry;
-	ZCRESP_OPENABENTRY openabentry;
-	ZCRESP_RESOLVENAME resolvename;
-	ZCRESP_GETPERMISSIONS getpermissions;
-	ZCRESP_GETABGAL getabgal;
-	ZCRESP_LOADSTORETABLE loadstoretable;
-	ZCRESP_OPENSTORE openstore;
-	ZCRESP_OPENPROFILESEC openprofilesec;
-	ZCRESP_LOADHIERARCHYTABLE loadhierarchytable;
-	ZCRESP_LOADCONTENTTABLE loadcontenttable;
-	ZCRESP_LOADRECIPIENTTABLE loadrecipienttable;
-	ZCRESP_LOADRULETABLE loadruletable;
-	ZCRESP_CREATEMESSAGE createmessage;
-	ZCRESP_CREATEFOLDER createfolder;
-	ZCRESP_GETSTOREENTRYID getstoreentryid;
-	ZCRESP_ENTRYIDFROMSOURCEKEY entryidfromsourcekey;
-	ZCRESP_STOREADVISE storeadvise;
-	ZCRESP_NOTIFDEQUEUE notifdequeue;
-	ZCRESP_QUERYROWS queryrows;
-	ZCRESP_SEEKROW seekrow;
-	ZCRESP_GETROWCOUNT getrowcount;
-	ZCRESP_FINDROW findrow;
-	ZCRESP_CREATEBOOKMARK createbookmark;
-	ZCRESP_GETRECEIVEFOLDER getreceivefolder;
-	ZCRESP_LOADATTACHMENTTABLE loadattachmenttable;
-	ZCRESP_OPENATTACHMENT openattachment;
-	ZCRESP_CREATEATTACHMENT createattachment;
-	ZCRESP_GETPROPVALS getpropvals;
-	ZCRESP_OPENEMBEDDED openembedded;
-	ZCRESP_GETNAMEDPROPIDS getnamedpropids;
-	ZCRESP_GETPROPNAMES getpropnames;
-	ZCRESP_HIERARCHYSYNC hierarchysync;
-	ZCRESP_CONTENTSYNC contentsync;
-	ZCRESP_CONFIGSYNC configsync;
-	ZCRESP_STATESYNC statesync;
-	ZCRESP_SYNCMESSAGECHANGE syncmessagechange;
-	ZCRESP_SYNCFOLDERCHANGE syncfolderchange;
-	ZCRESP_SYNCREADSTATECHANGES syncreadstatechanges;
-	ZCRESP_SYNCDELETIONS syncdeletions;
-	ZCRESP_HIERARCHYIMPORT hierarchyimport;
-	ZCRESP_CONTENTIMPORT contentimport;
-	ZCRESP_STATEIMPORT stateimport;
-	ZCRESP_IMPORTMESSAGE importmessage;
-	ZCRESP_GETSEARCHCRITERIA getsearchcriteria;
-	ZCRESP_MESSAGETORFC822 messagetorfc822;
-	ZCRESP_MESSAGETOICAL messagetoical;
-	ZCRESP_MESSAGETOVCF messagetovcf;
-	ZCRESP_GETUSERAVAILABILITY getuseravailability;
-	ZCRESP_IMTOMESSAGE2 imtomessage2;
+	zcresp_logon logon;
+	zcresp_uinfo uinfo;
+	zcresp_openentry openentry;
+	zcresp_openstoreentry openstoreentry;
+	zcresp_openabentry openabentry;
+	zcresp_resolvename resolvename;
+	zcresp_getpermissions getpermissions;
+	zcresp_getabgal getabgal;
+	zcresp_loadstoretable loadstoretable;
+	zcresp_openstore openstore;
+	zcresp_openprofilesec openprofilesec;
+	zcresp_loadhierarchytable loadhierarchytable;
+	zcresp_loadcontenttable loadcontenttable;
+	zcresp_loadrecipienttable loadrecipienttable;
+	zcresp_loadruletable loadruletable;
+	zcresp_createmessage createmessage;
+	zcresp_createfolder createfolder;
+	zcresp_getstoreentryid getstoreentryid;
+	zcresp_entryidfromsourcekey entryidfromsourcekey;
+	zcresp_storeadvise storeadvise;
+	zcresp_notifdequeue notifdequeue;
+	zcresp_queryrows queryrows;
+	zcresp_seekrow seekrow;
+	zcresp_getrowcount getrowcount;
+	zcresp_findrow findrow;
+	zcresp_createbookmark createbookmark;
+	zcresp_getreceivefolder getreceivefolder;
+	zcresp_loadattachmenttable loadattachmenttable;
+	zcresp_openattachment openattachment;
+	zcresp_createattachment createattachment;
+	zcresp_getpropvals getpropvals;
+	zcresp_openembedded openembedded;
+	zcresp_getnamedpropids getnamedpropids;
+	zcresp_getpropnames getpropnames;
+	zcresp_hierarchysync hierarchysync;
+	zcresp_contentsync contentsync;
+	zcresp_configsync configsync;
+	zcresp_statesync statesync;
+	zcresp_syncmessagechange syncmessagechange;
+	zcresp_syncfolderchange syncfolderchange;
+	zcresp_syncreadstatechanges syncreadstatechanges;
+	zcresp_syncdeletions syncdeletions;
+	zcresp_hierarchyimport hierarchyimport;
+	zcresp_contentimport contentimport;
+	zcresp_stateimport stateimport;
+	zcresp_importmessage importmessage;
+	zcresp_getsearchcriteria getsearchcriteria;
+	zcresp_messagetorfc822 messagetorfc822;
+	zcresp_messagetoical messagetoical;
+	zcresp_messagetovcf messagetovcf;
+	zcresp_getuseravailability getuseravailability;
+	zcresp_imtomessage2 imtomessage2;
 };
 
 struct ZCORE_RPC_RESPONSE {
