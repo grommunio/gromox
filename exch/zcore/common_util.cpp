@@ -2273,7 +2273,9 @@ static void zc_unwrap_smime(MAIL &ma) try
 	if (partlen < 0)
 		return;
 	size_t len = partlen;
-	auto ctbuf = std::make_unique<char[]>(len);
+	std::unique_ptr<char[], stdlib_delete> ctbuf(me_alloc<char>(len));
+	if (ctbuf == nullptr)
+		throw std::bad_alloc();
 	if (!part->read_head(ctbuf.get(), &len))
 		return;
 	size_t written_so_far = len;
@@ -2284,6 +2286,7 @@ static void zc_unwrap_smime(MAIL &ma) try
 	MAIL m2(g_mime_pool);
 	if (!m2.retrieve(ctbuf.get(), written_so_far))
 		return;
+	m2.buffer = ctbuf.release();
 	ma = std::move(m2);
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1996: ENOMEM\n");
