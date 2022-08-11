@@ -1470,14 +1470,6 @@ struct DB_NOTIFY_DATAGRAM {
 	DB_NOTIFY db_notify;
 };
 
-struct exmdb_hell {
-	BOOL rdsock(int, BINARY *, long timeout_ms = -1);
-	BOOL wrsock(int, const BINARY *, long timeout_ms = -1);
-
-	void *(*alloc)(size_t);
-	BOOL (*exec)(const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *);
-};
-
 extern GX_EXPORT int exmdb_ext_pull_request(const BINARY *, EXMDB_REQUEST *);
 extern GX_EXPORT int exmdb_ext_push_request(const EXMDB_REQUEST *, BINARY *);
 extern GX_EXPORT int exmdb_ext_pull_response(const BINARY *, EXMDB_RESPONSE *);
