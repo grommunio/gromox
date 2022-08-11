@@ -125,10 +125,13 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
 
 	for(auto& recipient : request.Recipients)
 	{
-		tMailTips& mailTips = data.ResponseMessages.emplace_back().MailTips.emplace();
+		mMailTipsResponseMessageType& mailTipsResponseMessage = data.ResponseMessages.emplace_back();
+		tMailTips& mailTips = mailTipsResponseMessage.MailTips.emplace();
 		mailTips.RecipientAddress = std::move(recipient);
+		mailTipsResponseMessage.success();
 	}
 
+	data.success();
 	data.serialize(response);
 }
 
@@ -151,8 +154,11 @@ void process(mGetServiceConfigurationRequest&&, XMLElement* response, const EWSC
 	response->SetName("GetMailTipsResponse");
 
 	mGetServiceConfigurationResponse data;
-	data.ResponseMessages.emplace_back().MailTipsConfiguration.emplace();
+	mGetServiceConfigurationResponseMessageType& msg = data.ResponseMessages.emplace_back();
+	msg.MailTipsConfiguration.emplace();
+	msg.success();
 
+	data.success();
 	data.serialize(response);
 }
 

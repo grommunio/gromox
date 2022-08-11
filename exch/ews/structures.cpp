@@ -158,10 +158,16 @@ mGetMailTipsRequest::mGetMailTipsRequest(const XMLElement* xml) :
 {}
 
 void mMailTipsResponseMessageType::serialize(XMLElement* xml) const
-{XMLDUMP(MailTips);}
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMP(MailTips);
+}
 
 void mGetMailTipsResponse::serialize(XMLElement* xml) const
-{XMLDUMP(ResponseMessages);}
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMP(ResponseMessages);
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -171,11 +177,17 @@ mGetServiceConfigurationRequest::mGetServiceConfigurationRequest(const XMLElemen
 {}
 
 void mGetServiceConfigurationResponse::serialize(tinyxml2::XMLElement* xml) const
-{XMLDUMP(ResponseMessages);}
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMP(ResponseMessages);
+}
 
 
 void mGetServiceConfigurationResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
-{XMLDUMP(MailTipsConfiguration);}
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMP(MailTipsConfiguration);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -192,10 +204,16 @@ void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void mResponseMessageType::success()
+/**
+ * @brief      Set response data to success
+ *
+ * @return     *this
+ */
+mResponseMessageType& mResponseMessageType::success()
 {
 	ResponseClass = "Success";
 	ResponseCode = "NoError";
+	return *this;
 }
 
 void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
