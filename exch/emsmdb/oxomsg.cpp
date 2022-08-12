@@ -224,6 +224,19 @@ static bool oxomsg_get_perm(const char *account,
 	return false;
 }
 
+static ec_error_t pass_scheduling(const char *code, const char *account,
+    const char *username, message_object &msg, const char *cls)
+{
+	/* This models EXC behavior. It's silly. */
+	if (cls != nullptr && strncasecmp(cls, "IPM.Schedule.", 13) == 0)
+		return ecSuccess;
+	fprintf(stderr, "%s: %s tried to send message %llxh (class %s) with repr/from=<%s>, "
+		"but user has no delegate/sendas permission.\n",
+		code, account, static_cast<unsigned long long>(msg.get_id()),
+		znul(cls), username);
+	return ecAccessDenied;
+}
+
 uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -285,7 +298,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0) {
-		fprintf(stderr, "I-2147: submitmessage denied because "
+		fprintf(stderr, "I-2160: submitmessage denied because "
 		        "message %llxh is FAI\n",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
@@ -297,13 +310,10 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (*username == '\0') {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else if (!oxomsg_get_perm(account, username, send_as)) {
-		/* This models EXC behavior. It's silly. */
-		auto cls = tmp_propvals.get<const char>(PR_MESSAGE_CLASS);
-		if (cls == nullptr || strncasecmp(cls, "IPM.Schedule.", 13) != 0) {
-			fprintf(stderr, "I-2081: %s tried to send with repr/from=<%s>, but no delegate/sendas permission.\n",
-			        account, username);
-			return ecAccessDenied;
-		}
+		auto ret = pass_scheduling("I-2081", account, username, *pmessage,
+		           tmp_propvals.get<const char>(PR_MESSAGE_CLASS));
+		if (ret != ecSuccess)
+			return ret;
 		/* Unlike EXC, do not allow representation. */
 		gx_strlcpy(username, account, std::size(username));
 	}
@@ -609,13 +619,10 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	if (*username == '\0') {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else if (!oxomsg_get_perm(account, username, send_as)) {
-		/* This models EXC behavior. It's silly. */
-		auto cls = outvalues.get<const char>(PR_MESSAGE_CLASS);
-		if (cls == nullptr || strncasecmp(cls, "IPM.Schedule.", 13) != 0) {
-			fprintf(stderr, "I-2080: %s tried to send with repr/from=<%s>, but no delegate/sendas permission.\n",
-			        account, username);
-			return ecAccessDenied;
-		}
+		auto ret = pass_scheduling("I-2080", account, username, *pmessage,
+		           outvalues.get<const char>(PR_MESSAGE_CLASS));
+		if (ret != ecSuccess)
+			return ret;
 		/* Unlike EXC, do not allow representation. */
 		gx_strlcpy(username, account, std::size(username));
 	}
