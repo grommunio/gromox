@@ -19,6 +19,7 @@
 #include <zlib.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include <fmt/core.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
@@ -556,12 +557,15 @@ static void present_stores(const char *storeuser, DB_RESULT &res)
 			"lest it would require the full original user database, "
 			"a requirement this tool does not want to impose. "
 			"The search for \"%s\" has turned up multiple candidate stores:\n\n", storeuser);
-	fprintf(stderr, "GUID                              user_id  most_recent_owner\n");
-	fprintf(stderr, "============================================================\n");
+	fprintf(stderr, "GUID                              user_id   size  most_recent_owner\n");
+	fprintf(stderr, "====================================================================\n");
 	while ((row = res.fetch_row()) != nullptr) {
 		auto colen = res.row_lengths();
-		fprintf(stderr, "%s  %7lu  %s\n", bin2hex(row[0], colen[0]).c_str(),
-		        strtoul(row[1], nullptr, 0), znul(row[2]));
+		char mbsize[32]{};
+		if (row[4] != nullptr)
+			HX_unit_size_cu(mbsize, std::size(mbsize), strtoull(row[4], nullptr, 0), 0);
+		fprintf(stderr, "%s  %7lu  %5s  %s\n", bin2hex(row[0], colen[0]).c_str(),
+		        strtoul(row[1], nullptr, 0), mbsize, znul(row[2]));
 	}
 	fprintf(stderr, "============================================================\n");
 }
@@ -581,11 +585,13 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 		throw YError("PK-1020: charset utf8mb4/utf8mb3 not available: %s",
 		      mysql_error(drv->m_conn));
 
-	auto qstr = *storeuser == '\0' ?
-	            "SELECT guid, user_id, user_name, type FROM stores"s :
-		    "SELECT guid, user_id, user_name, type FROM stores "
-		    "WHERE stores.user_name='" +
-		    sql_escape(drv->m_conn, storeuser) + "'";
+	std::string qstr = "SELECT s.guid, s.user_id, s.user_name, s.type, "
+	                   "p.val_longint FROM stores AS s "
+	                   "LEFT JOIN properties AS p "
+	                   "ON s.hierarchy_id=p.hierarchyid AND p.tag=0xE08";
+	if (*storeuser != '\0')
+		qstr += " WHERE s.user_name='" +
+		        sql_escape(drv->m_conn, storeuser) + "'";
 	auto res = drv->query(qstr.c_str());
 	if (*storeuser == '\0' || mysql_num_rows(res.get()) > 1) {
 		present_stores(storeuser, res);
