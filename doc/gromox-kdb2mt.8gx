@@ -4,7 +4,7 @@
 .SH Synopsis
 \fBgromox\-kdb2mt\fP [\fB\-pstv\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
 [\fB\-\-src\-user\fP \fIsqluser\fP] [\fB\-\-src-port\fP \fIsqlport\fP]
-[\fB\-\-src\-db\fP \fIdbname\fP] \fB\-\-src\-at\fP \fIdir\fP
+[\fB\-\-src\-db\fP \fIdbname\fP] \fB\-\-src\-attach\fP \fIdir\fP
 {\fB\-\-src\-guid\fP \fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} [...]
 .SH Description
 gromox\-kdb2mt reads one store from a Zarafa/Kopano SQL database and, for
@@ -67,10 +67,10 @@ Database name.
 .br
 Default: \fIkopano\fP
 .TP
-\fB\-\-src\-at\fP \fIdirectory\fP
+\fB\-\-src\-attach\fP \fIdirectory\fP
 Required specification to the /var/lib/kopano/attachments directory mounted
 somewhere locally. (To skip over file-based attachments, use the empty
-value, i.e. \fB\-\-src\-at ""\fP.)
+value, i.e. \fB\-\-src\-attach ""\fP.)
 .TP
 \fB\-\-src\-guid\fP \fIguid\fP
 Selects the mailbox with the particular GUID for extraction.
@@ -160,8 +160,8 @@ e.g. /run/mysql/mysql.sock). Command:
 .PP
 .RS 4
 SRCPASS=kopanosqlpass gromox\-kdb2mt \-\-src\-host 127.0.0.1 \-\-src\-port
-12345 \-\-src\-user kopano \-\-src\-at /mnt \-\-src\-mbox jdoe | gromox\-mt2exm
-\-u target@domain.de
+12345 \-\-src\-user kopano \-\-src\-attach /mnt \-\-src\-mbox jdoe |
+gromox\-mt2exm \-u target@domain.de
 .RE
 .PP
 Done! The speed of the operation depends on the capabilities of the network
