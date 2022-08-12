@@ -1361,8 +1361,11 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	EID_ARRAY message_ids;
 	
 	if (ppropvals->count != 1 ||
-	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PT_MV_BINARY)
+	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PT_MV_BINARY) {
+		fprintf(stderr, "W-2150: importdeletes exptected proptype 0102h, but got tag %xh\n",
+		        ppropvals->ppropval[0].proptag);
 		return ecInvalidParam;
+	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -1404,19 +1407,29 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	}
 	for (size_t i = 0; i < pbins->count; ++i) {
 		if (22 != pbins->pbin[i].cb) {
+			fprintf(stderr, "W-2151: importdeletes expected 22-byte XID, "
+			        "but got a %u-long object instead\n", pbins->pbin[i].cb);
 			return ecInvalidParam;
 		}
 		if (!common_util_binary_to_xid(&pbins->pbin[i], &tmp_xid))
 			return ecError;
 		if (plogon->is_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
-			if (tmp_guid != tmp_xid.guid)
+			if (tmp_guid != tmp_xid.guid) {
+				fprintf(stderr, "W-2152: importdeletes expected store %s but got store+XID %s\n",
+				        bin2hex(&tmp_guid, sizeof(tmp_guid)).c_str(),
+				        bin2hex(&tmp_xid, sizeof(tmp_xid)).c_str());
 				return ecInvalidParam;
+			}
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else if (sync_type == SYNC_TYPE_CONTENTS) {
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-			if (tmp_guid != tmp_xid.guid)
+			if (tmp_guid != tmp_xid.guid) {
+				fprintf(stderr, "W-2153: importdeletes expected store %s but got store+XID %s\n",
+				        bin2hex(&tmp_guid, sizeof(tmp_guid)).c_str(),
+				        bin2hex(&tmp_xid, sizeof(tmp_xid)).c_str());
 				return ecInvalidParam;
+			}
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
