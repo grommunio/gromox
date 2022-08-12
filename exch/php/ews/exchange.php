@@ -20,6 +20,9 @@ class ExchangeWebServices {
 		if (!$Mailbox || !$Mailbox->Address) {
 			die("E-2008: parameter error in GetUserOofSettingsRequest");
 		}
+		if (strcasecmp($_SERVER['REMOTE_USER'], $Mailbox->Address) !== 0) {
+			die("E-2143: Impersonation not allowed");
+		}
 		if (!$Mailbox->RoutingType) {
 			$Mailbox->RoutingType = "SMTP";
 		}
@@ -137,6 +140,9 @@ class ExchangeWebServices {
 		
 		if (!$Mailbox || !$Mailbox->Address) {
 			die("E-2012: parameter error in SetUserOofSettingsRequest");
+		}
+		if (strcasecmp($_SERVER['REMOTE_USER'], $Mailbox->Address) !== 0) {
+			die("E-2144: Impersonation not allowed");
 		}
 		if (!$Mailbox->RoutingType) {
 			$Mailbox->RoutingType = "SMTP";
