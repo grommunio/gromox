@@ -1307,11 +1307,6 @@ int main(int argc, const char **argv)
 	if (s != nullptr)
 		sqp.pass = s;
 
-	if (isatty(STDOUT_FILENO)) {
-		fprintf(stderr, "Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
-			"You probably wanted to redirect output into a file or pipe.\n");
-		return EXIT_FAILURE;
-	}
 	try {
 		std::unique_ptr<driver> drv;
 		if (g_srcguid != nullptr)
@@ -1320,6 +1315,11 @@ int main(int argc, const char **argv)
 			drv = kdb_open_by_user(g_srcmbox, sqp);
 		if (drv == nullptr) {
 			fprintf(stderr, "Problem?!\n");
+			return EXIT_FAILURE;
+		}
+		if (isatty(STDOUT_FILENO)) {
+			fprintf(stderr, "Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
+				"You probably wanted to redirect output into a file or pipe.\n");
 			return EXIT_FAILURE;
 		}
 		ret = do_database(std::move(drv), g_srcguid != nullptr ? g_srcguid : g_srcmbox);
