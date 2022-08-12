@@ -5214,8 +5214,8 @@ static uint32_t common_util_get_cid_length(uint64_t cid)
 	struct stat node_stat;
 	if (stat(cu_cid_path(exmdb_server_get_dir(), cid).c_str(), &node_stat) != 0)
 		return 0;
-	if (node_stat.st_size > UINT32_MAX)
-		node_stat.st_size = UINT32_MAX;
+	if (static_cast<unsigned long long>(node_stat.st_size) > UINT32_MAX)
+		return UINT32_MAX;
 	return node_stat.st_size;
 }
 
