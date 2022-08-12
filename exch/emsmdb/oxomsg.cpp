@@ -599,8 +599,10 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecAccessDenied;
 	}
 
-	static constexpr uint32_t rq_tags1[] = {PR_MESSAGE_FLAGS, PR_MESSAGE_CLASS};
-	static constexpr PROPTAG_ARRAY rq_tags = {2, deconst(rq_tags1)};
+	static constexpr uint32_t rq_tags1[] = {PR_MESSAGE_FLAGS};
+	static constexpr uint32_t cls_tags1[] = {PR_MESSAGE_CLASS};
+	static constexpr PROPTAG_ARRAY rq_tags = {1, deconst(rq_tags1)};
+	static constexpr PROPTAG_ARRAY cls_tags = {1, deconst(cls_tags1)};
 	TPROPVAL_ARRAY outvalues{};
 	if (!exmdb_client_get_message_properties(plogon->get_dir(), nullptr, 0,
 	    pmessage->get_id(), &rq_tags, &outvalues))
@@ -619,8 +621,11 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	if (*username == '\0') {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else if (!oxomsg_get_perm(account, username, send_as)) {
+		TPROPVAL_ARRAY cls_vals{};
+		if (pmessage->get_properties(0, &cls_tags, &cls_vals) != 0)
+			/* ignore, since we can test for cls_vals fill */;
 		auto ret = pass_scheduling("I-2080", account, username, *pmessage,
-		           outvalues.get<const char>(PR_MESSAGE_CLASS));
+		           cls_vals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
 			return ret;
 		/* Unlike EXC, do not allow representation. */
