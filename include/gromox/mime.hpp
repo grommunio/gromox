@@ -46,7 +46,7 @@ struct GX_EXPORT MIME {
 	bool to_tls(SSL *) const;
 	bool check_dot() const;
 	ssize_t get_length() const;
-	bool get_filename(char *file_name) const;
+	bool get_filename(char *file_name, size_t) const;
 	MIME *get_child();
 	const MIME *get_child() const;
 	MIME *get_parent();

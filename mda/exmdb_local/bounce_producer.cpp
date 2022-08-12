@@ -528,7 +528,7 @@ static void bounce_producer_enum_parts(const MIME *pmime, void *param)
 	char name[256];
 	char temp_name[512];
 	
-	if (!pmime->get_filename(name))
+	if (!pmime->get_filename(name, std::size(name)))
 		return;
 	if (!mime_string_to_utf8(penum->charset, name, temp_name,
 	    std::size(temp_name)))

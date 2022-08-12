@@ -2142,7 +2142,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	if (pattachment->proplist.set(PR_ATTACH_MIME_TAG, newval) != 0) {
 		return;
 	}
-	auto b_filename = pmime->get_filename(tmp_buff);
+	auto b_filename = pmime->get_filename(tmp_buff, std::size(tmp_buff));
 	if (b_filename) {
 		if (mime_string_to_utf8(pmime_enum->charset, tmp_buff,
 		    file_name, std::size(file_name))) {

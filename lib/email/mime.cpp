@@ -1963,10 +1963,9 @@ ssize_t MIME::get_length() const
 	return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 }
 
-bool MIME::get_filename(char *file_name) const
+bool MIME::get_filename(char *file_name, size_t fnsize) const
 {
 	auto pmime = this;
-	int i;
 	int mode;
 	char *ptr;
 	char *pend;
@@ -1974,9 +1973,9 @@ bool MIME::get_filename(char *file_name) const
 	char *pbegin;
 	char encoding[256];
 	
-	if (pmime->get_content_param("name", file_name, 256)) {
+	if (pmime->get_content_param("name", file_name, fnsize)) {
 		goto FIND_FILENAME;
-	} else if (pmime->get_field("Content-Disposition", file_name, 256)) {
+	} else if (pmime->get_field("Content-Disposition", file_name, fnsize)) {
 		tmp_len = strlen(file_name);
 		pbegin = search_string(file_name, "filename=", tmp_len);
 		if (NULL != pbegin) {
@@ -1991,7 +1990,8 @@ bool MIME::get_filename(char *file_name) const
 			goto FIND_FILENAME;
 		}
 		return false;
-	} else if (pmime->get_field("Content-Transfer-Encoding", encoding, 256)) {
+	} else if (pmime->get_field("Content-Transfer-Encoding",
+	    encoding, std::size(encoding))) {
 		if (0 == strcasecmp(encoding, "uue") ||
 			0 == strcasecmp(encoding, "x-uue") ||
 			0 == strcasecmp(encoding, "uuencode") ||
@@ -2018,7 +2018,7 @@ bool MIME::get_filename(char *file_name) const
 				return false;
 			}
 			ptr += 4;
-			for (i=0; i<256; i++,ptr++) {
+			for (size_t i = 0; i < fnsize; ++i, ++ptr) {
 				if ('\r' == *ptr || '\n' == *ptr) {
 					ptr ++;
 					file_name[i] = '\0';
@@ -2209,7 +2209,7 @@ static ssize_t mime_get_digest_single(const MIME *pmime, const char *id_string,
 		}
 	}
 
-	if (pmime->get_filename(file_name)) {
+	if (pmime->get_filename(file_name, std::size(file_name))) {
 		encode64(file_name, strlen(file_name), temp_buff, 512, &tmp_len);
 		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 		            ",\"filename\":\"%s\"", temp_buff);
