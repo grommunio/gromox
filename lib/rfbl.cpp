@@ -534,7 +534,7 @@ bool cu_validate_msgclass(const char *k)
 {
 	/* MS-OXCSTOR v25 §2.2.1.2ff */
 	auto z = strlen(k);
-	if (z + 1 > 255 || k[0] == '.' || k[z-1] == '.')
+	if (z + 1 > 255 || k[0] == '.' || (z > 0 && k[z-1] == '.'))
 		return false;
 	for (size_t i = 0; i < z; ++i) {
 		if (k[i] < 0x20 || k[i] > 0x7E)
