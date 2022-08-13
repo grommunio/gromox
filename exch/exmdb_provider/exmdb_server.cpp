@@ -20,7 +20,7 @@ using ENVIRONMENT_CONTEXT = env_context;
 
 static thread_local const char *g_id_key;
 static thread_local const char *g_public_username_key;
-static alloc_limiter<ENVIRONMENT_CONTEXT> g_ctx_allocator;
+static alloc_limiter<ENVIRONMENT_CONTEXT> g_ctx_allocator{"exmdb.ctx_allocator.d"};
 
 namespace {
 struct envctx_delete {

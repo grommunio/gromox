@@ -63,7 +63,7 @@ static int g_block_ID;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 smtp_param g_param;
-alloc_limiter<stream_block> g_blocks_allocator;
+alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
 
 /* 
  * construct a smtp parser object

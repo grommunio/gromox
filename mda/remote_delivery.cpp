@@ -52,7 +52,7 @@ static errno_t rd_starttls(rd_connection &&, MESSAGE_CONTEXT *, std::string &);
 static constexpr unsigned int network_timeout = 180;
 static std::unique_ptr<SSL_CTX, rd_delete> g_tls_ctx;
 static std::unique_ptr<std::mutex[]> g_tls_mutex_buf;
-static alloc_limiter<file_block> g_files_allocator;
+static alloc_limiter<file_block> g_files_allocator{"remote_delivery.g_files_allocator.d"};
 static std::string g_mx_host;
 static uint16_t g_mx_port;
 static bool g_enable_tls;

@@ -37,7 +37,7 @@ struct stream_block {
 };
 
 struct GX_EXPORT LIB_BUFFER {
-	LIB_BUFFER() = default;
+	LIB_BUFFER(const char *n) : m_name(n) {}
 	LIB_BUFFER(LIB_BUFFER &&) noexcept = delete;
 	LIB_BUFFER(size_t size, size_t items, const char *name = nullptr, const char *hint = nullptr);
 	LIB_BUFFER &operator=(LIB_BUFFER &&) noexcept;
@@ -63,7 +63,7 @@ struct GX_EXPORT LIB_BUFFER {
 };
 
 template<typename T> struct GX_EXPORT alloc_limiter : private LIB_BUFFER {
-	constexpr alloc_limiter() = default;
+	constexpr alloc_limiter(const char *name) : LIB_BUFFER(name) {}
 	constexpr alloc_limiter(size_t max, const char *name = nullptr, const char *hint = nullptr) :
 		LIB_BUFFER(sizeof(T), max, name, hint) {}
 	inline T *get() { return LIB_BUFFER::get<T>(); }
