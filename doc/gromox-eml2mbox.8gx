@@ -1,0 +1,25 @@
+.TH gromox\-eml2mbox 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+gromox\-eml2mbox \(em Utility to combine Internet Mail messages
+into an mbox-format mailbox
+.SH Synopsis
+\fBgromox\-eml2mbox\fP \fIfile\fP...
+.SH Description
+gromox\-eml2mbox reads one or more RFC5322-formated e-mail messages and
+re-exports them as a Unix mbox to stdout. The purpose is to make messages
+openable with command-line MUAs such as Alpine.
+.PP
+Passing \fB\-\fP as an argument will read a file list from stdin. This can help
+when *.eml leads to an expansion the system cannot handle.
+.SH Examples
+.nf
+gromox\-eml2mbox *.eml >all.mbox
+.fi
+.nf
+find . -type f -name "*.eml" | gromox\-eml2mbox - >all.mbox
+.fi
+.nf
+alpine -f $PWD/all.mbox
+.fi
+.SH See also
+\fBgromox\fP(7)
