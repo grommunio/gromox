@@ -1242,10 +1242,18 @@ static int mjson_convert_address(char *address, const char *charset,
 	if (*email_addr.display_name == '\0') {
 		memcpy(buff + offset, "(NIL", 4);
 		offset += 4;
-	} else if (prefer_qp_over_base64(email_addr.display_name)) {
+	} else if (mjson_check_ascii_printable(email_addr.display_name)) {
 		mjson_add_backslash(email_addr.display_name, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 		          "(\"%s\"", temp_buff);
+	} else if (prefer_qp_over_base64(email_addr.display_name)) {
+		offset += gx_snprintf(&buff[offset], length - offset, "(\"=?utf-8?q?");
+		auto ret = qp_encode_ex(&buff[offset], length - offset,
+		           email_addr.display_name, strlen(email_addr.display_name));
+		if (ret < 0)
+			return -1;
+		offset += ret;
+		offset += gx_snprintf(&buff[offset], length - offset, "?=\"");
 	} else {
 		offset += gx_snprintf(buff + offset, length - offset, "(\"=?utf-8?b?");
 		if (0 != encode64(email_addr.display_name,
