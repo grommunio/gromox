@@ -996,6 +996,7 @@ struct TPROPVAL_ARRAY {
 	int set(uint32_t tag, const void *d);
 	inline int set(const TAGGED_PROPVAL &a) { return set(a.proptag, a.pvalue); }
 	void erase(uint32_t tag);
+	size_t erase_if(bool (*pred)(const TAGGED_PROPVAL &));
 	TPROPVAL_ARRAY *dup() const;
 
 	uint16_t count;

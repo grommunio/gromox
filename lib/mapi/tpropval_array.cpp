@@ -54,6 +54,7 @@ int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 
 void TPROPVAL_ARRAY::erase(uint32_t proptag)
 {
+	static_assert(std::is_trivially_copyable_v<TAGGED_PROPVAL>);
 	for (size_t i = 0; i < count; ++i) {
 		if (ppropval[i].proptag != proptag)
 			continue;
@@ -63,6 +64,22 @@ void TPROPVAL_ARRAY::erase(uint32_t proptag)
 			memmove(&ppropval[i], &ppropval[i+1], (count - i) * sizeof(TAGGED_PROPVAL));
 		return;
 	}
+}
+
+size_t TPROPVAL_ARRAY::erase_if(bool (*pred)(const TAGGED_PROPVAL &tp))
+{
+	static_assert(std::is_trivially_copyable_v<TAGGED_PROPVAL>);
+	size_t o = 0;
+	for (size_t i = 0; i < count; ++i) {
+		auto &p = ppropval[i];
+		if (pred(p))
+			propval_free(PROP_TYPE(p.proptag), p.pvalue);
+		else if (i != o)
+			memcpy(&ppropval[o++], &ppropval[i], sizeof(TAGGED_PROPVAL));
+	}
+	auto removed = count - o;
+	count = o;
+	return removed;
 }
 
 bool tpropval_array_init_internal(TPROPVAL_ARRAY *parray)
