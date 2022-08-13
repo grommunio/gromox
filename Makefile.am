@@ -76,7 +76,7 @@ noinst_DATA += \
 	libgxs_logthru.ldd \
 	libgxs_mysql_adaptor.ldd \
 	libgxs_user_filter.ldd
-sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
@@ -243,6 +243,8 @@ gromox_dscli_SOURCES = tools/dscli.cpp
 gromox_dscli_LDADD = ${curl_LIBS} ${HX_LIBS} ${tinyxml_LIBS}
 gromox_e2ghelper_SOURCES = tools/e2ghelper.cpp
 gromox_e2ghelper_LDADD = ${HX_LIBS}
+gromox_eml2mbox_SOURCES = tools/eml2mbox.cpp
+gromox_eml2mbox_LDADD = ${HX_LIBS}
 gromox_eml2mt_SOURCES = tools/eml2mt.cpp tools/genimport.cpp lib/svc_loader.cpp
 gromox_eml2mt_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la -ldl
 gromox_exm2eml_SOURCES = tools/exm2eml.cpp tools/genimport.cpp lib/svc_loader.cpp
@@ -306,7 +308,7 @@ man_MANS = \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/freebusy.8gx doc/gromox.7 doc/gromox-abktconv.8gx \
 	doc/gromox-abktpull.8gx doc/gromox-dbop.8gx doc/gromox-dscli.8gx \
-	doc/gromox-eml2mt.8gx doc/gromox-exm2eml.8gx \
+	doc/gromox-eml2mbox.8gx doc/gromox-eml2mt.8gx doc/gromox-exm2eml.8gx \
 	doc/gromox-kdb2mt.8gx doc/gromox-mailq.8gx doc/gromox-mbop.8gx \
 	doc/gromox-mkmidb.8gx doc/gromox-mkprivate.8gx doc/gromox-mkpublic.8gx \
 	doc/gromox-mt2exm.8gx doc/http.8gx \
