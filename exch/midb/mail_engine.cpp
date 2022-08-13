@@ -2029,6 +2029,9 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	
 	dir = common_util_get_maildir();
 	fprintf(stderr, "Running sync_mailbox for %s\n", dir);
+	auto cl_err = make_scope_exit([&]() {
+		fprintf(stderr, "sync_mailbox aborted for %s\n", dir);
+	});
 	if (!exmdb_client::load_hierarchy_table(dir,
 	    rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
 	    NULL, TABLE_FLAG_DEPTH|TABLE_FLAG_NONOTIFICATIONS,
@@ -2210,6 +2213,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	}
 	pidb_transact.commit();
 	}
+	cl_err.release();
 	if (!exmdb_client::subscribe_notification(dir,
 	    NOTIFICATION_TYPE_OBJECTCREATED | NOTIFICATION_TYPE_OBJECTDELETED |
 	    NOTIFICATION_TYPE_OBJECTMODIFIED | NOTIFICATION_TYPE_OBJECTMOVED |
@@ -2379,10 +2383,11 @@ static void *midbme_scanwork(void *param)
 		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
 			auto pidb = &it->second;
 			time(&now_time);
+			auto last_diff = now_time - pidb->last_time;
+			auto load_diff = now_time - pidb->load_time;
 			bool clean = pidb->reference == 0 &&
-			             (pidb->sub_id == 0 ||
-			              now_time - pidb->last_time > g_cache_interval ||
-			              now_time - pidb->load_time > RELOAD_INTERVAL);
+			             (pidb->sub_id == 0 || last_diff > g_cache_interval ||
+			             load_diff > RELOAD_INTERVAL);
 			if (!clean) {
 				++it;
 				continue;
@@ -2392,6 +2397,10 @@ static void *midbme_scanwork(void *param)
 			} catch (const std::bad_alloc &) {
 				fprintf(stderr, "E-1622: ENOMEM\n");
 			}
+			fprintf(stderr, "I-2175: Closing user %s midb.sqlite3 (sub=%u, c=%lld, l=%lld)\n",
+			        pidb->username.c_str(), pidb->sub_id,
+			        static_cast<long long>(last_diff),
+			        static_cast<long long>(load_diff));
 			it = g_hash_table.erase(it);
 		}
 		hhold.unlock();
