@@ -86,8 +86,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	const char *storage_path, const char *msg_filename, const char* charset,
 	const char *email_charset, BOOL b_ext, char *buff, int length);
 static int mjson_convert_address(char *address, const char *charset, char *buff, int length);
-static void mjson_convert_quoted_printable(const char *astring,
-	char *out_stirng);
+static void mjson_add_backslash(const char *astring, char *out_string);
 static void mjson_emum_rfc822(MJSON_MIME *, void *);
 static void mjson_enum_build(MJSON_MIME *, void *);
 static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
@@ -1006,7 +1005,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 					offset ++;
 				}
 				if (mjson_check_ascii_printable(pmime->filename)) {
-					mjson_convert_quoted_printable(pmime->filename, temp_buff);
+					mjson_add_backslash(pmime->filename, temp_buff);
 					offset += gx_snprintf(buff + offset, length - offset,
 								"\"NAME\" \"%s\"", temp_buff);
 				} else {
@@ -1032,7 +1031,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		
 		if ('\0' != pmime->cid[0] &&
 		    mjson_check_ascii_printable(pmime->cid)) {
-			mjson_convert_quoted_printable(pmime->cid, temp_buff);
+			mjson_add_backslash(pmime->cid, temp_buff);
 			offset += gx_snprintf(buff + offset, length - offset,
 						" \"%s\"", temp_buff);
 		} else {
@@ -1179,7 +1178,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			
 			if ('\0' != pmime->cntl[0] &&
 			    mjson_check_ascii_printable(pmime->cntl)) {
-				mjson_convert_quoted_printable(pmime->cntl, temp_buff);
+				mjson_add_backslash(pmime->cntl, temp_buff);
 				offset += gx_snprintf(buff + offset, length - offset,
 							" \"%s\"", temp_buff);
 			} else {
@@ -1244,7 +1243,7 @@ static int mjson_convert_address(char *address, const char *charset,
 		memcpy(buff + offset, "(NIL", 4);
 		offset += 4;
 	} else if (prefer_qp_over_base64(email_addr.display_name)) {
-		mjson_convert_quoted_printable(email_addr.display_name, temp_buff);
+		mjson_add_backslash(email_addr.display_name, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 		          "(\"%s\"", temp_buff);
 	} else {
@@ -1265,7 +1264,7 @@ static int mjson_convert_address(char *address, const char *charset,
 	
 	if ('\0' != email_addr.local_part[0] &&
 	    mjson_check_ascii_printable(email_addr.local_part)) {
-		mjson_convert_quoted_printable(email_addr.local_part, temp_buff);
+		mjson_add_backslash(email_addr.local_part, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
 	} else {
@@ -1275,7 +1274,7 @@ static int mjson_convert_address(char *address, const char *charset,
 
 	if ('\0' != email_addr.domain[0] &&
 	    mjson_check_ascii_printable(email_addr.domain)) {
-		mjson_convert_quoted_printable(email_addr.domain, temp_buff);
+		mjson_add_backslash(email_addr.domain, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\")", temp_buff);
 	} else {
@@ -1317,7 +1316,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	
 	if ('\0' != pjson->date[0] &&
 	    mjson_check_ascii_printable(pjson->date)) {
-		mjson_convert_quoted_printable(pjson->date, temp_buff);
+		mjson_add_backslash(pjson->date, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					"\"%s\"", temp_buff);
 	} else {
@@ -1327,7 +1326,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	
 	if ('\0' != pjson->subject[0]) {
 		if (mjson_check_ascii_printable(pjson->subject)) {
-			mjson_convert_quoted_printable(pjson->subject, temp_buff);
+			mjson_add_backslash(pjson->subject, temp_buff);
 			offset += gx_snprintf(buff + offset, length - offset,
 						" \"%s\"", temp_buff);
 		} else {
@@ -1480,7 +1479,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	
 	if ('\0' != pjson->inreply[0] &&
 	    mjson_check_ascii_printable(pjson->inreply)) {
-		mjson_convert_quoted_printable(pjson->inreply, temp_buff);
+		mjson_add_backslash(pjson->inreply, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
 	} else {
@@ -1490,7 +1489,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	
 	if ('\0' != pjson->msgid[0] &&
 	    mjson_check_ascii_printable(pjson->msgid)) {
-		mjson_convert_quoted_printable(pjson->msgid, temp_buff);
+		mjson_add_backslash(pjson->msgid, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
 	} else {
@@ -1509,8 +1508,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	return offset;
 }
 
-static void mjson_convert_quoted_printable(const char *astring,
-	char *out_string)
+static void mjson_add_backslash(const char *astring, char *out_string)
 {
 	int i, j, len;
 	
