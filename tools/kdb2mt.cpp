@@ -166,9 +166,9 @@ static std::string sql_escape(MYSQL *sqh, const char *in)
 	return out;
 }
 
-static bool skip_property(uint16_t id)
+static bool skip_property(const TAGGED_PROPVAL &p)
 {
-	switch (id) {
+	switch (PROP_ID(p.proptag)) {
 	/*
 	 * Skip importing IMAP data; midb rebuilds this anyway, and has its own
 	 * database for this so as to not clutter the store with what is
@@ -268,8 +268,6 @@ static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 		TAGGED_PROPVAL pv{};
 		pv.pvalue = &upv;
 
-		if (skip_property(xtag))
-			continue;
 		switch (xtype) {
 		case PT_SHORT: upv.i = strtoul(znul(row[PCOL_ULONG]), nullptr, 0); break;
 		case PT_LONG: [[fallthrough]];
@@ -940,7 +938,8 @@ static gi_name_map do_namemap(driver &drv)
 
 static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
-	auto &props = item.get_props();
+	auto props = std::move(item.get_props());
+	props->erase_if(skip_property);
 	if (g_show_tree) {
 		gi_dump_tpropval_a(depth, *props);
 	} else {
@@ -1038,6 +1037,7 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 	auto ctnt = build_message(drv, depth, item);
 	if (skip_message(ctnt->proplist))
 		return 0;
+	ctnt->proplist.erase_if(skip_property);
 	if (parent.type == MAPI_ATTACH)
 		attachment_content_set_embedded_internal(parent.attach, ctnt.release());
 	if (parent.type != MAPI_FOLDER)
@@ -1066,7 +1066,8 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 
 static int do_recip(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
-	auto &props = item.get_props();
+	tpropval_array_ptr props = std::move(item.get_props());
+	props->erase_if(skip_property);
 	if (parent.message->children.prcpts->append_move(std::move(props)) == ENOMEM)
 		throw std::bad_alloc();
 	return 0;
@@ -1169,6 +1170,7 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	g_show_tree = saved_show_tree;
 
 	std::swap(atc->proplist, *props);
+	atc->proplist.erase_if(skip_property);
 	if (parent.type == MAPI_MESSAGE) {
 		if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get()))
 			throw std::bad_alloc();
