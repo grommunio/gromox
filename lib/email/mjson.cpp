@@ -1234,40 +1234,12 @@ static int mjson_convert_address(char *address, const char *charset,
     char *buff, int length)
 {
 	int offset;
-	size_t temp_len;
 	size_t ecode_len;
 	EMAIL_ADDR email_addr;
 	char temp_buff[2048];
-	char temp_address[1024];
-	ENCODE_STRING encode_string;
 	
 	offset = 0;
-	temp_len = strlen(address);
-	if (0 == strncmp(address, "=?", 2) &&
-		0 == strncmp(address + temp_len - 2, "?=", 2)) {
-		parse_mime_encode_string(address, temp_len, &encode_string);
-		if (0 == strcasecmp(encode_string.encoding, "base64") &&
-			0 != strcasecmp(encode_string.charset, "default")) {
-			if (decode64(encode_string.title, strlen(encode_string.title),
-			    temp_address, arsizeof(temp_address), &temp_len) == 0)
-				; // email_charset = encode_string.charset;
-			else
-				gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
-		} else if (0 == strcasecmp(encode_string.encoding,
-			"quoted-printable") && 0 != strcasecmp(
-			encode_string.charset, "default")) {
-			if (qp_decode_ex(temp_address, arsizeof(temp_address),
-			    encode_string.title, strlen(encode_string.title)) < 0)
-				temp_address[0] = '\0';
-			// email_charset = encode_string.charset;
-		} else {
-			gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
-		}
-	} else {
-		gx_strlcpy(temp_address, address, GX_ARRAY_SIZE(temp_address));
-	}
-	
-	parse_mime_addr(&email_addr, temp_address);
+	parse_mime_addr(&email_addr, address);
 	if (*email_addr.display_name == '\0') {
 		memcpy(buff + offset, "(NIL", 4);
 		offset += 4;
