@@ -64,7 +64,7 @@ static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static std::mutex g_id_lock;
 static char g_submit_command[1024];
-static alloc_limiter<file_block> g_file_allocator;
+static alloc_limiter<file_block> g_file_allocator{"emsmdb.g_file_allocator.d"};
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
 E(get_maildir)

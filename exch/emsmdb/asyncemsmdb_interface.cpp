@@ -55,7 +55,7 @@ static size_t g_tag_hash_max;
 static std::mutex g_list_lock, g_async_lock;
 static std::condition_variable g_waken_cond;
 static std::unordered_map<int, ASYNC_WAIT *> g_async_hash;
-static alloc_limiter<ASYNC_WAIT> g_wait_allocator;
+static alloc_limiter<ASYNC_WAIT> g_wait_allocator{"emsmdb.g_wait_allocator.d"};
 
 static void *aemsi_scanwork(void *);
 static void *aemsi_thrwork(void *);

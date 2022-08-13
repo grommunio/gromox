@@ -107,8 +107,8 @@ struct HOST_NODE {
 
 static gromox::atomic_bool g_notify_stop;
 static unsigned int g_threads_num;
-static alloc_limiter<fifo_block> g_fifo_alloc;
-static alloc_limiter<file_block> g_file_alloc;
+static alloc_limiter<fifo_block> g_fifo_alloc{"g_fifo_alloc.d"};
+static alloc_limiter<file_block> g_file_alloc{"g_file_alloc.d"};
 static std::vector<std::string> g_acl_list;
 static std::list<ENQUEUE_NODE> g_enqueue_list, g_enqueue_list1;
 static std::vector<std::shared_ptr<DEQUEUE_NODE>> g_dequeue_list1;

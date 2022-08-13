@@ -36,7 +36,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
 unsigned int g_popcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_stls, g_force_stls;
-alloc_limiter<stream_block> g_blocks_allocator;
+alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
 static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
 static std::unique_ptr<POP3_CONTEXT[]> g_context_list;

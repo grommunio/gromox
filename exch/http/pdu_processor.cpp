@@ -123,12 +123,12 @@ static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
-static alloc_limiter<DCERPC_CALL> g_call_allocator;
-static alloc_limiter<DCERPC_AUTH_CONTEXT> g_auth_allocator;
-static alloc_limiter<ASYNC_NODE> g_async_allocator;
-static alloc_limiter<BLOB_NODE> g_bnode_allocator;
-static alloc_limiter<NDR_STACK_ROOT> g_stack_allocator;
-static alloc_limiter<DCERPC_CONTEXT> g_context_allocator;
+static alloc_limiter<DCERPC_CALL> g_call_allocator{"g_call_allocator.d"};
+static alloc_limiter<DCERPC_AUTH_CONTEXT> g_auth_allocator{"g_auth_allocator.d"};
+static alloc_limiter<ASYNC_NODE> g_async_allocator{"g_async_allocator.d"};
+static alloc_limiter<BLOB_NODE> g_bnode_allocator{"g_bnode_allocator.d"};
+static alloc_limiter<NDR_STACK_ROOT> g_stack_allocator{"g_stack_allocator.d"};
+static alloc_limiter<DCERPC_CONTEXT> g_context_allocator{"g_context_allocator.d"};
 static std::vector<std::string> g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */

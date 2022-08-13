@@ -136,7 +136,7 @@ static pthread_t g_scan_id;
 static std::list<BACK_CONN> g_lost_list;
 static std::list<BACK_SVR> g_server_list;
 static std::mutex g_server_lock;
-static alloc_limiter<file_block> g_file_allocator;
+static alloc_limiter<file_block> g_file_allocator{"midb_agent.g_file_allocator.d"};
 static int g_file_ratio;
 
 static constexpr cfg_directive midb_agent_cfg_defaults[] = {

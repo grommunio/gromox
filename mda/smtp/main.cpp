@@ -34,7 +34,7 @@ gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
-alloc_limiter<file_block> g_files_allocator;
+alloc_limiter<file_block> g_files_allocator{"g_files_allocator.d"};
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},

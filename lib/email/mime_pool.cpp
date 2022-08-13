@@ -13,7 +13,8 @@
  *	@return
  *		mime pool object
  */
-MIME_POOL::MIME_POOL(size_t num, int ratio, const char *name, const char *hint)
+MIME_POOL::MIME_POOL(size_t num, int ratio, const char *name, const char *hint) :
+	allocator(name)
 {
 	auto pmime_pool = this;
 

@@ -120,7 +120,7 @@ static std::mutex g_queue_lock, g_cond_mutex, g_mpc_list_lock, g_count_lock;
 static std::condition_variable g_waken_cond;
 static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
-static alloc_limiter<file_block> g_file_allocator;
+static alloc_limiter<file_block> g_file_allocator("g_file_allocator.d");
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
 static std::unique_ptr<FREE_CONTEXT[]> g_free_ptr;
