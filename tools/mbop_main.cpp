@@ -16,6 +16,7 @@ static int help(const char *argv0)
 {
 	fprintf(stderr, "Usage: %s ...\n", argv0);
 	fprintf(stderr, "\tunload $maildir    Execute the UNLOAD RPC for the given mailbox\n");
+	fprintf(stderr, "\tvacuum $maildir    Execute the VACUUM RPC for the given mailbox\n");
 	return EXIT_FAILURE;
 }
 
