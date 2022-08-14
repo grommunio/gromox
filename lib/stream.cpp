@@ -865,6 +865,8 @@ int STREAM::write(const void *pbuff, size_t size)
 	while (offset < size) {
 		buff_size = STREAM_BLOCK_SIZE;
 		void *pstream_buff = get_write_buf(&buff_size);
+		if (pstream_buff == nullptr)
+			return STREAM_WRITE_FAIL;
 		actual_size = (size - offset > buff_size)?buff_size:(size - offset);
 		memcpy(pstream_buff, static_cast<const char *>(pbuff) + offset, actual_size);
 		fwd_write_ptr(actual_size);
