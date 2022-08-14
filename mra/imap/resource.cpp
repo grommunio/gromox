@@ -118,6 +118,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1916, "NO COPY failed"},
 	{1917, "NO UID COPY failed"},
 	{1918, "NO Memory allocation failure"},
+	{1919, "NO Unspecified error received from midb_agent"},
 	{2000 | MIDB_E_UNKNOWN_COMMAND, "midb: unknown command"},
 	{2000 | MIDB_E_PARAMETER_ERROR, "midb: command parameter error"},
 	{2000 | MIDB_E_HASHTABLE_FULL, "midb: hash table full"},
