@@ -6,6 +6,7 @@ enum {
 	MIDB_RESULT_ERROR,
 	/* server_enomem is conveyed via RESULT_ERROR + errnum=ENOMEM */
 	MIDB_LOCAL_ENOMEM,
+	MIDB_TOO_MANY_RESULTS,
 };
 enum {
 	FLAG_RECENT   = 0x1,
