@@ -47,7 +47,8 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1723, "-ERR failed to initialize TLS"},
 	{1724, "+OK begin TLS negotiation"},
 	{1725, "-ERR TLS negotiation only begin in AUTHORIZATION state"},
-	{1726,  "-ERR must issue a STLS command first"}
+	{1726, "-ERR must issue a STLS command first"},
+	{1727, "-ERR Unspecified error received from midb_agent"},
 };
 
 static std::unordered_map<unsigned int, std::string> g_def_code_table;

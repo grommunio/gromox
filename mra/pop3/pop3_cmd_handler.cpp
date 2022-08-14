@@ -157,6 +157,8 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 			/* write back nothing and close the connection */
 			pop3_parser_log_info(pcontext, LV_WARN, "midb returned error result");
 			return DISPATCH_SHOULD_CLOSE;
+		default:
+			return DISPATCH_SHOULD_CLOSE;
 		}
 		if (pcontext->total_mail < 0 ||
 		    pcontext->msg_array.size() != static_cast<size_t>(pcontext->total_mail))
@@ -465,6 +467,8 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 		case MIDB_RESULT_ERROR:
 			pop3_parser_log_info(pcontext, LV_WARN, "failed to execute delete command on midb server!");
 			return 1722 | DISPATCH_SHOULD_CLOSE;
+		default:
+			return 1727 | DISPATCH_SHOULD_CLOSE;
 		}
 		string_length = gx_snprintf(temp_buff, arsizeof(temp_buff),
 			"FOLDER-TOUCH %s inbox", pcontext->username);
