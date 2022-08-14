@@ -467,6 +467,8 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 		case MIDB_RESULT_ERROR:
 			pop3_parser_log_info(pcontext, LV_WARN, "failed to execute delete command on midb server!");
 			return 1722 | DISPATCH_SHOULD_CLOSE;
+		case MIDB_LOCAL_ENOMEM:
+			return 1728 | DISPATCH_SHOULD_CLOSE;
 		default:
 			return 1727 | DISPATCH_SHOULD_CLOSE;
 		}

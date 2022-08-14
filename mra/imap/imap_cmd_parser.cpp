@@ -1487,6 +1487,8 @@ static int m2icode(int r, int e)
 		return 1906;
 	case MIDB_RESULT_ERROR:
 		return DISPATCH_MIDB | static_cast<uint16_t>(e);
+	case MIDB_LOCAL_ENOMEM:
+		return 1920;
 	default:
 		return 1919;
 	}
@@ -3248,6 +3250,12 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
 	}
+	case MIDB_LOCAL_ENOMEM: {
+		auto imap_reply_str = resource_get_imap_code(1920, 1, &string_length);
+		string_length = gx_snprintf(buff, arsizeof(buff), "* %s", imap_reply_str);
+		imap_parser_safe_write(pcontext, buff, string_length);
+		return;
+	}
 	default: {
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
@@ -3298,6 +3306,12 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
 		auto imap_reply_str = resource_get_imap_code(1906, 1, &string_length);
+		string_length = gx_snprintf(buff, arsizeof(buff), "* %s", imap_reply_str);
+		imap_parser_safe_write(pcontext, buff, string_length);
+		return;
+	}
+	case MIDB_LOCAL_ENOMEM: {
+		auto imap_reply_str = resource_get_imap_code(1920, 1, &string_length);
 		string_length = gx_snprintf(buff, arsizeof(buff), "* %s", imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;

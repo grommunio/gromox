@@ -653,7 +653,7 @@ static int imap_search(const char *path, const char *folder,
 	}
 	return MIDB_RDWR_ERROR;
 } catch (const std::bad_alloc &) {
-	return MIDB_RDWR_ERROR;
+	return MIDB_LOCAL_ENOMEM;
 }
 
 static int imap_search_uid(const char *path, const char *folder,
@@ -708,7 +708,7 @@ static int imap_search_uid(const char *path, const char *folder,
 	}
 	return MIDB_RDWR_ERROR;
 } catch (const std::bad_alloc &) {
-	return MIDB_RDWR_ERROR;
+	return MIDB_LOCAL_ENOMEM;
 }
 
 static int get_mail_id(const char *path, const char *folder,

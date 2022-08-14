@@ -4,6 +4,8 @@ enum {
 	MIDB_NO_SERVER,
 	MIDB_RDWR_ERROR,
 	MIDB_RESULT_ERROR,
+	/* server_enomem is conveyed via RESULT_ERROR + errnum=ENOMEM */
+	MIDB_LOCAL_ENOMEM,
 };
 enum {
 	FLAG_RECENT   = 0x1,
