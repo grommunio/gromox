@@ -713,7 +713,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 	return buff_len;
 }
 
-static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
+static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	BOOL b_data, MITEM *pitem, int item_id, DOUBLE_LIST *pitem_list)
 {
 	int errnum;
@@ -724,16 +724,17 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		pitem->f_digest.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		auto len = pitem->f_digest.read(buff, arsizeof(buff));
 		if (len == MEM_END_OF_FILE)
-			return;
+			return 1923;
 		std::string eml_path;
 		try {
 			eml_path = std::string(pcontext->maildir) + "/eml";
 		} catch (const std::bad_alloc &) {
 			fprintf(stderr, "E-1464: ENOMEM\n");
+			return 1918;
 		}
 		if (eml_path.size() == 0 ||
 		    !mjson.retrieve(buff, len, eml_path.c_str()))
-			return;
+			return 1923;
 	}
 
 	BOOL b_first = FALSE;
@@ -975,7 +976,8 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		}
 	}
 	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len, ")\r\n");
-	pcontext->stream.write(buff, buff_len);
+	if (pcontext->stream.write(buff, buff_len) != STREAM_WRITE_OK)
+		return 1922;
 	if (!pcontext->b_readonly && pitem->flag_bits & FLAG_RECENT) {
 		pitem->flag_bits &= ~FLAG_RECENT;
 		if (0 == (pitem->flag_bits & FLAG_SEEN)) {
@@ -984,6 +986,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			imap_parser_modify_flags(pcontext, pitem->mid);
 		}
 	}
+	return 0;
 }
 
 static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
@@ -1843,7 +1846,8 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		auto imap_reply_str = resource_get_imap_code(1711, 1, &string_length);
 		len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				"%s %s", argv[0], imap_reply_str);
-		pcontext->stream.write(buff, len);
+		if (pcontext->stream.write(buff, len) != STREAM_WRITE_OK)
+			return 1922;
 		pcontext->write_offset = 0;
 		pcontext->sched_stat = SCHED_STAT_WRLST;
 		return DISPATCH_BREAK;
@@ -1882,7 +1886,8 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170011: OK LIST completed */
 	auto imap_reply_str = resource_get_imap_code(1711, 1, &string_length);
 	len += gx_snprintf(buff + len, arsizeof(buff) - len, "%s %s", argv[0], imap_reply_str);
-	pcontext->stream.write(buff, len);
+	if (pcontext->stream.write(buff, len) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
@@ -1961,8 +1966,8 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	auto imap_reply_str = resource_get_imap_code(1712, 1, &string_length);
 	len += gx_snprintf(buff + len, arsizeof(buff) - len,
 			"%s %s", argv[0], imap_reply_str);
-	
-	pcontext->stream.write(buff, len);
+	if (pcontext->stream.write(buff, len) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
@@ -2037,7 +2042,8 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	auto imap_reply_str = resource_get_imap_code(1713, 1, &string_length);
 	len += gx_snprintf(buff + len, arsizeof(buff) - len,
 			"%s %s", argv[0], imap_reply_str);
-	pcontext->stream.write(buff, len);
+	if (pcontext->stream.write(buff, len) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
@@ -2568,7 +2574,8 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* %d EXPUNGE\r\n", pitem->id - del_num);
-		pcontext->stream.write(buff, string_length);
+		if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+			return 1922;
 		b_deleted = TRUE;
 		del_num ++;
 	} catch (const std::bad_alloc &) {
@@ -2582,7 +2589,8 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
 	string_length = gx_snprintf(buff, arsizeof(buff),
 		"%s %s", argv[0], imap_reply_str);
-	pcontext->stream.write(buff, string_length);
+	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
@@ -2623,7 +2631,8 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	buff += argv[0];
 	buff += " ";
 	buff += imap_reply_str;
-	pcontext->stream.write(buff.c_str(), buff.size());
+	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
@@ -2665,8 +2674,10 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
 		pitem = (MITEM*)xarray.get_item(i);
-		imap_cmd_parser_process_fetch_item(pcontext,
-			b_data, pitem, pitem->id, &list_data);
+		result = imap_cmd_parser_process_fetch_item(pcontext, b_data,
+		         pitem, pitem->id, &list_data);
+		if (result != 0)
+			return result;
 	}
 	if (b_detail)
 		system_services_free_result(&xarray);
@@ -2677,7 +2688,8 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
 	}
 	string_length = strlen(buff);
-	pcontext->stream.write(buff, string_length);
+	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
 	if (b_data) {
@@ -2862,7 +2874,8 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		string_length = gx_snprintf(buff, arsizeof(buff),
 			"%s %s", argv[0], imap_reply_str);
 	}
-	pcontext->stream.write(buff, string_length);
+	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
@@ -2893,7 +2906,8 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	buff += argv[0];
 	buff += " ";
 	buff += imap_reply_str;
-	pcontext->stream.write(buff.c_str(), buff.size());
+	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
@@ -2945,8 +2959,10 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
 		pitem = (MITEM*)xarray.get_item(i);
-		imap_cmd_parser_process_fetch_item(pcontext,
-			b_data, pitem, pitem->id, &list_data);
+		ret = imap_cmd_parser_process_fetch_item(pcontext, b_data,
+		      pitem, pitem->id, &list_data);
+		if (ret != 0)
+			return ret;
 	}
 	if (b_detail)
 		system_services_free_result(&xarray);
@@ -2957,7 +2973,8 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
 	}
 	string_length = strlen(buff);
-	pcontext->stream.write(buff, string_length);
+	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
 	if (b_data) {
@@ -3122,7 +3139,8 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		auto imap_reply_str = resource_get_imap_code(1917, 1, &string_length);
 		string_length = gx_snprintf(buff, arsizeof(buff), "%s %s", argv[0], imap_reply_str);
 	}
-	pcontext->stream.write(buff, string_length);
+	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
@@ -3192,7 +3210,8 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* %d EXPUNGE\r\n", pitem->id - del_num);
-		pcontext->stream.write(buff, string_length);
+		if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+			return 1922;
 		b_deleted = TRUE;
 		del_num ++;
 	} catch (const std::bad_alloc &) {
@@ -3206,7 +3225,8 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
 	string_length = gx_snprintf(buff, arsizeof(buff),
 		"%s %s", argv[0], imap_reply_str);
-	pcontext->stream.write(buff, string_length);
+	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;

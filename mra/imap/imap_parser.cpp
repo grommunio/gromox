@@ -568,7 +568,8 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 					auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 					return ps_end_processing(pcontext, imap_reply_str, string_length);
 				}
-				pcontext->stream.write(&ctx.literal_ptr[nl_len], ctx.current_len);
+				if (pcontext->stream.write(&ctx.literal_ptr[nl_len], ctx.current_len) != STREAM_WRITE_OK)
+					return 1922;
 				pcontext->sched_stat = SCHED_STAT_APPENDING;
 				pcontext->read_offset = 0;
 				pcontext->command_len = 0;
@@ -1285,8 +1286,9 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 									   recent, exists);
 		if (NULL == pstream) {
 			pcontext->connection.write(buff, tmp_len);
-		} else {
-			pstream->write(buff, tmp_len);
+		} else if (pstream->write(buff, tmp_len) != STREAM_WRITE_OK) {
+			mem_file_free(&temp_file);
+			return;
 		}
 	}
 	
@@ -1349,10 +1351,10 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 			tmp_len += gx_snprintf(buff + tmp_len, arsizeof(buff) - tmp_len, "\\Draft");
 		}
 		tmp_len += gx_snprintf(buff + tmp_len, arsizeof(buff) - tmp_len, "))\r\n");
-		if (pstream != nullptr)
-			pstream->write(buff, tmp_len);
-		else
+		if (pstream == nullptr)
 			pcontext->connection.write(buff, tmp_len);
+		else if (pstream->write(buff, tmp_len) != STREAM_WRITE_OK)
+			break;
 	}
 	mem_file_free(&temp_file);
 }
