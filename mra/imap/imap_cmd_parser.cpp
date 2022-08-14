@@ -1489,6 +1489,8 @@ static int m2icode(int r, int e)
 		return DISPATCH_MIDB | static_cast<uint16_t>(e);
 	case MIDB_LOCAL_ENOMEM:
 		return 1920;
+	case MIDB_TOO_MANY_RESULTS:
+		return 1921;
 	default:
 		return 1919;
 	}

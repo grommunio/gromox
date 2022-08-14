@@ -81,7 +81,7 @@ struct BACK_SVR {
 
 static void free_result(XARRAY *);
 static void *midbag_scanwork(void *);
-static BOOL read_line(int sockd, char *buff, size_t length);
+static ssize_t read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
 static BOOL get_digest_string(const char *src, int length, const char *tag, char *buff, int buff_len);
 static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger);
@@ -534,9 +534,16 @@ static int rw_command(int fd, char *buff, size_t olen, size_t ilen)
 {
 	auto ret = write(fd, buff, olen);
 	if (ret < 0 || static_cast<size_t>(ret) != olen)
-		return -EIO;
-	if (!read_line(fd, buff, ilen))
-		return -EIO;
+		return MIDB_RDWR_ERROR;
+	ret = read_line(fd, buff, ilen);
+	if (ret == -ENOBUFS) {
+		fprintf(stderr, "E-2154: midb response is longer than expected (%zu), rejecting IMAP command. "
+		        "Consider raising midb_command_buffer_size or having fewer mails in the folder.\n",
+		        ilen);
+		return MIDB_TOO_MANY_RESULTS;
+	} else if (ret < 0) {
+		return MIDB_RDWR_ERROR;
+	}
 	return 0;
 }
 
@@ -567,8 +574,9 @@ static int delete_mail(const char *path, const char *folder,
 		length ++;
 		buff[length] = '\n';
 		length ++;
-		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-			return MIDB_RDWR_ERROR;
+		auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+		if (ret != 0)
+			return ret;
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 			continue;
@@ -584,8 +592,9 @@ static int delete_mail(const char *path, const char *folder,
 		length ++;
 		buff[length] = '\n';
 		length ++;
-		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-			return MIDB_RDWR_ERROR;
+		auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+		if (ret != 0)
+			return ret;
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			pback.reset();
 			return MIDB_RESULT_OK;
@@ -631,8 +640,9 @@ static int imap_search(const char *path, const char *folder,
 	buff[length] = '\n';
 	length ++;
 	
-	if (rw_command(pback->sockd, buff.get(), length, cbufsize) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff.get(), length, cbufsize);
+	if (ret != 0)
+		return ret;
 	if (strncmp(buff.get(), "TRUE", 4) == 0) {
 		pback.reset();
 		length = strlen(&buff[4]);
@@ -686,8 +696,9 @@ static int imap_search_uid(const char *path, const char *folder,
 	buff[length] = '\n';
 	length ++;
 	
-	if (rw_command(pback->sockd, buff.get(), length, cbufsize) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff.get(), length, cbufsize);
+	if (ret != 0)
+		return ret;
 	if (strncmp(buff.get(), "TRUE", 4) == 0) {
 		pback.reset();
 		length = strlen(&buff[4]);
@@ -719,8 +730,9 @@ static int get_mail_id(const char *path, const char *folder,
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-OFST %s %s %s UID ASC\r\n",
 				path, folder, mid_string);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		*pid = strtol(buff + 5, nullptr, 0) + 1;
 		pback.reset();
@@ -742,8 +754,9 @@ static int get_mail_uid(const char *path, const char *folder,
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-UNID %s %s %s\r\n",
 				path, folder, mid_string);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		*puid = strtol(buff + 5, nullptr, 0);
 		pback.reset();
@@ -769,8 +782,9 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-FDDT %s %s UID ASC\r\n", path, folder);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		if (6 != sscanf(buff, "TRUE %d %d %d %lu %u %d", &exists,
 		    &recent, &unseen, &uidvalid, &uidnext, &first_unseen)) {
@@ -814,8 +828,9 @@ static int make_folder(const char *path, const char *folder, int *perrno)
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-MAKF %s %s\r\n", path, folder);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -835,8 +850,9 @@ static int remove_folder(const char *path, const char *folder, int *perrno)
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-REMF %s %s\r\n", path, folder);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -856,8 +872,9 @@ static int ping_mailbox(const char *path, int *perrno)
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-PING %s\r\n", path);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -879,8 +896,9 @@ static int rename_folder(const char *path, const char *src_name,
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-RENF %s %s %s\r\n", path,
 				src_name, dst_name);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -900,8 +918,9 @@ static int subscribe_folder(const char *path, const char *folder, int *perrno)
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-SUBF %s %s\r\n", path, folder);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -921,8 +940,9 @@ static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-UNSF %s %s\r\n", path, folder);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -1150,8 +1170,9 @@ static int insert_mail(const char *path, const char *folder,
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-INST %s %s %s %s %ld\r\n",
 				path, folder, file_name, flags_string, time_stamp);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -1193,8 +1214,9 @@ static int remove_mail(const char *path, const char *folder,
 		length ++;
 		buff[length] = '\n';
 		length ++;
-		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-			return MIDB_RDWR_ERROR;
+		auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+		if (ret != 0)
+			return ret;
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 			continue;
@@ -1211,8 +1233,9 @@ static int remove_mail(const char *path, const char *folder,
 		length ++;
 		buff[length] = '\n';
 		length ++;
-		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-			return MIDB_RDWR_ERROR;
+		auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+		if (ret != 0)
+			return ret;
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			pback.reset();
 			return MIDB_RESULT_OK;
@@ -2316,8 +2339,9 @@ static int set_mail_flags(const char *path, const char *folder,
 	flags_string[length] = '\0';
 	length = gx_snprintf(buff, arsizeof(buff), "P-SFLG %s %s %s %s\r\n",
 				path, folder, mid_string, flags_string);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -2375,8 +2399,9 @@ static int unset_mail_flags(const char *path, const char *folder,
 	flags_string[length] = '\0';
 	length = gx_snprintf(buff, arsizeof(buff), "P-RFLG %s %s %s %s\r\n",
 				path, folder, mid_string, flags_string);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -2398,8 +2423,9 @@ static int get_mail_flags(const char *path, const char *folder,
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-GFLG %s %s %s\r\n",
 				path, folder, mid_string);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		*pflag_bits = 0;
@@ -2424,8 +2450,9 @@ static int copy_mail(const char *path, const char *src_folder,
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-COPY %s %s %s %s\r\n",
 				path, src_folder, mid_string, dst_folder);
-	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		return MIDB_RDWR_ERROR;
+	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
+	if (ret != 0)
+		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		strcpy(dst_mid, buff + 5);
@@ -2438,10 +2465,10 @@ static int copy_mail(const char *path, const char *src_folder,
 	return MIDB_RDWR_ERROR;
 }
 
-static BOOL read_line(int sockd, char *buff, size_t length)
+static ssize_t read_line(int sockd, char *buff, size_t length)
 {
 	if (length == 0)
-		return TRUE;
+		return 0;
 	size_t offset = 0;
 	--length;
 	int tv_msec;
@@ -2452,27 +2479,26 @@ static BOOL read_line(int sockd, char *buff, size_t length)
 		pfd_read.fd = sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			return FALSE;
+			return -ETIMEDOUT;
 		}
 		auto read_len = read(sockd, buff + offset,  length - offset);
 		if (read_len < 0) {
-			return FALSE;
+			return read_len;
 		}
 		buff[offset+read_len] = '\0';
 		if (read_len == 0)
-			return false;
+			return 0;
 		offset += read_len;
 		if (offset >= 2 && '\r' == buff[offset - 2] &&
 			'\n' == buff[offset - 1]) {
 			offset -= 2;
 			buff[offset] = '\0';
-			return TRUE;
+			return 1;
 		}
 		if (length == offset) {
-			return FALSE;
+			return -ENOBUFS;
 		}
 	}
-	
 }
 
 static BOOL check_full(const char *path)

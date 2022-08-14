@@ -157,6 +157,9 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 			/* write back nothing and close the connection */
 			pop3_parser_log_info(pcontext, LV_WARN, "midb returned error result");
 			return DISPATCH_SHOULD_CLOSE;
+		case MIDB_TOO_MANY_RESULTS:
+			pop3_parser_log_info(pcontext, LV_WARN, "Too many messages in folder");
+			return DISPATCH_SHOULD_CLOSE;
 		default:
 			return DISPATCH_SHOULD_CLOSE;
 		}
