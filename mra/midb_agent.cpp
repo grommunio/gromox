@@ -79,6 +79,7 @@ struct BACK_SVR {
 
 }
 
+static void free_result(XARRAY *);
 static void *midbag_scanwork(void *);
 static BOOL read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
@@ -422,7 +423,7 @@ static int list_mail(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto cl_0 = make_scope_exit([&]() { parray.clear(); });
+	auto EH = make_scope_exit([&]() { parray.clear(); });
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-UIDL %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		return MIDB_RDWR_ERROR;
@@ -463,7 +464,7 @@ static int list_mail(const char *path, const char *folder,
 					break;
 				} else if (0 == strncmp(buff, "FALSE ", 6)) {
 					pback.reset();
-					cl_0.release();
+					EH.release(); // ?
 					return MIDB_RESULT_ERROR;
 				}
 			}
@@ -511,11 +512,10 @@ static int list_mail(const char *path, const char *folder,
 
 		if (count >= lines) {
 			pback.reset();
-			if (!b_fail) {
-				cl_0.release();
-				return MIDB_RESULT_OK;
-			}
-			return MIDB_RESULT_ERROR;
+			if (b_fail)
+				return MIDB_RESULT_ERROR;
+			EH.release();
+			return MIDB_RESULT_OK;
 		}
 		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
@@ -568,15 +568,15 @@ static int delete_mail(const char *path, const char *folder,
 		buff[length] = '\n';
 		length ++;
 		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-			goto DELETE_ERROR;
+			return MIDB_RDWR_ERROR;
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
+			continue;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
 			pback.reset();
 			return MIDB_RESULT_ERROR;
-		} else {
-			goto DELETE_ERROR;
 		}
+		return MIDB_RDWR_ERROR;
 	}
 
 	if (length > cmd_len) {
@@ -585,7 +585,7 @@ static int delete_mail(const char *path, const char *folder,
 		buff[length] = '\n';
 		length ++;
 		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-			goto DELETE_ERROR;
+			return MIDB_RDWR_ERROR;
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			pback.reset();
 			return MIDB_RESULT_OK;
@@ -593,11 +593,9 @@ static int delete_mail(const char *path, const char *folder,
 			pback.reset();
 			return MIDB_RESULT_ERROR;
 		} else {
-			goto DELETE_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 	}
-
- DELETE_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1199,6 +1197,7 @@ static int remove_mail(const char *path, const char *folder,
 			return MIDB_RDWR_ERROR;
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
+			continue;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
 			pback.reset();
 			*perrno = strtol(buff + 6, nullptr, 0);
@@ -1286,11 +1285,11 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
+	auto EH = make_scope_exit([=]() { pxarray->clear(); });
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		return MIDB_RDWR_ERROR;
 	}
-	
 	
 	count = 0;
 	offset = 0;
@@ -1301,11 +1300,11 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
 		
@@ -1318,20 +1317,21 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 					num_buff[i-5] = '\0';
 					lines = strtol(num_buff, nullptr, 0);
 					if (lines < 0) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 					last_pos = i + 2;
 					line_pos = 0;
 					break;
 				} else if (0 == strncmp(buff, "FALSE ", 6)) {
 					pback.reset();
+					EH.release(); // ?
 					*perrno = strtol(buff + 6, nullptr, 0);
 					return MIDB_RESULT_ERROR;
 				}
 			}
 			if (-1 == lines) {
 				if (offset > 1024) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 				continue;
 			}
@@ -1368,18 +1368,19 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 				temp_line[line_pos] = buff[i];
 				line_pos ++;
 				if (line_pos >= 128) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 			}
 		}
 
 		if (count >= lines) {
 			pback.reset();
-			if (!b_format_error)
-				return MIDB_RESULT_OK;
-			*perrno = -1;
-			pxarray->clear();
-			return MIDB_RESULT_ERROR;
+			if (b_format_error) {
+				*perrno = -1;
+				return MIDB_RESULT_ERROR;
+			}
+			EH.release();
+			return MIDB_RESULT_OK;
 		}
 		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
@@ -1392,10 +1393,6 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 			last_pos = 0;
 		}
 	}
-
- RDWR_ERROR:
-	pxarray->clear();
-	return MIDB_RDWR_ERROR;
 }
 
 static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
@@ -1420,11 +1417,11 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
+	auto EH = make_scope_exit([=]() { pxarray->clear(); });
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-DELL %s %s UID ASC\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	}
-	
 	
 	count = 0;
 	offset = 0;
@@ -1435,11 +1432,11 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
 		
@@ -1452,20 +1449,21 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 					num_buff[i-5] = '\0';
 					lines = strtol(num_buff, nullptr, 0);
 					if (lines < 0) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 					last_pos = i + 2;
 					line_pos = 0;
 					break;
 				} else if (0 == strncmp(buff, "FALSE ", 6)) {
 					pback.reset();
+					EH.release(); // ?
 					*perrno = strtol(buff + 6, nullptr, 0);
 					return MIDB_RESULT_ERROR;
 				}
 			}
 			if (-1 == lines) {
 				if (offset > 1024) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 				continue;
 			}
@@ -1502,18 +1500,19 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 				temp_line[line_pos] = buff[i];
 				line_pos ++;
 				if (line_pos >= 128) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 			}
 		}
 
 		if (count >= lines) {
 			pback.reset();
-			if (!b_format_error)
-				return MIDB_RESULT_OK;
-			*perrno = -1;
-			pxarray->clear();
-			return MIDB_RESULT_ERROR;
+			if (b_format_error) {
+				*perrno = -1;
+				return MIDB_RESULT_ERROR;
+			}
+			EH.release();
+			return MIDB_RESULT_OK;
 		}
 		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
@@ -1526,10 +1525,6 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 			last_pos = 0;
 		}
 	}
-
- RDWR_ERROR:
-	pxarray->clear();
-	return MIDB_RDWR_ERROR;
 }
 
 static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
@@ -1555,10 +1550,14 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
+	auto EH = make_scope_exit([=]() {
+		free_result(pxarray);
+		pxarray->clear();
+	});
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC\r\n",
 				path, folder);
 	if (length != write(pback->sockd, buff, length)) {
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	}
 	
 	
@@ -1571,11 +1570,11 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		read_len = read(pback->sockd, buff + offset, 64*1024 - offset);
 		if (read_len <= 0) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
 		
@@ -1588,20 +1587,21 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 					num_buff[i-5] = '\0';
 					lines = strtol(num_buff, nullptr, 0);
 					if (lines < 0) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 					last_pos = i + 2;
 					line_pos = 0;
 					break;
 				} else if (0 == strncmp(buff, "FALSE ", 6)) {
 					pback.reset();
+					EH.release(); // ?
 					*perrno = strtol(buff + 6, nullptr, 0);
 					return MIDB_RESULT_ERROR;
 				}
 			}
 			if (-1 == lines) {
 				if (offset > 1024) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 				continue;
 			}
@@ -1630,25 +1630,19 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 				temp_line[line_pos] = buff[i];
 				line_pos ++;
 				if (line_pos >= 257*1024) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 			}
 		}
 
 		if (count >= lines) {
 			pback.reset();
-			if (!b_format_error)
-				return MIDB_RESULT_OK;
-			auto num = pxarray->get_capacity();
-			for (size_t i = 0; i < num; ++i) {
-				auto pitem = pxarray->get_item(i);
-				if (NULL != pitem) {
-					mem_file_free(&pitem->f_digest);
-				}
+			if (b_format_error) {
+				*perrno = -1;
+				return MIDB_RESULT_ERROR;
 			}
-			*perrno = -1;
-			pxarray->clear();
-			return MIDB_RESULT_ERROR;
+			EH.release();
+			return MIDB_RESULT_OK;
 		}
 		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (64*1024 == offset) {
@@ -1661,17 +1655,6 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			last_pos = 0;
 		}
 	}
-
- RDWR_ERROR:
-	auto num = pxarray->get_capacity();
-	for (size_t i = 0; i < num; ++i) {
-		auto pitem = pxarray->get_item(i);
-		if (NULL != pitem) {
-			mem_file_free(&pitem->f_digest);
-		}
-	}
-	pxarray->clear();
-	return MIDB_RDWR_ERROR;
 }
 
 static void free_result(XARRAY *pxarray)
@@ -1861,6 +1844,10 @@ static int fetch_detail(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
+	auto EH = make_scope_exit([=]() {
+		free_result(pxarray);
+		pxarray->clear();
+	});
 	
 	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
 		pnode=double_list_get_after(plist, pnode)) {
@@ -1879,9 +1866,8 @@ static int fetch_detail(const char *path, const char *folder,
 						pseq->max - pseq->min + 1);
 		}
 		if (length != write(pback->sockd, buff, length)) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
-		
 		
 		count = 0;
 		offset = 0;
@@ -1892,11 +1878,11 @@ static int fetch_detail(const char *path, const char *folder,
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
 			if (1 != poll(&pfd_read, 1, tv_msec)) {
-				goto RDWR_ERROR;
+				return MIDB_RDWR_ERROR;
 			}
 			read_len = read(pback->sockd, buff + offset, 64*1024 - offset);
 			if (read_len <= 0) {
-				goto RDWR_ERROR;
+				return MIDB_RDWR_ERROR;
 			}
 			offset += read_len;
 			
@@ -1909,7 +1895,7 @@ static int fetch_detail(const char *path, const char *folder,
 						num_buff[i-5] = '\0';
 						lines = strtol(num_buff, nullptr, 0);
 						if (lines < 0) {
-							goto RDWR_ERROR;
+							return MIDB_RDWR_ERROR;
 						}
 						last_pos = i + 2;
 						line_pos = 0;
@@ -1917,18 +1903,12 @@ static int fetch_detail(const char *path, const char *folder,
 					} else if (0 == strncmp(buff, "FALSE ", 6)) {
 						pback.reset();
 						*perrno = strtol(buff + 6, nullptr, 0);
-						auto num = pxarray->get_capacity();
-						for (size_t j = 0; j < num; ++j) {
-							auto pitem = pxarray->get_item(j);
-							mem_file_free(&pitem->f_digest);
-						}
-						pxarray->clear();
 						return MIDB_RESULT_ERROR;
 					}
 				}
 				if (-1 == lines) {
 					if (offset > 1024) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 					continue;
 				}
@@ -1961,21 +1941,20 @@ static int fetch_detail(const char *path, const char *folder,
 					temp_line[line_pos] = buff[i];
 					line_pos ++;
 					if (line_pos >= 257*1024) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 				}
 			}
 
-				if (b_format_error) {
-					pback.reset();
-					*perrno = -1;
-					auto num = pxarray->get_capacity();
-					for (size_t i = 0; i < num; ++i) {
-						auto pitem = pxarray->get_item(i);
-						mem_file_free(&pitem->f_digest);
-					}
-					return MIDB_RESULT_ERROR;
-				}
+			if (b_format_error) {
+				EH.release();
+				free_result(pxarray);
+				// no pxarray->clear?
+
+				pback.reset();
+				*perrno = -1;
+				return MIDB_RESULT_ERROR;
+			}
 			if (count >= lines)
 				break;
 			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
@@ -1992,16 +1971,8 @@ static int fetch_detail(const char *path, const char *folder,
 	}
 
 	pback.reset();
+	EH.release();
 	return MIDB_RESULT_OK;
-
- RDWR_ERROR:
-	auto num = pxarray->get_capacity();
-	for (size_t i = 0; i < num; ++i) {
-		auto pitem = pxarray->get_item(i);
-		mem_file_free(&pitem->f_digest);
-	}
-	pxarray->clear();
-	return MIDB_RDWR_ERROR;
 }
 
 static int fetch_simple_uid(const char *path, const char *folder,
@@ -2177,6 +2148,10 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
+	auto EH = make_scope_exit([=]() {
+		free_result(pxarray);
+		pxarray->clear();
+	});
 	
 	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
 		pnode=double_list_get_after(plist, pnode)) {
@@ -2184,7 +2159,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 		auto length = gx_snprintf(buff, arsizeof(buff), "P-DTLU %s %s UID ASC %d %d\r\n", path,
 					folder, pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		
 		count = 0;
@@ -2196,11 +2171,11 @@ static int fetch_detail_uid(const char *path, const char *folder,
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
 			if (1 != poll(&pfd_read, 1, tv_msec)) {
-				goto RDWR_ERROR;
+				return MIDB_RDWR_ERROR;
 			}
 			read_len = read(pback->sockd, buff + offset, 64*1024 - offset);
 			if (read_len <= 0) {
-				goto RDWR_ERROR;
+				return MIDB_RDWR_ERROR;
 			}
 			offset += read_len;
 
@@ -2213,7 +2188,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 						num_buff[i-5] = '\0';
 						lines = strtol(num_buff, nullptr, 0);
 						if (lines < 0) {
-							goto RDWR_ERROR;
+							return MIDB_RDWR_ERROR;
 						}
 						last_pos = i + 2;
 						line_pos = 0;
@@ -2221,18 +2196,12 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					} else if (0 == strncmp(buff, "FALSE ", 6)) {
 						pback.reset();
 						*perrno = strtol(buff + 6, nullptr, 0);
-						auto num = pxarray->get_capacity();
-						for (size_t j = 0; j < num; ++j) {
-							auto pitem = pxarray->get_item(j);
-							mem_file_free(&pitem->f_digest);
-						}
-						pxarray->clear();
 						return MIDB_RESULT_ERROR;
 					}
 				}
 				if (-1 == lines) {
 					if (offset > 1024) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 					continue;
 				}
@@ -2269,7 +2238,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					temp_line[line_pos] = buff[i];
 					line_pos ++;
 					if (line_pos >= 257 * 1024) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 				}
 			}
@@ -2279,11 +2248,9 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					break;
 				pback.reset();
 				*perrno = -1;
-				auto num = pxarray->get_capacity();
-				for (size_t i = 0; i < num; ++i) {
-					auto pitem = pxarray->get_item(i);
-					mem_file_free(&pitem->f_digest);
-				}
+				EH.release();
+				free_result(pxarray);
+				// no pxarray->clear?
 				return MIDB_RESULT_ERROR;
 			}
 			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
@@ -2301,15 +2268,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	
 	pback.reset();
 	return MIDB_RESULT_OK;
-
- RDWR_ERROR:
-	auto num = pxarray->get_capacity();
-	for (size_t i = 0; i < num; ++i) {
-		auto pitem = pxarray->get_item(i);
-		mem_file_free(&pitem->f_digest);
-	}
-	pxarray->clear();
-	return MIDB_RDWR_ERROR;
 }
 
 static int set_mail_flags(const char *path, const char *folder,
@@ -2530,7 +2488,7 @@ static BOOL check_full(const char *path)
 		return TRUE;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-CKFL %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
-		goto CHECK_ERROR;
+		return TRUE;
 	}
 
 	offset = 0;
@@ -2540,11 +2498,11 @@ static BOOL check_full(const char *path)
 		FD_ZERO(&myset);
 		FD_SET(pback->sockd, &myset);
 		if (select(pback->sockd + 1, &myset, NULL, NULL, &tv) <= 0) {
-			goto CHECK_ERROR;
+			return TRUE;
 		}
 		read_len = read(pback->sockd, buff + offset, 1024 - offset);
 		if (read_len <= 0) {
-			goto CHECK_ERROR;
+			return TRUE;
 		}
 		offset += read_len;
 		if (offset >= 2 && '\r' == buff[offset - 2] &&
@@ -2561,17 +2519,13 @@ static BOOL check_full(const char *path)
 				time(&pback->last_time);
 				pback.reset();
 				return TRUE;
-			} else {
-				goto CHECK_ERROR;
 			}
+			return TRUE;
 		}
 		if (1024 == offset) {
-			goto CHECK_ERROR;
+			return TRUE;
 		}
 	}
-
- CHECK_ERROR:
-	return TRUE;
 }
 
 static int connect_midb(const char *ip_addr, uint16_t port)
