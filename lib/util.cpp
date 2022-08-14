@@ -1036,7 +1036,7 @@ int decode64_ex(const char *_in, size_t inlen, void *vout,
 
 static inline bool qp_nonprintable(unsigned char c)
 {
-	return c <= 32 || c == '=' || c >= 127;
+	return c < 32 || c == '=' || c >= 127;
 }
 
 namespace gromox {
@@ -1052,6 +1052,9 @@ size_t qp_encoded_size_estimate(const char *s, size_t n)
 
 }
 
+/*
+ * The resulting QP data is not suitable as encoded-words, only bodytext.
+ */
 ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t length)
 {
 	auto output = static_cast<uint8_t *>(voutput);
