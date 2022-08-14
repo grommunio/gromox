@@ -67,6 +67,8 @@ LIB_BUFFER &LIB_BUFFER::operator=(LIB_BUFFER &&o) noexcept
 	o.allocated_num = 0;
 	item_size = o.item_size;
 	max_items = o.max_items;
+	m_name = o.m_name;
+	m_hint = o.m_hint;
 	return *this;
 }
 
