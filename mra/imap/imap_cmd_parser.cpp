@@ -2551,39 +2551,37 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (ret != 0)
 		return ret;
 
-	{
-		pcontext->stream.clear();
-		del_num = 0;
-		for (size_t i = 0; i < xarray.get_capacity(); ++i) try {
-			auto pitem = xarray.get_item(i);
-			if (zero_uid_bit(*pitem))
-				continue;
-			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
-			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-2030: remove %s: %s\n",
-				        eml_path.c_str(), strerror(errno));
-			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
-			string_length = gx_snprintf(buff, arsizeof(buff),
-				"* %d EXPUNGE\r\n", pitem->id - del_num);
-			pcontext->stream.write(buff, string_length);
-			b_deleted = TRUE;
-			del_num ++;
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1459: ENOMEM\n");
-		}
-		if (b_deleted)
-			imap_parser_touch_modify(pcontext, pcontext->username,
-										pcontext->selected_folder);
-		imap_parser_echo_modify(pcontext, NULL);
-		/* IMAP_CODE_2170026: OK EXPUNGE completed */
-		auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
+	pcontext->stream.clear();
+	del_num = 0;
+	for (size_t i = 0; i < xarray.get_capacity(); ++i) try {
+		auto pitem = xarray.get_item(i);
+		if (zero_uid_bit(*pitem))
+			continue;
+		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
+		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-2030: remove %s: %s\n",
+				eml_path.c_str(), strerror(errno));
+		imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
-			"%s %s", argv[0], imap_reply_str);
+			"* %d EXPUNGE\r\n", pitem->id - del_num);
 		pcontext->stream.write(buff, string_length);
-		pcontext->write_offset = 0;
-		pcontext->sched_stat = SCHED_STAT_WRLST;
-		return DISPATCH_BREAK;
+		b_deleted = TRUE;
+		del_num ++;
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1459: ENOMEM\n");
 	}
+	if (b_deleted)
+		imap_parser_touch_modify(pcontext, pcontext->username,
+			pcontext->selected_folder);
+	imap_parser_echo_modify(pcontext, NULL);
+	/* IMAP_CODE_2170026: OK EXPUNGE completed */
+	auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
+	string_length = gx_snprintf(buff, arsizeof(buff),
+		"%s %s", argv[0], imap_reply_str);
+	pcontext->stream.write(buff, string_length);
+	pcontext->write_offset = 0;
+	pcontext->sched_stat = SCHED_STAT_WRLST;
+	return DISPATCH_BREAK;
 }
 
 int imap_cmd_parser_unselect(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -3175,41 +3173,39 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (ret != 0)
 		return ret;
 
-	{
-		pcontext->stream.clear();
-		del_num = 0;
-		for (size_t i = 0; i < xarray.get_capacity(); ++i) try {
-			pitem = xarray.get_item(i);
-			if (zero_uid_bit(*pitem) ||
-			    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
-			    max_uid))
-				continue;
-			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
-			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-2086: remove %s: %s\n",
-				        eml_path.c_str(), strerror(errno));
-			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
-			string_length = gx_snprintf(buff, arsizeof(buff),
-				"* %d EXPUNGE\r\n", pitem->id - del_num);
-			pcontext->stream.write(buff, string_length);
-			b_deleted = TRUE;
-			del_num ++;
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1458: ENOMEM\n");
-		}
-		if (b_deleted)
-			imap_parser_touch_modify(pcontext, pcontext->username,
-										pcontext->selected_folder);
-		imap_parser_echo_modify(pcontext, NULL);
-		/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
-		auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
+	pcontext->stream.clear();
+	del_num = 0;
+	for (size_t i = 0; i < xarray.get_capacity(); ++i) try {
+		pitem = xarray.get_item(i);
+		if (zero_uid_bit(*pitem) ||
+		    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
+		    max_uid))
+			continue;
+		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
+		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-2086: remove %s: %s\n",
+				eml_path.c_str(), strerror(errno));
+		imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
-			"%s %s", argv[0], imap_reply_str);
+			"* %d EXPUNGE\r\n", pitem->id - del_num);
 		pcontext->stream.write(buff, string_length);
-		pcontext->write_offset = 0;
-		pcontext->sched_stat = SCHED_STAT_WRLST;
-		return DISPATCH_BREAK;
+		b_deleted = TRUE;
+		del_num ++;
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1458: ENOMEM\n");
 	}
+	if (b_deleted)
+		imap_parser_touch_modify(pcontext, pcontext->username,
+			pcontext->selected_folder);
+	imap_parser_echo_modify(pcontext, NULL);
+	/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
+	auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
+	string_length = gx_snprintf(buff, arsizeof(buff),
+		"%s %s", argv[0], imap_reply_str);
+	pcontext->stream.write(buff, string_length);
+	pcontext->write_offset = 0;
+	pcontext->sched_stat = SCHED_STAT_WRLST;
+	return DISPATCH_BREAK;
 }
 
 void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
