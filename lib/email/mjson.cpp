@@ -938,12 +938,6 @@ static bool mjson_check_ascii_printable(const char *astring)
 	       [&](uint8_t c) { return c >= 0x20 && c <= 0x7E; });
 }
 
-static bool prefer_qp_over_base64(const char *s)
-{
-	auto z = strlen(s);
-	return qp_encoded_size_estimate(s, z) < (z / 3 + 1) * 4;
-}
-
 static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	const char *storage_path, const char *msg_filename, const char *charset,
 	const char *email_charset, BOOL b_ext, char *buff, int length)
@@ -1246,15 +1240,11 @@ static int mjson_convert_address(char *address, const char *charset,
 		mjson_add_backslash(email_addr.display_name, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 		          "(\"%s\"", temp_buff);
-	} else if (prefer_qp_over_base64(email_addr.display_name)) {
-		offset += gx_snprintf(&buff[offset], length - offset, "(\"=?utf-8?q?");
-		auto ret = qp_encode_ex(&buff[offset], length - offset,
-		           email_addr.display_name, strlen(email_addr.display_name));
-		if (ret < 0)
-			return -1;
-		offset += ret;
-		offset += gx_snprintf(&buff[offset], length - offset, "?=\"");
 	} else {
+		/*
+		 * qp_encode_ex is only suitable for bodytext but not
+		 * encoded-words, so just pick base64
+		 */
 		offset += gx_snprintf(buff + offset, length - offset, "(\"=?utf-8?b?");
 		if (0 != encode64(email_addr.display_name,
 		    strlen(email_addr.display_name), buff + offset,
