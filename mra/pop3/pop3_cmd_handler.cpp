@@ -19,15 +19,8 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
 #include "pop3.hpp"
+#include "../midb_agent.hpp"
 #include "../../exch/authmgr.hpp"
-
-#define MIDB_RESULT_OK          0
-
-#define MIDB_NO_SERVER          1
-
-#define MIDB_RDWR_ERROR         2
-
-#define MIDB_RESULT_ERROR       3
 
 #define DEF_MODE                S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 

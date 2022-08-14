@@ -29,6 +29,7 @@
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
 #include "imap.hpp"
+#include "../midb_agent.hpp"
 #define MAX_DIGLEN		256*1024
 
 using namespace std::string_literals;

@@ -37,21 +37,7 @@
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
-
-#define MIDB_RESULT_OK			0
-#define MIDB_NO_SERVER			1
-#define MIDB_RDWR_ERROR			2
-#define MIDB_RESULT_ERROR		3
-#define MIDB_MAILBOX_FULL		4
-
-#define FLAG_RECENT				0x1
-#define FLAG_ANSWERED			0x2
-#define FLAG_FLAGGED			0x4
-#define FLAG_DELETED			0x8
-#define FLAG_SEEN				0x10
-#define FLAG_DRAFT				0x20
-
-#define FLAG_LOADED				0x80
+#include "midb_agent.hpp"
 
 using namespace gromox;
 using AGENT_MITEM = MITEM;
