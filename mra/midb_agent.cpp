@@ -129,7 +129,7 @@ static int imap_search(const char *path, const char *folder, const char *charset
 static int imap_search_uid(const char *path, const char *folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
 static BOOL check_full(const char *path);
 
-size_t g_midb_command_buffer_size = 256 * 1024;
+std::atomic<size_t> g_midb_command_buffer_size{256 * 1024};
 static int g_conn_num;
 static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
@@ -625,18 +625,19 @@ static int imap_search(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto buff   = std::make_unique<char[]>(g_midb_command_buffer_size);
-	auto buff1  = std::make_unique<char[]>(g_midb_command_buffer_size);
-	auto length = gx_snprintf(buff.get(), g_midb_command_buffer_size,
+	auto cbufsize = g_midb_command_buffer_size.load();
+	auto buff   = std::make_unique<char[]>(cbufsize);
+	auto buff1  = std::make_unique<char[]>(cbufsize);
+	auto length = gx_snprintf(buff.get(), cbufsize,
 	              "P-SRHL %s %s %s ", path, folder, charset);
 	int length1 = 0;
 	for (i=0; i<argc; i++) {
-		length1 += gx_snprintf(&buff1[length1], g_midb_command_buffer_size - length1,
+		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
 					"%s", argv[i]) + 1;
 	}
 	buff1[length1] = '\0';
 	length1 ++;
-	encode64(buff1.get(), length1, &buff[length], g_midb_command_buffer_size - length,
+	encode64(buff1.get(), length1, &buff[length], cbufsize - length,
 		&encode_len);
 	length += encode_len;
 	buff1.reset();
@@ -646,7 +647,7 @@ static int imap_search(const char *path, const char *folder,
 	buff[length] = '\n';
 	length ++;
 	
-	if (rw_command(pback->sockd, buff.get(), length, g_midb_command_buffer_size) < 0)
+	if (rw_command(pback->sockd, buff.get(), length, cbufsize) < 0)
 		return MIDB_RDWR_ERROR;
 	if (strncmp(buff.get(), "TRUE", 4) == 0) {
 		pback.reset();
@@ -679,18 +680,19 @@ static int imap_search_uid(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto buff   = std::make_unique<char[]>(g_midb_command_buffer_size);
-	auto buff1  = std::make_unique<char[]>(g_midb_command_buffer_size);
-	auto length = gx_snprintf(buff.get(), g_midb_command_buffer_size,
+	auto cbufsize = g_midb_command_buffer_size.load();
+	auto buff   = std::make_unique<char[]>(cbufsize);
+	auto buff1  = std::make_unique<char[]>(cbufsize);
+	auto length = gx_snprintf(buff.get(), cbufsize,
 	              "P-SRHU %s %s %s ", path, folder, charset);
 	int length1 = 0;
 	for (i=0; i<argc; i++) {
-		length1 += gx_snprintf(&buff1[length1], g_midb_command_buffer_size - length1,
+		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
 					"%s", argv[i]) + 1;
 	}
 	buff1[length1] = '\0';
 	length1 ++;
-	encode64(buff1.get(), length1, &buff[length], g_midb_command_buffer_size - length,
+	encode64(buff1.get(), length1, &buff[length], cbufsize - length,
 		&encode_len);
 	length += encode_len;
 	buff1.reset();
@@ -700,7 +702,7 @@ static int imap_search_uid(const char *path, const char *folder,
 	buff[length] = '\n';
 	length ++;
 	
-	if (rw_command(pback->sockd, buff.get(), length, g_midb_command_buffer_size) < 0)
+	if (rw_command(pback->sockd, buff.get(), length, cbufsize) < 0)
 		return MIDB_RDWR_ERROR;
 	if (strncmp(buff.get(), "TRUE", 4) == 0) {
 		pback.reset();
