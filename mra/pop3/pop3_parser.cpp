@@ -396,7 +396,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		switch (pop3_parser_dispatch_cmd(temp_command,
 			strlen(temp_command), pcontext)) {
 		case DISPATCH_CONTINUE:
-			return PROCESS_CONTINUE;
+			i = 0;
+			continue;
 		case DISPATCH_SHOULD_CLOSE:
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			if (system_services_container_remove_ip != nullptr)
