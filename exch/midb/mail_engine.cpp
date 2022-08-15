@@ -175,6 +175,7 @@ struct SIMU_NODE {
 }
 
 unsigned int g_midb_schema_upgrades;
+unsigned int g_midb_cache_interval, g_midb_reload_interval;
 
 static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 static BOOL g_wal;
@@ -185,7 +186,6 @@ static std::atomic<unsigned int> g_sequence_id;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
-static int g_cache_interval;          /* maximum living interval in table */
 static char g_org_name[256];
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
@@ -2386,8 +2386,9 @@ static void *midbme_scanwork(void *param)
 			auto last_diff = now_time - pidb->last_time;
 			auto load_diff = now_time - pidb->load_time;
 			bool clean = pidb->reference == 0 &&
-			             (pidb->sub_id == 0 || last_diff > g_cache_interval ||
-			             load_diff > RELOAD_INTERVAL);
+			             (pidb->sub_id == 0 ||
+			             last_diff > g_midb_cache_interval ||
+			             load_diff > g_midb_reload_interval);
 			if (!clean) {
 				++it;
 				continue;
@@ -4981,8 +4982,8 @@ static void mail_engine_notification_proc(const char *dir,
 }
 
 void mail_engine_init(const char *default_charset, const char *org_name,
-	size_t table_size, BOOL b_async, BOOL b_wal,
-	uint64_t mmap_size, int cache_interval, int mime_num)
+    size_t table_size, BOOL b_async, BOOL b_wal,
+    uint64_t mmap_size, int mime_num)
 {
 	g_sequence_id = 0;
 	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
@@ -4992,7 +4993,6 @@ void mail_engine_init(const char *default_charset, const char *org_name,
 	g_mmap_size = mmap_size;
 	g_table_size = table_size;
 	g_mime_num = mime_num;
-	g_cache_interval = cache_interval;
 }
 
 int mail_engine_run()

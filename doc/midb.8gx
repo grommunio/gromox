@@ -39,6 +39,9 @@ Default: \fI/usr/share/gromox/midb\fP
 Default: \fIwindows-1252\fP
 .TP
 \fBmidb_cache_interval\fP
+The time after the last use of a particular midb.sqlite3 that the sqlite gets
+unloaded.
+.br
 Default: \fI30minutes\fP
 .TP
 \fBmidb_cmd_debug\fP
@@ -60,6 +63,11 @@ Default: \fI5555\fP
 .TP
 \fBmidb_mime_number\fP
 Default: \fI4096\fP
+.TP
+\fBmidb_reload_interval\fP
+The time after a midb.sqlite3 was first loaded that it will be unloaded.
+.br
+Default: \fI60min\fP
 .TP
 \fBmidb_schema_upgrades\fP
 This directive controls whether database schemas are automatically upgraded

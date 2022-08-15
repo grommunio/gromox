@@ -61,11 +61,12 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR},
 	{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
 	{"default_charset", "windows-1252"},
-	{"midb_cache_interval", "30min", CFG_TIME, "1min", "30min"},
+	{"midb_cache_interval", "30min", CFG_TIME, "1min", "1year"},
 	{"midb_cmd_debug", "0"},
 	{"midb_listen_ip", "::1"},
 	{"midb_listen_port", "5555"},
 	{"midb_mime_number", "4096", CFG_SIZE, "1024"},
+	{"midb_reload_interval", "60min", CFG_TIME, "1min", "1year"},
 	{"midb_schema_upgrades", "auto"},
 	{"midb_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"midb_threads_num", "100", CFG_SIZE, "20", "1000"},
@@ -95,6 +96,8 @@ static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		return false;
 	}
 	g_cmd_debug = pconfig->get_ll("midb_cmd_debug");
+	g_midb_cache_interval = pconfig->get_ll("midb_cache_interval");
+	g_midb_reload_interval = pconfig->get_ll("midb_reload_interval");
 	auto s = pconfig->get_value("midb_schema_upgrades");
 	if (strcmp(s, "auto") == 0)
 		g_midb_schema_upgrades = MIDB_UPGRADE_AUTO;
@@ -199,7 +202,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("x500_org_name"), table_size,
 		parse_bool(g_config_file->get_value("sqlite_synchronous")) ? TRUE : false,
 		parse_bool(g_config_file->get_value("sqlite_wal_mode")) ? TRUE : false,
-		mmap_size, cache_interval, mime_num);
+		mmap_size, mime_num);
 	auto cl_5 = make_scope_exit(mail_engine_stop);
 
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);
