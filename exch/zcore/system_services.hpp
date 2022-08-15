@@ -36,6 +36,5 @@ E(set_user_lang)
 E(setpasswd)
 E(scndstore_hints)
 #undef E
-extern BOOL (*system_services_get_lang)(uint32_t, const char*, char*, int);
 extern int (*system_services_add_timer)(const char *, int);
 extern void (*system_services_log_info)(unsigned int, const char *, ...) __attribute__((format(printf, 2, 3)));

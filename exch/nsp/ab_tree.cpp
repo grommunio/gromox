@@ -33,6 +33,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zz_ndr_stack.hpp>
 #include "ab_tree.h"
@@ -93,9 +94,6 @@ static decltype(mysql_adaptor_get_class_users) *get_class_users;
 static decltype(mysql_adaptor_get_group_users) *get_group_users;
 static decltype(mysql_adaptor_get_domain_users) *get_domain_users;
 static decltype(mysql_adaptor_get_mlist_ids) *get_mlist_ids;
-
-static BOOL (*get_lang)(uint32_t codepage,
-	const char *tag, char *value, int len);
 
 static void *nspab_scanwork(void *);
 
@@ -214,7 +212,6 @@ int ab_tree_run()
 	E(get_group_users, "get_group_users");
 	E(get_domain_users, "get_domain_users");
 	E(get_mlist_ids, "get_mlist_ids");
-	E(get_lang, "get_lang");
 #undef E
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, nspab_scanwork, nullptr);
@@ -1084,24 +1081,24 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		switch (obj->list_type) {
 		case MLIST_TYPE_NORMAL:
-			if (!get_lang(codepage, "mlist0", lang_string,
-			    arsizeof(lang_string)))
+			if (cpl_get_string(codepage, "mlist0", lang_string,
+			    std::size(lang_string)) != 0)
 				strcpy(lang_string, "custom address list");
 			snprintf(str_dname, dn_size, "%s(%s)", obj->username.c_str(), lang_string);
 			break;
 		case MLIST_TYPE_GROUP:
-			if (!get_lang(codepage, "mlist1", lang_string,
-			    arsizeof(lang_string)))
+			if (cpl_get_string(codepage, "mlist1", lang_string,
+			    std::size(lang_string)) != 0)
 				strcpy(lang_string, "all users in department of %s");
 			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		case MLIST_TYPE_DOMAIN:
-			if (!get_lang(codepage, "mlist2", str_dname, dn_size))
+			if (cpl_get_string(codepage, "mlist2", str_dname, dn_size) != 0)
 				gx_strlcpy(str_dname, "all users in domain", dn_size);
 			break;
 		case MLIST_TYPE_CLASS:
-			if (!get_lang(codepage, "mlist3", lang_string,
-			    arsizeof(lang_string)))
+			if (cpl_get_string(codepage, "mlist3", lang_string,
+			    std::size(lang_string)) != 0)
 				strcpy(lang_string, "all users in group of %s");
 			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
@@ -1177,7 +1174,7 @@ void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
 
 void ab_tree_get_mlist_title(uint32_t codepage, char *str_title)
 {
-	if (!get_lang(codepage, "mlist", str_title, 256))
+	if (cpl_get_string(codepage, "mlist", str_title, 256) != 0)
 		strcpy(str_title, "Address List");
 }
 
