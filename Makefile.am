@@ -47,7 +47,6 @@ noinst_DATA += \
 	libgxs_event_stub.ldd \
 	libgxs_midb_agent.ldd
 exchange_plugins = \
-	libgxs_codepage_lang.la \
 	libgxs_exmdb_provider.la \
 	libgxs_timer_agent.la \
 	libgxp_exchange_emsmdb.la \
@@ -62,7 +61,6 @@ exchange_plugins = \
 	libgxs_mysql_adaptor.la \
 	libgxs_user_filter.la
 noinst_DATA += \
-	libgxs_codepage_lang.ldd \
 	libgxs_exmdb_provider.ldd \
 	libgxs_timer_agent.ldd \
 	libgxp_exchange_emsmdb.ldd \
@@ -152,10 +150,6 @@ midb_SOURCES = exch/midb/cmd_parser.cpp exch/midb/common_util.cpp exch/midb/exmd
 midb_LDADD = -ldl -lpthread -lresolv ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 zcore_SOURCES = exch/zcore/ab_tree.cpp exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.cpp exch/zcore/common_util.cpp exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/listener.cpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_parser.cpp exch/zcore/store_object.cpp exch/zcore/system_services.cpp exch/zcore/table_object.cpp exch/zcore/user_object.cpp exch/zcore/zarafa_server.cpp lib/svc_loader.cpp
 zcore_LDADD = -ldl -lpthread ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_cplus.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
-libgxs_codepage_lang_la_SOURCES = exch/codepage_lj.cpp
-libgxs_codepage_lang_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxs_codepage_lang_la_LIBADD = ${HX_LIBS} ${jsoncpp_LIBS} libgromox_common.la
-EXTRA_libgxs_codepage_lang_la_DEPENDENCIES = ${default_sym}
 libgxs_exmdb_provider_la_SOURCES = exch/exmdb_provider/bounce_producer.cpp exch/exmdb_provider/common_util.cpp exch/exmdb_provider/db_engine.cpp exch/exmdb_provider/exmdb_client.cpp exch/exmdb_provider/exmdb_listener.cpp exch/exmdb_provider/exmdb_parser.cpp exch/exmdb_provider/exmdb_rpc.cpp exch/exmdb_provider/notification_agent.cpp exch/exmdb_provider/exmdb_server.cpp exch/exmdb_provider/folder.cpp exch/exmdb_provider/ics.cpp exch/exmdb_provider/instance.cpp exch/exmdb_provider/instbody.cpp exch/exmdb_provider/main.cpp exch/exmdb_provider/message.cpp exch/exmdb_provider/names.cpp exch/exmdb_provider/store.cpp exch/exmdb_provider/table.cpp
 libgxs_exmdb_provider_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_exmdb_provider_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la

@@ -8,12 +8,16 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
+#include <json/reader.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
@@ -49,6 +53,7 @@ static int_to_str_t g_cpid2name_map, g_lcid2tag_map;
 static str_to_int_t g_cpname2id_map, g_lctag2id_map;
 static str_to_str_t g_ext2mime_map, g_mime2ext_map, g_lang2cset_map, g_ignore_map;
 static folder_name_map_t folder_name_map;
+static Json::Value g_cpl_dict;
 static std::once_flag g_textmaps_done;
 
 static void xmap_read(const char *file, const char *dirs,
@@ -148,6 +153,58 @@ static void folder_namedb_read(const char *file, const char *dirs, folder_name_m
 			continue;
 		current_locale->emplace(id, value);
 	}
+}
+
+/*
+ * Trivial mechanism to give translations for the special per-domain ABK groups
+ * to NSP clients, based on CPID (which is silly - the LCID should be used, but
+ * clients do not pass it when reading the GAB).
+ */
+static int cpl_read(const char *filename, const char *dirs, Json::Value &dict)
+{
+	auto fp = fopen_sd(filename, dirs);
+	if (fp == nullptr) {
+		fprintf(stderr, "[codepage_lang]: fopen_sd %s: %s\n",
+		        filename, strerror(errno));
+		return -1;
+	}
+	size_t sl = 0;
+	std::unique_ptr<char[], stdlib_delete> sd(HX_slurp_fd(fileno(fp.get()), &sl));
+	if (sd == nullptr) {
+		fprintf(stderr, "[codepage_lang]: slurp %s: %s\n",
+		        filename, strerror(errno));
+		return -1;
+	}
+	std::string sd2(sd.get(), sl);
+	sd.reset();
+	std::istringstream ss(sd2);
+	if (!Json::parseFromStream(Json::CharReaderBuilder(), ss, &dict, nullptr)) {
+		fprintf(stderr, "[codepage_lang]: invalid json in %s\n", filename);
+		return -1;
+	}
+	return 0;
+}
+
+errno_t cpl_get_string(uint32_t codepage, const char *tag, char *value, size_t len)
+{
+	const auto &dict = g_cpl_dict;
+	auto l1key = std::to_string(codepage);
+	if (dict.isMember(l1key)) {
+		const auto &l2ref = dict[l1key][tag];
+		if (l2ref == Json::Value::null)
+			return ENOENT;
+		gx_strlcpy(value, l2ref.asString().c_str(), len);
+		return 0;
+	}
+	/* use first entry as default */
+	auto it = dict.begin();
+	if (it == dict.end())
+		return ENOENT;
+	const auto &l2ref = (*it)[tag];
+	if (l2ref == Json::Value::null)
+		return ENOENT;
+	gx_strlcpy(value, l2ref.asString().c_str(), len);
+	return 0;
 }
 
 bool verify_cpid(uint32_t id)
@@ -276,6 +333,7 @@ void textmaps_init(const char *datapath)
 		        g_ext2mime_map.size(), g_mime2ext_map.size());
 		folder_namedb_read("folder_names.txt", datapath, folder_name_map);
 		fprintf(stderr, "[textmaps]: %zu translations in folder namedb\n", folder_name_map.size());
+		cpl_read("codepage_lang.json", datapath, g_cpl_dict);
 	});
 }
 

@@ -65,7 +65,6 @@ static std::vector<std::string> g_dfl_proc_plugins = {
 };
 static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_abktplug.so",
-	"libgxs_codepage_lang.so",
 	"libgxs_exmdb_provider.so",
 	"libgxs_logthru.so",
 	"libgxs_ldap_adaptor.so",

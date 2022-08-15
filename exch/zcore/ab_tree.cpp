@@ -34,6 +34,7 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
@@ -971,23 +972,24 @@ static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode,
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		switch (obj->list_type) {
 		case MLIST_TYPE_NORMAL:
-			if (!system_services_get_lang(codepage, "mlist0", lang_string, GX_ARRAY_SIZE(lang_string)))
+			if (cpl_get_string(codepage, "mlist0", lang_string,
+			    std::size(lang_string)) != 0)
 				strcpy(lang_string, "custom address list");
 			snprintf(str_dname, dn_size, "%s(%s)", obj->username.c_str(), lang_string);
 			break;
 		case MLIST_TYPE_GROUP:
-			if (!system_services_get_lang(codepage, "mlist1",
-			    lang_string, arsizeof(lang_string)))
+			if (cpl_get_string(codepage, "mlist1",
+			    lang_string, std::size(lang_string)) != 0)
 				strcpy(lang_string, "all users in department of %s");
 			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		case MLIST_TYPE_DOMAIN:
-			if (!system_services_get_lang(codepage, "mlist2", str_dname, dn_size))
+			if (cpl_get_string(codepage, "mlist2", str_dname, dn_size) != 0)
 				gx_strlcpy(str_dname, "all users in domain", dn_size);
 			break;
 		case MLIST_TYPE_CLASS:
-			if (!system_services_get_lang(codepage, "mlist3",
-			    lang_string, arsizeof(lang_string)))
+			if (cpl_get_string(codepage, "mlist3",
+			    lang_string, std::size(lang_string)) != 0)
 				strcpy(lang_string, "all users in group of %s");
 			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
