@@ -52,10 +52,10 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"block_interval_auths", "1min", CFG_TIME, "1s"},
 	{"config_file_path", PKGSYSCONFDIR "/pop3:" PKGSYSCONFDIR},
-	{"context_average_mem", "512K", CFG_SIZE, "128K"},
-	{"context_average_units", "5000", CFG_SIZE, "256"},
+	{"context_average_mem", "512K", CFG_SIZE, "64K"},
+	{"context_average_units", "5000", CFG_SIZE, "1"},
 	{"context_max_mem", "2M", CFG_SIZE},
-	{"context_num", "400", CFG_SIZE},
+	{"context_num", "400", CFG_SIZE, "1"},
 	{"data_file_path", PKGDATADIR "/pop3:" PKGDATADIR},
 	{"listen_port", "pop3_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "pop3_listen_tls_port", CFG_ALIAS},

@@ -217,15 +217,18 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		if (!pcontext->is_login)
 			return 1708;
 		pcontext->stream.clear();
-		pcontext->stream.write("+OK\r\n", 5);
+		if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
+			return 1729;
 
 		auto count = pcontext->msg_array.size();
 		for (size_t i = 0; i < count; ++i) {
 			auto punit = sa_get_item(pcontext->msg_array, i);
 			string_length = sprintf(temp_buff, "%zu %s\r\n", i + 1, punit->file_name.c_str());
-			pcontext->stream.write(temp_buff, string_length);
+			if (pcontext->stream.write(temp_buff, string_length) != STREAM_WRITE_OK)
+				return 1729;
 		}
-		pcontext->stream.write(".\r\n", 3);
+		if (pcontext->stream.write(".\r\n", 3) != STREAM_WRITE_OK)
+			return 1729;
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
 		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
@@ -270,15 +273,18 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		if (!pcontext->is_login)
 			return 1708;
 		pcontext->stream.clear();
-		pcontext->stream.write("+OK\r\n", 5);
+		if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
+			return 1729;
 		
 		auto count = pcontext->msg_array.size();
 		for (size_t i = 0; i < count; ++i) {
 			auto punit = sa_get_item(pcontext->msg_array, i);
 			string_length = sprintf(temp_buff, "%zu %zu\r\n", i + 1, punit->size);
-			pcontext->stream.write(temp_buff, string_length);
+			if (pcontext->stream.write(temp_buff, string_length) != STREAM_WRITE_OK)
+				return 1729;
 		}
-		pcontext->stream.write(".\r\n", 3);
+		if (pcontext->stream.write(".\r\n", 3) != STREAM_WRITE_OK)
+			return 1729;
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
 		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
@@ -345,7 +351,8 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 			return 1709;
 		}
 		pcontext->stream.clear();
-		pcontext->stream.write("+OK\r\n", 5);
+		if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
+			return 1729;
 		if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
 			pcontext->stream.clear();
 			return 1719;
@@ -438,7 +445,8 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 			return 1709;
 		}
 		pcontext->stream.clear();
-		pcontext->stream.write("+OK\r\n", 5);
+		if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
+			return 1729;
 		if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
 			pcontext->stream.clear();
 			return 1719;

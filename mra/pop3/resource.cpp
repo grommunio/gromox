@@ -50,6 +50,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1726, "-ERR must issue a STLS command first"},
 	{1727, "-ERR Unspecified error received from midb_agent"},
 	{1728, "-ERR midb_agent: out of memory"},
+	{1729, "-ERR Too many messages in result"},
 };
 
 static std::unordered_map<unsigned int, std::string> g_def_code_table;
