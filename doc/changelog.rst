@@ -1,8 +1,9 @@
-1.28.131
+1.28.178
 ========
 
 Enhancements:
 
+* kdb2mt: add a size column to the disambiguation table
 * exmdb_provider: added the "exmdb_search_yield" and "exmdb_search_nice" config
   directives
 * exmdb_provider: add a vacuum RPC (and expose via gromox-mbop(8gx))
@@ -10,6 +11,8 @@ Enhancements:
 
 Fixes:
 
+* kdb2mt: filter unwanted properties on writeout rather than readout
+  (rerecognize special folders)
 * oxcical: oxcical_export_timezone had missed emitting BYMONTHDAY subvalues
 * dscli: fix nullptr deref when -x option is used
 * nsp: show DT_DISTLIST icon for mlists
@@ -17,6 +20,9 @@ Fixes:
   recurring events
 * Check for iconv capabilities on startup so that we do not start on containers
   with too few libc components installed
+* zcore: avoid UAF when unpacking SMIME messages
+* imap: do not emit body-QP in () groups when encoded-word-QP is expected
+* imap, pop3: avoid hanging clients if response buffer is full
 
 Changes:
 
