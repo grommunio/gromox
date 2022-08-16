@@ -26,11 +26,10 @@ static int do_file(const char *filename)
 	auto cl_0 = make_scope_exit([&]() { HXmc_free(ln); });
 	while (HX_getl(&ln, fp.get()) != nullptr) {
 		HX_chomp(ln);
+		printf("%s\n", ln);
 		if (*ln == '\0')
 			break;
-		printf("%s\n", ln);
 	}
-	printf("\n");
 	while (HX_getl(&ln, fp.get()) != nullptr) {
 		HX_chomp(ln);
 		if (strncmp(ln, "From ", 5) == 0)
