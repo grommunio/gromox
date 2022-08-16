@@ -21,7 +21,11 @@ static int do_file(const char *filename)
 		        filename, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	printf("From MAILER-DAEMON Thu Jan  1 00:00:00 1970\n");
+	auto now = time(nullptr);
+	auto now_s = ctime(&now);
+	if (now_s != nullptr)
+		HX_chomp(now_s);
+	printf("From MAILER-DAEMON %s\n", now_s != nullptr ? now_s : "Sat Jan  1 00:00:00 2022");
 	hxmc_t *ln = nullptr;
 	auto cl_0 = make_scope_exit([&]() { HXmc_free(ln); });
 	while (HX_getl(&ln, fp.get()) != nullptr) {
