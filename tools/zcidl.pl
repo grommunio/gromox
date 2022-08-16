@@ -32,10 +32,11 @@ while (<STDIN>) {
 		if (scalar(@$iargs) > 0) {
 			print "\tauto &q = *static_cast<const zcreq_$func *>(q0);\n";
 		}
-		print "\tr0 = cu_alloc<zcresp_$func>();\n";
-		print "\tif (r0 == nullptr) return false;\n";
+		print "\tauto r1 = cu_alloc<zcresp_$func>();\n";
+		print "\tr0 = r1;\n";
+		print "\tif (r1 == nullptr) return false;\n";
 		if (scalar(@$oargs) > 0) {
-			print "\tauto &r = *static_cast<zcresp_$func *>(r0);\n";
+			print "\tauto &r = *r1;\n";
 		}
 		print "\tr0->result = zarafa_server_$func(", join(", ",
 			(map { my($type, $field) = @$_; "q.$field"; } @$iargs),
