@@ -127,16 +127,17 @@ bool MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 				pmime->f_other_fields.write(&v, sizeof(v));
 				pmime->f_other_fields.write(mime_field.value.c_str(), v);
 			}
-			if ('\r' != in_buff[current_offset])
+			auto nl_size = newline_size(&in_buff[current_offset], length);
+			if (nl_size == 0)
 				continue;
 			pmime->head_begin = in_buff;
 			pmime->head_length = current_offset;
 			/*
-			 * if a empty line is meet, end of mail head parse
-			 * skip the empty line, which separate the head and
-			 * content \r\n
+			 * If an empty line is met, end the parse of mail head
+			 * and skip the empty line which separates the head and
+			 * content.
 			 */
-			current_offset += 2;
+			current_offset += nl_size;
 			if (current_offset > length) {
 				pmime->clear();
 				return false;
@@ -163,6 +164,11 @@ bool MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 			}
 			return true;
 		}
+		/*
+		 * So now we have something that did not look like a header.
+		 * Are we already in content? (Assume yes.)
+		 */
+
 		if (0 == current_offset) {
 			pmime->head_touched = TRUE;
 			pmime->content_begin = in_buff;
@@ -174,10 +180,7 @@ bool MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 		}
 		pmime->head_begin = in_buff;
 		pmime->head_length = current_offset;
-		/*
-		 * there's not empty line, which separate the head and
-		 * content \r\n
-		 */
+
 		if (current_offset > length) {
 			pmime->clear();
 			return false;
@@ -1333,8 +1336,16 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	}
 	
 	auto pbuff = std::make_unique<char[]>(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
-	/* \r\n before boundary string or end of mail should not be included */
-	size_t tmp_len = pmime->content_length < 2 ? 1 : pmime->content_length - 2;
+	/*
+	 * Newline before boundary string or end of mail should not be included
+	 * (the mention is hidden somewhere in RFC 2046,2049)
+	 */
+	size_t tmp_len = pmime->content_length;
+	if (tmp_len >= 2 && newline_size(&pmime->content_begin[tmp_len-2], 2) == 2) {
+		tmp_len -= 2;
+	} else if (tmp_len >= 1 && newline_size(&pmime->content_begin[tmp_len-1], 1) == 1) {
+		tmp_len -= 1;
+	}
 	size_t size = 0;
 	for (i=0; i<tmp_len; i++) {
 		if ('.' == pmime->content_begin[i]) {
