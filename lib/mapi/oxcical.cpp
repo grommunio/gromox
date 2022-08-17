@@ -2090,11 +2090,11 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	piline = pmain_event->get_line("X-MICROSOFT-CDO-BUSYSTATUS");
 	if (piline == nullptr)
 		piline = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-BUSYSTATUS");
-	auto busy_status = lookup_busy_by_name(piline.get());
+	auto busy_status = lookup_busy_by_name(piline);
 	piline = pmain_event->get_line("X-MICROSOFT-CDO-INTENDEDSTATUS");
 	if (piline == nullptr)
 		piline = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-INTENDEDSTATUS");
-	auto intent_status = lookup_busy_by_name(piline.get());
+	auto intent_status = lookup_busy_by_name(piline);
 	if (method != nullptr && strcasecmp(method, "REQUEST") == 0) {
 		/* OXCICAL v11 pg 73 */
 		if (intent_status == olIndeterminate) {
@@ -2106,9 +2106,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		}
 	}
 	if (busy_status == olIndeterminate)
-		busy_status = lookup_busy_by_transp(pmain_event->get_line("TRANSP").get());
+		busy_status = lookup_busy_by_transp(pmain_event->get_line("TRANSP"));
 	if (busy_status == olIndeterminate)
-		busy_status = lookup_busy_by_status(pmain_event->get_line("STATUS").get());
+		busy_status = lookup_busy_by_status(pmain_event->get_line("STATUS"));
 	/*
 	 * N.B.: This edits the MAPI message destined for the Inbox folder; it is not
 	 * editing the Calendar folder MAPI message (this does not exist yet).
@@ -2407,7 +2407,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 	
 	b_proposal = FALSE;
 	auto piline = pical.get_line("X-MICROSOFT-CALSCALE");
-	uint16_t calendartype = oxcical_get_calendartype(piline.get());
+	uint16_t calendartype = oxcical_get_calendartype(piline);
 	auto mclass = "IPM.Appointment";
 	std::vector<message_ptr> msgvec;
 	uidxevent_list_t uid_list;

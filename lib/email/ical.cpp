@@ -1397,7 +1397,6 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 	ICAL_TIME itime1;
 	ICAL_TIME itime2;
 	struct tm tmp_tm;
-	std::shared_ptr<ICAL_LINE> piline;
 	const char *pvalue;
 	const char *pvalue1;
 	const char *pvalue2;
@@ -1411,7 +1410,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") != 0)
 			return NULL;
-		piline = pcomponent->get_line("DTSTART");
+		auto piline = pcomponent->get_line("DTSTART");
 		if (NULL == piline) {
 			return NULL;
 		}
@@ -1661,7 +1660,6 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 	int minute;
 	time_t tmp_time;
 	struct tm tmp_tm;
-	std::shared_ptr<ICAL_LINE> piline;
 	const char *pvalue;
 	
 	if (NULL == ptz_component) {
@@ -1680,7 +1678,7 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") != 0)
 			return false;
-		piline = pcomponent->get_line("TZOFFSETTO");
+		auto piline = pcomponent->get_line("TZOFFSETTO");
 		if (NULL == piline) {
 			return false;
 		}
