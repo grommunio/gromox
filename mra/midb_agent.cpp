@@ -415,7 +415,6 @@ static int list_mail(const char *path, const char *folder,
 	int line_pos;
 	char *pspace;
 	int tv_msec;
-	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
 	struct pollfd pfd_read;
@@ -441,20 +440,20 @@ static int list_mail(const char *path, const char *folder,
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			return MIDB_RDWR_ERROR;
 		}
+		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0) {
 			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
+		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
 				if (buff[i] != '\r' || buff[i+1] != '\n')
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
-					memcpy(num_buff, buff + 5, i - 5);
-					num_buff[i-5] = '\0';
-					lines = strtol(num_buff, nullptr, 0);
+					lines = strtol(buff + 5, nullptr, 0);
 					if (lines < 0) {
 						return MIDB_RDWR_ERROR;
 					}
@@ -964,7 +963,6 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 	int read_len;
 	int line_pos;
 	int tv_msec;
-	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
 	struct pollfd pfd_read;
@@ -987,20 +985,20 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			return MIDB_RDWR_ERROR;
 		}
+		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0) {
 			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
+		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
 				if (buff[i] != '\r' || buff[i+1] != '\n')
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
-					memcpy(num_buff, buff + 5, i - 5);
-					num_buff[i-5] = '\0';
-					lines = strtol(num_buff, nullptr, 0);
+					lines = strtol(buff + 5, nullptr, 0);
 					if (lines < 0) {
 						return MIDB_RDWR_ERROR;
 					}
@@ -1066,7 +1064,6 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 	int read_len;
 	int line_pos;
 	int tv_msec;
-	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
 	struct pollfd pfd_read;
@@ -1090,20 +1087,20 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			return MIDB_RDWR_ERROR;
 		}
+		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0) {
 			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
+		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
 				if (buff[i] != '\r' || buff[i+1] != '\n')
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
-					memcpy(num_buff, buff + 5, i - 5);
-					num_buff[i-5] = '\0';
-					lines = strtol(num_buff, nullptr, 0);
+					lines = strtol(buff + 5, nullptr, 0);
 					if (lines < 0) {
 						return MIDB_RDWR_ERROR;
 					}
@@ -1299,7 +1296,6 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	char *pspace;
 	char *pspace1;
 	int tv_msec;
-	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
 	BOOL b_format_error;
@@ -1325,20 +1321,20 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			return MIDB_RDWR_ERROR;
 		}
+		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0) {
 			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
+		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
 				if (buff[i] != '\r' || buff[i+1] != '\n')
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
-					memcpy(num_buff, buff + 5, i - 5);
-					num_buff[i-5] = '\0';
-					lines = strtol(num_buff, nullptr, 0);
+					lines = strtol(buff + 5, nullptr, 0);
 					if (lines < 0) {
 						return MIDB_RDWR_ERROR;
 					}
@@ -1431,7 +1427,6 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	char *pspace;
 	char *pspace1;
 	int tv_msec;
-	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
 	BOOL b_format_error;
@@ -1457,20 +1452,20 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			return MIDB_RDWR_ERROR;
 		}
+		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0) {
 			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
+		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
 				if (buff[i] != '\r' || buff[i+1] != '\n')
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
-					memcpy(num_buff, buff + 5, i - 5);
-					num_buff[i-5] = '\0';
-					lines = strtol(num_buff, nullptr, 0);
+					lines = strtol(buff + 5, nullptr, 0);
 					if (lines < 0) {
 						return MIDB_RDWR_ERROR;
 					}
@@ -1560,7 +1555,6 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	int read_len;
 	int line_pos;
 	int tv_msec;
-	char num_buff[32];
 	char buff[64*1025];
 	char temp_line[257*1024];
 	BOOL b_format_error;
@@ -1595,24 +1589,23 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			return MIDB_RDWR_ERROR;
 		}
-		read_len = read(pback->sockd, buff + offset, 64*1024 - offset);
+		read_len = read(pback->sockd, buff + offset, std::size(buff) - 1 - offset);
 		if (read_len <= 0) {
 			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
+		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (int i = 0; i < offset - 1 && i < 36; ++i) {
 				if (buff[i] != '\r' || buff[i+1] != '\n')
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
-					memcpy(num_buff, buff + 5, i - 5);
-					num_buff[i-5] = '\0';
-					lines = strtol(num_buff, nullptr, 0);
+					lines = strtol(buff + 5, nullptr, 0);
 					if (lines < 0) {
 						return MIDB_RDWR_ERROR;
 					}
-					last_pos = i + 2;
+					last_pos = i + 2; /* newline_size? */
 					line_pos = 0;
 					break;
 				} else if (0 == strncmp(buff, "FALSE ", 6)) {
@@ -1704,7 +1697,6 @@ static int fetch_simple(const char *path, const char *folder,
 	int tv_msec;
 	char *pspace;
 	char *pspace1;
-	char num_buff[32];
 	char buff[1024];
 	char temp_line[1024];
 	BOOL b_format_error;
@@ -1746,20 +1738,19 @@ static int fetch_simple(const char *path, const char *folder,
 			if (1 != poll(&pfd_read, 1, tv_msec)) {
 				return MIDB_RDWR_ERROR;
 			}
-			read_len = read(pback->sockd, buff + offset, 1024 - offset);
+			read_len = read(pback->sockd, buff + offset, std::size(buff) - 1 - offset);
 			if (read_len <= 0) {
 				return MIDB_RDWR_ERROR;
 			}
 			offset += read_len;
+			buff[offset] = '\0';
 			
 			if (-1 == lines) {
 				for (int i = 0; i < offset - 1 && i < 36; ++i) {
 					if (buff[i] != '\r' || buff[i+1] != '\n')
 						continue;
 					if (0 == strncmp(buff, "TRUE ", 5)) {
-						memcpy(num_buff, buff + 5, i - 5);
-						num_buff[i-5] = '\0';
-						lines = strtol(num_buff, nullptr, 0);
+						lines = strtol(buff + 5, nullptr, 0);
 						if (lines < 0) {
 							return MIDB_RDWR_ERROR;
 						}
@@ -1854,7 +1845,6 @@ static int fetch_detail(const char *path, const char *folder,
 	int read_len;
 	int line_pos;
 	int tv_msec;
-	char num_buff[32];
 	char buff[64*1025];
 	char temp_line[257*1024];
 	BOOL b_format_error;
@@ -1903,20 +1893,20 @@ static int fetch_detail(const char *path, const char *folder,
 			if (1 != poll(&pfd_read, 1, tv_msec)) {
 				return MIDB_RDWR_ERROR;
 			}
+			static_assert(std::size(buff) >= 64*1024 + 1);
 			read_len = read(pback->sockd, buff + offset, 64*1024 - offset);
 			if (read_len <= 0) {
 				return MIDB_RDWR_ERROR;
 			}
 			offset += read_len;
+			buff[offset] = '\0';
 			
 			if (-1 == lines) {
 				for (int i = 0; i < offset - 1 && i < 36; ++i) {
 					if (buff[i] != '\r' || buff[i+1] != '\n')
 						continue;
 					if (0 == strncmp(buff, "TRUE ", 5)) {
-						memcpy(num_buff, buff + 5, i - 5);
-						num_buff[i-5] = '\0';
-						lines = strtol(num_buff, nullptr, 0);
+						lines = strtol(buff + 5, nullptr, 0);
 						if (lines < 0) {
 							return MIDB_RDWR_ERROR;
 						}
@@ -2011,7 +2001,6 @@ static int fetch_simple_uid(const char *path, const char *folder,
 	char *pspace;
 	char *pspace1;
 	char *pspace2;
-	char num_buff[32];
 	char buff[1024];
 	char temp_line[1024];
 	BOOL b_format_error;
@@ -2042,20 +2031,19 @@ static int fetch_simple_uid(const char *path, const char *folder,
 			if (1 != poll(&pfd_read, 1, tv_msec)) {
 				return MIDB_RDWR_ERROR;
 			}
-			read_len = read(pback->sockd, buff + offset, 1024 - offset);
+			read_len = read(pback->sockd, buff + offset, std::size(buff) - 1 - offset);
 			if (read_len <= 0) {
 				return MIDB_RDWR_ERROR;
 			}
 			offset += read_len;
+			buff[offset] = '\0';
 
 			if (-1 == lines) {
 				for (int i = 0; i < offset - 1 && i < 36; ++i) {
 					if (buff[i] != '\r' || buff[i+1] != '\n')
 						continue;
 					if (0 == strncmp(buff, "TRUE ", 5)) {
-						memcpy(num_buff, buff + 5, i - 5);
-						num_buff[i-5] = '\0';
-						lines = strtol(num_buff, nullptr, 0);
+						lines = strtol(buff + 5, nullptr, 0);
 						if (lines < 0) {
 							return MIDB_RDWR_ERROR;
 						}
@@ -2158,7 +2146,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	int temp_len;
 	char *pspace;
 	int tv_msec;
-	char num_buff[32];
 	char buff[64*1025];
 	char temp_line[257*1024];
 	BOOL b_format_error;
@@ -2196,20 +2183,20 @@ static int fetch_detail_uid(const char *path, const char *folder,
 			if (1 != poll(&pfd_read, 1, tv_msec)) {
 				return MIDB_RDWR_ERROR;
 			}
+			static_assert(std::size(buff) >= 64*1024 + 1);
 			read_len = read(pback->sockd, buff + offset, 64*1024 - offset);
 			if (read_len <= 0) {
 				return MIDB_RDWR_ERROR;
 			}
 			offset += read_len;
+			buff[offset] = '\0';
 
 			if (-1 == lines) {
 				for (int i = 0; i < offset - 1 && i < 36; ++i) {
 					if (buff[i] != '\r' || buff[i+1] != '\n')
 						continue;
 					if (0 == strncmp(buff, "TRUE ", 5)) {
-						memcpy(num_buff, buff + 5, i - 5);
-						num_buff[i-5] = '\0';
-						lines = strtol(num_buff, nullptr, 0);
+						lines = strtol(buff + 5, nullptr, 0);
 						if (lines < 0) {
 							return MIDB_RDWR_ERROR;
 						}
@@ -2557,7 +2544,6 @@ static BOOL check_full(const char *path)
 static int connect_midb(const char *ip_addr, uint16_t port)
 {
 	int tv_msec;
-    int read_len;
     char temp_buff[1024];
 	struct pollfd pfd_read;
 
@@ -2579,7 +2565,7 @@ static int connect_midb(const char *ip_addr, uint16_t port)
 		close(sockd);
 		return -1;
 	}
-	read_len = read(sockd, temp_buff, 1024);
+	auto read_len = read(sockd, temp_buff, std::size(temp_buff) - 1);
 	if (read_len <= 0) {
         close(sockd);
         return -1;
