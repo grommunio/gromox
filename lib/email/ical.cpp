@@ -4,11 +4,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <list>
 #include <memory>
 #include <new>
 #include <optional>
 #include <string>
+#include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -703,7 +703,9 @@ bool ical::serialize(char *out_buff, size_t max_length)
 	return ical_serialize_component(this, out_buff, max_length) != 0;
 }
 
-static const ical_svlist *ical_get_subval_list_internal(const ical_vlist *pvalue_list, const char *name)
+static const std::vector<std::string> *
+ical_get_subval_list_internal(const std::vector<ical_value> *pvalue_list,
+    const char *name)
 {
 	auto end = pvalue_list->cend();
 	auto it  = std::find_if(pvalue_list->cbegin(), end,
@@ -714,7 +716,7 @@ static const ical_svlist *ical_get_subval_list_internal(const ical_vlist *pvalue
 }
 
 static const char *ical_get_first_subvalue_by_name_internal(
-    const ical_vlist *pvalue_list, const char *name)
+    const std::vector<ical_value> *pvalue_list, const char *name)
 {
 	if ('\0' == name[0]) {
 		return NULL;
@@ -743,7 +745,7 @@ const char *ICAL_LINE::get_first_subvalue()
 	return pivalue.subval_list.front().c_str();
 }
 
-const std::list<std::string> *ICAL_LINE::get_subval_list(const char *name)
+const std::vector<std::string> *ICAL_LINE::get_subval_list(const char *name)
 {
 	return ical_get_subval_list_internal(&value_list, name);
 }
@@ -2083,7 +2085,8 @@ static void ical_next_rrule_base_itime(ICAL_RRULE *pirrule)
 
 /* ptz_component can be NULL, represents UTC */
 bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
-    time_t start_time, const ical_vlist *pvalue_list, ICAL_RRULE *pirrule)
+    time_t start_time, const std::vector<ical_value> *pvalue_list,
+    ICAL_RRULE *pirrule)
 {
 	int i;
 	int tmp_int;
