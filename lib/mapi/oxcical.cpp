@@ -558,11 +558,11 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	return TRUE;
 }
 
-static std::shared_ptr<ICAL_COMPONENT> oxcical_find_vtimezone(ICAL *pical, const char *tzid)
+static std::shared_ptr<ICAL_COMPONENT> oxcical_find_vtimezone(const ical &pical, const char *tzid)
 {
 	const char *pvalue;
 	
-	for (auto pcomponent : pical->component_list) {
+	for (auto pcomponent : pical.component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "VTIMEZONE") != 0)
 			continue;
 		auto piline = pcomponent->get_line("TZID");
@@ -1931,7 +1931,7 @@ static inline unsigned int dfl_alarm_offset(bool allday)
 }
 
 static BOOL oxcical_import_internal(const char *str_zone, const char *method,
-    BOOL b_proposal, uint16_t calendartype, ICAL *pical,
+    BOOL b_proposal, uint16_t calendartype, const ical &pical,
     const event_list_t &pevent_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
     MESSAGE_CONTENT *pmsg, ICAL_TIME *pstart_itime, ICAL_TIME *pend_itime,
@@ -2317,7 +2317,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 }
 
 static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
-    ICAL *pical, const uidxevent_list_t &uid_list, EXT_BUFFER_ALLOC alloc,
+    const ical &pical, const uidxevent_list_t &uid_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
     std::vector<message_ptr> &msgvec)
 {
@@ -2339,9 +2339,9 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 	return TRUE;
 }
 
-static BOOL oxcical_classify_calendar(const ICAL *pical, uidxevent_list_t &ul) try
+static BOOL oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) try
 {
-	for (auto pcomponent : pical->component_list) {
+	for (auto pcomponent : pical.component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "VEVENT") != 0)
 			continue;
 		auto piline = pcomponent->get_line("UID");
@@ -2404,7 +2404,7 @@ static uint32_t oxcical_get_calendartype(std::shared_ptr<ICAL_LINE> piline)
 	return it != std::end(cal_scale_names) ? it->first : CAL_DEFAULT;
 }
 
-ec_error_t oxcical_import_multi(const char *str_zone, const ICAL *pical,
+ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     USERNAME_TO_ENTRYID username_to_entryid, std::vector<message_ptr> &finalvec)
 {
@@ -2413,7 +2413,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ICAL *pical,
 	uint16_t calendartype;
 	
 	b_proposal = FALSE;
-	auto piline = pical->get_line("X-MICROSOFT-CALSCALE");
+	auto piline = pical.get_line("X-MICROSOFT-CALSCALE");
 	calendartype = oxcical_get_calendartype(piline);
 	auto mclass = "IPM.Appointment";
 	std::vector<message_ptr> msgvec;
@@ -2421,14 +2421,14 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ICAL *pical,
 	if (!oxcical_classify_calendar(pical, uid_list) ||
 	    uid_list.size() == 0)
 		return ecNotFound;
-	piline = pical->get_line("METHOD");
+	piline = pical.get_line("METHOD");
 	if (NULL != piline) {
 		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue) {
 			if (0 == strcasecmp(pvalue, "PUBLISH")) {
 				if (uid_list.size() > 1) {
 					if (!oxcical_import_events(str_zone,
-					    calendartype, deconst(pical),
+					    calendartype, pical,
 					    uid_list, alloc, get_propids,
 					    username_to_entryid, msgvec))
 						return ecError;
@@ -2466,7 +2466,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ICAL *pical,
 		}
 	} else {
 		if (!oxcical_import_events(str_zone, calendartype,
-		    deconst(pical), uid_list, alloc, get_propids,
+		    pical, uid_list, alloc, get_propids,
 		    username_to_entryid, msgvec))
 			return ecError;
 		finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
@@ -2479,7 +2479,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ICAL *pical,
 	auto pmsg = msgvec.back().get();
 	if (pmsg->proplist.set(PR_MESSAGE_CLASS, mclass) != 0 ||
 	    !oxcical_import_internal(str_zone, pvalue, b_proposal, calendartype,
-	    deconst(pical), uid_list.begin()->second, alloc, get_propids,
+	    pical, uid_list.begin()->second, alloc, get_propids,
 	    username_to_entryid, pmsg, nullptr, nullptr, nullptr, nullptr))
 		return ecError;
 	finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
@@ -2487,7 +2487,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ICAL *pical,
 }
 
 message_ptr oxcical_import_single(const char *str_zone,
-    const ICAL *pical, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+    const ical &pical, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     USERNAME_TO_ENTRYID username_to_entryid)
 {
 	std::vector<message_ptr> vec;
@@ -2533,7 +2533,7 @@ static int sprintf_dtutc(char *b, size_t z, const ICAL_TIME &t)
 	       t.minute, t.second);
 }
 
-static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
+static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ical &pical,
 	int year, const char *tzid, TIMEZONESTRUCT *ptzstruct)
 {
 	int day;
@@ -2544,7 +2544,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ICAL *pical,
 	auto pcomponent = ical_new_component("VTIMEZONE");
 	if (pcomponent == nullptr)
 		return NULL;
-	pical->append_comp(pcomponent);
+	pical.append_comp(pcomponent);
 	auto piline = ical_new_simple_line("TZID", tzid);
 	if (piline == nullptr)
 		return NULL;
@@ -3151,7 +3151,7 @@ static bool busystatus_to_line(ol_busy_status status, const char *key,
 
 static BOOL oxcical_export_internal(const char *method, const char *tzid,
     std::shared_ptr<ICAL_COMPONENT> ptz_component, const MESSAGE_CONTENT *pmsg,
-    ICAL *pical, ENTRYID_TO_USERNAME entryid_to_username,
+    ical &pical, ENTRYID_TO_USERNAME entryid_to_username,
     ESSDN_TO_USERNAME essdn_to_username,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
@@ -3256,18 +3256,18 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	piline = ical_new_simple_line("METHOD", method);
 	if (piline == nullptr)
 		return FALSE;
-	if (pical->append_line(piline) < 0)
+	if (pical.append_line(piline) < 0)
 		return false;
 	piline = ical_new_simple_line("PRODID", "gromox-oxcical");
 	if (piline == nullptr)
 		return FALSE;
-	if (pical->append_line(piline) < 0)
+	if (pical.append_line(piline) < 0)
 		return false;
 	
 	piline = ical_new_simple_line("VERSION", "2.0");
 	if (piline == nullptr)
 		return FALSE;
-	if (pical->append_line(piline) < 0)
+	if (pical.append_line(piline) < 0)
 		return false;
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur};
@@ -3299,7 +3299,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				"X-MICROSOFT-CALSCALE", str);
 			if (piline == nullptr)
 				return FALSE;
-			if (const_cast<ICAL *>(pical)->append_line(piline) < 0)
+			if (pical.append_line(piline) < 0)
 				return false;
 		}
 	}
@@ -3380,7 +3380,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	auto pcomponent = ical_new_component("VEVENT");
 	if (pcomponent == nullptr)
 		return FALSE;
-	pical->append_comp(pcomponent);
+	pical.append_comp(pcomponent);
 	
 	if (0 == strcmp(method, "REQUEST") ||
 		0 == strcmp(method, "CANCEL")) {
@@ -3635,7 +3635,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		piline = ical_new_line("CATEGORIES");
 		if (piline == nullptr)
 			return FALSE;
-		if (pical->append_line(piline) < 0)
+		if (pical.append_line(piline) < 0)
 			return false;
 		auto &pivalue = piline->append_value();
 		for (size_t i = 0; i < sa->count; ++i)
@@ -3888,7 +3888,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		pcomponent = ical_new_component("VALARM");
 		if (pcomponent == nullptr)
 			return FALSE;
-		pical->append_comp(pcomponent);
+		pical.append_comp(pcomponent);
 		piline = ical_new_simple_line("DESCRIPTION", "REMINDER");
 		if (piline == nullptr)
 			return FALSE;
@@ -3920,7 +3920,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	return false;
 }
 
-BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ICAL *pical,
+BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
 	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
 	ENTRYID_TO_USERNAME entryid_to_username,
 	ESSDN_TO_USERNAME essdn_to_username)
@@ -3929,4 +3929,3 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ICAL *pical,
 	       pical, entryid_to_username, essdn_to_username,
 	       alloc, get_propids);
 }
-

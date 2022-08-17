@@ -146,7 +146,7 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return EIO;
 	}
-	auto err = oxcical_import_multi("UTC", &ical, malloc, ee_get_propids,
+	auto err = oxcical_import_multi("UTC", ical, malloc, ee_get_propids,
 	           oxcmail_username_to_entryid, mv);
 	if (err == ecNotFound) {
 		fprintf(stderr, "%s: Not an iCalendar object, or an incomplete one.\n", file);
