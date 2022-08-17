@@ -173,7 +173,7 @@ static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_compo
 	if (ptz_definition->keyname == nullptr)
 		return FALSE;
 	ptz_definition->crules = 0;
-	for (auto pcomponent : pvt_component->component_list) {
+	for (const auto &pcomponent : pvt_component->component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0)
 			b_daylight = FALSE;
 		else if (strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") == 0)
@@ -562,7 +562,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_find_vtimezone(const ical &pical,
 {
 	const char *pvalue;
 	
-	for (auto pcomponent : pical.component_list) {
+	for (const auto &pcomponent : pical.component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "VTIMEZONE") != 0)
 			continue;
 		auto piline = pcomponent->get_line("TZID");
@@ -711,7 +711,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		return FALSE;
 	tmp_byte = 0;
 	message_content_set_rcpts_internal(pmsg, prcpts);
-	for (auto piline : pmain_event->line_list) {
+	for (const auto &piline : pmain_event->line_list) {
 		if (strcasecmp(piline->m_name.c_str(), "ATTENDEE") != 0)
 			continue;
 		paddress = piline->get_first_subvalue();
@@ -1857,7 +1857,7 @@ static std::shared_ptr<ical_component> oxcical_main_event(const event_list_t &ev
 	if (evlist.size() == 1)
 		return evlist.front();
 	std::shared_ptr<ical_component> main_event;
-	for (auto event : evlist) {
+	for (const auto &event : evlist) {
 		auto line = event->get_line("RECURRENCE-ID");
 		if (line != nullptr) {
 			if (event->get_line("X-MICROSOFT-RRULE") != nullptr ||
@@ -2191,7 +2191,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				return FALSE;
 			message_content_set_attachments_internal(pmsg, pattachments);
 		}
-		for (auto event : pevent_list) {
+		for (const auto &event : pevent_list) {
 			if (event == pmain_event)
 				continue;
 			auto pattachment = attachment_content_init();
@@ -2262,7 +2262,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	}
 	
 	size_t tmp_count = 0;
-	for (auto line : pmain_event->line_list) {
+	for (const auto &line : pmain_event->line_list) {
 		if (strcasecmp(line->m_name.c_str(), "ATTACH") != 0)
 			continue;
 		tmp_count ++;
@@ -2341,7 +2341,7 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 
 static BOOL oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) try
 {
-	for (auto pcomponent : pical.component_list) {
+	for (const auto &pcomponent : pical.component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "VEVENT") != 0)
 			continue;
 		auto piline = pcomponent->get_line("UID");
@@ -2358,7 +2358,7 @@ static const char *oxcical_get_partstat(const uidxevent_list_t &uid_list)
 {
 	if (uid_list.size() == 0)
 		return nullptr;
-	for (auto event : uid_list.cbegin()->second) {
+	for (const auto &event : uid_list.cbegin()->second) {
 		auto piline = event->get_line("ATTENDEE");
 		if (piline != nullptr)
 			return piline->get_first_paramval("PARTSTAT");

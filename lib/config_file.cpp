@@ -142,11 +142,11 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
 		return config_file_init(fb, key_desc);
 	errno = 0;
 	try {
-		for (auto dir : gx_split(sdlist, ':')) {
+		for (auto &&dir : gx_split(sdlist, ':')) {
 			if (dir.size() == 0)
 				continue;
 			errno = 0;
-			auto full = dir + "/" + fb;
+			auto full = std::move(dir) + "/" + fb;
 			auto cfg = config_file_init(full.c_str(), key_desc);
 			if (cfg != nullptr)
 				return cfg;
