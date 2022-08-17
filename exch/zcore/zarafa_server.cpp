@@ -188,14 +188,13 @@ static void *zcorezs_scanwork(void *param)
 	time_t cur_time;
 	uint8_t tmp_byte;
 	struct pollfd fdpoll;
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST temp_list1;
+	DOUBLE_LIST maildir_list, expired_list;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *ptail;
 	
 	count = 0;
-	double_list_init(&temp_list);
-	double_list_init(&temp_list1);
+	double_list_init(&maildir_list);
+	double_list_init(&expired_list);
 	const zcresp_notifdequeue response{zcore_callid::notifdequeue, ecSuccess};
 	while (!g_notify_stop) {
 		sleep(1);
@@ -215,7 +214,7 @@ static void *zcorezs_scanwork(void *param)
 			while ((pnode = double_list_pop_front(&pinfo->sink_list)) != nullptr) {
 				auto psink_node = static_cast<const SINK_NODE *>(pnode->pdata);
 				if (cur_time >= psink_node->until_time) {
-					double_list_append_as_tail(&temp_list1, pnode);
+					double_list_append_as_tail(&expired_list, pnode);
 				} else {
 					double_list_append_as_tail(
 						&pinfo->sink_list, pnode);
@@ -251,7 +250,7 @@ static void *zcorezs_scanwork(void *param)
 					++iter;
 					continue;
 				}
-				double_list_append_as_tail(&temp_list, pnode);
+				double_list_append_as_tail(&maildir_list, pnode);
 				++iter;
 			} else {
 				if (0 != double_list_get_nodes_num(&pinfo->sink_list)) {
@@ -267,14 +266,14 @@ static void *zcorezs_scanwork(void *param)
 			}
 		}
 		tl_hold.unlock();
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
+		while ((pnode = double_list_pop_front(&maildir_list)) != nullptr) {
 			common_util_build_environment();
 			exmdb_client::ping_store(static_cast<char *>(pnode->pdata));
 			common_util_free_environment();
 			free(pnode->pdata);
 			free(pnode);
 		}
-		while ((pnode = double_list_pop_front(&temp_list1)) != nullptr) {
+		while ((pnode = double_list_pop_front(&expired_list)) != nullptr) {
 			auto psink_node = static_cast<SINK_NODE *>(pnode->pdata);
 			if (rpc_ext_push_response(&response, &tmp_bin)) {
 				tv_msec = SOCKET_TIMEOUT * 1000;
