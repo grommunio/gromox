@@ -342,7 +342,12 @@ std::string resource_parse_stcode_line(const char *src)
 		uint8_t sub = srclen + 3;
 		out.append(reinterpret_cast<char *>(&sub), 1);
 		out.append(src, srclen);
+		/* This \0 here terminates the first fragment.. */
 		out.append("\r\n", 3);
+		/*
+		 * The implicit trailing \0 in std::string serves as the length
+		 * byte for the second fragment.
+		 */
 		return out;
 	}
 	uint8_t seg = ptr - src + 1;
