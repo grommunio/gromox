@@ -582,7 +582,7 @@ static size_t ical_serialize_value_string(char *pbuff,
 	return offset;
 }
 
-static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
+static size_t ical_serialize_component(const ical_component &com,
 	char *out_buff, size_t max_length)
 {
 	size_t offset1;
@@ -590,6 +590,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	size_t line_begin;
 	BOOL need_semicolon;
 	
+	auto pcomponent = &com;	
 	size_t offset = gx_snprintf(out_buff, max_length, "BEGIN:%s\r\n",
 	                pcomponent->m_name.c_str());
 	if (offset >= max_length) {
@@ -684,7 +685,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 		offset ++;
 	}
 	for (auto comp : pcomponent->component_list) {
-		offset1 = ical_serialize_component(comp.get(), out_buff + offset, max_length - offset);
+		offset1 = ical_serialize_component(*comp, out_buff + offset, max_length - offset);
 		if (0 == offset1) {
 			return 0;
 		}
@@ -698,9 +699,9 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	return offset;
 }
 
-bool ical::serialize(char *out_buff, size_t max_length)
+bool ical::serialize(char *out_buff, size_t max_length) const
 {
-	return ical_serialize_component(this, out_buff, max_length) != 0;
+	return ical_serialize_component(*this, out_buff, max_length) != 0;
 }
 
 static const std::vector<std::string> *
@@ -730,12 +731,12 @@ static const char *ical_get_first_subvalue_by_name_internal(
 	return plist->front().c_str();
 }
 
-const char *ICAL_LINE::get_first_subvalue_by_name(const char *name)
+const char *ICAL_LINE::get_first_subvalue_by_name(const char *name) const
 {
 	return ical_get_first_subvalue_by_name_internal(&value_list, name);
 }
 
-const char *ICAL_LINE::get_first_subvalue()
+const char *ICAL_LINE::get_first_subvalue() const
 {
 	if (value_list.size() == 0)
 		return NULL;
@@ -745,7 +746,7 @@ const char *ICAL_LINE::get_first_subvalue()
 	return pivalue.subval_list.front().c_str();
 }
 
-const std::vector<std::string> *ICAL_LINE::get_subval_list(const char *name)
+const std::vector<std::string> *ICAL_LINE::get_subval_list(const char *name) const
 {
 	return ical_get_subval_list_internal(&value_list, name);
 }
