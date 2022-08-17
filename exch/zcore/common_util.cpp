@@ -2332,7 +2332,7 @@ BOOL common_util_message_to_ical(store_object *pstore,
 	if (ical.init() < 0)
 		return false;
 	common_util_set_dir(pstore->get_dir());
-	if (!oxcical_export(pmsgctnt, &ical,
+	if (!oxcical_export(pmsgctnt, ical,
 		common_util_alloc, common_util_get_propids,
 		common_util_entryid_to_username_internal,
 		common_util_essdn_to_username))
@@ -2362,7 +2362,7 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin)
 	if (ical.init() < 0 || !ical.retrieve(pbuff))
 		return NULL;
 	common_util_set_dir(pstore->get_dir());
-	return oxcical_import_single(tmzone, &ical, common_util_alloc,
+	return oxcical_import_single(tmzone, ical, common_util_alloc,
 	       common_util_get_propids_create, common_util_username_to_entryid);
 }
 
@@ -2379,7 +2379,7 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 	if (icobj.init() < 0 || !icobj.retrieve(ical_data))
 		return ecError;
 	common_util_set_dir(store->get_dir());
-	return oxcical_import_multi(tmzone, &icobj, common_util_alloc,
+	return oxcical_import_multi(tmzone, icobj, common_util_alloc,
 	       common_util_get_propids_create,
 	       common_util_username_to_entryid, msgvec);
 }
