@@ -44,11 +44,11 @@ std::shared_ptr<ICAL_LINE> ical_new_line(const char *name)
 	return nullptr;
 }
 
-std::shared_ptr<ICAL_LINE> ICAL_COMPONENT::get_line(const char *name) const
+const ical_line *ical_component::get_line(const char *name) const
 {
 	for (const auto &l : line_list)
 		if (strcasecmp(l->m_name.c_str(), name) == 0)
-			return l;
+			return l.get();
 	return nullptr;
 }
 
