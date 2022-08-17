@@ -33,7 +33,7 @@
 using namespace gromox;
 using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
-using event_list_t = std::vector<std::shared_ptr<ical_component>>;
+using event_list_t = std::vector<const ical_component *>;
 using uidxevent_list_t = std::unordered_map<std::string, event_list_t>;
 using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
@@ -1850,8 +1850,8 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 static const ical_component *oxcical_main_event(const event_list_t &evlist)
 {
 	if (evlist.size() == 1)
-		return evlist.front().get();
-	std::shared_ptr<ical_component> main_event;
+		return evlist.front();
+	const ical_component *main_event = nullptr;
 	for (const auto &event : evlist) {
 		auto line = event->get_line("RECURRENCE-ID");
 		if (line != nullptr) {
@@ -1867,7 +1867,7 @@ static const ical_component *oxcical_main_event(const event_list_t &evlist)
 		    main_event->get_line("RRULE") == nullptr)
 			return nullptr;
 	}
-	return main_event.get();
+	return main_event;
 }
 
 static bool oxcical_parse_allday(const ical_component &main_ev)
@@ -2187,7 +2187,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			message_content_set_attachments_internal(pmsg, pattachments);
 		}
 		for (auto event : pevent_list) {
-			if (event.get() == pmain_event)
+			if (event == pmain_event)
 				continue;
 			auto pattachment = attachment_content_init();
 			if (pattachment == nullptr)
@@ -2334,6 +2334,13 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 	return TRUE;
 }
 
+/**
+ * Build a by-UID lookup map for @pical.
+ *
+ * Any subsequent change to pical->component_list invalidates all entries of
+ * @ul. (The caller should ensure that the uidxevent_list_t object does not
+ * outlive a const ICAL *pointer.)
+ */
 static BOOL oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) try
 {
 	for (const auto &pcomponent : pical.component_list) {
@@ -2341,7 +2348,7 @@ static BOOL oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) t
 			continue;
 		auto piline = pcomponent->get_line("UID");
 		auto puid = piline != nullptr ? piline->get_first_subvalue() : "";
-		ul[puid].push_back(pcomponent);
+		ul[puid].push_back(pcomponent.get());
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
