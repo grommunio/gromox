@@ -2,6 +2,7 @@
 #include <atomic>
 #include <cstdint>
 #include <ctime>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <pthread.h>
@@ -11,8 +12,19 @@
 
 struct OBJECT_TREE;
 
+struct sink_node {
+	sink_node() = default;
+	~sink_node();
+	NOMOVE(sink_node);
+
+	int clifd = -1;
+	time_t until_time = 0;
+	NOTIF_SINK sink{};
+};
+using SINK_NODE = sink_node;
+
 struct USER_INFO {
-	USER_INFO();
+	USER_INFO() = default;
 	USER_INFO(USER_INFO &&) noexcept;
 	void operator=(USER_INFO &&) = delete;
 	~USER_INFO();
@@ -28,7 +40,7 @@ struct USER_INFO {
 	uint32_t cpid = 0, flags = 0;
 	time_t last_time = 0, reload_time = 0;
 	std::unique_ptr<OBJECT_TREE> ptree;
-	DOUBLE_LIST sink_list{};
+	std::list<sink_node> sink_list;
 	std::unordered_map<int, long> extra_owner;
 	std::mutex eowner_lock;
 	std::recursive_mutex lock;

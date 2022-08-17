@@ -61,13 +61,6 @@ struct NOTIFY_ITEM {
 	time_t last_time = 0;
 };
 
-struct SINK_NODE {
-	DOUBLE_LIST_NODE node;
-	int clifd;
-	time_t until_time;
-	NOTIF_SINK sink;
-};
-
 struct user_info_del {
 	void operator()(USER_INFO *x);
 };
@@ -87,9 +80,11 @@ static std::unordered_map<std::string, int> g_user_table;
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_table;
 static std::unordered_map<int, USER_INFO> g_session_table;
 
-USER_INFO::USER_INFO()
+sink_node::~sink_node()
 {
-	double_list_init(&sink_list);
+	if (clifd >= 0)
+		close(clifd);
+	free(sink.padvise);
 }
 
 USER_INFO::USER_INFO(USER_INFO &&o) noexcept :
@@ -98,22 +93,13 @@ USER_INFO::USER_INFO(USER_INFO &&o) noexcept :
 	lang(std::move(o.lang)), maildir(std::move(o.maildir)),
 	homedir(std::move(o.homedir)), cpid(o.cpid), flags(o.flags),
 	last_time(o.last_time), reload_time(o.reload_time),
-	ptree(std::move(o.ptree)), sink_list(o.sink_list)
-{
-	o.sink_list = {};
-}
+	ptree(std::move(o.ptree)), sink_list(std::move(o.sink_list))
+{}
 
 USER_INFO::~USER_INFO()
 {
 	auto pinfo = this;
-	DOUBLE_LIST_NODE *pnode;
-	while ((pnode = double_list_pop_front(&pinfo->sink_list)) != nullptr) {
-		auto psink_node = static_cast<SINK_NODE *>(pnode->pdata);
-		close(psink_node->clifd);
-		free(psink_node->sink.padvise);
-		free(psink_node);
-	}
-	double_list_free(&pinfo->sink_list);
+	sink_list.clear();
 	if (pinfo->ptree != nullptr) {
 		common_util_build_environment();
 		pinfo->ptree.reset();
@@ -188,13 +174,8 @@ static void *zcorezs_scanwork(void *param)
 	time_t cur_time;
 	uint8_t tmp_byte;
 	struct pollfd fdpoll;
-	DOUBLE_LIST maildir_list, expired_list;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *ptail;
 	
 	count = 0;
-	double_list_init(&maildir_list);
-	double_list_init(&expired_list);
 	const zcresp_notifdequeue response{zcore_callid::notifdequeue, ecSuccess};
 	while (!g_notify_stop) {
 		sleep(1);
@@ -202,6 +183,8 @@ static void *zcorezs_scanwork(void *param)
 		if (count >= g_ping_interval) {
 			count = 0;
 		}
+		std::vector<std::string> maildir_list;
+		std::list<sink_node> expired_list;
 		std::unique_lock tl_hold(g_table_lock);
 		time(&cur_time);
 		for (auto iter = g_session_table.begin(); iter != g_session_table.end(); ) {
@@ -210,18 +193,16 @@ static void *zcorezs_scanwork(void *param)
 				++iter;
 				continue;
 			}
-			ptail = double_list_get_tail(&pinfo->sink_list);
-			while ((pnode = double_list_pop_front(&pinfo->sink_list)) != nullptr) {
-				auto psink_node = static_cast<const SINK_NODE *>(pnode->pdata);
+			auto ptail = pinfo->sink_list.size() > 0 ? &pinfo->sink_list.back() : nullptr;
+			while (pinfo->sink_list.size() > 0) {
+				auto psink_node = &pinfo->sink_list.front();
 				if (cur_time >= psink_node->until_time) {
-					double_list_append_as_tail(&expired_list, pnode);
+					expired_list.splice(expired_list.end(), pinfo->sink_list, pinfo->sink_list.begin());
 				} else {
-					double_list_append_as_tail(
-						&pinfo->sink_list, pnode);
+					pinfo->sink_list.splice(pinfo->sink_list.end(), pinfo->sink_list, pinfo->sink_list.begin());
 				}
-				if (pnode == ptail) {
+				if (psink_node == ptail)
 					break;
-				}
 			}
 			if (cur_time - pinfo->reload_time >= g_cache_interval) {
 				common_util_build_environment();
@@ -239,42 +220,38 @@ static void *zcorezs_scanwork(void *param)
 					++iter;
 					continue;
 				}
-				pnode = me_alloc<DOUBLE_LIST_NODE>();
-				if (pnode == nullptr) {
+				try {
+					maildir_list.push_back(pinfo->get_maildir());
+				} catch (const std::bad_alloc &) {
+					fprintf(stderr, "E-2178: ENOMEM\n");
 					++iter;
 					continue;
 				}
-				pnode->pdata = strdup(pinfo->get_maildir());
-				if (NULL == pnode->pdata) {
-					free(pnode);
-					++iter;
-					continue;
-				}
-				double_list_append_as_tail(&maildir_list, pnode);
 				++iter;
 			} else {
-				if (0 != double_list_get_nodes_num(&pinfo->sink_list)) {
+				if (pinfo->sink_list.size() != 0) {
 					++iter;
 					continue;
 				}
 				common_util_build_environment();
 				pinfo->ptree.reset();
 				common_util_free_environment();
-				double_list_free(&pinfo->sink_list);
+				pinfo->sink_list.clear();
 				g_user_table.erase(pinfo->username);
 				iter = g_session_table.erase(iter);
 			}
 		}
 		tl_hold.unlock();
-		while ((pnode = double_list_pop_front(&maildir_list)) != nullptr) {
+		for (const auto &dir : maildir_list) {
 			common_util_build_environment();
-			exmdb_client::ping_store(static_cast<char *>(pnode->pdata));
+			exmdb_client::ping_store(dir.c_str());
 			common_util_free_environment();
-			free(pnode->pdata);
-			free(pnode);
 		}
-		while ((pnode = double_list_pop_front(&expired_list)) != nullptr) {
-			auto psink_node = static_cast<SINK_NODE *>(pnode->pdata);
+		maildir_list.clear();
+		while (expired_list.size() > 0) {
+			std::list<sink_node> holder;
+			holder.splice(holder.end(), expired_list, expired_list.begin());
+			auto psink_node = &holder.front();
 			if (rpc_ext_push_response(&response, &tmp_bin)) {
 				tv_msec = SOCKET_TIMEOUT * 1000;
 				fdpoll.fd = psink_node->clifd;
@@ -287,9 +264,7 @@ static void *zcorezs_scanwork(void *param)
 				if (read(psink_node->clifd, &tmp_byte, 1))
 					/* ignore */;
 			}
-			close(psink_node->clifd);
-			free(psink_node->sink.padvise);
-			free(psink_node);
+			/* implied ~sink_node */
 		}
 		if (0 != count) {
 			continue;
@@ -598,14 +573,14 @@ static void zarafa_server_notification_proc(const char *dir,
 	default:
 		return;
 	}
-	for (pnode=double_list_get_head(&pinfo->sink_list); NULL!=pnode;
-		pnode=double_list_get_after(&pinfo->sink_list, pnode)) {
-		auto psink_node = static_cast<SINK_NODE *>(pnode->pdata);
+	for (auto psink_node = pinfo->sink_list.begin();
+	     psink_node != pinfo->sink_list.end(); ++psink_node) {
 		for (i=0; i<psink_node->sink.count; i++) {
 			if (psink_node->sink.padvise[i].sub_id != notify_id ||
 			    hstore != psink_node->sink.padvise[i].hstore)
 				continue;
-			double_list_remove(&pinfo->sink_list, pnode);
+			std::list<sink_node> holder;
+			holder.splice(holder.end(), pinfo->sink_list, psink_node);
 			const zcresp_notifdequeue response = {zcore_callid::notifdequeue, ecSuccess, {1, &pnotification}};
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			fdpoll.fd = psink_node->clifd;
@@ -621,9 +596,7 @@ static void zarafa_server_notification_proc(const char *dir,
 				}
 				free(tmp_bin.pb);
 			}
-			close(psink_node->clifd);
-			free(psink_node->sink.padvise);
-			free(psink_node);
+			/* implied ~sink_node */
 			return;
 		}
 	}
@@ -2642,10 +2615,14 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 			ppnotifications, sizeof(void*)*count);
 		return ecSuccess;
 	}
-	auto psink_node = me_alloc<SINK_NODE>();
-	if (psink_node == nullptr)
-		return ecError;
-	psink_node->node.pdata = psink_node;
+	std::list<sink_node> holder;
+	try {
+		holder.emplace_back();
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-2179: ENOMEM\n");
+		return false;
+	}
+	auto psink_node = &holder.front();
 	psink_node->clifd = common_util_get_clifd();
 	time(&psink_node->until_time);
 	psink_node->until_time += timeval;
@@ -2653,13 +2630,11 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 	psink_node->sink.count = psink->count;
 	psink_node->sink.padvise = me_alloc<ADVISE_INFO>(psink->count);
 	if (NULL == psink_node->sink.padvise) {
-		free(psink_node);
 		return ecError;
 	}
 	memcpy(psink_node->sink.padvise, psink->padvise,
 				psink->count*sizeof(ADVISE_INFO));
-	double_list_append_as_tail(
-		&pinfo->sink_list, &psink_node->node);
+	pinfo->sink_list.splice(pinfo->sink_list.end(), holder, holder.begin());
 	return ecNotFound;
 }
 
