@@ -2747,7 +2747,7 @@ static bool is_meeting_response(const char *s)
 	       strcasecmp(s, "IPM.Schedule.Meeting.Resp.Tent") == 0;
 }
 
-static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> pevent_component,
+static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
     ENTRYID_TO_USERNAME entryid_to_username, ESSDN_TO_USERNAME essdn_to_username,
     EXT_BUFFER_ALLOC alloc, const char *partstat,
     const MESSAGE_CONTENT *pmsg) try
@@ -2775,7 +2775,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		piline = ical_new_line("ATTENDEE");
 		if (piline == nullptr)
 			return FALSE;
-		if (pevent_component->append_line(piline) < 0)
+		if (pevent_component.append_line(piline) < 0)
 			return false;
 		piline->append_param("PARTSTAT", partstat);
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
@@ -2796,7 +2796,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		piline = ical_new_line("ATTENDEE");
 		if (piline == nullptr)
 			return FALSE;
-		if (pevent_component->append_line(piline) < 0)
+		if (pevent_component.append_line(piline) < 0)
 			return false;
 		const char *role =
 			rcpttype == nullptr ? "REQ-PARTICIPANT" :
@@ -2827,8 +2827,8 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	return false;
 }
 
-static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
-    std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr) try
+static BOOL oxcical_export_rrule(const ical_component &ptz_component,
+    ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	ICAL_TIME itime;
 	time_t unix_time;
@@ -2879,7 +2879,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	auto piline = ical_new_line(str_tag);
 	if (piline == nullptr)
 		return FALSE;
-	if (pcomponent->append_line(piline) < 0)
+	if (pcomponent.append_line(piline) < 0)
 		return false;
 	switch (apr->recur_pat.patterntype) {
 	case PATTERNTYPE_DAY:
@@ -2971,7 +2971,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		nt_time *= 600000000;
 		unix_time = rop_util_nttime_to_unix(nt_time);
 		ical_utc_to_datetime(NULL, unix_time, &itime);
-		if (!ical_itime_to_utc(ptz_component.get(), itime, &unix_time))
+		if (!ical_itime_to_utc(&ptz_component, itime, &unix_time))
 			return FALSE;
 		ical_utc_to_datetime(NULL, unix_time, &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
@@ -3010,7 +3010,7 @@ static BOOL oxcical_check_exdate(APPOINTMENT_RECUR_PAT *apr)
 }
 
 static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
-    std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr) try
+    ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	BOOL b_found;
 	ICAL_TIME itime;
@@ -3026,7 +3026,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 		piline = ical_new_line("EXDATE");
 	if (piline == nullptr)
 		return FALSE;
-	if (pcomponent->append_line(piline) < 0)
+	if (pcomponent.append_line(piline) < 0)
 		return false;
 	auto &pivalue = piline->append_value();
 	if (b_date) {
@@ -3084,7 +3084,7 @@ static BOOL oxcical_check_rdate(APPOINTMENT_RECUR_PAT *apr)
 }
 
 static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
-     std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr) try
+     ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	BOOL b_found;
 	ICAL_TIME itime;
@@ -3094,7 +3094,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	auto piline = ical_new_line("RDATE");
 	if (piline == nullptr)
 		return FALSE;
-	if (pcomponent->append_line(piline) < 0)
+	if (pcomponent.append_line(piline) < 0)
 		return false;
 	auto &pivalue = piline->append_value();
 	if (b_date) {
@@ -3407,7 +3407,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	if (!oxcical_export_recipient_table(pcomponent, entryid_to_username,
+	if (!oxcical_export_recipient_table(*pcomponent, entryid_to_username,
 	    essdn_to_username, alloc, partstat, pmsg))
 		return FALSE;
 	
@@ -3427,15 +3427,15 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (!b_exceptional && b_recurrence) {
-		if (!oxcical_export_rrule(ptz_component, pcomponent, &apprecurr))
+		if (!oxcical_export_rrule(*ptz_component, *pcomponent, &apprecurr))
 			return FALSE;
 		if (oxcical_check_exdate(&apprecurr) &&
 		    !oxcical_export_exdate(tzid, g_oxcical_allday_ymd,
-		    pcomponent, &apprecurr))
+		    *pcomponent, &apprecurr))
 			return FALSE;
 		if (oxcical_check_rdate(&apprecurr) &&
 		    !oxcical_export_rdate(tzid, g_oxcical_allday_ymd,
-		    pcomponent, &apprecurr))
+		    *pcomponent, &apprecurr))
 			return FALSE;
 	}
 	
