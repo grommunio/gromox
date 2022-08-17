@@ -1380,7 +1380,7 @@ bool ical_parse_duration(const char *str_duration, long *pseconds)
 	return true;
 }
 
-static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+static const char *ical_get_datetime_offset(const ical_component &ptz_component,
     ICAL_TIME itime)
 {
 	int hour;
@@ -1407,7 +1407,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 	
 	b_standard = FALSE;
 	b_daylight = FALSE;
-	for (auto pcomponent : ptz_component->component_list) {
+	for (auto pcomponent : ptz_component.component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") != 0)
 			return NULL;
@@ -1600,13 +1600,12 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 	       daylight_offset : standard_offset;
 }
 
-bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+bool ical_itime_to_utc(const ical_component *ptz_component,
     ICAL_TIME itime, time_t *ptime)
 {
 	int hour_offset;
 	struct tm tmp_tm;
 	int minute_offset;
-	const char *str_offset;
 	
 	tmp_tm.tm_sec = itime.leap_second >= 60 ? itime.leap_second : itime.second;
 	tmp_tm.tm_min = itime.minute;
@@ -1621,7 +1620,7 @@ bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	if (NULL == ptz_component) {
 		return true;
 	}
-	str_offset = ical_get_datetime_offset(ptz_component, itime);
+	auto str_offset = ical_get_datetime_offset(*ptz_component, itime);
 	if (NULL == str_offset) {
 		return false;
 	}
@@ -1631,7 +1630,7 @@ bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	return true;
 }
 
-bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+bool ical_datetime_to_utc(const ical_component *ptz_component,
 	const char *str_datetime, time_t *ptime)
 {
 	bool b_utc;
@@ -1655,7 +1654,7 @@ bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	return true;
 }
 
-bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+bool ical_utc_to_datetime(const ical_component *ptz_component,
 	time_t utc_time, ICAL_TIME *pitime)
 {
 	int hour;
@@ -1709,7 +1708,7 @@ bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	return false;
 }
 
-static bool ical_parse_until(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+static bool ical_parse_until(const ical_component *ptz_component,
 	const char *str_until, time_t *ptime)
 {
 	bool b_utc;
@@ -2085,7 +2084,7 @@ static void ical_next_rrule_base_itime(ICAL_RRULE *pirrule)
 }
 
 /* ptz_component can be NULL, represents UTC */
-bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+bool ical_parse_rrule(const ical_component *ptz_component,
     time_t start_time, const std::vector<ical_value> *pvalue_list,
     ICAL_RRULE *pirrule)
 {

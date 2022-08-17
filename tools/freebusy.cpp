@@ -350,7 +350,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		nt_time = apr->recur_pat.enddate + apr->starttimeoffset;
 		nt_time *= 600000000;
 		unix_time = rop_util_nttime_to_unix(nt_time);
-		ical_utc_to_datetime(ptz_component, unix_time, &itime);
+		ical_utc_to_datetime(ptz_component.get(), unix_time, &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		piline->append_value("UNTIL", tmp_buff);
 	}
@@ -360,8 +360,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			return FALSE;
 		piline->append_value("WKST", wd);
 	}
-	return ical_parse_rrule(
-		ptz_component, whole_start_time,
+	return ical_parse_rrule(ptz_component.get(), whole_start_time,
 		&piline->value_list, pirrule) ? TRUE : false;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-2093: ENOMEM\n");
@@ -385,7 +384,7 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	double_list_init(plist);
 	do {
 		auto itime = irrule.instance_itime;
-		ical_itime_to_utc(ptz_component, itime, &tmp_time);
+		ical_itime_to_utc(ptz_component.get(), itime, &tmp_time);
 		if (tmp_time < start_time)
 			continue;
 		ical_itime_to_utc(NULL, itime, &tmp_time1);
@@ -413,7 +412,7 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		tmp_time = rop_util_nttime_to_unix(nt_time);
 		ICAL_TIME itime;
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
-		ical_itime_to_utc(ptz_component, itime, &tmp_time);
+		ical_itime_to_utc(ptz_component.get(), itime, &tmp_time);
 		if (tmp_time < start_time || tmp_time > end_time)
 			continue;
 		pevnode = me_alloc<EVENT_NODE>();
@@ -423,7 +422,7 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		nt_time *= 600000000;
 		tmp_time = rop_util_nttime_to_unix(nt_time);
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
-		ical_itime_to_utc(ptz_component, itime, &tmp_time);
+		ical_itime_to_utc(ptz_component.get(), itime, &tmp_time);
 		pevnode->end_time = tmp_time;
 		pevnode->pexception = apr->pexceptioninfo + i;
 		pevnode->pex_exception = apr->pextendedexception + i;
@@ -505,11 +504,11 @@ static void output_event(time_t start_time, time_t end_time,
 		printf("{\"StartTime\":%lld, ", static_cast<long long>(start_time));
 		printf("\"EndTime\":%lld, ", static_cast<long long>(end_time));
 	} else {
-		ical_utc_to_datetime(g_tz_component, start_time, &itime);
+		ical_utc_to_datetime(g_tz_component.get(), start_time, &itime);
 		printf("{\"StartTime\":\"%d-%02d-%02dT%02d:%02d:%02d\", ",
 					itime.year, itime.month, itime.day, itime.hour,
 					itime.minute, itime.second);
-		ical_utc_to_datetime(g_tz_component, end_time, &itime);
+		ical_utc_to_datetime(g_tz_component.get(), end_time, &itime);
 		printf("\"EndTime\":\"%d-%02d-%02dT%02d:%02d:%02d\", ",
 				itime.year, itime.month, itime.day, itime.hour,
 				itime.minute, itime.second);
@@ -1109,8 +1108,8 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "fail to produce vtimezone component\n");
 		exit(14);
 	}
-	ical_itime_to_utc(g_tz_component, itime_start, &g_start_time);
-	ical_itime_to_utc(g_tz_component, itime_end, &g_end_time);
+	ical_itime_to_utc(g_tz_component.get(), itime_start, &g_start_time);
+	ical_itime_to_utc(g_tz_component.get(), itime_end, &g_end_time);
  GET_FREEBUSY_DATA:
 	pdirs = cookie_parser_get(pparser, "dirs");
 	if (NULL == pdirs) {
