@@ -10,7 +10,7 @@
 #include <gromox/defs.h>
 #include <gromox/ical.hpp>
 
-const char *ICAL_LINE::get_first_paramval(const char *name)
+const char *ICAL_LINE::get_first_paramval(const char *name) const
 {
 	auto it = std::find_if(param_list.cbegin(), param_list.cend(),
 	          [=](const auto &e) { return strcasecmp(e.name.c_str(), name) == 0; });
@@ -44,9 +44,9 @@ std::shared_ptr<ICAL_LINE> ical_new_line(const char *name)
 	return nullptr;
 }
 
-std::shared_ptr<ICAL_LINE> ICAL_COMPONENT::get_line(const char *name)
+std::shared_ptr<ICAL_LINE> ICAL_COMPONENT::get_line(const char *name) const
 {
-	for (auto l : line_list)
+	for (const auto &l : line_list)
 		if (strcasecmp(l->m_name.c_str(), name) == 0)
 			return l;
 	return nullptr;

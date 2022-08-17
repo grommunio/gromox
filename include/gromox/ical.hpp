@@ -50,10 +50,10 @@ struct GX_EXPORT ical_line {
 	ical_value &append_value() { return value_list.emplace_back(); }
 	ical_value &append_value(const char *v) { value_list.push_back(ical_value(v)); return value_list.back(); }
 	void append_value(const char *v, const char *sv);
-	const char *get_first_paramval(const char *name);
-	const char *get_first_subvalue();
-	const char *get_first_subvalue_by_name(const char *name);
-	const std::vector<std::string> *get_subval_list(const char *name);
+	const char *get_first_paramval(const char *name) const;
+	const char *get_first_subvalue() const;
+	const char *get_first_subvalue_by_name(const char *name) const;
+	const std::vector<std::string> *get_subval_list(const char *name) const;
 
 	std::string m_name;
 	std::vector<ical_param> param_list;
@@ -65,7 +65,7 @@ struct GX_EXPORT ical_component {
 	public:
 	int append_comp(std::shared_ptr<ical_component>);
 	int append_line(std::shared_ptr<ICAL_LINE>);
-	std::shared_ptr<ICAL_LINE> get_line(const char *name);
+	std::shared_ptr<ICAL_LINE> get_line(const char *name) const;
 
 	std::string m_name;
 	std::vector<std::shared_ptr<ICAL_LINE>> line_list;
@@ -76,7 +76,7 @@ using ICAL_COMPONENT = ical_component;
 struct GX_EXPORT ical : public ical_component {
 	int init();
 	bool retrieve(char *in_buff);
-	bool serialize(char *out_buff, size_t maxlen);
+	bool serialize(char *out_buff, size_t maxlen) const;
 };
 using ICAL = ical;
 

@@ -2411,7 +2411,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ICAL *pical,
 	uint16_t calendartype;
 	
 	b_proposal = FALSE;
-	auto piline = const_cast<ICAL *>(pical)->get_line("X-MICROSOFT-CALSCALE");
+	auto piline = pical->get_line("X-MICROSOFT-CALSCALE");
 	calendartype = oxcical_get_calendartype(piline);
 	auto mclass = "IPM.Appointment";
 	std::vector<message_ptr> msgvec;
@@ -2419,7 +2419,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ICAL *pical,
 	if (!oxcical_classify_calendar(pical, uid_list) ||
 	    uid_list.size() == 0)
 		return ecNotFound;
-	piline = const_cast<ICAL *>(pical)->get_line("METHOD");
+	piline = pical->get_line("METHOD");
 	if (NULL != piline) {
 		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue) {
