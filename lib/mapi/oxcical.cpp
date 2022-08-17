@@ -323,7 +323,8 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (pvalue != nullptr && strtol(pvalue, nullptr, 0) != start_time % 60)
 			return FALSE;
 	}
-	if (!ical_parse_rrule(ptz_component, start_time, &piline->value_list, &irrule))
+	if (!ical_parse_rrule(ptz_component.get(), start_time,
+	    &piline->value_list, &irrule))
 		return FALSE;
 	auto b_exceptional = irrule.b_start_exceptional;
 	if (b_exceptional && !irrule.iterate())
@@ -342,7 +343,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	itime.hour = 0;
 	itime.minute = 0;
 	itime.second = 0;
-	ical_itime_to_utc(ptz_component, itime, &tmp_time);
+	ical_itime_to_utc(ptz_component.get(), itime, &tmp_time);
 	apr->recur_pat.startdate = rop_util_unix_to_nttime(tmp_time) / 600000000;
 	if (irrule.endless()) {
  SET_INFINITE:
@@ -376,7 +377,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		itime.hour = 0;
 		itime.minute = 0;
 		itime.second = 0;
-		ical_itime_to_utc(ptz_component, itime, &tmp_time);
+		ical_itime_to_utc(ptz_component.get(), itime, &tmp_time);
 		apr->recur_pat.enddate = rop_util_unix_to_nttime(tmp_time) / 600000000;
 	}
 	switch (irrule.frequency) {
@@ -424,7 +425,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				apr->recur_pat.pts.weekrecur |= 1 << wd;
 			}
 		} else {
-			ical_utc_to_datetime(ptz_component, start_time, &itime);
+			ical_utc_to_datetime(ptz_component.get(), start_time, &itime);
 			apr->recur_pat.pts.weekrecur = 1U << ical_get_dayofweek(itime.year, itime.month, itime.day);
 		}
 		break;
@@ -473,7 +474,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			patterntype = PATTERNTYPE_MONTH;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if (NULL == pvalue) {
-				ical_utc_to_datetime(ptz_component, start_time, &itime);
+				ical_utc_to_datetime(ptz_component.get(), start_time, &itime);
 				tmp_int = itime.day;
 			} else {
 				tmp_int = strtol(pvalue, nullptr, 0);
@@ -530,7 +531,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			patterntype = PATTERNTYPE_MONTH;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if (NULL == pvalue) {
-				ical_utc_to_datetime(ptz_component, start_time, &itime);
+				ical_utc_to_datetime(ptz_component.get(), start_time, &itime);
 				tmp_int = itime.day;
 			} else {
 				tmp_int = strtol(pvalue, nullptr, 0);
@@ -983,7 +984,7 @@ static BOOL oxcical_parse_dates(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				continue;
 			if (b_utc && ptz_component != nullptr) {
 				ical_itime_to_utc(NULL, itime, &tmp_time);
-				ical_utc_to_datetime(ptz_component, tmp_time, &itime);
+				ical_utc_to_datetime(ptz_component.get(), tmp_time, &itime);
 			}
 			itime.hour = 0;
 			itime.minute = 0;
@@ -1054,7 +1055,8 @@ static BOOL oxcical_parse_dtvalue(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (!ical_itime_to_utc(nullptr, *pitime, putc_time))
 				return FALSE;
 		} else {
-			if (!ical_itime_to_utc(ptz_component, *pitime, putc_time))
+			if (!ical_itime_to_utc(ptz_component.get(),
+			    *pitime, putc_time))
 				return FALSE;
 		}
 	} else if (0 == strcasecmp(pvalue1, "DATE")) {
@@ -1063,7 +1065,7 @@ static BOOL oxcical_parse_dtvalue(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (!ical_parse_date(pvalue, &pitime->year,
 		    &pitime->month, &pitime->day))
 			return FALSE;
-		if (!ical_itime_to_utc(ptz_component, *pitime, putc_time))
+		if (!ical_itime_to_utc(ptz_component.get(), *pitime, putc_time))
 			return FALSE;
 		*b_utc = false;
 	} else {
@@ -2017,7 +2019,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				end_itime.leap_second = 0;
 				end_itime.add_day(1);
 			}
-			ical_itime_to_utc(ptz_component, end_itime, &end_time);
+			ical_itime_to_utc(ptz_component.get(), end_itime, &end_time);
 		} else {
 			long duration;
 			auto pvalue = piline->get_first_subvalue();
@@ -2285,7 +2287,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 					time_t tmp_time;
 					pvalue1 = piline->get_first_paramval("VALUE");
 					alarmdelta = (pvalue1 == nullptr || strcasecmp(pvalue1, "DATE-TIME") == 0) &&
-					            ical_datetime_to_utc(ptz_component, pvalue, &tmp_time) ?
+					            ical_datetime_to_utc(ptz_component.get(), pvalue, &tmp_time) ?
 					            llabs(start_time - tmp_time) / 60 :
 					            dfl_alarm_offset(b_allday);
 				} else {
@@ -2976,7 +2978,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		nt_time *= 600000000;
 		unix_time = rop_util_nttime_to_unix(nt_time);
 		ical_utc_to_datetime(NULL, unix_time, &itime);
-		if (!ical_itime_to_utc(ptz_component, itime, &unix_time))
+		if (!ical_itime_to_utc(ptz_component.get(), itime, &unix_time))
 			return FALSE;
 		ical_utc_to_datetime(NULL, unix_time, &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
@@ -3540,7 +3542,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 		}
 	} else {
-		if (!ical_utc_to_datetime(ptz_component,
+		if (!ical_utc_to_datetime(ptz_component.get(),
 		    rop_util_nttime_to_unix(*lnum), &itime))
 			return FALSE;
 	}
@@ -3582,7 +3584,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
+	if (!ical_utc_to_datetime(ptz_component.get(), start_time, &itime))
 		return FALSE;
 	if (ptz_component != nullptr)
 		sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
@@ -3604,7 +3606,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (start_time != end_time) {
-		if (!ical_utc_to_datetime(ptz_component, end_time, &itime))
+		if (!ical_utc_to_datetime(ptz_component.get(), end_time, &itime))
 			return FALSE;
 		if (ptz_component != nullptr)
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
