@@ -73,6 +73,8 @@ static int rpc_parser_dispatch(const zcreq *q0, zcresp *&r0)
 		        static_cast<unsigned int>(r0->call_id));
 		return DISPATCH_FALSE;
 	}
+	if (q0->call_id == zcore_callid::notifdequeue && r0->result == ecNotFound)
+		return DISPATCH_CONTINUE;
 	r0->call_id = q0->call_id;
 	if (g_zrpc_debug == 0)
 		return DISPATCH_TRUE;
