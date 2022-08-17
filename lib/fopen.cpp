@@ -33,9 +33,9 @@ DIR_mp opendir_sd(const char *dirname, const char *sdlist)
 		dn.m_dir.reset(opendir(dirname));
 		return dn;
 	}
-	for (auto dir : gx_split(sdlist, ':')) {
+	for (auto &&dir : gx_split(sdlist, ':')) {
 		errno = 0;
-		dn.m_path = dir + "/" + dirname;
+		dn.m_path = std::move(dir) + "/" + dirname;
 		dn.m_dir.reset(opendir(dn.m_path.c_str()));
 		if (dn.m_dir != nullptr)
 			return dn;
@@ -54,9 +54,9 @@ std::unique_ptr<FILE, file_deleter> fopen_sd(const char *filename, const char *s
 	if (sdlist == nullptr || strchr(filename, '/') != nullptr)
 		return std::unique_ptr<FILE, file_deleter>(fopen(filename, "r"));
 	try {
-		for (auto dir : gx_split(sdlist, ':')) {
+		for (auto &&dir : gx_split(sdlist, ':')) {
 			errno = 0;
-			auto full = dir + "/" + filename;
+			auto full = std::move(dir) + "/" + filename;
 			std::unique_ptr<FILE, file_deleter> fp(fopen(full.c_str(), "r"));
 			if (fp != nullptr)
 				return fp;

@@ -596,7 +596,7 @@ static size_t ical_serialize_component(const ical_component &com,
 	if (offset >= max_length) {
 		return 0;
 	}
-	for (auto piline : pcomponent->line_list) {
+	for (const auto &piline : pcomponent->line_list) {
 		line_begin = offset;
 		offset += gx_snprintf(out_buff + offset,
 		          max_length - offset, "%s", piline->m_name.c_str());
@@ -684,7 +684,7 @@ static size_t ical_serialize_component(const ical_component &com,
 		out_buff[offset] = '\n';
 		offset ++;
 	}
-	for (auto comp : pcomponent->component_list) {
+	for (const auto &comp : pcomponent->component_list) {
 		offset1 = ical_serialize_component(*comp, out_buff + offset, max_length - offset);
 		if (0 == offset1) {
 			return 0;
@@ -1407,7 +1407,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 	
 	b_standard = FALSE;
 	b_daylight = FALSE;
-	for (auto pcomponent : ptz_component.component_list) {
+	for (const auto &pcomponent : ptz_component.component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") != 0)
 			return NULL;
@@ -1676,7 +1676,7 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		pitime->leap_second = 0;
 		return true;
 	}
-	for (auto pcomponent : ptz_component->component_list) {
+	for (const auto &pcomponent : ptz_component->component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") != 0)
 			return false;
