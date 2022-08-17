@@ -42,6 +42,10 @@ struct agent_thread {
 };
 
 struct remote_conn {
+	remote_conn(remote_svr *s) : psvr(s) {}
+	NOMOVE(remote_conn);
+	~remote_conn();
+
 	remote_svr *psvr = nullptr;
 	time_t last_time = 0;
 	int sockd = -1;
@@ -75,7 +79,6 @@ extern GX_EXPORT void exmdb_client_init(unsigned int conn_max, unsigned int noti
 extern GX_EXPORT void exmdb_client_stop();
 extern GX_EXPORT int exmdb_client_run(const char *dir, unsigned int fl = EXMDB_CLIENT_NO_FLAGS, void (*)(const remote_svr &) = nullptr, void (*)() = nullptr, void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr);
 extern GX_EXPORT bool exmdb_client_check_local(const char *pfx, BOOL *pvt);
-extern GX_EXPORT remote_conn_ref exmdb_client_get_connection(const char *dir);
 extern GX_EXPORT BOOL exmdb_client_do_rpc(const exreq *, exresp *);
 
 }

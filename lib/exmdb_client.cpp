@@ -38,6 +38,12 @@ static void (*mdcl_free_env)();
 static void (*mdcl_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
 static char mdcl_remote_id[128];
 
+remote_conn::~remote_conn()
+{
+	if (sockd >= 0)
+		close(sockd);
+}
+
 remote_conn_ref::remote_conn_ref(remote_conn_ref &&o)
 {
 	reset(true);
@@ -56,6 +62,7 @@ void remote_conn_ref::reset(bool lost)
 		pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), tmplist, tmplist.begin());
 	} else {
 		close(pconn->sockd);
+		pconn->sockd = -1;
 		--pconn->psvr->active_handles;
 		tmplist.clear();
 	}
@@ -85,12 +92,17 @@ void exmdb_client_stop()
 	for (auto &ag : mdcl_agent_list) {
 		pthread_kill(ag.thr_id, SIGALRM);
 		pthread_join(ag.thr_id, nullptr);
-		if (ag.sockd >= 0)
+		if (ag.sockd >= 0) {
 			close(ag.sockd);
+			ag.sockd = -1;
+		}
 	}
-	for (auto &srv : mdcl_server_list)
-		for (auto &conn : srv.conn_list)
+	for (auto &srv : mdcl_server_list) {
+		for (auto &conn : srv.conn_list) {
 			close(conn.sockd);
+			conn.sockd = -1;
+		}
+	}
 	mdcl_build_env = nullptr;
 	mdcl_free_env = nullptr;
 	mdcl_event_proc = nullptr;
@@ -183,6 +195,7 @@ static void cl_pinger2()
 		auto conn = &temp_list.front();
 		if (mdcl_notify_stop) {
 			close(conn->sockd);
+			conn->sockd = -1;
 			--conn->psvr->active_handles;
 			temp_list.pop_front();
 			continue;
@@ -190,6 +203,7 @@ static void cl_pinger2()
 		auto ping_buff = cpu_to_le32(0);
 		if (write(conn->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t)) {
 			close(conn->sockd);
+			conn->sockd = -1;
 			--conn->psvr->active_handles;
 			temp_list.pop_front();
 			continue;
@@ -200,6 +214,7 @@ static void cl_pinger2()
 		    read(conn->sockd, &resp_buff, 1) != 1 ||
 		    resp_buff != exmdb_response::success) {
 			close(conn->sockd);
+			conn->sockd = -1;
 			--conn->psvr->active_handles;
 			temp_list.pop_front();
 		} else {
@@ -403,7 +418,7 @@ bool exmdb_client_check_local(const char *prefix, BOOL *pvt)
 	return true;
 }
 
-remote_conn_ref exmdb_client_get_connection(const char *dir)
+static remote_conn_ref exmdb_client_get_connection(const char *dir)
 {
 	remote_conn_ref fc;
 	std::lock_guard sv_hold(mdcl_server_lock);
@@ -422,7 +437,7 @@ remote_conn_ref exmdb_client_get_connection(const char *dir)
 		        mdcl_conn_max, i->host.c_str(), i->port, i->prefix.c_str());
 		return fc;
 	}
-	fc.tmplist.emplace_back(remote_conn{&*i});
+	fc.tmplist.emplace_back(&*i);
 	auto &conn = fc.tmplist.back();
 	conn.sockd = exmdb_client_connect_exmdb(*i, false, "mdcl");
 	if (conn.sockd == -2) {
