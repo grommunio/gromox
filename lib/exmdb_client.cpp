@@ -468,11 +468,13 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 		return false;
 	}
 	free(bin.pb);
+	bin.pb = nullptr;
 	if (!exmdb_client_read_socket(conn->sockd, bin, mdcl_socket_timeout * 1000))
 		return false;
 	time(&conn->last_time);
 	conn.reset();
-	if (bin.cb < 5 || static_cast<exmdb_response>(bin.pb[0]) != exmdb_response::success) {
+	if (bin.cb < 5 || bin.pb == nullptr ||
+	    static_cast<exmdb_response>(bin.pb[0]) != exmdb_response::success) {
 		exmdb_rpc_free(bin.pb);
 		return false;
 	}
