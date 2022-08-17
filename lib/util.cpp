@@ -767,7 +767,7 @@ int decode64(const char *in, size_t inlen, void *vout, size_t outmax, size_t *ou
 
 	/* check parameters */
 	if (out==NULL) return FAIL;
-	if ((inlen + 3) / 4 * 3 >= outmax)
+	if (inlen / 4 * 3 >= outmax)
 		return BUFOVER;
 
 	/* xxx these necessary? */
@@ -921,7 +921,7 @@ int decode64_ex(const char *_in, size_t inlen, void *vout,
 {
 	auto out = static_cast<uint8_t *>(vout);
 	size_t inLen = inlen;
-	size_t outsize = ( ( inLen + 3 ) / 4 ) * 3;
+	size_t outsize = inlen / 4 * 3;
 	/* Get four input chars at a time and decode them. Ignore white space
 	 * chars (CR, LF, SP, HT). If '=' is encountered, terminate input. If
 	 * a char other than white space, base64 char, or '=' is encountered,

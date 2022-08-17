@@ -239,12 +239,26 @@ static int t_base64()
 
 	if (decode64("MTIz", 4, out, 3, &outlen) >= 0)
 		return printf("TB-11 failed\n");
+	if (decode64("", 0, out, 0, &outlen) >= 0)
+		return printf("TB-12 failed\n");
+	if (decode64("", 0, out, 1, &outlen) < 0)
+		return printf("TB-13 failed\n");
 	if (decode64("MTIz", 4, out, 4, &outlen) < 0)
 		return printf("TB-5 failed\n");
+	if (decode64("MTIz", 1, out, 4, &outlen) >= 0 &&
+	    outlen != 0)
+		return printf("TB-16 failed\n");
 	if (decode64_ex("MTIz", 4, out, 3, &outlen) >= 0)
 		return printf("TB-6 failed\n");
 	if (decode64_ex("MTIz", 4, out, 4, &outlen) < 0)
 		printf("TB-7 failed\n");
+	if (decode64_ex("", 0, out, 0, &outlen) >= 0)
+		return printf("TB-14 failed\n");
+	if (decode64_ex("", 0, out, 1, &outlen) < 0)
+		return printf("TB-15 failed\n");
+	if (decode64_ex("MTIz", 1, out, 4, &outlen) >= 0 &&
+	    outlen != 0)
+		return printf("TB-17 failed\n");
 
 	if (decode64_ex(cpool, arsizeof(cpool) - 1, out, arsizeof(out), &outlen) < 0)
 		return printf("TB-8 failed\n");
