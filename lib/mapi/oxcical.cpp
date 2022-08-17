@@ -1715,7 +1715,6 @@ static BOOL oxcical_parse_atx_binary(const ical_line &piline,
 	BINARY tmp_bin;
 	size_t decode_len;
 	uint8_t tmp_byte;
-	uint32_t tmp_int32;
 	uint64_t tmp_int64;
 	char tmp_buff[1024];
 	ATTACHMENT_LIST *pattachments;
@@ -1742,7 +1741,7 @@ static BOOL oxcical_parse_atx_binary(const ical_line &piline,
 	}
 	pvalue = piline.get_first_subvalue();
 	if (NULL != pvalue) {
-		tmp_int32 = strlen(pvalue);
+		uint32_t tmp_int32 = strlen(pvalue) / 4 * 3 + 1;
 		tmp_bin.pv = malloc(tmp_int32);
 		if (tmp_bin.pv == nullptr)
 			return FALSE;
@@ -1777,7 +1776,7 @@ static BOOL oxcical_parse_atx_binary(const ical_line &piline,
 	    pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, pvalue) != 0 ||
 	    pattachment->proplist.set(PR_DISPLAY_NAME, pvalue) != 0)
 		return FALSE;
-	tmp_int32 = ATTACH_BY_VALUE;
+	uint32_t tmp_int32 = ATTACH_BY_VALUE;
 	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
 		return FALSE;
 	pvalue1 = piline.get_first_paramval("FMTYPE");
