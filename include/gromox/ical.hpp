@@ -1,8 +1,8 @@
 #pragma once
 #include <ctime>
-#include <list>
 #include <memory>
 #include <string>
+#include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #define ICAL_NAME_LEN					64
@@ -21,15 +21,13 @@ enum class ical_frequency {
 #define RRULE_BY_WEEKNO					7
 #define RRULE_BY_MONTH					8
 
-using ical_svlist = std::list<std::string>;
-
 struct GX_EXPORT ical_param {
 	public:
 	ical_param(const char *n) : name(gromox::znul(n)) {}
 	void append_paramval(const char *s) { paramval_list.emplace_back(gromox::znul(s)); }
 
 	std::string name;
-	ical_svlist paramval_list;
+	std::vector<std::string> paramval_list;
 };
 using ICAL_PARAM = ical_param;
 
@@ -40,11 +38,9 @@ struct GX_EXPORT ical_value {
 	void append_subval(const char *s) { subval_list.emplace_back(gromox::znul(s)); }
 
 	std::string name;
-	ical_svlist subval_list;
+	std::vector<std::string> subval_list;
 };
 using ICAL_VALUE = ical_value;
-
-using ical_vlist = std::list<ical_value>;
 
 struct GX_EXPORT ical_line {
 	public:
@@ -57,11 +53,11 @@ struct GX_EXPORT ical_line {
 	const char *get_first_paramval(const char *name);
 	const char *get_first_subvalue();
 	const char *get_first_subvalue_by_name(const char *name);
-	const std::list<std::string> *get_subval_list(const char *name);
+	const std::vector<std::string> *get_subval_list(const char *name);
 
 	std::string m_name;
-	std::list<ical_param> param_list;
-	ical_vlist value_list;
+	std::vector<ical_param> param_list;
+	std::vector<ical_value> value_list;
 };
 using ICAL_LINE = ical_line;
 
@@ -72,8 +68,8 @@ struct GX_EXPORT ical_component {
 	std::shared_ptr<ICAL_LINE> get_line(const char *name);
 
 	std::string m_name;
-	std::list<std::shared_ptr<ICAL_LINE>> line_list;
-	std::list<std::shared_ptr<ical_component>> component_list;
+	std::vector<std::shared_ptr<ICAL_LINE>> line_list;
+	std::vector<std::shared_ptr<ical_component>> component_list;
 };
 using ICAL_COMPONENT = ical_component;
 
@@ -165,6 +161,6 @@ extern GX_EXPORT bool ical_parse_duration(const char *str_duration, long *psecon
 extern GX_EXPORT bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT>, ICAL_TIME, time_t *);
 extern GX_EXPORT bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT>, const char *datetime, time_t *);
 extern GX_EXPORT bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT>, time_t utc_time, ICAL_TIME *);
-extern GX_EXPORT bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT>, time_t start, const ical_vlist *value_list, ICAL_RRULE *);
+extern GX_EXPORT bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT>, time_t start, const std::vector<ical_value> *, ICAL_RRULE *);
 extern GX_EXPORT int weekday_to_int(const char *);
 extern GX_EXPORT const char *weekday_to_str(unsigned int);
