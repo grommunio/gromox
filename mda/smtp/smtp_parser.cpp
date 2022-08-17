@@ -243,7 +243,9 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			pcontext->session_num ++;
 			/* 250 Ok <flush ID> */
 			auto smtp_reply_str = resource_get_smtp_code(205, 1, &string_length);
-			string_length -= 2;
+			if (string_length >= 2 && smtp_reply_str[string_length-2] == '\r' &&
+			    smtp_reply_str[string_length-1] == '\n')
+				string_length -= 2;
 
 			memcpy(reply_buf, smtp_reply_str, string_length);
 			string_length += sprintf(reply_buf + string_length, 
