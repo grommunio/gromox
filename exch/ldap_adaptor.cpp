@@ -67,13 +67,50 @@ static constexpr cfg_directive ldap_adaptor_cfg_defaults[] = {
  */
 static bool validate_response(LDAP *ld, LDAPMessage *result)
 {
-	auto msg = ldap_first_message(ld, result);
-	if (msg == nullptr || ldap_msgtype(msg) != LDAP_RES_SEARCH_ENTRY)
+	if (result == nullptr) {
+		fprintf(stderr, "[ldap_adaptor]: ldap_search yielded success, but result is null?!\n");
 		return false;
-	while ((msg = ldap_next_message(ld, msg)) != nullptr)
-		if (ldap_msgtype(msg) != LDAP_RES_SEARCH_RESULT &&
-		    ldap_msgtype(msg) != LDAP_RES_SEARCH_REFERENCE)
+	}
+	auto count = ldap_count_messages(ld, result);
+	if (count == 0) {
+		fprintf(stderr, "[ldap_adaptor]: result set has 0 messages\n");
+		return false;
+	}
+	auto msg = ldap_first_message(ld, result);
+	if (msg == nullptr) {
+		fprintf(stderr, "[ldap_adaptor]: ldap_search result set has no first message\n");
+		return false;
+	} else if (ldap_msgtype(msg) != LDAP_RES_SEARCH_ENTRY) {
+		fprintf(stderr, "[ldap_adaptor]: ldap_search: result set's 1st message is not a "
+		        "LDAP_RES_SEARCH_ENTRY (%d) but %d\n",
+		        static_cast<int>(LDAP_RES_SEARCH_ENTRY), ldap_msgtype(msg));
+		return false;
+	}
+	int i = 0;
+	while ((msg = ldap_next_message(ld, msg)) != nullptr) {
+		auto mtype = ldap_msgtype(msg);
+		switch (mtype) {
+		case LDAP_RES_SEARCH_REFERENCE:
+			/* ignore referrals */
+			continue;
+		case LDAP_RES_SEARCH_RESULT:
+			/*
+			 * this is the part that appears in ldapsearch(1) as
+			 * # search result
+			 * search: 2
+			 * result: 0 Success
+			 */
+			continue;
+		case LDAP_RES_SEARCH_ENTRY:
+			fprintf(stderr, "[ldap_adaptor]: ldap_search yielded ambiguous result "
+			        "(msg %d/%d is also LDAP_RES_SEARCH_ENTRY)\n", i, count);
 			return false;
+		default:
+			fprintf(stderr, "[ldap_adaptor]: ldap_search yielded a result with "
+			        "msg %d/%d of unexpected type %d\n", i, count, mtype);
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -175,7 +212,6 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 		return FALSE;
 	}
 	if (!validate_response(tok->meta.get(), msg.get())) {
-		fprintf(stderr, "[ldap_adaptor]: filter %s was ambiguous\n", filter.c_str());
 		return FALSE;
 	}
 
