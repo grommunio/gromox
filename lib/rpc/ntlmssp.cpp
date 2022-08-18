@@ -302,9 +302,9 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	uint8_t *b;
 	va_list ap;
 	uint32_t length;
-	int intargs[64];
-	uint8_t buffs[64][1024];
-	DATA_BLOB blobs[64];
+	int intargs[64]{};
+	uint8_t buffs[64][1024]{};
+	DATA_BLOB blobs[64]{};
 	int head_ofs, data_ofs;
 	int head_size, data_size;
 	
