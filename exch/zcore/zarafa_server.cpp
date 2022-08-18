@@ -252,19 +252,19 @@ static void *zcorezs_scanwork(void *param)
 			std::list<sink_node> holder;
 			holder.splice(holder.end(), expired_list, expired_list.begin());
 			auto psink_node = &holder.front();
-			if (rpc_ext_push_response(&response, &tmp_bin)) {
-				tv_msec = SOCKET_TIMEOUT * 1000;
-				fdpoll.fd = psink_node->clifd;
-				fdpoll.events = POLLOUT|POLLWRBAND;
-				if (1 == poll(&fdpoll, 1, tv_msec)) {
-					write(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
-				}
-				free(tmp_bin.pb);
-				shutdown(psink_node->clifd, SHUT_WR);
-				if (read(psink_node->clifd, &tmp_byte, 1))
-					/* ignore */;
+			/* implied ~sink_node at end of scope */
+			if (!rpc_ext_push_response(&response, &tmp_bin))
+				continue;
+			tv_msec = SOCKET_TIMEOUT * 1000;
+			fdpoll.fd = psink_node->clifd;
+			fdpoll.events = POLLOUT|POLLWRBAND;
+			if (1 == poll(&fdpoll, 1, tv_msec)) {
+				write(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
 			}
-			/* implied ~sink_node */
+			free(tmp_bin.pb);
+			shutdown(psink_node->clifd, SHUT_WR);
+			if (read(psink_node->clifd, &tmp_byte, 1))
+				/* ignore */;
 		}
 		if (0 != count) {
 			continue;
