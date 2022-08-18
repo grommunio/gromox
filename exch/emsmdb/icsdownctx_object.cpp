@@ -1025,16 +1025,16 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	if (!b_downloaded || progmsg.b_fai) {
 		b_full = TRUE;
 	} else {
+		/* Downloaded && Normal message */
 		if (!exmdb_client_get_message_group_id(pctx->pstream->plogon->get_dir(),
 		    message_id, &pgroup_id))
 			return FALSE;
 		if (!(pctx->send_options & SEND_OPTIONS_PARTIAL) ||
-		    progmsg.b_fai || pgroup_id == nullptr ||
+		    pgroup_id == nullptr ||
 		    *ppartial_count > MAX_PARTIAL_ON_ROP) {
 			b_full = TRUE;
 		} else {
-			auto &ps = progmsg.b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen;
-			if (!ps->get_repl_first_max(1, &last_cn))
+			if (!pctx->pstate->pseen->get_repl_first_max(1, &last_cn))
 				return false;
 			if (!exmdb_client_get_change_indices(pctx->pstream->plogon->get_dir(),
 			    message_id, last_cn, &indices, &proptags))
