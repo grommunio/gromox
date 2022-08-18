@@ -1767,7 +1767,7 @@ timesub(const time_t *timep, int_fast32_t offset,
 	}
 
 	if (!TYPE_SIGNED(time_t) && y < TM_YEAR_BASE) {
-	  int signed_y = y;
+	  std::make_signed<time_t>::type signed_y = y;
 	  tmp->tm_year = signed_y - TM_YEAR_BASE;
 	} else if ((!TYPE_SIGNED(time_t) || INT_MIN + TM_YEAR_BASE <= y)
 		   && y - TM_YEAR_BASE <= INT_MAX)
