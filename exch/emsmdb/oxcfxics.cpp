@@ -1418,7 +1418,7 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			if (tmp_guid != tmp_xid.guid) {
 				fprintf(stderr, "W-2152: importdeletes expected store %s but got store+XID %s\n",
 				        bin2hex(&tmp_guid, sizeof(tmp_guid)).c_str(),
-				        bin2hex(&tmp_xid, sizeof(tmp_xid)).c_str());
+				        bin2hex(&tmp_xid, tmp_xid.size).c_str());
 				return ecInvalidParam;
 			}
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
@@ -1427,7 +1427,7 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			if (tmp_guid != tmp_xid.guid) {
 				fprintf(stderr, "W-2153: importdeletes expected store %s but got store+XID %s\n",
 				        bin2hex(&tmp_guid, sizeof(tmp_guid)).c_str(),
-				        bin2hex(&tmp_xid, sizeof(tmp_xid)).c_str());
+				        bin2hex(&tmp_xid, tmp_xid.size).c_str());
 				return ecInvalidParam;
 			}
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
