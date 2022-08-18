@@ -14,8 +14,9 @@ struct LOGON_PMB_RESPONSE {
 	uint64_t folder_ids[13];
 	uint8_t response_flags;
 	GUID mailbox_guid;
-	uint16_t replica_id;
-	GUID replica_guid;
+	/* replguid: something for distributed server-side replication of PMBs */
+	uint16_t replid;
+	GUID replguid;
 	LOGON_TIME logon_time;
 	uint64_t gwart_time;
 	uint32_t store_stat;
@@ -24,8 +25,8 @@ struct LOGON_PMB_RESPONSE {
 struct LOGON_PF_RESPONSE {
 	uint8_t logon_flags;
 	uint64_t folder_ids[13];
-	uint16_t replica_id;
-	GUID replica_guid;
+	uint16_t replid;
+	GUID replguid;
 	GUID per_user_guid;
 };
 
@@ -1001,7 +1002,7 @@ struct GETLOCALREPLICAIDS_REQUEST {
 };
 
 struct GETLOCALREPLICAIDS_RESPONSE {
-	GUID guid;
+	GUID replguid;
 	GLOBCNT global_count;
 };
 

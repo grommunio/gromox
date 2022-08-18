@@ -14,8 +14,8 @@ using namespace gromox;
 
 uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
     uint32_t store_stat, char *pessdn, size_t dnmax, uint64_t *pfolder_id,
-    uint8_t *presponse_flags, GUID *pmailbox_guid, uint16_t *preplica_id,
-    GUID *preplica_guid, LOGON_TIME *plogon_time, uint64_t *pgwart_time,
+    uint8_t *presponse_flags, GUID *pmailbox_guid, uint16_t *replid,
+    GUID *replguid, LOGON_TIME *plogon_time, uint64_t *pgwart_time,
     uint32_t *pstore_stat, LOGMAP *plogmap, uint8_t logon_id, uint32_t *phout)
 {
 	int user_id;
@@ -102,9 +102,9 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[11] = rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS);
 	pfolder_id[12] = rop_util_make_eid_ex(1, PRIVATE_FID_SHORTCUTS);
 	
-	*preplica_id = 0xFFFF;
-	*preplica_guid = gx_replguid_store_private;
-	preplica_guid->time_low = user_id;
+	*replid = 0xFFFF;
+	*replguid = gx_replguid_store_private;
+	replguid->time_low = user_id;
 	
 	time(&cur_time);
 	ptm = gmtime_r(&cur_time, &tmp_tm);
@@ -134,7 +134,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	
 uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
     uint32_t store_stat, char *pessdn, uint64_t *pfolder_id,
-    uint16_t *preplica_id, GUID *preplica_guid, GUID *pper_user_guid,
+    uint16_t *replid, GUID *replguid, GUID *pper_user_guid,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t *phout)
 {
 	int org_id;
@@ -193,9 +193,9 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[11] = 0;
 	pfolder_id[12] = 0;
 	
-	*preplica_id = 0xFFFF;
-	*preplica_guid = gx_replguid_store_public;
-	preplica_guid->time_low = domain_id;
+	*replid = 0xFFFF;
+	*replguid = gx_replguid_store_public;
+	replguid->time_low = domain_id;
 	memset(pper_user_guid, 0, sizeof(GUID));
 	
 	if (!exmdb_client_get_store_property(homedir, 0, PR_STORE_RECORD_KEY, &pvalue))

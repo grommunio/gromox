@@ -62,7 +62,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 				rq->open_flags, rq->store_stat,
 				rdr->pserver_name, GX_ARRAY_SIZE(rdr->pserver_name), pmb->folder_ids,
 				&pmb->response_flags, &pmb->mailbox_guid,
-				&pmb->replica_id, &pmb->replica_guid,
+				&pmb->replid, &pmb->replguid,
 				&pmb->logon_time, &pmb->gwart_time,
 				&pmb->store_stat,
 				pemsmdb_info->plogmap.get(), prequest->logon_id, &phandles[prequest->hindex]);
@@ -75,7 +75,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			(*ppresponse)->result = rop_logon_pf(rq->logon_flags,
 				rq->open_flags, rq->store_stat,
 				rdr->pserver_name, pfr->folder_ids,
-				&pfr->replica_id, &pfr->replica_guid,
+				&pfr->replid, &pfr->replguid,
 				&pfr->per_user_guid,
 				pemsmdb_info->plogmap.get(), prequest->logon_id, &phandles[prequest->hindex]);
 		}
@@ -1568,7 +1568,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			return ecServerOOM;
 		auto rq = static_cast<GETLOCALREPLICAIDS_REQUEST *>(prequest->ppayload);
 		(*ppresponse)->result = rop_getlocalreplicaids(
-			rq->count, &rsp->guid, &rsp->global_count,
+			rq->count, &rsp->replguid, &rsp->global_count,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
