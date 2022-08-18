@@ -108,11 +108,8 @@ BOOL icsupctx_object::end_state_stream()
 	if (!pset->deserialize(&tmp_bin)) {
 		return FALSE;
 	}
-	tmp_bin.cb = sizeof(void*);
-	tmp_bin.pv = &pctx->plogon;
-	if (!pset->register_mapping(&tmp_bin, common_util_mapping_replica)) {
+	if (!pset->register_mapping(pctx->plogon, common_util_mapping_replica))
 		return FALSE;
-	}
 	if (!pset->convert()) {
 		return FALSE;
 	}

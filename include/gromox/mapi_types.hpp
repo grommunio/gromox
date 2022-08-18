@@ -767,10 +767,9 @@ struct repl_node {
 class idset {
 	public:
 	idset(bool serialize, uint8_t type);
-	~idset();
 	static std::unique_ptr<idset> create(bool serialize, uint8_t type);
 
-	BOOL register_mapping(BINARY *, REPLICA_MAPPING);
+	BOOL register_mapping(void *logon_obj, REPLICA_MAPPING);
 	void clear() { repl_list.clear(); }
 	bool empty() const { return repl_list.empty(); }
 	BOOL append(uint64_t eid);
