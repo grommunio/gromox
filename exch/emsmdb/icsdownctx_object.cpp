@@ -1414,9 +1414,7 @@ BOOL icsdownctx_object::end_state_stream()
 	pctx->state_property = 0;
 	if (!pset->deserialize(&tmp_bin))
 		return FALSE;
-	tmp_bin.cb = sizeof(void*);
-	tmp_bin.pv = &pctx->pstream->plogon;
-	if (!pset->register_mapping(&tmp_bin, common_util_mapping_replica))
+	if (!pset->register_mapping(pctx->pstream->plogon, common_util_mapping_replica))
 		return FALSE;
 	if (!pset->convert())
 		return FALSE;

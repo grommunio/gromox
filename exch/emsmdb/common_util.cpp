@@ -748,7 +748,7 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 	void *pparam, uint16_t *preplid, GUID *pguid)
 {
 	BOOL b_found;
-	auto plogon = *static_cast<logon_object **>(pparam);
+	auto plogon = static_cast<logon_object *>(pparam);
 
 	if (to_guid) {
 		if (plogon->is_private()) {

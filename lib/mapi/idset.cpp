@@ -37,30 +37,16 @@ std::unique_ptr<idset> idset::create(bool ser, uint8_t type) try
 	return nullptr;
 }
 
-BOOL idset::register_mapping(BINARY *p, REPLICA_MAPPING m)
+BOOL idset::register_mapping(void *p, REPLICA_MAPPING m)
 {
 	auto pset = this;
 	if (pset->pparam != nullptr || pset->mapping != nullptr)
 		return FALSE;
-	if (p == nullptr) {
-		pset->pparam = NULL;
-	} else if (p->cb == 0) {
-		pset->pparam = NULL;
-	} else {
-		pset->pparam = malloc(p->cb);
-		if (pset->pparam == nullptr)
-			return FALSE;
-		memcpy(pset->pparam, p->pb, p->cb);
-	}
+	if (p == nullptr)
+		return false;
+	pset->pparam = p;
 	pset->mapping = m;
 	return TRUE;
-}
-
-idset::~idset()
-{
-	auto pset = this;
-	if (pset->pparam != nullptr)
-		free(pset->pparam);
 }
 
 BOOL idset::append_internal(uint16_t replid, uint64_t value) try
@@ -657,7 +643,8 @@ std::pair<bool, std::vector<range_node> *> idset::get_range_by_id(uint16_t repli
 		return {false, nullptr};
 	for (auto &replguid_node : set.repl_list) {
 		uint16_t tmp_replid;
-		if (!set.mapping(false, set.pparam, &tmp_replid, &replguid_node.replguid))
+		if (!set.mapping(false, set.pparam,
+		    &tmp_replid, &replguid_node.replguid))
 			return {false, nullptr};
 		if (tmp_replid == replid)
 			return {true, &replguid_node.range_list};
