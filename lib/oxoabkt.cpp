@@ -122,7 +122,9 @@ static void abkt_read_row(lb_reader &bin, Json::Value &jrow,
 			text = bin.preadustr(ulString);
 		} else {
 			text = bin.preadstr(ulString);
-			text = iconvtext(text.data(), text.size(), cpid_to_cset(cpid), "UTF-8");
+			auto cset = cpid_to_cset(cpid);
+			if (cset != nullptr)
+				text = iconvtext(text.data(), text.size(), cset, "UTF-8");
 		}
 	}
 	if (cttype_uses_label(ct_type))
@@ -177,7 +179,9 @@ static void abkt_write_row(Json::Value &jrow, abktaux &aux, lb_writer &bin, unsi
 	std::string text = jrow[field].asString();
 	bin.w4(aux.offset);
 	if (cpid != 0) {
-		text = iconvtext(text.data(), text.size(), "UTF-8", cpid_to_cset(cpid));
+		auto cset = cpid_to_cset(cpid);
+		if (cset != nullptr)
+			text = iconvtext(text.data(), text.size(), "UTF-8", cset);
 		aux.offset += text.size() + 1;
 		aux.data += std::move(text);
 		aux.data += '\0';
