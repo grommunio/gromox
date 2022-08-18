@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Public-Domain
-// From tzdata 2022a localtime.c
+// Source-Locator: https://github.com/eggert/tz 2022c-1-gaca1a705
 #include <algorithm>
 #include <cerrno>
 #include <cfloat>
