@@ -5,8 +5,8 @@
 
 struct LOGMAP;
 
-extern uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags, uint32_t store_stat, char *essdn, size_t dnmax, uint64_t *folder_id, uint8_t *response_flags, GUID *mailbox_guid, uint16_t *replica_id, GUID *preplica_guid, LOGON_TIME *logon_time, uint64_t *pgwart_time, uint32_t *store_stat_out, LOGMAP *, uint8_t logon_id, uint32_t *hout);
-extern uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags, uint32_t store_stat, char *essdn, uint64_t *folder_id, uint16_t *replica_id, GUID *replica_guid, GUID *per_user_guid, LOGMAP *, uint8_t logon_id, uint32_t *hout);
+extern uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags, uint32_t store_stat, char *essdn, size_t dnmax, uint64_t *folder_id, uint8_t *response_flags, GUID *mailbox_guid, uint16_t *replid, GUID *replguid, LOGON_TIME *logon_time, uint64_t *pgwart_time, uint32_t *store_stat_out, LOGMAP *, uint8_t logon_id, uint32_t *hout);
+extern uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags, uint32_t store_stat, char *essdn, uint64_t *folder_id, uint16_t *replid, GUID *replguid, GUID *per_user_guid, LOGMAP *, uint8_t logon_id, uint32_t *hout);
 extern uint32_t rop_getreceivefolder(const char *str_class, uint64_t *folder_id, char **str_explicit, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_setreceivefolder(uint64_t folder_id, const char *str_class, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_getreceivefoldertable(PROPROW_SET *, LOGMAP *, uint8_t logon_id, uint32_t hin);

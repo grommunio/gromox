@@ -109,8 +109,8 @@ static int rop_ext_push_logon_pmb_response(
 		TRY(pext->p_uint64(r->folder_ids[i]));
 	TRY(pext->p_uint8(r->response_flags));
 	TRY(pext->p_guid(r->mailbox_guid));
-	TRY(pext->p_uint16(r->replica_id));
-	TRY(pext->p_guid(r->replica_guid));
+	TRY(pext->p_uint16(r->replid));
+	TRY(pext->p_guid(r->replguid));
 	TRY(rop_ext_push_logon_time(pext, &r->logon_time));
 	TRY(pext->p_uint64(r->gwart_time));
 	return pext->p_uint32(r->store_stat);
@@ -122,8 +122,8 @@ static int rop_ext_push_logon_pf_response(
 	TRY(pext->p_uint8(r->logon_flags));
 	for (size_t i = 0; i < 13; ++i)
 		TRY(pext->p_uint64(r->folder_ids[i]));
-	TRY(pext->p_uint16(r->replica_id));
-	TRY(pext->p_guid(r->replica_guid));
+	TRY(pext->p_uint16(r->replid));
+	TRY(pext->p_guid(r->replguid));
 	return pext->p_guid(r->per_user_guid);
 }
 
@@ -1795,7 +1795,7 @@ static int rop_ext_pull_getlocalreplicaids_request(
 static int rop_ext_push_getlocalreplicaids_response(
 	EXT_PUSH *pext, const GETLOCALREPLICAIDS_RESPONSE *r)
 {
-	TRY(pext->p_guid(r->guid));
+	TRY(pext->p_guid(r->replguid));
 	return pext->p_bytes(r->global_count.ab, 6);
 }
 

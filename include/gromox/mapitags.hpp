@@ -794,7 +794,8 @@ enum {
 	// PR_PST_HIDDEN_COUNT = PROP_TAG(PT_LONG, 0x6635), /* PidTagPstHiddenCount */
 	// PR_PROFILE_OAB_COUNT_ATTEMPTED_INCRDN = PROP_TAG(PT_LONG, 0x6636), /* PidTagProfileOabCountAttemptedIncrdn */
 	// PR_PST_HIDDEN_UNREAD = PROP_TAG(PT_LONG, 0x6636), /* PidTagPstHiddenUnread */
-	PR_FOLDER_CHILD_COUNT = PROP_TAG(PT_LONG, 0x6638), /* PidTagSerializedReplidGuidMap */
+	PR_FOLDER_CHILD_COUNT = PROP_TAG(PT_LONG, 0x6638),
+	PidTagSerializedReplidGuidMap = PROP_TAG(PT_BINARY, 0x6638),
 	PR_RIGHTS = PROP_TAG(PT_LONG, 0x6639), /* PidTagRights */
 	PR_HAS_RULES = PROP_TAG(PT_BOOLEAN, 0x663A), /* PidTagHasRules */
 	PR_ADDRESS_BOOK_ENTRYID = PROP_TAG(PT_BINARY, 0x663B), /* PidTagAddressBookEntryId */
