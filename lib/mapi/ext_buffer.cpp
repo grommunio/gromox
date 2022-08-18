@@ -1161,7 +1161,9 @@ int EXT_PULL::g_xid(uint8_t size, XID *pxid)
 	if (size < 17 || size > 24)
 		return EXT_ERR_FORMAT;
 	TRY(g_guid(&pxid->guid));
-	return g_bytes(pxid->local_id, size - 16);
+	TRY(g_bytes(pxid->local_id, size - 16));
+	pxid->size = size;
+	return EXT_ERR_SUCCESS;
 }
 
 int EXT_PULL::g_folder_eid(FOLDER_ENTRYID *r)
