@@ -25,6 +25,18 @@ const FLATUID g_muidStorePrivate =
 	/* {20fa551b-66aa-cd11-9bc8-00aa002fc45a} */
 	{0x1B, 0x55, 0xFA, 0x20, 0xAA, 0x66, 0x11, 0xCD,
 	0x9B, 0xC8, 0x00, 0xAA, 0x00, 0x2F, 0xC4, 0x5A};
+const GUID gx_dbguid_store_private =
+	/* {XXXXXXXX-18a5-6f7b-bcdc-ea1ed03c5657} */
+	{0, 0x18a5, 0x6f7b, {0xbc, 0xdc}, {0xea, 0x1e, 0xd0, 0x3c, 0x56, 0x57}};
+const GUID gx_dbguid_store_public =
+	/* {XXXXXXXX-0afb-7df6-9192-49886aa738ce} */
+	{0, 0x0afb, 0x7df6, {0x91, 0x92}, {0x49, 0x88, 0x6a, 0xa7, 0x38, 0xce}};
+const GUID gx_replguid_store_private =
+	/* {XXXXXXXX-7f26-edf8-b32a-ce7a6da2e3b5} */
+	{0, 0x7f26, 0xedf8, {0xb3, 0x2a}, {0xce, 0x7a, 0x6d, 0xa2, 0xe3, 0xb5}};
+const GUID gx_replguid_store_public =
+	/* {XXXXXXXX-e361-8fde-a23c-c4f67e1d2fc6} */
+	{0, 0xe361, 0x8fde, {0xa2, 0x3c}, {0xc4, 0xf6, 0x7e, 0x1d, 0x2f, 0xc6}};
 const FLATUID g_muidStorePublic =
 	/* {1002831c-66aa-cd11-9bc8-00aa002fc45a} */
 	{0x1C, 0x83, 0x02, 0x10, 0xAA, 0x66, 0x11, 0xCD,
@@ -254,6 +266,19 @@ bool GUID::from_str(const char *s)
 	return true;
 }
 
+/**
+ * Compare, from offset 4, 12 bytes.
+ */
+int GUID::compare_4_12(const GUID &o) const
+{
+	if (time_mid != o.time_mid)
+		return time_mid > o.time_mid ? 1 : -1;
+	if (time_hi_and_version != o.time_hi_and_version)
+		return time_hi_and_version > o.time_hi_and_version ? 1 : -1;
+	auto r = memcmp(clock_seq, o.clock_seq, arsizeof(clock_seq));
+	return r != 0 ? r : memcmp(node, o.node, arsizeof(node));
+}
+
 int GUID::compare(const GUID &o) const
 {
 	/*
@@ -263,10 +288,5 @@ int GUID::compare(const GUID &o) const
 	 */
 	if (time_low != o.time_low)
 		return time_low > o.time_low ? 1 : -1;
-	if (time_mid != o.time_mid)
-		return time_mid > o.time_mid ? 1 : -1;
-	if (time_hi_and_version != o.time_hi_and_version)
-		return time_hi_and_version > o.time_hi_and_version ? 1 : -1;
-	auto r = memcmp(clock_seq, o.clock_seq, arsizeof(clock_seq));
-	return r != 0 ? r : memcmp(node, o.node, arsizeof(node));
+	return compare_4_12(o);
 }

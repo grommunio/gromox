@@ -103,18 +103,8 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[12] = rop_util_make_eid_ex(1, PRIVATE_FID_SHORTCUTS);
 	
 	*preplica_id = 0xFFFF;
-	/* {XXXXXXXX-7f26-edf8-b32a-ce7a6da2e3b5} */
+	*preplica_guid = gx_replguid_store_private;
 	preplica_guid->time_low = user_id;
-	preplica_guid->time_mid = 0x7f26;
-	preplica_guid->time_hi_and_version = 0xedf8;
-	preplica_guid->clock_seq[0] = 0xb3;
-	preplica_guid->clock_seq[1] = 0x2a;
-	preplica_guid->node[0] = 0xce;
-	preplica_guid->node[1] = 0x7a;
-	preplica_guid->node[2] = 0x6d;
-	preplica_guid->node[3] = 0xa2;
-	preplica_guid->node[4] = 0xe3;
-	preplica_guid->node[5] = 0xb5;
 	
 	time(&cur_time);
 	ptm = gmtime_r(&cur_time, &tmp_tm);
@@ -204,18 +194,8 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[12] = 0;
 	
 	*preplica_id = 0xFFFF;
-	/* {XXXXXXXX-e361-8fde-a23c-c4f67e1d2fc6} */
+	*preplica_guid = gx_replguid_store_public;
 	preplica_guid->time_low = domain_id;
-	preplica_guid->time_mid = 0xe361;
-	preplica_guid->time_hi_and_version = 0x8fde;
-	preplica_guid->clock_seq[0] = 0xa2;
-	preplica_guid->clock_seq[1] = 0x3c;
-	preplica_guid->node[0] = 0xc4;
-	preplica_guid->node[1] = 0xf6;
-	preplica_guid->node[2] = 0x7e;
-	preplica_guid->node[3] = 0x1d;
-	preplica_guid->node[4] = 0x2f;
-	preplica_guid->node[5] = 0xc6;
 	memset(pper_user_guid, 0, sizeof(GUID));
 	
 	if (!exmdb_client_get_store_property(homedir, 0, PR_STORE_RECORD_KEY, &pvalue))

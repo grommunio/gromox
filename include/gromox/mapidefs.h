@@ -815,6 +815,7 @@ struct GLOBCNT {
 struct GUID {
 	void to_str(char *, size_t, unsigned int type = 36) const;
 	bool from_str(const char *);
+	int compare_4_12(const GUID &) const;
 	int compare(const GUID &) const;
 	static GUID random_new();
 	static const GUID &machine_id();
@@ -1260,5 +1261,7 @@ extern const GUID
 	PSETID_NOTE, PSETID_POSTRSS, PSETID_REMOTE, PSETID_REPORT,
 	PSETID_SHARING, PSETID_TASK, PSETID_UNIFIEDMESSAGING,
 	PSETID_XMLEXTRACTEDENTITIES, PS_INTERNET_HEADERS, PS_MAPI,
-	PS_PUBLIC_STRINGS;
+	PS_PUBLIC_STRINGS,
+	gx_dbguid_store_private, gx_dbguid_store_public,
+	gx_replguid_store_private, gx_replguid_store_public;
 extern const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];
