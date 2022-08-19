@@ -141,80 +141,26 @@ eid_t rop_util_nfid_to_eid2(uint64_t id)
 
 GUID rop_util_make_user_guid(int user_id)
 {
-	/*
-	 * {XXXXXXXX-18a5-6f7b-bcdc-ea1ed03c5657} Database GUID (within
-	 * Exchange entryids) for Gromox private stores.
-	 */
-	GUID guid;
-	
+	auto guid = gx_dbguid_store_private;
 	guid.time_low = user_id;
-	guid.time_mid = 0x18a5;
-	guid.time_hi_and_version = 0x6f7b;
-	guid.clock_seq[0] = 0xbc;
-	guid.clock_seq[1] = 0xdc;
-	guid.node[0] = 0xea;
-	guid.node[1] = 0x1e;
-	guid.node[2] = 0xd0;
-	guid.node[3] = 0x3c;
-	guid.node[4] = 0x56;
-	guid.node[5] = 0x57;
 	return guid;
 }
 
 GUID rop_util_make_domain_guid(int domain_id)
 {
-	/*
-	 * {XXXXXXXX-0afb-7df6-9192-49886aa738ce}: Database GUID
-	 * for Gromox public stores.
-	 */
-	GUID guid;
-	
+	auto guid = gx_dbguid_store_public;
 	guid.time_low = domain_id;
-	guid.time_mid = 0x0afb;
-	guid.time_hi_and_version = 0x7df6;
-	guid.clock_seq[0] = 0x91;
-	guid.clock_seq[1] = 0x92;
-	guid.node[0] = 0x49;
-	guid.node[1] = 0x88;
-	guid.node[2] = 0x6a;
-	guid.node[3] = 0xa7;
-	guid.node[4] = 0x38;
-	guid.node[5] = 0xce;
 	return guid;
 }
 
 int rop_util_get_user_id(GUID guid)
 {
-	if (guid.time_mid != 0x18a5 ||
-		guid.time_hi_and_version != 0x6f7b ||
-		guid.clock_seq[0] != 0xbc ||
-		guid.clock_seq[1] != 0xdc ||
-		guid.node[0] != 0xea ||
-		guid.node[1] != 0x1e ||
-		guid.node[2] != 0xd0 ||
-		guid.node[3] != 0x3c ||
-		guid.node[4] != 0x56 ||
-		guid.node[5] != 0x57) {
-		return -1;
-	}
-	return guid.time_low;
+	return guid.compare_4_12(gx_dbguid_store_private) == 0 ? guid.time_low : -1;
 }
 
 int rop_util_get_domain_id(GUID guid)
 {
-	if (guid.time_mid != 0x0afb ||
-		guid.time_hi_and_version != 0x7df6 ||
-		guid.clock_seq[0] != 0x91 ||
-		guid.clock_seq[1] != 0x92 ||
-		guid.node[0] != 0x49 ||
-		guid.node[1] != 0x88 ||
-		guid.node[2] != 0x6a ||
-		guid.node[3] != 0xa7 ||
-		guid.node[4] != 0x38 ||
-		guid.node[5] != 0xce) {
-		return -1;
-	}
-	return guid.time_low;
+	return guid.compare_4_12(gx_dbguid_store_public) == 0 ? guid.time_low : -1;
 }
 
 uint64_t rop_util_unix_to_nttime(time_t unix_time)
