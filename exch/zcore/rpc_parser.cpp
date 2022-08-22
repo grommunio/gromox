@@ -211,6 +211,7 @@ static void *zcrp_thrwork(void *param)
 		/* ignore */;
 	close(clifd);
 	free(tmp_bin.pb);
+	tmp_bin.pb = nullptr;
 	goto NEXT_CLIFD;
 }
 
