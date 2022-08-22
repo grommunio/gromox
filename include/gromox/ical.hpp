@@ -46,6 +46,8 @@ using ICAL_VALUE = ical_value;
 
 struct GX_EXPORT ical_line {
 	public:
+	ical_line(const char *n) : m_name(n) {}
+	ical_line(const char *n, const char *v);
 	ical_param &append_param(ical_param &&o) { param_list.push_back(std::move(o)); return param_list.back(); }
 	void append_param(const char *v, const char *pv);
 	ical_value &append_value(ical_value &&o) { value_list.push_back(std::move(o)); return value_list.back(); }
@@ -67,11 +69,13 @@ struct GX_EXPORT ical_component {
 	public:
 	ical_component(const char *n) : m_name(n) {}
 	ical_component &append_comp(const char *n) { return component_list.emplace_back(n); }
-	int append_line(std::shared_ptr<ICAL_LINE>);
+	ical_line &append_line(ical_line &&o) { return line_list.emplace_back(std::move(o)); }
+	ical_line &append_line(const char *n) { return line_list.emplace_back(n); }
+	ical_line &append_line(const char *n, const char *v) { return line_list.emplace_back(n, v); }
 	const ical_line *get_line(const char *name) const;
 
 	std::string m_name;
-	std::vector<std::shared_ptr<ICAL_LINE>> line_list;
+	std::vector<ical_line> line_list;
 	/* Be wary of iterator/pointer invalidation */
 	std::list<ical_component> component_list;
 };
@@ -145,8 +149,6 @@ struct GX_EXPORT ical_rrule {
 };
 using ICAL_RRULE = ical_rrule;
 
-extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_line(const char *name);
-extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *value);
 extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
 extern GX_EXPORT bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday);
 extern GX_EXPORT bool ical_parse_datetime(const char *str_datetime, bool *pb_utc, ICAL_TIME *pitime);

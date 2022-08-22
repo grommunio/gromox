@@ -234,27 +234,26 @@ static bool empty_line(const char *pline)
 	return true;
 }
 
-static std::optional<ical_param> ical_retrieve_param(char *ptag)
+static ical_param ical_retrieve_param(char *ptag)
 {
 	char *ptr;
 	char *pnext;
 	
 	ptr = strchr(ptag, '=');
-	if (NULL == ptr) {
-		return {};
-	}
-	*ptr = '\0';
-	ptr ++;
-	std::optional<ical_param> piparam;
-	piparam.emplace(ptag);
+	if (ptr != nullptr)
+		*ptr = '\0';
+	ical_param piparam(ptag);
+	if (ptr == nullptr)
+		return piparam;
+	++ptr;
 	do {
 		pnext = ical_get_tag_comma(ptr);
-		piparam->append_paramval(ptr);
+		piparam.append_paramval(ptr);
 	} while ((ptr = pnext) != NULL);
 	return piparam;
 }
 
-static std::shared_ptr<ICAL_LINE> ical_retrieve_tag(char *ptag) try
+static ical_line ical_retrieve_tag(char *ptag)
 {
 	char *ptr;
 	char *pnext;
@@ -263,25 +262,16 @@ static std::shared_ptr<ICAL_LINE> ical_retrieve_tag(char *ptag) try
 	if (NULL != ptr) {
 		*ptr = '\0';
 	}
-	auto piline = ical_new_line(ptag);
-	if (NULL == piline) {
-		return NULL;
-	}
+	ical_line piline(ptag);
 	if (NULL == ptr) {
 		return piline;
 	}
 	ptr ++;
 	do {
 		pnext = ical_get_tag_semicolon(ptr);
-		auto op = ical_retrieve_param(ptr);
-		if (!op.has_value())
-			return nullptr;
-		piline->append_param(std::move(*op));
+		piline.append_param(ical_retrieve_param(ptr));
 	} while ((ptr = pnext) != NULL);
 	return piline;
-} catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2101: ENOMEM\n");
-	return nullptr;
 }
 
 static bool ical_check_base64(ICAL_LINE *piline)
@@ -351,7 +341,7 @@ static void ical_unescape_string(char *pstring)
 	}
 }
 
-static inline bool r1something(const char *s)
+static inline bool ical_std_keyword(const char *s)
 {
 	return strcasecmp(s, "ATTACH") == 0 || strcasecmp(s, "COMMENT") == 0 ||
 	       strcasecmp(s, "DESCRIPTION") == 0 || strcasecmp(s, "X-ALT-DESC") == 0 ||
@@ -369,7 +359,6 @@ static bool ical_retrieve_component(ical_component &comp,
 	char *pline;
 	char *pnext;
 	size_t length;
-	std::shared_ptr<ICAL_LINE> piline;
 	LINE_ITEM tmp_item;
 	
 	ical_clear_component(pcomponent);
@@ -399,21 +388,15 @@ static bool ical_retrieve_component(ical_component &comp,
 			}
 			return true;
 		}
-		piline = ical_retrieve_tag(tmp_item.ptag);
-		if (NULL == piline) {
+		auto piline = &pcomponent->append_line(ical_retrieve_tag(tmp_item.ptag));
+		if (tmp_item.pvalue == nullptr)
+			continue;
+		if (ical_std_keyword(piline->m_name.c_str())) {
+			auto &pivalue = piline->append_value();
+			ical_unescape_string(tmp_item.pvalue);
+			pivalue.append_subval(tmp_item.pvalue);
+		} else if (!ical_retrieve_value(piline, tmp_item.pvalue)) {
 			break;
-		}
-		if (pcomponent->append_line(piline) < 0)
-			break;
-
-		if (NULL != tmp_item.pvalue) {
-			if (r1something(piline->m_name.c_str())) {
-				auto &pivalue = piline->append_value();
-				ical_unescape_string(tmp_item.pvalue);
-				pivalue.append_subval(tmp_item.pvalue);
-			} else if (!ical_retrieve_value(piline.get(), tmp_item.pvalue)) {
-				break;
-			}
 		}
 	} while ((pline = pnext) != NULL);
 	ical_clear_component(pcomponent);
@@ -559,7 +542,8 @@ static size_t ical_serialize_component(const ical_component &com,
 	if (offset >= max_length) {
 		return 0;
 	}
-	for (const auto &piline : pcomponent->line_list) {
+	for (const auto &line : pcomponent->line_list) {
+		auto piline = &line;
 		line_begin = offset;
 		offset += gx_snprintf(out_buff + offset,
 		          max_length - offset, "%s", piline->m_name.c_str());
@@ -712,21 +696,6 @@ const char *ICAL_LINE::get_first_subvalue() const
 const std::vector<std::string> *ICAL_LINE::get_subval_list(const char *name) const
 {
 	return ical_get_subval_list_internal(&value_list, name);
-}
-
-std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name,
-    const char *value) try
-{
-	auto piline = ical_new_line(name);
-	if (NULL == piline) {
-		return NULL;
-	}
-	auto &pivalue = piline->append_value();
-	pivalue.append_subval(value);
-	return piline;
-} catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2100: ENOMEM\n");
-	return nullptr;
 }
 
 bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)

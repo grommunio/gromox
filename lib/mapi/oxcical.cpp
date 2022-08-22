@@ -712,7 +712,8 @@ static BOOL oxcical_parse_recipients(const ical_component &main_ev,
 		return FALSE;
 	tmp_byte = 0;
 	message_content_set_rcpts_internal(pmsg, prcpts);
-	for (const auto &piline : main_ev.line_list) {
+	for (const auto &line : main_ev.line_list) {
+		auto piline = &line;
 		if (strcasecmp(piline->m_name.c_str(), "ATTENDEE") != 0)
 			continue;
 		paddress = piline->get_first_subvalue();
@@ -2258,10 +2259,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	
 	size_t tmp_count = 0;
 	for (const auto &line : pmain_event->line_list) {
-		if (strcasecmp(line->m_name.c_str(), "ATTACH") != 0)
+		if (strcasecmp(line.m_name.c_str(), "ATTACH") != 0)
 			continue;
 		tmp_count ++;
-		if (!oxcical_parse_attachment(*line, tmp_count, pmsg))
+		if (!oxcical_parse_attachment(line, tmp_count, pmsg))
 			return FALSE;
 	}
 	
@@ -2543,11 +2544,7 @@ static ical_component *oxcical_export_timezone(ical &pical,
 	char tmp_buff[1024];
 
 	auto pcomponent = &pical.append_comp("VTIMEZONE");
-	auto piline = ical_new_simple_line("TZID", tzid);
-	if (piline == nullptr)
-		return NULL;
-	if (pcomponent->append_line(piline) < 0)
-		return nullptr;
+	pcomponent->append_line("TZID", tzid);
 	/* STANDARD component */
 	auto pcomponent1 = &pcomponent->append_comp("STANDARD");
 	order = ptzstruct->standarddate.day;
@@ -2574,18 +2571,10 @@ static ical_component *oxcical_export_timezone(ical &pical,
 	} else {
 		return NULL;
 	}
-	piline = ical_new_simple_line("DTSTART", tmp_buff);
-	if (piline == nullptr)
-		return NULL;
-	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+	pcomponent1->append_line("DTSTART", tmp_buff);
 	if (0 != ptzstruct->daylightdate.month) {
 		if (0 == ptzstruct->standarddate.year) {
-			piline = ical_new_line("RRULE");
-			if (piline == nullptr)
-				return NULL;
-			if (pcomponent1->append_line(piline) < 0)
-				return nullptr;
+			auto piline = &pcomponent1->append_line("RRULE");
 			piline->append_value("FREQ", "YEARLY");
 			auto dow = weekday_to_str(ptzstruct->standarddate.dayofweek);
 			if (dow == nullptr)
@@ -2595,11 +2584,7 @@ static ical_component *oxcical_export_timezone(ical &pical,
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
 			piline->append_value("BYMONTH", tmp_buff);
 		} else if (1 == ptzstruct->standarddate.year) {
-			piline = ical_new_line("RRULE");
-			if (piline == nullptr)
-				return NULL;
-			if (pcomponent1->append_line(piline) < 0)
-				return nullptr;
+			auto piline = &pcomponent1->append_line("RRULE");
 			piline->append_value("FREQ", "YEARLY");
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
 			piline->append_value("BYMONTHDAY", tmp_buff);
@@ -2611,18 +2596,12 @@ static ical_component *oxcical_export_timezone(ical &pical,
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
-	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
-	if (piline == nullptr)
-		return nullptr;
-	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+	pcomponent1->append_line("TZOFFSETFROM", tmp_buff);
 	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
-	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
-	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+	pcomponent1->append_line("TZOFFSETTO", tmp_buff);
 	if (ptzstruct->daylightdate.month == 0)
 		return pcomponent;
 	/* DAYLIGHT component */
@@ -2649,17 +2628,9 @@ static ical_component *oxcical_export_timezone(ical &pical,
 	} else {
 		return NULL;
 	}
-	piline = ical_new_simple_line("DTSTART", tmp_buff);
-	if (piline == nullptr)
-		return nullptr;
-	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+	pcomponent1->append_line("DTSTART", tmp_buff);
 	if (0 == ptzstruct->daylightdate.year) {
-		piline = ical_new_line("RRULE");
-		if (piline == nullptr)
-			return NULL;
-		if (pcomponent1->append_line(piline) < 0)
-			return nullptr;
+		auto piline = &pcomponent1->append_line("RRULE");
 		piline->append_value("FREQ", "YEARLY");
 		auto dow = weekday_to_str(ptzstruct->daylightdate.dayofweek);
 		if (dow == nullptr)
@@ -2669,11 +2640,7 @@ static ical_component *oxcical_export_timezone(ical &pical,
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
 		piline->append_value("BYMONTH", tmp_buff);
 	} else if (1 == ptzstruct->daylightdate.year) {
-		piline = ical_new_line("RRULE");
-		if (piline == nullptr)
-			return NULL;
-		if (pcomponent1->append_line(piline) < 0)
-			return nullptr;
+		auto piline = &pcomponent1->append_line("RRULE");
 		piline->append_value("FREQ", "YEARLY");
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
 		piline->append_value("BYMONTHDAY", tmp_buff);
@@ -2684,20 +2651,12 @@ static ical_component *oxcical_export_timezone(ical &pical,
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
-	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
-	if (piline == nullptr)
-		return nullptr;
-	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+	pcomponent1->append_line("TZOFFSETFROM", tmp_buff);
 	utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
-	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
-	if (piline == nullptr)
-		return nullptr;
-	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+	pcomponent1->append_line("TZOFFSETTO", tmp_buff);
 	return pcomponent;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-2180: ENOMEM\n");
@@ -2772,11 +2731,7 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 		str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 		if (str == nullptr)
 			return FALSE;
-		piline = ical_new_line("ATTENDEE");
-		if (piline == nullptr)
-			return FALSE;
-		if (pevent_component.append_line(piline) < 0)
-			return false;
+		auto piline = &pevent_component.append_line("ATTENDEE");
 		piline->append_param("PARTSTAT", partstat);
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
 		piline->append_value(nullptr, tmp_value);
@@ -2793,11 +2748,7 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 		auto rcpttype = pmsg->children.prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
 		if (rcpttype != nullptr && *rcpttype == MAPI_ORIG)
 			continue;
-		piline = ical_new_line("ATTENDEE");
-		if (piline == nullptr)
-			return FALSE;
-		if (pevent_component.append_line(piline) < 0)
-			return false;
+		auto piline = &pevent_component.append_line("ATTENDEE");
 		const char *role =
 			rcpttype == nullptr ? "REQ-PARTICIPANT" :
 			*rcpttype == MAPI_CC ? "OPT-PARTICIPANT" :
@@ -2876,11 +2827,7 @@ static BOOL oxcical_export_rrule(const ical_component &ptz_component,
 	}
 	if (str_tag == nullptr)
 		return FALSE;
-	auto piline = ical_new_line(str_tag);
-	if (piline == nullptr)
-		return FALSE;
-	if (pcomponent.append_line(piline) < 0)
-		return false;
+	auto piline = &pcomponent.append_line(str_tag);
 	switch (apr->recur_pat.patterntype) {
 	case PATTERNTYPE_DAY:
 		piline->append_value("FREQ", "DAILY");
@@ -3014,19 +2961,15 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 {
 	BOOL b_found;
 	ICAL_TIME itime;
-	std::shared_ptr<ICAL_LINE> piline;
 	char tmp_buff[1024];
+	ical_line *piline;
 	
 	if (apr->recur_pat.calendartype != CAL_DEFAULT ||
 	    apr->recur_pat.patterntype == PATTERNTYPE_HJMONTH ||
 	    apr->recur_pat.patterntype == PATTERNTYPE_HJMONTHNTH)
-		piline = ical_new_line("X-MICROSOFT-EXDATE");
+		piline = &pcomponent.append_line("X-MICROSOFT-EXDATE");
 	else
-		piline = ical_new_line("EXDATE");
-	if (piline == nullptr)
-		return FALSE;
-	if (pcomponent.append_line(piline) < 0)
-		return false;
+		piline = &pcomponent.append_line("EXDATE");
 	auto &pivalue = piline->append_value();
 	if (b_date) {
 		piline->append_param("VALUE", "DATE");
@@ -3089,11 +3032,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	ICAL_TIME itime;
 	char tmp_buff[1024];
 	
-	auto piline = ical_new_line("RDATE");
-	if (piline == nullptr)
-		return FALSE;
-	if (pcomponent.append_line(piline) < 0)
-		return false;
+	auto piline = &pcomponent.append_line("RDATE");
 	auto &pivalue = piline->append_value();
 	if (b_date) {
 		piline->append_param("VALUE", "DATE");
@@ -3136,8 +3075,8 @@ static bool busystatus_to_line(ol_busy_status status, const char *key,
 	          [](const auto &p, ol_busy_status v) { return p.first < v; });
 	if (it == std::cend(busy_status_names))
 		return true;
-	auto line = ical_new_simple_line(key, it->second);
-	return line != nullptr && com->append_line(line) >= 0;
+	com->append_line(key, it->second);
+	return true;
 }
 
 static BOOL oxcical_export_internal(const char *method, const char *tzid,
@@ -3243,22 +3182,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (b_exceptional)
 		goto EXPORT_VEVENT;
 	
-	piline = ical_new_simple_line("METHOD", method);
-	if (piline == nullptr)
-		return FALSE;
-	if (pical.append_line(piline) < 0)
-		return false;
-	piline = ical_new_simple_line("PRODID", "gromox-oxcical");
-	if (piline == nullptr)
-		return FALSE;
-	if (pical.append_line(piline) < 0)
-		return false;
-	
-	piline = ical_new_simple_line("VERSION", "2.0");
-	if (piline == nullptr)
-		return FALSE;
-	if (pical.append_line(piline) < 0)
-		return false;
+	pical.append_line("METHOD", method);
+	pical.append_line("PRODID", "gromox-oxcical");
+	pical.append_line("VERSION", "2.0");
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur};
 	if (!get_propids(&propnames, &propids))
@@ -3285,12 +3211,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			str = "Hijri";
 		}
 		if (str != nullptr) {
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CALSCALE", str);
-			if (piline == nullptr)
-				return FALSE;
-			if (pical.append_line(piline) < 0)
-				return false;
+			pical.append_line("X-MICROSOFT-CALSCALE", str);
 		}
 	}
 	
@@ -3388,11 +3309,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 		if (str != nullptr) {
 			snprintf(tmp_buff1, sizeof(tmp_buff1), "MAILTO:%s", str);
-			piline = ical_new_simple_line("ORGANIZER", tmp_buff1);
-			if (piline == nullptr)
-				return FALSE;
-			if (pcomponent->append_line(piline) < 0)
-				return false;
+			auto piline = &pcomponent->append_line("ORGANIZER", tmp_buff1);
 			str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
 			if (str != nullptr) {
 				piline->append_param("CN", str);
@@ -3409,11 +3326,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		auto kw = strcmp(method, "REPLY") == 0 ||
 		          strcmp(method, "COUNTER") == 0 ?
 		          "COMMENT" : "DESCRIPTION";
-		piline = ical_new_simple_line(kw, str);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		auto piline = &pcomponent->append_line(kw, str);
 		if (NULL != planguage) {
 			piline->append_param("LANGUAGE", planguage);
 		}
@@ -3452,7 +3365,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 								globalobjectid.data.cb - 12);
 				tmp_buff[globalobjectid.data.cb - 12] = '\0';
 			}
-			piline = ical_new_simple_line("UID", tmp_buff);
+			pcomponent->append_line("UID", tmp_buff);
 		} else {
 			globalobjectid.year = 0;
 			globalobjectid.month = 0;
@@ -3464,12 +3377,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			    tmp_buff1, sizeof(tmp_buff1)))
 				return FALSE;
 			HX_strupper(tmp_buff1);
-			piline = ical_new_simple_line("UID", tmp_buff1);
+			pcomponent->append_line("UID", tmp_buff1);
 		}
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
 	} else {
 		time(&cur_time);
 		memset(&globalobjectid, 0, sizeof(GLOBALOBJECTID));
@@ -3487,11 +3396,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		    sizeof(tmp_buff1)))
 			return FALSE;
 		HX_strupper(tmp_buff1);
-		piline = ical_new_simple_line("UID", tmp_buff1);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		pcomponent->append_line("UID", tmp_buff1);
 	}
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime};
@@ -3541,30 +3446,18 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		} else {
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
 		}
-		piline = ical_new_simple_line("RECURRENCE-ID", tmp_buff);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		auto piline = &pcomponent->append_line("RECURRENCE-ID", tmp_buff);
 		if (NULL != ptz_component) {
 			piline->append_param("TZID", tzid);
 		}
 	} else {
 		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		piline = ical_new_simple_line("RECURRENCE-ID", tmp_buff);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		pcomponent->append_line("RECURRENCE-ID", tmp_buff);
 	}
 	
 	str = pmsg->proplist.get<char>(PR_SUBJECT);
 	if (str != nullptr) {
-		piline = ical_new_simple_line("SUMMARY", str);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		auto piline = &pcomponent->append_line("SUMMARY", str);
 		if (NULL != planguage) {
 			piline->append_param("LANGUAGE", planguage);
 		}
@@ -3579,16 +3472,12 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	else
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 
-	piline = ical_new_simple_line("DTSTART", tmp_buff);
-	if (piline == nullptr)
-		return FALSE;
-	if (pcomponent->append_line(piline) < 0)
-		return false;
+	auto &pilineDTS = pcomponent->append_line("DTSTART", tmp_buff);
 	if (ptz_component == nullptr && g_oxcical_allday_ymd) {
-		piline->append_param("VALUE", "DATE");
+		pilineDTS.append_param("VALUE", "DATE");
 	}
 	if (NULL != ptz_component) {
-		piline->append_param("TZID", tzid);
+		pilineDTS.append_param("TZID", tzid);
 	}
 	
 	if (start_time != end_time) {
@@ -3600,11 +3489,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-		piline = ical_new_simple_line("DTEND", tmp_buff);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		auto piline = &pcomponent->append_line("DTEND", tmp_buff);
 		if (ptz_component == nullptr && g_oxcical_allday_ymd) {
 			piline->append_param("VALUE", "DATE");
 		}
@@ -3618,11 +3503,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	auto sa = pmsg->proplist.get<const STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids.ppropid[0]));
 	if (sa != nullptr) {
-		piline = ical_new_line("CATEGORIES");
-		if (piline == nullptr)
-			return FALSE;
-		if (pical.append_line(piline) < 0)
-			return false;
+		auto piline = &pical.append_line("CATEGORIES");
 		auto &pivalue = piline->append_value();
 		for (size_t i = 0; i < sa->count; ++i)
 			pivalue.append_subval(sa->ppstr[i]);
@@ -3630,46 +3511,38 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	num = pmsg->proplist.get<uint32_t>(PR_SENSITIVITY);
 	if (num == nullptr) {
-		piline = ical_new_simple_line("CLASS", "PUBLIC");
+		pcomponent->append_line("CLASS", "PUBLIC");
 	} else {
 		switch (*num) {
 		case SENSITIVITY_PERSONAL:
-			piline = ical_new_simple_line("CLASS", "PERSONAL");
+			pcomponent->append_line("CLASS", "PERSONAL");
 			break;
 		case SENSITIVITY_PRIVATE:
-			piline = ical_new_simple_line("CLASS", "PRIVATE");
+			pcomponent->append_line("CLASS", "PRIVATE");
 			break;
 		case SENSITIVITY_COMPANY_CONFIDENTIAL:
-			piline = ical_new_simple_line("CLASS", "CONFIDENTIAL");
+			pcomponent->append_line("CLASS", "CONFIDENTIAL");
 			break;
 		default:
-			piline = ical_new_simple_line("CLASS", "PUBLIC");
+			pcomponent->append_line("CLASS", "PUBLIC");
 			break;
 		}
 	}
-	if (piline == nullptr)
-		return FALSE;
-	if (pcomponent->append_line(piline) < 0)
-		return false;
 	
 	snum = pmsg->proplist.get<const uint8_t>(PR_IMPORTANCE);
 	if (snum != nullptr) {
 		/* RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58 */
 		switch (*snum) {
 		case IMPORTANCE_NORMAL:
-			piline = ical_new_simple_line("PRIORITY", "5");
+			pcomponent->append_line("PRIORITY", "5");
 			break;
 		case IMPORTANCE_HIGH:
-			piline = ical_new_simple_line("PRIORITY", "1");
+			pcomponent->append_line("PRIORITY", "1");
 			break;
 		default:
-			piline = ical_new_simple_line("PRIORITY", "9");
+			pcomponent->append_line("PRIORITY", "9");
 			break;
 		}
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
 	}
 	
 	propname = {MNID_ID, PSETID_MEETING};
@@ -3681,11 +3554,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (lnum != nullptr) {
 		ical_utc_to_datetime(nullptr, rop_util_nttime_to_unix(*lnum), &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-		piline = ical_new_simple_line("DTSTAMP", tmp_buff);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		pcomponent->append_line("DTSTAMP", tmp_buff);
 	}
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus};
@@ -3696,20 +3565,12 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		switch (static_cast<ol_busy_status>(*pbusystatus)) {
 		case olFree:
 		case olWorkingElsewhere:
-			piline = ical_new_simple_line("TRANSP", "TRANSPARENT");
-			if (piline == nullptr)
-				return FALSE;
-			if (pcomponent->append_line(piline) < 0)
-				return false;
+			pcomponent->append_line("TRANSP", "TRANSPARENT");
 			break;
 		case olTentative:
 		case olBusy:
 		case olOutOfOffice:
-			piline = ical_new_simple_line("TRANSP", "OPAQUE");
-			if (piline == nullptr)
-				return FALSE;
-			if (pcomponent->append_line(piline) < 0)
-				return false;
+			pcomponent->append_line("TRANSP", "OPAQUE");
 			break;
 		default:
 			break;
@@ -3722,11 +3583,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	auto psequence = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 	if (NULL != psequence) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *psequence);
-		piline = ical_new_simple_line("SEQUENCE", tmp_buff);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		pcomponent->append_line("SEQUENCE", tmp_buff);
 	}
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidLocation};
@@ -3734,11 +3591,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
 	if (str != nullptr) {
-		piline = ical_new_simple_line("LOCATION", str);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		auto piline = &pcomponent->append_line("LOCATION", str);
 		propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameLocationUrl)};
 		if (!get_propids(&propnames, &propids))
 			return FALSE;
@@ -3753,23 +3606,13 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (NULL != psequence) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *psequence);
-		piline = ical_new_simple_line(
-			"X-MICROSOFT-CDO-APPT-SEQUENCE", tmp_buff);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		pcomponent->append_line("X-MICROSOFT-CDO-APPT-SEQUENCE", tmp_buff);
 	}
 	
 	num = pmsg->proplist.get<uint32_t>(PR_OWNER_APPT_ID);
 	if (num != nullptr) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *num);
-		piline = ical_new_simple_line(
-			"X-MICROSOFT-CDO-OWNERAPPTID", tmp_buff);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		pcomponent->append_line("X-MICROSOFT-CDO-OWNERAPPTID", tmp_buff);
 	}
 	
 	if (pbusystatus != nullptr && !busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
@@ -3784,65 +3627,33 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	    "X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent))
 		return false;
 
-	piline = ical_new_simple_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");
-	if (piline == nullptr)
-		return FALSE;
-	if (pcomponent->append_line(piline) < 0)
-		return false;
+	pcomponent->append_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");
 	
 	num = pmsg->proplist.get<uint32_t>(PR_IMPORTANCE);
 	if (num != nullptr) {
 		switch (static_cast<mapi_importance>(*num)) {
 		case IMPORTANCE_LOW:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-IMPORTANCE", "0");
-			if (piline == nullptr)
-				return FALSE;
-			if (pcomponent->append_line(piline) < 0)
-				return false;
+			pcomponent->append_line("X-MICROSOFT-CDO-IMPORTANCE", "0");
 			break;
 		case IMPORTANCE_NORMAL:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-IMPORTANCE", "1");
-			if (piline == nullptr)
-				return FALSE;
-			if (pcomponent->append_line(piline) < 0)
-				return false;
+			pcomponent->append_line("X-MICROSOFT-CDO-IMPORTANCE", "1");
 			break;
 		case IMPORTANCE_HIGH:
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-CDO-IMPORTANCE", "2");
-			if (piline == nullptr)
-				return FALSE;
-			if (pcomponent->append_line(piline) < 0)
-				return false;
+			pcomponent->append_line("X-MICROSOFT-CDO-IMPORTANCE", "2");
 			break;
 		default:
 			break;
 		}
 	}
 	
-	piline = ical_new_simple_line("X-MICROSOFT-CDO-INSTTYPE", b_exceptional ? "3" : b_recurrence ? "1" : "0");
-	if (piline == nullptr)
-		return FALSE;
-	if (pcomponent->append_line(piline) < 0)
-		return false;
+	pcomponent->append_line("X-MICROSOFT-CDO-INSTTYPE", b_exceptional ? "3" : b_recurrence ? "1" : "0");
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose};
 	if (!get_propids(&propnames, &propids))
 		return FALSE;
 	auto flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	if (flag != nullptr) {
-		if (*flag == 0)
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-DISALLOW-COUNTER", "FALSE");
-		else
-			piline = ical_new_simple_line(
-				"X-MICROSOFT-DISALLOW-COUNTER", "TRUE");
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		pcomponent->append_line("X-MICROSOFT-DISALLOW-COUNTER", *flag != 0 ? "TRUE" : "FALSE");
 	}
 	
 	if (!b_exceptional && pmsg->children.pattachments != nullptr) {
@@ -3872,11 +3683,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	if (flag != nullptr && *flag != 0) {
 		pcomponent = &pical.append_comp("VALARM");
-		piline = ical_new_simple_line("DESCRIPTION", "REMINDER");
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		pcomponent->append_line("DESCRIPTION", "REMINDER");
 		propname = {MNID_ID, PSETID_COMMON, PidLidReminderDelta};
 		if (!get_propids(&propnames, &propids))
 			return FALSE;
@@ -3885,17 +3692,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			strcpy(tmp_buff, "-PT15M");
 		else
 			snprintf(tmp_buff, arsizeof(tmp_buff), "-PT%uM", *num);
-		piline = ical_new_simple_line("TRIGGER", tmp_buff);
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		auto piline = &pcomponent->append_line("TRIGGER", tmp_buff);
 		piline->append_param("RELATED", "START");
-		piline = ical_new_simple_line("ACTION", "DISPLAY");
-		if (piline == nullptr)
-			return FALSE;
-		if (pcomponent->append_line(piline) < 0)
-			return false;
+		pcomponent->append_line("ACTION", "DISPLAY");
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {

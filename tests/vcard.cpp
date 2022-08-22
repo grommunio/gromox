@@ -31,11 +31,11 @@ static void t_card()
 
 static void t_ical()
 {
+	printf("ical:\n");
 	ical ic;
 	auto &c = ic.append_comp("COMPX");
-	auto l = ical_new_simple_line("KEY", "VALUE1");
-	c.append_line(l);
-	auto &v = l->append_value();
+	auto &l = c.append_line("KEY", "VALUE1");
+	auto &v = l.append_value();
 	v.append_subval("SUBVAL");
 	v.append_subval("SUBVAL");
 
