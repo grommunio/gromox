@@ -8,6 +8,7 @@
 #include <memory>
 #include <unistd.h>
 #include <utility>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -77,25 +78,6 @@ static constexpr HXoption g_options_table[] = {
 
 static void *zalloc(size_t z) { return calloc(1, z); }
 
-static ssize_t fullread(int fd, void *vbuf, size_t size)
-{
-	char *buf = static_cast<char *>(vbuf);
-	size_t read_total = 0;
-	if (size > SSIZE_MAX)
-		size = SSIZE_MAX;
-
-	while (read_total < size) {
-		ssize_t ret = read(fd, buf, size - read_total);
-		if (ret < 0)
-			return ret;
-		else if (ret == 0)
-			break;
-		read_total += ret;
-		buf += ret;
-	}
-	return read_total;
-}
-
 static void filter_folder_map(gi_folder_map_t &fmap)
 {
 	if (!g_public_folder)
@@ -111,19 +93,19 @@ static void exm_read_base_maps()
 {
 	errno = 0;
 	char magic[8];
-	auto ret = fullread(STDIN_FILENO, magic, arsizeof(magic));
+	auto ret = HXio_fullread(STDIN_FILENO, magic, arsizeof(magic));
 	if (ret == 0)
 		throw YError("PG-1009: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != arsizeof(magic))
 		throw YError("PG-1126: %s", strerror(errno));
 	if (memcmp(magic, "GXMT0002", 8) != 0)
 		throw YError("PG-1127: Unrecognized input format");
-	ret = fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
+	ret = HXio_fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
 	if (ret == 0)
 		throw YError("PG-1008: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != sizeof(g_splice))
 		throw YError("PG-1120: %s", strerror(errno));
-	ret = fullread(STDIN_FILENO, &magic[0], 1);
+	ret = HXio_fullread(STDIN_FILENO, &magic[0], 1);
 	if (ret == 0)
 		throw YError("PG-1123: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != 1)
@@ -137,7 +119,7 @@ static void exm_read_base_maps()
 
 	uint64_t xsize = 0;
 	errno = 0;
-	ret = fullread(STDIN_FILENO, &xsize, sizeof(xsize));
+	ret = HXio_fullread(STDIN_FILENO, &xsize, sizeof(xsize));
 	if (ret == 0)
 		throw YError("PG-1007: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
@@ -145,7 +127,7 @@ static void exm_read_base_maps()
 	xsize = le64_to_cpu(xsize);
 	auto buf = std::make_unique<char[]>(xsize);
 	errno = 0;
-	ret = fullread(STDIN_FILENO, buf.get(), xsize);
+	ret = HXio_fullread(STDIN_FILENO, buf.get(), xsize);
 	if (ret == 0)
 		throw YError("PG-1010: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != xsize)
@@ -158,14 +140,14 @@ static void exm_read_base_maps()
 	gi_dump_folder_map(g_folder_map);
 
 	errno = 0;
-	ret = fullread(STDIN_FILENO, &xsize, sizeof(xsize));
+	ret = HXio_fullread(STDIN_FILENO, &xsize, sizeof(xsize));
 	if (ret == 0)
 		throw YError("PG-1011: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
 		throw YError("PG-1003: %s", strerror(errno));
 	xsize = le64_to_cpu(xsize);
 	buf = std::make_unique<char[]>(xsize);
-	ret = fullread(STDIN_FILENO, buf.get(), xsize);
+	ret = HXio_fullread(STDIN_FILENO, buf.get(), xsize);
 	if (ret == 0)
 		throw YError("PG-1012: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != xsize)
@@ -444,7 +426,7 @@ int main(int argc, const char **argv) try
 	while (true) {
 		uint64_t xsize = 0;
 		errno = 0;
-		auto ret = fullread(STDIN_FILENO, &xsize, sizeof(xsize));
+		auto ret = HXio_fullread(STDIN_FILENO, &xsize, sizeof(xsize));
 		if (ret == 0)
 			break;
 		if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
@@ -452,7 +434,7 @@ int main(int argc, const char **argv) try
 		xsize = le64_to_cpu(xsize);
 		auto buf = std::make_unique<char[]>(xsize);
 		errno = 0;
-		ret = fullread(STDIN_FILENO, buf.get(), xsize);
+		ret = HXio_fullread(STDIN_FILENO, buf.get(), xsize);
 		if (ret == 0)
 			throw YError("PG-1013: EOF on input");
 		else if (ret < 0 || static_cast<size_t>(ret) != xsize)
