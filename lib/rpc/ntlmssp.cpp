@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include <algorithm>
 #include <cerrno>
 #include <cstdarg>
 #include <cstdint>
@@ -202,8 +203,7 @@ static ssize_t ntlmssp_utf8_to_utf16le(const char *src, void *dst, size_t len)
 	size_t out_len;
 	iconv_t conv_id;
 
-	if (len > SSIZE_MAX)
-		len = SSIZE_MAX;
+	len = std::min(len, static_cast<size_t>(SSIZE_MAX));
 	conv_id = iconv_open("UTF-16LE", "UTF-8");
 	if (conv_id == (iconv_t)-1) {
 		fprintf(stderr, "E-2112: iconv_open: %s\n", strerror(errno));
