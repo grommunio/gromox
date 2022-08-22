@@ -262,6 +262,7 @@ static void *zcorezs_scanwork(void *param)
 				write(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
 			}
 			free(tmp_bin.pb);
+			tmp_bin.pb = nullptr;
 			shutdown(psink_node->clifd, SHUT_WR);
 			if (read(psink_node->clifd, &tmp_byte, 1))
 				/* ignore */;
