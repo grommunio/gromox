@@ -242,7 +242,7 @@ static vcard_param vcard_retrieve_param(char *ptag)
 	return pvparam;
 }
 
-static vcard_line vcard_retrieve_tag(char *ptag) try
+static vcard_line vcard_retrieve_tag(char *ptag)
 {
 	char *ptr;
 	char *pnext;
@@ -260,8 +260,6 @@ static vcard_line vcard_retrieve_tag(char *ptag) try
 		pvline.append_param(vcard_retrieve_param(ptr));
 	} while ((ptr = pnext) != NULL);
 	return pvline;
-} catch (const std::bad_alloc &) {
-	return nullptr;
 }
 
 static void vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)

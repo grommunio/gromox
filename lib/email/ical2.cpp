@@ -22,34 +22,19 @@ const char *ICAL_LINE::get_first_paramval(const char *name) const
 	return piparam.paramval_list.front().c_str();
 }
 
-int ICAL_COMPONENT::append_line(std::shared_ptr<ICAL_LINE> l)
-{
-	try {
-		line_list.push_back(std::move(l));
-		return 0;
-	} catch (...) {
-	}
-	return -ENOMEM;
-}
-
-std::shared_ptr<ICAL_LINE> ical_new_line(const char *name)
-{
-	try {
-		auto l = std::make_shared<ICAL_LINE>();
-		l->m_name = name;
-		return l;
-	} catch (...) {
-	}
-	errno = ENOMEM;
-	return nullptr;
-}
-
 const ical_line *ical_component::get_line(const char *name) const
 {
 	for (const auto &l : line_list)
-		if (strcasecmp(l->m_name.c_str(), name) == 0)
-			return l.get();
+		if (strcasecmp(l.m_name.c_str(), name) == 0)
+			return &l;
 	return nullptr;
+}
+
+ical_line::ical_line(const char *name, const char *value) :
+	m_name(name)
+{
+	auto &pivalue = append_value();
+	pivalue.append_subval(value);
 }
 
 void ical_line::append_param(const char *tag, const char *s)

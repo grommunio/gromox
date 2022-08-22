@@ -79,11 +79,7 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 	char tmp_buff[1024];
 	
 	auto pcomponent = std::make_optional<ical_component>("VTIMEZONE");
-	auto piline = ical_new_simple_line("TZID", tzid);
-	if (piline == nullptr)
-		return {};
-	if (pcomponent->append_line(piline) < 0)
-		return {};
+	auto piline = &pcomponent->append_line("TZID", tzid);
 	/* STANDARD component */
 	auto pcomponent1 = &pcomponent->append_comp("STANDARD");
 	if (0 == ptzstruct->daylightdate.month) {
@@ -108,18 +104,10 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 	} else {
 		return {};
 	}
-	piline = ical_new_simple_line("DTSTART", tmp_buff);
-	if (piline == nullptr)
-		return {};
-	if (pcomponent1->append_line(piline) < 0)
-		return {};
+	pcomponent1->append_line("DTSTART", tmp_buff);
 	if (0 != ptzstruct->daylightdate.month) {
 		if (0 == ptzstruct->standarddate.year) {
-			piline = ical_new_line("RRULE");
-			if (piline == nullptr)
-				return {};
-			if (pcomponent1->append_line(piline) < 0)
-				return {};
+			auto piline = &pcomponent1->append_line("RRULE");
 			piline->append_value("FREQ", "YEARLY");
 			order = ptzstruct->standarddate.day;
 			if (order == 5)
@@ -132,11 +120,7 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
 			piline->append_value("BYMONTH", tmp_buff);
 		} else if (1 == ptzstruct->standarddate.year) {
-			piline = ical_new_line("RRULE");
-			if (piline == nullptr)
-				return {};
-			if (pcomponent1->append_line(piline) < 0)
-				return {};
+			piline = &pcomponent->append_line("RRULE");
 			piline->append_value("FREQ", "YEARLY");
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
 			piline->append_value("BYMONTHDAY", tmp_buff);
@@ -148,20 +132,12 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
-	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
-	if (piline == nullptr)
-		return {};
-	if (pcomponent1->append_line(piline) < 0)
-		return {};
+	pcomponent1->append_line("TZOFFSETFROM", tmp_buff);
 	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
-	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
-	if (piline == nullptr)
-		return {};
-	if (pcomponent1->append_line(piline) < 0)
-		return {};
+	pcomponent1->append_line("TZOFFSETTO", tmp_buff);
 	if (ptzstruct->daylightdate.month == 0)
 		return pcomponent;
 	/* DAYLIGHT component */
@@ -186,17 +162,9 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 	} else {
 		return {};
 	}
-	piline = ical_new_simple_line("DTSTART", tmp_buff);
-	if (piline == nullptr)
-		return {};
-	if (pcomponent1->append_line(piline) < 0)
-		return {};
+	pcomponent1->append_line("DTSTART", tmp_buff);
 	if (0 == ptzstruct->daylightdate.year) {
-		piline = ical_new_line("RRULE");
-		if (piline == nullptr)
-			return {};
-		if (pcomponent1->append_line(piline) < 0)
-			return {};
+		auto piline = &pcomponent1->append_line("RRULE");
 		piline->append_value("FREQ", "YEARLY");
 		order = ptzstruct->daylightdate.day;
 		if (order == 5)
@@ -209,11 +177,7 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
 		piline->append_value("BYMONTH", tmp_buff);
 	} else if (1 == ptzstruct->daylightdate.year) {
-		piline = ical_new_line("RRULE");
-		if (piline == nullptr)
-			return {};
-		if (pcomponent1->append_line(piline) < 0)
-			return {};
+		auto piline = &pcomponent1->append_line("RRULE");
 		piline->append_value("FREQ", "YEARLY");
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
 		piline->append_value("BYMONTHDAY", tmp_buff);
@@ -224,20 +188,12 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
-	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
-	if (piline == nullptr)
-		return {};
-	if (pcomponent1->append_line(piline) < 0)
-		return {};
+	pcomponent1->append_line("TZOFFSETFROM", tmp_buff);
 	utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
-	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
-	if (piline == nullptr)
-		return {};
-	if (pcomponent1->append_line(piline) < 0)
-		return {};
+	pcomponent1->append_line("TZOFFSETTO", tmp_buff);
 	return pcomponent;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-2092: ENOMEM\n");
@@ -253,9 +209,8 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
 	uint64_t nt_time;
 	char tmp_buff[1024];
 	
-	auto piline = ical_new_line("RRULE");
-	if (piline == nullptr)
-		return FALSE;
+	ical_line iline("RRULE");
+	auto piline = &iline;
 	switch (apr->recur_pat.patterntype) {
 	case PATTERNTYPE_DAY:
 		piline->append_value("FREQ", "DAILY");
