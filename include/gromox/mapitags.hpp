@@ -1161,6 +1161,8 @@ enum {
 	PidLidReminderSet = 0x8503,
 	PidLidPrivate = 0x8506,
 	PidLidSmartNoAttach = 0x8514,
+	PidLidCommonStart = 0x8516,
+	PidLidCommonEnd = 0x8517,
 	PidLidFlagRequest = 0x8530,
 	PidLidReminderSignalTime = 0x8560,
 	PidLidToDoTitle = 0x85A4,
