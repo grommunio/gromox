@@ -173,7 +173,8 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 	if (ptz_definition->keyname == nullptr)
 		return FALSE;
 	ptz_definition->crules = 0;
-	for (const auto &pcomponent : vt.component_list) {
+	for (const auto &comp : vt.component_list) {
+		auto pcomponent = &comp;
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0)
 			b_daylight = FALSE;
 		else if (strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") == 0)
@@ -562,7 +563,8 @@ static const ical_component *oxcical_find_vtimezone(const ical &pical, const cha
 {
 	const char *pvalue;
 	
-	for (const auto &pcomponent : pical.component_list) {
+	for (const auto &comp : pical.component_list) {
+		auto pcomponent = &comp;
 		if (strcasecmp(pcomponent->m_name.c_str(), "VTIMEZONE") != 0)
 			continue;
 		auto piline = pcomponent->get_line("TZID");
@@ -572,7 +574,7 @@ static const ical_component *oxcical_find_vtimezone(const ical &pical, const cha
 		if (pvalue == nullptr)
 			continue;
 		if (strcasecmp(pvalue, tzid) == 0)
-			return pcomponent.get();
+			return pcomponent;
 	}
 	return NULL;
 }
@@ -2266,7 +2268,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	BOOL b_alarm = FALSE;
 	uint32_t alarmdelta = 0;
 	if (pmain_event->component_list.size() > 0) {
-		auto palarm_component = pmain_event->component_list.front();
+		auto palarm_component = &pmain_event->component_list.front();
 		if (strcasecmp(palarm_component->m_name.c_str(), "VALARM") == 0) {
 			b_alarm = TRUE;
 			piline = palarm_component->get_line("TRIGGER");
@@ -2341,12 +2343,13 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
  */
 static BOOL oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) try
 {
-	for (const auto &pcomponent : pical.component_list) {
+	for (const auto &comp : pical.component_list) {
+		auto pcomponent = &comp;
 		if (strcasecmp(pcomponent->m_name.c_str(), "VEVENT") != 0)
 			continue;
 		auto piline = pcomponent->get_line("UID");
 		auto puid = piline != nullptr ? piline->get_first_subvalue() : "";
-		ul[puid].push_back(pcomponent.get());
+		ul[puid].push_back(pcomponent);
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -2532,27 +2535,21 @@ static int sprintf_dtutc(char *b, size_t z, const ICAL_TIME &t)
 	       t.minute, t.second);
 }
 
-static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ical &pical,
-	int year, const char *tzid, TIMEZONESTRUCT *ptzstruct)
+static ical_component *oxcical_export_timezone(ical &pical,
+    int year, const char *tzid, TIMEZONESTRUCT *ptzstruct) try
 {
 	int day;
 	int order;
 	char tmp_buff[1024];
-	
-	auto pcomponent = ical_new_component("VTIMEZONE");
-	if (pcomponent == nullptr)
-		return NULL;
-	pical.append_comp(pcomponent);
+
+	auto pcomponent = &pical.append_comp("VTIMEZONE");
 	auto piline = ical_new_simple_line("TZID", tzid);
 	if (piline == nullptr)
 		return NULL;
 	if (pcomponent->append_line(piline) < 0)
 		return nullptr;
 	/* STANDARD component */
-	auto pcomponent1 = ical_new_component("STANDARD");
-	if (pcomponent1 == nullptr)
-		return NULL;
-	pcomponent->append_comp(pcomponent1);
+	auto pcomponent1 = &pcomponent->append_comp("STANDARD");
 	order = ptzstruct->standarddate.day;
 	if (order == 5)
 		order = -1;
@@ -2629,10 +2626,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ical &pical,
 	if (ptzstruct->daylightdate.month == 0)
 		return pcomponent;
 	/* DAYLIGHT component */
-	pcomponent1 = ical_new_component("DAYLIGHT");
-	if (pcomponent1 == nullptr)
-		return NULL;
-	pcomponent->append_comp(pcomponent1);
+	pcomponent1 = &pcomponent->append_comp("DAYLIGHT");
 	order = ptzstruct->daylightdate.day;
 	if (order == 5)
 		order = -1;
@@ -2657,7 +2651,7 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ical &pical,
 	}
 	piline = ical_new_simple_line("DTSTART", tmp_buff);
 	if (piline == nullptr)
-		return NULL;
+		return nullptr;
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	if (0 == ptzstruct->daylightdate.year) {
@@ -2705,6 +2699,9 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ical &pical,
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	return pcomponent;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2180: ENOMEM\n");
+	return nullptr;
 }
 
 static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
@@ -3240,7 +3237,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			end_time += *num;
 	}
 	
-	std::shared_ptr<ical_component> ptz_component;
+	ical_component *ptz_component = nullptr;
 	std::shared_ptr<ICAL_LINE> piline;
 	BINARY *bin = nullptr;
 	if (b_exceptional)
@@ -3369,10 +3366,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	BOOL b_allday = snum != nullptr && *snum != 0 ? TRUE : false;
-	auto pcomponent = ical_new_component("VEVENT");
-	if (pcomponent == nullptr)
-		return FALSE;
-	pical.append_comp(pcomponent);
+	auto pcomponent = &pical.append_comp("VEVENT");
 	
 	if (0 == strcmp(method, "REQUEST") ||
 		0 == strcmp(method, "CANCEL")) {
@@ -3534,7 +3528,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 		}
 	} else {
-		if (!ical_utc_to_datetime(ptz_component.get(),
+		if (!ical_utc_to_datetime(ptz_component,
 		    rop_util_nttime_to_unix(*lnum), &itime))
 			return FALSE;
 	}
@@ -3576,7 +3570,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	if (!ical_utc_to_datetime(ptz_component.get(), start_time, &itime))
+	if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
 		return FALSE;
 	if (ptz_component != nullptr)
 		sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
@@ -3598,7 +3592,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (start_time != end_time) {
-		if (!ical_utc_to_datetime(ptz_component.get(), end_time, &itime))
+		if (!ical_utc_to_datetime(ptz_component, end_time, &itime))
 			return FALSE;
 		if (ptz_component != nullptr)
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
@@ -3779,7 +3773,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (pbusystatus != nullptr && !busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
-	    "X-MICROSOFT-CDO-BUSYSTATUS", pcomponent.get()))
+	    "X-MICROSOFT-CDO-BUSYSTATUS", pcomponent))
 		return false;
 
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidIntendedBusyStatus};
@@ -3787,7 +3781,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 	if (num != nullptr && !busystatus_to_line(static_cast<ol_busy_status>(*num),
-	    "X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent.get()))
+	    "X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent))
 		return false;
 
 	piline = ical_new_simple_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");
@@ -3877,10 +3871,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	if (flag != nullptr && *flag != 0) {
-		pcomponent = ical_new_component("VALARM");
-		if (pcomponent == nullptr)
-			return FALSE;
-		pical.append_comp(pcomponent);
+		pcomponent = &pical.append_comp("VALARM");
 		piline = ical_new_simple_line("DESCRIPTION", "REMINDER");
 		if (piline == nullptr)
 			return FALSE;

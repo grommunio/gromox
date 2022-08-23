@@ -10,6 +10,7 @@
 #include <ctime>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unistd.h>
 #include <utility>
@@ -60,7 +61,7 @@ namespace exmdb_client = exmdb_client_remote;
 static time_t g_end_time;
 static time_t g_start_time;
 static const char *g_username;
-static std::shared_ptr<ICAL_COMPONENT> g_tz_component;
+static std::optional<ical_component> g_tz_component;
 static constexpr char fmt_datetimelcl[] = "%04d%02d%02dT%02d%02d%02d",
 	fmt_datetimeutc[] = "%04d%02d%02dT%02d%02d%02dZ";
 
@@ -70,27 +71,21 @@ static int sprintf_dtutc(char *b, size_t z, const ICAL_TIME &t)
 	       t.minute, t.second);
 }
 
-static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
+static std::optional<ical_component> tzstruct_to_vtimezone(int year,
     const char *tzid, TIMEZONESTRUCT *ptzstruct) try
 {
 	int day;
 	int order;
 	char tmp_buff[1024];
 	
-	auto pcomponent = ical_new_component("VTIMEZONE");
-	if (pcomponent == nullptr)
-		return NULL;
+	auto pcomponent = std::make_optional<ical_component>("VTIMEZONE");
 	auto piline = ical_new_simple_line("TZID", tzid);
 	if (piline == nullptr)
-		return NULL;
+		return {};
 	if (pcomponent->append_line(piline) < 0)
-		return nullptr;
+		return {};
 	/* STANDARD component */
-	auto pcomponent1 = ical_new_component("STANDARD");
-	if (pcomponent1 == nullptr)
-		return NULL;
-	if (pcomponent->append_comp(pcomponent1) < 0)
-		return nullptr;
+	auto pcomponent1 = &pcomponent->append_comp("STANDARD");
 	if (0 == ptzstruct->daylightdate.month) {
 		strcpy(tmp_buff, "16010101T000000");
 	} else if (ptzstruct->standarddate.year == 0) {
@@ -111,27 +106,27 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			(int)ptzstruct->standarddate.minute,
 			(int)ptzstruct->standarddate.second);
 	} else {
-		return NULL;
+		return {};
 	}
 	piline = ical_new_simple_line("DTSTART", tmp_buff);
 	if (piline == nullptr)
-		return NULL;
+		return {};
 	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+		return {};
 	if (0 != ptzstruct->daylightdate.month) {
 		if (0 == ptzstruct->standarddate.year) {
 			piline = ical_new_line("RRULE");
 			if (piline == nullptr)
-				return NULL;
+				return {};
 			if (pcomponent1->append_line(piline) < 0)
-				return nullptr;
+				return {};
 			piline->append_value("FREQ", "YEARLY");
 			order = ptzstruct->standarddate.day;
 			if (order == 5)
 				order = -1;
 			auto dow = weekday_to_str(ptzstruct->standarddate.dayofweek);
 			if (dow == nullptr)
-				return nullptr;
+				return {};
 			snprintf(tmp_buff, std::size(tmp_buff), "%d%s", order, dow);
 			piline->append_value("BYDAY", tmp_buff);
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
@@ -139,9 +134,9 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		} else if (1 == ptzstruct->standarddate.year) {
 			piline = ical_new_line("RRULE");
 			if (piline == nullptr)
-				return NULL;
+				return {};
 			if (pcomponent1->append_line(piline) < 0)
-				return nullptr;
+				return {};
 			piline->append_value("FREQ", "YEARLY");
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
 			piline->append_value("BYMONTHDAY", tmp_buff);
@@ -155,26 +150,22 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
 	if (piline == nullptr)
-		return nullptr;
+		return {};
 	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+		return {};
 	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
 	if (piline == nullptr)
-		return nullptr;
+		return {};
 	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+		return {};
 	if (ptzstruct->daylightdate.month == 0)
 		return pcomponent;
 	/* DAYLIGHT component */
-	pcomponent1 = ical_new_component("DAYLIGHT");
-	if (pcomponent1 == nullptr)
-		return NULL;
-	if (pcomponent->append_comp(pcomponent1) < 0)
-		return nullptr;
+	pcomponent1 = &pcomponent->append_comp("DAYLIGHT");
 	if (0 == ptzstruct->daylightdate.year) {
 		day = ical_get_dayofmonth(year,
 			ptzstruct->daylightdate.month,
@@ -193,26 +184,26 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			(int)ptzstruct->daylightdate.minute,
 			(int)ptzstruct->daylightdate.second);
 	} else {
-		return NULL;
+		return {};
 	}
 	piline = ical_new_simple_line("DTSTART", tmp_buff);
 	if (piline == nullptr)
-		return NULL;
+		return {};
 	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+		return {};
 	if (0 == ptzstruct->daylightdate.year) {
 		piline = ical_new_line("RRULE");
 		if (piline == nullptr)
-			return NULL;
+			return {};
 		if (pcomponent1->append_line(piline) < 0)
-			return nullptr;
+			return {};
 		piline->append_value("FREQ", "YEARLY");
 		order = ptzstruct->daylightdate.day;
 		if (order == 5)
 			order = -1;
 		auto dow = weekday_to_str(ptzstruct->daylightdate.dayofweek);
 		if (dow == nullptr)
-			return nullptr;
+			return {};
 		snprintf(tmp_buff, std::size(tmp_buff), "%d%s", order, dow);
 		piline->append_value("BYDAY", tmp_buff);
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
@@ -220,9 +211,9 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	} else if (1 == ptzstruct->daylightdate.year) {
 		piline = ical_new_line("RRULE");
 		if (piline == nullptr)
-			return NULL;
+			return {};
 		if (pcomponent1->append_line(piline) < 0)
-			return nullptr;
+			return {};
 		piline->append_value("FREQ", "YEARLY");
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
 		piline->append_value("BYMONTHDAY", tmp_buff);
@@ -235,22 +226,22 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETFROM", tmp_buff);
 	if (piline == nullptr)
-		return nullptr;
+		return {};
 	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+		return {};
 	utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
 	utc_offset = abs(utc_offset);
 	sprintf(tmp_buff + 1, "%02d%02d", utc_offset/60, utc_offset%60);
 	piline = ical_new_simple_line("TZOFFSETTO", tmp_buff);
 	if (piline == nullptr)
-		return nullptr;
+		return {};
 	if (pcomponent1->append_line(piline) < 0)
-		return nullptr;
+		return {};
 	return pcomponent;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-2092: ENOMEM\n");
-	return nullptr;
+	return {};
 }
 
 static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
@@ -500,15 +491,15 @@ static void output_event(time_t start_time, time_t end_time,
 	ICAL_TIME itime;
 	char tmp_buff[4096];
 	
-	if (NULL == g_tz_component) {
+	if (!g_tz_component.has_value()) {
 		printf("{\"StartTime\":%lld, ", static_cast<long long>(start_time));
 		printf("\"EndTime\":%lld, ", static_cast<long long>(end_time));
 	} else {
-		ical_utc_to_datetime(g_tz_component.get(), start_time, &itime);
+		ical_utc_to_datetime(&*g_tz_component, start_time, &itime);
 		printf("{\"StartTime\":\"%d-%02d-%02dT%02d:%02d:%02d\", ",
 					itime.year, itime.month, itime.day, itime.hour,
 					itime.minute, itime.second);
-		ical_utc_to_datetime(g_tz_component.get(), end_time, &itime);
+		ical_utc_to_datetime(&*g_tz_component, end_time, &itime);
 		printf("\"EndTime\":\"%d-%02d-%02dT%02d:%02d:%02d\", ",
 				itime.year, itime.month, itime.day, itime.hour,
 				itime.minute, itime.second);
@@ -832,18 +823,16 @@ static BOOL get_freebusy(const char *dir)
 			continue;
 		}
 		EXT_PULL ext_pull;
-		std::shared_ptr<ICAL_COMPONENT> ptz_component;
+		std::optional<ical_component> ptz_component;
 		auto bin = tmp_set.pparray[i]->get<const BINARY>(pidlidtimezonestruct);
-		if (bin == nullptr) {
-			ptz_component = NULL;
-		} else {
+		if (bin != nullptr) {
 			TIMEZONESTRUCT tzstruct;
 			ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_tzstruct(&tzstruct) != EXT_ERR_SUCCESS)
 				continue;
 			ptz_component = tzstruct_to_vtimezone(
 					1600, "timezone", &tzstruct);
-			if (ptz_component == nullptr)
+			if (!ptz_component.has_value())
 				continue;
 		}
 		bin = tmp_set.pparray[i]->get<BINARY>(pidlidappointmentrecur);
@@ -953,7 +942,7 @@ int main(int argc, const char **argv)
 	if (NULL == strchr(pstarttime, 'T') && NULL == strchr(pendtime, 'T')) {
 		g_start_time = strtol(pstarttime, nullptr, 0);
 		g_end_time = strtol(pendtime, nullptr, 0);
-		g_tz_component = NULL;
+		g_tz_component.reset();
 		goto GET_FREEBUSY_DATA;
 	}
 	if (6 != sscanf(pstarttime, "%d-%d-%dT%d:%d:%d",
@@ -1104,12 +1093,12 @@ int main(int argc, const char **argv)
 	tzstruct.daylightdate.second = strtol(ptoken1, nullptr, 0);
 	g_tz_component = tzstruct_to_vtimezone(
 				1600, "timezone", &tzstruct);
-	if (NULL == g_tz_component) {
+	if (!g_tz_component.has_value()) {
 		fprintf(stderr, "fail to produce vtimezone component\n");
 		exit(14);
 	}
-	ical_itime_to_utc(g_tz_component.get(), itime_start, &g_start_time);
-	ical_itime_to_utc(g_tz_component.get(), itime_end, &g_end_time);
+	ical_itime_to_utc(&*g_tz_component, itime_start, &g_start_time);
+	ical_itime_to_utc(&*g_tz_component, itime_end, &g_end_time);
  GET_FREEBUSY_DATA:
 	pdirs = cookie_parser_get(pparser, "dirs");
 	if (NULL == pdirs) {

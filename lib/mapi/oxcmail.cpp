@@ -3232,9 +3232,8 @@ static bool smime_clearsigned(const char *head_ct, MIME *head, char (&buf)[256])
 	       strcasecmp(buf, "application/x-pkcs7-signature") == 0;
 }
 
-MESSAGE_CONTENT* oxcmail_import(const char *charset,
-	const char *str_zone, MAIL *pmail,
-	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
+MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
+    MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
 	int i;
 	ICAL ical;
@@ -3538,11 +3537,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		} else {
 			if (!utf8_check(pcontent + content_len + 1))
 				utf8_filter(pcontent + content_len + 1);
-			if (ical.init() < 0) {
-				free(pcontent);
-				message_content_free(pmsg);
-				return nullptr;
-			}
 			if (!ical.retrieve(pcontent + content_len + 1)) {
 				mime_enum.pcalendar = nullptr;
 			} else {
@@ -3696,6 +3690,9 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	if (field_param.b_flag_del)
 		oxcmail_remove_flag_propties(pmsg, get_propids);
 	return pmsg;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2182: ENOMEM\n");
+	return nullptr;
 }
 
 static size_t oxcmail_encode_mime_string(const char *charset,
@@ -5128,7 +5125,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
     enum oxcmail_body body_type, std::shared_ptr<MIME_POOL> ppool,
     MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-    GET_PROPNAME get_propname)
+    GET_PROPNAME get_propname) try
 {
 	int i;
 	ICAL ical;
@@ -5359,8 +5356,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	if (NULL != pcalendar) {
 		char tmp_buff[1024*1024];
 		
-		if (ical.init() < 0)
-			goto EXPORT_FAILURE;
 		if (!oxcical_export(pmsg, ical, alloc,
 		    get_propids, oxcmail_entryid_to_username,
 		    oxcmail_essdn_to_username))
@@ -5474,6 +5469,9 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	return TRUE;
  EXPORT_FAILURE:
 	return FALSE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2181: ENOMEM\n");
+	return false;
 }
 
 enum oxcmail_body get_override_format(const MESSAGE_CONTENT &mc)

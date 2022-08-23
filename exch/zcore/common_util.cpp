@@ -2317,8 +2317,8 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 	return pmsgctnt;
 }
 
-BOOL common_util_message_to_ical(store_object *pstore,
-	uint64_t message_id, BINARY *pical_bin)
+BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
+    BINARY *pical_bin) try
 {
 	ICAL ical;
 	char tmp_buff[1024*1024];
@@ -2329,8 +2329,6 @@ BOOL common_util_message_to_ical(store_object *pstore,
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	if (ical.init() < 0)
-		return false;
 	common_util_set_dir(pstore->get_dir());
 	if (!oxcical_export(pmsgctnt, ical,
 		common_util_alloc, common_util_get_propids,
@@ -2342,9 +2340,12 @@ BOOL common_util_message_to_ical(store_object *pstore,
 	pical_bin->cb = strlen(tmp_buff);
 	pical_bin->pc = common_util_dup(tmp_buff);
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2183: ENOMEM\n");
+	return false;
 }
 
-message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin)
+message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) try
 {
 	ICAL ical;
 	char tmzone[64];
@@ -2359,15 +2360,18 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin)
 	}
 	memcpy(pbuff, pical_bin->pb, pical_bin->cb);
 	pbuff[pical_bin->cb] = '\0';
-	if (ical.init() < 0 || !ical.retrieve(pbuff))
+	if (!ical.retrieve(pbuff))
 		return NULL;
 	common_util_set_dir(pstore->get_dir());
 	return oxcical_import_single(tmzone, ical, common_util_alloc,
 	       common_util_get_propids_create, common_util_username_to_entryid);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2184: ENOMEM\n");
+	return nullptr;
 }
 
 ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
-    std::vector<message_ptr> &msgvec)
+    std::vector<message_ptr> &msgvec) try
 {
 	auto info = zarafa_server_get_info();
 	char tmzone[64];
@@ -2376,12 +2380,15 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 		gx_strlcpy(tmzone, common_util_get_default_timezone(), std::size(tmzone));
 
 	ICAL icobj;
-	if (icobj.init() < 0 || !icobj.retrieve(ical_data))
+	if (!icobj.retrieve(ical_data))
 		return ecError;
 	common_util_set_dir(store->get_dir());
 	return oxcical_import_multi(tmzone, icobj, common_util_alloc,
 	       common_util_get_propids_create,
 	       common_util_username_to_entryid, msgvec);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2185: ENOMEM\n");
+	return ecServerOOM;
 }
 
 BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
