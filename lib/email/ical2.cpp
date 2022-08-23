@@ -25,7 +25,7 @@ const char *ICAL_LINE::get_first_paramval(const char *name) const
 int ICAL_COMPONENT::append_line(std::shared_ptr<ICAL_LINE> l)
 {
 	try {
-		line_list.push_back(std::move(*l));
+		line_list.push_back(std::move(l));
 		return 0;
 	} catch (...) {
 	}
@@ -47,8 +47,8 @@ std::shared_ptr<ICAL_LINE> ical_new_line(const char *name)
 const ical_line *ical_component::get_line(const char *name) const
 {
 	for (const auto &l : line_list)
-		if (strcasecmp(l.m_name.c_str(), name) == 0)
-			return &l;
+		if (strcasecmp(l->m_name.c_str(), name) == 0)
+			return l.get();
 	return nullptr;
 }
 

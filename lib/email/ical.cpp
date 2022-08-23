@@ -599,11 +599,11 @@ static size_t ical_serialize_component(const ical_component &com,
 	for (const auto &piline : pcomponent->line_list) {
 		line_begin = offset;
 		offset += gx_snprintf(out_buff + offset,
-		          max_length - offset, "%s", piline.m_name.c_str());
+		          max_length - offset, "%s", piline->m_name.c_str());
 		if (offset >= max_length) {
 			return 0;
 		}
-		for (const auto &piparam : piline.param_list) {
+		for (const auto &piparam : piline->param_list) {
 			if (offset + 1 >= max_length) {
 				return 0;
 			}
@@ -638,7 +638,7 @@ static size_t ical_serialize_component(const ical_component &com,
 			return 0;
 		}
 		need_semicolon = FALSE;
-		for (const auto &pivalue : piline.value_list) {
+		for (const auto &pivalue : piline->value_list) {
 			if (!need_semicolon) {
 				need_semicolon = TRUE;
 			} else {
