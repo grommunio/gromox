@@ -253,7 +253,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	return nullptr;
 }
 
-static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
     time_t whole_start_time, const APPOINTMENT_RECUR_PAT *apr,
     ICAL_RRULE *pirrule) try
 {
@@ -350,7 +350,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		nt_time = apr->recur_pat.enddate + apr->starttimeoffset;
 		nt_time *= 600000000;
 		unix_time = rop_util_nttime_to_unix(nt_time);
-		ical_utc_to_datetime(ptz_component.get(), unix_time, &itime);
+		ical_utc_to_datetime(&tzcom, unix_time, &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		piline->append_value("UNTIL", tmp_buff);
 	}
@@ -360,14 +360,14 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			return FALSE;
 		piline->append_value("WKST", wd);
 	}
-	return ical_parse_rrule(ptz_component.get(), whole_start_time,
+	return ical_parse_rrule(&tzcom, whole_start_time,
 		&piline->value_list, pirrule) ? TRUE : false;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-2093: ENOMEM\n");
 	return false;
 }
 
-static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
+static BOOL find_recurrence_times(ical_component &tzcom,
     time_t whole_start_time, const APPOINTMENT_RECUR_PAT *apr,
 	time_t start_time, time_t end_time, DOUBLE_LIST *plist)
 {
@@ -377,14 +377,14 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	uint64_t nt_time;
 	ICAL_RRULE irrule;
 	EVENT_NODE *pevnode;
-	
-	if (!recurrencepattern_to_rrule(ptz_component, whole_start_time,
+
+	if (!recurrencepattern_to_rrule(tzcom, whole_start_time,
 	    apr, &irrule))
 		return FALSE;	
 	double_list_init(plist);
 	do {
 		auto itime = irrule.instance_itime;
-		ical_itime_to_utc(ptz_component.get(), itime, &tmp_time);
+		ical_itime_to_utc(&tzcom, itime, &tmp_time);
 		if (tmp_time < start_time)
 			continue;
 		ical_itime_to_utc(NULL, itime, &tmp_time1);
@@ -412,7 +412,7 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		tmp_time = rop_util_nttime_to_unix(nt_time);
 		ICAL_TIME itime;
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
-		ical_itime_to_utc(ptz_component.get(), itime, &tmp_time);
+		ical_itime_to_utc(&tzcom, itime, &tmp_time);
 		if (tmp_time < start_time || tmp_time > end_time)
 			continue;
 		pevnode = me_alloc<EVENT_NODE>();
@@ -422,7 +422,7 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		nt_time *= 600000000;
 		tmp_time = rop_util_nttime_to_unix(nt_time);
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
-		ical_itime_to_utc(ptz_component.get(), itime, &tmp_time);
+		ical_itime_to_utc(&tzcom, itime, &tmp_time);
 		pevnode->end_time = tmp_time;
 		pevnode->pexception = apr->pexceptioninfo + i;
 		pevnode->pex_exception = apr->pextendedexception + i;
@@ -854,7 +854,7 @@ static BOOL get_freebusy(const char *dir)
 		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 			continue;
 		DOUBLE_LIST tmp_list;
-		if (!find_recurrence_times(ptz_component, whole_start_time,
+		if (!find_recurrence_times(*ptz_component, whole_start_time,
 		    &apprecurr, g_start_time, g_end_time, &tmp_list))
 			continue;
 		DOUBLE_LIST_NODE *pnode;
