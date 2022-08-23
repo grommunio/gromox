@@ -55,7 +55,7 @@ const ical_line *ical_component::get_line(const char *name) const
 int ICAL_COMPONENT::append_comp(std::shared_ptr<ICAL_COMPONENT> c)
 {
 	try {
-		component_list.push_back(std::move(*c));
+		component_list.push_back(std::move(c));
 		return 0;
 	} catch (...) {
 	}
