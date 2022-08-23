@@ -248,7 +248,9 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 		memmove(ptz_definition->prules, ptz_definition->prules + 1,
 							sizeof(TZRULE)*ptz_definition->crules);
 	}
-	ptz_definition->prules[0].year = 1;
+	ptz_definition->prules[0].year = 1601;
+	ptz_definition->prules[0].x[0] = 1;
+	ptz_definition->prules[0].x[4] = 1;
 	return TRUE;
 }
 
