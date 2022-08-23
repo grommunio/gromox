@@ -2537,7 +2537,6 @@ static std::shared_ptr<ICAL_COMPONENT> oxcical_export_timezone(ical &pical,
 {
 	int day;
 	int order;
-	std::shared_ptr<ICAL_VALUE> pivalue;
 	char tmp_buff[1024];
 	
 	auto pcomponent = ical_new_component("VTIMEZONE");
@@ -2761,8 +2760,6 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 	std::shared_ptr<ICAL_LINE> piline;
 	char username[UADDR_SIZE];
 	char tmp_value[334];
-	std::shared_ptr<ICAL_PARAM> piparam;
-	std::shared_ptr<ICAL_VALUE> pivalue;
 	
 	if (pmsg->children.prcpts == nullptr)
 		return TRUE;
@@ -3021,7 +3018,6 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 	BOOL b_found;
 	ICAL_TIME itime;
 	std::shared_ptr<ICAL_LINE> piline;
-	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	
 	if (apr->recur_pat.calendartype != CAL_DEFAULT ||
@@ -3094,7 +3090,6 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 {
 	BOOL b_found;
 	ICAL_TIME itime;
-	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	
 	auto piline = ical_new_line("RDATE");
@@ -3165,7 +3160,6 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	EXT_PUSH ext_push;
 	time_t start_time;
 	BOOL b_exceptional, b_recurrence = false;
-	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	char tmp_buff1[2048];
 	PROPID_ARRAY propids;
