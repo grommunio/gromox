@@ -3144,8 +3144,7 @@ static bool busystatus_to_line(ol_busy_status status, const char *key,
 }
 
 static BOOL oxcical_export_internal(const char *method, const char *tzid,
-    std::shared_ptr<ICAL_COMPONENT> ptz_component, const MESSAGE_CONTENT *pmsg,
-    ical &pical, ENTRYID_TO_USERNAME entryid_to_username,
+    const MESSAGE_CONTENT *pmsg, ical &pical, ENTRYID_TO_USERNAME entryid_to_username,
     ESSDN_TO_USERNAME essdn_to_username,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
@@ -3241,6 +3240,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			end_time += *num;
 	}
 	
+	std::shared_ptr<ical_component> ptz_component;
 	std::shared_ptr<ICAL_LINE> piline;
 	BINARY *bin = nullptr;
 	if (b_exceptional)
@@ -3301,7 +3301,6 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	year = tmp_tm.tm_year + 1900;
 	
 	tzid = NULL;
-	ptz_component = NULL;
 	if (b_recurrence) {
 		propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneStruct};
 		if (!get_propids(&propnames, &propids))
@@ -3867,7 +3866,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (!pembedded->proplist.has(proptag_xrt))
 				continue;
 			if (!oxcical_export_internal(method, tzid,
-			    ptz_component, pembedded, pical, entryid_to_username,
+			    pembedded, pical, entryid_to_username,
 			    essdn_to_username, alloc, get_propids))
 				return FALSE;
 		}
@@ -3918,7 +3917,7 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
 	ENTRYID_TO_USERNAME entryid_to_username,
 	ESSDN_TO_USERNAME essdn_to_username)
 {
-	return oxcical_export_internal(nullptr, nullptr, nullptr, pmsg,
+	return oxcical_export_internal(nullptr, nullptr, pmsg,
 	       pical, entryid_to_username, essdn_to_username,
 	       alloc, get_propids);
 }
