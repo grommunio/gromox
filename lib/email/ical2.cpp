@@ -52,16 +52,6 @@ const ical_line *ical_component::get_line(const char *name) const
 	return nullptr;
 }
 
-int ICAL_COMPONENT::append_comp(std::shared_ptr<ICAL_COMPONENT> c)
-{
-	try {
-		component_list.push_back(std::move(c));
-		return 0;
-	} catch (...) {
-	}
-	return -ENOMEM;
-}
-
 void ical_line::append_param(const char *tag, const char *s)
 {
 	ical_param p(tag);

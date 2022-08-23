@@ -138,11 +138,7 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		return errno;
 	}
 	ICAL ical;
-	auto ret = ical.init();
-	if (ret < 0) {
-		fprintf(stderr, "ical_init: %s\n", strerror(-ret));
-		return -ret;
-	} else if (!ical.retrieve(slurp_data.get())) {
+	if (!ical.retrieve(slurp_data.get())) {
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return EIO;
 	}

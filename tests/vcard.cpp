@@ -32,11 +32,9 @@ static void t_card()
 static void t_ical()
 {
 	ical ic;
-	ic.init();
-	auto c = ical_new_component("COMPX");
-	ic.append_comp(c);
+	auto &c = ic.append_comp("COMPX");
 	auto l = ical_new_simple_line("KEY", "VALUE1");
-	c->append_line(l);
+	c.append_line(l);
 	auto &v = l->append_value();
 	v.append_subval("SUBVAL");
 	v.append_subval("SUBVAL");

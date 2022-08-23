@@ -122,41 +122,9 @@ static char *ical_get_value_sep(char *pstring, char sep)
 	return NULL;
 }
 
-static int ical_init_component(ICAL_COMPONENT *pcomponent, const char *name)
-{
-	try {
-		pcomponent->m_name = name;
-	} catch (...) {
-		return -ENOMEM;
-	}
-	return 0;
-}
-
-
 static void ical_clear_component(ICAL_COMPONENT *pcomponent)
 {
 	pcomponent->component_list.clear();
-}
-
-std::shared_ptr<ICAL_COMPONENT> ical_new_component(const char *name)
-{
-	try {
-		auto c = std::make_shared<ICAL_COMPONENT>();
-		auto ret = ical_init_component(c.get(), name);
-		if (ret < 0) {
-			errno = -ret;
-			return nullptr;
-		}
-		return c;
-	} catch (...) {
-	}
-	errno = ENOMEM;
-	return nullptr;
-}
-
-int ical::init()
-{
-	return ical_init_component(this, "VCALENDAR");
 }
 
 static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
@@ -394,9 +362,10 @@ static inline bool r1something(const char *s)
 	       strcasecmp(s, "VERSION") == 0;
 }
 
-static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
+static bool ical_retrieve_component(ical_component &comp,
     char *in_buff, char **ppnext) try
 {
+	auto pcomponent = &comp;
 	char *pline;
 	char *pnext;
 	size_t length;
@@ -416,14 +385,8 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 			if (NULL == tmp_item.pvalue) {
 				break;
 			}
-			auto pcomponent1 = ical_new_component(tmp_item.pvalue);
-			if (NULL == pcomponent1) {
-				break;
-			}
-			if (!ical_retrieve_component(pcomponent1.get(), pnext, &pnext)) {
-				break;
-			}
-			if (pcomponent->append_comp(pcomponent1) < 0)
+			auto &pcomponent1 = pcomponent->append_comp(tmp_item.pvalue);
+			if (!ical_retrieve_component(pcomponent1, pnext, &pnext))
 				break;
 			continue;
 		}
@@ -486,7 +449,7 @@ bool ical::retrieve(char *in_buff)
 	if (0 == strcasecmp(tmp_item.ptag, "BEGIN") &&
 		NULL != pnext && (NULL != tmp_item.pvalue &&
 		0 == strcasecmp(tmp_item.pvalue, "VCALENDAR"))) {
-		return ical_retrieve_component(pical, pnext, NULL);
+		return ical_retrieve_component(*pical, pnext, nullptr);
 	}
 	ical_clear_component(pical);
 	return false;
@@ -685,7 +648,7 @@ static size_t ical_serialize_component(const ical_component &com,
 		offset ++;
 	}
 	for (const auto &comp : pcomponent->component_list) {
-		offset1 = ical_serialize_component(*comp, out_buff + offset, max_length - offset);
+		offset1 = ical_serialize_component(comp, &out_buff[offset], max_length - offset);
 		if (0 == offset1) {
 			return 0;
 		}
@@ -1406,7 +1369,8 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 	
 	b_standard = FALSE;
 	b_daylight = FALSE;
-	for (const auto &pcomponent : ptz_component.component_list) {
+	for (const auto &comp : ptz_component.component_list) {
+		auto pcomponent = &comp;
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") != 0)
 			return NULL;
@@ -1674,7 +1638,8 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		pitime->leap_second = 0;
 		return true;
 	}
-	for (const auto &pcomponent : ptz_component->component_list) {
+	for (const auto &comp : ptz_component->component_list) {
+		auto pcomponent = &comp;
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") != 0)
 			return false;

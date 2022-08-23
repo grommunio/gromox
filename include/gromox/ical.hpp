@@ -1,7 +1,9 @@
 #pragma once
 #include <ctime>
+#include <list>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -63,18 +65,20 @@ using ICAL_LINE = ical_line;
 
 struct GX_EXPORT ical_component {
 	public:
-	int append_comp(std::shared_ptr<ical_component>);
+	ical_component(const char *n) : m_name(n) {}
+	ical_component &append_comp(const char *n) { return component_list.emplace_back(n); }
 	int append_line(std::shared_ptr<ICAL_LINE>);
 	const ical_line *get_line(const char *name) const;
 
 	std::string m_name;
 	std::vector<std::shared_ptr<ICAL_LINE>> line_list;
-	std::vector<std::shared_ptr<ical_component>> component_list;
+	/* Be wary of iterator/pointer invalidation */
+	std::list<ical_component> component_list;
 };
 using ICAL_COMPONENT = ical_component;
 
 struct GX_EXPORT ical : public ical_component {
-	int init();
+	ical() : ical_component("VCALENDAR") {}
 	bool retrieve(char *in_buff);
 	bool serialize(char *out_buff, size_t maxlen) const;
 };
@@ -141,7 +145,6 @@ struct GX_EXPORT ical_rrule {
 };
 using ICAL_RRULE = ical_rrule;
 
-extern GX_EXPORT std::shared_ptr<ICAL_COMPONENT> ical_new_component(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_line(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *value);
 extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
