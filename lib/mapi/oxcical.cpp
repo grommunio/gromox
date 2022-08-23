@@ -919,6 +919,8 @@ static BOOL oxcical_parse_start_end(BOOL b_start, BOOL b_proposal,
     const ical_component &pmain_event, time_t unix_time,
     namemap &phash, uint16_t *plast_propid,  MESSAGE_CONTENT *pmsg)
 {
+	uint16_t comid = b_start ? PidLidCommonStart : PidLidCommonEnd;
+	uint32_t sdtag = b_start ? PR_START_DATE : PR_END_DATE;
 	uint64_t tmp_int64;
 	
 	tmp_int64 = rop_util_unix_to_nttime(unix_time);
@@ -931,6 +933,12 @@ static BOOL oxcical_parse_start_end(BOOL b_start, BOOL b_proposal,
 		if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
 			return FALSE;
 		(*plast_propid) ++;
+		pn = {MNID_ID, PSETID_COMMON, comid};
+		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0 ||
+		    pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0 ||
+		    pmsg->proplist.set(sdtag, &tmp_int64) != 0)
+			return FALSE;
+		++*plast_propid;
 	}
 	if (!b_proposal ||
 	    (pmain_event.get_line("X-MS-OLK-ORIGINALEND") == nullptr &&
@@ -942,6 +950,12 @@ static BOOL oxcical_parse_start_end(BOOL b_start, BOOL b_proposal,
 		if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
 			return FALSE;
 		(*plast_propid) ++;
+		pn = {MNID_ID, PSETID_COMMON, comid};
+		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0 ||
+		    pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0 ||
+		    pmsg->proplist.set(sdtag, &tmp_int64) != 0)
+			return FALSE;
+		++*plast_propid;
 	}
 	return TRUE;
 }
