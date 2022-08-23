@@ -5358,8 +5358,10 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		
 		if (!oxcical_export(pmsg, ical, alloc,
 		    get_propids, oxcmail_entryid_to_username,
-		    oxcmail_essdn_to_username))
+		    oxcmail_essdn_to_username)) {
+			fprintf(stderr, "W-2186: oxcical_export failed for an unspecified reason\n");
 			goto EXPORT_FAILURE;
+		}
 		tmp_method[0] = '\0';
 		auto piline = ical.get_line("METHOD");
 		if (NULL != piline) {
