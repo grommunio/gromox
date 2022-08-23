@@ -710,8 +710,7 @@ static BOOL oxcical_parse_recipients(const ical_component &main_ev,
 		return FALSE;
 	tmp_byte = 0;
 	message_content_set_rcpts_internal(pmsg, prcpts);
-	for (const auto &line : main_ev.line_list) {
-		auto piline = &line;
+	for (const auto &piline : main_ev.line_list) {
 		if (strcasecmp(piline->m_name.c_str(), "ATTENDEE") != 0)
 			continue;
 		paddress = piline->get_first_subvalue();
@@ -2257,10 +2256,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	
 	size_t tmp_count = 0;
 	for (const auto &line : pmain_event->line_list) {
-		if (strcasecmp(line.m_name.c_str(), "ATTACH") != 0)
+		if (strcasecmp(line->m_name.c_str(), "ATTACH") != 0)
 			continue;
 		tmp_count ++;
-		if (!oxcical_parse_attachment(line, tmp_count, pmsg))
+		if (!oxcical_parse_attachment(*line, tmp_count, pmsg))
 			return FALSE;
 	}
 	
