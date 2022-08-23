@@ -107,46 +107,46 @@ static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
 	pdate->minute = itime.minute;
 	pdate->second = itime.second;
 	piline = sub.get_line("RRULE");
-	if (NULL != piline) {
-		pvalue = piline->get_first_subvalue_by_name("FREQ");
-		if (pvalue == nullptr || strcasecmp(pvalue, "YEARLY") != 0)
-			return FALSE;
-		pvalue = piline->get_first_subvalue_by_name("BYDAY");
-		pvalue1 = piline->get_first_subvalue_by_name("BYMONTHDAY");
-		if ((pvalue == nullptr && pvalue1 == nullptr) ||
-		    (pvalue != nullptr && pvalue1 != nullptr))
-			return FALSE;
-		pvalue2 = piline->get_first_subvalue_by_name("BYMONTH");
-		if (NULL == pvalue2) {
-			pdate->month = itime.month;
-		} else {
-			pdate->month = strtol(pvalue2, nullptr, 0);
-			if (pdate->month < 1 || pdate->month > 12)
-				return FALSE;
-		}
-		if (NULL != pvalue) {
-			pdate->year = 0;
-			if (!ical_parse_byday(pvalue, &dayofweek, &weekorder))
-				return FALSE;
-			if (weekorder == -1)
-				weekorder = 5;
-			if (weekorder > 5 || weekorder < 1)
-				return FALSE;
-			pdate->dayofweek = dayofweek;
-			pdate->day = weekorder;
-		} else {
-			pdate->year = 1;
-			pdate->dayofweek = 0;
-			pdate->day = strtol(pvalue1, nullptr, 0);
-			if (abs(pdate->day) < 1 || abs(pdate->day) > 31)
-				return FALSE;
-		}
-	} else {
+	if (piline == nullptr) {
 		pdate->year = 0;
 		pdate->month = itime.month;
 		pdate->dayofweek = ical_get_dayofweek(
 			itime.year, itime.month, itime.day);
 		pdate->day = ical_get_monthweekorder(itime.day);
+		return TRUE;
+	}
+	pvalue = piline->get_first_subvalue_by_name("FREQ");
+	if (pvalue == nullptr || strcasecmp(pvalue, "YEARLY") != 0)
+		return FALSE;
+	pvalue = piline->get_first_subvalue_by_name("BYDAY");
+	pvalue1 = piline->get_first_subvalue_by_name("BYMONTHDAY");
+	if ((pvalue == nullptr && pvalue1 == nullptr) ||
+	    (pvalue != nullptr && pvalue1 != nullptr))
+		return FALSE;
+	pvalue2 = piline->get_first_subvalue_by_name("BYMONTH");
+	if (NULL == pvalue2) {
+		pdate->month = itime.month;
+	} else {
+		pdate->month = strtol(pvalue2, nullptr, 0);
+		if (pdate->month < 1 || pdate->month > 12)
+			return FALSE;
+	}
+	if (NULL != pvalue) {
+		pdate->year = 0;
+		if (!ical_parse_byday(pvalue, &dayofweek, &weekorder))
+			return FALSE;
+		if (weekorder == -1)
+			weekorder = 5;
+		if (weekorder > 5 || weekorder < 1)
+			return FALSE;
+		pdate->dayofweek = dayofweek;
+		pdate->day = weekorder;
+	} else {
+		pdate->year = 1;
+		pdate->dayofweek = 0;
+		pdate->day = strtol(pvalue1, nullptr, 0);
+		if (abs(pdate->day) < 1 || abs(pdate->day) > 31)
+			return FALSE;
 	}
 	return TRUE;
 }
