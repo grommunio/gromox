@@ -69,7 +69,7 @@ struct GX_EXPORT ical_component {
 
 	std::string m_name;
 	std::vector<ical_line> line_list;
-	std::vector<ical_component> component_list;
+	std::vector<std::shared_ptr<ical_component>> component_list;
 };
 using ICAL_COMPONENT = ical_component;
 

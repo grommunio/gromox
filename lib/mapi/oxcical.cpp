@@ -173,8 +173,7 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 	if (ptz_definition->keyname == nullptr)
 		return FALSE;
 	ptz_definition->crules = 0;
-	for (const auto &component : vt.component_list) {
-		auto pcomponent = &component;
+	for (const auto &pcomponent : vt.component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0)
 			b_daylight = FALSE;
 		else if (strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") == 0)
@@ -563,8 +562,7 @@ static const ical_component *oxcical_find_vtimezone(const ical &pical, const cha
 {
 	const char *pvalue;
 	
-	for (const auto &com : pical.component_list) {
-		auto pcomponent = &com;
+	for (const auto &pcomponent : pical.component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "VTIMEZONE") != 0)
 			continue;
 		auto piline = pcomponent->get_line("TZID");
@@ -574,7 +572,7 @@ static const ical_component *oxcical_find_vtimezone(const ical &pical, const cha
 		if (pvalue == nullptr)
 			continue;
 		if (strcasecmp(pvalue, tzid) == 0)
-			return pcomponent;
+			return pcomponent.get();
 	}
 	return NULL;
 }
@@ -2269,7 +2267,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	BOOL b_alarm = FALSE;
 	uint32_t alarmdelta = 0;
 	if (pmain_event->component_list.size() > 0) {
-		const auto palarm_component = &pmain_event->component_list.front();
+		auto palarm_component = pmain_event->component_list.front();
 		if (strcasecmp(palarm_component->m_name.c_str(), "VALARM") == 0) {
 			b_alarm = TRUE;
 			piline = palarm_component->get_line("TRIGGER");
@@ -2344,13 +2342,12 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
  */
 static BOOL oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) try
 {
-	for (const auto &com : pical.component_list) {
-		auto pcomponent = &com;
+	for (const auto &pcomponent : pical.component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "VEVENT") != 0)
 			continue;
 		auto piline = pcomponent->get_line("UID");
 		auto puid = piline != nullptr ? piline->get_first_subvalue() : "";
-		ul[puid].push_back(pcomponent);
+		ul[puid].push_back(pcomponent.get());
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
