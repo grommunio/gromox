@@ -346,7 +346,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 	itime.hour = 0;
 	itime.minute = 0;
 	itime.second = 0;
-	ical_itime_to_utc(&tzcom, itime, &tmp_time);
+	ical_itime_to_utc(nullptr, itime, &tmp_time);
 	apr->recur_pat.startdate = rop_util_unix_to_rtime(tmp_time);
 	if (irrule.endless()) {
  SET_INFINITE:
@@ -380,7 +380,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 		itime.hour = 0;
 		itime.minute = 0;
 		itime.second = 0;
-		ical_itime_to_utc(&tzcom, itime, &tmp_time);
+		ical_itime_to_utc(nullptr, itime, &tmp_time);
 		apr->recur_pat.enddate = rop_util_unix_to_rtime(tmp_time);
 	}
 	switch (irrule.frequency) {

@@ -1552,6 +1552,11 @@ bool ical_itime_to_utc(const ical_component *ptz_component,
 	if (NULL == ptz_component) {
 		return true;
 	}
+	/*
+	 * @itime is anchored to @ptz_component. Conversion to tmp_tm did not
+	 * change that. Because make_gmtime() pretends @tmp_tm was UTC, @*ptime
+	 * now has bias which needs to be corrected.
+	 */
 	auto str_offset = ical_get_datetime_offset(*ptz_component, itime);
 	if (NULL == str_offset) {
 		return false;
