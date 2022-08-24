@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <list>
 #include <map>
 #include <memory>
 #include <optional>
@@ -22,7 +23,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/cookie_parser.hpp>
-#include <gromox/double_list.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -45,12 +45,10 @@ enum { /* for PidLidAppointmentStateFlags */
 
 namespace {
 
-struct EVENT_NODE {
-	DOUBLE_LIST_NODE node;
-	time_t start_time;
-	time_t end_time;
-	EXCEPTIONINFO *pexception;
-	EXTENDEDEXCEPTION *pex_exception;
+struct event_node {
+	time_t start_time = 0, end_time = 0;
+	EXCEPTIONINFO *pexception = nullptr;
+	EXTENDEDEXCEPTION *pex_exception = nullptr;
 };
 
 }
@@ -310,18 +308,17 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
 
 static BOOL find_recurrence_times(ical_component &tzcom,
     time_t whole_start_time, const APPOINTMENT_RECUR_PAT *apr,
-	time_t start_time, time_t end_time, DOUBLE_LIST *plist)
+	time_t start_time, time_t end_time, std::list<event_node> &plist)
 {
 	int i;
 	time_t tmp_time;
 	time_t tmp_time1;
 	ICAL_RRULE irrule;
-	EVENT_NODE *pevnode;
 
 	if (!recurrencepattern_to_rrule(tzcom, whole_start_time,
 	    apr, &irrule))
 		return FALSE;	
-	double_list_init(plist);
+	plist.clear();
 	do {
 		auto itime = irrule.instance_itime;
 		ical_itime_to_utc(&tzcom, itime, &tmp_time);
@@ -334,13 +331,12 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 		}
 		if (i < apr->exceptioncount)
 			continue;
-		pevnode = me_alloc<EVENT_NODE>();
-		pevnode->node.pdata = pevnode;
+		plist.emplace_back();
+		auto pevnode = &plist.back();
 		pevnode->start_time = tmp_time;
 		pevnode->end_time = tmp_time + (apr->endtimeoffset - apr->starttimeoffset) * 60;
 		pevnode->pexception = NULL;
 		pevnode->pex_exception = NULL;
-		double_list_append_as_tail(plist, &pevnode->node);
 		if (tmp_time >= end_time)
 			break;
 	} while (irrule.iterate());
@@ -351,8 +347,8 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 		ical_itime_to_utc(&tzcom, itime, &tmp_time);
 		if (tmp_time < start_time || tmp_time > end_time)
 			continue;
-		pevnode = me_alloc<EVENT_NODE>();
-		pevnode->node.pdata = pevnode;
+		plist.emplace_back();
+		auto pevnode = &plist.back();
 		pevnode->start_time = tmp_time;
 		tmp_time = rop_util_rtime_to_unix(apr->pexceptioninfo[i].enddatetime);
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
@@ -360,7 +356,6 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 		pevnode->end_time = tmp_time;
 		pevnode->pexception = apr->pexceptioninfo + i;
 		pevnode->pex_exception = apr->pextendedexception + i;
-		double_list_append_as_tail(plist, &pevnode->node);
 	}
 	return TRUE;
 }
@@ -785,13 +780,14 @@ static BOOL get_freebusy(const char *dir)
 		ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 			continue;
-		DOUBLE_LIST tmp_list;
+		std::list<event_node> event_list;
 		if (!find_recurrence_times(*ptz_component, whole_start_time,
-		    &apprecurr, g_start_time, g_end_time, &tmp_list))
+		    &apprecurr, g_start_time, g_end_time, event_list))
 			continue;
-		DOUBLE_LIST_NODE *pnode;
-		while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
-			auto pevnode = static_cast<EVENT_NODE *>(pnode->pdata);
+		while (event_list.size() > 0) {
+			std::list<event_node> holder;
+			holder.splice(holder.end(), event_list, event_list.begin());
+			auto pevnode = &holder.front();
 			if (pevnode->pexception == nullptr || pevnode->pex_exception == nullptr) {
 				if (b_first)
 					printf(",");
