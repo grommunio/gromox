@@ -183,6 +183,16 @@ time_t rop_util_nttime_to_unix(uint64_t nt_time)
 	return (time_t)unix_time;
 }
 
+time_t rop_util_rtime_to_unix(uint32_t t)
+{
+	return rop_util_nttime_to_unix(rop_util_rtime_to_nttime(t));
+}
+
+uint32_t rop_util_unix_to_rtime(time_t t)
+{
+	return rop_util_nttime_to_rtime(rop_util_unix_to_nttime(t));
+}
+
 uint64_t rop_util_current_nttime()
 {
 	struct timeval tvl;
