@@ -205,8 +205,6 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
     ICAL_RRULE *pirrule) try
 {
 	ICAL_TIME itime;
-	time_t unix_time;
-	uint64_t nt_time;
 	char tmp_buff[1024];
 	
 	ical_line iline("RRULE");
@@ -293,10 +291,7 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.occurrencecount);
 		piline->append_value("COUNT", tmp_buff);
 	} else if (apr->recur_pat.endtype == ENDTYPE_AFTER_DATE) {
-		nt_time = apr->recur_pat.enddate + apr->starttimeoffset;
-		nt_time *= 600000000;
-		unix_time = rop_util_nttime_to_unix(nt_time);
-		ical_utc_to_datetime(&tzcom, unix_time, &itime);
+		ical_utc_to_datetime(&tzcom, rop_util_rtime_to_unix(apr->recur_pat.enddate + apr->starttimeoffset), &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		piline->append_value("UNTIL", tmp_buff);
 	}
@@ -320,7 +315,6 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 	int i;
 	time_t tmp_time;
 	time_t tmp_time1;
-	uint64_t nt_time;
 	ICAL_RRULE irrule;
 	EVENT_NODE *pevnode;
 
@@ -335,9 +329,7 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 			continue;
 		ical_itime_to_utc(NULL, itime, &tmp_time1);
 		for (i = 0; i < apr->exceptioncount; ++i) {
-			nt_time = apr->pexceptioninfo[i].originalstartdate;
-			nt_time *= 600000000;
-			if (tmp_time1 == rop_util_nttime_to_unix(nt_time))
+			if (tmp_time1 == rop_util_rtime_to_unix(apr->pexceptioninfo[i].originalstartdate))
 				break;
 		}
 		if (i < apr->exceptioncount)
@@ -353,9 +345,7 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 			break;
 	} while (irrule.iterate());
 	for (i = 0; i < apr->exceptioncount; ++i) {
-		nt_time = apr->pexceptioninfo[i].startdatetime;
-		nt_time *= 600000000;
-		tmp_time = rop_util_nttime_to_unix(nt_time);
+		tmp_time = rop_util_rtime_to_unix(apr->pexceptioninfo[i].startdatetime);
 		ICAL_TIME itime;
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
 		ical_itime_to_utc(&tzcom, itime, &tmp_time);
@@ -364,9 +354,7 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 		pevnode = me_alloc<EVENT_NODE>();
 		pevnode->node.pdata = pevnode;
 		pevnode->start_time = tmp_time;
-		nt_time = apr->pexceptioninfo[i].enddatetime;
-		nt_time *= 600000000;
-		tmp_time = rop_util_nttime_to_unix(nt_time);
+		tmp_time = rop_util_rtime_to_unix(apr->pexceptioninfo[i].enddatetime);
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
 		ical_itime_to_utc(&tzcom, itime, &tmp_time);
 		pevnode->end_time = tmp_time;

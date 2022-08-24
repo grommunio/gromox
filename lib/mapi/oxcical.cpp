@@ -347,7 +347,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 	itime.minute = 0;
 	itime.second = 0;
 	ical_itime_to_utc(&tzcom, itime, &tmp_time);
-	apr->recur_pat.startdate = rop_util_unix_to_nttime(tmp_time) / 600000000;
+	apr->recur_pat.startdate = rop_util_unix_to_rtime(tmp_time);
 	if (irrule.endless()) {
  SET_INFINITE:
 		apr->recur_pat.endtype = ENDTYPE_NEVER_END;
@@ -381,7 +381,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 		itime.minute = 0;
 		itime.second = 0;
 		ical_itime_to_utc(&tzcom, itime, &tmp_time);
-		apr->recur_pat.enddate = rop_util_unix_to_nttime(tmp_time) / 600000000;
+		apr->recur_pat.enddate = rop_util_unix_to_rtime(tmp_time);
 	}
 	switch (irrule.frequency) {
 	case ical_frequency::second:
@@ -414,8 +414,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 		itime.second = 0;
 		itime.leap_second = 0;
 		ical_itime_to_utc(NULL, itime, &tmp_time);
-		apr->recur_pat.firstdatetime =
-			(rop_util_unix_to_nttime(tmp_time)/600000000)%
+		apr->recur_pat.firstdatetime = rop_util_unix_to_rtime(tmp_time) %
 			(10080 * irrule.interval);
 		patterntype = PATTERNTYPE_WEEK;
 		if (irrule.check_bymask(RRULE_BY_DAY)) {
@@ -1009,7 +1008,7 @@ static BOOL oxcical_parse_dates(const ical_component *ptz_component,
 			itime.minute = 0;
 			itime.second = 0;
 			ical_itime_to_utc(NULL, itime, &tmp_time);
-			tmp_date = rop_util_unix_to_nttime(tmp_time)/600000000;
+			tmp_date = rop_util_unix_to_rtime(tmp_time);
 			for (size_t i = 0; i < *pcount; ++i)
 				if (tmp_date == pdates[i])
 					return TRUE;
@@ -1026,7 +1025,7 @@ static BOOL oxcical_parse_dates(const ical_component *ptz_component,
 			if (!ical_parse_date(pnv2.c_str(), &itime.year, &itime.month, &itime.day))
 				continue;
 			ical_itime_to_utc(NULL, itime, &tmp_time);
-			pdates[*pcount] = rop_util_unix_to_nttime(tmp_time)/600000000;
+			pdates[*pcount] = rop_util_unix_to_rtime(tmp_time);
 			(*pcount) ++;
 			if (*pcount >= 1024)
 				return TRUE;
@@ -1495,7 +1494,6 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
-	uint64_t nt_time;
 	EXT_PUSH ext_push;
 	
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
@@ -1521,19 +1519,18 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	    pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &num) != 0)
 		return false;
 	++*plast_propid;
-	nt_time = apr->recur_pat.endtype == ENDTYPE_NEVER_END ||
-	          apr->recur_pat.endtype == ENDTYPE_NEVER_END1 ?
-	          1525076159 : /* 31 August 4500, 11:59 P.M */
-	          apr->recur_pat.enddate;
-	nt_time *= 600000000;
+	auto nt_time = rop_util_rtime_to_nttime(
+		apr->recur_pat.endtype == ENDTYPE_NEVER_END ||
+		apr->recur_pat.endtype == ENDTYPE_NEVER_END1 ?
+		1525076159 : /* 31 August 4500, 11:59 P.M */
+		apr->recur_pat.enddate);
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidClipEnd};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != 0)
 		return FALSE;
 	(*plast_propid) ++;
-	nt_time = apr->recur_pat.startdate;
-	nt_time *= 600000000;
+	nt_time = rop_util_rtime_to_nttime(apr->recur_pat.startdate);
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidClipStart};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
@@ -2241,7 +2238,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			if (!oxcical_parse_dtvalue(ptz_component,
 			    *piline, &b_utc, &itime, &tmp_time))
 				return FALSE;
-			auto minutes = rop_util_unix_to_nttime(tmp_time) / 600000000U;
+			auto minutes = rop_util_unix_to_rtime(tmp_time);
 			size_t i;
 			for (i = 0; i < apr.recur_pat.deletedinstancecount; ++i)
 				if (deleted_dates[i] == minutes)
@@ -2254,12 +2251,12 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			exceptions[apr.exceptioncount].originalstartdate = minutes;
 			ext_exceptions[apr.exceptioncount].originalstartdate = minutes;
 			ical_itime_to_utc(NULL, start_itime, &tmp_time);
-			minutes = rop_util_unix_to_nttime(tmp_time)/600000000;
+			minutes = rop_util_unix_to_rtime(tmp_time);
 			modified_dates[apr.recur_pat.modifiedinstancecount++] = minutes;
 			exceptions[apr.exceptioncount].startdatetime = minutes;
 			ext_exceptions[apr.exceptioncount].startdatetime = minutes;
 			ical_itime_to_utc(NULL, end_itime, &tmp_time);
-			minutes = rop_util_unix_to_nttime(tmp_time)/600000000;
+			minutes = rop_util_unix_to_rtime(tmp_time);
 			exceptions[apr.exceptioncount].enddatetime = minutes;
 			ext_exceptions[apr.exceptioncount].enddatetime = minutes;
 			++apr.exceptioncount;
@@ -2798,8 +2795,6 @@ static BOOL oxcical_export_rrule(const ical_component &ptz_component,
     ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	ICAL_TIME itime;
-	time_t unix_time;
-	uint64_t nt_time;
 	const char *str_tag;
 	char tmp_buff[1024];
 	
@@ -2929,10 +2924,7 @@ static BOOL oxcical_export_rrule(const ical_component &ptz_component,
 		piline->append_value("COUNT", tmp_buff);
 	} else if (ENDTYPE_AFTER_DATE ==
 		apr->recur_pat.endtype) {
-		nt_time = apr->recur_pat.enddate
-						+ apr->starttimeoffset;
-		nt_time *= 600000000;
-		unix_time = rop_util_nttime_to_unix(nt_time);
+		auto unix_time = rop_util_rtime_to_unix(apr->recur_pat.enddate + apr->starttimeoffset);
 		ical_utc_to_datetime(NULL, unix_time, &itime);
 		if (!ical_itime_to_utc(&ptz_component, itime, &unix_time))
 			return FALSE;
@@ -3004,8 +2996,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 		}
 		if (b_found)
 			continue;
-		auto tmp_int64 = (apr->recur_pat.pdeletedinstancedates[i] + apr->starttimeoffset) * 600000000ULL;
-		ical_utc_to_datetime(nullptr, rop_util_nttime_to_unix(tmp_int64), &itime);
+		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(apr->recur_pat.pdeletedinstancedates[i] + apr->starttimeoffset), &itime);
 		if (b_date)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		else if (tzid == nullptr)
@@ -3067,8 +3058,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 		}
 		if (b_found)
 			continue;
-		auto tmp_int64 = apr->recur_pat.pmodifiedinstancedates[i] * 600000000ULL;
-		ical_utc_to_datetime(nullptr, rop_util_nttime_to_unix(tmp_int64), &itime);
+		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(apr->recur_pat.pmodifiedinstancedates[i]), &itime);
 		if (b_date)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		else if (tzid == nullptr)
