@@ -1,5 +1,5 @@
-1.28.178
-========
+1.30.89
+=======
 
 Enhancements:
 
@@ -13,6 +13,8 @@ Fixes:
 
 * kdb2mt: filter unwanted properties on writeout rather than readout
   (rerecognize special folders)
+* oxcical: recurring appointments now have their summary ("effective ... from
+  02:00 to 02:15") displayed without uncanny time shift
 * oxcical: oxcical_export_timezone had missed emitting BYMONTHDAY subvalues
 * dscli: fix nullptr deref when -x option is used
 * nsp: show DT_DISTLIST icon for mlists
