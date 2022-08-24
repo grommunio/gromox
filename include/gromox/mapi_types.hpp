@@ -618,7 +618,10 @@ union PATTERNTYPE_SPECIFIC {
 #define FIRSTDOW_FRIDAY								0x00000005
 #define FIRSTDOW_SATURDAY							0x00000006
 
-#define ENDDATE_MISSING								0x5AE980DF	
+enum {
+	ENDDATE_MISSING        = 0x5ae980df,
+	ENDDATE_MISSING_RDELTA = 0x5ae980e1,
+};
 
 struct RECURRENCE_PATTERN {
 	uint16_t readerversion; /* 0x3004 */
@@ -638,7 +641,7 @@ struct RECURRENCE_PATTERN {
 	uint32_t modifiedinstancecount;
 	uint32_t *pmodifiedinstancedates;
 	uint32_t startdate;
-	uint32_t enddate; /* if no enddate, should be set to 0x5AE980DF */
+	uint32_t enddate; /* if no enddate, should be set to ENDDATE_MISSING */
 };
 
 struct EXCEPTIONINFO {
