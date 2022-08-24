@@ -258,9 +258,8 @@ static void *zcorezs_scanwork(void *param)
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			fdpoll.fd = psink_node->clifd;
 			fdpoll.events = POLLOUT|POLLWRBAND;
-			if (1 == poll(&fdpoll, 1, tv_msec)) {
+			if (tmp_bin.pb != nullptr && poll(&fdpoll, 1, tv_msec) == 1)
 				write(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
-			}
 			free(tmp_bin.pb);
 			tmp_bin.pb = nullptr;
 			shutdown(psink_node->clifd, SHUT_WR);
