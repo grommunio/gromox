@@ -1522,8 +1522,7 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	auto nt_time = rop_util_rtime_to_nttime(
 		apr->recur_pat.endtype == ENDTYPE_NEVER_END ||
 		apr->recur_pat.endtype == ENDTYPE_NEVER_END1 ?
-		1525076159 : /* 31 August 4500, 11:59 P.M */
-		apr->recur_pat.enddate);
+		ENDDATE_MISSING : apr->recur_pat.enddate);
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidClipEnd};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
@@ -3694,7 +3693,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (!get_propids(&propnames, &propids))
 			return FALSE;
 		num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
-		if (num == nullptr || *num == 0x5AE980E1)
+		if (num == nullptr || *num == ENDDATE_MISSING_RDELTA)
 			strcpy(tmp_buff, "-PT15M");
 		else
 			snprintf(tmp_buff, arsizeof(tmp_buff), "-PT%uM", *num);
