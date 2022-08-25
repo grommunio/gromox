@@ -495,9 +495,9 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 		apr->recur_pat.period = 12 * irrule.interval;
 		memset(&itime, 0, sizeof(ICAL_TIME));
 		itime.year = 1601;
-		itime.month = (itime_first.month - 1) % (12 * irrule.interval) + 1;
+		itime.month = (itime_first.month - 1) % (12 * irrule.interval);
 		itime.year += itime.month/12;
-		itime.month = (itime.month - 1) % 12 + 1;
+		itime.month = itime.month % 12 + 1;
 		itime.day = 1;
 		memset(&itime1, 0, sizeof(ICAL_TIME));
 		itime1.year = 1601;
