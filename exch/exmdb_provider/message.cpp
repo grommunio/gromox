@@ -2665,7 +2665,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	if (action_flavor & ACTION_FLAVOR_NS) {
+	if (action_flavor & DO_NOT_SEND_TO_ORIGINATOR) {
 		if (NULL == pmsgctnt->children.prcpts ||
 			0 == pmsgctnt->children.prcpts->count) {
 			*pb_result = FALSE;
@@ -2713,7 +2713,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		}
 		pmsgctnt->children.prcpts = prcpts;
 	}
-	if (action_flavor & ACTION_FLAVOR_ST) {
+	if (action_flavor & STOCK_REPLY_TEMPLATE) {
 		if (!bounce_producer_make_content(from_address, account,
 		    psqlite, message_id, BOUNCE_AUTO_RESPONSE, nullptr,
 		    nullptr, content_type, tmp_buff))
@@ -2932,18 +2932,17 @@ static ec_error_t message_forward_message(const char *from_address,
 		}
 		g_sqlite_for_oxcmail = nullptr;
 	}
-	if (action_flavor & ACTION_FLAVOR_AT) {
+	if (action_flavor & FWD_AS_ATTACHMENT) {
 		MAIL imail1(common_util_get_mime_pool());
 		auto pmime = imail1.add_head();
 		if (NULL == pmime) {
 			return ecServerOOM;
 		}
 		pmime->set_content_type("message/rfc822");
-		if (action_flavor & ACTION_FLAVOR_PR) {
+		if (action_flavor & FWD_PRESERVE_SENDER)
 			snprintf(tmp_buff, arsizeof(tmp_buff), "<%s>", from_address);
-		} else {
+		else
 			snprintf(tmp_buff, arsizeof(tmp_buff), "\"Forwarder\"<forwarder@%s>", pdomain);
-		}
 		pmime->set_field("From", tmp_buff);
 		offset = 0;
 		for (const auto &eaddr : rcpt_list) {
@@ -2965,11 +2964,10 @@ static ec_error_t message_forward_message(const char *from_address,
 			localtime_r(&cur_time, &time_buff));
 		pmime->set_field("Date", tmp_buff);
 		pmime->write_mail(&imail);
-		if (action_flavor & ACTION_FLAVOR_PR) {
+		if (action_flavor & FWD_PRESERVE_SENDER)
 			strcpy(tmp_buff, from_address);
-		} else {
+		else
 			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
-		}
 		cu_send_mail(&imail1, tmp_buff, rcpt_list);
 	} else {
 		auto pmime = imail.get_head();
@@ -2978,11 +2976,10 @@ static ec_error_t message_forward_message(const char *from_address,
 		}
 		for (const auto &eaddr : rcpt_list)
 			pmime->append_field("Delivered-To", eaddr.c_str());
-		if (action_flavor & ACTION_FLAVOR_PR) {
+		if (action_flavor & FWD_PRESERVE_SENDER)
 			strcpy(tmp_buff, from_address);
-		} else {
+		else
 			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
-		}
 		cu_send_mail(&imail, tmp_buff, rcpt_list);
 	}
 	return ecSuccess;
