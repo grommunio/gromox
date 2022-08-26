@@ -76,6 +76,8 @@ size_t TPROPVAL_ARRAY::erase_if(bool (*pred)(const TAGGED_PROPVAL &tp))
 			propval_free(PROP_TYPE(p.proptag), p.pvalue);
 		else if (i != o)
 			memcpy(&ppropval[o++], &ppropval[i], sizeof(TAGGED_PROPVAL));
+		else
+			++o;
 	}
 	auto removed = count - o;
 	count = o;
