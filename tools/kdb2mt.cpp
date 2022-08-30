@@ -491,6 +491,15 @@ kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 	drv->server_guid = bin2hex(row[0], rowlen[0]);
 	fmt::print(stderr, "kdb GUID: {}\n", drv->server_guid);
 
+	qstr = fmt::format("SELECT value FROM settings WHERE name='attachment_storage'");
+	res = drv->query(qstr.c_str());
+	if (res == nullptr)
+		throw YError("PG-1136: unable to request settings.attachment_storage");
+	row = res.fetch_row();
+	if (row != nullptr && row[0] != nullptr &&
+	    strncasecmp(row[0], "files", 5) != 0)
+		throw YError("PG-1137: kdb2mt does not support attachment_storage type other than files (v1, v2, etc.) at this time");
+
 	qstr = "SELECT MAX(databaserevision) FROM versions";
 	try {
 		res = drv->query(qstr.c_str());
