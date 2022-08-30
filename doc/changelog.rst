@@ -1,5 +1,5 @@
-1.30.89
-=======
+1.31 (2022-08-30)
+=================
 
 Enhancements:
 
@@ -16,6 +16,7 @@ Fixes:
 * oxcical: recurring appointments now have their summary ("effective ... from
   02:00 to 02:15") displayed without uncanny time shift
 * oxcical: oxcical_export_timezone had missed emitting BYMONTHDAY subvalues
+* oxcical: avoid month wraparound with recurring events in December
 * dscli: fix nullptr deref when -x option is used
 * nsp: show DT_DISTLIST icon for mlists
 * oxcical: set PidLidRecurring and PidLidRecurrenceType tags when importing
