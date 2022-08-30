@@ -2277,6 +2277,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	}
 	
 	pback.reset();
+	EH.release();
 	return MIDB_RESULT_OK;
 }
 
