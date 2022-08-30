@@ -1661,7 +1661,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			return MIDB_RESULT_OK;
 		}
 		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
-		if (64*1024 == offset) {
+		if (static_cast<size_t>(offset) >= std::size(buff) - 1) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
 			} else {
@@ -1818,7 +1818,7 @@ static int fetch_simple(const char *path, const char *folder,
 				return MIDB_RESULT_ERROR;
 			}
 			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
-			if (1024 == offset) {
+			if (static_cast<size_t>(offset) >= std::size(buff) - 1) {
 				if ('\r' != buff[offset - 1]) {
 					offset = 0;
 				} else {
@@ -2118,7 +2118,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 				return MIDB_RESULT_ERROR;
 			}
 			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
-			if (1024 == offset) {
+			if (static_cast<size_t>(offset) >= std::size(buff) - 1) {
 				if ('\r' != buff[offset - 1]) {
 					offset = 0;
 				} else {
