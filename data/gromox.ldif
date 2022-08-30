@@ -1,0 +1,4 @@
+dn: cn=gromox,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: gromox
+# OID base: 1.3.6.1.4.1.59323.2079
