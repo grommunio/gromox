@@ -1723,11 +1723,11 @@ static int rop_ext_pull_syncimportdeletes_request(
 static int rop_ext_pull_syncimportmessagemove_request(
 	EXT_PULL *pext, SYNCIMPORTMESSAGEMOVE_REQUEST *r)
 {
-	TRY(pext->g_exbin(&r->src_folder_id));
-	TRY(pext->g_exbin(&r->src_message_id));
-	TRY(pext->g_exbin(&r->change_list));
-	TRY(pext->g_exbin(&r->dst_message_id));
-	return pext->g_exbin(&r->change_number);
+	TRY(pext->g_bin_ex(&r->src_folder_id));
+	TRY(pext->g_bin_ex(&r->src_message_id));
+	TRY(pext->g_bin_ex(&r->change_list));
+	TRY(pext->g_bin_ex(&r->dst_message_id));
+	return pext->g_bin_ex(&r->change_number);
 }
 
 static int rop_ext_push_syncimportmessagemove_response(
@@ -1759,7 +1759,7 @@ static int rop_ext_pull_syncuploadstatestreambegin_request(
 static int rop_ext_pull_syncuploadstatestreamcontinue_request(
 	EXT_PULL *pext, SYNCUPLOADSTATESTREAMCONTINUE_REQUEST *r)
 {
-	return pext->g_exbin(&r->stream_data);
+	return pext->g_bin_ex(&r->stream_data);
 }
 
 static int rop_ext_pull_setlocalreplicamidsetdeleted_request(

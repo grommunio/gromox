@@ -242,7 +242,7 @@ int EXT_PULL::g_sbin(BINARY *r)
 	return g_bytes(r->pv, r->cb);
 }
 
-int EXT_PULL::g_exbin(BINARY *r)
+int EXT_PULL::g_bin_ex(BINARY *r)
 {
 	TRY(g_uint32(&r->cb));
 	if (r->cb == 0) {
@@ -1975,7 +1975,7 @@ int EXT_PULL::g_goid(GLOBALOBJECTID *r)
 	TRY(g_uint8(&r->day));
 	TRY(g_uint64(&r->creationtime));
 	TRY(g_bytes(r->x, 8));
-	return g_exbin(&r->data);
+	return g_bin_ex(&r->data);
 }
 
 static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)

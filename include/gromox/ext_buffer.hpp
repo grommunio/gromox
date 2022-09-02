@@ -108,7 +108,7 @@ struct EXT_PULL {
 	int g_blob(DATA_BLOB *);
 	int g_bin(BINARY *);
 	int g_sbin(BINARY *);
-	int g_exbin(BINARY *);
+	int g_bin_ex(BINARY *);
 	int g_uint16_a(SHORT_ARRAY *);
 	int g_uint32_a(LONG_ARRAY *);
 	int g_uint64_a(LONGLONG_ARRAY *);
