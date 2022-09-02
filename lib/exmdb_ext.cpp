@@ -1884,7 +1884,7 @@ static int exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte != 0)
 		TRY(x.g_str(&d.username));
-	TRY(x.g_exbin(&tmp_bin));
+	TRY(x.g_bin_ex(&tmp_bin));
 	d.pgiven = new(std::nothrow) idset(false, REPL_TYPE_ID);
 	if (d.pgiven == nullptr)
 		return EXT_ERR_ALLOC;
@@ -1896,7 +1896,7 @@ static int exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 	if (status != EXT_ERR_SUCCESS)
 		return gcsr_failure(status, d);
 	if (0 != tmp_byte) {
-		status = x.g_exbin(&tmp_bin);
+		status = x.g_bin_ex(&tmp_bin);
 		if (status != EXT_ERR_SUCCESS)
 			return gcsr_failure(status, d);
 		d.pseen = new(std::nothrow) idset(false, REPL_TYPE_ID);
@@ -1909,7 +1909,7 @@ static int exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 	if (status != EXT_ERR_SUCCESS)
 		return gcsr_failure(status, d);
 	if (0 != tmp_byte) {
-		status = x.g_exbin(&tmp_bin);
+		status = x.g_bin_ex(&tmp_bin);
 		if (status != EXT_ERR_SUCCESS)
 			return gcsr_failure(status, d);
 		d.pseen_fai = new(std::nothrow) idset(false, REPL_TYPE_ID);
@@ -1922,7 +1922,7 @@ static int exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 	if (status != EXT_ERR_SUCCESS)
 		return gcsr_failure(status, d);
 	if (0 != tmp_byte) {
-		status = x.g_exbin(&tmp_bin);
+		status = x.g_bin_ex(&tmp_bin);
 		if (status != EXT_ERR_SUCCESS)
 			return gcsr_failure(status, d);
 		d.pread = new(std::nothrow) idset(false, REPL_TYPE_ID);
@@ -2034,7 +2034,7 @@ static int exmdb_pull(EXT_PULL &x, exreq_get_hierarchy_sync &d)
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte != 0)
 		TRY(x.g_str(&d.username));
-	TRY(x.g_exbin(&tmp_bin));
+	TRY(x.g_bin_ex(&tmp_bin));
 	d.pgiven = new(std::nothrow) idset(false, REPL_TYPE_ID);
 	if (d.pgiven == nullptr)
 		return EXT_ERR_ALLOC;
@@ -2048,7 +2048,7 @@ static int exmdb_pull(EXT_PULL &x, exreq_get_hierarchy_sync &d)
 		return status;
 	}
 	if (0 != tmp_byte) {
-		status = x.g_exbin(&tmp_bin);
+		status = x.g_bin_ex(&tmp_bin);
 		if (EXT_ERR_SUCCESS != status) {
 			delete d.pgiven;
 			return status;
