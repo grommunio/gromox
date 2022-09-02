@@ -116,9 +116,15 @@ int main(int argc, const char **argv) try
 	auto cl_1 = make_scope_exit(gi_shutdown);
 
 	MESSAGE_CONTENT *ctnt = nullptr;
+	auto msg_id = strtoull(argv[1], nullptr, 0);
 	if (!exmdb_client_remote::read_message(g_storedir, nullptr, 65001,
-	    rop_util_make_eid_ex(1, strtoull(argv[1], nullptr, 0)), &ctnt)) {
+	    rop_util_make_eid_ex(1, msg_id), &ctnt)) {
 		fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
+		return EXIT_FAILURE;
+	}
+	if (ctnt == nullptr) {
+		fprintf(stderr, "A message by the id %llxh was not found\n",
+		        static_cast<unsigned long long>(msg_id));
 		return EXIT_FAILURE;
 	}
 	if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html, mimepool,
