@@ -714,6 +714,7 @@ struct GLOBALOBJECTID {
 	uint64_t creationtime;
 	uint8_t x[8];
 	BINARY data;
+	bool unparsed;
 };
 
 struct EID_ARRAY {

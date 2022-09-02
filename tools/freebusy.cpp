@@ -372,9 +372,10 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 	
 	if (NULL != pglobal_obj) {
 		ext_pull.init(pglobal_obj->pb, pglobal_obj->cb, malloc, 0);
-		if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
 			return FALSE;
-		if (memcmp(globalobjectid.data.pb, ThirdPartyGlobalId, sizeof(ThirdPartyGlobalId)) == 0) {
+		if (globalobjectid.data.cb >= sizeof(ThirdPartyGlobalId) &&
+		    memcmp(globalobjectid.data.pb, ThirdPartyGlobalId, sizeof(ThirdPartyGlobalId)) == 0) {
 			if (globalobjectid.data.cb - 12 > sizeof(tmp_buff) - 1) {
 				memcpy(tmp_buff, globalobjectid.data.pb + 12,
 									sizeof(tmp_buff) - 1);

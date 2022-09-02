@@ -14,6 +14,20 @@
 #define assert(x) do { if (!(x)) return EXIT_FAILURE; } while (false)
 using namespace gromox;
 
+static int t_extpp()
+{
+	auto s = hex2bin("040000008200e00074c5b7101a82e008000000009b2dbdb2255659027cf33d2a183706db6bc9240adbd249557c96f6783dcc06d8f9c48b1f");
+	EXT_PULL ep;
+	ep.init(s.data(), s.size(), malloc, 0);
+	GLOBALOBJECTID goid;
+	auto ret = ep.g_goid(&goid, 1);
+	if (ret != EXT_ERR_SUCCESS) {
+		fprintf(stderr, "g_goid failed\n");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 static void t_convert()
 {
 	char out[1];
@@ -303,6 +317,8 @@ static int t_cmp_icaltime()
 
 int main()
 {
+	if (t_extpp() != 0)
+		return EXIT_FAILURE;
 	t_convert();
 	if (t_emailaddr() != 0)
 		return EXIT_FAILURE;
