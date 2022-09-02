@@ -404,14 +404,14 @@ std::string hex2bin(const char *input)
 		unsigned char d = HX_tolower(input[2*n+1]);
 		if (c >= '0' && c <= '9')
 			c -= '0';
-		else if (c >= 'A' && c <= 'F')
-			c -= 'A' + 10;
+		else if (c >= 'a' && c <= 'f')
+			c = c - 'a' + 10;
 		else
 			c = 0;
 		if (d >= '0' && d <= '9')
 			d -= '0';
-		else if (d >= 'A' && d <= 'F')
-			d -= 'A' + 10;
+		else if (d >= 'a' && d <= 'f')
+			d = d - 'a' + 10;
 		else
 			d = 0;
 		buf[n] = (c << 4) | d;
