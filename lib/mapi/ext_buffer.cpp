@@ -1962,7 +1962,19 @@ int EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 	return g_bytes(r->preservedblock2, r->reservedblock2size);
 }
 
-int EXT_PULL::g_goid(GLOBALOBJECTID *r)
+static int ext_pull_goid_trailer(EXT_PULL *ext, GLOBALOBJECTID *r, size_t len)
+{
+	r->unparsed = true;
+	r->data.pv = ext->m_alloc(len);
+	if (r->data.pv == nullptr) {
+		r->data.cb = 0;
+		return EXT_ERR_ALLOC;
+	}
+	r->data.cb = len;
+	return ext->g_bytes(r->data.pv, len);
+}
+
+int EXT_PULL::g_goid(GLOBALOBJECTID *r, bool eat_all)
 {
 	uint8_t yh;
 	uint8_t yl;
@@ -1975,7 +1987,15 @@ int EXT_PULL::g_goid(GLOBALOBJECTID *r)
 	TRY(g_uint8(&r->day));
 	TRY(g_uint64(&r->creationtime));
 	TRY(g_bytes(r->x, 8));
-	return g_bin_ex(&r->data);
+	r->unparsed = false;
+	if (!eat_all)
+		return g_bin_ex(&r->data);
+	uint32_t remain = m_offset >= m_data_size ? 0 : m_data_size - m_offset;
+	if (remain < sizeof(uint32_t))
+		return ext_pull_goid_trailer(this, r, remain);
+	TRY(g_uint32(&r->data.cb));
+	m_offset -= sizeof(uint32_t);
+	return r->data.cb == remain ? g_bin_ex(&r->data) : ext_pull_goid_trailer(this, r, remain);
 }
 
 static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)
@@ -3378,6 +3398,8 @@ int EXT_PUSH::p_goid(const GLOBALOBJECTID &r)
 	TRY(p_uint8(r.day));
 	TRY(p_uint64(r.creationtime));
 	TRY(p_bytes(r.x, 8));
+	if (r.unparsed)
+		return p_bytes(r.data.pb, r.data.cb);
 	return p_bin_ex(r.data);
 }
 

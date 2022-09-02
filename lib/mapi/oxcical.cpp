@@ -46,7 +46,7 @@ static constexpr char
 	PidNameLocationUrl[] = "urn:schemas:calendar:locationurl";
 static constexpr size_t namemap_limit = 0x1000;
 static constexpr char EncodedGlobalId_hex[] =
-	"040000008200E00074C5B7101A82E008";
+	"040000008200E00074C5B7101A82E008"; /* s_rgbSPlus */
 static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 static constexpr char fmt_date[] = "%04d%02d%02d",
 	fmt_datetimelcl[] = "%04d%02d%02dT%02d%02d%02d",
@@ -1111,7 +1111,7 @@ static BOOL oxcical_parse_uid(const ical_component &main_event,
 	if (strncasecmp(pvalue, EncodedGlobalId_hex, 32) == 0 &&
 	    decode_hex_binary(pvalue, tmp_buff, arsizeof(tmp_buff))) {
 		ext_pull.init(tmp_buff, tmp_len / 2, alloc, 0);
-		if (ext_pull.g_goid(&globalobjectid) == EXT_ERR_SUCCESS &&
+		if (ext_pull.g_goid(&globalobjectid, 1) == EXT_ERR_SUCCESS &&
 		    ext_pull.m_offset == tmp_len / 2) {
 			if (globalobjectid.year < 1601 || globalobjectid.year > 4500 ||
 				globalobjectid.month > 12 || 0 == globalobjectid.month ||
@@ -3356,7 +3356,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 	if (bin != nullptr) {
 		ext_pull.init(bin->pb, bin->cb, alloc, 0);
-		if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
 			return FALSE;
 		if (globalobjectid.data.pb != nullptr &&
 		    globalobjectid.data.cb >= 12 &&
@@ -3429,7 +3429,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 				if (bin != nullptr) {
 					ext_pull.init(bin->pb, bin->cb, alloc, 0);
-					if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS)
+					if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
 						return FALSE;
 					itime.year = globalobjectid.year;
 					itime.month = globalobjectid.month;
