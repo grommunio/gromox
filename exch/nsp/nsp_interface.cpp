@@ -62,6 +62,7 @@ static BOOL g_session_check;
 static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
 static decltype(mysql_adaptor_get_id_from_username) *get_id_from_username;
 static decltype(mysql_adaptor_get_maildir) *get_maildir;
+static decltype(mysql_adaptor_get_mlist) *get_mlist_memb;
 static decltype(gromox::abkt_tojson) *nsp_abktojson;
 static decltype(gromox::abkt_tobinary) *nsp_abktobinary;
 
@@ -564,6 +565,7 @@ int nsp_interface_run()
 	E(get_domain_ids, "get_domain_ids");
 	E(get_maildir, "get_maildir");
 	E(get_id_from_username, "get_id_from_username");
+	E(get_mlist_memb, "get_mail_list");
 	query_service2("abkt_tojson", nsp_abktojson);
 	query_service2("abkt_tobinary", nsp_abktobinary);
 	if (nsp_abktojson == nullptr || nsp_abktobinary == nullptr)
@@ -600,6 +602,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 	}
 	pdomain ++;
 	if (!get_domain_ids(pdomain, &domain_id, &org_id)) {
+		fprintf(stderr, "W-2176: could not satisfy nsp_bind request for domain %s: not found\n", pdomain);
 		phandle->handle_type = HANDLE_EXCHANGE_NSP;
 		memset(&phandle->guid, 0, sizeof(GUID));
 		return ecError;
@@ -1414,7 +1417,45 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	}
 
 	uint32_t result;
-	if (pstat->container_id == PR_EMS_AB_PUBLIC_DELEGATES) {
+	if (pstat->container_id == PR_EMS_AB_MEMBER) {
+		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
+		if (pnode == nullptr) {
+			*ppoutmids = nullptr;
+			*pprows = nullptr;
+			return ecInvalidBookmark;
+		}
+		char mlistaddr[UADDR_SIZE]{};
+		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, mlistaddr, std::size(mlistaddr));
+		std::vector<std::string> member_list;
+		int ret = 0;
+		if (!get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list)) {
+			*ppoutmids = nullptr;
+			*pprows = nullptr;
+			return ecError;
+		}
+		for (const auto &memb : member_list) {
+			if ((*ppoutmids)->cvalues > requested) {
+				break;
+			}
+			int user_id;
+			if (!get_id_from_username(memb.c_str(), &user_id))
+				continue;
+			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
+			if (pnode == nullptr)
+				continue;
+			if (pfilter != nullptr &&
+			    !nsp_interface_match_node(pnode, pstat->codepage, pfilter))
+				continue;	
+			auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+			if (NULL == pproptag) {
+				*ppoutmids = nullptr;
+				*pprows = nullptr;
+				return ecServerOOM;
+			}
+			*pproptag = ab_tree_get_node_minid(pnode);
+		}
+		goto FETCH_ROWS;
+	} else if (pstat->container_id == PR_EMS_AB_PUBLIC_DELEGATES) {
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (NULL == pnode) {
 			*ppoutmids = nullptr;
