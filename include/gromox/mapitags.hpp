@@ -1031,7 +1031,7 @@ enum {
 	PR_EMS_AB_HOME_MDB = PROP_TAG(PT_UNICODE, 0x8006), /* PidTagAddressBookHomeMessageDatabase */
 	PR_EMS_AB_HOME_MDB_A = PROP_TAG(PT_STRING8, 0x8006),
 	// PR_EMS_AB_IS_MEMBER_OF_DL = PROP_TAG(PT_STRING8, 0x8008), /* PidTagAddressBookIsMemberOfDistributionList */
-	// PR_EMS_AB_MEMBER = PROP_TAG(PT_OBJECT, 0x8009), /* PidTagAddressBookMember */
+	PR_EMS_AB_MEMBER = PROP_TAG(PT_OBJECT, 0x8009), /* PidTagAddressBookMember */
 	// PR_EMS_AB_OWNER = PROP_TAG(PT_BINARY, 0x800C),
 	// PR_EMS_AB_OWNER_O = PROP_TAG(PT_OBJECT, 0x800C), /* PidTagAddressBookOwner */
 	// PR_EMS_AB_REPORTS = PROP_TAG(PT_OBJECT, 0x800E), /* PidTagAddressBookReports */
