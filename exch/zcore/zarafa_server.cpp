@@ -1532,6 +1532,9 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 		ptable = table_object::create(folder->pstore, pobject, zcore_tbltype::content, flags);
 		break;
 	}
+	case ZMG_DISTLIST:
+		ptable = table_object::create(nullptr, pobject, zcore_tbltype::distlist, 0);
+		break;
 	case ZMG_ABCONT:
 		ptable = table_object::create(nullptr, pobject, zcore_tbltype::abcontusr, 0);
 		break;

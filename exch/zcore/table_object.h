@@ -14,6 +14,7 @@ enum class zcore_tbltype {
 	recipient = 6,   /* pparent_obj is a message_object */
 	container = 7,   /* pparent_obj is a container_object */
 	abcontusr = 8,   /* pparent_obj is a container_object */
+	distlist = 9,    /* pparent_obj is a user_object */
 };
 
 struct store_object;

@@ -1229,6 +1229,13 @@ static ZEND_FUNCTION(mapi_folder_getcontentstable)
 			MAPI_G(hr) = ecInvalidObject;
 			THROW_EXCEPTION;
 		}
+	} else if (type == le_mapi_distlist) {
+		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE *,
+			&pzresource, -1, name_mapi_distlist, le_mapi_distlist);
+		if (probject->type != ZMG_DISTLIST) {
+			MAPI_G(hr) = ecInvalidObject;
+			THROW_EXCEPTION;
+		}
 	} else {
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;

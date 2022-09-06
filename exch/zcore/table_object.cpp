@@ -95,6 +95,9 @@ BOOL table_object::load()
 	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->load_user_table(ptable->prestriction);
+	} else if (ptable->table_type == zcore_tbltype::distlist) {
+		auto u = static_cast<user_object *>(ptable->pparent_obj);
+		return u->load_list_members(ptable->prestriction) == ecSuccess ? TRUE : false;
 	}
 	if (0 != ptable->table_id) {
 		return TRUE;
@@ -582,6 +585,9 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->query_user_table(cols, ptable->position, row_count, pset);
+	} else if (ptable->table_type == zcore_tbltype::distlist) {
+		auto u = static_cast<user_object *>(ptable->pparent_obj);
+		return u->query_member_table(cols, ptable->position, row_count, pset) == ecSuccess ? TRUE : false;
 	} else if (ptable->table_type == zcore_tbltype::rule) {
 		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
 		    nullptr, pinfo->cpid, ptable->table_id, cols,
@@ -713,6 +719,8 @@ uint32_t table_object::get_total()
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		ct->get_user_table_num(&num1);
 		return num1;
+	} else if (ptable->table_type == zcore_tbltype::distlist) {
+		return static_cast<user_object *>(ptable->pparent_obj)->m_members.size();
 	} else if (ptable->table_type == zcore_tbltype::store) {
 		return fixed_data != nullptr ? fixed_data->count : 0;
 	}

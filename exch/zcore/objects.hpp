@@ -213,9 +213,12 @@ struct user_object {
 	static std::unique_ptr<user_object> create(int base_id, uint32_t minid);
 	bool valid();
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	ec_error_t load_list_members(const RESTRICTION *);
+	ec_error_t query_member_table(const PROPTAG_ARRAY *, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 
 	int base_id = 0;
 	uint32_t minid = 0;
+	std::vector<uint32_t> m_members;
 };
 
 extern BOOL container_object_fetch_special_property(uint8_t special_type, uint32_t proptag, void **value);
