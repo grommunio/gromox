@@ -1022,7 +1022,8 @@ static void ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, int type,
 	if (pabnode->node_type != abnode_type::person &&
 	    pabnode->node_type != abnode_type::room &&
 	    pabnode->node_type != abnode_type::equipment &&
-	    pabnode->node_type != abnode_type::remote)
+	    pabnode->node_type != abnode_type::remote &&
+	    pabnode->node_type != abnode_type::mlist)
 		return;
 	auto u = static_cast<sql_user *>(pabnode->d_info);
 	unsigned int tag = 0;

@@ -19,6 +19,7 @@ E(get_homedir)
 E(get_id_from_username)
 E(get_maildir)
 E(get_mlist_ids)
+E(get_mlist_memb)
 E(get_org_domains)
 E(get_sub_classes)
 E(get_timezone)
@@ -66,6 +67,7 @@ int system_services_run()
 	E(system_services_get_group_users, "get_group_users");
 	E(system_services_get_domain_users, "get_domain_users");
 	E(system_services_get_mlist_ids, "get_mlist_ids");
+	E(system_services_get_mlist_memb, "get_mlist_memb");
 	E(system_services_check_same_org, "check_same_org");
 	E(system_services_log_info, "log_info");
 	E(system_services_setpasswd, "set_password");
@@ -100,6 +102,7 @@ void system_services_stop()
 	E("get_group_users");
 	E("get_domain_users");
 	E("get_mlist_ids");
+	E("get_mlist_memb");
 	E("check_same_org");
 	E("log_info");
 	E("set_password");
