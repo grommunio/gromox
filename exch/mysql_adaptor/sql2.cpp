@@ -529,7 +529,7 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	E(check_mlist_include, "check_mlist_include");
 	E(check_same_org2, "check_same_org2");
 	E(check_user, "check_user");
-	E(get_mlist, "get_mail_list");
+	E(get_mlist_memb, "get_mlist_memb");
 	E(get_user_info, "get_user_info");
 	E(scndstore_hints, "scndstore_hints");
 	E(domain_list_query, "domain_list_query");
