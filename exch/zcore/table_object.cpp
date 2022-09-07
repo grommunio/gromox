@@ -86,13 +86,13 @@ BOOL table_object::load()
 	auto ptable = this;
 	uint32_t row_num, permission, new_table_id, new_table_flags;
 	
-	if (ATTACHMENT_TABLE == ptable->table_type ||
-		RECIPIENT_TABLE == ptable->table_type ||
-	    ptable->table_type == CONTAINER_TABLE) {
+	if (ptable->table_type == zcore_tbltype::attachment ||
+		ptable->table_type == zcore_tbltype::recipient ||
+	    ptable->table_type == zcore_tbltype::container) {
 		return TRUE;
-	} else if (ptable->table_type == STORE_TABLE) {
+	} else if (ptable->table_type == zcore_tbltype::store) {
 		return storetbl_refresh(this) == 0 ? TRUE : false;
-	} else if (USER_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->load_user_table(ptable->prestriction);
 	}
@@ -100,7 +100,7 @@ BOOL table_object::load()
 		return TRUE;
 	}
 	switch (ptable->table_type) {
-	case HIERARCHY_TABLE: {
+	case zcore_tbltype::hierarchy: {
 		auto pinfo = zarafa_server_get_info();
 		auto username = ptable->pstore->owner_mode() ?
 		                nullptr : pinfo->get_username();
@@ -118,7 +118,7 @@ BOOL table_object::load()
 			return FALSE;
 		break;
 	}
-	case CONTENT_TABLE: {
+	case zcore_tbltype::content: {
 		auto pinfo = zarafa_server_get_info();
 		const char *username = nullptr;
 		if (!ptable->pstore->owner_mode()) {
@@ -147,7 +147,7 @@ BOOL table_object::load()
 			return FALSE;
 		break;
 	}
-	case RULE_TABLE:
+	case zcore_tbltype::rule:
 		if (!exmdb_client::load_rule_table(ptable->pstore->get_dir(),
 		    *static_cast<uint64_t *>(ptable->pparent_obj), 0,
 		    ptable->prestriction, &new_table_id, &row_num))
@@ -164,7 +164,7 @@ BOOL table_object::load()
 void table_object::unload()
 {
 	auto ptable = this;
-	if (USER_TABLE == ptable->table_type) {
+	if (ptable->table_type == zcore_tbltype::abcontusr) {
 		static_cast<container_object *>(ptable->pparent_obj)->clear();
 	} else {
 		table_object_set_table_id(ptable, 0);
@@ -215,19 +215,19 @@ static BOOL table_object_get_store_table_all_proptags(
 static BOOL table_object_get_all_columns(table_object *ptable,
 	PROPTAG_ARRAY *pcolumns)
 {
-	if (ATTACHMENT_TABLE == ptable->table_type) {
+	if (ptable->table_type == zcore_tbltype::attachment) {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		return msg->get_attachment_table_all_proptags(pcolumns);
-	} else if (RECIPIENT_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::recipient) {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		return msg->get_recipient_all_proptags(pcolumns);
-	} else if (CONTAINER_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::container) {
 		container_object_get_container_table_all_proptags(pcolumns);
 		return TRUE;
-	} else if (USER_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		container_object_get_user_table_all_proptags(pcolumns);
 		return TRUE;
-	} else if (STORE_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::store) {
 		return table_object_get_store_table_all_proptags(pcolumns);
 	}
 	return exmdb_client::get_table_all_proptags(ptable->pstore->get_dir(),
@@ -456,7 +456,7 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	size_t idx_sk = pcolumns->indexof(PR_SOURCE_KEY);
 	size_t idx_acc = pcolumns->indexof(PR_ACCESS);
-	size_t idx_rig = ptable->table_type == HIERARCHY_TABLE ?
+	size_t idx_rig = ptable->table_type == zcore_tbltype::hierarchy ?
 	                 pcolumns->indexof(PR_RIGHTS) : pcolumns->npos;
 	TARRAY_SET temp_set;
 
@@ -478,10 +478,10 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 		 * exmdb, which is intentional.
 		 */
 		if (idx_sk != pcolumns->npos)
-			tmp_columns.pproptag[idx_sk] = ptable->table_type == CONTENT_TABLE ?
+			tmp_columns.pproptag[idx_sk] = ptable->table_type == zcore_tbltype::content ?
 			                            PidTagMid : PidTagFolderId;
 		if (idx_acc != pcolumns->npos)
-			tmp_columns.pproptag[idx_acc] = ptable->table_type == CONTENT_TABLE ?
+			tmp_columns.pproptag[idx_acc] = ptable->table_type == zcore_tbltype::content ?
 			                                PidTagMid : PidTagFolderId;
 		if (idx_rig != pcolumns->npos)
 			tmp_columns.pproptag[idx_rig] = PidTagFolderId;
@@ -489,7 +489,7 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 		    username, pinfo->cpid, ptable->table_id, &tmp_columns,
 		    ptable->position, row_needed, &temp_set))
 			return FALSE;
-		if (CONTENT_TABLE == ptable->table_type) {
+		if (ptable->table_type == zcore_tbltype::content) {
 			if (idx_sk != pcolumns->npos &&
 			    !conttbl_srckey(ptable, temp_set))
 				return false;
@@ -569,20 +569,20 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 	if (row_count > INT32_MAX)
 		row_count = INT32_MAX;
 
-	if (ATTACHMENT_TABLE == ptable->table_type) {
+	if (ptable->table_type == zcore_tbltype::attachment) {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		return msg->query_attachment_table(cols, ptable->position, row_count, pset);
-	} else if (RECIPIENT_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::recipient) {
 		return rcpttable_query_rows(ptable, cols, pset, row_count);
-	} else if (CONTAINER_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::container) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->query_container_table(cols,
 		       (ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false,
 		       ptable->position, row_count, pset);
-	} else if (USER_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->query_user_table(cols, ptable->position, row_count, pset);
-	} else if (RULE_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::rule) {
 		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
 		    nullptr, pinfo->cpid, ptable->table_id, cols,
 		    ptable->position, row_count, pset))
@@ -593,12 +593,12 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 				return FALSE;
 		}
 		return TRUE;
-	} else if (STORE_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::store) {
 		return storetbl_query_rows(ptable, cols, pset, pinfo, row_count);
 	}
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
-	if ((CONTENT_TABLE == ptable->table_type ||
-	    HIERARCHY_TABLE == ptable->table_type)) {
+	if ((ptable->table_type == zcore_tbltype::content ||
+	    ptable->table_type == zcore_tbltype::hierarchy)) {
 		return hierconttbl_query_rows(ptable, cols, tmp_columns, pinfo, row_count, pset);
 	}
 	return exmdb_client::query_table(ptable->pstore->get_dir(),
@@ -693,27 +693,27 @@ uint32_t table_object::get_total()
 	uint32_t num1;
 	uint32_t total_rows;
 	
-	if (ATTACHMENT_TABLE == ptable->table_type) {
+	if (ptable->table_type == zcore_tbltype::attachment) {
 		num = 0;
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		msg->get_attachments_num(&num);
 		return num;
-	} else if (RECIPIENT_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::recipient) {
 		num = 0;
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		msg->get_recipient_num(&num);
 		return num;
-	} else if (CONTAINER_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::container) {
 		num1 = 0;
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		ct->get_container_table_num((ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false, &num1);
 		return num1;
-	} else if (USER_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		num1 = 0;
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		ct->get_user_table_num(&num1);
 		return num1;
-	} else if (STORE_TABLE == ptable->table_type) {
+	} else if (ptable->table_type == zcore_tbltype::store) {
 		return fixed_data != nullptr ? fixed_data->count : 0;
 	}
 	exmdb_client::sum_table(ptable->pstore->get_dir(),
@@ -722,7 +722,7 @@ uint32_t table_object::get_total()
 }
 
 std::unique_ptr<table_object> table_object::create(store_object *pstore,
-	void *pparent_obj, uint8_t table_type, uint32_t table_flags)
+	void *pparent_obj, zcore_tbltype table_type, uint32_t table_flags)
 {
 	std::unique_ptr<table_object> ptable;
 	try {
@@ -731,7 +731,7 @@ std::unique_ptr<table_object> table_object::create(store_object *pstore,
 		return NULL;
 	}
 	ptable->pstore = pstore;
-	if (RULE_TABLE == table_type) {
+	if (table_type == zcore_tbltype::rule) {
 		auto v = me_alloc<uint64_t>();
 		ptable->pparent_obj = v;
 		if (NULL == ptable->pparent_obj) {
@@ -741,7 +741,7 @@ std::unique_ptr<table_object> table_object::create(store_object *pstore,
 	} else {
 		ptable->pparent_obj = pparent_obj;
 	}
-	ptable->table_type = static_cast<zcore_table_type>(table_type);
+	ptable->table_type = table_type;
 	ptable->table_flags = table_flags;
 	ptable->pcolumns = NULL;
 	ptable->psorts = NULL;
@@ -758,7 +758,7 @@ table_object::~table_object()
 	table_object_reset(ptable);
 	if (fixed_data != nullptr)
 		tarray_set_free(fixed_data);
-	if (RULE_TABLE == ptable->table_type) {
+	if (ptable->table_type == zcore_tbltype::rule) {
 		free(ptable->pparent_obj);
 	}
 }
@@ -1005,7 +1005,7 @@ BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 	PROPTAG_ARRAY tmp_proptags;
 	
 	switch (ptable->table_type) {
-	case ATTACHMENT_TABLE: {
+	case zcore_tbltype::attachment: {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		if (!msg->get_attachment_table_all_proptags(&proptags))
 			return FALSE;	
@@ -1017,16 +1017,16 @@ BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 			return FALSE;	
 		break;
 	}
-	case RECIPIENT_TABLE:
+	case zcore_tbltype::recipient:
 		if (!static_cast<message_object *>(ptable->pparent_obj)->
 		    read_recipients(0, 0xFFFF, &tmp_set))
 			return FALSE;	
 		break;
-	case STORE_TABLE:
+	case zcore_tbltype::store:
 		if (storetbl_refresh(this) != 0)
 			return false;
 		break;
-	case USER_TABLE:
+	case zcore_tbltype::abcontusr:
 		container_object_get_user_table_all_proptags(&proptags);
 		if (!static_cast<container_object *>(ptable->pparent_obj)->
 		    query_user_table(&proptags, ptable->position, INT32_MAX, &tmp_set))
