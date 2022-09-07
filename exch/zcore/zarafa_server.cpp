@@ -1398,7 +1398,7 @@ uint32_t zarafa_server_loadstoretable(
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = table_object::create(nullptr, nullptr, STORE_TABLE, 0);
+	auto ptable = table_object::create(nullptr, nullptr, zcore_tbltype::store, 0);
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {ZMG_TABLE, std::move(ptable)});
@@ -1487,10 +1487,10 @@ uint32_t zarafa_server_loadhierarchytable(GUID hsession,
 	switch (mapi_type) {
 	case ZMG_FOLDER:
 		pstore = static_cast<folder_object *>(pobject)->pstore;
-		ptable = table_object::create(pstore, pobject, HIERARCHY_TABLE, flags);
+		ptable = table_object::create(pstore, pobject, zcore_tbltype::hierarchy, flags);
 		break;
 	case ZMG_ABCONT:
-		ptable = table_object::create(nullptr, pobject, CONTAINER_TABLE, flags);
+		ptable = table_object::create(nullptr, pobject, zcore_tbltype::container, flags);
 		break;
 	default:
 		return ecNotSupported;
@@ -1529,11 +1529,11 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 			if (!(permission & (frightsReadAny | frightsOwner)))
 				return ecNotFound;
 		}
-		ptable = table_object::create(folder->pstore, pobject, CONTENT_TABLE, flags);
+		ptable = table_object::create(folder->pstore, pobject, zcore_tbltype::content, flags);
 		break;
 	}
 	case ZMG_ABCONT:
-		ptable = table_object::create(nullptr, pobject, USER_TABLE, 0);
+		ptable = table_object::create(nullptr, pobject, zcore_tbltype::abcontusr, 0);
 		break;
 	default:
 		return ecNotSupported;
@@ -1559,7 +1559,7 @@ uint32_t zarafa_server_loadrecipienttable(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	auto ptable = table_object::create(pmessage->get_store(), pmessage, RECIPIENT_TABLE, 0);
+	auto ptable = table_object::create(pmessage->get_store(), pmessage, zcore_tbltype::recipient, 0);
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hmessage, {ZMG_TABLE, std::move(ptable)});
@@ -1581,7 +1581,7 @@ uint32_t zarafa_server_loadruletable(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto folder_id = pfolder->folder_id;
-	auto ptable = table_object::create(pfolder->pstore, &folder_id, RULE_TABLE, 0);
+	auto ptable = table_object::create(pfolder->pstore, &folder_id, zcore_tbltype::rule, 0);
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hfolder, {ZMG_TABLE, std::move(ptable)});
@@ -2666,14 +2666,14 @@ uint32_t zarafa_server_queryrows(
 		return ecNotSupported;
 	if (!ptable->load())
 		return ecError;
-	auto table_type = ptable->get_table_type();
+	auto table_type = ptable->table_type;
 	if (start != UINT32_MAX)
 		ptable->set_position(start);
 	if (NULL != prestriction) {
-		switch (ptable->get_table_type()) {
-		case HIERARCHY_TABLE:
-		case CONTENT_TABLE:
-		case RULE_TABLE:
+		switch (ptable->table_type) {
+		case zcore_tbltype::hierarchy:
+		case zcore_tbltype::content:
+		case zcore_tbltype::rule:
 			row_num = ptable->get_total();
 			if (row_num > count) {
 				row_num = count;
@@ -2701,10 +2701,10 @@ uint32_t zarafa_server_queryrows(
 				}
 			}
 			break;
-		case ATTACHMENT_TABLE:
-		case RECIPIENT_TABLE:
-		case STORE_TABLE:
-		case USER_TABLE:
+		case zcore_tbltype::attachment:
+		case zcore_tbltype::recipient:
+		case zcore_tbltype::store:
+		case zcore_tbltype::abcontusr:
 			if (!ptable->filter_rows(count, prestriction, pproptags, prowset))
 				return ecError;
 			break;
@@ -2717,25 +2717,26 @@ uint32_t zarafa_server_queryrows(
 		ptable->seek_current(TRUE, prowset->count);
 	}
 	pinfo.reset();
-	if ((STORE_TABLE != table_type &&
-		HIERARCHY_TABLE != table_type &&
-		CONTENT_TABLE != table_type &&
-		ATTACHMENT_TABLE != table_type)
-		||
+	if ((table_type != zcore_tbltype::store &&
+	     table_type != zcore_tbltype::hierarchy &&
+	     table_type != zcore_tbltype::content &&
+	     table_type != zcore_tbltype::attachment) ||
 	    (pproptags != nullptr && !pproptags->has(PR_OBJECT_TYPE)))
 		return ecSuccess;
 	switch (table_type) {
-	case STORE_TABLE:
+	case zcore_tbltype::store:
 		pobject_type = deconst(&object_type_store);
 		break;
-	case HIERARCHY_TABLE:
+	case zcore_tbltype::hierarchy:
 		pobject_type = deconst(&object_type_folder);
 		break;
-	case CONTENT_TABLE:
+	case zcore_tbltype::content:
 		pobject_type = deconst(&object_type_message);
 		break;
-	case ATTACHMENT_TABLE:
+	case zcore_tbltype::attachment:
 		pobject_type = deconst(&object_type_attachment);
+		break;
+	default:
 		break;
 	}
 	for (size_t i = 0; i < prowset->count; ++i) {
@@ -2878,7 +2879,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	if (ptable->get_table_type() != CONTENT_TABLE)
+	if (ptable->table_type != zcore_tbltype::content)
 		return ecSuccess;
 	b_max = FALSE;
 	b_multi_inst = FALSE;
@@ -2969,12 +2970,12 @@ uint32_t zarafa_server_restricttable(GUID hsession, uint32_t htable,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	switch (ptable->get_table_type()) {
-	case HIERARCHY_TABLE:
-	case CONTENT_TABLE:
-	case RULE_TABLE:
-	case STORE_TABLE:
-	case USER_TABLE:
+	switch (ptable->table_type) {
+	case zcore_tbltype::hierarchy:
+	case zcore_tbltype::content:
+	case zcore_tbltype::rule:
+	case zcore_tbltype::store:
+	case zcore_tbltype::abcontusr:
 		break;
 	default:
 		return ecNotSupported;
@@ -3003,10 +3004,10 @@ uint32_t zarafa_server_findrow(GUID hsession, uint32_t htable,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	switch (ptable->get_table_type()) {
-	case HIERARCHY_TABLE:
-	case CONTENT_TABLE:
-	case RULE_TABLE:
+	switch (ptable->table_type) {
+	case zcore_tbltype::hierarchy:
+	case zcore_tbltype::content:
+	case zcore_tbltype::rule:
 		break;
 	default:
 		return ecNotSupported;
@@ -3023,7 +3024,7 @@ uint32_t zarafa_server_findrow(GUID hsession, uint32_t htable,
 	case BOOKMARK_CURRENT:
 		break;
 	default:
-		if (ptable->get_table_type() == RULE_TABLE)
+		if (ptable->table_type == zcore_tbltype::rule)
 			return ecNotSupported;
 		if (!ptable->retrieve_bookmark(bookmark, &b_exist))
 			return ecInvalidBookmark;
@@ -3051,9 +3052,9 @@ uint32_t zarafa_server_createbookmark(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	switch (ptable->get_table_type()) {
-	case HIERARCHY_TABLE:
-	case CONTENT_TABLE:
+	switch (ptable->table_type) {
+	case zcore_tbltype::hierarchy:
+	case zcore_tbltype::content:
 		break;
 	default:
 		return ecNotSupported;
@@ -3075,9 +3076,9 @@ uint32_t zarafa_server_freebookmark(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	switch (ptable->get_table_type()) {
-	case HIERARCHY_TABLE:
-	case CONTENT_TABLE:
+	switch (ptable->table_type) {
+	case zcore_tbltype::hierarchy:
+	case zcore_tbltype::content:
 		break;
 	default:
 		return ecNotSupported;
@@ -3510,7 +3511,7 @@ uint32_t zarafa_server_loadattachmenttable(GUID hsession,
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
 	auto pstore = pmessage->get_store();
-	auto ptable = table_object::create(pstore, pmessage, ATTACHMENT_TABLE, 0);
+	auto ptable = table_object::create(pstore, pmessage, zcore_tbltype::attachment, 0);
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hmessage, {ZMG_TABLE, std::move(ptable)});

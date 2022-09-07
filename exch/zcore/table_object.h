@@ -4,15 +4,16 @@
 #include <vector>
 #include <gromox/mapi_types.hpp>
 
-enum zcore_table_type {
-	STORE_TABLE = 1,
-	HIERARCHY_TABLE = 2,
-	CONTENT_TABLE = 3,
-	RULE_TABLE = 4,
-	ATTACHMENT_TABLE = 5,
-	RECIPIENT_TABLE = 6,
-	CONTAINER_TABLE = 7,
-	USER_TABLE = 8,
+enum class zcore_tbltype {
+	invalid = 0,
+	store = 1,       /* pparent_obj is a nullptr */
+	hierarchy = 2,   /* pparent_obj is a folder_object */
+	content = 3,     /* pparent_obj is a folder_object */
+	rule = 4,        /* pparent_obj is a uint64_t */
+	attachment = 5,  /* pparent_obj is a message_object */
+	recipient = 6,   /* pparent_obj is a message_object */
+	container = 7,   /* pparent_obj is a container_object */
+	abcontusr = 8,   /* pparent_obj is a container_object */
 };
 
 struct store_object;
@@ -33,7 +34,7 @@ struct table_object {
 
 	public:
 	~table_object();
-	static std::unique_ptr<table_object> create(store_object *, void *parent, uint8_t table_type, uint32_t table_flags);
+	static std::unique_ptr<table_object> create(store_object *, void *parent, zcore_tbltype, uint32_t table_flags);
 	const PROPTAG_ARRAY *get_columns() const { return pcolumns; }
 	BOOL set_columns(const PROPTAG_ARRAY *);
 	BOOL set_sorts(const SORTORDER_SET *);
@@ -42,7 +43,6 @@ struct table_object {
 	BOOL query_rows(const PROPTAG_ARRAY *cols, uint32_t row_count, TARRAY_SET *);
 	BOOL set_restriction(const RESTRICTION *);
 	void seek_current(BOOL forward, uint32_t row_count);
-	uint8_t get_table_type() const { return table_type; }
 	uint32_t get_position() const { return position; }
 	void set_position(uint32_t pos);
 	void clear_position() { position = 0; }
@@ -57,7 +57,7 @@ struct table_object {
 	store_object *pstore = nullptr;
 	uint32_t handle = 0;
 	void *pparent_obj = nullptr;
-	enum zcore_table_type table_type{};
+	zcore_tbltype table_type{};
 	uint32_t table_flags = 0;
 	tarray_set *fixed_data = nullptr;
 	PROPTAG_ARRAY *pcolumns = nullptr;
