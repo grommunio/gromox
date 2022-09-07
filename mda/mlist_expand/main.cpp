@@ -17,7 +17,7 @@ DECLARE_HOOK_API();
 
 using namespace gromox;
 
-static decltype(mysql_adaptor_get_mlist) *get_mlist;
+static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
 
 static BOOL expand_process(MESSAGE_CONTEXT *pcontext);
 
@@ -27,9 +27,9 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
     case PLUGIN_INIT:
 		LINK_HOOK_API(ppdata);
 		textmaps_init();
-		query_service2("get_mail_list", get_mlist);
-		if (NULL == get_mlist) {
-			printf("[mlist_expand]: failed to get service \"get_mail_list\"\n");
+		query_service2("get_mlist_memb", get_mlist_memb);
+		if (get_mlist_memb == nullptr) {
+			printf("[mlist_expand]: failed to get service \"get_mlist_memb\"\n");
 			return FALSE;
 		}
 		bounce_producer_init(";");
@@ -75,7 +75,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	b_touched = FALSE;
 	while (pcontext->pcontrol->f_rcpt_to.readline(rcpt_to,
 	       arsizeof(rcpt_to)) != MEM_END_OF_FILE) {
-		get_mlist(rcpt_to, pcontext->pcontrol->from, &result, temp_file1);
+		get_mlist_memb(rcpt_to, pcontext->pcontrol->from, &result, temp_file1);
 		switch (result) {
 		case MLIST_RESULT_OK:
 			b_touched = TRUE;

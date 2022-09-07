@@ -1015,7 +1015,7 @@ bool mysql_adaptor_check_user(const char *username, char *path, size_t dsize) tr
 	return false;
 }
 
-BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
+BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
     int *presult, std::vector<std::string> &pfile) try
 {
 	int i, rows;

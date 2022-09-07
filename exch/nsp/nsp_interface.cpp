@@ -62,7 +62,7 @@ static BOOL g_session_check;
 static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
 static decltype(mysql_adaptor_get_id_from_username) *get_id_from_username;
 static decltype(mysql_adaptor_get_maildir) *get_maildir;
-static decltype(mysql_adaptor_get_mlist) *get_mlist_memb;
+static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
 static decltype(gromox::abkt_tojson) *nsp_abktojson;
 static decltype(gromox::abkt_tobinary) *nsp_abktobinary;
 
@@ -565,7 +565,7 @@ int nsp_interface_run()
 	E(get_domain_ids, "get_domain_ids");
 	E(get_maildir, "get_maildir");
 	E(get_id_from_username, "get_id_from_username");
-	E(get_mlist_memb, "get_mail_list");
+	E(get_mlist_memb, "get_mlist_memb");
 	query_service2("abkt_tojson", nsp_abktojson);
 	query_service2("abkt_tobinary", nsp_abktobinary);
 	if (nsp_abktojson == nullptr || nsp_abktobinary == nullptr)
