@@ -83,4 +83,26 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 		throw DispatchError(E3006(RoutingType));
 }
 
+/**
+ * @brief    Normalize mailbox specification
+ *
+ * Ensures that `RoutingType` equals "smtp", performing essdn resolution if
+ * necessary.
+ *
+ * @throw      DispatchError   Unsupported RoutingType
+ *
+ * @param Mailbox
+ */
+void EWSContext::normalize(tMailbox& Mailbox) const
+{
+	if(!Mailbox.RoutingType)
+		Mailbox.RoutingType = "smtp";
+	if(tolower(*Mailbox.RoutingType) == "smtp")
+		return;
+	if(Mailbox.RoutingType != "ex")
+		throw  DispatchError(E3010(*Mailbox.RoutingType));
+	Mailbox.Address = essdn_to_username(Mailbox.Address);
+	Mailbox.RoutingType = "smtp";
+}
+
 }

@@ -21,6 +21,12 @@ class DeserializationError : public InputError
 {using InputError::InputError;};
 
 /**
+ * @brief     Caller has insufficient permissions
+ */
+class AccessDenied : public InputError
+{using InputError::InputError;};
+
+/**
  * @brief      SOAP protocol error
  */
 class SOAPError : public InputError
@@ -61,6 +67,9 @@ inline std::string E3006(const std::string& RoutingType) {return "E-3006: unreco
 E(3007, "Failed to get user maildir");
 inline std::string E3008(const std::string& OofState) {return "E-3008: unrecognized OofState '"+OofState+"'";}
 inline std::string E3009(const std::string& ExAud) {return "E-3009: unrecognized ExternalAudience '"+ExAud+"'";}
+inline std::string E3010(const std::string& RoutingType) {return "E-3010: unrecognized RoutingType '"+RoutingType+"'";}
+E(3011, "Cannot access OOF state of another user");
+E(3012, "Cannot modify OOF state of another user");
 
 #undef E
 }

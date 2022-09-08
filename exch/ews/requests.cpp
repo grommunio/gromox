@@ -98,7 +98,7 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 	chmod(path.c_str(), 0666);
 }
 
-}
+} //anonymous namespace
 ///////////////////////////////////////////////////////////////////////
 //Request implementations
 
@@ -168,7 +168,6 @@ void process(mGetServiceConfigurationRequest&&, XMLElement* response, const EWSC
  * Provides the functionality of GetUserOofSettingsRequest
  * (../php/ews/exchange.php:16).
  *
- * @todo       Check permissions?
  * @todo       Check if error handling can be improved
  *             (using the response message instead of SOAP faults)
  *
@@ -180,6 +179,10 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 {
 	//Set name of the response node
 	response->SetName("GetUserOofSettingsResponse");
+
+	ctx.normalize(request.Mailbox);
+	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info.username))
+		throw AccessDenied(E3011);
 
 	//Initialize response data structure
 	mGetUserOofSettingsResponse data;
@@ -236,7 +239,6 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
  * Provides functionality of SetUserOofSettingsRequest
  * (../php/ews/exchange.php:134).
  *
- * @todo       Check permissions?
  * @todo       Check if error handling can be improved
  *             (using the response message instead of SOAP faults)
  *
@@ -248,6 +250,9 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 {
 	response->SetName("SetUserOofSettingsResponse");
 
+	ctx.normalize(request.Mailbox);
+	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info.username))
+		throw AccessDenied(E3012);
 	std::string maildir = ctx.get_maildir(request.Mailbox);
 
 	tUserOofSettings& OofSettings = request.UserOofSettings;
