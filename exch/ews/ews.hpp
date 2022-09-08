@@ -64,6 +64,7 @@ struct EWSContext
 
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
+	void normalize(Structures::tMailbox&) const;
 
 	int ID = 0;
 	HTTP_REQUEST& orig;
