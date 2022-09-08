@@ -44,6 +44,10 @@ public:
 	} mysql; ///< mysql adaptor function pointers
 
 	std::string x500_org_name; ///< organization name or empty string if not configured
+	int request_logging = 0; ///< 0 = none, 1 = request names, 2 = request data
+	int response_logging = 0; ///< 0 = none, 1 = response names, 2 = response data
+	int pretty_response = 0; ///< 0 = compact output, 1 = pretty printed response
+
 private:
 	static const std::unordered_map<std::string, Handler> requestMap;
 

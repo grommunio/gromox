@@ -133,10 +133,19 @@ static BOOL unauthed(int ctx_id)
  */
 BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 {
+	auto start = std::chrono::high_resolution_clock::now();
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if(!auth_info.b_authed)
 		return unauthed(ctx_id);
 	auto[response, code] = dispatch(ctx_id, auth_info, content, len);
+	if(response_logging >= 2)
+		printf("[ews] Response:\n%s\n", response.c_str());
+	if(response_logging)
+	{
+		auto end = std::chrono::high_resolution_clock::now();
+		double duration = double(std::chrono::duration_cast<std::chrono::microseconds>(end-start).count()) / 1000.0;
+		printf("[ews] Done, code %d, %lu bytes, %.3fms\n", code, response.size(), duration);
+	}
 	if(response.length() > std::numeric_limits<int>::max())
 	{
 		response = SOAP::Envelope::fault("Server", "Response body to large");
@@ -160,16 +169,20 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 {
 	using namespace std::string_literals;
 	EWSContext context(ctx_id, auth_info, static_cast<const char*>(data), len, *this);
+	if(request_logging >= 2)
+		printf("[ews] Incoming data:\n%.*s\n", len > INT_MAX? INT_MAX : int(len), static_cast<const char*>(data));
 	for(XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
 	{
 		XMLElement* responseContainer = context.response.body->InsertNewChildElement(xml->Name());
+		if(request_logging)
+			printf("[ews] Processing %s\n", xml->Name());
 		auto handler = requestMap.find(xml->Name());
 		if(handler == requestMap.end())
 		    throw Exceptions::UnknownRequestError("Unknown request '"s+xml->Name()+"'.");
 		else
 			handler->second(xml, responseContainer, context);
 	}
-	XMLPrinter printer(nullptr, false); // false -> true for compact output
+	XMLPrinter printer(nullptr, !pretty_response);
 	context.response.doc.Print(&printer);
 	return {printer.CStr(), 200};
 } catch(Exceptions::InputError& err)
@@ -203,6 +216,13 @@ static constexpr cfg_directive x500_defaults[] = {
 	CFG_TABLE_END,
 };
 
+static constexpr cfg_directive ews_cfg_defaults[] = {
+	{"ews_pretty_response", "0", CFG_BOOL},
+	{"ews_request_logging", "0", CFG_BOOL},
+	{"ews_response_logging", "0", CFG_BOOL},
+	CFG_TABLE_END,
+};
+
 /**
  * @brief      Load configuration file
  */
@@ -211,6 +231,11 @@ void EWSPlugin::loadConfig()
 	auto cfg = config_file_initd("exmdb_provider.cfg", get_config_path(), x500_defaults);
 	x500_org_name = cfg->get_value("x500_org_name");
 	mlog(LV_INFO, "[ews]: x500 org name is \"%s\"", x500_org_name.c_str());
+
+	cfg = config_file_initd("ews.cfg", get_config_path(), ews_cfg_defaults);
+	pretty_response = cfg->get_ll("ews_pretty_response");
+	request_logging = cfg->get_ll("ews_request_logging");
+	response_logging = cfg->get_ll("ews_response_logging");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
