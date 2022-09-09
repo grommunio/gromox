@@ -47,6 +47,10 @@ Show a diagnostic tree view of the source data as it is being read.
 Print message count progress while processing larger folders. This option has
 no effect if (the even more verbose) \fB\-t\fP option was used.
 .TP
+\fB\-\-acl\-map\fP \fIfile\fP
+Use the given file to perform ACL mapping. See section "ACL Extraction" below
+for details. This option implies \fB\-\-with\-acl\fP.
+.TP
 \fB\-\-src\-host\fP \fIhostname\fP
 Hostname for the source SQL connection.
 .br
@@ -224,21 +228,82 @@ When more than one store matches in any way, kdb2mt will print the result set
 with GUIDs and exit, at which point you need to use \-\-src\-guid instead.
 .SH ACL Extraction
 Because kdb2mt works completely LDAP-less, it knows nothing about users save
-for their numeric ID on the homeserver and a reference to the LDAP object (e.g.
-objectUUID). That user ID is not globally unique, therefore ACEs are carried
-over such that that permissions for user with ID \fIn\fP are transformed to
-\fIn\fP@\fIserverguid\fP.kopano.invalid.
+for their numeric user object ID on the homeserver and a reference to an LDAP
+object (the so-called "Extern id", e.g. objectUUID/uidNumber). The user object
+ID is local to a kopano-server instance. The composition of the object ID and
+server instance GUID forms a unique token. ACEs are carried over such that that
+permissions for user with a given \fIobjid\fP are transformed to the synthetic
+identity \fIobjid\fP@\fIserverguid\fP.kopano.invalid.
 .PP
 .RS 4
 .nf
 sqlite3 /var/lib/gromox/user/1/1/exmdb/exchange.sqlite3
 .
 sqlite> select * from permissions;
-member_id  folder_id  username                                           permission
----------  ---------  -------------------------------------------------  ----------
-1          15         default                                            2048      
-2          24         default                                            2048      
-3          2090545    1@aa8e2b20b2054ca98987ea1053c3bb16.kopano.invalid  1177      
+member_id  folder_id  username                                             permission
+---------  ---------  ---------------------------------------------------  ----------
+1          15         default                                              2048
+2          24         default                                              2048
+3          2090545    256@aa8e2b20b2054ca98987ea1053c3bb16.kopano.invalid  1177
+.fi
+.RE
+.PP
+kdb2mt can be instructed to map these to a new email address using the
+\-\-acl\-map command-line option. That file shall be a plain text file
+containing one mapping entry per line. Empty lines and lines beginning with a
+'#' are ignored. Each non-ignored line shall consist of whitespace-separated
+fields (spaces/tabs). The first field shall be the synthesized identity that is
+to be matched (objid@serverguid.kopano.invalid), the second field its desired
+replacement.
+.PP
+Take note that in multi-server Kopano installations, every LDAP user will
+appear in \fBall\fP kopano-server databases, and with generally \fBdifferent\fP
+user IDs:
+.PP
+.RS 4
+.nf
+# kopano-admin --details joe -h https://kopano01:237/
+Object id:              256
+Extern id:              10072
+Username:               joe
+...
+Auto-accept meeting req:no
+Home server:            kopano01.invalid
+MDB provider:           KOPANO_STORE_DELEGATE_GUID
+Store GUID:             45A167B5AA7D44B1B5AC1195AA25E6B0
+...
+
+# kopano-admin --details joe -h https://kopano02:237/
+Object id:              209
+Extern id:              10072
+Username:               joe
+...
+Auto-accept meeting req:no
+Home server:            kopano01.invalid
+[No store GUID shown since home is not on kopano02]
+.fi
+.RE
+.PP
+Mailboxes which have kopano02 as home server have ACL entries using the
+kopano02 object ID of joe. Therefore, the mapping file should contain the
+identities from all servers, that is,
+.PP
+.RS 4
+.nf
+256@aa8e2b20b2054ca98987ea1053c3bb16.kopano.invalid  joe@gromox
+209@dabb6b35a8cf471c94c6d85a25edf8c9.kopano.invalid  joe@gromox
+.fi
+.RE
+.PP
+The server GUID(s) may be found by examining the output from kopano-stats(1).
+(You will need to lowercase them.)
+.PP
+.RS 4
+.nf
+# kopano-stats -h https://kopano01:237/ --system | grep server_guid
+    server_guid    AA8E2B20B2054CA98987EA1053C3BB16
+# kopano-stats -h https://kopano02:237/ --system | grep server_guid
+    server_guid    DABB6B35A8CF471C94C6D85A25EDF8C9
 .fi
 .RE
 .SH ZARAFA Address Type
