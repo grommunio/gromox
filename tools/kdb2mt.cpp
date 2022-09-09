@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 #include <zlib.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -90,6 +91,8 @@ struct ace_list final {
 	errno_t emplace(std::string &&, uint32_t);
 	inline size_t size() const { return m_rows.size(); }
 	inline const std::vector<PERMISSION_DATA> &get_perms() const { return m_rows; }
+	auto begin() const { return m_rows.cbegin(); }
+	auto end() const { return m_rows.cend(); }
 
 	private:
 	std::list<std::string> m_strs;
@@ -124,11 +127,12 @@ struct sql_login_param {
 static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
-static char *g_srcguid, *g_srcmbox;
+static char *g_srcguid, *g_srcmbox, *g_acl_map_file;
 static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
 static unsigned int g_with_acl;
 static int g_with_hidden = -1;
 static std::vector<uint32_t> g_only_objs;
+static std::unordered_map<std::string, std::string> g_acl_map;
 static uint32_t g_proptag_stubbed;
 
 static void cb_only_obj(const HXoptcb *cb) {
@@ -140,6 +144,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Map folders of a private store (see manpage for detail)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the source archive"},
 	{nullptr, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose, nullptr, nullptr, 0, "More detailed progress reports"},
+	{"acl-map", 0, HXTYPE_STRING, &g_acl_map_file, nullptr, nullptr, 0, "ACL map to apply", "FILE"},
 	{"l1", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L1 fan number for attachment directories of type files_v1 (default: 10)", "N"},
 	{"l2", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L2 fan number for attachment directories of type files_v1 (default: 20)", "N"},
 	{"src-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Hostname for SQL connection (default: localhost)", "HOST"},
@@ -858,8 +863,11 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 		uint32_t ben_id = strtoul(row[0], nullptr, 0);
 		uint32_t rights = strtoul(row[1], nullptr, 0);
 		rights &= ~(frightsGromoxSendAs | frightsGromoxStoreOwner);
-		auto ret = yi->m_acl.emplace(std::to_string(ben_id) + "@"s +
-		           drv.server_guid + ".kopano.invalid", rights);
+		auto synthid = std::to_string(ben_id) + "@" + drv.server_guid + ".kopano.invalid";
+		auto it = g_acl_map.find(synthid);
+		if (it != g_acl_map.end())
+			synthid = it->second;
+		auto ret = yi->m_acl.emplace(std::move(synthid), rights);
 		if (ret == ENOMEM)
 			throw std::bad_alloc();
 		else if (ret != 0)
@@ -945,11 +953,25 @@ static gi_name_map do_namemap(driver &drv)
 	return map;
 }
 
+static void gi_dump_acl(unsigned int depth, const ace_list &acl)
+{
+	if (g_show_props)
+		tree(depth);
+	for (const auto &pd : acl) {
+		auto id = znul(pd.propvals.get<char>(PR_SMTP_ADDRESS));
+		auto ri = pd.propvals.get<uint32_t>(PR_MEMBER_RIGHTS);
+		if (id == nullptr || ri == nullptr)
+			continue;
+		tlog("ACE: %s: %xh\n", id, static_cast<unsigned int>(*ri));
+	}
+}
+
 static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	auto props = std::move(item.get_props());
 	props->erase_if(skip_property);
 	if (g_show_tree) {
+		gi_dump_acl(depth, item.m_acl);
 		gi_dump_tpropval_a(depth, *props);
 	} else {
 		auto dn = props->get<const char>(PR_DISPLAY_NAME);
@@ -1280,6 +1302,41 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 	return 0;
 }
 
+static int aclmap_read(const char *file, std::unordered_map<std::string, std::string> &map)
+{
+	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
+	if (fp == nullptr) {
+		fprintf(stderr, "Could not open %s: %s\n", file, strerror(errno));
+		return EXIT_FAILURE;
+	}
+	hxmc_t *line = nullptr;
+	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	unsigned int lnum = 0;
+	while (HX_getl(&line, fp.get()) != nullptr) {
+		++lnum;
+		HX_chomp(line);
+		char *b = line;
+		if (*b == '\0' || *b == '#')
+			continue;
+		while (*b != '\0' && !HX_isspace(*b))
+			++b;
+		*b++ = '\0';
+		if (*line == '\0') {
+			fprintf(stderr, "%s: ignoring incomplete line %u\n", file, lnum);
+			continue;
+		}
+		while (HX_isspace(*b))
+			++b;
+		if (*b == '\0') {
+			fprintf(stderr, "%s: ignoring incomplete line %u\n", file, lnum);
+			continue;
+		}
+		map.emplace(line, b);
+	}
+	fprintf(stderr, "%s: read %zu entries\n", file, map.size());
+	return 0;
+}
+
 static void terse_help()
 {
 	fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kdb2mt --src-host kdb.lan "
@@ -1312,6 +1369,11 @@ int main(int argc, const char **argv)
 
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
+	if (g_acl_map_file != nullptr) {
+		int ret = aclmap_read(g_acl_map_file, g_acl_map);
+		if (ret != EXIT_SUCCESS)
+			return ret;
+	}
 	int ret = EXIT_SUCCESS;
 	sql_login_param sqp;
 	if (g_sqlhost != nullptr)
