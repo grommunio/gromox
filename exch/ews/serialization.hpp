@@ -17,11 +17,11 @@
 #include <tinyxml2.h>
 
 #include "exceptions.hpp"
+#include "structures.hpp"
 
 namespace gromox::EWS::Serialization
 {
 using SetterFunc = const std::function<void(const char*)>&;
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //Conversion of built-in types
@@ -139,6 +139,42 @@ struct ExplicitConvert<gromox::time_point>
 		snprintf(timestr, 64, fsec? "%04d-%02d-%02dT%02d:%02d:%02d.%06ldZ" : "%04d-%02d-%02dT%02d:%02d:%02dZ",
 		         t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, fsec);
 		setter(timestr);
+	}
+};
+
+/**
+ * @brief      Conversion specialization for StrEnum
+ */
+template<const char* C0, const char*... Cs>
+struct ExplicitConvert<gromox::EWS::Structures::StrEnum<C0, Cs...>>
+{
+	using T = gromox::EWS::Structures::StrEnum<C0, Cs...>;
+
+	static constexpr uint8_t value = EC_IN | EC_OUT;
+
+	static inline tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, T& value)
+	{
+		const char* data = xml->GetText();
+		if(!data)
+			return tinyxml2::XML_NO_TEXT_NODE;
+		try {
+			value = data;
+		} catch (gromox::EWS::Exceptions::EnumError& err) {
+			throw gromox::EWS::Exceptions::DeserializationError(err.what());
+		}
+		return tinyxml2::XML_SUCCESS;
+	}
+
+	static inline tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, T& value)
+	{
+		value = xml->Value();
+		return tinyxml2::XML_SUCCESS;
+	}
+
+	static inline void serialize(const T& value, SetterFunc setter)
+	{
+		if(value.length())
+			setter(value.c_str());
 	}
 };
 
