@@ -4,17 +4,87 @@
 
 #pragma once
 
+#include <array>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include <gromox/clock.hpp>
 
+#include "exceptions.hpp"
+
 namespace tinyxml2
 {class XMLElement;}
 
 namespace gromox::EWS::Structures
 {
+
+/**
+ * @brief     String enum
+ *
+ * Throws when a non-template value is assigned or used for construction.
+ */
+template<const char* C0, const char*... Cs>
+struct StrEnum : public std::string
+{
+	static constexpr std::array<const char*, 1+sizeof...(Cs)> Choices{C0, Cs...};
+
+	StrEnum() = default;
+
+	template<typename... Args>
+	StrEnum(Args&&... args) : std::string(std::forward<Args...>(args...))
+	{check(*this);}
+
+	template<typename Arg>
+	StrEnum& operator=(Arg&& arg)
+	{
+		check(arg);
+		assign(std::forward<Arg>(arg));
+		return *this;
+	}
+
+	static void check(const std::string& v)
+	{
+		for(const char* choice : Choices)
+			if(choice == v)
+				return;
+		std::string msg = "\"";
+		msg += v;
+		msg += "\" is not one of [\"";
+		msg += Choices[0];
+		for(auto it = Choices.begin()+1; it != Choices.end(); ++it)
+		{
+			msg += "\", \"";
+			msg += *it;
+		}
+		msg += "\"]";
+		throw gromox::EWS::Exceptions::EnumError(msg);
+	}
+};
+
+/**
+ * @brief     Collection of XML enum types
+ */
+struct Enum
+{
+
+	//String constants used in enums
+#define VAL(NAME) static constexpr char NAME[] = #NAME
+	VAL(All);
+	VAL(Disabled);
+	VAL(Enabled);
+	VAL(Known);
+	VAL(None);
+	VAL(Scheduled);
+#undef VAL
+
+	//Enum types
+	using ExternalAudience = StrEnum<None, Known, All>; ///< Types.xsd:6530
+	using OofState = StrEnum<Disabled, Enabled, Scheduled>; ///< Types.xsd:6522
+};
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * @brief      Duration
@@ -157,8 +227,8 @@ struct tUserOofSettings
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	std::string OofState; ///< ["Disabled", "Enabled", "Scheduled"], Types.xsd:6522
-	std::string ExternalAudience; ///< ["None", "Known", "All"], Types.xsd:6530
+	Enum::OofState OofState;
+	Enum::ExternalAudience ExternalAudience;
 	std::optional<tDuration> Duration; ///< Out-of-office duration
 	std::optional<tReplyBody> InternalReply; ///< Internal reply message
 	std::optional<tReplyBody> ExternalReply; ///< External reply message

@@ -52,6 +52,12 @@ class DispatchError : public std::runtime_error
 class NotImplementedError : public std::runtime_error
 {using std::runtime_error::runtime_error;};
 
+/**
+ * @brief      An invalid value was assigned to an StrEnum
+ */
+class EnumError : public std::runtime_error
+{using std::runtime_error::runtime_error;};
+
 ///////////////////////////////////////////////////////////////////////////////
 //Error codes
 
