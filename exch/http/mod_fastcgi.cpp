@@ -507,9 +507,12 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 			fprintf(stderr, "E-2077: mkdir %s: %s\n", path, strerror(errno));
 			return false;
 		}
-		pcontext->cache_fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
-		if (pcontext->cache_fd == -1) {
-			fprintf(stderr, "E-2078: open %s: %s\n", path, strerror(errno));
+		pcontext->cache_fd = open_tmpfile(path, &pcontext->tmpfile,
+		                     O_RDWR | O_TRUNC);
+		if (pcontext->cache_fd < 0) {
+			fprintf(stderr, "E-2078: open_tmpfile{%s, %s}: %s\n",
+			        path, pcontext->tmpfile.c_str(),
+			        strerror(-pcontext->cache_fd));
 			return FALSE;
 		}
 		pcontext->cache_size = 0;
@@ -806,7 +809,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			phttp->pfast_context->pfnode->sock_path.c_str());
 		return FALSE;
 	}
-	if (-1 == phttp->pfast_context->cache_fd) {
+	if (phttp->pfast_context->cache_fd < 0) {
 		if (phttp->pfast_context->content_length == 0)
 			goto END_OF_STDIN;
 		unsigned int tmp_len = sizeof(tmp_buff);
@@ -853,6 +856,12 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			} else if (0 == tmp_len) {
 				close(phttp->pfast_context->cache_fd);
 				phttp->pfast_context->cache_fd = -1;
+				if (!phttp->pfast_context->tmpfile.empty() &&
+				    unlink(phttp->pfast_context->tmpfile.c_str()) < 0 &&
+				    errno != ENOENT)
+					fprintf(stderr, "W-1362: unlink %s: %s\n",
+					        phttp->pfast_context->tmpfile.c_str(),
+					        strerror(errno));
 				break;
 			}
 			ndr_push_init(&ndr_push, ndr_buff, sizeof(ndr_buff),
@@ -900,11 +909,19 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 
 void mod_fastcgi_put_context(HTTP_CONTEXT *phttp)
 {
-	if (-1 != phttp->pfast_context->cache_fd) {
+	auto &fc = *phttp->pfast_context;
+	if (fc.cache_fd >= 0) {
 		close(phttp->pfast_context->cache_fd);
+		phttp->pfast_context->cache_fd = -1;
+		if (!fc.tmpfile.empty() && unlink(fc.tmpfile.c_str()) < 0 &&
+		    errno != ENOENT)
+			fprintf(stderr, "W-1362: unlink %s: %s\n",
+				fc.tmpfile.c_str(), strerror(errno));
 	}
-	if (phttp->pfast_context->cli_sockd != -1)
+	if (phttp->pfast_context->cli_sockd != -1) {
 		close(phttp->pfast_context->cli_sockd);
+		phttp->pfast_context->cli_sockd = -1;
+	}
 	phttp->pfast_context = NULL;
 }
 
@@ -918,7 +935,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 	
 	if (phttp->pfast_context->b_end)
 		return TRUE;
-	if (-1 == phttp->pfast_context->cache_fd) {
+	if (phttp->pfast_context->cache_fd < 0) {
 		if (phttp->pfast_context->content_length <= phttp->stream_in.get_total_length())
 			phttp->pfast_context->b_end = TRUE;	
 		return TRUE;

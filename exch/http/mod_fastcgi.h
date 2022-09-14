@@ -18,6 +18,7 @@ struct FASTCGI_CONTEXT {
 	uint64_t cache_size = 0;
 	int cache_fd = -1, cli_sockd = -1;
 	gromox::time_point last_time{};
+	std::string tmpfile;
 };
 
 struct HTTP_CONTEXT;
