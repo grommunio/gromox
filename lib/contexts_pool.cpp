@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <cerrno>
 #include <csignal>
 #include <cstdio>
@@ -7,7 +10,12 @@
 #include <mutex>
 #include <pthread.h>
 #include <unistd.h>
-#include <sys/epoll.h>
+#ifdef HAVE_SYS_EPOLL_H
+#	include <sys/epoll.h>
+#endif
+#ifdef HAVE_SYS_EVENT_H
+#	include <sys/event.h>
+#endif
 #include <sys/socket.h>
 #include <gromox/atomic.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -23,8 +31,13 @@ struct evqueue {
 
 	unsigned int m_num = 0;
 	int m_fd = -1;
+#ifdef HAVE_SYS_EPOLL_H
 	std::unique_ptr<epoll_event[]> m_events;
-	inline SCHEDULE_CONTEXT *get_data(size_t i) const { return static_cast<SCHEDULE_CONTEXT *>(m_events[i].data.ptr); }
+	inline SCHEDULE_CONTEXT *get_data(size_t i) const { return static_cast<schedule_context *>(m_events[i].data.ptr); }
+#elif defined(HAVE_SYS_EVENT_H)
+	std::unique_ptr<struct kevent[]> m_events;
+	inline SCHEDULE_CONTEXT *get_data(size_t i) const { return static_cast<schedule_context *>(m_events[i].udata); }
+#endif
 
 	errno_t init(unsigned int numctx);
 	int wait();
@@ -59,6 +72,7 @@ void evqueue::reset()
 errno_t evqueue::init(unsigned int numctx) try
 {
 	m_num = numctx;
+#ifdef HAVE_SYS_EPOLL_H
 	if (m_fd >= 0)
 		close(m_fd);
 	m_fd = epoll_create(numctx);
@@ -67,6 +81,14 @@ errno_t evqueue::init(unsigned int numctx) try
 		return errno;
 	}
 	m_events = std::make_unique<epoll_event[]>(numctx);
+#elif defined(HAVE_SYS_EVENT_H)
+	m_fd = kqueue();
+	if (m_fd < 0) {
+		fprintf(stderr, "[contexts_pool]: kqueue: %s\n", strerror(errno));
+		return errno;
+	}
+	m_events = std::make_unique<struct kevent[]>(numctx * 2);
+#endif
 	return 0;
 } catch (const std::bad_alloc &) {
 	return ENOMEM;
@@ -74,11 +96,18 @@ errno_t evqueue::init(unsigned int numctx) try
 
 int evqueue::wait()
 {
+#ifdef HAVE_SYS_EPOLL_H
 	return epoll_wait(m_fd, m_events.get(), m_num, 1000);
+#elif defined(HAVE_SYS_EVENT_H)
+	static constexpr struct timespec ts = {1, 0};
+	return kevent(m_fd, nullptr, 0, m_events.get(), m_num, &ts);
+#endif
 }
 
 errno_t evqueue::mod(SCHEDULE_CONTEXT *ctx, bool add)
 {
+	auto fd = contexts_pool_get_context_socket(ctx);
+#ifdef HAVE_SYS_EPOLL_H
 	struct epoll_event ev{};
 	ev.data.ptr = ctx;
 	ev.events = EPOLLET | EPOLLONESHOT;
@@ -86,14 +115,40 @@ errno_t evqueue::mod(SCHEDULE_CONTEXT *ctx, bool add)
 		ev.events |= EPOLLIN;
 	if (ctx->polling_mask & POLLING_WRITE)
 		ev.events |= EPOLLOUT;
-	auto fd = contexts_pool_get_context_socket(ctx);
 	return epoll_ctl(m_fd, add ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, fd, &ev);
+#else
+	struct kevent ev{};
+	if (ctx->polling_mask & POLLING_READ) {
+		EV_SET(&ev, fd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_ONESHOT | EV_CLEAR, 0, 0, ctx);
+		auto ret = kevent(m_fd, &ev, 1, nullptr, 0, nullptr);
+		if (ret != 0)
+			return ret;
+		if (ev.flags & EV_ERROR)
+			fprintf(stderr, "evqueue::add: %s\n", strerror(ev.data));
+	}
+	if (ctx->polling_mask & POLLING_WRITE) {
+		EV_SET(&ev, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT | EV_CLEAR, 0, 0, ctx);
+		auto ret = kevent(m_fd, &ev, 1, nullptr, 0, nullptr);
+		if (ret != 0)
+			return ret;
+		if (ev.flags & EV_ERROR)
+			fprintf(stderr, "evqueue::add: %s\n", strerror(ev.data));
+	}
+	return 0;
+#endif
 }
 
 errno_t evqueue::del(SCHEDULE_CONTEXT *ctx)
 {
 	auto fd = contexts_pool_get_context_socket(ctx);
+#ifdef HAVE_SYS_EPOLL_H
 	return epoll_ctl(m_fd, EPOLL_CTL_DEL, fd, nullptr);
+#elif defined(HAVE_SYS_EVENT_H)
+	struct kevent ev[2];
+	EV_SET(&ev[0], fd, EVFILT_READ, EV_DELETE, 0, 0, nullptr);
+	EV_SET(&ev[1], fd, EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
+	return kevent(m_fd, ev, std::size(ev), nullptr, 0, nullptr);
+#endif
 }
 
 static void context_init(SCHEDULE_CONTEXT *pcontext)
