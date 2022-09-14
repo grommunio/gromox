@@ -366,7 +366,7 @@ static BOOL nsp_preproc(int context_id)
 	auto prequest = get_request(context_id);
 	if (strcasecmp(prequest->method, "POST") != 0)
 		return false;
-	auto tmp_len = prequest->f_request_uri.read(tmp_uri, arsizeof(tmp_uri));
+	auto tmp_len = prequest->f_request_uri.read(tmp_uri, std::size(tmp_uri) - 1);
 	if (tmp_len == MEM_END_OF_FILE)
 		return false;
 	tmp_uri[tmp_len] = '\0';
