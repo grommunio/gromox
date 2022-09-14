@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
@@ -47,6 +48,7 @@ struct HPM_CONTEXT {
 	int cache_fd = -1;
 	uint32_t chunk_size = 0, chunk_offset = 0;
 	uint64_t content_length = 0, cache_size = 0;
+	std::string tmpfile;
 };
 
 }
@@ -423,9 +425,12 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 				fprintf(stderr, "E-2079: mkdir %s: %s\n", path, strerror(errno));
 				return false;
 			}
-			phpm_ctx->cache_fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
-			if (phpm_ctx->cache_fd == -1) {
-				fprintf(stderr, "E-2090: open %s: %s\n", path, strerror(errno));
+			phpm_ctx->cache_fd = open_tmpfile(path, &phpm_ctx->tmpfile,
+			                     O_RDWR | O_TRUNC);
+			if (phpm_ctx->cache_fd < 0) {
+				fprintf(stderr, "E-2090: open{%s, %s}: %s\n",
+				        path, phpm_ctx->tmpfile.c_str(),
+				        strerror(-phpm_ctx->cache_fd));
 				phpm_ctx->b_preproc = FALSE;
 				return FALSE;
 			}
@@ -468,7 +473,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	auto phpm_ctx = &g_context_list[phttp->context_id];
 	if (phpm_ctx->b_end)
 		return TRUE;
-	if (-1 == phpm_ctx->cache_fd) {
+	if (phpm_ctx->cache_fd < 0) {
 		if (phpm_ctx->content_length <= phttp->stream_in.get_total_length())
 			phpm_ctx->b_end = TRUE;	
 		return TRUE;
@@ -588,7 +593,7 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 	struct stat node_stat;
 	
 	auto phpm_ctx = &g_context_list[phttp->context_id];
-	if (-1 == phpm_ctx->cache_fd) {
+	if (phpm_ctx->cache_fd < 0) {
 		if (0 == phpm_ctx->content_length) {
 			pcontent = NULL;
 		} else {
@@ -620,6 +625,11 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 		close(phpm_ctx->cache_fd);
 		phpm_ctx->cache_fd = -1;
 		phpm_ctx->content_length = node_stat.st_size;
+		if (!phpm_ctx->tmpfile.empty() &&
+		    unlink(phpm_ctx->tmpfile.c_str()) < 0 &&
+		    errno != ENOENT)
+			fprintf(stderr, "W-1347: remove %s: %s\n",
+			        phpm_ctx->tmpfile.c_str(), strerror(errno));
 	}
 	b_result = phpm_ctx->pinterface->proc(phttp->context_id,
 				pcontent, phpm_ctx->content_length);
@@ -656,9 +666,14 @@ void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 	if (NULL != phpm_ctx->pinterface->term) {
 		phpm_ctx->pinterface->term(phttp->context_id);
 	}
-	if (-1 != phpm_ctx->cache_fd) {
+	if (phpm_ctx->cache_fd >= 0) {
 		close(phpm_ctx->cache_fd);
 		phpm_ctx->cache_fd = -1;
+		if (!phpm_ctx->tmpfile.empty() &&
+		    unlink(phpm_ctx->tmpfile.c_str()) < 0 &&
+		    errno != ENOENT)
+			fprintf(stderr, "W-1369: remove %s: %s\n",
+			        phpm_ctx->tmpfile.c_str(), strerror(errno));
 	}
 	phpm_ctx->content_length = 0;
 	phpm_ctx->b_preproc = FALSE;

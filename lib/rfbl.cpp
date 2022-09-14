@@ -43,6 +43,9 @@
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
 
+using namespace std::string_literals;
+using namespace gromox;
+
 extern "C" {
 extern char **environ;
 }
@@ -51,8 +54,6 @@ class hxmc_deleter {
 	public:
 	void operator()(hxmc_t *s) { HXmc_free(s); }
 };
-
-using namespace gromox;
 
 static int gx_reexec_top_fd = -1;
 
@@ -680,6 +681,33 @@ bool set_digest(char *json, size_t iomax, const char *key, uint64_t val)
 	 * `jval[key]=val`, so force a particular json type now.
 	 */
 	return set_digest2(json, iomax, key, Json::Value::UInt64(val));
+}
+
+int open_tmpfile(const char *dir, std::string *fullname, unsigned int flags,
+    unsigned int mode) try
+{
+	int fd;
+	if (fullname != nullptr)
+		fullname->clear();
+#ifdef O_TMPFILE
+	fd = open(dir, O_TMPFILE | flags, mode);
+	if (fd >= 0)
+		return fd;
+	if (errno != EISDIR && errno != EOPNOTSUPP)
+		return -errno;
+#endif
+	char tn[17];
+	randstring_k(tn, std::size(tn), "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+	std::string tf;
+	if (fullname == nullptr)
+		fullname = &tf;
+	*fullname = dir + "/"s + tn;
+	fd = open(fullname->c_str(), O_CREAT | flags, mode);
+	if (fd >= 0)
+		return fd;
+	return -errno;
+} catch (const std::bad_alloc &) {
+	return -ENOMEM;
 }
 
 }
