@@ -557,7 +557,7 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 	}
 	int ret;
 	if ((ret = props->set(PidTagChangeNumber, &change_num)) != 0 ||
-	    (ret = props->set(PR_CHANGE_KEY, &bxid) != 0) ||
+	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != 0 ||
 	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != 0) {
 		fprintf(stderr, "%s: %s\n", __func__, strerror(-ret));
 		return ret;
