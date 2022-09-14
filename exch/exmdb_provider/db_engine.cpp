@@ -279,7 +279,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	return db_item_ptr(pdb);
 }
 
-void db_engine_put_db(DB_ITEM *pdb)
+void db_item_deleter::operator()(DB_ITEM *pdb) const
 {
 	time(&pdb->last_time);
 	pdb->giant_lock.unlock();

@@ -114,11 +114,10 @@ struct DB_ITEM {
 extern void db_engine_init(size_t table_size, int cache_interval, BOOL async, BOOL wal, uint64_t mmap_size, unsigned int threads_num);
 extern int db_engine_run();
 extern void db_engine_stop();
-void db_engine_put_db(DB_ITEM *pdb);
 
 class db_item_deleter {
 	public:
-	void operator()(DB_ITEM *d) { db_engine_put_db(d); }
+	void operator()(DB_ITEM *) const;
 };
 
 using db_item_ptr = std::unique_ptr<DB_ITEM, db_item_deleter>;
