@@ -409,7 +409,10 @@ void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
         return;
     }
 #endif
-	simple_tree_enum_from_node(pjson->tree.get_root(), [&](SIMPLE_TREE_NODE *stn) {
+	auto r = pjson->tree.get_root();
+	if (r == nullptr)
+		return;
+	simple_tree_enum_from_node(r, [&](SIMPLE_TREE_NODE *stn) {
 		auto m = containerof(stn, MJSON_MIME, node);
 		enum_func(m, param);
 	});
