@@ -179,7 +179,7 @@ MJSON::~MJSON()
  *		length				string buffer length
  *		path [in]			mail file path, can be NULL.
  *                          if you want to build rfc822
- *                          or seek file discritor in
+ *                          or seek file descriptor in
  *                          message, path cannot be NULL.
  */
 BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath)
@@ -825,7 +825,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	
 	temp_len = strlen(temp_mime.filename);
 
-	/* for some MUA sunch as Foxmail, use application/octet-stream
+	/* for some MUA such as Foxmail, use application/octet-stream
 	   as the Content-Type, so make the revision for these mimes
 	*/
     if (temp_len > 4 && 0 == strncasecmp(temp_mime.filename + temp_len - 4,
