@@ -5028,7 +5028,7 @@ static ZEND_FUNCTION(mapi_icaltomapi2)
 static void imtomapi2_proc(INTERNAL_FUNCTION_PARAMETERS,
     GUID session, LONG_ARRAY &msg_handles)
 {
-	array_init(return_value);
+	zarray_init(return_value);
 	for (size_t i = 0; i < msg_handles.count; ++i) {
 		auto res = st_malloc<MAPI_RESOURCE>();
 		if (res == nullptr) {
