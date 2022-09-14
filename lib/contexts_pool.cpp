@@ -343,22 +343,20 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 			} else {
 				pcontext->b_waiting = TRUE;
 			}
-		} else {
-			if (-1 == epoll_ctl(g_epoll_fd, EPOLL_CTL_MOD,
-				contexts_pool_get_context_socket(pcontext), &tmp_ev)) {
-				if (ENOENT == errno && 0 == epoll_ctl(g_epoll_fd,
-					EPOLL_CTL_ADD, contexts_pool_get_context_socket(
-					pcontext), &tmp_ev)) {
-					/* sometimes, fd will be removed by scanning
-						thread because of timeout, add it back
-						into epoll queue again */
-					pcontext->b_waiting = TRUE;
-				} else {
-					shutdown(contexts_pool_get_context_socket(
-										pcontext), SHUT_RDWR);
-					debug_info("[contexts_pool]: fail"
-						" to modify event in epoll\n");
-				}
+		} else if (epoll_ctl(g_epoll_fd, EPOLL_CTL_MOD,
+		    contexts_pool_get_context_socket(pcontext), &tmp_ev) == -1) {
+			if (ENOENT == errno && 0 == epoll_ctl(g_epoll_fd,
+				EPOLL_CTL_ADD, contexts_pool_get_context_socket(
+				pcontext), &tmp_ev)) {
+				/* sometimes, fd will be removed by scanning
+				thread because of timeout, add it back
+				into epoll queue again */
+				pcontext->b_waiting = TRUE;
+			} else {
+				shutdown(contexts_pool_get_context_socket(
+				         pcontext), SHUT_RDWR);
+				debug_info("[contexts_pool]: fail"
+					" to modify event in epoll\n");
 			}
 		}
 	} else if (type == CONTEXT_FREE && original_type == CONTEXT_TURNING) {
