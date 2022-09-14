@@ -147,13 +147,16 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 		return -1;
 	}
 	free(bin.pb);
+	bin.pb = nullptr;
 	if (mdcl_build_env != nullptr)
 		mdcl_build_env(srv);
 	auto cl_0 = make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
-	if (!exmdb_client_read_socket(sockd, bin, mdcl_socket_timeout * 1000))
+	if (!exmdb_client_read_socket(sockd, bin, mdcl_socket_timeout * 1000) ||
+	    bin.pb == nullptr)
 		return -1;
 	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
 	exmdb_rpc_free(bin.pb);
+	bin.pb = nullptr;
 	if (response_code != exmdb_response::success) {
 		fprintf(stderr, "exmdb_client: Failed to connect to [%s]:%hu/%s: %s\n",
 		       srv.host.c_str(), srv.port, srv.prefix.c_str(),
