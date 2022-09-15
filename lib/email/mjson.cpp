@@ -1380,13 +1380,12 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	offset ++;
 	buff[offset] = '(';
 	offset ++;
-	if (strlen(pjson->sender) > 0) { 
+	if (strlen(pjson->reply) > 0)
 		ret_len = mjson_convert_address(pjson->reply, charset,
 					buff + offset, length - offset);
-	} else {
+	else
 		ret_len = mjson_convert_address(pjson->from, charset,
 					buff + offset, length - offset);
-	}
 	if (-1 == ret_len) {
 		return -1;
 	}
