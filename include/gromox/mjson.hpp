@@ -12,19 +12,18 @@ struct MJSON_MIME {
 	SIMPLE_TREE_NODE node{};
 	alloc_limiter<MJSON_MIME> *ppool = nullptr;
 	enum mime_type mime_type = mime_type::none;
-	char id[64]{}, ctype[256]{}, encoding[32]{}, charset[32]{};
-	char filename[256]{}, cid[128]{}, cntl[256]{}, cntdspn[64]{};
+	std::string id, ctype, encoding, charset, filename, cid, cntl, cntdspn;
 	size_t head = 0, begin = 0, length = 0;
 
 	inline enum mime_type get_mtype() const { return mime_type; }
-	inline const char *get_ctype() const { return ctype; }
+	inline const char *get_ctype() const { return ctype.c_str(); }
+	inline const char *get_charset() const { return charset.c_str(); }
+	inline const char *get_filename() const { return filename.c_str(); }
+	inline const char *get_encoding() const { return encoding.c_str(); }
+	inline const char *get_id() const { return id.c_str(); }
 	inline bool ctype_is_rfc822() const { return strcasecmp(get_ctype(), "message/rfc822") == 0; }
-	inline const char *get_charset() const { return charset; }
-	inline const char *get_filename() const { return filename; }
-	inline const char *get_encoding() const { return encoding; }
 	inline bool encoding_is_b() const { return strcasecmp(get_encoding(), "base64") == 0; }
 	inline bool encoding_is_q() const { return strcasecmp(get_encoding(), "quoted-printable") == 0; }
-	inline const char *get_id() const { return id; }
 	size_t get_length(unsigned int param) const;
 	size_t get_offset(unsigned int param) const;
 };
