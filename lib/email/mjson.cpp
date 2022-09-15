@@ -854,59 +854,58 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		       reinterpret_cast<char *>(&temp_mime) + sizeof(SIMPLE_TREE_NODE),
 			sizeof(MJSON_MIME) - sizeof(SIMPLE_TREE_NODE));
 		return TRUE;
-	} else {
-		temp_len = strlen(temp_mime.id);
-		memcpy(temp_buff, temp_mime.id, temp_len + 1);
-		last_pos = 0;
-		for (size_t i = 0; i <= temp_len; ++i) {
-			if ('.' == temp_buff[i] || '\0' == temp_buff[i]) {
-				temp_buff[i] = '\0';
-				int offset = strtol(temp_buff + last_pos, nullptr, 0);
-				pnode = pmime->node.get_child();
-				if (NULL == pnode) {
-					pnode = &pmime->node;
-					pmime = pjson->ppool->get();
-					pmime->node.pdata = pmime;
-					pmime->ppool = pjson->ppool;
-					pmime->mime_type = MJSON_MIME_NONE;
-					if (!pjson->tree.add_child(
-						pnode, &pmime->node, SIMPLE_TREE_ADD_LAST)) {
-						pjson->ppool->put(pmime);
-						return FALSE;
-					}
-				} else {
-					pmime = (MJSON_MIME*)pnode->pdata;
-				}
-				
-				for (j=1; j<offset; j++) {
-					pnode = pmime->node.get_sibling();
-					if (NULL == pnode) {
-						pnode = &pmime->node;
-						pmime = pjson->ppool->get();
-						pmime->node.pdata = pmime;
-						pmime->ppool = pjson->ppool;
-						pmime->mime_type = MJSON_MIME_NONE;
-						if (!pjson->tree.insert_sibling(pnode,
-						    &pmime->node, SIMPLE_TREE_INSERT_AFTER)) {
-							pjson->ppool->put(pmime);
-							return FALSE;
-						}
-					} else {
-						pmime = (MJSON_MIME*)pnode->pdata;
-					}
-				}
-				last_pos = i + 1;
+	}
+	temp_len = strlen(temp_mime.id);
+	memcpy(temp_buff, temp_mime.id, temp_len + 1);
+	last_pos = 0;
+	for (size_t i = 0; i <= temp_len; ++i) {
+		if (temp_buff[i] != '.' && temp_buff[i] != '\0')
+			continue;
+		temp_buff[i] = '\0';
+		int offset = strtol(temp_buff + last_pos, nullptr, 0);
+		pnode = pmime->node.get_child();
+		if (NULL == pnode) {
+			pnode = &pmime->node;
+			pmime = pjson->ppool->get();
+			pmime->node.pdata = pmime;
+			pmime->ppool = pjson->ppool;
+			pmime->mime_type = MJSON_MIME_NONE;
+			if (!pjson->tree.add_child(
+			    pnode, &pmime->node, SIMPLE_TREE_ADD_LAST)) {
+				pjson->ppool->put(pmime);
+				return FALSE;
+			}
+		} else {
+			pmime = (MJSON_MIME *)pnode->pdata;
+		}
+
+		for (j = 1; j < offset; j++) {
+			pnode = pmime->node.get_sibling();
+			if (pnode != nullptr) {
+				pmime = static_cast<MJSON_MIME *>(pnode->pdata);
+				continue;
+			}
+			pnode = &pmime->node;
+			pmime = pjson->ppool->get();
+			pmime->node.pdata = pmime;
+			pmime->ppool = pjson->ppool;
+			pmime->mime_type = MJSON_MIME_NONE;
+			if (!pjson->tree.insert_sibling(pnode,
+			    &pmime->node, SIMPLE_TREE_INSERT_AFTER)) {
+				pjson->ppool->put(pmime);
+				return FALSE;
 			}
 		}
-		
-		if (MJSON_MIME_NONE != pmime->mime_type) {
-			return FALSE;
-		}
-		memcpy(reinterpret_cast<char *>(pmime) + sizeof(SIMPLE_TREE_NODE), 
-		       reinterpret_cast<char *>(&temp_mime) + sizeof(SIMPLE_TREE_NODE),
-			sizeof(MJSON_MIME) - sizeof(SIMPLE_TREE_NODE));
-		return TRUE;
-	}	
+		last_pos = i + 1;
+	}
+
+	if (MJSON_MIME_NONE != pmime->mime_type) {
+		return FALSE;
+	}
+	memcpy(reinterpret_cast<char *>(pmime) + sizeof(SIMPLE_TREE_NODE),
+	       reinterpret_cast<char *>(&temp_mime) + sizeof(SIMPLE_TREE_NODE),
+	       sizeof(MJSON_MIME) - sizeof(SIMPLE_TREE_NODE));
+	return TRUE;
 } 
 
 int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff, int length)
