@@ -1362,13 +1362,9 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	offset ++;
 	buff[offset] = '(';
 	offset ++;
-	if (strlen(pjson->sender) > 0) { 
-		ret_len = mjson_convert_address(pjson->sender, charset,
-					buff + offset, length - offset);
-	} else {
-		ret_len = mjson_convert_address(pjson->from, charset,
-					buff + offset, length - offset);
-	}
+	ret_len = mjson_convert_address(*pjson->sender != '\0' ?
+	          pjson->sender : pjson->from, charset,
+	          &buff[offset], length - offset);
 	if (-1 == ret_len) {
 		return -1;
 	}
@@ -1380,12 +1376,9 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	offset ++;
 	buff[offset] = '(';
 	offset ++;
-	if (strlen(pjson->reply) > 0)
-		ret_len = mjson_convert_address(pjson->reply, charset,
-					buff + offset, length - offset);
-	else
-		ret_len = mjson_convert_address(pjson->from, charset,
-					buff + offset, length - offset);
+	ret_len = mjson_convert_address(*pjson->reply != '\0' ?
+	          pjson->reply : pjson->from, charset,
+	          &buff[offset], length - offset);
 	if (-1 == ret_len) {
 		return -1;
 	}
