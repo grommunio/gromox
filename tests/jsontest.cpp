@@ -4,7 +4,8 @@
 
 static void enx(MJSON_MIME *mi, void *q)
 {
-	printf("this=%p type=%u id=%s\n", mi, static_cast<unsigned int>(mi->mime_type), mi->id);
+	printf("this=%p type=%u id=%s\n", mi,
+	       static_cast<unsigned int>(mi->mime_type), mi->get_id());
 }
 
 static char tdata1[] =

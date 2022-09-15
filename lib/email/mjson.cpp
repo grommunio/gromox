@@ -673,7 +673,8 @@ static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type)
 	return rstat == PARSE_STAT_END ? TRUE : false;
 }
 
-static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
+static BOOL mjson_record_node(MJSON *pjson, char *value, int length,
+    int type) try
 {
 	int rstat, j, last_pos = 0;
 	size_t temp_len;
@@ -730,37 +731,22 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 			    (b_digit && (value[i] == ' ' || value[i] == '\t' ||
 			    value[i] == ',' || i == length - 1))) {
 				temp_len = !b_digit ? i - last_pos : i + 1 - last_pos;
-				if (0 == strcasecmp(temp_tag, "id") && temp_len < 64) {
-					memcpy(temp_mime.id, value + last_pos, temp_len);
-					temp_mime.id[temp_len] = '\0';
-				} else if (0 == strcasecmp(temp_tag, "ctype") && temp_len < 256) {
-					memcpy(temp_mime.ctype, value + last_pos, temp_len);
-					temp_mime.ctype[temp_len] = '\0';
-				} else if (0 == strcasecmp(temp_tag, "encoding") && temp_len < 32) {
-					memcpy(temp_mime.encoding, value + last_pos, temp_len);
-					temp_mime.encoding[temp_len] = '\0';
-				} else if(0 == strcasecmp(temp_tag, "charset") && temp_len < 32) {
-					memcpy(temp_mime.charset, value + last_pos, temp_len);
-					temp_mime.charset[temp_len] = '\0';
-				} else if (0 == strcasecmp(temp_tag, "filename") &&
-					temp_len < sizeof(temp_mime.filename)) {
-					if (decode64(value + last_pos, temp_len, temp_mime.filename,
-					    arsizeof(temp_mime.filename), &temp_len) != 0)
-						temp_mime.filename[0] = '\0';
-				} else if (0 == strcasecmp(temp_tag, "cid") &&
-					temp_len < sizeof(temp_mime.cid)) {
-					if (decode64(value + last_pos, temp_len, temp_mime.cid,
-					    arsizeof(temp_mime.cid), &temp_len) != 0)
-						temp_mime.cid[0] = '\0';
-				} else if (0 == strcasecmp(temp_tag, "cntl") &&
-					temp_len < sizeof(temp_mime.cntl)) {
-					if (decode64(value + last_pos, temp_len, temp_mime.cntl,
-					    arsizeof(temp_mime.cntl), &temp_len) != 0)
-						temp_mime.cntl[0] = '\0';
-				} else if (0 == strcasecmp(temp_tag, "cntdspn") &&
-					temp_len < sizeof(temp_mime.cntdspn)) {
-					memcpy(temp_mime.cntdspn, value + last_pos, temp_len);
-					temp_mime.cntdspn[temp_len] = '\0';
+				if (strcasecmp(temp_tag, "id") == 0) {
+					temp_mime.id.assign(&value[last_pos], temp_len);
+				} else if (strcasecmp(temp_tag, "ctype") == 0) {
+					temp_mime.ctype.assign(&value[last_pos], temp_len);
+				} else if (strcasecmp(temp_tag, "encoding") == 0) {
+					temp_mime.encoding.assign(&value[last_pos], temp_len);
+				} else if (strcasecmp(temp_tag, "charset") == 0) {
+					temp_mime.charset.assign(&value[last_pos], temp_len);
+				} else if (strcasecmp(temp_tag, "filename") == 0) {
+					temp_mime.filename = base64_decode(std::string_view(&value[last_pos], temp_len));
+				} else if (strcasecmp(temp_tag, "cid") == 0) {
+					temp_mime.cid = base64_decode(std::string_view(&value[last_pos], temp_len));
+				} else if (strcasecmp(temp_tag, "cntl") == 0) {
+					temp_mime.cntl = base64_decode(std::string_view(&value[last_pos], temp_len));
+				} else if (strcasecmp(temp_tag, "cntdspn") == 0) {
+					temp_mime.cntdspn.assign(&value[last_pos], temp_len);
 				} else if (0 == strcasecmp(temp_tag, "head") && temp_len < 16) {
 					memcpy(temp_buff, value + last_pos, temp_len);
 					temp_buff[temp_len] = '\0';
@@ -788,19 +774,16 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		}
 	}
 	
-	
-	if ('\0' == temp_mime.ctype[0]) {
-		strcpy(temp_mime.ctype, "application/octet-stream");
-	}
-	
-	temp_len = strlen(temp_mime.filename);
+	if (temp_mime.ctype.empty())
+		temp_mime.ctype = "application/octet-stream";
 
 	/* for some MUA such as Foxmail, use application/octet-stream
 	   as the Content-Type, so make the revision for these mimes
 	*/
+	temp_len = temp_mime.filename.size();
 	if (temp_len > 4 && strncasecmp(&temp_mime.filename[temp_len-4], ".eml", 4) == 0 &&
 	    !temp_mime.ctype_is_rfc822())
-		strcpy(temp_mime.ctype, "message/rfc822");
+		temp_mime.ctype = "message/rfc822";
 	auto pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
 		auto pmime = pjson->ppool->get();
@@ -814,17 +797,15 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		return FALSE;
 	}
 	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
-	
-	if ('\0' == temp_mime.id[0]) {
+	if (temp_mime.id.empty()) {
 		if (pmime->get_mtype() != mime_type::none)
 			return FALSE;
-		memcpy(reinterpret_cast<char *>(pmime) + sizeof(SIMPLE_TREE_NODE), 
-		       reinterpret_cast<char *>(&temp_mime) + sizeof(SIMPLE_TREE_NODE),
-			sizeof(MJSON_MIME) - sizeof(SIMPLE_TREE_NODE));
+		temp_mime.node = pmime->node;
+		*pmime = std::move(temp_mime);
 		return TRUE;
 	}
-	temp_len = strlen(temp_mime.id);
-	memcpy(temp_buff, temp_mime.id, temp_len + 1);
+	temp_len = strlen(temp_mime.id.c_str());
+	memcpy(temp_buff, temp_mime.id.c_str(), temp_len + 1);
 	last_pos = 0;
 	for (size_t i = 0; i <= temp_len; ++i) {
 		if (temp_buff[i] != '.' && temp_buff[i] != '\0')
@@ -869,10 +850,12 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 
 	if (pmime->get_mtype() != mime_type::none)
 		return FALSE;
-	memcpy(reinterpret_cast<char *>(pmime) + sizeof(SIMPLE_TREE_NODE),
-	       reinterpret_cast<char *>(&temp_mime) + sizeof(SIMPLE_TREE_NODE),
-	       sizeof(MJSON_MIME) - sizeof(SIMPLE_TREE_NODE));
+	temp_mime.node = pmime->node;
+	*pmime = std::move(temp_mime);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-2185: ENOMEM\n");
+	return false;
 } 
 
 int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
@@ -919,8 +902,6 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	int ret_len;
 	BOOL b_space;
 	size_t ecode_len;
-	char ctype[256];
-	char *psubtype;
 	char temp_buff[2048];
 
 #ifdef _DEBUG_UMTA
@@ -933,9 +914,9 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	offset = 0;
 	
  FETCH_STRUCTURE_LOOP:
-	gx_strlcpy(ctype, pmime->ctype, GX_ARRAY_SIZE(ctype));
-	HX_strupper(ctype);
-	psubtype = strchr(ctype, '/');
+	auto ctype = pmime->ctype;
+	HX_strupper(ctype.data());
+	auto psubtype = strchr(ctype.data(), '/');
 	if (NULL == psubtype) {
 		psubtype = deconst("NIL");
 	} else {
@@ -945,7 +926,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	
 	if (pmime->get_mtype() == mime_type::single) {
 		offset += gx_snprintf(buff + offset, length - offset,
-					"(\"%s\" \"%s\"", ctype, psubtype);
+		          "(\"%s\" \"%s\"", ctype.c_str(), psubtype);
 		if (*pmime->get_charset() != '\0' || *pmime->get_filename() != '\0') {
 			buff[offset] = ' ';
 			offset ++;
@@ -958,7 +939,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				          "\"CHARSET\" \"%s\"", pmime->get_charset());
 				b_space = TRUE;
 			} else {
-				if (0 == strcasecmp(ctype, "text") &&
+				if (strcasecmp(ctype.c_str(), "text") == 0 &&
 					'\0' != email_charset[0]) {
 					offset += gx_snprintf(buff + offset, length - offset,
 							"\"CHARSET\" \"%s\"", email_charset);
@@ -995,9 +976,9 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			offset += 4;
 		}
 		
-		if ('\0' != pmime->cid[0] &&
-		    mjson_check_ascii_printable(pmime->cid)) {
-			mjson_add_backslash(pmime->cid, temp_buff);
+		if (pmime->cid.size() > 0 &&
+		    mjson_check_ascii_printable(pmime->cid.c_str())) {
+			mjson_add_backslash(pmime->cid.c_str(), temp_buff);
 			offset += gx_snprintf(buff + offset, length - offset,
 						" \"%s\"", temp_buff);
 		} else {
@@ -1037,10 +1018,10 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			
 			if ('\0' == msg_filename[0]) {
 				snprintf(temp_path, 256, "%s/%s", storage_path,
-					pmime->id);
+				         pmime->get_id());
 			} else {
 				snprintf(temp_path, 256, "%s/%s.%s", storage_path,
-					msg_filename, pmime->id);
+				         msg_filename, pmime->get_id());
 			}
 			
 			if (0 == stat(temp_path, &node_stat)) {
@@ -1055,7 +1036,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			          " %zu", pmime->length);
 		}
 					
-		if (0 == strcasecmp(ctype, "TEXT")) {
+		if (strcasecmp(ctype.c_str(), "TEXT") == 0) {
 			/* body lines */
 			memcpy(buff + offset, " NIL", 4);
 			offset += 4;
@@ -1071,10 +1052,10 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			
 			if ('\0' == msg_filename[0]) {
 				snprintf(temp_path, 256, "%s/%s.dgt", storage_path,
-					pmime->id);
+				         pmime->get_id());
 			} else {
 				snprintf(temp_path, 256, "%s/%s.%s.dgt", storage_path,
-					msg_filename, pmime->id);
+				         msg_filename, pmime->get_id());
 			}
 			wrapfd fd = open(temp_path, O_RDONLY);
 			if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
@@ -1125,11 +1106,9 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			
 			memcpy(buff + offset, " NIL", 4);
 			offset += 4;
-			
-		
-			if ('\0' != pmime->cntdspn[0]) {
+			if (pmime->cntdspn.size() > 0) {
 				offset += gx_snprintf(buff + offset, length - offset,
-							" (\"%s\" NIL)", pmime->cntdspn);
+				          " (\"%s\" NIL)", pmime->cntdspn.c_str());
 			} else {
 				memcpy(buff + offset, " NIL", 4);
 				offset += 4;
@@ -1139,10 +1118,9 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			
 			memcpy(buff + offset, " NIL", 4);
 			offset += 4;
-			
-			if ('\0' != pmime->cntl[0] &&
-			    mjson_check_ascii_printable(pmime->cntl)) {
-				mjson_add_backslash(pmime->cntl, temp_buff);
+			if (pmime->cntl.size() > 0 &&
+			    mjson_check_ascii_printable(pmime->cntl.c_str())) {
+				mjson_add_backslash(pmime->cntl.c_str(), temp_buff);
 				offset += gx_snprintf(buff + offset, length - offset,
 							" \"%s\"", temp_buff);
 			} else {
@@ -1505,13 +1483,15 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	
 	snprintf(temp_path, 256, "%s/%s", pbuild->msg_path, pbuild->filename);
 	if (1 == pbuild->depth) {
-		snprintf(msg_path, 256, "%s/%s", pbuild->storage_path, pmime->id);
-		snprintf(dgt_path, 256, "%s/%s.dgt", pbuild->storage_path, pmime->id);
+		snprintf(msg_path, std::size(msg_path), "%s/%s",
+		         pbuild->storage_path, pmime->get_id());
+		snprintf(dgt_path, std::size(dgt_path), "%s/%s.dgt",
+		         pbuild->storage_path, pmime->get_id());
 	} else {
 		snprintf(msg_path, 256, "%s/%s.%s", pbuild->storage_path,
-			pbuild->filename, pmime->id);
+		         pbuild->filename, pmime->get_id());
 		snprintf(dgt_path, 256, "%s/%s.%s.dgt", pbuild->storage_path,
-			pbuild->filename, pmime->id);
+		         pbuild->filename, pmime->get_id());
 	}
 		
 	
@@ -1594,10 +1574,10 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		close(fd);
 		if (1 == pbuild->depth) {
 			digest_len = sprintf(digest_buff, "{\"file\":\"%s\",",
-							pmime->id);
+			             pmime->get_id());
 		} else {
 			digest_len = sprintf(digest_buff, "{\"file\":\"%s.%s\",",
-							pbuild->filename, pmime->id);
+			             pbuild->filename, pmime->get_id());
 		}
 		int result = imail.get_digest(&mess_len, digest_buff + digest_len,
 					MAX_DIGLEN - digest_len - 1);
