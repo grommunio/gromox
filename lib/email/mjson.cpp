@@ -823,10 +823,9 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	/* for some MUA such as Foxmail, use application/octet-stream
 	   as the Content-Type, so make the revision for these mimes
 	*/
-    if (temp_len > 4 && 0 == strncasecmp(temp_mime.filename + temp_len - 4,
-		".eml", 4) && 0 != strcasecmp(temp_mime.ctype, "message/rfc822")) {
-        strcpy(temp_mime.ctype, "message/rfc822");
-    }
+	if (temp_len > 4 && strncasecmp(&temp_mime.filename[temp_len-4], ".eml", 4) == 0 &&
+	    !temp_mime.ctype_is_rfc822())
+		strcpy(temp_mime.ctype, "message/rfc822");
 	auto pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
 		auto pmime = pjson->ppool->get();
@@ -968,16 +967,16 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	if (pmime->get_mtype() == mime_type::single) {
 		offset += gx_snprintf(buff + offset, length - offset,
 					"(\"%s\" \"%s\"", ctype, psubtype);
-		if ('\0' != pmime->charset[0] || '\0' != pmime->filename[0]) {
+		if (*pmime->get_charset() != '\0' || *pmime->get_filename() != '\0') {
 			buff[offset] = ' ';
 			offset ++;
 			buff[offset] = '(';
 			offset ++;
 			
 			b_space = FALSE;
-			if ('\0' != pmime->charset[0]) {
+			if (*pmime->get_charset() != '\0') {
 				offset += gx_snprintf(buff + offset, length - offset,
-							"\"CHARSET\" \"%s\"", pmime->charset);
+				          "\"CHARSET\" \"%s\"", pmime->get_charset());
 				b_space = TRUE;
 			} else {
 				if (0 == strcasecmp(ctype, "text") &&
@@ -988,23 +987,22 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				}
 			}
 			
-			if ( '\0' != pmime->filename[0]) {
+			if (*pmime->get_filename() != '\0') {
 				if (b_space) {
 					buff[offset] = ' ';
 					offset ++;
 				}
-				if (mjson_check_ascii_printable(pmime->filename)) {
-					mjson_add_backslash(pmime->filename, temp_buff);
+				if (mjson_check_ascii_printable(pmime->get_filename())) {
+					mjson_add_backslash(pmime->get_filename(), temp_buff);
 					offset += gx_snprintf(buff + offset, length - offset,
 								"\"NAME\" \"%s\"", temp_buff);
 				} else {
 					offset += gx_snprintf(buff + offset, length - offset,
 								"\"NAME\" \"=?%s?b?",
 								('\0' != email_charset[0])?email_charset:charset);
-					if (0 != encode64(pmime->filename, strlen(pmime->filename),
-						buff + offset, length - offset, &ecode_len)) {
+					if (encode64(pmime->get_filename(), strlen(pmime->get_filename()),
+					    &buff[offset], length - offset, &ecode_len) != 0)
 						return -1;
-					}
 					offset += ecode_len;
 					memcpy(buff + offset, "?=\"", 3);
 					offset += 3;
@@ -1032,21 +1030,20 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		memcpy(buff + offset, " NIL", 4);
 		offset += 4;
 		
-		if ('\0' != pmime->encoding[0]) {
+		if (*pmime->get_encoding() != '\0') {
 			if (NULL != storage_path && NULL != msg_filename &&
-				0 == strcasecmp(pmime->ctype, "MESSAGE/RFC822")) {
+			    pmime->ctype_is_rfc822()) {
 				/* revision for APPLE device */
-				if (0 == strcasecmp(pmime->encoding, "base64") ||
-					0 == strcasecmp(pmime->encoding, "quoted-printable")) {
+				if (pmime->encoding_is_b() ||
+				    pmime->encoding_is_q())
 					offset += gx_snprintf(buff + offset, length - offset,
 								" \"7bit\"");
-				} else {
+				else
 					offset += gx_snprintf(buff + offset, length - offset,
-								" \"%s\"", pmime->encoding);
-				}
+					          " \"%s\"", pmime->get_encoding());
 			} else {
 				offset += gx_snprintf(buff + offset, length - offset,
-							" \"%s\"", pmime->encoding);
+				          " \"%s\"", pmime->get_encoding());
 			}
 		} else {
 			memcpy(buff + offset, " NIL", 4);
@@ -1054,9 +1051,8 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		}
 		
 		if (NULL != storage_path && NULL != msg_filename &&
-			0 == strcasecmp(pmime->ctype, "MESSAGE/RFC822") &&
-			(0 == strcasecmp(pmime->encoding, "base64") ||
-			0 == strcasecmp(pmime->encoding, "quoted-printable"))) {
+		    pmime->ctype_is_rfc822() &&
+		    (pmime->encoding_is_b() || pmime->encoding_is_q())) {
 			char temp_path[256];
 			struct stat node_stat;
 			
@@ -1087,7 +1083,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		}
 		
 		if (NULL != storage_path && NULL != msg_filename &&
-			0 == strcasecmp(pmime->ctype, "MESSAGE/RFC822")) {
+		    pmime->ctype_is_rfc822()) {
 			int envl_len;
 			int body_len;
 			char temp_path[256];
@@ -1472,9 +1468,9 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 		offset += 4;
 	}
 	
-	if ('\0' != pjson->msgid[0] &&
-	    mjson_check_ascii_printable(pjson->msgid)) {
-		mjson_add_backslash(pjson->msgid, temp_buff);
+	if (*pjson->get_mail_messageid() != '\0' &&
+	    mjson_check_ascii_printable(pjson->get_mail_messageid())) {
+		mjson_add_backslash(pjson->get_mail_messageid(), temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
 	} else {
@@ -1512,7 +1508,7 @@ static void mjson_add_backslash(const char *astring, char *out_string)
 static void mjson_emum_rfc822(MJSON_MIME *pmime, void *param)
 {
 	auto pb_found = static_cast<BOOL *>(param);
-	if (!*pb_found && strcasecmp(pmime->ctype, "message/rfc822") == 0)
+	if (!*pb_found && pmime->ctype_is_rfc822())
 		*pb_found = TRUE;
 }
 
@@ -1533,7 +1529,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	char temp_path[256];
 	
 	if (!pbuild->build_result || pbuild->depth > MAX_RFC822_DEPTH ||
-	    strcasecmp(pmime->ctype, "message/rfc822") != 0)
+	    !pmime->ctype_is_rfc822())
 		return;
 	
 	snprintf(temp_path, 256, "%s/%s", pbuild->msg_path, pbuild->filename);
@@ -1573,7 +1569,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	}
 	close(fd);
 	
-	if (0 == strcasecmp(pmime->encoding, "base64")) {
+	if (pmime->encoding_is_b()) {
 		std::unique_ptr<char[], stdlib_delete> pbuff1(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
 		if (NULL == pbuff1) {
 			pbuild->build_result = FALSE;
@@ -1585,7 +1581,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		}
 		pbuff = std::move(pbuff1);
 		length = length1;
-	} else if (0 == strcasecmp(pmime->encoding, "quoted-printable")) {
+	} else if (pmime->encoding_is_q()) {
 		std::unique_ptr<char[], stdlib_delete> pbuff1(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
 		if (NULL == pbuff1) {
 			pbuild->build_result = FALSE;
@@ -1707,13 +1703,14 @@ BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> pool, const char *storage_pa
 		return FALSE;
 	}
 	
-	snprintf(temp_path, 256, "%s/%s", storage_path, pjson->filename);
+	snprintf(temp_path, std::size(temp_path), "%s/%s", storage_path,
+	         pjson->get_mail_filename());
 	if (mkdir(temp_path, 0777) != 0 && errno != EEXIST) {
 		fprintf(stderr, "E-1433: mkdir %s: %s\n", temp_path, strerror(errno));
 		return FALSE;
 	}
 	BUILD_PARAM build_param;
-	build_param.filename = pjson->filename;
+	build_param.filename = pjson->get_mail_filename();
 	build_param.msg_path = pjson->path;
 	build_param.storage_path = temp_path;
 	build_param.depth = 1;
@@ -1793,7 +1790,8 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 #endif
 	if (!rfc822_check())
 		return FALSE;
-	snprintf(temp_path, 256, "%s/%s", storage_path, pjson->filename);
+	snprintf(temp_path, std::size(temp_path), "%s/%s", storage_path,
+	         pjson->get_mail_filename());
 	if (0 != stat(temp_path, &node_stat) ||
 		0 == S_ISDIR(node_stat.st_mode)) {
 		return FALSE;
@@ -1830,7 +1828,7 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	}
 	
 	pmime = (MJSON_MIME*)pnode->pdata;
-	ret_len = mjson_fetch_mime_structure(pmime, storage_path, pjson->filename,
+	ret_len = mjson_fetch_mime_structure(pmime, storage_path, pjson->get_mail_filename(),
 				charset, pjson->charset, b_ext, buff, length);
 	if (ret_len == -1)
 		return -1;

@@ -17,9 +17,12 @@ struct MJSON_MIME {
 
 	inline enum mime_type get_mtype() const { return mime_type; }
 	inline const char *get_ctype() const { return ctype; }
+	inline bool ctype_is_rfc822() const { return strcasecmp(get_ctype(), "message/rfc822") == 0; }
 	inline const char *get_charset() const { return charset; }
 	inline const char *get_filename() const { return filename; }
 	inline const char *get_encoding() const { return encoding; }
+	inline bool encoding_is_b() const { return strcasecmp(get_encoding(), "base64") == 0; }
+	inline bool encoding_is_q() const { return strcasecmp(get_encoding(), "quoted-printable") == 0; }
 	inline const char *get_id() const { return id; }
 	size_t get_length(unsigned int param) const;
 	size_t get_offset(unsigned int param) const;
