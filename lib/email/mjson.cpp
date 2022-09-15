@@ -390,7 +390,7 @@ BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath)
 	/* check for NONE mime in tree */
 	b_none = FALSE;
 	simple_tree_enum_from_node(pnode, [&](const SIMPLE_TREE_NODE *nd) {
-		if (static_cast<MJSON_MIME *>(nd->pdata)->mime_type == MJSON_MIME_NONE)
+		if (static_cast<MJSON_MIME *>(nd->pdata)->mime_type == mime_type::none)
 			b_none = TRUE;
 	});
 	if (b_none)
@@ -708,11 +708,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	MJSON_MIME temp_mime;
 	
 	temp_mime.ppool = pjson->ppool;
-	if (TYPE_STRUCTURE == type) {
-		temp_mime.mime_type = MJSON_MIME_MULTIPLE;
-	} else {
-		temp_mime.mime_type = MJSON_MIME_SINGLE;
-	}
+	temp_mime.mime_type = type == TYPE_STRUCTURE ? mime_type::multiple : mime_type::single;
 	rstat = RETRIEVE_TAG_FINDING;
 	for (int i = 0; i < length; ++i) {
 		switch (rstat) {
@@ -836,7 +832,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		auto pmime = pjson->ppool->get();
 		pmime->node.pdata = pmime;
 		pmime->ppool = pjson->ppool;
-		pmime->mime_type = MJSON_MIME_NONE;
+		pmime->mime_type = mime_type::none;
 		pjson->tree.set_root(&pmime->node);
 	}
 	pnode = pjson->tree.get_root();
@@ -846,9 +842,8 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	
 	if ('\0' == temp_mime.id[0]) {
-		if (MJSON_MIME_NONE != pmime->mime_type) {
+		if (pmime->get_mtype() != mime_type::none)
 			return FALSE;
-		}
 		memcpy(reinterpret_cast<char *>(pmime) + sizeof(SIMPLE_TREE_NODE), 
 		       reinterpret_cast<char *>(&temp_mime) + sizeof(SIMPLE_TREE_NODE),
 			sizeof(MJSON_MIME) - sizeof(SIMPLE_TREE_NODE));
@@ -868,7 +863,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 			pmime = pjson->ppool->get();
 			pmime->node.pdata = pmime;
 			pmime->ppool = pjson->ppool;
-			pmime->mime_type = MJSON_MIME_NONE;
+			pmime->mime_type = mime_type::none;
 			if (!pjson->tree.add_child(
 			    pnode, &pmime->node, SIMPLE_TREE_ADD_LAST)) {
 				pjson->ppool->put(pmime);
@@ -888,7 +883,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 			pmime = pjson->ppool->get();
 			pmime->node.pdata = pmime;
 			pmime->ppool = pjson->ppool;
-			pmime->mime_type = MJSON_MIME_NONE;
+			pmime->mime_type = mime_type::none;
 			if (!pjson->tree.insert_sibling(pnode,
 			    &pmime->node, SIMPLE_TREE_INSERT_AFTER)) {
 				pjson->ppool->put(pmime);
@@ -898,9 +893,8 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		last_pos = i + 1;
 	}
 
-	if (MJSON_MIME_NONE != pmime->mime_type) {
+	if (pmime->get_mtype() != mime_type::none)
 		return FALSE;
-	}
 	memcpy(reinterpret_cast<char *>(pmime) + sizeof(SIMPLE_TREE_NODE),
 	       reinterpret_cast<char *>(&temp_mime) + sizeof(SIMPLE_TREE_NODE),
 	       sizeof(MJSON_MIME) - sizeof(SIMPLE_TREE_NODE));
@@ -971,7 +965,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		psubtype ++;
 	}
 	
-	if (MJSON_MIME_SINGLE == pmime->mime_type) {
+	if (pmime->get_mtype() == mime_type::single) {
 		offset += gx_snprintf(buff + offset, length - offset,
 					"(\"%s\" \"%s\"", ctype, psubtype);
 		if ('\0' != pmime->charset[0] || '\0' != pmime->filename[0]) {
@@ -1185,7 +1179,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
  RFC822_SUCCESS:
 		buff[offset] = ')';
 		offset ++;
-	} else if (MJSON_MIME_MULTIPLE == pmime->mime_type) {
+	} else if (pmime->get_mtype() == mime_type::multiple) {
 		buff[offset] = '(';
 		offset ++;
 		auto pnode = pmime->node.get_child();

@@ -6,10 +6,6 @@
 #include <gromox/util.hpp>
 #define VALUE_LEN	256
 
-enum class mime_type {
-	none, single, multiple,
-};
-
 enum class mime_encoding {
 	none, base64, qp, uuencode, automatic, unknown,
 };

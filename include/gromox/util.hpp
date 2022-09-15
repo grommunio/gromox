@@ -26,6 +26,10 @@ enum {
 	QP_MIME_HEADER = 1U << 0,
 };
 
+enum class mime_type {
+	none, single, multiple,
+};
+
 struct file_block {
 	DOUBLE_LIST_NODE list_node;
 	char buf[FILE_BLOCK_SIZE];
