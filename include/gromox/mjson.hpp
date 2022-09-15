@@ -14,20 +14,12 @@ struct MJSON_MIME;
 using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
 
 struct MJSON_MIME {
-	SIMPLE_TREE_NODE node;
-	alloc_limiter<MJSON_MIME> *ppool;
-	int			mime_type;
-	char        id[64];
-	char 		ctype[256];
-	char        encoding[32];
-	char        charset[32];
-	char        filename[256];
-	char        cid[128];
-	char        cntl[256];
-	char        cntdspn[64];
-	size_t      head;
-	size_t      begin;
-	size_t		length;
+	SIMPLE_TREE_NODE node{};
+	alloc_limiter<MJSON_MIME> *ppool = nullptr;
+	int mime_type = MJSON_MIME_NONE;
+	char id[64]{}, ctype[256]{}, encoding[32]{}, charset[32]{};
+	char filename[256]{}, cid[128]{}, cntl[256]{}, cntdspn[64]{};
+	size_t head = 0, begin = 0, length = 0;
 
 	inline int get_mtype() const { return mime_type; }
 	inline const char *get_ctype() const { return ctype; }
