@@ -707,7 +707,6 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	char temp_buff[64];
 	MJSON_MIME temp_mime;
 	
-	memset(&temp_mime, 0, sizeof(temp_mime));
 	temp_mime.ppool = pjson->ppool;
 	if (TYPE_STRUCTURE == type) {
 		temp_mime.mime_type = MJSON_MIME_MULTIPLE;
