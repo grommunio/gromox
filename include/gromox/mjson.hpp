@@ -4,24 +4,18 @@
 #include <gromox/simple_tree.hpp>
 #include <gromox/util.hpp>
 
-#define MJSON_MIME_NONE			0
-
-#define MJSON_MIME_SINGLE		1
-
-#define MJSON_MIME_MULTIPLE		2
-
 struct MJSON_MIME;
 using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
 
 struct MJSON_MIME {
 	SIMPLE_TREE_NODE node{};
 	alloc_limiter<MJSON_MIME> *ppool = nullptr;
-	int mime_type = MJSON_MIME_NONE;
+	enum mime_type mime_type = mime_type::none;
 	char id[64]{}, ctype[256]{}, encoding[32]{}, charset[32]{};
 	char filename[256]{}, cid[128]{}, cntl[256]{}, cntdspn[64]{};
 	size_t head = 0, begin = 0, length = 0;
 
-	inline int get_mtype() const { return mime_type; }
+	inline enum mime_type get_mtype() const { return mime_type; }
 	inline const char *get_ctype() const { return ctype; }
 	inline const char *get_charset() const { return charset; }
 	inline const char *get_filename() const { return filename; }
