@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <string>
 #include <gromox/mime_pool.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/util.hpp>
@@ -44,9 +45,9 @@ struct GX_EXPORT MJSON {
 	int rfc822_fetch(const char *storage_path, const char *charset, BOOL ext, char *buf, int len);
 	int seek_fd(const char *id, int whence);
 	void enum_mime(MJSON_MIME_ENUM, void *);
-	const char *get_mail_filename() const { return filename; }
-	const char *get_mail_received() const { return received; }
-	const char *get_mail_messageid() const { return msgid; }
+	const char *get_mail_filename() const { return filename.c_str(); }
+	const char *get_mail_received() const { return received.c_str(); }
+	const char *get_mail_messageid() const { return msgid.c_str(); }
 	size_t get_mail_length() const { return size; }
 	MJSON_MIME *get_mime(const char *id);
 
@@ -57,11 +58,8 @@ struct GX_EXPORT MJSON {
 	int read = 0, replied = 0, forwarded = 0, unsent = 0;
 	int flag = 0, priority = 0;
 	size_t size = 0;
-	char path[256]{}, filename[128]{}, charset[32]{}, msgid[1024]{};
-	char from[1024]{}, sender[1024]{}, reply[1024]{};
-	char to[16*1024]{}, cc[16*1024]{}, inreply[1024]{}, subject[1024]{};
-	char received[256]{}, date[256]{}, ref[4096]{};
-	char notification[1024]{};
+	std::string path, filename, charset, msgid, from, sender, reply, to, cc;
+	std::string inreply, subject, received, date, ref, notification;
 };
 
 enum {
