@@ -99,7 +99,9 @@ int main(int argc, const char **argv) try
 	} \
 } while (false)
 	E(system_services_get_username_from_id, "get_username_from_id");
+	auto cl_2 = make_scope_exit([]() { service_release("get_username_from_id", "system"); });
 	E(system_services_get_user_ids, "get_user_ids");
+	auto cl_3 = make_scope_exit([]() { service_release("get_user_ids", "system"); });
 #undef E
 
 	auto mimepool = MIME_POOL::create(4096, 8, "mime_pool");
