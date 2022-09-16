@@ -3488,35 +3488,33 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
 		return FALSE;
-	if (ptz_component != nullptr)
-		sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-	else if (b_allday && g_oxcical_allday_ymd)
+	if (b_allday && g_oxcical_allday_ymd)
 		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
+	else if (ptz_component != nullptr)
+		sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
 	else
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 
 	auto &pilineDTS = pcomponent->append_line("DTSTART", tmp_buff);
-	if (ptz_component == nullptr && b_allday && g_oxcical_allday_ymd)
+	if (b_allday && g_oxcical_allday_ymd)
 		pilineDTS.append_param("VALUE", "DATE");
-	if (NULL != ptz_component) {
+	else if (ptz_component != nullptr)
 		pilineDTS.append_param("TZID", tzid);
-	}
 	
 	if (start_time != end_time) {
 		if (!ical_utc_to_datetime(ptz_component, end_time, &itime))
 			return FALSE;
-		if (ptz_component != nullptr)
-			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		else if (b_allday && g_oxcical_allday_ymd)
+		if (b_allday && g_oxcical_allday_ymd)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
+		else if (ptz_component != nullptr)
+			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		auto piline = &pcomponent->append_line("DTEND", tmp_buff);
-		if (ptz_component == nullptr && b_allday && g_oxcical_allday_ymd)
+		if (b_allday && g_oxcical_allday_ymd)
 			piline->append_param("VALUE", "DATE");
-		if (NULL != ptz_component) {
+		else if (ptz_component != nullptr)
 			piline->append_param("TZID", tzid);
-		}
 	}
 	
 	propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)};
