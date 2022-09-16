@@ -3359,11 +3359,11 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (!oxcical_export_rrule(*ptz_component, *pcomponent, &apprecurr))
 			return FALSE;
 		if (oxcical_check_exdate(&apprecurr) &&
-		    !oxcical_export_exdate(tzid, g_oxcical_allday_ymd,
+		    !oxcical_export_exdate(tzid, b_allday && g_oxcical_allday_ymd,
 		    *pcomponent, &apprecurr))
 			return FALSE;
 		if (oxcical_check_rdate(&apprecurr) &&
-		    !oxcical_export_rdate(tzid, g_oxcical_allday_ymd,
+		    !oxcical_export_rdate(tzid, b_allday && g_oxcical_allday_ymd,
 		    *pcomponent, &apprecurr))
 			return FALSE;
 	}
@@ -3490,15 +3490,14 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	if (ptz_component != nullptr)
 		sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-	else if (g_oxcical_allday_ymd)
+	else if (b_allday && g_oxcical_allday_ymd)
 		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 	else
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 
 	auto &pilineDTS = pcomponent->append_line("DTSTART", tmp_buff);
-	if (ptz_component == nullptr && g_oxcical_allday_ymd) {
+	if (ptz_component == nullptr && b_allday && g_oxcical_allday_ymd)
 		pilineDTS.append_param("VALUE", "DATE");
-	}
 	if (NULL != ptz_component) {
 		pilineDTS.append_param("TZID", tzid);
 	}
@@ -3508,14 +3507,13 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		if (ptz_component != nullptr)
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		else if (g_oxcical_allday_ymd)
+		else if (b_allday && g_oxcical_allday_ymd)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		auto piline = &pcomponent->append_line("DTEND", tmp_buff);
-		if (ptz_component == nullptr && g_oxcical_allday_ymd) {
+		if (ptz_component == nullptr && b_allday && g_oxcical_allday_ymd)
 			piline->append_param("VALUE", "DATE");
-		}
 		if (NULL != ptz_component) {
 			piline->append_param("TZID", tzid);
 		}
