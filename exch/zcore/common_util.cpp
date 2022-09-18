@@ -28,9 +28,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mime_pool.hpp>
-#include <gromox/oxcical.hpp>
 #include <gromox/oxcmail.hpp>
-#include <gromox/oxvcard.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>

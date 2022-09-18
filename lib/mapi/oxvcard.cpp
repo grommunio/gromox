@@ -9,7 +9,7 @@
 #include <string>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include <gromox/oxvcard.hpp>
+#include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
@@ -35,7 +35,10 @@ struct unrecog {
 
 }
 
+namespace gromox {
 unsigned int g_oxvcard_pedantic;
+}
+
 static constexpr uint32_t g_n_proptags[] = 
 	{PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 	PR_DISPLAY_NAME_PREFIX, PR_GENERATION};
