@@ -3102,11 +3102,12 @@ static bool busystatus_to_line(ol_busy_status status, const char *key,
 	return true;
 }
 
-static BOOL oxcical_export_internal(const char *method, const char *tzid,
+static const char *oxcical_export_internal(const char *method, const char *tzid,
     const MESSAGE_CONTENT *pmsg, ical &pical, ENTRYID_TO_USERNAME entryid_to_username,
     ESSDN_TO_USERNAME essdn_to_username,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
+#define E_2201 "E-2201: get_propids failed for an unspecified reason"
 	int year;
 	GUID guid;
 	time_t cur_time;
@@ -3134,7 +3135,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (str == nullptr)
 		str = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (str == nullptr)
-		return FALSE;
+		return "E-2200: no PR_MESSAGE_CLASS set";
 	partstat = NULL;
 	b_proposal = FALSE;
 	if (NULL != method) {
@@ -3154,7 +3155,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			PROPERTY_NAME pn = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentCounterProposal};
 			const PROPNAME_ARRAY pna = {1, &pn};
 			if (!get_propids(&pna, &propids))
-				return FALSE;
+				return E_2201;
 			auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 			if (flag != nullptr && *flag != 0) {
 				b_proposal = TRUE;
@@ -3169,30 +3170,30 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			method = "CANCEL";
 			partstat = "NEEDS-ACTION";
 		} else {
-			return FALSE;
+			return "E-2202: don't know how to transform message class to iCal";
 		}
 	}
 	PROPERTY_NAME propname = {MNID_ID, PSETID_APPOINTMENT, b_proposal ?
 		PidLidAppointmentProposedStartWhole : PidLidAppointmentStartWhole};
 	const PROPNAME_ARRAY propnames = {1, &propname};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	auto lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	if (lnum == nullptr)
-		return FALSE;
+		return "E-2203: no StartWhole property on object";
 	start_time = rop_util_nttime_to_unix(*lnum);
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, b_proposal ?
 	           PidLidAppointmentProposedEndWhole : PidLidAppointmentEndWhole};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	if (lnum != nullptr) {
 		end_time = rop_util_nttime_to_unix(*lnum);
 	} else {
 		propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentDuration};
 		if (!get_propids(&propnames, &propids))
-			return FALSE;
+			return E_2201;
 		end_time = start_time;
 		num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 		if (num != nullptr)
@@ -3211,14 +3212,14 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 	if (bin == nullptr) {
 		b_recurrence = FALSE;
 	} else {
 		ext_pull.init(bin->pb, bin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
-			return FALSE;
+			return "E-2204: PidLidAppointmentRecur contents not recognized";
 		b_recurrence = TRUE;
 	}
 	
@@ -3245,69 +3246,69 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (b_recurrence) {
 		propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneStruct};
 		if (!get_propids(&propnames, &propids))
-			return FALSE;
+			return E_2201;
 		bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 		if (bin != nullptr) {
 			propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneDescription};
 			if (!get_propids(&propnames, &propids))
-				return FALSE;
+				return E_2201;
 			tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
 			if (NULL == tzid) {
 				goto EXPORT_TZDEFINITION;
 			}
 			ext_pull.init(bin->pb, bin->cb, alloc, 0);
 			if (ext_pull.g_tzstruct(&tz_struct) != EXT_ERR_SUCCESS)
-				return FALSE;
+				return "E-2205: PidLidTimeZoneDescription contents not recognized";
 			ptz_component = oxcical_export_timezone(
 					pical, year - 1, tzid, &tz_struct);
 			if (ptz_component == nullptr)
-				return FALSE;
+				return "E-2206: export_timezone returned an unspecified error";
 		} else {
  EXPORT_TZDEFINITION:
 			propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentTimeZoneDefinitionRecur};
 			if (!get_propids(&propnames, &propids))
-				return FALSE;
+				return E_2201;
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 			if (bin != nullptr) {
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
-					return FALSE;
+					return "E-2207: PidLidAppointmentTimeZoneDefinitionRecur contents not recognized";
 				tzid = tz_definition.keyname;
 				oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
 				ptz_component = oxcical_export_timezone(
 						pical, year - 1, tzid, &tz_struct);
 				if (ptz_component == nullptr)
-					return FALSE;
+					return "E-2208: export_timezone returned an unspecified error";
 			}
 		}
 	} else {
 		propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentTimeZoneDefinitionStartDisplay};
 		if (!get_propids(&propnames, &propids))
-			return FALSE;
+			return E_2201;
 		bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 		if (bin != nullptr) {
 			propname.lid = PidLidAppointmentTimeZoneDefinitionEndDisplay;
 			if (!get_propids(&propnames, &propids))
-				return FALSE;
+				return E_2201;
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 		}
 		if (bin != nullptr) {
 			ext_pull.init(bin->pb, bin->cb, alloc, 0);
 			if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
-				return FALSE;
+				return "E-2209: PidLidAppointmentTimeZoneDefinitionEndDisplay contents not recognized";
 			tzid = tz_definition.keyname;
 			oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
 			ptz_component = oxcical_export_timezone(
 					pical, year - 1, tzid, &tz_struct);
 			if (ptz_component == nullptr)
-				return FALSE;
+				return "E-2210: export_timezone returned an unspecified error";
 		}
 	}
 	
  EXPORT_VEVENT:
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	BOOL b_allday = snum != nullptr && *snum != 0 ? TRUE : false;
 	auto pcomponent = &pical.append_comp("VEVENT");
@@ -3342,7 +3343,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (!oxcical_export_recipient_table(*pcomponent, entryid_to_username,
 	    essdn_to_username, alloc, partstat, pmsg))
-		return FALSE;
+		return "E-2211: export_recipient_table - unspecified error";
 	
 	str = pmsg->proplist.get<char>(PR_BODY);
 	if (str != nullptr) {
@@ -3357,25 +3358,25 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (!b_exceptional && b_recurrence) {
 		if (!oxcical_export_rrule(*ptz_component, *pcomponent, &apprecurr))
-			return FALSE;
+			return "E-2212: export_rrule - unspecified error";
 		if (oxcical_check_exdate(&apprecurr) &&
 		    !oxcical_export_exdate(tzid, b_allday && g_oxcical_allday_ymd,
 		    *pcomponent, &apprecurr))
-			return FALSE;
+			return "E-2213: export_exdate - unspecified error";
 		if (oxcical_check_rdate(&apprecurr) &&
 		    !oxcical_export_rdate(tzid, b_allday && g_oxcical_allday_ymd,
 		    *pcomponent, &apprecurr))
-			return FALSE;
+			return "E-2214: export_rdate - unspecified error";
 	}
 	
 	propname = {MNID_ID, PSETID_MEETING, PidLidGlobalObjectId};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 	if (bin != nullptr) {
 		ext_pull.init(bin->pb, bin->cb, alloc, 0);
 		if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
-			return FALSE;
+			return "E-2215: PidLidGlobalObjectId contents not recognized";
 		if (globalobjectid.data.pb != nullptr &&
 		    globalobjectid.data.cb >= 12 &&
 		    memcmp(globalobjectid.data.pb, ThirdPartyGlobalId, 12) == 0) {
@@ -3395,10 +3396,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			globalobjectid.day = 0;
 			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 			    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
-				return false;
+				return "E-2223";
 			if (!encode_hex_binary(tmp_buff, ext_push.m_offset,
 			    tmp_buff1, sizeof(tmp_buff1)))
-				return FALSE;
+				return "E-2216";
 			HX_strupper(tmp_buff1);
 			pcomponent->append_line("UID", tmp_buff1);
 		}
@@ -3414,28 +3415,28 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		    ext_push.p_guid(guid) != EXT_ERR_SUCCESS ||
 		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 		    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
-			return false;
+			return "E-2224";
 		if (!encode_hex_binary(tmp_buff, ext_push.m_offset, tmp_buff1,
 		    sizeof(tmp_buff1)))
-			return FALSE;
+			return "E-2217";
 		HX_strupper(tmp_buff1);
 		pcomponent->append_line("UID", tmp_buff1);
 	}
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
 	lnum = pmsg->proplist.get<uint64_t>(proptag_xrt);
 	if (lnum == nullptr) {
 		propname = {MNID_ID, PSETID_MEETING, PidLidIsException};
 		if (!get_propids(&propnames, &propids))
-			return FALSE;
+			return E_2201;
 		auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 		if (flag != nullptr && *flag != 0) {
 			propname = {MNID_ID, PSETID_MEETING, PidLidStartRecurrenceTime};
 			if (!get_propids(&propnames, &propids))
-				return FALSE;
+				return E_2201;
 			num = pmsg->proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 			if (num != nullptr) {
 				itime.hour   = (*num >> 12) & 0x1f;
@@ -3443,12 +3444,12 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				itime.second = *num & 0x3f;
 				propname.lid = PidLidGlobalObjectId;
 				if (!get_propids(&propnames, &propids))
-					return FALSE;
+					return E_2201;
 				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 				if (bin != nullptr) {
 					ext_pull.init(bin->pb, bin->cb, alloc, 0);
 					if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
-						return FALSE;
+						return "E-2218: PidLidGlobalObjectId contents not recognized";
 					itime.year = globalobjectid.year;
 					itime.month = globalobjectid.month;
 					itime.day = globalobjectid.day;
@@ -3458,11 +3459,11 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	} else {
 		if (!ical_utc_to_datetime(ptz_component,
 		    rop_util_nttime_to_unix(*lnum), &itime))
-			return FALSE;
+			return "E-2219";
 	}
 	if (lnum == nullptr) {
 		if (b_exceptional)
-			return FALSE;
+			return "E-2220";
 	} else if (!b_allday) {
 		if (NULL == ptz_component) {
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
@@ -3487,7 +3488,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
-		return FALSE;
+		return "E-2221";
 	if (b_allday && g_oxcical_allday_ymd)
 		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 	else if (ptz_component != nullptr)
@@ -3503,7 +3504,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (start_time != end_time) {
 		if (!ical_utc_to_datetime(ptz_component, end_time, &itime))
-			return FALSE;
+			return "E-2222";
 		if (b_allday && g_oxcical_allday_ymd)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		else if (ptz_component != nullptr)
@@ -3519,7 +3520,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	auto sa = pmsg->proplist.get<const STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids.ppropid[0]));
 	if (sa != nullptr) {
 		auto piline = &pical.append_line("CATEGORIES");
@@ -3568,7 +3569,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	propname.lid = (strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0) ?
 	               PidLidAttendeeCriticalChange : PidLidOwnerCriticalChange;
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	if (lnum != nullptr) {
 		ical_utc_to_datetime(nullptr, rop_util_nttime_to_unix(*lnum), &itime);
@@ -3578,7 +3579,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	auto pbusystatus = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 	if (NULL != pbusystatus) {
 		switch (static_cast<ol_busy_status>(*pbusystatus)) {
@@ -3598,7 +3599,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSequence};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	auto psequence = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 	if (NULL != psequence) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *psequence);
@@ -3607,13 +3608,13 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidLocation};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
 	if (str != nullptr) {
 		auto piline = &pcomponent->append_line("LOCATION", str);
 		propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameLocationUrl)};
 		if (!get_propids(&propnames, &propids))
-			return FALSE;
+			return E_2201;
 		str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
 		if (str != nullptr) {
 			piline->append_param("ALTREP", str);
@@ -3636,15 +3637,15 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (pbusystatus != nullptr && !busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
 	    "X-MICROSOFT-CDO-BUSYSTATUS", pcomponent))
-		return false;
+		return "E-2225";
 
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidIntendedBusyStatus};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 	if (num != nullptr && !busystatus_to_line(static_cast<ol_busy_status>(*num),
 	    "X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent))
-		return false;
+		return "E-2226";
 
 	pcomponent->append_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");
 	
@@ -3669,7 +3670,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	auto flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	if (flag != nullptr) {
 		pcomponent->append_line("X-MICROSOFT-DISALLOW-COUNTER", *flag != 0 ? "TRUE" : "FALSE");
@@ -3689,23 +3690,24 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				continue;
 			if (!pembedded->proplist.has(proptag_xrt))
 				continue;
-			if (!oxcical_export_internal(method, tzid,
-			    pembedded, pical, entryid_to_username,
-			    essdn_to_username, alloc, get_propids))
-				return FALSE;
+			auto err = oxcical_export_internal(method, tzid,
+			           pembedded, pical, entryid_to_username,
+			           essdn_to_username, alloc, get_propids);
+			if (err != nullptr)
+				return err;
 		}
 	}
 	
 	propname = {MNID_ID, PSETID_COMMON, PidLidReminderSet};
 	if (!get_propids(&propnames, &propids))
-		return FALSE;
+		return E_2201;
 	flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	if (flag != nullptr && *flag != 0) {
 		pcomponent = &pical.append_comp("VALARM");
 		pcomponent->append_line("DESCRIPTION", "REMINDER");
 		propname = {MNID_ID, PSETID_COMMON, PidLidReminderDelta};
 		if (!get_propids(&propnames, &propids))
-			return FALSE;
+			return E_2201;
 		num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 		if (num == nullptr || *num == ENDDATE_MISSING_RDELTA)
 			strcpy(tmp_buff, "-PT15M");
@@ -3715,10 +3717,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		piline->append_param("RELATED", "START");
 		pcomponent->append_line("ACTION", "DISPLAY");
 	}
-	return TRUE;
+	return nullptr;
+#undef E_2201
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2097: ENOMEM\n");
-	return false;
+	return "E-2097: ENOMEM";
 }
 
 BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
@@ -3726,7 +3728,11 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
 	ENTRYID_TO_USERNAME entryid_to_username,
 	ESSDN_TO_USERNAME essdn_to_username)
 {
-	return oxcical_export_internal(nullptr, nullptr, pmsg,
-	       pical, entryid_to_username, essdn_to_username,
-	       alloc, get_propids);
+	auto err = oxcical_export_internal(nullptr, nullptr, pmsg, pical,
+	           entryid_to_username, essdn_to_username, alloc, get_propids);
+	if (err != nullptr) {
+		fprintf(stderr, "%s\n", err);
+		return false;
+	}
+	return TRUE;
 }
