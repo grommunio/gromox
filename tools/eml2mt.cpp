@@ -190,7 +190,7 @@ int main(int argc, const char **argv) try
 	} else if (strcmp(bn, "gromox-vcf2mt") == 0) {
 		g_import_mode = IMPORT_VCARD;
 	} else {
-		fprintf(stderr, "Invocation of this utilit as \"%s\" not recognized\n", argv[0]);
+		fprintf(stderr, "Invocation of this utility as \"%s\" not recognized\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 	setvbuf(stdout, nullptr, _IOLBF, 0);

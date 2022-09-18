@@ -37,6 +37,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 extern GX_EXPORT BOOL oxcmail_export(const MESSAGE_CONTENT *, BOOL tnef, enum oxcmail_body, std::shared_ptr<MIME_POOL>, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
 extern GX_EXPORT BOOL oxcmail_username_to_entryid(const char *user, const char *disp, BINARY *, enum display_type *);
 extern GX_EXPORT enum oxcmail_body get_override_format(const MESSAGE_CONTENT &);
+extern GX_EXPORT BOOL oxcmail_entryid_to_username(const BINARY *, EXT_BUFFER_ALLOC, char *, size_t);
+extern GX_EXPORT BOOL oxcmail_essdn_to_username(const char *, char *, size_t);
 
 extern GX_EXPORT MESSAGE_CONTENT *oxvcard_import(const vcard *, GET_PROPIDS);
 extern GX_EXPORT BOOL oxvcard_export(MESSAGE_CONTENT *, vcard &, GET_PROPIDS);

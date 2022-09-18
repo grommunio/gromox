@@ -6,29 +6,43 @@
 #endif
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <unistd.h>
 #include <utility>
 #include <vector>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/ical.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
+#include <gromox/vcard.hpp>
 #include "genimport.hpp"
 #include "exch/midb/system_services.hpp"
+
+enum {
+	EXPORT_MAIL,
+	EXPORT_ICAL,
+	EXPORT_VCARD,
+};
 
 using namespace gromox;
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 decltype(system_services_get_user_ids) system_services_get_user_ids;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *g_username;
+static unsigned int g_export_mode = EXPORT_MAIL;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
+	{"ical", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_ICAL, "Export as calendar object"},
+	{"mail", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_MAIL, "Export as RFC5322 mail"},
+	{"vcard", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_VCARD, "Export as vCard object"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -67,6 +81,18 @@ static constexpr cfg_directive exm2eml_cfg_defaults[] = {
 
 int main(int argc, const char **argv) try
 {
+	auto bn = HX_basename(argv[0]);
+	if (strcmp(bn, "gromox-exm2eml") == 0) {
+		g_export_mode = EXPORT_MAIL;
+	} else if (strcmp(bn, "gromox-exm2ical") == 0) {
+		g_export_mode = EXPORT_ICAL;
+	} else if (strcmp(bn, "gromox-exm2vcf") == 0) {
+		g_export_mode = EXPORT_VCARD;
+	} else {
+		fprintf(stderr, "Invocation of this utility as \"%s\" not recognized\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
@@ -129,14 +155,41 @@ int main(int argc, const char **argv) try
 		        static_cast<unsigned long long>(msg_id));
 		return EXIT_FAILURE;
 	}
-	if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html, mimepool,
-	    &imail, malloc, cu_get_propids, cu_get_propname)) {
-		fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
-		return EXIT_FAILURE;
-	}
-	if (!imail.to_file(STDOUT_FILENO)) {
-		fprintf(stderr, "Writeout failed for an unspecified reason.\n");
-		return EXIT_FAILURE;
+	if (g_export_mode == EXPORT_MAIL) {
+		if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html, mimepool,
+		    &imail, malloc, cu_get_propids, cu_get_propname)) {
+			fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
+			return EXIT_FAILURE;
+		}
+		if (!imail.to_file(STDOUT_FILENO)) {
+			fprintf(stderr, "Writeout failed for an unspecified reason.\n");
+			return EXIT_FAILURE;
+		}
+	} else if (g_export_mode == EXPORT_ICAL) {
+		ical ic;
+		if (!oxcical_export(ctnt, ic, malloc, cu_get_propids,
+		    oxcmail_entryid_to_username, oxcmail_essdn_to_username)) {
+			fprintf(stderr, "oxcical_export failed for an unspecified reason.\n");
+			return EXIT_FAILURE;
+		}
+		auto buf = std::make_unique<char[]>(1048576);
+		if (!ic.serialize(buf.get(), 1048576)) {
+			fprintf(stderr, "vcard::serialize failed for an unspecified reason.\n");
+			return EXIT_FAILURE;
+		}
+		fputs(buf.get(), stdout);
+	} else if (g_export_mode == EXPORT_VCARD) {
+		vcard vc;
+		if (!oxvcard_export(ctnt, vc, cu_get_propids)) {
+			fprintf(stderr, "oxvcard_export failed for an unspecified reason.\n");
+			return EXIT_FAILURE;
+		}
+		auto buf = std::make_unique<char[]>(VCARD_MAX_BUFFER_LEN);
+		if (!vc.serialize(buf.get(), VCARD_MAX_BUFFER_LEN)) {
+			fprintf(stderr, "vcard::serialize failed for an unspecified reason.\n");
+			return EXIT_FAILURE;
+		}
+		fputs(buf.get(), stdout);
 	}
 	return EXIT_SUCCESS;
 } catch (const std::exception &e) {
