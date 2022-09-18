@@ -22,7 +22,7 @@
 #include <gromox/ical.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/oxcical.hpp>
+#include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>

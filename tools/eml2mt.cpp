@@ -19,13 +19,12 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mime_pool.hpp>
-#include <gromox/oxcical.hpp>
 #include <gromox/oxcmail.hpp>
-#include <gromox/oxvcard.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
+#include <gromox/vcard.hpp>
 #include "genimport.hpp"
 #include "exch/midb/system_services.hpp"
 

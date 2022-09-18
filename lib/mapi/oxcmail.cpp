@@ -30,9 +30,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mime_pool.hpp>
-#include <gromox/oxcical.hpp>
 #include <gromox/oxcmail.hpp>
-#include <gromox/oxvcard.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/rtf.hpp>
 #include <gromox/rtfcp.hpp>
@@ -40,6 +38,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>
 #include <gromox/util.hpp>
+#include <gromox/vcard.hpp>
 
 /* uncomment below macro if you need system to verify X-MS-TNEF-Correlator */
 /* #define VERIFY_TNEF_CORRELATOR */
