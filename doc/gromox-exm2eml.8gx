@@ -1,10 +1,15 @@
 .TH gromox\-exm2eml 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-exm2eml \(em Utility to export messages as Internet Mail
+gromox\-exm2eml \(em Utility to export messages as Internet Mail, iCalendar and
+vCard objects
 .SH Synopsis
-\fBgromox\-exm2eml \-u\fP \fIu@d.de\fP \fImessage_id\fP
+\fBgromox\-exm2eml \-u\fP \fIu@d.at\fP \fImessage_id\fP
+.PP
+\fBgromox\-exm2ical \-u\fP \fIu@d.at\fP \fImessage_id\fP
+.PP
+\fBgromox\-exm2vcf \-u\fP \fIu@d.at\fP \fImessage_id\fP
 .SH Description
 This tool serves as a development aid to test the conversion from MAPI message
-to Internet Mail (RFC 5322).
+to Internet Mail (RFC 5322), iCalendar (RFC 5545) or vCard (RFC 6350).
 .SH See also
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBgromox\-eml2mt\fP(8gx)

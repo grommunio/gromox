@@ -63,4 +63,4 @@ Import of calendar objects:
 .PP
 gromox\-ical2mt meeting.ics | gromox\-mt2exm \-u target@mailbox.de
 .SH See also
-\fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)
+\fBgromox\fP(7), \fBgromox\-exm2eml\fP(8gx), \fBgromox\-mt2exm\fP(8gx)

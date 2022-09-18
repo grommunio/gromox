@@ -235,7 +235,7 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	return TRUE;
 }
 
-static BOOL oxcmail_essdn_to_username(const char *pessdn,
+BOOL oxcmail_essdn_to_username(const char *pessdn,
     char *username, size_t ulen)
 {
 	int user_id;
@@ -251,7 +251,7 @@ static BOOL oxcmail_essdn_to_username(const char *pessdn,
 	return oxcmail_get_username(user_id, username, ulen);
 }
 
-static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
+BOOL oxcmail_entryid_to_username(const BINARY *pbin,
     EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
 {
 	uint32_t flags;
