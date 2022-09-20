@@ -3090,16 +3090,14 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	return false;
 }
 
-static bool busystatus_to_line(ol_busy_status status, const char *key,
+static void busystatus_to_line(ol_busy_status status, const char *key,
     ICAL_COMPONENT *com)
 {
 	auto it = std::lower_bound(std::cbegin(busy_status_names),
 	          std::cend(busy_status_names), status,
 	          [](const auto &p, ol_busy_status v) { return p.first < v; });
-	if (it == std::cend(busy_status_names))
-		return true;
-	com->append_line(key, it->second);
-	return true;
+	if (it != std::cend(busy_status_names))
+		com->append_line(key, it->second);
 }
 
 static const char *oxcical_export_internal(const char *method, const char *tzid,
@@ -3637,17 +3635,17 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		pcomponent->append_line("X-MICROSOFT-CDO-OWNERAPPTID", tmp_buff);
 	}
 	
-	if (pbusystatus != nullptr && !busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
-	    "X-MICROSOFT-CDO-BUSYSTATUS", pcomponent))
-		return "E-2225";
+	if (pbusystatus != nullptr)
+		busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
+			"X-MICROSOFT-CDO-BUSYSTATUS", pcomponent);
 
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidIntendedBusyStatus};
 	if (!get_propids(&propnames, &propids))
 		return E_2201;
 	num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
-	if (num != nullptr && !busystatus_to_line(static_cast<ol_busy_status>(*num),
-	    "X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent))
-		return "E-2226";
+	if (num != nullptr)
+		busystatus_to_line(static_cast<ol_busy_status>(*num),
+			"X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent);
 
 	pcomponent->append_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");
 	
