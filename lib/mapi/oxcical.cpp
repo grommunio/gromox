@@ -3549,10 +3549,10 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	snum = pmsg->proplist.get<const uint8_t>(PR_IMPORTANCE);
-	if (snum != nullptr) {
+	num = pmsg->proplist.get<const uint32_t>(PR_IMPORTANCE);
+	if (num != nullptr) {
 		/* RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58 */
-		switch (*snum) {
+		switch (*num) {
 		case IMPORTANCE_NORMAL:
 			pcomponent->append_line("PRIORITY", "5");
 			break;
