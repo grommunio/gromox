@@ -3092,6 +3092,69 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 
 #define E_2201 "E-2201: get_propids failed for an unspecified reason"
 
+static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
+    ical_component &com, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
+{
+	PROPERTY_NAME propname = {MNID_ID, PSETID_MEETING, PidLidGlobalObjectId};
+	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
+	PROPID_ARRAY propids;
+	char buf[1024], buf1[2048];
+	GLOBALOBJECTID goid;
+
+	if (!get_propids(&propnames, &propids))
+		return E_2201;
+	auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
+	if (bin != nullptr) {
+		EXT_PULL ext_pull;
+
+		ext_pull.init(bin->pb, bin->cb, alloc, 0);
+		if (ext_pull.g_goid(&goid, 1) != EXT_ERR_SUCCESS)
+			return "E-2215: PidLidGlobalObjectId contents not recognized";
+		if (goid.data.pb != nullptr && goid.data.cb >= 12 &&
+		    memcmp(goid.data.pb, ThirdPartyGlobalId, 12) == 0) {
+			if (goid.data.cb - 12 > sizeof(buf) - 1) {
+				memcpy(buf, &goid.data.pb[12], std::size(buf) - 1);
+				buf[std::size(buf)-1] = '\0';
+			} else {
+				memcpy(buf, &goid.data.pb[12], goid.data.cb - 12);
+				buf[goid.data.cb-12] = '\0';
+			}
+			com.append_line("UID", buf);
+		} else {
+			EXT_PUSH ext_push;
+
+			goid.year = 0;
+			goid.month = 0;
+			goid.day = 0;
+			if (!ext_push.init(buf, sizeof(buf), 0) ||
+			    ext_push.p_goid(goid) != EXT_ERR_SUCCESS)
+				return "E-2223";
+			if (!encode_hex_binary(buf, ext_push.m_offset,
+			    buf1, sizeof(buf1)))
+				return "E-2216";
+			HX_strupper(buf1);
+			com.append_line("UID", buf1);
+		}
+	} else {
+		goid.arrayid = EncodedGlobalId;
+		goid.creationtime = rop_util_unix_to_nttime(time(nullptr));
+		goid.data.cb = 16;
+		goid.data.pc = buf1;
+		EXT_PUSH ext_push;
+		if (!ext_push.init(buf1, 16, 0) ||
+		    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS ||
+		    !ext_push.init(buf, std::size(buf), 0) ||
+		    ext_push.p_goid(goid) != EXT_ERR_SUCCESS)
+			return "E-2224";
+		if (!encode_hex_binary(buf, ext_push.m_offset, buf1,
+		    sizeof(buf1)))
+			return "E-2217";
+		HX_strupper(buf1);
+		com.append_line("UID", buf1);
+	}
+	return nullptr;
+}
+
 static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
     uint32_t proptag_xrt, bool b_exceptional, bool b_allday,
     ical_component &com, const ical_component *ptz_component,
@@ -3482,77 +3545,20 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		    *pcomponent, &apprecurr))
 			return "E-2214: export_rdate - unspecified error";
 	}
-	
-	propname = {MNID_ID, PSETID_MEETING, PidLidGlobalObjectId};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
-	if (bin != nullptr) {
-		EXT_PULL ext_pull;
-		GLOBALOBJECTID globalobjectid;
 
-		ext_pull.init(bin->pb, bin->cb, alloc, 0);
-		if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
-			return "E-2215: PidLidGlobalObjectId contents not recognized";
-		if (globalobjectid.data.pb != nullptr &&
-		    globalobjectid.data.cb >= 12 &&
-		    memcmp(globalobjectid.data.pb, ThirdPartyGlobalId, 12) == 0) {
-			char tmp_buff[1024];
-			if (globalobjectid.data.cb - 12 > sizeof(tmp_buff) - 1) {
-				memcpy(tmp_buff, globalobjectid.data.pb + 12,
-									sizeof(tmp_buff) - 1);
-				tmp_buff[sizeof(tmp_buff) - 1] = '\0';
-			} else {
-				memcpy(tmp_buff, globalobjectid.data.pb + 12,
-								globalobjectid.data.cb - 12);
-				tmp_buff[globalobjectid.data.cb - 12] = '\0';
-			}
-			pcomponent->append_line("UID", tmp_buff);
-		} else {
-			EXT_PUSH ext_push;
-			char tmp_buff[1024], tmp_buff1[2048];
+	auto err = oxcical_export_uid(*pmsg, *pcomponent, alloc, get_propids);
+	if (err != nullptr)
+		return err;
 
-			globalobjectid.year = 0;
-			globalobjectid.month = 0;
-			globalobjectid.day = 0;
-			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-			    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
-				return "E-2223";
-			if (!encode_hex_binary(tmp_buff, ext_push.m_offset,
-			    tmp_buff1, sizeof(tmp_buff1)))
-				return "E-2216";
-			HX_strupper(tmp_buff1);
-			pcomponent->append_line("UID", tmp_buff1);
-		}
-	} else {
-		char tmp_buff[1024], tmp_buff1[2048];
-		GLOBALOBJECTID globalobjectid{};
-
-		globalobjectid.arrayid = EncodedGlobalId;
-		globalobjectid.creationtime = rop_util_unix_to_nttime(time(nullptr));
-		globalobjectid.data.cb = 16;
-		globalobjectid.data.pc = tmp_buff1;
-		EXT_PUSH ext_push;
-		if (!ext_push.init(tmp_buff1, 16, 0) ||
-		    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS ||
-		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-		    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
-			return "E-2224";
-		if (!encode_hex_binary(tmp_buff, ext_push.m_offset, tmp_buff1,
-		    sizeof(tmp_buff1)))
-			return "E-2217";
-		HX_strupper(tmp_buff1);
-		pcomponent->append_line("UID", tmp_buff1);
-	}
-	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime};
 	if (!get_propids(&propnames, &propids))
 		return E_2201;
 	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
-	auto err = oxcical_export_recid(*pmsg, proptag_xrt, b_exceptional,
-	           b_allday, *pcomponent, ptz_component, tzid, alloc, get_propids);
+	err = oxcical_export_recid(*pmsg, proptag_xrt, b_exceptional,
+	      b_allday, *pcomponent, ptz_component, tzid, alloc, get_propids);
 	if (err != nullptr)
 		return err;
+
 	str = pmsg->proplist.get<char>(PR_SUBJECT);
 	if (str != nullptr) {
 		auto piline = &pcomponent->append_line("SUMMARY", str);
