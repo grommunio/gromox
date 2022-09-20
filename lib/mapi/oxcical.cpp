@@ -30,6 +30,7 @@
 
 #define MAX_TZDEFINITION_LENGTH					(68*MAX_TZRULE_NUMBER+270)
 
+using namespace std::string_literals;
 using namespace gromox;
 using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
@@ -3107,25 +3108,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
 #define E_2201 "E-2201: get_propids failed for an unspecified reason"
-	int year;
-	GUID guid;
-	time_t cur_time;
-	time_t end_time;
-	ICAL_TIME itime;
-	BOOL b_proposal;
-	struct tm tmp_tm;
-	EXT_PULL ext_pull;
-	EXT_PUSH ext_push;
-	time_t start_time;
-	BOOL b_exceptional, b_recurrence = false;
-	char tmp_buff[1024];
-	char tmp_buff1[2048];
 	PROPID_ARRAY propids;
-	const char *partstat;
-	TIMEZONESTRUCT tz_struct;
-	MESSAGE_CONTENT *pembedded;
-	GLOBALOBJECTID globalobjectid;
-	TIMEZONEDEFINITION tz_definition;
 	APPOINTMENT_RECUR_PAT apprecurr;
 	
 	auto num = pmsg->proplist.get<const uint32_t>(PR_MESSAGE_LOCALE_ID);
@@ -3135,12 +3118,10 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		str = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (str == nullptr)
 		return "E-2200: no PR_MESSAGE_CLASS set";
-	partstat = NULL;
-	b_proposal = FALSE;
-	if (NULL != method) {
-		b_exceptional = TRUE;
-	} else {
-		b_exceptional = FALSE;
+	const char *partstat = nullptr;
+	bool b_proposal = false, b_exceptional = true, b_recurrence = false;
+	if (method == nullptr) {
+		b_exceptional = false;
 		if (strcasecmp(str, "IPM.Appointment") == 0) {
 			method = "PUBLISH";
 		} else if (strcasecmp(str, "IPM.Schedule.Meeting.Request") == 0) {
@@ -3157,7 +3138,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 				return E_2201;
 			auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 			if (flag != nullptr && *flag != 0) {
-				b_proposal = TRUE;
+				b_proposal = true;
 				method = "COUNTER";
 			} else {
 				method = "REPLY";
@@ -3180,7 +3161,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	auto lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	if (lnum == nullptr)
 		return "E-2203: no StartWhole property on object";
-	start_time = rop_util_nttime_to_unix(*lnum);
+	time_t start_time = rop_util_nttime_to_unix(*lnum), end_time;
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, b_proposal ?
 	           PidLidAppointmentProposedEndWhole : PidLidAppointmentEndWhole};
@@ -3211,13 +3192,12 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	if (!get_propids(&propnames, &propids))
 		return E_2201;
 	bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
-	if (bin == nullptr) {
-		b_recurrence = FALSE;
-	} else {
+	if (bin != nullptr) {
+		EXT_PULL ext_pull;
 		ext_pull.init(bin->pb, bin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 			return "E-2204: PidLidAppointmentRecur contents not recognized";
-		b_recurrence = TRUE;
+		b_recurrence = true;
 	}
 	
 	if (b_recurrence) {
@@ -3236,8 +3216,9 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
+	struct tm tmp_tm;
 	make_gmtm(start_time, &tmp_tm);
-	year = tmp_tm.tm_year + 1900;
+	auto year = tmp_tm.tm_year + 1900;
 	
 	tzid = NULL;
 	if (b_recurrence) {
@@ -3250,6 +3231,9 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			return E_2201;
 		tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
 		if (bin != nullptr && tzid != nullptr) {
+			EXT_PULL ext_pull;
+			TIMEZONESTRUCT tz_struct;
+
 			ext_pull.init(bin->pb, bin->cb, alloc, 0);
 			if (ext_pull.g_tzstruct(&tz_struct) != EXT_ERR_SUCCESS)
 				return "E-2205: PidLidTimeZoneDescription contents not recognized";
@@ -3263,6 +3247,10 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 				return E_2201;
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 			if (bin != nullptr) {
+				EXT_PULL ext_pull;
+				TIMEZONEDEFINITION tz_definition;
+				TIMEZONESTRUCT tz_struct;
+
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
 					return "E-2207: PidLidAppointmentTimeZoneDefinitionRecur contents not recognized";
@@ -3286,6 +3274,10 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 		}
 		if (bin != nullptr) {
+			EXT_PULL ext_pull;
+			TIMEZONEDEFINITION tz_definition;
+			TIMEZONESTRUCT tz_struct;
+
 			ext_pull.init(bin->pb, bin->cb, alloc, 0);
 			if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
 				return "E-2209: PidLidAppointmentTimeZoneDefinitionEndDisplay contents not recognized";
@@ -3308,6 +3300,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (0 == strcmp(method, "REQUEST") ||
 		0 == strcmp(method, "CANCEL")) {
+		char tmp_buff[1024];
 		str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 		if (str != nullptr) {
 			str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_ADDRTYPE);
@@ -3325,6 +3318,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			}
 		}
 		if (str != nullptr) {
+			char tmp_buff1[2048];
 			snprintf(tmp_buff1, sizeof(tmp_buff1), "MAILTO:%s", str);
 			auto piline = &pcomponent->append_line("ORGANIZER", tmp_buff1);
 			str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
@@ -3367,12 +3361,16 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		return E_2201;
 	bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 	if (bin != nullptr) {
+		EXT_PULL ext_pull;
+		GLOBALOBJECTID globalobjectid;
+
 		ext_pull.init(bin->pb, bin->cb, alloc, 0);
 		if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
 			return "E-2215: PidLidGlobalObjectId contents not recognized";
 		if (globalobjectid.data.pb != nullptr &&
 		    globalobjectid.data.cb >= 12 &&
 		    memcmp(globalobjectid.data.pb, ThirdPartyGlobalId, 12) == 0) {
+			char tmp_buff[1024];
 			if (globalobjectid.data.cb - 12 > sizeof(tmp_buff) - 1) {
 				memcpy(tmp_buff, globalobjectid.data.pb + 12,
 									sizeof(tmp_buff) - 1);
@@ -3384,6 +3382,9 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			}
 			pcomponent->append_line("UID", tmp_buff);
 		} else {
+			EXT_PUSH ext_push;
+			char tmp_buff[1024], tmp_buff1[2048];
+
 			globalobjectid.year = 0;
 			globalobjectid.month = 0;
 			globalobjectid.day = 0;
@@ -3397,15 +3398,16 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			pcomponent->append_line("UID", tmp_buff1);
 		}
 	} else {
-		time(&cur_time);
-		memset(&globalobjectid, 0, sizeof(GLOBALOBJECTID));
+		char tmp_buff[1024], tmp_buff1[2048];
+		GLOBALOBJECTID globalobjectid{};
+
 		globalobjectid.arrayid = EncodedGlobalId;
-		globalobjectid.creationtime = rop_util_unix_to_nttime(cur_time);
+		globalobjectid.creationtime = rop_util_unix_to_nttime(time(nullptr));
 		globalobjectid.data.cb = 16;
 		globalobjectid.data.pc = tmp_buff1;
-		guid = GUID::random_new();
+		EXT_PUSH ext_push;
 		if (!ext_push.init(tmp_buff1, 16, 0) ||
-		    ext_push.p_guid(guid) != EXT_ERR_SUCCESS ||
+		    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS ||
 		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 		    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
 			return "E-2224";
@@ -3421,6 +3423,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		return E_2201;
 	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
 	lnum = pmsg->proplist.get<uint64_t>(proptag_xrt);
+	ICAL_TIME itime;
 	if (lnum == nullptr) {
 		propname = {MNID_ID, PSETID_MEETING, PidLidIsException};
 		if (!get_propids(&propnames, &propids))
@@ -3440,6 +3443,9 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 					return E_2201;
 				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 				if (bin != nullptr) {
+					EXT_PULL ext_pull;
+					GLOBALOBJECTID globalobjectid;
+
 					ext_pull.init(bin->pb, bin->cb, alloc, 0);
 					if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
 						return "E-2218: PidLidGlobalObjectId contents not recognized";
@@ -3458,6 +3464,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		if (b_exceptional)
 			return "E-2220";
 	} else if (!b_allday) {
+		char tmp_buff[1024];
 		if (NULL == ptz_component) {
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		} else {
@@ -3468,6 +3475,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			piline->append_param("TZID", tzid);
 		}
 	} else {
+		char tmp_buff[1024];
 		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		pcomponent->append_line("RECURRENCE-ID", tmp_buff);
 	}
@@ -3482,6 +3490,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
 		return "E-2221";
+	char tmp_buff[1024];
 	if (b_allday && g_oxcical_allday_ymd)
 		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 	else if (ptz_component != nullptr)
@@ -3674,7 +3683,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			if (NULL == pmsg->children.pattachments->pplist[i]->pembedded) {
 				continue;
 			}
-			pembedded = pmsg->children.pattachments->pplist[i]->pembedded;
+			auto pembedded = pmsg->children.pattachments->pplist[i]->pembedded;
 			str = pembedded->proplist.get<char>(PR_MESSAGE_CLASS);
 			if (str == nullptr)
 				str = pembedded->proplist.get<char>(PR_MESSAGE_CLASS_A);
