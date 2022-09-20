@@ -3100,6 +3100,32 @@ static void busystatus_to_line(ol_busy_status status, const char *key,
 		com->append_line(key, it->second);
 }
 
+static void sensitivity_to_line(mapi_sensitivity n, ical_component *c)
+{
+	c->append_line("CLASS",
+		n == SENSITIVITY_PERSONAL ? "PERSONAL" :
+		n == SENSITIVITY_PRIVATE ? "PRIVATE" :
+		n == SENSITIVITY_COMPANY_CONFIDENTIAL ? "CONFIDENTIAL" :
+		"PUBLIC");
+}
+
+static void importance_to_lines(mapi_importance n, ical_component *c)
+{
+	/* RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58 */
+	if (n == IMPORTANCE_LOW) {
+		c->append_line("PRIORITY", "9");
+		c->append_line("X-MICROSOFT-CDO-IMPORTANCE", "0");
+	} else if (n == IMPORTANCE_NORMAL) {
+		c->append_line("PRIORITY", "5");
+		c->append_line("X-MICROSOFT-CDO-IMPORTANCE", "1");
+	} else if (n == IMPORTANCE_HIGH) {
+		c->append_line("PRIORITY", "1");
+		c->append_line("X-MICROSOFT-CDO-IMPORTANCE", "2");
+	} else {
+		c->append_line("PRIORITY", "9");
+	}
+}
+
 static const char *oxcical_export_internal(const char *method, const char *tzid,
     const MESSAGE_CONTENT *pmsg, ical &pical, ENTRYID_TO_USERNAME entryid_to_username,
     ESSDN_TO_USERNAME essdn_to_username,
@@ -3533,41 +3559,11 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	num = pmsg->proplist.get<uint32_t>(PR_SENSITIVITY);
-	if (num == nullptr) {
-		pcomponent->append_line("CLASS", "PUBLIC");
-	} else {
-		switch (*num) {
-		case SENSITIVITY_PERSONAL:
-			pcomponent->append_line("CLASS", "PERSONAL");
-			break;
-		case SENSITIVITY_PRIVATE:
-			pcomponent->append_line("CLASS", "PRIVATE");
-			break;
-		case SENSITIVITY_COMPANY_CONFIDENTIAL:
-			pcomponent->append_line("CLASS", "CONFIDENTIAL");
-			break;
-		default:
-			pcomponent->append_line("CLASS", "PUBLIC");
-			break;
-		}
-	}
-	
-	num = pmsg->proplist.get<const uint32_t>(PR_IMPORTANCE);
-	if (num != nullptr) {
-		/* RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58 */
-		switch (*num) {
-		case IMPORTANCE_NORMAL:
-			pcomponent->append_line("PRIORITY", "5");
-			break;
-		case IMPORTANCE_HIGH:
-			pcomponent->append_line("PRIORITY", "1");
-			break;
-		default:
-			pcomponent->append_line("PRIORITY", "9");
-			break;
-		}
-	}
-	
+	sensitivity_to_line(num != nullptr ? static_cast<mapi_sensitivity>(*num) :
+		SENSITIVITY_NONE, pcomponent);
+	num = pmsg->proplist.get<uint32_t>(PR_IMPORTANCE);
+	if (num != nullptr)
+		importance_to_lines(static_cast<mapi_importance>(*num), pcomponent);
 	propname = {MNID_ID, PSETID_MEETING};
 	propname.lid = (strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0) ?
 	               PidLidAttendeeCriticalChange : PidLidOwnerCriticalChange;
@@ -3651,24 +3647,6 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			"X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent);
 
 	pcomponent->append_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");
-	
-	num = pmsg->proplist.get<uint32_t>(PR_IMPORTANCE);
-	if (num != nullptr) {
-		switch (static_cast<mapi_importance>(*num)) {
-		case IMPORTANCE_LOW:
-			pcomponent->append_line("X-MICROSOFT-CDO-IMPORTANCE", "0");
-			break;
-		case IMPORTANCE_NORMAL:
-			pcomponent->append_line("X-MICROSOFT-CDO-IMPORTANCE", "1");
-			break;
-		case IMPORTANCE_HIGH:
-			pcomponent->append_line("X-MICROSOFT-CDO-IMPORTANCE", "2");
-			break;
-		default:
-			break;
-		}
-	}
-	
 	pcomponent->append_line("X-MICROSOFT-CDO-INSTTYPE", b_exceptional ? "3" : b_recurrence ? "1" : "0");
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose};
