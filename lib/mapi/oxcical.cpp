@@ -3421,7 +3421,8 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		return E_2201;
 	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
 	lnum = pmsg->proplist.get<uint64_t>(proptag_xrt);
-	ICAL_TIME itime;
+	ICAL_TIME itime{};
+	bool itime_is_set = false;
 	if (lnum == nullptr) {
 		propname = {MNID_ID, PSETID_MEETING, PidLidIsException};
 		if (!get_propids(&propnames, &propids))
@@ -3436,6 +3437,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 				itime.hour   = (*num >> 12) & 0x1f;
 				itime.minute = (*num >> 6) & 0x3f;
 				itime.second = *num & 0x3f;
+				itime_is_set = true;
 				propname.lid = PidLidGlobalObjectId;
 				if (!get_propids(&propnames, &propids))
 					return E_2201;
@@ -3457,8 +3459,9 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		if (!ical_utc_to_datetime(ptz_component,
 		    rop_util_nttime_to_unix(*lnum), &itime))
 			return "E-2219";
+		itime_is_set = true;
 	}
-	if (lnum == nullptr) {
+	if (!itime_is_set) {
 		if (b_exceptional)
 			return "E-2220";
 	} else if (!b_allday) {
