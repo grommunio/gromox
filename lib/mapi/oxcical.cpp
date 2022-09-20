@@ -3126,12 +3126,42 @@ static void importance_to_lines(mapi_importance n, ical_component *c)
 	}
 }
 
+#define E_2201 "E-2201: get_propids failed for an unspecified reason"
+
+static const char *oxcical_export_valarm(const MESSAGE_CONTENT &msg,
+    ical &pical, GET_PROPIDS get_propids)
+{
+	PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON, PidLidReminderSet};
+	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
+	PROPID_ARRAY propids;
+
+	if (!get_propids(&propnames, &propids))
+		return E_2201;
+	auto flag = msg.proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
+	if (flag == nullptr || *flag == 0)
+		return nullptr;
+	auto com = &pical.append_comp("VALARM");
+	com->append_line("DESCRIPTION", "REMINDER");
+	propname = {MNID_ID, PSETID_COMMON, PidLidReminderDelta};
+	if (!get_propids(&propnames, &propids))
+		return E_2201;
+	auto num = msg.proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+	char tmp_buff[32];
+	if (num == nullptr || *num == ENDDATE_MISSING_RDELTA)
+		strcpy(tmp_buff, "-PT15M");
+	else
+		snprintf(tmp_buff, arsizeof(tmp_buff), "-PT%uM", *num);
+	auto line = &com->append_line("TRIGGER", tmp_buff);
+	line->append_param("RELATED", "START");
+	com->append_line("ACTION", "DISPLAY");
+	return nullptr;
+}
+
 static const char *oxcical_export_internal(const char *method, const char *tzid,
     const MESSAGE_CONTENT *pmsg, ical &pical, ENTRYID_TO_USERNAME entryid_to_username,
     ESSDN_TO_USERNAME essdn_to_username,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
-#define E_2201 "E-2201: get_propids failed for an unspecified reason"
 	PROPID_ARRAY propids;
 	APPOINTMENT_RECUR_PAT apprecurr;
 	
@@ -3678,31 +3708,12 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 				return err;
 		}
 	}
-	
-	propname = {MNID_ID, PSETID_COMMON, PidLidReminderSet};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
-	if (flag != nullptr && *flag != 0) {
-		pcomponent = &pical.append_comp("VALARM");
-		pcomponent->append_line("DESCRIPTION", "REMINDER");
-		propname = {MNID_ID, PSETID_COMMON, PidLidReminderDelta};
-		if (!get_propids(&propnames, &propids))
-			return E_2201;
-		num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
-		if (num == nullptr || *num == ENDDATE_MISSING_RDELTA)
-			strcpy(tmp_buff, "-PT15M");
-		else
-			snprintf(tmp_buff, arsizeof(tmp_buff), "-PT%uM", *num);
-		auto piline = &pcomponent->append_line("TRIGGER", tmp_buff);
-		piline->append_param("RELATED", "START");
-		pcomponent->append_line("ACTION", "DISPLAY");
-	}
-	return nullptr;
-#undef E_2201
+
+	return oxcical_export_valarm(*pmsg, pical, get_propids);
 } catch (const std::bad_alloc &) {
 	return "E-2097: ENOMEM";
 }
+#undef E_2201
 
 BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
 	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
