@@ -3201,8 +3201,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	
 	ical_component *ptz_component = nullptr;
 	BINARY *bin = nullptr;
-	if (b_exceptional)
-		goto EXPORT_VEVENT;
+	if (!b_exceptional) {
 	
 	pical.append_line("METHOD", method);
 	pical.append_line("PRODID", "gromox-oxcical");
@@ -3246,14 +3245,11 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		if (!get_propids(&propnames, &propids))
 			return E_2201;
 		bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
-		if (bin != nullptr) {
-			propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneDescription};
-			if (!get_propids(&propnames, &propids))
-				return E_2201;
-			tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
-			if (NULL == tzid) {
-				goto EXPORT_TZDEFINITION;
-			}
+		propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneDescription};
+		if (!get_propids(&propnames, &propids))
+			return E_2201;
+		tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
+		if (bin != nullptr && tzid != nullptr) {
 			ext_pull.init(bin->pb, bin->cb, alloc, 0);
 			if (ext_pull.g_tzstruct(&tz_struct) != EXT_ERR_SUCCESS)
 				return "E-2205: PidLidTimeZoneDescription contents not recognized";
@@ -3262,7 +3258,6 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			if (ptz_component == nullptr)
 				return "E-2206: export_timezone returned an unspecified error";
 		} else {
- EXPORT_TZDEFINITION:
 			propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentTimeZoneDefinitionRecur};
 			if (!get_propids(&propnames, &propids))
 				return E_2201;
@@ -3302,8 +3297,8 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 				return "E-2210: export_timezone returned an unspecified error";
 		}
 	}
+    }
 	
- EXPORT_VEVENT:
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType};
 	if (!get_propids(&propnames, &propids))
 		return E_2201;
