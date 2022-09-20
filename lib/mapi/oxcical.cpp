@@ -2743,7 +2743,6 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
     EXT_BUFFER_ALLOC alloc, const char *partstat,
     const MESSAGE_CONTENT *pmsg) try
 {
-	std::shared_ptr<ICAL_LINE> piline;
 	char username[UADDR_SIZE];
 	char tmp_value[334];
 	
@@ -3201,7 +3200,6 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	ical_component *ptz_component = nullptr;
-	std::shared_ptr<ICAL_LINE> piline;
 	BINARY *bin = nullptr;
 	if (b_exceptional)
 		goto EXPORT_VEVENT;

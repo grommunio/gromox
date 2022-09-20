@@ -163,7 +163,7 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 		if (!system_services_get_id_from_username(memb.c_str(), &user_id))
 			continue;
 		auto mid = ab_tree_make_minid(minid_type::address, user_id);
-		auto node = ab_tree_minid_to_node(base.get(), mid);
+		node = ab_tree_minid_to_node(base.get(), mid);
 		LONG_ARRAY unused{};
 		if (node == nullptr ||
 		    !ab_tree_match_minids(base.get(), mid, info->cpid, res, &unused))

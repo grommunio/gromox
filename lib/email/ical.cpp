@@ -287,7 +287,6 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue) try
 	char *ptr1;
 	char *pnext;
 	char *pnext1;
-	std::shared_ptr<ICAL_VALUE> pivalue;
 	
 	auto b_base64 = ical_check_base64(piline);
 	ptr = pvalue;

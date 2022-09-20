@@ -105,7 +105,7 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 	pcomponent1->append_line("DTSTART", tmp_buff);
 	if (0 != ptzstruct->daylightdate.month) {
 		if (0 == ptzstruct->standarddate.year) {
-			auto piline = &pcomponent1->append_line("RRULE");
+			piline = &pcomponent1->append_line("RRULE");
 			piline->append_value("FREQ", "YEARLY");
 			order = ptzstruct->standarddate.day;
 			if (order == 5)
@@ -162,7 +162,7 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 	}
 	pcomponent1->append_line("DTSTART", tmp_buff);
 	if (0 == ptzstruct->daylightdate.year) {
-		auto piline = &pcomponent1->append_line("RRULE");
+		piline = &pcomponent1->append_line("RRULE");
 		piline->append_value("FREQ", "YEARLY");
 		order = ptzstruct->daylightdate.day;
 		if (order == 5)
@@ -175,7 +175,7 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
 		piline->append_value("BYMONTH", tmp_buff);
 	} else if (1 == ptzstruct->daylightdate.year) {
-		auto piline = &pcomponent1->append_line("RRULE");
+		piline = &pcomponent1->append_line("RRULE");
 		piline->append_value("FREQ", "YEARLY");
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
 		piline->append_value("BYMONTHDAY", tmp_buff);
