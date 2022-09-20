@@ -3090,6 +3090,79 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	return false;
 }
 
+#define E_2201 "E-2201: get_propids failed for an unspecified reason"
+
+static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
+    uint32_t proptag_xrt, bool b_exceptional, bool b_allday,
+    ical_component &com, const ical_component *ptz_component,
+    const char *tzid, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
+{
+	ICAL_TIME itime{};
+	bool itime_is_set = false;
+
+	auto lnum = msg.proplist.get<uint64_t>(proptag_xrt);
+	if (lnum == nullptr) {
+		PROPERTY_NAME propname = {MNID_ID, PSETID_MEETING, PidLidIsException};
+		const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
+		PROPID_ARRAY propids;
+
+		if (!get_propids(&propnames, &propids))
+			return E_2201;
+		auto flag = msg.proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
+		if (flag != nullptr && *flag != 0) {
+			propname = {MNID_ID, PSETID_MEETING, PidLidStartRecurrenceTime};
+			if (!get_propids(&propnames, &propids))
+				return E_2201;
+			auto num = msg.proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+			if (num != nullptr) {
+				itime.hour   = (*num >> 12) & 0x1f;
+				itime.minute = (*num >> 6) & 0x3f;
+				itime.second = *num & 0x3f;
+				itime_is_set = true;
+				propname.lid = PidLidGlobalObjectId;
+				if (!get_propids(&propnames, &propids))
+					return E_2201;
+				auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
+				if (bin != nullptr) {
+					EXT_PULL ext_pull;
+					GLOBALOBJECTID globalobjectid;
+
+					ext_pull.init(bin->pb, bin->cb, alloc, 0);
+					if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
+						return "E-2218: PidLidGlobalObjectId contents not recognized";
+					itime.year = globalobjectid.year;
+					itime.month = globalobjectid.month;
+					itime.day = globalobjectid.day;
+				}
+			}
+		}
+	} else {
+		if (!ical_utc_to_datetime(ptz_component,
+		    rop_util_nttime_to_unix(*lnum), &itime))
+			return "E-2219";
+		itime_is_set = true;
+	}
+	if (!itime_is_set) {
+		if (b_exceptional)
+			return "E-2220";
+	} else if (!b_allday) {
+		char tmp_buff[1024];
+		if (NULL == ptz_component) {
+			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
+		} else {
+			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
+		}
+		auto line = &com.append_line("RECURRENCE-ID", tmp_buff);
+		if (ptz_component != nullptr)
+			line->append_param("TZID", tzid);
+	} else {
+		char tmp_buff[1024];
+		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
+		com.append_line("RECURRENCE-ID", tmp_buff);
+	}
+	return nullptr;
+}
+
 static void busystatus_to_line(ol_busy_status status, const char *key,
     ICAL_COMPONENT *com)
 {
@@ -3476,67 +3549,10 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	if (!get_propids(&propnames, &propids))
 		return E_2201;
 	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
-	lnum = pmsg->proplist.get<uint64_t>(proptag_xrt);
-	ICAL_TIME itime{};
-	bool itime_is_set = false;
-	if (lnum == nullptr) {
-		propname = {MNID_ID, PSETID_MEETING, PidLidIsException};
-		if (!get_propids(&propnames, &propids))
-			return E_2201;
-		auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
-		if (flag != nullptr && *flag != 0) {
-			propname = {MNID_ID, PSETID_MEETING, PidLidStartRecurrenceTime};
-			if (!get_propids(&propnames, &propids))
-				return E_2201;
-			num = pmsg->proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
-			if (num != nullptr) {
-				itime.hour   = (*num >> 12) & 0x1f;
-				itime.minute = (*num >> 6) & 0x3f;
-				itime.second = *num & 0x3f;
-				itime_is_set = true;
-				propname.lid = PidLidGlobalObjectId;
-				if (!get_propids(&propnames, &propids))
-					return E_2201;
-				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
-				if (bin != nullptr) {
-					EXT_PULL ext_pull;
-					GLOBALOBJECTID globalobjectid;
-
-					ext_pull.init(bin->pb, bin->cb, alloc, 0);
-					if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
-						return "E-2218: PidLidGlobalObjectId contents not recognized";
-					itime.year = globalobjectid.year;
-					itime.month = globalobjectid.month;
-					itime.day = globalobjectid.day;
-				}
-			}
-		}
-	} else {
-		if (!ical_utc_to_datetime(ptz_component,
-		    rop_util_nttime_to_unix(*lnum), &itime))
-			return "E-2219";
-		itime_is_set = true;
-	}
-	if (!itime_is_set) {
-		if (b_exceptional)
-			return "E-2220";
-	} else if (!b_allday) {
-		char tmp_buff[1024];
-		if (NULL == ptz_component) {
-			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-		} else {
-			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		}
-		auto piline = &pcomponent->append_line("RECURRENCE-ID", tmp_buff);
-		if (NULL != ptz_component) {
-			piline->append_param("TZID", tzid);
-		}
-	} else {
-		char tmp_buff[1024];
-		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		pcomponent->append_line("RECURRENCE-ID", tmp_buff);
-	}
-	
+	auto err = oxcical_export_recid(*pmsg, proptag_xrt, b_exceptional,
+	           b_allday, *pcomponent, ptz_component, tzid, alloc, get_propids);
+	if (err != nullptr)
+		return err;
 	str = pmsg->proplist.get<char>(PR_SUBJECT);
 	if (str != nullptr) {
 		auto piline = &pcomponent->append_line("SUMMARY", str);
@@ -3545,6 +3561,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
+	ICAL_TIME itime;
 	if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
 		return "E-2221";
 	char tmp_buff[1024];
