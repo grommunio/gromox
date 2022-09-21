@@ -3255,6 +3255,67 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 	return nullptr;
 }
 
+static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
+    ical_component &com, const ical_component *tzcom, GET_PROPIDS get_propids)
+{
+	PROPERTY_NAME propname = {MNID_ID, PSETID_TASK, PidLidTaskStatus};
+	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
+	PROPID_ARRAY propids;
+
+	if (!get_propids(&propnames, &propids))
+		return E_2201;
+	auto num = msg.proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+	if (num != nullptr)
+		com.append_line("STATUS",
+			*num == tsvNotStarted ? "NEEDS-ACTION" :
+			*num == tsvComplete ? "COMPLETED" : "IN-PROGRESS");
+
+	propname = {MNID_ID, PSETID_TASK, PidLidPercentComplete};
+	if (!get_propids(&propnames, &propids))
+		return E_2201;
+	auto dbl = msg.proplist.get<const double>(PROP_TAG(PT_DOUBLE, propids.ppropid[0]));
+	if (dbl != nullptr) {
+		auto v = std::clamp(static_cast<unsigned int>(100 * *dbl), 0U, 100U);
+		char buf[4];
+		snprintf(buf, sizeof(buf), "%u", v);
+		com.append_line("PERCENT-COMPLETE", buf);
+	}
+
+	propname = {MNID_ID, PSETID_TASK, PidLidTaskDueDate};
+	if (!get_propids(&propnames, &propids))
+		return E_2201;
+	auto lnum = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+	if (lnum != nullptr) {
+		ICAL_TIME itime;
+		if (!ical_utc_to_datetime(tzcom, rop_util_nttime_to_unix(*lnum), &itime))
+			return "E-2221";
+		char txt[64];
+		if (tzcom == nullptr)
+			sprintf_dtutc(txt, sizeof(txt), itime);
+		else
+			sprintf_dtlcl(txt, sizeof(txt), itime);
+		com.append_line("DUE", txt);
+	}
+
+	propname = {MNID_ID, PSETID_TASK, PidLidTaskDateCompleted};
+	if (!get_propids(&propnames, &propids))
+		return E_2201;
+	lnum = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+	if (lnum != nullptr) {
+		ICAL_TIME itime;
+		if (!ical_utc_to_datetime(tzcom, rop_util_nttime_to_unix(*lnum), &itime))
+			return "E-2221";
+		char txt[64];
+		if (tzcom == nullptr)
+			sprintf_dtutc(txt, sizeof(txt), itime);
+		else
+			sprintf_dtlcl(txt, sizeof(txt), itime);
+		com.append_line("COMPLETED", txt);
+	}
+
+	return nullptr;
+}
+
 static void busystatus_to_line(ol_busy_status status, const char *key,
     ICAL_COMPONENT *com)
 {
@@ -3337,6 +3398,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		str = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (str == nullptr)
 		return "E-2200: no PR_MESSAGE_CLASS set";
+	auto icaltype = "VEVENT";
 	const char *partstat = nullptr;
 	bool b_proposal = false, b_exceptional = true, b_recurrence = false;
 	if (method == nullptr) {
@@ -3368,6 +3430,10 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		} else if (strcasecmp(str, "IPM.Schedule.Meeting.Canceled") == 0) {
 			method = "CANCEL";
 			partstat = "NEEDS-ACTION";
+		} else if (strcasecmp(str, "IPM.Task") == 0) {
+			method = "";
+			icaltype = nullptr;
+			pical.m_name = "VTODO";
 		} else {
 			return "E-2202: don't know how to transform message class to iCal";
 		}
@@ -3405,7 +3471,8 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	BINARY *bin = nullptr;
 	if (!b_exceptional) {
 	
-	pical.append_line("METHOD", method);
+	if (*method != '\0')
+		pical.append_line("METHOD", method);
 	pical.append_line("PRODID", "gromox-oxcical");
 	pical.append_line("VERSION", "2.0");
 	
@@ -3520,7 +3587,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		return E_2201;
 	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	BOOL b_allday = snum != nullptr && *snum != 0 ? TRUE : false;
-	auto pcomponent = &pical.append_comp("VEVENT");
+	auto pcomponent = icaltype != nullptr ? &pical.append_comp(icaltype) : &pical;
 	
 	if (strcmp(method, "REQUEST") == 0 || strcmp(method, "CANCEL") == 0)
 		oxcical_export_organizer(*pmsg, *pcomponent, essdn_to_username);
@@ -3592,6 +3659,22 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			pilineDTS.append_param("VALUE", "DATE");
 		else
 			pilineDTS.append_param("TZID", tzid);
+	} else {
+		propname = {MNID_ID, PSETID_TASK, PidLidTaskStartDate};
+		if (!get_propids(&propnames, &propids))
+			return E_2201;
+		lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+		if (lnum != nullptr) {
+			ICAL_TIME itime;
+			if (!ical_utc_to_datetime(ptz_component, rop_util_nttime_to_unix(*lnum), &itime))
+				return "E-2221";
+			char txt[64];
+			if (ptz_component == nullptr)
+				sprintf_dtutc(txt, sizeof(txt), itime);
+			else
+				sprintf_dtlcl(txt, sizeof(txt), itime);
+			pcomponent->append_line("DTSTART", txt);
+		}
 	}
 	
 	if (has_start_time && start_time != end_time) {
@@ -3613,7 +3696,11 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		else
 			piline->append_param("TZID", tzid);
 	}
-	
+
+	err = oxcical_export_task(*pmsg, *pcomponent, ptz_component, get_propids);
+	if (err != nullptr)
+		return err;
+
 	propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)};
 	if (!get_propids(&propnames, &propids))
 		return E_2201;
