@@ -631,6 +631,14 @@ enum { /* for PR_TODO_ITEM_FLAGS */
 	todoRecipientFlagged = 0x8U,
 };
 
+enum { /* for PidLidTaskStatus */
+	tsvNotStarted = 0,
+	tsvInProgress,
+	tsvComplete,
+	tsvWaiting,
+	tsvDeferred,
+};
+
 enum zics_type {
 	ICS_TYPE_CONTENTS = 1,
 	ICS_TYPE_HIERARCHY = 2,
