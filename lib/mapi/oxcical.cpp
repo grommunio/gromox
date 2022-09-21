@@ -3090,6 +3090,34 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	return false;
 }
 
+static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
+    ical_component &com, ESSDN_TO_USERNAME eun)
+{
+	char buf[UADDR_SIZE];
+	auto str = msg.proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (str != nullptr) {
+		str = msg.proplist.get<char>(PR_SENT_REPRESENTING_ADDRTYPE);
+		if (str == nullptr)
+			return;
+		if (strcasecmp(str, "SMTP") == 0) {
+			str = msg.proplist.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+		} else if (strcasecmp(str, "EX") == 0) {
+			str = msg.proplist.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			if (str != nullptr)
+				str = !eun(str, buf, std::size(buf)) ?
+				      nullptr : buf;
+		}
+	}
+	if (str == nullptr)
+		return;
+	char buf1[UADDR_SIZE+10];
+	snprintf(buf1, std::size(buf1), "MAILTO:%s", str);
+	auto line = &com.append_line("ORGANIZER", buf1);
+	str = msg.proplist.get<char>(PR_SENT_REPRESENTING_NAME);
+	if (str != nullptr)
+		line->append_param("CN", str);
+}
+
 #define E_2201 "E-2201: get_propids failed for an unspecified reason"
 
 static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
@@ -3488,36 +3516,8 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	BOOL b_allday = snum != nullptr && *snum != 0 ? TRUE : false;
 	auto pcomponent = &pical.append_comp("VEVENT");
 	
-	if (0 == strcmp(method, "REQUEST") ||
-		0 == strcmp(method, "CANCEL")) {
-		char tmp_buff[1024];
-		str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-		if (str != nullptr) {
-			str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_ADDRTYPE);
-			if (str != nullptr) {
-				if (strcasecmp(str, "SMTP") == 0) {
-					str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-				} else if (strcasecmp(str, "EX") == 0) {
-					str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-					if (str != nullptr)
-						str = !essdn_to_username(str, tmp_buff, std::size(tmp_buff)) ?
-						      nullptr : tmp_buff;
-				} else {
-					str = nullptr;
-				}
-			}
-		}
-		if (str != nullptr) {
-			char tmp_buff1[2048];
-			snprintf(tmp_buff1, sizeof(tmp_buff1), "MAILTO:%s", str);
-			auto piline = &pcomponent->append_line("ORGANIZER", tmp_buff1);
-			str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
-			if (str != nullptr) {
-				piline->append_param("CN", str);
-			}
-		}
-	}
-	
+	if (strcmp(method, "REQUEST") == 0 || strcmp(method, "CANCEL") == 0)
+		oxcical_export_organizer(*pmsg, *pcomponent, essdn_to_username);
 	if (!oxcical_export_recipient_table(*pcomponent, entryid_to_username,
 	    essdn_to_username, alloc, partstat, pmsg))
 		return "E-2211: export_recipient_table - unspecified error";
