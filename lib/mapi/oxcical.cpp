@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
@@ -3377,25 +3378,27 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	if (!get_propids(&propnames, &propids))
 		return E_2201;
 	auto lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
-	if (lnum == nullptr)
-		return "E-2203: no StartWhole property on object";
-	time_t start_time = rop_util_nttime_to_unix(*lnum), end_time;
-	
-	propname = {MNID_ID, PSETID_APPOINTMENT, b_proposal ?
-	           PidLidAppointmentProposedEndWhole : PidLidAppointmentEndWhole};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+	bool has_start_time = false;
+	time_t start_time, end_time;
 	if (lnum != nullptr) {
-		end_time = rop_util_nttime_to_unix(*lnum);
-	} else {
-		propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentDuration};
+		start_time = rop_util_nttime_to_unix(*lnum);
+		has_start_time = true;
+		propname = {MNID_ID, PSETID_APPOINTMENT, b_proposal ?
+			   PidLidAppointmentProposedEndWhole : PidLidAppointmentEndWhole};
 		if (!get_propids(&propnames, &propids))
 			return E_2201;
-		end_time = start_time;
-		num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
-		if (num != nullptr)
-			end_time += *num;
+		lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+		if (lnum != nullptr) {
+			end_time = rop_util_nttime_to_unix(*lnum);
+		} else {
+			propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentDuration};
+			if (!get_propids(&propnames, &propids))
+				return E_2201;
+			end_time = start_time;
+			num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+			if (num != nullptr)
+				end_time += *num;
+		}
 	}
 	
 	ical_component *ptz_component = nullptr;
@@ -3435,8 +3438,11 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	struct tm tmp_tm;
-	make_gmtm(start_time, &tmp_tm);
-	auto year = tmp_tm.tm_year + 1900;
+	unsigned int year = 1601;
+	if (has_start_time) {
+		make_gmtm(start_time, &tmp_tm);
+		year = tmp_tm.tm_year + 1900;
+	}
 	
 	tzid = NULL;
 	if (b_recurrence) {
@@ -3567,28 +3573,32 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	ICAL_TIME itime;
-	if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
-		return "E-2221";
-	char tmp_buff[1024];
-	if (ptz_component == nullptr)
-		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-	else if (b_allday && g_oxcical_allday_ymd)
-		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-	else
-		sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
+	if (has_start_time) {
+		ICAL_TIME itime;
+		if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
+			return "E-2221";
+		char tmp_buff[1024];
+		if (ptz_component == nullptr)
+			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
+		else if (b_allday && g_oxcical_allday_ymd)
+			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
+		else
+			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
 
-	auto &pilineDTS = pcomponent->append_line("DTSTART", tmp_buff);
-	if (ptz_component == nullptr)
-		/* nothing */;
-	else if (b_allday && g_oxcical_allday_ymd)
-		pilineDTS.append_param("VALUE", "DATE");
-	else
-		pilineDTS.append_param("TZID", tzid);
+		auto &pilineDTS = pcomponent->append_line("DTSTART", tmp_buff);
+		if (ptz_component == nullptr)
+			/* nothing */;
+		else if (b_allday && g_oxcical_allday_ymd)
+			pilineDTS.append_param("VALUE", "DATE");
+		else
+			pilineDTS.append_param("TZID", tzid);
+	}
 	
-	if (start_time != end_time) {
+	if (has_start_time && start_time != end_time) {
+		ICAL_TIME itime;
 		if (!ical_utc_to_datetime(ptz_component, end_time, &itime))
 			return "E-2222";
+		char tmp_buff[1024];
 		if (ptz_component == nullptr)
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else if (b_allday && g_oxcical_allday_ymd)
@@ -3628,6 +3638,8 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		return E_2201;
 	lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	if (lnum != nullptr) {
+		ICAL_TIME itime;
+		char tmp_buff[1024];
 		ical_utc_to_datetime(nullptr, rop_util_nttime_to_unix(*lnum), &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		pcomponent->append_line("DTSTAMP", tmp_buff);
@@ -3658,6 +3670,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		return E_2201;
 	auto psequence = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 	if (NULL != psequence) {
+		char tmp_buff[HXSIZEOF_Z32];
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *psequence);
 		pcomponent->append_line("SEQUENCE", tmp_buff);
 	}
@@ -3681,12 +3694,14 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (NULL != psequence) {
+		char tmp_buff[HXSIZEOF_Z32];
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *psequence);
 		pcomponent->append_line("X-MICROSOFT-CDO-APPT-SEQUENCE", tmp_buff);
 	}
 	
 	num = pmsg->proplist.get<uint32_t>(PR_OWNER_APPT_ID);
 	if (num != nullptr) {
+		char tmp_buff[HXSIZEOF_Z32];
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *num);
 		pcomponent->append_line("X-MICROSOFT-CDO-OWNERAPPTID", tmp_buff);
 	}
