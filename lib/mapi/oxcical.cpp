@@ -3571,7 +3571,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
 		return "E-2221";
 	char tmp_buff[1024];
-	if (b_allday && g_oxcical_allday_ymd)
+	if (b_allday && g_oxcical_allday_ymd && ptz_component != nullptr)
 		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 	else if (ptz_component != nullptr)
 		sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
@@ -3579,7 +3579,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 
 	auto &pilineDTS = pcomponent->append_line("DTSTART", tmp_buff);
-	if (b_allday && g_oxcical_allday_ymd)
+	if (b_allday && g_oxcical_allday_ymd && ptz_component != nullptr)
 		pilineDTS.append_param("VALUE", "DATE");
 	else if (ptz_component != nullptr)
 		pilineDTS.append_param("TZID", tzid);
@@ -3587,14 +3587,14 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	if (start_time != end_time) {
 		if (!ical_utc_to_datetime(ptz_component, end_time, &itime))
 			return "E-2222";
-		if (b_allday && g_oxcical_allday_ymd)
+		if (b_allday && g_oxcical_allday_ymd && ptz_component != nullptr)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		else if (ptz_component != nullptr)
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		auto piline = &pcomponent->append_line("DTEND", tmp_buff);
-		if (b_allday && g_oxcical_allday_ymd)
+		if (b_allday && g_oxcical_allday_ymd && ptz_component != nullptr)
 			piline->append_param("VALUE", "DATE");
 		else if (ptz_component != nullptr)
 			piline->append_param("TZID", tzid);
