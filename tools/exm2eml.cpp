@@ -38,7 +38,9 @@ decltype(system_services_get_user_ids) system_services_get_user_ids;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *g_username;
 static unsigned int g_export_mode = EXPORT_MAIL;
+static int g_allday_mode = -1;
 static constexpr HXoption g_options_table[] = {
+	{nullptr, 'Y', HXTYPE_INT, &g_allday_mode, nullptr, nullptr, 0, "Allday emission mode (default=-1, YMDHMS=0, YMD=1)"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	{"ical", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_ICAL, "Export as calendar object"},
 	{"mail", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_MAIL, "Export as RFC5322 mail"},
@@ -100,7 +102,8 @@ int main(int argc, const char **argv) try
 		terse_help();
 		return EXIT_FAILURE;
 	}
-
+	if (g_allday_mode >= 0)
+		g_oxcical_allday_ymd = g_allday_mode;
 	g_config_file = config_file_prg(nullptr, "midb.cfg",
 	                exm2eml_cfg_defaults);
 	if (g_config_file == nullptr) {
