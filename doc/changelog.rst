@@ -1,3 +1,25 @@
+1.32 (2022-09-23)
+=================
+
+Enhancements:
+
+* kdb2mt: detect unsupported "db" attachment layout
+* kdb2mt: add option for mapping ACL identities using a text file
+* nsp: support reading PR_EMS_MEMBER property
+* zcore: support GetContentsTable on distlist objects
+* exm2eml: add options --ical and --vcard
+
+Fixes:
+
+* oxcical: some RECURRENCE-ID may have been emitted based on undefined contents
+* oxcical: emit allday events as YMDHMS when YMD cannot be computed due to lack
+  of timezone information
+
+Changes:
+
+* email_lib: reimplementation of MJSON parsing using jsoncpp
+
+
 1.31 (2022-08-30)
 =================
 
