@@ -5,7 +5,8 @@
 #include <gromox/hpm_common.h>
 #include <gromox/plugin.hpp>
 
-struct HTTP_CONTEXT;
+struct http_context;
+using HTTP_CONTEXT = http_context;
 
 struct hpm_service_node {
 	void *service_addr;

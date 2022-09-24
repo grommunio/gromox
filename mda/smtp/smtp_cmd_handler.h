@@ -10,7 +10,8 @@ enum{
 	DISPATCH_ACTMASK = 0xFF000000U,
 };
 
-struct SMTP_CONTEXT;
+struct smtp_context;
+using SMTP_CONTEXT = smtp_context;
 
 int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext);

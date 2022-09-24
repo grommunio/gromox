@@ -47,10 +47,10 @@ enum {
 	CHANNEL_TYPE_OUT
 };
 
-struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
-	HTTP_CONTEXT();
-	~HTTP_CONTEXT();
-	NOMOVE(HTTP_CONTEXT);
+struct http_context final : public schedule_context {
+	http_context();
+	~http_context();
+	NOMOVE(http_context);
 
 	GENERIC_CONNECTION connection;
 	http_request request;
@@ -70,6 +70,7 @@ struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	void *pchannel = nullptr;
 	FASTCGI_CONTEXT *pfast_context = nullptr;
 };
+using http_context = HTTP_CONTEXT;
 
 struct RPC_IN_CHANNEL {
 	RPC_IN_CHANNEL();

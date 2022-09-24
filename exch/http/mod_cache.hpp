@@ -1,7 +1,8 @@
 #pragma once
 #include <gromox/common_types.hpp>
 
-struct HTTP_CONTEXT;
+struct http_context;
+using HTTP_CONTEXT = http_context;
 extern void mod_cache_init(int context_num);
 extern int mod_cache_run();
 extern void mod_cache_stop();

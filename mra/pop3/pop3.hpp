@@ -33,10 +33,10 @@ enum {
 
 struct CONFIG_FILE;
 
-struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
-	POP3_CONTEXT();
-	~POP3_CONTEXT();
-	NOMOVE(POP3_CONTEXT);
+struct pop3_context final : public schedule_context {
+	pop3_context();
+	~pop3_context();
+	NOMOVE(pop3_context);
 
 	GENERIC_CONNECTION connection;
 	char read_buffer[1024]{};
@@ -63,6 +63,7 @@ struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	char username[UADDR_SIZE]{};
 	char maildir[256]{};
 };
+using POP3_CONTEXT = pop3_context;
 
 extern void listener_init(const char *addr, uint16_t port, uint16_t port_ssl);
 extern int listener_run();

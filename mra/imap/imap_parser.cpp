@@ -1480,7 +1480,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx) tr
 	return imap_cmd_parser_dval(argc, argv, ctx, 1915);
 }
 
-IMAP_CONTEXT::IMAP_CONTEXT() :
+imap_context::imap_context() :
 	stream(&g_blocks_allocator)
 {
 	auto pcontext = this;
@@ -1522,7 +1522,7 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
 	pcontext->maildir[0] = '\0';
 }
 
-IMAP_CONTEXT::~IMAP_CONTEXT()
+imap_context::~imap_context()
 {
 	auto pcontext = this;
 	mem_file_free(&pcontext->f_flags);

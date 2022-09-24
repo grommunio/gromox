@@ -21,7 +21,8 @@ struct FASTCGI_CONTEXT {
 	std::string tmpfile;
 };
 
-struct HTTP_CONTEXT;
+struct http_context;
+using HTTP_CONTEXT = http_context;
 
 extern void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size, gromox::time_duration exec_timeout);
 extern int mod_fastcgi_run();
