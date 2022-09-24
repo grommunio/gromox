@@ -3293,7 +3293,7 @@ static void importance_to_lines(mapi_importance n, ical_component *c)
 #define E_2201 "E-2201: get_propids failed for an unspecified reason"
 
 static const char *oxcical_export_valarm(const MESSAGE_CONTENT &msg,
-    ical &pical, GET_PROPIDS get_propids)
+    ical_component &pical, GET_PROPIDS get_propids)
 {
 	PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON, PidLidReminderSet};
 	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
@@ -3736,7 +3736,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 
-	return oxcical_export_valarm(*pmsg, pical, get_propids);
+	return oxcical_export_valarm(*pmsg, *pcomponent, get_propids);
 } catch (const std::bad_alloc &) {
 	return "E-2097: ENOMEM";
 }
