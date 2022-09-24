@@ -97,10 +97,9 @@ errno_t evqueue::init(unsigned int numctx) try
 int evqueue::wait()
 {
 #ifdef HAVE_SYS_EPOLL_H
-	return epoll_wait(m_fd, m_events.get(), m_num, 1000);
+	return epoll_wait(m_fd, m_events.get(), m_num, 0);
 #elif defined(HAVE_SYS_EVENT_H)
-	static constexpr struct timespec ts = {1, 0};
-	return kevent(m_fd, nullptr, 0, m_events.get(), m_num, &ts);
+	return kevent(m_fd, nullptr, 0, m_events.get(), m_num, nullptr);
 #endif
 }
 
