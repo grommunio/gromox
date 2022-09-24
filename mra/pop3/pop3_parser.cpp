@@ -621,7 +621,7 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
 	return ret & DISPATCH_ACTMASK;
 }
 
-POP3_CONTEXT::POP3_CONTEXT() :
+pop3_context::pop3_context() :
 	stream(&g_blocks_allocator)
 {}
 
@@ -653,7 +653,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 	memset(pcontext->maildir, 0, arsizeof(pcontext->maildir));
 }
 
-POP3_CONTEXT::~POP3_CONTEXT()
+pop3_context::~pop3_context()
 {
 	auto pcontext = this;
 	pcontext->msg_array.clear();

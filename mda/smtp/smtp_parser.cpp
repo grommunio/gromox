@@ -611,7 +611,7 @@ void envelope_info::clear()
 	f_rcpt_to.clear();
 }
 
-SMTP_CONTEXT::SMTP_CONTEXT() :
+smtp_context::smtp_context() :
 	stream(&g_blocks_allocator), menv(&g_files_allocator)
 {}
 

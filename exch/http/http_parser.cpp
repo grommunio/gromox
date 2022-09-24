@@ -1888,7 +1888,7 @@ void http_request::clear()
 	f_others.clear();
 }
 
-HTTP_CONTEXT::HTTP_CONTEXT() :
+http_context::http_context() :
 	request(&g_file_allocator), stream_in(&g_blocks_allocator),
 	stream_out(stream_in.allocator)
 {
@@ -1921,7 +1921,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 	pcontext->pfast_context = NULL;
 }
 
-HTTP_CONTEXT::~HTTP_CONTEXT()
+http_context::~http_context()
 {
 	auto pcontext = this;
 	if (hpm_processor_is_in_charge(pcontext))

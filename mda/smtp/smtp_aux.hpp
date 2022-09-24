@@ -9,7 +9,8 @@ enum {
     FLUSHER_MODE_GATEWAY    
 };
 
-struct SMTP_CONTEXT;
+struct smtp_context;
+using SMTP_CONTEXT = smtp_context;
 
 extern void flusher_init(size_t queue_len);
 extern int flusher_run();

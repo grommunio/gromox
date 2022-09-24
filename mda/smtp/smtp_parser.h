@@ -56,9 +56,9 @@ struct EXT_DATA {
     int              cur_pos;
 };
 
-struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
-	SMTP_CONTEXT();
-	NOMOVE(SMTP_CONTEXT);
+struct smtp_context final : public schedule_context {
+	smtp_context();
+	NOMOVE(smtp_context);
 
 	GENERIC_CONNECTION connection;
 	STREAM stream; /* stream accepted from smtp client */
@@ -74,6 +74,7 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	int pre_rstlen{}; /* previous bytes rested by last flushing */
 	EXT_DATA ext_data{};
 };
+using SMTP_CONTEXT = smtp_context;
 
 struct smtp_param {
 	unsigned int context_num = 0;

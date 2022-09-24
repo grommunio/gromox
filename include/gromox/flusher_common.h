@@ -44,7 +44,8 @@ struct FLUSH_INFO {
     void          *flush_ptr;     /* extended data pointer */
 };
 
-struct SMTP_CONTEXT;
+struct smtp_context;
+using SMTP_CONTEXT = smtp_context;
 struct FLUSH_ENTITY final {
 	STREAM *pstream = nullptr;
 	GENERIC_CONNECTION *pconnection = nullptr;

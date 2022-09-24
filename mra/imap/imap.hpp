@@ -84,10 +84,10 @@ struct dir_tree {
 using DIR_TREE = dir_tree;
 using DIR_TREE_ENUM = void (*)(DIR_NODE *, void*);
 
-struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
-	IMAP_CONTEXT();
-	~IMAP_CONTEXT();
-	NOMOVE(IMAP_CONTEXT);
+struct imap_context final : public schedule_context {
+	imap_context();
+	~imap_context();
+	NOMOVE(imap_context);
 	/* a.k.a. is_login in pop3 */
 	inline bool is_authed() const { return proto_stat >= PROTO_STAT_AUTH; }
 
@@ -114,6 +114,7 @@ struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, maildir[256]{}, lang[32]{};
 };
+using IMAP_CONTEXT = imap_context;
 
 extern void imap_parser_init(int context_num, int average_num, size_t cache_size, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, BOOL support_starttls, BOOL force_starttls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int imap_parser_run();
