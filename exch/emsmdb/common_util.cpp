@@ -58,11 +58,9 @@ unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 unsigned int g_max_rule_len, g_max_extrule_len;
 static uint16_t g_smtp_port;
 static char g_smtp_ip[40], g_emsmdb_org_name[256];
-static int g_faststream_id;
 static int g_average_blocks;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
-static std::mutex g_id_lock;
 static char g_submit_command[1024];
 static alloc_limiter<file_block> g_file_allocator{"emsmdb.g_file_allocator.d"};
 
@@ -2014,7 +2012,6 @@ void common_util_init(const char *org_name, int average_blocks,
 	gx_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
 	g_smtp_port = smtp_port;
 	gx_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
-	g_faststream_id = 0;
 }
 
 int common_util_run()
@@ -2080,12 +2077,6 @@ void common_util_stop()
 const char* common_util_get_submit_command()
 {
 	return g_submit_command;
-}
-
-uint32_t common_util_get_ftstream_id()
-{
-	std::lock_guard id_hold(g_id_lock);
-	return g_faststream_id++;
 }
 
 std::shared_ptr<MIME_POOL> common_util_get_mime_pool()

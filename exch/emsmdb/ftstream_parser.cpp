@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
@@ -874,25 +875,17 @@ gxerr_t fxstream_parser::process(fastupctx_object &upctx)
 
 std::unique_ptr<ftstream_parser> ftstream_parser::create(logon_object *plogon) try
 {
-	auto stream_id = common_util_get_ftstream_id();
 	auto path = LOCAL_DISK_TMPDIR;
 	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 		fprintf(stderr, "E-1428: mkdir %s: %s\n", path, strerror(errno));
 		return nullptr;
 	}
 	std::unique_ptr<ftstream_parser> pstream(new ftstream_parser);
-	pstream->fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
+	pstream->fd = open_tmpfile(path, &pstream->path, O_RDWR | O_TRUNC);
 	if (pstream->fd < 0) {
-		if (errno != EISDIR && errno != EOPNOTSUPP) {
-			fprintf(stderr, "E-1668: open %s: %s\n", path, strerror(errno));
-			return nullptr;
-		}
-		pstream->path = path + "/"s + std::to_string(stream_id) + "." + get_host_ID();
-		pstream->fd = open(pstream->path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
-		if (-1 == pstream->fd) {
-			fprintf(stderr, "E-1429: open %s: %s\n", pstream->path.c_str(), strerror(errno));
-			return NULL;
-		}
+		fprintf(stderr, "E-1668: open{%s, %s}: %s\n", path,
+		        pstream->path.c_str(), strerror(-pstream->fd));
+		return nullptr;
 	}
 	pstream->plogon = plogon;
 	return pstream;
