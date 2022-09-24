@@ -65,7 +65,6 @@ static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 decltype(system_services_get_user_ids) system_services_get_user_ids;
 std::shared_ptr<CONFIG_FILE> g_config_file;
-static const char g_default_timezone[] = "UTC";
 static gi_name_map name_map;
 static std::unordered_map<std::string, uint16_t> name_rev_map;
 static uint16_t name_id = 0x8000;
