@@ -42,15 +42,11 @@ namespace {
  * @b_end:	the end of the request body has been seen
  */
 struct HPM_CONTEXT {
-	const HPM_INTERFACE *pinterface;
-	BOOL b_preproc;
-	BOOL b_chunked;
-	uint32_t chunk_size;
-	uint32_t chunk_offset; 
-	uint64_t content_length;
-	BOOL b_end;
-	int cache_fd;
-	uint64_t cache_size;
+	const HPM_INTERFACE *pinterface = nullptr;
+	BOOL b_preproc = false, b_chunked = false, b_end = false;
+	int cache_fd = -1;
+	uint32_t chunk_size = 0, chunk_offset = 0;
+	uint64_t content_length = 0, cache_size = 0;
 };
 
 }
@@ -60,7 +56,7 @@ static uint64_t g_max_size;
 static uint64_t g_cache_size;
 static HPM_PLUGIN *g_cur_plugin;
 static std::list<HPM_PLUGIN> g_plugin_list;
-static HPM_CONTEXT *g_context_list;
+static std::unique_ptr<HPM_CONTEXT[]> g_context_list;
 static std::vector<std::string> g_plugin_names;
 
 void hpm_processor_init(int context_num, std::vector<std::string> &&names,
@@ -358,29 +354,24 @@ static int hpm_processor_load_library(const char *plugin_name)
 	return PLUGIN_LOAD_OK;
 }
 
-int hpm_processor_run()
+int hpm_processor_run() try
 {
-	g_context_list = me_alloc<HPM_CONTEXT>(g_context_num);
-	if (NULL == g_context_list) {
-		printf("[hpm_processor]: Failed to allocate context list\n");
-		return -1;
-	}
-	memset(g_context_list, 0, sizeof(HPM_CONTEXT)*g_context_num);
+	g_context_list = std::make_unique<HPM_CONTEXT[]>(g_context_num);
 	for (const auto &i : g_plugin_names) {
 		int ret = hpm_processor_load_library(i.c_str());
 		if (ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
 	return 0;
+} catch (const std::bad_alloc &) {
+	printf("[hpm_processor]: Failed to allocate context list\n");
+	return -1;
 }
 
 void hpm_processor_stop()
 {
 	g_plugin_list.clear();
-	if (NULL != g_context_list) {
-		free(g_context_list);
-		g_context_list = NULL;
-	}
+	g_context_list.reset();
 }
 
 bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
