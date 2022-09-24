@@ -90,8 +90,8 @@ extern void pop3_parser_init(int context_num, size_t retrieving_size, gromox::ti
 extern int pop3_parser_run();
 extern int pop3_parser_process(POP3_CONTEXT *);
 extern void pop3_parser_stop();
-extern int pop3_parser_get_context_socket(SCHEDULE_CONTEXT *);
-extern gromox::time_point pop3_parser_get_context_timestamp(schedule_context *);
+extern int pop3_parser_get_context_socket(const schedule_context *);
+extern gromox::time_point pop3_parser_get_context_timestamp(const schedule_context *);
 extern SCHEDULE_CONTEXT **pop3_parser_get_contexts_list();
 extern int pop3_parser_threads_event_proc(int action);
 extern int pop3_parser_retrieve(POP3_CONTEXT *);
