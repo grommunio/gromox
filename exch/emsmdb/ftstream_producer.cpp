@@ -12,6 +12,7 @@
 #include <gromox/element_data.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
@@ -85,19 +86,11 @@ static bool fxstream_producer_open(fxstream_producer &p)
 	if (p.fd >= 0)
 		return true; /* already open */
 	auto path = LOCAL_DISK_TMPDIR;
-	p.fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
-	if (p.fd >= 0) {
-		p.path.clear();
-		return true;
-	}
-	if (errno != EISDIR && errno != EOPNOTSUPP) {
-		fprintf(stderr, "E-1667: open %s: %s\n", path, strerror(errno));
-		return false;
-	}
-	p.fd = open(p.path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
+	p.fd = open_tmpfile(path, &p.path, O_RDWR | O_TRUNC);
 	if (p.fd >= 0)
 		return true;
-	fprintf(stderr, "E-1338: open %s: %s\n", p.path.c_str(), strerror(errno));
+	fprintf(stderr, "E-1338: open{%s, %s}: %s\n", path, p.path.c_str(),
+	        strerror(errno));
 	return false;
 }
 
@@ -876,16 +869,12 @@ BOOL ftstream_producer::write_hierarchysync(
 std::unique_ptr<ftstream_producer>
 ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 {
-	int stream_id;
-	
-	stream_id = common_util_get_ftstream_id();
 	auto path = LOCAL_DISK_TMPDIR;
 	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 		fprintf(stderr, "E-1422: mkdir %s: %s\n", path, strerror(errno));
 		return nullptr;
 	}
 	std::unique_ptr<ftstream_producer> pstream(new ftstream_producer);
-	pstream->path = path + "/"s + std::to_string(stream_id) + "." + get_host_ID();
 	pstream->plogon = plogon;
 	pstream->string_option = string_option;
 	return pstream;
