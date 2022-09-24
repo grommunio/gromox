@@ -410,7 +410,7 @@ union local_storage {
   } u;
 
   /* The file name to be opened.  */
-  char fullname[max(sizeof(struct file_analysis), strlen(tzdirslash) + 1024)];
+  char fullname[max(sizeof(struct file_analysis), sizeof(tzdirslash) - 1 + 1024)];
 };
 
 /* Load tz data from the file named NAME into *SP.  Read extended
