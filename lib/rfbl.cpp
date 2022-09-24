@@ -34,6 +34,10 @@
 #include <libHX/proc.h>
 #include <libHX/string.h>
 #include <sys/wait.h>
+#ifdef __FreeBSD__
+#	include <sys/types.h>
+#	include <sys/sysctl.h>
+#endif
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
@@ -446,7 +450,7 @@ void startup_banner(const char *prog)
  * file access errors that would occur before gx_reexec, and we can be sure
  * that privileged informationed does not escape into a dump.
  */
-errno_t gx_reexec(const char *const *argv)
+errno_t gx_reexec(const char *const *argv) try
 {
 	auto s = getenv("GX_REEXEC_DONE");
 	if (s != nullptr || argv == nullptr) {
@@ -463,6 +467,7 @@ errno_t gx_reexec(const char *const *argv)
 	}
 	setenv("GX_REEXEC_DONE", "1", true);
 
+#if defined(__linux__)
 	hxmc_t *resolved = nullptr;
 	auto ret = HX_readlink(&resolved, "/proc/self/exe");
 	if (ret < 0) {
@@ -475,6 +480,32 @@ errno_t gx_reexec(const char *const *argv)
 	perror("execv");
 	HXmc_free(resolved);
 	return saved_errno;
+#elif defined(__FreeBSD__)
+	std::string tgt;
+	tgt.resize(64);
+	int oid[] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+	while (true) {
+		size_t z = tgt.size();
+		auto ret = sysctl(oid, std::size(oid), tgt.data(), &z,
+		           nullptr, 0);
+		if (ret == 0) {
+			tgt.resize(z);
+			break;
+		}
+		if (errno != ENOMEM)
+			return errno;
+		tgt.resize(tgt.size() * 2);
+	}
+	fprintf(stderr, "Reexecing %s\n", tgt.c_str());
+	execv(tgt.c_str(), const_cast<char **>(argv));
+	int saved_errno = errno;
+	perror("execv");
+	return saved_errno;
+#else
+#	error No implementation
+#endif
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
 }
 
 void gx_reexec_record(int fd)
