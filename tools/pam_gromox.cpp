@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/misc.h>
+#include <security/pam_appl.h>
 #include <security/pam_modules.h>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
@@ -59,7 +60,7 @@ static int read_password(pam_handle_t *pamh, const char *prompt, char **pass)
 
 	*pass = nullptr;
 	msg.msg_style = PAM_PROMPT_ECHO_OFF;
-	msg.msg = prompt != nullptr ? prompt : "Password: ";
+	msg.msg = deconst(prompt != nullptr ? prompt : "Password: ");
 	auto ret = converse(pamh, 1, &pmsg, &resp);
 	if (ret == PAM_SUCCESS)
 		*pass = strdup(resp->resp);
