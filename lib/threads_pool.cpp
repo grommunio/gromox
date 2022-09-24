@@ -207,20 +207,12 @@ static void *tpol_thrwork(void *pparam)
 		case PROCESS_IDLE:
 			contexts_pool_put_context(pcontext, CONTEXT_IDLING);
 			break;
-		case PROCESS_POLLING_NONE:
-			pcontext->polling_mask = 0;
-			contexts_pool_put_context(pcontext, CONTEXT_POLLING);
-			break;
 		case PROCESS_POLLING_RDONLY:
 			pcontext->polling_mask = POLLING_READ;
 			contexts_pool_put_context(pcontext, CONTEXT_POLLING);
 			break;
 		case PROCESS_POLLING_WRONLY:
 			pcontext->polling_mask = POLLING_WRITE;
-			contexts_pool_put_context(pcontext, CONTEXT_POLLING);
-			break;
-		case PROCESS_POLLING_RDWR:
-			pcontext->polling_mask = POLLING_READ | POLLING_WRITE;
 			contexts_pool_put_context(pcontext, CONTEXT_POLLING);
 			break;
 		case PROCESS_SLEEPING:

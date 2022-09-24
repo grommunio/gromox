@@ -10,10 +10,8 @@ enum{
 enum{
 	PROCESS_IDLE = 0,		/* wait for checking user-defined condition */
 	PROCESS_CONTINUE,
-	PROCESS_POLLING_NONE,
 	PROCESS_POLLING_RDONLY,
 	PROCESS_POLLING_WRONLY,
-	PROCESS_POLLING_RDWR,
 	PROCESS_SLEEPING,		/* context need to be pended */
 	PROCESS_CLOSE			/* put the context into free queue */
 };
