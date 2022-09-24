@@ -233,7 +233,7 @@ ssize_t rtfcp_uncompressed_size(const BINARY *rtf)
 	rtfcp_init_decompress_state(rtf->pb, rtf->cb, &state);
 	if (!rtfcp_verify_header(rtf->pb, state.in_size, &header))
 		return -1;
-	if (header.rawsize > SIZE_MAX)
+	if (static_cast<size_t>(header.rawsize) > SSIZE_MAX)
 		return -1; /* just a limitation of this function */
 	return header.rawsize;
 }
