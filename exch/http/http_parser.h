@@ -108,9 +108,9 @@ extern void http_parser_init(size_t context_num, gromox::time_duration timeout, 
 extern int http_parser_run();
 int http_parser_process(HTTP_CONTEXT *pcontext);
 extern void http_parser_stop();
-extern int http_parser_get_context_socket(SCHEDULE_CONTEXT *);
+extern int http_parser_get_context_socket(const schedule_context *);
 void http_parser_set_context(int context_id);
-extern gromox::time_point http_parser_get_context_timestamp(schedule_context *);
+extern gromox::time_point http_parser_get_context_timestamp(const schedule_context *);
 int http_parser_get_param(int param);
 extern SCHEDULE_CONTEXT **http_parser_get_contexts_list();
 int http_parser_threads_event_proc(int action);

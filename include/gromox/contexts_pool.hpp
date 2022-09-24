@@ -42,7 +42,7 @@ using SCHEDULE_CONTEXT = schedule_context;
 template<typename T> static inline auto
 CALCULATE_INTERVAL(T a, T b) -> decltype(a-b) { return a - b; }
 
-extern GX_EXPORT void contexts_pool_init(schedule_context **, unsigned int context_num, int (*get_socket)(schedule_context *), gromox::time_point (*get_ts)(schedule_context *), unsigned int contexts_per_thr, gromox::time_duration timeout);
+extern GX_EXPORT void contexts_pool_init(schedule_context **, unsigned int context_num, int (*get_socket)(const schedule_context *), gromox::time_point (*get_ts)(const schedule_context *), unsigned int contexts_per_thr, gromox::time_duration timeout);
 extern int contexts_pool_run();
 extern void contexts_pool_stop();
 SCHEDULE_CONTEXT* contexts_pool_get_context(int type);

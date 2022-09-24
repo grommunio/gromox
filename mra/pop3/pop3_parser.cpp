@@ -184,14 +184,14 @@ int pop3_parser_threads_event_proc(int action)
     return 0;
 }
 
-int pop3_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
+int pop3_parser_get_context_socket(const schedule_context *ctx)
 {
-	return static_cast<POP3_CONTEXT *>(ctx)->connection.sockd;
+	return static_cast<const pop3_context *>(ctx)->connection.sockd;
 }
 
-time_point pop3_parser_get_context_timestamp(schedule_context *ctx)
+time_point pop3_parser_get_context_timestamp(const schedule_context *ctx)
 {
-	return static_cast<POP3_CONTEXT *>(ctx)->connection.last_timestamp;
+	return static_cast<const pop3_context *>(ctx)->connection.last_timestamp;
 }
 
 int pop3_parser_process(POP3_CONTEXT *pcontext)

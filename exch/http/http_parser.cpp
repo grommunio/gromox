@@ -287,14 +287,14 @@ int http_parser_threads_event_proc(int action)
 	return 0;
 }
 
-int http_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
+int http_parser_get_context_socket(const schedule_context *ctx)
 {
-	return static_cast<HTTP_CONTEXT *>(ctx)->connection.sockd;
+	return static_cast<const http_context *>(ctx)->connection.sockd;
 }
 
-time_point http_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
+time_point http_parser_get_context_timestamp(const schedule_context *ctx)
 {
-	return static_cast<HTTP_CONTEXT *>(ctx)->connection.last_timestamp;
+	return static_cast<const http_context *>(ctx)->connection.last_timestamp;
 }
 
 static VCONN_REF http_parser_get_vconnection(const char *host,

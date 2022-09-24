@@ -181,14 +181,14 @@ void smtp_parser_stop()
 	g_param = {};
 }
 
-int smtp_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
+int smtp_parser_get_context_socket(const schedule_context *ctx)
 {
-	return static_cast<SMTP_CONTEXT *>(ctx)->connection.sockd;
+	return static_cast<const smtp_context *>(ctx)->connection.sockd;
 }
 
-time_point smtp_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
+time_point smtp_parser_get_context_timestamp(const schedule_context *ctx)
 {
-	return static_cast<SMTP_CONTEXT *>(ctx)->connection.last_timestamp;
+	return static_cast<const smtp_context *>(ctx)->connection.last_timestamp;
 }
 
 /*
