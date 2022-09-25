@@ -3434,6 +3434,10 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			method = "";
 			icaltype = nullptr;
 			pical.m_name = "VTODO";
+		} else if (strcasecmp(str, "IPM.Activity") == 0) {
+			method = "";
+			icaltype = nullptr;
+			pical.m_name = "VJOURNAL";
 		} else {
 			return "E-2202: don't know how to transform message class to iCal";
 		}
@@ -3605,6 +3609,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			piline->append_param("LANGUAGE", planguage);
 		}
 	}
+	/* IPM.Activity is RTF-only in Outlook, nothing in PR_BODY */
 	
 	if (!b_exceptional && b_recurrence) {
 		if (!oxcical_export_rrule(*ptz_component, *pcomponent, &apprecurr))
