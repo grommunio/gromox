@@ -23,7 +23,7 @@ using namespace gromox;
 
 static std::atomic<bool> xa_notify_stop{false};
 static std::condition_variable xa_thread_wake;
-static std::map<std::string, std::string> xa_alias_map;
+static std::map<std::string, std::string, std::less<>> xa_alias_map;
 static std::mutex xa_alias_lock;
 static std::thread xa_thread;
 static mysql_adaptor_init_param g_parm;
@@ -55,7 +55,7 @@ static MYSQL *sql_make_conn()
 	return conn;
 }
 
-static const std::string &xa_alias_lookup(const std::string &srch)
+static const std::string &xa_alias_lookup(const char *srch)
 {
 	static const std::string empty;
 	std::lock_guard hold(xa_alias_lock);
