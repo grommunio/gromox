@@ -179,6 +179,7 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata) try
 		unregister_interface(ep_6001, &interface);
 		return TRUE;
 	case PLUGIN_RELOAD:
+		exch_nsp_reload(nullptr);
 		ab_tree_invalidate_cache();
 		return TRUE;
 	}
