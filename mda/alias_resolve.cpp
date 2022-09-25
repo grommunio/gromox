@@ -55,12 +55,13 @@ static MYSQL *sql_make_conn()
 	return conn;
 }
 
-static const std::string &xa_alias_lookup(const char *srch)
+static std::string xa_alias_lookup(const char *srch)
 {
 	static const std::string empty;
 	std::lock_guard hold(xa_alias_lock);
 	auto i = xa_alias_map.find(srch);
 	return i != xa_alias_map.cend() ? i->second : empty;
+	/* return a copy, since the map may change after releasing the lock */
 }
 
 static void xa_refresh_aliases(MYSQL *conn) try
