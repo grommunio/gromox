@@ -1,0 +1,27 @@
+.TH kdb\-uidextract 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+\fBkdb\-uidextract\fP \(em Helper for creating a gromox\-kdb2mt ACL map
+.SH Synopsis
+\fBpython /usr/libexec/gromox/kdb\-uidextract\fP
+.SH Description
+kdb\-uidextract is a Python script utilizing python-kopano bindings to read
+user object descriptions off a Kopano installation and produce an ACL map for
+use with the gromox\-kdb2mt \-\-acl\-map option.
+.PP
+This script is meant to be executed on a Kopano system and does not rely on
+Gromox components at all.
+.PP
+kdb\-uidextract first queries the server on the current machine for all
+participating Kopano servers in the cluster. This requires that all Kopano
+servers accept TLS connections (/etc/kopano/server.cfg:server_ssl_port,
+server_ssl_key_file, sslkeys_path) and have authentication keys set up for the
+SYSTEM account (in the directory specified by sslkeys_path).
+.PP
+The resulting map for kdb2mt is printed to stdout.
+.SH Options
+This program offers no command-line options.
+.SH Files
+By way of the \fIkopano\fP Python module, /etc/kopano/admin.cfg is sourced for
+TLS certificate parameters. Confer with the kopano-admin.cfg(5) manpage.
+.SH See also
+\fPgromox\fP(7), \fBgromox\-kdb2mt\fP(8gx)

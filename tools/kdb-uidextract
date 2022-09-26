@@ -1,19 +1,43 @@
-#!/usr/bin/env python
-# Using env here so it does not autogenerate deps in the RPM for an ancient product
+# -*- python -*-
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2022 grommunio GmbH
+# This file is part of Gromox.
+
 import binascii
 import kopano
 import struct
 import sys
-sys.argv.pop()
-if len(sys.argv) == 0:
-	sys.argv.append("")
-for arg in sys.argv:
-	sys.stderr.write("Investigating %s\n" % arg)
-	server = kopano.Server(arg)
-	for user in server.users():
+
+init_server = kopano.Server()
+server_list = set()
+faulty = False
+for user in init_server.users(remote=True, system=false, hidden=True,
+    inactive=True):
+	server_list.add(user.home_server)
+
+for server_name in server_list:
+	uri = "https://%s:237/kopano" % server_name
+	server = None
+	try:
+		server = kopano.Server(server_socket=uri,
+		         sslkey_file=init_server.sslkey_file)
+	except:
+		faulty = True
+		continue
+	sguid = server.guid.lower()
+	for user in server.users(remote=True, system=false, hidden=True,
+	    inactive=True):
 		# 00000000AC21A95040D3EE48B319FBA7533044250100000006000000000100004D6A55784D6A453D00000000
 		if user.userid[0:48] != "00000000AC21A95040D3EE48B319FBA75330442501000000":
-			sys.stderr.write("Skipping %s (%s)" % (user.name, user.userid))
-			pass
+			print("# @%s.kopano.invalid\t<user %s has wrong GUID>" %
+			      (sguid, user.name))
+			continue
 		id = struct.unpack("<L", binascii.unhexlify(user.userid[56:64]))[0]
-		print("%s@%s.kopano.invalid\t%s" % (id, server.guid.lower(), user.email))
+		if user.email == "":
+			print("# %s@%s.kopano.invalid\t<user %s without email addr>" %
+			      (id, sguid, user.name))
+			continue
+		print("%s@%s.kopano.invalid\t%s" % (id, sguid, user.email))
+
+if faulty:
+	sys.stderr.write("[1;31mNot all servers could be reached[0m\n")

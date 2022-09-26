@@ -78,7 +78,7 @@ sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-dscli gromox-e2ghelper gromox
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
-sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt tools/kdb-uidextract
+sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
 pkglibexec_SCRIPTS = tools/create_queue.sh
 
 BUILT_SOURCES = include/gromox/paths.h php_mapi/mapierr.cpp php_mapi/mapitags.cpp php_mapi/zrpc.cpp exch/exmdb_provider/exmdb_dispatch.cpp exch/exmdb_provider/exmdb_rpc.cpp exch/zcore/rpc_dispatch.cpp lib/exmdb_rpc.cpp
@@ -308,7 +308,9 @@ man_MANS = \
 	doc/gromox-kdb2mt.8gx doc/gromox-mailq.8gx doc/gromox-mbop.8gx \
 	doc/gromox-mkmidb.8gx doc/gromox-mkprivate.8gx doc/gromox-mkpublic.8gx \
 	doc/gromox-mt2exm.8gx doc/http.8gx \
-	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
+	doc/imap.8gx doc/ip6_container.4gx \
+	doc/kdb-uidextract.8 \
+	doc/ldap_adaptor.4gx \
 	doc/logthru.4gx \
 	doc/mapi.4gx doc/mapi.7gx doc/midb.8gx doc/midb_agent.4gx \
 	doc/mh_emsmdb.4gx doc/mh_nsp.4gx \
@@ -355,6 +357,7 @@ exch/exmdb_provider/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh
 install-exec-hook:
 	${MKDIR_P} ${DESTDIR}${sbindir}
 	rm -fv ${DESTDIR}${pkglibdir}/libmapi4zf.*
+	cp -av tools/kdb-uidex* ${DESTDIR}${pkglibexecdir}/
 
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${mandir}/man8 ${DESTDIR}${pkgdatadir}/http/php
