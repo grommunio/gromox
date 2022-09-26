@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+# Using env here so it does not autogenerate deps in the RPM for an ancient product
+import binascii
+import kopano
+import struct
+import sys
+sys.argv.pop()
+if len(sys.argv) == 0:
+	sys.argv.append("")
+for arg in sys.argv:
+	sys.stderr.write("Investigating %s\n" % arg)
+	server = kopano.Server(arg)
+	for user in server.users():
+		# 00000000AC21A95040D3EE48B319FBA7533044250100000006000000000100004D6A55784D6A453D00000000
+		if user.userid[0:48] != "00000000AC21A95040D3EE48B319FBA75330442501000000":
+			sys.stderr.write("Skipping %s (%s)" % (user.name, user.userid))
+			pass
+		id = struct.unpack("<L", binascii.unhexlify(user.userid[56:64]))[0]
+		print("%s@%s.kopano.invalid\t%s" % (id, server.guid.lower(), user.email))
