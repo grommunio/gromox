@@ -309,7 +309,7 @@ man_MANS = \
 	doc/gromox-mkmidb.8gx doc/gromox-mkprivate.8gx doc/gromox-mkpublic.8gx \
 	doc/gromox-mt2exm.8gx doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx \
-	doc/kdb-uidextract.8 \
+	doc/kdb-uidextract.8 doc/kdb-uidextract-limited.8 \
 	doc/ldap_adaptor.4gx \
 	doc/logthru.4gx \
 	doc/mapi.4gx doc/mapi.7gx doc/midb.8gx doc/midb_agent.4gx \

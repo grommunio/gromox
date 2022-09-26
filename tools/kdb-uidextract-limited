@@ -1,0 +1,101 @@
+# -*- perl -*-
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2022 grommunio GmbH
+# This file is part of Gromox.
+
+use strict;
+use warnings;
+
+sub loginname_format
+{
+	my $fh;
+	open($fh, "< /etc/kopano/server.cfg");
+	while (defined(my $line = <$fh>)) {
+		if ($line =~ /^\s*loginname_format\s*=\s*(\S+)/) {
+			return $1;
+		}
+	}
+	return "\%u";
+}
+
+sub get_overview
+{
+	my $company = undef;
+	my(%user_list, %server_list);
+	my $fmt = &loginname_format();
+
+	foreach my $line (`kopano-admin -l`) {
+		chomp($line);
+		if ($line =~ /^User list for (.+?)\(/) {
+			$company = $1;
+			# Can be "Default" in non-hosted setups
+		} elsif ($line =~ /^Users \(/) {
+			$company = undef;
+		} elsif ($line =~ /^\s+Username\s+Fullname\s+Homeserver/) {
+		} elsif ($line =~ /^\s+-+$/) {
+		} elsif ($line =~ /^\s+(\S+)\s+.*\s+(\S+)\s*$/) {
+			my($username, $server) = ($1, $2, $3);
+			$server_list{$server} = 1;
+			my $key = $fmt;
+			$key =~ s{\%.}{
+			        $& eq "\%c" ? $company :
+			        $& eq "\%u" ? $username : $&
+			        }eg;
+			$user_list{$key} = 1;
+		}
+	}
+
+	return ([keys %user_list], [keys %server_list]);
+}
+
+sub main
+{
+	my($users, $servers) = &get_overview();
+	if (!defined($users) || !defined($servers)) {
+		return 1;
+	}
+
+	# kopano-stats does not respect sslkey from admin.cfg,
+	# so it's useless to even try other servers
+	$servers = ["default:"];
+
+	foreach my $srv_name (sort @$servers) {
+		#my $url = "https://$srv_name:237/";
+		my $url = "default:";
+		my $out = `kopano-stats -h "$url" --system`;
+		if ($? != 0) {
+			next;
+		}
+		my($srv_guid) = ($out =~ /server_guid\s+(\S+)/);
+		$srv_guid = lc($srv_guid);
+
+		foreach my $user (sort @$users) {
+			if ($user eq "SYSTEM") {
+				next;
+			}
+			my @out = `kopano-admin -h "$url" --details "$user"`;
+			my($objid, $email);
+			foreach my $line (@out) {
+				if ($line =~ m{^Object id:\s+(\d+)}) {
+					$objid = $1;
+				} elsif ($line =~ m{^Emailaddress:\s+(\S+)}) {
+					$email = $1;
+				}
+			}
+			if (!defined($objid)) {
+				print "# \@$srv_guid.kopano.invalid\t".
+				      "<user $user not present>\n";
+				next;
+			} elsif (!defined($email)) {
+				print "# $objid\@$srv_guid.kopano.invalid\t".
+				      "<user $user without email addr>\n";
+				next;
+			}
+			chomp($objid);
+			chomp($email);
+			print "$objid\@$srv_guid.kopano.invalid\t$email\n";
+		}
+	}
+}
+
+exit(&main());
