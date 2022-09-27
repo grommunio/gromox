@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2023 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
@@ -69,6 +69,23 @@ std::string EWSContext::essdn_to_username(const std::string& essdn) const
  *
  * @return     Path to the user's maildir
  */
+std::string EWSContext::get_maildir(const std::string& username) const
+{
+	char temp[256];
+	if(!plugin.mysql.get_maildir(username.c_str(), temp, arsizeof(temp)))
+		throw DispatchError(E3007);
+	return temp;
+}
+
+/**
+ * @brief      Get user maildir from Mailbox speciication
+ *
+ * @param      Mailbox   Mailbox structure
+ *
+ * @throw      DispatchError   Could not retrieve maildir
+ *
+ * @return     Path to the user's maildir
+ */
 std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 {
 	std::string RoutingType = Mailbox.RoutingType.value_or("smtp");
@@ -84,6 +101,31 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 		return temp;
 	} else
 		throw DispatchError(E3006(RoutingType));
+}
+
+/**
+ * @brief     Get properties of specified folder
+ *
+ * @param     folder  Folder Specification
+ * @param     props   Properties to get
+ *
+ * @return    Property values
+ */
+TPROPVAL_ARRAY EWSContext::getFolderProps(const sFolderSpec& folder, const PROPTAG_ARRAY& props) const
+{
+	const char* target = folder.target? folder.target->c_str() : auth_info.username;
+	const char* at = strchr(target, '@');
+	bool isPublic = folder.location == sFolderSpec::AUTO? at == nullptr : folder.location == sFolderSpec::PUBLIC;
+	auto func = isPublic? plugin.mysql.get_homedir : plugin.mysql.get_maildir;
+	if(isPublic && at)
+		target = at+1;
+	char targetDir[256];
+	if(!func(target, targetDir, arsizeof(targetDir)))
+		throw DispatchError(E3007);
+	TPROPVAL_ARRAY result;
+	if(!plugin.exmdb.get_folder_properties(targetDir, 0, folder.folderId, &props, &result))
+		throw DispatchError("exmdb call failed "+std::to_string(isPublic)+" "+targetDir);
+	return result;
 }
 
 /**

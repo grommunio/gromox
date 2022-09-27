@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -9,6 +9,11 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <variant>
+#include <vector>
+
+#include <gromox/clock.hpp>
+
 #include <tinyxml2.h>
 #include <vector>
 #include <fmt/chrono.h>
@@ -176,7 +181,7 @@ struct ExplicitConvert<gromox::EWS::Structures::StrEnum<C0, Cs...>>
 ///////////////////////////////////////////////////////////////////////////////
 //Type unpacking
 
-enum Container {NONE, OPTIONAL, LIST}; ///< Container information
+enum Container {NONE, OPTIONAL, LIST, VARIANT}; ///< Container information
 
 /**
  * @brief      Helper struct to unpack underlying types
@@ -205,6 +210,13 @@ template<typename T> struct BaseType<std::optional<T>> {
 template<typename T> struct BaseType<std::vector<T>> {
 	using type = T;
 	static constexpr Container container = LIST;
+};
+
+/**
+ * @brief      Container information for std::vector
+ */
+template<typename... Ts> struct BaseType<std::variant<Ts...>> {
+	static constexpr Container container = VARIANT;
 };
 
 template<typename T>
@@ -237,6 +249,17 @@ struct HasName
 template<typename T>
 static constexpr const char* getName(const char* def=nullptr)
 {
+	if constexpr(HasName<T>::value)
+	    return T::NAME;
+	else
+	    return def;
+}
+
+template<typename T>
+static constexpr const char* getName(const T&val, const char* def=nullptr)
+{
+	if constexpr(BaseType<T>::container == VARIANT)
+		return std::visit([def](const auto& v){return getName(v, def);}, val);
 	if constexpr(HasName<T>::value)
 	    return T::NAME;
 	else
@@ -342,6 +365,33 @@ static T fromXMLNodeList(const tinyxml2::XMLElement* child)
 	return values;
 }
 
+
+/**
+ * @brief     Deserialize choice of types
+ *
+ * Tries to match the name of each type against the name of the XML node.
+ * If a match is found or the type does not have a name, construction is attempted.
+ *
+ * @param     child  XMLElement containing one of the possible choices
+ *
+ * @return    Variant containing the object
+ */
+template<typename T, size_t I=0>
+static T fromXMLNodeVariant(const tinyxml2::XMLElement* child)
+{
+	using namespace std::string_literals;
+	if constexpr(I >= std::variant_size_v<T>)
+		throw Exceptions::DeserializationError("Failed to find proper type for node "s+child->Name());
+	else
+	{
+		using Contained = std::variant_alternative_t<I, T>;
+		const char* tname = getName<Contained>();
+		if(tname == nullptr || !strcmp(tname, child->Name()))
+			return T(std::in_place_index_t<I>(), fromXMLNodeDispatch<Contained>(child));
+		return fromXMLNodeVariant<T, I+1>(child);
+	}
+}
+
 /**
  * @brief      Unpack list type
  *
@@ -356,6 +406,8 @@ static T fromXMLNodeDispatch(const tinyxml2::XMLElement* child)
 {
 	if constexpr(BaseType<T>::container == LIST)
 		return fromXMLNodeList<T>(child);
+	else if constexpr(BaseType<T>::container == VARIANT)
+		return fromXMLNodeVariant<T>(child);
 	else
 		return fromXMLNode<T>(child);
 }
@@ -413,12 +465,17 @@ static T fromXMLAttr(const tinyxml2::XMLElement* xml, const char* name)
 		    return std::nullopt;
 		throw DeserializationError("Missing required attribute '"s+name+"' in element '"+xml->Name()+"'");
 	}
-	BaseType_t<T> val;
-	tinyxml2::XMLError err = ExplicitConvert<BaseType_t<T>>::deserialize(attr, val);
-	if(err == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE)
-		throw DeserializationError("Failed to convert attribute "s+name+"="+attr->Value()+" in element '"+xml->Name()
-	                               +"' to "+typeid(BaseType_t<T>).name());
-	return val;
+	if constexpr(explicit_convert<T>(EC_IN))
+	{
+		BaseType_t<T> val;
+		tinyxml2::XMLError err = ExplicitConvert<BaseType_t<T>>::deserialize(attr, val);
+		if(err == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE)
+			throw DeserializationError("Failed to convert attribute "s+name+"="+attr->Value()+" in element '"+xml->Name()
+		                               +"' to "+typeid(BaseType_t<T>).name());
+		return val;
+	}
+	else
+		return BaseType_t<T>(attr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -469,9 +526,22 @@ template<typename T>
 static void toXMLNodeList(tinyxml2::XMLElement* xml, const T& value)
 {
 	using BT = BaseType_t<T>;
-	const char* name = getName<BT>("x");
 	for(const BT& element : value)
-		toXMLNode<BT>(xml, name, element);
+		toXMLNode<BT>(xml, getName(element, "x"), element);
+}
+
+/**
+ * @brief      Serialize variant of values
+ *
+ * @param      xml    XMLElement to store data in
+ * @param      value  Variant to serialize
+ *
+ * @tparam     T      Variant type
+ */
+template<typename T>
+static void toXMLNodeVariant(tinyxml2::XMLElement* xml, const T& value)
+{
+	std::visit([xml](auto&& v){toXMLNodeDispatch(xml, v);}, value);
 }
 
 /**
@@ -489,6 +559,8 @@ static void toXMLNodeDispatch(tinyxml2::XMLElement* xml, const T& value)
 		toXmlNodeOpt<T>(xml, value);
 	else if constexpr(BaseType<T>::container == LIST)
 		toXMLNodeList<T>(xml, value);
+	else if constexpr(BaseType<T>::container == VARIANT)
+		toXMLNodeVariant(xml, value);
 	else
 		toXMLNode(xml, value);
 }
@@ -507,7 +579,7 @@ static void toXMLNode(tinyxml2::XMLElement* parent, const char* name, const T& v
 {
 	if constexpr(BaseType<T>::container == OPTIONAL)
 		if(!value)
-		return;
+			return;
 	tinyxml2::XMLElement* xml = parent->InsertNewChildElement(name);
 	toXMLNodeDispatch(xml, value);
 }
@@ -536,8 +608,10 @@ static void toXMLAttr(tinyxml2::XMLElement* parent, const char* name, const T& v
 		pvalue = &value;
 	if constexpr(explicit_convert<T>(EC_OUT))
 		ExplicitConvert<BaseType_t<T>>::serialize(*pvalue, [parent, name](const char* data){parent->SetAttribute(name, data);});
-	else
+	else if constexpr(explicit_convert<T>(EC_IMP_OUT))
 		parent->SetAttribute(name, value);
+	else
+		parent->SetAttribute(name, value.serialize().c_str());
 }
 
 }

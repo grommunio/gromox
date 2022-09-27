@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 
 #include <algorithm>
@@ -56,12 +56,15 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
 /**
  * Mapping of request names to handler functions.
  */
-const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap = {
-	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
-	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
+
+const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
+{
+	{"GetFolder", process<Structures::mGetFolderRequest>},
 	{"GetMailTips", process<Structures::mGetMailTipsRequest>},
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
+	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
+	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -218,6 +221,7 @@ EWSPlugin::_mysql::_mysql()
 	if (query_service2(# f, f) == nullptr) \
 		throw std::runtime_error("[ews]: failed to get the \""# f"\" service")
 
+	getService(get_homedir);
 	getService(get_maildir);
 	getService(get_username_from_id);
 #undef getService

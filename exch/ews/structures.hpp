@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
 
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <variant>
 #include <vector>
 
 #include <gromox/clock.hpp>
@@ -14,7 +16,10 @@
 #include "enums.hpp"
 
 namespace tinyxml2
-{class XMLElement;}
+{
+	class XMLElement;
+	class XMLAttribute;
+}
 
 namespace gromox::EWS
 {struct EWSContext;}
@@ -23,6 +28,53 @@ namespace gromox::EWS::Structures
 {
 
 struct tSerializableTimeZone;
+struct tDistinguishedFolderId;
+struct tFolderId;
+struct tFolderType;
+struct tCalendarFolderType;
+struct tContactsFolderType;
+struct tSearchFolderType;
+struct tTasksFolderType;
+
+/**
+ * @brief      Folder specification
+ *
+ * Resolves folder ID and type either from the distinguished name or
+ * the folder target string.
+ */
+struct sFolderSpec
+{
+	enum Type : uint8_t {NORMAL, CALENDAR, CONTACTS, SEARCH, TASKS};
+
+	sFolderSpec() = default;
+	explicit sFolderSpec(const tFolderId&);
+	explicit sFolderSpec(const tDistinguishedFolderId&);
+	sFolderSpec(const std::string_view&, uint64_t, Type=NORMAL);
+
+	void normalize();
+	std::string serialize() const;
+
+	std::optional<std::string> target;
+	uint64_t folderId;
+	Type type = NORMAL;
+	enum {AUTO, PRIVATE, PUBLIC} location = AUTO;
+
+private:
+	struct DistNameInfo
+	{
+		const char* name;
+		uint64_t id;
+		Type type;
+		bool isPrivate;
+	};
+
+	static const std::array<DistNameInfo, 21> distNameInfo;
+};
+
+/**
+ * Joint folder type
+ */
+using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderType, tSearchFolderType, tTasksFolderType>;
 
 /**
  * @brief     Formatted time string helper struct
@@ -130,6 +182,179 @@ struct tEmailAddressType
 };
 
 /**
+ * Types.xsd:1862
+ */
+struct tFolderId
+{
+	static constexpr char NAME[] = "FolderId";
+
+	tFolderId() = default;
+	tFolderId(const tinyxml2::XMLElement*);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::string Id; //Attribute
+	std::optional<std::string> ChangeKey; //Attribute
+};
+
+/**
+ * Types.xsd:1142
+ */
+struct tExtendedFieldURI
+{
+	using TMEntry = std::pair<const char*, uint16_t>;
+
+	static constexpr char NAME[] = "ExtendedFieldURI";
+
+	explicit tExtendedFieldURI(const tinyxml2::XMLElement*);
+	explicit tExtendedFieldURI(uint32_t);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<std::string> PropertyTag; //Attribute
+	Enum::MapiPropertyTypeType PropertyType; //Attribute
+	//<xs:attribute name="PropertyId" type="xs:int" use="optional"/>
+	//<xs:attribute name="DistinguishedPropertySetId" type="t:DistinguishedPropertySetType" use="optional"/>
+	//<xs:attribute name="PropertySetId" type="t:GuidType" use="optional"/>
+	//<xs:attribute name="PropertyName" type="xs:string" use="optional"/>
+
+	uint32_t tag() const;
+	static const char* typeName(uint16_t);
+
+	static std::array<TMEntry, 26> typeMap; ///< Types.xsd:1060
+};
+
+/**
+ * Types.xsd:1196
+ */
+struct tExtendedProperty
+{
+	explicit tExtendedProperty(const TAGGED_PROPVAL&);
+
+	TAGGED_PROPVAL propval;
+
+	void serialize(tinyxml2::XMLElement*) const;
+private:
+	void serialize(const void*, size_t, uint16_t, tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:1981
+ */
+struct tBaseFolderType
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<tFolderId> FolderId;
+	std::optional<tFolderId> ParentFolderId;
+	std::optional<std::string> FolderClass;
+	std::optional<std::string> DisplayName;
+	std::optional<int32_t> TotalCount;
+	std::optional<int32_t> ChildFolderCount;
+	std::vector<tExtendedProperty> ExtendendProperty;
+	//<xs:element name="ExtendedProperty" type="t:ExtendedPropertyType" minOccurs="0" maxOccurs="unbounded"/>
+	//<xs:element name="ManagedFolderInformation" type="t:ManagedFolderInformationType" minOccurs="0"/>
+	//<xs:element name="EffectiveRights" type="t:EffectiveRightsType" minOccurs="0"/>
+	//<xs:element name="DistinguishedFolderId" type="t:DistinguishedFolderIdNameType" minOccurs="0"/>
+	//<xs:element name="PolicyTag" type="t:RetentionTagType" minOccurs="0" />
+	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
+	//<xs:element name="ReplicaList" type="t:ArrayOfStringsType" minOccurs="0" />
+protected:
+	~tBaseFolderType() = default; ///< Abstract class, only available to derived classes
+};
+
+/**
+ * Types.xsd:
+ */
+struct tFieldURI
+{
+	static constexpr char NAME[] = "FieldURI";
+
+	tFieldURI(const tinyxml2::XMLElement*);
+
+	uint32_t tag() const;
+
+	std::string FieldURI; //Attribute
+
+	static std::unordered_map<std::string, uint32_t> fieldMap; ///< Types.xsd:402
+};
+
+/**
+ * Types.xsd:1165
+ */
+struct tFolderShape : public std::variant<tExtendedFieldURI, tFieldURI>
+{
+	using Base = std::variant<tExtendedFieldURI, tFieldURI>;
+
+	tFolderShape(const tinyxml2::XMLElement*);
+
+	uint32_t tag() const;
+};
+
+/**
+ * Types.xsd:2019
+ */
+struct tFolderType : public tBaseFolderType
+{
+	static constexpr char NAME[] = "Folder";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	//<xs:element name="PermissionSet" type="t:PermissionSetType" minOccurs="0"/>
+	std::optional<int32_t> UnreadCount;
+};
+
+/**
+ * Types.xsd:2031
+ */
+struct tCalendarFolderType : public tBaseFolderType
+{
+	static constexpr char NAME[] = "CalendarFolder";
+
+	//void serialize(tinyxml2::XMLElement*) const;
+
+	//<xs:element name="SharingEffectiveRights" type="t:CalendarPermissionReadAccessType" minOccurs="0"/>
+	//<xs:element name="PermissionSet" type="t:CalendarPermissionSetType" minOccurs="0"/>
+};
+
+/**
+ * Types.xsd:2064
+ */
+struct tContactsFolderType : public tBaseFolderType
+{
+	static constexpr char NAME[] = "ContactsFolder";
+
+	//void serialize(tinyxml2::XMLElement*) const;
+
+	//<xs:element name="SharingEffectiveRights" type="t:PermissionReadAccessType" minOccurs="0"/>
+	//<xs:element name="PermissionSet" type="t:PermissionSetType" minOccurs="0"/>
+	//<xs:element name="SourceId" type="xs:string" minOccurs="0"/>
+	//<xs:element name="AccountName" type="xs:string" minOccurs="0"/>
+};
+
+/**
+ * Types.xsd:2078
+ */
+struct tSearchFolderType : public tBaseFolderType
+{
+	static constexpr char NAME[] = "SearchFolder";
+
+	//void serialize(tinyxml2::XMLElement*) const;
+
+	//<xs:element name="SearchParameters" type="t:SearchParametersType" minOccurs="0" />
+
+};
+
+/**
+ * Types.xsd:2089
+ */
+struct tTasksFolderType : public tBaseFolderType
+{
+	static constexpr char NAME[] = "TasksFolder";
+};
+
+
+/**
  * Types.xsd:6372
  */
 struct tSerializableTimeZoneTime
@@ -158,6 +383,22 @@ struct tSerializableTimeZone
 	std::chrono::minutes offset(const gromox::time_point&) const;
 	gromox::time_point apply(const gromox::time_point&) const;
 	gromox::time_point remove(const gromox::time_point&) const;
+};
+
+/**
+ * Types.xsd:1273
+ */
+struct tFolderResponseShape
+{
+	tFolderResponseShape(const tinyxml2::XMLElement*);
+
+	std::vector<uint32_t> tags() const;
+
+	Enum::DefaultNamesType BaseShape;
+	std::optional<std::vector<tFolderShape>> AdditionalProperties;
+
+	static constexpr std::array<uint32_t, 1> tagsIdOnly = {PR_CHANGE_KEY};
+	static constexpr std::array<uint32_t, 4> tagsDefault = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
 };
 
 /**
@@ -202,6 +443,20 @@ struct tMailbox
 	std::optional<std::string> Name;
 	std::string Address;
 	std::optional<std::string> RoutingType;
+};
+
+/**
+ * Types.xsd:1847
+ */
+struct tDistinguishedFolderId
+{
+	static constexpr char NAME[] = "DistinguishedFolderId";
+
+	tDistinguishedFolderId(const tinyxml2::XMLElement*);
+
+	std::optional<tEmailAddressType> Mailbox;
+	std::optional<std::string> ChangeKey; //Attribute
+	Enum::DistinguishedFolderIdNameType Id; //Attribute
 };
 
 /**
@@ -357,6 +612,39 @@ struct mResponseMessageType
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Messages.xsd:692
+ */
+struct mGetFolderRequest
+{
+	mGetFolderRequest(const tinyxml2::XMLElement*);
+
+	tFolderResponseShape FolderShape;
+	std::vector<std::variant<tFolderId, tDistinguishedFolderId>> FolderIds;
+};
+
+struct mGetFolderResponseMessage : mResponseMessageType
+{
+	static constexpr char NAME[] = "GetFolderResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+	using mResponseMessageType::success;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::vector<sFolder> Folders;
+};
+
+/**
+ * Messages.xsd:789
+ */
+struct mGetFolderResponse
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::vector<mGetFolderResponseMessage> ResponseMessages;
+};
 
 /**
  * @brief      Get mail tips request

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -17,6 +17,7 @@ namespace gromox::EWS {
 
 namespace Structures
 {
+struct sFolderSpec;
 struct tMailbox;
 struct tSerializableTimeZone;
 }
@@ -41,6 +42,7 @@ public:
 	struct _mysql {
 		_mysql();
 
+		decltype(mysql_adaptor_get_homedir)* get_homedir;
 		decltype(mysql_adaptor_get_maildir)* get_maildir;
 		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
 	} mysql; ///< mysql adaptor function pointers
@@ -80,6 +82,8 @@ struct EWSContext
 
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
+	std::string get_maildir(const std::string&) const;
+	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	void normalize(Structures::tMailbox&) const;
 
 	int ID = 0;
