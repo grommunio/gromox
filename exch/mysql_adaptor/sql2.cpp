@@ -226,6 +226,9 @@ static int userlist_parse(sqlconn &conn, const char *query,
 		u.dtypx = DT_MAILUSER;
 		if (row[2] != nullptr)
 			u.dtypx = static_cast<enum display_type>(strtoul(row[2], nullptr, 0));
+		if (u.dtypx == DT_MAILUSER &&
+		    strtoul(row[3], nullptr, 0) == AF_USER_CONTACT)
+			u.dtypx = DT_REMOTE_MAILUSER;
 		u.id = strtoul(row[0], nullptr, 0);
 		u.username = row[1];
 		u.aliases = aliasmap_extract(amap, row[1]);
@@ -247,7 +250,7 @@ static int userlist_parse(sqlconn &conn, const char *query,
 
 int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) try
 {
-	char query[439];
+	char query[451];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr)
@@ -268,7 +271,7 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	propmap_load(*conn, query, pmap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
-	         "SELECT u.id, u.username, dt.propval_str AS dtypx, 9999, "
+	         "SELECT u.id, u.username, dt.propval_str AS dtypx, u.address_status, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
 	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username "
@@ -284,7 +287,7 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 
 int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) try
 {
-	char query[418];
+	char query[430];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr)
@@ -303,7 +306,7 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 	propmap_load(*conn, query, pmap);
 
 	gx_snprintf(query, arsizeof(query),
-	         "SELECT u.id, u.username, dt.propval_str AS dtypx, 9998, "
+	         "SELECT u.id, u.username, dt.propval_str AS dtypx, u.address_status, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
 	         JOIN_WITH_DISPLAYTYPE
@@ -319,7 +322,7 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 
 int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) try
 {
-	char query[479];
+	char query[491];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr)
@@ -343,7 +346,7 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	propmap_load(*conn, query, pmap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
-	         "SELECT u.id, u.username, dt.propval_str AS dtypx, 9997, "
+	         "SELECT u.id, u.username, dt.propval_str AS dtypx, u.address_status, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
 	         JOIN_WITH_DISPLAYTYPE

@@ -1240,6 +1240,11 @@ static uint32_t ab_tree_get_dtyp(const tree_node *n)
 		return DT_DISTLIST;
 	else if (a.node_type == abnode_type::folder)
 		return DT_FORUM;
+	else if (a.node_type != abnode_type::user)
+		return DT_MAILUSER;
+	auto &obj = *static_cast<const sql_user *>(a.d_info);
+	if (obj.dtypx == DT_REMOTE_MAILUSER)
+		return DT_REMOTE_MAILUSER;
 	return DT_MAILUSER;
 }
 
@@ -1253,12 +1258,14 @@ static std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 		return {DT_DISTLIST | DTE_FLAG_ACL_CAPABLE};
 	else if (a.node_type != abnode_type::user)
 		return {DT_MAILUSER};
+	auto &obj = *static_cast<const sql_user *>(a.d_info);
+	if (obj.dtypx == DT_REMOTE_MAILUSER)
+		return {DT_REMOTE_MAILUSER};
 	/*
-	 * In Gromox, everything with a username is capable of being used in an ACL
-	 * (and usernames are mandatory currently)
+	 * In Gromox, (almost) everything with a username is capable of being
+	 * used in an ACL (and usernames are mandatory currently).
 	 */
-	auto obj = static_cast<const sql_user *>(a.d_info);
-	return {(obj->dtypx & DTE_MASK_LOCAL) | DTE_FLAG_ACL_CAPABLE};
+	return {(obj.dtypx & DTE_MASK_LOCAL) | DTE_FLAG_ACL_CAPABLE};
 }
 
 /* Returns: TRUE (success or notfound), FALSE (fatal error/enomem/etc.) */
