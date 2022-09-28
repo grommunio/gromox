@@ -117,7 +117,7 @@ E-mail user      MAILUSER  REMOTE_M  REMOTE_MAILUSER  World        1 pax
 E-mail contact   MAILUSER  REMOTE_M  REMOTE_MAILUSER  World        1 pax
 Room             MAILUSER  MAILUSER  ROOM             Room         Room
 Equipment        MAILUSER  MAILUSER  EQUIPMENT        Board        1 pax
-Dist. list       DISTLIST  DISTLIST  DISTLIST         1 pax        3 pax
+Dist. list       DISTLIST  DISTLIST  DISTLIST         2 pax        3 pax
 Dynamic list     MAILUSER  AGENT     AGENT            2 pax+gear   3 pax
 Security group   DISTLIST  DISTLIST  DISTLIST | ACL   2 pax        3 pax
 Public folder    FOLDER    FORUM     unset            Folder+mail  1 pax

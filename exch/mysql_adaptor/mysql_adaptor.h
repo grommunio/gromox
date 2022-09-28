@@ -14,6 +14,7 @@ enum {
 	AF_USER_OUTOFDATE   = 0x02,
 	AF_USER_DELETED     = 0x03,
 	AF_USER_SHAREDMBOX  = 0x04,
+	AF_USER_CONTACT     = 0x05,
 	AF_USER__MASK       = 0x0F,
 
 	// historically: groups with AF_GROUP__MASK = 0xC0, with statuses NORMAL..DELETED
