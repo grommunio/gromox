@@ -198,8 +198,14 @@ enum {
 	CTRL_FLAG_DONTLOOKUP = 0x1000,
 };
 
+/*
+ * The SQL.user_properties PR_DISPLAY_TYPE_EX value is just a hint,
+ * and SQL.user_properties PR_DISPLAY_TYPE is ignored.
+ * NSP/zcore decides what is actually emitted to clients as the value for
+ * PR_DISPLAY_TYPE(_EX).
+ */
 enum display_type {
-	/* Not all of these are represented in PR_DISPLAY_TYPE_EX (since there is just room for one byte) */
+	/* Values for objects in content tables. */
 	DT_MAILUSER = 0,
 	DT_DISTLIST = 1,
 	DT_FORUM = 2,
@@ -210,19 +216,25 @@ enum display_type {
 	DT_ROOM = 7,
 	DT_EQUIPMENT = 8,
 	DT_SEC_DISTLIST = 9,
+
 	DT_CONTAINER = 0x100,
 	DT_TEMPLATE = 0x101,
 	DT_ADDRESS_TEMPLATE = 0x102,
 	DT_SEARCH = 0x200,
+
+	/* Values for objects in AB hierarchy tables */
 	DT_MODIFIABLE = 0x1 << 16,
 	DT_GLOBAL = 0x2 << 16,
 	DT_LOCAL = 0x3 << 16,
 	DT_WAN = 0x4 << 16,
 	DT_NOT_SPECIFIC = 0x5 << 16,
+
+	/* Values for objects in folder hierarchy tables */
 	DT_FOLDER = 1 << 24,
 	DT_FOLDER_LINK = 1 << 25,
 	DT_FOLDER_SPECIAL = 1 << 26,
 
+	/* Flag-related things for PR_DISPLAY_TYPE_EX */
 	DTE_FLAG_ACL_CAPABLE  = 1U << 30,
 	DTE_FLAG_REMOTE_VALID = 1U << 31,
 	DTE_MASK_REMOTE       = 0xFF00U,
