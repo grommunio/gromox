@@ -1,6 +1,6 @@
 
-Overview
-========
+Dialog templates
+================
 
 Exchange stores dialog templates at
 
@@ -99,3 +99,34 @@ CNTRL structure describing a radiobutton
 * ``ulSize`` (``lReturnValue``): Unique number that identifies the selected
   button.
 * ``ulString``: Offset to the label text of the control.
+
+
+Object types, display types, icons
+==================================
+
+===============  ========  ========  ===============  ===========  =====
+Exchange Object  Otyp      Dtyp      DtypEx           OL icon      OWA
+===============  ========  ========  ===============  ===========  =====
+Root container   ABCONT    unset     unset            -            -
+GAL              ABCONT    GLOBAL    unset            -            -
+NSPI container   ABCONT    LOCAL     unset            -            -
+Outlook AB       ABCONT    NOT_SPEC  unset            -            -
+Regular user     MAILUSER  MAILUSER  MAILUSER | ACL   1 pax        1 pax
+Shared mailbox   MAILUSER  MAILUSER  unset            1 pax        1 pax
+E-mail user      MAILUSER  REMOTE_M  REMOTE_MAILUSER  World        1 pax
+E-mail contact   MAILUSER  REMOTE_M  REMOTE_MAILUSER  World        1 pax
+Room             MAILUSER  MAILUSER  ROOM             Room         Room
+Equipment        MAILUSER  MAILUSER  EQUIPMENT        Board        1 pax
+Dist. list       DISTLIST  DISTLIST  DISTLIST         1 pax        3 pax
+Dynamic list     MAILUSER  AGENT     AGENT            2 pax+gear   3 pax
+Security group   DISTLIST  DISTLIST  DISTLIST | ACL   2 pax        3 pax
+Public folder    FOLDER    FORUM     unset            Folder+mail  1 pax
+===============  ========  ========  ===============  ===========  =====
+
+For Otyp, see ``mapidefs.h:enum mapi_object_type``. This tells
+the object type in C API terms (IABContainer, IMailUser,
+IDistList, IMAPIFolder, etc.).
+
+For Dtyp, Dtypex, see ``mapidefs.h:enum display_type``.
+
+PR_INSTANCE_ID as presented by MSMAPI reflects the Minimal Entryid.
