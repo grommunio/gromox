@@ -82,6 +82,11 @@ static int g_ab_cache_interval;
 static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
 static char g_nsp_org_name[256];
+
+/*
+ * Negative keys: lookup by domain id
+ * Positive keys: lookup by organization id (effectively contains domain objects again)
+ */
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock;
 

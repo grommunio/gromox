@@ -358,6 +358,15 @@ static constexpr char tbl_servers_103[] =
 "  PRIMARY KEY (`id`)"
 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
+static constexpr char tbl_orgparam_109[] =
+"CREATE TABLE `orgparam` ("
+"  `org_id` int(10) unsigned NOT NULL,"
+"  `key` varchar(32) CHARACTER SET ascii NOT NULL,"
+"  `value` varchar(255),"
+"  PRIMARY KEY (`org_id`, `key`),"
+"  CONSTRAINT `orgparam_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `orgs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+") DEFAULT CHARSET=utf8mb4";
+
 static constexpr struct tbl_init tbl_init_0[] = {
 	{"aliases", tbl_alias_0},
 	{"associations", tbl_assoc_0},
@@ -597,6 +606,7 @@ static constexpr struct tbl_init tbl_init_top[] = {
 	{"user_device_history", tbl_userdevhist_93},
 	{"task_queue", tbl_taskqueue_102},
 	{"servers", tbl_servers_top},
+	{"orgparam", tbl_orgparam_109},
 	{nullptr},
 };
 
@@ -755,6 +765,7 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{107, "ALTER TABLE `servers` CHANGE COLUMN `id` `id` tinyint(5) unsigned NOT NULL AUTO_INCREMENT"},
 	/* 108: Fix up previous 107 (was: "DEFAULT 0") */
 	{108, "ALTER TABLE `servers` CHANGE COLUMN `id` `id` tinyint(5) unsigned NOT NULL AUTO_INCREMENT"},
+	{109, tbl_orgparam_109},
 	{0, nullptr},
 };
 
