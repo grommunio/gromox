@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <cassert>
 #include <cstdint>
 #include <ctime>
 #include <memory>
@@ -37,7 +38,7 @@ using DOMAIN_NODE = domain_node;
 using gal_list_t = std::vector<SIMPLE_TREE_NODE *>;
 struct NSAB_NODE;
 struct AB_BASE {
-	AB_BASE();
+	AB_BASE() = default;
 	NOMOVE(AB_BASE);
 	~AB_BASE() { unload(); }
 	void unload();
@@ -47,7 +48,7 @@ struct AB_BASE {
 	time_t load_time = 0;
 	int base_id = 0;
 	std::vector<domain_node> domain_list;
-	SINGLE_LIST remote_list{};
+	std::vector<NSAB_NODE *> remote_list;
 	gal_list_t gal_list;
 	std::unordered_map<int, NSAB_NODE *> phash;
 	std::mutex remote_lock;
