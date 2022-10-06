@@ -130,16 +130,6 @@ uint32_t ab_tree_get_leaves_num(const SIMPLE_TREE_NODE *pnode)
 	return count;
 }
 
-static SINGLE_LIST_NODE* ab_tree_get_snode()
-{
-	return new(std::nothrow) SINGLE_LIST_NODE;
-}
-
-static void ab_tree_put_snode(SINGLE_LIST_NODE *psnode)
-{
-	delete psnode;
-}
-
 static AB_NODE* ab_tree_get_abnode()
 {
 	return new(std::nothrow) AB_NODE;
@@ -175,13 +165,9 @@ const SIMPLE_TREE_NODE *ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 	if (iter != pbase->phash.end())
 		return &iter->second->stree;
 	std::lock_guard rhold(pbase->remote_lock);
-	for (auto psnode = single_list_get_head(&pbase->remote_list); psnode != nullptr;
-		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
-		auto stn = static_cast<const SIMPLE_TREE_NODE *>(psnode->pdata);
-		auto xab = containerof(stn, AB_NODE, stree);
+	for (auto xab : pbase->remote_list)
 		if (xab->minid == minid)
-			return stn;
-	}
+			return &xab->stree;
 	return NULL;
 }
 
@@ -238,23 +224,12 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 void AB_BASE::unload()
 {
 	auto pbase = this;
-	SINGLE_LIST_NODE *pnode;
-	
 	gal_list.clear();
 	for (auto &domain : domain_list)
 		ab_tree_destruct_tree(&domain.tree);
 	domain_list.clear();
-	while ((pnode = single_list_pop_front(&pbase->remote_list)) != nullptr) {
-		auto stn = static_cast<SIMPLE_TREE_NODE *>(pnode->pdata);
-		auto xab = containerof(stn, AB_NODE, stree);
+	for (auto xab : pbase->remote_list)
 		ab_tree_put_abnode(xab);
-		ab_tree_put_snode(pnode);
-	}
-}
-
-AB_BASE::AB_BASE()
-{
-	single_list_init(&remote_list);
 }
 
 domain_node::domain_node(domain_node &&o) noexcept :
@@ -686,7 +661,6 @@ void ab_tree_del::operator()(AB_BASE *pbase)
 static void *nspab_scanwork(void *param)
 {
 	AB_BASE *pbase;
-	SINGLE_LIST_NODE *pnode;
 	
 	while (!g_notify_stop) {
 		pbase = NULL;
@@ -710,12 +684,9 @@ static void *nspab_scanwork(void *param)
 		for (auto &domain : pbase->domain_list)
 			ab_tree_destruct_tree(&domain.tree);
 		pbase->domain_list.clear();
-		while ((pnode = single_list_pop_front(&pbase->remote_list)) != nullptr) {
-			auto stn = static_cast<SIMPLE_TREE_NODE *>(pnode->pdata);
-			auto xab = containerof(stn, AB_NODE, stree);
+		for (auto xab : pbase->remote_list)
 			ab_tree_put_abnode(xab);
-			ab_tree_put_snode(pnode);
-		}
+		pbase->remote_list.clear();
 		pbase->phash.clear();
 		if (!ab_tree_load_base(pbase)) {
 			pbase->unload();
@@ -929,7 +900,6 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	int id;
 	int temp_len;
 	int domain_id;
-	AB_NODE *pabnode;
 	char prefix_string[1024];
 	
 	temp_len = gx_snprintf(prefix_string, GX_ARRAY_SIZE(prefix_string), "/o=%s/ou=Exchange "
@@ -953,14 +923,12 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	auto iter = pbase->phash.find(minid);
 	if (iter != pbase->phash.end())
 		return &iter->second->stree;
+
+	/* The minid belongs to an object that is outside of @pbase */
 	std::unique_lock rhold(pbase->remote_lock);
-	for (auto psnode = single_list_get_head(&pbase->remote_list); psnode != nullptr;
-		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
-		auto stn = static_cast<const SIMPLE_TREE_NODE *>(psnode->pdata);
-		auto xab = containerof(stn, AB_NODE, stree);
+	for (auto xab : pbase->remote_list)
 		if (xab->minid == minid)
-			return stn;
-	}
+			return &xab->stree;
 	rhold.unlock();
 	for (auto &domain : pbase->domain_list)
 		if (domain.domain_id == domain_id)
@@ -972,23 +940,18 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	if (iter == pbase1->phash.end())
 		return NULL;
 	auto xab = iter->second;
-	auto psnode = ab_tree_get_snode();
-	if (NULL == psnode) {
-		return NULL;
-	}
-	pabnode = ab_tree_get_abnode();
+	auto pabnode = ab_tree_get_abnode();
 	if (NULL == pabnode) {
-		ab_tree_put_snode(psnode);
 		return NULL;
 	}
-	psnode->pdata = pabnode;
-	pabnode->stree.pdata = nullptr;
+	pabnode->stree.pdata = pabnode;
 	pabnode->node_type = abnode_type::remote;
 	pabnode->minid = xab->minid;
 	pabnode->id = domain_id;
 	pabnode->d_info = nullptr;
+	assert(xab->node_type != abnode_type::remote);
 	if (xab->node_type == abnode_type::remote)
-		fprintf(stderr, "W-1568: unexplored case\n");
+		pabnode->d_info = nullptr;
 	else if (xab->node_type == abnode_type::domain)
 		pabnode->d_info = new(std::nothrow) sql_domain(*static_cast<sql_domain *>(xab->d_info));
 	else if (xab->node_type == abnode_type::group)
@@ -999,12 +962,16 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 		pabnode->d_info = new(std::nothrow) sql_user(*static_cast<sql_user *>(xab->d_info));
 	if (pabnode->d_info == nullptr && xab->node_type != abnode_type::remote) {
 		ab_tree_put_abnode(pabnode);
-		ab_tree_put_snode(psnode);
 		return nullptr;
 	}
 	pbase1.reset();
 	rhold.lock();
-	single_list_append_as_tail(&pbase->remote_list, psnode);
+	try {
+		pbase->remote_list.push_back(pabnode);
+	} catch (const std::bad_alloc &) {
+		ab_tree_put_abnode(pabnode);
+		return nullptr;
+	}
 	return &pabnode->stree;
 }
 
