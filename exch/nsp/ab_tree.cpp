@@ -83,7 +83,7 @@ static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
 static char g_nsp_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;
-static std::mutex g_base_lock, g_remote_lock;
+static std::mutex g_base_lock;
 
 static decltype(mysql_adaptor_get_org_domains) *get_org_domains;
 static decltype(mysql_adaptor_get_domain_info) *get_domain_info;
@@ -169,12 +169,12 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 	delete pabnode;
 }
 
-const SIMPLE_TREE_NODE *ab_tree_minid_to_node(const AB_BASE *pbase, uint32_t minid)
+const SIMPLE_TREE_NODE *ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 {
 	auto iter = pbase->phash.find(minid);
 	if (iter != pbase->phash.end())
 		return &iter->second->stree;
-	std::lock_guard rhold(g_remote_lock);
+	std::lock_guard rhold(pbase->remote_lock);
 	for (auto psnode = single_list_get_head(&pbase->remote_list); psnode != nullptr;
 		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
 		auto stn = static_cast<const SIMPLE_TREE_NODE *>(psnode->pdata);
@@ -953,7 +953,7 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	auto iter = pbase->phash.find(minid);
 	if (iter != pbase->phash.end())
 		return &iter->second->stree;
-	std::unique_lock rhold(g_remote_lock);
+	std::unique_lock rhold(pbase->remote_lock);
 	for (auto psnode = single_list_get_head(&pbase->remote_list); psnode != nullptr;
 		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
 		auto stn = static_cast<const SIMPLE_TREE_NODE *>(psnode->pdata);

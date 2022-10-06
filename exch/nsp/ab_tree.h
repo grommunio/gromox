@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <ctime>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -49,6 +50,7 @@ struct AB_BASE {
 	SINGLE_LIST remote_list{};
 	gal_list_t gal_list;
 	std::unordered_map<int, NSAB_NODE *> phash;
+	std::mutex remote_lock;
 };
 
 struct ab_tree_del {
@@ -66,8 +68,7 @@ extern bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *, GUID *) __attribute__
 extern BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *, char *buf, int len);
 extern const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *, const char *dn);
 extern const SIMPLE_TREE_NODE *ab_tree_uid_to_node(const AB_BASE *, int user_id);
-extern const SIMPLE_TREE_NODE *ab_tree_minid_to_node(const AB_BASE *, uint32_t minid);
-extern const SIMPLE_TREE_NODE *ab_tree_minid_to_node(const AB_BASE *, uint32_t minid);
+extern const SIMPLE_TREE_NODE *ab_tree_minid_to_node(AB_BASE *, uint32_t minid);
 extern uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *);
 extern gromox::abnode_type ab_tree_get_node_type(const SIMPLE_TREE_NODE *);
 extern void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
