@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/string.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
@@ -56,10 +57,8 @@ void mysql_adaptor_stop()
 	g_sqlconn_pool.clear();
 }
 
-BOOL mysql_adaptor_meta(const char *username, const char *password,
-    char *maildir, size_t msize, char *lang, size_t lsize, char *reason,
-    int length, unsigned int wantpriv, char *encrypt_passwd,
-    size_t encrypt_size, uint8_t *externid_present) try
+errno_t mysql_adaptor_meta(const char *username, const char *password,
+    unsigned int wantpriv, sql_meta_result &mres) try
 {
 	char temp_name[UADDR_SIZE*2];
 
@@ -71,14 +70,16 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		" WHERE u.username='"s + temp_name + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
-		return false;
+		return EIO;
 	DB_RESULT pmyres = mysql_store_result(conn->get());
-	if (pmyres == nullptr)
-		return false;
+	if (pmyres == nullptr) {
+		mres.errstr = "Could not store SQL result";
+		return ENOMEM;
+	}
 	conn.finish();
 	if (pmyres.num_rows() != 1) {
-		snprintf(reason, length, "user \"%s\" does not exist", username);
-		return FALSE;
+		mres.errstr = fmt::format("user \"{}\" does not exist", username);
+		return ENOENT;
 	}
 	
 	auto myrow = pmyres.fetch_row();
@@ -86,51 +87,49 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	if (myrow[1] != nullptr)
 		dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
 	if (dtypx == 0xff) {
-		snprintf(reason, length, "PR_DISPLAY_TYPE_EX is missing for this user");
-		return FALSE;
+		mres.errstr = "PR_DISPLAY_TYPE_EX is missing for this user";
+		return EINVAL;
 	} else if (dtypx != DT_MAILUSER) {
-		snprintf(reason, length, "user is not a real user");
-		return FALSE;
+		mres.errstr = "User is not a real user";
+		return EACCES;
 	}
 	int temp_status = strtol(myrow[2], nullptr, 0);
 	if (0 != temp_status) {
 		auto uval = temp_status & AF_USER__MASK;
 		if (temp_status & AF_DOMAIN__MASK) {
-			snprintf(reason, length, "domain of user \"%s\" is disabled!",
-				username);
+			mres.errstr = fmt::format("Domain of user \"{}\" is disabled!", username);
 		} else if (uval == AF_USER_SHAREDMBOX) {
-			snprintf(reason, length, "\"%s\" is a shared mailbox with no login", username);
+			mres.errstr = fmt::format("\"{}\" is a shared mailbox with no login", username);
 		} else if (uval != 0) {
-			snprintf(reason, length, "user \"%s\" is disabled!", username);
+			mres.errstr = fmt::format("User \"{}\" is disabled", username);
 		}
-		return FALSE;
+		return EACCES;
 	}
 
 	auto allowedsvc = strtoul(myrow[3], nullptr, 0);
 	if (wantpriv != 0 && !(allowedsvc & wantpriv)) {
-		snprintf(reason, length, "\"%s\" is not authorized to use service(s) %xh",
-		         username, wantpriv);
-		return false;
+		mres.errstr = fmt::format("\"{}\" is not authorized to use service(s) {:x}h",
+		              username, wantpriv);
+		return EACCES;
 	}
-
-	gx_strlcpy(encrypt_passwd, myrow[0], encrypt_size);
-	strcpy(maildir, myrow[4]);
-	if (NULL != lang) {
-		strcpy(lang, myrow[5]);
-	}
-	encrypt_passwd[encrypt_size-1] = '\0';
-	*externid_present = myrow[6] != nullptr;
-	return TRUE;
+	mres.maildir    = myrow[4];
+	mres.lang       = znul(myrow[5]);
+	mres.enc_passwd = myrow[0];
+	mres.have_xid   = myrow[6] != nullptr;
+	return 0;
+} catch (const std::bad_alloc &e) {
+	fprintf(stderr, "E-1701: ENOMEM\n");
+	return ENOMEM;
 } catch (const std::exception &e) {
-	fprintf(stderr, "E-%u: %s\n", 1701, e.what());
-	return false;
+	fprintf(stderr, "E-1701: %s\n", e.what());
+	return EIO;
 }
 
 static BOOL firsttime_password(const char *username, const char *password,
-    char *encrypt_passwd, size_t encrypt_size, char *reason, int length) try
+    std::string &encrypt_passwd)
 {
 	std::unique_lock cr_hold(g_crypt_lock);
-	gx_strlcpy(encrypt_passwd, crypt_wrapper(password), encrypt_size);
+	encrypt_passwd = znul(crypt_wrapper(password));
 	cr_hold.unlock();
 
 	char temp_name[UADDR_SIZE*2];
@@ -141,36 +140,33 @@ static BOOL firsttime_password(const char *username, const char *password,
 	if (!conn->query(qstr.c_str()))
 		return false;
 	return TRUE;
-} catch (const std::exception &e) {
-	fprintf(stderr, "E-%u: %s\n", 1702, e.what());
-	return false;
 }
 
 static BOOL verify_password(const char *username, const char *password,
-    const char *encrypt_passwd, char *reason, int length)
+    const char *encrypt_passwd, std::string &errstr)
 {
 	std::unique_lock cr_hold(g_crypt_lock);
 	if (0 == strcmp(crypt(password, encrypt_passwd), encrypt_passwd)) {
 		return TRUE;
 	}
 	cr_hold.unlock();
-	snprintf(reason, length, "password error, please check it "
-	         "and retry");
+	errstr = "password error, please check it and retry";
 	return FALSE;
 }
 
 BOOL mysql_adaptor_login2(const char *username, const char *password,
-    char *encrypt_passwd, size_t encrypt_size, char *reason,
-    int length)
+    std::string &encrypt_passwd, std::string &errstr) try
 {
 	BOOL ret;
-	if (g_parm.enable_firsttimepw && *encrypt_passwd == '\0')
-		ret = firsttime_password(username, password, encrypt_passwd,
-		      encrypt_size, reason, length);
+	if (g_parm.enable_firsttimepw && encrypt_passwd.empty())
+		ret = firsttime_password(username, password, encrypt_passwd);
 	else
-		ret = verify_password(username, password, encrypt_passwd, reason,
-		      length);
+		ret = verify_password(username, password,
+		      encrypt_passwd.c_str(), errstr);
 	return ret;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1702: ENOMEM\n");
+	return false;
 }
 
 BOOL mysql_adaptor_setpasswd(const char *username,

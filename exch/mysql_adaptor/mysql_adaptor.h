@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
@@ -72,11 +73,27 @@ struct sql_class {
 	std::string name;
 };
 
+/**
+ * Outputs from mysql_adaptor_meta
+ * @maildir:	Mailbox location
+ * @lang:	Preferred language for mailbox
+ * @enc_passwd:	Encrypted password right from the SQL column,
+ * 		used by authmgr to perform authentication.
+ * @errstr:	Error message, if any. This is for the system log only,
+ * 		it must not be sent to any peer.
+ * @have_xid:	Whether an externid is set
+ * 		(0=no / 1=yes / 0xFF=indeterminate)
+ */
+struct sql_meta_result {
+	std::string maildir, lang, enc_passwd, errstr;
+	uint8_t have_xid = 0xFF;
+};
+
 extern void mysql_adaptor_init(mysql_adaptor_init_param &&);
 extern int mysql_adaptor_run();
 extern void mysql_adaptor_stop();
-extern BOOL mysql_adaptor_meta(const char *username, const char *password, char *maildir, size_t msize, char *lang, size_t lsize, char *reason, int length, unsigned int mode, char *encrypted_passwd, size_t enc_size, uint8_t *externid_present);
-extern BOOL mysql_adaptor_login2(const char *username, const char *password, char *encrypt_passwd, size_t enc_size, char *reason, int length);
+extern gromox::errno_t mysql_adaptor_meta(const char *username, const char *password, unsigned int wantpriv, sql_meta_result &out);
+extern BOOL mysql_adaptor_login2(const char *username, const char *password, std::string &enc_passwd, std::string &errstr);
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password);
 extern BOOL mysql_adaptor_get_username_from_id(int user_id, char *username, size_t);
