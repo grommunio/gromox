@@ -27,31 +27,33 @@ static unsigned int am_choice = A_EXTERNID;
 
 static bool login_gen(const char *username, const char *password,
     char *maildir, size_t msize, char *lang, size_t lsize, char *reason,
-    size_t length, unsigned int wantpriv)
+    size_t length, unsigned int wantpriv) try
 {
-	char ep[107]{};
-	uint8_t have_xid = 0xFF;
+	sql_meta_result mres;
 	bool auth = false;
-	*reason = '\0';
-	auto meta = fptr_mysql_meta(username, password, maildir, msize,
-	            lang, lsize, reason,
-	            length, wantpriv, ep, sizeof(ep), &have_xid);
-	if (!meta || have_xid == 0xFF)
+	auto err = fptr_mysql_meta(username, password, wantpriv, mres);
+	gx_strlcpy(maildir, mres.maildir.c_str(), msize);
+	gx_strlcpy(lang, mres.lang.c_str(), lsize);
+	gx_strlcpy(reason, mres.errstr.c_str(), length);
+	if (err != 0 || mres.have_xid == 0xFF)
 		sleep(1);
 	else if (am_choice == A_DENY_ALL)
 		auth = false;
 	else if (am_choice == A_ALLOW_ALL)
 		auth = true;
-	else if (am_choice == A_EXTERNID && have_xid > 0)
+	else if (am_choice == A_EXTERNID && mres.have_xid > 0)
 		auth = fptr_ldap_login(username, password);
 	else if (am_choice == A_EXTERNID)
-		auth = fptr_mysql_login(username, password, ep, sizeof(ep),
-		       reason, length);
-	auth = auth && meta;
+		auth = fptr_mysql_login(username, password,
+		       mres.enc_passwd, mres.errstr);
+	auth = auth && err == 0;
 	if (!auth && *reason == '\0')
-		gx_strlcpy(reason, "Authentication rejected", length);
-	safe_memset(ep, 0, std::size(ep));
+		mres.errstr = "Authentication rejected";
+	safe_memset(mres.enc_passwd.data(), 0, mres.enc_passwd.size());
 	return auth;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1701: ENOMEM\n");
+	return false;
 }
 
 static bool authmgr_reload()
