@@ -18,7 +18,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
-enum { A_DENY_ALL, A_ALLOW_ALL, A_MYSQL, A_LDAP, A_EXTERNID };
+enum { A_DENY_ALL, A_ALLOW_ALL, A_EXTERNID };
 
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
 static decltype(mysql_adaptor_login2) *fptr_mysql_login;
@@ -42,11 +42,6 @@ static bool login_gen(const char *username, const char *password,
 		auth = false;
 	else if (am_choice == A_ALLOW_ALL)
 		auth = true;
-	else if (am_choice == A_MYSQL)
-		auth = fptr_mysql_login(username, password, ep, sizeof(ep),
-		       reason, length);
-	else if (am_choice == A_LDAP)
-		auth = fptr_ldap_login(username, password);
 	else if (am_choice == A_EXTERNID && have_xid > 0)
 		auth = fptr_ldap_login(username, password);
 	else if (am_choice == A_EXTERNID)
@@ -69,22 +64,21 @@ static bool authmgr_reload()
 	}
 
 	auto val = pfile->get_value("auth_backend_selection");
-	if (val == nullptr)
-		/* nothing */;
-	else if (strcmp(val, "deny_all") == 0)
+	if (val == nullptr) {
+	} else if (strcmp(val, "deny_all") == 0) {
 		am_choice = A_DENY_ALL;
-	else if (strcmp(val, "allow_all") == 0)
+		fprintf(stderr, "[authmgr]: \e[31mAll authentication requests will be denied\e[0m\n");
+	} else if (strcmp(val, "allow_all") == 0) {
 		am_choice = A_ALLOW_ALL;
-	else if (strcmp(val, "always_mysql") == 0)
-		am_choice = A_MYSQL;
-	else if (strcmp(val, "always_ldap") == 0)
-		am_choice = A_LDAP;
-	else if (strcmp(val, "externid") == 0)
+		fprintf(stderr, "[authmgr]: \e[1;31mArbitrary passwords will be accepted for authentication\e[0m\n");
+	} else if (strcmp(val, "always_mysql") == 0 || strcmp(val, "always_ldap") == 0) {
 		am_choice = A_EXTERNID;
-	fprintf(stderr, "[authmgr]: backend selection %s\n",
-	        val != nullptr ? val : "none");
+		fprintf(stderr, "[authmgr]: \e[1;33mauth_backend_selection=always_mysql/always_ldap is obsolete; switching to =externid\e[0m\n");
+	} else if (strcmp(val, "externid") == 0) {
+		am_choice = A_EXTERNID;
+	}
 
-	if (fptr_ldap_login == nullptr && am_choice >= A_LDAP) {
+	if (fptr_ldap_login == nullptr) {
 		query_service2("ldap_auth_login2", fptr_ldap_login);
 		if (fptr_ldap_login == nullptr) {
 			fprintf(stderr, "[authmgr]: ldap_adaptor plugin not loaded yet\n");

@@ -13,8 +13,7 @@ The usual config file location is /etc/gromox/authmgr.cfg.
 This controls how authmgr will verify passwords supplied with login operations.
 See the "Authentication modes" section below for details.
 .br
-Available: \fIdeny_all\fP, \fIallow_all\fP, \fIalways_mysql\fP,
-\fIalways_ldap\fP, \fIexternid\fP
+Available: \fIdeny_all\fP, \fIallow_all\fP, \fIexternid\fP
 .br
 Default: \fIexternid\fP
 .SH Authentication modes
@@ -26,12 +25,6 @@ for testing.
 exists). This may be handy when doing the initial mass-import of mailboxes via
 external IMAP-to-IMAP synchronization utilities such as imapsync without
 needing to know user passwords.
-.IP \(bu 4
-\fIalways_mysql\fP will cause authmgr to exclusively attempt password
-verification with the password field in the MySQL database.
-.IP \(bu 4
-\fIalways_ldap\fP will cause authmgr to exclusively attempt password
-verification with LDAP servers.
 .IP \(bu 4
 \fIexternid\fP will cause authmgr to selectively pick LDAP/MySQL, depending on
 whether the user was imported from LDAP or not.
