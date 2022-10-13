@@ -199,7 +199,7 @@ static void *ctxp_thrwork(void *pparam)
 		if (num <= 0) {
 			continue;
 		}
-		for (unsigned int i = 0; i < num; ++i) {
+		for (unsigned int i = 0; i < static_cast<unsigned int>(num); ++i) {
 			auto pcontext = g_poll_ctx.get_data(i);
 			std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
 			if (CONTEXT_POLLING != pcontext->type) {
