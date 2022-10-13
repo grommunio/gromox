@@ -198,40 +198,45 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 	       filter, attrs, true, nullptr, nullptr, nullptr, 2, msg);
 }
 
-BOOL ldap_adaptor_login2(const char *username, const char *password)
+static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
+    const char *username, const char *password, const std::string &base_dn)
 {
-	auto tok = g_conn_pool.get_wait();
 	ldap_msg msg;
 	std::unique_ptr<char[], stdlib_delete> freeme;
 	auto quoted = HX_strquote(username, HXQUOTE_LDAPRDN, &unique_tie(freeme));
 	auto filter = g_mail_attr + "="s + quoted;
-	auto ret = gx_ldap_search(tok->meta,
-	      g_search_base.size() != 0 ? g_search_base.c_str() : nullptr,
+	auto ret = gx_ldap_search(tok_meta,
+	           base_dn.size() > 0 ? base_dn.c_str() : nullptr,
 	      filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
 		fprintf(stderr, "[ldap_adaptor]: search with filter %s: %s\n",
 		       filter.c_str(), ldap_err2string(ret));
 		return FALSE;
 	}
-	if (!validate_response(tok->meta.get(), msg.get())) {
+	if (!validate_response(tok_meta.get(), msg.get()))
 		return FALSE;
-	}
-
-	auto firstmsg = ldap_first_message(tok->meta.get(), msg.get());
+	auto firstmsg = ldap_first_message(tok_meta.get(), msg.get());
 	if (firstmsg == nullptr)
 		return FALSE;
-	auto dn = ldap_get_dn(tok->meta.get(), firstmsg);
+	auto dn = ldap_get_dn(tok_meta.get(), firstmsg);
 	if (dn == nullptr)
 		return FALSE;
 
 	struct berval bv;
 	bv.bv_val = deconst(znul(password));
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
-	ret = gx_ldap_bind(tok->bind, dn, &bv);
+	ret = gx_ldap_bind(tok_bind, dn, &bv);
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
 	fprintf(stderr, "[ldap_adaptor]: ldap_simple_bind %s: %s\n", dn, ldap_err2string(ret));
 	return FALSE;
+}
+
+BOOL ldap_adaptor_login2(const char *username, const char *password)
+{
+	auto tok = g_conn_pool.get_wait();
+	return ldaplogin_host(tok->meta, tok->bind, username, password,
+	       g_search_base);
 }
 
 static bool ldap_adaptor_load() try
