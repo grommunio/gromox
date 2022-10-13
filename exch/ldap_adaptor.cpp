@@ -44,7 +44,6 @@ struct twoconn {
 static std::string g_ldap_host, g_search_base, g_mail_attr;
 static std::string g_bind_user, g_bind_pass;
 static bool g_use_tls;
-static unsigned int g_dataconn_num = 4;
 static unsigned int g_edir_workaround; /* server sends garbage sometimes */
 static resource_pool<twoconn> g_conn_pool;
 
@@ -241,7 +240,7 @@ static bool ldap_adaptor_load() try
 		       strerror(errno));
 		return false;
 	}
-	g_dataconn_num = pfile->get_ll("data_connections");
+	unsigned int dataconn_num = pfile->get_ll("data_connections");
 	g_ldap_host = pfile->get_value("ldap_host");
 	g_bind_user = pfile->get_value("ldap_bind_user");
 	g_bind_pass = pfile->get_value("ldap_bind_pass");
@@ -258,8 +257,8 @@ static bool ldap_adaptor_load() try
 	fprintf(stderr, "[ldap_adaptor]: hosts <%s>%s%s, base <%s>, #conn=%d, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
 	       g_edir_workaround ? " +EDIRECTORY_WORKAROUNDS" : "",
-	       g_search_base.c_str(), 2 * g_dataconn_num, g_mail_attr.c_str());
-	g_conn_pool.resize(g_dataconn_num);
+	       g_search_base.c_str(), 2 * dataconn_num, g_mail_attr.c_str());
+	g_conn_pool.resize(dataconn_num);
 	g_conn_pool.bump();
 	return true;
 } catch (const std::bad_alloc &) {
