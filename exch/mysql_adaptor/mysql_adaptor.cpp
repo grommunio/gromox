@@ -65,9 +65,17 @@ errno_t mysql_adaptor_meta(const char *username, const char *password,
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr =
 		"SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
-		"u.privilege_bits, u.maildir, u.lang, u.externid "
+		"u.privilege_bits, u.maildir, u.lang, u.externid, "
+		"op1.value AS ldap_uri, op2.value AS ldap_binddn, "
+		"op3.value AS ldap_bindpw, op4.value AS ldap_basedn "
 		"FROM users AS u " JOIN_WITH_DISPLAYTYPE
-		" WHERE u.username='"s + temp_name + "' LIMIT 2";
+		" LEFT JOIN orgs ON u.domain_id=orgs.id"
+		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.id AND op1.key='ldap_uri'"
+		" LEFT JOIN orgparam AS op2 ON orgs.id=op2.id AND op2.key='ldap_binddn'"
+		" LEFT JOIN orgparam AS op3 ON orgs.id=op3.id AND op3.key='ldap_bindpw'"
+		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.id AND op4.key='ldap_basedn'"
+		" WHERE u.username='"s + temp_name + "'"
+		" LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return EIO;
@@ -116,6 +124,10 @@ errno_t mysql_adaptor_meta(const char *username, const char *password,
 	mres.lang       = znul(myrow[5]);
 	mres.enc_passwd = myrow[0];
 	mres.have_xid   = myrow[6] != nullptr;
+	mres.ldap_uri    = znul(myrow[7]);
+	mres.ldap_binddn = znul(myrow[8]);
+	mres.ldap_bindpw = znul(myrow[9]);
+	mres.ldap_basedn = znul(myrow[10]);
 	return 0;
 } catch (const std::bad_alloc &e) {
 	fprintf(stderr, "E-1701: ENOMEM\n");

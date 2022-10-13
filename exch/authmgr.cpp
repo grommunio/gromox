@@ -22,7 +22,7 @@ enum { A_DENY_ALL, A_ALLOW_ALL, A_EXTERNID };
 
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
 static decltype(mysql_adaptor_login2) *fptr_mysql_login;
-static decltype(ldap_adaptor_login2) *fptr_ldap_login;
+static decltype(ldap_adaptor_login3) *fptr_ldap_login;
 static unsigned int am_choice = A_EXTERNID;
 
 static bool login_gen(const char *username, const char *password,
@@ -42,7 +42,7 @@ static bool login_gen(const char *username, const char *password,
 	else if (am_choice == A_ALLOW_ALL)
 		auth = true;
 	else if (am_choice == A_EXTERNID && mres.have_xid > 0)
-		auth = fptr_ldap_login(username, password);
+		auth = fptr_ldap_login(username, password, mres);
 	else if (am_choice == A_EXTERNID)
 		auth = fptr_mysql_login(username, password,
 		       mres.enc_passwd, mres.errstr);
@@ -81,7 +81,7 @@ static bool authmgr_reload()
 	}
 
 	if (fptr_ldap_login == nullptr) {
-		query_service2("ldap_auth_login2", fptr_ldap_login);
+		query_service2("ldap_auth_login3", fptr_ldap_login);
 		if (fptr_ldap_login == nullptr) {
 			fprintf(stderr, "[authmgr]: ldap_adaptor plugin not loaded yet\n");
 			return false;

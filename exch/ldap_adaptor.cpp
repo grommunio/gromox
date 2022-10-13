@@ -148,8 +148,8 @@ static ldap_ptr make_conn(const std::string &uri, const char *bind_user,
 	ret = ldap_sasl_bind_s(ld.get(), bind_user, LDAP_SASL_SIMPLE, &cred,
 	      nullptr, nullptr, nullptr);
 	if (ret != LDAP_SUCCESS) {
-		fprintf(stderr, "[ldap_adaptor]: bind as \"%s\": %s\n",
-		        znul(bind_user), ldap_err2string(ret));
+		fprintf(stderr, "[ldap_adaptor]: bind as \"%s\" on \"%s\": %s\n",
+		        znul(bind_user), uri.c_str(), ldap_err2string(ret));
 		return {};
 	}
 	return ld;
@@ -232,11 +232,29 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	return FALSE;
 }
 
-BOOL ldap_adaptor_login2(const char *username, const char *password)
+static BOOL ldaplogin_dpool(const char *username, const char *password)
 {
 	auto tok = g_conn_pool.get_wait();
 	return ldaplogin_host(tok->meta, tok->bind, username, password,
 	       g_search_base);
+}
+
+BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_result &m)
+{
+	auto z = g_conn_pool.size();
+	if (m.ldap_uri.empty() && z > 0)
+		return ldaplogin_dpool(user, pass);
+	/*
+	 * Keeping a pool per LDAP server can quickly exhaust file descriptors,
+	 * so don't even go there when multiple LDAP servers are in use.
+	 */
+	if (z > 0) {
+		g_conn_pool.resize(0);
+		g_conn_pool.clear();
+	}
+	auto conn = make_conn(m.ldap_uri.c_str(), m.ldap_binddn.c_str(),
+	            m.ldap_bindpw.c_str(), true);
+	return ldaplogin_host(conn, conn, user, pass, m.ldap_basedn);
 }
 
 static bool ldap_adaptor_load() try
@@ -262,7 +280,7 @@ static bool ldap_adaptor_load() try
 	g_mail_attr = pfile->get_value("ldap_mail_attr");
 	g_search_base = pfile->get_value("ldap_search_base");
 	g_edir_workaround = pfile->get_ll("ldap_edirectory_workaround");
-	fprintf(stderr, "[ldap_adaptor]: hosts <%s>%s%s, base <%s>, #conn=%d, mailattr=%s\n",
+	fprintf(stderr, "[ldap_adaptor]: default host <%s>%s%s, base <%s>, #conn=%d, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
 	       g_edir_workaround ? " +EDIRECTORY_WORKAROUNDS" : "",
 	       g_search_base.c_str(), 2 * dataconn_num, g_mail_attr.c_str());
@@ -289,7 +307,7 @@ static BOOL svc_ldap_adaptor(int reason, void **ppdata) try
 	LINK_SVC_API(ppdata);
 	if (!ldap_adaptor_load())
 		return false;
-	if (!register_service("ldap_auth_login2", ldap_adaptor_login2)) {
+	if (!register_service("ldap_auth_login3", ldap_adaptor_login3)) {
 		fprintf(stderr, "[ldap_adaptor]: failed to register services\n");
 		return false;
 	}
