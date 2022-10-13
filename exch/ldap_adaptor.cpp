@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #define DECLARE_SVC_API_STATIC
+#include <cassert>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -113,11 +114,11 @@ static bool validate_response(LDAP *ld, LDAPMessage *result)
 	return true;
 }
 
-static ldap_ptr make_conn(bool perform_bind)
+static ldap_ptr make_conn(const std::string &uri, const char *bind_user,
+    const char *bind_pass,  bool perform_bind)
 {
 	ldap_ptr ld;
-	auto host = g_ldap_host.c_str();
-	auto ret = ldap_initialize(&unique_tie(ld), *host == '\0' ? nullptr : host);
+	auto ret = ldap_initialize(&unique_tie(ld), uri.empty() ? nullptr : uri.c_str());
 	if (ret != LDAP_SUCCESS)
 		return {};
 	static constexpr int version = LDAP_VERSION3;
@@ -138,17 +139,17 @@ static ldap_ptr make_conn(bool perform_bind)
 		return ld;
 
 	struct berval cred{};
-	const char *binduser = nullptr;
-	if (g_bind_user.size() != 0) {
-		cred.bv_val = deconst(g_bind_pass.c_str());
-		cred.bv_len = g_bind_pass.size();
-		binduser = g_bind_user.c_str();
+	if (*bind_user != '\0') {
+		cred.bv_val = deconst(bind_pass);
+		cred.bv_len = strlen(znul(bind_pass));
+	} else {
+		bind_user = nullptr;
 	}
-	ret = ldap_sasl_bind_s(ld.get(), binduser, LDAP_SASL_SIMPLE, &cred,
+	ret = ldap_sasl_bind_s(ld.get(), bind_user, LDAP_SASL_SIMPLE, &cred,
 	      nullptr, nullptr, nullptr);
 	if (ret != LDAP_SUCCESS) {
 		fprintf(stderr, "[ldap_adaptor]: bind as \"%s\": %s\n",
-		       g_bind_user.c_str(), ldap_err2string(ret));
+		        znul(bind_user), ldap_err2string(ret));
 		return {};
 	}
 	return ld;
@@ -159,7 +160,7 @@ static constexpr bool AVOID_BIND = false, DO_BIND = true;
 static int gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 {
 	if (ld == nullptr)
-		ld = make_conn(AVOID_BIND);
+		ld = make_conn(g_ldap_host, nullptr, nullptr, AVOID_BIND);
 	if (ld == nullptr)
 		return LDAP_SERVER_DOWN;
 	auto ret = ldap_sasl_bind_s(ld.get(), dn, LDAP_SASL_SIMPLE, bv,
@@ -168,7 +169,7 @@ static int gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 		/* try full reconnect */;
 	else if (ret != LDAP_SERVER_DOWN)
 		return ret;
-	ld = make_conn(AVOID_BIND);
+	ld = make_conn(g_ldap_host, nullptr, nullptr, AVOID_BIND);
 	if (ld == nullptr)
 		return ret;
 	return ldap_sasl_bind_s(ld.get(), dn, LDAP_SASL_SIMPLE, bv,
@@ -179,7 +180,8 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
     char **attrs, LDAPMessage **msg)
 {
 	if (ld == nullptr)
-		ld = make_conn(DO_BIND);
+		ld = make_conn(g_ldap_host, g_bind_user.c_str(),
+		     g_bind_pass.c_str(), DO_BIND);
 	if (ld == nullptr)
 		return LDAP_SERVER_DOWN;
 	auto ret = ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
@@ -188,7 +190,8 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 		/* try full reconnect */;
 	else if (ret != LDAP_SERVER_DOWN)
 		return ret;
-	ld = make_conn(DO_BIND);
+	ld = make_conn(g_ldap_host, g_bind_user.c_str(),
+	     g_bind_pass.c_str(), DO_BIND);
 	if (ld == nullptr)
 		return ret;
 	return ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
