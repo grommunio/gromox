@@ -7,6 +7,11 @@ server for authentication purposes. Since the authoritative user database is in
 MySQL, LDAP is only used to perform authentication (Bind operations), and
 metadata searches that lead up to such Binds, i.e. looking for the LDAP object
 that has a particular "mail" attribute.
+.PP
+Gromox versions 1.33 and onwards have support for per-organization LDAP
+credentials. These are properties on the individual organization objects that
+live in the SQL database for Gromox users. Use Grommunio AAPI/AWEB to create
+and/or change organizations and their properties.
 .SH Configuration directives
 The configuration file, /etc/gromox/ldap_adaptor.cfg, serves not only the
 ldap_adaptor plugin, but is also read by the Grommunio Admin API.
@@ -33,8 +38,9 @@ eDirectory server implementations.
 Default: \fIfalse\fP
 .TP
 \fBldap_bind_user\fP
-An LDAP binddn to use for metadata searches. You cannot use but Simple
-Authentication at this time.
+An LDAP binddn to use for metadata searches. You can only use Simple
+Authentication at this time. If an organization object defines LDAP credentials
+of its own, those will be used in preference to ldap_bind_user.
 .br
 Default: (unset)
 .TP
@@ -45,10 +51,11 @@ Default: (unset)
 .TP
 \fBldap_host\fP
 Whitespace-separated set of LDAP URIs in the form of
-\fIldap[si]://[name[:port]]\fP. The openldap2 ldap.conf(5) manpage does not
-specify trailing slashes or DN bases like RFC 2255 specifies. openldap2
-utilities accept-ignore such part of the URI, while other implementations like
-python\-ldap3 fail to connect.
+\fIldap[si]://[name[:port]]\fP for the default LDAP tree. The openldap2 ldap.conf(5) manpage does not
+specify trailing slashes or DN bases like RFC 2255 does, and because of this,
+you should not use them. openldap2 utilities accept-ignore such part of the
+URI, while other implementations like python\-ldap3 fail to connect.
+Per-organization LDAP credentials override ldap_host as necessary.
 .br
 Default: (libldap default, see ldap.conf(5))
 .TP
@@ -62,9 +69,13 @@ Default: (empty)
 Default: (libldap default)
 .TP
 \fBldap_start_tls\fP
-Use the STARTTLS mechanism on LDAP connections. If possible, use Explicit TLS
-(ldaps:// in the URI field) in favor of STARTTLS; see Internet blog posts
-"STARTTLS considered harmful" for details.
+Use the STARTTLS mechanism on all LDAP connections. Prefer using Explicit TLS
+(ldaps:// in the URI field) in favor of ldap:// with STARTTLS; see Internet
+blog posts "STARTTLS considered harmful" for details.
+.br
+You cannot use ldap_start_tls when any LDAP server URI (including those from
+per-organization LDAP credentials) use ldaps://. Doing so could lead to runtime
+errors worded "TLS already started" or similar.
 .br
 Default: \fIoff\fP
 .br
