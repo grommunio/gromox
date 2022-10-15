@@ -493,9 +493,8 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	}
 	case PR_EMS_AB_THUMBNAIL_PHOTO:
-		if (node_type != abnode_type::person)
+		if (!ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, std::size(dn)))
 			return ecNotFound;
-		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, GX_ARRAY_SIZE(dn));
 		HX_strlcat(dn, "/config/portrait.jpg", arsizeof(dn));
 		if (!common_util_load_file(dn, &pprop->value.bin))
 			return ecNotFound;
@@ -1759,7 +1758,10 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 		t[z++] = U(PR_EMS_AB_PROXY_ADDRESSES);
 		t[z++] = U(PR_EMS_AB_HOME_MDB);
 		t[z++] = PR_CREATION_TIME;
-		if (node_type == abnode_type::person)
+		if (node_type == abnode_type::person ||
+		    node_type == abnode_type::room ||
+		    node_type == abnode_type::equipment ||
+		    node_type == abnode_type::mlist)
 			t[z++] = PR_EMS_AB_THUMBNAIL_PHOTO;
 		break;
 	case abnode_type::mlist:

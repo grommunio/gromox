@@ -1094,7 +1094,7 @@ ab_tree_get_object_aliases(const SIMPLE_TREE_NODE *pnode)
 	return alist;
 }
 
-void ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, int type,
+bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, unsigned int type,
     char *value, size_t vsize)
 {
 	value[0] = '\0';
@@ -1104,11 +1104,11 @@ void ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, int type,
 	    pabnode->node_type != abnode_type::equipment &&
 	    pabnode->node_type != abnode_type::remote &&
 	    pabnode->node_type != abnode_type::mlist)
-		return;
+		return false;
 	auto u = static_cast<sql_user *>(pabnode->d_info);
 	unsigned int tag = 0;
 	switch (type) {
-	case USER_MAIL_ADDRESS: gx_strlcpy(value, u->username.c_str(), vsize); return;
+	case USER_MAIL_ADDRESS: gx_strlcpy(value, u->username.c_str(), vsize); return true;
 	case USER_REAL_NAME: tag = PR_DISPLAY_NAME; break;
 	case USER_JOB_TITLE: tag = PR_TITLE; break;
 	case USER_COMMENT: tag = PR_COMMENT; break;
@@ -1116,14 +1116,15 @@ void ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, int type,
 	case USER_BUSINESS_TEL: tag = PR_PRIMARY_TELEPHONE_NUMBER; break;
 	case USER_NICK_NAME: tag = PR_NICKNAME; break;
 	case USER_HOME_ADDRESS: tag = PR_HOME_ADDRESS_STREET; break;
-	case USER_CREATE_DAY: *value = '\0'; return;
-	case USER_STORE_PATH: strcpy(value, u->maildir.c_str()); return;
+	case USER_CREATE_DAY: *value = '\0'; return true;
+	case USER_STORE_PATH: strcpy(value, u->maildir.c_str()); return true;
 	}
 	if (tag == 0)
-		return;
+		return false;
 	auto it = u->propvals.find(tag);
 	if (it != u->propvals.cend())
 		gx_strlcpy(value, it->second.c_str(), vsize);
+	return true;
 }
 
 void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
