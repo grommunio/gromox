@@ -1305,7 +1305,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (node_type >= abnode_type::containers)
 			return TRUE;
 		ab_tree_get_server_dn(pnode, dn, sizeof(dn));
-		strcat(dn, "/cn=Microsoft Private MDB");
+		HX_strlcat(dn, "/cn=Microsoft Private MDB", std::size(dn));
 		pvalue = common_util_dup(dn);
 		if (NULL == pvalue) {
 			return FALSE;
@@ -1577,7 +1577,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		strcat(dn, "/config/portrait.jpg");
+		HX_strlcat(dn, "/config/portrait.jpg", std::size(dn));
 		if (!common_util_load_file(dn, static_cast<BINARY *>(pvalue))) {
 			return TRUE;
 		}
