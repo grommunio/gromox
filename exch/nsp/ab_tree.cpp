@@ -146,9 +146,7 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 	case abnode_type::domain:
 		delete static_cast<sql_domain *>(pabnode->d_info);
 		break;
-	case abnode_type::person:
-	case abnode_type::room:
-	case abnode_type::equipment:
+	case abnode_type::user:
 	case abnode_type::mlist:
 		delete static_cast<sql_user *>(pabnode->d_info);
 		break;
@@ -271,17 +269,7 @@ static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try
 static BOOL ab_tree_load_user(AB_NODE *pabnode,
     sql_user &&usr, AB_BASE *pbase)
 {
-	switch (usr.dtypx) {
-	case DT_ROOM:
-		pabnode->node_type = abnode_type::room;
-		break;
-	case DT_EQUIPMENT:
-		pabnode->node_type = abnode_type::equipment;
-		break;
-	default:
-		pabnode->node_type = abnode_type::person;
-		break;
-	}
+	pabnode->node_type = abnode_type::user;
 	pabnode->id = usr.id;
 	pabnode->minid = ab_tree_make_minid(minid_type::address, usr.id);
 	auto iter = pbase->phash.find(pabnode->minid);
@@ -718,10 +706,14 @@ static int ab_tree_node_to_rpath(const SIMPLE_TREE_NODE *pnode,
 	case abnode_type::domain: k = 'd'; break;
 	case abnode_type::group: k = 'g'; break;
 	case abnode_type::abclass: k = 'c'; break;
-	case abnode_type::person: k = 'p'; break;
 	case abnode_type::mlist: k = 'l'; break;
-	case abnode_type::room: k = 'r'; break;
-	case abnode_type::equipment: k = 'e'; break;
+	case abnode_type::user:
+		switch (static_cast<const sql_user *>(pabnode->d_info)->dtypx) {
+		case DT_ROOM: k = 'r'; break;
+		case DT_EQUIPMENT: k = 'e'; break;
+		default: k = 'p'; break;
+		}
+		break;
 	default: return 0;
 	}
 	char temp_buff[HXSIZEOF_Z32+2];
@@ -851,9 +843,7 @@ BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		pnode = &pabnode->stree;
 	}
 	switch (pabnode->node_type) {
-	case abnode_type::person:
-	case abnode_type::room:
-	case abnode_type::equipment:
+	case abnode_type::user:
 		id = pabnode->id;
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, cusername, arsizeof(cusername));
 		ptoken = strchr(cusername, '@');
@@ -1032,9 +1022,7 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 		gx_strlcpy(str_dname, obj->name.c_str(), dn_size);
 		break;
 	}
-	case abnode_type::person:
-	case abnode_type::room:
-	case abnode_type::equipment: {
+	case abnode_type::user: {
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		if (it != obj->propvals.cend()) {
@@ -1099,9 +1087,7 @@ bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, unsigned int type,
 {
 	value[0] = '\0';
 	auto pabnode = containerof(pnode, AB_NODE, stree);
-	if (pabnode->node_type != abnode_type::person &&
-	    pabnode->node_type != abnode_type::room &&
-	    pabnode->node_type != abnode_type::equipment &&
+	if (pabnode->node_type != abnode_type::user &&
 	    pabnode->node_type != abnode_type::remote &&
 	    pabnode->node_type != abnode_type::mlist)
 		return false;
@@ -1260,8 +1246,7 @@ ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, unsigned int codepage
     unsigned int proptag, PROPERTY_VALUE *prop)
 {
 	auto node_type = ab_tree_get_node_type(node);
-	if (node_type != abnode_type::person && node_type != abnode_type::room &&
-	    node_type != abnode_type::equipment && node_type != abnode_type::mlist)
+	if (node_type != abnode_type::user && node_type != abnode_type::mlist)
 		return ecNotFound;
 	auto xab = containerof(node, AB_NODE, stree);
 	const auto &obj = *static_cast<sql_user *>(xab->d_info);
@@ -1361,9 +1346,6 @@ std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 	 * In Gromox, everything with a username is capable of being used in an ACL
 	 * (and usernames are mandatory currently)
 	 */
-	else if (a.node_type == abnode_type::room)
-		return {DT_ROOM | DTE_FLAG_ACL_CAPABLE};
-	else if (a.node_type == abnode_type::equipment)
-		return {DT_EQUIPMENT | DTE_FLAG_ACL_CAPABLE};
-	return {DT_MAILUSER | DTE_FLAG_ACL_CAPABLE};
+	auto obj = static_cast<const sql_user *>(a.d_info);
+	return {(obj->dtypx & DTE_MASK_LOCAL) | DTE_FLAG_ACL_CAPABLE};
 }
