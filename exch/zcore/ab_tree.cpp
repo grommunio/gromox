@@ -1376,6 +1376,11 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		auto v = cu_alloc<uint32_t>();
 		if (v == nullptr)
 			return FALSE;
+		if (node_type == abnode_type::mlist) {
+			*v = DT_DISTLIST | DTE_FLAG_ACL_CAPABLE;
+			*ppvalue = v;
+			return TRUE;
+		}
 		*v = node_type == abnode_type::room ? DT_ROOM :
 		     node_type == abnode_type::equipment ? DT_EQUIPMENT :
 			DT_MAILUSER | DTE_FLAG_ACL_CAPABLE;
