@@ -4,10 +4,8 @@ namespace gromox {
 
 enum class abnode_type : uint8_t {
 	remote = 0,
-	person = 1,
+	user = 1, /* person, room, equipment */
 	mlist = 2,
-	room = 3,
-	equipment = 4,
 	folder = 5,
 	domain = 0x81,
 	group = 0x82,

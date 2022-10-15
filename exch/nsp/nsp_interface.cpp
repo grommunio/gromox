@@ -110,9 +110,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	case PR_EMS_AB_HOME_MDB:
 	case PR_EMS_AB_HOME_MDB_A:
-		if (node_type != abnode_type::room &&
-		    node_type != abnode_type::person &&
-		    node_type != abnode_type::equipment)
+		if (node_type != abnode_type::user)
 			return ecNotFound;
 		ab_tree_get_server_dn(pnode, dn, sizeof(dn));
 		HX_strlcat(dn, "/cn=Microsoft Private MDB", arsizeof(dn));
@@ -247,9 +245,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		pprop->value.bin.pb[3] = (minid >> 24) & 0xFF;
 		return ecSuccess;
 	case PR_TRANSMITABLE_DISPLAY_NAME:
-		if (node_type != abnode_type::person &&
-		    node_type != abnode_type::equipment &&
-		    node_type != abnode_type::room)
+		if (node_type != abnode_type::user)
 			return ecNotFound;
 		[[fallthrough]];
 	case PR_DISPLAY_NAME:
@@ -270,9 +266,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
 	case PR_TRANSMITABLE_DISPLAY_NAME_A:
-		if (node_type != abnode_type::person &&
-		    node_type != abnode_type::equipment &&
-		    node_type != abnode_type::room)
+		if (node_type != abnode_type::user)
 			return ecNotFound;
 		[[fallthrough]];
 	case PR_DISPLAY_NAME_A:
@@ -400,9 +394,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_SMTP_ADDRESS_A:
 		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
-		else if (node_type == abnode_type::person ||
-		    node_type == abnode_type::equipment ||
-		    node_type == abnode_type::room)
+		else if (node_type == abnode_type::user)
 			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		else
 			return ecNotFound;
@@ -424,9 +416,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_EMS_AB_PROXY_ADDRESSES_A: {
 		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
-		else if (node_type == abnode_type::person ||
-		    node_type == abnode_type::equipment ||
-		    node_type == abnode_type::room)
+		else if (node_type == abnode_type::user)
 			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		else
 			return ecNotFound;
@@ -498,8 +488,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	}
 	/* User-defined props */
-	if (node_type == abnode_type::person || node_type == abnode_type::room ||
-	    node_type == abnode_type::equipment || node_type == abnode_type::mlist) {
+	if (node_type == abnode_type::user || node_type == abnode_type::mlist) {
 		auto ret = ab_tree_fetchprop(pnode, codepage, proptag, pprop);
 		if (ret == ecSuccess)
 			return ret;
@@ -1737,9 +1726,7 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 	case abnode_type::group:
 	case abnode_type::abclass:
 		return ecInvalidObject;
-	case abnode_type::person:
-	case abnode_type::room:
-	case abnode_type::equipment:
+	case abnode_type::user:
 		t[z++] = U(PR_NICKNAME);
 		t[z++] = U(PR_TITLE);
 		t[z++] = U(PR_PRIMARY_TELEPHONE_NUMBER);
@@ -1755,9 +1742,7 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 		t[z++] = U(PR_EMS_AB_PROXY_ADDRESSES);
 		t[z++] = U(PR_EMS_AB_HOME_MDB);
 		t[z++] = PR_CREATION_TIME;
-		if (node_type == abnode_type::person ||
-		    node_type == abnode_type::room ||
-		    node_type == abnode_type::equipment ||
+		if (node_type == abnode_type::user ||
 		    node_type == abnode_type::mlist)
 			t[z++] = PR_EMS_AB_THUMBNAIL_PHOTO;
 		break;
@@ -2295,14 +2280,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	if (NULL == ptnode) {
 		return ecInvalidObject;
 	}
-	switch (ab_tree_get_node_type(ptnode)) {
-	case abnode_type::person:
-	case abnode_type::room:
-	case abnode_type::equipment:
-		break;
-	default:
+	if (ab_tree_get_node_type(ptnode) != abnode_type::user)
 		return ecInvalidObject;
-	}
 	ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 	if (0 != strcasecmp(username, rpc_info.username)) {
 		return ecAccessDenied;
@@ -2440,9 +2419,7 @@ static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	switch(ab_tree_get_node_type(pnode)) {
-	case abnode_type::person:
-	case abnode_type::room:
-	case abnode_type::equipment:
+	case abnode_type::user:
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
