@@ -19,9 +19,10 @@ dependencies are needed:
 * MariaDB Connector/C or compatible
 * OpenLDAP or similar headers
 * OpenSSL or compatible
+* perl5
 * PHP 7/8 headers
 * SQLite3
-* tinyxml2
+* tinyxml2 >= 8
 * zlib
 
 When the grommunio repository is known to zypper, one can request to install
@@ -47,7 +48,7 @@ Source build procedure
 ======================
 
 The procedure is the well-established autotools run. Note that the default
-prefix is /usr, not /usr/local.
+install prefix is /usr, not /usr/local.
 
 For true developers, the ``qconf`` helper script may be used as a typing
 shortcut and to configure the paths such that just-built program binaries, from
@@ -56,6 +57,10 @@ installation from the grommunio distribution.
 
 The rest of the documentation assumes that Gromox was configured with
 ``--prefix=/usr --sysconfdir=/etc --localstatedir=/var``.
+
+(For FreeBSD/OpenBSD, you may need to pass extra parameters, e.g.
+``CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib
+--with-php-config=/usr/local/bin/php-config-8.1`` to configure.)
 
 ASAN notes
 ----------
