@@ -502,7 +502,12 @@ errno_t gx_reexec(const char *const *argv) try
 	perror("execv");
 	return saved_errno;
 #else
-#	error No implementation
+	/* Since none of our programs modify argv[0], executing the same should just work */
+	fprintf(stderr, "Reexecing %s\n", argv[0]);
+	execv(argv[0], const_cast<char **>(argv));
+	int saved_errno = errno;
+	perror("execv");
+	return saved_errno;
 #endif
 } catch (const std::bad_alloc &) {
 	return ENOMEM;
