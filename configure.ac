@@ -65,6 +65,24 @@ AC_ARG_WITH([unitdir],
 	])
 AC_SUBST([unitdir])
 
+dnl
+dnl The cstring header comes from the compiler, but ::strchr comes from the
+dnl C library. If the two are not synced up, a problem ensues.
+dnl
+AC_MSG_CHECKING([for a complete C++ environment])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+	#include <cstring>
+	int main() { auto a = ""; auto r = std::strchr(a, '/'); r = a; }
+])], [
+	AC_MSG_RESULT([ok])
+], [
+	AC_MSG_RESULT([no])
+	echo "***"
+	echo "*** The const versions of C string functions are absent."
+	echo "*** That's a bug in your toolchain combination."
+	echo "***"
+	# grep for CONST-STRCHR-MARKER
+])
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([HX], [libHX >= 4.3])
 PKG_CHECK_MODULES([crypto], [libcrypto])

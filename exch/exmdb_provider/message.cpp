@@ -1697,7 +1697,7 @@ static BOOL message_rectify_message(const char *account,
 		encode_hex_binary(cid_string, 16, cid_string + 16, 64);
 		memmove(cid_string, cid_string + 16, 32);
 		cid_string[32] = '@';
-		auto pc = strchr(static_cast<const char *>(account), '@');
+		const char *pc = strchr(account, '@'); /* CONST-STRCHR-MARKER */
 		if (pc == nullptr)
 			pc = account;
 		else
@@ -3564,7 +3564,7 @@ static ec_error_t opx_move_public(const char *account, sqlite3 *psqlite,
 	    pextmvcp->folder_eid.folder_type) {
 		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
-	auto pc = strchr(account, '@');
+	const char *pc = strchr(account, '@'); /* CONST-STRCHR-MARKER */
 	if (pc == nullptr)
 		pc = account;
 	else
