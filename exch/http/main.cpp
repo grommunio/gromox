@@ -240,13 +240,13 @@ int main(int argc, const char **argv) try
 	if (http_support_tls) {
 		if (NULL == certificate_path || NULL == private_key_path) {
 			http_support_tls = false;
-			printf("[http]: turn off TLS support because certificate or "
+			printf("[http]: TLS support deactivated because certificate or "
 				"private key path is empty\n");
 		} else {
-			printf("[http]: http support TLS mode\n");
+			printf("[http]: TLS support enabled\n");
 		}
 	} else {
-		printf("[http]: http doesn't support TLS mode\n");
+		printf("[http]: TLS support deactivated via config\n");
 	}
 
 	uint16_t listen_tls_port = g_config_file->get_ll("http_listen_tls_port");
