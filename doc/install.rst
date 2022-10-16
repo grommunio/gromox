@@ -12,6 +12,7 @@ dependencies are needed:
 * fmt >= 8
 * jsoncpp
 * libHX
+* libiconv (OpenBSD only)
 * libvmime
 * libzstd
 * Linux-PAM
