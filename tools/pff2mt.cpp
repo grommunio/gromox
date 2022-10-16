@@ -262,7 +262,8 @@ static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t
 		 * Data is in PR_ATTACH_DATA_BIN, and so was
 		 * already spooled into atc->proplist by the caller.
 		 */
-		tlog("[attachment type=%c size=%zu]\n", atype, asize);
+		tlog("[attachment type=%c size=%llu]\n", atype,
+		     static_cast<unsigned long long>(asize));
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_ITEM) {
 		libpff_item_ptr emb_item;
 		if (libpff_attachment_get_item(atx, &unique_tie(emb_item),
