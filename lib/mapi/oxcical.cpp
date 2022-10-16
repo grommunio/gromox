@@ -1691,7 +1691,7 @@ static BOOL oxcical_parse_atx_value(const ical_line &piline,
 		return FALSE;
 	if (pattachment->proplist.set(PR_ATTACH_EXTENSION, ".URL") != 0)
 		return FALSE;
-	auto pvalue1 = strrchr(pvalue, '/');
+	const char *pvalue1 = strrchr(pvalue, '/'); /* CONST-STRCHR-MARKER */
 	if (pvalue1 == nullptr)
 		pvalue1 = pvalue;
 	snprintf(tmp_buff, 256, "%s.url", pvalue1);
@@ -1783,7 +1783,7 @@ static BOOL oxcical_parse_atx_binary(const ical_line &piline,
 		snprintf(tmp_buff, arsizeof(tmp_buff), "calendar_attachment%d.dat", count);
 		pvalue = tmp_buff;
 	}
-	auto pvalue1 = strrchr(pvalue, '.');
+	const char *pvalue1 = strrchr(pvalue, '.'); /* CONST-STRCHR-MARKER */
 	if (pvalue1 == nullptr)
 		pvalue1 = ".dat";
 	if (pattachment->proplist.set(PR_ATTACH_EXTENSION, pvalue1) != 0 ||
