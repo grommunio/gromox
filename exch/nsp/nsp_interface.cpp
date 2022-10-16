@@ -169,16 +169,13 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		                 MAPI_MAILUSER;
 		return ecSuccess;
 	case PR_DISPLAY_TYPE:
-		/* The PR_DISPLAY_TYPE value in MariaDB is not directly used */
-		pprop->value.l = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
+		pprop->value.l = ab_tree_get_dtyp(pnode);
 		return ecSuccess;
-	case PR_DISPLAY_TYPE_EX:
-		/* The PR_DISPLAY_TYPE_EX value in MariaDB is not directly used */
-		pprop->value.l = node_type == abnode_type::room ? DT_ROOM :
-		                 node_type == abnode_type::equipment ? DT_EQUIPMENT :
-		                 node_type == abnode_type::mlist ? DT_DISTLIST :
-		                 DT_MAILUSER | DTE_FLAG_ACL_CAPABLE;
+	case PR_DISPLAY_TYPE_EX: {
+		auto dtypx = ab_tree_get_dtypx(pnode);
+		pprop->value.l = dtypx.has_value() ? *dtypx : DT_MAILUSER;
 		return ecSuccess;
+	}
 	case PR_MAPPING_SIGNATURE:
 		pprop->value.bin.cb = 16;
 		if (NULL == pbuff) {
