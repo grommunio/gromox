@@ -116,7 +116,7 @@ struct imap_context final : public schedule_context {
 };
 using IMAP_CONTEXT = imap_context;
 
-extern void imap_parser_init(int context_num, int average_num, size_t cache_size, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, BOOL support_starttls, BOOL force_starttls, const char *certificate_path, const char *cb_passwd, const char *key_path);
+extern void imap_parser_init(int context_num, int average_num, size_t cache_size, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int imap_parser_run();
 extern int imap_parser_process(IMAP_CONTEXT *);
 extern void imap_parser_stop();
@@ -238,6 +238,6 @@ extern std::shared_ptr<CONFIG_FILE> g_config_file;
 extern uint16_t g_listener_ssl_port;
 extern unsigned int g_imapcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
-extern bool g_support_starttls, g_force_starttls;
+extern bool g_support_tls, g_force_tls;
 extern std::atomic<size_t> g_alloc_xarray;
 extern alloc_limiter<stream_block> g_blocks_allocator;

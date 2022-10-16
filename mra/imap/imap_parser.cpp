@@ -65,7 +65,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
-bool g_support_starttls, g_force_starttls;
+bool g_support_tls, g_force_tls;
 std::atomic<size_t> g_alloc_xarray;
 alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
 static std::atomic<int> g_sequence_id;
@@ -97,7 +97,7 @@ alloc_limiter<DIR_NODE> *imap_parser_get_dpool()
 
 void imap_parser_init(int context_num, int average_num, size_t cache_size,
     time_duration timeout, time_duration autologout_time, int max_auth_times,
-	int block_auth_fail, BOOL support_starttls, BOOL force_starttls,
+    int block_auth_fail, bool support_tls, bool force_tls,
 	const char *certificate_path, const char *cb_passwd, const char *key_path)
 {
     g_context_num           = context_num;
@@ -107,13 +107,13 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	g_autologout_time       = autologout_time;
 	g_max_auth_times        = max_auth_times;
 	g_block_auth_fail       = block_auth_fail;
-	g_support_starttls      = support_starttls;
+	g_support_tls       = support_tls;
 	g_ssl_mutex_buf         = NULL;
 	g_notify_stop = true;
 	double_list_init(&g_sleeping_list);
 	g_sequence_id = 0;
-	if (support_starttls) {
-		g_force_starttls = force_starttls;
+	if (support_tls) {
+		g_force_tls = force_tls;
 		gx_strlcpy(g_certificate_path, certificate_path, arsizeof(g_certificate_path));
 		if (NULL != cb_passwd) {
 			gx_strlcpy(g_certificate_passwd, cb_passwd, arsizeof(g_certificate_passwd));
@@ -149,7 +149,7 @@ int imap_parser_run()
 {
 	int num;
 	
-	if (g_support_starttls) {
+	if (g_support_tls) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
 		SSL_load_error_strings();
@@ -293,11 +293,11 @@ void imap_parser_stop()
 	g_context_list.reset();
 	g_mime_pool.reset();
 	g_select_hash.reset();
-	if (g_support_starttls && g_ssl_ctx != nullptr) {
+	if (g_support_tls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
 	}
-	if (g_support_starttls && g_ssl_mutex_buf != nullptr) {
+	if (g_support_tls && g_ssl_mutex_buf != nullptr) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();

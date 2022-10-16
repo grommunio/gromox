@@ -110,7 +110,7 @@ terminated.
 .br
 Default: \fI3 minutes\fP
 .TP
-\fBimap_force_starttls\fP
+\fBimap_force_tls\fP
 This flag controls whether clients must utilize TLS, either by way of implicit
 TLS (cf. \fBimap_listen_tls_port\fP), or through the STARTTLS command.
 .br
@@ -145,9 +145,10 @@ Filesystem path to the key file needed to unlock the TLS certificate.
 .br
 Default: (unset)
 .TP
-\fBimap_support_starttls\fP
-This flag controls the offering of the STARTTLS extension (RFC 2595) to
-clients.
+\fBimap_support_tls\fP
+This flag controls the offering of TLS modes. This affects both the implicit TLS
+port as well as the advertisement of the STARTTLS extension and availability of
+the STARTTLS command (RFC 2595) to clients.
 .br
 Default: \fIfalse\fP
 .TP
