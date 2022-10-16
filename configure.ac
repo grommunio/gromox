@@ -92,6 +92,23 @@ AC_SEARCH_LIBS([crypt], [crypt], [crypt_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([ldap_init], [ldap_r ldap], [libldap_LIBS="$LIBS"; LIBS=""])
 AC_SUBST([crypt_LIBS])
 AC_SUBST([libldap_LIBS])
+dnl
+dnl Can't use AC_SEARCH_LIBS([iconv_open]) because that does not process
+dnl the "#define iconv_open libiconv_open" macro that some iconv
+dnl implementations have.
+dnl
+AC_MSG_CHECKING([for library containing iconv_open])
+AC_LINK_IFELSE([AC_LANG_SOURCE([
+	#include <iconv.h>
+	int main() { iconv_open("", ""); return 0; }
+])], [
+	AC_MSG_RESULT([none required])
+	iconv_LIBS=""
+], [
+	AC_MSG_RESULT([-liconv])
+	iconv_LIBS="-liconv"
+])
+AC_SUBST([iconv_LIBS])
 AC_DEFUN([MYSQL_WITH_MYSQL_CONFIG],[
 	AC_PATH_PROGS([MYSQL_CONFIG], [mysql_config mariadb_config])
 	AC_ARG_WITH([mysql-config], AS_HELP_STRING([--with-mysql-config=PATH], [path to the mysql-config script of mysql]),
