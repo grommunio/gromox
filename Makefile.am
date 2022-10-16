@@ -85,7 +85,7 @@ BUILT_SOURCES = include/gromox/paths.h php_mapi/mapierr.cpp php_mapi/mapitags.cp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
-libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS} ${jsoncpp_LIBS} ${tinyxml_LIBS} ${vmime_LIBS}
+libgromox_common_la_LIBADD = ${crypt_LIBS} ${HX_LIBS} ${jsoncpp_LIBS} ${tinyxml_LIBS} ${vmime_LIBS}
 libgromox_cplus_la_SOURCES = lib/cryptoutil.cpp lib/dbhelper.cpp lib/fileio.cpp lib/fopen.cpp lib/oxoabkt.cpp lib/textmaps.cpp
 libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${crypto_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${ssl_LIBS} ${zstd_LIBS} libgromox_common.la
 libgromox_dbop_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
@@ -204,7 +204,7 @@ libgxs_logthru_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libgxs_logthru_la_DEPENDENCIES = ${default_sym}
 libgxs_mysql_adaptor_la_SOURCES = exch/mysql_adaptor/mysql_adaptor.cpp exch/mysql_adaptor/sql2.cpp
 libgxs_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxs_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${HX_LIBS} ${fmt_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la
+libgxs_mysql_adaptor_la_LIBADD = -lpthread ${crypt_LIBS} ${HX_LIBS} ${fmt_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la
 EXTRA_libgxs_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
 libgxs_user_filter_la_SOURCES = exch/user_filter/audit_filter.cpp exch/user_filter/grey_list.cpp exch/user_filter/main.cpp exch/user_filter/str_filter.cpp exch/user_filter/temp_list.cpp
 libgxs_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
