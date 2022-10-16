@@ -62,11 +62,13 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"pop3_auth_times", "10", CFG_SIZE, "1"},
 	{"pop3_cmd_debug", "0"},
 	{"pop3_conn_timeout", "3min", CFG_TIME, "1s"},
-	{"pop3_force_stls", "false", CFG_BOOL},
+	{"pop3_force_stls", "pop3_force_stls", CFG_ALIAS},
+	{"pop3_force_tls", "false", CFG_BOOL},
 	{"pop3_listen_addr", "::"},
 	{"pop3_listen_port", "110"},
 	{"pop3_listen_tls_port", "0"},
-	{"pop3_support_stls", "false", CFG_BOOL},
+	{"pop3_support_stls", "pop3_support_tls", CFG_ALIAS},
+	{"pop3_support_tls", "false", CFG_BOOL},
 	{"pop3_thread_charge_num", "20", CFG_SIZE, "4"},
 	{"pop3_thread_init_num", "5", CFG_SIZE},
 	{"running_identity", "gromox"},
@@ -201,27 +203,27 @@ int main(int argc, const char **argv) try
 	printf("[pop3]: block client %s when authentication failure count "
 			"is exceeded\n", temp_buff);
 
-	auto pop3_support_stls = parse_bool(g_config_file->get_value("pop3_support_stls"));
+	auto pop3_support_tls = parse_bool(g_config_file->get_value("pop3_support_tls"));
 	auto certificate_path = g_config_file->get_value("pop3_certificate_path");
 	auto cb_passwd = g_config_file->get_value("pop3_certificate_passwd");
 	auto private_key_path = g_config_file->get_value("pop3_private_key_path");
-	if (pop3_support_stls) {
+	if (pop3_support_tls) {
 		if (NULL == certificate_path || NULL == private_key_path) {
-			pop3_support_stls = false;
-			printf("[pop3]: turn off TLS support because certificate or "
+			pop3_support_tls = false;
+			printf("[pop3]: TLS support deactivated because certificate or "
 				"private key path is empty\n");
 		} else {
-			printf("[pop3]: pop3 support TLS mode\n");
+			printf("[pop3]: TLS support enabled\n");
 		}
 	} else {
-		printf("[pop3]: pop3 doesn't support TLS mode\n");
+		printf("[pop3]: TLS support deactivated via config\n");
 	}
 	
-	auto pop3_force_stls = parse_bool(g_config_file->get_value("pop3_force_stls"));
-	if (pop3_support_stls && pop3_force_stls)
-		printf("[pop3]: pop3 MUST running in TLS mode\n");
+	auto pop3_force_tls = parse_bool(g_config_file->get_value("pop3_force_tls"));
+	if (pop3_support_tls && pop3_force_tls)
+		printf("[pop3]: pop3 MUST be running with TLS\n");
 	uint16_t listen_tls_port = g_config_file->get_ll("pop3_listen_tls_port");
-	if (!pop3_support_stls && listen_tls_port > 0)
+	if (!pop3_support_tls && listen_tls_port > 0)
 		listen_tls_port = 0;
 	if (listen_tls_port > 0)
 		printf("[system]: system TLS listening port %d\n", listen_tls_port);
@@ -287,8 +289,8 @@ int main(int argc, const char **argv) try
 	                     "pop3_blocks_allocator",
 	                     "pop3.cfg:context_num,context_average_mem");
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
-		pop3_auth_times, block_interval_auth, pop3_support_stls,
-		pop3_force_stls, certificate_path, cb_passwd,
+		pop3_auth_times, block_interval_auth, pop3_support_tls,
+		pop3_force_tls, certificate_path, cb_passwd,
 		private_key_path);
  
 	if (0 != pop3_parser_run()) { 

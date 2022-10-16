@@ -59,7 +59,7 @@ int pop3_cmd_handler_stls(const char *cmd_line, int line_length,
 	if (NULL != pcontext->connection.ssl) {
 		return 1703;
 	}
-	if (!g_support_stls)
+	if (!g_support_tls)
 		return 1703;
 	if (pcontext->is_login)
 		return 1725;
@@ -74,8 +74,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 	size_t string_length = 0;
 	char buff[1024];
     
-	if (g_support_stls && g_force_stls &&
-	    pcontext->connection.ssl == nullptr)
+	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
 		return 1726;
 	if (line_length <= 5 || line_length > 255 + 1 + 4) {
 		return 1704;

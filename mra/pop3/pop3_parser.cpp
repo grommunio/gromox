@@ -35,7 +35,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
 
 unsigned int g_popcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
-bool g_support_stls, g_force_stls;
+bool g_support_tls, g_force_tls;
 alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
 static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
@@ -49,7 +49,7 @@ static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
 void pop3_parser_init(int context_num, size_t retrieving_size,
     time_duration timeout, int max_auth_times, int block_auth_fail,
-    BOOL support_stls, BOOL force_stls, const char *certificate_path,
+    bool support_tls, bool force_tls, const char *certificate_path,
     const char *cb_passwd, const char *key_path)
 {
     g_context_num           = context_num;
@@ -57,10 +57,10 @@ void pop3_parser_init(int context_num, size_t retrieving_size,
     g_timeout               = timeout;
 	g_max_auth_times        = max_auth_times;
 	g_block_auth_fail       = block_auth_fail;
-	g_support_stls          = support_stls;
+	g_support_tls       = support_tls;
 	g_ssl_mutex_buf         = NULL;
-	if (support_stls) {
-		g_force_stls = force_stls;
+	if (support_tls) {
+		g_force_tls = force_tls;
 		gx_strlcpy(g_certificate_path, certificate_path, arsizeof(g_certificate_path));
 		if (NULL != cb_passwd) {
 			gx_strlcpy(g_certificate_passwd, cb_passwd, arsizeof(g_certificate_passwd));
@@ -94,7 +94,7 @@ static void pop3_parser_ssl_id(CRYPTO_THREADID* id)
  */
 int pop3_parser_run()
 {
-	if (g_support_stls) {
+	if (g_support_tls) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
 		SSL_load_error_strings();
@@ -164,11 +164,11 @@ void pop3_parser_stop()
 {
 	g_context_list2.clear();
 	g_context_list.reset();
-	if (g_support_stls && g_ssl_ctx != nullptr) {
+	if (g_support_tls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
 	}
-	if (g_support_stls && g_ssl_mutex_buf != nullptr) {
+	if (g_support_tls && g_ssl_mutex_buf != nullptr) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();

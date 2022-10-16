@@ -86,7 +86,7 @@ extern int pop3_cmd_handler_top(const char *cmd_line, int line_length, POP3_CONT
 extern int pop3_cmd_handler_quit(const char *cmd_line, int line_length, POP3_CONTEXT *);
 extern int pop3_cmd_handler_else(const char *cmd_line, int line_length, POP3_CONTEXT *);
 
-extern void pop3_parser_init(int context_num, size_t retrieving_size, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, BOOL support_stls, BOOL force_stls, const char *certificate_path, const char *cb_passwd, const char *key_path);
+extern void pop3_parser_init(int context_num, size_t retrieving_size, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int pop3_parser_run();
 extern int pop3_parser_process(POP3_CONTEXT *);
 extern void pop3_parser_stop();
@@ -118,6 +118,6 @@ extern void (*system_services_log_info)(unsigned int, const char *, ...);
 extern uint16_t g_listener_ssl_port;
 extern unsigned int g_popcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
-extern bool g_support_stls, g_force_stls;
+extern bool g_support_tls, g_force_tls;
 extern alloc_limiter<stream_block> g_blocks_allocator;
 extern std::shared_ptr<CONFIG_FILE> g_config_file;

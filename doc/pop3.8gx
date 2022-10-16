@@ -95,7 +95,7 @@ If a POP3 connection stalls for the given period, the connection is terminated.
 .br
 Default: \fI3 minutes\fP
 .TP
-\fBpop3_force_stls\fP
+\fBpop3_force_tls\fP
 This flag controls whether clients must utilize TLS, either by way of implicit
 TLS (cf. \fBpop3_listen_tls_port\fP), or through the STLS command.
 .br
@@ -123,9 +123,10 @@ Filesystem path to the key file needed to unlock the TLS certificate.
 .br
 Default: (unset)
 .TP
-\fBpop3_support_stls\fP
-This flag controls the offering of the STARTTLS extension/STLS command (RFC
-2595) to clients.
+\fBpop3_support_tls\fP
+This flag controls the offering of TLS modes. This affects both the implicit TLS
+port as well as the advertisement of the STARTTLS extension and availability of
+the STLS command (RFC 2595) to clients.
 .br
 Default: \fIfalse\fP
 .TP
