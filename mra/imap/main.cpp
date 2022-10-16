@@ -63,11 +63,13 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"imap_autologout_time", "30min", CFG_TIME, "1s"},
 	{"imap_cmd_debug", "0"},
 	{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
-	{"imap_force_starttls", "false", CFG_BOOL},
+	{"imap_force_starttls", "imap_force_tls", CFG_ALIAS},
+	{"imap_force_tls", "false", CFG_BOOL},
 	{"imap_listen_addr", "::"},
 	{"imap_listen_port", "143"},
 	{"imap_listen_tls_port", "0"},
-	{"imap_support_starttls", "false", CFG_BOOL},
+	{"imap_support_starttls", "imap_support_tls", CFG_ALIAS},
+	{"imap_support_tls", "false", CFG_BOOL},
 	{"imap_thread_charge_num", "20", CFG_SIZE, "4"},
 	{"imap_thread_init_num", "5", CFG_SIZE},
 	{"listen_port", "imap_listen_port", CFG_ALIAS},
@@ -205,26 +207,26 @@ int main(int argc, const char **argv) try
 	printf("[imap]: block client %s when authentication failure count "
 			"is exceeded\n", temp_buff);
 
-	auto imap_support_stls = parse_bool(g_config_file->get_value("imap_support_starttls"));
+	auto imap_support_tls = parse_bool(g_config_file->get_value("imap_support_tls"));
 	auto certificate_path = g_config_file->get_value("imap_certificate_path");
 	auto cb_passwd = g_config_file->get_value("imap_certificate_passwd");
 	auto private_key_path = g_config_file->get_value("imap_private_key_path");
-	if (imap_support_stls) {
+	if (imap_support_tls) {
 		if (NULL == certificate_path || NULL == private_key_path) {
-			imap_support_stls = false;
-			printf("[imap]: turn off TLS support because certificate or "
+			imap_support_tls = false;
+			printf("[imap]: TLS support deactivated because certificate or "
 				"private key path is empty\n");
 		} else {
-			printf("[imap]: imap support TLS mode\n");
+			printf("[imap]: TLS support enabled\n");
 		}
 	} else {
-		printf("[imap]: imap doesn't support TLS mode\n");
+		printf("[imap]: TLS support deactived via config\n");
 	}
 	
-	auto imap_force_stls = parse_bool(g_config_file->get_value("imap_force_starttls"));
-	if (imap_support_stls && imap_force_stls)
-		printf("[imap]: imap MUST running in TLS mode\n");
-	if (!imap_support_stls && listen_tls_port > 0)
+	auto imap_force_tls = parse_bool(g_config_file->get_value("imap_force_tls"));
+	if (imap_support_tls && imap_force_tls)
+		printf("[imap]: imap MUST be running with TLS\n");
+	if (!imap_support_tls && listen_tls_port > 0)
 		listen_tls_port = 0;
 	if (listen_tls_port > 0)
 		printf("[system]: system TLS listening port %d\n", listen_tls_port);
@@ -289,8 +291,7 @@ int main(int argc, const char **argv) try
 	                     "imap_blocks_alloc", "imap.cfg:context_num,context_average_mem");
 	imap_parser_init(context_num, context_aver_mitem, context_max_mem,
 		imap_conn_timeout, autologout_time, imap_auth_times,
-		block_interval_auth, imap_support_stls ? TRUE : false,
-		imap_force_stls ? TRUE : false,
+		block_interval_auth, imap_support_tls, imap_force_tls,
 		certificate_path, cb_passwd, private_key_path);  
  
 	if (0 != imap_parser_run()) { 

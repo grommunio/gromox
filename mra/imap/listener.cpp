@@ -125,7 +125,7 @@ void listener_stop_accept()
 char *capability_list(char *dst, size_t z, IMAP_CONTEXT *ctx)
 {
 	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE AUTH=LOGIN", z);
-	bool offer_tls = g_support_starttls;
+	bool offer_tls = g_support_tls;
 	if (ctx != nullptr) {
 		if (ctx->connection.ssl != nullptr || ctx->is_authed())
 			offer_tls = false;

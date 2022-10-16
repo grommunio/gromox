@@ -1310,7 +1310,7 @@ int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	if (pcontext->connection.ssl != nullptr)
 		return 1800;
-	if (!g_support_starttls)
+	if (!g_support_tls)
 		return 1800;
 	if (pcontext->proto_stat > PROTO_STAT_NOAUTH)
 		return 1801;
@@ -1323,8 +1323,7 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
 	
-	if (g_support_starttls && g_force_starttls &&
-	    pcontext->connection.ssl == nullptr)
+	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
 		return 1802;
 	if (argc != 3 || strcasecmp(argv[2], "LOGIN") != 0)
 		return 1800;
@@ -1426,8 +1425,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char reason[256];
 	char temp_password[256];
     
-	if (g_support_starttls && g_force_starttls &&
-	    pcontext->connection.ssl == nullptr)
+	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
 		return 1802;
 	if (argc != 4 || strlen(argv[2]) >= arsizeof(pcontext->username) ||
 	    strlen(argv[3]) > 255)
