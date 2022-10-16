@@ -89,8 +89,10 @@ AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AM_CONDITIONAL([HAVE_PFF], [test "$have_pff" = 1])
 AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
 AC_SEARCH_LIBS([crypt], [crypt], [crypt_LIBS="$LIBS"; LIBS=""])
+AC_SEARCH_LIBS([dlopen], [dl], [dl_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([ldap_init], [ldap_r ldap], [libldap_LIBS="$LIBS"; LIBS=""])
 AC_SUBST([crypt_LIBS])
+AC_SUBST([dl_LIBS])
 AC_SUBST([libldap_LIBS])
 dnl
 dnl Can't use AC_SEARCH_LIBS([iconv_open]) because that does not process
