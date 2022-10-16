@@ -1336,3 +1336,34 @@ void ab_tree_invalidate_cache()
 	for (auto &kvpair : g_base_hash)
 		kvpair.second.load_time = 0;
 }
+
+uint32_t ab_tree_get_dtyp(const tree_node *n)
+{
+	auto &a = *containerof(n, AB_NODE, stree);
+	if (a.node_type >= abnode_type::containers)
+		return DT_CONTAINER;
+	else if (a.node_type == abnode_type::mlist)
+		return DT_DISTLIST;
+	else if (a.node_type == abnode_type::folder)
+		return DT_FORUM;
+	return DT_MAILUSER;
+}
+
+std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
+{
+	auto &a = *containerof(n, AB_NODE, stree);
+	if (a.node_type >= abnode_type::containers ||
+	    a.node_type == abnode_type::folder)
+		return {};
+	else if (a.node_type == abnode_type::mlist)
+		return {DT_DISTLIST | DTE_FLAG_ACL_CAPABLE};
+	/*
+	 * In Gromox, everything with a username is capable of being used in an ACL
+	 * (and usernames are mandatory currently)
+	 */
+	else if (a.node_type == abnode_type::room)
+		return {DT_ROOM | DTE_FLAG_ACL_CAPABLE};
+	else if (a.node_type == abnode_type::equipment)
+		return {DT_EQUIPMENT | DTE_FLAG_ACL_CAPABLE};
+	return {DT_MAILUSER | DTE_FLAG_ACL_CAPABLE};
+}

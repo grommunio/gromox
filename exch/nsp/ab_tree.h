@@ -5,6 +5,7 @@
 #include <ctime>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -83,3 +84,5 @@ extern void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *, char *dn, int len);
 int ab_tree_get_guid_base_id(GUID guid);
 extern ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *, unsigned int codepage, unsigned int proptag, PROPERTY_VALUE *);
 extern void ab_tree_invalidate_cache();
+extern uint32_t ab_tree_get_dtyp(const tree_node *);
+extern std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *);
