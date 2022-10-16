@@ -1679,6 +1679,8 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 	}
 	switch(ab_tree_get_node_type(pnode)) {
 	case abnode_type::person:
+	case abnode_type::room:
+	case abnode_type::equipment:
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
