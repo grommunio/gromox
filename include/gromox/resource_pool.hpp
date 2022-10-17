@@ -96,7 +96,8 @@ template<typename Tp> class resource_pool {
 			m_numslots = n;
 	}
 	void clear() { m_list.clear(); }
-	size_t size() const { return m_list.size(); }
+	size_t available() const { return m_list.size(); }
+	size_t capacity() const { return m_numslots; }
 	void bump() {
 		std::unique_lock lk(m_mtx);
 		m_list.clear();

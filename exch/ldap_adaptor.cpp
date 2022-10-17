@@ -241,7 +241,7 @@ static BOOL ldaplogin_dpool(const char *username, const char *password)
 
 BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_result &m)
 {
-	auto z = g_conn_pool.size();
+	auto z = g_conn_pool.capacity();
 	if (m.ldap_uri.empty() && z > 0)
 		return ldaplogin_dpool(user, pass);
 	/*
