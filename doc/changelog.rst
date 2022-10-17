@@ -1,3 +1,30 @@
+1.32.66
+=======
+
+Enhancements:
+
+* tools: add kdb-uidextract and kdb-uidextract-limited scripts
+* Per-organization LDAP server support
+* Show more distinct icons in GAL (mailing lists now show the ML icon)
+* Support PR_THUMBNAIL_PHOTO for room, equipment and mlists
+* FreeBSD and OpenBSD compilation support
+* nsp: reload config on SIGHUP
+* oxcical: minimal VJOURNAL export
+* oxcical: implement VTODO export
+
+Changes:
+
+* authmgr: obsolete the `auth_backend_selection` config directive's values
+  `always_mysql` and `always_ldap`; these are treated like `externid` now.
+* imap: rename `imap_force_starttls` config directive to `imap_force_tls` and
+  `imap_support_tls` to `imap_support_tls`, since it affects encryption as a
+  whole, not just the STARTTLS command on the unencrypted port.
+* pop3: rename the `pop3_force_stls` config directive to `pop3_force_tls` and
+  `pop3_support_stls` to `pop3_support_stls`, since it affects encryption as a
+  whole, not just the STLS command on the unencrypted port.
+
+
+
 1.32 (2022-09-23)
 =================
 
