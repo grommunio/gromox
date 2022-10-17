@@ -252,7 +252,10 @@ BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_resu
 		g_conn_pool.resize(0);
 		g_conn_pool.clear();
 	}
-	auto conn = make_conn(m.ldap_uri.c_str(), m.ldap_binddn.c_str(),
+	auto conn = m.ldap_uri.empty() ?
+	            make_conn(g_ldap_host.c_str(), g_bind_user.c_str(),
+	            g_bind_pass.c_str(), true) :
+	            make_conn(m.ldap_uri.c_str(), m.ldap_binddn.c_str(),
 	            m.ldap_bindpw.c_str(), true);
 	return ldaplogin_host(conn, conn, user, pass, m.ldap_basedn);
 }
