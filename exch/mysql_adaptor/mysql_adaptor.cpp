@@ -70,10 +70,10 @@ errno_t mysql_adaptor_meta(const char *username, const char *password,
 		"op3.value AS ldap_bindpw, op4.value AS ldap_basedn "
 		"FROM users AS u " JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN orgs ON u.domain_id=orgs.id"
-		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.id AND op1.key='ldap_uri'"
-		" LEFT JOIN orgparam AS op2 ON orgs.id=op2.id AND op2.key='ldap_binddn'"
-		" LEFT JOIN orgparam AS op3 ON orgs.id=op3.id AND op3.key='ldap_bindpw'"
-		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.id AND op4.key='ldap_basedn'"
+		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
+		" LEFT JOIN orgparam AS op2 ON orgs.id=op2.org_id AND op2.key='ldap_binddn'"
+		" LEFT JOIN orgparam AS op3 ON orgs.id=op3.org_id AND op3.key='ldap_bindpw'"
+		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
 		" WHERE u.username='"s + temp_name + "'"
 		" LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
