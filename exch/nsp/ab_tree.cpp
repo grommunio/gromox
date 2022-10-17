@@ -1342,6 +1342,8 @@ std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 		return {};
 	else if (a.node_type == abnode_type::mlist)
 		return {DT_DISTLIST | DTE_FLAG_ACL_CAPABLE};
+	else if (a.node_type != abnode_type::user)
+		return {DT_MAILUSER};
 	/*
 	 * In Gromox, everything with a username is capable of being used in an ACL
 	 * (and usernames are mandatory currently)
