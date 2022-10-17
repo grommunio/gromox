@@ -1012,10 +1012,16 @@ static bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode,
 	    pabnode->node_type != abnode_type::remote &&
 	    pabnode->node_type != abnode_type::mlist)
 		return false;
-	auto u = static_cast<sql_user *>(pabnode->d_info);
+	auto u = static_cast<const sql_user *>(pabnode->d_info);
 	unsigned int tag = 0;
 	switch (type) {
-	case USER_MAIL_ADDRESS: gx_strlcpy(value, u->username.c_str(), vsize); return true;
+	case USER_MAIL_ADDRESS:
+		if ((u->dtypx & DTE_MASK_LOCAL) == DT_REMOTE_MAILUSER) {
+			tag = PR_SMTP_ADDRESS;
+			break;
+		}
+		gx_strlcpy(value, u->username.c_str(), vsize);
+		return true;
 	case USER_REAL_NAME: tag = PR_DISPLAY_NAME; break;
 	case USER_JOB_TITLE: tag = PR_TITLE; break;
 	case USER_COMMENT: tag = PR_COMMENT; break;
