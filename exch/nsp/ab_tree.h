@@ -86,3 +86,4 @@ extern ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *, unsigned int codep
 extern void ab_tree_invalidate_cache();
 extern uint32_t ab_tree_get_dtyp(const tree_node *);
 extern std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *);
+extern void ab_tree_dump_base(const AB_BASE &);

@@ -605,6 +605,8 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 		memset(&phandle->guid, 0, sizeof(GUID));
 		return ecError;
 	}
+	if (g_nsp_trace >= 2)
+		ab_tree_dump_base(*pbase);
 	phandle->guid = pbase->guid;
 	if (NULL != pserver_guid) {
 		*(GUID*)pserver_guid = common_util_get_server_guid();

@@ -1364,3 +1364,41 @@ std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 	 */
 	return {(obj.dtypx & DTE_MASK_LOCAL) | DTE_FLAG_ACL_CAPABLE};
 }
+
+static void ab_tree_dump_node(const tree_node *tnode, unsigned int lvl)
+{
+	auto &a = *containerof(tnode, NSAB_NODE, stree);
+	const char *ty;
+	switch (a.node_type) {
+	case abnode_type::remote: ty = "remote"; break;
+	case abnode_type::user: ty = "user"; break;
+	case abnode_type::mlist: ty = "mlist"; break;
+	case abnode_type::folder: ty = "folder"; break;
+	case abnode_type::domain: ty = "domain"; break;
+	case abnode_type::group: ty = "group"; break;
+	case abnode_type::abclass: ty = "abclass"; break;
+	default: ty = "?"; break;
+	}
+	fprintf(stderr, "%-*sminid %xh, nodeid %d, type %s",
+	        4 * lvl, "", a.minid, a.id, ty);
+	if (a.node_type == abnode_type::user ||
+	    a.node_type == abnode_type::mlist ||
+	    a.node_type == abnode_type::remote) {
+		auto &obj = *static_cast<const sql_user *>(a.d_info);
+		fprintf(stderr, ", <%s>", obj.username.c_str());
+	}
+	fprintf(stderr, "\n");
+}
+
+void ab_tree_dump_base(const AB_BASE &b)
+{
+	char gtxt[41]{};
+	b.guid.to_str(gtxt, std::size(gtxt));
+	fprintf(stderr, "NSP: Base/%s %d (%s)\n",
+	        b.base_id < 0 ? "Domain" : "Organization",
+	        b.base_id, gtxt);
+	for (const auto &d : b.domain_list) {
+		fprintf(stderr, "    Domain %d\n", d.domain_id);
+		simple_tree_node_enum(d.tree.root, ab_tree_dump_node, 2);
+	}
+}
