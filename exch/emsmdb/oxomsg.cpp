@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cassert>
 #include <cstdint>
 #include <cstdio>
 #include <string>
@@ -27,6 +28,10 @@ enum { /* for RopSubmitMessage */
 enum { /* for PR_SUBMIT_FLAGS (unused in Gromox) */
 	SUBMITFLAG_LOCKED = 0x1U,
 	SUBMITFLAG_PREPROCESS = 0x2U,
+};
+
+enum class repr_grant {
+	error = -1, no_impersonation, send_on_behalf, send_as,
 };
 
 /**
@@ -176,26 +181,20 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 /**
  * @send_as:	whether to evaluate either the Send-As or Send-On-Behalf list
  */
-static bool oxomsg_test_perm(const char *account,
-    const char *account_representing, bool send_as) try
+static int oxomsg_test_perm(const char *account, const char *maildir, bool send_as) try
 {
-	char maildir[256];
-	
-	if (0 == strcasecmp(account, account_representing)) {
-		return TRUE;
-	}
-	if (!common_util_get_maildir(account_representing, maildir, arsizeof(maildir)))
-		return FALSE;
 	auto dlg_path = maildir + std::string(send_as ? "/config/sendas.txt" : "/config/delegates.txt");
 	std::vector<std::string> delegate_list;
 	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
-	if (ret != 0 && ret != ENOENT)
+	if (ret != 0 && ret != ENOENT) {
 		fprintf(stderr, "E-2045: %s: %s\n", dlg_path.c_str(), strerror(ret));
+		return ret;
+	}
 	for (const auto &deleg : delegate_list)
 		if (strcasecmp(deleg.c_str(), account) == 0 ||
 		    common_util_check_mlist_include(deleg.c_str(), account))
-			return TRUE;
-	return FALSE;
+			return 1;
+	return 0;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1500: ENOMEM\n");
 	return false;
@@ -204,24 +203,25 @@ static bool oxomsg_test_perm(const char *account,
 /**
  * @account:	"secretary account"
  * @repr:	"boss account"
- *
- * Return value(s):
- * - rv false: Only send as yourself
- * - rv true, send_as false: Send-On-Behalf
- * - rv true, send_as true: Send-As
  */
-static bool oxomsg_get_perm(const char *account,
-    const char *account_representing, bool &send_as)
+static repr_grant oxomsg_get_perm(const char *account, const char *repr)
 {
-	if (oxomsg_test_perm(account, account_representing, true)) {
-		send_as = true;
-		return TRUE;
-	}
-	if (oxomsg_test_perm(account, account_representing, false)) {
-		send_as = false;
-		return TRUE;
-	}
-	return false;
+	if (strcasecmp(account, repr) == 0)
+		return repr_grant::send_as;
+	char repdir[256];
+	if (!common_util_get_maildir(repr, repdir, std::size(repdir)))
+		return repr_grant::error;
+	auto ret = oxomsg_test_perm(account, repdir, true);
+	if (ret < 0)
+		return repr_grant::error;
+	if (ret > 0)
+		return repr_grant::send_as;
+	ret = oxomsg_test_perm(account, repdir, false);
+	if (ret < 0)
+		return repr_grant::error;
+	if (ret > 0)
+		return repr_grant::send_on_behalf;
+	return repr_grant::no_impersonation;
 }
 
 static ec_error_t pass_scheduling(const char *code, const char *account,
@@ -306,18 +306,26 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (!oxomsg_extract_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
 	auto account = plogon->get_account();
-	bool send_as = false;
+	repr_grant repr_grant;
 	if (*username == '\0') {
+		/* "No impersonation requested" is modeled as {impersonate yourself}. */
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
-	} else if (!oxomsg_get_perm(account, username, send_as)) {
+		repr_grant = repr_grant::send_as;
+	} else {
+		repr_grant = oxomsg_get_perm(account, username);
+	}
+	if (repr_grant < repr_grant::send_on_behalf) {
 		auto ret = pass_scheduling("I-2081", account, username, *pmessage,
 		           tmp_propvals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
 			return ret;
 		/* Unlike EXC, do not allow representation. */
 		gx_strlcpy(username, account, std::size(username));
+		repr_grant = repr_grant::send_as;
 	}
-	gxerr_t err = oxomsg_rectify_message(pmessage, username, send_as);
+	assert(repr_grant >= repr_grant::send_on_behalf);
+	gxerr_t err = oxomsg_rectify_message(pmessage, username,
+	              repr_grant >= repr_grant::send_as);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
 	
@@ -617,10 +625,14 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	if (!oxomsg_extract_delegate(pmessage, username, std::size(username)))
 		return ecError;
 	auto account = plogon->get_account();
-	bool send_as = false;
+	repr_grant repr_grant;
 	if (*username == '\0') {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
-	} else if (!oxomsg_get_perm(account, username, send_as)) {
+		repr_grant = repr_grant::send_as;
+	} else {
+		repr_grant = oxomsg_get_perm(account, username);
+	}
+	if (repr_grant < repr_grant::send_on_behalf) {
 		TPROPVAL_ARRAY cls_vals{};
 		if (pmessage->get_properties(0, &cls_tags, &cls_vals) != 0)
 			/* ignore, since we can test for cls_vals fill */;
@@ -630,8 +642,11 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 			return ret;
 		/* Unlike EXC, do not allow representation. */
 		gx_strlcpy(username, account, std::size(username));
+		repr_grant = repr_grant::send_as;
 	}
-	gxerr_t err = oxomsg_rectify_message(pmessage, username, send_as);
+	assert(repr_grant >= repr_grant::send_on_behalf);
+	gxerr_t err = oxomsg_rectify_message(pmessage, username,
+	              repr_grant >= repr_grant::send_as);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
 	*pppropvals = cu_alloc<TPROPVAL_ARRAY>();
