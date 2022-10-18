@@ -130,6 +130,7 @@ namespace gromox {
 
 extern GX_EXPORT bool parse_bool(const char *s);
 extern GX_EXPORT std::string bin2hex(const void *, size_t);
+extern GX_EXPORT std::string bin2txt(const void *, size_t);
 template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }
 extern GX_EXPORT std::string hex2bin(const char *);
 extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
