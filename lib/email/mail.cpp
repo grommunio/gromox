@@ -597,7 +597,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 	b_tags[TAG_SIGNED] = FALSE;
 	b_tags[TAG_ENCRYPT] = FALSE;
 	
-	simple_tree_enum_from_node(pmail->tree.get_root(), [&](const SIMPLE_TREE_NODE *n) {
+	simple_tree_enum_from_node(pmail->tree.get_root(), [&](const tree_node *n, unsigned int) {
 		char buf[1024];
 		auto m = static_cast<const MIME *>(n->pdata);
 		if (strcasecmp(m->content_type, "multipart/signed") == 0)
@@ -758,7 +758,7 @@ void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param) const
         return;
     }
 #endif
-	simple_tree_enum_from_node(pmail->tree.get_root(), [&](const SIMPLE_TREE_NODE *stn) {
+	simple_tree_enum_from_node(pmail->tree.get_root(), [&](const tree_node *stn, unsigned int) {
 		auto m = containerof(stn, const MIME, node);
 		enum_func(m, param);
 	});

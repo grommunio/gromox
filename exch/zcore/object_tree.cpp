@@ -192,7 +192,7 @@ object_node::~object_node()
 static void object_tree_release_objnode(
 	OBJECT_TREE *pobjtree, OBJECT_NODE *pobjnode)
 {	
-	simple_tree_enum_from_node(&pobjnode->node, [&](const SIMPLE_TREE_NODE *n) {
+	simple_tree_enum_from_node(&pobjnode->node, [&](const tree_node *n, unsigned int) {
 		pobjtree->m_hash.erase(static_cast<const OBJECT_NODE *>(n->pdata)->handle);
 	});
 	pobjtree->tree.destroy_node(&pobjnode->node, [](SIMPLE_TREE_NODE *n) {
