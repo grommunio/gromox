@@ -80,7 +80,8 @@ static void nsp_trace(const char *func, bool is_exit, const STAT *s,
 		fprintf(stderr, "{#outrows=%u}\n", outrows->crows);
 		for (size_t k = 0; k < outrows->crows; ++k) {
 			auto dispn = outrows->prows[k].getval(PR_DISPLAY_NAME);
-			fprintf(stderr, "\t#%zu  %s\n", k, znul(dispn->pstr));
+			if (dispn != nullptr)
+				fprintf(stderr, "\t#%zu  %s\n", k, znul(dispn->pstr));
 		}
 	} else {
 		fprintf(stderr, "\n");
