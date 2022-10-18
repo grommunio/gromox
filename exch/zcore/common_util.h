@@ -90,6 +90,10 @@ enum {
 	RES_TOTAL_NUM
 };
 
+enum class repr_grant {
+	error = -1, no_impersonation, send_on_behalf, send_as,
+};
+
 struct MESSAGE_CONTENT;
 struct message_object;
 struct store_object;
@@ -102,10 +106,8 @@ BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria);
 extern bool cu_extract_delegate(message_object *, char *username, size_t);
-extern bool cu_test_delegate_perm_MD(const char *account, const char *maildir, bool send_as);
-extern bool cu_test_delegate_perm_AA(const char *account, const char *account_representing, bool send_as);
-extern bool cu_get_delegate_perm_MD(const char *account, const char *maildir, bool &send_as);
-extern bool cu_get_delegate_perm_AA(const char *account, const char *account_representing, bool &send_as);
+extern repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir);
+extern repr_grant cu_get_delegate_perm_AA(const char *account, const char *account_representing);
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval);
 void common_util_remove_propvals(

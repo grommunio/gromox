@@ -826,8 +826,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		}
 		*v = EC_SUPPORTMASK_OTHER;
 		auto pinfo = zarafa_server_get_info();
-		bool unused_sendas = false;
-		if (cu_get_delegate_perm_MD(pinfo->get_username(), pstore->dir, unused_sendas))
+		auto ret = cu_get_delegate_perm_MD(pinfo->get_username(), pstore->dir);
+		if (ret >= repr_grant::send_on_behalf)
 			*v |= STORE_SUBMIT_OK;
 		return TRUE;
 	}
