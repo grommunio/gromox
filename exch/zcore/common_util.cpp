@@ -159,79 +159,55 @@ bool cu_extract_delegate(message_object *pmessage, char *username, size_t ulen)
 }
 
 /**
- * Check whether @account (secretary) is allowed to represent @maildir
- * (this is the filesystem variant of cu_get_delegate_perm_AA.)
+ * Check whether @account (secretary) is allowed to represent @maildir.
  * @send_as:	whether to evaluate either the Send-As or Send-On-Behalf list
  */
-bool cu_test_delegate_perm_MD(const char *account,
+static int cu_test_delegate_perm_MD(const char *account,
     const char *maildir, bool send_as) try
 {
 	std::vector<std::string> delegate_list;
 	auto path = maildir + std::string(send_as ? "/config/sendas.txt" : "/config/delegates.txt");
 	auto ret = read_file_by_line(path.c_str(), delegate_list);
 	if (ret != 0 && ret != ENOENT) {
-		fprintf(stderr, "W-2057: %s: %s\n", path.c_str(), strerror(errno));
-		return FALSE;
+		fprintf(stderr, "W-2057: %s: %s\n", path.c_str(), strerror(ret));
+		return ret;
 	}
 	for (const auto &d : delegate_list)
 		if (strcasecmp(d.c_str(), account) == 0)
-			return TRUE;
-	return FALSE;
+			return 1;
+	return 0;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-2056: ENOMEM\n");
 	return false;
 }
 
 /**
- * Check whether @account (secretary) is allowed to represent @account_repr.
- * @send_as:	whether to evaluate either the Send-As or Send-On-Behalf list
- */
-bool cu_test_delegate_perm_AA(const char *account,
-    const char *account_representing, bool send_as)
-{
-	char maildir[256];	
-	
-	if (strcasecmp(account, account_representing) == 0)
-		return TRUE;
-	if (!system_services_get_maildir(account_representing,
-	    maildir, arsizeof(maildir)))
-		return FALSE;
-	return cu_get_delegate_perm_MD(account, maildir, send_as);
-}
-
-/**
  * @account:	"secretary account"
  * @maildir:	"boss account"
- *
- * Return value(s):
- * - rv false: Only send as yourself
- * - rv true, send_as false: Send-On-Behalf
- * - rv true, send_as true: Send-As
  */
-bool cu_get_delegate_perm_MD(const char *account, const char *maildir, bool &send_as)
+repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir)
 {
-	if (cu_test_delegate_perm_MD(account, maildir, true)) {
-		send_as = true;
-		return true;
-	}
-	if (cu_test_delegate_perm_MD(account, maildir, false)) {
-		send_as = false;
-		return true;
-	}
-	return false;
+	auto ret = cu_test_delegate_perm_MD(account, maildir, true);
+	if (ret < 0)
+		return repr_grant::error;
+	if (ret > 0)
+		return repr_grant::send_as;
+	ret = cu_test_delegate_perm_MD(account, maildir, false);
+	if (ret < 0)
+		return repr_grant::error;
+	if (ret > 0)
+		return repr_grant::send_on_behalf;
+	return repr_grant::no_impersonation;
 }
 
-bool cu_get_delegate_perm_AA(const char *account, const char *repr, bool &send_as)
+repr_grant cu_get_delegate_perm_AA(const char *account, const char *repr)
 {
-	if (cu_test_delegate_perm_AA(account, repr, true)) {
-		send_as = true;
-		return true;
-	}
-	if (cu_test_delegate_perm_AA(account, repr, false)) {
-		send_as = false;
-		return true;
-	}
-	return false;
+	if (strcasecmp(account, repr) == 0)
+		return repr_grant::send_as;
+	char repdir[256];
+	if (!system_services_get_maildir(repr, repdir, std::size(repdir)))
+		return repr_grant::error;
+	return cu_get_delegate_perm_MD(account, repdir);
 }
 
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,

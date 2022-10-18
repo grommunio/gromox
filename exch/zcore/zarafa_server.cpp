@@ -3404,15 +3404,20 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (!cu_extract_delegate(pmessage, username, std::size(username)))
 		return ecSendAsDenied;
 	auto account = pstore->get_account();
-	bool send_as = false;
+	repr_grant repr_grant;
 	if ('\0' == username[0]) {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
-	} else if (!cu_get_delegate_perm_AA(account, username, send_as)) {
-		fprintf(stderr, "I-1334: uid %s tried to send with from=<%s>, but no delegate/sendas permission.\n",
+		repr_grant = repr_grant::send_as;
+	} else {
+		repr_grant = cu_get_delegate_perm_AA(account, username);
+	}
+	if (repr_grant < repr_grant::send_on_behalf) {
+		fprintf(stderr, "I-1334: uid %s tried to send with from=<%s>, but no impersonation permission given.\n",
 		        account, username);
 		return ecAccessDenied;
 	}
-	auto err = rectify_message(pmessage, username, send_as);
+	auto err = rectify_message(pmessage, username,
+	           repr_grant >= repr_grant::send_as);
 	if (err != GXERR_SUCCESS) {
 		return gxerr_to_hresult(err);
 	}
