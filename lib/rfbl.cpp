@@ -386,6 +386,41 @@ bool parse_bool(const char *s)
 	return true;
 }
 
+std::string bin2txt(const void *vdata, size_t len)
+{
+	auto data = static_cast<const unsigned char *>(vdata);
+	std::string ret;
+	char b[5];
+	for (size_t i = 0; i < len; ++i) {
+		if (isprint(data[i]) && data[i] != '"' &&
+		    data[i] != '\'' && data[i] != '\\') {
+			/*
+			 * Facilitate inclusion in string literals - and not
+			 * messing up in-editor coloring.
+			 */
+			b[0] = data[i];
+			b[1] = '\0';
+		} else if (data[i] < 0010) {
+			b[0] = '\\';
+			b[1] = '0' + (data[i] % 8);
+			b[2] = '\0';
+		} else if (data[i] < 0100) {
+			b[0] = '\\';
+			b[1] = '0' + (data[i] / 8 % 8);
+			b[2] = '0' + (data[i] % 8);
+			b[3] = '\0';
+		} else {
+			b[0] = '\\';
+			b[1] = '0' + (data[i] / 64 % 8);
+			b[2] = '0' + (data[i] / 8 % 8);
+			b[3] = '0' + (data[i] % 8);
+			b[4] = '\0';
+		}
+		ret.append(b);
+	}
+	return ret;
+}
+
 std::string bin2hex(const void *vin, size_t len)
 {
 	std::string buffer;
