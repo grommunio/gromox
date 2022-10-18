@@ -16,9 +16,10 @@ Default: \fI5 minutes\fP
 Default: \fI3000\fP
 .TP
 \fBnsp_trace\fP
-Log entry into and exit out of NSP functions, with their parameter values. Log
-data dumps of select calls.
-Default: \fIno\fP
+Level 1: Log entry into and exit out of NSP functions, with their parameter
+values. Log data dumps of select calls. Level 2: Dump more data.
+.br
+Default: \fI0\fP
 .TP
 \fBsession_check\fP
 Default: \fIfalse\fP
