@@ -527,7 +527,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 		if (NULL == proot) {
 			continue;
 		}
-		simple_tree_enum_from_node(proot, [&pbase](SIMPLE_TREE_NODE *nd) {
+		simple_tree_enum_from_node(proot, [&pbase](tree_node *nd, unsigned int) {
 			auto node_type = ab_tree_get_node_type(nd);
 			if (node_type >= abnode_type::containers || nd->pdata != nullptr)
 				return;
@@ -753,7 +753,7 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 	if (NULL == ptnode) {
 		return NULL;
 	}
-	simple_tree_enum_from_node(ptnode, [&tmp_enum](const SIMPLE_TREE_NODE *pnode) {
+	simple_tree_enum_from_node(ptnode, [&tmp_enum](const tree_node *pnode, unsigned int) {
 		char temp_path[512];
 		auto abn = containerof(pnode, AB_NODE, stree);
 		if (tmp_enum.pabnode != nullptr ||

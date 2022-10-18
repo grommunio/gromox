@@ -25,7 +25,7 @@ struct GX_EXPORT tree_node {
 };
 using SIMPLE_TREE_NODE = tree_node;
 
-using SIMPLE_TREE_ENUM = void (*)(SIMPLE_TREE_NODE *, void *);
+using SIMPLE_TREE_ENUM = void (*)(tree_node *, void *, unsigned int);
 using SIMPLE_TREE_DELETE = void (*)(SIMPLE_TREE_NODE *);
 using SIMPLE_TREE_DUPLICATE = SIMPLE_TREE_NODE *(*)(SIMPLE_TREE_NODE *, void *);
 
@@ -44,18 +44,18 @@ struct GX_EXPORT mtree {
 };
 using SIMPLE_TREE = mtree;
 
-template<typename C, typename F> void simple_tree_node_enum(C *n, F &&f)
+template<typename C, typename F> void simple_tree_node_enum(C *n, F &&f, unsigned int lvl = 0)
 {
 	do {
-		f(n);
+		f(n, lvl);
 		if (n->pnode_child != nullptr)
-			simple_tree_node_enum(n->pnode_child, f);
+			simple_tree_node_enum(n->pnode_child, f, lvl + 1);
 		n = n->pnode_sibling;
 	} while (n != nullptr);
 }
-template<typename C, typename F> void simple_tree_enum_from_node(C *n, F &&f)
+template<typename C, typename F> void simple_tree_enum_from_node(C *n, F &&f, unsigned int lvl = 0)
 {
-	f(n);
+	f(n, lvl);
 	if (n->pnode_child != nullptr)
-		simple_tree_node_enum(n->pnode_child, f);
+		simple_tree_node_enum(n->pnode_child, f, lvl + 1);
 }

@@ -214,7 +214,7 @@ BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath) try
 	}
 	/* check for NONE mime in tree */
 	b_none = FALSE;
-	simple_tree_enum_from_node(pnode, [&](const SIMPLE_TREE_NODE *nd) {
+	simple_tree_enum_from_node(pnode, [&](const tree_node *nd, unsigned int) {
 		if (static_cast<MJSON_MIME *>(nd->pdata)->mime_type == mime_type::none)
 			b_none = TRUE;
 	});
@@ -240,7 +240,7 @@ void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
 	auto r = pjson->tree.get_root();
 	if (r == nullptr)
 		return;
-	simple_tree_enum_from_node(r, [&](SIMPLE_TREE_NODE *stn) {
+	simple_tree_enum_from_node(r, [&](tree_node *stn, unsigned int) {
 		auto m = containerof(stn, MJSON_MIME, node);
 		enum_func(m, param);
 	});
@@ -326,7 +326,7 @@ int MJSON::seek_fd(const char *id, int whence)
 MJSON_MIME *MJSON::get_mime(const char *id)
 {
 	ENUM_PARAM enum_param = {id};
-	simple_tree_enum_from_node(tree.get_root(), [&](const SIMPLE_TREE_NODE *nd) {
+	simple_tree_enum_from_node(tree.get_root(), [&](const tree_node *nd, unsigned int) {
 		if (enum_param.pmime != nullptr)
 			return;
 		auto m = static_cast<MJSON_MIME *>(nd->pdata);

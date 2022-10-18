@@ -566,7 +566,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 		if (NULL == proot) {
 			continue;
 		}
-		simple_tree_enum_from_node(proot, [&pbase](SIMPLE_TREE_NODE *nd) {
+		simple_tree_enum_from_node(proot, [&pbase](tree_node *nd, unsigned int) {
 			auto node_type = ab_tree_get_node_type(nd);
 			if (node_type >= abnode_type::containers || nd->pdata != nullptr)
 				return;
