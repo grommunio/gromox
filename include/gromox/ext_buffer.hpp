@@ -25,6 +25,23 @@ enum {
 	EXT_ERR_IPV6ADDRESS,
 };
 
+/**
+ * %EXT_FLAG_UTF16:	packed representation encodes wide strings as UTF-16
+ * 			(else, UTF-8)
+ * %EXT_FLAG_WCOUNT:	packed rep encodes certain array lengths as 32-bit
+ * 			(else, 16-bit)
+ * %EXT_FLAG_TBLLMT:	limit packed rep strings to 255 characters
+ * 			(GetContentsTable / GetHierarchyTable)
+ * %EXT_FLAG_ABK:	packed rep includes extra set/unset flags
+ * %EXT_FLAG_ZCORE:	unpacked rep uses zcore types for rule element pointers
+ *
+ * The Exchange protocols use UTF-16, but the Gromox exmdb and zcore RPC
+ * protocols use UTF-8. This may require using more than one context to process
+ * certain chunks of data; for example, to parse zcreq_getpropvals you need a
+ * ctx _without_ EXT_FLAG_UTF16, but to parse a oneoff entryid that may be
+ * present inside that getpropval request, you need a ctx _with_
+ * EXT_FLAG_UTF16.
+ */
 enum {
 	EXT_FLAG_UTF16 = 1U << 0,
 	EXT_FLAG_WCOUNT = 1U << 1,
