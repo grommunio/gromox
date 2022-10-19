@@ -673,7 +673,7 @@ static ZEND_FUNCTION(mapi_parseoneoff)
 {
 	size_t cbentryid = 0;
 	char *pentryid;
-	PULL_CTX pull_ctx;
+	EXT_PULL pull_ctx;
 	ONEOFF_ENTRYID oneoff_entry;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
@@ -681,7 +681,8 @@ static ZEND_FUNCTION(mapi_parseoneoff)
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
-	pull_ctx.init(pentryid, cbentryid);
+	pull_ctx.init(pentryid, cbentryid, ext_pack_alloc,
+		EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 	if (pull_ctx.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS) {
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
