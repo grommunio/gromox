@@ -405,6 +405,17 @@ void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 	g_parm = std::move(parm);
 	g_sqlconn_pool.resize(g_parm.conn_num);
 	g_sqlconn_pool.bump();
+
+	auto qstr = "SELECT u.id FROM users AS u LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=0x39050003 WHERE up.proptag IS NULL";
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn->query(qstr)) {
+		DB_RESULT res = mysql_store_result(conn->get());
+		if (res != nullptr && res.num_rows() > 0)
+			fprintf(stderr, "[mysql_adaptor]: \e[1;31m"
+			        "There are %zu users with no PR_DISPLAY_TYPE_EX set, "
+			        "which makes their existence _undefined_.\e[0m\n",
+			        res.num_rows());
+	}
 }
 
 static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
