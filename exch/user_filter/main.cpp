@@ -41,21 +41,8 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 			return FALSE;
 		}
 		auto str_value = pfile->get_value("IS_CASE_SENSITIVE");
-		if (NULL == str_value) {
-			case_sensitive = FALSE;
-			fprintf(stderr, "[%s]: case-insensitive\n", plugname.c_str());
-		} else {
-			if (0 == strcasecmp(str_value, "FALSE")) {
-				case_sensitive=FALSE;
-				fprintf(stderr, "[%s]: case-insensitive\n", plugname.c_str());
-			} else if (0 == strcasecmp(str_value, "TRUE")) {
-				case_sensitive=TRUE;
-				fprintf(stderr, "[%s]: case-sensitive\n", plugname.c_str());
-			} else {
-				case_sensitive = FALSE;
-				fprintf(stderr, "[%s]: case-insensitive\n", plugname.c_str());
-			}
-		}				
+		case_sensitive = str_value != nullptr && parse_bool(str_value);
+		fprintf(stderr, "[%s]: case-%ssensitive\n", plugname.c_str(), case_sensitive ? "" : "in");
 		str_value = pfile->get_value("AUDIT_MAX_NUM");
 		audit_max = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (audit_max < 0)
