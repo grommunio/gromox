@@ -105,8 +105,6 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 
 static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 {
-	char temp_buff[64];
-
 	switch(reason) {
 	case PLUGIN_RELOAD:
 		exmdb_provider_reload(nullptr);
@@ -147,54 +145,33 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		auto pconfig = std::move(g_config_during_init);
 		auto separator = pconfig->get_value("separator_for_bounce");
 		auto org_name = pconfig->get_value("x500_org_name");
-		printf("[exmdb_provider]: x500 org name is \"%s\"\n", org_name);
-		
 		int connection_num = pconfig->get_ll("rpc_proxy_connection_num");
-		printf("[exmdb_provider]: exmdb rpc proxy "
-			"connection number is %d\n", connection_num);
-			
 		int threads_num = pconfig->get_ll("notify_stub_threads_num");
-		printf("[exmdb_provider]: exmdb notify stub "
-			"threads number is %d\n", threads_num);
-		
 		size_t max_threads = pconfig->get_ll("max_rpc_stub_threads");
 		size_t max_routers = pconfig->get_ll("max_router_connections");
 		int table_size = pconfig->get_ll("table_size");
-		printf("[exmdb_provider]: db hash table size is %d\n", table_size);
-		
+		char cache_int_s[64], mmap_size_s[64];
 		int cache_interval = pconfig->get_ll("cache_interval");
-		HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
-		printf("[exmdb_provider]: cache interval is %s\n", temp_buff);
-		
+		HX_unit_seconds(cache_int_s, std::size(cache_int_s), cache_interval, 0);
 		int max_msg_count = pconfig->get_ll("max_store_message_count");
-		printf("[exmdb_provider]: maximum message "
-			"count per store is %d\n", max_msg_count);
-		
 		int max_rule = pconfig->get_ll("max_rule_number");
-		printf("[exmdb_provider]: maximum rule "
-			"number per folder is %d\n", max_rule);
-		
 		int max_ext_rule = pconfig->get_ll("max_ext_rule_number");
-		printf("[exmdb_provider]: maximum ext rule "
-			"number per folder is %d\n", max_ext_rule);
-		
 		auto b_async = parse_bool(pconfig->get_value("sqlite_synchronous"));
-		printf("[exmdb_provider]: sqlite synchronous PRAGMA is %s\n", b_async ? "ON" : "OFF");
-		
 		auto b_wal = parse_bool(pconfig->get_value("sqlite_wal_mode"));
-		printf("[exmdb_provider]: sqlite journal mode is %s\n", b_wal ? "WAL" : "DELETE");
-		
 		uint64_t mmap_size = pconfig->get_ll("sqlite_mmap_size");
-		if (0 == mmap_size) {
-			printf("[exmdb_provider]: sqlite mmap_size is disabled\n");
-		} else {
-			HX_unit_size(temp_buff, arsizeof(temp_buff), mmap_size, 1024, 0);
-			printf("[exmdb_provider]: sqlite mmap_size is %s\n", temp_buff);
-		}
-		
+		if (mmap_size != 0)
+			HX_unit_size(mmap_size_s, std::size(mmap_size_s), mmap_size, 1024, 0);
 		int populating_num = pconfig->get_ll("populating_threads_num");
-		printf("[exmdb_provider]: populating threads"
-				" number is %d\n", populating_num);
+		fprintf(stderr, "[exmdb_provider]: x500=\"%s\", "
+		        "rpc_proxyconn_num=%d, notify_stub_threads_num=%d, "
+		        "db_hash_table_size=%d, cache_interval=%s, max_msgs_per_store=%d, "
+		        "max_rule_per_folder=%d, max_ext_rule_per_folder=%d, popul_num=%d\n",
+		        org_name, connection_num, threads_num, table_size,
+		        cache_int_s, max_msg_count, max_rule, max_ext_rule,
+		        populating_num);
+		fprintf(stderr, "[exmdb_provider]: sqlite: synchronous=%s journal=%s mmap_size=%s\n",
+		       b_async ? "ON" : "OFF", b_wal ? "WAL" : "DELETE",
+		       mmap_size == 0 ? "disabled" : mmap_size_s);
 		
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
 		bounce_producer_init(separator);
