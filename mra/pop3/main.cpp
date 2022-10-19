@@ -259,8 +259,6 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
 		std::move(g_dfl_svc_plugins), context_num});
-	printf("--------------------------- service plugins begin"
-		   "---------------------------\n");
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;
@@ -268,13 +266,8 @@ int main(int argc, const char **argv) try
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	if (0 != service_run()) { 
-		printf("---------------------------- service plugins end"
-		   "----------------------------\n");
 		printf("[system]: failed to run service\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("---------------------------- service plugins end"
-		   "----------------------------\n");
 	}
 	auto cleanup_6 = make_scope_exit(service_stop);
 	

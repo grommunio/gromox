@@ -312,8 +312,6 @@ int main(int argc, const char **argv) try
 		printf("service_register ndr_stack_alloc failed\n");
 		return EXIT_FAILURE;
 	}
-	printf("--------------------------- service plugins begin"
-		   "---------------------------\n");
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;
@@ -321,13 +319,8 @@ int main(int argc, const char **argv) try
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	if (0 != service_run()) { 
-		printf("---------------------------- service plugins end"
-		   "----------------------------\n");
 		printf("[system]: failed to run service\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("---------------------------- service plugins end"
-		   "----------------------------\n");
 	}
 
 	if (iconv_validate() != 0)
@@ -346,31 +339,17 @@ int main(int argc, const char **argv) try
 		dns_name, dns_domain, TRUE, max_request_mem,
 		std::move(g_dfl_proc_plugins));
 	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
-	printf("---------------------------- proc plugins begin "
-		   "----------------------------\n");
 	if (0 != pdu_processor_run()) {
-		printf("----------------------------- proc plugins end "
-		   "-----------------------------\n");
 		printf("[system]: can not run pdu processor\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("----------------------------- proc plugins end "
-		   "-----------------------------\n");
 	}
 
 	hpm_processor_init(context_num, std::move(g_dfl_hpm_plugins),
 		hpm_cache_size, hpm_max_size);
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
-	printf("---------------------------- hpm plugins begin "
-		   "----------------------------\n");
 	if (0 != hpm_processor_run()) {
-		printf("----------------------------- hpm plugins end "
-		   "-----------------------------\n");
 		printf("[system]: can not run hpm processor\n");
 		return EXIT_FAILURE;
-	} else {
-		printf("----------------------------- hpm plugins end "
-		   "-----------------------------\n");
 	}
 
 	if (mod_rewrite_run(resource_get_string("config_file_path")) != 0) {

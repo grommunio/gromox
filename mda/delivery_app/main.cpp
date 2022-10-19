@@ -145,8 +145,6 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
 		std::move(g_dfl_svc_plugins), threads_max + free_contexts});
-	printf("--------------------------- service plugins begin"
-		   "---------------------------\n");
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;
@@ -154,13 +152,8 @@ int main(int argc, const char **argv) try
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
     if (0 != service_run()) { 
-		printf("---------------------------- service plugins end"
-		   "----------------------------\n");
 		printf("[system]: failed to run service\n");
 		return EXIT_FAILURE;
-    } else {
-		printf("---------------------------- service plugins end"
-		   "----------------------------\n");
     }
 	auto cleanup_4 = make_scope_exit(service_stop);
 
@@ -182,17 +175,9 @@ int main(int argc, const char **argv) try
 	transporter_init(PKGLIBDIR,
 		std::move(g_dfl_mpc_plugins), threads_min, threads_max,
 		free_contexts, mime_ratio, false);
-
-	printf("--------------------------- mpc plugins begin"
-		"---------------------------\n");
     if (0 != transporter_run()) { 
-		printf(" ---------------------------- mpc plugins end"
-			"-----------------------------\n");
 		printf("[system]: failed to run transporter\n");
 		return EXIT_FAILURE;
-    } else {
-		printf("----------------------------- mpc plugins end"
-			"-----------------------------\n");
     }
 	auto cleanup_12 = make_scope_exit(transporter_stop);
 
