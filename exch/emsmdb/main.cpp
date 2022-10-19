@@ -138,11 +138,9 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 	char smtp_ip[40];
 	int ping_interval;
 	int average_blocks;
-	char size_buff[32];
 	char separator[16];
 	char org_name[256];
 	int average_handles;
-	char temp_buff[256];
 	char file_name[256];
 	char submit_command[1024], *psearch;
 	
@@ -174,33 +172,29 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 			return false;
 		gx_strlcpy(separator, pfile->get_value("separator_for_bounce"), arsizeof(separator));
 		gx_strlcpy(org_name, pfile->get_value("x500_org_name"), arsizeof(org_name));
-		printf("[exchange_emsmdb]: x500 org name is \"%s\"\n", org_name);
 		average_handles = pfile->get_ll("average_handles");
-		printf("[exchange_emsmdb]: average handles number "
-			"per context is %d\n", average_handles);
 		average_blocks = pfile->get_ll("average_mem") / 256;
-		printf("[exchange_emsmdb]: average memory per"
-				" context is %d*256\n", average_blocks);
 		max_rcpt = pfile->get_ll("max_rcpt_num");
-		printf("[exchange_emsmdb]: maximum rcpt number is %d\n", max_rcpt);
 		max_mail = pfile->get_ll("max_mail_num");
-		printf("[exchange_emsmdb]: maximum mail number is %d\n", max_mail);
+		char max_length_s[32], max_rule_len_s[32], ping_int_s[32];
 		max_length = pfile->get_ll("max_mail_length");
-		HX_unit_size(size_buff, arsizeof(size_buff), max_length, 1024, 0);
-		printf("[exchange_emsmdb]: maximum mail length is %s\n", size_buff);
 		max_rule_len = pfile->get_ll("max_ext_rule_length");
-		HX_unit_size(size_buff, arsizeof(size_buff), max_rule_len, 1024, 0);
-		printf("[exchange_emsmdb]: maximum extended rule length is %s\n", size_buff);
+		HX_unit_size(max_rule_len_s, std::size(max_rule_len_s), max_rule_len, 1024, 0);
 		ping_interval = pfile->get_ll("mailbox_ping_interval");
-		HX_unit_seconds(temp_buff, arsizeof(temp_buff), ping_interval, 0);
-		printf("[exchange_emsmdb]: mailbox ping interval is %s\n",
-			temp_buff);
+		HX_unit_seconds(ping_int_s, std::size(ping_int_s), ping_interval, 0);
+		HX_unit_size(max_length_s, std::size(max_length_s), max_length, 1024, 0);
 		gx_strlcpy(smtp_ip, pfile->get_value("smtp_server_ip"), arsizeof(smtp_ip));
 		smtp_port = pfile->get_ll("smtp_server_port");
-		printf("[exchange_emsmdb]: smtp server is [%s]:%hu\n", smtp_ip, smtp_port);
 		gx_strlcpy(submit_command, pfile->get_value("submit_command"), arsizeof(submit_command));
 		async_num = pfile->get_ll("async_threads_num");
-		printf("[exchange_emsmdb]: async threads number is %d\n", async_num);
+
+		fprintf(stderr, "[exchange_emsmdb]: x500=\"%s\", "
+		        "avg_handles=%d, avgmem_per_ctx=%d*256, max_rcpt=%d, "
+		        "max_mail=%d, max_mail_len=%s, max_ext_rule_len=%s, "
+		        "ping_int=%s, async_threads=%d, smtp=[%s]:%hu\n",
+		       org_name, average_handles, average_blocks, max_rcpt,
+		       max_mail, max_length_s, max_rule_len_s, ping_int_s,
+		       async_num, smtp_ip, smtp_port);
 		
 #define regsvr(f) register_service(#f, f)
 		if (!regsvr(asyncemsmdb_interface_async_wait) ||
