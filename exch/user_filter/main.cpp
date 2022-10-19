@@ -42,12 +42,10 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		}
 		auto str_value = pfile->get_value("IS_CASE_SENSITIVE");
 		case_sensitive = str_value != nullptr && parse_bool(str_value);
-		fprintf(stderr, "[%s]: case-%ssensitive\n", plugname.c_str(), case_sensitive ? "" : "in");
 		str_value = pfile->get_value("AUDIT_MAX_NUM");
 		audit_max = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (audit_max < 0)
 			audit_max = 0;
-		fprintf(stderr, "[%s]: audit capacity is %d\n", plugname.c_str(), audit_max);
 		str_value = pfile->get_value("AUDIT_INTERVAL");
 		if (NULL == str_value) {
 			audit_interval = 60;
@@ -57,24 +55,23 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 				audit_interval = 60;
 		}
 		HX_unit_seconds(temp_buff, arsizeof(temp_buff), audit_interval, 0);
-		fprintf(stderr, "[%s]: audit interval is %s\n", plugname.c_str(), temp_buff);
 		str_value = pfile->get_value("AUDIT_TIMES");
 		audit_times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;
 		if (audit_times <= 0)
 			audit_times = 10;
-		fprintf(stderr, "[%s]: audit times is %d\n", plugname.c_str(), audit_times);
 		str_value = pfile->get_value("TEMP_LIST_SIZE");
 		temp_list_size = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (temp_list_size < 0)
 			temp_list_size = 0;
-		fprintf(stderr, "[%s]: temporary list capacity is %d\n", plugname.c_str(),
-			temp_list_size);
 		str_value = pfile->get_value("GREY_GROWING_NUM");
 		growing_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (growing_num < 0)
 			growing_num = 0;
-		fprintf(stderr, "[%s]: grey list growing number is %d\n", plugname.c_str(),
-			growing_num);
+		fprintf(stderr, "[%s]: case-%ssensitive, audit_capacity=%d, "
+		        "audit_interval=%s, audit_times=%d, tmplist_capacity=%d, "
+		        "greylist_grow=%d\n",
+		        plugname.c_str(), case_sensitive ? "" : "in",
+		        audit_max, temp_buff, audit_times, temp_list_size, growing_num);
 		str_value = pfile->get_value("JUDGE_SERVICE_NAME");
 		std::string judge_name = str_value != nullptr ? str_value : plugname.c_str() + "_judge"s;
 		str_value = pfile->get_value("ADD_SERVICE_NAME");
