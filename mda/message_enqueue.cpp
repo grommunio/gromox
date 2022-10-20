@@ -114,7 +114,6 @@ static int message_enqueue_run()
 {
 	key_t k_msg;
     char name[256];
-    pthread_attr_t attr;
 
 	if (!message_enqueue_check())
 		return -1;
@@ -135,14 +134,12 @@ static int message_enqueue_run()
     }
     g_last_flush_ID = message_enqueue_retrieve_max_ID();
 	g_notify_stop = false;
-    pthread_attr_init(&attr);
-	auto ret = pthread_create(&g_flushing_thread, &attr, meq_thrwork, nullptr);
+	auto ret = pthread_create(&g_flushing_thread, nullptr, meq_thrwork, nullptr);
 	if (ret != 0) {
 		printf("[message_enqueue]: failed to create flushing thread: %s\n", strerror(ret));
         return -7;
     }
 	pthread_setname_np(g_flushing_thread, "flusher");
-    pthread_attr_destroy(&attr);
     return 0;
 }
 
