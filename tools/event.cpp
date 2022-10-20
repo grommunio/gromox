@@ -277,7 +277,11 @@ int main(int argc, const char **argv) try
 	g_dequeue_list1.reserve(g_threads_num);
 	pthread_attr_init(&thr_attr);
 	auto cl_3 = make_scope_exit([&]() { pthread_attr_destroy(&thr_attr); });
-	pthread_attr_setstacksize(&thr_attr, 1024*1024);
+	auto ret = pthread_attr_setstacksize(&thr_attr, 1U << 20);
+	if (ret != 0) {
+		fprintf(stderr, "pthread_attr_setstacksize: %s\n", strerror(ret));
+		return 7;
+	}
 	
 	std::vector<pthread_t> tidlist;
 	tidlist.reserve(g_threads_num * 2);
@@ -291,7 +295,7 @@ int main(int argc, const char **argv) try
 	});
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		auto ret = pthread_create(&tid, &thr_attr, ev_enqwork, nullptr);
+		ret = pthread_create(&tid, &thr_attr, ev_enqwork, nullptr);
 		if (ret != 0) {
 			g_notify_stop = true;
 			printf("[system]: failed to create enqueue pool thread: %s\n", strerror(ret));
@@ -325,7 +329,7 @@ int main(int argc, const char **argv) try
 	}
 
 	pthread_t acc_thr{}, scan_thr{};
-	auto ret = pthread_create(&acc_thr, nullptr, ev_acceptwork,
+	ret = pthread_create(&acc_thr, nullptr, ev_acceptwork,
 	      reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
