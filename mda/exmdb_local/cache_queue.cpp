@@ -58,7 +58,6 @@ void cache_queue_init(const char *path, int scan_interval, int retrying_times)
  */
 int cache_queue_run()
 {
-	pthread_attr_t  attr;
 	struct stat node_stat;
 
 	/* check the directory */
@@ -72,16 +71,13 @@ int cache_queue_run()
     }
 	g_mess_id = cache_queue_retrieve_mess_ID();
 	g_notify_stop = false;
-	pthread_attr_init(&attr);
-	auto ret = pthread_create(&g_thread_id, &attr, mdl_thrwork, nullptr);
+	auto ret = pthread_create(&g_thread_id, nullptr, mdl_thrwork, nullptr);
 	if (ret != 0) {
-		pthread_attr_destroy(&attr);
 		g_notify_stop = true;
 		printf("[exmdb_local]: failed to create timer thread: %s\n", strerror(ret));
 		return -3;
 	}
 	pthread_setname_np(g_thread_id, "cache_queue");
-	pthread_attr_destroy(&attr);
 	return 0;
 }
 

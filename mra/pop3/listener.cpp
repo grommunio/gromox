@@ -81,26 +81,20 @@ int listener_run()
 
 int listener_trigger_accept()
 {
-	pthread_attr_t  attr;
-
-	pthread_attr_init(&attr);
-	auto ret = pthread_create(&g_thr_id, &attr, p3ls_thrwork, nullptr);
+	auto ret = pthread_create(&g_thr_id, nullptr, p3ls_thrwork, nullptr);
 	if (ret != 0) {
 		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
-		pthread_attr_destroy(&attr);
 		return -1;
 	}
 	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
-		ret = pthread_create(&g_ssl_thr_id, &attr, p3ls_thrworkssl, nullptr);
+		ret = pthread_create(&g_ssl_thr_id, nullptr, p3ls_thrworkssl, nullptr);
 		if (ret != 0) {
 			printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
-			pthread_attr_destroy(&attr);
 			return -2;
 		}
 		pthread_setname_np(g_ssl_thr_id, "tls_accept");
 	}
-	pthread_attr_destroy(&attr);
 	return 0;
 }
 

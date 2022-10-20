@@ -81,16 +81,12 @@ void cmd_parser_put_connection(std::list<midb_conn> &&holder)
 
 int cmd_parser_run()
 {
-	pthread_attr_t thr_attr;
-	pthread_attr_init(&thr_attr);
-	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&thr_attr); });
-
 	cmd_parser_register_command("PING", cmd_parser_ping);
 	g_notify_stop = false;
 
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		auto ret = pthread_create(&tid, &thr_attr, midcp_thrwork, nullptr);
+		auto ret = pthread_create(&tid, nullptr, midcp_thrwork, nullptr);
 		if (ret != 0) {
 			printf("[cmd_parser]: failed to create pool thread: %s\n", strerror(ret));
 			return -1;

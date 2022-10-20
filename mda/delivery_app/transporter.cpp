@@ -299,8 +299,7 @@ int transporter_run()
 		double_list_append_as_tail(&g_threads_list, &g_data_ptr[i].node);
     }
 	/* create the scanning thread */
-	pthread_attr_init(&attr);
-	auto ret = pthread_create(&g_scan_id, &attr, dxp_scanwork, nullptr);
+	auto ret = pthread_create(&g_scan_id, nullptr, dxp_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		transporter_collect_hooks();
@@ -309,7 +308,6 @@ int transporter_run()
 		return -11;
 	}
 	pthread_setname_np(g_scan_id, "xprt/scan");
-    pthread_attr_destroy(&attr);
 	/* make all thread wake up */
 	g_waken_cond.notify_all();
 	return 0;

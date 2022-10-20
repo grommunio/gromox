@@ -148,7 +148,6 @@ int message_dequeue_run()
 {
 	size_t size;
 	MESSAGE *pmessage;
-	pthread_attr_t attr;
 
 	if (!message_dequeue_check())
 		return -1;
@@ -195,8 +194,7 @@ int message_dequeue_run()
 		message_dequeue_collect_resource();
 		return -8;
 	}
-	pthread_attr_init(&attr);
-	auto ret = pthread_create(&g_thread_id, &attr, mdq_thrwork, nullptr);
+	auto ret = pthread_create(&g_thread_id, nullptr, mdq_thrwork, nullptr);
 	if (ret != 0) {
 		printf("[message_dequeue]: failed to create message dequeue thread: %s\n", strerror(ret));
 		message_dequeue_collect_resource();
