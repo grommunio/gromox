@@ -282,8 +282,12 @@ int transporter_run()
 
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
-	pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
+	auto ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
+	if (ret != 0) {
+		fprintf(stderr, "[transporter]: pthread_attr_setstacksize: %s\n", strerror(ret));
+		return -1;
+	}
 
 	for (size_t i = 0; i < g_threads_min; ++i) {
 		g_data_ptr[i].wait_on_event = TRUE;
@@ -301,7 +305,7 @@ int transporter_run()
 		double_list_append_as_tail(&g_threads_list, &g_data_ptr[i].node);
     }
 	/* create the scanning thread */
-	auto ret = pthread_create(&g_scan_id, nullptr, dxp_scanwork, nullptr);
+	ret = pthread_create(&g_scan_id, nullptr, dxp_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		transporter_collect_hooks();
@@ -567,8 +571,12 @@ static void *dxp_scanwork(void *arg)
 	pthread_attr_t attr;
 
 	pthread_attr_init(&attr);
-	pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
+	auto ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
+	if (ret != 0) {
+		fprintf(stderr, "[transporter]: pthread_attr_setstacksize: %s\n", strerror(ret));
+		return nullptr;
+	}
 
 	while (!g_notify_stop) {
 		sleep(SCAN_INTERVAL);

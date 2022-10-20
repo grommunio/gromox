@@ -86,13 +86,17 @@ int threads_pool_run(const char *hint)
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
+	ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
+	if (ret != 0) {
+		fprintf(stderr, "[threads_pool]: pthread_attr_setstacksize: %s\n", strerror(ret));
+		return -1;
+	}
 	created_thr_num = 0;
 	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
 		auto pdata = g_threads_data_buff.get();
 		pdata->node.pdata = pdata;
 		pdata->id = (pthread_t)-1;
 		pdata->notify_stop = FALSE;
-		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 		ret = pthread_create(&pdata->id, &attr, tpol_thrwork, pdata);
 		if (ret != 0) {
 			fprintf(stderr, "[threads_pool]: failed to create a pool thread: %s\n", strerror(ret));
@@ -259,8 +263,12 @@ static void *tpol_scanwork(void *pparam)
 	pthread_attr_t attr;
 
 	pthread_attr_init(&attr);
-	pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
+	auto ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
+	if (ret != 0) {
+		fprintf(stderr, "[tpolscanwork]: pthread_attr_setstacksize: %s\n", strerror(ret));
+		return nullptr;
+	}
 	not_empty_times = 0;
 	while (!g_notify_stop) {
 		sleep(1);
