@@ -25,6 +25,7 @@
 #include <gromox/mime_pool.hpp>
 #include <gromox/paths.h>
 #include <gromox/plugin.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
@@ -198,8 +199,6 @@ void transporter_init(const char *path, std::vector<std::string> &&names,
  */
 int transporter_run()
 {
-	pthread_attr_t attr;
-	
 	try {
 		g_circles_ptr = std::make_unique<CIRCLE_NODE[]>(g_threads_max * MAX_THROWING_NUM);
 	} catch (const std::bad_alloc &) {
@@ -280,10 +279,14 @@ int transporter_run()
 
 	for (unsigned int i = g_threads_min; i < g_threads_max; ++i)
 		double_list_append_as_tail(&g_free_threads, &g_data_ptr[i].node);
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
+	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
+
 	for (size_t i = 0; i < g_threads_min; ++i) {
 		g_data_ptr[i].wait_on_event = TRUE;
-		pthread_attr_init(&attr);
-		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 		auto ret = pthread_create(&g_data_ptr[i].id, &attr, dxp_thrwork, &g_data_ptr[i]);
 		if (ret != 0) {
 			transporter_collect_hooks();
@@ -295,7 +298,6 @@ int transporter_run()
 		char buf[32];
 		snprintf(buf, sizeof(buf), "xprt/%zu", i);
 		pthread_setname_np(g_data_ptr[i].id, buf);
-		pthread_attr_destroy(&attr);
 		double_list_append_as_tail(&g_threads_list, &g_data_ptr[i].node);
     }
 	/* create the scanning thread */
@@ -563,7 +565,11 @@ static void *dxp_scanwork(void *arg)
 	THREAD_DATA *pthr_data;
 	DOUBLE_LIST_NODE *pnode;
 	pthread_attr_t attr;
-	
+
+	pthread_attr_init(&attr);
+	pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
+	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
+
 	while (!g_notify_stop) {
 		sleep(SCAN_INTERVAL);
 		if (message_dequeue_get_param(MESSAGE_DEQUEUE_HOLDING) == 0)
@@ -581,8 +587,6 @@ static void *dxp_scanwork(void *arg)
 			continue;
 		}
 		pthr_data = (THREAD_DATA *)pnode->pdata;
-		pthread_attr_init(&attr);
-		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 		auto ret = pthread_create(&pthr_data->id, &attr, dxp_thrwork, pthr_data);
 		if (ret == 0) {
 			pthread_setname_np(pthr_data->id, "xprt/+");
@@ -595,7 +599,6 @@ static void *dxp_scanwork(void *arg)
 			double_list_append_as_tail(&g_free_threads, &pthr_data->node);
 			tl_hold.unlock();
 		}
-		pthread_attr_destroy(&attr);
 	}
 	return NULL;
 }

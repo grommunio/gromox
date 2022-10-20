@@ -12,6 +12,7 @@
 #include <gromox/contexts_pool.hpp>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 
@@ -20,6 +21,8 @@
 #define MAX_NOT_EMPTY_TIMES				10
 
 #define THREAD_STACK_SIZE           	16 * 1024 * 1024
+
+using namespace gromox;
 
 namespace {
 struct THR_DATA {
@@ -67,7 +70,6 @@ void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_
 int threads_pool_run(const char *hint)
 {
 	int created_thr_num;
-	pthread_attr_t attr;
 	
 	/* g_threads_data_buff is protected by g_threads_pool_data_lock */
 	g_threads_data_buff = alloc_limiter<THR_DATA>(g_threads_pool_max_num,
@@ -80,7 +82,10 @@ int threads_pool_run(const char *hint)
 		return -2;
 	}
 	pthread_setname_np(g_scan_id, "ep_pool/scan");
+
+	pthread_attr_t attr;
 	pthread_attr_init(&attr);
+	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
 	created_thr_num = 0;
 	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
 		auto pdata = g_threads_data_buff.get();
@@ -99,7 +104,6 @@ int threads_pool_run(const char *hint)
 			double_list_append_as_tail(&g_threads_data_list, &pdata->node);
 		}
 	}
-	pthread_attr_destroy(&attr);
 	g_threads_pool_cur_thr_num = created_thr_num;
 	return 0;
 }
@@ -253,7 +257,10 @@ static void *tpol_scanwork(void *pparam)
 {
 	int not_empty_times;
 	pthread_attr_t attr;
-	
+
+	pthread_attr_init(&attr);
+	pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
+	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
 	not_empty_times = 0;
 	while (!g_notify_stop) {
 		sleep(1);
@@ -271,8 +278,6 @@ static void *tpol_scanwork(void *pparam)
 				pdata->node.pdata = pdata;
 				pdata->id = (pthread_t)-1;
 				pdata->notify_stop = FALSE;
-				pthread_attr_init(&attr);
-				pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 				auto ret = pthread_create(&pdata->id, &attr, tpol_thrwork, pdata);
 				if (ret != 0) {
 					debug_info("[threads_pool]: W-1445: failed to increase pool threads: %s\n", strerror(ret));
@@ -283,7 +288,6 @@ static void *tpol_scanwork(void *pparam)
 						&g_threads_data_list, &pdata->node);
 					g_threads_pool_cur_thr_num ++;
 				}
-				pthread_attr_destroy(&attr);
 			} else {
 				debug_info("[threads_pool]: fatal error,"
 					" threads pool memory conflicts!\n");
