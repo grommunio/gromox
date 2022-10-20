@@ -84,9 +84,18 @@ int cmd_parser_run()
 	cmd_parser_register_command("PING", cmd_parser_ping);
 	g_notify_stop = false;
 
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
+	auto ret = pthread_attr_setstacksize(&attr, 1UL << 20);
+	if (ret != 0) {
+		fprintf(stderr, "[cmd_parser]: pthread_attr_setstacksize: %s\n", strerror(ret));
+		return -1;
+	}
+
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		auto ret = pthread_create(&tid, nullptr, midcp_thrwork, nullptr);
+		ret = pthread_create(&tid, &attr, midcp_thrwork, nullptr);
 		if (ret != 0) {
 			printf("[cmd_parser]: failed to create pool thread: %s\n", strerror(ret));
 			return -1;
