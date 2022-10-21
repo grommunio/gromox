@@ -14,8 +14,7 @@ our $gen_mode;
 if ($gen_mode eq "CLN" || $gen_mode eq "SDP") {
 	print "#include <$_>\n" for qw(cstring gromox/exmdb_client.hpp gromox/exmdb_rpc.hpp);
 	if ($gen_mode eq "SDP") {
-		print "#include <$_>\n" for qw(gromox/exmdb_common_util.hpp gromox/exmdb_provider_client.hpp);
-		print "#include \"$_\"\n" for qw(exmdb_ext.hpp);
+		print "#include <$_>\n" for qw(gromox/exmdb_common_util.hpp gromox/exmdb_ext.hpp gromox/exmdb_provider_client.hpp);
 		print "#include \"exmdb_server.h\"\n";
 	}
 	print "using namespace gromox;\n";

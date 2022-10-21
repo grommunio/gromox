@@ -5,9 +5,9 @@
 #include <list>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_provider_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include "exmdb_ext.hpp"
 #include "exmdb_server.h"
 
 using namespace gromox;
