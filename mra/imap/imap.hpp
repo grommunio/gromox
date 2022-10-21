@@ -4,6 +4,7 @@
 #include <ctime>
 #include <memory>
 #include <string>
+#include <gromox/authmgr.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
@@ -16,7 +17,6 @@
 #include <gromox/single_list.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
-#include "../exch/authmgr.hpp"
 #define MAX_LINE_LENGTH (64 * 1024)
 
 /* enumeration for the return value of imap_parser_dispatch_cmd */

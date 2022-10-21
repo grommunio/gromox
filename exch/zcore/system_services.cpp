@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdio>
+#include <gromox/authmgr.hpp>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
 #include "system_services.hpp"
-#include "../exch/authmgr.hpp"
 
 decltype(system_services_auth_login) system_services_auth_login;
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;

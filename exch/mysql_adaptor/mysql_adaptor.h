@@ -3,9 +3,9 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <gromox/authmgr.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/mapidefs.h>
-#include "../authmgr.hpp"
 
 enum {
 	/* Reason codes (users.address_status) for forbidden login */

@@ -1,7 +1,7 @@
 #pragma once
+#include <gromox/authmgr.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#include "../authmgr.hpp"
 #include "../mysql_adaptor/mysql_adaptor.h"
 #include "../mysql_adaptor/sql2.hpp"
 

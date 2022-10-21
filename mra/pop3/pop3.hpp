@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <openssl/ssl.h>
+#include <gromox/authmgr.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
@@ -11,7 +12,6 @@
 #include <gromox/msg_unit.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
-#include "../../exch/authmgr.hpp"
 #define MAX_LINE_LENGTH (64 * 1024)
 
 /* enumeration for the return value of pop3_parser_dispatch_cmd */

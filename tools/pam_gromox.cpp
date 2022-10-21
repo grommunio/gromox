@@ -15,6 +15,7 @@
 #include <libHX/misc.h>
 #include <security/pam_appl.h>
 #include <security/pam_modules.h>
+#include <gromox/authmgr.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -23,7 +24,6 @@
 #include <gromox/svc_loader.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
-#include "../exch/authmgr.hpp"
 #ifndef PAM_EXTERN
 #	define PAM_EXTERN
 #endif
