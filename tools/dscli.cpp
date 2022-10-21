@@ -4,10 +4,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <netdb.h>
+#include <resolv.h>
 #include <string>
 #include <unordered_set>
 #include <utility>
 #include <tinyxml2.h>
+#include <arpa/nameser.h>
 #include <curl/curl.h>
 #include <libHX/option.h>
 #include <gromox/scope.hpp>
@@ -20,6 +23,7 @@ struct curl_del {
 using namespace std::string_literals;
 using namespace gromox;
 
+static bool g_tty;
 static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
 static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_password, *g_legacydn;
 static constexpr HXoption g_options_table[] = {
@@ -166,6 +170,41 @@ static size_t oxd_write(char *ptr, size_t size, size_t nemb, void *udata)
 	return size * nemb;
 }
 
+static std::string domain_to_oxsrv(const char *dom)
+{
+	std::remove_pointer_t<res_state> state;
+	uint8_t rsp[1500];
+
+	if (res_ninit(&state) != 0)
+		throw std::bad_alloc();
+	auto cl_0 = make_scope_exit([&]() { res_nclose(&state); });
+	auto ret = res_nquerydomain(&state, "_autodiscover._tcp", dom, ns_c_in,
+	           ns_t_srv, rsp, std::size(rsp));
+	if (ret <= 0)
+		return {};
+
+	ns_msg handle;
+	if (ns_initparse(rsp, ret, &handle) != 0)
+		return {};
+	if (ns_msg_getflag(handle, ns_f_rcode) != ns_r_noerror)
+		return {};
+
+	ns_rr rr;
+	if (ns_parserr(&handle, ns_s_an, 0, &rr) != 0)
+		return {};
+	if (ns_rr_type(rr) != ns_t_srv)
+		return {};
+	auto ptr = ns_rr_rdata(rr);
+	ptr += 3 * sizeof(uint16_t);
+	auto port = ns_get16(ptr - sizeof(uint16_t));
+	char hostname[256];
+	ret = ns_name_uncompress(ns_msg_base(handle), ns_msg_end(handle), ptr,
+	      hostname, std::size(hostname));
+	if (ret == 0)
+		return {};
+	return std::string(hostname, ret) + ":" + std::to_string(port);
+}
+
 static std::string autodisc_url()
 {
 #define xmlpath "/Autodiscover/Autodiscover.xml"
@@ -175,8 +214,15 @@ static std::string autodisc_url()
 		return "https://"s + g_disc_host + xmlpath;
 	if (g_emailaddr != nullptr) {
 		auto p = strchr(g_emailaddr, '@');
-		if (p != nullptr)
-			return "https://"s + (p + 1) + xmlpath;
+		if (p != nullptr) {
+			auto dom = p + 1;
+			auto srv = domain_to_oxsrv(dom);
+			if (!srv.empty())
+				return "https://" + srv + xmlpath;
+			fprintf(stderr, "%sDNS SRV entry \"_autodiscover._tcp.%s\" is missing!%s\n",
+			        g_tty ? "\e[1;33m" : "", dom, g_tty ? "\e[0m" : "" /* ]] */);
+			return "https://"s + dom + xmlpath;
+		}
 	}
 	return "https://localhost/" xmlpath;
 #undef xmlpath
@@ -239,6 +285,7 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 
 int main(int argc, const char **argv)
 {
+	g_tty = isatty(STDERR_FILENO);
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
