@@ -1,7 +1,7 @@
 #pragma once
 #include <gromox/common_types.hpp>
 #include <gromox/mapidefs.h>
-#include "../mysql_adaptor/mysql_adaptor.h"
+#include <gromox/mysql_adaptor.hpp>
 
 extern int system_services_run();
 extern void system_services_stop();

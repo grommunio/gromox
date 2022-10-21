@@ -16,8 +16,8 @@
 #include <gromox/database_mysql.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mem_file.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
-#include "../exch/mysql_adaptor/mysql_adaptor.h"
 
 using namespace gromox;
 

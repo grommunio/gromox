@@ -2,7 +2,7 @@
 #include <gromox/authmgr.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#include "../mysql_adaptor/mysql_adaptor.h"
+#include <gromox/mysql_adaptor.hpp>
 #include "../mysql_adaptor/sql2.hpp"
 
 extern int system_services_run();

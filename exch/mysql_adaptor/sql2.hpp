@@ -3,8 +3,8 @@
 #include <mysql.h>
 #include <string>
 #include <vector>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/resource_pool.hpp>
-#include "mysql_adaptor.h"
 
 enum {
 	/* For ADDRESS_TYPE_NORMAL */

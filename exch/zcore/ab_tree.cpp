@@ -32,6 +32,7 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
@@ -42,7 +43,6 @@
 #include "objects.hpp"
 #include "system_services.hpp"
 #include "zarafa_server.h"
-#include "../mysql_adaptor/mysql_adaptor.h"
 
 #define EPOCH_DIFF 							11644473600LL
 

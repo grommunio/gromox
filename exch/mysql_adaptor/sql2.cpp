@@ -18,8 +18,8 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/svc_common.h>
-#include "mysql_adaptor.h"
 #include "sql2.hpp"
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 

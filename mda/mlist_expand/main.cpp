@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "bounce_producer.h"
 #include <cstdio>
-#include "../../exch/mysql_adaptor/mysql_adaptor.h"
 #include <gromox/hook_common.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/textmaps.hpp>
 #include <string>
 #include <typeinfo>

@@ -17,8 +17,8 @@
 #include <libHX/string.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/util.hpp>
-#include "mysql_adaptor.h"
 #include "sql2.hpp"
 #define MLIST_PRIVILEGE_ALL				0
 #define MLIST_PRIVILEGE_INTERNAL		1

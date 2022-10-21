@@ -23,6 +23,7 @@
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
@@ -35,7 +36,6 @@
 #include "ab_tree.h"
 #include "common_util.h"
 #include "nsp_interface.hpp"
-#include "../mysql_adaptor/mysql_adaptor.h"
 
 using namespace std::string_literals;
 using namespace gromox;
