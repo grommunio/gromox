@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 
 ACLOCAL_AMFLAGS = -I build-aux
-AM_CPPFLAGS = -I${top_srcdir}/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${crypto_CFLAGS} ${jsoncpp_CFLAGS} ${mysql_CFLAGS} ${sqlite_CFLAGS} ${ssl_CFLAGS} ${zlib_CFLAGS}
+AM_CPPFLAGS = -Iinclude -I${top_srcdir}/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${crypto_CFLAGS} ${jsoncpp_CFLAGS} ${mysql_CFLAGS} ${sqlite_CFLAGS} ${ssl_CFLAGS} ${zlib_CFLAGS}
 AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
 
@@ -81,7 +81,10 @@ endif
 sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
 pkglibexec_SCRIPTS = tools/create_queue.sh
 
-BUILT_SOURCES = include/gromox/paths.h php_mapi/mapierr.cpp php_mapi/mapitags.cpp php_mapi/zrpc.cpp exch/exmdb_provider/exmdb_dispatch.cpp exch/exmdb_provider/exmdb_rpc.cpp exch/zcore/rpc_dispatch.cpp lib/exmdb_rpc.cpp
+BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h \
+	php_mapi/zrpc.cpp \
+	exch/exmdb_provider/exmdb_rpc.cpp \
+	lib/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/single_list.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
@@ -324,51 +327,59 @@ man_MANS += doc/gromox-pff2mt.8gx
 endif
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
-	${AM_V_GEN}sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \
+	${AM_V_GEN}${MKDIR_P} include/gromox
+	${AM_V_at}sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \
 	 -e 's|#define PKGLIBDIR .*|#define PKGLIBDIR "${pkglibdir}"|' \
 	 -e 's|#define PKGDATADIR .*|#define PKGDATADIR "${pkgdatadir}"|' \
 	 -e 's|#define PKGSTATEDIR .*|#define PKGSTATEDIR "${localstatedir}/lib/${PACKAGE_NAME}"|' \
 	 -e 's|#define PKGLOGDIR .*|#define PKGLOGDIR "${localstatedir}/log/${PACKAGE_NAME}"|' \
 	 -e 's|#define DATADIR .*|#define DATADIR "${datadir}"|' \
-		<include/gromox/paths.h.in >"$@.tmp"
+		<${srcdir}/include/gromox/paths.h.in >"$@.tmp"
 	${AM_V_at}if ! cmp "$@" "$@.tmp" 2>/dev/null; then mv "$@.tmp" "$@"; fi; rm -f "$@.tmp"
 
-php_mapi/mapierr.cpp: include/gromox/mapierr.hpp tools/defs2php.sh tools/defs2php.pl
-	${AM_V_GEN}${top_srcdir}/tools/defs2php.sh -e <include/gromox/mapierr.hpp >$@
+include/mapierr.cpp: include/gromox/mapierr.hpp tools/defs2php.sh tools/defs2php.pl
+	${AM_V_GEN}${MKDIR_P} include/gromox
+	${AM_V_at}${srcdir}/tools/defs2php.sh -e <${srcdir}/include/gromox/mapierr.hpp >"$@"
 
-php_mapi/mapitags.cpp: include/gromox/mapitags.hpp tools/defs2php.sh tools/defs2php.pl
-	${AM_V_GEN}${top_srcdir}/tools/defs2php.sh -t <include/gromox/mapitags.hpp >$@
+include/mapitags.cpp: include/gromox/mapitags.hpp tools/defs2php.sh tools/defs2php.pl
+	${AM_V_GEN}${MKDIR_P} include/gromox
+	${AM_V_at}${srcdir}/tools/defs2php.sh -t <${srcdir}/include/gromox/mapitags.hpp >"$@"
 
-php_mapi/zrpc.cpp: php_mapi/zarafa_client.h tools/zcidl.sh tools/zcidl.pl
-	${AM_V_GEN}${top_srcdir}/tools/zcidl.sh -c <php_mapi/zarafa_client.h >"$@"
+php_mapi/zrpc.cpp: include/gromox/zcore_client.hpp tools/zcidl.sh tools/zcidl.pl
+	${AM_V_GEN}${MKDIR_P} php_mapi
+	${AM_V_at}${srcdir}/tools/zcidl.sh -c <${srcdir}/include/gromox/zcore_client.hpp >"$@"
 
-exch/zcore/rpc_dispatch.cpp: php_mapi/zrpc.cpp
-	${AM_V_GEN}${top_srcdir}/tools/zcidl.sh -d <php_mapi/zarafa_client.h >"$@"
+include/zrpc_dispatch.cpp: include/gromox/zcore_client.hpp tools/zcidl.sh tools/zcidl.pl
+	${AM_V_GEN}${MKDIR_P} php_mapi
+	${AM_V_at}${srcdir}/tools/zcidl.sh -d <${srcdir}/include/gromox/zcore_client.hpp >"$@"
 
 lib/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.pl
-	${AM_V_GEN}${top_srcdir}/tools/exmidl.sh -c <include/gromox/exmdb_idef.hpp >"$@"
+	${AM_V_GEN}${MKDIR_P} include/gromox
+	${AM_V_at}${srcdir}/tools/exmidl.sh -c <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
 
-exch/exmdb_provider/exmdb_dispatch.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.pl
-	${AM_V_GEN}${top_srcdir}/tools/exmidl.sh -d <include/gromox/exmdb_idef.hpp >"$@"
+include/exmdb_dispatch.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.pl
+	${AM_V_GEN}${MKDIR_P} include/gromox
+	${AM_V_at}${srcdir}/tools/exmidl.sh -d <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
 
 exch/exmdb_provider/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.pl
-	${AM_V_GEN}${top_srcdir}/tools/exmidl.sh -p <include/gromox/exmdb_idef.hpp >"$@"
+	${AM_V_GEN}${MKDIR_P} include/gromox
+	${AM_V_at}${srcdir}/tools/exmidl.sh -p <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
 
 install-exec-hook:
 	${MKDIR_P} ${DESTDIR}${sbindir}
 	rm -fv ${DESTDIR}${pkglibdir}/libmapi4zf.*
-	cp -av tools/kdb-uidex* ${DESTDIR}${pkglibexecdir}/
+	cp -av ${srcdir}/tools/kdb-uidex* ${DESTDIR}${pkglibexecdir}/
 
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${mandir}/man8 ${DESTDIR}${pkgdatadir}/http/php
-	cp -av data/* ${DESTDIR}${pkgdatadir}/
-	cp -av exch/php/* ${DESTDIR}${pkgdatadir}/http/php/
+	cp -av ${srcdir}/data/* ${DESTDIR}${pkgdatadir}/
+	cp -av ${srcdir}/exch/php/* ${DESTDIR}${pkgdatadir}/http/php/
 
 .la.ldd:
 	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@
 %.service: ${top_builddir}/config.status
 .tps.service:
-	${AM_V_GEN}${SED} -e 's|@''libexecdir''@|${libexecdir}|g' <$< >$@
+	${AM_V_GEN}${MKDIR_P} system; ${SED} -e 's|@''libexecdir''@|${libexecdir}|g' <$< >$@
 
 .PHONY: tarball
 tarball:

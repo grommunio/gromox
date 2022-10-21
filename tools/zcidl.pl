@@ -11,8 +11,8 @@ our $gen_mode;
 );
 
 if ($gen_mode eq "CLN") {
-	print "#include <$_>\n" for qw(gromox/defs.h gromox/zcore_rpc.hpp);
-	print "#include \"$_\"\n" for qw(php.h zarafa_client.h);
+	print "#include <$_>\n" for qw(gromox/defs.h gromox/zcore_client.hpp gromox/zcore_rpc.hpp);
+	print "#include \"$_\"\n" for qw(php.h);
 }
 
 while (<STDIN>) {
