@@ -20,12 +20,12 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <gromox/defs.h>
+#include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#include "common_util.h"
 #include "exmdb_ext.hpp"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"

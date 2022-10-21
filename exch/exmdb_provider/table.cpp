@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/database.h>
+#include <gromox/exmdb_common_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
@@ -23,7 +24,6 @@
 #include <gromox/sortorder_set.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
 #include "db_engine.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"

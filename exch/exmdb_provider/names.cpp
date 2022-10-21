@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2020 grommunio GmbH
 // This file is part of Gromox.
 #include <gromox/defs.h>
+#include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include "common_util.h"
 
 using namespace gromox;
 

@@ -7,8 +7,8 @@
 #include <poll.h>
 #include <unistd.h>
 #include <utility>
+#include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include "common_util.h"
 #include "exmdb_ext.hpp"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
