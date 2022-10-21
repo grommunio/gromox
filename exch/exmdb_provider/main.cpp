@@ -12,6 +12,7 @@
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_provider_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
 #include <gromox/svc_common.h>
@@ -19,7 +20,6 @@
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 #include "db_engine.h"
-#include "exmdb_client.h"
 #include "exmdb_listener.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
