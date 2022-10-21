@@ -7,6 +7,7 @@
 #undef vasprintf
 #undef asprintf
 #include <cstdint>
+#include <gromox/zcore_rpc.hpp>
 
 struct zcreq;
 struct zcresp;

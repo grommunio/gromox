@@ -13,9 +13,9 @@
 #include <gromox/safeint.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
+#include <gromox/zcore_client.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include "php.h"
-#include "zarafa_client.h"
 #include <memory>
 #include <unistd.h>
 #include <cstdlib>
@@ -545,10 +545,10 @@ static ZEND_FUNCTION(mapi_load_mapidefs)
 	c.name = zend_string_init(#PR_name, sizeof(#PR_name) - 1, 0); \
 	ZVAL_LONG(&c.value, PR_val); \
 	zend_register_constant(&c);
-#include "mapitags.cpp"
+#include <mapitags.cpp>
 	if (level < 1)
 		return;
-#include "mapierr.cpp"
+#include <mapierr.cpp>
 #undef C
 }
 

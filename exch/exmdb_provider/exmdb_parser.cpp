@@ -82,7 +82,7 @@ static BOOL exmdb_parser_check_local(const char *prefix, BOOL *pb_private)
 static BOOL exmdb_parser_dispatch3(const exreq *q0, exresp *&r0)
 {
 	switch (q0->call_id) {
-#include "exmdb_dispatch.cpp"
+#include <exmdb_dispatch.cpp>
 	default:
 		return FALSE;
 	}

@@ -67,7 +67,7 @@ BOOL rpc_parser_activate_connection(int clifd)
 static int rpc_parser_dispatch(const zcreq *q0, zcresp *&r0)
 {
 	switch (q0->call_id) {
-#include "rpc_dispatch.cpp"
+#include <zrpc_dispatch.cpp>
 	default:
 		fprintf(stderr, "E-2046: unknown zrpc request type %u\n",
 		        static_cast<unsigned int>(r0->call_id));
