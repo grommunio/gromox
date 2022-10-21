@@ -221,7 +221,7 @@ static std::string autodisc_url()
 				return "https://" + srv + xmlpath;
 			fprintf(stderr, "%sDNS SRV entry \"_autodiscover._tcp.%s\" is missing!%s\n",
 			        g_tty ? "\e[1;33m" : "", dom, g_tty ? "\e[0m" : "" /* ]] */);
-			return "https://"s + dom + xmlpath;
+			return "https://autodiscover."s + dom + xmlpath;
 		}
 	}
 	return "https://localhost/" xmlpath;
