@@ -142,7 +142,7 @@ static bool oxd_validate_response(const std::string &xml_in)
 	}
 
 	std::unordered_set<std::string> seen_urls;
-	bool ok = false;
+	bool ok = true;
 	for (node = node->FirstChildElement(); node != nullptr; node = node->NextSiblingElement()) {
 		name = node->Name();
 		if (name == nullptr || strcasecmp(name, "Protocol") != 0)
@@ -328,5 +328,6 @@ int main(int argc, const char **argv)
 	printf("* Response body:\n%s\n", xml_response.c_str());
 	if (!oxd_validate_response(xml_response))
 		return EXIT_FAILURE;
+	fprintf(stderr, "* Response has validated\n");
 	return EXIT_SUCCESS;
 }
