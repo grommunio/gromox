@@ -27,7 +27,7 @@ Changes:
   `imap_support_starttls` to `imap_support_tls`, since it affects encryption as
   a whole, not just the STARTTLS command on the unencrypted port.
 * pop3: rename the `pop3_force_stls` config directive to `pop3_force_tls` and
-  `pop3_support_stls` to `pop3_support_stls`, since it affects encryption as a
+  `pop3_support_stls` to `pop3_support_tls`, since it affects encryption as a
   whole, not just the STLS command on the unencrypted port.
 
 
