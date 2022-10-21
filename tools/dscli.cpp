@@ -8,6 +8,7 @@
 #include <resolv.h>
 #include <string>
 #include <unordered_set>
+#include <unistd.h>
 #include <utility>
 #include <tinyxml2.h>
 #include <arpa/nameser.h>
