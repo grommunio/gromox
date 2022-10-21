@@ -1,6 +1,13 @@
 #!/bin/sh -e
-if test ! -e configure; then
-	autoreconf -fiv
+topdir="${0%/*}"
+if [ "$topdir" = "$0" ]; then
+	topdir=.
+fi
+abstopdir=$(readlink -f "$topdir")
+if [ ! -e "${topdir}/configure" ]; then
+	cd "$topdir"
+	autoreconf -fi
+	cd -
 fi
 echo -en '#include <libHX/string.h>\nint main(void) { HXmc_free(NULL); }' >conftest.c
 libdir=""
@@ -12,4 +19,4 @@ if gcc -o conftest conftest.c $(pkg-config --cflags --libs libHX) >/dev/null 2>/
 	fi
 fi
 set -x
-exec ./configure --sysconfdir=/etc --localstatedir=/var $libdir CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" "$@"
+exec "$topdir/configure" --sysconfdir=/etc --localstatedir=/var $libdir CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" "$@"
