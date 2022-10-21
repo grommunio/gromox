@@ -6,8 +6,8 @@
 #include <type_traits>
 #include <vector>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/util.hpp>
-#include "../mysql_adaptor/mysql_adaptor.h"
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
 #define MINIMUM_COMPRESS_SIZE						0x100

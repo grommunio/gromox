@@ -23,13 +23,13 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include "mkshared.hpp"
-#include "exch/mysql_adaptor/mysql_adaptor.h"
 
 using namespace std::string_literals;
 using namespace gromox;

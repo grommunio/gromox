@@ -11,10 +11,10 @@
 #include <gromox/authmgr.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include "ldap_adaptor.hpp"
-#include "mysql_adaptor/mysql_adaptor.h"
 
 using namespace std::string_literals;
 using namespace gromox;

@@ -20,10 +20,10 @@
 #include <gromox/database.h>
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include "mkshared.hpp"
-#include "exch/mysql_adaptor/mysql_adaptor.h"
 using namespace std::string_literals;
 using namespace gromox;
 

@@ -31,6 +31,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
@@ -39,7 +40,6 @@
 #include "ab_tree.h"
 #include "common_util.h"
 #include "nsp_types.h"
-#include "../mysql_adaptor/mysql_adaptor.h"
 
 #define BASE_STATUS_CONSTRUCTING			0
 #define BASE_STATUS_LIVING					1
