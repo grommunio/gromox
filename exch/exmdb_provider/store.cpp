@@ -9,12 +9,12 @@
 #include <string>
 #include <vector>
 #include <gromox/database.h>
+#include <gromox/exmdb_common_util.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
 #include "db_engine.h"
 #include "exmdb_server.h"
 

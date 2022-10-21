@@ -21,6 +21,7 @@
 #include <gromox/cryptoutil.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
+#include <gromox/exmdb_common_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
@@ -31,7 +32,6 @@
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
-#include "common_util.h"
 #include "db_engine.h"
 #include "exmdb_client.h"
 #include "exmdb_parser.h"

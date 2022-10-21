@@ -14,13 +14,13 @@
 #include <sys/stat.h>
 #include <gromox/database.h>
 #include <gromox/endian.hpp>
+#include <gromox/exmdb_common_util.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-#include "common_util.h"
 #include "db_engine.h"
 #include "exmdb_server.h"
 

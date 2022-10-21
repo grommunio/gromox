@@ -22,6 +22,7 @@
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
+#include <gromox/exmdb_common_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
@@ -32,7 +33,6 @@
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
 #include "exmdb_server.h"
 #define S2A(x) reinterpret_cast<const char *>(x)
 

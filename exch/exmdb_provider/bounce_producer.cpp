@@ -19,6 +19,7 @@
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/dsn.hpp>
+#include <gromox/exmdb_common_util.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/svc_common.h>
@@ -26,7 +27,6 @@
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
-#include "common_util.h"
 
 using namespace gromox;
 
