@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdio>
+#include <gromox/authmgr.hpp>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
 #include "system_services.hpp"
-#include "../authmgr.hpp"
 
 BOOL (*system_services_judge_ip)(const char*);
 BOOL (*system_services_judge_user)(const char*);

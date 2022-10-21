@@ -14,13 +14,13 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/authmgr.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
 #include "pop3.hpp"
 #include "../midb_agent.hpp"
-#include "../../exch/authmgr.hpp"
 
 #define DEF_MODE                S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 

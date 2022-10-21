@@ -1,6 +1,6 @@
 #pragma once
+#include <gromox/authmgr.hpp>
 #include <gromox/common_types.hpp>
-#include "../authmgr.hpp"
 
 extern int system_services_run();
 extern void system_services_stop();
