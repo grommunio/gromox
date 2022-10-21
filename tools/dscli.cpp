@@ -17,13 +17,6 @@ struct curl_del {
 	void operator()(curl_slist *x) const { curl_slist_free_all(x); }
 };
 
-struct swbuf {
-	swbuf(const char *s) : ptr(s) {}
-	swbuf(std::string &&s) : buf(std::move(s)), ptr(buf.c_str()) {}
-	std::string buf;
-	const char *ptr = nullptr;
-};
-
 using namespace std::string_literals;
 using namespace gromox;
 
@@ -173,12 +166,12 @@ static size_t oxd_write(char *ptr, size_t size, size_t nemb, void *udata)
 	return size * nemb;
 }
 
-static swbuf autodisc_url()
+static std::string autodisc_url()
 {
 #define xmlpath "/Autodiscover/Autodiscover.xml"
-	if (g_disc_url)
+	if (g_disc_url != nullptr)
 		return g_disc_url;
-	if (g_disc_host)
+	if (g_disc_host != nullptr)
 		return "https://"s + g_disc_host + xmlpath;
 	if (g_emailaddr != nullptr) {
 		auto p = strchr(g_emailaddr, '@');
@@ -238,7 +231,7 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 	ret = curl_easy_setopt(ch, CURLOPT_USERAGENT, g_user_agent);
 	if (ret != CURLE_OK)
 		return ret;
-	ret = curl_easy_setopt(ch, CURLOPT_URL, autodisc_url().ptr);
+	ret = curl_easy_setopt(ch, CURLOPT_URL, autodisc_url().c_str());
 	if (ret != CURLE_OK)
 		return ret;
 	return CURLE_OK;
