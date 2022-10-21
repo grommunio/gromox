@@ -5,8 +5,8 @@
 #include <list>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_provider_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include "exmdb_client.h"
 #include "exmdb_ext.hpp"
 #include "exmdb_server.h"
 
