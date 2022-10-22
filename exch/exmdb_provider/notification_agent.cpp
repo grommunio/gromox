@@ -10,8 +10,8 @@
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/exmdb_server.hpp>
 #include "exmdb_parser.h"
-#include "exmdb_server.h"
 #include "notification_agent.h"
 
 void notification_agent_backward_notify(const char *remote_id,

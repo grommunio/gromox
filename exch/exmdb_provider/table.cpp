@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
@@ -26,7 +27,6 @@
 #include <gromox/util.hpp>
 #include "db_engine.h"
 #include "exmdb_parser.h"
-#include "exmdb_server.h"
 
 using LLU = unsigned long long;
 using namespace gromox;

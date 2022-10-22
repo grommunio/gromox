@@ -9,12 +9,12 @@
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include "db_engine.h"
-#include "exmdb_server.h"
 #define MAXIMUM_RECIEVE_FOLDERS				2000
 #define SYSTEM_ALLOCATED_EID_RANGE			10000
 

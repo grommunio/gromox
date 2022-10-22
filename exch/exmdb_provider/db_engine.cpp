@@ -24,6 +24,7 @@
 #include <gromox/eid_array.hpp>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
@@ -34,7 +35,6 @@
 #include <gromox/sortorder_set.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.h"
-#include "exmdb_server.h"
 #include "notification_agent.h"
 #define DB_LOCK_TIMEOUT					60
 #define MAX_DYNAMIC_NODES				100

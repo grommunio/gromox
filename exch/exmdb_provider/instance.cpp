@@ -15,6 +15,7 @@
 #include <gromox/database.h>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
@@ -22,7 +23,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include "db_engine.h"
-#include "exmdb_server.h"
 
 enum {
 	PR_BODY_U = CHANGE_PROP_TYPE(PR_BODY, PT_UNSPECIFIED),
