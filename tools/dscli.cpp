@@ -171,6 +171,7 @@ static size_t oxd_write(char *ptr, size_t size, size_t nemb, void *udata)
 	return size * nemb;
 }
 
+#ifdef HAVE_RES_NQUERYDOMAIN
 static std::string domain_to_oxsrv(const char *dom)
 {
 	std::remove_pointer_t<res_state> state;
@@ -205,6 +206,7 @@ static std::string domain_to_oxsrv(const char *dom)
 		return {};
 	return std::string(hostname, ret) + ":" + std::to_string(port);
 }
+#endif
 
 static std::string autodisc_url()
 {
@@ -217,11 +219,16 @@ static std::string autodisc_url()
 		auto p = strchr(g_emailaddr, '@');
 		if (p != nullptr) {
 			auto dom = p + 1;
+#ifdef HAVE_RES_NQUERYDOMAIN
 			auto srv = domain_to_oxsrv(dom);
 			if (!srv.empty())
 				return "https://" + srv + xmlpath;
 			fprintf(stderr, "%sDNS SRV entry \"_autodiscover._tcp.%s\" is missing!%s\n",
 			        g_tty ? "\e[1;33m" : "", dom, g_tty ? "\e[0m" : "" /* ]] */);
+#else
+			fprintf(stderr, "%sThis version was not built with DNS SRV analysis.%s\n",
+			        g_tty ? "\e[1;31m" : "", g_tty ? "\e[0m" : "");
+#endif
 			return "https://autodiscover."s + dom + xmlpath;
 		}
 	}
