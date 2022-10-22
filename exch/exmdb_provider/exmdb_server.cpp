@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <memory>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_server.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include "db_engine.h"
-#include "exmdb_server.h"
 
 namespace {
 

@@ -23,6 +23,7 @@
 #include <gromox/defs.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_provider_client.hpp>
+#include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
@@ -35,7 +36,6 @@
 #include "bounce_producer.hpp"
 #include "db_engine.h"
 #include "exmdb_parser.h"
-#include "exmdb_server.h"
 #define MIN_BATCH_MESSAGE_NUM 20
 
 using XUI = unsigned int;

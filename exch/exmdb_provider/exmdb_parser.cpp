@@ -23,12 +23,12 @@
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/exmdb_server.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include "exmdb_parser.h"
-#include "exmdb_server.h"
 #include "notification_agent.h"
 
 static size_t g_max_threads, g_max_routers;

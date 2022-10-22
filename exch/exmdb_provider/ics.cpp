@@ -6,11 +6,11 @@
 #include <gromox/database.h>
 #include <gromox/eid_array.hpp>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_server.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include "db_engine.h"
-#include "exmdb_server.h"
 #define IDSET_CACHE_MIN_RANGE				10
 
 using namespace gromox;

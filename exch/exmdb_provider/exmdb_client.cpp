@@ -8,7 +8,7 @@
 #include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_provider_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include "exmdb_server.h"
+#include <gromox/exmdb_server.hpp>
 
 using namespace gromox;
 

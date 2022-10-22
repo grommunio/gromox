@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>
 #include <gromox/html.hpp>
 #include <gromox/mail_func.hpp>
@@ -15,7 +16,6 @@
 #include <gromox/rtfcp.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
-#include "exmdb_server.h"
 
 using namespace gromox;
 
