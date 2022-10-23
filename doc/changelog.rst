@@ -1,3 +1,19 @@
+1.33.24
+=======
+
+Enhancements:
+
+* The gromox-dscli command-line utility now performs DNS SRV lookups.
+
+Fixes:
+
+* dscli: in absence of SRV records, fall back to autodiscover.<domain>,
+  not <domain>.
+* ldap_adaptor: the per-org LDAP base was erroneously used with the
+  default LDAP.
+* midb: resolve a startup crash in conjunction with musl libc.
+
+
 1.33 (2022-10-20)
 =================
 
