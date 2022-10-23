@@ -209,8 +209,8 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	           base_dn.size() > 0 ? base_dn.c_str() : nullptr,
 	      filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
-		fprintf(stderr, "[ldap_adaptor]: search with filter %s: %s\n",
-		       filter.c_str(), ldap_err2string(ret));
+		fprintf(stderr, "[ldap_adaptor]: search with base \"%s\" filter \"%s\": %s\n",
+		        base_dn.c_str(), filter.c_str(), ldap_err2string(ret));
 		return FALSE;
 	}
 	if (!validate_response(tok_meta.get(), msg.get()))
@@ -255,7 +255,7 @@ BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_resu
 	if (m.ldap_uri.empty()) {
 		auto conn = make_conn(g_ldap_host.c_str(), g_bind_user.c_str(),
 		            g_bind_pass.c_str(), true);
-		return ldaplogin_host(conn, conn, user, pass, m.ldap_basedn);
+		return ldaplogin_host(conn, conn, user, pass, g_search_base.c_str());
 	}
 	auto conn = make_conn(m.ldap_uri.c_str(), m.ldap_binddn.c_str(),
 	            m.ldap_bindpw.c_str(), true);
