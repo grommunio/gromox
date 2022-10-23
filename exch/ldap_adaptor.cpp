@@ -249,6 +249,7 @@ BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_resu
 	 * so don't even go there when multiple LDAP servers are in use.
 	 */
 	if (z > 0) {
+		fprintf(stderr, "[ldap_adaptor]: Pooling is now disabled (would use too many resources in multi-LDAP)\n");
 		g_conn_pool.resize(0);
 		g_conn_pool.clear();
 	}
