@@ -2141,13 +2141,13 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
 	if (num == nullptr) {
 		debug_info("[tnef]: cannot find PR_INTERNET_CPID");
-		return FALSE;
+	} else {
+		uint32_t tmp_cpids[] = {*num, 0};
+		tmp_larray = {2, tmp_cpids};
+		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_OEMCODEPAGE,
+		    &tmp_larray) != EXT_ERR_SUCCESS)
+			return FALSE;
 	}
-	uint32_t tmp_cpids[] = {*num, 0};
-	tmp_larray = {2, tmp_cpids};
-	if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_OEMCODEPAGE,
-	    &tmp_larray) != EXT_ERR_SUCCESS)
-		return FALSE;
 	/* ATTRIBUTE_ID_MESSAGESTATUS */
 	if (b_embedded) {
 		tmp_byte = 0;
