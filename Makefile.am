@@ -1,7 +1,8 @@
 # -*- Makefile -*-
 
 ACLOCAL_AMFLAGS = -I build-aux
-AM_CPPFLAGS = -Iinclude -I${top_srcdir}/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${crypto_CFLAGS} ${jsoncpp_CFLAGS} ${mysql_CFLAGS} ${sqlite_CFLAGS} ${ssl_CFLAGS} ${zlib_CFLAGS}
+AM_CPPFLAGS = -Iinclude -I${top_srcdir}/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${crypto_CFLAGS} ${jsoncpp_CFLAGS} ${mysql_CFLAGS} ${olecf_CFLAGS} ${pff_CFLAGS} ${sqlite_CFLAGS} ${ssl_CFLAGS} ${zlib_CFLAGS}
+AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 
@@ -71,6 +72,9 @@ noinst_DATA += \
 	libgxs_mysql_adaptor.ldd \
 	libgxs_user_filter.ldd
 sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+if HAVE_OLECF
+sbin_PROGRAMS += gromox-oxm2mt
+endif
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
@@ -260,6 +264,8 @@ gromox_kdb2mt_SOURCES = tools/genimport.cpp tools/kdb2mt.cpp
 gromox_kdb2mt_LDADD = ${fmt_LIBS} ${HX_LIBS} ${jsoncpp_LIBS} ${mysql_LIBS} ${pff_LIBS} ${zlib_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
 gromox_mt2exm_SOURCES = tools/genimport.cpp tools/mt2exm.cpp
 gromox_mt2exm_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
+gromox_oxm2mt_SOURCES = tools/genimport.cpp tools/oxm2mt.cpp
+gromox_oxm2mt_LDADD = ${HX_LIBS} ${fmt_LIBS} ${iconv_LIBS} ${mysql_LIBS} ${olecf_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
 gromox_pff2mt_SOURCES = tools/genimport.cpp tools/pff2mt.cpp
 gromox_pff2mt_LDADD = ${HX_LIBS} ${iconv_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
 rebuild_SOURCES = tools/rebuild2.cpp
@@ -326,6 +332,9 @@ man_MANS = \
 	doc/pam_gromox.4gx doc/pop3.8gx doc/rebuild.8gx doc/rtf2html.1gx \
 	doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
+if HAVE_OLECF
+man_MANS += doc/gromox-oxm2mt.8gx
+endif
 if HAVE_PFF
 man_MANS += doc/gromox-pff2mt.8
 endif

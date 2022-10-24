@@ -47,6 +47,7 @@ Makefile.in
 /gromox-mkprivate
 /gromox-mkpublic
 /gromox-mt2exm
+/gromox-oxm2mt
 /gromox-pff2mt
 /http
 /imap

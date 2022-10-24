@@ -1,0 +1,28 @@
+.TH gromox\-oxm2mt 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+gromox\-oxm2mt \(em Utility for analysis of Outlook .msg files
+.SH Synopsis
+\fBgromox\-oxm2mt\fP [\fB\-pt\fP] \fIinput.msg\fP
+.SH Description
+gromox\-oxm2mt reads an Outlook .msg file, and re-exports the data in a
+Gromox-specific mailbox transfer format to stdout for consumption by pipe by
+the gromox-mt2exm(8gx) program. Optionally, oxm2mt can print a tree summary of
+the message.
+.SH Options
+.TP
+\fB\-p\fP
+Show properties in detail (enhances \fB\-t\fP).
+.TP
+\fB\-t\fP
+Show a diagnostic tree view of the source data as it is being read.
+.SH Examples
+Import of a message to drafts:
+.PP
+gromox\-oxm2mt saved.msg | gromox\-mt2exm \-u target@mailbox.de \-B drafts
+.SH Normative references
+.IP \(bu 4
+MS-CFB: Compound File Binary Format (CFBF)
+.IP \(bu 4
+MS-OXMSG: Outlook Item (.msg) File Format
+.SH See also
+\fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)
