@@ -57,13 +57,13 @@ Makefile.in
 /zcore
 
 /include/gromox/paths.h
+/include/exmdb_dispatch.cpp
+/include/mapierr.cpp
+/include/mapitags.cpp
+/include/zrpc_dispatch.cpp
 /lib/exmdb_rpc.cpp
-/php_mapi/mapierr.cpp
-/php_mapi/mapitags.cpp
 /php_mapi/zrpc.cpp
-/exch/exmdb_provider/exmdb_dispatch.cpp
 /exch/exmdb_provider/exmdb_rpc.cpp
-/exch/zcore/rpc_dispatch.cpp
 /system/*.service
 /tests/bodyconv
 /tests/cryptest
