@@ -2184,18 +2184,17 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 		return false;
 	/* ATTRIBUTE_ID_MESSAGECLASS */
 	auto message_class = pmsg->proplist.get<const char>(PR_MESSAGE_CLASS_A);
-	if (NULL == message_class) {
+	if (message_class == nullptr)
 		message_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
-		if (NULL == message_class) {
-			debug_info("[tnef]: cannot find PR_MESSAGE_CLASS");
+	if (message_class == nullptr) {
+		debug_info("[tnef]: cannot find PR_MESSAGE_CLASS");
+	} else {
+		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_MESSAGECLASS,
+		    deconst(tnef_from_msgclass(message_class))) != EXT_ERR_SUCCESS)
 			return FALSE;
-		}
+		tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_CLASS_A;
+		tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_CLASS;
 	}
-	if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_MESSAGECLASS,
-	    deconst(tnef_from_msgclass(message_class))) != EXT_ERR_SUCCESS)
-		return FALSE;
-	tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_CLASS_A;
-	tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_CLASS;
 	/* ATTRIBUTE_ID_ORIGNINALMESSAGECLASS */
 	auto str = pmsg->proplist.get<const char>(PR_ORIG_MESSAGE_CLASS_A);
 	if (str != nullptr) {
