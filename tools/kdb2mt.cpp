@@ -152,8 +152,8 @@ static constexpr HXoption g_options_table[] = {
 	{"src-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Database name (default: kopano)", "NAME"},
 	{"src-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Username for SQL connection (default: root)", "USER"},
 	{"src-attach", 0, HXTYPE_STRING, &g_atxdir, nullptr, nullptr, 0, "Attachment directory", "DIR"},
-	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Mailbox to extract from SQL", "GUID"},
-	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Mailbox to extract from SQL", "USERNAME"},
+	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Lookup source mailbox by GUID", "GUID"},
+	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Lookup source mailbox by MRO", "NAME"},
 	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "OBJID"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
 	{"with-acl", 0, HXTYPE_VAL, &g_with_acl, nullptr, nullptr, 1, "Enable partial conversion of ACLs (beta)"},
@@ -494,7 +494,7 @@ kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 	if (row[0] == nullptr || rowlen[0] != sizeof(GUID))
 		throw YError("PG-1135: unable to request server_guid");
 	drv->server_guid = bin2hex(row[0], rowlen[0]);
-	fmt::print(stderr, "kdb GUID: {}\n", drv->server_guid);
+	fmt::print(stderr, "kdb Server GUID: {}\n", drv->server_guid);
 
 	qstr = fmt::format("SELECT value FROM settings WHERE name='attachment_storage'");
 	res = drv->query(qstr.c_str());
@@ -558,6 +558,7 @@ kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
 	if (setup_charset(drv->m_conn) != 0)
 		throw YError("PK-1021: charset utf8mb4/utf8mb3 not available: %s",
 		      mysql_error(drv->m_conn));
+	fmt::print(stderr, "Store GUID: {}\n", guid);
 	return kdb_open_by_guid_1(std::move(drv), guid);
 }
 
@@ -565,10 +566,7 @@ static void present_stores(const char *storeuser, DB_RESULT &res)
 {
 	DB_ROW row;
 	if (*storeuser != '\0')
-		fprintf(stderr, "PK-1008: This utility only does a heuristic search, "
-			"lest it would require the full original user database, "
-			"a requirement this tool does not want to impose. "
-			"The search for \"%s\" has turned up multiple candidate stores:\n\n", storeuser);
+		fmt::print(stderr, "The search for \"{}\" has turned up multiple candidate stores:\n\n", storeuser);
 	fprintf(stderr, "GUID                              user_id   size  most_recent_owner\n");
 	fprintf(stderr, "====================================================================\n");
 	while ((row = res.fetch_row()) != nullptr) {
@@ -601,9 +599,15 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 	                   "p.val_longint FROM stores AS s "
 	                   "LEFT JOIN properties AS p "
 	                   "ON s.hierarchy_id=p.hierarchyid AND p.tag=0xE08";
-	if (*storeuser != '\0')
+	if (*storeuser != '\0') {
+		fmt::print(stderr, "PK-1008: Warning: The search by MRO name "
+			"(--src-mbox) is only a heuristic and not guaranteed "
+			"to produce the correct result, "
+			"lest it would require the full original user database, "
+			"a requirement this tool does not want to impose.\n");
 		qstr += " WHERE s.user_name='" +
 		        sql_escape(drv->m_conn, storeuser) + "'";
+	}
 	auto res = drv->query(qstr.c_str());
 	if (*storeuser == '\0' || mysql_num_rows(res.get()) > 1) {
 		present_stores(storeuser, res);
@@ -613,7 +617,9 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 	if (row == nullptr || row[0] == nullptr)
 		throw YError("PK-1022: no store for that user");
 	auto rowlen = res.row_lengths();
-	return kdb_open_by_guid_1(std::move(drv), bin2hex(row[0], rowlen[0]).c_str());
+	auto guid = bin2hex(row[0], rowlen[0]);
+	fmt::print(stderr, "Store GUID for MRO \"{}\": {}\n", storeuser, guid);
+	return kdb_open_by_guid_1(std::move(drv), guid.c_str());
 }
 
 driver::~driver()
@@ -1340,7 +1346,7 @@ static int aclmap_read(const char *file, std::unordered_map<std::string, std::st
 static void terse_help()
 {
 	fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kdb2mt --src-host kdb.lan "
-	        "--src-attach /tmp/at --src-mbox jdoe\n");
+	        "--src-attach /tmp/at --src-guid 0123456789ABCDEFFEDCBA9876543210 jdoe\n");
 	fprintf(stderr, "Option overview: gromox-kdb2mt -?\n");
 	fprintf(stderr, "Documentation: man gromox-kdb2mt\n");
 }
