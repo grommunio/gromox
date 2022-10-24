@@ -11,19 +11,24 @@ dependencies are needed:
 * gumbo-parser
 * fmt >= 8
 * jsoncpp
-* libHX
+* libHX >= 4.3
 * libiconv (OpenBSD only)
-* libvmime
+* libvmime >= 0.9.2.175
 * libzstd
-* Linux-PAM
 * MariaDB Connector/C or compatible
 * OpenLDAP or similar headers
 * OpenSSL or compatible
 * perl5
-* PHP 7/8 headers
 * SQLite3
 * tinyxml2 >= 8
 * zlib
+
+Optional deps:
+
+* libc/libresolv with "res_nquerydomain" & "ns_initparse" functions
+* libpff
+* Linux-PAM
+* PHP 7/8 headers
 
 When the grommunio repository is known to zypper, one can request to install
 the dependencies of the SRPM, which conveniently brings in everything that was
