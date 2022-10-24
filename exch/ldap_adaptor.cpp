@@ -28,8 +28,8 @@ using namespace std::string_literals;
 
 namespace {
 struct ldapfree {
-	void operator()(LDAP *ld) { ldap_unbind_ext_s(ld, nullptr, nullptr); }
-	void operator()(LDAPMessage *m) { ldap_msgfree(m); }
+	void operator()(LDAP *ld) const { ldap_unbind_ext_s(ld, nullptr, nullptr); }
+	void operator()(LDAPMessage *m) const { ldap_msgfree(m); }
 };
 }
 
