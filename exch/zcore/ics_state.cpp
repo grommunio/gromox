@@ -63,8 +63,8 @@ std::shared_ptr<ics_state> ics_state::create_shared(uint8_t type) try
 BINARY *ics_state::serialize()
 {
 	struct mdel {
-		inline void operator()(BINARY *x) { rop_util_free_binary(x); }
-		inline void operator()(TPROPVAL_ARRAY *x) { tpropval_array_free(x); }
+		void operator()(BINARY *x) const { rop_util_free_binary(x); }
+		void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
 	};
 	EXT_PUSH ext_push;
 	static constexpr uint8_t bin_buff[8]{};

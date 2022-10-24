@@ -33,8 +33,8 @@ using namespace gromox;
 
 namespace {
 struct rd_delete {
-	void operator()(SSL *x) { SSL_free(x); }
-	void operator()(SSL_CTX *x) { SSL_CTX_free(x); }
+	void operator()(SSL *x) const { SSL_free(x); }
+	void operator()(SSL_CTX *x) const { SSL_CTX_free(x); }
 };
 
 struct rd_connection {

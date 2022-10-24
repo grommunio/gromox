@@ -56,7 +56,7 @@ extern char **environ;
 
 class hxmc_deleter {
 	public:
-	void operator()(hxmc_t *s) { HXmc_free(s); }
+	void operator()(hxmc_t *s) const { HXmc_free(s); }
 };
 
 static int gx_reexec_top_fd = -1;

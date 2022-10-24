@@ -528,12 +528,12 @@ POPULATING_NODE::~POPULATING_NODE()
 static ID_ARRAYS *db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 {
 	struct xhash {
-		size_t operator()(const char *s) {
+		size_t operator()(const char *s) const {
 			return s != nullptr ? std::hash<std::string_view>()(s) : 0;
 		}
 	};
 	struct xeq {
-		bool operator()(const char *a, const char *b) {
+		bool operator()(const char *a, const char *b) const {
 			if (a == b)
 				return true;
 			if (a == nullptr || b == nullptr)

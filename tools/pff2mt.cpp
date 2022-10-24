@@ -51,13 +51,13 @@ E(BINARY_DATA, BINARY)
 
 namespace {
 
-struct libpff_error_del { void operator()(libpff_error_t *x) { libpff_error_free(&x); } };
-struct libpff_file_del { void operator()(libpff_file_t *x) { libpff_file_free(&x, nullptr); } };
-struct libpff_item_del { void operator()(libpff_item_t *x) { libpff_item_free(&x, nullptr); } };
-struct libpff_record_set_del { void operator()(libpff_record_set_t *x) { libpff_record_set_free(&x, nullptr); } };
-struct libpff_record_entry_del { void operator()(libpff_record_entry_t *x) { libpff_record_entry_free(&x, nullptr); } };
-struct libpff_multi_value_del { void operator()(libpff_multi_value_t *x) { libpff_multi_value_free(&x, nullptr); } };
-struct libpff_noop_del { void operator()(void *x) { } };
+struct libpff_error_del { void operator()(libpff_error_t *x) const { libpff_error_free(&x); } };
+struct libpff_file_del { void operator()(libpff_file_t *x) const { libpff_file_free(&x, nullptr); } };
+struct libpff_item_del { void operator()(libpff_item_t *x) const { libpff_item_free(&x, nullptr); } };
+struct libpff_record_set_del { void operator()(libpff_record_set_t *x) const { libpff_record_set_free(&x, nullptr); } };
+struct libpff_record_entry_del { void operator()(libpff_record_entry_t *x) const { libpff_record_entry_free(&x, nullptr); } };
+struct libpff_multi_value_del { void operator()(libpff_multi_value_t *x) const { libpff_multi_value_free(&x, nullptr); } };
+struct libpff_noop_del { void operator()(void *x) const { } };
 
 using libpff_error_ptr        = std::unique_ptr<libpff_error_t, libpff_error_del>;
 using libpff_file_ptr         = std::unique_ptr<libpff_file_t, libpff_file_del>;

@@ -24,7 +24,7 @@ enum {
 namespace {
 
 struct db_deleter {
-	void operator()(MYSQL *m) { mysql_close(m); }
+	void operator()(MYSQL *m) const { mysql_close(m); }
 };
 
 }
