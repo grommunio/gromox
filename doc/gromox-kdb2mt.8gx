@@ -1,6 +1,6 @@
 .TH gromox\-kdb2mt 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-\fBgromox\-kdb2mt\fP \(em Utility for analysis of Kopano databases
+\fBgromox\-kdb2mt\fP \(em Utility for analysis/import of Kopano mailboxes
 .SH Synopsis
 \fBgromox\-kdb2mt\fP [\fB\-pstv\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
 [\fB\-\-src\-user\fP \fIsqluser\fP] [\fB\-\-src-port\fP \fIsqlport\fP]
