@@ -31,6 +31,8 @@
 #include "exmdb_parser.h"
 #include "notification_agent.h"
 
+using namespace gromox;
+
 static size_t g_max_threads, g_max_routers;
 static std::vector<EXMDB_ITEM> g_local_list;
 static std::unordered_set<std::shared_ptr<ROUTER_CONNECTION>> g_router_list;
@@ -150,9 +152,10 @@ static BOOL exmdb_parser_dispatch(const exreq *prequest, exresp *&presponse)
 	if (g_exrpc_debug == 0)
 		return ret;
 	if (!ret || g_exrpc_debug == 2)
-		fprintf(stderr, "EXRPC %s %s\n",
+		fprintf(stderr, "EXRPC %s %s (%s)\n",
 		        ret == 0 ? "FAIL" : "ok  ",
-		        exmdb_rpc_idtoname(prequest->call_id));
+		        exmdb_rpc_idtoname(prequest->call_id),
+		        znul(prequest->dir));
 	return ret;
 }
 
