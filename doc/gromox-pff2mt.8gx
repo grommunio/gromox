@@ -1,6 +1,6 @@
 .TH gromox\-pff2mt 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-pff2mt \(em Utility for analysis of PFF/PST/OST files
+gromox\-pff2mt \(em Utility for analysis/import of PFF/PST/OST files
 .SH Synopsis
 \fBgromox\-pff2mt\fP [\fB\-pst\fP] [...] \fIinput.pst\fP
 .SH Description

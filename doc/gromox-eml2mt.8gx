@@ -1,6 +1,6 @@
 .TH gromox\-eml2mt 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-eml2mt \(em Utility to import Internet Mail messages,
+gromox\-eml2mt \(em Utility for analysis/import of Internet Mail messages,
 iCalendar and vCard objects
 .SH Synopsis
 \fBgromox\-eml2mt\fP [\fB\-Ppt\fP] \fIfile.eml\fP[...]
