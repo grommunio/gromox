@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # A Shell script to generate the Kopano user list for Grommunio migration.
 #
@@ -38,7 +38,7 @@
 # Notice:
 # This script assumes a correct working Kopano server and if used a correct working Kopano archiver.
 # Script is compatible with any Linux target source.
-# Important, this script needs a bash, the smaller POSIX sh is not sufficient.
+# Important, this script was written for GNU Bash and isn't POSIX-compliant.
 #
 #
 # Instructions:
@@ -216,4 +216,4 @@ echo ""
 #
 # --- the end ---
 #
-# vim: syntax=auto ts=4 sw=4 sts=4 sr noet :
+# vim: syntax=bash ts=4 sw=4 sts=4 sr et :
