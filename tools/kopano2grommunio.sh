@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # A Shell migration script for Kopano 2 grommunio migration.
 #
@@ -11,6 +11,7 @@
 #
 # This script assumes a correct setup with grommunio attached to the LDAP/AD.
 # Script is compatible with any Linux target source.
+# Important, this script was written for GNU Bash and isn't POSIX-compliant.
 #
 # Instructions:
 #
@@ -58,7 +59,7 @@
 #    the bind-address is a config directive in the MySQL config file and
 #    looks like this:
 #
-#       bind-address = 192.168.130.2
+#       bind-address = 192.168.10.2
 #
 #    Test from grommunio server:
 #
@@ -107,9 +108,16 @@
 #    In the migration text file, mark the GIUD with type:1 after the GUID like:
 #    user3@domain.com,<User 3 store GUID>,1
 #
+#    We provide the script: create_k2g_migration_lists.sh to create the raw migration list on Kopano server.
+#
 #    A command to show all Kopano Store GUIDs as seen by the migration tool:
 #       SRCPASS=<KopanoMySqlPWD> gromox-kdb2mt --src-host <KopanoServer> --src-port=3306 --src-db=<KopanoDB> --src-user=GrommunioUser --src-at "" --src-mbox "" 2>&1|less -SX
-
+#
+#    Important:
+#    Verify the store GUIDs match the store GUIDs found in the list created by create_k2g_migration_lists.sh.
+#    If the store GUIDs do *not* match, migrate this mailbox with the store GUID fond with create_k2g_migration_lists.sh.
+#    A store GUID mismatch might happen, if an Kopano store was unhooked and hooked onto another account.
+#
 # 5. Define the variables.
 #
 # 6. Test the migration
@@ -117,8 +125,8 @@
 #
 # 7. If you delete all mailboxes and Public Store on grommunio,
 #    restart the grommunio server or its services before starting the migration to clear all caches
-
-
+#
+#
 # Variables to be set by the user of this script
 #
 # The Kopano server, we mount the attachment store from this server
@@ -147,7 +155,6 @@ KopanoMySqlServer=$KopanoServer
 
 # MYSQL user for Kopano database
 KopanoMySqlUser="GrommunioUser"
-#KopanoMySqlUser="rouser"
 
 # Passwort for MYSQL user for Kopano database
 KopanoMySqlPWD="Secret_mysql_Password"
@@ -464,15 +471,21 @@ while IFS= read -r line; do
     Write-MLog "$MailboxesCreateFailed mailboxes creation failed, $MailboxesImportFailed migrations failed." yellow
     Write-MLog "" "white"
     #
+    # if the $STOP_MARKER exists, interrupt migration and ask the Admin
+    if [[ -f "$STOP_MARKER" ]]; then
+        WaitAfterImport=1
+        Write-MLog "Stop marker: $STOP_MARKER found, interrupting migration." cyan
+    fi
+    #
     # type "X" to ask the Admin
     if [[ $WaitAfterImport -eq 0 ]]; then
         Write-MLog "Type 'X' to interrupt migration ..." cyan
         read -s -n 1 -t 0.5 key <&$stdin  # -s: do not echo input character, -n 1: read only 1 character (separate with space), -t 1: wait 1 seconds
-        [[ "$key" == "X" ]] && WaitAfterImport=1
+        if [[ "$key" == "X" ]]; then
+            WaitAfterImport=1
+            Write-MLog "'X' pressed, interrupting migration." cyan
+        fi
     fi
-    #
-    # if the $STOP_MARKER exists, interrupt migration and ask the Admin
-    [[ -f "$STOP_MARKER" ]] && WaitAfterImport=1
     #
     # Ask the Admin after migration of mailbox
     [[ $WaitAfterImport -eq 0 ]] && continue
@@ -534,4 +547,4 @@ Write-MLog "Kopano 2 grommunio migration done." cyan
 #
 # --- the end ---
 #
-# vim: syntax=auto ts=4 sw=4 sts=4 sr noet :
+# vim: syntax=bash ts=4 sw=4 sts=4 sr et :
