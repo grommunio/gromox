@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// This file is part of Gromox.
 #include "config.h"
 #include <cerrno>
 #include <cstdint>

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// This file is part of Gromox.
 /*
  * Symbols required by mapi.so are not provided by any library, which is why
  * the dynamic link check with lddcheck does not work on mapi.so. Instead, the
