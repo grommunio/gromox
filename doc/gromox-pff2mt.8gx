@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
 .TH gromox\-pff2mt 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox\-pff2mt \(em Utility for analysis/import of PFF/PST/OST files

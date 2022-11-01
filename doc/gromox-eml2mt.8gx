@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2022 grommunio GmbH
 .TH gromox\-eml2mt 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox\-eml2mt \(em Utility for analysis/import of Internet Mail messages,

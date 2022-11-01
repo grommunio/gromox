@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
 .TH gromox\-mkmidb 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox\-mkmidb \(em Tool for creating a blank message index database

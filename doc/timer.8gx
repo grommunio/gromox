@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2020-2021 grommunio GmbH
 .TH timer 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 \fBtimer\fP \(em deferred command executor

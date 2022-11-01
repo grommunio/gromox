@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
 .TH midb_agent 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 midb_agent \(em Service plugin for conversing with midb(8gx)

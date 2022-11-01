@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2020 grommunio GmbH
 .TH mapi 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 mapi.so \(em PHP module providing MAPI functions
