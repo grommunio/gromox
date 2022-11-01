@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2020-2021 grommunio GmbH
 .TH rtf2html 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 \fBrtf2html\fP \(em C++ helper program for the mapi(4gx) mapi_decompressrtf

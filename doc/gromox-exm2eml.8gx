@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2022 grommunio GmbH
 .TH gromox\-exm2eml 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox\-exm2eml \(em Utility to export messages as Internet Mail, iCalendar and

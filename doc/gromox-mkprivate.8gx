@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
 .TH gromox\-mkprivate 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox\-mkprivate \(em Tool for creating a blank private store

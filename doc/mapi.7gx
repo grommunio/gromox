@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2021 grommunio GmbH
 .TH mapi 7 "" "Gromox" "Gromox developer reference"
 .SH Name
 mapi \(em Definition for "Messaging Application Programming Interface"

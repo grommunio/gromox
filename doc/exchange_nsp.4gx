@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
 .TH exchange_nsp 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 exchange_nsp \(em http(8gx) processing plugin for the Exchange Server Name

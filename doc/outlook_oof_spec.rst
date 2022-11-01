@@ -1,3 +1,7 @@
+..
+	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+	SPDX-FileCopyrightText: 2020 Jan Engelhardt
+
 Observations on Outlook's Out Of Office Handling
 
 version 2020-03-31

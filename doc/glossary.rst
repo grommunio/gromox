@@ -1,3 +1,7 @@
+..
+	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+	SPDX-FileCopyrightText: 2021 grommunio GmbH
+
 
 property
 	Blurry term; can either refer to proptag or propid, and depending on

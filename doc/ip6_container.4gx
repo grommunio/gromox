@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2021 grommunio GmbH
 .TH ip6_container 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 ip6_container \(em trivial source connection counter

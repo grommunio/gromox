@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2022 grommunio GmbH
 .TH delmsg 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 \fBdelmsg\fP \(em MAPI message deletion from the command-line
