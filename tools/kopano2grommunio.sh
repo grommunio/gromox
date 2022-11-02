@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # A Shell migration script for Kopano 2 grommunio migration.
 #
