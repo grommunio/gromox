@@ -791,16 +791,16 @@ void mlog_init(const char *filename, unsigned int max_level)
 	g_max_loglevel = max_level;
 	g_log_direct = filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0;
 	if (g_log_direct) {
-		setvbuf(stdout, nullptr, _IOLBF, 0);
+		setvbuf(stderr, nullptr, _IOLBF, 0);
 		return;
 	}
 	std::lock_guard hold(g_log_mutex);
 	g_logfp.reset(fopen(filename, "a"));
 	g_log_direct = g_logfp == nullptr;
 	if (g_log_direct) {
-		fprintf(stderr, "Could not open %s for writing: %s. Using stdout.\n",
+		fprintf(stderr, "Could not open %s for writing: %s. Using stderr.\n",
 		        filename, strerror(errno));
-		setvbuf(stdout, nullptr, _IOLBF, 0);
+		setvbuf(stderr, nullptr, _IOLBF, 0);
 	} else {
 		setvbuf(g_logfp.get(), nullptr, _IOLBF, 0);
 	}
@@ -813,8 +813,8 @@ void mlog(unsigned int level, const char *fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	if (g_log_direct) {
-		vprintf(fmt, args);
-		fputc('\n', stdout);
+		vfprintf(stderr, fmt, args);
+		fputc('\n', stderr);
 		va_end(args);
 		return;
 	}
