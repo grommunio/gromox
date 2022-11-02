@@ -3,7 +3,6 @@
 #include <gromox/svc_loader.hpp>
 #include "delivery.hpp"
 
-void (*system_services_log_info)(unsigned int, const char *, ...);
 int (*system_services_check_domain)(const char *);
 
 int system_services_run()
@@ -15,7 +14,6 @@ int system_services_run()
 		return -1; \
 	} \
 } while (false)
-	E(system_services_log_info, "log_info");
 	E(system_services_check_domain, "domain_list_query");
 	return 0;
 #undef E

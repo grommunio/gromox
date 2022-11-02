@@ -49,8 +49,7 @@ static void *mdpls_thrwork(void *param)
 		NULL == common_util_get_id_from_username ||
 		NULL == common_util_get_domain_ids ||
 	    cu_send_mail == nullptr ||
-		NULL == common_util_get_mime_pool ||
-		NULL == common_util_log_info) {
+	    common_util_get_mime_pool == nullptr) {
 		if (g_notify_stop)
 			break;
 		sleep(1);	

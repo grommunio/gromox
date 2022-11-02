@@ -51,7 +51,6 @@
 #define SERVICE_ID_GET_ID_FROM_HOMEDIR						13
 #define SERVICE_ID_SEND_MAIL								14
 #define SERVICE_ID_GET_MIME_POOL							15
-#define SERVICE_ID_LOG_INFO									16
 #define SERVICE_ID_GET_HANDLE								17
 
 using XUI = unsigned int;
@@ -85,7 +84,6 @@ E(get_domain_ids)
 E(get_id_from_maildir)
 E(get_id_from_homedir)
 E(get_mime_pool)
-E(log_info)
 E(get_handle)
 #undef E
 decltype(cu_send_mail) cu_send_mail;
@@ -198,7 +196,6 @@ void common_util_pass_service(int service_id, void *func)
 	E(SERVICE_ID_GET_ID_FROM_HOMEDIR, common_util_get_id_from_homedir);
 	E(SERVICE_ID_SEND_MAIL, cu_send_mail);
 	E(SERVICE_ID_GET_MIME_POOL, common_util_get_mime_pool);
-	E(SERVICE_ID_LOG_INFO, common_util_log_info);
 	E(SERVICE_ID_GET_HANDLE, common_util_get_handle);
 	}
 #undef E

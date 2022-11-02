@@ -3109,7 +3109,7 @@ static BOOL message_make_deferred_action_messages(const char *username,
 	if (!exmdb_server_is_private())
 		return TRUE;
 	if (dam_list.size() > MAX_DAMS_PER_RULE_FOLDER) {
-		common_util_log_info(LV_NOTICE, "user=%s host=unknown  "
+		mlog(LV_NOTICE, "user=%s host=unknown  "
 			"DAM error: Too many Deferred Actions "
 			"triggered by message %llu in folder "
 			"%llu", username, LLU{message_id}, LLU{folder_id});
@@ -3224,13 +3224,13 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		return ec;
 	if (block.type == OP_MOVE) {
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be moved to %llu in folder %llu by"
 			" rule", account, LLU{message_id}, LLU{folder_id},
 			LLU{dst_mid}, LLU{dst_fid});
 	} else {
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be copied to %llu in folder %llu by"
 			" rule", account, LLU{message_id}, LLU{folder_id},
@@ -3338,7 +3338,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	    pmsgctnt == nullptr)
 		return ecError;
 	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  Delegated"
+		mlog(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU{message_id}, LLU{folder_id});
 		return ecSuccess;
@@ -3459,7 +3459,7 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 		if (ec != ecSuccess)
 			return ec;
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be deleted by rule", account,
 			LLU{message_id}, LLU{folder_id});
@@ -3484,7 +3484,7 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 	}
 	case OP_DELETE:
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be deleted by rule", account,
 			LLU{message_id}, LLU{folder_id});
@@ -3648,13 +3648,13 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 		return ec;
 	if (block.type == OP_MOVE) {
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be moved to %llu in folder %llu by "
 			"ext rule", account, LLU{message_id},
 			LLU{folder_id}, LLU{dst_mid}, LLU{dst_fid});
 	} else {
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be copied to %llu in folder %llu by "
 			"ext rule", account, LLU{message_id},
@@ -3715,7 +3715,7 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecError;
 	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  Delegated"
+		mlog(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU{message_id}, LLU{folder_id});
 		return ecSuccess;
@@ -3831,7 +3831,7 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 		if (ec != ecSuccess)
 			return ec;
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be deleted by ext rule", account,
 			LLU{message_id}, LLU{folder_id});
@@ -3860,7 +3860,7 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 	}
 	case OP_DELETE:
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be deleted by ext rule", account,
 			LLU{message_id}, LLU{folder_id});
@@ -4180,7 +4180,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 				return FALSE;
 		}
 	}
-	common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+	mlog(LV_DEBUG, "user=%s host=unknown  "
 		"Message %llu is delivered into folder "
 		"%llu", account, LLU{message_id}, LLU{fid_val});
 	auto ec = message_rule_new_message(b_oof, from_address, account,

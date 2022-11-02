@@ -1334,7 +1334,7 @@ static void log_err(const char *format, ...)
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
-	system_services_log_info(LV_ERR, "user=%s  %s", pinfo->get_username(), log_buf);
+	mlog(LV_ERR, "user=%s  %s", pinfo->get_username(), log_buf);
 }
 
 static BOOL cu_send_mail(MAIL *pmail, const char *sender,

@@ -1932,7 +1932,7 @@ http_context::~http_context()
 		mod_cache_put_context(pcontext);
 }
 
-void http_parser_log_info(HTTP_CONTEXT *pcontext, int level,
+void http_parser_log_info(const HTTP_CONTEXT *pcontext, int level,
     const char *format, ...)
 {
 	va_list ap;
@@ -1944,10 +1944,10 @@ void http_parser_log_info(HTTP_CONTEXT *pcontext, int level,
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	
 	if ('\0' == pcontext->username[0]) {
-		system_services_log_info(level, "ctxid=%u, host=[%s]  %s",
+		mlog(level, "ctxid=%u, host=[%s]  %s",
 			pcontext->context_id, pcontext->connection.client_ip, log_buf);
 	} else {
-		system_services_log_info(level, "user=%s, host=[%s]  %s",
+		mlog(level, "user=%s, host=[%s]  %s",
 			pcontext->username, pcontext->connection.client_ip, log_buf);
 	}
 

@@ -232,7 +232,6 @@ extern void (*system_services_install_event_stub)(void (*)(char *));
 extern void (*system_services_broadcast_event)(const char *);
 extern void (*system_services_broadcast_select)(const char *, const char *);
 extern void (*system_services_broadcast_unselect)(const char *, const char *);
-extern void (*system_services_log_info)(unsigned int, const char *, ...);
 
 extern std::shared_ptr<CONFIG_FILE> g_config_file;
 extern uint16_t g_listener_ssl_port;

@@ -34,7 +34,6 @@ E(set_user_lang)
 E(scndstore_hints)
 #undef E
 int (*system_services_add_timer)(const char *, int);
-void (*system_services_log_info)(unsigned int, const char *, ...);
 
 int system_services_run()
 {
@@ -69,7 +68,6 @@ int system_services_run()
 	E(system_services_get_mlist_ids, "get_mlist_ids");
 	E(system_services_get_mlist_memb, "get_mlist_memb");
 	E(system_services_check_same_org, "check_same_org");
-	E(system_services_log_info, "log_info");
 	E(system_services_setpasswd, "set_password");
 	E(system_services_get_user_privilege_bits, "get_user_privilege_bits");
 	E(system_services_add_timer, "add_timer");
@@ -104,7 +102,6 @@ void system_services_stop()
 	E("get_mlist_ids");
 	E("get_mlist_memb");
 	E("check_same_org");
-	E("log_info");
 	E("set_password");
 	E("get_user_privilege_bits");
 	E("add_timer");

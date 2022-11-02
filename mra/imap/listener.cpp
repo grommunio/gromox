@@ -180,7 +180,7 @@ static void *imls_thrwork(void *arg)
 			continue;
 		}
 		client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(LV_DEBUG, "New connection from [%s]:%hu",
+		mlog(LV_DEBUG, "New connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
 			fprintf(stderr, "W-1416: fcntl: %s\n", strerror(errno));
@@ -209,7 +209,7 @@ static void *imls_thrwork(void *arg)
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
 				  imap_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(LV_DEBUG, "Connection %s is denied by ipaddr filter",
+			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -225,7 +225,7 @@ static void *imls_thrwork(void *arg)
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
 				  imap_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(LV_DEBUG, "Connection %s is denied by "
+			mlog(LV_DEBUG, "Connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -306,7 +306,7 @@ static void *imls_thrworkssl(void *arg)
 			close(sockd2);
 			continue;
 		}
-		system_services_log_info(LV_DEBUG, "New TLS connection from [%s]:%hu",
+		mlog(LV_DEBUG, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
 			fprintf(stderr, "W-1418: fcntl: %s\n", strerror(errno));
@@ -336,7 +336,7 @@ static void *imls_thrworkssl(void *arg)
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
 				  imap_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
+			mlog(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -352,7 +352,7 @@ static void *imls_thrworkssl(void *arg)
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
 				  imap_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by "
+			mlog(LV_DEBUG, "TLS connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */

@@ -10,7 +10,6 @@ E(judge_user)
 E(add_user_into_temp_list)
 E(check_user)
 E(check_full)
-E(log_info)
 #undef E
 
 int system_services_run()
@@ -24,7 +23,6 @@ int system_services_run()
 } while (false)
 #define E2(f, s) ((f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))))
 
-	E(system_services_log_info, "log_info");
 	E2(system_services_judge_user, "user_filter_judge");
 	E2(system_services_add_user_into_temp_list, "user_filter_add");
 	E2(system_services_check_user, "check_user");

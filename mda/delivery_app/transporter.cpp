@@ -520,7 +520,7 @@ static void *dxp_thrwork(void *arg)
 			cannot_served_times = 0;
 			pcontext = &pthr_data->fake_context.context;
 			if (!pcontext->pmail->retrieve(static_cast<char *>(pmessage->mail_begin), pmessage->mail_length)) {
-				system_services_log_info(LV_DEBUG, "QID %d: Failed to "
+				mlog(LV_DEBUG, "QID %d: Failed to "
 					"load into mail object", pmessage->flush_ID);
 				message_dequeue_save(pmessage);
 				message_dequeue_put(pmessage);
@@ -1196,18 +1196,18 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
 
 	switch (pcontext->pcontrol->bound_type) {
 	case BOUND_UNKNOWN:
-		system_services_log_info(level, "UNKNOWN message FROM: %s, "
+		mlog(level, "UNKNOWN message FROM: %s, "
 			"TO: %s %s", pcontext->pcontrol->from, rcpt_buff, log_buf);
 		break;
 	case BOUND_IN:
 	case BOUND_OUT:
 	case BOUND_RELAY:
-		system_services_log_info(level, "SMTP message queue-ID: %d, FROM: %s, "
+		mlog(level, "SMTP message queue-ID: %d, FROM: %s, "
 			"TO: %s %s", pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
 			rcpt_buff, log_buf);
 		break;
 	default:
-		system_services_log_info(level, "APP created message FROM: %s, "
+		mlog(level, "APP created message FROM: %s, "
 			"TO: %s %s", pcontext->pcontrol->from, rcpt_buff, log_buf);
 		break;
 	}

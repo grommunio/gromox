@@ -113,7 +113,6 @@ extern authmgr_login_t system_services_auth_login;
 extern int (*system_services_list_mail)(const char *, const char *, std::vector<gromox::MSG_UNIT> &, int *num, uint64_t *size);
 extern int (*system_services_delete_mail)(const char *, const char *, const std::vector<gromox::MSG_UNIT *> &);
 extern void (*system_services_broadcast_event)(const char *);
-extern void (*system_services_log_info)(unsigned int, const char *, ...);
 
 extern uint16_t g_listener_ssl_port;
 extern unsigned int g_popcmd_debug;

@@ -683,7 +683,7 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 		++i;
 	if (i > limit)
 		all_rcpts += " + " + std::to_string(i - limit) + " others";
-	system_services_log_info(level, "remote=[%s] from=<%s> to={%s} %s",
+	mlog(level, "remote=[%s] from=<%s> to={%s} %s",
 		pcontext->connection.client_ip,
 		pcontext->menv.from, all_rcpts.c_str(), line_buf.get());
 } catch (const std::bad_alloc &) {
