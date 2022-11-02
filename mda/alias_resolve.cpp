@@ -116,7 +116,7 @@ static BOOL xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 	if (strchr(ctrl->from, '@') != nullptr) {
 		auto repl = xa_alias_lookup(ctrl->from);
 		if (repl.size() > 0) {
-			log_info(6, "alias_resolve: subst FROM %s -> %s", ctrl->from, repl.c_str());
+			mlog(LV_DEBUG, "alias_resolve: subst FROM %s -> %s", ctrl->from, repl.c_str());
 			gx_strlcpy(ctrl->from, repl.c_str(), arsizeof(ctrl->from));
 		}
 	}
@@ -133,7 +133,7 @@ static BOOL xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 			temp_file.writeline(rcpt_to);
 			continue;
 		}
-		log_info(6, "alias_resolve: subst RCPT %s -> %s", rcpt_to, repl.c_str());
+		mlog(LV_DEBUG, "alias_resolve: subst RCPT %s -> %s", rcpt_to, repl.c_str());
 		replaced = true;
 		temp_file.writeline(repl.c_str());
 	}
@@ -141,7 +141,7 @@ static BOOL xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 		temp_file.copy_to(ctrl->f_rcpt_to);
 	return false;
 } catch (const std::bad_alloc &) {
-	log_info(5, "E-1611: ENOMEM\n");
+	mlog(LV_INFO, "E-1611: ENOMEM\n");
 	return false;
 }
 
@@ -230,7 +230,7 @@ static BOOL xa_main(int reason, void **data)
 	try {
 		xa_thread = std::thread(xa_refresh_thread);
 	} catch (const std::system_error &e) {
-		log_info(3, "alias_resolve: %s\n", e.what());
+		mlog(LV_ERR, "alias_resolve: %s\n", e.what());
 		return false;
 	}
 	return true;

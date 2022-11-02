@@ -22,7 +22,6 @@
 #define SERVICE_ID_GET_ID_FROM_HOMEDIR						13
 #define SERVICE_ID_SEND_MAIL								14
 #define SERVICE_ID_GET_MIME_POOL							15
-#define SERVICE_ID_LOG_INFO									16
 #define SERVICE_ID_GET_HANDLE								17
 
 #define E(s) decltype(exmdb_client_ ## s) exmdb_client_ ## s;
@@ -90,7 +89,6 @@ int exmdb_client_run()
 	pass_service(SERVICE_ID_GET_ID_FROM_HOMEDIR, E(common_util_get_id_from_homedir));
 	pass_service(SERVICE_ID_SEND_MAIL, E(cu_send_mail));
 	pass_service(SERVICE_ID_GET_MIME_POOL, E(common_util_get_mime_pool));
-	pass_service(SERVICE_ID_LOG_INFO, E(log_info));
 	pass_service(SERVICE_ID_GET_HANDLE, E(emsmdb_interface_get_handle));
 #undef E
 	return 0;

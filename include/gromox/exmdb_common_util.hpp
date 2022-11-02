@@ -50,7 +50,6 @@ E(get_user_lang)
 #undef E
 extern BOOL (*cu_send_mail)(MAIL *, const char *sender, std::vector<std::string> &rcpts);
 extern std::shared_ptr<MIME_POOL> (*common_util_get_mime_pool)();
-extern void (*common_util_log_info)(unsigned int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
 extern const GUID *(*common_util_get_handle)();
 
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,

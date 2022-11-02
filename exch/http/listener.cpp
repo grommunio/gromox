@@ -177,7 +177,7 @@ static void *htls_thrwork(void *arg)
 			continue;
 		}
 		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(LV_DEBUG, "New connection from [%s]:%hu",
+		mlog(LV_DEBUG, "New connection from [%s]:%hu",
 			client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
 			fprintf(stderr, "W-1408: fcntl: %s\n", strerror(errno));
@@ -187,7 +187,7 @@ static void *htls_thrwork(void *arg)
 		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
-			system_services_log_info(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
+			mlog(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-202 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -207,7 +207,7 @@ static void *htls_thrwork(void *arg)
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
 				fprintf(stderr, "W-1983: write: %s\n", strerror(errno));
-			system_services_log_info(LV_DEBUG, "Connection %s is denied by ipaddr filter",
+			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -223,7 +223,7 @@ static void *htls_thrwork(void *arg)
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
 				fprintf(stderr, "W-1982: write: %s\n", strerror(errno));
-			system_services_log_info(LV_DEBUG, "Connection %s is denied by "
+			mlog(LV_DEBUG, "Connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -296,7 +296,7 @@ static void *htls_thrworkssl(void *arg)
 			continue;
 		}
 		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(LV_DEBUG, "New TLS connection from [%s]:%hu",
+		mlog(LV_DEBUG, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
 			fprintf(stderr, "W-1410: fcntl: %s\n", strerror(errno));
@@ -306,7 +306,7 @@ static void *htls_thrworkssl(void *arg)
 		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
-			system_services_log_info(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
+			mlog(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
 			len = sprintf(buff, "HTTP/1.1 503 L-332 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -326,7 +326,7 @@ static void *htls_thrworkssl(void *arg)
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
 				fprintf(stderr, "W-1980: write: %s\n", strerror(errno));
-			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
+			mlog(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -342,7 +342,7 @@ static void *htls_thrworkssl(void *arg)
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
 				fprintf(stderr, "W-1979: write: %s\n", strerror(errno));
-			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by "
+			mlog(LV_DEBUG, "TLS connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */

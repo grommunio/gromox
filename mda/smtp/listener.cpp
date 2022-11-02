@@ -166,7 +166,7 @@ static void *smls_thrwork(void *arg)
 			continue;
 		}
 		client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(LV_DEBUG, "New connection from [%s]:%hu",
+		mlog(LV_DEBUG, "New connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
 			fprintf(stderr, "W-1412: fcntl: %s\n", strerror(errno));
@@ -260,7 +260,7 @@ static void *smls_thrworkssl(void *arg)
 			continue;
 		}
 		client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(LV_DEBUG, "New TLS connection from [%s]:%hu",
+		mlog(LV_DEBUG, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
 			fprintf(stderr, "W-1414: fcntl: %s\n", strerror(errno));

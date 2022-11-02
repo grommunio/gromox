@@ -521,12 +521,12 @@ void exmdb_local_log_info(MESSAGE_CONTEXT *pcontext,
 	case BOUND_IN:
 	case BOUND_OUT:
 	case BOUND_RELAY:
-		log_info(level, "SMTP message queue-ID: %d, FROM: %s, TO: %s  %s",
+		mlog(level, "SMTP message queue-ID: %d, FROM: %s, TO: %s  %s",
 			pcontext->pcontrol->queue_ID, pcontext->pcontrol->from, rcpt_to,
 			log_buf);
 		break;
 	default:
-		log_info(level, "APP created message FROM: %s, TO: %s  %s",
+		mlog(level, "APP created message FROM: %s, TO: %s  %s",
 			pcontext->pcontrol->from, rcpt_to, log_buf);
 		break;
 	}
