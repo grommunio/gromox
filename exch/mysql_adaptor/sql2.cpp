@@ -47,8 +47,10 @@ static bool db_upgrade_check_2(MYSQL *conn)
 	auto current = dbop_mysql_schemaversion(conn);
 	if (current < 0)
 		return false;
-	if (current >= recent)
+	if (current >= recent) {
+		fprintf(stderr, "[mysql_adaptor]: Current schema n%d is recent.\n", current);
 		return true;
+	}
 	fprintf(stderr, "[mysql_adaptor]: Current schema n%d. Update available: n%d. Configured action: ",
 	       current, recent);
 	static constexpr const char *msg =
