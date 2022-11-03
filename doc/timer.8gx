@@ -55,6 +55,14 @@ The TCP port number for exposing the timer service on.
 .br
 Default: \fI6666\fP
 .TP
+\fBtimer_log_file\fP
+Default: \fI-\fP (stderr)
+.TP
+\fBtimer_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fBtimer_state_path\fP
 Default: \fI/var/lib/gromox/timer.txt\fP
 .TP

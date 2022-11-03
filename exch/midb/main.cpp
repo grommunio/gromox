@@ -65,6 +65,8 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"midb_cmd_debug", "0"},
 	{"midb_listen_ip", "::1"},
 	{"midb_listen_port", "5555"},
+	{"midb_log_file", "-"},
+	{"midb_log_level", "4" /* LV_NOTICE */},
 	{"midb_mime_number", "4096", CFG_SIZE, "1024"},
 	{"midb_reload_interval", "60min", CFG_TIME, "1min", "1year"},
 	{"midb_schema_upgrades", "auto"},
@@ -95,6 +97,7 @@ static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
+	mlog_init(pconfig->get_value("midb_log_file"), pconfig->get_ll("midb_log_level"));
 	g_cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	g_midb_cache_interval = pconfig->get_ll("midb_cache_interval");
 	g_midb_reload_interval = pconfig->get_ll("midb_reload_interval");

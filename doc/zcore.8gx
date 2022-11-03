@@ -133,6 +133,14 @@ The named path for the AF_LOCAL socket that zcore will listen on.
 .br
 Default: \fI/run/gromox/zcore.sock\fP
 .TP
+\fBzcore_log_file\fP
+Default: \fI-\fP (stderr)
+.TP
+\fBzcore_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fBzcore_max_obh_per_session\fP
 The maximum number of object handles each session can have at any one time
 (e.g. folders/messages/etc. open simultaneously). There is one session for each

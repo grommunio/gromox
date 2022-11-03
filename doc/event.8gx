@@ -47,6 +47,14 @@ The TCP port number for exposing the event service on.
 .br
 Default: \fI33333\fP
 .TP
+\fBevent_log_file\fP
+Default: \fI-\fP (stderr)
+.TP
+\fBevent_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fBevent_threads_num\fP
 The minimum number of client processing threads to keep around.
 .br

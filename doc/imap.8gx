@@ -142,6 +142,14 @@ address is fixed to the wildcard address.)
 .br
 Default: (unset)
 .TP
+\fBimap_log_file\fP
+Default: \fI-\fP (stderr)
+.TP
+\fBimap_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fBimap_private_key_path\fP
 Filesystem path to the key file needed to unlock the TLS certificate.
 .br

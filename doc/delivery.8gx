@@ -37,6 +37,14 @@ Default: \fI/usr/share/gromox/delivery\fP
 \fBdefault_domain\fP
 Default: (system domainname)
 .TP
+\fBdelivery_log_file\fP
+Default: \fI-\fP (stderr)
+.TP
+\fBdelivery_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fBdequeue_max_mem\fP
 Default: \fI1024M\fP
 .TP
