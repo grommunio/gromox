@@ -77,6 +77,14 @@ The TCP port to expose the implicit-TLS SMTP protocol service on.
 .br
 Default: (unset)
 .TP
+\fBlda_log_file\fP
+Default: \fI-\fP (stderr)
+.TP
+\fBlda_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fBlda_thread_charge_num\fP
 The maximum number of connections that each thread is allowed to process.
 .br

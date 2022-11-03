@@ -67,6 +67,8 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"pop3_listen_addr", "::"},
 	{"pop3_listen_port", "110"},
 	{"pop3_listen_tls_port", "0"},
+	{"pop3_log_file", "-"},
+	{"pop3_log_level", "4" /* LV_NOTICE */},
 	{"pop3_support_stls", "pop3_support_tls", CFG_ALIAS},
 	{"pop3_support_tls", "false", CFG_BOOL},
 	{"pop3_thread_charge_num", "20", CFG_SIZE, "4"},
@@ -93,6 +95,7 @@ static bool pop3_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
+	mlog_init(pconfig->get_value("pop3_log_file"), pconfig->get_ll("pop3_log_level"));
 	g_popcmd_debug = pconfig->get_ll("pop3_cmd_debug");
 	return true;
 }

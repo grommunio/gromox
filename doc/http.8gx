@@ -148,6 +148,14 @@ The TCP port to expose implicit-TLS HTTP protocol service (HTTPS) on.
 .br
 Default: (unset)
 .TP
+\fBhttp_log_file\fP
+Default: \fI-\fP (stderr)
+.TP
+\fBhttp_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fBhttp_private_key_path\fP
 Filesystem path to the key file needed to unlock the TLS certificate.
 .br

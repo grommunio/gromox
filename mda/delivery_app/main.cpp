@@ -52,6 +52,8 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR},
 	{"context_average_mime", "8", CFG_SIZE, "1"},
 	{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
+	{"delivery_log_file", "-"},
+	{"delivery_log_level", "4" /* LV_NOTICE */},
 	{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
 	{"dequeue_path", PKGSTATEQUEUEDIR},
 	{"running_identity", "gromox"},
@@ -91,6 +93,7 @@ int main(int argc, const char **argv) try
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
+	mlog_init(g_config_file->get_value("delivery_log_file"), g_config_file->get_ll("delivery_log_level"));
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));

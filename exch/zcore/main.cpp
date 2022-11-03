@@ -91,6 +91,8 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"zarafa_mime_number", "4096", CFG_SIZE, "1024"},
 	{"zarafa_threads_num", "100", CFG_SIZE, "1", "1000"},
 	{"zcore_listen", PKGRUNDIR "/zcore.sock"},
+	{"zcore_log_file", "-"},
+	{"zcore_log_level", "4" /* LV_NOTICE */},
 	{"zcore_max_obh_per_session", "500", CFG_SIZE, "100"},
 	{"zrpc_debug", "0"},
 	CFG_TABLE_END,
@@ -111,6 +113,7 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		       opt_config_file, strerror(errno));
 		return false;
 	}
+	mlog_init(pconfig->get_value("zcore_log_file"), pconfig->get_ll("zcore_log_level"));
 	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
 	g_oxcical_allday_ymd = pconfig->get_ll("oxcical_allday_ymd");
 	zcore_max_obh_per_session = pconfig->get_ll("zcore_max_obh_per_session");

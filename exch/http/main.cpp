@@ -93,6 +93,8 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_listen_addr", "::"},
 	{"http_listen_port", "80"},
 	{"http_listen_tls_port", "0"},
+	{"http_log_file", "-"},
+	{"http_log_level", "4" /* LV_NOTICE */},
 	{"http_support_ssl", "http_support_tls", CFG_ALIAS},
 	{"http_support_tls", "false", CFG_BOOL},
 	{"http_thread_charge_num", "20", CFG_SIZE, "4"},
@@ -120,6 +122,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
+	mlog_init(cfg->get_value("http_log_file"), cfg->get_ll("http_log_level"));
 	g_http_debug = cfg->get_ll("http_debug");
 	g_msrpc_debug = cfg->get_ll("msrpc_debug");
 	g_oxcical_allday_ymd = cfg->get_ll("oxcical_allday_ymd");

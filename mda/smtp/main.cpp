@@ -62,6 +62,8 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"lda_listen_addr", "::"},
 	{"lda_listen_port", "25"},
 	{"lda_listen_tls_port", "0"},
+	{"lda_log_file", "-"},
+	{"lda_log_level", "4" /* LV_NOTICE */},
 	{"lda_thread_charge_num", "400", CFG_SIZE, "4"},
 	{"lda_thread_init_num", "5", CFG_SIZE},
 	{"listen_port", "lda_listen_port", CFG_ALIAS},
@@ -115,6 +117,7 @@ int main(int argc, const char **argv) try
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
+	mlog_init(g_config_file->get_value("lda_log_file"), g_config_file->get_ll("lda_log_level"));
 	if (0 != resource_run()) { 
 		printf("[system]: Failed to load resource\n");
 		return EXIT_FAILURE;

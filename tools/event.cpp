@@ -130,6 +130,8 @@ static constexpr cfg_directive event_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/event:" PKGSYSCONFDIR},
 	{"event_listen_ip", "::1"},
 	{"event_listen_port", "33333"},
+	{"event_log_file", "-"},
+	{"event_log_level", "4" /* LV_NOTICE */},
 	{"event_threads_num", "50", CFG_SIZE, "1", "1000"},
 	CFG_TABLE_END,
 };
@@ -251,6 +253,7 @@ int main(int argc, const char **argv) try
 	if (pconfig == nullptr)
 		return 2;
 
+	mlog_init(pconfig->get_value("event_log_file"), pconfig->get_ll("event_log_level"));
 	auto listen_ip = pconfig->get_value("event_listen_ip");
 	uint16_t listen_port = pconfig->get_ll("event_listen_port");
 	printf("[system]: listen address is [%s]:%hu\n",
