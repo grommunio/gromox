@@ -1984,8 +1984,9 @@ bool http_parser_get_password(const char *username, char *password)
 	return true;
 }
 
-BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
+BOOL http_context::try_create_vconnection()
 {
+	auto pcontext = this;
 	const char *conn_cookie;
 	
 	if (CHANNEL_TYPE_IN == pcontext->channel_type) {
@@ -2049,9 +2050,10 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 	return TRUE;
 }
 
-void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
-	uint32_t bytes_received, uint32_t available_window)
+void http_context::set_outchannel_flowcontrol(uint32_t bytes_received,
+    uint32_t available_window)
 {
+	auto pcontext = this;
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return;
 	}
@@ -2073,9 +2075,9 @@ void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 	}
 }
 
-BOOL http_parser_recycle_inchannel(
-	HTTP_CONTEXT *pcontext, const char *predecessor_cookie)
+BOOL http_context::recycle_inchannel(const char *predecessor_cookie)
 {
+	auto pcontext = this;
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
 	}
@@ -2096,9 +2098,9 @@ BOOL http_parser_recycle_inchannel(
 	return TRUE;
 }
 
-BOOL http_parser_recycle_outchannel(
-	HTTP_CONTEXT *pcontext, const char *predecessor_cookie)
+BOOL http_context::recycle_outchannel(const char *predecessor_cookie)
 {
+	auto pcontext = this;
 	if (CHANNEL_TYPE_OUT != pcontext->channel_type) {
 		return FALSE;
 	}
@@ -2125,9 +2127,9 @@ BOOL http_parser_recycle_outchannel(
 	return TRUE;
 }
 
-BOOL http_parser_activate_inrecycling(
-	HTTP_CONTEXT *pcontext, const char *successor_cookie)
+BOOL http_context::activate_inrecycling(const char *successor_cookie)
 {
+	auto pcontext = this;
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
 	}
@@ -2148,9 +2150,9 @@ BOOL http_parser_activate_inrecycling(
 	return TRUE;
 }
 
-BOOL http_parser_activate_outrecycling(
-	HTTP_CONTEXT *pcontext, const char *successor_cookie)
+BOOL http_context::activate_outrecycling(const char *successor_cookie)
 {
+	auto pcontext = this;
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
 	}
@@ -2180,8 +2182,9 @@ BOOL http_parser_activate_outrecycling(
 	return TRUE;
 }
 
-void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, time_duration keepalive)
+void http_context::set_keep_alive(time_duration keepalive)
 {
+	auto pcontext = this;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);

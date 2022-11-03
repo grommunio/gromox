@@ -51,7 +51,14 @@ struct http_context final : public schedule_context {
 	http_context();
 	~http_context();
 	NOMOVE(http_context);
+	BOOL try_create_vconnection();
+	void set_outchannel_flowcontrol(uint32_t bytes_received, uint32_t available_window);
+	BOOL recycle_inchannel(const char *predecessor_cookie);
+	BOOL recycle_outchannel(const char *predecessor_cookie);
+	BOOL activate_inrecycling(const char *successor_cookie);
+	BOOL activate_outrecycling(const char *successor_cookie);
 	void log(int level, const char *format, ...) const __attribute__((format(printf, 3, 4)));
+	void set_keep_alive(gromox::time_duration keepalive);
 
 	GENERIC_CONNECTION connection;
 	http_request request;
@@ -116,20 +123,10 @@ int http_parser_get_param(int param);
 extern SCHEDULE_CONTEXT **http_parser_get_contexts_list();
 int http_parser_threads_event_proc(int action);
 extern bool http_parser_get_password(const char *username, char *password);
-BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext);
-void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
-	uint32_t bytes_received, uint32_t available_window);
-extern BOOL http_parser_recycle_inchannel(HTTP_CONTEXT *, const char *predecessor_cookie);
-extern BOOL http_parser_recycle_outchannel(HTTP_CONTEXT *, const char *predecessor_cookie);
-BOOL http_parser_activate_inrecycling(
-	HTTP_CONTEXT *pcontext, const char *successor_cookie);
-BOOL http_parser_activate_outrecycling(
-	HTTP_CONTEXT *pcontext, const char *successor_cookie);
 extern HTTP_CONTEXT *http_parser_get_context();
 extern void http_parser_shutdown_async();
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall);
-extern void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, gromox::time_duration keepalive);
 extern void http_report();
 
 extern alloc_limiter<stream_block> g_blocks_allocator;

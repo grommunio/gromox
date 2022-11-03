@@ -2653,7 +2653,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 			pchannel_out->available_window = pchannel_out->window_size;
-			if (!http_parser_try_create_vconnection(pcontext)) {
+			if (!pcontext->try_create_vconnection()) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2685,7 +2685,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			pchannel_out->available_window = pchannel_out->window_size;
 			pdu_processor_free_call(pcall);
-			if (!http_parser_recycle_outchannel(pcontext, channel_cookie))
+			if (!pcontext->recycle_outchannel(channel_cookie))
 				return PDU_PROCESSOR_ERROR;
 			pchannel_out->channel_stat = CHANNEL_STAT_RECYCLING;
 			return PDU_PROCESSOR_INPUT;
@@ -2729,7 +2729,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			pdu_processor_free_call(pcall);
 			/* notify out channel to send conn/c2 to client */
-			if (!http_parser_try_create_vconnection(pcontext))
+			if (!pcontext->try_create_vconnection())
 				return PDU_PROCESSOR_ERROR;
 			pchannel_in->channel_stat = CHANNEL_STAT_OPENED;
 			return PDU_PROCESSOR_INPUT;
@@ -2753,7 +2753,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (!http_parser_recycle_inchannel(pcontext, channel_cookie)) {
+			if (!pcontext->recycle_inchannel(channel_cookie)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2785,7 +2785,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			else if (keep_alive < 60000ms)
 				keep_alive = 60000ms;
 			pchannel_in->client_keepalive = keep_alive;
-			http_parser_set_keep_alive(pcontext, keep_alive);
+			pcontext->set_keep_alive(keep_alive);
 			pdu_processor_free_call(pcall);
 			return PDU_PROCESSOR_INPUT;
 		} else if (40 == length) {
@@ -2806,7 +2806,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 			pdu_processor_free_call(pcall);
-			if (http_parser_activate_inrecycling(pcontext, channel_cookie))
+			if (pcontext->activate_inrecycling(channel_cookie))
 				return PDU_PROCESSOR_TERMINATE;
 			return PDU_PROCESSOR_INPUT;
 		} else if (56 == length) {
@@ -2820,7 +2820,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 					pdu_processor_free_call(pcall);
 					return PDU_PROCESSOR_ERROR;
 				}
-				http_parser_set_outchannel_flowcontrol(pcontext,
+				pcontext->set_outchannel_flowcontrol(
 					pcall->pkt.payload.rts.commands[1].command.flowcontrolack.bytes_received,
 					pcall->pkt.payload.rts.commands[1].command.flowcontrolack.available_window);
 				pdu_processor_free_call(pcall);
@@ -2833,7 +2833,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 					return PDU_PROCESSOR_ERROR;
 				}
 				pdu_processor_free_call(pcall);
-				http_parser_activate_outrecycling(pcontext, channel_cookie);
+				pcontext->activate_outrecycling(channel_cookie);
 				return PDU_PROCESSOR_INPUT;
 			} else {
 				pdu_processor_free_call(pcall);
