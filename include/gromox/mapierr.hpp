@@ -1,4 +1,17 @@
 #pragma once
+/*
+ * “COM specifies which values in a HRESULT are treated as errors, and which
+ * aren't. […] there is a HRESULT_FROM_WIN32 function […] to convert a Win32
+ * error code to a HRESULT.” –https://stackoverflow.com/a/28318589
+ *
+ * 8003xxxx: FACILITY_STORAGE
+ * 8004xxxx: FACILITY_ITF (interface-specific)
+ * 8007xxxx: FACILITY_WIN32
+ * 8019xxxx: FACILITY_HTTP
+ *
+ * Needless to say MSMAPI messed this up, with some MAPI_E_* defined as
+ * in-facility codes (< 0xffff) and some as COM HRESULTs (0x8xxxxxxx).
+ */
 enum ec_error_t {
 	ecSuccess = 0, // ecNone
 	// MAPI_E_USER_ABORT = 0x1,
