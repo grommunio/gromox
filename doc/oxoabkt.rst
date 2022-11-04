@@ -104,8 +104,8 @@ CNTRL structure describing a radiobutton
 * ``ulString``: Offset to the label text of the control.
 
 
-Object types, display types, icons
-==================================
+Icon association for Exchange objects
+=====================================
 
 ===============  ========  ========  ===============  ===========  =====
 Exchange Object  Otyp      Dtyp      DtypEx           OL icon      OWA
@@ -132,4 +132,75 @@ IDistList, IMAPIFolder, etc.).
 
 For Dtyp, Dtypex, see ``mapidefs.h:enum display_type``.
 
-PR_INSTANCE_ID as presented by MSMAPI reflects the Minimal Entryid.
+
+MSMAPI exposed data
+===================
+
+The Minimal EntryID expressed by the NSPI protocol makes an appearance
+in MSMAPI in the PR_INSTANCE_ID property.
+
+The "Contacts" folder itself in private mailboxes:
+
+* PR_CONTAINER_CLASS=``IPM.Contacts``
+
+Contact in private "Contacts" folder:
+
+* PR_OBJECT_TYPE=5 MAPI_MESSAGE
+* PR_MESSAGE_CLASS=``IPM.Contact``
+* PidLidEmail1AddressType=``SMTP``/``EX``
+
+Same contact as seen in the AB Hierarchy:
+
+* PR_ADDRTYPE=``SMTP``/``EX``
+* PR_DISPLAY_TYPE=``0`` DT_MAILUSER
+* PR_OBJECT_TYPE=``6`` MAPI_MAILUSER
+
+Contact group in private "Contacts" folder:
+
+* PR_OBJECT_TYPE=``5`` MAPI_MESSAGE
+* PR_MESSAGE_CLASS=``IPM.DistList``
+* members in PidLidDistributionListOneOffMembers (PSETID_Address:0x8054:PT_MV_BINARY)
+* members in PidLidDistributionListMembers (PSETID_Address:0x8055:PT_MV_BINARY)
+* entryids found in 8054 are all muidOOP
+* entryids found in 8055 can be either muidOOP or WAB_GUID {d3ad91c0-9d51-11cf-a4a9-00aa0047faa4} wrapping muidEMSAB
+
+Same contact group as seen in the AB Hierarchy:
+
+* PR_ADDRTYPE=``MAPIPDL``
+* PR_DISPLAY_TYPE_EX={unset}
+* PR_DISPLAY_TYPE=``5`` DT_PRIVATE_DISTLIST
+* PR_OBJECT_TYPE=``8`` MAPI_DISTLIST
+
+Properties that may appear on GAL objects
+=========================================
+
+* PR_COMMENT: basic description
+* PR_DISPLAY_NAME: display name
+* PR_DISPLAY_TYPE
+* PR_DISPLAY_TYPE_EX
+* PR_OBJECT_TYPE: relevant for ::OpenEntry
+* PR_EMAIL_ADDRESS: limit of 128 chars with EX addrtype
+* PR_EMS_AB_COUNTRY_NAME: ISO code
+* PR_EMS_AB_DL_SENDER_HINT_TRANSLATIONS (PT_MV_UNICODE): another description field, supposedly limited to 175 Unicode chars
+* PR_EMS_AB_EXTERNAL_MEMBER_COUNT
+* PR_EMS_AB_TOTAL_MEMBER_COUNT
+* PR_EMS_AB_INSTANCE_TYPE=``0x4``
+* PR_EMS_AB_PROXY_ADDRESSES: aliases
+* PR_EMS_AB_ROOM_CAPACITY (also for equipment etc.)
+* PR_EMS_AB_USN_CHANGED: cf. LDAP entry
+* PR_EMS_AB_USN_CREATED: cf. LDAP entry
+* PR_MHS_COMMON_NAME: display name
+* PR_SMTP_ADDRESS
+* PR_TRANSMITABLE_DISPLAY_NAME: display name
+* 0x68c40102: a 16-byte GUID
+* 0x8202001f: display name
+* 0x8c730102: 16-byte GUID
+* 0x8c750102: 12-byte fixed blob ``0101 000000000005 0A000000``, present on shared mailboxes and room/equipment
+* 0x8cb1001f: X500 for the/a sysmailbox
+* 0x8cb30003: join restrictions for DLs. 0=join only via owner, 1=free to join, 2=moderated
+* 0x8cb40003: leave restrictions for DLs. 0=leave only via owner, 1=free to leave
+* 0x8cb60003=``6``
+* 0x8ccc0003=``0``
+* 0x8cec0003=``1``
+* 0x8c9f001f: some language list (``de-DE,bn-BD``)
+* 0x8d0f0003=``0``
