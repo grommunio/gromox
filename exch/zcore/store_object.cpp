@@ -472,8 +472,8 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-static void* store_object_get_oof_property(
-	const char *maildir, uint32_t proptag)
+static void *store_object_get_oof_property(const char *maildir,
+    uint32_t proptag) try
 {
 	int offset;
 	char *pbuff;
@@ -481,20 +481,37 @@ static void* store_object_get_oof_property(
 	void *pvalue;
 	const char *str_value;
 	char subject[1024];
-	char temp_path[256];
 	MIME_FIELD mime_field;
 	struct stat node_stat;
 	static constexpr uint8_t fake_true = true;
 	static constexpr uint8_t fake_false = false;
-	
+	std::string path;
+
+	switch (proptag) {
+	case PR_EC_OUTOFOFFICE:
+	case PR_EC_OUTOFOFFICE_FROM:
+	case PR_EC_OUTOFOFFICE_UNTIL:
+	case PR_EC_ALLOW_EXTERNAL:
+	case PR_EC_EXTERNAL_AUDIENCE:
+		path = maildir + "/config/autoreply.cfg"s;
+		break;
+	case PR_EC_OUTOFOFFICE_MSG:
+	case PR_EC_OUTOFOFFICE_SUBJECT:
+		path = maildir + "/config/internal-reply"s;
+		break;
+	case PR_EC_EXTERNAL_REPLY:
+	case PR_EC_EXTERNAL_SUBJECT:
+		path = maildir + "/config/external-reply"s;
+		break;
+	}
+
 	switch (proptag) {
 	case PR_EC_OUTOFOFFICE: {
 		auto oofstate = cu_alloc<uint32_t>();
 		if (oofstate == nullptr)
 			return NULL;
 		pvalue = oofstate;
-		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		auto pconfig = config_file_prg(nullptr, temp_path, nullptr);
+		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
 		if (NULL == pconfig) {
 			*oofstate = 0;
 		} else {
@@ -506,11 +523,7 @@ static void* store_object_get_oof_property(
 	}
 	case PR_EC_OUTOFOFFICE_MSG:
 	case PR_EC_EXTERNAL_REPLY: {
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-		         proptag == PR_EC_OUTOFOFFICE_MSG ?
-		         "%s/config/internal-reply" : "%s/config/external-reply",
-		         maildir);
-		wrapfd fd = open(temp_path, O_RDONLY);
+		wrapfd fd = open(path.c_str(), O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 			return nullptr;
 		buff_len = node_stat.st_size;
@@ -523,11 +536,7 @@ static void* store_object_get_oof_property(
 	}
 	case PR_EC_OUTOFOFFICE_SUBJECT:
 	case PR_EC_EXTERNAL_SUBJECT: {
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-		         proptag == PR_EC_OUTOFOFFICE_SUBJECT ?
-		         "%s/config/internal-reply" : "%s/config/external-reply",
-		         maildir);
-		wrapfd fd = open(temp_path, O_RDONLY);
+		wrapfd fd = open(path.c_str(), O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 			return NULL;
 		buff_len = node_stat.st_size;
@@ -551,8 +560,7 @@ static void* store_object_get_oof_property(
 	}
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
-		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		auto pconfig = config_file_prg(nullptr, temp_path, nullptr);
+		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
 		if (NULL == pconfig) {
 			return NULL;
 		}
@@ -569,8 +577,7 @@ static void* store_object_get_oof_property(
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
-		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-		auto pconfig = config_file_prg(nullptr, temp_path, nullptr);
+		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
 		if (NULL == pconfig) {
 			return deconst(&fake_false);
 		}
@@ -582,6 +589,8 @@ static void* store_object_get_oof_property(
 	}
 	}
 	return NULL;
+} catch (const std::bad_alloc &) {
+	return nullptr;
 }
 
 static BOOL store_object_get_calculated_property(store_object *pstore,
