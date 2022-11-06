@@ -47,5 +47,5 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime);
 extern GX_EXPORT BOOL mime_string_to_utf8(const char *charset, const char *mime_string, char *out_string, size_t out_len);
 void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
-extern GX_EXPORT int html_to_plain(const void *inbuf, int inlen, std::string &outbuf);
+extern GX_EXPORT int html_to_plain(const void *inbuf, size_t inlen, std::string &outbuf);
 extern GX_EXPORT char *plain_to_html(const char *rbuf);
