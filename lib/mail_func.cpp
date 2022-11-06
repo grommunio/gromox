@@ -1383,14 +1383,16 @@ void enriched_to_html(const char *enriched_txt,
 	html[offset] = '\0';
 }
 
-static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf) try
+static int html_to_plain_boring(const void *inbuf, size_t len,
+    std::string &outbuf) try
 {
 	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
 	bool linebegin = true;
-	int i = 0;
 	char is_xml = 0, lc = 0;
 	int depth = 0, in_q = 0;
-	
+
+	if (len == SIZE_MAX)
+		--len;
 	auto rbuf = std::make_unique<char[]>(len + 1);
 	if (rbuf == nullptr)
 		return -1;
@@ -1405,7 +1407,7 @@ static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf)
 	char c = buf[0];
 	char *p = buf.get();
 	char *rp = rbuf.get();
-	while (i < len) {
+	for (size_t i = 0; i < len; ++i) {
 		switch (c) {
 		case '\0':
 			break;
@@ -1572,7 +1574,6 @@ static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf)
 			break;
 		}
 		c = *(++ p);
-		i ++;
 	}
 	if (rp < rbuf.get() + len) {
 		*rp = '\0';
@@ -1583,7 +1584,7 @@ static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf)
 	return -1;
 }
 
-int html_to_plain(const void *inbuf, int len, std::string &outbuf)
+int html_to_plain(const void *inbuf, size_t len, std::string &outbuf)
 {
 	auto ret = feed_w3m(inbuf, len, outbuf);
 	if (ret >= 0)
