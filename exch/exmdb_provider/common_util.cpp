@@ -34,24 +34,8 @@
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
+#include "sfptrids.hpp"
 #define S2A(x) reinterpret_cast<const char *>(x)
-
-#define SERVICE_ID_LANG_TO_CHARSET							1
-#define SERVICE_ID_CPID_TO_CHARSET							2
-#define SERVICE_ID_GET_USER_DISPLAYNAME						3
-#define SERVICE_ID_CHECK_MLIST_INCLUDE						4
-#define SERVICE_ID_GET_USER_LANG							5
-#define SERVICE_ID_GET_TIMEZONE								6
-#define SERVICE_ID_GET_MAILDIR								7
-#define SERVICE_ID_GET_ID_FFROM_USERNAME					8
-#define SERVICE_ID_GET_USERNAME_FROM_ID						9
-#define SERVICE_ID_GET_USER_IDS								10
-#define SERVICE_ID_GET_DOMAIN_IDS							11
-#define SERVICE_ID_GET_ID_FROM_MAILDIR						12
-#define SERVICE_ID_GET_ID_FROM_HOMEDIR						13
-#define SERVICE_ID_SEND_MAIL								14
-#define SERVICE_ID_GET_MIME_POOL							15
-#define SERVICE_ID_GET_HANDLE								17
 
 using XUI = unsigned int;
 using LLD = long long;
