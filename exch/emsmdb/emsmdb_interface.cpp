@@ -558,7 +558,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	header_info.version = AUX_VERSION_1;
 	header_info.type = AUX_TYPE_EXORGINFO;
 	aux_orginfo.org_flags = PUBLIC_FOLDERS_ENABLED |
-		USE_AUTODISCOVER_FOR_PUBLIC_FOLDR_CONFIGURATION;
+		USE_AUTODISCOVER_FOR_PUBLIC_FOLDER_CONFIGURATION;
 	header_info.ppayload = &aux_orginfo;
 	node_info.pdata = &header_info;
 	double_list_append_as_tail(&aux_out.aux_list, &node_info);
