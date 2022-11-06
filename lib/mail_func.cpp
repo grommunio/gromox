@@ -1579,7 +1579,7 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 		*rp = '\0';
 	}
 	outbuf = rbuf.get();
-	return outbuf.size();
+	return 1;
 } catch (...) {
 	return -1;
 }
