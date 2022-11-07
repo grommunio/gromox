@@ -87,10 +87,10 @@ std::unique_ptr<STR_HASH_TABLE> STR_HASH_TABLE::create(size_t max_items,
 {
 	return std::make_unique<STR_HASH_TABLE>(max_items, item_size, func);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1537: ENOMEM\n");
+	mlog(LV_ERR, "E-1537: ENOMEM");
 	return nullptr;
 } catch (const std::invalid_argument &e) {
-	mlog(LV_ERR, "E-1538: %s\n", e.what());
+	mlog(LV_ERR, "E-1538: %s", e.what());
 	return nullptr;
 }
 

@@ -175,7 +175,7 @@ BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath) try
 		std::istringstream sin(json);
 		valid_json = Json::parseFromStream(Json::CharReaderBuilder(), sin, &root, nullptr);
 	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1554: ENOMEM\n");
+		mlog(LV_ERR, "E-1554: ENOMEM");
 		return false;
 	}
 
@@ -224,7 +224,7 @@ BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath) try
 		pjson->path = inpath;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2743: ENOMEM\n");
+	mlog(LV_ERR, "E-2743: ENOMEM");
 	return false;
 }
 
@@ -300,7 +300,7 @@ int MJSON::seek_fd(const char *id, int whence)
 			auto temp_path = std::string(pjson->path) + "/" + pjson->filename;
 			pjson->message_fd = open(temp_path.c_str(), O_RDONLY);
 		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1476: ENOMEM\n");
+			mlog(LV_ERR, "E-1476: ENOMEM");
 		}
 		if (-1 == pjson->message_fd) {
 			return -1;
@@ -437,7 +437,7 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 	*pmime = std::move(temp_mime);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2185: ENOMEM\n");
+	mlog(LV_ERR, "E-2185: ENOMEM");
 	return false;
 }
 
@@ -476,7 +476,7 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
 	buff[ret_len] = '\0';
 	return ret_len;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2186: ENOMEM\n");
+	mlog(LV_ERR, "E-2186: ENOMEM");
 	return -1;
 }
 
@@ -1104,7 +1104,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	}
 	
 	if (lseek(fd, pmime->get_offset(MJSON_MIME_CONTENT), SEEK_SET) < 0)
-		mlog(LV_ERR, "E-1430: lseek: %s\n", strerror(errno));
+		mlog(LV_ERR, "E-1430: lseek: %s", strerror(errno));
 	auto rdlen = ::read(fd, pbuff.get(), length);
 	if (rdlen < 0 || static_cast<size_t>(rdlen) != length) {
 		close(fd);
@@ -1160,7 +1160,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		if (!imail.to_file(fd)) {
 			close(fd);
 			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1372: remove %s: %s\n", msg_path, strerror(errno));
+				mlog(LV_WARN, "W-1372: remove %s: %s", msg_path, strerror(errno));
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -1178,7 +1178,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		pbuff.reset();
 		if (result <= 0) {
 			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1373: remove %s: %s\n", msg_path, strerror(errno));
+				mlog(LV_WARN, "W-1373: remove %s: %s", msg_path, strerror(errno));
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -1190,16 +1190,16 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		fd = open(dgt_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
 			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1374: remove %s: %s\n", msg_path, strerror(errno));
+				mlog(LV_WARN, "W-1374: remove %s: %s", msg_path, strerror(errno));
 			pbuild->build_result = FALSE;
 			return;
 		}
 		if (digest_len != write(fd, digest_buff, digest_len)) {
 			close(fd);
 			if (remove(dgt_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1375: remove %s: %s\n", dgt_path, strerror(errno));
+				mlog(LV_WARN, "W-1375: remove %s: %s", dgt_path, strerror(errno));
 			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1376: remove %s: %s\n", msg_path, strerror(errno));
+				mlog(LV_WARN, "W-1376: remove %s: %s", msg_path, strerror(errno));
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -1207,9 +1207,9 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		
 		if (!temp_mjson.retrieve(digest_buff, digest_len, pbuild->storage_path)) {
 			if (remove(dgt_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1377: remove %s: %s\n", dgt_path, strerror(errno));
+				mlog(LV_WARN, "W-1377: remove %s: %s", dgt_path, strerror(errno));
 			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1378: remove %s: %s\n", msg_path, strerror(errno));
+				mlog(LV_WARN, "W-1378: remove %s: %s", msg_path, strerror(errno));
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -1227,9 +1227,9 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		temp_mjson.enum_mime(mjson_enum_build, &build_param);
 		if (!build_param.build_result) {
 			if (remove(dgt_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1379: remove %s: %s\n", dgt_path, strerror(errno));
+				mlog(LV_WARN, "W-1379: remove %s: %s", dgt_path, strerror(errno));
 			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1380: remove %s: %s\n", msg_path, strerror(errno));
+				mlog(LV_WARN, "W-1380: remove %s: %s", msg_path, strerror(errno));
 			pbuild->build_result = FALSE;
 		}
 	}
@@ -1249,7 +1249,7 @@ BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> pool, const char *storage_pa
 	snprintf(temp_path, std::size(temp_path), "%s/%s", storage_path,
 	         pjson->get_mail_filename());
 	if (mkdir(temp_path, 0777) != 0 && errno != EEXIST) {
-		mlog(LV_ERR, "E-1433: mkdir %s: %s\n", temp_path, strerror(errno));
+		mlog(LV_ERR, "E-1433: mkdir %s: %s", temp_path, strerror(errno));
 		return FALSE;
 	}
 	BUILD_PARAM build_param;

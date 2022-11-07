@@ -37,7 +37,7 @@ std::shared_ptr<MIME_POOL> MIME_POOL::create(size_t number, int ratio,
 {
 	return std::make_unique<MIME_POOL>(number, ratio, name, hint);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1546: ENOMEM\n");
+	mlog(LV_ERR, "E-1546: ENOMEM");
 	return nullptr;
 }
 

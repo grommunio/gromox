@@ -241,7 +241,7 @@ int tnef_pull::g_propval(TNEF_PROPVAL *r)
 	TRY(pext->g_uint16(&r->propid));
 	r->ppropname = NULL;
 	if (r->propid == PROP_ID_INVALID)
-		mlog(LV_WARN, "W-1273: TNEF with PROP_ID_INVALID seen\n");
+		mlog(LV_WARN, "W-1273: TNEF with PROP_ID_INVALID seen");
 	if (is_nameprop_id(r->propid)) {
 		r->ppropname = pext->anew<PROPERTY_NAME>();
 		if (NULL == r->ppropname) {
@@ -994,7 +994,7 @@ static BOOL tnef_convert_to_propname(const std::string &input_tag,
 	try {
 		working_tag = input_tag;
 	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1567: ENOMEM\n");
+		mlog(LV_ERR, "E-1567: ENOMEM");
 		return false;
 	}
 	char *tag_string = working_tag.data();
@@ -1158,13 +1158,13 @@ static bool rec_namedprop(propmap_t &map, uint16_t &last_propid, TNEF_PROPVAL *t
 		tnef_pv->propid = iter->second;
 		return true;
 	} else if (map.size() >= 0x1000) {
-		mlog(LV_WARN, "W-1544: TNEF namedpropmap full\n");
+		mlog(LV_WARN, "W-1544: TNEF namedpropmap full");
 		return false;
 	}
 	try {
 		map.emplace(ts, last_propid);
 	} catch (const std::bad_alloc &) {
-		mlog(LV_WARN, "W-1545: ENOMEM\n");
+		mlog(LV_WARN, "W-1545: ENOMEM");
 		return false;
 	}
 	tnef_pv->propid = last_propid++;
@@ -1626,7 +1626,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	try { for (size_t i = 0; i < propids.count; ++i)
 		phash1.emplace(propids.ppropid[i], propids1.ppropid[i]);
 	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1987: ENOMEM\n");
+		mlog(LV_ERR, "E-1987: ENOMEM");
 	}
 	tnef_replace_propid(&pmsg->proplist, phash1);
 	if (NULL != pmsg->children.prcpts) {
@@ -2112,7 +2112,7 @@ static bool serialize_rcpt(tnef_push &ep, const MESSAGE_CONTENT &msg,
 	return ep.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_FROM, &addr) == EXT_ERR_SUCCESS;
 	/* keep these properties for attMsgProps */
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1648: ENOMEM\n");
+	mlog(LV_ERR, "E-1648: ENOMEM");
 	return false;
 }
 

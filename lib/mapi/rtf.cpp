@@ -327,7 +327,7 @@ static bool rtf_iconv_open(RTF_READER *preader, const char *fromcode)
 	auto cs = replace_iconv_charset(fromcode);
 	preader->conv_id = iconv_open("UTF-8//TRANSLIT", cs);
 	if ((iconv_t)-1 == preader->conv_id) {
-		mlog(LV_ERR, "E-2114: iconv_open %s: %s\n", cs, strerror(errno));
+		mlog(LV_ERR, "E-2114: iconv_open %s: %s", cs, strerror(errno));
 		return false;
 	}
 	gx_strlcpy(preader->current_encoding, fromcode, GX_ARRAY_SIZE(preader->current_encoding));
@@ -1632,7 +1632,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			if (preader->pfont_hash.size() < MAX_FONTS)
 				preader->pfont_hash.emplace(num, std::move(tmp_entry));
 		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1986: ENOMEM\n");
+			mlog(LV_ERR, "E-1986: ENOMEM");
 		}
 	} while ((pword = pword->get_sibling()) != nullptr);
 	if ('\0' == preader->default_encoding[0]) {
@@ -3111,7 +3111,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		replace_iconv_charset(charset));
 	conv_id = iconv_open(tmp_buff, "UTF-8");
 	if ((iconv_t)-1 == conv_id) {
-		mlog(LV_ERR, "E-2115: iconv_open %s: %s\n",
+		mlog(LV_ERR, "E-2115: iconv_open %s: %s",
 		        tmp_buff, strerror(errno));
 		return false;
 	}
@@ -3252,7 +3252,7 @@ bool rtf_init_library()
 	try {
 		g_cmd_hash.insert(cbegin(cmd_map), cend(cmd_map));
 	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1543: ENOMEM\n");
+		mlog(LV_ERR, "E-1543: ENOMEM");
 		return false;
 	}
 	return true;
