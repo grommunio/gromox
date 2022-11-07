@@ -121,7 +121,7 @@ static bool binhex_init_read_stat(READ_STAT *pstat,
 	pstat->length = length;
 	auto ptr = memmem(pbuff, length, g_hqxheader, HEADERMATCH);
 	if (NULL == ptr) {
-		debug_info("[binhex]: hqx buffer header not found");
+		mlog(LV_DEBUG, "binhex: hqx buffer header not found");
 		return false;
 	}
 	for (pstat->offset = static_cast<char *>(ptr) - static_cast<char *>(pbuff) + HEADERMATCH;
@@ -132,7 +132,7 @@ static bool binhex_init_read_stat(READ_STAT *pstat,
 		}
 	}
 	if (pstat->offset >= length) {
-		debug_info("[binhex]: corrupt hqx buffer");
+		mlog(LV_DEBUG, "binhex: corrupt hqx buffer");
 		return false;
 	}
 	for (;pstat->offset<length; pstat->offset++) {
@@ -144,11 +144,11 @@ static bool binhex_init_read_stat(READ_STAT *pstat,
 		}
 	}
 	if (pstat->offset >= length) {
-		debug_info("[binhex]: corrupt hqx buffer");
+		mlog(LV_DEBUG, "binhex: corrupt hqx buffer");
 		return false;
 	}
 	if (':' != pstat->pbuff[pstat->offset]) {
-		debug_info("[binhex]: corrupt hqx buffer");
+		mlog(LV_DEBUG, "binhex: corrupt hqx buffer");
 		return false;
 	}
 	pstat->offset ++;
@@ -167,12 +167,12 @@ static bool binhex_read_char(READ_STAT *pstat, uint8_t *pchar)
 		}
 	}
 	if (pstat->offset >= pstat->length) {
-		debug_info("[binhex]: unexpected end of hqx buffer");
+		mlog(LV_DEBUG, "binhex: unexpected end of hqx buffer");
 		return false;
 	}
 	c = g_demap[c];
 	if (0 == c) {
-		debug_info("[binhex]: illegal character in hqx buffer");
+		mlog(LV_DEBUG, "binhex: illegal character in hqx buffer");
 		return false;
 	}
 	*pchar = c - 1;
@@ -250,7 +250,7 @@ static bool binhex_read_crc(READ_STAT *pstat)
 		return false;
 	pstat->crc = be16p_to_cpu(tmp_buff);
 	if (pstat->crc != check) {
-		debug_info("[binhex]: CRC checksum error");
+		mlog(LV_DEBUG, "binhex: CRC checksum error");
 	}
 	pstat->crc = 0;
 	return true;

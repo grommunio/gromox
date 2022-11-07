@@ -119,7 +119,7 @@ static BOOL ip6flt_judge(const char *addr)
 		if (g_auditlist.try_emplace(addr, std::move(au)).second)
 			return TRUE;
 		if (ip6au_collect(current) == 0) {
-			debug_info("[ip_filter]: still cannot find one unit for auditing, giving up");
+			mlog(LV_DEBUG, "ip_filter: still cannot find one unit for auditing, giving up");
 			return TRUE;
 		}
 		g_auditlist.emplace(addr, std::move(au));

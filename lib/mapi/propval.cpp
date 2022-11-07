@@ -15,7 +15,7 @@ using namespace gromox;
 void *propval_dup(uint16_t type, const void *pvi)
 {
 	if (pvi == nullptr) {
-		debug_info("[propval]: cannot duplicate NULL propval");
+		mlog(LV_DEBUG, "propval: cannot duplicate NULL propval");
 		return NULL;
 	}
 	switch (type) {
@@ -318,7 +318,7 @@ void *propval_dup(uint16_t type, const void *pvi)
 void propval_free(uint16_t type, void *pvalue)
 {
 	if (NULL == pvalue) {
-		debug_info("[propval] cannot free NULL propval");
+		mlog(LV_DEBUG, "propval: cannot free NULL propval");
 		return;
 	}
 	switch (type) {

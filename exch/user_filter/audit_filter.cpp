@@ -19,6 +19,8 @@
 #include <gromox/util.hpp>
 #include "user_filter.hpp"
 
+using namespace gromox;
+
 namespace {
 struct STR_AUDIT {
     struct timeval  first_time_stamp;/* time stamp of first time of visit */
@@ -115,9 +117,7 @@ BOOL audit_filter_judge(const char *str)
 	} catch (const std::bad_alloc &) {
 	}
 	if (0 == audit_filter_collect_entry(&current_time)) {
-		/* still cannot find one unit for auditing, give up */
-		debug_info("[str_filter]: still cannot find one unit "
-		           "for auditing, give up");
+		mlog(LV_DEBUG, "str_filter: still cannot find one unit for auditing, giving up");
 		return TRUE;
 	}
 	try {

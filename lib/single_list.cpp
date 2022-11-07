@@ -18,7 +18,7 @@ void single_list_init(SINGLE_LIST* plist)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == plist) {
-		debug_info("[single_list]: single_list_init, param NULL");
+		mlog(LV_DEBUG, "single_list: single_list_init, param NULL");
 		return;
 	}
 #endif
@@ -44,7 +44,7 @@ BOOL single_list_append_as_tail(SINGLE_LIST* plist,
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == plist || NULL == node) {
-		debug_info("[single_list]: single_list_append_as_tail, param NULL");
+		mlog(LV_DEBUG, "single_list: single_list_append_as_tail, param NULL");
 		return FALSE;
 	}
 #endif
@@ -75,7 +75,7 @@ BOOL single_list_insert_as_head(SINGLE_LIST* plist, SINGLE_LIST_NODE* node)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == plist || NULL == node) {
-		debug_info("[single_list]: single_list_insert_as_head, param NULL");
+		mlog(LV_DEBUG, "single_list: single_list_insert_as_head, param NULL");
 		return FALSE;
 	}
 #endif
@@ -107,7 +107,7 @@ SINGLE_LIST_NODE *single_list_pop_front(SINGLE_LIST *plist)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == plist) {
-		debug_info("[single_list]: single_list_pop_front, param NULL");
+		mlog(LV_DEBUG, "single_list: single_list_pop_front, param NULL");
 		return NULL;
 	}
 #endif
@@ -141,7 +141,7 @@ SINGLE_LIST_NODE* single_list_get_head(SINGLE_LIST* plist)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == plist) {
-		debug_info("[single_list]: list_get_head, param NULL");
+		mlog(LV_DEBUG, "single_list: list_get_head, param NULL");
 		return NULL;
 	}
 #endif
@@ -166,7 +166,7 @@ SINGLE_LIST_NODE* single_list_get_tail(SINGLE_LIST* plist)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == plist) {
-		debug_info("[single_list]: list_get_tail, param NULL");
+		mlog(LV_DEBUG, "single_list: list_get_tail, param NULL");
 		return NULL;
 	}
 #endif
@@ -181,7 +181,7 @@ SINGLE_LIST_NODE* single_list_get_after(SINGLE_LIST* plist,
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == plist || NULL == base_node) { 
-		debug_info("[single_list]: list_get_after, param NULL");
+		mlog(LV_DEBUG, "single_list: list_get_after, param NULL");
 		return NULL;
 	}
 #endif
@@ -204,7 +204,7 @@ size_t single_list_get_nodes_num(const SINGLE_LIST *plist)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == plist) {
-		debug_info("[single_list]: single_list_get_nodes_num, param NULL");
+		mlog(LV_DEBUG, "single_list: single_list_get_nodes_num, param NULL");
 		return 0;
 	}
 #endif

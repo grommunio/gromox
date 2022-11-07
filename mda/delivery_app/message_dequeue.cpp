@@ -304,8 +304,7 @@ static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size)
 	pnode = single_list_pop_front(&g_free_list);
 	fr_hold.unlock();
 	if (NULL == pnode) {
-		debug_info("[message_dequeue]: fatal error in "
-			"message_dequeue_get_from_free\n");
+		mlog(LV_DEBUG, "fatal error in %s", __PRETTY_FUNCTION__);
 		return NULL;
 	}
 	pmessage = (MESSAGE*) pnode->pdata;

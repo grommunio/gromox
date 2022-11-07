@@ -4014,7 +4014,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		pskeleton->pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	}
 	if (NULL == pskeleton->pmessage_class) {
-		debug_info("[oxcmail]: missing message class for exporting");
+		mlog(LV_DEBUG, "oxcmail: missing message class for exporting");
 		return FALSE;
 	}
 	pskeleton->mail_type = oxcmail_get_mail_type(

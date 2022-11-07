@@ -435,8 +435,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 						pcontext->stream.rewind_read_ptr(actual_read);
 						goto DATA_PROCESS;
 					default:
-						debug_info("[smtp_parser] :error occurs in "
-									"smtp_dispatch_cmd\n");
+						mlog(LV_DEBUG, "smtp_parser :error occurs in smtp_dispatch_cmd");
 						pcontext->connection.reset();
 						smtp_parser_context_clear(pcontext);
 						return PROCESS_CLOSE;

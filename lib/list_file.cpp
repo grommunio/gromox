@@ -114,7 +114,7 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == list_file) {
-		debug_info("[list_file]: list_file_analyse_format, param NULL");
+		mlog(LV_DEBUG, "list_file: list_file_analyse_format, param NULL");
 		return FALSE;
 	}
 #endif
@@ -196,7 +196,7 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == list_file) {
-		debug_info("[list_file]: list_file_construct_list, param NULL");
+		mlog(LV_DEBUG, "list_file: list_file_construct_list, param NULL");
 		return FALSE;
 	}
 #endif
@@ -238,7 +238,7 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == list_file || NULL == pfile || NULL == line) {
-		debug_info("[list_file]: list_file_parse_line, param NULL");
+		mlog(LV_DEBUG, "list_file: list_file_parse_line, param NULL");
 		return FALSE;
 	}
 #endif

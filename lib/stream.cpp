@@ -14,6 +14,7 @@
 #define CR			0x100
 #define LF			0x101
 
+using namespace gromox;
 
 enum {
 	STREAM_EOM_WAITING = 0,
@@ -43,7 +44,7 @@ STREAM::STREAM(alloc_limiter<stream_block> *palloc) :
 	/* allocate the first node in initialization */
 	bappend = stream_append_node(pstream);
 	if (!bappend) {
-		debug_info("[stream]: Failed to allocate first node in stream_init");
+		mlog(LV_DEBUG, "stream: Failed to allocate first node in stream_init");
 		throw std::bad_alloc();
 	}
 	pstream->pnode_rd = pstream->pnode_wr;
@@ -100,7 +101,7 @@ unsigned int STREAM::readline(char **ppline)
 
 #ifdef _DEBUG_UMTA
 	if (ppline == nullptr) {
-		debug_info("[stream]: stream_readline, param NULL");
+		mlog(LV_DEBUG, "stream: stream_readline, param NULL");
 		return 0;
 	}
 #endif
@@ -294,7 +295,7 @@ void *STREAM::get_write_buf(unsigned int *psize)
 	auto pstream = this;
 #ifdef _DEBUG_UMTA
 	if (psize == nullptr) {
-		debug_info("[stream]: stream_get_wrbuf, param NULL");
+		mlog(LV_DEBUG, "stream: stream_get_wrbuf, param NULL");
 		return NULL;
 	}
 #endif
@@ -321,7 +322,7 @@ unsigned int STREAM::fwd_write_ptr(unsigned int offset)
 	auto pstream = this;
 #ifdef _DEBUG_UMTA
 	if(offset + pstream->wr_block_pos > STREAM_BLOCK_SIZE) {
-		debug_info("[stream]: offset is larger than block size in " 
+		mlog(LV_DEBUG, "stream: offset is larger than block size in " 
 				   "stream_forward_writing_ptr");
 		return 0;
 	}
@@ -420,7 +421,7 @@ void *STREAM::get_read_buf(unsigned int *psize)
 	char *ret_ptr;
 #ifdef _DEBUG_UMTA
 	if (psize == nullptr) {
-		debug_info("[stream]: stream_get_rdbuf, param NULL");
+		mlog(LV_DEBUG, "stream: stream_get_rdbuf, param NULL");
 		return NULL;
 	}
 #endif
@@ -497,7 +498,7 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 	assert(pstream->rd_block_pos < STREAM_BLOCK_SIZE);
 	assert(pstream->wr_block_pos < STREAM_BLOCK_SIZE);
 	if (pbuff == nullptr || psize == nullptr) {
-		debug_info("[stream]: stream_copyline, param NULL");
+		mlog(LV_DEBUG, "stream: stream_copyline, param NULL");
 		return STREAM_COPY_ERROR;
 	}
 
@@ -520,7 +521,7 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 	/* skip the '\n' at the beginning of the stream */
 	if (0 == pstream->rd_total_pos && *((char*)pstream->pnode_rd->pdata)
 				== '\n') {
-		debug_info("[stream]: skip \\n at the leading position of the stream "
+		mlog(LV_DEBUG, "stream: skip \\n at the leading position of the stream "
 				"in stream_copyline");
 		pstream->rd_block_pos	= 1;
 		pstream->rd_total_pos	= 1;
@@ -736,7 +737,7 @@ unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
 
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr) {
-		debug_info("[stream]: stream_peek_buffer, param NULL");
+		mlog(LV_DEBUG, "stream: stream_peek_buffer, param NULL");
 		return 0;
 	}
 #endif
@@ -851,7 +852,7 @@ int STREAM::write(const void *pbuff, size_t size)
 
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr) {
-		debug_info("[stream]: stream_write, param NULL");
+		mlog(LV_DEBUG, "stream: stream_write, param NULL");
 		return STREAM_WRITE_FAIL;
 	}
 #endif

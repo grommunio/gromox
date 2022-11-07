@@ -462,7 +462,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 			bytes_stack.emplace_back(common_bytes.ab, command);
 			auto stack_length = idset_stack_get_common_bytes(bytes_stack, common_bytes);
 			if (stack_length > 6) {
-				debug_info("[idset]: length of common bytes in"
+				mlog(LV_DEBUG, "idset: length of common bytes in"
 					" stack is too long when deserializing");
 				return 0;
 			}
@@ -491,7 +491,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 			uint8_t bitmask = pbin->pb[offset++];
 			auto stack_length = idset_stack_get_common_bytes(bytes_stack, common_bytes);
 			if (5 != stack_length) {
-				debug_info("[idset]: bitmask command error when "
+				mlog(LV_DEBUG, "idset: bitmask command error when "
 					"deserializing, length of common bytes in "
 					"stack should be 5");
 				return 0;
@@ -527,7 +527,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 			GLOBCNT common_bytes;
 			auto stack_length = idset_stack_get_common_bytes(bytes_stack, common_bytes);
 			if (stack_length > 5) {
-				debug_info("[idset]: range command error when "
+				mlog(LV_DEBUG, "idset: range command error when "
 					"deserializing, length of common bytes in "
 					"stack should be less than 5");
 				return 0;

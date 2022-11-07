@@ -1042,20 +1042,6 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 	return outpos;
 }
 
-void debug_info(const char *format, ...)
-{
-#ifdef _DEBUG_UMTA
-	char msg[256];
-	va_list ap;
-
-	memset(msg, 0, sizeof(msg));
-	va_start(ap, format);
-	vsprintf(msg, format, ap);
-	va_end(ap);
-	fprintf(stderr, "%s\n", msg);
-#endif
-}
-
 /*	qpdecode.c -- quoted-printable decoding routine
  *	Copyright (C) 2001-2003 Mark Weaver
  *	Written by Mark Weaver <mark@npsl.co.uk>

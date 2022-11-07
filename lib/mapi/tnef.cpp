@@ -626,7 +626,7 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 	TRY(pext->g_uint8(&r->lvl));
 	if (LVL_MESSAGE != r->lvl &&
 		LVL_ATTACHMENT != r->lvl) {
-		debug_info("[tnef]: attribute level error");
+		mlog(LV_DEBUG, "tnef: attribute level error");
 		return EXT_ERR_FORMAT;
 	}
 	TRY(pext->g_uint32(&r->attr_id));
@@ -658,7 +658,7 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		case ATTRIBUTE_ID_CONVERSATIONID:
 			break;
 		default:
-			debug_info("[tnef]: unknown attribute 0x%x", r->attr_id);
+			mlog(LV_DEBUG, "tnef: unknown attribute 0x%x", r->attr_id);
 			return EXT_ERR_FORMAT;
 		}
 		
@@ -674,7 +674,7 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		case ATTRIBUTE_ID_ATTACHRENDDATA:
 			break;
 		default:
-			debug_info("[tnef]: unknown attribute 0x%x", r->attr_id);
+			mlog(LV_DEBUG, "tnef: unknown attribute 0x%x", r->attr_id);
 			return EXT_ERR_FORMAT;
 		}
 	}
@@ -690,7 +690,7 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		}
 		TRY(pext->g_uint16(&header.trp_id));
 		if (0x0004 != header.trp_id) {
-			debug_info("[tnef]: tripidOneOff error");
+			mlog(LV_DEBUG, "tnef: tripidOneOff error");
 			return EXT_ERR_FORMAT;
 		}
 		TRY(pext->g_uint16(&header.total_len));
@@ -698,21 +698,21 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		TRY(pext->g_uint16(&header.address_len));
 		if (header.total_len != header.displayname_len +
 			header.address_len + 16) {
-			debug_info("[tnef]: triple header's structure-length error");
+			mlog(LV_DEBUG, "tnef: triple header's structure-length error");
 			return EXT_ERR_FORMAT;
 		}
 		uint32_t offset1 = ext.m_offset;
 		TRY(pext->g_str(&static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
 		offset1 += header.displayname_len;
 		if (ext.m_offset > offset1) {
-			debug_info("[tnef]: triple header's sender-name-length error");
+			mlog(LV_DEBUG, "tnef: triple header's sender-name-length error");
 			return EXT_ERR_FORMAT;
 		}
 		ext.m_offset = offset1;
 		TRY(pext->g_str(&static_cast<ATTR_ADDR *>(r->pvalue)->address));
 		offset1 += header.address_len;
 		if (ext.m_offset > offset1) {
-			debug_info("[tnef]: triple header's sender-email-length error");
+			mlog(LV_DEBUG, "tnef: triple header's sender-email-length error");
 			return EXT_ERR_FORMAT;
 		}
 		ext.m_offset = offset1;
@@ -853,7 +853,7 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		uint32_t offset1 = ext.m_offset + tmp_len;
 		TRY(pext->g_str(&static_cast<ATTR_ADDR *>(r->pvalue)->displayname));
 		if (ext.m_offset > offset1) {
-			debug_info("[tnef]: owner's display-name-length error");
+			mlog(LV_DEBUG, "tnef: owner's display-name-length error");
 			return EXT_ERR_FORMAT;
 		}
 		ext.m_offset = offset1;
@@ -861,7 +861,7 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		offset1 = ext.m_offset + tmp_len;
 		TRY(pext->g_str(&static_cast<ATTR_ADDR *>(r->pvalue)->address));
 		if (ext.m_offset > offset1) {
-			debug_info("[tnef]: owner's address-length error");
+			mlog(LV_DEBUG, "tnef: owner's address-length error");
 			return EXT_ERR_FORMAT;
 		}
 		ext.m_offset = offset1;
@@ -915,7 +915,7 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 	}
 	}
 	if (ext.m_offset > offset + len) {
-		debug_info("[tnef]: attribute data length error");
+		mlog(LV_DEBUG, "tnef: attribute data length error");
 		return EXT_ERR_FORMAT;
 	}
 	ext.m_offset = offset + len;
@@ -923,7 +923,7 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 #ifdef _DEBUG_UMTA
 	if (checksum != tnef_generate_checksum(
 		pext->data + offset, len)) {
-		debug_info("[tnef]: invalid checksum");
+		mlog(LV_DEBUG, "tnef: invalid checksum");
 	}
 #endif
 	return EXT_ERR_SUCCESS;
@@ -1236,7 +1236,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	if (ext_pull.g_uint32(&tmp_int32) != EXT_ERR_SUCCESS)
 		return NULL;
 	if (tmp_int32 != 0x223e9f78) {
-		debug_info("[tnef]: TNEF SIGNATURE error");
+		mlog(LV_DEBUG, "tnef: TNEF SIGNATURE error");
 		return NULL;
 	}
 	if (ext_pull.g_uint16(&tmp_int16) != EXT_ERR_SUCCESS)
@@ -1244,17 +1244,17 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	if (ext_pull.g_attr(&attribute) != EXT_ERR_SUCCESS)
 		return NULL;
 	if (ATTRIBUTE_ID_TNEFVERSION != attribute.attr_id) {
-		debug_info("[tnef]: cannot find idTnefVersion");
+		mlog(LV_DEBUG, "tnef: cannot find idTnefVersion");
 		return NULL;
 	}
 	if (ext_pull.g_attr(&attribute) != EXT_ERR_SUCCESS)
 		return NULL;
 	if (ATTRIBUTE_ID_OEMCODEPAGE != attribute.attr_id) {
-		debug_info("[tnef]: cannot find idOEMCodePage");
+		mlog(LV_DEBUG, "tnef: cannot find idOEMCodePage");
 		return NULL;
 	}
 	if (0 == ((LONG_ARRAY*)attribute.pvalue)->count) {
-		debug_info("[tnef]: cannot find PrimaryCodePage");
+		mlog(LV_DEBUG, "tnef: cannot find PrimaryCodePage");
 		return NULL;
 	}
 	cpid = ((LONG_ARRAY*)attribute.pvalue)->pl[0];
@@ -1284,13 +1284,13 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				cur_lvl = LVL_ATTACHMENT;
 				break;
 			} else {
-				debug_info("[tnef]: attachment should "
+				mlog(LV_DEBUG, "tnef: attachment should "
 					"begin with attAttachRendData");
 				return NULL;
 			}
 		}
 		if (b_props) {
-			debug_info("[tnef]: attMsgProps should be "
+			mlog(LV_DEBUG, "tnef: attMsgProps should be "
 				"the last attribute in message level");
 			return NULL;
 		}
@@ -1417,7 +1417,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				tmp_int32 = IMPORTANCE_HIGH;
 				break;
 			default:
-				debug_info("[tnef]: attPriority error");
+				mlog(LV_DEBUG, "tnef: attPriority error");
 				return NULL;
 			}
 			if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
@@ -1430,7 +1430,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			break;
 		case ATTRIBUTE_ID_RECIPTABLE: {
 			if (NULL != pmsg->children.prcpts) {
-				debug_info("[tnef]: idRecipTable already met");
+				mlog(LV_DEBUG, "tnef: idRecipTable already met");
 				return NULL;
 			}
 			prcpts = tarray_set_init();
@@ -1470,7 +1470,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			/* have been deprecated in Exchange Server */
 			break;
 		default:
-			debug_info("[tnef]: illegal attribute ID %x", attribute.attr_id);
+			mlog(LV_DEBUG, "tnef: illegal attribute ID %x", attribute.attr_id);
 			return NULL;
 		}
 	} while (ext_pull.m_offset < length);
@@ -1505,7 +1505,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	message_content_set_attachments_internal(pmsg, pattachments);
 	while (true) {
 		if (b_props && attribute.attr_id != ATTRIBUTE_ID_ATTACHRENDDATA) {
-			debug_info("[tnef]: attAttachment should be "
+			mlog(LV_DEBUG, "tnef: attAttachment should be "
 				"the last attribute in attachment level");
 			return NULL;
 		}
@@ -2140,7 +2140,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	/* ATTRIBUTE_ID_OEMCODEPAGE */
 	auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
 	if (num == nullptr) {
-		debug_info("[tnef]: cannot find PR_INTERNET_CPID");
+		mlog(LV_DEBUG, "tnef: cannot find PR_INTERNET_CPID");
 	} else {
 		uint32_t tmp_cpids[] = {*num, 0};
 		tmp_larray = {2, tmp_cpids};
@@ -2187,7 +2187,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	if (message_class == nullptr)
 		message_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
 	if (message_class == nullptr) {
-		debug_info("[tnef]: cannot find PR_MESSAGE_CLASS");
+		mlog(LV_DEBUG, "tnef: cannot find PR_MESSAGE_CLASS");
 	} else {
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_MESSAGECLASS,
 		    deconst(tnef_from_msgclass(message_class))) != EXT_ERR_SUCCESS)
@@ -2319,7 +2319,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 			tmp_int16 = 1;
 			break;
 		default:
-			debug_info("[tnef]: PR_IMPORTANCE error");
+			mlog(LV_DEBUG, "tnef: PR_IMPORTANCE error");
 			return FALSE;
 		}
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_PRIORITY,
@@ -2436,7 +2436,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 				tmp_rend.attach_type = ATTACH_TYPE_OLE;
 				break;
 			default:
-				debug_info("[tnef]: unsupported type in PR_ATTACH_METHOD by attachment");
+				mlog(LV_DEBUG, "tnef: unsupported type in PR_ATTACH_METHOD by attachment");
 				return FALSE;
 			}
 		}

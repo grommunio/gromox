@@ -297,8 +297,7 @@ static void *tpol_scanwork(void *pparam)
 					g_threads_pool_cur_thr_num ++;
 				}
 			} else {
-				debug_info("[threads_pool]: fatal error,"
-					" threads pool memory conflicts!\n");
+				mlog(LV_DEBUG, "threads_pool: fatal error, threads pool memory conflicts");
 			}
 		}
 		not_empty_times = 0;

@@ -58,14 +58,14 @@ bool MAIL::retrieve(char *in_buff, size_t length)
 
 #ifdef _DEBUG_UMTA
 	if (in_buff == nullptr) {
-		debug_info("[mail]: NULL pointer in mail_retrieve");
+		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
 	clear();
 	auto pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
-		debug_info("[mail]: fail to get mime from pool");
+		mlog(LV_DEBUG, "mail: failed to get mime from pool");
 		return false;
 	}
 	if (!pmime->retrieve(nullptr, in_buff, length)) {
@@ -75,7 +75,7 @@ bool MAIL::retrieve(char *in_buff, size_t length)
 
 	if (pmime->mime_type != mime_type::single &&
 	    pmime->mime_type != mime_type::multiple) {
-		debug_info("[mail]: fatal error in mime_retrieve");
+		mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
 	}
@@ -89,7 +89,7 @@ bool MAIL::retrieve(char *in_buff, size_t length)
 	/* retrieve as single mail object */
 	pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
-		debug_info("[mail]: fail to get mime from pool");
+		mlog(LV_DEBUG, "mail: failed to get mime from pool");
 		return false;
 	}
 	if (!pmime->retrieve(nullptr, in_buff, length)) {
@@ -129,7 +129,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			'-' == ptr[2 + pmime_parent->boundary_len])) {
 			pmime = pmail->pmime_pool->get_mime();
 			if (NULL == pmime) {
-				debug_info("[mail]: fail to get mime from pool");
+				mlog(LV_DEBUG, "mail: failed to get mime from pool");
 				return false;
 			}
 			if (!pmime->retrieve(pmime_parent, ptr_last, ptr - ptr_last)) {
@@ -138,7 +138,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			}
 			if (pmime->mime_type != mime_type::single &&
 			    pmime->mime_type != mime_type::multiple) {
-				debug_info("[mail]: fatal error in mime_retrieve_to_mime");
+				mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
 				pmail->pmime_pool->put_mime(pmime);
 				return false;
 			}
@@ -175,7 +175,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	/* some illegal multiple mimes haven't --boundary string-- */
 	pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
-		debug_info("[mail]: fail to get mime from pool");
+		mlog(LV_DEBUG, "mail: failed to get mime from pool");
 		return false;
 	}
 	if (!pmime->retrieve(pmime_parent, ptr_last, ptr_end - ptr_last)) {
@@ -184,7 +184,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	}
 	if (pmime->mime_type != mime_type::single &&
 	    pmime->mime_type != mime_type::multiple) {
-		debug_info("[mail]: fatal error in mime_retrieve_to_mime");
+		mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
 	}
@@ -368,7 +368,7 @@ bool MAIL::get_charset(char *charset) const
 	
 #ifdef _DEBUG_UMTA
 	if (charset == nullptr) {
-		debug_info("[mail]: NULL pointer in mail_get_charset");
+		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -443,7 +443,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 
 #ifdef _DEBUG_UMTA
 	if (poffset == nullptr || pbuff == nullptr) {
-		debug_info("[mail]: NULL pointer in mail_get_digest");
+		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
 		return -1;
 	}
 #endif
@@ -731,7 +731,7 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
 
 #ifdef _DEBUG_UMTA
 	if (pmime_base == nullptr) {
-        debug_info("[mail]: NULL pointer in mail_add_child");
+	        mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
         return NULL;
     }
 #endif
@@ -754,7 +754,7 @@ void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param) const
 	auto pmail = this;
 #ifdef _DEBUG_UMTA
 	if (enum_func == nullptr) {
-        debug_info("[mail]: NULL pointer in mail_enum_mime");
+	        mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
         return;
     }
 #endif
@@ -768,7 +768,7 @@ static void mail_enum_delete(SIMPLE_TREE_NODE *pnode)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pnode) {
-		debug_info("[mail]: NULL pointer in mail_enum_delete");
+		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
 		return;
 	}
 #endif
@@ -791,7 +791,7 @@ bool MAIL::dup(MAIL *pmail_dst)
 	
 #ifdef _DEBUG_UMTA
 	if (pmail_dst == nullptr) {
-		debug_info("[mail]: NULL pointer in mail_dup");
+		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -807,7 +807,7 @@ bool MAIL::dup(MAIL *pmail_dst)
 	}
 	auto pbuff = me_alloc<char>(strange_roundup(mail_len - 1, 64 * 1024));
 	if (NULL == pbuff) {
-		debug_info("[mail]: Failed to allocate memory in mail_dup");
+		mlog(LV_DEBUG, "Failed to allocate memory in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 			
@@ -842,7 +842,7 @@ bool MAIL::transfer_dot(MAIL *pmail_dst, bool add_dot)
 	
 #ifdef _DEBUG_UMTA
 	if (pmail_dst == nullptr) {
-		debug_info("[mail]: NULL pointer in mail_dup");
+		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -858,7 +858,7 @@ bool MAIL::transfer_dot(MAIL *pmail_dst, bool add_dot)
 	}
 	pbuff = me_alloc<char>(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
-		debug_info("[mail]: Failed to allocate memory in mail_dup");
+		mlog(LV_DEBUG, "Failed to allocate memory in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 	
