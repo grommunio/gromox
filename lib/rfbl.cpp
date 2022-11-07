@@ -25,6 +25,9 @@
 #include <utility>
 #include <vector>
 #include <zstd.h>
+#ifdef HAVE_SYSLOG_H
+#	include <syslog.h>
+#endif
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
@@ -64,7 +67,7 @@ static int gx_reexec_top_fd = -1;
 static unsigned int g_max_loglevel = LV_NOTICE;
 static std::shared_mutex g_log_mutex;
 static std::unique_ptr<FILE, file_deleter> g_logfp;
-static bool g_log_direct = true;
+static bool g_log_direct = true, g_log_syslog;
 
 LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum, const char *name,
     const char *hint) :
@@ -790,6 +793,14 @@ void mlog_init(const char *filename, unsigned int max_level)
 {
 	g_max_loglevel = max_level;
 	g_log_direct = filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0;
+	g_log_syslog = filename != nullptr && strcmp(filename, "syslog") == 0;
+	if (g_log_direct && getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
+		g_log_syslog = true;
+	if (g_log_syslog) {
+		openlog(nullptr, LOG_PID, LOG_MAIL);
+		setlogmask((1 << (max_level + 2)) - 1);
+		return;
+	}
 	if (g_log_direct) {
 		setvbuf(stderr, nullptr, _IOLBF, 0);
 		return;
@@ -812,7 +823,11 @@ void mlog(unsigned int level, const char *fmt, ...)
 		return;
 	va_list args;
 	va_start(args, fmt);
-	if (g_log_direct) {
+	if (g_log_syslog) {
+		vsyslog(level + 1, fmt, args);
+		va_end(args);
+		return;
+	} else if (g_log_direct) {
 		vfprintf(stderr, fmt, args);
 		fputc('\n', stderr);
 		va_end(args);

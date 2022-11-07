@@ -134,7 +134,10 @@ The named path for the AF_LOCAL socket that zcore will listen on.
 Default: \fI/run/gromox/zcore.sock\fP
 .TP
 \fBzcore_log_file\fP
-Default: \fI-\fP (stderr)
+Target for log messages here. Special values: "\fI-\fP" (stderr/syslog
+depending on parent PID) or "\fIsyslog\fP" are recognized.
+.br
+Default: \fI-\fP (auto)
 .TP
 \fBzcore_log_level\fP
 Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
