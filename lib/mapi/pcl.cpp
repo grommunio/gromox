@@ -7,6 +7,9 @@
 #include <utility>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
+
+using namespace gromox;
 
 static void pcl_pull_xid(const BINARY *pbin,
 	uint16_t offset, uint8_t size, XID *pxid)
@@ -74,7 +77,7 @@ bool PCL::append(const XID &zxid) try
 	emplace_back(zxid);
 	return true;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1535: ENOMEM\n");
+	mlog(LV_ERR, "E-1535: ENOMEM\n");
 	return false;
 }
 
@@ -83,7 +86,7 @@ bool PCL::merge(PCL &&their_list) try
 	splice(end(), std::move(their_list));
 	return true;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1536: ENOMEM\n");
+	mlog(LV_ERR, "E-1536: ENOMEM\n");
 	return false;
 }
 

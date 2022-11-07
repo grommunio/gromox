@@ -315,7 +315,7 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue) try
 	} while ((ptr = pnext) != NULL);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2099: ENOMEM\n");
+	mlog(LV_ERR, "E-2099: ENOMEM\n");
 	return false;
 }
 
@@ -401,7 +401,7 @@ static bool ical_retrieve_component(ical_component &comp,
 	ical_clear_component(pcomponent);
 	return false;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2098: ENOMEM\n");
+	mlog(LV_ERR, "E-2098: ENOMEM\n");
 	return false;
 }
 
@@ -848,7 +848,7 @@ unsigned int ical_get_monthdays(unsigned int year, unsigned int month)
 		{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
 		{31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
 	if (month < 1 || month > 12) {
-		fprintf(stderr, "E-2051: invalid parameter given to ical_get_monthdays (%u)\n", month);
+		mlog(LV_ERR, "E-2051: invalid parameter given to ical_get_monthdays (%u)\n", month);
 		return 0;
 	}
 	if (ical_check_leap_year(year))
@@ -1071,7 +1071,7 @@ int ICAL_TIME::delta_day(ICAL_TIME itime2) const
 	int delta_days;
 
 	if (month < 1 || month > 12 || day < 1 || day > 31) {
-		fprintf(stderr, "E-2052: illegal paremeters to ICAL_TIME::delta_day (%u,%u)\n", month, day);
+		mlog(LV_ERR, "E-2052: illegal paremeters to ICAL_TIME::delta_day (%u,%u)\n", month, day);
 		return 0;
 	}
 	if (itime1 < itime2)

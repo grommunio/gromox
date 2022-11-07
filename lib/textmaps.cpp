@@ -25,6 +25,7 @@
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/util.hpp>
 
 namespace {
 
@@ -287,7 +288,7 @@ const char *folder_namedb_resolve(const char *xpg_loc) try
 		return iter->first.c_str();
 	return nullptr;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1560: ENOMEM\n");
+	mlog(LV_ERR, "E-1560: ENOMEM\n");
 	return nullptr;
 }
 

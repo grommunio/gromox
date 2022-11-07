@@ -635,7 +635,7 @@ MESSAGE_CONTENT* oxvcard_import(
 		}
 	} catch (const unrecog &e) {
 		if (g_oxvcard_pedantic) {
-			fprintf(stderr, "E-2140: oxvcard_import stopped parsing that vcard due to pedantry: %s\n", e.what());
+			mlog(LV_ERR, "E-2140: oxvcard_import stopped parsing that vcard due to pedantry: %s\n", e.what());
 			return nullptr;
 		}
 	}
@@ -1027,6 +1027,6 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1605: ENOMEM\n");
+	mlog(LV_ERR, "E-1605: ENOMEM\n");
 	return false;
 }
