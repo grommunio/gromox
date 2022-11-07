@@ -165,7 +165,7 @@ BOOL bounce_producer_refresh() try
 	std::swap(g_resource_list, resource_list);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1527: ENOMEM\n");
+	mlog(LV_ERR, "E-1527: ENOMEM");
 	return false;
 }
 

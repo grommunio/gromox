@@ -14,6 +14,8 @@
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
 
+using namespace gromox;
+
 /* private global variable */
 static int g_audit_num;
 static int g_audit_interval;
@@ -64,6 +66,6 @@ BOOL bounce_audit_check(const char *audit_string) try
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1563: ENOMEM\n");
+	mlog(LV_ERR, "E-1563: ENOMEM");
 	return TRUE;
 }

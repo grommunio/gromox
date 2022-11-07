@@ -8,6 +8,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
+#include <gromox/util.hpp>
 #define FILE_BLOCK_SIZE 0x100
 #define STREAM_BLOCK_SIZE 0x10000
 

@@ -141,7 +141,7 @@ BOOL bounce_producer_refresh(const char *data_path) try
 	std::swap(g_resource_list, resource_list);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1501: ENOMEM\n");
+	mlog(LV_ERR, "E-1501: ENOMEM");
 	return false;
 }
 
@@ -494,7 +494,7 @@ BOOL bounce_producer_make(const char *username,
 		pmime->set_field("From", t_addr.c_str());
 		t_addr = "<"s + username + ">";
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1481: ENOMEM\n");
+		mlog(LV_ERR, "E-1481: ENOMEM");
 		return false;
 	}
 	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
@@ -539,7 +539,7 @@ BOOL bounce_producer_make(const char *username,
 		t_addr = "rfc822;"s + username;
 		dsn_append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1482: ENOMEM\n");
+		mlog(LV_ERR, "E-1482: ENOMEM");
 	}
 	switch (bounce_type) {
 	case BOUNCE_NOTIFY_READ:

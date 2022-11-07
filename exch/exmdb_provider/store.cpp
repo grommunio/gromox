@@ -248,7 +248,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	std::vector<std::string> delegate_list;
 	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
 	if (ret != 0 && ret != ENOENT)
-		fprintf(stderr, "E-2050: %s: %s\n", dlg_path.c_str(), strerror(ret));
+		mlog(LV_ERR, "E-2050: %s: %s", dlg_path.c_str(), strerror(ret));
 	for (const auto &d : delegate_list) {
 		if (strcasecmp(d.c_str(), username) == 0 ||
 		    common_util_check_mlist_include(d.c_str(), username)) {
@@ -258,7 +258,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2044: ENOMEM\n");
+	mlog(LV_ERR, "E-2044: ENOMEM");
 	return false;
 }
 
@@ -296,8 +296,8 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	 * Nowadays it's unlimited and we just check for final exhaustion.
 	 */
 	if (tmp_eid + count > GLOBCNT_MAX) {
-		fprintf(stderr, "E-1592: store \"%s\" has used up all local replica IDs. "
-		        "(Did you create too many Offline profiles?)\n", dir);
+		mlog(LV_ERR, "E-1592: store \"%s\" has used up all local replica IDs. "
+		        "(Did you create too many Offline profiles?)", dir);
 		*pbegin_eid = 0;
 		return TRUE;
 	}
@@ -358,7 +358,7 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	*psub_id = last_id + 1;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2130: ENOMEM\n");
+	mlog(LV_ERR, "E-2130: ENOMEM");
 	return false;
 }
 

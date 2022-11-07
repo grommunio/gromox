@@ -47,7 +47,7 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 	plogon->propname_hash.emplace(s, propid);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1633: ENOMEM\n");
+	mlog(LV_ERR, "E-1633: ENOMEM");
 	return false;
 }
 
@@ -285,7 +285,7 @@ logon_object::get_property_groupinfo(uint32_t group_id) try
 	group_list.push_back(std::move(*pgpinfo));
 	return &group_list.back();
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1631: ENOMEM\n");
+	mlog(LV_ERR, "E-1631: ENOMEM");
 	return nullptr;
 }
 

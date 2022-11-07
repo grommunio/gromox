@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <memory>
 #include <gromox/ab_tree.hpp>
+#include <gromox/util.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
 #include "objects.hpp"
@@ -173,7 +174,7 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2187: ENOMEM\n");
+	mlog(LV_ERR, "E-2187: ENOMEM");
 	return ecServerOOM;
 }
 

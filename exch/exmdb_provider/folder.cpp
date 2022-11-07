@@ -14,6 +14,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/util.hpp>
 #include "db_engine.h"
 #define MAXIMUM_RECIEVE_FOLDERS				2000
 #define SYSTEM_ALLOCATED_EID_RANGE			10000
@@ -423,25 +424,25 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 	*pfolder_id = 0;
 	auto parent_fid_p = pproperties->get<const eid_t>(PidTagParentFolderId);
 	if (parent_fid_p == nullptr || rop_util_get_replid(*parent_fid_p) != 1) {
-		fprintf(stderr, "E-1581: create_folder_b_p request with no parent or wrong EID\n");
+		mlog(LV_ERR, "E-1581: create_folder_b_p request with no parent or wrong EID");
 		return TRUE;
 	}
 	auto parent_id = rop_util_get_gc_value(*parent_fid_p);
 	common_util_remove_propvals(pproperties, PidTagParentFolderId);
 	pname = pproperties->get<char>(PR_DISPLAY_NAME);
 	if (pname == nullptr) {
-		fprintf(stderr, "E-1582: create_folder_b_p request with no name\n");
+		mlog(LV_ERR, "E-1582: create_folder_b_p request with no name");
 		return TRUE;
 	}
 	auto cn_p = pproperties->get<const eid_t>(PidTagChangeNumber);
 	if (cn_p == nullptr) {
-		fprintf(stderr, "E-1583: create_folder_b_p request without CN\n");
+		mlog(LV_ERR, "E-1583: create_folder_b_p request without CN");
 		return TRUE;
 	}
 	common_util_remove_propvals(pproperties, PidTagChangeNumber);
 	auto change_num = rop_util_get_gc_value(*cn_p);
 	if (!pproperties->has(PR_PREDECESSOR_CHANGE_LIST)) {
-		fprintf(stderr, "E-1584: create_folder_b_p request without PCL\n");
+		mlog(LV_ERR, "E-1584: create_folder_b_p request without PCL");
 		return TRUE;
 	}
 	auto folder_type_p = pproperties->get<const uint32_t>(PR_FOLDER_TYPE);
@@ -455,7 +456,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		case FOLDER_SEARCH:
 			if (exmdb_server_is_private())
 				break;
-			fprintf(stderr, "E-1585: create_folder_b_p request without PCL\n");
+			mlog(LV_ERR, "E-1585: create_folder_b_p request without PCL");
 			return TRUE;
 		default:
 			return TRUE;

@@ -697,7 +697,7 @@ BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 		return TRUE;
 	}
 	if (!pguid->from_str(S2A(sqlite3_column_text(pstmt, 0)))) {
-		fprintf(stderr, "E-1621: illegal GUID in dataset\n");
+		mlog(LV_ERR, "E-1621: illegal GUID in dataset");
 		return false;
 	}
 	*pb_found = TRUE;
@@ -1487,7 +1487,7 @@ std::string cu_cid_path(const char *dir, uint64_t id) try
 		dir = exmdb_server_get_dir();
 	return dir + "/cid/"s + std::to_string(id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1608: ENOMEM\n");
+	mlog(LV_ERR, "E-1608: ENOMEM");
 	return {};
 }
 
@@ -1534,7 +1534,7 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 		return nullptr;
 	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
 	if (NULL == pbuff) {
-		fprintf(stderr, "E-1626: ENOMEM\n");
+		mlog(LV_ERR, "E-1626: ENOMEM");
 		return NULL;
 	}
 	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
@@ -2628,7 +2628,7 @@ static BOOL common_util_set_message_body(
 	auto path = cu_cid_path(dir, cid);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0) {
-		fprintf(stderr, "E-1627: open %s O_CREAT: %s\n", path.c_str(), strerror(errno));
+		mlog(LV_ERR, "E-1627: open %s O_CREAT: %s", path.c_str(), strerror(errno));
 		return FALSE;
 	}
 	auto remove_file = make_scope_exit([&]() {
@@ -2679,7 +2679,7 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
 	auto path = cu_cid_path(dir, cid);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0) {
-		fprintf(stderr, "E-1628: open %s O_CREAT: %s\n", path.c_str(), strerror(errno));
+		mlog(LV_ERR, "E-1628: open %s O_CREAT: %s", path.c_str(), strerror(errno));
 		return FALSE;
 	}
 	auto remove_file = make_scope_exit([&]() {
@@ -4766,7 +4766,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 			ppropids->ppropid[i] = 0;
 		}
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1503: ENOMEM\n");
+		mlog(LV_ERR, "E-1503: ENOMEM");
 		return false;
 	}
 	return TRUE;
@@ -4917,7 +4917,7 @@ BOOL cu_rcpts_to_list(TARRAY_SET *prcpts, std::vector<std::string> &plist) try
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2036: ENOMEM\n");
+	mlog(LV_ERR, "E-2036: ENOMEM");
 	return false;
 }
 

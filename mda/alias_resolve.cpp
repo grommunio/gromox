@@ -18,6 +18,7 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/util.hpp>
 
 using namespace gromox;
 

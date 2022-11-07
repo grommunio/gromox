@@ -10,6 +10,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/util.hpp>
 #include "db_engine.h"
 #define IDSET_CACHE_MIN_RANGE				10
 
@@ -80,7 +81,7 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 			pcache->range_list.push_back(range_node);
 			continue;
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1623: ENOMEM\n");
+			mlog(LV_ERR, "E-1623: ENOMEM");
 			return false;
 		}
 		for (auto ival = range_node.low_value;

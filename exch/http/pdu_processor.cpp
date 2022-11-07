@@ -338,7 +338,7 @@ pdu_processor_create(const char *host, uint16_t tcp_port)
 	try {
 		pprocessor = std::make_unique<PDU_PROCESSOR>();
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1574: ENOMEM\n");
+		mlog(LV_ERR, "E-1574: ENOMEM");
 		return NULL;
 	}
 	/* verify that EP&INTF exists */
@@ -1570,7 +1570,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	/* marshaling the NDR out param data */
 	auto ret = pcall->pcontext->pinterface->ndr_push(prequest->opnum, &ndr_push, pout);
 	if (ret != EXT_ERR_SUCCESS) {
-		fprintf(stderr, "E-1918: ndr_push failed with result code %d\n", ret);
+		mlog(LV_ERR, "E-1918: ndr_push failed with result code %d", ret);
 		free(pdata);
 		pdu_processor_free_stack_root(pstack_root);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
@@ -3100,7 +3100,7 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 	       pendpoint->host, pendpoint->tcp_port);
 	return pendpoint;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1575: ENOMEM\n");
+	mlog(LV_ERR, "E-1575: ENOMEM");
 	return nullptr;
 }
 
@@ -3133,7 +3133,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	try {
 		pendpoint->interface_list.emplace_back(*pinterface);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1576: ENOMEM\n");
+		mlog(LV_ERR, "E-1576: ENOMEM");
 		return false;
 	}
 	char uuid_string[GUIDSTR_SIZE];

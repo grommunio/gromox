@@ -9,6 +9,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
@@ -187,7 +188,7 @@ static int oxomsg_test_perm(const char *account, const char *maildir, bool send_
 	std::vector<std::string> delegate_list;
 	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
 	if (ret != 0 && ret != ENOENT) {
-		fprintf(stderr, "E-2045: %s: %s\n", dlg_path.c_str(), strerror(ret));
+		mlog(LV_ERR, "E-2045: %s: %s", dlg_path.c_str(), strerror(ret));
 		return ret;
 	}
 	for (const auto &deleg : delegate_list)
@@ -196,7 +197,7 @@ static int oxomsg_test_perm(const char *account, const char *maildir, bool send_
 			return 1;
 	return 0;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1500: ENOMEM\n");
+	mlog(LV_ERR, "E-1500: ENOMEM");
 	return false;
 }
 

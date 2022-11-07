@@ -1477,7 +1477,7 @@ void common_util_notify_receipt(const char *username, int type,
 		return;
 	cu_send_mail(&imail, username, rcpt_list);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2035: ENOMEM\n");
+	mlog(LV_ERR, "E-2035: ENOMEM");
 }
 
 BOOL common_util_save_message_ics(logon_object *plogon,

@@ -282,7 +282,7 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 		g_cur_plugin->list_reference.push_back(std::move(nd));
 	} catch (const std::bad_alloc &) {
 		service_release(service, fn);
-		fprintf(stderr, "E-1636: ENOMEM\n");
+		mlog(LV_ERR, "E-1636: ENOMEM");
 		return nullptr;
 	}
 	return ret_addr;
@@ -422,13 +422,13 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 		if (b_chunked || content_length > g_cache_size) {
 			auto path = LOCAL_DISK_TMPDIR;
 			if (mkdir(path, 0777) < 0 && errno != EEXIST) {
-				fprintf(stderr, "E-2079: mkdir %s: %s\n", path, strerror(errno));
+				mlog(LV_ERR, "E-2079: mkdir %s: %s", path, strerror(errno));
 				return false;
 			}
 			phpm_ctx->cache_fd = open_tmpfile(path, &phpm_ctx->tmpfile,
 			                     O_RDWR | O_TRUNC);
 			if (phpm_ctx->cache_fd < 0) {
-				fprintf(stderr, "E-2090: open{%s, %s}: %s\n",
+				mlog(LV_ERR, "E-2090: open{%s, %s}: %s",
 				        path, phpm_ctx->tmpfile.c_str(),
 				        strerror(-phpm_ctx->cache_fd));
 				phpm_ctx->b_preproc = FALSE;

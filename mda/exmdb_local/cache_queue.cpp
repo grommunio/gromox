@@ -19,6 +19,7 @@
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
+#include <gromox/util.hpp>
 #include "exmdb_local.hpp"
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
@@ -118,7 +119,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	try {
 		file_name = g_path + "/"s + std::to_string(mess_id);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1531: ENOMEM\n");
+		mlog(LV_ERR, "E-1531: ENOMEM");
 		return -1;
 	}
 	wrapfd fd = open(file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, DEF_MODE);
@@ -290,7 +291,7 @@ static void *mdl_thrwork(void *arg)
 			try {
 				temp_path = std::string(g_path) + "/" + direntp->d_name;
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1475: ENOMEM\n");
+				mlog(LV_ERR, "E-1475: ENOMEM");
 			}
 			wrapfd fd = open(temp_path.c_str(), O_RDWR);
 			if (fd.get() < 0)

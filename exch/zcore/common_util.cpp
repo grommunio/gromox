@@ -177,7 +177,7 @@ static int cu_test_delegate_perm_MD(const char *account,
 			return 1;
 	return 0;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2056: ENOMEM\n");
+	mlog(LV_ERR, "E-2056: ENOMEM");
 	return false;
 }
 
@@ -443,7 +443,7 @@ BOOL common_util_build_environment() try
 	g_env_key = std::make_unique<env_context>();
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1977: ENOMEM\n");
+	mlog(LV_ERR, "E-1977: ENOMEM");
 	return false;
 }
 
@@ -461,7 +461,7 @@ void* common_util_alloc(size_t size)
 {
 	auto pctx = g_env_key.get();
 	if (pctx == nullptr) {
-		fprintf(stderr, "E-1909: T%lu: g_env_key is unset, allocator is unset\n", gx_gettid());
+		mlog(LV_ERR, "E-1909: T%lu: g_env_key is unset, allocator is unset", gx_gettid());
 		return NULL;
 	}
 	return pctx->allocator.alloc(size);
@@ -471,7 +471,7 @@ void common_util_set_clifd(int clifd)
 {
 	auto pctx = g_env_key.get();
 	if (pctx == nullptr)
-		fprintf(stderr, "E-1810: T%lu: g_env_key is unset, cannot set clifd\n", gx_gettid());
+		mlog(LV_ERR, "E-1810: T%lu: g_env_key is unset, cannot set clifd", gx_gettid());
 	else
 		pctx->clifd = clifd;
 }
@@ -481,7 +481,7 @@ int common_util_get_clifd()
 	auto pctx = g_env_key.get();
 	if (pctx != nullptr)
 		return pctx->clifd;
-	fprintf(stderr, "E-1811: T%lu: g_env_key is unset, clifd is unset\n", gx_gettid());
+	mlog(LV_ERR, "E-1811: T%lu: g_env_key is unset, clifd is unset", gx_gettid());
 	return -1;
 }
 
@@ -1706,7 +1706,7 @@ void common_util_notify_receipt(const char *username, int type,
 		return;
 	cu_send_mail(&imail, username, rcpt_list);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2038: ENOMEM\n");
+	mlog(LV_ERR, "E-2038: ENOMEM");
 }
 
 static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
@@ -2182,7 +2182,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		                static_cast<const char *>(pvalue);
 		return common_util_load_file(eml_path.c_str(), peml_bin);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1495: ENOMEM\n");
+		mlog(LV_ERR, "E-1495: ENOMEM");
 		return false;
 	}
 	auto pinfo = zarafa_server_get_info();
@@ -2263,7 +2263,7 @@ static void zc_unwrap_smime(MAIL &ma) try
 	m2.buffer = ctbuf.release();
 	ma = std::move(m2);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1996: ENOMEM\n");
+	mlog(LV_ERR, "E-1996: ENOMEM");
 }
 
 MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
@@ -2315,7 +2315,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	pical_bin->pc = common_util_dup(tmp_buff);
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2183: ENOMEM\n");
+	mlog(LV_ERR, "E-2183: ENOMEM");
 	return false;
 }
 
@@ -2340,7 +2340,7 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	return oxcical_import_single(tmzone, ical, common_util_alloc,
 	       common_util_get_propids_create, common_util_username_to_entryid);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2184: ENOMEM\n");
+	mlog(LV_ERR, "E-2184: ENOMEM");
 	return nullptr;
 }
 
@@ -2361,7 +2361,7 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 	       common_util_get_propids_create,
 	       common_util_username_to_entryid, msgvec);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2185: ENOMEM\n");
+	mlog(LV_ERR, "E-2185: ENOMEM");
 	return ecServerOOM;
 }
 
@@ -2429,7 +2429,7 @@ ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2048: ENOMEM\n");
+	mlog(LV_ERR, "E-2048: ENOMEM");
 	return ecServerOOM;
 }
 

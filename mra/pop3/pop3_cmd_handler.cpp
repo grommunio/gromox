@@ -341,7 +341,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 			eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
 			pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1469: ENOMEM\n");
+			mlog(LV_ERR, "E-1469: ENOMEM");
 		}
 		if (-1 == pcontext->message_fd) {
 			pop3_parser_log_info(pcontext, LV_WARN,
@@ -389,7 +389,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 			punit->b_deleted = TRUE;
 			pcontext->delmsg_list.push_back(punit);
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1961: ENOMEM\n");
+			mlog(LV_ERR, "E-1961: ENOMEM");
 			return 1915;
 		}
 		return 1700;
@@ -438,7 +438,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
 			pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1470: ENOMEM\n");
+			mlog(LV_ERR, "E-1470: ENOMEM");
 		}
 		if (-1 == pcontext->message_fd) {
 			return 1709;
@@ -492,7 +492,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				pop3_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted",
 					eml_path.c_str());
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1471: ENOMEM\n");
+			mlog(LV_ERR, "E-1471: ENOMEM");
 		}
 		pcontext->delmsg_list.clear();
 	}

@@ -687,7 +687,7 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 		pcontext->connection.client_ip,
 		pcontext->menv.from, all_rcpts.c_str(), line_buf.get());
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1609: ENOMEM\n");
+	mlog(LV_ERR, "E-1609: ENOMEM");
 }
 
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext)

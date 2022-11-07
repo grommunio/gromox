@@ -262,7 +262,7 @@ static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try
 {
 	return pbase->phash.emplace(pabnode->minid, pabnode).second ? TRUE : false;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1551: ENOMEM\n");
+	mlog(LV_ERR, "E-1551: ENOMEM");
 	return false;
 }
 
@@ -362,7 +362,7 @@ static BOOL ab_tree_load_class(
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1676: ENOMEM\n");
+			mlog(LV_ERR, "E-1676: ENOMEM");
 			ab_tree_put_abnode(pabnode);
 			return false;
 		}
@@ -483,7 +483,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			try {
 				parray.push_back(sort_item{&pabnode->stree, temp_buff});
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1674: ENOMEM\n");
+				mlog(LV_ERR, "E-1674: ENOMEM");
 				ab_tree_put_abnode(pabnode);
 				return false;
 			}
@@ -527,7 +527,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1675: ENOMEM\n");
+			mlog(LV_ERR, "E-1675: ENOMEM");
 			ab_tree_put_abnode(pabnode);
 			return false;
 		}
@@ -586,7 +586,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 		ptr = parray[i++].pnode;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1677: ENOMEM\n");
+	mlog(LV_ERR, "E-1677: ENOMEM");
 	return TRUE;
 }
 

@@ -257,7 +257,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	sprintf(db_path, "%s/exmdb/exchange.sqlite3", path);
 	auto ret = sqlite3_open_v2(db_path, &pdb->psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
-		fprintf(stderr, "E-1434: sqlite3_open %s: %s\n", db_path, sqlite3_errstr(ret));
+		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", db_path, sqlite3_errstr(ret));
 		pdb->psqlite = NULL;
 		return db_item_ptr(pdb);
 	}
@@ -572,7 +572,7 @@ static ID_ARRAYS *db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	}
 	return parrays;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1509: ENOMEM\n");
+	mlog(LV_ERR, "E-1509: ENOMEM");
 	return nullptr;
 }
 
@@ -621,7 +621,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 			parrays->remote_ids[i], &datagram);
 	}
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2118: ENOMEM\n");
+	mlog(LV_ERR, "E-2118: ENOMEM");
 }
 
 static void *mdpeng_thrwork(void *param)
@@ -684,7 +684,7 @@ static void *mdpeng_thrwork(void *param)
 		try {
 			table_ids.reserve(double_list_get_nodes_num(&pdb->tables.table_list));
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1649: ENOMEM\n");
+			mlog(LV_ERR, "E-1649: ENOMEM");
 		}
 		for (pnode = double_list_get_head(
 		     &pdb->tables.table_list); NULL != pnode;
@@ -804,7 +804,7 @@ BOOL db_engine_enqueue_populating_criteria(const char *dir, uint32_t cpid,
 	g_waken_cond.notify_one();
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1962: ENOMEM\n");
+	mlog(LV_ERR, "E-1962: ENOMEM");
 	return false;
 }
 
@@ -2003,7 +2003,7 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 			parrays->remote_ids[i], &datagram);
 	}
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2119: ENOMEM\n");
+	mlog(LV_ERR, "E-2119: ENOMEM");
 }
 	
 void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
@@ -2053,7 +2053,7 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2120: ENOMEM\n");
+	mlog(LV_ERR, "E-2120: ENOMEM");
 }
 
 void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
@@ -2094,7 +2094,7 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2121: ENOMEM\n");
+	mlog(LV_ERR, "E-2121: ENOMEM");
 }
 
 void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
@@ -2140,7 +2140,7 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2122: ENOMEM\n");
+	mlog(LV_ERR, "E-2122: ENOMEM");
 }
 
 static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
@@ -2340,7 +2340,7 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2123: ENOMEM\n");
+	mlog(LV_ERR, "E-2123: ENOMEM");
 }
 
 static void db_engine_update_prev_id(DOUBLE_LIST *plist,
@@ -2923,7 +2923,7 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2124: ENOMEM\n");
+	mlog(LV_ERR, "E-2124: ENOMEM");
 }
 
 void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
@@ -2968,7 +2968,7 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2125: ENOMEM\n");
+	mlog(LV_ERR, "E-2125: ENOMEM");
 }
 
 static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
@@ -3080,7 +3080,7 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
 	db_engine_notify_hierarchy_table_delete_row(
 		pdb, parent_id, folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2126: ENOMEM\n");
+	mlog(LV_ERR, "E-2126: ENOMEM");
 }
 
 static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
@@ -3732,7 +3732,7 @@ void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2127: ENOMEM\n");
+	mlog(LV_ERR, "E-2127: ENOMEM");
 }
 
 static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
@@ -3944,7 +3944,7 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
 	db_engine_notify_hierarchy_table_modify_row(
 		pdb, parent_id, folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2128: ENOMEM\n");
+	mlog(LV_ERR, "E-2128: ENOMEM");
 }
 
 void db_engine_notify_message_movecopy(db_item_ptr &pdb,
@@ -3973,7 +3973,7 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 		    pnsub->message_id == old_mid)) try {
 			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1521: ENOMEM\n");
+			mlog(LV_ERR, "E-1521: ENOMEM");
 			return;
 		}
 	}
@@ -4042,7 +4042,7 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 		    (pnsub->folder_id == old_fid && pnsub->message_id == 0)) try {
 			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1522: ENOMEM\n");
+			mlog(LV_ERR, "E-1522: ENOMEM");
 			return;
 		}
 	}

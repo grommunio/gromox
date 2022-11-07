@@ -241,7 +241,7 @@ static std::unique_ptr<char[]> mail_engine_ct_to_utf8(const char *charset,
 	iconv_close(conv_id);
 	return ret_string;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1963: ENOMEM\n");
+	mlog(LV_ERR, "E-1963: ENOMEM");
 	return nullptr;
 }
 
@@ -292,7 +292,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() >= 0) {
 			if (HXio_fullwrite(fd.get(), digest_buff, tmp_len) != tmp_len)
-				fprintf(stderr, "E-2082: write %s: %s\n", temp_path, strerror(errno));
+				mlog(LV_ERR, "E-2082: write %s: %s", temp_path, strerror(errno));
 			fd.close();
 		}
 	} else {
@@ -419,7 +419,7 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 	out_buff[offset] = '\0';
 	return ret_string;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1968: ENOMEM\n");
+	mlog(LV_ERR, "E-1968: ENOMEM");
 	return nullptr;
 }
 
@@ -475,7 +475,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	    strlen(rs.get())) != nullptr)
 		penum->b_result = TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1970: ENOMEM\n");
+	mlog(LV_ERR, "E-1970: ENOMEM");
 }
 
 static BOOL mail_engine_ct_search_head(const char *charset,
@@ -1318,7 +1318,7 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 	}
 	return plist;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1971: ENOMEM\n");
+	mlog(LV_ERR, "E-1971: ENOMEM");
 	return {};
 }
 
@@ -1683,7 +1683,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 	sqlite3_bind_int64(pstmt, 10, size);
 	sqlite3_bind_int64(pstmt, 11, received_time);
 	if (sqlite3_step(pstmt) != SQLITE_DONE)
-		fprintf(stderr, "E-2075: sqlite_step not finished\n");
+		mlog(LV_ERR, "E-2075: sqlite_step not finished");
 }
 
 static void mail_engine_sync_message(IDB_ITEM *pidb,
@@ -2281,7 +2281,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 		auto ret = sqlite3_open_v2(temp_path, &pidb->psqlite, SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
 			g_hash_table.erase(xp.first);
-			fprintf(stderr, "E-1438: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
+			mlog(LV_ERR, "E-1438: sqlite3_open %s: %s", temp_path, sqlite3_errstr(ret));
 			return {};
 		}
 		ret = mail_engine_autoupgrade(pidb->psqlite, temp_path);
@@ -2386,7 +2386,7 @@ static void *midbme_scanwork(void *param)
 			if (pidb->sub_id != 0) try {
 				unsub_list.emplace_back(it->first.c_str(), pidb->sub_id);
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1622: ENOMEM\n");
+				mlog(LV_ERR, "E-1622: ENOMEM");
 			}
 			fprintf(stderr, "I-2175: Closing user %s midb.sqlite3 (sub=%u, c=%lld, l=%lld)\n",
 			        pidb->username.c_str(), pidb->sub_id,
@@ -2704,11 +2704,11 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	sprintf(temp_path, "%s/eml/%s", argv[1], argv[3]);
 	wrapfd fd = open(temp_path, O_RDONLY);
 	if (fd.get() < 0) {
-		fprintf(stderr, "E-2071: Opening %s for reading failed: %s\n", temp_path, strerror(errno));
+		mlog(LV_ERR, "E-2071: Opening %s for reading failed: %s", temp_path, strerror(errno));
 		return MIDB_E_DISK_ERROR;
 	}
 	if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode)) {
-		fprintf(stderr, "E-2072: fstat/type mismatch\n");
+		mlog(LV_ERR, "E-2072: fstat/type mismatch");
 		return MIDB_E_DISK_ERROR;
 	}
 	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
@@ -2731,11 +2731,11 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	sprintf(temp_path, "%s/ext/%s", argv[1], argv[3]);
 	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 	if (fd.get() < 0) {
-		fprintf(stderr, "E-2073: Opening %s for writing failed: %s\n", temp_path, strerror(errno));
+		mlog(LV_ERR, "E-2073: Opening %s for writing failed: %s", temp_path, strerror(errno));
 		return MIDB_E_DISK_ERROR;
 	}
 	if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len)
-		fprintf(stderr, "E-2085: write %s: %s\n", temp_path, strerror(errno));
+		mlog(LV_ERR, "E-2085: write %s: %s", temp_path, strerror(errno));
 	fd.close();
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -2886,16 +2886,16 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	try {
 		eml_path = argv[1] + "/eml/"s + argv[3];
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1486: ENOMEM\n");
+		mlog(LV_ERR, "E-1486: ENOMEM");
 		return MIDB_E_NO_MEMORY;
 	}
 	wrapfd fd = open(eml_path.c_str(), O_RDONLY);
 	if (fd.get() < 0) {
-		fprintf(stderr, "E-2074: Opening %s for reading failed: %s\n", eml_path.c_str(), strerror(errno));
+		mlog(LV_ERR, "E-2074: Opening %s for reading failed: %s", eml_path.c_str(), strerror(errno));
 		return MIDB_E_DISK_ERROR;
 	}
 	if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode)) {
-		fprintf(stderr, "E-2089: fstat/type mismatch\n");
+		mlog(LV_ERR, "E-2089: fstat/type mismatch");
 		return MIDB_E_DISK_ERROR;
 	}
 	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
@@ -2990,17 +2990,17 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		eml_path = argv[1] + "/eml/"s + argv[3];
 		auto eml_path1 = argv[1] + "/eml/"s + mid_string;
 		if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
-			fprintf(stderr, "E-2083: link %s %s: %s\n",
+			mlog(LV_ERR, "E-2083: link %s %s: %s",
 			        eml_path.c_str(), eml_path1.c_str(),
 			        strerror(errno));
 		eml_path = argv[1] + "/ext/"s + argv[3];
 		eml_path1 = argv[1] + "/ext/"s + mid_string;
 		if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
-			fprintf(stderr, "E-2084: link %s %s: %s\n",
+			mlog(LV_ERR, "E-2084: link %s %s: %s",
 			        eml_path.c_str(), eml_path1.c_str(),
 			        strerror(errno));
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1487: ENOMEM\n");
+		mlog(LV_ERR, "E-1487: ENOMEM");
 		return MIDB_E_NO_MEMORY;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO mapping"
@@ -3046,7 +3046,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		mid_string.insert(0, "TRUE ");
 		mid_string.append("\r\n");
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1488: ENOMEM\n");
+		mlog(LV_ERR, "E-1488: ENOMEM");
 		return MIDB_E_NO_MEMORY;
 	}
 	return cmd_write(sockd, mid_string.c_str(), mid_string.size());
@@ -4314,7 +4314,7 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	sprintf(temp_path, "%s/exmdb/midb.sqlite3", argv[1]);
 	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
-		fprintf(stderr, "E-1439: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
+		mlog(LV_ERR, "E-1439: sqlite3_open %s: %s", temp_path, sqlite3_errstr(ret));
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	auto presult = mail_engine_ct_match(argv[3], psqlite, folder_id, ptree.get(), false);
@@ -4389,7 +4389,7 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	sprintf(temp_path, "%s/exmdb/midb.sqlite3", argv[1]);
 	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
-		fprintf(stderr, "E-1505: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
+		mlog(LV_ERR, "E-1505: sqlite3_open %s: %s", temp_path, sqlite3_errstr(ret));
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	auto presult = mail_engine_ct_match(argv[3], psqlite, folder_id, ptree.get(), TRUE);
@@ -4635,7 +4635,7 @@ static BOOL mail_engine_add_notification_folder(
 			temp_name = decoded_name + "/"s + str;
 		}
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1477: ENOMEM\n");
+		mlog(LV_ERR, "E-1477: ENOMEM");
 		return false;
 	}
 	encode_hex_binary(temp_name.c_str(), temp_name.size(), encoded_name, arsizeof(encoded_name));
@@ -4749,7 +4749,7 @@ static void mail_engine_move_notification_folder(
 			temp_name = decoded_name + "/"s + str;
 		}
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1478: ENOMEM\n");
+		mlog(LV_ERR, "E-1478: ENOMEM");
 	}
 	encode_hex_binary(temp_name.c_str(), temp_name.size(), encoded_name, arsizeof(encoded_name));
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET parent_fid=%llu, name='%s' "

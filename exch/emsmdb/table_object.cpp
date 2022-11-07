@@ -9,6 +9,7 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/sortorder_set.hpp>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
@@ -18,6 +19,8 @@
 #include "rop_ids.hpp"
 #include "rop_processor.h"
 #include "table_object.h"
+
+using namespace gromox;
 
 static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 {
@@ -277,7 +280,7 @@ BOOL table_object::create_bookmark(uint32_t *pindex) try
 	*pindex = bookmark_index++;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2117: ENOMEM\n");
+	mlog(LV_ERR, "E-2117: ENOMEM");
 	return false;
 }
 

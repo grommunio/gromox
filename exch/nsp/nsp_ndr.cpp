@@ -814,7 +814,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, unsigned int flag,
 			TRY(ndr_pull_uint32(pndr, &r->reserved));
 			break;
 		default:
-			fprintf(stderr, "E-1910: nsp_ndr type %xh unhandled\n", *ptype);
+			mlog(LV_ERR, "E-1910: nsp_ndr type %xh unhandled", *ptype);
 			return NDR_ERR_BAD_SWITCH;
 		}
 	}
@@ -902,7 +902,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, unsigned int flag,
 	case PT_NULL:
 		break;
 	default:
-		fprintf(stderr, "E-1911: nsp_ndr type %xh unhandled\n", *ptype);
+		mlog(LV_ERR, "E-1911: nsp_ndr type %xh unhandled", *ptype);
 		return NDR_ERR_BAD_SWITCH;
 	}
 	return NDR_ERR_SUCCESS;
@@ -969,7 +969,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, unsigned int flag,
 			TRY(ndr_push_uint32(pndr, r->reserved));
 			break;
 		default:
-			fprintf(stderr, "E-1912: nsp_ndr type %xh unhandled\n", type);
+			mlog(LV_ERR, "E-1912: nsp_ndr type %xh unhandled", type);
 			return NDR_ERR_BAD_SWITCH;
 		}
 	}
@@ -1047,7 +1047,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, unsigned int flag,
 	case PT_NULL:
 		break;
 	default:
-		fprintf(stderr, "E-1913: nsp_ndr type %xh unhandled\n", type);
+		mlog(LV_ERR, "E-1913: nsp_ndr type %xh unhandled", type);
 		return NDR_ERR_BAD_SWITCH;
 	}
 	return NDR_ERR_SUCCESS;
@@ -1483,7 +1483,7 @@ static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, unsigned int flag,
 			TRY(nsp_ndr_pull_restriction_sub(pndr, FLAG_HEADER, &r->res_sub));
 			break;
 		default:
-			fprintf(stderr, "E-1914: nsp_ndr type %xh unhandled\n", *ptype);
+			mlog(LV_ERR, "E-1914: nsp_ndr type %xh unhandled", *ptype);
 			return NDR_ERR_BAD_SWITCH;
 		}
 	}
@@ -1518,7 +1518,7 @@ static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, unsigned int flag,
 		TRY(nsp_ndr_pull_restriction_sub(pndr, FLAG_CONTENT, &r->res_sub));
 		break;
 	default:
-		fprintf(stderr, "E-1915: nsp_ndr type %xh unhandled\n", *ptype);
+		mlog(LV_ERR, "E-1915: nsp_ndr type %xh unhandled", *ptype);
 		return NDR_ERR_BAD_SWITCH;
 	}
 	return NDR_ERR_SUCCESS;
@@ -1563,7 +1563,7 @@ static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, unsigned int flag,
 			TRY(nsp_ndr_push_restriction_sub(pndr, FLAG_HEADER, &r->res_sub));
 			break;
 		default:
-			fprintf(stderr, "E-1916: nsp_ndr type %xh unhandled\n", type);
+			mlog(LV_ERR, "E-1916: nsp_ndr type %xh unhandled", type);
 			return NDR_ERR_BAD_SWITCH;
 		}
 	}
@@ -1598,7 +1598,7 @@ static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, unsigned int flag,
 		TRY(nsp_ndr_push_restriction_sub(pndr, FLAG_CONTENT, &r->res_sub));
 		break;
 	default:
-		fprintf(stderr, "E-1917: nsp_ndr type %xh unhandled\n", type);
+		mlog(LV_ERR, "E-1917: nsp_ndr type %xh unhandled", type);
 		return NDR_ERR_BAD_SWITCH;
 	}
 	return NDR_ERR_SUCCESS;
