@@ -453,7 +453,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 		case 0x5:
 		case 0x6: { /* push */
 			if (offset + command >= pbin->cb) {
-				debug_info("[idset]: E-1651: not enough bytes left\n");
+				mlog(LV_DEBUG, "D-1651: not enough bytes left");
 				return 0;
 			}
 			GLOBCNT common_bytes;
@@ -483,7 +483,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 		}
 		case 0x42: { /* bitmask */
 			if (offset + 2 >= pbin->cb) {
-				debug_info("[idset]: E-1652: not enough bytes left\n");
+				mlog(LV_DEBUG, "D-1652: not enough bytes left");
 				return 0;
 			}
 			GLOBCNT common_bytes;
@@ -533,7 +533,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 				return 0;
 			}
 			if (offset + 6 - stack_length >= pbin->cb) {
-				debug_info("[idset]: E-1653: not enough bytes left\n");
+				mlog(LV_DEBUG, "D-1653: not enough bytes left");
 				return 0;
 			}
 			memcpy(&common_bytes.ab[stack_length],

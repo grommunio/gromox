@@ -1402,7 +1402,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 		}
 	}
 } catch (const std::bad_alloc &) {
-	debug_info("[mime]: E-1973: Failed to allocate memory in MIME::read_content");
+	mlog(LV_ERR, "E-1973: Failed to allocate memory");
 	*plength = 0;
 	return false;
 }
@@ -1584,7 +1584,7 @@ bool MIME::to_file(int fd) const
 			memcpy(tmp_buff + len, "\r\n", 2);
 			len += 2;
 		} else {
-			debug_info("[mime]: E-1640");
+			mlog(LV_ERR, "E-1640");
 			return false;
 		}
 	}
@@ -1776,7 +1776,7 @@ bool MIME::to_tls(SSL *ssl) const
 			memcpy(tmp_buff + len, "\r\n", 2);
 			len += 2;
 		} else {
-			debug_info("[mime]: E-1641");
+			mlog(LV_ERR, "E-1641");
 			return false;
 		}
 	}

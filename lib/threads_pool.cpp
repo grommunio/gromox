@@ -288,7 +288,7 @@ static void *tpol_scanwork(void *pparam)
 				pdata->notify_stop = FALSE;
 				auto ret = pthread_create(&pdata->id, &attr, tpol_thrwork, pdata);
 				if (ret != 0) {
-					debug_info("[threads_pool]: W-1445: failed to increase pool threads: %s\n", strerror(ret));
+					mlog(LV_WARN, "W-1445: failed to increase pool threads: %s", strerror(ret));
 					g_threads_data_buff.put(pdata);
 				} else {
 					pthread_setname_np(pdata->id, "ep_pool/+");
