@@ -1595,7 +1595,7 @@ BOOL common_util_send_message(store_object *pstore,
 		return FALSE;
 	}
 	if (prcpts->count == 0)
-		fprintf(stderr, "I-1504: Store %s attempted to send message %llxh to 0 recipients\n",
+		mlog(LV_INFO, "I-1504: Store %s attempted to send message %llxh to 0 recipients",
 		        pstore->get_account(), static_cast<unsigned long long>(message_id));
 
 	std::vector<std::string> rcpt_list;

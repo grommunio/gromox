@@ -260,7 +260,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (!plogon->is_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == logon_mode::guest) {
-		fprintf(stderr, "I-2145: submitmessage denied because %s is guest\n", plogon->account);
+		mlog(LV_INFO, "I-2145: submitmessage denied because %s is guest", plogon->account);
 		return ecAccessDenied;
 	}
 
@@ -272,15 +272,15 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
 	if (pmessage->importing()) {
-		fprintf(stderr, "I-2146: submitmessage denied because "
-		        "message %llxh is under construction\n",
+		mlog(LV_INFO, "I-2146: submitmessage denied because "
+		        "message %llxh is under construction",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
 	auto tag_access = pmessage->get_tag_access();
 	if (!(tag_access & MAPI_ACCESS_MODIFY)) {
-		fprintf(stderr, "I-2147: submitmessage denied because "
-		        "%s has no MAPI_ACCESS_MODIFY on message %llxh\n",
+		mlog(LV_INFO, "I-2147: submitmessage denied because "
+		        "%s has no MAPI_ACCESS_MODIFY on message %llxh",
 		        plogon->account,
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
@@ -299,8 +299,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0) {
-		fprintf(stderr, "I-2160: submitmessage denied because "
-		        "message %llxh is FAI\n",
+		mlog(LV_INFO, "I-2160: submitmessage denied because "
+		        "message %llxh is FAI",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
@@ -366,8 +366,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (message_flags == nullptr)
 		return ecError;
 	if (*message_flags & MSGFLAG_SUBMITTED) {
-		fprintf(stderr, "I-2148: submitmessage denied because "
-		        "message %llxh is already submitted\n",
+		mlog(LV_INFO, "I-2148: submitmessage denied because "
+		        "message %llxh is already submitted",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
@@ -395,8 +395,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	    pmessage->get_id(), &b_marked))
 		return ecError;
 	if (!b_marked) {
-		fprintf(stderr, "I-2149: submitmessage denied because "
-		        "message %llxh failed try_mark_submit\n",
+		mlog(LV_INFO, "I-2149: submitmessage denied because "
+		        "message %llxh failed try_mark_submit",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
@@ -591,7 +591,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	if (!plogon->is_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == logon_mode::guest) {
-		fprintf(stderr, "I-2143: transportsend disallowed because %s is guest\n", plogon->account);
+		mlog(LV_INFO, "I-2143: transportsend disallowed because %s is guest", plogon->account);
 		return ecAccessDenied;
 	}
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
@@ -602,8 +602,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
 	if (pmessage->importing()) {
-		fprintf(stderr, "I-2144: transportsend disallowed because "
-		        "message %llxh is under construction\n",
+		mlog(LV_INFO, "I-2144: transportsend disallowed because "
+		        "message %llxh is under construction",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
@@ -618,8 +618,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecError;
 	auto msgflags = outvalues.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (msgflags != nullptr && *msgflags & MSGFLAG_SUBMITTED) {
-		fprintf(stderr, "I-2144: transportsend disallowed because "
-		        "message %llxh was already submitted once\n",
+		mlog(LV_INFO, "I-2144: transportsend disallowed because "
+		        "message %llxh was already submitted once",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}

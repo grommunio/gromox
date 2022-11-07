@@ -76,7 +76,7 @@ static void *mdpls_thrwork(void *param)
 			auto next = prev + 60;
 			auto now = time(nullptr);
 			if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-				fprintf(stderr, "I-1666: Rejecting %s: not allowed by exmdb_acl\n", client_hostip);
+				mlog(LV_INFO, "I-1666: Rejecting %s: not allowed by exmdb_acl", client_hostip);
 			auto tmp_byte = exmdb_response::access_deny;
 			write(sockd, &tmp_byte, 1);
 			close(sockd);

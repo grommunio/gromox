@@ -3412,7 +3412,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		repr_grant = cu_get_delegate_perm_AA(account, username);
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
-		fprintf(stderr, "I-1334: uid %s tried to send with from=<%s>, but no impersonation permission given.\n",
+		mlog(LV_INFO, "I-1334: uid %s tried to send with from=<%s>, but no impersonation permission given.",
 		        account, username);
 		return ecAccessDenied;
 	}
