@@ -13,6 +13,7 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
+#include <gromox/util.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
 #include "exmdb_client.h"
@@ -880,7 +881,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 		for (size_t i = start_pos; i < end_pos; ++i)
 			pset->pparray[pset->count++] = tmp_set.pparray[i];
 	} else {
-		fprintf(stderr, "I-1663: report me (c=%u s=%u n=%d)\n",
+		mlog(LV_INFO, "I-1663: report me (c=%u s=%u n=%d)",
 		        static_cast<unsigned int>(tmp_set.count),
 		        static_cast<unsigned int>(start_pos),
 		        static_cast<int>(row_needed));

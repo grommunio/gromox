@@ -2388,7 +2388,7 @@ static void *midbme_scanwork(void *param)
 			} catch (const std::bad_alloc &) {
 				mlog(LV_ERR, "E-1622: ENOMEM");
 			}
-			fprintf(stderr, "I-2175: Closing user %s midb.sqlite3 (sub=%u, c=%lld, l=%lld)\n",
+			mlog(LV_INFO, "I-2175: Closing user %s midb.sqlite3 (sub=%u, c=%lld, l=%lld)",
 			        pidb->username.c_str(), pidb->sub_id,
 			        static_cast<long long>(last_diff),
 			        static_cast<long long>(load_diff));

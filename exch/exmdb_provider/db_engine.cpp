@@ -292,10 +292,10 @@ BOOL db_engine_vacuum(const char *path)
 	auto db = db_engine_get_db(path);
 	if (db == nullptr || db->psqlite == nullptr)
 		return false;
-	fprintf(stderr, "I-2102: Vacuuming %s (exchange.sqlite3)\n", path);
+	mlog(LV_INFO, "I-2102: Vacuuming %s (exchange.sqlite3)", path);
 	if (gx_sql_exec(db->psqlite, "VACUUM") != SQLITE_OK)
 		return false;
-	fprintf(stderr, "I-2102: Vacuuming %s ended\n", path);
+	mlog(LV_INFO, "I-2102: Vacuuming %s ended", path);
 	return TRUE;
 }
 
