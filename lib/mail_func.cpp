@@ -383,7 +383,7 @@ size_t parse_mime_field(char *in_buff, size_t buff_len,
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2025: ENOMEM\n");
+	mlog(LV_ERR, "E-2025: ENOMEM\n");
 	return 0;
 }
 

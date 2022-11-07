@@ -368,7 +368,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	}
 	return false;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1966: ENOMEM\n");
+	mlog(LV_ERR, "E-1966: ENOMEM\n");
 	return false;
 }
 

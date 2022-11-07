@@ -175,7 +175,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 	try {
 		file_path = dir + "/"s + file_name;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1493: ENOMEM\n");
+		mlog(LV_ERR, "E-1493: ENOMEM\n");
 		return nullptr;
 	}
 	auto pfile = list_file_initd(file_path.c_str(), nullptr, "%s:256");
@@ -437,7 +437,7 @@ std::unique_ptr<property_groupinfo>
 	}
 	return pinfo;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1632: ENOMEM\n");
+	mlog(LV_ERR, "E-1632: ENOMEM\n");
 	return nullptr;
 }
 

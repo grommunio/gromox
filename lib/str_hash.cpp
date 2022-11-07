@@ -12,6 +12,8 @@
 #include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
 
+using namespace gromox;
+
 static size_t g_num_of_collision;
 static constexpr auto strhashitem_al = roundup(sizeof(STR_HASH_ITEM), sizeof(std::max_align_t));
 
@@ -85,10 +87,10 @@ std::unique_ptr<STR_HASH_TABLE> STR_HASH_TABLE::create(size_t max_items,
 {
 	return std::make_unique<STR_HASH_TABLE>(max_items, item_size, func);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1537: ENOMEM\n");
+	mlog(LV_ERR, "E-1537: ENOMEM\n");
 	return nullptr;
 } catch (const std::invalid_argument &e) {
-	fprintf(stderr, "E-1538: %s\n", e.what());
+	mlog(LV_ERR, "E-1538: %s\n", e.what());
 	return nullptr;
 }
 

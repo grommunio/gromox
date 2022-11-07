@@ -21,6 +21,7 @@
 #include <gromox/defs.h>
 #include <gromox/socket.h>
 #include <gromox/tie.hpp>
+#include <gromox/util.hpp>
 
 using namespace gromox;
 
@@ -144,7 +145,7 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 		if (oflags & O_NONBLOCK) {
 			int flags = fcntl(fd, F_GETFL, 0);
 			if (flags < 0) {
-				fprintf(stderr, "W-1391: fctnl: %s\n", strerror(errno));
+				mlog(LV_WARN, "W-1391: fctnl: %s\n", strerror(errno));
 				flags = 0;
 			}
 			flags |= O_NONBLOCK;
@@ -175,7 +176,7 @@ static int gx_gai_listen(const struct addrinfo *r)
 		return -2;
 	static const int y = 1;
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(y)) < 0)
-		fprintf(stderr, "W-1385: setsockopt: %s\n", strerror(errno));
+		mlog(LV_WARN, "W-1385: setsockopt: %s\n", strerror(errno));
 	auto ret = bind(fd, r->ai_addr, r->ai_addrlen);
 	if (ret != 0) {
 		int se = errno;
@@ -247,7 +248,7 @@ int gx_local_listen(const char *path, bool delete_on_create)
 	/* There will be a TOCTOU report, but what can you do... */
 	ret = unlink(path);
 	if (ret < 0 && errno != ENOENT) {
-		fprintf(stderr, "E-1400: unlink %s: %s\n", path, strerror(errno));
+		mlog(LV_ERR, "E-1400: unlink %s: %s\n", path, strerror(errno));
 		return -errno;
 	}
 	ret = gx_gai_listen(&r);

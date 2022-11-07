@@ -215,7 +215,7 @@ BOOL html_init_library()
 	}
 	g_conv_id = iconv_open("UTF-16LE", "UTF-8");
 	if ((iconv_t)-1 == g_conv_id) {
-		fprintf(stderr, "E-2107: iconv_open: %s\n", strerror(errno));
+		mlog(LV_ERR, "E-2107: iconv_open: %s\n", strerror(errno));
 		return FALSE;
 	}
 	return TRUE;
@@ -1296,7 +1296,7 @@ static void html_string_to_utf8(uint32_t cpid,
 	auto cs = replace_iconv_charset(charset);
 	auto conv_id = iconv_open("UTF-8//IGNORE", cs);
 	if (conv_id == (iconv_t)-1) {
-		fprintf(stderr, "E-2106: iconv_open %s: %s\n", cs, strerror(errno));
+		mlog(LV_ERR, "E-2106: iconv_open %s: %s\n", cs, strerror(errno));
 		snprintf(dst, len, "ICONV_ERROR");
 		return;
 	}
