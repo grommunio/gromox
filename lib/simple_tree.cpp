@@ -12,7 +12,7 @@ BOOL mtree::set_root(SIMPLE_TREE_NODE *pnode)
 	auto ptree = this;
 #ifdef _DEBUG_UMTA
 	if (pnode == nullptr) {
-		debug_info("[simple_tree]: NULL pointer in mtree::set_root");
+		mlog(LV_DEBUG, "simple_tree: NULL pointer in mtree::set_root");
 		return FALSE;
 	}
 #endif
@@ -49,7 +49,7 @@ BOOL mtree::insert_sibling(tree_node *pnode_base, tree_node *pnode, int opt)
 
 #ifdef _DEBUG_UMTA
 	if (pnode == nullptr || pnode_base == nullptr) {
-		debug_info("[simple_tree]: NULL pointer in simple_tree_add_sibling");
+		mlog(LV_DEBUG, "simple_tree: NULL pointer in simple_tree_add_sibling");
 		return FALSE;
 	}
 #endif
@@ -109,7 +109,7 @@ BOOL mtree::add_child(tree_node *pnode_base, tree_node *pnode, int opt)
 
 #ifdef _DEBUG_UMTA
 	if (pnode == nullptr || pnode_base == nullptr) {
-		debug_info("[simple_tree]: NULL pointer in mtree::add_child");
+		mlog(LV_DEBUG, "simple_tree: NULL pointer in mtree::add_child");
 		return FALSE;
 	}
 #endif
@@ -168,7 +168,7 @@ void mtree::destroy_node(tree_node *pnode, SIMPLE_TREE_DELETE del_func)
 
 #ifdef _DEBUG_UMTA
 	if (pnode == nullptr || del_func == nullptr) {
-		debug_info("[simple_tree]: NULL pointer in mtree::destroy_node");
+		mlog(LV_DEBUG, "simple_tree: NULL pointer in mtree::destroy_node");
 		return;
 	}
 #endif
@@ -182,7 +182,7 @@ void mtree::destroy_node(tree_node *pnode, SIMPLE_TREE_DELETE del_func)
 		ptree->nodes_num --;
 #ifdef _DEBUG_UMTA
 		if (0 != ptree->nodes_num) {
-			debug_info("[simple_tree]: fatal error "
+			mlog(LV_DEBUG, "simple_tree: fatal error "
 					"in simple_tree_destroy_node");
 		}
 #endif
@@ -239,7 +239,7 @@ static void simple_tree_destroy_group(SIMPLE_TREE *ptree,
 
 #ifdef _DEBUG_UMTA
 	if (NULL == ptree || NULL == pnode || NULL == del_func) {	
-		debug_info("[simple_tree]: NULL pointer in "
+		mlog(LV_DEBUG, "simple_tree: NULL pointer in "
 					"simple_tree_destroy_group");
 		return;
 	}

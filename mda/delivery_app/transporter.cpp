@@ -862,13 +862,13 @@ static void *transporter_queryservice(const char *service, const std::type_info 
     }
 	pservice = me_alloc<SERVICE_NODE>();
     if (NULL == pservice) {
-		debug_info("[transporter]: Failed to allocate memory for service node");
+		mlog(LV_DEBUG, "transporter: Failed to allocate memory for service node");
         service_release(service, g_cur_lib->file_name);
         return NULL;
     }
 	pservice->service_name = me_alloc<char>(strlen(service) + 1);
     if (NULL == pservice->service_name) {
-		debug_info("[transporter]: Failed to allocate memory for service name");
+		mlog(LV_DEBUG, "transporter: Failed to allocate memory for service name");
         service_release(service, g_cur_lib->file_name);
         free(pservice);
         return NULL;

@@ -925,12 +925,12 @@ static bool ntlmssp_check_ntlm1(const DATA_BLOB *pnt_response,
 	uint8_t p24[24];
 	
 	if (psec_blob->cb != 8) {
-		debug_info("[ntlmssp]: incorrect challenge size (%u) in check_ntlm1",
+		mlog(LV_DEBUG, "ntlmssp: incorrect challenge size (%u) in check_ntlm1",
 			psec_blob->cb);
 		return false;
 	}
 	if (pnt_response->cb != 24) {
-		debug_info("[ntlmssp]: incorrect password length (%u) in check_ntlm1",
+		mlog(LV_DEBUG, "ntlmssp: incorrect password length (%u) in check_ntlm1",
 			pnt_response->cb);
 		return false;
 	}
@@ -965,12 +965,12 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 	uint8_t value_from_encryption[16];
 
 	if (psec_blob->cb != 8) {
-		debug_info("[ntlmssp]: incorrect challenge size (%u) "
+		mlog(LV_DEBUG, "ntlmssp: incorrect challenge size (%u) "
 			"in check_ntlm2", psec_blob->cb);
 		return false;
 	}
 	if (pntv2_response->cb < 24) {
-		debug_info("[ntlmssp]: incorrect password length (%u) "
+		mlog(LV_DEBUG, "ntlmssp: incorrect password length (%u) "
 			"in check_ntlm2", pntv2_response->cb);
 		return false;
 	}
@@ -1023,12 +1023,12 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	uint8_t value_from_encryption[16];
 	
 	if (psec_blob->cb != 8) {
-		debug_info("[ntlmssp]: incorrect challenge size (%u) "
+		mlog(LV_DEBUG, "ntlmssp: incorrect challenge size (%u) "
 			"in sess_key_ntlm2", psec_blob->cb);
 		return false;
 	}
 	if (pntv2_response->cb < 24) {
-		debug_info("[ntlmssp]: incorrect password length (%u) "
+		mlog(LV_DEBUG, "ntlmssp: incorrect password length (%u) "
 			"in sess_key_ntlm2", pntv2_response->cb);
 		return false;
 	}
@@ -1089,7 +1089,7 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 		return false;
 	
 	if (pnt_response->cb != 0 && pnt_response->cb < 24)
-		debug_info("[ntlmssp]: invalid NT password length (%u) for user %s "
+		mlog(LV_DEBUG, "ntlmssp: invalid NT password length (%u) for user %s "
 			"in server_chkpasswd", pnt_response->cb, pntlmssp->user);
 
 	if (pnt_response->cb > 24) {
@@ -1128,12 +1128,12 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	} 
 	
 	if (plm_response->cb == 0) {
-		debug_info("[ntlmssp]: neither LanMan nor NT password supplied for "
+		mlog(LV_DEBUG, "ntlmssp: neither LanMan nor NT password supplied for "
 			"user %s in server_chkpasswd", pntlmssp->user);
 		return false;
 	}
 	if (plm_response->cb < 24) {
-		debug_info("[ntlmssp]: invalid LanMan password length (%u) for "
+		mlog(LV_DEBUG, "ntlmssp: invalid LanMan password length (%u) for "
 			"user %s in server_chkpasswd", pnt_response->cb, pntlmssp->user);
 		return false;
 	}
@@ -1220,7 +1220,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 	uint8_t weak_session_buff[8];
 	
 	if (pntlmssp->session_key.cb < 8) {
-		debug_info("[ntlmssp]: NO session key, cannot initialise "
+		mlog(LV_DEBUG, "ntlmssp: NO session key, cannot initialise "
 			"signing in sign_init");
 		return false;
 	}
@@ -1439,7 +1439,7 @@ bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 	if (!ntlmssp_parse_packet(*pblob, "Cd", "NTLMSSP", &ntlmssp_command))
 		return false;
 	if (ntlmssp_command != pntlmssp->expected_state) {
-		debug_info("[ntlmssp]: got NTLMSSP command %u, expected %u "
+		mlog(LV_DEBUG, "ntlmssp: got NTLMSSP command %u, expected %u "
 			"in ntlmssp_update", ntlmssp_command, pntlmssp->expected_state);
 		return false;
 	}
@@ -1454,7 +1454,7 @@ bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 		if (!ntlmssp_server_auth(pntlmssp, *pblob, &tmp_blob))
 			return false;
 	} else {
-		debug_info("[ntlmssp]: unexpected NTLMSSP command %u "
+		mlog(LV_DEBUG, "ntlmssp: unexpected NTLMSSP command %u "
 			"in ntlmssp_update", ntlmssp_command);
 		return false;
 	}
@@ -1567,11 +1567,11 @@ static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
 	if (pntlmssp->session_key.cb == 0)
 		return false;
 	if (pntlmssp->session_key.cb == 0) {
-		debug_info("[ntlm]: no session key, cannot check packet signature\n");
+		mlog(LV_DEBUG, "ntlm: no session key, cannot check packet signature");
 		return false;
 	}
 	if (psig->cb < 8)
-		debug_info("[ntlmssp]: NTLMSSP packet check failed due to short "
+		mlog(LV_DEBUG, "ntlmssp: NTLMSSP packet check failed due to short "
 			"signature (%u bytes)! in check_packet", psig->cb);
 	if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length, pwhole_pdu,
 	    pdu_length, NTLMSSP_DIRECTION_RECEIVE, &local_sig, true))
@@ -1580,15 +1580,13 @@ static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		if (local_sig.cb != psig->cb ||
 			memcmp(local_sig.pb, psig->pb, psig->cb) != 0) {
-			debug_info("[ntlmssp]: NTLMSSP NTLM2 packet check failed due to "
-				"invalid signature!\n");
+			mlog(LV_DEBUG, "ntlmssp: NTLMSSP NTLM2 packet check failed due to invalid signature!");
 			return false;
 		}
 	} else {
 		if (local_sig.cb != psig->cb || memcmp(&local_sig.pb[8],
 		    &psig->pb[8], psig->cb - 8) != 0) {
-			debug_info("[ntlmssp]: NTLMSSP NTLM1 packet check failed due to "
-				"invalid signature!\n");
+			mlog(LV_DEBUG, "ntlmssp: NTLMSSP NTLM1 packet check failed due to invalid signature!");
 			return false;
 		}
 	}
@@ -1618,7 +1616,7 @@ bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
 		return false;
 	std::lock_guard lk(pntlmssp->lock);
 	if (pntlmssp->session_key.cb == 0) {
-		debug_info("[ntlm]: no session key, cannot seal packet\n");
+		mlog(LV_DEBUG, "ntlm: no session key, cannot seal packet");
 		return false;
 	}
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
@@ -1654,7 +1652,7 @@ bool ntlmssp_unseal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata,
 {
 	std::lock_guard lk(pntlmssp->lock);
 	if (pntlmssp->session_key.cb == 0) {
-		debug_info("[ntlm]: no session key, cannot unseal packet\n");
+		mlog(LV_DEBUG, "ntlm: no session key, cannot unseal packet");
 		return false;
 	}
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {

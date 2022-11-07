@@ -270,13 +270,13 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 	}
 	pservice = me_alloc<SERVICE_NODE>();
 	if (NULL == pservice) {
-		debug_info("[flusher]: Failed to allocate memory for service node");
+		mlog(LV_DEBUG, "flusher: Failed to allocate memory for service node");
 		service_release(service, g_flusher_plug->file_name);
 		return NULL;
 	}
 	pservice->service_name = me_alloc<char>(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
-		debug_info("[flusher]: Failed to allocate memory for service name");
+		mlog(LV_DEBUG, "flusher: Failed to allocate memory for service name");
 		service_release(service, g_flusher_plug->file_name);
 		free(pservice);
 		return NULL;

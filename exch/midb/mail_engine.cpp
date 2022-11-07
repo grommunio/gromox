@@ -965,7 +965,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					b_result1 = TRUE;
 				break;
 			default:
-				debug_info("[mail_engine]: condition stat %u unknown!",
+				mlog(LV_DEBUG, "mail_engine: condition stat %u unknown!",
 												ptree_node->condition);
 				break;
 			}
@@ -2317,7 +2317,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 		b_load = TRUE;
 	} else if (pidb->reference > MAX_DB_WAITING_THREADS) {
 		hhold.unlock();
-		debug_info("[mail_engine]: too many threads waiting on %s\n", path);
+		mlog(LV_DEBUG, "mail_engine: too many threads waiting on %s", path);
 		return {};
 	}
 	pidb->reference ++;

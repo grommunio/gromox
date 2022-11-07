@@ -153,7 +153,7 @@ errno_t evqueue::del(SCHEDULE_CONTEXT *ctx)
 static void context_init(SCHEDULE_CONTEXT *pcontext)
 {
 	if (NULL == pcontext) {
-		debug_info("[contexts_pool]: pcontext is NULL in context_init!\n");
+		mlog(LV_DEBUG, "pcontext is NULL in %s", __PRETTY_FUNCTION__);
 		return;
 	}
 	pcontext->type = CONTEXT_FREE;
@@ -163,7 +163,7 @@ static void context_init(SCHEDULE_CONTEXT *pcontext)
 static void context_free(SCHEDULE_CONTEXT *pcontext)
 {
 	if (NULL == pcontext) {
-		debug_info("[contexts_pool]: pcontext is NULL in context_free!\n");
+		mlog(LV_DEBUG, "pcontext is NULL in %s", __PRETTY_FUNCTION__);
 		return;
 	}
 	pcontext->type = -1;
@@ -208,9 +208,9 @@ static void *ctxp_thrwork(void *pparam)
 				continue;
 			}
 			if (!pcontext->b_waiting) {
-				debug_info("[contexts_pool]: fatal error in context"
+				mlog(LV_DEBUG, "contexts_pool: fatal error in context"
 					" queue! b_waiting mismatch in thread_work_func"
-					" context: %p\n", pcontext);
+					" context: %p", pcontext);
 				continue;
 			}
 			double_list_remove(&g_context_lists[CONTEXT_POLLING],
@@ -253,8 +253,7 @@ static void *ctxp_scanwork(void *pparam)
 				contexts_pool_get_context_timestamp(pcontext))
 				>= g_time_out) {
 				if (g_poll_ctx.del(pcontext) != 0) {
-					debug_info("[contexts_pool]: fail "
-						"to remove event from epoll\n");
+					mlog(LV_DEBUG, "contexts_pool: failed to remove event from epoll");
 				} else {
 					pcontext->b_waiting = FALSE;
 					pcontext->type = CONTEXT_SWITCHING;
@@ -409,8 +408,7 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 	case CONTEXT_SLEEPING:
 		break;
 	default:
-		debug_info("[contexts_pool]: cannot put "
-			"context into queue of type %d\n", type); 
+		mlog(LV_DEBUG, "contexts_pool: cannot put context into queue of type %d", type); 
 		return;
 	}
 	
@@ -422,7 +420,7 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 		if (original_type == CONTEXT_CONSTRUCTING) {
 			if (g_poll_ctx.mod(pcontext, true) != 0) {
 				pcontext->b_waiting = FALSE;
-				debug_info("[contexts_pool]: fail to add event to epoll!\n");
+				mlog(LV_DEBUG, "contexts_pool: failed to add event to epoll");
 			} else {
 				pcontext->b_waiting = TRUE;
 			}
@@ -435,8 +433,7 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 			} else {
 				shutdown(contexts_pool_get_context_socket(
 				         pcontext), SHUT_RDWR);
-				debug_info("[contexts_pool]: fail"
-					" to modify event in epoll\n");
+				mlog(LV_DEBUG, "contexts_pool: failed to modify event in epoll");
 			}
 		}
 	} else if (type == CONTEXT_FREE && original_type == CONTEXT_TURNING) {
@@ -484,8 +481,7 @@ BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type)
 	}
 	while (CONTEXT_SLEEPING != pcontext->type) {
 		usleep(100000);
-		debug_info("[contexts_pool]: waiting context"
-			" %p to be CONTEXT_SLEEPING\n", pcontext);
+		mlog(LV_DEBUG, "contexts_pool: waiting context %p to be CONTEXT_SLEEPING", pcontext);
 	}
 	std::unique_lock sleep_hold(g_context_locks[CONTEXT_SLEEPING]);
 	double_list_remove(&g_context_lists[CONTEXT_SLEEPING], &pcontext->node);

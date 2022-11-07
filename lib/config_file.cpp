@@ -104,7 +104,7 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
 	}
 	auto cfg = config_file_alloc(table_size + EXT_ENTRY_NUM);
 	if (cfg == NULL) {
-		debug_info("[config_file]: config_file_init: %s, alloc fail", filename);
+		mlog(LV_DEBUG, "config_file: config_file_init: %s, alloc fail", filename);
 		fclose(fin);
 		return NULL;
 	}
@@ -216,7 +216,7 @@ const char *CONFIG_FILE::get_value(const char *key) const
 
 #ifdef _DEBUG_UMTA
 	if (key == nullptr) {
-		debug_info("[config_file]: config_file_get_value: invalid param");
+		mlog(LV_DEBUG, "config_file: config_file_get_value: invalid param");
 		return NULL;
 	}
 #endif
@@ -258,7 +258,7 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg,
 
 #ifdef _DEBUG_UMTA
 	if (NULL == cfg || NULL == line) {
-		debug_info("[config_file]: config_file_parse_line, param NULL");
+		mlog(LV_DEBUG, "config_file: config_file_parse_line, param NULL");
 		return;
 	}
 #endif
@@ -300,7 +300,7 @@ BOOL CONFIG_FILE::set_value(const char *key, const char *value)
 
 #ifdef _DEBUG_UMTA
 	if (key == nullptr || value == nullptr) {
-		debug_info("[config_file]: config_file_set_value: invalid param");
+		mlog(LV_DEBUG, "config_file: config_file_set_value: invalid param");
 		return FALSE;
 	}
 #endif

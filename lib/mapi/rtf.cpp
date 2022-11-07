@@ -692,7 +692,7 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 		pentry = rtf_lookup_font(preader, param);
 		if (NULL == pentry) {
 			encoding = preader->default_encoding;
-			debug_info("[rtf]: invalid font number %d", param);
+			mlog(LV_DEBUG, "rtf: invalid font number %d", param);
 			tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 				TAG_FONT_BEGIN, DEFAULT_FONT_STR);
 		} else {
@@ -896,7 +896,7 @@ static bool rtf_attrstack_express_all(RTF_READER *preader)
 	
 	pnode = double_list_get_tail(&preader->attr_stack_list);
 	if (NULL == pnode) {
-		debug_info("[rtf]: no stack to express all attribute from");
+		mlog(LV_DEBUG, "rtf: no stack to express all attribute from");
 		return true;
 	}
 	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
@@ -915,12 +915,12 @@ static bool rtf_attrstack_push_express(RTF_READER *preader, int attr, int param)
 	
 	pnode = double_list_get_tail(&preader->attr_stack_list);
 	if (NULL == pnode) {
-		debug_info("[rtf]: cannot find stack node for pushing attribute");
+		mlog(LV_DEBUG, "rtf: cannot find stack node for pushing attribute");
 		return false;
 	}
 	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
 	if (pattrstack->tos >= MAX_ATTRS - 1) {
-		debug_info("[rtf]: too many attributes");
+		mlog(LV_DEBUG, "rtf: too many attributes");
 		return false;
 	}
 	if (!rtf_starting_body(preader) || !rtf_starting_text(preader))
@@ -971,7 +971,7 @@ static int rtf_attrstack_peek(const RTF_READER *preader)
 {
 	auto pnode = double_list_get_tail(&preader->attr_stack_list);
 	if (NULL == pnode) {
-		debug_info("[rtf]: cannot find stack node for peeking attribute");
+		mlog(LV_DEBUG, "rtf: cannot find stack node for peeking attribute");
 		return ATTR_NONE;
 	}
 	auto pattrstack = static_cast<const ATTRSTACK_NODE *>(pnode->pdata);
@@ -1013,7 +1013,7 @@ static bool rtf_attrstack_find_pop_express(RTF_READER *preader, int attr)
 	
 	auto pnode = double_list_get_tail(&preader->attr_stack_list);
 	if (NULL == pnode) {
-		debug_info("[rtf]: cannot find stack node for finding attribute");
+		mlog(LV_DEBUG, "rtf: cannot find stack node for finding attribute");
 		return true;
 	}
 	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
@@ -1025,7 +1025,7 @@ static bool rtf_attrstack_find_pop_express(RTF_READER *preader, int attr)
 		}
 	}
 	if (!b_found) {
-		debug_info("[rtf]: cannot find attribute in stack node");
+		mlog(LV_DEBUG, "rtf: cannot find attribute in stack node");
 		return true;
 	}
 	for (i=pattrstack->tos; i>=0; i--) {
@@ -1056,7 +1056,7 @@ static void rtf_ungetchar(RTF_READER *preader, int ch)
 	if (preader->ungot_chars[0] >= 0 &&
 		preader->ungot_chars[1] >= 0 &&
 		preader->ungot_chars[2] >= 0) {
-		debug_info("[rtf]: more than 3 ungot chars");
+		mlog(LV_DEBUG, "rtf: more than 3 ungot chars");
 	}
 	preader->ungot_chars[2] = preader->ungot_chars[1];
 	preader->ungot_chars[1] = preader->ungot_chars[0];
@@ -1117,14 +1117,14 @@ static char* rtf_read_element(RTF_READER *preader)
 	current_max_length = 10;
 	auto input_str = static_cast<char *>(calloc(1, current_max_length));
 	if (NULL == input_str) {
-		debug_info("[rtf]: cannot allocate word storage");
+		mlog(LV_DEBUG, "rtf: cannot allocate word storage");
 		return NULL;
 	}
 	
 	do {
 		if (EXT_ERR_SUCCESS != rtf_getchar(preader, &ch)) {
 			free(input_str);
-			debug_info("[rtf]: fail to get char from reader");
+			mlog(LV_DEBUG, "rtf: failed to get char from reader");
 			return NULL;
 		}
 	} while ('\n' == ch);
@@ -1134,7 +1134,7 @@ static char* rtf_read_element(RTF_READER *preader)
 		while (' ' == ch) {
 			if (EXT_ERR_SUCCESS != rtf_getchar(preader, &ch)) {
 				free(input_str);
-				debug_info("[rtf]: fail to get char from reader");
+				mlog(LV_DEBUG, "rtf: failed to get char from reader");
 				return NULL;
 			}
 			have_whitespace = true;
@@ -1151,7 +1151,7 @@ static char* rtf_read_element(RTF_READER *preader)
 	case '\\':
 		if (EXT_ERR_SUCCESS != rtf_getchar(preader, &ch2)) {
 			free(input_str);
-			debug_info("[rtf]: fail to get char from reader");
+			mlog(LV_DEBUG, "rtf: failed to get char from reader");
 			return NULL;
 		}
 		/* look for two-character command words */
@@ -1175,13 +1175,13 @@ static char* rtf_read_element(RTF_READER *preader)
 			input_str[1]='\'';
 			if (EXT_ERR_SUCCESS != rtf_getchar(preader, &ch)) {
 				free(input_str);
-				debug_info("[rtf]: fail to get char from reader");
+				mlog(LV_DEBUG, "rtf: failed to get char from reader");
 				return nullptr;
 			}
 			input_str[2] = ch;
 			if (EXT_ERR_SUCCESS != rtf_getchar(preader, &ch)) {
 				free(input_str);
-				debug_info("[rtf]: fail to get char from reader");
+				mlog(LV_DEBUG, "rtf: failed to get char from reader");
 				return NULL;
 			}
 			input_str[3] = ch;
@@ -1215,7 +1215,7 @@ static char* rtf_read_element(RTF_READER *preader)
 				break;
 			if (EXT_ERR_SUCCESS != rtf_getchar(preader, &ch)) {
 				free(input_str);
-				debug_info("[rtf]: fail to get char from reader");
+				mlog(LV_DEBUG, "rtf: failed to get char from reader");
 				return NULL;
 			}
 			continue; 
@@ -1251,14 +1251,14 @@ static char* rtf_read_element(RTF_READER *preader)
 			auto input_new = re_alloc<char>(input_str, current_max_length);
 			if (NULL == input_new) {
 				free(input_str);
-				debug_info("[rtf]: out of memory");
+				mlog(LV_DEBUG, "rtf: out of memory");
 				return NULL;
 			}
 			input_str = input_new;
 		}
 		if (EXT_ERR_SUCCESS != rtf_getchar(preader, &ch)) {
 			free(input_str);
-			debug_info("[rtf]: fail to get char from reader");
+			mlog(LV_DEBUG, "rtf: failed to get char from reader");
 			return NULL;
 		}
 	}
@@ -1308,7 +1308,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			free(input_word);
 			pgroup = me_alloc<GROUP_NODE>();
 			if (NULL == pgroup) {
-				debug_info("[rtf]: out of memory");
+				mlog(LV_DEBUG, "rtf: out of memory");
 				return false;
 			}
 			pgroup->node.pdata = NULL;
@@ -1329,7 +1329,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 		} else if (input_word[0] == '}') {
 			free(input_word);
 			if (NULL == plast_group) {
-				debug_info("[rtf]: rtf format error, missing first '{'");
+				mlog(LV_DEBUG, "rtf: rtf format error, missing first '{'");
 				return false;
 			}
 			rtf_free_collection(&plast_group->collection_list);
@@ -1341,7 +1341,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 		} else {
 			if (NULL == plast_group) {
 				free(input_word);
-				debug_info("[rtf]: rtf format error, missing first '{'");
+				mlog(LV_DEBUG, "rtf: rtf format error, missing first '{'");
 				return false;
 			}
 			if (rtf_optimize_element(&plast_group->collection_list, input_word)) {
@@ -1351,7 +1351,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			pword = me_alloc<SIMPLE_TREE_NODE>();
 			if (NULL == pword) {
 				free(input_word);
-				debug_info("[rtf]: out of memory");
+				mlog(LV_DEBUG, "rtf: out of memory");
 				return false;
 			}
 			pword->pdata = input_word;
@@ -1532,7 +1532,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			continue;
 		}
 		if (num < 0) {
-			debug_info("[rtf]: illegal font id in font table");
+			mlog(LV_DEBUG, "rtf: illegal font id in font table");
 			return false;
 		}
 		tmp_buff[0] = '\0';
@@ -1547,7 +1547,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			if ('\\' != string[0]) {
 				auto tmp_len = strlen(string);
 				if (tmp_len + tmp_offset > sizeof(tmp_buff) - 1) {
-					debug_info("[rtf]: invalid font name");
+					mlog(LV_DEBUG, "rtf: invalid font name");
 					return false;
 				} else {
 					memcpy(tmp_buff + tmp_offset, string, tmp_len);
@@ -1556,7 +1556,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 				continue;
 			} else if (string[1] == '\'' && string[2] != '\0' && string[3] != '\0') {
 				if (tmp_offset + 1 > sizeof(tmp_buff) - 1) {
-					debug_info("[rtf]: invalid font name");
+					mlog(LV_DEBUG, "rtf: invalid font name");
 					return false;
 				}
 				tmp_buff[tmp_offset] = rtf_decode_hex_char(string + 2);
@@ -1566,7 +1566,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			ret = rtf_parse_control(string + 1,
 			      tmp_name, MAX_CONTROL_LEN, &param);
 			if (ret < 0) {
-				debug_info("[rtf]: illegal control word in font table");
+				mlog(LV_DEBUG, "rtf: illegal control word in font table");
 				continue;
 			} else if (ret == 0) {
 				continue;
@@ -1583,13 +1583,13 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 				}
 				if (!string_from_utf8(rtf_cpid_to_encoding(tmp_cpid),
 				    tmp_name, name, arsizeof(name))) {
-					debug_info("[rtf]: invalid font name");
+					mlog(LV_DEBUG, "rtf: invalid font name");
 					return false;
 				} else {
 					auto tmp_len = strlen(name);
 					if (tmp_len + tmp_offset >
 					    sizeof(tmp_buff) - 1) {
-						debug_info("[rtf]: invalid font name");
+						mlog(LV_DEBUG, "rtf: invalid font name");
 						return false;
 					}
 					memcpy(tmp_buff + tmp_offset, name, tmp_len);
@@ -1602,7 +1602,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			}
 		}
 		if (0 == tmp_offset) {
-			debug_info("[rtf]: invalid font name");
+			mlog(LV_DEBUG, "rtf: invalid font name");
 			return false;
 		}
 		tmp_buff[tmp_offset] = '\0';
@@ -1620,7 +1620,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 		}
 		if (!string_to_utf8(rtf_cpid_to_encoding(cpid), tmp_buff,
 		    name, std::size(name))) {
-			debug_info("[rtf]: invalid font name");
+			mlog(LV_DEBUG, "rtf: invalid font name");
 			strcpy(name, DEFAULT_FONT_STR);
 		}
 		ptoken = strchr(name, ';');
@@ -1835,7 +1835,7 @@ static int rtf_cmd_cf(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	if (!have_param || num < 0 || num >= preader->total_colors) {
-		debug_info("[rtf]: font color change attempted is invalid");
+		mlog(LV_DEBUG, "rtf: font color change attempted is invalid");
 	} else {
 		if (!rtf_attrstack_push_express(preader, ATTR_FOREGROUND,
 		    preader->color_table[num]))
@@ -1848,7 +1848,7 @@ static int rtf_cmd_cb(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	if (!have_param || num < 0 || num >= preader->total_colors) {
-		debug_info("[rtf]: font color change attempted is invalid");
+		mlog(LV_DEBUG, "rtf: font color change attempted is invalid");
 	} else {
 		if (!rtf_attrstack_push_express(preader, ATTR_BACKGROUND,
 		    preader->color_table[num]))
@@ -1969,7 +1969,7 @@ static int rtf_cmd_highlight(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	if (!have_param || num < 0 || num >= preader->total_colors) {
-		debug_info("[rtf]: font background "
+		mlog(LV_DEBUG, "rtf: font background "
 			"color change attempted is invalid");
 	} else {
 		if (!rtf_attrstack_push_express(preader, ATTR_BACKGROUND,
@@ -2869,7 +2869,7 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	
 	paragraph_align = ALIGN_LEFT;
 	if (pnode->get_depth() >= MAX_GROUP_DEPTH) {
-		debug_info("[rtf]: max group depth reached");
+		mlog(LV_DEBUG, "rtf: max group depth reached");
 		return -ELOOP;
 	}
 	if (!rtf_check_for_table(preader) || !rtf_stack_list_new_node(preader))

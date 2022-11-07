@@ -551,7 +551,7 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 	}
 
 	if (auth_data_only && data_and_pad != pauth->auth_pad_length) {
-		debug_info("[pdu_processor]: WARNING: pad length mismatch, "
+		mlog(LV_DEBUG, "pdu_processor: WARNING: pad length mismatch, "
 			"calculated %u got %u\n", data_and_pad, pauth->auth_pad_length);
 		pdu_ndr_free_dcerpc_auth(pauth);
 		return FALSE;
@@ -750,8 +750,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 	
 	if (double_list_get_nodes_num(&pcall->pprocessor->auth_list) >
 		MAX_CONTEXTS_PER_CONNECTION) {
-		debug_info("[pdu_processor]: maximum auth contexts"
-			" number of connection reached\n");
+		mlog(LV_DEBUG, "pdu_processor: maximum auth contexts number of connection reached");
 		return FALSE;
 	}
 	auto pauth_ctx = g_auth_allocator->get();
@@ -815,7 +814,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 	}
 	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
 	g_auth_allocator->put(pauth_ctx);
-	debug_info("[pdu_processor]: unsupported authentication type\n");
+	mlog(LV_DEBUG, "pdu_processor: unsupported authentication type");
 	return FALSE;
 }
 
@@ -940,7 +939,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 			}
 		}
 		if (!b_found) {
-			debug_info("[pdu_processor]: only NDR or NDR64 transfer syntax "
+			mlog(LV_DEBUG, "pdu_processor: only NDR or NDR64 transfer syntax "
 				"can be accepted by system\n");
 			return pdu_processor_bind_nak(pcall, 0);
 		}
@@ -961,7 +960,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	if (NULL == pinterface) {
 		char uuid_str[GUIDSTR_SIZE];
 		uuid.to_str(uuid_str, arsizeof(uuid_str));
-		debug_info("[pdu_processor]: interface %s/%d unknown when binding\n",
+		mlog(LV_DEBUG, "pdu_processor: interface %s/%d unknown when binding",
 			uuid_str, if_version);
 		/* we don't know about that interface */
 		result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
@@ -1088,8 +1087,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
-		debug_info("[pdu_processor]: fata error in pdu_processor_process_bind"
-			" cannot get auth_context from list\n");
+		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
@@ -1158,7 +1156,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
 		goto AUTH3_FAIL;
 	if (!ntlmssp_session_info(pauth_ctx->pntlmssp, &pauth_ctx->session_info)) {
-		debug_info("[pdu_processor]: failed to establish session_info\n");
+		mlog(LV_DEBUG, "pdu_processor: failed to establish session_info");
 		goto AUTH3_FAIL;
 	}
 	if (pauth_ctx->auth_info.auth_type != RPC_C_AUTHN_NONE)
@@ -1250,8 +1248,8 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 				}
 			}
 			if (!b_found) {
-				debug_info("[pdu_processor]: only NDR or NDR64 transfer syntax "
-					"can be accepted by system\n");
+				mlog(LV_DEBUG, "pdu_processor: only NDR or NDR64 transfer syntax "
+					"can be accepted by system");
 				result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 				reason = DCERPC_BIND_REASON_ASYNTAX;
 				goto ALTER_ACK;
@@ -1264,7 +1262,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		if (NULL == pinterface) {
 			char uuid_str[GUIDSTR_SIZE];
 			uuid.to_str(uuid_str, arsizeof(uuid_str));
-			debug_info("[pdu_processor]: interface %s/%d unknown when altering\n",
+			mlog(LV_DEBUG, "pdu_processor: interface %s/%d unknown when altering",
 				uuid_str, if_version);
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DCERPC_BIND_REASON_ASYNTAX;
@@ -1273,8 +1271,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 
 		if (double_list_get_nodes_num(&pprocessor->context_list) >
 			MAX_CONTEXTS_PER_CONNECTION) {
-			debug_info("[pdu_processor]: maximum rpc contexts"
-				" number of connection reached\n");
+			mlog(LV_DEBUG, "pdu_processor: maximum rpc contexts number of connection reached");
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DECRPC_BIND_REASON_LOCAL_LIMIT_EXCEEDED;
 			goto ALTER_ACK;
@@ -1370,8 +1367,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
-		debug_info("[pdu_processor]: fata error in pdu_processor_process_alter"
-			" cannot get auth_context from list\n");
+		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
@@ -1507,8 +1503,8 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	}
 
 	if (creds2.cb != sig_size) {
-		debug_info("[pdu_processor]: auth_response: creds2.cb[%u] != "
-			"sig_size[%u] pad[%u] stub[%u]\n", creds2.cb,
+		mlog(LV_DEBUG, "pdu_processor: auth_response: creds2.cb[%u] != "
+			"sig_size[%u] pad[%u] stub[%u]", creds2.cb,
 			static_cast<unsigned int>(sig_size),
 			pauth_ctx->auth_info.auth_pad_length,
 			ppkt->payload.response.stub_and_verifier.cb);
@@ -1559,7 +1555,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	pdata = malloc(alloc_size);
 	if (NULL == pdata) {
 		pdu_processor_free_stack_root(pstack_root);
-		debug_info("[pdu_processor]: push fail on RPC call %u on %s\n",
+		mlog(LV_DEBUG, "pdu_processor: push fail on RPC call %u on %s",
 			prequest->opnum, pcall->pcontext->pinterface->name);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 	}
@@ -1656,8 +1652,7 @@ static uint32_t pdu_processor_apply_async_id()
 		return 0;
 	}
 	if (double_list_get_nodes_num(&pcall->pcontext->async_list) >= MAX_SYNC_PER_CONTEXT) {
-		debug_info("[pdu_processor]: maximum async contexts"
-			" number of connection reached\n");
+		mlog(LV_DEBUG, "pdu_processor: maximum async contexts number of connection reached");
 		return 0;
 	}
 	pcontext = http_parser_get_context();
@@ -1895,7 +1890,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	if (NDR_ERR_SUCCESS != pcontext->pinterface->ndr_pull(
 		prequest->opnum, &ndr_pull, &pin)) {
 		pdu_processor_free_stack_root(pstack_root);
-		debug_info("[pdu_processor]: pull fail on RPC call %u on %s\n",
+		mlog(LV_DEBUG, "pdu_processor: pull fail on RPC call %u on %s",
 			prequest->opnum, pcontext->pinterface->name);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
 	}
@@ -1927,7 +1922,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	switch (ret) {
 	case DISPATCH_FAIL:
 		pdu_processor_free_stack_root(pstack_root);
-		debug_info("[pdu_processor]: RPC execution fault in call %s:%02x\n",
+		mlog(LV_DEBUG, "pdu_processor: RPC execution fault in call %s:%02x",
 			pcontext->pinterface->name, prequest->opnum);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OP_RNG_ERROR);
 	case DISPATCH_PENDING:
@@ -1937,7 +1932,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		return pdu_processor_reply_request(pcall, pstack_root, pout);
 	default:
 		pdu_processor_free_stack_root(pstack_root);
-		debug_info("[pdu_processor]: unknown return value by %s:%02x\n",
+		mlog(LV_DEBUG, "pdu_processor: unknown return value by %s:%02x",
 			pcontext->pinterface->name, prequest->opnum);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OP_RNG_ERROR);
 	}
@@ -2848,8 +2843,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 		}
 	}
 	
-	debug_info("[pdu_processor]: unknown pdu in RTS process procedure\n");
-	
+	mlog(LV_DEBUG, "pdu_processor: unknown pdu in RTS process procedure");
 	pdu_processor_free_call(pcall);
 	return PDU_PROCESSOR_ERROR;
 }
@@ -3026,8 +3020,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		if (0 == (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 			if (double_list_get_nodes_num(&pprocessor->fragmented_list) >
 				MAX_FRAGMENTED_CALLS) {
-				debug_info("[pdu_processor]: maximum fragments"
-					" number of call reached\n");
+				mlog(LV_DEBUG, "pdu_processor: maximum fragments number of call reached");
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -3070,8 +3063,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		return PDU_PROCESSOR_INPUT;
 	default:
 		b_result = FALSE;
-		debug_info("[pdu_processor]: invalid ncancn packet type "
-			"in process procedure\n");
+		mlog(LV_DEBUG, "pdu_processor: invalid ncancn packet type in process procedure");
 		break;
 	}
 	
@@ -3393,15 +3385,13 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 	}
 	auto pservice = me_alloc<pdu_service_node>();
 	if (NULL == pservice) {
-		debug_info("[pdu_processor]: Failed to allocate memory "
-			"for service node\n");
+		mlog(LV_DEBUG, "pdu_processor: Failed to allocate memory for service node");
 		service_release(service, fn);
 		return NULL;
 	}
 	pservice->service_name = me_alloc<char>(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
-		debug_info("[pdu_processor]: Failed to allocate memory "
-			"for service name\n");
+		mlog(LV_DEBUG, "pdu_processor: Failed to allocate memory for service name");
 		service_release(service, fn);
 		free(pservice);
 		return NULL;

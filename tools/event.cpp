@@ -164,7 +164,7 @@ BOOL FIFO::enqueue(const MEM_FILE &mf)
 {
 #ifdef _DEBUG_UMTA
 	if (pdata == nullptr)
-		debug_info("[fifo]: fifo_enqueue, param nullptr");
+		mlog(LV_DEBUG, "%s, param nullptr", __PRETTY_FUNCTION__);
 #endif
 	if (cur_size >= max_size)
 		return false;

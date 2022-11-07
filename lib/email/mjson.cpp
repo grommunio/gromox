@@ -131,7 +131,7 @@ static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pnode) {
-		debug_info("[mail]: NULL pointer in mjson_enum_delete");
+		mlog(LV_DEBUG, "mail: NULL pointer in mjson_enum_delete");
 		return;
 	}
 #endif
@@ -163,7 +163,7 @@ BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath) try
 	
 #ifdef _DEBUG_UMTA
 	if (digest_buff == nullptr) {
-		debug_info("[mail]: NULL pointer in mjson_retrieve");
+		mlog(LV_DEBUG, "mail: NULL pointer in mjson_retrieve");
 		return FALSE;
 	}
 #endif
@@ -233,7 +233,7 @@ void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
 	auto pjson = this;
 #ifdef _DEBUG_UMTA
 	if (enum_func == nullptr) {
-        debug_info("[mail]: NULL pointer in mjson_enum_mime");
+        mlog(LV_DEBUG, "mail: NULL pointer in mjson_enum_mime");
         return;
     }
 #endif
@@ -459,7 +459,7 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
 
 #ifdef _DEBUG_UMTA
 	if (buff == nullptr) {
-		debug_info("[mail]: NULL pointer in mjson_fetch_structure");
+		mlog(LV_DEBUG, "mail: NULL pointer in mjson_fetch_structure");
 		return -1;
 	}
 #endif
@@ -499,7 +499,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime || NULL == buff) {
-		debug_info("[mail]: NULL pointer in mjson_fetch_mime_structure");
+		mlog(LV_DEBUG, "mail: NULL pointer in mjson_fetch_mime_structure");
 		return -1;
 	}
 #endif
@@ -840,7 +840,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pjson || NULL == buff) {
-		debug_info("[mail]: NULL pointer in mjson_fetch_envelope");
+		mlog(LV_DEBUG, "mail: NULL pointer in mjson_fetch_envelope");
 		return -1;
 	}
 #endif
@@ -1328,7 +1328,7 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 
 #ifdef _DEBUG_UMTA
 	if (storage_path == nullptr || buff == nullptr) {
-		debug_info("[mail]: NULL pointer in mjson_rfc822_fetch");
+		mlog(LV_DEBUG, "mail: NULL pointer in mjson_rfc822_fetch");
 		return -1;
 	}
 #endif
@@ -1361,7 +1361,7 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pjson || NULL == storage_path || NULL == buff) {
-		debug_info("[mail]: NULL pointer in mjson_rfc822_fetch_internal");
+		mlog(LV_DEBUG, "mail: NULL pointer in mjson_rfc822_fetch_internal");
 		return -1;
 	}
 #endif

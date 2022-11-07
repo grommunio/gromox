@@ -898,8 +898,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 	    id1, pdynamic->folder_ids.pll[i], &b_included) ||
 	    !common_util_check_descendant(pdb->psqlite,
 	    id2, pdynamic->folder_ids.pll[i], &b_included1)) {
-		debug_info("[db_engine]: fatal error in"
-			" common_util_check_descendant\n");
+		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
 	}
 	if (b_included == b_included1) {
@@ -915,8 +914,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 		message_id = sqlite3_column_int64(pstmt, 0);
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, message_id, &b_exist)) {
-			debug_info("[db_engine]: fail to check"
-				" item in search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
 		}
 		if (b_included != b_exist) {
@@ -932,8 +930,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 				"WHERE folder_id=%llu AND message_id=%llu",
 				LLU{pdynamic->folder_id}, LLU{message_id});
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-				debug_info("[db_engine]: fail to "
-					"delete from search_result\n");
+				mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 			continue;
 		}
 		if (!cu_eval_msg_restriction(pdb->psqlite,
@@ -962,8 +959,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 	if (pdynamic->search_flags & RECURSIVE_SEARCH) {
 		if (!common_util_check_descendant(pdb->psqlite,
 		    id1, pdynamic->folder_ids.pll[i], &b_included)) {
-			debug_info("[db_engine]: fatal error in"
-				" common_util_check_descendant\n");
+			mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 			return;
 		}
 		if (!b_included)
@@ -977,8 +973,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 	case DYNAMIC_EVENT_NEW_MESSAGE:
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
-			debug_info("[db_engine]: fail to check"
-				" item in search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
 		}
 		if (b_exist)
@@ -996,15 +991,13 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 				cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 				pdynamic->folder_id, id2, 0);
 		} else {
-			debug_info("[db_engine]: fail to "
-				"insert into search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to insert into search_result");
 		}
 		break;
 	case DYNAMIC_EVENT_DELETE_MESSAGE:
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
-			debug_info("[db_engine]: fail to check"
-				" item in search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
 		}
 		if (!b_exist)
@@ -1018,14 +1011,12 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 			"WHERE folder_id=%llu AND message_id=%llu",
 			LLU{pdynamic->folder_id}, LLU{id2});
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-			debug_info("[db_engine]: fail to "
-				"delete from search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 		break;
 	case DYNAMIC_EVENT_MODIFY_MESSAGE:
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
-			debug_info("[db_engine]: fail to check"
-				" item in search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
 		}
 		if (cu_eval_msg_restriction(
@@ -1049,8 +1040,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 					cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 					pdynamic->folder_id, id2, 0);
 			} else {
-				debug_info("[db_engine]: fail to "
-					"insert into search_result\n");
+				mlog(LV_DEBUG, "db_engine: failed to insert into search_result");
 			}
 		} else {
 			if (!b_exist)
@@ -1064,8 +1054,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 				"WHERE folder_id=%llu AND message_id=%llu",
 				LLU{pdynamic->folder_id}, LLU{id2});
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-				debug_info("[db_engine]: fail to "
-					"delete from search_result\n");
+				mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 		}
 		break;
 	}
@@ -1079,8 +1068,7 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 	
 	if (event_type == DYNAMIC_EVENT_MOVE_FOLDER &&
 	    !common_util_get_folder_type(pdb->psqlite, id3, &folder_type)) {
-		debug_info("[db_engine]: fatal error in"
-			" common_util_get_folder_type\n");
+		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
 	}
 	for (pnode=double_list_get_head(&pdb->dynamic_list); NULL!=pnode;

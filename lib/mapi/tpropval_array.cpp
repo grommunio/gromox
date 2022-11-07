@@ -6,12 +6,13 @@
 #include <gromox/propval.hpp>
 #include <gromox/util.hpp>
 
+using namespace gromox;
+
 static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
     const void *xpropval)
 {
 	if (xpropval == nullptr) {
-		debug_info("[tpropval_array]: pvalue is"
-			" NULL in tpropval_array_append");
+		mlog(LV_DEBUG, "pvalue is NULL in %s", __PRETTY_FUNCTION__);
 		return true;
 	}
 	if (parray->count == 0 && parray->ppropval == nullptr &&
