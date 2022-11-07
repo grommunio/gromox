@@ -5,7 +5,8 @@
 mapi.so \(em PHP module providing MAPI functions
 .SH Description
 mapi.so is a PHP module that makes available a number of functions to PHP for
-connecting to Gromox services. In particular, it will talk to zcore(8gx).
+connecting to Gromox services. In particular, the PHP module will regularly
+invoke RPCs to zcore(8gx).
 .SH Configuration
 The PHP ini fragment, mapi.ini, may look like this:
 .in +4n
@@ -13,58 +14,6 @@ The PHP ini fragment, mapi.ini, may look like this:
 extension=mapi.so
 [mapi]
 zcore_socket=/run/gromox/zcore.sock
-.EE
-.in
-.SH Compatibility with other implementations
-The Gromox implementation of mapi.so is missing (-) some functions and offering
-others (+) compared to KGWC:
-.PP
-.in +4n
-.EX
--mapi_createconversationindex
--mapi_folder_openmodifytable
--mapi_freebusydata_enumblocks
--mapi_freebusydata_getpublishrange
--mapi_freebusydata_setrange
--mapi_freebusyenumblock_ical
--mapi_freebusyenumblock_next
--mapi_freebusyenumblock_reset
--mapi_freebusyenumblock_restrict
--mapi_freebusyenumblock_skip
--mapi_freebusy_openmsg
--mapi_freebusysupport_close
--mapi_freebusysupport_loaddata
--mapi_freebusysupport_loadupdate
--mapi_freebusysupport_open
--mapi_freebusyupdate_publish
--mapi_freebusyupdate_reset
--mapi_freebusyupdate_savechanges
--mapi_icaltomapi2
--mapi_importcontentschanges_importmessagechange
--mapi_rules_gettable
--mapi_rules_modifytable
--mapi_vcftomapi2
--mapi_zarafa_getcompanylist
--mapi_zarafa_getgrouplist
--mapi_zarafa_getgrouplistofuser
--mapi_zarafa_getquota
--mapi_zarafa_getuser_by_id
--mapi_zarafa_getuser_by_name
--mapi_zarafa_getuserlist
--mapi_zarafa_getuserlistofgroup
--mapi_zarafa_setquota
-+mapi_folder_getrulestable
-+mapi_folder_modifyrules
-+mapi_getuseravailability
-+mapi_importcontentschanges_importmessagechange
-+mapi_linkmessage
-+mapi_logon_ex
-+mapi_openpropertytostream
-+mapi_table_createbookmark
-+mapi_table_findrow
-+mapi_table_freebookmark
-+nsp_getuserinfo
-+nsp_setuserpasswd
 .EE
 .in
 .SH See also
