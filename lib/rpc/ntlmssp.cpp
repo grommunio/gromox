@@ -206,7 +206,7 @@ static ssize_t ntlmssp_utf8_to_utf16le(const char *src, void *dst, size_t len)
 	len = std::min(len, static_cast<size_t>(SSIZE_MAX));
 	conv_id = iconv_open("UTF-16LE", "UTF-8");
 	if (conv_id == (iconv_t)-1) {
-		mlog(LV_ERR, "E-2112: iconv_open: %s\n", strerror(errno));
+		mlog(LV_ERR, "E-2112: iconv_open: %s", strerror(errno));
 		return -1;
 	}
 	auto pin  = deconst(src);
@@ -231,7 +231,7 @@ static bool ntlmssp_utf16le_to_utf8(const void *src, size_t src_len,
 
 	conv_id = iconv_open("UTF-8", "UTF-16LE");
 	if (conv_id == (iconv_t)-1) {
-		mlog(LV_ERR, "E-2113: iconv_open: %s\n", strerror(errno));
+		mlog(LV_ERR, "E-2113: iconv_open: %s", strerror(errno));
 		return false;
 	}
 	pin = (char*)src;
@@ -649,7 +649,7 @@ NTLMSSP_CTX *ntlmssp_init(const char *netbios_name, const char *dns_name,
 	pntlmssp->get_password = get_password;
 	return pntlmssp;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1645: ENOMEM\n");
+	mlog(LV_ERR, "E-1645: ENOMEM");
 	return nullptr;
 }
 

@@ -77,10 +77,10 @@ INT_HASH_TABLE::create(size_t max_items, size_t item_size) try
 {
 	return std::make_unique<INT_HASH_TABLE>(max_items, item_size);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1548: ENOMEM\n");
+	mlog(LV_ERR, "E-1548: ENOMEM");
 	return nullptr;
 } catch (const std::invalid_argument &e) {
-	mlog(LV_ERR, "E-1549: %s\n", e.what());
+	mlog(LV_ERR, "E-1549: %s", e.what());
 	return nullptr;
 }
 

@@ -77,7 +77,7 @@ bool PCL::append(const XID &zxid) try
 	emplace_back(zxid);
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1535: ENOMEM\n");
+	mlog(LV_ERR, "E-1535: ENOMEM");
 	return false;
 }
 
@@ -86,7 +86,7 @@ bool PCL::merge(PCL &&their_list) try
 	splice(end(), std::move(their_list));
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1536: ENOMEM\n");
+	mlog(LV_ERR, "E-1536: ENOMEM");
 	return false;
 }
 

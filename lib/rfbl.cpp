@@ -74,7 +74,7 @@ LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum, const char *name,
 	item_size(isize), max_items(inum), m_name(name), m_hint(hint)
 {
 	if (isize == 0 || inum == 0)
-		mlog(LV_ERR, "E-1669: Invalid parameters passed to LIB_BUFFER ctor\n");
+		mlog(LV_ERR, "E-1669: Invalid parameters passed to LIB_BUFFER ctor");
 }
 
 LIB_BUFFER &LIB_BUFFER::operator=(LIB_BUFFER &&o) noexcept
@@ -95,12 +95,12 @@ void *LIB_BUFFER::get_raw()
 		if (exp >= max_items) {
 			mlog(LV_ERR, "E-1992: The buffer pool \"%s\" is full. "
 			        "This either means a memory leak, or the pool sizes "
-			        "have been configured too low.\n",
+			        "have been configured too low.",
 			        znul(m_name));
 			if (m_hint != nullptr)
-				mlog(LV_INFO, "I-1993: Config directives that could be tuned: %s\n", m_hint);
+				mlog(LV_INFO, "I-1993: Config directives that could be tuned: %s", m_hint);
 			else
-				mlog(LV_INFO, "I-1994: Size is dynamic but not tunable.\n");
+				mlog(LV_INFO, "I-1994: Size is dynamic but not tunable.");
 			errno = ENOMEM;
 			return nullptr;
 		}
@@ -638,7 +638,7 @@ bool cu_validate_msgclass(const char *k)
 bool cpid_cstr_compatible(uint32_t cpid)
 {
 	if (cpid == 1200 || cpid == 1201 || cpid == 12000 || cpid == 12001) {
-		mlog(LV_ERR, "E-2103: CString conversion routine called with cpid %u\n", cpid);
+		mlog(LV_ERR, "E-2103: CString conversion routine called with cpid %u", cpid);
 		return false;
 	}
 	return true;
@@ -648,7 +648,7 @@ bool cset_cstr_compatible(const char *s)
 {
 	if (strncasecmp(s, "utf16", 5) == 0 || strncasecmp(s, "utf32", 5) == 0 ||
 	    strncasecmp(s, "utf-16", 6) == 0 || strncasecmp(s, "utf-32", 6) == 0) {
-		mlog(LV_ERR, "E-2104: CString conversion routine called with charset %s\n", s);
+		mlog(LV_ERR, "E-2104: CString conversion routine called with charset %s", s);
 		return false;
 	}
 	return true;
@@ -726,7 +726,7 @@ bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
 		gx_strlcpy(out, memb.asString().c_str(), outmax);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1988: ENOMEM\n");
+	mlog(LV_ERR, "E-1988: ENOMEM");
 	return false;
 }
 
@@ -744,7 +744,7 @@ set_digest2(char *json, size_t iomax, const char *key, T &&val) try
 	gx_strlcpy(json, Json::writeString(swb, std::move(jval)).c_str(), iomax);
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1989: ENOMEM\n");
+	mlog(LV_ERR, "E-1989: ENOMEM");
 	return false;
 }
 
@@ -856,7 +856,7 @@ int XARRAY::append(MITEM &&ptr, unsigned int tag) try
 	do {
 		auto exp = m_limit.load();
 		if (exp == 0) {
-			mlog(LV_ERR, "E-1995: XARRAY pool exhausted\n");
+			mlog(LV_ERR, "E-1995: XARRAY pool exhausted");
 			return -1;
 		}
 		auto nuval = exp - 1;

@@ -96,7 +96,7 @@ BOOL idset::append_internal(uint16_t replid, uint64_t value) try
 		range_list.emplace_back(value, value);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1613: ENOMEM\n");
+	mlog(LV_ERR, "E-1613: ENOMEM");
 	return false;
 }
 
@@ -160,7 +160,7 @@ BOOL idset::append_range(uint16_t replid,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1614: ENOMEM\n");
+	mlog(LV_ERR, "E-1614: ENOMEM");
 	return false;
 }
 
@@ -195,7 +195,7 @@ void idset::remove(uint64_t eid) try
 		}
 	}
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1615: ENOMEM\n");
+	mlog(LV_ERR, "E-1615: ENOMEM");
 }
 
 BOOL idset::concatenate(const IDSET *pset_src)
@@ -472,7 +472,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 				auto x = rop_util_gc_to_value(common_bytes);
 				globset.emplace_back(x, x);
 			} catch (const std::bad_alloc &) {
-				mlog(LV_ERR, "E-1616: ENOMEM\n");
+				mlog(LV_ERR, "E-1616: ENOMEM");
 				return 0;
 			}
 			/* MS-OXCFXICS 3.1.5.4.3.1.1 */
@@ -551,7 +551,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1618: ENOMEM\n");
+	mlog(LV_ERR, "E-1618: ENOMEM");
 	return 0;
 }
 
@@ -599,7 +599,7 @@ BOOL idset::deserialize(const BINARY *pbin) try
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1617: ENOMEM\n");
+	mlog(LV_ERR, "E-1617: ENOMEM");
 	return false;
 }
 
@@ -628,7 +628,7 @@ BOOL idset::convert() try
 	pset->b_serialize = true;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1619: ENOMEM\n");
+	mlog(LV_ERR, "E-1619: ENOMEM");
 	return false;
 }
 

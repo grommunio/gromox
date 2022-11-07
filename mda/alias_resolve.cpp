@@ -141,7 +141,7 @@ static BOOL xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 		temp_file.copy_to(ctrl->f_rcpt_to);
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_INFO, "E-1611: ENOMEM\n");
+	mlog(LV_INFO, "E-1611: ENOMEM");
 	return false;
 }
 
@@ -230,7 +230,7 @@ static BOOL xa_main(int reason, void **data)
 	try {
 		xa_thread = std::thread(xa_refresh_thread);
 	} catch (const std::system_error &e) {
-		mlog(LV_ERR, "alias_resolve: %s\n", e.what());
+		mlog(LV_ERR, "alias_resolve: %s", e.what());
 		return false;
 	}
 	return true;

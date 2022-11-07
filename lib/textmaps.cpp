@@ -288,7 +288,7 @@ const char *folder_namedb_resolve(const char *xpg_loc) try
 		return iter->first.c_str();
 	return nullptr;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1560: ENOMEM\n");
+	mlog(LV_ERR, "E-1560: ENOMEM");
 	return nullptr;
 }
 

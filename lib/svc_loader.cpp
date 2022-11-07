@@ -323,7 +323,7 @@ BOOL service_register_service(const char *func_name, void *addr,
 	plug->list_service.push_back(std::move(e));
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1637: ENOMEM\n");
+	mlog(LV_ERR, "E-1637: ENOMEM");
 	return false;
 }
 

@@ -723,7 +723,7 @@ int EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 	TRY(g_uint32(&r->flags));
 	TRY(g_guid(&g));
 	if (g != muidStoreWrap) {
-		mlog(LV_INFO, "I-1969: not a wrapuid\n");
+		mlog(LV_INFO, "I-1969: not a wrapuid");
 		return EXT_ERR_FORMAT;
 	}
 	TRY(g_uint8(&r->version));
