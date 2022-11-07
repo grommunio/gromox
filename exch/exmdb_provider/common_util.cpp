@@ -913,7 +913,7 @@ uint32_t common_util_get_folder_unread_count(
 		return 0;
 	auto have_read = pstmt.col_uint64(0);
 	if (have_read > count)
-		fprintf(stderr, "W-1665: fid %llxh inconsistent read states for %s: %lld > %lld\n",
+		mlog(LV_WARN, "W-1665: fid %llxh inconsistent read states for %s: %lld > %lld",
 		        LLU{folder_id}, username, LLU{have_read}, LLU{count});
 	return count - std::min(count, have_read);
 }
@@ -2535,7 +2535,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 	auto ret = sqlite3_step(pstmt);
 	if (ret != SQLITE_DONE)
-		fprintf(stderr, "W-1274: %s\n", sqlite3_errstr(ret));
+		mlog(LV_WARN, "W-1274: %s", sqlite3_errstr(ret));
 }
 
 static BOOL cu_update_object_cid(sqlite3 *psqlite, db_table table_type,
@@ -2633,7 +2633,7 @@ static BOOL common_util_set_message_body(
 	}
 	auto remove_file = make_scope_exit([&]() {
 		if (::remove(path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1382: remove %s: %s\n",
+			mlog(LV_WARN, "W-1382: remove %s: %s",
 			        path.c_str(), strerror(errno));
 	});
 	if (PROP_TYPE(proptag) == PT_UNICODE) {
@@ -2684,7 +2684,7 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
 	}
 	auto remove_file = make_scope_exit([&]() {
 		if (::remove(path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1389: remove %s: %s\n",
+			mlog(LV_WARN, "W-1389: remove %s: %s",
 			        path.c_str(), strerror(errno));
 	});
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
@@ -3262,7 +3262,7 @@ BOOL cu_remove_properties(db_table table_type, uint64_t id,
 			" AND proptag=?", LLU{id});
 		break;
 	default:
-		fprintf(stderr, "W-1594: %s undiscovered case\n", __func__);
+		mlog(LV_WARN, "W-1594: %s undiscovered case", __func__);
 		return false;
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);

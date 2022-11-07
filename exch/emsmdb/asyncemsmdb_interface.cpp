@@ -188,7 +188,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		    g_tag_hash.emplace(tmp_tag, pwait).second)
 			return DISPATCH_PENDING;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "W-1540: ENOMEM\n");
+		mlog(LV_WARN, "W-1540: ENOMEM");
 	}
 	if (async_id != 0)
 		g_async_hash.erase(async_id);

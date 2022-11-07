@@ -3,11 +3,14 @@
 #include <cstring>
 #include <gromox/lzxpress.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/util.hpp>
 #include "aux_ext.hpp"
 #include "aux_types.h"
 #include "common_util.h"
 #define AUX_ALIGN_SIZE									4
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
+
+using namespace gromox;
 
 static int aux_ext_pull_aux_perf_requestid(
 	EXT_PULL *pext, AUX_PERF_REQUESTID *r)
@@ -1056,7 +1059,7 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 			decompressed_len = lzxpress_decompress(pdata,
 				rpc_header_ext.size, buff, sizeof(buff));
 			if (decompressed_len != rpc_header_ext.size_actual) {
-				fprintf(stderr, "W-1098: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)\n",
+				mlog(LV_WARN, "W-1098: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)",
 				        rpc_header_ext.size, rpc_header_ext.size_actual,
 				        decompressed_len);
 				return EXT_ERR_LZXPRESS;

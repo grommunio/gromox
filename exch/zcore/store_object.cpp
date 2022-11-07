@@ -1270,7 +1270,7 @@ static void set_store_lang(store_object *store, const char *locale)
 		return;
 	auto lang = folder_namedb_resolve(locale);
 	if (lang == nullptr) {
-		fprintf(stderr, "W-1506: %s requested to set folder names to %s, but this language is unknown.\n",
+		mlog(LV_WARN, "W-1506: %s requested to set folder names to %s, but this language is unknown.",
 		        store->account, locale);
 	} else {
 		static constexpr unsigned int fids[] = {

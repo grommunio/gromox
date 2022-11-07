@@ -154,7 +154,7 @@ static void message_enqueue_cancel(FLUSH_ENTITY *pentity) try
     fclose((FILE*)pentity->pflusher->flush_ptr);
     pentity->pflusher->flush_ptr = NULL;
 	if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1399: remove %s: %s\n", file_name.c_str(), strerror(errno));
+		mlog(LV_WARN, "W-1399: remove %s: %s", file_name.c_str(), strerror(errno));
     pentity->pflusher->flush_ID = 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1528: ENOMEM");
@@ -370,7 +370,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	fclose(fp);
     pentity->pflusher->flush_ptr = NULL;
 	if (remove(name.c_str()) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1424: remove %s: %s\n", name.c_str(), strerror(errno));
+		mlog(LV_WARN, "W-1424: remove %s: %s", name.c_str(), strerror(errno));
 	return FALSE;
 }
 
@@ -407,7 +407,7 @@ static int message_enqueue_retrieve_max_ID() try
 			if (size != 0)
 				max_ID = temp_ID;
 			else if (remove(temp_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1421: remove %s: %s\n", temp_path.c_str(), strerror(errno));
+				mlog(LV_WARN, "W-1421: remove %s: %s", temp_path.c_str(), strerror(errno));
         } 
     }
     return max_ID;

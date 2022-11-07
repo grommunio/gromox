@@ -215,7 +215,7 @@ db_item_ptr db_engine_get_db(const char *path)
 			return NULL;
 		}
 		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_warning)
-			fprintf(stderr, "W-1620: contention on %s (%u uses)\n", path, refs);
+			mlog(LV_WARN, "W-1620: contention on %s (%u uses)", path, refs);
 		++pdb->reference;
 		hhold.unlock();
 		if (!pdb->giant_lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {

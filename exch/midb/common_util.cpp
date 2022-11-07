@@ -42,7 +42,7 @@ BOOL common_util_build_environment(const char *maildir) try
 	 */
 	if (++g_ctx_refcount > 1) {
 		if (*maildir != '\0' && strcmp(g_ctx_key->maildir, maildir) != 0)
-			fprintf(stderr, "W-1901: T%lu: g_ctx_key->maildir mismatch %s vs %s\n",
+			mlog(LV_WARN, "W-1901: T%lu: g_ctx_key->maildir mismatch %s vs %s",
 			        gx_gettid(), g_ctx_key->maildir, maildir);
 		return TRUE;
 	}
@@ -60,7 +60,7 @@ void common_util_free_environment()
 	if (--g_ctx_refcount > 0)
 		return;
 	if (g_ctx_key == nullptr) {
-		fprintf(stderr, "W-1902: T%lu: g_ctx_key already unset\n", gx_gettid());
+		mlog(LV_WARN, "W-1902: T%lu: g_ctx_key already unset", gx_gettid());
 		return;
 	}
 	g_ctx_key.reset();

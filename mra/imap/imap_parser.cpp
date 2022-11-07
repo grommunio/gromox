@@ -674,7 +674,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 				}
 				if (!pcontext->file_path.empty()) {
 					if (remove(pcontext->file_path.c_str()) != 0 && errno != ENOENT)
-						fprintf(stderr, "W-1474: remove %s: %s\n",
+						mlog(LV_WARN, "W-1474: remove %s: %s",
 						        pcontext->file_path.c_str(), strerror(errno));
 					pcontext->file_path.clear();
 				}
@@ -1016,7 +1016,7 @@ static int ps_end_processing(IMAP_CONTEXT *pcontext,
 	}
 	if (!pcontext->file_path.empty()) {
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1381: remove %s: %s\n",
+			mlog(LV_WARN, "W-1381: remove %s: %s",
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->file_path.clear();
 	}
@@ -1531,7 +1531,7 @@ imap_context::~imap_context()
 	}
 	if (!pcontext->file_path.empty())
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1351: chmod %s: %s\n",
+			mlog(LV_WARN, "W-1351: chmod %s: %s",
 				pcontext->file_path.c_str(), strerror(errno));
 }
 
@@ -1782,12 +1782,12 @@ void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t co
 	opt = fcntl(pcontext->connection.sockd, F_GETFL, 0);
 	opt &= (~O_NONBLOCK);
 	if (fcntl(pcontext->connection.sockd, F_SETFL, opt) < 0)
-		fprintf(stderr, "W-1365: fcntl: %s\n", strerror(errno));
+		mlog(LV_WARN, "W-1365: fcntl: %s", strerror(errno));
 	/* end of set mode */
 	pcontext->connection.write(pbuff, count);
 	/* set the socket back to non-block mode */
 	opt |= O_NONBLOCK;
 	if (fcntl(pcontext->connection.sockd, F_SETFL, opt) < 0)
-		fprintf(stderr, "W-1366: fcntl: %s\n", strerror(errno));
+		mlog(LV_WARN, "W-1366: fcntl: %s", strerror(errno));
 	/* end of set mode */
 }

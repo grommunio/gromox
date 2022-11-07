@@ -202,7 +202,7 @@ BOOL common_util_permanent_entryid_to_binary(
 		return FALSE;
 	memset(pbin->pb, 0, pbin->cb);
 	if (ppermeid->id_type != ENTRYID_TYPE_PERMANENT)
-		fprintf(stderr, "W-2040: %s: conversion of a non-permanent entryid attempted\n", __func__);
+		mlog(LV_WARN, "W-2040: %s: conversion of a non-permanent entryid attempted", __func__);
 	pbin->pb[0] = ppermeid->id_type;
 	pbin->pb[1] = ppermeid->r1;
 	pbin->pb[2] = ppermeid->r2;
@@ -229,7 +229,7 @@ BOOL common_util_ephemeral_entryid_to_binary(
 		return FALSE;
 	memset(pbin->pb, 0, pbin->cb);
 	if (pephid->id_type != ENTRYID_TYPE_EPHEMERAL)
-		fprintf(stderr, "W-2041: %s: conversion of a non-permanent entryid attempted\n", __func__);
+		mlog(LV_WARN, "W-2041: %s: conversion of a non-permanent entryid attempted", __func__);
 	pbin->pb[0] = pephid->id_type;
 	pbin->pb[1] = pephid->r1;
 	pbin->pb[2] = pephid->r2;

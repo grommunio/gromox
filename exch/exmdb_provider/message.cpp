@@ -3162,9 +3162,9 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 	if (!common_util_check_folder_id(psqlite, dst_fid, &b_exist))
 		return ecError;
 	if (!b_exist) {
-		fprintf(stderr, "W-1978: inbox \"%s\": while processing msgid %llxh (folder %llxh), "
+		mlog(LV_WARN, "W-1978: inbox \"%s\": while processing msgid %llxh (folder %llxh), "
 		        "an OP_MOVE/OP_COPY rule was disabled "
-		        "because target folder %llxh does not exist\n",
+		        "because target folder %llxh does not exist",
 		        znul(account), LLU{message_id}, LLU{folder_id}, LLU{dst_fid});
 		message_make_deferred_error_message(account,
 			psqlite, folder_id, message_id, prnode->id,

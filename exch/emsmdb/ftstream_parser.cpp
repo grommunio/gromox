@@ -376,7 +376,7 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 	if (atom_element == MetaTagIdsetGiven)
 		proptype = PT_BINARY;
 	if (propid == PROP_ID_INVALID)
-		fprintf(stderr, "W-1272: ftstream with PROP_ID_INVALID seen\n");
+		mlog(LV_WARN, "W-1272: ftstream with PROP_ID_INVALID seen");
 	if (is_nameprop_id(propid)) {
 		ppropname = ftstream_parser_read_property_name(pstream);
 		if (NULL == ppropname) {
@@ -812,7 +812,7 @@ static BOOL ftstream_parser_truncate_fd(
 		return TRUE;
 	}
 	if (lseek(pstream->fd, pstream->offset, SEEK_SET) < 0)
-		fprintf(stderr, "W-1425: lseek: %s\n", strerror(errno));
+		mlog(LV_WARN, "W-1425: lseek: %s", strerror(errno));
 	char buff[0x10000];
 	auto len = read(pstream->fd, buff, sizeof(buff));
 	if (len <= 0) {
@@ -900,5 +900,5 @@ fxstream_parser::~fxstream_parser()
 	close(pstream->fd);
 	if (pstream->path.size() > 0 && remove(pstream->path.c_str()) < 0 &&
 	    errno != ENOENT)
-		fprintf(stderr, "W-1392: remove %s: %s\n", pstream->path.c_str(), strerror(errno));
+		mlog(LV_WARN, "W-1392: remove %s: %s", pstream->path.c_str(), strerror(errno));
 }

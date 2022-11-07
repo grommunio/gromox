@@ -150,7 +150,7 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 			if (str != nullptr) {
 				auto ret = common_util_essdn_to_username(str, username, ulen);
 				if (!ret)
-					fprintf(stderr, "W-1642: Rejecting submission of msgid %llxh because user <%s> is not from this system\n",
+					mlog(LV_WARN, "W-1642: Rejecting submission of msgid %llxh because user <%s> is not from this system",
 					        static_cast<unsigned long long>(pmessage->message_id), str);
 				return ret;
 			}
@@ -171,7 +171,7 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 	if (eid != nullptr) {
 		auto ret = common_util_entryid_to_username(eid, username, ulen);
 		if (!ret)
-			fprintf(stderr, "W-1643: rejecting submission of msgid %llxh because its PR_SENT_REPRESENTING_ENTRYID does not reference a user in the local system\n",
+			mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because its PR_SENT_REPRESENTING_ENTRYID does not reference a user in the local system",
 			        static_cast<unsigned long long>(pmessage->message_id));
 		return ret;
 	}

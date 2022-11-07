@@ -628,7 +628,7 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 		if (!phpm_ctx->tmpfile.empty() &&
 		    unlink(phpm_ctx->tmpfile.c_str()) < 0 &&
 		    errno != ENOENT)
-			fprintf(stderr, "W-1347: remove %s: %s\n",
+			mlog(LV_WARN, "W-1347: remove %s: %s",
 			        phpm_ctx->tmpfile.c_str(), strerror(errno));
 	}
 	b_result = phpm_ctx->pinterface->proc(phttp->context_id,
@@ -672,7 +672,7 @@ void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 		if (!phpm_ctx->tmpfile.empty() &&
 		    unlink(phpm_ctx->tmpfile.c_str()) < 0 &&
 		    errno != ENOENT)
-			fprintf(stderr, "W-1369: remove %s: %s\n",
+			mlog(LV_WARN, "W-1369: remove %s: %s",
 			        phpm_ctx->tmpfile.c_str(), strerror(errno));
 	}
 	phpm_ctx->content_length = 0;

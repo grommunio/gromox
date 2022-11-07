@@ -167,10 +167,10 @@ static void *p3ls_thrwork(void *arg)
 		mlog(LV_DEBUG, "New connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
-			fprintf(stderr, "W-1405: fctnl: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1405: fctnl: %s", strerror(errno));
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			fprintf(stderr, "W-1339: setsockopt: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1339: setsockopt: %s", strerror(errno));
 		pcontext = (POP3_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
@@ -294,10 +294,10 @@ static void *p3ls_thrworkssl(void *arg)
 		mlog(LV_DEBUG, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
-			fprintf(stderr, "W-1406: fctnl: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1406: fctnl: %s", strerror(errno));
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			fprintf(stderr, "W-1407: setsockopt: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1407: setsockopt: %s", strerror(errno));
 		pcontext = (POP3_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {

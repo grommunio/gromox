@@ -232,7 +232,7 @@ void message_dequeue_put(MESSAGE *pmessage) try
 	pmessage->begin_address = NULL;
 	auto name = g_path_mess + "/" + std::to_string(pmessage->message_data);
 	if (remove(name.c_str()) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1352: remove %s: %s\n", name.c_str(), strerror(errno));
+		mlog(LV_WARN, "W-1352: remove %s: %s", name.c_str(), strerror(errno));
 	std::unique_lock h(g_hash_mutex);
 	g_mess_hash->remove(pmessage->message_data);
 	h.unlock();

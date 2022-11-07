@@ -1176,7 +1176,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 
 	ssize_t written_len = pcontext->write_length - pcontext->write_offset; /*int-int*/
 	if (written_len < 0)
-		fprintf(stderr, "W-1533: wl=%zd. report me.\n", written_len);
+		mlog(LV_WARN, "W-1533: wl=%zd. report me.", written_len);
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_OPENED) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
@@ -1188,7 +1188,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			written_len = pchannel_out->available_window;
 	}
 	if (pcontext->write_buff == nullptr && written_len > 0)
-		fprintf(stderr, "W-1534: wl=%zd. report me.\n", written_len);
+		mlog(LV_WARN, "W-1534: wl=%zd. report me.", written_len);
 	if (g_http_debug) {
 		auto s = static_cast<const char *>(pcontext->write_buff);
 		fprintf(stderr, ">> ctx %p send %zd\n%.*s\n>>-EOP\n", pcontext,

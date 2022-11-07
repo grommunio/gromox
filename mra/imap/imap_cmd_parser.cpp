@@ -2210,7 +2210,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (-1 != fd) {
 			close(fd);
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1370: remove %s: %s\n",
+				mlog(LV_WARN, "W-1370: remove %s: %s",
 				        eml_path.c_str(), strerror(errno));
 		}
 		return 1909;
@@ -2369,7 +2369,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	if (0 != fstat(pcontext->message_fd, &node_stat)) {
 		close(pcontext->message_fd);
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1342: remove %s: %s\n",
+			mlog(LV_WARN, "W-1342: remove %s: %s",
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->message_fd = -1;
 		pcontext->mid.clear();
@@ -2383,7 +2383,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		pbuff.reset();
 		close(pcontext->message_fd);
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1343: remove %s: %s\n",
+			mlog(LV_WARN, "W-1343: remove %s: %s",
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->message_fd = -1;
 		pcontext->mid.clear();
@@ -2398,7 +2398,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		imail.clear();
 		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1344: remove %s: %s\n",
+			mlog(LV_WARN, "W-1344: remove %s: %s",
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->mid.clear();
 		pcontext->file_path.clear();
@@ -2443,14 +2443,14 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		imail.clear();
 		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1345: remove %s: %s\n",
+			mlog(LV_WARN, "W-1345: remove %s: %s",
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->mid.clear();
 		pcontext->file_path.clear();
 		if (-1 != fd) {
 			close(fd);
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1346: remove %s: %s\n",
+				mlog(LV_WARN, "W-1346: remove %s: %s",
 				        eml_path.c_str(), strerror(errno));
 		}
 		return 1909;
@@ -2459,7 +2459,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	imail.clear();
 	pbuff.reset();
 	if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1336: remove %s: %s\n",
+		mlog(LV_WARN, "W-1336: remove %s: %s",
 			pcontext->file_path.c_str(), strerror(errno));
 	pcontext->file_path.clear();
 	auto ssr = system_services_insert_mail(pcontext->maildir, temp_name,
@@ -2567,7 +2567,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			continue;
 		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-2030: remove %s: %s\n",
+			mlog(LV_WARN, "W-2030: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
@@ -3203,7 +3203,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			continue;
 		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-2086: remove %s: %s\n",
+			mlog(LV_WARN, "W-2086: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
@@ -3306,7 +3306,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 				continue;
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-2087: remove %s: %s\n",
+				mlog(LV_WARN, "W-2087: remove %s: %s",
 				        eml_path.c_str(), strerror(errno));
 			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 			b_deleted = TRUE;

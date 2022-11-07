@@ -299,7 +299,7 @@ void pdu_processor_stop()
 	if (z > 0) {
 		/* http_parser_stop runs before pdu_processor_stop, so all
 		 * VIRTUAL_CONNECTION objects ought to be gone already. */
-		fprintf(stderr, "W-1573: %zu PDU_PROCESSORs remaining\n", z);
+		mlog(LV_WARN, "W-1573: %zu PDU_PROCESSORs remaining", z);
 		g_processor_list.clear();
 	}
 
