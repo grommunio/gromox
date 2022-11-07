@@ -70,6 +70,7 @@ struct seen_list {
 
 static ec_error_t message_rule_new_message(BOOL, const char *, const char *, uint32_t, sqlite3 *, uint64_t, uint64_t, const char *, seen_list &);
 
+static constexpr uint8_t fake_true = true;
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
 static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
 
@@ -1616,7 +1617,6 @@ static BOOL message_rectify_message(const char *account,
 	uint64_t nt_time;
 	EXT_PUSH ext_push;
 	char cid_string[256];
-	static constexpr uint8_t fake_true = true;
 	static constexpr uint32_t fake_int32 = 0;
 	static uint32_t fake_flags = MSGFLAG_UNMODIFIED; /* modified by cu_set_properties */
 	
@@ -3390,7 +3390,6 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 		propval.pvalue = &searchkey_bin;
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	}
-	static constexpr uint8_t fake_true = true;
 	TAGGED_PROPVAL propval;
 	propval.proptag = PR_DELEGATED_BY_RULE;
 	propval.pvalue = deconst(&fake_true);
@@ -3436,7 +3435,6 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
     const ACTION_BLOCK &block, size_t rule_idx,
     const RULE_NODE *prnode, BOOL &b_del, std::list<DAM_NODE> &dam_list)
 {
-	static const uint8_t fake_true = 1;
 	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY: {
@@ -3766,7 +3764,6 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 		propval.pvalue = &searchkey_bin;
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	}
-	static constexpr uint8_t fake_true = true;
 	TAGGED_PROPVAL propval;
 	propval.proptag = PR_DELEGATED_BY_RULE;
 	propval.pvalue = deconst(&fake_true);
@@ -3812,7 +3809,6 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
     const EXT_ACTION_BLOCK &block, size_t rule_idx,
     const RULE_NODE *prnode, BOOL &b_del)
 {
-	static constexpr uint8_t fake_true = 1;
 	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY:
@@ -4019,7 +4015,6 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	char display_name[1024];
 	MESSAGE_CONTENT tmp_msg;
 	char digest_buff[MAX_DIGLEN];
-	static const uint8_t fake_true = 1;
 	
 	if (NULL != pdigest && strlen(pdigest) >= MAX_DIGLEN) {
 		return FALSE;
