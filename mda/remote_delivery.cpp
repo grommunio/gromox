@@ -329,7 +329,7 @@ static errno_t rd_starttls(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
 	}
 	SSL_set_fd(conn.tls.get(), conn.fd);
 	if (SSL_connect(conn.tls.get()) != 1) {
-		fprintf(stderr, "W-1569: Could not TLS-connect to [%s]:%hu\n",
+		mlog(LV_WARN, "W-1569: Could not TLS-connect to [%s]:%hu",
 		        g_mx_host.c_str(), g_mx_port);
 		return EHOSTUNREACH;
 	}

@@ -183,10 +183,10 @@ static void *imls_thrwork(void *arg)
 		mlog(LV_DEBUG, "New connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
-			fprintf(stderr, "W-1416: fcntl: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1416: fcntl: %s", strerror(errno));
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			fprintf(stderr, "W-1417: setsockopt: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1417: setsockopt: %s", strerror(errno));
 		pcontext = (IMAP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
@@ -309,10 +309,10 @@ static void *imls_thrworkssl(void *arg)
 		mlog(LV_DEBUG, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
-			fprintf(stderr, "W-1418: fcntl: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1418: fcntl: %s", strerror(errno));
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			fprintf(stderr, "W-1419: setsockopt: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1419: setsockopt: %s", strerror(errno));
 		pcontext = (IMAP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {

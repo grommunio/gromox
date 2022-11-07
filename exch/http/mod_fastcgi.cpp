@@ -859,7 +859,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 				if (!phttp->pfast_context->tmpfile.empty() &&
 				    unlink(phttp->pfast_context->tmpfile.c_str()) < 0 &&
 				    errno != ENOENT)
-					fprintf(stderr, "W-1362: unlink %s: %s\n",
+					mlog(LV_WARN, "W-1362: unlink %s: %s",
 					        phttp->pfast_context->tmpfile.c_str(),
 					        strerror(errno));
 				break;
@@ -915,7 +915,7 @@ void mod_fastcgi_put_context(HTTP_CONTEXT *phttp)
 		phttp->pfast_context->cache_fd = -1;
 		if (!fc.tmpfile.empty() && unlink(fc.tmpfile.c_str()) < 0 &&
 		    errno != ENOENT)
-			fprintf(stderr, "W-1362: unlink %s: %s\n",
+			mlog(LV_WARN, "W-1362: unlink %s: %s",
 				fc.tmpfile.c_str(), strerror(errno));
 	}
 	if (phttp->pfast_context->cli_sockd != -1) {

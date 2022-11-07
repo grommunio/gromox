@@ -169,7 +169,7 @@ static int cu_test_delegate_perm_MD(const char *account,
 	auto path = maildir + std::string(send_as ? "/config/sendas.txt" : "/config/delegates.txt");
 	auto ret = read_file_by_line(path.c_str(), delegate_list);
 	if (ret != 0 && ret != ENOENT) {
-		fprintf(stderr, "W-2057: %s: %s\n", path.c_str(), strerror(ret));
+		mlog(LV_WARN, "W-2057: %s: %s", path.c_str(), strerror(ret));
 		return ret;
 	}
 	for (const auto &d : delegate_list)
@@ -452,7 +452,7 @@ void common_util_free_environment()
 	if (--g_env_refcount > 0)
 		return;
 	if (g_env_key == nullptr)
-		fprintf(stderr, "W-1908: T%lu: g_env_key already unset\n", gx_gettid());
+		mlog(LV_WARN, "W-1908: T%lu: g_env_key already unset", gx_gettid());
 	else
 		g_env_key.reset();
 }

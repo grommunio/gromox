@@ -403,7 +403,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	if (!pmail->to_file(fd)) {
 		close(fd);
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1386: remove %s: %s\n",
+			mlog(LV_WARN, "W-1386: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
@@ -420,7 +420,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	
 	if (result <= 0) {
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1387: remove %s: %s\n",
+			mlog(LV_WARN, "W-1387: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
@@ -444,7 +444,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	if (NULL == pmsg) {
 		g_alloc_key = nullptr;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1388: remove %s: %s\n",
+			mlog(LV_WARN, "W-1388: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext, address, LV_ERR, "fail "
 			"to convert rfc5322 into MAPI message object");

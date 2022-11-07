@@ -3523,7 +3523,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK) {
 			sqlite3_close(psqlite);
 			if (remove(tmp_path) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1348: remove %s: %s\n", tmp_path, strerror(errno));
+				mlog(LV_WARN, "W-1348: remove %s: %s", tmp_path, strerror(errno));
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "CREATE UNIQUE INDEX state_index"

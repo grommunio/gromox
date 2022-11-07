@@ -1010,7 +1010,7 @@ bool mysql_adaptor_check_user(const char *username, char *path, size_t dsize) tr
 	if (pmyres.num_rows() == 0) {
 		return false;
 	} else if (pmyres.num_rows() > 1) {
-		fprintf(stderr, "W-1510: userdb conflict: <%s> is in both \"users\" and \"aliases\"\n", username);
+		mlog(LV_WARN, "W-1510: userdb conflict: <%s> is in both \"users\" and \"aliases\"", username);
 		return false;
 	}
 	auto myrow = pmyres.fetch_row();

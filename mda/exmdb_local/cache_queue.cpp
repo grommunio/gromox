@@ -132,7 +132,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	    write(fd.get(), &enc_origtime, sizeof(enc_origtime)) != sizeof(enc_origtime)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1353: remove %s: %s\n",
+			mlog(LV_WARN, "W-1353: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
@@ -142,7 +142,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 		printf("[exmdb_local]: fail to get mail length\n");
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1354: remove %s: %s\n",
+			mlog(LV_WARN, "W-1354: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
@@ -150,7 +150,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (write(fd.get(), &len, sizeof(len)) != sizeof(len)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1355: remove %s: %s\n",
+			mlog(LV_WARN, "W-1355: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
@@ -165,7 +165,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	    write(fd.get(), &enc_bounce, sizeof(enc_bounce)) != sizeof(enc_bounce)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1356: remove %s: %s\n",
+			mlog(LV_WARN, "W-1356: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
     }
@@ -175,7 +175,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1357: remove %s: %s\n",
+			mlog(LV_WARN, "W-1357: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
     }
@@ -185,7 +185,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1358: remove %s: %s\n",
+			mlog(LV_WARN, "W-1358: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
 		return -1;
     }
@@ -193,7 +193,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (write(fd.get(), "", 1) != 1) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1359: remove %s: %s\n",
+			mlog(LV_WARN, "W-1359: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
@@ -202,7 +202,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (write(fd.get(), &enc_times, sizeof(enc_times)) != sizeof(enc_times)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1360: remove %s: %s\n",
+			mlog(LV_WARN, "W-1360: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
@@ -316,7 +316,7 @@ static void *mdl_thrwork(void *arg)
 			mess_len = le32_to_cpu(mess_len);
 			size_t size = node_stat.st_size - sizeof(time_t) - 2 * sizeof(uint32_t);
 			if (size < mess_len) {
-				fprintf(stderr, "W-1554: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1554: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
 			auto pbuff = me_alloc<char>(((size - 1) / (64 * 1024) + 1) * 64 * 1024);
@@ -340,28 +340,28 @@ static void *mdl_thrwork(void *arg)
 			ptr = pbuff + mess_len; /* to hell with this bullcrap */
 			size -= mess_len;
 			if (size < sizeof(uint32_t)) {
-				fprintf(stderr, "W-1555: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1555: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
 			pcontext->pcontrol->queue_ID = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
-				fprintf(stderr, "W-1556: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1556: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
 			pcontext->pcontrol->bound_type = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
-				fprintf(stderr, "W-1557: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1557: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
 			pcontext->pcontrol->is_spam = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
-				fprintf(stderr, "W-1558: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1558: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
 			pcontext->pcontrol->need_bounce = le32p_to_cpu(ptr);
@@ -369,7 +369,7 @@ static void *mdl_thrwork(void *arg)
 			size -= sizeof(uint32_t);
 
 			if (size == 0)
-				fprintf(stderr, "W-1559: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1559: garbage in %s; review and delete", temp_path.c_str());
 			auto zlen = strnlen(ptr, size);
 			if (zlen > INT32_MAX)
 				zlen = INT32_MAX;
@@ -380,17 +380,17 @@ static void *mdl_thrwork(void *arg)
 			ptr += zlen;
 			size -= zlen;
 			if (size == 0 || *ptr != '\0')
-				fprintf(stderr, "W-1570: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1570: garbage in %s; review and delete", temp_path.c_str());
 			++ptr;
 			--size;
 
 			if (size == 0)
-				fprintf(stderr, "W-1590: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1590: garbage in %s; review and delete", temp_path.c_str());
 			zlen = strnlen(ptr, size);
 			/* Need \0 for going on */
 			int deliv_ret;
 			if (zlen == size) {
-				fprintf(stderr, "W-1591: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1591: garbage in %s; review and delete", temp_path.c_str());
 				deliv_ret = DELIVERY_OPERATION_ERROR;
 			} else {
 				pcontext->pcontrol->f_rcpt_to.clear();
@@ -450,7 +450,7 @@ static void *mdl_thrwork(void *arg)
 			}
 			fd.close();
 			if (need_remove && remove(temp_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1432: remove %s: %s\n",
+				mlog(LV_WARN, "W-1432: remove %s: %s",
 				        temp_path.c_str(), strerror(errno));
 			need_bounce &= pcontext->pcontrol->need_bounce;
 			

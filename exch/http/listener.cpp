@@ -180,10 +180,10 @@ static void *htls_thrwork(void *arg)
 		mlog(LV_DEBUG, "New connection from [%s]:%hu",
 			client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
-			fprintf(stderr, "W-1408: fcntl: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1408: fcntl: %s", strerror(errno));
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			fprintf(stderr, "W-1409: setsockopt: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1409: setsockopt: %s", strerror(errno));
 		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
@@ -193,7 +193,7 @@ static void *htls_thrwork(void *arg)
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1984: write: %s\n", strerror(errno));
+				mlog(LV_WARN, "W-1984: write: %s", strerror(errno));
 			close(sockd2);
 			continue;
 		}
@@ -206,7 +206,7 @@ static void *htls_thrwork(void *arg)
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1983: write: %s\n", strerror(errno));
+				mlog(LV_WARN, "W-1983: write: %s", strerror(errno));
 			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
@@ -222,7 +222,7 @@ static void *htls_thrwork(void *arg)
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1982: write: %s\n", strerror(errno));
+				mlog(LV_WARN, "W-1982: write: %s", strerror(errno));
 			mlog(LV_DEBUG, "Connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
@@ -299,10 +299,10 @@ static void *htls_thrworkssl(void *arg)
 		mlog(LV_DEBUG, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
-			fprintf(stderr, "W-1410: fcntl: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1410: fcntl: %s", strerror(errno));
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			fprintf(stderr, "W-1411: setsockopt: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1411: setsockopt: %s", strerror(errno));
 		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
@@ -312,7 +312,7 @@ static void *htls_thrworkssl(void *arg)
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1981: write: %s\n", strerror(errno));
+				mlog(LV_WARN, "W-1981: write: %s", strerror(errno));
 			close(sockd2);
 			continue;
 		}
@@ -325,7 +325,7 @@ static void *htls_thrworkssl(void *arg)
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1980: write: %s\n", strerror(errno));
+				mlog(LV_WARN, "W-1980: write: %s", strerror(errno));
 			mlog(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
@@ -341,7 +341,7 @@ static void *htls_thrworkssl(void *arg)
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1979: write: %s\n", strerror(errno));
+				mlog(LV_WARN, "W-1979: write: %s", strerror(errno));
 			mlog(LV_DEBUG, "TLS connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);

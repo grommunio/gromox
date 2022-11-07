@@ -593,7 +593,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 	}
 	pdomain ++;
 	if (!get_domain_ids(pdomain, &domain_id, &org_id)) {
-		fprintf(stderr, "W-2176: could not satisfy nsp_bind request for domain %s: not found\n", pdomain);
+		mlog(LV_WARN, "W-2176: could not satisfy nsp_bind request for domain %s: not found", pdomain);
 		phandle->handle_type = HANDLE_EXCHANGE_NSP;
 		memset(&phandle->guid, 0, sizeof(GUID));
 		return ecError;

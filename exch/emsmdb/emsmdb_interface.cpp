@@ -311,7 +311,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	HX_strlower(temp_handle.username);
 	std::unique_lock gl_hold(g_lock);
 	if (g_handle_hash.size() >= g_handle_hash_max) {
-		fprintf(stderr, "W-1577: g_handle_hash is full\n");
+		mlog(LV_WARN, "W-1577: g_handle_hash is full");
 		return FALSE;
 	}
 	temp_handle.info.plogmap = rop_processor_create_logmap();
@@ -345,7 +345,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		}
 	} else {
 		if (uh_iter->second.size() >= emsmdb_max_cxh_per_user) {
-			fprintf(stderr, "W-1580: user %s reached maximum CXH (%u)\n",
+			mlog(LV_WARN, "W-1580: user %s reached maximum CXH (%u)",
 			        phandle->username, emsmdb_max_cxh_per_user);
 			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
@@ -898,7 +898,7 @@ void emsmdb_interface_add_table_notify(const char *dir,
 		if (g_notify_hash.size() < g_notify_hash_max)
 			g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "W-1541: ENOMEM\n");
+		mlog(LV_WARN, "W-1541: ENOMEM");
 	}
 }
 
@@ -946,7 +946,7 @@ void emsmdb_interface_add_subscription_notify(const char *dir,
 		if (g_notify_hash.size() < g_notify_hash_max)
 			g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "W-1542: ENOMEM\n");
+		mlog(LV_WARN, "W-1542: ENOMEM");
 	}
 }
 

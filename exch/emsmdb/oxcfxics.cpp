@@ -1363,7 +1363,7 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	
 	if (ppropvals->count != 1 ||
 	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PT_MV_BINARY) {
-		fprintf(stderr, "W-2150: importdeletes exptected proptype 0102h, but got tag %xh\n",
+		mlog(LV_WARN, "W-2150: importdeletes exptected proptype 0102h, but got tag %xh",
 		        ppropvals->ppropval[0].proptag);
 		return ecInvalidParam;
 	}
@@ -1408,8 +1408,8 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	}
 	for (size_t i = 0; i < pbins->count; ++i) {
 		if (22 != pbins->pbin[i].cb) {
-			fprintf(stderr, "W-2151: importdeletes expected 22-byte XID, "
-			        "but got a %u-long object instead\n", pbins->pbin[i].cb);
+			mlog(LV_WARN, "W-2151: importdeletes expected 22-byte XID, "
+ 			        "but got a %u-long object instead", pbins->pbin[i].cb);
 			return ecInvalidParam;
 		}
 		if (!common_util_binary_to_xid(&pbins->pbin[i], &tmp_xid))
@@ -1417,7 +1417,7 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		if (plogon->is_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 			if (tmp_guid != tmp_xid.guid) {
-				fprintf(stderr, "W-2152: importdeletes expected store %s but got store+XID %s\n",
+				mlog(LV_WARN, "W-2152: importdeletes expected store %s but got store+XID %s",
 				        bin2hex(&tmp_guid, sizeof(tmp_guid)).c_str(),
 				        bin2hex(&tmp_xid, tmp_xid.size).c_str());
 				return ecInvalidParam;
@@ -1426,7 +1426,7 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		} else if (sync_type == SYNC_TYPE_CONTENTS) {
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 			if (tmp_guid != tmp_xid.guid) {
-				fprintf(stderr, "W-2153: importdeletes expected store %s but got store+XID %s\n",
+				mlog(LV_WARN, "W-2153: importdeletes expected store %s but got store+XID %s",
 				        bin2hex(&tmp_guid, sizeof(tmp_guid)).c_str(),
 				        bin2hex(&tmp_xid, tmp_xid.size).c_str());
 				return ecInvalidParam;

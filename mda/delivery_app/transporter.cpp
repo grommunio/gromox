@@ -602,7 +602,7 @@ static void *dxp_scanwork(void *arg)
 			double_list_append_as_tail(&g_threads_list, &pthr_data->node);
 			tl_hold.unlock();
 		} else {
-			fprintf(stderr, "W-1446: pthread_create: %s\n", strerror(ret));
+			mlog(LV_WARN, "W-1446: pthread_create: %s", strerror(ret));
 			tl_hold.lock();
 			double_list_append_as_tail(&g_free_threads, &pthr_data->node);
 			tl_hold.unlock();
