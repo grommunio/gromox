@@ -44,6 +44,8 @@
 
 #define HGROWING_SIZE					250
 
+using namespace gromox;
+
 static int g_scan_interval;
 static pthread_t g_scan_id;
 static int g_average_handles;
@@ -150,7 +152,7 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 		g_logon_hash.emplace(rlogon->get_dir(), 1);
 	return handle;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1974: ENOMEM\n");
+	mlog(LV_ERR, "E-1974: ENOMEM");
 	return -1;
 }
 
@@ -225,7 +227,7 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	}
 	return pobjnode->handle;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1975: ENOMEM\n");
+	mlog(LV_ERR, "E-1975: ENOMEM");
 	return -1;
 }
 

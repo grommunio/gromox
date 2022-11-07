@@ -389,7 +389,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		eml_path = std::string(home_dir) + "/eml/" + mid_string;
 		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, DEF_MODE);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1472: ENOMEM\n");
+		mlog(LV_ERR, "E-1472: ENOMEM");
 	}
 	if (-1 == fd) {
 		if (NULL != pcontext1) {

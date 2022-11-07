@@ -109,7 +109,7 @@ object_tree_init_root(const char *maildir) try
 	}
 	return prootobj;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1099: ENOMEM\n");
+	mlog(LV_ERR, "E-1099: ENOMEM");
 	return nullptr;
 }
 

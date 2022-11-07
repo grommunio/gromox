@@ -324,7 +324,7 @@ static errno_t rd_starttls(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
 	}
 	conn.tls.reset(SSL_new(g_tls_ctx.get()));
 	if (conn.tls == nullptr) {
-		fprintf(stderr, "E-1553: Could not create local TLS context\n");
+		mlog(LV_ERR, "E-1553: Could not create local TLS context");
 		return EHOSTUNREACH;
 	}
 	SSL_set_fd(conn.tls.get(), conn.fd);
@@ -375,7 +375,7 @@ static BOOL remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 		if (ret == 0)
 			return TRUE;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1552: ENOMEM\n");
+		mlog(LV_ERR, "E-1552: ENOMEM");
 		return false;
 	}
 

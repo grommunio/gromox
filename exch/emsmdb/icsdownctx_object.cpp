@@ -15,6 +15,7 @@
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
@@ -23,6 +24,8 @@
 #include "ics_state.h"
 #include "icsdownctx_object.h"
 #include "logon_object.h"
+
+using namespace gromox;
 
 enum {
 	FUNC_ID_UINT32,
@@ -41,7 +44,7 @@ bool ics_flow_list::record_node(uint8_t func_id, const void *param) try
 	emplace_back(func_id, param);
 	return true;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1598: ENOMEM\n");
+	mlog(LV_ERR, "E-1598: ENOMEM");
 	return false;
 }
 
@@ -61,7 +64,7 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 	try {
 		pctx.reset(new icsdownctx_object);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1454: ENOMEM\n");
+		mlog(LV_ERR, "E-1454: ENOMEM");
 		return NULL;
 	}
 	pctx->pstate = ics_state::create(plogon, state_type);
@@ -740,7 +743,7 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 		try {
 			pctx->group_list.push_back(group_id);
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1597: ENOMEM\n");
+			mlog(LV_ERR, "E-1597: ENOMEM");
 			return false;
 		}
 	}

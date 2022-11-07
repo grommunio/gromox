@@ -89,7 +89,7 @@ static bool fxstream_producer_open(fxstream_producer &p)
 	p.fd = open_tmpfile(path, &p.path, O_RDWR | O_TRUNC);
 	if (p.fd >= 0)
 		return true;
-	fprintf(stderr, "E-1338: open{%s, %s}: %s\n", path, p.path.c_str(),
+	mlog(LV_ERR, "E-1338: open{%s, %s}: %s", path, p.path.c_str(),
 	        strerror(errno));
 	return false;
 }
@@ -871,7 +871,7 @@ ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 {
 	auto path = LOCAL_DISK_TMPDIR;
 	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
-		fprintf(stderr, "E-1422: mkdir %s: %s\n", path, strerror(errno));
+		mlog(LV_ERR, "E-1422: mkdir %s: %s", path, strerror(errno));
 		return nullptr;
 	}
 	std::unique_ptr<ftstream_producer> pstream(new ftstream_producer);
@@ -879,7 +879,7 @@ ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 	pstream->string_option = string_option;
 	return pstream;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1452: ENOMEM\n");
+	mlog(LV_ERR, "E-1452: ENOMEM");
 	return nullptr;
 }
 

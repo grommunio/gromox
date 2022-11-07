@@ -658,7 +658,7 @@ int transporter_load_library(const char* path)
 		auto altpath = std::string(g_path) + "/" + path;
 		handle = dlopen(altpath.c_str(), RTLD_LAZY);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1473: ENOMEM\n");
+		mlog(LV_ERR, "E-1473: ENOMEM");
 		return PLUGIN_FAIL_OPEN;
 	}
     if (NULL == handle){

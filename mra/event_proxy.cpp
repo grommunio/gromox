@@ -106,7 +106,7 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 		for (i = 0; i < conn_num; ++i) try {
 			g_lost_list.emplace_back();
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1657: ENOMEM\n");
+			mlog(LV_ERR, "E-1657: ENOMEM");
 		}
 
 		g_notify_stop = false;

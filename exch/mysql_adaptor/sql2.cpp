@@ -20,6 +20,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/util.hpp>
 #include "sql2.hpp"
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 
@@ -380,7 +381,7 @@ errno_t mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
 			hints.push_back(strtoul(row[0], nullptr, 0));
 	return 0;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1638: ENOMEM\n");
+	mlog(LV_ERR, "E-1638: ENOMEM");
 	return ENOMEM;
 }
 
@@ -398,7 +399,7 @@ static int mysql_adaptor_domain_list_query(const char *domain) try
 		return -ENOMEM;
 	return res.fetch_row() != nullptr;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1647: ENOMEM\n");
+	mlog(LV_ERR, "E-1647: ENOMEM");
 	return -ENOMEM;
 }
 

@@ -1064,14 +1064,14 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 						auto eml_path = std::string(pcontext->maildir) + "/eml/" + (last_line + 8);
 						pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
 					} catch (const std::bad_alloc &) {
-						fprintf(stderr, "E-1466: ENOMEM\n");
+						mlog(LV_ERR, "E-1466: ENOMEM");
 					}
 					if (-1 == pcontext->message_fd) {
 						strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
 						pcontext->write_length += 3;
 					} else {
 						if (lseek(pcontext->message_fd, strtol(ptr + 1, nullptr, 0), SEEK_SET) < 0)
-							fprintf(stderr, "E-1426: lseek: %s\n", strerror(errno));
+							mlog(LV_ERR, "E-1426: lseek: %s", strerror(errno));
 						pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
 						pcontext->current_len = 0;
 						len = MAX_LINE_LENGTH - pcontext->write_length;
@@ -1110,14 +1110,14 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 						auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + (last_line + 10);
 						pcontext->message_fd = open(rfc_path.c_str(), O_RDONLY);
 					} catch (const std::bad_alloc &) {
-						fprintf(stderr, "E-1467: ENOMEM\n");
+						mlog(LV_ERR, "E-1467: ENOMEM");
 					}
 					if (-1 == pcontext->message_fd) {
 						strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
 						pcontext->write_length += 3;
 					} else {
 						if (lseek(pcontext->message_fd, strtol(ptr + 1, nullptr, 0), SEEK_SET) < 0)
-							fprintf(stderr, "E-1427: lseek: %s\n", strerror(errno));
+							mlog(LV_ERR, "E-1427: lseek: %s", strerror(errno));
 						pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
 						pcontext->current_len = 0;
 						len = MAX_LINE_LENGTH - pcontext->write_length;
@@ -1229,7 +1229,7 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 		           pcontext->selected_folder + " " + mid_string;
 		system_services_broadcast_event(buf.c_str());
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1468: ENOMEM\n");
+		mlog(LV_ERR, "E-1468: ENOMEM");
 	}
 }
 

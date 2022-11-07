@@ -16,6 +16,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "objects.hpp"
@@ -915,7 +916,7 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 			auto dlg_path = pfolder->pstore->get_dir() + "/config/delegates.txt"s;
 			fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1491: ENOMEM\n");
+			mlog(LV_ERR, "E-1491: ENOMEM");
 		}
 		if (-1 != fd) {
 			if (b_delegate) {

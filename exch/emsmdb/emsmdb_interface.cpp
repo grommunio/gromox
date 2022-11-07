@@ -324,7 +324,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		auto xp = g_handle_hash.emplace(temp_handle.guid, std::move(temp_handle));
 		phandle = &xp.first->second;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1578: ENOMEM\n");
+		mlog(LV_ERR, "E-1578: ENOMEM");
 		return false;
 	}
 	auto uh_iter = g_user_hash.find(phandle->username);
@@ -340,7 +340,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		} catch (const std::bad_alloc &) {
 			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
-			fprintf(stderr, "E-1579: ENOMEM\n");
+			mlog(LV_ERR, "E-1579: ENOMEM");
 			return FALSE;
 		}
 	} else {
@@ -825,7 +825,7 @@ BOOL emsmdb_interface_alloc_handle_number(uint32_t *pnum)
 		return FALSE;
 	}
 	if (phandle->last_handle >= INT32_MAX) {
-		fprintf(stderr, "E-2139: Very long lived connection, awkward situation - I am not implemented!\n");
+		mlog(LV_ERR, "E-2139: Very long lived connection, awkward situation - I am not implemented!");
 		return false;
 	}
 	*pnum = phandle->last_handle++;
@@ -1235,7 +1235,7 @@ static void *emsi_scanwork(void *pparam)
 			if (cur_time - phandle->last_time > HANDLE_VALID_INTERVAL) try {
 				temp_list.push_back(guid);
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1624: ENOMEM\n");
+				mlog(LV_ERR, "E-1624: ENOMEM");
 				continue;
 			}
 		}

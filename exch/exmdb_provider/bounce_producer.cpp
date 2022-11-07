@@ -140,7 +140,7 @@ BOOL bounce_producer_refresh(const char *data_path) try
 	std::swap(g_resource_list, resource_list);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1502: ENOMEM\n");
+	mlog(LV_ERR, "E-1502: ENOMEM");
 	return false;
 }
 

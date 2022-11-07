@@ -4,6 +4,7 @@
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "logon_object.h"
@@ -432,7 +433,7 @@ uint32_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 			 * way to add entries. At what time do entries vivify
 			 * anyway?
 			 */
-			fprintf(stderr, "E-2141: public folder LT/REPL mapping not really implemented\n");
+			mlog(LV_ERR, "E-2141: public folder LT/REPL mapping not really implemented");
 			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
 			    replid, &b_found, &plong_term_id->guid))
 				return ecError;
@@ -471,7 +472,7 @@ uint32_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
 	if (domain_id == plogon->account_id) {
 		replid = 1;
 	} else {
-		fprintf(stderr, "E-2142: public folder LT/REPL mapping not really implemented\n");
+		mlog(LV_ERR, "E-2142: public folder LT/REPL mapping not really implemented");
 		if (!common_util_check_same_org(domain_id, plogon->account_id))
 			return ecInvalidParam;
 		if (!exmdb_client_get_mapping_replid(plogon->get_dir(),

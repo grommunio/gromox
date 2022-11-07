@@ -223,7 +223,7 @@ static void *zcorezs_scanwork(void *param)
 				try {
 					maildir_list.push_back(pinfo->get_maildir());
 				} catch (const std::bad_alloc &) {
-					fprintf(stderr, "E-2178: ENOMEM\n");
+					mlog(LV_ERR, "E-2178: ENOMEM");
 					++iter;
 					continue;
 				}
@@ -1288,7 +1288,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 				std::make_move_iterator(temp_list.begin()),
 				std::make_move_iterator(temp_list.end()));
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1679: ENOMEM\n");
+			mlog(LV_ERR, "E-1679: ENOMEM");
 			return ecServerOOM;
 		}
 	}
@@ -2558,7 +2558,7 @@ uint32_t zarafa_server_unadvise(GUID hsession, uint32_t hstore,
 	g_notify_table.erase(std::move(tmp_buf));
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1498: ENOMEM\n");
+	mlog(LV_ERR, "E-1498: ENOMEM");
 	return ecServerOOM;
 }
 
@@ -2584,7 +2584,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 			tmp_buf = std::to_string(psink->padvise[i].sub_id) +
 			          "|" + pstore->get_dir();
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1496: ENOMEM\n");
+			mlog(LV_ERR, "E-1496: ENOMEM");
 			continue;
 		}
 		std::unique_lock nl_hold(g_notify_lock);
@@ -2622,7 +2622,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 	try {
 		holder.emplace_back();
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-2179: ENOMEM\n");
+		mlog(LV_ERR, "E-2179: ENOMEM");
 		return false;
 	}
 	auto psink_node = &holder.front();

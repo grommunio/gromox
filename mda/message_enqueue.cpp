@@ -157,7 +157,7 @@ static void message_enqueue_cancel(FLUSH_ENTITY *pentity) try
 		fprintf(stderr, "W-1399: remove %s: %s\n", file_name.c_str(), strerror(errno));
     pentity->pflusher->flush_ID = 0;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1528: ENOMEM\n");
+	mlog(LV_ERR, "E-1528: ENOMEM");
 }
 
 static int message_enqueue_stop()
@@ -220,7 +220,7 @@ static BOOL message_enqueue_check() try
     }
     return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1530: ENOMEM\n");
+	mlog(LV_ERR, "E-1530: ENOMEM");
 	return false;
 }
 
@@ -267,7 +267,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	try {
 		name = g_path + "/mess/"s + std::to_string(pentity->pflusher->flush_ID);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1529: ENOMEM\n");
+		mlog(LV_ERR, "E-1529: ENOMEM");
 		return false;
 	}
 	uint64_t mess_len = 0;
@@ -412,7 +412,7 @@ static int message_enqueue_retrieve_max_ID() try
     }
     return max_ID;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1532: ENOMEM\n");
+	mlog(LV_ERR, "E-1532: ENOMEM");
 	return 0;
 }
 

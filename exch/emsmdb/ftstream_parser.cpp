@@ -877,20 +877,20 @@ std::unique_ptr<ftstream_parser> ftstream_parser::create(logon_object *plogon) t
 {
 	auto path = LOCAL_DISK_TMPDIR;
 	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
-		fprintf(stderr, "E-1428: mkdir %s: %s\n", path, strerror(errno));
+		mlog(LV_ERR, "E-1428: mkdir %s: %s", path, strerror(errno));
 		return nullptr;
 	}
 	std::unique_ptr<ftstream_parser> pstream(new ftstream_parser);
 	pstream->fd = open_tmpfile(path, &pstream->path, O_RDWR | O_TRUNC);
 	if (pstream->fd < 0) {
-		fprintf(stderr, "E-1668: open{%s, %s}: %s\n", path,
+		mlog(LV_ERR, "E-1668: open{%s, %s}: %s", path,
 		        pstream->path.c_str(), strerror(-pstream->fd));
 		return nullptr;
 	}
 	pstream->plogon = plogon;
 	return pstream;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1450: ENOMEM\n");
+	mlog(LV_ERR, "E-1450: ENOMEM");
 	return nullptr;
 }
 

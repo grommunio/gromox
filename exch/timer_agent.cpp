@@ -90,7 +90,7 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 		for (size_t i = 0; i < conn_num; ++i) try {
 			g_lost_list.emplace_back();
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1655: ENOMEM\n");
+			mlog(LV_ERR, "E-1655: ENOMEM");
 		}
 
 		g_notify_stop = false;

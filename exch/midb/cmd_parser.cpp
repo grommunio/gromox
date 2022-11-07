@@ -66,7 +66,7 @@ std::list<midb_conn> cmd_parser_get_connection() try
 	holder.emplace_back();
 	return holder;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1985: ENOMEM\n");
+	mlog(LV_ERR, "E-1985: ENOMEM");
 	return {};
 }
 

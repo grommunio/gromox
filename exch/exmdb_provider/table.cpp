@@ -3175,7 +3175,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	}
 	return FALSE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2042: ENOMEM\n");
+	mlog(LV_ERR, "E-2042: ENOMEM");
 	return false;
 }
 
@@ -3505,7 +3505,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		close(tfd);
 		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
-			fprintf(stderr, "E-1435: sqlite3_open %s: %s\n", tmp_path, sqlite3_errstr(ret));
+			mlog(LV_ERR, "E-1435: sqlite3_open %s: %s", tmp_path, sqlite3_errstr(ret));
 			return FALSE;
 		}
 		gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
@@ -3536,13 +3536,13 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	} else if (errno == EEXIST) {
 		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
-			fprintf(stderr, "E-1436: sqlite3_open %s: %s\n", tmp_path, sqlite3_errstr(ret));
+			mlog(LV_ERR, "E-1436: sqlite3_open %s: %s", tmp_path, sqlite3_errstr(ret));
 			return FALSE;
 		}
 		gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
 		gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
 	} else {
-		fprintf(stderr, "E-1943: open %s: %s\n", tmp_path, strerror(errno));
+		mlog(LV_ERR, "E-1943: open %s: %s", tmp_path, strerror(errno));
 		return false;
 	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
@@ -3804,7 +3804,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	sqlite3 *psqlite = nullptr;
 	auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
-		fprintf(stderr, "E-1437: sqlite3_open %s: %s\n", tmp_path, sqlite3_errstr(ret));
+		mlog(LV_ERR, "E-1437: sqlite3_open %s: %s", tmp_path, sqlite3_errstr(ret));
 		return FALSE;
 	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });

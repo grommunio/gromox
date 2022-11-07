@@ -62,7 +62,7 @@ static BOOL store_object_cache_propname(store_object *pstore,
 	pstore->propname_hash.emplace(s, propid);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1634: ENOMEM\n");
+	mlog(LV_ERR, "E-1634: ENOMEM");
 	return false;
 }
 
@@ -331,7 +331,7 @@ store_object::get_property_groupinfo(uint32_t group_id) try
 	group_list.push_back(std::move(*pgpinfo));
 	return &group_list.back();
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1630: ENOMEM\n");
+	mlog(LV_ERR, "E-1630: ENOMEM");
 	return nullptr;
 }
 
@@ -1073,7 +1073,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	try {
 		autoreply_path = maildir + "/config/autoreply.cfg"s;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1483: ENOMEM\n");
+		mlog(LV_ERR, "E-1483: ENOMEM");
 		return false;
 	}
 	/* Ensure file exists for config_file_prg */
@@ -1110,7 +1110,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			autoreply_path += proptag == PR_EC_OUTOFOFFICE_MSG ?
 			             "/config/internal-reply" : "/config/external-reply";
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1484: ENOMEM\n");
+			mlog(LV_ERR, "E-1484: ENOMEM");
 			return false;
 		}
 		wrapfd fd = open(autoreply_path.c_str(), O_RDONLY);
@@ -1152,7 +1152,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			autoreply_path += proptag == PR_EC_OUTOFOFFICE_SUBJECT ?
 			             "/config/internal-reply" : "/config/external-reply";
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1485: ENOMEM\n");
+			mlog(LV_ERR, "E-1485: ENOMEM");
 			return false;
 		}
 		struct stat node_stat;
@@ -1340,7 +1340,7 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			try {
 				pic_path = pstore->dir + "/config/portrait.jpg"s;
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1494: ENOMEM\n");
+				mlog(LV_ERR, "E-1494: ENOMEM");
 			}
 			wrapfd fd = open(pic_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
 			if (fd.get() < 0)

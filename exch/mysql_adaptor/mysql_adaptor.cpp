@@ -130,10 +130,10 @@ errno_t mysql_adaptor_meta(const char *username, const char *password,
 	mres.ldap_basedn = znul(myrow[10]);
 	return 0;
 } catch (const std::bad_alloc &e) {
-	fprintf(stderr, "E-1701: ENOMEM\n");
+	mlog(LV_ERR, "E-1701: ENOMEM");
 	return ENOMEM;
 } catch (const std::exception &e) {
-	fprintf(stderr, "E-1701: %s\n", e.what());
+	mlog(LV_ERR, "E-1701: %s", e.what());
 	return EIO;
 }
 
@@ -177,7 +177,7 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
 		      encrypt_passwd.c_str(), errstr);
 	return ret;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1702: ENOMEM\n");
+	mlog(LV_ERR, "E-1702: ENOMEM");
 	return false;
 }
 

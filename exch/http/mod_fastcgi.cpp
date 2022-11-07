@@ -209,7 +209,7 @@ int mod_fastcgi_run() try
 	g_context_list = std::make_unique<FASTCGI_CONTEXT[]>(g_context_num);
 	return 0;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1654: ENOMEM\n");
+	mlog(LV_ERR, "E-1654: ENOMEM");
 	return -ENOMEM;
 }
 
@@ -504,13 +504,13 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 	if (b_chunked || content_length > g_cache_size) {
 		auto path = LOCAL_DISK_TMPDIR;
 		if (mkdir(path, 0777) < 0 && errno != EEXIST) {
-			fprintf(stderr, "E-2077: mkdir %s: %s\n", path, strerror(errno));
+			mlog(LV_ERR, "E-2077: mkdir %s: %s", path, strerror(errno));
 			return false;
 		}
 		pcontext->cache_fd = open_tmpfile(path, &pcontext->tmpfile,
 		                     O_RDWR | O_TRUNC);
 		if (pcontext->cache_fd < 0) {
-			fprintf(stderr, "E-2078: open_tmpfile{%s, %s}: %s\n",
+			mlog(LV_ERR, "E-2078: open_tmpfile{%s, %s}: %s",
 			        path, pcontext->tmpfile.c_str(),
 			        strerror(-pcontext->cache_fd));
 			return FALSE;

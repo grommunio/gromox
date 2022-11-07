@@ -11,6 +11,7 @@
 #include <gromox/pcl.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #include "attachment_object.h"
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -786,7 +787,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 		new_pta.pproptag = new_tags.data();
 		pproptags = &new_pta;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1610: ENOMEM\n");
+		mlog(LV_ERR, "E-1610: ENOMEM");
 		return ecServerOOM;
 	}
 	auto pctx = icsdownctx_object::create(plogon, pfolder, sync_type,
