@@ -108,9 +108,10 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	pmessage->tag_access = tag_access;
 	pmessage->open_flags = open_flags;
 	pmessage->pstate = std::move(pstate);
+	auto dir = plogon->get_dir();
 	if (0 == message_id) {
 		pmessage->pembedding = static_cast<attachment_object *>(pparent);
-		if (!exmdb_client::load_embedded_instance(plogon->get_dir(),
+		if (!exmdb_client::load_embedded_instance(dir,
 		    b_new, static_cast<attachment_object *>(pparent)->instance_id,
 		    &pmessage->instance_id))
 			return NULL;
@@ -122,13 +123,13 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	} else {
 		pmessage->folder_id = *static_cast<uint64_t *>(pparent);
 		if (pmessage->plogon->is_private()) {
-			if (!exmdb_client::load_message_instance(plogon->get_dir(),
+			if (!exmdb_client::load_message_instance(dir,
 			    nullptr, cpid, b_new, pmessage->folder_id, message_id,
 			    &pmessage->instance_id))
 				return NULL;
 		} else {
 			auto rpc_info = get_rpc_info();
-			if (!exmdb_client::load_message_instance(plogon->get_dir(),
+			if (!exmdb_client::load_message_instance(dir,
 			    rpc_info.username, cpid, b_new, pmessage->folder_id,
 			    message_id, &pmessage->instance_id))
 				return NULL;
@@ -146,7 +147,7 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 		return NULL;
 	}
 	if (!b_new) {
-		if (!exmdb_client::get_instance_property(plogon->get_dir(),
+		if (!exmdb_client::get_instance_property(dir,
 		    pmessage->instance_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)))
 			return NULL;
@@ -352,13 +353,14 @@ static gxerr_t message_object_save2(message_object *pmessage, bool b_fai,
     BINARY *&pbin_pcl, const char *rpc_user)
 {
 	BINARY *pbin_pcl1 = nullptr;
+	auto dir = pmessage->plogon->get_dir();
 
-	if (!exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+	if (!exmdb_client::get_instance_property(dir,
 	    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return GXERR_CALL_FAILED;
-	if (!exmdb_client::get_message_property(pmessage->plogon->get_dir(),
+	if (!exmdb_client::get_message_property(dir,
 	    nullptr, 0, pmessage->message_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl1)) ||
 	    pbin_pcl1 == nullptr)
@@ -371,7 +373,7 @@ static gxerr_t message_object_save2(message_object *pmessage, bool b_fai,
 		return GXERR_SUCCESS;
 
 	void *rv;
-	if (!exmdb_client::get_folder_property(pmessage->plogon->get_dir(),
+	if (!exmdb_client::get_folder_property(dir,
 	    0, pmessage->folder_id, PR_RESOLVE_METHOD, &rv))
 		return GXERR_CALL_FAILED;
 	uint32_t resolve_method = rv == nullptr ? RESOLVE_METHOD_DEFAULT :
@@ -379,11 +381,11 @@ static gxerr_t message_object_save2(message_object *pmessage, bool b_fai,
 	if (!b_fai && resolve_method == RESOLVE_METHOD_DEFAULT) {
 		MESSAGE_CONTENT *pmsgctnt = nullptr;
 		if (pmessage->plogon->is_private()) {
-			if (!exmdb_client::read_message(pmessage->plogon->get_dir(),
+			if (!exmdb_client::read_message(dir,
 			    nullptr, pmessage->cpid,
 			    pmessage->message_id, &pmsgctnt))
 				return GXERR_CALL_FAILED;
-		} else if (!exmdb_client::read_message(pmessage->plogon->get_dir(),
+		} else if (!exmdb_client::read_message(dir,
 		    rpc_user, pmessage->cpid,
 		    pmessage->message_id, &pmsgctnt)) {
 			return GXERR_CALL_FAILED;
@@ -392,8 +394,7 @@ static gxerr_t message_object_save2(message_object *pmessage, bool b_fai,
 			auto mstatus = pmsgctnt->proplist.get<const uint32_t>(PR_MSG_STATUS);
 			if (mstatus == nullptr)
 				return GXERR_CALL_FAILED;
-			if (!exmdb_client::set_message_instance_conflict(
-			    pmessage->plogon->get_dir(),
+			if (!exmdb_client::set_message_instance_conflict(dir,
 			    pmessage->instance_id, pmsgctnt))
 				return GXERR_CALL_FAILED;
 			auto tmp_status = *mstatus | MSGSTATUS_IN_CONFLICT;
@@ -437,10 +438,11 @@ gxerr_t message_object::save()
 	if (!pmessage->b_new && !pmessage->b_touched)
 		return GXERR_SUCCESS;
 	auto rpc_info = get_rpc_info();
-	if (!exmdb_client::allocate_cn(pmessage->plogon->get_dir(), &pmessage->change_num))
+	auto dir = plogon->get_dir();
+	if (!exmdb_client::allocate_cn(dir, &pmessage->change_num))
 		return GXERR_CALL_FAILED;
 	void *assoc;
-	if (!exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+	if (!exmdb_client::get_instance_property(dir,
 	    pmessage->instance_id, PR_ASSOCIATED, &assoc))
 		return GXERR_CALL_FAILED;
 
@@ -453,7 +455,7 @@ gxerr_t message_object::save()
 				return ret;
 		}
 	} else if (0 != pmessage->message_id) {
-		if (!exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+		if (!exmdb_client::get_instance_property(dir,
 		    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
 		    reinterpret_cast<void **>(&pbin_pcl)))
 			return GXERR_CALL_FAILED;
@@ -529,12 +531,12 @@ gxerr_t message_object::save()
 	TAGGED_PROPVAL tmp_propval;
 	tmp_propval.proptag = PidTagChangeNumber;
 	tmp_propval.pvalue = &pmessage->change_num;
-	if (!exmdb_client::set_instance_property(pmessage->plogon->get_dir(),
+	if (!exmdb_client::set_instance_property(dir,
 	    pmessage->instance_id, &tmp_propval, &result))
 		return GXERR_CALL_FAILED;
 	
 	gxerr_t e_result = GXERR_CALL_FAILED;
-	if (!exmdb_client::flush_instance(pmessage->plogon->get_dir(),
+	if (!exmdb_client::flush_instance(dir,
 	    pmessage->instance_id, pmessage->plogon->get_account(),
 	    &e_result) || e_result != GXERR_SUCCESS)
 		return e_result;
@@ -559,7 +561,7 @@ gxerr_t message_object::save()
 	const property_groupinfo *pgpinfo = nullptr;
 	if (is_new || pmessage->pstate != nullptr)
 		goto SAVE_FULL_CHANGE;
-	if (!exmdb_client::get_message_group_id(pmessage->plogon->get_dir(),
+	if (!exmdb_client::get_message_group_id(dir,
 	    pmessage->message_id, &pgroup_id))
 		return GXERR_CALL_FAILED;
 	if (NULL == pgroup_id) {
@@ -567,7 +569,7 @@ gxerr_t message_object::save()
 		if (NULL == pgpinfo) {
 			return GXERR_CALL_FAILED;
 		}
-		if (!exmdb_client::set_message_group_id(pmessage->plogon->get_dir(),
+		if (!exmdb_client::set_message_group_id(dir,
 		    pmessage->message_id, pgpinfo->group_id))
 			return GXERR_CALL_FAILED;
 	}  else {
@@ -577,7 +579,7 @@ gxerr_t message_object::save()
 		}
 	}
 	
-	if (!exmdb_client::mark_modified(pmessage->plogon->get_dir(),
+	if (!exmdb_client::mark_modified(dir,
 	    pmessage->message_id))
 		return GXERR_CALL_FAILED;
 	
@@ -613,7 +615,7 @@ gxerr_t message_object::save()
 				return GXERR_CALL_FAILED;
 		}
 	}
-	if (!exmdb_client::save_change_indices(pmessage->plogon->get_dir(),
+	if (!exmdb_client::save_change_indices(dir,
 	    pmessage->message_id, pmessage->change_num, pindices.get(), pungroup_proptags.get()))
 		return GXERR_CALL_FAILED;
 	proptag_array_clear(pmessage->pchanged_proptags);
@@ -627,7 +629,7 @@ gxerr_t message_object::save()
 	INDEX_ARRAY tmp_indices;
 	tmp_indices.count = 0;
 	tmp_indices.pproptag = NULL;
-	if (!exmdb_client::save_change_indices(pmessage->plogon->get_dir(),
+	if (!exmdb_client::save_change_indices(dir,
 	    pmessage->message_id, pmessage->change_num, &tmp_indices,
 	    static_cast<PROPTAG_ARRAY *>(&tmp_indices)))
 		return GXERR_CALL_FAILED;
@@ -635,7 +637,7 @@ gxerr_t message_object::save()
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&
 	    !pmessage->plogon->is_private())
-		exmdb_client::rule_new_message(pmessage->plogon->get_dir(),
+		exmdb_client::rule_new_message(dir,
 			rpc_info.username, pmessage->plogon->get_account(),
 			pmessage->cpid, pmessage->folder_id,
 			pmessage->message_id);
@@ -653,7 +655,8 @@ BOOL message_object::reload()
 	
 	if (pmessage->b_new)
 		return TRUE;
-	if (!exmdb_client::reload_message_instance(pmessage->plogon->get_dir(),
+	auto dir = plogon->get_dir();
+	if (!exmdb_client::reload_message_instance(dir,
 	    pmessage->instance_id, &b_result))
 		return FALSE;	
 	if (!b_result)
@@ -673,7 +676,7 @@ BOOL message_object::reload()
 		free(pnode);
 	pmessage->change_num = 0;
 	if (!pmessage->b_new) {
-		if (!exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+		if (!exmdb_client::get_instance_property(dir,
 		    pmessage->instance_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)) ||
 		    pchange_num == nullptr)
@@ -865,7 +868,8 @@ BOOL message_object::clear_unsent()
 	if (0 == pmessage->message_id) {
 		return FALSE;
 	}
-	if (!exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+	auto dir = plogon->get_dir();
+	if (!exmdb_client::get_instance_property(dir,
 	    pmessage->instance_id, PR_MESSAGE_FLAGS, reinterpret_cast<void **>(&pmessage_flags)))
 		return FALSE;	
 	if (NULL == pmessage_flags) {
@@ -874,7 +878,7 @@ BOOL message_object::clear_unsent()
 	*pmessage_flags &= ~MSGFLAG_UNSENT;
 	tmp_propval.proptag = PR_MESSAGE_FLAGS;
 	tmp_propval.pvalue = pmessage_flags;
-	return exmdb_client::set_instance_property(pmessage->plogon->get_dir(),
+	return exmdb_client::set_instance_property(dir,
 	       pmessage->instance_id, &tmp_propval, &result);
 }
 
@@ -1120,7 +1124,8 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	if (!exmdb_client::get_instance_properties(pmessage->plogon->get_dir(),
+	auto dir = plogon->get_dir();
+	if (!exmdb_client::get_instance_properties(dir,
 	    size_limit, pmessage->instance_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	
@@ -1144,7 +1149,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_MESSAGE_LOCALE_ID;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
-		if (exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+		if (exmdb_client::get_instance_property(dir,
 		    pmessage->instance_id, PR_INTERNET_CPID, &pvalue) &&
 		    pvalue != nullptr && pinfo->cpid == *static_cast<uint32_t *>(pvalue))
 			pv.pvalue = &pinfo->lcid_string;
@@ -1205,6 +1210,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		return FALSE;
 	}
 	
+	auto dir = pmessage->plogon->get_dir();
 	for (i=0; i<ppropvals->count; i++) {
 		/* if property is being open as stream object, can not be modified */
 		if (b_check) {
@@ -1216,7 +1222,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			} else if (ppropvals->ppropval[i].proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
-				if (!exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+				if (!exmdb_client::get_instance_property(dir,
 				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 					return FALSE;	
 				if (pvb_disabled(pvalue)) {
@@ -1246,8 +1252,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 				tmp_bytes[0] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_READ);
 				tmp_bytes[1] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_RN_PENDING);
 				tmp_bytes[2] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_NRN_PENDING);
-				if (!exmdb_client::set_instance_properties(
-				    pmessage->plogon->get_dir(),
+				if (!exmdb_client::set_instance_properties(dir,
 				    pmessage->instance_id, &tmp_propvals1,
 				    &tmp_problems))
 					return FALSE;	
@@ -1260,7 +1265,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	if (0 == tmp_propvals.count) {
 		return TRUE;
 	}
-	if (!exmdb_client::set_instance_properties(pmessage->plogon->get_dir(),
+	if (!exmdb_client::set_instance_properties(dir,
 	    pmessage->instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count > 0) {
@@ -1381,8 +1386,9 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY *pcolumns;
 	MESSAGE_CONTENT msgctnt;
+	auto dstdir = plogon->get_dir();
 	
-	if (!exmdb_client::check_instance_cycle(pmessage->plogon->get_dir(),
+	if (!exmdb_client::check_instance_cycle(dstdir,
 	    pmessage_src->instance_id, pmessage->instance_id, pb_cycle))
 		return FALSE;	
 	if (*pb_cycle)
@@ -1414,7 +1420,7 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 		msgctnt.children.prcpts = NULL;
 	if (pexcluded_proptags->has(PR_MESSAGE_ATTACHMENTS))
 		msgctnt.children.pattachments = NULL;
-	if (!exmdb_client::write_message_instance(pmessage->plogon->get_dir(),
+	if (!exmdb_client::write_message_instance(dstdir,
 	    pmessage->instance_id, &msgctnt, b_force, &proptags, pproblems))
 		return FALSE;	
 	pcolumns = proptag_array_dup(pmessage_src->precipient_columns);
@@ -1474,10 +1480,12 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	auto username = pmessage->plogon->is_private() ? nullptr : rpc_info.username;
 	b_notify = FALSE;
 	*pb_changed = FALSE;
+	auto dir = pmessage->plogon->get_dir();
+
 	switch (read_flag) {
 	case MSG_READ_FLAG_DEFAULT:
 	case MSG_READ_FLAG_SUPPRESS_RECEIPT:
-		if (!exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+		if (!exmdb_client::get_instance_property(dir,
 		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;	
 		if (pvb_enabled(pvalue))
@@ -1486,15 +1494,14 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		*pb_changed = TRUE;
 		if (read_flag != MSG_READ_FLAG_DEFAULT)
 			break;
-		if (!exmdb_client::get_instance_property(
-		    pmessage->plogon->get_dir(), pmessage->instance_id,
-		    PR_READ_RECEIPT_REQUESTED, &pvalue))
+		if (!exmdb_client::get_instance_property(dir,
+		    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED, &pvalue))
 			return FALSE;
 		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
 		break;
 	case MSG_READ_FLAG_CLEAR_READ_FLAG:
-		if (!exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+		if (!exmdb_client::get_instance_property(dir,
 		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;
 		if (pvb_disabled(pvalue))
@@ -1503,7 +1510,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		*pb_changed = TRUE;
 		break;
 	case MSG_READ_FLAG_GENERATE_RECEIPT_ONLY:
-		if (!exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+		if (!exmdb_client::get_instance_property(dir,
 		    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED, &pvalue))
 			return FALSE;
 		if (pvb_enabled(pvalue))
@@ -1513,32 +1520,32 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	case MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
 	case MSG_READ_FLAG_CLEAR_NOTIFY_READ | MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD: {
 		if (read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_READ) {
-			if (!exmdb_client::remove_instance_property(pmessage->plogon->get_dir(),
+			if (!exmdb_client::remove_instance_property(dir,
 			    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED, &result))
 				return FALSE;	
-			if (exmdb_client::get_message_property(pmessage->plogon->get_dir(),
+			if (exmdb_client::get_message_property(dir,
 			    username, 0, pmessage->message_id,
 			    PR_READ_RECEIPT_REQUESTED, &pvalue) &&
 			    pvb_enabled(pvalue) &&
-			    !exmdb_client::remove_message_property(pmessage->plogon->get_dir(),
+			    !exmdb_client::remove_message_property(dir,
 			    pmessage->cpid, pmessage->message_id, PR_READ_RECEIPT_REQUESTED))
 				return FALSE;
 		}
 		if (read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD) {
-			if (!exmdb_client::remove_instance_property(pmessage->plogon->get_dir(),
+			if (!exmdb_client::remove_instance_property(dir,
 			    pmessage->instance_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED,
 			    &result))
 				return FALSE;	
-			if (exmdb_client::get_message_property(pmessage->plogon->get_dir(),
+			if (exmdb_client::get_message_property(dir,
 			    username, 0, pmessage->message_id,
 			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &pvalue) &&
 			    pvb_enabled(pvalue) &&
-			    !exmdb_client::remove_message_property(pmessage->plogon->get_dir(),
+			    !exmdb_client::remove_message_property(dir,
 			    pmessage->cpid, pmessage->message_id,
 			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED))
 					return FALSE;	
 		}
-		if (!exmdb_client::get_instance_property(pmessage->plogon->get_dir(),
+		if (!exmdb_client::get_instance_property(dir,
 		    pmessage->instance_id, PR_MESSAGE_FLAGS, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
@@ -1548,11 +1555,10 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		*v &= ~MSGFLAG_UNMODIFIED;
 		propval.proptag = PR_MESSAGE_FLAGS;
 		propval.pvalue = pvalue;
-		if (!exmdb_client::set_instance_property(pmessage->plogon->get_dir(),
+		if (!exmdb_client::set_instance_property(dir,
 		    pmessage->instance_id, &propval, &result))
 			return FALSE;
-		if (!exmdb_client::mark_modified(pmessage->plogon->get_dir(),
-		    pmessage->message_id))
+		if (!exmdb_client::mark_modified(dir, pmessage->message_id))
 			return FALSE;
 		return TRUE;
 	}
@@ -1560,12 +1566,12 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		return TRUE;
 	}
 	if (*pb_changed) {
-		if (!exmdb_client::set_message_read_state(pmessage->plogon->get_dir(),
+		if (!exmdb_client::set_message_read_state(dir,
 		    username, pmessage->message_id, tmp_byte, &read_cn))
 			return FALSE;
 		propval.proptag = PR_READ;
 		propval.pvalue = &tmp_byte;
-		if (!exmdb_client::set_instance_property(pmessage->plogon->get_dir(),
+		if (!exmdb_client::set_instance_property(dir,
 		    pmessage->instance_id, &propval, &result))
 			return FALSE;	
 		if (0 != result) {
@@ -1574,7 +1580,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	}
 	if (!b_notify)
 		return TRUE;
-	if (!exmdb_client::get_message_brief(pmessage->plogon->get_dir(),
+	if (!exmdb_client::get_message_brief(dir,
 	    pmessage->cpid, pmessage->message_id, &pbrief))
 		return FALSE;
 	if (NULL != pbrief) {
@@ -1587,9 +1593,9 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	propval_buff[0].pvalue  = deconst(&fake_false);
 	propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 	propval_buff[1].pvalue  = deconst(&fake_false);
-	exmdb_client::set_instance_properties(pmessage->plogon->get_dir(),
+	exmdb_client::set_instance_properties(dir,
 		pmessage->instance_id, &propvals, &problems);
-	exmdb_client::set_message_properties(pmessage->plogon->get_dir(),
+	exmdb_client::set_message_properties(dir,
 		username, 0, pmessage->message_id, &propvals, &problems);
 	return TRUE;
 }
