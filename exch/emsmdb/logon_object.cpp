@@ -90,7 +90,7 @@ BOOL logon_object::get_named_propname(uint16_t propid, PROPERTY_NAME *ppropname)
 		*ppropname = static_cast<PROPERTY_NAME>(iter->second);
 		return TRUE;
 	}
-	if (!exmdb_client_get_named_propname(plogon->dir, propid, ppropname))
+	if (!exmdb_client::get_named_propname(plogon->dir, propid, ppropname))
 		return FALSE;	
 	if (ppropname->kind == MNID_ID || ppropname->kind == MNID_STRING)
 		logon_object_cache_propname(plogon, propid, ppropname);
@@ -143,7 +143,7 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 	if (0 == tmp_propids.count) {
 		return TRUE;
 	}
-	if (!exmdb_client_get_named_propnames(plogon->dir,
+	if (!exmdb_client::get_named_propnames(plogon->dir,
 	    &tmp_propids, &tmp_propnames))
 		return FALSE;	
 	for (i=0; i<ppropids->count; i++) {
@@ -176,7 +176,7 @@ BOOL logon_object::get_named_propid(BOOL b_create,
 		*ppropid = iter->second;
 		return TRUE;
 	}
-	if (!exmdb_client_get_named_propid(plogon->dir, b_create,
+	if (!exmdb_client::get_named_propid(plogon->dir, b_create,
 	    ppropname, ppropid))
 		return FALSE;
 	if (0 == *ppropid) {
@@ -237,7 +237,7 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 	if (0 == tmp_propnames.count) {
 		return TRUE;
 	}
-	if (!exmdb_client_get_named_propids(plogon->dir, b_create,
+	if (!exmdb_client::get_named_propids(plogon->dir, b_create,
 	    &tmp_propnames, &tmp_propids))
 		return FALSE;	
 	for (i=0; i<ppropnames->count; i++) {
@@ -294,7 +294,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	auto plogon = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (!exmdb_client_get_store_all_proptags(plogon->dir, &tmp_proptags))
+	if (!exmdb_client::get_store_all_proptags(plogon->dir, &tmp_proptags))
 		return FALSE;	
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 25);
 	if (NULL == pproptags->pproptag) {
@@ -406,7 +406,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (!exmdb_client_get_store_property(plogon->dir, 0,
+		if (!exmdb_client::get_store_property(plogon->dir, 0,
 		    PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
@@ -419,7 +419,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (!exmdb_client_get_store_property(plogon->dir, 0,
+		if (!exmdb_client::get_store_property(plogon->dir, 0,
 		    PR_ASSOC_MESSAGE_SIZE_EXTENDED, &pvalue) || pvalue == nullptr)
 			return FALSE;	
 		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
@@ -431,7 +431,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (!exmdb_client_get_store_property(plogon->dir, 0,
+		if (!exmdb_client::get_store_property(plogon->dir, 0,
 		    PR_NORMAL_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
@@ -648,7 +648,7 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	if (!exmdb_client_get_store_properties(plogon->dir,
+	if (!exmdb_client::get_store_properties(plogon->dir,
 	    pinfo->cpid, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (0 == tmp_propvals.count) {
@@ -701,7 +701,7 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (0 == tmp_propvals.count) {
 		return TRUE;
 	}
-	if (!exmdb_client_set_store_properties(plogon->dir,
+	if (!exmdb_client::set_store_properties(plogon->dir,
 	    pinfo->cpid, &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	if (0 == tmp_problems.count) {
@@ -742,5 +742,5 @@ BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	return exmdb_client_remove_store_properties(plogon->dir, &tmp_proptags);
+	return exmdb_client::remove_store_properties(plogon->dir, &tmp_proptags);
 }

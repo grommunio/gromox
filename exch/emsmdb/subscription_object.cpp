@@ -22,7 +22,7 @@ subscription_object::create(logon_object *plogon, uint8_t logon_id,
 		return NULL;
 	psub->plogon = plogon;
 	psub->logon_id = logon_id;
-	if (!exmdb_client_subscribe_notification(plogon->get_dir(),
+	if (!exmdb_client::subscribe_notification(plogon->get_dir(),
 	    notification_types, b_whole, folder_id, message_id, &psub->sub_id))
 		return NULL;
 	return psub;
@@ -39,6 +39,6 @@ void subscription_object::set_handle(uint32_t h)
 subscription_object::~subscription_object()
 {	
 	auto psub = this;
-	exmdb_client_unsubscribe_notification(psub->plogon->get_dir(), psub->sub_id);
+	exmdb_client::unsubscribe_notification(psub->plogon->get_dir(), psub->sub_id);
 	emsmdb_interface_remove_subscription_notify(psub->plogon->get_dir(), psub->sub_id);
 }
