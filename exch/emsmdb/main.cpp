@@ -235,7 +235,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 			mlog(LV_ERR, "emsmdb: failed to run common util");
 			return FALSE;
 		}
-		if (0 != exmdb_client_run()) {
+		if (exmdb_client::run() != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run exmdb client");
 			return FALSE;
 		}

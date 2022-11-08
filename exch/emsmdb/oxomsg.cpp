@@ -378,20 +378,20 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 #if 0
 	/* check if it is already in spooler queue */
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
+	if (!exmdb_client::check_message(plogon->get_dir(), fid_spooler,
 	    pmessage->get_id(), &b_exist))
 		return ecError;
 	if (b_exist)
 		return ecAccessDenied;
 	if (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) {
-		if (!exmdb_client_link_message(plogon->get_dir(), pinfo->cpid,
+		if (!exmdb_client::link_message(plogon->get_dir(), pinfo->cpid,
 		    fid_spooler, pmessage->get_id(), &b_result) || !b_result)
 			return ecError;
 		return ecSuccess;
 	}
 #endif
 	
-	if (!exmdb_client_try_mark_submit(plogon->get_dir(),
+	if (!exmdb_client::try_mark_submit(plogon->get_dir(),
 	    pmessage->get_id(), &b_marked))
 		return ecError;
 	if (!b_marked) {
@@ -412,7 +412,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		if (0 == timer_id) {
 			goto SUBMIT_FAIL;
 		}
-		exmdb_client_set_message_timer(plogon->get_dir(),
+		exmdb_client::set_message_timer(plogon->get_dir(),
 			pmessage->get_id(), timer_id);
 		pmessage->reload();
 		return ecSuccess;
@@ -427,7 +427,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	return ecSuccess;
 
  SUBMIT_FAIL:
-	exmdb_client_clear_submit(plogon->get_dir(), pmessage->get_id(), b_unsent);
+	exmdb_client::clear_submit(plogon->get_dir(), pmessage->get_id(), b_unsent);
 	return ecError;
 }
 
@@ -449,12 +449,12 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecNotSupported;
 	if (plogon->logon_mode == logon_mode::guest)
 		return ecAccessDenied;
-	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
+	if (!exmdb_client::check_message(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
 	if (!b_exist)
 		return ecNotFound;
-	if (!exmdb_client_get_message_property(plogon->get_dir(),
+	if (!exmdb_client::get_message_property(plogon->get_dir(),
 	    nullptr, 0, message_id, PR_MESSAGE_FLAGS,
 	    reinterpret_cast<void **>(&pmessage_flags)))
 		return ecError;
@@ -462,25 +462,25 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecError;
 	}
 	if (*pmessage_flags & MSGFLAG_SUBMITTED) {
-		if (!exmdb_client_get_message_timer(plogon->get_dir(),
+		if (!exmdb_client::get_message_timer(plogon->get_dir(),
 		    message_id, &ptimer_id))
 			return ecError;
 		if (ptimer_id != nullptr && !common_util_cancel_timer(*ptimer_id))
 			return ecUnableToAbort;
-		if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, TRUE))
+		if (!exmdb_client::clear_submit(plogon->get_dir(), message_id, TRUE))
 			return ecError;
 		if (!common_util_save_message_ics(plogon, message_id, nullptr))
 			return ecError;
 		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
+	if (!exmdb_client::check_message(plogon->get_dir(), fid_spooler,
 	    message_id, &b_exist))
 		return ecError;
 	if (!b_exist)
 		return ecNotInQueue;
 	/* unlink the message in spooler queue */
-	if (!exmdb_client_unlink_message(plogon->get_dir(), pinfo->cpid,
+	if (!exmdb_client::unlink_message(plogon->get_dir(), pinfo->cpid,
 	    fid_spooler, message_id))
 		return ecError;
 	return ecSuccess;
@@ -536,13 +536,13 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
+	if (!exmdb_client::check_message(plogon->get_dir(), fid_spooler,
 	    message_id, &b_exist))
 		return ecError;
 	if (!b_exist)
 		return ecNotInQueue;
 	/* unlink the message in spooler queue */
-	if (!exmdb_client_unlink_message(plogon->get_dir(), pinfo->cpid,
+	if (!exmdb_client::unlink_message(plogon->get_dir(), pinfo->cpid,
 	    fid_spooler, message_id))
 		return ecError;
 	tmp_proptags.count = 3;
@@ -550,7 +550,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	proptag_buff[0] = PR_DELETE_AFTER_SUBMIT;
 	proptag_buff[1] = PR_TARGET_ENTRYID;
 	proptag_buff[2] = PR_PARENT_ENTRYID;
-	if (!exmdb_client_get_message_properties(plogon->get_dir(), nullptr, 0,
+	if (!exmdb_client::get_message_properties(plogon->get_dir(), nullptr, 0,
 	    message_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
@@ -564,12 +564,12 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	if (NULL != ptarget) {
 		if (!cu_entryid_to_mid(plogon, ptarget, &folder_id, &new_id))
 			return ecError;
-		if (!exmdb_client_movecopy_message(plogon->get_dir(),
+		if (!exmdb_client::movecopy_message(plogon->get_dir(),
 		    plogon->account_id, pinfo->cpid, message_id, folder_id,
 		    new_id, b_delete, &b_result))
 			return ecError;
 	} else if (b_delete) {
-		exmdb_client_delete_message(plogon->get_dir(),
+		exmdb_client::delete_message(plogon->get_dir(),
 			plogon->account_id, pinfo->cpid,
 			parent_id, message_id, TRUE, &b_result);
 	}
@@ -613,7 +613,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	static constexpr PROPTAG_ARRAY rq_tags = {1, deconst(rq_tags1)};
 	static constexpr PROPTAG_ARRAY cls_tags = {1, deconst(cls_tags1)};
 	TPROPVAL_ARRAY outvalues{};
-	if (!exmdb_client_get_message_properties(plogon->get_dir(), nullptr, 0,
+	if (!exmdb_client::get_message_properties(plogon->get_dir(), nullptr, 0,
 	    pmessage->get_id(), &rq_tags, &outvalues))
 		return ecError;
 	auto msgflags = outvalues.get<const uint32_t>(PR_MESSAGE_FLAGS);
@@ -684,7 +684,7 @@ uint32_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!exmdb_client_transport_new_mail(plogon->get_dir(), message_id,
+	if (!exmdb_client::transport_new_mail(plogon->get_dir(), message_id,
 	    folder_id, message_flags, pstr_class))
 		return ecError;
 	return ecSuccess;
