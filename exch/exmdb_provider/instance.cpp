@@ -305,7 +305,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL exmdb_server_load_message_instance(const char *dir,
+BOOL exmdb_server::load_message_instance(const char *dir,
 	const char *username, uint32_t cpid, BOOL b_new,
 	uint64_t folder_id, uint64_t message_id,
 	uint32_t *pinstance_id)
@@ -332,7 +332,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	pinstance->cpid = cpid;
 	mid_val = rop_util_get_gc_value(message_id);
 	pinstance->type = INSTANCE_TYPE_MESSAGE;
-	if (!exmdb_server_is_private()) {
+	if (!exmdb_server::is_private()) {
 		pinstance->username = strdup(username);
 		if (NULL == pinstance->username) {
 			free(pinstance);
@@ -371,9 +371,9 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		*pinstance_id = instance_id;
 		return TRUE;
 	}
-	if (!exmdb_server_is_private())
-		exmdb_server_set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
+	if (!exmdb_server::is_private())
+		exmdb_server::set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!common_util_begin_message_optimize(pdb->psqlite))
 		return FALSE;
@@ -415,7 +415,7 @@ static INSTANCE_NODE* instance_get_instance(db_item_ptr &pdb, uint32_t instance_
 	return NULL;
 }
 
-BOOL exmdb_server_load_embedded_instance(const char *dir,
+BOOL exmdb_server::load_embedded_instance(const char *dir,
 	BOOL b_new, uint32_t attachment_instance_id,
 	uint32_t *pinstance_id)
 {
@@ -531,7 +531,7 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 }
 
 /* get PidTagChangeNumber from embedded message */
-BOOL exmdb_server_get_embedded_cn(const char *dir, uint32_t instance_id,
+BOOL exmdb_server::get_embedded_cn(const char *dir, uint32_t instance_id,
     uint64_t **ppcn)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -548,8 +548,8 @@ BOOL exmdb_server_get_embedded_cn(const char *dir, uint32_t instance_id,
 }
 
 /* if instance does not exist, do not reload the instance */
-BOOL exmdb_server_reload_message_instance(
-	const char *dir, uint32_t instance_id, BOOL *pb_result)
+BOOL exmdb_server::reload_message_instance(const char *dir,
+    uint32_t instance_id, BOOL *pb_result)
 {
 	uint32_t last_id;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -613,8 +613,7 @@ BOOL exmdb_server_reload_message_instance(
 	return TRUE;
 }
 
-BOOL exmdb_server_clear_message_instance(
-	const char *dir, uint32_t instance_id)
+BOOL exmdb_server::clear_message_instance(const char *dir, uint32_t instance_id)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -985,7 +984,7 @@ static BOOL instance_read_message(
 	return TRUE;
 }
 
-BOOL exmdb_server_read_message_instance(const char *dir,
+BOOL exmdb_server::read_message_instance(const char *dir,
 	uint32_t instance_id, MESSAGE_CONTENT *pmsgctnt)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -1036,7 +1035,7 @@ static BOOL instance_identify_message(MESSAGE_CONTENT *pmsgctnt)
 }
 
 /* pproptags is for returning successful proptags */
-BOOL exmdb_server_write_message_instance(const char *dir,
+BOOL exmdb_server::write_message_instance(const char *dir,
 	uint32_t instance_id, const MESSAGE_CONTENT *pmsgctnt,
 	BOOL b_force, PROPTAG_ARRAY *pproptags,
 	PROBLEM_ARRAY *pproblems)
@@ -1179,7 +1178,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_load_attachment_instance(const char *dir,
+BOOL exmdb_server::load_attachment_instance(const char *dir,
 	uint32_t message_instance_id, uint32_t attachment_num,
 	uint32_t *pinstance_id)
 {
@@ -1247,7 +1246,7 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_create_attachment_instance(const char *dir,
+BOOL exmdb_server::create_attachment_instance(const char *dir,
 	uint32_t message_instance_id, uint32_t *pinstance_id,
 	uint32_t *pattachment_num)
 {
@@ -1314,7 +1313,7 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_read_attachment_instance(const char *dir,
+BOOL exmdb_server::read_attachment_instance(const char *dir,
 	uint32_t instance_id, ATTACHMENT_CONTENT *pattctnt)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -1328,7 +1327,7 @@ BOOL exmdb_server_read_attachment_instance(const char *dir,
 	return instance_read_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pattctnt);
 }
 
-BOOL exmdb_server_write_attachment_instance(const char *dir,
+BOOL exmdb_server::write_attachment_instance(const char *dir,
 	uint32_t instance_id, const ATTACHMENT_CONTENT *pattctnt,
 	BOOL b_force, PROBLEM_ARRAY *pproblems)
 {
@@ -1405,9 +1404,8 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_delete_message_instance_attachment(
-	const char *dir, uint32_t message_instance_id,
-	uint32_t attachment_num)
+BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
+    uint32_t message_instance_id, uint32_t attachment_num)
 {
 	int i;
 	
@@ -1443,7 +1441,7 @@ BOOL exmdb_server_delete_message_instance_attachment(
 }
 
 /* account must be available when it is a normal message instance */ 
-BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
+BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
     const char *account, gxerr_t *pe_result)
 {
 	int i;
@@ -1608,19 +1606,18 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	}
 	pinstance->b_new = FALSE;
 	folder_id = rop_util_make_eid_ex(1, pinstance->folder_id);
-	if (!exmdb_server_is_private())
-		exmdb_server_set_public_username(pinstance->username);
+	if (!exmdb_server::is_private())
+		exmdb_server::set_public_username(pinstance->username);
 	pdb.reset();
 	g_inside_flush_instance = true;
-	BOOL b_result = exmdb_server_write_message(dir, account, 0, folder_id,
+	BOOL b_result = exmdb_server::write_message(dir, account, 0, folder_id,
 	                pmsgctnt, pe_result);
 	g_inside_flush_instance = false;
-	exmdb_server_set_public_username(nullptr);
+	exmdb_server::set_public_username(nullptr);
 	return b_result;
 }
 	
-BOOL exmdb_server_unload_instance(
-	const char *dir, uint32_t instance_id)
+BOOL exmdb_server::unload_instance(const char *dir, uint32_t instance_id)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1642,9 +1639,8 @@ BOOL exmdb_server_unload_instance(
 	return TRUE;
 }
 
-BOOL exmdb_server_get_instance_all_proptags(
-	const char *dir, uint32_t instance_id,
-	PROPTAG_ARRAY *pproptags)
+BOOL exmdb_server::get_instance_all_proptags(const char *dir,
+    uint32_t instance_id, PROPTAG_ARRAY *pproptags)
 {
 	int i;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -2045,9 +2041,9 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 	return TRUE;
 }	
 
-BOOL exmdb_server_get_instance_properties(
-	const char *dir, uint32_t size_limit, uint32_t instance_id,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL exmdb_server::get_instance_properties(const char *dir,
+    uint32_t size_limit, uint32_t instance_id, const PROPTAG_ARRAY *pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	int i, j;
 	uint16_t propid;
@@ -2582,8 +2578,8 @@ static BOOL set_xns_props_atx(INSTANCE_NODE *pinstance,
 	return TRUE;
 }
 
-BOOL exmdb_server_set_instance_properties(const char *dir, uint32_t instance_id,
-    const TPROPVAL_ARRAY *props, PROBLEM_ARRAY *prob)
+BOOL exmdb_server::set_instance_properties(const char *dir,
+    uint32_t instance_id, const TPROPVAL_ARRAY *props, PROBLEM_ARRAY *prob)
 {
 	auto db = db_engine_get_db(dir);
 	if (db == nullptr || db->psqlite == nullptr)
@@ -2596,9 +2592,9 @@ BOOL exmdb_server_set_instance_properties(const char *dir, uint32_t instance_id,
 	return set_xns_props_atx(ins, props, prob);
 }
 
-BOOL exmdb_server_remove_instance_properties(
-	const char *dir, uint32_t instance_id,
-	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+BOOL exmdb_server::remove_instance_properties(const char *dir,
+    uint32_t instance_id, const PROPTAG_ARRAY *pproptags,
+    PROBLEM_ARRAY *pproblems)
 {
 	int i;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -2693,7 +2689,7 @@ BOOL exmdb_server_remove_instance_properties(
 	return TRUE;
 }
 
-BOOL exmdb_server_check_instance_cycle(const char *dir,
+BOOL exmdb_server::check_instance_cycle(const char *dir,
 	uint32_t src_instance_id, uint32_t dst_instance_id, BOOL *pb_cycle)
 {
 	if (src_instance_id == dst_instance_id) {
@@ -2715,8 +2711,8 @@ BOOL exmdb_server_check_instance_cycle(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_empty_message_instance_rcpts(
-	const char *dir, uint32_t instance_id)
+BOOL exmdb_server::empty_message_instance_rcpts(const char *dir,
+    uint32_t instance_id)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2733,8 +2729,8 @@ BOOL exmdb_server_empty_message_instance_rcpts(
 	return TRUE;
 }
 
-BOOL exmdb_server_get_message_instance_rcpts_num(
-	const char *dir, uint32_t instance_id, uint16_t *pnum)
+BOOL exmdb_server::get_message_instance_rcpts_num(const char *dir,
+    uint32_t instance_id, uint16_t *pnum)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2749,8 +2745,8 @@ BOOL exmdb_server_get_message_instance_rcpts_num(
 	return TRUE;
 }
 
-BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
-	const char *dir, uint32_t instance_id, PROPTAG_ARRAY *pproptags)
+BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
+    uint32_t instance_id, PROPTAG_ARRAY *pproptags)
 {
 	TARRAY_SET *prcpts;
 	
@@ -2793,9 +2789,9 @@ BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
 	return TRUE;
 }
 
-BOOL exmdb_server_get_message_instance_rcpts(
-	const char *dir, uint32_t instance_id, uint32_t row_id,
-	uint16_t need_count, TARRAY_SET *pset)
+BOOL exmdb_server::get_message_instance_rcpts(const char *dir,
+    uint32_t instance_id, uint32_t row_id, uint16_t need_count,
+    TARRAY_SET *pset)
 {
 	TARRAY_SET *prcpts;
 	
@@ -2877,8 +2873,8 @@ BOOL exmdb_server_get_message_instance_rcpts(
 }
 
 /* if only PR_ROWID in propvals, means delete this row */
-BOOL exmdb_server_update_message_instance_rcpts(
-	const char *dir, uint32_t instance_id, const TARRAY_SET *pset)
+BOOL exmdb_server::update_message_instance_rcpts(const char *dir,
+    uint32_t instance_id, const TARRAY_SET *pset)
 {
 	uint32_t row_id;
 	
@@ -2941,9 +2937,8 @@ BOOL exmdb_server_update_message_instance_rcpts(
 	return TRUE;
 }
 
-BOOL exmdb_server_copy_instance_rcpts(
-	const char *dir, BOOL b_force, uint32_t src_instance_id,
-	uint32_t dst_instance_id, BOOL *pb_result)
+BOOL exmdb_server::copy_instance_rcpts(const char *dir, BOOL b_force,
+    uint32_t src_instance_id, uint32_t dst_instance_id, BOOL *pb_result)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2978,8 +2973,8 @@ BOOL exmdb_server_copy_instance_rcpts(
 	return TRUE;
 }
 
-BOOL exmdb_server_empty_message_instance_attachments(
-	const char *dir, uint32_t instance_id)
+BOOL exmdb_server::empty_message_instance_attachments(const char *dir,
+    uint32_t instance_id)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2996,8 +2991,8 @@ BOOL exmdb_server_empty_message_instance_attachments(
 	return TRUE;
 }
 
-BOOL exmdb_server_get_message_instance_attachments_num(
-	const char *dir, uint32_t instance_id, uint16_t *pnum)
+BOOL exmdb_server::get_message_instance_attachments_num(const char *dir,
+    uint32_t instance_id, uint16_t *pnum)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -3012,8 +3007,8 @@ BOOL exmdb_server_get_message_instance_attachments_num(
 	return TRUE;
 }
 
-BOOL exmdb_server_get_message_instance_attachment_table_all_proptags(
-	const char *dir, uint32_t instance_id, PROPTAG_ARRAY *pproptags)
+BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char *dir,
+    uint32_t instance_id, PROPTAG_ARRAY *pproptags)
 {
 	int i, j;
 	
@@ -3053,9 +3048,8 @@ BOOL exmdb_server_get_message_instance_attachment_table_all_proptags(
 	return TRUE;
 }
 
-BOOL exmdb_server_copy_instance_attachments(
-	const char *dir, BOOL b_force, uint32_t src_instance_id,
-	uint32_t dst_instance_id, BOOL *pb_result)
+BOOL exmdb_server::copy_instance_attachments(const char *dir, BOOL b_force,
+    uint32_t src_instance_id, uint32_t dst_instance_id, BOOL *pb_result)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -3090,10 +3084,9 @@ BOOL exmdb_server_copy_instance_attachments(
 	return TRUE;
 }
 
-BOOL exmdb_server_query_message_instance_attachment_table(
-	const char *dir, uint32_t instance_id,
-	const PROPTAG_ARRAY *pproptags, uint32_t start_pos,
-	int32_t row_needed, TARRAY_SET *pset)
+BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
+    uint32_t instance_id, const PROPTAG_ARRAY *pproptags, uint32_t start_pos,
+    int32_t row_needed, TARRAY_SET *pset)
 {
 	int i;
 	int32_t end_pos;
@@ -3163,8 +3156,8 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 	return TRUE;
 }
 
-BOOL exmdb_server_set_message_instance_conflict(const char *dir,
-	uint32_t instance_id, const MESSAGE_CONTENT *pmsgctnt)
+BOOL exmdb_server::set_message_instance_conflict(const char *dir,
+    uint32_t instance_id, const MESSAGE_CONTENT *pmsgctnt)
 {
 	uint8_t tmp_byte;
 	BOOL b_inconflict;

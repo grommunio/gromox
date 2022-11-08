@@ -223,12 +223,10 @@ unsigned int common_util_sequence_ID()
 }
 
 /* can directly be called in local rpc thread without
-	invoking exmdb_server_build_environment before! */
+	invoking exmdb_server::build_environment before! */
 void* common_util_alloc(size_t size)
 {
-	ALLOC_CONTEXT *pctx;
-	
-	pctx = exmdb_server_get_alloc_context();
+	auto pctx = exmdb_server::get_alloc_context();
 	if (pctx != nullptr)
 		return pctx->alloc(size);
 	return ndr_stack_alloc(NDR_STACK_IN, size);
@@ -729,7 +727,7 @@ static BOOL common_util_check_subfolders(
 {
 	char sql_string[80];
 	
-	if (exmdb_server_is_private())
+	if (exmdb_server::is_private())
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
 		          "folders WHERE parent_id=%llu", LLU{folder_id});
 	else
@@ -750,7 +748,7 @@ static char* common_util_calculate_folder_path(
 	
 	len = 0;
 	tmp_fid = folder_id;
-	auto b_private = exmdb_server_is_private();
+	auto b_private = exmdb_server::is_private();
 	while (true) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM"
 				" folder_properties WHERE proptag=%u AND "
@@ -851,7 +849,7 @@ static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 			"search_result.message_id=messages.message_id"
 			" AND messages.is_associated=%u",
 			LLU{folder_id}, !!b_associated);
-	else if (exmdb_server_is_private())
+	else if (exmdb_server::is_private())
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu "
 			"AND is_associated=%u", LLU{folder_id}, !!b_associated);
@@ -871,7 +869,7 @@ uint32_t common_util_get_folder_unread_count(
 	uint32_t folder_type;
 	char sql_string[220];
 	
-	if (exmdb_server_is_private()) {
+	if (exmdb_server::is_private()) {
 		if (common_util_get_folder_type(psqlite, folder_id, &folder_type) &&
 		    folder_type == FOLDER_SEARCH)
 			gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
@@ -888,7 +886,7 @@ uint32_t common_util_get_folder_unread_count(
 		return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 		       sqlite3_column_int64(pstmt, 0);
 	}
-	auto username = exmdb_pf_read_per_user ? exmdb_server_get_public_username() : "";
+	auto username = exmdb_pf_read_per_user ? exmdb_server::get_public_username() : "";
 	if (username == nullptr)
 		return 0;
 	gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM messages WHERE"
@@ -976,7 +974,7 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
 {
 	char sql_string[128];
 	
-	if (!exmdb_server_is_private()) {
+	if (!exmdb_server::is_private()) {
 		*pfolder_type = folder_id == PUBLIC_FID_ROOT ? FOLDER_ROOT : FOLDER_GENERIC;
 		return TRUE;
 	}
@@ -1024,7 +1022,7 @@ static uint32_t common_util_get_folder_flags(
 		folder_flags |= folder_type == FOLDER_SEARCH ? FOLDER_FLAGS_SEARCH : FOLDER_FLAGS_NORMAL;
 	if (common_util_check_folder_rules(psqlite, folder_id))
 		folder_flags |= FOLDER_FLAGS_RULES;
-	if (exmdb_server_is_private()) {
+	if (exmdb_server::is_private()) {
 		if (common_util_check_descendant(psqlite, folder_id,
 		    PRIVATE_FID_IPMSUBTREE, &b_included) && b_included)
 			folder_flags |= FOLDER_FLAGS_IPM;
@@ -1114,16 +1112,15 @@ BOOL common_util_get_folder_by_name(
 static BINARY *cu_fid_to_entryid(sqlite3 *psqlite, uint64_t folder_id)
 {
 	BOOL b_found;
-	int account_id;
 	uint16_t replid;
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
-	account_id = exmdb_server_get_account_id();
+	auto account_id = exmdb_server::get_account_id();
 	if (account_id < 0)
 		return NULL;
 	tmp_entryid.flags = 0;
-	if (exmdb_server_is_private()) {
+	if (exmdb_server::is_private()) {
 		auto pbin = common_util_get_mailbox_guid(psqlite);
 		if (pbin == nullptr)
 			return NULL;
@@ -1158,18 +1155,17 @@ static BINARY *cu_fid_to_entryid(sqlite3 *psqlite, uint64_t folder_id)
 
 static BINARY *cu_mid_to_entryid(sqlite3 *psqlite, uint64_t message_id)
 {
-	int account_id;
 	EXT_PUSH ext_push;
 	uint64_t folder_id;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	if (!common_util_get_message_parent_folder(psqlite, message_id, &folder_id))
 		return NULL;	
-	account_id = exmdb_server_get_account_id();
+	auto account_id = exmdb_server::get_account_id();
 	if (account_id < 0)
 		return NULL;
 	tmp_entryid.flags = 0;
-	if (exmdb_server_is_private()) {
+	if (exmdb_server::is_private()) {
 		auto pbin = common_util_get_mailbox_guid(psqlite);
 		if (pbin == nullptr)
 			return NULL;
@@ -1247,8 +1243,8 @@ static BOOL common_util_check_message_read(
 {
 	char sql_string[128];
 	
-	if (!exmdb_server_is_private()) {
-		auto username = exmdb_pf_read_per_user ? exmdb_server_get_public_username() : "";
+	if (!exmdb_server::is_private()) {
+		auto username = exmdb_pf_read_per_user ? exmdb_server::get_public_username() : "";
 		if (username == nullptr)
 			return FALSE;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
@@ -1484,7 +1480,7 @@ static BOOL common_util_get_message_display_recipients(
 std::string cu_cid_path(const char *dir, uint64_t id) try
 {
 	if (dir == nullptr)
-		dir = exmdb_server_get_dir();
+		dir = exmdb_server::get_dir();
 	return dir + "/cid/"s + std::to_string(id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1608: ENOMEM");
@@ -1497,7 +1493,7 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	char sql_string[128];
 	struct stat node_stat;
 	
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 	if (dir == nullptr)
 		return NULL;
 	if (proptag == PR_BODY || proptag == PR_BODY_A)
@@ -1828,7 +1824,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = exmdb_pf_read_states == 0 && !exmdb_server_is_private() ?
+		*v = exmdb_pf_read_states == 0 && !exmdb_server::is_private() ?
 		     true : !!common_util_check_message_read(db, id);
 		return GP_ADV;
 	}
@@ -1860,7 +1856,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		if (!common_util_get_message_flags(db, id, false,
 		    reinterpret_cast<uint32_t **>(&pv.pvalue)))
 			return GP_ERR;
-		if (exmdb_pf_read_states == 0 && !exmdb_server_is_private())
+		if (exmdb_pf_read_states == 0 && !exmdb_server::is_private())
 			*static_cast<uint32_t *>(pv.pvalue) |= MSGFLAG_READ;
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PR_SUBJECT:
@@ -2509,7 +2505,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 			" AND proptag=%u", MSGFLAG_EVERREAD,
 		        LLU{message_id}, PR_MESSAGE_FLAGS);
 	gx_sql_exec(psqlite, sql_string);
-	if (exmdb_server_is_private()) {
+	if (exmdb_server::is_private()) {
 		if (!is_read)
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
 				"read_state=0 WHERE message_id=%llu", LLU{message_id});
@@ -2519,7 +2515,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 		gx_sql_exec(psqlite, sql_string);
 		return;
 	}
-	auto username = exmdb_pf_read_per_user ? exmdb_server_get_public_username() : "";
+	auto username = exmdb_pf_read_per_user ? exmdb_server::get_public_username() : "";
 	if (username == nullptr)
 		return;
 	if (is_read)
@@ -2619,7 +2615,7 @@ static BOOL common_util_set_message_body(
 	} else {
 		return FALSE;
 	}
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 	if (dir == nullptr)
 		return FALSE;
 	uint64_t cid = 0;
@@ -2670,7 +2666,7 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
 	} else {
 		return false;
 	}
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 	if (dir == nullptr)
 		return FALSE;
 	uint64_t cid = 0;
@@ -3792,7 +3788,7 @@ BOOL common_util_check_descendant(sqlite3 *psqlite,
 		return TRUE;
 	}
 	folder_id = inner_fid;
-	auto b_private = exmdb_server_is_private();
+	auto b_private = exmdb_server::is_private();
 	auto pstmt = gx_sql_prep(psqlite, "SELECT parent_id"
 	             " FROM folders WHERE folder_id=?");
 	if (pstmt == nullptr)
@@ -4472,7 +4468,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	char mid_string[128];
 	char mid_string1[128];
 	uint32_t message_size;
-	auto b_private = exmdb_server_is_private();
+	auto b_private = exmdb_server::is_private();
 	
 	if (!b_embedded) {
 		if (*pdst_mid == 0 &&
@@ -4512,14 +4508,14 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			snprintf(mid_string, arsizeof(mid_string), "%lld.%u.%s",
 			         LLD{time(nullptr)}, common_util_sequence_ID(), get_host_ID());
 			snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
-				exmdb_server_get_dir(), mid_string);
+			         exmdb_server::get_dir(), mid_string);
 			snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
-				exmdb_server_get_dir(), mid_string1);
+			         exmdb_server::get_dir(), mid_string1);
 			link(tmp_path1, tmp_path);
 			snprintf(tmp_path, arsizeof(tmp_path), "%s/ext/%s",
-				exmdb_server_get_dir(), mid_string);
+			         exmdb_server::get_dir(), mid_string);
 			snprintf(tmp_path1, arsizeof(tmp_path1), "%s/ext/%s",
-				exmdb_server_get_dir(), mid_string1);
+			         exmdb_server::get_dir(), mid_string1);
 			link(tmp_path1, tmp_path);
 		}
 	}
@@ -4671,7 +4667,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		return FALSE;
 	propval_buff[0].proptag = PR_CHANGE_KEY;
 	propval_buff[0].pvalue = cu_xid_to_bin({
-		exmdb_server_is_private() ?
+		exmdb_server::is_private() ?
 			rop_util_make_user_guid(account_id) :
 			rop_util_make_domain_guid(account_id),
 		change_num});
@@ -5185,7 +5181,7 @@ BOOL common_util_indexing_sub_contents(
 static uint32_t common_util_get_cid_string_length(uint64_t cid)
 {
 	struct stat node_stat;
-	wrapfd fd = open(cu_cid_path(exmdb_server_get_dir(), cid).c_str(), O_RDONLY);
+	wrapfd fd = open(cu_cid_path(exmdb_server::get_dir(), cid).c_str(), O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return 0;
 	auto buf = cu_alloc<char>(node_stat.st_size + 1);
@@ -5209,7 +5205,7 @@ static uint32_t common_util_get_cid_string_length(uint64_t cid)
 static uint32_t common_util_get_cid_length(uint64_t cid)
 {
 	struct stat node_stat;
-	if (stat(cu_cid_path(exmdb_server_get_dir(), cid).c_str(), &node_stat) != 0)
+	if (stat(cu_cid_path(exmdb_server::get_dir(), cid).c_str(), &node_stat) != 0)
 		return 0;
 	if (static_cast<unsigned long long>(node_stat.st_size) > UINT32_MAX)
 		return UINT32_MAX;

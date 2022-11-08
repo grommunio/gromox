@@ -174,7 +174,7 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 {
 	if (g_exmdb_schema_upgrades != EXMDB_UPGRADE_YES)
 		return 0;
-	auto is_pvt = exmdb_server_is_private();
+	auto is_pvt = exmdb_server::is_private();
 	auto kind = is_pvt ? sqlite_kind::pvt : sqlite_kind::pub;
 	auto recent = dbop_sqlite_recentversion(kind);
 	auto current = dbop_sqlite_schemaversion(db, kind);
@@ -274,7 +274,7 @@ db_item_ptr db_engine_get_db(const char *path)
 		snprintf(sql_string, sizeof(sql_string), "PRAGMA mmap_size=%llu", LLU{g_mmap_size});
 		gx_sql_exec(pdb->psqlite, sql_string);
 	}
-	if (exmdb_server_is_private())
+	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(pdb);
 	return db_item_ptr(pdb);
 }
@@ -464,10 +464,10 @@ static BOOL db_engine_search_folder(const char *dir,
 			break;
 		if (count == g_exmdb_search_pacing) {
 			pdb.reset();
-			exmdb_server_free_environment();
+			exmdb_server::free_env();
 			if (g_exmdb_search_yield)
 				std::this_thread::yield(); /* +2 to +3% walltime */
-			exmdb_server_build_env(EM_PRIVATE, dir);
+			exmdb_server::build_env(EM_PRIVATE, dir);
 			pdb = db_engine_get_db(dir);
 			if (pdb == nullptr || pdb->psqlite == nullptr) {
 				return FALSE;
@@ -595,7 +595,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 {
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_SEARCHCOMPLETE,
 	                folder_id, 0);
@@ -648,8 +648,8 @@ static void *mdpeng_thrwork(void *param)
 			goto NEXT_SEARCH;	
 		}
 		auto cl_1 = make_scope_exit([&]() { eid_array_free(pfolder_ids); });
-		exmdb_server_build_env(EM_PRIVATE, psearch->dir.c_str());
-		auto cl_2 = make_scope_exit(exmdb_server_free_environment);
+		exmdb_server::build_env(EM_PRIVATE, psearch->dir.c_str());
+		auto cl_2 = make_scope_exit(exmdb_server::free_env);
 		for (size_t i = 0; i < psearch->folder_ids.count; ++i) {
 			if (!eid_array_append(pfolder_ids,
 			    psearch->folder_ids.pll[i])) {
@@ -698,7 +698,7 @@ static void *mdpeng_thrwork(void *param)
 		}
 		pdb.reset();
 		while (table_ids.size() > 0) {
-			exmdb_server_reload_content_table(psearch->dir.c_str(), table_ids.back());
+			exmdb_server::reload_content_table(psearch->dir.c_str(), table_ids.back());
 			table_ids.pop_back();
 		}
 		goto NEXT_SEARCH;
@@ -1358,7 +1358,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (NULL == padded_row) {
-			datagram.dir = deconst(exmdb_server_get_dir());
+			datagram.dir = deconst(exmdb_server::get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			padded_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>(2);
@@ -1368,7 +1368,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			padded_row->row_folder_id = folder_id;
 			padded_row->row_message_id = message_id;
 			datagram.db_notify.pdata = padded_row;
-			datagram1.dir = deconst(exmdb_server_get_dir());
+			datagram1.dir = deconst(exmdb_server::get_dir());
 			datagram1.b_table = TRUE;
 			datagram1.id_array.count = 1;
 			padded_row1 = padded_row + 1;
@@ -1963,7 +1963,7 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 {
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_NEWMAIL, folder_id, 0);
 	if (tmp_list.size() == 0)
@@ -2000,7 +2000,7 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	int i;
 	void *pvalue;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_NEWMAIL, folder_id, 0);
 	if (tmp_list.size() > 0) {
@@ -2049,7 +2049,7 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 {
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTCREATED,
 	                folder_id, 0);
@@ -2095,7 +2095,7 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
 	if (!common_util_get_message_parent_folder(pdb->psqlite, message_id, &folder_id))
 		return;
 
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTCREATED,
 	                folder_id, 0);
 	if (tmp_list.size() > 0) {
@@ -2167,7 +2167,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 		    folder_id, ptable->prestriction))
 			continue;
 		if (NULL == padded_row) {
-			datagram.dir = deconst(exmdb_server_get_dir());
+			datagram.dir = deconst(exmdb_server::get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			datagram.db_notify.type =
@@ -2250,7 +2250,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				continue;
 			}
 			if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-				auto h = exmdb_server_get_handle();
+				auto h = exmdb_server::get_handle();
 				if (h != nullptr && *h == ptable->handle_guid)
 					continue;
 			}
@@ -2267,7 +2267,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				continue;
 			}
 			if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-				auto h = exmdb_server_get_handle();
+				auto h = exmdb_server::get_handle();
 				if (h != nullptr && *h == ptable->handle_guid)
 					continue;
 			}
@@ -2295,7 +2295,7 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
 {
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTCREATED,
 	                parent_id, 0);
@@ -2445,7 +2445,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (NULL == pdeleted_row) {
-			datagram.dir = deconst(exmdb_server_get_dir());
+			datagram.dir = deconst(exmdb_server::get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			pdeleted_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
@@ -2457,7 +2457,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			if (NULL == pmodified_row) {
 				return;
 			}
-			datagram1.dir = deconst(exmdb_server_get_dir());
+			datagram1.dir = deconst(exmdb_server::get_dir());
 			datagram1.b_table = TRUE;
 			datagram1.id_array.count = 1;
 			pmodified_row->row_folder_id = folder_id;
@@ -2879,7 +2879,7 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
 {
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTDELETED,
 	                folder_id, message_id);
@@ -2925,7 +2925,7 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
 	    message_id, &folder_id))
 		return;
 
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTDELETED, folder_id, message_id);
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
@@ -3011,12 +3011,12 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-			auto h = exmdb_server_get_handle();
+			auto h = exmdb_server::get_handle();
 			if (h != nullptr && *h == ptable->handle_guid)
 				continue;
 		}
 		if (NULL == pdeleted_row) {
-			datagram.dir = deconst(exmdb_server_get_dir());
+			datagram.dir = deconst(exmdb_server::get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			datagram.db_notify.type =
@@ -3039,7 +3039,7 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
 {
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTDELETED,
 	                parent_id, 0);
@@ -3122,7 +3122,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			continue;
 		pstmt.finalize();
 		if (NULL == pmodified_row) {
-			datagram.dir = deconst(exmdb_server_get_dir());
+			datagram.dir = deconst(exmdb_server::get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			pmodified_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
@@ -3687,7 +3687,7 @@ void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
 {
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTMODIFIED,
 	                folder_id, message_id);
@@ -3769,7 +3769,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 			    cu_eval_folder_restriction(
 				pdb->psqlite, folder_id, ptable->prestriction)) {
 				if (NULL == padded_row) {
-					datagram2.dir = deconst(exmdb_server_get_dir());
+					datagram2.dir = deconst(exmdb_server::get_dir());
 					datagram2.b_table = TRUE;
 					datagram2.id_array.count = 1;
 					datagram2.db_notify.type =
@@ -3788,7 +3788,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 					continue;
 				}
 				if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-					auto h = exmdb_server_get_handle();
+					auto h = exmdb_server::get_handle();
 					if (h != nullptr && *h == ptable->handle_guid)
 						continue;
 				}
@@ -3835,12 +3835,12 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 				continue;
 			}
 			if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-				auto h = exmdb_server_get_handle();
+				auto h = exmdb_server::get_handle();
 				if (h != nullptr && *h == ptable->handle_guid)
 					continue;
 			}
 			if (NULL == pdeleted_row) {
-				datagram1.dir = deconst(exmdb_server_get_dir());
+				datagram1.dir = deconst(exmdb_server::get_dir());
 				datagram1.b_table = TRUE;
 				datagram1.id_array.count = 1;
 				datagram1.db_notify.type =
@@ -3861,12 +3861,12 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-			auto h = exmdb_server_get_handle();
+			auto h = exmdb_server::get_handle();
 			if (h != nullptr && *h == ptable->handle_guid)
 				continue;
 		}
 		if (NULL == pmodified_row) {
-			datagram.dir = deconst(exmdb_server_get_dir());
+			datagram.dir = deconst(exmdb_server::get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			datagram.db_notify.type =
@@ -3901,7 +3901,7 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
 {
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 
 	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTMODIFIED,
 	                folder_id, 0);
@@ -3941,7 +3941,7 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 {
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 	std::vector<ID_NODE> tmp_list;
 
 	for (const auto &sub : pdb->nsub_list) {
@@ -4009,7 +4009,7 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 {
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
-	auto dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 	std::vector<ID_NODE> tmp_list;
 
 	for (const auto &sub : pdb->nsub_list) {
@@ -4086,7 +4086,7 @@ void db_engine_notify_content_table_reload(db_item_ptr &pdb, uint32_t table_id)
 		return;
 	}
 	auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
-	datagram.dir = deconst(exmdb_server_get_dir());
+	datagram.dir = deconst(exmdb_server::get_dir());
 	datagram.db_notify.type = !ptable->b_search ?
 		DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED :
 		DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED;
@@ -4106,7 +4106,6 @@ void db_engine_begin_batch_mode(db_item_ptr &pdb)
 void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 {
 	int table_num;
-	const char *dir;
 	DOUBLE_LIST_NODE *pnode;
 	
 	table_num = double_list_get_nodes_num(&pdb->tables.table_list);
@@ -4124,11 +4123,10 @@ void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 	}
 	pdb->tables.b_batch = FALSE;
 	pdb.reset();
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server::get_dir();
 	while (0 != table_num) {
 		table_num --;
-		exmdb_server_reload_content_table(
-			dir, ptable_ids[table_num]);
+		exmdb_server::reload_content_table(dir, ptable_ids[table_num]);
 	}
 }
 
