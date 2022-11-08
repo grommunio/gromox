@@ -48,6 +48,43 @@ static BOOL instance_identify_message(MESSAGE_CONTENT *pmsgctnt);
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
 static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
 
+instance_node::instance_node(instance_node &&o) noexcept :
+	instance_id(o.instance_id), parent_id(o.parent_id),
+	folder_id(o.folder_id), last_id(o.last_id), cpid(o.cpid),
+	type(o.type), b_new(o.b_new), change_mask(o.change_mask),
+	username(std::move(o.username)), pcontent(o.pcontent)
+{
+	o.pcontent = nullptr;
+}
+
+void instance_node::release()
+{
+	if (pcontent == nullptr)
+		return;
+	if (type == instance_type::message)
+		message_content_free(static_cast<MESSAGE_CONTENT *>(pcontent));
+	else
+		attachment_content_free(static_cast<ATTACHMENT_CONTENT *>(pcontent));
+	pcontent = nullptr;
+}
+
+instance_node &instance_node::operator=(instance_node &&o) noexcept
+{
+	release();
+	instance_id = o.instance_id;
+	parent_id = o.parent_id;
+	folder_id = o.folder_id;
+	last_id = o.last_id;
+	cpid = o.cpid;
+	type = o.type;
+	b_new = o.b_new;
+	change_mask = o.change_mask;
+	username = std::move(o.username);
+	pcontent = o.pcontent;
+	o.pcontent = nullptr;
+	return *this;
+}
+
 static BOOL instance_load_message(sqlite3 *psqlite,
 	uint64_t message_id, uint32_t *plast_id,
 	MESSAGE_CONTENT **ppmsgctnt)
@@ -307,19 +344,17 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 
 static uint32_t next_instance_id(db_item_ptr &db)
 {
-	auto n = double_list_get_tail(&db->instance_list);
-	if (n == nullptr)
+	if (db->instance_list.empty())
 		return 1;
-	auto id = static_cast<const INSTANCE_NODE *>(n->pdata)->instance_id + 1;
+	auto id = db->instance_list.back().instance_id + 1;
 	if (id == UINT32_MAX)
 		mlog(LV_ERR, "E-1270: instance IDs exhausted");
 	return id;
 }
 
-BOOL exmdb_server::load_message_instance(const char *dir,
-	const char *username, uint32_t cpid, BOOL b_new,
-	uint64_t folder_id, uint64_t message_id,
-	uint32_t *pinstance_id)
+BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
+    uint32_t cpid, BOOL b_new, uint64_t folder_id, uint64_t message_id,
+    uint32_t *pinstance_id) try
 {
 	uint64_t mid_val;
 	uint32_t tmp_int32;
@@ -330,53 +365,32 @@ BOOL exmdb_server::load_message_instance(const char *dir,
 	auto instance_id = next_instance_id(pdb);
 	if (instance_id == UINT32_MAX)
 		return false;
-	auto pinstance = me_alloc<INSTANCE_NODE>();
-	if (NULL == pinstance) {
-		return FALSE;
-	}
-	memset(pinstance, 0, sizeof(INSTANCE_NODE));
-	pinstance->node.pdata = pinstance;
-	pinstance->instance_id = instance_id;
+
+	instance_node inode, *pinstance = &inode;
+	inode.instance_id = instance_id;
 	pinstance->folder_id = rop_util_get_gc_value(folder_id);
 	pinstance->cpid = cpid;
 	mid_val = rop_util_get_gc_value(message_id);
 	pinstance->type = instance_type::message;
 	if (!exmdb_server::is_private()) {
-		pinstance->username = strdup(username);
-		if (NULL == pinstance->username) {
-			free(pinstance);
-			return FALSE;
-		}
+		pinstance->username = username;
 	}
 	if (b_new) {
 		/* message_id MUST NOT exist in messages table */
 		pinstance->b_new = TRUE;
 		pinstance->pcontent = message_content_init();
 		if (NULL == pinstance->pcontent) {
-			if (NULL != pinstance->username) {
-				free(pinstance->username);
-			}
-			free(pinstance);
 			return FALSE;
 		}
 		auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 		if (ict->proplist.set(PidTagMid, &message_id) != 0) {
-			message_content_free(ict);
-			if (NULL != pinstance->username) {
-				free(pinstance->username);
-			}
-			free(pinstance);
 			return FALSE;
 		}
 		tmp_int32 = 0;
 		if (ict->proplist.set(PR_MSG_STATUS, &tmp_int32) != 0) {
-			message_content_free(ict);
-			if (pinstance->username != nullptr)
-				free(pinstance->username);
-			free(pinstance);
 			return false;
 		}
-		double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
+		pdb->instance_list.push_back(std::move(inode));
 		*pinstance_id = instance_id;
 		return TRUE;
 	}
@@ -389,38 +403,28 @@ BOOL exmdb_server::load_message_instance(const char *dir,
 	if (!instance_load_message(pdb->psqlite, mid_val, &pinstance->last_id,
 	    reinterpret_cast<MESSAGE_CONTENT **>(&pinstance->pcontent))) {
 		common_util_end_message_optimize();
-		if (NULL != pinstance->username) {
-			free(pinstance->username);
-		}
-		free(pinstance);
 		return FALSE;
 	}
 	common_util_end_message_optimize();
 	sql_transact.commit();
 	if (NULL == pinstance->pcontent) {
-		if (NULL != pinstance->username) {
-			free(pinstance->username);
-		}
-		free(pinstance);
 		*pinstance_id = 0;
 		return TRUE;
 	}
 	pinstance->b_new = FALSE;
-	double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
+	pdb->instance_list.push_back(std::move(inode));
 	*pinstance_id = instance_id;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1299: ENOMEM");
+	return false;
 }
 
 static INSTANCE_NODE* instance_get_instance(db_item_ptr &pdb, uint32_t instance_id)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pdb->instance_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->instance_list, pnode)) {
-		auto n = static_cast<INSTANCE_NODE *>(pnode->pdata);
-		if (n->instance_id == instance_id)
-			return n;
-	}
+	for (auto &i : pdb->instance_list)
+		if (i.instance_id == instance_id)
+			return &i;
 	return NULL;
 }
 
@@ -429,13 +433,11 @@ static const INSTANCE_NODE *instance_get_instance_c(db_item_ptr &pdb, uint32_t i
 	return instance_get_instance(pdb, id);
 }
 
-BOOL exmdb_server::load_embedded_instance(const char *dir,
-	BOOL b_new, uint32_t attachment_instance_id,
-	uint32_t *pinstance_id)
+BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
+    uint32_t attachment_instance_id, uint32_t *pinstance_id) try
 {
 	uint64_t mid_val;
 	uint64_t message_id;
-	INSTANCE_NODE *pinstance;
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
@@ -456,42 +458,23 @@ BOOL exmdb_server::load_embedded_instance(const char *dir,
 		if (!common_util_allocate_eid(pdb->psqlite, &mid_val))
 			return FALSE;
 		message_id = rop_util_make_eid_ex(1, mid_val);
-		pinstance = me_alloc<INSTANCE_NODE>();
-		if (NULL == pinstance) {
-			return FALSE;
-		}
-		memset(pinstance, 0, sizeof(INSTANCE_NODE));
-		pinstance->node.pdata = pinstance;
+
+		instance_node inode, *pinstance = &inode;
 		pinstance->instance_id = instance_id;
 		pinstance->parent_id = attachment_instance_id;
 		pinstance->cpid = pinstance1->cpid;
-		if (NULL != pinstance1->username) {
-			pinstance->username = strdup(pinstance1->username);
-			if (NULL == pinstance->username) {
-				free(pinstance);
-				return FALSE;
-			}
-		}
+		inode.username = pinstance1->username;
 		pinstance->type = instance_type::message;
 		pinstance->b_new = TRUE;
 		pinstance->pcontent = message_content_init();
 		if (NULL == pinstance->pcontent) {
-			if (NULL != pinstance->username) {
-				free(pinstance->username);
-			}
-			free(pinstance);
 			return FALSE;
 		}
 		auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 		if (ict->proplist.set(PidTagMid, &message_id) != 0) {
-			message_content_free(ict);
-			if (NULL != pinstance->username) {
-				free(pinstance->username);
-			}
-			free(pinstance);
 			return FALSE;
 		}
-		double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
+		pdb->instance_list.push_back(std::move(inode));
 		*pinstance_id = instance_id;
 		return TRUE;
 	}
@@ -499,12 +482,8 @@ BOOL exmdb_server::load_embedded_instance(const char *dir,
 		*pinstance_id = 0;
 		return TRUE;
 	}
-	pinstance = me_alloc<INSTANCE_NODE>();
-	if (NULL == pinstance) {
-		return FALSE;
-	}
-	memset(pinstance, 0, sizeof(INSTANCE_NODE));
-	pinstance->node.pdata = pinstance;
+
+	instance_node inode, *pinstance = &inode;
 	pinstance->instance_id = instance_id;
 	pinstance->parent_id = attachment_instance_id;
 	if (NULL != pmsgctnt->children.pattachments &&
@@ -518,26 +497,19 @@ BOOL exmdb_server::load_embedded_instance(const char *dir,
 		}
 	}
 	pinstance->cpid = pinstance1->cpid;
-	if (NULL != pinstance1->username) {
-		pinstance->username = strdup(pinstance1->username);
-		if (NULL == pinstance->username) {
-			free(pinstance);
-			return FALSE;
-		}
-	}
+	inode.username = pinstance1->username;
 	pinstance->type = instance_type::message;
 	pinstance->b_new = FALSE;
 	pinstance->pcontent = message_content_dup(pmsgctnt);
 	if (NULL == pinstance->pcontent) {
-		if (NULL != pinstance->username) {
-			free(pinstance->username);
-		}
-		free(pinstance);
 		return FALSE;
 	}
-	double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
+	pdb->instance_list.push_back(std::move(inode));
 	*pinstance_id = instance_id;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1269: ENOMEM");
+	return false;
 }
 
 /* get PidTagChangeNumber from embedded message */
@@ -1198,8 +1170,8 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 }
 
 BOOL exmdb_server::load_attachment_instance(const char *dir,
-	uint32_t message_instance_id, uint32_t attachment_num,
-	uint32_t *pinstance_id)
+    uint32_t message_instance_id, uint32_t attachment_num,
+    uint32_t *pinstance_id) try
 {
 	int i;
 	ATTACHMENT_CONTENT *pattachment = nullptr;
@@ -1231,40 +1203,29 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 		*pinstance_id = 0;
 		return TRUE;
 	}
-	auto pinstance = me_alloc<INSTANCE_NODE>();
-	if (NULL == pinstance) {
-		return FALSE;
-	}
-	memset(pinstance, 0, sizeof(INSTANCE_NODE));
-	pinstance->node.pdata = pinstance;
+
+	instance_node inode, *pinstance = &inode;
 	pinstance->instance_id = instance_id;
 	pinstance->parent_id = message_instance_id;
 	pinstance->cpid = pinstance1->cpid;
-	if (NULL != pinstance1->username) {
-		pinstance->username = strdup(pinstance1->username);
-		if (NULL == pinstance->username) {
-			free(pinstance);
-			return FALSE;
-		}
-	}
+	inode.username = pinstance1->username;
 	pinstance->type = instance_type::attachment;
 	pinstance->b_new = FALSE;
 	pinstance->pcontent = attachment_content_dup(pattachment);
 	if (NULL == pinstance->pcontent) {
-		if (NULL != pinstance->username) {
-			free(pinstance->username);
-		}
-		free(pinstance);
 		return FALSE;
 	}
-	double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
+	pdb->instance_list.push_back(std::move(inode));
 	*pinstance_id = instance_id;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1268: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_server::create_attachment_instance(const char *dir,
-	uint32_t message_instance_id, uint32_t *pinstance_id,
-	uint32_t *pattachment_num)
+    uint32_t message_instance_id, uint32_t *pinstance_id,
+    uint32_t *pattachment_num) try
 {
 	ATTACHMENT_CONTENT *pattachment;
 	
@@ -1285,45 +1246,30 @@ BOOL exmdb_server::create_attachment_instance(const char *dir,
 		*pattachment_num = ATTACHMENT_NUM_INVALID;
 		return TRUE;	
 	}
-	auto pinstance = me_alloc<INSTANCE_NODE>();
-	if (NULL == pinstance) {
-		return FALSE;
-	}
-	memset(pinstance, 0, sizeof(INSTANCE_NODE));
-	pinstance->node.pdata = pinstance;
+
+	instance_node inode, *pinstance = &inode;
 	pinstance->instance_id = instance_id;
 	pinstance->parent_id = message_instance_id;
 	pinstance->cpid = pinstance1->cpid;
-	if (NULL != pinstance1->username) {
-		pinstance->username = strdup(pinstance1->username);
-		if (NULL == pinstance->username) {
-			free(pinstance);
-			return FALSE;
-		}
-	}
+	inode.username = pinstance1->username;
 	pinstance->type = instance_type::attachment;
 	pinstance->b_new = TRUE;
 	pattachment = attachment_content_init();
 	if (NULL == pattachment) {
-		if (NULL != pinstance->username) {
-			free(pinstance->username);
-		}
-		free(pinstance);
 		return FALSE;
 	}
 	*pattachment_num = pinstance1->last_id++;
 	if (pattachment->proplist.set(PR_ATTACH_NUM, pattachment_num) != 0) {
 		attachment_content_free(pattachment);
-		if (NULL != pinstance->username) {
-			free(pinstance->username);
-		}
-		free(pinstance);
 		return FALSE;
 	}
 	pinstance->pcontent = pattachment;
-	double_list_append_as_tail(&pdb->instance_list, &pinstance->node);
+	pdb->instance_list.push_back(std::move(inode));
 	*pinstance_id = instance_id;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1267: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_server::read_attachment_instance(const char *dir,
@@ -1613,7 +1559,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	pinstance->b_new = FALSE;
 	folder_id = rop_util_make_eid_ex(1, pinstance->folder_id);
 	if (!exmdb_server::is_private())
-		exmdb_server::set_public_username(pinstance->username);
+		exmdb_server::set_public_username(pinstance->username.c_str());
 	pdb.reset();
 	g_inside_flush_instance = true;
 	BOOL b_result = exmdb_server::write_message(dir, account, 0, folder_id,
@@ -1628,19 +1574,12 @@ BOOL exmdb_server::unload_instance(const char *dir, uint32_t instance_id)
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance(pdb, instance_id);
-	if (NULL == pinstance) {
-		return TRUE;
+	for (auto it = pdb->instance_list.begin(); it != pdb->instance_list.end(); ++it) {
+		if (it->instance_id == instance_id) {
+			pdb->instance_list.erase(it);
+			break;
+		}
 	}
-	double_list_remove(&pdb->instance_list, &pinstance->node);
-	if (pinstance->type == instance_type::attachment)
-		attachment_content_free(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent));
-	else
-		message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
-	if (NULL != pinstance->username) {
-		free(pinstance->username);
-	}
-	free(pinstance);
 	return TRUE;
 }
 

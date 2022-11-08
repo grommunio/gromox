@@ -250,7 +250,6 @@ db_item_ptr db_engine_get_db(const char *path)
 	}
 	double_list_init(&pdb->dynamic_list);
 	double_list_init(&pdb->tables.table_list);
-	double_list_init(&pdb->instance_list);
 	pdb->tables.last_id = 0;
 	pdb->tables.b_batch = FALSE;
 	pdb->tables.psqlite = NULL;
@@ -323,18 +322,7 @@ DB_ITEM::~DB_ITEM()
 	auto pdb = this;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_pop_front(&pdb->instance_list)) != nullptr) {
-		auto pinstance = static_cast<INSTANCE_NODE *>(pnode->pdata);
-		if (NULL != pinstance->username) {
-			free(pinstance->username);
-		}
-		if (pinstance->type == instance_type::message)
-			message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
-		else
-			attachment_content_free(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent));
-		free(pinstance);
-	}
-	double_list_free(&pdb->instance_list);
+	pdb->instance_list.clear();
 	while ((pnode = double_list_pop_front(&pdb->dynamic_list)) != nullptr) {
 		auto pdynamic = static_cast<DYNAMIC_NODE *>(pnode->pdata);
 		restriction_free(pdynamic->prestriction);
