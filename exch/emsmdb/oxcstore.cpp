@@ -51,7 +51,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		}
 		if (!common_util_get_maildir(username, maildir, arsizeof(maildir)))
 			return ecError;
-		if (!exmdb_client::check_mailbox_permission(maildir,
+		if (!exmdb_client::get_mbox_perm(maildir,
 		    rpc_info.username, &permission))
 			return ecError;
 		if (permission == rightsNone)

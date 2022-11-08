@@ -146,12 +146,12 @@ static int exmdb_push(EXT_PUSH &x, const exreq_remove_store_properties &d)
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static int exmdb_pull(EXT_PULL &x, exreq_check_mailbox_permission &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_mbox_perm &d)
 {
 	return x.g_str(&d.username);
 }
 
-static int exmdb_push(EXT_PUSH &x, const exreq_check_mailbox_permission &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_mbox_perm &d)
 {
 	return x.p_str(d.username);
 }
@@ -2186,7 +2186,7 @@ static int exmdb_push(EXT_PUSH &x, const exreq_get_public_folder_unread_count &d
 	E(get_store_properties) \
 	E(set_store_properties) \
 	E(remove_store_properties) \
-	E(check_mailbox_permission) \
+	E(get_mbox_perm) \
 	E(get_folder_by_class) \
 	E(set_folder_by_class) \
 	E(check_folder_id) \
@@ -2495,12 +2495,12 @@ static int exmdb_push(EXT_PUSH &x, const exresp_set_store_properties &d)
 	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_pull(EXT_PULL &x, exresp_check_mailbox_permission &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_mbox_perm &d)
 {
 	return x.g_uint32(&d.permission);
 }
 
-static int exmdb_push(EXT_PUSH &x, const exresp_check_mailbox_permission &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_mbox_perm &d)
 {
 	return x.p_uint32(d.permission);
 }
@@ -3592,7 +3592,7 @@ static int exmdb_push(EXT_PUSH &x, const exresp_get_public_folder_unread_count &
 	E(get_store_all_proptags) \
 	E(get_store_properties) \
 	E(set_store_properties) \
-	E(check_mailbox_permission) \
+	E(get_mbox_perm) \
 	E(get_folder_by_class) \
 	E(set_folder_by_class) \
 	E(get_folder_class_table) \

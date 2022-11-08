@@ -193,7 +193,7 @@ BOOL exmdb_server::remove_store_properties(const char *dir,
 }
 
 /* private only */
-BOOL exmdb_server::check_mailbox_permission(const char *dir,
+BOOL exmdb_server::get_mbox_perm(const char *dir,
     const char *username, uint32_t *ppermission) try
 {
 	char sql_string[128];

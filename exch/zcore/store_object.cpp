@@ -121,8 +121,7 @@ bool store_object::owner_mode() const
 		return true;
 	lk.unlock();
 	uint32_t perm = rightsNone;
-	if (!exmdb_client::check_mailbox_permission(pstore->dir,
-	    pinfo->get_username(), &perm))
+	if (!exmdb_client::get_mbox_perm(pstore->dir, pinfo->get_username(), &perm))
 		return false;
 	if (!(perm & frightsGromoxStoreOwner))
 		return false;
@@ -686,7 +685,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			*acval = MAPI_ACCESS_AllSix;
 			return TRUE;
 		}
-		if (!exmdb_client::check_mailbox_permission(pstore->dir,
+		if (!exmdb_client::get_mbox_perm(pstore->dir,
 		    pinfo->get_username(), &permission))
 			return FALSE;
 		permission &= ~frightsGromoxStoreOwner;
@@ -712,7 +711,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		}
 		auto pinfo = zarafa_server_get_info();
 		if (pstore->b_private) {
-			if (!exmdb_client::check_mailbox_permission(pstore->dir,
+			if (!exmdb_client::get_mbox_perm(pstore->dir,
 			    pinfo->get_username(), &permission))
 				return FALSE;
 			*static_cast<uint32_t *>(*ppvalue) &= ~(frightsGromoxSendAs | frightsGromoxStoreOwner);
