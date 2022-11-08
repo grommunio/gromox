@@ -1383,6 +1383,14 @@ void enriched_to_html(const char *enriched_txt,
 	html[offset] = '\0';
 }
 
+static std::unique_ptr<char[]> htp_memdup(const void *src, size_t len)
+{
+	auto dst = std::make_unique<char[]>(len + 1);
+	memcpy(dst.get(), src, len);
+	dst[len] = '\0';
+	return dst;
+}
+
 static int html_to_plain_boring(const void *inbuf, size_t len,
     std::string &outbuf) try
 {
@@ -1393,17 +1401,8 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 
 	if (len == SIZE_MAX)
 		--len;
-	auto rbuf = std::make_unique<char[]>(len + 1);
-	if (rbuf == nullptr)
-		return -1;
-	memcpy(rbuf.get(), inbuf, len);
-	rbuf[len] = '\0';
-	auto buf = std::make_unique<char[]>(len + 1);
-	if (NULL == buf) {
-		return -1;
-	}
-	memcpy(buf.get(), rbuf.get(), len);
-	buf[len] = '\0';
+	auto rbuf = htp_memdup(inbuf, len);
+	auto buf = htp_memdup(inbuf, len);
 	char c = buf[0];
 	char *p = buf.get();
 	char *rp = rbuf.get();
