@@ -124,7 +124,8 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 		return FALSE;
 	if (pproplist->set(PidTagParentFolderId, &parent_id) != 0)
 		return FALSE;
-	if (!exmdb_client::allocate_cn(pctx->pstream->plogon->get_dir(), &change_num))
+	auto dir = pctx->pstream->plogon->get_dir();
+	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return FALSE;
 	if (pproplist->set(PidTagChangeNumber, &change_num) != 0)
 		return FALSE;
@@ -141,7 +142,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	if (pproplist->set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!exmdb_client::create_folder_by_properties(pctx->pstream->plogon->get_dir(),
+	if (!exmdb_client::create_folder_by_properties(dir,
 	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
 		return FALSE;
 	if (pctx->pstream->plogon->logon_mode == logon_mode::owner)
@@ -162,7 +163,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	propval_buff[1].pvalue = &tmp_id;
 	propval_buff[2].proptag = PR_MEMBER_RIGHTS;
 	propval_buff[2].pvalue = &permission;
-	exmdb_client::update_folder_permission(pctx->pstream->plogon->get_dir(),
+	exmdb_client::update_folder_permission(dir,
 		*pfolder_id, FALSE, 1, &permission_row);
 	return TRUE;
 }
@@ -205,11 +206,13 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 	};
 	for (auto t : tags)
 		pproplist->erase(t);
-	if (!exmdb_client::allocate_cn(pctx->pstream->plogon->get_dir(), &change_num))
+	auto plogon = pctx->pstream->plogon;
+	auto dir = plogon->get_dir();
+	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return GXERR_CALL_FAILED;
 	if (pproplist->set(PidTagChangeNumber, &change_num) != 0)
 		return GXERR_CALL_FAILED;
-	auto pbin = cu_xid_to_bin({pctx->pstream->plogon->guid(), change_num});
+	auto pbin = cu_xid_to_bin({plogon->guid(), change_num});
 	if (NULL == pbin) {
 		return GXERR_CALL_FAILED;
 	}
@@ -223,8 +226,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 		return GXERR_CALL_FAILED;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	gxerr_t e_result = GXERR_CALL_FAILED;
-	if (!exmdb_client::write_message(pctx->pstream->plogon->get_dir(),
-	    pctx->pstream->plogon->get_account(), pinfo->cpid,
+	if (!exmdb_client::write_message(dir, plogon->get_account(), pinfo->cpid,
 	    folder_id, pctx->m_content, &e_result) || e_result != GXERR_SUCCESS)
 		return e_result;
 	return GXERR_SUCCESS;
@@ -295,6 +297,7 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		m_props = nullptr;
 		break;
 	}
+	auto dir = pstream->plogon->get_dir();
 	switch (marker) {
 	case STARTTOPFLD:
 		if (ROOT_ELEMENT_TOPFOLDER !=
@@ -443,7 +446,7 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			tmp_rcpts.count = 1;
 			tmp_rcpts.pparray = &m_props;
-			if (!exmdb_client::update_message_instance_rcpts(pctx->pstream->plogon->get_dir(),
+			if (!exmdb_client::update_message_instance_rcpts(dir,
 			    pnode->instance_id, &tmp_rcpts))
 				return GXERR_CALL_FAILED;
 			tpropval_array_free(m_props);
@@ -478,7 +481,7 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			instance_id = fastupctx_object_get_last_message_instance(pctx);
-			if (!exmdb_client::create_attachment_instance(pctx->pstream->plogon->get_dir(),
+			if (!exmdb_client::create_attachment_instance(dir,
 			    instance_id, &tmp_id, &tmp_num) || tmp_id == 0)
 				return GXERR_CALL_FAILED;
 		} else {
@@ -507,12 +510,10 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			gxerr_t e_result = GXERR_CALL_FAILED;
-			if (!exmdb_client::flush_instance(pctx->pstream->plogon->get_dir(),
-			    pnode->instance_id, nullptr, &e_result) ||
-			    e_result != GXERR_SUCCESS)
+			if (!exmdb_client::flush_instance(dir, pnode->instance_id,
+			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
 				return e_result;
-			if (!exmdb_client::unload_instance(pctx->pstream->plogon->get_dir(),
-			    pnode->instance_id))
+			if (!exmdb_client::unload_instance(dir, pnode->instance_id))
 				return GXERR_CALL_FAILED;
 		}
 		pctx->marker_stack.erase(pnode);
@@ -530,15 +531,15 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 				}
 			}
 			instance_id = fastupctx_object_get_last_attachment_instance(pctx);
-			if (!exmdb_client::load_embedded_instance(pctx->pstream->plogon->get_dir(),
+			if (!exmdb_client::load_embedded_instance(dir,
 			    false, instance_id, &tmp_id))
 				return GXERR_CALL_FAILED;
 			if (0 == tmp_id) {
-				if (!exmdb_client::load_embedded_instance(pctx->pstream->plogon->get_dir(),
+				if (!exmdb_client::load_embedded_instance(dir,
 				    TRUE, instance_id, &tmp_id) || tmp_id == 0)
 					return GXERR_CALL_FAILED;
 			} else {
-				if (!exmdb_client::clear_message_instance(pctx->pstream->plogon->get_dir(),
+				if (!exmdb_client::clear_message_instance(dir,
 				    instance_id))
 					return GXERR_CALL_FAILED;
 			}
@@ -580,12 +581,10 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			gxerr_t e_result = GXERR_CALL_FAILED;
-			if (!exmdb_client::flush_instance(pctx->pstream->plogon->get_dir(),
-			    pnode->instance_id, nullptr, &e_result) ||
-			    e_result != GXERR_SUCCESS)
+			if (!exmdb_client::flush_instance(dir, pnode->instance_id,
+			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
 				return e_result;
-			if (!exmdb_client::unload_instance(pctx->pstream->plogon->get_dir(),
-			    pnode->instance_id))
+			if (!exmdb_client::unload_instance(dir, pnode->instance_id))
 				return GXERR_CALL_FAILED;
 		}
 		pctx->marker_stack.erase(pnode);
@@ -611,6 +610,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 	
 	auto pnode = pctx->marker_stack.rbegin();
 	auto last_marker = pnode == pctx->marker_stack.rend() ? 0U : pnode->marker;
+	auto dir = pctx->pstream->plogon->get_dir();
 	switch (marker) {
 	case PR_MESSAGE_RECIPIENTS:
 		switch (pctx->root_element) {
@@ -619,8 +619,8 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 			case 0:
 				instance_id =
 					fastupctx_object_get_last_message_instance(pctx);
-				if (!exmdb_client::empty_message_instance_rcpts(
-				    pctx->pstream->plogon->get_dir(), instance_id))
+				if (!exmdb_client::empty_message_instance_rcpts(dir,
+				    instance_id))
 					return FALSE;	
 			case STARTEMBED:
 				break;
@@ -651,8 +651,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 		case ROOT_ELEMENT_MESSAGECONTENT:
 			switch (last_marker) {
 			case 0:
-				if (!exmdb_client::empty_message_instance_attachments(
-				    pctx->pstream->plogon->get_dir(),
+				if (!exmdb_client::empty_message_instance_attachments(dir,
 					fastupctx_object_get_last_message_instance(pctx))) {
 					return FALSE;
 				}
