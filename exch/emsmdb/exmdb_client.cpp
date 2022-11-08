@@ -25,20 +25,6 @@
 #define SERVICE_ID_GET_MIME_POOL							15
 #define SERVICE_ID_GET_HANDLE								17
 
-#define E(s) decltype(exmdb_client_ ## s) exmdb_client_ ## s;
-E(get_named_propid)
-E(get_named_propname)
-E(get_store_property)
-E(get_folder_property)
-E(delete_message)
-E(check_message_owner)
-E(get_instance_property)
-E(set_instance_property)
-E(remove_instance_property)
-E(get_message_property)
-E(set_message_property)
-E(remove_message_property)
-#undef E
 #define EXMIDL(n, p) decltype(exmdb_client_ ## n) exmdb_client_ ## n;
 #define IDLOUT
 #include <gromox/exmdb_idef.hpp>
