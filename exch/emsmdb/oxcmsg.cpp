@@ -562,10 +562,12 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	auto username = plogon->is_private() ? nullptr : rpc_info.username;
 	b_notify = FALSE;
 	b_changed = FALSE;
+	auto dir = plogon->get_dir();
+
 	switch (read_flag) {
 	case MSG_READ_FLAG_DEFAULT:
 	case MSG_READ_FLAG_SUPPRESS_RECEIPT:
-		if (!exmdb_client::get_message_property(plogon->get_dir(),
+		if (!exmdb_client::get_message_property(dir,
 		    username, 0, message_id, PR_READ, &pvalue))
 			return FALSE;	
 		if (pvb_enabled(pvalue))
@@ -574,7 +576,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		b_changed = TRUE;
 		if (read_flag != MSG_READ_FLAG_DEFAULT)
 			break;
-		if (!exmdb_client::get_message_property(plogon->get_dir(),
+		if (!exmdb_client::get_message_property(dir,
 		    username, 0, message_id,
 		    PR_READ_RECEIPT_REQUESTED, &pvalue))
 			return FALSE;
@@ -582,7 +584,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 			b_notify = TRUE;
 		break;
 	case MSG_READ_FLAG_CLEAR_READ_FLAG:
-		if (!exmdb_client::get_message_property(plogon->get_dir(),
+		if (!exmdb_client::get_message_property(dir,
 		    username, 0, message_id, PR_READ, &pvalue))
 			return FALSE;
 		if (pvb_enabled(pvalue)) {
@@ -591,7 +593,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		}
 		break;
 	case MSG_READ_FLAG_GENERATE_RECEIPT_ONLY:
-		if (!exmdb_client::get_message_property(plogon->get_dir(),
+		if (!exmdb_client::get_message_property(dir,
 		    username, 0, message_id, PR_READ_RECEIPT_REQUESTED,
 		    &pvalue))
 			return FALSE;
@@ -603,34 +605,32 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	case MSG_READ_FLAG_CLEAR_NOTIFY_READ |
 		MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
 		if ((read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_READ) &&
-		    exmdb_client::get_message_property(plogon->get_dir(),
-		    username, 0, message_id,
-		    PR_READ_RECEIPT_REQUESTED, &pvalue) &&
+		    exmdb_client::get_message_property(dir, username, 0,
+		    message_id, PR_READ_RECEIPT_REQUESTED, &pvalue) &&
 		    pvb_enabled(pvalue) &&
-		    !exmdb_client::remove_message_property(plogon->get_dir(),
+		    !exmdb_client::remove_message_property(dir,
 		    pinfo->cpid, message_id, PR_READ_RECEIPT_REQUESTED))
 			return FALSE;
 		if ((read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD) &&
-		    exmdb_client::get_message_property(plogon->get_dir(),
+		    exmdb_client::get_message_property(dir,
 		    username, 0, message_id,
 		    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &pvalue) &&
 		    pvb_enabled(pvalue) &&
-		    !exmdb_client::remove_message_property(plogon->get_dir(),
-		    pinfo->cpid, message_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED))
+		    !exmdb_client::remove_message_property(dir, pinfo->cpid,
+		    message_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED))
 			return FALSE;
-		if (!exmdb_client::mark_modified(plogon->get_dir(), message_id))
+		if (!exmdb_client::mark_modified(dir, message_id))
 			return FALSE;	
 		return TRUE;
 	default:
 		return TRUE;
 	}
-	if (b_changed && !exmdb_client::set_message_read_state(plogon->get_dir(),
+	if (b_changed && !exmdb_client::set_message_read_state(dir,
 	    username, message_id, tmp_byte, &read_cn))
 		return FALSE;
 	if (!b_notify)
 		return TRUE;
-	if (!exmdb_client::get_message_brief(plogon->get_dir(),
-	    pinfo->cpid, message_id, &pbrief))
+	if (!exmdb_client::get_message_brief(dir, pinfo->cpid, message_id, &pbrief))
 		return FALSE;	
 	if (NULL != pbrief) {
 		common_util_notify_receipt(plogon->get_account(),
@@ -642,7 +642,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	propval_buff[0].pvalue = deconst(&fake_false);
 	propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 	propval_buff[1].pvalue = deconst(&fake_false);
-	exmdb_client::set_message_properties(plogon->get_dir(), username,
+	exmdb_client::set_message_properties(dir, username,
 		0, message_id, &propvals, &problems);
 	return TRUE;
 }
