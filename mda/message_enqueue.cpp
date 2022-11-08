@@ -76,7 +76,6 @@ static int			g_last_pos;
 
 static void *(*query_serviceF)(const char *, const std::type_info &);
 static int (*get_queue_length)();
-static void (*log_info)(unsigned int, const char *, ...);
 static BOOL (*feedback_entity)(std::list<FLUSH_ENTITY> &&);
 static BOOL (*register_cancel)(CANCEL_FUNCTION);
 static std::list<FLUSH_ENTITY> (*get_from_queue)();
@@ -428,7 +427,6 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 		query_service1(register_cancel);
 		query_service1(get_from_queue);
 		query_service1(get_host_ID);
-		query_service1(log_info);
 		query_service1(set_flush_ID);
 		query_service1(get_plugin_name);
 		query_service1(get_config_path);

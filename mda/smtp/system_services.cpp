@@ -43,5 +43,4 @@ void system_services_stop()
 	}
 	if (system_services_check_full != nullptr)
 		service_release("check_full", "system");
-	service_release("log_info", "system");
 }
