@@ -27,7 +27,7 @@ DECLARE_SVC_API(static);
 DECLARE_SVC_API(extern);
 #endif
 
-#define LINK_SVC_API(param) \
+#define LINK_SVC_API(param) do { \
 	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
 	query_service2("register_service", register_serviceF); \
 	query_service1(get_plugin_name); \
@@ -37,7 +37,8 @@ DECLARE_SVC_API(extern);
 	query_service1(get_context_num); \
 	query_service1(get_host_ID); \
 	query_service1(get_prog_id); \
-	query_service1(ndr_stack_alloc);
+	query_service1(ndr_stack_alloc); \
+} while (false)
 #define SVC_ENTRY(s) BOOL SVC_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */
