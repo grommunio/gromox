@@ -305,6 +305,15 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	return TRUE;
 }
 
+static uint32_t next_instance_id(db_item_ptr &db)
+{
+	auto n = double_list_get_tail(&db->instance_list);
+	if (n == nullptr)
+		return 1;
+	auto id = static_cast<const INSTANCE_NODE *>(n->pdata)->instance_id + 1;
+	return id;
+}
+
 BOOL exmdb_server::load_message_instance(const char *dir,
 	const char *username, uint32_t cpid, BOOL b_new,
 	uint64_t folder_id, uint64_t message_id,
@@ -312,15 +321,11 @@ BOOL exmdb_server::load_message_instance(const char *dir,
 {
 	uint64_t mid_val;
 	uint32_t tmp_int32;
-	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	pnode = double_list_get_tail(&pdb->instance_list);
-	uint32_t instance_id = pnode == nullptr ? 0 :
-	                       static_cast<INSTANCE_NODE *>(pnode->pdata)->instance_id;
-	instance_id ++;
+	auto instance_id = next_instance_id(pdb);
 	auto pinstance = me_alloc<INSTANCE_NODE>();
 	if (NULL == pinstance) {
 		return FALSE;
@@ -426,17 +431,13 @@ BOOL exmdb_server::load_embedded_instance(const char *dir,
 {
 	uint64_t mid_val;
 	uint64_t message_id;
-	DOUBLE_LIST_NODE *pnode;
 	INSTANCE_NODE *pinstance;
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	pnode = double_list_get_tail(&pdb->instance_list);
-	uint32_t instance_id = pnode == nullptr ? 0 :
-	                       static_cast<INSTANCE_NODE *>(pnode->pdata)->instance_id;
-	instance_id ++;
+	auto instance_id = next_instance_id(pdb);
 	auto pinstance1 = instance_get_instance_c(pdb, attachment_instance_id);
 	if (pinstance1 == nullptr || pinstance1->type != instance_type::attachment)
 		return FALSE;
@@ -1195,16 +1196,12 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 	uint32_t *pinstance_id)
 {
 	int i;
-	DOUBLE_LIST_NODE *pnode;
 	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	pnode = double_list_get_tail(&pdb->instance_list);
-	uint32_t instance_id = pnode == nullptr ? 0 :
-	                       static_cast<INSTANCE_NODE *>(pnode->pdata)->instance_id;
-	instance_id ++;
+	auto instance_id = next_instance_id(pdb);
 	auto pinstance1 = instance_get_instance_c(pdb, message_instance_id);
 	if (pinstance1 == nullptr || pinstance1->type != instance_type::message)
 		return FALSE;
@@ -1261,16 +1258,12 @@ BOOL exmdb_server::create_attachment_instance(const char *dir,
 	uint32_t message_instance_id, uint32_t *pinstance_id,
 	uint32_t *pattachment_num)
 {
-	DOUBLE_LIST_NODE *pnode;
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	pnode = double_list_get_tail(&pdb->instance_list);
-	uint32_t instance_id = pnode == nullptr ? 0 :
-	                       static_cast<INSTANCE_NODE *>(pnode->pdata)->instance_id;
-	instance_id ++;
+	auto instance_id = next_instance_id(pdb);
 	auto pinstance1 = instance_get_instance(pdb, message_instance_id);
 	if (pinstance1 == nullptr || pinstance1->type != instance_type::message)
 		return FALSE;
