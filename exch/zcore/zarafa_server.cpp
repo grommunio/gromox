@@ -1433,7 +1433,7 @@ uint32_t zarafa_server_openstore(GUID hsession,
 			    !system_services_get_maildir(username, dir, arsizeof(dir)))
 				return ecError;
 			uint32_t permission = rightsNone;
-			if (!exmdb_client::check_mailbox_permission(dir,
+			if (!exmdb_client::get_mbox_perm(dir,
 			    pinfo->get_username(), &permission))
 				return ecError;
 			if (permission == rightsNone)
@@ -3377,7 +3377,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		return ecNotSupported;
 	if (!pstore->owner_mode()) {
 		uint32_t permission = 0;
-		if (!exmdb_client::check_mailbox_permission(pstore->get_dir(),
+		if (!exmdb_client::get_mbox_perm(pstore->get_dir(),
 		    pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsGromoxSendAs))

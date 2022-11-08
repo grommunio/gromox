@@ -32,7 +32,7 @@ enum class exmdb_callid : uint8_t {
 	get_store_properties = 0x09,
 	set_store_properties = 0x0a,
 	remove_store_properties = 0x0b,
-	check_mailbox_permission = 0x0c,
+	get_mbox_perm = 0x0c,
 	// get_folder_by_class (v1) = 0x0d,
 	set_folder_by_class = 0x0e,
 	get_folder_class_table = 0x0f,
@@ -194,7 +194,7 @@ struct exreq_remove_store_properties : public exreq {
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct exreq_check_mailbox_permission : public exreq {
+struct exreq_get_mbox_perm : public exreq {
 	char *username;
 };
 
@@ -849,7 +849,7 @@ struct exresp_set_store_properties : public exresp {
 	PROBLEM_ARRAY problems;
 };
 
-struct exresp_check_mailbox_permission : public exresp {
+struct exresp_get_mbox_perm : public exresp {
 	uint32_t permission;
 };
 
