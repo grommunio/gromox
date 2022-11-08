@@ -43,7 +43,6 @@ static struct HXoption g_options_table[] = {
 };
 
 static std::vector<std::string> g_dfl_svc_plugins = {
-	"libgxs_logthru.so",
 	"libgxs_midb_agent.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",

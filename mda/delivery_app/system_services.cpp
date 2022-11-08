@@ -21,6 +21,5 @@ int system_services_run()
 
 void system_services_stop()
 {
-	service_release("log_info", "system");
 	service_release("domain_list_query", "system");
 }

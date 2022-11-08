@@ -105,7 +105,6 @@ void system_services_stop()
 	service_release("ip_container_remove", "system");
 	service_release("ip_filter_add", "system");
 	service_release("user_filter_add", "system");
-	service_release("log_info", "system");
 	service_release("auth_login_gen", "system");
 	service_release("get_mail_id", "system");
 	service_release("get_mail_uid", "system");
