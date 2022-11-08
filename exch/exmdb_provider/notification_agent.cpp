@@ -19,7 +19,7 @@ void notification_agent_backward_notify(const char *remote_id,
 {
 	if (NULL == remote_id) {
 		for (size_t i = 0; i < pnotify->id_array.count; ++i)
-			exmdb_server_event_proc(pnotify->dir, pnotify->b_table,
+			exmdb_server::event_proc(pnotify->dir, pnotify->b_table,
 				pnotify->id_array.pl[i], &pnotify->db_notify);
 		return;
 	}

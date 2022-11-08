@@ -92,8 +92,6 @@ static BOOL exmdb_parser_dispatch3(const exreq *q0, exresp *&r0)
 
 static BOOL exmdb_parser_dispatch2(const exreq *prequest, exresp *&r0)
 {
-	BOOL b_return;
-	
 	/*
 	 * Special handling for a few RPCs in lieu of the default code provided
 	 * for these callids in dispatch3.
@@ -106,7 +104,7 @@ static BOOL exmdb_parser_dispatch2(const exreq *prequest, exresp *&r0)
 		if (r1 == nullptr)
 			return false;
 		auto &r = *r1;
-		b_return = exmdb_server_get_content_sync(prequest->dir,
+		auto b_return = exmdb_server::get_content_sync(prequest->dir,
 		           q.folder_id, q.username, q.pgiven, q.pseen,
 		           q.pseen_fai, q.pread, q.cpid, q.prestriction,
 		           q.b_ordered, &r.fai_count, &r.fai_total,
@@ -127,7 +125,7 @@ static BOOL exmdb_parser_dispatch2(const exreq *prequest, exresp *&r0)
 		if (r1 == nullptr)
 			return false;
 		auto &r = *r1;
-		b_return = exmdb_server_get_hierarchy_sync(prequest->dir,
+		auto b_return = exmdb_server::get_hierarchy_sync(prequest->dir,
 		           q.folder_id, q.username, q.pgiven, q.pseen,
 		           &r.fldchgs, &r.last_cn, &r.given_fids,
 		           &r.deleted_fids);
@@ -146,7 +144,7 @@ static BOOL exmdb_parser_dispatch(const exreq *prequest, exresp *&presponse)
 		mlog(LV_DEBUG, "exmdb rpc %s accessing %s: %s",
 			exmdb_rpc_idtoname(prequest->call_id),
 		       prequest->dir, strerror(errno));
-	exmdb_server_set_dir(prequest->dir);
+	exmdb_server::set_dir(prequest->dir);
 	auto ret = exmdb_parser_dispatch2(prequest, presponse);
 	if (ret)
 		presponse->call_id = prequest->call_id;
@@ -240,7 +238,7 @@ static void *mdpps_thrwork(void *pparam)
 		if (offset < buff_len) {
 			continue;
 		}
-		exmdb_server_build_env(b_private ? EM_PRIVATE : 0, nullptr);
+		exmdb_server::build_env(b_private ? EM_PRIVATE : 0, nullptr);
 		tmp_bin.pv = pbuff;
 		tmp_bin.cb = buff_len;
 		exreq *request = nullptr;
@@ -260,8 +258,8 @@ static void *mdpps_thrwork(void *pparam)
 					tmp_byte = exmdb_response::misconfig_mode;
 				} else {
 					pconnection->remote_id = q.remote_id;
-					exmdb_server_free_environment();
-					exmdb_server_set_remote_id(pconnection->remote_id.c_str());
+					exmdb_server::free_env();
+					exmdb_server::set_remote_id(pconnection->remote_id.c_str());
 					is_connected = TRUE;
 					if (5 != write(pconnection->sockd, resp_buff, 5)) {
 						break;
@@ -284,7 +282,7 @@ static void *mdpps_thrwork(void *pparam)
 					tmp_byte = exmdb_response::max_reached;
 				} else {
 					prouter->remote_id = q.remote_id;
-					exmdb_server_free_environment();
+					exmdb_server::free_env();
 					if (5 != write(pconnection->sockd, resp_buff, 5)) {
 						break;
 					} else {
@@ -310,14 +308,14 @@ static void *mdpps_thrwork(void *pparam)
 		} else if (EXT_ERR_SUCCESS != exmdb_ext_push_response(response, &tmp_bin)) {
 			tmp_byte = exmdb_response::push_error;
 		} else {
-			exmdb_server_free_environment();
+			exmdb_server::free_env();
 			offset = 0;
 			pbuff = tmp_bin.pb;
 			buff_len = tmp_bin.cb;
 			is_writing = TRUE;
 			continue;
 		}
-		exmdb_server_free_environment();
+		exmdb_server::free_env();
 		write(pconnection->sockd, &tmp_byte, 1);
 		break;
 	}
