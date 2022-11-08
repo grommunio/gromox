@@ -4,6 +4,7 @@
 #include <memory>
 #include <mutex>
 #include <sqlite3.h>
+#include <string>
 #include <gromox/double_list.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
@@ -73,19 +74,22 @@ using NSUB_NODE = nsub_node;
 #define CHANGE_MASK_HTML						0x01
 #define CHANGE_MASK_BODY						0x02
 
-struct INSTANCE_NODE {
-	DOUBLE_LIST_NODE node;
-	uint32_t instance_id;
-	uint32_t parent_id;
-	uint64_t folder_id;
-	uint32_t last_id;
-	uint32_t cpid;
-	char *username;
-	enum instance_type type;
-	BOOL b_new;
-	uint8_t change_mask;
-	void *pcontent;
+struct instance_node {
+	instance_node() = default;
+	instance_node(instance_node &&) noexcept;
+	~instance_node() { release(); }
+	instance_node &operator=(instance_node &&) noexcept;
+	void release();
+
+	uint32_t instance_id = 0, parent_id = 0, folder_id = 0, last_id = 0;
+	uint32_t cpid = 0;
+	enum instance_type type = instance_type::message;
+	BOOL b_new = false;
+	uint8_t change_mask{};
+	std::string username;
+	void *pcontent = nullptr;
 };
+using INSTANCE_NODE = instance_node;
 
 struct DB_ITEM {
 	DB_ITEM() = default;
@@ -99,7 +103,7 @@ struct DB_ITEM {
 	sqlite3 *psqlite = nullptr;
 	DOUBLE_LIST dynamic_list{};	/* dynamic search list */
 	std::vector<nsub_node> nsub_list;
-	DOUBLE_LIST instance_list{};
+	std::vector<instance_node> instance_list;
 
 	/* memory database for holding rop table objects instance */
 	struct {
