@@ -1746,9 +1746,7 @@ static int nsp_fill_dfl_tags(abnode_type node_type, bool b_unicode,
 		t[z++] = U(PR_EMS_AB_PROXY_ADDRESSES);
 		t[z++] = U(PR_EMS_AB_HOME_MDB);
 		t[z++] = PR_CREATION_TIME;
-		if (node_type == abnode_type::user ||
-		    node_type == abnode_type::mlist)
-			t[z++] = PR_EMS_AB_THUMBNAIL_PHOTO;
+		t[z++] = PR_EMS_AB_THUMBNAIL_PHOTO;
 		break;
 	case abnode_type::mlist:
 		t[z++] = U(PR_SMTP_ADDRESS);
@@ -1756,6 +1754,7 @@ static int nsp_fill_dfl_tags(abnode_type node_type, bool b_unicode,
 		t[z++] = U(PR_DEPARTMENT_NAME);
 		t[z++] = U(PR_EMS_AB_PROXY_ADDRESSES);
 		t[z++] = PR_CREATION_TIME;
+		t[z++] = PR_EMS_AB_THUMBNAIL_PHOTO;
 		break;
 	case abnode_type::folder:
 		t[z++] = PR_COMPANY_NAME_A;
