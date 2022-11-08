@@ -328,11 +328,10 @@ DB_ITEM::~DB_ITEM()
 		if (NULL != pinstance->username) {
 			free(pinstance->username);
 		}
-		if (INSTANCE_TYPE_MESSAGE == pinstance->type) {
+		if (pinstance->type == instance_type::message)
 			message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
-		} else {
+		else
 			attachment_content_free(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent));
-		}
 		free(pinstance);
 	}
 	double_list_free(&pdb->instance_list);

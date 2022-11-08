@@ -38,9 +38,8 @@ enum {
 	TABLE_TYPE_RULE
 };
 
-enum instance_type {
-	INSTANCE_TYPE_MESSAGE,
-	INSTANCE_TYPE_ATTACHMENT
+enum class instance_type {
+	message, attachment,
 };
 
 struct TABLE_NODE {
