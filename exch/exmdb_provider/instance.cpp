@@ -311,6 +311,8 @@ static uint32_t next_instance_id(db_item_ptr &db)
 	if (n == nullptr)
 		return 1;
 	auto id = static_cast<const INSTANCE_NODE *>(n->pdata)->instance_id + 1;
+	if (id == UINT32_MAX)
+		mlog(LV_ERR, "E-1270: instance IDs exhausted");
 	return id;
 }
 
@@ -326,6 +328,8 @@ BOOL exmdb_server::load_message_instance(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto instance_id = next_instance_id(pdb);
+	if (instance_id == UINT32_MAX)
+		return false;
 	auto pinstance = me_alloc<INSTANCE_NODE>();
 	if (NULL == pinstance) {
 		return FALSE;
@@ -438,6 +442,8 @@ BOOL exmdb_server::load_embedded_instance(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto instance_id = next_instance_id(pdb);
+	if (instance_id == UINT32_MAX)
+		return false;
 	auto pinstance1 = instance_get_instance_c(pdb, attachment_instance_id);
 	if (pinstance1 == nullptr || pinstance1->type != instance_type::attachment)
 		return FALSE;
@@ -1202,6 +1208,8 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto instance_id = next_instance_id(pdb);
+	if (instance_id == UINT32_MAX)
+		return false;
 	auto pinstance1 = instance_get_instance_c(pdb, message_instance_id);
 	if (pinstance1 == nullptr || pinstance1->type != instance_type::message)
 		return FALSE;
@@ -1264,6 +1272,8 @@ BOOL exmdb_server::create_attachment_instance(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto instance_id = next_instance_id(pdb);
+	if (instance_id == UINT32_MAX)
+		return false;
 	auto pinstance1 = instance_get_instance(pdb, message_instance_id);
 	if (pinstance1 == nullptr || pinstance1->type != instance_type::message)
 		return FALSE;
