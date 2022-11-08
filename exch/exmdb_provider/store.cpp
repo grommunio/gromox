@@ -217,8 +217,19 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		auto fid  = pstmt.col_uint64(1);
 		*ppermission |= perm;
 	/*
-	 * Tryout for conveying the special store ownership.
-	 * Take FOLDEROWNER bit _only_ from Top Of Information Store.
+	 * Outlook and g-web only expose IPM_SUBTREE and below, so permissions
+	 * can only be set on those folders with those UIs.
+	 *
+	 * In EXC, store ownership is a separate bit only settable via Admin
+	 * Center. FOLDEROWNER on IPM_SUBTREE only gives permission on
+	 * IPM_SUBTREE.
+	 *
+	 * In Gromox, the FOLDEROWNER bit on IPM_SUBTREE is interpreted as
+	 * store ownership. This allows users to delegate full ownership by
+	 * themselves, but the implication is that someone else can also modify
+	 * modify folders outside of IPM_SUBTREE, e.g. search folders - which
+	 * may not be strictly desired. But then, don't give the mailbox away,
+	 * I guess?
 	 */
 		if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
 			*ppermission |= frightsGromoxStoreOwner;
