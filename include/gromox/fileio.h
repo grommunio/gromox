@@ -12,6 +12,8 @@
 #include <sys/types.h>
 #include <gromox/defs.h>
 
+struct BINARY;
+
 #ifdef COMPILE_DIAG
 /* Compiler generates important -Wformat-truncation diagnostics */
 #define gx_snprintf snprintf
@@ -67,6 +69,9 @@ extern GX_EXPORT errno_t gx_reexec(const char *const *);
 extern GX_EXPORT void gx_reexec_record(int);
 extern GX_EXPORT unsigned long gx_gettid();
 extern GX_EXPORT std::string zstd_decompress(std::string_view);
+extern GX_EXPORT size_t gx_decompressed_size(const char *);
+extern GX_EXPORT errno_t gx_decompress_file(const char *, BINARY &, void *(*)(size_t), void *(*)(void *, size_t));
+extern GX_EXPORT errno_t gx_compress_tofile(std::string_view, const char *outfile, uint8_t complvl = 0);
 extern GX_EXPORT std::string base64_decode(const std::string_view &);
 extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);
 extern GX_EXPORT int open_tmpfile(const char *, std::string *, unsigned int, unsigned int = 0600);
