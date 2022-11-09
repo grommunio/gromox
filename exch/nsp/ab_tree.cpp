@@ -1365,6 +1365,10 @@ std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 	return {(obj.dtypx & DTE_MASK_LOCAL) | DTE_FLAG_ACL_CAPABLE};
 }
 
+/**
+ * Dump an individual NSAB_NODE to stderr.
+ * Part of the nsp_trace=2 dumper for AB_BASEs.
+ */
 static void ab_tree_dump_node(const tree_node *tnode, unsigned int lvl)
 {
 	auto &a = *containerof(tnode, NSAB_NODE, stree);
@@ -1390,6 +1394,10 @@ static void ab_tree_dump_node(const tree_node *tnode, unsigned int lvl)
 	fprintf(stderr, "\n");
 }
 
+/**
+ * Dump an AB_BASE to stderr. This is for debugging, and only happening with
+ * the nsp_trace=2 configuration directive set.
+ */
 void ab_tree_dump_base(const AB_BASE &b)
 {
 	char gtxt[41]{};
