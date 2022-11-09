@@ -2024,7 +2024,7 @@ int common_util_run()
 #define E(f, s) do { \
 	query_service2(s, f); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "exchange_emsmdb", (s)); \
+		mlog(LV_ERR, "emsmdb: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -2049,7 +2049,7 @@ int common_util_run()
 
 	if (!oxcmail_init_library(g_emsmdb_org_name,
 		common_util_get_user_ids, common_util_get_username_from_id)) {
-		printf("[exchange_emsmdb]: Failed to init oxcmail library\n");
+		mlog(LV_ERR, "emsmdb: failed to init oxcmail library");
 		return -2;
 	}
 	g_file_allocator = alloc_limiter<file_block>(g_average_blocks * context_num,
@@ -2063,7 +2063,7 @@ int common_util_run()
 	g_mime_pool = MIME_POOL::create(mime_num, 16,
 	              "emsmdb_mime_pool (http.cfg:context_num)");
 	if (NULL == g_mime_pool) {
-		printf("[exchange_emsmdb]: Failed to init MIME pool\n");
+		mlog(LV_ERR, "emsmdb: failed to init MIME pool");
 		return -4;
 	}
 	return 0;

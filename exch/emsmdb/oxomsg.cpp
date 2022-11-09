@@ -231,8 +231,8 @@ static ec_error_t pass_scheduling(const char *code, const char *account,
 	/* This models EXC behavior. It's silly. */
 	if (cls != nullptr && strncasecmp(cls, "IPM.Schedule.", 13) == 0)
 		return ecSuccess;
-	fprintf(stderr, "%s: %s tried to send message %llxh (class %s) with repr/from=<%s>, "
-		"but user has no delegate/sendas permission.\n",
+	mlog(LV_ERR, "%s: %s tried to send message %llxh (class %s) with repr/from=<%s>, "
+		"but user has no delegate/sendas permission.",
 		code, account, static_cast<unsigned long long>(msg.get_id()),
 		znul(cls), username);
 	return ecAccessDenied;
