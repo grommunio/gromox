@@ -4073,7 +4073,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	} else {
 		b_oof = FALSE;
 		//TODO get public folder id
-		fprintf(stderr, "%s - public folder not implemented\n", __func__);
+		mlog(LV_ERR, "%s - public folder not implemented", __PRETTY_FUNCTION__);
 		return false;
 	}
 	seen_list seen;

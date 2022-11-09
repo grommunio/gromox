@@ -75,7 +75,7 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 		pconfig = config_file_initd("exmdb_provider.cfg", get_config_path(),
 		          exmdb_cfg_defaults);
 	if (pconfig == nullptr) {
-		printf("[exmdb_provider]: config_file_initd exmdb_provider.cfg: %s\n",
+		mlog(LV_ERR, "exmdb_provider: config_file_initd exmdb_provider.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
@@ -122,7 +122,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		auto pconfig = g_config_during_init = config_file_initd(cfg_path.c_str(),
 		               get_config_path(), exmdb_cfg_defaults);
 		if (NULL == pconfig) {
-			printf("[exmdb_provider]: config_file_initd %s: %s\n",
+			mlog(LV_ERR, "exmdb_provider: config_file_initd %s: %s",
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
@@ -131,12 +131,12 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 
 		auto listen_ip = pconfig->get_value("listen_ip");
 		uint16_t listen_port = pconfig->get_ll("exmdb_listen_port");
-		printf("[exmdb_provider]: listen address is [%s]:%hu\n",
+		mlog(LV_NOTICE, "exmdb_provider: listen address is [%s]:%hu",
 		       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 		exmdb_listener_init(listen_ip, listen_port);
 		if (exmdb_listener_run(get_config_path()) != 0) {
-			printf("[exmdb_provider]: failed to run exmdb listener\n");
+			mlog(LV_ERR, "exmdb_provider: failed to run exmdb listener");
 			return FALSE;
 		}
 		return TRUE;
@@ -162,14 +162,14 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		if (mmap_size != 0)
 			HX_unit_size(mmap_size_s, std::size(mmap_size_s), mmap_size, 1024, 0);
 		int populating_num = pconfig->get_ll("populating_threads_num");
-		fprintf(stderr, "[exmdb_provider]: x500=\"%s\", "
+		mlog(LV_INFO, "exmdb_provider: x500=\"%s\", "
 		        "rpc_proxyconn_num=%d, notify_stub_threads_num=%d, "
 		        "db_hash_table_size=%d, cache_interval=%s, max_msgs_per_store=%d, "
-		        "max_rule_per_folder=%d, max_ext_rule_per_folder=%d, popul_num=%d\n",
+		        "max_rule_per_folder=%d, max_ext_rule_per_folder=%d, popul_num=%d",
 		        org_name, connection_num, threads_num, table_size,
 		        cache_int_s, max_msg_count, max_rule, max_ext_rule,
 		        populating_num);
-		fprintf(stderr, "[exmdb_provider]: sqlite: synchronous=%s journal=%s mmap_size=%s\n",
+		mlog(LV_INFO, "exmdb_provider: sqlite: synchronous=%s journal=%s mmap_size=%s",
 		       b_async ? "ON" : "OFF", b_wal ? "WAL" : "DELETE",
 		       mmap_size == 0 ? "disabled" : mmap_size_s);
 		
@@ -186,33 +186,33 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		exmdb_client_init(connection_num, threads_num);
 		
 		if (bounce_producer_run(get_data_path()) != 0) {
-			printf("[exmdb_provider]: failed to run bounce producer\n");
+			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
 			return FALSE;
 		}
 		if (0 != exmdb_server_run()) {
-			printf("[exmdb_provider]: failed to run exmdb server\n");
+			mlog(LV_ERR, "exmdb_provider: failed to start exmdb server");
 			db_engine_stop();
 			return FALSE;
 		}
 		if (0 != db_engine_run()) {
-			printf("[exmdb_provider]: failed to run db engine\n");
+			mlog(LV_ERR, "exmdb_provider: failed to start db engine");
 			db_engine_stop();
 			return FALSE;
 		}
 		if (exmdb_parser_run(get_config_path()) != 0) {
-			printf("[exmdb_provider]: failed to run exmdb parser\n");
+			mlog(LV_ERR, "exmdb_provider: failed to start exmdb parser");
 			db_engine_stop();
 			return FALSE;
 		}
 		if (0 != exmdb_listener_trigger_accept()) {
-			printf("[exmdb_provider]: fail to trigger exmdb listener\n");
+			mlog(LV_ERR, "exmdb_provider: failed to start exmdb listener");
 			exmdb_listener_stop();
 			exmdb_parser_stop();
 			db_engine_stop();
 			return FALSE;
 		}
 		if (exmdb_client_run_front(get_config_path()) != 0) {
-			printf("[exmdb_provider]: failed to run exmdb client\n");
+			mlog(LV_ERR, "exmdb_provider: failed to start exmdb client");
 			exmdb_listener_stop();
 			exmdb_parser_stop();
 			db_engine_stop();
