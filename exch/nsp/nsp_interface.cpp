@@ -76,20 +76,20 @@ static void nsp_trace(const char *func, bool is_exit, const STAT *s,
 		s->container_id, s->cur_rec, s->delta, s->num_pos, s->total_rec);
 	if (delta != nullptr)
 		fprintf(stderr, "{*pdelta=%d}", *delta);
-	if (outrows != nullptr) {
-		fprintf(stderr, "{#outrows=%u}\n", outrows->crows);
-		for (size_t k = 0; k < outrows->crows; ++k) {
-			auto dispn = outrows->prows[k].getval(PR_DISPLAY_NAME);
-			auto eid = outrows->prows[k].getval(PR_ENTRYID);
-			fprintf(stderr, "\t#%zu  %s (%u props)\n",
-			        k, dispn != nullptr ? znul(dispn->pstr) : "",
-			        outrows->prows[k].cvalues);
-			if (eid == nullptr)
-				continue;
-			fprintf(stderr, "\t#%zu  %s\n", k, bin2txt(eid->bin.pb, eid->bin.cb).c_str());
-		}
-	} else {
+	if (outrows == nullptr) {
 		fprintf(stderr, "\n");
+		return;
+	}
+	fprintf(stderr, "{#outrows=%u}\n", outrows->crows);
+	for (size_t k = 0; k < outrows->crows; ++k) {
+		auto dispn = outrows->prows[k].getval(PR_DISPLAY_NAME);
+		auto eid = outrows->prows[k].getval(PR_ENTRYID);
+		fprintf(stderr, "\t#%zu  %s (%u props)\n",
+			k, dispn != nullptr ? znul(dispn->pstr) : "",
+			outrows->prows[k].cvalues);
+		if (eid == nullptr)
+			continue;
+		fprintf(stderr, "\t#%zu  %s\n", k, bin2txt(eid->bin.pb, eid->bin.cb).c_str());
 	}
 }
 
