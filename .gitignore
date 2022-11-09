@@ -66,6 +66,7 @@ Makefile.in
 /exch/exmdb_provider/exmdb_rpc.cpp
 /system/*.service
 /tests/bodyconv
+/tests/compress
 /tests/cryptest
 /tests/jsontest
 /tests/lzxpress

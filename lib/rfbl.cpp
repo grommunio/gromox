@@ -28,6 +28,7 @@
 #ifdef HAVE_SYSLOG_H
 #	include <syslog.h>
 #endif
+#include <sys/stat.h>
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
@@ -892,6 +893,164 @@ std::string zstd_decompress(std::string_view x)
 	}
 	out.resize(outds.pos);
 	return out;
+}
+
+size_t gx_decompressed_size(const char *infile)
+{
+	wrapfd fd(open(infile, O_RDONLY));
+	if (fd.get() < 0)
+		return errno == ENOENT ? SIZE_MAX : 0;
+	struct stat sb;
+	if (fstat(fd.get(), &sb) < 0 || !S_ISREG(sb.st_mode))
+		return 0;
+	size_t inbufsize = ZSTD_DStreamInSize();
+	if (static_cast<unsigned long long>(sb.st_size) < inbufsize)
+		inbufsize = sb.st_size;
+	auto inbuf = std::make_unique<char[]>(inbufsize);
+	auto rdret = read(fd.get(), inbuf.get(), inbufsize);
+	if (rdret < 0)
+		return 0;
+	auto outsize = ZSTD_getFrameContentSize(inbuf.get(), rdret);
+	if (outsize == ZSTD_CONTENTSIZE_ERROR)
+		return 0;
+	else if (outsize == ZSTD_CONTENTSIZE_UNKNOWN)
+		return sb.st_size;
+	return outsize;
+}
+
+/**
+ * Even if this function returns an error, outbin.pv needs to be freed.
+ */
+errno_t gx_decompress_file(const char *infile, BINARY &outbin,
+    void *(*alloc)(size_t), void *(*realloc)(void *, size_t)) try
+{
+	outbin = {};
+	wrapfd fd(open(infile, O_RDONLY));
+	if (fd.get() < 0)
+		return errno;
+	struct stat sb;
+	if (fstat(fd.get(), &sb) < 0)
+		return errno;
+	if (!S_ISREG(sb.st_mode))
+		return 0;
+
+	auto strm = ZSTD_createDStream();
+	if (strm == nullptr)
+		throw std::bad_alloc();
+	auto cl_0 = make_scope_exit([&]() { ZSTD_freeDStream(strm); });
+	ZSTD_initDStream(strm);
+
+	size_t inbufsize = ZSTD_DStreamInSize();
+	if (static_cast<unsigned long long>(sb.st_size) < inbufsize)
+		inbufsize = sb.st_size;
+	auto inbuf = std::make_unique<char[]>(inbufsize);
+	auto rdret = read(fd.get(), inbuf.get(), inbufsize);
+	if (rdret < 0)
+		return errno;
+	posix_fadvise(fd.get(), 0, sb.st_size, POSIX_FADV_SEQUENTIAL);
+
+	auto outsize = ZSTD_getFrameContentSize(inbuf.get(), rdret);
+	if (outsize == ZSTD_CONTENTSIZE_ERROR)
+		return EIO;
+	else if (outsize == ZSTD_CONTENTSIZE_UNKNOWN)
+		outsize = 1023;
+	else if (outsize == 0)
+		outsize = 1; /* so that multiplication later on works */
+	if (outsize >= UINT32_MAX - 1)
+		outsize = UINT32_MAX - 1;
+	outbin.pv = alloc(outsize + 1); /* arrange for \0 */
+	if (outbin.pv == nullptr)
+		return ENOMEM;
+	outbin.cb = outsize;
+
+	ZSTD_inBuffer inds = {inbuf.get(), static_cast<size_t>(rdret)};
+	ZSTD_outBuffer outds = {outbin.pv, outbin.cb};
+	do {
+		/*
+		 * Repeat decompress attempt of current read buffer for as long
+		 * as output buffer is not big enough.
+		 */
+		while (inds.pos < inds.size) {
+			auto zret = ZSTD_decompressStream(strm, &outds, &inds);
+			if (ZSTD_isError(zret)) {
+				mlog(LV_ERR, "ZSTD_decompressStream %s: %s",
+					infile, ZSTD_getErrorName(zret));
+				return EIO;
+			}
+			if (zret == 0)
+				/* One frame is done; but there may be more in @inds. */
+				continue;
+			if (outds.pos < outds.size)
+				continue;
+			if (outbin.cb >= UINT32_MAX - 1)
+				return EFBIG;
+			size_t newsize = outbin.cb < UINT32_MAX / 2 ? outbin.cb * 2 : UINT32_MAX - 1;
+			void *newblk = realloc(outbin.pv, newsize + 1);
+			if (newblk == nullptr)
+				return ENOMEM;
+			outbin.cb  = newsize;
+			outbin.pv  = newblk;
+			outds.size = newsize;
+			outds.dst  = newblk;
+		}
+		/*
+		 * Read next bite from compressed file.
+		 * There could be more zstd frames.
+		 */
+		rdret = read(fd.get(), inbuf.get(), inbufsize);
+		if (rdret < 0)
+			return errno;
+		inds.pos = 0;
+		inds.size = static_cast<size_t>(rdret);
+	} while (rdret != 0);
+	outbin.cb = outds.pos;
+	outbin.pb[outbin.cb] = '\0';
+	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
+errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile, uint8_t complvl)
+{
+	wrapfd fd(open(outfile, O_WRONLY | O_TRUNC | O_CREAT, 0666));
+	if (fd.get() < 0)
+		return errno;
+	if (complvl == 0)
+		/* Our default is even more important than zstd's own default */
+		complvl = 6;
+
+	auto strm = ZSTD_createCStream();
+	auto cl_0 = make_scope_exit([&]() { ZSTD_freeCStream(strm); });
+	ZSTD_initCStream(strm, complvl);
+	ZSTD_CCtx_setParameter(strm, ZSTD_c_checksumFlag, 1);
+	ZSTD_CCtx_setPledgedSrcSize(strm, inbuf.size());
+	ZSTD_inBuffer inds = {inbuf.data(), inbuf.size()};
+	ZSTD_outBuffer outds{};
+	outds.size = std::min(ZSTD_CStreamOutSize(), static_cast<size_t>(SSIZE_MAX));
+	auto outbuf = std::make_unique<char[]>(ZSTD_CStreamOutSize());
+	outds.dst = outbuf.get();
+
+	while (inds.pos < inds.size) {
+		outds.pos = 0;
+		auto zr = ZSTD_compressStream2(strm, &outds, &inds, ZSTD_e_continue);
+		if (ZSTD_isError(zr))
+			return EIO;
+		auto r2 = HXio_fullwrite(fd.get(), outds.dst, outds.pos);
+		if (r2 < 0 || static_cast<size_t>(r2) != outds.pos)
+			return EIO;
+	}
+	while (true) {
+		outds.pos = 0;
+		auto zr = ZSTD_compressStream2(strm, &outds, &inds, ZSTD_e_end);
+		if (ZSTD_isError(zr))
+			return EIO;
+		auto r2 = HXio_fullwrite(fd.get(), outds.dst, outds.pos);
+		if (r2 < 0 || static_cast<size_t>(r2) != outds.pos)
+			return EIO;
+		if (zr == 0)
+			break;
+	}
+	return 0;
 }
 
 }
