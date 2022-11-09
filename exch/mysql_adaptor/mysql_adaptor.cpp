@@ -1064,48 +1064,49 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 	int type = strtol(myrow[1], nullptr, 0);
 	int privilege = strtol(myrow[2], nullptr, 0);
 
-	switch (type) {
-	case MLIST_TYPE_NORMAL:
-		switch (privilege) {
-		case MLIST_PRIVILEGE_ALL:
-		case MLIST_PRIVILEGE_OUTGOING:
-			b_chkintl = FALSE;
-			break;
-		case MLIST_PRIVILEGE_INTERNAL:
-			b_chkintl = TRUE;
-			break;
-		case MLIST_PRIVILEGE_DOMAIN:
-			if (0 != strcasecmp(pdomain, pfrom_domain)) {
-				*presult = MLIST_RESULT_PRIVIL_DOMAIN;
-				return TRUE;
-			}
-			b_chkintl = FALSE;
-			break;
-		case MLIST_PRIVILEGE_SPECIFIED:
-			qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
-			if (!conn->query(qstr.c_str()))
-				return false;
-			pmyres = mysql_store_result(conn->get());
-			if (pmyres == nullptr)
-				return false;
-			rows = pmyres.num_rows();
-			for (i = 0; i < rows; i++) {
-				myrow = pmyres.fetch_row();
-				if (0 == strcasecmp(myrow[0], from) ||
-					0 == strcasecmp(myrow[0], pfrom_domain)) {
-					break;
-				}
-			}
-			if (i == rows) {
-				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
-				return TRUE;
-			}
-			b_chkintl = FALSE;
-			break;
-		default:
-			*presult = MLIST_RESULT_NONE;
+	switch (privilege) {
+	case MLIST_PRIVILEGE_ALL:
+	case MLIST_PRIVILEGE_OUTGOING:
+		b_chkintl = FALSE;
+		break;
+	case MLIST_PRIVILEGE_INTERNAL:
+		b_chkintl = TRUE;
+		break;
+	case MLIST_PRIVILEGE_DOMAIN:
+		if (0 != strcasecmp(pdomain, pfrom_domain)) {
+			*presult = MLIST_RESULT_PRIVIL_DOMAIN;
 			return TRUE;
 		}
+		b_chkintl = FALSE;
+		break;
+	case MLIST_PRIVILEGE_SPECIFIED:
+		qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
+		if (!conn->query(qstr.c_str()))
+			return false;
+		pmyres = mysql_store_result(conn->get());
+		if (pmyres == nullptr)
+			return false;
+		rows = pmyres.num_rows();
+		for (i = 0; i < rows; i++) {
+			myrow = pmyres.fetch_row();
+			if (0 == strcasecmp(myrow[0], from) ||
+				0 == strcasecmp(myrow[0], pfrom_domain)) {
+				break;
+			}
+		}
+		if (i == rows) {
+			*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
+			return TRUE;
+		}
+		b_chkintl = FALSE;
+		break;
+	default:
+		*presult = MLIST_RESULT_NONE;
+		return TRUE;
+	}
+
+	switch (type) {
+	case MLIST_TYPE_NORMAL:
 		qstr = "SELECT username FROM associations WHERE list_id=" + std::to_string(id);
 		if (!conn->query(qstr.c_str()))
 			return false;
@@ -1134,46 +1135,6 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 	case MLIST_TYPE_GROUP: {
-		switch (privilege) {
-		case MLIST_PRIVILEGE_ALL:
-		case MLIST_PRIVILEGE_OUTGOING:
-			b_chkintl = FALSE;
-			break;
-		case MLIST_PRIVILEGE_INTERNAL:
-			b_chkintl = TRUE;
-			break;
-		case MLIST_PRIVILEGE_DOMAIN:
-			if (0 != strcasecmp(pdomain, pfrom_domain)) {
-				*presult = MLIST_RESULT_PRIVIL_DOMAIN;
-				return TRUE;
-			}
-			b_chkintl = FALSE;
-			break;
-		case MLIST_PRIVILEGE_SPECIFIED:
-			qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
-			if (!conn->query(qstr.c_str()))
-				return false;
-			pmyres = mysql_store_result(conn->get());
-			if (pmyres == nullptr)
-				return false;
-			rows = pmyres.num_rows();
-			for (i = 0; i < rows; i++) {
-				myrow = pmyres.fetch_row();
-				if (0 == strcasecmp(myrow[0], from) ||
-					0 == strcasecmp(myrow[0], pfrom_domain)) {
-					break;
-				}
-			}
-			if (i == rows) {
-				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
-				return TRUE;
-			}
-			b_chkintl = FALSE;
-			break;
-		default:
-			*presult = MLIST_RESULT_NONE;
-			return TRUE;
-		}
 		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='"s + temp_name + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
@@ -1223,46 +1184,6 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 		return TRUE;
 	}
 	case MLIST_TYPE_DOMAIN: {
-		switch (privilege) {
-		case MLIST_PRIVILEGE_ALL:
-		case MLIST_PRIVILEGE_OUTGOING:
-			b_chkintl = FALSE;
-			break;
-		case MLIST_PRIVILEGE_INTERNAL:
-			b_chkintl = TRUE;
-			break;
-		case MLIST_PRIVILEGE_DOMAIN:
-			if (0 != strcasecmp(pdomain, pfrom_domain)) {
-				*presult = MLIST_RESULT_PRIVIL_DOMAIN;
-				return TRUE;
-			}
-			b_chkintl = FALSE;
-			break;
-		case MLIST_PRIVILEGE_SPECIFIED:
-			qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
-			if (!conn->query(qstr.c_str()))
-				return false;
-			pmyres = mysql_store_result(conn->get());
-			if (pmyres == nullptr)
-				return false;
-			rows = pmyres.num_rows();
-			for (i = 0; i < rows; i++) {
-				myrow = pmyres.fetch_row();
-				if (0 == strcasecmp(myrow[0], from) ||
-					0 == strcasecmp(myrow[0], pfrom_domain)) {
-					break;
-				}
-			}
-			if (i == rows) {
-				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
-				return TRUE;
-			}
-			b_chkintl = FALSE;
-			break;
-		default:
-			*presult = MLIST_RESULT_NONE;
-			return TRUE;
-		}
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
@@ -1312,47 +1233,6 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 		return TRUE;
 	}
 	case MLIST_TYPE_CLASS: {
-		switch (privilege) {
-		case MLIST_PRIVILEGE_ALL:
-		case MLIST_PRIVILEGE_OUTGOING:
-			b_chkintl = FALSE;
-			break;
-		case MLIST_PRIVILEGE_INTERNAL:
-			b_chkintl = TRUE;
-			break;
-		case MLIST_PRIVILEGE_DOMAIN:
-			if (0 != strcasecmp(pdomain, pfrom_domain)) {
-				*presult = MLIST_RESULT_PRIVIL_DOMAIN;
-				return TRUE;
-			}
-			b_chkintl = FALSE;
-			break;
-		case MLIST_PRIVILEGE_SPECIFIED:
-			qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
-			if (!conn->query(qstr.c_str()))
-				return false;
-			pmyres = mysql_store_result(conn->get());
-			if (pmyres == nullptr)
-				return false;
-			rows = pmyres.num_rows();
-			for (i = 0; i < rows; i++) {
-				myrow = pmyres.fetch_row();
-				if (0 == strcasecmp(myrow[0], from) ||
-					0 == strcasecmp(myrow[0], pfrom_domain)) {
-					break;
-				}
-			}
-			if (i == rows) {
-				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
-				return TRUE;
-			}
-			b_chkintl = FALSE;
-			break;
-		default:
-			*presult = MLIST_RESULT_NONE;
-			return TRUE;
-		}
-
 		qstr = "SELECT id FROM classes WHERE listname='"s + temp_name + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
