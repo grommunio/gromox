@@ -858,6 +858,42 @@ wrapfd::~wrapfd()
 	errno = e;
 }
 
+std::string zstd_decompress(std::string_view x)
+{
+	std::string out;
+	auto strm = ZSTD_createDStream();
+	if (strm == nullptr)
+		throw std::bad_alloc();
+	auto cl_0 = make_scope_exit([&]() { ZSTD_freeDStream(strm); });
+	ZSTD_initDStream(strm);
+	ZSTD_inBuffer xds = {x.data(), x.size()};
+	size_t ffsize = ZSTD_getFrameContentSize(x.data(), x.size());
+	if (ffsize == ZSTD_CONTENTSIZE_ERROR)
+		return out;
+	if (ffsize == ZSTD_CONTENTSIZE_UNKNOWN)
+		ffsize = 0;
+	else if (ffsize >= 0 && ffsize < out.capacity())
+		/* Offer the entire on-stack room in the first iteration */
+		ffsize = out.capacity();
+	if (ffsize == 0)
+		ffsize = ZSTD_DStreamOutSize();
+	out.resize(ffsize);
+	ZSTD_outBuffer outds = {out.data(), out.size()};
+
+	while (xds.pos < xds.size) {
+		auto ret = ZSTD_decompressStream(strm, &outds, &xds);
+		if (ZSTD_isError(ret))
+			break;
+		if (outds.pos == outds.size) {
+			outds.size = out.size() * 2;
+			out.resize(outds.size);
+			outds.dst = out.data();
+		}
+	}
+	out.resize(outds.pos);
+	return out;
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try
