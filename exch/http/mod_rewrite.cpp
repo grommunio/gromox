@@ -119,12 +119,12 @@ static int mod_rewrite_default()
 	static constexpr size_t ebufsize = 512;
 	auto errbuf = std::make_unique<char[]>(ebufsize);
 
-	printf("[mod_rewrite]: defaulting to built-in rule list\n");
+	mlog(LV_NOTICE, "mod_rewrite: defaulting to built-in rule list");
 	node.replace_string = "\\0/EWS/autodiscover.php";
 	auto ret = regcomp(&node.search_pattern, "/autodiscover/autodiscover.xml", REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
-		printf("[mod_rewrite]: regcomp: %s\n", errbuf.get());
+		mlog(LV_ERR, "mod_rewrite: regcomp: %s", errbuf.get());
 		return -EINVAL;
 	}
 	node.reg_set = true;
@@ -134,7 +134,7 @@ static int mod_rewrite_default()
 	ret = regcomp(&node.search_pattern, "/EWS/Exchange.asmx", REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
-		printf("[mod_rewrite]: regcomp: %s\n", errbuf.get());
+		mlog(LV_ERR, "mod_rewrite: regcomp: %s", errbuf.get());
 		return -EINVAL;
 	}
 	node.reg_set = true;
@@ -144,7 +144,7 @@ static int mod_rewrite_default()
 	ret = regcomp(&node.search_pattern, "/OAB/oab.xml", REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
-		printf("[mod_rewrite]: regcomp: %s\n", errbuf.get());
+		mlog(LV_ERR, "mod_rewrite: regcomp: %s", errbuf.get());
 		return -EINVAL;
 	}
 	node.reg_set = true;
@@ -154,7 +154,7 @@ static int mod_rewrite_default()
 	ret = regcomp(&node.search_pattern, "\\(/Microsoft-Server-ActiveSync\\)", REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
-		printf("[mod_rewrite]: regcomp: %s\n", errbuf.get());
+		mlog(LV_ERR, "mod_rewrite: regcomp: %s", errbuf.get());
 		return -EINVAL;
 	}
 	node.reg_set = true;
@@ -164,7 +164,7 @@ static int mod_rewrite_default()
 	ret = regcomp(&node.search_pattern, "\\(/.well-known/autoconfig/mail/config-v1.1.xml\\)", REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
-		printf("[mod_rewrite]: regcomp: %s\n", errbuf.get());
+		mlog(LV_ERR, "mod_rewrite: regcomp: %s", errbuf.get());
 		return -EINVAL;
 	}
 	node.reg_set = true;
@@ -187,7 +187,7 @@ int mod_rewrite_run(const char *sdlist) try
 		return mod_rewrite_default();
 	if (file_ptr == nullptr) {
 		int se = errno;
-		printf("[mod_rewrite]: fopen_sd rewrite.txt: %s\n", strerror(errno));
+		mlog(LV_ERR, "mod_rewrite: fopen_sd rewrite.txt: %s", strerror(errno));
 		return -(errno = se);
 	}
 	while (fgets(line, GX_ARRAY_SIZE(line), file_ptr.get())) {
@@ -208,8 +208,8 @@ int mod_rewrite_run(const char *sdlist) try
 		HX_strltrim(line);
 		ptoken = strstr(line, "=>");
 		if (NULL == ptoken) {
-			printf("[mod_rewrite]: invalid line %d, cannot "
-						"find seperator \"=>\"\n", line_no);
+			mlog(LV_ERR, "mod_rewrite: invalid line %d, cannot "
+						"find seperator \"=>\"", line_no);
 			continue;
 		}
 		*ptoken = '\0';
@@ -217,8 +217,8 @@ int mod_rewrite_run(const char *sdlist) try
 		ptoken += 2;
 		HX_strltrim(ptoken);
 		if ('\\' != ptoken[0] || ptoken[1] < '0' || ptoken[1] > '9') {
-			printf("[mod_rewrite]: invalid line %d, cannot"
-				" find replace sequence number\n", line_no);
+			mlog(LV_ERR, "mod_rewrite: invalid line %d, cannot"
+				" find replace sequence number", line_no);
 			continue;
 		}
 		REWRITE_NODE node;
@@ -226,7 +226,7 @@ int mod_rewrite_run(const char *sdlist) try
 		auto ret = regcomp(&node.search_pattern, line, REG_ICASE);
 		if (ret != 0) {
 			regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
-			printf("[mod_rewrite]: line %d: %s\n", line_no, errbuf.get());
+			mlog(LV_ERR, "mod_rewrite: line %d: %s", line_no, errbuf.get());
 			return -EINVAL;
 		}
 		node.reg_set = true;

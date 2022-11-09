@@ -67,7 +67,7 @@ int listener_run()
 {
 	g_listener_sock = gx_inet_listen(g_listener_addr.c_str(), g_listener_port);
 	if (g_listener_sock < 0) {
-		printf("[listener]: failed to create socket [*]:%hu: %s\n",
+		mlog(LV_ERR, "listener: failed to create socket [*]:%hu: %s",
 		       g_listener_port, strerror(-g_listener_sock));
 		return -1;
 	}
@@ -80,7 +80,7 @@ int listener_run()
 	if (g_listener_ssl_port > 0) {
 		g_listener_ssl_sock = gx_inet_listen(g_listener_addr.c_str(), g_listener_ssl_port);
 		if (g_listener_ssl_sock < 0) {
-			printf("[listener]: failed to create socket [*]:%hu: %s\n",
+			mlog(LV_ERR, "listener: failed to create socket [*]:%hu: %s",
 			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
 			return -1;
 		}
@@ -98,14 +98,14 @@ int listener_trigger_accept()
 {
 	auto ret = pthread_create(&g_thr_id, nullptr, htls_thrwork, nullptr);
 	if (ret != 0) {
-		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 		return -1;
 	}
 	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
 		ret = pthread_create(&g_ssl_thr_id, nullptr, htls_thrworkssl, nullptr);
 		if (ret != 0) {
-			printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
+			mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 			return -2;
 		}
 		pthread_setname_np(g_ssl_thr_id, "tls_accept");
@@ -157,14 +157,14 @@ static void *htls_thrwork(void *arg)
 		          client_txtport, sizeof(client_txtport),
 		          NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
+			mlog(LV_ERR, "E-1260: getnameinfo: %s", gai_strerror(ret));
 			close(sockd2);
 			continue;
 		}
 		addrlen = sizeof(fact_addr); 
 		ret = getsockname(sockd2, reinterpret_cast<struct sockaddr *>(&fact_addr), &addrlen);
 		if (ret != 0) {
-			printf("getsockname: %s\n", strerror(errno));
+			mlog(LV_ERR, "E-1259: getsockname: %s", strerror(errno));
 			close(sockd2);
 			continue;
 		}
@@ -172,7 +172,7 @@ static void *htls_thrwork(void *arg)
 		      addrlen, server_hostip, sizeof(server_hostip),
 		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
-			printf("getsockname: %s\n", gai_strerror(ret));
+			mlog(LV_ERR, "E-1258: getsockname: %s", gai_strerror(ret));
 			close(sockd2);
 			continue;
 		}
@@ -276,14 +276,14 @@ static void *htls_thrworkssl(void *arg)
 		          client_txtport, sizeof(client_txtport),
 		          NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
+			mlog(LV_ERR, "E-1257: getnameinfo: %s", gai_strerror(ret));
 			close(sockd2);
 			continue;
 		}
 		addrlen = sizeof(fact_addr); 
 		ret = getsockname(sockd2, reinterpret_cast<struct sockaddr *>(&fact_addr), &addrlen);
 		if (ret != 0) {
-			printf("getsockname: %s\n", strerror(errno));
+			mlog(LV_ERR, "E-1256: getsockname: %s", strerror(errno));
 			close(sockd2);
 			continue;
 		}
@@ -291,7 +291,7 @@ static void *htls_thrworkssl(void *arg)
 		      addrlen, server_hostip, sizeof(server_hostip),
 		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
+			mlog(LV_ERR, "E-1255: getnameinfo: %s", gai_strerror(ret));
 			close(sockd2);
 			continue;
 		}

@@ -118,7 +118,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 	if (cfg == nullptr)
 		cfg = config_file_prg(opt_config_file, "http.cfg", http_cfg_defaults);
 	if (opt_config_file != nullptr && cfg == nullptr) {
-		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
 	mlog_init(cfg->get_value("http_log_file"), cfg->get_ll("http_log_level"));
@@ -158,7 +158,8 @@ int main(int argc, const char **argv) try
 	sigaction(SIGPIPE, &sact, nullptr);
 	g_config_file = config_file_prg(opt_config_file, "http.cfg", http_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
-		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		mlog(LV_ERR, "resource: config_file_init %s: %s",
+			opt_config_file, strerror(errno));
 	if (g_config_file == nullptr || !http_reload_config(g_config_file))
 		return EXIT_FAILURE;
 
@@ -170,7 +171,7 @@ int main(int argc, const char **argv) try
 		resource_set_string("HOST_ID", temp_buff);
 		str_val = temp_buff;
 	}
-	printf("[system]: host ID is %s\n", str_val);
+	mlog(LV_NOTICE, "system: host ID is \"%s\"", str_val);
 	gx_strlcpy(host_name, str_val, GX_ARRAY_SIZE(host_name));
 	dns_name = str_val;
 	
@@ -181,10 +182,10 @@ int main(int argc, const char **argv) try
 			*temp_buff = '\0';
 		resource_set_string("DEFAULT_DOMAIN", temp_buff);
 		str_val = temp_buff;
-		printf("[system]: warning! cannot find default domain, OS domain name "
-			"will be used as default domain\n");
+		mlog(LV_WARN, "system: No domain name set. "
+			"OS domain name will be used as default domain.");
 	}
-	printf("[system]: default domain is %s\n", str_val);
+	mlog(LV_NOTICE, "system: default domain is \"%s\"", str_val);
 
 	ptoken = strchr(host_name, '.');
 	netbios_name = host_name;
@@ -200,7 +201,7 @@ int main(int argc, const char **argv) try
 		thread_charge_num = thread_charge_num / 4 * 4;
 		resource_set_integer("http_thread_charge_num", thread_charge_num);
 	}
-	printf("[system]: one thread is in charge of %d contexts\n",
+	mlog(LV_INFO, "system: one thread is in charge of %d contexts",
 		thread_charge_num);
 
 	unsigned int context_num = g_config_file->get_ll("context_num");
@@ -211,29 +212,29 @@ int main(int argc, const char **argv) try
 			thread_init_num = 1;
 			context_num = thread_charge_num;
 			resource_set_integer("CONTEXT_NUM", context_num);
-			printf("[system]: rectify contexts number %d\n", context_num);
+			mlog(LV_NOTICE, "system: rectified contexts number to %d", context_num);
 		}
 		resource_set_integer("http_thread_init_num", thread_init_num);
 	}
-	printf("[system]: threads pool initial threads number is %d\n",
+	mlog(LV_INFO, "system: threads pool initial threads number is %d",
 		thread_init_num);
 
 	unsigned int context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
 	HX_unit_size(temp_buff, arsizeof(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
-	printf("[http]: context average memory is %s\n", temp_buff);
+	mlog(LV_INFO, "http: context average memory is %s", temp_buff);
 	
 	std::chrono::seconds http_conn_timeout{g_config_file->get_ll("http_conn_timeout")};
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), http_conn_timeout.count(), 0);
-	printf("[http]: http socket read write timeout is %s\n", temp_buff);
+	mlog(LV_INFO, "http: http socket read write timeout is %s", temp_buff);
  
 	int http_auth_times = g_config_file->get_ll("http_auth_times");
-	printf("[http]: maximum authentication failure times is %d\n", 
+	mlog(LV_INFO, "http: maximum authentication failure count is %d",
 			http_auth_times);
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
-	printf("[http]: block client %s when authentication failure count "
-			"is exceeded\n", temp_buff);
+	mlog(LV_INFO, "http: blocking clients for %s when authentication "
+		"failure count is exceeded", temp_buff);
 	
 	auto http_support_tls = parse_bool(g_config_file->get_value("http_support_tls"));
 	auto certificate_path = g_config_file->get_value("http_certificate_path");
@@ -242,56 +243,56 @@ int main(int argc, const char **argv) try
 	if (http_support_tls) {
 		if (NULL == certificate_path || NULL == private_key_path) {
 			http_support_tls = false;
-			printf("[http]: TLS support deactivated because certificate or "
-				"private key path is empty\n");
+			mlog(LV_NOTICE, "http: TLS support deactivated because certificate or "
+				"private key path is empty");
 		} else {
-			printf("[http]: TLS support enabled\n");
+			mlog(LV_INFO, "http: TLS support enabled");
 		}
 	} else {
-		printf("[http]: TLS support deactivated via config\n");
+		mlog(LV_NOTICE, "http: TLS support deactivated via config");
 	}
 
 	uint16_t listen_tls_port = g_config_file->get_ll("http_listen_tls_port");
 	if (!http_support_tls && listen_tls_port > 0)
 		listen_tls_port = 0;
 	if (listen_tls_port > 0)
-		printf("[system]: system TLS listening port %hu\n", listen_tls_port);
+		mlog(LV_NOTICE, "system: system TLS listening port %hu", listen_tls_port);
 	
 	size_t max_request_mem = g_config_file->get_ll("request_max_mem");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), max_request_mem, 1024, 0);
-	printf("[pdu_processor]: maximum request memory is %s\n", temp_buff);
+	mlog(LV_INFO, "pdu_processor: maximum request memory is %s", temp_buff);
 
 	uint64_t hpm_cache_size = g_config_file->get_ll("hpm_cache_size");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), hpm_cache_size, 1024, 0);
-	printf("[hpm_processor]: fastcgi cache size is %s\n", temp_buff);
+	mlog(LV_INFO, "hpm_processor: fastcgi cache size is %s", temp_buff);
 	
 	uint64_t hpm_max_size = g_config_file->get_ll("hpm_max_size");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), hpm_max_size, 1024, 0);
-	printf("[hpm_processor]: hpm maximum size is %s\n", temp_buff);
+	mlog(LV_INFO, "hpm_processor: HPM maximum size is %s", temp_buff);
 
 	uint64_t fastcgi_cache_size = g_config_file->get_ll("fastcgi_cache_size");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), fastcgi_cache_size, 1024, 0);
-	printf("[mod_fastcgi]: fastcgi cache size is %s\n", temp_buff);
+	mlog(LV_INFO, "mod_fastcgi: fastcgi cache size is %s", temp_buff);
 	
 	uint64_t fastcgi_max_size = g_config_file->get_ll("fastcgi_max_size");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), fastcgi_max_size, 1024, 0);
-	printf("[mod_fastcgi]: fastcgi maximum size is %s\n", temp_buff);
+	mlog(LV_INFO, "mod_fastcgi: fastcgi maximum size is %s", temp_buff);
 	
 	std::chrono::seconds fastcgi_exec_timeout{g_config_file->get_ll("fastcgi_exec_timeout")};
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), fastcgi_exec_timeout.count(), 0);
-	printf("[http]: fastcgi execution timeout is %s\n", temp_buff);
+	mlog(LV_INFO, "http: fastcgi execution timeout is %s", temp_buff);
 	uint16_t listen_port = g_config_file->get_ll("http_listen_port");
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");
 	listener_init(g_config_file->get_value("http_listen_addr"),
 		listen_port, listen_tls_port, mss_size);
 	auto cleanup_4 = make_scope_exit(listener_stop);
 	if (0 != listener_run()) {
-		printf("[system]: fail to start listener\n");
+		mlog(LV_ERR, "system: failed to start listener");
 		return EXIT_FAILURE;
 	}
 
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
-		printf("[system]: fail to get file limitation\n");
+		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
 		return EXIT_FAILURE;
 	}
 	if (rl.rlim_cur < 5*context_num + 256 ||
@@ -299,9 +300,11 @@ int main(int argc, const char **argv) try
 		rl.rlim_cur = 5*context_num + 256;
 		rl.rlim_max = 5*context_num + 256;
 		if (setrlimit(RLIMIT_NOFILE, &rl) != 0)
-			printf("[system]: fail to set file limitation\n");
+			mlog(LV_WARN, "setrlimit RLIMIT_NFILE %zu: %s",
+				static_cast<size_t>(rl.rlim_max), strerror(errno));
 		else
-			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
+			mlog(LV_NOTICE, "system: FD limit set to %zu",
+				static_cast<size_t>(rl.rlim_cur));
 	}
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
@@ -311,17 +314,17 @@ int main(int argc, const char **argv) try
 	if (!service_register_service("ndr_stack_alloc",
 	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),
 	    typeid(*pdu_processor_ndr_stack_alloc))) {
-		printf("service_register ndr_stack_alloc failed\n");
+		mlog(LV_ERR, "service_register ndr_stack_alloc failed");
 		return EXIT_FAILURE;
 	}
 	if (service_run_early() != 0) {
-		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
+		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
 		return EXIT_FAILURE;
 	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	if (0 != service_run()) { 
-		printf("[system]: failed to run service\n");
+		mlog(LV_ERR, "system: failed to run services");
 		return EXIT_FAILURE;
 	}
 
@@ -330,7 +333,7 @@ int main(int argc, const char **argv) try
 	textmaps_init();
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) { 
-		printf("[system]: failed to run system service\n");
+		mlog(LV_ERR, "system: failed to run system services");
 		return EXIT_FAILURE;
 	}
 
@@ -342,7 +345,7 @@ int main(int argc, const char **argv) try
 		std::move(g_dfl_proc_plugins));
 	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 	if (0 != pdu_processor_run()) {
-		printf("[system]: can not run pdu processor\n");
+		mlog(LV_ERR, "system: could not start PDU processor");
 		return EXIT_FAILURE;
 	}
 
@@ -350,26 +353,26 @@ int main(int argc, const char **argv) try
 		hpm_cache_size, hpm_max_size);
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 	if (0 != hpm_processor_run()) {
-		printf("[system]: can not run hpm processor\n");
+		mlog(LV_ERR, "system: could not start HPM processor");
 		return EXIT_FAILURE;
 	}
 
 	if (mod_rewrite_run(resource_get_string("config_file_path")) != 0) {
-		printf("[system]: failed to run mod rewrite\n");
+		mlog(LV_ERR, "system: failed to start mod_rewrite");
 		return EXIT_FAILURE;
 	}
 	mod_fastcgi_init(context_num, fastcgi_cache_size,
 		fastcgi_max_size, fastcgi_exec_timeout); 
 	auto cleanup_18 = make_scope_exit(mod_fastcgi_stop);
 	if (0 != mod_fastcgi_run()) { 
-		printf("[system]: failed to run mod fastcgi\n");
+		mlog(LV_ERR, "system: failed to start mod_fastcgi");
 		return EXIT_FAILURE;
 	}
 
 	mod_cache_init(context_num);
 	auto cleanup_20 = make_scope_exit(mod_cache_stop);
 	if (0 != mod_cache_run()) {
-		printf("[system]: failed to run mod cache\n");
+		mlog(LV_ERR, "system: failed to start mod_cache");
 		return EXIT_FAILURE;
 	}
 
@@ -378,7 +381,7 @@ int main(int argc, const char **argv) try
 		certificate_path, cb_passwd, private_key_path);
 	auto cleanup_22 = make_scope_exit(http_parser_stop);
 	if (0 != http_parser_run()) { 
-		printf("[system]: failed to run http parser\n");
+		mlog(LV_ERR, "system: failed to start HTTP parser");
 		return EXIT_FAILURE;
 	}
 
@@ -389,7 +392,7 @@ int main(int argc, const char **argv) try
 		thread_charge_num, http_conn_timeout); 
 	auto cleanup_24 = make_scope_exit(contexts_pool_stop);
 	if (0 != contexts_pool_run()) { 
-		printf("[system]: failed to run contexts pool\n");
+		mlog(LV_ERR, "system: failed to start context_pool");
 		return EXIT_FAILURE;
 	}
  
@@ -397,19 +400,19 @@ int main(int argc, const char **argv) try
 	auto cleanup_28 = make_scope_exit(threads_pool_stop);
 	threads_pool_register_event_proc(http_parser_threads_event_proc);
 	if (threads_pool_run("http.cfg:http_thread_init_num") != 0) {
-		printf("[system]: failed to run threads pool\n");
+		mlog(LV_ERR, "system: failed to start thread pool");
 		return EXIT_FAILURE;
 	}
 
 	/* accept the connection */
 	if (listener_trigger_accept() != 0) {
-		printf("[system]: fail trigger accept\n");
+		mlog(LV_ERR, "system: failed listening socket setup");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_29 = make_scope_exit(listener_stop_accept);
 	
 	retcode = EXIT_SUCCESS;
-	printf("[system]: HTTP DAEMON is now running\n");
+	mlog(LV_NOTICE, "system: HTTP daemon is now running");
 	while (!g_notify_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {

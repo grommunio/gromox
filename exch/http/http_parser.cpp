@@ -120,8 +120,7 @@ static void httpctx_report(const HTTP_CONTEXT &ctx, size_t i)
 	auto &cn = ctx.connection;
 	if (cn.sockd < 0)
 		return;
-	fprintf(stderr, "%-3zu  %-2d  ", i, cn.sockd);
-	fprintf(stderr, "[%s]:%hu->[%s]:%hu\n",
+	mlog(LV_INFO, "%-3zu  %-2d  [%s]:%hu->[%s]:%hu", i, cn.sockd,
 	        cn.client_ip, cn.client_port, cn.server_ip, cn.server_port);
 	const char *chtyp = "NONE";
 	switch (ctx.channel_type) {
@@ -130,21 +129,20 @@ static void httpctx_report(const HTTP_CONTEXT &ctx, size_t i)
 	case CHANNEL_TYPE_OUT: chtyp = "OUT"; break;
 	default: chtyp = "?"; break;
 	}
-	fprintf(stderr, "   %4s  [%s]:%hu  %s\n",
+	mlog(LV_INFO, "   %4s  [%s]:%hu  %s",
 		chtyp, ctx.host, ctx.port, ctx.username);
 }
 
 void http_report()
 {
 	/* There is no lock surrounding these structures, and they can be in an undefined state */
-	fprintf(stderr, "HTTP Contexts:\n");
-	fprintf(stderr, "Ctx  fd  src->host\n");
-	fprintf(stderr, "   ChTy  RPCEndpoint, Username\n");
-	fprintf(stderr, "-------------------------------------------------------------------------------\n");
+	mlog(LV_INFO, "HTTP Contexts:");
+	mlog(LV_INFO, "Ctx  fd  src->host");
+	mlog(LV_INFO, "   ChTy  RPCEndpoint, Username");
+	mlog(LV_INFO, "-------------------------------------------------------------------------------");
 	for (size_t i = 0; i < g_context_num; ++i) {
 		httpctx_report(g_context_list[i], i);
 	}
-	fprintf(stderr, "\n");
 }
 
 void http_parser_init(size_t context_num, time_duration timeout,
@@ -204,7 +202,7 @@ int http_parser_run()
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (NULL == g_ssl_ctx) {
-			printf("[http_parser]: Failed to init SSL context\n");
+			mlog(LV_ERR, "http_parser: failed to init TLS context");
 			return -1;
 		}
 		if ('\0' != g_certificate_passwd[0]) {
@@ -230,13 +228,13 @@ int http_parser_run()
 		}
 		auto mp = g_config_file->get_value("tls_min_proto");
 		if (mp != nullptr && tls_set_min_proto(g_ssl_ctx, mp) != 0) {
-			fprintf(stderr, "[http_parser]: tls_min_proto value \"%s\" not accepted\n", mp);
+			mlog(LV_ERR, "http_parser: tls_min_proto value \"%s\" rejected", mp);
 			return -4;
 		}
 		try {
 			g_ssl_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
 		} catch (const std::bad_alloc &) {
-			printf("[http_parser]: Failed to allocate SSL locking buffer\n");
+			mlog(LV_ERR, "http_parser: failed to allocate TLS locking buffer");
 			return -5;
 		}
 #ifdef OLD_SSL
@@ -254,7 +252,7 @@ int http_parser_run()
 			g_context_list2[i] = &g_context_list[i];
 		}
 	} catch (const std::bad_alloc &) {
-		printf("[http_parser]: Failed to allocate HTTP contexts\n");
+		mlog(LV_ERR, "http_parser: failed to allocate HTTP contexts");
         return -8;
     }
 	g_inchannel_allocator = alloc_limiter<RPC_IN_CHANNEL>(g_context_num,
@@ -1797,7 +1795,7 @@ void http_parser_vconnection_async_reply(const char *host,
 {
 	/* system is going to stop now */
 	if (g_async_stop) {
-		printf("noticed async_stop\n");
+		mlog(LV_DEBUG, "noticed async_stop");
 		return;
 	}
 	auto pvconnection = http_parser_get_vconnection(host, port, connection_cookie);
@@ -2025,11 +2023,11 @@ BOOL http_context::try_create_vconnection()
 		HX_strlower(hash_key.data());
 		xp = g_vconnection_hash.try_emplace(std::move(hash_key));
 	} catch (const std::bad_alloc &) {
-		pcontext->log(LV_DEBUG, "W-1292: Out of memory\n");
+		pcontext->log(LV_DEBUG, "W-1292: Out of memory");
 		return false;
 	}
 	if (!xp.second) {
-		pcontext->log(LV_DEBUG, "W-1291: vconn suddenly started existing\n");
+		pcontext->log(LV_DEBUG, "W-1291: vconn suddenly started existing");
 		goto RETRY_QUERY;
 	}
 	auto nc = &xp.first->second;

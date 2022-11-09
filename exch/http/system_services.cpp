@@ -3,7 +3,10 @@
 #include <gromox/authmgr.hpp>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
+#include <gromox/util.hpp>
 #include "system_services.hpp"
+
+using namespace gromox;
 
 BOOL (*system_services_judge_ip)(const char*);
 BOOL (*system_services_judge_user)(const char*);
@@ -17,7 +20,7 @@ int system_services_run()
 #define E(f, s) do { \
 	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
+		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)

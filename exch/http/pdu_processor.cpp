@@ -1916,7 +1916,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	    (ret != DISPATCH_SUCCESS || ecode != ecSuccess))
 		dbg = true;
 	if (dbg)
-		fprintf(stderr, "rpc_dispatch(%s, %u) EC=%xh RS=%d\n",
+		mlog(LV_DEBUG, "rpc_dispatch(%s, %u) EC=%xh RS=%d",
 		        pcontext->pinterface->name, prequest->opnum,
 		        static_cast<unsigned int>(ecode), ret);
 	switch (ret) {
@@ -3088,7 +3088,7 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 	gx_strlcpy(pendpoint->host, host, GX_ARRAY_SIZE(pendpoint->host));
 	pendpoint->tcp_port = tcp_port;
 	pendpoint->last_group_id = 0;
-	printf("[pdu_processor]: registered endpoint [%s]:%hu\n",
+	mlog(LV_INFO, "pdu_processor: registered endpoint [%s]:%hu",
 	       pendpoint->host, pendpoint->tcp_port);
 	return pendpoint;
 } catch (const std::bad_alloc &) {
@@ -3100,17 +3100,17 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
     const DCERPC_INTERFACE *pinterface)
 {
 	if (NULL == pinterface->ndr_pull) {
-		printf("[pdu_processor]: ndr_pull of interface %s cannot be NULL\n",
+		mlog(LV_ERR, "pdu_processor: ndr_pull of interface %s cannot be NULL",
 			pinterface->name);
 		return FALSE;
 	}
 	if (NULL == pinterface->dispatch) {
-		printf("[pdu_processor]: dispatch of interface %s cannot be NULL\n",
+		mlog(LV_ERR, "pdu_processor: dispatch of interface %s cannot be NULL",
 			pinterface->name);
 		return FALSE;
 	}
 	if (NULL == pinterface->ndr_push) {
-		printf("[pdu_processor]: ndr_push of interface %s cannot be NULL\n",
+		mlog(LV_ERR, "pdu_processor: ndr_push of interface %s cannot be NULL",
 			pinterface->name);
 		return FALSE;
 	}
@@ -3118,8 +3118,8 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	auto ix = std::find_if(lst.cbegin(), lst.cend(),
 	          interface_eq(pinterface->uuid, pinterface->version));
 	if (ix != lst.cend()) {
-		printf("[pdu_processor]: interface already exists under "
-		       "endpoint [%s]:%hu\n", pendpoint->host, pendpoint->tcp_port);
+		mlog(LV_ERR, "pdu_processor: interface already exists under "
+		       "endpoint [%s]:%hu", pendpoint->host, pendpoint->tcp_port);
 		return FALSE;
 	}
 	try {
@@ -3130,7 +3130,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	}
 	char uuid_string[GUIDSTR_SIZE];
 	pinterface->uuid.to_str(uuid_string, arsizeof(uuid_string));
-	printf("[pdu_processor]: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)\n",
+	mlog(LV_INFO, "pdu_processor: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)",
 	       pendpoint->host, pendpoint->tcp_port, pinterface->name,
 	       uuid_string, pinterface->version & 0xFFFF,
 	       (pinterface->version >> 16) & 0xFFFF);
@@ -3172,7 +3172,7 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	auto pplugin = this;
 	
 	if (pplugin->file_name.size() > 0)
-		printf("[pdu_processor]: unloading %s\n", pplugin->file_name.c_str());
+		mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name.c_str());
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
@@ -3426,16 +3426,14 @@ static int pdu_processor_load_library(const char* plugin_name)
 	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
 		plug.handle = dlopen((PKGLIBDIR + "/"s + plugin_name).c_str(), RTLD_LAZY);
 	if (plug.handle == nullptr) {
-		printf("[pdu_processor]: error loading %s: %s\n", fake_path,
+		mlog(LV_ERR, "pdu_processor: error loading %s: %s", fake_path,
 			dlerror());
-		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
 		return PLUGIN_FAIL_OPEN;
     }
 	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "PROC_LibMain"));
 	if (plug.lib_main == nullptr) {
-		printf("[pdu_processor]: error finding the PROC_LibMain function in %s\n",
-			fake_path);
-		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "pdu_processor: error finding the PROC_LibMain "
+			"function in %s", fake_path);
 		return PLUGIN_NO_MAIN;
 	}
 	plug.file_name = plugin_name;
@@ -3445,9 +3443,8 @@ static int pdu_processor_load_library(const char* plugin_name)
 	/* append the pendpoint node into endpoint list */
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (!g_cur_plugin->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
-		printf("[pdu_processor]: error executing the plugin's init function "
-			"in %s\n", fake_path);
-		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "pdu_processor: error executing the plugin's init "
+			"function in %s", fake_path);
 		g_plugin_list.pop_back();
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
