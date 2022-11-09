@@ -115,7 +115,7 @@ BOOL bounce_producer_refresh(const char *data_path) try
 
 	auto dinfo = opendir_sd("mail_bounce", data_path);
 	if (dinfo.m_dir == nullptr) {
-		printf("[exmdb_provider]: opendir_sd(mail_bounce) %s: %s\n",
+		mlog(LV_ERR, "exmdb_provider: opendir_sd(mail_bounce) %s: %s",
 		       dinfo.m_path.c_str(), strerror(errno));
 		return FALSE;
 	}
@@ -131,8 +131,8 @@ BOOL bounce_producer_refresh(const char *data_path) try
 	auto pdefault = std::find_if(resource_list.begin(), resource_list.end(),
 	                [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, "ascii") == 0; });
 	if (pdefault == resource_list.end()) {
-		printf("[exmdb_provider]: there are no "
-			"\"ascii\" bounce mail templates in %s\n", dinfo.m_path.c_str());
+		mlog(LV_ERR, "exmdb_provider: there are no "
+			"\"ascii\" bounce mail templates in %s", dinfo.m_path.c_str());
 		return FALSE;
 	}
 	std::unique_lock wr_hold(g_list_lock);
@@ -237,7 +237,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 					break;
 				}
 			} else {
-				printf("[exmdb_provider]: bounce mail %s format error\n",
+				mlog(LV_ERR, "exmdb_provider: bounce mail %s format error",
 				       sub_buf.c_str());
 				return;
 			}
@@ -260,8 +260,8 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 
 		for (j=TAG_BEGIN+1; j<until_tag; j++) {
 			if (-1 == presource->format[i][j].position) {
-				printf("[exmdb_provider]: format error in %s, lack of "
-				       "tag %s\n", sub_buf.c_str(), g_tags[j-1].name);
+				mlog(LV_ERR, "exmdb_provider: format error in %s, lacking "
+				       "tag %s", sub_buf.c_str(), g_tags[j-1].name);
 				return;
 			}
 		}

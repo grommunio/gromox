@@ -181,18 +181,18 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	if (current >= recent)
 		return 0;
 	auto c = is_pvt ? 'V' : 'B';
-	fprintf(stderr, "[dbop_sqlite]: %s: current schema E%c-%d; upgrading to E%c-%d.\n",
+	mlog(LV_NOTICE, "dbop_sqlite: %s: current schema E%c-%d; upgrading to E%c-%d.",
 		filedesc, c, current, c, recent);
 	auto start = tp_now();
 	auto ret = dbop_sqlite_upgrade(db, filedesc, kind, DBOP_VERBOSE);
 	if (ret != 0) {
-		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n",
+		mlog(LV_ERR, "dbop_sqlite upgrade %s: %s",
 		        filedesc, strerror(-ret));
 		return -1;
 	}
 	auto d1 = tp_now() - start;
 	auto d2 = std::chrono::duration<double>(d1).count();
-	fprintf(stderr, "[dbop_sqlite]: Completed upgrade of %s in %.2fs.\n",
+	mlog(LV_NOTICE, "dbop_sqlite: Completed upgrade of %s in %.2fs.",
 	        filedesc, d2);
 	return 0;
 }
@@ -211,7 +211,7 @@ db_item_ptr db_engine_get_db(const char *path)
 		auto refs = pdb->reference.load();
 		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_reject) {
 			hhold.unlock();
-			printf("E-1593: contention on %s (%u uses), rejecting db request\n", path, refs);
+			mlog(LV_ERR, "E-1593: contention on %s (%u uses), rejecting db request", path, refs);
 			return NULL;
 		}
 		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_warning)
@@ -228,7 +228,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	}
 	if (g_hash_table.size() >= g_table_size) {
 		hhold.unlock();
-		printf("[exmdb_provider]: W-1297: too many sqlites referenced at once (exmdb_provider.cfg:table_size=%zu)\n", g_table_size);
+		mlog(LV_ERR, "E-1297: too many sqlites referenced at once (exmdb_provider.cfg:table_size=%zu)", g_table_size);
 		return NULL;
 	}
 	try {
@@ -236,7 +236,7 @@ db_item_ptr db_engine_get_db(const char *path)
 		pdb = &xp.first->second;
 	} catch (const std::bad_alloc &) {
 		hhold.unlock();
-		printf("[exmdb_provider]: W-1296: ENOMEM\n");
+		mlog(LV_ERR, "E-1296: ENOMEM");
 		return NULL;
 	}
 	time(&pdb->last_time);
@@ -722,21 +722,21 @@ void db_engine_init(size_t table_size, int cache_interval,
 int db_engine_run()
 {
 	if (SQLITE_OK != sqlite3_config(SQLITE_CONFIG_MULTITHREAD)) {
-		printf("[exmdb_provider]: warning! fail to change"
-			" to multiple thread mode for sqlite engine\n");
+		mlog(LV_WARN, "exmdb_provider: failed to change"
+			" to multiple thread mode for sqlite engine");
 	}
 	if (SQLITE_OK != sqlite3_config(SQLITE_CONFIG_MEMSTATUS, 0)) {
-		printf("[exmdb_provider]: warning! fail to close"
-			" memory statistic for sqlite engine\n");
+		mlog(LV_WARN, "exmdb_provider: failed to close"
+			" memory statistic for sqlite engine");
 	}
 	if (SQLITE_OK != sqlite3_initialize()) {
-		printf("[exmdb_provider]: Failed to initialize sqlite engine\n");
+		mlog(LV_ERR, "exmdb_provider: Failed to initialize sqlite engine");
 		return -2;
 	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_tid, nullptr, mdpeng_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[exmdb_provider]: failed to create db scan thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "exmdb_provider: failed to create db scan thread: %s", strerror(ret));
 		return -4;
 	}
 	pthread_setname_np(g_scan_tid, "exmdbeng/scan");
@@ -744,7 +744,7 @@ int db_engine_run()
 		pthread_t tid;
 		ret = pthread_create(&tid, nullptr, mdpeng_thrwork, nullptr);
 		if (ret != 0) {
-			printf("[exmdb_provider]: E-1448: pthread_create: %s\n", strerror(ret));
+			mlog(LV_ERR, "E-1448: pthread_create: %s", strerror(ret));
 			db_engine_stop();
 			return -5;
 		}
