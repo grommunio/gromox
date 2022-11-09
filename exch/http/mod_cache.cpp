@@ -159,7 +159,7 @@ void mod_cache_init(int context_num)
 
 static int mod_cache_defaults()
 {
-	printf("[mod_cache]: defaulting to built-in list of handled paths\n");
+	mlog(LV_NOTICE, "mod_cache: defaulting to built-in list of handled paths");
 	DIRECTORY_NODE node;
 	node.domain = "*";
 	node.path = "/web";
@@ -177,7 +177,7 @@ static int mod_cache_read_txt() try
 	if (pfile == nullptr && errno == ENOENT) {
 		return mod_cache_defaults();
 	} else if (pfile == nullptr) {
-		printf("[mod_cache]: list_file_initd cache.txt: %s\n", strerror(errno));
+		mlog(LV_ERR, "mod_cache: list_file_initd cache.txt: %s", strerror(errno));
 		return -1;
 	}
 	auto item_num = pfile->get_size();
@@ -195,7 +195,7 @@ static int mod_cache_read_txt() try
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	printf("[mod_cache: bad_alloc\n");
+	mlog(LV_ERR, "E-1253: ENOMEM");
 	return -ENOMEM;
 }
 
@@ -206,19 +206,19 @@ int mod_cache_run()
 		return ret;
 	g_context_list = me_alloc<CACHE_CONTEXT>(g_context_num);
 	if (NULL == g_context_list) {
-		printf("[mod_cache]: Failed to allocate context list\n");
+		mlog(LV_ERR, "mod_cache: failed to allocate context list");
 		return -2;
 	}
 	memset(g_context_list, 0, sizeof(CACHE_CONTEXT)*g_context_num);
 	g_cache_hash = STR_HASH_TABLE::create(HASH_GROWING_NUM, sizeof(CACHE_ITEM *), nullptr);
 	if (NULL == g_cache_hash) {
-		printf("[mod_cache]: Failed to init cache hash table\n");
+		mlog(LV_ERR, "mod_cache: failed to init cache hash table");
 		return -3;
 	}
 	g_notify_stop = false;
 	ret = pthread_create(&g_scan_tid, nullptr, mod_cache_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[mod_cache]: failed to create scanning thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "mod_cache: failed to create scanning thread: %s", strerror(ret));
 		g_notify_stop = true;
 		return -4;
 	}

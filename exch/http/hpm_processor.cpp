@@ -76,21 +76,21 @@ static BOOL hpm_processor_register_interface(
 {
 	auto fn = g_cur_plugin->file_name.c_str();
 	if (NULL == pinterface->preproc) {
-		printf("[hpm_processor]: preproc of interface in %s cannot be NULL\n", fn);
+		mlog(LV_ERR, "http_processor: preproc of interface in %s cannot be NULL", fn);
 		return FALSE;
 	}
 	if (NULL == pinterface->proc) {
-		printf("[hpm_processor]: proc of interface in %s cannot be NULL\n", fn);
+		mlog(LV_ERR, "http_processor: proc of interface in %s cannot be NULL", fn);
 		return FALSE;
 	}
 	if (NULL == pinterface->retr) {
-		printf("[hpm_processor]: retr of interface in %s cannot be NULL\n", fn);
+		mlog(LV_ERR, "http_processor: retr of interface in %s cannot be NULL", fn);
 		return FALSE;
 	}
 	if (NULL != g_cur_plugin->interface.preproc ||
 		NULL != g_cur_plugin->interface.proc ||
 		NULL != g_cur_plugin->interface.retr) {
-		printf("[hpm_processor]: interface has been already registered in %s", fn);
+		mlog(LV_ERR, "http_processor: interface has already been registered in %s", fn);
 		return FALSE;
 	}
 	memcpy(&g_cur_plugin->interface, pinterface, sizeof(HPM_INTERFACE));
@@ -302,7 +302,7 @@ HPM_PLUGIN::~HPM_PLUGIN()
 	PLUGIN_MAIN func;
 	auto pplugin = this;
 	if (pplugin->file_name.size() > 0)
-		printf("[hpm_processor]: unloading %s\n", pplugin->file_name.c_str());
+		mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name.c_str());
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
@@ -325,15 +325,13 @@ static int hpm_processor_load_library(const char *plugin_name)
 	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
 		plug.handle = dlopen((PKGLIBDIR + "/"s + plugin_name).c_str(), RTLD_LAZY);
 	if (plug.handle == nullptr) {
-		printf("[hpm_processor]: error loading %s: %s\n", fake_path, dlerror());
-		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "http_processor: error loading %s: %s", fake_path, dlerror());
 		return PLUGIN_FAIL_OPEN;
     }
 	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "HPM_LibMain"));
 	if (plug.lib_main == nullptr) {
-		printf("[hpm_processor]: error finding the "
-			"HPM_LibMain function in %s\n", fake_path);
-		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "http_processor: error finding the "
+			"HPM_LibMain function in %s", fake_path);
 		return PLUGIN_NO_MAIN;
 	}
 	plug.file_name = plugin_name;
@@ -344,9 +342,8 @@ static int hpm_processor_load_library(const char *plugin_name)
 	    g_cur_plugin->interface.preproc == nullptr ||
 	    g_cur_plugin->interface.proc == nullptr ||
 	    g_cur_plugin->interface.retr == nullptr) {
-		printf("[hpm_processor]: error executing the plugin's init "
-			"function, or interface not registered in %s\n", fake_path);
-		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "http_processor: error executing the plugin's init "
+			"function, or interface not registered in %s", fake_path);
 		g_plugin_list.pop_back();
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
@@ -366,7 +363,7 @@ int hpm_processor_run() try
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	printf("[hpm_processor]: Failed to allocate context list\n");
+	mlog(LV_ERR, "http_processor: failed to allocate context list");
 	return -1;
 }
 

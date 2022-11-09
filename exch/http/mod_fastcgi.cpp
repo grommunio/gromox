@@ -142,7 +142,7 @@ void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size,
 
 static int mod_fastcgi_defaults()
 {
-	printf("[mod_fastcgi]: defaulting to built-in list of handled paths\n");
+	mlog(LV_NOTICE, "mod_fastcgi: defaulting to built-in list of handled paths");
 	FASTCGI_NODE node;
 	node.domain = "*";
 	node.path = "/EWS";
@@ -175,7 +175,7 @@ static int mod_fastcgi_read_txt() try
 	if (pfile == nullptr && errno == ENOENT) {
 		return mod_fastcgi_defaults();
 	} else if (pfile == nullptr) {
-		printf("[mod_fastcgi]: list_file_initd fastcgi.txt: %s\n", strerror(errno));
+		mlog(LV_ERR, "mod_fastcgi: list_file_initd fastcgi.txt: %s", strerror(errno));
 		return -1;
 	}
 	auto item_num = pfile->get_size();
@@ -197,7 +197,7 @@ static int mod_fastcgi_read_txt() try
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	printf("[mod_fastcgi]: bad_alloc\n");
+	mlog(LV_ERR, "E-1254: ENOMEM");
 	return -ENOMEM;
 }
 
