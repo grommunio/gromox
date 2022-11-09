@@ -1776,7 +1776,7 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 }
 
 int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
-	uint32_t mid, uint32_t codepage, LPROPTAG_ARRAY **ppproptags)
+    uint32_t mid, uint32_t codepage, LPROPTAG_ARRAY **tags)
 {
 	int base_id;
 	char temp_buff[1024];
@@ -1784,44 +1784,44 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		*ppproptags = NULL;
+		*tags = nullptr;
 		return ecError;
 	}
 	if (0 == mid) {
-		*ppproptags = NULL;
+		*tags = nullptr;
 		return ecInvalidObject;
 	}
 	BOOL b_unicode = codepage == CP_WINUNICODE ? TRUE : false;
-	*ppproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
-	if (NULL == *ppproptags) {
+	*tags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
+	if (NULL == *tags) {
 		return ecServerOOM;
 	}
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
-		*ppproptags = NULL;
+		*tags = nullptr;
 		return ecError;
 	}
 	auto pnode = ab_tree_minid_to_node(pbase.get(), mid);
 	if (NULL == pnode) {
-		*ppproptags = NULL;
+		*tags = nullptr;
 		return ecInvalidObject;
 	}
 	if (nsp_interface_get_default_proptags(ab_tree_get_node_type(pnode),
-	    b_unicode, *ppproptags) == ecSuccess) {
+	    b_unicode, *tags) == ecSuccess) {
 		size_t count = 0;
-		for (size_t i = 0; i < (*ppproptags)->cvalues; ++i) {
+		for (size_t i = 0; i < (*tags)->cvalues; ++i) {
 			if (nsp_interface_fetch_property(pnode, false, codepage,
-			    (*ppproptags)->pproptag[i], &prop_val, temp_buff,
+			    (*tags)->pproptag[i], &prop_val, temp_buff,
 			    GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
 				continue;
 			if (i != count) {
-				(*ppproptags)->pproptag[count] = (*ppproptags)->pproptag[i];
+				(*tags)->pproptag[count] = (*tags)->pproptag[i];
 			}
 			count ++;
 		}
-		(*ppproptags)->cvalues = count;
+		(*tags)->cvalues = count;
 	} else {
-		*ppproptags = NULL;
+		*tags = nullptr;
 	}
 	return ecSuccess;
 }
