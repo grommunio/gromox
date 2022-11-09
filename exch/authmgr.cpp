@@ -60,7 +60,7 @@ static bool authmgr_reload()
 {
 	auto pfile = config_file_initd("authmgr.cfg", get_config_path(), nullptr);
 	if (pfile == nullptr) {
-		fprintf(stderr, "[authmgr]: confing_file_initd authmgr.cfg: %s\n",
+		mlog(LV_ERR, "authmgr: confing_file_initd authmgr.cfg: %s",
 		        strerror(errno));
 		return false;
 	}
@@ -69,13 +69,13 @@ static bool authmgr_reload()
 	if (val == nullptr) {
 	} else if (strcmp(val, "deny_all") == 0) {
 		am_choice = A_DENY_ALL;
-		fprintf(stderr, "[authmgr]: \e[31mAll authentication requests will be denied\e[0m\n");
+		mlog(LV_ERR, "authmgr: \e[31mAll authentication requests will be denied\e[0m");
 	} else if (strcmp(val, "allow_all") == 0) {
 		am_choice = A_ALLOW_ALL;
-		fprintf(stderr, "[authmgr]: \e[1;31mArbitrary passwords will be accepted for authentication\e[0m\n");
+		mlog(LV_ERR, "authmgr: \e[1;31mArbitrary passwords will be accepted for authentication\e[0m");
 	} else if (strcmp(val, "always_mysql") == 0 || strcmp(val, "always_ldap") == 0) {
 		am_choice = A_EXTERNID;
-		fprintf(stderr, "[authmgr]: \e[1;33mauth_backend_selection=always_mysql/always_ldap is obsolete; switching to =externid\e[0m\n");
+		mlog(LV_ERR, "authmgr: \e[1;33mauth_backend_selection=always_mysql/always_ldap is obsolete; switching to =externid\e[0m");
 	} else if (strcmp(val, "externid") == 0) {
 		am_choice = A_EXTERNID;
 	}
@@ -83,7 +83,7 @@ static bool authmgr_reload()
 	if (fptr_ldap_login == nullptr) {
 		query_service2("ldap_auth_login3", fptr_ldap_login);
 		if (fptr_ldap_login == nullptr) {
-			fprintf(stderr, "[authmgr]: ldap_adaptor plugin not loaded yet\n");
+			mlog(LV_ERR, "authmgr: ldap_adaptor plugin not loaded yet");
 			return false;
 		}
 	}
@@ -98,11 +98,11 @@ static bool authmgr_init()
 	query_service2("mysql_auth_login2", fptr_mysql_login);
 	if (fptr_mysql_meta == nullptr ||
 	    fptr_mysql_login == nullptr) {
-		fprintf(stderr, "[authmgr]: mysql_adaptor plugin not loaded yet\n");
+		mlog(LV_ERR, "authmgr: mysql_adaptor plugin not loaded yet");
 		return false;
 	}
 	if (!register_service("auth_login_gen", login_gen)) {
-		fprintf(stderr, "[authmgr]: failed to register auth services\n");
+		mlog(LV_ERR, "authmgr: failed to register auth services");
 		return false;
 	}
 	return true;
