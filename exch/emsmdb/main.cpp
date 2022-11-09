@@ -98,7 +98,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 		pconfig = config_file_initd("exchange_emsmdb.cfg", get_config_path(),
 		          emsmdb_cfg_defaults);
 	if (pconfig == nullptr) {
-		printf("[exmdb_provider]: config_file_initd exmdb_provider.cfg: %s\n",
+		mlog(LV_ERR, "exmdb_provider: config_file_initd exmdb_provider.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
@@ -164,7 +164,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		auto pfile = config_file_initd(cfg_path.c_str(),
 		             get_config_path(), emsmdb_cfg_defaults);
 		if (NULL == pfile) {
-			printf("[exchange_emsmdb]: config_file_initd %s: %s\n",
+			mlog(LV_ERR, "emsmdb: config_file_initd %s: %s",
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
@@ -188,10 +188,10 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		gx_strlcpy(submit_command, pfile->get_value("submit_command"), arsizeof(submit_command));
 		async_num = pfile->get_ll("async_threads_num");
 
-		fprintf(stderr, "[exchange_emsmdb]: x500=\"%s\", "
+		mlog(LV_INFO, "emsmdb: x500=\"%s\", "
 		        "avg_handles=%d, avgmem_per_ctx=%d*256, max_rcpt=%d, "
 		        "max_mail=%d, max_mail_len=%s, max_ext_rule_len=%s, "
-		        "ping_int=%s, async_threads=%d, smtp=[%s]:%hu\n",
+		        "ping_int=%s, async_threads=%d, smtp=[%s]:%hu",
 		       org_name, average_handles, average_blocks, max_rcpt,
 		       max_mail, max_length_s, max_rule_len_s, ping_int_s,
 		       async_num, smtp_ip, smtp_port);
@@ -204,7 +204,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		    !regsvr(emsmdb_interface_disconnect) ||
 		    !regsvr(emsmdb_interface_rpc_ext2) ||
 		    !regsvr(emsmdb_interface_touch_handle)) {
-			printf("[exchange_emsmdb]: service interface registration failure\n");
+			mlog(LV_ERR, "emsmdb: service interface registration failure");
 			return false;
 		}
 #undef regsvr
@@ -212,12 +212,12 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		/* host can include wildcard */
 		ep_6001 = register_endpoint("*", 6001);
 		if (ep_6001 == nullptr) {
-			printf("[exchange_emsmdb]: failed to register endpoint with port 6001\n");
+			mlog(LV_ERR, "emsmdb: failed to register endpoint with port 6001");
 			return FALSE;
 		}
 		if (!register_interface(ep_6001, &interface_emsmdb) ||
 		    !register_interface(ep_6001, &interface_async_emsmdb)) {
-			printf("[exchange_emsmdb]: failed to register emsmdb interface\n");
+			mlog(LV_ERR, "emsmdb: failed to register emsmdb interface");
 			return FALSE;
 		}
 		bounce_producer_init(separator);
@@ -228,34 +228,33 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
 		if (bounce_producer_run(get_data_path()) != 0) {
-			printf("[exchange_emsmdb]: failed to run bounce producer\n");
+			mlog(LV_ERR, "emsmdb: failed to run bounce producer");
 			return FALSE;
 		}
 		if (0 != common_util_run()) {
-			printf("[exchange_emsmdb]: failed to run common util\n");
+			mlog(LV_ERR, "emsmdb: failed to run common util");
 			return FALSE;
 		}
 		if (0 != exmdb_client_run()) {
-			printf("[exchange_emsmdb]: failed to run exmdb client\n");
+			mlog(LV_ERR, "emsmdb: failed to run exmdb client");
 			return FALSE;
 		}
 		if (0 != msgchg_grouping_run()) {
-			printf("[exchange_emsmdb]: failed to run msgchg grouping\n");
+			mlog(LV_ERR, "emsmdb: failed to run msgchg grouping");
 			return FALSE;
 		}
 		if (0 != emsmdb_interface_run()) {
-			printf("[exchange_emsmdb]: failed to run emsmdb interface\n");
+			mlog(LV_ERR, "emsmdb: failed to run emsmdb interface");
 			return FALSE;
 		}
 		if (0 != asyncemsmdb_interface_run()) {
-			printf("[exchange_emsmdb]: failed to run asyncemsmdb interface\n");
+			mlog(LV_ERR, "emsmdb: failed to run asyncemsmdb interface");
 			return FALSE;
 		}
 		if (0 != rop_processor_run()) {
-			printf("[exchange_emsmdb]: failed to run rop processor\n");
+			mlog(LV_ERR, "emsmdb: failed to run rop processor");
 			return FALSE;
 		}
-		printf("[exchange_emsmdb]: plugin is loaded into system\n");
 		return TRUE;
 	}
 	case PLUGIN_FREE:

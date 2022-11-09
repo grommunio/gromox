@@ -108,36 +108,34 @@ static void *emsi_scanwork(void *);
 void emsmdb_report()
 {
 	std::lock_guard gl_hold(g_lock);
-	fprintf(stderr, "EMSMDB Sessions:\n");
-	fprintf(stderr, "%-32s  %-32s  CXR CPID LCID\n", "GUID", "USERNAME");
-	fprintf(stderr, "LOGON  %-32s  MBOXUSER\n", "MBOXGUID");
-	fprintf(stderr, "--------------------------------------------------------------------------------\n");
+	mlog(LV_INFO, "EMSMDB Sessions:");
+	mlog(LV_INFO, "%-32s  %-32s  CXR CPID LCID", "GUID", "USERNAME");
+	mlog(LV_INFO, "LOGON  %-32s  MBOXUSER", "MBOXGUID");
+	mlog(LV_INFO, "--------------------------------------------------------------------------------");
 	/* Sort display by CXR. */
 	for (const auto &e1 : g_user_hash) {
 	for (const auto hp : e1.second) {
 		auto &h = *hp;
 		auto &ei = h.info;
-		fprintf(stderr, "%-32s  %-32s  /%-2u %-4u %-4u\n",
+		mlog(LV_INFO, "%-32s  %-32s  /%-2u %-4u %-4u",
 			bin2hex(&h.guid, sizeof(GUID)).c_str(), h.username, h.cxr,
 			ei.cpid, ei.lcid_string);
 		for (unsigned int i = 0; i < std::size(ei.plogmap->p); ++i) {
 			auto li = ei.plogmap->p[i].get();
 			if (li == nullptr)
 				continue;
-			fprintf(stderr, "%5u", i);
 			auto root = li->root.get();
 			if (root == nullptr || root->type != OBJECT_TYPE_LOGON) {
-				fprintf(stderr, "  null\n");
+				mlog(LV_INFO, "%5u  null", i);
 				continue;
 			}
 			auto lo = static_cast<logon_object *>(root->pobject);
-			fprintf(stderr, "  %-32s  %s(%u)\n",
+			mlog(LV_INFO, "%5u  %-32s  %s(%u)", i,
 			        bin2hex(&lo->mailbox_guid, sizeof(lo->mailbox_guid)).c_str(),
 			        lo->account, lo->account_id);
 		}
 	}
 	}
-	fprintf(stderr, "\n");
 }
 
 emsmdb_info::emsmdb_info(emsmdb_info &&o) noexcept :
@@ -430,7 +428,7 @@ int emsmdb_interface_run()
 	auto ret = pthread_create(&g_scan_id, nullptr, emsi_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
-		printf("[exchange_emsmdb]: E-1447: pthread_create: %s\n", strerror(ret));
+		mlog(LV_ERR, "E-1447: pthread_create: %s", strerror(ret));
 		return -4;
 	}
 	pthread_setname_np(g_scan_id, "emsmdb/scan");
@@ -635,7 +633,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	if (0 != cb_auxin) {
 		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != aux_ext_pull_aux_info(&ext_pull, &aux_in)) {
-			mlog(LV_DEBUG, "exchange_emsmdb: failed to pull input "
+			mlog(LV_DEBUG, "emsmdb: failed to pull input "
 				"auxiliary buffer in emsmdb_interface_connect_ex");
 		} else {
 			for (pnode=double_list_get_head(&aux_in.aux_list); NULL!=pnode;
@@ -725,7 +723,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	if (cb_auxin > 0) {
 		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != aux_ext_pull_aux_info(&ext_pull, &aux_in)) {
-			mlog(LV_DEBUG, "exchange_emsmdb: failed to parse input "
+			mlog(LV_DEBUG, "emsmdb: failed to parse input "
 				"auxiliary buffer in emsmdb_interface_rpc_ext2");
 		}
 	}

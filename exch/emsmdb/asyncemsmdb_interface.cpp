@@ -86,8 +86,8 @@ int asyncemsmdb_interface_run()
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, aemsi_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[exchange_emsmdb]: failed to create scanning thread "
-		       "for asyncemsmdb: %s\n", strerror(ret));
+		mlog(LV_ERR, "emsmdb: failed to create scanning thread "
+		       "for asyncemsmdb: %s", strerror(ret));
 		g_notify_stop = true;
 		return -5;
 	}
@@ -96,8 +96,8 @@ int asyncemsmdb_interface_run()
 		pthread_t tid;
 		ret = pthread_create(&tid, nullptr, aemsi_thrwork, nullptr);
 		if (ret != 0) {
-			printf("[exchange_emsmdb]: failed to create wake up "
-			       "thread for asyncemsmdb: %s\n", strerror(ret));
+			mlog(LV_ERR, "emsmdb: failed to create wake up "
+			       "thread for asyncemsmdb: %s", strerror(ret));
 			asyncemsmdb_interface_stop();
 			return -6;
 		}

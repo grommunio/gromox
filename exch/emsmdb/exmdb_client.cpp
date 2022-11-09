@@ -4,6 +4,7 @@
 #include <cstring>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
@@ -44,6 +45,8 @@ E(remove_message_property)
 #undef EXMIDL
 #undef IDLOUT
 
+using namespace gromox;
+
 int exmdb_client_run()
 {
 	void (*register_proc)(void*);
@@ -52,7 +55,7 @@ int exmdb_client_run()
 #define EXMIDL(n, p) do { \
 	query_service2("exmdb_client_" #n, exmdb_client_ ## n); \
 	if ((exmdb_client_ ## n) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "exchange_emsmdb", "exmdb_client_" #n); \
+		mlog(LV_ERR, "emsmdb: failed to get the \"%s\" service", "exmdb_client_" #n); \
 		return -1; \
 	} \
 } while (false);
@@ -64,7 +67,7 @@ int exmdb_client_run()
 #define E(f, s) do { \
 	query_service2(s, f); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "exchange_emsmdb", (s)); \
+		mlog(LV_ERR, "emsmdb: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)

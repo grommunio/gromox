@@ -1585,7 +1585,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		break;
 	}
 	default:
-		mlog(LV_DEBUG, "exchange_emsmdb: rop 0x%.2x not implemented!",
+		mlog(LV_DEBUG, "emsmdb: rop 0x%.2x not implemented!",
 			prequest->rop_id);
 		return ecError;
 	}

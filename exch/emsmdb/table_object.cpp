@@ -112,7 +112,8 @@ BOOL table_object::load()
 			return FALSE;
 		break;
 	default:
-		fprintf(stderr, "%s - not calling table_object_set_table_id\n", __func__);
+		mlog(LV_DEBUG, "%s - not calling table_object_set_table_id",
+			__PRETTY_FUNCTION__);
 		return TRUE;
 	}
 	table_object_set_table_id(ptable, table_id);
