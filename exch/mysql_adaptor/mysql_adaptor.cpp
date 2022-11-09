@@ -20,11 +20,14 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/util.hpp>
 #include "sql2.hpp"
-#define MLIST_PRIVILEGE_ALL				0
-#define MLIST_PRIVILEGE_INTERNAL		1
-#define MLIST_PRIVILEGE_DOMAIN			2
-#define MLIST_PRIVILEGE_SPECIFIED		3
-#define MLIST_PRIVILEGE_OUTGOING		4
+
+/**
+ * @domain:	only users in the same domain may send to the mlist
+ * @specified:	only allowed users may send to the mlist (tbl: "specifieds")
+ */
+enum class mlist_priv {
+	all = 0, internal, domain, specified, outgoing,
+};
 
 #define MLIST_RESULT_OK					0
 #define MLIST_RESULT_NONE				1
@@ -1023,6 +1026,10 @@ bool mysql_adaptor_check_user(const char *username, char *path, size_t dsize) tr
 	return false;
 }
 
+/**
+ * @from:	From address
+ * @username:	Recipient address; mailing list
+ */
 BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
     int *presult, std::vector<std::string> &pfile) try
 {
@@ -1062,24 +1069,24 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 	auto myrow = pmyres.fetch_row();
 	int id = strtol(myrow[0], nullptr, 0);
 	int type = strtol(myrow[1], nullptr, 0);
-	int privilege = strtol(myrow[2], nullptr, 0);
+	auto privilege = static_cast<mlist_priv>(strtol(myrow[2], nullptr, 0));
 
 	switch (privilege) {
-	case MLIST_PRIVILEGE_ALL:
-	case MLIST_PRIVILEGE_OUTGOING:
+	case mlist_priv::all:
+	case mlist_priv::outgoing:
 		b_chkintl = FALSE;
 		break;
-	case MLIST_PRIVILEGE_INTERNAL:
+	case mlist_priv::internal:
 		b_chkintl = TRUE;
 		break;
-	case MLIST_PRIVILEGE_DOMAIN:
+	case mlist_priv::domain:
 		if (0 != strcasecmp(pdomain, pfrom_domain)) {
 			*presult = MLIST_RESULT_PRIVIL_DOMAIN;
 			return TRUE;
 		}
 		b_chkintl = FALSE;
 		break;
-	case MLIST_PRIVILEGE_SPECIFIED:
+	case mlist_priv::specified:
 		qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
 		if (!conn->query(qstr.c_str()))
 			return false;
