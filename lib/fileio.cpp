@@ -9,7 +9,6 @@
 #include <string>
 #include <string_view>
 #include <unistd.h>
-#include <zstd.h>
 #if defined(__linux__) && defined(__GLIBC__) && __GLIBC__ == 2 && __GLIBC_MINOR__ < 30
 #	include <sys/syscall.h>
 #endif
@@ -100,20 +99,6 @@ unsigned long gx_gettid()
 #else
 	return (unsigned long)pthread_self();
 #endif
-}
-
-std::string zstd_decompress(std::string_view x)
-{
-	std::string out;
-	while (x.size() > 0) {
-		char buf[4096];
-		auto ret = ZSTD_decompress(buf, arsizeof(buf), x.data(), x.size());
-		if (ZSTD_isError(ret))
-			break;
-		out.append(buf, ret);
-		x.remove_prefix(ret);
-	}
-	return out;
 }
 
 std::string base64_decode(const std::string_view &x)
