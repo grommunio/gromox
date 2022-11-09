@@ -962,30 +962,31 @@ static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode,
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		switch (obj->list_type) {
-		case MLIST_TYPE_NORMAL:
+		case mlist_type::normal:
 			if (cpl_get_string(codepage, "mlist0", lang_string,
 			    std::size(lang_string)) != 0)
 				strcpy(lang_string, "custom address list");
 			snprintf(str_dname, dn_size, "%s(%s)", obj->username.c_str(), lang_string);
 			break;
-		case MLIST_TYPE_GROUP:
+		case mlist_type::group:
 			if (cpl_get_string(codepage, "mlist1",
 			    lang_string, std::size(lang_string)) != 0)
 				strcpy(lang_string, "all users in department of %s");
 			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
-		case MLIST_TYPE_DOMAIN:
+		case mlist_type::domain:
 			if (cpl_get_string(codepage, "mlist2", str_dname, dn_size) != 0)
 				gx_strlcpy(str_dname, "all users in domain", dn_size);
 			break;
-		case MLIST_TYPE_CLASS:
+		case mlist_type::dyngroup:
 			if (cpl_get_string(codepage, "mlist3",
 			    lang_string, std::size(lang_string)) != 0)
 				strcpy(lang_string, "all users in group of %s");
 			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		default:
-			snprintf(str_dname, dn_size, "unknown address list type %u", obj->list_type);
+			snprintf(str_dname, dn_size, "unknown address list type %u",
+			         static_cast<unsigned int>(obj->list_type));
 		}
 		break;
 	}

@@ -864,10 +864,11 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		return FALSE;
 
 	auto myrow = pmyres.fetch_row();
-	int id = strtol(myrow[0], nullptr, 0), type = strtol(myrow[1], nullptr, 0);
+	int id = strtol(myrow[0], nullptr, 0);
+	auto type = static_cast<mlist_type>(strtol(myrow[1], nullptr, 0));
 	b_result = FALSE;
 	switch (type) {
-	case MLIST_TYPE_NORMAL:
+	case mlist_type::normal:
 		qstr = "SELECT username FROM associations WHERE list_id=" +
 		       std::to_string(id) + " AND username='"s + temp_account + "'";
 		if (!conn->query(qstr.c_str()))
@@ -878,7 +879,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres.num_rows() > 0)
 			b_result = TRUE;
 		return b_result;
-	case MLIST_TYPE_GROUP: {
+	case mlist_type::group: {
 		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='"s + temp_name + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
@@ -900,7 +901,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 			b_result = TRUE;
 		return b_result;
 	}
-	case MLIST_TYPE_DOMAIN: {
+	case mlist_type::domain: {
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
@@ -922,7 +923,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 			b_result = TRUE;
 		return b_result;
 	}
-	case MLIST_TYPE_CLASS: {
+	case mlist_type::dyngroup: {
 		qstr = "SELECT id FROM classes WHERE listname='"s + temp_name + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
@@ -1068,7 +1069,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 	}
 	auto myrow = pmyres.fetch_row();
 	int id = strtol(myrow[0], nullptr, 0);
-	int type = strtol(myrow[1], nullptr, 0);
+	auto type = static_cast<mlist_type>(strtol(myrow[1], nullptr, 0));
 	auto privilege = static_cast<mlist_priv>(strtol(myrow[2], nullptr, 0));
 
 	switch (privilege) {
@@ -1113,7 +1114,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 	}
 
 	switch (type) {
-	case MLIST_TYPE_NORMAL:
+	case mlist_type::normal:
 		qstr = "SELECT username FROM associations WHERE list_id=" + std::to_string(id);
 		if (!conn->query(qstr.c_str()))
 			return false;
@@ -1141,7 +1142,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 		}
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
-	case MLIST_TYPE_GROUP: {
+	case mlist_type::group: {
 		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='"s + temp_name + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
@@ -1190,7 +1191,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 	}
-	case MLIST_TYPE_DOMAIN: {
+	case mlist_type::domain: {
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
@@ -1239,7 +1240,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 	}
-	case MLIST_TYPE_CLASS: {
+	case mlist_type::dyngroup: {
 		qstr = "SELECT id FROM classes WHERE listname='"s + temp_name + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
