@@ -77,14 +77,14 @@ errno_t evqueue::init(unsigned int numctx) try
 		close(m_fd);
 	m_fd = epoll_create(numctx);
 	if (m_fd < 0) {
-		fprintf(stderr, "[contexts_pool]: epoll_create: %s\n", strerror(errno));
+		mlog(LV_ERR, "contexts_pool: epoll_create: %s", strerror(errno));
 		return errno;
 	}
 	m_events = std::make_unique<epoll_event[]>(numctx);
 #elif defined(HAVE_SYS_EVENT_H)
 	m_fd = kqueue();
 	if (m_fd < 0) {
-		fprintf(stderr, "[contexts_pool]: kqueue: %s\n", strerror(errno));
+		mlog(LV_ERR, "contexts_pool: kqueue: %s", strerror(errno));
 		return errno;
 	}
 	m_events = std::make_unique<struct kevent[]>(numctx * 2);
@@ -123,7 +123,7 @@ errno_t evqueue::mod(SCHEDULE_CONTEXT *ctx, bool add)
 		if (ret != 0)
 			return ret;
 		if (ev.flags & EV_ERROR)
-			fprintf(stderr, "evqueue::add: %s\n", strerror(ev.data));
+			mlog(LV_ERR, "evqueue::add: %s", strerror(ev.data));
 	}
 	if (ctx->polling_mask & POLLING_WRITE) {
 		EV_SET(&ev, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT | EV_CLEAR, 0, 0, ctx);
@@ -131,7 +131,7 @@ errno_t evqueue::mod(SCHEDULE_CONTEXT *ctx, bool add)
 		if (ret != 0)
 			return ret;
 		if (ev.flags & EV_ERROR)
-			fprintf(stderr, "evqueue::add: %s\n", strerror(ev.data));
+			mlog(LV_ERR, "evqueue::add: %s", strerror(ev.data));
 	}
 	return 0;
 #endif
@@ -208,7 +208,7 @@ static void *ctxp_thrwork(void *pparam)
 				continue;
 			}
 			if (!pcontext->b_waiting) {
-				mlog(LV_DEBUG, "contexts_pool: fatal error in context"
+				mlog(LV_DEBUG, "contexts_pool: error in context"
 					" queue! b_waiting mismatch in thread_work_func"
 					" context: %p", pcontext);
 				continue;
@@ -322,20 +322,20 @@ int contexts_pool_run()
 {    
 	auto ret = g_poll_ctx.init(g_context_num);
 	if (ret != 0) {
-		fprintf(stderr, "[contexts_pool]: evqueue: %s\n", strerror(ret));
+		mlog(LV_ERR, "contexts_pool: evqueue: %s", strerror(ret));
 		return -1;
 	}
 	g_notify_stop = false;
 	ret = pthread_create(&g_thread_id, nullptr, ctxp_thrwork, nullptr);
 	if (ret != 0) {
-		fprintf(stderr, "[contexts_pool]: failed to create epoll thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "contexts_pool: failed to create epoll thread: %s", strerror(ret));
 		g_notify_stop = true;
 		return -3;
 	}
 	pthread_setname_np(g_thread_id, "epollctx/work");
 	ret = pthread_create(&g_scan_id, nullptr, ctxp_scanwork, nullptr);
 	if (ret != 0) {
-		fprintf(stderr, "[contexts_pool]: failed to create scan thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "contexts_pool: failed to create scan thread: %s", strerror(ret));
 		g_notify_stop = true;
 		if (!pthread_equal(g_thread_id, {})) {
 			pthread_kill(g_thread_id, SIGALRM);

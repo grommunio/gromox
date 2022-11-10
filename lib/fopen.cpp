@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 #include <gromox/fileio.h>
+#include <gromox/util.hpp>
 
 namespace gromox {
 
@@ -40,7 +41,7 @@ DIR_mp opendir_sd(const char *dirname, const char *sdlist)
 		if (dn.m_dir != nullptr)
 			return dn;
 		if (errno != ENOENT) {
-			fprintf(stderr, "opendir_sd %s: %s\n",
+			mlog(LV_ERR, "opendir_sd %s: %s",
 			        dn.m_path.c_str(), strerror(errno));
 			return dn;
 		}
@@ -61,7 +62,7 @@ std::unique_ptr<FILE, file_deleter> fopen_sd(const char *filename, const char *s
 			if (fp != nullptr)
 				return fp;
 			if (errno != ENOENT) {
-				fprintf(stderr, "fopen_sd %s: %s\n",
+				mlog(LV_ERR, "fopen_sd %s: %s",
 				        full.c_str(), strerror(errno));
 				return nullptr;
 			}

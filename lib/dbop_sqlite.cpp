@@ -8,6 +8,7 @@
 #include <gromox/database.h>
 #include <gromox/dbop.h>
 #include <gromox/scope.hpp>
+#include <gromox/util.hpp>
 
 /*
  * INDEX names should be suffixed by the schema number, to facilitate
@@ -551,7 +552,7 @@ static int dbop_sqlite_create_int(sqlite3 *db, const struct tbl_init *entry,
 {
 	for (; entry->name != nullptr; ++entry) {
 		if (flags & DBOP_VERBOSE)
-			fprintf(stderr, "[dbop_sqlite] Creating table \"%s\"\n", entry->name);
+			mlog(LV_NOTICE, "dbop_sqlite: Creating table \"%s\"", entry->name);
 		auto ret = gx_sql_exec(db, entry->command);
 		if (ret != SQLITE_OK)
 			return -1;
@@ -640,7 +641,7 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 		return -EIO;
 	for (; entry->v != 0; ++entry) {
 		if (flags & DBOP_VERBOSE)
-			fprintf(stderr, "dbop_sqlite: upgrading %s to schema E%c-%u\n",
+			mlog(LV_NOTICE, "dbop_sqlite: upgrading %s to schema E%c-%u",
 			        filedesc, kind_to_char(kind), entry->v);
 		int ret;
 		if (entry->command != nullptr && entry->tbl_name == nullptr &&
@@ -656,7 +657,7 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 				return ret;
 			did_chcol = true;
 		} else {
-			fprintf(stderr, "[dbop_sqlite]: malformed entry in upgrade table, sv %u\n", entry->v);
+			mlog(LV_ERR, "dbop_sqlite: malformed entry in upgrade table, sv %u", entry->v);
 			return -EINVAL;
 		}
 		dbop_sqlite_bump(db, entry->v);

@@ -7,6 +7,7 @@
 #include <mysql.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
+#include <gromox/util.hpp>
 /*
  * Notes:
  *  - In case of new tables, edit ``tbl_init_top`` as well
@@ -386,10 +387,11 @@ static constexpr struct tbl_init tbl_init_0[] = {
 static int dbop_mysql_create_int(MYSQL *conn, const struct tbl_init *entry)
 {
 	for (; entry->name != nullptr; ++entry) {
-		fprintf(stderr, "Creating %s\n", entry->name);
+		mlog(LV_NOTICE, "dbop: Creating %s", entry->name);
 		auto ret = mysql_real_query(conn, entry->command, strlen(entry->command));
 		if (ret != 0) {
-			fprintf(stderr, "Query \"%s\":\n%s\n", entry->command, mysql_error(conn));
+			mlog(LV_ERR, "dbop: Query \"%s\":", entry->command);
+			mlog(LV_ERR, "dbop: %s", mysql_error(conn));
 			return EXIT_FAILURE;
 		}
 	}
@@ -620,7 +622,8 @@ int dbop_mysql_create_top(MYSQL *conn)
 	         dbop_mysql_recentversion());
 	ret = mysql_real_query(conn, uq, strlen(uq));
 	if (ret != 0) {
-		fprintf(stderr, "Query \"%s\":\n%s\n", uq, mysql_error(conn));
+		mlog(LV_ERR, "dbop: Query \"%s\":", uq);
+		mlog(LV_ERR, "%s", mysql_error(conn));
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -631,8 +634,7 @@ int dbop_mysql_schemaversion(MYSQL *conn)
 {
 	const char q[] = "SELECT `value` FROM `options` WHERE `key`='schemaversion'";
 	if (mysql_real_query(conn, q, strlen(q)) != 0) {
-		fprintf(stderr, "dbop: Query \"%s\": %s\n",
-		        q, mysql_error(conn));
+		mlog(LV_ERR, "dbop: Query \"%s\": %s", q, mysql_error(conn));
 		return -1;
 	}
 	DB_RESULT res(mysql_store_result(conn));
@@ -777,7 +779,7 @@ int dbop_mysql_recentversion()
 int dbop_mysql_upgrade(MYSQL *conn)
 {
 	auto current = dbop_mysql_schemaversion(conn);
-	fprintf(stderr, "Current database schema: gx-%d\n", current);
+	mlog(LV_NOTICE, "dbop: Current database schema: gx-%d", current);
 	if (current < 0)
 		return EXIT_FAILURE;
 
@@ -786,10 +788,10 @@ int dbop_mysql_upgrade(MYSQL *conn)
 		++entry;
 
 	for (; entry->v != 0; ++entry) {
-		fprintf(stderr, "Upgrading schema to GX-%u\n", entry->v);
+		mlog(LV_NOTICE, "dbop: Upgrading schema to GX-%u", entry->v);
 		auto ret = mysql_real_query(conn, entry->command, strlen(entry->command));
 		if (ret != 0) {
-			fprintf(stderr, "\"%s\": %s\n", entry->command, mysql_error(conn));
+			mlog(LV_ERR, "dbop: \"%s\": %s", entry->command, mysql_error(conn));
 			return EXIT_FAILURE;
 		}
 		char uq[72];
@@ -799,7 +801,7 @@ int dbop_mysql_upgrade(MYSQL *conn)
 			snprintf(uq, sizeof(uq), "UPDATE `options` SET `value`=%u WHERE `key`='schemaversion'", entry->v);
 		ret = mysql_real_query(conn, uq, strlen(uq));
 		if (ret != 0) {
-			fprintf(stderr, "\"%s\": %s\n", uq, mysql_error(conn));
+			mlog(LV_ERR, "dbop: \"%s\": %s", uq, mysql_error(conn));
 			return EXIT_FAILURE;
 		}
 	}
