@@ -63,11 +63,11 @@ int cache_queue_run()
 
 	/* check the directory */
     if (0 != stat(g_path, &node_stat)) {
-        printf("[exmdb_local]: can not find %s directory\n", g_path);
+		mlog(LV_ERR, "exmdb_local: can not find %s directory", g_path);
         return -1;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-        printf("[exmdb_local]: %s is not a directory\n", g_path);
+		mlog(LV_ERR, "exmdb_local: %s is not a directory", g_path);
         return -2;
     }
 	g_mess_id = cache_queue_retrieve_mess_ID();
@@ -75,7 +75,7 @@ int cache_queue_run()
 	auto ret = pthread_create(&g_thread_id, nullptr, mdl_thrwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
-		printf("[exmdb_local]: failed to create timer thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "exmdb_local: failed to create timer thread: %s", strerror(ret));
 		return -3;
 	}
 	pthread_setname_np(g_thread_id, "cache_queue");
@@ -139,7 +139,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	/* at the begin of file, write the length of message */
 	auto maillen = pcontext->pmail->get_length();
 	if (maillen < 0) {
-		printf("[exmdb_local]: fail to get mail length\n");
+		mlog(LV_ERR, "exmdb_local: failed to get mail length");
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1354: remove %s: %s",
@@ -262,12 +262,12 @@ static void *mdl_thrwork(void *arg)
 
 	pcontext = get_context();
 	if (NULL == pcontext) {
-		printf("[exmdb_local]: fail to get context in cache queue thread\n");
+		mlog(LV_ERR, "exmdb_local: failed to get context in cache queue thread");
 		return nullptr;
 	}
 	auto dirp = opendir_sd(g_path, nullptr);
 	if (dirp.m_dir == nullptr) {
-		printf("[exmdb_local]: failed to open cache directory %s: %s\n",
+		mlog(LV_ERR, "exmdb_local: failed to open cache directory %s: %s",
 			g_path, strerror(errno));
 		return nullptr;
 	}
@@ -308,8 +308,8 @@ static void *mdl_thrwork(void *arg)
 			uint64_t enc_origtime;
 			if (read(fd.get(), &enc_origtime, sizeof(uint64_t)) != sizeof(uint64_t) ||
 			    read(fd.get(), &mess_len, sizeof(uint32_t)) != sizeof(uint32_t)) {
-				printf("[exmdb_local]: fail to read information from %s "
-					"in timer queue\n", temp_path.c_str());
+				mlog(LV_ERR, "exmdb_local: failed to read information from %s "
+					"in timer queue", temp_path.c_str());
 				continue;
 			}
 			time_t original_time = le64_to_cpu(enc_origtime);
@@ -321,20 +321,20 @@ static void *mdl_thrwork(void *arg)
 			}
 			auto pbuff = me_alloc<char>(((size - 1) / (64 * 1024) + 1) * 64 * 1024);
 			if (NULL == pbuff) {
-				printf("[exmdb_local]: Failed to allocate memory for %s "
-					"in timer queue thread\n", temp_path.c_str());
+				mlog(LV_ERR, "exmdb_local: Failed to allocate memory for %s "
+					"in timer queue thread", temp_path.c_str());
 				continue;
 			}
 			auto rdret = read(fd.get(), pbuff, size);
 			if (rdret < 0 || static_cast<size_t>(rdret) != size) {
 				free(pbuff);
-				printf("[exmdb_local]: partial read from %s\n", temp_path.c_str());
+				mlog(LV_ERR, "exmdb_local: partial read from %s", temp_path.c_str());
 				continue;
 			}
 			if (!pcontext->pmail->retrieve(pbuff, mess_len)) {
 				free(pbuff);
-				printf("[exmdb_local]: failed to retrieve message %s in "
-				       "cache queue into mail object\n", temp_path.c_str());
+				mlog(LV_ERR, "exmdb_local: failed to retrieve message %s in "
+				       "cache queue into mail object", temp_path.c_str());
 				continue;
 			}
 			ptr = pbuff + mess_len; /* to hell with this bullcrap */
@@ -445,8 +445,8 @@ static void *mdl_thrwork(void *arg)
 				lseek(fd.get(), 0, SEEK_SET);
 				times = cpu_to_le32(times + 1);
 				if (write(fd.get(), &times, sizeof(uint32_t)) != sizeof(uint32_t))
-					printf("[exmdb_local]: error while updating "
-						"times\n");
+					mlog(LV_ERR, "exmdb_local: error while updating "
+						"times");
 			}
 			fd.close();
 			if (need_remove && remove(temp_path.c_str()) < 0 && errno != ENOENT)

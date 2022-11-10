@@ -70,7 +70,7 @@ int exmdb_local_run()
 #define E(f, s) do { \
 	query_service2((s), f); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "exmdb_local", (s)); \
+		mlog(LV_ERR, "exmdb_local: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -86,20 +86,20 @@ int exmdb_local_run()
 
 	if (!oxcmail_init_library(g_org_name,
 		exmdb_local_get_user_ids, exmdb_local_get_username)) {
-		printf("[exmdb_local]: Failed to init oxcmail library\n");
+		mlog(LV_ERR, "exmdb_local: failed to init oxcmail library");
 		return -2;
 	}
 	struct srcitem { char s[256]; };
 	auto plist = list_file_initd("propnames.txt", get_data_path(), "%s:256");
 	if (NULL == plist) {
-		printf("[exmdb_local]: list_file_initd propnames.txt: %s\n", strerror(errno));
+		mlog(LV_ERR, "exmdb_local: list_file_initd propnames.txt: %s", strerror(errno));
 		return -3;
 	}
 	auto num = plist->get_size();
 	auto pitem = static_cast<srcitem *>(plist->get_list());
 	g_str_hash = STR_HASH_TABLE::create(num + 1, sizeof(uint16_t), nullptr);
 	if (NULL == g_str_hash) {
-		printf("[exmdb_local]: Failed to init hash table\n");
+		mlog(LV_ERR, "exmdb_local: failed to init hash table");
 		return -4;
 	}
 	last_propid = 0x8001;
