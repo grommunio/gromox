@@ -1248,6 +1248,18 @@ int ab_tree_get_guid_base_id(GUID guid)
 	return g_base_hash.find(base_id) != g_base_hash.end() ? base_id : 0;
 }
 
+ec_error_t ab_tree_proplist(const tree_node *node, std::vector<uint32_t> &tags)
+{
+	auto node_type = ab_tree_get_node_type(node);
+	if (node_type != abnode_type::user && node_type != abnode_type::mlist)
+		return ecNotFound;
+	auto xab = containerof(node, AB_NODE, stree);
+	auto &obj = *static_cast<const sql_user *>(xab->d_info);
+	for (const auto &entry : obj.propvals)
+		tags.push_back(entry.first);
+	return ecSuccess;
+}
+
 ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, unsigned int codepage,
     unsigned int proptag, PROPERTY_VALUE *prop)
 {
