@@ -1800,23 +1800,35 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 		*tags = nullptr;
 		return ecInvalidObject;
 	}
-	if (nsp_interface_get_default_proptags(ab_tree_get_node_type(pnode),
-	    b_unicode, *tags) == ecSuccess) {
-		size_t count = 0;
-		for (size_t i = 0; i < (*tags)->cvalues; ++i) {
-			if (nsp_interface_fetch_property(pnode, false, codepage,
-			    (*tags)->pproptag[i], &prop_val, temp_buff,
-			    GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
-				continue;
-			if (i != count) {
-				(*tags)->pproptag[count] = (*tags)->pproptag[i];
-			}
-			count ++;
-		}
-		(*tags)->cvalues = count;
-	} else {
+
+	/* Grab tags */
+	auto type = ab_tree_get_node_type(pnode);
+	uint32_t ntags = 0;
+	std::vector<uint32_t> ctags(DFL_TAGS_MAX);
+	auto ret = nsp_fill_dfl_tags(type, b_unicode, ctags.data(), ntags);
+	assert(ntags <= DFL_TAGS_MAX);
+	if (ret != ecSuccess)
+		ntags = 0;
+	ctags.resize(ntags);
+	ab_tree_proplist(pnode, ctags);
+
+	/* Trim tags that have no propval */
+	std::sort(ctags.begin(), ctags.end());
+	ctags.erase(std::unique(ctags.begin(), ctags.end()), ctags.end());
+	ctags.erase(std::remove_if(ctags.begin(), ctags.end(), [&](uint32_t proptag) {
+		return nsp_interface_fetch_property(pnode, false, codepage,
+		       proptag, &prop_val, temp_buff,
+		       std::size(temp_buff)) != ecSuccess;
+	}), ctags.end());
+
+	/* Copy out */
+	(*tags)->cvalues = ctags.size();
+	(*tags)->pproptag = ndr_stack_anew<uint32_t>(ctags.size());
+	if ((*tags)->pproptag == nullptr) {
 		*tags = nullptr;
+		return ecServerOOM;
 	}
+	memcpy((*tags)->pproptag, ctags.data(), sizeof(uint32_t) * ctags.size());
 	return ecSuccess;
 }
 
