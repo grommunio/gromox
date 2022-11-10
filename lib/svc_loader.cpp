@@ -120,7 +120,7 @@ int service_run()
 			++it;
 			continue;
 		}
-		fprintf(stderr, "[service]: Init of %s not successful\n",
+		mlog(LV_ERR, "service: init of %s not successful",
 		        g_cur_plug->file_name.c_str());
 		it = g_list_plug.erase(it);
 		g_cur_plug = nullptr;
@@ -157,7 +157,7 @@ static int service_load_library(const char *path)
 	auto it = std::find_if(g_list_plug.cbegin(), g_list_plug.cend(),
 	          [&](const SVC_PLUG_ENTITY &p) { return p.file_name == path; });
 	if (it != g_list_plug.cend()) {
-		fprintf(stderr, "[service]: %s is already loaded by service module\n", path);
+		mlog(LV_ERR, "service: %s is already loaded by service module", path);
 		return PLUGIN_ALREADY_LOADED;
 	}
 	SVC_PLUG_ENTITY plug;
@@ -165,15 +165,15 @@ static int service_load_library(const char *path)
 	if (plug.handle == nullptr && strchr(path, '/') == nullptr)
 		plug.handle = dlopen((PKGLIBDIR + "/"s + path).c_str(), RTLD_LAZY);
 	if (plug.handle == nullptr) {
-		fprintf(stderr, "[service]: error loading %s: %s\n", fake_path, dlerror());
-		fprintf(stderr, "[service]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "service: error loading %s: %s", fake_path, dlerror());
+		mlog(LV_ERR, "service: the plugin %s is not loaded", fake_path);
 		return PLUGIN_FAIL_OPEN;
 	}
 	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "SVC_LibMain"));
 	if (plug.lib_main == nullptr) {
-		fprintf(stderr, "[service]: error finding the SVC_LibMain function in %s\n",
+		mlog(LV_ERR, "service: error finding the SVC_LibMain function in %s",
 				fake_path);
-		fprintf(stderr, "[service]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "service: the plugin %s is not loaded", fake_path);
 		return PLUGIN_NO_MAIN;
 	}
 	plug.file_name = path;
@@ -204,11 +204,11 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 	PLUGIN_MAIN func;
 	auto plib = this;
 	if (plib->ref_count > 0) {
-		fprintf(stderr, "Unbalanced refcount on %s\n", plib->file_name.c_str());
+		mlog(LV_NOTICE, "Unbalanced refcount on %s", plib->file_name.c_str());
 		return;
 	}
 	if (plib->file_name.size() > 0)
-		fprintf(stderr, "[service]: unloading %s\n", plib->file_name.c_str());
+		mlog(LV_INFO, "service: unloading %s", plib->file_name.c_str());
 	func = (PLUGIN_MAIN)plib->lib_main;
 	if (func != nullptr && plib->completed_init)
 		/* notify the plugin that it will be unloaded */
@@ -344,18 +344,13 @@ void *service_query(const char *service_name, const char *module, const std::typ
 			"ip_filter_add", "ip_filter_judge", "ndr_stack_alloc"};
 		if (std::none_of(excl, &excl[GX_ARRAY_SIZE(excl)],
 		    [&](const char *s) { return strcmp(service_name, s) == 0; }))
-			fprintf(stderr, "[service]: dlname \"%s\" not found\n", service_name);
+			mlog(LV_ERR, "service: dlname \"%s\" not found", service_name);
 		return NULL;
 	}
 	auto &pservice = *node;
 	if (strcmp(ti.name(), pservice->type_info->name()) != 0) {
-		if (isatty(STDERR_FILENO))
-			fprintf(stderr, "\e[33m");
-		fprintf(stderr, "[service]: type mismatch on dlname \"%s\" (%s VS %s)",
+		mlog(LV_ERR, "service: type mismatch on dlname \"%s\" (%s VS %s)",
 			service_name, pservice->type_info->name(), ti.name());
-		if (isatty(STDERR_FILENO))
-			fprintf(stderr, "\e[0m");
-		fprintf(stderr, "\n");
 	}
 	if (module == nullptr)
 		/* untracked user */

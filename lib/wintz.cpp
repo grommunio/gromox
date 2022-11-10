@@ -27,13 +27,13 @@ static errno_t wintz_load_namemap(const char *dirs)
 {
 	std::unique_ptr<FILE, file_deleter> fp(fopen_sd("windowsZones.xml", dirs));
 	if (fp == nullptr) {
-		fprintf(stderr, "Could not open windowsZones.xml: %s\n", strerror(errno));
+		mlog(LV_ERR, "Could not open windowsZones.xml: %s", strerror(errno));
 		return errno;
 	}
 	tinyxml2::XMLDocument doc;
 	auto ret = doc.LoadFile(fp.get());
 	if (ret != tinyxml2::XML_SUCCESS) {
-		fprintf(stderr, "Failed to load/parse windowsZones.xml\n");
+		mlog(LV_ERR, "Failed to load/parse windowsZones.xml");
 		return EIO;
 	}
 	auto node = doc.RootElement();
@@ -41,17 +41,17 @@ static errno_t wintz_load_namemap(const char *dirs)
 		return EIO;
 	auto name = node->Name();
 	if (name == nullptr || strcasecmp(name, "supplementalData") != 0) {
-		fprintf(stderr, "No supplemental root element\n");
+		mlog(LV_ERR, "No supplemental root element");
 		return EIO;
 	}
 	node = node->FirstChildElement("windowsZones");
 	if (node == nullptr) {
-		fprintf(stderr, "No windowsZones element\n");
+		mlog(LV_ERR, "No windowsZones element");
 		return EIO;
 	}
 	node = node->FirstChildElement("mapTimezones");
 	if (node == nullptr) {
-		fprintf(stderr, "No mapTimezones element\n");
+		mlog(LV_ERR, "No mapTimezones element");
 		return EIO;
 	}
 	for (node = node->FirstChildElement("mapZone");
@@ -81,14 +81,14 @@ static errno_t wintz_load_tzdefs(const char *dirs)
 		auto &wzone = tzpair.second;
 		std::unique_ptr<FILE, file_deleter> fp(fopen_sd((wzone + ".tzd").c_str(), dirs));
 		if (fp == nullptr) {
-			fprintf(stderr, "Could not open %s: %s\n",
+			mlog(LV_ERR, "Could not open %s: %s",
 			        wzone.c_str(), strerror(errno));
 			return errno;
 		}
 		size_t sl = 0;
 		std::unique_ptr<char[], stdlib_delete> sd(HX_slurp_fd(fileno(fp.get()), &sl));
 		if (sd == nullptr) {
-			fprintf(stderr, "slurp_fd: %s\n", strerror(errno));
+			mlog(LV_ERR, "slurp_fd: %s", strerror(errno));
 			return errno;
 		}
 		wzone_to_tzdef.emplace(wzone, std::string(sd.get(), sl));

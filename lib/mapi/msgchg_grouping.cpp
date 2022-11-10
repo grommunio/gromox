@@ -168,7 +168,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 	
 	uint32_t group_id = strtoul(file_name + 2, nullptr, 16);
 	if (0 == group_id || 0xFFFFFFFF == group_id) {
-		fprintf(stderr, "[exchange_emsmdb]: file name %s format error\n", file_name);
+		mlog(LV_ERR, "msgchggrp: file name %s format error", file_name);
 		return NULL;
 	}
 	std::string file_path;
@@ -180,13 +180,13 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 	}
 	auto pfile = list_file_initd(file_path.c_str(), nullptr, "%s:256");
 	if (NULL == pfile) {
-		fprintf(stderr, "[exchange_emsmdb]: list_file_init %s: %s\n",
+		mlog(LV_ERR, "msgchggrp: list_file_init %s: %s",
 		       file_path.c_str(), strerror(errno));
 		return NULL;
 	}
 	pinfo_node = msgchg_grouping_create_info_node(group_id);
 	if (NULL == pinfo_node) {
-		fprintf(stderr, "[exchange_emsmdb]: out of memory during loading of property group info\n");
+		mlog(LV_ERR, "msgchggrp: out of memory during loading of property group info");
 		return NULL;
 	}
 	auto line_num = pfile->get_size();
@@ -197,36 +197,36 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 		if (0 == strncasecmp(pline, "index:", 6)) {
 			index = strtol(pline + 6, nullptr, 0);
 			if (index < 0) {
-				fprintf(stderr, "[exchange_emsmdb]: index %d error in %s\n",
+				mlog(LV_ERR, "msgchggrp: index %d error in %s",
 				        index, file_path.c_str());
 				return NULL;
 			}
 			pgp_node = msgchg_grouping_create_group_node(index);
 			if (NULL == pgp_node) {
-				fprintf(stderr, "[exchange_emsmdb]: out of memory during loading of property group info\n");
+				mlog(LV_ERR, "msgchggrp: out of memory during loading of property group info");
 				return NULL;
 			}
 			if (!msgchg_grouping_append_group_list(pinfo_node, pgp_node)) {
 				msgchg_grouping_free_group_node(pgp_node);
-				fprintf(stderr, "[exchange_emsmdb]: index %d duplicated\n", index);
+				mlog(LV_ERR, "msgchggrp: index %d duplicated", index);
 				return NULL;
 			}
 		} else if (0 == strncasecmp(pline, "0x", 2)) {
 			if (-1 == index) {
-				fprintf(stderr, "[exchange_emsmdb]: file %s must begin with \"index:\"\n",
+				mlog(LV_ERR, "msgchggrp: file %s must begin with \"index:\"",
 				        file_path.c_str());
 				return NULL;
 			}
 			proptag = strtol(pline + 2, NULL, 16);
 			if (PROP_ID(proptag) == 0 || PROP_ID(proptag) >= 0x8000) {
-				fprintf(stderr, "[exchange_emsmdb]: fail to parse line \"%s\" in %s\n",
+				mlog(LV_ERR, "msgchggrp: fail to parse line \"%s\" in %s",
 				        pline, file_path.c_str());
 				return NULL;
 			}
 			ptag_node = me_alloc<TAG_NODE>();
 			if (NULL == ptag_node) {
-				fprintf(stderr, "[exchange_emsmdb]: out of memory while "
-					"loading property group info\n");
+				mlog(LV_ERR, "msgchggrp: out of memory while "
+					"loading property group info");
 				return NULL;
 			}
 			ptag_node->node.pdata = ptag_node;
@@ -237,63 +237,63 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 				&pgp_node->tag_list, &ptag_node->node);
 		} else if (0 == strncasecmp(pline, "GUID=", 5)) {
 			if (-1 == index) {
-				fprintf(stderr, "[exchange_emsmdb]: file %s must "
-					"begin with \"index:\"\n", file_path.c_str());
+				mlog(LV_ERR, "msgchggrp: file %s must "
+					"begin with \"index:\"", file_path.c_str());
 				return NULL;
 			}
 			ptoken = strchr(pline + 5, ',');
 			if (NULL == ptoken) {
-				fprintf(stderr, "[exchange_emsmdb]: line "
-					"\"%s\" format error\n", pline);
+				mlog(LV_ERR, "msgchggrp: line "
+					"\"%s\" format error", pline);
 				return NULL;
 			}
 			*ptoken++ = '\0';
 			ptoken1 = strchr(ptoken, ',');
 			if (NULL == ptoken1) {
-				fprintf(stderr, "[exchange_emsmdb]: format"
-					" error in \"%s\"\n", ptoken);
+				mlog(LV_ERR, "msgchggrp: format"
+					" error in \"%s\"", ptoken);
 				return NULL;
 			}
 			*ptoken1++ = '\0';
 			if (0 != strncasecmp(ptoken1, "TYPE=0x", 7)) {
-				fprintf(stderr, "[exchange_emsmdb]: format"
-					" error in \"%s\"\n", ptoken1);
+				mlog(LV_ERR, "msgchggrp: format"
+					" error in \"%s\"", ptoken1);
 				return NULL;
 			}
 			ptag_node = me_alloc<TAG_NODE>();
 			if (NULL == ptag_node) {
-				fprintf(stderr, "[exchange_emsmdb]: out of memory "
-					"when loading property group info\n");
+				mlog(LV_ERR, "msgchggrp: out of memory "
+					"when loading property group info");
 				return NULL;
 			}
 			ptag_node->node.pdata = ptag_node;
 			ptag_node->propid = 0;
 			ptag_node->type = strtol(ptoken1 + 7, NULL, 16);
 			if (0 == ptag_node->type) {
-				fprintf(stderr, "[exchange_emsmdb]: format"
-					"error in \"%s\"\n", ptoken1);
+				mlog(LV_ERR, "msgchggrp: format"
+					"error in \"%s\"", ptoken1);
 				return NULL;
 			}
 			ptag_node->ppropname = me_alloc<PROPERTY_NAME>();
 			if (NULL == ptag_node->ppropname) {
 				free(ptag_node);
-				fprintf(stderr, "[exchange_emsmdb]: out of memory when "
-					"loading property group info\n");
+				mlog(LV_ERR, "msgchggrp: out of memory when "
+					"loading property group info");
 				return NULL;
 			}
 			if (!ptag_node->ppropname->guid.from_str(pline + 5)) {
 				free(ptag_node->ppropname);
 				free(ptag_node);
-				fprintf(stderr, "[exchange_emsmdb]: guid string"
-					" \"%s\" format error\n", pline + 5);
+				mlog(LV_ERR, "msgchggrp: guid string"
+					" \"%s\" format error", pline + 5);
 				return NULL;
 			}
 			if (0 == strncasecmp(ptoken, "LID=", 4)) {
 				ptag_node->ppropname->kind = MNID_ID;
 				ptag_node->ppropname->lid = strtol(ptoken + 4, nullptr, 0);
 				if (ptag_node->ppropname->lid == 0) {
-					fprintf(stderr, "[exchange_emsmdb]: lid \"%s\"/%u error "
-						"with guid \"%s\"\n", ptoken + 4,
+					mlog(LV_ERR, "msgchggrp: lid \"%s\"/%u error "
+						"with guid \"%s\"", ptoken + 4,
 						ptag_node->ppropname->lid, pline + 5);
 					free(ptag_node->ppropname);
 					free(ptag_node);
@@ -309,16 +309,16 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 				if ('\0' == ptoken[5]) {
 					free(ptag_node->ppropname);
 					free(ptag_node);
-					fprintf(stderr, "[exchange_emsmdb]: name empty "
-						"with guid \"%s\"\n", pline + 5);
+					mlog(LV_ERR, "msgchggrp: name empty "
+						"with guid \"%s\"", pline + 5);
 					return NULL;
 				}
 				ptag_node->ppropname->pname = strdup(ptoken + 5);
 				if (NULL == ptag_node->ppropname->pname) {
 					free(ptag_node->ppropname);
 					free(ptag_node);
-					fprintf(stderr, "[exchange_emsmdb]: out of memory "
-						"when loading property group info\n");
+					mlog(LV_ERR, "msgchggrp: out of memory "
+						"when loading property group info");
 					return NULL;
 				}
 				ptag_node->ppropname->lid = 0;
@@ -327,20 +327,20 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 			} else {
 				free(ptag_node->ppropname);
 				free(ptag_node);
-				fprintf(stderr, "[exchange_emsmdb]: type %s unknown\n", ptoken);
+				mlog(LV_ERR, "msgchggrp: type %s unknown", ptoken);
 				return NULL;
 			}
 		}
 		pline += 256;
 	}
 	if (!msgchg_grouping_verify_group_list(pinfo_node))
-		fprintf(stderr, "[exchange_emsmdb]: indexes should "
-			"begin with 0 and be continuous\n");
+		mlog(LV_ERR, "msgchggrp: indexes should "
+			"begin with 0 and be continuous");
 	else if (msgchg_grouping_append_info_list(pinfo_node))
 		return pinfo_node;
 	else
-		fprintf(stderr, "[exchange_emsmdb]: duplicated "
-			"group_id 0x%x\n", pinfo_node->group_id);
+		mlog(LV_ERR, "msgchggrp: duplicated "
+			"group_id 0x%x", pinfo_node->group_id);
 	return NULL;
 }
 
@@ -349,7 +349,7 @@ int msgchg_grouping_run()
 	struct dirent *direntp;
 	auto dinfo = opendir_sd("msgchg_grouping", g_folder_path.c_str());
 	if (dinfo.m_dir == nullptr) {
-		fprintf(stderr, "[exchange_emsmdb]: opendir \"%s\": %s\n",
+		mlog(LV_ERR, "msgchggrp: opendir \"%s\": %s",
 		       dinfo.m_path.c_str(), strerror(errno));
 		return -1;
 	}
@@ -358,15 +358,15 @@ int msgchg_grouping_run()
 			continue;	
 		}
 		if (msgchg_grouping_load_gpinfo(dinfo.m_path.c_str(), direntp->d_name) == nullptr) {
-			fprintf(stderr, "[exchange_emsmdb]: Failed to load property group "
-				"info definition file %s/%s: %s\n",
+			mlog(LV_ERR, "msgchggrp: Failed to load property group "
+				"info definition file %s/%s: %s",
 				dinfo.m_path.c_str(), direntp->d_name, strerror(errno));
 			return -2;
 		}
 	}
 	if (0 == double_list_get_nodes_num(&g_info_list)) {
-		fprintf(stderr, "[exchange_emsmdb]: no \"property"
-			" group info\" found within directory \"%s\"\n",
+		mlog(LV_ERR, "msgchggrp: no \"property"
+			" group info\" found within directory \"%s\"",
 			dinfo.m_path.c_str());
 		return -3;
 	}

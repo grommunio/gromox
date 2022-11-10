@@ -1569,7 +1569,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t length = rdlength;
@@ -1706,7 +1706,7 @@ static BOOL oxcmail_parse_binhex(const MIME *pmime, ATTACHMENT_CONTENT *pattachm
 		return FALSE;
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t content_len = rdlength;
@@ -1816,7 +1816,7 @@ static BOOL oxcmail_parse_appledouble(const MIME *pmime,
 	(*plast_propid) ++;
 	auto rdlength = phmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t content_len = rdlength;
@@ -1870,7 +1870,7 @@ static BOOL oxcmail_parse_appledouble(const MIME *pmime,
 	}
 	rdlength = pdmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		free(pcontent);
 		return false;
 	}
@@ -1916,7 +1916,7 @@ static BOOL oxcmail_parse_macbinary(const MIME *pmime,
 	
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t content_len = rdlength;
@@ -1996,7 +1996,7 @@ static BOOL oxcmail_parse_applesingle(const MIME *pmime,
 	
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t content_len = rdlength;
@@ -2283,7 +2283,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	if (strcasecmp(cttype, "text/directory") == 0) {
 		auto rdlength = pmime->get_length();
 		if (rdlength < 0) {
-			fprintf(stderr, "%s:MIME::get_length:%u: unsuccessful\n", __func__, __LINE__);
+			mlog(LV_ERR, "%s:MIME::get_length:%u: unsuccessful", __func__, __LINE__);
 			return;
 		}
 		size_t content_len = rdlength;
@@ -2331,7 +2331,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	    (b_filename && strcasecmp(".eml", extension) == 0)) {
 		auto rdlength = pmime->get_length();
 		if (rdlength < 0) {
-			fprintf(stderr, "%s:MIME::get_length:%u: unsuccessful\n", __func__, __LINE__);
+			mlog(LV_ERR, "%s:MIME::get_length:%u: unsuccessful", __func__, __LINE__);
 			return;
 		}
 		size_t content_len = rdlength;
@@ -2429,7 +2429,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	}
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length:%u: unsuccessful\n", __func__, __LINE__);
+		mlog(LV_ERR, "%s:MIME::get_length:%u: unsuccessful", __func__, __LINE__);
 		return;
 	}
 	size_t content_len = rdlength;
@@ -2453,7 +2453,7 @@ static MESSAGE_CONTENT* oxcmail_parse_tnef(MIME *pmime,
 	
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return nullptr;
 	}
 	size_t content_len = rdlength;
@@ -3116,7 +3116,7 @@ static BOOL oxcmail_parse_smime_message(MAIL *pmail, MESSAGE_CONTENT *pmsg) try
 	}
 	auto rdlength = phead->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t content_len = rdlength;
@@ -3509,7 +3509,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	if (NULL != mime_enum.pcalendar) {
 		auto rdlength = mime_enum.pcalendar->get_length();
 		if (rdlength < 0) {
-			fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+			mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 			message_content_free(pmsg);
 			return nullptr;
 		}
