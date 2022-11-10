@@ -3791,10 +3791,10 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		pcomponent->append_line("X-MICROSOFT-CDO-APPT-SEQUENCE", tmp_buff);
 	}
 	
-	num = pmsg->proplist.get<uint32_t>(PR_OWNER_APPT_ID);
-	if (num != nullptr) {
+	auto inum = pmsg->proplist.get<int32_t>(PR_OWNER_APPT_ID);
+	if (inum != nullptr) {
 		char tmp_buff[HXSIZEOF_Z32];
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *num);
+		snprintf(tmp_buff, std::size(tmp_buff), "%d", *inum);
 		pcomponent->append_line("X-MICROSOFT-CDO-OWNERAPPTID", tmp_buff);
 	}
 	
