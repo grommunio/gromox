@@ -122,20 +122,20 @@ static int message_enqueue_run()
 		close(fd);
     k_msg = ftok(name, TOKEN_MESSAGE_QUEUE);
     if (-1 == k_msg) {
-		printf("[message_enqueue]: ftok %s: %s\n", name, strerror(errno));
+		mlog(LV_ERR, "message_enqueue: ftok %s: %s", name, strerror(errno));
         return -2;
     }
     /* create the message queue */
     g_msg_id = msgget(k_msg, 0666|IPC_CREAT);
     if (-1 == g_msg_id) {
-		printf("[message_enqueue]: msgget: %s\n", strerror(errno));
+		mlog(LV_ERR, "message_enqueue: msgget: %s", strerror(errno));
         return -6;
     }
     g_last_flush_ID = message_enqueue_retrieve_max_ID();
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_flushing_thread, nullptr, meq_thrwork, nullptr);
 	if (ret != 0) {
-		printf("[message_enqueue]: failed to create flushing thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "message_enqueue: failed to create flushing thread: %s", strerror(ret));
         return -7;
     }
 	pthread_setname_np(g_flushing_thread, "flusher");
@@ -192,29 +192,29 @@ static BOOL message_enqueue_check() try
 
     /* check if the directory exists and is a real directory */
     if (0 != stat(g_path, &node_stat)) {
-        printf("[message_enqueue]: cannot find directory %s\n", g_path);
+		mlog(LV_ERR, "message_enqueue: cannot find directory %s", g_path);
         return FALSE;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-        printf("[message_enqueue]: %s is not a directory\n", g_path);
+		mlog(LV_ERR, "message_enqueue: %s is not a directory", g_path);
         return FALSE;
     }
 	auto name = g_path + "/mess"s;
 	if (stat(name.c_str(), &node_stat) != 0) {
-		printf("[message_enqueue]: cannot find directory %s\n", name.c_str());
+		mlog(LV_ERR, "message_enqueue: cannot find directory %s", name.c_str());
         return FALSE;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-		printf("[message_enqueue]: %s is not a directory\n", name.c_str());
+		mlog(LV_ERR, "message_enqueue: %s is not a directory", name.c_str());
 		return FALSE;
     }
 	name = g_path + "/save"s;
 	if (stat(name.c_str(), &node_stat) != 0) {
-		printf("[message_enqueue]: cannot find directory %s\n", name.c_str());
+		mlog(LV_ERR, "message_enqueue: cannot find directory %s", name.c_str());
         return FALSE;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-		printf("[message_enqueue]: %s is not a directory\n", name.c_str());
+		mlog(LV_ERR, "message_enqueue: %s is not a directory", name.c_str());
 		return FALSE;
     }
     return TRUE;
@@ -447,22 +447,22 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 		}
 		auto pfile = config_file_initd(filename.c_str(), get_config_path(), nullptr);
 		if (pfile == nullptr) {
-			printf("[message_enqueue]: config_file_initd %s: %s\n",
+			mlog(LV_ERR, "message_enqueue: config_file_initd %s: %s",
 			       filename.c_str(), strerror(errno));
 			return false;
 		}
 		queue_path = pfile->get_value("ENQUEUE_PATH");
 		if (queue_path == nullptr)
 			queue_path = PKGSTATEQUEUEDIR;
-		printf("[message_enqueue]: enqueue path is %s\n", queue_path);
+		mlog(LV_INFO, "message_enqueue: enqueue path is %s", queue_path);
 
 		message_enqueue_init(queue_path);
 		if (message_enqueue_run() != 0) {
-			printf("[message_enqueue]: failed to run the module\n");
+			mlog(LV_ERR, "message_enqueue: failed to run the module");
 			return false;
 		}
 		if (!register_cancel(message_enqueue_cancel)) {
-			printf("[message_enqueue]: failed to register cancel flushing\n");
+			mlog(LV_ERR, "message_enqueue: failed to register cancel flushing");
 			return false;
 		}
 		set_flush_ID(g_last_flush_ID);

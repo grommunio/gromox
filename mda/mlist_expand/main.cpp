@@ -30,19 +30,18 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 		textmaps_init();
 		query_service2("get_mlist_memb", get_mlist_memb);
 		if (get_mlist_memb == nullptr) {
-			printf("[mlist_expand]: failed to get service \"get_mlist_memb\"\n");
+			mlog(LV_ERR, "mlist_expand: failed to get service \"get_mlist_memb\"");
 			return FALSE;
 		}
 		bounce_producer_init(";");
 		if (bounce_producer_run(get_data_path())) {
-			printf("[mlist_expand]: failed to run bounce producer\n");
+			mlog(LV_ERR, "mlist_expand: failed to run bounce producer");
 			return FALSE;
 		}
 		if (!register_hook(expand_process)) {
-			printf("[mlist_expand]: failed to register the hook function\n");
+			mlog(LV_ERR, "mlist_expand: failed to register the hook function");
             return FALSE;
         }
-		printf("[mlist_expand]: plugin is loaded into system\n");
         return TRUE;
     case PLUGIN_FREE:
         return TRUE;

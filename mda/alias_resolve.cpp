@@ -42,13 +42,13 @@ static MYSQL *sql_make_conn()
 	if (mysql_real_connect(conn, g_parm.host.c_str(), g_parm.user.c_str(),
 	    g_parm.pass.size() != 0 ? g_parm.pass.c_str() : nullptr,
 	    g_parm.dbname.c_str(), g_parm.port, nullptr, 0) == nullptr) {
-		printf("[mysql_adaptor]: Failed to connect to mysql server: %s\n",
+		mlog(LV_ERR, "alias_resolve: Failed to connect to mysql server: %s",
 		       mysql_error(conn));
 		mysql_close(conn);
 		return nullptr;
 	}
 	if (mysql_set_character_set(conn, "utf8mb4") != 0) {
-		fprintf(stderr, "[mysql_adaptor]: \"utf8mb4\" not available: %s\n",
+		mlog(LV_ERR, "alias_resolve: \"utf8mb4\" not available: %s",
 		        mysql_error(conn));
 		mysql_close(conn);
 		return nullptr;
@@ -78,7 +78,7 @@ static void xa_refresh_aliases(MYSQL *conn) try
 			newmap.emplace(row[0], row[1]);
 	std::lock_guard hold(xa_alias_lock);
 	std::swap(xa_alias_map, newmap);
-	fprintf(stderr, "[alias_resolve]: I-1612: refreshed alias map (%zu entries)\n",
+	mlog(LV_INFO, "I-1612: refreshed alias map (%zu entries)",
 	        xa_alias_map.size());
 } catch (const std::bad_alloc &) {
 }
@@ -167,7 +167,7 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg,
 		mcfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
 		       mysql_directives);
 	if (mcfg == nullptr) {
-		printf("[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
+		mlog(LV_ERR, "alias_resolve: config_file_initd mysql_adaptor.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
@@ -177,7 +177,7 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg,
 	g_parm.pass = mcfg->get_value("mysql_password");
 	g_parm.dbname = mcfg->get_value("mysql_dbname");
 	g_parm.timeout = mcfg->get_ll("mysql_rdwr_timeout");
-	printf("[alias_resolve]: mysql [%s]:%d, timeout=%d, db=%s\n",
+	mlog(LV_NOTICE, "alias_resolve: mysql [%s]:%d, timeout=%d, db=%s",
 	       g_parm.host.size() == 0 ? "*" : g_parm.host.c_str(), g_parm.port,
 	       g_parm.timeout, g_parm.dbname.c_str());
 
@@ -185,7 +185,7 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg,
 		acfg = config_file_initd("alias_resolve.cfg", get_config_path(),
 		       xa_directives);
 	if (acfg == nullptr) {
-		printf("[mysql_adaptor]: config_file_initd alias_resolve.cfg: %s\n",
+		mlog(LV_ERR, "alias_resolve: config_file_initd alias_resolve.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
@@ -214,14 +214,14 @@ static BOOL xa_main(int reason, void **data)
 	auto mcfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
 	            mysql_directives);
 	if (mcfg == nullptr) {
-		printf("[alias_resolve]: config_file_initd mysql_adaptor.cfg: %s\n",
+		mlog(LV_ERR, "alias_resolve: config_file_initd mysql_adaptor.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
 	auto acfg = config_file_initd("alias_resolve.cfg", get_config_path(),
 	            xa_directives);
 	if (acfg == nullptr) {
-		printf("[alias_resolve]: config_file_initd alias_resolve.cfg: %s\n",
+		mlog(LV_ERR, "alias_resolve: config_file_initd alias_resolve.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
