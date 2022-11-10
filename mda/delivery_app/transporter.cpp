@@ -202,13 +202,13 @@ int transporter_run()
 	try {
 		g_circles_ptr = std::make_unique<CIRCLE_NODE[]>(g_threads_max * MAX_THROWING_NUM);
 	} catch (const std::bad_alloc &) {
-		printf("[transporter]: Failed to allocate memory for circle list\n");
+		mlog(LV_ERR, "transporter: failed to allocate memory for circle list");
         return -1;
 	}
 	try {
 		g_data_ptr = std::make_unique<THREAD_DATA[]>(g_threads_max);
 	} catch (const std::bad_alloc &) {
-		printf("[transporter]: Failed to allocate memory for threads data\n");
+		mlog(LV_ERR, "transporter: failed to allocate memory for threads data");
 		transporter_collect_resource();
 		return -2;
 	}
@@ -226,7 +226,7 @@ int transporter_run()
 		g_free_ptr = std::make_unique<FREE_CONTEXT[]>(g_free_num);
 	} catch (const std::bad_alloc &) {
 		transporter_collect_resource();
-		printf("[transporter]: Failed to allocate memory for free list\n");
+		mlog(LV_ERR, "transporter: failed to allocate memory for free list");
         return -3;
 	}
 	for (size_t i = 0; i < g_free_num; ++i) {
@@ -238,7 +238,7 @@ int transporter_run()
 	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME, "transporter_mime_pool");
 	if (NULL == g_mime_pool) {
 		transporter_collect_resource();
-		printf("[transporter]: Failed to init MIME pool\n");
+		mlog(LV_ERR, "transporter: failed to init MIME pool");
         return -4;
 	}
 	g_file_allocator = alloc_limiter<file_block>(FILENUM_PER_CONTROL * (g_free_num + g_threads_max),
@@ -266,12 +266,12 @@ int transporter_run()
 	}
 
 	if ('\0' == g_local_path[0]) {
-		printf("[transporter]: there's no local hook registered in system\n");
+		mlog(LV_ERR, "transporter: no local delivery hook registered");
 		transporter_collect_hooks();
 		transporter_collect_resource();
 		return -8;
 	} else if (*g_remote_path == '\0') {
-		printf("[transporter]: there's no remote hook registered in system\n");
+		mlog(LV_ERR, "transporter: no remote delivery hook registered");
 		transporter_collect_hooks();
 		transporter_collect_resource();
 		return -1;
@@ -285,7 +285,7 @@ int transporter_run()
 	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
 	auto ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 	if (ret != 0) {
-		fprintf(stderr, "[transporter]: pthread_attr_setstacksize: %s\n", strerror(ret));
+		mlog(LV_ERR, "transporter: pthread_attr_setstacksize: %s", strerror(ret));
 		return -1;
 	}
 
@@ -295,7 +295,7 @@ int transporter_run()
 		if (ret != 0) {
 			transporter_collect_hooks();
 			transporter_collect_resource();
-			printf("[transporter]: failed to create transport thread %zu: %s\n",
+			mlog(LV_ERR, "transporter: failed to create transport thread %zu: %s",
 			       i, strerror(ret));
 			return -10;
         }
@@ -310,7 +310,7 @@ int transporter_run()
 		g_notify_stop = true;
 		transporter_collect_hooks();
 		transporter_collect_resource();
-		printf("[transporter]: failed to create scanner thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "transporter: failed to create scanner thread: %s", strerror(ret));
 		return -11;
 	}
 	pthread_setname_np(g_scan_id, "xprt/scan");
@@ -520,7 +520,7 @@ static void *dxp_thrwork(void *arg)
 			cannot_served_times = 0;
 			pcontext = &pthr_data->fake_context.context;
 			if (!pcontext->pmail->retrieve(static_cast<char *>(pmessage->mail_begin), pmessage->mail_length)) {
-				mlog(LV_DEBUG, "QID %d: Failed to "
+				mlog(LV_ERR, "QID %d: Failed to "
 					"load into mail object", pmessage->flush_ID);
 				message_dequeue_save(pmessage);
 				message_dequeue_put(pmessage);
@@ -574,7 +574,7 @@ static void *dxp_scanwork(void *arg)
 	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
 	auto ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 	if (ret != 0) {
-		fprintf(stderr, "[transporter]: pthread_attr_setstacksize: %s\n", strerror(ret));
+		mlog(LV_ERR, "transporter: pthread_attr_setstacksize: %s", strerror(ret));
 		return nullptr;
 	}
 
@@ -633,7 +633,7 @@ int transporter_load_library(const char* path)
 	transporter_clean_up_unloading();
 	/* check whether the plugin is same as local or remote plugin */
 	if (strcmp(path, g_local_path) == 0 || strcmp(path, g_remote_path) == 0) {
-		printf("[transporter]: %s is already loaded in module\n", path);
+		mlog(LV_ERR, "transporter: %s is already loaded", path);
 		return PLUGIN_ALREADY_LOADED;
 	}
 	
@@ -641,7 +641,7 @@ int transporter_load_library(const char* path)
     for (pnode=double_list_get_head(&g_unloading_list); NULL!=pnode;
          pnode=double_list_get_after(&g_unloading_list, pnode)) {
 		if (strcmp(static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
-			printf("[transporter]: %s is already loaded in module\n", path);
+			mlog(LV_ERR, "transporter: %s is already loaded", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
 	}
@@ -649,7 +649,7 @@ int transporter_load_library(const char* path)
     for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
          pnode=double_list_get_after(&g_lib_list, pnode)) {
 		if (strcmp(static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
-			printf("[transporter]: %s is already loaded in module\n", path);
+			mlog(LV_ERR, "transporter: %s is already loaded", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
 	}
@@ -662,22 +662,18 @@ int transporter_load_library(const char* path)
 		return PLUGIN_FAIL_OPEN;
 	}
     if (NULL == handle){
-        printf("[transporter]: error loading %s: %s\n", fake_path, dlerror());
-        printf("[transporter]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "transporter: error loading %s: %s", fake_path, dlerror());
         return PLUGIN_FAIL_OPEN;
     }
     func = (PLUGIN_MAIN)dlsym(handle, "HOOK_LibMain");
     if (NULL == func) {
-        printf("[transporter]: error finding the HOOK_LibMain function in %s\n",
-                fake_path);
-        printf("[transporter]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "transporter: error finding the HOOK_LibMain function in %s", fake_path);
         dlclose(handle);
         return PLUGIN_NO_MAIN;
     }
 	auto plib = me_alloc<HOOK_PLUG_ENTITY>();
     if (NULL == plib) {
-		printf("[transporter]: Failed to allocate memory for %s\n", fake_path);
-        printf("[transporter]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "transporter: Failed to allocate memory for %s", fake_path);
         dlclose(handle);
         return PLUGIN_FAIL_ALLOCNODE;
     }
@@ -695,9 +691,8 @@ int transporter_load_library(const char* path)
     g_cur_lib = plib;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (!func(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
-		printf("[transporter]: error executing the plugin's init function "
-                "in %s\n", fake_path);
-        printf("[transporter]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "transporter: error executing the plugin's init function "
+                "in %s", fake_path);
         /*
          *  the lib node will automatically removed from libs list in
          *  transporter_unload_library function
@@ -795,7 +790,7 @@ static void transporter_clean_up_unloading()
 				free(((SERVICE_NODE*)(pnode1->pdata))->service_name);
 				free(pnode1->pdata);
 			}
-			printf("[transporter]: unloading %s\n", plib->file_name);
+			mlog(LV_INFO, "transporter: unloading %s", plib->file_name);
 			dlclose(plib->handle);
 		}
 	}
@@ -931,8 +926,8 @@ static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
 {
 	if (reinterpret_cast<uintptr_t>(pcontext) < reinterpret_cast<uintptr_t>(g_free_ptr.get()) ||
 	    reinterpret_cast<uintptr_t>(pcontext) > reinterpret_cast<uintptr_t>(g_free_ptr.get() + g_free_num)) {
-		printf("[transporter]: invalid context pointer is detected when some "
-				"plugin try to enqueue message context\n");
+		mlog(LV_ERR, "transporter: invalid context pointer is detected when some "
+				"plugin try to enqueue message context");
 		return;
 	}
 	auto pnode = &containerof(pcontext, FREE_CONTEXT, context)->node;
@@ -978,8 +973,8 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 
 	if (reinterpret_cast<uintptr_t>(pcontext) < reinterpret_cast<uintptr_t>(g_free_ptr.get()) ||
 	    reinterpret_cast<uintptr_t>(pcontext) > reinterpret_cast<uintptr_t>(g_free_ptr.get() + g_free_num)) {
-		printf("[transporter]: invalid context pointer is detected when some "
-				"plugin try to throw message context\n");
+		mlog(LV_ERR, "transporter: invalid context pointer is detected when some "
+				"plugin try to throw message context");
 		return FALSE;
 	}
 	auto pthr_data = g_tls_key;
@@ -997,15 +992,15 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 		}
 	}
 	if (NULL != pnode) {
-		printf("[transporter]: message infinite loop is detected\n");
+		mlog(LV_ERR, "transporter: message infinite loop is detected");
 		transporter_put_context(pcontext);
 		return FALSE;
 	}
 	/* append this hook into thrown list */
 	pcircle = reinterpret_cast<CIRCLE_NODE *>(double_list_pop_front(&pthr_data->anti_loop.free_list));
 	if (NULL == pcircle) {
-		printf("[transporter]: exceed the maximum depth that one thread "
-			"can throw\n");
+		mlog(LV_ERR, "transporter: exceed the maximum depth that one thread "
+			"can throw");
 		transporter_put_context(pcontext);
         return FALSE;
 	}
