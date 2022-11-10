@@ -63,8 +63,6 @@ static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
 static decltype(mysql_adaptor_get_id_from_username) *get_id_from_username;
 static decltype(mysql_adaptor_get_maildir) *get_maildir;
 static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
-static decltype(gromox::abkt_tojson) *nsp_abktojson;
-static decltype(gromox::abkt_tobinary) *nsp_abktobinary;
 
 static void nsp_trace(const char *func, bool is_exit, const STAT *s,
     int *delta = nullptr, NSP_ROWSET *outrows = nullptr)
@@ -557,10 +555,6 @@ int nsp_interface_run()
 	E(get_maildir, "get_maildir");
 	E(get_id_from_username, "get_id_from_username");
 	E(get_mlist_memb, "get_mlist_memb");
-	query_service2("abkt_tojson", nsp_abktojson);
-	query_service2("abkt_tobinary", nsp_abktobinary);
-	if (nsp_abktojson == nullptr || nsp_abktobinary == nullptr)
-		mlog(LV_ERR, "nsp: address book user interface templates not available");
 	return 0;
 #undef E
 }
@@ -2710,7 +2704,8 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 		tpldata += std::string_view(buf, have_read);
 	fd.close();
 	try {
-		tpldata = nsp_abktobinary(nsp_abktojson(tpldata, 0), codepage, false);
+		/* .abkt files are Unicode, transform them to 8-bit codepage */
+		tpldata = abkt_tobinary(abkt_tojson(tpldata, 0), codepage, false);
 	} catch (const std::runtime_error &e) {
 		return MAPI_E_UNKNOWN_LCID;
 	}

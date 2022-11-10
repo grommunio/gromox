@@ -53,7 +53,6 @@ exchange_plugins = \
 	libgxp_exchange_nsp.la \
 	libgxp_exchange_rfr.la \
 	libgxh_mh_emsmdb.la libgxh_mh_nsp.la \
-	libgxs_abktplug.la \
 	libgxs_authmgr.la \
 	libgxs_ip6_container.la libgxs_ip6_filter.la \
 	libgxs_ldap_adaptor.la \
@@ -66,7 +65,6 @@ noinst_DATA += \
 	libgxp_exchange_nsp.ldd \
 	libgxp_exchange_rfr.ldd \
 	libgxh_mh_emsmdb.ldd libgxh_mh_nsp.ldd \
-	libgxs_abktplug.ldd \
 	libgxs_authmgr.ldd \
 	libgxs_ip6_container.ldd libgxs_ip6_filter.ldd \
 	libgxs_ldap_adaptor.ldd \
@@ -179,10 +177,6 @@ libgxh_mh_nsp_la_SOURCES = exch/mh/mh_common.cpp exch/mh/nsp.cpp exch/mh/nsp_bri
 libgxh_mh_nsp_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxh_mh_nsp_la_LIBADD = -lpthread libgromox_common.la libgromox_mapi.la
 EXTRA_libgxh_mh_nsp_la_DEPENDENCIES = ${default_sym}
-libgxs_abktplug_la_SOURCES = exch/abktplug.cpp
-libgxs_abktplug_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxs_abktplug_la_LIBADD = libgromox_cplus.la
-EXTRA_libgxs_abktplug_la_DEPENDENCIES = ${default_sym}
 libgxs_authmgr_la_SOURCES = exch/authmgr.cpp exch/authmgr.hpp
 libgxs_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_authmgr_la_LIBADD = libgromox_common.la
