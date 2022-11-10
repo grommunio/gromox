@@ -264,7 +264,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 			common_util_get_maildir(), mid_string);
 		fd = open(temp_path, O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) < 0) {
-			fprintf(stderr, "%s: %s: %s\n", __func__, temp_path, strerror(errno));
+			mlog(LV_ERR, "E-1252: %s: %s", temp_path, strerror(errno));
 			return 0;
 		}
 		if (!S_ISREG(node_stat.st_mode))
@@ -966,7 +966,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			default:
 				mlog(LV_DEBUG, "mail_engine: condition stat %u unknown!",
-												ptree_node->condition);
+					static_cast<unsigned int>(ptree_node->condition));
 				break;
 			}
 		}
@@ -1729,7 +1729,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	DOUBLE_LIST_NODE *pnode;
 	
 	dir = common_util_get_maildir();
-	fprintf(stderr, "Running sync_contents for %s, folder %llu\n",
+	mlog(LV_NOTICE, "Running sync_contents for %s, folder %llu",
 	        dir, LLU{folder_id});
 	if (!exmdb_client::query_folder_messages(dir,
 	    rop_util_make_eid_ex(1, folder_id), &rows))
@@ -1840,12 +1840,12 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 				sqlite3_column_int64(pstmt1, 4));
 		}
 		if (++procmsgs % 512 == 0)
-			fprintf(stderr, "sync_contents %s fld %llu progress: %zu/%zu\n",
+			mlog(LV_NOTICE, "sync_contents %s fld %llu progress: %zu/%zu",
 			        dir, LLU{folder_id}, procmsgs, totalmsgs);
 	}
 	if (procmsgs > 512)
 		/* display final value */
-			fprintf(stderr, "sync_contents %s fld %llu progress: %zu/%zu\n",
+			mlog(LV_NOTICE, "sync_contents %s fld %llu progress: %zu/%zu",
 			        dir, LLU{folder_id}, procmsgs, totalmsgs);
 	pstmt.finalize();
 	pstmt1.finalize();
@@ -2018,9 +2018,9 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	uint32_t proptag_buff[6];
 	
 	dir = common_util_get_maildir();
-	fprintf(stderr, "Running sync_mailbox for %s\n", dir);
+	mlog(LV_NOTICE, "Running sync_mailbox for %s", dir);
 	auto cl_err = make_scope_exit([&]() {
-		fprintf(stderr, "sync_mailbox aborted for %s\n", dir);
+		mlog(LV_NOTICE, "sync_mailbox aborted for %s", dir);
 	});
 	if (!exmdb_client::load_hierarchy_table(dir,
 	    rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
@@ -2065,12 +2065,12 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 		auto folder_id = rop_util_get_gc_value(*num);
 		auto flag = rows.pparray[i]->get<const uint8_t>(PR_ATTR_HIDDEN);
 		if (flag != nullptr && *flag != 0) {
-			fprintf(stderr, "sync_mailbox %s fld %llu skipped: PR_ATTR_HIDDEN=1\n",
+			mlog(LV_NOTICE, "sync_mailbox %s fld %llu skipped: PR_ATTR_HIDDEN=1",
 			        dir, LLU{folder_id});
 			continue;
 		}
 		if (skip_folder_class(rows.pparray[i]->get<const char>(PR_CONTAINER_CLASS))) {
-			fprintf(stderr, "sync_mailbox %s fld %llu skipped: PR_CONTAINER_CLASS not IPF.Note\n",
+			mlog(LV_NOTICE, "sync_mailbox %s fld %llu skipped: PR_CONTAINER_CLASS not IPF.Note",
 			        dir, LLU{folder_id});
 			continue;
 		}
@@ -2211,7 +2211,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	    0, 0, &pidb->sub_id))
 		pidb->sub_id = 0;	
 	time(&pidb->load_time);
-	fprintf(stderr, "Ended sync_mailbox for %s\n", dir);
+	mlog(LV_NOTICE, "Ended sync_mailbox for %s", dir);
 	return TRUE;
 }
 
@@ -2243,15 +2243,15 @@ static int mail_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	auto current = dbop_sqlite_schemaversion(db, sqlite_kind::midb);
 	if (current >= recent)
 		return 0;
-	fprintf(stderr, "[dbop_sqlite]: %s: current schema EM-%d; upgrading to EM-%d.\n",
+	mlog(LV_NOTICE, "dbop_sqlite: %s: current schema EM-%d; upgrading to EM-%d.",
 		filedesc, current, recent);
 	auto ret = dbop_sqlite_upgrade(db, filedesc, sqlite_kind::midb, DBOP_VERBOSE);
 	if (ret != 0) {
-		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n",
+		mlog(LV_NOTICE, "dbop_sqlite upgrade %s: %s",
 		        filedesc, strerror(-ret));
 		return -1;
 	}
-	fprintf(stderr, "[dbop_sqlite]: upgrade %s: complete\n", filedesc);
+	mlog(LV_NOTICE, "dbop_sqlite: upgrade %s: complete", filedesc);
 	return 0;
 }
 
@@ -4988,27 +4988,27 @@ void mail_engine_init(const char *default_charset, const char *org_name,
 int mail_engine_run()
 {
 	if (sqlite3_config(SQLITE_CONFIG_MULTITHREAD) != SQLITE_OK)
-		printf("[mail_engine]: warning! fail to change "
-			"to multiple thread mode for sqlite engine\n");
+		mlog(LV_WARN, "mail_engine: failed to change "
+			"to multiple thread mode for sqlite engine");
 	if (sqlite3_config(SQLITE_CONFIG_MEMSTATUS, 0) != SQLITE_OK)
-		printf("[mail_engine]: warning! fail to close"
-			" memory statistic for sqlite engine\n");
+		mlog(LV_WARN, "mail_engine: failed to close"
+			" memory statistic for sqlite engine");
 	if (!oxcmail_init_library(g_org_name,
 		system_services_get_user_ids, system_services_get_username_from_id)) {
-		printf("[mail_engine]: Failed to init oxcmail library\n");
+		mlog(LV_ERR, "mail_engine: failed to init oxcmail library");
 		return -1;
 	}
 	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME,
 	              "midb_mime_pool (midb.cfg:g_mime_num)");
 	if (NULL == g_mime_pool) {
-		printf("[mail_engine]: Failed to init MIME pool\n");
+		mlog(LV_ERR, "mail_engine: failed to init MIME pool");
 		return -3;
 	}
 	g_alloc_mjson = mjson_allocator_init(g_table_size * 10);
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[mail_engine]: failed to create scan thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "mail_engine: failed to create scan thread: %s", strerror(ret));
 		return -5;
 	}
 	pthread_setname_np(g_scan_tid, "mail_engine");

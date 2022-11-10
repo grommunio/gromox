@@ -89,7 +89,7 @@ int cmd_parser_run()
 	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
 	auto ret = pthread_attr_setstacksize(&attr, 1UL << 20);
 	if (ret != 0) {
-		fprintf(stderr, "[cmd_parser]: pthread_attr_setstacksize: %s\n", strerror(ret));
+		mlog(LV_ERR, "cmd_parser: pthread_attr_setstacksize: %s", strerror(ret));
 		return -1;
 	}
 
@@ -97,7 +97,7 @@ int cmd_parser_run()
 		pthread_t tid;
 		ret = pthread_create(&tid, &attr, midcp_thrwork, nullptr);
 		if (ret != 0) {
-			printf("[cmd_parser]: failed to create pool thread: %s\n", strerror(ret));
+			mlog(LV_ERR, "cmd_parser: failed to create pool thread: %s", strerror(ret));
 			return -1;
 		}
 		char buf[32];
