@@ -548,7 +548,7 @@ int nsp_interface_run()
 #define E(f, s) do { \
 	query_service2(s, f); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "exchange_nsp", (s)); \
+		mlog(LV_ERR, "nsp: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -560,7 +560,7 @@ int nsp_interface_run()
 	query_service2("abkt_tojson", nsp_abktojson);
 	query_service2("abkt_tobinary", nsp_abktobinary);
 	if (nsp_abktojson == nullptr || nsp_abktobinary == nullptr)
-		fprintf(stderr, "[exchange_nsp]: address book user interface templates not available\n");
+		mlog(LV_ERR, "nsp: address book user interface templates not available");
 	return 0;
 #undef E
 }
@@ -2695,7 +2695,7 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 	if (!verify_cpid(codepage))
 		return MAPI_E_UNKNOWN_CPID;
 	if (dn != nullptr) {
-		fprintf(stderr, "[exchange_nsp]: unimplemented templateinfo dn=%s\n", dn);
+		mlog(LV_WARN, "nsp: unimplemented templateinfo dn=%s", dn);
 		return MAPI_E_UNKNOWN_LCID;
 	}
 

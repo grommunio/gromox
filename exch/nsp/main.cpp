@@ -62,7 +62,7 @@ static bool exch_nsp_reload(std::shared_ptr<CONFIG_FILE> cfg)
 		cfg = config_file_initd("exchange_nsp.cfg", get_config_path(),
 		      nsp_cfg_defaults);
 	if (cfg == nullptr) {
-		fprintf(stderr, "[exchange_nsp]: config_file_initd exchange_nsp.cfg: %s\n",
+		mlog(LV_ERR, "nsp: config_file_initd exchange_nsp.cfg: %s",
 		        strerror(errno));
 		return false;
 	}
@@ -100,23 +100,23 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata) try
 		auto pfile = config_file_initd(cfg_path.c_str(),
 		             get_config_path(), nsp_cfg_defaults);
 		if (NULL == pfile) {
-			printf("[exchange_nsp]: config_file_initd %s: %s\n",
+			mlog(LV_ERR, "nsp: config_file_initd %s: %s",
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
 		if (!exch_nsp_reload(pfile))
 			return false;
 		org_name = pfile->get_value("X500_ORG_NAME");
-		printf("[exchange_nsp]: x500 org name is \"%s\"\n", org_name);
+		mlog(LV_INFO, "nsp: x500 org name is \"%s\"", org_name);
 		table_size = pfile->get_ll("hash_table_size");
-		printf("[exchange_nsp]: hash table size is %d\n", table_size);
+		mlog(LV_INFO, "nsp: hash table size is %d", table_size);
 		cache_interval = pfile->get_ll("cache_interval");
 		HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
-		printf("[exchange_nsp]: address book tree item"
-				" cache interval is %s\n", temp_buff);
+		mlog(LV_INFO, "nsp: address book tree item"
+				" cache interval is %s", temp_buff);
 		b_check = pfile->get_ll("session_check");
 		if (b_check)
-			printf("[exchange_nsp]: bind session will be checked\n");
+			mlog(LV_INFO, "nsp: bind session will be checked");
 		ab_tree_init(org_name, table_size, cache_interval);
 
 #define regsvr(n) register_service(#n, n)
@@ -137,40 +137,38 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata) try
 		    !regsvr(nsp_interface_seek_entries) ||
 		    !regsvr(nsp_interface_unbind) ||
 		    !regsvr(nsp_interface_update_stat)) {
-			printf("[exchange_nsp]: exchange_nsp not loaded\n");
 			return false;
 		}
 #undef regsvr
 
 		ep_6001 = register_endpoint("*", 6001);
 		if (ep_6001 == nullptr) {
-			printf("[exchange_nsp]: failed to register endpoint with port 6001\n");
+			mlog(LV_ERR, "nsp: failed to register endpoint with port 6001");
 			return FALSE;
 		}
 		ep_6004 = register_endpoint("*", 6004);
 		if (ep_6004 == nullptr) {
-			printf("[exchange_nsp]: failed to register endpoint with port 6004\n");
+			mlog(LV_ERR, "nsp: failed to register endpoint with port 6004");
 			return FALSE;
 		}
 		if (!register_interface(ep_6001, &interface) ||
 		    !register_interface(ep_6004, &interface)) {
-			printf("[exchange_nsp]: failed to register interface\n");
+			mlog(LV_ERR, "nsp: failed to register interface");
 			return FALSE;
 		}
 		if (0 != common_util_run()) {
-			printf("[exchange_nsp]: failed to run common util\n");
+			mlog(LV_ERR, "nsp: failed to run common util");
 			return FALSE;
 		}
 		if (0 != ab_tree_run()) {
-			printf("[exchange_nsp]: failed to run address book tree\n");
+			mlog(LV_ERR, "nsp: failed to run address book tree");
 			return FALSE;
 		}
 		nsp_interface_init(b_check);
 		if (0 != nsp_interface_run()) {
-			printf("[exchange_nsp]: failed to run nsp interface\n");
+			mlog(LV_ERR, "nsp: failed to run nsp interface");
 			return FALSE;
 		}
-		printf("[exchange_nsp]: plugin is loaded into system\n");
 		return TRUE;
 	}
 	case PLUGIN_FREE:
