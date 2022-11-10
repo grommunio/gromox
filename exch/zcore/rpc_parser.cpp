@@ -81,7 +81,7 @@ static int rpc_parser_dispatch(const zcreq *q0, zcresp *&r0)
 	if (g_zrpc_debug == 0)
 		return DISPATCH_TRUE;
 	if (r0->result != 0 || g_zrpc_debug == 2)
-		fprintf(stderr, "ZRPC %s %8xh %s\n",
+		mlog(LV_DEBUG, "ZRPC %s %8xh %s",
 		        r0->result == 0 ? "ok  " : "FAIL",
 		        r0->result,
 		        zcore_rpc_idtoname(q0->call_id));
@@ -225,7 +225,7 @@ int rpc_parser_run()
 		pthread_t tid;
 		ret = pthread_create(&tid, nullptr, zcrp_thrwork, nullptr);
 		if (ret != 0) {
-			printf("[rpc_parser]: failed to create pool thread: %s\n", strerror(ret));
+			mlog(LV_ERR, "rpc_parser: failed to create pool thread: %s", strerror(ret));
 			rpc_parser_stop();
 			return -2;
 		}
