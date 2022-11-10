@@ -52,7 +52,7 @@ int listener_run(const char *configdir)
 {
 	g_listen_sockd = gx_inet_listen(g_listen_ip, g_listen_port);
 	if (g_listen_sockd < 0) {
-		printf("[listener]: failed to create listen socket: %s\n", strerror(-g_listen_sockd));
+		mlog(LV_ERR, "listener: failed to create listen socket: %s", strerror(-g_listen_sockd));
 		return -1;
 	}
 	gx_reexec_record(g_listen_sockd);
@@ -60,10 +60,10 @@ int listener_run(const char *configdir)
 	auto ret = list_file_read_fixedstrings("midb_acl.txt",
 	           configdir, g_acl_list);
 	if (ret == ENOENT) {
-		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
+		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
 		g_acl_list = {"::1"};
 	} else if (ret != 0) {
-		printf("[listener]: list_file_initd \"midb_acl.txt\": %s\n", strerror(errno));
+		mlog(LV_ERR, "listener: list_file_initd \"midb_acl.txt\": %s", strerror(errno));
 		close(g_listen_sockd);
 		return -5;
 	}
@@ -77,7 +77,7 @@ int listener_trigger_accept()
 	g_notify_stop = false;
 	auto ret = pthread_create(&thr_id, nullptr, midls_thrwork, nullptr);
 	if (ret != 0) {
-		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 		return -1;
 	}
 	pthread_setname_np(thr_id, "listener");
@@ -109,7 +109,7 @@ static void *midls_thrwork(void *param)
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          nullptr, 0, NI_NUMERICSERV | NI_NUMERICHOST);
 		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
+			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
 			close(sockd);
 			continue;
 		}

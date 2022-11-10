@@ -2,8 +2,10 @@
 #include <cstdio>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
+#include <gromox/util.hpp>
 #include "system_services.hpp"
 
+using namespace gromox;
 bool (*system_services_get_user_lang)(const char *, char *, size_t);
 bool (*system_services_get_timezone)(const char *, char *, size_t);
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
@@ -17,7 +19,7 @@ int system_services_run()
 #define E(f, s) do { \
 	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
+		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)

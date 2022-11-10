@@ -94,7 +94,7 @@ static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		pconfig = config_file_prg(opt_config_file, "midb.cfg",
 		          midb_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr) {
-		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
 	mlog_init(pconfig->get_value("midb_log_file"), pconfig->get_ll("midb_log_level"));
@@ -137,56 +137,58 @@ int main(int argc, const char **argv) try
 	g_config_file = pconfig = config_file_prg(opt_config_file, "midb.cfg",
 	                midb_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
-		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		mlog(LV_ERR, "system: config_file_init %s: %s", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 2;
 	if (!midb_reload_config(pconfig))
 		return EXIT_FAILURE;
 
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
-	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
+	mlog(LV_INFO, "system: exmdb proxy connection number is %d", proxy_num);
 	
 	int stub_num = pconfig->get_ll("notify_stub_threads_num");
-	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
+	mlog(LV_INFO, "system: exmdb notify stub threads number is %d", stub_num);
 	
 	auto listen_ip = pconfig->get_value("midb_listen_ip");
 	uint16_t listen_port = pconfig->get_ll("midb_listen_port");
-	printf("[system]: listen address is [%s]:%hu\n",
+	mlog(LV_NOTICE, "system: listen address is [%s]:%hu",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 	unsigned int threads_num = pconfig->get_ll("midb_threads_num");
-	printf("[system]: connection threads number is %d\n", threads_num);
+	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
 	size_t table_size = pconfig->get_ll("midb_table_size");
-	printf("[system]: hash table size is %zu\n", table_size);
+	mlog(LV_INFO, "system: hash table size is %zu", table_size);
 
 	int cache_interval = pconfig->get_ll("midb_cache_interval");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
-	printf("[system]: cache interval is %s\n", temp_buff);
+	mlog(LV_INFO, "system: cache interval is %s", temp_buff);
 	
 	int mime_num = pconfig->get_ll("midb_mime_number");
-	printf("[system]: mime number is %d\n", mime_num);
+	mlog(LV_INFO, "system: mime number is %d", mime_num);
 
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	uint64_t mmap_size = pconfig->get_ll("sqlite_mmap_size");
 	if (0 == mmap_size) {
-		printf("[system]: sqlite mmap_size is disabled\n");
+		mlog(LV_INFO, "system: sqlite mmap_size is disabled");
 	} else {
 		HX_unit_size(temp_buff, arsizeof(temp_buff), mmap_size, 1024, 0);
-		printf("[system]: sqlite mmap_size is %s\n", temp_buff);
+		mlog(LV_INFO, "system: sqlite mmap_size is %s", temp_buff);
 	}
 	
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
-		printf("[system]: fail to get file limitation\n");
+		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
 	} else {
 		rlim_t tb5 = 5 * table_size;
 		if (rl.rlim_cur < tb5 || rl.rlim_max < tb5) {
 			rl.rlim_cur = tb5;
 			rl.rlim_max = tb5;
 			if (setrlimit(RLIMIT_NOFILE, &rl) != 0)
-				printf("[system]: fail to set file limitation\n");
+				mlog(LV_WARN, "setrlimit RLIMIT_NFILE %zu: %s",
+					static_cast<size_t>(rl.rlim_max), strerror(errno));
 			else
-				printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
+				mlog(LV_NOTICE, "system: FD limit set to %zu",
+					static_cast<size_t>(rl.rlim_cur));
 		}
 	}
 
@@ -212,11 +214,11 @@ int main(int argc, const char **argv) try
 	auto cl_4 = make_scope_exit(cmd_parser_stop);
 
 	if (service_run_early() != 0) {
-		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
+		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
 		return 3;
 	}
 	if (listener_run(g_config_file->get_value("config_file_path")) != 0) {
-		printf("[system]: failed to run tcp listener\n");
+		mlog(LV_ERR, "system: failed to start TCP listener");
 		return 6;
 	}
 	if (switch_user_exec(*pconfig, argv) != 0)
@@ -225,35 +227,35 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	textmaps_init();
 	if (0 != service_run()) {
-		printf("[system]: failed to run service\n");
+		mlog(LV_ERR, "system: failed to start services");
 		return 3;
 	}
 	auto cl_1 = make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) {
-		printf("[system]: failed to run system services\n");
+		mlog(LV_ERR, "system: failed to start system services");
 		return 4;
 	}
 	if (0 != cmd_parser_run()) {
-		printf("[system]: failed to run command parser\n");
+		mlog(LV_ERR, "system: failed to start command parser");
 		return 7;
 	}
 	if (0 != mail_engine_run()) {
-		printf("[system]: failed to run mail engine\n");
+		mlog(LV_ERR, "system: failed to start mail engine");
 		return 8;
 	}
 	if (exmdb_client_run_front(g_config_file->get_value("config_file_path")) != 0) {
-		printf("[system]: failed to run exmdb client\n");
+		mlog(LV_ERR, "system: failed to start exmdb client");
 		return 9;
 	}
 	if (0 != listener_trigger_accept()) {
-		printf("[system]: fail to trigger tcp listener\n");
+		mlog(LV_ERR, "system: failed to start TCP listener");
 		return 11;
 	}
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
-	printf("[system]: MIDB is now running\n");
+	mlog(LV_NOTICE, "system: MIDB is now running");
 	while (!g_notify_stop) {
 		sleep(1);
 		if (g_hup_signalled.exchange(false)) {
