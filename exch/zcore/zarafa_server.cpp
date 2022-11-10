@@ -223,7 +223,7 @@ static void *zcorezs_scanwork(void *param)
 				try {
 					maildir_list.push_back(pinfo->get_maildir());
 				} catch (const std::bad_alloc &) {
-					fprintf(stderr, "E-2178: ENOMEM\n");
+					mlog(LV_ERR, "E-2178: ENOMEM");
 					++iter;
 					continue;
 				}
@@ -633,7 +633,7 @@ int zarafa_server_run()
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[zarafa_server]: E-1443: pthread_create: %s\n", strerror(ret));
+		mlog(LV_ERR, "E-1443: pthread_create: %s", strerror(ret));
 		return -4;
 	}
 	pthread_setname_np(g_scan_id, "zarafa");
@@ -673,7 +673,7 @@ uint32_t zarafa_server_logon(const char *username,
 	    password, maildir, arsizeof(maildir), lang, arsizeof(lang),
 	    reason, arsizeof(reason),
 	    USER_PRIVILEGE_EXCH)) {
-		fprintf(stderr, "auth rejected for \"%s\": %s\n", username, reason);
+		mlog(LV_ERR, "Auth rejected for \"%s\": %s", username, reason);
 		return ecLoginFailure;
 	}
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
@@ -1288,7 +1288,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 				std::make_move_iterator(temp_list.begin()),
 				std::make_move_iterator(temp_list.end()));
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1679: ENOMEM\n");
+			mlog(LV_ERR, "E-1679: ENOMEM");
 			return ecServerOOM;
 		}
 	}
@@ -2558,7 +2558,7 @@ uint32_t zarafa_server_unadvise(GUID hsession, uint32_t hstore,
 	g_notify_table.erase(std::move(tmp_buf));
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1498: ENOMEM\n");
+	mlog(LV_ERR, "E-1498: ENOMEM");
 	return ecServerOOM;
 }
 
@@ -2584,7 +2584,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 			tmp_buf = std::to_string(psink->padvise[i].sub_id) +
 			          "|" + pstore->get_dir();
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1496: ENOMEM\n");
+			mlog(LV_ERR, "E-1496: ENOMEM");
 			continue;
 		}
 		std::unique_lock nl_hold(g_notify_lock);
@@ -2622,7 +2622,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 	try {
 		holder.emplace_back();
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-2179: ENOMEM\n");
+		mlog(LV_ERR, "E-2179: ENOMEM");
 		return false;
 	}
 	auto psink_node = &holder.front();
@@ -3412,7 +3412,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		repr_grant = cu_get_delegate_perm_AA(account, username);
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
-		fprintf(stderr, "I-1334: uid %s tried to send with from=<%s>, but no impersonation permission given.\n",
+		mlog(LV_INFO, "I-1334: uid %s tried to send with from=<%s>, but no impersonation permission given.",
 		        account, username);
 		return ecAccessDenied;
 	}

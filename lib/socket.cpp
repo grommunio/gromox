@@ -21,6 +21,7 @@
 #include <gromox/defs.h>
 #include <gromox/socket.h>
 #include <gromox/tie.hpp>
+#include <gromox/util.hpp>
 
 using namespace gromox;
 
@@ -123,7 +124,7 @@ gx_inet_lookup(const char *host, uint16_t port, unsigned int xflags)
 	snprintf(portbuf, sizeof(portbuf), "%hu", port);
 	int ret = getaddrinfo(host, port == 0 ? nullptr : portbuf, &hints, &unique_tie(aires));
 	if (ret != 0) {
-		fprintf(stderr, "Could not resolve [%s]:%s: %s\n",
+		mlog(LV_ERR, "Could not resolve [%s]:%s: %s",
 		       host, portbuf, gai_strerror(ret));
 		return nullptr;
 	}
@@ -144,7 +145,7 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 		if (oflags & O_NONBLOCK) {
 			int flags = fcntl(fd, F_GETFL, 0);
 			if (flags < 0) {
-				fprintf(stderr, "W-1391: fctnl: %s\n", strerror(errno));
+				mlog(LV_WARN, "W-1391: fctnl: %s", strerror(errno));
 				flags = 0;
 			}
 			flags |= O_NONBLOCK;
@@ -175,7 +176,7 @@ static int gx_gai_listen(const struct addrinfo *r)
 		return -2;
 	static const int y = 1;
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(y)) < 0)
-		fprintf(stderr, "W-1385: setsockopt: %s\n", strerror(errno));
+		mlog(LV_WARN, "W-1385: setsockopt: %s", strerror(errno));
 	auto ret = bind(fd, r->ai_addr, r->ai_addrlen);
 	if (ret != 0) {
 		int se = errno;
@@ -247,7 +248,7 @@ int gx_local_listen(const char *path, bool delete_on_create)
 	/* There will be a TOCTOU report, but what can you do... */
 	ret = unlink(path);
 	if (ret < 0 && errno != ENOENT) {
-		fprintf(stderr, "E-1400: unlink %s: %s\n", path, strerror(errno));
+		mlog(LV_ERR, "E-1400: unlink %s: %s", path, strerror(errno));
 		return -errno;
 	}
 	ret = gx_gai_listen(&r);
@@ -289,7 +290,7 @@ int gx_peer_is_local2(const sockaddr *peer_sockaddr, socklen_t peer_socklen)
 #ifdef __linux__
 	int rsk = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
 	if (rsk < 0) {
-		fprintf(stderr, "socket AF_NETLINK: %s\n", strerror(errno));
+		mlog(LV_ERR, "socket AF_NETLINK: %s", strerror(errno));
 		return -errno;
 	}
 	struct {

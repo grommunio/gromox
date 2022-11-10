@@ -42,7 +42,6 @@ E(install_event_stub)
 E(broadcast_event)
 E(broadcast_select)
 E(broadcast_unselect)
-E(log_info)
 #undef E
 
 int system_services_run()
@@ -59,7 +58,6 @@ int system_services_run()
 	E2(system_services_judge_ip, "ip_filter_judge");
 	E2(system_services_container_add_ip, "ip_container_add");
 	E2(system_services_container_remove_ip, "ip_container_remove");
-	E(system_services_log_info, "log_info");
 	E2(system_services_judge_user, "user_filter_judge");
 	E2(system_services_add_user_into_temp_list, "user_filter_add");
 	E(system_services_auth_login, "auth_login_gen");
@@ -107,7 +105,6 @@ void system_services_stop()
 	service_release("ip_container_remove", "system");
 	service_release("ip_filter_add", "system");
 	service_release("user_filter_add", "system");
-	service_release("log_info", "system");
 	service_release("auth_login_gen", "system");
 	service_release("get_mail_id", "system");
 	service_release("get_mail_uid", "system");

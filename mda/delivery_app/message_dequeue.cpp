@@ -107,29 +107,29 @@ static BOOL message_dequeue_check()
 
 	/* check if the directory exists and is a real directory */
 	if (stat(g_path.c_str(), &node_stat) != 0) {
-		printf("[message_dequeue]: cannot find directory %s\n", g_path.c_str());
+		mlog(LV_ERR, "mdq: cannot find directory %s", g_path.c_str());
 		return FALSE;
 	}
 	if (0 == S_ISDIR(node_stat.st_mode)) {
-		printf("[message_dequeue]: %s is not a directory\n", g_path.c_str());
+		mlog(LV_ERR, "mdq: %s is not a directory", g_path.c_str());
 		return FALSE;
 	}
 	/* mess directory is used to save the message larger than BLOCK_SIZE */
 	if (stat(g_path_mess.c_str(), &node_stat) != 0) {
-		printf("[message_dequeue]: cannot find directory %s\n", g_path_mess.c_str());
+		mlog(LV_ERR, "mdq: cannot find directory %s", g_path_mess.c_str());
         return FALSE;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-		printf("[message_dequeue]: %s is not a directory\n", g_path_mess.c_str());
+		mlog(LV_ERR, "mdq: %s is not a directory", g_path_mess.c_str());
         return FALSE;
     }
 	/* save directory is used to save the message for debugging */
 	if (stat(g_path_save.c_str(), &node_stat) != 0) {
-		printf("[message_dequeue]: cannot find directory %s\n", g_path_save.c_str());
+		mlog(LV_ERR, "mdq: cannot find directory %s", g_path_save.c_str());
         return FALSE;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-		printf("[message_dequeue]: %s is not a directory\n", g_path_save.c_str());
+		mlog(LV_ERR, "mdq: %s is not a directory", g_path_save.c_str());
         return FALSE;
     }
 	return TRUE;
@@ -155,7 +155,7 @@ int message_dequeue_run()
 	try {
 		name = g_path + "/token.ipc"s;
 	} catch (const std::bad_alloc &) {
-		printf("[message_dequeue]: MDQ-167\n");
+		mlog(LV_ERR, "MDQ-167: ENOMEM");
 		return false;
 	}
 	int fd = open(name.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
@@ -163,13 +163,13 @@ int message_dequeue_run()
 		close(fd);
 	auto k_msg = ftok(name.c_str(), TOKEN_MESSAGE_QUEUE);
     if (-1 == k_msg) {
-		printf("[message_dequeue]: ftok %s: %s\n", name.c_str(), strerror(errno));
+		mlog(LV_ERR, "mdq: ftok %s: %s", name.c_str(), strerror(errno));
         return -2;
     }
 	/* create the message queue */
 	g_msg_id = msgget(k_msg, 0666|IPC_CREAT);
 	if (-1 == g_msg_id) {
-		printf("[message_dequeue]: msgget: %s\n", strerror(errno));
+		mlog(LV_ERR, "mdq: msgget: %s", strerror(errno));
 		message_dequeue_collect_resource();
 		return -6;
 	}
@@ -177,7 +177,7 @@ int message_dequeue_run()
 	size = sizeof(MESSAGE)*g_message_units;
 	g_message_ptr = (MESSAGE*)malloc(size);
 	if (NULL == g_message_ptr) {
-		printf("[message_dequeue]: fail to allocate message nodes\n");
+		mlog(LV_ERR, "mdq: failed to allocate message nodes");
 		message_dequeue_collect_resource();
 		return -7;
 	}
@@ -190,13 +190,13 @@ int message_dequeue_run()
 	}
 	g_mess_hash = INT_HASH_TABLE::create(2 * g_message_units + 1, sizeof(void *));
 	if (g_mess_hash == nullptr) {
-		printf("[message_dequeue]: failed to initialize hash table\n");
+		mlog(LV_ERR, "mdq: failed to initialize hash table");
 		message_dequeue_collect_resource();
 		return -8;
 	}
 	auto ret = pthread_create(&g_thread_id, nullptr, mdq_thrwork, nullptr);
 	if (ret != 0) {
-		printf("[message_dequeue]: failed to create message dequeue thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "mdq: failed to create message dequeue thread: %s", strerror(ret));
 		message_dequeue_collect_resource();
 		return -9;
 	}
@@ -232,14 +232,14 @@ void message_dequeue_put(MESSAGE *pmessage) try
 	pmessage->begin_address = NULL;
 	auto name = g_path_mess + "/" + std::to_string(pmessage->message_data);
 	if (remove(name.c_str()) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1352: remove %s: %s\n", name.c_str(), strerror(errno));
+		mlog(LV_WARN, "W-1352: remove %s: %s", name.c_str(), strerror(errno));
 	std::unique_lock h(g_hash_mutex);
 	g_mess_hash->remove(pmessage->message_data);
 	h.unlock();
 	message_dequeue_put_to_free(pmessage);
 	g_dequeued_num ++;
 } catch (const std::bad_alloc &) {
-	printf("[message_dequeue]: MDQ-254\n");
+	mlog(LV_ERR, "mdq: MDQ-254");
 }
 
 void message_dequeue_stop()
@@ -304,8 +304,7 @@ static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size)
 	pnode = single_list_pop_front(&g_free_list);
 	fr_hold.unlock();
 	if (NULL == pnode) {
-		debug_info("[message_dequeue]: fatal error in "
-			"message_dequeue_get_from_free\n");
+		mlog(LV_DEBUG, "error in %s", __PRETTY_FUNCTION__);
 		return NULL;
 	}
 	pmessage = (MESSAGE*) pnode->pdata;
@@ -401,7 +400,7 @@ static void message_dequeue_load_from_mess(int mess) try
 	h.lock();
 	g_mess_hash->add(mess, pmessage);
 } catch (const std::bad_alloc &) {
-	printf("[message_dequeue]: E-1940\n");
+	mlog(LV_ERR, "E-1940: ENOMEM");
 	return;
 }
 
@@ -412,7 +411,7 @@ static void *mdq_thrwork(void *arg)
     struct dirent *direntp;
 
 	while ((dirp = opendir(g_path_mess.c_str())) == nullptr) {
-		printf("[message_dequeue]: failed to open directory %s: %s\n",
+		mlog(LV_ERR, "mdq: failed to open directory %s: %s",
 		       g_path_mess.c_str(), strerror(errno));
         sleep(1);
     }
@@ -424,8 +423,8 @@ static void *mdq_thrwork(void *arg)
 				message_dequeue_load_from_mess(msg.msg_content);
 				break;
 			default:
-				printf("[message_dequeue]: unknown message queue type %ld, "
-					"should be MESSAGE_MESS\n", msg.msg_type);
+				mlog(LV_ERR, "mdq: unknown message queue type %ld, "
+					"should be MESSAGE_MESS", msg.msg_type);
 			}
 			continue;
 		}
@@ -511,7 +510,7 @@ void message_dequeue_save(MESSAGE *pmessage)
 		new_file = g_path_save + "/" + std::to_string(pmessage->flush_ID);
 		old_file = g_path_mess + "/" + std::to_string(pmessage->message_data);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "[message_dequeue]: MDQ-536\n");
+		mlog(LV_ERR, "MDQ-536: ENOMEM");
 		return;
 	}
 	if (MESSAGE_MESS == pmessage->message_option) {
@@ -519,7 +518,7 @@ void message_dequeue_save(MESSAGE *pmessage)
 	} else {
 		int fd = open(new_file.c_str(), O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 		if (fd < 0) {
-			printf("[message_dequeue]: open/w %s: %s\n",
+			mlog(LV_ERR, "mdq: opening %s for write: %s",
 			       new_file.c_str(), strerror(errno));
 			return;
 		}

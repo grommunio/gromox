@@ -148,7 +148,7 @@ BOOL bounce_producer_refresh() try
 			bounce_producer_load_subdir(dinfo.m_path, direntp->d_name, resource_list);
 		}
 	} else if (errno != ENOENT) {
-		printf("[exmdb_local]: opendir_sd %s: %s\n",
+		mlog(LV_ERR, "exmdb_local: opendir_sd %s: %s",
 		       dinfo.m_path.c_str(), strerror(errno));
 		return FALSE;
 	}
@@ -156,8 +156,8 @@ BOOL bounce_producer_refresh() try
 	auto pdefault = std::find_if(resource_list.begin(), resource_list.end(),
 	                [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, "ascii") == 0; });
 	if (pdefault == resource_list.end()) {
-		printf("[exmdb_local]: there are no \"ascii\" bounce mail "
-			"templates in \"%s\"\n", dinfo.m_path.c_str());
+		mlog(LV_ERR, "exmdb_local: there are no \"ascii\" bounce mail "
+			"templates in \"%s\"", dinfo.m_path.c_str());
 		return FALSE;
 	}
 	std::unique_lock wr_hold(g_list_lock);
@@ -165,7 +165,7 @@ BOOL bounce_producer_refresh() try
 	std::swap(g_resource_list, resource_list);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1527: ENOMEM\n");
+	mlog(LV_ERR, "E-1527: ENOMEM");
 	return false;
 }
 
@@ -280,7 +280,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 					break;
 				}
 			} else {
-				printf("[exmdb_local]: bounce mail %s format error\n",
+				mlog(LV_ERR, "exmdb_local: bounce mail %s format error",
 					sub_buf.c_str());
 				return;
 			}
@@ -303,8 +303,8 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 
 		for (j=TAG_BEGIN+1; j<until_tag; j++) {
 			if (-1 == presource->format[i][j].position) {
-				printf("[exmdb_local]: format error in %s, lack of "
-				       "tag %s\n", sub_buf.c_str(), g_tags[j-1].name);
+				mlog(LV_ERR, "exmdb_local: format error in %s, lacking "
+				       "tag %s", sub_buf.c_str(), g_tags[j-1].name);
 				return;
 			}
 		}
@@ -419,7 +419,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		case TAG_LENGTH: {
 			auto mail_len = pmail_original->get_length();
 			if (mail_len < 0) {
-				printf("[exmdb_local]: fail to get mail length\n");
+				mlog(LV_ERR, "exmdb_local: failed to get mail length");
 				mail_len = 0;
 			}
 			HX_unit_size(ptr, 128 /* yuck */, mail_len, 1000, 0);
@@ -434,8 +434,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	ptr += len;
 	auto phead = pmail->add_head();
 	if (NULL == phead) {
-		printf("[exmdb_local]: fatal error, there's no mime "
-			"in mime pool\n");
+		mlog(LV_ERR, "exmdb_local: MIME pool exhausted");
 		return;
 	}
 	pmime = phead;
@@ -458,8 +457,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (NULL == pmime) {
-		printf("[exmdb_local]: fatal error, there's no mime "
-			"in mime pool\n");
+		mlog(LV_ERR, "exmdb_local: MIME pool exhausted");
 		return;
 	}
 	parse_field_value(presource->content_type[bounce_type],
@@ -470,7 +468,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(original_ptr,
 	    ptr - original_ptr, mime_encoding::automatic)) {
-        printf("[exmdb_local]: fatal error, fail to write content\n");
+	mlog(LV_ERR, "exmdb_local: failed to write content");
         return;
 	}
 	

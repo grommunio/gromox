@@ -116,7 +116,7 @@ BOOL bounce_producer_refresh(const char *data_path) try
 
 	auto dinfo = opendir_sd("notify_bounce", data_path);
 	if (dinfo.m_dir == nullptr) {
-		printf("[exmdb_provider]: opendir_sd(notify_bounce) %s: %s\n",
+		mlog(LV_ERR, "exmdb_provider: opendir_sd(notify_bounce) %s: %s",
 		       dinfo.m_path.c_str(), strerror(errno));
 		return FALSE;
 	}
@@ -132,8 +132,8 @@ BOOL bounce_producer_refresh(const char *data_path) try
 	auto pdefault = std::find_if(resource_list.begin(), resource_list.end(),
 	                [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, "ascii") == 0; });
 	if (pdefault == resource_list.end()) {
-		printf("[exmdb_provider]: there are no "
-			"\"ascii\" bounce mail templates in %s\n", dinfo.m_path.c_str());
+		mlog(LV_ERR, "emsmdb: there are no "
+			"\"ascii\" bounce mail templates in %s", dinfo.m_path.c_str());
 		return FALSE;
 	}
 	std::unique_lock wr_hold(g_list_lock);
@@ -141,7 +141,7 @@ BOOL bounce_producer_refresh(const char *data_path) try
 	std::swap(g_resource_list, resource_list);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1501: ENOMEM\n");
+	mlog(LV_ERR, "E-1501: ENOMEM");
 	return false;
 }
 
@@ -236,7 +236,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 					break;
 				}
 			} else {
-				printf("[exmdb_provider]: bounce mail %s format error\n",
+				mlog(LV_ERR, "exmdb_provider: bounce mail %s format error",
 				       sub_buf.c_str());
 				return;
 			}
@@ -259,8 +259,8 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 
 		for (j=TAG_BEGIN+1; j<until_tag; j++) {
 			if (-1 == presource->format[i][j].position) {
-				printf("[exmdb_provider]: format error in %s, lack of "
-				       "tag %s\n", sub_buf.c_str(), g_tags[j-1].name);
+				mlog(LV_ERR, "exmdb_provider: format error in %s, lacking "
+				       "tag %s", sub_buf.c_str(), g_tags[j-1].name);
 				return;
 			}
 		}
@@ -494,7 +494,7 @@ BOOL bounce_producer_make(const char *username,
 		pmime->set_field("From", t_addr.c_str());
 		t_addr = "<"s + username + ">";
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1481: ENOMEM\n");
+		mlog(LV_ERR, "E-1481: ENOMEM");
 		return false;
 	}
 	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
@@ -539,7 +539,7 @@ BOOL bounce_producer_make(const char *username,
 		t_addr = "rfc822;"s + username;
 		dsn_append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1482: ENOMEM\n");
+		mlog(LV_ERR, "E-1482: ENOMEM");
 	}
 	switch (bounce_type) {
 	case BOUNCE_NOTIFY_READ:

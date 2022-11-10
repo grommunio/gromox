@@ -120,6 +120,17 @@ address is fixed to the wildcard address.)
 .br
 Default: (unset)
 .TP
+\fBpop3_log_file\fP
+Target for log messages here. Special values: "\fI-\fP" (stderr/syslog
+depending on parent PID) or "\fIsyslog\fP" are recognized.
+.br
+Default: \fI-\fP (auto)
+.TP
+\fBpop3_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fBpop3_private_key_path\fP
 Filesystem path to the key file needed to unlock the TLS certificate.
 .br

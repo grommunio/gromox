@@ -42,7 +42,6 @@ static struct HXoption g_options_table[] = {
 static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_event_proxy.so",
 	"libgxs_event_stub.so",
-	"libgxs_logthru.so",
 	"libgxs_midb_agent.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
@@ -68,6 +67,8 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"imap_listen_addr", "::"},
 	{"imap_listen_port", "143"},
 	{"imap_listen_tls_port", "0"},
+	{"imap_log_file", "-"},
+	{"imap_log_level", "4" /* LV_NOTICE */},
 	{"imap_support_starttls", "imap_support_tls", CFG_ALIAS},
 	{"imap_support_tls", "false", CFG_BOOL},
 	{"imap_thread_charge_num", "20", CFG_SIZE, "4"},
@@ -91,6 +92,7 @@ static bool imap_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 		fprintf(stderr, "config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
+	mlog_init(cfg->get_value("imap_log_file"), cfg->get_ll("imap_log_level"));
 	g_imapcmd_debug = cfg->get_ll("imap_cmd_debug");
 	return true;
 }

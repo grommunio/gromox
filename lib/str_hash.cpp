@@ -12,6 +12,8 @@
 #include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
 
+using namespace gromox;
+
 static size_t g_num_of_collision;
 static constexpr auto strhashitem_al = roundup(sizeof(STR_HASH_ITEM), sizeof(std::max_align_t));
 
@@ -85,10 +87,10 @@ std::unique_ptr<STR_HASH_TABLE> STR_HASH_TABLE::create(size_t max_items,
 {
 	return std::make_unique<STR_HASH_TABLE>(max_items, item_size, func);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1537: ENOMEM\n");
+	mlog(LV_ERR, "E-1537: ENOMEM");
 	return nullptr;
 } catch (const std::invalid_argument &e) {
-	fprintf(stderr, "E-1538: %s\n", e.what());
+	mlog(LV_ERR, "E-1538: %s", e.what());
 	return nullptr;
 }
 
@@ -120,7 +122,7 @@ int STR_HASH_TABLE::add(const char *key, const void *value)
 	
 #ifdef _DEBUG_UMTA 
 	if (NULL == ptbl || NULL == key || NULL == value) {
-		debug_info("[str_hash]: str_hash_add, param NULL");
+		mlog(LV_DEBUG, "str_hash: str_hash_add, param NULL");
 		return -1;
 	}
 #endif
@@ -129,7 +131,7 @@ int STR_HASH_TABLE::add(const char *key, const void *value)
 	}
 	auto list_node = ptbl->buf_pool->get<STR_HASH_ITEM>();
 	if (NULL == list_node) {
-		debug_info("[str_hash]: str_hash_add, lib_buffer_get fail");
+		mlog(LV_DEBUG, "str_hash: str_hash_add, lib_buffer_get fail");
 		return -3;
 	}
 
@@ -191,7 +193,7 @@ void *STR_HASH_TABLE::query1(const char *key) const
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == ptbl || NULL == key) {
-		debug_info("[str_hash]: str_hash_query, param NULL");
+		mlog(LV_DEBUG, "str_hash: str_hash_query, param NULL");
 		return NULL;
 	}
 #endif
@@ -239,7 +241,7 @@ int STR_HASH_TABLE::remove(const char *key)
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == ptbl || NULL == key) {
-		debug_info("[str_hash]: str_hash_remove, param NULL");
+		mlog(LV_DEBUG, "str_hash: str_hash_remove, param NULL");
 		return -1;
 	}
 #endif
@@ -286,7 +288,7 @@ STR_HASH_ITER *STR_HASH_TABLE::make_iter()
 {
 	auto iter = gromox::me_alloc<STR_HASH_ITER>();
 	if (iter == nullptr) {
-		debug_info("[str_hash]: can not alloc hash iter");
+		mlog(LV_DEBUG, "str_hash: can not alloc hash iter");
 		return NULL;
 	}
 	
@@ -307,7 +309,7 @@ void str_hash_iter_free(STR_HASH_ITER *piter)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {
-		debug_info("[str_hash]: str_hash_iter_free, param NULL");
+		mlog(LV_DEBUG, "str_hash: str_hash_iter_free, param NULL");
 		return;
 	}
 #endif
@@ -334,7 +336,7 @@ void str_hash_iter_begin(STR_HASH_ITER *piter)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {	
-		debug_info("[str_hash]: str_hash_iter_begin, param NULL");
+		mlog(LV_DEBUG, "str_hash: str_hash_iter_begin, param NULL");
 		return;
 	}
 #endif
@@ -356,7 +358,7 @@ int str_hash_iter_done(STR_HASH_ITER *piter)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {	
-		debug_info("[str_hash]: str_hash_iter_done, param NULL");
+		mlog(LV_DEBUG, "str_hash: str_hash_iter_done, param NULL");
 		return 0;
 	}
 #endif
@@ -383,7 +385,7 @@ void* str_hash_iter_get_value(STR_HASH_ITER *piter, char *key)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {
-		debug_info("[str_hash]: str_hash_iter_get_value, param NULL");
+		mlog(LV_DEBUG, "str_hash: str_hash_iter_get_value, param NULL");
 		return NULL;
 	}
 #endif
@@ -410,7 +412,7 @@ int str_hash_iter_forward(STR_HASH_ITER *piter)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {
-		debug_info("[str_hash]: str_hash_iter_forward, param NULL");
+		mlog(LV_DEBUG, "str_hash: str_hash_iter_forward, param NULL");
 		return -1;
 	}
 #endif
@@ -443,7 +445,7 @@ int str_hash_iter_remove(STR_HASH_ITER *piter)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {
-		debug_info("[str_hash]: str_hash_iter_remove, param NULL");
+		mlog(LV_DEBUG, "str_hash: str_hash_iter_remove, param NULL");
 		return -1;
 	}
 #endif

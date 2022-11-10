@@ -19,6 +19,7 @@
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
+#include <gromox/util.hpp>
 #include "exmdb_local.hpp"
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
@@ -62,11 +63,11 @@ int cache_queue_run()
 
 	/* check the directory */
     if (0 != stat(g_path, &node_stat)) {
-        printf("[exmdb_local]: can not find %s directory\n", g_path);
+		mlog(LV_ERR, "exmdb_local: can not find %s directory", g_path);
         return -1;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-        printf("[exmdb_local]: %s is not a directory\n", g_path);
+		mlog(LV_ERR, "exmdb_local: %s is not a directory", g_path);
         return -2;
     }
 	g_mess_id = cache_queue_retrieve_mess_ID();
@@ -74,7 +75,7 @@ int cache_queue_run()
 	auto ret = pthread_create(&g_thread_id, nullptr, mdl_thrwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
-		printf("[exmdb_local]: failed to create timer thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "exmdb_local: failed to create timer thread: %s", strerror(ret));
 		return -3;
 	}
 	pthread_setname_np(g_thread_id, "cache_queue");
@@ -118,7 +119,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	try {
 		file_name = g_path + "/"s + std::to_string(mess_id);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1531: ENOMEM\n");
+		mlog(LV_ERR, "E-1531: ENOMEM");
 		return -1;
 	}
 	wrapfd fd = open(file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, DEF_MODE);
@@ -131,17 +132,17 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	    write(fd.get(), &enc_origtime, sizeof(enc_origtime)) != sizeof(enc_origtime)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1353: remove %s: %s\n",
+			mlog(LV_WARN, "W-1353: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
 	/* at the begin of file, write the length of message */
 	auto maillen = pcontext->pmail->get_length();
 	if (maillen < 0) {
-		printf("[exmdb_local]: fail to get mail length\n");
+		mlog(LV_ERR, "exmdb_local: failed to get mail length");
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1354: remove %s: %s\n",
+			mlog(LV_WARN, "W-1354: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
@@ -149,7 +150,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (write(fd.get(), &len, sizeof(len)) != sizeof(len)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1355: remove %s: %s\n",
+			mlog(LV_WARN, "W-1355: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
@@ -164,7 +165,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	    write(fd.get(), &enc_bounce, sizeof(enc_bounce)) != sizeof(enc_bounce)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1356: remove %s: %s\n",
+			mlog(LV_WARN, "W-1356: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
     }
@@ -174,7 +175,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1357: remove %s: %s\n",
+			mlog(LV_WARN, "W-1357: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
     }
@@ -184,7 +185,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1358: remove %s: %s\n",
+			mlog(LV_WARN, "W-1358: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
 		return -1;
     }
@@ -192,7 +193,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (write(fd.get(), "", 1) != 1) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1359: remove %s: %s\n",
+			mlog(LV_WARN, "W-1359: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
@@ -201,7 +202,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (write(fd.get(), &enc_times, sizeof(enc_times)) != sizeof(enc_times)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1360: remove %s: %s\n",
+			mlog(LV_WARN, "W-1360: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
@@ -261,12 +262,12 @@ static void *mdl_thrwork(void *arg)
 
 	pcontext = get_context();
 	if (NULL == pcontext) {
-		printf("[exmdb_local]: fail to get context in cache queue thread\n");
+		mlog(LV_ERR, "exmdb_local: failed to get context in cache queue thread");
 		return nullptr;
 	}
 	auto dirp = opendir_sd(g_path, nullptr);
 	if (dirp.m_dir == nullptr) {
-		printf("[exmdb_local]: failed to open cache directory %s: %s\n",
+		mlog(LV_ERR, "exmdb_local: failed to open cache directory %s: %s",
 			g_path, strerror(errno));
 		return nullptr;
 	}
@@ -290,7 +291,7 @@ static void *mdl_thrwork(void *arg)
 			try {
 				temp_path = std::string(g_path) + "/" + direntp->d_name;
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1475: ENOMEM\n");
+				mlog(LV_ERR, "E-1475: ENOMEM");
 			}
 			wrapfd fd = open(temp_path.c_str(), O_RDWR);
 			if (fd.get() < 0)
@@ -307,60 +308,60 @@ static void *mdl_thrwork(void *arg)
 			uint64_t enc_origtime;
 			if (read(fd.get(), &enc_origtime, sizeof(uint64_t)) != sizeof(uint64_t) ||
 			    read(fd.get(), &mess_len, sizeof(uint32_t)) != sizeof(uint32_t)) {
-				printf("[exmdb_local]: fail to read information from %s "
-					"in timer queue\n", temp_path.c_str());
+				mlog(LV_ERR, "exmdb_local: failed to read information from %s "
+					"in timer queue", temp_path.c_str());
 				continue;
 			}
 			time_t original_time = le64_to_cpu(enc_origtime);
 			mess_len = le32_to_cpu(mess_len);
 			size_t size = node_stat.st_size - sizeof(time_t) - 2 * sizeof(uint32_t);
 			if (size < mess_len) {
-				fprintf(stderr, "W-1554: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1554: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
 			auto pbuff = me_alloc<char>(((size - 1) / (64 * 1024) + 1) * 64 * 1024);
 			if (NULL == pbuff) {
-				printf("[exmdb_local]: Failed to allocate memory for %s "
-					"in timer queue thread\n", temp_path.c_str());
+				mlog(LV_ERR, "exmdb_local: Failed to allocate memory for %s "
+					"in timer queue thread", temp_path.c_str());
 				continue;
 			}
 			auto rdret = read(fd.get(), pbuff, size);
 			if (rdret < 0 || static_cast<size_t>(rdret) != size) {
 				free(pbuff);
-				printf("[exmdb_local]: partial read from %s\n", temp_path.c_str());
+				mlog(LV_ERR, "exmdb_local: partial read from %s", temp_path.c_str());
 				continue;
 			}
 			if (!pcontext->pmail->retrieve(pbuff, mess_len)) {
 				free(pbuff);
-				printf("[exmdb_local]: failed to retrieve message %s in "
-				       "cache queue into mail object\n", temp_path.c_str());
+				mlog(LV_ERR, "exmdb_local: failed to retrieve message %s in "
+				       "cache queue into mail object", temp_path.c_str());
 				continue;
 			}
 			ptr = pbuff + mess_len; /* to hell with this bullcrap */
 			size -= mess_len;
 			if (size < sizeof(uint32_t)) {
-				fprintf(stderr, "W-1555: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1555: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
 			pcontext->pcontrol->queue_ID = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
-				fprintf(stderr, "W-1556: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1556: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
 			pcontext->pcontrol->bound_type = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
-				fprintf(stderr, "W-1557: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1557: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
 			pcontext->pcontrol->is_spam = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
-				fprintf(stderr, "W-1558: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1558: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
 			pcontext->pcontrol->need_bounce = le32p_to_cpu(ptr);
@@ -368,7 +369,7 @@ static void *mdl_thrwork(void *arg)
 			size -= sizeof(uint32_t);
 
 			if (size == 0)
-				fprintf(stderr, "W-1559: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1559: garbage in %s; review and delete", temp_path.c_str());
 			auto zlen = strnlen(ptr, size);
 			if (zlen > INT32_MAX)
 				zlen = INT32_MAX;
@@ -379,17 +380,17 @@ static void *mdl_thrwork(void *arg)
 			ptr += zlen;
 			size -= zlen;
 			if (size == 0 || *ptr != '\0')
-				fprintf(stderr, "W-1570: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1570: garbage in %s; review and delete", temp_path.c_str());
 			++ptr;
 			--size;
 
 			if (size == 0)
-				fprintf(stderr, "W-1590: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1590: garbage in %s; review and delete", temp_path.c_str());
 			zlen = strnlen(ptr, size);
 			/* Need \0 for going on */
 			int deliv_ret;
 			if (zlen == size) {
-				fprintf(stderr, "W-1591: garbage in %s; review and delete\n", temp_path.c_str());
+				mlog(LV_WARN, "W-1591: garbage in %s; review and delete", temp_path.c_str());
 				deliv_ret = DELIVERY_OPERATION_ERROR;
 			} else {
 				pcontext->pcontrol->f_rcpt_to.clear();
@@ -444,12 +445,12 @@ static void *mdl_thrwork(void *arg)
 				lseek(fd.get(), 0, SEEK_SET);
 				times = cpu_to_le32(times + 1);
 				if (write(fd.get(), &times, sizeof(uint32_t)) != sizeof(uint32_t))
-					printf("[exmdb_local]: error while updating "
-						"times\n");
+					mlog(LV_ERR, "exmdb_local: error while updating "
+						"times");
 			}
 			fd.close();
 			if (need_remove && remove(temp_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1432: remove %s: %s\n",
+				mlog(LV_WARN, "W-1432: remove %s: %s",
 				        temp_path.c_str(), strerror(errno));
 			need_bounce &= pcontext->pcontrol->need_bounce;
 			

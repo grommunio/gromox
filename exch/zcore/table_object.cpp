@@ -15,6 +15,7 @@
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/sortorder_set.hpp>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "object_tree.h"
@@ -157,7 +158,7 @@ BOOL table_object::load()
 			return FALSE;
 		break;
 	default:
-		fprintf(stderr, "%s - not calling table_object_set_table_id\n", __func__);
+		mlog(LV_WARN, "%s - not calling table_object_set_table_id", __PRETTY_FUNCTION__);
 		return TRUE;
 	}
 	table_object_set_table_id(ptable, new_table_id);
@@ -789,7 +790,7 @@ BOOL table_object::create_bookmark(uint32_t *pindex) try
 	*pindex = bookmark_list.back().index;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1635: ENOMEM\n");
+	mlog(LV_ERR, "E-1635: ENOMEM");
 	return false;
 }
 

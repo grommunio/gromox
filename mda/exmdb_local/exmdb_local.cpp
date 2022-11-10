@@ -70,7 +70,7 @@ int exmdb_local_run()
 #define E(f, s) do { \
 	query_service2((s), f); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "exmdb_local", (s)); \
+		mlog(LV_ERR, "exmdb_local: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -86,20 +86,20 @@ int exmdb_local_run()
 
 	if (!oxcmail_init_library(g_org_name,
 		exmdb_local_get_user_ids, exmdb_local_get_username)) {
-		printf("[exmdb_local]: Failed to init oxcmail library\n");
+		mlog(LV_ERR, "exmdb_local: failed to init oxcmail library");
 		return -2;
 	}
 	struct srcitem { char s[256]; };
 	auto plist = list_file_initd("propnames.txt", get_data_path(), "%s:256");
 	if (NULL == plist) {
-		printf("[exmdb_local]: list_file_initd propnames.txt: %s\n", strerror(errno));
+		mlog(LV_ERR, "exmdb_local: list_file_initd propnames.txt: %s", strerror(errno));
 		return -3;
 	}
 	auto num = plist->get_size();
 	auto pitem = static_cast<srcitem *>(plist->get_list());
 	g_str_hash = STR_HASH_TABLE::create(num + 1, sizeof(uint16_t), nullptr);
 	if (NULL == g_str_hash) {
-		printf("[exmdb_local]: Failed to init hash table\n");
+		mlog(LV_ERR, "exmdb_local: failed to init hash table");
 		return -4;
 	}
 	last_propid = 0x8001;
@@ -389,7 +389,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		eml_path = std::string(home_dir) + "/eml/" + mid_string;
 		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, DEF_MODE);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1472: ENOMEM\n");
+		mlog(LV_ERR, "E-1472: ENOMEM");
 	}
 	if (-1 == fd) {
 		if (NULL != pcontext1) {
@@ -403,7 +403,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	if (!pmail->to_file(fd)) {
 		close(fd);
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1386: remove %s: %s\n",
+			mlog(LV_WARN, "W-1386: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
@@ -420,7 +420,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	
 	if (result <= 0) {
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1387: remove %s: %s\n",
+			mlog(LV_WARN, "W-1387: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
@@ -444,7 +444,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	if (NULL == pmsg) {
 		g_alloc_key = nullptr;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1388: remove %s: %s\n",
+			mlog(LV_WARN, "W-1388: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext, address, LV_ERR, "fail "
 			"to convert rfc5322 into MAPI message object");
@@ -521,12 +521,12 @@ void exmdb_local_log_info(MESSAGE_CONTEXT *pcontext,
 	case BOUND_IN:
 	case BOUND_OUT:
 	case BOUND_RELAY:
-		log_info(level, "SMTP message queue-ID: %d, FROM: %s, TO: %s  %s",
+		mlog(level, "SMTP message queue-ID: %d, FROM: %s, TO: %s  %s",
 			pcontext->pcontrol->queue_ID, pcontext->pcontrol->from, rcpt_to,
 			log_buf);
 		break;
 	default:
-		log_info(level, "APP created message FROM: %s, TO: %s  %s",
+		mlog(level, "APP created message FROM: %s, TO: %s  %s",
 			pcontext->pcontrol->from, rcpt_to, log_buf);
 		break;
 	}

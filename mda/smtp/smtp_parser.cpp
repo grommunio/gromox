@@ -114,36 +114,36 @@ int smtp_parser_run()
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (NULL == g_ssl_ctx) {
-			printf("[smtp_parser]: Failed to init SSL context\n");
+			mlog(LV_ERR, "smtp_parser: failed to init TLS context");
 			return -1;
 		}
 		if (g_param.cert_passwd.size() > 0)
 			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx, deconst(g_param.cert_passwd.c_str()));
 		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx, g_param.cert_path.c_str()) <= 0) {
-			printf("[smtp_parser]: fail to use certificate file:");
+			fprintf(stderr, "smtp_parser: failed to use certificate file:");
 			ERR_print_errors_fp(stdout);
 			return -2;
 		}
 		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, g_param.key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
-			printf("[smtp_parser]: fail to use private key file:");
+			fprintf(stderr, "smtp_parser: failed to use private key file:");
 			ERR_print_errors_fp(stdout);
 			return -3;
 		}
 
 		if (1 != SSL_CTX_check_private_key(g_ssl_ctx)) {
-			printf("[smtp_parser]: private key does not match certificate:");
+			fprintf(stderr, "smtp_parser: private key does not match certificate:");
 			ERR_print_errors_fp(stdout);
 			return -4;
 		}
 		auto mp = g_config_file->get_value("tls_min_proto");
 		if (mp != nullptr && tls_set_min_proto(g_ssl_ctx, mp) != 0) {
-			fprintf(stderr, "[smtp_parser]: tls_min_proto value \"%s\" not accepted\n", mp);
+			mlog(LV_ERR, "smtp_parser: tls_min_proto value \"%s\" rejected", mp);
 			return -4;
 		}
 		try {
 			g_ssl_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
 		} catch (const std::bad_alloc &) {
-			printf("[smtp_parser]: Failed to allocate SSL locking buffer\n");
+			mlog(LV_ERR, "smtp_parser: failed to allocate TLS locking buffer");
 			return -5;
 		}
 #ifdef OLD_SSL
@@ -159,7 +159,7 @@ int smtp_parser_run()
 			g_context_list2[i] = &g_context_list[i];
 		}
 	} catch (const std::bad_alloc &) {
-		printf("[smtp_parser]: Failed to allocate SMTP contexts\n");
+		mlog(LV_ERR, "smtp_parser: failed to allocate SMTP contexts");
 		return -7;
 	}
 	return 0;
@@ -435,8 +435,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 						pcontext->stream.rewind_read_ptr(actual_read);
 						goto DATA_PROCESS;
 					default:
-						debug_info("[smtp_parser] :error occurs in "
-									"smtp_dispatch_cmd\n");
+						mlog(LV_DEBUG, "smtp_parser :error occurs in smtp_dispatch_cmd");
 						pcontext->connection.reset();
 						smtp_parser_context_clear(pcontext);
 						return PROCESS_CLOSE;
@@ -683,11 +682,11 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 		++i;
 	if (i > limit)
 		all_rcpts += " + " + std::to_string(i - limit) + " others";
-	system_services_log_info(level, "remote=[%s] from=<%s> to={%s} %s",
+	mlog(level, "remote=[%s] from=<%s> to={%s} %s",
 		pcontext->connection.client_ip,
 		pcontext->menv.from, all_rcpts.c_str(), line_buf.get());
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1609: ENOMEM\n");
+	mlog(LV_ERR, "E-1609: ENOMEM");
 }
 
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext)

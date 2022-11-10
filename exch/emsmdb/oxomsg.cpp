@@ -9,6 +9,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
@@ -149,7 +150,7 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 			if (str != nullptr) {
 				auto ret = common_util_essdn_to_username(str, username, ulen);
 				if (!ret)
-					fprintf(stderr, "W-1642: Rejecting submission of msgid %llxh because user <%s> is not from this system\n",
+					mlog(LV_WARN, "W-1642: Rejecting submission of msgid %llxh because user <%s> is not from this system",
 					        static_cast<unsigned long long>(pmessage->message_id), str);
 				return ret;
 			}
@@ -170,7 +171,7 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 	if (eid != nullptr) {
 		auto ret = common_util_entryid_to_username(eid, username, ulen);
 		if (!ret)
-			fprintf(stderr, "W-1643: rejecting submission of msgid %llxh because its PR_SENT_REPRESENTING_ENTRYID does not reference a user in the local system\n",
+			mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because its PR_SENT_REPRESENTING_ENTRYID does not reference a user in the local system",
 			        static_cast<unsigned long long>(pmessage->message_id));
 		return ret;
 	}
@@ -187,7 +188,7 @@ static int oxomsg_test_perm(const char *account, const char *maildir, bool send_
 	std::vector<std::string> delegate_list;
 	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
 	if (ret != 0 && ret != ENOENT) {
-		fprintf(stderr, "E-2045: %s: %s\n", dlg_path.c_str(), strerror(ret));
+		mlog(LV_ERR, "E-2045: %s: %s", dlg_path.c_str(), strerror(ret));
 		return ret;
 	}
 	for (const auto &deleg : delegate_list)
@@ -196,7 +197,7 @@ static int oxomsg_test_perm(const char *account, const char *maildir, bool send_
 			return 1;
 	return 0;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1500: ENOMEM\n");
+	mlog(LV_ERR, "E-1500: ENOMEM");
 	return false;
 }
 
@@ -230,8 +231,8 @@ static ec_error_t pass_scheduling(const char *code, const char *account,
 	/* This models EXC behavior. It's silly. */
 	if (cls != nullptr && strncasecmp(cls, "IPM.Schedule.", 13) == 0)
 		return ecSuccess;
-	fprintf(stderr, "%s: %s tried to send message %llxh (class %s) with repr/from=<%s>, "
-		"but user has no delegate/sendas permission.\n",
+	mlog(LV_ERR, "%s: %s tried to send message %llxh (class %s) with repr/from=<%s>, "
+		"but user has no delegate/sendas permission.",
 		code, account, static_cast<unsigned long long>(msg.get_id()),
 		znul(cls), username);
 	return ecAccessDenied;
@@ -259,7 +260,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (!plogon->is_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == logon_mode::guest) {
-		fprintf(stderr, "I-2145: submitmessage denied because %s is guest\n", plogon->account);
+		mlog(LV_INFO, "I-2145: submitmessage denied because %s is guest", plogon->account);
 		return ecAccessDenied;
 	}
 
@@ -271,15 +272,15 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
 	if (pmessage->importing()) {
-		fprintf(stderr, "I-2146: submitmessage denied because "
-		        "message %llxh is under construction\n",
+		mlog(LV_INFO, "I-2146: submitmessage denied because "
+		        "message %llxh is under construction",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
 	auto tag_access = pmessage->get_tag_access();
 	if (!(tag_access & MAPI_ACCESS_MODIFY)) {
-		fprintf(stderr, "I-2147: submitmessage denied because "
-		        "%s has no MAPI_ACCESS_MODIFY on message %llxh\n",
+		mlog(LV_INFO, "I-2147: submitmessage denied because "
+		        "%s has no MAPI_ACCESS_MODIFY on message %llxh",
 		        plogon->account,
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
@@ -298,8 +299,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0) {
-		fprintf(stderr, "I-2160: submitmessage denied because "
-		        "message %llxh is FAI\n",
+		mlog(LV_INFO, "I-2160: submitmessage denied because "
+		        "message %llxh is FAI",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
@@ -365,8 +366,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (message_flags == nullptr)
 		return ecError;
 	if (*message_flags & MSGFLAG_SUBMITTED) {
-		fprintf(stderr, "I-2148: submitmessage denied because "
-		        "message %llxh is already submitted\n",
+		mlog(LV_INFO, "I-2148: submitmessage denied because "
+		        "message %llxh is already submitted",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
@@ -394,8 +395,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	    pmessage->get_id(), &b_marked))
 		return ecError;
 	if (!b_marked) {
-		fprintf(stderr, "I-2149: submitmessage denied because "
-		        "message %llxh failed try_mark_submit\n",
+		mlog(LV_INFO, "I-2149: submitmessage denied because "
+		        "message %llxh failed try_mark_submit",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
@@ -590,7 +591,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	if (!plogon->is_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == logon_mode::guest) {
-		fprintf(stderr, "I-2143: transportsend disallowed because %s is guest\n", plogon->account);
+		mlog(LV_INFO, "I-2143: transportsend disallowed because %s is guest", plogon->account);
 		return ecAccessDenied;
 	}
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
@@ -601,8 +602,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
 	if (pmessage->importing()) {
-		fprintf(stderr, "I-2144: transportsend disallowed because "
-		        "message %llxh is under construction\n",
+		mlog(LV_INFO, "I-2144: transportsend disallowed because "
+		        "message %llxh is under construction",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
@@ -617,8 +618,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecError;
 	auto msgflags = outvalues.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (msgflags != nullptr && *msgflags & MSGFLAG_SUBMITTED) {
-		fprintf(stderr, "I-2144: transportsend disallowed because "
-		        "message %llxh was already submitted once\n",
+		mlog(LV_INFO, "I-2144: transportsend disallowed because "
+		        "message %llxh was already submitted once",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}

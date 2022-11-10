@@ -3,7 +3,10 @@
 #include <gromox/authmgr.hpp>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
+#include <gromox/util.hpp>
 #include "system_services.hpp"
+
+using namespace gromox;
 
 BOOL (*system_services_judge_ip)(const char*);
 BOOL (*system_services_judge_user)(const char*);
@@ -11,14 +14,13 @@ BOOL (*system_services_container_add_ip)(const char*);
 BOOL (*system_services_container_remove_ip)(const char*);
 BOOL (*system_services_add_user_into_temp_list)(const char *, int);
 decltype(system_services_auth_login) system_services_auth_login;
-void (*system_services_log_info)(unsigned int, const char *, ...);
 
 int system_services_run()
 {
 #define E(f, s) do { \
 	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
+		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -27,7 +29,6 @@ int system_services_run()
 	E2(system_services_judge_ip, "ip_filter_judge");
 	E2(system_services_container_add_ip, "ip_container_add");
 	E2(system_services_container_remove_ip, "ip_container_remove");
-	E(system_services_log_info, "log_info");
 	E2(system_services_judge_user, "user_filter_judge");
 	E2(system_services_add_user_into_temp_list, "user_filter_add");
 	E(system_services_auth_login, "auth_login_gen");
@@ -41,7 +42,6 @@ void system_services_stop()
 	service_release("ip_filter_judge", "system");
 	service_release("ip_container_add", "system");
 	service_release("ip_container_remove", "system");
-	service_release("log_info", "system");
 	service_release("user_filter_judge", "system");
 	service_release("user_filter_add", "system");
 	service_release("auth_login_gen", "system");

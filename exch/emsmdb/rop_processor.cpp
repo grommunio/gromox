@@ -44,6 +44,8 @@
 
 #define HGROWING_SIZE					250
 
+using namespace gromox;
+
 static int g_scan_interval;
 static pthread_t g_scan_id;
 static int g_average_handles;
@@ -150,7 +152,7 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 		g_logon_hash.emplace(rlogon->get_dir(), 1);
 	return handle;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1974: ENOMEM\n");
+	mlog(LV_ERR, "E-1974: ENOMEM");
 	return -1;
 }
 
@@ -225,7 +227,7 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	}
 	return pobjnode->handle;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1975: ENOMEM\n");
+	mlog(LV_ERR, "E-1975: ENOMEM");
 	return -1;
 }
 
@@ -321,8 +323,8 @@ int rop_processor_run()
 	auto ret = pthread_create(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
-		printf("[exchange_emsmdb]: failed to create scanning thread "
-		       "for logon hash table: %s\n", strerror(ret));
+		mlog(LV_ERR, "emsmdb: failed to create scanning thread "
+		       "for logon hash table: %s", strerror(ret));
 		return -5;
 	}
 	pthread_setname_np(g_scan_id, "rop_scan");
@@ -393,10 +395,10 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			dbg = true;
 		if (dbg) {
 			if (rsp != nullptr)
-				fprintf(stderr, "rop_dispatch(%s) EC=%xh RS=%xh\n",
+				mlog(LV_DEBUG, "rop_dispatch(%s) EC=%xh RS=%xh",
 					rop_idtoname(req->rop_id), result, rsp->result);
 			else
-				fprintf(stderr, "rop_dispatch(%s) EC=%xh RS=none\n",
+				mlog(LV_DEBUG, "rop_dispatch(%s) EC=%xh RS=none",
 					rop_idtoname(req->rop_id), result);
 		}
 		switch (result) {
@@ -569,7 +571,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	result = rop_processor_execute_and_push(pout,
 		&tmp_cb, &rop_buff, TRUE, &response_list);
 	if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
-		fprintf(stderr, "rop_proc_ex+push() EC = %xh\n", result);
+		mlog(LV_DEBUG, "rop_proc_ex+push() EC = %xh", result);
 	if (result != ecSuccess)
 		return result;
 	offset = tmp_cb;

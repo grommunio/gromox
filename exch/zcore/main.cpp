@@ -57,7 +57,6 @@ static constexpr struct HXoption g_options_table[] = {
 };
 
 static std::vector<std::string> g_dfl_svc_plugins = {
-	"libgxs_logthru.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
 	"libgxs_authmgr.so",
@@ -91,6 +90,8 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"zarafa_mime_number", "4096", CFG_SIZE, "1024"},
 	{"zarafa_threads_num", "100", CFG_SIZE, "1", "1000"},
 	{"zcore_listen", PKGRUNDIR "/zcore.sock"},
+	{"zcore_log_file", "-"},
+	{"zcore_log_level", "4" /* LV_NOTICE */},
 	{"zcore_max_obh_per_session", "500", CFG_SIZE, "100"},
 	{"zrpc_debug", "0"},
 	CFG_TABLE_END,
@@ -107,10 +108,11 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		pconfig = config_file_prg(opt_config_file, "zcore.cfg",
 		          zcore_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr) {
-		printf("[exmdb_provider]: config_file_init %s: %s\n",
+		mlog(LV_ERR, "config_file_init %s: %s",
 		       opt_config_file, strerror(errno));
 		return false;
 	}
+	mlog_init(pconfig->get_value("zcore_log_file"), pconfig->get_ll("zcore_log_level"));
 	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
 	g_oxcical_allday_ymd = pconfig->get_ll("oxcical_allday_ymd");
 	zcore_max_obh_per_session = pconfig->get_ll("zcore_max_obh_per_session");
@@ -144,7 +146,8 @@ int main(int argc, const char **argv) try
 	g_config_file = pconfig = config_file_prg(opt_config_file, "zcore.cfg",
 	                zcore_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
-		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		mlog(LV_ERR, "system: config_file_init %s: %s",
+			opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 2;
 	if (!zcore_reload_config(pconfig))
@@ -157,13 +160,13 @@ int main(int argc, const char **argv) try
 	} else {
 		gx_strlcpy(host_name, str_value, GX_ARRAY_SIZE(host_name));
 	}
-	printf("[system]: hostname is %s\n", host_name);
+	mlog(LV_NOTICE, "system: hostname is %s", host_name);
 	
 	msgchg_grouping_init(g_config_file->get_value("data_file_path"));
 	auto cl_0c = make_scope_exit(msgchg_grouping_free);
 	auto cl_4 = make_scope_exit(msgchg_grouping_stop);
 	unsigned int threads_num = pconfig->get_ll("zarafa_threads_num");
-	printf("[system]: connection threads number is %d\n", threads_num);
+	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
@@ -172,36 +175,36 @@ int main(int argc, const char **argv) try
 	auto cl_0 = make_scope_exit(service_stop);
 	
 	unsigned int table_size = pconfig->get_ll("address_table_size");
-	printf("[system]: address table size is %d\n", table_size);
+	mlog(LV_INFO, "system: address table size is %d", table_size);
 
 	int cache_interval = pconfig->get_ll("address_cache_interval");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
-	printf("[system]: address book tree item"
-		" cache interval is %s\n", temp_buff);
+	mlog(LV_INFO, "system: address book tree item"
+		" cache interval is %s", temp_buff);
 
 	ab_tree_init(g_config_file->get_value("x500_org_name"), table_size, cache_interval);
 	auto cl_5 = make_scope_exit(ab_tree_stop);
 	bounce_producer_init(g_config_file->get_value("separator_for_bounce"));
 
 	int mime_num = pconfig->get_ll("zarafa_mime_number");
-	printf("[system]: mime number is %d\n", mime_num);
+	mlog(LV_INFO, "system: mime number is %d", mime_num);
 	
 	auto max_rcpt = pconfig->get_ll("max_rcpt_num");
-	printf("[system]: maximum rcpt number is %lld\n", max_rcpt);
+	mlog(LV_INFO, "system: maximum rcpt number is %lld", max_rcpt);
 	
 	auto max_mail = pconfig->get_ll("max_mail_num");
-	printf("[system]: maximum mail number is %lld\n", max_mail);
+	mlog(LV_INFO, "system: maximum mail number is %lld", max_mail);
 	
 	auto max_length = pconfig->get_ll("mail_max_length");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), max_length, 1024, 0);
-	printf("[system]: maximum mail length is %s\n", temp_buff);
+	mlog(LV_INFO, "system: maximum mail length is %s", temp_buff);
 	
 	auto max_rule_len = pconfig->get_ll("max_ext_rule_length");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), max_rule_len, 1024, 0);
-	printf("[system]: maximum extended rule length is %s\n", temp_buff);
+	mlog(LV_INFO, "system: maximum extended rule length is %s", temp_buff);
 	
 	uint16_t smtp_port = pconfig->get_ll("smtp_server_port");
-	printf("[system]: smtp server is [%s]:%hu\n",
+	mlog(LV_NOTICE, "system: SMTP server is [%s]:%hu",
 	       g_config_file->get_value("smtp_server_ip"), smtp_port);
 	
 	common_util_init(g_config_file->get_value("x500_org_name"), host_name,
@@ -212,23 +215,23 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("submit_command"));
 	
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
-	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
+	mlog(LV_INFO, "system: exmdb proxy connection number is %d", proxy_num);
 	
 	int stub_num = pconfig->get_ll("notify_stub_threads_num");
-	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
+	mlog(LV_INFO, "system: exmdb notify stub threads number is %d", stub_num);
 	
 	exmdb_client_init(proxy_num, stub_num);
 	auto cl_8 = make_scope_exit(exmdb_client_stop);
 	table_size = pconfig->get_ll("user_table_size");
-	printf("[system]: hash table size is %d\n", table_size);
+	mlog(LV_INFO, "system: hash table size is %d", table_size);
 
 	cache_interval = pconfig->get_ll("user_cache_interval");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
-	printf("[system]: cache interval is %s\n", temp_buff);
+	mlog(LV_INFO, "system: cache interval is %s", temp_buff);
 	
 	int ping_interval = pconfig->get_ll("mailbox_ping_interval");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), ping_interval, 0);
-	printf("[system]: mailbox ping interval is %s\n", temp_buff);
+	mlog(LV_INFO, "system: mailbox ping interval is %s", temp_buff);
 	
 	zarafa_server_init(table_size, cache_interval, ping_interval);
 	auto cl_7 = make_scope_exit(zarafa_server_stop);
@@ -236,7 +239,7 @@ int main(int argc, const char **argv) try
 	auto cl_6 = make_scope_exit(rpc_parser_stop);
 
 	if (service_run_early() != 0) {
-		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
+		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
 		return 3;
 	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
@@ -245,53 +248,53 @@ int main(int argc, const char **argv) try
 		return 3;
 	textmaps_init();
 	if (0 != service_run()) {
-		printf("[system]: failed to run service\n");
+		mlog(LV_ERR, "system: failed to start services");
 		return 3;
 	}
 	auto cl_1 = make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) {
-		printf("[system]: failed to run system services\n");
+		mlog(LV_ERR, "system: failed to start system services");
 		return 4;
 	}
 	listener_init();
 	auto cl_10 = make_scope_exit(listener_stop);
 	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
-		printf("[system]: failed to run listener\n");
+		mlog(LV_ERR, "system: failed to start listener");
 		return 13;
 	}
 	if (common_util_run(g_config_file->get_value("data_file_path")) != 0) {
-		printf("[system]: failed to run common util\n");
+		mlog(LV_ERR, "system: failed to start common util");
 		return 5;
 	}
 	if (bounce_producer_run(g_config_file->get_value("data_file_path")) != 0) {
-		printf("[system]: failed to run bounce producer\n");
+		mlog(LV_ERR, "system: failed to start bounce producer");
 		return 6;
 	}
 	if (0 != msgchg_grouping_run()) {
-		printf("[system]: failed to run msgchg grouping\n");
+		mlog(LV_ERR, "system: failed to start msgchg grouping");
 		return 7;
 	}
 	if (0 != ab_tree_run()) {
-		printf("[system]: failed to run address book tree\n");
+		mlog(LV_ERR, "system: failed to start address book tree");
 		return 8;
 	}
 	if (0 != rpc_parser_run()) {
-		printf("[system]: failed to run rpc parser\n");
+		mlog(LV_ERR, "system: failed to start ZRPC parser");
 		return 9;
 	}
 	if (0 != zarafa_server_run()) {
-		printf("[system]: failed to run zarafa server\n");
+		mlog(LV_ERR, "system: failed to run zserver");
 		return 10;
 	}
 	if (exmdb_client_run_front(g_config_file->get_value("config_file_path")) != 0) {
-		printf("[system]: failed to run exmdb client\n");
+		mlog(LV_ERR, "system: failed to start exmdb client");
 		return 11;
 	}
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
-	printf("[system]: zcore is now running\n");
+	mlog(LV_NOTICE, "system: zcore is now running");
 	while (!g_notify_stop) {
 		sleep(1);
 		if (g_hup_signalled.exchange(false)) {

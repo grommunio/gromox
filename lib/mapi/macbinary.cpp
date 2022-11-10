@@ -11,6 +11,8 @@
 /* Mac time of 00:00:00 GMT, Jan 1, 1970 */
 #define TIMEDIFF 0x7c25b080
 
+using namespace gromox;
+
 static const uint16_t g_magic[256] = {
   0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
   0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
@@ -137,7 +139,7 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	}
 	if (130 == r->version && 0 != strncmp(
 		(char*)&r->signature, "mBIN", 4)) {
-		debug_info("[macbinary]: signature of MacBinaryIII error");
+		mlog(LV_DEBUG, "macbinary: signature of MacBinaryIII error");
 	}
 	TRY(pext->g_uint8(&r->mini_version));
 	if (129 != r->mini_version) {
@@ -145,7 +147,7 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	}
 	TRY(macbinary_pull_uint16(pext, &crc));
 	if (macbinary_crc(&ext.m_udata[offset], 124, 0) != crc)
-		debug_info("[macbinary]: CRC checksum error");
+		mlog(LV_DEBUG, "macbinary: CRC checksum error");
 	return pext->g_bytes(r->pads2, 2);
 }
 

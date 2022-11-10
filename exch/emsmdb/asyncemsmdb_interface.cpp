@@ -86,8 +86,8 @@ int asyncemsmdb_interface_run()
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, aemsi_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[exchange_emsmdb]: failed to create scanning thread "
-		       "for asyncemsmdb: %s\n", strerror(ret));
+		mlog(LV_ERR, "emsmdb: failed to create scanning thread "
+		       "for asyncemsmdb: %s", strerror(ret));
 		g_notify_stop = true;
 		return -5;
 	}
@@ -96,8 +96,8 @@ int asyncemsmdb_interface_run()
 		pthread_t tid;
 		ret = pthread_create(&tid, nullptr, aemsi_thrwork, nullptr);
 		if (ret != 0) {
-			printf("[exchange_emsmdb]: failed to create wake up "
-			       "thread for asyncemsmdb: %s\n", strerror(ret));
+			mlog(LV_ERR, "emsmdb: failed to create wake up "
+			       "thread for asyncemsmdb: %s", strerror(ret));
 			asyncemsmdb_interface_stop();
 			return -6;
 		}
@@ -188,7 +188,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		    g_tag_hash.emplace(tmp_tag, pwait).second)
 			return DISPATCH_PENDING;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "W-1540: ENOMEM\n");
+		mlog(LV_WARN, "W-1540: ENOMEM");
 	}
 	if (async_id != 0)
 		g_async_hash.erase(async_id);

@@ -16,6 +16,8 @@
 #include <gromox/int_hash.hpp>
 #include <gromox/util.hpp>
 
+using namespace gromox;
+
 static size_t g_num_of_collision;
 static constexpr auto inthashitem_al = roundup(sizeof(INT_HASH_ITEM), sizeof(std::max_align_t));
 
@@ -75,10 +77,10 @@ INT_HASH_TABLE::create(size_t max_items, size_t item_size) try
 {
 	return std::make_unique<INT_HASH_TABLE>(max_items, item_size);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1548: ENOMEM\n");
+	mlog(LV_ERR, "E-1548: ENOMEM");
 	return nullptr;
 } catch (const std::invalid_argument &e) {
-	fprintf(stderr, "E-1549: %s\n", e.what());
+	mlog(LV_ERR, "E-1549: %s", e.what());
 	return nullptr;
 }
 
@@ -109,17 +111,17 @@ int INT_HASH_TABLE::add(int key, void *value)
 	size_t index = -1;
 	
 	if (value == nullptr) {
-		debug_info("[int_hash]: int_hash_add, invalid parameter");
+		mlog(LV_DEBUG, "int_hash: int_hash_add, invalid parameter");
 		return -1;
 	}
 
 	if (ptbl->item_num >= ptbl->capacity) {
-		debug_info("[int_hash]: int_hash_add, the hash table is full");
+		mlog(LV_DEBUG, "int_hash: int_hash_add, the hash table is full");
 		return -2;
 	}
 	auto list_node = ptbl->buf_pool->get<INT_HASH_ITEM>();
 	if (NULL == list_node) {
-		debug_info("[int_hash]: int_hash_add, lib_buffer_get fail");
+		mlog(LV_DEBUG, "int_hash: int_hash_add, lib_buffer_get fail");
 		return -3;
 	}
 
@@ -142,7 +144,7 @@ int INT_HASH_TABLE::add(int key, void *value)
 		 the same key twice.
 		 */
 		if (key == ((INT_HASH_ITEM*)dlist->phead->pdata)->hash_key) {
-			debug_info("[int_hash]: int_hash_add, the key already exist");
+			mlog(LV_DEBUG, "int_hash: int_hash_add, the key already exist");
 			ptbl->buf_pool->put(list_node);
 			return -4;
 		}
@@ -150,7 +152,7 @@ int INT_HASH_TABLE::add(int key, void *value)
 		while (next != dlist->phead) 
 		{
 			if (key == ((INT_HASH_ITEM*)next->pdata)->hash_key) {
-				debug_info("[int_hash]: int_hash_add, the key already exist");
+				mlog(LV_DEBUG, "int_hash: int_hash_add, the key already exist");
 				ptbl->buf_pool->put(list_node);
 				return -4;
 			}
@@ -263,7 +265,7 @@ INT_HASH_ITER *INT_HASH_TABLE::make_iter()
 	auto ptbl = this;
 	auto iter = gromox::me_alloc<INT_HASH_ITER>();
 	if (iter == nullptr) {
-		debug_info("[int_hash]: can not alloc hash iter");
+		mlog(LV_DEBUG, "int_hash: can not alloc hash iter");
 		return NULL;
 	}
 	
@@ -341,7 +343,7 @@ void* int_hash_iter_get_value(INT_HASH_ITER *piter, int *key)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {
-		debug_info("[int_hash]: int_hash_iter_get_value, invalid param");
+		mlog(LV_DEBUG, "int_hash: int_hash_iter_get_value, invalid param");
 		return NULL;
 	}
 #endif
@@ -367,7 +369,7 @@ int int_hash_iter_forward(INT_HASH_ITER *piter)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {
-		debug_info("[int_hash]: int_hash_iter_forward, invalid param");
+		mlog(LV_DEBUG, "int_hash: int_hash_iter_forward, invalid param");
 		return -1;
 	}
 #endif
@@ -400,17 +402,17 @@ int int_hash_iter_remove(INT_HASH_ITER *piter)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {
-		debug_info("[int_hash]: int_hash_iter_remove, invalid param");
+		mlog(LV_DEBUG, "int_hash: int_hash_iter_remove, invalid param");
 		return -1;
 	}
 #endif
 	auto hash_map = piter->ptable->hash_map.get();
 	if (piter->ptable->item_num < 1) {
-		debug_info("[int_hash]: the hash table is empty");
+		mlog(LV_DEBUG, "int_hash: the hash table is empty");
 		return -2;
 	}
 	if (NULL == piter->cur_node) {
-		debug_info("[int_hash]: the removed item does not exist");
+		mlog(LV_DEBUG, "int_hash: the removed item does not exist");
 		return -3;
 	}
 	node = piter->cur_node;

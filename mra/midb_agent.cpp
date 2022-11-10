@@ -171,7 +171,7 @@ static bool list_file_read_midb(const char *filename) try
 	}
 	return true;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1656: ENOMEM\n");
+	mlog(LV_ERR, "E-1656: ENOMEM");
 	return false;
 }
 
@@ -536,8 +536,8 @@ static int rw_command(int fd, char *buff, size_t olen, size_t ilen)
 		return MIDB_RDWR_ERROR;
 	ret = read_line(fd, buff, ilen);
 	if (ret == -ENOBUFS) {
-		fprintf(stderr, "E-2154: midb response is longer than expected (%zu), rejecting IMAP command. "
-		        "Consider raising midb_command_buffer_size or having fewer mails in the folder.\n",
+		mlog(LV_ERR, "E-2154: midb response is longer than expected (%zu), rejecting IMAP command. "
+		        "Consider raising midb_command_buffer_size or having fewer mails in the folder.",
 		        ilen);
 		return MIDB_TOO_MANY_RESULTS;
 	} else if (ret < 0) {

@@ -548,7 +548,7 @@ int nsp_interface_run()
 #define E(f, s) do { \
 	query_service2(s, f); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "exchange_nsp", (s)); \
+		mlog(LV_ERR, "nsp: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -560,7 +560,7 @@ int nsp_interface_run()
 	query_service2("abkt_tojson", nsp_abktojson);
 	query_service2("abkt_tobinary", nsp_abktobinary);
 	if (nsp_abktojson == nullptr || nsp_abktobinary == nullptr)
-		fprintf(stderr, "[exchange_nsp]: address book user interface templates not available\n");
+		mlog(LV_ERR, "nsp: address book user interface templates not available");
 	return 0;
 #undef E
 }
@@ -593,7 +593,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 	}
 	pdomain ++;
 	if (!get_domain_ids(pdomain, &domain_id, &org_id)) {
-		fprintf(stderr, "W-2176: could not satisfy nsp_bind request for domain %s: not found\n", pdomain);
+		mlog(LV_WARN, "W-2176: could not satisfy nsp_bind request for domain %s: not found", pdomain);
 		phandle->handle_type = HANDLE_EXCHANGE_NSP;
 		memset(&phandle->guid, 0, sizeof(GUID));
 		return ecError;
@@ -1311,7 +1311,7 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 			cmp = strcasecmp(prop_val.value.pstr, pfilter->res.res_property.pprop->value.pstr);
 			break;
 		default:
-			fprintf(stderr, "E-1967: unhandled proptag %xh\n", pfilter->res.res_property.proptag);
+			mlog(LV_ERR, "E-1967: unhandled proptag %xh", pfilter->res.res_property.proptag);
 			return false;
 		}
 		return three_way_eval(static_cast<relop>(pfilter->res.res_property.relop), cmp) ? TRUE : false;
@@ -1343,7 +1343,7 @@ static std::unordered_set<std::string> delegates_for(const char *dir) try
 	auto path = dir + "/config/delegates.txt"s;
 	auto ret = read_file_by_line(path.c_str(), dl);
 	if (ret != 0 && ret != ENOENT)
-		fprintf(stderr, "E-2054: %s: %s\n", path.c_str(), strerror(ret));
+		mlog(LV_ERR, "E-2054: %s: %s", path.c_str(), strerror(ret));
 	return std::unordered_set<std::string>{std::make_move_iterator(dl.begin()), std::make_move_iterator(dl.end())};
 } catch (const std::bad_alloc &) {
 	return {};
@@ -2317,7 +2317,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		    pentry_ids->pbin[i].pb[0] == ENTRYID_TYPE_PERMANENT) {
 			ptnode = ab_tree_dn_to_node(pbase.get(), pentry_ids->pbin[i].pc + 28);
 		} else {
-			fprintf(stderr, "E-2039: Unknown NSPI entry ID type %xh\n",
+			mlog(LV_ERR, "E-2039: Unknown NSPI entry ID type %xh",
 			        pentry_ids->pbin[i].pb[0]);
 			ptnode = nullptr;
 		}
@@ -2335,7 +2335,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		auto dlg_path = maildir + "/config/delegates.txt"s;
 		wrapfd fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
 		if (fd.get() < 0) {
-			fprintf(stderr, "E-2024: open %s: %s\n",
+			mlog(LV_ERR, "E-2024: open %s: %s",
 			        dlg_path.c_str(), strerror(errno));
 			return ecError;
 		}
@@ -2346,7 +2346,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1919: ENOMEM\n");
+	mlog(LV_ERR, "E-1919: ENOMEM");
 	return ecServerOOM;
 }
 
@@ -2695,7 +2695,7 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 	if (!verify_cpid(codepage))
 		return MAPI_E_UNKNOWN_CPID;
 	if (dn != nullptr) {
-		fprintf(stderr, "[exchange_nsp]: unimplemented templateinfo dn=%s\n", dn);
+		mlog(LV_WARN, "nsp: unimplemented templateinfo dn=%s", dn);
 		return MAPI_E_UNKNOWN_LCID;
 	}
 

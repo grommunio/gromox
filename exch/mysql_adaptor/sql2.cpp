@@ -20,6 +20,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/util.hpp>
 #include "sql2.hpp"
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 
@@ -48,24 +49,24 @@ static bool db_upgrade_check_2(MYSQL *conn)
 	if (current < 0)
 		return false;
 	if (current >= recent) {
-		fprintf(stderr, "[mysql_adaptor]: Current schema n%d is recent.\n", current);
+		mlog(LV_NOTICE, "mysql_adaptor: Current schema n%d is recent.", current);
 		return true;
 	}
-	fprintf(stderr, "[mysql_adaptor]: Current schema n%d. Update available: n%d. Configured action: ",
+	mlog(LV_NOTICE, "mysql_adaptor: Current schema n%d. Update available: n%d.",
 	       current, recent);
 	static constexpr const char *msg =
 		"The upgrade either needs to be manually done with gromox-dbop(8gx), "
 		"or configure mysql_adaptor(4gx) [see warning in manpage] to do it.";
 	if (g_parm.schema_upgrade == S_SKIP) {
-		fprintf(stderr, "skip.\n");
+		mlog(LV_NOTICE, "mysql_adaptor: Configured action: skip.");
 		puts(msg);
 		return true;
 	} else if (g_parm.schema_upgrade != S_AUTOUP) {
-		fprintf(stderr, "abort.\n");
+		mlog(LV_ERR, "mysql_adaptor: Configured action: abort.");
 		puts(msg);
 		return false;
 	}
-	fprintf(stderr, "autoupgrade (now).\n");
+	mlog(LV_INFO, "mysql_adaptor: Configured action: autoupgrade (now).");
 	return dbop_mysql_upgrade(conn) == EXIT_SUCCESS;
 }
 
@@ -89,13 +90,13 @@ MYSQL *sql_make_conn()
 	if (mysql_real_connect(conn, g_parm.host.c_str(), g_parm.user.c_str(),
 	    g_parm.pass.size() != 0 ? g_parm.pass.c_str() : nullptr,
 	    g_parm.dbname.c_str(), g_parm.port, nullptr, 0) == nullptr) {
-		fprintf(stderr, "[mysql_adaptor]: Failed to connect to mysql server: %s\n",
+		mlog(LV_ERR, "mysql_adaptor: Failed to connect to mysql server: %s",
 		       mysql_error(conn));
 		mysql_close(conn);
 		return nullptr;
 	}
 	if (mysql_set_character_set(conn, "utf8mb4") != 0) {
-		fprintf(stderr, "[mysql_adaptor]: \"utf8mb4\" not available: %s\n",
+		mlog(LV_ERR, "mysql_adaptor: \"utf8mb4\" not available: %s",
 		        mysql_error(conn));
 		mysql_close(conn);
 		return nullptr;
@@ -119,7 +120,7 @@ bool sqlconn::query(const char *q)
 			return false;
 		if (mysql_query(m_conn, q) == 0)
 			return true;
-		fprintf(stderr, "[mysql_adaptor]: Query \"%s\" failed: %s\n", q, mysql_error(m_conn));
+		mlog(LV_ERR, "mysql_adaptor: Query \"%s\" failed: %s", q, mysql_error(m_conn));
 		return false;
 	}
 	auto ret = mysql_query(m_conn, q);
@@ -129,18 +130,18 @@ bool sqlconn::query(const char *q)
 	auto ers = mysql_error(m_conn);
 	if (!sev) {
 		/* Problem with query itself, connection likely good */
-		fprintf(stderr, "[mysql_adaptor]: Query \"%s\" failed: %s\n", q, ers);
+		mlog(LV_ERR, "mysql_adaptor: Query \"%s\" failed: %s", q, ers);
 		return false;
 	}
 	m_conn = sql_make_conn();
 	if (m_conn == nullptr) {
-		fprintf(stderr, "[mysql_adaptor]: %s, and immediate reconnect unsuccessful: %s\n", ers, mysql_error(m_conn));
+		mlog(LV_ERR, "mysql_adaptor: %s, and immediate reconnect unsuccessful: %s", ers, mysql_error(m_conn));
 		return false;
 	}
 	ret = mysql_query(m_conn, q);
 	if (ret == 0)
 		return true;
-	fprintf(stderr, "[mysql_adaptor]: Query \"%s\" failed: %s\n", q, mysql_error(m_conn));
+	mlog(LV_ERR, "mysql_adaptor: Query \"%s\" failed: %s", q, mysql_error(m_conn));
 	return false;
 }
 
@@ -283,7 +284,7 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	         "LEFT JOIN `groups` AS `gr` ON `u`.`username`=`gr`.`groupname`", class_id);
 	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
-	fprintf(stderr, "[mysql_adaptor]: %s %s\n", __func__, e.what());
+	mlog(LV_ERR, "mysql_adaptor: %s %s", __func__, e.what());
 	return false;
 }
 
@@ -318,7 +319,7 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 	         "WHERE u.domain_id=%u AND u.group_id=0", domain_id);
 	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
-	fprintf(stderr, "[mysql_adaptor]: %s %s\n", __func__, e.what());
+	mlog(LV_ERR, "mysql_adaptor: %s %s", __func__, e.what());
 	return false;
 }
 
@@ -359,7 +360,7 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	         "FROM members AS m WHERE u.username=m.username)=0", group_id);
 	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
-	fprintf(stderr, "[mysql_adaptor]: %s %s\n", __func__, e.what());
+	mlog(LV_ERR, "mysql_adaptor: %s %s", __func__, e.what());
 	return false;
 }
 
@@ -380,7 +381,7 @@ errno_t mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
 			hints.push_back(strtoul(row[0], nullptr, 0));
 	return 0;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1638: ENOMEM\n");
+	mlog(LV_ERR, "E-1638: ENOMEM");
 	return ENOMEM;
 }
 
@@ -398,7 +399,7 @@ static int mysql_adaptor_domain_list_query(const char *domain) try
 		return -ENOMEM;
 	return res.fetch_row() != nullptr;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1647: ENOMEM\n");
+	mlog(LV_ERR, "E-1647: ENOMEM");
 	return -ENOMEM;
 }
 
@@ -413,9 +414,9 @@ void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 	if (conn->query(qstr)) {
 		DB_RESULT res = mysql_store_result(conn->get());
 		if (res != nullptr && res.num_rows() > 0)
-			fprintf(stderr, "[mysql_adaptor]: \e[1;31m"
+			mlog(LV_ERR, "mysql_adaptor: \e[1;31m"
 			        "There are %zu users with no PR_DISPLAY_TYPE_EX set, "
-			        "which makes their existence _undefined_.\e[0m\n",
+			        "which makes their existence _undefined_.\e[0m",
 			        res.num_rows());
 	}
 }
@@ -438,7 +439,7 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 		cfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
 		      mysql_adaptor_cfg_defaults);
 	if (cfg == nullptr) {
-		fprintf(stderr, "[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
+		mlog(LV_ERR, "mysql_adaptor: config_file_initd mysql_adaptor.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
@@ -456,7 +457,7 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 		par.pass = sss_obf_reverse(base64_decode(p2));
 	par.dbname = cfg->get_value("mysql_dbname");
 	par.timeout = cfg->get_ll("mysql_rdwr_timeout");
-	fprintf(stderr, "[mysql_adaptor]: host [%s]:%d, #conn=%d timeout=%d, db=%s\n",
+	mlog(LV_INFO, "mysql_adaptor: host [%s]:%d, #conn=%d timeout=%d, db=%s",
 	       par.host.size() == 0 ? "*" : par.host.c_str(), par.port,
 	       par.conn_num, par.timeout, par.dbname.c_str());
 	auto v = cfg->get_value("schema_upgrade");
@@ -498,19 +499,19 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	auto cfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
 	           mysql_adaptor_cfg_defaults);
 	if (cfg == nullptr) {
-		fprintf(stderr, "[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
+		mlog(LV_ERR, "mysql_adaptor: config_file_initd mysql_adaptor.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
 	if (!mysql_adaptor_reload_config(cfg))
 		return false;
 	if (mysql_adaptor_run() != 0) {
-		fprintf(stderr, "[mysql_adaptor]: failed to run mysql adaptor\n");
+		mlog(LV_ERR, "mysql_adaptor: failed to startup");
 		return false;
 	}
 #define E(f, s) do { \
 	if (!register_service((s), mysql_adaptor_ ## f)) { \
-		fprintf(stderr, "[%s]: failed to register the \"%s\" service\n", "mysql_adaptor", (s)); \
+		mlog(LV_ERR, "mysql_adaptor: failed to register the \"%s\" service", (s)); \
 		return false; \
 	} \
 } while (false)

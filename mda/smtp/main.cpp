@@ -43,7 +43,6 @@ static struct HXoption g_options_table[] = {
 };
 
 static std::vector<std::string> g_dfl_svc_plugins = {
-	"libgxs_logthru.so",
 	"libgxs_midb_agent.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
@@ -62,6 +61,8 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"lda_listen_addr", "::"},
 	{"lda_listen_port", "25"},
 	{"lda_listen_tls_port", "0"},
+	{"lda_log_file", "-"},
+	{"lda_log_level", "4" /* LV_NOTICE */},
 	{"lda_thread_charge_num", "400", CFG_SIZE, "4"},
 	{"lda_thread_init_num", "5", CFG_SIZE},
 	{"listen_port", "lda_listen_port", CFG_ALIAS},
@@ -111,12 +112,14 @@ int main(int argc, const char **argv) try
 	g_config_file = config_file_prg(opt_config_file, "smtp.cfg",
 	                smtp_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
-		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		mlog(LV_ERR, "resource: config_file_init %s: %s",
+			opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
+	mlog_init(g_config_file->get_value("lda_log_file"), g_config_file->get_ll("lda_log_level"));
 	if (0 != resource_run()) { 
-		printf("[system]: Failed to load resource\n");
+		mlog(LV_ERR, "system: failed to load resources");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_2 = make_scope_exit(resource_stop);
@@ -129,7 +132,7 @@ int main(int argc, const char **argv) try
 		resource_set_string("HOST_ID", temp_buff);
 		str_val = temp_buff;
 	}
-	printf("[system]: host ID is %s\n", str_val);
+	mlog(LV_NOTICE, "system: host ID is \"%s\"", str_val);
 	
 	str_val = resource_get_string("DEFAULT_DOMAIN");
 	if (str_val == NULL) {
@@ -137,10 +140,10 @@ int main(int argc, const char **argv) try
 		getdomainname(temp_buff, arsizeof(temp_buff));
 		resource_set_string("DEFAULT_DOMAIN", temp_buff);
 		str_val = temp_buff;
-		printf("[system]: warning! cannot find default domain, OS domain name "
-			"will be used as default domain\n");
+		mlog(LV_WARN, "system: Cannot find default domain. OS domain name "
+			"will be used as default domain.");
 	}
-	printf("[system]: default domain is %s\n", str_val);
+	mlog(LV_NOTICE, "system: default domain is \"%s\"", str_val);
 	
 	g_config_file->get_uint("context_num", &scfg.context_num);
 	unsigned int thread_charge_num = g_config_file->get_ll("lda_thread_charge_num");
@@ -148,7 +151,7 @@ int main(int argc, const char **argv) try
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
 			resource_set_integer("lda_thread_charge_num", thread_charge_num);
 		}
-	printf("[system]: one thread is in charge of %d contexts\n",
+	mlog(LV_INFO, "system: one thread is in charge of %d contexts",
 		thread_charge_num);
 	
 	unsigned int thread_init_num = g_config_file->get_ll("lda_thread_init_num");
@@ -158,16 +161,16 @@ int main(int argc, const char **argv) try
 			thread_init_num = 1;
 			scfg.context_num = thread_charge_num;
 			resource_set_integer("CONTEXT_NUM", scfg.context_num);
-			printf("[system]: rectify contexts number %d\n", scfg.context_num);
+			mlog(LV_NOTICE, "system: rectified contexts number to %d", scfg.context_num);
 		}
 		resource_set_integer("lda_thread_init_num", thread_init_num);
 	}
-	printf("[system]: threads pool initial threads number is %d\n",
+	mlog(LV_INFO, "system: threads pool initial threads number is %d",
 		thread_init_num);
 
 	size_t context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
 	HX_unit_size(temp_buff, arsizeof(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
-	printf("[smtp]: context average memory is %s\n", temp_buff);
+	mlog(LV_INFO, "dq: context average memory is %s", temp_buff);
  
 	scfg.flushing_size = g_config_file->get_ll("context_max_mem") / (64 * 1024);
 	if (scfg.flushing_size < context_aver_mem) {
@@ -177,11 +180,11 @@ int main(int argc, const char **argv) try
 	} 
 	scfg.flushing_size *= 64 * 1024;
 	HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.flushing_size, 1024, 0);
-	printf("[smtp]: context maximum memory is %s\n", temp_buff);
+	mlog(LV_INFO, "dq: context maximum memory is %s", temp_buff);
  
 	scfg.timeout = std::chrono::seconds(g_config_file->get_ll("smtp_conn_timeout"));
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), std::chrono::duration_cast<std::chrono::seconds>(scfg.timeout).count(), 0);
-	printf("[smtp]: smtp socket read write timeout is %s\n", temp_buff);
+	mlog(LV_INFO, "dq: SMTP socket read write timeout is %s", temp_buff);
 
 	scfg.support_pipeline = parse_bool(g_config_file->get_value("smtp_support_pipeline"));
 	scfg.support_starttls = parse_bool(g_config_file->get_value("smtp_support_starttls")) ? TRUE : false;
@@ -197,46 +200,46 @@ int main(int argc, const char **argv) try
 	if (scfg.support_starttls) {
 		if (scfg.cert_path.size() == 0 || scfg.key_path.size() == 0) {
 			scfg.support_starttls = false;
-			printf("[smtp]: turn off TLS support because certificate or "
-				"private key path is empty\n");
+			mlog(LV_ERR, "dq: turning off TLS support because certificate or "
+				"private key path is empty");
 		} else {
-			printf("[smtp]: smtp support esmtp TLS mode\n");
+			mlog(LV_NOTICE, "dq: SMTP supports ESMTP TLS mode");
 		}
 	} else {
-		printf("[smtp]: smtp doesn't support esmtp TLS mode\n");
+		mlog(LV_NOTICE, "dq: SMTP does not support ESMTP TLS mode");
 	}
 
 	scfg.force_starttls = parse_bool(g_config_file->get_value("smtp_force_starttls"));
 	if (scfg.support_starttls && scfg.force_starttls)
-		printf("[smtp]: smtp MUST running in TLS mode\n");
+		mlog(LV_NOTICE, "dq: SMTP MUST be used in TLS mode");
 	uint16_t listen_port = g_config_file->get_ll("lda_listen_port");
 	uint16_t listen_tls_port = g_config_file->get_ll("lda_listen_tls_port");
 	if (!scfg.support_starttls && listen_tls_port > 0)
 		listen_tls_port = 0;
 	if (listen_tls_port > 0)
-		printf("[system]: system TLS listening port %hu\n", listen_tls_port);
+		mlog(LV_NOTICE, "system: system TLS listening port %hu", listen_tls_port);
 
 	scfg.need_auth = parse_bool(g_config_file->get_value("smtp_need_auth")) ? TRUE : false;
-	printf("[smtp]: auth_needed is %s\n", scfg.need_auth ? "ON" : "OFF");
+	mlog(LV_NOTICE, "dq: auth_needed is %s", scfg.need_auth ? "ON" : "OFF");
 
 	scfg.auth_times = g_config_file->get_ll("smtp_auth_times");
-	printf("[smtp]: maximum authentication failure times is %d\n", 
+	mlog(LV_INFO, "dq: maximum authentication failure count is %d", 
 	       scfg.auth_times);
 
 	scfg.blktime_auths = g_config_file->get_ll("block_interval_auths");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), scfg.blktime_auths, 0);
-	printf("[smtp]: block client %s when authentication failure count "
-			"is exceeded\n", temp_buff);
+	mlog(LV_INFO, "dq: blocking clients for %s when authentication failure count "
+			"is exceeded", temp_buff);
 
 	scfg.max_mail_length = g_config_file->get_ll("mail_max_length");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.max_mail_length, 1024, 0);
-	printf("[smtp]: maximum mail length is %s\n", temp_buff);
+	mlog(LV_NOTICE, "dq: maximum mail length is %s", temp_buff);
 
 	scfg.max_mail_sessions = g_config_file->get_ll("smtp_max_mail_num");
 	scfg.blktime_sessions = g_config_file->get_ll("block_interval_session");
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), scfg.blktime_sessions, 0);
-	printf("[smtp]: block remote side %s when mails number is exceed for one "
-			"session\n", temp_buff);
+	mlog(LV_INFO, "dq: blocking remote side for %s when mails number is exceed for one "
+			"session", temp_buff);
 	
 	str_val = resource_get_string("command_protocol");
 	if (strcasecmp(str_val, "both") == 0)
@@ -251,13 +254,13 @@ int main(int argc, const char **argv) try
 	listener_init(g_config_file->get_value("lda_listen_addr"),
 		listen_port, listen_tls_port);
 	if (0 != listener_run()) {
-		printf("[system]: fail to start listener\n");
+		mlog(LV_ERR, "system: failed to start listener");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
-		printf("[system]: fail to get file limitation\n");
+		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
 		return EXIT_FAILURE;
 	}
 	if (rl.rlim_cur < scfg.context_num + 128 ||
@@ -265,22 +268,24 @@ int main(int argc, const char **argv) try
 		rl.rlim_cur = scfg.context_num + 128;
 		rl.rlim_max = scfg.context_num + 128;
 		if (setrlimit(RLIMIT_NOFILE, &rl) != 0)
-			printf("[system]: fail to set file limitation\n");
+			mlog(LV_WARN, "setrlimit RLIMIT_NFILE %zu: %s",
+				static_cast<size_t>(rl.rlim_max), strerror(errno));
 		else
-			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
+			mlog(LV_NOTICE, "system: FD limit set to %zu",
+				static_cast<size_t>(rl.rlim_cur));
 	}
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
 		std::move(g_dfl_svc_plugins), scfg.context_num});
 	if (service_run_early() != 0) {
-		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
+		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
 		return EXIT_FAILURE;
 	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
 	if (0 != service_run()) { 
-		printf("[system]: failed to run service\n");
+		mlog(LV_ERR, "system: failed to start services");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_6 = make_scope_exit(service_stop);
@@ -288,7 +293,7 @@ int main(int argc, const char **argv) try
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	if (0 != system_services_run()) { 
-		printf("[system]: failed to run system service\n");
+		mlog(LV_ERR, "system: failed to start system service");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
@@ -300,7 +305,7 @@ int main(int argc, const char **argv) try
 	                     "smtp_blocks_alloc", "smtp.cfg:context_num,context_aver_mem");
 	smtp_parser_init(scfg);
 	if (0 != smtp_parser_run()) { 
-		printf("[system]: failed to run smtp parser\n");
+		mlog(LV_ERR, "system: failed to start SMTP parser");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_16 = make_scope_exit(smtp_parser_stop);
@@ -311,14 +316,14 @@ int main(int argc, const char **argv) try
 		thread_charge_num, scfg.timeout);
  
 	if (0 != contexts_pool_run()) { 
-		printf("[system]: failed to run contexts pool\n");
+		mlog(LV_ERR, "system: failed to start context pool");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_18 = make_scope_exit(contexts_pool_stop);
 
 	flusher_init(scfg.context_num);
 	if (0 != flusher_run()) {
-		printf("[system]: failed to run flusher\n");
+		mlog(LV_ERR, "system: failed to start flusher");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_20 = make_scope_exit(flusher_stop);
@@ -326,19 +331,19 @@ int main(int argc, const char **argv) try
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(smtp_parser_process));
 	threads_pool_register_event_proc(smtp_parser_threads_event_proc);
 	if (threads_pool_run("smtp.cfg:lda_thread_init_num")) {
-		printf("[system]: failed to run threads pool\n");
+		mlog(LV_ERR, "system: failed to run thread pool");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_26 = make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
 	if (listener_trigger_accept() != 0) {
-		printf("[system]: fail trigger accept\n");
+		mlog(LV_ERR, "system: failed accept()");
 		return EXIT_FAILURE;
 	}
 	
 	retcode = EXIT_SUCCESS;
-	printf("[system]: SMTP DAEMON is now running\n");
+	mlog(LV_NOTICE, "system: delivery-queue / SMTP daemon is now running");
 	while (!g_notify_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false))

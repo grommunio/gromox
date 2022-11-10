@@ -5,6 +5,8 @@
 #include <gromox/mime_pool.hpp>
 #include <gromox/util.hpp>
 
+using namespace gromox;
+
 /*
  *	@param
  *		number			number of mimes
@@ -35,7 +37,7 @@ std::shared_ptr<MIME_POOL> MIME_POOL::create(size_t number, int ratio,
 {
 	return std::make_unique<MIME_POOL>(number, ratio, name, hint);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1546: ENOMEM\n");
+	mlog(LV_ERR, "E-1546: ENOMEM");
 	return nullptr;
 }
 
@@ -63,7 +65,7 @@ void MIME_POOL::put_mime(MIME *pmime)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
-		debug_info("[mime_pool]: NULL pointer in mime_pool_put");
+		mlog(LV_DEBUG, "mime_pool: NULL pointer in mime_pool_put");
 		return;
 	}
 #endif
@@ -71,7 +73,7 @@ void MIME_POOL::put_mime(MIME *pmime)
 	auto pmime_pool = pmime_node->pool;
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime_pool) {
-		debug_info("[mime_pool]: fatal error in mime_pool_put");
+		mlog(LV_DEBUG, "mime_pool: fatal error in mime_pool_put");
 		return;
 	}
 #endif

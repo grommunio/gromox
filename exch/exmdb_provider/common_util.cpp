@@ -51,7 +51,6 @@
 #define SERVICE_ID_GET_ID_FROM_HOMEDIR						13
 #define SERVICE_ID_SEND_MAIL								14
 #define SERVICE_ID_GET_MIME_POOL							15
-#define SERVICE_ID_LOG_INFO									16
 #define SERVICE_ID_GET_HANDLE								17
 
 using XUI = unsigned int;
@@ -85,7 +84,6 @@ E(get_domain_ids)
 E(get_id_from_maildir)
 E(get_id_from_homedir)
 E(get_mime_pool)
-E(log_info)
 E(get_handle)
 #undef E
 decltype(cu_send_mail) cu_send_mail;
@@ -198,7 +196,6 @@ void common_util_pass_service(int service_id, void *func)
 	E(SERVICE_ID_GET_ID_FROM_HOMEDIR, common_util_get_id_from_homedir);
 	E(SERVICE_ID_SEND_MAIL, cu_send_mail);
 	E(SERVICE_ID_GET_MIME_POOL, common_util_get_mime_pool);
-	E(SERVICE_ID_LOG_INFO, common_util_log_info);
 	E(SERVICE_ID_GET_HANDLE, common_util_get_handle);
 	}
 #undef E
@@ -700,7 +697,7 @@ BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 		return TRUE;
 	}
 	if (!pguid->from_str(S2A(sqlite3_column_text(pstmt, 0)))) {
-		fprintf(stderr, "E-1621: illegal GUID in dataset\n");
+		mlog(LV_ERR, "E-1621: illegal GUID in dataset");
 		return false;
 	}
 	*pb_found = TRUE;
@@ -916,7 +913,7 @@ uint32_t common_util_get_folder_unread_count(
 		return 0;
 	auto have_read = pstmt.col_uint64(0);
 	if (have_read > count)
-		fprintf(stderr, "W-1665: fid %llxh inconsistent read states for %s: %lld > %lld\n",
+		mlog(LV_WARN, "W-1665: fid %llxh inconsistent read states for %s: %lld > %lld",
 		        LLU{folder_id}, username, LLU{have_read}, LLU{count});
 	return count - std::min(count, have_read);
 }
@@ -1490,7 +1487,7 @@ std::string cu_cid_path(const char *dir, uint64_t id) try
 		dir = exmdb_server_get_dir();
 	return dir + "/cid/"s + std::to_string(id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1608: ENOMEM\n");
+	mlog(LV_ERR, "E-1608: ENOMEM");
 	return {};
 }
 
@@ -1537,7 +1534,7 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 		return nullptr;
 	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
 	if (NULL == pbuff) {
-		fprintf(stderr, "E-1626: ENOMEM\n");
+		mlog(LV_ERR, "E-1626: ENOMEM");
 		return NULL;
 	}
 	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
@@ -2538,7 +2535,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 	auto ret = sqlite3_step(pstmt);
 	if (ret != SQLITE_DONE)
-		fprintf(stderr, "W-1274: %s\n", sqlite3_errstr(ret));
+		mlog(LV_WARN, "W-1274: %s", sqlite3_errstr(ret));
 }
 
 static BOOL cu_update_object_cid(sqlite3 *psqlite, db_table table_type,
@@ -2631,12 +2628,12 @@ static BOOL common_util_set_message_body(
 	auto path = cu_cid_path(dir, cid);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0) {
-		fprintf(stderr, "E-1627: open %s O_CREAT: %s\n", path.c_str(), strerror(errno));
+		mlog(LV_ERR, "E-1627: open %s O_CREAT: %s", path.c_str(), strerror(errno));
 		return FALSE;
 	}
 	auto remove_file = make_scope_exit([&]() {
 		if (::remove(path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1382: remove %s: %s\n",
+			mlog(LV_WARN, "W-1382: remove %s: %s",
 			        path.c_str(), strerror(errno));
 	});
 	if (PROP_TYPE(proptag) == PT_UNICODE) {
@@ -2682,12 +2679,12 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
 	auto path = cu_cid_path(dir, cid);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0) {
-		fprintf(stderr, "E-1628: open %s O_CREAT: %s\n", path.c_str(), strerror(errno));
+		mlog(LV_ERR, "E-1628: open %s O_CREAT: %s", path.c_str(), strerror(errno));
 		return FALSE;
 	}
 	auto remove_file = make_scope_exit([&]() {
 		if (::remove(path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1389: remove %s: %s\n",
+			mlog(LV_WARN, "W-1389: remove %s: %s",
 			        path.c_str(), strerror(errno));
 	});
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
@@ -3265,7 +3262,7 @@ BOOL cu_remove_properties(db_table table_type, uint64_t id,
 			" AND proptag=?", LLU{id});
 		break;
 	default:
-		fprintf(stderr, "W-1594: %s undiscovered case\n", __func__);
+		mlog(LV_WARN, "W-1594: %s undiscovered case", __func__);
 		return false;
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
@@ -4769,7 +4766,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 			ppropids->ppropid[i] = 0;
 		}
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1503: ENOMEM\n");
+		mlog(LV_ERR, "E-1503: ENOMEM");
 		return false;
 	}
 	return TRUE;
@@ -4920,7 +4917,7 @@ BOOL cu_rcpts_to_list(TARRAY_SET *prcpts, std::vector<std::string> &plist) try
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2036: ENOMEM\n");
+	mlog(LV_ERR, "E-2036: ENOMEM");
 	return false;
 }
 

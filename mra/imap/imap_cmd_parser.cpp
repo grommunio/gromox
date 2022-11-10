@@ -495,7 +495,7 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	if (fd == -1)
 		return -1;
 	if (lseek(fd, offset, SEEK_SET) < 0)
-		fprintf(stderr, "E-1431: lseek: %s\n", strerror(errno));
+		mlog(LV_ERR, "E-1431: lseek: %s", strerror(errno));
 	gx_strlcpy(temp_buff, tags, arsizeof(temp_buff));
 	if (tags[0] == '(')
 		tmp_argc = parse_imap_args(temp_buff + 1,
@@ -692,7 +692,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 				           std::string(pcontext->maildir) + "/eml/" + pjson->get_mail_filename() :
 				           std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + storage_path + "/" + pjson->get_mail_filename();
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1465: ENOMEM\n");
+				mlog(LV_ERR, "E-1465: ENOMEM");
 			}
 
 			len = imap_cmd_parser_match_field(cmd_tag, eml_path.c_str(),
@@ -729,7 +729,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		try {
 			eml_path = std::string(pcontext->maildir) + "/eml";
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1464: ENOMEM\n");
+			mlog(LV_ERR, "E-1464: ENOMEM");
 			return 1918;
 		}
 		if (eml_path.size() == 0 ||
@@ -758,7 +758,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				try {
 					rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				} catch (const std::bad_alloc &) {
-					fprintf(stderr, "E-1461: ENOMEM\n");
+					mlog(LV_ERR, "E-1461: ENOMEM");
 				}
 				if (rfc_path.size() <= 0 ||
 				    !mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str()))
@@ -787,7 +787,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				try {
 					rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				} catch (const std::bad_alloc &) {
-					fprintf(stderr, "E-1462: ENOMEM\n");
+					mlog(LV_ERR, "E-1462: ENOMEM");
 				}
 				if (rfc_path.size() <= 0 ||
 				    !mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str()))
@@ -933,7 +933,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				try {
 					rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				} catch (const std::bad_alloc &) {
-					fprintf(stderr, "E-1463: ENOMEM\n");
+					mlog(LV_ERR, "E-1463: ENOMEM");
 				}
 				if (rfc_path.size() > 0 &&
 				    mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str())) {
@@ -2204,13 +2204,13 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		eml_path = std::string(pcontext->maildir) + "/eml/" + mid_string;
 		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1456: ENOMEM\n");
+		mlog(LV_ERR, "E-1456: ENOMEM");
 	}
 	if (fd < 0 || !imail.to_file(fd)) {
 		if (-1 != fd) {
 			close(fd);
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1370: remove %s: %s\n",
+				mlog(LV_WARN, "W-1370: remove %s: %s",
 				        eml_path.c_str(), strerror(errno));
 		}
 		return 1909;
@@ -2369,7 +2369,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	if (0 != fstat(pcontext->message_fd, &node_stat)) {
 		close(pcontext->message_fd);
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1342: remove %s: %s\n",
+			mlog(LV_WARN, "W-1342: remove %s: %s",
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->message_fd = -1;
 		pcontext->mid.clear();
@@ -2383,7 +2383,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		pbuff.reset();
 		close(pcontext->message_fd);
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1343: remove %s: %s\n",
+			mlog(LV_WARN, "W-1343: remove %s: %s",
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->message_fd = -1;
 		pcontext->mid.clear();
@@ -2398,7 +2398,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		imail.clear();
 		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1344: remove %s: %s\n",
+			mlog(LV_WARN, "W-1344: remove %s: %s",
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->mid.clear();
 		pcontext->file_path.clear();
@@ -2437,20 +2437,20 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		eml_path = std::string(pcontext->maildir) + "/eml/" + pcontext->mid;
 		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1460: ENOMEM\n");
+		mlog(LV_ERR, "E-1460: ENOMEM");
 	}
 	if (fd < 0 || !imail.to_file(fd)) {
 		imail.clear();
 		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1345: remove %s: %s\n",
+			mlog(LV_WARN, "W-1345: remove %s: %s",
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->mid.clear();
 		pcontext->file_path.clear();
 		if (-1 != fd) {
 			close(fd);
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1346: remove %s: %s\n",
+				mlog(LV_WARN, "W-1346: remove %s: %s",
 				        eml_path.c_str(), strerror(errno));
 		}
 		return 1909;
@@ -2459,7 +2459,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	imail.clear();
 	pbuff.reset();
 	if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1336: remove %s: %s\n",
+		mlog(LV_WARN, "W-1336: remove %s: %s",
 			pcontext->file_path.c_str(), strerror(errno));
 	pcontext->file_path.clear();
 	auto ssr = system_services_insert_mail(pcontext->maildir, temp_name,
@@ -2567,7 +2567,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			continue;
 		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-2030: remove %s: %s\n",
+			mlog(LV_WARN, "W-2030: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
@@ -2577,7 +2577,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		b_deleted = TRUE;
 		del_num ++;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1459: ENOMEM\n");
+		mlog(LV_ERR, "E-1459: ENOMEM");
 	}
 	if (b_deleted)
 		imap_parser_touch_modify(pcontext, pcontext->username,
@@ -3203,7 +3203,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			continue;
 		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-2086: remove %s: %s\n",
+			mlog(LV_WARN, "W-2086: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
@@ -3213,7 +3213,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		b_deleted = TRUE;
 		del_num ++;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1458: ENOMEM\n");
+		mlog(LV_ERR, "E-1458: ENOMEM");
 	}
 	if (b_deleted)
 		imap_parser_touch_modify(pcontext, pcontext->username,
@@ -3306,12 +3306,12 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 				continue;
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-2087: remove %s: %s\n",
+				mlog(LV_WARN, "W-2087: remove %s: %s",
 				        eml_path.c_str(), strerror(errno));
 			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 			b_deleted = TRUE;
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1457: ENOMEM\n");
+			mlog(LV_ERR, "E-1457: ENOMEM");
 		}
 		break;
 	case MIDB_NO_SERVER: {

@@ -84,13 +84,13 @@ void flusher_init(size_t queue_len)
 int flusher_run()
 {
 	if (NULL == g_flusher_plug) {
-		printf("[flusher]: Failed to allocate memory for FLUSHER\n");
+		mlog(LV_ERR, "flusher: failed to allocate memory for FLUSHER");
 		return -3;
 	}
 	if (!flusher_load_plugin())
 		return -2;
 	if (g_current_ID < 0) {
-		printf("[flusher]: flush ID error, should be larger than 0\n");
+		mlog(LV_ERR, "flusher: flush ID error, should be larger than 0");
 		return -4;
 	}
 	return 0;
@@ -170,7 +170,7 @@ static BOOL flusher_load_plugin()
 	main_result = FLH_LibMain(PLUGIN_INIT, const_cast<void **>(server_funcs));
 	g_can_register = false;
 	if (!main_result) {
-		printf("[flusher]: fail to execute init in flusher plugin\n");
+		mlog(LV_ERR, "flusher: failed to execute init in flusher plugin");
 		return FALSE;
 	}
 	g_flusher_plug->completed_init = true;
@@ -184,11 +184,11 @@ void flusher_stop()
 	if (NULL == g_flusher_plug)
 		return;
 	if (g_flusher_plug->completed_init && !FLH_LibMain(PLUGIN_FREE, nullptr)) {
-		printf("[flusher]: error executing Flusher_LibMain with "
-			   "FLUSHER_LIB_FREE in plugin %s\n", g_flusher_plug->path);
+		mlog(LV_ERR, "flusher: error executing Flusher_LibMain with "
+			   "FLUSHER_LIB_FREE in plugin %s", g_flusher_plug->path);
 		return;
 	}
-	printf("[flusher]: unloading %s\n", g_flusher_plug->path);
+	mlog(LV_INFO, "flusher: unloading %s", g_flusher_plug->path);
 	/* free the service reference of the plugin */
 	if (0 != single_list_get_nodes_num(&g_flusher_plug->list_reference)) {
 		for (pnode=single_list_get_head(&g_flusher_plug->list_reference); NULL!=pnode;
@@ -270,13 +270,13 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 	}
 	pservice = me_alloc<SERVICE_NODE>();
 	if (NULL == pservice) {
-		debug_info("[flusher]: Failed to allocate memory for service node");
+		mlog(LV_DEBUG, "flusher: Failed to allocate memory for service node");
 		service_release(service, g_flusher_plug->file_name);
 		return NULL;
 	}
 	pservice->service_name = me_alloc<char>(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
-		debug_info("[flusher]: Failed to allocate memory for service name");
+		mlog(LV_DEBUG, "flusher: Failed to allocate memory for service name");
 		service_release(service, g_flusher_plug->file_name);
 		free(pservice);
 		return NULL;

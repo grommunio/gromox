@@ -8,6 +8,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
+#include <gromox/util.hpp>
 #define FILE_BLOCK_SIZE 0x100
 #define STREAM_BLOCK_SIZE 0x10000
 
@@ -124,7 +125,6 @@ extern BOOL decode_hex_binary(const char *src, void *dst, int dstlen);
 extern int uudecode(const char *in, size_t inlen, int *pmode, char *file_name, size_t fnmax, char *out, size_t maxlen, size_t *outlen);
 int uuencode(int mode, const char *file_name, const char *in,
 	size_t inlen, char *out, size_t outmax, size_t *outlen);
-extern void debug_info(const char *format, ...);
 
 namespace gromox {
 
@@ -150,5 +150,7 @@ extern GX_EXPORT const std::string *ianatz_to_tzdef(const char *, const char * =
 extern GX_EXPORT bool get_digest(const char *src, const char *tag, char *out, size_t outmax);
 extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, const char *v);
 extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, uint64_t v);
+extern GX_EXPORT void mlog_init(const char *file, unsigned int level);
+extern GX_EXPORT void mlog(unsigned int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 
 }

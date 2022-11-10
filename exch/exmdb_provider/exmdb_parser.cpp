@@ -143,7 +143,8 @@ static BOOL exmdb_parser_dispatch2(const exreq *prequest, exresp *&r0)
 static BOOL exmdb_parser_dispatch(const exreq *prequest, exresp *&presponse)
 {
 	if (access(prequest->dir, R_OK | X_OK) < 0)
-		printf("exmdb rpc %s accessing %s: %s\n", exmdb_rpc_idtoname(prequest->call_id),
+		mlog(LV_DEBUG, "exmdb rpc %s accessing %s: %s",
+			exmdb_rpc_idtoname(prequest->call_id),
 		       prequest->dir, strerror(errno));
 	exmdb_server_set_dir(prequest->dir);
 	auto ret = exmdb_parser_dispatch2(prequest, presponse);
@@ -152,7 +153,7 @@ static BOOL exmdb_parser_dispatch(const exreq *prequest, exresp *&presponse)
 	if (g_exrpc_debug == 0)
 		return ret;
 	if (!ret || g_exrpc_debug == 2)
-		fprintf(stderr, "EXRPC %s %s (%s)\n",
+		mlog(LV_DEBUG, "EXRPC %s %s (%s)",
 		        ret == 0 ? "FAIL" : "ok  ",
 		        exmdb_rpc_idtoname(prequest->call_id),
 		        znul(prequest->dir));
@@ -336,7 +337,7 @@ void exmdb_parser_put_connection(std::shared_ptr<EXMDB_CONNECTION> &&pconnection
 	auto ret = pthread_create(&pconnection->thr_id, nullptr, mdpps_thrwork, pconnection.get());
 	if (ret == 0)
 		return;
-	fprintf(stderr, "W-1440: pthread_create: %s\n", strerror(ret));
+	mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
 	chold.lock();
 	g_connection_list.erase(stpair.first);
 }
@@ -376,7 +377,7 @@ int exmdb_parser_run(const char *config_path)
 {
 	auto ret = list_file_read_exmdb("exmdb_list.txt", config_path, g_local_list);
 	if (ret != 0) {
-		printf("[exmdb_provider]: list_file_read_exmdb: %s\n", strerror(ret));
+		mlog(LV_ERR, "exmdb_provider: list_file_read_exmdb: %s", strerror(ret));
 		return 1;
 	}
 #if __cplusplus >= 202000L

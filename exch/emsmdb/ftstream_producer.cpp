@@ -33,7 +33,7 @@ static void ftstream_producer_try_recode_nbp(FTSTREAM_PRODUCER *pstream) try
 	point_node p = {point_type::normal_break, pstream->offset};
 	pstream->bp_list.push_back(std::move(p));
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "W-1601: ENOMEM\n");
+	mlog(LV_WARN, "W-1601: ENOMEM");
 }
 
 static void ftstream_producer_record_nbp(FTSTREAM_PRODUCER *pstream,
@@ -44,7 +44,7 @@ static void ftstream_producer_record_nbp(FTSTREAM_PRODUCER *pstream,
 	point_node p = {point_type::normal_break, nbp};
 	pstream->bp_list.emplace_back(std::move(p));
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "W-1602: ENOMEM\n");
+	mlog(LV_WARN, "W-1602: ENOMEM");
 }
 
 static void ftstream_producer_record_lvp(FTSTREAM_PRODUCER *pstream,
@@ -61,7 +61,7 @@ static void ftstream_producer_record_lvp(FTSTREAM_PRODUCER *pstream,
 	point_node p = {point_type::long_var, position + length};
 	pstream->bp_list.emplace_back(std::move(p));
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "W-1603: ENOMEM\n");
+	mlog(LV_WARN, "W-1603: ENOMEM");
 }
 
 static void ftstream_producer_record_wsp(FTSTREAM_PRODUCER *pstream,
@@ -78,7 +78,7 @@ static void ftstream_producer_record_wsp(FTSTREAM_PRODUCER *pstream,
 	point_node p = {point_type::wstring, position + length};
 	pstream->bp_list.emplace_back(std::move(p));
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "W-1604: ENOMEM\n");
+	mlog(LV_WARN, "W-1604: ENOMEM");
 }
 
 static bool fxstream_producer_open(fxstream_producer &p)
@@ -89,7 +89,7 @@ static bool fxstream_producer_open(fxstream_producer &p)
 	p.fd = open_tmpfile(path, &p.path, O_RDWR | O_TRUNC);
 	if (p.fd >= 0)
 		return true;
-	fprintf(stderr, "E-1338: open{%s, %s}: %s\n", path, p.path.c_str(),
+	mlog(LV_ERR, "E-1338: open{%s, %s}: %s", path, p.path.c_str(),
 	        strerror(errno));
 	return false;
 }
@@ -268,12 +268,12 @@ static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
 	PROPERTY_NAME propname;
 
 	if (propid == PROP_ID_INVALID)
-		fprintf(stderr, "W-1271: ftstream with PROP_ID_INVALID seen\n");
+		mlog(LV_WARN, "W-1271: ftstream with PROP_ID_INVALID seen");
 	if (is_nameprop_id(propid)) {
 		if (!pstream->plogon->get_named_propname(propid, &propname))
 			return -1;
 		if (propname.kind == KIND_NONE) {
-			fprintf(stderr, "W-1566: propid %xh has no matching namedprop\n", propid);
+			mlog(LV_WARN, "W-1566: propid %xh has no matching namedprop", propid);
 			return 2;
 		}
 	}
@@ -871,7 +871,7 @@ ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 {
 	auto path = LOCAL_DISK_TMPDIR;
 	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
-		fprintf(stderr, "E-1422: mkdir %s: %s\n", path, strerror(errno));
+		mlog(LV_ERR, "E-1422: mkdir %s: %s", path, strerror(errno));
 		return nullptr;
 	}
 	std::unique_ptr<ftstream_producer> pstream(new ftstream_producer);
@@ -879,7 +879,7 @@ ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 	pstream->string_option = string_option;
 	return pstream;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1452: ENOMEM\n");
+	mlog(LV_ERR, "E-1452: ENOMEM");
 	return nullptr;
 }
 
@@ -891,7 +891,7 @@ fxstream_producer::~fxstream_producer()
 	close(pstream->fd);
 	if (pstream->path.size() > 0 && remove(pstream->path.c_str()) < 0 &&
 	    errno != ENOENT)
-		fprintf(stderr, "W-1371: remove %s: %s\n", pstream->path.c_str(), strerror(errno));
+		mlog(LV_WARN, "W-1371: remove %s: %s", pstream->path.c_str(), strerror(errno));
 }
 
 BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
@@ -974,7 +974,7 @@ BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 		close(pstream->fd);
 		pstream->fd = -1;
 		if (remove(pstream->path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1340: remove: %s: %s\n",
+			mlog(LV_WARN, "W-1340: remove: %s: %s",
 			        pstream->path.c_str(), strerror(errno));
 	}
 	pstream->offset = 0;

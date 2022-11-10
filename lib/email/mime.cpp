@@ -38,7 +38,7 @@ MIME::MIME(alloc_limiter<file_block> *palloc)
 	auto pmime = this;
 #ifdef _DEBUG_UMTA
 	if (palloc == nullptr) {
-		debug_info("[mime]: NULL pointer found in mime_init");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return;
 	}
 #endif
@@ -87,7 +87,7 @@ bool MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 
 #ifdef _DEBUG_UMTA
 	if (in_buff == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::retrieve");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -259,7 +259,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	
 #ifdef _DEBUG_UMTA
 	if (pcontent == nullptr && length != 0) {
-		debug_info("[mime]: NULL pointer found in MIME::write_content");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -271,8 +271,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	if (encoding_type != mime_encoding::base64 &&
 	    encoding_type != mime_encoding::qp &&
 	    encoding_type != mime_encoding::none) {
-		debug_info("[mime]: encoding type should be one of "
-			"mime_encoding::none, mime_encoding::base64, mime_encoding::qp");
+		mlog(LV_DEBUG, "mime: encoding type should be one of {none,base64,qp}");
 		return false;
 	}
 	if (pmime->content_touched && pmime->content_begin != nullptr &&
@@ -368,7 +367,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	}
 	return false;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1966: ENOMEM\n");
+	mlog(LV_ERR, "E-1966: ENOMEM");
 	return false;
 }
 
@@ -386,7 +385,7 @@ bool MIME::write_mail(MAIL *pmail)
 	auto pmime = this;
 #ifdef _DEBUG_UMTA
 	if (pmail == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::write_mail");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
     }
 #endif
@@ -420,7 +419,7 @@ bool MIME::set_content_type(const char *newtype)
 
 #ifdef _DEBUG_UMTA
 	if (newtype == nullptr) {
-		debug_info("[mime]: NULL pointer found in mime_set_content_type");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -537,7 +536,7 @@ bool MIME::get_field(const char *tag, char *value, int length) const
 	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::get_field");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -578,7 +577,7 @@ int MIME::get_field_num(const char *tag) const
 
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::get_field_num");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return 0;
 	}
 #endif
@@ -622,7 +621,7 @@ bool MIME::search_field(const char *tag, int order, char *value, int length) con
 	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::search_field");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -680,7 +679,7 @@ bool MIME::set_field(const char *tag, const char *value)
 	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::set_field");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -765,7 +764,7 @@ bool MIME::append_field(const char *tag, const char *value)
 	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::append_field");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -843,7 +842,7 @@ bool MIME::get_content_param(const char *tag, char *value, int length) const
 	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::get_content_param");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -883,7 +882,7 @@ bool MIME::set_content_param(const char *tag, const char *value)
 	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::set_content_param");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -975,7 +974,7 @@ bool MIME::serialize(STREAM *pstream) const
 	
 #ifdef _DEBUG_UMTA
 	if (pstream == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::serialize");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -1074,7 +1073,7 @@ bool MIME::serialize(STREAM *pstream) const
 	} else if (0 == tmp_len) {
 		pstream->write("\r\n", 2);
 	} else {
-		debug_info("[mime]: fatal error in MIME::serialize");
+		mlog(LV_DEBUG, "Unspecific error in %s", __PRETTY_FUNCTION__);
 	}
 	return true;
 }
@@ -1131,7 +1130,7 @@ static bool mime_read_multipart_content(const MIME *pmime,
 		} else if (0 == tmp_len) {
 			tmp_stream.write("\r\n", 2);
 		} else {
-			debug_info("[mime]: fatal error in mime_read_multipart_content");
+			mlog(LV_DEBUG, "Unspecific error in %s", __PRETTY_FUNCTION__);
 		}
 	}
 	offset = 0;
@@ -1164,7 +1163,7 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 	
 	if (pmime->mime_type == mime_type::none) {
 #ifdef _DEBUG_UMTA
-		debug_info("[mime]: mime content type is not set");
+		mlog(LV_DEBUG, "mime: mime content type is not set");
 #endif
 		return false;
 	}
@@ -1264,7 +1263,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	
 #ifdef _DEBUG_UMTA
 	if (out_buff == nullptr || plength == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::read_content");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -1290,7 +1289,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	if (0 == pmime->content_length) {
 		auto mail_len = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
 		if (mail_len <= 0) {
-			debug_info("[mime]: Failed to get mail length in MIME::read_content");
+			mlog(LV_DEBUG, "Failed to get mail length in %s", __PRETTY_FUNCTION__);
 			*plength = 0;
 			return false;
 		}
@@ -1368,7 +1367,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	switch (encoding_type) {
 	case mime_encoding::base64:
 		if (decode64_ex(pbuff.get(), size, out_buff, max_length, plength) != 0) {
-			debug_info("[mime]: fail to decode base64 mime content");
+			mlog(LV_DEBUG, "mime: failed to decode base64 mime content");
 			if (0 == *plength) {
 				return false;
 			}
@@ -1386,7 +1385,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	case mime_encoding::uuencode:
 		if (uudecode(pbuff.get(), size, nullptr, nullptr, 0, out_buff,
 		    max_length, plength) != 0) {
-			debug_info("[mime]: fail to decode uuencode mime content");
+			mlog(LV_DEBUG, "mime: failed to decode uuencode mime content");
 			goto COPY_RAW_DATA;
 		}
 		return true;
@@ -1402,7 +1401,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 		}
 	}
 } catch (const std::bad_alloc &) {
-	debug_info("[mime]: E-1973: Failed to allocate memory in MIME::read_content");
+	mlog(LV_ERR, "E-1973: Failed to allocate memory");
 	*plength = 0;
 	return false;
 }
@@ -1427,7 +1426,7 @@ bool MIME::to_file(int fd) const
 	
 	if (pmime->mime_type == mime_type::none) {
 #ifdef _DEBUG_UMTA
-		debug_info("[mime]: mime content type is not set");
+		mlog(LV_DEBUG, "mime: mime content type is not set");
 #endif
 		return false;
 	}
@@ -1584,7 +1583,7 @@ bool MIME::to_file(int fd) const
 			memcpy(tmp_buff + len, "\r\n", 2);
 			len += 2;
 		} else {
-			debug_info("[mime]: E-1640");
+			mlog(LV_ERR, "E-1640");
 			return false;
 		}
 	}
@@ -1614,13 +1613,13 @@ bool MIME::to_tls(SSL *ssl) const
 	
 #ifdef _DEBUG_UMTA
 	if (tls == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::to_tls");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
 	if (pmime->mime_type == mime_type::none) {
 #ifdef _DEBUG_UMTA
-		debug_info("[mime]: mime content type is not set");
+		mlog(LV_DEBUG, "mime: mime content type is not set");
 #endif
 		return false;
 	}
@@ -1776,7 +1775,7 @@ bool MIME::to_tls(SSL *ssl) const
 			memcpy(tmp_buff + len, "\r\n", 2);
 			len += 2;
 		} else {
-			debug_info("[mime]: E-1641");
+			mlog(LV_ERR, "E-1641");
 			return false;
 		}
 	}
@@ -1804,7 +1803,7 @@ bool MIME::check_dot() const
 	
 	if (pmime->mime_type == mime_type::none) {
 #ifdef _DEBUG_UMTA
-		debug_info("[mime]: mime content type is not set");
+		mlog(LV_DEBUG, "mime: mime content type is not set");
 #endif
 		return false;
 	}
@@ -2077,7 +2076,7 @@ ssize_t MIME::get_mimes_digest(const char *id_string, size_t *poffset,
 	auto pmime = this;
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr || poffset == nullptr || pcount == nullptr) {
-		debug_info("[mime]: NULL pointer found in MIME::get_mimes_digest");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return -1;
 	}
 #endif
@@ -2345,7 +2344,7 @@ ssize_t MIME::get_structure_digest(const char *id_string, size_t *poffset,
 	auto pmime = this;
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr || poffset == nullptr || pcount == nulllptr) {
-		debug_info("[mime]: NULL pointer found in MIME::get_structure_digest");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return -1;
 	}
 #endif
@@ -2500,7 +2499,7 @@ static bool mime_parse_multiple(MIME *pmime)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_parse_multiple");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
@@ -2573,7 +2572,7 @@ static void mime_produce_boundary(MIME *pmime)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_produce_boundary");
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return;
 	}
 #endif

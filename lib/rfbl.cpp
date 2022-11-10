@@ -16,6 +16,7 @@
 #include <iconv.h>
 #include <list>
 #include <memory>
+#include <shared_mutex>
 #include <spawn.h>
 #include <sstream>
 #include <string>
@@ -24,6 +25,9 @@
 #include <utility>
 #include <vector>
 #include <zstd.h>
+#ifdef HAVE_SYSLOG_H
+#	include <syslog.h>
+#endif
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
@@ -60,13 +64,17 @@ class hxmc_deleter {
 };
 
 static int gx_reexec_top_fd = -1;
+static unsigned int g_max_loglevel = LV_NOTICE;
+static std::shared_mutex g_log_mutex;
+static std::unique_ptr<FILE, file_deleter> g_logfp;
+static bool g_log_direct = true, g_log_syslog;
 
 LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum, const char *name,
     const char *hint) :
 	item_size(isize), max_items(inum), m_name(name), m_hint(hint)
 {
 	if (isize == 0 || inum == 0)
-		fprintf(stderr, "E-1669: Invalid parameters passed to LIB_BUFFER ctor\n");
+		mlog(LV_ERR, "E-1669: Invalid parameters passed to LIB_BUFFER ctor");
 }
 
 LIB_BUFFER &LIB_BUFFER::operator=(LIB_BUFFER &&o) noexcept
@@ -85,14 +93,14 @@ void *LIB_BUFFER::get_raw()
 	do {
 		auto exp = allocated_num.load();
 		if (exp >= max_items) {
-			fprintf(stderr, "E-1992: The buffer pool \"%s\" is full. "
+			mlog(LV_ERR, "E-1992: The buffer pool \"%s\" is full. "
 			        "This either means a memory leak, or the pool sizes "
-			        "have been configured too low.\n",
+			        "have been configured too low.",
 			        znul(m_name));
 			if (m_hint != nullptr)
-				fprintf(stderr, "I-1993: Config directives that could be tuned: %s\n", m_hint);
+				mlog(LV_INFO, "I-1993: Config directives that could be tuned: %s", m_hint);
 			else
-				fprintf(stderr, "I-1994: Size is dynamic but not tunable.\n");
+				mlog(LV_INFO, "I-1994: Size is dynamic but not tunable.");
 			errno = ENOMEM;
 			return nullptr;
 		}
@@ -143,7 +151,7 @@ int gx_vsnprintf1(char *buf, size_t sz, const char *file, unsigned int line,
 		*buf = '\0';
 		return ret;
 	} else if (static_cast<size_t>(ret) >= sz) {
-		fprintf(stderr, "gx_vsnprintf: truncation at %s:%u (%d bytes into buffer of %zu)\n",
+		mlog(LV_ERR, "gx_vsnprintf: truncation at %s:%u (%d bytes into buffer of %zu)",
 		        file, line, ret, sz);
 		return strlen(buf);
 	}
@@ -161,7 +169,7 @@ int gx_snprintf1(char *buf, size_t sz, const char *file, unsigned int line,
 		*buf = '\0';
 		return ret;
 	} else if (static_cast<size_t>(ret) >= sz) {
-		fprintf(stderr, "gx_snprintf: truncation at %s:%u (%d bytes into buffer of %zu)\n",
+		mlog(LV_ERR, "gx_snprintf: truncation at %s:%u (%d bytes into buffer of %zu)",
 		        file, line, ret, sz);
 		return strlen(buf);
 	}
@@ -473,8 +481,10 @@ void rfc1123_dstring(char *buf, size_t z, time_t ts)
 
 void startup_banner(const char *prog)
 {
-	fprintf(stderr, "\n%s %s (pid %ld uid %ld)\n\n", prog, PACKAGE_VERSION,
+	fprintf(stderr, "\n");
+	mlog(LV_NOTICE, "%s %s (pid %ld uid %ld)", prog, PACKAGE_VERSION,
 	        static_cast<long>(getpid()), static_cast<long>(getuid()));
+	fprintf(stderr, "\n");
 }
 
 /**
@@ -506,10 +516,10 @@ errno_t gx_reexec(const char *const *argv) try
 	hxmc_t *resolved = nullptr;
 	auto ret = HX_readlink(&resolved, "/proc/self/exe");
 	if (ret < 0) {
-		fprintf(stderr, "reexec: readlink: %s", strerror(-ret));
+		mlog(LV_ERR, "reexec: readlink: %s", strerror(-ret));
 		return -ret;
 	}
-	fprintf(stderr, "Reexecing %s\n", resolved);
+	mlog(LV_NOTICE, "Reexecing %s", resolved);
 	execv(resolved, const_cast<char **>(argv));
 	int saved_errno = errno;
 	perror("execv");
@@ -531,14 +541,14 @@ errno_t gx_reexec(const char *const *argv) try
 			return errno;
 		tgt.resize(tgt.size() * 2);
 	}
-	fprintf(stderr, "Reexecing %s\n", tgt.c_str());
+	mlog(LV_NOTICE, "Reexecing %s", tgt.c_str());
 	execv(tgt.c_str(), const_cast<char **>(argv));
 	int saved_errno = errno;
 	perror("execv");
 	return saved_errno;
 #else
 	/* Since none of our programs modify argv[0], executing the same should just work */
-	fprintf(stderr, "Reexecing %s\n", argv[0]);
+	mlog(LV_NOTICE, "Reexecing %s", argv[0]);
 	execv(argv[0], const_cast<char **>(argv));
 	int saved_errno = errno;
 	perror("execv");
@@ -565,19 +575,19 @@ errno_t switch_user_exec(const CONFIG_FILE &cf, const char **argv)
 	case HXPROC_SU_SUCCESS:
 		return gx_reexec(argv);
 	case HXPROC_USER_NOT_FOUND:
-		fprintf(stderr, "No such user \"%s\": %s\n", user, strerror(errno));
+		mlog(LV_ERR, "No such user \"%s\": %s", user, strerror(errno));
 		break;
 	case HXPROC_GROUP_NOT_FOUND:
-		fprintf(stderr, "Group lookup failed/Can't happen\n");
+		mlog(LV_ERR, "Group lookup failed/Can't happen");
 		break;
 	case HXPROC_SETUID_FAILED:
-		fprintf(stderr, "setuid to \"%s\" failed: %s\n", user, strerror(errno));
+		mlog(LV_ERR, "setuid to \"%s\" failed: %s", user, strerror(errno));
 		break;
 	case HXPROC_SETGID_FAILED:
-		fprintf(stderr, "setgid to groupof(\"%s\") failed: %s\n", user, strerror(errno));
+		mlog(LV_ERR, "setgid to groupof(\"%s\") failed: %s", user, strerror(errno));
 		break;
 	case HXPROC_INITGROUPS_FAILED:
-		fprintf(stderr, "initgroups for \"%s\" failed: %s\n", user, strerror(errno));
+		mlog(LV_ERR, "initgroups for \"%s\" failed: %s", user, strerror(errno));
 		break;
 	}
 	return errno;
@@ -630,7 +640,7 @@ bool cu_validate_msgclass(const char *k)
 bool cpid_cstr_compatible(uint32_t cpid)
 {
 	if (cpid == 1200 || cpid == 1201 || cpid == 12000 || cpid == 12001) {
-		fprintf(stderr, "E-2103: CString conversion routine called with cpid %u\n", cpid);
+		mlog(LV_ERR, "E-2103: CString conversion routine called with cpid %u", cpid);
 		return false;
 	}
 	return true;
@@ -640,7 +650,7 @@ bool cset_cstr_compatible(const char *s)
 {
 	if (strncasecmp(s, "utf16", 5) == 0 || strncasecmp(s, "utf32", 5) == 0 ||
 	    strncasecmp(s, "utf-16", 6) == 0 || strncasecmp(s, "utf-32", 6) == 0) {
-		fprintf(stderr, "E-2104: CString conversion routine called with charset %s\n", s);
+		mlog(LV_ERR, "E-2104: CString conversion routine called with charset %s", s);
 		return false;
 	}
 	return true;
@@ -693,8 +703,8 @@ int iconv_validate()
 	     "iso-8859-1", "iso-2022-jp"}) {
 		auto k = iconv_open("UTF-8", "UTF-16LE");
 		if (k == (iconv_t)-1) {
-			fprintf(stderr, "I can't work like this! iconv lacks support for the essential character set %s. "
-			        "Perhaps you need to install some libc locale package.\n", s);
+			mlog(LV_ERR, "I can't work like this! iconv lacks support for the essential character set %s. "
+			        "Perhaps you need to install some libc locale package.", s);
 			return -errno;
 		}
 		iconv_close(k);
@@ -718,7 +728,7 @@ bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
 		gx_strlcpy(out, memb.asString().c_str(), outmax);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1988: ENOMEM\n");
+	mlog(LV_ERR, "E-1988: ENOMEM");
 	return false;
 }
 
@@ -736,7 +746,7 @@ set_digest2(char *json, size_t iomax, const char *key, T &&val) try
 	gx_strlcpy(json, Json::writeString(swb, std::move(jval)).c_str(), iomax);
 	return true;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1989: ENOMEM\n");
+	mlog(LV_ERR, "E-1989: ENOMEM");
 	return false;
 }
 
@@ -781,6 +791,64 @@ int open_tmpfile(const char *dir, std::string *fullname, unsigned int flags,
 	return -ENOMEM;
 }
 
+void mlog_init(const char *filename, unsigned int max_level)
+{
+	g_max_loglevel = max_level;
+	g_log_direct = filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0;
+	g_log_syslog = filename != nullptr && strcmp(filename, "syslog") == 0;
+	if (g_log_direct && getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
+		g_log_syslog = true;
+	if (g_log_syslog) {
+		openlog(nullptr, LOG_PID, LOG_MAIL);
+		setlogmask((1 << (max_level + 2)) - 1);
+		return;
+	}
+	if (g_log_direct) {
+		setvbuf(stderr, nullptr, _IOLBF, 0);
+		return;
+	}
+	std::lock_guard hold(g_log_mutex);
+	g_logfp.reset(fopen(filename, "a"));
+	g_log_direct = g_logfp == nullptr;
+	if (g_log_direct) {
+		mlog(LV_ERR, "Could not open %s for writing: %s. Using stderr.",
+		        filename, strerror(errno));
+		setvbuf(stderr, nullptr, _IOLBF, 0);
+	} else {
+		setvbuf(g_logfp.get(), nullptr, _IOLBF, 0);
+	}
+}
+
+void mlog(unsigned int level, const char *fmt, ...)
+{
+	if (level > g_max_loglevel)
+		return;
+	va_list args;
+	va_start(args, fmt);
+	if (g_log_syslog) {
+		vsyslog(level + 1, fmt, args);
+		va_end(args);
+		return;
+	} else if (g_log_direct) {
+		vfprintf(stderr, fmt, args);
+		fputc('\n', stderr);
+		va_end(args);
+		return;
+	}
+	char buf[64];
+	buf[0] = '<';
+	buf[1] = '0' + level;
+	buf[2] = '>';
+	auto now = time(nullptr);
+	struct tm tmbuf;
+	strftime(buf + 3, std::size(buf) - 3, "%FT%T ", localtime_r(&now, &tmbuf));
+	std::shared_lock hold(g_log_mutex);
+	fputs(buf, g_logfp.get());
+	vfprintf(g_logfp.get(), fmt, args);
+	fputc('\n', g_logfp.get());
+	va_end(args);
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try
@@ -790,7 +858,7 @@ int XARRAY::append(MITEM &&ptr, unsigned int tag) try
 	do {
 		auto exp = m_limit.load();
 		if (exp == 0) {
-			fprintf(stderr, "E-1995: XARRAY pool exhausted\n");
+			mlog(LV_ERR, "E-1995: XARRAY pool exhausted");
 			return -1;
 		}
 		auto nuval = exp - 1;

@@ -67,7 +67,7 @@ int listener_run()
 {
 	g_listener_sock = gx_inet_listen(g_listener_addr.c_str(), g_listener_port);
 	if (g_listener_sock < 0) {
-		printf("[listener]: failed to create socket [*]:%hu: %s\n",
+		mlog(LV_ERR, "listener: failed to create socket [*]:%hu: %s",
 		       g_listener_port, strerror(-g_listener_sock));
 		return -1;
 	}
@@ -80,7 +80,7 @@ int listener_run()
 	if (g_listener_ssl_port > 0) {
 		g_listener_ssl_sock = gx_inet_listen(g_listener_addr.c_str(), g_listener_ssl_port);
 		if (g_listener_ssl_sock < 0) {
-			printf("[listener]: failed to create socket [*]:%hu: %s\n",
+			mlog(LV_ERR, "listener: failed to create socket [*]:%hu: %s",
 			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
 			return -1;
 		}
@@ -98,14 +98,14 @@ int listener_trigger_accept()
 {
 	auto ret = pthread_create(&g_thr_id, nullptr, htls_thrwork, nullptr);
 	if (ret != 0) {
-		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 		return -1;
 	}
 	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
 		ret = pthread_create(&g_ssl_thr_id, nullptr, htls_thrworkssl, nullptr);
 		if (ret != 0) {
-			printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
+			mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 			return -2;
 		}
 		pthread_setname_np(g_ssl_thr_id, "tls_accept");
@@ -157,14 +157,14 @@ static void *htls_thrwork(void *arg)
 		          client_txtport, sizeof(client_txtport),
 		          NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
+			mlog(LV_ERR, "E-1260: getnameinfo: %s", gai_strerror(ret));
 			close(sockd2);
 			continue;
 		}
 		addrlen = sizeof(fact_addr); 
 		ret = getsockname(sockd2, reinterpret_cast<struct sockaddr *>(&fact_addr), &addrlen);
 		if (ret != 0) {
-			printf("getsockname: %s\n", strerror(errno));
+			mlog(LV_ERR, "E-1259: getsockname: %s", strerror(errno));
 			close(sockd2);
 			continue;
 		}
@@ -172,28 +172,28 @@ static void *htls_thrwork(void *arg)
 		      addrlen, server_hostip, sizeof(server_hostip),
 		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
-			printf("getsockname: %s\n", gai_strerror(ret));
+			mlog(LV_ERR, "E-1258: getsockname: %s", gai_strerror(ret));
 			close(sockd2);
 			continue;
 		}
 		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(LV_DEBUG, "New connection from [%s]:%hu",
+		mlog(LV_DEBUG, "New connection from [%s]:%hu",
 			client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
-			fprintf(stderr, "W-1408: fcntl: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1408: fcntl: %s", strerror(errno));
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			fprintf(stderr, "W-1409: setsockopt: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1409: setsockopt: %s", strerror(errno));
 		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
-			system_services_log_info(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
+			mlog(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-202 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1984: write: %s\n", strerror(errno));
+				mlog(LV_WARN, "W-1984: write: %s", strerror(errno));
 			close(sockd2);
 			continue;
 		}
@@ -206,8 +206,8 @@ static void *htls_thrwork(void *arg)
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1983: write: %s\n", strerror(errno));
-			system_services_log_info(LV_DEBUG, "Connection %s is denied by ipaddr filter",
+				mlog(LV_WARN, "W-1983: write: %s", strerror(errno));
+			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -222,8 +222,8 @@ static void *htls_thrwork(void *arg)
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1982: write: %s\n", strerror(errno));
-			system_services_log_info(LV_DEBUG, "Connection %s is denied by "
+				mlog(LV_WARN, "W-1982: write: %s", strerror(errno));
+			mlog(LV_DEBUG, "Connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -276,14 +276,14 @@ static void *htls_thrworkssl(void *arg)
 		          client_txtport, sizeof(client_txtport),
 		          NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
+			mlog(LV_ERR, "E-1257: getnameinfo: %s", gai_strerror(ret));
 			close(sockd2);
 			continue;
 		}
 		addrlen = sizeof(fact_addr); 
 		ret = getsockname(sockd2, reinterpret_cast<struct sockaddr *>(&fact_addr), &addrlen);
 		if (ret != 0) {
-			printf("getsockname: %s\n", strerror(errno));
+			mlog(LV_ERR, "E-1256: getsockname: %s", strerror(errno));
 			close(sockd2);
 			continue;
 		}
@@ -291,28 +291,28 @@ static void *htls_thrworkssl(void *arg)
 		      addrlen, server_hostip, sizeof(server_hostip),
 		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
+			mlog(LV_ERR, "E-1255: getnameinfo: %s", gai_strerror(ret));
 			close(sockd2);
 			continue;
 		}
 		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
-		system_services_log_info(LV_DEBUG, "New TLS connection from [%s]:%hu",
+		mlog(LV_DEBUG, "New TLS connection from [%s]:%hu",
 					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
-			fprintf(stderr, "W-1410: fcntl: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1410: fcntl: %s", strerror(errno));
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			fprintf(stderr, "W-1411: setsockopt: %s\n", strerror(errno));
+			mlog(LV_WARN, "W-1411: setsockopt: %s", strerror(errno));
 		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
-			system_services_log_info(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
+			mlog(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
 			len = sprintf(buff, "HTTP/1.1 503 L-332 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1981: write: %s\n", strerror(errno));
+				mlog(LV_WARN, "W-1981: write: %s", strerror(errno));
 			close(sockd2);
 			continue;
 		}
@@ -325,8 +325,8 @@ static void *htls_thrworkssl(void *arg)
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1980: write: %s\n", strerror(errno));
-			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
+				mlog(LV_WARN, "W-1980: write: %s", strerror(errno));
+			mlog(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -341,8 +341,8 @@ static void *htls_thrworkssl(void *arg)
 								"Connection: close\r\n"
 								"\r\n");
 			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				fprintf(stderr, "W-1979: write: %s\n", strerror(errno));
-			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by "
+				mlog(LV_WARN, "W-1979: write: %s", strerror(errno));
+			mlog(LV_DEBUG, "TLS connection %s is denied by "
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */

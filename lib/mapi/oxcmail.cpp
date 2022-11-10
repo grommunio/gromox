@@ -536,7 +536,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		return FALSE;
 	return pproplist->set(PR_RECIPIENT_TYPE, &rcpt_type) == 0 ? TRUE : false;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2049: ENOMEM\n");
+	mlog(LV_ERR, "E-2049: ENOMEM");
 	return false;
 }
 
@@ -549,7 +549,7 @@ static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
 	try {
 		mblist.parse(field);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-2023: ENOMEM\n");
+		mlog(LV_ERR, "E-2023: ENOMEM");
 		return false;
 	}
 	for (const auto &compo : mblist.getChildComponents()) {
@@ -654,7 +654,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 	try {
 		mblist.parse(field);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-2022: ENOMEM\n");
+		mlog(LV_ERR, "E-2022: ENOMEM");
 		return false;
 	}
 	for (const auto &compo : mblist.getChildComponents()) {
@@ -1569,7 +1569,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t length = rdlength;
@@ -1706,7 +1706,7 @@ static BOOL oxcmail_parse_binhex(const MIME *pmime, ATTACHMENT_CONTENT *pattachm
 		return FALSE;
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t content_len = rdlength;
@@ -1816,7 +1816,7 @@ static BOOL oxcmail_parse_appledouble(const MIME *pmime,
 	(*plast_propid) ++;
 	auto rdlength = phmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t content_len = rdlength;
@@ -1870,7 +1870,7 @@ static BOOL oxcmail_parse_appledouble(const MIME *pmime,
 	}
 	rdlength = pdmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		free(pcontent);
 		return false;
 	}
@@ -1916,7 +1916,7 @@ static BOOL oxcmail_parse_macbinary(const MIME *pmime,
 	
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t content_len = rdlength;
@@ -1996,7 +1996,7 @@ static BOOL oxcmail_parse_applesingle(const MIME *pmime,
 	
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t content_len = rdlength;
@@ -2283,7 +2283,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	if (strcasecmp(cttype, "text/directory") == 0) {
 		auto rdlength = pmime->get_length();
 		if (rdlength < 0) {
-			fprintf(stderr, "%s:MIME::get_length:%u: unsuccessful\n", __func__, __LINE__);
+			mlog(LV_ERR, "%s:MIME::get_length:%u: unsuccessful", __func__, __LINE__);
 			return;
 		}
 		size_t content_len = rdlength;
@@ -2331,7 +2331,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	    (b_filename && strcasecmp(".eml", extension) == 0)) {
 		auto rdlength = pmime->get_length();
 		if (rdlength < 0) {
-			fprintf(stderr, "%s:MIME::get_length:%u: unsuccessful\n", __func__, __LINE__);
+			mlog(LV_ERR, "%s:MIME::get_length:%u: unsuccessful", __func__, __LINE__);
 			return;
 		}
 		size_t content_len = rdlength;
@@ -2429,7 +2429,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	}
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length:%u: unsuccessful\n", __func__, __LINE__);
+		mlog(LV_ERR, "%s:MIME::get_length:%u: unsuccessful", __func__, __LINE__);
 		return;
 	}
 	size_t content_len = rdlength;
@@ -2453,7 +2453,7 @@ static MESSAGE_CONTENT* oxcmail_parse_tnef(MIME *pmime,
 	
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return nullptr;
 	}
 	size_t content_len = rdlength;
@@ -3116,7 +3116,7 @@ static BOOL oxcmail_parse_smime_message(MAIL *pmail, MESSAGE_CONTENT *pmsg) try
 	}
 	auto rdlength = phead->get_length();
 	if (rdlength < 0) {
-		fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
 	size_t content_len = rdlength;
@@ -3165,7 +3165,7 @@ static BOOL oxcmail_parse_smime_message(MAIL *pmail, MESSAGE_CONTENT *pmsg) try
 		return FALSE;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1972: ENOMEM\n");
+	mlog(LV_ERR, "E-1972: ENOMEM");
 	return false;
 }
 
@@ -3509,7 +3509,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	if (NULL != mime_enum.pcalendar) {
 		auto rdlength = mime_enum.pcalendar->get_length();
 		if (rdlength < 0) {
-			fprintf(stderr, "%s:MIME::get_length: unsuccessful\n", __func__);
+			mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 			message_content_free(pmsg);
 			return nullptr;
 		}
@@ -3690,7 +3690,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		oxcmail_remove_flag_propties(pmsg, get_propids);
 	return pmsg;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2182: ENOMEM\n");
+	mlog(LV_ERR, "E-2182: ENOMEM");
 	return nullptr;
 }
 
@@ -3704,7 +3704,7 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 	try {
 		tmp_buff = std::make_unique<char[]>(alloc_size);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1539: ENOMEM\n");
+		mlog(LV_ERR, "E-1539: ENOMEM");
 		return 0;
 	}
 
@@ -3850,7 +3850,7 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 		ep2.init(address_array.pbin[i].pb, address_array.pbin[i].cb, alloc, EXT_FLAG_UTF16);
 		if (ep2.g_oneoff_eid(&oo) != EXT_ERR_SUCCESS ||
 		    strcasecmp(oo.paddress_type, "SMTP") != 0) {
-			fprintf(stderr, "W-1964: skipping non-SMTP reply-to entry\n");
+			mlog(LV_WARN, "W-1964: skipping non-SMTP reply-to entry");
 			continue;
 		}
 		if (oo.pdisplay_name != nullptr && *oo.pdisplay_name != '\0') {
@@ -4014,7 +4014,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		pskeleton->pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	}
 	if (NULL == pskeleton->pmessage_class) {
-		debug_info("[oxcmail]: missing message class for exporting");
+		mlog(LV_DEBUG, "oxcmail: missing message class for exporting");
 		return FALSE;
 	}
 	pskeleton->mail_type = oxcmail_get_mail_type(
@@ -5302,7 +5302,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			try {
 				pbuff = std::make_unique<char[]>(alloc_size);
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1508: ENOMEM\n");
+				mlog(LV_ERR, "E-1508: ENOMEM");
 				goto EXPORT_FAILURE;
 			}
 			if (!string_from_utf8(mime_skeleton.charset,
@@ -5358,7 +5358,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		if (!oxcical_export(pmsg, ical, alloc,
 		    get_propids, oxcmail_entryid_to_username,
 		    oxcmail_essdn_to_username)) {
-			fprintf(stderr, "W-2186: oxcical_export failed for an unspecified reason\n");
+			mlog(LV_WARN, "W-2186: oxcical_export failed for an unspecified reason");
 			goto EXPORT_FAILURE;
 		}
 		tmp_method[0] = '\0';
@@ -5471,7 +5471,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
  EXPORT_FAILURE:
 	return FALSE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2181: ENOMEM\n");
+	mlog(LV_ERR, "E-2181: ENOMEM");
 	return false;
 }
 

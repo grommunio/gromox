@@ -46,7 +46,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		auto pfile = config_file_initd(filename.c_str(), get_config_path(),
 		             nullptr);
 		if (NULL == pfile) {
-			printf("[exmdb_local]: config_file_initd %s: %s\n",
+			mlog(LV_ERR, "exmdb_local: config_file_initd %s: %s",
 			       filename.c_str(), strerror(errno));
 			return FALSE;
 		}
@@ -58,17 +58,17 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		
 		str_value = pfile->get_value("X500_ORG_NAME");
 		gx_strlcpy(org_name, str_value != nullptr ? str_value : "Gromox default", arsizeof(org_name));
-		printf("[exmdb_local]: x500 org name is \"%s\"\n", org_name);
+		mlog(LV_INFO, "exmdb_local: x500 org name is \"%s\"", org_name);
 		
 		str_value = pfile->get_value("DEFAULT_CHARSET");
 		gx_strlcpy(charset, str_value != nullptr ? str_value : "windows-1252", arsizeof(charset));
-		printf("[exmdb_local]: default charset is \"%s\"\n", charset);
+		mlog(LV_INFO, "exmdb_local: default charset is \"%s\"", charset);
 		
 		str_value = pfile->get_value("EXMDB_CONNECTION_NUM");
 		conn_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 5;
 		if (conn_num < 2 || conn_num > 100)
 			conn_num = 5;
-		printf("[exmdb_local]: exmdb connection number is %d\n", conn_num);
+		mlog(LV_INFO, "exmdb_local: exmdb connection number is %d", conn_num);
 		
 		str_value = pfile->get_value("CACHE_SCAN_INTERVAL");
 		if (NULL == str_value) {
@@ -79,20 +79,20 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 				cache_interval = 180;
 		}
 		HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
-		printf("[exmdb_local]: cache scanning interval is %s\n", temp_buff);
+		mlog(LV_INFO, "exmdb_local: cache scanning interval is %s", temp_buff);
 
 		str_value = pfile->get_value("RETRYING_TIMES");
 		retrying_times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 30;
 		if (retrying_times <= 0)
 			retrying_times = 30;
-		printf("[exmdb_local]: retrying times on temporary failure is %d\n",
+		mlog(LV_INFO, "exmdb_local: retrying times on temporary failure is %d",
 			retrying_times);
 		
 		str_value = pfile->get_value("FAILURE_TIMES_FOR_ALARM");
 		times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;
 		if (times <= 0)
 			times = 10;
-		printf("[exmdb_local]: failure count for alarm is %d\n", times);
+		mlog(LV_INFO, "exmdb_local: failure count for alarm is %d", times);
 
 		str_value = pfile->get_value("INTERVAL_FOR_FAILURE_STATISTIC");
 		if (NULL == str_value) {
@@ -103,7 +103,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 				interval = 3600;
 		}
 		HX_unit_seconds(temp_buff, arsizeof(temp_buff), interval, 0);
-		printf("[exmdb_local]: interval for failure alarm is %s\n", temp_buff);
+		mlog(LV_INFO, "exmdb_local: interval for failure alarm is %s", temp_buff);
 
 		str_value = pfile->get_value("ALARM_INTERVAL");
 		if (NULL == str_value) {
@@ -114,13 +114,13 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 				alarm_interval = 1800;
 		}
 		HX_unit_seconds(temp_buff, arsizeof(temp_buff), alarm_interval, 0);
-		printf("[exmdb_local]: alarms interval is %s\n", temp_buff);
+		mlog(LV_INFO, "exmdb_local: alarms interval is %s", temp_buff);
 
 		str_value = pfile->get_value("RESPONSE_AUDIT_CAPACITY");
 		response_capacity = str_value != nullptr ? strtol(str_value, nullptr, 0) : 1000;
 		if (response_capacity < 0)
 			response_capacity = 1000;
-		printf("[exmdb_local]: auto response audit capacity is %d\n",
+		mlog(LV_INFO, "exmdb_local: auto response audit capacity is %d",
 			response_capacity);
 
 		str_value = pfile->get_value("RESPONSE_INTERVAL");
@@ -132,7 +132,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 				response_interval = 180;
 		}
 		HX_unit_seconds(temp_buff, arsizeof(temp_buff), response_interval, 0);
-		printf("[exmdb_local]: auto response interval is %s\n", temp_buff);
+		mlog(LV_INFO, "exmdb_local: auto response interval is %s", temp_buff);
 
 		net_failure_init(times, interval, alarm_interval);
 		bounce_producer_init(separator);
@@ -142,27 +142,27 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		exmdb_local_init(org_name, charset);
 		
 		if (0 != net_failure_run()) {
-			printf("[exmdb_local]: failed to run net failure\n");
+			mlog(LV_ERR, "exmdb_local: failed to start net_failure component");
 			return FALSE;
 		}
 		if (0 != bounce_producer_run()) {
-			printf("[exmdb_local]: failed to run bounce producer\n");
+			mlog(LV_ERR, "exmdb_local: failed to start bounce producer");
 			return FALSE;
 		}
 		if (0 != cache_queue_run()) {
-			printf("[exmdb_local]: failed to run cache queue\n");
+			mlog(LV_ERR, "exmdb_local: failed to start cache queue");
 			return FALSE;
 		}
 		if (exmdb_client_run(get_config_path(), EXMDB_CLIENT_ASYNC_CONNECT) != 0) {
-			printf("[exmdb_local]: failed to run exmdb client\n");
+			mlog(LV_ERR, "exmdb_local: failed to start exmdb_client");
 			return FALSE;
 		}
 		if (0 != exmdb_local_run()) {
-			printf("[exmdb_local]: failed to run exmdb local\n");
+			mlog(LV_ERR, "exmdb_local: failed to start exmdb_local");
 			return FALSE;
 		}
 		if (!register_local(exmdb_local_hook)) {
-			printf("[exmdb_local]: failed to register the hook function\n");
+			mlog(LV_ERR, "exmdb_local: failed to register the hook function");
             return FALSE;
         }
         return TRUE;

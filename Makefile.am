@@ -57,7 +57,6 @@ exchange_plugins = \
 	libgxs_authmgr.la \
 	libgxs_ip6_container.la libgxs_ip6_filter.la \
 	libgxs_ldap_adaptor.la \
-	libgxs_logthru.la \
 	libgxs_mysql_adaptor.la \
 	libgxs_user_filter.la
 noinst_DATA += \
@@ -71,7 +70,6 @@ noinst_DATA += \
 	libgxs_authmgr.ldd \
 	libgxs_ip6_container.ldd libgxs_ip6_filter.ldd \
 	libgxs_ldap_adaptor.ldd \
-	libgxs_logthru.ldd \
 	libgxs_mysql_adaptor.ldd \
 	libgxs_user_filter.ldd
 sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
@@ -201,10 +199,6 @@ libgxs_ldap_adaptor_la_SOURCES = exch/ldap_adaptor.cpp
 libgxs_ldap_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_ldap_adaptor_la_LIBADD = libgromox_common.la libgromox_cplus.la ${libldap_LIBS}
 EXTRA_libgxs_ldap_adaptor_la_DEPENDENCIES = ${default_sym}
-libgxs_logthru_la_SOURCES = exch/logthru.cpp
-libgxs_logthru_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxs_logthru_la_LIBADD = -lpthread libgromox_common.la
-EXTRA_libgxs_logthru_la_DEPENDENCIES = ${default_sym}
 libgxs_mysql_adaptor_la_SOURCES = exch/mysql_adaptor/mysql_adaptor.cpp exch/mysql_adaptor/sql2.cpp
 libgxs_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_mysql_adaptor_la_LIBADD = -lpthread ${crypt_LIBS} ${HX_LIBS} ${fmt_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la
@@ -314,7 +308,6 @@ man_MANS = \
 	doc/imap.8gx doc/ip6_container.4gx \
 	doc/kdb-uidextract.8 doc/kdb-uidextract-limited.8 \
 	doc/ldap_adaptor.4gx \
-	doc/logthru.4gx \
 	doc/mapi.4gx doc/mapi.7gx doc/midb.8gx doc/midb_agent.4gx \
 	doc/mh_emsmdb.4gx doc/mh_nsp.4gx \
 	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_rewrite.4gx \

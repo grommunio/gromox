@@ -4,6 +4,7 @@
 #include <cstring>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
@@ -22,7 +23,6 @@
 #define SERVICE_ID_GET_ID_FROM_HOMEDIR						13
 #define SERVICE_ID_SEND_MAIL								14
 #define SERVICE_ID_GET_MIME_POOL							15
-#define SERVICE_ID_LOG_INFO									16
 #define SERVICE_ID_GET_HANDLE								17
 
 #define E(s) decltype(exmdb_client_ ## s) exmdb_client_ ## s;
@@ -45,6 +45,8 @@ E(remove_message_property)
 #undef EXMIDL
 #undef IDLOUT
 
+using namespace gromox;
+
 int exmdb_client_run()
 {
 	void (*register_proc)(void*);
@@ -53,7 +55,7 @@ int exmdb_client_run()
 #define EXMIDL(n, p) do { \
 	query_service2("exmdb_client_" #n, exmdb_client_ ## n); \
 	if ((exmdb_client_ ## n) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "exchange_emsmdb", "exmdb_client_" #n); \
+		mlog(LV_ERR, "emsmdb: failed to get the \"%s\" service", "exmdb_client_" #n); \
 		return -1; \
 	} \
 } while (false);
@@ -65,7 +67,7 @@ int exmdb_client_run()
 #define E(f, s) do { \
 	query_service2(s, f); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "exchange_emsmdb", (s)); \
+		mlog(LV_ERR, "emsmdb: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -90,7 +92,6 @@ int exmdb_client_run()
 	pass_service(SERVICE_ID_GET_ID_FROM_HOMEDIR, E(common_util_get_id_from_homedir));
 	pass_service(SERVICE_ID_SEND_MAIL, E(cu_send_mail));
 	pass_service(SERVICE_ID_GET_MIME_POOL, E(common_util_get_mime_pool));
-	pass_service(SERVICE_ID_LOG_INFO, E(log_info));
 	pass_service(SERVICE_ID_GET_HANDLE, E(emsmdb_interface_get_handle));
 #undef E
 	return 0;

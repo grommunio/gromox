@@ -6,6 +6,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/lzxpress.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "logon_object.h"
@@ -3034,7 +3035,7 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 		decompressed_len = lzxpress_decompress(pdata,
 					rpc_header_ext.size, pbuff, 0x8000);
 		if (decompressed_len < rpc_header_ext.size_actual) {
-			fprintf(stderr, "W-1097: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)\n",
+			mlog(LV_WARN, "W-1097: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)",
 				rpc_header_ext.size, rpc_header_ext.size_actual,
 				decompressed_len);
 			return EXT_ERR_LZXPRESS;

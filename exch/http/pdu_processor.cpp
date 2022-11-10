@@ -299,7 +299,7 @@ void pdu_processor_stop()
 	if (z > 0) {
 		/* http_parser_stop runs before pdu_processor_stop, so all
 		 * VIRTUAL_CONNECTION objects ought to be gone already. */
-		fprintf(stderr, "W-1573: %zu PDU_PROCESSORs remaining\n", z);
+		mlog(LV_WARN, "W-1573: %zu PDU_PROCESSORs remaining", z);
 		g_processor_list.clear();
 	}
 
@@ -338,7 +338,7 @@ pdu_processor_create(const char *host, uint16_t tcp_port)
 	try {
 		pprocessor = std::make_unique<PDU_PROCESSOR>();
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1574: ENOMEM\n");
+		mlog(LV_ERR, "E-1574: ENOMEM");
 		return NULL;
 	}
 	/* verify that EP&INTF exists */
@@ -551,7 +551,7 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 	}
 
 	if (auth_data_only && data_and_pad != pauth->auth_pad_length) {
-		debug_info("[pdu_processor]: WARNING: pad length mismatch, "
+		mlog(LV_DEBUG, "pdu_processor: WARNING: pad length mismatch, "
 			"calculated %u got %u\n", data_and_pad, pauth->auth_pad_length);
 		pdu_ndr_free_dcerpc_auth(pauth);
 		return FALSE;
@@ -750,8 +750,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 	
 	if (double_list_get_nodes_num(&pcall->pprocessor->auth_list) >
 		MAX_CONTEXTS_PER_CONNECTION) {
-		debug_info("[pdu_processor]: maximum auth contexts"
-			" number of connection reached\n");
+		mlog(LV_DEBUG, "pdu_processor: maximum auth contexts number of connection reached");
 		return FALSE;
 	}
 	auto pauth_ctx = g_auth_allocator->get();
@@ -815,7 +814,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 	}
 	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
 	g_auth_allocator->put(pauth_ctx);
-	debug_info("[pdu_processor]: unsupported authentication type\n");
+	mlog(LV_DEBUG, "pdu_processor: unsupported authentication type");
 	return FALSE;
 }
 
@@ -940,7 +939,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 			}
 		}
 		if (!b_found) {
-			debug_info("[pdu_processor]: only NDR or NDR64 transfer syntax "
+			mlog(LV_DEBUG, "pdu_processor: only NDR or NDR64 transfer syntax "
 				"can be accepted by system\n");
 			return pdu_processor_bind_nak(pcall, 0);
 		}
@@ -961,7 +960,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	if (NULL == pinterface) {
 		char uuid_str[GUIDSTR_SIZE];
 		uuid.to_str(uuid_str, arsizeof(uuid_str));
-		debug_info("[pdu_processor]: interface %s/%d unknown when binding\n",
+		mlog(LV_DEBUG, "pdu_processor: interface %s/%d unknown when binding",
 			uuid_str, if_version);
 		/* we don't know about that interface */
 		result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
@@ -1088,8 +1087,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
-		debug_info("[pdu_processor]: fata error in pdu_processor_process_bind"
-			" cannot get auth_context from list\n");
+		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
@@ -1158,7 +1156,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
 		goto AUTH3_FAIL;
 	if (!ntlmssp_session_info(pauth_ctx->pntlmssp, &pauth_ctx->session_info)) {
-		debug_info("[pdu_processor]: failed to establish session_info\n");
+		mlog(LV_DEBUG, "pdu_processor: failed to establish session_info");
 		goto AUTH3_FAIL;
 	}
 	if (pauth_ctx->auth_info.auth_type != RPC_C_AUTHN_NONE)
@@ -1250,8 +1248,8 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 				}
 			}
 			if (!b_found) {
-				debug_info("[pdu_processor]: only NDR or NDR64 transfer syntax "
-					"can be accepted by system\n");
+				mlog(LV_DEBUG, "pdu_processor: only NDR or NDR64 transfer syntax "
+					"can be accepted by system");
 				result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 				reason = DCERPC_BIND_REASON_ASYNTAX;
 				goto ALTER_ACK;
@@ -1264,7 +1262,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		if (NULL == pinterface) {
 			char uuid_str[GUIDSTR_SIZE];
 			uuid.to_str(uuid_str, arsizeof(uuid_str));
-			debug_info("[pdu_processor]: interface %s/%d unknown when altering\n",
+			mlog(LV_DEBUG, "pdu_processor: interface %s/%d unknown when altering",
 				uuid_str, if_version);
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DCERPC_BIND_REASON_ASYNTAX;
@@ -1273,8 +1271,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 
 		if (double_list_get_nodes_num(&pprocessor->context_list) >
 			MAX_CONTEXTS_PER_CONNECTION) {
-			debug_info("[pdu_processor]: maximum rpc contexts"
-				" number of connection reached\n");
+			mlog(LV_DEBUG, "pdu_processor: maximum rpc contexts number of connection reached");
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DECRPC_BIND_REASON_LOCAL_LIMIT_EXCEEDED;
 			goto ALTER_ACK;
@@ -1370,8 +1367,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
-		debug_info("[pdu_processor]: fata error in pdu_processor_process_alter"
-			" cannot get auth_context from list\n");
+		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
@@ -1507,8 +1503,8 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	}
 
 	if (creds2.cb != sig_size) {
-		debug_info("[pdu_processor]: auth_response: creds2.cb[%u] != "
-			"sig_size[%u] pad[%u] stub[%u]\n", creds2.cb,
+		mlog(LV_DEBUG, "pdu_processor: auth_response: creds2.cb[%u] != "
+			"sig_size[%u] pad[%u] stub[%u]", creds2.cb,
 			static_cast<unsigned int>(sig_size),
 			pauth_ctx->auth_info.auth_pad_length,
 			ppkt->payload.response.stub_and_verifier.cb);
@@ -1559,7 +1555,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	pdata = malloc(alloc_size);
 	if (NULL == pdata) {
 		pdu_processor_free_stack_root(pstack_root);
-		debug_info("[pdu_processor]: push fail on RPC call %u on %s\n",
+		mlog(LV_DEBUG, "pdu_processor: push fail on RPC call %u on %s",
 			prequest->opnum, pcall->pcontext->pinterface->name);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 	}
@@ -1570,7 +1566,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	/* marshaling the NDR out param data */
 	auto ret = pcall->pcontext->pinterface->ndr_push(prequest->opnum, &ndr_push, pout);
 	if (ret != EXT_ERR_SUCCESS) {
-		fprintf(stderr, "E-1918: ndr_push failed with result code %d\n", ret);
+		mlog(LV_ERR, "E-1918: ndr_push failed with result code %d", ret);
 		free(pdata);
 		pdu_processor_free_stack_root(pstack_root);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
@@ -1656,8 +1652,7 @@ static uint32_t pdu_processor_apply_async_id()
 		return 0;
 	}
 	if (double_list_get_nodes_num(&pcall->pcontext->async_list) >= MAX_SYNC_PER_CONTEXT) {
-		debug_info("[pdu_processor]: maximum async contexts"
-			" number of connection reached\n");
+		mlog(LV_DEBUG, "pdu_processor: maximum async contexts number of connection reached");
 		return 0;
 	}
 	pcontext = http_parser_get_context();
@@ -1895,7 +1890,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	if (NDR_ERR_SUCCESS != pcontext->pinterface->ndr_pull(
 		prequest->opnum, &ndr_pull, &pin)) {
 		pdu_processor_free_stack_root(pstack_root);
-		debug_info("[pdu_processor]: pull fail on RPC call %u on %s\n",
+		mlog(LV_DEBUG, "pdu_processor: pull fail on RPC call %u on %s",
 			prequest->opnum, pcontext->pinterface->name);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
 	}
@@ -1921,13 +1916,13 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	    (ret != DISPATCH_SUCCESS || ecode != ecSuccess))
 		dbg = true;
 	if (dbg)
-		fprintf(stderr, "rpc_dispatch(%s, %u) EC=%xh RS=%d\n",
+		mlog(LV_DEBUG, "rpc_dispatch(%s, %u) EC=%xh RS=%d",
 		        pcontext->pinterface->name, prequest->opnum,
 		        static_cast<unsigned int>(ecode), ret);
 	switch (ret) {
 	case DISPATCH_FAIL:
 		pdu_processor_free_stack_root(pstack_root);
-		debug_info("[pdu_processor]: RPC execution fault in call %s:%02x\n",
+		mlog(LV_DEBUG, "pdu_processor: RPC execution fault in call %s:%02x",
 			pcontext->pinterface->name, prequest->opnum);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OP_RNG_ERROR);
 	case DISPATCH_PENDING:
@@ -1937,7 +1932,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		return pdu_processor_reply_request(pcall, pstack_root, pout);
 	default:
 		pdu_processor_free_stack_root(pstack_root);
-		debug_info("[pdu_processor]: unknown return value by %s:%02x\n",
+		mlog(LV_DEBUG, "pdu_processor: unknown return value by %s:%02x",
 			pcontext->pinterface->name, prequest->opnum);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OP_RNG_ERROR);
 	}
@@ -2653,7 +2648,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 			pchannel_out->available_window = pchannel_out->window_size;
-			if (!http_parser_try_create_vconnection(pcontext)) {
+			if (!pcontext->try_create_vconnection()) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2685,7 +2680,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			pchannel_out->available_window = pchannel_out->window_size;
 			pdu_processor_free_call(pcall);
-			if (!http_parser_recycle_outchannel(pcontext, channel_cookie))
+			if (!pcontext->recycle_outchannel(channel_cookie))
 				return PDU_PROCESSOR_ERROR;
 			pchannel_out->channel_stat = CHANNEL_STAT_RECYCLING;
 			return PDU_PROCESSOR_INPUT;
@@ -2729,7 +2724,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			pdu_processor_free_call(pcall);
 			/* notify out channel to send conn/c2 to client */
-			if (!http_parser_try_create_vconnection(pcontext))
+			if (!pcontext->try_create_vconnection())
 				return PDU_PROCESSOR_ERROR;
 			pchannel_in->channel_stat = CHANNEL_STAT_OPENED;
 			return PDU_PROCESSOR_INPUT;
@@ -2753,7 +2748,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (!http_parser_recycle_inchannel(pcontext, channel_cookie)) {
+			if (!pcontext->recycle_inchannel(channel_cookie)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2785,7 +2780,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			else if (keep_alive < 60000ms)
 				keep_alive = 60000ms;
 			pchannel_in->client_keepalive = keep_alive;
-			http_parser_set_keep_alive(pcontext, keep_alive);
+			pcontext->set_keep_alive(keep_alive);
 			pdu_processor_free_call(pcall);
 			return PDU_PROCESSOR_INPUT;
 		} else if (40 == length) {
@@ -2806,7 +2801,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 			pdu_processor_free_call(pcall);
-			if (http_parser_activate_inrecycling(pcontext, channel_cookie))
+			if (pcontext->activate_inrecycling(channel_cookie))
 				return PDU_PROCESSOR_TERMINATE;
 			return PDU_PROCESSOR_INPUT;
 		} else if (56 == length) {
@@ -2820,7 +2815,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 					pdu_processor_free_call(pcall);
 					return PDU_PROCESSOR_ERROR;
 				}
-				http_parser_set_outchannel_flowcontrol(pcontext,
+				pcontext->set_outchannel_flowcontrol(
 					pcall->pkt.payload.rts.commands[1].command.flowcontrolack.bytes_received,
 					pcall->pkt.payload.rts.commands[1].command.flowcontrolack.available_window);
 				pdu_processor_free_call(pcall);
@@ -2833,7 +2828,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 					return PDU_PROCESSOR_ERROR;
 				}
 				pdu_processor_free_call(pcall);
-				http_parser_activate_outrecycling(pcontext, channel_cookie);
+				pcontext->activate_outrecycling(channel_cookie);
 				return PDU_PROCESSOR_INPUT;
 			} else {
 				pdu_processor_free_call(pcall);
@@ -2848,8 +2843,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 		}
 	}
 	
-	debug_info("[pdu_processor]: unknown pdu in RTS process procedure\n");
-	
+	mlog(LV_DEBUG, "pdu_processor: unknown pdu in RTS process procedure");
 	pdu_processor_free_call(pcall);
 	return PDU_PROCESSOR_ERROR;
 }
@@ -3026,8 +3020,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		if (0 == (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 			if (double_list_get_nodes_num(&pprocessor->fragmented_list) >
 				MAX_FRAGMENTED_CALLS) {
-				debug_info("[pdu_processor]: maximum fragments"
-					" number of call reached\n");
+				mlog(LV_DEBUG, "pdu_processor: maximum fragments number of call reached");
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -3070,8 +3063,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		return PDU_PROCESSOR_INPUT;
 	default:
 		b_result = FALSE;
-		debug_info("[pdu_processor]: invalid ncancn packet type "
-			"in process procedure\n");
+		mlog(LV_DEBUG, "pdu_processor: invalid ncancn packet type in process procedure");
 		break;
 	}
 	
@@ -3096,11 +3088,11 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 	gx_strlcpy(pendpoint->host, host, GX_ARRAY_SIZE(pendpoint->host));
 	pendpoint->tcp_port = tcp_port;
 	pendpoint->last_group_id = 0;
-	printf("[pdu_processor]: registered endpoint [%s]:%hu\n",
+	mlog(LV_INFO, "pdu_processor: registered endpoint [%s]:%hu",
 	       pendpoint->host, pendpoint->tcp_port);
 	return pendpoint;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1575: ENOMEM\n");
+	mlog(LV_ERR, "E-1575: ENOMEM");
 	return nullptr;
 }
 
@@ -3108,17 +3100,17 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
     const DCERPC_INTERFACE *pinterface)
 {
 	if (NULL == pinterface->ndr_pull) {
-		printf("[pdu_processor]: ndr_pull of interface %s cannot be NULL\n",
+		mlog(LV_ERR, "pdu_processor: ndr_pull of interface %s cannot be NULL",
 			pinterface->name);
 		return FALSE;
 	}
 	if (NULL == pinterface->dispatch) {
-		printf("[pdu_processor]: dispatch of interface %s cannot be NULL\n",
+		mlog(LV_ERR, "pdu_processor: dispatch of interface %s cannot be NULL",
 			pinterface->name);
 		return FALSE;
 	}
 	if (NULL == pinterface->ndr_push) {
-		printf("[pdu_processor]: ndr_push of interface %s cannot be NULL\n",
+		mlog(LV_ERR, "pdu_processor: ndr_push of interface %s cannot be NULL",
 			pinterface->name);
 		return FALSE;
 	}
@@ -3126,19 +3118,19 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	auto ix = std::find_if(lst.cbegin(), lst.cend(),
 	          interface_eq(pinterface->uuid, pinterface->version));
 	if (ix != lst.cend()) {
-		printf("[pdu_processor]: interface already exists under "
-		       "endpoint [%s]:%hu\n", pendpoint->host, pendpoint->tcp_port);
+		mlog(LV_ERR, "pdu_processor: interface already exists under "
+		       "endpoint [%s]:%hu", pendpoint->host, pendpoint->tcp_port);
 		return FALSE;
 	}
 	try {
 		pendpoint->interface_list.emplace_back(*pinterface);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1576: ENOMEM\n");
+		mlog(LV_ERR, "E-1576: ENOMEM");
 		return false;
 	}
 	char uuid_string[GUIDSTR_SIZE];
 	pinterface->uuid.to_str(uuid_string, arsizeof(uuid_string));
-	printf("[pdu_processor]: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)\n",
+	mlog(LV_INFO, "pdu_processor: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)",
 	       pendpoint->host, pendpoint->tcp_port, pinterface->name,
 	       uuid_string, pinterface->version & 0xFFFF,
 	       (pinterface->version >> 16) & 0xFFFF);
@@ -3180,7 +3172,7 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	auto pplugin = this;
 	
 	if (pplugin->file_name.size() > 0)
-		printf("[pdu_processor]: unloading %s\n", pplugin->file_name.c_str());
+		mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name.c_str());
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
@@ -3393,15 +3385,13 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 	}
 	auto pservice = me_alloc<pdu_service_node>();
 	if (NULL == pservice) {
-		debug_info("[pdu_processor]: Failed to allocate memory "
-			"for service node\n");
+		mlog(LV_DEBUG, "pdu_processor: Failed to allocate memory for service node");
 		service_release(service, fn);
 		return NULL;
 	}
 	pservice->service_name = me_alloc<char>(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
-		debug_info("[pdu_processor]: Failed to allocate memory "
-			"for service name\n");
+		mlog(LV_DEBUG, "pdu_processor: Failed to allocate memory for service name");
 		service_release(service, fn);
 		free(pservice);
 		return NULL;
@@ -3436,16 +3426,14 @@ static int pdu_processor_load_library(const char* plugin_name)
 	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
 		plug.handle = dlopen((PKGLIBDIR + "/"s + plugin_name).c_str(), RTLD_LAZY);
 	if (plug.handle == nullptr) {
-		printf("[pdu_processor]: error loading %s: %s\n", fake_path,
+		mlog(LV_ERR, "pdu_processor: error loading %s: %s", fake_path,
 			dlerror());
-		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
 		return PLUGIN_FAIL_OPEN;
     }
 	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "PROC_LibMain"));
 	if (plug.lib_main == nullptr) {
-		printf("[pdu_processor]: error finding the PROC_LibMain function in %s\n",
-			fake_path);
-		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "pdu_processor: error finding the PROC_LibMain "
+			"function in %s", fake_path);
 		return PLUGIN_NO_MAIN;
 	}
 	plug.file_name = plugin_name;
@@ -3455,9 +3443,8 @@ static int pdu_processor_load_library(const char* plugin_name)
 	/* append the pendpoint node into endpoint list */
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (!g_cur_plugin->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
-		printf("[pdu_processor]: error executing the plugin's init function "
-			"in %s\n", fake_path);
-		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "pdu_processor: error executing the plugin's init "
+			"function in %s", fake_path);
 		g_plugin_list.pop_back();
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;

@@ -76,21 +76,21 @@ static BOOL hpm_processor_register_interface(
 {
 	auto fn = g_cur_plugin->file_name.c_str();
 	if (NULL == pinterface->preproc) {
-		printf("[hpm_processor]: preproc of interface in %s cannot be NULL\n", fn);
+		mlog(LV_ERR, "http_processor: preproc of interface in %s cannot be NULL", fn);
 		return FALSE;
 	}
 	if (NULL == pinterface->proc) {
-		printf("[hpm_processor]: proc of interface in %s cannot be NULL\n", fn);
+		mlog(LV_ERR, "http_processor: proc of interface in %s cannot be NULL", fn);
 		return FALSE;
 	}
 	if (NULL == pinterface->retr) {
-		printf("[hpm_processor]: retr of interface in %s cannot be NULL\n", fn);
+		mlog(LV_ERR, "http_processor: retr of interface in %s cannot be NULL", fn);
 		return FALSE;
 	}
 	if (NULL != g_cur_plugin->interface.preproc ||
 		NULL != g_cur_plugin->interface.proc ||
 		NULL != g_cur_plugin->interface.retr) {
-		printf("[hpm_processor]: interface has been already registered in %s", fn);
+		mlog(LV_ERR, "http_processor: interface has already been registered in %s", fn);
 		return FALSE;
 	}
 	memcpy(&g_cur_plugin->interface, pinterface, sizeof(HPM_INTERFACE));
@@ -282,7 +282,7 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 		g_cur_plugin->list_reference.push_back(std::move(nd));
 	} catch (const std::bad_alloc &) {
 		service_release(service, fn);
-		fprintf(stderr, "E-1636: ENOMEM\n");
+		mlog(LV_ERR, "E-1636: ENOMEM");
 		return nullptr;
 	}
 	return ret_addr;
@@ -302,7 +302,7 @@ HPM_PLUGIN::~HPM_PLUGIN()
 	PLUGIN_MAIN func;
 	auto pplugin = this;
 	if (pplugin->file_name.size() > 0)
-		printf("[hpm_processor]: unloading %s\n", pplugin->file_name.c_str());
+		mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name.c_str());
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
@@ -325,15 +325,13 @@ static int hpm_processor_load_library(const char *plugin_name)
 	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
 		plug.handle = dlopen((PKGLIBDIR + "/"s + plugin_name).c_str(), RTLD_LAZY);
 	if (plug.handle == nullptr) {
-		printf("[hpm_processor]: error loading %s: %s\n", fake_path, dlerror());
-		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "http_processor: error loading %s: %s", fake_path, dlerror());
 		return PLUGIN_FAIL_OPEN;
     }
 	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "HPM_LibMain"));
 	if (plug.lib_main == nullptr) {
-		printf("[hpm_processor]: error finding the "
-			"HPM_LibMain function in %s\n", fake_path);
-		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "http_processor: error finding the "
+			"HPM_LibMain function in %s", fake_path);
 		return PLUGIN_NO_MAIN;
 	}
 	plug.file_name = plugin_name;
@@ -344,9 +342,8 @@ static int hpm_processor_load_library(const char *plugin_name)
 	    g_cur_plugin->interface.preproc == nullptr ||
 	    g_cur_plugin->interface.proc == nullptr ||
 	    g_cur_plugin->interface.retr == nullptr) {
-		printf("[hpm_processor]: error executing the plugin's init "
-			"function, or interface not registered in %s\n", fake_path);
-		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
+		mlog(LV_ERR, "http_processor: error executing the plugin's init "
+			"function, or interface not registered in %s", fake_path);
 		g_plugin_list.pop_back();
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
@@ -366,7 +363,7 @@ int hpm_processor_run() try
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	printf("[hpm_processor]: Failed to allocate context list\n");
+	mlog(LV_ERR, "http_processor: failed to allocate context list");
 	return -1;
 }
 
@@ -394,7 +391,7 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 		} else {
 			if (tmp_len >= 32) {
 				phpm_ctx->b_preproc = FALSE;
-				http_parser_log_info(phttp, LV_DEBUG, "length of "
+				phttp->log(LV_DEBUG, "length of "
 					"content-length is too long for hpm_processor");
 				return FALSE;
 			}
@@ -405,7 +402,7 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 		}
 		if (content_length > g_max_size) {
 			phpm_ctx->b_preproc = FALSE;
-			http_parser_log_info(phttp, LV_DEBUG, "content-length"
+			phttp->log(LV_DEBUG, "content-length"
 				" is too long for hpm_processor");
 			return FALSE;
 		}
@@ -422,13 +419,13 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 		if (b_chunked || content_length > g_cache_size) {
 			auto path = LOCAL_DISK_TMPDIR;
 			if (mkdir(path, 0777) < 0 && errno != EEXIST) {
-				fprintf(stderr, "E-2079: mkdir %s: %s\n", path, strerror(errno));
+				mlog(LV_ERR, "E-2079: mkdir %s: %s", path, strerror(errno));
 				return false;
 			}
 			phpm_ctx->cache_fd = open_tmpfile(path, &phpm_ctx->tmpfile,
 			                     O_RDWR | O_TRUNC);
 			if (phpm_ctx->cache_fd < 0) {
-				fprintf(stderr, "E-2090: open{%s, %s}: %s\n",
+				mlog(LV_ERR, "E-2090: open{%s, %s}: %s",
 				        path, phpm_ctx->tmpfile.c_str(),
 				        strerror(-phpm_ctx->cache_fd));
 				phpm_ctx->b_preproc = FALSE;
@@ -495,7 +492,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 				tmp_len = size;
 			}
 			if (tmp_len != write(phpm_ctx->cache_fd, pbuff, tmp_len)) {
-				http_parser_log_info(phttp, LV_DEBUG, "fail to"
+				phttp->log(LV_DEBUG, "failed to"
 					" write cache file for hpm_processor");
 				return FALSE;
 			}
@@ -526,7 +523,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 		ptoken = static_cast<char *>(memmem(tmp_buff, size, "\r\n", 2));
 		if (NULL == ptoken) {
 			if (1024 == size) {
-				http_parser_log_info(phttp, LV_DEBUG, "fail to "
+				phttp->log(LV_DEBUG, "failed to "
 					"parse chunked block for hpm_processor");
 				return FALSE;
 			}
@@ -535,7 +532,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 		*ptoken = '\0';
 		phpm_ctx->chunk_size = strtol(tmp_buff, NULL, 16);
 		if (0 == phpm_ctx->chunk_size) {
-			http_parser_log_info(phttp, LV_DEBUG, "fail to "
+			phttp->log(LV_DEBUG, "failed to "
 				"parse chunked block for hpm_processor");
 			return FALSE;
 		}
@@ -547,7 +544,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 		if (phpm_ctx->chunk_size >= size + phpm_ctx->chunk_offset) {
 			if (size != write(phpm_ctx->cache_fd, pbuff, size)) {
-				http_parser_log_info(phttp, LV_DEBUG, "fail to "
+				phttp->log(LV_DEBUG, "failed to "
 					"write cache file for hpm_processor");
 				return FALSE;
 			}
@@ -556,7 +553,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 		} else {
 			tmp_len = phpm_ctx->chunk_size - phpm_ctx->chunk_offset;
 			if (tmp_len != write(phpm_ctx->cache_fd, pbuff, tmp_len)) {
-				http_parser_log_info(phttp, LV_DEBUG, "fail to"
+				phttp->log(LV_DEBUG, "failed to"
 					" write cache file for hpm_processor");
 				return FALSE;
 			}
@@ -565,7 +562,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			phpm_ctx->chunk_offset = phpm_ctx->chunk_size;
 		}
 		if (phpm_ctx->cache_size > g_max_size) {
-			http_parser_log_info(phttp, LV_DEBUG, "chunked content"
+			phttp->log(LV_DEBUG, "chunked content"
 				" length is too long for hpm_processor");
 			return FALSE;
 		}
@@ -628,7 +625,7 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 		if (!phpm_ctx->tmpfile.empty() &&
 		    unlink(phpm_ctx->tmpfile.c_str()) < 0 &&
 		    errno != ENOENT)
-			fprintf(stderr, "W-1347: remove %s: %s\n",
+			mlog(LV_WARN, "W-1347: remove %s: %s",
 			        phpm_ctx->tmpfile.c_str(), strerror(errno));
 	}
 	b_result = phpm_ctx->pinterface->proc(phttp->context_id,
@@ -672,7 +669,7 @@ void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 		if (!phpm_ctx->tmpfile.empty() &&
 		    unlink(phpm_ctx->tmpfile.c_str()) < 0 &&
 		    errno != ENOENT)
-			fprintf(stderr, "W-1369: remove %s: %s\n",
+			mlog(LV_WARN, "W-1369: remove %s: %s",
 			        phpm_ctx->tmpfile.c_str(), strerror(errno));
 	}
 	phpm_ctx->content_length = 0;

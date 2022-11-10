@@ -49,8 +49,7 @@ static void *mdpls_thrwork(void *param)
 		NULL == common_util_get_id_from_username ||
 		NULL == common_util_get_domain_ids ||
 	    cu_send_mail == nullptr ||
-		NULL == common_util_get_mime_pool ||
-		NULL == common_util_log_info) {
+	    common_util_get_mime_pool == nullptr) {
 		if (g_notify_stop)
 			break;
 		sleep(1);	
@@ -66,7 +65,7 @@ static void *mdpls_thrwork(void *param)
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          nullptr, 0, NI_NUMERICSERV | NI_NUMERICHOST);
 		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
+			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
 			close(sockd);
 			continue;
 		}
@@ -77,7 +76,7 @@ static void *mdpls_thrwork(void *param)
 			auto next = prev + 60;
 			auto now = time(nullptr);
 			if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-				fprintf(stderr, "I-1666: Rejecting %s: not allowed by exmdb_acl\n", client_hostip);
+				mlog(LV_INFO, "I-1666: Rejecting %s: not allowed by exmdb_acl", client_hostip);
 			auto tmp_byte = exmdb_response::access_deny;
 			write(sockd, &tmp_byte, 1);
 			close(sockd);
@@ -113,17 +112,17 @@ int exmdb_listener_run(const char *config_path)
 	}
 	g_listen_sockd = gx_inet_listen(g_listen_ip, g_listen_port);
 	if (g_listen_sockd < 0) {
-		printf("[exmdb_provider]: failed to create listen socket: %s\n", strerror(-g_listen_sockd));
+		mlog(LV_ERR, "exmdb_provider: failed to create listen socket: %s", strerror(-g_listen_sockd));
 		return -1;
 	}
 	gx_reexec_record(g_listen_sockd);
 
 	auto ret = list_file_read_fixedstrings("exmdb_acl.txt", config_path, g_acl_list);
 	if (ret == ENOENT) {
-		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
+		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
 		g_acl_list = {"::1"};
 	} else if (ret != 0) {
-		printf("[exmdb_provider]: Failed to read ACLs from exmdb_acl.txt: %s\n", strerror(errno));
+		mlog(LV_ERR, "exmdb_provider: Failed to read ACLs from exmdb_acl.txt: %s", strerror(errno));
 		close(g_listen_sockd);
 		return -5;
 	}
@@ -138,7 +137,7 @@ int exmdb_listener_trigger_accept()
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_listener_id, nullptr, mdpls_thrwork, nullptr);
 	if (ret != 0) {
-		printf("[exmdb_provider]: failed to create exmdb listener thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "exmdb_provider: failed to create exmdb listener thread: %s", strerror(ret));
 		return -1;
 	}
 	pthread_setname_np(g_listener_id, "exmdb_listener");

@@ -89,7 +89,7 @@ std::unique_ptr<LIST_FILE> list_file_initd(const char *fb, const char *sdlist,
 			if (cfg != nullptr)
 				return cfg;
 			if (errno != ENOENT) {
-				fprintf(stderr, "list_file_initd %s: %s\n",
+				mlog(LV_ERR, "list_file_initd %s: %s",
 				        full.c_str(), strerror(errno));
 				return nullptr;
 			}
@@ -114,7 +114,7 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == list_file) {
-		debug_info("[list_file]: list_file_analyse_format, param NULL");
+		mlog(LV_DEBUG, "list_file: list_file_analyse_format, param NULL");
 		return FALSE;
 	}
 #endif
@@ -139,7 +139,7 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 				list_file->format[num] = 's';
 				ptr ++;
 				if (':' != *ptr) {
-					fprintf(stderr, "[list_file]: invalid format, should have a \":\" after \"s\"\n");
+					mlog(LV_ERR, "list_file: invalid format, should have a \":\" after \"s\"");
 					return FALSE;
 				}
 				ptr ++;
@@ -155,12 +155,12 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 					ptr = temp_ptr - 1;
 				}
 				if (strlen(temp_buf) == 0) {
-					fprintf(stderr, "[list_file]: invalid format, should have a number after \":\"\n");
+					mlog(LV_ERR, "list_file: invalid format, should have a number after \":\"");
 					return FALSE;
 				}
 				list_file->type_size[num] = strtol(temp_buf, nullptr, 0);
 				if (list_file->type_size[num] <= 0) {
-					fprintf(stderr, "[list_file]: invalid format, length follows should be larger than 0\n");
+					mlog(LV_ERR, "list_file: invalid format, length follows should be larger than 0");
 					return FALSE;
 				}
 				num ++;
@@ -196,7 +196,7 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == list_file) {
-		debug_info("[list_file]: list_file_construct_list, param NULL");
+		mlog(LV_DEBUG, "list_file: list_file_construct_list, param NULL");
 		return FALSE;
 	}
 #endif
@@ -210,7 +210,7 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 	rewind(list_file->file_ptr.get());
 	auto ptr = gromox::me_alloc<char>(table_size * list_file->item_size);
 	if (NULL == ptr) {
-		fprintf(stderr, "[list_file]: memory allocation failed\n");
+		mlog(LV_ERR, "list_file: memory allocation failed");
 		return FALSE;
 	}
 	list_file->pfile = ptr;
@@ -238,7 +238,7 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 
 #ifdef _DEBUG_UMTA
 	if (NULL == list_file || NULL == pfile || NULL == line) {
-		debug_info("[list_file]: list_file_parse_line, param NULL");
+		mlog(LV_DEBUG, "list_file: list_file_parse_line, param NULL");
 		return FALSE;
 	}
 #endif
@@ -387,7 +387,7 @@ errno_t list_file_read_exmdb(const char *filename, const char *sdlist,
 		} else if (strcmp(item[i].type, "private") == 0) {
 			e.type = EXMDB_ITEM::EXMDB_PRIVATE;
 		} else {
-			fprintf(stderr, "list_file_read_exmdb:%s: skipping line with illegal type \"%s\"\n",
+			mlog(LV_ERR, "list_file_read_exmdb:%s: skipping line with illegal type \"%s\"",
 			        filename, item[i].type);
 			continue;
 		}

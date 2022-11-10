@@ -89,6 +89,6 @@ const char *resource_get_pop3_code(unsigned int code_type, unsigned int n, size_
             return ret_ptr;
         }
     }
-	debug_info("[resource]: rcode does not exist (resource_get_pop3_code)");
+	mlog(LV_DEBUG, "resource: rcode does not exist (resource_get_pop3_code)");
     return NULL;
 }

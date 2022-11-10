@@ -94,6 +94,8 @@ static constexpr cfg_directive timer_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR},
 	{"timer_listen_ip", "::1"},
 	{"timer_listen_port", "6666"},
+	{"timer_log_file", "-"},
+	{"timer_log_level", "4" /* LV_NOTICE */},
 	{"timer_state_path", PKGSTATEDIR "/timer.txt"},
 	{"timer_threads_num", "50", CFG_SIZE, "5", "50"},
 	CFG_TABLE_END,
@@ -231,6 +233,7 @@ int main(int argc, const char **argv) try
 	if (pconfig == nullptr)
 		return 2;
 
+	mlog_init(pconfig->get_value("timer_log_file"), pconfig->get_ll("timer_log_level"));
 	g_list_path = pconfig->get_value("timer_state_path");
 	uint16_t listen_port = pconfig->get_ll("timer_listen_port");
 	auto listen_ip = pconfig->get_value("timer_listen_ip");

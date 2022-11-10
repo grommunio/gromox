@@ -159,7 +159,7 @@ void mod_cache_init(int context_num)
 
 static int mod_cache_defaults()
 {
-	printf("[mod_cache]: defaulting to built-in list of handled paths\n");
+	mlog(LV_NOTICE, "mod_cache: defaulting to built-in list of handled paths");
 	DIRECTORY_NODE node;
 	node.domain = "*";
 	node.path = "/web";
@@ -177,7 +177,7 @@ static int mod_cache_read_txt() try
 	if (pfile == nullptr && errno == ENOENT) {
 		return mod_cache_defaults();
 	} else if (pfile == nullptr) {
-		printf("[mod_cache]: list_file_initd cache.txt: %s\n", strerror(errno));
+		mlog(LV_ERR, "mod_cache: list_file_initd cache.txt: %s", strerror(errno));
 		return -1;
 	}
 	auto item_num = pfile->get_size();
@@ -195,7 +195,7 @@ static int mod_cache_read_txt() try
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	printf("[mod_cache: bad_alloc\n");
+	mlog(LV_ERR, "E-1253: ENOMEM");
 	return -ENOMEM;
 }
 
@@ -206,19 +206,19 @@ int mod_cache_run()
 		return ret;
 	g_context_list = me_alloc<CACHE_CONTEXT>(g_context_num);
 	if (NULL == g_context_list) {
-		printf("[mod_cache]: Failed to allocate context list\n");
+		mlog(LV_ERR, "mod_cache: failed to allocate context list");
 		return -2;
 	}
 	memset(g_context_list, 0, sizeof(CACHE_CONTEXT)*g_context_num);
 	g_cache_hash = STR_HASH_TABLE::create(HASH_GROWING_NUM, sizeof(CACHE_ITEM *), nullptr);
 	if (NULL == g_cache_hash) {
-		printf("[mod_cache]: Failed to init cache hash table\n");
+		mlog(LV_ERR, "mod_cache: failed to init cache hash table");
 		return -3;
 	}
 	g_notify_stop = false;
 	ret = pthread_create(&g_scan_tid, nullptr, mod_cache_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[mod_cache]: failed to create scanning thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "mod_cache: failed to create scanning thread: %s", strerror(ret));
 		g_notify_stop = true;
 		return -4;
 	}
@@ -594,7 +594,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	}
 	tmp_len = phttp->request.f_host.get_total_length();
 	if (tmp_len >= sizeof(domain)) {
-		http_parser_log_info(phttp, LV_DEBUG, "length of "
+		phttp->log(LV_DEBUG, "length of "
 			"request host is too long for mod_cache");
 		return FALSE;
 	}
@@ -611,11 +611,11 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	}
 	tmp_len = phttp->request.f_request_uri.get_total_length();
 	if (0 == tmp_len) {
-		http_parser_log_info(phttp, LV_DEBUG, "cannot"
+		phttp->log(LV_DEBUG, "cannot"
 			" find request uri for mod_cache");
 		return FALSE;
 	} else if (tmp_len >= sizeof(tmp_buff)) {
-		http_parser_log_info(phttp, LV_DEBUG, "length of "
+		phttp->log(LV_DEBUG, "length of "
 			"request uri is too long for mod_cache");
 		return FALSE;
 	}
@@ -623,14 +623,14 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	phttp->request.f_request_uri.read(tmp_buff, tmp_len);
 	tmp_buff[tmp_len] = '\0';
 	if (!parse_uri(tmp_buff, request_uri)) {
-		http_parser_log_info(phttp, LV_DEBUG, "request"
+		phttp->log(LV_DEBUG, "request"
 				" uri format error for mod_cache");
 		return FALSE;
 	}
 	suffix[0] = '\0';
 	ptoken = strrchr(request_uri, '/');
 	if (NULL == ptoken) {
-		http_parser_log_info(phttp, LV_DEBUG, "request uri "
+		phttp->log(LV_DEBUG, "request uri "
 			"format error, missing slash for mod_cache");
 		return FALSE;
 	}
@@ -674,7 +674,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	if (mod_cache_get_others_field(&phttp->request.f_others, "Range",
 	    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 		if (!mod_cache_parse_range_value(tmp_buff, node_stat.st_size, pcontext)) {
-			http_parser_log_info(phttp, LV_DEBUG, "\"range\""
+			phttp->log(LV_DEBUG, "\"range\""
 				" value in http request header format"
 				" error for mod_cache");
 			return FALSE;

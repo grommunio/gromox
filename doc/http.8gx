@@ -148,6 +148,17 @@ The TCP port to expose implicit-TLS HTTP protocol service (HTTPS) on.
 .br
 Default: (unset)
 .TP
+\fBhttp_log_file\fP
+Target for log messages here. Special values: "\fI-\fP" (stderr/syslog
+depending on parent PID) or "\fIsyslog\fP" are recognized.
+.br
+Default: \fI-\fP (auto)
+.TP
+\fBhttp_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fBhttp_private_key_path\fP
 Filesystem path to the key file needed to unlock the TLS certificate.
 .br
@@ -172,7 +183,7 @@ Default: \fI5\fP
 \fBmsrpc_debug\fP
 Log every completed RPC call and the return code of the operation in a minimal
 fashion to stderr. Level 1 emits RPCs with a failure return code, level 2 emits
-all RPCs.
+all RPCs. Note the daemon log level needs to be "debug" (6), too.
 .br
 Default: \fI0\fP
 .TP

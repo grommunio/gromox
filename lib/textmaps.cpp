@@ -25,6 +25,7 @@
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/util.hpp>
 
 namespace {
 
@@ -61,7 +62,7 @@ static void xmap_read(const char *file, const char *dirs,
 {
 	auto filp = fopen_sd(file, dirs);
 	if (filp == nullptr) {
-		fprintf(stderr, "[textmaps]: fopen_sd %s: %s\n", file, strerror(errno));
+		mlog(LV_ERR, "textmaps: fopen_sd %s: %s", file, strerror(errno));
 		return;
 	}
 	hxmc_t *line = nullptr;
@@ -90,7 +91,7 @@ static void smap_read(const char *file, const char *dirs,
 {
 	auto filp = fopen_sd(file, dirs);
 	if (filp == nullptr) {
-		fprintf(stderr, "[textmaps]: fopen_sd %s: %s\n", file, strerror(errno));
+		mlog(LV_ERR, "textmaps: fopen_sd %s: %s", file, strerror(errno));
 		return;
 	}
 	hxmc_t *line = nullptr;
@@ -123,7 +124,7 @@ static void folder_namedb_read(const char *file, const char *dirs, folder_name_m
 {
 	auto filp = fopen_sd(file, dirs);
 	if (filp == nullptr) {
-		fprintf(stderr, "[textmaps]: fopen_sd %s: %s\n", file, strerror(errno));
+		mlog(LV_ERR, "textmaps: fopen_sd %s: %s", file, strerror(errno));
 		return;
 	}
 	hxmc_t *line = nullptr;
@@ -164,14 +165,14 @@ static int cpl_read(const char *filename, const char *dirs, Json::Value &dict)
 {
 	auto fp = fopen_sd(filename, dirs);
 	if (fp == nullptr) {
-		fprintf(stderr, "[codepage_lang]: fopen_sd %s: %s\n",
+		mlog(LV_ERR, "textmaps: fopen_sd %s: %s",
 		        filename, strerror(errno));
 		return -1;
 	}
 	size_t sl = 0;
 	std::unique_ptr<char[], stdlib_delete> sd(HX_slurp_fd(fileno(fp.get()), &sl));
 	if (sd == nullptr) {
-		fprintf(stderr, "[codepage_lang]: slurp %s: %s\n",
+		mlog(LV_ERR, "textmaps: slurp %s: %s",
 		        filename, strerror(errno));
 		return -1;
 	}
@@ -179,7 +180,7 @@ static int cpl_read(const char *filename, const char *dirs, Json::Value &dict)
 	sd.reset();
 	std::istringstream ss(sd2);
 	if (!Json::parseFromStream(Json::CharReaderBuilder(), ss, &dict, nullptr)) {
-		fprintf(stderr, "[codepage_lang]: invalid json in %s\n", filename);
+		mlog(LV_ERR, "textmaps: invalid JSON data in %s", filename);
 		return -1;
 	}
 	return 0;
@@ -287,7 +288,7 @@ const char *folder_namedb_resolve(const char *xpg_loc) try
 		return iter->first.c_str();
 	return nullptr;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1560: ENOMEM\n");
+	mlog(LV_ERR, "E-1560: ENOMEM");
 	return nullptr;
 }
 
@@ -320,19 +321,19 @@ void textmaps_init(const char *datapath)
 		datapath = PKGDATADIR;
 	std::call_once(g_textmaps_done, [=]() {
 		xmap_read("cpid.txt", datapath, g_cpid2name_map, g_cpname2id_map);
-		fprintf(stderr, "[textmaps]: cpid: %zu IDs, %zu names\n",
+		mlog(LV_INFO, "textmaps: cpid: %zu IDs, %zu names",
 		        g_cpid2name_map.size(), g_cpname2id_map.size());
 		xmap_read("lcid.txt", datapath, g_lcid2tag_map, g_lctag2id_map);
-		fprintf(stderr, "[textmaps]: lcid: %zu IDs, %zu names\n",
+		mlog(LV_INFO, "textmaps: lcid: %zu IDs, %zu names",
 		        g_lcid2tag_map.size(), g_lctag2id_map.size());
 		smap_read("lang_charset.txt", datapath, g_lang2cset_map, g_ignore_map);
-		fprintf(stderr, "[textmaps]: lang_charset: %zu mappings\n",
+		mlog(LV_INFO, "textmaps: lang_charset: %zu mappings",
 		        g_lang2cset_map.size());
 		smap_read("mime_extension.txt", datapath, g_ext2mime_map, g_mime2ext_map);
-		fprintf(stderr, "[textmaps]: mime_extension: %zu exts, %zu mimetypes\n",
+		mlog(LV_INFO, "textmaps: mime_extension: %zu exts, %zu mimetypes",
 		        g_ext2mime_map.size(), g_mime2ext_map.size());
 		folder_namedb_read("folder_names.txt", datapath, folder_name_map);
-		fprintf(stderr, "[textmaps]: %zu translations in folder namedb\n", folder_name_map.size());
+		mlog(LV_INFO, "textmaps: %zu translations in folder namedb", folder_name_map.size());
 		cpl_read("codepage_lang.json", datapath, g_cpl_dict);
 	});
 }

@@ -9,6 +9,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #include "attachment_object.h"
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -19,6 +20,8 @@
 #include "logon_object.h"
 #include "message_object.h"
 
+using namespace gromox;
+
 std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
     void *pobject, int root_element)
 {
@@ -26,7 +29,7 @@ std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
 	try {
 		pctx.reset(new fastupctx_object);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1451: ENOMEM\n");
+		mlog(LV_ERR, "E-1451: ENOMEM");
 		return NULL;
 	}
 	pctx->pobject = pobject;
@@ -596,7 +599,7 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 	try {
 		pctx->marker_stack.emplace_back(std::move(new_mark));
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1600: ENOMEM\n");
+		mlog(LV_ERR, "E-1600: ENOMEM");
 		return GXERR_CALL_FAILED;
 	}
 	return GXERR_SUCCESS;

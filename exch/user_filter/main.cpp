@@ -36,7 +36,7 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		auto cfg_path = plugname + ".cfg";
 		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path(), nullptr);
 		if (NULL == pfile) {
-			fprintf(stderr, "[%s]: config_file_initd %s: %s\n",
+			mlog(LV_ERR, "%s: config_file_initd %s: %s",
 			       plugname.c_str(), cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
@@ -67,9 +67,9 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		growing_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (growing_num < 0)
 			growing_num = 0;
-		fprintf(stderr, "[%s]: case-%ssensitive, audit_capacity=%d, "
+		mlog(LV_INFO, "%s: case-%ssensitive, audit_capacity=%d, "
 		        "audit_interval=%s, audit_times=%d, tmplist_capacity=%d, "
-		        "greylist_grow=%d\n",
+		        "greylist_grow=%d",
 		        plugname.c_str(), case_sensitive ? "" : "in",
 		        audit_max, temp_buff, audit_times, temp_list_size, growing_num);
 		str_value = pfile->get_value("JUDGE_SERVICE_NAME");
@@ -82,21 +82,21 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		str_filter_init(plugname.c_str(), case_sensitive, audit_max,
 		   audit_interval, audit_times, temp_list_size, list_path, growing_num);
 		if (0 != str_filter_run()) {
-			fprintf(stderr, "[%s]: failed to run the module\n", plugname.c_str());
+			mlog(LV_ERR, "%s: failed to run the module", plugname.c_str());
 			return FALSE;
 		}
 		if (judge_name.size() > 0 && !register_service(judge_name.c_str(), str_filter_judge)) {
-			fprintf(stderr, "[%s]: failed to register \"%s\" service\n",
+			mlog(LV_ERR, "%s: failed to register \"%s\" service",
 			       plugname.c_str(), judge_name.c_str());
 			return FALSE;
 		}
 		if (query_name.size() > 0 && !register_service(query_name.c_str(), str_filter_query)) {
-			fprintf(stderr, "[%s]: failed to register \"%s\" service\n",
+			mlog(LV_ERR, "%s: failed to register \"%s\" service",
 			       plugname.c_str(), query_name.c_str());
 			return FALSE;
 		}
 		if (add_name.size() > 0 && !register_service(add_name.c_str(), str_filter_add_string_into_temp_list)) {
-			fprintf(stderr, "[%s]: failed to register \"%s\" service\n",
+			mlog(LV_ERR, "%s: failed to register \"%s\" service",
 			       plugname.c_str(), add_name.c_str());
 			return FALSE;
 		}

@@ -22,6 +22,7 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/util.hpp>
 #include "db_engine.h"
 
 enum {
@@ -688,7 +689,7 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag)
 			return fake_read_cid(g_dbg_synth_content, tag, cid, plen);
 		path = cu_cid_path(nullptr, cid);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1588: ENOMEM\n");
+		mlog(LV_ERR, "E-1588: ENOMEM");
 		return nullptr;
 	}
 	if (path.empty())
@@ -697,7 +698,7 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag)
 	if (fd.get() < 0) {
 		if (g_dbg_synth_content)
 			return fake_read_cid(g_dbg_synth_content, tag, cid, plen);
-		fprintf(stderr, "E-1587: %s: %s\n", path.c_str(), strerror(errno));
+		mlog(LV_ERR, "E-1587: %s: %s", path.c_str(), strerror(errno));
 		return nullptr;
 	}
 	if (fstat(fd.get(), &node_stat) != 0) {

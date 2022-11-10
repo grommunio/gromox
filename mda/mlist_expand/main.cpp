@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "bounce_producer.h"
 #include <cstdio>
+#include <string>
+#include <typeinfo>
 #include <gromox/hook_common.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/textmaps.hpp>
-#include <string>
-#include <typeinfo>
+#include <gromox/util.hpp>
 
 DECLARE_HOOK_API();
 
@@ -29,19 +30,18 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 		textmaps_init();
 		query_service2("get_mlist_memb", get_mlist_memb);
 		if (get_mlist_memb == nullptr) {
-			printf("[mlist_expand]: failed to get service \"get_mlist_memb\"\n");
+			mlog(LV_ERR, "mlist_expand: failed to get service \"get_mlist_memb\"");
 			return FALSE;
 		}
 		bounce_producer_init(";");
 		if (bounce_producer_run(get_data_path())) {
-			printf("[mlist_expand]: failed to run bounce producer\n");
+			mlog(LV_ERR, "mlist_expand: failed to run bounce producer");
 			return FALSE;
 		}
 		if (!register_hook(expand_process)) {
-			printf("[mlist_expand]: failed to register the hook function\n");
+			mlog(LV_ERR, "mlist_expand: failed to register the hook function");
             return FALSE;
         }
-		printf("[mlist_expand]: plugin is loaded into system\n");
         return TRUE;
     case PLUGIN_FREE:
         return TRUE;
@@ -83,12 +83,12 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
-				log_info(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
+				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"mlist %s is expanded", pcontext->pcontrol->queue_ID,
 					pcontext->pcontrol->from, rcpt_to, rcpt_to);
 				break;
 			default:
-				log_info(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
+				mlog(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
 					"mlist %s is expanded", pcontext->pcontrol->from, rcpt_to,
 					rcpt_to);
 				break;
@@ -117,14 +117,14 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
-				log_info(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
+				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-domain message can be accepted",
 					pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
 					rcpt_to, pcontext->pcontrol->from, rcpt_to);
 				break;
 			default:
-				log_info(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
+				mlog(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-domain message can be accepted",
 					pcontext->pcontrol->from, rcpt_to,
@@ -152,14 +152,14 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
-				log_info(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
+				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-member message can be accepted",
 					pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
 					rcpt_to, pcontext->pcontrol->from, rcpt_to);
 				break;
 			default:
-				log_info(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
+				mlog(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-member message can be accepted",
 					pcontext->pcontrol->from, rcpt_to,
@@ -187,14 +187,14 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
-				log_info(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
+				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only specified senders' message can be accepted",
 					pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
 					rcpt_to, pcontext->pcontrol->from, rcpt_to);
 				break;
 			default:
-				log_info(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
+				mlog(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only specified senders's message can be accepted",
 					pcontext->pcontrol->from, rcpt_to,

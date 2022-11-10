@@ -12,6 +12,8 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 
+using namespace gromox;
+
 namespace {
 struct STACK_NODE {
 	STACK_NODE(const uint8_t *b, uint8_t l) noexcept : common_length(l)
@@ -94,7 +96,7 @@ BOOL idset::append_internal(uint16_t replid, uint64_t value) try
 		range_list.emplace_back(value, value);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1613: ENOMEM\n");
+	mlog(LV_ERR, "E-1613: ENOMEM");
 	return false;
 }
 
@@ -158,7 +160,7 @@ BOOL idset::append_range(uint16_t replid,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1614: ENOMEM\n");
+	mlog(LV_ERR, "E-1614: ENOMEM");
 	return false;
 }
 
@@ -193,7 +195,7 @@ void idset::remove(uint64_t eid) try
 		}
 	}
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1615: ENOMEM\n");
+	mlog(LV_ERR, "E-1615: ENOMEM");
 }
 
 BOOL idset::concatenate(const IDSET *pset_src)
@@ -451,7 +453,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 		case 0x5:
 		case 0x6: { /* push */
 			if (offset + command >= pbin->cb) {
-				debug_info("[idset]: E-1651: not enough bytes left\n");
+				mlog(LV_DEBUG, "D-1651: not enough bytes left");
 				return 0;
 			}
 			GLOBCNT common_bytes;
@@ -460,7 +462,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 			bytes_stack.emplace_back(common_bytes.ab, command);
 			auto stack_length = idset_stack_get_common_bytes(bytes_stack, common_bytes);
 			if (stack_length > 6) {
-				debug_info("[idset]: length of common bytes in"
+				mlog(LV_DEBUG, "idset: length of common bytes in"
 					" stack is too long when deserializing");
 				return 0;
 			}
@@ -470,7 +472,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 				auto x = rop_util_gc_to_value(common_bytes);
 				globset.emplace_back(x, x);
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1616: ENOMEM\n");
+				mlog(LV_ERR, "E-1616: ENOMEM");
 				return 0;
 			}
 			/* MS-OXCFXICS 3.1.5.4.3.1.1 */
@@ -481,7 +483,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 		}
 		case 0x42: { /* bitmask */
 			if (offset + 2 >= pbin->cb) {
-				debug_info("[idset]: E-1652: not enough bytes left\n");
+				mlog(LV_DEBUG, "D-1652: not enough bytes left");
 				return 0;
 			}
 			GLOBCNT common_bytes;
@@ -489,7 +491,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 			uint8_t bitmask = pbin->pb[offset++];
 			auto stack_length = idset_stack_get_common_bytes(bytes_stack, common_bytes);
 			if (5 != stack_length) {
-				debug_info("[idset]: bitmask command error when "
+				mlog(LV_DEBUG, "idset: bitmask command error when "
 					"deserializing, length of common bytes in "
 					"stack should be 5");
 				return 0;
@@ -525,13 +527,13 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 			GLOBCNT common_bytes;
 			auto stack_length = idset_stack_get_common_bytes(bytes_stack, common_bytes);
 			if (stack_length > 5) {
-				debug_info("[idset]: range command error when "
+				mlog(LV_DEBUG, "idset: range command error when "
 					"deserializing, length of common bytes in "
 					"stack should be less than 5");
 				return 0;
 			}
 			if (offset + 6 - stack_length >= pbin->cb) {
-				debug_info("[idset]: E-1653: not enough bytes left\n");
+				mlog(LV_DEBUG, "D-1653: not enough bytes left");
 				return 0;
 			}
 			memcpy(&common_bytes.ab[stack_length],
@@ -549,7 +551,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1618: ENOMEM\n");
+	mlog(LV_ERR, "E-1618: ENOMEM");
 	return 0;
 }
 
@@ -597,7 +599,7 @@ BOOL idset::deserialize(const BINARY *pbin) try
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1617: ENOMEM\n");
+	mlog(LV_ERR, "E-1617: ENOMEM");
 	return false;
 }
 
@@ -626,7 +628,7 @@ BOOL idset::convert() try
 	pset->b_serialize = true;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1619: ENOMEM\n");
+	mlog(LV_ERR, "E-1619: ENOMEM");
 	return false;
 }
 

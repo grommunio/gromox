@@ -15,7 +15,7 @@ void mem_file_init(MEM_FILE *pfile, alloc_limiter<file_block> *palloc)
 	DOUBLE_LIST_NODE *pnode;
 #ifdef _DEBUG_UMTA
 	if (NULL == pfile || NULL == palloc) {
-		debug_info("[mem_file]: mem_file_init, param NULL");
+		mlog(LV_DEBUG, "mem_file: mem_file_init, param NULL");
 		return;
 	}
 #endif
@@ -26,7 +26,7 @@ void mem_file_init(MEM_FILE *pfile, alloc_limiter<file_block> *palloc)
 
 #ifdef _DEBUG_UMTA
 	if (palloc->item_size - sizeof(DOUBLE_LIST_NODE) < FILE_BLOCK_SIZE) {
-		debug_info("[mem_file]: item size in allocator is too small");
+		mlog(LV_DEBUG, "mem_file: item size in allocator is too small");
 		return;
 	}
 #endif
@@ -35,7 +35,7 @@ void mem_file_init(MEM_FILE *pfile, alloc_limiter<file_block> *palloc)
 
 #ifdef _DEBUG_UMTA
 	if(NULL == pnode) {
-		debug_info("[mem_file]: Failed to allocate first node in mem file's "
+		mlog(LV_DEBUG, "mem_file: Failed to allocate first node in mem file's "
 				   "init func");
 		return;
 	}
@@ -62,7 +62,7 @@ size_t MEM_FILE::readline(char *pbuff, size_t size)
 
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr) {
-		debug_info("[mem_file]: mem_file_readline, param NULL");
+		mlog(LV_DEBUG, "mem_file: mem_file_readline, param NULL");
 		return 0;
 	}
 #endif
@@ -221,7 +221,7 @@ size_t MEM_FILE::read(void* pbuff, size_t size)
 	
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr) {
-		debug_info("[mem_file]: mem_file_read, param NULL");
+		mlog(LV_DEBUG, "mem_file: mem_file_read, param NULL");
 		return 0;
 	}
 #endif
@@ -501,7 +501,7 @@ size_t MEM_FILE::write(const void *pbuff, size_t size)
 	size_t blocks, actual_written, i;
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr) {
-		debug_info("[mem_file]: mem_file_write, param NULL");
+		mlog(LV_DEBUG, "mem_file: mem_file_write, param NULL");
 		return 0;
 	}
 #endif
@@ -580,7 +580,7 @@ size_t MEM_FILE::writeline(const char *pbuff)
 {
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr) {
-		debug_info("[mem_file]: mem_file_writeline, param NULL");
+		mlog(LV_DEBUG, "mem_file: mem_file_writeline, param NULL");
 		return 0;
 	}
 #endif						 
@@ -611,7 +611,7 @@ void MEM_FILE::clear()
 	DOUBLE_LIST_NODE *pnode, *phead;
 #ifdef _DEBUG_UMTA
 	if (pfile->allocator == nullptr) {
-		debug_info("[mem_file]: mem_file_clear, param NULL");
+		mlog(LV_DEBUG, "mem_file: mem_file_clear, param NULL");
 		return;
 	}
 #endif
@@ -644,7 +644,7 @@ void mem_file_free(MEM_FILE *pfile)
 	DOUBLE_LIST_NODE *phead;
 #ifdef _DEBUG_UMTA
 	if (NULL == pfile || NULL == pfile->allocator) {
-		debug_info("[mem_file]: mem_file_free, param NULL");
+		mlog(LV_DEBUG, "mem_file: mem_file_free, param NULL");
 		return;
 	}
 #endif
@@ -668,7 +668,7 @@ static DOUBLE_LIST_NODE* mem_file_append_node(MEM_FILE *pfile)
 {	 
 #ifdef _DEBUG_UMTA
 		if (NULL == pfile) {
-		debug_info("[mem_file]: mem_file_append_node, param NULL");
+		mlog(LV_DEBUG, "mem_file: mem_file_append_node, param NULL");
 		return NULL;
 	}
 #endif

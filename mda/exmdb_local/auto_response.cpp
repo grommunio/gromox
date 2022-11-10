@@ -57,7 +57,7 @@ void auto_response_reply(const char *user_home,
 	} else {
 		auto lcldom = exmdb_local_check_domain(ptoken + 1);
 		if (lcldom < 0) {
-			fprintf(stderr, "auto_response: check_domain: %s\n",
+			mlog(LV_ERR, "auto_response: check_domain: %s",
 			        strerror(-lcldom));
 			return;
 		}

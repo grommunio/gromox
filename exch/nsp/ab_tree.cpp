@@ -187,7 +187,7 @@ int ab_tree_run()
 #define E(f, s) do { \
 	query_service2(s, f); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "exchange_nsp", (s)); \
+		mlog(LV_ERR, "nsp: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -205,7 +205,7 @@ int ab_tree_run()
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, nspab_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[exchange_nsp]: failed to create scanning thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "nsp: failed to create scanning thread: %s", strerror(ret));
 		g_notify_stop = true;
 		return -4;
 	}
@@ -262,7 +262,7 @@ static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try
 {
 	return pbase->phash.emplace(pabnode->minid, pabnode).second ? TRUE : false;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1551: ENOMEM\n");
+	mlog(LV_ERR, "E-1551: ENOMEM");
 	return false;
 }
 
@@ -362,7 +362,7 @@ static BOOL ab_tree_load_class(
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1676: ENOMEM\n");
+			mlog(LV_ERR, "E-1676: ENOMEM");
 			ab_tree_put_abnode(pabnode);
 			return false;
 		}
@@ -483,7 +483,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			try {
 				parray.push_back(sort_item{&pabnode->stree, temp_buff});
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1674: ENOMEM\n");
+				mlog(LV_ERR, "E-1674: ENOMEM");
 				ab_tree_put_abnode(pabnode);
 				return false;
 			}
@@ -527,7 +527,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1675: ENOMEM\n");
+			mlog(LV_ERR, "E-1675: ENOMEM");
 			ab_tree_put_abnode(pabnode);
 			return false;
 		}
@@ -586,7 +586,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 		ptr = parray[i++].pnode;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1677: ENOMEM\n");
+	mlog(LV_ERR, "E-1677: ENOMEM");
 	return TRUE;
 }
 
@@ -601,7 +601,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 	auto it = g_base_hash.find(base_id);
 	if (it == g_base_hash.end()) {
 		if (g_base_hash.size() >= g_base_size) {
-			printf("[exchange_nsp]: W-1298: AB base hash is full\n");
+			mlog(LV_ERR, "E-1298: AB base hash is full");
 			return nullptr;
 		}
 		try {
@@ -1322,7 +1322,7 @@ ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, unsigned int codepage
 
 void ab_tree_invalidate_cache()
 {
-	printf("[exchange_nsp]: Invalidating AB caches\n");
+	mlog(LV_NOTICE, "nsp: Invalidating AB caches");
 	std::unique_lock bl_hold(g_base_lock);
 	for (auto &kvpair : g_base_hash)
 		kvpair.second.load_time = 0;

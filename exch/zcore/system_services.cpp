@@ -3,7 +3,10 @@
 #include <gromox/authmgr.hpp>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
+#include <gromox/util.hpp>
 #include "system_services.hpp"
+
+using namespace gromox;
 
 decltype(system_services_auth_login) system_services_auth_login;
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
@@ -34,14 +37,13 @@ E(set_user_lang)
 E(scndstore_hints)
 #undef E
 int (*system_services_add_timer)(const char *, int);
-void (*system_services_log_info)(unsigned int, const char *, ...);
 
 int system_services_run()
 {
 #define E(f, s) do { \
 	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
+		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -69,7 +71,6 @@ int system_services_run()
 	E(system_services_get_mlist_ids, "get_mlist_ids");
 	E(system_services_get_mlist_memb, "get_mlist_memb");
 	E(system_services_check_same_org, "check_same_org");
-	E(system_services_log_info, "log_info");
 	E(system_services_setpasswd, "set_password");
 	E(system_services_get_user_privilege_bits, "get_user_privilege_bits");
 	E(system_services_add_timer, "add_timer");
@@ -104,7 +105,6 @@ void system_services_stop()
 	E("get_mlist_ids");
 	E("get_mlist_memb");
 	E("check_same_org");
-	E("log_info");
 	E("set_password");
 	E("get_user_privilege_bits");
 	E("add_timer");

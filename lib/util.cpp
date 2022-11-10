@@ -334,7 +334,7 @@ BOOL string_to_utf8(const char *charset, const char *in_string,
 	gx_strlcpy(tmp_charset, replace_iconv_charset(charset), GX_ARRAY_SIZE(tmp_charset));
 	conv_id = iconv_open("UTF-8", tmp_charset);
 	if (conv_id == iconv_t(-1)) {
-		fprintf(stderr, "E-2108: iconv_open %s: %s\n",
+		mlog(LV_ERR, "E-2108: iconv_open %s: %s",
 		        tmp_charset, strerror(errno));
 		return FALSE;
 	}
@@ -379,7 +379,7 @@ BOOL string_from_utf8(const char *charset, const char *in_string,
 	auto cs = replace_iconv_charset(charset);
 	auto conv_id = iconv_open(cs, "UTF-8");
 	if (conv_id == iconv_t(-1)) {
-		fprintf(stderr, "E-2109: iconv_open %s: %s\n", cs, strerror(errno));
+		mlog(LV_ERR, "E-2109: iconv_open %s: %s", cs, strerror(errno));
 		return FALSE;
 	}
 	pin = (char*)in_string;
@@ -404,7 +404,7 @@ ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len)
 	len = std::min(len, static_cast<size_t>(SSIZE_MAX));
 	conv_id = iconv_open("UTF-16LE", "UTF-8");
 	if (conv_id == (iconv_t)-1) {
-		fprintf(stderr, "E-2110: iconv_open: %s\n", strerror(errno));
+		mlog(LV_ERR, "E-2110: iconv_open: %s", strerror(errno));
 		return -1;
 	}
 	auto pin  = deconst(src);
@@ -428,7 +428,7 @@ BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 	
 	conv_id = iconv_open("UTF-8", "UTF-16LE");
 	if (conv_id == (iconv_t)-1) {
-		fprintf(stderr, "E-2111: iconv_open: %s\n", strerror(errno));
+		mlog(LV_ERR, "E-2111: iconv_open: %s", strerror(errno));
 		return false;
 	}
 	pin = (char*)src;
@@ -1040,20 +1040,6 @@ ssize_t qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t len
 	}
 	output[outpos] = 0;
 	return outpos;
-}
-
-void debug_info(const char *format, ...)
-{
-#ifdef _DEBUG_UMTA
-	char msg[256];
-	va_list ap;
-
-	memset(msg, 0, sizeof(msg));
-	va_start(ap, format);
-	vsprintf(msg, format, ap);
-	va_end(ap);
-	fprintf(stderr, "%s\n", msg);
-#endif
 }
 
 /*	qpdecode.c -- quoted-printable decoding routine

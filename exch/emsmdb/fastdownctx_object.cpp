@@ -8,6 +8,7 @@
 #include <utility>
 #include <gromox/eid_array.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
@@ -15,6 +16,8 @@
 #include "ftstream_producer.h"
 #include "ics_state.h"
 #include "logon_object.h"
+
+using namespace gromox;
 
 enum {
 	FUNC_ID_UINT32,
@@ -27,7 +30,7 @@ bool fxdown_flow_list::record_node(uint8_t func_id, const void *param) try
 	emplace_back(func_id, param);
 	return true;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1599: ENOMEM\n");
+	mlog(LV_ERR, "E-1599: ENOMEM");
 	return false;
 }
 
@@ -322,7 +325,7 @@ fastdownctx_object::create(logon_object *plogon, uint8_t string_option)
 	try {
 		pctx.reset(new fastdownctx_object);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1453: ENOMEM\n");
+		mlog(LV_ERR, "E-1453: ENOMEM");
 		return NULL;
 	}
 	pctx->pstream = ftstream_producer::create(plogon, string_option);

@@ -175,7 +175,7 @@ int ab_tree_run()
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, zcoreab_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[exchange_nsp]: failed to create scanning thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "zcore: failed to create scanning thread: %s", strerror(ret));
 		g_notify_stop = true;
 		return -3;
 	}
@@ -230,7 +230,7 @@ static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try
 {
 	return pbase->phash.emplace(pabnode->minid, pabnode).second ? TRUE : false;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1550: ENOMEM\n");
+	mlog(LV_ERR, "E-1550: ENOMEM");
 	return false;
 }
 
@@ -324,7 +324,7 @@ static BOOL ab_tree_load_class(
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1670: ENOMEM\n");
+			mlog(LV_ERR, "E-1670: ENOMEM");
 			ab_tree_put_abnode(pabnode);
 			return false;
 		}
@@ -445,7 +445,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			try {
 				parray.push_back(sort_item{&pabnode->stree, temp_buff});
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1671: ENOMEM\n");
+				mlog(LV_ERR, "E-1671: ENOMEM");
 				ab_tree_put_abnode(pabnode);
 				return false;
 			}
@@ -489,7 +489,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1672: ENOMEM\n");
+			mlog(LV_ERR, "E-1672: ENOMEM");
 			ab_tree_put_abnode(pabnode);
 			return false;
 		}
@@ -547,7 +547,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 		ptr = parray[i++].pnode;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1673: ENOMEM\n");
+	mlog(LV_ERR, "E-1673: ENOMEM");
 	return TRUE;
 }
 
@@ -562,7 +562,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 	auto it = g_base_hash.find(base_id);
 	if (it == g_base_hash.cend()) {
 		if (g_base_hash.size() >= g_base_size) {
-			printf("[exchange_nsp]: W-1290: AB base hash is full\n");
+			mlog(LV_ERR, "E-1290: AB base hash is full");
 			return nullptr;
 		}
 		try {
@@ -1723,7 +1723,7 @@ bool ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage, char *pstr,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1678: ENOMEM\n");
+	mlog(LV_ERR, "E-1678: ENOMEM");
 	return false;
 }
 
@@ -1922,7 +1922,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 
 void ab_tree_invalidate_cache()
 {
-	printf("[zcore]: Invalidating AB caches\n");
+	mlog(LV_NOTICE, "zcore: Invalidating AB caches");
 	std::unique_lock bl_hold(g_base_lock);
 	for (auto &kvpair : g_base_hash)
 		kvpair.second.load_time = 0;

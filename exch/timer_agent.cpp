@@ -74,23 +74,23 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 		auto pfile = config_file_initd(cfg_path.c_str(),
 		             get_config_path(), timer_agent_cfg_defaults);
 		if (NULL == pfile) {
-			fprintf(stderr, "[timer_agent]: config_file_initd %s: %s\n",
+			mlog(LV_ERR, "timer_agent: config_file_initd %s: %s",
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
 
 		size_t conn_num = pfile->get_ll("connection_num");
-		fprintf(stderr, "[timer_agent]: timer connection number is %zu\n", conn_num);
+		mlog(LV_INFO, "timer_agent: timer connection number is %zu", conn_num);
 
 		gx_strlcpy(g_timer_ip, pfile->get_value("timer_host"), arsizeof(g_timer_ip));
 		g_timer_port = pfile->get_ll("timer_port");
-		fprintf(stderr, "[timer_agent]: timer address is [%s]:%hu\n",
+		mlog(LV_NOTICE, "timer_agent: timer address is [%s]:%hu",
 		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);
 
 		for (size_t i = 0; i < conn_num; ++i) try {
 			g_lost_list.emplace_back();
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1655: ENOMEM\n");
+			mlog(LV_ERR, "E-1655: ENOMEM");
 		}
 
 		g_notify_stop = false;
@@ -98,15 +98,19 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 		if (ret != 0) {
 			g_notify_stop = true;
 			g_back_list.clear();
-			fprintf(stderr, "[timer_agent]: failed to create scan thread: %s\n",
+			mlog(LV_ERR, "timer_agent: failed to create scan thread: %s",
 			        strerror(ret));
 			return FALSE;
 		}
 		pthread_setname_np(g_scan_id, "timer_agent");
-		if (!register_service("add_timer", add_timer))
-			fprintf(stderr, "[timer_agent]: failed to register add_timer\n");
-		if (!register_service("cancel_timer", cancel_timer))
-			fprintf(stderr, "[timer_agent]: failed to register cancel_timer\n");
+		if (!register_service("add_timer", add_timer)) {
+			mlog(LV_ERR, "timer_agent: failed to register add_timer");
+			return false;
+		}
+		if (!register_service("cancel_timer", cancel_timer)) {
+			mlog(LV_ERR, "timer_agent: failed to register cancel_timer");
+			return false;
+		}
 		return TRUE;
 	}
 	case PLUGIN_FREE:
@@ -319,7 +323,7 @@ static int connect_timer()
 		auto next = prev + 60;
 		auto now = time(nullptr);
 		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-			fprintf(stderr, "gx_inet_connect timer_agent@[%s]:%hu: %s\n",
+			mlog(LV_ERR, "gx_inet_connect timer_agent@[%s]:%hu: %s",
 			        g_timer_ip, g_timer_port, strerror(-sockd));
 	        return -1;
 	}

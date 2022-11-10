@@ -119,7 +119,7 @@ static BOOL ip6flt_judge(const char *addr)
 		if (g_auditlist.try_emplace(addr, std::move(au)).second)
 			return TRUE;
 		if (ip6au_collect(current) == 0) {
-			debug_info("[ip_filter]: still cannot find one unit for auditing, giving up");
+			mlog(LV_DEBUG, "ip_filter: still cannot find one unit for auditing, giving up");
 			return TRUE;
 		}
 		g_auditlist.emplace(addr, std::move(au));
@@ -166,7 +166,7 @@ static BOOL svc_ip6_filter(int reason, void **data)
 
 	auto pfile = config_file_initd(filename.c_str(), get_config_path(), nullptr);
 	if (pfile == nullptr) {
-		printf("[ip6_container]: config_file_initd %s: %s\n",
+		mlog(LV_ERR, "ip6_container: config_file_initd %s: %s",
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
@@ -186,14 +186,14 @@ static BOOL svc_ip6_filter(int reason, void **data)
 		add_name = "ip_filter_add";
 	char temp_buff[64];
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), std::chrono::duration_cast<std::chrono::seconds>(g_audit_intvl).count(), 0);
-	printf("[%s]: audit capacity is %d\n", plugname.c_str(), g_audit_max);
-	printf("[%s]: audit interval is %s\n", plugname.c_str(), temp_buff);
-	printf("[%s]: audit times is %d\n", plugname.c_str(), g_max_within_interval);
-	printf("[%s]: temporary list capacity is %zu\n", plugname.c_str(), g_templist_maxsize);
+	mlog(LV_INFO, "%s: audit capacity is %d", plugname.c_str(), g_audit_max);
+	mlog(LV_INFO, "%s: audit interval is %s", plugname.c_str(), temp_buff);
+	mlog(LV_INFO, "%s: audit times is %d", plugname.c_str(), g_max_within_interval);
+	mlog(LV_INFO, "%s: temporary list capacity is %zu", plugname.c_str(), g_templist_maxsize);
 
 	if ((add_name != nullptr && !register_service(add_name, ip6flt_add)) ||
 	    (judge_name != nullptr && !register_service(judge_name, ip6flt_judge))) {
-		printf("[ip6_filter]: can't register services (symbol clash?)\n");
+		mlog(LV_ERR, "ip6_filter: can't register services (symbol clash?)");
 		return false;
 	}
 	return TRUE;

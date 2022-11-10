@@ -181,18 +181,18 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	if (current >= recent)
 		return 0;
 	auto c = is_pvt ? 'V' : 'B';
-	fprintf(stderr, "[dbop_sqlite]: %s: current schema E%c-%d; upgrading to E%c-%d.\n",
+	mlog(LV_NOTICE, "dbop_sqlite: %s: current schema E%c-%d; upgrading to E%c-%d.",
 		filedesc, c, current, c, recent);
 	auto start = tp_now();
 	auto ret = dbop_sqlite_upgrade(db, filedesc, kind, DBOP_VERBOSE);
 	if (ret != 0) {
-		fprintf(stderr, "[dbop_sqlite] upgrade %s: %s\n",
+		mlog(LV_ERR, "dbop_sqlite upgrade %s: %s",
 		        filedesc, strerror(-ret));
 		return -1;
 	}
 	auto d1 = tp_now() - start;
 	auto d2 = std::chrono::duration<double>(d1).count();
-	fprintf(stderr, "[dbop_sqlite]: Completed upgrade of %s in %.2fs.\n",
+	mlog(LV_NOTICE, "dbop_sqlite: Completed upgrade of %s in %.2fs.",
 	        filedesc, d2);
 	return 0;
 }
@@ -211,11 +211,11 @@ db_item_ptr db_engine_get_db(const char *path)
 		auto refs = pdb->reference.load();
 		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_reject) {
 			hhold.unlock();
-			printf("E-1593: contention on %s (%u uses), rejecting db request\n", path, refs);
+			mlog(LV_ERR, "E-1593: contention on %s (%u uses), rejecting db request", path, refs);
 			return NULL;
 		}
 		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_warning)
-			fprintf(stderr, "W-1620: contention on %s (%u uses)\n", path, refs);
+			mlog(LV_WARN, "W-1620: contention on %s (%u uses)", path, refs);
 		++pdb->reference;
 		hhold.unlock();
 		if (!pdb->giant_lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
@@ -228,7 +228,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	}
 	if (g_hash_table.size() >= g_table_size) {
 		hhold.unlock();
-		printf("[exmdb_provider]: W-1297: too many sqlites referenced at once (exmdb_provider.cfg:table_size=%zu)\n", g_table_size);
+		mlog(LV_ERR, "E-1297: too many sqlites referenced at once (exmdb_provider.cfg:table_size=%zu)", g_table_size);
 		return NULL;
 	}
 	try {
@@ -236,7 +236,7 @@ db_item_ptr db_engine_get_db(const char *path)
 		pdb = &xp.first->second;
 	} catch (const std::bad_alloc &) {
 		hhold.unlock();
-		printf("[exmdb_provider]: W-1296: ENOMEM\n");
+		mlog(LV_ERR, "E-1296: ENOMEM");
 		return NULL;
 	}
 	time(&pdb->last_time);
@@ -257,7 +257,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	sprintf(db_path, "%s/exmdb/exchange.sqlite3", path);
 	auto ret = sqlite3_open_v2(db_path, &pdb->psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
-		fprintf(stderr, "E-1434: sqlite3_open %s: %s\n", db_path, sqlite3_errstr(ret));
+		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", db_path, sqlite3_errstr(ret));
 		pdb->psqlite = NULL;
 		return db_item_ptr(pdb);
 	}
@@ -292,10 +292,10 @@ BOOL db_engine_vacuum(const char *path)
 	auto db = db_engine_get_db(path);
 	if (db == nullptr || db->psqlite == nullptr)
 		return false;
-	fprintf(stderr, "I-2102: Vacuuming %s (exchange.sqlite3)\n", path);
+	mlog(LV_INFO, "I-2102: Vacuuming %s (exchange.sqlite3)", path);
 	if (gx_sql_exec(db->psqlite, "VACUUM") != SQLITE_OK)
 		return false;
-	fprintf(stderr, "I-2102: Vacuuming %s ended\n", path);
+	mlog(LV_INFO, "I-2102: Vacuuming %s ended", path);
 	return TRUE;
 }
 
@@ -572,7 +572,7 @@ static ID_ARRAYS *db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	}
 	return parrays;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1509: ENOMEM\n");
+	mlog(LV_ERR, "E-1509: ENOMEM");
 	return nullptr;
 }
 
@@ -621,7 +621,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 			parrays->remote_ids[i], &datagram);
 	}
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2118: ENOMEM\n");
+	mlog(LV_ERR, "E-2118: ENOMEM");
 }
 
 static void *mdpeng_thrwork(void *param)
@@ -684,7 +684,7 @@ static void *mdpeng_thrwork(void *param)
 		try {
 			table_ids.reserve(double_list_get_nodes_num(&pdb->tables.table_list));
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1649: ENOMEM\n");
+			mlog(LV_ERR, "E-1649: ENOMEM");
 		}
 		for (pnode = double_list_get_head(
 		     &pdb->tables.table_list); NULL != pnode;
@@ -722,21 +722,21 @@ void db_engine_init(size_t table_size, int cache_interval,
 int db_engine_run()
 {
 	if (SQLITE_OK != sqlite3_config(SQLITE_CONFIG_MULTITHREAD)) {
-		printf("[exmdb_provider]: warning! fail to change"
-			" to multiple thread mode for sqlite engine\n");
+		mlog(LV_WARN, "exmdb_provider: failed to change"
+			" to multiple thread mode for sqlite engine");
 	}
 	if (SQLITE_OK != sqlite3_config(SQLITE_CONFIG_MEMSTATUS, 0)) {
-		printf("[exmdb_provider]: warning! fail to close"
-			" memory statistic for sqlite engine\n");
+		mlog(LV_WARN, "exmdb_provider: failed to close"
+			" memory statistic for sqlite engine");
 	}
 	if (SQLITE_OK != sqlite3_initialize()) {
-		printf("[exmdb_provider]: Failed to initialize sqlite engine\n");
+		mlog(LV_ERR, "exmdb_provider: Failed to initialize sqlite engine");
 		return -2;
 	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_tid, nullptr, mdpeng_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[exmdb_provider]: failed to create db scan thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "exmdb_provider: failed to create db scan thread: %s", strerror(ret));
 		return -4;
 	}
 	pthread_setname_np(g_scan_tid, "exmdbeng/scan");
@@ -744,7 +744,7 @@ int db_engine_run()
 		pthread_t tid;
 		ret = pthread_create(&tid, nullptr, mdpeng_thrwork, nullptr);
 		if (ret != 0) {
-			printf("[exmdb_provider]: E-1448: pthread_create: %s\n", strerror(ret));
+			mlog(LV_ERR, "E-1448: pthread_create: %s", strerror(ret));
 			db_engine_stop();
 			return -5;
 		}
@@ -804,7 +804,7 @@ BOOL db_engine_enqueue_populating_criteria(const char *dir, uint32_t cpid,
 	g_waken_cond.notify_one();
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1962: ENOMEM\n");
+	mlog(LV_ERR, "E-1962: ENOMEM");
 	return false;
 }
 
@@ -898,8 +898,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 	    id1, pdynamic->folder_ids.pll[i], &b_included) ||
 	    !common_util_check_descendant(pdb->psqlite,
 	    id2, pdynamic->folder_ids.pll[i], &b_included1)) {
-		debug_info("[db_engine]: fatal error in"
-			" common_util_check_descendant\n");
+		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
 	}
 	if (b_included == b_included1) {
@@ -915,8 +914,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 		message_id = sqlite3_column_int64(pstmt, 0);
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, message_id, &b_exist)) {
-			debug_info("[db_engine]: fail to check"
-				" item in search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
 		}
 		if (b_included != b_exist) {
@@ -932,8 +930,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 				"WHERE folder_id=%llu AND message_id=%llu",
 				LLU{pdynamic->folder_id}, LLU{message_id});
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-				debug_info("[db_engine]: fail to "
-					"delete from search_result\n");
+				mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 			continue;
 		}
 		if (!cu_eval_msg_restriction(pdb->psqlite,
@@ -962,8 +959,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 	if (pdynamic->search_flags & RECURSIVE_SEARCH) {
 		if (!common_util_check_descendant(pdb->psqlite,
 		    id1, pdynamic->folder_ids.pll[i], &b_included)) {
-			debug_info("[db_engine]: fatal error in"
-				" common_util_check_descendant\n");
+			mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 			return;
 		}
 		if (!b_included)
@@ -977,8 +973,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 	case DYNAMIC_EVENT_NEW_MESSAGE:
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
-			debug_info("[db_engine]: fail to check"
-				" item in search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
 		}
 		if (b_exist)
@@ -996,15 +991,13 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 				cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 				pdynamic->folder_id, id2, 0);
 		} else {
-			debug_info("[db_engine]: fail to "
-				"insert into search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to insert into search_result");
 		}
 		break;
 	case DYNAMIC_EVENT_DELETE_MESSAGE:
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
-			debug_info("[db_engine]: fail to check"
-				" item in search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
 		}
 		if (!b_exist)
@@ -1018,14 +1011,12 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 			"WHERE folder_id=%llu AND message_id=%llu",
 			LLU{pdynamic->folder_id}, LLU{id2});
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-			debug_info("[db_engine]: fail to "
-				"delete from search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 		break;
 	case DYNAMIC_EVENT_MODIFY_MESSAGE:
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
-			debug_info("[db_engine]: fail to check"
-				" item in search_result\n");
+			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
 			return;
 		}
 		if (cu_eval_msg_restriction(
@@ -1049,8 +1040,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 					cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 					pdynamic->folder_id, id2, 0);
 			} else {
-				debug_info("[db_engine]: fail to "
-					"insert into search_result\n");
+				mlog(LV_DEBUG, "db_engine: failed to insert into search_result");
 			}
 		} else {
 			if (!b_exist)
@@ -1064,8 +1054,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 				"WHERE folder_id=%llu AND message_id=%llu",
 				LLU{pdynamic->folder_id}, LLU{id2});
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-				debug_info("[db_engine]: fail to "
-					"delete from search_result\n");
+				mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 		}
 		break;
 	}
@@ -1079,8 +1068,7 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 	
 	if (event_type == DYNAMIC_EVENT_MOVE_FOLDER &&
 	    !common_util_get_folder_type(pdb->psqlite, id3, &folder_type)) {
-		debug_info("[db_engine]: fatal error in"
-			" common_util_get_folder_type\n");
+		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
 	}
 	for (pnode=double_list_get_head(&pdb->dynamic_list); NULL!=pnode;
@@ -2003,7 +1991,7 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 			parrays->remote_ids[i], &datagram);
 	}
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2119: ENOMEM\n");
+	mlog(LV_ERR, "E-2119: ENOMEM");
 }
 	
 void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
@@ -2053,7 +2041,7 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2120: ENOMEM\n");
+	mlog(LV_ERR, "E-2120: ENOMEM");
 }
 
 void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
@@ -2094,7 +2082,7 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2121: ENOMEM\n");
+	mlog(LV_ERR, "E-2121: ENOMEM");
 }
 
 void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
@@ -2140,7 +2128,7 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2122: ENOMEM\n");
+	mlog(LV_ERR, "E-2122: ENOMEM");
 }
 
 static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
@@ -2340,7 +2328,7 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2123: ENOMEM\n");
+	mlog(LV_ERR, "E-2123: ENOMEM");
 }
 
 static void db_engine_update_prev_id(DOUBLE_LIST *plist,
@@ -2923,7 +2911,7 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2124: ENOMEM\n");
+	mlog(LV_ERR, "E-2124: ENOMEM");
 }
 
 void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
@@ -2968,7 +2956,7 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2125: ENOMEM\n");
+	mlog(LV_ERR, "E-2125: ENOMEM");
 }
 
 static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
@@ -3080,7 +3068,7 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
 	db_engine_notify_hierarchy_table_delete_row(
 		pdb, parent_id, folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2126: ENOMEM\n");
+	mlog(LV_ERR, "E-2126: ENOMEM");
 }
 
 static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
@@ -3732,7 +3720,7 @@ void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
 		pdb, common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2127: ENOMEM\n");
+	mlog(LV_ERR, "E-2127: ENOMEM");
 }
 
 static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
@@ -3944,7 +3932,7 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
 	db_engine_notify_hierarchy_table_modify_row(
 		pdb, parent_id, folder_id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2128: ENOMEM\n");
+	mlog(LV_ERR, "E-2128: ENOMEM");
 }
 
 void db_engine_notify_message_movecopy(db_item_ptr &pdb,
@@ -3973,7 +3961,7 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 		    pnsub->message_id == old_mid)) try {
 			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1521: ENOMEM\n");
+			mlog(LV_ERR, "E-1521: ENOMEM");
 			return;
 		}
 	}
@@ -4042,7 +4030,7 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 		    (pnsub->folder_id == old_fid && pnsub->message_id == 0)) try {
 			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1522: ENOMEM\n");
+			mlog(LV_ERR, "E-1522: ENOMEM");
 			return;
 		}
 	}

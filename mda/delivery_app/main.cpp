@@ -41,7 +41,6 @@ static std::vector<std::string> g_dfl_mpc_plugins = {
 	"libgxm_remote_delivery.so",
 };
 static std::vector<std::string> g_dfl_svc_plugins = {
-	"libgxs_logthru.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
 	"libgxs_authmgr.so",
@@ -52,6 +51,8 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR},
 	{"context_average_mime", "8", CFG_SIZE, "1"},
 	{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
+	{"delivery_log_file", "-"},
+	{"delivery_log_level", "4" /* LV_NOTICE */},
 	{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
 	{"dequeue_path", PKGSTATEQUEUEDIR},
 	{"running_identity", "gromox"},
@@ -87,10 +88,11 @@ int main(int argc, const char **argv) try
 	g_config_file = config_file_prg(opt_config_file, "delivery.cfg",
 	                delivery_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
-		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		mlog(LV_ERR, "resource: config_file_init %s: %s", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
+	mlog_init(g_config_file->get_value("delivery_log_file"), g_config_file->get_ll("delivery_log_level"));
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
@@ -99,7 +101,7 @@ int main(int argc, const char **argv) try
 		resource_set_string("HOST_ID", temp_buff);
 		str_val = temp_buff;
 	}
-	printf("[system]: host ID is %s\n", str_val);
+	mlog(LV_NOTICE, "system: host ID is \"%s\"", str_val);
 
 	str_val = resource_get_string("DEFAULT_DOMAIN");
 	if (str_val == NULL) {
@@ -107,14 +109,14 @@ int main(int argc, const char **argv) try
 		getdomainname(temp_buff, arsizeof(temp_buff));
 		resource_set_string("DEFAULT_DOMAIN", temp_buff);
 		str_val = temp_buff;
-		printf("[system]: warning! cannot find default domain, OS domain name "
-			"will be used as default domain\n");
+		mlog(LV_WARN, "system: Cannot find default domain. OS domain name "
+			"will be used as default domain.");
 	}
-	printf("[system]: default domain is %s\n", str_val);
+	mlog(LV_NOTICE, "system: default domain is \"%s\"", str_val);
 
 	unsigned int threads_min = g_config_file->get_ll("work_threads_min");
 	unsigned int threads_max = 2 * threads_min;
-    printf("[system]: minimum working threads number is %d\n", threads_min);
+	mlog(LV_INFO, "system: minimum working threads number is %d", threads_min);
 
 	if (resource_get_uint("WORK_THREADS_MAX", &threads_max)) {
 		if (threads_max <= threads_min) {
@@ -122,7 +124,7 @@ int main(int argc, const char **argv) try
 			resource_set_integer("WORK_THREADS_MAX", threads_max);
 		}
     }
-    printf("[system]: maximum working threads number is %d\n", threads_max);
+	mlog(LV_INFO, "system: maximum working threads number is %d", threads_max);
 
 	unsigned int free_contexts = threads_max;
 	if (resource_get_uint("FREE_CONTEXT_NUM", &free_contexts)) {
@@ -131,28 +133,28 @@ int main(int argc, const char **argv) try
 			resource_set_integer("FREE_CONTEXT_NUM", free_contexts);
 		}
 	}
-    printf("[system]: free contexts number is %d\n", free_contexts);
+	mlog(LV_INFO, "system: free contexts number is %d", free_contexts);
     
 	unsigned int mime_ratio = g_config_file->get_ll("context_average_mime");
-	printf("[system]: average mimes number for one context is %d\n",
+	mlog(LV_INFO, "system: average mimes number for one context is %d",
 		mime_ratio);
 
 	size_t max_mem = g_config_file->get_ll("dequeue_maximum_mem");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), max_mem, 1024, 0);
-    printf("[message_dequeue]: maximum allocated memory is %s\n", temp_buff);
+	mlog(LV_INFO, "message_dequeue: maximum allocated memory is %s", temp_buff);
     
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
 		std::move(g_dfl_svc_plugins), threads_max + free_contexts});
 	if (service_run_early() != 0) {
-		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
+		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
 		return EXIT_FAILURE;
 	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
 		return EXIT_FAILURE;
-    if (0 != service_run()) { 
-		printf("[system]: failed to run service\n");
+    if (0 != service_run()) {
+		mlog(LV_ERR, "system: failed to start services");
 		return EXIT_FAILURE;
     }
 	auto cleanup_4 = make_scope_exit(service_stop);
@@ -160,14 +162,14 @@ int main(int argc, const char **argv) try
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
     if (0 != system_services_run()) { 
-		printf("[system]: failed to run system service\n");
+		mlog(LV_ERR, "system: failed to start system services");
 		return EXIT_FAILURE;
     }
 	auto cleanup_6 = make_scope_exit(system_services_stop);
 
 	message_dequeue_init(g_config_file->get_value("dequeue_path"), max_mem);
     if (0 != message_dequeue_run()) { 
-		printf("[system]: failed to run message dequeue\n");
+		mlog(LV_ERR, "system: failed to start message dequeue");
 		return EXIT_FAILURE;
     }
 	auto cleanup_8 = make_scope_exit(message_dequeue_stop);
@@ -176,13 +178,13 @@ int main(int argc, const char **argv) try
 		std::move(g_dfl_mpc_plugins), threads_min, threads_max,
 		free_contexts, mime_ratio, false);
     if (0 != transporter_run()) { 
-		printf("[system]: failed to run transporter\n");
+		mlog(LV_ERR, "system: failed to start transporter");
 		return EXIT_FAILURE;
     }
 	auto cleanup_12 = make_scope_exit(transporter_stop);
 
 	retcode = EXIT_SUCCESS;
-    printf("[system]: DELIVERY APP is now running\n");
+	mlog(LV_NOTICE, "system: LDA is now running");
 	while (!g_notify_stop) {
         sleep(3);
 		if (g_hup_signalled.exchange(false))

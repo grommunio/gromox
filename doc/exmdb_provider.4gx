@@ -106,7 +106,7 @@ Log every incoming exmdb network RPC and the return code of the operation in a
 minimal fashion to stderr. Level 1 emits RPCs with a failure return code, level
 2 emits all RPCs. Note that direct function calls from within the process image
 are not logged this way, so this will not show exmdb_provider invocations from
-exchange_emsmdb(4gx).
+exchange_emsmdb(4gx). Note the daemon log level needs to be "debug" (6), too.
 .br
 Default: \fI0\fP
 .TP

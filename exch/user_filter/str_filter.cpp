@@ -146,6 +146,5 @@ void str_filter_echo(const char *format, ...)
 	va_start(ap, format);
 	vsprintf(msg, format, ap);
 	va_end(ap);
-	fprintf(stderr, "[%s]: %s\n", g_module_name, msg);
+	mlog(LV_ERR, "%s: %s", g_module_name, msg);
 }
-

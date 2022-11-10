@@ -42,7 +42,7 @@ BOOL common_util_build_environment(const char *maildir) try
 	 */
 	if (++g_ctx_refcount > 1) {
 		if (*maildir != '\0' && strcmp(g_ctx_key->maildir, maildir) != 0)
-			fprintf(stderr, "W-1901: T%lu: g_ctx_key->maildir mismatch %s vs %s\n",
+			mlog(LV_WARN, "W-1901: T%lu: g_ctx_key->maildir mismatch %s vs %s",
 			        gx_gettid(), g_ctx_key->maildir, maildir);
 		return TRUE;
 	}
@@ -51,7 +51,7 @@ BOOL common_util_build_environment(const char *maildir) try
 	g_ctx_key = std::move(pctx);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1976: ENOMEM\n");
+	mlog(LV_ERR, "E-1976: ENOMEM");
 	return false;
 }
 
@@ -60,7 +60,7 @@ void common_util_free_environment()
 	if (--g_ctx_refcount > 0)
 		return;
 	if (g_ctx_key == nullptr) {
-		fprintf(stderr, "W-1902: T%lu: g_ctx_key already unset\n", gx_gettid());
+		mlog(LV_WARN, "W-1902: T%lu: g_ctx_key already unset", gx_gettid());
 		return;
 	}
 	g_ctx_key.reset();
@@ -70,7 +70,7 @@ void* common_util_alloc(size_t size)
 {
 	auto pctx = g_ctx_key.get();
 	if (NULL == pctx) {
-		fprintf(stderr, "E-1903: T%lu: g_ctx_key is unset, allocator is unset\n", gx_gettid());
+		mlog(LV_ERR, "E-1903: T%lu: g_ctx_key is unset, allocator is unset", gx_gettid());
 		return NULL;
 	}
 	return pctx->ptmp_ctx.has_value() ? pctx->ptmp_ctx->alloc(size) :
@@ -81,7 +81,7 @@ BOOL common_util_switch_allocator()
 {
 	auto pctx = g_ctx_key.get();
 	if (NULL == pctx) {
-		fprintf(stderr, "E-1904: T%lu: g_ctx_key is unset, allocator is unset\n", gx_gettid());
+		mlog(LV_ERR, "E-1904: T%lu: g_ctx_key is unset, allocator is unset", gx_gettid());
 		return FALSE;
 	}
 	if (pctx->ptmp_ctx.has_value())
@@ -95,7 +95,7 @@ void common_util_set_maildir(const char *maildir)
 {
 	auto pctx = g_ctx_key.get();
 	if (pctx == nullptr)
-		fprintf(stderr, "E-1905: T%lu: g_ctx_key is unset, cannot set maildir\n", gx_gettid());
+		mlog(LV_ERR, "E-1905: T%lu: g_ctx_key is unset, cannot set maildir", gx_gettid());
 	else
 		gx_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
 }
@@ -105,7 +105,7 @@ const char* common_util_get_maildir()
 	auto pctx = g_ctx_key.get();
 	if (pctx != nullptr)
 		return pctx->maildir;
-	fprintf(stderr, "E-1906: T%lu: g_ctx_key is unset, maildir is unset\n", gx_gettid());
+	mlog(LV_ERR, "E-1906: T%lu: g_ctx_key is unset, maildir is unset", gx_gettid());
 	return NULL;
 }
 

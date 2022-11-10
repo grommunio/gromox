@@ -89,7 +89,7 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
 		while (kdend->key != nullptr)
 			++kdend;
 		if (!std::is_sorted(key_desc, kdend)) {
-			fprintf(stderr, "List of built-in defaults (%p) is not sorted\n", key_desc);
+			mlog(LV_ERR, "List of built-in defaults (%p) is not sorted", key_desc);
 			return nullptr;
 		}
 	}
@@ -104,7 +104,7 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
 	}
 	auto cfg = config_file_alloc(table_size + EXT_ENTRY_NUM);
 	if (cfg == NULL) {
-		debug_info("[config_file]: config_file_init: %s, alloc fail", filename);
+		mlog(LV_DEBUG, "config_file: config_file_init: %s, alloc fail", filename);
 		fclose(fin);
 		return NULL;
 	}
@@ -151,7 +151,7 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
 			if (cfg != nullptr)
 				return cfg;
 			if (errno != ENOENT) {
-				fprintf(stderr, "config_file_initd %s: %s\n",
+				mlog(LV_ERR, "config_file_initd %s: %s",
 				        full.c_str(), strerror(errno));
 				return nullptr;
 			}
@@ -183,7 +183,7 @@ std::shared_ptr<CONFIG_FILE> config_file_prg(const char *ov, const char *fb,
 		return config_file_initd(fb, default_searchpath(), key_desc);
 	auto cfg = config_file_init(ov, key_desc);
 	if (cfg == nullptr)
-		fprintf(stderr, "config_file_init %s: %s\n", ov, strerror(errno));
+		mlog(LV_ERR, "config_file_init %s: %s", ov, strerror(errno));
 	return cfg;
 }
 
@@ -216,7 +216,7 @@ const char *CONFIG_FILE::get_value(const char *key) const
 
 #ifdef _DEBUG_UMTA
 	if (key == nullptr) {
-		debug_info("[config_file]: config_file_get_value: invalid param");
+		mlog(LV_DEBUG, "config_file: config_file_get_value: invalid param");
 		return NULL;
 	}
 #endif
@@ -258,7 +258,7 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg,
 
 #ifdef _DEBUG_UMTA
 	if (NULL == cfg || NULL == line) {
-		debug_info("[config_file]: config_file_parse_line, param NULL");
+		mlog(LV_DEBUG, "config_file: config_file_parse_line, param NULL");
 		return;
 	}
 #endif
@@ -300,7 +300,7 @@ BOOL CONFIG_FILE::set_value(const char *key, const char *value)
 
 #ifdef _DEBUG_UMTA
 	if (key == nullptr || value == nullptr) {
-		debug_info("[config_file]: config_file_set_value: invalid param");
+		mlog(LV_DEBUG, "config_file: config_file_set_value: invalid param");
 		return FALSE;
 	}
 #endif
@@ -375,7 +375,7 @@ unsigned long long CONFIG_FILE::get_ll(const char *key) const
 {
 	auto sv = get_value(key);
 	if (sv == nullptr) {
-		fprintf(stderr, "*** config key \"%s\" has no default and was not set either\n", key);
+		mlog(LV_ERR, "*** config key \"%s\" has no default and was not set either", key);
 		throw cfg_error();
 	}
 	return strtoull(sv, nullptr, 0);

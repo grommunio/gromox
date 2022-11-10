@@ -2239,7 +2239,7 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 			seq = sqlite3_column_int64(pstmt, 2);
 			rn.push_back(RULE_NODE{seq, state, msg_id, prov});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1561: ENOMEM\n");
+			mlog(LV_ERR, "E-1561: ENOMEM");
 			return false;
 		}
 		auto it = std::find_if(plist.begin(), plist.end(),
@@ -2314,7 +2314,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 		try {
 			rn.push_back(RULE_NODE{seq, state, message_id, static_cast<char *>(pvalue)});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1507: ENOMEM\n");
+			mlog(LV_ERR, "E-1507: ENOMEM");
 			return false;
 		}
 		auto it = std::find_if(plist.begin(), plist.end(),
@@ -2532,7 +2532,7 @@ static BOOL message_make_deferred_error_message(const char *username,
 	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2026: ENOMEM\n");
+	mlog(LV_ERR, "E-2026: ENOMEM");
 	return false;
 }
 
@@ -2797,7 +2797,7 @@ static ec_error_t message_bounce_message(const char *from_address,
 	try {
 		rcpt_list.emplace_back(pvalue == nullptr ? from_address : static_cast<char *>(pvalue));
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-2037: ENOMEM\n");
+		mlog(LV_ERR, "E-2037: ENOMEM");
 		return ecServerOOM;
 	}
 
@@ -3094,7 +3094,7 @@ static BOOL message_make_deferred_action_message(const char *username,
 	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2027: ENOMEM\n");
+	mlog(LV_ERR, "E-2027: ENOMEM");
 	return false;
 }
 
@@ -3109,7 +3109,7 @@ static BOOL message_make_deferred_action_messages(const char *username,
 	if (!exmdb_server_is_private())
 		return TRUE;
 	if (dam_list.size() > MAX_DAMS_PER_RULE_FOLDER) {
-		common_util_log_info(LV_NOTICE, "user=%s host=unknown  "
+		mlog(LV_NOTICE, "user=%s host=unknown  "
 			"DAM error: Too many Deferred Actions "
 			"triggered by message %llu in folder "
 			"%llu", username, LLU{message_id}, LLU{folder_id});
@@ -3142,7 +3142,7 @@ static BOOL message_make_deferred_action_messages(const char *username,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2028: ENOMEM\n");
+	mlog(LV_ERR, "E-2028: ENOMEM");
 	return false;
 }
 
@@ -3162,9 +3162,9 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 	if (!common_util_check_folder_id(psqlite, dst_fid, &b_exist))
 		return ecError;
 	if (!b_exist) {
-		fprintf(stderr, "W-1978: inbox \"%s\": while processing msgid %llxh (folder %llxh), "
+		mlog(LV_WARN, "W-1978: inbox \"%s\": while processing msgid %llxh (folder %llxh), "
 		        "an OP_MOVE/OP_COPY rule was disabled "
-		        "because target folder %llxh does not exist\n",
+		        "because target folder %llxh does not exist",
 		        znul(account), LLU{message_id}, LLU{folder_id}, LLU{dst_fid});
 		message_make_deferred_error_message(account,
 			psqlite, folder_id, message_id, prnode->id,
@@ -3204,7 +3204,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 	try {
 		seen.fld.emplace_back(dst_fid);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-2033: ENOMEM\n");
+		mlog(LV_ERR, "E-2033: ENOMEM");
 		return ecServerOOM;
 	}
 	char tmp_buff[MAX_DIGLEN];
@@ -3224,13 +3224,13 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		return ec;
 	if (block.type == OP_MOVE) {
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be moved to %llu in folder %llu by"
 			" rule", account, LLU{message_id}, LLU{folder_id},
 			LLU{dst_mid}, LLU{dst_fid});
 	} else {
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be copied to %llu in folder %llu by"
 			" rule", account, LLU{message_id}, LLU{folder_id},
@@ -3338,7 +3338,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	    pmsgctnt == nullptr)
 		return ecError;
 	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  Delegated"
+		mlog(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU{message_id}, LLU{folder_id});
 		return ecSuccess;
@@ -3414,7 +3414,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 		auto eml_path = maildir + "/eml/"s + mid_string;
 		auto ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
 		if (ret < 0) {
-			fprintf(stderr, "E-1606: HX_copy_file %s -> %s: %s\n",
+			mlog(LV_ERR, "E-1606: HX_copy_file %s -> %s: %s",
 			        tmp_path1, eml_path.c_str(), strerror(-ret));
 			continue;
 		}
@@ -3459,7 +3459,7 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 		if (ec != ecSuccess)
 			return ec;
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be deleted by rule", account,
 			LLU{message_id}, LLU{folder_id});
@@ -3484,7 +3484,7 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 	}
 	case OP_DELETE:
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be deleted by rule", account,
 			LLU{message_id}, LLU{folder_id});
@@ -3628,7 +3628,7 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 	try {
 		seen.fld.emplace_back(dst_fid);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-2031: ENOMEM\n");
+		mlog(LV_ERR, "E-2031: ENOMEM");
 		return ecServerOOM;
 	}
 	char tmp_buff[MAX_DIGLEN];
@@ -3648,13 +3648,13 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 		return ec;
 	if (block.type == OP_MOVE) {
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be moved to %llu in folder %llu by "
 			"ext rule", account, LLU{message_id},
 			LLU{folder_id}, LLU{dst_mid}, LLU{dst_fid});
 	} else {
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be copied to %llu in folder %llu by "
 			"ext rule", account, LLU{message_id},
@@ -3715,7 +3715,7 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecError;
 	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  Delegated"
+		mlog(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU{message_id}, LLU{folder_id});
 		return ecSuccess;
@@ -3790,7 +3790,7 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 		auto eml_path = maildir + "/eml/"s + mid_string;
 		auto ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
 		if (ret < 0) {
-			fprintf(stderr, "E-1607: HX_copy_file %s -> %s: %s\n",
+			mlog(LV_ERR, "E-1607: HX_copy_file %s -> %s: %s",
 			        tmp_path1, eml_path.c_str(), strerror(-ret));
 			continue;
 		}
@@ -3831,7 +3831,7 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 		if (ec != ecSuccess)
 			return ec;
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be deleted by ext rule", account,
 			LLU{message_id}, LLU{folder_id});
@@ -3860,7 +3860,7 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 	}
 	case OP_DELETE:
 		b_del = TRUE;
-		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be deleted by ext rule", account,
 			LLU{message_id}, LLU{folder_id});
@@ -3971,7 +3971,7 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 		seen.msg.emplace_back(message_node{folder_id, message_id});
 		return ecSuccess;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-2029: ENOMEM\n");
+		mlog(LV_ERR, "E-2029: ENOMEM");
 		return ecServerOOM;
 	}
 	void *pvalue = nullptr;
@@ -4073,14 +4073,14 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	} else {
 		b_oof = FALSE;
 		//TODO get public folder id
-		fprintf(stderr, "%s - public folder not implemented\n", __func__);
+		mlog(LV_ERR, "%s - public folder not implemented", __PRETTY_FUNCTION__);
 		return false;
 	}
 	seen_list seen;
 	try {
 		seen.fld.emplace_back(fid_val);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-2032: ENOMEM\n");
+		mlog(LV_ERR, "E-2032: ENOMEM");
 		return false;
 	}
 	tmp_msg = *pmsg;
@@ -4180,7 +4180,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 				return FALSE;
 		}
 	}
-	common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
+	mlog(LV_DEBUG, "user=%s host=unknown  "
 		"Message %llu is delivered into folder "
 		"%llu", account, LLU{message_id}, LLU{fid_val});
 	auto ec = message_rule_new_message(b_oof, from_address, account,
@@ -4337,7 +4337,7 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	try {
 		seen.fld.emplace_back(fid_val);
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-2034: ENOMEM\n");
+		mlog(LV_ERR, "E-2034: ENOMEM");
 		return false;
 	}
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
