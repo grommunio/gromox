@@ -11,8 +11,10 @@
 #include <string>
 #include <gromox/config_file.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/util.hpp>
 
 using namespace std::string_literals;
+using namespace gromox;
 static std::map<std::string, size_t> g_cont_tbl;
 static std::mutex g_cont_lock;
 static unsigned int g_max_num;
@@ -71,17 +73,17 @@ static BOOL svc_ip6_container(int reason, void **data)
 	}
 	auto pfile = config_file_initd(filename.c_str(), get_config_path(), nullptr);
 	if (pfile == nullptr) {
-		printf("[ip6_container]: config_file_initd %s: %s\n",
+		mlog(LV_ERR, "ip6_container: config_file_initd %s: %s",
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
 	auto strv = pfile->get_value("CONNECTION_MAX_NUM");
 	g_max_num = strv != nullptr ? strtoul(strv, nullptr, 0) : 200;
-	printf("[ip6_container]: maximum number of connections per client is %u\n", g_max_num);
+	mlog(LV_NOTICE, "ip6_container: maximum number of connections per client is %u", g_max_num);
 
 	if (!register_service("ip_container_add", ip6co_add) ||
 	    !register_service("ip_container_remove", ip6co_remove)) {
-		printf("[ip6_container]: can't register services (symbol clash?)\n");
+		mlog(LV_ERR, "ip6_container: can't register services (symbol clash?)");
 		return false;
 	}
 	return TRUE;

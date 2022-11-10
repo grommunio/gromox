@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/util.hpp>
+using namespace gromox;
 static BOOL svc_abktplug(int reason, void **apidata)
 {
 	if (reason != PLUGIN_INIT)
@@ -11,7 +13,7 @@ static BOOL svc_abktplug(int reason, void **apidata)
 	LINK_SVC_API(apidata);
 	if (!register_service("abkt_tobinary", gromox::abkt_tobinary) ||
 	    !register_service("abkt_tojson", gromox::abkt_tojson)) {
-		fprintf(stderr, "[abktxfrm]: failed to register services\n");
+		mlog(LV_ERR, "abktxfrm: failed to register services");
 		return false;
 	}
 	return TRUE;

@@ -324,11 +324,11 @@ static BOOL hpm_mh_nsp(int reason, void **plugdata)
 		try {
 			created = std::make_unique<MhNspPlugin>(plugdata);
 		} catch(std::bad_alloc& exc) {
-			printf("[mh_nsp]: failed to allocate plugin memory (%s)\n", exc.what());
+			mlog(LV_ERR, "mh_nsp: failed to allocate plugin memory (%s)", exc.what());
 		} catch(std::runtime_error& exc) {
-			printf("[mh_nsp]: failed to initialize plugin (%s)\n", exc.what());
+			mlog(LV_ERR, "mh_nsp: failed to initialize plugin (%s)", exc.what());
 		} catch(std::exception& exc) {
-			printf("[mh_nsp]: unknown error during initialization (%s)\n", exc.what());
+			mlog(LV_ERR, "mh_nsp: unknown error during initialization (%s)", exc.what());
 		}
 		interface.preproc = nsp_preproc;
 		interface.proc = nsp_proc;
@@ -339,7 +339,6 @@ static BOOL hpm_mh_nsp(int reason, void **plugdata)
 		if (!register_interface(&interface))
 			return false;
 		plugin = std::move(created);
-		printf("[mh_nsp]: plugin is loaded into system\n");
 		return TRUE;
 	}
 	case PLUGIN_FREE:

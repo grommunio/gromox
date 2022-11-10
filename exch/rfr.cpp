@@ -74,25 +74,24 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 		LINK_PROC_API(ppdata);
 		query_service1(get_id_from_username);
 		if (NULL == get_id_from_username) {
-			printf("[exchange_rfr]: failed to get service \"get_id_from_username\"\n");
+			mlog(LV_ERR, "rfr: failed to get service \"get_id_from_username\"");
 			return FALSE;
 		}
 		ep_6001 = register_endpoint("*", 6001);
 		if (ep_6001 == nullptr) {
-			printf("[exchange_rfr]: failed to register endpoint with port 6001\n");
+			mlog(LV_ERR, "rfr: failed to register endpoint with port 6001");
 			return FALSE;
 		}
 		ep_6002 = register_endpoint("*", 6002);
 		if (ep_6002 == nullptr) {
-			printf("[exchange_rfr]: failed to register endpoint with port 6002\n");
+			mlog(LV_ERR, "rfr: failed to register endpoint with port 6002");
 			return FALSE;
 		}
 		if (!register_interface(ep_6001, &interface) ||
 		    !register_interface(ep_6002, &interface)) {
-			printf("[exchange_rfr]: failed to register interface\n");
+			mlog(LV_ERR, "rfr: failed to register interface");
 			return FALSE;
 		}
-		printf("[exchange_rfr]: plugin is loaded into system\n");
 		return TRUE;
 	}
 	}
