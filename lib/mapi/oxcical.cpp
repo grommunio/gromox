@@ -2355,7 +2355,7 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 		           username_to_entryid, pembedded, nullptr, nullptr,
 		           nullptr, nullptr);
 		if (err != nullptr) {
-			fprintf(stderr, "%s\n", err);
+			mlog(LV_ERR, "%s", err);
 			return FALSE;
 		}
 	}
@@ -2514,7 +2514,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 	           get_propids, username_to_entryid, pmsg, nullptr, nullptr,
 	           nullptr, nullptr);
 	if (err != nullptr) {
-		fprintf(stderr, "%s\n", err);
+		mlog(LV_ERR, "%s", err);
 		return ecError;
 	}
 	finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
@@ -3857,7 +3857,7 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
 	auto err = oxcical_export_internal(nullptr, nullptr, pmsg, pical,
 	           entryid_to_username, essdn_to_username, alloc, get_propids);
 	if (err != nullptr) {
-		fprintf(stderr, "%s\n", err);
+		mlog(LV_ERR, "%s", err);
 		return false;
 	}
 	return TRUE;

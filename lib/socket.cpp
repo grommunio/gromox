@@ -124,7 +124,7 @@ gx_inet_lookup(const char *host, uint16_t port, unsigned int xflags)
 	snprintf(portbuf, sizeof(portbuf), "%hu", port);
 	int ret = getaddrinfo(host, port == 0 ? nullptr : portbuf, &hints, &unique_tie(aires));
 	if (ret != 0) {
-		fprintf(stderr, "Could not resolve [%s]:%s: %s\n",
+		mlog(LV_ERR, "Could not resolve [%s]:%s: %s",
 		       host, portbuf, gai_strerror(ret));
 		return nullptr;
 	}
@@ -290,7 +290,7 @@ int gx_peer_is_local2(const sockaddr *peer_sockaddr, socklen_t peer_socklen)
 #ifdef __linux__
 	int rsk = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
 	if (rsk < 0) {
-		fprintf(stderr, "socket AF_NETLINK: %s\n", strerror(errno));
+		mlog(LV_ERR, "socket AF_NETLINK: %s", strerror(errno));
 		return -errno;
 	}
 	struct {
