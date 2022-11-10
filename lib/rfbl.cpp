@@ -151,7 +151,7 @@ int gx_vsnprintf1(char *buf, size_t sz, const char *file, unsigned int line,
 		*buf = '\0';
 		return ret;
 	} else if (static_cast<size_t>(ret) >= sz) {
-		fprintf(stderr, "gx_vsnprintf: truncation at %s:%u (%d bytes into buffer of %zu)\n",
+		mlog(LV_ERR, "gx_vsnprintf: truncation at %s:%u (%d bytes into buffer of %zu)",
 		        file, line, ret, sz);
 		return strlen(buf);
 	}
@@ -169,7 +169,7 @@ int gx_snprintf1(char *buf, size_t sz, const char *file, unsigned int line,
 		*buf = '\0';
 		return ret;
 	} else if (static_cast<size_t>(ret) >= sz) {
-		fprintf(stderr, "gx_snprintf: truncation at %s:%u (%d bytes into buffer of %zu)\n",
+		mlog(LV_ERR, "gx_snprintf: truncation at %s:%u (%d bytes into buffer of %zu)",
 		        file, line, ret, sz);
 		return strlen(buf);
 	}
@@ -481,8 +481,10 @@ void rfc1123_dstring(char *buf, size_t z, time_t ts)
 
 void startup_banner(const char *prog)
 {
-	fprintf(stderr, "\n%s %s (pid %ld uid %ld)\n\n", prog, PACKAGE_VERSION,
+	fprintf(stderr, "\n");
+	mlog(LV_NOTICE, "%s %s (pid %ld uid %ld)", prog, PACKAGE_VERSION,
 	        static_cast<long>(getpid()), static_cast<long>(getuid()));
+	fprintf(stderr, "\n");
 }
 
 /**
@@ -514,10 +516,10 @@ errno_t gx_reexec(const char *const *argv) try
 	hxmc_t *resolved = nullptr;
 	auto ret = HX_readlink(&resolved, "/proc/self/exe");
 	if (ret < 0) {
-		fprintf(stderr, "reexec: readlink: %s", strerror(-ret));
+		mlog(LV_ERR, "reexec: readlink: %s", strerror(-ret));
 		return -ret;
 	}
-	fprintf(stderr, "Reexecing %s\n", resolved);
+	mlog(LV_NOTICE, "Reexecing %s", resolved);
 	execv(resolved, const_cast<char **>(argv));
 	int saved_errno = errno;
 	perror("execv");
@@ -539,14 +541,14 @@ errno_t gx_reexec(const char *const *argv) try
 			return errno;
 		tgt.resize(tgt.size() * 2);
 	}
-	fprintf(stderr, "Reexecing %s\n", tgt.c_str());
+	mlog(LV_NOTICE, "Reexecing %s", tgt.c_str());
 	execv(tgt.c_str(), const_cast<char **>(argv));
 	int saved_errno = errno;
 	perror("execv");
 	return saved_errno;
 #else
 	/* Since none of our programs modify argv[0], executing the same should just work */
-	fprintf(stderr, "Reexecing %s\n", argv[0]);
+	mlog(LV_NOTICE, "Reexecing %s", argv[0]);
 	execv(argv[0], const_cast<char **>(argv));
 	int saved_errno = errno;
 	perror("execv");
@@ -573,19 +575,19 @@ errno_t switch_user_exec(const CONFIG_FILE &cf, const char **argv)
 	case HXPROC_SU_SUCCESS:
 		return gx_reexec(argv);
 	case HXPROC_USER_NOT_FOUND:
-		fprintf(stderr, "No such user \"%s\": %s\n", user, strerror(errno));
+		mlog(LV_ERR, "No such user \"%s\": %s", user, strerror(errno));
 		break;
 	case HXPROC_GROUP_NOT_FOUND:
-		fprintf(stderr, "Group lookup failed/Can't happen\n");
+		mlog(LV_ERR, "Group lookup failed/Can't happen");
 		break;
 	case HXPROC_SETUID_FAILED:
-		fprintf(stderr, "setuid to \"%s\" failed: %s\n", user, strerror(errno));
+		mlog(LV_ERR, "setuid to \"%s\" failed: %s", user, strerror(errno));
 		break;
 	case HXPROC_SETGID_FAILED:
-		fprintf(stderr, "setgid to groupof(\"%s\") failed: %s\n", user, strerror(errno));
+		mlog(LV_ERR, "setgid to groupof(\"%s\") failed: %s", user, strerror(errno));
 		break;
 	case HXPROC_INITGROUPS_FAILED:
-		fprintf(stderr, "initgroups for \"%s\" failed: %s\n", user, strerror(errno));
+		mlog(LV_ERR, "initgroups for \"%s\" failed: %s", user, strerror(errno));
 		break;
 	}
 	return errno;
@@ -701,8 +703,8 @@ int iconv_validate()
 	     "iso-8859-1", "iso-2022-jp"}) {
 		auto k = iconv_open("UTF-8", "UTF-16LE");
 		if (k == (iconv_t)-1) {
-			fprintf(stderr, "I can't work like this! iconv lacks support for the essential character set %s. "
-			        "Perhaps you need to install some libc locale package.\n", s);
+			mlog(LV_ERR, "I can't work like this! iconv lacks support for the essential character set %s. "
+			        "Perhaps you need to install some libc locale package.", s);
 			return -errno;
 		}
 		iconv_close(k);
@@ -809,7 +811,7 @@ void mlog_init(const char *filename, unsigned int max_level)
 	g_logfp.reset(fopen(filename, "a"));
 	g_log_direct = g_logfp == nullptr;
 	if (g_log_direct) {
-		fprintf(stderr, "Could not open %s for writing: %s. Using stderr.\n",
+		mlog(LV_ERR, "Could not open %s for writing: %s. Using stderr.",
 		        filename, strerror(errno));
 		setvbuf(stderr, nullptr, _IOLBF, 0);
 	} else {
