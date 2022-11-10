@@ -3,6 +3,7 @@
 #include <typeinfo>
 #include <gromox/defs.h>
 #include <gromox/svc_loader.hpp>
+#include <gromox/util.hpp>
 #include "smtp_aux.hpp"
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
@@ -12,12 +13,14 @@ E(check_user)
 E(check_full)
 #undef E
 
+using namespace gromox;
+
 int system_services_run()
 {
 #define E(f, s) do { \
 	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
+		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
