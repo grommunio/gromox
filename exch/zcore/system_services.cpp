@@ -108,5 +108,6 @@ void system_services_stop()
 	E("set_password");
 	E("get_user_privilege_bits");
 	E("add_timer");
+	E("scndstore_hints");
 #undef E
 }
