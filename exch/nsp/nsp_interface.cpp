@@ -1689,18 +1689,13 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	return ecSuccess;
 }
 
-static int nsp_interface_get_default_proptags(abnode_type node_type,
-	BOOL b_unicode, LPROPTAG_ARRAY *pproptags)
+static constexpr size_t DFL_TAGS_MAX = 32;
+
+static int nsp_fill_dfl_tags(abnode_type node_type, bool b_unicode,
+    uint32_t *t, unsigned int &z)
 {
 #define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE((x), PT_STRING8))
-	static constexpr size_t UPPER_LIMIT = 32;
-	unsigned int &z = pproptags->cvalues;
-	pproptags->cvalues  = 0;
-	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, UPPER_LIMIT);
-	if (pproptags->pproptag == nullptr)
-		return ecServerOOM;
-
-	auto &t = pproptags->pproptag;
+	/* 16 props */
 	t[z++] = U(PR_DISPLAY_NAME);
 	t[z++] = U(PR_ADDRTYPE);
 	t[z++] = U(PR_EMAIL_ADDRESS);
@@ -1723,6 +1718,7 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 	case abnode_type::abclass:
 		return ecInvalidObject;
 	case abnode_type::user:
+		/* Up to 16 */
 		t[z++] = U(PR_NICKNAME);
 		t[z++] = U(PR_TITLE);
 		t[z++] = U(PR_PRIMARY_TELEPHONE_NUMBER);
@@ -1756,11 +1752,22 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 	default:
 		return ecInvalidObject;
 	}
-	assert(z <= UPPER_LIMIT);
 	return ecSuccess;
 #undef U
 }
 
+static int nsp_interface_get_default_proptags(abnode_type node_type,
+	BOOL b_unicode, LPROPTAG_ARRAY *pproptags)
+{
+	pproptags->cvalues  = 0;
+	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, DFL_TAGS_MAX);
+	if (pproptags->pproptag == nullptr)
+		return ecServerOOM;
+	auto ret = nsp_fill_dfl_tags(node_type, b_unicode,
+	           pproptags->pproptag, pproptags->cvalues);
+	assert(pproptags->cvalues <= DFL_TAGS_MAX);
+	return ret;
+}
 
 int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	uint32_t mid, uint32_t codepage, LPROPTAG_ARRAY **ppproptags)
