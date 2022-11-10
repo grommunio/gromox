@@ -372,11 +372,11 @@ static BOOL hpm_mh_emsmdb(int reason, void **ppdata)
 		try {
 			created = std::make_unique<MhEmsmdbPlugin>(ppdata);
 		} catch(std::bad_alloc& exc) {
-			printf("[mh_emsmdb]: failed to allocate plugin memory (%s)\n", exc.what());
+			mlog(LV_ERR, "mh_emsmdb: failed to allocate plugin memory (%s)", exc.what());
 		} catch(std::runtime_error& exc) {
-			printf("[mh_emsmdb]: failed to initialize plugin (%s)\n", exc.what());
+			mlog(LV_ERR, "mh_emsmdb: failed to initialize plugin (%s)", exc.what());
 		} catch(std::exception& exc) {
-			printf("[mh_emsmdb]: unknown error during initialization (%s)\n", exc.what());
+			mlog(LV_ERR, "mh_emsmdb: unknown error during initialization (%s)", exc.what());
 		}
 		if (!created)
 			return false;
@@ -390,7 +390,6 @@ static BOOL hpm_mh_emsmdb(int reason, void **ppdata)
 			return false;
 		asyncemsmdb_interface_register_active(reinterpret_cast<void*>(asyncemsmdb_wakeup_proc));
 		plugin = std::move(created);
-		printf("[mh_emsmdb]: plugin is loaded into system\n");
 		return TRUE;
 	}
 	case PLUGIN_FREE:

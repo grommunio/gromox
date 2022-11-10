@@ -68,21 +68,21 @@ static constexpr cfg_directive ldap_adaptor_cfg_defaults[] = {
 static bool validate_response(LDAP *ld, LDAPMessage *result)
 {
 	if (result == nullptr) {
-		fprintf(stderr, "[ldap_adaptor]: ldap_search yielded success, but result is null?!\n");
+		mlog(LV_ERR, "ldap_adaptor: ldap_search yielded success, but result is null?!");
 		return false;
 	}
 	auto count = ldap_count_messages(ld, result);
 	if (count == 0) {
-		fprintf(stderr, "[ldap_adaptor]: result set has 0 messages\n");
+		mlog(LV_ERR, "ldap_adaptor: result set has 0 messages");
 		return false;
 	}
 	auto msg = ldap_first_message(ld, result);
 	if (msg == nullptr) {
-		fprintf(stderr, "[ldap_adaptor]: ldap_search result set has no first message\n");
+		mlog(LV_ERR, "ldap_adaptor: ldap_search result set has no first message");
 		return false;
 	} else if (ldap_msgtype(msg) != LDAP_RES_SEARCH_ENTRY) {
-		fprintf(stderr, "[ldap_adaptor]: ldap_search: result set's 1st message is not a "
-		        "LDAP_RES_SEARCH_ENTRY (%d) but %d\n",
+		mlog(LV_ERR, "ldap_adaptor: ldap_search: result set's 1st message is not a "
+		        "LDAP_RES_SEARCH_ENTRY (%d) but %d",
 		        static_cast<int>(LDAP_RES_SEARCH_ENTRY), ldap_msgtype(msg));
 		return false;
 	}
@@ -102,12 +102,12 @@ static bool validate_response(LDAP *ld, LDAPMessage *result)
 			 */
 			continue;
 		case LDAP_RES_SEARCH_ENTRY:
-			fprintf(stderr, "[ldap_adaptor]: ldap_search yielded ambiguous result "
-			        "(msg %d/%d is also LDAP_RES_SEARCH_ENTRY)\n", i, count);
+			mlog(LV_ERR, "ldap_adaptor: ldap_search yielded ambiguous result "
+			        "(msg %d/%d is also LDAP_RES_SEARCH_ENTRY)", i, count);
 			return false;
 		default:
-			fprintf(stderr, "[ldap_adaptor]: ldap_search yielded a result with "
-			        "msg %d/%d of unexpected type %d\n", i, count, mtype);
+			mlog(LV_ERR, "ldap_adaptor: ldap_search yielded a result with "
+			        "msg %d/%d of unexpected type %d", i, count, mtype);
 			return false;
 		}
 	}
@@ -131,7 +131,7 @@ static ldap_ptr make_conn(const std::string &uri, const char *bind_user,
 	if (g_use_tls) {
 		ret = ldap_start_tls_s(ld.get(), nullptr, nullptr);
 		if (ret != LDAP_SUCCESS) {
-			fprintf(stderr, "ldap_start_tls_s: %s\n", ldap_err2string(ret));
+			mlog(LV_ERR, "ldap_start_tls_s: %s", ldap_err2string(ret));
 			return {};
 		}
 	}
@@ -148,7 +148,7 @@ static ldap_ptr make_conn(const std::string &uri, const char *bind_user,
 	ret = ldap_sasl_bind_s(ld.get(), bind_user, LDAP_SASL_SIMPLE, &cred,
 	      nullptr, nullptr, nullptr);
 	if (ret != LDAP_SUCCESS) {
-		fprintf(stderr, "[ldap_adaptor]: bind as \"%s\" on \"%s\": %s\n",
+		mlog(LV_ERR, "ldap_adaptor: bind as \"%s\" on \"%s\": %s",
 		        znul(bind_user), uri.c_str(), ldap_err2string(ret));
 		return {};
 	}
@@ -209,7 +209,7 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	           base_dn.size() > 0 ? base_dn.c_str() : nullptr,
 	      filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
-		fprintf(stderr, "[ldap_adaptor]: search with base \"%s\" filter \"%s\": %s\n",
+		mlog(LV_ERR, "ldap_adaptor: search with base \"%s\" filter \"%s\": %s",
 		        base_dn.c_str(), filter.c_str(), ldap_err2string(ret));
 		return FALSE;
 	}
@@ -228,7 +228,7 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	ret = gx_ldap_bind(tok_bind, dn, &bv);
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
-	fprintf(stderr, "[ldap_adaptor]: ldap_simple_bind %s: %s\n", dn, ldap_err2string(ret));
+	mlog(LV_ERR, "ldap_adaptor: ldap_simple_bind %s: %s", dn, ldap_err2string(ret));
 	return FALSE;
 }
 
@@ -249,7 +249,7 @@ BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_resu
 	 * so don't even go there when multiple LDAP servers are in use.
 	 */
 	if (z > 0) {
-		fprintf(stderr, "[ldap_adaptor]: Pooling is now disabled (would use too many resources in multi-LDAP)\n");
+		mlog(LV_NOTICE, "ldap_adaptor: Pooling is now disabled (would use too many resources in multi-LDAP)");
 		g_conn_pool.resize(0);
 		g_conn_pool.clear();
 	}
@@ -268,7 +268,7 @@ static bool ldap_adaptor_load() try
 	auto pfile = config_file_initd("ldap_adaptor.cfg", get_config_path(),
 	             ldap_adaptor_cfg_defaults);
 	if (pfile == nullptr) {
-		fprintf(stderr, "[ldap_adaptor]: config_file_initd ldap_adaptor.cfg: %s\n",
+		mlog(LV_ERR, "ldap_adaptor: config_file_initd ldap_adaptor.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
@@ -286,7 +286,7 @@ static bool ldap_adaptor_load() try
 	g_mail_attr = pfile->get_value("ldap_mail_attr");
 	g_search_base = pfile->get_value("ldap_search_base");
 	g_edir_workaround = pfile->get_ll("ldap_edirectory_workaround");
-	fprintf(stderr, "[ldap_adaptor]: default host <%s>%s%s, base <%s>, #conn=%d, mailattr=%s\n",
+	mlog(LV_NOTICE, "ldap_adaptor: default host <%s>%s%s, base <%s>, #conn=%d, mailattr=%s",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
 	       g_edir_workaround ? " +EDIRECTORY_WORKAROUNDS" : "",
 	       g_search_base.c_str(), 2 * dataconn_num, g_mail_attr.c_str());
@@ -294,7 +294,7 @@ static bool ldap_adaptor_load() try
 	g_conn_pool.bump();
 	return true;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "[ldap_adaptor]: E-1455: ENOMEM\n");
+	mlog(LV_ERR, "E-1455: ENOMEM");
 	return false;
 }
 
@@ -314,7 +314,7 @@ static BOOL svc_ldap_adaptor(int reason, void **ppdata) try
 	if (!ldap_adaptor_load())
 		return false;
 	if (!register_service("ldap_auth_login3", ldap_adaptor_login3)) {
-		fprintf(stderr, "[ldap_adaptor]: failed to register services\n");
+		mlog(LV_ERR, "ldap_adaptor: failed to register services");
 		return false;
 	}
 	return TRUE;
