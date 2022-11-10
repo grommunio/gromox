@@ -920,6 +920,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	if (0 == pstat->container_id) {
 		for (i = start_pos; i < pbase->gal_list.size() &&
 		     i < start_pos + tmp_count; ++i) {
+			if (ab_tree_hidden(pbase->gal_list[i]) & AB_HIDE_FROM_GAL)
+				continue;
 			prow = common_util_proprowset_enlarge(*pprows);
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
@@ -940,6 +942,10 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			if (i >= start_pos + tmp_count)
 				break;
 			if (i < start_pos) {
+				++i;
+				continue;
+			}
+			if (ab_tree_hidden(pbase->gal_list[i]) & AB_HIDE_FROM_AL) {
 				++i;
 				continue;
 			}
@@ -1422,7 +1428,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (!get_id_from_username(memb.c_str(), &user_id))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
-			if (pnode == nullptr)
+			if (pnode == nullptr ||
+			    ab_tree_hidden(pnode) & AB_HIDE_FROM_AL)
 				continue;
 			if (pfilter != nullptr &&
 			    !nsp_interface_match_node(pnode, pstat->codepage, pfilter))
@@ -1459,7 +1466,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (!get_id_from_username(deleg.c_str(), &user_id))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
-			if (pnode == nullptr)
+			if (pnode == nullptr ||
+			    ab_tree_hidden(pnode) & AB_HIDE_DELEGATE)
 				continue;
 			if (pfilter != nullptr &&
 			    !nsp_interface_match_node(pnode, pstat->codepage, pfilter))
@@ -1496,6 +1504,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		     (*ppoutmids)->cvalues <= requested &&
 		     i < pbase->gal_list.size(); ++i) {
 			auto ptr = pbase->gal_list[i];
+			if (ab_tree_hidden(ptr) & AB_HIDE_FROM_GAL)
+				continue;
 			if (nsp_interface_match_node(ptr, pstat->codepage, pfilter)) {
 				auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 				if (NULL == pproptag) {
@@ -1528,6 +1538,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				break;
 			} else if (i < start_pos) {
 				i++;
+				continue;
+			} else if (ab_tree_hidden(pnode) & AB_HIDE_FROM_AL) {
 				continue;
 			}
 			if (nsp_interface_match_node(pnode,
