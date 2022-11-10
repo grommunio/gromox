@@ -88,7 +88,7 @@ static int rd_run()
 	try {
 		g_tls_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
 	} catch (const std::bad_alloc &) {
-		printf("[remote_delivery]: failed TLS mutex setup\n");
+		mlog(LV_ERR, "remote_delivery: failed TLS mutex setup");
 		return -1;
 	}
 	CRYPTO_THREADID_set_callback(rd_ssl_id);
@@ -97,7 +97,7 @@ static int rd_run()
 	OpenSSL_add_all_algorithms();
 	g_tls_ctx.reset(SSL_CTX_new(SSLv23_client_method()));
 	if (g_tls_ctx == nullptr) {
-		printf("[remote_delivery]: failed TLS setup\n");
+		mlog(LV_ERR, "remote_delivery: failed TLS setup");
 		return -1;
 	}
 	return 0;
@@ -129,7 +129,7 @@ static void rd_log(const MESSAGE_CONTEXT *ctx, unsigned int level,
 	vasprintf(&unique_tie(asbuf), fmt, args);
 	va_end(args);
 	outbuf += asbuf.get();
-	fprintf(stderr, "[remote_delivery]: %s\n", outbuf.c_str());
+	mlog(level, "remote_delivery: %s", outbuf.c_str());
 }
 
 static bool rd_send_cmd(const rd_connection &conn,
@@ -286,7 +286,7 @@ static errno_t rd_data(rd_connection &&conn, MESSAGE_CONTEXT *ctx, std::string &
 		response += " (after DOT)";
 		return ret;
 	}
-	fprintf(stderr, "[remote_delivery]: SMTP output to %s ok\n", g_mx_host.c_str());
+	mlog(LV_INFO, "remote_delivery: SMTP output to %s ok", g_mx_host.c_str());
 	rd_send_cmd(conn, "QUIT\r\n", 6);
 	return 0;
 }
@@ -342,7 +342,7 @@ static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 	rd_connection conn;
 	conn.fd = gx_inet_connect(g_mx_host.c_str(), g_mx_port, 0);
 	if (conn.fd < 0) {
-		rd_log(ctx, 8, "Could not connect to SMTP [%s]:%hu: %s",
+		rd_log(ctx, LV_ERR, "Could not connect to SMTP [%s]:%hu: %s",
 			g_mx_host.c_str(), g_mx_port, strerror(-conn.fd));
 		return EHOSTUNREACH;
 	}
@@ -352,7 +352,7 @@ static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 
 	if (ret == ETIMEDOUT)
 		return ret;
-	rd_log(ctx, 8, "SMTP said answered \"%s\" after connection", response.c_str());
+	rd_log(ctx, LV_DEBUG, "SMTP said answered \"%s\" after connection", response.c_str());
 	/* change reason to connection refused */
 	if (ret == 0 || 1)
 		ret = ECONNREFUSED;
@@ -380,12 +380,12 @@ static BOOL remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	}
 
 	char rcpt[UADDR_SIZE];
-	fprintf(stderr, "[remote_delivery]: Local code: %s (ret=%d). "
-	        "SMTP reason string: %s. Recipient(s) affected:\n",
+	mlog(LV_ERR, "remote_delivery: Local code: %s (ret=%d). "
+	        "SMTP reason string: %s. Recipient(s) affected:",
 	        strerror(ret), ret, errstr.c_str());
 	l_ctrl.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (l_ctrl.f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
-		fprintf(stderr, "[remote_delivery]:\t%s\n", rcpt);
+		mlog(LV_ERR, "remote_delivery:\t%s", rcpt);
 	return TRUE;
 }
 
@@ -408,7 +408,7 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 	auto cfg_file = config_file_initd(filename.c_str(), get_config_path(),
 	                remote_delivery_cfg_defaults);
 	if (cfg_file == nullptr) {
-		printf("[remote_delivery]: config_file_initd %s: %s\n",
+		mlog(LV_ERR, "remote_delivery: config_file_initd %s: %s",
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
@@ -418,10 +418,10 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 	g_mx_port = cfg_file->get_ll("mx_port");
 	g_enable_tls = cfg_file->get_ll("starttls_support");
 	if (rd_run() != 0) {
-		printf("[remote_delivery]: rd_run failed\n");
+		mlog(LV_ERR, "remote_delivery: rd_run failed");
 		return false;
 	} else if (!register_remote(remote_delivery_hook)) {
-		printf("[remote_delivery]: register_remote failed\n");
+		mlog(LV_ERR, "remote_delivery: register_remote failed");
 		return false;
 	}
 	return TRUE;

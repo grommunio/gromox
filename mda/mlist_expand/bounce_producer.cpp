@@ -130,7 +130,7 @@ int bounce_producer_run(const char *datadir)
 #define E(f, s) do { \
 	query_service2(s, f); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "mlist_expand", (s)); \
+		mlog(LV_ERR, "mlist_expand: failed to get the \"%s\" service", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -157,7 +157,7 @@ BOOL bounce_producer_refresh(const char *datadir)
 
 	auto dinfo = opendir_sd("mlist_bounce", datadir);
 	if (dinfo.m_dir == nullptr) {
-		printf("[mlist_expand]: opendir_sd(mlist_expand) %s: %s\n",
+		mlog(LV_ERR, "mlist_expand: opendir_sd(mlist_expand) %s: %s",
 		       dinfo.m_path.c_str(), strerror(errno));
 		return FALSE;
 	}
@@ -173,8 +173,8 @@ BOOL bounce_producer_refresh(const char *datadir)
 	auto pdefault = std::find_if(resource_list.begin(), resource_list.end(),
 	                [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, "ascii") == 0; });
 	if (pdefault == resource_list.end()) {
-		printf("[mlist_expand]: there are no \"ascii\" bounce mail "
-			"templates in %s\n", dinfo.m_path.c_str());
+		mlog(LV_ERR, "mlist_expand: there are no \"ascii\" bounce mail "
+			"templates in %s", dinfo.m_path.c_str());
 		return FALSE;
 	}
 	std::unique_lock wr_hold(g_list_lock);
@@ -294,7 +294,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 					break;
 				}
 			} else {
-				printf("[mlist_expand]: bounce mail %s format error\n",
+				mlog(LV_ERR, "mlist_expand: bounce mail %s format error",
 				       sub_buf.c_str());
 				return;
 			}
@@ -317,8 +317,8 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 
 		for (j=TAG_BEGIN+1; j<until_tag; j++) {
 			if (-1 == presource->format[i][j].position) {
-				printf("[mlist_expand]: format error in %s, lack of "
-				       "tag %s\n", sub_buf.c_str(), g_tags[j-1].name);
+				mlog(LV_ERR, "mlist_expand: format error in %s, lacking "
+				       "tag %s", sub_buf.c_str(), g_tags[j-1].name);
 				return;
 			}
 		}
@@ -372,7 +372,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		pdomain ++;
 		auto lcldom = bounce_producer_check_domain(pdomain);
 		if (lcldom < 0) {
-			fprintf(stderr, "bounce_producer: check_domain: %s\n",
+			mlog(LV_ERR, "bounce_producer: check_domain: %s",
 			        strerror(-lcldom));
 			return;
 		}
@@ -441,7 +441,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		case TAG_LENGTH: {
 			auto mail_len = pmail_original->get_length();
 			if (mail_len < 0) {
-				printf("[mlist_expand]: fail to get mail length\n");
+				mlog(LV_ERR, "mlist_expand: failed to get mail length");
 				mail_len = 0;
 			}
 			HX_unit_size(ptr, 128 /* yuck */, mail_len, 1000, 0);
@@ -456,8 +456,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	ptr += len;
 	auto phead = pmail->add_head();
 	if (NULL == phead) {
-		printf("[mlist_expand]: fatal error, there's no mime "
-			"in mime pool\n");
+		mlog(LV_ERR, "mlist_expand: MIME pool exhausted");
 		return;
 	}
 	pmime = phead;
@@ -478,8 +477,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (NULL == pmime) {
-		printf("[mlist_expand]: fatal error, there's no mime "
-			"in mime pool\n");
+		mlog(LV_ERR, "mlist_expand: MIME pool exhausted");
 		return;
 	}
 	parse_field_value(presource->content_type[bounce_type],
@@ -490,7 +488,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(original_ptr,
 	    ptr - original_ptr, mime_encoding::automatic)) {
-        printf("[mlist_expand]: fatal error, fail to write content\n");
+        mlog(LV_ERR, "mlist_expand: failed to write content");
         return;
 	}
 	
