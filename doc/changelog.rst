@@ -7,6 +7,8 @@ Enhancements:
 
 Fixes:
 
+* oxcical: resolve Exchange complaining about the X-MICROSOFT-CDO-OWNERAPPTID
+  line our implementation generated
 * dscli: in absence of SRV records, fall back to autodiscover.<domain>,
   not <domain>.
 * ldap_adaptor: the per-org LDAP base was erroneously used with the
