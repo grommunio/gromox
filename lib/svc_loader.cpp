@@ -49,6 +49,7 @@ struct SVC_PLUG_ENTITY {
 
 	std::vector<std::shared_ptr<service_entry>> list_service;
 	std::atomic<int> ref_count = 0;
+	std::vector<std::string> ref_holders;
 	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
 	std::string file_name, full_path;
@@ -190,6 +191,7 @@ static int service_load_library(const char *path)
 
 SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) noexcept :
 	list_service(std::move(o.list_service)), ref_count(o.ref_count.load()),
+	ref_holders(std::move(o.ref_holders)),
 	handle(o.handle), lib_main(o.lib_main),
 	file_name(std::move(o.file_name)), full_path(std::move(o.full_path)),
 	completed_init(o.completed_init)
@@ -203,8 +205,17 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 {
 	PLUGIN_MAIN func;
 	auto plib = this;
-	if (plib->ref_count > 0) {
-		mlog(LV_NOTICE, "Unbalanced refcount on %s", plib->file_name.c_str());
+	if (plib->ref_count > 0) try {
+		auto tx = "Unbalanced refcount on " + plib->file_name + ", still held by {";
+		for (auto &&s : plib->ref_holders) {
+			tx += std::move(s);
+			tx += ", ";
+		}
+		tx += "}";
+		mlog(LV_NOTICE, "%s", tx.c_str());
+		return;
+	} catch (const std::bad_alloc &) {
+		mlog(LV_NOTICE, "Unbalanced refcount on %s + ENOMEM", plib->file_name.c_str());
 		return;
 	}
 	if (plib->file_name.size() > 0)
@@ -371,6 +382,7 @@ void *service_query(const char *service_name, const char *module, const std::typ
 	 */
 	pmodule->ref_count ++;
 	pservice->plib->ref_count ++;
+	pservice->plib->ref_holders.emplace_back(service_name + "@"s + znul(module));
 	return pservice->service_addr;
 
 }
@@ -400,6 +412,10 @@ void service_release(const char *service_name, const char *module)
 		pservice->list_reference.erase(pmodule);
 	}
 	pservice->plib->ref_count --;
+	auto &rh = pservice->plib->ref_holders;
+	auto i = std::find(rh.begin(), rh.end(), service_name + "@"s + znul(module));
+	if (i != rh.end())
+		rh.erase(i);
 }
 
 void service_trigger_all(unsigned int ev)
