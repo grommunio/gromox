@@ -52,20 +52,20 @@ int listener_run(const char *CS_PATH)
 {
 	g_listen_sockd = gx_local_listen(CS_PATH, true /* autodelete */);
 	if (g_listen_sockd < 0) {
-		printf("[listener]: listen %s: %s\n", CS_PATH, strerror(errno));
+		mlog(LV_ERR, "listen %s: %s", CS_PATH, strerror(errno));
 		return -1;
 	}
 	gx_reexec_record(g_listen_sockd);
 	if (chmod(CS_PATH, 0666) < 0) {
 		close(g_listen_sockd);
-		printf("[listener]: fail to change access mode of %s\n", CS_PATH);
+		mlog(LV_ERR, "listener: failed to change the access mode of %s", CS_PATH);
 		return -3;
 	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_listener_id, nullptr, zcls_thrwork, nullptr);
 	if (ret != 0) {
 		close(g_listen_sockd);
-		printf("[listener]: failed to create accept thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "listener: failed to create accept thread: %s", strerror(ret));
 		return -5;
 	}
 	pthread_setname_np(g_listener_id, "accept");

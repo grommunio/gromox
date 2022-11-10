@@ -175,7 +175,7 @@ int ab_tree_run()
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, zcoreab_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[exchange_nsp]: failed to create scanning thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "zcore: failed to create scanning thread: %s", strerror(ret));
 		g_notify_stop = true;
 		return -3;
 	}
@@ -562,7 +562,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 	auto it = g_base_hash.find(base_id);
 	if (it == g_base_hash.cend()) {
 		if (g_base_hash.size() >= g_base_size) {
-			printf("[exchange_nsp]: W-1290: AB base hash is full\n");
+			mlog(LV_ERR, "E-1290: AB base hash is full");
 			return nullptr;
 		}
 		try {
@@ -1922,7 +1922,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 
 void ab_tree_invalidate_cache()
 {
-	printf("[zcore]: Invalidating AB caches\n");
+	mlog(LV_NOTICE, "zcore: Invalidating AB caches");
 	std::unique_lock bl_hold(g_base_lock);
 	for (auto &kvpair : g_base_hash)
 		kvpair.second.load_time = 0;

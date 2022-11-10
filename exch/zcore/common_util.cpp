@@ -415,12 +415,12 @@ int common_util_run(const char *data_path)
 	g_mime_pool = MIME_POOL::create(g_mime_num, 16,
 	              "zcore_mime_pool (zcore.cfg:g_mime_num)");
 	if (NULL == g_mime_pool) {
-		printf("[common_util]: Failed to init MIME pool\n");
+		mlog(LV_ERR, "common_util: failed to init MIME pool");
 		return -1;
 	}
 	if (!oxcmail_init_library(g_org_name, system_services_get_user_ids,
 		system_services_get_username_from_id)) {
-		printf("[common_util]: Failed to init oxcmail library\n");
+		mlog(LV_ERR, "common_util: failed to init oxcmail library");
 		return -2;
 	}
 	return 0;

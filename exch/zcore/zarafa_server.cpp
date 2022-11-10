@@ -633,7 +633,7 @@ int zarafa_server_run()
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[zarafa_server]: E-1443: pthread_create: %s\n", strerror(ret));
+		mlog(LV_ERR, "E-1443: pthread_create: %s", strerror(ret));
 		return -4;
 	}
 	pthread_setname_np(g_scan_id, "zarafa");
@@ -673,7 +673,7 @@ uint32_t zarafa_server_logon(const char *username,
 	    password, maildir, arsizeof(maildir), lang, arsizeof(lang),
 	    reason, arsizeof(reason),
 	    USER_PRIVILEGE_EXCH)) {
-		fprintf(stderr, "auth rejected for \"%s\": %s\n", username, reason);
+		mlog(LV_ERR, "Auth rejected for \"%s\": %s", username, reason);
 		return ecLoginFailure;
 	}
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));

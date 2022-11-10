@@ -78,7 +78,7 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	proptag = PR_STORE_RECORD_KEY;
 	if (!exmdb_client::get_store_properties(
 		dir, 0, &proptags, &propvals)) {
-		printf("get_store_properties %s: failed\n", dir);
+		mlog(LV_ERR, "get_store_properties %s: failed", dir);
 		return NULL;	
 	}
 	auto bin = propvals.get<const BINARY>(PR_STORE_RECORD_KEY);
