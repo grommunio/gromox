@@ -2362,14 +2362,8 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 		*ppcolumns = NULL;
 		return ecServerOOM;
 	}
-	pcolumns->cvalues = 31;
-	pcolumns->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pcolumns->cvalues);
-	if (NULL == pcolumns->pproptag) {
-		*ppcolumns = NULL;
-		return ecServerOOM;
-	}
 	static constexpr uint32_t utags[] = {
-		PR_DISPLAY_NAME, PR_NICKNAME, PR_TITLE,
+		PR_DISPLAY_NAME, PR_NICKNAME,/* PR_TITLE, */
 		PR_BUSINESS_TELEPHONE_NUMBER, PR_PRIMARY_TELEPHONE_NUMBER,
 		PR_MOBILE_TELEPHONE_NUMBER, PR_HOME_ADDRESS_STREET, PR_COMMENT,
 		PR_COMPANY_NAME, PR_DEPARTMENT_NAME, PR_OFFICE_LOCATION,
@@ -2382,6 +2376,12 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 		PR_INSTANCE_KEY, PR_MAPPING_SIGNATURE, PR_SEND_RICH_INFO,
 		PR_TEMPLATEID, PR_EMS_AB_OBJECT_GUID, PR_CREATION_TIME,
 	};
+	pcolumns->cvalues = std::size(utags) + std::size(ntags);
+	pcolumns->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pcolumns->cvalues);
+	if (pcolumns->pproptag == nullptr) {
+		*ppcolumns = nullptr;
+		return ecServerOOM;
+	}
 	size_t i = 0;
 	for (auto tag : utags)
 		pcolumns->pproptag[i++] = b_unicode ? tag : CHANGE_PROP_TYPE(tag, PT_STRING8);
