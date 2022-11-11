@@ -540,23 +540,13 @@ static BOOL ab_tree_load_tree(int domain_id,
 	return TRUE;
 }
 
-/**
- * Return a bitmask of hide flags for the given user.
- */
 uint32_t ab_tree_hidden(const tree_node *node)
 {
 	auto node_type = ab_tree_get_node_type(node);
 	if (node_type != abnode_type::user && node_type != abnode_type::mlist)
 		return 0;
 	auto xab = containerof(node, AB_NODE, stree);
-	auto &obj = *static_cast<const sql_user *>(xab->d_info);
-	auto v = obj.propvals.find(PR_ATTR_HIDDEN_GROMOX);
-	if (v != obj.propvals.end())
-		return strtoul(v->second.c_str(), nullptr, 0);
-	v = obj.propvals.find(PR_ATTR_HIDDEN);
-	if (v == obj.propvals.end())
-		return 0;
-	return strtoul(v->second.c_str(), nullptr, 0) ? AB_HIDE__DEFAULT : 0;
+	return static_cast<const sql_user *>(xab->d_info)->hidden;
 }
 
 static BOOL ab_tree_load_base(AB_BASE *pbase) try
