@@ -67,6 +67,7 @@ enum { /* for PR_ATTR_HIDDEN_*GROMOX* */
 
 /**
  * @dtex:	%DT_* type as specified for PR_DISPLAY_TYPE_EX.
+ * @hidden:	hide bits for the address book
  * @list_type:	%MLIST_TYPE_* value; only interpret field when
  * 		addr_type==ADDRESS_TYPE_MLIST.
  */
@@ -74,6 +75,7 @@ struct sql_user {
 	enum display_type dtypx = DT_MAILUSER;
 	int id = 0;
 	enum mlist_type list_type = MLIST_TYPE_NORMAL;
+	uint32_t hidden = 0;
 	int list_priv = 0;
 	std::string username, maildir;
 	std::vector<std::string> aliases; /* email addresses */

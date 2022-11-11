@@ -237,6 +237,14 @@ static int userlist_parse(sqlconn &conn, const char *query,
 		u.aliases = aliasmap_extract(amap, row[1]);
 		u.propvals = propmap_extract(pmap, u.id);
 		u.maildir = row[4];
+		auto it = u.propvals.find(PR_ATTR_HIDDEN_GROMOX);
+		if (it != u.propvals.end()) {
+			u.hidden = strtoul(it->second.c_str(), nullptr, 0);
+		} else {
+			it = u.propvals.find(PR_ATTR_HIDDEN);
+			if (it != u.propvals.end())
+				u.hidden = strtoul(it->second.c_str(), nullptr, 0) ? AB_HIDE__DEFAULT : 0;
+		}
 		if (u.dtypx == DT_DISTLIST) {
 			u.list_type = static_cast<enum mlist_type>(strtoul(znul(row[5]), nullptr, 0));
 			u.list_priv = strtoul(znul(row[6]), nullptr, 0);
