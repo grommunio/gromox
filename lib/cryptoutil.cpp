@@ -101,7 +101,7 @@ std::string sss_obf_reverse(const std::string_view &x)
 #define U(x) reinterpret_cast<unsigned char *>(x)
 	auto cipher = EVP_get_cipherbynid(NID_aes_256_cbc);
 	if (cipher == nullptr ||
-	    !EVP_DecryptInit_ex(ctx.get(), cipher, 0, CU(&x[4]), CU(&x[36])))
+	    !EVP_DecryptInit_ex(ctx.get(), cipher, nullptr, CU(&x[4]), CU(&x[36])))
 		return out;
 	out.resize(x.size() - 56);
 	int plainlen = 0, digestlen = 0;
