@@ -47,6 +47,7 @@ struct AB_BASE {
 
 	std::atomic<int> status{0}, reference{0};
 	time_t load_time = 0;
+	size_t gal_hidden_count = 0;
 	int base_id = 0;
 	std::vector<domain_node> domain_list;
 	stn_list_t gal_list;
@@ -76,3 +77,4 @@ extern bool ab_tree_resolvename(AB_BASE *, uint32_t codepage, char *str, stn_lis
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids);
 extern void ab_tree_invalidate_cache();
+extern uint32_t ab_tree_hidden(const tree_node *);
