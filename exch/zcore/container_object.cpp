@@ -893,41 +893,40 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 {
 	auto pcontainer = this;
 	
-	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
-		if (NULL != pcontainer->contents.pminid_array) {
-			*pnum = pcontainer->contents.pminid_array->count;
-			return TRUE;
-		}
-		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
-		if (pbase == nullptr)
-			return FALSE;
-		*pnum = 0;
-		if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
-			*pnum = std::min(pbase->gal_list.size(), static_cast<size_t>(UINT32_MAX));
-		} else if (0 == pcontainer->id.abtree_id.minid) {
-			*pnum = 0;
-		} else {
-			auto pnode = ab_tree_minid_to_node(pbase.get(),
-				pcontainer->id.abtree_id.minid);
-			if (pnode == nullptr)
-				return TRUE;
-			pnode = pnode->get_child();
-			if (pnode == nullptr)
-				return TRUE;
-			do {
-				if (ab_tree_get_node_type(pnode) >= abnode_type::containers)
-					continue;
-				(*pnum) ++;
-			} while ((pnode = pnode->get_sibling()) != nullptr);
-		}
-	} else {
-		if (NULL == pcontainer->contents.prow_set) {
-			if (!pcontainer->load_user_table(nullptr))
-				return FALSE;	
-		}
-		*pnum = pcontainer->contents.prow_set != nullptr ?
-		        pcontainer->contents.prow_set->count : 0;
+	if (type != CONTAINER_TYPE_ABTREE) {
+		if (contents.prow_set == nullptr && !load_user_table(nullptr))
+			return false;
+		*pnum = contents.prow_set != nullptr ?
+		        contents.prow_set->count : 0;
+		return TRUE;
 	}
+	if (NULL != pcontainer->contents.pminid_array) {
+		*pnum = pcontainer->contents.pminid_array->count;
+		return TRUE;
+	}
+	auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
+	if (pbase == nullptr)
+		return FALSE;
+	*pnum = 0;
+	if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
+		*pnum = std::min(pbase->gal_list.size(), static_cast<size_t>(UINT32_MAX));
+		return TRUE;
+	} else if (0 == pcontainer->id.abtree_id.minid) {
+		*pnum = 0;
+		return TRUE;
+	}
+	auto pnode = ab_tree_minid_to_node(pbase.get(),
+		pcontainer->id.abtree_id.minid);
+	if (pnode == nullptr)
+		return TRUE;
+	pnode = pnode->get_child();
+	if (pnode == nullptr)
+		return TRUE;
+	do {
+		if (ab_tree_get_node_type(pnode) >= abnode_type::containers)
+			continue;
+		(*pnum)++;
+	} while ((pnode = pnode->get_sibling()) != nullptr);
 	return TRUE;
 }
 
