@@ -10,6 +10,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
@@ -893,41 +894,42 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 {
 	auto pcontainer = this;
 	
-	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
-		if (NULL != pcontainer->contents.pminid_array) {
-			*pnum = pcontainer->contents.pminid_array->count;
-			return TRUE;
-		}
-		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
-		if (pbase == nullptr)
-			return FALSE;
-		*pnum = 0;
-		if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
-			*pnum = std::min(pbase->gal_list.size(), static_cast<size_t>(UINT32_MAX));
-		} else if (0 == pcontainer->id.abtree_id.minid) {
-			*pnum = 0;
-		} else {
-			auto pnode = ab_tree_minid_to_node(pbase.get(),
-				pcontainer->id.abtree_id.minid);
-			if (pnode == nullptr)
-				return TRUE;
-			pnode = pnode->get_child();
-			if (pnode == nullptr)
-				return TRUE;
-			do {
-				if (ab_tree_get_node_type(pnode) >= abnode_type::containers)
-					continue;
-				(*pnum) ++;
-			} while ((pnode = pnode->get_sibling()) != nullptr);
-		}
-	} else {
-		if (NULL == pcontainer->contents.prow_set) {
-			if (!pcontainer->load_user_table(nullptr))
-				return FALSE;	
-		}
-		*pnum = pcontainer->contents.prow_set != nullptr ?
-		        pcontainer->contents.prow_set->count : 0;
+	if (type != CONTAINER_TYPE_ABTREE) {
+		if (contents.prow_set == nullptr && !load_user_table(nullptr))
+			return false;
+		*pnum = contents.prow_set != nullptr ?
+		        contents.prow_set->count : 0;
+		return TRUE;
 	}
+	if (NULL != pcontainer->contents.pminid_array) {
+		*pnum = pcontainer->contents.pminid_array->count;
+		return TRUE;
+	}
+	auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
+	if (pbase == nullptr)
+		return FALSE;
+	*pnum = 0;
+	if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
+		*pnum = std::min(pbase->gal_list.size() - pbase->gal_hidden_count,
+		        static_cast<size_t>(UINT32_MAX));
+		return TRUE;
+	} else if (0 == pcontainer->id.abtree_id.minid) {
+		*pnum = 0;
+		return TRUE;
+	}
+	auto pnode = ab_tree_minid_to_node(pbase.get(),
+		pcontainer->id.abtree_id.minid);
+	if (pnode == nullptr)
+		return TRUE;
+	pnode = pnode->get_child();
+	if (pnode == nullptr)
+		return TRUE;
+	do {
+		if (ab_tree_get_node_type(pnode) >= abnode_type::containers ||
+		    ab_tree_hidden(pnode) & AB_HIDE_FROM_AL)
+			continue;
+		(*pnum)++;
+	} while ((pnode = pnode->get_sibling()) != nullptr);
 	return TRUE;
 }
 
@@ -999,9 +1001,9 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 			     i < pcontainer->contents.pminid_array->count; ++i) {
 				auto ptnode = ab_tree_minid_to_node(pbase.get(),
 					pcontainer->contents.pminid_array->pl[i]);
-				if (NULL == ptnode) {
+				if (ptnode == nullptr ||
+				    ab_tree_hidden(ptnode) & AB_HIDE_FROM_AL)
 					continue;
-				}
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (NULL == pset->pparray[pset->count]) {
 					return FALSE;
@@ -1012,17 +1014,14 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				pset->count ++;
 			}
 		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
-			size_t i = 0;
-			for (auto e : pbase->gal_list) {
-				if (i < first_pos) {
-					++i;
+			for (size_t i = first_pos; i < pbase->gal_list.size(); ++i) {
+				if (ab_tree_hidden(pbase->gal_list[i]) & AB_HIDE_FROM_GAL)
 					continue;
-				}
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (NULL == pset->pparray[pset->count]) {
 					return FALSE;
 				}
-				if (!ab_tree_fetch_node_properties(e,
+				if (!ab_tree_fetch_node_properties(pbase->gal_list[i],
 				    pproptags, pset->pparray[pset->count])) {
 					return FALSE;
 				}
@@ -1030,7 +1029,6 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				if (pset->count == row_count) {
 					break;
 				}
-				++i;
 			}
 		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_EMPTY) {
 			return TRUE;
@@ -1043,11 +1041,10 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				return TRUE;
 			size_t i = 0;
 			do {
-				if (ab_tree_get_node_type(ptnode) >= abnode_type::containers)
+				if (ab_tree_get_node_type(ptnode) >= abnode_type::containers ||
+				    ab_tree_hidden(ptnode) & AB_HIDE_FROM_AL ||
+				    i < first_pos)
 					continue;
-				if (i < first_pos) {
-					continue;
-				}
 				i++;
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (NULL == pset->pparray[pset->count]) {

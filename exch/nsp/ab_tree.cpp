@@ -540,6 +540,15 @@ static BOOL ab_tree_load_tree(int domain_id,
 	return TRUE;
 }
 
+uint32_t ab_tree_hidden(const tree_node *node)
+{
+	auto node_type = ab_tree_get_node_type(node);
+	if (node_type != abnode_type::user && node_type != abnode_type::mlist)
+		return 0;
+	auto xab = containerof(node, AB_NODE, stree);
+	return static_cast<const sql_user *>(xab->d_info)->hidden;
+}
+
 static BOOL ab_tree_load_base(AB_BASE *pbase) try
 {
 	char temp_buff[1024];
@@ -1248,6 +1257,18 @@ int ab_tree_get_guid_base_id(GUID guid)
 	return g_base_hash.find(base_id) != g_base_hash.end() ? base_id : 0;
 }
 
+ec_error_t ab_tree_proplist(const tree_node *node, std::vector<uint32_t> &tags)
+{
+	auto node_type = ab_tree_get_node_type(node);
+	if (node_type != abnode_type::user && node_type != abnode_type::mlist)
+		return ecNotFound;
+	auto xab = containerof(node, AB_NODE, stree);
+	auto &obj = *static_cast<const sql_user *>(xab->d_info);
+	for (const auto &entry : obj.propvals)
+		tags.push_back(entry.first);
+	return ecSuccess;
+}
+
 ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, unsigned int codepage,
     unsigned int proptag, PROPERTY_VALUE *prop)
 {
@@ -1365,6 +1386,10 @@ std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 	return {(obj.dtypx & DTE_MASK_LOCAL) | DTE_FLAG_ACL_CAPABLE};
 }
 
+/**
+ * Dump an individual NSAB_NODE to stderr.
+ * Part of the nsp_trace=2 dumper for AB_BASEs.
+ */
 static void ab_tree_dump_node(const tree_node *tnode, unsigned int lvl)
 {
 	auto &a = *containerof(tnode, NSAB_NODE, stree);
@@ -1390,6 +1415,10 @@ static void ab_tree_dump_node(const tree_node *tnode, unsigned int lvl)
 	fprintf(stderr, "\n");
 }
 
+/**
+ * Dump an AB_BASE to stderr. This is for debugging, and only happening with
+ * the nsp_trace=2 configuration directive set.
+ */
 void ab_tree_dump_base(const AB_BASE &b)
 {
 	char gtxt[41]{};

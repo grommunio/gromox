@@ -74,20 +74,20 @@ static void nsp_trace(const char *func, bool is_exit, const STAT *s,
 		s->container_id, s->cur_rec, s->delta, s->num_pos, s->total_rec);
 	if (delta != nullptr)
 		fprintf(stderr, "{*pdelta=%d}", *delta);
-	if (outrows != nullptr) {
-		fprintf(stderr, "{#outrows=%u}\n", outrows->crows);
-		for (size_t k = 0; k < outrows->crows; ++k) {
-			auto dispn = outrows->prows[k].getval(PR_DISPLAY_NAME);
-			auto eid = outrows->prows[k].getval(PR_ENTRYID);
-			fprintf(stderr, "\t#%zu  %s (%u props)\n",
-			        k, dispn != nullptr ? znul(dispn->pstr) : "",
-			        outrows->prows[k].cvalues);
-			if (eid == nullptr)
-				continue;
-			fprintf(stderr, "\t#%zu  %s\n", k, bin2txt(eid->bin.pb, eid->bin.cb).c_str());
-		}
-	} else {
+	if (outrows == nullptr) {
 		fprintf(stderr, "\n");
+		return;
+	}
+	fprintf(stderr, "{#outrows=%u}\n", outrows->crows);
+	for (size_t k = 0; k < outrows->crows; ++k) {
+		auto dispn = outrows->prows[k].getval(PR_DISPLAY_NAME);
+		auto eid = outrows->prows[k].getval(PR_ENTRYID);
+		fprintf(stderr, "\t#%zu  %s (%u props)\n",
+			k, dispn != nullptr ? znul(dispn->pstr) : "",
+			outrows->prows[k].cvalues);
+		if (eid == nullptr)
+			continue;
+		fprintf(stderr, "\t#%zu  %s\n", k, bin2txt(eid->bin.pb, eid->bin.cb).c_str());
 	}
 }
 
@@ -918,26 +918,22 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	}
 	size_t i = 0;
 	if (0 == pstat->container_id) {
-		for (auto ptr : pbase->gal_list) {
-			if (i >= start_pos + tmp_count)
-				break;
-			if (i < start_pos) {
-				++i;
+		for (i = start_pos; i < pbase->gal_list.size() &&
+		     i < start_pos + tmp_count; ++i) {
+			if (ab_tree_hidden(pbase->gal_list[i]) & AB_HIDE_FROM_GAL)
 				continue;
-			}
 			prow = common_util_proprowset_enlarge(*pprows);
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
 				*pprows = nullptr;
 				return ecServerOOM;
 			}
-			result = nsp_interface_fetch_row(ptr,
+			result = nsp_interface_fetch_row(pbase->gal_list[i],
 				 b_ephid, pstat->codepage, pproptags, prow);
 			if (result != ecSuccess) {
 				*pprows = nullptr;
 				return result;
 			}
-			i++;
 		}
 	} else {
 		do {
@@ -946,6 +942,10 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			if (i >= start_pos + tmp_count)
 				break;
 			if (i < start_pos) {
+				++i;
+				continue;
+			}
+			if (ab_tree_hidden(pbase->gal_list[i]) & AB_HIDE_FROM_AL) {
 				++i;
 				continue;
 			}
@@ -1428,7 +1428,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (!get_id_from_username(memb.c_str(), &user_id))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
-			if (pnode == nullptr)
+			if (pnode == nullptr ||
+			    ab_tree_hidden(pnode) & AB_HIDE_FROM_AL)
 				continue;
 			if (pfilter != nullptr &&
 			    !nsp_interface_match_node(pnode, pstat->codepage, pfilter))
@@ -1465,7 +1466,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (!get_id_from_username(deleg.c_str(), &user_id))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
-			if (pnode == nullptr)
+			if (pnode == nullptr ||
+			    ab_tree_hidden(pnode) & AB_HIDE_DELEGATE)
 				continue;
 			if (pfilter != nullptr &&
 			    !nsp_interface_match_node(pnode, pstat->codepage, pfilter))
@@ -1502,6 +1504,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		     (*ppoutmids)->cvalues <= requested &&
 		     i < pbase->gal_list.size(); ++i) {
 			auto ptr = pbase->gal_list[i];
+			if (ab_tree_hidden(ptr) & AB_HIDE_FROM_GAL)
+				continue;
 			if (nsp_interface_match_node(ptr, pstat->codepage, pfilter)) {
 				auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 				if (NULL == pproptag) {
@@ -1534,6 +1538,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				break;
 			} else if (i < start_pos) {
 				i++;
+				continue;
+			} else if (ab_tree_hidden(pnode) & AB_HIDE_FROM_AL) {
 				continue;
 			}
 			if (nsp_interface_match_node(pnode,
@@ -1695,18 +1701,13 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	return ecSuccess;
 }
 
-static int nsp_interface_get_default_proptags(abnode_type node_type,
-	BOOL b_unicode, LPROPTAG_ARRAY *pproptags)
+static constexpr size_t DFL_TAGS_MAX = 32;
+
+static int nsp_fill_dfl_tags(abnode_type node_type, bool b_unicode,
+    uint32_t *t, unsigned int &z)
 {
 #define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE((x), PT_STRING8))
-	static constexpr size_t UPPER_LIMIT = 32;
-	unsigned int &z = pproptags->cvalues;
-	pproptags->cvalues  = 0;
-	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, UPPER_LIMIT);
-	if (pproptags->pproptag == nullptr)
-		return ecServerOOM;
-
-	auto &t = pproptags->pproptag;
+	/* 16 props */
 	t[z++] = U(PR_DISPLAY_NAME);
 	t[z++] = U(PR_ADDRTYPE);
 	t[z++] = U(PR_EMAIL_ADDRESS);
@@ -1729,6 +1730,7 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 	case abnode_type::abclass:
 		return ecInvalidObject;
 	case abnode_type::user:
+		/* Up to 16 */
 		t[z++] = U(PR_NICKNAME);
 		t[z++] = U(PR_TITLE);
 		t[z++] = U(PR_PRIMARY_TELEPHONE_NUMBER);
@@ -1762,14 +1764,25 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 	default:
 		return ecInvalidObject;
 	}
-	assert(z <= UPPER_LIMIT);
 	return ecSuccess;
 #undef U
 }
 
+static int nsp_interface_get_default_proptags(abnode_type node_type,
+	BOOL b_unicode, LPROPTAG_ARRAY *pproptags)
+{
+	pproptags->cvalues  = 0;
+	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, DFL_TAGS_MAX);
+	if (pproptags->pproptag == nullptr)
+		return ecServerOOM;
+	auto ret = nsp_fill_dfl_tags(node_type, b_unicode,
+	           pproptags->pproptag, pproptags->cvalues);
+	assert(pproptags->cvalues <= DFL_TAGS_MAX);
+	return ret;
+}
 
 int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
-	uint32_t mid, uint32_t codepage, LPROPTAG_ARRAY **ppproptags)
+    uint32_t mid, uint32_t codepage, LPROPTAG_ARRAY **tags)
 {
 	int base_id;
 	char temp_buff[1024];
@@ -1777,45 +1790,57 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		*ppproptags = NULL;
+		*tags = nullptr;
 		return ecError;
 	}
 	if (0 == mid) {
-		*ppproptags = NULL;
+		*tags = nullptr;
 		return ecInvalidObject;
 	}
 	BOOL b_unicode = codepage == CP_WINUNICODE ? TRUE : false;
-	*ppproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
-	if (NULL == *ppproptags) {
+	*tags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
+	if (NULL == *tags) {
 		return ecServerOOM;
 	}
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
-		*ppproptags = NULL;
+		*tags = nullptr;
 		return ecError;
 	}
 	auto pnode = ab_tree_minid_to_node(pbase.get(), mid);
 	if (NULL == pnode) {
-		*ppproptags = NULL;
+		*tags = nullptr;
 		return ecInvalidObject;
 	}
-	if (nsp_interface_get_default_proptags(ab_tree_get_node_type(pnode),
-	    b_unicode, *ppproptags) == ecSuccess) {
-		size_t count = 0;
-		for (size_t i = 0; i < (*ppproptags)->cvalues; ++i) {
-			if (nsp_interface_fetch_property(pnode, false, codepage,
-			    (*ppproptags)->pproptag[i], &prop_val, temp_buff,
-			    GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
-				continue;
-			if (i != count) {
-				(*ppproptags)->pproptag[count] = (*ppproptags)->pproptag[i];
-			}
-			count ++;
-		}
-		(*ppproptags)->cvalues = count;
-	} else {
-		*ppproptags = NULL;
+
+	/* Grab tags */
+	auto type = ab_tree_get_node_type(pnode);
+	uint32_t ntags = 0;
+	std::vector<uint32_t> ctags(DFL_TAGS_MAX);
+	auto ret = nsp_fill_dfl_tags(type, b_unicode, ctags.data(), ntags);
+	assert(ntags <= DFL_TAGS_MAX);
+	if (ret != ecSuccess)
+		ntags = 0;
+	ctags.resize(ntags);
+	ab_tree_proplist(pnode, ctags);
+
+	/* Trim tags that have no propval */
+	std::sort(ctags.begin(), ctags.end());
+	ctags.erase(std::unique(ctags.begin(), ctags.end()), ctags.end());
+	ctags.erase(std::remove_if(ctags.begin(), ctags.end(), [&](uint32_t proptag) {
+		return nsp_interface_fetch_property(pnode, false, codepage,
+		       proptag, &prop_val, temp_buff,
+		       std::size(temp_buff)) != ecSuccess;
+	}), ctags.end());
+
+	/* Copy out */
+	(*tags)->cvalues = ctags.size();
+	(*tags)->pproptag = ndr_stack_anew<uint32_t>(ctags.size());
+	if ((*tags)->pproptag == nullptr) {
+		*tags = nullptr;
+		return ecServerOOM;
 	}
+	memcpy((*tags)->pproptag, ctags.data(), sizeof(uint32_t) * ctags.size());
 	return ecSuccess;
 }
 
@@ -2355,14 +2380,8 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 		*ppcolumns = NULL;
 		return ecServerOOM;
 	}
-	pcolumns->cvalues = 31;
-	pcolumns->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pcolumns->cvalues);
-	if (NULL == pcolumns->pproptag) {
-		*ppcolumns = NULL;
-		return ecServerOOM;
-	}
 	static constexpr uint32_t utags[] = {
-		PR_DISPLAY_NAME, PR_NICKNAME, PR_TITLE,
+		PR_DISPLAY_NAME, PR_NICKNAME,/* PR_TITLE, */
 		PR_BUSINESS_TELEPHONE_NUMBER, PR_PRIMARY_TELEPHONE_NUMBER,
 		PR_MOBILE_TELEPHONE_NUMBER, PR_HOME_ADDRESS_STREET, PR_COMMENT,
 		PR_COMPANY_NAME, PR_DEPARTMENT_NAME, PR_OFFICE_LOCATION,
@@ -2375,6 +2394,12 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 		PR_INSTANCE_KEY, PR_MAPPING_SIGNATURE, PR_SEND_RICH_INFO,
 		PR_TEMPLATEID, PR_EMS_AB_OBJECT_GUID, PR_CREATION_TIME,
 	};
+	pcolumns->cvalues = std::size(utags) + std::size(ntags);
+	pcolumns->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pcolumns->cvalues);
+	if (pcolumns->pproptag == nullptr) {
+		*ppcolumns = nullptr;
+		return ecServerOOM;
+	}
 	size_t i = 0;
 	for (auto tag : utags)
 		pcolumns->pproptag[i++] = b_unicode ? tag : CHANGE_PROP_TYPE(tag, PT_STRING8);
