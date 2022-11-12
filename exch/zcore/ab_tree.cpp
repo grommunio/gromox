@@ -531,6 +531,8 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 			auto node_type = ab_tree_get_node_type(nd);
 			if (node_type >= abnode_type::containers || nd->pdata != nullptr)
 				return;
+			if (ab_tree_hidden(nd) & AB_HIDE_FROM_GAL)
+				++pbase->gal_hidden_count;
 			pbase->gal_list.push_back(nd);
 		});
 	}
@@ -1862,6 +1864,15 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 	return false;
 }
 
+uint32_t ab_tree_hidden(const tree_node *node)
+{
+	auto node_type = ab_tree_get_node_type(node);
+	if (node_type != abnode_type::user && node_type != abnode_type::mlist)
+		return 0;
+	auto xab = containerof(node, AB_NODE, stree);
+	return static_cast<const sql_user *>(xab->d_info)->hidden;
+}
+
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids)
 {
@@ -1872,7 +1883,8 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	single_list_init(&temp_list);
 	if (container_id == SPECIAL_CONTAINER_GAL) {
 		for (auto ptr : pbase->gal_list) {
-			if (!ab_tree_match_node(ptr, codepage, pfilter))
+			if ((ab_tree_hidden(ptr) & AB_HIDE_FROM_GAL) ||
+			    !ab_tree_match_node(ptr, codepage, pfilter))
 				continue;
 			psnode1 = cu_alloc<SINGLE_LIST_NODE>();
 			if (NULL == psnode1) {
@@ -1890,7 +1902,8 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 			return TRUE;
 		}
 		do {
-			if (ab_tree_get_node_type(pnode) >= abnode_type::containers)
+			if (ab_tree_get_node_type(pnode) >= abnode_type::containers ||
+			    (ab_tree_hidden(pnode) & AB_HIDE_FROM_AL))
 				continue;
 			if (!ab_tree_match_node(pnode, codepage, pfilter))
 				continue;
