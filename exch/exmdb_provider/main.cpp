@@ -189,7 +189,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
 			return FALSE;
 		}
-		if (0 != exmdb_server_run()) {
+		if (exmdb_server::run()) {
 			mlog(LV_ERR, "exmdb_provider: failed to start exmdb server");
 			db_engine_stop();
 			return FALSE;
@@ -224,7 +224,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
 #undef IDLOUT
-		register_service("exmdb_client_register_proc", exmdb_server_register_proc);
+		register_service("exmdb_client_register_proc", exmdb_server::register_proc);
 		register_service("pass_service", common_util_pass_service);
 		return TRUE;
 	}

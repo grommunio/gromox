@@ -51,7 +51,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		}
 		if (!common_util_get_maildir(username, maildir, arsizeof(maildir)))
 			return ecError;
-		if (!exmdb_client_check_mailbox_permission(maildir,
+		if (!exmdb_client::check_mailbox_permission(maildir,
 		    rpc_info.username, &permission))
 			return ecError;
 		if (permission == rightsNone)
@@ -79,7 +79,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_STORE_RECORD_KEY;
 	proptag_buff[1] = PR_OOF_STATE;
-	if (!exmdb_client_get_store_properties(maildir, 0, &proptags, &propvals))
+	if (!exmdb_client::get_store_properties(maildir, 0, &proptags, &propvals))
 		return ecError;
 	auto bin = propvals.get<const BINARY>(PR_STORE_RECORD_KEY);
 	if (bin == nullptr)
@@ -199,7 +199,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	replguid->time_low = domain_id;
 	memset(pper_user_guid, 0, sizeof(GUID));
 	
-	if (!exmdb_client_get_store_property(homedir, 0, PR_STORE_RECORD_KEY, &pvalue))
+	if (!exmdb_client::get_store_property(homedir, 0, PR_STORE_RECORD_KEY, &pvalue))
 		return ecError;
 	if (NULL == pvalue) {
 		return ecError;
@@ -232,7 +232,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
 		return ecNotSupported;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	if (!exmdb_client_get_folder_by_class(plogon->get_dir(), pstr_class,
+	if (!exmdb_client::get_folder_by_class(plogon->get_dir(), pstr_class,
 	    pfolder_id, ppstr_explicit))
 		return ecError;
 	return ecSuccess;
@@ -262,7 +262,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 	if (!plogon->is_private())
 		return ecNotSupported;
 	if (0 != folder_id) {
-		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
+		if (!exmdb_client::get_folder_property(plogon->get_dir(), 0,
 		    folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (NULL == pvalue) {
@@ -273,7 +273,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 	}
 	if (plogon->logon_mode != logon_mode::owner)
 		return ecAccessDenied;
-	if (!exmdb_client_set_folder_by_class(plogon->get_dir(),
+	if (!exmdb_client::set_folder_by_class(plogon->get_dir(),
 	    folder_id, pstr_class, &b_result))
 		return ecError;
 	if (!b_result)
@@ -298,7 +298,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 		return ecNotSupported;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	if (!exmdb_client_get_folder_class_table(plogon->get_dir(), &class_table))
+	if (!exmdb_client::get_folder_class_table(plogon->get_dir(), &class_table))
 		return ecError;
 	if (0 == class_table.count) {
 		return ecNoReceiveFolder;
@@ -347,7 +347,7 @@ uint32_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 	}
 	replid = rop_util_get_replid(folder_id);
 	if (1 != replid) {
-		if (!exmdb_client_get_mapping_guid(plogon->get_dir(), replid,
+		if (!exmdb_client::get_mapping_guid(plogon->get_dir(), replid,
 		    &b_found, &guid))
 			return ecError;
 		if (!b_found)
@@ -434,7 +434,7 @@ uint32_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 			 * anyway?
 			 */
 			mlog(LV_ERR, "E-2141: public folder LT/REPL mapping not really implemented");
-			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
+			if (!exmdb_client::get_mapping_guid(plogon->get_dir(),
 			    replid, &b_found, &plong_term_id->guid))
 				return ecError;
 			if (!b_found)
@@ -475,7 +475,7 @@ uint32_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
 		mlog(LV_ERR, "E-2142: public folder LT/REPL mapping not really implemented");
 		if (!common_util_check_same_org(domain_id, plogon->account_id))
 			return ecInvalidParam;
-		if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
+		if (!exmdb_client::get_mapping_replid(plogon->get_dir(),
 		    plong_term_id->guid, &b_found, &replid))
 			return ecError;
 		if (!b_found)

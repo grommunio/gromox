@@ -23,7 +23,7 @@ using namespace gromox;
 
 static constexpr uint64_t GLOBCNT_MAX = 0x7fffffffffff;
 
-BOOL exmdb_server_ping_store(const char *dir)
+BOOL exmdb_server::ping_store(const char *dir)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
@@ -32,8 +32,8 @@ BOOL exmdb_server_ping_store(const char *dir)
 	return TRUE;
 }
 
-BOOL exmdb_server_get_all_named_propids(
-	const char *dir, PROPID_ARRAY *ppropids)
+BOOL exmdb_server::get_all_named_propids(const char *dir,
+    PROPID_ARRAY *ppropids)
 {
 	int total_count;
 	char sql_string[256];
@@ -70,7 +70,7 @@ BOOL exmdb_server_get_all_named_propids(
 	return TRUE;
 }
 
-BOOL exmdb_server_get_named_propids(const char *dir,
+BOOL exmdb_server::get_named_propids(const char *dir,
 	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids)
 {
@@ -85,7 +85,7 @@ BOOL exmdb_server_get_named_propids(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_get_named_propnames(const char *dir,
+BOOL exmdb_server::get_named_propnames(const char *dir,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -95,10 +95,10 @@ BOOL exmdb_server_get_named_propnames(const char *dir,
 }
 
 /* public only */
-BOOL exmdb_server_get_mapping_guid(const char *dir,
+BOOL exmdb_server::get_mapping_guid(const char *dir,
 	uint16_t replid, BOOL *pb_found, GUID *pguid)
 {
-	if (exmdb_server_is_private())
+	if (exmdb_server::is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -110,10 +110,10 @@ BOOL exmdb_server_get_mapping_guid(const char *dir,
 }
 
 /* public only */
-BOOL exmdb_server_get_mapping_replid(const char *dir,
+BOOL exmdb_server::get_mapping_replid(const char *dir,
 	GUID guid, BOOL *pb_found, uint16_t *preplid)
 {
-	if (exmdb_server_is_private())
+	if (exmdb_server::is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -135,8 +135,8 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_get_store_all_proptags(
-	const char *dir, PROPTAG_ARRAY *pproptags)
+BOOL exmdb_server::get_store_all_proptags(const char *dir,
+    PROPTAG_ARRAY *pproptags)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -148,7 +148,7 @@ BOOL exmdb_server_get_store_all_proptags(
 	return TRUE;
 }
 
-BOOL exmdb_server_get_store_properties(const char *dir,
+BOOL exmdb_server::get_store_properties(const char *dir,
 	uint32_t cpid, const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY *ppropvals)
 {
@@ -162,7 +162,7 @@ BOOL exmdb_server_get_store_properties(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_set_store_properties(const char *dir,
+BOOL exmdb_server::set_store_properties(const char *dir,
 	uint32_t cpid, const TPROPVAL_ARRAY *ppropvals,
 	PROBLEM_ARRAY *pproblems)
 {
@@ -178,8 +178,8 @@ BOOL exmdb_server_set_store_properties(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_remove_store_properties(
-	const char *dir, const PROPTAG_ARRAY *pproptags)
+BOOL exmdb_server::remove_store_properties(const char *dir,
+    const PROPTAG_ARRAY *pproptags)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -193,12 +193,12 @@ BOOL exmdb_server_remove_store_properties(
 }
 
 /* private only */
-BOOL exmdb_server_check_mailbox_permission(const char *dir,
+BOOL exmdb_server::check_mailbox_permission(const char *dir,
     const char *username, uint32_t *ppermission) try
 {
 	char sql_string[128];
 	
-	if (!exmdb_server_is_private())
+	if (!exmdb_server::is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -262,7 +262,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	return false;
 }
 
-BOOL exmdb_server_allocate_cn(const char *dir, uint64_t *pcn)
+BOOL exmdb_server::allocate_cn(const char *dir, uint64_t *pcn)
 {
 	uint64_t change_num;
 	auto pdb = db_engine_get_db(dir);
@@ -276,7 +276,7 @@ BOOL exmdb_server_allocate_cn(const char *dir, uint64_t *pcn)
 
 /* if *pbegin_eid is 0, means too many
 	allocation requests within an interval */
-BOOL exmdb_server_allocate_ids(const char *dir,
+BOOL exmdb_server::allocate_ids(const char *dir,
 	uint32_t count, uint64_t *pbegin_eid)
 {
 	uint64_t tmp_eid;
@@ -313,12 +313,11 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_subscribe_notification(const char *dir,
+BOOL exmdb_server::subscribe_notification(const char *dir,
    uint16_t notificaton_type, BOOL b_whole, uint64_t folder_id,
    uint64_t message_id, uint32_t *psub_id) try
 {
 	uint16_t replid;
-	const char *remote_id;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -327,7 +326,7 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	                   pdb->nsub_list.back().sub_id;
 	nsub_node sub, *pnsub = &sub;
 	pnsub->sub_id = last_id + 1;
-	remote_id = exmdb_server_get_remote_id();
+	auto remote_id = exmdb_server::get_remote_id();
 	if (NULL == remote_id) {
 		pnsub->remote_id = NULL;
 	} else {
@@ -340,7 +339,7 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	pnsub->b_whole = b_whole;
 	if (0 == folder_id) {
 		pnsub->folder_id = 0;
-	} else if (exmdb_server_is_private()) {
+	} else if (exmdb_server::is_private()) {
 		pnsub->folder_id = rop_util_get_gc_value(folder_id);
 	} else {
 		replid = rop_util_get_replid(folder_id);
@@ -362,8 +361,7 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	return false;
 }
 
-BOOL exmdb_server_unsubscribe_notification(
-	const char *dir, uint32_t sub_id)
+BOOL exmdb_server::unsubscribe_notification(const char *dir, uint32_t sub_id)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -375,7 +373,7 @@ BOOL exmdb_server_unsubscribe_notification(
 	return TRUE;
 }
 
-BOOL exmdb_server_transport_new_mail(const char *dir, uint64_t folder_id,
+BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
 	uint64_t message_id, uint32_t message_flags, const char *pstr_class)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -428,7 +426,7 @@ static BOOL table_check_address_in_contact_folder(
 	return TRUE;
 }
 
-BOOL exmdb_server_check_contact_address(const char *dir,
+BOOL exmdb_server::check_contact_address(const char *dir,
 	const char *paddress, BOOL *pb_found)
 {
 	uint32_t proptags[3];
@@ -477,12 +475,12 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	       PRIVATE_FID_CONTACTS, paddress, pb_found);
 }
 
-BOOL exmdb_server_vacuum(const char *dir)
+BOOL exmdb_server::vacuum(const char *dir)
 {
 	return db_engine_vacuum(dir);
 }
 
-BOOL exmdb_server_unload_store(const char *dir)
+BOOL exmdb_server::unload_store(const char *dir)
 {
 	return db_engine_unload_db(dir);
 }

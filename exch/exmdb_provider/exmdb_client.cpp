@@ -15,13 +15,13 @@ using namespace gromox;
 static void buildenv(const remote_svr &s)
 {
 	auto flags = s.type == EXMDB_ITEM::EXMDB_PRIVATE ? EM_PRIVATE : 0;
-	exmdb_server_build_env(flags, nullptr);
+	exmdb_server::build_env(flags, nullptr);
 }
 
 int exmdb_client_run_front(const char *dir)
 {
 	return exmdb_client_run(dir, EXMDB_CLIENT_ALLOW_DIRECT | EXMDB_CLIENT_ASYNC_CONNECT,
-	       buildenv, exmdb_server_free_environment, exmdb_server_event_proc);
+	       buildenv, exmdb_server::free_env, exmdb_server::event_proc);
 }
 
 /* Caution. This function is not a common exmdb service,
@@ -32,16 +32,15 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,
 	const char *pdigest, uint32_t *presult)
 {
-	BOOL b_result;
 	BOOL b_private;
 	
 	if (exmdb_client_check_local(dir, &b_private)) {
-		auto original_dir = exmdb_server_get_dir();
-		exmdb_server_set_dir(dir);
-		b_result = exmdb_server_delivery_message(
+		auto original_dir = exmdb_server::get_dir();
+		exmdb_server::set_dir(dir);
+		auto b_result = exmdb_server::delivery_message(
 					dir, from_address, account,
 					cpid, pmsg, pdigest, presult);
-		exmdb_server_set_dir(original_dir);
+		exmdb_server::set_dir(original_dir);
 		return b_result;
 	}
 	exreq_delivery_message q{};

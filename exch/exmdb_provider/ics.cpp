@@ -140,7 +140,7 @@ static void ics_enum_content_idset(void *vparam, uint64_t message_id)
 
 /*  username is used in public mode to get
 	read information and read change number */
-BOOL exmdb_server_get_content_sync(const char *dir,
+BOOL exmdb_server::get_content_sync(const char *dir,
 	uint64_t folder_id, const char *username, const IDSET *pgiven,
 	const IDSET *pseen, const IDSET *pseen_fai, const IDSET *pread,
 	uint32_t cpid, const RESTRICTION *prestriction, BOOL b_ordered,
@@ -156,7 +156,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	*pfai_total = 0;
 	*pnormal_count = 0;
 	*pnormal_total = 0;
-	auto b_private = exmdb_server_is_private();
+	auto b_private = exmdb_server::is_private();
 
 	/* Setup of scratch space db */
 	if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
@@ -635,7 +635,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL exmdb_server_get_hierarchy_sync(const char *dir,
+BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	uint64_t folder_id, const char *username, const IDSET *pgiven,
 	const IDSET *pseen, FOLDER_CHANGES *pfldchgs, uint64_t *plast_cn,
 	EID_ARRAY *pgiven_fids, EID_ARRAY *pdeleted_fids)
@@ -662,7 +662,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 
 	/* Query section 1 */
 	{
-	auto stm_select_fld = gx_sql_prep(pdb->psqlite, exmdb_server_is_private() ?
+	auto stm_select_fld = gx_sql_prep(pdb->psqlite, exmdb_server::is_private() ?
 	                      "SELECT folder_id, change_number FROM folders WHERE parent_id=?" :
 	                      "SELECT folder_id, change_number FROM folders WHERE parent_id=? AND is_deleted=0");
 	if (stm_select_fld == nullptr)

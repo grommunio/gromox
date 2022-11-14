@@ -37,9 +37,9 @@ while (<STDIN>) {
 		print "\tBOOL xb_private;\n\n";
 		print "\tif (!exmdb_client_check_local(dir, &xb_private))\n";
 		print "\t\treturn exmdb_client_remote::$func(".join(", ", @anames).");\n";
-		print "\texmdb_server_build_env(EM_LOCAL | (xb_private ? EM_PRIVATE : 0), dir);\n";
-		print "\tauto xbresult = exmdb_server_$func(".join(", ", @anames).");\n";
-		print "\texmdb_server_free_environment();\n";
+		print "\texmdb_server::build_env(EM_LOCAL | (xb_private ? EM_PRIVATE : 0), dir);\n";
+		print "\tauto xbresult = exmdb_server::$func(".join(", ", @anames).");\n";
+		print "\texmdb_server::free_env();\n";
 		print "\treturn xbresult;\n";
 		print "}\n\n";
 		next;
@@ -55,7 +55,7 @@ while (<STDIN>) {
 		if (scalar(@$oargs) > 0) {
 			print "\tauto &r = *r1;\n";
 		}
-		print "\treturn exmdb_server_$func(", join(", ", "q0->dir",
+		print "\treturn exmdb_server::$func(", join(", ", "q0->dir",
 			(map { my($type, $field) = @$_; "q.$field"; } @$iargs),
 			(map { my($type, $field) = @$_; "&r.$field"; } @$oargs),
 		), ");\n}\n";

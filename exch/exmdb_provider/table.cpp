@@ -142,7 +142,7 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	uint32_t permission;
 	char sql_string[256];
 	
-	if (!exmdb_server_is_private()) {
+	if (!exmdb_server::is_private()) {
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT folder_id FROM"
 		         " folders WHERE parent_id=%llu AND is_deleted=%u",
 		         LLU{folder_id}, !!(table_flags & TABLE_FLAG_SOFTDELETES));
@@ -185,7 +185,7 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL exmdb_server_sum_hierarchy(const char *dir,
+BOOL exmdb_server::sum_hierarchy(const char *dir,
 	uint64_t folder_id, const char *username,
 	BOOL b_depth, uint32_t *pcount)
 {
@@ -199,7 +199,7 @@ BOOL exmdb_server_sum_hierarchy(const char *dir,
 	return TRUE;
 }
 	
-BOOL exmdb_server_load_hierarchy_table(const char *dir,
+BOOL exmdb_server::load_hierarchy_table(const char *dir,
 	uint64_t folder_id, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, uint32_t *ptable_id,
 	uint32_t *prow_count)
@@ -208,15 +208,13 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	uint32_t table_id;
 	TABLE_NODE *ptnode;
 	char sql_string[256];
-	const char *remote_id;
-	const GUID *phandle_guid;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!exmdb_server_is_private())
-		exmdb_server_set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
+	if (!exmdb_server::is_private())
+		exmdb_server::set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (NULL == pdb->tables.psqlite) {
 		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
@@ -240,7 +238,7 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	memset(ptnode, 0, sizeof(TABLE_NODE));
 	ptnode->node.pdata = ptnode;
 	ptnode->table_id = table_id;
-	remote_id = exmdb_server_get_remote_id();
+	auto remote_id = exmdb_server::get_remote_id();
 	if (NULL != remote_id) {
 		ptnode->remote_id = strdup(remote_id);
 		if (NULL == ptnode->remote_id) {
@@ -252,7 +250,7 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	ptnode->folder_id = fid_val;
 	ptnode->table_flags = table_flags;
 	if (table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-		phandle_guid = exmdb_server_get_handle();
+		auto phandle_guid = exmdb_server::get_handle();
 		if (NULL == phandle_guid) {
 			memset(&ptnode->handle_guid, 0, sizeof(GUID));
 		} else {
@@ -302,7 +300,7 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
+BOOL exmdb_server::sum_content(const char *dir, uint64_t folder_id,
 	BOOL b_fai, BOOL b_deleted, uint32_t *pcount)
 {
 	uint64_t fid_val;
@@ -312,7 +310,7 @@ BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (exmdb_server_is_private())
+	if (exmdb_server::is_private())
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu AND "
 			"is_associated=%u", LLU{fid_val}, !!b_fai);
@@ -623,7 +621,6 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	uint32_t tmp_proptag;
 	char tmp_string[128];
 	char sql_string[1024];
-	const char *remote_id;
 	DOUBLE_LIST value_list;
 	uint32_t tmp_proptags[16];
 	
@@ -634,8 +631,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		return FALSE;	
 	}
 	b_search = FALSE;
-	if (!exmdb_server_is_private()) {
-		exmdb_server_set_public_username(username);
+	if (!exmdb_server::is_private()) {
+		exmdb_server::set_public_username(username);
 	} else {
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT is_search FROM"
 		          " folders WHERE folder_id=%llu", LLU{fid_val});
@@ -649,7 +646,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			b_search = TRUE;
 		}
 	}
-	auto cl_1 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
+	auto cl_1 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	if (pdb->tables.psqlite == nullptr &&
 	    sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
 	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
@@ -701,7 +698,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	memset(ptnode, 0, sizeof(TABLE_NODE));
 	ptnode->node.pdata = ptnode;
 	ptnode->table_id = table_id;
-	remote_id = exmdb_server_get_remote_id();
+	auto remote_id = exmdb_server::get_remote_id();
 	bool all_ok = false;
 	auto cl_0 = make_scope_exit([&]() {
 		if (all_ok)
@@ -733,7 +730,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	ptnode->table_flags = table_flags;
 	ptnode->b_search = b_search;
 	ptnode->cpid = cpid;
-	if (!exmdb_server_is_private()) {
+	if (!exmdb_server::is_private()) {
 		ptnode->username = strdup(username);
 		if (NULL == ptnode->username) {
 			return false;
@@ -877,7 +874,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		if (pstmt1 == nullptr)
 			return false;
 	}
-	if (exmdb_server_is_private()) {
+	if (exmdb_server::is_private()) {
 		if ((table_flags & TABLE_FLAG_SOFTDELETES) ||
 		    (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION)) {
 			strcpy(sql_string, "SELECT message_id FROM messages WHERE 0");
@@ -1246,7 +1243,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	return TRUE;
 }
 
-BOOL exmdb_server_load_content_table(const char *dir, uint32_t cpid,
+BOOL exmdb_server::load_content_table(const char *dir, uint32_t cpid,
 	uint64_t folder_id, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
 	uint32_t *ptable_id, uint32_t *prow_count)
@@ -1261,7 +1258,7 @@ BOOL exmdb_server_load_content_table(const char *dir, uint32_t cpid,
 	       table_flags, prestriction, psorts, ptable_id, prow_count);
 }
 
-BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
+BOOL exmdb_server::reload_content_table(const char *dir, uint32_t table_id)
 {
 	BOOL b_result;
 	uint32_t row_count;
@@ -1359,7 +1356,7 @@ static BOOL table_load_permissions(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL exmdb_server_load_permission_table(const char *dir,
+BOOL exmdb_server::load_permission_table(const char *dir,
 	uint64_t folder_id, uint8_t table_flags,
 	uint32_t *ptable_id, uint32_t *prow_count)
 {
@@ -1367,7 +1364,6 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	uint32_t table_id;
 	TABLE_NODE *ptnode;
 	char sql_string[256];
-	const char *remote_id;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1393,7 +1389,7 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	memset(ptnode, 0, sizeof(TABLE_NODE));
 	ptnode->node.pdata = ptnode;
 	ptnode->table_id = table_id;
-	remote_id = exmdb_server_get_remote_id();
+	auto remote_id = exmdb_server::get_remote_id();
 	if (NULL != remote_id) {
 		ptnode->remote_id = strdup(remote_id);
 		if (NULL == ptnode->remote_id) {
@@ -1605,7 +1601,7 @@ static BOOL table_load_rules(sqlite3 *psqlite, uint64_t folder_id,
 	return TRUE;
 }
 
-BOOL exmdb_server_load_rule_table(const char *dir,
+BOOL exmdb_server::load_rule_table(const char *dir,
 	uint64_t folder_id, uint8_t table_flags,
 	const RESTRICTION *prestriction,
 	uint32_t *ptable_id, uint32_t *prow_count)
@@ -1614,7 +1610,6 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	uint32_t table_id;
 	TABLE_NODE *ptnode;
 	char sql_string[256];
-	const char *remote_id;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1640,7 +1635,7 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	memset(ptnode, 0, sizeof(TABLE_NODE));
 	ptnode->node.pdata = ptnode;
 	ptnode->table_id = table_id;
-	remote_id = exmdb_server_get_remote_id();
+	auto remote_id = exmdb_server::get_remote_id();
 	if (NULL != remote_id) {
 		ptnode->remote_id = strdup(remote_id);
 		if (NULL == ptnode->remote_id) {
@@ -1693,7 +1688,7 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
+BOOL exmdb_server::unload_table(const char *dir, uint32_t table_id)
 {
 	char sql_string[128];
 	DOUBLE_LIST_NODE *pnode;
@@ -1731,7 +1726,7 @@ BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 	return TRUE;
 }
 
-BOOL exmdb_server_sum_table(const char *dir,
+BOOL exmdb_server::sum_table(const char *dir,
 	uint32_t table_id, uint32_t *prows)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -1920,7 +1915,7 @@ static const TABLE_NODE *find_table(db_item_ptr &pdb, uint32_t table_id)
 
 /* every property value returned in a row MUST
 be less than or equal to 510 bytes in size. */
-BOOL exmdb_server_query_table(const char *dir, const char *username,
+BOOL exmdb_server::query_table(const char *dir, const char *username,
 	uint32_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
@@ -1945,9 +1940,9 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 	auto ptnode = find_table(pdb, table_id);
 	if (ptnode == nullptr)
 		return TRUE;
-	if (!exmdb_server_is_private())
-		exmdb_server_set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
+	if (!exmdb_server::is_private())
+		exmdb_server::set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	switch (ptnode->type) {
 	case TABLE_TYPE_HIERARCHY: {
 		if (row_needed > 0) {
@@ -2719,7 +2714,7 @@ static BOOL match_tbl_rule(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 	return TRUE;
 }
 
-BOOL exmdb_server_match_table(const char *dir, const char *username,
+BOOL exmdb_server::match_table(const char *dir, const char *username,
 	uint32_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos,
 	const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
@@ -2732,9 +2727,9 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 		*pposition = -1;
 		return TRUE;
 	}
-	if (!exmdb_server_is_private())
-		exmdb_server_set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
+	if (!exmdb_server::is_private())
+		exmdb_server::set_public_username(username);
+	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	ppropvals->count = 0;
 	ppropvals->ppropval = NULL;
 	BOOL ret = TRUE;
@@ -2750,7 +2745,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	return ret;
 }
 
-BOOL exmdb_server_locate_table(const char *dir,
+BOOL exmdb_server::locate_table(const char *dir,
 	uint32_t table_id, uint64_t inst_id, uint32_t inst_num,
 	int32_t *pposition, uint32_t *prow_type)
 {
@@ -2969,7 +2964,7 @@ static BOOL read_tblrow_ctnt(uint32_t cpid, uint32_t table_id,
 	return TRUE;
 }
 
-BOOL exmdb_server_read_table_row(const char *dir, const char *username,
+BOOL exmdb_server::read_table_row(const char *dir, const char *username,
 	uint32_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals)
 {
@@ -2981,9 +2976,9 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		ppropvals->count = 0;
 		return TRUE;
 	}
-	if (!exmdb_server_is_private())
-		exmdb_server_set_public_username(username);
-	auto cl_1 = make_scope_exit([]() { exmdb_server_set_public_username(nullptr); });
+	if (!exmdb_server::is_private())
+		exmdb_server::set_public_username(username);
+	auto cl_1 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	if (TABLE_TYPE_HIERARCHY == ptnode->type) {
 		return read_tblrow_hier(cpid, table_id, pproptags, inst_id, inst_num, ppropvals, pdb);
 	} else if (TABLE_TYPE_CONTENT == ptnode->type) {
@@ -2994,7 +2989,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 	return TRUE;
 }
 	
-BOOL exmdb_server_mark_table(const char *dir,
+BOOL exmdb_server::mark_table(const char *dir,
 	uint32_t table_id, uint32_t position, uint64_t *pinst_id,
 	uint32_t *pinst_num, uint32_t *prow_type)
 {
@@ -3052,7 +3047,7 @@ BOOL exmdb_server_mark_table(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_get_table_all_proptags(const char *dir,
+BOOL exmdb_server::get_table_all_proptags(const char *dir,
     uint32_t table_id, PROPTAG_ARRAY *pproptags) try
 {
 	char sql_string[256];
@@ -3261,7 +3256,7 @@ static BOOL table_expand_sub_contents(int depth,
 	return TRUE;
 }
 
-BOOL exmdb_server_expand_table(const char *dir,
+BOOL exmdb_server::expand_table(const char *dir,
 	uint32_t table_id, uint64_t inst_id, BOOL *pb_found,
 	int32_t *pposition, uint32_t *prow_count)
 {
@@ -3377,7 +3372,7 @@ BOOL exmdb_server_expand_table(const char *dir,
 	       row_id, pstmt, pstmt1, &idx);
 }
 
-BOOL exmdb_server_collapse_table(const char *dir,
+BOOL exmdb_server::collapse_table(const char *dir,
 	uint32_t table_id, uint64_t inst_id, BOOL *pb_found,
 	int32_t *pposition, uint32_t *prow_count)
 {
@@ -3468,7 +3463,7 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_store_table_state(const char *dir,
+BOOL exmdb_server::store_table_state(const char *dir,
 	uint32_t table_id, uint64_t inst_id,
 	uint32_t inst_num, uint32_t *pstate_id)
 {
@@ -3495,7 +3490,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	if (TABLE_TYPE_CONTENT != ptnode->type) {
 		return TRUE;
 	}
-	snprintf(tmp_path, arsizeof(tmp_path), "%s/tmp/state.sqlite3", exmdb_server_get_dir());
+	snprintf(tmp_path, std::size(tmp_path), "%s/tmp/state.sqlite3",
+	         exmdb_server::get_dir());
 	/*
 	 * sqlite3_open does not expose O_EXCL, so let's create the file under
 	 * EXCL semantics ahead of time.
@@ -3760,7 +3756,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_restore_table_state(const char *dir,
+BOOL exmdb_server::restore_table_state(const char *dir,
 	uint32_t table_id, uint32_t state_id, int32_t *pposition)
 {
 	int i;
@@ -3797,7 +3793,8 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	if (TABLE_TYPE_CONTENT != ptnode->type) {
 		return TRUE;
 	}
-	snprintf(tmp_path, arsizeof(tmp_path), "%s/tmp/state.sqlite3", exmdb_server_get_dir());
+	snprintf(tmp_path, std::size(tmp_path), "%s/tmp/state.sqlite3",
+	         exmdb_server::get_dir());
 	if (0 != stat(tmp_path, &node_stat)) {
 		return TRUE;
 	}

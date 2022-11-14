@@ -26,14 +26,14 @@ using LLU = unsigned long long;
 unsigned int exmdb_pf_read_per_user, exmdb_pf_read_states;
 
 /* private only */
-BOOL exmdb_server_get_folder_by_class(const char *dir,
+BOOL exmdb_server::get_folder_by_class(const char *dir,
     const char *str_class, uint64_t *pid, char **str_explicit)
 {
 	char *pdot;
 	char tmp_class[256];
 	char sql_string[1024];
 	
-	if (!exmdb_server_is_private())
+	if (!exmdb_server::is_private())
 		return FALSE;
 	auto class_len = std::min(strlen(str_class), static_cast<size_t>(255));
 	memcpy(tmp_class, str_class, class_len);
@@ -79,12 +79,12 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 }
 
 /* private only */
-BOOL exmdb_server_set_folder_by_class(const char *dir,
+BOOL exmdb_server::set_folder_by_class(const char *dir,
 	uint64_t folder_id, const char *str_class, BOOL *pb_result)
 {
 	char sql_string[1024];
 	
-	if (!exmdb_server_is_private())
+	if (!exmdb_server::is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -136,7 +136,7 @@ BOOL exmdb_server_set_folder_by_class(const char *dir,
 }
 
 /* private only */
-BOOL exmdb_server_get_folder_class_table(
+BOOL exmdb_server::get_folder_class_table(
 	const char *dir, TARRAY_SET *ptable)
 {
 	int total_count;
@@ -203,7 +203,7 @@ BOOL exmdb_server_get_folder_class_table(
 	return TRUE;
 }
 
-BOOL exmdb_server_check_folder_id(const char *dir,
+BOOL exmdb_server::check_folder_id(const char *dir,
 	uint64_t folder_id, BOOL *pb_exist)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -214,14 +214,14 @@ BOOL exmdb_server_check_folder_id(const char *dir,
 }
 
 /* this function is only used by midb for query */
-BOOL exmdb_server_query_folder_messages(const char *dir,
+BOOL exmdb_server::query_folder_messages(const char *dir,
 	uint64_t folder_id, TARRAY_SET *pset)
 {
 	uint64_t message_id;
 	char sql_string[256];
 	uint32_t message_flags;
 	
-	if (!exmdb_server_is_private())
+	if (!exmdb_server::is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -351,12 +351,12 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_check_folder_deleted(const char *dir,
+BOOL exmdb_server::check_folder_deleted(const char *dir,
 	uint64_t folder_id, BOOL *pb_del)
 {
 	char sql_string[256];
 	
-	if (exmdb_server_is_private()) {
+	if (exmdb_server::is_private()) {
 		*pb_del = FALSE;
 		return TRUE;
 	}
@@ -374,7 +374,7 @@ BOOL exmdb_server_check_folder_deleted(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_get_folder_by_name(const char *dir,
+BOOL exmdb_server::get_folder_by_name(const char *dir,
 	uint64_t parent_id, const char *str_name,
 	uint64_t *pfolder_id)
 {
@@ -393,7 +393,7 @@ BOOL exmdb_server_get_folder_by_name(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
+BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
     TPROPVAL_ARRAY *pproperties, uint64_t *pfolder_id)
 {
 	uint32_t art;
@@ -454,7 +454,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		case FOLDER_GENERIC:
 			break;
 		case FOLDER_SEARCH:
-			if (exmdb_server_is_private())
+			if (exmdb_server::is_private())
 				break;
 			mlog(LV_ERR, "E-1585: create_folder_b_p request without PCL");
 			return TRUE;
@@ -613,7 +613,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 	return TRUE;
 }
 
-BOOL exmdb_server_get_folder_all_proptags(const char *dir,
+BOOL exmdb_server::get_folder_all_proptags(const char *dir,
 	uint64_t folder_id, PROPTAG_ARRAY *pproptags)
 {
 	int i;
@@ -647,9 +647,9 @@ BOOL exmdb_server_get_folder_all_proptags(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_get_folder_properties(
-	const char *dir, uint32_t cpid, uint64_t folder_id,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL exmdb_server::get_folder_properties(const char *dir, uint32_t cpid,
+    uint64_t folder_id, const PROPTAG_ARRAY *pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -663,10 +663,9 @@ BOOL exmdb_server_get_folder_properties(
 }
 
 /* no PROPERTY_PROBLEM for PidTagChangeNumber and PR_CHANGE_KEY */
-BOOL exmdb_server_set_folder_properties(
-	const char *dir, uint32_t cpid, uint64_t folder_id,
-	const TPROPVAL_ARRAY *pproperties,
-	PROBLEM_ARRAY *pproblems)
+BOOL exmdb_server::set_folder_properties(const char *dir, uint32_t cpid,
+    uint64_t folder_id, const TPROPVAL_ARRAY *pproperties,
+    PROBLEM_ARRAY *pproblems)
 {
 	int i;
 	BOOL b_result;
@@ -677,7 +676,7 @@ BOOL exmdb_server_set_folder_properties(
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (exmdb_server_is_private() && fid_val == PRIVATE_FID_ROOT) {
+	if (exmdb_server::is_private() && fid_val == PRIVATE_FID_ROOT) {
 		for (i=0; i<pproperties->count; i++) {
 			if (pproperties->ppropval[i].proptag != PR_ADDITIONAL_REN_ENTRYIDS &&
 			    pproperties->ppropval[i].proptag != PR_ADDITIONAL_REN_ENTRYIDS_EX &&
@@ -701,7 +700,7 @@ BOOL exmdb_server_set_folder_properties(
 	return TRUE;
 }
 
-BOOL exmdb_server_remove_folder_properties(const char *dir,
+BOOL exmdb_server::remove_folder_properties(const char *dir,
 	uint64_t folder_id, const PROPTAG_ARRAY *pproptags)
 {
 	uint64_t fid_val;
@@ -733,7 +732,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 	
 	*pb_partial = FALSE;
 	uint64_t fid_val = folder_id;
-	auto b_private = exmdb_server_is_private();
+	auto b_private = exmdb_server::is_private();
 	if (b_private)
 		b_hard = TRUE;
 	if (!common_util_get_folder_type(pdb->psqlite, folder_id, &folder_type))
@@ -1031,7 +1030,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 }
 
 /* only delete empty generic folder or search folder itself, not content */
-BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
+BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 	uint64_t folder_id, BOOL b_hard, BOOL *pb_result)
 {
 	BOOL b_search;
@@ -1047,7 +1046,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 		return FALSE;
 	b_search = FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (exmdb_server_is_private()) {
+	if (exmdb_server::is_private()) {
 		if (fid_val < PRIVATE_FID_CUSTOM) {
 			*pb_result = FALSE;
 			return TRUE;
@@ -1079,7 +1078,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 			return TRUE;
 		}
 		pstmt.finalize();
-		if (exmdb_server_is_private())
+		if (exmdb_server::is_private())
 			snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM"
 			          " messages WHERE parent_fid=%llu", LLU{fid_val});
 		else
@@ -1111,7 +1110,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	parent_id = common_util_get_folder_parent_fid(
 							pdb->psqlite, fid_val);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (exmdb_server_is_private()) {
+	if (exmdb_server::is_private()) {
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders"
 		        " WHERE folder_id=%llu", LLU{fid_val});
 	} else if (b_hard) {
@@ -1163,7 +1162,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	return TRUE;
 }
 
-BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
+BOOL exmdb_server::empty_folder(const char *dir, uint32_t cpid,
 	const char *username, uint64_t folder_id, BOOL b_hard,
 	BOOL b_normal, BOOL b_fai, BOOL b_sub, BOOL *pb_partial)
 {
@@ -1227,7 +1226,7 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 	return TRUE;
 }
 
-BOOL exmdb_server_check_folder_cycle(const char *dir,
+BOOL exmdb_server::check_folder_cycle(const char *dir,
 	uint64_t src_fid, uint64_t dst_fid, BOOL *pb_cycle)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -1465,7 +1464,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	
 	*pb_partial = FALSE;
 	fid_val = src_fid;
-	auto b_private = exmdb_server_is_private();
+	auto b_private = exmdb_server::is_private();
 	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
 		return FALSE;
 	if (folder_type == FOLDER_SEARCH) {
@@ -1721,7 +1720,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 }
 
 /* set hierarchy change number when finish action */
-BOOL exmdb_server_copy_folder_internal(const char *dir,
+BOOL exmdb_server::copy_folder_internal(const char *dir,
 	int account_id, uint32_t cpid, BOOL b_guest, const char *username,
 	uint64_t src_fid, BOOL b_normal, BOOL b_fai, BOOL b_sub,
 	uint64_t dst_fid, BOOL *pb_collid, BOOL *pb_partial)
@@ -1780,7 +1779,7 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 }
 
 /* set hierarchy change number when finish action */
-BOOL exmdb_server_movecopy_folder(const char *dir,
+BOOL exmdb_server::movecopy_folder(const char *dir,
 	int account_id, uint32_t cpid, BOOL b_guest, const char *username,
 	uint64_t src_pid, uint64_t src_fid, uint64_t dst_fid,
 	const char *str_new, BOOL b_copy, BOOL *pb_exist,
@@ -1805,7 +1804,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	*pb_exist = FALSE;
 	*pb_partial = FALSE;
 	if (!b_copy) {
-		if (exmdb_server_is_private()) {
+		if (exmdb_server::is_private()) {
 			if (src_val < PRIVATE_FID_CUSTOM) {
 				*pb_partial = TRUE;
 				return TRUE;
@@ -1943,16 +1942,16 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_get_search_criteria(
-	const char *dir, uint64_t folder_id, uint32_t *psearch_status,
-	RESTRICTION **pprestriction, LONGLONG_ARRAY *pfolder_ids)
+BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
+    uint32_t *psearch_status, RESTRICTION **pprestriction,
+    LONGLONG_ARRAY *pfolder_ids)
 {
 	uint64_t fid_val;
 	EXT_PULL ext_pull;
 	char sql_string[256];
 	uint32_t search_flags;
 	
-	if (!exmdb_server_is_private())
+	if (!exmdb_server::is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2043,7 +2042,7 @@ static BOOL folder_clear_search_folder(db_item_ptr &pdb,
 	return TRUE;
 }
 
-BOOL exmdb_server_set_search_criteria(const char *dir,
+BOOL exmdb_server::set_search_criteria(const char *dir,
 	uint32_t cpid, uint64_t folder_id, uint32_t search_flags,
 	const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids,
 	BOOL *pb_result)
@@ -2061,7 +2060,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	uint8_t tmp_buff[0x8000];
 	LONGLONG_ARRAY folder_ids;
 	
-	if (!exmdb_server_is_private())
+	if (!exmdb_server::is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2200,7 +2199,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_check_folder_permission(const char *dir,
+BOOL exmdb_server::check_folder_permission(const char *dir,
 	uint64_t folder_id, const char *username,
 	uint32_t *ppermission)
 {
@@ -2211,8 +2210,7 @@ BOOL exmdb_server_check_folder_permission(const char *dir,
 	       rop_util_get_gc_value(folder_id), username, ppermission);
 }
 
-BOOL exmdb_server_empty_folder_permission(
-	const char *dir, uint64_t folder_id)
+BOOL exmdb_server::empty_folder_permission(const char *dir, uint64_t folder_id)
 {
 	char sql_string[1024];
 	auto pdb = db_engine_get_db(dir);
@@ -2251,7 +2249,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		permission |= frightsDeleteOwned;
 	if (permission & frightsEditAny)
 		permission |= frightsEditOwned;
-	if (!b_freebusy || !exmdb_server_is_private() ||
+	if (!b_freebusy || !exmdb_server::is_private() ||
 	    fid_val != PRIVATE_FID_CALENDAR)
 		permission &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
 	if (NULL == pstmt) {
@@ -2341,7 +2339,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		permission |= frightsDeleteOwned;
 	if (permission & frightsEditAny)
 		permission |= frightsEditOwned;
-	if (!b_freebusy || !exmdb_server_is_private() ||
+	if (!b_freebusy || !exmdb_server::is_private() ||
 	    fid_val != PRIVATE_FID_CALENDAR)
 		permission &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE permissions SET permission=%u"
@@ -2389,7 +2387,7 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 }
 
 /* after updating the database, update the table too! */
-BOOL exmdb_server_update_folder_permission(const char *dir,
+BOOL exmdb_server::update_folder_permission(const char *dir,
 	uint64_t folder_id, BOOL b_freebusy,
 	uint16_t count, const PERMISSION_DATA *prow)
 {
@@ -2424,8 +2422,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_empty_folder_rule(
-	const char *dir, uint64_t folder_id)
+BOOL exmdb_server::empty_folder_rule(const char *dir, uint64_t folder_id)
 {
 	char sql_string[1024];
 	auto pdb = db_engine_get_db(dir);
@@ -2439,7 +2436,7 @@ BOOL exmdb_server_empty_folder_rule(
 }
 
 /* after updating the database, update the table too! */
-BOOL exmdb_server_update_folder_rule(const char *dir,
+BOOL exmdb_server::update_folder_rule(const char *dir,
 	uint64_t folder_id, uint16_t count,
 	const RULE_DATA *prow, BOOL *pb_exceed)
 {
@@ -2685,10 +2682,10 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 }
 
 /* public only */
-BOOL exmdb_server_get_public_folder_unread_count(const char *dir,
+BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
 	const char *username, uint64_t folder_id, uint32_t *pcount)
 {
-	if (exmdb_server_is_private())
+	if (exmdb_server::is_private())
 		return FALSE;
 	if (exmdb_pf_read_states == 0) {
 		*pcount = 0;
@@ -2697,10 +2694,10 @@ BOOL exmdb_server_get_public_folder_unread_count(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	exmdb_server_set_public_username(username);
+	exmdb_server::set_public_username(username);
 	*pcount = common_util_get_folder_unread_count(
 		pdb->psqlite, rop_util_get_gc_value(folder_id));
-	exmdb_server_set_public_username(nullptr);
+	exmdb_server::set_public_username(nullptr);
 	return TRUE;
 	
 }
