@@ -29,8 +29,9 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 	}
 	pattachment->pparent = pparent;
 	pattachment->open_flags = open_flags;
+	auto dir = pparent->plogon->get_dir();
 	if (ATTACHMENT_NUM_INVALID == attachment_num) {
-		if (!exmdb_client::create_attachment_instance(pparent->plogon->get_dir(),
+		if (!exmdb_client::create_attachment_instance(dir,
 		    pparent->instance_id, &pattachment->instance_id,
 		    &pattachment->attachment_num))
 			return NULL;
@@ -40,7 +41,7 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 		}
 		pattachment->b_new = TRUE;
 	} else {
-		if (!exmdb_client::load_attachment_instance(pparent->plogon->get_dir(),
+		if (!exmdb_client::load_attachment_instance(dir,
 		    pparent->instance_id, attachment_num, &pattachment->instance_id))
 			return NULL;
 		pattachment->attachment_num = attachment_num;
@@ -504,7 +505,8 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	int i;
 	ATTACHMENT_CONTENT attctnt;
 	
-	if (!exmdb_client::check_instance_cycle(pattachment->pparent->plogon->get_dir(),
+	auto dstdir = pparent->plogon->get_dir();
+	if (!exmdb_client::check_instance_cycle(dstdir,
 	    pattachment_src->instance_id, pattachment->instance_id, pb_cycle))
 		return FALSE;	
 	if (*pb_cycle)
@@ -526,7 +528,7 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	}
 	if (pexcluded_proptags->has(PR_ATTACH_DATA_OBJ))
 		attctnt.pembedded = NULL;
-	if (!exmdb_client::write_attachment_instance(pattachment->pparent->plogon->get_dir(),
+	if (!exmdb_client::write_attachment_instance(dstdir,
 	    pattachment->instance_id, &attctnt, b_force, pproblems))
 		return FALSE;	
 	pattachment->b_touched = TRUE;
