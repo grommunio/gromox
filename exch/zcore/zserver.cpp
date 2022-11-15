@@ -38,6 +38,7 @@
 #include "object_tree.h"
 #include "objects.hpp"
 #include "rpc_ext.h"
+#include "rpc_parser.hpp"
 #include "store_object.h"
 #include "system_services.hpp"
 #include "table_object.h"
@@ -1437,8 +1438,15 @@ uint32_t zs_openstore(GUID hsession,
 	if (!exmdb_client::get_mbox_perm(dir,
 	    pinfo->get_username(), &permission))
 		return ecError;
-	if (permission == rightsNone)
+	if (permission == rightsNone) {
+		if (g_zrpc_debug >= 1)
+			mlog(LV_ERR, "openstore: \"%s\" has no rights to access \"%s\"\n",
+				pinfo->get_username(), username);
 		return ecLoginPerm;
+	} else if (g_zrpc_debug >= 2) {
+		mlog(LV_DEBUG, "openstore: \"%s\" granted access to \"%s\"\n",
+			pinfo->get_username(), username);
+	}
 	if (permission & frightsGromoxStoreOwner) try {
 		std::lock_guard lk(pinfo->eowner_lock);
 		pinfo->extra_owner.insert_or_assign(user_id, time(nullptr));
