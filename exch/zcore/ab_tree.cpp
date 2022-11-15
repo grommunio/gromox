@@ -1874,24 +1874,17 @@ uint32_t ab_tree_hidden(const tree_node *node)
 }
 
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
-	uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids)
+    uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids) try
 {
 	int count;
-	SINGLE_LIST temp_list;
-	SINGLE_LIST_NODE *psnode1;
+	std::vector<const tree_node *> tlist;
 	
-	single_list_init(&temp_list);
 	if (container_id == SPECIAL_CONTAINER_GAL) {
 		for (auto ptr : pbase->gal_list) {
 			if ((ab_tree_hidden(ptr) & AB_HIDE_FROM_GAL) ||
 			    !ab_tree_match_node(ptr, codepage, pfilter))
 				continue;
-			psnode1 = cu_alloc<SINGLE_LIST_NODE>();
-			if (NULL == psnode1) {
-				return FALSE;
-			}
-			psnode1->pdata = ptr;
-			single_list_append_as_tail(&temp_list, psnode1);
+			tlist.push_back(ptr);
 		}
 	} else {
 		auto pnode = ab_tree_minid_to_node(pbase, container_id);
@@ -1907,15 +1900,10 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 				continue;
 			if (!ab_tree_match_node(pnode, codepage, pfilter))
 				continue;
-			psnode1 = cu_alloc<SINGLE_LIST_NODE>();
-			if (NULL == psnode1) {
-				return FALSE;
-			}
-			psnode1->pdata = const_cast<SIMPLE_TREE_NODE *>(pnode);
-			single_list_append_as_tail(&temp_list, psnode1);
+			tlist.push_back(pnode);
 		} while ((pnode = pnode->get_sibling()) != nullptr);
 	}
-	pminids->count = single_list_get_nodes_num(&temp_list);
+	pminids->count = tlist.size();
 	if (0 == pminids->count) {
 		pminids->pl = NULL;
 	} else {
@@ -1926,11 +1914,12 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 		}
 	}
 	count = 0;
-	for (auto psnode = single_list_get_head(&temp_list); psnode != nullptr;
-		psnode=single_list_get_after(&temp_list, psnode),count++) {
-		pminids->pl[count] = ab_tree_get_node_minid(static_cast<const SIMPLE_TREE_NODE *>(psnode->pdata));
-	}
+	for (auto ptr : tlist)
+		pminids->pl[count++] = ab_tree_get_node_minid(ptr);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1247: ENOMEM");
+	return false;
 }
 
 void ab_tree_invalidate_cache()
