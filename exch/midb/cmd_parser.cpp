@@ -90,7 +90,7 @@ int cmd_parser_run()
 	size_t tss = 8UL << 20;
 	auto ret = pthread_attr_getstacksize(&attr, &tss);
 	if (ret == 0)
-		tss = std::max(tss, 8UL << 20);
+		tss = std::max(tss, static_cast<size_t>(8UL << 20));
 	ret = pthread_attr_setstacksize(&attr, tss);
 	if (ret != 0) {
 		mlog(LV_ERR, "cmd_parser: pthread_attr_setstacksize: %s", strerror(ret));
