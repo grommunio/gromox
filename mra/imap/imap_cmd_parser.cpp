@@ -2524,14 +2524,13 @@ static bool zero_uid_bit(const MITEM &i)
 	return i.uid == 0 || !(i.flag_bits & FLAG_DELETED);
 }
 
-int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 {
 	int errnum;
 	int del_num;
 	BOOL b_deleted;
 	size_t string_length = 0;
 	char buff[1024];
-	SINGLE_LIST temp_list;
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
@@ -2545,16 +2544,15 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (ret != 0)
 		return ret;
 	auto num = xarray.get_capacity();
-	single_list_init(&temp_list);
+	std::vector<MITEM *> exp_list;
 	for (size_t i = 0; i < num; ++i) {
 		auto pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem))
 			continue;
-		pitem->node.pdata = pitem;
-		single_list_append_as_tail(&temp_list, &pitem->node);
+		exp_list.push_back(pitem);
 	}
 	ssr = system_services_remove_mail(pcontext->maildir,
-	      pcontext->selected_folder, &temp_list, &errnum);
+	      pcontext->selected_folder, exp_list, &errnum);
 	ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
@@ -2592,6 +2590,9 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1246: ENOMEM");
+	return 1918;
 }
 
 int imap_cmd_parser_unselect(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -2766,7 +2767,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1721;
 }
 
-int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 {
 	unsigned int uid;
 	int errnum;
@@ -2778,7 +2779,6 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[64*1024];
 	char temp_name[1024];
 	DOUBLE_LIST list_seq;
-	SINGLE_LIST temp_list;
 	char uid_string[64*1024];
 	char uid_string1[64*1024];
 	SEQUENCE_NODE sequence_nodes[1024];
@@ -2838,16 +2838,15 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			uidvalidity = 0;
 	}
 	if (!b_copied) {
-		single_list_init(&temp_list);
+		std::vector<MITEM *> exp_list;
 		for (;i>0; i--) {
 			auto pitem = xarray.get_item(i - 1);
 			if (pitem->uid == 0)
 				continue;
-			pitem->node.pdata = pitem;
-			single_list_append_as_tail(&temp_list, &pitem->node);
+			exp_list.push_back(pitem);
 		}
 		system_services_remove_mail(pcontext->maildir,
-			temp_name, &temp_list, &errnum);
+			temp_name, exp_list, &errnum);
 	}
 	pcontext->stream.clear();
 	if (b_copied) {
@@ -2874,6 +2873,9 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1245: ENOMEM");
+	return 1918;
 }
 
 int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -3035,7 +3037,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1724;
 }
 
-int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 {
 	unsigned int uid;
 	int errnum;
@@ -3047,7 +3049,6 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[64*1024];
 	char temp_name[1024];
 	DOUBLE_LIST list_seq;
-	SINGLE_LIST temp_list;
 	char uid_string[64*1024];
 	SEQUENCE_NODE sequence_nodes[1024];
 	
@@ -3101,16 +3102,15 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			uidvalidity = 0;
 	}
 	if (!b_copied) {
-		single_list_init(&temp_list);
+		std::vector<MITEM *> exp_list;
 		for (;i>0; i--) {
 			auto pitem = xarray.get_item(i - 1);
 			if (pitem->uid == 0)
 				continue;
-			pitem->node.pdata = pitem;
-			single_list_append_as_tail(&temp_list, &pitem->node);
+			exp_list.push_back(pitem);
 		}
 		system_services_remove_mail(pcontext->maildir,
-			temp_name, &temp_list, &errnum);
+			temp_name, exp_list, &errnum);
 	}
 	pcontext->stream.clear();
 	if (b_copied) {
@@ -3136,9 +3136,12 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1244: ENOMEM");
+	return 1918;
 }
 
-int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 {
 	int errnum;
 	int del_num;
@@ -3147,7 +3150,6 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
     DOUBLE_LIST list_seq;
-	SINGLE_LIST temp_list;
 	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
@@ -3171,18 +3173,17 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	auto pitem = xarray.get_item(num - 1);
 	max_uid = pitem->uid;
-	single_list_init(&temp_list);
+	std::vector<MITEM *> exp_list;
 	for (size_t i = 0; i < num; ++i) {
 		pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem) ||
 		    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
 		    max_uid))
 			continue;
-		pitem->node.pdata = pitem;
-		single_list_append_as_tail(&temp_list, &pitem->node);
+		exp_list.push_back(pitem);
 	}
 	ssr = system_services_remove_mail(pcontext->maildir,
-	      pcontext->selected_folder, &temp_list, &errnum);
+	      pcontext->selected_folder, exp_list, &errnum);
 	ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
@@ -3222,16 +3223,18 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
 	return DISPATCH_BREAK;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1243: ENOMEM");
+	return 1918;
 }
 
-void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
+void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
 {
 	int errnum, result, i;
 	BOOL b_deleted;
 	char buff[1024];
 	char prev_selected[128];
 	size_t string_length = 0;
-	SINGLE_LIST temp_list;
 	const char *estring;
 	
 	if (*pcontext->selected_folder == '\0')
@@ -3282,16 +3285,15 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	}
 	b_deleted = FALSE;
 	int num = xarray.get_capacity();
-	single_list_init(&temp_list);
+	std::vector<MITEM *> exp_list;
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem))
 			continue;
-		pitem->node.pdata = pitem;
-		single_list_append_as_tail(&temp_list, &pitem->node);
+		exp_list.push_back(pitem);
 	}
 	result = system_services_remove_mail(pcontext->maildir,
-	         prev_selected, &temp_list, &errnum);
+	         prev_selected, exp_list, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		for (i = 0; i < num; ++i) try {
@@ -3343,6 +3345,8 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	if (b_deleted)
 		imap_parser_touch_modify(pcontext,
 			pcontext->username, prev_selected);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1242: ENOMEM");
 }
 
 /**
