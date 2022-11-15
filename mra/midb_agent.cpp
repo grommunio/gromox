@@ -32,7 +32,6 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/msg_unit.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/single_list.hpp>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>

@@ -15,7 +15,6 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/simple_tree.hpp>
-#include <gromox/single_list.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
 #define MAX_LINE_LENGTH (64 * 1024)
