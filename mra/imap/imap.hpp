@@ -4,6 +4,7 @@
 #include <ctime>
 #include <memory>
 #include <string>
+#include <vector>
 #include <gromox/authmgr.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
@@ -18,6 +19,8 @@
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
 #define MAX_LINE_LENGTH (64 * 1024)
+
+struct MITEM;
 
 /* enumeration for the return value of imap_parser_dispatch_cmd */
 enum {
@@ -213,7 +216,7 @@ extern int (*system_services_unsubscribe_folder)(const char *, const char *, int
 extern int (*system_services_enum_folders)(const char *, MEM_FILE *, int *);
 extern int (*system_services_enum_subscriptions)(const char *, MEM_FILE *, int *);
 extern int (*system_services_insert_mail)(const char *, const char *, const char *, const char *, long, int *);
-extern int (*system_services_remove_mail)(const char *, const char *, const SINGLE_LIST *, int *);
+extern int (*system_services_remove_mail)(const char *, const char *, const std::vector<MITEM *> &, int *);
 extern int (*system_services_list_simple)(const char *, const char *, XARRAY *, int *);
 extern int (*system_services_list_deleted)(const char *, const char *, XARRAY *, int *);
 extern int (*system_services_list_detail)(const char *, const char *, XARRAY *, int *);
