@@ -170,7 +170,6 @@ int message_dequeue_run()
 	g_msg_id = msgget(k_msg, 0666|IPC_CREAT);
 	if (-1 == g_msg_id) {
 		mlog(LV_ERR, "mdq: msgget: %s", strerror(errno));
-		message_dequeue_collect_resource();
 		return -6;
 	}
 	g_message_units = g_max_memory/(BLOCK_SIZE/2);
@@ -178,7 +177,6 @@ int message_dequeue_run()
 	g_message_ptr = (MESSAGE*)malloc(size);
 	if (NULL == g_message_ptr) {
 		mlog(LV_ERR, "mdq: failed to allocate message nodes");
-		message_dequeue_collect_resource();
 		return -7;
 	}
 	memset(g_message_ptr, 0, size);
@@ -253,8 +251,6 @@ void message_dequeue_stop()
     g_max_memory = 0;
 	g_current_mem  = 0;
     g_msg_id = -1;
-	g_message_ptr = NULL;
-	g_mess_hash = NULL;
 	g_notify_stop = true;
 }
 
