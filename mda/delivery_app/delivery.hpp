@@ -19,17 +19,17 @@ struct CONFIG_FILE;
 
 /* message struct for dequeuing from mail queue */
 struct MESSAGE {
-	SINGLE_LIST_NODE node; /* node for list */
-	int flush_ID; /* flush_ID by smtp server */
-	int bound_type; /* BOUND_IN, BOUND_OUT, BOUND_RELAY ... */
-	BOOL is_spam; /* is this a spam mail */
-	int message_option; /* tape message or mess message */
-	int message_data; /* tape position or mess ID*/
-	char *begin_address; /* message buffer address */
-	size_t size; /* size of allocated buffer */
-	void *mail_begin; /* mail begin address */
-	size_t mail_length; /* mail length */
-	char *envelope_from, *envelope_rcpt;
+	SINGLE_LIST_NODE node{}; /* node for list */
+	int flush_ID = 0; /* flush_ID by smtp server */
+	int bound_type = 0; /* BOUND_IN, BOUND_OUT, BOUND_RELAY ... */
+	BOOL is_spam = false; /* is this a spam mail */
+	int message_option = 0; /* tape message or mess message */
+	int message_data = 0; /* tape position or mess ID*/
+	char *begin_address = nullptr; /* message buffer address */
+	size_t size = 0; /* size of allocated buffer */
+	void *mail_begin = nullptr; /* mail begin address */
+	size_t mail_length = 0; /* mail length */
+	char *envelope_from = nullptr, *envelope_rcpt = nullptr;
 };
 
 extern void message_dequeue_init(const char *path, size_t max_memory);

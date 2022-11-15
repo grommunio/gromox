@@ -15,6 +15,7 @@
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
+#include <memory>
 #include <mutex>
 #include <pthread.h>
 #include <string>
@@ -54,7 +55,7 @@ static int				g_msg_id;	    /* message queue id */
 static size_t			g_message_units;/* allocated message units number */
 static size_t			g_max_memory;   /* maximum allocated memory for mess*/
 static size_t			g_current_mem;  /*current allocated memory */
-static MESSAGE			*g_message_ptr;
+static std::unique_ptr<MESSAGE[]> g_message_ptr;
 static SINGLE_LIST				g_used_list;
 static std::unique_ptr<INT_HASH_TABLE> g_mess_hash;
 static SINGLE_LIST				g_free_list;
@@ -88,7 +89,7 @@ void message_dequeue_init(const char *path, size_t max_memory)
 	single_list_init(&g_free_list);
 	g_current_mem = 0;
 	g_msg_id = -1;
-	g_message_ptr = NULL;
+	g_message_ptr.reset();
 	g_mess_hash = NULL;
 	g_notify_stop = false;
 	g_dequeued_num = 0;
@@ -137,18 +138,12 @@ static BOOL message_dequeue_check()
 
 static void message_dequeue_collect_resource()
 {
-	if (NULL != g_message_ptr) {
-		free(g_message_ptr);
-		g_message_ptr = NULL;	
-	}
+	g_message_ptr.reset();
 	g_mess_hash.reset();
 }
 
 int message_dequeue_run()
 {
-	size_t size;
-	MESSAGE *pmessage;
-
 	if (!message_dequeue_check())
 		return -1;
 	std::string name;
@@ -173,16 +168,10 @@ int message_dequeue_run()
 		return -6;
 	}
 	g_message_units = g_max_memory/(BLOCK_SIZE/2);
-	size = sizeof(MESSAGE)*g_message_units;
-	g_message_ptr = (MESSAGE*)malloc(size);
-	if (NULL == g_message_ptr) {
-		mlog(LV_ERR, "mdq: failed to allocate message nodes");
-		return -7;
-	}
-	memset(g_message_ptr, 0, size);
+	g_message_ptr = std::make_unique<MESSAGE[]>(g_message_units);
 	/* append rest of message node into free list */
 	for (size_t i = 0; i < g_message_units; ++i) {
-		pmessage = g_message_ptr + i;
+		auto pmessage = &g_message_ptr[i];
         pmessage->node.pdata = pmessage;
 		single_list_append_as_tail(&g_free_list, &pmessage->node);
 	}
