@@ -248,14 +248,14 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 			break;
 		case FUNC_ID_MESSAGE: {
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
+			auto dir = pctx->pstream->plogon->get_dir();
 			if (pctx->pstream->plogon->is_private()) {
-				if (!exmdb_client::read_message(pctx->pstream->plogon->get_dir(),
-				    nullptr, pinfo->cpid,
+				if (!exmdb_client::read_message(dir, nullptr, pinfo->cpid,
 				    *static_cast<const uint64_t *>(param), &pmsgctnt))
 					return FALSE;
 			} else {
 				auto rpc_info = get_rpc_info();
-				if (!exmdb_client::read_message(pctx->pstream->plogon->get_dir(),
+				if (!exmdb_client::read_message(dir,
 				    rpc_info.username, pinfo->cpid,
 				    *static_cast<const uint64_t *>(param), &pmsgctnt))
 					return FALSE;
