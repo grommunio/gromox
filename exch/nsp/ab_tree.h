@@ -13,7 +13,6 @@
 #include <gromox/int_hash.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/simple_tree.hpp>
-#include <gromox/single_list.hpp>
 #define USER_MAIL_ADDRESS					0
 #define USER_REAL_NAME						1
 #define USER_JOB_TITLE						2

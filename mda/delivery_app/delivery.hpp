@@ -2,7 +2,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <gromox/single_list.hpp>
 
 enum {
 	MESSAGE_MESS = 2,
