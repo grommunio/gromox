@@ -747,6 +747,7 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 {
 	BOOL b_found;
 	auto plogon = static_cast<logon_object *>(pparam);
+	auto dir = plogon->get_dir();
 
 	if (to_guid) {
 		if (plogon->is_private()) {
@@ -757,7 +758,7 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 		} else {
 			if (1 == *preplid) {
 				*pguid = rop_util_make_domain_guid(plogon->account_id);
-			} else if (!exmdb_client::get_mapping_guid(plogon->get_dir(),
+			} else if (!exmdb_client::get_mapping_guid(dir,
 			    *preplid, &b_found, pguid) || !b_found) {
 				return FALSE;
 			}
@@ -772,7 +773,7 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 			if (tmp_guid == *pguid)
 				*preplid = 1;
-			else if (!exmdb_client::get_mapping_replid(plogon->get_dir(),
+			else if (!exmdb_client::get_mapping_replid(dir,
 			    *pguid, &b_found, preplid) || !b_found)
 				return FALSE;
 		}
@@ -1490,8 +1491,9 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[2];
+	auto dir = plogon->get_dir();
 	
-	if (!exmdb_client::allocate_cn(plogon->get_dir(), &change_num))
+	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return FALSE;	
 	tmp_propvals.count = 2;
 	tmp_propvals.ppropval = propval_buff;
@@ -1502,11 +1504,10 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	if (NULL == propval_buff[1].pvalue) {
 		return FALSE;
 	}
-	if (!exmdb_client::set_message_properties(plogon->get_dir(), nullptr, 0,
+	if (!exmdb_client::set_message_properties(dir, nullptr, 0,
 	    message_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
-	if (!exmdb_client::get_message_group_id(plogon->get_dir(),
-	    message_id, &pgroup_id))
+	if (!exmdb_client::get_message_group_id(dir, message_id, &pgroup_id))
 		return FALSE;	
 	const property_groupinfo *pgpinfo;
 	if (NULL == pgroup_id) {
@@ -1514,7 +1515,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 		if (NULL == pgpinfo) {
 			return FALSE;
 		}
-		if (!exmdb_client::set_message_group_id(plogon->get_dir(),
+		if (!exmdb_client::set_message_group_id(dir,
 		    message_id, pgpinfo->group_id))
 			return FALSE;	
 	}  else {
@@ -1553,7 +1554,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 		}
 		
 	}
-	return exmdb_client::save_change_indices(plogon->get_dir(), message_id,
+	return exmdb_client::save_change_indices(dir, message_id,
 	       change_num, pindices.get(), pungroup_proptags.get());
 }
 
@@ -1822,15 +1823,16 @@ BOOL common_util_send_message(logon_object *plogon,
 	using LLU = unsigned long long;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
+	auto dir = plogon->get_dir();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
-	if (!exmdb_client::get_message_property(plogon->get_dir(), nullptr, 0,
+	if (!exmdb_client::get_message_property(dir, nullptr, 0,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {
 		log_err("W-1289: Cannot get parent folder_id of mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
 		return FALSE;
 	}
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
-	if (!exmdb_client::read_message(plogon->get_dir(), nullptr, cpid,
+	if (!exmdb_client::read_message(dir, nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr) {
 		log_err("W-1288: Failed to read mid:%llu from exmdb",
 		        LLU{rop_util_get_gc_value(message_id)});
@@ -1926,7 +1928,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		return FALSE;
 	}
 	auto body_type = get_override_format(*pmsgctnt);
-	common_util_set_dir(plogon->get_dir());
+	common_util_set_dir(dir);
 	/* try to avoid TNEF message */
 	if (!oxcmail_export(pmsgctnt, false, body_type, g_mime_pool, &imail,
 	    common_util_alloc, common_util_get_propids, common_util_get_propname)) {
@@ -1952,26 +1954,24 @@ BOOL common_util_send_message(logon_object *plogon,
 			        LLU{rop_util_get_gc_value(message_id)});
 			return FALSE;	
 		}
-		if (!exmdb_client::clear_submit(plogon->get_dir(), message_id, false)) {
+		if (!exmdb_client::clear_submit(dir, message_id, false)) {
 			log_err("W-1278: Failed to clear submit flag while sending mid:%llu",
 			        LLU{rop_util_get_gc_value(message_id)});
 			return FALSE;
 		}
-		if (!exmdb_client::movecopy_message(plogon->get_dir(),
-		    plogon->account_id, cpid, message_id, folder_id,
-		    new_id, TRUE, &b_result)) {
+		if (!exmdb_client::movecopy_message(dir, plogon->account_id,
+		    cpid, message_id, folder_id, new_id, TRUE, &b_result)) {
 			log_err("W-1277: Failed to move to target folder while sending mid:%llu",
 			        LLU{rop_util_get_gc_value(message_id)});
 			return FALSE;
 		}
 		return TRUE;
 	} else if (b_delete) {
-		exmdb_client::delete_message(plogon->get_dir(),
-			plogon->account_id, cpid, parent_id, message_id,
-			TRUE, &b_result);
+		exmdb_client::delete_message(dir, plogon->account_id, cpid,
+			parent_id, message_id, TRUE, &b_result);
 		return TRUE;
 	}
-	if (!exmdb_client::clear_submit(plogon->get_dir(), message_id, false)) {
+	if (!exmdb_client::clear_submit(dir, message_id, false)) {
 		log_err("W-1276: Failed to clear submit flag while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
 		return FALSE;
@@ -1982,9 +1982,8 @@ BOOL common_util_send_message(logon_object *plogon,
 	if (ptarget == nullptr ||
 	    !cu_entryid_to_fid(plogon, ptarget, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
-	if (!exmdb_client::movecopy_messages(plogon->get_dir(),
-	    plogon->account_id, cpid, false, nullptr, parent_id, folder_id,
-	    false, &ids, &b_partial)) {
+	if (!exmdb_client::movecopy_messages(dir, plogon->account_id, cpid,
+	    false, nullptr, parent_id, folder_id, false, &ids, &b_partial)) {
 		log_err("W-1275: Failed to move to \"Sent\" folder while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
 		return FALSE;

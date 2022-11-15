@@ -155,6 +155,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	static constexpr uint32_t fake_del = 0;
 	PERSISTDATA_ARRAY persistdatas;
 	static constexpr BINARY fake_bin = {gromox::arsizeof(bin_buff), {deconst(bin_buff)}};
+	auto dir = pfolder->plogon->get_dir();
 	
 	switch (proptag) {
 	case PR_CONTENT_UNREAD: {
@@ -165,8 +166,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		if (*outvalue == nullptr)
 			return FALSE;
 		auto rpc_info = get_rpc_info();
-		return exmdb_client::get_public_folder_unread_count(
-		       pfolder->plogon->get_dir(),
+		return exmdb_client::get_public_folder_unread_count(dir,
 		       rpc_info.username, pfolder->folder_id, v);
 	}
 	case PR_MESSAGE_SIZE: {
@@ -174,7 +174,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*outvalue = v;
 		if (*outvalue == nullptr)
 			return FALSE;
-		if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+		if (!exmdb_client::get_folder_property(dir,
 		    0, pfolder->folder_id, PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
@@ -186,7 +186,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*outvalue = v;
 		if (*outvalue == nullptr)
 			return FALSE;
-		if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+		if (!exmdb_client::get_folder_property(dir,
 		    0, pfolder->folder_id, PR_ASSOC_MESSAGE_SIZE_EXTENDED,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
@@ -198,7 +198,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*outvalue = v;
 		if (*outvalue == nullptr)
 			return FALSE;
-		if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+		if (!exmdb_client::get_folder_property(dir,
 		    0, pfolder->folder_id, PR_NORMAL_MESSAGE_SIZE_EXTENDED,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
@@ -225,8 +225,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			*v = rightsAll | frightsContact;
 		} else {
 			auto rpc_info = get_rpc_info();
-			if (!exmdb_client::check_folder_permission(
-			    pfolder->plogon->get_dir(),
+			if (!exmdb_client::check_folder_permission(dir,
 			    pfolder->folder_id, rpc_info.username, v))
 				return FALSE;
 		}
@@ -236,7 +235,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*outvalue = cu_fid_to_entryid(pfolder->plogon, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_ENTRYID:
-		if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+		if (!exmdb_client::get_folder_property(dir,
 		    0, pfolder->folder_id, PidTagParentFolderId,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
@@ -257,11 +256,11 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 				return TRUE;
 			}
 		}
-		if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+		if (!exmdb_client::get_folder_property(dir,
 		    0, pfolder->folder_id, PidTagParentFolderId,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+		if (!exmdb_client::get_folder_property(dir,
 		    0, *static_cast<uint64_t *>(pvalue), PR_SOURCE_KEY,
 		    outvalue))
 			return FALSE;
@@ -346,7 +345,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT)) {
 			return FALSE;
 		}
-		if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+		if (!exmdb_client::get_folder_property(dir,
 		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_REM_ONLINE_ENTRYID, &pvalue) || pvalue == nullptr)
 			return FALSE;
@@ -359,7 +358,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+		if (!exmdb_client::get_folder_property(dir,
 		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS, &pvalue))
 			return FALSE;
@@ -416,7 +415,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+		if (!exmdb_client::get_folder_property(dir,
 		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS_EX, &pvalue))
 			return FALSE;
@@ -472,7 +471,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
 			return FALSE;	
 		}
-		if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+		if (!exmdb_client::get_folder_property(dir,
 		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_FREEBUSY_ENTRYIDS, &pvalue))
 			return FALSE;
@@ -614,12 +613,13 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (0 == tmp_propvals.count) {
 		return TRUE;
 	}
-	if (!exmdb_client::allocate_cn(pfolder->plogon->get_dir(), &change_num))
+	auto dir = plogon->get_dir();
+	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return FALSE;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &change_num;
 	
-	if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+	if (!exmdb_client::get_folder_property(dir,
 	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
@@ -687,14 +687,15 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	if (!exmdb_client::remove_folder_properties(pfolder->plogon->get_dir(),
+	auto dir = plogon->get_dir();
+	if (!exmdb_client::remove_folder_properties(dir,
 	    pfolder->folder_id, &tmp_proptags))
 		return FALSE;	
 	tmp_propvals.count = 4;
 	tmp_propvals.ppropval = propval_buff;
-	if (!exmdb_client::allocate_cn(pfolder->plogon->get_dir(), &change_num))
+	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return TRUE;
-	if (!exmdb_client::get_folder_property(pfolder->plogon->get_dir(),
+	if (!exmdb_client::get_folder_property(dir,
 	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
@@ -716,7 +717,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	propval_buff[2].pvalue = pbin_pcl;
 	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &last_time;
-	exmdb_client::set_folder_properties(pfolder->plogon->get_dir(), 0,
+	exmdb_client::set_folder_properties(dir, 0,
 		pfolder->folder_id, &tmp_propvals, &tmp_problems);
 	return TRUE;
 }

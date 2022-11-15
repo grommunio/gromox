@@ -35,8 +35,9 @@ uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
 	auto rpc_info = get_rpc_info();
+	auto dir = plogon->get_dir();
 	if (plogon->logon_mode != logon_mode::owner) {
-		if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+		if (!exmdb_client::check_folder_permission(dir,
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
@@ -47,8 +48,7 @@ uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 			if (prow[i].flags != ROW_ADD)
 				return ecInvalidParam;
 		}
-		if (!exmdb_client::empty_folder_rule(plogon->get_dir(),
-		    pfolder->folder_id))
+		if (!exmdb_client::empty_folder_rule(dir, pfolder->folder_id))
 			return ecError;
 	}
 	for (i=0; i<count; i++) {
@@ -58,7 +58,7 @@ uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 				return ecError;
 		}
 	}
-	if (!exmdb_client::update_folder_rule(plogon->get_dir(),
+	if (!exmdb_client::update_folder_rule(dir,
 	    pfolder->folder_id, count, prow, &b_exceed))
 		return ecError;
 	if (b_exceed)
@@ -118,8 +118,9 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 		return ecNotSupported;
 	fid_deferred = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);
 	auto rpc_info = get_rpc_info();
+	auto dir = plogon->get_dir();
 	if (plogon->logon_mode != logon_mode::owner) {
-		if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+		if (!exmdb_client::check_folder_permission(dir,
 		    fid_deferred, rpc_info.username, &permission))
 			return ecError;
 		if (!(permission & frightsEditAny))
@@ -132,7 +133,7 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	res_property.proptag = PR_DAM_ORIG_MSG_SVREID;
 	res_property.propval.proptag = res_property.proptag;
 	res_property.propval.pvalue = deconst(pserver_entry_id);
-	if (!exmdb_client::load_content_table(plogon->get_dir(), 0, fid_deferred,
+	if (!exmdb_client::load_content_table(dir, 0, fid_deferred,
 	    nullptr, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
 	    &table_id, &row_count))
 		return ecError;
@@ -141,10 +142,10 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	
-	if (!exmdb_client::query_table(plogon->get_dir(), nullptr, 0,
+	if (!exmdb_client::query_table(dir, nullptr, 0,
 	    table_id, &proptags, 0, row_count, &tmp_set))
 		return ecError;
-	exmdb_client::unload_table(plogon->get_dir(), table_id);
+	exmdb_client::unload_table(dir, table_id);
 	
 	propvals.count = 2;
 	propvals.ppropval = propval_buff;
@@ -159,7 +160,7 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 		if (NULL == pmid) {
 			continue;
 		}
-		exmdb_client::set_message_properties(plogon->get_dir(), nullptr,
+		exmdb_client::set_message_properties(dir, nullptr,
 			0, *pmid, &propvals, &problems);
 	}
 	return ecSuccess;

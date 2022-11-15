@@ -375,24 +375,24 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	flag = tmp_propvals.get<uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	/* we don't use spool queue, so disable the whole functionality */
+	auto dir = plogon->get_dir();
 #if 0
 	/* check if it is already in spooler queue */
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	if (!exmdb_client::check_message(plogon->get_dir(), fid_spooler,
+	if (!exmdb_client::check_message(dir, fid_spooler,
 	    pmessage->get_id(), &b_exist))
 		return ecError;
 	if (b_exist)
 		return ecAccessDenied;
 	if (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) {
-		if (!exmdb_client::link_message(plogon->get_dir(), pinfo->cpid,
+		if (!exmdb_client::link_message(dir, pinfo->cpid,
 		    fid_spooler, pmessage->get_id(), &b_result) || !b_result)
 			return ecError;
 		return ecSuccess;
 	}
 #endif
 	
-	if (!exmdb_client::try_mark_submit(plogon->get_dir(),
-	    pmessage->get_id(), &b_marked))
+	if (!exmdb_client::try_mark_submit(dir, pmessage->get_id(), &b_marked))
 		return ecError;
 	if (!b_marked) {
 		mlog(LV_INFO, "I-2149: submitmessage denied because "
@@ -412,8 +412,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		if (0 == timer_id) {
 			goto SUBMIT_FAIL;
 		}
-		exmdb_client::set_message_timer(plogon->get_dir(),
-			pmessage->get_id(), timer_id);
+		exmdb_client::set_message_timer(dir, pmessage->get_id(), timer_id);
 		pmessage->reload();
 		return ecSuccess;
 	}
@@ -427,7 +426,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	return ecSuccess;
 
  SUBMIT_FAIL:
-	exmdb_client::clear_submit(plogon->get_dir(), pmessage->get_id(), b_unsent);
+	exmdb_client::clear_submit(dir, pmessage->get_id(), b_unsent);
 	return ecError;
 }
 
@@ -536,13 +535,13 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	if (!exmdb_client::check_message(plogon->get_dir(), fid_spooler,
-	    message_id, &b_exist))
+	auto dir = plogon->get_dir();
+	if (!exmdb_client::check_message(dir, fid_spooler, message_id, &b_exist))
 		return ecError;
 	if (!b_exist)
 		return ecNotInQueue;
 	/* unlink the message in spooler queue */
-	if (!exmdb_client::unlink_message(plogon->get_dir(), pinfo->cpid,
+	if (!exmdb_client::unlink_message(dir, pinfo->cpid,
 	    fid_spooler, message_id))
 		return ecError;
 	tmp_proptags.count = 3;
@@ -550,7 +549,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	proptag_buff[0] = PR_DELETE_AFTER_SUBMIT;
 	proptag_buff[1] = PR_TARGET_ENTRYID;
 	proptag_buff[2] = PR_PARENT_ENTRYID;
-	if (!exmdb_client::get_message_properties(plogon->get_dir(), nullptr, 0,
+	if (!exmdb_client::get_message_properties(dir, nullptr, 0,
 	    message_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
@@ -564,12 +563,12 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	if (NULL != ptarget) {
 		if (!cu_entryid_to_mid(plogon, ptarget, &folder_id, &new_id))
 			return ecError;
-		if (!exmdb_client::movecopy_message(plogon->get_dir(),
+		if (!exmdb_client::movecopy_message(dir,
 		    plogon->account_id, pinfo->cpid, message_id, folder_id,
 		    new_id, b_delete, &b_result))
 			return ecError;
 	} else if (b_delete) {
-		exmdb_client::delete_message(plogon->get_dir(),
+		exmdb_client::delete_message(dir,
 			plogon->account_id, pinfo->cpid,
 			parent_id, message_id, TRUE, &b_result);
 	}
