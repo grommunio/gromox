@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <vector>
 #include <libHX/string.h>
 #include <sys/ipc.h>
 #include <sys/mman.h>
@@ -56,9 +57,8 @@ static size_t			g_message_units;/* allocated message units number */
 static size_t			g_max_memory;   /* maximum allocated memory for mess*/
 static size_t			g_current_mem;  /*current allocated memory */
 static std::unique_ptr<MESSAGE[]> g_message_ptr;
-static SINGLE_LIST				g_used_list;
 static std::unique_ptr<INT_HASH_TABLE> g_mess_hash;
-static SINGLE_LIST				g_free_list;
+static std::vector<MESSAGE *> g_free_list, g_used_list;
 static std::mutex g_hash_mutex, g_used_mutex, g_free_mutex, g_mess_mutex;
 static pthread_t		g_thread_id;
 static gromox::atomic_bool g_notify_stop;
@@ -85,8 +85,6 @@ void message_dequeue_init(const char *path, size_t max_memory)
 	g_path_mess = path + "/mess"s;
 	g_path_save = path + "/save"s;
 	g_max_memory = ((max_memory-1)/(BLOCK_SIZE/2) + 1) * (BLOCK_SIZE/2);
-	single_list_init(&g_used_list);
-	single_list_init(&g_free_list);
 	g_current_mem = 0;
 	g_msg_id = -1;
 	g_message_ptr.reset();
@@ -169,11 +167,11 @@ int message_dequeue_run()
 	}
 	g_message_units = g_max_memory/(BLOCK_SIZE/2);
 	g_message_ptr = std::make_unique<MESSAGE[]>(g_message_units);
+	g_free_list.reserve(g_message_units);
+	g_used_list.reserve(g_message_units);
 	/* append rest of message node into free list */
 	for (size_t i = 0; i < g_message_units; ++i) {
-		auto pmessage = &g_message_ptr[i];
-        pmessage->node.pdata = pmessage;
-		single_list_append_as_tail(&g_free_list, &pmessage->node);
+		g_free_list.push_back(&g_message_ptr[i]);
 	}
 	g_mess_hash = INT_HASH_TABLE::create(2 * g_message_units + 1, sizeof(void *));
 	if (g_mess_hash == nullptr) {
@@ -198,14 +196,12 @@ int message_dequeue_run()
  */
 MESSAGE* message_dequeue_get()
 {
-	SINGLE_LIST_NODE *pnode;
-
 	std::unique_lock h(g_used_mutex);
-	pnode = single_list_pop_front(&g_used_list);
-	if (NULL == pnode) {
+	if (g_used_list.size() == 0)
 		return NULL;
-	}
-	return (MESSAGE*)pnode->pdata;
+	auto msg = g_used_list.front();
+	g_used_list.erase(g_used_list.begin());
+	return msg;
 }
 
 /*
@@ -273,9 +269,6 @@ static void message_dequeue_retrieve_to_message(MESSAGE *pmessage,
  */
 static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size)
 {
-	SINGLE_LIST_NODE *pnode;
-	MESSAGE *pmessage;
-
 	/* at a certain time, number of mess message node is limited */
 	if (MESSAGE_MESS == message_option) {
 		std::unique_lock h(g_mess_mutex);
@@ -286,13 +279,13 @@ static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size)
 		}
 	}
 	std::unique_lock fr_hold(g_free_mutex);
-	pnode = single_list_pop_front(&g_free_list);
-	fr_hold.unlock();
-	if (NULL == pnode) {
+	if (g_free_list.empty()) {
 		mlog(LV_DEBUG, "error in %s", __PRETTY_FUNCTION__);
 		return NULL;
 	}
-	pmessage = (MESSAGE*) pnode->pdata;
+	auto pmessage = g_free_list.front();
+	g_free_list.erase(g_free_list.begin());
+	fr_hold.unlock();
 	pmessage->message_option = message_option;
 	if (MESSAGE_MESS == message_option) {
 		pmessage->size = size;
@@ -318,7 +311,7 @@ static void message_dequeue_put_to_free(MESSAGE *pmessage)
 		g_current_mem -= pmessage->size;
 	}
 	std::unique_lock h(g_free_mutex);
-	single_list_append_as_tail(&g_free_list, &pmessage->node);
+	g_free_list.push_back(pmessage);
 }
 
 /*
@@ -329,7 +322,7 @@ static void message_dequeue_put_to_free(MESSAGE *pmessage)
 static void message_dequeue_put_to_used(MESSAGE *pmessage)
 {
 	std::unique_lock h(g_used_mutex);
-    single_list_append_as_tail(&g_used_list, &pmessage->node);
+	g_used_list.push_back(pmessage);
 	h.unlock();
 	/* send a signal to threads pool in transporter */
 	transporter_wakeup_one_thread();
@@ -414,9 +407,8 @@ static void *mdq_thrwork(void *arg)
 			continue;
 		}
 		usleep(SLEEP_INTERVAL);
-		if (single_list_get_nodes_num(&g_free_list) != g_message_units) {
+		if (g_free_list.size() != g_message_units)
 			continue;
-		}
 		/* clean up mess */
 		seekdir(dirp, 0);
 		while ((direntp = readdir(dirp)) != NULL) {
@@ -452,7 +444,7 @@ static void *mdq_thrwork(void *arg)
 int message_dequeue_get_param(int param)
 {
 	if (param == MESSAGE_DEQUEUE_HOLDING)
-		return single_list_get_nodes_num(&g_used_list);
+		return g_used_list.size();
 	return 0;
 }
 

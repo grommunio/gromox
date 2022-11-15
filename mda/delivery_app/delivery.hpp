@@ -16,7 +16,6 @@ struct CONFIG_FILE;
 
 /* message struct for dequeuing from mail queue */
 struct MESSAGE {
-	SINGLE_LIST_NODE node{}; /* node for list */
 	int flush_ID = 0; /* flush_ID by smtp server */
 	int bound_type = 0; /* BOUND_IN, BOUND_OUT, BOUND_RELAY ... */
 	BOOL is_spam = false; /* is this a spam mail */
