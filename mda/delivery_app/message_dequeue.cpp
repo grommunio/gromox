@@ -449,35 +449,11 @@ static void *mdq_thrwork(void *arg)
 	return NULL;
 }
 
-/*
- *  @param
- *  	param			MESSAGE_DEQUEUE_HOLDING
- *						MESSAGE_DEQUEUE_PROCESSING
- *						MESSAGE_DEQUEUE_DEQUEUED
- *						MESSAGE_DEQUEUE_ALLOCATED
- *	@return
- *		value
- */
 int message_dequeue_get_param(int param)
 {
-	int ret_val;
-
-	switch(param) {
-	case MESSAGE_DEQUEUE_HOLDING:
+	if (param == MESSAGE_DEQUEUE_HOLDING)
 		return single_list_get_nodes_num(&g_used_list);
-	case MESSAGE_DEQUEUE_PROCESSING:
-		ret_val = g_message_units - single_list_get_nodes_num(&g_used_list) -
-				  single_list_get_nodes_num(&g_free_list);
-		return ret_val;
-	case MESSAGE_DEQUEUE_DEQUEUED:
-		ret_val = g_dequeued_num;
-		g_dequeued_num = 0;
-		return ret_val;
-	case MESSAGE_DEQUEUE_ALLOCATED:
-		return g_current_mem/(BLOCK_SIZE/2);
-	default:
-		return 0;
-	}
+	return 0;
 }
 
 /*
