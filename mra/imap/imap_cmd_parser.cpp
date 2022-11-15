@@ -2641,7 +2641,6 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	int i, num;
 	BOOL b_data;
-	MITEM *pitem;
 	BOOL b_detail;
 	char buff[1024];
 	size_t string_length = 0;
@@ -2671,7 +2670,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->stream.clear();
 	num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
-		pitem = (MITEM*)xarray.get_item(i);
+		auto pitem = xarray.get_item(i);
 		result = imap_cmd_parser_process_fetch_item(pcontext, b_data,
 		         pitem, pitem->id, &list_data);
 		if (result != 0)
@@ -2713,7 +2712,6 @@ static bool store_flagkeyword(const char *str)
 int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum, i;
-	MITEM *pitem;
 	int flag_bits;
 	int temp_argc;
 	char *temp_argv[8];
@@ -2759,7 +2757,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return result;
 	int num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
-		pitem = (MITEM*)xarray.get_item(i);
+		auto pitem = xarray.get_item(i);
 		imap_cmd_parser_store_flags(argv[3], pitem->mid,
 			pitem->id, 0, flag_bits, pcontext);
 		imap_parser_modify_flags(pcontext, pitem->mid);
@@ -2772,7 +2770,6 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	unsigned int uid;
 	int errnum;
-	MITEM *pitem;
 	BOOL b_first;
 	BOOL b_copied;
 	int i, j;
@@ -2808,7 +2805,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	string_length1 = 0;
 	int num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
-		pitem = (MITEM*)xarray.get_item(i);
+		auto pitem = xarray.get_item(i);
 		if (system_services_copy_mail(pcontext->maildir,
 		    pcontext->selected_folder, pitem->mid, temp_name,
 		    pitem->mid, &errnum) != MIDB_RESULT_OK) {
@@ -2843,7 +2840,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (!b_copied) {
 		single_list_init(&temp_list);
 		for (;i>0; i--) {
-			pitem = (MITEM*)xarray.get_item(i - 1);
+			auto pitem = xarray.get_item(i - 1);
 			if (pitem->uid == 0)
 				continue;
 			pitem->node.pdata = pitem;
@@ -2917,7 +2914,6 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	int i;
 	BOOL b_data;
-	MITEM *pitem;
 	BOOL b_detail;
 	char buff[1024];
 	size_t string_length = 0;
@@ -2956,7 +2952,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->stream.clear();
 	num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
-		pitem = (MITEM*)xarray.get_item(i);
+		auto pitem = xarray.get_item(i);
 		ret = imap_cmd_parser_process_fetch_item(pcontext, b_data,
 		      pitem, pitem->id, &list_data);
 		if (ret != 0)
@@ -2987,7 +2983,6 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum, i, flag_bits, temp_argc;
-	MITEM *pitem;
 	char *temp_argv[8];
 	DOUBLE_LIST list_seq;
 	SEQUENCE_NODE sequence_nodes[1024];
@@ -3031,7 +3026,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return ret;
 	int num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
-		pitem = (MITEM*)xarray.get_item(i);
+		auto pitem = xarray.get_item(i);
 		imap_cmd_parser_store_flags(argv[4], pitem->mid,
 			pitem->id, pitem->uid, flag_bits, pcontext);
 		imap_parser_modify_flags(pcontext, pitem->mid);
@@ -3045,7 +3040,6 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	unsigned int uid;
 	int errnum;
 	BOOL b_first;
-	MITEM *pitem;
 	BOOL b_copied;
 	int i, j;
 	unsigned long uidvalidity;
@@ -3078,7 +3072,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	string_length = 0;
 	int num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
-		pitem = (MITEM*)xarray.get_item(i);
+		auto pitem = xarray.get_item(i);
 		if (system_services_copy_mail(pcontext->maildir,
 		    pcontext->selected_folder, pitem->mid, temp_name,
 		    pitem->mid, &errnum) != MIDB_RESULT_OK) {
@@ -3109,7 +3103,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (!b_copied) {
 		single_list_init(&temp_list);
 		for (;i>0; i--) {
-			pitem = (MITEM*)xarray.get_item(i - 1);
+			auto pitem = xarray.get_item(i - 1);
 			if (pitem->uid == 0)
 				continue;
 			pitem->node.pdata = pitem;
