@@ -170,7 +170,7 @@ ANTI_LOOP::ANTI_LOOP()
  */
 void transporter_init(const char *path, std::vector<std::string> &&names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
-    unsigned int mime_radito, bool ignerr)
+    unsigned int mime_ratio, bool ignerr)
 {
 	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_plugin_names = std::move(names);
@@ -180,7 +180,7 @@ void transporter_init(const char *path, std::vector<std::string> &&names,
 	g_threads_min = threads_min;
 	g_threads_max = threads_max;
 	g_free_num = free_num;
-	g_mime_num = mime_radito*(threads_max + free_num);
+	g_mime_num = mime_ratio * (threads_max + free_num);
 	/* Preallocate so this won't throw down the road */
 	g_free_list.reserve(free_num);
 	g_queue_list.reserve(free_num);
