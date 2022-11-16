@@ -10,11 +10,13 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
@@ -23,33 +25,31 @@
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
-#include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
-#include <gromox/str_hash.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "http_parser.h"
 #include "mod_cache.hpp"
 #include "resource.h"
 #include "system_services.hpp"
-#define HASH_GROWING_NUM			1000
-
 #define BOUNDARY_STRING				"00000000000000000001"
 
 using namespace gromox;
 
 namespace {
-struct CACHE_ITEM {
-	DOUBLE_LIST_NODE node;
-	const char *content_type;
-	void *mblk;
-	struct stat sb;
-	BOOL b_expired;
-	int reference;
+struct cache_item {
+	cache_item() = default;
+	cache_item(cache_item &&) = delete;
+	~cache_item();
+
+	const char *content_type = nullptr;
+	void *mblk = nullptr;
+	struct stat sb{};
 };
+using CACHE_ITEM = cache_item;
 
 struct RANGE {
 	uint32_t begin;
@@ -57,7 +57,7 @@ struct RANGE {
 };
 
 struct cache_context {
-	CACHE_ITEM *pitem = nullptr;
+	std::shared_ptr<cache_item> pitem;
 	BOOL b_header = false;
 	uint32_t offset = 0, until = 0;
 	ssize_t range_pos = -1;
@@ -74,11 +74,16 @@ struct DIRECTORY_NODE {
 static int g_context_num;
 static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_tid;
-static DOUBLE_LIST g_item_list;
 static std::mutex g_hash_lock;
 static std::vector<DIRECTORY_NODE> g_directory_list;
-static std::unique_ptr<STR_HASH_TABLE> g_cache_hash;
+static std::unordered_map<std::string, std::shared_ptr<cache_item>> g_cache_hash;
 static std::unique_ptr<CACHE_CONTEXT[]> g_context_list;
+
+cache_item::~cache_item()
+{
+	if (mblk != nullptr)
+		munmap(mblk, static_cast<size_t>(sb.st_size));
+}
 
 static bool stat4_eq(const struct stat &a, const struct stat &b)
 {
@@ -89,9 +94,6 @@ static bool stat4_eq(const struct stat &a, const struct stat &b)
 static void *mod_cache_scanwork(void *pparam)
 {
 	int count;
-	char tmp_key[1024];
-	CACHE_ITEM *pitem;
-	CACHE_ITEM **ppitem;
 	struct stat node_stat;
 	
 	count = 0;
@@ -102,54 +104,24 @@ static void *mod_cache_scanwork(void *pparam)
 			continue;
 		}
 		std::lock_guard hhold(g_hash_lock);
-		auto iter = g_cache_hash->make_iter();
-		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
-			str_hash_iter_forward(iter)) {
-			ppitem = static_cast<CACHE_ITEM **>(str_hash_iter_get_value(iter, tmp_key));
-			pitem = *ppitem;
-			if (0 != pitem->reference) {
+		for (auto iter = g_cache_hash.begin(); iter != g_cache_hash.end(); ) {
+			auto &pitem = iter->second;
+			if (stat(iter->first.c_str(), &node_stat) == 0 &&
+			    S_ISREG(node_stat.st_mode) && stat4_eq(node_stat, pitem->sb)) {
+				++iter;
 				continue;
 			}
-			if (stat(tmp_key, &node_stat) == 0 &&
-			    S_ISREG(node_stat.st_mode) && stat4_eq(node_stat, pitem->sb))
-				continue;
-			str_hash_iter_remove(iter);
-			if (pitem->mblk != nullptr)
-				munmap(pitem->mblk, static_cast<size_t>(pitem->sb.st_size));
-			free(pitem);
+			iter = g_cache_hash.erase(iter);
 		}
-		str_hash_iter_free(iter);
 		count = 0;
 	}
 	return nullptr;
-}
-
-static BOOL mod_cache_enlarge_hash()
-{
-	void *ptmp_value;
-	char tmp_key[1024];
-	
-	auto phash = STR_HASH_TABLE::create(g_cache_hash->capacity +
-		HASH_GROWING_NUM, sizeof(CACHE_ITEM*), NULL);
-	if (NULL == phash) {
-		return FALSE;
-	}
-	auto iter = g_cache_hash->make_iter();
-	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
-		str_hash_iter_forward(iter)) {
-		ptmp_value = str_hash_iter_get_value(iter, tmp_key);
-		phash->add(tmp_key, ptmp_value);
-	}
-	str_hash_iter_free(iter);
-	g_cache_hash = std::move(phash);
-	return TRUE;
 }
 
 void mod_cache_init(int context_num)
 {
 	g_notify_stop = true;
 	g_context_num = context_num;
-	double_list_init(&g_item_list);
 }
 
 static int mod_cache_defaults()
@@ -200,11 +172,6 @@ int mod_cache_run() try
 	if (ret < 0)
 		return ret;
 	g_context_list = std::make_unique<cache_context[]>(g_context_num);
-	g_cache_hash = STR_HASH_TABLE::create(HASH_GROWING_NUM, sizeof(CACHE_ITEM *), nullptr);
-	if (NULL == g_cache_hash) {
-		mlog(LV_ERR, "mod_cache: failed to init cache hash table");
-		return -3;
-	}
 	g_notify_stop = false;
 	ret = pthread_create(&g_scan_tid, nullptr, mod_cache_scanwork, nullptr);
 	if (ret != 0) {
@@ -221,10 +188,6 @@ int mod_cache_run() try
 
 void mod_cache_stop()
 {
-	CACHE_ITEM *pitem;
-	CACHE_ITEM **ppitem;
-	DOUBLE_LIST_NODE *pnode;
-	
 	if (!g_notify_stop) {
 		g_notify_stop = true;
 		if (!pthread_equal(g_scan_tid, {})) {
@@ -234,25 +197,7 @@ void mod_cache_stop()
 	}
 	g_directory_list.clear();
 	g_context_list.reset();
-	if (NULL != g_cache_hash) {
-		auto iter = g_cache_hash->make_iter();
-		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
-			str_hash_iter_forward(iter)) {
-			ppitem = static_cast<CACHE_ITEM **>(str_hash_iter_get_value(iter, nullptr));
-			if ((*ppitem)->mblk != nullptr)
-				munmap((*ppitem)->mblk, static_cast<size_t>((*ppitem)->sb.st_size));
-			free(*ppitem);
-		}
-		str_hash_iter_free(iter);
-		g_cache_hash.reset();
-	}
-	while ((pnode = double_list_pop_front(&g_item_list)) != nullptr) {
-		pitem = (CACHE_ITEM*)pnode->pdata;
-		if (pitem->mblk != nullptr)
-			munmap(pitem->mblk, static_cast<size_t>(pitem->sb.st_size));
-		free(pitem);
-	}
-	double_list_free(&g_item_list);
+	g_cache_hash.clear();
 }
 
 static CACHE_CONTEXT* mod_cache_get_cache_context(HTTP_CONTEXT *phttp)
@@ -574,7 +519,6 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	char *ptoken;
 	char suffix[16];
 	char domain[256];
-	CACHE_ITEM *pitem;
 	char tmp_path[512];
 	char tmp_buff[8192];
 	struct stat node_stat;
@@ -691,88 +635,54 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 		pcontext->until = node_stat.st_size;
 	}
 	std::unique_lock hhold(g_hash_lock);
-	auto ppitem = g_cache_hash->query<CACHE_ITEM *>(tmp_path);
-	if (NULL != ppitem) {
-		pitem = *ppitem;
+	auto iter = g_cache_hash.find(tmp_path);
+	if (iter != g_cache_hash.end()) {
+		auto pitem = iter->second;
 		if (!stat4_eq(pitem->sb, node_stat)) {
-			g_cache_hash->remove(tmp_path);
-			if (pitem->reference > 0) {
-				pitem->b_expired = TRUE;
-				pitem->node.pdata = pitem;
-				double_list_append_as_tail(
-					&g_item_list, &pitem->node);
-			} else {
-				if (pitem->mblk != nullptr)
-					munmap(pitem->mblk, static_cast<size_t>(pitem->sb.st_size));
-				free(pitem);
-			}
+			g_cache_hash.erase(iter);
 		} else {
-			pitem->reference ++;
 			pitem->mblk = mmap(nullptr, static_cast<size_t>(node_stat.st_size),
 			              PROT_READ, MAP_SHARED, fd.get(), 0);
 			if (pitem->mblk == MAP_FAILED) {
 				pcontext->range.clear();
 				return false;
 			}
-			pcontext->pitem = pitem;
+			pcontext->pitem = std::move(pitem);
 			return TRUE;
 		}
 	}
 	hhold.unlock();
-	pitem = me_alloc<CACHE_ITEM>();
-	if (NULL == pitem) {
-		pcontext->range.clear();
-		return mod_cache_exit_response(phttp, 503);
-	}
+
+	try {
+	auto pitem = std::make_shared<cache_item>();
 	pitem->content_type = extension_to_mime(suffix);
-	pitem->reference = 1;
 	pitem->sb = node_stat;
 	hhold.lock();
-	ppitem = g_cache_hash->query<CACHE_ITEM *>(tmp_path);
-	if (NULL == ppitem) {
-		if (g_cache_hash->add(tmp_path, &pitem) != 1) {
-			if (!mod_cache_enlarge_hash())
-				goto INVALIDATE_ITEM;
-			g_cache_hash->add(tmp_path, &pitem);
-		}
-		pitem->b_expired = FALSE;
+	iter = g_cache_hash.find(tmp_path);
+	if (iter == g_cache_hash.end()) {
 		pitem->mblk = mmap(nullptr, static_cast<size_t>(node_stat.st_size),
 		              PROT_READ, MAP_SHARED, fd.get(), 0);
 		if (pitem->mblk == MAP_FAILED) {
 			pcontext->range.clear();
 			return false;
 		}
-		pcontext->pitem = pitem;
+		g_cache_hash.emplace(tmp_path, pitem);
+		pcontext->pitem = std::move(pitem);
 		return TRUE;
 	}
- INVALIDATE_ITEM:
-	pitem->b_expired = TRUE;
-	pitem->node.pdata = pitem;
-	double_list_append_as_tail(&g_item_list, &pitem->node);
-	pcontext->pitem = pitem;
+	} catch (const std::bad_alloc &) {
+		pcontext->range.clear();
+		return mod_cache_exit_response(phttp, 503);
+	}
 	return TRUE;
 }
 
 void mod_cache_put_context(HTTP_CONTEXT *phttp)
 {
-	CACHE_ITEM *pitem;
 	CACHE_CONTEXT *pcontext;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
-	if (NULL == pcontext->pitem) {
-		return;
-	}
-	pitem = pcontext->pitem;
-	pcontext->pitem = NULL;
-	std::unique_lock hhold(g_hash_lock);
-	pitem->reference --;
-	if (pitem->reference != 0 || !pitem->b_expired)
-		return;
-	double_list_remove(&g_item_list, &pitem->node);
-	hhold.unlock();
-	if (pitem->mblk != nullptr)
-		munmap(pitem->mblk, static_cast<size_t>(pitem->sb.st_size));
-	free(pitem);
+	pcontext->pitem.reset();
 	pcontext->range.clear();
 }
 
