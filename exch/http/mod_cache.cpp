@@ -340,22 +340,36 @@ static BOOL mod_cache_parse_rfc1123_dstring(
 	return TRUE;
 }
 
-static BOOL mod_cache_response_unmodified(HTTP_CONTEXT *phttp)
+static const char *status_text(unsigned int s)
+{
+	switch (s) {
+	case 304: return "304 Not Modified";
+	case 400: return "400 Bad Request";
+	case 403: return "403 Permission denied";
+	case 416: return "416 Range Not Satisfiable";
+	case 4162: return "416 Too Many Ranges";
+	case 503: return "503 Service Unavailable";
+	default: return "500 Internal Server Error";
+	}
+}
+
+static BOOL mod_cache_exit_response(HTTP_CONTEXT *phttp, unsigned int status)
 {
 	time_t cur_time;
 	struct tm tmp_tm;
-	int response_len;
 	char dstring[128];
-	char response_buff[1024];
+	char rb[256];
 	
 	time(&cur_time);
 	gmtime_r(&cur_time, &tmp_tm);
 	strftime(dstring, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
-	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
-					"HTTP/1.1 304 Not Modified\r\n"
-					"Date: %s\r\n\r\n",
-					dstring);
-	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
+	auto rl = gx_snprintf(rb, std::size(rb),
+	          "HTTP/1.1 %s\r\n"
+	          "Date: %s\r\n"
+	          "Content-Length: 0\r\n"
+	          "Content-Type: text/plain; charset=utf-8\r\n\r\n",
+	          status_text(status), dstring);
+	return phttp->stream_out.write(rb, rl) == STREAM_WRITE_OK ? TRUE : false;
 }
 
 static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
@@ -475,7 +489,7 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
 }
 
-static BOOL mod_cache_parse_range_value(char *value,
+static int mod_cache_parse_range_value(char *value,
 	uint32_t size, CACHE_CONTEXT *pcontext)
 {
 	int i;
@@ -489,12 +503,12 @@ static BOOL mod_cache_parse_range_value(char *value,
 	HX_strrtrim(value);
 	HX_strltrim(value);
 	if (0 != strncasecmp(value, "bytes", 5)) {
-		return FALSE;
+		return 416;
 	}
 	value += 5;
 	HX_strltrim(value);
 	if ('=' != value[0]) {
-		return FALSE;
+		return 400;
 	}
 	value ++;
 	HX_strltrim(value);
@@ -510,7 +524,7 @@ static BOOL mod_cache_parse_range_value(char *value,
 		}
 	}
 	if (count > GX_ARRAY_SIZE(ranges))
-		return FALSE;
+		return 4162;
 	range_num = 0;
 	plast_token = value;
 	for (i=0; i<val_len; i++) {
@@ -520,23 +534,23 @@ static BOOL mod_cache_parse_range_value(char *value,
 		ptoken = value + i;
 		*ptoken = '\0';
 		if (plast_token == ptoken) {
-			return FALSE;
+			return 400;
 		}
 		ptoken1 = strchr(plast_token, '-');
 		if (NULL == ptoken1) {
-			return FALSE;
+			return 400;
 		}
 		*ptoken1 = '\0';
 		ptoken1 ++;
 		auto first_bpos = strtol(plast_token, nullptr, 0);
 		if (first_bpos >= 0 && static_cast<unsigned long>(first_bpos) >= size)
-			return FALSE;
+			return 416;
 		auto last_bpos = strtol(ptoken1, nullptr, 0);
 		if (0 == last_bpos) {
 			last_bpos = size - 1;
 		}
 		if (last_bpos < 0 || static_cast<unsigned long>(last_bpos) >= size)
-			return FALSE;
+			return 416;
 		if (first_bpos <= last_bpos) {
 			ranges[range_num].begin = first_bpos;
 			ranges[range_num].end = last_bpos;
@@ -548,12 +562,13 @@ static BOOL mod_cache_parse_range_value(char *value,
 		plast_token = ptoken + 1;
 	}
 	if (0 == range_num) {
-		return FALSE;
+		/* RFC 7233 §2.1 specifies at least one range-set is required */
+		return 400;
 	}
 	if (1 == range_num) {
 		pcontext->offset = ranges[0].begin;
 		pcontext->until = ranges[0].end + 1;
-		return TRUE;
+		return 0;
 	}
 	pcontext->offset = 0;
 	pcontext->until = 0;
@@ -561,10 +576,10 @@ static BOOL mod_cache_parse_range_value(char *value,
 	pcontext->range_num = range_num;
 	pcontext->prange = me_alloc<RANGE>(range_num);
 	if (NULL == pcontext->prange) {
-		return FALSE;
+		return 503;
 	}
 	memcpy(pcontext->prange, ranges, sizeof(RANGE)*range_num);
-	return TRUE;
+	return 0;
 }
 
 bool mod_cache_take_request(HTTP_CONTEXT *phttp)
@@ -654,33 +669,35 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s%s", it->dir.c_str(),
 	         request_uri + it->path.size());
 	wrapfd fd = open(tmp_path, O_RDONLY);
-	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
-	    !S_ISREG(node_stat.st_mode))
-		return FALSE;
-	if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
-		return FALSE;
+	if (fd.get() < 0)
+		return mod_cache_exit_response(phttp,
+			errno == ENOENT || errno == ENOTDIR ? 404 :
+			errno == EACCES || errno == EISDIR ? 403 : 503);
+	if (fstat(fd.get(), &node_stat) != 0 ||
+	    static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
+		return mod_cache_exit_response(phttp, 500);
+	else if (!S_ISREG(node_stat.st_mode))
+		return mod_cache_exit_response(phttp, 403);
 	struct stat sb;
 	if (mod_cache_get_others_field(&phttp->request.f_others,
 	    "If-None-Match", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
 	    mod_cache_retrieve_etag(tmp_buff, sb)) {
 		if (stat4_eq(sb, node_stat))
-			return mod_cache_response_unmodified(phttp);
+			return mod_cache_exit_response(phttp, 304);
 	} else if (mod_cache_get_others_field(&phttp->request.f_others,
 	    "If-Modified-Since", tmp_buff, std::size(tmp_buff)) &&
 	    mod_cache_parse_rfc1123_dstring(tmp_buff, &sb.st_mtime)) {
 		if (sb.st_mtime == node_stat.st_mtime)
-			return mod_cache_response_unmodified(phttp);
+			return mod_cache_exit_response(phttp, 304);
 	}
 	pcontext = mod_cache_get_cache_context(phttp);
 	memset(pcontext, 0, sizeof(CACHE_CONTEXT));
 	if (mod_cache_get_others_field(&phttp->request.f_others, "Range",
 	    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-		if (!mod_cache_parse_range_value(tmp_buff, node_stat.st_size, pcontext)) {
-			phttp->log(LV_DEBUG, "\"range\""
-				" value in http request header format"
-				" error for mod_cache");
-			return FALSE;
-		}
+		auto status = mod_cache_parse_range_value(tmp_buff,
+		              node_stat.st_size, pcontext);
+		if (status != 0)
+			return mod_cache_exit_response(phttp, status);
 	} else {
 		pcontext->offset = 0;
 		pcontext->until = node_stat.st_size;
@@ -714,7 +731,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 			free(pcontext->prange);
 			pcontext->prange = NULL;
 		}
-		return FALSE;
+		return mod_cache_exit_response(phttp, 503);
 	}
 	strcpy(pitem->extention, suffix);
 	pitem->reference = 1;
@@ -727,7 +744,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 			free(pcontext->prange);
 			pcontext->prange = NULL;
 		}
-		return FALSE;
+		return mod_cache_exit_response(phttp, 503);
 	}
 	if (read(fd.get(), pitem->blob.pb, node_stat.st_size) != node_stat.st_size) {
 		free(pitem->blob.pb);
@@ -736,7 +753,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 			free(pcontext->prange);
 			pcontext->prange = NULL;
 		}
-		return FALSE;
+		return mod_cache_exit_response(phttp, 503);
 	}
 	fd.close();
 	hhold.lock();
