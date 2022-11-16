@@ -380,7 +380,9 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	if (NULL == pcontent_type) {
 		pcontent_type = "application/octet-stream";
 	}
-	strcpy(response_buff, pcontext->until != pcontext->pitem->blob.cb ?
+	bool emit_206 = pcontext->offset != 0 ||
+	                pcontext->until != pcontext->pitem->blob.cb;
+	strcpy(response_buff, emit_206 ?
 	       "HTTP/1.1 206 Partial Content\r\n" : "HTTP/1.1 200 OK\r\n");
 	response_len = strlen(response_buff);
 	response_len += gx_snprintf(response_buff + response_len,
@@ -394,7 +396,7 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 					date_string, pcontent_type,
 					pcontext->until - pcontext->offset,
 					modified_string, etag);
-	if (pcontext->until != pcontext->pitem->blob.cb) {
+	if (emit_206) {
 		response_len += gx_snprintf(response_buff + response_len,
 		                GX_ARRAY_SIZE(response_buff) - response_len,
 					"Content-Range: bytes %u-%u/%u\r\n\r\n",
