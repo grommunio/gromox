@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
@@ -43,7 +44,7 @@ namespace {
 struct CACHE_ITEM {
 	DOUBLE_LIST_NODE node;
 	const char *content_type;
-	DATA_BLOB blob;
+	void *mblk;
 	struct stat sb;
 	BOOL b_expired;
 	int reference;
@@ -79,15 +80,10 @@ static std::vector<DIRECTORY_NODE> g_directory_list;
 static std::unique_ptr<STR_HASH_TABLE> g_cache_hash;
 static CACHE_CONTEXT *g_context_list;
 
-static bool stat3_eq(const struct stat &a, const struct stat &b)
-{
-	return a.st_dev == b.st_dev && a.st_ino == b.st_ino &&
-	       a.st_mtime == b.st_mtime;
-}
-
 static bool stat4_eq(const struct stat &a, const struct stat &b)
 {
-	return stat3_eq(a, b) && a.st_size == b.st_size;
+	return a.st_dev == b.st_dev && a.st_ino == b.st_ino &&
+	       a.st_mtime == b.st_mtime && a.st_size == b.st_size;
 }
 
 static void *mod_cache_scanwork(void *pparam)
@@ -115,12 +111,11 @@ static void *mod_cache_scanwork(void *pparam)
 				continue;
 			}
 			if (stat(tmp_key, &node_stat) == 0 &&
-			    S_ISREG(node_stat.st_mode) &&
-			    static_cast<unsigned long long>(node_stat.st_size) == pitem->blob.cb &&
-			    stat3_eq(node_stat, pitem->sb))
+			    S_ISREG(node_stat.st_mode) && stat4_eq(node_stat, pitem->sb))
 				continue;
 			str_hash_iter_remove(iter);
-			free(pitem->blob.pb);
+			if (pitem->mblk != nullptr)
+				munmap(pitem->mblk, static_cast<size_t>(pitem->sb.st_size));
 			free(pitem);
 		}
 		str_hash_iter_free(iter);
@@ -249,7 +244,8 @@ void mod_cache_stop()
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			ppitem = static_cast<CACHE_ITEM **>(str_hash_iter_get_value(iter, nullptr));
-			free((*ppitem)->blob.pb);
+			if ((*ppitem)->mblk != nullptr)
+				munmap((*ppitem)->mblk, static_cast<size_t>((*ppitem)->sb.st_size));
 			free(*ppitem);
 		}
 		str_hash_iter_free(iter);
@@ -257,7 +253,8 @@ void mod_cache_stop()
 	}
 	while ((pnode = double_list_pop_front(&g_item_list)) != nullptr) {
 		pitem = (CACHE_ITEM*)pnode->pdata;
-		free(pitem->blob.pb);
+		if (pitem->mblk != nullptr)
+			munmap(pitem->mblk, static_cast<size_t>(pitem->sb.st_size));
 		free(pitem);
 	}
 	double_list_free(&g_item_list);
@@ -395,7 +392,7 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 		pcontent_type = "application/octet-stream";
 	}
 	bool emit_206 = pcontext->offset != 0 ||
-	                pcontext->until != pcontext->pitem->blob.cb;
+	                pcontext->until != pcontext->pitem->sb.st_size;
 	strcpy(response_buff, emit_206 ?
 	       "HTTP/1.1 206 Partial Content\r\n" : "HTTP/1.1 200 OK\r\n");
 	response_len = strlen(response_buff);
@@ -413,9 +410,9 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	if (emit_206) {
 		response_len += gx_snprintf(response_buff + response_len,
 		                GX_ARRAY_SIZE(response_buff) - response_len,
-					"Content-Range: bytes %u-%u/%u\r\n\r\n",
+					"Content-Range: bytes %u-%u/%llu\r\n\r\n",
 					pcontext->offset, pcontext->until - 1,
-					pcontext->pitem->blob.cb);
+		                static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
 	} else {
 		gx_strlcpy(&response_buff[response_len], "\r\n",
 			arsizeof(response_buff) - response_len);
@@ -443,9 +440,9 @@ static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
 		/* Content-Type: xxx\r\n */
 		content_length += 16 + ctype_len;
 		/* Content-Range: bytes x-x/xxx\r\n */
-		content_length += 25 + sprintf(num_buff, "%u%u%u",
+		content_length += 25 + sprintf(num_buff, "%u%u%llu",
 		                  pcontext->prange[i].begin, pcontext->prange[i].end,
-		                  pcontext->pitem->blob.cb);
+		                  static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
 		content_length += 2; /* \r\n */
 		content_length += pcontext->prange[i].end -
 						pcontext->prange[i].begin + 1;
@@ -673,8 +670,9 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 		return mod_cache_exit_response(phttp,
 			errno == ENOENT || errno == ENOTDIR ? 404 :
 			errno == EACCES || errno == EISDIR ? 403 : 503);
-	if (fstat(fd.get(), &node_stat) != 0 ||
-	    static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
+	if (fstat(fd.get(), &node_stat) != 0)
+		return mod_cache_exit_response(phttp, 503);
+	if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
 		return mod_cache_exit_response(phttp, 500);
 	else if (!S_ISREG(node_stat.st_mode))
 		return mod_cache_exit_response(phttp, 403);
@@ -706,8 +704,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	auto ppitem = g_cache_hash->query<CACHE_ITEM *>(tmp_path);
 	if (NULL != ppitem) {
 		pitem = *ppitem;
-		if (!stat3_eq(pitem->sb, node_stat) ||
-		    pitem->blob.cb != static_cast<unsigned long long>(node_stat.st_size)) {
+		if (!stat4_eq(pitem->sb, node_stat)) {
 			g_cache_hash->remove(tmp_path);
 			if (pitem->reference > 0) {
 				pitem->b_expired = TRUE;
@@ -715,11 +712,21 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 				double_list_append_as_tail(
 					&g_item_list, &pitem->node);
 			} else {
-				free(pitem->blob.pb);
+				if (pitem->mblk != nullptr)
+					munmap(pitem->mblk, static_cast<size_t>(pitem->sb.st_size));
 				free(pitem);
 			}
 		} else {
 			pitem->reference ++;
+			pitem->mblk = mmap(nullptr, static_cast<size_t>(node_stat.st_size),
+			              PROT_READ, MAP_SHARED, fd.get(), 0);
+			if (pitem->mblk == MAP_FAILED) {
+				if (pcontext->prange != nullptr) {
+					free(pcontext->prange);
+					pcontext->prange = nullptr;
+				}
+				return false;
+			}
 			pcontext->pitem = pitem;
 			return TRUE;
 		}
@@ -736,26 +743,6 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	pitem->content_type = extension_to_mime(suffix);
 	pitem->reference = 1;
 	pitem->sb = node_stat;
-	pitem->blob.cb = node_stat.st_size;
-	pitem->blob.pb = me_alloc<uint8_t>(node_stat.st_size);
-	if (pitem->blob.pb == nullptr) {
-		free(pitem);
-		if (NULL != pcontext->prange) {
-			free(pcontext->prange);
-			pcontext->prange = NULL;
-		}
-		return mod_cache_exit_response(phttp, 503);
-	}
-	if (read(fd.get(), pitem->blob.pb, node_stat.st_size) != node_stat.st_size) {
-		free(pitem->blob.pb);
-		free(pitem);
-		if (NULL != pcontext->prange) {
-			free(pcontext->prange);
-			pcontext->prange = NULL;
-		}
-		return mod_cache_exit_response(phttp, 503);
-	}
-	fd.close();
 	hhold.lock();
 	ppitem = g_cache_hash->query<CACHE_ITEM *>(tmp_path);
 	if (NULL == ppitem) {
@@ -765,6 +752,15 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 			g_cache_hash->add(tmp_path, &pitem);
 		}
 		pitem->b_expired = FALSE;
+		pitem->mblk = mmap(nullptr, static_cast<size_t>(node_stat.st_size),
+		              PROT_READ, MAP_SHARED, fd.get(), 0);
+		if (pitem->mblk == MAP_FAILED) {
+			if (pcontext->prange != nullptr) {
+				free(pcontext->prange);
+				pcontext->prange = nullptr;
+			}
+			return false;
+		}
 		pcontext->pitem = pitem;
 		return TRUE;
 	}
@@ -793,7 +789,8 @@ void mod_cache_put_context(HTTP_CONTEXT *phttp)
 		return;
 	double_list_remove(&g_item_list, &pitem->node);
 	hhold.unlock();
-	free(pitem->blob.pb);
+	if (pitem->mblk != nullptr)
+		munmap(pitem->mblk, static_cast<size_t>(pitem->sb.st_size));
 	free(pitem);
 	if (NULL != pcontext->prange) {
 		free(pcontext->prange);
@@ -843,10 +840,20 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 	} else {
 		tmp_len = pcontext->until - pcontext->offset;
 	}
-	if (phttp->stream_out.write(&pcontext->pitem->blob.pb[pcontext->offset],
-	    tmp_len) != STREAM_WRITE_OK) {
+	auto &item = *pcontext->pitem;
+	auto rem_to_eof = pcontext->offset < item.sb.st_size ?
+	                    item.sb.st_size - pcontext->offset : 0;
+	if (tmp_len > rem_to_eof)
+		tmp_len = rem_to_eof;
+	if (item.mblk == nullptr) {
+		mlog(LV_DEBUG, "%s called without active memory mapping", __func__);
 		mod_cache_put_context(phttp);
 		return FALSE;
+	}
+	if (phttp->stream_out.write(static_cast<const char *>(item.mblk) +
+	    pcontext->offset, tmp_len) != STREAM_WRITE_OK) {
+		mod_cache_put_context(phttp);
+		return false;
 	}
 	pcontext->offset += tmp_len;
 	if (pcontext->offset == pcontext->until) {
@@ -864,11 +871,11 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 				tmp_len = sprintf(tmp_buff,
 					"\r\n--%s\r\n"
 					"Content-Type: %s\r\n"
-					"Content-Range: bytes %u-%u/%u\r\n\r\n",
+					"Content-Range: bytes %u-%u/%llu\r\n\r\n",
 					BOUNDARY_STRING, pcontent_type,
 					pcontext->prange[pcontext->range_pos].begin,
 					pcontext->prange[pcontext->range_pos].end,
-					pcontext->pitem->blob.cb);
+				          static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
 			} else {
 				tmp_len = sprintf(tmp_buff,
 					"\r\n--%s--\r\n",
