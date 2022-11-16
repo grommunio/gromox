@@ -717,6 +717,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	strcpy(pitem->extention, suffix);
 	pitem->reference = 1;
 	pitem->sb = node_stat;
+	pitem->blob.cb = node_stat.st_size;
 	pitem->blob.pb = me_alloc<uint8_t>(node_stat.st_size);
 	if (pitem->blob.pb == nullptr) {
 		free(pitem);
