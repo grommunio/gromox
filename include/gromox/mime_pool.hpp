@@ -3,7 +3,6 @@
 #include <memory>
 #include <mutex>
 #include <gromox/mime.hpp>
-#include <gromox/single_list.hpp>
 #include <gromox/util.hpp>
 
 struct MIME_POOL;

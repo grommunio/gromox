@@ -6,10 +6,8 @@
 #include <unordered_map>
 #include <vector>
 #include <gromox/mem_file.hpp>
-#include <gromox/single_list.hpp>
 
 struct MITEM {
-	SINGLE_LIST_NODE node{};
 	char mid[128]{};
 	int id = 0, uid = 0;
 	char flag_bits = 0;

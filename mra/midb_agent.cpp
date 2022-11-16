@@ -32,7 +32,6 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/msg_unit.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/single_list.hpp>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
@@ -99,7 +98,7 @@ static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 static int enum_folders(const char *path, MEM_FILE *, int *perrno);
 static int enum_subscriptions(const char *path, MEM_FILE *, int *perrno);
 static int insert_mail(const char *path, const char *folder, const char *file_name, const char *flags_string, long time_stamp, int *perrno);
-static int remove_mail(const char *path, const char *folder, const SINGLE_LIST *, int *perrno);
+static int remove_mail(const char *path, const char *folder, const std::vector<MITEM *> &, int *perrno);
 static int list_simple(const char *path, const char *folder, XARRAY *, int *perrno);
 static int list_deleted(const char *path, const char *folder, XARRAY *, int *perrno);
 static int list_detail(const char *path, const char *folder, XARRAY *pxarray, int *perrno);
@@ -1182,24 +1181,21 @@ static int insert_mail(const char *path, const char *folder,
 }
 
 static int remove_mail(const char *path, const char *folder,
-    const SINGLE_LIST *plist, int *perrno)
+    const std::vector<MITEM *> &plist, int *perrno)
 {
 	int cmd_len;
 	int temp_len;
 	char buff[128*1025];
 
-	if (0 == single_list_get_nodes_num(plist)) {
+	if (plist.empty())
 		return MIDB_RESULT_OK;
-	}
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 	cmd_len = length;
 	
-	for (auto pnode = single_list_get_head(plist); pnode != nullptr;
-		pnode=single_list_get_after(plist, pnode)) {
-		auto pitem = static_cast<const AGENT_MITEM *>(pnode->pdata);
+	for (auto pitem : plist) {
 		buff[length] = ' ';
 		length ++;
 		temp_len = strlen(pitem->mid);

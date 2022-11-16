@@ -44,7 +44,6 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/single_list.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "cmd_parser.h"

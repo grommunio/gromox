@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <deque>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -34,7 +35,6 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include <gromox/single_list.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
 
@@ -55,7 +55,6 @@ using namespace gromox;
 namespace {
 
 struct fifo_block {
-	SINGLE_LIST_NODE list_node;
 	MEM_FILE mem_file;
 };
 
@@ -63,12 +62,12 @@ struct FIFO {
 	FIFO() = default;
 	FIFO(alloc_limiter<fifo_block> *, size_t data_size, size_t max_size);
 	BOOL enqueue(const MEM_FILE &);
-	MEM_FILE *get_front();
+	MEM_FILE *get_front() const;
 	void dequeue();
 
 	alloc_limiter<fifo_block> *mbuf_pool = nullptr;
-	SINGLE_LIST mlist{};
-	size_t data_size = 0, cur_size = 0, max_size = 0;
+	std::deque<fifo_block *> mlist;
+	size_t data_size = 0, max_size = 0;
 };
 
 struct qsock {
@@ -156,7 +155,6 @@ FIFO::FIFO(alloc_limiter<fifo_block> *pbuf_pool, size_t ds, size_t ms) :
 {
 	if (pbuf_pool == nullptr)
 		throw std::invalid_argument("FIFO with no LIB_BUFFER");
-	single_list_init(&mlist);
 }
 
 /* Returns TRUE on success, or FALSE if the FIFO is full. */
@@ -166,16 +164,18 @@ BOOL FIFO::enqueue(const MEM_FILE &mf)
 	if (pdata == nullptr)
 		mlog(LV_DEBUG, "%s, param nullptr", __PRETTY_FUNCTION__);
 #endif
-	if (cur_size >= max_size)
+	if (mlist.size() >= max_size)
 		return false;
 	auto blk = mbuf_pool->get();
 	if (blk == nullptr)
 		return false;
 	blk->mem_file = mf;
-	auto node = &blk->list_node;
-	node->pdata = &blk->mem_file;
-	single_list_append_as_tail(&mlist, node);
-	++cur_size;
+	try {
+		mlist.push_back(blk);
+	} catch (const std::bad_alloc &) {
+		mbuf_pool->put(blk);
+		return false;
+	}
 	return TRUE;
 }
 
@@ -185,23 +185,22 @@ BOOL FIFO::enqueue(const MEM_FILE &mf)
  */
 void FIFO::dequeue()
 {
-	if (cur_size <= 0)
+	if (mlist.empty())
 		return;
-	auto node = single_list_pop_front(&mlist);
-	mbuf_pool->put(containerof(node, fifo_block, list_node));
-	--cur_size;
+	auto blk = mlist.front();
+	mlist.pop_front();
+	mbuf_pool->put(blk);
 }
 
 /**
  * Returns a pointer to the data at the front of the specified FIFO, or nullptr
  * if the FIFO is empty.
  */
-MEM_FILE *FIFO::get_front()
+MEM_FILE *FIFO::get_front() const
 {
-	if (cur_size <= 0)
+	if (mlist.empty())
 		return nullptr;
-	auto node = single_list_get_head(&mlist);
-	return node != nullptr ? static_cast<MEM_FILE *>(node->pdata) : nullptr;
+	return &mlist.front()->mem_file;
 }
 
 DEQUEUE_NODE::~DEQUEUE_NODE()

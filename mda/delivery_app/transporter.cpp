@@ -26,7 +26,6 @@
 #include <gromox/paths.h>
 #include <gromox/plugin.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/single_list.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "delivery.hpp"
@@ -75,7 +74,6 @@ struct FIXED_CONTEXT {
 };
 
 struct FREE_CONTEXT {
-	SINGLE_LIST_NODE node{};
 	CONTROL_INFO mail_control{};
 	MAIL mail{};
 	MESSAGE_CONTEXT context{};
@@ -111,8 +109,7 @@ static unsigned int g_threads_max, g_threads_min, g_mime_num, g_free_num;
 static gromox::atomic_bool g_notify_stop;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;
-static SINGLE_LIST		g_free_list;
-static SINGLE_LIST		g_queue_list;
+static std::vector<FREE_CONTEXT *> g_free_list, g_queue_list;
 static DOUBLE_LIST		g_lib_list;
 static DOUBLE_LIST		 g_hook_list;
 static DOUBLE_LIST		 g_unloading_list;
@@ -184,7 +181,9 @@ void transporter_init(const char *path, std::vector<std::string> &&names,
 	g_threads_max = threads_max;
 	g_free_num = free_num;
 	g_mime_num = mime_radito*(threads_max + free_num);
-	single_list_init(&g_free_list);
+	/* Preallocate so this won't throw down the road */
+	g_free_list.reserve(free_num);
+	g_queue_list.reserve(free_num);
 	double_list_init(&g_hook_list);
 	double_list_init(&g_lib_list);
 	double_list_init(&g_unloading_list);
@@ -230,9 +229,7 @@ int transporter_run()
         return -3;
 	}
 	for (size_t i = 0; i < g_free_num; ++i) {
-		auto pcontext = &g_free_ptr[i];
-		pcontext->node.pdata = pcontext;
-		single_list_append_as_tail(&g_free_list, &pcontext->node);
+		g_free_list.push_back(&g_free_ptr[i]);
 	}
 
 	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME, "transporter_mime_pool");
@@ -883,16 +880,13 @@ static void *transporter_queryservice(const char *service, const std::type_info 
  */
 static MESSAGE_CONTEXT* transporter_get_context()
 {
-	SINGLE_LIST_NODE *pnode;
-	MESSAGE_CONTEXT *pcontext;
-
 	std::unique_lock ctx_hold(g_context_lock);
-	pnode = single_list_pop_front(&g_free_list);	
-	ctx_hold.unlock();
-	if (NULL == pnode) {
+	if (g_free_list.size() == 0)
 		return NULL;
-	}
-	pcontext = &((FREE_CONTEXT*)(pnode->pdata))->context;
+	auto free_ctx = g_free_list.front();
+	g_free_list.erase(g_free_list.begin());
+	ctx_hold.unlock();
+	auto pcontext = &free_ctx->context;
 	pcontext->pcontrol->bound_type = BOUND_SELF;
 	return pcontext;
 }
@@ -912,9 +906,9 @@ static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
 	pcontext->pcontrol->need_bounce = FALSE;
 	pcontext->pcontrol->from[0] = '\0';
 	pcontext->pmail->clear();
-	auto pnode = &containerof(pcontext, FREE_CONTEXT, context)->node;
+	auto free_ctx = containerof(pcontext, FREE_CONTEXT, context);
 	std::lock_guard ctx_hold(g_context_lock);
-    single_list_append_as_tail(&g_free_list, pnode);
+	g_free_list.push_back(free_ctx);
 }
 
 /*
@@ -930,9 +924,9 @@ static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
 				"plugin try to enqueue message context");
 		return;
 	}
-	auto pnode = &containerof(pcontext, FREE_CONTEXT, context)->node;
+	auto free_ctx = containerof(pcontext, FREE_CONTEXT, context);
 	std::unique_lock q_hold(g_queue_lock);
-    single_list_append_as_tail(&g_queue_list, pnode);
+	g_queue_list.push_back(free_ctx); /* reserved, so should not throw */
 	q_hold.unlock();
 	/* wake up one thread */
 	g_waken_cond.notify_one();
@@ -945,15 +939,13 @@ static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
  */
 static MESSAGE_CONTEXT* transporter_dequeue_context()
 {
-	SINGLE_LIST_NODE *pnode;
-
 	std::unique_lock q_hold(g_queue_lock);
-	pnode = single_list_pop_front(&g_queue_list);	
-	q_hold.unlock();
-	if (NULL == pnode) {
+	if (g_queue_list.empty())
 		return NULL;
-	}
-	return &((FREE_CONTEXT*)(pnode->pdata))->context;
+	auto free_ctx = g_queue_list.front();
+	g_queue_list.erase(g_queue_list.begin());
+	q_hold.unlock();
+	return &free_ctx->context;
 }
 
 /*

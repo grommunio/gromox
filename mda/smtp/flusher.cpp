@@ -3,11 +3,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <string>
+#include <vector>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/flusher_common.h>
 #include <gromox/paths.h>
-#include <gromox/single_list.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include <libHX/string.h>
@@ -25,17 +27,16 @@ using namespace gromox;
 namespace {
 
 struct SERVICE_NODE {
-	SINGLE_LIST_NODE		node;
 	void			*service_addr;
-	char			*service_name;
+	std::string service_name;
 };
 
 struct FLH_PLUG_ENTITY {
-	CANCEL_FUNCTION flush_cancel;
-	SINGLE_LIST			list_reference;
-	char			file_name[256];
-	char            path[256];
-	bool completed_init;
+	~FLH_PLUG_ENTITY();
+	CANCEL_FUNCTION flush_cancel = nullptr;
+	std::vector<SERVICE_NODE> list_ref;
+	char file_name[256]{}, path[256]{};
+	bool completed_init = false;
 };
 
 }
@@ -58,27 +59,24 @@ static const char *flusher_get_state_path();
 static int flusher_increase_max_ID();
 static void flusher_set_flush_ID(int);
 	
-static FLH_PLUG_ENTITY *g_flusher_plug;
+static std::unique_ptr<FLH_PLUG_ENTITY> g_flusher_plug;
 static bool g_can_register;
 static size_t g_max_queue_len;
 static std::mutex g_flush_mutex;
 static std::list<FLUSH_ENTITY> g_flush_queue;
 static std::atomic<int> g_current_ID;
 
-void flusher_init(size_t queue_len)
+void flusher_init(size_t queue_len) try
 {
 	static constexpr char path[] = "libgxf_message_enqueue.so";
-	g_flusher_plug = me_alloc<FLH_PLUG_ENTITY>();
-	if (NULL == g_flusher_plug) {
-		return;
-	}
+	g_flusher_plug = std::make_unique<FLH_PLUG_ENTITY>();
 	g_flusher_plug->flush_cancel = NULL;
 	gx_strlcpy(g_flusher_plug->path, path, GX_ARRAY_SIZE(g_flusher_plug->path));
 	auto pname = strrchr(path, '/');
 	gx_strlcpy(g_flusher_plug->file_name, pname != nullptr ? pname + 1 : path,
 		GX_ARRAY_SIZE(g_flusher_plug->file_name));
-	single_list_init(&g_flusher_plug->list_reference);
 	g_max_queue_len = queue_len;
+} catch (const std::bad_alloc &) {
 }
 
 int flusher_run()
@@ -179,10 +177,13 @@ static BOOL flusher_load_plugin()
 
 void flusher_stop()
 {
-	SINGLE_LIST_NODE *pnode;
-	
-	if (NULL == g_flusher_plug)
-		return;
+	g_flusher_plug.reset();
+}
+
+FLH_PLUG_ENTITY::~FLH_PLUG_ENTITY()
+{
+	auto g_flusher_plug = this;
+
 	if (g_flusher_plug->completed_init && !FLH_LibMain(PLUGIN_FREE, nullptr)) {
 		mlog(LV_ERR, "flusher: error executing Flusher_LibMain with "
 			   "FLUSHER_LIB_FREE in plugin %s", g_flusher_plug->path);
@@ -190,24 +191,9 @@ void flusher_stop()
 	}
 	mlog(LV_INFO, "flusher: unloading %s", g_flusher_plug->path);
 	/* free the service reference of the plugin */
-	if (0 != single_list_get_nodes_num(&g_flusher_plug->list_reference)) {
-		for (pnode=single_list_get_head(&g_flusher_plug->list_reference); NULL!=pnode;
-			 pnode=single_list_get_after(&g_flusher_plug->list_reference, pnode)) {
-			service_release(((SERVICE_NODE*)(pnode->pdata))->service_name,
-							g_flusher_plug->file_name);
-		}
-		/* free the reference list */
-		while ((pnode = single_list_pop_front(&g_flusher_plug->list_reference)) != nullptr) {
-			free(((SERVICE_NODE*)(pnode->pdata))->service_name);
-			free(pnode->pdata);
-			pnode = NULL;
-		}
-	}
-
-	if (NULL != g_flusher_plug) {
-		free(g_flusher_plug);
-		g_flusher_plug = NULL;
-	}
+	if (g_flusher_plug->list_ref.size() > 0)
+		for (auto &svc : g_flusher_plug->list_ref)
+			service_release(svc.service_name.c_str(), g_flusher_plug->file_name);
 }
 
 static int flusher_increase_max_ID()
@@ -234,8 +220,6 @@ static void flusher_set_flush_ID(int ID)
 static void *flusher_queryservice(const char *service, const std::type_info &ti)
 {
 	void *ret_addr;
-	SERVICE_NODE *pservice;
-	SINGLE_LIST_NODE *pnode;
 	
 #define E(s, f) \
 	do { \
@@ -257,35 +241,20 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 	E("get_state_path", flusher_get_state_path);
 #undef E
 	/* check if already exists in the reference list */
-	for (pnode=single_list_get_head(&g_flusher_plug->list_reference); NULL!=pnode;
-		 pnode=single_list_get_after(&g_flusher_plug->list_reference, pnode)) {
-		pservice =  (SERVICE_NODE*)(pnode->pdata);
-		if (0 == strcmp(service, pservice->service_name)) {
-			return pservice->service_addr;
-		}
-	}
+	for (const auto &svc : g_flusher_plug->list_ref)
+		if (svc.service_name == service)
+			return svc.service_addr;
 	ret_addr = service_query(service, g_flusher_plug->file_name, ti);
 	if (NULL == ret_addr) {
 		return NULL;
 	}
-	pservice = me_alloc<SERVICE_NODE>();
-	if (NULL == pservice) {
-		mlog(LV_DEBUG, "flusher: Failed to allocate memory for service node");
+	try {
+		g_flusher_plug->list_ref.push_back(SERVICE_NODE{ret_addr, service});
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-1241: failed to allocate memory for service name");
 		service_release(service, g_flusher_plug->file_name);
 		return NULL;
 	}
-	pservice->service_name = me_alloc<char>(strlen(service) + 1);
-	if (NULL == pservice->service_name) {
-		mlog(LV_DEBUG, "flusher: Failed to allocate memory for service name");
-		service_release(service, g_flusher_plug->file_name);
-		free(pservice);
-		return NULL;
-
-	}
-	strcpy(pservice->service_name, service);
-	pservice->node.pdata = pservice;
-	pservice->service_addr = ret_addr;
-	single_list_append_as_tail(&g_flusher_plug->list_reference, &pservice->node);
 	return ret_addr;
 }
 
