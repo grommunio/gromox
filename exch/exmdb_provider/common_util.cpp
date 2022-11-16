@@ -3845,7 +3845,6 @@ static SVREID *cu_get_msg_parent_svreid(sqlite3 *psqlite, uint64_t message_id)
 BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	uint64_t folder_id, LONGLONG_ARRAY *pfolder_ids)
 {
-	int i;
 	char sql_string[128];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM "
@@ -3855,7 +3854,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 		return FALSE;
 	pfolder_ids->count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	pfolder_ids->pll = cu_alloc<uint64_t>();
+	pfolder_ids->pll = cu_alloc<uint64_t>(pfolder_ids->count);
 	if (pfolder_ids->pll == nullptr)
 		return FALSE;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT included_fid FROM"
@@ -3863,8 +3862,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	i = 0;
-	while (sqlite3_step(pstmt) == SQLITE_ROW)
+	for (size_t i = 0; i < pfolder_ids->count && sqlite3_step(pstmt) == SQLITE_ROW; )
 		pfolder_ids->pll[i++] = sqlite3_column_int64(pstmt, 0);
 	return TRUE;
 }
