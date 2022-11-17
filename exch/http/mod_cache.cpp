@@ -42,7 +42,7 @@ using namespace gromox;
 namespace {
 struct CACHE_ITEM {
 	DOUBLE_LIST_NODE node;
-	char extention[16];
+	const char *content_type;
 	DATA_BLOB blob;
 	struct stat sb;
 	BOOL b_expired;
@@ -390,7 +390,7 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm);
 	strftime(modified_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
 	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
-	auto pcontent_type = extension_to_mime(pcontext->pitem->extention);
+	auto pcontent_type = pcontext->pitem->content_type;
 	if (NULL == pcontent_type) {
 		pcontent_type = "application/octet-stream";
 	}
@@ -431,7 +431,7 @@ static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
 	char num_buff[64];
 	uint32_t content_length;
 	
-	auto pcontent_type = extension_to_mime(pcontext->pitem->extention);
+	auto pcontent_type = pcontext->pitem->content_type;
 	if (NULL == pcontent_type) {
 		pcontent_type = "application/octet-stream";
 	}
@@ -733,7 +733,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 		}
 		return mod_cache_exit_response(phttp, 503);
 	}
-	strcpy(pitem->extention, suffix);
+	pitem->content_type = extension_to_mime(suffix);
 	pitem->reference = 1;
 	pitem->sb = node_stat;
 	pitem->blob.cb = node_stat.st_size;
@@ -857,7 +857,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 						pcontext->range_pos].begin;
 				pcontext->until = pcontext->prange[
 						pcontext->range_pos].end + 1;
-				auto pcontent_type = extension_to_mime(pcontext->pitem->extention);
+				auto pcontent_type = pcontext->pitem->content_type;
 				if (NULL == pcontent_type) {
 					pcontent_type = "application/octet-stream";
 				}
