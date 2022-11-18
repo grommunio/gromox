@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <unistd.h>
+#include <unordered_map>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/exmdb_rpc.hpp>
@@ -19,7 +20,6 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
@@ -31,7 +31,7 @@ using namespace gromox;
 
 static char g_org_name[256];
 static thread_local ALLOC_CONTEXT *g_alloc_key;
-static std::unique_ptr<STR_HASH_TABLE> g_str_hash;
+static std::unordered_map<std::string, uint16_t> g_str_hash;
 static char g_default_charset[32];
 static std::atomic<int> g_sequence_id;
 
@@ -62,7 +62,7 @@ void exmdb_local_init(const char *org_name, const char *default_charset)
 	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
 }
 
-int exmdb_local_run()
+int exmdb_local_run() try
 {
 	int last_propid;
 	char temp_line[256];
@@ -97,19 +97,16 @@ int exmdb_local_run()
 	}
 	auto num = plist->get_size();
 	auto pitem = static_cast<srcitem *>(plist->get_list());
-	g_str_hash = STR_HASH_TABLE::create(num + 1, sizeof(uint16_t), nullptr);
-	if (NULL == g_str_hash) {
-		mlog(LV_ERR, "exmdb_local: failed to init hash table");
-		return -4;
-	}
 	last_propid = 0x8001;
 	for (decltype(num) i = 0; i < num; ++i) {
 		gx_strlcpy(temp_line, pitem[i].s, sizeof(temp_line));
 		HX_strlower(temp_line);
-		g_str_hash->add(temp_line, &last_propid);
-		last_propid ++;
+		g_str_hash.emplace(temp_line, last_propid++);
 	}
 	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "exmdb_local_run: bad_alloc");
+	return -3;
 }
 
 BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
@@ -303,12 +300,9 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 				tmp_guid, ppropnames->ppropname[i].pname);
 
 		HX_strlower(tmp_string);
-		auto ppropid = g_str_hash->query<uint16_t>(tmp_string);
-		if (NULL == ppropid) {
-			ppropids->ppropid[i] = 0;
-		} else {
-			ppropids->ppropid[i] = *ppropid;
-		}
+		auto ppropid = g_str_hash.find(tmp_string);
+		ppropids->ppropid[i] = ppropid != g_str_hash.end() ?
+		                       ppropid->second : 0;
 	}
 	return TRUE;
 }
