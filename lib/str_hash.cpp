@@ -6,6 +6,7 @@
 #include <cstring>
 #include <memory>
 #include <stdexcept>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -74,6 +75,9 @@ STR_HASH_TABLE::~STR_HASH_TABLE()
 {
 	auto ptbl = this;
 	size_t	i = 0;
+	DOUBLE_LIST_NODE *nd;
+	while ((nd = double_list_pop_front(&ptbl->iter_list)) != nullptr)
+		ptbl->buf_pool->put(containerof(nd, STR_HASH_ITEM, iter_node));
 	double_list_free(&(ptbl->iter_list));
 	if (NULL != ptbl->hash_map) {
 		for (i = 0; i < ptbl->entry_num; i++) {
