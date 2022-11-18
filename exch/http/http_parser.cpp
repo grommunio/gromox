@@ -1941,13 +1941,12 @@ void http_context::log(int level, const char *format, ...) const
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	
-	if ('\0' == pcontext->username[0]) {
+	if (g_http_debug && *pcontext->username == '\0')
 		mlog(level, "ctxid=%u, host=[%s]  %s",
 			pcontext->context_id, pcontext->connection.client_ip, log_buf);
-	} else {
+	else if (g_http_debug)
 		mlog(level, "user=%s, host=[%s]  %s",
 			pcontext->username, pcontext->connection.client_ip, log_buf);
-	}
 
 }
 
