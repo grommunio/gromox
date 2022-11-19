@@ -20,7 +20,6 @@
 #include <gromox/rtf.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/simple_tree.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)

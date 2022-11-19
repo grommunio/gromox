@@ -27,7 +27,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zcore_rpc.hpp>

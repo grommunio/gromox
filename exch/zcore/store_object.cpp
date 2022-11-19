@@ -26,7 +26,6 @@
 #include <gromox/msgchg_grouping.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
