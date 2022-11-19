@@ -1,9 +1,15 @@
-1.33.24
-=======
+1.33.146
+========
 
 Enhancements:
 
+* Daemons have a new log level directive (e.g. http_log_level, zcore_log_level,
+  etc.) which defaults to 4 (NOTICE) and needs to be set to 6 (DEBUG) before
+  other debug knobs like http_debug, zrpc_debug, etc. actually emit something.
+* User accounts can now be hidden from the GAL and other address lists
 * The gromox-dscli command-line utility now performs DNS SRV lookups.
+* mod_cache: remodel the whole module to be a passthrough to the kernel's
+  buffer cache by using mmap and thus saving a lot of resident memory.
 
 Fixes:
 
@@ -14,6 +20,13 @@ Fixes:
 * ldap_adaptor: the per-org LDAP base was erroneously used with the
   default LDAP.
 * midb: resolve a startup crash in conjunction with musl libc.
+* exmdb_provider: fix a buffer overrun in common_util_load_search_scopes
+* lib: rectify return value of html_to_plain_boring.
+  On systems without w3m installed, HTML-to-text conversion would
+  produce garbage when the output was exactly 65001 bytes long.
+* mod_cache: support continuation via `curl -C` and `wget -c`
+* mod_cache: report errors with various 4xx and 5xx status codes rather than
+  exclusively 404
 
 
 1.33 (2022-10-20)
