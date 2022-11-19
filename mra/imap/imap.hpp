@@ -94,7 +94,7 @@ struct imap_context final : public schedule_context {
 
 	GENERIC_CONNECTION connection;
 	std::string mid, file_path;
-	DOUBLE_LIST_NODE hash_node{}, sleeping_node{};
+	DOUBLE_LIST_NODE sleeping_node{};
 	int proto_stat = 0, sched_stat = 0;
 	int message_fd = -1;
 	char *write_buff = nullptr;

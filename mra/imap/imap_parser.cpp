@@ -80,7 +80,7 @@ static alloc_limiter<file_block> g_alloc_file{"g_alloc_file.d"};
 static alloc_limiter<DIR_NODE> g_alloc_dir{"g_alloc_dir.d"};
 static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
 static std::shared_ptr<MIME_POOL> g_mime_pool;
-static std::unordered_map<std::string, DOUBLE_LIST> g_select_hash;
+static std::unordered_map<std::string, std::vector<imap_context *>> g_select_hash; /* username=>context */
 static std::mutex g_hash_lock, g_list_lock;
 static DOUBLE_LIST g_sleeping_list;
 static char g_certificate_path[256];
@@ -1137,7 +1137,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 	}
 }
 
-static DOUBLE_LIST *sh_query(const char *x)
+static std::vector<imap_context *> *sh_query(const char *x)
 {
 	auto i = g_select_hash.find(x);
 	return i == g_select_hash.end() ? nullptr : &i->second;
@@ -1147,7 +1147,6 @@ void imap_parser_bcast_touch(IMAP_CONTEXT *pcontext, const char *username,
     const char *folder)
 {
 	char buff[1024];
-	DOUBLE_LIST_NODE *pnode;
 	
 	gx_strlcpy(buff, username, arsizeof(buff));
 	HX_strlower(buff);
@@ -1156,13 +1155,10 @@ void imap_parser_bcast_touch(IMAP_CONTEXT *pcontext, const char *username,
 	if (NULL == plist) {
 		return;
 	}
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pcontext1 = static_cast<IMAP_CONTEXT *>(pnode->pdata);
+	for (auto pcontext1 : *plist)
 		if (pcontext != pcontext1 && 0 == strcmp(folder, pcontext1->selected_folder)) {
 			pcontext1->b_modify = TRUE;
 		}
-	}
 	hl_hold.unlock();
 	snprintf(buff, 1024, "FOLDER-TOUCH %s %s", username, folder);
 	system_services_broadcast_event(buff);
@@ -1171,7 +1167,6 @@ void imap_parser_bcast_touch(IMAP_CONTEXT *pcontext, const char *username,
 static void imap_parser_event_touch(const char *username, const char *folder)
 {
 	char temp_string[UADDR_SIZE];
-	DOUBLE_LIST_NODE *pnode;
 	
 	gx_strlcpy(temp_string, username, arsizeof(temp_string));
 	HX_strlower(temp_string);
@@ -1180,19 +1175,15 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 	if (NULL == plist) {
 		return;
 	}
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
+	for (auto pcontext : *plist)
 		if (0 == strcmp(folder, pcontext->selected_folder)) {
 			pcontext->b_modify = TRUE;
 		}
-	}
 }
 
 void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const std::string &mid_string) try
 {
 	char buff[1024];
-	DOUBLE_LIST_NODE *pnode;
 	
 	gx_strlcpy(buff, pcontext->username, arsizeof(buff));
 	HX_strlower(buff);
@@ -1201,9 +1192,7 @@ void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const std::string &mid_stri
 	if (NULL == plist) {
 		return;
 	}
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pcontext1 = static_cast<IMAP_CONTEXT *>(pnode->pdata);
+	for (auto pcontext1 : *plist) {
 		if (pcontext != pcontext1 && 0 == strcmp(pcontext->selected_folder,
 			pcontext1->selected_folder)) {
 			pcontext1->f_flags.emplace_back(mid_string);
@@ -1221,8 +1210,6 @@ static void imap_parser_event_flag(const char *username, const char *folder,
     const char *mid_string) try
 {
 	char temp_string[UADDR_SIZE];
-	DOUBLE_LIST_NODE *pnode;
-	
 	gx_strlcpy(temp_string, username, arsizeof(temp_string));
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
@@ -1230,13 +1217,10 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	if (NULL == plist) {
 		return;
 	}
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
+	for (auto pcontext : *plist)
 		if (0 == strcmp(pcontext->selected_folder, folder)) {
 			pcontext->f_flags.emplace_back(mid_string);
 		}
-	}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1087: ENOMEM");
 }
@@ -1433,7 +1417,6 @@ imap_context::imap_context() :
 	stream(&g_blocks_allocator)
 {
 	auto pcontext = this;
-	pcontext->hash_node.pdata = pcontext;
 	pcontext->sleeping_node.pdata = pcontext;
     pcontext->connection.sockd = -1;
 }
@@ -1583,7 +1566,6 @@ static void imap_parser_event_proc(char *event)
 void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 {
 	char temp_string[UADDR_SIZE];
-	DOUBLE_LIST temp_list;
 	
 	gx_strlcpy(temp_string, pcontext->username, arsizeof(temp_string));
 	HX_strlower(temp_string);
@@ -1591,16 +1573,16 @@ void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = sh_query(temp_string);
 	if (NULL == plist) {
-		double_list_init(&temp_list);
 		if (g_select_hash.size() <= g_context_num) {
-			auto xpair = g_select_hash.emplace(std::string(temp_string), temp_list);
-			plist = &xpair.first->second;
-			if (NULL != plist) {
-				double_list_append_as_tail(plist, &pcontext->hash_node);
-			}
+			auto xpair = g_select_hash.emplace(temp_string, std::vector<imap_context *>());
+			auto &list = xpair.first->second;
+			list.push_back(pcontext);
 		}
 	} else {
-		double_list_append_as_tail(plist, &pcontext->hash_node);
+		/* Ensure the memory block pointed to by pcontext is not going by accidents */
+		static_assert(!std::is_move_constructible_v<imap_context>);
+		static_assert(!std::is_move_assignable_v<imap_context>);
+		plist->push_back(pcontext);
 	}
 	hl_hold.unlock();
 	system_services_broadcast_select(pcontext->username, pcontext->selected_folder);
@@ -1610,7 +1592,6 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 {
 	BOOL should_remove;
 	char temp_string[UADDR_SIZE];
-	DOUBLE_LIST_NODE *pnode;
 	
 	should_remove = TRUE;
 	pcontext->selected_time = 0;
@@ -1619,15 +1600,13 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = sh_query(temp_string);
 	if (NULL != plist) {
-		double_list_remove(plist, &pcontext->hash_node);
-		if (double_list_get_nodes_num(plist) == 0) {
+		plist->erase(std::remove(plist->begin(), plist->end(), pcontext), plist->end());
+		if (plist->size() == 0) {
 			g_select_hash.erase(temp_string);
 		} else {
 			pcontext->b_modify = FALSE;
 			pcontext->f_flags.clear();
-			for (pnode=double_list_get_head(plist); NULL!=pnode;
-				pnode=double_list_get_after(plist, pnode)) {
-				auto pcontext1 = static_cast<IMAP_CONTEXT *>(pnode->pdata);
+			for (auto pcontext1 : *plist) {
 				if (0 == strcmp(pcontext->selected_folder, pcontext1->selected_folder)) {
 					should_remove = FALSE;
 					break;
@@ -1662,9 +1641,7 @@ static void *imps_scanwork(void *argp)
 		time(&cur_time);
 		for (const auto &xpair : g_select_hash) {
 			auto plist = &xpair.second;
-			for (auto pnode = double_list_get_head(plist); pnode != nullptr;
-				pnode=double_list_get_after(plist, pnode)) {
-				auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
+			for (auto pcontext : *plist) {
 				if (cur_time - pcontext->selected_time > SELECT_INTERVAL) {
 					try {
 						temp_file.emplace_back(bk{pcontext->username,
