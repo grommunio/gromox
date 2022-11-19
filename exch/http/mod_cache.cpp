@@ -647,6 +647,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 				pcontext->range.clear();
 				return false;
 			}
+			posix_madvise(pitem->mblk, static_cast<size_t>(node_stat.st_size), POSIX_MADV_SEQUENTIAL);
 			pcontext->pitem = std::move(pitem);
 			return TRUE;
 		}
@@ -666,6 +667,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 			pcontext->range.clear();
 			return false;
 		}
+		posix_madvise(pitem->mblk, static_cast<size_t>(node_stat.st_size), POSIX_MADV_SEQUENTIAL);
 		g_cache_hash.emplace(tmp_path, pitem);
 		pcontext->pitem = std::move(pitem);
 		return TRUE;
