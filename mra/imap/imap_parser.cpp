@@ -82,7 +82,7 @@ static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unordered_map<std::string, std::vector<imap_context *>> g_select_hash; /* username=>context */
 static std::mutex g_hash_lock, g_list_lock;
-static DOUBLE_LIST g_sleeping_list;
+static std::vector<imap_context *> g_sleeping_list;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
@@ -109,7 +109,6 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	g_support_tls       = support_tls;
 	g_ssl_mutex_buf         = NULL;
 	g_notify_stop = true;
-	double_list_init(&g_sleeping_list);
 	g_sequence_id = 0;
 	if (support_tls) {
 		g_force_tls = force_tls;
@@ -294,7 +293,7 @@ void imap_parser_stop()
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
 	}
-	double_list_free(&g_sleeping_list);
+	g_sleeping_list.clear();
     g_context_num		= 0;
 	g_cache_size	    = 0;
 	g_autologout_time   = std::chrono::seconds(0);
@@ -406,7 +405,7 @@ static int ps_stat_notifying(IMAP_CONTEXT *pcontext)
 		pcontext->connection.write(temp_buff, len);
 	}
 	std::unique_lock ll_hold(g_list_lock);
-	double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
+	g_sleeping_list.push_back(pcontext);
 	pcontext->sched_stat = SCHED_STAT_IDLING;
 	return PROCESS_SLEEPING;
 }
@@ -435,7 +434,7 @@ static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 			return PROCESS_POLLING_RDONLY;
 		if (pcontext->is_authed()) {
 			std::unique_lock ll_hold(g_list_lock);
-			double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
+			g_sleeping_list.push_back(pcontext);
 			return PROCESS_SLEEPING;
 		}
 		/* IMAP_CODE_2180011: BAD timeout */
@@ -742,7 +741,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 		return PROCESS_CONTINUE;
 	}
 	std::unique_lock ll_hold(g_list_lock);
-	double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
+	g_sleeping_list.push_back(pcontext);
 	return PROCESS_SLEEPING;
 }
 
@@ -1417,7 +1416,6 @@ imap_context::imap_context() :
 	stream(&g_blocks_allocator)
 {
 	auto pcontext = this;
-	pcontext->sleeping_node.pdata = pcontext;
     pcontext->connection.sockd = -1;
 }
 
@@ -1469,12 +1467,12 @@ static void *imps_thrwork(void *argp)
 {
 	int peek_len;
 	char tmp_buff;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *ptail;
 	
 	while (!g_notify_stop) {
 		std::unique_lock ll_hold(g_list_lock);
-		ptail = double_list_get_tail(&g_sleeping_list);
+		imap_context *ptail = nullptr, *pcontext = nullptr;
+		if (g_sleeping_list.size() > 0)
+			ptail = g_sleeping_list.back();
 		ll_hold.unlock();
 		if (NULL == ptail) {
 			usleep(100000);
@@ -1483,11 +1481,15 @@ static void *imps_thrwork(void *argp)
 		
 		do {
 			ll_hold.lock();
-			pnode = double_list_pop_front(&g_sleeping_list);
+			if (g_sleeping_list.size() > 0) {
+				pcontext = g_sleeping_list.front();
+				g_sleeping_list.erase(g_sleeping_list.begin());
+			} else {
+				pcontext = nullptr;
+			}
 			ll_hold.unlock();
-			if (pnode == nullptr)
+			if (pcontext == nullptr)
 				break;
-			auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 			if (SCHED_STAT_IDLING == pcontext->sched_stat) {
 				std::unique_lock hl_hold(g_hash_lock);
 				if (pcontext->b_modify) {
@@ -1495,11 +1497,9 @@ static void *imps_thrwork(void *argp)
 					hl_hold.unlock();
 					pcontext->sched_stat = SCHED_STAT_NOTIFYING;
 					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
-					if (pnode == ptail) {
+					if (pcontext == ptail)
 						break;
-					} else {
-						continue;
-					}
+					continue;
 				}
 			}
 			peek_len = recv(pcontext->connection.sockd, &tmp_buff, 1, MSG_PEEK);
@@ -1512,14 +1512,14 @@ static void *imps_thrwork(void *argp)
 					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 				} else {
 					ll_hold.lock();
-					double_list_append_as_tail(&g_sleeping_list, pnode);
+					g_sleeping_list.push_back(pcontext);
 					ll_hold.unlock();
 				}
 			} else {
 				pcontext->sched_stat = SCHED_STAT_DISCONNECTED;
 				contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 			}
-		} while (pnode != ptail);
+		} while (pcontext != ptail);
 		usleep(100000);
 	}
 	return nullptr;
