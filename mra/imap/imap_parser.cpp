@@ -1593,8 +1593,8 @@ void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 	if (NULL == plist) {
 		double_list_init(&temp_list);
 		if (g_select_hash.size() <= g_context_num) {
-			g_select_hash.emplace(std::string(temp_string), temp_list);
-			plist = sh_query(temp_string);
+			auto xpair = g_select_hash.emplace(std::string(temp_string), temp_list);
+			plist = &xpair.first->second;
 			if (NULL != plist) {
 				double_list_append_as_tail(plist, &pcontext->hash_node);
 			}
