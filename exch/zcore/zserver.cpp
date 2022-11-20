@@ -1421,28 +1421,30 @@ uint32_t zs_openstore(GUID hsession,
 		return ecError;
 	if (store_entryid.wrapped_provider_uid == g_muidStorePublic) {
 		*phobject = pinfo->ptree->get_store_handle(false, pinfo->domain_id);
-	} else {
-		if (!common_util_essdn_to_uid(store_entryid.pmailbox_dn, &user_id))
-			return ecNotFound;
-		if (pinfo->user_id != user_id) {
-			if (!system_services_get_username_from_id(user_id,
-			    username, GX_ARRAY_SIZE(username)) ||
-			    !system_services_get_maildir(username, dir, arsizeof(dir)))
-				return ecError;
-			uint32_t permission = rightsNone;
-			if (!exmdb_client::get_mbox_perm(dir,
-			    pinfo->get_username(), &permission))
-				return ecError;
-			if (permission == rightsNone)
-				return ecLoginPerm;
-			if (permission & frightsGromoxStoreOwner) try {
-				std::lock_guard lk(pinfo->eowner_lock);
-				pinfo->extra_owner.insert_or_assign(user_id, time(nullptr));
-			} catch (const std::bad_alloc &) {
-			}
-		}
-		*phobject = pinfo->ptree->get_store_handle(TRUE, user_id);
+		return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
 	}
+	if (!common_util_essdn_to_uid(store_entryid.pmailbox_dn, &user_id))
+		return ecNotFound;
+	if (pinfo->user_id == user_id) {
+		*phobject = pinfo->ptree->get_store_handle(TRUE, user_id);
+		return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
+	}
+	if (!system_services_get_username_from_id(user_id,
+	    username, GX_ARRAY_SIZE(username)) ||
+	    !system_services_get_maildir(username, dir, arsizeof(dir)))
+		return ecError;
+	uint32_t permission = rightsNone;
+	if (!exmdb_client::get_mbox_perm(dir,
+	    pinfo->get_username(), &permission))
+		return ecError;
+	if (permission == rightsNone)
+		return ecLoginPerm;
+	if (permission & frightsGromoxStoreOwner) try {
+		std::lock_guard lk(pinfo->eowner_lock);
+		pinfo->extra_owner.insert_or_assign(user_id, time(nullptr));
+	} catch (const std::bad_alloc &) {
+	}
+	*phobject = pinfo->ptree->get_store_handle(TRUE, user_id);
 	return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
 }
 
