@@ -21,7 +21,7 @@
 #include "object_tree.h"
 #include "objects.hpp"
 #include "store_object.h"
-#include "zarafa_server.h"
+#include "zserver.hpp"
 
 using namespace gromox;
 

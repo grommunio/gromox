@@ -39,7 +39,7 @@
 #include "object_tree.h"
 #include "rpc_parser.hpp"
 #include "system_services.hpp"
-#include "zarafa_server.h"
+#include "zserver.hpp"
 
 using namespace gromox;
 

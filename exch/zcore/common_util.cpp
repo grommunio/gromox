@@ -45,7 +45,7 @@
 #include "objects.hpp"
 #include "store_object.h"
 #include "system_services.hpp"
-#include "zarafa_server.h"
+#include "zserver.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;

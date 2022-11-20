@@ -21,7 +21,7 @@
 #include "exmdb_client.h"
 #include "objects.hpp"
 #include "store_object.h"
-#include "zarafa_server.h"
+#include "zserver.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;

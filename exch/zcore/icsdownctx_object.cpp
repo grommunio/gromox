@@ -14,7 +14,7 @@
 #include "ics_state.h"
 #include "objects.hpp"
 #include "store_object.h"
-#include "zarafa_server.h"
+#include "zserver.hpp"
 
 std::unique_ptr<icsdownctx_object>
 icsdownctx_object::create(folder_object *pfolder, uint8_t sync_type)
