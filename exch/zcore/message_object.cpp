@@ -72,7 +72,7 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 			    &pmessage->instance_id))
 				return NULL;
 		} else {
-			auto pinfo = zarafa_server_get_info();
+			auto pinfo = zs_get_info();
 			if (!exmdb_client::load_message_instance(pstore->get_dir(),
 			    pinfo->get_username(), cpid, b_new, pmessage->folder_id,
 			    message_id, &pmessage->instance_id))
@@ -230,7 +230,7 @@ errno_t message_object::init_message(bool fai, uint32_t new_cpid)
 	auto dispname = cu_alloc<char>(1024);
 	if (dispname == nullptr)
 		return ENOMEM;
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (!system_services_get_user_displayname(pinfo->get_username(),
 	    dispname, dispnamesize) || *dispname == '\0')
 		gx_strlcpy(dispname, pinfo->get_username(), dispnamesize);
@@ -269,7 +269,7 @@ gxerr_t message_object::save()
 	if (!pmessage->b_new && !pmessage->b_touched)
 		return GXERR_SUCCESS;
 	auto dir = pmessage->pstore->get_dir();
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (!exmdb_client::allocate_cn(
 		dir, &pmessage->change_num)) {
 		return GXERR_CALL_FAILED;
@@ -1136,7 +1136,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 				MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD;
 	const char *username = nullptr;
 	if (!pmessage->pstore->b_private) {
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		username = pinfo->get_username();
 	}
 	b_notify = FALSE;

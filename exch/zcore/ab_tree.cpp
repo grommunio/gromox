@@ -1641,7 +1641,7 @@ BOOL ab_tree_fetch_node_properties(const SIMPLE_TREE_NODE *pnode,
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
 		if (!ab_tree_fetch_node_property(pnode,

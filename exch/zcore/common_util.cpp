@@ -925,7 +925,7 @@ BOOL cu_entryid_to_fid(BINARY bin,
 					tmp_entryid.global_counter);
 			return TRUE;
 		}
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		if (pinfo == nullptr || *pdb_id != pinfo->domain_id)
 			return FALSE;
 		if (!exmdb_client::get_mapping_replid(pinfo->get_homedir(),
@@ -975,7 +975,7 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 				tmp_entryid.message_global_counter);
 			return TRUE;
 		}
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		if (NULL == pinfo || *pdb_id != pinfo->domain_id) {
 			return FALSE;
 		}
@@ -1326,7 +1326,7 @@ static void log_err(const char *format, ...)
 	va_list ap;
 	char log_buf[2048];
 	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (NULL == pinfo) {
 		return;
 	}
@@ -1566,7 +1566,7 @@ BOOL common_util_send_message(store_object *pstore,
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client_get_message_property(pstore->get_dir(), nullptr, 0,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr)
@@ -1732,7 +1732,7 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 		return NULL;
 	if (!common_util_essdn_to_uid(pstore_entryid->pmailbox_dn, &user_id))
 		return NULL;	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (user_id != pinfo->user_id) {
 		pmovecopy1->same_store = 0;
 		pmovecopy1->pstore_eid = pstore_entryid;
@@ -1824,7 +1824,7 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 		store_entryid.wrapped_provider_uid = g_muidStorePublic;
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_PUBLIC;
 		store_entryid.pserver_name = g_hostname;
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		if (!common_util_username_to_essdn(pinfo->get_username(),
 		    tmp_buff, arsizeof(tmp_buff)))
 			return NULL;	
@@ -1928,7 +1928,7 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	auto username = pstore->b_private ? nullptr : pinfo->get_username();
 	if (!exmdb_client::read_message(pstore->get_dir(), username,
 	    pinfo->cpid, message_id, &pmsgctnt))
@@ -2031,7 +2031,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 		return FALSE;
 	}
 	common_util_set_propvals(pproplist, &propval);
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
 	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
 		return FALSE;
@@ -2121,7 +2121,7 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	}
 	if (!common_util_create_folder(pstore1, folder_id1, &tmp_propvals, &new_fid))
 		return GXERR_CALL_FAILED;
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
 		username = pinfo->get_username();
@@ -2185,7 +2185,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		mlog(LV_ERR, "E-1495: ENOMEM");
 		return false;
 	}
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
@@ -2271,7 +2271,7 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 {
 	char charset[32], tmzone[64];
 	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	MAIL imail(g_mime_pool);
 	if (!imail.retrieve(peml_bin->pc, peml_bin->cb))
 		return NULL;
@@ -2298,7 +2298,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	char tmp_buff[1024*1024];
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
@@ -2324,7 +2324,7 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	ICAL ical;
 	char tmzone[64];
 	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (!system_services_get_timezone(pinfo->get_username(), tmzone,
 	    arsizeof(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, common_util_get_default_timezone());
@@ -2347,7 +2347,7 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
     std::vector<message_ptr> &msgvec) try
 {
-	auto info = zarafa_server_get_info();
+	auto info = zs_get_info();
 	char tmzone[64];
 	if (!system_services_get_timezone(info->get_username(), tmzone,
 	    arsizeof(tmzone)) || tmzone[0] == '\0')
@@ -2371,7 +2371,7 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	auto message_id = pmessage->get_id();
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)

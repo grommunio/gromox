@@ -181,7 +181,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		return exmdb_client::get_public_folder_unread_count(pfolder->pstore->get_dir(),
 		       pinfo->get_username(), pfolder->folder_id,
 		       static_cast<uint32_t *>(*ppvalue));
@@ -202,7 +202,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
 			return TRUE;
 		}
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		return exmdb_client::get_folder_perm(pfolder->pstore->get_dir(),
 		       pfolder->folder_id, pinfo->get_username(),
 		       static_cast<uint32_t *>(*ppvalue));
@@ -549,7 +549,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (!exmdb_client::get_folder_properties(pfolder->pstore->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;
@@ -606,7 +606,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &last_time;
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (!exmdb_client::set_folder_properties(pfolder->pstore->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	

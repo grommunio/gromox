@@ -405,7 +405,7 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 				return pobjnode->handle;	
 		} while ((pnode = pnode->get_sibling()) != nullptr);
 	}
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (b_private) {
 		if (account_id == pinfo->user_id) {
 			gx_strlcpy(dir, pinfo->get_maildir(), arsizeof(dir));
