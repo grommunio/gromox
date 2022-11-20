@@ -42,7 +42,7 @@
 #include "common_util.h"
 #include "objects.hpp"
 #include "system_services.hpp"
-#include "zarafa_server.h"
+#include "zserver.hpp"
 
 #define EPOCH_DIFF 							11644473600LL
 

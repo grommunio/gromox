@@ -8,7 +8,7 @@
 #include "common_util.h"
 #include "objects.hpp"
 #include "system_services.hpp"
-#include "zarafa_server.h"
+#include "zserver.hpp"
 
 using namespace gromox;
 

@@ -24,7 +24,7 @@
 #include "store_object.h"
 #include "system_services.hpp"
 #include "table_object.h"
-#include "zarafa_server.h"
+#include "zserver.hpp"
 
 enum {
 	PROP_TAG_PROFILESCLSID = PROP_TAG(PT_CLSID, 0x0048),

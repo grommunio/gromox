@@ -19,7 +19,7 @@
 #include "common_util.h"
 #include "rpc_ext.h"
 #include "rpc_parser.hpp"
-#include "zarafa_server.h"
+#include "zserver.hpp"
 
 using namespace gromox;
 
