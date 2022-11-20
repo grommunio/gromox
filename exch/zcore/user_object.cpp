@@ -158,7 +158,7 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 	if (!system_services_get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list))
 		return ecSuccess;
 	m_members.clear();
-	auto info = zarafa_server_get_info();
+	auto info = zs_get_info();
 	for (const auto &memb : member_list) {
 		int user_id;
 		if (!system_services_get_id_from_username(memb.c_str(), &user_id))

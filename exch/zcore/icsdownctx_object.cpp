@@ -65,7 +65,7 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 		return FALSE;
 	if (!pctx->pstate->deserialize(pstate_bin))
 		return FALSE;
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread.get() : nullptr;
 	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai.get() : nullptr;
 	auto pseen = (sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen.get() : nullptr;
@@ -144,7 +144,7 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
 		return FALSE;
 	if (!pctx->pstate->deserialize(state))
 		return FALSE;
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	auto username = pctx->pstore->owner_mode() ? nullptr : pinfo->get_username();
 	if (!exmdb_client::get_hierarchy_sync(pctx->pstore->get_dir(),
 	    pctx->folder_id, username, pctx->pstate->pgiven.get(),

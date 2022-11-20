@@ -178,7 +178,7 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	PROPERTY_NAME propname_buff[9];
 	PROPNAME_ARRAY propnames;
 	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
 	auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
 	if (pstore == nullptr || mapi_type != ZMG_STORE)
@@ -258,7 +258,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
 		if (pbase == nullptr)
 			return FALSE;
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		if (!ab_tree_match_minids(pbase.get(), pcontainer->id.abtree_id.minid,
 			pinfo->cpid, prestriction, &minid_array)) {
 			return FALSE;	
@@ -287,7 +287,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 	if (NULL != pcontainer->contents.prow_set) {
 		return TRUE;
 	}
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (!exmdb_client::load_content_table(pinfo->get_maildir(),
 	    pinfo->cpid, pcontainer->id.exmdb_id.folder_id, nullptr, 0,
 	    nullptr, nullptr, &table_id, &row_num))
@@ -545,7 +545,7 @@ static BOOL container_object_fetch_folder_properties(
 		case PR_ENTRYID:
 		case PR_PARENT_ENTRYID: {
 			uint8_t mapi_type = 0;
-			auto pinfo = zarafa_server_get_info();
+			auto pinfo = zs_get_info();
 			auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
 			auto store = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
 			if (store == nullptr || mapi_type != ZMG_STORE)
@@ -646,7 +646,7 @@ BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (pcontainer->type != CONTAINER_TYPE_ABTREE) {
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		if (!exmdb_client::get_folder_properties(pinfo->get_maildir(),
 		    pinfo->cpid, pcontainer->id.exmdb_id.folder_id,
 		    container_object_get_folder_proptags(), &tmp_propvals))
@@ -742,7 +742,7 @@ static BOOL container_object_query_folder_hierarchy(
 	TARRAY_SET tmp_set;
 	TPROPVAL_ARRAY **pparray;
 	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (!exmdb_client::load_hierarchy_table(pinfo->get_maildir(),
 	    folder_id, nullptr, TABLE_FLAG_DEPTH, nullptr, &table_id, &row_num))
 		return FALSE;
@@ -830,7 +830,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				return FALSE;
 			}
-			auto pinfo = zarafa_server_get_info();
+			auto pinfo = zs_get_info();
 			if (!exmdb_client::get_folder_properties(pinfo->get_maildir(),
 				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
 				container_object_get_folder_proptags(), &tmp_propvals)) {

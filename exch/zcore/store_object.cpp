@@ -109,7 +109,7 @@ bool store_object::owner_mode() const
 	auto pstore = this;
 	if (!pstore->b_private)
 		return FALSE;
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (pinfo->user_id == pstore->account_id)
 		return true;
 	std::unique_lock lk(pinfo->eowner_lock);
@@ -137,7 +137,7 @@ bool store_object::primary_mode() const
 {
 	if (!b_private)
 		return false;
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	return pinfo->user_id == account_id;
 }
 
@@ -680,7 +680,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			*acval = MAPI_ACCESS_AllSix;
 			return TRUE;
 		}
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		if (!pstore->b_private) {
 			*acval = MAPI_ACCESS_AllSix;
 			return TRUE;
@@ -709,7 +709,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
 			return TRUE;
 		}
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		if (pstore->b_private) {
 			if (!exmdb_client::get_mbox_perm(pstore->dir,
 			    pinfo->get_username(), &permission))
@@ -833,7 +833,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return TRUE;
 		}
 		*v = EC_SUPPORTMASK_OTHER;
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		auto ret = cu_get_delegate_perm_MD(pinfo->get_username(), pstore->dir);
 		if (ret >= repr_grant::send_on_behalf)
 			*v |= STORE_SUBMIT_OK;
@@ -853,12 +853,12 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		}
 		return TRUE;
 	case PR_USER_NAME: {
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		*ppvalue = deconst(pinfo->get_username());
 		return TRUE;
 	}
 	case PR_USER_ENTRYID: {
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		*ppvalue = common_util_username_to_addressbook_entryid(pinfo->get_username());
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -1034,7 +1034,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (0 == tmp_proptags.count) {
 		return TRUE;
 	}
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (pstore->b_private && pinfo->user_id == pstore->account_id) {
 		for (i=0; i<tmp_proptags.count; i++) {
 			auto pvalue = pinfo->ptree->get_zstore_propval(tmp_proptags.pproptag[i]);
@@ -1312,7 +1312,7 @@ static void set_store_lang(store_object *store, const char *locale)
 BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	auto pstore = this;
 	for (i=0; i<ppropvals->count; i++) {
 		if (store_object_is_readonly_prop(
@@ -1370,7 +1370,7 @@ BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
 	auto pstore = this;
 	int i;
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	for (i=0; i<pproptags->count; i++) {
 		if (store_object_is_readonly_prop(pstore, pproptags->pproptag[i]))
 			continue;

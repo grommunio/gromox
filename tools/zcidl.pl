@@ -38,7 +38,7 @@ while (<STDIN>) {
 		if (scalar(@$oargs) > 0) {
 			print "\tauto &r = *r1;\n";
 		}
-		print "\tr0->result = zarafa_server_$func(", join(", ",
+		print "\tr0->result = zs_$func(", join(", ",
 			(map { my($type, $field) = @$_; "q.$field"; } @$iargs),
 			(map { my($type, $field) = @$_; "&r.$field"; } @$oargs),
 		), ");\n";

@@ -233,8 +233,8 @@ int main(int argc, const char **argv) try
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), ping_interval, 0);
 	mlog(LV_INFO, "system: mailbox ping interval is %s", temp_buff);
 	
-	zarafa_server_init(table_size, cache_interval, ping_interval);
-	auto cl_7 = make_scope_exit(zarafa_server_stop);
+	zserver_init(table_size, cache_interval, ping_interval);
+	auto cl_7 = make_scope_exit(zserver_stop);
 	rpc_parser_init(threads_num);
 	auto cl_6 = make_scope_exit(rpc_parser_stop);
 
@@ -282,7 +282,7 @@ int main(int argc, const char **argv) try
 		mlog(LV_ERR, "system: failed to start ZRPC parser");
 		return 9;
 	}
-	if (0 != zarafa_server_run()) {
+	if (zserver_run() != 0) {
 		mlog(LV_ERR, "system: failed to run zserver");
 		return 10;
 	}

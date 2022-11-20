@@ -60,7 +60,7 @@ static errno_t storetbl_add_row(table_object *tbl, const USER_INFO &info,
 
 static errno_t storetbl_refresh(table_object *tbl)
 {
-	auto info = zarafa_server_get_info();
+	auto info = zs_get_info();
 	if (info == nullptr)
 		return EIO;
 	if (tbl->fixed_data != nullptr)
@@ -105,7 +105,7 @@ BOOL table_object::load()
 	}
 	switch (ptable->table_type) {
 	case zcore_tbltype::hierarchy: {
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		auto username = ptable->pstore->owner_mode() ?
 		                nullptr : pinfo->get_username();
 		new_table_flags = TABLE_FLAG_NONOTIFICATIONS;
@@ -123,7 +123,7 @@ BOOL table_object::load()
 		break;
 	}
 	case zcore_tbltype::content: {
-		auto pinfo = zarafa_server_get_info();
+		auto pinfo = zs_get_info();
 		const char *username = nullptr;
 		if (!ptable->pstore->owner_mode()) {
 			if (!ptable->pstore->b_private) {
@@ -191,7 +191,7 @@ static BOOL table_object_get_store_table_all_proptags(
 		PR_STORE_ENTRYID, PR_USER_ENTRYID,
 	};
 	
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (!exmdb_client::get_store_all_proptags(pinfo->get_maildir(), &tmp_proptags1) ||
 	    !exmdb_client::get_store_all_proptags(pinfo->get_homedir(), &tmp_proptags2))
 		return FALSE;
@@ -558,7 +558,7 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 			cols = &tmp_columns;
 		}
 	}
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	if (NULL == pinfo) {
 		return FALSE;
 	}
@@ -1068,7 +1068,7 @@ BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 	if (0 == ptable->table_id) {
 		return FALSE;
 	}
-	auto pinfo = zarafa_server_get_info();
+	auto pinfo = zs_get_info();
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	proptags.count = 2;
 	proptags.pproptag = proptag_buff;
