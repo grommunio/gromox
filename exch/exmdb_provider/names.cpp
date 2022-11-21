@@ -7,7 +7,6 @@
 
 using namespace gromox;
 
-#define EXP(s) exmdb_callid::s
 #define E(s) #s
 static constexpr const char *exmdb_rpc_names[] = {
 	E(CONNECT),
@@ -23,7 +22,7 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(SET_STORE_PROPERTIES),
 	E(REMOVE_STORE_PROPERTIES),
 	E(GET_MBOX_PERM),
-	E(GET_FOLDER_BY_CLASS),
+	"GET_FOLDER_BY_CLASS_V1",
 	E(SET_FOLDER_BY_CLASS),
 	E(GET_FOLDER_CLASS_TABLE),
 	E(CHECK_FOLDER_ID),
@@ -133,15 +132,14 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(COPY_INSTANCE_ATTACHMENTS),
 	E(CHECK_CONTACT_ADDRESS),
 	E(GET_PUBLIC_FOLDER_UNREAD_COUNT),
-	nullptr, /* x7b */
-	nullptr,
+	E(VACUUM),
+	E(GET_FOLDER_BY_CLASS),
 	nullptr,
 	nullptr,
 	nullptr,
 	E(UNLOAD_STORE),
 };
 #undef E
-#undef EXP
 
 const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
