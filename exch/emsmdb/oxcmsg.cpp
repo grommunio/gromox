@@ -77,7 +77,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (!exmdb_client::check_folder_permission(plogon->get_dir(), folder_id,
+	if (!exmdb_client::get_folder_perm(plogon->get_dir(), folder_id,
 	    rpc_info.username, &permission))
 		return ecError;
 	if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
@@ -192,7 +192,7 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 		return ecNotSupported;
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != logon_mode::owner) {
-		if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
 			return ecError;
 		if (!(permission & (frightsOwner | frightsCreate)))

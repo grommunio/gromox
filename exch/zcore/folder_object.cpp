@@ -203,7 +203,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			return TRUE;
 		}
 		auto pinfo = zarafa_server_get_info();
-		return exmdb_client::check_folder_permission(pfolder->pstore->get_dir(),
+		return exmdb_client::get_folder_perm(pfolder->pstore->get_dir(),
 		       pfolder->folder_id, pinfo->get_username(),
 		       static_cast<uint32_t *>(*ppvalue));
 	}

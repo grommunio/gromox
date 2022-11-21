@@ -225,7 +225,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			*v = rightsAll | frightsContact;
 		} else {
 			auto rpc_info = get_rpc_info();
-			if (!exmdb_client::check_folder_permission(dir,
+			if (!exmdb_client::get_folder_perm(dir,
 			    pfolder->folder_id, rpc_info.username, v))
 				return FALSE;
 		}

@@ -40,7 +40,7 @@ enum class exmdb_callid : uint8_t {
 	query_folder_messages = 0x11,
 	check_folder_deleted = 0x12,
 	get_folder_by_name = 0x13,
-	check_folder_permission = 0x14,
+	get_folder_perm = 0x14,
 	create_folder_by_properties = 0x15,
 	get_folder_all_proptags = 0x16,
 	get_folder_properties = 0x17,
@@ -224,7 +224,7 @@ struct exreq_get_folder_by_name : public exreq {
 	char *str_name;
 };
 
-struct exreq_check_folder_permission : public exreq {
+struct exreq_get_folder_perm : public exreq {
 	uint64_t folder_id;
 	char *username;
 };
@@ -882,7 +882,7 @@ struct exresp_get_folder_by_name : public exresp {
 	uint64_t folder_id;
 };
 
-struct exresp_check_folder_permission : public exresp {
+struct exresp_get_folder_perm : public exresp {
 	uint32_t permission;
 };
 

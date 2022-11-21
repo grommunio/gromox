@@ -759,7 +759,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 			uint64_t parent_fid = sqlite3_column_int64(pstmt, 1);
 			if (NULL != username) {
 				uint32_t permission;
-				if (!common_util_check_folder_permission(pdb->psqlite,
+				if (!cu_get_folder_permission(pdb->psqlite,
 				    parent_fid, username, &permission))
 					return FALSE;
 				if (permission & (frightsOwner | frightsDeleteAny)) {
@@ -806,7 +806,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 			b_check = FALSE;
 		} else {
 			uint32_t permission = rightsNone;
-			if (!common_util_check_folder_permission(pdb->psqlite,
+			if (!cu_get_folder_permission(pdb->psqlite,
 			    fid_val, username, &permission))
 				return FALSE;
 			if (permission & (frightsOwner | frightsDeleteAny)) {
@@ -988,7 +988,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 			continue;
 		if (NULL != username) {
 			uint32_t permission = rightsNone;
-			if (!common_util_check_folder_permission(pdb->psqlite,
+			if (!cu_get_folder_permission(pdb->psqlite,
 			    fid_val, username, &permission))
 				return FALSE;
 			if (!(permission & frightsOwner)) {
@@ -1469,7 +1469,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		return FALSE;
 	if (folder_type == FOLDER_SEARCH) {
 		if (b_guest) {
-			if (!common_util_check_folder_permission(pdb->psqlite,
+			if (!cu_get_folder_permission(pdb->psqlite,
 			    dst_fid, username, &permission))
 				return FALSE;
 			if (!(permission & frightsCreate)) {
@@ -1498,7 +1498,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				message_id = sqlite3_column_int64(pstmt, 0);
 				parent_fid = sqlite3_column_int64(pstmt, 1);
 				if (b_guest) {
-					if (!common_util_check_folder_permission(pdb->psqlite,
+					if (!cu_get_folder_permission(pdb->psqlite,
 					    parent_fid, username, &permission))
 						return FALSE;
 					if (permission & (frightsOwner | frightsReadAny)) {
@@ -1546,11 +1546,11 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				*pb_partial = FALSE;
 				return TRUE;
 			}
-			if (!common_util_check_folder_permission(pdb->psqlite,
+			if (!cu_get_folder_permission(pdb->psqlite,
 			    fid_val, username, &permission))
 				return FALSE;
 			b_check	= (permission & (frightsOwner | frightsReadAny)) ? false : TRUE;
-			if (!common_util_check_folder_permission(pdb->psqlite,
+			if (!cu_get_folder_permission(pdb->psqlite,
 			    dst_fid, username, &permission))
 				return FALSE;
 			if (!(permission & frightsCreate)) {
@@ -1662,7 +1662,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	if (!b_sub)
 		return TRUE;
 	if (b_guest) {
-		if (!common_util_check_folder_permission(pdb->psqlite,
+		if (!cu_get_folder_permission(pdb->psqlite,
 		    dst_fid, username, &permission))
 			return FALSE;
 		if (!(permission & frightsCreateSubfolder)) {
@@ -1679,7 +1679,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		src_fid1 = sqlite3_column_int64(pstmt, 0);
 		fid_val = src_fid1;
 		if (b_check) {
-			if (!common_util_check_folder_permission(pdb->psqlite,
+			if (!cu_get_folder_permission(pdb->psqlite,
 			    fid_val, username, &permission))
 				return FALSE;
 			if (!(permission & (frightsReadAny | frightsVisible))) {
@@ -2199,14 +2199,14 @@ BOOL exmdb_server::set_search_criteria(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server::check_folder_permission(const char *dir,
+BOOL exmdb_server::get_folder_perm(const char *dir,
 	uint64_t folder_id, const char *username,
 	uint32_t *ppermission)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	return common_util_check_folder_permission(pdb->psqlite,
+	return cu_get_folder_permission(pdb->psqlite,
 	       rop_util_get_gc_value(folder_id), username, ppermission);
 }
 

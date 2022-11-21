@@ -40,7 +40,7 @@ uint32_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	}
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != logon_mode::owner) {
-		if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
@@ -76,7 +76,7 @@ uint32_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
 		return ecNotSupported;
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != logon_mode::owner) {
-		if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
 		if (!(permission & (frightsOwner | frightsVisible)))

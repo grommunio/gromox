@@ -270,7 +270,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	if (!b_guest) {
 		b_check = FALSE;
 	} else if (folder_type != FOLDER_SEARCH) {
-		if (!common_util_check_folder_permission(pdb->psqlite,
+		if (!cu_get_folder_permission(pdb->psqlite,
 		    src_val, username, &permission))
 			return FALSE;
 		b_check = (permission & (frightsOwner | frightsReadAny)) ? false : TRUE;
@@ -318,7 +318,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 		sqlite3_reset(pstmt);
 		if (folder_type == FOLDER_SEARCH) {
 			if (b_check) {
-				if (!common_util_check_folder_permission(pdb->psqlite,
+				if (!cu_get_folder_permission(pdb->psqlite,
 				    parent_fid, username, &permission))
 					goto MVCP_FAILURE;
 				if (!(permission & (frightsOwner | frightsReadAny))) {
@@ -479,7 +479,7 @@ BOOL exmdb_server::delete_messages(const char *dir,
 	} else if (folder_type == FOLDER_SEARCH) {
 		b_check = TRUE;
 	} else {
-		if (!common_util_check_folder_permission(pdb->psqlite,
+		if (!cu_get_folder_permission(pdb->psqlite,
 		    src_val, username, &permission))
 			return FALSE;
 		b_check = (permission & (frightsOwner | frightsDeleteAny)) ? false : TRUE;
@@ -521,7 +521,7 @@ BOOL exmdb_server::delete_messages(const char *dir,
 		sqlite3_reset(pstmt);
 		if (folder_type == FOLDER_SEARCH) {
 			if (b_check) {
-				if (!common_util_check_folder_permission(pdb->psqlite,
+				if (!cu_get_folder_permission(pdb->psqlite,
 				    parent_fid, username, &permission))
 					return FALSE;
 				if (!(permission & (frightsOwner | frightsDeleteAny))) {
