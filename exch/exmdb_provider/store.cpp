@@ -239,7 +239,8 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		return false;
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 	while (sqlite3_step(pstmt) == SQLITE_ROW)
-		*ppermission |= frightsGromoxStoreOwner;
+		if (pstmt.col_int64(0) & frightsOwner)
+			*ppermission |= frightsGromoxStoreOwner;
 	pstmt.finalize();
 	pdb.reset();
 
