@@ -206,14 +206,22 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	*ppermission = rightsNone;
 
 	/* Store permission := union of folder permissions */
-	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT permission "
+	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT permission, folder_id "
 	             "FROM permissions WHERE username=?");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		*ppermission |= sqlite3_column_int64(pstmt, 0);
+		auto perm = pstmt.col_uint64(0);
+		auto fid  = pstmt.col_uint64(1);
+		*ppermission |= perm;
+	/*
+	 * Tryout for conveying the special store ownership.
+	 * Take FOLDEROWNER bit _only_ from Top Of Information Store.
+	 */
+		if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
+			*ppermission |= frightsGromoxStoreOwner;
 	}
 	pstmt.finalize();
 
@@ -228,19 +236,6 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		if (common_util_check_mlist_include(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)), username))
 			*ppermission |= sqlite3_column_int64(pstmt, 1);
 	}
-	pstmt.finalize();
-
-	/*
-	 * Tryout for conveying the special store ownership.
-	 * Take FOLDEROWNER bit _only_ from Top Of Information Store.
-	 */
-	pstmt = gx_sql_prep(pdb->psqlite, "SELECT permission FROM permissions WHERE username=? AND folder_id=9 LIMIT 1");
-	if (pstmt == nullptr)
-		return false;
-	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-	while (sqlite3_step(pstmt) == SQLITE_ROW)
-		if (pstmt.col_int64(0) & frightsOwner)
-			*ppermission |= frightsGromoxStoreOwner;
 	pstmt.finalize();
 	pdb.reset();
 
