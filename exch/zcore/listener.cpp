@@ -52,7 +52,7 @@ int listener_run(const char *CS_PATH)
 {
 	g_listen_sockd = gx_local_listen(CS_PATH, true /* autodelete */);
 	if (g_listen_sockd < 0) {
-		mlog(LV_ERR, "listen %s: %s", CS_PATH, strerror(errno));
+		mlog(LV_ERR, "listen %s: %s", CS_PATH, strerror(-g_listen_sockd));
 		return -1;
 	}
 	gx_reexec_record(g_listen_sockd);

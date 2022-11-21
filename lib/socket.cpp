@@ -189,7 +189,7 @@ static int gx_gai_listen(const struct addrinfo *r)
 		int se = errno;
 		close(fd);
 		errno = se;
-		return -1;
+		return -2;
 	}
 	return fd;
 }
@@ -240,11 +240,22 @@ int gx_local_listen(const char *path, bool delete_on_create)
 		return ret; /* fd */
 	if (ret == -2 || errno != EADDRINUSE)
 		return -errno;
-	int saved_errno = errno;
+
 	struct stat sb;
 	ret = stat(path, &sb);
-	if (ret < 0 || !S_ISSOCK(sb.st_mode))
-		return -saved_errno;
+	if (ret < 0)
+		return -errno;
+	if (!S_ISSOCK(sb.st_mode))
+		return -ENOTSOCK;
+
+	int testfd = socket(AF_LOCAL, SOCK_STREAM, 0);
+	if (testfd < 0)
+		return -errno;
+	ret = connect(testfd, r.ai_addr, r.ai_addrlen);
+	close(testfd);
+	if (ret == 0)
+		return -EADDRINUSE;
+
 	/* There will be a TOCTOU report, but what can you do... */
 	ret = unlink(path);
 	if (ret < 0 && errno != ENOENT) {
