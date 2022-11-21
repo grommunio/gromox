@@ -244,8 +244,14 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		if (common_util_check_mlist_include(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)), username))
-			*ppermission |= sqlite3_column_int64(pstmt, 1);
+		auto ben = pstmt.col_text(0);
+		if (!common_util_check_mlist_include(ben, username))
+			continue;
+		auto perm = pstmt.col_uint64(1);
+		auto fid  = pstmt.col_uint64(2);
+		*ppermission |= perm;
+		if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
+			*ppermission |= frightsGromoxStoreOwner;
 	}
 	pstmt.finalize();
 	pdb.reset();
