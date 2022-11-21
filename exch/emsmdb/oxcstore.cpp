@@ -58,6 +58,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 			return ecLoginPerm;
 		*presponse_flags = RESPONSE_FLAG_RESERVED;
 		if (permission & frightsGromoxSendAs) {
+			permission ^= frightsGromoxSendAs;
 			*presponse_flags |= RESPONSE_FLAG_SENDASRIGHT;
 			logon_mode = logon_mode::delegate;
 		} else {
