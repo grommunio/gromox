@@ -1474,7 +1474,10 @@ int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1800;
 	gx_strlcpy(pcontext->tag_string, argv[0], arsizeof(pcontext->tag_string));
 	pcontext->sched_stat = SCHED_STAT_IDLING;
-	return 1602;
+	size_t len = 0;
+	auto reply = resource_get_imap_code(1602, 1, &len);
+	pcontext->connection.write(reply, len);
+	return 0;
 }
 
 static int m2icode(int r, int e)
