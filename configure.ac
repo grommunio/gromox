@@ -1,4 +1,4 @@
-AC_INIT([gromox], [1.33])
+AC_INIT([gromox], [1.34])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
 AC_PREFIX_DEFAULT([/usr])
@@ -158,12 +158,16 @@ MYSQL_WITH_MYSQL_CONFIG
 unitdir=$("$PKG_CONFIG" systemd --variable systemd_system_unit_dir 2>/dev/null)
 sysusersdir=$("$PKG_CONFIG" systemd --variable sysusersdir 2>/dev/null)
 tmpfilesdir=$("$PKG_CONFIG" systemd --variable tmpfilesdir 2>/dev/null)
-AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'])
-AS_IF([test -z "$sysusersdir"], [sysusersdir='${prefix}/lib/sysusers.d'])
-AS_IF([test -z "$tmpfilesdir"], [tmpfilesdir='${prefix}/lib/tmpfiles.d'])
+AC_ARG_WITH([dcprefix],
+	[AS_HELP_STRING([Extra path inserted for distcheck])],
+	[dcprefix="$withval"])
+AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'], [unitdir='${dcprefix}'"$unitdir"])
+AS_IF([test -z "$sysusersdir"], [sysusersdir='${prefix}/lib/sysusers.d'], [sysusersdir='${dcprefix}'"$sysusersdir"])
+AS_IF([test -z "$tmpfilesdir"], [tmpfilesdir='${prefix}/lib/tmpfiles.d'], [tmpfilesdir='${dcprefix}'"$tmpfilesdir"])
 AC_SUBST([unitdir])
 AC_SUBST([sysusersdir])
 AC_SUBST([tmpfilesdir])
+AC_SUBST([dcprefix])
 
 AC_ARG_WITH([php], [
 		AS_HELP_STRING([--with-php=/usr/bin/php-config], [Enable building PHP modules])

@@ -2,8 +2,8 @@
 
 ACLOCAL_AMFLAGS = -I build-aux
 AM_CPPFLAGS = -Iinclude -I${top_srcdir}/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${crypto_CFLAGS} ${jsoncpp_CFLAGS} ${mysql_CFLAGS} ${sqlite_CFLAGS} ${ssl_CFLAGS} ${zlib_CFLAGS}
-AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
+AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
@@ -19,9 +19,9 @@ pamlib_LTLIBRARIES = pam_gromox.la
 noinst_DATA += pam_gromox.ldd
 endif
 if HAVE_PHP
-phpinidir = ${PHP_SYSCONF_DIR}
+phpinidir = ${dcprefix}${PHP_SYSCONF_DIR}
 phpini_DATA = php_mapi/mapi.ini
-phplibdir = ${PHP_EXTENSION_DIR}
+phplibdir = ${dcprefix}${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
 endif
 sysusers_DATA = system/sysusers-gromox.conf
@@ -81,7 +81,7 @@ BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.
 	php_mapi/zrpc.cpp \
 	exch/exmdb_provider/exmdb_rpc.cpp \
 	lib/exmdb_rpc.cpp
-CLEANFILES = ${BUILT_SOURCES}
+CLEANFILES = ${BUILT_SOURCES} ${noinst_DATA}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
 libgromox_common_la_LIBADD = ${crypt_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${tinyxml_LIBS} ${vmime_LIBS}
@@ -355,12 +355,20 @@ exch/exmdb_provider/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh
 install-exec-hook:
 	${MKDIR_P} ${DESTDIR}${sbindir}
 	rm -fv ${DESTDIR}${pkglibdir}/libmapi4zf.*
+
+install-exec-local:
+	${MKDIR_P} ${DESTDIR}${pkglibexecdir}
 	cp -av ${srcdir}/tools/kdb-uidex* ${DESTDIR}${pkglibexecdir}/
 
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${mandir}/man8 ${DESTDIR}${pkgdatadir}/http/php
 	cp -av ${srcdir}/data/* ${DESTDIR}${pkgdatadir}/
 	cp -av ${srcdir}/exch/php/* ${DESTDIR}${pkgdatadir}/http/php/
+
+uninstall-hook:
+	rm -Rf UNINSTALL_HOOK ${DESTDIR}${pkglibexecdir}/kdb-uidex*
+	chmod -R u+w ${DESTDIR}${pkgdatadir}/
+	rm -Rf ${DESTDIR}${pkgdatadir}/
 
 .la.ldd:
 	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@
@@ -373,6 +381,6 @@ tarball:
 	tmpdir=$$(mktemp -dtu); \
 	mkdir $$tmpdir && \
 	pushd ${top_srcdir} && git archive --prefix=${PACKAGE_NAME}-${PACKAGE_VERSION}/ HEAD | tar -C $$tmpdir -x && popd; \
-	pushd $$tmpdir/${PACKAGE_NAME}-${PACKAGE_VERSION} && autoreconf -fi && popd; \
+	pushd $$tmpdir/${PACKAGE_NAME}-${PACKAGE_VERSION} && autoreconf -fi && rm -Rf autom4te*.cache && popd; \
 	tar --use=zstd -C $$tmpdir -cf ${PACKAGE_NAME}-${PACKAGE_VERSION}.tar.zst --owner=root --group=root ${PACKAGE_NAME}-${PACKAGE_VERSION}/; \
 	rm -Rf $$tmpdir
