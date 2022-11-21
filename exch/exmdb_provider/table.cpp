@@ -2168,6 +2168,9 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 				if (pproptags->pproptag[i] == PR_MEMBER_RIGHTS &&
 				    !(ptnode->table_flags & PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY))
 					*static_cast<uint32_t *>(pvalue) &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
+				if (pproptags->pproptag[i] == PR_MEMBER_RIGHTS &&
+				    (ptnode->table_flags & PERMISSIONS_TABLE_FLAG_ROPFILTER))
+					*static_cast<uint32_t *>(pvalue) &= rightsMaxROP;
 				if (NULL == pvalue) {
 					continue;
 				}

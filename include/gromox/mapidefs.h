@@ -544,7 +544,6 @@ enum {
 	 */
 	frightsGromoxStoreOwner     = 0x2000U,
 
-	/* right sets as per edkmdb */
 	rightsNone = 0U,
 	rightsReadOnly = frightsReadAny,
 	rightsReadWrite = frightsReadAny | frightsEditAny,
@@ -557,6 +556,9 @@ enum {
 	rightsGromox7 = frightsReadAny | frightsCreate | frightsEditAny |
 	                frightsDeleteAny | frightsCreateSubfolder |
 	                frightsOwner | frightsVisible,
+
+	rightsMaxROP = rightsAll | frightsContact | frightsFreeBusySimple |
+	               frightsFreeBusyDetailed,
 };
 
 enum { /* ROWENTRY::ulRowFlags bits */

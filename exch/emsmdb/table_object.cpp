@@ -102,7 +102,8 @@ BOOL table_object::load()
 	case ropGetPermissionsTable:
 		if (!exmdb_client::load_permission_table(ptable->plogon->get_dir(),
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
-		    ptable->table_flags, &table_id, &row_num))
+		    ptable->table_flags | PERMISSIONS_TABLE_FLAG_ROPFILTER,
+		    &table_id, &row_num))
 			return FALSE;
 		break;
 	case ropGetRulesTable:
