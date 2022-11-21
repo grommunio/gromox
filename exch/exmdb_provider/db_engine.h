@@ -46,12 +46,11 @@ enum instance_type {
 struct TABLE_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t table_id;
-	char *remote_id;
 	int type;
-	BOOL b_search;
+	char *remote_id;
 	uint64_t folder_id;
-	uint8_t table_flags;
 	GUID handle_guid;
+	uint32_t table_flags;
 	uint32_t cpid;
 	char *username;
 	RESTRICTION *prestriction;
@@ -59,6 +58,7 @@ struct TABLE_NODE {
 	uint32_t instance_tag;
 	uint32_t extremum_tag;
 	uint32_t header_id;
+	BOOL b_search;
 	BOOL b_hint;		/* is table touched in batch-mode */
 };
 
