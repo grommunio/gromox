@@ -131,9 +131,7 @@ BINARY* common_util_to_private_folder_entryid(
 BINARY* common_util_to_private_message_entryid(
 	sqlite3 *psqlite, const char *username,
 	uint64_t folder_id, uint64_t message_id);
-BOOL common_util_check_folder_permission(
-	sqlite3 *psqlite, uint64_t folder_id,
-	const char *username, uint32_t *ppermission);
+extern BOOL cu_get_folder_permission(sqlite3 *, uint64_t folder_id, const char *username, uint32_t *perms);
 extern BOOL common_util_check_descendant(sqlite3 *, uint64_t inner_fid, uint64_t outer_fid, BOOL *pb_included);
 BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 	uint64_t message_id, uint64_t *pfolder_id);

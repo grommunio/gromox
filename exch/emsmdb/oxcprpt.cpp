@@ -343,7 +343,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 		auto fld = static_cast<folder_object *>(pobject);
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != logon_mode::owner) {
-			if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+			if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 			    fld->folder_id, rpc_info.username, &permission))
 				return ecError;
 			if (!(permission & frightsOwner))
@@ -406,7 +406,7 @@ uint32_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
 		auto fld = static_cast<folder_object *>(pobject);
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != logon_mode::owner) {
-			if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+			if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 			    fld->folder_id, rpc_info.username, &permission))
 				return ecError;
 			if (!(permission & frightsOwner))
@@ -592,7 +592,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		auto flddst = static_cast<folder_object *>(pobject_dst);
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != logon_mode::owner) {
-			if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+			if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 			    flddst->folder_id, rpc_info.username, &permission))
 				return ecError;
 			if (!(permission & frightsOwner))
@@ -799,7 +799,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 			return ecNotSupported;
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != logon_mode::owner) {
-			if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+			if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 			    fldsrc->folder_id, rpc_info.username, &permission))
 				return ecError;
 			if (permission & frightsOwner) {
@@ -809,7 +809,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 					return ecAccessDenied;
 				username = rpc_info.username;
 			}
-			if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+			if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 			    flddst->folder_id, rpc_info.username, &permission))
 				return ecError;
 			if (!(permission & frightsOwner))
@@ -929,7 +929,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
 		if (b_write) {
 			auto rpc_info = get_rpc_info();
 			if (plogon->logon_mode != logon_mode::owner) {
-				if (!exmdb_client::check_folder_permission(plogon->get_dir(),
+				if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 				    static_cast<folder_object *>(pobject)->folder_id,
 				    rpc_info.username, &permission))
 					return ecError;

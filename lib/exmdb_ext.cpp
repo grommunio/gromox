@@ -220,13 +220,13 @@ static int exmdb_push(EXT_PUSH &x, const exreq_get_folder_by_name &d)
 	return x.p_str(d.str_name);
 }
 
-static int exmdb_pull(EXT_PULL &x, exreq_check_folder_permission &d)
+static int exmdb_pull(EXT_PULL &x, exreq_get_folder_perm &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_str(&d.username);
 }
 
-static int exmdb_push(EXT_PUSH &x, const exreq_check_folder_permission &d)
+static int exmdb_push(EXT_PUSH &x, const exreq_get_folder_perm &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_str(d.username);
@@ -2193,7 +2193,7 @@ static int exmdb_push(EXT_PUSH &x, const exreq_get_public_folder_unread_count &d
 	E(query_folder_messages) \
 	E(check_folder_deleted) \
 	E(get_folder_by_name) \
-	E(check_folder_permission) \
+	E(get_folder_perm) \
 	E(create_folder_by_properties) \
 	E(get_folder_all_proptags) \
 	E(get_folder_properties) \
@@ -2577,12 +2577,12 @@ static int exmdb_push(EXT_PUSH &x, const exresp_get_folder_by_name &d)
 	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_pull(EXT_PULL &x, exresp_check_folder_permission &d)
+static int exmdb_pull(EXT_PULL &x, exresp_get_folder_perm &d)
 {
 	return x.g_uint32(&d.permission);
 }
 
-static int exmdb_push(EXT_PUSH &x, const exresp_check_folder_permission &d)
+static int exmdb_push(EXT_PUSH &x, const exresp_get_folder_perm &d)
 {
 	return x.p_uint32(d.permission);
 }
@@ -3600,7 +3600,7 @@ static int exmdb_push(EXT_PUSH &x, const exresp_get_public_folder_unread_count &
 	E(query_folder_messages) \
 	E(check_folder_deleted) \
 	E(get_folder_by_name) \
-	E(check_folder_permission) \
+	E(get_folder_perm) \
 	E(create_folder_by_properties) \
 	E(get_folder_all_proptags) \
 	E(get_folder_properties) \

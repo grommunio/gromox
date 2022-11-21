@@ -544,7 +544,7 @@ static BOOL get_freebusy(const char *dir)
 	uint32_t pidlidtimezonestruct = PROP_TAG(PT_BINARY, propids.ppropid[12]);
 	
 	if (NULL != g_username) {
-		if (!exmdb_client::check_folder_permission(dir,
+		if (!exmdb_client::get_folder_perm(dir,
 		    rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
 		    g_username, &permission))
 			return FALSE;

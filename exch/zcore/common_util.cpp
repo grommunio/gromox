@@ -1136,7 +1136,7 @@ int cu_calc_msg_access(store_object *pstore, const char *user,
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (!exmdb_client::check_folder_permission(pstore->get_dir(),
+	if (!exmdb_client::get_folder_perm(pstore->get_dir(),
 	    folder_id, user, &permission))
 		return ecError;
 	if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
@@ -2125,7 +2125,7 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
 		username = pinfo->get_username();
-		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
+		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
 		    folder_id, username, &permission))
 			return GXERR_CALL_FAILED;
 		if (!(permission & (frightsReadAny | frightsOwner)))

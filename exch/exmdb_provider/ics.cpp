@@ -593,7 +593,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 		fid_val = sqlite3_column_int64(pstmt, 0);
 		change_num = sqlite3_column_int64(pstmt, 1);
 		if (NULL != username) {
-			if (!common_util_check_folder_permission(psqlite,
+			if (!cu_get_folder_permission(psqlite,
 			    fid_val, username, &permission))
 				return FALSE;
 			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))

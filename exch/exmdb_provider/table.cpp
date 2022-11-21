@@ -101,7 +101,7 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 			if (pstmt == nullptr)
 				return 0;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				if (!common_util_check_folder_permission(psqlite,
+				if (!cu_get_folder_permission(psqlite,
 				    sqlite3_column_int64(pstmt, 0),
 				    username, &permission))
 					continue;
@@ -119,7 +119,7 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 			return 0;
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			if (NULL != username) {
-				if (!common_util_check_folder_permission(psqlite,
+				if (!cu_get_folder_permission(psqlite,
 				    sqlite3_column_int64(pstmt, 0), username, &permission))
 					continue;
 				if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
@@ -159,7 +159,7 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 		folder_id1 = sqlite3_column_int64(pstmt1, 0);
 		if (NULL != username) {
-			if (!common_util_check_folder_permission(psqlite,
+			if (!cu_get_folder_permission(psqlite,
 			    folder_id1, username, &permission))
 				continue;
 			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))

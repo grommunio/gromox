@@ -129,7 +129,7 @@ BOOL table_object::load()
 			if (!ptable->pstore->b_private) {
 				username = pinfo->get_username();
 			} else {
-				if (!exmdb_client::check_folder_permission(ptable->pstore->get_dir(),
+				if (!exmdb_client::get_folder_perm(ptable->pstore->get_dir(),
 				    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 				    pinfo->get_username(), &permission))
 					return FALSE;	
@@ -246,7 +246,7 @@ static uint32_t table_object_get_folder_tag_access(store_object *pstore,
 	if (pstore->owner_mode()) {
 		return MAPI_ACCESS_AllSix;
 	}
-	if (!exmdb_client::check_folder_permission(pstore->get_dir(),
+	if (!exmdb_client::get_folder_perm(pstore->get_dir(),
 	    folder_id, username, &permission))
 		return 0;
 	if (permission & frightsOwner) {
@@ -268,7 +268,7 @@ static uint32_t table_object_get_folder_permission_rights(store_object *pstore,
 	if (pstore->owner_mode()) {
 		return rightsAll | frightsContact;
 	}
-	if (!exmdb_client::check_folder_permission(pstore->get_dir(),
+	if (!exmdb_client::get_folder_perm(pstore->get_dir(),
 	    folder_id, username, &permission))
 		return 0;
 	return permission;

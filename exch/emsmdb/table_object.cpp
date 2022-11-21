@@ -83,7 +83,7 @@ BOOL table_object::load()
 			if (!ptable->plogon->is_private()) {
 				username = rpc_info.username;
 			} else {
-				if (!exmdb_client::check_folder_permission(
+				if (!exmdb_client::get_folder_perm(
 				    ptable->plogon->get_dir(),
 				    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 				    rpc_info.username, &permission))

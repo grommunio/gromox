@@ -3682,9 +3682,8 @@ BINARY* common_util_to_private_message_entryid(
 	return pbin;
 }
 
-BOOL common_util_check_folder_permission(
-	sqlite3 *psqlite, uint64_t folder_id,
-	const char *username, uint32_t *ppermission)
+BOOL cu_get_folder_permission(sqlite3 *psqlite, uint64_t folder_id,
+    const char *username, uint32_t *ppermission)
 {
 	char sql_string[1024];
 	

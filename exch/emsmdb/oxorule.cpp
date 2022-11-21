@@ -37,7 +37,7 @@ uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	auto rpc_info = get_rpc_info();
 	auto dir = plogon->get_dir();
 	if (plogon->logon_mode != logon_mode::owner) {
-		if (!exmdb_client::check_folder_permission(dir,
+		if (!exmdb_client::get_folder_perm(dir,
 		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
@@ -120,7 +120,7 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	auto rpc_info = get_rpc_info();
 	auto dir = plogon->get_dir();
 	if (plogon->logon_mode != logon_mode::owner) {
-		if (!exmdb_client::check_folder_permission(dir,
+		if (!exmdb_client::get_folder_perm(dir,
 		    fid_deferred, rpc_info.username, &permission))
 			return ecError;
 		if (!(permission & frightsEditAny))
