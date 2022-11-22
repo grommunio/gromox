@@ -43,23 +43,17 @@ static struct rand_initializer {
 } rand_instance;
 }
 
-static int utf8_byte_num(unsigned char ch)
-{
-	int byte_num = 0;
-
-	if (ch >= 0xFC && ch < 0xFE)
-		byte_num = 6;
-	else if (ch >= 0xF8)
-		byte_num = 5;
-	else if (ch >= 0xF0)
-		byte_num = 4;
-	else if (ch >= 0xE0)
-		byte_num = 3;
-	else if (ch >= 0xC0)
-		byte_num = 2;
-	else if (!(ch & 0x80))
-		byte_num = 1;
-	return byte_num;
+namespace gromox {
+const uint8_t utf8_byte_num[256] = {
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,0,0,
+};
 }
  
 /* check for invalid UTF-8 */
@@ -74,7 +68,7 @@ BOOL utf8_check(const char *str)
 	while (*ptr != '\0') {
 		ch = (unsigned char)*ptr;
 		if (byte_num == 0) {
-			byte_num = utf8_byte_num(ch);
+			byte_num = utf8_byte_num[ch];
 			if (byte_num == 0)
 				return FALSE;
 		}
@@ -97,7 +91,7 @@ bool utf8_count_codepoints(const char *str, size_t *plen)
 	auto clen = strlen(str);
 
 	while (*ptr != '\0' && len < clen) {
-		auto byte_num = utf8_byte_num(*ptr);
+		auto byte_num = utf8_byte_num[*ptr];
 		if (byte_num == 0)
 			return false;
 		ptr += byte_num;
@@ -114,7 +108,7 @@ bool utf16_count_codepoints(const char *str, size_t *plen)
 	auto clen = strlen(str);
 
 	while (*ptr != '\0' && len < clen) {
-		auto byte_num = utf8_byte_num(*ptr);
+		auto byte_num = utf8_byte_num[*ptr];
 		if (byte_num == 0)
 			return false;
 		else if (byte_num < 4)
@@ -133,8 +127,6 @@ BOOL utf8_truncate(char *str, int length)
 {
 	int len = 0;
 	int clen = 0;
-	int byte_num = 0;
-	unsigned char ch;
 	char *ptr = str;
 	
 	clen = strlen(str);
@@ -143,8 +135,7 @@ BOOL utf8_truncate(char *str, int length)
 			*ptr = '\0';
 			return TRUE;
 		}
-		ch = (unsigned char)*ptr;
-		byte_num = utf8_byte_num(ch);
+		auto byte_num = utf8_byte_num[static_cast<unsigned char>(*ptr)];
 		if (byte_num == 0)
 			return FALSE;
 		ptr += byte_num;
