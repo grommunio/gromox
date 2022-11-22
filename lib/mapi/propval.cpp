@@ -396,17 +396,6 @@ void propval_free(uint16_t type, void *pvalue)
 	free(pvalue);
 }
 
-/**
- * Returns the octet count for the UTF-16 representation of the string.
- */
-static uint32_t propval_utf16_len(const char *putf8_string)
-{
-	size_t len;
-	if (!utf16_count_codepoints(putf8_string, &len))
-		return 0;
-	return 2 * len;
-}
-
 uint32_t propval_size(uint16_t type, void *pvalue)
 {
 	uint32_t length;
@@ -435,9 +424,8 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_SYSTIME:
 		return sizeof(uint64_t);
 	case PT_STRING8:
-		return strlen(static_cast<char *>(pvalue));
 	case PT_UNICODE:
-		return propval_utf16_len(static_cast<char *>(pvalue));
+		return strlen(static_cast<char *>(pvalue));
 	case PT_CLSID:
 		return 16;
 	case PT_SVREID:
@@ -461,18 +449,12 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_MV_DOUBLE:
 	case PT_MV_APPTIME:
 		return sizeof(double) * static_cast<DOUBLE_ARRAY *>(pvalue)->count;
-	case PT_MV_STRING8: {
-		length = 0;
-		auto sa = static_cast<STRING_ARRAY *>(pvalue);
-		for (size_t i = 0; i < sa->count; ++i)
-			length += strlen(sa->ppstr[i]);
-		return length;
-	}
+	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
 		length = 0;
 		auto sa = static_cast<STRING_ARRAY *>(pvalue);
 		for (size_t i = 0; i < sa->count; ++i)
-			length += propval_utf16_len(sa->ppstr[i]);
+			length += strlen(sa->ppstr[i]);
 		return length;
 	}
 	case PT_MV_CLSID:

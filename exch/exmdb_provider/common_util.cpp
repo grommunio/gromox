@@ -1512,6 +1512,11 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	wrapfd fd = open(cu_cid_path(dir, cid).c_str(), O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
+
+	/*
+	 * Tack on a NUL for the sake of string functions which may process
+	 * pbuff down the road.
+	 */
 	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
 	if (NULL == pbuff) {
 		mlog(LV_ERR, "E-1626: ENOMEM");
@@ -2617,10 +2622,12 @@ static BOOL common_util_set_message_body(
 			        path.c_str(), strerror(errno));
 	});
 	if (PROP_TYPE(proptag) == PT_UNICODE) {
-		size_t ncp = 0;
-		if (!utf8_count_codepoints(static_cast<char *>(pvalue), &ncp))
-			return false;
-		uint32_t len = cpu_to_le32(ncp);
+		/*
+		 * Gromox < 1.14 uses this count for computation of
+		 * PR_MESSAGE_SIZE. Only needs to be approximate.
+		 */
+		uint32_t len = cpu_to_le32(std::min(strlen(reinterpret_cast<char *>(pvalue)) / 2,
+		               static_cast<size_t>(UINT32_MAX)));
 		if (write(fd.get(), &len, sizeof(len)) != sizeof(len))
 			return FALSE;
 	}
@@ -2628,6 +2635,7 @@ static BOOL common_util_set_message_body(
 	auto ret = write(fd.get(), pvalue, len);
 	if (ret < 0 || static_cast<size_t>(ret) != len)
 		return FALSE;
+	/* Give a NUL byte to appease old Gromox < 0.21. */
 	if (write(fd.get(), "", 1) != 1)
 		return false;
 	if (!cu_update_object_cid(psqlite, db_table::msg_props, message_id, proptag, cid))
@@ -5153,42 +5161,34 @@ BOOL common_util_indexing_sub_contents(
 }
 
 /**
- * Return the transfer size (see PR_MESSAGE_SIZE description) for a
- * content blob that is going to be transferred as UTF-16. The blob
- * is assumed to be UTF-8 encoded, and have a leading codepoint
- * counter; the caller must ensure this function only called for
- * blobs previously so encoded.
+ * Returns the size that contributes to PR_MESSAGE_SIZE.
+ *
+ * pidtagmessagesize-canonical-property.md (in the office-developer-client-docs
+ * git repo) says "approximate number of bytes that are transferred". Because
+ * most wire transfers happen in UTF-16, we would need a painstaking conversion
+ * first for PT_UNICODE properties.
+ *
+ * OXPROPS v27 §2.796, OXCMSG v25 §2.2.1.7 however say "Contains the size, in
+ * bytes, consumed by the Message object on the server". The object on the
+ * server however is UTF-8 and thus consumes a different amount of bytes.
+ * OXCFXICS v24 §3.2.5.4, §3.3.5.12, once again, allow approximations.
+ *
+ * Gromox also uses PR_MESSAGE_SIZE for quota tracking. That is not an exact an
+ * exact science either, due to potential compression or potential presence of
+ * midb EML copies.
  */
-static uint32_t common_util_get_cid_string_length(uint64_t cid)
-{
-	struct stat node_stat;
-	wrapfd fd = open(cu_cid_path(exmdb_server::get_dir(), cid).c_str(), O_RDONLY);
-	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
-		return 0;
-	auto buf = cu_alloc<char>(node_stat.st_size + 1);
-	if (buf == nullptr ||
-	    read(fd.get(), buf, node_stat.st_size) != node_stat.st_size)
-		return 0;
-	buf[node_stat.st_size] = '\0';
-	/*
-	 * Skip over the 4-byte UTF-8 codepoint counter (which is useless when
-	 * determining UTF-16 codepoint count). The trailing U+0000 is not
-	 * processed, and so is not included in the result.
-	 */
-	size_t ncp = 0;
-	return utf16_count_codepoints(buf + sizeof(uint32_t), &ncp) ? 2 * ncp : 0;
-}
-
-/**
- * Return the transfer size for a content blob that is transferred
- * raw; the caller must ensure this function is only called for blobs
- * previously so encoded (i.e. without codepoint counter).
- */
-static uint32_t common_util_get_cid_length(uint64_t cid)
+static uint32_t cu_get_cid_length(uint64_t cid, uint16_t proptype)
 {
 	struct stat node_stat;
 	if (stat(cu_cid_path(exmdb_server::get_dir(), cid).c_str(), &node_stat) != 0)
 		return 0;
+	if (proptype == PT_STRING8 && node_stat.st_size >= 1)
+		/* Discount trailing NUL byte in file */
+		--node_stat.st_size;
+	if (proptype == PT_UNICODE && node_stat.st_size >= 5)
+		/* Discount leading U8 codepoint count field
+		 * and the trailing NUL. */
+		node_stat.st_size -= 5;
 	if (static_cast<unsigned long long>(node_stat.st_size) > UINT32_MAX)
 		return UINT32_MAX;
 	return node_stat.st_size;
@@ -5197,7 +5197,6 @@ static uint32_t common_util_get_cid_length(uint64_t cid)
 uint32_t common_util_calculate_message_size(
 	const MESSAGE_CONTENT *pmsgctnt)
 {
-	uint32_t tmp_len;
 	uint32_t message_size;
 	TAGGED_PROPVAL *ppropval;
 	ATTACHMENT_CONTENT *pattachment;
@@ -5212,30 +5211,16 @@ uint32_t common_util_calculate_message_size(
 		case PidTagChangeNumber:
 			continue;
 		case ID_TAG_BODY:
-			message_size += common_util_get_cid_string_length(
-			                *static_cast<uint64_t *>(ppropval->pvalue));
+		case ID_TAG_TRANSPORTMESSAGEHEADERS:
+			message_size += cu_get_cid_length(*static_cast<uint64_t *>(ppropval->pvalue), PT_UNICODE);
 			break;
 		case ID_TAG_BODY_STRING8:
-			tmp_len = common_util_get_cid_length(
-			          *static_cast<uint64_t *>(ppropval->pvalue));
-			if (tmp_len > 0)
-				/* Account for trailing U+0000 in file */
-				message_size += tmp_len - 1;
+		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
+			message_size += cu_get_cid_length(*static_cast<uint64_t *>(ppropval->pvalue), PT_STRING8);
 			break;
 		case ID_TAG_HTML:
 		case ID_TAG_RTFCOMPRESSED:
-			message_size += common_util_get_cid_length(
-			                *static_cast<uint64_t *>(ppropval->pvalue));
-			break;
-		case ID_TAG_TRANSPORTMESSAGEHEADERS:
-			message_size += common_util_get_cid_string_length(
-			                *static_cast<uint64_t *>(ppropval->pvalue));
-			break;
-		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
-			tmp_len = common_util_get_cid_length(
-			          *static_cast<uint64_t *>(ppropval->pvalue));
-			if (tmp_len > 0)
-				message_size += tmp_len - 1;
+			message_size += cu_get_cid_length(*static_cast<uint64_t *>(ppropval->pvalue), PT_BINARY);
 			break;
 		default:
 			message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
@@ -5262,8 +5247,7 @@ uint32_t common_util_calculate_message_size(
 					continue;
 				case ID_TAG_ATTACHDATABINARY:
 				case ID_TAG_ATTACHDATAOBJECT:
-					message_size += common_util_get_cid_length(
-					                *static_cast<uint64_t *>(ppropval->pvalue));
+					message_size += cu_get_cid_length(*static_cast<uint64_t *>(ppropval->pvalue), PT_BINARY);
 					break;
 				default:
 					message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
@@ -5292,8 +5276,7 @@ uint32_t common_util_calculate_attachment_size(
 			continue;
 		case ID_TAG_ATTACHDATABINARY:
 		case ID_TAG_ATTACHDATAOBJECT:
-			attachment_size += common_util_get_cid_length(
-			                   *static_cast<uint64_t *>(ppropval->pvalue));
+			attachment_size += cu_get_cid_length(*static_cast<uint64_t *>(ppropval->pvalue), PT_BINARY);
 			break;
 		default:
 			attachment_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
