@@ -9,6 +9,8 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/propval.hpp>
+#include <gromox/safeint.hpp>
+#include <gromox/util.hpp>
 #include "attachment_object.h"
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -20,6 +22,8 @@
 #include "rop_funcs.hpp"
 #include "rop_processor.h"
 #include "stream_object.h"
+
+using namespace gromox;
 
 uint32_t rop_getpropertyidsfromnames(uint8_t flags,
     const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids, LOGMAP *plogmap,
@@ -83,6 +87,43 @@ uint32_t rop_getnamesfrompropertyids(const PROPID_ARRAY *ppropids,
 	}
 }
 
+static uint16_t size_in_utf16(const char *u8str)
+{
+	uint32_t len = 0;
+	auto ptr = reinterpret_cast<const unsigned char *>(u8str);
+	auto clen = strlen(u8str);
+
+	while (*ptr != '\0' && len < clen) {
+		auto byte_num = utf8_byte_num[*ptr];
+		if (byte_num >= 1 && byte_num < 4)
+			len += 2;
+		else if (byte_num == 4)
+			len += 4; /* UTF-16 surrogate pair */
+		/* else: iconv emits nothing for broken bytes */
+		if (len >= 0x8000)
+			break;
+		ptr += byte_num;
+	}
+	return len;
+}
+
+/* Caller does not care for an exact count above 0x8000, so always break early. */
+static uint32_t propval_size_xfer(uint16_t type, void *val)
+{
+	if (type == PT_UNICODE)
+		return size_in_utf16(static_cast<char *>(val)) + 2;
+	else if (type != PT_MV_UNICODE)
+		return propval_size(type, val);
+	uint32_t len = 0;
+	auto sa = static_cast<STRING_ARRAY *>(val);
+	for (size_t i = 0; i < sa->count; ++i) {
+		len += size_in_utf16(sa->ppstr[i]);
+		if (len >= 0x8000)
+			break;
+	}
+	return len;
+}
+
 uint32_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
     const PROPTAG_ARRAY *pproptags, PROPERTY_ROW *prow, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
@@ -90,7 +131,6 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	int i;
 	uint32_t cpid;
 	int object_type;
-	uint32_t tmp_size;
 	uint16_t proptype;
 	uint32_t total_size;
 	TPROPVAL_ARRAY propvals;
@@ -144,8 +184,8 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	}
 	total_size = 0;
 	for (i=0; i<propvals.count; i++) {
-		tmp_size = propval_size(PROP_TYPE(propvals.ppropval[i].proptag),
-			propvals.ppropval[i].pvalue);
+		auto tmp_size = propval_size_xfer(PROP_TYPE(propvals.ppropval[i].proptag),
+		                propvals.ppropval[i].pvalue);
 		if (tmp_size >= 0x8000) {
 			propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
 			propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
@@ -165,7 +205,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 			case PT_OBJECT:
 			case PT_STRING8:
 			case PT_UNICODE:
-				if (propval_size(proptype, propvals.ppropval[i].pvalue) >= 0x1000) {
+				if (propval_size_xfer(proptype, propvals.ppropval[i].pvalue) >= 0x1000) {
 					propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
 					propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
 					if (NULL == propvals.ppropval[i].pvalue) {
