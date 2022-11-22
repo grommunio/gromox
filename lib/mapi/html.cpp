@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cctype>
 #include <cerrno>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -282,26 +283,6 @@ static BOOL html_init_writer(RTF_WRITER *pwriter)
 	return TRUE;
 } 
  
-static int html_utf8_byte_num(unsigned char ch)
-{
-	int byte_num = 0;
-
-	if (ch >= 0xFC && ch < 0xFE) {
-		byte_num = 6;
-	} else if (ch >= 0xF8) {
-		byte_num = 5;
-	} else if (ch >= 0xF0) {
-		byte_num = 4;
-	} else if (ch >= 0xE0) {
-		byte_num = 3;
-	} else if (ch >= 0xC0) {
-		byte_num = 2;
-	} else if (0 == (ch & 0x80)) {
-		byte_num = 1;
-	}
-	return byte_num;
-}
-
 static uint32_t html_utf8_to_wchar(const char *src, int length)
 {
 	size_t len;
@@ -318,14 +299,14 @@ static uint32_t html_utf8_to_wchar(const char *src, int length)
 
 static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 {
-	int len;
 	int tmp_len;
 	uint16_t wchar;
 	char tmp_buff[9];
 	const char *ptr = string, *pend = string + strlen(string);
 
 	while ('\0' != *ptr) {
-		len = html_utf8_byte_num(*ptr);
+		static_assert(UCHAR_MAX <= std::size(utf8_byte_num));
+		auto len = utf8_byte_num[static_cast<unsigned char>(*ptr)];
 		if (ptr + len > pend) {
 			return FALSE;
 		}
