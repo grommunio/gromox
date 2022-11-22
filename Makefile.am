@@ -235,6 +235,7 @@ gromox_eml2mt_LDADD = ${dl_LIBS} ${HX_LIBS} ${mysql_LIBS} libgromox_common.la li
 gromox_exm2eml_SOURCES = tools/exm2eml.cpp tools/genimport.cpp lib/svc_loader.cpp
 gromox_exm2eml_LDADD = ${dl_LIBS} ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 gromox_mailq_SOURCES = tools/mailq.cpp
+gromox_mailq_LDADD = libgromox_common.la
 gromox_mbop_SOURCES = tools/mbop_main.cpp
 gromox_mbop_LDADD = libgromox_exrpc.la
 gromox_mkmidb_SOURCES = tools/mkmidb.cpp tools/mkshared.cpp

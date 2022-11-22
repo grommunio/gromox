@@ -40,7 +40,7 @@ class wrapfd {
 	public:
 	wrapfd(int z) : m_fd{z} {}
 	wrapfd(wrapfd &&) noexcept = delete;
-	~wrapfd() { if (m_fd >= 0) ::close(m_fd); }
+	~wrapfd();
 	int get() const { return m_fd; }
 	int release() { int t = m_fd; m_fd = -1; return t; }
 	void close() { if (m_fd >= 0) ::close(m_fd); m_fd = -1; }
