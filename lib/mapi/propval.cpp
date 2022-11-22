@@ -435,7 +435,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_SYSTIME:
 		return sizeof(uint64_t);
 	case PT_STRING8:
-		return strlen(static_cast<char *>(pvalue)) + 1;
+		return strlen(static_cast<char *>(pvalue));
 	case PT_UNICODE:
 		return propval_utf16_len(static_cast<char *>(pvalue));
 	case PT_CLSID:
@@ -465,7 +465,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		length = 0;
 		auto sa = static_cast<STRING_ARRAY *>(pvalue);
 		for (size_t i = 0; i < sa->count; ++i)
-			length += strlen(sa->ppstr[i]) + 1;
+			length += strlen(sa->ppstr[i]);
 		return length;
 	}
 	case PT_MV_UNICODE: {

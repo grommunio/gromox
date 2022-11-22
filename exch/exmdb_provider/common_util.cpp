@@ -5171,8 +5171,9 @@ static uint32_t common_util_get_cid_string_length(uint64_t cid)
 		return 0;
 	buf[node_stat.st_size] = '\0';
 	/*
-	 * Skip over the UTF-8 codepoint counter (which is useless when
-	 * determining UTF-16 codepoint count).
+	 * Skip over the 4-byte UTF-8 codepoint counter (which is useless when
+	 * determining UTF-16 codepoint count). The trailing U+0000 is not
+	 * processed, and so is not included in the result.
 	 */
 	size_t ncp = 0;
 	return utf16_count_codepoints(buf + sizeof(uint32_t), &ncp) ? 2 * ncp : 0;
@@ -5218,6 +5219,7 @@ uint32_t common_util_calculate_message_size(
 			tmp_len = common_util_get_cid_length(
 			          *static_cast<uint64_t *>(ppropval->pvalue));
 			if (tmp_len > 0)
+				/* Account for trailing U+0000 in file */
 				message_size += tmp_len - 1;
 			break;
 		case ID_TAG_HTML:
