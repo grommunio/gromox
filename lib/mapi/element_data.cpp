@@ -281,40 +281,6 @@ void message_content_free(MESSAGE_CONTENT *pmsgctnt)
 	free(pmsgctnt);
 }
 
-uint32_t message_content_get_size(const MESSAGE_CONTENT *pmsgctnt)
-{
-	uint32_t message_size;
-	TAGGED_PROPVAL *ppropval;
-	ATTACHMENT_CONTENT *pattachment;
-	
-	message_size = 0;
-	for (size_t i = 0; i < pmsgctnt->proplist.count; ++i) {
-		ppropval = pmsgctnt->proplist.ppropval + i;
-		message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
-	}
-	if (NULL != pmsgctnt->children.prcpts) {
-		for (size_t i = 0; i < pmsgctnt->children.prcpts->count; ++i)
-			for (size_t j = 0; j < pmsgctnt->children.prcpts->pparray[i]->count; ++j) {
-				ppropval = pmsgctnt->children.prcpts->pparray[i]->ppropval + j;
-				message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
-			}
-	}
-	if (NULL != pmsgctnt->children.pattachments) {
-		for (size_t i = 0; i < pmsgctnt->children.pattachments->count; ++i) {
-			pattachment = pmsgctnt->children.pattachments->pplist[i];
-			for (size_t j = 0; j < pattachment->proplist.count; ++j) {
-				ppropval = pattachment->proplist.ppropval + j;
-				message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
-			}
-			if (NULL != pattachment->pembedded) {
-				message_size += message_content_get_size(
-								pattachment->pembedded);
-			}
-		}
-	}
-	return message_size;
-}
-
 MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *pmsgctnt)
 {
 	int i;
