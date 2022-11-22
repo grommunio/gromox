@@ -146,7 +146,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	for (i=0; i<propvals.count; i++) {
 		tmp_size = propval_size(PROP_TYPE(propvals.ppropval[i].proptag),
 			propvals.ppropval[i].pvalue);
-		if (tmp_size > 0x8000) {
+		if (tmp_size >= 0x8000) {
 			propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
 			propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
 			if (NULL == propvals.ppropval[i].pvalue) {
@@ -157,7 +157,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		}
 		total_size += tmp_size;
 	}
-	if (total_size > 0x7000) {
+	if (total_size >= 0x7000) {
 		for (i=0; i<propvals.count; i++) {
 			proptype = PROP_TYPE(propvals.ppropval[i].proptag);
 			switch (proptype) {
@@ -165,8 +165,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 			case PT_OBJECT:
 			case PT_STRING8:
 			case PT_UNICODE:
-				if (0x1000 < propval_size(proptype,
-					propvals.ppropval[i].pvalue)) {
+				if (propval_size(proptype, propvals.ppropval[i].pvalue) >= 0x1000) {
 					propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
 					propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
 					if (NULL == propvals.ppropval[i].pvalue) {
