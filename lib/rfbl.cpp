@@ -849,6 +849,15 @@ void mlog(unsigned int level, const char *fmt, ...)
 	va_end(args);
 }
 
+wrapfd::~wrapfd()
+{
+	if (m_fd < 0)
+		return;
+	int e = errno;
+	::close(m_fd);
+	errno = e;
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try
