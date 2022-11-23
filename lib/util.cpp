@@ -569,13 +569,16 @@ int wildcard_match(const char *data, const char *mask, BOOL icase)
   return (mask >= ma) ? NOMATCH : MATCH;   /* Start of both = match */
 }
 
+/**
+ * @length:	the number of characters to produce
+ */
 void randstring_k(char *buff, int length, const char *string)
 {	 
 	int i, key;
 	int string_len;
 	
 	if (length <= 0)
-		length = 1;
+		return;
 	string_len = strlen(string);
 	for (i=0; i<length; i++) {
 		key = rand() % string_len;
