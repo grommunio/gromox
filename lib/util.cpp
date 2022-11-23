@@ -482,7 +482,7 @@ static char crypt_salt[65]=
 const char *crypt_wrapper(const char *pw)
 {
 	char salt[21] = "$6$";
-	randstring_k(salt + 3, 16, crypt_salt);
+	randstring(salt + 3, 16, crypt_salt);
 	salt[19] = '$';
 	salt[20] = '\0';
 	auto ret = crypt(pw, salt);
@@ -569,28 +569,26 @@ int wildcard_match(const char *data, const char *mask, BOOL icase)
   return (mask >= ma) ? NOMATCH : MATCH;   /* Start of both = match */
 }
 
+static constexpr char randstr_pool[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
+
 /**
  * @length:	the number of characters to produce
  */
-void randstring_k(char *buff, int length, const char *string)
+void randstring(char *buff, int length, const char *string)
 {	 
 	int i, key;
 	int string_len;
 	
 	if (length <= 0)
 		return;
+	if (string == nullptr || *string == '\0')
+		string = randstr_pool;
 	string_len = strlen(string);
 	for (i=0; i<length; i++) {
 		key = rand() % string_len;
 		buff[i] = string[key];
 	}
 	buff[length] = '\0';
-}
-
-void randstring(char *b, int l)
-{
-	const char p[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
-	return randstring_k(b, l, p);
 }
 
 #define OK	(0)

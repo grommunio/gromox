@@ -315,7 +315,7 @@ ssize_t feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 	filename = tmpdir == nullptr ? "/tmp" : tmpdir;
 	auto pos = filename.length();
 	filename += "/XXXXXXXXXXXX.html";
-	randstring_k(&filename[pos+1], 12, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+	randstring(&filename[pos+1], 12, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
 	filename[pos+13] = '.';
 
 	std::unique_ptr<FILE, file_deleter> fp(fopen(filename.c_str(), "w"));
@@ -778,7 +778,7 @@ int open_tmpfile(const char *dir, std::string *fullname, unsigned int flags,
 		return -errno;
 #endif
 	char tn[17];
-	randstring_k(tn, 16, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+	randstring(tn, 16, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 	std::string tf;
 	if (fullname == nullptr)
 		fullname = &tf;
