@@ -109,7 +109,7 @@ void auto_response_reply(const char *user_home,
 		return;
 	}
 	if (fstat(fd, &node_stat) != 0 || node_stat.st_size == 0 ||
-	    static_cast<size_t>(node_stat.st_size) > sizeof(buff) - 1 ||
+	    static_cast<unsigned long long>(node_stat.st_size) > sizeof(buff) - 1 ||
 	    read(fd, buff, node_stat.st_size) != node_stat.st_size) {
 		close(fd);
 		return;

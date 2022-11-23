@@ -610,6 +610,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 		return mod_cache_exit_response(phttp, 500);
 	else if (!S_ISREG(node_stat.st_mode))
 		return mod_cache_exit_response(phttp, 403);
+	static_assert(UINT32_MAX <= SIZE_MAX);
 	struct stat sb;
 	if (mod_cache_get_others_field(&phttp->request.f_others,
 	    "If-None-Match", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
@@ -641,7 +642,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 		if (!stat4_eq(pitem->sb, node_stat)) {
 			g_cache_hash.erase(iter);
 		} else {
-			pitem->mblk = mmap(nullptr, static_cast<size_t>(node_stat.st_size),
+			pitem->mblk = mmap(nullptr, node_stat.st_size,
 			              PROT_READ, MAP_SHARED, fd.get(), 0);
 			if (pitem->mblk == MAP_FAILED) {
 				pcontext->range.clear();
@@ -661,7 +662,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	hhold.lock();
 	iter = g_cache_hash.find(tmp_path);
 	if (iter == g_cache_hash.end()) {
-		pitem->mblk = mmap(nullptr, static_cast<size_t>(node_stat.st_size),
+		pitem->mblk = mmap(nullptr, node_stat.st_size,
 		              PROT_READ, MAP_SHARED, fd.get(), 0);
 		if (pitem->mblk == MAP_FAILED) {
 			pcontext->range.clear();
