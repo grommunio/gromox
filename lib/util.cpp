@@ -574,20 +574,15 @@ static constexpr char randstr_pool[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN
 /**
  * @length:	the number of characters to produce
  */
-void randstring(char *buff, int length, const char *string)
+void randstring(char *buff, size_t length, const char *string)
 {	 
-	int i, key;
-	int string_len;
-	
 	if (length <= 0)
 		return;
 	if (string == nullptr || *string == '\0')
 		string = randstr_pool;
-	string_len = strlen(string);
-	for (i=0; i<length; i++) {
-		key = rand() % string_len;
-		buff[i] = string[key];
-	}
+	auto string_len = strlen(string);
+	for (size_t i = 0; i < length; ++i)
+		buff[i] = string[rand() % string_len];
 	buff[length] = '\0';
 }
 
