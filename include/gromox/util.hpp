@@ -110,7 +110,7 @@ char* search_string(const char *haystack, const char *needle,
     size_t haystacklen);
 extern GX_EXPORT const char *crypt_wrapper(const char *);
 int wildcard_match(const char *data, const char *mask, BOOL icase);
-extern GX_EXPORT void randstring(char *out, int len, const char *pool = nullptr);
+extern GX_EXPORT void randstring(char *out, size_t len, const char *pool = nullptr);
 extern int encode64(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern int encode64_ex(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern int decode64(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
