@@ -1471,7 +1471,38 @@ std::string cu_cid_path(const char *dir, uint64_t id) try
 	return {};
 }
 
+std::string cu_ciz_path(const char *dir, uint64_t id) try
+{
+	return cu_cid_path(dir, id) + ".zst";
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1248: ENOMEM");
+	return {};
+}
+
 static void *cu_get_object_text_v1(const char *, uint64_t, uint32_t, uint32_t, uint32_t);
+
+static void *cu_get_object_text_v2(const char *dir, uint64_t cid,
+    uint32_t proptag, uint32_t db_proptag, uint32_t cpid)
+{
+	BINARY dxbin{};
+	errno = gx_decompress_file(cu_ciz_path(dir, cid).c_str(), dxbin,
+	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
+	if (errno != 0)
+		return nullptr;
+
+	if (PROP_TYPE(proptag) == PT_BINARY || PROP_TYPE(proptag) == PT_OBJECT) {
+		auto bin = cu_alloc<BINARY>();
+		if (bin == nullptr)
+			return nullptr;
+		*bin = std::move(dxbin);
+		return bin;
+	}
+	if (proptag == db_proptag)
+		/* Requested proptag already matches the type found in the DB */
+		return dxbin.pv;
+	return common_util_convert_copy(PROP_TYPE(proptag) == PT_STRING8 ? TRUE : false,
+	       cpid, static_cast<char *>(dxbin.pv));
+}
 
 static void *cu_get_object_text(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
@@ -1511,6 +1542,15 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	uint64_t cid = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
 
+	/*
+	 * Try compressed variant first. Fail any serious errors.
+	 * Only when it was not found do check the uncompressed variant.
+	 */
+	auto blk = cu_get_object_text_v2(dir, cid, proptag, proptag1, cpid);
+	if (blk != nullptr)
+		return blk;
+	if (errno != ENOENT)
+		return nullptr;
 	return cu_get_object_text_v1(dir, cid, proptag, proptag1, cpid);
 }
 
@@ -5209,9 +5249,15 @@ BOOL common_util_indexing_sub_contents(
  */
 static uint32_t cu_get_cid_length(uint64_t cid, uint16_t proptype)
 {
+	auto dir = exmdb_server::get_dir();
+	auto size = gx_decompressed_size(cu_ciz_path(dir, cid).c_str());
+	if (size != SIZE_MAX)
+		return size <= UINT32_MAX ? size : UINT32_MAX;
+
 	struct stat node_stat;
 	if (stat(cu_cid_path(exmdb_server::get_dir(), cid).c_str(), &node_stat) != 0)
 		return 0;
+	/* Le old uncompressed format has a few kinks... */
 	if (proptype == PT_STRING8 && node_stat.st_size >= 1)
 		/* Discount trailing NUL byte in file */
 		--node_stat.st_size;
