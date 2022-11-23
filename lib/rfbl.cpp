@@ -778,7 +778,7 @@ int open_tmpfile(const char *dir, std::string *fullname, unsigned int flags,
 		return -errno;
 #endif
 	char tn[17];
-	randstring_k(tn, std::size(tn), "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+	randstring_k(tn, 16, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 	std::string tf;
 	if (fullname == nullptr)
 		fullname = &tf;

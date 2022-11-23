@@ -320,6 +320,9 @@ static int t_cmp_icaltime()
 
 int main()
 {
+	char buf[1];
+	randstring_k(buf + 1, 0, "A");
+
 	if (t_extpp() != 0)
 		return EXIT_FAILURE;
 	t_convert();
