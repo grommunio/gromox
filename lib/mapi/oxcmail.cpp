@@ -3901,7 +3901,7 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 	if (oxcmail_get_smtp_address(&pmsg->proplist, alloc, tags,
 	    address, arsizeof(address))) {
 		offset += gx_snprintf(field + offset, fdsize - offset, "<%s>", address);
-	} else {
+	} else if (offset > 0) {
 		/*
 		 * RFC 5322 §3.4's ABNF mandates an address at all times.
 		 * If we only emitted "Display Name", parsers can
