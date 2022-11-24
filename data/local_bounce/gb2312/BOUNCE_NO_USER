@@ -1,9 +1,10 @@
-Content-Type: text/plain; format=flowed
+Content-Type: text/plain; charset=utf-8
 Subject: =?utf-8?b?5oqV6YCS5aSx6LSl77yM5pS25Lu25Lq65LiN5a2Y5Zyo?=
 From: "=?utf-8?b?57O757uf5oqV6YCS5ZGY?="<postmaster@system>
 
 您好：
-  很抱歉通知您，您发送到“<rcpt>”的邮件无法被正确投递，因为该收件人并不存在！请验证该邮件地址是否真实有效，谢谢！
+  很抱歉通知您，您发送到“<rcpt>”的邮件无法被正确投递，
+因为该收件人并不存在！请验证该邮件地址是否真实有效。
 
 以下是您所发送邮件的一些基本信息：
     发送时间：    <time>

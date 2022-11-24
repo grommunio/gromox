@@ -1,9 +1,10 @@
-Content-Type: text/plain; format=flowed
+Content-Type: text/plain; charset=utf-8
 Subject: I have received your mail
 From: "Mail Daemon"<postmaster@system>
 
 Hi,
-  Thank you for sending me the mail. I have received it!(this is an auto-response)
+  Thank you for sending me the mail. I have received it.
+(this is an auto-response)
 
 Below is the original mail information:
    Time:    <time>

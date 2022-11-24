@@ -1,9 +1,11 @@
-Content-Type: text/plain; format=flowed
+Content-Type: text/plain; charset=utf-8
 Subject: =?utf-8?b?6YCB5L+h5qip6ZmQ44GM44Gq44GE44Gf44KB44CB44Oh44O844Or6YCB5L+h5aSx5pWX?=
 From: "=?utf-8?b?44K344K544OG44Og?="<postmaster@system>
 
 お知らせ：
-  メールリストにあるメンバーではない場合、"<rcpt>"のメールリストへの送信権限がありません。システム管理員から該当送信権限を取得して頂いたら、再度メール送信をお願いします。
+  メールリストにあるメンバーではない場合、"<rcpt>"のメールリストへの
+送信権限がありません。システム管理員から該当送信権限を取得して
+頂いたら、再度メール送信をお願いします。
 
 送信情報は下記となります：
     送信時間：    <time>

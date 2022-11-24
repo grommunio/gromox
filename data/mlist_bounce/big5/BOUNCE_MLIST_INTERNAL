@@ -1,9 +1,11 @@
-Content-Type: text/plain; format=flowed
+Content-Type: text/plain; charset=utf-8
 Subject: =?utf-8?b?5oqV6YGe5aSx5pWX77yM5rKS5pyJ6Laz5aSg55qE5qyK6ZmQ?=
 From: "=?utf-8?b?57O757Wx5oqV6YGe5ZOh?="<postmaster@system>
 
 您好：
-  很抱歉通知您，您沒有足夠的權限向“<rcpt>”這個郵件列表發送郵件，僅列表內成員才可向該列表發送郵件！請聯系管理員並取得相應的權限後再嘗試發送，謝謝！
+  很抱歉通知您，您沒有足夠的權限向“<rcpt>”這個郵件列表發送郵件，
+僅列表內成員才可向該列表發送郵件！
+請聯系管理員並取得相應的權限後再嘗試發送。
 
 以下是您所發送郵件的一些基本信息：
     發送時間：    <time>

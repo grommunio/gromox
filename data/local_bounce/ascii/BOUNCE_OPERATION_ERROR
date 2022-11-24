@@ -1,9 +1,11 @@
-Content-Type: text/plain; format=flowed
+Content-Type: text/plain; charset=utf-8
 Subject: Delivery failure, mail system error!
 From: "Mail Daemon"<postmaster@system>
 
 Hi,
-  I am sorry to tell you that some error occurs in our mail system, your message to "<rcpt>" cannot be delivered, please contact our mail system administrator to settle this problem. Thank you!
+  I am sorry to tell you that some error occurs in our mail system,
+your message to "<rcpt>" cannot be delivered, please contact our mail
+system administrator to settle this problem.
 
 Below is the original mail information:
    Time:    <time>
