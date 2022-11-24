@@ -1,9 +1,11 @@
-Content-Type: text/plain; format=flowed
+Content-Type: text/plain; charset=utf-8
 Subject: Delivery failure, privilege not enough
 From: "Mail Daemon"<postmaster@system>
 
 Hi,
-  You have not enough privilege to send mail to mail list <rcpt>, this mail list can only accept mails come from specified senders. please contact the administrator for authorization. Thank you!
+  You have not enough privilege to send mail to mail list <rcpt>,
+this mail list can only accept mails come from specified senders.
+please contact the administrator for authorization.
 
 Below is the original mail information:
    Time:    <time>

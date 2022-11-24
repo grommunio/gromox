@@ -1,9 +1,11 @@
-Content-Type: text/plain; format=flowed
+Content-Type: text/plain; charset=utf-8
 Subject: Delivery failure, user doesn't exist!
 From: "Mail Daemon"<postmaster@system>
 
 Hi,
-  I am sorry to tell you that that the address "<rcpt>" does not exist. Please check whether the addess is rigthly composed and try it again. Thank you!
+  I am sorry to tell you that that the address "<rcpt>" does not
+exist. Please check whether the addess is rigthly composed and try it
+again.
 
 Below is the original mail information:
    Time:    <time>

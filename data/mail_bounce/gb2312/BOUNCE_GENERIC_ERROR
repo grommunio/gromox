@@ -1,9 +1,10 @@
-Content-Type: text/plain; format=flowed
+Content-Type: text/plain; charset=utf-8
 Subject: =?utf-8?b?5oqV6YCS5aSx6LSl77yM57O757uf5Zug5Li65p+Q5Lqb5Y6f5Zug5ouS57ud5oKo5LqG55qE6YKu5Lu2?=
 From: "=?utf-8?b?57O757uf5oqV6YCS5ZGY?="<postmaster@system>
 
 您好：
-  很抱歉通知您，您发送到“<rcpt>”的邮件无法被正确投递，系统因为某些原因拒绝您了的邮件！
+  很抱歉通知您，您发送到“<rcpt>”的邮件无法被正确投递，
+系统因为某些原因拒绝您了的邮件！
 
 以下是您所发送邮件的一些基本信息：
     发送时间：    <time>
