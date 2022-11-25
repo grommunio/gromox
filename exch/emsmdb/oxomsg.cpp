@@ -316,7 +316,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		repr_grant = oxomsg_get_perm(account, username);
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
-		auto ret = pass_scheduling("I-2081", account, username, *pmessage,
+		auto ret = pass_scheduling("E-2081", account, username, *pmessage,
 		           tmp_propvals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
 			return ret;
@@ -636,7 +636,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		TPROPVAL_ARRAY cls_vals{};
 		if (pmessage->get_properties(0, &cls_tags, &cls_vals) != 0)
 			/* ignore, since we can test for cls_vals fill */;
-		auto ret = pass_scheduling("I-2080", account, username, *pmessage,
+		auto ret = pass_scheduling("E-2080", account, username, *pmessage,
 		           cls_vals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
 			return ret;
