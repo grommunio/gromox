@@ -1,3 +1,12 @@
+Development 1.35.10
+===================
+
+Enhancements:
+
+* exmdb_provider: on-disk content file compression, controllable using
+  the "exmdb_file_compression" config directive
+
+
 1.35 (2022-11-25)
 =================
 

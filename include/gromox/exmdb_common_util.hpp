@@ -180,5 +180,6 @@ uint32_t common_util_calculate_attachment_size(
 extern const char *exmdb_rpc_idtoname(exmdb_callid);
 
 extern unsigned int g_max_rule_num, g_max_extrule_num;
+extern int g_cid_compression;
 extern thread_local unsigned int g_inside_flush_instance;
 extern thread_local sqlite3 *g_sqlite_for_oxcmail;

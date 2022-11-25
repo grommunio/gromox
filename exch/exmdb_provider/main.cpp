@@ -173,6 +173,23 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		       b_async ? "ON" : "OFF", b_wal ? "WAL" : "DELETE",
 		       mmap_size == 0 ? "disabled" : mmap_size_s);
 		
+		auto str = pconfig->get_value("exmdb_file_compression");
+		if (str == nullptr || !parse_bool(str))
+			g_cid_compression = -1;
+		else if (strcasecmp(str, "yes") == 0 ||
+		    strcasecmp(str, "zstd") == 0)
+			g_cid_compression = 0;
+		else if (strncasecmp(str, "zstd-", 5) == 0)
+			g_cid_compression = strtoul(str + 5, nullptr, 0);
+		else
+			mlog(LV_WARN, "Compression scheme \"%s\" not understood, deactivating", str);
+		if (g_cid_compression < 0)
+			mlog(LV_INFO, "Content File Compression: off");
+		else if (g_cid_compression == 0)
+			mlog(LV_INFO, "Content File Compression: default/zstd-6"); /* cf. rfbl.cpp */
+		else
+			mlog(LV_INFO, "Content File Compression: zstd-%d", g_cid_compression);
+
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
 		bounce_producer_init(separator);
 		db_engine_init(table_size, cache_interval,
