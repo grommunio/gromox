@@ -2618,7 +2618,7 @@ static BOOL common_util_set_message_subject(
 	return TRUE;
 }
 
-static BOOL cu_set_msg_body_v1(sqlite3 *, uint64_t, const char *, uint64_t, uint32_t, void *);
+static BOOL cu_set_msg_body_v1(sqlite3 *, uint64_t, const char *, uint64_t, uint32_t, const char *);
 
 static BOOL common_util_set_message_body(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
@@ -2664,11 +2664,11 @@ static BOOL common_util_set_message_body(
 		return FALSE;
 
 	return cu_set_msg_body_v1(psqlite, message_id, dir, cid, proptag,
-	       pvalue);
+	       static_cast<const char *>(pvalue));
 }
 
 static BOOL cu_set_msg_body_v1(sqlite3 *psqlite, uint64_t message_id,
-    const char *dir, uint64_t cid, uint32_t proptag, void *pvalue)
+    const char *dir, uint64_t cid, uint32_t proptag, const char *value)
 {
 	auto path = cu_cid_path(dir, cid);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
@@ -2686,13 +2686,13 @@ static BOOL cu_set_msg_body_v1(sqlite3 *psqlite, uint64_t message_id,
 		 * Gromox < 1.14 uses this count for computation of
 		 * PR_MESSAGE_SIZE. Only needs to be approximate.
 		 */
-		uint32_t len = cpu_to_le32(std::min(strlen(reinterpret_cast<char *>(pvalue)) / 2,
+		uint32_t len = cpu_to_le32(std::min(strlen(value) / 2,
 		               static_cast<size_t>(UINT32_MAX)));
 		if (write(fd.get(), &len, sizeof(len)) != sizeof(len))
 			return FALSE;
 	}
-	auto len = strlen(static_cast<char *>(pvalue));
-	auto ret = write(fd.get(), pvalue, len);
+	auto len = strlen(value);
+	auto ret = write(fd.get(), value, len);
 	if (ret < 0 || static_cast<size_t>(ret) != len)
 		return FALSE;
 	/* Give a NUL byte to appease old Gromox < 0.21. */
