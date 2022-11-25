@@ -55,6 +55,7 @@ thread_local unsigned int g_inside_flush_instance;
 thread_local sqlite3 *g_sqlite_for_oxcmail;
 static thread_local prepared_statements *g_opt_key;
 unsigned int g_max_rule_num, g_max_extrule_num;
+int g_cid_compression = -1; /* disabled(-1), default_level(0), specific_level(n) */
 static std::atomic<unsigned int> g_sequence_id;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
@@ -2620,6 +2621,28 @@ static BOOL common_util_set_message_subject(
 
 static BOOL cu_set_msg_body_v1(sqlite3 *, uint64_t, const char *, uint64_t, uint32_t, const char *);
 
+static BOOL cu_set_msg_body_v2(sqlite3 *psqlite, uint64_t message_id,
+    const char *dir, uint64_t cid, uint32_t proptag, const char *value)
+{
+	auto path = cu_ciz_path(dir, cid);
+	auto remove_file = make_scope_exit([&]() {
+		if (::remove(path.c_str()) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1236: remove %s: %s",
+			        path.c_str(), strerror(errno));
+	});
+	auto ret = gx_compress_tofile(value, path.c_str(), g_cid_compression);
+	if (ret != 0) {
+		mlog(LV_ERR, "E-1235: compress_tofile %s: %s\n",
+		     path.c_str(), strerror(ret));
+		return false;
+	}
+	if (!cu_update_object_cid(psqlite, db_table::msg_props, message_id,
+	    proptag, cid))
+		return TRUE;
+	remove_file.release();
+	return TRUE;
+}
+
 static BOOL common_util_set_message_body(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	const TAGGED_PROPVAL *ppropval)
@@ -2662,7 +2685,9 @@ static BOOL common_util_set_message_body(
 	uint64_t cid = 0;
 	if (!common_util_allocate_cid(psqlite, &cid))
 		return FALSE;
-
+	if (g_cid_compression >= 0)
+		return cu_set_msg_body_v2(psqlite, message_id, dir, cid, proptag,
+		       static_cast<const char *>(pvalue));
 	return cu_set_msg_body_v1(psqlite, message_id, dir, cid, proptag,
 	       static_cast<const char *>(pvalue));
 }
@@ -2706,6 +2731,32 @@ static BOOL cu_set_msg_body_v1(sqlite3 *psqlite, uint64_t message_id,
 
 static BOOL cu_set_obj_cid_val_v1(sqlite3 *, db_table, uint64_t, const char *, uint64_t, const TAGGED_PROPVAL *);
 
+static BOOL cu_set_obj_cid_val_v2(sqlite3 *psqlite, db_table table_type,
+    uint64_t message_id, const char *dir, uint64_t cid,
+    const TAGGED_PROPVAL *prop)
+{
+	auto path = cu_ciz_path(dir, cid);
+	auto remove_file = make_scope_exit([&]() {
+		if (::remove(path.c_str()) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1237: remove %s: %s",
+			        path.c_str(), strerror(errno));
+	});
+	/*
+	 * zstd already has some form of uncompressability detection
+	 * (huf_compress.c), so we do not have to implement our own. Besides,
+	 * even if the overall entropy for a file is high, maybe there still is
+	 * a block where it's comparatively low.
+	 */
+	auto &bv = *static_cast<const BINARY *>(prop->pvalue);
+	auto ret = gx_compress_tofile(std::string_view(bv.pc, bv.cb),
+	           path.c_str(), g_cid_compression);
+	if (ret != 0 || !cu_update_object_cid(psqlite, table_type, message_id,
+	    prop->proptag, cid))
+		return false;
+	remove_file.release();
+	return TRUE;
+}
+
 static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
     uint64_t message_id, const TAGGED_PROPVAL *ppropval)
 {
@@ -2726,6 +2777,9 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
 	uint64_t cid = 0;
 	if (!common_util_allocate_cid(psqlite, &cid))
 		return FALSE;
+	if (g_cid_compression >= 0)
+		return cu_set_obj_cid_val_v2(psqlite, table_type, message_id,
+		       dir, cid, ppropval);
 	return cu_set_obj_cid_val_v1(psqlite, table_type, message_id, dir, cid,
 	       ppropval);
 }
