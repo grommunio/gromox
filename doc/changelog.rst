@@ -1,3 +1,24 @@
+Development 1.34.26
+===================
+
+Enhancements:
+
+* exmdb_provider: mlists that were granted the StoreOwner permission bit
+  through an ACL now propagate it to the individuals in the mlist.
+
+Fixes:
+
+* imap: the response to the IDLE command had been malformed
+* emsmdb: On outgoing mails, the Return-Receipt-To (Read Receipt Request)
+  header was malformed. On the incoming side, this would then be
+  translated back to invalid@invalid.
+
+Changes:
+
+* http: only show HTTP context log messages when the "g_http_debug"
+  config directive is set to a non-zero value
+
+
 Gromox 1.34 (2022-11-21)
 ========================
 
