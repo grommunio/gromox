@@ -32,6 +32,9 @@
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
+#if defined(HAVE_SYS_XATTR_H)
+#	include <sys/xattr.h>
+#endif
 #include <json/reader.h>
 #include <json/writer.h>
 #include <libHX/ctype_helper.h>
@@ -1018,6 +1021,10 @@ errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile, uint8_t 
 	if (complvl == 0)
 		/* Our default is even more important than zstd's own default */
 		complvl = 6;
+#ifdef HAVE_FSETXATTR
+	if (fsetxattr(fd.get(), "btrfs.compression", "none", 4, XATTR_CREATE) != 0)
+		/* ignore */;
+#endif
 
 	auto strm = ZSTD_createCStream();
 	auto cl_0 = make_scope_exit([&]() { ZSTD_freeCStream(strm); });
