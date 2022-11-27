@@ -1,10 +1,11 @@
-Development 1.35.10
+Development 1.35.14
 ===================
 
 Enhancements:
 
 * exmdb_provider: on-disk content file compression, controllable using
-  the "exmdb_file_compression" config directive
+  the "exmdb_file_compression" config directive (affects only new files)
+* tools: new utility `gromox-compress` to compress existing content files
 
 
 1.35 (2022-11-25)

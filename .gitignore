@@ -33,6 +33,7 @@ Makefile.in
 /event
 /freebusy
 /gromox-abktconv
+/gromox-compress
 /gromox-dbop
 /gromox-dscli
 /gromox-e2ghelper

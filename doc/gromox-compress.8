@@ -1,0 +1,43 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2022 grommunio GmbH
+.TH gromox\-compress 8 "" "Gromox" "Gromox admin reference"
+.SH Name
+gromox\-compress \(em Utility to recompress Gromox content files
+.SH Synopsis
+\fBgromox\-compress\fP \fB\-\-cid\fP {\fIdirectory\fP|\fIfile\fP...}
+.SH Description
+gromox\-compress compresses content files (attachments, bodytext) in an
+existing mailbox after the fact. This utility is useful because the
+"exmdb_file_compression" config directive only controls compression in the
+groupware servers for newly created content files.
+.SH Options
+.TP
+\fB\-\-cid\fP
+Treat all arguments given on the command-line as CID directories, and process
+them appropriately.
+.TP
+\fB\-n\fP
+Dry run. In essence, this only builds the file lists and runs no compressors.
+.TP
+\fB\-z\fP \fIlevel\fP
+Compression level to use. Defaults to 6.
+.SH Examples
+Compress some:
+.PP
+gromox\-compress \-\-cid /var/lib/gromox/user/0/1/cid
+/var/lib/gromox/user/0/2/cid
+.PP
+Or string that further to compress cid directories of all mailboxes:
+.PP
+find /var/lib/gromox/{user,domain} -type d -name cid -exec gromox-compress
+\-\-cid {} +
+.SH Formats
+.IP \(bu 4
+cid/[0-9]+: content file, with proptag-dependent header and trailer
+.IP \(bu 4
+cid/[0-9]+.v1z: content file, with proptag-dependent header and trailer,
+compressed
+.IP \(bu 4
+cid/[0-9]+.zst: content file, headerless, compressed
+.SH See also
+\fBgromox\fP(7), \fBexmdb_provider\fP(4gx)
