@@ -116,7 +116,12 @@ static uint64_t delete_unused_files(const std::string &cid_dir,
 	while ((de = readdir(dh.get())) != nullptr) {
 		if (*de->d_name == '.')
 			continue;
-		if (std::binary_search(used_ids.begin(), used_ids.end(), de->d_name)) {
+		std::string defix = de->d_name;
+		if (defix.size() > 4 &&
+		    (defix.compare(defix.size() - 4, 4, ".zst") == 0 ||
+		    defix.compare(defix.size() - 4, 4, ".v1z") == 0))
+			defix.erase(defix.size() - 4);
+		if (std::binary_search(used_ids.begin(), used_ids.end(), defix)) {
 			if (g_verbose)
 				printf("%s: still in use\n", de->d_name);
 			continue;
