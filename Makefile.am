@@ -70,7 +70,7 @@ noinst_DATA += \
 	libgxs_ldap_adaptor.ldd \
 	libgxs_mysql_adaptor.ldd \
 	libgxs_user_filter.ldd
-sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
@@ -222,6 +222,8 @@ event_SOURCES = tools/event.cpp
 event_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 gromox_abktconv_SOURCES = tools/abktconv.cpp
 gromox_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
+gromox_compress_SOURCES = tools/compress.cpp
+gromox_compress_LDADD = ${HX_LIBS} libgromox_common.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp tools/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
 gromox_dscli_SOURCES = tools/dscli.cpp
