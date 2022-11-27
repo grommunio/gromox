@@ -33,6 +33,7 @@ Makefile.in
 /event
 /freebusy
 /gromox-abktconv
+/gromox-compress
 /gromox-dbop
 /gromox-dscli
 /gromox-e2ghelper
@@ -66,6 +67,7 @@ Makefile.in
 /exch/exmdb_provider/exmdb_rpc.cpp
 /system/*.service
 /tests/bodyconv
+/tests/compress
 /tests/cryptest
 /tests/jsontest
 /tests/lzxpress

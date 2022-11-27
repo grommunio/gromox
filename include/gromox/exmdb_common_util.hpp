@@ -116,7 +116,7 @@ BOOL common_util_check_message_associated(
 BOOL common_util_get_message_flags(sqlite3 *psqlite,
 	uint64_t message_id, BOOL b_native,
 	uint32_t **ppmessage_flags);
-extern std::string cu_cid_path(const char *, uint64_t);
+extern std::string cu_cid_path(const char *, uint64_t, unsigned int type);
 void common_util_set_message_read(sqlite3 *psqlite,
 	uint64_t message_id, uint8_t is_read);
 extern BOOL common_util_addressbook_entryid_to_username(const BINARY *eid, char *username, size_t);
@@ -179,5 +179,6 @@ uint32_t common_util_calculate_attachment_size(
 extern const char *exmdb_rpc_idtoname(exmdb_callid);
 
 extern unsigned int g_max_rule_num, g_max_extrule_num;
+extern int g_cid_compression;
 extern thread_local unsigned int g_inside_flush_instance;
 extern thread_local sqlite3 *g_sqlite_for_oxcmail;

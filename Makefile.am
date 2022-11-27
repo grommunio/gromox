@@ -70,7 +70,7 @@ noinst_DATA += \
 	libgxs_ldap_adaptor.ldd \
 	libgxs_mysql_adaptor.ldd \
 	libgxs_user_filter.ldd
-sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
@@ -84,9 +84,9 @@ BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.
 CLEANFILES = ${BUILT_SOURCES} ${noinst_DATA}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
-libgromox_common_la_LIBADD = ${crypt_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${tinyxml_LIBS} ${vmime_LIBS}
+libgromox_common_la_LIBADD = ${crypt_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${tinyxml_LIBS} ${vmime_LIBS} ${zstd_LIBS}
 libgromox_cplus_la_SOURCES = lib/cryptoutil.cpp lib/dbhelper.cpp lib/fileio.cpp lib/fopen.cpp lib/oxoabkt.cpp lib/textmaps.cpp
-libgromox_cplus_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${ssl_LIBS} ${zstd_LIBS} libgromox_common.la
+libgromox_cplus_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${ssl_LIBS} libgromox_common.la
 libgromox_dbop_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_dbop_la_SOURCES = lib/dbop_mysql.cpp lib/dbop_sqlite.cpp
 libgromox_dbop_la_LIBADD = ${fmt_LIBS} ${mysql_LIBS} ${sqlite_LIBS} libgromox_cplus.la
@@ -222,6 +222,8 @@ event_SOURCES = tools/event.cpp
 event_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 gromox_abktconv_SOURCES = tools/abktconv.cpp
 gromox_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
+gromox_compress_SOURCES = tools/compress.cpp
+gromox_compress_LDADD = ${HX_LIBS} libgromox_common.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp tools/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
 gromox_dscli_SOURCES = tools/dscli.cpp
@@ -266,10 +268,12 @@ mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
 mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
-noinst_PROGRAMS = tests/bodyconv tests/cryptest tests/jsontest tests/lzxpress tests/utiltest tests/vcard tests/zendfake tools/tzdump
+noinst_PROGRAMS = tests/bodyconv tests/compress tests/cryptest tests/jsontest tests/lzxpress tests/utiltest tests/vcard tests/zendfake tools/tzdump
 TESTS = tests/utiltest
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
+tests_compress_SOURCES = tests/compress.cpp
+tests_compress_LDADD = libgromox_common.la
 tests_cryptest_SOURCES = tests/cryptest.cpp
 tests_cryptest_LDADD = libgromox_common.la
 tests_jsontest_SOURCES = tests/jsontest.cpp

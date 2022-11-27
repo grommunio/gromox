@@ -55,6 +55,7 @@ thread_local unsigned int g_inside_flush_instance;
 thread_local sqlite3 *g_sqlite_for_oxcmail;
 static thread_local prepared_statements *g_opt_key;
 unsigned int g_max_rule_num, g_max_extrule_num;
+int g_cid_compression = -1; /* disabled(-1), default_level(0), specific_level(n) */
 static std::atomic<unsigned int> g_sequence_id;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
@@ -1461,21 +1462,54 @@ static BOOL common_util_get_message_display_recipients(
 	return *ppvalue != nullptr ? TRUE : false;
 }
 
-std::string cu_cid_path(const char *dir, uint64_t id) try
+std::string cu_cid_path(const char *dir, uint64_t id, unsigned int type) try
 {
 	if (dir == nullptr)
 		dir = exmdb_server::get_dir();
-	return dir + "/cid/"s + std::to_string(id);
+	auto path = dir + "/cid/"s + std::to_string(id);
+	if (type == 2)
+		path += ".zst";
+	else if (type == 1)
+		path += ".v1z";
+	return path;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1608: ENOMEM");
 	return {};
+}
+
+static void *cu_get_object_text_v0(const char *, uint64_t, uint32_t, uint32_t, uint32_t);
+
+static void *cu_get_object_text_vx(const char *dir, uint64_t cid,
+    uint32_t proptag, uint32_t db_proptag, uint32_t cpid, unsigned int type)
+{
+	BINARY dxbin{};
+	errno = gx_decompress_file(cu_cid_path(dir, cid, type).c_str(), dxbin,
+	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
+	if (errno != 0)
+		return nullptr;
+
+	if (PROP_TYPE(proptag) == PT_BINARY || PROP_TYPE(proptag) == PT_OBJECT) {
+		auto bin = cu_alloc<BINARY>();
+		if (bin == nullptr)
+			return nullptr;
+		*bin = std::move(dxbin);
+		return bin;
+	} else if (type == 1 && PROP_TYPE(db_proptag) == PT_UNICODE) {
+		if (dxbin.cb < 4)
+			return nullptr;
+		dxbin.pc += 4;
+	}
+	if (proptag == db_proptag)
+		/* Requested proptag already matches the type found in the DB */
+		return dxbin.pv;
+	return common_util_convert_copy(PROP_TYPE(proptag) == PT_STRING8 ? TRUE : false,
+	       cpid, dxbin.pc);
 }
 
 static void *cu_get_object_text(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
 	char sql_string[128];
-	struct stat node_stat;
 	
 	auto dir = exmdb_server::get_dir();
 	if (dir == nullptr)
@@ -1509,7 +1543,29 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	uint32_t proptag1 = sqlite3_column_int64(pstmt, 0);
 	uint64_t cid = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
-	wrapfd fd = open(cu_cid_path(dir, cid).c_str(), O_RDONLY);
+
+	/*
+	 * Try compressed variant first. Fail any serious errors.
+	 * Only when it was not found do check the uncompressed variant.
+	 */
+	auto blk = cu_get_object_text_vx(dir, cid, proptag, proptag1, cpid, 2);
+	if (blk != nullptr)
+		return blk;
+	if (errno != ENOENT)
+		return nullptr;
+	blk = cu_get_object_text_vx(dir, cid, proptag, proptag1, cpid, 1);
+	if (blk != nullptr)
+		return blk;
+	if (errno != ENOENT)
+		return nullptr;
+	return cu_get_object_text_v0(dir, cid, proptag, proptag1, cpid);
+}
+
+static void *cu_get_object_text_v0(const char *dir, uint64_t cid,
+    uint32_t proptag, uint32_t proptag1, uint32_t cpid)
+{
+	wrapfd fd = open(cu_cid_path(dir, cid, 0).c_str(), O_RDONLY);
+	struct stat node_stat;
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
 
@@ -1536,9 +1592,10 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	if (PROP_TYPE(proptag1) == PT_UNICODE)
 		pbuff += sizeof(uint32_t);
 	if (proptag == proptag1)
+		/* Requested proptag already matches the type found in the DB */
 		return pbuff;
 	return common_util_convert_copy(PROP_TYPE(proptag) == PT_STRING8 ? TRUE : false,
-	       cpid, static_cast<char *>(pbuff));
+	       cpid, pbuff);
 }
 
 BOOL cu_get_property(db_table table_type, uint64_t id,
@@ -2568,6 +2625,30 @@ static BOOL common_util_set_message_subject(
 	return TRUE;
 }
 
+static BOOL cu_set_msg_body_v0(sqlite3 *, uint64_t, const char *, uint64_t, uint32_t, const char *);
+
+static BOOL cu_set_msg_body_v2(sqlite3 *psqlite, uint64_t message_id,
+    const char *dir, uint64_t cid, uint32_t proptag, const char *value)
+{
+	auto path = cu_cid_path(dir, cid, 2);
+	auto remove_file = make_scope_exit([&]() {
+		if (::remove(path.c_str()) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1236: remove %s: %s",
+			        path.c_str(), strerror(errno));
+	});
+	auto ret = gx_compress_tofile(value, path.c_str(), g_cid_compression);
+	if (ret != 0) {
+		mlog(LV_ERR, "E-1235: compress_tofile %s: %s\n",
+		     path.c_str(), strerror(ret));
+		return false;
+	}
+	if (!cu_update_object_cid(psqlite, db_table::msg_props, message_id,
+	    proptag, cid))
+		return TRUE;
+	remove_file.release();
+	return TRUE;
+}
+
 static BOOL common_util_set_message_body(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	const TAGGED_PROPVAL *ppropval)
@@ -2610,7 +2691,17 @@ static BOOL common_util_set_message_body(
 	uint64_t cid = 0;
 	if (!common_util_allocate_cid(psqlite, &cid))
 		return FALSE;
-	auto path = cu_cid_path(dir, cid);
+	if (g_cid_compression >= 0)
+		return cu_set_msg_body_v2(psqlite, message_id, dir, cid, proptag,
+		       static_cast<const char *>(pvalue));
+	return cu_set_msg_body_v0(psqlite, message_id, dir, cid, proptag,
+	       static_cast<const char *>(pvalue));
+}
+
+static BOOL cu_set_msg_body_v0(sqlite3 *psqlite, uint64_t message_id,
+    const char *dir, uint64_t cid, uint32_t proptag, const char *value)
+{
+	auto path = cu_cid_path(dir, cid, 0);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-1627: open %s O_CREAT: %s", path.c_str(), strerror(errno));
@@ -2626,13 +2717,13 @@ static BOOL common_util_set_message_body(
 		 * Gromox < 1.14 uses this count for computation of
 		 * PR_MESSAGE_SIZE. Only needs to be approximate.
 		 */
-		uint32_t len = cpu_to_le32(std::min(strlen(reinterpret_cast<char *>(pvalue)) / 2,
+		uint32_t len = cpu_to_le32(std::min(strlen(value) / 2,
 		               static_cast<size_t>(UINT32_MAX)));
 		if (write(fd.get(), &len, sizeof(len)) != sizeof(len))
 			return FALSE;
 	}
-	auto len = strlen(static_cast<char *>(pvalue));
-	auto ret = write(fd.get(), pvalue, len);
+	auto len = strlen(value);
+	auto ret = write(fd.get(), value, len);
 	if (ret < 0 || static_cast<size_t>(ret) != len)
 		return FALSE;
 	/* Give a NUL byte to appease old Gromox < 0.21. */
@@ -2640,6 +2731,34 @@ static BOOL common_util_set_message_body(
 		return false;
 	if (!cu_update_object_cid(psqlite, db_table::msg_props, message_id, proptag, cid))
 		return TRUE;
+	remove_file.release();
+	return TRUE;
+}
+
+static BOOL cu_set_obj_cid_val_v0(sqlite3 *, db_table, uint64_t, const char *, uint64_t, const TAGGED_PROPVAL *);
+
+static BOOL cu_set_obj_cid_val_v2(sqlite3 *psqlite, db_table table_type,
+    uint64_t message_id, const char *dir, uint64_t cid,
+    const TAGGED_PROPVAL *prop)
+{
+	auto path = cu_cid_path(dir, cid, 2);
+	auto remove_file = make_scope_exit([&]() {
+		if (::remove(path.c_str()) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1237: remove %s: %s",
+			        path.c_str(), strerror(errno));
+	});
+	/*
+	 * zstd already has some form of uncompressability detection
+	 * (huf_compress.c), so we do not have to implement our own. Besides,
+	 * even if the overall entropy for a file is high, maybe there still is
+	 * a block where it's comparatively low.
+	 */
+	auto &bv = *static_cast<const BINARY *>(prop->pvalue);
+	auto ret = gx_compress_tofile(std::string_view(bv.pc, bv.cb),
+	           path.c_str(), g_cid_compression);
+	if (ret != 0 || !cu_update_object_cid(psqlite, table_type, message_id,
+	    prop->proptag, cid))
+		return false;
 	remove_file.release();
 	return TRUE;
 }
@@ -2664,7 +2783,18 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
 	uint64_t cid = 0;
 	if (!common_util_allocate_cid(psqlite, &cid))
 		return FALSE;
-	auto path = cu_cid_path(dir, cid);
+	if (g_cid_compression >= 0)
+		return cu_set_obj_cid_val_v2(psqlite, table_type, message_id,
+		       dir, cid, ppropval);
+	return cu_set_obj_cid_val_v0(psqlite, table_type, message_id, dir, cid,
+	       ppropval);
+}
+
+static BOOL cu_set_obj_cid_val_v0(sqlite3 *psqlite, db_table table_type,
+    uint64_t message_id, const char *dir, uint64_t cid,
+    const TAGGED_PROPVAL *ppropval)
+{
+	auto path = cu_cid_path(dir, cid, 0);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-1628: open %s O_CREAT: %s", path.c_str(), strerror(errno));
@@ -5179,9 +5309,16 @@ BOOL common_util_indexing_sub_contents(
  */
 static uint32_t cu_get_cid_length(uint64_t cid, uint16_t proptype)
 {
+	auto dir = exmdb_server::get_dir();
+	auto size = gx_decompressed_size(cu_cid_path(dir, cid, 2).c_str());
+	if (size != SIZE_MAX)
+		return size <= UINT32_MAX ? size : UINT32_MAX;
+
 	struct stat node_stat;
-	if (stat(cu_cid_path(exmdb_server::get_dir(), cid).c_str(), &node_stat) != 0)
+	if (stat(cu_cid_path(exmdb_server::get_dir(), cid, 0).c_str(),
+	    &node_stat) != 0)
 		return 0;
+	/* Le old uncompressed format has a few kinks... */
 	if (proptype == PT_STRING8 && node_stat.st_size >= 1)
 		/* Discount trailing NUL byte in file */
 		--node_stat.st_size;
