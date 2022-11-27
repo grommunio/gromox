@@ -686,7 +686,7 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag) try
 		return fake_read_cid(g_dbg_synth_content, tag, cid, plen);
 
 	BINARY dxbin;
-	errno = gx_decompress_file(cu_ciz_path(nullptr, cid).c_str(), dxbin,
+	errno = gx_decompress_file(cu_cid_path(nullptr, cid, 2).c_str(), dxbin,
 	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
 	if (errno == 0) {
 		*plen = dxbin.cb;
@@ -695,7 +695,7 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag) try
 		return nullptr;
 	}
 
-	auto path = cu_cid_path(nullptr, cid);
+	auto path = cu_cid_path(nullptr, cid, 0);
 	if (path.empty())
 		return nullptr;
 	wrapfd fd = open(path.c_str(), O_RDONLY);

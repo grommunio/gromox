@@ -1462,21 +1462,16 @@ static BOOL common_util_get_message_display_recipients(
 	return *ppvalue != nullptr ? TRUE : false;
 }
 
-std::string cu_cid_path(const char *dir, uint64_t id) try
+std::string cu_cid_path(const char *dir, uint64_t id, unsigned int type) try
 {
 	if (dir == nullptr)
 		dir = exmdb_server::get_dir();
-	return dir + "/cid/"s + std::to_string(id);
+	auto path = dir + "/cid/"s + std::to_string(id);
+	if (type == 2)
+		path += ".zst";
+	return path;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1608: ENOMEM");
-	return {};
-}
-
-std::string cu_ciz_path(const char *dir, uint64_t id) try
-{
-	return cu_cid_path(dir, id) + ".zst";
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1248: ENOMEM");
 	return {};
 }
 
@@ -1486,7 +1481,7 @@ static void *cu_get_object_text_v2(const char *dir, uint64_t cid,
     uint32_t proptag, uint32_t db_proptag, uint32_t cpid)
 {
 	BINARY dxbin{};
-	errno = gx_decompress_file(cu_ciz_path(dir, cid).c_str(), dxbin,
+	errno = gx_decompress_file(cu_cid_path(dir, cid, 2).c_str(), dxbin,
 	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
 	if (errno != 0)
 		return nullptr;
@@ -1558,7 +1553,7 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 static void *cu_get_object_text_v1(const char *dir, uint64_t cid,
     uint32_t proptag, uint32_t proptag1, uint32_t cpid)
 {
-	wrapfd fd = open(cu_cid_path(dir, cid).c_str(), O_RDONLY);
+	wrapfd fd = open(cu_cid_path(dir, cid, 0).c_str(), O_RDONLY);
 	struct stat node_stat;
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
@@ -2624,7 +2619,7 @@ static BOOL cu_set_msg_body_v1(sqlite3 *, uint64_t, const char *, uint64_t, uint
 static BOOL cu_set_msg_body_v2(sqlite3 *psqlite, uint64_t message_id,
     const char *dir, uint64_t cid, uint32_t proptag, const char *value)
 {
-	auto path = cu_ciz_path(dir, cid);
+	auto path = cu_cid_path(dir, cid, 2);
 	auto remove_file = make_scope_exit([&]() {
 		if (::remove(path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1236: remove %s: %s",
@@ -2695,7 +2690,7 @@ static BOOL common_util_set_message_body(
 static BOOL cu_set_msg_body_v1(sqlite3 *psqlite, uint64_t message_id,
     const char *dir, uint64_t cid, uint32_t proptag, const char *value)
 {
-	auto path = cu_cid_path(dir, cid);
+	auto path = cu_cid_path(dir, cid, 0);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-1627: open %s O_CREAT: %s", path.c_str(), strerror(errno));
@@ -2735,7 +2730,7 @@ static BOOL cu_set_obj_cid_val_v2(sqlite3 *psqlite, db_table table_type,
     uint64_t message_id, const char *dir, uint64_t cid,
     const TAGGED_PROPVAL *prop)
 {
-	auto path = cu_ciz_path(dir, cid);
+	auto path = cu_cid_path(dir, cid, 2);
 	auto remove_file = make_scope_exit([&]() {
 		if (::remove(path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1237: remove %s: %s",
@@ -2788,7 +2783,7 @@ static BOOL cu_set_obj_cid_val_v1(sqlite3 *psqlite, db_table table_type,
     uint64_t message_id, const char *dir, uint64_t cid,
     const TAGGED_PROPVAL *ppropval)
 {
-	auto path = cu_cid_path(dir, cid);
+	auto path = cu_cid_path(dir, cid, 0);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-1628: open %s O_CREAT: %s", path.c_str(), strerror(errno));
@@ -5304,12 +5299,13 @@ BOOL common_util_indexing_sub_contents(
 static uint32_t cu_get_cid_length(uint64_t cid, uint16_t proptype)
 {
 	auto dir = exmdb_server::get_dir();
-	auto size = gx_decompressed_size(cu_ciz_path(dir, cid).c_str());
+	auto size = gx_decompressed_size(cu_cid_path(dir, cid, 2).c_str());
 	if (size != SIZE_MAX)
 		return size <= UINT32_MAX ? size : UINT32_MAX;
 
 	struct stat node_stat;
-	if (stat(cu_cid_path(exmdb_server::get_dir(), cid).c_str(), &node_stat) != 0)
+	if (stat(cu_cid_path(exmdb_server::get_dir(), cid, 0).c_str(),
+	    &node_stat) != 0)
 		return 0;
 	/* Le old uncompressed format has a few kinks... */
 	if (proptype == PT_STRING8 && node_stat.st_size >= 1)
