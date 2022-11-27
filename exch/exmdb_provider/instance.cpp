@@ -694,6 +694,14 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag) try
 	} else if (errno != ENOENT) {
 		return nullptr;
 	}
+	errno = gx_decompress_file(cu_cid_path(nullptr, cid, 1).c_str(), dxbin,
+	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
+	if (errno == 0) {
+		*plen = dxbin.cb;
+		return dxbin.pv;
+	} else if (errno != ENOENT) {
+		return nullptr;
+	}
 
 	auto path = cu_cid_path(nullptr, cid, 0);
 	if (path.empty())

@@ -1469,19 +1469,21 @@ std::string cu_cid_path(const char *dir, uint64_t id, unsigned int type) try
 	auto path = dir + "/cid/"s + std::to_string(id);
 	if (type == 2)
 		path += ".zst";
+	else if (type == 1)
+		path += ".v1z";
 	return path;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1608: ENOMEM");
 	return {};
 }
 
-static void *cu_get_object_text_v1(const char *, uint64_t, uint32_t, uint32_t, uint32_t);
+static void *cu_get_object_text_v0(const char *, uint64_t, uint32_t, uint32_t, uint32_t);
 
-static void *cu_get_object_text_v2(const char *dir, uint64_t cid,
-    uint32_t proptag, uint32_t db_proptag, uint32_t cpid)
+static void *cu_get_object_text_vx(const char *dir, uint64_t cid,
+    uint32_t proptag, uint32_t db_proptag, uint32_t cpid, unsigned int type)
 {
 	BINARY dxbin{};
-	errno = gx_decompress_file(cu_cid_path(dir, cid, 2).c_str(), dxbin,
+	errno = gx_decompress_file(cu_cid_path(dir, cid, type).c_str(), dxbin,
 	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
 	if (errno != 0)
 		return nullptr;
@@ -1492,12 +1494,16 @@ static void *cu_get_object_text_v2(const char *dir, uint64_t cid,
 			return nullptr;
 		*bin = std::move(dxbin);
 		return bin;
+	} else if (type == 1 && PROP_TYPE(db_proptag) == PT_UNICODE) {
+		if (dxbin.cb < 4)
+			return nullptr;
+		dxbin.pc += 4;
 	}
 	if (proptag == db_proptag)
 		/* Requested proptag already matches the type found in the DB */
 		return dxbin.pv;
 	return common_util_convert_copy(PROP_TYPE(proptag) == PT_STRING8 ? TRUE : false,
-	       cpid, static_cast<char *>(dxbin.pv));
+	       cpid, dxbin.pc);
 }
 
 static void *cu_get_object_text(sqlite3 *psqlite,
@@ -1542,15 +1548,20 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	 * Try compressed variant first. Fail any serious errors.
 	 * Only when it was not found do check the uncompressed variant.
 	 */
-	auto blk = cu_get_object_text_v2(dir, cid, proptag, proptag1, cpid);
+	auto blk = cu_get_object_text_vx(dir, cid, proptag, proptag1, cpid, 2);
 	if (blk != nullptr)
 		return blk;
 	if (errno != ENOENT)
 		return nullptr;
-	return cu_get_object_text_v1(dir, cid, proptag, proptag1, cpid);
+	blk = cu_get_object_text_vx(dir, cid, proptag, proptag1, cpid, 1);
+	if (blk != nullptr)
+		return blk;
+	if (errno != ENOENT)
+		return nullptr;
+	return cu_get_object_text_v0(dir, cid, proptag, proptag1, cpid);
 }
 
-static void *cu_get_object_text_v1(const char *dir, uint64_t cid,
+static void *cu_get_object_text_v0(const char *dir, uint64_t cid,
     uint32_t proptag, uint32_t proptag1, uint32_t cpid)
 {
 	wrapfd fd = open(cu_cid_path(dir, cid, 0).c_str(), O_RDONLY);
@@ -1584,7 +1595,7 @@ static void *cu_get_object_text_v1(const char *dir, uint64_t cid,
 		/* Requested proptag already matches the type found in the DB */
 		return pbuff;
 	return common_util_convert_copy(PROP_TYPE(proptag) == PT_STRING8 ? TRUE : false,
-	       cpid, static_cast<char *>(pbuff));
+	       cpid, pbuff);
 }
 
 BOOL cu_get_property(db_table table_type, uint64_t id,
@@ -2614,7 +2625,7 @@ static BOOL common_util_set_message_subject(
 	return TRUE;
 }
 
-static BOOL cu_set_msg_body_v1(sqlite3 *, uint64_t, const char *, uint64_t, uint32_t, const char *);
+static BOOL cu_set_msg_body_v0(sqlite3 *, uint64_t, const char *, uint64_t, uint32_t, const char *);
 
 static BOOL cu_set_msg_body_v2(sqlite3 *psqlite, uint64_t message_id,
     const char *dir, uint64_t cid, uint32_t proptag, const char *value)
@@ -2683,11 +2694,11 @@ static BOOL common_util_set_message_body(
 	if (g_cid_compression >= 0)
 		return cu_set_msg_body_v2(psqlite, message_id, dir, cid, proptag,
 		       static_cast<const char *>(pvalue));
-	return cu_set_msg_body_v1(psqlite, message_id, dir, cid, proptag,
+	return cu_set_msg_body_v0(psqlite, message_id, dir, cid, proptag,
 	       static_cast<const char *>(pvalue));
 }
 
-static BOOL cu_set_msg_body_v1(sqlite3 *psqlite, uint64_t message_id,
+static BOOL cu_set_msg_body_v0(sqlite3 *psqlite, uint64_t message_id,
     const char *dir, uint64_t cid, uint32_t proptag, const char *value)
 {
 	auto path = cu_cid_path(dir, cid, 0);
@@ -2724,7 +2735,7 @@ static BOOL cu_set_msg_body_v1(sqlite3 *psqlite, uint64_t message_id,
 	return TRUE;
 }
 
-static BOOL cu_set_obj_cid_val_v1(sqlite3 *, db_table, uint64_t, const char *, uint64_t, const TAGGED_PROPVAL *);
+static BOOL cu_set_obj_cid_val_v0(sqlite3 *, db_table, uint64_t, const char *, uint64_t, const TAGGED_PROPVAL *);
 
 static BOOL cu_set_obj_cid_val_v2(sqlite3 *psqlite, db_table table_type,
     uint64_t message_id, const char *dir, uint64_t cid,
@@ -2775,11 +2786,11 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
 	if (g_cid_compression >= 0)
 		return cu_set_obj_cid_val_v2(psqlite, table_type, message_id,
 		       dir, cid, ppropval);
-	return cu_set_obj_cid_val_v1(psqlite, table_type, message_id, dir, cid,
+	return cu_set_obj_cid_val_v0(psqlite, table_type, message_id, dir, cid,
 	       ppropval);
 }
 
-static BOOL cu_set_obj_cid_val_v1(sqlite3 *psqlite, db_table table_type,
+static BOOL cu_set_obj_cid_val_v0(sqlite3 *psqlite, db_table table_type,
     uint64_t message_id, const char *dir, uint64_t cid,
     const TAGGED_PROPVAL *ppropval)
 {
