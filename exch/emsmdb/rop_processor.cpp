@@ -560,12 +560,10 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		return ecRpcFormat;
 	}
 	rop_buff.rhe_flags = 0;
-	if (0 == (flags & RPCEXT2_FLAG_NOXORMAGIC)) {
+	if (!(flags & RPCEXT2_FLAG_NOXORMAGIC))
 		rop_buff.rhe_flags |= RHE_FLAG_XORMAGIC;
-	}
-	if (0 == (flags & RPCEXT2_FLAG_NOCOMPRESSION)) {
+	if (!(flags & RPCEXT2_FLAG_NOCOMPRESSION))
 		rop_buff.rhe_flags |= RHE_FLAG_COMPRESSED;
-	}
 	double_list_init(&response_list);
 	tmp_cb = *pcb_out;
 	result = rop_processor_execute_and_push(pout,

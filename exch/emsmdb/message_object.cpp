@@ -1192,9 +1192,8 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	TPROPVAL_ARRAY tmp_propvals1;
 	TAGGED_PROPVAL propval_buff[3];
 	
-	if (0 == (pmessage->open_flags & OPEN_MODE_FLAG_READWRITE)) {
+	if (!(pmessage->open_flags & OPEN_MODE_FLAG_READWRITE))
 		return FALSE;
-	}
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (NULL == pproblems->pproblem) {
@@ -1312,9 +1311,8 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (0 == (pmessage->open_flags & OPEN_MODE_FLAG_READWRITE)) {
+	if (!(pmessage->open_flags & OPEN_MODE_FLAG_READWRITE))
 		return FALSE;
-	}
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (NULL == pproblems->pproblem) {

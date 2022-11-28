@@ -264,9 +264,8 @@ uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
 		}
 		*pcount = i;
 	}
-	if (0 == (QUERY_ROWS_FLAGS_NOADVANCE & flags)) {
+	if (!(flags & QUERY_ROWS_FLAGS_NOADVANCE))
 		ptable->seek_current(b_forward, *pcount);
-	}
 	*pseek_pos = BOOKMARK_CURRENT;
 	if (b_forward) {
 		if (ptable->get_position() >= ptable->get_total())

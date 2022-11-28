@@ -113,18 +113,16 @@ uint32_t ab_tree_make_minid(minid_type type, uint32_t value)
 
 minid_type ab_tree_get_minid_type(uint32_t minid)
 {
-	if (0 == (minid & 0x80000000)) {
+	if (!(minid & 0x80000000))
 		return minid_type::address;
-	}
 	auto type = static_cast<minid_type>(minid >> 29);
 	return type == minid_type::reserved ? minid_type::address : type;
 }
 
 uint32_t ab_tree_get_minid_value(uint32_t minid)
 {
-	if (0 == (minid & 0x80000000)) {
+	if (!(minid & 0x80000000))
 		return minid;
-	}
 	return minid & 0x1FFFFFFF;
 }
 

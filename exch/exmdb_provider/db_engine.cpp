@@ -3934,15 +3934,11 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 	for (const auto &sub : pdb->nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
-			if (0 == (pnsub->notificaton_type &
-				NOTIFICATION_TYPE_OBJECTCOPIED)) {
+			if (!(pnsub->notificaton_type & NOTIFICATION_TYPE_OBJECTCOPIED))
 				continue;
-			}
 		} else {
-			if (0 == (pnsub->notificaton_type &
-				NOTIFICATION_TYPE_OBJECTMOVED)) {
+			if (!(pnsub->notificaton_type & NOTIFICATION_TYPE_OBJECTMOVED))
 				continue;
-			}
 		}
 		if (pnsub->b_whole || (pnsub->folder_id == old_fid &&
 		    pnsub->message_id == old_mid)) try {
@@ -4002,15 +3998,11 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 	for (const auto &sub : pdb->nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
-			if (0 == (pnsub->notificaton_type &
-				NOTIFICATION_TYPE_OBJECTCOPIED)) {
+			if (!(pnsub->notificaton_type & NOTIFICATION_TYPE_OBJECTCOPIED))
 				continue;
-			}
 		} else {
-			if (0 == (pnsub->notificaton_type &
-				NOTIFICATION_TYPE_OBJECTMOVED)) {
+			if (!(pnsub->notificaton_type & NOTIFICATION_TYPE_OBJECTMOVED))
 				continue;
-			}
 		}
 		if (pnsub->b_whole ||
 		    (pnsub->folder_id == folder_id && pnsub->message_id == 0) ||

@@ -100,7 +100,7 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 	} else {
 		*pmsg_count = 0;
 	}
-	if (0 == (sync_flags & SYNC_FLAG_NODELETIONS)) {
+	if (!(sync_flags & SYNC_FLAG_NODELETIONS)) {
 		if (pctx->pdeleted_eids != nullptr)
 			eid_array_free(pctx->pdeleted_eids);
 		pctx->pdeleted_eids = eid_array_dup(&deleted_messages);
@@ -156,7 +156,7 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
 	pctx->pgiven_eids = eid_array_dup(&given_folders);
 	if (pctx->pgiven_eids == nullptr)
 		return FALSE;
-	if (0 == (sync_flags & SYNC_FLAG_NODELETIONS)) {
+	if (!(sync_flags & SYNC_FLAG_NODELETIONS)) {
 		if (pctx->pdeleted_eids != nullptr)
 			eid_array_free(pctx->pdeleted_eids);
 		pctx->pdeleted_eids = eid_array_dup(&deleted_folders);
@@ -375,7 +375,7 @@ BOOL icsdownctx_object::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 {
 	auto pctx = this;
 	
-	if (0 == (flags & SYNC_SOFT_DELETE)) {
+	if (!(flags & SYNC_SOFT_DELETE)) {
 		if (NULL == pctx->pdeleted_eids) {
 			pbins->count = 0;
 			pbins->pbin = NULL;

@@ -40,9 +40,8 @@ uint32_t ndr_pull_get_ptrcnt(const NDR_PULL *pndr)
 
 static size_t ndr_align_size(uint32_t offset, size_t n)
 {
-	if (0 == (offset & (n - 1))) {
+	if (!(offset & (n - 1)))
 		return 0;
-	}
 	return n - (offset & (n - 1));
 }
 
@@ -76,7 +75,7 @@ int ndr_pull_align(NDR_PULL *pndr, size_t size)
 		size = (pndr->flags & NDR_FLAG_NDR64) ? 4 : 2;
 	}
 	
-	if (0 == (pndr->flags & NDR_FLAG_NOALIGN)) {
+	if (!(pndr->flags & NDR_FLAG_NOALIGN)) {
 		if (pndr->flags & NDR_FLAG_PAD_CHECK) {
 			if (!ndr_pull_check_padding(pndr, size))
 				return NDR_ERR_PADDING;
@@ -391,7 +390,7 @@ int ndr_push_align(NDR_PUSH *pndr, size_t size)
 	} else if (size == 3) {
 		size = (pndr->flags & NDR_FLAG_NDR64) ? 4 : 2;
 	}
-	if (0 == (pndr->flags & NDR_FLAG_NOALIGN)) {
+	if (!(pndr->flags & NDR_FLAG_NOALIGN)) {
 		pad = ((pndr->offset + (size - 1)) & ~(size - 1)) - pndr->offset;
 		while (pad--) {
 			TRY(ndr_push_uint8(pndr, 0));

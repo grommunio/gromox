@@ -100,7 +100,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
  PERMISSION_CHECK:
 	if (!(tag_access & MAPI_ACCESS_READ))
 		return ecAccessDenied;
-	if (0 == (open_mode_flags & OPEN_MODE_FLAG_READWRITE) &&
+	if (!(open_mode_flags & OPEN_MODE_FLAG_READWRITE) &&
 	    !(tag_access & MAPI_ACCESS_MODIFY)) {
 		if (!(open_mode_flags & OPEN_MODE_FLAG_BESTACCESS))
 			return ecAccessDenied;
@@ -271,10 +271,9 @@ uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	if (!(tag_access & MAPI_ACCESS_MODIFY))
 		return ecAccessDenied;
 	auto open_flags = pmessage->get_open_flags();
-	if (0 == (open_flags & OPEN_MODE_FLAG_READWRITE) &&
-		SAVE_FLAG_FORCESAVE != save_flags) {
+	if (!(open_flags & OPEN_MODE_FLAG_READWRITE) &&
+	    save_flags != SAVE_FLAG_FORCESAVE)
 		return ecAccessDenied;
-	}
 	if (SAVE_FLAG_FORCESAVE != save_flags) {
 		if (!pmessage->check_original_touched(&b_touched))
 			return ecError;
@@ -801,10 +800,9 @@ uint32_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
 	if (!(tag_access & MAPI_ACCESS_MODIFY))
 		return ecAccessDenied;
 	auto open_flags = pattachment->get_open_flags();
-	if (0 == (open_flags & OPEN_MODE_FLAG_READWRITE) &&
-		SAVE_FLAG_FORCESAVE != save_flags) {
+	if (!(open_flags & OPEN_MODE_FLAG_READWRITE) &&
+	    save_flags != SAVE_FLAG_FORCESAVE)
 		return ecAccessDenied;
-	}
 	auto err = pattachment->save();
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
@@ -857,9 +855,8 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 	if (pmessage == nullptr)
 		return ecError;
 	if (pmessage->get_instance_id() == 0) {
-		if (0 == (OPEN_EMBEDDED_FLAG_CREATE & open_embedded_flags)) {
+		if (!(open_embedded_flags & OPEN_EMBEDDED_FLAG_CREATE))
 			return ecNotFound;
-		}
 		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
 		pmessage = message_object::create(plogon, TRUE, cpid, 0,

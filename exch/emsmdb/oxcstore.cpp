@@ -150,10 +150,9 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	const char *pdomain1;
 	
 	
-	if (0 == (open_flags & LOGON_OPEN_FLAG_PUBLIC) ||
-		open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
+	if (!(open_flags & LOGON_OPEN_FLAG_PUBLIC) ||
+	    (open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER))
 		return ecLoginFailure;
-	}
 	auto rpc_info = get_rpc_info();
 	pdomain = strchr(rpc_info.username, '@');
 	if (NULL == pdomain) {
