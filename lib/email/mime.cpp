@@ -2565,7 +2565,7 @@ static bool mime_parse_multiple(MIME *pmime)
 
 static void mime_produce_boundary(MIME *pmime)
 {
-	char *begin, *end, *ptr, temp;
+	char *begin, *end, *ptr;
 	char temp_boundary[VALUE_LEN];
     int boundary_len;
 
@@ -2583,14 +2583,14 @@ static void mime_produce_boundary(MIME *pmime)
 	begin = pmime->boundary_string + 15 + length;
 	end = begin + 8;
 	for (ptr=begin; ptr<end; ptr++) {
-		temp = rand()%16;
+		char temp = gromox::rand() % 16;
 		*ptr = (temp > 9)?(temp + 55):(temp + 48);
 	}
 	*ptr = '.';
 	begin = end + 1;
 	end = begin + 8;
 	for (ptr=begin; ptr<end; ptr++) {
-        temp = rand()%16;
+		char temp = gromox::rand() % 16;
         *ptr = (temp > 9)?(temp + 55):(temp + 48);
     }
 	*ptr = '\0';

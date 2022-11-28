@@ -484,6 +484,7 @@ static void emsmdb_bridge_touch_handle(EMSMDB_HANDLE2 ses)
 
 static void produce_session(const char *tag, char *session)
 {
+	using gromox::rand;
 	time_t cur_time;
 	char temp_time[16], temp_name[16];
 
@@ -497,7 +498,8 @@ static void produce_session(const char *tag, char *session)
 	}
 	for (char *c = temp_name, *end = temp_name + 16; c < end; ++c)
 		if (!HX_isalpha(*c) && !HX_isdigit(*c))
-			*c = !HX_isalpha(*c) && !HX_isdigit(*c)? '0' + rand() % 10 : HX_tolower(*c);
+			*c = !HX_isalpha(*c) && !HX_isdigit(*c) ?
+			     '0' + rand() % 10 : HX_tolower(*c);
 	for (size_t i = 0; i < 32; ++i) {
 		auto mod = i % 4;
 		auto pos = i / 4;

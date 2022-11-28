@@ -29,9 +29,6 @@
 #	include <syslog.h>
 #endif
 #include <sys/stat.h>
-#if __linux__ && defined(HAVE_SYS_RANDOM_H)
-#	include <sys/random.h>
-#endif
 #if defined(HAVE_SYS_XATTR_H)
 #	include <sys/xattr.h>
 #endif

@@ -422,6 +422,7 @@ uint32_t MhNspContext::getmailboxurl() try
 
 static void produce_session(const char *tag, char *session)
 {
+	using gromox::rand;
 	auto cur_time = time(nullptr);
 	char temp_time[16], temp_name[16];
 	snprintf(temp_time, arsizeof(temp_time), "%lx", static_cast<long>(cur_time));
@@ -433,7 +434,8 @@ static void produce_session(const char *tag, char *session)
 	}
 	for (char *c = temp_name, *end = temp_name+16; c < end; ++c)
 		if (!HX_isalpha(*c) && !HX_isdigit(*c))
-			*c = !HX_isalpha(*c) && !HX_isdigit(*c)? '0' + rand() % 10 : HX_tolower(*c);
+			*c = !HX_isalpha(*c) && !HX_isdigit(*c) ?
+			     '0' + rand() % 10 : HX_tolower(*c);
 	for (size_t i = 0; i < 32; ++i) {
 		auto mod = i % 4;
 		auto pos = i / 4;
