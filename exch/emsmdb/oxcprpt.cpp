@@ -93,7 +93,7 @@ static uint16_t size_in_utf16(const char *u8str)
 	auto ptr = reinterpret_cast<const unsigned char *>(u8str);
 	auto clen = strlen(u8str);
 
-	while (*ptr != '\0' && len < clen) {
+	while (*ptr != '\0' && ptr < reinterpret_cast<const unsigned char *>(u8str) + clen) {
 		auto byte_num = utf8_byte_num[*ptr];
 		if (byte_num >= 1 && byte_num < 4)
 			len += 2;
