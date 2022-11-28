@@ -5320,13 +5320,9 @@ static uint32_t cu_get_cid_length(uint64_t cid, uint16_t proptype)
 	    &node_stat) != 0)
 		return 0;
 	/* Le old uncompressed format has a few kinks... */
-	if (proptype == PT_STRING8 && node_stat.st_size >= 1)
-		/* Discount trailing NUL byte in file */
-		--node_stat.st_size;
-	if (proptype == PT_UNICODE && node_stat.st_size >= 5)
-		/* Discount leading U8 codepoint count field
-		 * and the trailing NUL. */
-		node_stat.st_size -= 5;
+	if (proptype == PT_UNICODE && node_stat.st_size >= 4)
+		/* Discount leading U8 codepoint count field */
+		node_stat.st_size -= 4;
 	if (static_cast<unsigned long long>(node_stat.st_size) > UINT32_MAX)
 		return UINT32_MAX;
 	return node_stat.st_size;
