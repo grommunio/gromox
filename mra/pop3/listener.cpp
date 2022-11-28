@@ -164,8 +164,6 @@ static void *p3ls_thrwork(void *arg)
 			continue;
 		}
 		client_port = strtoul(client_txtport, nullptr, 0);
-		mlog(LV_DEBUG, "New connection from [%s]:%hu",
-					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
 			mlog(LV_WARN, "W-1405: fctnl: %s", strerror(errno));
 		flag = 1;
@@ -291,8 +289,6 @@ static void *p3ls_thrworkssl(void *arg)
 			continue;
 		}
 		client_port = strtoul(client_txtport, nullptr, 0);
-		mlog(LV_DEBUG, "New TLS connection from [%s]:%hu",
-					client_hostip, client_port);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
 			mlog(LV_WARN, "W-1406: fctnl: %s", strerror(errno));
 		flag = 1;
