@@ -3,9 +3,12 @@
  *	this file includes some utility functions that will be used by many 
  *	programs
  */
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <algorithm>
 #if defined(HAVE_CRYPT_H)
-#include <crypt.h>
+#	include <crypt.h>
 #endif
 #include <cerrno>
 #include <climits>
