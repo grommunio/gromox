@@ -693,6 +693,8 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag) try
 	if (fstat(fd.get(), &node_stat) != 0) {
 		return NULL;
 	}
+	if (posix_fadvise(fd.get(), 0, node_stat.st_size, POSIX_FADV_SEQUENTIAL) != 0)
+		/* ignore */;
 	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
 	if (pbuff == nullptr ||
 	    read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
