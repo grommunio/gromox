@@ -162,7 +162,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 		pctx->pprogtotal->normal_size = total_normal;
 	}
 	
-	if (0 == (pctx->sync_flags & SYNC_FLAG_NODELETIONS)) {
+	if (!(pctx->sync_flags & SYNC_FLAG_NODELETIONS)) {
 		pctx->pdeleted_messages = eid_array_dup(&deleted_messages);
 		if (NULL == pctx->pdeleted_messages) {
 			return FALSE;
@@ -202,15 +202,12 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 		}
 	}
 	
-	if (0 == (pctx->sync_flags & SYNC_FLAG_NODELETIONS)) {
-		if (!pctx->flow_list.record_node(FUNC_ID_DELETIONS))
-			return FALSE;
-	}
-	
-	if (pctx->sync_flags & SYNC_FLAG_READSTATE) {
-		if (!pctx->flow_list.record_node(FUNC_ID_READSTATECHANGES))
-			return FALSE;
-	}
+	if (!(pctx->sync_flags & SYNC_FLAG_NODELETIONS) &&
+	    !pctx->flow_list.record_node(FUNC_ID_DELETIONS))
+		return FALSE;
+	if (pctx->sync_flags & SYNC_FLAG_READSTATE &&
+	    !pctx->flow_list.record_node(FUNC_ID_READSTATECHANGES))
+		return FALSE;
 	if (!pctx->flow_list.record_node(FUNC_ID_STATE) ||
 	    !pctx->flow_list.record_tag(INCRSYNCEND))
 		return FALSE;	
@@ -324,9 +321,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		if (lnum == nullptr)
 			return FALSE;
 		auto folder_id = *lnum;
-		if (0 == (SYNC_EXTRA_FLAG_EID & pctx->extra_flags)) {
+		if (!(pctx->extra_flags & SYNC_EXTRA_FLAG_EID))
 			common_util_remove_propvals(&chg, PidTagFolderId);
-		}
 		lnum = chg.get<uint64_t>(PidTagParentFolderId);
 		if (lnum == nullptr)
 			return FALSE;
@@ -910,10 +906,9 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	if (NULL == pmsgctnt) {
 		pctx->pstate->pgiven->remove(message_id);
 		if (b_downloaded) {
-			if (0 == (SYNC_FLAG_NODELETIONS & pctx->sync_flags)) {
-				if (!eid_array_append(pctx->pdeleted_messages, message_id))
-					return FALSE;	
-			}
+			if (!(pctx->sync_flags & SYNC_FLAG_NODELETIONS) &&
+			    !eid_array_append(pctx->pdeleted_messages, message_id))
+				return FALSE;
 			if (SYNC_FLAG_READSTATE & pctx->sync_flags) {
 				eid_array_remove(pctx->pread_messags, message_id);
 				eid_array_remove(pctx->punread_messags, message_id);
@@ -928,7 +923,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		return FALSE;
 	}
 	if (*pstatus & MSGSTATUS_IN_CONFLICT) {
-		if (0 == (pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
+		if (!(pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
 			if (!exmdb_client::get_folder_property(dir,
 			    0, folder_id, PR_SOURCE_KEY, &pvalue))
 				return FALSE;	
@@ -994,7 +989,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	memcpy(ppropval, pmsgctnt->proplist.ppropval,
 		sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	pmsgctnt->proplist.ppropval = ppropval;
-	if (0 == (pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
+	if (!(pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
 		if (!exmdb_client::get_folder_property(dir,
 		    0, folder_id, PR_SOURCE_KEY, &pvalue))
 			return FALSE;	
@@ -1100,8 +1095,8 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 		proplist.ppropval[proplist.count].proptag = MetaTagIdsetDeleted;
 		proplist.ppropval[proplist.count++].pvalue = pbin1;
 	}
-	if (0 == (SYNC_FLAG_IGNORENOLONGERINSCOPE & pctx->sync_flags)
-		&& pctx->pnolonger_messages->count > 0) {
+	if (!(pctx->sync_flags & SYNC_FLAG_IGNORENOLONGERINSCOPE) &&
+	    pctx->pnolonger_messages->count > 0) {
 		idset xset(true, REPL_TYPE_ID);
 		for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
 			if (!xset.append(pctx->pnolonger_messages->pids[i])) {

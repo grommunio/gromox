@@ -33,9 +33,8 @@
 	if (empty($props[PR_MESSAGE_FLAGS])) {
 		die("cannot get PR_MESSAGE_FLAGS from message object");
 	}
-	if (0 == (MSGFLAG_SUBMIT & $props[PR_MESSAGE_FLAGS])) {
+	if (!($props[PR_MESSAGE_FLAGS] & MSGFLAG_SUBMIT))
 		die("message " . $argv[2] . " was not submitted");
-	}
 	mapi_message_submitmessage($message);
 	exit("message " . $argv[2] . " has been submitted successfully");
 ?>

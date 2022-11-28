@@ -3870,9 +3870,8 @@ uint32_t zs_openembedded(GUID hsession,
 	if (pmessage == nullptr)
 		return ecError;
 	if (pmessage->get_instance_id() == 0) {
-		if (0 == (FLAG_CREATE & flags)) {
+		if (!(flags & FLAG_CREATE))
 			return ecNotFound;
-		}
 		if (!b_writable)
 			return ecAccessDenied;
 		pmessage = message_object::create(pstore, TRUE, pinfo->cpid, 0,

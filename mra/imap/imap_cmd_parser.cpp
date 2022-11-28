@@ -841,7 +841,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			            mjson.get_mail_filename(),
 			            mjson.get_mail_length());
 			if (!pcontext->b_readonly &&
-				0 == (pitem->flag_bits & FLAG_SEEN)) {
+			    !(pitem->flag_bits & FLAG_SEEN)) {
 				system_services_set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
@@ -877,7 +877,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				buff_len += gx_snprintf(buff + buff_len,
 				            arsizeof(buff) - buff_len, "RFC822.TEXT NIL");
 			if (!pcontext->b_readonly &&
-				0 == (pitem->flag_bits & FLAG_SEEN)) {
+			    !(pitem->flag_bits & FLAG_SEEN)) {
 				system_services_set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
@@ -965,7 +965,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			}
 			buff_len += len;
 			if (!pcontext->b_readonly &&
-				0 == (pitem->flag_bits & FLAG_SEEN) &&
+			    !(pitem->flag_bits & FLAG_SEEN) &&
 			    strncasecmp(kw, "BODY[", 5) == 0) {
 				system_services_set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
@@ -980,7 +980,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		return 1922;
 	if (!pcontext->b_readonly && pitem->flag_bits & FLAG_RECENT) {
 		pitem->flag_bits &= ~FLAG_RECENT;
-		if (0 == (pitem->flag_bits & FLAG_SEEN)) {
+		if (!(pitem->flag_bits & FLAG_SEEN)) {
 			system_services_unset_flags(pcontext->maildir,
 				pcontext->selected_folder, pitem->mid, FLAG_RECENT, &errnum);
 			imap_parser_modify_flags(pcontext, pitem->mid);

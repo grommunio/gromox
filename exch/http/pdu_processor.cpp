@@ -539,9 +539,8 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 		return FALSE;
 	*pauth_length = ptrailer->cb - data_and_pad;
 	flags = 0;
-	if (0 == (ppkt->drep[0] & DCERPC_DREP_LE)) {
+	if (!(ppkt->drep[0] & DCERPC_DREP_LE))
 		flags = NDR_FLAG_BIGENDIAN;
-	}
 	ndr_pull_init(&ndr, ptrailer->pb, ptrailer->cb, flags);
 	if (NDR_ERR_SUCCESS != ndr_pull_advance(&ndr, data_and_pad)) {
 		return FALSE;
@@ -677,9 +676,8 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 	}
 	
 	flags = 0;
-	if (0 == (ppkt->drep[0] & DCERPC_DREP_LE)) {
+	if (!(ppkt->drep[0] & DCERPC_DREP_LE))
 		flags = NDR_FLAG_BIGENDIAN;
-	}
 	if (ppkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	}
@@ -2892,9 +2890,9 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	}
 	
 	/* we only allow fragmented requests, no other packet types */
-	if ((0 == (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) ||
-		0 == (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) &&
-		pcall->pkt.pkt_type != DCERPC_PKT_REQUEST) {
+	if ((!(pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) ||
+	    !(pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) &&
+	    pcall->pkt.pkt_type != DCERPC_PKT_REQUEST) {
 		if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 			pdu_processor_free_call(pcall);
 			return PDU_PROCESSOR_ERROR;
@@ -2917,7 +2915,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		}
 
 		if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) {
-			if (0 == (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+			if (!(pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 				alloc_size = prequest->alloc_hint;
 				if (alloc_size < prequest->stub_and_verifier.cb)
 					alloc_size = prequest->stub_and_verifier.cb * 8;
@@ -3017,7 +3015,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 
 		/* this may not be the last pdu in the chain - if its isn't then
 		just put it on the fragmented_list and wait for the rest */
-		if (0 == (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+		if (!(pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 			if (double_list_get_nodes_num(&pprocessor->fragmented_list) >
 				MAX_FRAGMENTED_CALLS) {
 				mlog(LV_DEBUG, "pdu_processor: maximum fragments number of call reached");

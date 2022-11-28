@@ -1473,7 +1473,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	}
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	if ((pinstance->change_mask & CHANGE_MASK_HTML) &&
-		0 == (pinstance->change_mask & CHANGE_MASK_BODY)) {
+	    !(pinstance->change_mask & CHANGE_MASK_BODY)) {
 		auto pbin  = ict->proplist.get<BINARY>(PR_HTML);
 		auto pcpid = ict->proplist.get<uint32_t>(PR_INTERNET_CPID);
 		if (NULL != pbin && NULL != pcpid) {

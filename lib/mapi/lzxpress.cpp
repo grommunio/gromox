@@ -212,7 +212,7 @@ uint32_t lzxpress_decompress(const void *inputv, uint32_t input_size,
 		 * set in indicator. For example, if indicator_bit has value 4
 		 * check whether the 4th bit of the value in indicator is set
 		 */
-		if (0 == ((indicator >> indicator_bit) & 1)) {
+		if (!((indicator >> indicator_bit) & 1)) {
 			if (output_index > max_output_size)
 				break;
 			output[output_index] = input[input_index];

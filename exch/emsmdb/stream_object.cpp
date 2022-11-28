@@ -73,7 +73,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	}
 	auto pvalue = propvals.getval(proptag);
 	if (NULL == pvalue) {
-		if (0 == (open_flags & OPENSTREAM_FLAG_CREATE)) {
+		if (!(open_flags & OPENSTREAM_FLAG_CREATE)) {
 			/* cannot find proptag, return immediately to
 			caller and the caller check the result by
 			calling stream_object_check */
