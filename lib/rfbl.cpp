@@ -873,7 +873,7 @@ std::string zstd_decompress(std::string_view x)
 		return out;
 	if (ffsize == ZSTD_CONTENTSIZE_UNKNOWN)
 		ffsize = 0;
-	else if (ffsize >= 0 && ffsize < out.capacity())
+	else if (ffsize < out.capacity())
 		/* Offer the entire on-stack room in the first iteration */
 		ffsize = out.capacity();
 	if (ffsize == 0)
