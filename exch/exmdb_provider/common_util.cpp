@@ -5314,9 +5314,16 @@ static uint32_t cu_get_cid_length(uint64_t cid, uint16_t proptype)
 	auto size = gx_decompressed_size(cu_cid_path(dir, cid, 2).c_str());
 	if (size != SIZE_MAX)
 		return size <= UINT32_MAX ? size : UINT32_MAX;
+	size = gx_decompressed_size(cu_cid_path(dir, cid, 1).c_str());
+	if (size != SIZE_MAX) {
+		if (proptype == PT_UNICODE && size >= 4)
+			/* Discount leading U8 codepoint count field */
+			size -= 4;
+		return size <= UINT32_MAX ? size : UINT32_MAX;
+	}
 
 	struct stat node_stat;
-	if (stat(cu_cid_path(exmdb_server::get_dir(), cid, 0).c_str(),
+	if (stat(cu_cid_path(dir, cid, 0).c_str(),
 	    &node_stat) != 0)
 		return 0;
 	/* Le old uncompressed format has a few kinks... */
