@@ -125,6 +125,7 @@ int uuencode(int mode, const char *file_name, const char *in,
 
 namespace gromox {
 
+extern GX_EXPORT uint32_t rand();
 extern GX_EXPORT bool parse_bool(const char *s);
 extern GX_EXPORT std::string bin2hex(const void *, size_t);
 extern GX_EXPORT std::string bin2txt(const void *, size_t);

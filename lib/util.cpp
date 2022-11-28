@@ -11,14 +11,15 @@
 #	include <crypt.h>
 #endif
 #include <cerrno>
+#include <chrono>
 #include <climits>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <ctime>
 #include <iconv.h>
+#include <random>
 #include <unistd.h>
 #include <json/reader.h>
 #include <libHX/ctype_helper.h>
@@ -32,20 +33,6 @@
 
 using namespace gromox;
 
-namespace {
-static struct rand_initializer {
-	rand_initializer() {
-		int seed;
-#if __linux__
-		getrandom(&seed, sizeof(seed), 0);
-#else
-		seed = time(nullptr) ^ getpid();
-#endif
-		srand(seed);
-	}
-} rand_instance;
-}
-
 namespace gromox {
 const uint8_t utf8_byte_num[256] = {
 	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -58,7 +45,7 @@ const uint8_t utf8_byte_num[256] = {
 	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,0,0,
 };
 }
- 
+
 /* check for invalid UTF-8 */
 BOOL utf8_check(const char *str)
 {
@@ -537,7 +524,7 @@ void randstring(char *buff, size_t length, const char *string)
 		string = randstr_pool;
 	auto string_len = strlen(string);
 	for (size_t i = 0; i < length; ++i)
-		buff[i] = string[rand() % string_len];
+		buff[i] = string[gromox::rand() % string_len];
 	buff[length] = '\0';
 }
 

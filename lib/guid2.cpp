@@ -4,11 +4,13 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <mutex>
+#include <random>
 #include <unistd.h>
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
@@ -177,6 +179,25 @@ static std::once_flag machine_guid_loaded;
 
 namespace gromox {
 
+static uint32_t gromox_rng_seed()
+{
+	uint32_t seed = 0;
+	ssize_t ret = 0;
+#if defined(__linux__) && defined(HAVE_GETRANDOM)
+	ret = getrandom(&seed, sizeof(seed), 0);
+#endif
+	if (ret < 0 || static_cast<size_t>(ret) != sizeof(seed))
+		seed = std::chrono::steady_clock::now().time_since_epoch().count() ^ getpid();
+	return seed;
+}
+
+static std::mt19937 gromox_rng(gromox_rng_seed());
+
+uint32_t rand()
+{
+	return gromox_rng();
+}
+
 static void machine_guid_read()
 {
 	int fd = open("/etc/machine-id", O_RDONLY);
@@ -205,16 +226,11 @@ const GUID &GUID::machine_id()
 
 GUID GUID::random_new()
 {
+	using gromox::rand;
 	GUID guid;
-#if __linux__ && defined(HAVE_SYS_RANDOM_H)
-	if (getrandom(&guid, sizeof(guid), 0) == sizeof(guid)) {
-	} else
-#endif
-	{
-		int32_t v[4] = {rand(), rand(), rand(), rand()};
-		static_assert(sizeof(v) == sizeof(guid));
-		memcpy(&guid, v, sizeof(guid));
-	}
+	uint32_t v[4] = {rand(), rand(), rand(), rand()};
+	static_assert(sizeof(v) == sizeof(guid));
+	memcpy(&guid, v, sizeof(guid));
 	/* Set the 1-0-x variant as per RFC 4122 §4.1.1 */
 	guid.clock_seq[0] &= 0x3F;
 	guid.clock_seq[0] |= 0x80;
