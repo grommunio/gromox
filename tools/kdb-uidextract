@@ -3,7 +3,9 @@
 # SPDX-FileCopyrightText: 2022 grommunio GmbH
 # This file is part of Gromox.
 
+from __future__ import print_function
 import binascii
+import json
 import kopano
 import struct
 import sys
@@ -11,10 +13,11 @@ import sys
 init_server = kopano.Server()
 server_list = set()
 faulty = False
-for user in init_server.users(remote=True, system=false, hidden=True,
+for user in init_server.users(remote=True, system=False, hidden=True,
     inactive=True):
 	server_list.add(user.home_server)
 
+print("[")
 for server_name in server_list:
 	uri = "https://%s:237/kopano" % server_name
 	server = None
@@ -25,19 +28,20 @@ for server_name in server_list:
 		faulty = True
 		continue
 	sguid = server.guid.lower()
-	for user in server.users(remote=True, system=false, hidden=True,
+	for user in server.users(remote=True, system=False, hidden=True,
 	    inactive=True):
 		# 00000000AC21A95040D3EE48B319FBA7533044250100000006000000000100004D6A55784D6A453D00000000
-		if user.userid[0:48] != "00000000AC21A95040D3EE48B319FBA75330442501000000":
-			print("# @%s.kopano.invalid\t<user %s has wrong GUID>" %
-			      (sguid, user.name))
-			continue
-		id = struct.unpack("<L", binascii.unhexlify(user.userid[56:64]))[0]
-		if user.email == "":
-			print("# %s@%s.kopano.invalid\t<user %s without email addr>" %
-			      (id, sguid, user.name))
-			continue
-		print("%s@%s.kopano.invalid\t%s" % (id, sguid, user.email))
+		obj = {
+			"sv": sguid,
+			"st": user.guid,
+			"na": user.name,
+			"em": user.email,
+			"to": user.email
+		}
+		if user.userid[0:48] == "00000000AC21A95040D3EE48B319FBA75330442501000000":
+			obj["id"] = struct.unpack("<L", binascii.unhexlify(user.userid[56:64]))[0]
+		print(json.dumps(obj), ",", sep='')
+print("{}]")
 
 if faulty:
 	sys.stderr.write("[1;31mNot all servers could be reached[0m\n")

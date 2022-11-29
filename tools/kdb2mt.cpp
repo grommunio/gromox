@@ -27,6 +27,7 @@
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
@@ -127,7 +128,7 @@ struct sql_login_param {
 static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
-static char *g_srcguid, *g_srcmbox, *g_acl_map_file;
+static char *g_srcguid, *g_srcmbox, *g_acl_map_file, *g_user_map_file;
 static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
 static unsigned int g_with_acl;
 static int g_with_hidden = -1;
@@ -144,7 +145,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Map folders of a private store (see manpage for detail)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the source archive"},
 	{nullptr, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose, nullptr, nullptr, 0, "More detailed progress reports"},
-	{"acl-map", 0, HXTYPE_STRING, &g_acl_map_file, nullptr, nullptr, 0, "ACL map to apply", "FILE"},
+	{"acl-map", 0, HXTYPE_STRING, &g_acl_map_file, nullptr, nullptr, 0, "(No longer used)", "FILE"},
 	{"l1", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L1 fan number for attachment directories of type files_v1 (default: 10)", "N"},
 	{"l2", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L2 fan number for attachment directories of type files_v1 (default: 20)", "N"},
 	{"mbox-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Lookup source mailbox by GUID", "GUID"},
@@ -161,6 +162,7 @@ static constexpr HXoption g_options_table[] = {
 	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Old name and alias for --mbox-guid", "GUID"},
 	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Old name and alias for --mbox-mro", "NAME"},
 	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "OBJID"},
+	{"user-map", 0, HXTYPE_STRING, &g_user_map_file, nullptr, nullptr, 0, "User resolution map", "FILE"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
 	{"with-acl", 0, HXTYPE_VAL, &g_with_acl, nullptr, nullptr, 1, "Enable partial conversion of ACLs (beta)"},
 	{"without-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 0, "Do skip folders with PR_ATTR_HIDDEN [default: dependent upon -s]"},
@@ -1314,36 +1316,30 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 	return 0;
 }
 
-static int aclmap_read(const char *file, std::unordered_map<std::string, std::string> &map)
+static int usermap_read(const char *file, std::unordered_map<std::string, std::string> &map)
 {
-	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
-	if (fp == nullptr) {
-		fprintf(stderr, "Could not open %s: %s\n", file, strerror(errno));
+	size_t slurp_len = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(file, &slurp_len));
+	if (slurp_data == nullptr) {
+		fprintf(stderr, "Could not read %s: %s\n", file, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	hxmc_t *line = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
-	unsigned int lnum = 0;
-	while (HX_getl(&line, fp.get()) != nullptr) {
-		++lnum;
-		HX_chomp(line);
-		char *b = line;
-		if (*b == '\0' || *b == '#')
+	Json::Value jval;
+	if (!json_from_str({slurp_data.get(), slurp_len}, jval) ||
+	    !jval.isArray()) {
+		fprintf(stderr, "%s: parse error\n", file);
+		return EXIT_FAILURE;
+	}
+	for (unsigned int i = 0; i < jval.size(); ++i) {
+		auto &row = jval[i];
+		if (row["id"].isNull() || row["sv"].isNull())
 			continue;
-		while (*b != '\0' && !HX_isspace(*b))
-			++b;
-		*b++ = '\0';
-		if (*line == '\0') {
-			fprintf(stderr, "%s: ignoring incomplete line %u\n", file, lnum);
-			continue;
-		}
-		while (HX_isspace(*b))
-			++b;
-		if (*b == '\0') {
-			fprintf(stderr, "%s: ignoring incomplete line %u\n", file, lnum);
-			continue;
-		}
-		map.emplace(line, b);
+		auto srv_guid = row["sv"].asString();
+		HX_strlower(srv_guid.data());
+		if (!row["to"].isNull() &&
+		    strchr(row["to"].asCString(), '@') != nullptr)
+			map.emplace(row["id"].asString() + "@" + srv_guid + ".kopano.invalid",
+				row["to"].asString());
 	}
 	fprintf(stderr, "%s: read %zu entries\n", file, map.size());
 	return 0;
@@ -1362,6 +1358,17 @@ int main(int argc, const char **argv)
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
+	if (g_acl_map_file != nullptr) {
+		fprintf(stderr, "The --acl-map option is no longer valid.\n");
+		fprintf(stderr, "Use --user-map from now on; this is a new file format. See manpage for details.\n");
+		return EXIT_FAILURE;
+	} else if (g_user_map_file != nullptr) {
+		int ret = usermap_read(g_user_map_file, g_acl_map);
+		if (ret != EXIT_SUCCESS)
+			return ret;
+	}
 	if (g_with_hidden < 0)
 		g_with_hidden = !g_splice;
 	if ((g_srcguid != nullptr) == (g_srcmbox != nullptr)) {
@@ -1379,13 +1386,6 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if (iconv_validate() != 0)
-		return EXIT_FAILURE;
-	if (g_acl_map_file != nullptr) {
-		int ret = aclmap_read(g_acl_map_file, g_acl_map);
-		if (ret != EXIT_SUCCESS)
-			return ret;
-	}
 	int ret = EXIT_SUCCESS;
 	sql_login_param sqp;
 	if (g_sqlhost != nullptr)
