@@ -55,88 +55,88 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (pbase == nullptr)
 		return FALSE;
 	auto pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
-	if (NULL == pnode) {
-		pbase.reset();
-		/* if user is hidden from addressbook tree, we simply
-			return the necessary information to the caller */
-		auto w_otype = pproptags->has(PR_OBJECT_TYPE);
-		auto w_atype = pproptags->has(PR_ADDRTYPE);
-		auto w_smtp  = pproptags->has(PR_SMTP_ADDRESS);
-		auto w_email = pproptags->has(PR_EMAIL_ADDRESS);
-		auto w_dname = pproptags->has(PR_DISPLAY_NAME);
-		auto w_acct  = pproptags->has(PR_ACCOUNT);
-		bool wx_name = w_smtp || w_email || w_dname || w_acct;
-		if (w_otype || w_atype || wx_name) {
-			ppropvals->count = 0;
-			auto *vc = ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
-			if (NULL == ppropvals->ppropval) {
-				return FALSE;
-			}
-			if (w_otype) {
-				vc->proptag = PR_OBJECT_TYPE;
-				vc->pvalue = deconst(&fake_type);
-				ppropvals->count ++;
-				++vc;
-			}
-			if (w_atype) {
-				vc->proptag = PR_ADDRTYPE;
-				vc->pvalue = deconst("EX");
-				ppropvals->count ++;
-				++vc;
-			}
-			if (wx_name &&
-			    ab_tree_get_minid_type(puser->minid) == minid_type::address &&
-			    system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
-			    username, GX_ARRAY_SIZE(username))) {
-				if (w_smtp) {
-					vc->proptag = PR_SMTP_ADDRESS;
-					vc->pvalue = common_util_dup(username);
-					if (vc->pvalue == nullptr)
-						return FALSE;
-					ppropvals->count ++;
-					++vc;
-				}
-				if (w_acct) {
-					vc->proptag = PR_ACCOUNT;
-					vc->pvalue = common_util_dup(username);
-					if (vc->pvalue == nullptr)
-						return FALSE;
-					ppropvals->count ++;
-					++vc;
-				}
-				if (w_email && common_util_username_to_essdn(username,
-				    tmp_buff, std::size(tmp_buff))) {
-					vc->proptag = PR_EMAIL_ADDRESS;
-					vc->pvalue = common_util_dup(tmp_buff);
-					if (vc->pvalue == nullptr)
-						return FALSE;
-					ppropvals->count ++;
-					++vc;
-				}
-				if (w_dname && system_services_get_user_displayname(username,
-				    tmp_buff, arsizeof(tmp_buff))) {
-					if ('\0' == tmp_buff[0]) {
-						strcpy(tmp_buff, username);
-					}
-					vc->proptag = PR_DISPLAY_NAME;
-					vc->pvalue = common_util_dup(tmp_buff);
-					if (vc->pvalue == nullptr)
-						return FALSE;
-					ppropvals->count ++;	
-					++vc;
-				}
-			}
-		} else {
-			ppropvals->count = 0;
-			ppropvals->ppropval = NULL;
-		}
+	if (pnode != nullptr) {
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		if (ppropvals->ppropval == nullptr)
+			return FALSE;
+		return ab_tree_fetch_node_properties(pnode, pproptags, ppropvals);
+	}
+	pbase.reset();
+	/* if user is hidden from addressbook tree, we simply
+		return the necessary information to the caller */
+	auto w_otype = pproptags->has(PR_OBJECT_TYPE);
+	auto w_atype = pproptags->has(PR_ADDRTYPE);
+	auto w_smtp  = pproptags->has(PR_SMTP_ADDRESS);
+	auto w_email = pproptags->has(PR_EMAIL_ADDRESS);
+	auto w_dname = pproptags->has(PR_DISPLAY_NAME);
+	auto w_acct  = pproptags->has(PR_ACCOUNT);
+	bool wx_name = w_smtp || w_email || w_dname || w_acct;
+	if (!w_otype && !w_atype && !wx_name) {
+		ppropvals->count = 0;
+		ppropvals->ppropval = nullptr;
 		return TRUE;
 	}
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->count = 0;
+	auto *vc = ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
-	return ab_tree_fetch_node_properties(pnode, pproptags, ppropvals);
+	if (w_otype) {
+		vc->proptag = PR_OBJECT_TYPE;
+		vc->pvalue = deconst(&fake_type);
+		ppropvals->count++;
+		++vc;
+	}
+	if (w_atype) {
+		vc->proptag = PR_ADDRTYPE;
+		vc->pvalue = deconst("EX");
+		ppropvals->count++;
+		++vc;
+	}
+	if (!wx_name ||
+	    ab_tree_get_minid_type(puser->minid) != minid_type::address ||
+	    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
+	    username, GX_ARRAY_SIZE(username))) {
+		return TRUE;
+	}
+	if (w_smtp) {
+		vc->proptag = PR_SMTP_ADDRESS;
+		vc->pvalue = common_util_dup(username);
+		if (vc->pvalue == nullptr)
+			return FALSE;
+		ppropvals->count++;
+		++vc;
+	}
+	if (w_acct) {
+		vc->proptag = PR_ACCOUNT;
+		vc->pvalue = common_util_dup(username);
+		if (vc->pvalue == nullptr)
+			return FALSE;
+		ppropvals->count++;
+		++vc;
+	}
+	if (w_email && common_util_username_to_essdn(username,
+	    tmp_buff, std::size(tmp_buff))) {
+		vc->proptag = PR_EMAIL_ADDRESS;
+		vc->pvalue = common_util_dup(tmp_buff);
+		if (vc->pvalue == nullptr)
+			return FALSE;
+		ppropvals->count++;
+		++vc;
+	}
+	if (w_dname && system_services_get_user_displayname(username,
+	    tmp_buff, arsizeof(tmp_buff))) {
+		if ('\0' == tmp_buff[0]) {
+			strcpy(tmp_buff, username);
+		}
+		vc->proptag = PR_DISPLAY_NAME;
+		vc->pvalue = common_util_dup(tmp_buff);
+		if (vc->pvalue == nullptr)
+			return FALSE;
+		ppropvals->count++;
+		++vc;
+	}
+	return TRUE;
 }
 
 ec_error_t user_object::load_list_members(const RESTRICTION *res) try
