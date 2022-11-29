@@ -7,20 +7,18 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <memory>
 #include <mutex>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
-#include <json/reader.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -176,10 +174,7 @@ static int cpl_read(const char *filename, const char *dirs, Json::Value &dict)
 		        filename, strerror(errno));
 		return -1;
 	}
-	std::string sd2(sd.get(), sl);
-	sd.reset();
-	std::istringstream ss(sd2);
-	if (!Json::parseFromStream(Json::CharReaderBuilder(), ss, &dict, nullptr)) {
+	if (!json_from_str({sd.get(), sl}, dict)) {
 		mlog(LV_ERR, "textmaps: invalid JSON data in %s", filename);
 		return -1;
 	}

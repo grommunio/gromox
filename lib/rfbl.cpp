@@ -14,11 +14,13 @@
 #include <ctime>
 #include <fcntl.h>
 #include <iconv.h>
+#include <istream>
 #include <list>
 #include <memory>
 #include <shared_mutex>
 #include <spawn.h>
 #include <sstream>
+#include <streambuf>
 #include <string>
 #include <string_view>
 #include <unistd.h>
@@ -45,6 +47,7 @@
 #endif
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -59,10 +62,14 @@ extern "C" {
 extern char **environ;
 }
 
+namespace {
+
 class hxmc_deleter {
 	public:
 	void operator()(hxmc_t *s) const { HXmc_free(s); }
 };
+
+}
 
 static int gx_reexec_top_fd = -1;
 static unsigned int g_max_loglevel = LV_NOTICE;
@@ -716,10 +723,8 @@ int iconv_validate()
 bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
 {
 	Json::Value jval;
-	std::istringstream jstream(json);
-	auto valid = Json::parseFromStream(Json::CharReaderBuilder(), jstream, &jval, nullptr);
-	if (!valid)
-                return false;
+	if (!gromox::json_from_str(json, jval))
+		return false;
 	if (!jval.isMember(key))
 		return false;
 	auto &memb = jval[key];
@@ -737,9 +742,7 @@ template<typename T> static bool
 set_digest2(char *json, size_t iomax, const char *key, T &&val) try
 {
 	Json::Value jval;
-	std::istringstream jstream(json);
-	auto valid = Json::parseFromStream(Json::CharReaderBuilder(), jstream, &jval, nullptr);
-	if (!valid)
+	if (!gromox::json_from_str(json, jval))
                 return false;
 	jval[key] = val;
 	Json::StreamWriterBuilder swb;
@@ -1056,6 +1059,27 @@ errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile, uint8_t 
 			break;
 	}
 	return 0;
+}
+
+struct iomembuf : public std::streambuf {
+	iomembuf(const char *p, size_t z) {
+		auto q = const_cast<char *>(p);
+		setg(q, q, q + z);
+	}
+};
+
+struct imemstream : public virtual iomembuf, public std::istream {
+	imemstream(const char *p, size_t z) :
+		iomembuf(p, z),
+		std::istream(static_cast<std::streambuf *>(this))
+	{}
+};
+
+bool json_from_str(std::string_view sv, Json::Value &jv)
+{
+	imemstream strm(sv.data(), sv.size());
+	return Json::parseFromStream(Json::CharReaderBuilder(),
+	       strm, &jv, nullptr);
 }
 
 }
