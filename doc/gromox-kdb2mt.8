@@ -4,9 +4,9 @@
 .SH Name
 \fBgromox\-kdb2mt\fP \(em Utility for analysis/import of Kopano mailboxes
 .SH Synopsis
-\fBgromox\-kdb2mt\fP [\fB\-pstv\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
-[\fB\-\-src\-user\fP \fIsqluser\fP] [\fB\-\-src-port\fP \fIsqlport\fP]
-[\fB\-\-src\-db\fP \fIdbname\fP] \fB\-\-src\-attach\fP \fIdir\fP
+\fBgromox\-kdb2mt\fP [\fB\-pstv\fP] [\fB\-\-sql\-host\fP \fIhostname\fP]
+[\fB\-\-sql\-user\fP \fIidentity\fP] [\fB\-\-sql\-port\fP \fInumber\fP]
+[\fB\-\-sql\-db\fP \fIname\fP] \fB\-\-src\-attach\fP \fIdir\fP
 {\fB\-\-src\-guid\fP \fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} [...]
 .SH Description
 gromox\-kdb2mt reads one store from a Zarafa/Kopano SQL database and, for
@@ -53,22 +53,22 @@ no effect if (the even more verbose) \fB\-t\fP option was used.
 Use the given file to perform ACL mapping. See section "ACL Extraction" below
 for details. This option implies \fB\-\-with\-acl\fP.
 .TP
-\fB\-\-src\-host\fP \fIhostname\fP
+\fB\-\-sql\-host\fP \fIhostname\fP
 Hostname for the source SQL connection.
 .br
 Default: (MySQL default; \fIlocalhost\fP)
 .TP
-\fB\-\-src\-port\fP \fIport\fP
+\fB\-\-sql\-port\fP \fInumber\fP
 Port for the source SQL connection.
 .br
 Default: (MySQL default; automatic)
 .TP
-\fB\-\-src\-user\fP \fIusername\fP
+\fB\-\-sql\-user\fP \fIidentity\fP
 Username for the source SQL connection.
 .br
 Default: \fIroot\fP
 .TP
-\fB\-\-src\-db\fP \fIdbname\fP
+\fB\-\-sql\-db\fP \fIdbname\fP
 Database name.
 .br
 Default: \fIkopano\fP
@@ -103,6 +103,20 @@ Perform partial conversion of ACLs. See the ACL section below for details.
 .TP
 \fB\-\-with\-hidden\fP, \fB\-\-without\-hidden\fP
 This option controls the import of folders that have PR_ATTR_HIDDEN=1.
+.SH Obsolete options
+These may be removed in any future release.
+.TP
+\-\-src\-host \fIhostname\fP
+Renamed to \fB\-\-sql\-host\fP for Gromox 1.37.
+.TP
+\-\-src\-user \fIidentity\fP
+Renamed to \fB\-\-sql\-user\fP for Gromox 1.37.
+.TP
+\-\-src\-port \fInumber\fP
+Renamed to \fB\-\-sql\-port\fP for Gromox 1.37.
+.TP
+\-\-src\-db \fIname\fP
+Renamed to \fB\-\-sql\-db\fP for Gromox 1.37.
 .SH Splice mode
 Normally, kdb2mt will have a folder mapping table that specifies one entry,
 which is "(Source root)" to "(Target root)\\Top of Information Store\\Import of
@@ -129,7 +143,7 @@ yours, leaving out \-s is normally the desired behavior, since you may not want
 want to mix your (existing) with their mails.
 .SH Environment variables
 .TP
-\fBSRCPASS\fP
+\fBSQLPASS\fP
 Password for the source SQL connection.
 .SH Examples
 .SS Common scenario (Separate hosts)
@@ -165,8 +179,8 @@ special meaning of "localhost" (which implies the use of an AF_LOCAL socket,
 e.g. /run/mysql/mysql.sock). Command:
 .PP
 .RS 4
-SRCPASS=kopanosqlpass gromox\-kdb2mt \-\-src\-host 127.0.0.1 \-\-src\-port
-12345 \-\-src\-user kopano \-\-src\-attach /mnt \-\-src\-mbox jdoe |
+SQLPASS=kopanosqlpass gromox\-kdb2mt \-\-sql\-host 127.0.0.1 \-\-sql\-port
+12345 \-\-sql\-user kopano \-\-src\-attach /mnt \-\-src\-mbox jdoe |
 gromox\-mt2exm \-u target@domain.de
 .RE
 .PP
