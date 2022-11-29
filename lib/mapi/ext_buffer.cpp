@@ -2055,7 +2055,7 @@ int EXT_PULL::g_msgctnt(MESSAGE_CONTENT *r)
 BOOL EXT_PUSH::init(void *pdata, uint32_t alloc_size,
     uint32_t flags, const EXT_BUFFER_MGT *mgt)
 {
-	const EXT_BUFFER_MGT default_mgt = {malloc, realloc, free};
+	const EXT_BUFFER_MGT default_mgt = {zalloc, realloc, free};
 	m_mgt = mgt != nullptr ? *mgt : default_mgt;
 	if (pdata == nullptr) {
 		b_alloc = TRUE;

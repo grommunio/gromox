@@ -160,7 +160,7 @@ int main(int argc, const char **argv) try
 	}
 	if (g_export_mode == EXPORT_MAIL) {
 		if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html, mimepool,
-		    &imail, malloc, cu_get_propids, cu_get_propname)) {
+		    &imail, zalloc, cu_get_propids, cu_get_propname)) {
 			fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
 			return EXIT_FAILURE;
 		}
@@ -170,7 +170,7 @@ int main(int argc, const char **argv) try
 		}
 	} else if (g_export_mode == EXPORT_ICAL) {
 		ical ic;
-		if (!oxcical_export(ctnt, ic, malloc, cu_get_propids,
+		if (!oxcical_export(ctnt, ic, zalloc, cu_get_propids,
 		    oxcmail_entryid_to_username, oxcmail_essdn_to_username)) {
 			fprintf(stderr, "oxcical_export failed for an unspecified reason.\n");
 			return EXIT_FAILURE;

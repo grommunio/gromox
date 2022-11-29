@@ -53,7 +53,7 @@ enum {
 using EXT_BUFFER_ALLOC = void *(*)(size_t);
 
 struct EXT_BUFFER_MGT {
-	void *(*alloc)(size_t);
+	EXT_BUFFER_ALLOC alloc;
 	void *(*realloc)(void *, size_t);
 	void (*free)(void *);
 };

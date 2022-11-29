@@ -875,6 +875,11 @@ static inline bool qp_nonprintable(unsigned char c)
 
 namespace gromox {
 
+void *zalloc(size_t z)
+{
+	return calloc(1, z);
+}
+
 size_t qp_encoded_size_estimate(const char *s, size_t n)
 {
 	size_t enc = n;

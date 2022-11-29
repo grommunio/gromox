@@ -21,7 +21,7 @@ static int t_extpp()
 {
 	auto s = hex2bin("040000008200e00074c5b7101a82e008000000009b2dbdb2255659027cf33d2a183706db6bc9240adbd249557c96f6783dcc06d8f9c48b1f");
 	EXT_PULL ep;
-	ep.init(s.data(), s.size(), malloc, 0);
+	ep.init(s.data(), s.size(), zalloc, 0);
 	GLOBALOBJECTID goid;
 	auto ret = ep.g_goid(&goid, 1);
 	if (ret != EXT_ERR_SUCCESS) {
@@ -225,9 +225,9 @@ static int t_cmp_svreid()
 	uint8_t eid1[] = "\x02\x00\x00\x01", eid2[] = "\x03\x00\x00\x00\x01";
 	EXT_PULL ep;
 	SVREID s1, s2;
-	ep.init(eid1, sizeof(eid1), malloc, 0);
+	ep.init(eid1, sizeof(eid1), zalloc, 0);
 	ep.g_svreid(&s1);
-	ep.init(eid2, sizeof(eid2), malloc, 0);
+	ep.init(eid2, sizeof(eid2), zalloc, 0);
 	ep.g_svreid(&s2);
 	assert(s1.compare(s2) < 0);
 	assert(s1.compare(s1) == 0);

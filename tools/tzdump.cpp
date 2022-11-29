@@ -44,7 +44,7 @@ static int d_raw(const char *name, const void *data, size_t size)
 {
 	EXT_PULL ep;
 	TIMEZONEDEFINITION def;
-	ep.init(data, size, malloc, EXT_FLAG_UTF16);
+	ep.init(data, size, zalloc, EXT_FLAG_UTF16);
 	if (ep.g_tzdef(&def) != EXT_ERR_SUCCESS) {
 		fprintf(stderr, "%s: does not look like a TIMEZONEDEFINITION\n", name);
 		return EXIT_FAILURE;

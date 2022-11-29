@@ -419,8 +419,6 @@ void gi_dump_name_map(const gi_name_map &map)
 	}
 }
 
-static void *zalloc(size_t z) { return calloc(1, z); }
-
 void gi_folder_map_read(const void *buf, size_t bufsize, gi_folder_map_t &map)
 {
 	EXT_PULL ep;

@@ -371,7 +371,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 	GLOBALOBJECTID globalobjectid;
 	
 	if (NULL != pglobal_obj) {
-		ext_pull.init(pglobal_obj->pb, pglobal_obj->cb, malloc, 0);
+		ext_pull.init(pglobal_obj->pb, pglobal_obj->cb, zalloc, 0);
 		if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
 			return FALSE;
 		if (globalobjectid.data.cb >= sizeof(ThirdPartyGlobalId) &&
@@ -766,7 +766,7 @@ static BOOL get_freebusy(const char *dir)
 		auto bin = tmp_set.pparray[i]->get<const BINARY>(pidlidtimezonestruct);
 		if (bin != nullptr) {
 			TIMEZONESTRUCT tzstruct;
-			ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+			ext_pull.init(bin->pb, bin->cb, zalloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_tzstruct(&tzstruct) != EXT_ERR_SUCCESS)
 				continue;
 			ptz_component = tzstruct_to_vtimezone(
@@ -778,7 +778,7 @@ static BOOL get_freebusy(const char *dir)
 		if (bin == nullptr)
 			continue;
 		APPOINTMENT_RECUR_PAT apprecurr;
-		ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+		ext_pull.init(bin->pb, bin->cb, zalloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 			continue;
 		std::list<event_node> event_list;
