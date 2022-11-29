@@ -76,8 +76,6 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static void *zalloc(size_t z) { return calloc(1, z); }
-
 static void filter_folder_map(gi_folder_map_t &fmap)
 {
 	if (!g_public_folder)

@@ -120,7 +120,7 @@ do_mail(const char *file, std::shared_ptr<MIME_POOL> mime_pool)
 		return nullptr;
 	}
 	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxcmail_import("utf-8",
-		"UTC", &imail, malloc, ee_get_propids));
+		"UTC", &imail, zalloc, ee_get_propids));
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 	return msg;
@@ -140,7 +140,7 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return EIO;
 	}
-	auto err = oxcical_import_multi("UTC", ical, malloc, ee_get_propids,
+	auto err = oxcical_import_multi("UTC", ical, zalloc, ee_get_propids,
 	           oxcmail_username_to_entryid, mv);
 	if (err == ecNotFound) {
 		fprintf(stderr, "%s: Not an iCalendar object, or an incomplete one.\n", file);

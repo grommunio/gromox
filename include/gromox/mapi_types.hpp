@@ -1092,5 +1092,6 @@ using GET_PROPNAME = BOOL (*)(uint16_t, PROPERTY_NAME **);
 using GET_USER_IDS = BOOL (*)(const char *, int *, int *, enum display_type *);
 using GET_USERNAME = BOOL (*)(int, char *, size_t);
 using USERNAME_TO_ENTRYID = BOOL (*)(const char *, const char *, BINARY *, enum display_type *);
-using ENTRYID_TO_USERNAME = BOOL (*)(const BINARY *, void *(*)(size_t), char *, size_t);
+using EXT_BUFFER_ALLOC = void *(*)(size_t);
+using ENTRYID_TO_USERNAME = BOOL (*)(const BINARY *, EXT_BUFFER_ALLOC, char *, size_t);
 using ESSDN_TO_USERNAME = BOOL (*)(const char *, char *, size_t);
