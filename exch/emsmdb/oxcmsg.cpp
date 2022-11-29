@@ -275,10 +275,9 @@ uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	    save_flags != SAVE_FLAG_FORCESAVE)
 		return ecAccessDenied;
 	if (SAVE_FLAG_FORCESAVE != save_flags) {
-		if (!pmessage->check_original_touched(&b_touched))
-			return ecError;
-		if (b_touched)
-			return ecObjectModified;
+		auto ret = pmessage->check_original_touched();
+		if (ret != ecSuccess)
+			return ret;
 	}
 	uint32_t tmp_proptag = PidTagMid;
 	proptags.count = 1;
