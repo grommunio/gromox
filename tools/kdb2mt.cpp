@@ -147,10 +147,14 @@ static constexpr HXoption g_options_table[] = {
 	{"acl-map", 0, HXTYPE_STRING, &g_acl_map_file, nullptr, nullptr, 0, "ACL map to apply", "FILE"},
 	{"l1", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L1 fan number for attachment directories of type files_v1 (default: 10)", "N"},
 	{"l2", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L2 fan number for attachment directories of type files_v1 (default: 20)", "N"},
-	{"src-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Hostname for SQL connection (default: localhost)", "HOST"},
-	{"src-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Port for SQL connection (default: auto)", "PORT"},
-	{"src-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Database name (default: kopano)", "NAME"},
-	{"src-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Username for SQL connection (default: root)", "USER"},
+	{"sql-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Hostname for SQL connection (default: localhost)", "HOST"},
+	{"sql-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Port for SQL connection (default: auto)", "PORT"},
+	{"sql-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Database name (default: kopano)", "NAME"},
+	{"sql-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Username for SQL connection (default: root)", "USER"},
+	{"src-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Old name and alias for --sql-host", "HOST"},
+	{"src-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Old name and alias for --sql-port", "PORT"},
+	{"src-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Old name and alias for --sql-db", "NAME"},
+	{"src-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Old name and alias for --sql-user", "USER"},
 	{"src-attach", 0, HXTYPE_STRING, &g_atxdir, nullptr, nullptr, 0, "Attachment directory", "DIR"},
 	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Lookup source mailbox by GUID", "GUID"},
 	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Lookup source mailbox by MRO", "NAME"},
@@ -1345,7 +1349,7 @@ static int aclmap_read(const char *file, std::unordered_map<std::string, std::st
 
 static void terse_help()
 {
-	fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kdb2mt --src-host kdb.lan "
+	fprintf(stderr, "Usage: SQLPASS=sqlpass gromox-kdb2mt --sql-host kdb.lan "
 	        "--src-attach /tmp/at --src-guid 0123456789ABCDEFFEDCBA9876543210 jdoe\n");
 	fprintf(stderr, "Option overview: gromox-kdb2mt -?\n");
 	fprintf(stderr, "Documentation: man gromox-kdb2mt\n");
@@ -1388,9 +1392,14 @@ int main(int argc, const char **argv)
 		sqp.port = strtoul(g_sqlport, nullptr, 0);
 	sqp.dbname = g_sqldb != nullptr ? g_sqldb : "kopano";
 	sqp.user = g_sqluser != nullptr ? g_sqluser : "root";
-	auto s = getenv("SRCPASS");
-	if (s != nullptr)
+	auto s = getenv("SQLPASS");
+	if (s != nullptr) {
 		sqp.pass = s;
+	} else {
+		s = getenv("SRCPASS");
+		if (s != nullptr)
+			sqp.pass = s;
+	}
 
 	try {
 		std::unique_ptr<driver> drv;
