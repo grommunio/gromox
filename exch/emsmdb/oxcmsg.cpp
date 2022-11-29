@@ -254,7 +254,6 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hresponse, uint32_t hin)
 {
-	BOOL b_touched;
 	int object_type;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
