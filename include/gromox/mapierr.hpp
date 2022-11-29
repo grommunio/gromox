@@ -342,7 +342,7 @@ enum ec_error_t {
 	// ecInvalidEntryId = 0x80040107, /* MAPI_E_INVALID_ENTRYID */
 	ecInvalidObject = 0x80040108, /* MAPI_E_INVALID_OBJECT */
 	ecObjectModified = 0x80040109, /* MAPI_E_OBJECT_CHANGED */
-	// ecObjectDeleted = 0x8004010A, /* MAPI_E_OBJECT_DELETED */
+	ecObjectDeleted = 0x8004010A, /* MAPI_E_OBJECT_DELETED */
 	// ecBusy = 0x8004010B, /* MAPI_E_BUSY */
 	// ecDiskFull = 0x8004010D, /* MAPI_E_NOT_ENOUGH_DISK */
 	ecInsufficientResrc = 0x8004010E, /* MAPI_E_NOT_ENOUGH_RESOURCES */

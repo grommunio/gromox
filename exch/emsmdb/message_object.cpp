@@ -182,8 +182,10 @@ uint32_t message_object::check_original_touched() const
 		    pmessage->instance_id, &pchange_num))
 			return ecError;
 	}
-	/* if it cannot find PidTagChangeNumber, it means message does not exist any more */
-	if (pchange_num == nullptr || *pchange_num != pmessage->change_num)
+	if (pchange_num == nullptr)
+		/* OXCFXICS v24 §3.3.4.3.3.2.2.1; message does not exist anymore */
+		return ecObjectDeleted;
+	if (*pchange_num != pmessage->change_num)
 		return ecObjectModified;
 	return ecSuccess;
 }
