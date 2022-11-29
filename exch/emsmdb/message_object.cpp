@@ -164,28 +164,28 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	return pmessage;
 }
 
-BOOL message_object::check_original_touched(BOOL *pb_touched)
+uint32_t message_object::check_original_touched() const
 {
 	auto pmessage = this;
 	uint64_t *pchange_num;
 	
 	if (pmessage->b_new) {
-		*pb_touched = FALSE;
-		return TRUE;
+		return ecSuccess; /* not touched */
 	}
 	if (0 != pmessage->message_id) {
 		if (!exmdb_client::get_message_property(pmessage->plogon->get_dir(),
 		    nullptr, 0, pmessage->message_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)))
-			return FALSE;
+			return ecError;
 	} else {
 		if (!exmdb_client::get_embedded_cn(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, &pchange_num))
-			return FALSE;	
+			return ecError;
 	}
 	/* if it cannot find PidTagChangeNumber, it means message does not exist any more */
-	*pb_touched = pchange_num == nullptr || *pchange_num != pmessage->change_num ? TRUE : false;
-	return TRUE;
+	if (pchange_num == nullptr || *pchange_num != pmessage->change_num)
+		return ecObjectModified;
+	return ecSuccess;
 }
 
 message_object::~message_object()
