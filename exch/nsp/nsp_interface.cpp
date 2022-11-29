@@ -2730,7 +2730,9 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 	try {
 		/* .abkt files are Unicode, transform them to 8-bit codepage */
 		tpldata = abkt_tobinary(abkt_tojson(tpldata, 0), codepage, false);
-	} catch (const std::runtime_error &e) {
+	} catch (const std::bad_alloc &) {
+		return ecServerOOM;
+	} catch (const std::runtime_error &) {
 		return MAPI_E_UNKNOWN_LCID;
 	}
 
