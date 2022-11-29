@@ -35,6 +35,9 @@ int main(int argc, const char **argv)
 	if (g_cpid != 0 && cpid_to_cset(g_cpid) == nullptr) {
 		printf("Unknown codepage %u\n", g_cpid);
 		return EXIT_FAILURE;
+	} else if (g_tobin && g_tojson) {
+		printf("Cannot use both -b and -j\n");
+		return EXIT_FAILURE;
 	}
 
 	std::string all;
@@ -43,10 +46,7 @@ int main(int argc, const char **argv)
 	while ((have_read = read(STDIN_FILENO, buf, sizeof(buf))) > 0)
 		all += std::string_view(buf, have_read);
 
-	if (g_tobin && g_tojson) {
-		printf("Cannot use both -b and -j\n");
-		return EXIT_FAILURE;
-	} else if (g_tojson) {
+	if (g_tojson) {
 		try {
 			auto out = abkt_tojson(std::move(all), g_cpid);
 			puts(out.c_str());
