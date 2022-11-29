@@ -7,7 +7,8 @@
 \fBgromox\-kdb2mt\fP [\fB\-pstv\fP] [\fB\-\-sql\-host\fP \fIhostname\fP]
 [\fB\-\-sql\-user\fP \fIidentity\fP] [\fB\-\-sql\-port\fP \fInumber\fP]
 [\fB\-\-sql\-db\fP \fIname\fP] \fB\-\-src\-attach\fP \fIdir\fP
-{\fB\-\-mbox\-guid\fP \fImboxguid\fP|\fB\-\-mbox\-mro\fP \fIusername\fP} [...]
+{\fB\-\-mbox\-guid\fP \fImboxguid\fP|\fB\-\-mbox\-name\fP
+\fIusername\fP|\fB\-\-mbox\-mro\fP \fIusername\fP} [...]
 .SH Description
 gromox\-kdb2mt reads one store from a Zarafa/Kopano SQL database and, for
 attachments, the associated filesystem. The data is then re-exported in a
@@ -81,6 +82,11 @@ value, i.e. \fB\-\-src\-attach ""\fP.)
 \fB\-\-mbox\-guid\fP \fIguid\fP
 Selects the mailbox with the particular GUID for extraction.
 (This may be used to read orphaned stores.)
+.TP
+\fB\-\-mbox\-user\fP \fIusername\fP
+Scan the user map (cf. \-\-user\-map) for a mailbox which was used by the given
+username, and use it for extraction.
+(To get a listing of all stores, use \fB\-\-mbox\-user ""\fP.)
 .TP
 \fB\-\-mbox\-mro\fP \fIusername\fP
 Scan the source database for a mailbox which appears to have last been used by
