@@ -222,7 +222,7 @@ int main(int argc, const char **argv) try
 			printf("[imap]: TLS support enabled\n");
 		}
 	} else {
-		printf("[imap]: TLS support deactived via config\n");
+		printf("[imap]: TLS support deactivated via config\n");
 	}
 	
 	auto imap_force_tls = parse_bool(g_config_file->get_value("imap_force_tls"));

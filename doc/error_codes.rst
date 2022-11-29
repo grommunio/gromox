@@ -77,7 +77,7 @@ Verify the server information in your account properties.'
 
 Task '...' reported error (0x80042108) : 'Outlook is unable to connect to your
 incoming )POP3) e-mail server. If you continue to receive this message, contact
-your server administartor or Internet service provider (ISP).'
+your server administrator or Internet service provider (ISP).'
 
 Fehler (0x80190194) beim Ausführen der Aufgabe "abc@def.de": "Ein unerwarteter
 Fehler ist aufgetreten."
