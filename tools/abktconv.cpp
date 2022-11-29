@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020 grommunio GmbH
 // This file is part of Gromox.
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unistd.h>
 #include <utility>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/paths.h>
@@ -40,12 +44,14 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	std::string all;
-	char buf[4096];
-	ssize_t have_read;
-	while ((have_read = read(STDIN_FILENO, buf, sizeof(buf))) > 0)
-		all += std::string_view(buf, have_read);
+	size_t slurp_len = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(STDIN_FILENO, &slurp_len));
+	if (slurp_data == nullptr) {
+		fprintf(stderr, "HX_slurp_fd stdin: %s\n", strerror(errno));
+		return EXIT_FAILURE;
+	}
 
+	std::string_view all(slurp_data.get(), slurp_len);
 	if (g_tojson) {
 		try {
 			auto out = abkt_tojson(std::move(all), g_cpid);

@@ -5,12 +5,9 @@
 #include <cstring>
 #include <fcntl.h>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <unistd.h>
 #include <utility>
-#include <json/reader.h>
-#include <json/value.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -18,6 +15,7 @@
 #include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mime_pool.hpp>
@@ -168,17 +166,8 @@ BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath) try
 	}
 #endif
 	clear();
-	bool valid_json = false;
 	Json::Value root;
-	try {
-		std::string json = digest_buff;
-		std::istringstream sin(json);
-		valid_json = Json::parseFromStream(Json::CharReaderBuilder(), sin, &root, nullptr);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1554: ENOMEM");
-		return false;
-	}
-
+	auto valid_json = json_from_str(digest_buff, root);
 	if (valid_json) {
 		pjson->filename     = root["file"].asString();
 		pjson->uid          = root["uid"].asUInt();

@@ -4,13 +4,13 @@
 #include <climits>
 #include <cstdint>
 #include <cstring>
-#include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
-#include <json/reader.h>
 #include <json/writer.h>
 #include <gromox/binrdwr.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/textmaps.hpp>
@@ -219,7 +219,7 @@ static void abkt_write(Json::Value &tpl, lb_writer &bin,
 
 namespace gromox {
 
-std::string abkt_tojson(const std::string &bin, unsigned int codepage)
+std::string abkt_tojson(std::string_view bin, unsigned int codepage)
 {
 	lb_reader reader(bin.data(), bin.size());
 	Json::Value jval;
@@ -227,12 +227,10 @@ std::string abkt_tojson(const std::string &bin, unsigned int codepage)
 	return Json::writeString(Json::StreamWriterBuilder(), std::move(jval));
 }
 
-std::string abkt_tobinary(const std::string &json, unsigned int codepage, bool dogap)
+std::string abkt_tobinary(std::string_view json, unsigned int codepage, bool dogap)
 {
 	Json::Value jval;
-	std::istringstream sin(json);
-	auto valid = Json::parseFromStream(Json::CharReaderBuilder(), sin, &jval, nullptr);
-	if (!valid)
+	if (!json_from_str(std::move(json), jval))
 		throw lb_reader::invalid();
 	lb_writer writer;
 	abkt_write(jval, writer, codepage, dogap);
