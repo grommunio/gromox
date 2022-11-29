@@ -77,7 +77,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	}
 	ppropvals->count = 0;
-	auto *vc = ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
+	auto *vc = ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(6);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
