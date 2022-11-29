@@ -666,7 +666,8 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag) try
 	errno = gx_decompress_file(cu_cid_path(nullptr, cid, 2).c_str(), dxbin,
 	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
 	if (errno == 0) {
-		*plen = dxbin.cb;
+		if (plen != nullptr)
+			*plen = dxbin.cb;
 		return dxbin.pv;
 	} else if (errno != ENOENT) {
 		return nullptr;
@@ -674,7 +675,8 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag) try
 	errno = gx_decompress_file(cu_cid_path(nullptr, cid, 1).c_str(), dxbin,
 	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
 	if (errno == 0) {
-		*plen = dxbin.cb;
+		if (plen != nullptr)
+			*plen = dxbin.cb;
 		return dxbin.pv;
 	} else if (errno != ENOENT) {
 		return nullptr;
