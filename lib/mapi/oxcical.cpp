@@ -1879,7 +1879,7 @@ static const ical_component *oxcical_main_event(const event_list_t &evlist, cons
 			continue;
 		}
 		if (main_event != nullptr) {
-			*err = "E-2737: There is more than one \"main\" event in this calender obejct";
+			*err = "E-2737: There is more than one \"main\" event in this calendar object";
 			return nullptr;
 		}
 		main_event = event;

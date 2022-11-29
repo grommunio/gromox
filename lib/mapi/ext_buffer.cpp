@@ -164,7 +164,7 @@ int EXT_PULL::g_str(char **ppstr)
 
 int EXT_PULL::g_wstr(char **ppstr)
 {
-	/* Everything is measured in octects */
+	/* Everything is measured in octets */
 	size_t i;
 	
 	if (!(m_flags & EXT_FLAG_UTF16))

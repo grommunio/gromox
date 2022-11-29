@@ -1071,7 +1071,7 @@ int ICAL_TIME::delta_day(ICAL_TIME itime2) const
 	int delta_days;
 
 	if (month < 1 || month > 12 || day < 1 || day > 31) {
-		mlog(LV_ERR, "E-2052: illegal paremeters to ICAL_TIME::delta_day (%u,%u)", month, day);
+		mlog(LV_ERR, "E-2052: illegal parameters to ICAL_TIME::delta_day (%u,%u)", month, day);
 		return 0;
 	}
 	if (itime1 < itime2)

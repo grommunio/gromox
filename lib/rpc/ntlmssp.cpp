@@ -629,7 +629,7 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 }
 
 
-/* neg_flags can be one ore more following
+/* neg_flags can be one or more following
 	NTLMSSP_NEGOTIATE_128
 	NTLMSSP_NEGOTIATE_56
 	NTLMSSP_NEGOTIATE_KEY_EXCH

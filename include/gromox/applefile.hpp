@@ -58,7 +58,7 @@ struct FINFO {
 struct FXINFO {
 	int16_t fd_iconid;		/* icon ID number */
 	int16_t fd_unused[3];	/* spare */
-	int8_t fd_script; /* scrip flag and code */
+	int8_t fd_script; /* script flag and code */
 	int8_t fd_xflags; /* reserved */
 	int16_t fd_comment;		/* comment ID number */
 	int32_t fd_putaway;		/* home directory ID */
