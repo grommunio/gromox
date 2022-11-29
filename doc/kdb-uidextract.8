@@ -7,11 +7,11 @@
 \fBpython /usr/libexec/gromox/kdb\-uidextract\fP
 .SH Description
 kdb\-uidextract is a Python script utilizing python-kopano bindings to read
-user object descriptions off a Kopano installation and produce an ACL map for
-use with the gromox\-kdb2mt \-\-acl\-map option.
+user object descriptions off a Kopano installation and produce a user listing
+suitable for consumption by the gromox\-kdb2mt \-\-user\-map option.
 .PP
-This script is meant to be executed on a Kopano system and does not rely on
-Gromox components at all.
+This script is meant to be executed on a live Kopano system and does not rely
+on Gromox components at all.
 .PP
 kdb\-uidextract first queries the server on the current machine for all
 participating Kopano servers in the cluster. This requires that all Kopano
@@ -25,5 +25,36 @@ This program offers no command-line options.
 .SH Files
 By way of the \fIkopano\fP Python module, /etc/kopano/admin.cfg is sourced for
 TLS certificate parameters. Confer with the kopano-admin.cfg(5) manpage.
+.SH Format
+The output is a JSON file containing an array of user objects. Each user object
+is a dictionary with zero or more attributes; these can be:
+.IP \(bu 4
+"na": username
+.IP \(bu 4
+"sv": server GUID, represented as 16 ASCII characters, case-insensitive
+.IP \(bu 4
+"st": store GUID, represented as 16 ASCII characters, case-insensitive
+.IP \(bu 4
+"id": per-database(!) numeric user ID
+.IP \(bu 4
+"em": e-mail address associated with the Kopano account
+.IP \(bu 4
+"to": e-mail address that gromox\-kdb2mt(8) should map the Kopano user to
+.PP
+null values and empty strings are allowed. Take note that in multi-server
+Kopano installations, every LDAP user will appear in \fBall\fP the
+kopano-server databases, and with generally \fBdifferent\fP user IDs.
+.RS 4
+.nf
+[
+ {"em": "boss@company.com", "na": "boss", "sv":
+"0123456789abcdef0123456789abcdef", "st": "0123456789abcdef0123456789abcdef",
+"to": "boss@company.com", "id": 3},
+ {"em": "boss@company.com", "na": "boss", "sv":
+"123456789abcdef0123456789abcdef0", "st": "0123456789abcdef0123456789abcdef",
+"to": "boss@company.com", "id": 91}
+]
+.fi
+.RE
 .SH See also
 \fPgromox\fP(7), \fBgromox\-kdb2mt\fP(8gx), \fBkdb\-uidextract\-limited\fP(8)
