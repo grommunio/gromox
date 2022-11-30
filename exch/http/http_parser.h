@@ -78,7 +78,7 @@ struct http_context final : public schedule_context {
 	void *pchannel = nullptr;
 	FASTCGI_CONTEXT *pfast_context = nullptr;
 };
-using http_context = HTTP_CONTEXT;
+using HTTP_CONTEXT = http_context;
 
 struct RPC_IN_CHANNEL {
 	RPC_IN_CHANNEL();
