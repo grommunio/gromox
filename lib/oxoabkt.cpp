@@ -108,7 +108,7 @@ static void abkt_read_row(lb_reader &bin, Json::Value &jrow,
 	if (cttype_uses_proptag(ct_type))
 		jrow["proptag"] = dwType;
 	if (ct_type == DTCT_EDIT) {
-		jrow["ulSize"] = ulSize;
+		jrow["maxlen"] = ulSize;
 	} else if (ct_type == DTCT_DDLBX) {
 		jrow["proptag2"] = gxT2Extra;
 		jrow["proptag3"] = ulSize;
