@@ -690,18 +690,17 @@ BOOL MhEmsmdbPlugin::process(int context_id, const void *content, uint64_t lengt
 	auto cleanup_0 = make_scope_exit([&]() { rpc_free_stack(); });
 	auto allocator = [](size_t size) {return ndr_stack_alloc(NDR_STACK_IN, size);};
 	ctx.ext_pull.init(content, static_cast<uint32_t>(length), allocator, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
-	ProcRes (MhEmsmdbPlugin::*proc)(MhEmsmdbContext&);
 	if (strcasecmp(ctx.request_value, "Connect") == 0)
-		proc = &MhEmsmdbPlugin::connect;
+		result = connect(ctx);
 	else if (strcasecmp(ctx.request_value, "Disconnect") == 0)
-		proc = &MhEmsmdbPlugin::disconnect;
+		result = disconnect(ctx);
 	else if (strcasecmp(ctx.request_value, "Execute") == 0)
-		proc = &MhEmsmdbPlugin::execute;
+		result = execute(ctx);
 	else if (strcasecmp(ctx.request_value, "NotificationWait") == 0)
-		proc = &MhEmsmdbPlugin::wait;
+		result = wait(ctx);
 	else
 		return false;
-	if ((result = (this->*proc)(ctx)))
+	if (result)
 		return result.value();
 	return ctx.normal_response();
 }
