@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
@@ -1003,6 +1004,19 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 	return X_RUNOFF;
 }
 
+static char *now_str(char *buf, size_t bufsize)
+{
+	using namespace std::chrono;
+	auto now   = time_point_cast<nanoseconds>(system_clock::now());
+	auto now_t = system_clock::to_time_t(now);
+	struct tm now_tm;
+	strftime(buf, bufsize, "%T", localtime_r(&now_t, &now_tm));
+	auto z = strlen(buf);
+	snprintf(&buf[z], bufsize - z, ".%06lu",
+	         static_cast<unsigned long>(now.time_since_epoch().count() % 1000000000UL));
+	return buf;
+}
+
 static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
     void *pbuff, unsigned int size)
 {
@@ -1012,7 +1026,13 @@ static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
 	if (actual_read <= 0)
 		return actual_read;
 	if (g_http_debug) {
-		fprintf(stderr, "<< ctx %p recv %zd\n", pcontext, actual_read);
+		auto &co = pcontext->connection;
+		char tbuf[24];
+		now_str(tbuf, std::size(tbuf));
+		fprintf(stderr, "\e[1m<< %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n",
+		        now_str(tbuf, std::size(tbuf)),
+		        co.client_ip, co.client_port,
+		        co.server_ip, co.server_port, actual_read);
 		fflush(stderr);
 		bool ascii = true;
 		for (ssize_t i = 0; i < actual_read; ++i) {
@@ -1189,7 +1209,12 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		mlog(LV_WARN, "W-1534: wl=%zd. report me.", written_len);
 	if (g_http_debug) {
 		auto s = static_cast<const char *>(pcontext->write_buff);
-		fprintf(stderr, ">> ctx %p send %zd\n%.*s\n>>-EOP\n", pcontext,
+		auto &co = pcontext->connection;
+		char tbuf[24];
+		fprintf(stderr, "\e[1m>> %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n%.*s\n>>-EOP\n",
+		        now_str(tbuf, std::size(tbuf)),
+		        co.server_ip, co.server_port,
+		        co.client_ip, co.client_port,
 		        written_len, (int)written_len, znul(s));
 	}
 	if (pcontext->write_buff == nullptr)
