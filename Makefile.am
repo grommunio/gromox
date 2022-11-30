@@ -298,12 +298,12 @@ man_MANS = \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
-	doc/freebusy.8gx doc/gromox.7 doc/gromox-abktconv.8gx \
-	doc/gromox-abktpull.8gx doc/gromox-dbop.8gx doc/gromox-dscli.8gx \
-	doc/gromox-eml2mbox.8gx doc/gromox-eml2mt.8gx doc/gromox-exm2eml.8gx \
-	doc/gromox-kdb2mt.8gx doc/gromox-mailq.8gx doc/gromox-mbop.8gx \
-	doc/gromox-mkmidb.8gx doc/gromox-mkprivate.8gx doc/gromox-mkpublic.8gx \
-	doc/gromox-mt2exm.8gx doc/http.8gx \
+	doc/freebusy.8gx doc/gromox.7 doc/gromox-abktconv.8 \
+	doc/gromox-abktpull.8 doc/gromox-dbop.8 doc/gromox-dscli.8 \
+	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 \
+	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbop.8 \
+	doc/gromox-mkmidb.8 doc/gromox-mkprivate.8 doc/gromox-mkpublic.8 \
+	doc/gromox-mt2exm.8 doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx \
 	doc/kdb-uidextract.8 doc/kdb-uidextract-limited.8 \
 	doc/ldap_adaptor.4gx \
@@ -315,7 +315,7 @@ man_MANS = \
 	doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 if HAVE_PFF
-man_MANS += doc/gromox-pff2mt.8gx
+man_MANS += doc/gromox-pff2mt.8
 endif
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
