@@ -147,6 +147,8 @@ static constexpr HXoption g_options_table[] = {
 	{"acl-map", 0, HXTYPE_STRING, &g_acl_map_file, nullptr, nullptr, 0, "ACL map to apply", "FILE"},
 	{"l1", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L1 fan number for attachment directories of type files_v1 (default: 10)", "N"},
 	{"l2", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L2 fan number for attachment directories of type files_v1 (default: 20)", "N"},
+	{"mbox-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Lookup source mailbox by GUID", "GUID"},
+	{"mbox-mro", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Lookup source mailbox by MRO", "NAME"},
 	{"sql-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Hostname for SQL connection (default: localhost)", "HOST"},
 	{"sql-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Port for SQL connection (default: auto)", "PORT"},
 	{"sql-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Database name (default: kopano)", "NAME"},
@@ -156,8 +158,8 @@ static constexpr HXoption g_options_table[] = {
 	{"src-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Old name and alias for --sql-db", "NAME"},
 	{"src-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Old name and alias for --sql-user", "USER"},
 	{"src-attach", 0, HXTYPE_STRING, &g_atxdir, nullptr, nullptr, 0, "Attachment directory", "DIR"},
-	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Lookup source mailbox by GUID", "GUID"},
-	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Lookup source mailbox by MRO", "NAME"},
+	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Old name and alias for --mbox-guid", "GUID"},
+	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Old name and alias for --mbox-mro", "NAME"},
 	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "OBJID"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
 	{"with-acl", 0, HXTYPE_VAL, &g_with_acl, nullptr, nullptr, 1, "Enable partial conversion of ACLs (beta)"},
@@ -605,7 +607,7 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 	                   "ON s.hierarchy_id=p.hierarchyid AND p.tag=0xE08";
 	if (*storeuser != '\0') {
 		fmt::print(stderr, "PK-1008: Warning: The search by MRO name "
-			"(--src-mbox) is only a heuristic and not guaranteed "
+			"(--mbox-mro) is only a heuristic and not guaranteed "
 			"to produce the correct result, "
 			"lest it would require the full original user database, "
 			"a requirement this tool does not want to impose.\n");
@@ -1350,7 +1352,7 @@ static int aclmap_read(const char *file, std::unordered_map<std::string, std::st
 static void terse_help()
 {
 	fprintf(stderr, "Usage: SQLPASS=sqlpass gromox-kdb2mt --sql-host kdb.lan "
-	        "--src-attach /tmp/at --src-guid 0123456789ABCDEFFEDCBA9876543210 jdoe\n");
+	        "--src-attach /tmp/at --mbox-guid 0123456789ABCDEFFEDCBA9876543210 jdoe\n");
 	fprintf(stderr, "Option overview: gromox-kdb2mt -?\n");
 	fprintf(stderr, "Documentation: man gromox-kdb2mt\n");
 }
@@ -1363,7 +1365,7 @@ int main(int argc, const char **argv)
 	if (g_with_hidden < 0)
 		g_with_hidden = !g_splice;
 	if ((g_srcguid != nullptr) == (g_srcmbox != nullptr)) {
-		fprintf(stderr, "Exactly one of --src-guid or --src-mbox must be specified.\n");
+		fprintf(stderr, "Exactly one of --mbox-guid or --mbox-mro must be specified.\n");
 		terse_help();
 		return EXIT_FAILURE;
 	} else if (g_atxdir == nullptr) {

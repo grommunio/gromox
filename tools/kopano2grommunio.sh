@@ -111,7 +111,7 @@
 #    We provide the script: create_k2g_migration_lists.sh to create the raw migration list on Kopano server.
 #
 #    A command to show all Kopano Store GUIDs as seen by the migration tool:
-#       SQLPASS=<KopanoMySqlPWD> gromox-kdb2mt --sql-host <KopanoServer> --sql-port=3306 --sql-db=<KopanoDB> --sql-user=GrommunioUser --src-at "" --src-mbox "" 2>&1|less -SX
+#       SQLPASS=<KopanoMySqlPWD> gromox-kdb2mt --sql-host <KopanoServer> --sql-port=3306 --sql-db=<KopanoDB> --sql-user=GrommunioUser --src-at "" --mbox-mro "" 2>&1|less -SX
 #
 #    Important:
 #    Verify the store GUIDs match the store GUIDs found in the list created by create_k2g_migration_lists.sh.
@@ -428,18 +428,18 @@ while IFS= read -r line; do
         #
         if [[ $MigMBox =~ ^@.* ]]; then
             Write-MLog "This is the Kopano public store (GUID: $KopanoUser) for domain: $MigMBox" yellow
-            (SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --src-guid "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
+            (SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-guid "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
             ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
         else
             if [[ $IsID -eq 0 ]]; then
                 Write-MLog "Migration of mailbox $MigMBox with Kopano login $KopanoUser start" yellow
                 # add parameter -s to import into correct folders. eg: gromox-kdb2mt -s ....
-                (SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --src-mbox "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
+                (SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-mro "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
                 ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
             else
                 Write-MLog "Migration of mailbox $MigMBox with Kopano GUID $KopanoUser start" yellow
                 # add parameter -s to import into correct folders. eg: gromox-kdb2mt -s ....
-                (SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --src-guid "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
+                (SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-guid "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
                 ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
             fi
         fi

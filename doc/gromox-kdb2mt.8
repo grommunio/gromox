@@ -7,7 +7,7 @@
 \fBgromox\-kdb2mt\fP [\fB\-pstv\fP] [\fB\-\-sql\-host\fP \fIhostname\fP]
 [\fB\-\-sql\-user\fP \fIidentity\fP] [\fB\-\-sql\-port\fP \fInumber\fP]
 [\fB\-\-sql\-db\fP \fIname\fP] \fB\-\-src\-attach\fP \fIdir\fP
-{\fB\-\-src\-guid\fP \fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} [...]
+{\fB\-\-mbox\-guid\fP \fImboxguid\fP|\fB\-\-mbox\-mro\fP \fIusername\fP} [...]
 .SH Description
 gromox\-kdb2mt reads one store from a Zarafa/Kopano SQL database and, for
 attachments, the associated filesystem. The data is then re-exported in a
@@ -78,15 +78,15 @@ Required specification to the /var/lib/kopano/attachments directory mounted
 somewhere locally. (To skip over file-based attachments, use the empty
 value, i.e. \fB\-\-src\-attach ""\fP.)
 .TP
-\fB\-\-src\-guid\fP \fIguid\fP
+\fB\-\-mbox\-guid\fP \fIguid\fP
 Selects the mailbox with the particular GUID for extraction.
 (This may be used to read orphaned stores.)
 .TP
-\fB\-\-src\-mbox\fP \fIusername\fP
+\fB\-\-mbox\-mro\fP \fIusername\fP
 Scan the source database for a mailbox which appears to have last been used by
 \fIusername\fP, and use it for extraction. There are a number of \fBcaveats\fP
 related to this lookup; see the section "Store lookup by name" further below.
-(To get a listing of all stores, use \fB\-\-src\-mbox ""\fP.)
+(To get a listing of all stores, use \fB\-\-mbox\-mro ""\fP.)
 .TP
 \fB\-\-l1\fP \fIx\fP, \fB\-\-l2\fP \fIy\fP
 If you are using "attachment_storage=files_v1-\fIx\fP-\fIy\fP" in
@@ -117,6 +117,12 @@ Renamed to \fB\-\-sql\-port\fP for Gromox 1.37.
 .TP
 \-\-src\-db \fIname\fP
 Renamed to \fB\-\-sql\-db\fP for Gromox 1.37.
+.TP
+\-\-src\-guid \fIname\fP
+Renamed to \fB\-\-mbox\-guid for Gromox 1.37.
+.TP
+\-\-src\-mbox \fIname\fP
+Renamed to \fB\-\-mbox\-mro for Gromox 1.37.
 .SH Splice mode
 Normally, kdb2mt will have a folder mapping table that specifies one entry,
 which is "(Source root)" to "(Target root)\\Top of Information Store\\Import of
@@ -180,7 +186,7 @@ e.g. /run/mysql/mysql.sock). Command:
 .PP
 .RS 4
 SQLPASS=kopanosqlpass gromox\-kdb2mt \-\-sql\-host 127.0.0.1 \-\-sql\-port
-12345 \-\-sql\-user kopano \-\-src\-attach /mnt \-\-src\-mbox jdoe |
+12345 \-\-sql\-user kopano \-\-src\-attach /mnt \-\-mbox\-mro jdoe |
 gromox\-mt2exm \-u target@domain.de
 .RE
 .PP
@@ -194,12 +200,13 @@ mix and match the plethora of utilities available at their disposal.
 Possible operations include mysqldump(1), sftp(1), rsync(1), tar(1) and
 curl(1).
 .SH Store lookup using Kopano tools
-If kdb2mt's built-in heuristic \-\-src\-mbox resolution mechanism is not
+If kdb2mt's built-in heuristic \-\-mbox\-mro resolution mechanism is not
 adequate enough, you can use utilities from the Kopano installation, provided
 that is still active.
 .IP \(bu 4
 `kopano\-storeadm \-M` is the gold standard. This dumps the entire store list,
-in JSON representation. The GUIDs can then be used together with \-\-src\-guid.
+in JSON representation. The GUIDs can then be used together with
+\-\-mbox\-guid.
 .IP \(bu 4
 The global "SYSTEM" user object in Kopano also happens to have a private store,
 titled "Inbox \- SYSTEM". This store however is practically empty and it is
@@ -228,7 +235,7 @@ does not rely on the existence of such authentication provider.
 Every store has a metadata field for the \fBmost recent owner\fP (MRO). This
 field was intended for orphaned stores and has informational value only. The
 MRO field is not always updated by Kopano services, which can lead to
-\-\-src\-mbox not necessarily finding an expected match. In particular,
+\-\-mbox\-mro not necessarily finding an expected match. In particular,
 kopano\-server misses doing the MRO update on store detach, and on changes to
 the username in LDAP.
 .PP
@@ -238,10 +245,10 @@ set of all stores.
 .PP
 Furthermore, the MRO field is missing the domain/company part of the username.
 Company public stores (in hosted setups) use the company name as MRO. This all
-contributes to \-\-src\-mbox possibly matching multiple stores.
+contributes to \-\-mbox\-mro possibly matching multiple stores.
 .PP
 When more than one store matches in any way, kdb2mt will print the result set
-with GUIDs and exit, at which point you need to use \-\-src\-guid instead.
+with GUIDs and exit, at which point you need to use \-\-mbox\-guid instead.
 .SH ACL Extraction
 Because kdb2mt works completely LDAP-less, it knows nothing about users save
 for their numeric user object ID on the homeserver and a reference to an LDAP
