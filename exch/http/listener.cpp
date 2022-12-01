@@ -35,7 +35,6 @@
 using namespace gromox;
 
 static void *htls_thrwork(void *);
-static void *htls_thrworkssl(void *);
 
 static unsigned int g_mss_size;
 static gromox::atomic_bool g_stop_accept;
@@ -96,14 +95,16 @@ int listener_run()
 
 int listener_trigger_accept()
 {
-	auto ret = pthread_create(&g_thr_id, nullptr, htls_thrwork, nullptr);
+	auto ret = pthread_create(&g_thr_id, nullptr, htls_thrwork,
+	           reinterpret_cast<void *>(uintptr_t(false)));
 	if (ret != 0) {
 		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 		return -1;
 	}
 	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
-		ret = pthread_create(&g_ssl_thr_id, nullptr, htls_thrworkssl, nullptr);
+		ret = pthread_create(&g_ssl_thr_id, nullptr, htls_thrwork,
+		      reinterpret_cast<void *>(uintptr_t(true)));
 		if (ret != 0) {
 			mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 			return -2;
@@ -132,6 +133,7 @@ void listener_stop_accept()
 
 static void *htls_thrwork(void *arg)
 {
+	bool use_tls = reinterpret_cast<uintptr_t>(arg);
 	socklen_t addrlen;
 	int len, flag, sockd2;
 	struct sockaddr_storage fact_addr, client_peer;
@@ -142,8 +144,8 @@ static void *htls_thrwork(void *arg)
 	for (;;) {
 		addrlen = sizeof(client_peer);
 		/* wait for an incoming connection */
-		sockd2 = accept(g_listener_sock, (struct sockaddr*)&client_peer, 
-			&addrlen);
+		sockd2 = accept(use_tls ? g_listener_ssl_sock : g_listener_sock,
+		         reinterpret_cast<struct sockaddr *>(&client_peer), &addrlen);
 		if (g_stop_accept) {
 			if (sockd2 >= 0)
 				close(sockd2);
@@ -233,127 +235,10 @@ static void *htls_thrwork(void *arg)
 		pcontext->connection.last_timestamp = tp_now();
 		pcontext->connection.sockd          = sockd2;
 		pcontext->connection.client_port    = client_port;
-		pcontext->connection.server_port    = g_listener_port;
+		pcontext->connection.server_port    = use_tls ? g_listener_ssl_port : g_listener_port;
 		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
 		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
-		pcontext->sched_stat                = SCHED_STAT_RDHEAD;
-		/* 
-		valid the context and wake up one thread if there are some threads
-		block on the condition variable 
-		*/
-		pcontext->polling_mask = POLLING_READ;
-		contexts_pool_put_context(pcontext, CONTEXT_POLLING);
-	}
-	return nullptr;
-}
-
-static void *htls_thrworkssl(void *arg)
-{
-	socklen_t addrlen;
-	int len, flag, sockd2;
-	struct sockaddr_storage fact_addr, client_peer;
-	char client_hostip[40], client_txtport[8], server_hostip[40];
-	HTTP_CONTEXT *pcontext;
-	char buff[1024];
-	
-	for (;;) {
-		addrlen = sizeof(client_peer);
-		/* wait for an incoming connection */
-		sockd2 = accept(g_listener_ssl_sock, (struct sockaddr*)&client_peer, 
-			&addrlen);
-		if (g_stop_accept) {
-			if (sockd2 >= 0)
-				close(sockd2);
-			return nullptr;
-		}
-		if (-1 == sockd2) {
-			continue;
-		}
-		int ret = getnameinfo(reinterpret_cast<struct sockaddr *>(&client_peer),
-		          addrlen, client_hostip, sizeof(client_hostip),
-		          client_txtport, sizeof(client_txtport),
-		          NI_NUMERICHOST | NI_NUMERICSERV);
-		if (ret != 0) {
-			mlog(LV_ERR, "E-1257: getnameinfo: %s", gai_strerror(ret));
-			close(sockd2);
-			continue;
-		}
-		addrlen = sizeof(fact_addr); 
-		ret = getsockname(sockd2, reinterpret_cast<struct sockaddr *>(&fact_addr), &addrlen);
-		if (ret != 0) {
-			mlog(LV_ERR, "E-1256: getsockname: %s", strerror(errno));
-			close(sockd2);
-			continue;
-		}
-		ret = getnameinfo(reinterpret_cast<struct sockaddr *>(&fact_addr),
-		      addrlen, server_hostip, sizeof(server_hostip),
-		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
-		if (ret != 0) {
-			mlog(LV_ERR, "E-1255: getnameinfo: %s", gai_strerror(ret));
-			close(sockd2);
-			continue;
-		}
-		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
-		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
-			mlog(LV_WARN, "W-1410: fcntl: %s", strerror(errno));
-		flag = 1;
-		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			mlog(LV_WARN, "W-1411: setsockopt: %s", strerror(errno));
-		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
-		/* there's no context available in contexts pool, close the connection*/
-		if (NULL == pcontext) {
-			mlog(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
-			len = sprintf(buff, "HTTP/1.1 503 L-332 Service Unavailable\r\n"
-								"Content-Length: 0\r\n"
-								"Connection: close\r\n"
-								"\r\n");
-			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				mlog(LV_WARN, "W-1981: write: %s", strerror(errno));
-			close(sockd2);
-			continue;
-		}
-		pcontext->type = CONTEXT_CONSTRUCTING;
-		/* pass the client ipaddr into the ipaddr filter */
-		if (system_services_judge_ip != nullptr &&
-		    !system_services_judge_ip(client_hostip)) {
-			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-346 Service Unavailable\r\n"
-								"Content-Length: 0\r\n"
-								"Connection: close\r\n"
-								"\r\n");
-			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				mlog(LV_WARN, "W-1980: write: %s", strerror(errno));
-			mlog(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
-				client_hostip);
-			close(sockd2);
-			/* release the context */
-			contexts_pool_put_context(pcontext, CONTEXT_FREE);
-			continue;
-		}
-		/* pass the client ipaddr into the ipaddr container */
-		if (system_services_container_add_ip != nullptr &&
-		    !system_services_container_add_ip(client_hostip)) {
-			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-364 Service Unavailable\r\n"
-								"Content-Length: 0\r\n"
-								"Connection: close\r\n"
-								"\r\n");
-			if (HXio_fullwrite(sockd2, buff, len) < 0)
-				mlog(LV_WARN, "W-1979: write: %s", strerror(errno));
-			mlog(LV_DEBUG, "TLS connection %s is denied by "
-				"ipaddr container", client_hostip);
-			close(sockd2);
-			/* release the context */
-			contexts_pool_put_context(pcontext, CONTEXT_FREE);
-			continue;
-		}
-		
-		/* construct the context object */
-		pcontext->connection.last_timestamp = tp_now();
-		pcontext->connection.sockd          = sockd2;
-		pcontext->sched_stat                = SCHED_STAT_INITSSL;
-		pcontext->connection.client_port    = client_port;
-		pcontext->connection.server_port    = g_listener_ssl_port;
-		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
-		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
+		pcontext->sched_stat                = use_tls ? SCHED_STAT_INITSSL : SCHED_STAT_RDHEAD;
 		/* 
 		valid the context and wake up one thread if there are some threads
 		block on the condition variable 
