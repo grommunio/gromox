@@ -20,6 +20,7 @@
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -34,7 +35,6 @@
 using namespace gromox;
 
 static void *smls_thrwork(void *);
-static void *smls_thrworkssl(void *);
 
 static pthread_t g_thr_id;
 static gromox::atomic_bool g_stop_accept;
@@ -83,14 +83,16 @@ int listener_run()
 
 int listener_trigger_accept()
 {
-	auto ret = pthread_create(&g_thr_id, nullptr, smls_thrwork, nullptr);
+	auto ret = pthread_create(&g_thr_id, nullptr, smls_thrwork,
+	           reinterpret_cast<void *>(uintptr_t(false)));
 	if (ret != 0) {
 		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 		return -1;
 	}
 	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
-		ret = pthread_create(&g_ssl_thr_id, nullptr, smls_thrworkssl, nullptr);
+		ret = pthread_create(&g_ssl_thr_id, nullptr, smls_thrwork,
+		      reinterpret_cast<void *>(uintptr_t(true)));
 		if (ret != 0) {
 			mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 			return -2;
@@ -119,6 +121,7 @@ void listener_stop_accept()
 
 static void *smls_thrwork(void *arg)
 {
+	bool use_tls = reinterpret_cast<uintptr_t>(arg);
 	socklen_t addrlen;
 	int sockd2, client_port, len, flag;
 	size_t string_length = 0;
@@ -131,8 +134,8 @@ static void *smls_thrwork(void *arg)
 	for (;;) {
 		addrlen = sizeof(client_peer);
 		/* wait for an incoming connection */
-		sockd2 = accept(g_listener_sock, (struct sockaddr*)&client_peer, 
-			&addrlen);
+		sockd2 = accept(use_tls ? g_listener_ssl_sock : g_listener_sock,
+		         reinterpret_cast<struct sockaddr *>(&client_peer), &addrlen);
 		if (g_stop_accept) {
 			if (sockd2 >= 0)
 				close(sockd2);
@@ -185,104 +188,22 @@ static void *smls_thrwork(void *arg)
 			continue;        
 		}
 		pcontext->type = CONTEXT_CONSTRUCTING;
-		/* 220 <domain> Service ready */
-		smtp_reply_str = resource_get_smtp_code(202, 1, &string_length);
-		smtp_reply_str2 = resource_get_smtp_code(202, 2, &string_length);
-		host_ID = resource_get_string("HOST_ID");
-		len = sprintf(buff, "%s%s%s", smtp_reply_str, host_ID,
-			  smtp_reply_str2);
-		write(sockd2, buff, len);
-		/* construct the context object */
-		pcontext->connection.last_timestamp = tp_now();
-		pcontext->connection.sockd             = sockd2;
-		pcontext->connection.client_port    = client_port;
-		pcontext->connection.server_port    = g_listener_port;
-		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
-		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
-		/* 
-		valid the context and wake up one thread if there are some threads
-		block on the condition variable 
-		*/
-		pcontext->polling_mask = POLLING_READ;
-		contexts_pool_put_context(pcontext, CONTEXT_POLLING);
-	}
-	return nullptr;
-}
-
-static void *smls_thrworkssl(void *arg)
-{
-	socklen_t addrlen;
-	int sockd2, client_port, len, flag;
-	size_t string_length = 0;
-	struct sockaddr_storage fact_addr, client_peer;
-	char client_hostip[40], client_txtport[8], server_hostip[40];
-	SMTP_CONTEXT *pcontext;
-	const char *smtp_reply_str, *smtp_reply_str2, *host_ID;
-	char buff[1024];
-	
-	for (;;) {
-		addrlen = sizeof(client_peer);
-		/* wait for an incoming connection */
-		sockd2 = accept(g_listener_ssl_sock, (struct sockaddr*)&client_peer, 
-			&addrlen);
-		if (g_stop_accept) {
-			if (sockd2 >= 0)
-				close(sockd2);
-			return nullptr;
-		}
-		if (-1 == sockd2) {
-			continue;
-		}
-		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&client_peer),
-		          addrlen, client_hostip, sizeof(client_hostip),
-		          client_txtport, sizeof(client_txtport),
-		          NI_NUMERICHOST | NI_NUMERICSERV);
-		if (ret != 0) {
-			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
-			close(sockd2);
-			continue;
-		}
-		addrlen = sizeof(fact_addr); 
-		ret = getsockname(sockd2, reinterpret_cast<sockaddr *>(&fact_addr), &addrlen);
-		if (ret != 0) {
-			mlog(LV_ERR, "getsockname: %s", strerror(errno));
-			close(sockd2);
-			continue;
-		}
-		ret = getnameinfo(reinterpret_cast<sockaddr *>(&fact_addr),
-		      addrlen, server_hostip, sizeof(server_hostip),
-		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
-		if (ret != 0) {
-			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
-			close(sockd2);
-			continue;
-		}
-		client_port = strtoul(client_txtport, nullptr, 0);
-		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
-			mlog(LV_WARN, "W-1414: fcntl: %s", strerror(errno));
-		flag = 1;
-		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			mlog(LV_WARN, "W-1415: setsockopt: %s", strerror(errno));
-		pcontext = (SMTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
-		/* there's no context available in contexts pool, close the connection*/
-		if (NULL == pcontext) {
-			/* 421 <domain> Service not available */
-			smtp_reply_str = resource_get_smtp_code(401, 1, &string_length);
-			smtp_reply_str2 = resource_get_smtp_code(401, 2, &string_length);
+		if (!use_tls) {
+			/* 220 <domain> Service ready */
+			smtp_reply_str = resource_get_smtp_code(202, 1, &string_length);
+			smtp_reply_str2 = resource_get_smtp_code(202, 2, &string_length);
 			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "%s%s%s", smtp_reply_str, host_ID,
-				  smtp_reply_str2);
-			write(sockd2, buff, len);
-			close(sockd2);
-			continue;        
+			      smtp_reply_str2);
+			if (HXio_fullwrite(sockd2, buff, len) != len)
+				/* ignore */;
 		}
-		pcontext->type = CONTEXT_CONSTRUCTING;
 		/* construct the context object */
 		pcontext->connection.last_timestamp = tp_now();
 		pcontext->connection.sockd             = sockd2;
-		pcontext->last_cmd                     = T_STARTTLS_CMD;
+		pcontext->last_cmd                  = use_tls ? T_STARTTLS_CMD : 0;
 		pcontext->connection.client_port    = client_port;
-		pcontext->connection.server_port    = g_listener_ssl_port;
+		pcontext->connection.server_port    = use_tls ? g_listener_ssl_port : g_listener_port;
 		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
 		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
 		/* 
