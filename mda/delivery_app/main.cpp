@@ -18,6 +18,7 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/socket.h>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "delivery.hpp"
@@ -166,6 +167,11 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
     }
 	auto cleanup_6 = make_scope_exit(system_services_stop);
+	auto dummy_sk = gx_local_listen("/run/gromox/da-runcheck");
+	if (dummy_sk < 0) {
+		mlog(LV_ERR, "gromox-delivery is already running");
+		return EXIT_FAILURE;
+	}
 
 	message_dequeue_init(g_config_file->get_value("dequeue_path"), max_mem);
     if (0 != message_dequeue_run()) { 
