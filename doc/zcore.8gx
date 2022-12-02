@@ -26,7 +26,7 @@ Display option summary.
 .SH Configuration directives
 The usual config file location is /etc/gromox/zcore.cfg.
 .TP
-\fBaddress_cache_internal\fP
+\fBaddress_cache_interval\fP
 Default: \fI5 minutes\fP
 .TP
 \fBaddress_table_size\fP
