@@ -808,7 +808,7 @@ enum {
 	PR_CLIENT_ACTIONS = PROP_TAG(PT_BINARY, 0x6645), /* PidTagClientActions */
 	PR_DAM_ORIGINAL_ENTRYID = PROP_TAG(PT_BINARY, 0x6646), /* PidTagDamOriginalEntryId */
 	PR_DAM_BACK_PATCHED = PROP_TAG(PT_BOOLEAN, 0x6647), /* PidTagDamBackPatched */
-	// PR_RULE_ERROR = PROP_TAG(PT_LONG, 0x6648), /* PidTagRuleError */
+	PR_RULE_ERROR = PROP_TAG(PT_LONG, 0x6648), /* PidTagRuleError */
 	PR_RULE_ACTION_TYPE = PROP_TAG(PT_LONG, 0x6649), /* PidTagRuleActionType */
 	PR_HAS_NAMED_PROPERTIES = PROP_TAG(PT_BOOLEAN, 0x664A), /* PidTagHasNamedProperties */
 	// ? = PROP_TAG(PT_UNICODE, 0x664A), /* MSEMS service: Autodiscover URL (OL2013,2021) */

@@ -2488,7 +2488,8 @@ static BOOL message_make_deferred_error_message(const char *username,
 	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Error") != 0 ||
 	    pmsg->proplist.set(PR_RULE_ACTION_TYPE, &action_type) != 0 ||
-	    pmsg->proplist.set(PR_RULE_ACTION_NUMBER, &block_index) != 0) {
+	    pmsg->proplist.set(PR_RULE_ACTION_NUMBER, &block_index) != 0 ||
+	    pmsg->proplist.set(PR_RULE_ERROR, &rule_error) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
