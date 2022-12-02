@@ -149,7 +149,7 @@ int main(int argc, const char **argv) try
 		mlog(LV_ERR, "system: config_file_init %s: %s",
 			opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
-		return 2;
+		return EXIT_FAILURE;
 	if (!zcore_reload_config(pconfig))
 		return EXIT_FAILURE;
 
@@ -240,55 +240,55 @@ int main(int argc, const char **argv) try
 
 	if (service_run_early() != 0) {
 		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
-		return 3;
+		return EXIT_FAILURE;
 	}
 	if (switch_user_exec(*g_config_file, argv) != 0)
-		return 3;
+		return EXIT_FAILURE;
 	if (iconv_validate() != EXIT_SUCCESS)
-		return 3;
+		return EXIT_FAILURE;
 	textmaps_init();
 	if (0 != service_run()) {
 		mlog(LV_ERR, "system: failed to start services");
-		return 3;
+		return EXIT_FAILURE;
 	}
 	auto cl_1 = make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) {
 		mlog(LV_ERR, "system: failed to start system services");
-		return 4;
+		return EXIT_FAILURE;
 	}
 	listener_init();
 	auto cl_10 = make_scope_exit(listener_stop);
 	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
 		mlog(LV_ERR, "system: failed to start listener");
-		return 13;
+		return EXIT_FAILURE;
 	}
 	if (common_util_run(g_config_file->get_value("data_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start common util");
-		return 5;
+		return EXIT_FAILURE;
 	}
 	if (bounce_producer_run(g_config_file->get_value("data_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start bounce producer");
-		return 6;
+		return EXIT_FAILURE;
 	}
 	if (0 != msgchg_grouping_run()) {
 		mlog(LV_ERR, "system: failed to start msgchg grouping");
-		return 7;
+		return EXIT_FAILURE;
 	}
 	if (0 != ab_tree_run()) {
 		mlog(LV_ERR, "system: failed to start address book tree");
-		return 8;
+		return EXIT_FAILURE;
 	}
 	if (0 != rpc_parser_run()) {
 		mlog(LV_ERR, "system: failed to start ZRPC parser");
-		return 9;
+		return EXIT_FAILURE;
 	}
 	if (zserver_run() != 0) {
 		mlog(LV_ERR, "system: failed to run zserver");
-		return 10;
+		return EXIT_FAILURE;
 	}
 	if (exmdb_client_run_front(g_config_file->get_value("config_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start exmdb client");
-		return 11;
+		return EXIT_FAILURE;
 	}
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
@@ -303,7 +303,7 @@ int main(int argc, const char **argv) try
 			ab_tree_invalidate_cache();
 		}
 	}
-	return 0;
+	return EXIT_SUCCESS;
 } catch (const cfg_error &) {
 	return EXIT_FAILURE;
 }

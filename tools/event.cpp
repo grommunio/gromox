@@ -250,7 +250,7 @@ int main(int argc, const char **argv) try
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
-		return 2;
+		return EXIT_FAILURE;
 
 	mlog_init(pconfig->get_value("event_log_file"), pconfig->get_ll("event_log_level"));
 	auto listen_ip = pconfig->get_value("event_listen_ip");
@@ -264,12 +264,12 @@ int main(int argc, const char **argv) try
 	auto sockd = gx_inet_listen(listen_ip, listen_port);
 	if (sockd < 0) {
 		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
-		return 5;
+		return EXIT_FAILURE;
 	}
 	gx_reexec_record(sockd);
 	auto cl_2 = make_scope_exit([&]() { close(sockd); });
 	if (switch_user_exec(*pconfig, argv) != 0)
-		return 7;
+		return EXIT_FAILURE;
 	
 	g_threads_num ++;
 	g_fifo_alloc = alloc_limiter<fifo_block>(g_threads_num * FIFO_AVERAGE_LENGTH,
@@ -282,7 +282,7 @@ int main(int argc, const char **argv) try
 	auto ret = pthread_attr_setstacksize(&thr_attr, 1U << 20);
 	if (ret != 0) {
 		fprintf(stderr, "pthread_attr_setstacksize: %s\n", strerror(ret));
-		return 7;
+		return EXIT_FAILURE;
 	}
 	
 	std::vector<pthread_t> tidlist;
@@ -301,7 +301,7 @@ int main(int argc, const char **argv) try
 		if (ret != 0) {
 			g_notify_stop = true;
 			printf("[system]: failed to create enqueue pool thread: %s\n", strerror(ret));
-			return 9;
+			return EXIT_FAILURE;
 		}
 		char buf[32];
 		snprintf(buf, sizeof(buf), "enqueue/%u", i);
@@ -312,7 +312,7 @@ int main(int argc, const char **argv) try
 		if (ret != 0) {
 			g_notify_stop = true;
 			printf("[system]: failed to create dequeue pool thread: %s\n", strerror(ret));
-			return 9;
+			return EXIT_FAILURE;
 		}
 		snprintf(buf, sizeof(buf), "dequeue/%u", i);
 		pthread_setname_np(tid, buf);
@@ -327,7 +327,7 @@ int main(int argc, const char **argv) try
 	} else if (err != 0) {
 		printf("[system]: list_file_initd event_acl.txt: %s\n", strerror(err));
 		g_notify_stop = true;
-		return 10;
+		return EXIT_FAILURE;
 	}
 
 	pthread_t acc_thr{}, scan_thr{};
@@ -336,7 +336,7 @@ int main(int argc, const char **argv) try
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		g_notify_stop = true;
-		return 11;
+		return EXIT_FAILURE;
 	}
 	auto cl_5 = make_scope_exit([&]() {
 		pthread_kill(acc_thr, SIGALRM); /* kick accept() */
@@ -347,7 +347,7 @@ int main(int argc, const char **argv) try
 	if (ret != 0) {
 		printf("[system]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
-		return 11;
+		return EXIT_FAILURE;
 	}
 	auto cl_6 = make_scope_exit([&]() {
 		pthread_kill(scan_thr, SIGALRM); /* kick sleep() */
@@ -363,7 +363,7 @@ int main(int argc, const char **argv) try
 	while (!g_notify_stop) {
 		sleep(1);
 	}
-	return 0;
+	return EXIT_SUCCESS;
 } catch (const cfg_error &) {
 	return EXIT_FAILURE;
 }

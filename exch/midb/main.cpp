@@ -139,7 +139,7 @@ int main(int argc, const char **argv) try
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		mlog(LV_ERR, "system: config_file_init %s: %s", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
-		return 2;
+		return EXIT_FAILURE;
 	if (!midb_reload_config(pconfig))
 		return EXIT_FAILURE;
 
@@ -215,11 +215,11 @@ int main(int argc, const char **argv) try
 
 	if (service_run_early() != 0) {
 		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
-		return 3;
+		return EXIT_FAILURE;
 	}
 	if (listener_run(g_config_file->get_value("config_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start TCP listener");
-		return 6;
+		return EXIT_FAILURE;
 	}
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
@@ -228,28 +228,28 @@ int main(int argc, const char **argv) try
 	textmaps_init();
 	if (0 != service_run()) {
 		mlog(LV_ERR, "system: failed to start services");
-		return 3;
+		return EXIT_FAILURE;
 	}
 	auto cl_1 = make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) {
 		mlog(LV_ERR, "system: failed to start system services");
-		return 4;
+		return EXIT_FAILURE;
 	}
 	if (0 != cmd_parser_run()) {
 		mlog(LV_ERR, "system: failed to start command parser");
-		return 7;
+		return EXIT_FAILURE;
 	}
 	if (0 != mail_engine_run()) {
 		mlog(LV_ERR, "system: failed to start mail engine");
-		return 8;
+		return EXIT_FAILURE;
 	}
 	if (exmdb_client_run_front(g_config_file->get_value("config_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start exmdb client");
-		return 9;
+		return EXIT_FAILURE;
 	}
 	if (0 != listener_trigger_accept()) {
 		mlog(LV_ERR, "system: failed to start TCP listener");
-		return 11;
+		return EXIT_FAILURE;
 	}
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
@@ -263,7 +263,7 @@ int main(int argc, const char **argv) try
 			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}
-	return 0;
+	return EXIT_SUCCESS;
 } catch (const cfg_error &) {
 	return EXIT_FAILURE;
 }

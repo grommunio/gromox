@@ -46,14 +46,14 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
 		printf("version: %s\n", PACKAGE_VERSION);
-		return 0;
+		return EXIT_SUCCESS;
 	}
 	offset = 0;
 	buff_len = 64*1024;
 	auto pbuff = gromox::me_alloc<char>(buff_len);
 	if (NULL == pbuff) {
 		fprintf(stderr, "out of memory\n");
-		return 1;
+		return EXIT_FAILURE;
 	}
 	while ((read_len = read(STDIN_FILENO, pbuff, buff_len - offset)) > 0) {
 		offset += read_len;
@@ -62,7 +62,7 @@ int main(int argc, const char **argv)
 			auto nb = gromox::re_alloc<char>(pbuff, buff_len);
 			if (NULL == pbuff) {
 				fprintf(stderr, "out of memory\n");
-				return 1;
+				return EXIT_FAILURE;
 			}
 			pbuff = nb;
 		}
@@ -77,32 +77,32 @@ int main(int argc, const char **argv)
 	pbuff = gromox::me_alloc<char>(unc_size);
 	if (NULL == pbuff) {
 		fprintf(stderr, "out of memory\n");
-		return 1;
+		return EXIT_FAILURE;
 	}
 	size_t rtf_len = unc_size;
 	if (!rtfcp_uncompress(&rtf_bin, pbuff, &rtf_len)) {
 		fprintf(stderr, "fail to uncompress rtf\n");
-		return 2;
+		return EXIT_FAILURE;
 	}
 	g_list_file = list_file_initd("cpid.txt", PKGDATADIR, "%d%s:64");
 	if (NULL == g_list_file) {
 		fprintf(stderr, "list_file_init %s: %s\n",
 			PKGDATADIR "/cpid.txt", strerror(errno));
-		return 3;
+		return EXIT_FAILURE;
 	}
 	pattachments = attachment_list_init();
 	if (NULL == pattachments) {
-		return 1;
+		return EXIT_FAILURE;
 	}
 	if (!rtf_init_library()) {
 		fprintf(stderr, "Failed to init RTF library\n");
-		return 4;
+		return EXIT_FAILURE;
 	}
 	char *htmlout = nullptr;
 	if (rtf_to_html(pbuff, rtf_len, "utf-8", &htmlout, &tmp_len, pattachments)) {
 		write(STDOUT_FILENO, htmlout, tmp_len);
 		free(htmlout);
-		exit(0);
+		return EXIT_SUCCESS;
 	} else {
 		fprintf(stderr, "fail to convert rtf\n");
 		return 5;
