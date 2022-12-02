@@ -231,7 +231,7 @@ int main(int argc, const char **argv) try
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
-		return 2;
+		return EXIT_FAILURE;
 
 	mlog_init(pconfig->get_value("timer_log_file"), pconfig->get_ll("timer_log_level"));
 	g_list_path = pconfig->get_value("timer_state_path");
@@ -247,18 +247,18 @@ int main(int argc, const char **argv) try
 	auto sockd = gx_inet_listen(listen_ip, listen_port);
 	if (sockd < 0) {
 		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
-		return 4;
+		return EXIT_FAILURE;
 	}
 	gx_reexec_record(sockd);
 	auto cl_0 = make_scope_exit([&]() { close(sockd); });
 	if (switch_user_exec(*pconfig, argv) != 0)
-		return 4;
+		return EXIT_FAILURE;
 
 	auto pfile = list_file_initd(g_list_path.c_str(), "/", "%d%l%s:512");
 	if (NULL == pfile) {
 		printf("[system]: Failed to read timers from %s: %s\n",
 		       g_list_path.c_str(), strerror(errno));
-		return 3;
+		return EXIT_FAILURE;
 	}
 
 	auto item_num = pfile->get_size();
@@ -297,7 +297,7 @@ int main(int argc, const char **argv) try
 	g_list_fd = open(g_list_path.c_str(), O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (g_list_fd < 0) {
 		printf("[system]: Failed to open %s: %s\n", g_list_path.c_str(), strerror(errno));
-		return 7;
+		return EXIT_FAILURE;
 	}
 	auto cl_1 = make_scope_exit([&]() { close(g_list_fd); });
 
@@ -317,7 +317,7 @@ int main(int argc, const char **argv) try
 		if (ret != 0) {
 			printf("[system]: failed to create pool thread: %s\n", strerror(ret));
 			g_notify_stop = true;
-			return 8;
+			return EXIT_FAILURE;
 		}
 		char buf[32];
 		snprintf(buf, sizeof(buf), "worker/%u", i);
@@ -333,7 +333,7 @@ int main(int argc, const char **argv) try
 	} else if (err != 0) {
 		printf("[system]: list_file_initd timer_acl.txt: %s\n", strerror(err));
 		g_notify_stop = true;
-		return 9;
+		return EXIT_FAILURE;
 	}
 	
 	auto ret = pthread_create(&thr_accept_id, nullptr, tmr_acceptwork,
@@ -341,7 +341,7 @@ int main(int argc, const char **argv) try
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		g_notify_stop = true;
-		return 10;
+		return EXIT_FAILURE;
 	}
 	auto cl_3 = make_scope_exit([&]() {
 		pthread_kill(thr_accept_id, SIGALRM); /* kick accept() */
@@ -374,7 +374,7 @@ int main(int argc, const char **argv) try
 		sleep(1);
 
 	}
-	return 0;
+	return EXIT_SUCCESS;
 } catch (const cfg_error &) {
 	return EXIT_FAILURE;
 }
