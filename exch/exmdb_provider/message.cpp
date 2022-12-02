@@ -2216,13 +2216,11 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		uint32_t state = sqlite3_column_int64(pstmt, 0);
-		if ((state & RULE_STATE_PARSE_ERROR)
-			|| (state & RULE_STATE_ERROR)) {
+		if (state & (ST_PARSE_ERROR | ST_ERROR))
 			continue;
-		}
-		if (state & RULE_STATE_ENABLED) {
+		if (state & ST_ENABLED) {
 			/* do nothing */
-		} else if (state & RULE_STATE_ONLY_WHEN_OOF) {
+		} else if (state & ST_ONLY_WHEN_OOF) {
 			if (!b_oof)
 				continue;
 		} else {
@@ -2284,13 +2282,11 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 			continue;
 		}
 		auto state = *static_cast<uint32_t *>(pvalue);
-		if ((state & RULE_STATE_PARSE_ERROR)
-			|| (state & RULE_STATE_ERROR)) {
+		if (state & (ST_PARSE_ERROR | ST_ERROR))
 			continue;
-		}
-		if (state & RULE_STATE_ENABLED) {
+		if (state & ST_ENABLED) {
 			/* do nothing */
-		} else if (state & RULE_STATE_ONLY_WHEN_OOF) {
+		} else if (state & ST_ONLY_WHEN_OOF) {
 			if (!b_oof)
 				continue;
 		} else {
@@ -2545,7 +2541,7 @@ static ec_error_t message_disable_rule(sqlite3 *psqlite,
 	
 	if (!b_extended) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET state=state|%u "
-		        "WHERE rule_id=%llu", RULE_STATE_ERROR, LLU{id});
+		         "WHERE rule_id=%llu", ST_ERROR, LLU{id});
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return ecError;
 	} else {
@@ -2554,7 +2550,7 @@ static ec_error_t message_disable_rule(sqlite3 *psqlite,
 			NULL == pvalue) {
 			return ecError;
 		}
-		*static_cast<uint32_t *>(pvalue) |= RULE_STATE_ERROR;
+		*static_cast<uint32_t *>(pvalue) |= ST_ERROR;
 		propval.proptag = PR_RULE_MSG_STATE;
 		propval.pvalue = pvalue;
 		if (!cu_set_property(db_table::msg_props, id, 0,
@@ -3509,7 +3505,7 @@ static ec_error_t op_process(BOOL b_oof, const char *from_address,
     const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit,
     std::list<DAM_NODE> &dam_list)
 {
-	if (b_exit && !(prnode->state & RULE_STATE_ONLY_WHEN_OOF))
+	if (b_exit && !(prnode->state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	void *pvalue = nullptr;
 	if (!common_util_get_rule_property(prnode->id, psqlite,
@@ -3518,9 +3514,8 @@ static ec_error_t op_process(BOOL b_oof, const char *from_address,
 	if (pvalue == nullptr || !cu_eval_msg_restriction(psqlite,
 	    0, message_id, static_cast<RESTRICTION *>(pvalue)))
 		return ecSuccess;
-	if (prnode->state & RULE_STATE_EXIT_LEVEL) {
+	if (prnode->state & ST_EXIT_LEVEL)
 		b_exit = TRUE;
-	}
 	RULE_ACTIONS *pactions = nullptr;
 	if (!common_util_get_rule_property(prnode->id, psqlite,
 	    PR_RULE_ACTIONS, reinterpret_cast<void **>(&pactions)))
@@ -3882,7 +3877,7 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
     uint64_t message_id, const char *pdigest, seen_list &seen,
     const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit)
 {
-	if (b_exit && !(prnode->state & RULE_STATE_ONLY_WHEN_OOF))
+	if (b_exit && !(prnode->state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	void *pvalue = nullptr;
 	if (!cu_get_property(db_table::msg_props, prnode->id, 0, psqlite,
@@ -3903,9 +3898,8 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 		return ecError;
 	if (!cu_eval_msg_restriction(psqlite, 0, message_id, &restriction))
 		return ecSuccess;
-	if (prnode->state & RULE_STATE_EXIT_LEVEL) {
+	if (prnode->state & ST_EXIT_LEVEL)
 		b_exit = TRUE;
-	}
 	if (!cu_get_property(db_table::msg_props, prnode->id, 0, psqlite,
 	    PR_EXTENDED_RULE_MSG_ACTIONS, &pvalue))
 		return ecError;
