@@ -216,7 +216,7 @@ int gx_inet_listen(const char *host, uint16_t port)
 	return -(errno = saved_errno);
 }
 
-int gx_local_listen(const char *path, bool delete_on_create)
+int gx_local_listen(const char *path)
 {
 	struct sockaddr_un u;
 	if (strlen(path) >= arsizeof(u.sun_path))
