@@ -417,7 +417,9 @@ void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 	g_sqlconn_pool.resize(g_parm.conn_num);
 	g_sqlconn_pool.bump();
 
-	auto qstr = "SELECT u.id FROM users AS u LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=0x39050003 WHERE up.proptag IS NULL";
+	auto qstr = "SELECT u.id FROM users AS u LEFT JOIN user_properties "
+	            "AS up ON u.id=up.user_id AND up.proptag=0x39050003 "
+	            "WHERE u.domain_id > 0 AND up.proptag IS NULL";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn->query(qstr)) {
 		DB_RESULT res = mysql_store_result(conn->get());
