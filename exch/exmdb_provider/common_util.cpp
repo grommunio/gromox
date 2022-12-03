@@ -4348,10 +4348,27 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
 		void *pvalue = nullptr;
+		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+			return FALSE;
+		if (PROP_TYPE(rcon->proptag) == PT_BINARY) {
+			if (!cu_get_property(db_table::msg_props,
+			    message_id, cpid, psqlite, rcon->proptag, &pvalue) ||
+			    pvalue == nullptr)
+				return FALSE;
+			auto &dbval = *static_cast<const BINARY *>(pvalue);
+			auto &rsval = *static_cast<const BINARY *>(rcon->propval.pvalue);
+			switch (rcon->fuzzy_level & 0xFFFF) {
+			case FL_FULLSTRING:
+				return dbval.cb == rsval.cb && memcmp(dbval.pv, rsval.pv, rsval.cb) == 0;
+			case FL_SUBSTRING:
+				return HX_memmem(dbval.pv, dbval.cb, rsval.pv, rsval.cb) != nullptr;
+			case FL_PREFIX:
+				return dbval.cb >= rsval.cb && memcmp(dbval.pv, rsval.pv, rsval.cb) == 0;
+			}
+			return false;
+		}
 		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
 		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
 		if (!cu_get_property(db_table::msg_props,
 		    message_id, cpid, psqlite, rcon->proptag, &pvalue) ||
