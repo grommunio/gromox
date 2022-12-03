@@ -756,6 +756,8 @@ struct ACTION_BLOCK {
 	uint32_t flavor;
 	uint32_t flags;
 	void *pdata;
+
+	std::string repr() const;
 };
 
 struct ADVISE_INFO {
@@ -1063,6 +1065,8 @@ struct RECIPIENT_BLOCK {
 	uint8_t reserved;
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
+
+	std::string repr() const;
 };
 
 struct RESTRICTION_AND_OR;
@@ -1185,6 +1189,8 @@ struct RESTRICTION_COUNT {
 struct RULE_ACTIONS {
 	uint16_t count;
 	ACTION_BLOCK *pblock;
+
+	std::string repr() const;
 };
 
 struct RULE_DATA {
@@ -1221,6 +1227,8 @@ struct ZREPLY_ACTION {
 struct FORWARDDELEGATE_ACTION {
 	uint16_t count;
 	RECIPIENT_BLOCK *pblock;
+
+	std::string repr() const;
 };
 
 enum { /* for GetSearchCriteria */
