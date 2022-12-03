@@ -296,37 +296,32 @@ BOOL string_to_utf8(const char *charset, const char *in_string,
 BOOL string_from_utf8(const char *charset, const char *in_string,
     char *out_string, size_t out_len)
 {
-	int length;
-	char *pin, *pout;
-	size_t in_len;
-	
-	
+	if (out_len == 0)
+		return TRUE;
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
 		0 == strcasecmp(charset, "US-ASCII")) {
-		strcpy(out_string, in_string);
+		gx_strlcpy(out_string, in_string, out_len);
 		return TRUE;
 	}
 	
-	length = strlen(in_string);
+	auto length = strlen(in_string);
 	if (0 == length) {
 		out_string[0] = '\0';
 		return TRUE;
 	}
 	
 	auto orig_outlen = out_len;
-	if (out_len > 0)
-		/* Leave room for \0 */
-		--out_len;
+	--out_len; /* Leave room for \0 */
 	auto cs = replace_iconv_charset(charset);
 	auto conv_id = iconv_open(cs, "UTF-8");
 	if (conv_id == iconv_t(-1)) {
 		mlog(LV_ERR, "E-2109: iconv_open %s: %s", cs, strerror(errno));
 		return FALSE;
 	}
-	pin = (char*)in_string;
-	pout = out_string;
-	in_len = length;
+	auto pin = const_cast<char *>(in_string);
+	auto pout = out_string;
+	auto in_len = length;
 	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return FALSE;

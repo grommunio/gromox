@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdio>
 #include <memory>
+#include <unistd.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <gromox/defs.h>
