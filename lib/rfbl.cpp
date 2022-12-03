@@ -884,13 +884,20 @@ void mlog(unsigned int level, const char *fmt, ...)
 	va_end(args);
 }
 
-wrapfd::~wrapfd()
+errno_t wrapfd::close_rd() noexcept
 {
 	if (m_fd < 0)
-		return;
-	int e = errno;
-	::close(m_fd);
-	errno = e;
+		return 0;
+	auto ret = ::close(m_fd);
+	m_fd = -1;
+	if (ret == 0)
+		return 0;
+	ret = errno;
+	try {
+		mlog(LV_ERR, "wrapfd::close: %s", strerror(ret));
+	} catch (...) {
+	}
+	return ret;
 }
 
 std::string zstd_decompress(std::string_view x)
@@ -1089,7 +1096,7 @@ errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile, uint8_t 
 		if (zr == 0)
 			break;
 	}
-	return 0;
+	return fd.close_wr();
 }
 
 struct iomembuf : public std::streambuf {

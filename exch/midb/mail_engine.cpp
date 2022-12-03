@@ -273,7 +273,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 			return 0;
 		if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return 0;
-		fd.close();
+		fd.close_rd();
 		MAIL imail(g_mime_pool);
 		if (!imail.retrieve(pbuff.get(), node_stat.st_size))
 			return 0;
@@ -290,9 +290,9 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 			common_util_get_maildir(), mid_string);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() >= 0) {
-			if (HXio_fullwrite(fd.get(), digest_buff, tmp_len) != tmp_len)
+			if (HXio_fullwrite(fd.get(), digest_buff, tmp_len) != tmp_len ||
+			    fd.close_wr() < 0)
 				mlog(LV_ERR, "E-2082: write %s: %s", temp_path, strerror(errno));
-			fd.close();
 		}
 	} else {
 		if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode) ||
@@ -303,7 +303,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		    node_stat.st_size) != node_stat.st_size)
 			return 0;
 		digest_buff[node_stat.st_size] = '\0';
-		fd.close();
+		fd.close_rd();
 	}
 	auto pstmt = gx_sql_prep(psqlite, "SELECT uid, recent, read,"
 	             " unsent, flagged, replied, forwarded, deleted, ext,"
@@ -1654,9 +1654,9 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() < 0)
 			return;
-		if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len)
+		if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len ||
+		    fd.close_wr() < 0)
 			return;
-		fd.close();
 		sprintf(temp_path1, "%s/eml/%s", dir, mid_string1);
 		fd = open(temp_path1, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() < 0)
@@ -2715,7 +2715,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return MIDB_E_SHORT_READ;
-	fd.close();
+	fd.close_rd();
 
 	MAIL imail(g_mime_pool);
 	if (!imail.retrieve(pbuff.get(), node_stat.st_size))
@@ -2733,9 +2733,9 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		mlog(LV_ERR, "E-2073: Opening %s for writing failed: %s", temp_path, strerror(errno));
 		return MIDB_E_DISK_ERROR;
 	}
-	if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len)
+	if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len ||
+	    fd.close_wr() < 0)
 		mlog(LV_ERR, "E-2085: write %s: %s", temp_path, strerror(errno));
-	fd.close();
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2902,7 +2902,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return MIDB_E_SHORT_READ;
-	fd.close();
+	fd.close_rd();
 
 	MAIL imail(g_mime_pool);
 	if (!imail.retrieve(pbuff.get(), node_stat.st_size))

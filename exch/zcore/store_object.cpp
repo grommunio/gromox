@@ -13,6 +13,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -1350,11 +1351,16 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			} catch (const std::bad_alloc &) {
 				mlog(LV_ERR, "E-1494: ENOMEM");
 			}
+			/* Write to temp file first */
 			wrapfd fd = open(pic_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
 			if (fd.get() < 0)
 				break;
 			auto bv = static_cast<BINARY *>(ppropvals->ppropval[i].pvalue);
-			write(fd.get(), bv->pb, bv->cb);
+			if (HXio_fullwrite(fd.get(), bv->pb, bv->cb) != bv->cb ||
+			    fd.close_wr() < 0) {
+				mlog(LV_ERR, "E-1236: write %s: %s", pic_path.c_str(), strerror(errno));
+				return false;
+			}
 			break;
 		}
 		default:

@@ -42,13 +42,13 @@ class wrapfd {
 	public:
 	wrapfd(int z) : m_fd{z} {}
 	wrapfd(wrapfd &&) noexcept = delete;
-	~wrapfd();
+	~wrapfd() { close_rd(); }
 	int get() const { return m_fd; }
 	int release() { int t = m_fd; m_fd = -1; return t; }
-	void close() { if (m_fd >= 0) ::close(m_fd); m_fd = -1; }
+	errno_t close_rd() noexcept;
+	errno_t close_wr() noexcept __attribute__((warn_unused_result)) { return close_rd(); };
 	void operator=(wrapfd &&o) noexcept {
-		if (m_fd >= 0)
-			::close(m_fd);
+		close_rd();
 		m_fd = o.m_fd;
 		o.m_fd = -1;
 	}

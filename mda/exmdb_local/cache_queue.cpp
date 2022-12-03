@@ -130,7 +130,6 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	uint64_t enc_origtime = cpu_to_le64(original_time);
 	if (write(fd.get(), &enc_times, sizeof(enc_times)) != sizeof(enc_times) ||
 	    write(fd.get(), &enc_origtime, sizeof(enc_origtime)) != sizeof(enc_origtime)) {
-		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1353: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
@@ -140,7 +139,6 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	auto maillen = pcontext->pmail->get_length();
 	if (maillen < 0) {
 		mlog(LV_ERR, "exmdb_local: failed to get mail length");
-		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1354: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
@@ -148,7 +146,6 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	}
 	auto len = cpu_to_le32(static_cast<size_t>(maillen));
 	if (write(fd.get(), &len, sizeof(len)) != sizeof(len)) {
-		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1355: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
@@ -163,7 +160,6 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	    write(fd.get(), &enc_bound, sizeof(enc_bound)) != sizeof(enc_bound) ||
 	    write(fd.get(), &enc_spam, sizeof(enc_spam)) != sizeof(enc_spam) ||
 	    write(fd.get(), &enc_bounce, sizeof(enc_bounce)) != sizeof(enc_bounce)) {
-		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1356: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
@@ -173,7 +169,6 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	auto temp_len = strlen(pcontext->pcontrol->from) + 1;
 	auto wrret = write(fd.get(), pcontext->pcontrol->from, temp_len);
 	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
-		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1357: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
@@ -183,7 +178,6 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	temp_len = strlen(rcpt_to) + 1;
 	wrret = write(fd.get(), rcpt_to, temp_len);
 	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
-		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1358: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
@@ -191,7 +185,6 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
     }
     /* last null character for indicating end of rcpt to array */
 	if (write(fd.get(), "", 1) != 1) {
-		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1359: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
@@ -199,8 +192,8 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	}
 	lseek(fd.get(), 0, SEEK_SET);
 	enc_times = cpu_to_le32(1);
-	if (write(fd.get(), &enc_times, sizeof(enc_times)) != sizeof(enc_times)) {
-		fd.close();
+	if (write(fd.get(), &enc_times, sizeof(enc_times)) != sizeof(enc_times) ||
+	    fd.close_wr() < 0) {
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1360: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
@@ -445,11 +438,12 @@ static void *mdl_thrwork(void *arg)
 				/* rewrite type and until time */
 				lseek(fd.get(), 0, SEEK_SET);
 				times = cpu_to_le32(times + 1);
-				if (write(fd.get(), &times, sizeof(uint32_t)) != sizeof(uint32_t))
+				if (write(fd.get(), &times, sizeof(uint32_t)) != sizeof(uint32_t) ||
+				    fd.close_wr() < 0)
 					mlog(LV_ERR, "exmdb_local: error while updating "
 						"times");
 			}
-			fd.close();
+			fd.close_rd();
 			if (need_remove && remove(temp_path.c_str()) < 0 && errno != ENOENT)
 				mlog(LV_WARN, "W-1432: remove %s: %s",
 				        temp_path.c_str(), strerror(errno));
