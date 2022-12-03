@@ -1033,8 +1033,8 @@ bool MIME::serialize(STREAM *pstream) const
 			pstream->write("\r\n", 2);
 		else if (pmime->content_length != 0)
 			pstream->write(pmime->content_begin, pmime->content_length);
-		else
-			reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream);
+		else if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream))
+			return false;
 		return true;
 	}
 	if (NULL == pmime->first_boundary) {

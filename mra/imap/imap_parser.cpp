@@ -1739,8 +1739,9 @@ static void *imps_scanwork(void *argp)
 		hl_hold.unlock();
 		
 		while (temp_file.readline(username, arsizeof(username)) != MEM_END_OF_FILE) {
-			temp_file.readline(maildir, arsizeof(maildir));
-			temp_file.readline(folder, arsizeof(folder));
+			if (temp_file.readline(maildir, std::size(maildir)) == MEM_END_OF_FILE ||
+			    temp_file.readline(folder, std::size(folder)) == MEM_END_OF_FILE)
+				break;
 			system_services_broadcast_select(username, folder);
 			system_services_ping_mailbox(maildir, &err_num);
 		}
