@@ -1875,7 +1875,6 @@ uint32_t ab_tree_hidden(const tree_node *node)
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
     uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids) try
 {
-	int count;
 	std::vector<const tree_node *> tlist;
 	
 	if (container_id == SPECIAL_CONTAINER_GAL) {
@@ -1911,10 +1910,10 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 			pminids->count = 0;
 			return FALSE;
 		}
+		size_t count = 0;
+		for (auto ptr : tlist)
+			pminids->pl[count++] = ab_tree_get_node_minid(ptr);
 	}
-	count = 0;
-	for (auto ptr : tlist)
-		pminids->pl[count++] = ab_tree_get_node_minid(ptr);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1247: ENOMEM");

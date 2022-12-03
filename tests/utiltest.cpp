@@ -34,8 +34,10 @@ static int t_extpp()
 static void t_convert()
 {
 	char out[1];
-	string_to_utf8("cp1252", "foo", out, std::size(out));
-	string_from_utf8("cp1252", "foo", out, std::size(out));
+	if (!string_to_utf8("cp1252", "foo", out, std::size(out)))
+		/* ignore */;
+	if (!string_from_utf8("cp1252", "foo", out, std::size(out)))
+		/* ignore */;
 }
 
 static int t_emailaddr()

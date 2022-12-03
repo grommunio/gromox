@@ -3235,8 +3235,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
 {
 	int errnum, result, i;
 	BOOL b_deleted;
-	char buff[1024];
-	char prev_selected[128];
+	char prev_selected[sizeof(pcontext->selected_folder)], buff[1024];
 	size_t string_length = 0;
 	const char *estring;
 	

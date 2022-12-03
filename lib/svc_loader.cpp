@@ -98,6 +98,8 @@ int service_run_early()
 	for (const auto &i : g_plugin_names) {
 		int ret = service_load_library(i.c_str());
 		if (ret == PLUGIN_LOAD_OK) {
+			if (g_cur_plug == nullptr)
+				continue;
 			if (g_cur_plug->lib_main(PLUGIN_EARLY_INIT, const_cast<void **>(server_funcs))) {
 				g_cur_plug = nullptr;
 				continue;
