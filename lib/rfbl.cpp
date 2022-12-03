@@ -453,28 +453,58 @@ std::string bin2hex(const void *vin, size_t len)
 	return buffer;
 }
 
-std::string hex2bin(const char *input)
+std::string hex2bin(std::string_view input, hex2bin_mode onbad)
 {
-	auto max = strlen(input) / 2; /* ignore last nibble if needed */
+	auto max = input.size() / 2;
+	size_t z = 0;
 	std::string buf;
 	buf.resize(max);
-	for (size_t n = 0; n < max; ++n) {
-		unsigned char c = HX_tolower(input[2*n]);
-		unsigned char d = HX_tolower(input[2*n+1]);
-		if (c >= '0' && c <= '9')
-			c -= '0';
-		else if (c >= 'a' && c <= 'f')
-			c = c - 'a' + 10;
-		else
-			c = 0;
-		if (d >= '0' && d <= '9')
-			d -= '0';
-		else if (d >= 'a' && d <= 'f')
-			d = d - 'a' + 10;
-		else
-			d = 0;
-		buf[n] = (c << 4) | d;
+	while (input.size() > 0) {
+		unsigned char hi = 0, lo = 0;
+		while (input.size() > 0) {
+			hi = HX_tolower(input[0]);
+			if (hi >= '0' && hi <= '9') {
+				hi -= '0';
+			} else if (hi >= 'a' && hi <= 'f') {
+				hi = hi - 'a' + 10;
+			} else if (onbad == HEX2BIN_SKIP) {
+				input.remove_prefix(1);
+				continue;
+			} else if (onbad == HEX2BIN_ZERO) {
+				hi = 0;
+			} else if (onbad == HEX2BIN_STOP) {
+				return buf;
+			} else if (onbad == HEX2BIN_EMPTY) {
+				return buf = {};
+			}
+			input.remove_prefix(1);
+			break;
+		}
+		if (input.size() == 0)
+			break;
+		while (input.size() > 0) {
+			lo = HX_tolower(input[0]);
+			if (lo >= '0' && lo <= '9') {
+				lo -= '0';
+			} else if (lo >= 'a' && lo <= 'f') {
+				lo = lo - 'a' + 10;
+			} else if (onbad == HEX2BIN_SKIP) {
+				input.remove_prefix(1);
+				continue;
+			} else if (onbad == HEX2BIN_ZERO) {
+				lo = 0;
+			} else if (onbad == HEX2BIN_STOP) {
+				buf.resize(z);
+				return buf;
+			} else if (onbad == HEX2BIN_EMPTY) {
+				return buf = {};
+			}
+			input.remove_prefix(1);
+			break;
+		}
+		buf[z++] = (hi << 4) | lo;
 	}
+	buf.resize(z);
 	return buf;
 }
 

@@ -125,13 +125,23 @@ int uuencode(int mode, const char *file_name, const char *in,
 
 namespace gromox {
 
+/**
+ * %HEX2BIN_EMPTY:	return empty string on unrecognized input character
+ * %HEX2BIN_STOP:	return partial string on unrecognized input character
+ * %HEX2BIN_ZERO:	treat unrecognized input characters as '0'
+ * %HEX2BIN_SKIP:	skip over unrecognized input characters
+ */
+enum hex2bin_mode {
+	HEX2BIN_EMPTY, HEX2BIN_STOP, HEX2BIN_ZERO, HEX2BIN_SKIP,
+};
+
 extern GX_EXPORT void *zalloc(size_t);
 extern GX_EXPORT uint32_t rand();
 extern GX_EXPORT bool parse_bool(const char *s);
 extern GX_EXPORT std::string bin2hex(const void *, size_t);
 extern GX_EXPORT std::string bin2txt(const void *, size_t);
 template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }
-extern GX_EXPORT std::string hex2bin(const char *);
+extern GX_EXPORT std::string hex2bin(std::string_view, hex2bin_mode = HEX2BIN_EMPTY);
 extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
 extern GX_EXPORT int setup_sigalrm();
 extern GX_EXPORT size_t qp_encoded_size_estimate(const char *, size_t);
