@@ -3,6 +3,9 @@
 #include <string>
 #include <utility>
 #include <gromox/mapidefs.h>
+#include <gromox/util.hpp>
+
+using namespace gromox;
 
 static inline const char *relop_repr(relop r)
 {
@@ -28,6 +31,11 @@ std::string TAGGED_PROPVAL::repr() const
 	case PT_I8: ss << "PT_I8{" PTI << *static_cast<uint64_t *>(pvalue) << "}"; break;
 	case PT_STRING8: ss << "PT_STRING8{" PTI << "\"" << static_cast<const char *>(pvalue) << "\"}"; break;
 	case PT_UNICODE: ss << "PT_UNICODE{" PTI << "\"" << static_cast<const char *>(pvalue) << "\"}"; break;
+	case PT_BINARY: {
+		auto bin = static_cast<const BINARY *>(pvalue);
+		ss << "PT_BINARY{" PTI << "[" << bin->cb << "]=\"" << bin2txt(bin->pv, bin->cb) << "\"}";
+		break;
+	}
 	case PT_SVREID: {
 		auto &x = *static_cast<const SVREID *>(pvalue);
 		ss << "PT_SVREID{" PTI;
@@ -78,7 +86,7 @@ std::string RESTRICTION_AND_OR::repr() const
 	auto s = std::to_string(count);
 	for (size_t i = 0; i < count; ++i)
 		s += "," + pres[i].repr();
-	return "RES_AOR{" + std::move(s) + "}";
+	return "RES_AOR[" + std::to_string(count) + "]{" + std::move(s) + "}";
 }
 
 std::string RESTRICTION_NOT::repr() const
@@ -165,8 +173,11 @@ std::string RESTRICTION_SUBOBJ::repr() const
 
 std::string RESTRICTION_COMMENT::repr() const
 {
-	return "RES_COMMENT{" + std::to_string(count) + "," +
-	       ppropval->repr() + "," + pres->repr() + "}";
+	std::string s = "RES_COMMENT{props[" + std::to_string(count) + "]={";
+	for (size_t i = 0; i < count; ++i)
+		s += ppropval[i].repr() + ",";
+	s += "},res={" + pres->repr() + "}}";
+	return s;
 }
 
 std::string RESTRICTION_COUNT::repr() const
