@@ -2955,7 +2955,14 @@ static ec_error_t message_forward_message(const char *from_address,
 			pmime->append_field("Delivered-To", eaddr.c_str());
 		}
 		pmime->set_field("To", tmp_buff);
-		snprintf(tmp_buff, arsizeof(tmp_buff), "Automatic forwarded message from %s", username);
+
+		auto pmime_old = imail.get_head();
+		memcpy(tmp_buff, "\x00\x00\x00\x00", 5);
+		if (pmime_old == nullptr ||
+		    !pmime_old->get_field("Subject", tmp_buff + 5, std::size(tmp_buff) - 5))
+			snprintf(tmp_buff, std::size(tmp_buff), "Fwd: (no subject)");
+		else
+			memcpy(tmp_buff, "Fwd: ", 5);
 		pmime->set_field("Subject", tmp_buff);
 		time(&cur_time);
 		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z", 
