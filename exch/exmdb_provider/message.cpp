@@ -2935,10 +2935,12 @@ static ec_error_t message_forward_message(const char *from_address,
 			return ecServerOOM;
 		}
 		pmime->set_content_type("message/rfc822");
-		if (action_flavor & FWD_PRESERVE_SENDER)
-			snprintf(tmp_buff, arsizeof(tmp_buff), "<%s>", from_address);
-		else
-			snprintf(tmp_buff, arsizeof(tmp_buff), "\"Forwarder\"<forwarder@%s>", pdomain);
+		/*
+		 * OXORULE v21 §2.2.5.1.1 specifies FWD_AS_ATTACHMENT is
+		 * exclusive, so FWD_PRESERVE_SENDER is not evaluated to build
+		 * the From line.
+		 */
+		snprintf(tmp_buff, std::size(tmp_buff), "<%s>", username);
 		pmime->set_field("From", tmp_buff);
 		offset = 0;
 		for (const auto &eaddr : rcpt_list) {
@@ -2960,10 +2962,9 @@ static ec_error_t message_forward_message(const char *from_address,
 			localtime_r(&cur_time, &time_buff));
 		pmime->set_field("Date", tmp_buff);
 		pmime->write_mail(&imail);
-		if (action_flavor & FWD_PRESERVE_SENDER)
-			strcpy(tmp_buff, from_address);
-		else
-			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
+		/* Envelope FROM */
+		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
+		           from_address : username, std::size(tmp_buff));
 		cu_send_mail(&imail1, tmp_buff, rcpt_list);
 	} else {
 		auto pmime = imail.get_head();
@@ -2972,10 +2973,9 @@ static ec_error_t message_forward_message(const char *from_address,
 		}
 		for (const auto &eaddr : rcpt_list)
 			pmime->append_field("Delivered-To", eaddr.c_str());
-		if (action_flavor & FWD_PRESERVE_SENDER)
-			strcpy(tmp_buff, from_address);
-		else
-			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
+		/* Envelope FROM */
+		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
+		           from_address : username, std::size(tmp_buff));
 		cu_send_mail(&imail, tmp_buff, rcpt_list);
 	}
 	return ecSuccess;
