@@ -2361,6 +2361,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			write(fd.get(), u.c_str(), u.size());
 			write(fd.get(), "\r\n", 2);
 		}
+		if (fd.close_wr() < 0)
+			return ecError;
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -2728,7 +2730,7 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 	ssize_t have_read;
 	while ((have_read = read(fd.get(), buf, sizeof(buf))) > 0)
 		tpldata += std::string_view(buf, have_read);
-	fd.close();
+	fd.close_rd();
 	try {
 		/* .abkt files are Unicode, transform them to 8-bit codepage */
 		tpldata = abkt_tobinary(abkt_tojson(tpldata, 0), codepage, false);

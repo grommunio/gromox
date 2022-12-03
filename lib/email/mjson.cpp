@@ -654,7 +654,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				goto RFC822_FAILURE;
 			}
 			digest_buff[rdret] = '\0';
-			fd.close();
+			fd.close_rd();
 			MJSON temp_mjson(pmime->ppool);
 			if (!temp_mjson.retrieve(digest_buff, node_stat.st_size, storage_path)) {
 				free(digest_buff);

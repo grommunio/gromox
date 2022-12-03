@@ -2728,7 +2728,7 @@ static BOOL cu_set_msg_body_v0(sqlite3 *psqlite, uint64_t message_id,
 	if (ret < 0 || static_cast<size_t>(ret) != len)
 		return FALSE;
 	/* Give a NUL byte to appease old Gromox < 0.21. */
-	if (write(fd.get(), "", 1) != 1)
+	if (write(fd.get(), "", 1) != 1 || fd.close_wr() < 0)
 		return false;
 	if (!cu_update_object_cid(psqlite, db_table::msg_props, message_id, proptag, cid))
 		return TRUE;
@@ -2809,8 +2809,8 @@ static BOOL cu_set_obj_cid_val_v0(sqlite3 *psqlite, db_table table_type,
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
 	auto ret = write(fd.get(), bv->pv, bv->cb);
 	if (ret < 0 || static_cast<size_t>(ret) != bv->cb ||
-	    !cu_update_object_cid(psqlite, table_type, message_id,
-	    ppropval->proptag, cid))
+	    fd.close_wr() < 0 || !cu_update_object_cid(psqlite, table_type,
+	    message_id, ppropval->proptag, cid))
 		return FALSE;
 	remove_file.release();
 	return TRUE;
