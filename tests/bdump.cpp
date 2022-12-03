@@ -11,9 +11,10 @@
 
 using namespace gromox;
 
-enum { D_NONE, D_RESTRICT, };
+enum { D_NONE, D_RESTRICT, D_ACTIONS, };
 static unsigned int g_decode, g_hex2bin;
 static constexpr struct HXoption g_options_table[] = {
+	{"act", 'A', HXTYPE_VAL, &g_decode, nullptr, nullptr, D_ACTIONS, "Decode rule actions"},
 	{"pack", 'p', HXTYPE_NONE, &g_hex2bin, nullptr, nullptr, 0, "Use hex2bin"},
 	{"res", 'r', HXTYPE_VAL, &g_decode, nullptr, nullptr, D_RESTRICT, "Decode restriction"},
 	HXOPT_AUTOHELP,
@@ -42,6 +43,11 @@ int main(int argc, const char **argv)
 		if (ep.g_restriction(&rs) != EXT_ERR_SUCCESS)
 			return EXIT_FAILURE;
 		printf("%s\n", rs.repr().c_str());
+	} else if (g_decode == D_ACTIONS) {
+		RULE_ACTIONS ra{};
+		if (ep.g_rule_actions(&ra) != EXT_ERR_SUCCESS)
+			return EXIT_FAILURE;
+		printf("%s\n", ra.repr().c_str());
 	}
 	return EXIT_SUCCESS;
 }

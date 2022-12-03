@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
@@ -54,6 +55,8 @@ struct MOVECOPY_ACTION {
 	uint8_t same_store;
 	STORE_ENTRYID *pstore_eid;
 	void *pfolder_eid; /* SVREID or BINARY */
+
+	std::string repr() const;
 };
 
 struct EXT_MOVECOPY_ACTION {
@@ -65,6 +68,8 @@ struct REPLY_ACTION {
 	uint64_t template_folder_id;
 	uint64_t template_message_id;
 	GUID template_guid;
+
+	std::string repr() const;
 };
 
 struct EXT_REPLY_ACTION {
