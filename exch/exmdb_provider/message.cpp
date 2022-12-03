@@ -2888,7 +2888,8 @@ static ec_error_t message_forward_message(const char *from_address,
 	std::unique_ptr<char[], stdlib_delete> pbuff;
 	MAIL imail;
 	if (NULL != pdigest) {
-		get_digest(pdigest, "file", mid_string, arsizeof(mid_string));
+		if (!get_digest(pdigest, "file", mid_string, std::size(mid_string)))
+			return ecError;
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
 		         exmdb_server::get_dir(), mid_string);
 		wrapfd fd = open(tmp_path, O_RDONLY);

@@ -1675,8 +1675,11 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			temp_name1[i] = temp_name[i];
 			continue;
 		}
-		imap_cmd_parser_imapfolder_to_sysfolder(
-			pcontext->lang, temp_name1, converted_name);
+		if (!imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
+		    temp_name1, converted_name)) {
+			mem_file_free(&temp_file);
+			return 1800;
+		}
 		ssr = system_services_make_folder(pcontext->maildir,
 		      converted_name, &errnum);
 		ret = m2icode(ssr, errnum);

@@ -3631,7 +3631,10 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 				return NULL;
 			}
 			if (ret == 65001) {
-				pmsg->proplist.set(PR_BODY_W, plainbuf.data());
+				if (pmsg->proplist.set(PR_BODY_W, plainbuf.data()) != 0) {
+					message_content_free(pmsg);
+					return nullptr;
+				}
 			} else {
 				auto z = 3 * plainbuf.size() + 1;
 				auto s = static_cast<char *>(alloc(z));
