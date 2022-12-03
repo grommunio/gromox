@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
@@ -54,6 +55,8 @@ struct MOVECOPY_ACTION {
 	uint8_t same_store;
 	STORE_ENTRYID *pstore_eid;
 	void *pfolder_eid; /* SVREID or BINARY */
+
+	std::string repr() const;
 };
 
 struct EXT_MOVECOPY_ACTION {
@@ -65,6 +68,8 @@ struct REPLY_ACTION {
 	uint64_t template_folder_id;
 	uint64_t template_message_id;
 	GUID template_guid;
+
+	std::string repr() const;
 };
 
 struct EXT_REPLY_ACTION {
@@ -112,13 +117,15 @@ struct EXT_RULE_ACTIONS {
 	EXT_ACTION_BLOCK *pblock;
 };
 
-#define RULE_STATE_ENABLED							0x00000001
-#define RULE_STATE_ERROR							0x00000002
-#define RULE_STATE_ONLY_WHEN_OOF					0x00000004
-#define RULE_STATE_KEEP_OOF_HIST					0x00000008
-#define RULE_STATE_EXIT_LEVEL						0x00000010
-#define RULE_STATE_SKIP_IF_SCL_IS_SAFE				0x00000020
-#define RULE_STATE_PARSE_ERROR						0x00000040
+enum {
+	ST_ENABLED             = 0x01U,
+	ST_ERROR               = 0x02U,
+	ST_ONLY_WHEN_OOF       = 0x04U,
+	ST_KEEP_OOF_HIST       = 0x08U,
+	ST_EXIT_LEVEL          = 0x10U,
+	ST_SKIP_IF_SCL_IS_SAFE = 0x20U,
+	ST_PARSE_ERROR         = 0x40U,
+};
 
 #define RULE_ERROR_GENERIC							0x00000001
 #define RULE_ERROR_OPEN_FOLDER						0x00000002

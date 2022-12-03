@@ -2216,13 +2216,11 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		uint32_t state = sqlite3_column_int64(pstmt, 0);
-		if ((state & RULE_STATE_PARSE_ERROR)
-			|| (state & RULE_STATE_ERROR)) {
+		if (state & (ST_PARSE_ERROR | ST_ERROR))
 			continue;
-		}
-		if (state & RULE_STATE_ENABLED) {
+		if (state & ST_ENABLED) {
 			/* do nothing */
-		} else if (state & RULE_STATE_ONLY_WHEN_OOF) {
+		} else if (state & ST_ONLY_WHEN_OOF) {
 			if (!b_oof)
 				continue;
 		} else {
@@ -2284,13 +2282,11 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 			continue;
 		}
 		auto state = *static_cast<uint32_t *>(pvalue);
-		if ((state & RULE_STATE_PARSE_ERROR)
-			|| (state & RULE_STATE_ERROR)) {
+		if (state & (ST_PARSE_ERROR | ST_ERROR))
 			continue;
-		}
-		if (state & RULE_STATE_ENABLED) {
+		if (state & ST_ENABLED) {
 			/* do nothing */
-		} else if (state & RULE_STATE_ONLY_WHEN_OOF) {
+		} else if (state & ST_ONLY_WHEN_OOF) {
 			if (!b_oof)
 				continue;
 		} else {
@@ -2492,7 +2488,8 @@ static BOOL message_make_deferred_error_message(const char *username,
 	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Error") != 0 ||
 	    pmsg->proplist.set(PR_RULE_ACTION_TYPE, &action_type) != 0 ||
-	    pmsg->proplist.set(PR_RULE_ACTION_NUMBER, &block_index) != 0) {
+	    pmsg->proplist.set(PR_RULE_ACTION_NUMBER, &block_index) != 0 ||
+	    pmsg->proplist.set(PR_RULE_ERROR, &rule_error) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -2545,7 +2542,7 @@ static ec_error_t message_disable_rule(sqlite3 *psqlite,
 	
 	if (!b_extended) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET state=state|%u "
-		        "WHERE rule_id=%llu", RULE_STATE_ERROR, LLU{id});
+		         "WHERE rule_id=%llu", ST_ERROR, LLU{id});
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return ecError;
 	} else {
@@ -2554,7 +2551,7 @@ static ec_error_t message_disable_rule(sqlite3 *psqlite,
 			NULL == pvalue) {
 			return ecError;
 		}
-		*static_cast<uint32_t *>(pvalue) |= RULE_STATE_ERROR;
+		*static_cast<uint32_t *>(pvalue) |= ST_ERROR;
 		propval.proptag = PR_RULE_MSG_STATE;
 		propval.pvalue = pvalue;
 		if (!cu_set_property(db_table::msg_props, id, 0,
@@ -2938,10 +2935,12 @@ static ec_error_t message_forward_message(const char *from_address,
 			return ecServerOOM;
 		}
 		pmime->set_content_type("message/rfc822");
-		if (action_flavor & FWD_PRESERVE_SENDER)
-			snprintf(tmp_buff, arsizeof(tmp_buff), "<%s>", from_address);
-		else
-			snprintf(tmp_buff, arsizeof(tmp_buff), "\"Forwarder\"<forwarder@%s>", pdomain);
+		/*
+		 * OXORULE v21 §2.2.5.1.1 specifies FWD_AS_ATTACHMENT is
+		 * exclusive, so FWD_PRESERVE_SENDER is not evaluated to build
+		 * the From line.
+		 */
+		snprintf(tmp_buff, std::size(tmp_buff), "<%s>", username);
 		pmime->set_field("From", tmp_buff);
 		offset = 0;
 		for (const auto &eaddr : rcpt_list) {
@@ -2956,17 +2955,23 @@ static ec_error_t message_forward_message(const char *from_address,
 			pmime->append_field("Delivered-To", eaddr.c_str());
 		}
 		pmime->set_field("To", tmp_buff);
-		snprintf(tmp_buff, arsizeof(tmp_buff), "Automatic forwarded message from %s", username);
+
+		auto pmime_old = imail.get_head();
+		memcpy(tmp_buff, "\x00\x00\x00\x00", 5);
+		if (pmime_old == nullptr ||
+		    !pmime_old->get_field("Subject", tmp_buff + 5, std::size(tmp_buff) - 5))
+			snprintf(tmp_buff, std::size(tmp_buff), "Fwd: (no subject)");
+		else
+			memcpy(tmp_buff, "Fwd: ", 5);
 		pmime->set_field("Subject", tmp_buff);
 		time(&cur_time);
 		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z", 
 			localtime_r(&cur_time, &time_buff));
 		pmime->set_field("Date", tmp_buff);
 		pmime->write_mail(&imail);
-		if (action_flavor & FWD_PRESERVE_SENDER)
-			strcpy(tmp_buff, from_address);
-		else
-			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
+		/* Envelope FROM */
+		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
+		           from_address : username, std::size(tmp_buff));
 		cu_send_mail(&imail1, tmp_buff, rcpt_list);
 	} else {
 		auto pmime = imail.get_head();
@@ -2975,10 +2980,9 @@ static ec_error_t message_forward_message(const char *from_address,
 		}
 		for (const auto &eaddr : rcpt_list)
 			pmime->append_field("Delivered-To", eaddr.c_str());
-		if (action_flavor & FWD_PRESERVE_SENDER)
-			strcpy(tmp_buff, from_address);
-		else
-			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
+		/* Envelope FROM */
+		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
+		           from_address : username, std::size(tmp_buff));
 		cu_send_mail(&imail, tmp_buff, rcpt_list);
 	}
 	return ecSuccess;
@@ -3509,7 +3513,7 @@ static ec_error_t op_process(BOOL b_oof, const char *from_address,
     const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit,
     std::list<DAM_NODE> &dam_list)
 {
-	if (b_exit && !(prnode->state & RULE_STATE_ONLY_WHEN_OOF))
+	if (b_exit && !(prnode->state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	void *pvalue = nullptr;
 	if (!common_util_get_rule_property(prnode->id, psqlite,
@@ -3518,9 +3522,8 @@ static ec_error_t op_process(BOOL b_oof, const char *from_address,
 	if (pvalue == nullptr || !cu_eval_msg_restriction(psqlite,
 	    0, message_id, static_cast<RESTRICTION *>(pvalue)))
 		return ecSuccess;
-	if (prnode->state & RULE_STATE_EXIT_LEVEL) {
+	if (prnode->state & ST_EXIT_LEVEL)
 		b_exit = TRUE;
-	}
 	RULE_ACTIONS *pactions = nullptr;
 	if (!common_util_get_rule_property(prnode->id, psqlite,
 	    PR_RULE_ACTIONS, reinterpret_cast<void **>(&pactions)))
@@ -3882,7 +3885,7 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
     uint64_t message_id, const char *pdigest, seen_list &seen,
     const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit)
 {
-	if (b_exit && !(prnode->state & RULE_STATE_ONLY_WHEN_OOF))
+	if (b_exit && !(prnode->state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	void *pvalue = nullptr;
 	if (!cu_get_property(db_table::msg_props, prnode->id, 0, psqlite,
@@ -3903,9 +3906,8 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 		return ecError;
 	if (!cu_eval_msg_restriction(psqlite, 0, message_id, &restriction))
 		return ecSuccess;
-	if (prnode->state & RULE_STATE_EXIT_LEVEL) {
+	if (prnode->state & ST_EXIT_LEVEL)
 		b_exit = TRUE;
-	}
 	if (!cu_get_property(db_table::msg_props, prnode->id, 0, psqlite,
 	    PR_EXTENDED_RULE_MSG_ACTIONS, &pvalue))
 		return ecError;

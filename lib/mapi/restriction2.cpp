@@ -3,6 +3,10 @@
 #include <string>
 #include <utility>
 #include <gromox/mapidefs.h>
+#include <gromox/mapi_types.hpp>
+#include <gromox/util.hpp>
+
+using namespace gromox;
 
 static inline const char *relop_repr(relop r)
 {
@@ -28,6 +32,11 @@ std::string TAGGED_PROPVAL::repr() const
 	case PT_I8: ss << "PT_I8{" PTI << *static_cast<uint64_t *>(pvalue) << "}"; break;
 	case PT_STRING8: ss << "PT_STRING8{" PTI << "\"" << static_cast<const char *>(pvalue) << "\"}"; break;
 	case PT_UNICODE: ss << "PT_UNICODE{" PTI << "\"" << static_cast<const char *>(pvalue) << "\"}"; break;
+	case PT_BINARY: {
+		auto bin = static_cast<const BINARY *>(pvalue);
+		ss << "PT_BINARY{" PTI << "[" << bin->cb << "]=\"" << bin2txt(bin->pv, bin->cb) << "\"}";
+		break;
+	}
 	case PT_SVREID: {
 		auto &x = *static_cast<const SVREID *>(pvalue);
 		ss << "PT_SVREID{" PTI;
@@ -78,7 +87,7 @@ std::string RESTRICTION_AND_OR::repr() const
 	auto s = std::to_string(count);
 	for (size_t i = 0; i < count; ++i)
 		s += "," + pres[i].repr();
-	return "RES_AOR{" + std::move(s) + "}";
+	return "RES_AOR[" + std::to_string(count) + "]{" + std::move(s) + "}";
 }
 
 std::string RESTRICTION_NOT::repr() const
@@ -165,11 +174,103 @@ std::string RESTRICTION_SUBOBJ::repr() const
 
 std::string RESTRICTION_COMMENT::repr() const
 {
-	return "RES_COMMENT{" + std::to_string(count) + "," +
-	       ppropval->repr() + "," + pres->repr() + "}";
+	std::string s = "RES_COMMENT{props[" + std::to_string(count) + "]={";
+	for (size_t i = 0; i < count; ++i)
+		s += ppropval[i].repr() + ",";
+	s += "},res={" + pres->repr() + "}}";
+	return s;
 }
 
 std::string RESTRICTION_COUNT::repr() const
 {
 	return "RES_COUNT{" + std::to_string(count) + "," + sub_res.repr() + "}";
+}
+
+std::string MOVECOPY_ACTION::repr() const
+{
+	return std::string("{") + (same_store ? "same_store" : "other_store") + "}";
+}
+
+std::string RECIPIENT_BLOCK::repr() const
+{
+	std::string s = "[" + std::to_string(count) + "]={";
+	for (size_t i = 0; i < count; ++i)
+		s += ppropval[i].repr() + ",";
+	s += "}";
+	return s;
+}
+
+std::string FORWARDDELEGATE_ACTION::repr() const
+{
+	std::string s = "{[" + std::to_string(count) + "]={";
+	for (size_t i = 0; i < count; ++i)
+		s += pblock[i].repr() + ",";
+	s += "}}";
+	return s;
+}
+
+std::string ACTION_BLOCK::repr() const
+{
+	std::string s = "ACTION_BLOCK{";
+	switch (type) {
+	case OP_MOVE:
+		s += "MOVE";
+		s += static_cast<const MOVECOPY_ACTION *>(pdata)->repr();
+		break;
+	case OP_COPY:
+		s += "COPY";
+		s += static_cast<const MOVECOPY_ACTION *>(pdata)->repr();
+		break;
+	case OP_REPLY:
+		if (flavor & DO_NOT_SEND_TO_ORIGINATOR)
+			s += "nooriginator,";
+		if (flavor & STOCK_REPLY_TEMPLATE)
+			s += "template,";
+		s += "REPLY";
+		break;
+	case OP_OOF_REPLY:
+		s += "OOF_REPLY";
+		break;
+	case OP_DEFER_ACTION:
+		s += "DEFER_ACTION";
+		break;
+	case OP_BOUNCE:
+		s += "BOUNCE{" + std::to_string(*static_cast<const uint32_t *>(pdata)) + "}";
+		break;
+	case OP_FORWARD:
+		s += (flavor & FWD_PRESERVE_SENDER) ? "keep_from," : "replace_from,";
+		s += (flavor & FWD_AS_ATTACHMENT) ? "attach," : "as_is,";
+		if (flavor & FWD_DO_NOT_MUNGE_MSG)
+			s += "nomunge,";
+		if (flavor & FWD_AS_SMS_ALERT)
+			s += "sms,";
+		s += "FORWARD";
+		s += static_cast<const FORWARDDELEGATE_ACTION *>(pdata)->repr();
+		break;
+	case OP_DELEGATE:
+		s += "DELEGATE";
+		s += static_cast<const FORWARDDELEGATE_ACTION *>(pdata)->repr();
+		break;
+	case OP_TAG:
+		s += "TAG{" + static_cast<const TAGGED_PROPVAL *>(pdata)->repr() + "}";
+		break;
+	case OP_DELETE:
+		s += "DELETE";
+		break;
+	case OP_MARK_AS_READ:
+		s += "MARK_AS_READ";
+		break;
+	}
+	s += "}";
+	return s;
+	//length,type,flavor,flags,pdata
+}
+
+std::string RULE_ACTIONS::repr() const
+{
+	auto s = "RULE_ACTIONS{" + std::to_string(count);
+	for (size_t i = 0; i < count; ++i)
+		s += "," + pblock[i].repr();
+	s += "}";
+	return s;
 }

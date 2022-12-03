@@ -4347,41 +4347,47 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		       cpid, message_id, &pres->xnot->res);
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
+		void *pvalue = nullptr;
+		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+			return FALSE;
+		if (PROP_TYPE(rcon->proptag) == PT_BINARY) {
+			if (!cu_get_property(db_table::msg_props,
+			    message_id, cpid, psqlite, rcon->proptag, &pvalue) ||
+			    pvalue == nullptr)
+				return FALSE;
+			auto &dbval = *static_cast<const BINARY *>(pvalue);
+			auto &rsval = *static_cast<const BINARY *>(rcon->propval.pvalue);
+			switch (rcon->fuzzy_level & 0xFFFF) {
+			case FL_FULLSTRING:
+				return dbval.cb == rsval.cb && memcmp(dbval.pv, rsval.pv, rsval.cb) == 0;
+			case FL_SUBSTRING:
+				return HX_memmem(dbval.pv, dbval.cb, rsval.pv, rsval.cb) != nullptr;
+			case FL_PREFIX:
+				return dbval.cb >= rsval.cb && memcmp(dbval.pv, rsval.pv, rsval.cb) == 0;
+			}
+			return false;
+		}
 		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
 		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
 		if (!cu_get_property(db_table::msg_props,
 		    message_id, cpid, psqlite, rcon->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
+		auto dbval = static_cast<const char *>(pvalue);
+		auto rsval = static_cast<const char *>(rcon->propval.pvalue);
+		auto icase = rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE);
 		switch (rcon->fuzzy_level & 0xFFFF) {
 		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				       static_cast<char *>(pvalue)) == 0;
-			else
-				return strcmp(static_cast<char *>(rcon->propval.pvalue),
-				       static_cast<char *>(pvalue)) == 0;
-			return FALSE;
+			return icase ? strcasecmp(dbval, rsval) == 0 :
+			       strcmp(dbval, rsval) == 0;
 		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strcasestr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
-			else
-				return strstr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
-			return FALSE;
+			return icase ? strcasestr(dbval, rsval) != nullptr :
+			       strstr(dbval, rsval) != nullptr;
 		case FL_PREFIX: {
-			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strncasecmp(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
-			else
-				return strncmp(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
-			return FALSE;
+			auto len = strlen(rsval);
+			return icase ? strncasecmp(dbval, rsval, len) == 0 :
+			       strncmp(dbval, rsval, len) == 0;
 		}
 		}
 		return FALSE;
