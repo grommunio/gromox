@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -52,16 +53,19 @@ struct FORMAT_DATA {
 	int tag;
 };
 
+struct bounce_template {
+	char subject[256], content_type[256];
+	std::unique_ptr<char[]> content;
+	FORMAT_DATA format[TAG_TOTAL_LEN+1];
+};
+
 /*
  * <time> <from> <rcpts> <rcpt>
  * <subject> <parts> <length>
  */
 struct RESOURCE_NODE {
 	char				charset[32];
-	char				subject[BOUNCE_TOTAL_NUM][256];
-	char				content_type[BOUNCE_TOTAL_NUM][256];
-	std::unique_ptr<char[]> content[BOUNCE_TOTAL_NUM];
-	FORMAT_DATA			format[BOUNCE_TOTAL_NUM][TAG_TOTAL_LEN + 1];
+	std::array<bounce_template, BOUNCE_TOTAL_NUM> tp;
 };
 
 struct TAG_ITEM {
@@ -177,15 +181,15 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 	struct dirent *sub_direntp;
 	struct stat node_stat;
 	int i, j, k, until_tag;
-	FORMAT_DATA temp;
 	MIME_FIELD mime_field;
 	RESOURCE_NODE rnode, *presource = &rnode;
 
 	/* fill the struct with initial data */
 	for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
+		auto &tp = presource->tp[i];
 		for (j=0; j<TAG_TOTAL_LEN; j++) {
-			presource->format[i][j].position = -1;
-			presource->format[i][j].tag = j;
+			tp.format[j].position = -1;
+			tp.format[j].tag = j;
 		}
 	}
 	auto dir_buf = basedir + "/" + dir_name;
@@ -208,26 +212,27 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 		    !S_ISREG(node_stat.st_mode))
 			continue;
-		presource->content[i] = std::make_unique<char[]>(node_stat.st_size);
-		if (read(fd.get(), presource->content[i].get(),
+		auto &tp = presource->tp[i];
+		tp.content = std::make_unique<char[]>(node_stat.st_size);
+		if (read(fd.get(), tp.content.get(),
 		    node_stat.st_size) != node_stat.st_size)
 			return;
 		fd.close();
 		j = 0;
 		while (j < node_stat.st_size) {
-			auto parsed_length = parse_mime_field(&presource->content[i][j],
+			auto parsed_length = parse_mime_field(&tp.content[j],
 			                     node_stat.st_size - j, &mime_field);
 			j += parsed_length;
 			if (0 != parsed_length) {
 				if (strcasecmp(mime_field.name.c_str(), "Content-Type") == 0)
-					gx_strlcpy(presource->content_type[i], mime_field.value.c_str(), std::size(presource->content_type[i]));
+					gx_strlcpy(tp.content_type, mime_field.value.c_str(), std::size(tp.content_type));
 				else if (strcasecmp(mime_field.name.c_str(), "Subject") == 0)
-					gx_strlcpy(presource->subject[i], mime_field.value.c_str(), std::size(presource->subject[i]));
-				if (presource->content[i][j] == '\n') {
+					gx_strlcpy(tp.subject, mime_field.value.c_str(), std::size(tp.subject));
+				if (tp.content[j] == '\n') {
 					++j;
 					break;
-				} else if (presource->content[i][j] == '\r' &&
-				    presource->content[i][j+1] == '\n') {
+				} else if (tp.content[j] == '\r' &&
+				    tp.content[j+1] == '\n') {
 					j += 2;
 					break;
 				}
@@ -238,23 +243,22 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 			}
 		}
 		/* find tags in file content and mark the position */
-		presource->format[i][TAG_BEGIN].position = j;
+		tp.format[TAG_BEGIN].position = j;
 		for (; j<node_stat.st_size; j++) {
-			if ('<' == presource->content[i][j]) {
+			if (tp.content[j] == '<') {
 				for (k=0; k<TAG_TOTAL_LEN; k++) {
-					if (strncasecmp(&presource->content[i][j], g_tags[k].name, g_tags[k].length) == 0) {
-						presource->format[i][k + 1].position = j;
+					if (strncasecmp(&tp.content[j], g_tags[k].name, g_tags[k].length) == 0) {
+						tp.format[k+1].position = j;
 						break;
 					}
 				}
 			}
 		}
-		presource->format[i][TAG_END].position = node_stat.st_size;
-	
+		tp.format[TAG_END].position = node_stat.st_size;
 		until_tag = TAG_TOTAL_LEN;
 
 		for (j=TAG_BEGIN+1; j<until_tag; j++) {
-			if (-1 == presource->format[i][j].position) {
+			if (tp.format[j].position == -1) {
 				mlog(LV_ERR, "zcore: format error in %s, lacking "
 				       "tag %s", sub_buf.c_str(), g_tags[j-1].name);
 				return;
@@ -264,12 +268,8 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		/* sort the tags ascending */
 		for (j=TAG_BEGIN+1; j<until_tag; j++) {
 			for (k=TAG_BEGIN+1; k<until_tag; k++) {
-				if (presource->format[i][j].position <
-					presource->format[i][k].position) {
-					temp = presource->format[i][j];
-					presource->format[i][j] = presource->format[i][k];
-					presource->format[i][k] = temp;
-				}
+				if (tp.format[j].position < tp.format[k].position)
+					std::swap(tp.format[j], tp.format[k]);
 			}
 		}
 	}
@@ -337,7 +337,6 @@ static BOOL bounce_producer_make_content(const char *username,
 	char *content_type, char *pcontent)
 {
 	char *ptr;
-	int prev_pos;
 	char charset[32];
 	char date_buff[128];
 	struct tm time_buff;
@@ -387,15 +386,16 @@ static BOOL bounce_producer_make_content(const char *username,
 	auto it = std::find_if(g_resource_list.begin(), g_resource_list.end(),
 	          [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, charset) == 0; });
 	auto presource = it != g_resource_list.end() ? &*it : g_default_resource;
-	prev_pos = presource->format[bounce_type][TAG_BEGIN].position;
+	auto &tp = presource->tp[bounce_type];
+	int prev_pos = tp.format[TAG_BEGIN].position;
 	until_tag = TAG_TOTAL_LEN;
 	for (i=TAG_BEGIN+1; i<until_tag; i++) {
-		len = presource->format[bounce_type][i].position - prev_pos;
-		memcpy(ptr, &presource->content[bounce_type][prev_pos], len);
-		prev_pos = presource->format[bounce_type][i].position +
-					g_tags[presource->format[bounce_type][i].tag-1].length;
+		len = tp.format[i].position - prev_pos;
+		memcpy(ptr, &tp.content[prev_pos], len);
+		prev_pos = tp.format[i].position +
+					g_tags[tp.format[i].tag-1].length;
 		ptr += len;
-		switch (presource->format[bounce_type][i].tag) {
+		switch (tp.format[i].tag) {
 		case TAG_TIME:
 			len = gx_snprintf(ptr, 128, "%s", date_buff);
 			ptr += len;
@@ -434,14 +434,14 @@ static BOOL bounce_producer_make_content(const char *username,
 			break;
 		}
 	}
-	len = presource->format[bounce_type][TAG_END].position - prev_pos;
-	memcpy(ptr, &presource->content[bounce_type][prev_pos], len);
+	len = tp.format[TAG_END].position - prev_pos;
+	memcpy(ptr, &tp.content[prev_pos], len);
 	ptr += len;
 	if (NULL != subject) {
-		strcpy(subject, presource->subject[bounce_type]);
+		strcpy(subject, tp.subject);
 	}
 	if (NULL != content_type) {
-		strcpy(content_type, presource->content_type[bounce_type]);
+		strcpy(content_type, tp.content_type);
 	}
 	*ptr = '\0';
 	return TRUE;
