@@ -29,7 +29,6 @@ extern BOOL bounce_audit_check(const char *audit_string);
 
 extern void bounce_producer_init(const char *separator);
 extern int bounce_producer_run();
-extern BOOL bounce_producer_refresh();
 extern void bounce_producer_make(const char *from, const char *rcpt, MAIL *orig_mail, time_t orig_time, int bounce_type, MAIL *cur_mail);
 
 extern int (*exmdb_local_check_domain)(const char *domainname);

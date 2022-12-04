@@ -106,6 +106,7 @@ static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 	char *charset);
 
 static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff);
+static BOOL bounce_producer_refresh();
 static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
 static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
@@ -131,7 +132,7 @@ int bounce_producer_run()
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL bounce_producer_refresh() try
+static BOOL bounce_producer_refresh() try
 {
     struct dirent *direntp;
 	std::vector<RESOURCE_NODE> resource_list;

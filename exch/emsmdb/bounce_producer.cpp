@@ -87,6 +87,7 @@ static constexpr TAG_ITEM g_tags[] = {
 	{"<length>", 8}
 };
 
+static BOOL bounce_producer_refresh(const char *data_path);
 static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
 static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
@@ -109,7 +110,7 @@ int bounce_producer_run(const char *data_path)
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL bounce_producer_refresh(const char *data_path) try
+static BOOL bounce_producer_refresh(const char *data_path) try
 {
 	struct dirent *direntp;
 	std::vector<RESOURCE_NODE> resource_list;
