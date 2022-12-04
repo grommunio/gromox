@@ -7,8 +7,6 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <memory>
-#include <mutex>
-#include <shared_mutex>
 #include <string>
 #include <unistd.h>
 #include <utility>
@@ -72,7 +70,6 @@ struct TAG_ITEM {
 static char g_separator[16];
 static std::vector<RESOURCE_NODE> g_resource_list;
 static RESOURCE_NODE *g_default_resource;
-static std::shared_mutex g_list_lock;
 static constexpr const char *g_resource_table[] = {
 	"BOUNCE_AUTO_RESPONSE", "BOUNCE_MAIL_TOO_LARGE",
 	"BOUNCE_CANNOT_DISPLAY", "BOUNCE_GENERIC_ERROR"
@@ -136,9 +133,8 @@ static BOOL bounce_producer_refresh(const char *data_path) try
 			"\"ascii\" bounce mail templates in %s", dinfo.m_path.c_str());
 		return FALSE;
 	}
-	std::unique_lock wr_hold(g_list_lock);
 	g_default_resource = &*pdefault;
-	std::swap(g_resource_list, resource_list);
+	g_resource_list = std::move(resource_list);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1502: ENOMEM");
@@ -374,7 +370,6 @@ BOOL bounce_producer_make_content(const char *from,
 			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", arsizeof(charset));
 		}
 	}
-	std::shared_lock rd_hold(g_list_lock);
 	auto it = std::find_if(g_resource_list.begin(), g_resource_list.end(),
 	          [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, charset) == 0; });
 	auto presource = it != g_resource_list.end() ? &*it : g_default_resource;
