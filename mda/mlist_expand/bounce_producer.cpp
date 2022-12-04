@@ -324,7 +324,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
  *		bounce_type			type of bounce mail
  *		pmail [out]			bounce mail object
  */
-void bounce_producer_make(const char *from, const char *rcpt_to,
+bool bounce_producer_make(const char *from, const char *rcpt_to,
 	MAIL *pmail_original, int bounce_type, MAIL *pmail)
 {
 	DSN dsn;
@@ -353,7 +353,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		if (lcldom < 0) {
 			mlog(LV_ERR, "bounce_producer: check_domain: %s",
 			        strerror(-lcldom));
-			return;
+			return false;
 		}
 		if (lcldom > 0) {
 			if (bounce_producer_get_lang(from, lang, arsizeof(lang)))
@@ -364,6 +364,8 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	
 	if('\0' != time_zone[0]) {
 		auto sp = tz::tzalloc(time_zone);
+		if (sp == nullptr)
+			return false;
 		tz::localtime_rz(sp, &cur_time, &time_buff);
 		tz::tzfree(sp);
 	} else {
@@ -435,7 +437,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	auto phead = pmail->add_head();
 	if (NULL == phead) {
 		mlog(LV_ERR, "mlist_expand: MIME pool exhausted");
-		return;
+		return false;
 	}
 	pmime = phead;
 	pmime->set_content_type("multipart/report");
@@ -456,7 +458,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (NULL == pmime) {
 		mlog(LV_ERR, "mlist_expand: MIME pool exhausted");
-		return;
+		return false;
 	}
 	parse_field_value(tp.content_type, strlen(tp.content_type),
 		tmp_buff, 256, &pmime->f_type_params);
@@ -465,7 +467,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	if (!pmime->write_content(original_ptr,
 	    ptr - original_ptr, mime_encoding::automatic)) {
         mlog(LV_ERR, "mlist_expand: failed to write content");
-        return;
+		return false;
 	}
 	
 	dsn_init(&dsn);
@@ -477,7 +479,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	pdsn_fields = dsn_new_rcpt_fields(&dsn);
 	if (NULL == pdsn_fields) {
 		dsn_free(&dsn);
-		return;
+		return false;
 	}
 	snprintf(tmp_buff, 1024, "rfc822;%s", rcpt_to);
 	dsn_append_field(pdsn_fields, "Final-Recipient", tmp_buff);
@@ -494,6 +496,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		}
 	}
 	dsn_free(&dsn);
+	return true;
 }
 
 static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,

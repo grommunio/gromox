@@ -464,10 +464,14 @@ static void *mdl_thrwork(void *arg)
 						"produce bounce message, because of too many "
 						"mails to %s", temp_rcpt);
 					put_context(pbounce_context);
+				} else if (!bounce_producer_make(temp_from,
+				    temp_rcpt, pcontext->pmail, original_time,
+				    bounce_type, pbounce_context->pmail)) {
+					exmdb_local_log_info(pcontext, ptr, LV_ERR,
+						"error during bounce_producer_make for %s",
+						temp_rcpt);
+					put_context(pbounce_context);
 				} else {
-					bounce_producer_make(temp_from, temp_rcpt,
-						pcontext->pmail, original_time, bounce_type,
-						pbounce_context->pmail);
 					sprintf(pbounce_context->pcontrol->from,
 					        "postmaster@%s", get_default_domain());
 					pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);

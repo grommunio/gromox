@@ -9,5 +9,4 @@ enum{
 };
 
 extern int bounce_producer_run(const char *, const char *, const char *);
-void bounce_producer_make(const char *from, const char *rcpt,
-	MAIL *pmail_original, int bounce_type, MAIL *pmail);
+extern bool bounce_producer_make(const char *from, const char *rcpt, MAIL *orig, int bounce_type, MAIL *cur);
