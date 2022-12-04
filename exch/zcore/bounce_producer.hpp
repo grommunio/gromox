@@ -11,4 +11,4 @@ enum{
 };
 
 extern int bounce_producer_run(const char *, const char *, const char *);
-extern BOOL bounce_producer_make(const char *username, MESSAGE_CONTENT *brief, int bounce_type, MAIL *);
+extern BOOL bounce_producer_make(const char *username, MESSAGE_CONTENT *brief, unsigned int bounce_type, MAIL *);

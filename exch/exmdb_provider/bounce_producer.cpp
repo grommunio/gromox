@@ -309,10 +309,9 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 	return offset;
 }
 
-BOOL bounce_producer_make_content(const char *from,
-	const char *rcpt, sqlite3 *psqlite, uint64_t message_id,
-	int bounce_type, char *mime_from, char *subject,
-	char *content_type, char *pcontent)
+BOOL bounce_producer_make_content(const char *from, const char *rcpt,
+    sqlite3 *psqlite, uint64_t message_id, unsigned int bounce_type,
+    char *mime_from, char *subject, char *content_type, char *pcontent)
 {
 	char *ptr;
 	void *pvalue;
@@ -363,6 +362,8 @@ BOOL bounce_producer_make_content(const char *from,
 	auto it = std::find_if(g_resource_list.begin(), g_resource_list.end(),
 	          [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, charset) == 0; });
 	auto presource = it != g_resource_list.end() ? &*it : g_default_resource;
+	if (bounce_type >= BOUNCE_TOTAL_NUM)
+		return false;
 	auto &tp = presource->tp[bounce_type];
 	int prev_pos = tp.format[TAG_BEGIN].position;
 	until_tag = TAG_TOTAL_LEN;
@@ -421,9 +422,8 @@ BOOL bounce_producer_make_content(const char *from,
 	return TRUE;
 }
 
-BOOL bounce_producer_make(const char *from, const char *rcpt,
-	sqlite3 *psqlite, uint64_t message_id, int bounce_type,
-	MAIL *pmail)
+BOOL bounce_producer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
+    uint64_t message_id, unsigned int bounce_type, MAIL *pmail)
 {
 	DSN dsn;
 	MIME *pmime;

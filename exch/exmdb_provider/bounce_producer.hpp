@@ -11,10 +11,5 @@ enum{
 };
 
 extern int bounce_producer_run(const char *, const char *, const char *);
-BOOL bounce_producer_make_content(const char *from,
-	const char *rcpt, sqlite3 *psqlite, uint64_t message_id,
-	int bounce_type, char *mime_from, char *subject,
-	char *content_type, char *pcontent);
-BOOL bounce_producer_make(const char *from, const char *rcpt,
-	sqlite3 *psqlite, uint64_t message_id, int bounce_type,
-	MAIL *pmail);
+extern BOOL bounce_producer_make_content(const char *from, const char *rcpt, sqlite3 *, uint64_t msg_id, unsigned int bounce_type, char *mime_from, char *subject, char *content_type, char *content);
+extern BOOL bounce_producer_make(const char *from, const char *rcpt, sqlite3 *, uint64_t msg_id, unsigned int bounce_type, MAIL *);

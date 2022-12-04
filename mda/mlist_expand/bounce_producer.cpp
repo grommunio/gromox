@@ -325,7 +325,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
  *		pmail [out]			bounce mail object
  */
 bool bounce_producer_make(const char *from, const char *rcpt_to,
-	MAIL *pmail_original, int bounce_type, MAIL *pmail)
+    MAIL *pmail_original, unsigned int bounce_type, MAIL *pmail)
 {
 	DSN dsn;
 	char *ptr;
@@ -384,6 +384,8 @@ bool bounce_producer_make(const char *from, const char *rcpt_to,
 	auto it = std::find_if(g_resource_list.begin(), g_resource_list.end(),
 	          [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, charset) == 0; });
 	auto presource = it != g_resource_list.end() ? &*it : g_default_resource;
+	if (bounce_type >= BOUNCE_TOTAL_NUM)
+		return false;
 	auto &tp = presource->tp[bounce_type];
 	int prev_pos = tp.format[TAG_BEGIN].position;
 	until_tag = TAG_TOTAL_LEN;

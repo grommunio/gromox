@@ -329,8 +329,8 @@ static int bounce_producer_get_rcpts(
 }
 
 static BOOL bounce_producer_make_content(const char *username,
-	MESSAGE_CONTENT *pbrief, int bounce_type, char *subject,
-	char *content_type, char *pcontent)
+    MESSAGE_CONTENT *pbrief, unsigned int bounce_type, char *subject,
+    char *content_type, char *pcontent)
 {
 	char *ptr;
 	char charset[32];
@@ -382,6 +382,8 @@ static BOOL bounce_producer_make_content(const char *username,
 	auto it = std::find_if(g_resource_list.begin(), g_resource_list.end(),
 	          [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, charset) == 0; });
 	auto presource = it != g_resource_list.end() ? &*it : g_default_resource;
+	if (bounce_type >= BOUNCE_TOTAL_NUM)
+		return false;
 	auto &tp = presource->tp[bounce_type];
 	int prev_pos = tp.format[TAG_BEGIN].position;
 	until_tag = TAG_TOTAL_LEN;
@@ -443,8 +445,8 @@ static BOOL bounce_producer_make_content(const char *username,
 	return TRUE;
 }
 
-BOOL bounce_producer_make(const char *username,
-	MESSAGE_CONTENT *pbrief, int bounce_type, MAIL *pmail)
+BOOL bounce_producer_make(const char *username, MESSAGE_CONTENT *pbrief,
+    unsigned int bounce_type, MAIL *pmail)
 {
 	DSN dsn;
 	MIME *pmime;
