@@ -381,7 +381,7 @@ static BOOL bounce_producer_make_content(const char *username,
 	return TRUE;
 }
 
-BOOL bounce_producer_make(const char *username, MESSAGE_CONTENT *pbrief,
+BOOL zcore_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
     const char *bounce_type, MAIL *pmail)
 {
 	DSN dsn;
