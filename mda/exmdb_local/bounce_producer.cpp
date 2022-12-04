@@ -7,8 +7,6 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <memory>
-#include <mutex>
-#include <shared_mutex>
 #include <string>
 #include <unistd.h>
 #include <utility>
@@ -82,7 +80,6 @@ struct TAG_ITEM {
 static char g_separator[16];
 static std::vector<RESOURCE_NODE> g_resource_list;
 static RESOURCE_NODE *g_default_resource;
-static std::shared_mutex g_list_lock;
 static constexpr const char *g_resource_table[] = {
 	"BOUNCE_NO_USER", "BOUNCE_MAILBOX_FULL",
 	"BOUNCE_OPERATION_ERROR", "BOUNCE_MAIL_DELIVERED"
@@ -161,9 +158,8 @@ static BOOL bounce_producer_refresh() try
 			"templates in \"%s\"", dinfo.m_path.c_str());
 		return FALSE;
 	}
-	std::unique_lock wr_hold(g_list_lock);
 	g_default_resource = &*pdefault;
-	std::swap(g_resource_list, resource_list);
+	g_resource_list = std::move(resource_list);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1527: ENOMEM");
@@ -379,7 +375,6 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	if ('\0' == charset[0]) {
 		strcpy(charset, mcharset);
 	}
-	std::shared_lock rd_hold(g_list_lock);
 	auto it = std::find_if(g_resource_list.begin(), g_resource_list.end(),
 	          [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, charset) == 0; });
 	auto presource = it != g_resource_list.end() ? &*it : g_default_resource;
@@ -465,7 +460,6 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		strlen(presource->content_type[bounce_type]),
 		tmp_buff, 256, &pmime->f_type_params);
 	pmime->set_content_type(tmp_buff);
-	rd_hold.unlock();
 	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(original_ptr,
 	    ptr - original_ptr, mime_encoding::automatic)) {
