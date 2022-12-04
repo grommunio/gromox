@@ -111,6 +111,7 @@ static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset);
 
 static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 	char *charset);
+static BOOL bounce_producer_refresh(const char *datadir);
 static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
 static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
@@ -150,7 +151,7 @@ int bounce_producer_run(const char *datadir)
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL bounce_producer_refresh(const char *datadir)
+static BOOL bounce_producer_refresh(const char *datadir)
 {
     struct dirent *direntp;
 	std::vector<RESOURCE_NODE> resource_list;
