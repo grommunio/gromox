@@ -47,14 +47,18 @@ enum{
 namespace {
 
 struct FORMAT_DATA {
-	int	position;
-	int tag;
+	int position = -1, tag = -1;
 };
 
 struct bounce_template {
-	char subject[256], content_type[256];
+	char subject[256]{}, content_type[256]{};
 	std::unique_ptr<char[]> content;
 	FORMAT_DATA format[TAG_TOTAL_LEN+1];
+
+	bounce_template() {
+		for (size_t j = 0; j < std::size(format); ++j)
+			format[j].tag = j;
+	}
 };
 
 /*
@@ -181,14 +185,6 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 	MIME_FIELD mime_field;
 	RESOURCE_NODE rnode, *presource = &rnode;
 
-	/* fill the struct with initial data */
-	for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
-		auto &tp = presource->tp[i];
-		for (j=0; j<TAG_TOTAL_LEN; j++) {
-			tp.format[j].position = -1;
-			tp.format[j].tag = j;
-		}
-	}
 	auto dir_buf = basedir + "/" + dir_name;
 	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
 	if (sub_dirp.m_dir != nullptr) while ((sub_direntp = readdir(sub_dirp.m_dir.get())) != nullptr) {
