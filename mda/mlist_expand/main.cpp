@@ -101,7 +101,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			pbounce_context = get_context();
 			if (pbounce_context == nullptr ||
 			    !bounce_producer_make(pcontext->pcontrol->from,
-			    rcpt_to, pcontext->pmail, BOUNCE_MLIST_DOMAIN,
+			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_DOMAIN",
 			    pbounce_context->pmail)) {
 				temp_file2.writeline(rcpt_to);
 				break;
@@ -136,7 +136,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			pbounce_context = get_context();
 			if (pbounce_context == nullptr ||
 			    !bounce_producer_make(pcontext->pcontrol->from,
-			    rcpt_to, pcontext->pmail, BOUNCE_MLIST_INTERNAL,
+			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_INTERNAL",
 			    pbounce_context->pmail)) {
 				temp_file2.writeline(rcpt_to);
 				break;
@@ -171,7 +171,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			pbounce_context = get_context();
 			if (pbounce_context == nullptr ||
 			    !bounce_producer_make(pcontext->pcontrol->from,
-			    rcpt_to, pcontext->pmail, BOUNCE_MLIST_SPECIFIED,
+			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_SPECIFIED",
 			    pbounce_context->pmail)) {
 				temp_file2.writeline(rcpt_to);
 				break;

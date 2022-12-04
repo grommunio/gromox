@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
-#include <array>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
+#include <map>
 #include <memory>
 #include <string>
 #include <unistd.h>
@@ -69,7 +69,7 @@ struct bounce_template {
  */
 struct RESOURCE_NODE {
 	char				charset[32];
-	std::array<bounce_template, BOUNCE_TOTAL_NUM> tp;
+	std::map<std::string, bounce_template> tp;
 };
 
 struct TAG_ITEM {
@@ -84,8 +84,6 @@ static BOOL bounce_producer_refresh(const char *, const char *);
 static char g_separator[16];
 static std::vector<RESOURCE_NODE> g_resource_list;
 static RESOURCE_NODE *g_default_resource;
-static constexpr const char *g_resource_table[] =
-	{"BOUNCE_NOTIFY_READ", "BOUNCE_NOTIFY_NON_READ"};
 static constexpr TAG_ITEM g_tags[] = {
 	{"<time>", 6},
 	{"<from>", 6},
@@ -159,7 +157,6 @@ static BOOL bounce_producer_check_subdir(const std::string &basedir,
 	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
 	if (sub_dirp.m_dir == nullptr)
 		return FALSE;
-	size_t item_num = 0;
 	while ((sub_direntp = readdir(sub_dirp.m_dir.get())) != nullptr) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
@@ -168,15 +165,8 @@ static BOOL bounce_producer_check_subdir(const std::string &basedir,
 		if (stat(sub_buf.c_str(), &node_stat) != 0 ||
 		    !S_ISREG(node_stat.st_mode))
 			continue;
-		for (size_t i = 0; i < BOUNCE_TOTAL_NUM; ++i) {
-			if (0 == strcmp(g_resource_table[i], sub_direntp->d_name) &&
-				node_stat.st_size < 64*1024) {
-				item_num ++;
-				break;
-			}
-		}
 	}
-	return item_num == BOUNCE_TOTAL_NUM ? TRUE : false;
+	return TRUE;
 }
 
 static void bounce_producer_load_subdir(const std::string &basedir,
@@ -184,7 +174,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 {
 	struct dirent *sub_direntp;
 	struct stat node_stat;
-	int i, j, k, until_tag;
+	int j, k, until_tag;
 	MIME_FIELD mime_field;
 	RESOURCE_NODE rnode, *presource = &rnode;
 
@@ -194,21 +184,12 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
 			continue;
-		/* compare file name with the resource table and get the index */
-		for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
-			if (0 == strcmp(g_resource_table[i], sub_direntp->d_name)) {
-				break;
-			}
-		}
-		if (BOUNCE_TOTAL_NUM == i) {
-			continue;
-		}
 		auto sub_buf = dir_buf + "/" + sub_direntp->d_name;
 		wrapfd fd = open(sub_buf.c_str(), O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 		    !S_ISREG(node_stat.st_mode))
 			continue;
-		auto &tp = presource->tp[i];
+		auto &tp = presource->tp[sub_direntp->d_name];
 		tp.content = std::make_unique<char[]>(node_stat.st_size);
 		if (read(fd.get(), tp.content.get(),
 		    node_stat.st_size) != node_stat.st_size)
@@ -329,7 +310,7 @@ static int bounce_producer_get_rcpts(
 }
 
 static BOOL bounce_producer_make_content(const char *username,
-    MESSAGE_CONTENT *pbrief, unsigned int bounce_type, char *subject,
+    MESSAGE_CONTENT *pbrief, const char *bounce_type, char *subject,
     char *content_type, char *pcontent)
 {
 	char *ptr;
@@ -382,7 +363,7 @@ static BOOL bounce_producer_make_content(const char *username,
 	auto it = std::find_if(g_resource_list.begin(), g_resource_list.end(),
 	          [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, charset) == 0; });
 	auto presource = it != g_resource_list.end() ? &*it : g_default_resource;
-	if (bounce_type >= BOUNCE_TOTAL_NUM)
+	if (presource->tp.find(bounce_type) == presource->tp.end())
 		return false;
 	auto &tp = presource->tp[bounce_type];
 	int prev_pos = tp.format[TAG_BEGIN].position;
@@ -446,7 +427,7 @@ static BOOL bounce_producer_make_content(const char *username,
 }
 
 BOOL bounce_producer_make(const char *username, MESSAGE_CONTENT *pbrief,
-    unsigned int bounce_type, MAIL *pmail)
+    const char *bounce_type, MAIL *pmail)
 {
 	DSN dsn;
 	MIME *pmime;
@@ -539,16 +520,12 @@ BOOL bounce_producer_make(const char *username, MESSAGE_CONTENT *pbrief,
 		mlog(LV_ERR, "E-1480: ENOMEM");
 		return false;
 	}
-	switch (bounce_type) {
-	case BOUNCE_NOTIFY_READ:
+	if (strcmp(bounce_type, "BOUNCE_NOTIFY_READ") == 0)
 		dsn_append_field(pdsn_fields, "Disposition",
 			"automatic-action/MDN-sent-automatically; displayed");
-		break;
-	case BOUNCE_NOTIFY_NON_READ:
+	else if (strcmp(bounce_type, "BOUNCE_NOTIFY_NON_READ") == 0)
 		dsn_append_field(pdsn_fields, "Disposition",
 			"manual-action/MDN-sent-automatically; deleted");
-		break;
-	}
 	str = pbrief->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 	if (str != nullptr)
 		dsn_append_field(pdsn_fields, "Original-Message-ID", str);
