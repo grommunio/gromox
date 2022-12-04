@@ -103,24 +103,16 @@ static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 	char *charset);
 
 static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff);
-static BOOL bounce_producer_refresh();
+static BOOL bounce_producer_refresh(const char *, const char *);
 static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
 static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
-void bounce_producer_init(const char *separator)
+int bounce_producer_run(const char *separator, const char *data_path,
+    const char *bounce_grp)
 {
 	gx_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
 	g_default_resource = NULL;
-}
-
-/*
- *	@return
- *		 0				OK
- *		<>0				fail
- */
-int bounce_producer_run()
-{
-	return bounce_producer_refresh() ? 0 : -1;
+	return bounce_producer_refresh(data_path, bounce_grp) ? 0 : -1;
 }
 
 /*
@@ -129,13 +121,14 @@ int bounce_producer_run()
  *		TRUE				OK
  *		FALSE				fail
  */
-static BOOL bounce_producer_refresh() try
+static BOOL bounce_producer_refresh(const char *data_path,
+    const char *bounce_grp) try
 {
     struct dirent *direntp;
 	std::vector<RESOURCE_NODE> resource_list;
 
 	errno = 0;
-	auto dinfo = opendir_sd("local_bounce", get_data_path());
+	auto dinfo = opendir_sd(bounce_grp, data_path);
 	if (dinfo.m_dir != nullptr) {
 		while ((direntp = readdir(dinfo.m_dir.get())) != nullptr) {
 			if (strcmp(direntp->d_name, ".") == 0 ||

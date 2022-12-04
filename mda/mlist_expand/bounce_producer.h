@@ -8,7 +8,6 @@ enum{
 	BOUNCE_TOTAL_NUM
 };
 
-extern void bounce_producer_init(const char *separator);
-extern int bounce_producer_run(const char *datadir);
+extern int bounce_producer_run(const char *, const char *, const char *);
 void bounce_producer_make(const char *from, const char *rcpt,
 	MAIL *pmail_original, int bounce_type, MAIL *pmail);

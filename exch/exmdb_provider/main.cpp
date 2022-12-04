@@ -143,7 +143,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 	}
 	case PLUGIN_INIT: {
 		auto pconfig = std::move(g_config_during_init);
-		auto separator = pconfig->get_value("separator_for_bounce");
 		auto org_name = pconfig->get_value("x500_org_name");
 		int connection_num = pconfig->get_ll("rpc_proxy_connection_num");
 		int threads_num = pconfig->get_ll("notify_stub_threads_num");
@@ -191,7 +190,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			mlog(LV_INFO, "Content File Compression: zstd-%d", g_cid_compression);
 
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
-		bounce_producer_init(separator);
 		db_engine_init(table_size, cache_interval,
 			b_async ? TRUE : false, b_wal ? TRUE : false, mmap_size, populating_num);
 		uint16_t listen_port = pconfig->get_ll("exmdb_listen_port");
@@ -202,7 +200,8 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		}
 		exmdb_client_init(connection_num, threads_num);
 		
-		if (bounce_producer_run(get_data_path()) != 0) {
+		if (bounce_producer_run(pconfig->get_value("separator_for_bounce"),
+		    get_data_path(), "mail_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
 			return FALSE;
 		}

@@ -71,7 +71,7 @@ struct TAG_ITEM {
 
 }
 
-static BOOL bounce_producer_refresh(const char *);
+static BOOL bounce_producer_refresh(const char *, const char *);
 
 static char g_separator[16];
 static std::vector<RESOURCE_NODE> g_resource_list;
@@ -91,17 +91,12 @@ static constexpr TAG_ITEM g_tags[] = {
 static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
 static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
-void bounce_producer_init(const char* separator)
+int bounce_producer_run(const char *separator, const char *data_path,
+    const char *bounce_grp)
 {
 	gx_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
 	g_default_resource = NULL;
-}
-
-int bounce_producer_run(const char *data_path)
-{
-	if (!bounce_producer_refresh(data_path))
-		return -1;
-	return 0;
+	return bounce_producer_refresh(data_path, bounce_grp) ? 0 : -1;
 }
 
 /*
@@ -110,15 +105,16 @@ int bounce_producer_run(const char *data_path)
  *		TRUE				OK
  *		FALSE				fail
  */
-static BOOL bounce_producer_refresh(const char *data_path) try
+static BOOL bounce_producer_refresh(const char *data_path,
+    const char *bounce_grp) try
 {
 	struct dirent *direntp;
 	std::vector<RESOURCE_NODE> resource_list;
 
-	auto dinfo = opendir_sd("notify_bounce", data_path);
+	auto dinfo = opendir_sd(bounce_grp, data_path);
 	if (dinfo.m_dir == nullptr) {
-		mlog(LV_ERR, "zcore: opendir_sd(notify_bounce) %s: %s",
-		       dinfo.m_path.c_str(), strerror(errno));
+		mlog(LV_ERR, "zcore: opendir_sd(%s) %s: %s",
+			bounce_grp, dinfo.m_path.c_str(), strerror(errno));
 		return FALSE;
 	}
 	while ((direntp = readdir(dinfo.m_dir.get())) != nullptr) {
