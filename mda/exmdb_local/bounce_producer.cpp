@@ -11,7 +11,6 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
-#include <vector>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -68,15 +67,6 @@ struct bounce_template {
 	}
 };
 
-/*
- * <time> <from> <rcpt> <rcpts>
- * <subject> <parts> <length> <answer>
- */
-struct RESOURCE_NODE {
-	char				charset[32];
-	std::map<std::string, bounce_template> tp;
-};
-
 struct TAG_ITEM {
 	const char	*name;
 	int			length;
@@ -85,8 +75,8 @@ struct TAG_ITEM {
 }
 
 static char g_separator[16];
-static std::vector<RESOURCE_NODE> g_resource_list;
-static RESOURCE_NODE *g_default_resource;
+using template_map = std::map<std::string, bounce_template>;
+static std::map<std::string, template_map> g_resource_list;
 static constexpr TAG_ITEM g_tags[] = {
 	{"<time>", 6},
 	{"<from>", 6},
@@ -107,13 +97,12 @@ static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 
 static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff);
 static BOOL bounce_producer_refresh(const char *, const char *);
-static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
+static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, template_map &);
 
 int bounce_producer_run(const char *separator, const char *data_path,
     const char *bounce_grp)
 {
 	gx_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
-	g_default_resource = NULL;
 	return bounce_producer_refresh(data_path, bounce_grp) ? 0 : -1;
 }
 
@@ -127,7 +116,6 @@ static BOOL bounce_producer_refresh(const char *data_path,
     const char *bounce_grp) try
 {
     struct dirent *direntp;
-	std::vector<RESOURCE_NODE> resource_list;
 
 	errno = 0;
 	auto dinfo = opendir_sd(bounce_grp, data_path);
@@ -136,23 +124,14 @@ static BOOL bounce_producer_refresh(const char *data_path,
 			if (strcmp(direntp->d_name, ".") == 0 ||
 			    strcmp(direntp->d_name, "..") == 0)
 				continue;
-			bounce_producer_load_subdir(dinfo.m_path, direntp->d_name, resource_list);
+			bounce_producer_load_subdir(dinfo.m_path, direntp->d_name,
+				g_resource_list[direntp->d_name]);
 		}
 	} else if (errno != ENOENT) {
 		mlog(LV_ERR, "exmdb_local: opendir_sd %s: %s",
 		       dinfo.m_path.c_str(), strerror(errno));
 		return FALSE;
 	}
-
-	auto pdefault = std::find_if(resource_list.begin(), resource_list.end(),
-	                [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, "ascii") == 0; });
-	if (pdefault == resource_list.end()) {
-		mlog(LV_ERR, "exmdb_local: there are no \"ascii\" bounce mail "
-			"templates in \"%s\"", dinfo.m_path.c_str());
-		return FALSE;
-	}
-	g_default_resource = &*pdefault;
-	g_resource_list = std::move(resource_list);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1527: ENOMEM");
@@ -166,13 +145,12 @@ static BOOL bounce_producer_refresh(const char *data_path,
  *		plist [out]				resource will be appended into this list
  */
 static void bounce_producer_load_subdir(const std::string &basedir,
-    const char *dir_name, std::vector<RESOURCE_NODE> &plist)
+    const char *dir_name, template_map &plist)
 {
     struct dirent *sub_direntp;
 	struct stat node_stat;
 	int j, k, until_tag;
 	MIME_FIELD mime_field;
-	RESOURCE_NODE rnode, *presource = &rnode;
 
 	auto dir_buf = basedir + "/" + dir_name;
 	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
@@ -185,7 +163,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 		    !S_ISREG(node_stat.st_mode))
 			continue;
-		auto &tp = presource->tp[sub_direntp->d_name];
+		bounce_template tp;
 		tp.content = std::make_unique<char[]>(node_stat.st_size);
 		if (read(fd.get(), tp.content.get(), node_stat.st_size) != node_stat.st_size)
 			return;
@@ -246,9 +224,8 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 					std::swap(tp.format[j], tp.format[k]);
 			}
 		}
+		plist.emplace(sub_direntp->d_name, std::move(tp));
 	}
-	gx_strlcpy(presource->charset, dir_name, GX_ARRAY_SIZE(presource->charset));
-	plist.push_back(std::move(rnode));
 }
 
 /*
@@ -307,12 +284,15 @@ bool bounce_producer_make(const char *from, const char *rcpt_to,
 	if ('\0' == charset[0]) {
 		strcpy(charset, mcharset);
 	}
-	auto it = std::find_if(g_resource_list.begin(), g_resource_list.end(),
-	          [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, charset) == 0; });
-	auto presource = it != g_resource_list.end() ? &*it : g_default_resource;
-	if (presource->tp.find(bounce_type) == presource->tp.end())
+	auto it = g_resource_list.find(charset);
+	if (it == g_resource_list.end())
+		it = g_resource_list.find("ascii");
+	if (it == g_resource_list.end())
 		return false;
-	auto &tp = presource->tp[bounce_type];
+	auto it2 = it->second.find(bounce_type);
+	if (it2 == it->second.end())
+		return false;
+	auto &tp = it2->second;
 	int prev_pos = tp.format[TAG_BEGIN].position;
 	until_tag = TAG_TOTAL_LEN;
 	for (i=TAG_BEGIN+1; i<until_tag; i++) {
