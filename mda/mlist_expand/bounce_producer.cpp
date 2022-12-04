@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
-#include <array>
 #include "bounce_producer.h"
 #include <cerrno>
 #include <cstdio>
@@ -18,6 +17,7 @@
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include <libHX/string.h>
+#include <map>
 #include <memory>
 #include <string>
 #include <sys/stat.h>
@@ -77,7 +77,7 @@ struct bounce_template {
  */
 struct RESOURCE_NODE {
 	char				charset[32];
-	std::array<bounce_template, BOUNCE_TOTAL_NUM> tp;
+	std::map<std::string, bounce_template> tp;
 };
 
 struct TAG_ITEM {
@@ -90,10 +90,6 @@ struct TAG_ITEM {
 static char g_separator[16];
 static std::vector<RESOURCE_NODE> g_resource_list;
 static RESOURCE_NODE *g_default_resource;
-static constexpr const char *g_resource_table[] = {
-	"BOUNCE_MLIST_SPECIFIED", "BOUNCE_MLIST_INTERNAL",
-	"BOUNCE_MLIST_DOMAIN",
-};
 static constexpr TAG_ITEM g_tags[] = {
 	{"<time>", 6},
 	{"<from>", 6},
@@ -196,7 +192,6 @@ static BOOL bounce_producer_check_subdir(const std::string &basedir,
 	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
 	if (sub_dirp.m_dir == nullptr)
 		return false;
-	size_t item_num = 0;
 	while ((sub_direntp = readdir(sub_dirp.m_dir.get())) != nullptr) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
@@ -205,15 +200,8 @@ static BOOL bounce_producer_check_subdir(const std::string &basedir,
 		if (stat(sub_buf.c_str(), &node_stat) != 0 ||
 		    !S_ISREG(node_stat.st_mode))
 			continue;
-		for (size_t i = 0; i < BOUNCE_TOTAL_NUM; ++i) {
-            if (0 == strcmp(g_resource_table[i], sub_direntp->d_name) &&
-				node_stat.st_size < 64*1024) {
-                item_num ++;
-                break;
-            }
-        }
     }
-	return item_num == BOUNCE_TOTAL_NUM ? TRUE : false;
+	return TRUE;
 }
 
 /*
@@ -227,7 +215,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 {
     struct dirent *sub_direntp;
 	struct stat node_stat;
-	int i, j, k, until_tag;
+	int j, k, until_tag;
 	MIME_FIELD mime_field;
 	RESOURCE_NODE rnode, *presource = &rnode;
 
@@ -237,21 +225,12 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
 			continue;
-		/* compare file name with the resource table and get the index */
-        for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
-            if (0 == strcmp(g_resource_table[i], sub_direntp->d_name)) {
-                break;
-            }
-        }
-		if (BOUNCE_TOTAL_NUM == i) {
-			continue;
-		}
 		auto sub_buf = dir_buf + "/" + sub_direntp->d_name;
 		wrapfd fd = open(sub_buf.c_str(), O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 		    !S_ISREG(node_stat.st_mode))
 			continue;
-		auto &tp = presource->tp[i];
+		auto &tp = presource->tp[sub_direntp->d_name];
 		tp.content = std::make_unique<char[]>(node_stat.st_size);
 		if (read(fd.get(), tp.content.get(), node_stat.st_size) != node_stat.st_size) {
 			return;
@@ -325,7 +304,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
  *		pmail [out]			bounce mail object
  */
 bool bounce_producer_make(const char *from, const char *rcpt_to,
-    MAIL *pmail_original, unsigned int bounce_type, MAIL *pmail)
+    MAIL *pmail_original, const char *bounce_type, MAIL *pmail)
 {
 	DSN dsn;
 	char *ptr;
@@ -384,7 +363,7 @@ bool bounce_producer_make(const char *from, const char *rcpt_to,
 	auto it = std::find_if(g_resource_list.begin(), g_resource_list.end(),
 	          [&](const RESOURCE_NODE &n) { return strcasecmp(n.charset, charset) == 0; });
 	auto presource = it != g_resource_list.end() ? &*it : g_default_resource;
-	if (bounce_type >= BOUNCE_TOTAL_NUM)
+	if (presource->tp.find(bounce_type) == presource->tp.end())
 		return false;
 	auto &tp = presource->tp[bounce_type];
 	int prev_pos = tp.format[TAG_BEGIN].position;

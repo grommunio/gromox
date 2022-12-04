@@ -252,7 +252,8 @@ static int cache_queue_increase_mess_ID()
 
 static void *mdl_thrwork(void *arg)
 {
-	int i, bounce_type = 0, scan_interval;
+	const char *bounce_type = nullptr;
+	int i, scan_interval;
 	time_t scan_begin, scan_end;
     struct dirent *direntp;
 	char temp_from[UADDR_SIZE], temp_rcpt[UADDR_SIZE];
@@ -400,7 +401,7 @@ static void *mdl_thrwork(void *arg)
 				if (static_cast<unsigned int>(g_retrying_times) <= times) {
 					need_bounce = TRUE;
 					need_remove = TRUE;
-					bounce_type = BOUNCE_OPERATION_ERROR;
+					bounce_type = "BOUNCE_OPERATION_ERROR";
 				} else {
 					need_bounce = FALSE;
 					need_remove = FALSE;
@@ -414,24 +415,24 @@ static void *mdl_thrwork(void *arg)
 				net_failure_statistic(1, 0, 0, 0);
 				break;
 			case DELIVERY_OPERATION_DELIVERED:
-				bounce_type = BOUNCE_MAIL_DELIVERED;
+				bounce_type = "BOUNCE_MAIL_DELIVERED";
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				net_failure_statistic(1, 0, 0, 0);
 				break;
 			case DELIVERY_NO_USER:
-			    bounce_type = BOUNCE_NO_USER;
+				bounce_type = "BOUNCE_NO_USER";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 				net_failure_statistic(0, 0, 0, 1);
 				break;
 			case DELIVERY_MAILBOX_FULL:
-				bounce_type = BOUNCE_MAILBOX_FULL;
+				bounce_type = "BOUNCE_MAILBOX_FULL";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 			    break;
 			case DELIVERY_OPERATION_ERROR:
-				bounce_type = BOUNCE_OPERATION_ERROR;
+				bounce_type = "BOUNCE_OPERATION_ERROR";
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				net_failure_statistic(0, 0, 1, 0);

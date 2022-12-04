@@ -3,14 +3,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/hook_common.h>
 
-enum{
-	BOUNCE_NO_USER,
-	BOUNCE_MAILBOX_FULL,
-	BOUNCE_OPERATION_ERROR,
-	BOUNCE_MAIL_DELIVERED,
-	BOUNCE_TOTAL_NUM,
-};
-
 enum {
 	DELIVERY_NO_USER,
 	DELIVERY_MAILBOX_FULL,
@@ -20,6 +12,7 @@ enum {
 	DELIVERY_OPERATION_DELIVERED
 };
 
+struct MAIL;
 #define BOUND_NOTLOCAL					7
 
 extern void auto_response_reply(const char *user_home, const char *from, const char *rcpt);
@@ -28,7 +21,7 @@ extern void bounce_audit_init(int audit_num, int audit_interval);
 extern BOOL bounce_audit_check(const char *audit_string);
 
 extern int bounce_producer_run(const char *, const char *, const char *);
-extern bool bounce_producer_make(const char *from, const char *rcpt, MAIL *orig, time_t orig_time, unsigned int bounce_type, MAIL *cur);
+extern bool bounce_producer_make(const char *from, const char *rcpt, MAIL *orig, time_t orig_time, const char *bounce_type, MAIL *cur);
 
 extern int (*exmdb_local_check_domain)(const char *domainname);
 extern bool (*exmdb_local_get_lang)(const char *username, char *lang, size_t);
