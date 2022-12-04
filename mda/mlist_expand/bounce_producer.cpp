@@ -112,7 +112,6 @@ static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset);
 static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 	char *charset);
 static BOOL bounce_producer_refresh(const char *, const char *);
-static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
 static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
 int bounce_producer_run(const char *separator, const char *data_path,
@@ -157,8 +156,6 @@ static BOOL bounce_producer_refresh(const char *datadir, const char *bounce_grp)
 		if (strcmp(direntp->d_name, ".") == 0 ||
 		    strcmp(direntp->d_name, "..") == 0)
 			continue;
-		if (!bounce_producer_check_subdir(dinfo.m_path, direntp->d_name))
-			continue;
 		bounce_producer_load_subdir(dinfo.m_path, direntp->d_name, resource_list);
     }
 
@@ -171,36 +168,6 @@ static BOOL bounce_producer_refresh(const char *datadir, const char *bounce_grp)
 	}
 	g_default_resource = &*pdefault;
 	g_resource_list = std::move(resource_list);
-	return TRUE;
-}
-
-/*
- *	check if the sub directory has all necessary files
- *	@param
- *		dir_name [in]			sub directory
- *	@return
- *		TRUE					OK
- *		FALSE					illegal
- */
-static BOOL bounce_producer_check_subdir(const std::string &basedir,
-    const char *dir_name)
-{
-    struct dirent *sub_direntp;
-	struct stat node_stat;
-
-	auto dir_buf = basedir + "/" + dir_name;
-	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
-	if (sub_dirp.m_dir == nullptr)
-		return false;
-	while ((sub_direntp = readdir(sub_dirp.m_dir.get())) != nullptr) {
-		if (strcmp(sub_direntp->d_name, ".") == 0 ||
-		    strcmp(sub_direntp->d_name, "..") == 0)
-			continue;
-		auto sub_buf = dir_buf + "/" + sub_direntp->d_name;
-		if (stat(sub_buf.c_str(), &node_stat) != 0 ||
-		    !S_ISREG(node_stat.st_mode))
-			continue;
-    }
 	return TRUE;
 }
 
