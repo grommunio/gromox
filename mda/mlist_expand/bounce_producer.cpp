@@ -108,23 +108,16 @@ static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset);
 
 static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 	char *charset);
-static BOOL bounce_producer_refresh(const char *datadir);
+static BOOL bounce_producer_refresh(const char *, const char *);
 static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
 static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
-void bounce_producer_init(const char* separator)
+int bounce_producer_run(const char *separator, const char *data_path,
+    const char *bounce_grp)
 {
 	gx_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
 	g_default_resource = NULL;
-}
 
-/*
- *	@return
- *		 0				OK
- *		<>0				fail
- */
-int bounce_producer_run(const char *datadir)
-{
 #define E(f, s) do { \
 	query_service2(s, f); \
 	if ((f) == nullptr) { \
@@ -137,9 +130,7 @@ int bounce_producer_run(const char *datadir)
 	E(bounce_producer_get_lang, "get_user_lang");
 	E(bounce_producer_get_timezone, "get_timezone");
 #undef E
-	if (!bounce_producer_refresh(datadir))
-		return -5;
-	return 0;
+	return bounce_producer_refresh(data_path, bounce_grp) ? 0 : -1;
 }
 
 /*
@@ -148,15 +139,15 @@ int bounce_producer_run(const char *datadir)
  *		TRUE				OK
  *		FALSE				fail
  */
-static BOOL bounce_producer_refresh(const char *datadir)
+static BOOL bounce_producer_refresh(const char *datadir, const char *bounce_grp)
 {
     struct dirent *direntp;
 	std::vector<RESOURCE_NODE> resource_list;
 
-	auto dinfo = opendir_sd("mlist_bounce", datadir);
+	auto dinfo = opendir_sd(bounce_grp, datadir);
 	if (dinfo.m_dir == nullptr) {
-		mlog(LV_ERR, "mlist_expand: opendir_sd(mlist_expand) %s: %s",
-		       dinfo.m_path.c_str(), strerror(errno));
+		mlog(LV_ERR, "mlist_expand: opendir_sd(%s) %s: %s",
+			bounce_grp, dinfo.m_path.c_str(), strerror(errno));
 		return FALSE;
 	}
 	while ((direntp = readdir(dinfo.m_dir.get())) != nullptr) {

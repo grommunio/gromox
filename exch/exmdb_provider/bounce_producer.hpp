@@ -10,8 +10,7 @@ enum{
 	BOUNCE_TOTAL_NUM
 };
 
-extern void bounce_producer_init(const char *separator);
-extern int bounce_producer_run(const char *data_path);
+extern int bounce_producer_run(const char *, const char *, const char *);
 BOOL bounce_producer_make_content(const char *from,
 	const char *rcpt, sqlite3 *psqlite, uint64_t message_id,
 	int bounce_type, char *mime_from, char *subject,
