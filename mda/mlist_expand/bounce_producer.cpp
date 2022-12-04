@@ -255,7 +255,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
  *		bounce_type			type of bounce mail
  *		pmail [out]			bounce mail object
  */
-bool bounce_producer_make(const char *from, const char *rcpt_to,
+bool mlex_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail_original, const char *bounce_type, MAIL *pmail)
 {
 	DSN dsn;

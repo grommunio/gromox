@@ -465,11 +465,11 @@ static void *mdl_thrwork(void *arg)
 						"produce bounce message, because of too many "
 						"mails to %s", temp_rcpt);
 					put_context(pbounce_context);
-				} else if (!bounce_producer_make(temp_from,
+				} else if (!exml_bouncer_make(temp_from,
 				    temp_rcpt, pcontext->pmail, original_time,
 				    bounce_type, pbounce_context->pmail)) {
 					exmdb_local_log_info(pcontext, ptr, LV_ERR,
-						"error during bounce_producer_make for %s",
+						"error during exml_bouncer_make for %s",
 						temp_rcpt);
 					put_context(pbounce_context);
 				} else {

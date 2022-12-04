@@ -241,7 +241,7 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 	return offset;
 }
 
-BOOL bounce_producer_make_content(const char *from, const char *rcpt,
+BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
     sqlite3 *psqlite, uint64_t message_id, const char *bounce_type,
     char *mime_from, char *subject, char *content_type, char *pcontent)
 {
@@ -357,7 +357,7 @@ BOOL bounce_producer_make_content(const char *from, const char *rcpt,
 	return TRUE;
 }
 
-BOOL bounce_producer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
+BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
     uint64_t message_id, const char *bounce_type, MAIL *pmail)
 {
 	DSN dsn;
@@ -372,7 +372,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	DSN_FIELDS *pdsn_fields;
 	char content_buff[256*1024];
 	
-	if (!bounce_producer_make_content(from, rcpt,
+	if (!exmdb_bouncer_make_content(from, rcpt,
 	    psqlite, message_id, bounce_type, mime_from,
 	    subject, content_type, content_buff))
 		return FALSE;

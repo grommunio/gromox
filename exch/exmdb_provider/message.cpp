@@ -2710,7 +2710,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		pmsgctnt->children.prcpts = prcpts;
 	}
 	if (action_flavor & STOCK_REPLY_TEMPLATE) {
-		if (!bounce_producer_make_content(from_address, account,
+		if (!exmdb_bouncer_make_content(from_address, account,
 		    psqlite, message_id, "BOUNCE_AUTO_RESPONSE", nullptr,
 		    nullptr, content_type, tmp_buff))
 			return FALSE;
@@ -2798,7 +2798,7 @@ static ec_error_t message_bounce_message(const char *from_address,
 	}
 
 	MAIL imail(common_util_get_mime_pool());
-	if (!bounce_producer_make(from_address, account, psqlite, message_id,
+	if (!exmdb_bouncer_make(from_address, account, psqlite, message_id,
 	    bounce_type, &imail))
 		return ecServerOOM;
 	const char *pvalue2 = strchr(account, '@');

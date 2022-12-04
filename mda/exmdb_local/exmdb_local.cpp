@@ -160,7 +160,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			}
 			time(&current_time);
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !bounce_producer_make(pcontext->pcontrol->from,
+			    !exml_bouncer_make(pcontext->pcontrol->from,
 			    rcpt_buff, pcontext->pmail, current_time,
 			    "BOUNCE_MAIL_DELIVERED", pbounce_context->pmail)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
@@ -187,7 +187,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			}
 			time(&current_time);
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !bounce_producer_make(pcontext->pcontrol->from,
+			    !exml_bouncer_make(pcontext->pcontrol->from,
 			    rcpt_buff, pcontext->pmail, current_time,
 			    "BOUNCE_NO_USER", pbounce_context->pmail)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
@@ -213,7 +213,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			}
 			time(&current_time);
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !bounce_producer_make(pcontext->pcontrol->from,
+			    !exml_bouncer_make(pcontext->pcontrol->from,
 			    rcpt_buff, pcontext->pmail, current_time,
 			    "BOUNCE_MAILBOX_FULL", pbounce_context->pmail)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
@@ -240,7 +240,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			}
 			time(&current_time);
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !bounce_producer_make(pcontext->pcontrol->from,
+			    !exml_bouncer_make(pcontext->pcontrol->from,
 			    rcpt_buff, pcontext->pmail, current_time,
 			    "BOUNCE_OPERATION_ERROR", pbounce_context->pmail)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
