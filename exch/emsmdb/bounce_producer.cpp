@@ -20,7 +20,9 @@
 #include <gromox/dsn.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mime.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
@@ -32,114 +34,6 @@
 
 using namespace std::string_literals;
 using namespace gromox;
-
-namespace {
-
-struct bounce_template {
-	char subject[256]{}, content_type[256]{};
-	std::unique_ptr<char[]> content;
-	size_t body_start = 0;
-};
-
-}
-
-static char g_separator[16];
-using template_map = std::map<std::string, bounce_template>;
-static std::map<std::string, template_map> g_resource_list;
-
-static BOOL bounce_producer_refresh(const char *, const char *);
-static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, template_map &);
-
-int bounce_producer_run(const char *separator, const char *data_path,
-    const char *bounce_grp)
-{
-	gx_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
-	return bounce_producer_refresh(data_path, bounce_grp) ? 0 : -1;
-}
-
-/*
- *	refresh the current resource list
- *	@return
- *		TRUE				OK
- *		FALSE				fail
- */
-static BOOL bounce_producer_refresh(const char *data_path,
-    const char *bounce_grp) try
-{
-	struct dirent *direntp;
-
-	auto dinfo = opendir_sd(bounce_grp, data_path);
-	if (dinfo.m_dir == nullptr) {
-		mlog(LV_ERR, "exmdb_provider: opendir_sd(%s) %s: %s",
-			bounce_grp, dinfo.m_path.c_str(), strerror(errno));
-		return FALSE;
-	}
-	while ((direntp = readdir(dinfo.m_dir.get())) != nullptr) {
-		if (strcmp(direntp->d_name, ".") == 0 ||
-		    strcmp(direntp->d_name, "..") == 0)
-			continue;
-		bounce_producer_load_subdir(dinfo.m_path, direntp->d_name,
-			g_resource_list[direntp->d_name]);
-	}
-	return TRUE;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1501: ENOMEM");
-	return false;
-}
-
-static void bounce_producer_load_subdir(const std::string &basedir,
-    const char *dir_name, template_map &plist)
-{
-	struct dirent *sub_direntp;
-	struct stat node_stat;
-	int j;
-	MIME_FIELD mime_field;
-
-	auto dir_buf = basedir + "/" + dir_name;
-	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
-	if (sub_dirp.m_dir != nullptr) while ((sub_direntp = readdir(sub_dirp.m_dir.get())) != nullptr) {
-		if (strcmp(sub_direntp->d_name, ".") == 0 ||
-		    strcmp(sub_direntp->d_name, "..") == 0)
-			continue;
-		auto sub_buf = dir_buf + "/" + sub_direntp->d_name;
-		wrapfd fd = open(sub_buf.c_str(), O_RDONLY);
-		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
-		    !S_ISREG(node_stat.st_mode))
-			continue;
-		bounce_template tp;
-		tp.content = std::make_unique<char[]>(node_stat.st_size);
-		if (read(fd.get(), tp.content.get(),
-		    node_stat.st_size) != node_stat.st_size)
-			return;
-		fd.close();
-		j = 0;
-		while (j < node_stat.st_size) {
-			auto parsed_length = parse_mime_field(&tp.content[j],
-			                     node_stat.st_size - j, &mime_field);
-			j += parsed_length;
-			if (0 != parsed_length) {
-				if (strcasecmp(mime_field.name.c_str(), "Content-Type") == 0)
-					gx_strlcpy(tp.content_type, mime_field.value.c_str(), std::size(tp.content_type));
-				else if (strcasecmp(mime_field.name.c_str(), "Subject") == 0)
-					gx_strlcpy(tp.subject, mime_field.value.c_str(), std::size(tp.subject));
-				if (tp.content[j] == '\n') {
-					++j;
-					break;
-				} else if (tp.content[j] == '\r' &&
-				    tp.content[j+1] == '\n') {
-					j += 2;
-					break;
-				}
-			} else {
-				mlog(LV_ERR, "exmdb_provider: bounce mail %s format error",
-				       sub_buf.c_str());
-				return;
-			}
-		}
-		tp.body_start = j;
-		plist.emplace(sub_direntp->d_name, std::move(tp));
-	}
-}
 
 static BOOL bounce_producer_make_content(const char *username,
     MESSAGE_CONTENT *pbrief, const char *bounce_type, char *subject,
@@ -190,16 +84,10 @@ static BOOL bounce_producer_make_content(const char *username,
 			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", arsizeof(charset));
 		}
 	}
-	auto it = g_resource_list.find(charset);
-	if (it == g_resource_list.end())
-		it = g_resource_list.find("ascii");
-	if (it == g_resource_list.end())
+	auto tpptr = bounce_gen_lookup(charset, bounce_type);
+	if (tpptr == nullptr)
 		return false;
-	auto it2 = it->second.find(bounce_type);
-	if (it2 == it->second.end())
-		return false;
-	auto &tp = it2->second;
-
+	auto &tp = *tpptr;
 	auto fa = HXformat_init();
 	if (fa == nullptr)
 		return false;
@@ -210,14 +98,14 @@ static BOOL bounce_producer_make_content(const char *username,
 	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "user", username, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "rcpts",
-	    bounce_gen_rcpts(*pbrief->children.prcpts, g_separator).c_str(),
+	    bounce_gen_rcpts(*pbrief->children.prcpts).c_str(),
 	    HXTYPE_STRING | immed) < 0)
 		return false;
 	auto subj = pbrief->proplist.get<const char>(PR_SUBJECT);
 	if (HXformat_add(fa, "subject", subj != nullptr ? subj : "",
 	    HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "parts",
-	    bounce_gen_attachs(*pbrief->children.pattachments, g_separator).c_str(),
+	    bounce_gen_attachs(*pbrief->children.pattachments).c_str(),
 	    HXTYPE_STRING | immed) < 0)
 		return false;
 	HX_unit_size(date_buff, std::size(date_buff), *message_size, 1000, 0);
@@ -230,10 +118,10 @@ static BOOL bounce_producer_make_content(const char *username,
 	gx_strlcpy(pcontent, replaced, content_size);
 	HXmc_free(replaced);
 	if (NULL != subject) {
-		strcpy(subject, tp.subject);
+		strcpy(subject, tp.subject.c_str());
 	}
 	if (NULL != content_type) {
-		strcpy(content_type, tp.content_type);
+		strcpy(content_type, tp.content_type.c_str());
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
