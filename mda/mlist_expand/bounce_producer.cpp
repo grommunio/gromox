@@ -17,6 +17,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
+#include <libHX/option.h>
 #include <libHX/string.h>
 #include <map>
 #include <memory>
@@ -29,34 +30,12 @@
 
 using namespace gromox;
 
-enum{
-	TAG_BEGIN,
-	TAG_TIME,
-	TAG_FROM,
-	TAG_RCPT,
-	TAG_RCPTS,
-	TAG_SUBJECT,
-	TAG_PARTS,
-	TAG_LENGTH,
-	TAG_END,
-	TAG_TOTAL_LEN = TAG_END
-};
-
 namespace {
-
-struct FORMAT_DATA {
-	int position = -1, tag = -1;
-};
 
 struct bounce_template {
 	char from[UADDR_SIZE]{}, subject[256]{}, content_type[256]{};
 	std::unique_ptr<char[]> content;
-	FORMAT_DATA format[TAG_TOTAL_LEN+1];
-
-	bounce_template() {
-		for (size_t j = 0; j < std::size(format); ++j)
-			format[j].tag = j;
-	}
+	size_t body_start = 0;
 };
 
 /*
@@ -68,25 +47,11 @@ struct RESOURCE_NODE {
 	std::map<std::string, bounce_template> tp;
 };
 
-struct TAG_ITEM {
-	const char	*name;
-	int			length;
-};
-
 }
 
 static char g_separator[16];
 using template_map = std::map<std::string, bounce_template>;
 static std::map<std::string, template_map> g_resource_list;
-static constexpr TAG_ITEM g_tags[] = {
-	{"%(time)", 7},
-	{"%(from)", 7},
-	{"%(rcpt)", 7},
-	{"%(rcpts)", 8},
-	{"%(subject)", 10},
-	{"%(parts)", 8},
-	{"%(length)", 9},
-};
 
 int (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
@@ -150,7 +115,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 {
     struct dirent *sub_direntp;
 	struct stat node_stat;
-	int j, k, until_tag;
+	int j;
 	MIME_FIELD mime_field;
 
 	auto dir_buf = basedir + "/" + dir_name;
@@ -196,36 +161,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 				return;
 			}
 		}
-		/* find tags in file content and mark the position */
-		tp.format[TAG_BEGIN].position = j;
-		for (; j<node_stat.st_size; j++) {
-			if (tp.content[j] == '%') {
-				for (k=0; k<TAG_TOTAL_LEN; k++) {
-					if (strncasecmp(&tp.content[j], g_tags[k].name, g_tags[k].length) == 0) {
-						tp.format[k+1].position = j;
-						break;
-					}
-				}
-			}
-		}
-		tp.format[TAG_END].position = node_stat.st_size;
-		until_tag = TAG_TOTAL_LEN;
-
-		for (j=TAG_BEGIN+1; j<until_tag; j++) {
-			if (tp.format[j].position == -1) {
-				mlog(LV_ERR, "mlist_expand: format error in %s, lacking "
-				       "tag %s", sub_buf.c_str(), g_tags[j-1].name);
-				return;
-			}
-		}
-
-		/* sort the tags ascending */
-		for (j=TAG_BEGIN+1; j<until_tag; j++) {
-			for (k=TAG_BEGIN+1; k<until_tag; k++) {
-				if (tp.format[j].position < tp.format[k].position)
-					std::swap(tp.format[j], tp.format[k]);
-			}
-		}
+		tp.body_start = j;
 		plist.emplace(sub_direntp->d_name, std::move(tp));
 	}
 }
@@ -239,20 +175,17 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 bool mlex_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail_original, const char *bounce_type, MAIL *pmail) try
 {
-	char *ptr;
 	MIME *pmime;
 	time_t cur_time;
 	char charset[32];
 	char tmp_buff[1024];
 	char date_buff[128];
 	struct tm time_buff;
-	int i, len, until_tag;
-	char original_ptr[256*1024];
+	int len;
 	char lang[32], time_zone[64];
 	
 	
 	time(&cur_time);
-	ptr = original_ptr;
 	charset[0] = '\0';
 	time_zone[0] = '\0';
 	auto pdomain = strchr(from, '@');
@@ -286,7 +219,10 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	}
 	
 	auto mcharset = bounce_gen_charset(*pmail_original);
-	auto it = g_resource_list.find(mcharset.size() > 0 ? mcharset.c_str() : charset);
+	if ('\0' == charset[0]) {
+		strcpy(charset, mcharset.c_str());
+	}
+	auto it = g_resource_list.find(charset);
 	if (it == g_resource_list.end())
 		it = g_resource_list.find("ascii");
 	if (it == g_resource_list.end())
@@ -295,57 +231,38 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	if (it2 == it->second.end())
 		return false;
 	auto &tp = it2->second;
-	int prev_pos = tp.format[TAG_BEGIN].position;
-	until_tag = TAG_TOTAL_LEN;
-	for (i=TAG_BEGIN+1; i<until_tag; i++) {
-		len = tp.format[i].position - prev_pos;
-		memcpy(ptr, &tp.content[prev_pos], len);
-		prev_pos = tp.format[i].position + g_tags[tp.format[i].tag-1].length;
-		ptr += len;
-		switch (tp.format[i].tag) {
-		case TAG_TIME:
-			len = gx_snprintf(ptr, 128, "%s", date_buff);
-			ptr += len;
-			break;
-		case TAG_FROM:
-			strcpy(ptr, from);
-			ptr += strlen(from);
-			break;	
-    	case TAG_RCPT:
-			strcpy(ptr, rcpt_to);
-        	ptr += strlen(rcpt_to);
-			break;
-    	case TAG_RCPTS:
-			strcpy(ptr, rcpt_to);
-        	ptr += strlen(rcpt_to);
-			break;
-		case TAG_SUBJECT: {
-			auto str = bounce_gen_subject(*pmail_original, mcharset.c_str());
-			ptr = stpcpy(ptr, str.c_str());
-            break;
-		}
-		case TAG_PARTS: {
-			auto str = bounce_gen_attachs(*pmail_original,
-			           mcharset.c_str(), g_separator);
-			ptr = stpcpy(ptr, str.c_str());
-            break;
-		}
-		case TAG_LENGTH: {
-			auto mail_len = pmail_original->get_length();
-			if (mail_len < 0) {
-				mlog(LV_ERR, "mlist_expand: failed to get mail length");
-				mail_len = 0;
-			}
-			HX_unit_size(ptr, 128 /* yuck */, mail_len, 1000, 0);
-			len = strlen(ptr);
-			ptr += len;
-			break;
-		}
-		}
+
+	auto fa = HXformat_init();
+	if (fa == nullptr)
+		return false;
+	auto cl_0 = make_scope_exit([&]() { HXformat_free(fa); });
+	unsigned int immed = HXFORMAT_IMMED;
+	if (HXformat_add(fa, "time", date_buff, HXTYPE_STRING | immed) < 0 ||
+	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "rcpt", rcpt_to, HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "rcpts", rcpt_to, HXTYPE_STRING) < 0)
+		return false;
+	auto str = bounce_gen_subject(*pmail_original, mcharset.c_str());
+	if (HXformat_add(fa, "subject", str.c_str(), HXTYPE_STRING | immed) < 0)
+		return false;
+	str = bounce_gen_attachs(*pmail_original, mcharset.c_str(), g_separator);
+	if (HXformat_add(fa, "parts", str.c_str(), HXTYPE_STRING | immed) < 0)
+		return false;
+	auto mail_len = pmail_original->get_length();
+	if (mail_len < 0) {
+		mlog(LV_ERR, "mlist_expand: failed to get mail length");
+		mail_len = 0;
 	}
-	len = tp.format[TAG_END].position - prev_pos;
-	memcpy(ptr, &tp.content[prev_pos], len);
-	ptr += len;
+	HX_unit_size(date_buff, std::size(date_buff), mail_len, 1000, 0);
+	if (HXformat_add(fa, "length", date_buff, HXTYPE_STRING) < 0)
+		return false;
+
+	hxmc_t *replaced = nullptr;
+	auto aprint_len = HXformat_aprintf(fa, &replaced, &tp.content[tp.body_start]);
+	if (aprint_len < 0)
+		return false;
+	auto cl_1 = make_scope_exit([&]() { HXmc_free(replaced); });
+
 	auto phead = pmail->add_head();
 	if (NULL == phead) {
 		mlog(LV_ERR, "mlist_expand: MIME pool exhausted");
@@ -356,7 +273,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	pmime->set_content_param("report-type", "delivery-status");
 	pmime->set_field("Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
-	auto str = bounce_gen_thrindex(*pmail_original);
+	str = bounce_gen_thrindex(*pmail_original);
 	if (!str.empty())
 		pmime->set_field("Thread-Index", str.c_str());
 	pmime->set_field("From", tp.from);
@@ -377,8 +294,8 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 		tmp_buff, 256, &pmime->f_type_params);
 	pmime->set_content_type(tmp_buff);
 	pmime->set_content_param("charset", "\"utf-8\"");
-	if (!pmime->write_content(original_ptr,
-	    ptr - original_ptr, mime_encoding::automatic)) {
+	if (!pmime->write_content(replaced, aprint_len,
+	    mime_encoding::automatic)) {
         mlog(LV_ERR, "mlist_expand: failed to write content");
 		return false;
 	}
@@ -398,6 +315,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	dsn.append_field(pdsn_fields, "Status", "5.0.0");
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
 	dsn.append_field(pdsn_fields, "Remote-MTA", tmp_buff);
+	char original_ptr[256*1024];
 	if (dsn.serialize(original_ptr, std::size(original_ptr))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
