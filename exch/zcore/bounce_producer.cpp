@@ -14,6 +14,7 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/defs.h>
 #include <gromox/dsn.hpp>
 #include <gromox/element_data.hpp>
@@ -206,64 +207,9 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 	}
 }
 
-static int bounce_producer_get_mail_parts(
-	ATTACHMENT_LIST *pattachments, char *parts)
-{
-	int i;
-	int offset;
-	int tmp_len;
-	BOOL b_first;
-	
-	offset = 0;
-	b_first = FALSE;
-	for (i=0; i<pattachments->count; i++) {
-		auto pvalue = pattachments->pplist[i]->proplist.get<const char>(PR_ATTACH_LONG_FILENAME);
-		if (NULL == pvalue) {
-			continue;
-		}
-		tmp_len = strlen(pvalue);
-		if (offset + tmp_len < 128*1024) {
-			if (b_first) {
-				strcpy(parts + offset, g_separator);
-				offset += strlen(g_separator);
-			}
-			memcpy(parts + offset, pvalue, tmp_len);
-			offset += tmp_len;
-			b_first = TRUE;
-		}
-	}
-	return offset;
-}
-
-static int bounce_producer_get_rcpts(
-	TARRAY_SET *prcpts, char *rcpts)
-{
-	size_t offset = 0;
-	BOOL b_first;
-
-	b_first = FALSE;
-	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto pvalue = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
-		if (NULL == pvalue) {
-			continue;
-		}
-		auto tmp_len = strlen(pvalue);
-		if (offset + tmp_len < 128*1024) {
-			if (b_first) {
-				strcpy(rcpts + offset, g_separator);
-				offset += strlen(g_separator);
-			}
-			memcpy(rcpts + offset, pvalue, tmp_len);
-			offset += tmp_len;
-			b_first = TRUE;
-		}
-	}
-	return offset;
-}
-
 static BOOL bounce_producer_make_content(const char *username,
     MESSAGE_CONTENT *pbrief, const char *bounce_type, char *subject,
-    char *content_type, char *pcontent)
+    char *content_type, char *pcontent) try
 {
 	char *ptr;
 	char charset[32];
@@ -342,11 +288,11 @@ static BOOL bounce_producer_make_content(const char *username,
 			strcpy(ptr, username);
 			ptr += strlen(username);
 			break;
-		case TAG_RCPTS:
-			len = bounce_producer_get_rcpts(
-				pbrief->children.prcpts, ptr);
-			ptr += len;
+		case TAG_RCPTS: {
+			auto str = bounce_gen_rcpts(*pbrief->children.prcpts, g_separator);
+			ptr = stpcpy(ptr, str.c_str());
 			break;
+		}
 		case TAG_SUBJECT: {
 			auto str = pbrief->proplist.get<const char>(PR_SUBJECT);
 			if (str != nullptr) {
@@ -356,11 +302,11 @@ static BOOL bounce_producer_make_content(const char *username,
 			}
 			break;
 		}
-		case TAG_PARTS:
-			len = bounce_producer_get_mail_parts(
-				pbrief->children.pattachments, ptr);
-			ptr += len;
+		case TAG_PARTS: {
+			auto str = bounce_gen_attachs(*pbrief->children.pattachments, g_separator);
+			ptr = stpcpy(ptr, str.c_str());
 			break;
+		}
 		case TAG_LENGTH:
 			HX_unit_size(ptr, 128 /* yuck */, message_size, 1000, 0);
 			len = strlen(ptr);
@@ -379,6 +325,9 @@ static BOOL bounce_producer_make_content(const char *username,
 	}
 	*ptr = '\0';
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1217: ENOMEM");
+	return false;
 }
 
 BOOL zcore_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,

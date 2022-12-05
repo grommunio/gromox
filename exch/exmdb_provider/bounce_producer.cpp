@@ -202,48 +202,35 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 	}
 }
 
-static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
-	uint64_t message_id, char *parts)
+static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 {
-	int offset;
-	int tmp_len;
+	std::string r;
 	void *pvalue;
-	BOOL b_first;
 	char sql_string[256];
-	uint64_t attachment_id;
 	
-	offset = 0;
-	b_first = FALSE;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT attachment_id FROM "
 	        "attachments WHERE message_id=%llu", static_cast<unsigned long long>(message_id));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		attachment_id = sqlite3_column_int64(pstmt, 0);
+		auto attachment_id = pstmt.col_uint64(0);
 		if (!cu_get_property(db_table::atx_props,
 		    attachment_id, 0, psqlite, PR_ATTACH_LONG_FILENAME, &pvalue))
 			return 0;
 		if (NULL == pvalue) {
 			continue;
 		}
-		tmp_len = strlen(static_cast<char *>(pvalue));
-		if (offset + tmp_len < 128*1024) {
-			if (b_first) {
-				strcpy(parts + offset, g_separator);
-				offset += strlen(g_separator);
-			}
-			memcpy(parts + offset, pvalue, tmp_len);
-			offset += tmp_len;
-			b_first = TRUE;
-		}
+		if (!r.empty())
+			r += g_separator;
+		r += static_cast<const char *>(pvalue);
 	}
-	return offset;
+	return r;
 }
 
 BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
     sqlite3 *psqlite, uint64_t message_id, const char *bounce_type,
-    char *mime_from, char *subject, char *content_type, char *pcontent)
+    char *mime_from, char *subject, char *content_type, char *pcontent) try
 {
 	char *ptr;
 	void *pvalue;
@@ -330,10 +317,11 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 				ptr += len;
 			}
 			break;
-		case TAG_PARTS:
-			len = bounce_producer_get_mail_parts(psqlite, message_id, ptr);
-			ptr += len;
+		case TAG_PARTS: {
+			auto str = exmdb_bouncer_attachs(psqlite, message_id);
+			ptr = stpcpy(ptr, str.c_str());
 			break;
+		}
 		case TAG_LENGTH:
 			HX_unit_size(ptr, 128 /* yuck */, message_size, 1000, 0);
 			len = strlen(ptr);
@@ -355,6 +343,9 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	}
 	*ptr = '\0';
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1219: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
