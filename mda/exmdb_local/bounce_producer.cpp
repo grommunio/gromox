@@ -78,13 +78,13 @@ static char g_separator[16];
 using template_map = std::map<std::string, bounce_template>;
 static std::map<std::string, template_map> g_resource_list;
 static constexpr TAG_ITEM g_tags[] = {
-	{"<time>", 6},
-	{"<from>", 6},
-	{"<rcpt>", 6},
-	{"<rcpts>", 7},
-	{"<subject>", 9},
-	{"<parts>", 7},
-	{"<length>", 8}
+	{"%(time)", 7},
+	{"%(from)", 7},
+	{"%(rcpt)", 7},
+	{"%(rcpts)", 8},
+	{"%(subject)", 10},
+	{"%(parts)", 8},
+	{"%(length)", 9},
 };
 
 static void bounce_producer_enum_parts(const MIME *, void *);
@@ -197,7 +197,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		/* find tags in file content and mark the position */
 		tp.format[TAG_BEGIN].position = j;
 		for (; j<node_stat.st_size; j++) {
-			if (tp.content[j] == '<') {
+			if (tp.content[j] == '%') {
 				for (k=0; k<TAG_TOTAL_LEN; k++) {
 					if (strncasecmp(&tp.content[j], g_tags[k].name, g_tags[k].length) == 0) {
 						tp.format[k+1].position = j;

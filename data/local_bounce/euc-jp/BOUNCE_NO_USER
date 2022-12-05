@@ -3,13 +3,13 @@ Subject: =?utf-8?b?5Y+X5L+h6ICF44GM5a2Y5Zyo44GX44Gm44GE44Gq44GE44Gf44KB44CB44Oh4
 From: "=?utf-8?b?44K344K544OG44Og?="<postmaster@system>
 
 お知らせ：
-  受信者が存在していないため、"<rcpt>"へのメールを正しく送信
+  受信者が存在していないため、"%(rcpt)"へのメールを正しく送信
 できません。受信者のメールアドレス有効性の確認をお願いします。
 
 送信情報は下記となります：
-    送信時間：    <time>
-    送信者：　　  <from>
-    宛先：　      <rcpts>
-    メール標題：  <subject>
-    添付：        <parts>
-    サイズ：　    <length>
+    送信時間：    %(time)
+    送信者：　　  %(from)
+    宛先：　      %(rcpts)
+    メール標題：  %(subject)
+    添付：        %(parts)
+    サイズ：　    %(length)
