@@ -7,6 +7,7 @@
 #include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/defs.h>
 #include <gromox/dsn.hpp>
 #include <gromox/fileio.h>
@@ -42,18 +43,6 @@ enum{
 };
 
 namespace {
-
-struct ENUM_CHARSET {
-	BOOL b_found;
-	char *charset;
-};
-
-struct ENUM_PARTS {
-	int	 offset;
-	char *ptr;
-	char *charset;
-	BOOL b_first;
-};
 
 struct FORMAT_DATA {
 	int position = -1, tag = -1;
@@ -102,14 +91,6 @@ static constexpr TAG_ITEM g_tags[] = {
 int (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
 bool (*bounce_producer_get_timezone)(const char *username, char *timezone, size_t);
-static void bounce_producer_enum_parts(const MIME *, void *);
-static void bounce_producer_enum_charset(const MIME *, void *);
-static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff);
-static int bp_get_subject(MAIL *, char *subject, size_t sbsize, const char *charset);
-static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset);
-
-static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
-	char *charset);
 static BOOL bounce_producer_refresh(const char *, const char *);
 static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, template_map &);
 
@@ -256,13 +237,12 @@ static void bounce_producer_load_subdir(const std::string &basedir,
  *		pmail [out]			bounce mail object
  */
 bool mlex_bouncer_make(const char *from, const char *rcpt_to,
-    MAIL *pmail_original, const char *bounce_type, MAIL *pmail)
+    MAIL *pmail_original, const char *bounce_type, MAIL *pmail) try
 {
 	char *ptr;
 	MIME *pmime;
 	time_t cur_time;
 	char charset[32];
-	char mcharset[32];
 	char tmp_buff[1024];
 	char date_buff[128];
 	struct tm time_buff;
@@ -305,12 +285,8 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 		snprintf(date_buff + len, 128 - len, " %s", time_zone);
 	}
 	
-	bounce_producer_get_mail_charset(pmail_original, mcharset);
-	
-	if ('\0' == charset[0]) {
-		strcpy(charset, mcharset);
-	}
-	auto it = g_resource_list.find(charset);
+	auto mcharset = bounce_gen_charset(*pmail_original);
+	auto it = g_resource_list.find(mcharset.size() > 0 ? mcharset.c_str() : charset);
 	if (it == g_resource_list.end())
 		it = g_resource_list.find("ascii");
 	if (it == g_resource_list.end())
@@ -343,15 +319,17 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 			strcpy(ptr, rcpt_to);
         	ptr += strlen(rcpt_to);
 			break;
-    	case TAG_SUBJECT:
-			len = bp_get_subject(pmail_original, ptr,
-			      std::size(original_ptr) - (ptr - original_ptr), mcharset);
-            ptr += len;
+		case TAG_SUBJECT: {
+			auto str = bounce_gen_subject(*pmail_original, mcharset.c_str());
+			ptr = stpcpy(ptr, str.c_str());
             break;
-    	case TAG_PARTS:
-			len = bounce_producer_get_mail_parts(pmail_original, ptr, mcharset);
-			ptr += len;
+		}
+		case TAG_PARTS: {
+			auto str = bounce_gen_attachs(*pmail_original,
+			           mcharset.c_str(), g_separator);
+			ptr = stpcpy(ptr, str.c_str());
             break;
+		}
 		case TAG_LENGTH: {
 			auto mail_len = pmail_original->get_length();
 			if (mail_len < 0) {
@@ -378,8 +356,9 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	pmime->set_content_param("report-type", "delivery-status");
 	pmime->set_field("Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
-	if (bounce_producer_get_mail_thread_index(pmail_original, tmp_buff))
-		pmime->set_field("Thread-Index", tmp_buff);
+	auto str = bounce_gen_thrindex(*pmail_original);
+	if (!str.empty())
+		pmime->set_field("Thread-Index", str.c_str());
 	pmime->set_field("From", tp.from);
 	snprintf(tmp_buff, 256, "<%s>", from);
 	pmime->set_field("To", tmp_buff);
@@ -428,118 +407,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 		}
 	}
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1215: ENOMEM");
+	return false;
 }
-
-static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
-	char *charset)
-{
-	ENUM_PARTS enum_parts;
-
-	enum_parts.ptr = parts;
-	enum_parts.offset = 0;
-	enum_parts.charset = charset;
-	enum_parts.b_first = FALSE;
-	pmail->enum_mime(bounce_producer_enum_parts, &enum_parts);
-	return enum_parts.offset;
-}
-
-/*
- *	enum the mail attachment
- */
-static void bounce_producer_enum_parts(const MIME *pmime, void *param)
-{
-	auto penum = static_cast<ENUM_PARTS *>(param);
-	int attach_len;
-	char name[256];
-	char temp_name[512];
-	
-	if (!pmime->get_filename(name, std::size(name)))
-		return;
-	if (!mime_string_to_utf8(penum->charset, name, temp_name,
-	    std::size(temp_name)))
-		return;
-	attach_len = strlen(temp_name);
-	if (penum->offset + attach_len >= 128 * 1024)
-		return;
-	if (penum->b_first) {
-		strcpy(penum->ptr + penum->offset, g_separator);
-		penum->offset += strlen(g_separator);
-	}
-	memcpy(penum->ptr + penum->offset, temp_name, attach_len);
-	penum->offset += attach_len;
-	penum->b_first = TRUE;
-}
-
-static int bp_get_subject(MAIL *pmail, char *subject, size_t sbsize,
-    const char *charset)
-{
-	char tmp_buff[1024];
-	auto pmime = pmail->get_head();
-	if (!pmime->get_field("Subject", tmp_buff, 1024)) {
-		*subject = '\0';
-		return 0;
-	}
-	if (!mime_string_to_utf8(charset, tmp_buff, subject, sbsize))
-		return 0;
-	return strlen(subject);
-}
-
-/*
- *	get mail content charset
- *	@param
- *		pmail [in]				indicate the mail object
- *		charset [out]			for retrieving the charset
- *	@return
- *		string length
- */
-static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset)
-{
-	ENUM_CHARSET enum_charset;
-
-	enum_charset.b_found = FALSE;
-	enum_charset.charset = charset;
-	pmail->enum_mime(bounce_producer_enum_charset, &enum_charset);
-	if (!enum_charset.b_found)
-		strcpy(charset, "ascii");
-	return strlen(charset);
-}
-
-static void bounce_producer_enum_charset(const MIME *pmime, void *param)
-{
-	auto penum = static_cast<ENUM_CHARSET *>(param);
-	char charset[32];
-	char *begin, *end;
-	int len;
-	
-	if (penum->b_found)
-		return;
-	if (!pmime->get_content_param("charset", charset, 32))
-		return;
-	len = strlen(charset);
-	if (len <= 2) {
-		return;
-	}
-	begin = strchr(charset, '"');
-	if (NULL != begin) {
-		end = strchr(begin + 1, '"');
-		if (NULL == end) {
-			return;
-		}
-		len = end - begin - 1;
-		memcpy(penum->charset, begin + 1, len);
-		penum->charset[len] = '\0';
-	} else {
-		strcpy(penum->charset, charset);
-	}
-	penum->b_found = TRUE;
-}
-
-static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff)
-{
-	auto phead = pmail->get_head();
-	if (NULL == phead) {
-		return FALSE;
-	}
-	return phead->get_field("Thread-Index", pbuff, 128);
-}
-
