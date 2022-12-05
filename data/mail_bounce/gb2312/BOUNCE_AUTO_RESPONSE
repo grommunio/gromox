@@ -6,9 +6,9 @@ From: "=?utf-8?b?57O757uf5oqV6YCS5ZGY?="<postmaster@system>
   感谢您的来信，邮件我已经收到！(此邮件为自动回复)
 
 以下是您所发送邮件的一些基本信息：
-    发送时间：    <time>
-    发件人地址：  <from>
-    收件人：      <rcpt>
-    邮件主题：    <subject>
-    附件：        <parts>
-    邮件大小：    <length>
+    发送时间：    %(time)
+    发件人地址：  %(from)
+    收件人：      %(rcpt)
+    邮件主题：    %(subject)
+    附件：        %(parts)
+    邮件大小：    %(length)

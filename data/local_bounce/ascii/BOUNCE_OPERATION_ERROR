@@ -4,13 +4,13 @@ From: "Mail Daemon"<postmaster@system>
 
 Hi,
   I am sorry to tell you that some error occurs in our mail system,
-your message to "<rcpt>" cannot be delivered, please contact our mail
+your message to "%(rcpt)" cannot be delivered, please contact our mail
 system administrator to settle this problem.
 
 Below is the original mail information:
-   Time:    <time>
-   From:    <from>
-   To:      <rcpts>
-   Subject: <subject>
-   Parts:   <parts>
-   Length:  <length>
+   Time:    %(time)
+   From:    %(from)
+   To:      %(rcpts)
+   Subject: %(subject)
+   Parts:   %(parts)
+   Length:  %(length)

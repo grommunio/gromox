@@ -3,14 +3,14 @@ Subject: =?utf-8?b?5oqV6YCS5aSx6LSl77yM5pS25Lu25Lq66YKu566x5bey5ruh?=
 From: "=?utf-8?b?57O757uf5oqV6YCS5ZGY?="<postmaster@system>
 
 您好：
-  很抱歉通知您，您发送到“<rcpt>”的邮件无法被正确投递，
+  很抱歉通知您，您发送到“%(rcpt)”的邮件无法被正确投递，
 因为收件人邮箱已满，无法再接收任何邮件。
 请等待收件人清空邮箱后再尝试发送。
 
 以下是您所发送邮件的一些基本信息：
-    发送时间：    <time>
-    发件人地址：  <from>
-    收件人：      <rcpts>
-    邮件主题：    <subject>
-    附件：        <parts>
-    邮件大小：    <length>
+    发送时间：    %(time)
+    发件人地址：  %(from)
+    收件人：      %(rcpts)
+    邮件主题：    %(subject)
+    附件：        %(parts)
+    邮件大小：    %(length)

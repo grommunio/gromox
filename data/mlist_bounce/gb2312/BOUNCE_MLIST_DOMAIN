@@ -3,14 +3,14 @@ Subject: =?utf-8?b?5oqV6YCS5aSx6LSl77yM5rKh5pyJ6Laz5aSf55qE5p2D6ZmQ?=
 From: "=?utf-8?b?57O757uf5oqV6YCS5ZGY?="<postmaster@system>
 
 您好：
-  很抱歉通知您，您没有足够的权限向“<rcpt>”这个邮件列表发送邮件，
+  很抱歉通知您，您没有足够的权限向“%(rcpt)”这个邮件列表发送邮件，
 仅域内成员才可向该列表发送邮件！
 请联系管理员并取得相应的权限后再尝试发送。
 
 以下是您所发送邮件的一些基本信息：
-    发送时间：    <time>
-    发件人地址：  <from>
-    收件人：      <rcpts>
-    邮件主题：    <subject>
-    附件：        <parts>
-    邮件大小：    <length>
+    发送时间：    %(time)
+    发件人地址：  %(from)
+    收件人：      %(rcpts)
+    邮件主题：    %(subject)
+    附件：        %(parts)
+    邮件大小：    %(length)

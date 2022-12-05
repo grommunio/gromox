@@ -2,13 +2,13 @@ Content-Type: text/plain; charset=utf-8
 Subject: =?utf-8?b?6YO15Lu25bey6K6A?=
 
 您好：
-  您的郵件已被 "<user>" 閱讀！
+  您的郵件已被 "%(user)" 閱讀！
 
 以下是您所發送郵件的一些基本信息：
-    發送時間：    <time>
-    發件人地址：  <from>
-    收件人：      <rcpts>
-    郵件主題：    <subject>
-    附件：        <parts>
-    郵件大小：    <length>
+    發送時間：    %(time)
+    發件人地址：  %(from)
+    收件人：      %(rcpts)
+    郵件主題：    %(subject)
+    附件：        %(parts)
+    郵件大小：    %(length)
 	

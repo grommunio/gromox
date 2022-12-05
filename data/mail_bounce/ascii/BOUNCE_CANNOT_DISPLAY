@@ -3,13 +3,13 @@ Subject: Delivery failure, user doesn't exist!
 From: "Mail Daemon"<postmaster@system>
 
 Hi,
-  Your message to "<rcpt>" can not be displayed to the user.
+  Your message to "%(rcpt)" can not be displayed to the user.
 
 Below is the original mail information:
-   Time:    <time>
-   From:    <from>
-   To:      <rcpt>
-   Subject: <subject>
-   Parts:   <parts>
-   Length:  <length>
+   Time:    %(time)
+   From:    %(from)
+   To:      %(rcpt)
+   Subject: %(subject)
+   Parts:   %(parts)
+   Length:  %(length)
 	

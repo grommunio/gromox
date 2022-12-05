@@ -3,12 +3,12 @@ Subject: Delivery failure, mail too large
 From: "Mail Daemon"<postmaster@system>
 
 Hi,
-  Your message to "<rcpt>" cannot be delivered properly because it's too large!
+  Your message to "%(rcpt)" cannot be delivered properly because it's too large!
 
 Below is the original mail information:
-   Time:    <time>
-   From:    <from>
-   To:      <rcpt>
-   Subject: <subject>
-   Parts:   <parts>
-   Length:  <length>
+   Time:    %(time)
+   From:    %(from)
+   To:      %(rcpt)
+   Subject: %(subject)
+   Parts:   %(parts)
+   Length:  %(length)
