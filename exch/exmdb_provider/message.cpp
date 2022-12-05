@@ -2712,7 +2712,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	if (action_flavor & STOCK_REPLY_TEMPLATE) {
 		if (!exmdb_bouncer_make_content(from_address, account,
 		    psqlite, message_id, "BOUNCE_AUTO_RESPONSE", nullptr,
-		    nullptr, content_type, tmp_buff))
+		    nullptr, content_type, tmp_buff, std::size(tmp_buff)))
 			return FALSE;
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 		common_util_remove_propvals(&pmsgctnt->proplist, PidTagMid);
