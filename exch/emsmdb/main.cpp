@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include <libHX/string.h>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/mail_func.hpp>
@@ -226,7 +227,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		rop_processor_init(average_handles, ping_interval);
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
-		if (bounce_producer_run(separator, get_data_path(),
+		if (bounce_gen_init(separator, get_data_path(),
 		    "notify_bounce") != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run bounce producer");
 			return FALSE;

@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -265,7 +266,7 @@ int main(int argc, const char **argv) try
 		mlog(LV_ERR, "system: failed to start common util");
 		return EXIT_FAILURE;
 	}
-	if (bounce_producer_run(g_config_file->get_value("separator_for_bounce"),
+	if (bounce_gen_init(g_config_file->get_value("separator_for_bounce"),
 	    g_config_file->get_value("data_file_path"), "notify_bounce") != 0) {
 		mlog(LV_ERR, "system: failed to start bounce producer");
 		return EXIT_FAILURE;

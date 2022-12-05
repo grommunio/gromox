@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <string>
 #include <typeinfo>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/textmaps.hpp>
@@ -33,8 +34,7 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 			mlog(LV_ERR, "mlist_expand: failed to get service \"get_mlist_memb\"");
 			return FALSE;
 		}
-		if (bounce_producer_run(";", get_data_path(),
-		    "mlist_bounce") != 0) {
+		if (bounce_gen_init(";", get_data_path(), "mlist_bounce") != 0) {
 			mlog(LV_ERR, "mlist_expand: failed to run bounce producer");
 			return FALSE;
 		}

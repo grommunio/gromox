@@ -4,6 +4,7 @@
 #include <cstring>
 #include <string>
 #include <libHX/string.h>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
@@ -144,8 +145,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			mlog(LV_ERR, "exmdb_local: failed to start net_failure component");
 			return FALSE;
 		}
-		if (bounce_producer_run(";", get_data_path(),
-		    "local_bounce") != 0) {
+		if (bounce_gen_init(";", get_data_path(), "local_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_local: failed to start bounce producer");
 			return FALSE;
 		}
