@@ -3,13 +3,13 @@ Subject: =?utf-8?b?5oqV6YCS5aSx6LSl77yM6YKu5Lu257O757uf5Ye66ZSZ?=
 From: "=?utf-8?b?57O757uf5oqV6YCS5ZGY?="<postmaster@system>
 
 您好：
-  很抱歉通知您，您发送到“<rcpt>”的邮件无法被正确投递，
+  很抱歉通知您，您发送到“%(rcpt)”的邮件无法被正确投递，
 我们的邮件系统出错，请联系系统管理员以解决该问题。
 
 以下是您所发送邮件的一些基本信息：
-    发送时间：    <time>
-    发件人地址：  <from>
-    收件人：      <rcpts>
-    邮件主题：    <subject>
-    附件：        <parts>
-    邮件大小：    <length>
+    发送时间：    %(time)
+    发件人地址：  %(from)
+    收件人：      %(rcpts)
+    邮件主题：    %(subject)
+    附件：        %(parts)
+    邮件大小：    %(length)

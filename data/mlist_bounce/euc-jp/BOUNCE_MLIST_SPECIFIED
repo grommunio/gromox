@@ -3,14 +3,14 @@ Subject: =?utf-8?b?6YCB5L+h5qip6ZmQ44GM44Gq44GE44Gf44KB44CB44Oh44O844Or6YCB5L+h5
 From: "=?utf-8?b?44K344K544OG44Og?="<postmaster@system>
 
 お知らせ：
-  指定されている送信者ではない場合、"<rcpt>"のメールリストへの
+  指定されている送信者ではない場合、"%(rcpt)"のメールリストへの
 送信権限がありません。システム管理員から該当送信権限を取得して
 頂いたら、再度メール送信をお願いします。
 
 送信情報は下記となります：
-    送信時間：    <time>
-    送信者：　　  <from>
-    宛先：　      <rcpts>
-    メール標題：  <subject>
-    添付：        <parts>
-    サイズ：　    <length>
+    送信時間：    %(time)
+    送信者：　　  %(from)
+    宛先：　      %(rcpts)
+    メール標題：  %(subject)
+    添付：        %(parts)
+    サイズ：　    %(length)

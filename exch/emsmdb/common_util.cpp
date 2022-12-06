@@ -1473,8 +1473,9 @@ void common_util_notify_receipt(const char *username, int type,
 	std::vector<std::string> rcpt_list;
 	rcpt_list.emplace_back(str);
 	MAIL imail(g_mime_pool);
-	int bounce_type = type == NOTIFY_RECEIPT_READ ? BOUNCE_NOTIFY_READ : BOUNCE_NOTIFY_NON_READ;
-	if (!bounce_producer_make(username, pbrief, bounce_type, &imail))
+	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
+	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
+	if (!emsmdb_bouncer_make(username, pbrief, bounce_type, &imail))
 		return;
 	cu_send_mail(&imail, username, rcpt_list);
 } catch (const std::bad_alloc &) {

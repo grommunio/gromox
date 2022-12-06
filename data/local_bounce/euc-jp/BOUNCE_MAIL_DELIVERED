@@ -3,13 +3,13 @@ Subject: =?utf-8?b?44Oh44O844Or44GM5q2j5bi444Gr6YWN5L+h44GV44KM44G+44GX44Gf?=
 From: "=?utf-8?b?44K344K544OG44Og?="<postmaster@system>
 
 お知らせ：
-  あなたのメールは"<rcpt>"に届きました。
+  あなたのメールは"%(rcpt)"に届きました。
 
 送信情報は下記となります：
-    送信時間：    <time>
-    送信者：　　  <from>
-    宛先：　      <rcpts>
-    メール標題：  <subject>
-    添付：        <parts>
-    サイズ：　    <length>
+    送信時間：    %(time)
+    送信者：　　  %(from)
+    宛先：　      %(rcpts)
+    メール標題：  %(subject)
+    添付：        %(parts)
+    サイズ：　    %(length)
 	

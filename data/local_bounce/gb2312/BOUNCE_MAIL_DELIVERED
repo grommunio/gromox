@@ -3,12 +3,12 @@ Subject: =?utf-8?b?6YKu5Lu25bey5oiQ5Yqf6YCB6L6+?=
 From: "=?utf-8?b?57O757uf5oqV6YCS5ZGY?="<postmaster@system>
 
 您好：
-  邮件已成功送到至“<rcpt>”的邮箱！
+  邮件已成功送到至“%(rcpt)”的邮箱！
 
 以下是您所发送邮件的一些基本信息：
-    发送时间：    <time>
-    发件人地址：  <from>
-    收件人：      <rcpts>
-    邮件主题：    <subject>
-    附件：        <parts>
-    邮件大小：    <length>
+    发送时间：    %(time)
+    发件人地址：  %(from)
+    收件人：      %(rcpts)
+    邮件主题：    %(subject)
+    附件：        %(parts)
+    邮件大小：    %(length)

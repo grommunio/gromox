@@ -3,12 +3,12 @@ Subject: =?utf-8?b?5oqV6YGe5aSx5pWX77yM54Sh5rOV5bCH6YO15Lu25ZGI54++57Wm5pyA57WC5
 From: "=?utf-8?b?57O757Wx5oqV6YGe5ZOh?="<postmaster@system>
 
 您好：
-  很抱歉通知您，您發送到“<rcpt>”的郵件無法被正確呈現！
+  很抱歉通知您，您發送到“%(rcpt)”的郵件無法被正確呈現！
 
 以下是您所發送郵件的一些基本信息：
-    發送時間：    <time>
-    發件人地址：  <from>
-    收件人：      <rcpt>
-    郵件主題：    <subject>
-    附件：        <parts>
-    郵件大小：    <length>
+    發送時間：    %(time)
+    發件人地址：  %(from)
+    收件人：      %(rcpt)
+    郵件主題：    %(subject)
+    附件：        %(parts)
+    郵件大小：    %(length)

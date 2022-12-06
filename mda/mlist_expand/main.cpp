@@ -33,8 +33,8 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 			mlog(LV_ERR, "mlist_expand: failed to get service \"get_mlist_memb\"");
 			return FALSE;
 		}
-		bounce_producer_init(";");
-		if (bounce_producer_run(get_data_path())) {
+		if (bounce_producer_run(";", get_data_path(),
+		    "mlist_bounce") != 0) {
 			mlog(LV_ERR, "mlist_expand: failed to run bounce producer");
 			return FALSE;
 		}
@@ -99,13 +99,13 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			break;
 		case MLIST_RESULT_PRIVIL_DOMAIN:
 			pbounce_context = get_context();
-			if (NULL == pbounce_context) {
+			if (pbounce_context == nullptr ||
+			    !mlex_bouncer_make(pcontext->pcontrol->from,
+			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_DOMAIN",
+			    pbounce_context->pmail)) {
 				temp_file2.writeline(rcpt_to);
 				break;
 			}
-			bounce_producer_make(pcontext->pcontrol->from, rcpt_to,
-					pcontext->pmail, BOUNCE_MLIST_DOMAIN,
-					pbounce_context->pmail);
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
 				get_default_domain());
@@ -134,13 +134,13 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			break;
 		case MLIST_RESULT_PRIVIL_INTERNAL:
 			pbounce_context = get_context();
-			if (NULL == pbounce_context) {
+			if (pbounce_context == nullptr ||
+			    !mlex_bouncer_make(pcontext->pcontrol->from,
+			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_INTERNAL",
+			    pbounce_context->pmail)) {
 				temp_file2.writeline(rcpt_to);
 				break;
 			}
-			bounce_producer_make(pcontext->pcontrol->from, rcpt_to,
-				pcontext->pmail, BOUNCE_MLIST_INTERNAL,
-				pbounce_context->pmail);
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
 				get_default_domain());
@@ -169,13 +169,13 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			break;
 		case MLIST_RESULT_PRIVIL_SPECIFIED:
 			pbounce_context = get_context();
-			if (NULL == pbounce_context) {
+			if (pbounce_context == nullptr ||
+			    !mlex_bouncer_make(pcontext->pcontrol->from,
+			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_SPECIFIED",
+			    pbounce_context->pmail)) {
 				temp_file2.writeline(rcpt_to);
 				break;
 			}
-			bounce_producer_make(pcontext->pcontrol->from, rcpt_to,
-				pcontext->pmail, BOUNCE_MLIST_SPECIFIED,
-				pbounce_context->pmail);
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
 				get_default_domain());

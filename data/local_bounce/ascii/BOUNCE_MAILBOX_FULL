@@ -3,13 +3,13 @@ Subject: Delivery failure, user's mailbox is full
 From: "Mail Daemon"<postmaster@system>
 
 Hi,
-  I am sorry to tell you that <rcpt>'s mailbox is full, we cannot
+  I am sorry to tell you that %(rcpt)'s mailbox is full, we cannot
 deliver any message into this mailbox, please try it later.
 
 Below is the original mail information:
-   Time:    <time>
-   From:    <from>
-   To:      <rcpts>
-   Subject: <subject>
-   Parts:   <parts>
-   Length:  <length>
+   Time:    %(time)
+   From:    %(from)
+   To:      %(rcpts)
+   Subject: %(subject)
+   Parts:   %(parts)
+   Length:  %(length)

@@ -252,7 +252,8 @@ static int cache_queue_increase_mess_ID()
 
 static void *mdl_thrwork(void *arg)
 {
-	int i, bounce_type = 0, scan_interval;
+	const char *bounce_type = nullptr;
+	int i, scan_interval;
 	time_t scan_begin, scan_end;
     struct dirent *direntp;
 	char temp_from[UADDR_SIZE], temp_rcpt[UADDR_SIZE];
@@ -400,7 +401,7 @@ static void *mdl_thrwork(void *arg)
 				if (static_cast<unsigned int>(g_retrying_times) <= times) {
 					need_bounce = TRUE;
 					need_remove = TRUE;
-					bounce_type = BOUNCE_OPERATION_ERROR;
+					bounce_type = "BOUNCE_OPERATION_ERROR";
 				} else {
 					need_bounce = FALSE;
 					need_remove = FALSE;
@@ -414,24 +415,24 @@ static void *mdl_thrwork(void *arg)
 				net_failure_statistic(1, 0, 0, 0);
 				break;
 			case DELIVERY_OPERATION_DELIVERED:
-				bounce_type = BOUNCE_MAIL_DELIVERED;
+				bounce_type = "BOUNCE_MAIL_DELIVERED";
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				net_failure_statistic(1, 0, 0, 0);
 				break;
 			case DELIVERY_NO_USER:
-			    bounce_type = BOUNCE_NO_USER;
+				bounce_type = "BOUNCE_NO_USER";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 				net_failure_statistic(0, 0, 0, 1);
 				break;
 			case DELIVERY_MAILBOX_FULL:
-				bounce_type = BOUNCE_MAILBOX_FULL;
+				bounce_type = "BOUNCE_MAILBOX_FULL";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 			    break;
 			case DELIVERY_OPERATION_ERROR:
-				bounce_type = BOUNCE_OPERATION_ERROR;
+				bounce_type = "BOUNCE_OPERATION_ERROR";
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				net_failure_statistic(0, 0, 1, 0);
@@ -464,10 +465,14 @@ static void *mdl_thrwork(void *arg)
 						"produce bounce message, because of too many "
 						"mails to %s", temp_rcpt);
 					put_context(pbounce_context);
+				} else if (!exml_bouncer_make(temp_from,
+				    temp_rcpt, pcontext->pmail, original_time,
+				    bounce_type, pbounce_context->pmail)) {
+					exmdb_local_log_info(pcontext, ptr, LV_ERR,
+						"error during exml_bouncer_make for %s",
+						temp_rcpt);
+					put_context(pbounce_context);
 				} else {
-					bounce_producer_make(temp_from, temp_rcpt,
-						pcontext->pmail, original_time, bounce_type,
-						pbounce_context->pmail);
 					sprintf(pbounce_context->pcontrol->from,
 					        "postmaster@%s", get_default_domain());
 					pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);

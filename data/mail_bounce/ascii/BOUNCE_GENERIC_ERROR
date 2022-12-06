@@ -3,12 +3,12 @@ Subject: Delivery failure, system has refused your mail because of some reason
 From: "Mail Daemon"<postmaster@system>
 
 Hi,
-  your message to "<rcpt>" has been be refused by some reason!
+  your message to "%(rcpt)" has been be refused by some reason!
 
 Below is the original mail information:
-   Time:    <time>
-   From:    <from>
-   To:      <rcpt>
-   Subject: <subject>
-   Parts:   <parts>
-   Length:  <length>
+   Time:    %(time)
+   From:    %(from)
+   To:      %(rcpt)
+   Subject: %(subject)
+   Parts:   %(parts)
+   Length:  %(length)

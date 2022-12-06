@@ -184,7 +184,6 @@ int main(int argc, const char **argv) try
 
 	ab_tree_init(g_config_file->get_value("x500_org_name"), table_size, cache_interval);
 	auto cl_5 = make_scope_exit(ab_tree_stop);
-	bounce_producer_init(g_config_file->get_value("separator_for_bounce"));
 
 	int mime_num = pconfig->get_ll("zarafa_mime_number");
 	mlog(LV_INFO, "system: mime number is %d", mime_num);
@@ -266,7 +265,8 @@ int main(int argc, const char **argv) try
 		mlog(LV_ERR, "system: failed to start common util");
 		return EXIT_FAILURE;
 	}
-	if (bounce_producer_run(g_config_file->get_value("data_file_path")) != 0) {
+	if (bounce_producer_run(g_config_file->get_value("separator_for_bounce"),
+	    g_config_file->get_value("data_file_path"), "notify_bounce") != 0) {
 		mlog(LV_ERR, "system: failed to start bounce producer");
 		return EXIT_FAILURE;
 	}

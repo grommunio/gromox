@@ -220,14 +220,14 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 			mlog(LV_ERR, "emsmdb: failed to register emsmdb interface");
 			return FALSE;
 		}
-		bounce_producer_init(separator);
 		common_util_init(org_name, average_blocks, max_rcpt, max_mail,
 			max_length, max_rule_len, smtp_ip, smtp_port, submit_command);
 		msgchg_grouping_init(get_data_path());
 		rop_processor_init(average_handles, ping_interval);
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
-		if (bounce_producer_run(get_data_path()) != 0) {
+		if (bounce_producer_run(separator, get_data_path(),
+		    "notify_bounce") != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run bounce producer");
 			return FALSE;
 		}

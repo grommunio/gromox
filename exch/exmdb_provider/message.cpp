@@ -2710,8 +2710,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		pmsgctnt->children.prcpts = prcpts;
 	}
 	if (action_flavor & STOCK_REPLY_TEMPLATE) {
-		if (!bounce_producer_make_content(from_address, account,
-		    psqlite, message_id, BOUNCE_AUTO_RESPONSE, nullptr,
+		if (!exmdb_bouncer_make_content(from_address, account,
+		    psqlite, message_id, "BOUNCE_AUTO_RESPONSE", nullptr,
 		    nullptr, content_type, tmp_buff))
 			return FALSE;
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
@@ -2766,7 +2766,7 @@ static ec_error_t message_bounce_message(const char *from_address,
 	uint64_t message_id, uint32_t bounce_code)
 {
 	void *pvalue;
-	int bounce_type;
+	const char *bounce_type = nullptr;
 	char tmp_buff[256];
 	
 	if (0 == strcasecmp(from_address, "none@none") ||
@@ -2775,13 +2775,13 @@ static ec_error_t message_bounce_message(const char *from_address,
 	}
 	switch (bounce_code) {
 	case BOUNCE_CODE_MESSAGE_TOO_LARGE:
-		bounce_type = BOUNCE_MAIL_TOO_LARGE;
+		bounce_type = "BOUNCE_MAIL_TOO_LARGE";
 		break;
 	case BOUNCE_CODE_MESSAGE_NOT_DISPLAYED:
-		bounce_type = BOUNCE_CANNOT_DISPLAY;
+		bounce_type = "BOUNCE_CANNOT_DISPLAY";
 		break;
 	case BOUNCE_CODE_MESSAGE_DENIED:
-		bounce_type = BOUNCE_GENERIC_ERROR;
+		bounce_type = "BOUNCE_GENERIC_ERROR";
 		break;
 	default:
 		return ecSuccess;
@@ -2798,7 +2798,7 @@ static ec_error_t message_bounce_message(const char *from_address,
 	}
 
 	MAIL imail(common_util_get_mime_pool());
-	if (!bounce_producer_make(from_address, account, psqlite, message_id,
+	if (!exmdb_bouncer_make(from_address, account, psqlite, message_id,
 	    bounce_type, &imail))
 		return ecServerOOM;
 	const char *pvalue2 = strchr(account, '@');
@@ -2888,7 +2888,8 @@ static ec_error_t message_forward_message(const char *from_address,
 	std::unique_ptr<char[], stdlib_delete> pbuff;
 	MAIL imail;
 	if (NULL != pdigest) {
-		get_digest(pdigest, "file", mid_string, arsizeof(mid_string));
+		if (!get_digest(pdigest, "file", mid_string, std::size(mid_string)))
+			return ecError;
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
 		         exmdb_server::get_dir(), mid_string);
 		wrapfd fd = open(tmp_path, O_RDONLY);

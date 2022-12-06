@@ -135,7 +135,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		mlog(LV_INFO, "exmdb_local: auto response interval is %s", temp_buff);
 
 		net_failure_init(times, interval, alarm_interval);
-		bounce_producer_init(separator);
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
 		exmdb_client_init(conn_num, 0);
@@ -145,7 +144,8 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			mlog(LV_ERR, "exmdb_local: failed to start net_failure component");
 			return FALSE;
 		}
-		if (0 != bounce_producer_run()) {
+		if (bounce_producer_run(";", get_data_path(),
+		    "local_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_local: failed to start bounce producer");
 			return FALSE;
 		}

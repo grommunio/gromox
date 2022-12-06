@@ -2,13 +2,13 @@ Content-Type: text/plain; charset=utf-8
 Subject: Your message has been deleted!
 
 Hi,
-  Your message has not been displayed to "<user>".
+  Your message has not been displayed to "%(user)".
 
 Below is the original mail information:
-   Time:    <time>
-   From:    <from>
-   To:      <rcpts>
-   Subject: <subject>
-   Parts:   <parts>
-   Length:  <length>
+   Time:    %(time)
+   From:    %(from)
+   To:      %(rcpts)
+   Subject: %(subject)
+   Parts:   %(parts)
+   Length:  %(length)
 	

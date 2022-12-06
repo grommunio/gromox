@@ -3,13 +3,13 @@ Subject: Mail has been delivered successfully
 From: "Mail Daemon"<postmaster@system>
 
 Hi,
-  Your mail has been delivered to <rcpt> successfully!
+  Your mail has been delivered to %(rcpt) successfully!
 
 Below is the original mail information:
-   Time:    <time>
-   From:    <from>
-   To:      <rcpts>
-   Subject: <subject>
-   Parts:   <parts>
-   Length:  <length>
+   Time:    %(time)
+   From:    %(from)
+   To:      %(rcpts)
+   Subject: %(subject)
+   Parts:   %(parts)
+   Length:  %(length)
 

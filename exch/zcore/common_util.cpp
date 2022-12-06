@@ -1701,8 +1701,9 @@ void common_util_notify_receipt(const char *username, int type,
 		return;
 	std::vector<std::string> rcpt_list = {str};
 	MAIL imail(g_mime_pool);
-	int bounce_type = type == NOTIFY_RECEIPT_READ ? BOUNCE_NOTIFY_READ : BOUNCE_NOTIFY_NON_READ;
-	if (!bounce_producer_make(username, pbrief, bounce_type, &imail))
+	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
+	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
+	if (!zcore_bouncer_make(username, pbrief, bounce_type, &imail))
 		return;
 	cu_send_mail(&imail, username, rcpt_list);
 } catch (const std::bad_alloc &) {
