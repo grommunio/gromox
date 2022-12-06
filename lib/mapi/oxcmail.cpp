@@ -2617,7 +2617,7 @@ static bool oxcmail_enum_dsn_action_field(const char *tag,
 	return true;
 }
 
-static bool oxcmail_enum_dsn_action_fields(DSN_FIELDS *pfields, void *pparam)
+static bool oxcmail_enum_dsn_action_fields(const std::vector<dsn_field> &pfields, void *pparam)
 {
 	return DSN::enum_fields(pfields, oxcmail_enum_dsn_action_field, pparam);
 }
@@ -2731,7 +2731,7 @@ status_code_to_diag(unsigned int subject, unsigned int detail)
 	return noaction;
 }
 
-static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
+static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields, void *pparam)
 {
 	int kind;
 	int tmp_len;
@@ -2956,7 +2956,7 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 	}
 	message_content_set_rcpts_internal(pmsg, dsn_info.prcpts);
-	if (!dsn.enum_fields(dsn.get_message_fields(),
+	if (!dsn.enum_fields(*dsn.get_message_fields(),
 	    oxcmail_enum_dsn_reporting_mta, pmsg)) {
 		return NULL;
 	}
@@ -3059,7 +3059,7 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 
 	DSN dsn;
 	if (!dsn.retrieve(tmp_buff, content_len) ||
-	    !dsn.enum_fields(dsn.get_message_fields(), oxcmail_enum_mdn, pmsg))
+	    !dsn.enum_fields(*dsn.get_message_fields(), oxcmail_enum_mdn, pmsg))
 		return NULL;
 	dsn.clear();
 	auto ts = pmsg->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
