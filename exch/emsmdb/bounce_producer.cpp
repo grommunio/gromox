@@ -11,16 +11,21 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <libHX/option.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/defs.h>
 #include <gromox/dsn.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mime.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
@@ -30,243 +35,17 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-enum{
-	TAG_BEGIN,
-	TAG_TIME,
-	TAG_FROM,
-	TAG_RCPTS,
-	TAG_USER,
-	TAG_SUBJECT,
-	TAG_PARTS,
-	TAG_LENGTH,
-	TAG_END,
-	TAG_TOTAL_LEN = TAG_END
-};
-
-namespace {
-
-struct FORMAT_DATA {
-	int position = -1, tag = -1;
-};
-
-struct bounce_template {
-	char subject[256]{}, content_type[256]{};
-	std::unique_ptr<char[]> content;
-	FORMAT_DATA format[TAG_TOTAL_LEN+1];
-
-	bounce_template() {
-		for (size_t j = 0; j < std::size(format); ++j)
-			format[j].tag = j;
-	}
-};
-
-struct TAG_ITEM {
-	const char	*name;
-	int			length;
-};
-
-}
-
-static char g_separator[16];
-using template_map = std::map<std::string, bounce_template>;
-static std::map<std::string, template_map> g_resource_list;
-static constexpr TAG_ITEM g_tags[] = {
-	{"%(time)", 7},
-	{"%(from)", 7},
-	{"%(user)", 7},
-	{"%(rcpts)", 8},
-	{"%(subject)", 10},
-	{"%(parts)", 8},
-	{"%(length)", 9},
-};
-
-static BOOL bounce_producer_refresh(const char *, const char *);
-static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, template_map &);
-
-int bounce_producer_run(const char *separator, const char *data_path,
-    const char *bounce_grp)
-{
-	gx_strlcpy(g_separator, separator, GX_ARRAY_SIZE(g_separator));
-	return bounce_producer_refresh(data_path, bounce_grp) ? 0 : -1;
-}
-
-/*
- *	refresh the current resource list
- *	@return
- *		TRUE				OK
- *		FALSE				fail
- */
-static BOOL bounce_producer_refresh(const char *data_path,
-    const char *bounce_grp) try
-{
-	struct dirent *direntp;
-
-	auto dinfo = opendir_sd(bounce_grp, data_path);
-	if (dinfo.m_dir == nullptr) {
-		mlog(LV_ERR, "exmdb_provider: opendir_sd(%s) %s: %s",
-			bounce_grp, dinfo.m_path.c_str(), strerror(errno));
-		return FALSE;
-	}
-	while ((direntp = readdir(dinfo.m_dir.get())) != nullptr) {
-		if (strcmp(direntp->d_name, ".") == 0 ||
-		    strcmp(direntp->d_name, "..") == 0)
-			continue;
-		bounce_producer_load_subdir(dinfo.m_path, direntp->d_name,
-			g_resource_list[direntp->d_name]);
-	}
-	return TRUE;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1501: ENOMEM");
-	return false;
-}
-
-static void bounce_producer_load_subdir(const std::string &basedir,
-    const char *dir_name, template_map &plist)
-{
-	struct dirent *sub_direntp;
-	struct stat node_stat;
-	int j, k, until_tag;
-	MIME_FIELD mime_field;
-
-	auto dir_buf = basedir + "/" + dir_name;
-	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
-	if (sub_dirp.m_dir != nullptr) while ((sub_direntp = readdir(sub_dirp.m_dir.get())) != nullptr) {
-		if (strcmp(sub_direntp->d_name, ".") == 0 ||
-		    strcmp(sub_direntp->d_name, "..") == 0)
-			continue;
-		auto sub_buf = dir_buf + "/" + sub_direntp->d_name;
-		wrapfd fd = open(sub_buf.c_str(), O_RDONLY);
-		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
-		    !S_ISREG(node_stat.st_mode))
-			continue;
-		bounce_template tp;
-		tp.content = std::make_unique<char[]>(node_stat.st_size);
-		if (read(fd.get(), tp.content.get(),
-		    node_stat.st_size) != node_stat.st_size)
-			return;
-		fd.close();
-		j = 0;
-		while (j < node_stat.st_size) {
-			auto parsed_length = parse_mime_field(&tp.content[j],
-			                     node_stat.st_size - j, &mime_field);
-			j += parsed_length;
-			if (0 != parsed_length) {
-				if (strcasecmp(mime_field.name.c_str(), "Content-Type") == 0)
-					gx_strlcpy(tp.content_type, mime_field.value.c_str(), std::size(tp.content_type));
-				else if (strcasecmp(mime_field.name.c_str(), "Subject") == 0)
-					gx_strlcpy(tp.subject, mime_field.value.c_str(), std::size(tp.subject));
-				if (tp.content[j] == '\n') {
-					++j;
-					break;
-				} else if (tp.content[j] == '\r' &&
-				    tp.content[j+1] == '\n') {
-					j += 2;
-					break;
-				}
-			} else {
-				mlog(LV_ERR, "exmdb_provider: bounce mail %s format error",
-				       sub_buf.c_str());
-				return;
-			}
-		}
-		/* find tags in file content and mark the position */
-		tp.format[TAG_BEGIN].position = j;
-		for (; j<node_stat.st_size; j++) {
-			if (tp.content[j] == '%') {
-				for (k=0; k<TAG_TOTAL_LEN; k++) {
-					if (strncasecmp(&tp.content[j], g_tags[k].name, g_tags[k].length) == 0) {
-						tp.format[k+1].position = j;
-						break;
-					}
-				}
-			}
-		}
-		tp.format[TAG_END].position = node_stat.st_size;
-		until_tag = TAG_TOTAL_LEN;
-
-		for (j=TAG_BEGIN+1; j<until_tag; j++) {
-			if (tp.format[j].position == -1) {
-				mlog(LV_ERR, "exmdb_provider: format error in %s, lacking "
-				       "tag %s", sub_buf.c_str(), g_tags[j-1].name);
-				return;
-			}
-		}
-
-		/* sort the tags ascending */
-		for (j=TAG_BEGIN+1; j<until_tag; j++) {
-			for (k=TAG_BEGIN+1; k<until_tag; k++) {
-				if (tp.format[j].position < tp.format[k].position)
-					std::swap(tp.format[j], tp.format[k]);
-			}
-		}
-		plist.emplace(sub_direntp->d_name, std::move(tp));
-	}
-}
-
-static int bounce_producer_get_mail_parts(
-	ATTACHMENT_LIST *pattachments, char *parts)
-{
-	int i;
-	int offset;
-	BOOL b_first;
-	
-	offset = 0;
-	b_first = FALSE;
-	for (i=0; i<pattachments->count; i++) {
-		auto lfn = pattachments->pplist[i]->proplist.get<const char>(PR_ATTACH_LONG_FILENAME);
-		if (lfn == nullptr)
-			continue;
-		auto tmp_len = strlen(lfn);
-		if (offset + tmp_len < 128*1024) {
-			if (b_first) {
-				strcpy(parts + offset, g_separator);
-				offset += strlen(g_separator);
-			}
-			memcpy(parts + offset, lfn, tmp_len);
-			offset += tmp_len;
-			b_first = TRUE;
-		}
-	}
-	return offset;
-}
-
-static size_t bounce_producer_get_rcpts(TARRAY_SET *prcpts, char *rcpts)
-{
-	size_t offset = 0;
-	BOOL b_first;
-	
-	b_first = FALSE;
-	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto str = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
-		if (str == nullptr)
-			continue;
-		auto tmp_len = strlen(str);
-		if (offset + tmp_len < 128*1024) {
-			if (b_first) {
-				strcpy(rcpts + offset, g_separator);
-				offset += strlen(g_separator);
-			}
-			memcpy(rcpts + offset, str, tmp_len);
-			offset += tmp_len;
-			b_first = TRUE;
-		}
-	}
-	return offset;
-}
-
 static BOOL bounce_producer_make_content(const char *username,
     MESSAGE_CONTENT *pbrief, const char *bounce_type, char *subject,
-    char *content_type, char *pcontent)
+    char *content_type, char *pcontent, size_t content_size) try
 {
-	char *ptr;
 	time_t tmp_time;
 	char charset[32];
 	char date_buff[128];
 	struct tm time_buff;
-	int i, len, until_tag;
+	int len;
 	char lang[32], time_zone[64];
 
-	ptr = pcontent;
 	charset[0] = '\0';
 	time_zone[0] = '\0';
 	auto ts = pbrief->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
@@ -305,78 +84,54 @@ static BOOL bounce_producer_make_content(const char *username,
 			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", arsizeof(charset));
 		}
 	}
-	auto it = g_resource_list.find(charset);
-	if (it == g_resource_list.end())
-		it = g_resource_list.find("ascii");
-	if (it == g_resource_list.end())
+	auto tpptr = bounce_gen_lookup(charset, bounce_type);
+	if (tpptr == nullptr)
 		return false;
-	auto it2 = it->second.find(bounce_type);
-	if (it2 == it->second.end())
+	auto &tp = *tpptr;
+	auto fa = HXformat_init();
+	if (fa == nullptr)
 		return false;
-	auto &tp = it2->second;
-	int prev_pos = tp.format[TAG_BEGIN].position;
-	until_tag = TAG_TOTAL_LEN;
-	for (i=TAG_BEGIN+1; i<until_tag; i++) {
-		len = tp.format[i].position - prev_pos;
-		memcpy(ptr, &tp.content[prev_pos], len);
-		prev_pos = tp.format[i].position + g_tags[tp.format[i].tag-1].length;
-		ptr += len;
-		switch (tp.format[i].tag) {
-		case TAG_TIME:
-			len = gx_snprintf(ptr, 128, "%s", date_buff);
-			ptr += len;
-			break;
-		case TAG_FROM:
-			strcpy(ptr, from);
-			ptr += strlen(from);
-			break;
-		case TAG_USER:
-			strcpy(ptr, username);
-			ptr += strlen(username);
-			break;
-		case TAG_RCPTS:
-			len = bounce_producer_get_rcpts(
-				pbrief->children.prcpts, ptr);
-			ptr += len;
-			break;
-		case TAG_SUBJECT: {
-			auto subj = pbrief->proplist.get<const char>(PR_SUBJECT);
-			if (subj != nullptr) {
-				len = strlen(subj);
-				memcpy(ptr, subj, len);
-				ptr += len;
-			}
-			break;
-		}
-		case TAG_PARTS:
-			len = bounce_producer_get_mail_parts(
-				pbrief->children.pattachments, ptr);
-			ptr += len;
-			break;
-		case TAG_LENGTH:
-			HX_unit_size(ptr, 128 /* yuck */, *message_size, 1000, 0);
-			len = strlen(ptr);
-			ptr += len;
-			break;
-		}
-	}
-	len = tp.format[TAG_END].position - prev_pos;
-	memcpy(ptr, &tp.content[prev_pos], len);
-	ptr += len;
+	auto cl_0 = make_scope_exit([&]() { HXformat_free(fa); });
+	unsigned int immed = HXFORMAT_IMMED;
+	if (HXformat_add(fa, "time", date_buff,
+	    HXTYPE_STRING | immed) < 0 ||
+	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "user", username, HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "rcpts",
+	    bounce_gen_rcpts(*pbrief->children.prcpts).c_str(),
+	    HXTYPE_STRING | immed) < 0)
+		return false;
+	auto subj = pbrief->proplist.get<const char>(PR_SUBJECT);
+	if (HXformat_add(fa, "subject", subj != nullptr ? subj : "",
+	    HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "parts",
+	    bounce_gen_attachs(*pbrief->children.pattachments).c_str(),
+	    HXTYPE_STRING | immed) < 0)
+		return false;
+	HX_unit_size(date_buff, std::size(date_buff), *message_size, 1000, 0);
+	if (HXformat_add(fa, "length", date_buff, HXTYPE_STRING) < 0)
+		return false;
+
+	hxmc_t *replaced = nullptr;
+	if (HXformat_aprintf(fa, &replaced, &tp.content[tp.body_start]) < 0)
+		return false;
+	gx_strlcpy(pcontent, replaced, content_size);
+	HXmc_free(replaced);
 	if (NULL != subject) {
-		strcpy(subject, tp.subject);
+		strcpy(subject, tp.subject.c_str());
 	}
 	if (NULL != content_type) {
-		strcpy(content_type, tp.content_type);
+		strcpy(content_type, tp.content_type.c_str());
 	}
-	*ptr = '\0';
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1218: ENOMEM");
+	return false;
 }
 
 BOOL emsmdb_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
     const char *bounce_type, MAIL *pmail)
 {
-	DSN dsn;
 	MIME *pmime;
 	size_t out_len;
 	time_t cur_time;
@@ -387,7 +142,6 @@ BOOL emsmdb_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
 	struct tm time_buff;
 	char mime_from[1024];
 	char content_type[128];
-	DSN_FIELDS *pdsn_fields;
 	char content_buff[256*1024];
 	
 	if (common_util_get_user_displayname(username, tmp_buff,
@@ -400,7 +154,8 @@ BOOL emsmdb_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
 		mime_from[0] = '\0';
 	}
 	if (!bounce_producer_make_content(username, pbrief,
-	    bounce_type, subject, content_type, content_buff))
+	    bounce_type, subject, content_type, content_buff,
+	    std::size(content_buff)))
 		return FALSE;
 	auto phead = pmail->add_head();
 	if (NULL == phead) {
@@ -458,33 +213,34 @@ BOOL emsmdb_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
 	if (!pmime->write_content(content_buff,
 	    strlen(content_buff), mime_encoding::automatic))
 		return FALSE;
-	dsn_init(&dsn);
-	pdsn_fields = dsn_get_message_fileds(&dsn);
+
+	DSN dsn;
+	auto pdsn_fields = dsn.get_message_fields();
 	try {
 		t_addr = "rfc822;"s + username;
-		dsn_append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
+		dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1482: ENOMEM");
 	}
 	if (strcmp(bounce_type, "BOUNCE_NOTIFY_READ") == 0)
-		dsn_append_field(pdsn_fields, "Disposition",
+		dsn.append_field(pdsn_fields, "Disposition",
 			"automatic-action/MDN-sent-automatically; displayed");
 	else if (strcmp(bounce_type, "BOUNCE_NOTIFY_NON_READ") == 0)
-		dsn_append_field(pdsn_fields, "Disposition",
+		dsn.append_field(pdsn_fields, "Disposition",
 			"manual-action/MDN-sent-automatically; deleted");
 	str = pbrief->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 	if (str != nullptr)
-		dsn_append_field(pdsn_fields, "Original-Message-ID", str);
+		dsn.append_field(pdsn_fields, "Original-Message-ID", str);
 	bv = pbrief->proplist.get<BINARY>(PR_PARENT_KEY);
 	if (bv != nullptr) {
 		encode64(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff), &out_len);
-		dsn_append_field(pdsn_fields,
+		dsn.append_field(pdsn_fields,
 			"X-MSExch-Correlation-Key", tmp_buff);
 	}
 	if ('\0' != mime_from[0]) {
-		dsn_append_field(pdsn_fields, "X-Display-Name", mime_from);
+		dsn.append_field(pdsn_fields, "X-Display-Name", mime_from);
 	}
-	if (dsn_serialize(&dsn, content_buff, GX_ARRAY_SIZE(content_buff))) {
+	if (dsn.serialize(content_buff, GX_ARRAY_SIZE(content_buff))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			pmime->set_content_type("message/disposition-notification");
@@ -492,6 +248,5 @@ BOOL emsmdb_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
 				strlen(content_buff), mime_encoding::none);
 		}
 	}
-	dsn_free(&dsn);
 	return TRUE;
 }

@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <libHX/string.h>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
@@ -200,7 +201,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		}
 		exmdb_client_init(connection_num, threads_num);
 		
-		if (bounce_producer_run(pconfig->get_value("separator_for_bounce"),
+		if (bounce_gen_init(pconfig->get_value("separator_for_bounce"),
 		    get_data_path(), "mail_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
 			return FALSE;
