@@ -2910,7 +2910,6 @@ static inline const char *om_actsev_to_mclass(unsigned int s)
 
 static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 {
-	DSN dsn;
 	size_t content_len;
 	DSN_ENUM_INFO dsn_info;
 	char tmp_buff[256*1024];
@@ -2933,9 +2932,9 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	content_len = sizeof(tmp_buff);
 	if (!pmime->read_content(tmp_buff, &content_len))
 		return NULL;
-	dsn_init(&dsn);
+
+	DSN dsn;
 	if (!dsn_retrieve(&dsn, tmp_buff, content_len)) {
-		dsn_free(&dsn);
 		return NULL;
 	}
 	dsn_info.action_severity = -1;
@@ -2943,12 +2942,10 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		oxcmail_enum_dsn_action_fields,
 		&dsn_info.action_severity);
 	if (-1 == dsn_info.action_severity) {
-		dsn_free(&dsn);
 		return NULL;
 	}
 	dsn_info.prcpts = tarray_set_init();
 	if (NULL == dsn_info.prcpts) {
-		dsn_free(&dsn);
 		return NULL;
 	}
 	auto ts = pmsg->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
@@ -2959,24 +2956,20 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	if (!dsn_enum_rcpts_fields(&dsn,
 	    oxcmail_enum_dsn_rcpt_fields, &dsn_info)) {
 		tarray_set_free(dsn_info.prcpts);
-		dsn_free(&dsn);
 		return NULL;
 	}
 	message_content_set_rcpts_internal(pmsg, dsn_info.prcpts);
 	if (!dsn_enum_fields(dsn_get_message_fileds(&dsn),
 	    oxcmail_enum_dsn_reporting_mta, pmsg)) {
-		dsn_free(&dsn);
 		return NULL;
 	}
 	auto as = om_actsev_to_mclass(dsn_info.action_severity);
 	if (as != nullptr) {
 		gx_strlcpy(tmp_buff, as, arsizeof(tmp_buff));
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, tmp_buff) != 0) {
-			dsn_free(&dsn);
 			return NULL;
 		}
 	}
-	dsn_free(&dsn);
 	return pmime;
 }
 
@@ -3043,7 +3036,6 @@ static bool oxcmail_enum_mdn(const char *tag,
 
 static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 {
-	DSN dsn;
 	size_t content_len;
 	char tmp_buff[256*1024];
 	
@@ -3067,17 +3059,16 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	content_len = sizeof(tmp_buff);
 	if (!pmime->read_content(tmp_buff, &content_len))
 		return NULL;
-	dsn_init(&dsn);
+
+	DSN dsn;
 	if (!dsn_retrieve(&dsn, tmp_buff, content_len)) {
-		dsn_free(&dsn);
 		return NULL;
 	}
 	if (!dsn_enum_fields(dsn_get_message_fileds(&dsn),
 	    oxcmail_enum_mdn, pmsg)) {
-		dsn_free(&dsn);
 		return NULL;
 	}
-	dsn_free(&dsn);
+	dsn_clear(&dsn);
 	auto ts = pmsg->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
 	if (pmsg->proplist.set(PR_ORIGINAL_DELIVERY_TIME, ts) != 0 ||
 	    pmsg->proplist.set(PR_RECEIPT_TIME, ts) != 0)
@@ -4579,7 +4570,6 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 	EXT_BUFFER_ALLOC alloc, char *pdsn_content,
 	int max_length)
 {
-	DSN dsn;
 	int tmp_len;
 	char action[16];
 	TARRAY_SET *prcpts;
@@ -4598,7 +4588,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 		"5.1.0", "5.1.6", "5.0.0", "5.0.0", "5.7.0", "5.0.0",
 		"5.1.2"};
 	
-	dsn_init(&dsn);
+	DSN dsn;
 	pdsn_fields = dsn_get_message_fileds(&dsn);
 	auto str = pmsg->proplist.get<const char>(PidTagReportingMessageTransferAgent);
 	if (str == nullptr) {
@@ -4606,12 +4596,10 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 		gethostname(tmp_buff + 5, sizeof(tmp_buff) - 5);
 		tmp_buff[arsizeof(tmp_buff)-1] = '\0';
 		if (!dsn_append_field(pdsn_fields, "Reporting-MTA", tmp_buff)) {
-			dsn_free(&dsn);
 			return FALSE;
 		}
 	} else {
 		if (!dsn_append_field(pdsn_fields, "Reporting-MTA", str)) {
-			dsn_free(&dsn);
 			return FALSE;
 		}
 	}
@@ -4642,22 +4630,18 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 	for (size_t i = 0; i < prcpts->count; ++i) {
 		pdsn_fields = dsn_new_rcpt_fields(&dsn);
 		if (NULL == pdsn_fields) {
-			dsn_free(&dsn);
 			return FALSE;
 		}
 		strcpy(tmp_buff, "rfc822;");
 		if (!oxcmail_get_smtp_address(prcpts->pparray[i], alloc,
 		    tags_self, tmp_buff + 7, arsizeof(tmp_buff) - 7)) {
-			dsn_free(&dsn);
 			return FALSE;
 		}
 		if (!dsn_append_field(pdsn_fields, "Final-Recipient", tmp_buff)) {
-			dsn_free(&dsn);
 			return FALSE;
 		}
 		if (*action != '\0' &&
 		    !dsn_append_field(pdsn_fields, "Action", action)) {
-			dsn_free(&dsn);
 			return FALSE;
 		}
 		auto num = prcpts->pparray[i]->get<const uint32_t>(PR_NDR_DIAG_CODE);
@@ -4668,7 +4652,6 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 					strcpy(tmp_buff, *num > 6 ? "5.4.0" :
 					       status_strings1[*num]);
 					if (!dsn_append_field(pdsn_fields, "Status", tmp_buff)) {
-						dsn_free(&dsn);
 						return FALSE;
 					}
 				}
@@ -4678,7 +4661,6 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 					strcpy(tmp_buff, *num > 48 ? "5.0.0" :
 					       status_strings2[*num]);
 					if (!dsn_append_field(pdsn_fields, "Status", tmp_buff)) {
-						dsn_free(&dsn);
 						return FALSE;
 					}
 				}
@@ -4687,29 +4669,24 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 		str = prcpts->pparray[i]->get<char>(PR_DSN_REMOTE_MTA);
 		if (str != nullptr && !dsn_append_field(pdsn_fields,
 		    "Remote-MTA", str)) {
-			dsn_free(&dsn);
 			return FALSE;
 		}
 		str = prcpts->pparray[i]->get<char>(PR_SUPPLEMENTARY_INFO);
 		if (str != nullptr && !dsn_append_field(pdsn_fields,
 		    "X-Supplementary-Info", str)) {
-			dsn_free(&dsn);
 			return FALSE;
 		}
 		str = prcpts->pparray[i]->get<char>(PR_DISPLAY_NAME);
 		if (str != nullptr && oxcmail_encode_mime_string(charset,
 		    str, tmp_buff, arsizeof(tmp_buff)) > 0 &&
 		    !dsn_append_field(pdsn_fields, "X-Display-Name", tmp_buff)) {
-			dsn_free(&dsn);
 			return FALSE;
 		}
 	}
  SERIALIZE_DSN:
 	if (!dsn_serialize(&dsn, pdsn_content, max_length)) {
-		dsn_free(&dsn);
 		return FALSE;
 	}
-	dsn_free(&dsn);
 	return TRUE;
 }
 
@@ -4718,7 +4695,6 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 	EXT_BUFFER_ALLOC alloc, char *pmdn_content,
 	int max_length)
 {
-	DSN dsn;
 	int tmp_len;
 	size_t base64_len;
 	char tmp_buff[1024];
@@ -4754,11 +4730,10 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 		}
 	}
  EXPORT_MDN_CONTENT:
-	dsn_init(&dsn);
+	DSN dsn;
 	pdsn_fields = dsn_get_message_fileds(&dsn);
 	snprintf(tmp_buff, arsizeof(tmp_buff), "rfc822;%s", tmp_address);
 	if (!dsn_append_field(pdsn_fields, "Final-Recipient", tmp_buff)) {
-		dsn_free(&dsn);
 		return FALSE;
 	}
 	tmp_len = strlen(pmessage_class);
@@ -4766,7 +4741,6 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 	       "manual-action/MDN-sent-automatically; displayed" :
 	       "manual-action/MDN-sent-automatically; deleted");
 	if (!dsn_append_field(pdsn_fields, "Disposition", tmp_buff)) {
-		dsn_free(&dsn);
 		return FALSE;
 	}
 	auto bv = pmsg->proplist.get<const BINARY>(PR_PARENT_KEY);
@@ -4774,27 +4748,22 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 	    arsizeof(tmp_buff), &base64_len) == 0) {
 		tmp_buff[base64_len] = '\0';
 		if (!dsn_append_field(pdsn_fields, "X-MSExch-Correlation-Key", tmp_buff)) {
-			dsn_free(&dsn);
 			return FALSE;
 		}
 	}
 	str = pmsg->proplist.get<char>(PidTagOriginalMessageId);
 	if (str != nullptr && !dsn_append_field(pdsn_fields,
 	    "Original-Message-ID", str)) {
-		dsn_free(&dsn);
 		return FALSE;
 	}
 	if (pdisplay_name != nullptr && oxcmail_encode_mime_string(charset,
 	    pdisplay_name, tmp_buff, arsizeof(tmp_buff)) > 0 &&
 	    !dsn_append_field(pdsn_fields, "X-Display-Name", tmp_buff)) {
-		dsn_free(&dsn);
 		return FALSE;
 	}
 	if (!dsn_serialize(&dsn, pmdn_content, max_length)) {
-		dsn_free(&dsn);
 		return FALSE;
 	}
-	dsn_free(&dsn);
 	return TRUE;
 }
 

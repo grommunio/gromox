@@ -384,7 +384,6 @@ static BOOL bounce_producer_make_content(const char *username,
 BOOL zcore_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
     const char *bounce_type, MAIL *pmail)
 {
-	DSN dsn;
 	MIME *pmime;
 	size_t out_len;
 	time_t cur_time;
@@ -466,7 +465,8 @@ BOOL zcore_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
 	if (!pmime->write_content(content_buff,
 	    strlen(content_buff), mime_encoding::automatic))
 		return FALSE;
-	dsn_init(&dsn);
+
+	DSN dsn;
 	pdsn_fields = dsn_get_message_fileds(&dsn);
 	try {
 		t_addr = "rfc822;"s + username;
@@ -501,6 +501,5 @@ BOOL zcore_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
 				strlen(content_buff), mime_encoding::none);
 		}
 	}
-	dsn_free(&dsn);
 	return TRUE;
 }
