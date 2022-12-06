@@ -267,7 +267,6 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	char date_buff[128];
 	struct tm time_buff;
 	int i, len, until_tag;
-	DSN_FIELDS *pdsn_fields;
 	char original_ptr[256*1024];
 	char lang[32], time_zone[64];
 	
@@ -406,22 +405,21 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	}
 	
 	DSN dsn;
-	pdsn_fields = dsn_get_message_fileds(&dsn);
+	auto pdsn_fields = dsn.get_message_fields();
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
-	dsn_append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
-	dsn_append_field(pdsn_fields, "Arrival-Date", date_buff);
-	
-	pdsn_fields = dsn_new_rcpt_fields(&dsn);
+	dsn.append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
+	dsn.append_field(pdsn_fields, "Arrival-Date", date_buff);
+	pdsn_fields = dsn.new_rcpt_fields();
 	if (NULL == pdsn_fields) {
 		return false;
 	}
 	snprintf(tmp_buff, 1024, "rfc822;%s", rcpt_to);
-	dsn_append_field(pdsn_fields, "Final-Recipient", tmp_buff);
-	dsn_append_field(pdsn_fields, "Action", "failed");
-	dsn_append_field(pdsn_fields, "Status", "5.0.0");
+	dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff);
+	dsn.append_field(pdsn_fields, "Action", "failed");
+	dsn.append_field(pdsn_fields, "Status", "5.0.0");
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
-	dsn_append_field(pdsn_fields, "Remote-MTA", tmp_buff);
-	if (dsn_serialize(&dsn, original_ptr, 256 * 1024)) {
+	dsn.append_field(pdsn_fields, "Remote-MTA", tmp_buff);
+	if (dsn.serialize(original_ptr, std::size(original_ptr))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			pmime->set_content_type("message/delivery-status");

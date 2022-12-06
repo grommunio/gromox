@@ -43,20 +43,21 @@ DSN::DSN()
 	double_list_init(&pdsn->rcpts_fields);
 }
 
-bool dsn_retrieve(DSN *pdsn, char *in_buff, size_t length)
+bool DSN::retrieve(char *in_buff, size_t length)
 {
+	auto pdsn = this;
 	DSN_FIELDS *pfields;
 	MIME_FIELD mime_field;
 	size_t current_offset = 0;
 
-	dsn_clear(pdsn);
+	clear();
 	pfields = &pdsn->message_fields;
 	while (current_offset < length) {
 		if (0 == strncmp(in_buff + current_offset, "\r\n", 2)) {
 			if (double_list_get_nodes_num(pfields) > 0) {
-				pfields = dsn_new_rcpt_fields(pdsn);
+				pfields = new_rcpt_fields();
 				if (NULL == pfields) {
-					dsn_clear(pdsn);
+					clear();
 					return false;
 				}
 			}
@@ -69,9 +70,9 @@ bool dsn_retrieve(DSN *pdsn, char *in_buff, size_t length)
 		if (0 == parsed_length) {
 			break;
 		}
-		if (!dsn_append_field(pfields, mime_field.name.c_str(),
+		if (!DSN::append_field(pfields, mime_field.name.c_str(),
 		    mime_field.value.c_str())) {
-			dsn_clear(pdsn);
+			clear();
 			return false;
 		}
 	}
@@ -82,13 +83,15 @@ bool dsn_retrieve(DSN *pdsn, char *in_buff, size_t length)
 	return true;
 }
 
-DSN_FIELDS* dsn_get_message_fileds(DSN *pdsn)
+DSN_FIELDS *DSN::get_message_fields()
 {
+	auto pdsn = this;
 	return &pdsn->message_fields;
 }
 
-DSN_FIELDS* dsn_new_rcpt_fields(DSN *pdsn)
+DSN_FIELDS *DSN::new_rcpt_fields()
 {
+	auto pdsn = this;
 	auto pfields = gromox::me_alloc<RCPT_DSN_FIELDS>();
 	if (NULL == pfields) {
 		return NULL;
@@ -115,7 +118,7 @@ static void dsn_delete_rcpt_fields(DSN *pdsn, DSN_FIELDS *pfields)
 	}
 }
 
-bool dsn_append_field(DSN_FIELDS *pfields, const char *tag, const char *value)
+bool DSN::append_field(DSN_FIELDS *pfields, const char *tag, const char *value)
 {
 	auto pfield = gromox::me_alloc<DSN_FIELD>();
 	if (NULL == pfield) {
@@ -137,8 +140,9 @@ bool dsn_append_field(DSN_FIELDS *pfields, const char *tag, const char *value)
 	return true;
 }
 
-bool dsn_enum_rcpts_fields(DSN *pdsn, RCPTS_FIELDS_ENUM enum_func, void *pparam)
+bool DSN::enum_rcpts_fields(RCPTS_FIELDS_ENUM enum_func, void *pparam)
 {
+	auto pdsn = this;
 	DOUBLE_LIST_NODE *pnode;
 	RCPT_DSN_FIELDS *pfields;
 	
@@ -151,7 +155,7 @@ bool dsn_enum_rcpts_fields(DSN *pdsn, RCPTS_FIELDS_ENUM enum_func, void *pparam)
 	return true;
 }
 
-bool dsn_enum_fields(DSN_FIELDS *pfields, DSN_FIELDS_ENUM enum_func,
+bool DSN::enum_fields(DSN_FIELDS *pfields, DSN_FIELDS_ENUM enum_func,
     void *pparam)
 {
 	DSN_FIELD *pfield;
@@ -166,8 +170,9 @@ bool dsn_enum_fields(DSN_FIELDS *pfields, DSN_FIELDS_ENUM enum_func,
 	return true;
 }
 
-bool dsn_serialize(DSN *pdsn, char *out_buff, size_t max_length)
+bool DSN::serialize(char *out_buff, size_t max_length)
 {
+	auto pdsn = this;
 	size_t offset;
 	DSN_FIELD *pfield;
 	DSN_FIELDS *pfields;
@@ -210,8 +215,9 @@ bool dsn_serialize(DSN *pdsn, char *out_buff, size_t max_length)
 	return true;
 }
 
-void dsn_clear(DSN *pdsn)
+void DSN::clear()
 {
+	auto pdsn = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	dsn_clear_fields(&pdsn->message_fields);
@@ -225,7 +231,7 @@ void dsn_clear(DSN *pdsn)
 DSN::~DSN()
 {
 	auto pdsn = this;
-	dsn_clear(pdsn);
+	clear();
 	double_list_free(&pdsn->message_fields);
 	double_list_free(&pdsn->rcpts_fields);
 }
