@@ -360,7 +360,6 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
     uint64_t message_id, const char *bounce_type, MAIL *pmail)
 {
-	DSN dsn;
 	MIME *pmime;
 	time_t cur_time;
 	char subject[1024];
@@ -404,7 +403,8 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	if (!pmime->write_content(content_buff,
 	    strlen(content_buff), mime_encoding::automatic))
 		return FALSE;
-	dsn_init(&dsn);
+
+	DSN dsn;
 	pdsn_fields = dsn_get_message_fileds(&dsn);
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
 	dsn_append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
@@ -413,7 +413,6 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	dsn_append_field(pdsn_fields, "Arrival-Date", date_buff);
 	pdsn_fields = dsn_new_rcpt_fields(&dsn);
 	if (NULL == pdsn_fields) {
-		dsn_free(&dsn);
 		return FALSE;
 	}
 	snprintf(tmp_buff, 1024, "rfc822;%s", rcpt);
@@ -431,6 +430,5 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 				strlen(content_buff), mime_encoding::none);
 		}
 	}
-	dsn_free(&dsn);
 	return TRUE;
 }

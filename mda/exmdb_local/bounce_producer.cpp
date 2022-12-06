@@ -238,7 +238,6 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail_original, time_t original_time, const char *bounce_type,
     MAIL *pmail)
 {
-	DSN dsn;
 	char *ptr;
 	MIME *pmime;
 	time_t cur_time;
@@ -380,7 +379,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 		return false;
 	}
 	
-	dsn_init(&dsn);
+	DSN dsn;
 	pdsn_fields = dsn_get_message_fileds(&dsn);
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
 	dsn_append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
@@ -389,7 +388,6 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	dsn_append_field(pdsn_fields, "Arrival-Date", date_buff);
 	pdsn_fields = dsn_new_rcpt_fields(&dsn);
 	if (NULL == pdsn_fields) {
-		dsn_free(&dsn);
 		return false;
 	}
 	snprintf(tmp_buff, 1024, "rfc822;%s", rcpt_to);
@@ -411,7 +409,6 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 				strlen(original_ptr), mime_encoding::none);
 		}
 	}
-	dsn_free(&dsn);
 	return true;
 }
 

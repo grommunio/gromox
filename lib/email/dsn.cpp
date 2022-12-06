@@ -36,8 +36,9 @@ static void dsn_clear_fields(DSN_FIELDS *pfields)
 	}
 }
 
-void dsn_init(DSN *pdsn)
+DSN::DSN()
 {
+	auto pdsn = this;
 	double_list_init(&pdsn->message_fields);
 	double_list_init(&pdsn->rcpts_fields);
 }
@@ -221,8 +222,9 @@ void dsn_clear(DSN *pdsn)
 	}
 }
 
-void dsn_free(DSN *pdsn)
+DSN::~DSN()
 {
+	auto pdsn = this;
 	dsn_clear(pdsn);
 	double_list_free(&pdsn->message_fields);
 	double_list_free(&pdsn->rcpts_fields);
