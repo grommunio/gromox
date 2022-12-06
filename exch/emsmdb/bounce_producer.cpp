@@ -386,7 +386,6 @@ BOOL emsmdb_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
 	struct tm time_buff;
 	char mime_from[1024];
 	char content_type[128];
-	DSN_FIELDS *pdsn_fields;
 	char content_buff[256*1024];
 	
 	if (common_util_get_user_displayname(username, tmp_buff,
@@ -459,32 +458,32 @@ BOOL emsmdb_bouncer_make(const char *username, MESSAGE_CONTENT *pbrief,
 		return FALSE;
 
 	DSN dsn;
-	pdsn_fields = dsn_get_message_fileds(&dsn);
+	auto pdsn_fields = dsn.get_message_fields();
 	try {
 		t_addr = "rfc822;"s + username;
-		dsn_append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
+		dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1482: ENOMEM");
 	}
 	if (strcmp(bounce_type, "BOUNCE_NOTIFY_READ") == 0)
-		dsn_append_field(pdsn_fields, "Disposition",
+		dsn.append_field(pdsn_fields, "Disposition",
 			"automatic-action/MDN-sent-automatically; displayed");
 	else if (strcmp(bounce_type, "BOUNCE_NOTIFY_NON_READ") == 0)
-		dsn_append_field(pdsn_fields, "Disposition",
+		dsn.append_field(pdsn_fields, "Disposition",
 			"manual-action/MDN-sent-automatically; deleted");
 	str = pbrief->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 	if (str != nullptr)
-		dsn_append_field(pdsn_fields, "Original-Message-ID", str);
+		dsn.append_field(pdsn_fields, "Original-Message-ID", str);
 	bv = pbrief->proplist.get<BINARY>(PR_PARENT_KEY);
 	if (bv != nullptr) {
 		encode64(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff), &out_len);
-		dsn_append_field(pdsn_fields,
+		dsn.append_field(pdsn_fields,
 			"X-MSExch-Correlation-Key", tmp_buff);
 	}
 	if ('\0' != mime_from[0]) {
-		dsn_append_field(pdsn_fields, "X-Display-Name", mime_from);
+		dsn.append_field(pdsn_fields, "X-Display-Name", mime_from);
 	}
-	if (dsn_serialize(&dsn, content_buff, GX_ARRAY_SIZE(content_buff))) {
+	if (dsn.serialize(content_buff, GX_ARRAY_SIZE(content_buff))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			pmime->set_content_type("message/disposition-notification");

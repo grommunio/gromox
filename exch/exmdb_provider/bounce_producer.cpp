@@ -368,7 +368,6 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	char tmp_buff[1024];
 	char date_buff[128];
 	char content_type[128];
-	DSN_FIELDS *pdsn_fields;
 	char content_buff[256*1024];
 	
 	if (!exmdb_bouncer_make_content(from, rcpt,
@@ -405,24 +404,24 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 		return FALSE;
 
 	DSN dsn;
-	pdsn_fields = dsn_get_message_fileds(&dsn);
+	auto pdsn_fields = dsn.get_message_fields();
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
-	dsn_append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
+	dsn.append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
 	localtime_r(&cur_time, &time_buff);
 	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
-	dsn_append_field(pdsn_fields, "Arrival-Date", date_buff);
-	pdsn_fields = dsn_new_rcpt_fields(&dsn);
+	dsn.append_field(pdsn_fields, "Arrival-Date", date_buff);
+	pdsn_fields = dsn.new_rcpt_fields();
 	if (NULL == pdsn_fields) {
 		return FALSE;
 	}
 	snprintf(tmp_buff, 1024, "rfc822;%s", rcpt);
-	dsn_append_field(pdsn_fields, "Final-Recipient", tmp_buff);
-	dsn_append_field(pdsn_fields, "Action", "failed");
-	dsn_append_field(pdsn_fields, "Status", "5.0.0");
+	dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff);
+	dsn.append_field(pdsn_fields, "Action", "failed");
+	dsn.append_field(pdsn_fields, "Status", "5.0.0");
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
-	dsn_append_field(pdsn_fields, "Remote-MTA", tmp_buff);
+	dsn.append_field(pdsn_fields, "Remote-MTA", tmp_buff);
 	
-	if (dsn_serialize(&dsn, content_buff, GX_ARRAY_SIZE(content_buff))) {
+	if (dsn.serialize(content_buff, GX_ARRAY_SIZE(content_buff))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			pmime->set_content_type("message/delivery-status");
