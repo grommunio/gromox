@@ -432,7 +432,7 @@ BOOL MhEmsmdbContext::notification_response() const
 	auto current_time = tp_now();
 	size_t response_len = StringRenderer(response_buff, sizeof(response_buff))
 	                      .add(commonHeader, "NotificationWait", request_id, client_info, session_string, current_time)
-	                      .add("Transfer-Encoding: chunked\r\n");
+	                      .add("Transfer-Encoding: chunked\r\n\r\n");
 	return write_response(ID, response_buff, static_cast<int>(response_len)) &&
 	       write_response(ID, "c\r\nPROCESSING\r\n\r\n", 17) ? TRUE : false;
 }
