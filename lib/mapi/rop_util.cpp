@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <sys/time.h>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
@@ -195,10 +194,9 @@ uint32_t rop_util_unix_to_rtime(time_t t)
 
 uint64_t rop_util_current_nttime()
 {
-	struct timeval tvl;
-	
-	gettimeofday(&tvl, NULL);
-	return rop_util_unix_to_nttime(tvl.tv_sec) + tvl.tv_usec*10;
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	return rop_util_unix_to_nttime(ts.tv_sec) + ts.tv_nsec  / 100;
 }
 
 GUID rop_util_binary_to_guid(const BINARY *pbin)
