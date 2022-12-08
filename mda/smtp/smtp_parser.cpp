@@ -317,8 +317,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			if (SSL_ERROR_WANT_READ == ssl_errno ||
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
 				current_time = tp_now();
-				if (CALCULATE_INTERVAL(current_time,
-				    pcontext->connection.last_timestamp) < g_param.timeout)
+				if (current_time - pcontext->connection.last_timestamp < g_param.timeout)
 					return PROCESS_POLLING_RDONLY;
 				/* 451 Timeout */
 				auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
@@ -380,8 +379,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			goto LOST_READ;
 		}
 		/* check if context is timed out */
-		if (CALCULATE_INTERVAL(current_time,
-		    pcontext->connection.last_timestamp) >= g_param.timeout) {
+		if (current_time - pcontext->connection.last_timestamp >= g_param.timeout) {
 			/* 451 Timeout */
 			auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
 			pcontext->connection.write(smtp_reply_str, string_length);

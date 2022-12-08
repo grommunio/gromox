@@ -249,9 +249,7 @@ static void *ctxp_scanwork(void *pparam)
 				double_list_append_as_tail(&temp_list, pnode);
 				goto CHECK_TAIL;
 			}
-			if (CALCULATE_INTERVAL(current_time,
-				contexts_pool_get_context_timestamp(pcontext))
-				>= g_time_out) {
+			if (current_time - contexts_pool_get_context_timestamp(pcontext) >= g_time_out) {
 				if (g_poll_ctx.del(pcontext) != 0) {
 					mlog(LV_DEBUG, "contexts_pool: failed to remove event from epoll");
 				} else {

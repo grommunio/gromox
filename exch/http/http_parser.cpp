@@ -537,10 +537,8 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 		return X_RUNOFF;
 	}
 	auto current_time = tp_now();
-	if (CALCULATE_INTERVAL(current_time,
-	    pcontext->connection.last_timestamp) < g_timeout) {
+	if (current_time - pcontext->connection.last_timestamp < g_timeout)
 		return PROCESS_POLLING_RDONLY;
-	}
 	pcontext->log(LV_DEBUG, "I-1920: timeout");
 	http_4xx(pcontext, "Request Timeout", 408);
 	return X_LOOP;
@@ -1077,10 +1075,8 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 		return X_RUNOFF;
 	}
 	/* check if context is timed out */
-	if (CALCULATE_INTERVAL(current_time,
-	    pcontext->connection.last_timestamp) < g_timeout) {
+	if (current_time - pcontext->connection.last_timestamp < g_timeout)
 		return htparse_rdhead_st(pcontext, actual_read);
-	}
 	pcontext->log(LV_DEBUG, "I-1934: timeout");
 	http_4xx(pcontext, "Request Timeout", 408);
 	return X_LOOP;
@@ -1238,10 +1234,8 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			return X_RUNOFF;
 		}
 		/* check if context is timed out */
-		if (CALCULATE_INTERVAL(current_time,
-		    pcontext->connection.last_timestamp) < g_timeout) {
+		if (current_time - pcontext->connection.last_timestamp < g_timeout)
 			return PROCESS_POLLING_WRONLY;
-		}
 		pcontext->log(LV_DEBUG, "timeout");
 		return X_RUNOFF;
 	}
@@ -1401,10 +1395,8 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 		return X_RUNOFF;
 	}
 	/* check if context is timed out */
-	if (CALCULATE_INTERVAL(current_time,
-	    pcontext->connection.last_timestamp) < g_timeout) {
+	if (current_time - pcontext->connection.last_timestamp < g_timeout)
 		return PROCESS_POLLING_RDONLY;
-	}
 	pcontext->log(LV_DEBUG, "I-1935: timeout");
 	http_4xx(pcontext, "Request Timeout", 408);
 	return X_LOOP;
@@ -1489,9 +1481,8 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 				return X_RUNOFF;
 			}
 			/* check if context is timed out */
-			if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) < g_timeout) {
+			if (current_time - pcontext->connection.last_timestamp < g_timeout)
 				return PROCESS_POLLING_RDONLY;
-			}
 			pcontext->log(LV_DEBUG, "I-1937: timeout");
 			http_4xx(pcontext, "Request Timeout", 408);
 			return X_LOOP;
@@ -1708,10 +1699,8 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 
 	auto current_time = tp_now();
 	/* check if context is timed out */
-	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
-	    OUT_CHANNEL_MAX_WAIT) {
+	if (current_time - pcontext->connection.last_timestamp < OUT_CHANNEL_MAX_WAIT)
 		return PROCESS_IDLE;
-	}
 	pcontext->log(LV_DEBUG, "no correpoding in "
 		"channel coming during maximum waiting interval");
 	return X_RUNOFF;
@@ -1745,10 +1734,8 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 
 	auto current_time = tp_now();
 	/* check if context is timed out */
-	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
-	    OUT_CHANNEL_MAX_WAIT) {
+	if (current_time - pcontext->connection.last_timestamp < OUT_CHANNEL_MAX_WAIT)
 		return PROCESS_IDLE;
-	}
 	pcontext->log(LV_DEBUG, "channel is not "
 		"recycled during maximum waiting interval");
 	return X_RUNOFF;
@@ -1776,7 +1763,7 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 
 	auto current_time = tp_now();
 	/* check keep alive */
-	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
+	if (current_time - pcontext->connection.last_timestamp <
 	    pchannel_out->client_keepalive / 2)
 		return PROCESS_IDLE;
 	if (!pdu_processor_rts_ping(pchannel_out->pcall))
