@@ -34,48 +34,26 @@ struct session_data {
 };
 
 enum {
-	RC_SUCCESS = 0,
-	RC_UNKNOWN_FAILURE = 1,
-	RC_INVALID_VERB = 2,
-	RC_INVALID_PATH = 3,
-	RC_INVALID_HEADER = 4,
-	RC_INVALID_REQUEST_TYPE = 5,
-	RC_INVALID_CONTEXT_COOKIE = 6,
-	RC_MISSING_HEADER = 7,
-	RC_ANONYMOUS_NOT_ALLOWED = 8,
-	RC_TOO_LARGE = 9,
-	RC_CONTEXT_NOT_FOUND = 10,
-	RC_NO_PRIVILEGE = 11,
-	RC_INVALID_REQUEST_BODY = 12,
-	RC_MISSING_COOKIE = 13,
-	RC_RESERVED = 14,
-	RC_INVALID_SEQUENCE = 15,
-	RC_ENDPOINT_DISABLED = 16,
-	RC_INVALID_RESPONSE = 17,
-	RC_ENDPOINT_SHUTTING_DOWN = 18,
+	RC_SUCCESS,
+	RC_INVALID_VERB,
+	RC_INVALID_CONTEXT_COOKIE,
+	RC_MISSING_HEADER,
+	RC_NO_PRIVILEGE,
+	RC_INVALID_REQUEST_BODY,
+	RC_MISSING_COOKIE,
+	RC_INVALID_SEQUENCE,
 };
 
 static constexpr const char *g_error_text[] = {
     "The request was properly formatted and accepted.",
-    "The request produced an unknown failure.",
     "The request has an invalid verb.",
-   	"The request has an invalid path.",
-    "The request has an invalid header.",
-    "The request has an invalid X-RequestType header.",
     "The request has an invalid session context cookie.",
     "The request has a missing required header.",
-    "The request is anonymous, but anonymous requests are not accepted.",
-    "The request is too large.",
-    "The Session Context is not found.",
     "The client has no privileges to the Session Context.",
     "The request body is invalid.",
     "The request is missing a required cookie.",
-    "This value MUST be ignored by the client.",
     "The request has violated the sequencing requirement"
         " of one request at a time per Session Context.",
-    "The endpoint is disabled.",
-    "The response is invalid.",
-    "The endpoint is shutting down."
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
