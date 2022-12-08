@@ -150,7 +150,7 @@ BOOL MhContext::unauthed() const
 	return write_response(ID, tmp_buff, tmp_len);
 }
 
-BOOL MhContext::error_responsecode(int response_code) const
+BOOL MhContext::error_responsecode(resp_code response_code) const
 {
 	char dstring[128], text_buff[512], response_buff[4096];
 
@@ -161,18 +161,18 @@ BOOL MhContext::error_responsecode(int response_code) const
 		"</head><body>\r\n"
 		"<h1>Diagnostic Information</h1>\r\n"
 		"<p>%s</p>\r\n"
-		"</body></html>\r\n", g_error_text[response_code]);
+		"</body></html>\r\n", g_error_text[static_cast<unsigned int>(response_code)]);
 	rfc1123_dstring(dstring, arsizeof(dstring), time_point::clock::to_time_t(start_time));
 	auto response_len = snprintf(response_buff,
 		sizeof(response_buff),
 		"HTTP/1.1 200 OK\r\n"
 		"Cache-Control: private\r\n"
 		"Content-Type: text/html\r\n"
-		"X-ResponseCode: %d\r\n"
+		"X-ResponseCode: %u\r\n"
 		"Content-Length: %d\r\n"
 		"X-ServerApplication: Exchange/15.00.0847.4040\r\n"
 		"Date: %s\r\n\r\n%s",
-		response_code, text_len, dstring, text_buff);
+		static_cast<unsigned int>(response_code), text_len, dstring, text_buff);
 	return write_response(ID, response_buff, response_len);
 }
 

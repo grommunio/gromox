@@ -33,15 +33,9 @@ struct session_data {
 	gromox::time_point expire_time;
 };
 
-enum {
-	RC_SUCCESS,
-	RC_INVALID_VERB,
-	RC_INVALID_CONTEXT_COOKIE,
-	RC_MISSING_HEADER,
-	RC_NO_PRIVILEGE,
-	RC_INVALID_REQUEST_BODY,
-	RC_MISSING_COOKIE,
-	RC_INVALID_SEQUENCE,
+enum class resp_code {
+	success, invalid_verb, invalid_ctx_cookie, missing_header, no_priv,
+	invalid_rq_body, missing_cookie, invalid_seq,
 };
 
 static constexpr const char *g_error_text[] = {
@@ -67,7 +61,7 @@ struct MhContext
 	bool getHeader(char*, size_t);
 
 	BOOL unauthed() const;
-	BOOL error_responsecode(int) const;
+	BOOL error_responsecode(resp_code) const;
 	BOOL ping_response() const;
 	BOOL failure_response(uint32_t) const;
 	BOOL normal_response() const;
