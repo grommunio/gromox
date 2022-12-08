@@ -632,7 +632,7 @@ BOOL MhNspPlugin::process(int context_id, const void *content, uint64_t length)
 	            	return strcmp(a.first, b) < 0;
 	            });
 	if (proc == cend(reqProcessors))
-		return false;
+		return ctx.error_responsecode(resp_code::invalid_rq_type);
 	result = (this->*proc->second)(ctx);
 	if (result.has_value())
 		return result.value();
