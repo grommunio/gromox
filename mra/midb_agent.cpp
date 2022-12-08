@@ -115,6 +115,8 @@ static int imap_search(const char *path, const char *folder, const char *charset
 static int imap_search_uid(const char *path, const char *folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
 static BOOL check_full(const char *path);
 
+static constexpr unsigned int POLLIN_SET =
+	POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR | POLLNVAL;
 std::atomic<size_t> g_midb_command_buffer_size{256 * 1024};
 static int g_conn_num;
 static gromox::atomic_bool g_notify_stop;
@@ -2489,8 +2491,6 @@ static BOOL check_full(const char *path)
 {
 	int offset;
 	int read_len;
-	fd_set myset;
-	struct timeval tv;
 	char buff[1024];
 
 	auto pback = get_connection(path);
@@ -2503,13 +2503,10 @@ static BOOL check_full(const char *path)
 
 	offset = 0;
 	while (true) {
-		tv.tv_usec = 0;
-		tv.tv_sec = SOCKET_TIMEOUT;
-		FD_ZERO(&myset);
-		FD_SET(pback->sockd, &myset);
-		if (select(pback->sockd + 1, &myset, NULL, NULL, &tv) <= 0) {
+		struct pollfd pfd = {pback->sockd};
+		pfd.events = POLLIN_SET;
+		if (poll(&pfd, 1, SOCKET_TIMEOUT * 1000) <= 0)
 			return TRUE;
-		}
 		read_len = read(pback->sockd, buff + offset, 1024 - offset);
 		if (read_len <= 0) {
 			return TRUE;
