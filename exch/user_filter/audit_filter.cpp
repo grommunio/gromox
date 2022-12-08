@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <libHX/string.h>
-#include <sys/time.h>
+#include <gromox/clock.hpp>
 #include <gromox/util.hpp>
 #include "user_filter.hpp"
 
@@ -23,8 +23,8 @@ using namespace gromox;
 
 namespace {
 struct STR_AUDIT {
-    struct timeval  first_time_stamp;/* time stamp of first time of visit */
-    struct timeval  last_time_stamp; /* time stamp of last time of visit  */
+	time_point first_time_stamp; /* time stamp of first time of visit */
+	time_point last_time_stamp; /* time stamp of last time of visit  */
     int             times;
 };
 }
@@ -32,12 +32,12 @@ struct STR_AUDIT {
 static std::unordered_map<std::string, STR_AUDIT> g_audit_hash;
 
 static int g_audit_num;
-static int g_audit_interval;         /*  connecting times  per interval */ 
+static std::chrono::seconds g_audit_interval; /* connecting times per interval */
 static int g_max_within_interval;    /*  max times within the interval  */  
 static std::mutex g_audit_mutex_lock;
 static BOOL g_case_sensitive;
 
-static size_t audit_filter_collect_entry(const struct timeval *);
+static size_t audit_filter_collect_entry(const time_point);
 
 /*
  *  initialize the audit filter
@@ -51,7 +51,7 @@ void audit_filter_init(BOOL case_sensitive, int audit_num, int audit_interval,
 {
 	g_case_sensitive        = case_sensitive;
     g_audit_num             = audit_num;
-    g_audit_interval        = audit_interval;
+	g_audit_interval = std::chrono::seconds(audit_interval);
     g_max_within_interval   = audit_times;
 }
 
@@ -70,8 +70,6 @@ void audit_filter_stop()
  */
 BOOL audit_filter_judge(const char *str) 
 {
-    struct timeval current_time;
-
 	if (g_audit_num <= 0 || str == nullptr)
 		return TRUE;
 	std::string temp_string;
@@ -84,7 +82,7 @@ BOOL audit_filter_judge(const char *str)
 		HX_strlower(temp_string.data());
 	std::lock_guard am_hold(g_audit_mutex_lock); 
 	auto iter = g_audit_hash.find(temp_string);
-    gettimeofday(&current_time, NULL);                  
+	auto current_time = tp_now();
 	if (iter != g_audit_hash.end()) {
 		auto paudit = &iter->second;
         if (paudit->times < g_max_within_interval) {
@@ -116,7 +114,7 @@ BOOL audit_filter_judge(const char *str)
 			return TRUE;
 	} catch (const std::bad_alloc &) {
 	}
-	if (0 == audit_filter_collect_entry(&current_time)) {
+	if (audit_filter_collect_entry(current_time) == 0) {
 		mlog(LV_DEBUG, "str_filter: still cannot find one unit for auditing, giving up");
 		return TRUE;
 	}
@@ -137,8 +135,6 @@ BOOL audit_filter_judge(const char *str)
  */
 BOOL audit_filter_query(const char *str) 
 {
-	struct timeval current_time;
-
 	if (g_audit_num <= 0 || str == nullptr)
 		return FALSE;
 	std::string temp_string;
@@ -150,7 +146,7 @@ BOOL audit_filter_query(const char *str)
 	if (!g_case_sensitive)
 		HX_strlower(temp_string.data());
 	std::lock_guard am_hold(g_audit_mutex_lock);
-	gettimeofday(&current_time, NULL);
+	auto current_time = tp_now();
 	auto iter = g_audit_hash.find(temp_string);
 	if (iter == g_audit_hash.end())
 		return FALSE;
@@ -170,19 +166,19 @@ BOOL audit_filter_query(const char *str)
  *  @return
  *      the number of entries collected
  */
-static size_t audit_filter_collect_entry(const struct timeval *current_time)
+static size_t audit_filter_collect_entry(const time_point current_time)
 {
 #if __cplusplus >= 202000L
 	return std::erase_if(g_audit_hash, [=](const auto &it) {
 		auto &sa = it.second;
-		return CALCULATE_INTERVAL(*current_time, sa.last_time_stamp) >= g_audit_interval;
+		return CALCULATE_INTERVAL(current_time, sa.last_time_stamp) >= g_audit_interval;
 	});
 #else
 	size_t num_of_collect = 0;
 
 	for (auto iter = g_audit_hash.begin(); iter != g_audit_hash.end(); ) {
 		auto iter_audit = &iter->second;
-        if (CALCULATE_INTERVAL(*current_time, 
+        if (CALCULATE_INTERVAL(current_time,
             iter_audit->last_time_stamp) >= g_audit_interval) {
 			iter = g_audit_hash.erase(iter);
             num_of_collect++;
