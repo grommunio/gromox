@@ -699,7 +699,7 @@ BOOL MhEmsmdbPlugin::process(int context_id, const void *content, uint64_t lengt
 	else if (strcasecmp(ctx.request_value, "NotificationWait") == 0)
 		result = wait(ctx);
 	else
-		return false;
+		return ctx.error_responsecode(resp_code::invalid_rq_type);
 	if (result)
 		return result.value();
 	return ctx.normal_response();
