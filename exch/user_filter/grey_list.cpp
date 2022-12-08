@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <utility>
 #include <libHX/string.h>
-#include <sys/time.h>
+#include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/list_file.hpp>
 #include <gromox/svc_common.h>
@@ -24,8 +24,9 @@ DECLARE_SVC_API(extern);
 namespace {
 
 struct GREY_LIST_ENTRY {
-	int current_times = 0, allowed_times = 0, interval = 0;
-	struct timeval last_access{};
+	int current_times = 0, allowed_times = 0;
+	time_duration interval{};
+	time_point last_access{};
 };
 
 struct LIST_ITEM {
@@ -80,7 +81,6 @@ int grey_list_run()
 int grey_list_query(const char *str, BOOL b_count)
 {
 	char temp_string [256];
-    struct timeval current_time;
 
     if (NULL == str) {
         return GREY_LIST_NOT_FOUND;
@@ -101,10 +101,9 @@ int grey_list_query(const char *str, BOOL b_count)
     if (0 == pentry->allowed_times) {
         return GREY_LIST_DENY; /* deny it */
     }
-    if (0 == pentry->interval) {
-        return GREY_LIST_ALLOW; 
-    }
-    gettimeofday(&current_time, NULL);
+	if (pentry->interval == time_duration{})
+		return GREY_LIST_ALLOW;
+	auto current_time = tp_now();
 	if (CALCULATE_INTERVAL(current_time, pentry->last_access) >
 		pentry->interval) {
 		if (!b_count)
@@ -126,8 +125,6 @@ int grey_list_query(const char *str, BOOL b_count)
  */
 int grey_list_refresh()
 {
-    struct timeval current_time;
-
 	if (0 == g_growing_num) {
 		return GREY_REFRESH_OK;
 	}
@@ -141,12 +138,12 @@ int grey_list_refresh()
 	auto list_len = plist_file->get_size();
 	decltype(g_grey_table) phash;
 
-    gettimeofday(&current_time, NULL);
+	auto current_time = tp_now();
 	for (decltype(list_len) i = 0; i < list_len; ++i, ++pitem) try {
 		if (!g_case_sensitive)
 			HX_strlower(pitem->string);
 		phash.emplace(pitem->string, GREY_LIST_ENTRY{0, pitem->allow_times,
-			static_cast<int>(HX_strtoull_sec(pitem->interval, nullptr)), current_time});
+			std::chrono::seconds(HX_strtoull_sec(pitem->interval, nullptr)), current_time});
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1564: ENOMEM");
 		return false;

@@ -1,12 +1,12 @@
 #pragma once
 #include <ctime>
 #include <sys/stat.h>
+#include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 
 #define DEF_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
-#define CALCULATE_INTERVAL(a, b) \
-	(((a).tv_usec >= (b).tv_usec) ? ((a).tv_sec - (b).tv_sec) : \
-	((a).tv_sec - (b).tv_sec - 1))
+template<typename T> static inline auto
+CALCULATE_INTERVAL(T a, T b) -> decltype(a-b) { return a - b; }
 
 enum {
 	GREY_LIST_ALLOW = 0,
