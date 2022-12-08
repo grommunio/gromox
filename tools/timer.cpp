@@ -20,9 +20,9 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <gromox/atomic.hpp>
@@ -70,6 +70,8 @@ struct srcitem {
 
 }
 
+static constexpr auto POLLIN_SET =
+	POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR | POLLNVAL;
 static gromox::atomic_bool g_notify_stop;
 static unsigned int g_threads_num;
 static std::atomic<int> g_last_tid;
@@ -576,16 +578,12 @@ static void *tmr_thrwork(void *param)
 
 static BOOL read_mark(CONNECTION_NODE *pconnection)
 {
-	fd_set myset;
 	int i, read_len;
-	struct timeval tv;
 
 	while (true) {
-		tv.tv_usec = 0;
-		tv.tv_sec = SOCKET_TIMEOUT;
-		FD_ZERO(&myset);
-		FD_SET(pconnection->sockd, &myset);
-		if (select(pconnection->sockd + 1, &myset, nullptr, nullptr, &tv) <= 0)
+		struct pollfd pfd = {pconnection->sockd};
+		pfd.events = POLLIN_SET;
+		if (poll(&pfd, 1, SOCKET_TIMEOUT * 1000) <= 0)
 			return FALSE;
 		read_len = read(pconnection->sockd, pconnection->buffer +
 		pconnection->offset, 1024 - pconnection->offset);
