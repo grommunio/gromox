@@ -25,8 +25,8 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
@@ -104,6 +104,8 @@ struct HOST_NODE {
 
 }
 
+static constexpr unsigned int POLLIN_SET =
+	POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR | POLLNVAL;
 static gromox::atomic_bool g_notify_stop;
 static unsigned int g_threads_num;
 static alloc_limiter<fifo_block> g_fifo_alloc{"g_fifo_alloc.d"};
@@ -776,19 +778,15 @@ static void *ev_deqwork(void *param)
 
 static BOOL read_response(int sockd)
 {
-	fd_set myset;
 	int offset;
 	int read_len;
 	char buff[1024];
-	struct timeval tv;
 
 	offset = 0;
 	while (true) {
-		tv.tv_usec = 0;
-		tv.tv_sec = SOCKET_TIMEOUT;
-		FD_ZERO(&myset);
-		FD_SET(sockd, &myset);
-		if (select(sockd + 1, &myset, nullptr, nullptr, &tv) <= 0)
+		struct pollfd pfd = {sockd};
+		pfd.events = POLLIN_SET;
+		if (poll(&pfd, 1, SOCKET_TIMEOUT * 1000) <= 0)
 			return FALSE;
 		read_len = read(sockd, buff + offset, 1024 - offset);
 		if (read_len <= 0)
@@ -803,16 +801,12 @@ static BOOL read_response(int sockd)
 
 static BOOL read_mark(ENQUEUE_NODE *penqueue)
 {
-	fd_set myset;
 	int i, read_len;
-	struct timeval tv;
 
 	while (true) {
-		tv.tv_usec = 0;
-		tv.tv_sec = SOCKET_TIMEOUT;
-		FD_ZERO(&myset);
-		FD_SET(penqueue->sockd, &myset);
-		if (select(penqueue->sockd + 1, &myset, nullptr, nullptr, &tv) <= 0)
+		struct pollfd pfd = {penqueue->sockd};
+		pfd.events = POLLIN_SET;
+		if (poll(&pfd, 1, SOCKET_TIMEOUT * 1000) <= 0)
 			return FALSE;
 		read_len = read(penqueue->sockd, penqueue->buffer +
 		penqueue->offset, MAX_CMD_LENGTH - penqueue->offset);
