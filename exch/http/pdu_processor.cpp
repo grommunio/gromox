@@ -16,7 +16,6 @@
 #include <vector>
 #include <libHX/string.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
@@ -150,7 +149,6 @@ dcerpc_call::dcerpc_call() :
 	 * the packet before ndr_pull_init is called.
 	 */
 	node.pdata = this;
-	gettimeofday(&time, nullptr);
 	double_list_init(&reply_list);
 }
 
