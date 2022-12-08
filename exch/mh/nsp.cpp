@@ -460,7 +460,7 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 	auto tmp_len = ctx.orig.f_cookie.read(tmp_buff, arsizeof(tmp_buff) - 1);
 	if (tmp_len == MEM_END_OF_FILE) {
 		if (strcasecmp(ctx.request_value, "Bind") != 0)
-			return ctx.error_responsecode(RC_MISSING_COOKIE);
+			return ctx.error_responsecode(resp_code::missing_cookie);
 		ctx.session = nullptr;
 		if (strcasecmp(ctx.request_value, "PING") == 0) {
 			nsp_bridge_touch_handle(ctx.session_guid);
@@ -472,28 +472,28 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 	auto pparser = cookie_parser_init(tmp_buff);
 	auto string = cookie_parser_get(pparser, "sid");
 	if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
-		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	gx_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Unbind") != 0) {
 		string = cookie_parser_get(pparser, "sequence");
 		if (string == nullptr || !ctx.sequence_guid.from_str(string))
-			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+			return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	}
 	std::unique_lock hl_hold(hashLock);
 	auto it = sessions.find(ctx.session_string);
 	if (it == sessions.end())
-		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	if (it->second.expire_time < ctx.start_time) {
 		removeSession(it);
-		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	}
 	ctx.session = &it->second;
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Bind") !=0 &&
 	    strcasecmp(ctx.request_value, "Unbind") != 0 &&
 	    ctx.sequence_guid != ctx.session->sequence_guid)
-			return ctx.error_responsecode(RC_INVALID_SEQUENCE);
+			return ctx.error_responsecode(resp_code::invalid_seq);
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Unbind") != 0) {
 		ctx.sequence_guid = GUID::random_new();
@@ -513,7 +513,7 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 	auto& request = ctx.request.emplace<bind_request>();
 	auto& response = ctx.response.emplace<bind_response>();
 	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
-		return ctx.error_responsecode(RC_INVALID_REQUEST_BODY);
+		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = nsp_bridge_run(ctx.session_guid, request, response);
 	if (response.result != ecSuccess) {
 		if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
@@ -558,7 +558,7 @@ MhNspPlugin::ProcRes MhNspPlugin::unbind(MhNspContext& ctx)
 	auto& request = ctx.request.emplace<unbind_request>();
 	auto& response = ctx.response.emplace<unbind_response>();
 	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
-		return ctx.error_responsecode(RC_INVALID_REQUEST_BODY);
+		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = nsp_bridge_unbind(ctx.session_guid, request.reserved);
 	std::unique_lock hl_hold(hashLock);
 	removeSession(ctx.session_string);
@@ -574,7 +574,7 @@ MhNspPlugin::ProcRes MhNspPlugin::proxy(MhNspContext& ctx)
 	auto& request = ctx.request.emplace<RI>();
 	auto& response = ctx.response.emplace<RI>();
 	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
-		return ctx.error_responsecode(RC_INVALID_REQUEST_BODY);
+		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = nsp_bridge_run(ctx.session_guid, request, response);
 	if constexpr(copystat)
 		response.stat = request.stat;
@@ -588,7 +588,7 @@ MhNspPlugin::ProcRes MhNspPlugin::getMailboxUrl(MhNspContext& ctx)
 	auto& request = ctx.request.emplace<getmailboxurl_request>();
 	auto& response = ctx.response.emplace<getmatches_response>();
 	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
-		return ctx.error_responsecode(RC_INVALID_REQUEST_BODY);
+		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = ctx.getmailboxurl();
 	if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
@@ -600,7 +600,7 @@ MhNspPlugin::ProcRes MhNspPlugin::getAddressBookUrl(MhNspContext& ctx)
 	auto& request = ctx.request.emplace<getaddressbookurl_request>();
 	auto& response = ctx.response.emplace<getaddressbookurl_response>();
 	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
-		return ctx.error_responsecode(RC_INVALID_REQUEST_BODY);
+		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = ctx.getaddressbookurl();
 	if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
@@ -615,9 +615,9 @@ BOOL MhNspPlugin::process(int context_id, const void *content, uint64_t length)
 	if (!ctx.loadHeaders())
 		return false;
 	if (ctx.request_value[0] == '\0')
-		return ctx.error_responsecode(RC_INVALID_VERB);
+		return ctx.error_responsecode(resp_code::invalid_verb);
 	if (ctx.request_id[0] == '\0' || ctx.client_info[0] == '\0')
-		return ctx.error_responsecode(RC_MISSING_HEADER);
+		return ctx.error_responsecode(resp_code::missing_header);
 	auto result = loadCookies(ctx);
 	if (result.has_value())
 		return result.value();

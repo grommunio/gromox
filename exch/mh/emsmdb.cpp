@@ -522,7 +522,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	auto tmp_len = ctx.orig.f_cookie.read(tmp_buff, arsizeof(tmp_buff) - 1);
 	if (tmp_len == MEM_END_OF_FILE) {
 		if (strcasecmp(ctx.request_value, "Connect"))
-			return ctx.error_responsecode(RC_MISSING_COOKIE);
+			return ctx.error_responsecode(resp_code::missing_cookie);
 		ctx.session = nullptr;
 		return std::nullopt;
 	}
@@ -530,29 +530,29 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	auto pparser = cookie_parser_init(tmp_buff);
 	auto string = cookie_parser_get(pparser, "sid");
 	if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
-		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	gx_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
 		string = cookie_parser_get(pparser, "sequence");
 		if (string == nullptr || !ctx.sequence_guid.from_str(string))
-			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+			return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	}
 	std::unique_lock hl_hold(hashLock);
 	auto it = sessions.find(ctx.session_string);
 	if (it == sessions.end())
-		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	if (it->second.expire_time < ctx.start_time) {
 		removeSession(it);
-		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	}
 	ctx.session = &it->second;
 	if (strcasecmp(ctx.session->username, ctx.auth_info.username) != 0)
-		return ctx.error_responsecode(RC_NO_PRIVILEGE);
+		return ctx.error_responsecode(resp_code::no_priv);
 	ctx.session_guid = ctx.session->session_guid;
 	if (strcasecmp(ctx.request_value, "Execute") == 0 &&
 	    ctx.sequence_guid != ctx.session->sequence_guid)
-		return ctx.error_responsecode(RC_INVALID_SEQUENCE);
+		return ctx.error_responsecode(resp_code::invalid_seq);
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Disconnect") != 0 &&
 	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
@@ -566,7 +566,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_connect_req(ctx.request.connect) != EXT_ERR_SUCCESS)
-		return ctx.error_responsecode(RC_INVALID_REQUEST_BODY);
+		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	uint16_t cxr;
 	GUID old_guid;
 	ctx.response.connect.status = 0;
@@ -610,7 +610,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::disconnect(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_disconnect_req(ctx.request.disconnect) != EXT_ERR_SUCCESS)
-		return ctx.error_responsecode(RC_INVALID_REQUEST_BODY);
+		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	ctx.response.disconnect.status = 0;
 	ctx.response.disconnect.result = emsmdb_bridge_disconnect(ctx.session_guid);
 	std::unique_lock hl_hold(hashLock);
@@ -624,7 +624,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::disconnect(MhEmsmdbContext &ctx)
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::execute(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_execute_req(ctx.request.execute) != EXT_ERR_SUCCESS)
-		return ctx.error_responsecode(RC_INVALID_REQUEST_BODY);
+		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	ctx.response.execute.flags = ctx.request.execute.flags;
 	ctx.response.execute.cb_out = ctx.request.execute.cb_out;
 	ctx.response.execute.status = 0;
@@ -639,7 +639,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 	ECDOASYNCWAITEX_IN wait_in;
 	ECDOASYNCWAITEX_OUT wait_out;
 	if (ctx.ext_pull.g_notificationwait_req(ctx.request.notificationwait) != EXT_ERR_SUCCESS)
-		return ctx.error_responsecode(RC_INVALID_REQUEST_BODY);
+		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	wait_in.acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
 	wait_in.acxh.guid = ctx.session_guid;
 	wait_out.flags_out = ctx.ID;
@@ -676,9 +676,9 @@ BOOL MhEmsmdbPlugin::process(int context_id, const void *content, uint64_t lengt
 	if (!ctx.loadHeaders())
 		return false;
 	if (ctx.request_value[0] == '\0')
-		return ctx.error_responsecode(RC_INVALID_VERB);
+		return ctx.error_responsecode(resp_code::invalid_verb);
 	if (ctx.request_id[0] == '\0' || ctx.client_info[0] == '\0')
-		return ctx.error_responsecode(RC_MISSING_HEADER);
+		return ctx.error_responsecode(resp_code::missing_header);
 	if ((result = loadCookies(ctx)))
 		return result.value();
 	if (strcasecmp(ctx.request_value, "PING") == 0) {
