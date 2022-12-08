@@ -383,10 +383,8 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 	if (SSL_ERROR_WANT_READ == ssl_errno ||
 	    SSL_ERROR_WANT_WRITE == ssl_errno) {
 		auto current_time = tp_now();
-		if (CALCULATE_INTERVAL(current_time,
-		    pcontext->connection.last_timestamp) < g_timeout) {
+		if (current_time - pcontext->connection.last_timestamp < g_timeout)
 			return PROCESS_POLLING_RDONLY;
-		}
 		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
@@ -441,10 +439,8 @@ static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 			return ps_end_processing(pcontext);
 		}
 		/* check if context is timed out */
-		if (CALCULATE_INTERVAL(current_time,
-		    pcontext->connection.last_timestamp) < g_timeout) {
+		if (current_time - pcontext->connection.last_timestamp < g_timeout)
 			return PROCESS_POLLING_RDONLY;
-		}
 		if (pcontext->is_authed()) {
 			std::unique_lock ll_hold(g_list_lock);
 			double_list_append_as_tail(&g_sleeping_list, &pcontext->sleeping_node);
@@ -785,10 +781,8 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 			return ps_end_processing(pcontext);
 		}
 		/* check if context is timed out */
-		if (CALCULATE_INTERVAL(current_time,
-		    pcontext->connection.last_timestamp) < g_timeout) {
+		if (current_time - pcontext->connection.last_timestamp < g_timeout)
 			return PROCESS_POLLING_RDONLY;
-		}
 		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
@@ -844,10 +838,8 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 			return ps_end_processing(pcontext);
 		}
 		/* check if context is timed out */
-		if (CALCULATE_INTERVAL(current_time,
-		    pcontext->connection.last_timestamp) < g_timeout) {
+		if (current_time - pcontext->connection.last_timestamp < g_timeout)
 			return PROCESS_POLLING_WRONLY;
-		}
 		imap_parser_log_info(pcontext, LV_DEBUG, "timeout");
 		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
@@ -932,10 +924,8 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 			return ps_end_processing(pcontext);
 		}
 		/* check if context is timed out */
-		if (CALCULATE_INTERVAL(current_time,
-		    pcontext->connection.last_timestamp) < g_timeout) {
+		if (current_time - pcontext->connection.last_timestamp < g_timeout)
 			return PROCESS_POLLING_WRONLY;
-		}
 		imap_parser_log_info(pcontext, LV_DEBUG, "time out");
 		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
@@ -1578,8 +1568,7 @@ static void *imps_thrwork(void *argp)
 				contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 			} else if (peek_len < 0) {
 				auto current_time = tp_now();
-				if (CALCULATE_INTERVAL(current_time,
-					pcontext->connection.last_timestamp) >= g_autologout_time) {
+				if (current_time - pcontext->connection.last_timestamp >= g_autologout_time) {
 					pcontext->sched_stat = SCHED_STAT_AUTOLOGOUT;
 					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 				} else {

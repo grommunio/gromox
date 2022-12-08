@@ -104,8 +104,7 @@ int grey_list_query(const char *str, BOOL b_count)
 	if (pentry->interval == time_duration{})
 		return GREY_LIST_ALLOW;
 	auto current_time = tp_now();
-	if (CALCULATE_INTERVAL(current_time, pentry->last_access) >
-		pentry->interval) {
+	if (current_time - pentry->last_access > pentry->interval) {
 		if (!b_count)
 			return GREY_LIST_ALLOW;
 		pentry->last_access = current_time;

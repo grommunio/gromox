@@ -86,14 +86,13 @@ BOOL audit_filter_judge(const char *str)
 	if (iter != g_audit_hash.end()) {
 		auto paudit = &iter->second;
         if (paudit->times < g_max_within_interval) {
-            if (CALCULATE_INTERVAL(current_time, paudit->first_time_stamp) >
-				g_audit_interval) {
+			if (current_time - paudit->first_time_stamp > g_audit_interval) {
                 paudit->times = 0;
                 paudit->first_time_stamp = current_time;
             }
             paudit->times ++;
             paudit->last_time_stamp = current_time;
-		} else if (CALCULATE_INTERVAL(current_time, paudit->last_time_stamp) > g_audit_interval) {
+		} else if (current_time - paudit->last_time_stamp > g_audit_interval) {
 			paudit->times = 1;
 			paudit->first_time_stamp = current_time;
 			paudit->last_time_stamp = current_time;
@@ -153,8 +152,7 @@ BOOL audit_filter_query(const char *str)
 	auto paudit = &iter->second;
 	if (paudit->times < g_max_within_interval)
 		return FALSE;
-	return g_audit_interval <= CALCULATE_INTERVAL(current_time,
-	       paudit->last_time_stamp) ? TRUE : false;
+	return g_audit_interval <= current_time - paudit->last_time_stamp ? TRUE : false;
 }
 
 /*
@@ -171,15 +169,14 @@ static size_t audit_filter_collect_entry(const time_point current_time)
 #if __cplusplus >= 202000L
 	return std::erase_if(g_audit_hash, [=](const auto &it) {
 		auto &sa = it.second;
-		return CALCULATE_INTERVAL(current_time, sa.last_time_stamp) >= g_audit_interval;
+		return current_time - sa.last_time_stamp >= g_audit_interval;
 	});
 #else
 	size_t num_of_collect = 0;
 
 	for (auto iter = g_audit_hash.begin(); iter != g_audit_hash.end(); ) {
 		auto iter_audit = &iter->second;
-        if (CALCULATE_INTERVAL(current_time,
-            iter_audit->last_time_stamp) >= g_audit_interval) {
+		if (current_time - iter_audit->last_time_stamp >= g_audit_interval) {
 			iter = g_audit_hash.erase(iter);
             num_of_collect++;
 		} else {
