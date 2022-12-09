@@ -1,11 +1,26 @@
-Development 1.35.14
-===================
+Gromox 1.36 (2022-12-09)
+========================
 
 Enhancements:
 
 * exmdb_provider: on-disk content file compression, controllable using
   the "exmdb_file_compression" config directive (affects only new files)
 * tools: new utility `gromox-compress` to compress existing content files
+* exmdb_provider: support evaluation of inbox rules that have RES_CONTENT
+  restrictions with PT_BINARY properties
+
+Fixes:
+
+* Asynchronous notification over MH was not responsive due to a malformed
+  HTTP response, which was fixed.
+
+Changes:
+
+* Bounce template generation was rewritten for size
+* mysql_adaptor: silence PR_DISPLAY_TYPE_EX warning for admin user
+* emsmdb: let ropSaveChangesMessage return ecObjectDeleted
+* exmdb_provider: set PR_RULE_ERROR property when Deferred Error Messages
+  (DEMs) are generated
 
 
 1.35 (2022-11-25)
