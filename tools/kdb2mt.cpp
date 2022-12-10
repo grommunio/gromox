@@ -61,6 +61,10 @@ enum propcol {
 	PCOL_LONGINT, PCOL_HI, PCOL_LO,
 };
 
+enum class aclconv {
+	automatic = -1, noextract, extract, convert,
+};
+
 struct kdb_item;
 
 struct driver final {
@@ -130,7 +134,7 @@ static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
 static char *g_srcguid, *g_srcmbox, *g_acl_map_file, *g_user_map_file;
 static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
-static unsigned int g_with_acl;
+static enum aclconv g_acl_conv = aclconv::automatic;
 static int g_with_hidden = -1;
 static std::vector<uint32_t> g_only_objs;
 static std::unordered_map<std::string, std::string> g_acl_map;
@@ -140,12 +144,29 @@ static void cb_only_obj(const HXoptcb *cb) {
 		g_only_objs.push_back(cb->data_long);
 }
 
+static void acl_cb(const struct HXoptcb *i)
+{
+	auto s = i->data;
+	if (strcasecmp(s, "no") == 0 || strcasecmp(s, "noextract") == 0) {
+		g_acl_conv = aclconv::noextract;
+	} else if (strcasecmp(s, "ex") == 0 || strcasecmp(s, "extract") == 0) {
+		g_acl_conv = aclconv::extract;
+	} else if (strcasecmp(s, "convert") == 0) {
+		g_acl_conv = aclconv::convert;
+	} else if (strcasecmp(s, "auto") == 0) {
+		g_acl_conv = aclconv::automatic;
+	} else {
+		fprintf(stderr, "Unrecognized --acl option value \"%s\"\n", s);
+		exit(EXIT_FAILURE);
+	}
+}
+
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Map folders of a private store (see manpage for detail)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the source archive"},
 	{nullptr, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose, nullptr, nullptr, 0, "More detailed progress reports"},
-	{"acl-map", 0, HXTYPE_STRING, &g_acl_map_file, nullptr, nullptr, 0, "(No longer used)", "FILE"},
+	{"acl", 0, HXTYPE_STRING, nullptr, nullptr, acl_cb, 0, "Conversion for ACLs (auto, no/noextract, extract, convert)", "MODE"},
 	{"l1", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L1 fan number for attachment directories of type files_v1 (default: 10)", "N"},
 	{"l2", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L2 fan number for attachment directories of type files_v1 (default: 20)", "N"},
 	{"mbox-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Lookup source mailbox by GUID", "GUID"},
@@ -164,7 +185,6 @@ static constexpr HXoption g_options_table[] = {
 	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "OBJID"},
 	{"user-map", 0, HXTYPE_STRING, &g_user_map_file, nullptr, nullptr, 0, "User resolution map", "FILE"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
-	{"with-acl", 0, HXTYPE_VAL, &g_with_acl, nullptr, nullptr, 1, "Enable partial conversion of ACLs (beta)"},
 	{"without-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 0, "Do skip folders with PR_ATTR_HIDDEN [default: dependent upon -s]"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -865,7 +885,7 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 	/* Gromox ACL tables are only specified for folders at this time. */
 	if (yi->m_mapitype != MAPI_FOLDER)
 		return yi;
-	if (!g_with_acl)
+	if (g_acl_conv == aclconv::noextract)
 		return yi;
 	/*
 	 * ECSecurity.cpp ECSecurity::GetObjectPermission never evaluates type=1
@@ -1336,12 +1356,13 @@ static int usermap_read(const char *file, std::unordered_map<std::string, std::s
 			continue;
 		auto srv_guid = row["sv"].asString();
 		HX_strlower(srv_guid.data());
-		if (!row["to"].isNull() &&
+		if (g_acl_conv == aclconv::convert && !row["to"].isNull() &&
 		    strchr(row["to"].asCString(), '@') != nullptr)
 			map.emplace(row["id"].asString() + "@" + srv_guid + ".kopano.invalid",
 				row["to"].asString());
 	}
-	fprintf(stderr, "%s: read %zu entries\n", file, map.size());
+	if (g_acl_conv == aclconv::convert)
+		fprintf(stderr, "%s: read %zu entries\n", file, map.size());
 	return 0;
 }
 
@@ -1364,7 +1385,20 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "The --acl-map option is no longer valid.\n");
 		fprintf(stderr, "Use --user-map from now on; this is a new file format. See manpage for details.\n");
 		return EXIT_FAILURE;
-	} else if (g_user_map_file != nullptr) {
+	}
+	if (g_acl_conv == aclconv::convert && g_user_map_file == nullptr) {
+		fprintf(stderr, "--acl=convert requires --user-map\n");
+		exit(EXIT_FAILURE);
+	} else if (g_acl_conv == aclconv::automatic) {
+		if (g_user_map_file == nullptr) {
+			g_acl_conv = aclconv::noextract;
+			fprintf(stderr, "No ACLs will be extracted\n");
+		} else {
+			g_acl_conv = aclconv::convert;
+			fprintf(stderr, "ACLs will be extracted and converted\n");
+		}
+	}
+	if (g_user_map_file != nullptr) {
 		int ret = usermap_read(g_user_map_file, g_acl_map);
 		if (ret != EXIT_SUCCESS)
 			return ret;
