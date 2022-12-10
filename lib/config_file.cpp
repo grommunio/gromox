@@ -163,7 +163,6 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
 	auto cfg = config_file_alloc(EXT_ENTRY_NUM);
 	if (cfg == NULL)
 		return nullptr;
-	gx_strlcpy(cfg->file_name, fb, GX_ARRAY_SIZE(cfg->file_name));
 	if (key_desc != nullptr)
 		for (; key_desc->key != nullptr; ++key_desc)
 			config_file_apply_1(*cfg, *key_desc);
