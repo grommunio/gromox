@@ -536,6 +536,8 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email,
 	auto resp_acc = add_child(resp, "Account");
 	add_child(resp_acc, "AccountType", "email");
 	add_child(resp_acc, "Action", "settings"); // TODO redirectAddr, redirectUrl
+	add_child(resp_acc, "MicrosoftOnline", "False");
+	add_child(resp_acc, "ConsumerMailbox", "False");
 
 	auto ews_url = fmt::format(ews_base_url, host_id, exchange_asmx);
 	auto OABUrl = fmt::format(oab_base_url, host_id);
