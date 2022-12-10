@@ -2629,6 +2629,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				return result;
 			}
 		}
+		nsp_trace(__func__, 1, pstat, nullptr, *pprows);
 		return ecSuccess;
 	}
 
@@ -2695,6 +2696,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			}
 		}
 	}
+	nsp_trace(__func__, 1, pstat, nullptr, *pprows);
 	return ecSuccess;
 }
 
