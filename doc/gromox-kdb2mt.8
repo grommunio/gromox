@@ -51,7 +51,7 @@ no effect if (the even more verbose) \fB\-t\fP option was used.
 .TP
 \fB\-\-user\-map\fP \fIfile\fP
 Use the given file to perform ACL mapping. See section "ACL Extraction" below
-for details. This option implies \fB\-\-with\-acl\fP.
+for details.
 .TP
 \fB\-\-sql\-host\fP \fIhostname\fP
 Hostname for the source SQL connection.
@@ -98,8 +98,11 @@ specified multiple times. In the output stream, the objects will have an
 unspecified location given as their parent folder. (mt2exm will use the
 drafts folder because it is expectedly less crowded than one's inbox.)
 .TP
-\fB\-\-with\-acl\fP
-Perform partial conversion of ACLs. See the ACL section below for details.
+\fB\-\-acl\fP={\fIauto\fP|\fIno\fP|\fInoextract\fP|\fIextract\fP|\fIconvert\fP}
+Handling for ACLs on MAPI objects: ignore, extract to synthetic address, or
+convert to an e-mail address. \fIauto\fP plus the presence of \-\-user\-map
+leads to \fIconvert\fP. \fIauto\fP plus the absence of \-\-user\-map leads to
+\fInoextract\fP. See the section "ACL Extraction" below for some more details.
 .TP
 \fB\-\-with\-hidden\fP, \fB\-\-without\-hidden\fP
 This option controls the import of folders that have PR_ATTR_HIDDEN=1.
@@ -107,8 +110,9 @@ This option controls the import of folders that have PR_ATTR_HIDDEN=1.
 These may be removed in any future release.
 .TP
 \-\-acl\-map \fIfile\fP
-Replaced for Gromox 1.37 by a new \fB\-\-user\-map\fP option, which takes a new
-file format, but kdb\-uidextract(8) has been updated accordingly.
+Replaced for Gromox 1.37 by new \fB\-\-acl\fP and \fB\-\-user\-map\fP options,
+the latter of which takes a new file format, but kdb\-uidextract(8) has been
+updated accordingly.
 .TP
 \-\-src\-host \fIhostname\fP
 Renamed to \fB\-\-sql\-host\fP for Gromox 1.37.
