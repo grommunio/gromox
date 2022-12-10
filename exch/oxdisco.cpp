@@ -397,15 +397,13 @@ void OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 	auto resp_user = add_child(resp, "User");
 	add_child(resp_user, "AutoDiscoverSMTPAddress", email); // TODO get the primary email address
 
-	char displayname[4096];
-	if(!mysql.get_user_displayname(email, displayname, 4096))
+	auto buf = std::make_unique<char[]>(4096);
+	if (!mysql.get_user_displayname(email, buf.get(), 4096))
 		return; // TODO error handling
-	add_child(resp_user, "DisplayName", displayname);
-
-	char x500dn[1024];
-	if (!username_to_essdn(email, x500dn, GX_ARRAY_SIZE(x500dn)))
+	add_child(resp_user, "DisplayName", buf.get());
+	if (!username_to_essdn(email, buf.get(), 4096))
 		return; // TODO error handling
-	add_child(resp_user, "LegacyDN", x500dn);
+	add_child(resp_user, "LegacyDN", buf.get());
 	add_child(resp_user, "EMailAddress", email);
 
 	char hex_string[16];
@@ -538,12 +536,10 @@ void OxdiscoPlugin::resp_eas(XMLElement *el, const char *email)
 	add_child(resp, "Culture", "en:us");
 
 	auto resp_user = add_child(resp, "User");
-
-	char displayname[4096];
-	if(!mysql.get_user_displayname(email, displayname, 4096))
+	auto buf = std::make_unique<char[]>(4096);
+	if (!mysql.get_user_displayname(email, buf.get(), 4096))
 		return; // TODO error handling
-
-	add_child(resp_user, "DisplayName", displayname);
+	add_child(resp_user, "DisplayName", buf.get());
 	add_child(resp_user, "EMailAddress", email);
 
 	auto resp_act = add_child(resp, "Action");
