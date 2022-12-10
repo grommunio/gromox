@@ -57,6 +57,7 @@ static struct HXoption g_options_table[] = {
 static std::vector<std::string> g_dfl_hpm_plugins = {
 	"libgxh_mh_emsmdb.so",
 	"libgxh_mh_nsp.so",
+	"libgxh_oxdisco.so",
 };
 static std::vector<std::string> g_dfl_proc_plugins = {
 	"libgxp_exchange_emsmdb.so",

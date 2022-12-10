@@ -120,18 +120,8 @@ static int mod_rewrite_default()
 	auto errbuf = std::make_unique<char[]>(ebufsize);
 
 	mlog(LV_NOTICE, "mod_rewrite: defaulting to built-in rule list");
-	node.replace_string = "\\0/EWS/autodiscover.php";
-	auto ret = regcomp(&node.search_pattern, "/autodiscover/autodiscover.xml", REG_ICASE);
-	if (ret != 0) {
-		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
-		mlog(LV_ERR, "mod_rewrite: regcomp: %s", errbuf.get());
-		return -EINVAL;
-	}
-	node.reg_set = true;
-	g_rewrite_list.push_back(std::move(node));
-
 	node.replace_string = "\\0/EWS/exchange.php";
-	ret = regcomp(&node.search_pattern, "/EWS/Exchange.asmx", REG_ICASE);
+	auto ret = regcomp(&node.search_pattern, "/EWS/Exchange.asmx", REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
 		mlog(LV_ERR, "mod_rewrite: regcomp: %s", errbuf.get());
