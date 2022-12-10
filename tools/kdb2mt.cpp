@@ -71,6 +71,10 @@ struct driver final {
 	driver() = default;
 	~driver();
 	NOMOVE(driver);
+
+	int open_by_guid_1(const char *);
+	int open_by_guid(const char *);
+	int open_by_user(const char *);
 	DB_RESULT query(const char *);
 	uint32_t hid_from_eid(const BINARY &);
 	uint32_t hid_from_mst(kdb_item &, uint32_t);
@@ -505,9 +509,9 @@ static void do_print(unsigned int depth, kdb_item &item)
 	     kp_item_type_to_str(item.m_mapitype));
 }
 
-static std::unique_ptr<driver>
-kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
+int driver::open_by_guid_1(const char *guid)
 {
+	auto drv = this;
 	if (hex2bin(guid).size() != 16)
 		throw YError("PK-1011: invalid GUID passed");
 
@@ -557,7 +561,7 @@ kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 	drv->m_user_id = strtoul(row[1], nullptr, 0);
 	drv->m_store_hid = strtoul(row[0], nullptr, 0);
 	drv->m_public_store = row[2] != nullptr && strtoul(row[2], nullptr, 0) == 1;
-	return std::move(drv);
+	return 0;
 }
 
 static int setup_charset(MYSQL *m)
@@ -588,12 +592,10 @@ static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
 	return drv;
 }
 
-static std::unique_ptr<driver>
-kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
+int driver::open_by_guid(const char *guid)
 {
-	auto drv = make_driver(sqp);
 	fmt::print(stderr, "Store GUID: {}\n", guid);
-	return kdb_open_by_guid_1(std::move(drv), guid);
+	return open_by_guid_1(guid);
 }
 
 static void present_stores(const char *storeuser, DB_RESULT &res)
@@ -614,10 +616,9 @@ static void present_stores(const char *storeuser, DB_RESULT &res)
 	fprintf(stderr, "============================================================\n");
 }
 
-static std::unique_ptr<driver>
-kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
+int driver::open_by_user(const char *storeuser)
 {
-	auto drv = make_driver(sqp);
+	auto drv = this;
 	std::string qstr = "SELECT s.guid, s.user_id, s.user_name, s.type, "
 	                   "p.val_longint FROM stores AS s "
 	                   "LEFT JOIN properties AS p "
@@ -642,7 +643,7 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 	auto rowlen = res.row_lengths();
 	auto guid = bin2hex(row[0], rowlen[0]);
 	fmt::print(stderr, "Store GUID for MRO \"{}\": {}\n", storeuser, guid);
-	return kdb_open_by_guid_1(std::move(drv), guid.c_str());
+	return open_by_guid_1(guid.c_str());
 }
 
 driver::~driver()
@@ -1433,12 +1434,13 @@ int main(int argc, const char **argv)
 	}
 
 	try {
-		std::unique_ptr<driver> drv;
+		auto drv = make_driver(sqp);
+		int ret = 0;
 		if (g_srcguid != nullptr)
-			drv = kdb_open_by_guid(g_srcguid, sqp);
+			ret = drv->open_by_guid(g_srcguid);
 		else if (g_srcmbox != nullptr)
-			drv = kdb_open_by_user(g_srcmbox, sqp);
-		if (drv == nullptr) {
+			ret = drv->open_by_user(g_srcmbox);
+		if (ret != 0) {
 			fprintf(stderr, "Problem?!\n");
 			return EXIT_FAILURE;
 		}
