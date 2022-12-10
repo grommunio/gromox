@@ -24,13 +24,21 @@ Compression level to use. Defaults to 6.
 .SH Examples
 Compress some:
 .PP
+.RS 4
+.nf
 gromox\-compress \-\-cid /var/lib/gromox/user/0/1/cid
 /var/lib/gromox/user/0/2/cid
+.fi
+.RE
 .PP
 Or string that further to compress cid directories of all mailboxes:
 .PP
+.RS 4
+.nf
 find /var/lib/gromox/{user,domain} -type d -name cid -exec gromox-compress
 \-\-cid {} +
+.fi
+.RE
 .SH Formats
 .IP \(bu 4
 cid/[0-9]+: content file, with proptag-dependent header and trailer
