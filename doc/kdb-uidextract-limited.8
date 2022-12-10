@@ -9,7 +9,7 @@
 kdb\-uidextract\-limited is a Perl script utilizing just the Kopano command
 line interface of the kopano\-admin(8) and kopano\-stats(8) programs to read
 user object descriptions off a Kopano installation and produce an ACL map for
-use with the gromox\-kdb2mt \-\-acl\-map option.
+use with the gromox\-kdb2mt \-\-user\-map option.
 .PP
 This script is meant to be executed on a Kopano system and does not rely on
 Gromox at all.
@@ -18,9 +18,10 @@ Unlike kdb\-uidextract, kdb\-uidextract\-limited also does not rely on the
 presence of python\-kopano bindings (e.g. for when installing those is
 considered infeasible). However, kdb\-uidextract\-limited can only evaluate the
 host it is executed on and has no automatic multi-server capability. This is
-because the kopano\-stats(8) command is lacking a \-h option. To produce a
-complete map, you need to manually execute kdb\-uidextract\-limited on all
-Kopano server instances in a cluster and concatenate the results.
+because kopano\-stats(8) never loads a TLS certificate needed to make the \-h
+option work. To produce a complete map, you need to manually execute
+kdb\-uidextract\-limited on all Kopano server instances in a cluster and then
+join the results in accordance with the JSON syntax, e.g. by use of jq(1).
 .PP
 kopano\-server need not be set up for TLS.
 .PP

@@ -4,10 +4,11 @@
 .SH Name
 \fBgromox\-kdb2mt\fP \(em Utility for analysis/import of Kopano mailboxes
 .SH Synopsis
-\fBgromox\-kdb2mt\fP [\fB\-pstv\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
-[\fB\-\-src\-user\fP \fIsqluser\fP] [\fB\-\-src-port\fP \fIsqlport\fP]
-[\fB\-\-src\-db\fP \fIdbname\fP] \fB\-\-src\-attach\fP \fIdir\fP
-{\fB\-\-src\-guid\fP \fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} [...]
+\fBgromox\-kdb2mt\fP [\fB\-pstv\fP] [\fB\-\-sql\-host\fP \fIhostname\fP]
+[\fB\-\-sql\-user\fP \fIidentity\fP] [\fB\-\-sql\-port\fP \fInumber\fP]
+[\fB\-\-sql\-db\fP \fIname\fP] \fB\-\-src\-attach\fP \fIdir\fP
+{\fB\-\-mbox\-guid\fP \fImboxguid\fP|\fB\-\-mbox\-name\fP
+\fIusername\fP|\fB\-\-mbox\-mro\fP \fIusername\fP} [...]
 .SH Description
 gromox\-kdb2mt reads one store from a Zarafa/Kopano SQL database and, for
 attachments, the associated filesystem. The data is then re-exported in a
@@ -49,26 +50,26 @@ Show a diagnostic tree view of the source data as it is being read.
 Print message count progress while processing larger folders. This option has
 no effect if (the even more verbose) \fB\-t\fP option was used.
 .TP
-\fB\-\-acl\-map\fP \fIfile\fP
+\fB\-\-user\-map\fP \fIfile\fP
 Use the given file to perform ACL mapping. See section "ACL Extraction" below
-for details. This option implies \fB\-\-with\-acl\fP.
+for details.
 .TP
-\fB\-\-src\-host\fP \fIhostname\fP
+\fB\-\-sql\-host\fP \fIhostname\fP
 Hostname for the source SQL connection.
 .br
 Default: (MySQL default; \fIlocalhost\fP)
 .TP
-\fB\-\-src\-port\fP \fIport\fP
+\fB\-\-sql\-port\fP \fInumber\fP
 Port for the source SQL connection.
 .br
 Default: (MySQL default; automatic)
 .TP
-\fB\-\-src\-user\fP \fIusername\fP
+\fB\-\-sql\-user\fP \fIidentity\fP
 Username for the source SQL connection.
 .br
 Default: \fIroot\fP
 .TP
-\fB\-\-src\-db\fP \fIdbname\fP
+\fB\-\-sql\-db\fP \fIdbname\fP
 Database name.
 .br
 Default: \fIkopano\fP
@@ -78,15 +79,20 @@ Required specification to the /var/lib/kopano/attachments directory mounted
 somewhere locally. (To skip over file-based attachments, use the empty
 value, i.e. \fB\-\-src\-attach ""\fP.)
 .TP
-\fB\-\-src\-guid\fP \fIguid\fP
+\fB\-\-mbox\-guid\fP \fIguid\fP
 Selects the mailbox with the particular GUID for extraction.
 (This may be used to read orphaned stores.)
 .TP
-\fB\-\-src\-mbox\fP \fIusername\fP
+\fB\-\-mbox\-user\fP \fIusername\fP
+Scan the user map (cf. \-\-user\-map) for a mailbox which was used by the given
+username, and use it for extraction.
+(To get a listing of all stores, use \fB\-\-mbox\-user ""\fP.)
+.TP
+\fB\-\-mbox\-mro\fP \fIusername\fP
 Scan the source database for a mailbox which appears to have last been used by
 \fIusername\fP, and use it for extraction. There are a number of \fBcaveats\fP
 related to this lookup; see the section "Store lookup by name" further below.
-(To get a listing of all stores, use \fB\-\-src\-mbox ""\fP.)
+(To get a listing of all stores, use \fB\-\-mbox\-mro ""\fP.)
 .TP
 \fB\-\-l1\fP \fIx\fP, \fB\-\-l2\fP \fIy\fP
 If you are using "attachment_storage=files_v1-\fIx\fP-\fIy\fP" in
@@ -98,11 +104,39 @@ specified multiple times. In the output stream, the objects will have an
 unspecified location given as their parent folder. (mt2exm will use the
 drafts folder because it is expectedly less crowded than one's inbox.)
 .TP
-\fB\-\-with\-acl\fP
-Perform partial conversion of ACLs. See the ACL section below for details.
+\fB\-\-acl\fP={\fIauto\fP|\fIno\fP|\fInoextract\fP|\fIextract\fP|\fIconvert\fP}
+Handling for ACLs on MAPI objects: ignore, extract to synthetic address, or
+convert to an e-mail address. \fIauto\fP plus the presence of \-\-user\-map
+leads to \fIconvert\fP. \fIauto\fP plus the absence of \-\-user\-map leads to
+\fInoextract\fP. See the section "ACL Extraction" below for some more details.
 .TP
 \fB\-\-with\-hidden\fP, \fB\-\-without\-hidden\fP
 This option controls the import of folders that have PR_ATTR_HIDDEN=1.
+.SH Obsolete options
+These may be removed in any future release.
+.TP
+\-\-acl\-map \fIfile\fP
+Replaced for Gromox 1.37 by new \fB\-\-acl\fP and \fB\-\-user\-map\fP options,
+the latter of which takes a new file format, but kdb\-uidextract(8) has been
+updated accordingly.
+.TP
+\-\-src\-host \fIhostname\fP
+Renamed to \fB\-\-sql\-host\fP for Gromox 1.37.
+.TP
+\-\-src\-user \fIidentity\fP
+Renamed to \fB\-\-sql\-user\fP for Gromox 1.37.
+.TP
+\-\-src\-port \fInumber\fP
+Renamed to \fB\-\-sql\-port\fP for Gromox 1.37.
+.TP
+\-\-src\-db \fIname\fP
+Renamed to \fB\-\-sql\-db\fP for Gromox 1.37.
+.TP
+\-\-src\-guid \fIname\fP
+Renamed to \fB\-\-mbox\-guid for Gromox 1.37.
+.TP
+\-\-src\-mbox \fIname\fP
+Renamed to \fB\-\-mbox\-mro for Gromox 1.37.
 .SH Splice mode
 Normally, kdb2mt will have a folder mapping table that specifies one entry,
 which is "(Source root)" to "(Target root)\\Top of Information Store\\Import of
@@ -129,7 +163,7 @@ yours, leaving out \-s is normally the desired behavior, since you may not want
 want to mix your (existing) with their mails.
 .SH Environment variables
 .TP
-\fBSRCPASS\fP
+\fBSQLPASS\fP
 Password for the source SQL connection.
 .SH Examples
 .SS Common scenario (Separate hosts)
@@ -165,8 +199,8 @@ special meaning of "localhost" (which implies the use of an AF_LOCAL socket,
 e.g. /run/mysql/mysql.sock). Command:
 .PP
 .RS 4
-SRCPASS=kopanosqlpass gromox\-kdb2mt \-\-src\-host 127.0.0.1 \-\-src\-port
-12345 \-\-src\-user kopano \-\-src\-attach /mnt \-\-src\-mbox jdoe |
+SQLPASS=kopanosqlpass gromox\-kdb2mt \-\-sql\-host 127.0.0.1 \-\-sql\-port
+12345 \-\-sql\-user kopano \-\-src\-attach /mnt \-\-mbox\-mro jdoe |
 gromox\-mt2exm \-u target@domain.de
 .RE
 .PP
@@ -180,12 +214,13 @@ mix and match the plethora of utilities available at their disposal.
 Possible operations include mysqldump(1), sftp(1), rsync(1), tar(1) and
 curl(1).
 .SH Store lookup using Kopano tools
-If kdb2mt's built-in heuristic \-\-src\-mbox resolution mechanism is not
+If kdb2mt's built-in heuristic \-\-mbox\-mro resolution mechanism is not
 adequate enough, you can use utilities from the Kopano installation, provided
 that is still active.
 .IP \(bu 4
 `kopano\-storeadm \-M` is the gold standard. This dumps the entire store list,
-in JSON representation. The GUIDs can then be used together with \-\-src\-guid.
+in JSON representation. The GUIDs can then be used together with
+\-\-mbox\-guid.
 .IP \(bu 4
 The global "SYSTEM" user object in Kopano also happens to have a private store,
 titled "Inbox \- SYSTEM". This store however is practically empty and it is
@@ -214,7 +249,7 @@ does not rely on the existence of such authentication provider.
 Every store has a metadata field for the \fBmost recent owner\fP (MRO). This
 field was intended for orphaned stores and has informational value only. The
 MRO field is not always updated by Kopano services, which can lead to
-\-\-src\-mbox not necessarily finding an expected match. In particular,
+\-\-mbox\-mro not necessarily finding an expected match. In particular,
 kopano\-server misses doing the MRO update on store detach, and on changes to
 the username in LDAP.
 .PP
@@ -224,10 +259,10 @@ set of all stores.
 .PP
 Furthermore, the MRO field is missing the domain/company part of the username.
 Company public stores (in hosted setups) use the company name as MRO. This all
-contributes to \-\-src\-mbox possibly matching multiple stores.
+contributes to \-\-mbox\-mro possibly matching multiple stores.
 .PP
 When more than one store matches in any way, kdb2mt will print the result set
-with GUIDs and exit, at which point you need to use \-\-src\-guid instead.
+with GUIDs and exit, at which point you need to use \-\-mbox\-guid instead.
 .SH ACL Extraction
 Because kdb2mt works completely LDAP-less, it knows nothing about users save
 for their numeric user object ID on the homeserver and a reference to an LDAP
@@ -251,63 +286,10 @@ member_id  folder_id  username                                             permi
 .RE
 .PP
 kdb2mt can be instructed to map these to a new email address using the
-\-\-acl\-map command-line option. That file shall be a plain text file
-containing one mapping entry per line. Empty lines and lines beginning with a
-'#' are ignored. Each non-ignored line shall consist of whitespace-separated
-fields (spaces/tabs). The first field shall be the synthesized identity that is
-to be matched (objid@serverguid.kopano.invalid), the second field its desired
-replacement.
-.PP
-Take note that in multi-server Kopano installations, every LDAP user will
-appear in \fBall\fP kopano-server databases, and with generally \fBdifferent\fP
-user IDs:
-.PP
-.RS 4
-.nf
-# kopano-admin --details joe -h https://kopano01:237/
-Object id:              256
-Extern id:              10072
-Username:               joe
-...
-Auto-accept meeting req:no
-Home server:            kopano01.invalid
-MDB provider:           KOPANO_STORE_DELEGATE_GUID
-Store GUID:             45A167B5AA7D44B1B5AC1195AA25E6B0
-...
-
-# kopano-admin --details joe -h https://kopano02:237/
-Object id:              209
-Extern id:              10072
-Username:               joe
-...
-Auto-accept meeting req:no
-Home server:            kopano01.invalid
-[No store GUID shown since home is not on kopano02]
-.fi
-.RE
-.PP
-Mailboxes which have kopano02 as home server have ACL entries using the
-kopano02 object ID of joe. Therefore, the mapping file should contain the
-identities from all servers, that is,
-.PP
-.RS 4
-.nf
-256@aa8e2b20b2054ca98987ea1053c3bb16.kopano.invalid  joe@gromox
-209@dabb6b35a8cf471c94c6d85a25edf8c9.kopano.invalid  joe@gromox
-.fi
-.RE
-.PP
-The server GUID(s) may be found by examining the output from kopano-stats(1).
-(You will need to lowercase them.)
-.PP
-.RS 4
-.nf
-# kopano-stats -h https://kopano01:237/ --system | grep server_guid
-    server_guid    AA8E2B20B2054CA98987EA1053C3BB16
-# kopano-stats -h https://kopano02:237/ --system | grep server_guid
-    server_guid    DABB6B35A8CF471C94C6D85A25EDF8C9
-.fi
-.RE
+\-\-user\-map command-line option. That file can be generated by executing
+kdb\-uidextract(8) or the kdb\-uidextract\-limited(8) helper programs on the
+original, live Kopano system. (With some effort, the file can also be manually
+constructed.)
 .SH ZARAFA Address Type
 MAPI is a system that supports referencing conversation participants of a
 message by means other than an SMTP e-mail address. For example, the "EX"

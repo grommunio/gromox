@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <list>
+#include <map>
 #include <memory>
 #include <mysql.h>
 #include <string>
@@ -27,6 +28,7 @@
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
@@ -60,12 +62,21 @@ enum propcol {
 	PCOL_LONGINT, PCOL_HI, PCOL_LO,
 };
 
+enum class aclconv {
+	automatic = -1, noextract, extract, convert,
+};
+
 struct kdb_item;
 
 struct driver final {
 	driver() = default;
 	~driver();
 	NOMOVE(driver);
+
+	int open_by_guid_1(const char *);
+	int open_by_guid(const char *);
+	int open_by_mro(const char *);
+	int open_by_user(const char *);
 	DB_RESULT query(const char *);
 	uint32_t hid_from_eid(const BINARY &);
 	uint32_t hid_from_mst(kdb_item &, uint32_t);
@@ -124,19 +135,38 @@ struct sql_login_param {
 
 }
 
+using LR_map = std::map<std::string, std::string>;
+
 static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
-static char *g_srcguid, *g_srcmbox, *g_acl_map_file;
+static char *g_srcguid, *g_srcmbox, *g_srcmro, *g_acl_map_file, *g_user_map_file;
 static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
-static unsigned int g_with_acl;
+static enum aclconv g_acl_conv = aclconv::automatic;
 static int g_with_hidden = -1;
 static std::vector<uint32_t> g_only_objs;
-static std::unordered_map<std::string, std::string> g_acl_map;
+static LR_map g_kuid_to_email, g_username_to_storeguid;
 static uint32_t g_proptag_stubbed;
 
 static void cb_only_obj(const HXoptcb *cb) {
 		g_only_objs.push_back(cb->data_long);
+}
+
+static void acl_cb(const struct HXoptcb *i)
+{
+	auto s = i->data;
+	if (strcasecmp(s, "no") == 0 || strcasecmp(s, "noextract") == 0) {
+		g_acl_conv = aclconv::noextract;
+	} else if (strcasecmp(s, "ex") == 0 || strcasecmp(s, "extract") == 0) {
+		g_acl_conv = aclconv::extract;
+	} else if (strcasecmp(s, "convert") == 0) {
+		g_acl_conv = aclconv::convert;
+	} else if (strcasecmp(s, "auto") == 0) {
+		g_acl_conv = aclconv::automatic;
+	} else {
+		fprintf(stderr, "Unrecognized --acl option value \"%s\"\n", s);
+		exit(EXIT_FAILURE);
+	}
 }
 
 static constexpr HXoption g_options_table[] = {
@@ -144,19 +174,26 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Map folders of a private store (see manpage for detail)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the source archive"},
 	{nullptr, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose, nullptr, nullptr, 0, "More detailed progress reports"},
-	{"acl-map", 0, HXTYPE_STRING, &g_acl_map_file, nullptr, nullptr, 0, "ACL map to apply", "FILE"},
+	{"acl", 0, HXTYPE_STRING, nullptr, nullptr, acl_cb, 0, "Conversion for ACLs (auto, no/noextract, extract, convert)", "MODE"},
 	{"l1", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L1 fan number for attachment directories of type files_v1 (default: 10)", "N"},
 	{"l2", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L2 fan number for attachment directories of type files_v1 (default: 20)", "N"},
-	{"src-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Hostname for SQL connection (default: localhost)", "HOST"},
-	{"src-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Port for SQL connection (default: auto)", "PORT"},
-	{"src-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Database name (default: kopano)", "NAME"},
-	{"src-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Username for SQL connection (default: root)", "USER"},
+	{"mbox-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Lookup source mailbox by GUID", "GUID"},
+	{"mbox-mro", 0, HXTYPE_STRING, &g_srcmro, nullptr, nullptr, 0, "Lookup source mailbox by MRO", "NAME"},
+	{"mbox-name", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Lookup source mailbox by username (requires --user-map)", "NAME"},
+	{"sql-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Hostname for SQL connection (default: localhost)", "HOST"},
+	{"sql-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Port for SQL connection (default: auto)", "PORT"},
+	{"sql-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Database name (default: kopano)", "NAME"},
+	{"sql-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Username for SQL connection (default: root)", "USER"},
+	{"src-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Old name and alias for --sql-host", "HOST"},
+	{"src-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Old name and alias for --sql-port", "PORT"},
+	{"src-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Old name and alias for --sql-db", "NAME"},
+	{"src-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Old name and alias for --sql-user", "USER"},
 	{"src-attach", 0, HXTYPE_STRING, &g_atxdir, nullptr, nullptr, 0, "Attachment directory", "DIR"},
-	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Lookup source mailbox by GUID", "GUID"},
-	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Lookup source mailbox by MRO", "NAME"},
+	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Old name and alias for --mbox-guid", "GUID"},
+	{"src-mbox", 0, HXTYPE_STRING, &g_srcmro, nullptr, nullptr, 0, "Old name and alias for --mbox-mro", "NAME"},
 	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "OBJID"},
+	{"user-map", 0, HXTYPE_STRING, &g_user_map_file, nullptr, nullptr, 0, "User resolution map", "FILE"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
-	{"with-acl", 0, HXTYPE_VAL, &g_with_acl, nullptr, nullptr, 1, "Enable partial conversion of ACLs (beta)"},
 	{"without-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 0, "Do skip folders with PR_ATTR_HIDDEN [default: dependent upon -s]"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -477,11 +514,49 @@ static void do_print(unsigned int depth, kdb_item &item)
 	     kp_item_type_to_str(item.m_mapitype));
 }
 
-static std::unique_ptr<driver>
-kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
+int driver::open_by_guid_1(const char *guid)
 {
+	auto drv = this;
 	if (hex2bin(guid).size() != 16)
 		throw YError("PK-1011: invalid GUID passed");
+
+	/* user_id available from n61 */
+	auto qstr = fmt::format("SELECT hierarchy_id, user_id, type FROM stores WHERE guid=0x{}", guid);
+	auto res = drv->query(qstr.c_str());
+	auto row = res.fetch_row();
+	if (row == nullptr || row[0] == nullptr || row[1] == nullptr)
+		throw YError("PK-1014: no store by that GUID");
+	drv->m_user_id = strtoul(row[1], nullptr, 0);
+	drv->m_store_hid = strtoul(row[0], nullptr, 0);
+	drv->m_public_store = row[2] != nullptr && strtoul(row[2], nullptr, 0) == 1;
+	return 0;
+}
+
+static int setup_charset(MYSQL *m)
+{
+	auto ret = mysql_set_character_set(m, "utf8mb4");
+	if (ret == 0)
+		return 0;
+	ret = mysql_set_character_set(m, "utf8");
+	if (ret == 0)
+		return 0;
+	/* Restore previous error state. */
+	return mysql_set_character_set(m, "utf8mb4");
+}
+
+static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
+{
+	auto drv = std::make_unique<driver>();
+	drv->m_conn = mysql_init(nullptr);
+	if (drv->m_conn == nullptr)
+		throw std::bad_alloc();
+	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
+	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
+		throw YError("PK-1018: mysql_connect %s@%s: %s",
+		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
+	if (setup_charset(drv->m_conn) != 0)
+		throw YError("PK-1021: charset utf8mb4/utf8mb3 not available: %s",
+		      mysql_error(drv->m_conn));
 
 	auto qstr = fmt::format("SELECT value FROM settings WHERE name='server_guid'");
 	DB_RESULT res = drv->query(qstr.c_str());
@@ -520,55 +595,33 @@ kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 		throw YError("PK-1004: Database schema kdb-%u is not supported.\n", drv->schema_vers);
 	fprintf(stderr, "Database schema is kdb-%u\n", drv->schema_vers);
 
-	/* user_id available from n61 */
-	qstr = fmt::format("SELECT hierarchy_id, user_id, type FROM stores WHERE guid=0x{}", guid);
-	res = drv->query(qstr.c_str());
-	row = res.fetch_row();
-	if (row == nullptr || row[0] == nullptr || row[1] == nullptr)
-		throw YError("PK-1014: no store by that GUID");
-	drv->m_user_id = strtoul(row[1], nullptr, 0);
-	drv->m_store_hid = strtoul(row[0], nullptr, 0);
-	drv->m_public_store = row[2] != nullptr && strtoul(row[2], nullptr, 0) == 1;
-	return std::move(drv);
+	return drv;
 }
 
-static int setup_charset(MYSQL *m)
+int driver::open_by_guid(const char *guid)
 {
-	auto ret = mysql_set_character_set(m, "utf8mb4");
-	if (ret == 0)
-		return 0;
-	ret = mysql_set_character_set(m, "utf8");
-	if (ret == 0)
-		return 0;
-	/* Restore previous error state. */
-	return mysql_set_character_set(m, "utf8mb4");
-}
-
-static std::unique_ptr<driver>
-kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
-{
-	auto drv = std::make_unique<driver>();
-	drv->m_conn = mysql_init(nullptr);
-	if (drv->m_conn == nullptr)
-		throw std::bad_alloc();
-	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
-	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
-		throw YError("PK-1018: mysql_connect %s@%s: %s",
-		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
-	if (setup_charset(drv->m_conn) != 0)
-		throw YError("PK-1021: charset utf8mb4/utf8mb3 not available: %s",
-		      mysql_error(drv->m_conn));
 	fmt::print(stderr, "Store GUID: {}\n", guid);
-	return kdb_open_by_guid_1(std::move(drv), guid);
+	return open_by_guid_1(guid);
 }
 
-static void present_stores(const char *storeuser, DB_RESULT &res)
+static void bdash(size_t count)
+{
+	char buf[81];
+	if (count > 79)
+		count = 79;
+	memset(buf, '=', count);
+	buf[count++] = '\n';
+	buf[count] = '\0';
+	fputs(buf, stderr);
+}
+
+static void present_mro_stores(const char *storeuser, DB_RESULT &res)
 {
 	DB_ROW row;
 	if (*storeuser != '\0')
 		fmt::print(stderr, "The search for \"{}\" has turned up multiple candidate stores:\n\n", storeuser);
 	fprintf(stderr, "GUID                              user_id   size  most_recent_owner\n");
-	fprintf(stderr, "====================================================================\n");
+	bdash(68);
 	while ((row = res.fetch_row()) != nullptr) {
 		auto colen = res.row_lengths();
 		char mbsize[32]{};
@@ -577,40 +630,45 @@ static void present_stores(const char *storeuser, DB_RESULT &res)
 		fprintf(stderr, "%s  %7lu  %5s  %s\n", bin2hex(row[0], colen[0]).c_str(),
 		        strtoul(row[1], nullptr, 0), mbsize, znul(row[2]));
 	}
-	fprintf(stderr, "============================================================\n");
+	bdash(68);
 }
 
-static std::unique_ptr<driver>
-kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
+static void present_user_stores(const char *storeuser)
 {
-	auto drv = std::make_unique<driver>();
-	drv->m_conn = mysql_init(nullptr);
-	if (drv->m_conn == nullptr)
-		throw std::bad_alloc();
-	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
-	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
-		throw YError("PK-1019: mysql_connect %s@%s: %s",
-		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
-	if (setup_charset(drv->m_conn) != 0)
-		throw YError("PK-1020: charset utf8mb4/utf8mb3 not available: %s",
-		      mysql_error(drv->m_conn));
+	if (*storeuser != '\0')
+		fmt::print(stderr, "The search for \"{}\" has turned up multiple candidate stores:\n\n", storeuser);
+	fmt::print(stderr, "Server/Store                          Username\n");
+	bdash(79);
+	std::string last_srv;
+	for (const auto &e : g_username_to_storeguid) {
+		auto slash = e.first.find_first_of('/');
+		if (slash == e.first.npos) {
+			fmt::print(stderr, "Malformed user-map entry: {}\n", e.first);
+			continue;
+		}
+		std::string_view srv(e.first.c_str(), slash);
+		if (last_srv != srv) {
+			fmt::print(stderr, "{}\n", srv);
+			last_srv = srv;
+		}
+		fmt::print(stderr, "    {:<32}  {}\n", e.second, &e.first[slash+1]);
+	}
+	bdash(79);
+}
 
+int driver::open_by_mro(const char *storeuser)
+{
+	auto drv = this;
 	std::string qstr = "SELECT s.guid, s.user_id, s.user_name, s.type, "
 	                   "p.val_longint FROM stores AS s "
 	                   "LEFT JOIN properties AS p "
 	                   "ON s.hierarchy_id=p.hierarchyid AND p.tag=0xE08";
-	if (*storeuser != '\0') {
-		fmt::print(stderr, "PK-1008: Warning: The search by MRO name "
-			"(--src-mbox) is only a heuristic and not guaranteed "
-			"to produce the correct result, "
-			"lest it would require the full original user database, "
-			"a requirement this tool does not want to impose.\n");
+	if (*storeuser != '\0')
 		qstr += " WHERE s.user_name='" +
 		        sql_escape(drv->m_conn, storeuser) + "'";
-	}
 	auto res = drv->query(qstr.c_str());
 	if (*storeuser == '\0' || mysql_num_rows(res.get()) > 1) {
-		present_stores(storeuser, res);
+		present_mro_stores(storeuser, res);
 		throw YError("PK-1013: \"%s\" was ambiguous.\n", storeuser);
 	}
 	auto row = res.fetch_row();
@@ -619,7 +677,20 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 	auto rowlen = res.row_lengths();
 	auto guid = bin2hex(row[0], rowlen[0]);
 	fmt::print(stderr, "Store GUID for MRO \"{}\": {}\n", storeuser, guid);
-	return kdb_open_by_guid_1(std::move(drv), guid.c_str());
+	return open_by_guid_1(guid.c_str());
+}
+
+int driver::open_by_user(const char *storeuser)
+{
+	if (*storeuser == '\0') {
+		present_user_stores(storeuser);
+		throw YError("PK-1013: \"%s\" was ambiguous.\n", storeuser);
+	}
+	auto it = g_username_to_storeguid.find(server_guid + "/" + storeuser);
+	if (it == g_username_to_storeguid.end())
+		throw YError("PK-1022: no store for that user");
+	fmt::print(stderr, "Store GUID for user \"{}\": {}\n", storeuser, it->second);
+	return open_by_guid_1(it->second.c_str());
 }
 
 driver::~driver()
@@ -857,7 +928,7 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 	/* Gromox ACL tables are only specified for folders at this time. */
 	if (yi->m_mapitype != MAPI_FOLDER)
 		return yi;
-	if (!g_with_acl)
+	if (g_acl_conv == aclconv::noextract)
 		return yi;
 	/*
 	 * ECSecurity.cpp ECSecurity::GetObjectPermission never evaluates type=1
@@ -870,8 +941,8 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 		uint32_t rights = strtoul(row[1], nullptr, 0);
 		rights &= ~(frightsGromoxSendAs | frightsGromoxStoreOwner);
 		auto synthid = std::to_string(ben_id) + "@" + drv.server_guid + ".kopano.invalid";
-		auto it = g_acl_map.find(synthid);
-		if (it != g_acl_map.end())
+		auto it = g_kuid_to_email.find(synthid);
+		if (it != g_kuid_to_email.end())
 			synthid = it->second;
 		auto ret = yi->m_acl.emplace(std::move(synthid), rights);
 		if (ret == ENOMEM)
@@ -961,13 +1032,13 @@ static gi_name_map do_namemap(driver &drv)
 
 static void gi_dump_acl(unsigned int depth, const ace_list &acl)
 {
-	if (g_show_props)
-		tree(depth);
 	for (const auto &pd : acl) {
 		auto id = znul(pd.propvals.get<char>(PR_SMTP_ADDRESS));
 		auto ri = pd.propvals.get<uint32_t>(PR_MEMBER_RIGHTS);
 		if (id == nullptr || ri == nullptr)
 			continue;
+		if (g_show_props)
+			tree(depth);
 		tlog("ACE: %s: %xh\n", id, static_cast<unsigned int>(*ri));
 	}
 }
@@ -1308,45 +1379,47 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 	return 0;
 }
 
-static int aclmap_read(const char *file, std::unordered_map<std::string, std::string> &map)
+static int usermap_read(const char *file, LR_map &ku, LR_map &na)
 {
-	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
-	if (fp == nullptr) {
-		fprintf(stderr, "Could not open %s: %s\n", file, strerror(errno));
+	size_t slurp_len = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(file, &slurp_len));
+	if (slurp_data == nullptr) {
+		fprintf(stderr, "Could not read %s: %s\n", file, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	hxmc_t *line = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
-	unsigned int lnum = 0;
-	while (HX_getl(&line, fp.get()) != nullptr) {
-		++lnum;
-		HX_chomp(line);
-		char *b = line;
-		if (*b == '\0' || *b == '#')
-			continue;
-		while (*b != '\0' && !HX_isspace(*b))
-			++b;
-		*b++ = '\0';
-		if (*line == '\0') {
-			fprintf(stderr, "%s: ignoring incomplete line %u\n", file, lnum);
-			continue;
-		}
-		while (HX_isspace(*b))
-			++b;
-		if (*b == '\0') {
-			fprintf(stderr, "%s: ignoring incomplete line %u\n", file, lnum);
-			continue;
-		}
-		map.emplace(line, b);
+	Json::Value jval;
+	if (!json_from_str({slurp_data.get(), slurp_len}, jval) ||
+	    !jval.isArray()) {
+		fprintf(stderr, "%s: parse error\n", file);
+		return EXIT_FAILURE;
 	}
-	fprintf(stderr, "%s: read %zu entries\n", file, map.size());
+	for (unsigned int i = 0; i < jval.size(); ++i) {
+		auto &row = jval[i];
+		if (row["id"].isNull() || row["sv"].isNull())
+			continue;
+		auto srv_guid = row["sv"].asString();
+		HX_strlower(srv_guid.data());
+		if (g_acl_conv == aclconv::convert && !row["to"].isNull() &&
+		    strchr(row["to"].asCString(), '@') != nullptr)
+			ku.emplace(row["id"].asString() + "@" + srv_guid + ".kopano.invalid",
+				row["to"].asString());
+		if (!row["na"].isNull() && !row["st"].isNull()) {
+			auto store_guid = row["st"].asString();
+			HX_strlower(store_guid.data());
+			auto p = std::move(srv_guid) + "/" + row["na"].asString();
+			na.emplace(std::move(p), std::move(store_guid));
+		}
+	}
+	if (g_acl_conv == aclconv::convert)
+		fprintf(stderr, "usermap %s: %zu x kuid -> (new) emailaddr\n", file, ku.size());
+	fprintf(stderr, "usermap %s: %zu x name -> storeguid\n", file, na.size());
 	return 0;
 }
 
 static void terse_help()
 {
-	fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kdb2mt --src-host kdb.lan "
-	        "--src-attach /tmp/at --src-guid 0123456789ABCDEFFEDCBA9876543210 jdoe\n");
+	fprintf(stderr, "Usage: SQLPASS=sqlpass gromox-kdb2mt --sql-host kdb.lan "
+	        "--src-attach /tmp/at --mbox-guid 0123456789ABCDEFFEDCBA9876543210 jdoe\n");
 	fprintf(stderr, "Option overview: gromox-kdb2mt -?\n");
 	fprintf(stderr, "Documentation: man gromox-kdb2mt\n");
 }
@@ -1356,10 +1429,40 @@ int main(int argc, const char **argv)
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
+	if (g_acl_map_file != nullptr) {
+		fprintf(stderr, "The --acl-map option is no longer valid.\n");
+		fprintf(stderr, "Use --user-map from now on; this is a new file format. See manpage for details.\n");
+		return EXIT_FAILURE;
+	}
+	if (g_acl_conv == aclconv::convert && g_user_map_file == nullptr) {
+		fprintf(stderr, "--acl=convert requires --user-map\n");
+		exit(EXIT_FAILURE);
+	} else if (g_acl_conv == aclconv::automatic) {
+		if (g_user_map_file == nullptr) {
+			g_acl_conv = aclconv::noextract;
+			fprintf(stderr, "No ACLs will be extracted\n");
+		} else {
+			g_acl_conv = aclconv::convert;
+			fprintf(stderr, "ACLs will be extracted and converted\n");
+		}
+	}
+	if (g_user_map_file != nullptr) {
+		int ret = usermap_read(g_user_map_file, g_kuid_to_email,
+		          g_username_to_storeguid);
+		if (ret != EXIT_SUCCESS)
+			return ret;
+	}
 	if (g_with_hidden < 0)
 		g_with_hidden = !g_splice;
-	if ((g_srcguid != nullptr) == (g_srcmbox != nullptr)) {
-		fprintf(stderr, "Exactly one of --src-guid or --src-mbox must be specified.\n");
+	if (g_srcmbox != nullptr && g_user_map_file == nullptr) {
+		fprintf(stderr, "--mbox-name requires --user-map\n");
+		return EXIT_FAILURE;
+	}
+	if ((g_srcguid != nullptr) + (g_srcmbox != nullptr) +
+	    (g_srcmro != nullptr) > 1) {
+		fprintf(stderr, "Exactly one of --mbox-guid, --mbox-name or --mbox-mro must be specified.\n");
 		terse_help();
 		return EXIT_FAILURE;
 	} else if (g_atxdir == nullptr) {
@@ -1373,13 +1476,6 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if (iconv_validate() != 0)
-		return EXIT_FAILURE;
-	if (g_acl_map_file != nullptr) {
-		int ret = aclmap_read(g_acl_map_file, g_acl_map);
-		if (ret != EXIT_SUCCESS)
-			return ret;
-	}
 	int ret = EXIT_SUCCESS;
 	sql_login_param sqp;
 	if (g_sqlhost != nullptr)
@@ -1388,17 +1484,25 @@ int main(int argc, const char **argv)
 		sqp.port = strtoul(g_sqlport, nullptr, 0);
 	sqp.dbname = g_sqldb != nullptr ? g_sqldb : "kopano";
 	sqp.user = g_sqluser != nullptr ? g_sqluser : "root";
-	auto s = getenv("SRCPASS");
-	if (s != nullptr)
+	auto s = getenv("SQLPASS");
+	if (s != nullptr) {
 		sqp.pass = s;
+	} else {
+		s = getenv("SRCPASS");
+		if (s != nullptr)
+			sqp.pass = s;
+	}
 
 	try {
-		std::unique_ptr<driver> drv;
+		auto drv = make_driver(sqp);
+		int ret = 0;
 		if (g_srcguid != nullptr)
-			drv = kdb_open_by_guid(g_srcguid, sqp);
+			ret = drv->open_by_guid(g_srcguid);
+		else if (g_srcmro != nullptr)
+			ret = drv->open_by_mro(g_srcmro);
 		else if (g_srcmbox != nullptr)
-			drv = kdb_open_by_user(g_srcmbox, sqp);
-		if (drv == nullptr) {
+			ret = drv->open_by_user(g_srcmbox);
+		if (ret != 0) {
 			fprintf(stderr, "Problem?!\n");
 			return EXIT_FAILURE;
 		}

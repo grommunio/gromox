@@ -1,10 +1,11 @@
-# -*- perl -*-
+#!/usr/bin/perl
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2022 grommunio GmbH
 # This file is part of Gromox.
 
 use strict;
 use warnings;
+use JSON::PP;
 
 sub loginname_format
 {
@@ -59,6 +60,9 @@ sub main
 	# so it's useless to even try other servers
 	$servers = ["default:"];
 
+	my $json = JSON::PP->new();
+	$json->utf8()->canonical();
+	print "[\n";
 	foreach my $srv_name (sort @$servers) {
 		#my $url = "https://$srv_name:237/";
 		my $url = "default:";
@@ -74,28 +78,20 @@ sub main
 				next;
 			}
 			my @out = `kopano-admin -h "$url" --details "$user"`;
-			my($objid, $email);
+			my %object = ("sv" => $srv_guid, "na" => $user);
 			foreach my $line (@out) {
 				if ($line =~ m{^Object id:\s+(\d+)}) {
-					$objid = $1;
+					$object{"id"} = $1;
 				} elsif ($line =~ m{^Emailaddress:\s+(\S+)}) {
-					$email = $1;
+					$object{"em"} = $object{"to"} = $1;
+				} elsif ($line =~ m{^Store GUID:\s+(\S+)}) {
+					$object{"st"} = lc($1);
 				}
 			}
-			if (!defined($objid)) {
-				print "# \@$srv_guid.kopano.invalid\t".
-				      "<user $user not present>\n";
-				next;
-			} elsif (!defined($email)) {
-				print "# $objid\@$srv_guid.kopano.invalid\t".
-				      "<user $user without email addr>\n";
-				next;
-			}
-			chomp($objid);
-			chomp($email);
-			print "$objid\@$srv_guid.kopano.invalid\t$email\n";
+			print $json->encode(\%object), "\n";
 		}
 	}
+	print "{}]\n";
 }
 
 exit(&main());
