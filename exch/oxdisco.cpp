@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
+#include <cerrno>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -240,7 +241,24 @@ static enum adv_setting parse_adv(const char *s)
  */
 void OxdiscoPlugin::loadConfig()
 {
-	auto c = config_file_initd("autodiscover.cfg", get_config_path(), autodiscover_cfg_defaults);
+	auto c = config_file_initd("autodiscover.ini", get_config_path(), nullptr);
+	if (c != nullptr) {
+		auto s = c->get_value("organization");
+		if (s != nullptr)
+			x500_org_name = s;
+		s = c->get_value("advertise_mh");
+		if (s != nullptr)
+			m_advertise_mh = parse_adv(s);
+		s = c->get_value("advertise_rpch");
+		if (s != nullptr)
+			m_advertise_rpch = parse_adv(s);
+	}
+	/* If there is no autodiscover.cfg, we have an old system and are done. */
+	c = config_file_initd("autodiscover.cfg", get_config_path(), nullptr);
+	if (c == nullptr || *c->file_name == '\0')
+		return;
+	/* If there is autodiscover.cfg, ignore autodiscover.ini */
+	c = config_file_initd("autodiscover.cfg", get_config_path(), autodiscover_cfg_defaults);
 	x500_org_name = c->get_value("x500_org_name");
 	RedirectAddr = c->get_value("RedirectAddr");
 	RedirectUrl = c->get_value("RedirectUrl");
