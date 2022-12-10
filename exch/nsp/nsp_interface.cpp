@@ -2621,7 +2621,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				*pprows = nullptr;
 				return ecServerOOM;
 			}
-			result = nsp_interface_fetch_row(pnode, TRUE,
+			result = nsp_interface_fetch_row(pnode, false,
 			         pstat->codepage, pproptags, prow);
 			if (result != ecSuccess) {
 				*ppmids = nullptr;
@@ -2687,7 +2687,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				*pprows = nullptr;
 				return ecServerOOM;
 			}
-			result = nsp_interface_fetch_row(pnode2, TRUE,
+			result = nsp_interface_fetch_row(pnode2, false,
 			         pstat->codepage, pproptags, prow);
 			if (result != ecSuccess) {
 				*ppmids = nullptr;
