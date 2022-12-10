@@ -1484,7 +1484,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 			if (ret < 0)
 				return false;
 			void *pvalue;
-			if (ret == 65001 || *pcpid == 65001) {
+			if (ret == CP_UTF8 || *pcpid == CP_UTF8) {
 				pvalue = plainbuf.data();
 			} else {
 				pvalue = common_util_convert_copy(TRUE, *pcpid, plainbuf.c_str());

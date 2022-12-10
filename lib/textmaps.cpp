@@ -206,8 +206,9 @@ errno_t cpl_get_string(uint32_t codepage, const char *tag, char *value, size_t l
 bool verify_cpid(uint32_t id)
 {
 	return g_cpid2name_map.find(id) != g_cpid2name_map.cend() &&
-	       id != 1200 && id != 1201 && id != 12000 && id != 12001 &&
-	       id != 65000 && id != 65001;
+	       id != CP_UTF16 && id != CP_UTF16BE &&
+	       id != CP_UTF32 && id != CP_UTF32BE &&
+	       id != CP_UTF7 && id != CP_UTF8;
 }
 
 const char *cpid_to_cset(uint32_t id)

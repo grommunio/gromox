@@ -1587,7 +1587,7 @@ int html_to_plain(const void *inbuf, size_t len, std::string &outbuf)
 {
 	auto ret = feed_w3m(inbuf, len, outbuf);
 	if (ret >= 0)
-		return 65001;
+		return CP_UTF8;
 	ret = html_to_plain_boring(inbuf, len, outbuf);
 	if (ret <= 0)
 		return ret;
@@ -1596,7 +1596,7 @@ int html_to_plain(const void *inbuf, size_t len, std::string &outbuf)
 
 /*
  * Always outputs UTF-8. The caller must ensure that this is conveyed properly
- * (e.g. via PR_INTERNET_CPID=65001).
+ * (e.g. via PR_INTERNET_CPID=65001 [CP_UTF8]).
  */
 char *plain_to_html(const char *rbuf)
 {

@@ -3589,7 +3589,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			auto phtml_bin = pmsg->proplist.get<const BINARY>(PR_HTML);
 			if (NULL != phtml_bin) {
 				auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-				tmp_int32 = num == nullptr ? 65001 : *num;
+				tmp_int32 = num == nullptr ? CP_UTF8 : *num;
 				char *rtfout = nullptr;
 				if (html_to_rtf(phtml_bin->pv, phtml_bin->cb, tmp_int32,
 				    &rtfout, &content_len)) {
@@ -3607,14 +3607,14 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		auto phtml_bin = pmsg->proplist.get<const BINARY>(PR_HTML);
 		if (NULL != phtml_bin) {
 			auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-			tmp_int32 = num == nullptr ? 65001 : *num;
+			tmp_int32 = num == nullptr ? CP_UTF8 : *num;
 			std::string plainbuf;
 			auto ret = html_to_plain(phtml_bin->pc, phtml_bin->cb, plainbuf);
 			if (ret < 0) {
 				message_content_free(pmsg);
 				return NULL;
 			}
-			if (ret == 65001) {
+			if (ret == CP_UTF8) {
 				if (pmsg->proplist.set(PR_BODY_W, plainbuf.data()) != 0) {
 					message_content_free(pmsg);
 					return nullptr;
@@ -3651,7 +3651,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			}
 			phtml_bin->cb = strlen(phtml_bin->pc);
 			pmsg->proplist.set(PR_HTML, phtml_bin);
-			tmp_int32 = 65001;
+			tmp_int32 = CP_UTF8;
 			pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32);
 		}
 	}

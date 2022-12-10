@@ -677,7 +677,8 @@ bool cu_validate_msgclass(const char *k)
 
 bool cpid_cstr_compatible(uint32_t cpid)
 {
-	if (cpid == 1200 || cpid == 1201 || cpid == 12000 || cpid == 12001) {
+	if (cpid == CP_UTF16 || cpid == CP_UTF16BE ||
+	    cpid == CP_UTF32 || cpid == CP_UTF32BE) {
 		mlog(LV_ERR, "E-2103: CString conversion routine called with cpid %u", cpid);
 		return false;
 	}
