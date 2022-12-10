@@ -148,7 +148,7 @@ int main(int argc, const char **argv) try
 
 	MESSAGE_CONTENT *ctnt = nullptr;
 	auto msg_id = strtoull(argv[1], nullptr, 0);
-	if (!exmdb_client_remote::read_message(g_storedir, nullptr, 65001,
+	if (!exmdb_client_remote::read_message(g_storedir, nullptr, CP_UTF8,
 	    rop_util_make_eid_ex(1, msg_id), &ctnt)) {
 		fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
 		return EXIT_FAILURE;

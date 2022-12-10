@@ -700,7 +700,7 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		return ret;
 	}
 	gxerr_t e_result = GXERR_SUCCESS;
-	if (!exmdb_client::write_message(g_storedir, g_dstuser.c_str(), 65001,
+	if (!exmdb_client::write_message(g_storedir, g_dstuser.c_str(), CP_UTF8,
 	    parent_fld, ctnt, &e_result)) {
 		fprintf(stderr, "exm: write_message RPC failed\n");
 		return -EIO;

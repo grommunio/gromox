@@ -55,6 +55,15 @@ enum {
 	NP_STRBUF_SIZE = 36 + 11 + NP_NAMEBUF_SIZE, /* "GUID=<>,NAME=<>" */
 };
 
+enum {
+	CP_UTF16 = 1200,
+	CP_UTF16BE = 1201,
+	CP_UTF32 = 12000,
+	CP_UTF32BE = 12001,
+	CP_UTF7 = 65000,
+	CP_UTF8 = 65001,
+};
+
 extern GX_EXPORT unsigned int gxerr_to_hresult(gxerr_t);
 extern GX_EXPORT const char *mapi_strerror(unsigned int);
 

@@ -58,7 +58,7 @@ int main(int argc, const char **argv)
 	 * Always do hard deletion, because the message really needs to go away.
 	 * Other tools/programs might pick it up otherwise.
 	 */
-	if (!exmdb_client_remote::delete_messages(g_storedir, g_user_id, 65001,
+	if (!exmdb_client_remote::delete_messages(g_storedir, g_user_id, CP_UTF8,
 	    nullptr, rop_util_make_eid_ex(1, g_folderid), &ea, true, &partial)) {
 		printf("RPC was rejected.\n");
 		return EXIT_FAILURE;
