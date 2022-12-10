@@ -2573,7 +2573,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-2030: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
-		imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
+		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* %d EXPUNGE\r\n", pitem->id - del_num);
 		if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
@@ -3206,7 +3206,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-2086: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
-		imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
+		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* %d EXPUNGE\r\n", pitem->id - del_num);
 		if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
@@ -3309,7 +3309,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 				mlog(LV_WARN, "W-2087: remove %s: %s",
 				        eml_path.c_str(), strerror(errno));
-			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
+			imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
 			b_deleted = TRUE;
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1457: ENOMEM");
