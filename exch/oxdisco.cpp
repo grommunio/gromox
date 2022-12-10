@@ -136,6 +136,7 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 //		/* emit("All requests must be POST"); */
 //		return false;
 	char uri[1024];
+	req->f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	size_t len = req->f_request_uri.read(uri, arsizeof(uri) - 1);
 	if (len == MEM_END_OF_FILE)
 		return false;
