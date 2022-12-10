@@ -572,8 +572,7 @@ static int setup_charset(MYSQL *m)
 	return mysql_set_character_set(m, "utf8mb4");
 }
 
-static std::unique_ptr<driver>
-kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
+static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
 {
 	auto drv = std::make_unique<driver>();
 	drv->m_conn = mysql_init(nullptr);
@@ -586,6 +585,13 @@ kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
 	if (setup_charset(drv->m_conn) != 0)
 		throw YError("PK-1021: charset utf8mb4/utf8mb3 not available: %s",
 		      mysql_error(drv->m_conn));
+	return drv;
+}
+
+static std::unique_ptr<driver>
+kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
+{
+	auto drv = make_driver(sqp);
 	fmt::print(stderr, "Store GUID: {}\n", guid);
 	return kdb_open_by_guid_1(std::move(drv), guid);
 }
@@ -611,18 +617,7 @@ static void present_stores(const char *storeuser, DB_RESULT &res)
 static std::unique_ptr<driver>
 kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 {
-	auto drv = std::make_unique<driver>();
-	drv->m_conn = mysql_init(nullptr);
-	if (drv->m_conn == nullptr)
-		throw std::bad_alloc();
-	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
-	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
-		throw YError("PK-1019: mysql_connect %s@%s: %s",
-		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
-	if (setup_charset(drv->m_conn) != 0)
-		throw YError("PK-1020: charset utf8mb4/utf8mb3 not available: %s",
-		      mysql_error(drv->m_conn));
-
+	auto drv = make_driver(sqp);
 	std::string qstr = "SELECT s.guid, s.user_id, s.user_name, s.type, "
 	                   "p.val_longint FROM stores AS s "
 	                   "LEFT JOIN properties AS p "
