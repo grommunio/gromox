@@ -515,6 +515,44 @@ int driver::open_by_guid_1(const char *guid)
 	if (hex2bin(guid).size() != 16)
 		throw YError("PK-1011: invalid GUID passed");
 
+	/* user_id available from n61 */
+	auto qstr = fmt::format("SELECT hierarchy_id, user_id, type FROM stores WHERE guid=0x{}", guid);
+	auto res = drv->query(qstr.c_str());
+	auto row = res.fetch_row();
+	if (row == nullptr || row[0] == nullptr || row[1] == nullptr)
+		throw YError("PK-1014: no store by that GUID");
+	drv->m_user_id = strtoul(row[1], nullptr, 0);
+	drv->m_store_hid = strtoul(row[0], nullptr, 0);
+	drv->m_public_store = row[2] != nullptr && strtoul(row[2], nullptr, 0) == 1;
+	return 0;
+}
+
+static int setup_charset(MYSQL *m)
+{
+	auto ret = mysql_set_character_set(m, "utf8mb4");
+	if (ret == 0)
+		return 0;
+	ret = mysql_set_character_set(m, "utf8");
+	if (ret == 0)
+		return 0;
+	/* Restore previous error state. */
+	return mysql_set_character_set(m, "utf8mb4");
+}
+
+static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
+{
+	auto drv = std::make_unique<driver>();
+	drv->m_conn = mysql_init(nullptr);
+	if (drv->m_conn == nullptr)
+		throw std::bad_alloc();
+	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
+	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
+		throw YError("PK-1018: mysql_connect %s@%s: %s",
+		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
+	if (setup_charset(drv->m_conn) != 0)
+		throw YError("PK-1021: charset utf8mb4/utf8mb3 not available: %s",
+		      mysql_error(drv->m_conn));
+
 	auto qstr = fmt::format("SELECT value FROM settings WHERE name='server_guid'");
 	DB_RESULT res = drv->query(qstr.c_str());
 	if (res == nullptr)
@@ -552,43 +590,6 @@ int driver::open_by_guid_1(const char *guid)
 		throw YError("PK-1004: Database schema kdb-%u is not supported.\n", drv->schema_vers);
 	fprintf(stderr, "Database schema is kdb-%u\n", drv->schema_vers);
 
-	/* user_id available from n61 */
-	qstr = fmt::format("SELECT hierarchy_id, user_id, type FROM stores WHERE guid=0x{}", guid);
-	res = drv->query(qstr.c_str());
-	row = res.fetch_row();
-	if (row == nullptr || row[0] == nullptr || row[1] == nullptr)
-		throw YError("PK-1014: no store by that GUID");
-	drv->m_user_id = strtoul(row[1], nullptr, 0);
-	drv->m_store_hid = strtoul(row[0], nullptr, 0);
-	drv->m_public_store = row[2] != nullptr && strtoul(row[2], nullptr, 0) == 1;
-	return 0;
-}
-
-static int setup_charset(MYSQL *m)
-{
-	auto ret = mysql_set_character_set(m, "utf8mb4");
-	if (ret == 0)
-		return 0;
-	ret = mysql_set_character_set(m, "utf8");
-	if (ret == 0)
-		return 0;
-	/* Restore previous error state. */
-	return mysql_set_character_set(m, "utf8mb4");
-}
-
-static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
-{
-	auto drv = std::make_unique<driver>();
-	drv->m_conn = mysql_init(nullptr);
-	if (drv->m_conn == nullptr)
-		throw std::bad_alloc();
-	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
-	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
-		throw YError("PK-1018: mysql_connect %s@%s: %s",
-		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
-	if (setup_charset(drv->m_conn) != 0)
-		throw YError("PK-1021: charset utf8mb4/utf8mb3 not available: %s",
-		      mysql_error(drv->m_conn));
 	return drv;
 }
 
