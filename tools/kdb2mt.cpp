@@ -961,13 +961,13 @@ static gi_name_map do_namemap(driver &drv)
 
 static void gi_dump_acl(unsigned int depth, const ace_list &acl)
 {
-	if (g_show_props)
-		tree(depth);
 	for (const auto &pd : acl) {
 		auto id = znul(pd.propvals.get<char>(PR_SMTP_ADDRESS));
 		auto ri = pd.propvals.get<uint32_t>(PR_MEMBER_RIGHTS);
 		if (id == nullptr || ri == nullptr)
 			continue;
+		if (g_show_props)
+			tree(depth);
 		tlog("ACE: %s: %xh\n", id, static_cast<unsigned int>(*ri));
 	}
 }
