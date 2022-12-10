@@ -50,9 +50,10 @@ static std::unique_ptr<tinyxml2::XMLPrinter>
 oxd_make_request(const char *email, const char *dn)
 {
 	tinyxml2::XMLDocument doc;
-	doc.NewDeclaration();
+	auto decl = doc.NewDeclaration();
+	doc.InsertEndChild(decl);
 	auto root = doc.NewElement("Autodiscover");
-	doc.InsertFirstChild(root);
+	doc.InsertEndChild(root);
 	root->SetAttribute("xmlns", "http://schemas.microsoft.com/exchange/autodiscover/outlook/requestschema/2006");
 	auto req = adc(root, "Request");
 	if (email != nullptr)
