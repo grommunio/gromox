@@ -1338,7 +1338,6 @@ static inline const char *tag_or_bug(const char *s)
 static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	size_t temp_len;
-	char reason[256];
 	char temp_password[256];
 	
 	pcontext->proto_stat = PROTO_STAT_NOAUTH;
@@ -1352,10 +1351,11 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 			"denied by user filter", pcontext->username);
 		return 1901 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
     }
+	sql_meta_result mres;
 	if (system_services_auth_login(pcontext->username, temp_password,
-	    pcontext->maildir, arsizeof(pcontext->maildir), pcontext->lang,
-	    arsizeof(pcontext->lang), reason, arsizeof(reason),
-	    USER_PRIVILEGE_IMAP)) {
+	    USER_PRIVILEGE_IMAP, mres)) {
+		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
+		gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
 		safe_memset(temp_password, 0, std::size(temp_password));
 		if (*pcontext->maildir == '\0')
 			return 1902 | DISPATCH_TAG;
@@ -1372,7 +1372,8 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		return DISPATCH_CONTINUE;
 	}
 	safe_memset(temp_password, 0, std::size(temp_password));
-	imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s", reason);
+	imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s",
+		mres.errstr.c_str());
 	pcontext->auth_times ++;
 	if (pcontext->auth_times >= g_max_auth_times) {
 		if (system_services_add_user_into_temp_list != nullptr)
@@ -1391,7 +1392,6 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *ctx)
 
 int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	char reason[256];
 	char temp_password[256];
     
 	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
@@ -1411,10 +1411,12 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
     }
 	strcpy(temp_password, argv[3]);
 	HX_strltrim(temp_password);
+
+	sql_meta_result mres;
 	if (system_services_auth_login(pcontext->username, temp_password,
-	    pcontext->maildir, arsizeof(pcontext->maildir), pcontext->lang,
-	    arsizeof(pcontext->lang), reason, arsizeof(reason),
-	    USER_PRIVILEGE_IMAP)) {
+	    USER_PRIVILEGE_IMAP, mres)) {
+		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
+		gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
 		if (*pcontext->maildir == '\0')
 			return 1902;
 		if (*pcontext->lang == '\0')
@@ -1423,7 +1425,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
 		return 1705;
 	}
-	imap_parser_log_info(pcontext, LV_WARN, "LOGIN failed: %s", reason);
+	imap_parser_log_info(pcontext, LV_WARN, "LOGIN failed: %s", mres.errstr.c_str());
 	pcontext->auth_times++;
 	if (pcontext->auth_times >= g_max_auth_times) {
 		if (system_services_add_user_into_temp_list != nullptr)

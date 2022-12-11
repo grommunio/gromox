@@ -41,4 +41,4 @@ struct sql_meta_result {
 	uint8_t have_xid = 0xFF;
 };
 
-using authmgr_login_t = bool (*)(const char *username, const char *password, char *maildir, size_t msize, char *lang, size_t lsize, char *reason, size_t rsnrsize, unsigned int privbits);
+using authmgr_login_t = bool (*)(const char *username, const char *password, unsigned int wantprivs, sql_meta_result &);

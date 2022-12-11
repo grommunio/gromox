@@ -26,15 +26,10 @@ static decltype(ldap_adaptor_login3) *fptr_ldap_login;
 static unsigned int am_choice = A_EXTERNID;
 
 static bool login_gen(const char *username, const char *password,
-    char *maildir, size_t msize, char *lang, size_t lsize, char *reason,
-    size_t length, unsigned int wantpriv) try
+    unsigned int wantpriv, sql_meta_result &mres) try
 {
-	sql_meta_result mres;
 	bool auth = false;
 	auto err = fptr_mysql_meta(username, wantpriv, mres);
-	gx_strlcpy(maildir, mres.maildir.c_str(), msize);
-	gx_strlcpy(lang, mres.lang.c_str(), lsize);
-	gx_strlcpy(reason, mres.errstr.c_str(), length);
 	if (err != 0 || mres.have_xid == 0xFF)
 		sleep(1);
 	else if (am_choice == A_DENY_ALL)
@@ -47,7 +42,7 @@ static bool login_gen(const char *username, const char *password,
 		auth = fptr_mysql_login(username, password,
 		       mres.enc_passwd, mres.errstr);
 	auth = auth && err == 0;
-	if (!auth && *reason == '\0')
+	if (!auth && mres.errstr.empty())
 		mres.errstr = "Authentication rejected";
 	safe_memset(mres.enc_passwd.data(), 0, mres.enc_passwd.size());
 	return auth;

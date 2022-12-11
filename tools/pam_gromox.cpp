@@ -129,10 +129,8 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	             "system", typeid(decltype(*fptr_login))));
 	if (fptr_login == nullptr)
 		return PAM_AUTH_ERR;
-	char maildir[256], lang[256], reason[256];
-	ret = fptr_login(username, authtok.get(), maildir, arsizeof(maildir),
-	      lang, arsizeof(lang), reason,
-	      sizeof(reason), wantpriv) ? PAM_SUCCESS : PAM_AUTH_ERR;
+	sql_meta_result mres;
+	ret = fptr_login(username, authtok.get(), wantpriv, mres) ? PAM_SUCCESS : PAM_AUTH_ERR;
 	service_release("auth_login_gen", "system");
 	return ret;
 }

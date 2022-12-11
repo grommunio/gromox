@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
 // This file is part of Gromox.
+#include <cassert>
 #include <climits>
 #include <csignal>
 #include <cstdint>
@@ -651,19 +652,17 @@ ec_error_t zs_logon(const char *username,
 	int user_id;
 	int domain_id;
 	char lang[32];
-	char reason[256];
 	char homedir[256];
-	char maildir[256];
 	char tmp_name[UADDR_SIZE];
 	
 	auto pdomain = strchr(username, '@');
 	if (pdomain == nullptr)
 		return ecUnknownUser;
 	pdomain ++;
-	if (!system_services_auth_login(username, znul(password), maildir,
-	    sizeof(maildir), lang, sizeof(lang), reason, sizeof(reason),
-	    USER_PRIVILEGE_EXCH)) {
-		mlog(LV_ERR, "Auth rejected for \"%s\": %s", username, reason);
+	sql_meta_result mres;
+	if (!system_services_auth_login(username, znul(password),
+	    USER_PRIVILEGE_EXCH, mres)) {
+		mlog(LV_ERR, "Auth rejected for \"%s\": %s", username, mres.errstr.c_str());
 		return ecLoginFailure;
 	}
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
@@ -686,10 +685,7 @@ ec_error_t zs_logon(const char *username,
 	    !system_services_get_homedir(pdomain, homedir, arsizeof(homedir)) ||
 	    !system_services_get_domain_ids(pdomain, &domain_id, &org_id))
 		return ecError;
-	if (password == nullptr &&
-	    (!system_services_get_maildir(username, maildir, arsizeof(maildir)) ||
-	    !system_services_get_user_lang(username, lang, arsizeof(lang))))
-		return ecError;
+	assert(!mres.maildir.empty());
 
 	USER_INFO tmp_info;
 	tmp_info.hsession = GUID::random_new();
@@ -700,8 +696,8 @@ ec_error_t zs_logon(const char *username,
 	try {
 		tmp_info.username = username;
 		HX_strlower(tmp_info.username.data());
-		tmp_info.lang = lang;
-		tmp_info.maildir = maildir;
+		tmp_info.lang = mres.lang;
+		tmp_info.maildir = mres.maildir;
 		tmp_info.homedir = homedir;
 	} catch (const std::bad_alloc &) {
 		return ecServerOOM;
@@ -711,7 +707,7 @@ ec_error_t zs_logon(const char *username,
 	tmp_info.flags = flags;
 	time(&tmp_info.last_time);
 	tmp_info.reload_time = tmp_info.last_time;
-	tmp_info.ptree = object_tree_create(maildir);
+	tmp_info.ptree = object_tree_create(tmp_info.maildir.c_str());
 	if (tmp_info.ptree == nullptr)
 		return ecError;
 	tl_hold.lock();

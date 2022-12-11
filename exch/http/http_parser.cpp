@@ -669,12 +669,14 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		return X_LOOP;
 	}
 
-	char reason[256];
+	sql_meta_result mres;
 	if (system_services_auth_login(pcontext->username, pcontext->password,
-	    pcontext->maildir, arsizeof(pcontext->maildir), pcontext->lang,
-	    arsizeof(pcontext->lang), reason, arsizeof(reason),
-	    USER_PRIVILEGE_EXCH)) {
+	    USER_PRIVILEGE_EXCH, mres)) {
+		/* Success */
+		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
+		gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
 		if ('\0' == pcontext->maildir[0]) {
+			/* But... */
 			char dstring[128], response_buff[1024];
 			rfc1123_dstring(dstring, arsizeof(dstring));
 			auto response_len = gx_snprintf(
@@ -691,7 +693,8 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 			pcontext->bytes_rw = 0;
 			pcontext->b_close = TRUE;
 			pcontext->sched_stat = SCHED_STAT_WRREP;
-			pcontext->log(LV_ERR, "maildir for \"%s\" absent: %s", pcontext->username, reason);
+			pcontext->log(LV_ERR, "maildir for \"%s\" absent: %s",
+				pcontext->username, mres.errstr.c_str());
 			return X_LOOP;
 		}
 
@@ -705,7 +708,8 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	}
 
 	pcontext->b_authed = FALSE;
-	pcontext->log(LV_ERR, "login failed: \"%s\": %s", pcontext->username, reason);
+	pcontext->log(LV_ERR, "login failed: \"%s\": %s",
+		pcontext->username, mres.errstr.c_str());
 	pcontext->auth_times ++;
 	if (system_services_add_user_into_temp_list != nullptr &&
 	    pcontext->auth_times >= g_max_auth_times)

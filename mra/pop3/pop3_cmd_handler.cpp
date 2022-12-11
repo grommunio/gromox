@@ -108,7 +108,6 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-	char reason[256];
 	char temp_password[256];
     
 	if (line_length <= 5 || line_length > 255 + 1 + 4) {
@@ -125,13 +124,13 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		return 1705;
 	}
 	
+	sql_meta_result mres;
     memcpy(temp_password, cmd_line + 5, line_length - 5);
     temp_password[line_length - 5] = '\0';
 	HX_strltrim(temp_password);
 	if (system_services_auth_login(pcontext->username, temp_password,
-	    pcontext->maildir, arsizeof(pcontext->maildir), nullptr, 0,
-	    reason, arsizeof(reason),
-	    USER_PRIVILEGE_POP3)) {
+	    USER_PRIVILEGE_POP3, mres)) {
+		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 		pcontext->msg_array.clear();
 		pcontext->total_size = 0;
 		
@@ -169,7 +168,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		pop3_parser_log_info(pcontext, LV_DEBUG, "login success");
 		return 1700;
 	} else {
-		pop3_parser_log_info(pcontext, LV_WARN, "login failed: %s", reason);
+		pop3_parser_log_info(pcontext, LV_WARN, "login failed: %s", mres.errstr.c_str());
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= g_max_auth_times) {
 			if (system_services_add_user_into_temp_list != nullptr)
