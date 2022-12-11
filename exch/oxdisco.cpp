@@ -58,6 +58,8 @@ class OxdiscoPlugin {
 	int resp_pub(tinyxml2::XMLElement *, const char *);
 	int resp_web(tinyxml2::XMLElement *, const char *);
 	int resp_eas(tinyxml2::XMLElement *, const char *);
+	void resp_mh(XMLElement *, const char *dom, const std::string &ews, const std::string &oab, const std::string &ecp, const std::string &depl);
+	void resp_rpch(XMLElement *, const char *dom, const std::string &ews, const std::string &oab, const std::string &ecp, const std::string &depl);
 	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	const char *gtx(tinyxml2::XMLElement &, const char *);
@@ -428,8 +430,15 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 	auto ews_url = fmt::format(ews_base_url, domain, exchange_asmx);
 	auto OABUrl = fmt::format(oab_base_url, domain);
 	auto EcpUrl = fmt::format(ews_base_url, domain, "");
+	resp_mh(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
+	resp_rpch(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
+	return 0;
+}
 
-	[this](XMLElement *resp_acc, const char *domain, const std::string &ews_url, const std::string &OABUrl, const std::string &EcpUrl, const std::string &deploymentid) {
+void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
+    const std::string &ews_url, const std::string &OABUrl,
+    const std::string &EcpUrl, const std::string &deploymentid)
+{
 	auto resp_prt = add_child(resp_acc, "Protocol");
 	add_child(resp_prt, "OOFUrl", ews_url);
 	add_child(resp_prt, "OABUrl", OABUrl);
@@ -463,11 +472,12 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 	auto resp_prt_abk = add_child(resp_prt, "AddressBook");
 	add_child(resp_prt_abk, "InternalUrl", abk_url);
 	add_child(resp_prt_abk, "ExternalUrl", abk_url);
+}
 
-	}(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
-
-	/* Protocol EXCH */
-	[this](XMLElement *resp_acc, const char *domain, const std::string &ews_url, const std::string &OABUrl, const std::string &EcpUrl, const std::string &deploymentid) {
+void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *domain,
+    const std::string &ews_url, const std::string &OABUrl,
+    const std::string &EcpUrl, const std::string &deploymentid)
+{
 	auto resp_prt = add_child(resp_acc, "Protocol");
 	add_child(resp_prt, "OOFUrl", ews_url);
 	add_child(resp_prt, "OABUrl", OABUrl);
@@ -509,8 +519,6 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 
 	resp_prt = add_child(resp_acc, "PublicFolderInformation");
 	add_child(resp_prt, "SmtpAddress", "public.folder.root@"s + domain);
-	}(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
-	return 0;
 }
 
 /**
