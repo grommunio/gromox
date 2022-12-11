@@ -278,13 +278,11 @@ void OxdiscoPlugin::writeheader(int ctx_id, int code, size_t content_length)
  */
 BOOL OxdiscoPlugin::die(int ctx_id, const char *error_code, const char *error_msg)
 {
-	time_t rawtime;
-	struct tm *timeinfo;
+	struct tm timebuf;
 	char error_time[13];
-
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	strftime(error_time, 13, "%T", timeinfo);
+	auto rawtime = time(nullptr);
+	auto timeinfo = localtime_r(&rawtime, &timebuf);
+	strftime(error_time, std::size(error_time), "%T", timeinfo);
 
 	auto data = fmt::format(error_templ, error_time, server_id, error_code, error_msg);
 	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s\n", data.size(), data.c_str());
@@ -572,13 +570,12 @@ const char* OxdiscoPlugin::get_redirect_addr(const char *email)
 
 BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn, size_t dnmax)
 {
-	char *pdomain;
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
 
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
-	pdomain = strchr(tmp_name, '@');
+	auto pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;
 	}
