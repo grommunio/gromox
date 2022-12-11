@@ -655,16 +655,17 @@ ec_error_t zs_logon(const char *username,
 	char homedir[256];
 	char tmp_name[UADDR_SIZE];
 	
-	auto pdomain = strchr(username, '@');
-	if (pdomain == nullptr)
-		return ecUnknownUser;
-	pdomain ++;
 	sql_meta_result mres;
 	if (!system_services_auth_login(username, znul(password),
 	    USER_PRIVILEGE_EXCH, mres)) {
 		mlog(LV_ERR, "Auth rejected for \"%s\": %s", username, mres.errstr.c_str());
 		return ecLoginFailure;
 	}
+	username = mres.username.c_str();
+	auto pdomain = strchr(username, '@');
+	if (pdomain == nullptr)
+		return ecUnknownUser;
+	pdomain ++;
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	HX_strlower(tmp_name);
 	std::unique_lock tl_hold(g_table_lock);

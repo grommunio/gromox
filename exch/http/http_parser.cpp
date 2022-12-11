@@ -673,6 +673,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	if (system_services_auth_login(pcontext->username, pcontext->password,
 	    USER_PRIVILEGE_EXCH, mres)) {
 		/* Success */
+		gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 		gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
 		if ('\0' == pcontext->maildir[0]) {

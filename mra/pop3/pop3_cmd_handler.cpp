@@ -130,6 +130,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	HX_strltrim(temp_password);
 	if (system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_POP3, mres)) {
+		gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 		pcontext->msg_array.clear();
 		pcontext->total_size = 0;

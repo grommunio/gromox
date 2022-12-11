@@ -1354,6 +1354,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 	sql_meta_result mres;
 	if (system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_IMAP, mres)) {
+		gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 		gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
 		safe_memset(temp_password, 0, std::size(temp_password));
@@ -1415,6 +1416,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	sql_meta_result mres;
 	if (system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_IMAP, mres)) {
+		gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 		gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
 		if (*pcontext->maildir == '\0')

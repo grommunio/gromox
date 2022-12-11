@@ -24,6 +24,7 @@ enum {
 
 /**
  * Outputs from mysql_adaptor_meta
+ * @username:	Primary, e-mail-address-based username
  * @maildir:	Mailbox location
  * @lang:	Preferred language for mailbox
  * @enc_passwd:	Encrypted password right from the SQL column,
@@ -34,7 +35,7 @@ enum {
  * 		(0=no / 1=yes / 0xFF=indeterminate)
  */
 struct sql_meta_result {
-	std::string maildir, lang, enc_passwd, errstr;
+	std::string username, maildir, lang, enc_passwd, errstr;
 	std::string ldap_uri, ldap_binddn, ldap_bindpw, ldap_basedn;
 	std::string ldap_mail_attr;
 	bool ldap_start_tls = false;

@@ -36,5 +36,6 @@ E(set_timezone)
 E(set_user_lang)
 E(setpasswd)
 E(scndstore_hints)
+E(meta)
 #undef E
 extern int (*system_services_add_timer)(const char *, int);
