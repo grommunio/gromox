@@ -1,3 +1,29 @@
+Development 1.36.23
+===================
+
+Enhancements:
+
+* kdb2mt: full user resolution with new option --mbox-name
+
+Fixes:
+
+* kdb2mt: repair printing of tree graphics when ACL lists are dumped with -t -p
+
+Changes:
+
+* kdb2mt: rename SQL parameter options
+* kdb2mt: rename mailbox selection options
+* kdb-uidextract: new output format
+* kdb2mt: add new --acl option for fine-grained control over ACL extraction
+* nsp: avoid generating ephemeral entryids from ResolveNamesW
+  (Selecting addresses from the "From" dropdown in OL's
+  compose mail dialog works now)
+* zcore: reduce threads_num to below rpc_proxy_connection_num
+  (Addresses "exmdb_client: reached maximum connections ...")
+* emsmdb: stop syncing named props on folders to OL
+  (it does not support them anyway)
+
+
 Gromox 1.36 (2022-12-09)
 ========================
 
