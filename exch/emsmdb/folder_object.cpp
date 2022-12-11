@@ -46,9 +46,10 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
-	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-		sizeof(uint32_t)*tmp_proptags.count);
-	pproptags->count = tmp_proptags.count;
+	auto eop = std::copy_if(&tmp_proptags.pproptag[0],
+	           &tmp_proptags.pproptag[tmp_proptags.count],
+	           pproptags->pproptag, [](uint32_t x) { return x < 0x80000000; });
+	pproptags->count = eop - pproptags->pproptag;
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
 	pproptags->pproptag[pproptags->count++] = PR_RIGHTS;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
