@@ -55,9 +55,9 @@ class OxdiscoPlugin {
 	void writeheader(int, int, size_t);
 	BOOL die(int, const char *, const char *);
 	BOOL resp(int, const char *, const char *);
-	void resp_pub(tinyxml2::XMLElement *, const char *);
-	void resp_web(tinyxml2::XMLElement *, const char *);
-	void resp_eas(tinyxml2::XMLElement *, const char *);
+	int resp_pub(tinyxml2::XMLElement *, const char *);
+	int resp_web(tinyxml2::XMLElement *, const char *);
+	int resp_eas(tinyxml2::XMLElement *, const char *);
 	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	const char *gtx(tinyxml2::XMLElement &, const char *);
@@ -347,15 +347,18 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *email, const char *ars)
 
 	auto resproot = respdoc.NewElement("Autodiscover");
 	resproot->SetAttribute("xmlns", response_xmlns);
+	int ret;
 
 	if (strcasecmp(ars, response_outlook_xmlns) == 0)
-		resp_web(resproot, email);
+		ret = resp_web(resproot, email);
 	else if (strcasecmp(ars, response_mobile_xmlns) == 0)
-		resp_eas(resproot, email);
+		ret = resp_eas(resproot, email);
 	else {
 		respdoc.Clear();
 		return die(ctx_id, provider_unavailable_code, provider_unavailable_msg);
 	}
+	if (ret < 0)
+		return die(ctx_id, "503", "Internal Server Error");
 
 	int code = 200;
 	respdoc.InsertEndChild(resproot);
@@ -376,7 +379,7 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *email, const char *ars)
  * @param      el
  * @param      email
  */
-void OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
+int OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 {
 	auto resp = add_child(el, "Response");
 	resp->SetAttribute("xmlns", response_outlook_xmlns);
@@ -385,23 +388,23 @@ void OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 		auto resp_acc = add_child(resp, "Account");
 		add_child(resp_acc, "Action", "redirectUrl");
 		add_child(resp_acc, "RedirectUrl", RedirectUrl.c_str());
-		return;
+		return 0;
 	}
 	else if (!RedirectAddr.empty()) {
 		auto resp_acc = add_child(resp, "Account");
 		add_child(resp_acc, "Action", "redirectAddr");
 		add_child(resp_acc, "RedirectAddr", get_redirect_addr(email));
-		return;
+		return 0;
 	}
 	auto resp_user = add_child(resp, "User");
 	add_child(resp_user, "AutoDiscoverSMTPAddress", email); // TODO get the primary email address
 
 	auto buf = std::make_unique<char[]>(4096);
 	if (!mysql.get_user_displayname(email, buf.get(), 4096))
-		return; // TODO error handling
+		return -1;
 	add_child(resp_user, "DisplayName", buf.get());
 	if (!username_to_essdn(email, buf.get(), 4096))
-		return; // TODO error handling
+		return -1;
 	add_child(resp_user, "LegacyDN", buf.get());
 	add_child(resp_user, "EMailAddress", email);
 
@@ -502,6 +505,7 @@ void OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 
 	resp_prt = add_child(resp_acc, "PublicFolderInformation");
 	add_child(resp_prt, "SmtpAddress", "public.folder.root@"s + domain);
+	return 0;
 }
 
 /**
@@ -510,14 +514,16 @@ void OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
  * @param el
  * @param email
  */
-void OxdiscoPlugin::resp_pub(XMLElement *el, const char *email)
+int OxdiscoPlugin::resp_pub(XMLElement *el, const char *email)
 {
 	auto domain = strchr(email, '@');
 	if (domain == nullptr) {
 		mlog(LV_DEBUG, "no domain in OXD request\n");
+		return -1;
 	}
 	else {
 		mlog(LV_DEBUG, "[oxdisco] pub domain: %s\n", ++domain);
+		return 0;
 	}
 }
 
@@ -527,7 +533,7 @@ void OxdiscoPlugin::resp_pub(XMLElement *el, const char *email)
  * @param      el              Response XMLElement
  * @param      email           Email address for autodiscover
  */
-void OxdiscoPlugin::resp_eas(XMLElement *el, const char *email)
+int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email)
 {
 	auto resp = add_child(el, "Response");
 	resp->SetAttribute("xmlns", response_mobile_xmlns);
@@ -537,7 +543,7 @@ void OxdiscoPlugin::resp_eas(XMLElement *el, const char *email)
 	auto resp_user = add_child(resp, "User");
 	auto buf = std::make_unique<char[]>(4096);
 	if (!mysql.get_user_displayname(email, buf.get(), 4096))
-		return; // TODO error handling
+		return -1;
 	add_child(resp_user, "DisplayName", buf.get());
 	add_child(resp_user, "EMailAddress", email);
 
@@ -558,6 +564,7 @@ void OxdiscoPlugin::resp_eas(XMLElement *el, const char *email)
 		add_child(resp_ser, "Url", url);
 		add_child(resp_ser, "Name", url);
 	}
+	return 0;
 }
 
 const char* OxdiscoPlugin::get_redirect_addr(const char *email)
