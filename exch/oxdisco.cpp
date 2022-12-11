@@ -25,6 +25,10 @@ using namespace tinyxml2;
 
 namespace {
 
+enum class adv_setting {
+	no, yes, not_old_mso, new_mso_only,
+};
+
 class OxdiscoPlugin {
 	public:
 	OxdiscoPlugin();
@@ -50,13 +54,14 @@ class OxdiscoPlugin {
 	int request_logging = 0; // 0 = none, 1 = request data
 	int response_logging = 0; // 0 = none, 1 = response data
 	int pretty_response = 0; // 0 = compact output, 1 = pretty printed response
+	adv_setting m_advertise_rpch = adv_setting::yes, m_advertise_mh = adv_setting::yes;
 
 	void loadConfig();
 	void writeheader(int, int, size_t);
 	BOOL die(int, const char *, const char *);
 	BOOL resp(int, const char *, const char *);
 	int resp_pub(tinyxml2::XMLElement *, const char *);
-	int resp_web(tinyxml2::XMLElement *, const char *);
+	int resp_web(tinyxml2::XMLElement *, const char *, const char *ua);
 	int resp_eas(tinyxml2::XMLElement *, const char *);
 	void resp_mh(XMLElement *, const char *dom, const std::string &ews, const std::string &oab, const std::string &ecp, const std::string &depl);
 	void resp_rpch(XMLElement *, const char *dom, const std::string &ews, const std::string &oab, const std::string &ecp, const std::string &depl);
@@ -65,6 +70,7 @@ class OxdiscoPlugin {
 	const char *gtx(tinyxml2::XMLElement &, const char *);
 	const char *get_redirect_addr(const char *);
 	BOOL username_to_essdn(const char *username, char *dn, size_t);
+	bool advertise_prot(enum adv_setting, const char *ua) const;
 };
 
 }
@@ -343,6 +349,15 @@ XMLElement *OxdiscoPlugin::add_child(XMLElement *el, const char *tag,
  */
 BOOL OxdiscoPlugin::resp(int ctx_id, const char *email, const char *ars)
 {
+	auto req = get_request(ctx_id);
+	char user_agent[64];
+	req->f_user_agent.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	size_t len = req->f_user_agent.read(user_agent, std::size(user_agent) - 1);
+	if (len == MEM_END_OF_FILE)
+		*user_agent = '\0';
+	else
+		user_agent[len] = '\0';
+
 	respdoc.Clear();
 	auto decl = respdoc.NewDeclaration();
 	respdoc.InsertEndChild(decl);
@@ -352,7 +367,7 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *email, const char *ars)
 	int ret;
 
 	if (strcasecmp(ars, response_outlook_xmlns) == 0)
-		ret = resp_web(resproot, email);
+		ret = resp_web(resproot, email, user_agent);
 	else if (strcasecmp(ars, response_mobile_xmlns) == 0)
 		ret = resp_eas(resproot, email);
 	else {
@@ -375,13 +390,30 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *email, const char *ars)
 	return write_response(ctx_id, response, strlen(response));
 }
 
+bool OxdiscoPlugin::advertise_prot(enum adv_setting adv, const char *ua) const
+{
+	switch (adv) {
+	case adv_setting::no:
+		return false;
+	case adv_setting::not_old_mso:
+		return strncasecmp(ua, "Microsoft Office/", 17) != 0 ||
+		       strtoul(&ua[17], nullptr, 10) >= 16;
+	case adv_setting::new_mso_only:
+		return strncasecmp(ua, "Microsoft Office/", 17) == 0 &&
+		       strtoul(&ua[17], nullptr, 10) >= 16;
+	default:
+		return true;
+	}
+}
+
 /**
  * @brief      Create response for outlook schema
  *
  * @param      el
  * @param      email
  */
-int OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
+int OxdiscoPlugin::resp_web(XMLElement *el, const char *email,
+    const char *user_agent)
 {
 	auto resp = add_child(el, "Response");
 	resp->SetAttribute("xmlns", response_outlook_xmlns);
@@ -424,14 +456,15 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 	add_child(resp_acc, "MicrosoftOnline", "False");
 	add_child(resp_acc, "ConsumerMailbox", "False");
 
-	/* Protocol EXHTTP */
 	auto domain = strchr(email, '@');
 	++domain;
 	auto ews_url = fmt::format(ews_base_url, domain, exchange_asmx);
 	auto OABUrl = fmt::format(oab_base_url, domain);
 	auto EcpUrl = fmt::format(ews_base_url, domain, "");
-	resp_mh(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
-	resp_rpch(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
+	if (advertise_prot(m_advertise_mh, user_agent))
+		resp_mh(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
+	if (advertise_prot(m_advertise_rpch, user_agent))
+		resp_rpch(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
 	return 0;
 }
 
