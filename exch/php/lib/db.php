@@ -170,12 +170,12 @@ function get_secondary_store_hints($email_address)
 {
 	$db_conn = get_db_connection();
 
-	$sql_string = "SELECT up.propval_str, u2.primary_email
+	$sql_string = "SELECT up.propval_str, u2.username
 		FROM users AS u1
 		LEFT JOIN secondary_store_hints AS ssh ON u1.id = ssh.primary
 		LEFT JOIN users AS u2 ON ssh.secondary = u2.id
 		LEFT JOIN user_properties AS up ON u2.id = up.user_id
-		WHERE proptag = 0x3001001F AND u1.primary_email = '". $db_conn->real_escape_string($email_address) ."';";
+		WHERE proptag = 0x3001001F AND u1.username = '". $db_conn->real_escape_string($email_address) ."';";
 
 	$results = $db_conn->query($sql_string);
 	if (!$results) {
