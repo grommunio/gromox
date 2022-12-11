@@ -22,4 +22,23 @@ enum {
 	USER_PRIVILEGE_ARCHIVE = 1U << 7,
 };
 
+/**
+ * Outputs from mysql_adaptor_meta
+ * @maildir:	Mailbox location
+ * @lang:	Preferred language for mailbox
+ * @enc_passwd:	Encrypted password right from the SQL column,
+ * 		used by authmgr to perform authentication.
+ * @errstr:	Error message, if any. This is for the system log only,
+ * 		it must not be sent to any peer.
+ * @have_xid:	Whether an externid is set
+ * 		(0=no / 1=yes / 0xFF=indeterminate)
+ */
+struct sql_meta_result {
+	std::string maildir, lang, enc_passwd, errstr;
+	std::string ldap_uri, ldap_binddn, ldap_bindpw, ldap_basedn;
+	std::string ldap_mail_attr;
+	bool ldap_start_tls = false;
+	uint8_t have_xid = 0xFF;
+};
+
 using authmgr_login_t = bool (*)(const char *username, const char *password, char *maildir, size_t msize, char *lang, size_t lsize, char *reason, size_t rsnrsize, unsigned int privbits);

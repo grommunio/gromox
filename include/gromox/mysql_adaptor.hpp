@@ -89,25 +89,6 @@ struct sql_class {
 	std::string name;
 };
 
-/**
- * Outputs from mysql_adaptor_meta
- * @maildir:	Mailbox location
- * @lang:	Preferred language for mailbox
- * @enc_passwd:	Encrypted password right from the SQL column,
- * 		used by authmgr to perform authentication.
- * @errstr:	Error message, if any. This is for the system log only,
- * 		it must not be sent to any peer.
- * @have_xid:	Whether an externid is set
- * 		(0=no / 1=yes / 0xFF=indeterminate)
- */
-struct sql_meta_result {
-	std::string maildir, lang, enc_passwd, errstr;
-	std::string ldap_uri, ldap_binddn, ldap_bindpw, ldap_basedn;
-	std::string ldap_mail_attr;
-	bool ldap_start_tls = false;
-	uint8_t have_xid = 0xFF;
-};
-
 extern void mysql_adaptor_init(mysql_adaptor_init_param &&);
 extern int mysql_adaptor_run();
 extern void mysql_adaptor_stop();
