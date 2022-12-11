@@ -215,11 +215,24 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 static constexpr cfg_directive autodiscover_cfg_defaults[] = {
 	{"RedirectAddr", ""},
 	{"RedirectUrl", ""},
+	{"oxdisco_advertise_mh", "yes"},
+	{"oxdisco_advertise_rpch", "yes"},
 	{"pretty_response", "0", CFG_BOOL},
 	{"request_logging", "0", CFG_BOOL},
 	{"response_logging", "0", CFG_BOOL},
 	{"x500_org_name", "Gromox default"},
 };
+
+static enum adv_setting parse_adv(const char *s)
+{
+	if (strcasecmp(s, "no") == 0 || strcmp(s, "0") == 0)
+		return adv_setting::no;
+	else if (strcasecmp(s, "not_old_mso") == 0)
+		return adv_setting::not_old_mso;
+	else if (strcasecmp(s, "new_mso_only") == 0)
+		return adv_setting::new_mso_only;
+	return adv_setting::yes;
+}
 
 /**
  * @brief      Loads configuration file
@@ -234,6 +247,8 @@ void OxdiscoPlugin::loadConfig()
 	request_logging = c->get_ll("request_logging");
 	response_logging = c->get_ll("response_logging");
 	pretty_response = c->get_ll("pretty_response");
+	m_advertise_mh = parse_adv(c->get_value("oxdisco_advertise_mh"));
+	m_advertise_rpch = parse_adv(c->get_value("oxdisco_advertise_rpch"));
 }
 
 /**
