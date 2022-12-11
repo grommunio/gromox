@@ -123,11 +123,6 @@ Default: (unspecified)
 \fBzarafa_mime_number\fP
 Default: \fI4096\fP
 .TP
-\fBzarafa_threads_num\fP
-The minimum number of client processing threads to keep around.
-.br
-Default: \fI100\fP
-.TP
 \fBzcore_listen\fP
 The named path for the AF_LOCAL socket that zcore will listen on.
 .br
@@ -150,6 +145,11 @@ The maximum number of object handles each session can have at any one time
 mailbox opened.
 .br
 Default: \fI500\fP
+.TP
+\fBzcore_threads_num\fP
+The minimum number of client processing threads to keep around.
+.br
+Default: \fI10\fP
 .TP
 \fBzrpc_debug\fP
 Log every incoming zcore RPC and the return code of the operation in a minimal
