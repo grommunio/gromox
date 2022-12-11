@@ -425,11 +425,13 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 	/* Protocol EXHTTP */
 	auto domain = strchr(email, '@');
 	++domain;
-
-	auto resp_prt = add_child(resp_acc, "Protocol");
 	auto ews_url = fmt::format(ews_base_url, domain, exchange_asmx);
-	add_child(resp_prt, "OOFUrl", ews_url);
 	auto OABUrl = fmt::format(oab_base_url, domain);
+	auto EcpUrl = fmt::format(ews_base_url, domain, "");
+
+	[this](XMLElement *resp_acc, const char *domain, const std::string &ews_url, const std::string &OABUrl, const std::string &EcpUrl, const std::string &deploymentid) {
+	auto resp_prt = add_child(resp_acc, "Protocol");
+	add_child(resp_prt, "OOFUrl", ews_url);
 	add_child(resp_prt, "OABUrl", OABUrl);
 
 	add_child(resp_prt, "Type", "EXHTTP");
@@ -442,7 +444,6 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 	add_child(resp_prt, "EwsUrl", ews_url);
 	add_child(resp_prt, "EmwsUrl", ews_url);
 
-	auto EcpUrl = fmt::format(ews_base_url, domain, "");
 	add_child(resp_prt, "EcpUrl", EcpUrl);
 	add_child(resp_prt, "EcpUrl-photo", "thumbnail.php");
 
@@ -463,8 +464,11 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 	add_child(resp_prt_abk, "InternalUrl", abk_url);
 	add_child(resp_prt_abk, "ExternalUrl", abk_url);
 
+	}(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
+
 	/* Protocol EXCH */
-	resp_prt = add_child(resp_acc, "Protocol");
+	[this](XMLElement *resp_acc, const char *domain, const std::string &ews_url, const std::string &OABUrl, const std::string &EcpUrl, const std::string &deploymentid) {
+	auto resp_prt = add_child(resp_acc, "Protocol");
 	add_child(resp_prt, "OOFUrl", ews_url);
 	add_child(resp_prt, "OABUrl", OABUrl);
 	add_child(resp_prt, "Type", "EXCH");
@@ -505,6 +509,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email)
 
 	resp_prt = add_child(resp_acc, "PublicFolderInformation");
 	add_child(resp_prt, "SmtpAddress", "public.folder.root@"s + domain);
+	}(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
 	return 0;
 }
 
