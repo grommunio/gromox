@@ -546,6 +546,7 @@ static constexpr char tbl_users_top[] =
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
 "  `primary_email` varchar(320) CHARACTER SET ascii,"
+"  `altname` varchar(64),"
 "  `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT '',"
 "  `domain_id` int(10) unsigned NOT NULL,"
 "  `group_id` int(10) unsigned NOT NULL,"
@@ -567,6 +568,7 @@ static constexpr char tbl_users_top[] =
 "  UNIQUE KEY `username` (`username`),"
 "  UNIQUE KEY `domain_id_2` (`domain_id`,`username`),"
 "  UNIQUE KEY `group_id_2` (`group_id`,`username`),"
+"  UNIQUE KEY `altname` (`altname`),"
 "  KEY `group_id` (`group_id`),"
 "  KEY `domain_id` (`domain_id`),"
 "  KEY `maildir` (`maildir`)"
@@ -768,6 +770,8 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	/* 108: Fix up previous 107 (was: "DEFAULT 0") */
 	{108, "ALTER TABLE `servers` CHANGE COLUMN `id` `id` tinyint(5) unsigned NOT NULL AUTO_INCREMENT"},
 	{109, tbl_orgparam_109},
+	{110, "ALTER TABLE `users` ADD COLUMN `altname` varchar(64) AFTER `primary_email`"},
+	{111, "ALTER TABLE `users` ADD CONSTRAINT UNIQUE `altname` (`altname`)"},
 	{0, nullptr},
 };
 
