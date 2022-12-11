@@ -89,11 +89,12 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"x500_org_name", "Gromox default"},
 	{"zarafa_mime_number", "4096", CFG_SIZE, "1024"},
-	{"zarafa_threads_num", "100", CFG_SIZE, "1", "1000"},
+	{"zarafa_threads_num", "zcore_threads_num", CFG_ALIAS},
 	{"zcore_listen", PKGRUNDIR "/zcore.sock"},
 	{"zcore_log_file", "-"},
 	{"zcore_log_level", "4" /* LV_NOTICE */},
 	{"zcore_max_obh_per_session", "500", CFG_SIZE, "100"},
+	{"zcore_threads_num", "10", CFG_SIZE, "1", "1000"},
 	{"zrpc_debug", "0"},
 	CFG_TABLE_END,
 };
@@ -166,7 +167,7 @@ int main(int argc, const char **argv) try
 	msgchg_grouping_init(g_config_file->get_value("data_file_path"));
 	auto cl_0c = make_scope_exit(msgchg_grouping_free);
 	auto cl_4 = make_scope_exit(msgchg_grouping_stop);
-	unsigned int threads_num = pconfig->get_ll("zarafa_threads_num");
+	unsigned int threads_num = pconfig->get_ll("zcore_threads_num");
 	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
 	service_init({g_config_file->get_value("config_file_path"),
