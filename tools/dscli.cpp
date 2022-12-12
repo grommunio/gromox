@@ -26,12 +26,11 @@ using namespace gromox;
 
 static bool g_tty;
 static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
-static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_password, *g_legacydn;
+static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_legacydn;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'h', HXTYPE_STRING, &g_disc_host, nullptr, nullptr, 0, "Host to contact (in absence of -e/-H)"},
 	{nullptr, 'H', HXTYPE_STRING, &g_disc_url, nullptr, nullptr, 0, "Full autodiscover URL to use"},
 	{nullptr, 'e', HXTYPE_STRING, &g_emailaddr, nullptr, nullptr, 0, "E-mail address for user lookup"},
-	{nullptr, 'p', HXTYPE_STRING, &g_password, nullptr, nullptr, 0, "Use the $PASS environment variable for password"},
 	{nullptr, 'x', HXTYPE_STRING, &g_legacydn, nullptr, nullptr, 0, "Legacy DN"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -302,14 +301,13 @@ int main(int argc, const char **argv)
 		free(g_disc_host);
 		free(g_disc_url);
 		free(g_emailaddr);
-		free(g_password);
 		free(g_legacydn);
 	});
 	if (g_disc_url != nullptr && g_disc_host != nullptr) {
 		fprintf(stderr, "Can only use one of -H and -h.\n");
 		return EXIT_FAILURE;
 	}
-	auto password = g_password != nullptr ? g_password : getenv("PASS");
+	auto password = getenv("PASS");
 	if (password == nullptr) {
 		fprintf(stderr, "No password specified. Use the $PASS environment variable.\n");
 		return EXIT_FAILURE;
