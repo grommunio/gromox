@@ -16,8 +16,8 @@ scale-out over multiple hosts.
 
 Gromox is modular and consists of a set of components and programs to provide
 its feature set. This repository includes a number of manual pages, for which a
-rendered version is at
-[docs.grommunio.com](https://docs.grommunio.com/man/gromox.7.html).
+rendered version is at `docs.grommunio.com
+<https://docs.grommunio.com/man/gromox.7.html>`_.
 
 Instructions for compilation are in `doc/install.rst <doc/install.rst>`_.
 
@@ -54,9 +54,9 @@ The source code repository and technical issue tracker can be found at
 Standards and protocols
 =======================
 
-Gromox follows a number of protocols as described by the [Microsoft Exchange
-Server Protocol
-Documents](https://learn.microsoft.com/en-us/openspecs/exchange_server_protocols/ms-oxprotlp) —
+Gromox follows a number of protocols as described by the `Microsoft Exchange
+Server Protocol Documents
+<https://learn.microsoft.com/en-us/openspecs/exchange_server_protocols/ms-oxprotlp>`_ —
 OXCDATA, OXDSCLI, OXCFOLD, OXCFXICS, OXCICAL, OXCMAIL, OXCMAPIHTTP (plus yet
 undocumented encodings), OXCMSG, OXCNOTIF, OXNSPI, OXCPERM, OXCPRPT, OXCROPS,
 OXCRPC, OXCSTOR, OXCTABL, OXMSG, OXOABK, OXOABKT, OXOCAL, OXOCNTC, OXODLGT,
