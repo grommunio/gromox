@@ -214,10 +214,10 @@ int tnef_pull::g_propname(PROPERTY_NAME *r)
 	
 	TRY(pext->g_guid(&r->guid));
 	TRY(pext->g_uint32(&tmp_int));
-	if (0 == tmp_int) {
+	if (tmp_int == MNID_ID) {
 		r->kind = MNID_ID;
 		return pext->g_uint32(&r->lid);
-	} else if (1 == tmp_int) {
+	} else if (tmp_int == MNID_STRING) {
 		r->kind = MNID_STRING;
 		TRY(pext->g_uint32(&tmp_int));
 		uint32_t offset = ext.m_offset + tmp_int;
@@ -1668,8 +1668,7 @@ int tnef_push::p_propname(const PROPERTY_NAME &rr)
 	TRY(pext->p_guid(r->guid));
 	if (r->kind != MNID_ID && r->kind != MNID_STRING)
 		return EXT_ERR_FORMAT;
-	uint32_t tmp_int = r->kind;
-	TRY(pext->p_uint32(tmp_int));
+	TRY(pext->p_uint32(r->kind));
 	if (r->kind == MNID_ID) {
 		return pext->p_uint32(r->lid);
 	} else if (r->kind == MNID_STRING) {
@@ -1677,7 +1676,7 @@ int tnef_push::p_propname(const PROPERTY_NAME &rr)
 		TRY(pext->advance(sizeof(uint32_t)));
 		TRY(pext->p_wstr(r->pname));
 		uint32_t offset1 = ext.m_offset;
-		tmp_int = offset1 - (offset + sizeof(uint32_t));
+		uint32_t tmp_int = offset1 - (offset + sizeof(uint32_t));
 		ext.m_offset = offset;
 		TRY(pext->p_uint32(tmp_int));
 		ext.m_offset = offset1;
