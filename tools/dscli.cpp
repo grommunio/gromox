@@ -26,11 +26,12 @@ using namespace gromox;
 
 static bool g_tty;
 static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
-static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_legacydn;
+static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_legacydn, *g_auth_user;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'h', HXTYPE_STRING, &g_disc_host, nullptr, nullptr, 0, "Host to contact (in absence of -e/-H)"},
 	{nullptr, 'H', HXTYPE_STRING, &g_disc_url, nullptr, nullptr, 0, "Full autodiscover URL to use"},
-	{nullptr, 'e', HXTYPE_STRING, &g_emailaddr, nullptr, nullptr, 0, "E-mail address for user lookup"},
+	{nullptr, 'e', HXTYPE_STRING, &g_emailaddr, nullptr, nullptr, 0, "Perform discovery for this specific store (username/emailaddr)", "USERNAME"},
+	{nullptr, 'u', HXTYPE_STRING, &g_auth_user, nullptr, nullptr, 0, "Use a distinct user for authentication", "USERNAME"},
 	{nullptr, 'x', HXTYPE_STRING, &g_legacydn, nullptr, nullptr, 0, "Legacy DN"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -257,8 +258,8 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 	ret = curl_easy_setopt(ch, CURLOPT_FOLLOWLOCATION, 1L);
 	if (ret != CURLE_OK)
 		return ret;
-	ret = curl_easy_setopt(ch, CURLOPT_USERNAME, g_emailaddr != nullptr ?
-	      g_emailaddr : g_legacydn);
+	ret = curl_easy_setopt(ch, CURLOPT_USERNAME, g_auth_user != nullptr ?
+	      g_auth_user : g_emailaddr != nullptr ? g_emailaddr : g_legacydn);
 	if (ret != CURLE_OK)
 		return ret;
 	ret = curl_easy_setopt(ch, CURLOPT_PASSWORD, password);
