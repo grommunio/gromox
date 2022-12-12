@@ -665,6 +665,8 @@ enum {
 	// PR_YPOS = PROP_TAG(PT_LONG, 0x3F06), /* PidTagYCoordinate */
 	// PR_CONTROL_ID = PROP_TAG(PT_BINARY, 0x3F07), /* PidTagControlId */
 	// PR_INITIAL_DETAILS_PANE = PROP_TAG(PT_LONG, 0x3F08), /* PidTagInitialDetailsPane */
+	// PR_PREVIEW_UNREAD = PROP_TAG(PT_UNICODE, 0x3FD8),
+	PR_PREVIEW = PROP_TAG(PT_UNICODE, 0x3FD9),
 	PR_INTERNET_CPID = PROP_TAG(PT_LONG, 0x3FDE), /* PidTagInternetCodepage */
 	PR_AUTO_RESPONSE_SUPPRESS = PROP_TAG(PT_LONG, 0x3FDF), /* PidTagAutoResponseSuppress */
 	PR_ACL_DATA = PROP_TAG(PT_BINARY, 0x3FE0), /* PidTagAccessControlListData */
