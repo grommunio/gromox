@@ -80,9 +80,11 @@ bool MAIL::retrieve(char *in_buff, size_t length)
 		return false;
 	}
 	pmail->tree.set_root(&pmime->node);
-	if (pmime->mime_type != mime_type::multiple ||
-	    mail_retrieve_to_mime(pmail, pmime, pmime->first_boundary +
-	    pmime->boundary_len + 4, pmime->last_boundary))
+	if (pmime->mime_type != mime_type::multiple)
+		return true;
+	auto fss = &pmime->first_boundary[pmime->boundary_len+2];
+	auto nl_len = newline_size(fss, pmime->last_boundary - fss);
+	if (mail_retrieve_to_mime(pmail, pmime, &fss[nl_len], pmime->last_boundary))
 		return true;
 
 	pmail->clear();
@@ -126,6 +128,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		    pmime_parent->boundary_len) != 0)
 			continue;
 		if (ptr[pmime_parent->boundary_len+2] != '\r' &&
+		    ptr[pmime_parent->boundary_len+2] != '\n' &&
 		    ptr[pmime_parent->boundary_len+2] != '-')
 			continue;
 		pmime = pmail->pmime_pool->get_mime();
@@ -151,16 +154,20 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 				&pmime->node, SIMPLE_TREE_INSERT_AFTER);
 		}
 		pmime_last = pmime;
-		if (pmime->mime_type == mime_type::multiple &&
-		    !mail_retrieve_to_mime(pmail, pmime,
-		    pmime->first_boundary + pmime->boundary_len + 4,
-		    pmime->last_boundary))
-			return false;
+		if (pmime->mime_type == mime_type::multiple) {
+			auto fss = pmime->first_boundary == nullptr ? nullptr : &pmime->first_boundary[pmime->boundary_len+2];
+			auto nl_len = fss == nullptr ? 0 : newline_size(fss, pmime->last_boundary - fss);
+			if (!mail_retrieve_to_mime(pmail, pmime,
+			    &fss[nl_len], pmime->last_boundary))
+				return false;
+		}
 		if ('-' == ptr[2 + pmime_parent->boundary_len] &&
 		    '-' == ptr[3 + pmime_parent->boundary_len]) {
 			return true;
 		}
-		ptr += pmime_parent->boundary_len + 4;
+		ptr += pmime_parent->boundary_len + 2;
+		auto nl_len = newline_size(ptr, 2);
+		ptr += nl_len;
 		ptr_last = ptr;
 	}
 	for (ptr=ptr_last; ptr<ptr_end; ptr++) {
@@ -194,11 +201,13 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		pmail->tree.insert_sibling(&pmime_last->node,
 			&pmime->node, SIMPLE_TREE_INSERT_AFTER);
 	}
-	if (pmime->mime_type == mime_type::multiple &&
-	    !mail_retrieve_to_mime(pmail, pmime,
-	    pmime->first_boundary + pmime->boundary_len + 4,
-	    pmime->last_boundary))
-		return false;
+	if (pmime->mime_type == mime_type::multiple) {
+		auto fss = &pmime->first_boundary[pmime->boundary_len+2];
+		auto nl_len = newline_size(fss, pmime->last_boundary - fss);
+		if (!mail_retrieve_to_mime(pmail, pmime,
+		    &fss[nl_len], pmime->last_boundary))
+			return false;
+	}
 	return true;
 }
 
