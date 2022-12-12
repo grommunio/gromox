@@ -524,9 +524,6 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		tmp_int32 = static_cast<uint32_t>(dtypx);
 		if (pproplist->set(PR_DISPLAY_TYPE, &tmp_int32) != 0)
 			return FALSE;
-		tmp_int32 = recipSendable;
-		if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != 0)
-			return FALSE;
 	}
 	tmp_byte = 1;
 	if (pproplist->set(PR_RESPONSIBILITY, &tmp_byte) != 0)
