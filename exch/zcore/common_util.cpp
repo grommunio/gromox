@@ -2181,7 +2181,8 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	    message_id, PidTagMidString, &pvalue) && pvalue != nullptr) try {
 		auto eml_path = pstore->get_dir() + "/eml/"s +
 		                static_cast<const char *>(pvalue);
-		return common_util_load_file(eml_path.c_str(), peml_bin);
+		if (common_util_load_file(eml_path.c_str(), peml_bin))
+			return TRUE;
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1495: ENOMEM");
 		return false;
