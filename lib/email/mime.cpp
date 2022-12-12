@@ -2525,12 +2525,12 @@ static bool mime_parse_multiple(MIME *pmime)
 	begin = pmime->content_begin;
 	end = begin + pmime->content_length - boundary_len;
 	for (ptr=begin; ptr < end; ptr++) {
-		if (ptr[0] == '-' && ptr[1] == '-' &&
-			0 == strncmp(pmime->boundary_string, ptr + 2,boundary_len)
-			&& '\r' == ptr[2 + boundary_len] && 
-			'\n' == ptr[3 + boundary_len]) {
+		if (ptr[0] != '-' || ptr[1] != '-' ||
+		    strncmp(pmime->boundary_string, ptr + 2, boundary_len) != 0)
+			continue;
+		auto nl_len = newline_size(&ptr[boundary_len+2], 2);
+		if (nl_len > 0)
 			break;
-		}
 	}
 	if (ptr == end) {
 		return false;
