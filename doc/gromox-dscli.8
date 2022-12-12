@@ -30,10 +30,31 @@ indeed your desired target, you need to specify \-h/\-H.
 .br
 Default: derive from -e argument, otherwise \fIlocalhost\fP
 .TP
+\fB\-u\fP \fIusername\fP
+Use a distinct username for authentication.
+.br
+Default: inherit from \-e option
+.TP
 \fB\-x\fP \fI/o=1234578/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=username\fP
 LegacyDN field to send along in the request.
 .br
 Default: (none)
+.SH Examples
+Discover your store:
+.PP
+.RS 4
+.nf
+PASS=letmein gromox-dscli -e user@company.at
+.fi
+.RE
+.PP
+Test public store discovery:
+.PP
+.RS 4
+.nf
+PASS=letmein gromox-dscli -e public.folder.root@company.at -u user@company.at
+.fi
+.RE
 .SH Normative references
 .IP \(bu 4
 MS-OXDISCO: Autodiscover HTTP Service Protocol
