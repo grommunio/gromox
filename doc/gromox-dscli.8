@@ -13,7 +13,7 @@ to/from a server for testing.
 .TP
 \fB\-H\fP \fIhttps://host/Autodiscover/Autodiscover.xml\fP
 The full URL for making the request. Useful when the request URI is
-non-standard.
+non-standard. Use of \-H disables DNS SRV lookup.
 .br
 Default: \fIhttps://localhost/Autodiscover/Autodiscover.xml\fP
 .TP
@@ -24,11 +24,10 @@ Default: (none)
 .TP
 \fB\-h\fP \fIhost\fP
 The hostname to use for making the request. From this, the full URL is
-constructed as "https://\fIhost\fP/Autodiscover/Autodiscover.xml". There is no
-implied DNS SRV lookup based no the email address, so unless localhost is
-indeed your desired target, you need to specify \-h/\-H.
+constructed as "https://\fIhost\fP/Autodiscover/Autodiscover.xml". Use of \-h
+disabled DNS SRV lookup.
 .br
-Default: derive from -e argument, otherwise \fIlocalhost\fP
+Default: derive from \-e argument, otherwise (\-x) \fIlocalhost\fP
 .TP
 \fB\-u\fP \fIusername\fP
 Use a distinct username for authentication.
