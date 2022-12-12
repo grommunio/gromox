@@ -41,13 +41,13 @@ int main(int argc, const char **argv)
 	if (strcmp(argv[1], "vacuum") == 0) {
 		if (argc < 3)
 			return help(*argv);
-		do_simple_rpc(&exmdb_client::vacuum, argv[2]);
+		ret = do_simple_rpc(&exmdb_client::vacuum, argv[2]);
 	} else if (strcmp(argv[1], "unload") == 0) {
 		if (argc < 3)
 			return help(*argv);
-		do_simple_rpc(&exmdb_client::unload_store, argv[2]);
+		ret = do_simple_rpc(&exmdb_client::unload_store, argv[2]);
 	} else {
 		help(*argv);
 	}
-	return EXIT_SUCCESS;
+	return ret;
 }
