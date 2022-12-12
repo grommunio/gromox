@@ -126,8 +126,8 @@ static BOOL unauthed(int);
 OxdiscoPlugin::OxdiscoPlugin()
 {
 	host_id = get_host_ID();
-	server_id = std::hash<std::string>{}(host_id);
 	loadConfig();
+	server_id = std::hash<std::string>{}(host_id);
 
 	mlog(LV_DEBUG, "[oxdisco] org %s RedirectAddr %s RedirectUrl %s request_logging %d response_logging %d pretty_response %d\n",
 		x500_org_name.empty() ? "empty" : x500_org_name.c_str(),
@@ -254,6 +254,9 @@ void OxdiscoPlugin::loadConfig()
 		auto s = c->get_value("organization");
 		if (s != nullptr)
 			x500_org_name = s;
+		s = c->get_value("hostname");
+		if (s != nullptr)
+			host_id = s;
 		s = c->get_value("advertise_mh");
 		if (s != nullptr)
 			m_advertise_mh = parse_adv(s);
@@ -275,6 +278,9 @@ void OxdiscoPlugin::loadConfig()
 	pretty_response = c->get_ll("pretty_response");
 	m_advertise_mh = parse_adv(c->get_value("oxdisco_advertise_mh"));
 	m_advertise_rpch = parse_adv(c->get_value("oxdisco_advertise_rpch"));
+	auto s = c->get_value("oxdisco_exonym");
+	if (s != nullptr)
+		host_id = s;
 }
 
 /**
