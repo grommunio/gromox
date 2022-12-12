@@ -35,6 +35,28 @@ struct tDuration
 };
 
 /**
+ * @brief      Identifier for a fully resolved email address
+ *
+ * Types.xsd:273
+ */
+struct tEmailAddressType
+{
+	static constexpr char NAME[] = "Mailbox";
+
+	tEmailAddressType() = default;
+	explicit tEmailAddressType(const tinyxml2::XMLElement*);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<std::string> Name;
+	std::optional<std::string> EmailAddress;
+	std::optional<std::string> RoutingType;
+	std::optional<std::string> MailboxType; ///< Types.xsd:253
+	std::optional<std::string> ItemId;
+	std::optional<std::string> OriginalDisplayName;
+};
+
+/**
  * @brief      Mailbox/EmailAddress
  *
  * Types.xsd:6323
@@ -48,6 +70,32 @@ struct tMailbox
 	std::optional<std::string> Name;
 	std::string Address;
 	std::optional<std::string> RoutingType;
+};
+
+/**
+ * Types.xsd:6987
+ */
+struct tMailTips
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tEmailAddressType RecipientAddress;
+	std::string PendingMailTips; ///< MailTipTypes, Types.xsd:6947
+
+	//<xs:element minOccurs="1" maxOccurs="1" name="RecipientAddress" type="t:EmailAddressType" />
+	//<xs:element minOccurs="1" maxOccurs="1" name="PendingMailTips" type="t:MailTipTypes" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="OutOfOffice" type="t:OutOfOfficeMailTip" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="MailboxFull" type="xs:boolean" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="CustomMailTip" type="xs:string" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="TotalMemberCount" type="xs:int" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="ExternalMemberCount" type="xs:int" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="MaxMessageSize" type="xs:int" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="DeliveryRestricted" type="xs:boolean" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="IsModerated" type="xs:boolean" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="InvalidRecipient" type="xs:boolean" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="Scope" type="xs:int" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="RecipientSuggestions" type="t:ArrayOfRecipientSuggestionsType" />
+	//<xs:element minOccurs="0" maxOccurs="1" name="PreferAccessibleContent" type="xs:boolean" />
 };
 
 /**
@@ -112,6 +160,46 @@ struct mResponseMessageType
 	std::optional<int> DescriptiveLinkKey;
 
 	void success();
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Get mail tips request
+ *
+ * Messages.xsg:1742
+ */
+struct mGetMailTipsRequest
+{
+	explicit mGetMailTipsRequest(const tinyxml2::XMLElement*);
+
+	tEmailAddressType SendingAs;
+	std::vector<tEmailAddressType> Recipients;
+	std::string MailTipsRequested; ///< Types.xsd:6947
+};
+
+/**
+ * Messages.xsd:1776
+ */
+struct mMailTipsResponseMessageType
+{
+	static constexpr char NAME[] = "MailTipsResponseMessageType";
+
+	std::optional<tMailTips> MailTips;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * @brief      Get mail tips response
+ *
+ * Messages.xsg:1760
+ */
+struct mGetMailTipsResponse
+{
+	std::vector<mMailTipsResponseMessageType> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

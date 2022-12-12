@@ -3,7 +3,6 @@
 // This file is part of Gromox.
 
 #include "serialization.hpp"
-#include "soaputil.hpp"
 #include "structures.hpp"
 
 using namespace gromox::EWS;
@@ -48,6 +47,7 @@ XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLEle
 	}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+// Request implementation
 
 tDuration::tDuration(const XMLElement* xml) :
     XMLINIT(StartTime), XMLINIT(EndTime)
@@ -59,10 +59,42 @@ void tDuration::serialize(XMLElement* xml) const
 	XMLDUMP(EndTime);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+tEmailAddressType::tEmailAddressType(const tinyxml2::XMLElement* xml) :
+    XMLINIT(Name),
+    XMLINIT(EmailAddress),
+    XMLINIT(RoutingType),
+    XMLINIT(MailboxType),
+    XMLINIT(ItemId),
+    XMLINIT(OriginalDisplayName)
+{}
+
+void tEmailAddressType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMP(Name);
+    XMLDUMP(EmailAddress);
+    XMLDUMP(RoutingType);
+    XMLDUMP(MailboxType);
+    XMLDUMP(ItemId);
+    XMLDUMP(OriginalDisplayName);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 tMailbox::tMailbox(const XMLElement* xml) :
     XMLINIT(Name), XMLINIT(Address), XMLINIT(RoutingType)
 {}
 
+///////////////////////////////////////////////////////////////////////////////
+
+void tMailTips::serialize(XMLElement* xml) const
+{
+	XMLDUMP(RecipientAddress);
+	XMLDUMP(PendingMailTips);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 tReplyBody::tReplyBody(const XMLElement* xml):
     XMLINIT(Message), XMLINITA(lang)
@@ -73,6 +105,8 @@ void tReplyBody::serialize(XMLElement* xml) const
 	XMLDUMP(Message);
 	XMLDUMPA(lang);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 tUserOofSettings::tUserOofSettings(const XMLElement* xml) :
     XMLINIT(OofState),
@@ -92,6 +126,7 @@ void tUserOofSettings::serialize(XMLElement* xml) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+// Message implementation
 
 mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
     XMLINIT(Mailbox)
@@ -103,6 +138,23 @@ void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
 	XMLDUMP(UserOofSettings);
 	XMLDUMP(AllowExternalOof);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+mGetMailTipsRequest::mGetMailTipsRequest(const XMLElement* xml) :
+    XMLINIT(SendingAs),
+    XMLINIT(Recipients),
+    XMLINIT(MailTipsRequested)
+{}
+
+void mMailTipsResponseMessageType::serialize(XMLElement* xml) const
+{XMLDUMP(MailTips);}
+
+void mGetMailTipsResponse::serialize(XMLElement* xml) const
+{XMLDUMP(ResponseMessages);}
+
+
+///////////////////////////////////////////////////////////////////////////////
 
 void mResponseMessageType::success()
 {
@@ -117,6 +169,8 @@ void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMP(ResponseCode);
 	XMLDUMP(DescriptiveLinkKey);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 mSetUserOofSettingsRequest::mSetUserOofSettingsRequest(const XMLElement* xml) :
     XMLINIT(Mailbox), XMLINIT(UserOofSettings)
