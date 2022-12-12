@@ -79,6 +79,9 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 	if (NULL == pctx->pproptags) {
 		return NULL;
 	}
+	/* OL produces PR_BODY from PR_PREVIEW if the former is missing, which is meh. */
+	if (!proptag_array_append(pctx->pproptags, PR_PREVIEW))
+		return nullptr;
 	if (NULL != prestriction) {
 		pctx->prestriction = restriction_dup(prestriction);
 		if (NULL == pctx->prestriction) {
