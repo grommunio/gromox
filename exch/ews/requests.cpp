@@ -103,6 +103,36 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 //Request implementations
 
 /**
+ * @brief      Process GetMailTipsRequest
+ *
+ * Provides the functionality of GetMailTips
+ * (../php/ews/exchange.php:398).
+ *
+ * In its current state it does nothing more than echoing back the recipient list.
+ *
+ * @todo       This function lacks most of its functionality and is practically worthless.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSContext&)
+{
+	response->SetName("GetMailTipsResponse");
+
+	mGetMailTipsResponse data;
+	data.ResponseMessages.reserve(request.Recipients.size());
+
+	for(auto& recipient : request.Recipients)
+	{
+		tMailTips& mailTips = data.ResponseMessages.emplace_back().MailTips.emplace();
+		mailTips.RecipientAddress = std::move(recipient);
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetUserOofSettingsRequest
  *
  * Provides the functionality of GetUserOofSettingsRequest
