@@ -5281,12 +5281,19 @@ uint32_t zs_linkmessage(GUID hsession,
 	auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
 	if (handle == INVALID_HANDLE)
 		return ecNullObject;
-	if (pinfo->user_id < 0 || static_cast<unsigned int>(pinfo->user_id) != account_id) {
+	if (pinfo->user_id < 0)
 		return ecAccessDenied;
-	}
 	auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
 	if (pstore == nullptr || mapi_type != ZMG_STORE)
 		return ecError;
+	if (!pstore->owner_mode()) {
+		uint32_t permission = rightsNone;
+		if (!exmdb_client::get_folder_perm(pstore->get_dir(), folder_id,
+		    pinfo->get_username(), &permission))
+			return ecError;
+		if (!(permission & frightsCreate))
+			return ecAccessDenied;
+	}
 	gx_strlcpy(maildir, pstore->get_dir(), arsizeof(maildir));
 	cpid = pinfo->cpid;
 	pinfo.reset();
