@@ -11,7 +11,7 @@ namespace gromox {
 
 struct bounce_template {
 	std::string content_type, from, subject;
-	std::unique_ptr<char[]> content;
+	std::unique_ptr<char[], stdlib_delete> content;
 	size_t ctlen = 0, body_start = 0;
 };
 
