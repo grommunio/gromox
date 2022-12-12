@@ -8,6 +8,7 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include<functional>
 #include <tinyxml2.h>
 #include <fmt/core.h>
 #include <fmt/printf.h>
@@ -42,6 +43,7 @@ class OxdiscoPlugin {
 
 		decltype(mysql_adaptor_get_user_displayname) *get_user_displayname;
 		decltype(mysql_adaptor_get_user_ids) *get_user_ids;
+		decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
 	} mysql; // mysql adaptor function pointers
 
 	private:
@@ -50,6 +52,7 @@ class OxdiscoPlugin {
 	uint server_id; // Hash of the name of the mail server
 	std::string RedirectAddr; // Domain to perform Autodiscover
 	std::string RedirectUrl; // URL for a subsequent Autodiscover request
+	std::string host_id;
 	int user_id;
 	int domain_id;
 	int request_logging = 0; // 0 = none, 1 = request data
@@ -61,17 +64,19 @@ class OxdiscoPlugin {
 	void writeheader(int, int, size_t);
 	BOOL die(int, const char *, const char *);
 	BOOL resp(int, const char *, const char *);
-	int resp_pub(tinyxml2::XMLElement *, const char *);
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *ua);
 	int resp_eas(tinyxml2::XMLElement *, const char *);
-	void resp_mh(XMLElement *, const char *dom, const std::string &ews, const std::string &oab, const std::string &ecp, const std::string &depl);
-	void resp_rpch(XMLElement *, const char *dom, const std::string &ews, const std::string &oab, const std::string &ecp, const std::string &depl);
+	void resp_mh(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool);
+	void resp_rpch(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	const char *gtx(tinyxml2::XMLElement &, const char *);
 	const char *get_redirect_addr(const char *);
-	BOOL username_to_essdn(const char *username, char *dn, size_t);
+	BOOL username_to_essdn(const char *, char *, size_t);
+	BOOL domainname_to_essdn(const char *, char *, size_t);
 	bool advertise_prot(enum adv_setting, const char *ua) const;
+	std::string get_deploymentid(const int, const char*);
+	void get_hex_string(const char*, char*);
 };
 
 }
@@ -89,6 +94,8 @@ static constexpr char
 	oab_base_url[] = "https://{}/OAB/",
 	server_base_dn[] = "/o={}/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn={}@{}",
+	public_folder[] = "Public Folder",
+	public_folder_email[] = "public.folder.root@",
 	bad_address_code[] = "501",
 	bad_address_msg[] = "Bad Address",
 	invalid_request_code[] = "600",
@@ -118,8 +125,8 @@ static BOOL unauthed(int);
 
 OxdiscoPlugin::OxdiscoPlugin()
 {
-	// TODO server_id
-	server_id = 123456;
+	host_id = get_host_ID();
+	server_id = std::hash<std::string>{}(host_id);
 	loadConfig();
 
 	mlog(LV_DEBUG, "[oxdisco] org %s RedirectAddr %s RedirectUrl %s request_logging %d response_logging %d pretty_response %d\n",
@@ -200,7 +207,8 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 		return die(ctx_id, provider_unavailable_code, provider_unavailable_msg);
 
 	// TODO get the main email address of the authenticated user
-	if(strcasecmp(email, auth_info.username) != 0)
+	if(strcasecmp(email, auth_info.username) != 0 &&
+			strncasecmp(email, public_folder_email, 19) != 0)
 		return die(ctx_id, bad_address_code, bad_address_msg);
 
 	if (!RedirectAddr.empty() || !RedirectUrl.empty()) {
@@ -460,47 +468,71 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email,
 		add_child(resp_acc, "RedirectAddr", get_redirect_addr(email));
 		return 0;
 	}
+
 	auto resp_user = add_child(resp, "User");
 	add_child(resp_user, "AutoDiscoverSMTPAddress", email); // TODO get the primary email address
 
 	auto buf = std::make_unique<char[]>(4096);
-	if (!mysql.get_user_displayname(email, buf.get(), 4096))
-		return -1;
-	add_child(resp_user, "DisplayName", buf.get());
-	if (!username_to_essdn(email, buf.get(), 4096))
-		return -1;
-	add_child(resp_user, "LegacyDN", buf.get());
-	add_child(resp_user, "EMailAddress", email);
+	auto domain = strchr(email, '@');
+	++domain;
+	char hex_string[12];
+	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
 
-	char hex_string[16];
-	encode_hex_int(user_id, hex_string);
-	auto deploymentid = fmt::sprintf("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%s",
-		email[0], email[1], email[2], email[3], email[4], email[5], email[6],
-		email[7], email[8], email[9], email[10], email[11], hex_string);
-	HX_strupper(deploymentid.data());
-	add_child(resp_user, "DeploymentId", deploymentid);
+	std::string DisplayName, LegacyDN, DeploymentId;
+	if (is_private) {
+		if (!mysql.get_user_displayname(email, buf.get(), 4096))
+			return -1;
+		DisplayName = buf.get();
+
+		if (!username_to_essdn(email, buf.get(), 4096))
+			return -1;
+		LegacyDN = buf.get();
+
+		get_hex_string(email, hex_string);
+		DeploymentId = get_deploymentid(user_id, hex_string);
+	}
+	else {
+		DisplayName = public_folder;
+
+		if (!domainname_to_essdn(domain, buf.get(), 4096))
+			return -1;
+		LegacyDN = buf.get();
+
+		get_hex_string(domain, hex_string);
+		DeploymentId = get_deploymentid(domain_id, hex_string);
+	}
+
+	add_child(resp_user, "DisplayName", DisplayName);
+	add_child(resp_user, "LegacyDN", LegacyDN);
+	HX_strupper(DeploymentId.data());
+	add_child(resp_user, "DeploymentId", DeploymentId);
 
 	auto resp_acc = add_child(resp, "Account");
 	add_child(resp_acc, "AccountType", "email");
 	add_child(resp_acc, "Action", "settings"); // TODO redirectAddr, redirectUrl
-	add_child(resp_acc, "MicrosoftOnline", "False");
-	add_child(resp_acc, "ConsumerMailbox", "False");
 
-	auto domain = strchr(email, '@');
-	++domain;
-	auto ews_url = fmt::format(ews_base_url, domain, exchange_asmx);
-	auto OABUrl = fmt::format(oab_base_url, domain);
-	auto EcpUrl = fmt::format(ews_base_url, domain, "");
+	auto ews_url = fmt::format(ews_base_url, host_id, exchange_asmx);
+	auto OABUrl = fmt::format(oab_base_url, host_id);
+	auto EcpUrl = fmt::format(ews_base_url, host_id, "");
+
 	if (advertise_prot(m_advertise_mh, user_agent))
-		resp_mh(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
+		resp_mh(resp_acc, domain, ews_url, OABUrl, EcpUrl, DeploymentId, is_private);
 	if (advertise_prot(m_advertise_rpch, user_agent))
-		resp_rpch(resp_acc, domain, ews_url, OABUrl, EcpUrl, deploymentid);
+		resp_rpch(resp_acc, domain, ews_url, OABUrl, EcpUrl, DeploymentId, is_private);
+	
+	if (is_private) {
+		auto pfe = fmt::format("{}{}", public_folder_email, domain);
+		auto resp_pfi = add_child(resp_acc, "PublicFolderInformation");
+		add_child(resp_pfi, "SmtpAddress", pfe);
+	}
+
 	return 0;
 }
 
 void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
     const std::string &ews_url, const std::string &OABUrl,
-    const std::string &EcpUrl, const std::string &deploymentid)
+    const std::string &EcpUrl, const std::string &deploymentid,
+		bool is_private)
 {
 	auto resp_prt = add_child(resp_acc, "Protocol");
 	add_child(resp_prt, "OOFUrl", ews_url);
@@ -511,15 +543,17 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
 	add_child(resp_prt, "SSL", "On");
 	add_child(resp_prt, "CertPrincipalName", "None");
 	add_child(resp_prt, "AuthPackage", "basic");
-
-	add_child(resp_prt, "ASUrl", ews_url);
-	add_child(resp_prt, "EwsUrl", ews_url);
-	add_child(resp_prt, "EmwsUrl", ews_url);
-
-	add_child(resp_prt, "EcpUrl", EcpUrl);
-	add_child(resp_prt, "EcpUrl-photo", "thumbnail.php");
-
 	add_child(resp_prt, "ServerExclusiveConnect", "on");
+
+	if (is_private) {
+		add_child(resp_prt, "ASUrl", ews_url);
+		add_child(resp_prt, "EwsUrl", ews_url);
+		add_child(resp_prt, "EmwsUrl", ews_url);
+
+		add_child(resp_prt, "EcpUrl", EcpUrl);
+		add_child(resp_prt, "EcpUrl-photo", "thumbnail.php");
+	}
+
 
 	/* Protocol Type=mapiHttp */
 	resp_prt = add_child(resp_acc, "Protocol");
@@ -527,11 +561,11 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
 	resp_prt->SetAttribute("Version", "1");
 	auto resp_prt_mst = add_child(resp_prt, "MailStore");
 
-	auto mst_url = fmt::format(mailbox_base_url, domain, "emsmdb", deploymentid, domain);
+	auto mst_url = fmt::format(mailbox_base_url, host_id, "emsmdb", deploymentid, domain);
 	add_child(resp_prt_mst, "InternalUrl", mst_url);
 	add_child(resp_prt_mst, "ExternalUrl", mst_url);
 
-	auto abk_url = fmt::format(mailbox_base_url, domain, "nspi", deploymentid, domain);
+	auto abk_url = fmt::format(mailbox_base_url, host_id, "nspi", deploymentid, domain);
 	auto resp_prt_abk = add_child(resp_prt, "AddressBook");
 	add_child(resp_prt_abk, "InternalUrl", abk_url);
 	add_child(resp_prt_abk, "ExternalUrl", abk_url);
@@ -539,16 +573,14 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
 
 void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *domain,
     const std::string &ews_url, const std::string &OABUrl,
-    const std::string &EcpUrl, const std::string &deploymentid)
+    const std::string &EcpUrl, const std::string &deploymentid,
+		bool is_private)
 {
 	auto resp_prt = add_child(resp_acc, "Protocol");
-	add_child(resp_prt, "OOFUrl", ews_url);
-	add_child(resp_prt, "OABUrl", OABUrl);
 	add_child(resp_prt, "Type", "EXCH");
 
 	auto depl_server = fmt::format("{}@{}", deploymentid, domain);
 	add_child(resp_prt, "Server", depl_server);
-
 	add_child(resp_prt, "ServerVersion", oxd_server_version);
 
 	auto ServerDN = fmt::format(server_base_dn,
@@ -561,13 +593,18 @@ void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *domain,
 	add_child(resp_prt, "MdbDN", MdbDN);
 
 	add_child(resp_prt, "AuthPackage", "anonymous");
-	add_child(resp_prt, "PublicFolderServer", domain);
-	add_child(resp_prt, "ASUrl", ews_url);
-	add_child(resp_prt, "EwsUrl", ews_url);
-	add_child(resp_prt, "EmwsUrl", ews_url);
-	add_child(resp_prt, "EcpUrl", EcpUrl);
-	add_child(resp_prt, "EcpUrl-photo", "thumbnail.php");
 	add_child(resp_prt, "ServerExclusiveConnect", "off");
+
+	if (is_private) {
+		add_child(resp_prt, "OOFUrl", ews_url);
+		add_child(resp_prt, "OABUrl", OABUrl);
+		add_child(resp_prt, "PublicFolderServer", domain);
+		add_child(resp_prt, "ASUrl", ews_url);
+		add_child(resp_prt, "EwsUrl", ews_url);
+		add_child(resp_prt, "EmwsUrl", ews_url);
+		add_child(resp_prt, "EcpUrl", EcpUrl);
+		add_child(resp_prt, "EcpUrl-photo", "thumbnail.php");
+	}
 
 	/* Protocol EXPR */
 	resp_prt = add_child(resp_acc, "Protocol");
@@ -577,30 +614,11 @@ void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *domain,
 	add_child(resp_prt, "CertPrincipalName", "None");
 	add_child(resp_prt, "AuthPackage", "basic");
 	add_child(resp_prt, "ServerExclusiveConnect", "on");
-	add_child(resp_prt, "OOFUrl", ews_url);
-	add_child(resp_prt, "OABUrl", OABUrl);
-
-	resp_prt = add_child(resp_acc, "PublicFolderInformation");
-	add_child(resp_prt, "SmtpAddress", "public.folder.root@"s + domain);
-}
-
-/**
- * @brief      Create response for public folder Autodiscover
- *
- * @param el
- * @param email
- */
-int OxdiscoPlugin::resp_pub(XMLElement *el, const char *email)
-{
-	auto domain = strchr(email, '@');
-	if (domain == nullptr) {
-		mlog(LV_DEBUG, "no domain in OXD request\n");
-		return -1;
+	if (is_private) {
+		add_child(resp_prt, "OOFUrl", ews_url);
+		add_child(resp_prt, "OABUrl", OABUrl);
 	}
-	else {
-		mlog(LV_DEBUG, "[oxdisco] pub domain: %s\n", ++domain);
-		return 0;
-	}
+
 }
 
 /**
@@ -673,6 +691,43 @@ BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn, size_t
 	return TRUE;
 }
 
+BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn, size_t dnmax)
+{
+	char hex_string[16];
+	int org_id;
+
+	mysql.get_domain_ids(domainname, &domain_id, &org_id);
+	encode_hex_int(domain_id, hex_string);
+	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
+			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s00000000-public.folder.root",
+			x500_org_name.c_str(), hex_string);
+	HX_strupper(pessdn);
+	return TRUE;
+}
+
+std::string OxdiscoPlugin::get_deploymentid(const int id, const char* hex_string)
+{
+	char temp_hex[16];
+	encode_hex_int(id, temp_hex);
+	return fmt::sprintf("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%s",
+			hex_string[0], hex_string[1], hex_string[2], hex_string[3],
+			hex_string[4], hex_string[5], hex_string[6], hex_string[7], 
+			hex_string[8], hex_string[9], hex_string[10], hex_string[11], temp_hex);
+}
+
+void OxdiscoPlugin::get_hex_string(const char* str, char* hex_string)
+{
+	size_t l = strlen(str);
+	for (size_t i = 0; i < 12; ++i) {
+		if (i < l) {
+			hex_string[i] = str[i];
+		}
+		else {
+			hex_string[i] = '\0';
+		}
+	}
+}
+
 /**
  * @brief      Initialize mysql adaptor function pointers
  */
@@ -683,6 +738,7 @@ OxdiscoPlugin::_mysql::_mysql()
 		throw std::runtime_error("[ews]: failed to get the \""# f"\" service")
 	getService(get_user_displayname);
 	getService(get_user_ids);
+	getService(get_domain_ids);
 #undef getService
 }
 
