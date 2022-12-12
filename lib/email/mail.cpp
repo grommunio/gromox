@@ -118,51 +118,50 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	MIME *pmime, *pmime_last;
 	char *ptr, *ptr_last;
 
-	ptr = ptr_begin;
 	ptr_last = ptr_begin;
 	pmime_last = NULL;
-	while (ptr < ptr_end) {
-		if (ptr[0] == '-' && ptr[1] == '-' &&
-			strncmp(ptr + 2, pmime_parent->boundary_string, 
-			pmime_parent->boundary_len) == 0 &&
-			('\r' == ptr[2 + pmime_parent->boundary_len] ||
-			'-' == ptr[2 + pmime_parent->boundary_len])) {
-			pmime = pmail->pmime_pool->get_mime();
-			if (NULL == pmime) {
-				mlog(LV_DEBUG, "mail: failed to get mime from pool");
-				return false;
-			}
-			if (!pmime->retrieve(pmime_parent, ptr_last, ptr - ptr_last)) {
-				pmail->pmime_pool->put_mime(pmime);
-				return false;
-			}
-			if (pmime->mime_type != mime_type::single &&
-			    pmime->mime_type != mime_type::multiple) {
-				mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
-				pmail->pmime_pool->put_mime(pmime);
-				return false;
-			}
-			if (NULL == pmime_last) {
-				pmail->tree.add_child(&pmime_parent->node,
-					&pmime->node,SIMPLE_TREE_ADD_LAST);
-            } else {
-				pmail->tree.insert_sibling(&pmime_last->node,
-					&pmime->node, SIMPLE_TREE_INSERT_AFTER);
-            }
-			pmime_last = pmime;
-			if (pmime->mime_type == mime_type::multiple &&
-			    !mail_retrieve_to_mime(pmail, pmime,
-			    pmime->first_boundary + pmime->boundary_len + 4,
-			    pmime->last_boundary))
-				return false;
-			if ('-' == ptr[2 + pmime_parent->boundary_len] &&
-				'-' == ptr[3 + pmime_parent->boundary_len]) {
-				return true;
-			}
-			ptr += pmime_parent->boundary_len + 4;
-			ptr_last = ptr;
+	for (ptr = ptr_begin; ptr < ptr_end; ++ptr) {
+		if (ptr[0] != '-' || ptr[1] != '-' ||
+		    strncmp(&ptr[2], pmime_parent->boundary_string,
+		    pmime_parent->boundary_len) != 0)
+			continue;
+		if (ptr[pmime_parent->boundary_len+2] != '\r' &&
+		    ptr[pmime_parent->boundary_len+2] != '-')
+			continue;
+		pmime = pmail->pmime_pool->get_mime();
+		if (NULL == pmime) {
+			mlog(LV_DEBUG, "mail: failed to get mime from pool");
+			return false;
 		}
-		ptr ++;
+		if (!pmime->retrieve(pmime_parent, ptr_last, ptr - ptr_last)) {
+			pmail->pmime_pool->put_mime(pmime);
+			return false;
+		}
+		if (pmime->mime_type != mime_type::single &&
+		    pmime->mime_type != mime_type::multiple) {
+			mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
+			pmail->pmime_pool->put_mime(pmime);
+			return false;
+		}
+		if (NULL == pmime_last) {
+			pmail->tree.add_child(&pmime_parent->node,
+				&pmime->node, SIMPLE_TREE_ADD_LAST);
+		} else {
+			pmail->tree.insert_sibling(&pmime_last->node,
+				&pmime->node, SIMPLE_TREE_INSERT_AFTER);
+		}
+		pmime_last = pmime;
+		if (pmime->mime_type == mime_type::multiple &&
+		    !mail_retrieve_to_mime(pmail, pmime,
+		    pmime->first_boundary + pmime->boundary_len + 4,
+		    pmime->last_boundary))
+			return false;
+		if ('-' == ptr[2 + pmime_parent->boundary_len] &&
+		    '-' == ptr[3 + pmime_parent->boundary_len]) {
+			return true;
+		}
+		ptr += pmime_parent->boundary_len + 4;
+		ptr_last = ptr;
 	}
 	for (ptr=ptr_last; ptr<ptr_end; ptr++) {
 		if ('\t' != *ptr && ' ' != *ptr && '\r' != *ptr && '\n' != *ptr) {
