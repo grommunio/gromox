@@ -27,6 +27,18 @@ static int help()
 	return EXIT_FAILURE;
 }
 
+static uint32_t delcount(eid_t fid)
+{
+	static constexpr uint32_t tag_msgc = PR_DELETED_COUNT_TOTAL;
+	static constexpr PROPTAG_ARRAY tags_msgc = {1, deconst(&tag_msgc)};
+	TPROPVAL_ARRAY props;
+	if (!exmdb_client::get_folder_properties(g_storedir, 0, fid,
+	    &tags_msgc, &props))
+		return 0;
+	auto c = props.get<const uint32_t>(tag_msgc);
+	return c != nullptr ? *c : 0;
+}
+
 static int main(int argc, const char **argv)
 {
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -41,6 +53,7 @@ static int main(int argc, const char **argv)
 	ea.pids = eids.data();
 	BOOL partial = false;
 	eid_t fid = rop_util_make_eid_ex(1, g_folderid);
+	auto old_msgc = delcount(fid);
 	/*
 	 * Always do hard deletion, because the message really needs to go away.
 	 * Other tools/programs might pick it up otherwise.
@@ -50,11 +63,10 @@ static int main(int argc, const char **argv)
 		printf("RPC was rejected.\n");
 		return EXIT_FAILURE;
 	}
-	if (partial) {
+	auto diff = delcount(fid) - old_msgc;
+	if (partial)
 		printf("Partial completion\n");
-		return EXIT_SUCCESS;
-	}
-	printf("%zu messages deleted\n", eids.size());
+	printf("%u messages deleted\n", diff);
 	return EXIT_SUCCESS;
 }
 
