@@ -4139,8 +4139,10 @@ static const char *sender_id_to_text(const uint32_t *v)
 }
 
 static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
-    EXT_BUFFER_ALLOC alloc, MIME *phead)
+    EXT_BUFFER_ALLOC alloc, MIME *phead, bool sched)
 {
+	if (sched)
+		return true;
 	char tmp_field[MIME_FIELD_LEN];
 	auto str  = pmsg->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto str1 = pmsg->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
@@ -4168,9 +4170,16 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
 }
 
 static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
-    const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead)
+    const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead, bool sched)
 {
 	char tmp_field[MIME_FIELD_LEN];
+	if (sched) {
+		if (oxcmail_export_address(pmsg, alloc, tags_sender,
+		    cset, tmp_field, std::size(tmp_field)) &&
+		    !phead->set_field("From", tmp_field))
+			return false;
+		return true;
+	}
 	if (oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 	    cset, tmp_field, std::size(tmp_field))) {
 		if (!phead->set_field("From", tmp_field))
@@ -4184,7 +4193,7 @@ static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
 }
 
 static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
-    const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead)
+    const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead, bool sched)
 {
 	char tmp_field[MIME_FIELD_LEN];
 	auto flag = pmsg->proplist.get<uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
@@ -4196,7 +4205,7 @@ static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
 	else if (oxcmail_export_address(pmsg, alloc, tags_sender,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
-	else if (oxcmail_export_address(pmsg, alloc, tags_sent_repr,
+	else if (sched && oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
 	else
@@ -4205,7 +4214,7 @@ static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
 }
 
 static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
-    const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead)
+    const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead, bool sched)
 {
 	char tmp_field[MIME_FIELD_LEN];
 	auto flag = pmsg->proplist.get<uint8_t>(PR_READ_RECEIPT_REQUESTED);
@@ -4214,7 +4223,7 @@ static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
 	if (oxcmail_export_address(pmsg, alloc, tags_read_rcpt,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
-	else if (oxcmail_export_address(pmsg, alloc, tags_sent_repr,
+	else if (sched && oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
 	else
@@ -4259,11 +4268,12 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	struct tm time_buff;
 	PROPID_ARRAY propids;
 
+	auto sched = pskeleton->mail_type == oxcmail_type::calendar;
 	if (!phead->set_field("MIME-Version", "1.0") ||
-	    !oxcmail_export_sender(pmsg, pskeleton->charset, alloc, phead) ||
-	    !oxcmail_export_fromsender(pmsg, pskeleton->charset, alloc, phead) ||
-	    !oxcmail_export_receiptto(pmsg, pskeleton->charset, alloc, phead) ||
-	    !oxcmail_export_receiptflg(pmsg, pskeleton->charset, alloc, phead) ||
+	    !oxcmail_export_sender(pmsg, pskeleton->charset, alloc, phead, sched) ||
+	    !oxcmail_export_fromsender(pmsg, pskeleton->charset, alloc, phead, sched) ||
+	    !oxcmail_export_receiptto(pmsg, pskeleton->charset, alloc, phead, sched) ||
+	    !oxcmail_export_receiptflg(pmsg, pskeleton->charset, alloc, phead, sched) ||
 	    !oxcmail_export_tocc(pmsg, pskeleton, alloc, phead))
 		return false;
 	char tmp_buff[MIME_FIELD_LEN];

@@ -48,6 +48,8 @@ Changes:
 * ews: new module providing the EWS endpoint,
   replacing the PHP-based implementation
 * delmsg: program has been merged into gromox-mbop as a subcommand
+* emsmdb: rework interpretation of the PR_SENT_REPRESENTING_* proptags on
+  meeting request objects
 
 
 Gromox 1.37 (2022-12-18)
