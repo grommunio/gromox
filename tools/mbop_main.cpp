@@ -3,27 +3,96 @@
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
+#include <vector>
+#include <libHX/option.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include <gromox/paths.h>
-#include <gromox/scope.hpp>
+#include "genimport.hpp"
 
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
-static int help(const char *argv0)
+namespace delmsg {
+
+static uint64_t g_folderid;
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'f', HXTYPE_UINT64, &g_folderid, nullptr, nullptr, 0, "Folder ID"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int help()
 {
-	fprintf(stderr, "Usage: %s ...\n", argv0);
-	fprintf(stderr, "\tunload $maildir    Execute the UNLOAD RPC for the given mailbox\n");
-	fprintf(stderr, "\tvacuum $maildir    Execute the VACUUM RPC for the given mailbox\n");
+	fprintf(stderr, "Usage: gromox-mbop -u a@b.de delmsg -f folder_id message_id[,...]\n");
 	return EXIT_FAILURE;
 }
 
-static int do_simple_rpc(BOOL (*f)(const char *), const char *dir)
+static int main(int argc, const char **argv)
 {
-	if (!f(dir)) {
-		fprintf(stderr, "unload: the operation failed\n");
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	if (g_folderid == 0)
+		return help();
+	std::vector<uint64_t> eids;
+	while (*++argv != nullptr)
+		eids.push_back(rop_util_make_eid_ex(1, strtoull(*argv, nullptr, 0)));
+	EID_ARRAY ea;
+	ea.count = eids.size();
+	ea.pids = eids.data();
+	BOOL partial = false;
+	eid_t fid = rop_util_make_eid_ex(1, g_folderid);
+	/*
+	 * Always do hard deletion, because the message really needs to go away.
+	 * Other tools/programs might pick it up otherwise.
+	 */
+	if (!exmdb_client::delete_messages(g_storedir, g_user_id, CP_UTF8,
+	    nullptr, fid, &ea, true, &partial)) {
+		printf("RPC was rejected.\n");
+		return EXIT_FAILURE;
+	}
+	if (partial) {
+		printf("Partial completion\n");
+		return EXIT_SUCCESS;
+	}
+	printf("%zu messages deleted\n", eids.size());
+	return EXIT_SUCCESS;
+}
+
+} /* namespace delmsg */
+
+namespace global {
+
+static char *g_arg_username, *g_arg_userdir;
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'd', HXTYPE_STRING, &g_arg_userdir, nullptr, nullptr, 0, "Directory of the mailbox", "DIR"},
+	{nullptr, 'u', HXTYPE_STRING, &g_arg_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int help()
+{
+	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-args...]\n");
+	fprintf(stderr, "Global options:\n");
+	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
+	fprintf(stderr, "Command list:\n");
+	fprintf(stderr, "\tdelmsg    Issue \"delete_message\" RPCs for a mailbox\n");
+	fprintf(stderr, "\tunload    Issue the \"unload\" RPC for a mailbox\n");
+	fprintf(stderr, "\tvacuum    Issue the \"vacuum\" RPC for a mailbox\n");
+	return EXIT_FAILURE;
+}
+
+} /* namespace global */
+
+static int do_simple_rpc(int argc, const char **argv)
+{
+	bool ok = false;
+	if (strcmp(argv[0], "unload") == 0)
+		ok = exmdb_client::unload_store(g_storedir);
+	else if (strcmp(argv[0], "vacuum") == 0)
+		ok = exmdb_client::vacuum(g_storedir);
+	if (!ok) {
+		fprintf(stderr, "%s: the operation failed\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -31,23 +100,41 @@ static int do_simple_rpc(BOOL (*f)(const char *), const char *dir)
 
 int main(int argc, const char **argv)
 {
-	if (argc < 2)
-		return help(*argv);
-	exmdb_client_init(1, 0);
-	auto cl_0 = make_scope_exit(exmdb_client_stop);
-	auto ret = exmdb_client_run(PKGSYSCONFDIR, 0);
-	if (ret < 0)
+	using namespace global;
+
+	setvbuf(stdout, nullptr, _IOLBF, 0);
+	if (HX_getopt(global::g_options_table, &argc, &argv,
+	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (strcmp(argv[1], "vacuum") == 0) {
-		if (argc < 3)
-			return help(*argv);
-		ret = do_simple_rpc(&exmdb_client::vacuum, argv[2]);
-	} else if (strcmp(argv[1], "unload") == 0) {
-		if (argc < 3)
-			return help(*argv);
-		ret = do_simple_rpc(&exmdb_client::unload_store, argv[2]);
-	} else {
-		help(*argv);
+	--argc;
+	++argv;
+	if (argc == 0)
+		return global::help();
+	if (g_arg_username != nullptr && g_arg_userdir != nullptr) {
+		fprintf(stderr, "Can only specify one of -d or -u\n");
+		return EXIT_FAILURE;
+	} else if (g_arg_username == nullptr && g_arg_userdir == nullptr) {
+		fprintf(stderr, "Must specify either -d or -u\n");
+		return EXIT_FAILURE;
 	}
+
+	if (g_arg_username != nullptr) {
+		gi_setup_early(g_arg_username);
+		if (gi_setup() != EXIT_SUCCESS)
+			return EXIT_FAILURE;
+	} else if (g_arg_userdir != nullptr) {
+		g_storedir = g_arg_userdir;
+		if (gi_setup_from_dir() != EXIT_SUCCESS)
+			return EXIT_FAILURE;
+	}
+
+	int ret = EXIT_FAILURE;
+	if (strcmp(argv[0], "delmsg") == 0)
+		ret = delmsg::main(argc, argv);
+	else if (strcmp(argv[0], "unload") == 0 ||
+	    strcmp(argv[0], "vacuum") == 0)
+		ret = do_simple_rpc(argc, argv);
+	else
+		fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
 	return ret;
 }

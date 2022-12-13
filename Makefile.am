@@ -8,7 +8,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
 noinst_DATA = libgromox_common.ldd libgromox_cplus.ldd libgromox_dbop.ldd libgromox_email.ldd libgromox_epoll.ldd libgromox_exrpc.la libgromox_mapi.ldd libgromox_rpc.ldd
-pkglibexec_PROGRAMS = cgkrepair cleaner delivery delmsg delivery-queue event freebusy http imap midb pop3 rebuild rtf2html timer zcore
+pkglibexec_PROGRAMS = cgkrepair cleaner delivery delivery-queue event freebusy http imap midb pop3 rebuild rtf2html timer zcore
 pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -206,8 +206,6 @@ cgkrepair_SOURCES = tools/cgkrepair.cpp tools/genimport.cpp
 cgkrepair_LDADD = ${gromox_mt2exm_LDADD}
 cleaner_SOURCES = tools/cleaner.cpp
 cleaner_LDADD = ${fmt_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_cplus.la
-delmsg_SOURCES = tools/delmsg.cpp tools/genimport.cpp
-delmsg_LDADD = ${gromox_mt2exm_LDADD}
 freebusy_SOURCES = tools/freebusy.cpp
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
@@ -238,8 +236,8 @@ gromox_exm2eml_SOURCES = tools/exm2eml.cpp tools/genimport.cpp lib/svc_loader.cp
 gromox_exm2eml_LDADD = ${dl_LIBS} ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 gromox_mailq_SOURCES = tools/mailq.cpp
 gromox_mailq_LDADD = libgromox_common.la
-gromox_mbop_SOURCES = tools/mbop_main.cpp
-gromox_mbop_LDADD = libgromox_exrpc.la
+gromox_mbop_SOURCES = tools/mbop_main.cpp tools/genimport.cpp
+gromox_mbop_LDADD = ${gromox_mt2exm_LDADD}
 gromox_mkmidb_SOURCES = tools/mkmidb.cpp tools/mkshared.cpp
 gromox_mkmidb_LDADD = ${fmt_LIBS} ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_mapi.la
 gromox_mkprivate_SOURCES = tools/mkprivate.cpp tools/mkshared.cpp
@@ -296,7 +294,7 @@ man_MANS = \
 	doc/authmgr.4gx doc/autodiscover.4gx \
 	doc/cgkrepair.8gx doc/cleaner.8gx doc/gromox-compress.8 \
 	doc/delivery.8gx doc/delivery-queue.8gx \
-	doc/delmsg.8gx doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
+	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \

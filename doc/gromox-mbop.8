@@ -4,13 +4,42 @@
 .SH Name
 gromox\-mbop \(em Mailbox operations utility
 .SH Synopsis
-\fBgromox\-mbop\fP \fIcommand\fP [args...]
+\fBgromox\-mbop\fP {\fB\-d\fP \fImbox\fP|\fB\-u\fP \fIu@d.de\fP} \fIcommand\fP
+[command-args...]
+.SH Global options
+.TP
+\fB\-d\fP \fI/var/lib/gromox/user/1/2\fP
+Lookup the mailbox parameters from the associated filesystem location.
+.TP
+\fB\-u\fP \fIu@d.de\fP
+Lookup the mailbox parameters from the associated username.
 .SH Commands
+.IP \(bu 4
+delmsg: issue "delete_message" RPCs for a mailbox
+.IP \(bu 4
+unload: issue the "unload_store" RPC for a mailbox
+.IP \(bu 4
+vacuum: issue the "vacuum" RPC for a mailbox
+.SS delmsg
+\fBSynopsis:\fP gromox-mbop -u a@b.de delmsg -f 0x13 198196 198197 ...
+.PP
+This command hard-deletes messages from a store, including issuing proper
+PR_CHANGE_KEY metadata updates for the sake of Cached Mode clients.
+.PP
+The folder and message IDs taken as arguments on the command-line should be
+of the GC-value form, i.e. as they appear in the the SQLite database.
 .SS unload
-Issue the UNLOAD RPC to exmdb_provider(4gx). Takes the mailbox directory as
-argument, e.g. `\fBgromox\-mbop unload /var/lib/gromox/user/0/1\fP`.
+Normally, exmdb_provider(4gx) keeps stores open for up to
+exmdb_provider.cfg:cache_interval. The "unload_store" RPC to
+exmdb_provider(4gx) causes the sqlite database (in
+/var/lib/gromox/.../exmdb/exchange.sqlite3) to be closed. Any subsequent RPC
+may reopen it, though. The unload RPC is useful after a mailbox was deleted
+and/or reinitialized with grommunio-admin-api or tools like
+gromox-mkprivate(8)/gromox-mkpublic(8). [zcore also has store state in memory.
+This would also need to be purged \(em but there is no RPC for such action at
+this time.]
 .SS vacuum
-Issue the VACUUM RPC to exmdb_provider(4gx). Takes the mailbox directory as
-argument.
+The "vacuum" RPC makes exmdb_provider issue the SQLite "vacuum" command on
+exchange.sqlite3, which rebuilds and compacts the database file.
 .SH See also
 \fBgromox\fP(7)
