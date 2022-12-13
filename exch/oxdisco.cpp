@@ -20,6 +20,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include "mysql_adaptor/sql2.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -44,6 +45,7 @@ class OxdiscoPlugin {
 		decltype(mysql_adaptor_get_user_displayname) *get_user_displayname;
 		decltype(mysql_adaptor_get_user_ids) *get_user_ids;
 		decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
+		decltype(mysql_adaptor_scndstore_hints) *scndstore_hints;
 	} mysql; // mysql adaptor function pointers
 
 	private:
@@ -525,7 +527,27 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email,
 		resp_mh(resp_acc, domain, ews_url, OABUrl, EcpUrl, DeploymentId, is_private);
 	if (advertise_prot(m_advertise_rpch, user_agent))
 		resp_rpch(resp_acc, domain, ews_url, OABUrl, EcpUrl, DeploymentId, is_private);
-	
+
+	std::vector<sql_user> hints;
+	auto err = mysql.scndstore_hints(user_id, hints);
+	if (err != 0) {
+		mlog(LV_ERR, "oxdisco: error retrieving secondary store hints: %s", strerror(err));
+		return -1;
+	}
+
+	if (hints.size() > 0) {
+		for (const auto &user : hints) {
+			auto am = add_child(resp_acc, "AlternativeMailbox");
+			add_child(am, "Type", "Delegate");
+			auto em = user.username.c_str();
+			auto dn = user.propvals.find(PR_DISPLAY_NAME);
+			/* DispName is required as per OXDSCLI § */
+			add_child(am, "DisplayName", dn != user.propvals.end() ? dn->second.c_str() : em);
+			add_child(am, "SmtpAddress", em);
+			add_child(am, "OwnerSmtpAddress", em);
+		}
+	}
+
 	if (is_private) {
 		auto pfe = fmt::format("{}{}", public_folder_email, domain);
 		auto resp_pfi = add_child(resp_acc, "PublicFolderInformation");
@@ -745,6 +767,7 @@ OxdiscoPlugin::_mysql::_mysql()
 	getService(get_user_displayname);
 	getService(get_user_ids);
 	getService(get_domain_ids);
+	getService(scndstore_hints);
 #undef getService
 }
 
