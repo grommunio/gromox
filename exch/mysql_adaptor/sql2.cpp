@@ -372,11 +372,15 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	return false;
 }
 
-errno_t mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
+errno_t mysql_adaptor_scndstore_hints(int pri, std::vector<sql_user> &hints) try
 {
-	char query[76];
-	snprintf(query, arsizeof(query), "SELECT `secondary` "
-	         "FROM `secondary_store_hints` WHERE `primary`=%u", pri);
+	char query[233];
+	snprintf(query, std::size(query),
+	         "SELECT u.id, u.username, u.maildir, up.propval_str "
+	         "FROM secondary_store_hints AS s "
+	         "INNER JOIN users AS u ON s.`secondary`=u.id "
+	         "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=0x3001001f "
+	         "WHERE s.`primary`=%u", pri);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr || !conn->query(query))
 		return EIO;
@@ -384,9 +388,15 @@ errno_t mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
 	if (result == nullptr)
 		return ENOMEM;
 	DB_ROW row;
-	while ((row = result.fetch_row()) != nullptr)
-		if (row[0] != nullptr)
-			hints.push_back(strtoul(row[0], nullptr, 0));
+	while ((row = result.fetch_row()) != nullptr) {
+		sql_user u;
+		u.id = strtoul(row[0], nullptr, 0);
+		u.username = znul(row[1]);
+		u.maildir = znul(row[2]);
+		if (row[3] != nullptr)
+			u.propvals.emplace(PR_DISPLAY_NAME, row[3]);
+		hints.push_back(std::move(u));
+	}
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1638: ENOMEM");
