@@ -22,7 +22,7 @@ struct MIME_POOL;
 struct vcard;
 
 namespace gromox {
-extern GX_EXPORT bool g_oxcical_allday_ymd;
+extern GX_EXPORT bool g_oxcical_allday_ymd, oxcical_exchsched_compat;
 extern GX_EXPORT unsigned int g_oxvcard_pedantic;
 }
 
