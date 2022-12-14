@@ -70,6 +70,7 @@ class OxdiscoPlugin {
 	int resp_eas(tinyxml2::XMLElement *, const char *);
 	void resp_mh(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool);
+	BOOL resp_autocfg(int, const char*);
 	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	const char *gtx(tinyxml2::XMLElement &, const char *);
@@ -159,7 +160,8 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 	if (len == MEM_END_OF_FILE)
 		return false;
 	uri[len] = '\0';
-	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") != 0)
+	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") != 0 &&
+			strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 40) != 0)
 		return false;
 	return TRUE;
 }
@@ -181,6 +183,22 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if(!auth_info.b_authed)
 		return unauthed(ctx_id);
+
+	char uri[1024];
+	auto req = get_request(ctx_id);
+	req->f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	size_t l = req->f_request_uri.read(uri, arsizeof(uri) - 1);
+	if (l == MEM_END_OF_FILE)
+		return false;
+	uri[l] = '\0';
+	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 &&
+	    (uri[44] == '\0' || uri[44] == '?')) {
+		if (strncmp(&uri[44], "?emailaddress=", 14) != 0)
+			return resp_autocfg(ctx_id, auth_info.username);
+		auto username = &uri[44+14];
+		/* still need hex decoding */
+		return resp_autocfg(ctx_id, username);
+	}
 
 	XMLDocument doc;
 	if (doc.Parse(static_cast<const char *>(content), len) != XML_SUCCESS)
@@ -687,6 +705,53 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email)
 		add_child(resp_ser, "Name", url);
 	}
 	return 0;
+}
+
+BOOL OxdiscoPlugin::resp_autocfg(int ctx_id, const char* username)
+{
+	respdoc.Clear();
+	auto decl = respdoc.NewDeclaration();
+	respdoc.InsertEndChild(decl);
+
+	auto resproot = respdoc.NewElement("clientConfig");
+	resproot->SetAttribute("version", "1.1");
+	respdoc.InsertEndChild(resproot);
+
+	auto t_host_id = host_id.c_str();
+	auto resp_prov = add_child(resproot, "emailProvider");
+	resp_prov->SetAttribute("id", t_host_id);
+
+	// TODO get all domains?
+	add_child(resp_prov, "domain", t_host_id);
+	add_child(resp_prov, "displayName", "Gromox Mail");
+	add_child(resp_prov, "displayShortName", "Gromox");
+
+	auto resp_imap = add_child(resp_prov, "incomingServer");
+	add_child(resp_imap, "type", "imap");
+	add_child(resp_imap, "hostname", t_host_id);
+	add_child(resp_imap, "port", "143");
+	add_child(resp_imap, "socketType", "plain");
+	add_child(resp_imap, "authentication", "password-cleartext");
+	add_child(resp_imap, "username", username);
+
+	auto resp_smtp = add_child(resp_prov, "outgoingServer");
+	add_child(resp_smtp, "type", "smtp");
+	add_child(resp_smtp, "hostname", t_host_id);
+	add_child(resp_smtp, "port", "25");
+	add_child(resp_smtp, "socketType", "plain");
+	add_child(resp_smtp, "authentication", "password-cleartext");
+	add_child(resp_smtp, "username", username);
+
+	int code = 200;
+	XMLPrinter printer(nullptr, !pretty_response);
+	respdoc.Print(&printer);
+
+	const char* response = printer.CStr();
+	if (response_logging > 0)
+		mlog(LV_DEBUG, "[oxdisco] response: %s", response);
+
+	writeheader(ctx_id, code, strlen(response));
+	return write_response(ctx_id, response, strlen(response));
 }
 
 const char* OxdiscoPlugin::get_redirect_addr(const char *email)
