@@ -535,7 +535,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email,
 		return -1;
 	}
 
-	if (hints.size() > 0) {
+	if (is_private && hints.size() > 0) {
 		for (const auto &user : hints) {
 			auto am = add_child(resp_acc, "AlternativeMailbox");
 			add_child(am, "Type", "Delegate");
