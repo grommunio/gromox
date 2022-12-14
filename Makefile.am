@@ -52,7 +52,7 @@ exchange_plugins = \
 	libgxp_exchange_emsmdb.la \
 	libgxp_exchange_nsp.la \
 	libgxp_exchange_rfr.la \
-	libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oxdisco.la \
+	libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oxdisco.la libgxh_oab.la \
 	libgxs_authmgr.la \
 	libgxs_ip6_container.la libgxs_ip6_filter.la \
 	libgxs_ldap_adaptor.la \
@@ -64,7 +64,7 @@ noinst_DATA += \
 	libgxp_exchange_emsmdb.ldd \
 	libgxp_exchange_nsp.ldd \
 	libgxp_exchange_rfr.ldd \
-	libgxh_mh_emsmdb.ldd libgxh_mh_nsp.ldd libgxh_oxdisco.ldd \
+	libgxh_mh_emsmdb.ldd libgxh_mh_nsp.ldd libgxh_oxdisco.ldd libgxh_oab.ldd \
 	libgxs_authmgr.ldd \
 	libgxs_ip6_container.ldd libgxs_ip6_filter.ldd \
 	libgxs_ldap_adaptor.ldd \
@@ -181,6 +181,10 @@ libgxh_oxdisco_la_SOURCES = exch/oxdisco.cpp
 libgxh_oxdisco_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxh_oxdisco_la_LIBADD = ${HX_LIBS} ${fmt_LIBS} ${tinyxml_LIBS} libgromox_common.la
 EXTRA_libgxh_oxdisco_la_DEPENDENCIES = ${default_sym}
+libgxh_oab_la_SOURCES = exch/oab.cpp
+libgxh_oab_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxh_oab_la_LIBADD = libgromox_common.la
+EXTRA_libgxh_oab_la_DEPENDENCIES = ${default_sym}
 libgxs_authmgr_la_SOURCES = exch/authmgr.cpp exch/authmgr.hpp
 libgxs_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_authmgr_la_LIBADD = libgromox_common.la
