@@ -76,6 +76,15 @@ inline std::string E3009(const std::string& ExAud) {return "E-3009: unrecognized
 inline std::string E3010(const std::string& RoutingType) {return "E-3010: unrecognized RoutingType '"+RoutingType+"'";}
 E(3011, "Cannot access OOF state of another user");
 E(3012, "Cannot modify OOF state of another user");
+E(3013, "Either \"FreeBusyViewOptions\" or \"SuggestionsViewOptions\" is required.");
+E(3014, "\"TimeZone\" is required.");
+E(3015, "Failed to get named propids");
+E(3016, "Failed to get some named propids");
+E(3017, "Failed to get user permissions");
+E(3018, "Insufficient access rights");
+E(3019, "Failed to load calendar");
+E(3020, "Failed to query calendar");
+
 
 #undef E
 }

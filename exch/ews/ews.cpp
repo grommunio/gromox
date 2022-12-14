@@ -13,7 +13,10 @@
 #include <tinyxml2.h>
 #include <fmt/core.h>
 #include <gromox/config_file.hpp>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/hpm_common.h>
+#include <gromox/paths.h>
+#include <gromox/scope.hpp>
 
 #include "exceptions.hpp"
 #include "requests.hpp"
@@ -26,6 +29,12 @@ using namespace gromox::EWS;
 using namespace tinyxml2;
 
 using Exceptions::DispatchError;
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+void* EWSContext::alloc(size_t count)
+{return ndr_stack_alloc(NDR_STACK_IN, count);}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -52,6 +61,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"GetMailTips", process<Structures::mGetMailTipsRequest>},
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
+	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -171,6 +181,9 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 	EWSContext context(ctx_id, auth_info, static_cast<const char*>(data), len, *this);
 	if(request_logging >= 2)
 		printf("[ews] Incoming data:\n%.*s\n", len > INT_MAX? INT_MAX : int(len), static_cast<const char*>(data));
+	if(!rpc_new_stack())
+		printf("[ews]: Failed to allocate stack, exmdb might not work");
+	auto cl0 = make_scope_exit([]{rpc_free_stack();});
 	for(XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
 	{
 		XMLElement* responseContainer = context.response.body->InsertNewChildElement(xml->Name());
@@ -209,6 +222,20 @@ EWSPlugin::_mysql::_mysql()
 	getService(get_maildir);
 	getService(get_username_from_id);
 #undef getService
+}
+
+EWSPlugin::_exmdb::_exmdb()
+{
+#define EXMIDL(n, p) do { \
+	query_service2("exmdb_client_" #n, n); \
+	if ((n) == nullptr) { \
+		throw std::runtime_error("[ews]: failed to get the \"exmdb_client_"# n"\" service\n"); \
+	} \
+} while (false);
+#define IDLOUT
+#include <gromox/exmdb_idef.hpp>
+#undef EXMIDL
+#undef IDLOUT
 }
 
 static constexpr cfg_directive x500_defaults[] = {
