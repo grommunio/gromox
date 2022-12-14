@@ -4,18 +4,16 @@
 
 #pragma once
 
-#include <cstdio>
 #include <cmath>
-#include <ctime>
+#include <cstdio>
 #include <functional>
 #include <optional>
 #include <string>
-#include <vector>
-
-#include <gromox/clock.hpp>
-
 #include <tinyxml2.h>
-
+#include <vector>
+#include <fmt/chrono.h>
+#include <fmt/core.h>
+#include <gromox/clock.hpp>
 #include "exceptions.hpp"
 #include "structures.hpp"
 
@@ -26,9 +24,9 @@ using SetterFunc = const std::function<void(const char*)>&;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //Conversion of built-in types
 
-static constexpr uint8_t EC_IN = 1 << 0; ///< Needs explicit conversion on import
-static constexpr uint8_t EC_OUT = 1 << 0; ///< Needs explicit conversion on export
-static constexpr uint8_t EC_IMP_OUT = 1 << 2; ///< Can be exported implicitely by SetText
+static constexpr uint8_t EC_IN = 0x1U; ///< Needs explicit conversion on import
+static constexpr uint8_t EC_OUT = 0x2U; ///< Needs explicit conversion on export
+static constexpr uint8_t EC_IMP_OUT = 0x4U; ///< Can be exported implicitely by SetText
 
 /**
  * @brief      Explicit conversion information
@@ -131,14 +129,11 @@ struct ExplicitConvert<gromox::time_point>
 	static inline void serialize(const gromox::time_point& value, SetterFunc setter)
 	{
 		tm t;
-		char timestr[64];
 		time_t timestamp = gromox::time_point::clock::to_time_t(value);
 		gmtime_r(&timestamp, &t);
 		auto frac = value.time_since_epoch() % std::chrono::seconds(1);
 		long fsec = std::chrono::duration_cast<std::chrono::microseconds>(frac).count();
-		snprintf(timestr, 64, fsec? "%04d-%02d-%02dT%02d:%02d:%02d.%06ldZ" : "%04d-%02d-%02dT%02d:%02d:%02dZ",
-		         t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, fsec);
-		setter(timestr);
+		setter(fmt::format("{:%FT%T}.{:06}Z", t, fsec).c_str());
 	}
 };
 

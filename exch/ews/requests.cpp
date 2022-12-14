@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <tinyxml2.h>
 
 #include <gromox/clock.hpp>
@@ -25,6 +26,7 @@ using namespace std;
 using namespace tinyxml2;
 
 using Clock = time_point::clock;
+using std::to_string;
 
 ///////////////////////////////////////////////////////////////////////////////
 //Helper functions
@@ -159,6 +161,61 @@ void process(mGetServiceConfigurationRequest&&, XMLElement* response, const EWSC
 	msg.success();
 
 	data.success();
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process GetUserAvailabilityRequest
+ *
+ * Provides the functionality of GetUserAvailabilityRequest
+ * (../php/ews/exchange.php:225).
+ *
+ * @todo       Implement timezone transformations
+ * @todo       Check if error handling can be improved
+ *             (using the response message instead of SOAP faults)
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName("GetUserAvailabilityResponse");
+
+	if(!request.FreeBusyViewOptions && !request.SuggestionsViewOptions)
+		throw InputError(E3013);
+	if(!request.TimeZone)
+		throw InputError(E3014);
+
+	tDuration& TimeWindow = request.FreeBusyViewOptions? request.FreeBusyViewOptions->TimeWindow :
+	                                                     request.SuggestionsViewOptions->DetailedSuggestionsWindow;
+
+	mGetUserAvailabilityResponse data;
+	data.FreeBusyResponseArray.emplace().reserve(request.MailboxDataArray.size());
+	for(const tMailboxData& MailboxData : request.MailboxDataArray)
+	{
+		try {
+			string maildir = ctx.get_maildir(MailboxData.Email);
+			time_t start = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.StartTime));
+			time_t end = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.EndTime));
+			tFreeBusyView fbv(ctx.auth_info.username, maildir.c_str(), start, end, ctx);
+			mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(move(fbv));
+			for(auto& event : *fbr.FreeBusyView->CalendarEventArray)
+			{
+				event.StartTime.offset = request.TimeZone->offset(event.StartTime.time);
+				event.EndTime.offset = request.TimeZone->offset(event.EndTime.time);
+			}
+			fbr.ResponseMessage.emplace().success();
+		} catch(AccessDenied&) {
+			mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
+			fbr.FreeBusyView.emplace();
+			fbr.ResponseMessage.emplace("Error", "InvalidAccessLevel",
+			                            "Cannot access freebusy data of "+MailboxData.Email.Address);
+		} catch(DispatchError& err){
+			mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
+			fbr.ResponseMessage.emplace("Error", "ErrorMailRecipientNotFound", "Failed to get freebusy data: "s+err.what());
+		}
+	}
 	data.serialize(response);
 }
 

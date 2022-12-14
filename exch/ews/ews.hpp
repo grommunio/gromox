@@ -7,8 +7,10 @@
 #include <functional>
 #include <optional>
 
+#include <gromox/element_data.hpp>
 #include <gromox/hpm_common.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/mapi_types.hpp>
 
 #include "soaputil.hpp"
 
@@ -17,6 +19,7 @@ namespace gromox::EWS {
 namespace Structures
 {
 struct tMailbox;
+struct tSerializableTimeZone;
 }
 
 
@@ -42,6 +45,16 @@ public:
 		decltype(mysql_adaptor_get_maildir)* get_maildir;
 		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
 	} mysql; ///< mysql adaptor function pointers
+
+	struct _exmdb {
+		_exmdb();
+
+	#define EXMIDL(n, p) BOOL (*n) p;
+	#define IDLOUT
+	#include <gromox/exmdb_idef.hpp>
+	#undef EXMIDL
+	#undef IDLOUT
+	} exmdb;
 
 	std::string x500_org_name; ///< organization name or empty string if not configured
 	int request_logging = 0; ///< 0 = none, 1 = request names, 2 = request data
@@ -76,6 +89,9 @@ struct EWSContext
 	SOAP::Envelope request;
 	SOAP::Envelope response;
 	EWSPlugin& plugin;
+
+	static void* alloc(size_t);
+	template<typename T> static inline T* alloc(size_t count=1) {return reinterpret_cast<T*>(alloc(sizeof(T)*count));}
 };
 
 }

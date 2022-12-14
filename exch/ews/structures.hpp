@@ -4,87 +4,90 @@
 
 #pragma once
 
-#include <array>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include <gromox/clock.hpp>
+#include <gromox/mapidefs.h>
 
-#include "exceptions.hpp"
+#include "enums.hpp"
 
 namespace tinyxml2
 {class XMLElement;}
 
+namespace gromox::EWS
+{struct EWSContext;}
+
 namespace gromox::EWS::Structures
 {
 
+struct tSerializableTimeZone;
+
 /**
- * @brief     String enum
+ * @brief     Formatted time string helper struct
  *
- * Throws when a non-template value is assigned or used for construction.
+ * Parses a time string in hh:mm:ss format into the hour, minute and second
+ * members.
  */
-template<const char* C0, const char*... Cs>
-struct StrEnum : public std::string
+struct sTime
 {
-	static constexpr std::array<const char*, 1+sizeof...(Cs)> Choices{C0, Cs...};
+	sTime(const tinyxml2::XMLElement*);
 
-	StrEnum() = default;
-
-	template<typename... Args>
-	StrEnum(Args&&... args) : std::string(std::forward<Args...>(args...))
-	{check(*this);}
-
-	template<typename Arg>
-	StrEnum& operator=(Arg&& arg)
-	{
-		check(arg);
-		assign(std::forward<Arg>(arg));
-		return *this;
-	}
-
-	static void check(const std::string& v)
-	{
-		for(const char* choice : Choices)
-			if(choice == v)
-				return;
-		std::string msg = "\"";
-		msg += v;
-		msg += "\" is not one of [\"";
-		msg += Choices[0];
-		for(auto it = Choices.begin()+1; it != Choices.end(); ++it)
-		{
-			msg += "\", \"";
-			msg += *it;
-		}
-		msg += "\"]";
-		throw gromox::EWS::Exceptions::EnumError(msg);
-	}
+	uint8_t hour;
+	uint8_t minute;
+	uint8_t second;
 };
 
 /**
- * @brief     Collection of XML enum types
+ * @brief     Timepoint with time zone offset
  */
-struct Enum
+struct sTimePoint
 {
+	sTimePoint(const gromox::time_point&);
+	sTimePoint(const gromox::time_point&, const tSerializableTimeZone&);
 
-	//String constants used in enums
-#define VAL(NAME) static constexpr char NAME[] = #NAME
-	VAL(All);
-	VAL(Disabled);
-	VAL(Enabled);
-	VAL(Known);
-	VAL(None);
-	VAL(Scheduled);
-#undef VAL
+	void serialize(tinyxml2::XMLElement*) const;
 
-	//Enum types
-	using ExternalAudience = StrEnum<None, Known, All>; ///< Types.xsd:6530
-	using OofState = StrEnum<Disabled, Enabled, Scheduled>; ///< Types.xsd:6522
+	gromox::time_point time;
+	std::chrono::minutes offset = std::chrono::minutes(0);
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Types.xsd:6288
+ */
+struct tCalendarEventDetails
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<std::string> ID;
+	std::optional<std::string> Subject;
+	std::optional<std::string> Location;
+	bool IsMeeting;
+	bool IsRecurring;
+	bool IsException;
+	bool IsReminderSet;
+	bool IsPrivate;
+};
+
+/**
+ * Types.xsd:6301
+ */
+struct tCalendarEvent
+{
+	static constexpr char NAME[] = "CalendarEvent";
+
+	tCalendarEvent(time_t start, time_t end, uint32_t btype, const std::string &uid, const char *subj, const char *loc, bool meet, bool recur, bool exc, bool remind, bool pvt, bool detailed);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	sTimePoint StartTime;
+	sTimePoint EndTime;
+	Enum::LegacyFreeBusyType BusyType;
+	std::optional<tCalendarEventDetails> CalenderEventDetails;
+};
 
 /**
  * @brief      Duration
@@ -121,9 +124,68 @@ struct tEmailAddressType
 	std::optional<std::string> Name;
 	std::optional<std::string> EmailAddress;
 	std::optional<std::string> RoutingType;
-	std::optional<std::string> MailboxType; ///< Types.xsd:253
+	std::optional<Enum::MailboxTypeType> MailboxType;
 	std::optional<std::string> ItemId;
 	std::optional<std::string> OriginalDisplayName;
+};
+
+/**
+ * Types.xsd:6372
+ */
+struct tSerializableTimeZoneTime
+{
+	explicit tSerializableTimeZoneTime(const tinyxml2::XMLElement*);
+
+	int32_t Bias;
+	sTime Time;
+	int32_t DayOrder;
+	int32_t Month;
+	Enum::DayOfWeekType DayOfWeek;
+	std::optional<int32_t> Year;
+};
+
+/**
+ * Types.xsd:6383
+ */
+struct tSerializableTimeZone
+{
+	explicit tSerializableTimeZone(const tinyxml2::XMLElement*);
+
+	int32_t Bias;
+	tSerializableTimeZoneTime StandardTime;
+	tSerializableTimeZoneTime DaylightTime;
+
+	std::chrono::minutes offset(const gromox::time_point&) const;
+	gromox::time_point apply(const gromox::time_point&) const;
+	gromox::time_point remove(const gromox::time_point&) const;
+};
+
+/**
+ * Types.xsd:6400
+ */
+struct tFreeBusyView
+{
+	tFreeBusyView() = default;
+	tFreeBusyView(const char*, const char*, time_t, time_t, const EWSContext&);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	Enum::FreeBusyViewType FreeBusyViewType = "None";
+	std::optional<std::string> MergedFreeBusy;
+	std::optional<std::vector<tCalendarEvent>> CalendarEventArray;
+	//<xs:element minOccurs="0" maxOccurs="1" name="WorkingHours" type="t:WorkingHours" />
+};
+
+/**
+ * Types.xsd:6348
+ */
+struct tFreeBusyViewOptions
+{
+	tFreeBusyViewOptions(const tinyxml2::XMLElement*);
+
+	tDuration TimeWindow;
+	std::optional<int32_t> MergedFreeBusyIntervalInMinutes;
+	std::optional<Enum::FreeBusyViewType> RequestedView;
 };
 
 /**
@@ -143,6 +205,18 @@ struct tMailbox
 };
 
 /**
+ * Types.xsd:6409
+ */
+struct tMailboxData
+{
+	tMailboxData(const tinyxml2::XMLElement*);
+
+	tMailbox Email;
+	Enum::MeetingAttendeeType AttendeeType;
+	std::optional<bool> ExcludeConflicts;
+};
+
+/**
  * Types.xsd:6987
  */
 struct tMailTips
@@ -150,7 +224,7 @@ struct tMailTips
 	void serialize(tinyxml2::XMLElement*) const;
 
 	tEmailAddressType RecipientAddress;
-	std::string PendingMailTips; ///< MailTipTypes, Types.xsd:6947
+	Enum::MailTipTypes PendingMailTips;
 
 	//<xs:element minOccurs="0" maxOccurs="1" name="OutOfOffice" type="t:OutOfOfficeMailTip" />
 	//<xs:element minOccurs="0" maxOccurs="1" name="MailboxFull" type="xs:boolean" />
@@ -214,6 +288,23 @@ struct tReplyBody
 };
 
 /**
+ * Types.xsd:6432
+ */
+struct tSuggestionsViewOptions
+{
+	explicit tSuggestionsViewOptions(const tinyxml2::XMLElement*);
+
+	std::optional<int32_t> GoodThreshold;
+	std::optional<int32_t> MaximumResultsByDay;
+	std::optional<int32_t> MaximumNonWorkHourResultsByDay;
+	std::optional<int32_t> MeetingDurationInMinutes;
+	std::optional<Enum::SuggestionQuality> MinimumSuggestionQuality;
+	tDuration DetailedSuggestionsWindow;
+	std::optional<gromox::time_point> CurrentMeetingTime;
+	std::optional<std::string> GlobalObjectId;
+};
+
+/**
  * @brief      User out-of-office settings
  *
  * Types.xsd:6551
@@ -252,10 +343,14 @@ struct tUserOofSettings
  */
 struct mResponseMessageType
 {
+	mResponseMessageType() = default;
+	explicit mResponseMessageType(const std::string&, const std::optional<std::string>& = std::nullopt,
+	                              const std::optional<std::string>& = std::nullopt);
+
 	std::string ResponseClass;
 	std::optional<std::string> MessageText;
 	std::optional<std::string> ResponseCode;
-	std::optional<int> DescriptiveLinkKey;
+	std::optional<int32_t> DescriptiveLinkKey;
 
 	mResponseMessageType& success();
 
@@ -275,7 +370,7 @@ struct mGetMailTipsRequest
 
 	tEmailAddressType SendingAs;
 	std::vector<tEmailAddressType> Recipients;
-	std::string MailTipsRequested; ///< Types.xsd:6947
+	Enum::MailTipTypes MailTipsRequested;
 };
 
 /**
@@ -314,7 +409,7 @@ struct mGetServiceConfigurationRequest
 	explicit mGetServiceConfigurationRequest(const tinyxml2::XMLElement*);
 
 	std::optional<tEmailAddressType> ActingAs;
-	std::vector<std::string> RequestedConfiguration; ///< Types.xsd:7019
+	std::vector<Enum::ServiceConfigurationType> RequestedConfiguration;
 	//<xs:element minOccurs="0" maxOccurs="1" name="ConfigurationRequestDetails" type="t:ConfigurationRequestDetailsType" />
 };
 
@@ -346,6 +441,46 @@ struct mGetServiceConfigurationResponse : mResponseMessageType
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::vector<mGetServiceConfigurationResponseMessageType> ResponseMessages;
+};
+
+/**
+ * Messages.xsd:2204
+ */
+struct mGetUserAvailabilityRequest
+{
+	explicit mGetUserAvailabilityRequest(const tinyxml2::XMLElement*);
+
+	std::optional<tSerializableTimeZone> TimeZone;
+	std::vector<tMailboxData> MailboxDataArray;
+	std::optional<tFreeBusyViewOptions> FreeBusyViewOptions;
+	std::optional<tSuggestionsViewOptions> SuggestionsViewOptions;
+};
+
+/**
+ * Messages.xsd:2182
+ */
+struct mFreeBusyResponse
+{
+	static constexpr char NAME[] = "FreeBusyResponse";
+
+	mFreeBusyResponse() = default;
+	explicit mFreeBusyResponse(tFreeBusyView&&);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<tFreeBusyView> FreeBusyView;
+	std::optional<mResponseMessageType> ResponseMessage;
+};
+
+/**
+ * Messages.xsd:2204
+ */
+struct mGetUserAvailabilityResponse
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<std::vector<mFreeBusyResponse>> FreeBusyResponseArray;
+	//<xs:element minOccurs="0" maxOccurs="1" name="SuggestionsResponse" type="m:SuggestionsResponseType" />
 };
 
 /**
