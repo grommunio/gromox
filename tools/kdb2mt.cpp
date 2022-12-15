@@ -145,7 +145,7 @@ static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
 static enum aclconv g_acl_conv = aclconv::automatic;
 static int g_with_hidden = -1;
 static std::vector<uint32_t> g_only_objs;
-static LR_map g_kuid_to_email, g_username_to_storeguid;
+static LR_map g_kuid_to_email, g_username_to_storeguid, g_zaddr_to_email;
 static uint32_t g_proptag_stubbed;
 
 static void cb_only_obj(const HXoptcb *cb) {
@@ -298,6 +298,35 @@ errno_t ace_list::emplace(std::string &&s, uint32_t r)
 	return 0;
 }
 
+static void substitute_addrs(TPROPVAL_ARRAY *ar)
+{
+	static constexpr std::pair<uint32_t, uint32_t> proplist[] = {
+		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS},
+		{PR_ORIGINAL_SENDER_ADDRTYPE, PR_ORIGINAL_SENDER_EMAIL_ADDRESS},
+		{PR_ORIGINAL_SENT_REPRESENTING_ADDRTYPE, PR_ORIGINAL_SENT_REPRESENTING_EMAIL_ADDRESS},
+		{PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS},
+		{PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS},
+		{PR_ORIGINAL_AUTHOR_ADDRTYPE, PR_ORIGINAL_AUTHOR_EMAIL_ADDRESS},
+		{PR_ORIGINALLY_INTENDED_RECIP_ADDRTYPE, PR_ORIGINALLY_INTENDED_RECIP_EMAIL_ADDRESS},
+		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS},
+		{PR_ADDRTYPE, PR_EMAIL_ADDRESS},
+	};
+	for (const auto &pair : proplist) {
+		auto at = ar->get<const char>(pair.first);
+		if (at == nullptr || strcasecmp(at, "ZARAFA") != 0)
+			continue;
+		auto em = ar->get<const char>(pair.second);
+		if (em == nullptr)
+			continue;
+		auto repl = g_zaddr_to_email.find(em);
+		if (repl == g_zaddr_to_email.end())
+			continue;
+		if (ar->set(TAGGED_PROPVAL{pair.first, deconst("SMTP")}) != 0 ||
+		    ar->set(TAGGED_PROPVAL{pair.second, deconst(repl->second.c_str())}) != 0)
+			throw std::bad_alloc();
+	}
+}
+
 static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 {
 	auto res = drv.query(qstr);
@@ -337,9 +366,13 @@ static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 			throw YError("PK-1007: proptype %xh not supported. Implement me!", pv.proptag);
 		}
 		pv.proptag = PROP_TAG(xtype, xtag);
+
 		if (ar->set(pv) != 0)
 			throw std::bad_alloc();
 	}
+
+	if (g_user_map_file != nullptr)
+		substitute_addrs(ar);
 }
 
 static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
@@ -1379,7 +1412,7 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 	return 0;
 }
 
-static int usermap_read(const char *file, LR_map &ku, LR_map &na)
+static int usermap_read(const char *file, LR_map &ku, LR_map &na, LR_map &ze)
 {
 	size_t slurp_len = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(file, &slurp_len));
@@ -1399,16 +1432,23 @@ static int usermap_read(const char *file, LR_map &ku, LR_map &na)
 			continue;
 		auto srv_guid = row["sv"].asString();
 		HX_strlower(srv_guid.data());
-		if (g_acl_conv == aclconv::convert && !row["to"].isNull() &&
-		    strchr(row["to"].asCString(), '@') != nullptr)
-			ku.emplace(row["id"].asString() + "@" + srv_guid + ".kopano.invalid",
-				row["to"].asString());
-		if (!row["na"].isNull() && !row["st"].isNull()) {
+		auto f_na = !row["na"].isNull() ? row["na"].asCString() : "";
+		auto f_em = !row["em"].isNull() ? row["em"].asCString() : "";
+		auto f_to = !row["to"].isNull() ? row["to"].asCString() : "";
+		if (g_acl_conv == aclconv::convert && *f_to != '\0' &&
+		    strchr(f_to, '@') != nullptr)
+			ku.emplace(row["id"].asString() + "@" + srv_guid +
+				".kopano.invalid", f_to);
+		if (*f_na != '\0' && !row["st"].isNull()) {
 			auto store_guid = row["st"].asString();
 			HX_strlower(store_guid.data());
-			auto p = std::move(srv_guid) + "/" + row["na"].asString();
+			auto p = std::move(srv_guid) + "/" + f_na;
 			na.emplace(std::move(p), std::move(store_guid));
 		}
+		if (*f_na != '\0' && *f_to != '\0')
+			ze.emplace(f_na, f_to);
+		if (*f_em != '\0' && *f_to != '\0')
+			ze.emplace(f_em, f_to);
 	}
 	if (g_acl_conv == aclconv::convert)
 		fprintf(stderr, "usermap %s: %zu x kuid -> (new) emailaddr\n", file, ku.size());
@@ -1450,7 +1490,7 @@ int main(int argc, const char **argv)
 	}
 	if (g_user_map_file != nullptr) {
 		int ret = usermap_read(g_user_map_file, g_kuid_to_email,
-		          g_username_to_storeguid);
+		          g_username_to_storeguid, g_zaddr_to_email);
 		if (ret != EXIT_SUCCESS)
 			return ret;
 	}

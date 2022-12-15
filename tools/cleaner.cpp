@@ -113,6 +113,7 @@ static uint64_t delete_unused_files(const std::string &cid_dir,
 	struct dirent *de;
 	auto dfd = dirfd(dh.get());
 	uint64_t bytes = 0;
+	size_t filecount = 0;
 	while ((de = readdir(dh.get())) != nullptr) {
 		if (*de->d_name == '.')
 			continue;
@@ -140,16 +141,19 @@ static uint64_t delete_unused_files(const std::string &cid_dir,
 			HX_unit_size_cu(buf, arsizeof(buf), sb.st_size, 0);
 			printf("%s: removing... (%sB)\n", de->d_name, buf);
 		}
-		if (g_dry_run)
+		if (g_dry_run) {
 			bytes += sb.st_size;
-		else if (unlinkat(dfd, de->d_name, 0) != 0)
+			++filecount;
+		} else if (unlinkat(dfd, de->d_name, 0) != 0) {
 			fprintf(stderr, "unlink(%s): %s\n", de->d_name, strerror(errno));
-		else
+		} else {
 			bytes += sb.st_size;
+			++filecount;
+		}
 	}
 	char buf[32];
 	HX_unit_size(buf, arsizeof(buf), bytes, 0, 0);
-	printf("Purged %sB from %s\n", buf, cid_dir.c_str());
+	printf("Purged %zu files (%sB) from %s\n", filecount, buf, cid_dir.c_str());
 	return bytes;
 }
 
