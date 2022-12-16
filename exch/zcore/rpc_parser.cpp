@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <chrono>
 #include <condition_variable>
 #include <csignal>
 #include <cstdint>
@@ -12,6 +13,7 @@
 #include <vector>
 #include <sys/socket.h>
 #include <gromox/atomic.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/util.hpp>
@@ -68,6 +70,7 @@ BOOL rpc_parser_activate_connection(int clifd)
 
 static int rpc_parser_dispatch(const zcreq *q0, zcresp *&r0)
 {
+	auto tstart = tp_now();
 	switch (q0->call_id) {
 #include <zrpc_dispatch.cpp>
 	default:
@@ -75,15 +78,17 @@ static int rpc_parser_dispatch(const zcreq *q0, zcresp *&r0)
 		        static_cast<unsigned int>(r0->call_id));
 		return DISPATCH_FALSE;
 	}
+	auto tend = tp_now();
 	if (q0->call_id == zcore_callid::notifdequeue && r0->result == ecNotFound)
 		return DISPATCH_CONTINUE;
 	r0->call_id = q0->call_id;
 	if (g_zrpc_debug == 0)
 		return DISPATCH_TRUE;
 	if (r0->result != 0 || g_zrpc_debug == 2)
-		mlog(LV_DEBUG, "ZRPC %s %8xh %s",
+		mlog(LV_DEBUG, "ZRPC %s %8xh %5luµs %s",
 		        r0->result == 0 ? "ok  " : "FAIL",
 		        r0->result,
+		        static_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()),
 		        zcore_rpc_idtoname(q0->call_id));
 	return DISPATCH_TRUE;
 }
