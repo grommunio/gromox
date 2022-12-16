@@ -1,13 +1,18 @@
-Development 1.36.23
+Development 1.36.35
 ===================
 
 Enhancements:
 
-* kdb2mt: full user resolution with new option --mbox-name
+* kdb2mt: full user resolution with new option --mbox-name/--user-map
+* kdb2mt: translate PR_*_ADDRTYPE from ZARAFA to SMTP (via --user-map)
 
 Fixes:
 
 * kdb2mt: repair printing of tree graphics when ACL lists are dumped with -t -p
+* Fixed a parsing inconsistency between LF and CRLF mail input
+* zcore: support on-the-fly EML (re-)generation in zs_messagetorfc822
+* zcore: allow zs_linktomessage RPC if store permissions allow for it
+* emsmdb: avoid synchronizing PR_PREVIEW
 
 Changes:
 
