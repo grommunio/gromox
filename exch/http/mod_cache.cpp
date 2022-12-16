@@ -283,6 +283,7 @@ static const char *status_text(unsigned int s)
 	case 304: return "304 Not Modified";
 	case 400: return "400 Bad Request";
 	case 403: return "403 Permission denied";
+	case 404: return "404 Not Found";
 	case 416: return "416 Range Not Satisfiable";
 	case 4162: return "416 Too Many Ranges";
 	case 503: return "503 Service Unavailable";
