@@ -33,6 +33,9 @@
  * Reserved:                          0xFFFF
  *
  * There are some more reserved ranges, but we need not bother with it.
+ * NSP does not have named properties, so...
+ *
+ *  More properties!                  0x8000..0xFFFE
  */
 enum {
 	PR_NULL = PROP_TAG(PT_NULL, 0x0000), /* PidTagNull */
@@ -1058,8 +1061,8 @@ enum {
 	// PR_EMS_AB_OBJ_DIST_NAME = PROP_TAG(PT_UNICODE, 0x803C), /* PidTagAddressBookObjectDistinguishedName */
 	// PR_EMS_AB_DELIV_CONT_LENGTH = PROP_TAG(PT_LONG, 0x806A), /* PidTagAddressBookDeliveryContentLength */
 	// PR_EMS_AB_DL_MEM_SUBMIT_PERMS_BL_O = PROP_TAG(PT_OBJECT, 0x8073), /* PidTagAddressBookDistributionListMemberSubmitAccepted */
-	PR_EMS_AB_NETWORK_ADDRESS = PROP_TAG(PT_UNICODE, 0x8170), /* PidTagAddressBookNetworkAddress */
-	PR_EMS_AB_NETWORK_ADDRESS_A = PROP_TAG(PT_STRING8, 0x8170),
+	PR_EMS_AB_NETWORK_ADDRESS = PROP_TAG(PT_MV_UNICODE, 0x8170), /* PidTagAddressBookNetworkAddress */
+	PR_EMS_AB_NETWORK_ADDRESS_A = PROP_TAG(PT_MV_STRING8, 0x8170),
 	// PR_EMS_AB_EXTENSION_ATTRIBUTE_11 = PROP_TAG(PT_UNICODE, 0x8C57), /* PidTagAddressBookExtensionAttribute11 */
 	// PR_EMS_AB_EXTENSION_ATTRIBUTE_12 = PROP_TAG(PT_UNICODE, 0x8C58), /* PidTagAddressBookExtensionAttribute12 */
 	// PR_EMS_AB_EXTENSION_ATTRIBUTE_13 = PROP_TAG(PT_UNICODE, 0x8C59), /* PidTagAddressBookExtensionAttribute13 */
