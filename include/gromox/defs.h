@@ -88,6 +88,10 @@ static inline constexpr bool is_nameprop_id(unsigned int i) { return i >= 0x8000
 
 namespace gromox {
 
+struct iseq_node {
+	int min, max;
+};
+
 struct stdlib_delete {
 	inline void operator()(void *x) const { free(x); }
 };

@@ -43,12 +43,6 @@ using AGENT_MITEM = MITEM;
 
 namespace {
 
-struct SEQUENCE_NODE {
-	DOUBLE_LIST_NODE node;
-	int min;
-	int max;
-};
-
 struct BACK_SVR;
 struct BACK_CONN {
 	int sockd = -1;
@@ -103,10 +97,10 @@ static int list_simple(const char *path, const char *folder, XARRAY *, int *perr
 static int list_deleted(const char *path, const char *folder, XARRAY *, int *perrno);
 static int list_detail(const char *path, const char *folder, XARRAY *pxarray, int *perrno);
 static void free_result(XARRAY *pxarray);
-static int fetch_simple(const char *path, const char *folder, const DOUBLE_LIST *, XARRAY *, int *perrno);
-static int fetch_detail(const char *path, const char *folder, const DOUBLE_LIST *, XARRAY *, int *perrno);
-static int fetch_simple_uid(const char *path, const char *folder, const DOUBLE_LIST *, XARRAY *, int *perrno);
-static int fetch_detail_uid(const char *path, const char *folder, const DOUBLE_LIST *, XARRAY *, int *perrno);
+static int fetch_simple(const char *path, const char *folder, const std::vector<iseq_node> &, XARRAY *, int *perrno);
+static int fetch_detail(const char *path, const char *folder, const std::vector<iseq_node> &, XARRAY *, int *perrno);
+static int fetch_simple_uid(const char *path, const char *folder, const std::vector<iseq_node> &, XARRAY *, int *perrno);
+static int fetch_detail_uid(const char *path, const char *folder, const std::vector<iseq_node> &, XARRAY *, int *perrno);
 static int set_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
 static int unset_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
 static int get_mail_flags(const char *path, const char *folder, const char *mid_string, int *pflag_bits, int *perrno);
@@ -1683,7 +1677,7 @@ static void free_result(XARRAY *pxarray)
 }
 
 static int fetch_simple(const char *path, const char *folder,
-    const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
+    const std::vector<iseq_node> &list, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -1704,9 +1698,8 @@ static int fetch_simple(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	
-	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pseq = static_cast<const SEQUENCE_NODE *>(pnode->pdata);
+	for (const auto &seq : list) {
+		auto pseq = &seq;
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
 				length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC -1 1\r\n",
@@ -1833,7 +1826,7 @@ static int fetch_simple(const char *path, const char *folder,
 }
 
 static int fetch_detail(const char *path, const char *folder,
-    const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
+    const std::vector<iseq_node> &list, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -1860,9 +1853,8 @@ static int fetch_detail(const char *path, const char *folder,
 		pxarray->clear();
 	});
 	
-	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pseq = static_cast<const SEQUENCE_NODE *>(pnode->pdata);
+	for (const auto &seq : list) {
+		auto pseq = &seq;
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
 				length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC -1 1\r\n",
@@ -1987,7 +1979,7 @@ static int fetch_detail(const char *path, const char *folder,
 }
 
 static int fetch_simple_uid(const char *path, const char *folder,
-    const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
+    const std::vector<iseq_node> &list, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -2008,9 +2000,8 @@ static int fetch_simple_uid(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	
-	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pseq = static_cast<const SEQUENCE_NODE *>(pnode->pdata);
+	for (const auto &seq : list) {
+		auto pseq = &seq;
 		auto length = gx_snprintf(buff, arsizeof(buff), "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
 					pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
@@ -2133,7 +2124,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 }
 
 static int fetch_detail_uid(const char *path, const char *folder,
-    const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
+    const std::vector<iseq_node> &list, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -2161,9 +2152,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 		pxarray->clear();
 	});
 	
-	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pseq = static_cast<const SEQUENCE_NODE *>(pnode->pdata);
+	for (const auto &seq : list) {
+		auto pseq = &seq;
 		auto length = gx_snprintf(buff, arsizeof(buff), "P-DTLU %s %s UID ASC %d %d\r\n", path,
 					folder, pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
