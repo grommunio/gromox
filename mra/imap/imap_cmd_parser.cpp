@@ -15,6 +15,7 @@
 #include <memory>
 #include <string>
 #include <unistd.h>
+#include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
@@ -35,16 +36,6 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-namespace {
-
-struct SEQUENCE_NODE {
-	DOUBLE_LIST_NODE node;
-	int min;
-	int max;
-};
-
-}
-
 enum {
 	TYPE_WILDS = 1,
 	TYPE_WILDP
@@ -63,14 +54,11 @@ static inline bool special_folder(const char *name)
 	return false;
 }
 
-static BOOL imap_cmd_parser_hint_sequence(DOUBLE_LIST *plist,
+static BOOL icp_hint_seq(const std::vector<iseq_node> &list,
 	unsigned int num, unsigned int max_uid)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
+	for (const auto &seq : list) {
+		auto pseq = &seq;
 		if (-1 == pseq->max) {
 			if (-1 == pseq->min) {
 				if (num == max_uid)
@@ -88,11 +76,10 @@ static BOOL imap_cmd_parser_hint_sequence(DOUBLE_LIST *plist,
 	return FALSE;
 }
 
-static BOOL imap_cmd_parser_parse_sequence(DOUBLE_LIST *plist,
-    SEQUENCE_NODE *nodes, char *string)
+static BOOL icp_parse_seq(std::vector<iseq_node> &list, char *string) try
 {
 	int i, j;
-	int len, temp;
+	int len;
 	char *last_colon;
 	char *last_break;
 	
@@ -102,18 +89,16 @@ static BOOL imap_cmd_parser_parse_sequence(DOUBLE_LIST *plist,
 	else
 		string[len] = ',';
 
-	double_list_init(plist);
+	list.clear();
 	last_break = string;
 	last_colon = NULL;
 	for (i=0,j=0; i<=len&&j<1024; i++) {
 		if (!HX_isdigit(string[i]) && string[i] != '*'
 			&& ',' != string[i] && ':' != string[i]) {
-			double_list_free(plist);
 			return FALSE;
 		}
 		if (':' == string[i]) {
 			if (NULL != last_colon) {
-				double_list_free(plist);
 				return FALSE;
 			} else {
 				last_colon = string + i;
@@ -124,61 +109,48 @@ static BOOL imap_cmd_parser_parse_sequence(DOUBLE_LIST *plist,
 			continue;
 		}
 		if (0 == string + i - last_break) {
-			double_list_free(plist);
 			return FALSE;
 		}
 		string[i] = '\0';
-		nodes[j].node.pdata = &nodes[j];
+		iseq_node seq;
 		if (last_colon == nullptr) {
 			if (*last_break == '*' ||
-			    (nodes[j].min = strtol(last_break, nullptr, 0)) <= 0) {
-				double_list_free(plist);
+			    (seq.min = strtol(last_break, nullptr, 0)) <= 0)
 				return FALSE;
-			}
-			nodes[j].max = nodes[j].min;
+			seq.max = seq.min;
 		} else if (strcmp(last_break, "*") == 0) {
-			nodes[j].max = -1;
+			seq.max = -1;
 			if (0 == strcmp(last_colon + 1, "*")) {
-				nodes[j].min = -1;
+				seq.min = -1;
 			} else {
-				nodes[j].min = strtol(last_colon + 1, nullptr, 0);
-				if (nodes[j].min <= 0) {
-					double_list_free(plist);
+				seq.min = strtol(last_colon + 1, nullptr, 0);
+				if (seq.min <= 0)
 					return FALSE;
-				}
 			}
 			last_colon = nullptr;
 		} else {
-			nodes[j].min = strtol(last_break, nullptr, 0);
-			if (nodes[j].min <= 0) {
-				double_list_free(plist);
+			seq.min = strtol(last_break, nullptr, 0);
+			if (seq.min <= 0)
 				return FALSE;
-			}
 			if (0 == strcmp(last_colon + 1, "*")) {
-				nodes[j].max = -1;
+				seq.max = -1;
 			} else {
-				nodes[j].max = strtol(last_colon + 1, nullptr, 0);
-				if (nodes[j].max <= 0) {
-					double_list_free(plist);
+				seq.max = strtol(last_colon + 1, nullptr, 0);
+				if (seq.max <= 0)
 					return FALSE;
-				}
 			}
 			last_colon = nullptr;
 		}
-		if (-1 != nodes[j].max && nodes[j].max < nodes[j].min) {
-			temp = nodes[j].max;
-			nodes[j].max = nodes[j].min;
-			nodes[j].min = temp;
-		}
+		if (seq.max != -1 && seq.max < seq.min)
+			std::swap(seq.min, seq.max);
 		last_break = string + i + 1;
-		double_list_append_as_tail(plist, &nodes[j].node);
+		list.push_back(std::move(seq));
 		j++;
 	}
-	if (1024 == j) {
-		double_list_free(plist);
-		return FALSE;
-	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1211: ENOMEM");
+	return false;
 }
 
 static void imap_cmd_parser_find_arg_node(DOUBLE_LIST *plist,
@@ -2653,15 +2625,13 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
 	char* tmp_argv[128];
-	DOUBLE_LIST list_seq;
+	std::vector<iseq_node> list_seq;
 	DOUBLE_LIST list_data;
 	DOUBLE_LIST_NODE nodes[1024];
-	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 4 || !imap_cmd_parser_parse_sequence(&list_seq,
-	    sequence_nodes, argv[2]))
+	if (argc < 4 || !icp_parse_seq(list_seq, argv[2]))
 		return 1800;
 	if (!imap_cmd_parser_parse_fetch_args(&list_data, nodes, &b_detail,
 	    &b_data, argv[3], tmp_argv, arsizeof(tmp_argv)))
@@ -2669,9 +2639,9 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = b_detail ?
 	           system_services_fetch_detail(pcontext->maildir,
-	           pcontext->selected_folder, &list_seq, &xarray, &errnum) :
+	           pcontext->selected_folder, list_seq, &xarray, &errnum) :
 	           system_services_fetch_simple(pcontext->maildir,
-	           pcontext->selected_folder, &list_seq, &xarray, &errnum);
+	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
 		return result;
@@ -2723,13 +2693,12 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int flag_bits;
 	int temp_argc;
 	char *temp_argv[8];
-	DOUBLE_LIST list_seq;
-	SEQUENCE_NODE sequence_nodes[1024];
+	std::vector<iseq_node> list_seq;
 
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 5 || !imap_cmd_parser_parse_sequence(&list_seq,
-	    sequence_nodes, argv[2]) || !store_flagkeyword(argv[3]))
+	if (argc < 5 || !icp_parse_seq(list_seq, argv[2]) ||
+	    !store_flagkeyword(argv[3]))
 		return 1800;
 	if ('(' == argv[4][0] && ')' == argv[4][strlen(argv[4]) - 1]) {
 		temp_argc = parse_imap_args(argv[4] + 1, strlen(argv[4]) - 2,
@@ -2759,7 +2728,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = system_services_fetch_simple(pcontext->maildir,
-	           pcontext->selected_folder, &list_seq, &xarray, &errnum);
+	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
 		return result;
@@ -2785,20 +2754,19 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_name[1024];
-	DOUBLE_LIST list_seq;
+	std::vector<iseq_node> list_seq;
 	char uid_string[64*1024];
 	char uid_string1[64*1024];
-	SEQUENCE_NODE sequence_nodes[1024];
     
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 4 || !imap_cmd_parser_parse_sequence(&list_seq, sequence_nodes, argv[2]) ||
+	if (argc < 4 || !icp_parse_seq(list_seq, argv[2]) ||
 	    strlen(argv[3]) == 0 || strlen(argv[3]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[3], temp_name))
 		return 1800;
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = system_services_fetch_simple(pcontext->maildir,
-	           pcontext->selected_folder, &list_seq, &xarray, &errnum);
+	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
 		return result;
@@ -2927,16 +2895,14 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
 	char* tmp_argv[128];
-	DOUBLE_LIST list_seq;
+	std::vector<iseq_node> list_seq;
 	DOUBLE_LIST list_data;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE nodes[1024];
-	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 5 || !imap_cmd_parser_parse_sequence(&list_seq,
-	    sequence_nodes, argv[3]))
+	if (argc < 5 || !icp_parse_seq(list_seq, argv[3]))
 		return 1800;
 	if (!imap_cmd_parser_parse_fetch_args(&list_data, nodes, &b_detail,
 	    &b_data, argv[4], tmp_argv, arsizeof(tmp_argv)))
@@ -2952,9 +2918,9 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = b_detail ?
 	           system_services_fetch_detail_uid(pcontext->maildir,
-	           pcontext->selected_folder, &list_seq, &xarray, &errnum) :
+	           pcontext->selected_folder, list_seq, &xarray, &errnum) :
 	           system_services_fetch_simple_uid(pcontext->maildir,
-	           pcontext->selected_folder, &list_seq, &xarray, &errnum);
+	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
@@ -2993,13 +2959,12 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum, i, flag_bits, temp_argc;
 	char *temp_argv[8];
-	DOUBLE_LIST list_seq;
-	SEQUENCE_NODE sequence_nodes[1024];
+	std::vector<iseq_node> list_seq;
 
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 6 || !imap_cmd_parser_parse_sequence(&list_seq,
-	    sequence_nodes, argv[3]) || !store_flagkeyword(argv[4]))
+	if (argc < 6 || !icp_parse_seq(list_seq, argv[3]) ||
+	    !store_flagkeyword(argv[4]))
 		return 1800;
 	if ('(' == argv[5][0] && ')' == argv[5][strlen(argv[5]) - 1]) {
 		temp_argc = parse_imap_args(argv[5] + 1, strlen(argv[5]) - 2,
@@ -3029,7 +2994,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
-	           pcontext->selected_folder, &list_seq, &xarray, &errnum);
+	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
@@ -3055,19 +3020,18 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_name[1024];
-	DOUBLE_LIST list_seq;
+	std::vector<iseq_node> list_seq;
 	char uid_string[64*1024];
-	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 5 || !imap_cmd_parser_parse_sequence(&list_seq, sequence_nodes, argv[3]) ||
+	if (argc < 5 || !icp_parse_seq(list_seq, argv[3]) ||
 	    strlen(argv[4]) == 0 || strlen(argv[4]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[4], temp_name))
 		return 1800;
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
-	           pcontext->selected_folder, &list_seq, &xarray, &errnum);
+	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
@@ -3156,15 +3120,13 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	BOOL b_deleted;
 	char buff[1024];
 	size_t string_length = 0;
-    DOUBLE_LIST list_seq;
-	SEQUENCE_NODE sequence_nodes[1024];
+	std::vector<iseq_node> list_seq;
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
 	if (pcontext->b_readonly)
 		return 1806;
-	if (argc < 4 || !imap_cmd_parser_parse_sequence(&list_seq,
-	    sequence_nodes, argv[3]))
+	if (argc < 4 || !icp_parse_seq(list_seq, argv[3]))
 		return 1800;
 	b_deleted = FALSE;
 	XARRAY xarray(g_alloc_xarray);
@@ -3184,8 +3146,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	for (size_t i = 0; i < num; ++i) {
 		pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem) ||
-		    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
-		    max_uid))
+		    !icp_hint_seq(list_seq, pitem->uid, max_uid))
 			continue;
 		exp_list.push_back(pitem);
 	}
@@ -3200,8 +3161,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	for (size_t i = 0; i < xarray.get_capacity(); ++i) try {
 		pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem) ||
-		    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
-		    max_uid))
+		    !icp_hint_seq(list_seq, pitem->uid, max_uid))
 			continue;
 		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
