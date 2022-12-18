@@ -1355,42 +1355,43 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 				last_colon = string + i;
 				*last_colon = '\0';
 			}
-		} else if (',' == string[i]) {
-			if (string + i - last_break == 0)
-				return NULL;
-			string[i] = '\0';
-			seq_node seq, *pseq = &seq;
-			if (NULL != last_colon) {
-				if (0 == strcmp(last_break, "*")) {
-					if (strcmp(last_colon + 1, "*") != 0) {
-						pseq->min = strtol(last_colon + 1, nullptr, 0);
-						if (!pseq->has_min())
-							return NULL;
-					}
-				} else {
-					pseq->min = strtol(last_break, nullptr, 0);
-					if (!pseq->has_min())
-						return NULL;
-					if (strcmp(last_colon + 1, "*") != 0) {
-						pseq->max = strtol(last_colon + 1, nullptr, 0);
-						if (!pseq->has_max())
-							return NULL;
-					}
-				}
-				last_colon = NULL;
-			} else {
-				if (*last_break == '*') {
-					pseq->min = strtol(last_break, nullptr, 0);
-					if (!pseq->has_min())
-						return NULL;
-				}
-				pseq->max = pseq->min;
-			}
-			if (pseq->max < pseq->min)
-				std::swap(pseq->min, pseq->max);
-			last_break = string + i + 1;
-			plist->push_back(seq_node{seq.min, seq.max});
+			continue;
+		} else if (string[i] != ',') {
+			continue;
 		}
+		if (string + i - last_break == 0)
+			return NULL;
+		string[i] = '\0';
+		seq_node seq, *pseq = &seq;
+		if (last_colon == nullptr) {
+			if (*last_break == '*') {
+				pseq->min = strtol(last_break, nullptr, 0);
+				if (!pseq->has_min())
+					return NULL;
+			}
+			pseq->max = pseq->min;
+		} else if (strcmp(last_break, "*") == 0) {
+			if (strcmp(last_colon + 1, "*") != 0) {
+				pseq->min = strtol(last_colon + 1, nullptr, 0);
+				if (!pseq->has_min())
+					return NULL;
+			}
+			last_colon = nullptr;
+		} else {
+			pseq->min = strtol(last_break, nullptr, 0);
+			if (!pseq->has_min())
+				return NULL;
+			if (strcmp(last_colon + 1, "*") != 0) {
+				pseq->max = strtol(last_colon + 1, nullptr, 0);
+				if (!pseq->has_max())
+					return NULL;
+			}
+			last_colon = nullptr;
+		}
+		if (pseq->max < pseq->min)
+			std::swap(pseq->min, pseq->max);
+		last_break = string + i + 1;
+		plist->push_back(seq_node{seq.min, seq.max});
 	}
 	return plist;
 } catch (const std::bad_alloc &) {
