@@ -119,59 +119,60 @@ static BOOL imap_cmd_parser_parse_sequence(DOUBLE_LIST *plist,
 				last_colon = string + i;
 				*last_colon = '\0';
 			}
-		} else if (',' == string[i]) {
-			if (0 == string + i - last_break) {
+			continue;
+		} else if (string[i] != ',') {
+			continue;
+		}
+		if (0 == string + i - last_break) {
+			double_list_free(plist);
+			return FALSE;
+		}
+		string[i] = '\0';
+		nodes[j].node.pdata = &nodes[j];
+		if (last_colon == nullptr) {
+			if (*last_break == '*' ||
+			    (nodes[j].min = strtol(last_break, nullptr, 0)) <= 0) {
 				double_list_free(plist);
 				return FALSE;
 			}
-			string[i] = '\0';
-			nodes[j].node.pdata = &nodes[j];
-			if (NULL != last_colon) {
-				if (0 == strcmp(last_break, "*")) {
-					nodes[j].max = -1;
-					if (0 == strcmp(last_colon + 1, "*")) {
-						nodes[j].min = -1;
-					} else {
-						nodes[j].min = strtol(last_colon + 1, nullptr, 0);
-						if (nodes[j].min <= 0) {
-							double_list_free(plist);
-							return FALSE;
-						}
-					}
-				} else {
-					nodes[j].min = strtol(last_break, nullptr, 0);
-					if (nodes[j].min <= 0) {
-						double_list_free(plist);
-						return FALSE;
-					}
-					if (0 == strcmp(last_colon + 1, "*")) {
-						nodes[j].max = -1;
-					} else {
-						nodes[j].max = strtol(last_colon + 1, nullptr, 0);
-						if (nodes[j].max <= 0) {
-							double_list_free(plist);
-							return FALSE;
-						}
-					}
-				}
-				last_colon = NULL;
+			nodes[j].max = nodes[j].min;
+		} else if (strcmp(last_break, "*") == 0) {
+			nodes[j].max = -1;
+			if (0 == strcmp(last_colon + 1, "*")) {
+				nodes[j].min = -1;
 			} else {
-				if ('*' == *last_break ||
-				    (nodes[j].min = strtol(last_break, nullptr, 0)) <= 0) {
+				nodes[j].min = strtol(last_colon + 1, nullptr, 0);
+				if (nodes[j].min <= 0) {
 					double_list_free(plist);
 					return FALSE;
 				}
-				nodes[j].max = nodes[j].min;
 			}
-			if (-1 != nodes[j].max && nodes[j].max < nodes[j].min) {
-				temp = nodes[j].max;
-				nodes[j].max = nodes[j].min;
-				nodes[j].min = temp;
+			last_colon = nullptr;
+		} else {
+			nodes[j].min = strtol(last_break, nullptr, 0);
+			if (nodes[j].min <= 0) {
+				double_list_free(plist);
+				return FALSE;
 			}
-			last_break = string + i + 1;
-			double_list_append_as_tail(plist, &nodes[j].node);
-			j ++;
+			if (0 == strcmp(last_colon + 1, "*")) {
+				nodes[j].max = -1;
+			} else {
+				nodes[j].max = strtol(last_colon + 1, nullptr, 0);
+				if (nodes[j].max <= 0) {
+					double_list_free(plist);
+					return FALSE;
+				}
+			}
+			last_colon = nullptr;
 		}
+		if (-1 != nodes[j].max && nodes[j].max < nodes[j].min) {
+			temp = nodes[j].max;
+			nodes[j].max = nodes[j].min;
+			nodes[j].min = temp;
+		}
+		last_break = string + i + 1;
+		double_list_append_as_tail(plist, &nodes[j].node);
+		j++;
 	}
 	if (1024 == j) {
 		double_list_free(plist);
