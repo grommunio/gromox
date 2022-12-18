@@ -119,10 +119,7 @@ static BOOL icp_parse_seq(std::vector<iseq_node> &list, char *string) try
 				return FALSE;
 			seq.max = seq.min;
 		} else if (strcmp(last_break, "*") == 0) {
-			seq.max = -1;
-			if (0 == strcmp(last_colon + 1, "*")) {
-				seq.min = -1;
-			} else {
+			if (strcmp(last_colon + 1, "*") != 0) {
 				seq.min = strtol(last_colon + 1, nullptr, 0);
 				if (seq.min <= 0)
 					return FALSE;
@@ -132,9 +129,7 @@ static BOOL icp_parse_seq(std::vector<iseq_node> &list, char *string) try
 			seq.min = strtol(last_break, nullptr, 0);
 			if (seq.min <= 0)
 				return FALSE;
-			if (0 == strcmp(last_colon + 1, "*")) {
-				seq.max = -1;
-			} else {
+			if (strcmp(last_colon + 1, "*") != 0) {
 				seq.max = strtol(last_colon + 1, nullptr, 0);
 				if (seq.max <= 0)
 					return FALSE;
