@@ -1686,16 +1686,14 @@ static void mail_engine_sync_message(IDB_ITEM *pidb,
 			NULL, message_flags, received_time, mod_time);
 }
 
-static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
+static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 {
 	const char *dir;
 	TARRAY_SET rows;
 	sqlite3 *psqlite;
 	uint32_t uidnext;
 	uint32_t uidnext1;
-	DOUBLE_LIST temp_list;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
 	
 	dir = common_util_get_maildir();
 	mlog(LV_NOTICE, "Running sync_contents for %s, folder %llu",
@@ -1829,32 +1827,26 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	         " FROM messages WHERE message_id=?");
 	if (pstmt1 == nullptr)
 		return FALSE;
-	double_list_init(&temp_list);
+
+	std::vector<uint64_t> temp_list;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
-			pnode = cu_alloc<DOUBLE_LIST_NODE>();
-			if (pnode == nullptr)
-				return FALSE;
-			pnode->pdata = cu_alloc<uint64_t>();
-			if (pnode->pdata == nullptr)
-				return FALSE;
-			*static_cast<uint64_t *>(pnode->pdata) = message_id;
-			double_list_append_as_tail(&temp_list, pnode);
+			temp_list.push_back(message_id);
 		}
 	}
 	pstmt.finalize();
 	pstmt1.finalize();
-	if (0 != double_list_get_nodes_num(&temp_list)) {
+	if (temp_list.size() > 0) {
 		pstmt = gx_sql_prep(pidb->psqlite, "DELETE "
 		        "FROM messages WHERE message_id=?");
 		if (pstmt == nullptr)
 			return FALSE;
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
+		for (auto id : temp_list) {
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, *static_cast<uint64_t *>(pnode->pdata));
+			pstmt.bind_int64(1, id);
 			if (sqlite3_step(pstmt) != SQLITE_DONE)
 				return FALSE;
 		}
@@ -1871,6 +1863,9 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	        "WHERE folder_id=%llu", FIELD_NONE, LLU{folder_id});
 	gx_sql_exec(pidb->psqlite, sql_string);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1208: ENOMEM");
+	return false;
 }
 
 static unsigned int spname_to_fid(const char *s)
@@ -1896,37 +1891,28 @@ static const char *spfid_to_name(unsigned int z)
 }
 
 static BOOL mail_engine_get_encoded_name(sqlite3_stmt *pstmt,
-	uint64_t folder_id, char *encoded_name)
+    uint64_t folder_id, char *encoded_name) try
 {
-	int length;
-	int offset;
 	char temp_name[512];
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
 
 	if (auto x = spfid_to_name(folder_id)) {
 		strcpy(encoded_name, x);
 		return TRUE;
 	}
-	double_list_init(&temp_list);
+
+	std::vector<std::string> temp_list;
 	do {
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, folder_id);
 		if (sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
-		pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (pnode == nullptr)
-			return FALSE;
 		folder_id = sqlite3_column_int64(pstmt, 0);
-		pnode->pdata = static_cast<char *>(common_util_dup(S2A(sqlite3_column_text(pstmt, 1))));
-		if (pnode->pdata == nullptr)
-			return FALSE;
-		double_list_insert_as_head(&temp_list, pnode);
+		temp_list.emplace_back(S2A(sqlite3_column_text(pstmt, 1)));
 	} while (PRIVATE_FID_IPMSUBTREE != folder_id);
-	offset = 0;
-	for (pnode=double_list_get_head(&temp_list); NULL!=pnode;
-		pnode=double_list_get_after(&temp_list, pnode)) {
-		length = strlen(static_cast<char *>(pnode->pdata));
+	std::reverse(temp_list.begin(), temp_list.end());
+	size_t offset = 0;
+	for (const auto &name : temp_list) {
+		auto length = name.size();
 		if (length >= 256)
 			return FALSE;
 		if (0 != offset) {
@@ -1935,11 +1921,14 @@ static BOOL mail_engine_get_encoded_name(sqlite3_stmt *pstmt,
 		}
 		if (offset + length >= 512)
 			return FALSE;
-		memcpy(temp_name + offset, pnode->pdata, length);
+		memcpy(&temp_name[offset], name.c_str(), length);
 		offset += length;
 	}
 	encode_hex_binary(temp_name, offset, encoded_name, 1024);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1207: ENOMEM");
+	return false;
 }
 
 static uint64_t mail_engine_get_top_folder_id(
@@ -1969,7 +1958,8 @@ static bool skip_folder_class(const char *c)
 	return true;
 }
 
-static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
+static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
+    bool force_resync = false) try
 {
 	BOOL b_new;
 	const char *dir;
@@ -1980,9 +1970,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	uint64_t parent_fid;
 	uint64_t commit_max;
 	char sql_string[1280];
-	DOUBLE_LIST temp_list;
 	PROPTAG_ARRAY proptags;
-	DOUBLE_LIST_NODE *pnode;
 	char encoded_name[1024];
 	uint32_t proptag_buff[6];
 	
@@ -2139,32 +2127,26 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	         "folder_id FROM folders WHERE folder_id=?");
 	if (pstmt1 == nullptr)
 		return false;
-	double_list_init(&temp_list);
+
+	std::vector<uint64_t> temp_list;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		uint64_t folder_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, folder_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
-			pnode = cu_alloc<DOUBLE_LIST_NODE>();
-			if (pnode == nullptr)
-				return false;
-			pnode->pdata = cu_alloc<uint64_t>();
-			if (pnode->pdata == nullptr)
-				return false;
-			*static_cast<uint64_t *>(pnode->pdata) = folder_id;
-			double_list_append_as_tail(&temp_list, pnode);
+			temp_list.push_back(folder_id);
 		}
 	}
 	pstmt.finalize();
 	pstmt1.finalize();
-	if (0 != double_list_get_nodes_num(&temp_list)) {
+	if (temp_list.size() > 0) {
 		pstmt = gx_sql_prep(pidb->psqlite, "DELETE"
 		        " FROM folders WHERE folder_id=?");
 		if (pstmt == nullptr)
 			return false;
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
+		for (auto id : temp_list) {
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, *static_cast<uint64_t *>(pnode->pdata));
+			pstmt.bind_int64(1, id);
 			if (sqlite3_step(pstmt) != SQLITE_DONE)
 				return false;
 		}
@@ -2182,6 +2164,9 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 	time(&pidb->load_time);
 	mlog(LV_NOTICE, "Ended sync_mailbox for %s", dir);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1206: ENOMEM");
+	return false;
 }
 
 static IDB_REF mail_engine_peek_idb(const char *path)
