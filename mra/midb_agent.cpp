@@ -97,10 +97,10 @@ static int list_simple(const char *path, const char *folder, XARRAY *, int *perr
 static int list_deleted(const char *path, const char *folder, XARRAY *, int *perrno);
 static int list_detail(const char *path, const char *folder, XARRAY *pxarray, int *perrno);
 static void free_result(XARRAY *pxarray);
-static int fetch_simple(const char *path, const char *folder, const std::vector<iseq_node> &, XARRAY *, int *perrno);
-static int fetch_detail(const char *path, const char *folder, const std::vector<iseq_node> &, XARRAY *, int *perrno);
-static int fetch_simple_uid(const char *path, const char *folder, const std::vector<iseq_node> &, XARRAY *, int *perrno);
-static int fetch_detail_uid(const char *path, const char *folder, const std::vector<iseq_node> &, XARRAY *, int *perrno);
+static int fetch_simple(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
+static int fetch_detail(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
+static int fetch_simple_uid(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
+static int fetch_detail_uid(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
 static int set_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
 static int unset_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
 static int get_mail_flags(const char *path, const char *folder, const char *mid_string, int *pflag_bits, int *perrno);
@@ -1677,7 +1677,7 @@ static void free_result(XARRAY *pxarray)
 }
 
 static int fetch_simple(const char *path, const char *folder,
-    const std::vector<iseq_node> &list, XARRAY *pxarray, int *perrno)
+    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -1826,7 +1826,7 @@ static int fetch_simple(const char *path, const char *folder,
 }
 
 static int fetch_detail(const char *path, const char *folder,
-    const std::vector<iseq_node> &list, XARRAY *pxarray, int *perrno)
+    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -1979,7 +1979,7 @@ static int fetch_detail(const char *path, const char *folder,
 }
 
 static int fetch_simple_uid(const char *path, const char *folder,
-    const std::vector<iseq_node> &list, XARRAY *pxarray, int *perrno)
+    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -2124,7 +2124,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 }
 
 static int fetch_detail_uid(const char *path, const char *folder,
-    const std::vector<iseq_node> &list, XARRAY *pxarray, int *perrno)
+    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
