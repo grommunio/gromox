@@ -111,11 +111,11 @@ static BOOL icp_parse_seq(std::vector<seq_node> &list, char *string) try
 		string[i] = '\0';
 		seq_node seq;
 		if (last_colon == nullptr) {
-			if (*last_break == '*')
-				return false;
-			seq.min = strtol(last_break, nullptr, 0);
-			if (!seq.has_min())
-				return false;
+			if (*last_break != '*') {
+				seq.min = strtol(last_break, nullptr, 0);
+				if (!seq.has_min())
+					return false;
+			}
 			seq.max = seq.min;
 		} else if (strcmp(last_break, "*") == 0) {
 			if (strcmp(last_colon + 1, "*") != 0) {

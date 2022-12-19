@@ -1312,11 +1312,11 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 		string[i] = '\0';
 		seq_node seq;
 		if (last_colon == nullptr) {
-			if (*last_break == '*')
-				return nullptr;
-			seq.min = strtol(last_break, nullptr, 0);
-			if (!seq.has_min())
-				return NULL;
+			if (*last_break != '*') {
+				seq.min = strtol(last_break, nullptr, 0);
+				if (!seq.has_min())
+					return NULL;
+			}
 			seq.max = seq.min;
 		} else if (strcmp(last_break, "*") == 0) {
 			if (strcmp(last_colon + 1, "*") != 0) {
