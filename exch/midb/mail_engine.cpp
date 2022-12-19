@@ -80,14 +80,6 @@ enum class midb_conj {
 
 namespace {
 
-struct seq_node {
-	using value_type = unsigned int;
-	static constexpr value_type unset = UINT_MAX;
-	value_type min = unset, max = unset;
-	constexpr bool has_min() const { return min != unset && min != 0; }
-	constexpr bool has_max() const { return max != unset && max != 0; }
-};
-
 struct CONDITION_TREE : DOUBLE_LIST {
 	CONDITION_TREE() { double_list_init(this); }
 	~CONDITION_TREE();
