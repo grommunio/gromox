@@ -1364,11 +1364,11 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 		string[i] = '\0';
 		seq_node seq, *pseq = &seq;
 		if (last_colon == nullptr) {
-			if (*last_break == '*') {
-				pseq->min = strtol(last_break, nullptr, 0);
-				if (!pseq->has_min())
-					return NULL;
-			}
+			if (*last_break == '*')
+				return nullptr;
+			pseq->min = strtol(last_break, nullptr, 0);
+			if (!pseq->has_min())
+				return NULL;
 			pseq->max = pseq->min;
 		} else if (strcmp(last_break, "*") == 0) {
 			if (strcmp(last_colon + 1, "*") != 0) {
