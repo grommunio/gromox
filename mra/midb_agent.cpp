@@ -1700,8 +1700,8 @@ static int fetch_simple(const char *path, const char *folder,
 	
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		if (pseq->max == -1) {
-			if (pseq->min == -1)
+		if (pseq->max == pseq->unset) {
+			if (pseq->min == pseq->unset)
 				length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC -1 1\r\n",
 						path, folder);
 			else
@@ -1855,8 +1855,8 @@ static int fetch_detail(const char *path, const char *folder,
 	
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		if (pseq->max == -1) {
-			if (pseq->min == -1)
+		if (pseq->max == pseq->unset) {
+			if (pseq->min == pseq->unset)
 				length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC -1 1\r\n",
 						path, folder);
 			else

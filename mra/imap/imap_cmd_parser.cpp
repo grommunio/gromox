@@ -59,8 +59,8 @@ static BOOL icp_hint_seq(const std::vector<iseq_node> &list,
 {
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		if (-1 == pseq->max) {
-			if (-1 == pseq->min) {
+		if (pseq->max == pseq->unset) {
+			if (pseq->min == pseq->unset) {
 				if (num == max_uid)
 					return TRUE;
 			} else {
@@ -114,29 +114,31 @@ static BOOL icp_parse_seq(std::vector<iseq_node> &list, char *string) try
 		string[i] = '\0';
 		iseq_node seq;
 		if (last_colon == nullptr) {
-			if (*last_break == '*' ||
-			    (seq.min = strtol(last_break, nullptr, 0)) <= 0)
-				return FALSE;
+			if (*last_break == '*')
+				return false;
+			seq.min = strtol(last_break, nullptr, 0);
+			if (!seq.has_min())
+				return false;
 			seq.max = seq.min;
 		} else if (strcmp(last_break, "*") == 0) {
 			if (strcmp(last_colon + 1, "*") != 0) {
 				seq.min = strtol(last_colon + 1, nullptr, 0);
-				if (seq.min <= 0)
+				if (!seq.has_min())
 					return FALSE;
 			}
 			last_colon = nullptr;
 		} else {
 			seq.min = strtol(last_break, nullptr, 0);
-			if (seq.min <= 0)
+			if (!seq.has_min())
 				return FALSE;
 			if (strcmp(last_colon + 1, "*") != 0) {
 				seq.max = strtol(last_colon + 1, nullptr, 0);
-				if (seq.max <= 0)
+				if (!seq.has_max())
 					return FALSE;
 			}
 			last_colon = nullptr;
 		}
-		if (seq.max != -1 && seq.max < seq.min)
+		if (seq.max != seq.unset && seq.max < seq.min)
 			std::swap(seq.min, seq.max);
 		last_break = string + i + 1;
 		list.push_back(std::move(seq));
