@@ -67,11 +67,10 @@ enum {
 };
 
 enum class midb_cond {
-	all, answered, bcc, before, body, cc, deleted, draft, flagged, from,
+	x_none, all, answered, bcc, before, body, cc, deleted, draft, flagged, from,
 	header, id, keyword, larger, is_new, old, on, recent, seen,
 	sent_before, sent_on, sent_since, since, smaller, subject, text, to,
 	uid, unanswered, undeleted, undraft, unflagged, unkeyword, unseen,
-	x_none,
 };
 
 enum class midb_conj {
@@ -85,11 +84,12 @@ struct CONDITION_TREE : DOUBLE_LIST {
 	~CONDITION_TREE();
 };
 
-struct CONDITION_TREE_NODE {
-	DOUBLE_LIST_NODE node;
-	CONDITION_TREE *pbranch;
-	enum midb_conj conjunction;
-	enum midb_cond condition;
+struct ct_node {
+	~ct_node();
+	DOUBLE_LIST_NODE node{};
+	CONDITION_TREE *pbranch = nullptr;
+	enum midb_conj conjunction = midb_conj::c_and;
+	enum midb_cond condition = midb_cond::x_none;
 
 	union {
 		char *ct_headers[2];
@@ -99,6 +99,7 @@ struct CONDITION_TREE_NODE {
 		std::vector<seq_node> *ct_seq;
 	};
 };
+using CONDITION_TREE_NODE = ct_node;
 
 struct KEYWORD_ENUM {
 	MJSON *pjson;
@@ -1052,24 +1053,22 @@ CONDITION_TREE::~CONDITION_TREE()
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_pop_front(this)) != nullptr) {
-		auto ptree_node = static_cast<CONDITION_TREE_NODE *>(pnode->pdata);
-		if (NULL != ptree_node->pbranch) {
-			ptree_node->pbranch = NULL;
-		} else if (cond_is_id(ptree_node->condition)) {
-			delete ptree_node->ct_seq;
-			ptree_node->ct_seq = nullptr;
-		} else if (cond_w_stmt(ptree_node->condition)) {
-			free(ptree_node->ct_keyword);
-			ptree_node->ct_keyword = nullptr;
-		} else if (ptree_node->condition == midb_cond::header) {
-			free(ptree_node->ct_headers[0]);
-			free(ptree_node->ct_headers[1]);
-			ptree_node->ct_headers[0] = nullptr;
-			ptree_node->ct_headers[1] = nullptr;
-		}
-		free(ptree_node);
+		delete static_cast<ct_node *>(pnode->pdata);
 	}
 	double_list_free(this);
+}
+
+ct_node::~ct_node()
+{
+	if (pbranch != nullptr) {
+	} else if (cond_is_id(condition)) {
+		delete ct_seq;
+	} else if (cond_w_stmt(condition)) {
+		free(ct_keyword);
+	} else if (condition == midb_cond::header) {
+		free(ct_headers[0]);
+		free(ct_headers[1]);
+	}
 }
 
 static enum midb_cond cond_str_to_cond(const char *s)
@@ -1133,20 +1132,17 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 	struct tm tmp_tm;
 	char* tmp_argv[256];
 	DOUBLE_LIST_NODE *pnode;
-	CONDITION_TREE_NODE *ptree_node;
 	auto plist = std::make_unique<CONDITION_TREE>();
 
 	for (i=0; i<argc; i++) {
-		ptree_node = me_alloc<CONDITION_TREE_NODE>();
-		if (ptree_node == nullptr)
-			return {};
+		auto ptree_node = new ct_node;
 		ptree_node->node.pdata = ptree_node;
 		ptree_node->pbranch = NULL;
 		if (0 == strcasecmp(argv[i], "NOT")) {
 			ptree_node->conjunction = midb_conj::c_not;
 			i ++;
 			if (i >= argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 		} else {
@@ -1156,28 +1152,28 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 			i ++;
 			if (i + 1 > argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			ptree_node->ct_keyword = mail_engine_ct_to_utf8(charset, argv[i]).release();
 			if (ptree_node->ct_keyword == nullptr) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 		} else if (array_find_istr(kwlist2, argv[i])) {
 			if (i + 1 > argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 			i ++;
 			if (i + 1 > argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL == strptime(argv[i], "%d-%b-%Y", &tmp_tm)) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			ptree_node->ct_time = mktime(&tmp_tm);
@@ -1187,48 +1183,48 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			tmp_argc = parse_imap_args(argv[i] + 1,
 				len - 2, tmp_argv, sizeof(tmp_argv));
 			if (-1 == tmp_argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			auto plist1 = mail_engine_ct_build_internal(
 						charset, tmp_argc, tmp_argv);
 			if (NULL == plist1) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			ptree_node->pbranch = plist1.release();
 		} else if (0 == strcasecmp(argv[i], "OR")) {
 			i ++;
 			if (i + 1 > argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			tmp_argc = mail_engine_ct_compile_criteria(
 								argc, argv, i, tmp_argv);
 			if (-1 == tmp_argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			i += tmp_argc;
 			if (i + 1 > argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			tmp_argc1 = mail_engine_ct_compile_criteria(
 					argc, argv, i, tmp_argv + tmp_argc);
 			if (-1 == tmp_argc1) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			auto plist1 = mail_engine_ct_build_internal(charset,
 							tmp_argc + tmp_argc1, tmp_argv);
 			if (NULL == plist1) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			if (double_list_get_nodes_num(plist1.get()) != 2 ||
 			    (pnode = double_list_get_tail(plist1.get())) == nullptr) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			static_cast<CONDITION_TREE_NODE *>(pnode->pdata)->conjunction = midb_conj::c_or;
@@ -1240,13 +1236,13 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			ptree_node->condition = midb_cond::header;
 			i ++;
 			if (i + 1 > argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			ptree_node->ct_headers[0] = strdup(argv[i]);
 			i ++;
 			if (i + 1 > argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			ptree_node->ct_headers[1] = strdup(argv[i]);
@@ -1256,7 +1252,7 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			                        midb_cond::larger : midb_cond::smaller;
 			i ++;
 			if (i + 1 > argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			ptree_node->ct_size = strtol(argv[i], nullptr, 0);
@@ -1264,19 +1260,19 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			ptree_node->condition = midb_cond::uid;
 			i ++;
 			if (i + 1 > argc) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			auto plist1 = ct_parse_seq(argv[i]);
 			if (NULL == plist1) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			ptree_node->ct_seq = plist1.release();
 		} else {
 			auto plist1 = ct_parse_seq(argv[i]);
 			if (NULL == plist1) {
-				free(ptree_node);
+				delete ptree_node;
 				return {};
 			}
 			ptree_node->condition = midb_cond::id;
