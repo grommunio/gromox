@@ -1354,36 +1354,36 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 		if (string + i - last_break == 0)
 			return NULL;
 		string[i] = '\0';
-		seq_node seq, *pseq = &seq;
+		seq_node seq;
 		if (last_colon == nullptr) {
 			if (*last_break == '*')
 				return nullptr;
-			pseq->min = strtol(last_break, nullptr, 0);
-			if (!pseq->has_min())
+			seq.min = strtol(last_break, nullptr, 0);
+			if (!seq.has_min())
 				return NULL;
-			pseq->max = pseq->min;
+			seq.max = seq.min;
 		} else if (strcmp(last_break, "*") == 0) {
 			if (strcmp(last_colon + 1, "*") != 0) {
-				pseq->min = strtol(last_colon + 1, nullptr, 0);
-				if (!pseq->has_min())
+				seq.min = strtol(last_colon + 1, nullptr, 0);
+				if (!seq.has_min())
 					return NULL;
 			}
 			last_colon = nullptr;
 		} else {
-			pseq->min = strtol(last_break, nullptr, 0);
-			if (!pseq->has_min())
+			seq.min = strtol(last_break, nullptr, 0);
+			if (!seq.has_min())
 				return NULL;
 			if (strcmp(last_colon + 1, "*") != 0) {
-				pseq->max = strtol(last_colon + 1, nullptr, 0);
-				if (!pseq->has_max())
+				seq.max = strtol(last_colon + 1, nullptr, 0);
+				if (!seq.has_max())
 					return NULL;
 			}
 			last_colon = nullptr;
 		}
-		if (pseq->max < pseq->min)
-			std::swap(pseq->min, pseq->max);
+		if (seq.max < seq.min)
+			std::swap(seq.min, seq.max);
 		last_break = string + i + 1;
-		plist->push_back(seq_node{seq.min, seq.max});
+		plist->push_back(std::move(seq));
 	}
 	return plist;
 } catch (const std::bad_alloc &) {

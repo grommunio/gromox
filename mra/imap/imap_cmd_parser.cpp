@@ -77,12 +77,10 @@ static BOOL icp_hint_seq(const std::vector<seq_node> &list,
 
 static BOOL icp_parse_seq(std::vector<seq_node> &list, char *string) try
 {
-	int i, j;
-	int len;
 	char *last_colon;
 	char *last_break;
 	
-	len = strlen(string);
+	auto len = strlen(string);
 	if (string[len-1] == ',')
 		len --;
 	else
@@ -91,7 +89,7 @@ static BOOL icp_parse_seq(std::vector<seq_node> &list, char *string) try
 	list.clear();
 	last_break = string;
 	last_colon = NULL;
-	for (i=0,j=0; i<=len&&j<1024; i++) {
+	for (size_t i = 0; i <= len; ++i) {
 		if (!HX_isdigit(string[i]) && string[i] != '*'
 			&& ',' != string[i] && ':' != string[i]) {
 			return FALSE;
@@ -141,7 +139,6 @@ static BOOL icp_parse_seq(std::vector<seq_node> &list, char *string) try
 			std::swap(seq.min, seq.max);
 		last_break = string + i + 1;
 		list.push_back(std::move(seq));
-		j++;
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
