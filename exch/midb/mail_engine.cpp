@@ -1546,9 +1546,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 	size_t size;
 	int tmp_len;
 	char from[UADDR_SIZE], rcpt[UADDR_SIZE];
-	uint8_t b_read;
 	const char *dir;
-	uint8_t b_unsent;
 	char subject[1024];
 	char temp_path[256];
 	char temp_path1[256];
@@ -1614,8 +1612,8 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 			return;
 	}
 	(*puidnext) ++;
-	b_unsent = !!(message_flags & MSGFLAG_UNSENT);
-	b_read   = !!(message_flags & MSGFLAG_READ);
+	auto b_unsent = !!(message_flags & MSGFLAG_UNSENT);
+	auto b_read   = !!(message_flags & MSGFLAG_READ);
 	mail_engine_extract_digest_fields(temp_buff, subject, arsizeof(subject),
 		from, arsizeof(from), rcpt, arsizeof(rcpt), &size);
 	sqlite3_reset(pstmt);
@@ -1640,13 +1638,11 @@ static void mail_engine_sync_message(IDB_ITEM *pidb,
 	const char *mid_string1, uint64_t mod_time, uint64_t mod_time1,
 	uint32_t message_flags, uint8_t b_unsent, uint8_t b_read)
 {
-	uint8_t b_read1;
-	uint8_t b_unsent1;
 	char sql_string[256];
 	
 	if (NULL != mid_string || mod_time <= mod_time1) {
-		b_unsent1 = !!(message_flags & MSGFLAG_UNSENT);
-		b_read1   = !!(message_flags & MSGFLAG_READ);
+		auto b_unsent1 = !!(message_flags & MSGFLAG_UNSENT);
+		auto b_read1   = !!(message_flags & MSGFLAG_READ);
 		if (b_unsent != b_unsent1 || b_read != b_read1) {
 			sqlite3_reset(pstmt1);
 			sqlite3_bind_int64(pstmt1, 1, b_unsent1);
@@ -2688,6 +2684,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	auto nt_time = rop_util_unix_to_nttime(strtol(argv[5], nullptr, 0));
 	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
 		return MIDB_E_NO_MEMORY;
+	static_assert(std::is_same_v<decltype(b_read), uint8_t>);
 	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0)
 		return MIDB_E_NO_MEMORY;
 	if (0 != b_unsent) {
@@ -2793,10 +2790,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	int user_id;
 	char lang[32];
 	int flags_len;
-	uint8_t b_read;
 	uint64_t nt_time;
 	char charset[32], tmzone[64];
-	uint8_t b_unsent;
 	uint32_t tmp_flags;
 	char flags_buff[16];
 	uint64_t change_num;
@@ -2852,29 +2847,18 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (sqlite3_step(pstmt) != SQLITE_ROW ||
 	    gx_sql_col_uint64(pstmt, 12) != folder_id)
 		return MIDB_E_NO_MESSAGE;
-	b_read = 0;
-	b_unsent = 0;
 	flags_buff[0] = '(';
 	flags_len = 1;
-	if (0 != sqlite3_column_int64(pstmt, 7)) {
-		flags_buff[flags_len] = 'A';
-		flags_len ++;
-	}
-	if (0 != sqlite3_column_int64(pstmt, 6)) {
-		flags_buff[flags_len] = 'F';
-		flags_len ++;
-	}
-	if (0 != sqlite3_column_int64(pstmt, 8)) {
-		flags_buff[flags_len] = 'W';
-		flags_len ++;
-	}
-	flags_buff[flags_len] = ')';
-	flags_len ++;
+	if (pstmt.col_int64(7) != 0)
+		flags_buff[flags_len++] = 'A';
+	if (pstmt.col_int64(6) != 0)
+		flags_buff[flags_len++] = 'F';
+	if (pstmt.col_int64(8) != 0)
+		flags_buff[flags_len++] = 'W';
+	flags_buff[flags_len++] = ')';
 	flags_buff[flags_len] = '\0';
-	if (sqlite3_column_int64(pstmt, 5) != 0)
-		b_unsent = 1;
-	if (sqlite3_column_int64(pstmt, 4) != 0)
-		b_read = 1;
+	auto b_unsent = pstmt.col_int64(5) != 0;
+	uint8_t b_read = pstmt.col_int64(4) != 0;
 	nt_time = sqlite3_column_int64(pstmt, 10);
 	pstmt.finalize();
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
@@ -2896,6 +2880,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	auto cl_msg = make_scope_exit([&]() { message_content_free(pmsgctnt); });
 	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
 		return MIDB_E_NO_MEMORY;
+	static_assert(std::is_same_v<decltype(b_read), uint8_t>);
 	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0)
 		return MIDB_E_NO_MEMORY;
 	if (0 != b_unsent) {
@@ -3519,36 +3504,21 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 		uid = sqlite3_column_int64(pstmt, 1);
 		flags_buff[0] = '(';
 		flags_len = 1;
-		if (0 != sqlite3_column_int64(pstmt, 2)) {
-			flags_buff[flags_len] = 'A';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 3)) {
-			flags_buff[flags_len] = 'U';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 4)) {
-			flags_buff[flags_len] = 'F';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 5)) {
-			flags_buff[flags_len] = 'D';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 6)) {
-			flags_buff[flags_len] = 'S';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 7)) {
-			flags_buff[flags_len] = 'R';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 8)) {
-			flags_buff[flags_len] = 'W';
-			flags_len ++;
-		}
-		flags_buff[flags_len] = ')';
-		flags_len ++;
+		if (pstmt.col_int64(2) != 0)
+			flags_buff[flags_len++] = 'A';
+		if (pstmt.col_int64(3) != 0)
+			flags_buff[flags_len++] = 'U';
+		if (pstmt.col_int64(4) != 0)
+			flags_buff[flags_len++] = 'F';
+		if (pstmt.col_int64(5) != 0)
+			flags_buff[flags_len++] = 'D';
+		if (pstmt.col_int64(6) != 0)
+			flags_buff[flags_len++] = 'S';
+		if (pstmt.col_int64(7) != 0)
+			flags_buff[flags_len++] = 'R';
+		if (pstmt.col_int64(8) != 0)
+			flags_buff[flags_len++] = 'W';
+		flags_buff[flags_len++] = ')';
 		flags_buff[flags_len] = '\0';
 		buff_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line),
 			"%s %u %s\r\n", mid_string, uid,
@@ -3680,36 +3650,21 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 		auto &flags_buff = sn.flags;
 		flags_buff[0] = '(';
 		flags_len = 1;
-		if (0 != sqlite3_column_int64(pstmt, 3)) {
-			flags_buff[flags_len] = 'A';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 4)) {
-			flags_buff[flags_len] = 'U';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 5)) {
-			flags_buff[flags_len] = 'F';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 6)) {
-			flags_buff[flags_len] = 'D';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 7)) {
-			flags_buff[flags_len] = 'S';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 8)) {
-			flags_buff[flags_len] = 'R';
-			flags_len ++;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 9)) {
-			flags_buff[flags_len] = 'W';
-			flags_len ++;
-		}
-		flags_buff[flags_len] = ')';
-		flags_len ++;
+		if (pstmt.col_int64(3) != 0)
+			flags_buff[flags_len++] = 'A';
+		if (pstmt.col_int64(4) != 0)
+			flags_buff[flags_len++] = 'U';
+		if (pstmt.col_int64(5) != 0)
+			flags_buff[flags_len++] = 'F';
+		if (pstmt.col_int64(6) != 0)
+			flags_buff[flags_len++] = 'D';
+		if (pstmt.col_int64(7) != 0)
+			flags_buff[flags_len++] = 'S';
+		if (pstmt.col_int64(8) != 0)
+			flags_buff[flags_len++] = 'R';
+		if (pstmt.col_int64(9) != 0)
+			flags_buff[flags_len++] = 'W';
+		flags_buff[flags_len++] = ')';
 		flags_buff[flags_len] = '\0';
 		temp_list.push_back(std::move(sn));
 	}
@@ -3915,10 +3870,8 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 		    temp_buff + temp_len) == 0)
 			return MIDB_E_DIGEST;
 		temp_len = strlen(temp_buff);
-		temp_buff[temp_len] = '\r';
-		temp_len ++;
-		temp_buff[temp_len] = '\n';
-		temp_len ++;	
+		temp_buff[temp_len++] = '\r';
+		temp_buff[temp_len++] = '\n';
 		ret = cmd_write(sockd, temp_buff, temp_len);
 		if (ret != 0)
 			return ret;
@@ -4138,38 +4091,23 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MESSAGE;
 	flags_buff[0] = '(';
 	flags_len = 1;
-	if (0 != sqlite3_column_int64(pstmt, 5)) {
-		flags_buff[flags_len] = 'A';
-		flags_len ++;
-	}
-	if (0 != sqlite3_column_int64(pstmt, 3)) {
-		flags_buff[flags_len] = 'U';
-		flags_len ++;
-	}
-	if (0 != sqlite3_column_int64(pstmt, 4)) {
-		flags_buff[flags_len] = 'F';
-		flags_len ++;
-	}
-	if (0 != sqlite3_column_int64(pstmt, 6)) {
-		flags_buff[flags_len] = 'W';
-		flags_len ++;
-	}
-	if (0 != sqlite3_column_int64(pstmt, 7)) {
-		flags_buff[flags_len] = 'D';
-		flags_len ++;	
-	}
-	if (0 != sqlite3_column_int64(pstmt, 2)) {
-		flags_buff[flags_len] = 'S';
-		flags_len ++;
-	}
-	if (0 != sqlite3_column_int64(pstmt, 1)) {
-		flags_buff[flags_len] = 'R';
-		flags_len ++;
-	}
+	if (pstmt.col_int64(5) != 0)
+		flags_buff[flags_len++] = 'A';
+	if (pstmt.col_int64(3) != 0)
+		flags_buff[flags_len++] = 'U';
+	if (pstmt.col_int64(4) != 0)
+		flags_buff[flags_len++] = 'F';
+	if (pstmt.col_int64(6) != 0)
+		flags_buff[flags_len++] = 'W';
+	if (pstmt.col_int64(7) != 0)
+		flags_buff[flags_len++] = 'D';
+	if (pstmt.col_int64(2) != 0)
+		flags_buff[flags_len++] = 'S';
+	if (pstmt.col_int64(1) != 0)
+		flags_buff[flags_len++] = 'R';
 	pstmt.finalize();
 	pidb.reset();
-	flags_buff[flags_len] = ')';
-	flags_len ++;
+	flags_buff[flags_len++] = ')';
 	flags_buff[flags_len] = '\0';
 	temp_len = sprintf(temp_buff, "TRUE %s\r\n", flags_buff);
 	return cmd_write(sockd, temp_buff, temp_len);
@@ -4729,8 +4667,6 @@ static void mail_engine_modify_notification_folder(
 static void mail_engine_modify_notification_message(
 	IDB_ITEM *pidb, uint64_t folder_id, uint64_t message_id)
 {
-	int b_read;
-	int b_unsent;
 	char sql_string[256];
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
@@ -4750,8 +4686,8 @@ static void mail_engine_modify_notification_message(
 	auto str = propvals.get<const char>(PidTagMidString);
 	if (str != nullptr) {
  UPDATE_MESSAGE_FLAGS:
-		b_unsent = !!(message_flags & MSGFLAG_UNSENT);
-		b_read   = !!(message_flags & MSGFLAG_READ);
+		auto b_unsent = !!(message_flags & MSGFLAG_UNSENT);
+		auto b_read   = !!(message_flags & MSGFLAG_READ);
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET read=%d, unsent=%d"
 		        " WHERE message_id=%llu", b_read, b_unsent, LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
