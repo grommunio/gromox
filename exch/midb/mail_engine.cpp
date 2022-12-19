@@ -141,29 +141,6 @@ enum {
 	FIELD_FLAG
 };
 
-namespace {
-
-struct IDL_NODE {
-	DOUBLE_LIST_NODE node;
-	char *mid_string;
-	uint32_t size;
-};
-
-struct DTLU_NODE {
-	DOUBLE_LIST_NODE node;
-	uint32_t idx;
-	char *mid_string;
-};
-
-struct SIMU_NODE {
-	DOUBLE_LIST_NODE node;
-	uint32_t idx;
-	uint32_t uid;
-	char *mid_string;
-	char *flags_buff;
-};
-
-}
 
 unsigned int g_midb_schema_upgrades;
 unsigned int g_midb_cache_interval, g_midb_reload_interval;
@@ -2606,15 +2583,11 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	return 0;
 }
 
-static int mail_engine_muidl(int argc, char **argv, int sockd)
+static int mail_engine_muidl(int argc, char **argv, int sockd) try
 {
+	using idl_node = std::pair<std::string /* mid_string */, uint32_t /* size */>;
 	int result;
-	int offset;
-	int temp_len;
-	char temp_line[512];
-	DOUBLE_LIST tmp_list;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
 	char list_buff[256*1024];
 	
 	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
@@ -2630,27 +2603,20 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	double_list_init(&tmp_list);
+
+	std::vector<idl_node> tmp_list;
 	while (SQLITE_ROW == (result = sqlite3_step(pstmt))) {
-		auto pinode = cu_alloc<IDL_NODE>();
-		if (pinode == nullptr)
-			return MIDB_E_NO_MEMORY;
-		pinode->node.pdata = pinode;
-		pinode->mid_string = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
-		if (pinode->mid_string == nullptr)
-			return MIDB_E_NO_MEMORY;
-		pinode->size = sqlite3_column_int64(pstmt, 1);
-		double_list_append_as_tail(&tmp_list, &pinode->node);
+		tmp_list.emplace_back(S2A(sqlite3_column_text(pstmt, 0)), pstmt.col_int64(1));
 	}
 	pstmt.finalize();
 	if (result != SQLITE_DONE)
 		return MIDB_E_SQLUNEXP;
-	offset = sprintf(list_buff, "TRUE %zu\r\n",
-		double_list_get_nodes_num(&tmp_list));
-	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
-		auto pinode = static_cast<const IDL_NODE *>(pnode->pdata);
-		temp_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line), "%s %u\r\n",
-						pinode->mid_string, pinode->size);
+	auto offset = snprintf(list_buff, std::size(list_buff),
+	              "TRUE %zu\r\n", tmp_list.size());
+	for (const auto &idl : tmp_list) {
+		char temp_line[512];
+		auto temp_len = gx_snprintf(temp_line, std::size(temp_line), "%s %u\r\n",
+		                idl.first.c_str(), idl.second);
 		if (256*1024 - offset < temp_len) {
 			auto ret = cmd_write(sockd, list_buff, offset);
 			if (ret != 0)
@@ -2661,6 +2627,9 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 		offset += temp_len;
 	}
 	return cmd_write(sockd, list_buff, offset);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1209: ENOMEM");
+	return MIDB_E_NO_MEMORY;
 }
 
 static bool system_services_lang_to_charset(const char *lang, char (&charset)[32])
@@ -3634,16 +3603,17 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 
-static int mail_engine_psimu(int argc, char **argv, int sockd)
+static int mail_engine_psimu(int argc, char **argv, int sockd) try
 {
-	int buff_len;
-	int temp_len;
+	struct simu_node {
+		uint32_t idx, uid;
+		char flags[10];
+		std::string mid_string;
+	};
+
 	int flags_len, total_mail = 0;
-	char flags_buff[16];
 	char temp_line[1024];
 	char sql_string[1024];
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
 	char temp_buff[256*1024];
 	
 	if (argc != 7 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
@@ -3735,18 +3705,15 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	double_list_init(&temp_list);
+
+	std::vector<simu_node> temp_list;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		auto psm_node = cu_alloc<SIMU_NODE>();
-		if (psm_node == nullptr)
-			return MIDB_E_NO_MEMORY;
-		psm_node->node.pdata = psm_node;
-		psm_node->idx = b_asc ? sqlite3_column_int64(pstmt, 0) :
-		                total_mail - sqlite3_column_int64(pstmt, 0) + 1;
-		psm_node->mid_string = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
-		if (psm_node->mid_string == nullptr)
-			return MIDB_E_NO_MEMORY;
-		psm_node->uid = sqlite3_column_int64(pstmt, 2);
+		simu_node sn;
+		sn.idx = b_asc ? pstmt.col_int64(0) :
+		         total_mail - pstmt.col_int64(0) + 1;
+		sn.mid_string = S2A(sqlite3_column_text(pstmt, 1));
+		sn.uid = pstmt.col_int64(2);
+		auto &flags_buff = sn.flags;
 		flags_buff[0] = '(';
 		flags_len = 1;
 		if (0 != sqlite3_column_int64(pstmt, 3)) {
@@ -3780,20 +3747,14 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 		flags_buff[flags_len] = ')';
 		flags_len ++;
 		flags_buff[flags_len] = '\0';
-		psm_node->flags_buff = common_util_dup(flags_buff);
-		if (psm_node->flags_buff == nullptr)
-			return MIDB_E_NO_MEMORY;
-		double_list_append_as_tail(&temp_list, &psm_node->node);
+		temp_list.push_back(std::move(sn));
 	}
 	pstmt.finalize();
-	temp_len = sprintf(temp_buff, "TRUE %zu\r\n",
-		double_list_get_nodes_num(&temp_list));
-	for (pnode=double_list_get_head(&temp_list); NULL!=pnode;
-		pnode=double_list_get_after(&temp_list, pnode)) {
-		auto psm_node = static_cast<SIMU_NODE *>(pnode->pdata);
-		buff_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line), "%u %s %u %s\r\n",
-					psm_node->idx - 1, psm_node->mid_string,
-					psm_node->uid, psm_node->flags_buff);
+	auto temp_len = snprintf(temp_buff, std::size(temp_buff),
+	                "TRUE %zu\r\n", temp_list.size());
+	for (const auto &sn : temp_list) {
+		auto buff_len = gx_snprintf(temp_line, std::size(temp_line), "%u %s %u %s\r\n",
+		                sn.idx - 1, sn.mid_string.c_str(), sn.uid, sn.flags);
 		if (256*1024 - temp_len < buff_len) {
 			auto ret = cmd_write(sockd, temp_buff, temp_len);
 			if (ret != 0)
@@ -3805,8 +3766,10 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	}
 	pidb.reset();
 	return cmd_write(sockd, temp_buff, temp_len);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1208: ENOMEM");
+	return MIDB_E_NO_MEMORY;
 }
-
 
 /*
  * List Deleted-flagged mails
@@ -3878,13 +3841,12 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 
-static int mail_engine_pdtlu(int argc, char **argv, int sockd)
+static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 {
+	using dtlu_node = std::pair<std::string /* mid_string */, uint32_t /* idx */>;
 	BOOL b_asc;
-	int temp_len, total_mail = 0;
+	int total_mail = 0;
 	char sql_string[1024];
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
 	char temp_buff[MAX_DIGLEN + 16];
 	
 	if (argc != 7 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
@@ -3971,30 +3933,21 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	double_list_init(&temp_list);
+
+	std::vector<dtlu_node> temp_list;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		auto pdt_node = cu_alloc<DTLU_NODE>();
-		if (pdt_node == nullptr)
-			return MIDB_E_NO_MEMORY;
-		pdt_node->node.pdata = pdt_node;
-		pdt_node->idx = b_asc ? sqlite3_column_int64(pstmt, 0) :
-		                total_mail - sqlite3_column_int64(pstmt, 0) + 1;
-		pdt_node->mid_string = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
-		if (pdt_node->mid_string == nullptr)
-			return MIDB_E_NO_MEMORY;
-		double_list_append_as_tail(&temp_list, &pdt_node->node);
+		temp_list.emplace_back(pstmt.col_text(1),
+			b_asc ? pstmt.col_int64(0) :
+			total_mail - pstmt.col_int64(0) + 1);
 	}
 	pstmt.finalize();
-	temp_len = sprintf(temp_buff, "TRUE %zu\r\n",
-		double_list_get_nodes_num(&temp_list));
+	auto temp_len = sprintf(temp_buff, "TRUE %zu\r\n", temp_list.size());
 	auto ret = cmd_write(sockd, temp_buff, temp_len);
 	if (ret != 0)
 		return ret;
-	for (pnode=double_list_get_head(&temp_list); NULL!=pnode;
-		pnode=double_list_get_after(&temp_list, pnode)) {
-		auto pdt_node = static_cast<const DTLU_NODE *>(pnode->pdata);
-		temp_len = sprintf(temp_buff, "%d ", pdt_node->idx - 1);
-		if (mail_engine_get_digest(pidb->psqlite, pdt_node->mid_string,
+	for (const auto &dt : temp_list) {
+		temp_len = snprintf(temp_buff, std::size(temp_buff), "%d ", dt.second - 1);
+		if (mail_engine_get_digest(pidb->psqlite, dt.first.c_str(),
 		    temp_buff + temp_len) == 0)
 			return MIDB_E_DIGEST;
 		temp_len = strlen(temp_buff);
@@ -4007,6 +3960,9 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 			return ret;
 	}
 	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1210: ENOMEM");
+	return MIDB_E_NO_MEMORY;
 }
 
 /*
