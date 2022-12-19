@@ -135,8 +135,6 @@ static BOOL icp_parse_seq(std::vector<seq_node> &list, char *string) try
 			}
 			last_colon = nullptr;
 		}
-		if (seq.max != seq.unset && seq.max < seq.min)
-			std::swap(seq.min, seq.max);
 		last_break = string + i + 1;
 		list.push_back(std::move(seq));
 	}
