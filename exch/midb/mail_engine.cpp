@@ -3839,7 +3839,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 		else if (last == seq_node::unset)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string "
 					"FROM messages WHERE folder_id=%llu AND uid>=%u"
-					" ORDER BY idx", LLU{folder_id}, first);
+			         " ORDER BY idx DESC", LLU{folder_id}, first);
 		else if (last == first)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string "
 					"FROM messages WHERE folder_id=%llu AND uid=%u",
