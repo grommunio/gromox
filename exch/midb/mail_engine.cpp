@@ -79,18 +79,14 @@ enum class midb_conj {
 
 namespace {
 
-struct CONDITION_TREE : DOUBLE_LIST {
-	CONDITION_TREE() { double_list_init(this); }
-	~CONDITION_TREE();
-};
-
+struct ct_node;
+using CONDITION_TREE = std::vector<ct_node>;
 struct ct_node {
 	ct_node() = default;
 	ct_node(ct_node &&);
 	~ct_node();
 	void operator=(ct_node &&) = delete;
 
-	DOUBLE_LIST_NODE node{};
 	CONDITION_TREE *pbranch = nullptr;
 	enum midb_conj conjunction = midb_conj::c_and;
 	enum midb_cond condition = midb_cond::x_none;
@@ -508,11 +504,10 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	char temp_buff[1024];
 	char temp_buff1[1024];
 	midb_conj conjunctions[1024];
-	const DOUBLE_LIST_NODE *pnode;
 	KEYWORD_ENUM keyword_enum;
 	const CONDITION_TREE *trees[1024];
+	CONDITION_TREE::const_iterator pnode, nodes[1024];
 	char digest_buff[MAX_DIGLEN];
-	const DOUBLE_LIST_NODE *nodes[1024];
 	
 #define PUSH_MATCH(TREE, NODE, CONJUNCTION, RESULT) \
 		{trees[sp]=TREE;nodes[sp]=NODE;conjunctions[sp]=CONJUNCTION;results[sp]=RESULT;sp++;}
@@ -525,10 +520,9 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
  PROC_BEGIN:
 	b_result = TRUE;
 	b_loaded = FALSE;
-	for (pnode=double_list_get_head(ptree);	NULL!=pnode;
-		pnode=double_list_get_after(ptree, pnode)) {
+	for (pnode = ptree->begin(); pnode != ptree->end(); ++pnode) {
 		{
-		auto ptree_node = static_cast<const CONDITION_TREE_NODE *>(pnode->pdata);
+		auto ptree_node = &*pnode;
 		conjunction = ptree_node->conjunction;
 		if ((b_result && conjunction == midb_conj::c_or) ||
 		    (!b_result && conjunction == midb_conj::c_and))
@@ -1052,16 +1046,6 @@ static inline bool cond_w_stmt(enum midb_cond x)
 	       x == midb_cond::unkeyword;
 }
 
-CONDITION_TREE::~CONDITION_TREE()
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(this)) != nullptr) {
-		delete static_cast<ct_node *>(pnode->pdata);
-	}
-	double_list_free(this);
-}
-
 ct_node::ct_node(ct_node &&o) :
 	pbranch(o.pbranch), conjunction(o.conjunction), condition(o.condition)
 {
@@ -1153,12 +1137,10 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 	int tmp_argc1;
 	struct tm tmp_tm;
 	char* tmp_argv[256];
-	DOUBLE_LIST_NODE *pnode;
 	auto plist = std::make_unique<CONDITION_TREE>();
 
 	for (i=0; i<argc; i++) {
 		ct_node ctn, *ptree_node = &ctn;
-		ptree_node->node.pdata = ptree_node;
 		ptree_node->pbranch = NULL;
 		if (0 == strcasecmp(argv[i], "NOT")) {
 			ptree_node->conjunction = midb_conj::c_not;
@@ -1231,12 +1213,11 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			if (NULL == plist1) {
 				return {};
 			}
-			if (double_list_get_nodes_num(plist1.get()) != 2 ||
-			    (pnode = double_list_get_tail(plist1.get())) == nullptr) {
+			if (plist1->size() != 2)
 				return {};
-			}
-			static_cast<CONDITION_TREE_NODE *>(pnode->pdata)->conjunction = midb_conj::c_or;
-			ptree_node->pbranch = plist1.release();
+			auto &ln = plist1->back();
+			ln.conjunction = midb_conj::c_or;
+			ln.pbranch = plist1.release();
 			i += tmp_argc1 - 1;
 		} else if (array_find_istr(kwlist3, argv[i])) {
 			ptree_node->condition = cond_str_to_cond(argv[i]);
@@ -1280,8 +1261,7 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			ptree_node->condition = midb_cond::id;
 			ptree_node->ct_seq = plist1.release();
 		}
-		auto nn = new ct_node(std::move(ctn));
-		double_list_append_as_tail(plist.get(), &nn->node);
+		plist->push_back(std::move(ctn));
 	}
 	return plist;
 } catch (const std::bad_alloc &) {
