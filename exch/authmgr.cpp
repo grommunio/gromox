@@ -31,7 +31,7 @@ static bool login_gen(const char *username, const char *password,
 {
 	sql_meta_result mres;
 	bool auth = false;
-	auto err = fptr_mysql_meta(username, password, wantpriv, mres);
+	auto err = fptr_mysql_meta(username, wantpriv, mres);
 	gx_strlcpy(maildir, mres.maildir.c_str(), msize);
 	gx_strlcpy(lang, mres.lang.c_str(), lsize);
 	gx_strlcpy(reason, mres.errstr.c_str(), length);

@@ -109,7 +109,7 @@ struct sql_meta_result {
 extern void mysql_adaptor_init(mysql_adaptor_init_param &&);
 extern int mysql_adaptor_run();
 extern void mysql_adaptor_stop();
-extern gromox::errno_t mysql_adaptor_meta(const char *username, const char *password, unsigned int wantpriv, sql_meta_result &out);
+extern gromox::errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv, sql_meta_result &out);
 extern BOOL mysql_adaptor_login2(const char *username, const char *password, std::string &enc_passwd, std::string &errstr);
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password);

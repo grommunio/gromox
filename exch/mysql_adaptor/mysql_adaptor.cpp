@@ -60,8 +60,8 @@ void mysql_adaptor_stop()
 	g_sqlconn_pool.clear();
 }
 
-errno_t mysql_adaptor_meta(const char *username, const char *password,
-    unsigned int wantpriv, sql_meta_result &mres) try
+errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
+    sql_meta_result &mres) try
 {
 	char temp_name[UADDR_SIZE*2];
 
