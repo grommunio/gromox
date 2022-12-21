@@ -46,6 +46,7 @@ class OxdiscoPlugin {
 		decltype(mysql_adaptor_get_user_ids) *get_user_ids;
 		decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
 		decltype(mysql_adaptor_scndstore_hints) *scndstore_hints;
+		decltype(mysql_adaptor_get_homeserver) *get_homeserver;
 	} mysql; // mysql adaptor function pointers
 
 	private:
@@ -503,6 +504,12 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email,
 	++domain;
 	char hex_string[12];
 	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
+	std::pair<std::string, std::string> homesrv_buf;
+	if (mysql.get_homeserver(email, is_private, homesrv_buf) != 0)
+		return -1;
+	const char *homesrv = homesrv_buf.second.c_str();
+	if (homesrv == nullptr)
+		homesrv = host_id.c_str();
 
 	std::string DisplayName, LegacyDN, DeploymentId;
 	if (is_private) {
@@ -539,14 +546,16 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email,
 	add_child(resp_acc, "MicrosoftOnline", "False");
 	add_child(resp_acc, "ConsumerMailbox", "False");
 
-	auto ews_url = fmt::format(ews_base_url, host_id, exchange_asmx);
-	auto OABUrl = fmt::format(oab_base_url, host_id);
-	auto EcpUrl = fmt::format(ews_base_url, host_id, "");
+	auto ews_url = fmt::format(ews_base_url, homesrv, exchange_asmx);
+	auto OABUrl = fmt::format(oab_base_url, homesrv);
+	auto EcpUrl = fmt::format(ews_base_url, homesrv, "");
 
 	if (advertise_prot(m_advertise_mh, user_agent))
-		resp_mh(resp_acc, domain, ews_url, OABUrl, EcpUrl, DeploymentId, is_private);
+		resp_mh(resp_acc, homesrv, ews_url, OABUrl, EcpUrl,
+			DeploymentId, is_private);
 	if (advertise_prot(m_advertise_rpch, user_agent))
-		resp_rpch(resp_acc, domain, ews_url, OABUrl, EcpUrl, DeploymentId, is_private);
+		resp_rpch(resp_acc, homesrv, ews_url, OABUrl, EcpUrl,
+			DeploymentId, is_private);
 
 	std::vector<sql_user> hints;
 	auto err = mysql.scndstore_hints(user_id, hints);
@@ -609,11 +618,11 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
 	resp_prt->SetAttribute("Version", "1");
 	auto resp_prt_mst = add_child(resp_prt, "MailStore");
 
-	auto mst_url = fmt::format(mailbox_base_url, host_id, "emsmdb", deploymentid, domain);
+	auto mst_url = fmt::format(mailbox_base_url, domain, "emsmdb", deploymentid, domain);
 	add_child(resp_prt_mst, "InternalUrl", mst_url);
 	add_child(resp_prt_mst, "ExternalUrl", mst_url);
 
-	auto abk_url = fmt::format(mailbox_base_url, host_id, "nspi", deploymentid, domain);
+	auto abk_url = fmt::format(mailbox_base_url, domain, "nspi", deploymentid, domain);
 	auto resp_prt_abk = add_child(resp_prt, "AddressBook");
 	add_child(resp_prt_abk, "InternalUrl", abk_url);
 	add_child(resp_prt_abk, "ExternalUrl", abk_url);
@@ -835,6 +844,7 @@ OxdiscoPlugin::_mysql::_mysql()
 	getService(get_user_ids);
 	getService(get_domain_ids);
 	getService(scndstore_hints);
+	getService(get_homeserver);
 #undef getService
 }
 
