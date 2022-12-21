@@ -28,7 +28,6 @@ Makefile.in
 /cleaner
 /delivery
 /delivery-queue
-/delmsg
 /digest
 /event
 /freebusy
