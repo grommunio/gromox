@@ -72,17 +72,16 @@ static int instance_conv_htmlfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 	auto ret = instance_get_rtf(mc, bin);
 	if (ret <= 0)
 		return ret;
-	std::unique_ptr<char[], instbody_delete> outbuf;
-	size_t outlen = 0;
+	std::string outbuf;
 	auto at = attachment_list_init();
 	auto at_clean = make_scope_exit([&]() { attachment_list_free(at); });
-	if (!rtf_to_html(bin->pc, bin->cb, "utf-8", &unique_tie(outbuf), &outlen, at))
+	if (!rtf_to_html(bin->pc, bin->cb, "utf-8", outbuf, at))
 		return -1;
-	bin->cb = outlen;
-	bin->pv = common_util_alloc(outlen);
+	bin->cb = outbuf.size() < UINT32_MAX ? outbuf.size() : UINT32_MAX;
+	bin->pv = common_util_alloc(bin->cb);
 	if (bin->pv == nullptr)
 		return -1;
-	memcpy(bin->pv, outbuf.get(), outlen);
+	memcpy(bin->pv, outbuf.c_str(), bin->cb);
 	return 1;
 }
 
