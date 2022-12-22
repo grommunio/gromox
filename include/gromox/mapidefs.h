@@ -696,6 +696,7 @@ enum {
 	DEL_FOLDERS = 1U << 2,
 	DEL_ASSOCIATED = 1U << 3, /* MAPI only, not used in OXCROPS. */
 	DELETE_HARD_DELETE = 1U << 4, /* undocumented on MSDN */
+	ZC_DELMSG_NOTIFY_UNREAD = 1U << 30,
 };
 
 enum {
