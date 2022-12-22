@@ -234,8 +234,7 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	if (!RedirectAddr.empty() || !RedirectUrl.empty()) {
 		mlog(LV_DEBUG, "[oxdisco] send redirect response\n");
 	}
-	return resp(ctx_id, email, ars);
-
+	return resp(ctx_id, auth_info.username, email, ars);
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1700: ENOMEM\n");
 	return die(ctx_id, server_error_code, server_error_msg);
@@ -476,8 +475,8 @@ bool OxdiscoPlugin::advertise_prot(enum adv_setting adv, const char *ua) const
  * @param      el
  * @param      email
  */
-int OxdiscoPlugin::resp_web(XMLElement *el, const char *email,
-    const char *user_agent)
+int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
+    const char *email, const char *user_agent)
 {
 	auto resp = add_child(el, "Response");
 	resp->SetAttribute("xmlns", response_outlook_xmlns);
@@ -559,10 +558,12 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email,
 			DeploymentId, is_private);
 
 	std::vector<sql_user> hints;
-	auto err = mysql.scndstore_hints(user_id, hints);
-	if (err != 0) {
-		mlog(LV_ERR, "oxdisco: error retrieving secondary store hints: %s", strerror(err));
-		return -1;
+	if (is_private && strcasecmp(authuser, email) == 0) {
+		auto err = mysql.scndstore_hints(user_id, hints);
+		if (err != 0) {
+			mlog(LV_ERR, "oxdisco: error retrieving secondary store hints: %s", strerror(err));
+			return -1;
+		}
 	}
 
 	if (is_private && hints.size() > 0) {
