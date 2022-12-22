@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdlib>
 #ifdef COMPILE_DIAG
+#	include <cassert>
 #	include <stdexcept>
 #endif
 #include <string>
