@@ -75,7 +75,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	
 	auto mcharset = bounce_gen_charset(*pmail_original);
 	if ('\0' == charset[0]) {
-		strcpy(charset, mcharset.c_str());
+		gx_strlcpy(charset, mcharset.c_str(), std::size(charset));
 	}
 	auto tpptr = bounce_gen_lookup(charset, bounce_type);
 	if (tpptr == nullptr)
