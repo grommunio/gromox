@@ -56,8 +56,7 @@ class OxdiscoPlugin {
 	std::string RedirectAddr; // Domain to perform Autodiscover
 	std::string RedirectUrl; // URL for a subsequent Autodiscover request
 	std::string host_id;
-	int user_id;
-	int domain_id;
+	int user_id = -1, domain_id = -1;
 	int request_logging = 0; // 0 = none, 1 = request data
 	int response_logging = 0; // 0 = none, 1 = response data
 	int pretty_response = 0; // 0 = compact output, 1 = pretty printed response
@@ -75,7 +74,7 @@ class OxdiscoPlugin {
 	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	const char *gtx(tinyxml2::XMLElement &, const char *);
-	const char *get_redirect_addr(const char *);
+	std::string get_redirect_addr(const char *);
 	BOOL username_to_essdn(const char *, char *, size_t);
 	BOOL domainname_to_essdn(const char *, char *, size_t);
 	bool advertise_prot(enum adv_setting, const char *ua) const;
@@ -501,6 +500,8 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *email,
 
 	auto buf = std::make_unique<char[]>(4096);
 	auto domain = strchr(email, '@');
+	if (domain == nullptr)
+		return -1;
 	++domain;
 	char hex_string[12];
 	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
@@ -701,6 +702,8 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email)
 	auto resp_act = add_child(resp, "Action");
 
 	auto domain = strchr(email, '@');
+	if (domain == nullptr)
+		return -1;
 	++domain;
 
 	if (!RedirectAddr.empty() && strcasecmp(domain, RedirectAddr.c_str()) != 0) {
@@ -765,12 +768,12 @@ BOOL OxdiscoPlugin::resp_autocfg(int ctx_id, const char* username)
 	return write_response(ctx_id, response, strlen(response));
 }
 
-const char* OxdiscoPlugin::get_redirect_addr(const char *email)
+std::string OxdiscoPlugin::get_redirect_addr(const char *email)
 {
 	std::string s_email = email;
 	std::string username = s_email.substr(0, s_email.find('@') - 1);
 	std::string redirect_addr = username + "@" + RedirectAddr;
-	return redirect_addr.c_str();
+	return redirect_addr;
 }
 
 BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn, size_t dnmax)
