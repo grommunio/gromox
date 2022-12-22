@@ -3707,7 +3707,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	pidb.reset();
 	return cmd_write(sockd, temp_buff, temp_len);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1208: ENOMEM");
+	mlog(LV_ERR, "E-1204: ENOMEM");
 	return MIDB_E_NO_MEMORY;
 }
 

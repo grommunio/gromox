@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <unistd.h>
 #include <libHX/option.h>
 #include <gromox/list_file.hpp>
@@ -38,7 +39,6 @@ int main(int argc, const char **argv)
 	int read_len;
 	int buff_len;
 	BINARY rtf_bin;
-	size_t tmp_len;
 	ATTACHMENT_LIST *pattachments;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -98,10 +98,9 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "Failed to init RTF library\n");
 		return EXIT_FAILURE;
 	}
-	char *htmlout = nullptr;
-	if (rtf_to_html(pbuff, rtf_len, "utf-8", &htmlout, &tmp_len, pattachments)) {
-		write(STDOUT_FILENO, htmlout, tmp_len);
-		free(htmlout);
+	std::string htmlout;
+	if (rtf_to_html(pbuff, rtf_len, "utf-8", htmlout, pattachments)) {
+		write(STDOUT_FILENO, htmlout.c_str(), htmlout.size());
 		return EXIT_SUCCESS;
 	} else {
 		fprintf(stderr, "fail to convert rtf\n");

@@ -146,6 +146,7 @@ struct mime_skeleton {
 	enum oxcmail_type mail_type{};
 	enum oxcmail_body body_type{};
 	BOOL b_inline = false, b_attachment = false;
+	std::string rtf;
 	BINARY rtf_bin{};
 	char *pplain = nullptr;
 	BINARY *phtml = nullptr;
@@ -4037,13 +4038,11 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 						free(pbuff);
 						return FALSE;
 					}
-					size_t tmp_len = SIZE_MAX;
-					char *htmlout = nullptr;
-					if (rtf_to_html(pbuff, rtf_len, pcharset, &htmlout,
-					    &tmp_len, pskeleton->pattachments)) {
-						pskeleton->rtf_bin.pv = htmlout;
+					if (rtf_to_html(pbuff, rtf_len, pcharset, pskeleton->rtf,
+					    pskeleton->pattachments)) {
+						pskeleton->rtf_bin.pv = pskeleton->rtf.data();
 						free(pbuff);
-						pskeleton->rtf_bin.cb = tmp_len;
+						pskeleton->rtf_bin.cb = pskeleton->rtf.size();
 						pskeleton->phtml = &pskeleton->rtf_bin;
 						if (0 == pskeleton->pattachments->count) {
 							attachment_list_free(pskeleton->pattachments);

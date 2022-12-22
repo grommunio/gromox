@@ -3052,17 +3052,15 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 }
 
 bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
-    char **pbuff_out, size_t *plength, ATTACHMENT_LIST *pattachments)
+    std::string &buf_out, ATTACHMENT_LIST *pattachments) try
 {
 	int i;
 	int tmp_len;
 	iconv_t conv_id;
-	char *pout;
 	RTF_READER reader;
 	char tmp_buff[128];
 	SIMPLE_TREE_NODE *pnode;
 	
-	*pbuff_out = nullptr;
 	if (!rtf_init_reader(&reader, pbuff_in, length, pattachments))
 		return false;
 	if (!rtf_load_element_tree(&reader)) {
@@ -3099,12 +3097,8 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
 		0 == strcasecmp(charset, "US-ASCII")) {
-		*pbuff_out = me_alloc<char>(reader.ext_push.m_offset);
-		if (*pbuff_out == nullptr) {
-			return false;
-		}
-		memcpy(*pbuff_out, reader.ext_push.m_udata, reader.ext_push.m_offset);
-		*plength = reader.ext_push.m_offset;
+		buf_out.resize(reader.ext_push.m_offset);
+		memcpy(buf_out.data(), reader.ext_push.m_udata, reader.ext_push.m_offset);
 		return true;
 	}
 	snprintf(tmp_buff, 128, "%s//TRANSLIT",
@@ -3115,24 +3109,21 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		        tmp_buff, strerror(errno));
 		return false;
 	}
+	auto cl_0 = make_scope_exit([&]() { iconv_close(conv_id); });
 	auto pin = reader.ext_push.m_cdata;
 	/* Assumption for 3x is that no codepage maps to points beyond BMP */
-	*plength = 3 * reader.ext_push.m_offset;
-	size_t out_len = *plength;
-	*pbuff_out = me_alloc<char>(out_len + 1);
-	if (*pbuff_out == nullptr) {
-		iconv_close(conv_id);
-		return false;
-	}
-	pout = *pbuff_out;
+	size_t out_len = 3 * reader.ext_push.m_offset;
+	buf_out.resize(out_len);
+	auto pout = buf_out.data();
 	size_t in_len = reader.ext_push.m_offset;
 	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
-		iconv_close(conv_id);
 		return false;
 	}
-	iconv_close(conv_id);
-	*plength -= out_len;
+	buf_out.resize(buf_out.size() - out_len);
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1205: ENOMEM");
+	return false;
 }
 
 bool rtf_init_library()

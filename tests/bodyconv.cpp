@@ -53,10 +53,9 @@ int main(int argc, const char **argv)
 			std::cout << std::string_view(out.get(), outlen) << std::endl;
 	} else if (strcmp(argv[1], "rtftohtml") == 0) {
 		auto at = attachment_list_init();
-		size_t outlen = 0;
-		std::unique_ptr<char[], stdlib_delete> out;
-		if (rtf_to_html(all.c_str(), all.size(), "utf-8", &unique_tie(out), &outlen, at))
-			std::cout << std::string_view(out.get(), outlen) << std::endl;
+		std::string out;
+		if (rtf_to_html(all.c_str(), all.size(), "utf-8", out, at))
+			std::cout << out << std::endl;
 	} else if (strcmp(argv[1], "rtfcptortf") == 0) {
 		BINARY rtf_comp;
 		rtf_comp.cb = all.size();
