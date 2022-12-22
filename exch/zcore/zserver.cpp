@@ -1696,7 +1696,7 @@ uint32_t zs_deletemessages(GUID hsession,
 	uint32_t proptag_buff[2];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	BOOL notify_non_read = FALSE; /* TODO: Read from config or USER_INFO. */
+	bool notify_non_read = flags & ZC_DELMSG_NOTIFY_UNREAD;
 	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
