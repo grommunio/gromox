@@ -1129,8 +1129,6 @@ static bool mime_read_multipart_content(const MIME *pmime,
 			tmp_stream.write(pmime->last_boundary, tmp_len);
 		} else if (0 == tmp_len) {
 			tmp_stream.write("\r\n", 2);
-		} else {
-			mlog(LV_DEBUG, "Unspecific error in %s", __PRETTY_FUNCTION__);
 		}
 	}
 	offset = 0;

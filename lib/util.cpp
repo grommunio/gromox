@@ -260,13 +260,14 @@ BOOL string_to_utf8(const char *charset, const char *in_string,
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
 		0 == strcasecmp(charset, "US-ASCII")) {
-		strcpy(out_string, in_string);
+		gx_strlcpy(out_string, in_string, out_len);
 		return TRUE;
 	}
 	cset_cstr_compatible(charset);
 	auto length = strlen(in_string);
 	if (0 == length) {
-		out_string[0] = '\0';
+		if (out_len > 0)
+			out_string[0] = '\0';
 		return TRUE;
 	}
 	auto orig_outlen = out_len;
