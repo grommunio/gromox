@@ -52,7 +52,7 @@ class OxdiscoPlugin {
 
 	private:
 	tinyxml2::XMLDocument respdoc;
-	std::string x500_org_name;
+	std::string x500_org_name = "Gromox default";
 	uint server_id; // Hash of the name of the mail server
 	std::string RedirectAddr; // Domain to perform Autodiscover
 	std::string RedirectUrl; // URL for a subsequent Autodiscover request
