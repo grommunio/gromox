@@ -1,3 +1,19 @@
+Development 1.37.38
+===================
+
+Fixes:
+
+* midb: IMAP SEARCH commands had numeric sequence ranges "m:n" misparsed
+* midb, imap: recognize "*" in sequence sets (alias for "*:*")
+
+Changes:
+
+* oxdisco: new module providing the AutoDiscover endpoints
+  (To go back to the old implementation, set http.cfg:http_old_php_handler=1)
+* oab: new module providing the OAB endpoint
+* delmsg: program has been merged into gromox-mbop as a subcommand
+
+
 Gromox 1.37 (2022-12-18)
 ========================
 
