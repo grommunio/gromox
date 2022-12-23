@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cerrno>
 #include <chrono>
 #include <cmath>
@@ -61,12 +62,13 @@ class OxdiscoPlugin {
 	int response_logging = 0; // 0 = none, 1 = response data
 	int pretty_response = 0; // 0 = compact output, 1 = pretty printed response
 	adv_setting m_advertise_rpch = adv_setting::yes, m_advertise_mh = adv_setting::yes;
+	bool m_validate_scndrequest = true;
 
 	void loadConfig();
 	void writeheader(int, int, size_t);
 	BOOL die(int, const char *, const char *);
-	BOOL resp(int, const char *, const char *);
-	int resp_web(tinyxml2::XMLElement *, const char *, const char *ua);
+	BOOL resp(int, const char *, const char *, const char *);
+	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua);
 	int resp_eas(tinyxml2::XMLElement *, const char *);
 	void resp_mh(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool);
@@ -226,10 +228,22 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	if (ars == nullptr)
 		return die(ctx_id, provider_unavailable_code, provider_unavailable_msg);
 
-	// TODO get the main email address of the authenticated user
-	if(strcasecmp(email, auth_info.username) != 0 &&
-			strncasecmp(email, public_folder_email, 19) != 0)
-		return die(ctx_id, bad_address_code, bad_address_msg);
+	if (m_validate_scndrequest && strcasecmp(email, auth_info.username) != 0 &&
+	    strncasecmp(email, public_folder_email, 19) != 0) {
+		int auth_user_id = 0, auth_domain_id = 0;
+		mysql.get_user_ids(auth_info.username, &auth_user_id, &auth_domain_id, nullptr);
+		std::vector<sql_user> hints;
+		auto err = mysql.scndstore_hints(auth_user_id, hints);
+		if (err != 0) {
+			mlog(LV_ERR, "oxdisco: error retrieving secondary store hints: %s", strerror(err));
+			return -1;
+		}
+		if (std::none_of(hints.begin(), hints.end(),
+		    [&](const sql_user &u) { return strcasecmp(u.username.c_str(), email) == 0; }))
+			/* authuser has no scndstore matching email */
+			return die(ctx_id, bad_address_code, (bad_address_msg +
+			       " (403 Permission Denied)"s).c_str());
+	}
 
 	if (!RedirectAddr.empty() || !RedirectUrl.empty()) {
 		mlog(LV_DEBUG, "[oxdisco] send redirect response\n");
@@ -245,6 +259,7 @@ static constexpr cfg_directive autodiscover_cfg_defaults[] = {
 	{"RedirectUrl", ""},
 	{"oxdisco_advertise_mh", "yes"},
 	{"oxdisco_advertise_rpch", "yes"},
+	{"oxdisco_validate_scndrequest", "yes", CFG_BOOL},
 	{"pretty_response", "0", CFG_BOOL},
 	{"request_logging", "0", CFG_BOOL},
 	{"response_logging", "0", CFG_BOOL},
@@ -297,6 +312,7 @@ void OxdiscoPlugin::loadConfig()
 	pretty_response = c->get_ll("pretty_response");
 	m_advertise_mh = parse_adv(c->get_value("oxdisco_advertise_mh"));
 	m_advertise_rpch = parse_adv(c->get_value("oxdisco_advertise_rpch"));
+	m_validate_scndrequest = c->get_ll("oxdisco_validate_scndrequest");
 	auto s = c->get_value("oxdisco_exonym");
 	if (s != nullptr)
 		host_id = s;
@@ -410,7 +426,8 @@ XMLElement *OxdiscoPlugin::add_child(XMLElement *el, const char *tag,
  *
  * @return     BOOL            TRUE if response was successful, false otherwise
  */
-BOOL OxdiscoPlugin::resp(int ctx_id, const char *email, const char *ars)
+BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
+    const char *email, const char *ars)
 {
 	auto req = get_request(ctx_id);
 	char user_agent[64];
@@ -430,7 +447,7 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *email, const char *ars)
 	int ret;
 
 	if (strcasecmp(ars, response_outlook_xmlns) == 0)
-		ret = resp_web(resproot, email, user_agent);
+		ret = resp_web(resproot, authuser, email, user_agent);
 	else if (strcasecmp(ars, response_mobile_xmlns) == 0)
 		ret = resp_eas(resproot, email);
 	else {
