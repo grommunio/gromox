@@ -134,7 +134,7 @@ OxdiscoPlugin::OxdiscoPlugin()
 	loadConfig();
 	server_id = std::hash<std::string>{}(host_id);
 
-	mlog(LV_DEBUG, "[oxdisco] org %s RedirectAddr %s RedirectUrl %s request_logging %d response_logging %d pretty_response %d\n",
+	mlog(LV_DEBUG, "[oxdisco] org %s RedirectAddr %s RedirectUrl %s request_logging %d response_logging %d pretty_response %d",
 		x500_org_name.empty() ? "empty" : x500_org_name.c_str(),
 		RedirectAddr.empty() ? "empty" : RedirectAddr.c_str(),
 		RedirectUrl.empty() ? "empty" : RedirectUrl.c_str(),
@@ -213,7 +213,7 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	}
 
 	if (request_logging > 0)
-		mlog(LV_DEBUG, "[oxdisco] incoming: %s\n", static_cast<const char *>(content));
+		mlog(LV_DEBUG, "[oxdisco] incoming: %s", static_cast<const char *>(content));
 
 	auto req_node = root->FirstChildElement("Request");
 	if (req_node == nullptr)
@@ -246,7 +246,7 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	}
 
 	if (!RedirectAddr.empty() || !RedirectUrl.empty()) {
-		mlog(LV_DEBUG, "[oxdisco] send redirect response\n");
+		mlog(LV_DEBUG, "[oxdisco] send redirect response");
 	}
 	return resp(ctx_id, auth_info.username, email, ars);
 } catch (const std::bad_alloc &) {
@@ -372,7 +372,7 @@ BOOL OxdiscoPlugin::die(int ctx_id, const char *error_code, const char *error_ms
 	strftime(error_time, std::size(error_time), "%T", timeinfo);
 
 	auto data = fmt::format(error_templ, error_time, server_id, error_code, error_msg);
-	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s\n", data.size(), data.c_str());
+	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s", data.size(), data.c_str());
 	writeheader(ctx_id, 200, data.size());
 	write_response(ctx_id, data.c_str(), data.size());
 	return false;
@@ -895,10 +895,10 @@ static BOOL oxdisco_init(void **apidata)
 		g_oxdisco_plugin.reset(new OxdiscoPlugin());
 	}
 	catch (std::exception& e) {
-		mlog(LV_DEBUG, "[oxdisco] failed to initialize plugin: %s\n", e.what());
+		mlog(LV_DEBUG, "[oxdisco] failed to initialize plugin: %s", e.what());
 		return false;
 	}
-	mlog(LV_DEBUG, "[oxdisco]: plugin is loaded into system\n");
+	mlog(LV_DEBUG, "[oxdisco]: plugin is loaded into system");
 	return TRUE;
 }
 
