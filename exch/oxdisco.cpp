@@ -51,13 +51,11 @@ class OxdiscoPlugin {
 	} mysql; // mysql adaptor function pointers
 
 	private:
-	tinyxml2::XMLDocument respdoc;
 	std::string x500_org_name = "Gromox default";
 	uint server_id; // Hash of the name of the mail server
 	std::string RedirectAddr; // Domain to perform Autodiscover
 	std::string RedirectUrl; // URL for a subsequent Autodiscover request
 	std::string host_id;
-	int user_id = -1, domain_id = -1;
 	int request_logging = 0; // 0 = none, 1 = request data
 	int response_logging = 0; // 0 = none, 1 = response data
 	int pretty_response = 0; // 0 = compact output, 1 = pretty printed response
@@ -65,23 +63,23 @@ class OxdiscoPlugin {
 	bool m_validate_scndrequest = true;
 
 	void loadConfig();
-	void writeheader(int, int, size_t);
-	BOOL die(int, const char *, const char *);
-	BOOL resp(int, const char *, const char *, const char *);
-	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua);
-	int resp_eas(tinyxml2::XMLElement *, const char *);
-	void resp_mh(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool);
-	void resp_rpch(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool);
-	BOOL resp_autocfg(int, const char*);
-	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
-	tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
-	const char *gtx(tinyxml2::XMLElement &, const char *);
-	std::string get_redirect_addr(const char *);
-	BOOL username_to_essdn(const char *, char *, size_t);
-	BOOL domainname_to_essdn(const char *, char *, size_t);
-	bool advertise_prot(enum adv_setting, const char *ua) const;
-	std::string get_deploymentid(const int, const char*);
-	void get_hex_string(const char*, char*);
+	static void writeheader(int, int, size_t);
+	BOOL die(int, const char *, const char *) const;
+	BOOL resp(int, const char *, const char *, const char *) const;
+	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
+	int resp_eas(tinyxml2::XMLElement *, const char *) const;
+	static void resp_mh(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool);
+	void resp_rpch(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool) const;
+	BOOL resp_autocfg(int, const char *) const;
+	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
+	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
+	static const char *gtx(tinyxml2::XMLElement &, const char *);
+	std::string get_redirect_addr(const char *) const;
+	BOOL username_to_essdn(const char *, char *, size_t, int &, int &) const;
+	BOOL domainname_to_essdn(const char *, char *, size_t, int &) const;
+	static bool advertise_prot(enum adv_setting, const char *ua);
+	static std::string get_deploymentid(int, const char *);
+	static void get_hex_string(const char *, char *);
 };
 
 }
@@ -363,7 +361,8 @@ void OxdiscoPlugin::writeheader(int ctx_id, int code, size_t content_length)
  * @param      error_msg       Error message for the Autodiscover response
  * @return     BOOL always return false
  */
-BOOL OxdiscoPlugin::die(int ctx_id, const char *error_code, const char *error_msg)
+BOOL OxdiscoPlugin::die(int ctx_id, const char *error_code,
+    const char *error_msg) const
 {
 	struct tm timebuf;
 	char error_time[13];
@@ -427,7 +426,7 @@ XMLElement *OxdiscoPlugin::add_child(XMLElement *el, const char *tag,
  * @return     BOOL            TRUE if response was successful, false otherwise
  */
 BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
-    const char *email, const char *ars)
+    const char *email, const char *ars) const
 {
 	auto req = get_request(ctx_id);
 	char user_agent[64];
@@ -438,7 +437,7 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
 	else
 		user_agent[len] = '\0';
 
-	respdoc.Clear();
+	tinyxml2::XMLDocument respdoc;
 	auto decl = respdoc.NewDeclaration();
 	respdoc.InsertEndChild(decl);
 
@@ -470,7 +469,7 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
 	return write_response(ctx_id, response, strlen(response));
 }
 
-bool OxdiscoPlugin::advertise_prot(enum adv_setting adv, const char *ua) const
+bool OxdiscoPlugin::advertise_prot(enum adv_setting adv, const char *ua)
 {
 	switch (adv) {
 	case adv_setting::no:
@@ -493,7 +492,7 @@ bool OxdiscoPlugin::advertise_prot(enum adv_setting adv, const char *ua) const
  * @param      email
  */
 int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
-    const char *email, const char *user_agent)
+    const char *email, const char *user_agent) const
 {
 	auto resp = add_child(el, "Response");
 	resp->SetAttribute("xmlns", response_outlook_xmlns);
@@ -529,12 +528,12 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 		homesrv = host_id.c_str();
 
 	std::string DisplayName, LegacyDN, DeploymentId;
+	int user_id = 0, domain_id = 0;
 	if (is_private) {
 		if (!mysql.get_user_displayname(email, buf.get(), 4096))
 			return -1;
 		DisplayName = buf.get();
-
-		if (!username_to_essdn(email, buf.get(), 4096))
+		if (!username_to_essdn(email, buf.get(), 4096, user_id, domain_id))
 			return -1;
 		LegacyDN = buf.get();
 
@@ -543,8 +542,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	}
 	else {
 		DisplayName = public_folder;
-
-		if (!domainname_to_essdn(domain, buf.get(), 4096))
+		if (!domainname_to_essdn(domain, buf.get(), 4096, domain_id))
 			return -1;
 		LegacyDN = buf.get();
 
@@ -608,7 +606,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
     const std::string &ews_url, const std::string &OABUrl,
     const std::string &EcpUrl, const std::string &deploymentid,
-		bool is_private)
+    bool is_private)
 {
 	auto resp_prt = add_child(resp_acc, "Protocol");
 	add_child(resp_prt, "OOFUrl", ews_url);
@@ -650,7 +648,7 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
 void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *domain,
     const std::string &ews_url, const std::string &OABUrl,
     const std::string &EcpUrl, const std::string &deploymentid,
-		bool is_private)
+    bool is_private) const
 {
 	auto resp_prt = add_child(resp_acc, "Protocol");
 	add_child(resp_prt, "Type", "EXCH");
@@ -703,7 +701,7 @@ void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *domain,
  * @param      el              Response XMLElement
  * @param      email           Email address for autodiscover
  */
-int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email)
+int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email) const
 {
 	auto resp = add_child(el, "Response");
 	resp->SetAttribute("xmlns", response_mobile_xmlns);
@@ -739,9 +737,9 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email)
 	return 0;
 }
 
-BOOL OxdiscoPlugin::resp_autocfg(int ctx_id, const char* username)
+BOOL OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 {
-	respdoc.Clear();
+	tinyxml2::XMLDocument respdoc;
 	auto decl = respdoc.NewDeclaration();
 	respdoc.InsertEndChild(decl);
 
@@ -786,7 +784,7 @@ BOOL OxdiscoPlugin::resp_autocfg(int ctx_id, const char* username)
 	return write_response(ctx_id, response, strlen(response));
 }
 
-std::string OxdiscoPlugin::get_redirect_addr(const char *email)
+std::string OxdiscoPlugin::get_redirect_addr(const char *email) const
 {
 	std::string s_email = email;
 	std::string username = s_email.substr(0, s_email.find('@') - 1);
@@ -794,7 +792,8 @@ std::string OxdiscoPlugin::get_redirect_addr(const char *email)
 	return redirect_addr;
 }
 
-BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn, size_t dnmax)
+BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn,
+    size_t dnmax, int &user_id, int &domain_id) const
 {
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
@@ -816,10 +815,11 @@ BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn, size_t
 	return TRUE;
 }
 
-BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn, size_t dnmax)
+BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn,
+    size_t dnmax, int &domain_id) const
 {
 	char hex_string[16];
-	int org_id;
+	int org_id = 0;
 
 	mysql.get_domain_ids(domainname, &domain_id, &org_id);
 	encode_hex_int(domain_id, hex_string);
@@ -830,7 +830,8 @@ BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn, si
 	return TRUE;
 }
 
-std::string OxdiscoPlugin::get_deploymentid(const int id, const char* hex_string)
+std::string OxdiscoPlugin::get_deploymentid(const int id,
+    const char *hex_string)
 {
 	char temp_hex[16];
 	encode_hex_int(id, temp_hex);
@@ -840,7 +841,7 @@ std::string OxdiscoPlugin::get_deploymentid(const int id, const char* hex_string
 			hex_string[8], hex_string[9], hex_string[10], hex_string[11], temp_hex);
 }
 
-void OxdiscoPlugin::get_hex_string(const char* str, char* hex_string)
+void OxdiscoPlugin::get_hex_string(const char *str, char *hex_string)
 {
 	size_t l = strlen(str);
 	for (size_t i = 0; i < 12; ++i) {
