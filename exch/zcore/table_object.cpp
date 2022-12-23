@@ -74,10 +74,10 @@ static errno_t storetbl_refresh(table_object *tbl)
 		return EIO;
 	storetbl_add_row(tbl, *info, tags, true, info->user_id);
 	storetbl_add_row(tbl, *info, tags, false, info->domain_id);
-	std::vector<int> hints;
+	std::vector<sql_user> hints;
 	if (system_services_scndstore_hints(info->user_id, hints) == 0)
-		for (const auto &uid : hints)
-			storetbl_add_row(tbl, *info, tags, true, uid);
+		for (const auto &user : hints)
+			storetbl_add_row(tbl, *info, tags, true, user.id);
 	/* Table now contains _validated_ entries. */
 	return 0;
 }

@@ -12,6 +12,7 @@
 #include <typeinfo>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
@@ -23,6 +24,8 @@
 #include <gromox/util.hpp>
 #include "sql2.hpp"
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
+
+using namespace std::string_literals;
 
 DECLARE_SVC_API();
 
@@ -372,11 +375,15 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	return false;
 }
 
-errno_t mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
+errno_t mysql_adaptor_scndstore_hints(int pri, std::vector<sql_user> &hints) try
 {
-	char query[76];
-	snprintf(query, arsizeof(query), "SELECT `secondary` "
-	         "FROM `secondary_store_hints` WHERE `primary`=%u", pri);
+	char query[233];
+	snprintf(query, std::size(query),
+	         "SELECT u.id, u.username, u.maildir, up.propval_str "
+	         "FROM secondary_store_hints AS s "
+	         "INNER JOIN users AS u ON s.`secondary`=u.id "
+	         "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=0x3001001f "
+	         "WHERE s.`primary`=%u", pri);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr || !conn->query(query))
 		return EIO;
@@ -384,9 +391,15 @@ errno_t mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
 	if (result == nullptr)
 		return ENOMEM;
 	DB_ROW row;
-	while ((row = result.fetch_row()) != nullptr)
-		if (row[0] != nullptr)
-			hints.push_back(strtoul(row[0], nullptr, 0));
+	while ((row = result.fetch_row()) != nullptr) {
+		sql_user u;
+		u.id = strtoul(row[0], nullptr, 0);
+		u.username = znul(row[1]);
+		u.maildir = znul(row[2]);
+		if (row[3] != nullptr)
+			u.propvals.emplace(PR_DISPLAY_NAME, row[3]);
+		hints.push_back(std::move(u));
+	}
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1638: ENOMEM");
@@ -408,6 +421,36 @@ static int mysql_adaptor_domain_list_query(const char *domain) try
 	return res.fetch_row() != nullptr;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1647: ENOMEM");
+	return -ENOMEM;
+}
+
+static errno_t mysql_adaptor_homeserver(const char *entity, bool is_pvt,
+    std::pair<std::string, std::string> &servers) try
+{
+	char qent[UADDR_SIZE*2];
+	mysql_adaptor_encode_squote(entity, qent);
+	auto qstr = is_pvt ?
+	            "SELECT sv.hostname, sv.extname FROM users AS u "
+	            "LEFT JOIN servers AS sv ON u.homeserver=sv.id "
+	            "WHERE u.username='"s + qent + "' LIMIT 2" :
+	            "SELECT sv.hostname, sv.extname FROM domains AS d "
+	            "LEFT JOIN servers AS sv ON d.homeserver=sv.id "
+	            "WHERE d.domainname='"s + qent + "' LIMIT 2";
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn->query(qstr.c_str()))
+		return EIO;
+	DB_RESULT res = mysql_store_result(conn->get());
+	if (res == nullptr)
+		return ENOMEM;
+	conn.finish();
+	if (res.num_rows() != 1)
+		return ENOENT;
+	auto row = res.fetch_row();
+	servers.first  = znul(row[0]);
+	servers.second = znul(row[1]);
+	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1210: ENOMEM");
 	return -ENOMEM;
 }
 
@@ -560,6 +603,7 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	E(get_user_info, "get_user_info");
 	E(scndstore_hints, "scndstore_hints");
 	E(domain_list_query, "domain_list_query");
+	E(homeserver, "get_homeserver");
 #undef E
 	return TRUE;
 }
