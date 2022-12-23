@@ -525,7 +525,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	if (mysql.get_homeserver(email, is_private, homesrv_buf) != 0)
 		return -1;
 	const char *homesrv = homesrv_buf.second.c_str();
-	if (homesrv == nullptr)
+	if (*homesrv == '\0')
 		homesrv = host_id.c_str();
 
 	std::string DisplayName, LegacyDN, DeploymentId;
