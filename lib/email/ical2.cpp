@@ -37,6 +37,13 @@ ical_line::ical_line(const char *name, const char *value) :
 	pivalue.append_subval(value);
 }
 
+ical_line::ical_line(const char *name, std::string &&value) :
+	m_name(name)
+{
+	auto &pivalue = append_value();
+	pivalue.append_subval(std::move(value));
+}
+
 void ical_line::append_param(const char *tag, const char *s)
 {
 	ical_param p(tag);
@@ -51,5 +58,12 @@ void ical_line::append_value(const char *tag, const char *s)
 {
 	ical_value v(tag);
 	v.append_subval(s);
+	append_value(std::move(v));
+}
+
+void ical_line::append_value(const char *tag, std::string &&s)
+{
+	ical_value v(tag);
+	v.append_subval(std::move(s));
 	append_value(std::move(v));
 }

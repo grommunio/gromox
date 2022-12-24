@@ -38,6 +38,7 @@ struct GX_EXPORT ical_value {
 	ical_value() = default;
 	ical_value(const char *n) : name(gromox::znul(n)) {}
 	void append_subval(const char *s) { subval_list.emplace_back(gromox::znul(s)); }
+	void append_subval(std::string &&s) { subval_list.emplace_back(std::move(s)); }
 
 	std::string name;
 	std::vector<std::string> subval_list;
@@ -48,12 +49,14 @@ struct GX_EXPORT ical_line {
 	public:
 	ical_line(const char *n) : m_name(n) {}
 	ical_line(const char *n, const char *v);
+	ical_line(const char *n, std::string &&v);
 	ical_param &append_param(ical_param &&o) { param_list.push_back(std::move(o)); return param_list.back(); }
 	void append_param(const char *v, const char *pv);
 	ical_value &append_value(ical_value &&o) { value_list.push_back(std::move(o)); return value_list.back(); }
 	ical_value &append_value() { return value_list.emplace_back(); }
 	ical_value &append_value(const char *v) { value_list.push_back(ical_value(v)); return value_list.back(); }
 	void append_value(const char *v, const char *sv);
+	void append_value(const char *v, std::string &&sv);
 	const char *get_first_paramval(const char *name) const;
 	const char *get_first_subvalue() const;
 	const char *get_first_subvalue_by_name(const char *name) const;
@@ -72,6 +75,7 @@ struct GX_EXPORT ical_component {
 	ical_line &append_line(ical_line &&o) { return line_list.emplace_back(std::move(o)); }
 	ical_line &append_line(const char *n) { return line_list.emplace_back(n); }
 	ical_line &append_line(const char *n, const char *v) { return line_list.emplace_back(n, v); }
+	ical_line &append_line(const char *n, std::string &&v) { return line_list.emplace_back(n, std::move(v)); }
 	const ical_line *get_line(const char *name) const;
 
 	std::string m_name;
