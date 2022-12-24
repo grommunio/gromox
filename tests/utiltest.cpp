@@ -16,18 +16,27 @@
 #undef assert
 #define assert(x) do { if (!(x)) return EXIT_FAILURE; } while (false)
 using namespace gromox;
+#define s_rgbSPlus "040000008200E00074C5B7101A82E008"
 
 static int t_extpp()
 {
-	auto s = hex2bin("040000008200e00074c5b7101a82e008000000009b2dbdb2255659027cf33d2a183706db6bc9240adbd249557c96f6783dcc06d8f9c48b1f");
+	auto s = hex2bin(s_rgbSPlus "000000009b2dbdb2255659027cf33d2a183706db6bc9240adbd249557c96f6783dcc06d8f9c48b1f");
 	EXT_PULL ep;
 	ep.init(s.data(), s.size(), zalloc, 0);
 	GLOBALOBJECTID goid;
-	auto ret = ep.g_goid(&goid, 1);
-	if (ret != EXT_ERR_SUCCESS) {
-		fprintf(stderr, "g_goid failed\n");
-		return EXIT_FAILURE;
-	}
+	auto ret = ep.g_goid(&goid);
+	assert(ret == EXT_ERR_SUCCESS && goid.unparsed);
+#define s_date "0000000066b5d6b711d901010000000000000000"
+	s = hex2bin(s_rgbSPlus s_date "01000000ffff");
+	ep.init(s.data(), s.size(), zalloc, 0);
+	assert(ep.g_goid(&goid) == EXT_ERR_SUCCESS);
+	assert((!goid.unparsed && goid.data.cb == 1) ||
+	       (goid.unparsed && goid.data.cb == 6));
+	s = hex2bin(s_rgbSPlus s_date "02000000ff");
+	ep.init(s.data(), s.size(), zalloc, 0);
+	assert(ep.g_goid(&goid) == EXT_ERR_SUCCESS);
+	assert(goid.unparsed && goid.data.cb == 5);
+#undef s_date
 	return EXIT_SUCCESS;
 }
 

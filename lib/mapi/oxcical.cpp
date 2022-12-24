@@ -1113,7 +1113,7 @@ static BOOL oxcical_parse_uid(const ical_component &main_event,
 	if (strncasecmp(pvalue, EncodedGlobalId_hex, 32) == 0 &&
 	    decode_hex_binary(pvalue, tmp_buff, arsizeof(tmp_buff))) {
 		ext_pull.init(tmp_buff, tmp_len / 2, alloc, 0);
-		if (ext_pull.g_goid(&globalobjectid, 1) == EXT_ERR_SUCCESS &&
+		if (ext_pull.g_goid(&globalobjectid) == EXT_ERR_SUCCESS &&
 		    ext_pull.m_offset == tmp_len / 2) {
 			if (globalobjectid.year < 1601 || globalobjectid.year > 4500 ||
 				globalobjectid.month > 12 || 0 == globalobjectid.month ||
@@ -1136,6 +1136,7 @@ static BOOL oxcical_parse_uid(const ical_component &main_event,
 	globalobjectid.data.pv = alloc(globalobjectid.data.cb);
 	if (globalobjectid.data.pv == nullptr)
 		return FALSE;
+	static_assert(sizeof(ThirdPartyGlobalId) == 12);
 	memcpy(globalobjectid.data.pb, ThirdPartyGlobalId, 12);
 	memcpy(globalobjectid.data.pb + 12, pvalue, tmp_len);
  MAKE_GLOBALOBJID:
@@ -3137,7 +3138,7 @@ static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
 		EXT_PULL ext_pull;
 
 		ext_pull.init(bin->pb, bin->cb, alloc, 0);
-		if (ext_pull.g_goid(&goid, 1) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_goid(&goid) != EXT_ERR_SUCCESS)
 			return "E-2215: PidLidGlobalObjectId contents not recognized";
 		if (goid.data.pb != nullptr && goid.data.cb >= 12 &&
 		    memcmp(goid.data.pb, ThirdPartyGlobalId, 12) == 0) {
@@ -3220,7 +3221,7 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 					GLOBALOBJECTID globalobjectid;
 
 					ext_pull.init(bin->pb, bin->cb, alloc, 0);
-					if (ext_pull.g_goid(&globalobjectid, 1) != EXT_ERR_SUCCESS)
+					if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 						return "E-2218: PidLidGlobalObjectId contents not recognized";
 					itime.year = globalobjectid.year;
 					itime.month = globalobjectid.month;

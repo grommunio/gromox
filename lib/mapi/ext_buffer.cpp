@@ -1974,7 +1974,7 @@ static int ext_pull_goid_trailer(EXT_PULL *ext, GLOBALOBJECTID *r, size_t len)
 	return ext->g_bytes(r->data.pv, len);
 }
 
-int EXT_PULL::g_goid(GLOBALOBJECTID *r, bool eat_all)
+int EXT_PULL::g_goid(GLOBALOBJECTID *r)
 {
 	uint8_t yh;
 	uint8_t yl;
@@ -1988,14 +1988,13 @@ int EXT_PULL::g_goid(GLOBALOBJECTID *r, bool eat_all)
 	TRY(g_uint64(&r->creationtime));
 	TRY(g_bytes(r->x, 8));
 	r->unparsed = false;
-	if (!eat_all)
-		return g_bin_ex(&r->data);
-	uint32_t remain = m_offset >= m_data_size ? 0 : m_data_size - m_offset;
-	if (remain < sizeof(uint32_t))
-		return ext_pull_goid_trailer(this, r, remain);
+	uint32_t unparsed_len = m_offset >= m_data_size ? 0 : m_data_size - m_offset;
+	if (unparsed_len < sizeof(uint32_t))
+		return ext_pull_goid_trailer(this, r, unparsed_len);
 	TRY(g_uint32(&r->data.cb));
 	m_offset -= sizeof(uint32_t);
-	return r->data.cb == remain ? g_bin_ex(&r->data) : ext_pull_goid_trailer(this, r, remain);
+	return r->data.cb == unparsed_len - sizeof(uint32_t) ? g_bin_ex(&r->data) :
+	       ext_pull_goid_trailer(this, r, unparsed_len);
 }
 
 static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)

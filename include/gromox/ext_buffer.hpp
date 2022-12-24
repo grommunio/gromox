@@ -175,7 +175,7 @@ struct EXT_PULL {
 	int g_tzstruct(TIMEZONESTRUCT *);
 	int g_tzdef(TIMEZONEDEFINITION *);
 	int g_apptrecpat(APPOINTMENT_RECUR_PAT *);
-	int g_goid(GLOBALOBJECTID *, bool eat_all);
+	int g_goid(GLOBALOBJECTID *);
 	int g_msgctnt(MESSAGE_CONTENT *);
 
 	template<typename T> inline T *anew() { return static_cast<T *>(m_alloc(sizeof(T))); }
