@@ -262,6 +262,7 @@ static constexpr cfg_directive autodiscover_cfg_defaults[] = {
 	{"request_logging", "0", CFG_BOOL},
 	{"response_logging", "0", CFG_BOOL},
 	{"x500_org_name", "Gromox default"},
+	CFG_TABLE_END,
 };
 
 static enum adv_setting parse_adv(const char *s)
