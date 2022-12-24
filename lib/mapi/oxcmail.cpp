@@ -4097,10 +4097,6 @@ void mime_skeleton::clear()
 		attachment_list_free(pskeleton->pattachments);
 		pskeleton->pattachments = nullptr;
 	}
-	if (NULL != pskeleton->rtf_bin.pb) {
-		free(pskeleton->rtf_bin.pb);
-		pskeleton->rtf_bin.pb = nullptr;
-	}
 }
 
 static inline const char *importance_to_text(const uint32_t *v)
