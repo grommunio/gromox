@@ -13,6 +13,7 @@ temp.mk
 *.la
 *.ldd
 *.lo
+*.su
 Makefile
 Makefile.in
 /aclocal.m4
