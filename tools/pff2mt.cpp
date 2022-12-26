@@ -1000,7 +1000,7 @@ static void az_fmap_splice_rft2(const tarray_set &tset)
 		if (props == nullptr)
 			continue;
 		auto msgcls = props->get<char>(PR_MESSAGE_CLASS);
-		auto tgtfld = props->get<uint32_t>(PidTagPff6605);
+		auto tgtfld = props->get<uint32_t>(PR_PST_RECEIVE_FOLDER_NID);
 		if (msgcls == nullptr || tgtfld == nullptr)
 			continue;
 		/*
