@@ -285,8 +285,15 @@ void OxdiscoPlugin::loadConfig()
 	auto c = config_file_initd("autodiscover.ini", get_config_path(), nullptr);
 	if (c != nullptr) {
 		auto s = c->get_value("organization");
-		if (s != nullptr)
-			x500_org_name = s;
+		if (s != nullptr) {
+			auto &x = x500_org_name;
+			x = s;
+#if __cplusplus >= 202000L
+			std::erase(x, '\'');
+#else
+			x.erase(std::remove(x.begin(), x.end(), '\''), x.end());
+#endif
+		}
 		s = c->get_value("hostname");
 		if (s != nullptr)
 			host_id = s;
