@@ -772,7 +772,7 @@ enum {
 	// PR_RULE_MSG_LEVEL = PROP_TAG(PT_LONG, 0x65ED), /* PidTagRuleMessageLevel */
 	// PR_RULE_MSG_PROVIDER_DATA = PROP_TAG(PT_BINARY, 0x65EE), /* PidTagRuleMessageProviderData */
 	PR_RULE_MSG_SEQUENCE = PROP_TAG(PT_LONG, 0x65F3), /* PidTagRuleMessageSequence */
-	PidTagPff6605 = PROP_TAG(PT_LONG, 0x6605), /* PFF: receive folder table: NID for target folder */
+	PR_PST_RECEIVE_FOLDER_NID = PROP_TAG(PT_LONG, 0x6605),
 	// PR_PROFILE_TRANSPORT_FLAGS = PROP_TAG(PT_LONG, 0x6605),
 	PR_USER_ENTRYID = PROP_TAG(PT_BINARY, 0x6619), /* PidTagUserEntryId */
 	PR_USER_NAME = PROP_TAG(PT_STRING8, 0x661A),
