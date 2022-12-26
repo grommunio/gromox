@@ -52,7 +52,7 @@ exchange_plugins = \
 	libgxp_exchange_emsmdb.la \
 	libgxp_exchange_nsp.la \
 	libgxp_exchange_rfr.la \
-	libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oxdisco.la libgxh_oab.la \
+	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oxdisco.la libgxh_oab.la \
 	libgxs_authmgr.la \
 	libgxs_ip6_container.la libgxs_ip6_filter.la \
 	libgxs_ldap_adaptor.la \
@@ -64,7 +64,7 @@ noinst_DATA += \
 	libgxp_exchange_emsmdb.ldd \
 	libgxp_exchange_nsp.ldd \
 	libgxp_exchange_rfr.ldd \
-	libgxh_mh_emsmdb.ldd libgxh_mh_nsp.ldd libgxh_oxdisco.ldd libgxh_oab.ldd \
+	libgxh_ews.ldd libgxh_mh_emsmdb.ldd libgxh_mh_nsp.ldd libgxh_oxdisco.ldd libgxh_oab.ldd \
 	libgxs_authmgr.ldd \
 	libgxs_ip6_container.ldd libgxs_ip6_filter.ldd \
 	libgxs_ldap_adaptor.ldd \
@@ -169,6 +169,10 @@ libgxp_exchange_rfr_la_SOURCES = exch/rfr.cpp
 libgxp_exchange_rfr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxp_exchange_rfr_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_rpc.la
 EXTRA_libgxp_exchange_rfr_la_DEPENDENCIES = ${default_sym}
+libgxh_ews_la_SOURCES = exch/ews/context.cpp exch/ews/ews.cpp exch/ews/freebusy.cpp exch/ews/requests.cpp exch/ews/soaputil.cpp exch/ews/structures.cpp
+libgxh_ews_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxh_ews_la_LIBADD = ${HX_LIBS} ${fmt_LIBS} ${tinyxml_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+EXTRA_libgxh_ews_la_DEPENDENCIES = ${default_sym}
 libgxh_mh_emsmdb_la_SOURCES = exch/mh/emsmdb.cpp exch/mh/mh_common.cpp
 libgxh_mh_emsmdb_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxh_mh_emsmdb_la_LIBADD = -lpthread libgromox_common.la libgromox_mapi.la
