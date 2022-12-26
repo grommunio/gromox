@@ -68,7 +68,7 @@ class OxdiscoPlugin {
 	BOOL resp(int, const char *, const char *, const char *) const;
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
 	int resp_eas(tinyxml2::XMLElement *, const char *) const;
-	static void resp_mh(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool);
+	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool) const;
 	BOOL resp_autocfg(int, const char *) const;
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
@@ -567,7 +567,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	auto EcpUrl = fmt::format(ews_base_url, homesrv, "");
 
 	if (advertise_prot(m_advertise_mh, user_agent))
-		resp_mh(resp_acc, homesrv, ews_url, OABUrl, EcpUrl,
+		resp_mh(resp_acc, homesrv, domain, ews_url, OABUrl, EcpUrl,
 			DeploymentId, is_private);
 	if (advertise_prot(m_advertise_rpch, user_agent))
 		resp_rpch(resp_acc, homesrv, ews_url, OABUrl, EcpUrl,
@@ -604,7 +604,8 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	return 0;
 }
 
-void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
+void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *homesrv,
+    const char *domain,
     const std::string &ews_url, const std::string &OABUrl,
     const std::string &EcpUrl, const std::string &deploymentid,
     bool is_private)
@@ -614,7 +615,7 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
 	add_child(resp_prt, "OABUrl", OABUrl);
 
 	add_child(resp_prt, "Type", "EXHTTP");
-	add_child(resp_prt, "Server", domain);
+	add_child(resp_prt, "Server", homesrv);
 	add_child(resp_prt, "SSL", "On");
 	add_child(resp_prt, "CertPrincipalName", "None");
 	add_child(resp_prt, "AuthPackage", "basic");
@@ -636,11 +637,11 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *domain,
 	resp_prt->SetAttribute("Version", "1");
 	auto resp_prt_mst = add_child(resp_prt, "MailStore");
 
-	auto mst_url = fmt::format(mailbox_base_url, domain, "emsmdb", deploymentid, domain);
+	auto mst_url = fmt::format(mailbox_base_url, homesrv, "emsmdb", deploymentid, domain);
 	add_child(resp_prt_mst, "InternalUrl", mst_url);
 	add_child(resp_prt_mst, "ExternalUrl", mst_url);
 
-	auto abk_url = fmt::format(mailbox_base_url, domain, "nspi", deploymentid, domain);
+	auto abk_url = fmt::format(mailbox_base_url, homesrv, "nspi", deploymentid, domain);
 	auto resp_prt_abk = add_child(resp_prt, "AddressBook");
 	add_child(resp_prt_abk, "InternalUrl", abk_url);
 	add_child(resp_prt_abk, "ExternalUrl", abk_url);
