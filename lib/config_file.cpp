@@ -370,11 +370,19 @@ BOOL CONFIG_FILE::get_uint(const char *key, unsigned int *value) const
 	return TRUE;
 }
 
+/**
+ * Not suitable for signed or maybe-signed (e.g. time_t) quantities.
+ */
 unsigned long long CONFIG_FILE::get_ll(const char *key) const
 {
 	auto sv = get_value(key);
 	if (sv == nullptr) {
 		mlog(LV_ERR, "*** config key \"%s\" has no default and was not set either", key);
+		/*
+		 * Programming error; get_ll is meant to be only used with
+		 * CONFIG_FILE objects that were initialized from a
+		 * cfg_directive array (e.g. config_file_initd).
+		 */
 		throw cfg_error();
 	}
 	return strtoull(sv, nullptr, 0);

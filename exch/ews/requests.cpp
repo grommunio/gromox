@@ -267,13 +267,13 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 			data.UserOofSettings->ExternalAudience = external_audience? "Known" : "All";
 		else
 			data.UserOofSettings->ExternalAudience = "None";
-		try {
-			time_t start_time = configFile->get_ll("start_time");
-			time_t end_time = configFile->get_ll("end_time");
+		auto start_time = configFile->get_value("start_time");
+		auto end_time = configFile->get_value("end_time");
+		if (start_time != nullptr && end_time != nullptr) {
 			tDuration& Duration = data.UserOofSettings->Duration.emplace();
-			Duration.StartTime = Clock::from_time_t(start_time);
-			Duration.EndTime = Clock::from_time_t(end_time);
-		} catch (cfg_error&) {}
+			Duration.StartTime = Clock::from_time_t(strtoll(start_time, nullptr, 0));
+			Duration.EndTime = Clock::from_time_t(strtoll(end_time, nullptr, 0));
+		}
 		optional<string> reply = readMessageBody(maildir+"/config/internal-reply");
 		if(reply)
 			data.UserOofSettings->InternalReply.emplace(std::move(reply));
