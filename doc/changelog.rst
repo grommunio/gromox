@@ -1,4 +1,4 @@
-Development 1.37.38
+Development 1.37.83
 ===================
 
 Fixes:
@@ -8,9 +8,12 @@ Fixes:
 
 Changes:
 
-* oxdisco: new module providing the AutoDiscover endpoints
+* oxdisco: new module providing the AutoDiscover endpoints,
+  replacing the PHP-based implementation
   (To go back to the old implementation, set http.cfg:http_old_php_handler=1)
 * oab: new module providing the OAB endpoint
+* ews: new module providing the EWS endpoint,
+  replacing the PHP-based implementation
 * delmsg: program has been merged into gromox-mbop as a subcommand
 
 
