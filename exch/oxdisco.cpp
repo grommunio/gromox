@@ -560,7 +560,6 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 
 	add_child(resp_user, "DisplayName", DisplayName);
 	add_child(resp_user, "LegacyDN", LegacyDN);
-	HX_strupper(DeploymentId.data());
 	add_child(resp_user, "DeploymentId", DeploymentId);
 
 	auto resp_acc = add_child(resp, "Account");
@@ -820,7 +819,6 @@ BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn,
 	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 			x500_org_name.c_str(), hex_string2, hex_string, tmp_name);
-	HX_strupper(pessdn);
 	return TRUE;
 }
 
@@ -835,7 +833,6 @@ BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn,
 	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s00000000-public.folder.root",
 			x500_org_name.c_str(), hex_string);
-	HX_strupper(pessdn);
 	return TRUE;
 }
 
