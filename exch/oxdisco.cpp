@@ -69,7 +69,7 @@ class OxdiscoPlugin {
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
 	int resp_eas(tinyxml2::XMLElement *, const char *) const;
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
-	void resp_rpch(XMLElement *, const char *, const std::string &, const std::string &, const std::string &, const std::string &, bool) const;
+	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool) const;
 	BOOL resp_autocfg(int, const char *) const;
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
@@ -576,7 +576,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 		resp_mh(resp_acc, homesrv, domain, ews_url, OABUrl, EcpUrl,
 			DeploymentId, is_private);
 	if (advertise_prot(m_advertise_rpch, user_agent))
-		resp_rpch(resp_acc, homesrv, ews_url, OABUrl, EcpUrl,
+		resp_rpch(resp_acc, homesrv, domain, ews_url, OABUrl, EcpUrl,
 			DeploymentId, is_private);
 
 	std::vector<sql_user> hints;
@@ -653,7 +653,8 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *homesrv,
 	add_child(resp_prt_abk, "ExternalUrl", abk_url);
 }
 
-void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *domain,
+void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *homesrv,
+    const char *domain,
     const std::string &ews_url, const std::string &OABUrl,
     const std::string &EcpUrl, const std::string &deploymentid,
     bool is_private) const
@@ -680,7 +681,7 @@ void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *domain,
 	if (is_private) {
 		add_child(resp_prt, "OOFUrl", ews_url);
 		add_child(resp_prt, "OABUrl", OABUrl);
-		add_child(resp_prt, "PublicFolderServer", domain);
+		add_child(resp_prt, "PublicFolderServer", homesrv);
 		add_child(resp_prt, "ASUrl", ews_url);
 		add_child(resp_prt, "EwsUrl", ews_url);
 		add_child(resp_prt, "EmwsUrl", ews_url);
@@ -691,7 +692,7 @@ void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *domain,
 	/* Protocol EXPR */
 	resp_prt = add_child(resp_acc, "Protocol");
 	add_child(resp_prt, "Type", "EXPR");
-	add_child(resp_prt, "Server", domain);
+	add_child(resp_prt, "Server", homesrv);
 	add_child(resp_prt, "SSL", "On");
 	add_child(resp_prt, "CertPrincipalName", "None");
 	add_child(resp_prt, "AuthPackage", "basic");
