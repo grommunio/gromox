@@ -72,7 +72,7 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"pop3_support_tls", "false", CFG_BOOL},
 	{"pop3_thread_charge_num", "20", CFG_SIZE, "4"},
 	{"pop3_thread_init_num", "5", CFG_SIZE},
-	{"running_identity", "gromox"},
+	{"running_identity", RUNNING_IDENTITY},
 	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "pop3_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "pop3_threaD_init_num", CFG_ALIAS},

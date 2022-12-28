@@ -56,7 +56,7 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 	{"delivery_log_level", "4" /* LV_NOTICE */},
 	{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
 	{"dequeue_path", PKGSTATEQUEUEDIR},
-	{"running_identity", "gromox"},
+	{"running_identity", RUNNING_IDENTITY},
 	{"state_path", PKGSTATEDIR},
 	{"work_threads_min", "16", CFG_SIZE, "1"},
 	CFG_TABLE_END,
