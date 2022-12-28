@@ -393,40 +393,40 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 	/* C1: apptstartwhole >= start && apptstartwhole <= end */
 	RESTRICTION_PROPERTY rst_1 = {RELOP_GE, ptag.apptstartwhole, {ptag.apptstartwhole, &start_nttime}};
 	RESTRICTION_PROPERTY rst_2 = {RELOP_LE, ptag.apptstartwhole, {ptag.apptstartwhole, &end_nttime}};
-	RESTRICTION rst_3[2]       = {{RES_PROPERTY, &rst_1}, {RES_PROPERTY, &rst_2}};
+	RESTRICTION rst_3[2]       = {{RES_PROPERTY, {&rst_1}}, {RES_PROPERTY, {&rst_2}}};
 	RESTRICTION_AND_OR rst_4   = {std::size(rst_3), rst_3};
 
 	/* C2: apptendwhole >= start && apptendwhole <= end */
 	RESTRICTION_PROPERTY rst_5 = {RELOP_GE, ptag.apptendwhole, {ptag.apptendwhole, &start_nttime}};
 	RESTRICTION_PROPERTY rst_6 = {RELOP_LE, ptag.apptendwhole, {ptag.apptendwhole, &end_nttime}};
-	RESTRICTION rst_7[2]       = {{RES_PROPERTY, &rst_5}, {RES_PROPERTY, &rst_6}};
+	RESTRICTION rst_7[2]       = {{RES_PROPERTY, {&rst_5}}, {RES_PROPERTY, {&rst_6}}};
 	RESTRICTION_AND_OR rst_8   = {std::size(rst_7), rst_7};
 
 	/* C3: apptstartwhole < start && apptendwhole > end */
 	RESTRICTION_PROPERTY rst_9  = {RELOP_LT, ptag.apptstartwhole, {ptag.apptstartwhole, &start_nttime}};
 	RESTRICTION_PROPERTY rst_10 = {RELOP_GT, ptag.apptendwhole, {ptag.apptendwhole, &end_nttime}};
-	RESTRICTION rst_11[2]       = {{RES_PROPERTY, &rst_9}, {RES_PROPERTY, &rst_10}};
+	RESTRICTION rst_11[2]       = {{RES_PROPERTY, {&rst_9}}, {RES_PROPERTY, {&rst_10}}};
 	RESTRICTION_AND_OR rst_12   = {std::size(rst_11), rst_11};
 
 	/* C4: have(clipend) && recurring && clipend >= start */
 	RESTRICTION_EXIST rst_13    = {ptag.clipend};
 	RESTRICTION_PROPERTY rst_14 = {RELOP_EQ, ptag.recurring, {ptag.recurring, deconst(&fixed_true)}};
 	RESTRICTION_PROPERTY rst_15 = {RELOP_GE, ptag.clipend, {ptag.clipend, &start_nttime}};
-	RESTRICTION rst_16[3]       = {{RES_EXIST, &rst_13}, {RES_PROPERTY, &rst_14}, {RES_PROPERTY, &rst_15}};
+	RESTRICTION rst_16[3]       = {{RES_EXIST, {&rst_13}}, {RES_PROPERTY, {&rst_14}}, {RES_PROPERTY, {&rst_15}}};
 	RESTRICTION_AND_OR rst_17   = {std::size(rst_16), rst_16};
 
 	/* C5: !have(clipend) && recurring && apptstartwhole <= end */
 	RESTRICTION_EXIST rst_18    = {ptag.clipend};
-	RESTRICTION rst_19          = {RES_EXIST, &rst_18};
+	RESTRICTION rst_19          = {RES_EXIST, {&rst_18}};
 	RESTRICTION_PROPERTY rst_20 = {RELOP_EQ, ptag.recurring, {ptag.recurring, deconst(&fixed_true)}};
 	RESTRICTION_PROPERTY rst_21 = {RELOP_LE, ptag.apptstartwhole, {ptag.apptstartwhole, &end_nttime}};
-	RESTRICTION rst_22[3]       = {{RES_NOT, &rst_19}, {RES_PROPERTY, &rst_20}, {RES_PROPERTY, &rst_21}};
+	RESTRICTION rst_22[3]       = {{RES_NOT, {&rst_19}}, {RES_PROPERTY, {&rst_20}}, {RES_PROPERTY, {&rst_21}}};
 	RESTRICTION_AND_OR rst_23   = {std::size(rst_22), rst_22};
 
 	/* OR over C1-C5 */
-	RESTRICTION rst_24[5]       = {{RES_AND, &rst_4}, {RES_AND, &rst_8}, {RES_AND, &rst_12}, {RES_AND, &rst_17}, {RES_AND, &rst_23}};
+	RESTRICTION rst_24[5]       = {{RES_AND, {&rst_4}}, {RES_AND, {&rst_8}}, {RES_AND, {&rst_12}}, {RES_AND, {&rst_17}}, {RES_AND, {&rst_23}}};
 	RESTRICTION_AND_OR rst_25   = {std::size(rst_24), rst_24};
-	RESTRICTION rst_26          = {RES_OR, &rst_25};
+	RESTRICTION rst_26          = {RES_OR, {&rst_25}};
 
 	uint32_t table_id = 0, row_count = 0;
 	if (!exmdb_client.load_content_table(dir, 0, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
