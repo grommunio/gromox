@@ -500,7 +500,7 @@ int SVREID::compare(const SVREID &o) const
 	if (ret != 0)
 		return ret;
 	uint8_t buf[20], o_buf[20];
-	BINARY bin{20, buf}, o_bin{20, o_buf};
+	BINARY bin{20, {buf}}, o_bin{20, {o_buf}};
 	if (flag) {
 		cpu_to_le64p(&buf[0], folder_id);
 		cpu_to_le64p(&buf[8], message_id);

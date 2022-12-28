@@ -219,7 +219,7 @@ static void t_respool()
 static int t_cmp_binary()
 {
 	uint8_t x[] = "X", xy[] = "XY";
-	BINARY p = {1, x}, q = {2, xy};
+	BINARY p = {1, {x}}, q = {2, {xy}};
 	assert(p.compare(q) < 0);
 	return EXIT_SUCCESS;
 }
