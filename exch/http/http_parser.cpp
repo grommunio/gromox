@@ -1011,7 +1011,7 @@ static char *now_str(char *buf, size_t bufsize)
 	strftime(buf, bufsize, "%T", localtime_r(&now_t, &now_tm));
 	auto z = strlen(buf);
 	snprintf(&buf[z], bufsize - z, ".%06lu",
-	         static_cast<unsigned long>(now.time_since_epoch().count() % 1000000000UL));
+	         static_cast<unsigned long>(duration_cast<microseconds>(now.time_since_epoch()).count() % 1000000UL));
 	return buf;
 }
 
