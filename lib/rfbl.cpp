@@ -606,7 +606,7 @@ errno_t switch_user_exec(const CONFIG_FILE &cf, const char **argv)
 {
 	auto user = cf.get_value("running_identity");
 	if (user == nullptr)
-		user = "gromox";
+		user = RUNNING_IDENTITY;
 	switch (HXproc_switch_user(user, nullptr)) {
 	case HXPROC_SU_NOOP:
 		return gx_reexec(nullptr);

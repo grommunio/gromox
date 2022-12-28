@@ -68,7 +68,7 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"listen_port", "lda_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "lda_listen_tls_port", CFG_ALIAS},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
-	{"running_identity", "gromox"},
+	{"running_identity", RUNNING_IDENTITY},
 	{"smtp_auth_times", "3", CFG_SIZE, "1"},
 	{"smtp_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"smtp_force_starttls", "false", CFG_BOOL},
