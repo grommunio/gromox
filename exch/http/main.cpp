@@ -106,7 +106,7 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"msrpc_debug", "0"},
 	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"request_max_mem", "4M", CFG_SIZE, "1M"},
-	{"running_identity", "gromox"},
+	{"running_identity", RUNNING_IDENTITY},
 	{"state_path", PKGSTATEDIR},
 	{"tcp_max_segment", "0", CFG_SIZE},
 	{"thread_charge_num", "http_thread_charge_num", CFG_ALIAS},

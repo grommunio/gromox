@@ -19,6 +19,7 @@
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
+#include <gromox/config_file.hpp>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
 #include <gromox/ext_buffer.hpp>
@@ -50,14 +51,14 @@ void adjust_rights(int fd)
 	}
 	if (S_ISDIR(sb.st_mode))
 		mode |= S_IXUSR;
-	auto sp = getpwnam("gromox");
+	auto sp = getpwnam(RUNNING_IDENTITY);
 	if (sp == nullptr)
-		fprintf(stderr, "No \"gromox\" user in system. Not changing UID of mailbox.\n");
+		fprintf(stderr, "No \"" RUNNING_IDENTITY "\" user in system. Not changing UID of mailbox.\n");
 	else
 		uid = sp->pw_uid;
-	auto gr = getgrnam("gromox");
+	auto gr = getgrnam(RUNNING_IDENTITY);
 	if (gr == nullptr) {
-		fprintf(stderr, "No \"gromox\" group in system. Not changing GID of mailbox.\n");
+		fprintf(stderr, "No \"" RUNNING_IDENTITY "\" group in system. Not changing GID of mailbox.\n");
 	} else {
 		gid = gr->gr_gid;
 		mode |= S_IRGRP | S_IWGRP;

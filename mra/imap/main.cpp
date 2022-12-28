@@ -75,7 +75,7 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"imap_thread_init_num", "5", CFG_SIZE},
 	{"listen_port", "imap_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "imap_listen_tls_port", CFG_ALIAS},
-	{"running_identity", "gromox"},
+	{"running_identity", RUNNING_IDENTITY},
 	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "imap_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "imap_thread_init_num", CFG_ALIAS},

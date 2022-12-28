@@ -59,6 +59,11 @@ struct GX_EXPORT CONFIG_FILE {
 struct cfg_error : public std::exception {};
 
 #define NO_SEARCH_DIRS nullptr
+#if defined(__OpenBSD__)
+#define RUNNING_IDENTITY "_gromox"
+#else
+#define RUNNING_IDENTITY "gromox"
+#endif
 
 extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename, const cfg_directive *);
 extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_initd(const char *basename, const char *searchdirs, const cfg_directive *);
