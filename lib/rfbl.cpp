@@ -988,8 +988,10 @@ errno_t gx_decompress_file(const char *infile, BINARY &outbin,
 	auto rdret = read(fd.get(), inbuf.get(), inbufsize);
 	if (rdret < 0)
 		return errno;
+#if defined(HAVE_POSIX_FADVISE)
 	if (posix_fadvise(fd.get(), 0, sb.st_size, POSIX_FADV_SEQUENTIAL) != 0)
 		/* ignore */;
+#endif
 
 	auto outsize = ZSTD_getFrameContentSize(inbuf.get(), rdret);
 	if (outsize == ZSTD_CONTENTSIZE_ERROR)
