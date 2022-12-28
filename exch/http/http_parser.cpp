@@ -1005,8 +1005,8 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 static char *now_str(char *buf, size_t bufsize)
 {
 	using namespace std::chrono;
-	auto now   = time_point_cast<nanoseconds>(system_clock::now());
-	auto now_t = system_clock::to_time_t(std::chrono::time_point_cast<std::chrono::system_clock::duration>(now));
+	auto now   = system_clock::now();
+	auto now_t = system_clock::to_time_t(now);
 	struct tm now_tm;
 	strftime(buf, bufsize, "%T", localtime_r(&now_t, &now_tm));
 	auto z = strlen(buf);
