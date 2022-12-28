@@ -6,6 +6,7 @@
 
 #include <functional>
 #include <optional>
+#include <unordered_map>
 
 #include <gromox/element_data.hpp>
 #include <gromox/hpm_common.h>
