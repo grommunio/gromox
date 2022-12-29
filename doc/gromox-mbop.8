@@ -35,6 +35,9 @@ of the GC-value form, i.e. as they appear in the the SQLite database.
 \fB-f\fP \fIfolder_id\fP
 The folder from which to delete the messages. (If a msgid is specified which is
 not located in the particular folder, that message will not be deleted.)
+.TP
+\fB\-\-soft\fP
+Perform a soft deletion. (This feature is experimental.) Default is hard.
 .SH unload
 Normally, exmdb_provider(4gx) keeps stores open for up to
 exmdb_provider.cfg:cache_interval. The "unload_store" RPC to
