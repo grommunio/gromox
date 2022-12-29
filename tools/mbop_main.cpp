@@ -103,6 +103,8 @@ static int do_simple_rpc(int argc, const char **argv)
 		ok = exmdb_client::unload_store(g_storedir);
 	else if (strcmp(argv[0], "vacuum") == 0)
 		ok = exmdb_client::vacuum(g_storedir);
+	else
+		return -EINVAL;
 	if (!ok) {
 		fprintf(stderr, "%s: the operation failed\n", argv[0]);
 		return EXIT_FAILURE;
@@ -141,12 +143,14 @@ int main(int argc, const char **argv)
 	}
 
 	int ret = EXIT_FAILURE;
-	if (strcmp(argv[0], "delmsg") == 0)
+	if (strcmp(argv[0], "delmsg") == 0) {
 		ret = delmsg::main(argc, argv);
-	else if (strcmp(argv[0], "unload") == 0 ||
-	    strcmp(argv[0], "vacuum") == 0)
+	} else {
 		ret = do_simple_rpc(argc, argv);
-	else
-		fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
+		if (ret == -EINVAL) {
+			fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
+			ret = EXIT_FAILURE;
+		}
+	}
 	return ret;
 }
