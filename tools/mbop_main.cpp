@@ -29,6 +29,8 @@ static int help()
 	return EXIT_FAILURE;
 }
 
+}
+
 static uint32_t delcount(eid_t fid)
 {
 	static constexpr uint32_t tag_msgc = PR_DELETED_COUNT_TOTAL;
@@ -40,6 +42,8 @@ static uint32_t delcount(eid_t fid)
 	auto c = props.get<const uint32_t>(tag_msgc);
 	return c != nullptr ? *c : 0;
 }
+
+namespace delmsg {
 
 static int main(int argc, const char **argv)
 {
@@ -70,6 +74,42 @@ static int main(int argc, const char **argv)
 
 } /* namespace delmsg */
 
+namespace emptyfld {
+
+static unsigned int g_recursive, g_soft;
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'R', HXTYPE_NONE, &g_recursive, nullptr, nullptr, 0, "Recurse into subfolders"},
+	{"soft", 0, HXTYPE_NONE, &g_soft, nullptr, nullptr, 0, "Soft-delete (experimental)"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int main(int argc, const char **argv)
+{
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	while (*++argv != nullptr) {
+		BOOL partial = false;
+		auto fid = strtoull(*argv, nullptr, 0);
+		auto eid = rop_util_make_eid_ex(1, fid);
+		auto old_msgc = delcount(eid);
+		auto ok = exmdb_client::empty_folder(g_storedir, CP_UTF8, nullptr,
+		          eid, !g_soft, true, false, g_recursive, &partial);
+		if (!ok) {
+			fprintf(stderr, "empty_folder 0x%llx failed\n",
+				static_cast<unsigned long long>(fid));
+			return EXIT_FAILURE;
+		}
+		auto diff = delcount(eid) - old_msgc;
+		if (partial)
+			printf("Partial completion\n");
+		printf("Folder 0x%llx: %u messages deleted\n", fid, diff);
+	}
+	return EXIT_SUCCESS;
+}
+
+}
+
 namespace global {
 
 static char *g_arg_username, *g_arg_userdir;
@@ -86,9 +126,10 @@ static int help()
 	fprintf(stderr, "Global options:\n");
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
 	fprintf(stderr, "Command list:\n");
-	fprintf(stderr, "\tdelmsg    Issue \"delete_message\" RPCs for a mailbox\n");
-	fprintf(stderr, "\tunload    Issue the \"unload\" RPC for a mailbox\n");
-	fprintf(stderr, "\tvacuum    Issue the \"vacuum\" RPC for a mailbox\n");
+	fprintf(stderr, "\tdelmsg    Issue \"delete_message\" RPCs\n");
+	fprintf(stderr, "\temptyfld  Issue \"empty_folder\" RPCs\n");
+	fprintf(stderr, "\tunload    Issue the \"unload\" RPC\n");
+	fprintf(stderr, "\tvacuum    Issue the \"vacuum\" RPC\n");
 	return EXIT_FAILURE;
 }
 
@@ -106,12 +147,13 @@ static int main(int argc, const char **argv)
 	bool ok = false;
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (strcmp(argv[0], "unload") == 0)
+	if (strcmp(argv[0], "unload") == 0) {
 		ok = exmdb_client::unload_store(g_storedir);
-	else if (strcmp(argv[0], "vacuum") == 0)
+	} else if (strcmp(argv[0], "vacuum") == 0) {
 		ok = exmdb_client::vacuum(g_storedir);
-	else
+	} else {
 		return -EINVAL;
+	}
 	if (!ok) {
 		fprintf(stderr, "%s: the operation failed\n", argv[0]);
 		return EXIT_FAILURE;
@@ -154,6 +196,8 @@ int main(int argc, const char **argv)
 	int ret = EXIT_FAILURE;
 	if (strcmp(argv[0], "delmsg") == 0) {
 		ret = delmsg::main(argc, argv);
+	} else if (strcmp(argv[0], "emptyfld") == 0) {
+		ret = emptyfld::main(argc, argv);
 	} else {
 		ret = simple_rpc::main(argc, argv);
 		if (ret == -EINVAL) {

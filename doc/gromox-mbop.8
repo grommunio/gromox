@@ -38,6 +38,19 @@ not located in the particular folder, that message will not be deleted.)
 .TP
 \fB\-\-soft\fP
 Perform a soft deletion. (This feature is experimental.) Default is hard.
+.SH emptyfld
+.SS Synopsis
+\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBemptyfld\fP [\fB\-R\fP] [\fB\-\-soft\fP]
+\fIfolder_id\fP...
+.SS Description
+This command deletes messages from a folder.
+.SS Subcommand options
+.TP
+\fB-R\fP
+Besides messages, also delete subfolders.
+.TP
+\fB\-\-soft\fP
+Perform a soft deletion. (This feature is experimental.) Default is hard.
 .SH unload
 Normally, exmdb_provider(4gx) keeps stores open for up to
 exmdb_provider.cfg:cache_interval. The "unload_store" RPC to

@@ -1,6 +1,10 @@
 Development 1.37.83
 ===================
 
+Enhancements:
+
+* gromox-mbop: added "emptyfld" command
+
 Fixes:
 
 * midb: IMAP SEARCH commands had numeric sequence ranges "m:n" misparsed
