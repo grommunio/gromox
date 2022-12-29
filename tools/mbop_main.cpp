@@ -15,8 +15,10 @@ namespace exmdb_client = exmdb_client_remote;
 namespace delmsg {
 
 static uint64_t g_folderid;
+static unsigned int g_soft;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'f', HXTYPE_UINT64, &g_folderid, nullptr, nullptr, 0, "Folder ID"},
+	{"soft", 0, HXTYPE_NONE, &g_soft, nullptr, nullptr, 0, "Soft-delete (experimental)"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -54,12 +56,8 @@ static int main(int argc, const char **argv)
 	BOOL partial = false;
 	eid_t fid = rop_util_make_eid_ex(1, g_folderid);
 	auto old_msgc = delcount(fid);
-	/*
-	 * Always do hard deletion, because the message really needs to go away.
-	 * Other tools/programs might pick it up otherwise.
-	 */
 	if (!exmdb_client::delete_messages(g_storedir, g_user_id, CP_UTF8,
-	    nullptr, fid, &ea, true, &partial)) {
+	    nullptr, fid, &ea, !g_soft, &partial)) {
 		printf("RPC was rejected.\n");
 		return EXIT_FAILURE;
 	}
