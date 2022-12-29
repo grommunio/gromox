@@ -9,7 +9,7 @@
 #include <cstring>
 #include <memory>
 #include <string>
-#include<functional>
+#include <functional>
 #include <tinyxml2.h>
 #include <fmt/core.h>
 #include <fmt/printf.h>
