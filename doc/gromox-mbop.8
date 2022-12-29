@@ -20,15 +20,22 @@ delmsg: issue "delete_message" RPCs for a mailbox
 unload: issue the "unload_store" RPC for a mailbox
 .IP \(bu 4
 vacuum: issue the "vacuum" RPC for a mailbox
-.SS delmsg
-\fBSynopsis:\fP gromox-mbop -u a@b.de delmsg -f 0x13 198196 198197 ...
-.PP
+.SH delmsg
+.SS Synopsis
+\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBdelmsg \-f\fP \fIfolder_id\fP
+[\fImsgid\fP...]
+.SS Description
 This command hard-deletes messages from a store, including issuing proper
 PR_CHANGE_KEY metadata updates for the sake of Cached Mode clients.
 .PP
 The folder and message IDs taken as arguments on the command-line should be
 of the GC-value form, i.e. as they appear in the the SQLite database.
-.SS unload
+.SS Subcommand options
+.TP
+\fB-f\fP \fIfolder_id\fP
+The folder from which to delete the messages. (If a msgid is specified which is
+not located in the particular folder, that message will not be deleted.)
+.SH unload
 Normally, exmdb_provider(4gx) keeps stores open for up to
 exmdb_provider.cfg:cache_interval. The "unload_store" RPC to
 exmdb_provider(4gx) causes the sqlite database (in
@@ -38,7 +45,7 @@ and/or reinitialized with grommunio-admin-api or tools like
 gromox-mkprivate(8)/gromox-mkpublic(8). [zcore also has store state in memory.
 This would also need to be purged \(em but there is no RPC for such action at
 this time.]
-.SS vacuum
+.SH vacuum
 The "vacuum" RPC makes exmdb_provider issue the SQLite "vacuum" command on
 exchange.sqlite3, which rebuilds and compacts the database file.
 .SH See also
