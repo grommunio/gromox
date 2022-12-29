@@ -96,9 +96,18 @@ static int help()
 
 } /* namespace global */
 
-static int do_simple_rpc(int argc, const char **argv)
+namespace simple_rpc {
+
+static constexpr HXoption g_options_table[] = {
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int main(int argc, const char **argv)
 {
 	bool ok = false;
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
 	if (strcmp(argv[0], "unload") == 0)
 		ok = exmdb_client::unload_store(g_storedir);
 	else if (strcmp(argv[0], "vacuum") == 0)
@@ -110,6 +119,8 @@ static int do_simple_rpc(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
+}
+
 }
 
 int main(int argc, const char **argv)
@@ -146,7 +157,7 @@ int main(int argc, const char **argv)
 	if (strcmp(argv[0], "delmsg") == 0) {
 		ret = delmsg::main(argc, argv);
 	} else {
-		ret = do_simple_rpc(argc, argv);
+		ret = simple_rpc::main(argc, argv);
 		if (ret == -EINVAL) {
 			fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
 			ret = EXIT_FAILURE;
