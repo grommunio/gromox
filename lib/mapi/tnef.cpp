@@ -2167,7 +2167,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 		if (NULL != pmsg->children.pattachments) {
 			tmp_byte |= FMS_HASATTACH;
 		}
-		BINARY tmp_bin = {1, &tmp_byte};
+		BINARY tmp_bin = {1, {&tmp_byte}};
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_MESSAGESTATUS,
 		    &tmp_bin) != EXT_ERR_SUCCESS)
 			return FALSE;
