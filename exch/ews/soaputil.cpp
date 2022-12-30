@@ -26,6 +26,8 @@ Envelope::Envelope()
 	XMLElement* root = doc.NewElement("SOAP:Envelope");
 	doc.InsertFirstChild(root);
 	root->SetAttribute("xmlns:SOAP", NS_SOAP);
+	root->SetAttribute("xmlns:xsi", NS_XSI);
+	root->SetAttribute("xmlns:xsd", NS_XSD);
 	header = root->InsertNewChildElement("SOAP:Header");
 	body = root->InsertNewChildElement("SOAP:Body");
 
@@ -34,7 +36,7 @@ Envelope::Envelope()
 	ServerVersionInfo->SetAttribute("MinorVersion", "0");
 	ServerVersionInfo->SetAttribute("MajorBuildNumber", "847");
 	ServerVersionInfo->SetAttribute("MinorBuildNumber", "4040");
-	ServerVersionInfo->SetAttribute("xmlns:t", "http://schemas.microsoft.com/exchange/services/2006/types");
+	ServerVersionInfo->SetAttribute("xmlns:t", NS_TYPS);
 }
 
 /**

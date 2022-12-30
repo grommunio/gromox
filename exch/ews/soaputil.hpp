@@ -11,9 +11,11 @@
 namespace gromox::EWS::SOAP
 {
 
-static constexpr char NS_SOAP[] = "http://www.w3.org/2003/05/soap-envelope/";
-static constexpr char NS_MSGS[] = "https://schemas.microsoft.com/exchange/services/2006/messages";
-static constexpr char NS_TYPS[] = "https://schemas.microsoft.com/exchange/services/2006/types";
+static constexpr char NS_SOAP[] = "http://schemas.xmlsoap.org/soap/envelope/";
+static constexpr char NS_XSI[] = "http://www.w3.org/2001/XMLSchema-instance";
+static constexpr char NS_XSD[] = "http://www.w3.org/2001/XMLSchema";
+static constexpr char NS_MSGS[] = "http://schemas.microsoft.com/exchange/services/2006/messages";
+static constexpr char NS_TYPS[] = "http://schemas.microsoft.com/exchange/services/2006/types";
 
 /**
  * @brief      Basic class to manage SOAP Envelopes

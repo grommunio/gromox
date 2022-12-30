@@ -4,6 +4,7 @@
 
 #include <gromox/ical.hpp>
 #include "serialization.hpp"
+#include "soaputil.hpp"
 #include "structures.hpp"
 
 using namespace gromox::EWS;
@@ -19,6 +20,8 @@ using namespace tinyxml2;
 
 using namespace std::string_literals;
 using namespace Exceptions;
+using gromox::EWS::SOAP::NS_MSGS;
+using gromox::EWS::SOAP::NS_TYPS;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -143,6 +146,7 @@ void tEmailAddressType::serialize(tinyxml2::XMLElement* xml) const
 
 void tFreeBusyView::serialize(XMLElement* xml) const
 {
+	xml->SetAttribute("xmlns", NS_TYPS);
 	XMLDUMP(FreeBusyViewType);
 	XMLDUMP(MergedFreeBusy);
 	XMLDUMP(CalendarEventArray);
@@ -306,7 +310,7 @@ tUserOofSettings::tUserOofSettings(const XMLElement* xml) :
 
 void tUserOofSettings::serialize(XMLElement* xml) const
 {
-	xml->SetAttribute("xmlns", "http://schemas.microsoft.com/exchange/services/2006/types");
+	xml->SetAttribute("xmlns", NS_TYPS);
 	XMLDUMP(OofState);
 	XMLDUMP(ExternalAudience);
 	XMLDUMP(Duration);
@@ -322,6 +326,7 @@ mFreeBusyResponse::mFreeBusyResponse(tFreeBusyView&& fbv) : FreeBusyView(std::mo
 
 void mFreeBusyResponse::serialize(XMLElement* xml) const
 {
+	xml->SetAttribute("xmlns", NS_MSGS);
 	XMLDUMP(ResponseMessage);
 	XMLDUMP(FreeBusyView);
 }
@@ -382,6 +387,7 @@ mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
 
 void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
 {
+	xml->SetAttribute("xmlns", NS_MSGS);
 	XMLDUMP(ResponseMessage);
 	toXMLNode(xml, "OofSettings", UserOofSettings);
 	XMLDUMP(AllowExternalOof);
@@ -421,4 +427,7 @@ mSetUserOofSettingsRequest::mSetUserOofSettingsRequest(const XMLElement* xml) :
 {}
 
 void mSetUserOofSettingsResponse::serialize(XMLElement* xml) const
-{XMLDUMP(ResponseMessage);}
+{
+	xml->SetAttribute("xmlns", NS_MSGS);
+	XMLDUMP(ResponseMessage);
+}
