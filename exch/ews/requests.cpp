@@ -75,7 +75,7 @@ optional<string> readMessageBody(const std::string& path) try
 	return content;
 } catch(std::exception& e)
 {
-	printf("[ews] %s\n", e.what());
+	mlog(LV_ERR, "[ews] %s\n", e.what());
 	return nullopt;
 }
 
