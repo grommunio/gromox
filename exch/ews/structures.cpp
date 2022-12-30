@@ -306,6 +306,7 @@ tUserOofSettings::tUserOofSettings(const XMLElement* xml) :
 
 void tUserOofSettings::serialize(XMLElement* xml) const
 {
+	xml->SetAttribute("xmlns", "http://schemas.microsoft.com/exchange/services/2006/types");
 	XMLDUMP(OofState);
 	XMLDUMP(ExternalAudience);
 	XMLDUMP(Duration);
