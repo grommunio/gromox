@@ -466,7 +466,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			if (NULL == pprop->value.string_array.ppstr[0]) {
 				return ecServerOOM;
 			}
-			pprop->value.string_array.ppstr[1] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len - 12);
+			pprop->value.string_array.ppstr[1] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len + 12);
 			if (NULL == pprop->value.string_array.ppstr[1]) {
 				return ecServerOOM;
 			}
