@@ -114,7 +114,7 @@ struct MhNspContext : public MhContext
 	template<size_t I> using Response_t = std::variant_alternative_t<I, NspResponse>; ///< Response type by index
 
 	explicit MhNspContext(int contextId) : MhContext(contextId) {
-		ext_push.init(push_buff, static_cast<uint32_t>(arsizeof(push_buff)), EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
+		ext_push.init(push_buff.get(), static_cast<uint32_t>(push_buff_size), EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 		epush = &ext_push;
 	}
 
@@ -609,7 +609,8 @@ MhNspPlugin::ProcRes MhNspPlugin::getAddressBookUrl(MhNspContext& ctx)
 
 BOOL MhNspPlugin::process(int context_id, const void *content, uint64_t length)
 {
-	MhNspContext ctx(context_id);
+	auto heapctx = std::make_unique<MhNspContext>(context_id); /* huge object */
+	MhNspContext &ctx = *heapctx;
 	if (!ctx.auth_info.b_authed)
 		return ctx.unauthed();
 	if (!ctx.loadHeaders())

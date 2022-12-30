@@ -76,7 +76,9 @@ struct MhContext
 	gromox::time_point start_time;
 	GUID session_guid{}, sequence_guid{};
 	char request_id[256]{}, client_info[256]{};
-	char request_value[32]{}, session_string[64]{}, push_buff[0x80000];
+	char request_value[32]{}, session_string[64]{};
+	size_t push_buff_size = 512 << 10;
+	std::unique_ptr<char[]> push_buff;
 	session_data *session = nullptr;
 
 protected:
