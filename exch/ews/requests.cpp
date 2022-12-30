@@ -73,9 +73,8 @@ optional<string> readMessageBody(const std::string& path) try
 	string content(totalLength-headerLenght, 0);
 	ifs.read(content.data(), content.size());
 	return content;
-} catch(std::exception& e)
-{
-	printf("[ews] %s\n", e.what());
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "[ews] %s\n", e.what());
 	return nullopt;
 }
 
@@ -206,12 +205,12 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 				event.EndTime.offset = request.TimeZone->offset(event.EndTime.time);
 			}
 			fbr.ResponseMessage.emplace().success();
-		} catch(AccessDenied&) {
+		} catch (const AccessDenied &) {
 			mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
 			fbr.FreeBusyView.emplace();
 			fbr.ResponseMessage.emplace("Error", "InvalidAccessLevel",
 			                            "Cannot access freebusy data of "+MailboxData.Email.Address);
-		} catch(DispatchError& err){
+		} catch (const DispatchError &err) {
 			mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
 			fbr.ResponseMessage.emplace("Error", "ErrorMailRecipientNotFound", "Failed to get freebusy data: "s+err.what());
 		}

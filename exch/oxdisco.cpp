@@ -902,8 +902,7 @@ static BOOL oxdisco_init(void **apidata)
 		return false;
 	try {
 		g_oxdisco_plugin.reset(new OxdiscoPlugin());
-	}
-	catch (std::exception& e) {
+	} catch (const std::exception &e) {
 		mlog(LV_DEBUG, "[oxdisco] failed to initialize plugin: %s", e.what());
 		return false;
 	}
