@@ -19,13 +19,6 @@ An Autodiscover client would make a "POST /Autodiscover/Autodiscover.xml"
 request to the autodiscover server that was determined moments ago. The mailbox
 credentials are presented using HTTP authentication.
 .PP
-In a Gromox minimal setup, http(8gx) will receive this POST request and, in
-conjunction with the built-in defaults of mod_rewrite(4gx) and
-mod_fastcgi(4gx), is forwarded to a php-fpm instance, since the Autodiscover
-handler is coded in PHP. Alternative setups where, for example, an nginx
-frontend is used, nginx can also be the server that passes the request to a PHP
-executor.
-.PP
 The Autodiscover response contains a HTTP server (generally the HTTP home
 server) and the designated choice for protocol framing. A client uses this to
 set up the EMSMDB MAPI service within a MAPI profile. Because the HTTP home
@@ -35,46 +28,11 @@ Autodiscover requests. (In other words, removing the DNS entry for the
 Autodiscover server after a profile is set up would break the address book, but
 not the message store.)
 .SH Configuration directives
-At first, /etc/gromox/mysql_adaptor.cfg is read for the connection parameters
-to the user database. See gromox(7) for a description of the format. See
-mysql_adaptor(4gx) for details about the available configuration directives. In
-the file's absence, built-in defaults as documented are applied, in other
-words, root@localhost/email. Note that \fBthis cfg file is read using an ini
-parser\fP, which is not technically correct and has the caveat that it is not
-possible to use any of these characters in values: \fB;\fP
-.PP
-Note that PHP is dumb and the program cannot distinguish between file absence
-and file presence but missing permissions.
-.PP
-Second, /etc/gromox/autodiscover.ini is read. In the file's absence, built-in
-defaults, tuned for the minimal Gromox installation, are used. A few ini
-sections and keys are recognized.
-.SS [database]
-This section can be used to override the parameters previously sourced from
-mysql_adaptor.cfg (or built-in defaults thereto).
+The normal config file location is /etc/gromox/autodiscover.cfg. (For backwards
+compatibility, if autodiscover.cfg is not present, the module will read part of
+autodiscover.ini.)
 .TP
-\fBhost\fP
-Host and optionally port to pass to php-mysqli.
-.br
-Default: inherit from mysql_adaptor, \fIlocalhost\fP.
-.TP
-\fBusername\fP
-User for the SQL connection.
-.br
-Default: inherit, \fIroot\fP.
-.TP
-\fBpassword\fP
-Password for the same.
-.br
-Default: inherit, (empty string).
-.TP
-\fBdbname\fP
-Database name.
-.br
-Default: inherit, \fIemail\fP.
-.SS [exchange]
-.TP
-\fBadvertise_mh\fP
+\fBoxdisco_advertise_mh\fP
 This setting controls whether the AutoDiscover response should include a EXHTTP
 Protocol section. Possible values: \fIyes\fP, \fIno\fP, \fInot_old_mso\fP,
 \fIonly_new_mso\fP. The latter two values can be used to finely control
@@ -82,7 +40,7 @@ emission in case of clients other than Outlook.
 .br
 Default: \fIyes\fP
 .TP
-\fBadvertise_rpch\fP
+\fBoxdisco_advertise_rpch\fP
 This setting controls whether the AutoDiscover response should include
 EXCH/EXPR Protocol sections. Possible values: \fIyes\fP, \fIno\fP,
 \fIonly_old_mso\fP, \fInot_new_mso\fP. The latter two values can be used to
@@ -90,42 +48,35 @@ finely control emission in case of clients other than Outlook.
 .br
 Default: \fIyes\fP
 .TP
-\fBhostname\fP
-The \fBglobally valid\fP hostname of this server for the purpose of
-AutoDisocvery referring to itself and other RPC and EWS endpoints. (The OXDSCLI
-protocol requires URLs and Outlook would not do anything if we snuck in
-relative paths in violation of the spec.)
+\fBoxdisco_pretty_response\fP
+A debugging knob to make the module emit indented XML responses.
 .br
-Default: (system hostname).
-.SS [default]
+Default: \fIno\fP
 .TP
-\fBtimezone\fP
+\fBoxdisco_request_logging\fP
+Log AutoDiscover requests. This is independent of http.cfg:http_debug, and
+setting both would log requests twice.
+.br
+Default: \fIno\fP
+.TP
+\fBoxdisco_response_logging\fP
+Log AutoDiscover responses. This is independent of http.cfg:http_debug, and
+setting both would log responses twice.
+.br
+Default: \fIno\fP
+.TP
+\fBoxdisco_validate_scndrequest\fP
+When OL opens a non-default store (store of another user) or a public store, it
+may also make an AutoDiscover inquiry for the extra store. This setting
+controls whether the server-side AutoDiscover module should perform a
+permission check on non-default stores and possibly reject returning connection
+details. (Inquiry Public stores are always permitted.)
+.br
+Default: \fIyes\fP
+.TP
+\fBx500_org_name\fP
+.br
 Default: (unspecified)
-.SS [system]
-.TP
-\fBfreebusy\fP
-Program location of the freebusy binary.
-.br
-Default: \fI/usr/libexec/gromox/freebusy\fP
-.SS [http-proxy]
-This section contains the emsmdb multiserver map. This conveys the
-public-facing HTTP server name(s) for homedir prefix(es), and Outlook and other
-clients will connect to these servers. Whether prefixes end in a slash or not
-is of no consequence, their right will always be treated as a word boundary so
-that "/var/lib/gromox/user" will not be a match to a userdir
-"/var/lib/gromox/users/x/y" (but will be for "/var/lib/gromox/user/x/y").
-.PP
-Default:
-.PP
-.RS
-.nf
-/var/lib/gromox/user/ = (system hostname)
-/var/lib/gromox/domain/ = (system hostname)
-.fi
-.RE
-.PP
-If no prefix yields a match for a given mailbox directory, the value from the
-exchange.hostname setting is used as a response.
 .SH Outlook notes
 When Outlook is active, it is possible to Ctrl-MouseBtn3 (right click) on the
 status tray icon to call up a context menu, from which "Test Email
