@@ -529,7 +529,8 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	char hex_string[12];
 	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
 	std::pair<std::string, std::string> homesrv_buf;
-	if (mysql.get_homeserver(email, is_private, homesrv_buf) != 0)
+	if (mysql.get_homeserver(is_private ? email : domain,
+	    is_private, homesrv_buf) != 0)
 		return -1;
 	const char *homesrv = homesrv_buf.second.c_str();
 	if (*homesrv == '\0')
