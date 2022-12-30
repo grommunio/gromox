@@ -244,8 +244,8 @@ static constexpr cfg_directive x500_defaults[] = {
 
 static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_pretty_response", "0", CFG_BOOL},
-	{"ews_request_logging", "0", CFG_BOOL},
-	{"ews_response_logging", "0", CFG_BOOL},
+	{"ews_request_logging", "0"},
+	{"ews_response_logging", "0"},
 	CFG_TABLE_END,
 };
 
