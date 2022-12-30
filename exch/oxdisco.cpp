@@ -253,14 +253,14 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 }
 
 static constexpr cfg_directive autodiscover_cfg_defaults[] = {
-	{"RedirectAddr", ""},
-	{"RedirectUrl", ""},
 	{"oxdisco_advertise_mh", "yes"},
 	{"oxdisco_advertise_rpch", "yes"},
+	{"oxdisco_pretty_response", "0", CFG_BOOL},
+	{"oxdisco_redirect_addr", ""},
+	{"oxdisco_redirect_url", ""},
+	{"oxdisco_request_logging", "0", CFG_BOOL},
+	{"oxdisco_response_logging", "0", CFG_BOOL},
 	{"oxdisco_validate_scndrequest", "yes", CFG_BOOL},
-	{"pretty_response", "0", CFG_BOOL},
-	{"request_logging", "0", CFG_BOOL},
-	{"response_logging", "0", CFG_BOOL},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };
@@ -311,11 +311,11 @@ void OxdiscoPlugin::loadConfig()
 	/* If there is autodiscover.cfg, ignore autodiscover.ini */
 	c = config_file_initd("autodiscover.cfg", get_config_path(), autodiscover_cfg_defaults);
 	x500_org_name = c->get_value("x500_org_name");
-	RedirectAddr = c->get_value("RedirectAddr");
-	RedirectUrl = c->get_value("RedirectUrl");
-	request_logging = c->get_ll("request_logging");
-	response_logging = c->get_ll("response_logging");
-	pretty_response = c->get_ll("pretty_response");
+	RedirectAddr = c->get_value("oxdisco_redirect_addr");
+	RedirectUrl = c->get_value("oxdisco_redirect_url");
+	request_logging = c->get_ll("oxdisco_request_logging");
+	response_logging = c->get_ll("oxdisco_response_logging");
+	pretty_response = c->get_ll("oxdisco_pretty_response");
 	m_advertise_mh = parse_adv(c->get_value("oxdisco_advertise_mh"));
 	m_advertise_rpch = parse_adv(c->get_value("oxdisco_advertise_rpch"));
 	m_validate_scndrequest = c->get_ll("oxdisco_validate_scndrequest");
