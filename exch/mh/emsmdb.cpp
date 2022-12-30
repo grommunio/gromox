@@ -129,7 +129,7 @@ struct execute_request {
 
 struct execute_response {
 	uint32_t status, result, flags, cb_out;
-	uint8_t out[0x40000];
+	uint8_t out[256<<10];
 	uint32_t cb_auxout;
 	uint8_t auxout[0x1008];
 };
@@ -174,7 +174,7 @@ struct MhEmsmdbContext : public MhContext
 {
 	explicit MhEmsmdbContext(int contextId) : MhContext(contextId)
 	{
-		ext_push.init(push_buff, arsizeof(push_buff), EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
+		ext_push.init(push_buff.get(), push_buff_size, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 		epush = &ext_push;
 	}
 
@@ -669,7 +669,8 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 BOOL MhEmsmdbPlugin::process(int context_id, const void *content, uint64_t length)
 {
 	ProcRes result;
-	MhEmsmdbContext ctx(context_id);
+	auto heapctx = std::make_unique<MhEmsmdbContext>(context_id); /* huge object */
+	MhEmsmdbContext &ctx = *heapctx;
 	status[ctx.ID] = {};
 	if (!ctx.auth_info.b_authed)
 		return ctx.unauthed();

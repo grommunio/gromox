@@ -11,7 +11,8 @@ using namespace hpm_mh;
 
 MhContext::MhContext(int context_id) :
 	ID(context_id), orig(*get_request(context_id)),
-	auth_info(get_auth_info(context_id)), start_time(tp_now())
+	auth_info(get_auth_info(context_id)), start_time(tp_now()),
+	push_buff(std::make_unique<char[]>(push_buff_size))
 {}
 
 bool MhContext::getHeader(char* dest, size_t maxlen)
