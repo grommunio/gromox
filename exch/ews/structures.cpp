@@ -383,7 +383,7 @@ mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
 void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
 {
 	XMLDUMP(ResponseMessage);
-	XMLDUMP(UserOofSettings);
+	toXMLNode(xml, "OofSettings", UserOofSettings);
 	XMLDUMP(AllowExternalOof);
 }
 
