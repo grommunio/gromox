@@ -149,12 +149,12 @@ BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 		return unauthed(ctx_id);
 	auto[response, code] = dispatch(ctx_id, auth_info, content, len);
 	if(response_logging >= 2)
-		printf("[ews] Response:\n%s\n", response.c_str());
+		mlog(LV_DEBUG, "[ews] Response: %s", response.c_str());
 	if(response_logging)
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		double duration = double(std::chrono::duration_cast<std::chrono::microseconds>(end-start).count()) / 1000.0;
-		printf("[ews] Done, code %d, %lu bytes, %.3fms\n", code, response.size(), duration);
+		mlog(LV_DEBUG, "[ews] Done, code %d, %lu bytes, %.3fms", code, response.size(), duration);
 	}
 	if(response.length() > std::numeric_limits<int>::max())
 	{
@@ -180,15 +180,17 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 	using namespace std::string_literals;
 	EWSContext context(ctx_id, auth_info, static_cast<const char*>(data), len, *this);
 	if(request_logging >= 2)
-		printf("[ews] Incoming data:\n%.*s\n", len > INT_MAX? INT_MAX : int(len), static_cast<const char*>(data));
+		mlog(LV_DEBUG, "[ews] Incoming data: %.*s",
+			len > INT_MAX ? INT_MAX : static_cast<int>(len),
+			static_cast<const char *>(data));
 	if(!rpc_new_stack())
-		printf("[ews]: Failed to allocate stack, exmdb might not work");
+		mlog(LV_ERR, "[ews]: Failed to allocate stack, exmdb might not work");
 	auto cl0 = make_scope_exit([]{rpc_free_stack();});
 	for(XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
 	{
 		XMLElement* responseContainer = context.response.body->InsertNewChildElement(xml->Name());
 		if(request_logging)
-			printf("[ews] Processing %s\n", xml->Name());
+			mlog(LV_DEBUG, "[ews] Processing %s", xml->Name());
 		auto handler = requestMap.find(xml->Name());
 		if(handler == requestMap.end())
 		    throw Exceptions::UnknownRequestError("Unknown request '"s+xml->Name()+"'.");
@@ -290,10 +292,9 @@ static BOOL ews_init(void **apidata)
 	try {
 		g_ews_plugin.reset(new EWSPlugin());
 	}  catch (std::exception& e) {
-		printf("[ews] failed to initialize plugin: %s\n", e.what());
+		mlog(LV_ERR, "[ews] failed to initialize plugin: %s", e.what());
 		return false;
 	}
-	printf("[ews]: plugin is loaded into system\n");
 	return TRUE;
 }
 
