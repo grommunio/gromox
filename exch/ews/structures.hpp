@@ -504,7 +504,9 @@ struct mGetUserOofSettingsResponse
 {
 	mResponseMessageType ResponseMessage;
 	std::optional<tUserOofSettings> UserOofSettings;
-	std::optional<std::string> AllowExternalOof;
+
+	/* OXWOOF v15 §7.1 says it's optional, but OL disagrees */
+	std::string AllowExternalOof = "All";
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
