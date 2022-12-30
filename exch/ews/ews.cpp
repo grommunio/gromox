@@ -200,12 +200,9 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 	XMLPrinter printer(nullptr, !pretty_response);
 	context.response.doc.Print(&printer);
 	return {printer.CStr(), 200};
-} catch(Exceptions::InputError& err)
-{
+} catch (const Exceptions::InputError &err) {
 	return {SOAP::Envelope::fault("Client", err.what()), 200};
-}
-catch(std::exception& err)
-{
+} catch (const std::exception &err) {
 	return {SOAP::Envelope::fault("Server", err.what()), 500};
 }
 
@@ -291,7 +288,7 @@ static BOOL ews_init(void **apidata)
 		return false;
 	try {
 		g_ews_plugin.reset(new EWSPlugin());
-	}  catch (std::exception& e) {
+	} catch (const std::exception &e) {
 		mlog(LV_ERR, "[ews] failed to initialize plugin: %s", e.what());
 		return false;
 	}

@@ -154,7 +154,7 @@ struct ExplicitConvert<gromox::EWS::Structures::StrEnum<C0, Cs...>>
 			return tinyxml2::XML_NO_TEXT_NODE;
 		try {
 			value = data;
-		} catch (gromox::EWS::Exceptions::EnumError& err) {
+		} catch (const gromox::EWS::Exceptions::EnumError &err) {
 			throw gromox::EWS::Exceptions::DeserializationError(err.what());
 		}
 		return tinyxml2::XML_SUCCESS;
