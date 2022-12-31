@@ -92,6 +92,11 @@ PKG_CHECK_MODULES([gumbo], [gumbo])
 PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [
 	PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 0.8 jsoncpp < 1])
 ])
+PKG_CHECK_MODULES([libldap], [ldap], [], [
+	AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
+	AC_SEARCH_LIBS([ldap_init], [ldap_r ldap], [libldap_LIBS="$LIBS"; LIBS=""], [AC_MSG_ERROR([libldap is required])])
+	AC_SUBST([libldap_LIBS])
+])
 PKG_CHECK_MODULES([olecf], [libolecf], [have_olecf=1], [have_olecf=0])
 PKG_CHECK_MODULES([pff], [libpff], [have_pff=1], [have_pff=0])
 PKG_CHECK_MODULES([sqlite], [sqlite3])
@@ -107,7 +112,6 @@ AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
 AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AM_CONDITIONAL([HAVE_OLECF], [test "$have_olecf" = 1])
 AM_CONDITIONAL([HAVE_PFF], [test "$have_pff" = 1])
-AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
 AC_CHECK_FUNCS([fsetxattr posix_fadvise])
 crypt_LIBS=""
 dl_LIBS=""
@@ -115,7 +119,6 @@ libldap_LIBS=""
 resolv_LIBS=""
 AC_SEARCH_LIBS([crypt], [crypt], [crypt_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([dlopen], [dl], [dl_LIBS="$LIBS"; LIBS=""])
-AC_SEARCH_LIBS([ldap_init], [ldap_r ldap], [libldap_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([ns_initparse], [resolv], [resolv_LIBS="$LIBS"; LIBS=""])
 LIBS="$LIBS $resolv_LIBS"
 AH_TEMPLATE([HAVE_RES_NQUERYDOMAIN], [])
@@ -135,7 +138,6 @@ AC_LINK_IFELSE(
 LIBS="$saved_LIBS"
 AC_SUBST([crypt_LIBS])
 AC_SUBST([dl_LIBS])
-AC_SUBST([libldap_LIBS])
 AC_SUBST([resolv_LIBS])
 dnl
 dnl Can't use AC_SEARCH_LIBS([iconv_open]) because that does not process
