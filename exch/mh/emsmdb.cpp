@@ -559,7 +559,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 		ctx.sequence_guid = GUID::random_new();
 		ctx.session->sequence_guid = ctx.sequence_guid;
 	}
-	ctx.session->expire_time = ctx.start_time + session_valid_interval + std::chrono::seconds(60);
+	ctx.session->expire_time = ctx.start_time + session_valid_interval + session_valid_extragrace;
 	return std::nullopt;
 }
 
@@ -585,7 +585,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 			produce_session(ctx.auth_info.username, ctx.session_string);
 			ctx.sequence_guid = GUID::random_new();
 			std::unique_lock hl_hold(ses_lock);
-			auto exptime = tp_now() + session_valid_interval + std::chrono::seconds(60);
+			auto exptime = tp_now() + session_valid_interval + session_valid_extragrace;
 			try {
 				auto emplaced = sessions.try_emplace(ctx.session_string, ctx.session_guid, ctx.sequence_guid, ctx.auth_info.username, exptime);
 				if (!emplaced.second) {

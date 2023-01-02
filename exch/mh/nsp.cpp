@@ -500,7 +500,7 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 		ctx.session->sequence_guid = ctx.sequence_guid;
 	}
 	ctx.session_guid = ctx.session->session_guid;
-	ctx.session->expire_time = ctx.start_time + session_valid_interval + std::chrono::seconds(60);
+	ctx.session->expire_time = ctx.start_time + session_valid_interval + session_valid_extragrace;
 	if (strcasecmp(ctx.request_value, "PING") == 0) {
 		nsp_bridge_touch_handle(ctx.session_guid);
 		return ctx.ping_response();
@@ -531,7 +531,7 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 	} else {
 		produce_session(ctx.auth_info.username, ctx.session_string);
 		ctx.sequence_guid = GUID::random_new();
-		auto exptime = tp_now() + session_valid_interval + std::chrono::seconds(60);
+		auto exptime = tp_now() + session_valid_interval + session_valid_extragrace;
 		std::unique_lock hl_hold(hashLock);
 		try {
 			auto emplaced = sessions.try_emplace(ctx.session_string, ctx.session_guid, ctx.sequence_guid, ctx.auth_info.username, exptime);
