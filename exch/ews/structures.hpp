@@ -277,8 +277,7 @@ struct tMailTipsServiceConfiguration
  */
 struct tReplyBody
 {
-	template<typename T>
-	explicit inline tReplyBody(T&& Message) : Message(std::forward<T>(Message)) {}
+	template<typename T> explicit tReplyBody(T &&Message) : Message(std::forward<T>(Message)) {}
 	explicit tReplyBody(const tinyxml2::XMLElement*);
 
 	std::optional<std::string> Message;
