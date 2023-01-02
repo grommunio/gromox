@@ -228,7 +228,7 @@ private:
 	pthread_t scan;
 
 	std::unordered_set<notification_ctx *> pending;
-	std::mutex listLock, hashLock;
+	std::mutex pending_lock, ses_lock;
 	std::unordered_map<std::string, int> users;
 	std::unordered_map<std::string, session_data> sessions;
 	std::vector<notification_ctx> status;
@@ -288,7 +288,7 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 	MhEmsmdbPlugin& plugin = *static_cast<MhEmsmdbPlugin*>(ptr);
 	while (!plugin.stop) {
 		auto now = tp_now();
-		std::unique_lock hl_hold(plugin.hashLock);
+		std::unique_lock hl_hold(plugin.ses_lock);
 		for (auto entry = plugin.sessions.begin(); entry != plugin.sessions.end();) {
 			if (entry->second.expire_time < now)
 				entry = plugin.removeSession(entry);
@@ -296,7 +296,7 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 				++entry;
 		}
 		hl_hold.unlock();
-		std::unique_lock ll_hold(plugin.listLock);
+		std::unique_lock ll_hold(plugin.pending_lock);
 		for (auto ctx : plugin.pending) {
 			if (now - ctx->pending_time >=
 			    response_pending_period - std::chrono::seconds(3)) {
@@ -538,7 +538,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 		if (string == nullptr || !ctx.sequence_guid.from_str(string))
 			return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	}
-	std::unique_lock hl_hold(hashLock);
+	std::unique_lock hl_hold(ses_lock);
 	auto it = sessions.find(ctx.session_string);
 	if (it == sessions.end())
 		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
@@ -573,7 +573,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 	ctx.response.connect.result = emsmdb_bridge_connect(ctx.request.connect, ctx.response.connect, cxr, ctx.session_guid);
 	if (ctx.response.connect.result == ecSuccess) {
 		if (ctx.session != nullptr) {
-			std::unique_lock hl_hold(hashLock);
+			std::unique_lock hl_hold(ses_lock);
 			auto it = sessions.find(ctx.session_string);
 			if (it != sessions.end()) {
 				old_guid = ctx.session->session_guid;
@@ -584,7 +584,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 		} else {
 			produce_session(ctx.auth_info.username, ctx.session_string);
 			ctx.sequence_guid = GUID::random_new();
-			std::unique_lock hl_hold(hashLock);
+			std::unique_lock hl_hold(ses_lock);
 			auto exptime = tp_now() + session_valid_interval + std::chrono::seconds(60);
 			try {
 				auto emplaced = sessions.try_emplace(ctx.session_string, ctx.session_guid, ctx.sequence_guid, ctx.auth_info.username, exptime);
@@ -613,7 +613,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::disconnect(MhEmsmdbContext &ctx)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	ctx.response.disconnect.status = 0;
 	ctx.response.disconnect.result = emsmdb_bridge_disconnect(ctx.session_guid);
-	std::unique_lock hl_hold(hashLock);
+	std::unique_lock hl_hold(ses_lock);
 	removeSession(ctx.session_string);
 	hl_hold.unlock();
 	if (ctx.ext_push.p_disconnect_rsp(ctx.response.disconnect) != EXT_ERR_SUCCESS)
@@ -652,7 +652,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 		nctx.session_guid = ctx.session_guid;
 		nctx.start_time = ctx.start_time;
 		nctx.pending_time = tp_now();
-		std::unique_lock ll_hold(listLock);
+		std::unique_lock ll_hold(pending_lock);
 		try {
 			pending.emplace(&nctx);
 		}  catch (std::bad_alloc&) {
@@ -745,7 +745,7 @@ void MhEmsmdbPlugin::term(int context_id)
 	if (status[context_id].pending_status == PENDING_STATUS_NONE)
 		return;
 	acxh.handle_type = 0;
-	std::unique_lock ll_hold(listLock);
+	std::unique_lock ll_hold(pending_lock);
 	if (status[context_id].pending_status != PENDING_STATUS_NONE) {
 		acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
 		acxh.guid = status[context_id].session_guid;
@@ -759,7 +759,7 @@ void MhEmsmdbPlugin::term(int context_id)
 
 void MhEmsmdbPlugin::async_wakeup(int context_id, BOOL b_pending)
 {
-	std::unique_lock ll_hold(listLock);
+	std::unique_lock ll_hold(pending_lock);
 	if (status[context_id].pending_status == PENDING_STATUS_NONE)
 		return;
 	status[context_id].notification_status =
