@@ -89,12 +89,12 @@ void Envelope::clean(XMLElement* element)
 string Envelope::fault(const char* code, const char* message)
 {
 	return fmt::format(
-	        "<SOAP:Envelope xmlns:SOAP = \"http://schemas.xmlsoap.org/soap/envelope/\""
-	                      " xmlns:xsi = \"http://www.w3.org/1999/XMLSchema-instance\">"
+	        "<SOAP:Envelope xmlns:SOAP=\"http://schemas.xmlsoap.org/soap/envelope/\""
+	                      " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\">"
 	          "<SOAP:Body>"
 	            "<SOAP:Fault>"
-	              "<faultcode xsi:type = \"xsd:string\">SOAP:{}</faultcode>"
-	              "<faultstring xsi:type = \"xsd:string\">{}</faultstring>"
+	              "<faultcode xsi:type=\"xsd:string\">SOAP:{}</faultcode>"
+	              "<faultstring xsi:type=\"xsd:string\">{}</faultstring>"
 	            "</SOAP:Fault>"
 	          "</SOAP:Body>"
 		"</SOAP:Envelope>",
