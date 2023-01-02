@@ -8,27 +8,47 @@
 #include <memory>
 #include <string>
 #include <unistd.h>
+#include <vector>
 #include <fmt/core.h>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/paths.h>
+#include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
 
 using namespace gromox;
+using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 namespace {
 
-struct olecf_error_del { void operator()(libolecf_error_t *x) { libolecf_error_free(&x); } };
-struct olecf_file_del { void operator()(libolecf_file_t *x) { libolecf_file_free(&x, nullptr); } };
-struct olecf_item_del { void operator()(libolecf_item_t *x) { libolecf_item_free(&x, nullptr); } };
+struct pte {
+	uint32_t proptag, flags;
+	union {
+		char data[8];
+		uint16_t v_ui2;
+		uint32_t v_ui4;
+		uint64_t v_ui8;
+		float v_flt;
+		double v_dbl;
+	};
+};
+static_assert(sizeof(pte) == 16);
+
+struct olecf_error_del { void operator()(libolecf_error_t *x) const { libolecf_error_free(&x); } };
+struct olecf_file_del { void operator()(libolecf_file_t *x) const { libolecf_file_free(&x, nullptr); } };
+struct olecf_item_del { void operator()(libolecf_item_t *x) const { libolecf_item_free(&x, nullptr); } };
+struct bin_del { void operator()(BINARY *x) const { rop_util_free_binary(x); } };
 
 using oxm_error_ptr = std::unique_ptr<libolecf_error_t, olecf_error_del>;
 using oxm_file_ptr  = std::unique_ptr<libolecf_file_t, olecf_file_del>;
 using oxm_item_ptr  = std::unique_ptr<libolecf_item_t, olecf_item_del>;
-using ustring = std::basic_string<uint8_t>;
+using bin_ptr       = std::unique_ptr<BINARY, bin_del>;
 
 }
 
@@ -39,6 +59,9 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+static constexpr char S_PROPFILE[] = "__properties_version1.0";
+static gi_name_map name_map;
+
 static YError az_error(const char *prefix, const oxm_error_ptr &err)
 {
 	char buf[160];
@@ -47,17 +70,22 @@ static YError az_error(const char *prefix, const oxm_error_ptr &err)
 	return YError(std::string(prefix) + ": " + buf);
 }
 
-static ustring slurp_stream(libolecf_item_t *stream)
+static bin_ptr slurp_stream(libolecf_item_t *stream)
 {
 	oxm_error_ptr err;
 	uint32_t strm_size = 0;
 
 	if (libolecf_item_get_size(stream, &strm_size, &unique_tie(err)) < 1)
 		throw az_error("PO-1009", err);
-	ustring buf;
-	buf.resize(strm_size);
+	bin_ptr buf(me_alloc<BINARY>());
+	if (buf == nullptr)
+		throw std::bad_alloc();
+	buf->cb = strm_size;
+	buf->pb = me_alloc<uint8_t>(strm_size);
+	if (buf->pb == nullptr)
+		throw std::bad_alloc();
 	for (size_t ofs = 0; ofs < strm_size; ) {
-		auto ret = libolecf_stream_read_buffer(stream, &buf[ofs],
+		auto ret = libolecf_stream_read_buffer(stream, &buf->pb[ofs],
 		           strm_size - ofs, &~unique_tie(err));
 		if (ret < 0)
 			throw az_error("PO-1010", err);
@@ -68,7 +96,7 @@ static ustring slurp_stream(libolecf_item_t *stream)
 	return buf;
 }
 
-static ustring slurp_stream(libolecf_item_t *dir, const char *file)
+static bin_ptr slurp_stream(libolecf_item_t *dir, const char *file)
 {
 	oxm_error_ptr err;
 	oxm_item_ptr propstrm;
@@ -80,104 +108,238 @@ static ustring slurp_stream(libolecf_item_t *dir, const char *file)
 	return slurp_stream(propstrm.get());
 }
 
-static int parse_propstrmentry(EXT_PULL &ep, TPROPVAL_ARRAY &proplist)
+static int read_pte(EXT_PULL &ep, struct pte &pte)
 {
-	uint32_t proptag = 0, alloc_len = 0;
-	ustring blob;
-
-	if (ep.eof())
-		return 0;
-	if (ep.g_uint32(&proptag) != EXT_ERR_SUCCESS)
-		return -EIO;
-	if (ep.advance(4) != EXT_ERR_SUCCESS)
-		return -EIO;
-
-	switch (PROP_TYPE(proptag)) {
-
-	/* Fixed-length props */
-#define IMMED(T, func) \
-	do { \
-		T v; \
-		static_assert(sizeof(T) <= 8); \
-		if (ep.func(&v) != EXT_ERR_SUCCESS) \
-			return -EIO; \
-		if (ep.advance(8 - sizeof(T)) != EXT_ERR_SUCCESS) \
-			return -EIO; \
-		proplist.set(proptag, &v); \
-	} while (false)
-
-		case PT_SHORT: IMMED(uint16_t, g_uint16); return 1;
-		case PT_ERROR: [[fallthrough]];
-		case PT_LONG: IMMED(uint32_t, g_uint32); return 1;
-		case PT_FLOAT: IMMED(float, g_float); return 1;
-		case PT_DOUBLE: [[fallthrough]];
-		case PT_APPTIME: IMMED(double, g_double); return 1;
-		case PT_CURRENCY: [[fallthrough]];
-		case PT_SYSTIME: [[fallthrough]];
-		case PT_I8: IMMED(uint64_t, g_uint64); return 1;
-#undef IMMED
-	case PT_BOOLEAN: {
-		// make BOOL a class, forbid op&
-		uint32_t v;
-		if (ep.g_uint32(&v) != EXT_ERR_SUCCESS)
-			return EIO;
-		if (ep.advance(4) != EXT_ERR_SUCCESS)
-			return EIO;
-		BOOL w = !!v;
-		proplist.set(proptag, &w);
-		return 1;
+	if (ep.m_offset + 16 > ep.m_data_size)
+		return EXT_ERR_FORMAT;
+	auto ret = ep.g_uint32(&pte.proptag);
+	if (ret != EXT_ERR_SUCCESS)
+		return ret;
+	ret = ep.g_uint32(&pte.flags);
+	if (ret != EXT_ERR_SUCCESS)
+		return ret;
+	auto pos = ep.m_offset;
+	switch (PROP_TYPE(pte.proptag)) {
+	case PT_SHORT: ret = ep.g_uint16(&pte.v_ui2); break;
+	case PT_LONG: ret = ep.g_uint32(&pte.v_ui4); break;
+	case PT_FLOAT: ret = ep.g_float(&pte.v_flt); break;
+	case PT_DOUBLE:
+	case PT_APPTIME: ret = ep.g_double(&pte.v_dbl); break;
+	case PT_CURRENCY:
+	case PT_SYSTIME:
+	case PT_I8: ret = ep.g_uint64(&pte.v_ui8); break;
+	case PT_BOOLEAN: ret = ep.g_uint32(&pte.v_ui4); break;
+	default: ret = ep.g_uint32(&pte.v_ui4); break;
 	}
+	if (ret == EXT_ERR_SUCCESS)
+		ep.m_offset = pos + 8;
+	return ret;
+}
 
-	/* Variable-length types */
+static int ptesv_to_prop(const struct pte &pte, const char *cset,
+    libolecf_item_t *dir, TPROPVAL_ARRAY &proplist)
+{
+	auto blob = slurp_stream(dir, fmt::format("__substg1.0_{:08X}", pte.proptag).c_str());
+	switch (PROP_TYPE(pte.proptag)) {
+	case PT_STRING8: {
+		if (pte.v_ui4 != blob->cb + 1)
+			return -EIO;
+		auto s = iconvtext(blob->pc, blob->cb, cset, "UTF-8//IGNORE");
+		return proplist.set(pte.proptag, s.data());
+	}
+	case PT_UNICODE: {
+		if (pte.v_ui4 != blob->cb + 2)
+			return -EIO;
+		auto s = iconvtext(blob->pc, blob->cb, "UTF-16", "UTF-8//IGNORE");
+		return proplist.set(pte.proptag, s.data());
+	}
 	case PT_BINARY:
-	case PT_STRING8:
-	case PT_UNICODE:
+		return proplist.set(pte.proptag, blob.get());
 	case PT_CLSID:
-		if (ep.g_uint32(&alloc_len) != EXT_ERR_SUCCESS)
-			return EIO;
-		if (ep.advance(4) != EXT_ERR_SUCCESS)
-			return EIO;
-		blob.resize(alloc_len);
-		// look for __substg1.0_<proptag> in a moment
-		break;
+		if (blob->cb < sizeof(GUID))
+			return -EIO;
+		return proplist.set(pte.proptag, blob->pv);
 
-	case PT_OBJECT:
-		// special case
-
-	/* Multi-valued types */
-	case PT_MV_SHORT:
-	case PT_MV_LONG:
-	case PT_MV_FLOAT:
-	case PT_MV_APPTIME:
-	case PT_MV_DOUBLE:
-	case PT_MV_CURRENCY:
-	case PT_MV_SYSTIME:
-	case PT_MV_I8:
-	case PT_MV_CLSID:
-	case PT_MV_BINARY:
-	case PT_MV_STRING8:
-	case PT_MV_UNICODE:
-		printf("recognized but unimpl %x\n", proptag);
-		ep.advance(8);
-		break;
 	default:
-		throw YError(fmt::format("PO-1015: Unsupported proptype {:x}", proptag));
+		if (pte.v_ui4 != blob->cb)
+			return -EIO;
+		throw YError(fmt::format("Unsupported proptag {:08x}", pte.proptag));
 	}
 	return 0;
 }
 
-static errno_t parse_propstrm(EXT_PULL &ep, TPROPVAL_ARRAY &proplist)
+static int ptemv_to_prop(const struct pte &pte, const char *cset,
+    libolecf_item_t *dir, TPROPVAL_ARRAY &proplist)
 {
-	while (parse_propstrmentry(ep, proplist) > 0)
-		;
+	uint8_t unitsize = 0;
+	switch (PROP_TYPE(pte.proptag)) {
+	case PT_MV_SHORT: unitsize = 2; break;
+	case PT_MV_FLOAT:
+	case PT_MV_LONG: unitsize = 4; break;
+	case PT_MV_APPTIME:
+	case PT_MV_DOUBLE:
+	case PT_MV_CURRENCY:
+	case PT_MV_SYSTIME:
+	case PT_MV_I8: unitsize = 8; break;
+	case PT_MV_CLSID: unitsize = 16; break;
+	default: throw YError(fmt::format("PO-1008: ptemv_to_prop does not implement proptag {:08x}", pte.proptag));
+	}
+	bin_ptr bin(me_alloc<BINARY>());
+	if (bin == nullptr)
+		return -ENOMEM;
+	bin->cb = 0;
+	bin->pb = me_alloc<uint8_t>(pte.v_ui4);
+	if (bin->pb == nullptr)
+		return -ENOMEM;
+
+	uint32_t count = pte.v_ui4 / unitsize;
+	for (uint32_t i = 0; i < count; ++i) {
+		auto file = fmt::format("__substg1.0_{:08X}-{:08X}", pte.proptag, i);
+		oxm_error_ptr err;
+		oxm_item_ptr strm;
+
+		if (libolecf_item_get_sub_item_by_utf8_path(dir,
+		    reinterpret_cast<const uint8_t *>(file.c_str()),
+		    file.size(), &unique_tie(strm), &unique_tie(err)) < 1)
+			throw az_error("PO-1011", err);
+		auto ret = libolecf_stream_read_buffer(strm.get(),
+		           &bin->pb[unitsize*i], unitsize, &~unique_tie(err));
+		if (ret < 0)
+			throw az_error("PO-1012", err);
+		else if (ret != unitsize)
+			throw YError("PO-1013");
+	}
+
+#define E(st, mb) do { \
+		st xa; \
+		xa.count = count; \
+		xa.mb = static_cast<decltype(xa.mb)>(bin->pv); \
+		return proplist.set(pte.proptag, &xa); \
+	} while (false)
+
+	switch (PROP_TYPE(pte.proptag)) {
+	case PT_MV_SHORT: E(SHORT_ARRAY, ps);
+	case PT_MV_LONG: E(LONG_ARRAY, pl);
+	case PT_MV_FLOAT: E(FLOAT_ARRAY, mval);
+	case PT_MV_APPTIME:
+	case PT_MV_DOUBLE: E(DOUBLE_ARRAY, mval);
+	case PT_MV_CURRENCY:
+	case PT_MV_SYSTIME:
+	case PT_MV_I8: E(LONGLONG_ARRAY, pll);
+	case PT_MV_CLSID: E(GUID_ARRAY, pguid);
+	default: return 0;
+#undef E
+	}
 }
 
-static errno_t do_message(libolecf_item_t *dir, MESSAGE_CONTENT *mc)
+static int ptemvs_to_prop(const struct pte &pte, const char *cset,
+    libolecf_item_t *dir, TPROPVAL_ARRAY &proplist)
 {
-	/* MS-OXMSG v §2.4 */
-	auto propstrm = slurp_stream(dir, "__properties_version1.0");
+	std::vector<std::string> strs;
+	std::vector<char *> strp;
+	STRING_ARRAY sa;
+	sa.count = pte.v_ui4 / 4;
+	strs.resize(sa.count);
+	strp.resize(sa.count);
+
+	for (uint32_t i = 0; i < sa.count; ++i) {
+		auto file = fmt::format("__substg1.0_{:08X}-{:08X}", pte.proptag, i);
+		oxm_error_ptr err;
+		oxm_item_ptr strm;
+		uint32_t strm_size = 0;
+
+		if (libolecf_item_get_sub_item_by_utf8_path(dir,
+		    reinterpret_cast<const uint8_t *>(file.c_str()),
+		    file.size(), &unique_tie(strm), &unique_tie(err)) < 1)
+			throw az_error("PO-1014", err);
+		if (libolecf_item_get_size(strm.get(), &strm_size,
+		    &~unique_tie(err)) < 1)
+			throw az_error("PO-1015", err);
+
+		std::string rdbuf;
+		rdbuf.resize(strm_size);
+		auto ret = libolecf_stream_read_buffer(strm.get(),
+		           reinterpret_cast<uint8_t *>(rdbuf.data()), strm_size,
+		           &~unique_tie(err));
+		if (ret < 0)
+			throw az_error("PO-1016", err);
+		else if (ret != strm_size)
+			throw YError("PO-1017");
+
+		if (PROP_TYPE(pte.proptag) == PT_MV_STRING8)
+			rdbuf = iconvtext(rdbuf.c_str(), strm_size, cset, "UTF-8//IGNORE");
+		else
+			rdbuf = iconvtext(rdbuf.c_str(), strm_size, "UTF-16", "UTF-8//IGNORE");
+		strs[i] = std::move(rdbuf);
+	}
+	for (uint32_t i = 0; i < sa.count; ++i)
+		strp[i] = strs[i].data();
+	sa.ppstr = strp.data();
+	return proplist.set(pte.proptag, &sa);
+}
+
+static int pte_to_prop(const struct pte &pte, const char *cset,
+    libolecf_item_t *dir, TPROPVAL_ARRAY &proplist)
+{
+	switch (PROP_TYPE(pte.proptag)) {
+	case PT_SHORT:
+	case PT_LONG:
+	case PT_FLOAT:
+	case PT_DOUBLE:
+	case PT_APPTIME:
+	case PT_CURRENCY:
+	case PT_SYSTIME:
+	case PT_I8:
+		return proplist.set(pte.proptag, &pte.v_ui8);
+	case PT_BOOLEAN: {
+		BOOL w = !!pte.v_ui4;
+		return proplist.set(pte.proptag, &w);
+	}
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
+		return ptemvs_to_prop(pte, cset, dir, proplist);
+	}
+
+	if (pte.proptag & MV_FLAG)
+		return ptemv_to_prop(pte, cset, dir, proplist);
+	return ptesv_to_prop(pte, cset, dir, proplist);
+}
+
+static errno_t parse_propstrm(EXT_PULL &ep, const char *cset,
+    libolecf_item_t *dir, TPROPVAL_ARRAY &proplist)
+{
+	while (ep.m_offset < ep.m_data_size) {
+		struct pte pte;
+		auto ret = read_pte(ep, pte);
+		if (ret != EXT_ERR_SUCCESS)
+			return -EIO;
+		ret = pte_to_prop(pte, cset, dir, proplist);
+		if (ret != 0)
+			return ret;
+	}
+	return 0;
+}
+
+static int parse_propstrm_to_cpid(const EXT_PULL &ep1)
+{
+	auto ep = ep1;
+	while (ep.m_offset < ep.m_data_size) {
+		struct pte pte;
+		auto ret = read_pte(ep, pte);
+		if (ret != EXT_ERR_SUCCESS)
+			return -EIO;
+		if (pte.proptag == PR_MESSAGE_CODEPAGE)
+			return pte.v_ui4;
+	}
+	return 0;
+}
+
+static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
+{
+	/* MS-OXMSG v16 §2.4 */
+	auto propstrm = slurp_stream(msg_dir, S_PROPFILE);
 	EXT_PULL ep;
-	ep.init(propstrm.data(), propstrm.size(), malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
+	ep.init(propstrm->pv, propstrm->cb, malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 	if (ep.advance(16) != EXT_ERR_SUCCESS)
 		return EIO;
 	uint32_t recip_count = 0, atx_count = 0;
@@ -187,10 +349,20 @@ static errno_t do_message(libolecf_item_t *dir, MESSAGE_CONTENT *mc)
 		return EIO;
 	if (ep.advance(8) != EXT_ERR_SUCCESS)
 		return EIO;
-	return parse_propstrm(ep, mc->proplist);
+	auto cpid = parse_propstrm_to_cpid(ep);
+	if (cpid < 0)
+		return EIO;
+	auto cset = cpid_to_cset(cpid);
+	if (cset == nullptr)
+		cset = "ascii";
+	fprintf(stderr, "Using codepage %s for 8-bit strings\n", cset);
+	auto ret = parse_propstrm(ep, cset, msg_dir, ctnt.proplist);
+	if (ret < 0)
+		return -ret;
+	return 0;
 }
 
-static errno_t do_file(const char *filename) try
+static errno_t do_file(const char *filename, std::vector<message_ptr> &msgvec) try
 {
 	oxm_error_ptr err;
 	oxm_file_ptr file;
@@ -213,19 +385,28 @@ static errno_t do_file(const char *filename) try
 	if (libolecf_file_get_root_item(file.get(), &unique_tie(root),
 	    &~unique_tie(err)) < 1)
 		throw az_error("PO-1001", err);
-	std::unique_ptr<MESSAGE_CONTENT, mc_delete> gx_msg(message_content_init());
-	if (gx_msg == nullptr)
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> ctnt(message_content_init());
+	if (ctnt == nullptr)
 		throw std::bad_alloc();
-	auto ret = do_message(root.get(), gx_msg.get());
-	return ret;
+	ctnt->children.pattachments = attachment_list_init();
+	if (ctnt->children.pattachments == nullptr)
+		throw std::bad_alloc();
+	ctnt->children.prcpts = tarray_set_init();
+	if (ctnt->children.prcpts == nullptr)
+		throw std::bad_alloc();
+	auto ret = do_message(root.get(), *ctnt);
+	if (ret != 0)
+		return ret;
+	msgvec.push_back(std::move(ctnt));
+	return 0;
 } catch (const char *e) {
-	fprintf(stderr, "pff: Exception: %s\n", e);
+	fprintf(stderr, "oxm: Exception: %s\n", e);
 	return ECANCELED;
 } catch (const std::string &e) {
-	fprintf(stderr, "pff: Exception: %s\n", e.c_str());
+	fprintf(stderr, "oxm: Exception: %s\n", e.c_str());
 	return ECANCELED;
 } catch (const std::exception &e) {
-	fprintf(stderr, "pff: Exception: %s\n", e.what());
+	fprintf(stderr, "oxm: Exception: %s\n", e.what());
 	return ECANCELED;
 }
 
@@ -252,10 +433,57 @@ int main(int argc, const char **argv)
 	}
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	auto ret = do_file(argv[1]);
-	if (ret != 0) {
-		fprintf(stderr, "oxm2mt: Import unsuccessful.\n");
-		return EXIT_FAILURE;
+	textmaps_init(PKGDATADIR);
+
+	std::vector<message_ptr> msgs;
+	for (int i = 1; i < argc; ++i) {
+		auto ret = do_file(argv[i], msgs);
+		if (ret != 0) {
+			fprintf(stderr, "oxm2mt: Import unsuccessful.\n");
+			return EXIT_FAILURE;
+		}
+	}
+
+	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0002", 8);
+	if (ret < 0)
+		throw YError("PG-1014: %s", strerror(errno));
+	uint8_t flag = false;
+	ret = HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)); /* splice */
+	if (ret < 0)
+		throw YError("PG-1015: %s", strerror(errno));
+	ret = HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)); /* public store */
+	if (ret < 0)
+		throw YError("PG-1016: %s", strerror(errno));
+	gi_folder_map_write({});
+	gi_dump_name_map(name_map);
+	gi_name_map_write(name_map);
+
+	auto parent = parent_desc::as_folder(~0ULL);
+	for (size_t i = 0; i < msgs.size(); ++i) {
+		if (g_show_tree) {
+			fprintf(stderr, "Message %zu\n", i + 1);
+			gi_dump_msgctnt(0, *msgs[i]);
+		}
+		EXT_PUSH ep;
+		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
+			fprintf(stderr, "E-2020: ENOMEM\n");
+			return EXIT_FAILURE;
+		}
+		if (ep.p_uint32(MAPI_MESSAGE) != EXT_ERR_SUCCESS ||
+		    ep.p_uint32(i + 1) != EXT_ERR_SUCCESS ||
+		    ep.p_uint32(parent.type) != EXT_ERR_SUCCESS ||
+		    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
+		    ep.p_msgctnt(*msgs[i]) != EXT_ERR_SUCCESS) {
+			fprintf(stderr, "E-2021\n");
+			return EXIT_FAILURE;
+		}
+		uint64_t xsize = cpu_to_le64(ep.m_offset);
+		ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
+		if (ret < 0)
+			throw YError("PG-1017: %s", strerror(errno));
+		ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+		if (ret < 0)
+			throw YError("PG-1018: %s", strerror(errno));
 	}
 	return EXIT_SUCCESS;
 }
