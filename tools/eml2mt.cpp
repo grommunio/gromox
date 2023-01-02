@@ -236,6 +236,11 @@ int main(int argc, const char **argv) try
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
 		return EXIT_FAILURE;
 	}
+	if (isatty(STDOUT_FILENO)) {
+		fprintf(stderr, "Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
+			"You probably wanted to redirect output into a file or pipe.\n");
+		return EXIT_FAILURE;
+	}
 
 	auto mime_pool = MIME_POOL::create(4096, 8, "mime_pool");
 	std::vector<message_ptr> msgs;
@@ -253,12 +258,6 @@ int main(int argc, const char **argv) try
 			if (do_vcard(argv[i], msgs) != 0)
 				continue;
 		}
-	}
-
-	if (isatty(STDOUT_FILENO)) {
-		fprintf(stderr, "Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
-			"You probably wanted to redirect output into a file or pipe.\n");
-		return EXIT_FAILURE;
 	}
 
 	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0002", 8);
