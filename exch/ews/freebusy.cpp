@@ -243,9 +243,12 @@ static bool find_recur_times(const ical_component *tzcom,
 	do {
 		auto itime = irrule.instance_itime;
 		time_t ut{}, utnz{};
-		if (!ical_itime_to_utc(tzcom, itime, &ut) || ut < start_time ||
-		    !ical_itime_to_utc(nullptr, itime, &utnz))
+		if (!ical_itime_to_utc(tzcom, itime, &ut))
+			break;
+		if (ut < start_time)
 			continue;
+		if (!ical_itime_to_utc(nullptr, itime, &utnz))
+			break;
 		auto &ei = apr.pexceptioninfo;
 		auto time_test = [&](const EXCEPTIONINFO &e) {
 			return rop_util_rtime_to_unix(e.originalstartdate) == utnz;

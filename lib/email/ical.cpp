@@ -781,6 +781,7 @@ bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitim
 			return false;
 		}
 	} else {
+		mlog(LV_DEBUG, "W-1200: Unparsable date: \"%s\"", tmp_buff);
 		return false;
 	}
 	if ('T' != tsep) {
