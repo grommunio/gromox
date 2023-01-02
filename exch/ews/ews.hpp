@@ -76,7 +76,7 @@ private:
  */
 struct EWSContext
 {
-	inline EWSContext(int ID, HTTP_AUTH_INFO auth_info, const char* data, uint64_t length, EWSPlugin& plugin) :
+	EWSContext(int ID, HTTP_AUTH_INFO auth_info, const char *data, uint64_t length, EWSPlugin &plugin) :
 		ID(ID), orig(*get_request(ID)), auth_info(auth_info), request(data, length), plugin(plugin)
 	{}
 

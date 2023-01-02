@@ -41,7 +41,7 @@ namespace
  *
  * @return     Reference to the string
  */
-inline std::string& tolower(std::string& str)
+static inline std::string &tolower(std::string &str)
 {
 	transform(str.begin(), str.end(), str.begin(), ::tolower);
 	return str;

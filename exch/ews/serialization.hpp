@@ -92,7 +92,7 @@ struct ExplicitConvert<std::string>
 {
 	static constexpr uint8_t value = EC_IN | EC_OUT;
 
-	static inline tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, std::string& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *xml, std::string &value)
 	{
 		const char* data = xml->GetText();
 		if(!data)
@@ -101,13 +101,13 @@ struct ExplicitConvert<std::string>
 		return tinyxml2::XML_SUCCESS;
 	}
 
-	static inline tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, std::string& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute *xml, std::string &value)
 	{
 		value = xml->Value();
 		return tinyxml2::XML_SUCCESS;
 	}
 
-	static inline void serialize(const std::string& value, SetterFunc setter)
+	static void serialize(const std::string &value, SetterFunc setter)
 	{
 		if(value.length())
 			setter(value.c_str());
@@ -126,7 +126,7 @@ struct ExplicitConvert<gromox::time_point>
 
 	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement*, gromox::time_point&);
 
-	static inline void serialize(const gromox::time_point& value, SetterFunc setter)
+	static void serialize(const gromox::time_point &value, SetterFunc setter)
 	{
 		tm t;
 		time_t timestamp = gromox::time_point::clock::to_time_t(value);
@@ -147,7 +147,7 @@ struct ExplicitConvert<gromox::EWS::Structures::StrEnum<C0, Cs...>>
 
 	static constexpr uint8_t value = EC_IN | EC_OUT;
 
-	static inline tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, T& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *xml, T &value)
 	{
 		const char* data = xml->GetText();
 		if(!data)
@@ -160,13 +160,13 @@ struct ExplicitConvert<gromox::EWS::Structures::StrEnum<C0, Cs...>>
 		return tinyxml2::XML_SUCCESS;
 	}
 
-	static inline tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, T& value)
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute *xml, T &value)
 	{
 		value = xml->Value();
 		return tinyxml2::XML_SUCCESS;
 	}
 
-	static inline void serialize(const T& value, SetterFunc setter)
+	static void serialize(const T &value, SetterFunc setter)
 	{
 		if(value.length())
 			setter(value.c_str());
