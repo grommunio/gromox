@@ -60,8 +60,7 @@ namespace {
 
 struct FIELD_ENUM_PARAM {
 	FIELD_ENUM_PARAM(namemap &r) : phash(r) {}
-	FIELD_ENUM_PARAM(FIELD_ENUM_PARAM &&) = delete;
-	void operator=(FIELD_ENUM_PARAM &&) = delete;
+	NOMOVE(FIELD_ENUM_PARAM);
 
 	EXT_BUFFER_ALLOC alloc{};
 	MESSAGE_CONTENT *pmsg = nullptr;
@@ -74,8 +73,7 @@ struct FIELD_ENUM_PARAM {
 
 struct MIME_ENUM_PARAM {
 	MIME_ENUM_PARAM(namemap &r) : phash(r) {}
-	MIME_ENUM_PARAM(MIME_ENUM_PARAM &&) = delete;
-	void operator=(MIME_ENUM_PARAM &&) = delete;
+	NOMOVE(MIME_ENUM_PARAM);
 
 	bool b_result = false;
 	int attach_id = 0;
