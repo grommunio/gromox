@@ -16,8 +16,8 @@ template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { retu
 }
 #define GX_EXPORT __attribute__((visibility("default")))
 #define NOMOVE(K) \
-	K(K &&) = delete; \
-	void operator=(K &&) = delete;
+	K(K &&) noexcept = delete; \
+	void operator=(K &&) noexcept = delete;
 
 /*
  * The timezone column in the user database ought to be never empty. Having an

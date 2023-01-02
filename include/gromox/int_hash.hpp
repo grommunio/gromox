@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/util.hpp>
 
@@ -13,9 +14,8 @@ struct INT_HASH_ITEM {
 struct INT_HASH_ITER;
 struct GX_EXPORT INT_HASH_TABLE {
 	INT_HASH_TABLE(size_t max_items, size_t item_size);
-	INT_HASH_TABLE(INT_HASH_TABLE &&) = delete;
 	~INT_HASH_TABLE();
-	void operator=(INT_HASH_TABLE &&) = delete;
+	NOMOVE(INT_HASH_TABLE);
 	/* 
 	 * init a hash table with the specified max_items capacity and
 	 * item_size of data size.
