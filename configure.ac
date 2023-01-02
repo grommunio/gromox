@@ -108,11 +108,27 @@ AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AM_CONDITIONAL([HAVE_OLECF], [test "$have_olecf" = 1])
 AM_CONDITIONAL([HAVE_PFF], [test "$have_pff" = 1])
 AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
-AC_CHECK_FUNCS([fsetxattr res_nquerydomain posix_fadvise])
+AC_CHECK_FUNCS([fsetxattr posix_fadvise])
 AC_SEARCH_LIBS([crypt], [crypt], [crypt_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([dlopen], [dl], [dl_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([ldap_init], [ldap_r ldap], [libldap_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([ns_initparse], [resolv], [resolv_LIBS="$LIBS"; LIBS=""])
+LIBS="$LIBS $resolv_LIBS"
+AH_TEMPLATE([HAVE_RES_NQUERYDOMAIN], [])
+AC_MSG_CHECKING([for res_nquerydomain])
+AC_LINK_IFELSE(
+	dnl It is a macro on some older systems
+	[AC_LANG_SOURCE([
+		#include <resolv.h>
+		int main() { res_nquerydomain(0,0,0,0,0,0,0); }
+	])],
+	[
+		AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE_RES_NQUERYDOMAIN], [1])
+	],
+	[AC_MSG_RESULT([no])]
+)
+LIBS="$saved_LIBS"
 AC_SUBST([crypt_LIBS])
 AC_SUBST([dl_LIBS])
 AC_SUBST([libldap_LIBS])
