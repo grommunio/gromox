@@ -291,6 +291,7 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		tlog("}");
 		break;
 	}
+	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
 		auto &ss = *static_cast<STRING_ARRAY *>(tp.pvalue);
 		tlog("mvstr[%zu]", static_cast<size_t>(ss.count));
