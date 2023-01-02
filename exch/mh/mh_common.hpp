@@ -27,6 +27,7 @@ struct session_data {
 		gx_strlcpy(username, user, UADDR_SIZE);
 		HX_strlower(username);
 	}
+	NOMOVE(session_data);
 
 	GUID session_guid{}, sequence_guid{};
 	char username[UADDR_SIZE]{};
