@@ -3,8 +3,6 @@
 // This file is part of Gromox.
 
 #pragma once
-
-#include <functional>
 #include <optional>
 #include <unordered_map>
 
@@ -32,7 +30,7 @@ struct EWSContext;
 class EWSPlugin
 {
 public:
-	using Handler = std::function<void(const tinyxml2::XMLElement*, tinyxml2::XMLElement*, const EWSContext&)>;
+	using Handler = void (*)(const tinyxml2::XMLElement *, tinyxml2::XMLElement *, const EWSContext &);
 
 	EWSPlugin();
 

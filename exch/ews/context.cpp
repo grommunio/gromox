@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
+#include <cctype>
 #include <fmt/core.h>
 #include "exceptions.hpp"
 #include "ews.hpp"
@@ -21,7 +23,7 @@ using namespace Structures;
  */
 static inline std::string &tolower(std::string &str)
 {
-	transform(str.begin(), str.end(), str.begin(), ::tolower);
+	std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 	return str;
 }
 
