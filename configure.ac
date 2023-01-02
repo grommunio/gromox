@@ -109,6 +109,10 @@ AM_CONDITIONAL([HAVE_OLECF], [test "$have_olecf" = 1])
 AM_CONDITIONAL([HAVE_PFF], [test "$have_pff" = 1])
 AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
 AC_CHECK_FUNCS([fsetxattr posix_fadvise])
+crypt_LIBS=""
+dl_LIBS=""
+libldap_LIBS=""
+resolv_LIBS=""
 AC_SEARCH_LIBS([crypt], [crypt], [crypt_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([dlopen], [dl], [dl_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([ldap_init], [ldap_r ldap], [libldap_LIBS="$LIBS"; LIBS=""])
