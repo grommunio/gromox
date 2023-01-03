@@ -1,14 +1,16 @@
-Development 1.37.83
-===================
+Gromox 2.0 (2023-01-03)
+=======================
 
 Enhancements:
 
 * gromox-mbop: added "emptyfld" command
+* gromox-oxm2mt: new utility to read .msg files
 
 Fixes:
 
 * midb: IMAP SEARCH commands had numeric sequence ranges "m:n" misparsed
 * midb, imap: recognize "*" in sequence sets (alias for "*:*")
+* nsp: resolve a wrong allocation size that led to a crash
 
 Changes:
 
