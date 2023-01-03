@@ -82,7 +82,7 @@ timeouts in components other than exmdb_provider. (The procedure takes roughly
 on a 3700X CPU, single-thread. The file can also temporarily grow to double its
 size, so ample disk space may be required.)
 .br
-Default: \fIno\fP
+Default: \fIyes\fP
 .TP
 \fBexmdb_search_pacing\fP
 When initially populating a search folder (static or dynamic), yield the lock
