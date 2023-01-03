@@ -301,13 +301,6 @@ struct RECIPIENT_ROW {
 	PROPERTY_ROW properties;
 };
 
-#define CP_USASCII									0x04E4
-#define CP_UNICODE									0x04B0
-#define CP_JAUTODETECT								0xC6F4
-#define CP_KAUTODETECT								0xC705
-#define CP_ISO2022JPESC								0xC42D
-#define CP_ISO2022JPSIO								0xC42E
-
 struct OPENRECIPIENT_ROW {
 	uint8_t recipient_type;
 	uint16_t cpid;

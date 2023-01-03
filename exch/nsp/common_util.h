@@ -26,10 +26,6 @@ enum {
 	NspiUnicodeProptypes = 0x80000000U,
 };
 
-enum {
-	CP_WINUNICODE = 1200,
-};
-
 /* PR_CONTAINER_FLAGS values */
 #define	AB_RECIPIENTS					0x1
 #define	AB_SUBCONTAINERS				0x2
