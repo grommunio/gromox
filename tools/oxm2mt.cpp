@@ -363,6 +363,39 @@ static int do_recips(libolecf_item_t *msg_dir, unsigned int nrecips,
 	return 0;
 }
 
+static int do_attachs(libolecf_item_t *msg_dir, unsigned int natx,
+    const char *cset, ATTACHMENT_LIST &atxlist)
+{
+	for (size_t i = 0; i < natx; ++i) {
+		auto file = fmt::format("__attach_version1.0_#{:08X}", i);
+		oxm_error_ptr err;
+		oxm_item_ptr rcpt_dir;
+
+		if (libolecf_item_get_sub_item_by_utf8_path(msg_dir,
+		    reinterpret_cast<const uint8_t *>(file.c_str()), file.size(),
+		    &unique_tie(rcpt_dir), &unique_tie(err)) < 1)
+			throw az_error("PO-1020", err);
+		auto propstrm = slurp_stream(rcpt_dir.get(), S_PROPFILE);
+		EXT_PULL ep;
+		ep.init(propstrm->pv, propstrm->cb, malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
+		if (ep.advance(8) != EXT_ERR_SUCCESS)
+			return EIO;
+		tpropval_array_ptr props(tpropval_array_init());
+		if (props == nullptr)
+			throw std::bad_alloc();
+		auto ret = parse_propstrm(ep, cset, rcpt_dir.get(), *props);
+		if (ret < 0)
+			return -ret;
+		attachment_content_ptr atc(attachment_content_init());
+		std::swap(atc->proplist.count, props->count);
+		std::swap(atc->proplist.ppropval, props->ppropval);
+		if (!attachment_list_append_internal(&atxlist, atc.get()))
+			throw std::bad_alloc();
+		atc.release();
+	}
+	return 0;
+}
+
 static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
 {
 	/* MS-OXMSG v16 §2.4 */
@@ -389,6 +422,9 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
 	if (ret < 0)
 		return -ret;
 	ret = do_recips(msg_dir, recip_count, cset, *ctnt.children.prcpts);
+	if (ret < 0)
+		return -ret;
+	ret = do_attachs(msg_dir, atx_count, cset, *ctnt.children.pattachments);
 	if (ret < 0)
 		return -ret;
 	return 0;
