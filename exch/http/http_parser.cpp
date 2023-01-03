@@ -1015,6 +1015,16 @@ static char *now_str(char *buf, size_t bufsize)
 	return buf;
 }
 
+static size_t find_first_nonprint(const void *vptr, size_t z)
+{
+	auto begin = static_cast<const uint8_t *>(vptr);
+	auto end = begin + z;
+	for (auto p = begin; p < end; ++p)
+		if (!isprint(*p) && *p != '\r' && *p != '\n')
+			return p - begin;
+	return z;
+}
+
 static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
     void *pbuff, unsigned int size)
 {
@@ -1031,16 +1041,9 @@ static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
 		        now_str(tbuf, std::size(tbuf)),
 		        co.client_ip, co.client_port,
 		        co.server_ip, co.server_port, actual_read);
-		fflush(stderr);
-		bool ascii = true;
-		for (ssize_t i = 0; i < actual_read; ++i) {
-			auto c = static_cast<const uint8_t *>(pbuff)[i];
-			if (!isprint(c) && c != '\r' && c != '\n') {
-				ascii = false;
-				break;
-			}
-		}
-		if (ascii) {
+		if (find_first_nonprint(pbuff, actual_read) ==
+		    static_cast<size_t>(actual_read)) {
+			fflush(stderr);
 			if (HXio_fullwrite(STDERR_FILENO, pbuff, actual_read) < 0)
 				/* ignore */;
 		} else {
