@@ -1207,14 +1207,32 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	if (pcontext->write_buff == nullptr && written_len > 0)
 		mlog(LV_WARN, "W-1534: wl=%zd. report me.", written_len);
 	if (g_http_debug) {
-		auto s = static_cast<const char *>(pcontext->write_buff);
 		auto &co = pcontext->connection;
 		char tbuf[24];
-		fprintf(stderr, "\e[1m>> %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n%.*s\n>>-EOP\n",
+		fprintf(stderr, "\e[1m>> %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n",
 		        now_str(tbuf, std::size(tbuf)),
 		        co.server_ip, co.server_port,
-		        co.client_ip, co.client_port,
-		        written_len, (int)written_len, znul(s));
+		        co.client_ip, co.client_port, written_len);
+		auto pfx = find_first_nonprint(pcontext->write_buff, written_len);
+		fflush(stderr);
+		if (pfx == static_cast<size_t>(written_len)) {
+			if (HXio_fullwrite(STDERR_FILENO, pcontext->write_buff, written_len) < 0)
+				/* ignore */;
+		} else {
+			/*
+			 * Unlike in htparse_readsock, here the write buffer
+			 * contains both HTTP headers, MH chunks and ROP
+			 * response buffer. Try to separate them so that the
+			 * hexdump starts at the ROP part.
+			 */
+			auto b = static_cast<const uint8_t *>(pcontext->write_buff);
+			while (pfx > 0 && b[pfx-1] != '\r' && b[pfx-1] != '\n')
+				--pfx;
+			if (HXio_fullwrite(STDERR_FILENO, b, pfx) < 0)
+				/* ignore */;
+			HX_hexdump(stderr, &b[pfx], written_len - pfx);
+		}
+		fprintf(stderr, ">>-EOP\n");
 	}
 	if (pcontext->write_buff == nullptr)
 		written_len = 0;
