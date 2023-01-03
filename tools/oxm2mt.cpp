@@ -334,6 +334,35 @@ static int parse_propstrm_to_cpid(const EXT_PULL &ep1)
 	return 0;
 }
 
+static int do_recips(libolecf_item_t *msg_dir, unsigned int nrecips,
+    const char *cset, tarray_set &rcpts)
+{
+	for (size_t i = 0; i < nrecips; ++i) {
+		auto file = fmt::format("__recip_version1.0_#{:08X}", i);
+		oxm_error_ptr err;
+		oxm_item_ptr rcpt_dir;
+
+		if (libolecf_item_get_sub_item_by_utf8_path(msg_dir,
+		    reinterpret_cast<const uint8_t *>(file.c_str()), file.size(),
+		    &unique_tie(rcpt_dir), &unique_tie(err)) < 1)
+			throw az_error("PO-1020", err);
+		auto propstrm = slurp_stream(rcpt_dir.get(), S_PROPFILE);
+		EXT_PULL ep;
+		ep.init(propstrm->pv, propstrm->cb, malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
+		if (ep.advance(8) != EXT_ERR_SUCCESS)
+			return EIO;
+		tpropval_array_ptr props(tpropval_array_init());
+		if (props == nullptr)
+			throw std::bad_alloc();
+		auto ret = parse_propstrm(ep, cset, rcpt_dir.get(), *props);
+		if (ret < 0)
+			return -ret;
+		if (rcpts.append_move(std::move(props)) == ENOMEM)
+			throw std::bad_alloc();
+	}
+	return 0;
+}
+
 static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
 {
 	/* MS-OXMSG v16 §2.4 */
@@ -357,6 +386,9 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
 		cset = "ascii";
 	fprintf(stderr, "Using codepage %s for 8-bit strings\n", cset);
 	auto ret = parse_propstrm(ep, cset, msg_dir, ctnt.proplist);
+	if (ret < 0)
+		return -ret;
+	ret = do_recips(msg_dir, recip_count, cset, *ctnt.children.prcpts);
 	if (ret < 0)
 		return -ret;
 	return 0;
