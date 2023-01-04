@@ -268,7 +268,7 @@ uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
 		ptable->seek_current(b_forward, *pcount);
 	*pseek_pos = BOOKMARK_CURRENT;
 	if (b_forward) {
-		if (ptable->get_position() >= ptable->get_total())
+		if (ptable->get_position() >= ptable->m_total)
 			*pseek_pos = BOOKMARK_END;
 	} else {
 		if (ptable->get_position() == 0)
@@ -317,7 +317,7 @@ uint32_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
 	if (!ptable->load())
 		return ecError;
 	*pnumerator = ptable->get_position();
-	*pdenominator = ptable->get_total();
+	*pdenominator = ptable->m_total;
 	return ecSuccess;
 }
 
@@ -342,20 +342,20 @@ uint32_t rop_seekrow(uint8_t seek_pos, int32_t offset, uint8_t want_moved_count,
 			return ecInvalidParam;
 		}
 		original_position = 0;
-		clamped = static_cast<uint32_t>(offset) > ptable->get_total();
+		clamped = static_cast<uint32_t>(offset) > ptable->m_total;
 		ptable->set_position(offset);
 		break;
 	case BOOKMARK_END:
 		if (offset > 0) {
 			return ecInvalidParam;
 		}
-		original_position = ptable->get_total();
+		original_position = ptable->m_total;
 		ptable->set_position(safe_add_s(original_position, offset, &clamped));
 		break;
 	case BOOKMARK_CURRENT: {
 		original_position = ptable->get_position();
 		auto newpos = safe_add_s(original_position, offset, &clamped);
-		clamped = newpos > ptable->get_total();
+		clamped = newpos > ptable->m_total;
 		ptable->set_position(newpos);
 		break;
 	}
@@ -417,7 +417,7 @@ uint32_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator,
 		return ecNotSupported;
 	if (!ptable->load())
 		return ecError;
-	auto position = numerator * ptable->get_total() / denominator;
+	auto position = numerator * ptable->m_total / denominator;
 	ptable->set_position(position);
 	return ecSuccess;
 }
@@ -515,7 +515,7 @@ uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 		ptable->set_position(0);
 		break;
 	case BOOKMARK_END:
-		ptable->set_position(ptable->get_total());
+		ptable->set_position(ptable->m_total);
 		break;
 	case BOOKMARK_CURRENT:
 		break;

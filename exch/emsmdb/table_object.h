@@ -35,7 +35,6 @@ struct table_object {
 	uint32_t get_position() const { return m_position; }
 	void set_position(uint32_t position);
 	void clear_position() { m_position = 0; }
-	uint32_t get_total() const;
 	BOOL create_bookmark(uint32_t *pindex);
 	void remove_bookmark(uint32_t index);
 	void clear_bookmarks() { bookmark_list.clear(); }
@@ -52,13 +51,12 @@ struct table_object {
 	logon_object *plogon = nullptr;
 	CXH cxh{};
 	LOGMAP *plogmap = nullptr;
-	uint8_t logon_id = 0;
-	uint32_t handle = 0;
 	void *pparent_obj = nullptr;
-	uint8_t rop_id = 0, table_flags = 0;
+	uint8_t logon_id = 0, rop_id = 0, table_flags = 0;
 	PROPTAG_ARRAY *m_columns = nullptr;
 	SORTORDER_SET *m_sorts = nullptr;
 	RESTRICTION *m_restriction = nullptr;
-	uint32_t m_position = 0, m_table_id = 0, bookmark_index = 0;
+	uint32_t m_position = 0, m_total = 0;
+	uint32_t handle = 0, m_table_id = 0, bookmark_index = 0;
 	std::vector<bookmark_node> bookmark_list;
 };
