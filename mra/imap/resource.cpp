@@ -132,7 +132,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{2000 | MIDB_E_DIGEST, "mail digest error"},
 	{2000 | MIDB_E_FOLDER_EXISTS, "folder already exists"},
 	{2000 | MIDB_E_FOLDER_LIMIT, "reached the limitation of folders"},
-	{2000 | MIDB_E_MAILBOX_FULL, "mailbox is full"},
+	{2000 | MIDB_E_MAILBOX_FULL, "mailbox is full (either bytes or messages)"},
 	{2000 | MIDB_E_NO_DELETE, "midb: failed to delete the folder"},
 	{2000 | MIDB_E_STORE_NOT_LOADED, "midb: store not loaded"},
 	{2000 | MIDB_E_STORE_BUSY, "midb: store is being used"},

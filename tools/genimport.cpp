@@ -643,7 +643,7 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct)
 	case delivery_message_result::result_ok:
 		break;
 	case delivery_message_result::mailbox_full:
-		fprintf(stderr, "Message rejected - mailbox is full\n");
+		fprintf(stderr, "Message rejected - mailbox is full (either bytes or exmdb_provider.cfg:max_store_message_count)\n");
 		return EXIT_FAILURE;
 	case delivery_message_result::result_error:
 		fprintf(stderr, "Message rejected - unspecified reason\n");
