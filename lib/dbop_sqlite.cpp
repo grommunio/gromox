@@ -218,6 +218,20 @@ static constexpr char tbl_pvt_folders_0[] =
 "  FOREIGN KEY (parent_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE);"
 "CREATE INDEX search_index ON folders(is_search);";
 
+static constexpr char tbl_pvt_folders_9[] =
+"CREATE TABLE folders ("
+"  folder_id INTEGER PRIMARY KEY,"
+"  parent_id INTEGER,"
+"  change_number INTEGER UNIQUE NOT NULL,"
+"  is_search INTEGER DEFAULT 0,"
+"  search_flags INTEGER DEFAULT NULL,"
+"  search_criteria BLOB DEFAULT NULL,"
+"  cur_eid INTEGER NOT NULL,"
+"  max_eid INTEGER NOT NULL,"
+"  `is_deleted` INTEGER DEFAULT 0,"
+"  FOREIGN KEY (parent_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE INDEX search_index9 ON folders(is_search);";
+
 static constexpr char tbl_pvt_msgs_0[] =
 "CREATE TABLE messages ("
 "  message_id INTEGER PRIMARY KEY,"
@@ -377,7 +391,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"recipients_properties", tbl_rcptprops_5},
 	{"attachments", tbl_attach_0},
 	{"attachment_properties", tbl_atxprops_6},
-	{"folders", tbl_pvt_folders_0},
+	{"folders", tbl_pvt_folders_9},
 	{"messages", tbl_pvt_msgs_8},
 	{"receive_table", tbl_pvt_recvfld_0},
 	{"search_scopes", tbl_pvt_searchscopes_0},
@@ -516,6 +530,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	 * an is_deleted column. Make it right.
 	 */
 	{8, nullptr, "messages", tbl_pvt_msgs_8, tbl_pvt_msgs_move8},
+	{9, "ALTER TABLE `folders` ADD COLUMN `is_deleted` INTEGER DEFAULT 0"},
 	TABLE_END,
 };
 
