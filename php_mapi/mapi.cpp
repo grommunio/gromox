@@ -28,9 +28,6 @@
 #	include "mapi_arginfo.hpp"
 #endif
 #include "type_conversion.hpp"
-#define PR_CONTENTS_SYNCHRONIZER					0x662D000D
-#define PR_HIERARCHY_SYNCHRONIZER					0x662C000D
-#define PR_COLLECTOR								0x662E000D
 #ifdef ZTS
 #	include "TSRM.h"
 #endif
