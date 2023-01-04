@@ -143,7 +143,10 @@ Default: unlimited (only limited by ulimits)
 Default: \fI1000\fP
 .TP
 \fBmax_store_message_count\fP
-Default: \fI200000\fP
+The maximum number of messages any one particular message store is allowed to
+keep. The technical limit is somewhere around 2^47.
+.br
+Default: \fI0\fP (no limit)
 .TP
 \fBmbox_contention_warning\fP
 If there are more than this many threads waiting to use a mailbox, emit a

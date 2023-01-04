@@ -51,7 +51,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"max_router_connections", "4095M", CFG_SIZE},
 	{"max_rpc_stub_threads", "4095M", CFG_SIZE},
 	{"max_rule_number", "1000", CFG_SIZE, "1", "2000"},
-	{"max_store_message_count", "200000", CFG_SIZE},
+	{"max_store_message_count", "0", CFG_SIZE},
 	{"mbox_contention_reject", "5", CFG_SIZE},
 	{"mbox_contention_warning", "5", CFG_SIZE},
 	{"notify_stub_threads_num", "4", CFG_SIZE, "0"},
