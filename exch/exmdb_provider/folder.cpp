@@ -899,7 +899,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		else
 			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
 				" message_size, is_deleted FROM messages "
-				"WHERE parent_fid=%llu AND is_associated=%d AND 2",
+				"WHERE parent_fid=%llu AND is_associated=%d",
 				LLU{fid_val}, is_associated);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
