@@ -142,17 +142,9 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	uint32_t permission;
 	char sql_string[256];
 	
-	if (!exmdb_server::is_private()) {
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT folder_id FROM"
-		         " folders WHERE parent_id=%llu AND is_deleted=%u",
-		         LLU{folder_id}, !!(table_flags & TABLE_FLAG_SOFTDELETES));
-	} else if (table_flags & TABLE_FLAG_SOFTDELETES) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT"
-		        " folder_id FROM folders WHERE 0");
-	} else {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
-		        "FROM folders WHERE parent_id=%llu", LLU{folder_id});
-	}
+	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
+	         " folders WHERE parent_id=%llu AND is_deleted=%u",
+	         LLU{folder_id}, !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;

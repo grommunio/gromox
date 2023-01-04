@@ -323,11 +323,6 @@ BOOL exmdb_server::check_folder_deleted(const char *dir,
 	uint64_t folder_id, BOOL *pb_del)
 {
 	char sql_string[256];
-	
-	if (exmdb_server::is_private()) {
-		*pb_del = FALSE;
-		return TRUE;
-	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -895,12 +890,8 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 	}
 	if (!b_sub)
 		return TRUE;
-	if (b_private)
-		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
-			  "FROM folders WHERE parent_id=%llu", LLU{fid_val});
-	else
-		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
-		         " is_deleted FROM folders WHERE parent_id=%llu", LLU{fid_val});
+	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
+	         " is_deleted FROM folders WHERE parent_id=%llu", LLU{fid_val});
 
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -912,7 +903,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 			*pb_partial = TRUE;
 			continue;
 		}
-		bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 1);
+		bool is_deleted = pstmt.col_int64(1);
 		if (!b_hard && is_deleted)
 			continue;
 		if (NULL != username) {
@@ -1025,10 +1016,7 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 	}
 	auto parent_id = common_util_get_folder_parent_fid(pdb->psqlite, fid_val);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (exmdb_server::is_private()) {
-		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders"
-		        " WHERE folder_id=%llu", LLU{fid_val});
-	} else if (b_hard) {
+	if (b_hard) {
 		BOOL b_partial = false;
 		uint64_t normal_size = 0, fai_size = 0;
 		if (!folder_empty_folder(pdb, cpid, nullptr, fid_val, TRUE,
