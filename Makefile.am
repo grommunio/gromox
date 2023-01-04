@@ -333,7 +333,7 @@ man_MANS = \
 	doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 if HAVE_OLECF
-man_MANS += doc/gromox-oxm2mt.8gx
+man_MANS += doc/gromox-oxm2mt.8
 endif
 if HAVE_PFF
 man_MANS += doc/gromox-pff2mt.8
