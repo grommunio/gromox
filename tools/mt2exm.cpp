@@ -325,7 +325,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 	if (g_show_tree && g_show_props)
 		gi_dump_msgctnt(0, ctnt);
 	auto folder_it = g_folder_map.find(obd.parent.folder_id);
-	if (folder_it == g_folder_map.end()) {
+	if (!g_do_delivery && folder_it == g_folder_map.end()) {
 		fprintf(stderr, "PF-1123: unknown parent folder %llxh\n",
 		        static_cast<unsigned long long>(obd.parent.folder_id));
 		return 0;
