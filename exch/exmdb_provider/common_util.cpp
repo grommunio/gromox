@@ -712,13 +712,8 @@ static BOOL common_util_check_subfolders(
 {
 	char sql_string[80];
 	
-	if (exmdb_server::is_private())
-		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
-		          "folders WHERE parent_id=%llu", LLU{folder_id});
-	else
-		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
-			" folders WHERE parent_id=%llu AND is_deleted=0",
-			LLU{folder_id});
+	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
+	         " folders WHERE parent_id=%llu AND is_deleted=0", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW ? TRUE : false;
 }
@@ -834,10 +829,6 @@ static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 			"search_result.message_id=messages.message_id"
 			" AND messages.is_associated=%u",
 			LLU{folder_id}, !!b_associated);
-	else if (exmdb_server::is_private())
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-			" FROM messages WHERE parent_fid=%llu "
-			"AND is_associated=%u", LLU{folder_id}, !!b_associated);
 	else
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu "
