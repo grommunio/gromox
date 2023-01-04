@@ -4,16 +4,9 @@
 .SH Name
 gromox\-mkmidb \(em Tool for creating a blank message index database
 .SH Synopsis
-\fBgromox\-mkmidb\fP [\fB\-Uv\fP] [\fB\-T\fP \fItemplate_dir\fP] [\fB\-c\fP
-\fIconfig\fP] [\fB\-fP\fP] \fIusername\fP
+\fBgromox\-mkmidb\fP [\fB\-Uv\fP] [\fB\-c\fP \fIconfig\fP] [\fB\-fP\fP]
+\fIusername\fP
 .SH Options
-.TP
-\fB\-T\fP \fIpath\fP
-This option can be used to override the \fIdata_file_path\fP variable from the
-config file; it specifies the location where the SQLite schemas etc. are
-stored.
-.br
-Default: \fI/usr/share/gromox\fP
 .TP
 \fB\-U\fP
 Rather than creating the SQLite file, upgrade it. (The \-f option has no

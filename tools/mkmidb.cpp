@@ -34,7 +34,6 @@ enum {
 static unsigned int opt_force, opt_create_old, opt_upgrade, opt_verbose;
 static char *opt_config_file;
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'T', HXTYPE_STRING, nullptr, nullptr, nullptr, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting exchange.sqlite3"},
 	{nullptr, 'U', HXTYPE_NONE, &opt_upgrade, nullptr, nullptr, 0, "Perform schema upgrade"},
