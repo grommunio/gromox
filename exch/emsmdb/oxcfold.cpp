@@ -984,5 +984,15 @@ uint32_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 		return ecError;
 	rtable->set_handle(hnd);
 	*phout = hnd;
+	if (table_flags & TABLE_FLAG_DEFERREDERRORS)
+		/* Inaccurate rowcount permissible under OXCFOLD v23.2 §2.2.1.14.1 */
+		return ecSuccess;
+	/*
+	 * Inaccurate rowcounts crash OL's "Recover Deleted Items" dialog.
+	 * Perform the hard work early on, then.
+	 */
+	if (!rtable->load())
+		return ecError;
+	*prow_count = rtable->m_total;
 	return ecSuccess;
 }
