@@ -69,13 +69,13 @@ static bool authmgr_reload()
 	if (val == nullptr) {
 	} else if (strcmp(val, "deny_all") == 0) {
 		am_choice = A_DENY_ALL;
-		mlog(LV_ERR, "authmgr: \e[31mAll authentication requests will be denied\e[0m");
+		mlog(LV_NOTICE, "authmgr: All authentication requests will be denied");
 	} else if (strcmp(val, "allow_all") == 0) {
 		am_choice = A_ALLOW_ALL;
-		mlog(LV_ERR, "authmgr: \e[1;31mArbitrary passwords will be accepted for authentication\e[0m");
+		mlog(LV_NOTICE, "authmgr: Arbitrary passwords will be accepted for authentication");
 	} else if (strcmp(val, "always_mysql") == 0 || strcmp(val, "always_ldap") == 0) {
 		am_choice = A_EXTERNID;
-		mlog(LV_ERR, "authmgr: \e[1;33mauth_backend_selection=always_mysql/always_ldap is obsolete; switching to =externid\e[0m");
+		mlog(LV_WARN, "authmgr: auth_backend_selection=always_mysql/always_ldap is obsolete; switching to =externid");
 	} else if (strcmp(val, "externid") == 0) {
 		am_choice = A_EXTERNID;
 	}
