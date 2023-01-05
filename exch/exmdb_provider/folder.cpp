@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
@@ -2284,15 +2285,15 @@ BOOL exmdb_server::empty_folder_rule(const char *dir, uint64_t folder_id)
 }
 
 /* after updating the database, update the table too! */
-BOOL exmdb_server::update_folder_rule(const char *dir,
-	uint64_t folder_id, uint16_t count,
-	const RULE_DATA *prow, BOOL *pb_exceed)
+BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
+    uint16_t count, const RULE_DATA *prow, BOOL *pb_exceed) try
 {
 	int i;
 	EXT_PUSH ext_push;
 	char sql_string[256];
-	char action_buff[256*1024];
-	char condition_buff[256*1024];
+	static constexpr size_t bigbufsiz = 256 << 10;
+	auto action_buff = std::make_unique<char[]>(bigbufsiz);
+	auto condition_buff = std::make_unique<char[]>(bigbufsiz);
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2341,14 +2342,14 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 			auto pcondition = prow[i].propvals.get<RESTRICTION>(PR_RULE_CONDITION);
 			if (pcondition == nullptr)
 				continue;
-			if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
+			if (!ext_push.init(condition_buff.get(), bigbufsiz, 0) ||
 			    ext_push.p_restriction(*pcondition) != EXT_ERR_SUCCESS)
 				return false;
 			int condition_len = ext_push.m_offset;
 			auto paction = prow[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 			if (paction == nullptr)
 				continue;
-			if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
+			if (!ext_push.init(action_buff.get(), bigbufsiz, 0) ||
 			    ext_push.p_rule_actions(*paction) != EXT_ERR_SUCCESS)
 				return false;
 			int action_len = ext_push.m_offset;
@@ -2378,9 +2379,9 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 					pprovider_bin->cb, SQLITE_STATIC);
 			else
 				sqlite3_bind_null(pstmt, 7);
-			sqlite3_bind_blob(pstmt, 8, condition_buff,
+			sqlite3_bind_blob(pstmt, 8, condition_buff.get(),
 				condition_len, SQLITE_STATIC);
-			sqlite3_bind_blob(pstmt, 9, action_buff,
+			sqlite3_bind_blob(pstmt, 9, action_buff.get(),
 				action_len, SQLITE_STATIC);
 			if (pstmt.step() != SQLITE_DONE)
 				return false;
@@ -2456,7 +2457,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 			}
 			auto pcondition = prow[i].propvals.get<RESTRICTION>(PR_RULE_CONDITION);
 			if (NULL != pcondition) {
-				if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
+				if (!ext_push.init(condition_buff.get(), bigbufsiz, 0) ||
 				    ext_push.p_restriction(*pcondition) != EXT_ERR_SUCCESS)
 					return false;
 				int condition_len = ext_push.m_offset;
@@ -2465,7 +2466,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 				pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 				if (pstmt1 == nullptr)
 					return false;
-				sqlite3_bind_blob(pstmt1, 1, condition_buff,
+				sqlite3_bind_blob(pstmt1, 1, condition_buff.get(),
 						condition_len, SQLITE_STATIC);
 				if (SQLITE_DONE != sqlite3_step(pstmt1)) {
 					pstmt1.finalize();
@@ -2475,7 +2476,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 			}
 			auto paction = prow[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 			if (NULL != paction) {
-				if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
+				if (!ext_push.init(action_buff.get(), bigbufsiz, 0) ||
 				    ext_push.p_rule_actions(*paction) != EXT_ERR_SUCCESS)
 					return false;
 				int action_len = ext_push.m_offset;
@@ -2484,7 +2485,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 				pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 				if (pstmt1 == nullptr)
 					return false;
-				sqlite3_bind_blob(pstmt1, 1, action_buff,
+				sqlite3_bind_blob(pstmt1, 1, action_buff.get(),
 						action_len, SQLITE_STATIC);
 				if (pstmt1.step() != SQLITE_DONE)
 					return false;
@@ -2516,6 +2517,9 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 	}
 	sql_transact.commit();
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1199: ENOMEM");
+	return false;
 }
 
 /* public only */
