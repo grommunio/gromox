@@ -291,20 +291,17 @@ kdb\-uidextract(8) or the kdb\-uidextract\-limited(8) helper programs on the
 original, live Kopano system. (With some effort, the file can also be manually
 constructed.)
 .SH ZARAFA Address Type
-MAPI is a system that supports referencing conversation participants of a
-message by means other than an SMTP e-mail address. For example, the "EX"
-address type employed by Exchange uses the Distinguished Name of the user
-object in the ActiveDirectory. (Obviously, this only works for users present in
-the LDAP tree.) Zarafa/Kopano systems define a "ZARAFA" address type, and the
-identifiers contain the username (possibly in other forms such as
-company\\username or company@username) or the (SMTP) email address.
+MAPI as a system supports referencing a message's participants by arbitrary
+target descriptors. These include, but are not limited to, SMTP e-mail
+addresses, usernames, LDAP RDNs, X.400 address, or even a fax number.
+For example, the "EX" address type employed by Exchange uses the ESSDN
+(Enterprise/Site/Server Distinguished Name) of the user, which is sort of a
+LDAP Relative Distinguished Name (RDN).
 .PP
-Because kdb2mt operates without LDAP, the utility cannot convert those
-usernames. Conversion of what appears to be email addresses but isn't may lead
-to a wrong result. Rewriting ZARAFA-type addresses is therefore left to a
-separate tool.
-.PP
-The presence of a ZARAFA-type address on a message object will make many
-clients skip such objects silently in part or in full.
+Zarafa/Kopano systems define a "ZARAFA" address type, and the identifiers
+contain the username (possibly in other forms such as company\\username or
+company@username) or the (SMTP) email address; it is not entirely consistent.
+With the help of a user map file, the ZARAFA-type addresses can be converted to
+SMTP addresses.
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)
