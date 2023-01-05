@@ -1035,17 +1035,13 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 {
 	BOOL b_search;
 	BOOL b_partial;
-	uint64_t fid_val;
-	uint64_t fai_size;
-	uint64_t parent_id;
 	char sql_string[256];
-	uint64_t normal_size;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	b_search = FALSE;
-	fid_val = rop_util_get_gc_value(folder_id);
+	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (exmdb_server::is_private()) {
 		if (fid_val < PRIVATE_FID_CUSTOM) {
 			*pb_result = FALSE;
@@ -1107,13 +1103,13 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 		pstmt.finalize();
 		db_engine_delete_dynamic(pdb, fid_val);
 	}
-	parent_id = common_util_get_folder_parent_fid(
-							pdb->psqlite, fid_val);
+	auto parent_id = common_util_get_folder_parent_fid(pdb->psqlite, fid_val);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (exmdb_server::is_private()) {
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders"
 		        " WHERE folder_id=%llu", LLU{fid_val});
 	} else if (b_hard) {
+		uint64_t normal_size = 0, fai_size = 0;
 		if (!folder_empty_folder(pdb, cpid, nullptr, fid_val, TRUE,
 		    TRUE, TRUE, TRUE, &b_partial, &normal_size, &fai_size,
 		    nullptr, nullptr) || b_partial ||
