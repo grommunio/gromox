@@ -43,9 +43,8 @@ BOOL exmdb_server::get_folder_by_class(const char *dir,
 		return FALSE;
 	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT folder_id"
 	             " FROM receive_table WHERE class=?");
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	pdot = tmp_class + class_len;
 	do {
 		*pdot = '\0';
@@ -68,9 +67,8 @@ BOOL exmdb_server::get_folder_by_class(const char *dir,
 	if (*str_explicit == nullptr)
 		return false;
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	*pid = sqlite3_step(pstmt) == SQLITE_ROW ?
 	       rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 0)) :
 	       rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
@@ -92,22 +90,19 @@ BOOL exmdb_server::set_folder_by_class(const char *dir,
 	if (0 == folder_id) {
 		auto pstmt = gx_sql_prep(pdb->psqlite, "DELETE FROM"
 		             " receive_table WHERE class=?");
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr)
 			return FALSE;
-		}
 		sqlite3_bind_text(pstmt, 1, str_class, -1, SQLITE_STATIC);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
-		}
 		*pb_result = TRUE;
 		return TRUE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM folders WHERE"
 	          " folder_id=%llu", LLU{rop_util_get_gc_value(folder_id)});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		*pb_result = FALSE;
 		return TRUE;
@@ -123,14 +118,12 @@ BOOL exmdb_server::set_folder_by_class(const char *dir,
 	snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO receive_table"
 	         " VALUES (?, ?, %llu)", LLU{rop_util_current_nttime()});
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	sqlite3_bind_text(pstmt, 1, str_class, -1, SQLITE_STATIC);
 	sqlite3_bind_int64(pstmt, 2, rop_util_get_gc_value(folder_id));
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -158,45 +151,38 @@ BOOL exmdb_server::get_folder_class_table(
 		return TRUE;
 	}
 	ptable->pparray = cu_alloc<TPROPVAL_ARRAY *>(total_count);
-	if (NULL == ptable->pparray) {
+	if (ptable->pparray == nullptr)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT class, folder_id,"
 					" modified_time FROM receive_table");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	ptable->count = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		auto ppropvals = cu_alloc<TPROPVAL_ARRAY>();
-		if (NULL == ppropvals) {
+		if (ppropvals == nullptr)
 			return FALSE;
-		}
 		ppropvals->count = 3;
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
-		if (NULL == ppropvals->ppropval) {
+		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		}
 		ppropvals->ppropval[0].proptag = PidTagFolderId;
 		auto v = cu_alloc<uint64_t>();
 		ppropvals->ppropval[0].pvalue = v;
-		if (NULL == ppropvals->ppropval[0].pvalue) {
+		if (ppropvals->ppropval[0].pvalue == nullptr)
 			return FALSE;
-		}
 		*v = rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 1));
 		ppropvals->ppropval[1].proptag = PR_MESSAGE_CLASS_A;
 		ppropvals->ppropval[1].pvalue =
 			common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)));
-		if (NULL == ppropvals->ppropval[1].pvalue) {
+		if (ppropvals->ppropval[1].pvalue == nullptr)
 			return FALSE;
-		}
 		ppropvals->ppropval[2].proptag = PR_LAST_MODIFICATION_TIME;
 		v = cu_alloc<uint64_t>();
 		ppropvals->ppropval[2].pvalue = v;
-		if (NULL == ppropvals->ppropval[2].pvalue) {
+		if (ppropvals->ppropval[2].pvalue == nullptr)
 			return FALSE;
-		}
 		*v = sqlite3_column_int64(pstmt, 2);
 		ptable->pparray[ptable->count++] = ppropvals;
 	}
@@ -238,12 +224,8 @@ BOOL exmdb_server::query_folder_messages(const char *dir,
 			" messages WHERE parent_fid=%llu AND is_associated=0",
 			LLU{rop_util_get_gc_value(folder_id)});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
-	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
 	pset->count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(pset->count);
@@ -255,46 +237,39 @@ BOOL exmdb_server::query_folder_messages(const char *dir,
 			" mid_string FROM messages WHERE parent_fid=%llu AND "
 			"is_associated=0", LLU{rop_util_get_gc_value(folder_id)});
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT propval "
 	              "FROM message_properties WHERE message_id=?"
 	              " AND proptag=?");
-	if (pstmt1 == nullptr) {
+	if (pstmt1 == nullptr)
 		return FALSE;
-	}
 	for (size_t i = 0; i < pset->count; ++i) {
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_ROW)
 			return FALSE;
-		}
 		auto ppropvals = cu_alloc<TPROPVAL_ARRAY>();
-		if (NULL == ppropvals) {
+		if (ppropvals == nullptr)
 			return FALSE;
-		}
 		pset->pparray[i] = ppropvals;
 		ppropvals->count = 0;
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(5);
-		if (NULL == ppropvals->ppropval) {
+		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		}
 		message_id = sqlite3_column_int64(pstmt, 0);
 		auto *pv = &ppropvals->ppropval[ppropvals->count];
 		pv->proptag = PidTagMid;
 		auto uv = cu_alloc<uint64_t>();
 		pv->pvalue = uv;
-		if (pv->pvalue == nullptr) {
+		if (pv->pvalue == nullptr)
 			return FALSE;
-		}
 		*uv = rop_util_make_eid_ex(1, message_id);
 		ppropvals->count ++;
 		++pv;
 		if (SQLITE_NULL != sqlite3_column_type(pstmt, 2)) {
 			pv->proptag = PidTagMidString;
 			pv->pvalue = common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 2)));
-			if (pv->pvalue == nullptr) {
+			if (pv->pvalue == nullptr)
 				return FALSE;
-			}
 			ppropvals->count ++;
 			++pv;
 		}
@@ -306,15 +281,13 @@ BOOL exmdb_server::query_folder_messages(const char *dir,
 			message_flags &= ~(MSGFLAG_READ | MSGFLAG_HASATTACH |
 			                 MSGFLAG_FROMME | MSGFLAG_ASSOCIATED |
 			                 MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING);
-			if (0 != sqlite3_column_int64(pstmt, 1)) {
+			if (pstmt.col_int64(1) != 0)
 				message_flags |= MSGFLAG_READ;
-			}
 			pv->proptag = PR_MESSAGE_FLAGS;
 			auto iv = cu_alloc<uint32_t>();
 			pv->pvalue = iv;
-			if (pv->pvalue == nullptr) {
+			if (pv->pvalue == nullptr)
 				return FALSE;
-			}
 			*iv = message_flags;
 			ppropvals->count ++;
 			++pv;
@@ -326,9 +299,8 @@ BOOL exmdb_server::query_folder_messages(const char *dir,
 			pv->proptag = PR_LAST_MODIFICATION_TIME;
 			uv = cu_alloc<uint64_t>();
 			pv->pvalue = uv;
-			if (pv->pvalue == nullptr) {
+			if (pv->pvalue == nullptr)
 				return FALSE;
-			}
 			*uv = sqlite3_column_int64(pstmt1, 0);
 			ppropvals->count ++;
 			++pv;
@@ -340,9 +312,8 @@ BOOL exmdb_server::query_folder_messages(const char *dir,
 			pv->proptag = PR_MESSAGE_DELIVERY_TIME;
 			uv = cu_alloc<uint64_t>();
 			pv->pvalue = uv;
-			if (pv->pvalue == nullptr) {
+			if (pv->pvalue == nullptr)
 				return FALSE;
-			}
 			*uv = sqlite3_column_int64(pstmt1, 0);
 			ppropvals->count ++;
 			++pv;
@@ -367,9 +338,8 @@ BOOL exmdb_server::check_folder_deleted(const char *dir,
 				"FROM folders WHERE folder_id=%llu",
 				LLU{rop_util_get_gc_value(folder_id)});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	*pb_del = sqlite3_step(pstmt) != SQLITE_ROW || sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
 	return TRUE;
 }
@@ -475,9 +445,8 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
 		          " folders WHERE folder_id=%llu", LLU{tmp_val});
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr)
 			return FALSE;
-		}
 		if (sqlite3_step(pstmt) == SQLITE_ROW)
 			return TRUE;
 		if (!common_util_check_allocated_eid(pdb->psqlite, tmp_val, &b_result))
@@ -489,9 +458,8 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 	            "ON f.folder_id=fp.folder_id AND fp.proptag=? "
 	            "WHERE f.parent_id=? and fp.propval=? COLLATE NOCASE";
 	auto pstmt = gx_sql_prep(pdb->psqlite, qstr);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	pstmt.bind_int64(1, PR_DISPLAY_NAME);
 	pstmt.bind_int64(2, parent_id);
 	pstmt.bind_text(3, pname);
@@ -527,22 +495,19 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 		pstmt = gx_sql_prep(pdb->psqlite, "INSERT INTO folders "
 		        "(folder_id, parent_id, change_number, "
 		        "cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr)
 			return FALSE;
-		}
 		sqlite3_bind_int64(pstmt, 1, folder_id);
 		sqlite3_bind_int64(pstmt, 2, parent_id);
 		sqlite3_bind_int64(pstmt, 3, change_num);
 		sqlite3_bind_int64(pstmt, 4, cur_eid);
 		sqlite3_bind_int64(pstmt, 5, max_eid);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
-		}
 		pstmt.finalize();
 		if (!cu_set_properties(db_table::folder_props,
-			folder_id, cpid, pdb->psqlite, pproperties, &tmp_problems)) {
+		    folder_id, cpid, pdb->psqlite, pproperties, &tmp_problems))
 			return FALSE;
-		}
 		next = 1;
 		tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER_NEXT;
 		tmp_propval.pvalue = &next;
@@ -564,20 +529,17 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 		pstmt = gx_sql_prep(pdb->psqlite, "INSERT INTO folders (folder_id,"
 		        " parent_id, change_number, is_search, cur_eid, "
 		        "max_eid) VALUES (?, ?, ?, 1, 0, 0)");
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr)
 			return FALSE;
-		}
 		sqlite3_bind_int64(pstmt, 1, folder_id);
 		sqlite3_bind_int64(pstmt, 2, parent_id);
 		sqlite3_bind_int64(pstmt, 3, change_num);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
-		}
 		pstmt.finalize();
 		if (!cu_set_properties(db_table::folder_props,
-			folder_id, cpid, pdb->psqlite, pproperties, &tmp_problems)) {
+		    folder_id, cpid, pdb->psqlite, pproperties, &tmp_problems))
 			return FALSE;
-		}
 	}
 	if (!common_util_allocate_folder_art(pdb->psqlite, &art))
 		return FALSE;
@@ -623,14 +585,12 @@ BOOL exmdb_server::get_folder_all_proptags(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!cu_get_proptags(db_table::folder_props,
-		rop_util_get_gc_value(folder_id), pdb->psqlite, &tmp_proptags)) {
+	    rop_util_get_gc_value(folder_id), pdb->psqlite, &tmp_proptags))
 		return FALSE;
-	}
 	pdb.reset();
-	for (i=0; i<tmp_proptags.count; i++) {
+	for (i = 0; i < tmp_proptags.count; ++i)
 		if (tmp_proptags.pproptag[i] == PR_SOURCE_KEY)
 			break;
-	}
 	if (i < tmp_proptags.count) {
 		*pproptags = tmp_proptags;
 	} else {
@@ -655,10 +615,9 @@ BOOL exmdb_server::get_folder_properties(const char *dir, uint32_t cpid,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!cu_get_properties(db_table::folder_props,
-		rop_util_get_gc_value(folder_id), cpid, pdb->psqlite,
-		pproptags, ppropvals)) {
+	    rop_util_get_gc_value(folder_id), cpid, pdb->psqlite,
+	    pproptags, ppropvals))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -684,15 +643,13 @@ BOOL exmdb_server::set_folder_properties(const char *dir, uint32_t cpid,
 				continue;
 			if (!cu_set_property(db_table::folder_props, PRIVATE_FID_INBOX,
 			    0, pdb->psqlite, &pproperties->ppropval[i],
-			    &b_result)) {
+			    &b_result))
 				return FALSE;
-			}
 		}
 	}
 	if (!cu_set_properties(db_table::folder_props,
-		fid_val, cpid, pdb->psqlite, pproperties, pproblems)) {
+	    fid_val, cpid, pdb->psqlite, pproperties, pproblems))
 		return FALSE;
-	}
 	sql_transact.commit();
 	db_engine_notify_folder_modification(pdb,
 		common_util_get_folder_parent_fid(
@@ -710,9 +667,8 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 	fid_val = rop_util_get_gc_value(folder_id);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!cu_remove_properties(db_table::folder_props,
-		fid_val, pdb->psqlite, pproptags)) {
+	    fid_val, pdb->psqlite, pproptags))
 		return FALSE;
-	}
 	sql_transact.commit();
 	db_engine_notify_folder_modification(pdb,
 		common_util_get_folder_parent_fid(
@@ -777,9 +733,8 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 					continue;
 				}
 			}
-			if (NULL != pmessage_count) {
+			if (pmessage_count != nullptr)
 				(*pmessage_count) ++;
-			}
 			if (is_associated && pfai_size != nullptr)
 				*pfai_size += sqlite3_column_int64(pstmt, 2);
 			else if (!is_associated && pnormal_size != nullptr)
@@ -1050,15 +1005,12 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT is_search FROM"
 		          " folders WHERE folder_id=%llu", LLU{fid_val});
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr)
 			return FALSE;
-		}
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_ROW)
 			return TRUE;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 0)) {
+		if (pstmt.col_int64(0) != 0)
 			b_search = TRUE;
-		}
 	} else if (fid_val < PUBLIC_FID_CUSTOM) {
 		*pb_result = FALSE;
 		return TRUE;
@@ -1092,9 +1044,8 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM"
 		          " search_result WHERE folder_id=%llu", LLU{fid_val});
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr)
 			return FALSE;
-		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			db_engine_proc_dynamic_event(pdb, cpid,
 				DYNAMIC_EVENT_DELETE_MESSAGE, fid_val,
@@ -1140,18 +1091,15 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 		"SET propval=%llu WHERE folder_id=%llu AND proptag=?",
 		LLU{rop_util_current_nttime()}, LLU{parent_id});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	sqlite3_bind_int64(pstmt, 0, PR_HIER_REV);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 0, PR_LOCAL_COMMIT_TIME_MAX);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	pstmt.finalize();
 	sql_transact.commit();
 	*pb_result = TRUE;
@@ -1230,9 +1178,8 @@ BOOL exmdb_server::check_folder_cycle(const char *dir,
 		return FALSE;
 	if (!common_util_check_descendant(pdb->psqlite,
 	    rop_util_get_gc_value(dst_fid), rop_util_get_gc_value(src_fid),
-	    pb_cycle)) {
+	    pb_cycle))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1270,9 +1217,8 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	sqlite3_bind_int64(pstmt, 3, change_num);
 	sqlite3_bind_int64(pstmt, 4, last_eid + 2);
 	sqlite3_bind_int64(pstmt, 5, last_eid + ALLOCATED_EID_RANGE);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folder_properties "
 		"(folder_id, proptag, propval) SELECT %llu, proptag,"
@@ -1289,9 +1235,8 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 		sqlite3_bind_int64(pstmt, 2, frightsOwner);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
-		}
 		pstmt.finalize();
 	}
 	if (!common_util_allocate_folder_art(psqlite, &art))
@@ -1305,39 +1250,33 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, art);
 	sqlite3_bind_int64(pstmt, 2, PR_INTERNET_ARTICLE_NUMBER);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, 1);
 	sqlite3_bind_int64(pstmt, 2, PR_INTERNET_ARTICLE_NUMBER_NEXT);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
 	sqlite3_bind_int64(pstmt, 2, PR_LAST_MODIFICATION_TIME);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
 	sqlite3_bind_int64(pstmt, 2, PR_LOCAL_COMMIT_TIME_MAX);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, 0);
 	sqlite3_bind_int64(pstmt, 2, PR_HIERARCHY_CHANGE_NUM);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
 	sqlite3_bind_int64(pstmt, 2, PR_HIER_REV);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	*pdst_fid = last_eid + 1;
 	return TRUE;
 }
@@ -1379,9 +1318,8 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 		sqlite3_bind_int64(pstmt, 2, frightsOwner);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
-		}
 	}
 	if (!common_util_allocate_folder_art(pdb->psqlite, &art))
 		return FALSE;
@@ -1394,33 +1332,28 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, art);
 	sqlite3_bind_int64(pstmt, 2, PR_INTERNET_ARTICLE_NUMBER);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
 	sqlite3_bind_int64(pstmt, 2, PR_LAST_MODIFICATION_TIME);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
 	sqlite3_bind_int64(pstmt, 2, PR_LOCAL_COMMIT_TIME_MAX);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, 0);
 	sqlite3_bind_int64(pstmt, 2, PR_HIERARCHY_CHANGE_NUM);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
 	sqlite3_bind_int64(pstmt, 2, PR_HIER_REV);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
-	}
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result (folder_id, "
 		"message_id) SELECT %llu, message_id WHERE folder_id=%llu",
@@ -1432,11 +1365,10 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW)
 		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_NEW_MESSAGE, last_eid,
 			sqlite3_column_int64(pstmt, 0), 0);
-	}
 	*pdst_fid = last_eid;
 	return TRUE;
 }
@@ -1519,13 +1451,11 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 					continue;
 				}
 				if (0 == is_associated) {
-					if (NULL != pnormal_size) {
+					if (pnormal_size != nullptr)
 						*pnormal_size += message_size;
-					}
 				} else {
-					if (NULL != pfai_size) {
+					if (pfai_size != nullptr)
 						*pfai_size += message_size;
-					}
 				}
 				db_engine_proc_dynamic_event(pdb, cpid,
 					DYNAMIC_EVENT_NEW_MESSAGE,
@@ -1588,13 +1518,11 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				continue;
 			}
 			if (0 == is_associated) {
-				if (NULL != pnormal_size) {
+				if (pnormal_size != nullptr)
 					*pnormal_size += message_size;
-				}
 			} else {
-				if (NULL != pfai_size) {
+				if (pfai_size != nullptr)
 					*pfai_size += message_size;
-				}
 			}
 			db_engine_proc_dynamic_event(pdb, cpid,
 				DYNAMIC_EVENT_NEW_MESSAGE, dst_fid,
@@ -1641,13 +1569,11 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				continue;
 			}
 			if (0 == is_associated) {
-				if (NULL != pnormal_size) {
+				if (pnormal_size != nullptr)
 					*pnormal_size += message_size;
-				}
 			} else {
-				if (NULL != pfai_size) {
+				if (pfai_size != nullptr)
 					*pfai_size += message_size;
-				}
 			}
 			db_engine_proc_dynamic_event(pdb, cpid,
 				DYNAMIC_EVENT_NEW_MESSAGE, dst_fid,
@@ -1698,9 +1624,8 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 			*pb_partial = TRUE;
 			continue;
 		}
-		if (NULL != pfolder_count) {
+		if (pfolder_count != nullptr)
 			(*pfolder_count) ++;
-		}
 		if (folder_type == FOLDER_SEARCH)
 			continue;
 		if (!folder_copy_folder_internal(pdb, account_id,
@@ -1735,9 +1660,8 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 	src_val = rop_util_get_gc_value(src_fid);
 	dst_val = rop_util_get_gc_value(dst_fid);
 	if (!common_util_check_descendant(pdb->psqlite, dst_fid,
-	    src_val, pb_collid)) {
+	    src_val, pb_collid))
 		return FALSE;
-	}
 	if (*pb_collid)
 		return TRUE;
 	folder_count = 0;
@@ -1829,9 +1753,8 @@ BOOL exmdb_server::movecopy_folder(const char *dir,
 	}
 	if (!b_copy) {
 		if (!common_util_check_descendant(pdb->psqlite, dst_val,
-		    src_val, &b_included)) {
+		    src_val, &b_included))
 			return FALSE;
-		}
 		if (b_included) {
 			*pb_partial = TRUE;
 			return TRUE;
@@ -1847,13 +1770,11 @@ BOOL exmdb_server::movecopy_folder(const char *dir,
 			"SET propval=? WHERE folder_id=%llu AND proptag=%u",
 		        LLU{src_val}, PR_DISPLAY_NAME);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr)
 			return FALSE;
-		}
 		sqlite3_bind_text(pstmt, 1, str_new, -1, SQLITE_STATIC);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
-		}
 		pstmt.finalize();
 		nt_time = rop_util_current_nttime();
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
@@ -1896,13 +1817,11 @@ BOOL exmdb_server::movecopy_folder(const char *dir,
 			"SET propval=? WHERE folder_id=%llu AND proptag=%u",
 		        LLU{fid_val}, PR_DISPLAY_NAME);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr) {
+		if (pstmt == nullptr)
 			return FALSE;
-		}
 		sqlite3_bind_text(pstmt, 1, str_new, -1, SQLITE_STATIC);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
-		}
 		pstmt.finalize();
 		if (folder_type != FOLDER_SEARCH) {
 			normal_size = 0;
@@ -1957,18 +1876,16 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 				" search_flags, search_criteria FROM "
 				"folders WHERE folder_id=%llu", LLU{fid_val});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	if (SQLITE_ROW != sqlite3_step(pstmt) ||
 		0 == sqlite3_column_int64(pstmt, 0) ||
 		NULL == sqlite3_column_blob(pstmt, 2) ||
 		0 == sqlite3_column_bytes(pstmt, 2)) {
 		pstmt.finalize();
 		*psearch_status = SEARCH_STATUS_NOT_INITIALIZED;
-		if (NULL != pprestriction) {
+		if (pprestriction != nullptr)
 			*pprestriction = NULL;
-		}
 		if (NULL != pfolder_ids) {
 			pfolder_ids->count = 0;
 			pfolder_ids->pll = NULL;
@@ -1980,10 +1897,8 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 		ext_pull.init(sqlite3_column_blob(pstmt, 2),
 			sqlite3_column_bytes(pstmt, 2), common_util_alloc, 0);
 		*pprestriction = cu_alloc<RESTRICTION>();
-		if (NULL == *pprestriction) {
-			return FALSE;
-		}
-		if (ext_pull.g_restriction(*pprestriction) != EXT_ERR_SUCCESS)
+		if (*pprestriction == nullptr ||
+		    ext_pull.g_restriction(*pprestriction) != EXT_ERR_SUCCESS)
 			return FALSE;
 	}
 	pstmt.finalize();
@@ -1991,11 +1906,10 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	    !common_util_load_search_scopes(pdb->psqlite, fid_val, pfolder_ids))
 		return FALSE;
 	pdb.reset();
-	if (NULL != pfolder_ids) {
+	if (pfolder_ids != nullptr)
 		for (size_t i = 0; i < pfolder_ids->count; ++i)
 			pfolder_ids->pll[i] = rop_util_make_eid_ex(
 								1, pfolder_ids->pll[i]);
-	}
 	*psearch_status = 0;
 	if (db_engine_check_populating(dir, fid_val))
 		*psearch_status |= SEARCH_REBUILD;
@@ -2025,11 +1939,10 @@ static BOOL folder_clear_search_folder(db_item_ptr &pdb,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW)
 		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_DELETE_MESSAGE, folder_id,
 			sqlite3_column_int64(pstmt, 0), 0);
-	}
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_result"
 	        " WHERE folder_id=%llu", LLU{folder_id});
@@ -2066,9 +1979,8 @@ BOOL exmdb_server::set_search_criteria(const char *dir,
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
 			fid_val1 = rop_util_get_gc_value(pfolder_ids->pll[i]);
 			if (!common_util_check_descendant(pdb->psqlite, fid_val,
-			    fid_val1, &b_included)) {
+			    fid_val1, &b_included))
 				return FALSE;	
-			}
 			if (b_included) {
 				*pb_result = FALSE;
 				return TRUE;
@@ -2097,39 +2009,33 @@ BOOL exmdb_server::set_search_criteria(const char *dir,
 		if (pstmt == nullptr)
 			return false;
 		sqlite3_bind_blob(pstmt, 1, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_DONE)
 			return false;
-		}
 		pstmt.finalize();
 	} else {
-		if (0 == original_flags) {
+		if (original_flags == 0)
 			return false;
-		}
 		prestriction = cu_alloc<RESTRICTION>();
-		if (NULL == prestriction) {
+		if (prestriction == nullptr)
 			return false;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT search_criteria FROM"
 		          " folders WHERE folder_id=%llu", LLU{fid_val});
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return false;
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_ROW)
 			return false;
-		}
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_pull.g_restriction(deconst(prestriction)) != EXT_ERR_SUCCESS) {
+		if (ext_pull.g_restriction(deconst(prestriction)) != EXT_ERR_SUCCESS)
 			return false;
-		}
 		pstmt.finalize();
 	}
 	if (pfolder_ids->count > 0) {
 		folder_ids.count = 0;
 		folder_ids.pll = cu_alloc<uint64_t>(pfolder_ids->count);
-		if (NULL == folder_ids.pll) {
+		if (folder_ids.pll == nullptr)
 			return false;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_scopes"
 		        " WHERE folder_id=%llu", LLU{fid_val});
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
@@ -2147,27 +2053,23 @@ BOOL exmdb_server::set_search_criteria(const char *dir,
 			folder_ids.pll[folder_ids.count] =
 				rop_util_get_gc_value(pfolder_ids->pll[i]);
 			sqlite3_bind_int64(pstmt1, 1, folder_ids.pll[folder_ids.count]);
-			if (SQLITE_ROW != sqlite3_step(pstmt1)) {
+			if (pstmt1.step() != SQLITE_ROW)
 				return false;
-			}
 			if (0 == sqlite3_column_int64(pstmt1, 0)) {
 				sqlite3_reset(pstmt);
 				sqlite3_reset(pstmt1);
 				continue;
 			}
 			sqlite3_bind_int64(pstmt, 1, folder_ids.pll[folder_ids.count]);
-			if (SQLITE_DONE != sqlite3_step(pstmt)) {
+			if (pstmt.step() != SQLITE_DONE)
 				return false;
-			}
 			sqlite3_reset(pstmt);
 			sqlite3_reset(pstmt1);
 			folder_ids.count ++;
 		}
 	} else {
-		if (0 == original_flags) {
-			return false;
-		}
-		if (!common_util_load_search_scopes(pdb->psqlite, fid_val, &folder_ids))
+		if (original_flags == 0 ||
+		    !common_util_load_search_scopes(pdb->psqlite, fid_val, &folder_ids))
 			return false;
 	}
 	b_recursive = (search_flags & RECURSIVE_SEARCH) ? TRUE : false;
@@ -2259,9 +2161,8 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	}
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 	sqlite3_bind_int64(pstmt, 2, permission);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_DONE)
 		return false;
-	}
 	sqlite3_reset(pstmt);
 	return true;
 }
@@ -2292,9 +2193,8 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 			if (pstmt1 == nullptr)
 				return false;
 			uint32_t permission = rightsNone;
-			if (SQLITE_ROW == sqlite3_step(pstmt1)) {
+			if (pstmt1.step() == SQLITE_ROW)
 				permission = sqlite3_column_int64(pstmt1, 0);
-			}
 			pstmt1.finalize();
 			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO permissions"
 						" (folder_id, username, permission) VALUES"
@@ -2304,9 +2204,8 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 				return false;
 			sqlite3_bind_text(pstmt1, 1, "default", -1, SQLITE_STATIC);
 			sqlite3_bind_int64(pstmt1, 2, permission);
-			if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+			if (pstmt1.step() != SQLITE_DONE)
 				return false;
-			}
 			member_id = sqlite3_last_insert_rowid(pdb->psqlite);
 		} else {
 			member_id = sqlite3_column_int64(pstmt1, 0);
@@ -2465,9 +2364,8 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 			}
 			auto pname = prow[i].propvals.get<const char>(PR_RULE_NAME);
 			auto pprovider = prow[i].propvals.get<const char>(PR_RULE_PROVIDER);
-			if (NULL == pprovider) {
+			if (pprovider == nullptr)
 				continue;
-			}
 			uint32_t seq_id;
 			auto num = prow[i].propvals.get<const uint32_t>(PR_RULE_SEQUENCE);
 			if (num == nullptr) {
@@ -2489,17 +2387,15 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 			auto puser_flags = prow[i].propvals.get<const uint32_t>(PR_RULE_USER_FLAGS);
 			auto pprovider_bin = prow[i].propvals.get<const BINARY>(PR_RULE_PROVIDER_DATA);
 			auto pcondition = prow[i].propvals.get<RESTRICTION>(PR_RULE_CONDITION);
-			if (NULL == pcondition) {
+			if (pcondition == nullptr)
 				continue;
-			}
 			if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
 			    ext_push.p_restriction(*pcondition) != EXT_ERR_SUCCESS)
 				return false;
 			int condition_len = ext_push.m_offset;
 			auto paction = prow[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
-			if (NULL == paction) {
+			if (paction == nullptr)
 				continue;
-			}
 			if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
 			    ext_push.p_rule_actions(*paction) != EXT_ERR_SUCCESS)
 				return false;
@@ -2513,33 +2409,29 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 				if (pstmt == nullptr)
 					return false;
 			}
-			if (NULL != pname) {
+			if (pname != nullptr)
 				sqlite3_bind_text(pstmt, 1, pname, -1, SQLITE_STATIC);
-			} else {
+			else
 				sqlite3_bind_null(pstmt, 1);
-			}
 			sqlite3_bind_text(pstmt, 2, pprovider, -1, SQLITE_STATIC);
 			sqlite3_bind_int64(pstmt, 3, seq_id);
 			sqlite3_bind_int64(pstmt, 4, state);
 			sqlite3_bind_int64(pstmt, 5, plevel != nullptr ? *plevel : 0);
-			if (NULL != puser_flags) {
+			if (puser_flags != nullptr)
 				sqlite3_bind_int64(pstmt, 6, *puser_flags);
-			} else {
+			else
 				sqlite3_bind_null(pstmt, 6);
-			}
-			if (NULL != pprovider_bin && pprovider_bin->cb > 0) {
+			if (pprovider_bin != nullptr && pprovider_bin->cb > 0)
 				sqlite3_bind_blob(pstmt, 7, pprovider_bin->pb,
 					pprovider_bin->cb, SQLITE_STATIC);
-			} else {
+			else
 				sqlite3_bind_null(pstmt, 7);
-			}
 			sqlite3_bind_blob(pstmt, 8, condition_buff,
 				condition_len, SQLITE_STATIC);
 			sqlite3_bind_blob(pstmt, 9, action_buff,
 				action_len, SQLITE_STATIC);
-			if (SQLITE_DONE != sqlite3_step(pstmt)) {
+			if (pstmt.step() != SQLITE_DONE)
 				return false;
-			}
 			sqlite3_reset(pstmt);
 			break;
 		}
@@ -2565,9 +2457,8 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 				if (pstmt1 == nullptr)
 					return false;
 				sqlite3_bind_text(pstmt1, 1, pprovider, -1, SQLITE_STATIC);
-				if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+				if (pstmt1.step() != SQLITE_DONE)
 					return false;
-				}
 				pstmt1.finalize();
 			}
 			auto num = prow[i].propvals.get<const uint32_t>(PR_RULE_SEQUENCE);
@@ -2607,9 +2498,8 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 					return false;
 				sqlite3_bind_blob(pstmt1, 1, pprovider_bin->pb,
 						pprovider_bin->cb, SQLITE_STATIC);
-				if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+				if (pstmt1.step() != SQLITE_DONE)
 					return false;
-				}
 				pstmt1.finalize();
 			}
 			auto pcondition = prow[i].propvals.get<RESTRICTION>(PR_RULE_CONDITION);
@@ -2644,9 +2534,8 @@ BOOL exmdb_server::update_folder_rule(const char *dir,
 					return false;
 				sqlite3_bind_blob(pstmt1, 1, action_buff,
 						action_len, SQLITE_STATIC);
-				if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+				if (pstmt1.step() != SQLITE_DONE)
 					return false;
-				}
 				pstmt1.finalize();
 			}
 			break;
