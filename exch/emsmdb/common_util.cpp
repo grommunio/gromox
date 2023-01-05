@@ -1477,7 +1477,8 @@ void common_util_notify_receipt(const char *username, int type,
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	if (!emsmdb_bouncer_make(username, pbrief, bounce_type, &imail))
 		return;
-	cu_send_mail(&imail, username, rcpt_list);
+	if (cu_send_mail(&imail, username, rcpt_list) != ecSuccess)
+		/* ignore */;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2035: ENOMEM");
 }
@@ -1599,7 +1600,7 @@ static int common_util_get_response(int sockd,
 	return SMTP_UNKOWN_RESPONSE;
 }
 
-BOOL cu_send_mail(MAIL *pmail, const char *sender,
+ec_error_t cu_send_mail(MAIL *pmail, const char *sender,
     const std::vector<std::string> &rcpt_list)
 {
 	int res_val;
@@ -1610,14 +1611,14 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 	MAIL dot_encoded(pmail->pmime_pool);
 	if (pmail->check_dot()) {
 		if (!pmail->transfer_dot(&dot_encoded, true))
-			return false;
+			return ecError;
 		pmail = &dot_encoded;
 	}
 	int sockd = gx_inet_connect(g_smtp_ip, g_smtp_port, 0);
 	if (sockd < 0) {
 		mlog2(LV_ERR, "Cannot connect to SMTP server [%s]:%hu: %s",
 			g_smtp_ip, g_smtp_port, strerror(-sockd));
-		return FALSE;
+		return ecNetwork;
 	}
 	/* read welcome information of MTA */
 	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
@@ -1626,7 +1627,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "Timeout with SMTP server [%s]:%hu",
 			g_smtp_ip, g_smtp_port);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_PERMANENT_ERROR:
 	case SMTP_TEMP_ERROR:
 	case SMTP_UNKOWN_RESPONSE:
@@ -1635,7 +1636,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "Failed to connect to SMTP. "
 			"Server response is \"%s\"", last_response);
-		return FALSE;
+		return ecNetwork;
 	}
 
 	/* send helo xxx to server */
@@ -1644,7 +1645,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
 		mlog2(LV_ERR, "Failed to send \"HELO\" command");
-		return FALSE;
+		return ecNetwork;
 	}
 	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
 	switch (res_val) {
@@ -1652,7 +1653,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "Timeout with SMTP "
 			"server [%s]:%hu", g_smtp_ip, g_smtp_port);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_PERMANENT_ERROR:
 	case SMTP_TEMP_ERROR:
 	case SMTP_UNKOWN_RESPONSE:
@@ -1661,14 +1662,14 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "SMTP server responded with \"%s\" "
 			"after sending \"HELO\" command", last_response);
-		return FALSE;
+		return ecNetwork;
 	}
 
 	command_len = sprintf(last_command, "mail from:<%s>\r\n", sender);
 	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
 		mlog2(LV_ERR, "Failed to send \"MAIL FROM\" command");
-		return FALSE;
+		return ecNetwork;
 	}
 	/* read mail from response information */
 	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
@@ -1677,7 +1678,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "Timeout with SMTP server [%s]:%hu",
 			g_smtp_ip, g_smtp_port);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_PERMANENT_ERROR:
 		case SMTP_TEMP_ERROR:
 		case SMTP_UNKOWN_RESPONSE:
@@ -1686,7 +1687,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "SMTP server responded \"%s\" "
 			"after sending \"MAIL FROM\" command", last_response);
-		return FALSE;
+		return ecNetwork;
 	}
 
 	for (const auto &eaddr : rcpt_list) {
@@ -1696,7 +1697,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		if (!common_util_send_command(sockd, last_command, command_len)) {
 			close(sockd);
 			mlog2(LV_ERR, "Failed to send \"RCPT TO\" command");
-			return FALSE;
+			return ecNetwork;
 		}
 		/* read rcpt to response information */
 		res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
@@ -1705,7 +1706,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 			close(sockd);
 			mlog2(LV_ERR, "Timeout with SMTP server [%s]:%hu",
 				g_smtp_ip, g_smtp_port);
-			return FALSE;
+			return ecNetwork;
 		case SMTP_PERMANENT_ERROR:
 		case SMTP_TEMP_ERROR:
 		case SMTP_UNKOWN_RESPONSE:
@@ -1713,7 +1714,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 			close(sockd);
 			mlog2(LV_ERR, "SMTP server responded with \"%s\" "
 				"after sending \"RCPT TO\" command", last_response);
-			return FALSE;
+			return ecNetwork;
 		}						
 	}
 	/* send data */
@@ -1723,7 +1724,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "Sender %s: Failed "
 			"to send \"DATA\" command", sender);
-		return FALSE;
+		return ecNetwork;
 	}
 
 	/* read data response information */
@@ -1733,7 +1734,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "Sender %s: Timeout with SMTP server [%s]:%hu",
 			sender, g_smtp_ip, g_smtp_port);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_PERMANENT_ERROR:
 	case SMTP_TEMP_ERROR:
 	case SMTP_UNKOWN_RESPONSE:
@@ -1741,7 +1742,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "Sender %s: SMTP server responded \"%s\" "
 			"after sending \"DATA\" command", sender, last_response);
-		return FALSE;
+		return ecNetwork;
 	}
 
 	pmail->set_header("X-Mailer", "gromox-emsmdb " PACKAGE_VERSION);
@@ -1749,7 +1750,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 	    !common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);
 		mlog2(LV_ERR, "Sender %s: Failed to send mail content", sender);
-		return FALSE;
+		return ecNetwork;
 	}
 	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
 	switch (res_val) {
@@ -1757,7 +1758,7 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "Sender %s: Timeout with SMTP server [%s]:%hu",
 			sender, g_smtp_ip, g_smtp_port);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_PERMANENT_ERROR:
 	case SMTP_TEMP_ERROR:
 	case SMTP_UNKOWN_RESPONSE:	
@@ -1765,15 +1766,15 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		close(sockd);
 		mlog2(LV_ERR, "Sender %s: SMTP server responded \"%s\" "
 					"after sending mail content", sender, last_response);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_SEND_OK:
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
 		mlog2(LV_NOTICE, "emsmdb: outgoing SMTP [%s]:%hu: from=<%s> OK",
 		        g_smtp_ip, g_smtp_port, sender);
-		return TRUE;
+		return ecSuccess;
 	}
-	return false;
+	return ecSuccess;
 }
 
 static void common_util_set_dir(const char *dir)
@@ -1937,7 +1938,8 @@ BOOL common_util_send_message(logon_object *plogon,
 		        LLU{rop_util_get_gc_value(message_id)});
 		return FALSE;	
 	}
-	if (!cu_send_mail(&imail, plogon->get_account(), rcpt_list)) {
+	auto ret = cu_send_mail(&imail, plogon->get_account(), rcpt_list);
+	if (ret != ecSuccess) {
 		mlog2(LV_ERR, "E-1280: Failed to send mid:%llu via SMTP",
 		        LLU{rop_util_get_gc_value(message_id)});
 		return FALSE;

@@ -2756,7 +2756,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	std::vector<std::string> rcpt_list;
 	if (!cu_rcpts_to_list(pmsgctnt->children.prcpts, rcpt_list))
 		return FALSE;
-	cu_send_mail(&imail, tmp_buff, rcpt_list);
+	if (cu_send_mail(&imail, tmp_buff, rcpt_list) != ecSuccess)
+		/* ignore */;
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -2804,7 +2805,8 @@ static ec_error_t message_bounce_message(const char *from_address,
 	const char *pvalue2 = strchr(account, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "postmaster@%s",
 	         pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
-	cu_send_mail(&imail, tmp_buff, rcpt_list);
+	if (cu_send_mail(&imail, tmp_buff, rcpt_list) != ecSuccess)
+		/* ignore */;
 	return ecSuccess;
 }
 
@@ -2973,7 +2975,8 @@ static ec_error_t message_forward_message(const char *from_address,
 		/* Envelope FROM */
 		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
 		           from_address : username, std::size(tmp_buff));
-		cu_send_mail(&imail1, tmp_buff, rcpt_list);
+		if (cu_send_mail(&imail1, tmp_buff, rcpt_list) != ecSuccess)
+			/* ignore */;
 	} else {
 		auto pmime = imail.get_head();
 		if (NULL == pmime) {
@@ -2984,7 +2987,8 @@ static ec_error_t message_forward_message(const char *from_address,
 		/* Envelope FROM */
 		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
 		           from_address : username, std::size(tmp_buff));
-		cu_send_mail(&imail, tmp_buff, rcpt_list);
+		if (cu_send_mail(&imail, tmp_buff, rcpt_list) != ecSuccess)
+			/* ignore */;
 	}
 	return ecSuccess;
 }
