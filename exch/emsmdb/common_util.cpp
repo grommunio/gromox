@@ -1810,8 +1810,7 @@ static BOOL common_util_get_propname(
 	return TRUE;
 }
 
-BOOL common_util_send_message(logon_object *plogon,
-	uint64_t message_id, BOOL b_submit)
+ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_submit)
 {
 	MAIL imail;
 	void *pvalue;
@@ -1831,19 +1830,19 @@ BOOL common_util_send_message(logon_object *plogon,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {
 		mlog2(LV_ERR, "E-1289: Cannot get parent folder_id of mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ecNotFound;
 	}
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
 	if (!exmdb_client::read_message(dir, nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr) {
 		mlog2(LV_ERR, "E-1288: Failed to read mid:%llu from exmdb",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ecRpcFailed;
 	}
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		auto ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
-			return FALSE;
+			return ecServerOOM;
 		}
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
@@ -1855,14 +1854,14 @@ BOOL common_util_send_message(logon_object *plogon,
 	if (message_flags == nullptr) {
 		mlog2(LV_ERR, "E-1287: Failed to get message_flag of mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ecError;
 	}
 	BOOL b_resend = (*message_flags & MSGFLAG_RESEND) ? TRUE : false;
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		mlog2(LV_ERR, "E-1286: Missing recipients for message mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return MAPI_E_NO_RECIPIENTS;
 	}
 
 	std::vector<std::string> rcpt_list;
@@ -1893,14 +1892,14 @@ BOOL common_util_send_message(logon_object *plogon,
 			if (entryid == nullptr) {
 				mlog2(LV_ERR, "E-1285: Cannot get recipient entryid while sending mid:%llu",
 				        LLU{rop_util_get_gc_value(message_id)});
-				return FALSE;
+				return ecInvalidRecips;
 			}
 			char username[UADDR_SIZE];
 			if (!common_util_entryid_to_username(entryid,
 			    username, GX_ARRAY_SIZE(username))) {
 				mlog2(LV_ERR, "E-1284: Cannot convert recipient entryid to SMTP address while sending mid:%llu",
 				        LLU{rop_util_get_gc_value(message_id)});
-				return FALSE;	
+				return ecInvalidRecips;
 			}
 			rcpt_list.emplace_back(username);
 		} else if (strcasecmp(addrtype, "SMTP") == 0) {
@@ -1908,7 +1907,7 @@ BOOL common_util_send_message(logon_object *plogon,
 			if (str == nullptr) {
 				mlog2(LV_ERR, "E-1283: Cannot get email address of recipient of SMTP address type while sending mid:%llu",
 				        LLU{rop_util_get_gc_value(message_id)});
-				return FALSE;
+				return ecInvalidRecips;
 			}
 			rcpt_list.emplace_back(str);
 		} else if (strcasecmp(addrtype, "EX") == 0) {
@@ -1927,7 +1926,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	if (rcpt_list.size() == 0) {
 		mlog2(LV_ERR, "E-1282: Empty converted recipients list while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return MAPI_E_NO_RECIPIENTS;
 	}
 	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(dir);
@@ -1936,13 +1935,13 @@ BOOL common_util_send_message(logon_object *plogon,
 	    common_util_alloc, common_util_get_propids, common_util_get_propname)) {
 		mlog2(LV_ERR, "E-1281: Failed to export to RFC5322 mail while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;	
+		return ecError;	
 	}
 	auto ret = cu_send_mail(&imail, plogon->get_account(), rcpt_list);
 	if (ret != ecSuccess) {
 		mlog2(LV_ERR, "E-1280: Failed to send mid:%llu via SMTP",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ret;
 	}
 	imail.clear();
 	
@@ -1960,29 +1959,29 @@ BOOL common_util_send_message(logon_object *plogon,
 		    ptarget, &folder_id, &new_id)) {
 			mlog2(LV_WARN, "W-1279: Failed to retrieve target entryid while sending mid:%llu",
 			        LLU{rop_util_get_gc_value(message_id)});
-			return FALSE;	
+			return ecWarnWithErrors;	
 		}
 		if (!exmdb_client::clear_submit(dir, message_id, false)) {
 			mlog2(LV_WARN, "W-1278: Failed to clear submit flag while sending mid:%llu",
 			        LLU{rop_util_get_gc_value(message_id)});
-			return FALSE;
+			return ecWarnWithErrors;
 		}
 		if (!exmdb_client::movecopy_message(dir, plogon->account_id,
 		    cpid, message_id, folder_id, new_id, TRUE, &b_result)) {
 			mlog2(LV_WARN, "W-1277: Failed to move to target folder while sending mid:%llu",
 			        LLU{rop_util_get_gc_value(message_id)});
-			return FALSE;
+			return ecWarnWithErrors;
 		}
-		return TRUE;
+		return ecSuccess;
 	} else if (b_delete) {
 		exmdb_client::delete_message(dir, plogon->account_id, cpid,
 			parent_id, message_id, TRUE, &b_result);
-		return TRUE;
+		return ecSuccess;
 	}
 	if (!exmdb_client::clear_submit(dir, message_id, false)) {
 		mlog2(LV_WARN, "W-1276: Failed to clear submit flag while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ecWarnWithErrors;
 	}
 	ids.count = 1;
 	ids.pids = &message_id;
@@ -1994,9 +1993,9 @@ BOOL common_util_send_message(logon_object *plogon,
 	    false, nullptr, parent_id, folder_id, false, &ids, &b_partial)) {
 		mlog2(LV_WARN, "W-1275: Failed to move to \"Sent\" folder while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ecWarnWithErrors;
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
 alloc_limiter<file_block> *common_util_get_allocator()
