@@ -410,24 +410,22 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		timer_id = common_util_add_timer(
 			command_buff, deferred_time);
 		if (0 == timer_id) {
-			goto SUBMIT_FAIL;
+			exmdb_client::clear_submit(dir, pmessage->get_id(), b_unsent);
+			return ecError;
 		}
 		exmdb_client::set_message_timer(dir, pmessage->get_id(), timer_id);
 		pmessage->reload();
 		return ecSuccess;
 	}
 	
-	if (!common_util_send_message(plogon, pmessage->get_id(), TRUE))
-		goto SUBMIT_FAIL;
-	if (!b_delete)
+	auto ret = cu_send_message(plogon, pmessage->get_id(), true);
+	if (ret != ecSuccess && ret != ecWarnWithErrors)
+		exmdb_client::clear_submit(dir, pmessage->get_id(), b_unsent);
+	else if (!b_delete)
 		pmessage->reload();
 	else
 		pmessage->clear_unsent();
-	return ecSuccess;
-
- SUBMIT_FAIL:
-	exmdb_client::clear_submit(dir, pmessage->get_id(), b_unsent);
-	return ecError;
+	return ret;
 }
 
 uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
@@ -671,9 +669,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 			}
 		}
 	}
-	if (!common_util_send_message(plogon, pmessage->get_id(), false))
-		return ecError;
-	return ecSuccess;
+	return cu_send_message(plogon, pmessage->get_id(), false);
 }
 
 uint32_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,

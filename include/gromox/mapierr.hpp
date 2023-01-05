@@ -74,7 +74,7 @@ enum ec_error_t {
 	// ecFolderSetReceive = 0x00000462,
 	ecNoReceiveFolder = 0x00000463,
 	// ecNoDelSubmitMsg = 0x00000465,
-	// ecInvalidRecips = 0x00000467,
+	ecInvalidRecips = 0x00000467,
 	// ecNoReplicaHere = 0x00000468,
 	// ecNoReplicaAvailable = 0x00000469,
 	// ecPublicMDB = 0x0000046A,
