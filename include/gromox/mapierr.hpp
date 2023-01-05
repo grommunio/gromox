@@ -352,7 +352,8 @@ enum ec_error_t {
 	// ecTooManySessions = 0x80040112, /* MAPI_E_SESSION_LIMIT */
 	// ecUserAbort = 0x80040113, /* MAPI_E_USER_CANCEL */
 	ecUnableToAbort = 0x80040114, /* MAPI_E_UNABLE_TO_ABORT */
-	ecRpcFailed = 0x80040115, /* MAPI_E_NETWORK_ERROR */
+	ecRpcFailed = 0x80040115,
+	ecNetwork = 0x80040115, /* MAPI_E_NETWORK_ERROR */
 	// ecReadFault = 0x80040116, /* ecWriteFault, MAPI_E_DISK_ERROR */
 	ecTooComplex = 0x80040117, /* MAPI_E_TOO_COMPLEX */
 	// MAPI_E_BAD_COLUMN = 0x80040118,
