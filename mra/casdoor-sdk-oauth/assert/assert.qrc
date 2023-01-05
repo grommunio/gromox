@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/assert">
+        <file>logo.png</file>
+        <file>favicon.png</file>
+    </qresource>
+</RCC>
