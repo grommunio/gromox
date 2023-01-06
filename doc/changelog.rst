@@ -1,3 +1,30 @@
+Development 2.0.39
+==================
+
+Behavioral changes:
+
+* exmdb_provider: the "exmdb_schema_upgrade" config directive is
+  now enabled by default
+* midb: the "midb_schema_upgrade" config directive is now enabled by default
+* exmdb_provider: increase default value for the "max_store_message_count"
+  directive from 200k to infinity
+* mkmidb: remove no-op -T command-line option
+
+Enhancements:
+
+* exmdb_provider: support for private store message and folder softdelete
+  (and thus the Recover Deleted Items feature in OL)
+* http: print HTTP responses in full, not just until the first \0
+
+Fixes:
+
+* emsmdb: work around OL crash with Recover Deleted Items dialog
+* Deletion of a folder from a public store did trash the store size counter and
+  reduce it by an arbitrary amount towards 0, reporting the store to be smaller
+  than it really was.
+* mt2exm: avoid running into PF-1123 error when -D option is used
+
+
 Gromox 2.0 (2023-01-03)
 =======================
 
