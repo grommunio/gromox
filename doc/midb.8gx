@@ -89,7 +89,7 @@ DB is unavailable and operations on it will be delayed. Connection aborts, if
 any, would be due to timeouts in components other than midb. (The file can
 temporarily grow to double its size, so ample disk space may be required.)
 .br
-Default: \fIno\fP
+Default: \fIyes\fP
 .TP
 \fBmidb_table_size\fP
 Default: \fI5000\fP

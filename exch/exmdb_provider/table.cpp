@@ -142,17 +142,9 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	uint32_t permission;
 	char sql_string[256];
 	
-	if (!exmdb_server::is_private()) {
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT folder_id FROM"
-		         " folders WHERE parent_id=%llu AND is_deleted=%u",
-		         LLU{folder_id}, !!(table_flags & TABLE_FLAG_SOFTDELETES));
-	} else if (table_flags & TABLE_FLAG_SOFTDELETES) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT"
-		        " folder_id FROM folders WHERE 0");
-	} else {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
-		        "FROM folders WHERE parent_id=%llu", LLU{folder_id});
-	}
+	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
+	         " folders WHERE parent_id=%llu AND is_deleted=%u",
+	         LLU{folder_id}, !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
@@ -310,15 +302,10 @@ BOOL exmdb_server::sum_content(const char *dir, uint64_t folder_id,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (exmdb_server::is_private())
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-			" FROM messages WHERE parent_fid=%llu AND "
-			"is_associated=%u", LLU{fid_val}, !!b_fai);
-	else
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-			" FROM messages WHERE parent_fid=%llu AND "
-			"(is_associated=%u AND is_deleted=%u)",
-			LLU{fid_val}, !!b_fai, !!b_deleted);
+	snprintf(sql_string, std::size(sql_string), "SELECT count(*)"
+	         " FROM messages WHERE parent_fid=%llu AND "
+	         "(is_associated=%u AND is_deleted=%u)",
+	         LLU{fid_val}, !!b_fai, !!b_deleted);
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
@@ -604,33 +591,17 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
 	uint32_t *ptable_id, uint32_t *prow_count)
 {
-	int depth;
-	int sql_len, multi_index = 0;
+	int multi_index = 0;
 	size_t tag_count = 0;
 	void *pvalue;
-	uint16_t type;
-	BOOL b_search;
-	uint64_t row_id;
-	uint64_t prev_id;
-	sqlite3 *psqlite;
-	uint64_t mid_val;
-	uint32_t table_id;
-	TABLE_NODE *ptnode;
-	uint64_t parent_fid;
-	uint64_t last_row_id;
-	uint32_t tmp_proptag;
-	char tmp_string[128];
 	char sql_string[1024];
-	DOUBLE_LIST value_list;
 	uint32_t tmp_proptags[16];
 	
 	auto conv_id = (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) ?
 	               get_conv_id(prestriction) : nullptr;
-	if (NULL != psorts && psorts->count >
-		sizeof(tmp_proptags)/sizeof(uint32_t)) {
+	if (psorts != nullptr && psorts->count > std::size(tmp_proptags))
 		return FALSE;	
-	}
-	b_search = FALSE;
+	bool b_search = false;
 	if (!exmdb_server::is_private()) {
 		exmdb_server::set_public_username(username);
 	} else {
@@ -639,24 +610,16 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_ROW)
 			return TRUE;
-		}
-		if (0 != sqlite3_column_int64(pstmt, 0)) {
-			b_search = TRUE;
-		}
+		b_search = pstmt.col_int64(0) != 0;
 	}
 	auto cl_1 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	if (pdb->tables.psqlite == nullptr &&
 	    sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
 	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	if (0 == *ptable_id) {
-		pdb->tables.last_id ++;
-		table_id = pdb->tables.last_id;
-	} else {
-		table_id = *ptable_id;
-	}
+	uint32_t table_id = *ptable_id != 0 ? *ptable_id : ++pdb->tables.last_id;
 	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE t%u "
 		"(row_id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -689,12 +652,11 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
-	ptnode = me_alloc<TABLE_NODE>();
-	if (NULL == ptnode) {
+	auto ptnode = me_alloc<TABLE_NODE>();
+	if (ptnode == nullptr)
 		return FALSE;
-	}
 	xstmt pstmt, pstmt1;
-	psqlite = NULL;
+	sqlite3 *psqlite = nullptr;
 	memset(ptnode, 0, sizeof(TABLE_NODE));
 	ptnode->node.pdata = ptnode;
 	ptnode->table_id = table_id;
@@ -721,62 +683,53 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	});
 	if (NULL != remote_id) {
 		ptnode->remote_id = strdup(remote_id);
-		if (NULL == ptnode->remote_id) {
+		if (ptnode->remote_id == nullptr)
 			return false;
-		}
 	}
 	ptnode->type = TABLE_TYPE_CONTENT;
 	ptnode->folder_id = fid_val;
 	ptnode->table_flags = table_flags;
-	ptnode->b_search = b_search;
+	ptnode->b_search = b_search ? TRUE : false;
 	ptnode->cpid = cpid;
 	if (!exmdb_server::is_private()) {
 		ptnode->username = strdup(username);
-		if (NULL == ptnode->username) {
+		if (ptnode->username == nullptr)
 			return false;
-		}
 	}
 	if (NULL != prestriction) {
 		ptnode->prestriction = restriction_dup(prestriction);
-		if (NULL == ptnode->prestriction) {
+		if (ptnode->prestriction == nullptr)
 			return false;
-		}
 	}
 	xtransaction psort_transact;
 	if (NULL != psorts) {
 		ptnode->psorts = sortorder_set_dup(psorts);
-		if (NULL == ptnode->psorts) {
+		if (ptnode->psorts == nullptr)
 			return false;
-		}
 		if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
 			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 			return false;
 		}
 		psort_transact = gx_sql_begin_trans(psqlite);
-		sql_len = snprintf(sql_string, arsizeof(sql_string), "CREATE"
+		auto sql_len = snprintf(sql_string, std::size(sql_string), "CREATE"
 			" TABLE stbl (message_id INTEGER");
-		tag_count = 0;
 		for (size_t i = 0; i < psorts->count; ++i) {
-			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
-			if (TABLE_SORT_MAXIMUM_CATEGORY ==
-				psorts->psort[i].table_sort ||
-				TABLE_SORT_MINIMUM_CATEGORY ==
-				psorts->psort[i].table_sort) {
+			auto tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
+			if (psorts->psort[i].table_sort == TABLE_SORT_MAXIMUM_CATEGORY ||
+			    psorts->psort[i].table_sort == TABLE_SORT_MINIMUM_CATEGORY)
 				ptnode->extremum_tag = tmp_proptag;
-			}
 			tmp_proptags[tag_count] = tmp_proptag;
 			/* check if proptag is already in the field list */
 			if (i >= psorts->ccategories) {
 				size_t j;
 				for (j = 0; j < tag_count; ++j)
-					if (tmp_proptags[j] == tmp_proptag) {
+					if (tmp_proptags[j] == tmp_proptag)
 						break;
-					}
 				if (j < tag_count)
 					continue;
 			}
 			tag_count ++;
-			type = psorts->psort[i].type;
+			uint16_t type = psorts->psort[i].type;
 			if ((type & MVI_FLAG) == MVI_FLAG) {
 				type &= ~MVI_FLAG;
 				ptnode->instance_tag = tmp_proptag;
@@ -818,49 +771,44 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				return false;
 			}
 		}
-		if (psorts->ccategories > 0) {
+		if (psorts->ccategories > 0)
 			sql_len += gx_snprintf(sql_string + sql_len,
 			           GX_ARRAY_SIZE(sql_string) - sql_len,
 						", read_state INTEGER");
-		}
-		if (0 != ptnode->instance_tag) {
+		if (ptnode->instance_tag != 0)
 			sql_len += gx_snprintf(sql_string + sql_len,
 			           GX_ARRAY_SIZE(sql_string) - sql_len,
 						", inst_num INTEGER");
-		}
 		sql_string[sql_len++] = ')';
 		sql_string[sql_len] = '\0';
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return false;
 		for (size_t i = 0; i < tag_count; ++i) {
-			tmp_proptag = tmp_proptags[i];
+			auto tmp_proptag = tmp_proptags[i];
 			snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 			         "CREATE INDEX stbl_%zu ON stbl (v%x)",
 			         i, tmp_proptag);
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return false;
 		}
-		if (0 == ptnode->instance_tag) {
+		if (ptnode->instance_tag == 0)
 			snprintf(sql_string, arsizeof(sql_string), "CREATE UNIQUE INDEX t%u_4 "
 					"ON t%u (inst_id)", table_id, table_id);
-		} else {
+		else
 			snprintf(sql_string, arsizeof(sql_string), "CREATE INDEX t%u_4 "
 				"ON t%u (inst_id)", table_id, table_id);
-		}
 		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 			return false;
 		sql_len = snprintf(sql_string, arsizeof(sql_string), "INSERT INTO stbl VALUES (?");
 		for (size_t i = 0; i < tag_count; ++i)
 			sql_len += gx_snprintf(sql_string + sql_len,
 			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
-		if (psorts->ccategories > 0) {
+		if (psorts->ccategories > 0)
 			sql_len += gx_snprintf(sql_string + sql_len,
 			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
-		}
-		if (0 != ptnode->instance_tag) {
+		if (ptnode->instance_tag != 0)
 			sql_len += gx_snprintf(sql_string + sql_len,
 			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
-		}
 		sql_string[sql_len++] = ')';
 		sql_string[sql_len] = '\0';
 		pstmt1 = gx_sql_prep(psqlite, sql_string);
@@ -874,47 +822,54 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		if (pstmt1 == nullptr)
 			return false;
 	}
+	bool b_deleted = table_flags & TABLE_FLAG_SOFTDELETES;
 	if (exmdb_server::is_private()) {
-		if ((table_flags & TABLE_FLAG_SOFTDELETES) ||
-		    (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION)) {
+		if (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION) {
 			strcpy(sql_string, "SELECT message_id FROM messages WHERE 0");
 		} else if (table_flags & TABLE_FLAG_ASSOCIATED) {
 			if (!b_search) {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 				        "FROM messages WHERE parent_fid=%llu "
-				        "AND is_associated=1", LLU{fid_val});
+				         "AND is_associated=1 AND is_deleted=%u",
+				         LLU{fid_val}, b_deleted);
 			} else {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT "
 				        "messages.message_id FROM messages"
 				        " JOIN search_result ON "
 				        "search_result.folder_id=%llu AND "
 				        "search_result.message_id=messages.message_id"
-				        " AND messages.is_associated=1", LLU{fid_val});
+				         " AND messages.is_associated=1 AND messages.is_deleted=%u",
+				         LLU{fid_val}, b_deleted);
 			}
 		} else if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
 			if (conv_id != nullptr) {
+				char tmp_string[128];
 				encode_hex_binary(conv_id->pb,
 					16, tmp_string, sizeof(tmp_string));
 				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
-				        "FROM message_properties WHERE proptag=%u AND"
-				        " propval=x'%s'", PR_CONVERSATION_ID,
-				        tmp_string);
+				         "FROM message_properties AS mp INNER JOIN messages AS m "
+				         "WHERE mp.proptag=%u AND mp.propval=x'%s' "
+				         "AND m.is_deleted=%u", PR_CONVERSATION_ID,
+				         tmp_string, b_deleted);
 			} else {
-				strcpy(sql_string, "SELECT message_id"
+				snprintf(sql_string, std::size(sql_string), "SELECT message_id"
 				       " FROM messages WHERE parent_fid IS NOT NULL"
-				       " AND is_associated=0");
+				         " AND is_associated=0 AND is_deleted=%u",
+				         b_deleted);
 			}
 		} else if (!b_search) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 			        "FROM messages WHERE parent_fid=%llu "
-			        "AND is_associated=0", LLU{fid_val});
+			         "AND is_associated=0 AND is_deleted=%u",
+			         LLU{fid_val}, b_deleted);
 		} else {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			        "messages.message_id FROM messages"
 			        " JOIN search_result ON "
 			        "search_result.folder_id=%llu AND "
 			        "search_result.message_id=messages.message_id"
-			        " AND messages.is_associated=0", LLU{fid_val});
+			         " AND messages.is_associated=0 AND messages.is_deleted=%u",
+			         LLU{fid_val}, b_deleted);
 		}
 	} else if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
 		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
@@ -925,6 +880,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		            !!(table_flags & TABLE_FLAG_SOFTDELETES),
 		            !!(table_flags & TABLE_FLAG_ASSOCIATED));
 	} else if (conv_id != nullptr) {
+		char tmp_string[128];
 		encode_hex_binary(conv_id->pb, 16, tmp_string, sizeof(tmp_string));
 		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 		            "SELECT message_properties.message_id "
@@ -944,18 +900,18 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return false;
-	last_row_id = 0;
+	uint64_t last_row_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		mid_val = sqlite3_column_int64(pstmt, 0);
+		uint64_t mid_val = pstmt.col_uint64(0);
 		if (conv_id != nullptr) {
+			uint64_t parent_fid = 0;
 			if (common_util_check_message_associated(pdb->psqlite, mid_val))
 				continue;
 			if (!common_util_get_message_parent_folder(pdb->psqlite,
 			    mid_val, &parent_fid))
 				return false;
-			if (0 == parent_fid) {
+			if (parent_fid == 0)
 				continue;
-			}
 		} else if (prestriction != nullptr &&
 		    !cu_eval_msg_restriction(pdb->psqlite, cpid, mid_val, prestriction)) {
 			continue;
@@ -963,20 +919,17 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		sqlite3_bind_int64(pstmt1, 1, mid_val);
 		if (NULL != psorts) {
 			for (size_t i = 0; i < tag_count; ++i) {
-				tmp_proptag = tmp_proptags[i];
-				if (tmp_proptag == ptnode->instance_tag) {
+				auto tmp_proptag = tmp_proptags[i];
+				if (tmp_proptag == ptnode->instance_tag)
 					continue;
-				}
 				if (!cu_get_property(db_table::msg_props, mid_val,
-					cpid, pdb->psqlite, tmp_proptag,
-					&pvalue)) {
+				    cpid, pdb->psqlite, tmp_proptag, &pvalue))
 					return false;
-				}
-				if (NULL == pvalue) {
+				if (pvalue == nullptr)
 					sqlite3_bind_null(pstmt1, i + 2);
-				} else if (!common_util_bind_sqlite_statement(pstmt1, i + 2, PROP_TYPE(tmp_proptag), pvalue)) {
+				else if (!common_util_bind_sqlite_statement(pstmt1,
+				    i + 2, PROP_TYPE(tmp_proptag), pvalue))
 					return false;
-				}
 			}
 			if (psorts->ccategories > 0) {
 				if (!cu_get_property(db_table::msg_props,
@@ -987,7 +940,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			}
 			/* inssert all instances into stbl */
 			if (0 != ptnode->instance_tag) {
-				type = PROP_TYPE(ptnode->instance_tag);
+				uint16_t type = PROP_TYPE(ptnode->instance_tag);
 				type &= ~MV_INSTANCE;
 				if (!cu_get_property(db_table::msg_props,
 				    mid_val, cpid, pdb->psqlite,
@@ -997,9 +950,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
  BIND_NULL_INSTANCE:
 					sqlite3_bind_null(pstmt1, multi_index);
 					sqlite3_bind_int64(pstmt1, tag_count + 3, 0);
-					if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+					if (pstmt1.step() != SQLITE_DONE)
 						return false;
-					}
 					sqlite3_reset(pstmt1);
 					continue;
 				}
@@ -1014,9 +966,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
-						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+						if (pstmt1.step() != SQLITE_DONE)
 							return false;
-						}
 						sqlite3_reset(pstmt1);
 					}
 					break;
@@ -1031,9 +982,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
-						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+						if (pstmt1.step() != SQLITE_DONE)
 							return false;
-						}
 						sqlite3_reset(pstmt1);
 					}
 					break;
@@ -1050,9 +1000,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
-						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+						if (pstmt1.step() != SQLITE_DONE)
 							return false;
-						}
 						sqlite3_reset(pstmt1);
 					}
 					break;
@@ -1066,7 +1015,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 						    pstmt1, multi_index, PT_FLOAT, &fa->mval[i]))
 							return false;
 						sqlite3_bind_int64(pstmt1, tag_count + 3, i + 1);
-						if (sqlite3_step(pstmt1) != SQLITE_DONE)
+						if (pstmt1.step() != SQLITE_DONE)
 							return false;
 						sqlite3_reset(pstmt1);
 					}
@@ -1082,7 +1031,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 						    pstmt1, multi_index, PT_DOUBLE, &fa->mval[i]))
 							return false;
 						sqlite3_bind_int64(pstmt1, tag_count + 3, i + 1);
-						if (sqlite3_step(pstmt1) != SQLITE_DONE)
+						if (pstmt1.step() != SQLITE_DONE)
 							return false;
 						sqlite3_reset(pstmt1);
 					}
@@ -1099,9 +1048,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
-						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+						if (pstmt1.step() != SQLITE_DONE)
 							return false;
-						}
 						sqlite3_reset(pstmt1);
 					}
 					break;
@@ -1116,9 +1064,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
-						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+						if (pstmt1.step() != SQLITE_DONE)
 							return false;
-						}
 						sqlite3_reset(pstmt1);
 					}
 					break;
@@ -1133,9 +1080,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
-						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+						if (pstmt1.step() != SQLITE_DONE)
 							return false;
-						}
 						sqlite3_reset(pstmt1);
 					}
 					break;
@@ -1149,12 +1095,10 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			sqlite3_bind_int64(pstmt1, 2, last_row_id);
 			sqlite3_bind_int64(pstmt1, 3, last_row_id + 1);
 		}
-		if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+		if (pstmt1.step() != SQLITE_DONE)
 			return false;
-		}
-		if (NULL == psorts) {
+		if (psorts == nullptr)
 			last_row_id = sqlite3_last_insert_rowid(pdb->tables.psqlite);
-		}
 		sqlite3_reset(pstmt1);
 	}
 	if (NULL != psorts) {
@@ -1176,6 +1120,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return false;
+		DOUBLE_LIST value_list;
 		double_list_init(&value_list);
 		uint32_t unread_count = 0;
 		if (!table_load_content(pdb,
@@ -1201,13 +1146,14 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			if (pstmt1 == nullptr)
 				return false;
 			size_t i = 1;
-			prev_id = 0;
+			uint64_t prev_id = 0;
+			int depth = 0;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
 				if (0 != prev_id &&
 					depth < sqlite3_column_int64(pstmt, 3) &&
 				    gx_sql_col_uint64(pstmt, 4) != prev_id)
 					continue;
-				row_id = sqlite3_column_int64(pstmt, 0);
+				uint64_t row_id = pstmt.col_uint64(0);
 				if (CONTENT_ROW_HEADER == sqlite3_column_int64(pstmt, 1)) {
 					if (0 == sqlite3_column_int64(pstmt, 2)) {
 						prev_id = row_id;
@@ -1218,9 +1164,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				}
 				sqlite3_bind_int64(pstmt1, 1, i);
 				sqlite3_bind_int64(pstmt1, 2, row_id);
-				if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+				if (pstmt1.step() != SQLITE_DONE)
 					return false;
-				}
 				sqlite3_reset(pstmt1);
 				i ++;
 			}
@@ -1235,9 +1180,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	all_ok = true;
 	table_transact.commit();
 	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
-	if (0 == *ptable_id) {
+	if (*ptable_id == 0)
 		*ptable_id = table_id;
-	}
 	*prow_count = 0;
 	table_sum_table_count(pdb, table_id, prow_count); 
 	return TRUE;

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -52,7 +53,7 @@ BOOL table_object::is_loaded()
 BOOL table_object::load()
 {
 	auto ptable = this;
-	uint32_t row_num;
+	uint32_t &row_num = m_total;
 	uint32_t table_id;
 	uint32_t permission;
 	
@@ -128,6 +129,7 @@ void table_object::unload()
 
 BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *pset)
 {
+	assert(is_loaded());
 	auto ptable = this;
 	DCERPC_INFO rpc_info;
 	const char *username;
@@ -141,7 +143,7 @@ BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 		pset->count = 0;
 		return TRUE;
 	}
-	if (m_position >= ptable->get_total() && b_forward) {
+	if (m_position >= ptable->m_total && b_forward) {
 		pset->count = 0;
 		return TRUE;
 	}
@@ -163,13 +165,11 @@ BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 
 void table_object::seek_current(BOOL b_forward, uint16_t row_count)
 {
-	auto ptable = this;
-	
+	assert(is_loaded());
 	if (b_forward) {
 		m_position += row_count;
-		auto total_rows = ptable->get_total();
-		if (m_position > total_rows)
-			m_position = total_rows;
+		if (m_position > m_total)
+			m_position = m_total;
 	} else {
 		if (m_position < row_count) {
 			m_position = 0;
@@ -217,28 +217,10 @@ BOOL table_object::set_restriction(const RESTRICTION *prestriction)
 
 void table_object::set_position(uint32_t position)
 {
-	auto ptable = this;
-	auto total_rows = ptable->get_total();
-	if (position > total_rows) {
-		position = total_rows;
-	}
+	assert(is_loaded());
+	if (position > m_total)
+		position = m_total;
 	m_position = position;
-}
-
-uint32_t table_object::get_total() const
-{
-	auto ptable = this;
-	uint16_t num;
-	uint32_t total_rows;
-	
-	if (ptable->rop_id == ropGetAttachmentTable) {
-		num = 0;
-		static_cast<message_object *>(ptable->pparent_obj)->get_attachments_num(&num);
-		return num;
-	}
-	exmdb_client::sum_table(ptable->plogon->get_dir(),
-		m_table_id, &total_rows);
-	return total_rows;
 }
 
 std::unique_ptr<table_object> table_object::create(logon_object *plogon,
@@ -288,6 +270,7 @@ BOOL table_object::create_bookmark(uint32_t *pindex) try
 
 BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 {
+	assert(is_loaded());
 	auto ptable = this;
 	uint32_t tmp_type;
 	int32_t tmp_position;
@@ -307,9 +290,8 @@ BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 	} else {
 		m_position = bm->position;
 	}
-	auto total_rows = ptable->get_total();
-	if (m_position > total_rows)
-		m_position = total_rows;
+	if (m_position > m_total)
+		m_position = m_total;
 	return TRUE;
 }
 

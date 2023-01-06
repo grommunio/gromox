@@ -172,7 +172,7 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 
 static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 {
-	if (g_exmdb_schema_upgrades != EXMDB_UPGRADE_YES)
+	if (g_exmdb_schema_upgrades == EXMDB_UPGRADE_NO)
 		return 0;
 	auto is_pvt = exmdb_server::is_private();
 	auto kind = is_pvt ? sqlite_kind::pvt : sqlite_kind::pub;

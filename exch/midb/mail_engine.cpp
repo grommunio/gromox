@@ -2164,7 +2164,7 @@ static IDB_REF mail_engine_peek_idb(const char *path)
 
 static int mail_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 {
-	if (g_midb_schema_upgrades != MIDB_UPGRADE_YES)
+	if (g_midb_schema_upgrades == MIDB_UPGRADE_NO)
 		return 0;
 	auto recent = dbop_sqlite_recentversion(sqlite_kind::midb);
 	auto current = dbop_sqlite_schemaversion(db, sqlite_kind::midb);

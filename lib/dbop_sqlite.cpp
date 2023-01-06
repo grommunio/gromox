@@ -14,6 +14,7 @@
  * INDEX names should be suffixed by the schema number, to facilitate
  * dbop_sqlite_upgrade (old table+index exists simultaneously with new table).
  */
+#define TABLE_END {}
 
 namespace gromox {
 
@@ -217,6 +218,20 @@ static constexpr char tbl_pvt_folders_0[] =
 "  FOREIGN KEY (parent_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE);"
 "CREATE INDEX search_index ON folders(is_search);";
 
+static constexpr char tbl_pvt_folders_9[] =
+"CREATE TABLE folders ("
+"  folder_id INTEGER PRIMARY KEY,"
+"  parent_id INTEGER,"
+"  change_number INTEGER UNIQUE NOT NULL,"
+"  is_search INTEGER DEFAULT 0,"
+"  search_flags INTEGER DEFAULT NULL,"
+"  search_criteria BLOB DEFAULT NULL,"
+"  cur_eid INTEGER NOT NULL,"
+"  max_eid INTEGER NOT NULL,"
+"  `is_deleted` INTEGER DEFAULT 0,"
+"  FOREIGN KEY (parent_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE INDEX search_index9 ON folders(is_search);";
+
 static constexpr char tbl_pvt_msgs_0[] =
 "CREATE TABLE messages ("
 "  message_id INTEGER PRIMARY KEY,"
@@ -238,7 +253,7 @@ static constexpr char tbl_pvt_msgs_0[] =
 "CREATE INDEX parent_assoc_index ON messages(parent_fid, is_associated);"
 "CREATE INDEX parent_read_assoc_index ON messages(parent_fid, read_state, is_associated);";
 
-static constexpr char tbl_pvt_msgs_7[] =
+static constexpr char tbl_pvt_msgs_8[] =
 "CREATE TABLE messages ("
 "  message_id INTEGER PRIMARY KEY,"
 "  parent_fid INTEGER,"
@@ -254,13 +269,13 @@ static constexpr char tbl_pvt_msgs_7[] =
 "  mid_string TEXT DEFAULT NULL,"
 "  FOREIGN KEY (parent_fid) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE,"
 "  FOREIGN KEY (parent_attid) REFERENCES attachments (attachment_id) ON DELETE CASCADE ON UPDATE CASCADE);"
-"CREATE INDEX pid_messages_index7 ON messages(parent_fid);"
-"CREATE INDEX attid_messages_index7 ON messages(parent_attid);"
-"CREATE INDEX assoc_index7 ON messages(is_associated);"
-"CREATE INDEX parent_assoc_index7 ON messages(parent_fid, is_associated);"
-"CREATE INDEX parent_read_assoc_index7 ON messages(parent_fid, read_state, is_associated);";
+"CREATE INDEX pid_messages_index8 ON messages(parent_fid);"
+"CREATE INDEX attid_messages_index8 ON messages(parent_attid);"
+"CREATE INDEX assoc_index8 ON messages(is_associated);"
+"CREATE INDEX parent_assoc_index8 ON messages(parent_fid, is_associated);"
+"CREATE INDEX parent_read_assoc_index8 ON messages(parent_fid, read_state, is_associated);";
 
-static constexpr char tbl_pvt_msgs_move7[] =
+static constexpr char tbl_pvt_msgs_move8[] =
 "INSERT INTO messages SELECT message_id, parent_fid, parent_attid, 0 AS is_deleted, is_associated, change_number, read_cn, read_state, message_size, group_id, timer_id, mid_string FROM u0";
 
 static constexpr char tbl_pvt_recvfld_0[] =
@@ -359,7 +374,7 @@ static constexpr tbl_init tbl_pvt_init_0[] = {
 	{"receive_table", tbl_pvt_recvfld_0},
 	{"search_scopes", tbl_pvt_searchscopes_0},
 	{"search_result", tbl_pvt_searchresult_0},
-	{},
+	TABLE_END,
 };
 
 static constexpr tbl_init tbl_pvt_init_top[] = {
@@ -376,12 +391,12 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"recipients_properties", tbl_rcptprops_5},
 	{"attachments", tbl_attach_0},
 	{"attachment_properties", tbl_atxprops_6},
-	{"folders", tbl_pvt_folders_0},
-	{"messages", tbl_pvt_msgs_0},
+	{"folders", tbl_pvt_folders_9},
+	{"messages", tbl_pvt_msgs_8},
 	{"receive_table", tbl_pvt_recvfld_0},
 	{"search_scopes", tbl_pvt_searchscopes_0},
 	{"search_result", tbl_pvt_searchresult_0},
-	{},
+	TABLE_END,
 };
 
 static constexpr tbl_init tbl_pub_init_0[] = {
@@ -403,7 +418,7 @@ static constexpr tbl_init tbl_pub_init_0[] = {
 	{"read_states", tbl_pub_readst_0},
 	{"read_cns", tbl_pub_readcn_0},
 	{"replca_mapping", tbl_pub_replmap_0},
-	{},
+	TABLE_END,
 };
 
 static constexpr tbl_init tbl_pub_init_top[] = {
@@ -425,7 +440,7 @@ static constexpr tbl_init tbl_pub_init_top[] = {
 	{"read_states", tbl_pub_readst_0},
 	{"read_cns", tbl_pub_readcn_0},
 	{"replca_mapping", tbl_pub_replmap_0},
-	{},
+	TABLE_END,
 };
 
 static constexpr char tbl_midb_folders_0[] =
@@ -487,7 +502,7 @@ static constexpr tbl_init tbl_midb_init_0[] = {
 	{"folders", tbl_midb_folders_0},
 	{"messages", tbl_midb_msgs_0},
 	{"mapping", tbl_midb_mapping_0},
-	{},
+	TABLE_END,
 };
 
 static constexpr tbl_init tbl_midb_init_top[] = {
@@ -495,9 +510,13 @@ static constexpr tbl_init tbl_midb_init_top[] = {
 	{"folders", tbl_midb_folders_0},
 	{"messages", tbl_midb_msgs_0},
 	{"mapping", tbl_midb_mapping_0},
-	{},
+	TABLE_END,
 };
 
+/*
+ * Because sqlite does not support ALTER TABLE CHANGE COLUMN statements, we are
+ * but left with recreating the entire table and issuing a move(copy) command.
+ */
 static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{1, nullptr, "configurations", tbl_config_1, tbl_config_move1},
 	{2, nullptr, "store_properties", tbl_storeprops_2, tbl_storeprops_move2},
@@ -507,10 +526,12 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{6, nullptr, "attachment_properties", tbl_atxprops_6, tbl_atxprops_move6},
 	/*
 	 * Some AAPI versions generated schema 0 databases with an is_deleted column.
-	 * Recreate that table to make that column official.
+	 * Some dbop_sqlite versions generated schema 7 databases without
+	 * an is_deleted column. Make it right.
 	 */
-	{7, nullptr, "messages", tbl_pvt_msgs_7, tbl_pvt_msgs_move7},
-	{},
+	{8, nullptr, "messages", tbl_pvt_msgs_8, tbl_pvt_msgs_move8},
+	{9, "ALTER TABLE `folders` ADD COLUMN `is_deleted` INTEGER DEFAULT 0"},
+	TABLE_END,
 };
 
 static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
@@ -520,12 +541,12 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{4, nullptr, "message_properties", tbl_msgprops_4, tbl_msgprops_move4},
 	{5, nullptr, "recipients_properties", tbl_rcptprops_5, tbl_rcptprops_move5},
 	{6, nullptr, "attachment_properties", tbl_atxprops_6, tbl_atxprops_move6},
-	{},
+	TABLE_END,
 };
 
 static constexpr tblite_upgradefn tbl_midb_upgrade_list[] = {
 	{1, nullptr, "configurations", tbl_config_1, tbl_config_move1},
-	{},
+	TABLE_END,
 };
 
 static char kind_to_char(sqlite_kind k)

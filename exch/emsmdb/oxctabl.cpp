@@ -30,13 +30,10 @@ static BOOL oxctable_verify_columns_and_sorts(
 		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		break;
 	}
-	for (i=0; i<pcolumns->count; i++) {
-		if (pcolumns->pproptag[i] & MV_INSTANCE) {
-			if (proptag != pcolumns->pproptag[i]) {
+	for (i = 0; i < pcolumns->count; ++i)
+		if (pcolumns->pproptag[i] & MV_INSTANCE)
+			if (proptag != pcolumns->pproptag[i])
 				return FALSE;
-			}
-		}
-	}
 	return TRUE;
 }
 
@@ -85,9 +82,8 @@ uint32_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 	uint16_t type;
 	int object_type;
 	
-	if (0 == pproptags->count) {
+	if (pproptags->count == 0)
 		return ecInvalidParam;
-	}
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
@@ -121,9 +117,8 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 	BOOL b_multi_inst;
 	uint32_t tmp_proptag;
 	
-	if (psort_criteria->count > MAXIMUM_SORT_COUNT) {
+	if (psort_criteria->count > MAXIMUM_SORT_COUNT)
 		return ecTooComplex;
-	}
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
@@ -146,10 +141,9 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 			break;
 		case TABLE_SORT_MAXIMUM_CATEGORY:
 		case TABLE_SORT_MINIMUM_CATEGORY:
-			if (0 == psort_criteria->ccategories ||
-				psort_criteria->ccategories != i) {
+			if (psort_criteria->ccategories == 0 ||
+			    psort_criteria->ccategories != i)
 				return ecInvalidParam;
-			}
 			break;
 		default:
 			return ecInvalidParam;
@@ -259,16 +253,15 @@ uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
 				break;
 			}
 		}
-		if (0 == i) {
+		if (i == 0)
 			return ecBufferTooSmall;
-		}
 		*pcount = i;
 	}
 	if (!(flags & QUERY_ROWS_FLAGS_NOADVANCE))
 		ptable->seek_current(b_forward, *pcount);
 	*pseek_pos = BOOKMARK_CURRENT;
 	if (b_forward) {
-		if (ptable->get_position() >= ptable->get_total())
+		if (ptable->get_position() >= ptable->m_total)
 			*pseek_pos = BOOKMARK_END;
 	} else {
 		if (ptable->get_position() == 0)
@@ -317,7 +310,7 @@ uint32_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
 	if (!ptable->load())
 		return ecError;
 	*pnumerator = ptable->get_position();
-	*pdenominator = ptable->get_total();
+	*pdenominator = ptable->m_total;
 	return ecSuccess;
 }
 
@@ -338,24 +331,22 @@ uint32_t rop_seekrow(uint8_t seek_pos, int32_t offset, uint8_t want_moved_count,
 	int8_t clamped = 0;
 	switch (seek_pos) {
 	case BOOKMARK_BEGINNING:
-		if (offset < 0) {
+		if (offset < 0)
 			return ecInvalidParam;
-		}
 		original_position = 0;
-		clamped = static_cast<uint32_t>(offset) > ptable->get_total();
+		clamped = static_cast<uint32_t>(offset) > ptable->m_total;
 		ptable->set_position(offset);
 		break;
 	case BOOKMARK_END:
-		if (offset > 0) {
+		if (offset > 0)
 			return ecInvalidParam;
-		}
-		original_position = ptable->get_total();
+		original_position = ptable->m_total;
 		ptable->set_position(safe_add_s(original_position, offset, &clamped));
 		break;
 	case BOOKMARK_CURRENT: {
 		original_position = ptable->get_position();
 		auto newpos = safe_add_s(original_position, offset, &clamped);
-		clamped = newpos > ptable->get_total();
+		clamped = newpos > ptable->m_total;
 		ptable->set_position(newpos);
 		break;
 	}
@@ -374,9 +365,8 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark, int32_t offset,
 	BOOL b_exist;
 	int object_type;
 	
-	if (pbookmark->cb != sizeof(uint32_t)) {
+	if (pbookmark->cb != sizeof(uint32_t))
 		return ecInvalidBookmark;
-	}
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
@@ -407,9 +397,8 @@ uint32_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator,
 {
 	int object_type;
 	
-	if (0 == denominator) {
+	if (denominator == 0)
 		return ecInvalidBookmark;
-	}
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
@@ -417,7 +406,7 @@ uint32_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator,
 		return ecNotSupported;
 	if (!ptable->load())
 		return ecError;
-	auto position = numerator * ptable->get_total() / denominator;
+	auto position = numerator * ptable->m_total / denominator;
 	ptable->set_position(position);
 	return ecSuccess;
 }
@@ -503,9 +492,8 @@ uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	case BOOKMARK_CUSTOM:
 		if (ptable->rop_id == ropGetRulesTable)
 			return ecNotSupported;
-		if (pbookmark->cb != sizeof(uint32_t)) {
+		if (pbookmark->cb != sizeof(uint32_t))
 			return ecInvalidBookmark;
-		}
 		result = rop_seekrowbookmark(pbookmark, 0, 0, pbookmark_invisible,
 				&has_soughtless, &offset_sought, plogmap, logon_id, hin);
 		if (result != ecSuccess)
@@ -515,7 +503,7 @@ uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 		ptable->set_position(0);
 		break;
 	case BOOKMARK_END:
-		ptable->set_position(ptable->get_total());
+		ptable->set_position(ptable->m_total);
 		break;
 	case BOOKMARK_CURRENT:
 		break;
@@ -527,14 +515,12 @@ uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	if (!ptable->match_row(b_forward, pres, &position, &propvals))
 		return ecError;
 	*ppcolumns = deconst(ptable->get_columns());
-	if (position < 0) {
+	if (position < 0)
 		return ecNotFound;
-	}
 	ptable->set_position(position);
 	*pprow = cu_alloc<PROPERTY_ROW>();
-	if (NULL == *pprow) {
+	if (*pprow == nullptr)
 		return ecServerOOM;
-	}
 	if (!common_util_propvals_to_row(&propvals, *ppcolumns, *pprow))
 		return ecServerOOM;
 	return ecSuccess;
@@ -545,9 +531,8 @@ uint32_t rop_freebookmark(const BINARY *pbookmark, LOGMAP *plogmap,
 {
 	int object_type;
 	
-	if (pbookmark->cb != sizeof(uint32_t)) {
+	if (pbookmark->cb != sizeof(uint32_t))
 		return ecInvalidBookmark;
-	}
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
@@ -614,9 +599,8 @@ uint32_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 		*pcount = 0;
 		return ecSuccess;
 	}
-	if (max_count > *pexpanded_count) {
+	if (max_count > *pexpanded_count)
 		max_count = *pexpanded_count;
-	}
 	auto old_position = ptable->get_position();
 	ptable->set_position(position + 1);
 	if (!ptable->query_rows(TRUE, max_count, &tmp_set)) {
@@ -710,9 +694,8 @@ uint32_t rop_setcollapsestate(const BINARY *pcollapse_state, BINARY *pbookmark,
 		return ecNotSupported;
 	if (ropGetContentsTable != ptable->rop_id)
 		return ecNotSupported;
-	if (sizeof(uint32_t) != pcollapse_state->cb) {
+	if (pcollapse_state->cb != sizeof(uint32_t))
 		return ecInvalidParam;
-	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
 	if (!ptable->load())

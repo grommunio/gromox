@@ -205,7 +205,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
 			" change_number, is_associated, message_size,"
 			" read_state, read_cn FROM messages WHERE "
-			"parent_fid=%llu", static_cast<unsigned long long>(fid_val));
+		         "parent_fid=%llu AND is_deleted=0",
+		         static_cast<unsigned long long>(fid_val));
 	else
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
 			" change_number, is_associated, message_size "
@@ -662,8 +663,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 
 	/* Query section 1 */
 	{
-	auto stm_select_fld = gx_sql_prep(pdb->psqlite, exmdb_server::is_private() ?
-	                      "SELECT folder_id, change_number FROM folders WHERE parent_id=?" :
+	auto stm_select_fld = gx_sql_prep(pdb->psqlite,
 	                      "SELECT folder_id, change_number FROM folders WHERE parent_id=? AND is_deleted=0");
 	if (stm_select_fld == nullptr)
 		return FALSE;
