@@ -142,7 +142,7 @@ BOOL exmdb_server::get_folder_class_table(
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	auto total_count = std::max(static_cast<uint64_t>(UINT32_MAX), pstmt.col_uint64(0));
+	auto total_count = std::min(static_cast<uint64_t>(UINT32_MAX), pstmt.col_uint64(0));
 	pstmt.finalize();
 	if (0 == total_count) {
 		ptable->count = 0;
