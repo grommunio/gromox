@@ -98,8 +98,8 @@ BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions);
 void common_util_notify_receipt(const char *username,
 	int type, MESSAGE_CONTENT *pbrief);
 extern BOOL common_util_save_message_ics(logon_object *plogon, uint64_t msg_id, PROPTAG_ARRAY *changed_tags);
-extern BOOL cu_send_mail(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
-extern BOOL common_util_send_message(logon_object *, uint64_t msg_id, BOOL submit);
+extern ec_error_t cu_send_mail(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
+extern ec_error_t cu_send_message(logon_object *, uint64_t msg_id, bool submit);
 
 #define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
 E(check_mlist_include)

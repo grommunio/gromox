@@ -83,7 +83,7 @@ E(add_timer)
 E(cancel_timer)
 #undef E
 
-static void log_err(const char *format, ...) __attribute__((format(printf, 1, 2)));
+static void mlog2(unsigned int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
 
 void* common_util_alloc(size_t size)
 {
@@ -1477,7 +1477,8 @@ void common_util_notify_receipt(const char *username, int type,
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	if (!emsmdb_bouncer_make(username, pbrief, bounce_type, &imail))
 		return;
-	cu_send_mail(&imail, username, rcpt_list);
+	if (cu_send_mail(&imail, username, rcpt_list) != ecSuccess)
+		/* ignore */;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2035: ENOMEM");
 }
@@ -1599,7 +1600,7 @@ static int common_util_get_response(int sockd,
 	return SMTP_UNKOWN_RESPONSE;
 }
 
-BOOL cu_send_mail(MAIL *pmail, const char *sender,
+ec_error_t cu_send_mail(MAIL *pmail, const char *sender,
     const std::vector<std::string> &rcpt_list)
 {
 	int res_val;
@@ -1610,32 +1611,32 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 	MAIL dot_encoded(pmail->pmime_pool);
 	if (pmail->check_dot()) {
 		if (!pmail->transfer_dot(&dot_encoded, true))
-			return false;
+			return ecError;
 		pmail = &dot_encoded;
 	}
 	int sockd = gx_inet_connect(g_smtp_ip, g_smtp_port, 0);
 	if (sockd < 0) {
-		log_err("Cannot connect to SMTP server [%s]:%hu: %s",
+		mlog2(LV_ERR, "Cannot connect to SMTP server [%s]:%hu: %s",
 			g_smtp_ip, g_smtp_port, strerror(-sockd));
-		return FALSE;
+		return ecNetwork;
 	}
 	/* read welcome information of MTA */
 	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		log_err("Timeout with SMTP server [%s]:%hu",
+		mlog2(LV_ERR, "Timeout with SMTP server [%s]:%hu",
 			g_smtp_ip, g_smtp_port);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_PERMANENT_ERROR:
 	case SMTP_TEMP_ERROR:
 	case SMTP_UNKOWN_RESPONSE:
         /* send quit command to server */
         common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		log_err("Failed to connect to SMTP. "
+		mlog2(LV_ERR, "Failed to connect to SMTP. "
 			"Server response is \"%s\"", last_response);
-		return FALSE;
+		return ecNetwork;
 	}
 
 	/* send helo xxx to server */
@@ -1643,50 +1644,50 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 	command_len = strlen(last_command);
 	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
-		log_err("Failed to send \"HELO\" command");
-		return FALSE;
+		mlog2(LV_ERR, "Failed to send \"HELO\" command");
+		return ecNetwork;
 	}
 	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		log_err("Timeout with SMTP "
+		mlog2(LV_ERR, "Timeout with SMTP "
 			"server [%s]:%hu", g_smtp_ip, g_smtp_port);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_PERMANENT_ERROR:
 	case SMTP_TEMP_ERROR:
 	case SMTP_UNKOWN_RESPONSE:
 		/* send quit command to server */
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		log_err("SMTP server responded with \"%s\" "
+		mlog2(LV_ERR, "SMTP server responded with \"%s\" "
 			"after sending \"HELO\" command", last_response);
-		return FALSE;
+		return ecNetwork;
 	}
 
 	command_len = sprintf(last_command, "mail from:<%s>\r\n", sender);
 	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
-		log_err("Failed to send \"MAIL FROM\" command");
-		return FALSE;
+		mlog2(LV_ERR, "Failed to send \"MAIL FROM\" command");
+		return ecNetwork;
 	}
 	/* read mail from response information */
 	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		log_err("Timeout with SMTP server [%s]:%hu",
+		mlog2(LV_ERR, "Timeout with SMTP server [%s]:%hu",
 			g_smtp_ip, g_smtp_port);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_PERMANENT_ERROR:
 		case SMTP_TEMP_ERROR:
 		case SMTP_UNKOWN_RESPONSE:
 		/* send quit command to server */
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		log_err("SMTP server responded \"%s\" "
+		mlog2(LV_ERR, "SMTP server responded \"%s\" "
 			"after sending \"MAIL FROM\" command", last_response);
-		return FALSE;
+		return ecNetwork;
 	}
 
 	for (const auto &eaddr : rcpt_list) {
@@ -1695,25 +1696,25 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 		              "rcpt to:<%s@none>\r\n", eaddr.c_str());
 		if (!common_util_send_command(sockd, last_command, command_len)) {
 			close(sockd);
-			log_err("Failed to send \"RCPT TO\" command");
-			return FALSE;
+			mlog2(LV_ERR, "Failed to send \"RCPT TO\" command");
+			return ecNetwork;
 		}
 		/* read rcpt to response information */
 		res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
 		switch (res_val) {
 		case SMTP_TIME_OUT:
 			close(sockd);
-			log_err("Timeout with SMTP server [%s]:%hu",
+			mlog2(LV_ERR, "Timeout with SMTP server [%s]:%hu",
 				g_smtp_ip, g_smtp_port);
-			return FALSE;
+			return ecNetwork;
 		case SMTP_PERMANENT_ERROR:
 		case SMTP_TEMP_ERROR:
 		case SMTP_UNKOWN_RESPONSE:
 			common_util_send_command(sockd, "quit\r\n", 6);
 			close(sockd);
-			log_err("SMTP server responded with \"%s\" "
+			mlog2(LV_ERR, "SMTP server responded with \"%s\" "
 				"after sending \"RCPT TO\" command", last_response);
-			return FALSE;
+			return ecNetwork;
 		}						
 	}
 	/* send data */
@@ -1721,9 +1722,9 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 	command_len = strlen(last_command);
 	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
-		log_err("Sender %s: Failed "
+		mlog2(LV_ERR, "Sender %s: Failed "
 			"to send \"DATA\" command", sender);
-		return FALSE;
+		return ecNetwork;
 	}
 
 	/* read data response information */
@@ -1731,49 +1732,49 @@ BOOL cu_send_mail(MAIL *pmail, const char *sender,
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		log_err("Sender %s: Timeout with SMTP server [%s]:%hu",
+		mlog2(LV_ERR, "Sender %s: Timeout with SMTP server [%s]:%hu",
 			sender, g_smtp_ip, g_smtp_port);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_PERMANENT_ERROR:
 	case SMTP_TEMP_ERROR:
 	case SMTP_UNKOWN_RESPONSE:
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		log_err("Sender %s: SMTP server responded \"%s\" "
+		mlog2(LV_ERR, "Sender %s: SMTP server responded \"%s\" "
 			"after sending \"DATA\" command", sender, last_response);
-		return FALSE;
+		return ecNetwork;
 	}
 
 	pmail->set_header("X-Mailer", "gromox-emsmdb " PACKAGE_VERSION);
 	if (!pmail->to_file(sockd) ||
 	    !common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);
-		log_err("Sender %s: Failed to send mail content", sender);
-		return FALSE;
+		mlog2(LV_ERR, "Sender %s: Failed to send mail content", sender);
+		return ecNetwork;
 	}
 	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
 	switch (res_val) {
 	case SMTP_TIME_OUT:
 		close(sockd);
-		log_err("Sender %s: Timeout with SMTP server [%s]:%hu",
+		mlog2(LV_ERR, "Sender %s: Timeout with SMTP server [%s]:%hu",
 			sender, g_smtp_ip, g_smtp_port);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_PERMANENT_ERROR:
 	case SMTP_TEMP_ERROR:
 	case SMTP_UNKOWN_RESPONSE:	
         common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		log_err("Sender %s: SMTP server responded \"%s\" "
+		mlog2(LV_ERR, "Sender %s: SMTP server responded \"%s\" "
 					"after sending mail content", sender, last_response);
-		return FALSE;
+		return ecNetwork;
 	case SMTP_SEND_OK:
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		log_err("emsmdb: outgoing SMTP [%s]:%hu: from=<%s> OK",
+		mlog2(LV_NOTICE, "emsmdb: outgoing SMTP [%s]:%hu: from=<%s> OK",
 		        g_smtp_ip, g_smtp_port, sender);
-		return TRUE;
+		return ecSuccess;
 	}
-	return false;
+	return ecSuccess;
 }
 
 static void common_util_set_dir(const char *dir)
@@ -1809,8 +1810,7 @@ static BOOL common_util_get_propname(
 	return TRUE;
 }
 
-BOOL common_util_send_message(logon_object *plogon,
-	uint64_t message_id, BOOL b_submit)
+ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_submit)
 {
 	MAIL imail;
 	void *pvalue;
@@ -1828,21 +1828,21 @@ BOOL common_util_send_message(logon_object *plogon,
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client::get_message_property(dir, nullptr, 0,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {
-		log_err("W-1289: Cannot get parent folder_id of mid:%llu",
+		mlog2(LV_ERR, "E-1289: Cannot get parent folder_id of mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ecNotFound;
 	}
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
 	if (!exmdb_client::read_message(dir, nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr) {
-		log_err("W-1288: Failed to read mid:%llu from exmdb",
+		mlog2(LV_ERR, "E-1288: Failed to read mid:%llu from exmdb",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ecRpcFailed;
 	}
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		auto ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
-			return FALSE;
+			return ecServerOOM;
 		}
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
@@ -1852,16 +1852,16 @@ BOOL common_util_send_message(logon_object *plogon,
 	}
 	auto message_flags = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (message_flags == nullptr) {
-		log_err("W-1287: Failed to get message_flag of mid:%llu",
+		mlog2(LV_ERR, "E-1287: Failed to get message_flag of mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ecError;
 	}
 	BOOL b_resend = (*message_flags & MSGFLAG_RESEND) ? TRUE : false;
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
-		log_err("W-1286: Missing recipients for message mid:%llu",
+		mlog2(LV_ERR, "E-1286: Missing recipients for message mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return MAPI_E_NO_RECIPIENTS;
 	}
 
 	std::vector<std::string> rcpt_list;
@@ -1890,24 +1890,24 @@ BOOL common_util_send_message(logon_object *plogon,
  CONVERT_ENTRYID:
 			auto entryid = prcpts->pparray[i]->get<const BINARY>(PR_ENTRYID);
 			if (entryid == nullptr) {
-				log_err("W-1285: Cannot get recipient entryid while sending mid:%llu",
+				mlog2(LV_ERR, "E-1285: Cannot get recipient entryid while sending mid:%llu",
 				        LLU{rop_util_get_gc_value(message_id)});
-				return FALSE;
+				return ecInvalidRecips;
 			}
 			char username[UADDR_SIZE];
 			if (!common_util_entryid_to_username(entryid,
 			    username, GX_ARRAY_SIZE(username))) {
-				log_err("W-1284: Cannot convert recipient entryid to SMTP address while sending mid:%llu",
+				mlog2(LV_ERR, "E-1284: Cannot convert recipient entryid to SMTP address while sending mid:%llu",
 				        LLU{rop_util_get_gc_value(message_id)});
-				return FALSE;	
+				return ecInvalidRecips;
 			}
 			rcpt_list.emplace_back(username);
 		} else if (strcasecmp(addrtype, "SMTP") == 0) {
 			str = prcpts->pparray[i]->get<char>(PR_EMAIL_ADDRESS);
 			if (str == nullptr) {
-				log_err("W-1283: Cannot get email address of recipient of SMTP address type while sending mid:%llu",
+				mlog2(LV_ERR, "E-1283: Cannot get email address of recipient of SMTP address type while sending mid:%llu",
 				        LLU{rop_util_get_gc_value(message_id)});
-				return FALSE;
+				return ecInvalidRecips;
 			}
 			rcpt_list.emplace_back(str);
 		} else if (strcasecmp(addrtype, "EX") == 0) {
@@ -1924,26 +1924,32 @@ BOOL common_util_send_message(logon_object *plogon,
 		}
 	}
 	if (rcpt_list.size() == 0) {
-		log_err("W-1282: Empty converted recipients list while sending mid:%llu",
+		mlog2(LV_ERR, "E-1282: Empty converted recipients list while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return MAPI_E_NO_RECIPIENTS;
 	}
 	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(dir);
 	/* try to avoid TNEF message */
 	if (!oxcmail_export(pmsgctnt, false, body_type, g_mime_pool, &imail,
 	    common_util_alloc, common_util_get_propids, common_util_get_propname)) {
-		log_err("W-1281: Failed to export to RFC5322 mail while sending mid:%llu",
+		mlog2(LV_ERR, "E-1281: Failed to export to RFC5322 mail while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;	
+		return ecError;	
 	}
-	if (!cu_send_mail(&imail, plogon->get_account(), rcpt_list)) {
-		log_err("W-1280: Failed to send mid:%llu via SMTP",
+	auto ret = cu_send_mail(&imail, plogon->get_account(), rcpt_list);
+	if (ret != ecSuccess) {
+		mlog2(LV_ERR, "E-1280: Failed to send mid:%llu via SMTP",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ret;
 	}
 	imail.clear();
 	
+	/*
+	 * Mail is out, but we may still encounter errors during
+	 * postprocessing. The send routine really should not report a terminal
+	 * error to the user at this point. :-/
+	 */
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
@@ -1951,31 +1957,31 @@ BOOL common_util_send_message(logon_object *plogon,
 	if (NULL != ptarget) {
 		if (!cu_entryid_to_mid(plogon,
 		    ptarget, &folder_id, &new_id)) {
-			log_err("W-1279: Failed to retrieve target entryid while sending mid:%llu",
+			mlog2(LV_WARN, "W-1279: Failed to retrieve target entryid while sending mid:%llu",
 			        LLU{rop_util_get_gc_value(message_id)});
-			return FALSE;	
+			return ecWarnWithErrors;	
 		}
 		if (!exmdb_client::clear_submit(dir, message_id, false)) {
-			log_err("W-1278: Failed to clear submit flag while sending mid:%llu",
+			mlog2(LV_WARN, "W-1278: Failed to clear submit flag while sending mid:%llu",
 			        LLU{rop_util_get_gc_value(message_id)});
-			return FALSE;
+			return ecWarnWithErrors;
 		}
 		if (!exmdb_client::movecopy_message(dir, plogon->account_id,
 		    cpid, message_id, folder_id, new_id, TRUE, &b_result)) {
-			log_err("W-1277: Failed to move to target folder while sending mid:%llu",
+			mlog2(LV_WARN, "W-1277: Failed to move to target folder while sending mid:%llu",
 			        LLU{rop_util_get_gc_value(message_id)});
-			return FALSE;
+			return ecWarnWithErrors;
 		}
-		return TRUE;
+		return ecSuccess;
 	} else if (b_delete) {
 		exmdb_client::delete_message(dir, plogon->account_id, cpid,
 			parent_id, message_id, TRUE, &b_result);
-		return TRUE;
+		return ecSuccess;
 	}
 	if (!exmdb_client::clear_submit(dir, message_id, false)) {
-		log_err("W-1276: Failed to clear submit flag while sending mid:%llu",
+		mlog2(LV_WARN, "W-1276: Failed to clear submit flag while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ecWarnWithErrors;
 	}
 	ids.count = 1;
 	ids.pids = &message_id;
@@ -1985,11 +1991,11 @@ BOOL common_util_send_message(logon_object *plogon,
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 	if (!exmdb_client::movecopy_messages(dir, plogon->account_id, cpid,
 	    false, nullptr, parent_id, folder_id, false, &ids, &b_partial)) {
-		log_err("W-1275: Failed to move to \"Sent\" folder while sending mid:%llu",
+		mlog2(LV_WARN, "W-1275: Failed to move to \"Sent\" folder while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
-		return FALSE;
+		return ecWarnWithErrors;
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
 alloc_limiter<file_block> *common_util_get_allocator()
@@ -2083,7 +2089,7 @@ std::shared_ptr<MIME_POOL> common_util_get_mime_pool()
 	return g_mime_pool;
 }
 
-static void log_err(const char *format, ...)
+static void mlog2(unsigned int level, const char *format, ...)
 {
 	va_list ap;
 	char log_buf[2048];
@@ -2096,6 +2102,6 @@ static void log_err(const char *format, ...)
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
-	mlog(LV_ERR, "user=%s host=%s  %s",
+	mlog(level, "user=%s host=%s  %s",
 		rpc_info.username, rpc_info.client_ip, log_buf);
 }
