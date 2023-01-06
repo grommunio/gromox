@@ -257,9 +257,10 @@ void ab_tree_stop()
 	g_base_hash.clear();
 }
 
-static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try
+static bool ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try
 {
-	return pbase->phash.emplace(pabnode->minid, pabnode).second ? TRUE : false;
+	pbase->phash.emplace(pabnode->minid, pabnode);
+	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1551: ENOMEM");
 	return false;
@@ -316,8 +317,7 @@ static BOOL ab_tree_load_class(
 		pabnode->node_type = abnode_type::abclass;
 		pabnode->id = cls.child_id;
 		pabnode->minid = ab_tree_make_minid(minid_type::abclass, cls.child_id);
-		if (pbase->phash.find(pabnode->minid) == pbase->phash.end() &&
-		    !ab_tree_cache_node(pbase, pabnode))
+		if (!ab_tree_cache_node(pbase, pabnode))
 			return FALSE;
 		auto child_id = cls.child_id;
 		pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
@@ -434,8 +434,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			pabnode->node_type = abnode_type::abclass;
 			pabnode->id = cls.child_id;
 			pabnode->minid = ab_tree_make_minid(minid_type::abclass, cls.child_id);
-			if (pbase->phash.find(pabnode->minid) == pbase->phash.end() &&
-			    !ab_tree_cache_node(pbase, pabnode)) {
+			if (!ab_tree_cache_node(pbase, pabnode)) {
 				ab_tree_put_abnode(pabnode);
 				return FALSE;
 			}
