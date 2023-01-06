@@ -866,14 +866,12 @@ void mlog(unsigned int level, const char *fmt, ...)
 		va_end(args);
 		return;
 	} else if (g_log_direct) {
-		if (g_log_tty) {
-			if (level <= LV_ERR)
+		if (g_log_tty)
 			fprintf(stderr,
 				level <= LV_ERR ? "\e[1;31m" :
 				level <= LV_WARN ? "\e[31m" :
 				level <= LV_NOTICE ? "\e[1;37m" :
 				level == LV_DEBUG ? "\e[1;30m" : "");
-		}
 		vfprintf(stderr, fmt, args);
 		if (g_log_tty)
 			fprintf(stderr, "\e[39m");

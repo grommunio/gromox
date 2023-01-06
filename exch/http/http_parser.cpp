@@ -1204,8 +1204,10 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		    pchannel_out->available_window)
 			written_len = pchannel_out->available_window;
 	}
-	if (pcontext->write_buff == nullptr && written_len > 0)
+	if (pcontext->write_buff == nullptr && written_len > 0) {
 		mlog(LV_WARN, "W-1534: wl=%zd. report me.", written_len);
+		written_len = 0;
+	}
 	if (g_http_debug) {
 		auto &co = pcontext->connection;
 		char tbuf[24];
