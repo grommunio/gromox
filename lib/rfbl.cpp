@@ -75,7 +75,7 @@ static int gx_reexec_top_fd = -1;
 static unsigned int g_max_loglevel = LV_NOTICE;
 static std::shared_mutex g_log_mutex;
 static std::unique_ptr<FILE, file_deleter> g_logfp;
-static bool g_log_direct = true, g_log_syslog;
+static bool g_log_direct = true, g_log_tty, g_log_syslog;
 
 LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum, const char *name,
     const char *hint) :
@@ -831,6 +831,7 @@ void mlog_init(const char *filename, unsigned int max_level)
 	g_max_loglevel = max_level;
 	g_log_direct = filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0;
 	g_log_syslog = filename != nullptr && strcmp(filename, "syslog") == 0;
+	g_log_tty    = isatty(STDERR_FILENO);
 	if (g_log_direct && getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
 		g_log_syslog = true;
 	if (g_log_syslog) {
@@ -865,7 +866,17 @@ void mlog(unsigned int level, const char *fmt, ...)
 		va_end(args);
 		return;
 	} else if (g_log_direct) {
+		if (g_log_tty) {
+			if (level <= LV_ERR)
+			fprintf(stderr,
+				level <= LV_ERR ? "\e[1;31m" :
+				level <= LV_WARN ? "\e[31m" :
+				level <= LV_NOTICE ? "\e[1;37m" :
+				level == LV_DEBUG ? "\e[1;30m" : "");
+		}
 		vfprintf(stderr, fmt, args);
+		if (g_log_tty)
+			fprintf(stderr, "\e[39m");
 		fputc('\n', stderr);
 		va_end(args);
 		return;

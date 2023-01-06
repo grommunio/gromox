@@ -467,9 +467,9 @@ void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 	if (conn->query(qstr)) {
 		DB_RESULT res = mysql_store_result(conn->get());
 		if (res != nullptr && res.num_rows() > 0)
-			mlog(LV_ERR, "mysql_adaptor: \e[1;31m"
+			mlog(LV_ERR, "mysql_adaptor: "
 			        "There are %zu users with no PR_DISPLAY_TYPE_EX set, "
-			        "which makes their existence _undefined_.\e[0m",
+			        "which makes their existence _undefined_.",
 			        res.num_rows());
 	}
 }
