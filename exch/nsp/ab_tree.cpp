@@ -59,7 +59,7 @@
 using namespace gromox;
 
 struct NSAB_NODE {
-	SIMPLE_TREE_NODE stree;
+	SIMPLE_TREE_NODE stree{};
 	int id = 0;
 	uint32_t minid = 0;
 	void *d_info = nullptr;
@@ -795,8 +795,13 @@ bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
 	if (pabnode->node_type < abnode_type::containers &&
-	    pnode->pdata != nullptr)
+	    pnode->pdata != nullptr) {
+		if (pnode == pnode->pdata) {
+			mlog(LV_WARN, "W-1198: Self-referencing NSAB_NODE");
+			return false;
+		}
 		return ab_tree_node_to_guid(static_cast<const SIMPLE_TREE_NODE *>(pnode->pdata), pguid);
+	}
 	memset(pguid, 0, sizeof(GUID));
 	pguid->time_low = static_cast<unsigned int>(pabnode->node_type) << 24;
 	if (pabnode->node_type == abnode_type::remote) {
@@ -947,7 +952,7 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	if (NULL == pabnode) {
 		return NULL;
 	}
-	pabnode->stree.pdata = pabnode;
+	pabnode->stree.pdata = nullptr;
 	pabnode->node_type = abnode_type::remote;
 	pabnode->minid = xab->minid;
 	pabnode->id = domain_id;
