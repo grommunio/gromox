@@ -38,6 +38,7 @@ using DOMAIN_NODE = domain_node;
 
 using stn_list_t = std::vector<SIMPLE_TREE_NODE *>;
 struct ZAB_NODE;
+/* See exch/nsp/ab_tree.h for commentary */
 struct AB_BASE {
 	AB_BASE() = default;
 	~AB_BASE() { unload(); }

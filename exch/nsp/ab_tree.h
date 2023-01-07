@@ -31,6 +31,15 @@ struct domain_node {
 	domain_node(domain_node &&) noexcept;
 	~domain_node();
 	int domain_id = -1;
+	/*
+	 * All NSAB_NODE objects created for a domain are owned by this domain,
+	 * or more specially, @tree. ~domain_node is in charge of destruction
+	 * of all those NSAB_NODEs (since @tree is modeled as trivial-ct-dt).
+	 *
+	 * More than one NSAB_NODE in the tree may have the same minid, e.g.
+	 * because a user can appear in different AB containers within this
+	 * domain.
+	 */
 	SIMPLE_TREE tree{};
 };
 using DOMAIN_NODE = domain_node;
@@ -46,10 +55,33 @@ struct AB_BASE {
 	GUID guid{};
 	std::atomic<int> status{0}, reference{0};
 	time_t load_time = 0;
+	/*
+	 * base_id==0: not permitted (contains e.g. the AAPI administrator)
+	 * base_id >0: Base is for an organization (multiple domains)
+	 * base_id <0: Base is for one domain (base_id == -domain_id);
+	 *             @domain_list will have exactly one entry.
+	 */
 	int base_id = 0;
+	/*
+	 * domain_node / domain_node::tree owns all the NSAB_NODEs
+	 * that tree references.
+	 * AB_BASE::gal_list and AB_BASE::phash can reference those nodes.
+	 */
 	std::vector<domain_node> domain_list;
+	/*
+	 * @remote_list owns all the NSAB_NODEs it references.
+	 * No other AB_BASE members references these nodes.
+	 */
 	std::vector<NSAB_NODE *> remote_list;
+	/*
+	 * Ordered view (but in no particular order) over all NSAB_NODEs that represent users
+	 * (so no AB containers).
+	 */
 	gal_list_t gal_list;
+	/*
+	 * A phash entry for a minid will point to _any one_ NSAB_NODE in this
+	 * base that has this minid.
+	 */
 	std::unordered_map<int, NSAB_NODE *> phash;
 	std::mutex remote_lock;
 };

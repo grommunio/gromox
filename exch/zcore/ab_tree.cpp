@@ -63,8 +63,13 @@
 
 using namespace gromox;
 
+/* See NSAB_NODE for commentary. */
 struct ZAB_NODE {
-	SIMPLE_TREE_NODE stree;
+	ZAB_NODE() = default;
+	~ZAB_NODE();
+	NOMOVE(ZAB_NODE);
+
+	SIMPLE_TREE_NODE stree{};
 	int id = 0;
 	uint32_t minid = 0;
 	void *d_info = nullptr;
@@ -131,8 +136,9 @@ static AB_NODE* ab_tree_get_abnode()
 	return new(std::nothrow) AB_NODE;
 }
 
-static void ab_tree_put_abnode(AB_NODE *pabnode)
+ZAB_NODE::~ZAB_NODE()
 {
+	auto pabnode = this;
 	switch (pabnode->node_type) {
 	case abnode_type::domain:
 		delete static_cast<sql_domain *>(pabnode->d_info);
@@ -150,7 +156,6 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 	default:
 		break;
 	}
-	delete pabnode;
 }
 
 const SIMPLE_TREE_NODE *
@@ -186,7 +191,7 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 	auto proot = ptree->get_root();
 	if (NULL != proot) {
 		ptree->destroy_node(proot, [](SIMPLE_TREE_NODE *nd) {
-			ab_tree_put_abnode(containerof(nd, AB_NODE, stree));
+			delete containerof(nd, AB_NODE, stree);
 		});
 	}
 	ptree->clear();
@@ -224,9 +229,10 @@ void ab_tree_stop()
 	g_base_hash.clear();
 }
 
-static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try
+static bool ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try
 {
-	return pbase->phash.emplace(pabnode->minid, pabnode).second ? TRUE : false;
+	pbase->phash.emplace(pabnode->minid, pabnode);
+	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1550: ENOMEM");
 	return false;
@@ -277,16 +283,16 @@ static BOOL ab_tree_load_class(
 		pabnode->node_type = abnode_type::abclass;
 		pabnode->id = cls.child_id;
 		pabnode->minid = ab_tree_make_minid(minid_type::abclass, cls.child_id);
-		if (pbase->phash.find(pabnode->minid) == pbase->phash.end() &&
-		    !ab_tree_cache_node(pbase, pabnode))
-			return FALSE;
 		auto child_id = cls.child_id;
 		pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
-		if (pabnode->d_info == nullptr)
+		if (pabnode->d_info == nullptr) {
+			delete pabnode;
 			return false;
+		}
 		auto pclass = &pabnode->stree;
 		ptree->add_child(pnode, pclass, SIMPLE_TREE_ADD_LAST);
-		if (!ab_tree_load_class(child_id, ptree, pclass, pbase))
+		if (!ab_tree_cache_node(pbase, pabnode) ||
+		    !ab_tree_load_class(child_id, ptree, pclass, pbase))
 			return FALSE;
 	}
 
@@ -300,7 +306,7 @@ static BOOL ab_tree_load_class(
 	std::vector<sort_item> parray;
 	auto cl_array = make_scope_exit([&parray]() {
 		for (const auto &e : parray)
-			ab_tree_put_abnode(containerof(e.pnode, AB_NODE, stree));
+			delete containerof(e.pnode, AB_NODE, stree);
 	});
 	for (auto &&usr : file_user) {
 		pabnode = ab_tree_get_abnode();
@@ -309,12 +315,12 @@ static BOOL ab_tree_load_class(
 		}
 		if (usr.dtypx == DT_DISTLIST) {
 			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 		} else {
 			if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 		}
@@ -323,7 +329,7 @@ static BOOL ab_tree_load_class(
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1670: ENOMEM");
-			ab_tree_put_abnode(pabnode);
+			delete pabnode;
 			return false;
 		}
 	}
@@ -350,8 +356,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 	pabnode->node_type = abnode_type::domain;
 	pabnode->id = domain_id;
 	pabnode->minid = ab_tree_make_minid(minid_type::domain, domain_id);
-	if (!ab_tree_cache_node(pbase, pabnode))
-		return FALSE;
 	if (!utf8_check(dinfo.name.c_str()))
 		utf8_filter(dinfo.name.data());
 	if (!utf8_check(dinfo.title.c_str()))
@@ -359,10 +363,14 @@ static BOOL ab_tree_load_tree(int domain_id,
 	if (!utf8_check(dinfo.address.c_str()))
 		utf8_filter(dinfo.address.data());
 	pabnode->d_info = new(std::nothrow) sql_domain(std::move(dinfo));
-	if (pabnode->d_info == nullptr)
+	if (pabnode->d_info == nullptr) {
+		delete pabnode;
 		return false;
+	}
 	auto pdomain = &pabnode->stree;
 	ptree->set_root(pdomain);
+	if (!ab_tree_cache_node(pbase, pabnode))
+		return false;
 
 	std::vector<sql_group> file_group;
 	if (!system_services_get_domain_groups(domain_id, file_group))
@@ -375,14 +383,16 @@ static BOOL ab_tree_load_tree(int domain_id,
 		pabnode->node_type = abnode_type::group;
 		pabnode->id = grp.id;
 		pabnode->minid = ab_tree_make_minid(minid_type::group, grp.id);
-		if (!ab_tree_cache_node(pbase, pabnode))
-			return FALSE;
 		auto grp_id = grp.id;
 		pabnode->d_info = new(std::nothrow) sql_group(std::move(grp));
-		if (pabnode->d_info == nullptr)
+		if (pabnode->d_info == nullptr) {
+			delete pabnode;
 			return false;
+		}
 		auto pgroup = &pabnode->stree;
 		ptree->add_child(pdomain, pgroup, SIMPLE_TREE_ADD_LAST);
+		if (!ab_tree_cache_node(pbase, pabnode))
+			return false;
 		
 		std::vector<sql_class> file_class;
 		if (!system_services_get_group_classes(grp_id, file_class))
@@ -395,18 +405,16 @@ static BOOL ab_tree_load_tree(int domain_id,
 			pabnode->node_type = abnode_type::abclass;
 			pabnode->id = cls.child_id;
 			pabnode->minid = ab_tree_make_minid(minid_type::abclass, cls.child_id);
-			if (pbase->phash.find(pabnode->minid) == pbase->phash.end() &&
-			    !ab_tree_cache_node(pbase, pabnode)) {
-				ab_tree_put_abnode(pabnode);
-				return FALSE;
-			}
 			auto child_id = cls.child_id;
 			pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
-			if (pabnode->d_info == nullptr)
+			if (pabnode->d_info == nullptr) {
+				delete pabnode;
 				return false;
+			}
 			auto pclass = &pabnode->stree;
 			ptree->add_child(pgroup, pclass, SIMPLE_TREE_ADD_LAST);
-			if (!ab_tree_load_class(child_id, ptree, pclass, pbase))
+			if (!ab_tree_cache_node(pbase, pabnode) ||
+			    !ab_tree_load_class(child_id, ptree, pclass, pbase))
 				return FALSE;
 		}
 		
@@ -420,7 +428,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		std::vector<sort_item> parray;
 		auto cl_array = make_scope_exit([&parray]() {
 			for (const auto &e : parray)
-				ab_tree_put_abnode(containerof(e.pnode, AB_NODE, stree));
+				delete containerof(e.pnode, AB_NODE, stree);
 		});
 		for (auto &&usr : file_user) {
 			pabnode = ab_tree_get_abnode();
@@ -429,12 +437,12 @@ static BOOL ab_tree_load_tree(int domain_id,
 			}
 			if (usr.dtypx == DT_DISTLIST) {
 				if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
-					ab_tree_put_abnode(pabnode);
+					delete pabnode;
 					return false;
 				}
 			} else {
 				if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
-					ab_tree_put_abnode(pabnode);
+					delete pabnode;
 					return false;
 				}
 			}
@@ -444,7 +452,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 				parray.push_back(sort_item{&pabnode->stree, temp_buff});
 			} catch (const std::bad_alloc &) {
 				mlog(LV_ERR, "E-1671: ENOMEM");
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 		}
@@ -464,7 +472,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	std::vector<sort_item> parray;
 	auto cl_array = make_scope_exit([&parray]() {
 		for (const auto &e : parray)
-			ab_tree_put_abnode(containerof(e.pnode, AB_NODE, stree));
+			delete containerof(e.pnode, AB_NODE, stree);
 	});
 	for (auto &&usr : file_user) {
 		pabnode = ab_tree_get_abnode();
@@ -473,12 +481,12 @@ static BOOL ab_tree_load_tree(int domain_id,
 		}
 		if (usr.dtypx == DT_DISTLIST) {
 			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 		} else {
 			if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 		}
@@ -488,7 +496,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1672: ENOMEM");
-			ab_tree_put_abnode(pabnode);
+			delete pabnode;
 			return false;
 		}
 	}
@@ -777,8 +785,13 @@ static bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
 	if (pabnode->node_type < abnode_type::containers &&
-	    pnode->pdata != nullptr)
+	    pnode->pdata != nullptr) {
+		if (pnode == pnode->pdata) {
+			mlog(LV_WARN, "W-1197: Self-referencing ZAB_NODE");
+			return false;
+		}
 		return ab_tree_node_to_guid(static_cast<const SIMPLE_TREE_NODE *>(pnode->pdata), pguid);
+	}
 	memset(pguid, 0, sizeof(GUID));
 	pguid->time_low = static_cast<uint32_t>(pabnode->node_type) << 24;
 	if (pabnode->node_type == abnode_type::remote) {
