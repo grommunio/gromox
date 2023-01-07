@@ -874,7 +874,7 @@ void mlog(unsigned int level, const char *fmt, ...)
 				level == LV_DEBUG ? "\e[1;30m" : "");
 		vfprintf(stderr, fmt, args);
 		if (g_log_tty)
-			fprintf(stderr, "\e[39m");
+			fprintf(stderr, "\e[0m");
 		fputc('\n', stderr);
 		va_end(args);
 		return;
