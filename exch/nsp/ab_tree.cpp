@@ -59,7 +59,9 @@
 using namespace gromox;
 
 struct NSAB_NODE {
+	NSAB_NODE() = default;
 	~NSAB_NODE();
+	NOMOVE(NSAB_NODE);
 
 	SIMPLE_TREE_NODE stree{};
 	int id = 0;

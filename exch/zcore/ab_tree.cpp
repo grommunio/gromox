@@ -64,7 +64,9 @@
 using namespace gromox;
 
 struct ZAB_NODE {
+	ZAB_NODE() = default;
 	~ZAB_NODE();
+	NOMOVE(ZAB_NODE);
 
 	SIMPLE_TREE_NODE stree{};
 	int id = 0;
