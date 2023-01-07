@@ -63,6 +63,7 @@
 
 using namespace gromox;
 
+/* See NSAB_NODE for commentary. */
 struct ZAB_NODE {
 	ZAB_NODE() = default;
 	~ZAB_NODE();
