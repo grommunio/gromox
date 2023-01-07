@@ -59,6 +59,8 @@
 using namespace gromox;
 
 struct NSAB_NODE {
+	~NSAB_NODE();
+
 	SIMPLE_TREE_NODE stree{};
 	int id = 0;
 	uint32_t minid = 0;
@@ -139,8 +141,9 @@ static AB_NODE* ab_tree_get_abnode()
 	return new(std::nothrow) AB_NODE;
 }
 
-static void ab_tree_put_abnode(AB_NODE *pabnode)
+NSAB_NODE::~NSAB_NODE()
 {
+	auto pabnode = this;
 	switch (pabnode->node_type) {
 	case abnode_type::domain:
 		delete static_cast<sql_domain *>(pabnode->d_info);
@@ -158,7 +161,6 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 	default:
 		break;
 	}
-	delete pabnode;
 }
 
 const SIMPLE_TREE_NODE *ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
@@ -217,7 +219,7 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 	auto proot = ptree->get_root();
 	if (NULL != proot) {
 		ptree->destroy_node(proot, [](SIMPLE_TREE_NODE *nd) {
-			ab_tree_put_abnode(containerof(nd, AB_NODE, stree));
+			delete containerof(nd, AB_NODE, stree);
 		});
 	}
 	ptree->clear();
@@ -231,7 +233,7 @@ void AB_BASE::unload()
 		ab_tree_destruct_tree(&domain.tree);
 	domain_list.clear();
 	for (auto xab : pbase->remote_list)
-		ab_tree_put_abnode(xab);
+		delete xab;
 }
 
 domain_node::domain_node(domain_node &&o) noexcept :
@@ -320,7 +322,7 @@ static BOOL ab_tree_load_class(
 		auto child_id = cls.child_id;
 		pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
 		if (pabnode->d_info == nullptr) {
-			ab_tree_put_abnode(pabnode);
+			delete pabnode;
 			return false;
 		}
 		auto pclass = &pabnode->stree;
@@ -340,7 +342,7 @@ static BOOL ab_tree_load_class(
 	std::vector<sort_item> parray;
 	auto cl_array = make_scope_exit([&parray]() {
 		for (const auto &e : parray)
-			ab_tree_put_abnode(containerof(e.pnode, AB_NODE, stree));
+			delete containerof(e.pnode, AB_NODE, stree);
 	});
 	for (auto &&usr : file_user) {
 		pabnode = ab_tree_get_abnode();
@@ -349,12 +351,12 @@ static BOOL ab_tree_load_class(
 		}
 		if (usr.dtypx == DT_DISTLIST) {
 			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 		} else {
 			if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 		}
@@ -363,7 +365,7 @@ static BOOL ab_tree_load_class(
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1676: ENOMEM");
-			ab_tree_put_abnode(pabnode);
+			delete pabnode;
 			return false;
 		}
 	}
@@ -398,7 +400,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		utf8_filter(dinfo.address.data());
 	pabnode->d_info = new(std::nothrow) sql_domain(std::move(dinfo));
 	if (pabnode->d_info == nullptr) {
-		ab_tree_put_abnode(pabnode);
+		delete pabnode;
 		return false;
 	}
 	auto pdomain = &pabnode->stree;
@@ -420,7 +422,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		auto grp_id = grp.id;
 		pabnode->d_info = new(std::nothrow) sql_group(std::move(grp));
 		if (pabnode->d_info == nullptr) {
-			ab_tree_put_abnode(pabnode);
+			delete pabnode;
 			return false;
 		}
 		auto pgroup = &pabnode->stree;
@@ -442,7 +444,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			auto child_id = cls.child_id;
 			pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
 			if (pabnode->d_info == nullptr) {
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 			auto pclass = &pabnode->stree;
@@ -462,7 +464,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		std::vector<sort_item> parray;
 		auto cl_array = make_scope_exit([&parray]() {
 			for (const auto &e : parray)
-				ab_tree_put_abnode(containerof(e.pnode, AB_NODE, stree));
+				delete containerof(e.pnode, AB_NODE, stree);
 		});
 		for (auto &&usr : file_user) {
 			pabnode = ab_tree_get_abnode();
@@ -471,12 +473,12 @@ static BOOL ab_tree_load_tree(int domain_id,
 			}
 			if (usr.dtypx == DT_DISTLIST) {
 				if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
-					ab_tree_put_abnode(pabnode);
+					delete pabnode;
 					return false;
 				}
 			} else {
 				if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
-					ab_tree_put_abnode(pabnode);
+					delete pabnode;
 					return false;
 				}
 			}
@@ -486,7 +488,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 				parray.push_back(sort_item{&pabnode->stree, temp_buff});
 			} catch (const std::bad_alloc &) {
 				mlog(LV_ERR, "E-1674: ENOMEM");
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 		}
@@ -506,7 +508,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	std::vector<sort_item> parray;
 	auto cl_array = make_scope_exit([&parray]() {
 		for (const auto &e : parray)
-			ab_tree_put_abnode(containerof(e.pnode, AB_NODE, stree));
+			delete containerof(e.pnode, AB_NODE, stree);
 	});
 	for (auto &&usr : file_user) {
 		pabnode = ab_tree_get_abnode();
@@ -515,12 +517,12 @@ static BOOL ab_tree_load_tree(int domain_id,
 		}
 		if (usr.dtypx == DT_DISTLIST) {
 			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 		} else {
 			if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
-				ab_tree_put_abnode(pabnode);
+				delete pabnode;
 				return false;
 			}
 		}
@@ -530,7 +532,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1675: ENOMEM");
-			ab_tree_put_abnode(pabnode);
+			delete pabnode;
 			return false;
 		}
 		cl_array.release();
@@ -689,7 +691,7 @@ static void *nspab_scanwork(void *param)
 			ab_tree_destruct_tree(&domain.tree);
 		pbase->domain_list.clear();
 		for (auto xab : pbase->remote_list)
-			ab_tree_put_abnode(xab);
+			delete xab;
 		pbase->remote_list.clear();
 		pbase->phash.clear();
 		if (!ab_tree_load_base(pbase)) {
@@ -972,7 +974,7 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	else
 		pabnode->d_info = new(std::nothrow) sql_user(*static_cast<sql_user *>(xab->d_info));
 	if (pabnode->d_info == nullptr && xab->node_type != abnode_type::remote) {
-		ab_tree_put_abnode(pabnode);
+		delete pabnode;
 		return nullptr;
 	}
 	pbase1.reset();
@@ -980,7 +982,7 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	try {
 		pbase->remote_list.push_back(pabnode);
 	} catch (const std::bad_alloc &) {
-		ab_tree_put_abnode(pabnode);
+		delete pabnode;
 		return nullptr;
 	}
 	return &pabnode->stree;
