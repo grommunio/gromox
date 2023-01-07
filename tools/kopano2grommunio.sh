@@ -2,16 +2,22 @@
 #
 # A Shell migration script for Kopano 2 grommunio migration.
 #
-# Copyright 2022 Walter Hofstaedtler
+# Copyright 2022-2023 Walter Hofstaedtler
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Authors: grommunio <dev@grommunio.com>
 #          Walter Hofstaedtler <walter@hofstaedtler.com>
+#
+#
+# Credits:
+#
+# Some changes in the documentation of crpb.
 #
 # Notice:
 #
 # This script assumes a correct setup with grommunio attached to the LDAP/AD.
 # Script is compatible with any Linux target source.
 # Important, this script was written for GNU Bash and isn't POSIX-compliant.
+# The script requires at least Gromox 1.37.
 #
 # Instructions:
 #
@@ -117,8 +123,40 @@
 #    Verify the store GUIDs match the store GUIDs found in the list created by create_k2g_migration_lists.sh.
 #    If the store GUIDs do *not* match, migrate this mailbox with the store GUID fond with create_k2g_migration_lists.sh.
 #    A store GUID mismatch might happen, if an Kopano store was unhooked and hooked onto another account.
+#    Please note, the script can only create mailboxes if the source is an LDAP directory.
+#    Mailboxes that do not come from an LDAP directory must first be created manually in the Admin UI.
 #
-# 5. Define the variables.
+# 5. Set the variables - how should the migration proceed
+#    Here you have to decide if the mailboxes should be created by the script and when the mailboxes should be created.
+#
+#    If the mailboxes are already created or there is no LDAP source:
+#      CreateGrommunioMailbox=0
+#      OnlyCreateGrommunioMailbox=0
+#    In this case, the script imports the Kopano data into existing mailboxes, mailbox by mailbox.
+#
+#    The mailboxes should be created during the migration process:
+#      CreateGrommunioMailbox=1
+#      OnlyCreateGrommunioMailbox=0
+#    In this case, the script creates the mailbox and imports the Kopano data,
+#    then creates the next mailbox and imports the Kopano data, and so on.
+#
+#    If the mailboxes should be created by the script before the actual migration.
+#    This is a 2 pass migration, first all mailboxes are created and in the 2nd pass the Kopano data is migrated:
+#      CreateGrommunioMailbox=1
+#      OnlyCreateGrommunioMailbox=1
+#    This is especially useful for large migrations, the mailboxes are created in advance,
+#    the users work with Grommunio immediately but still have empty mailboxes,
+#    new mails arrive in the mailboxes and the old mails are migrated one by one.
+#    For the 2nd pass set the variables like this:
+#      CreateGrommunioMailbox=0
+#      OnlyCreateGrommunioMailbox=0
+#
+#    When the migration is running unattended:
+#      StopOnError=0
+#    Otherwise the script waits for a command from the admin in case of an error and that
+#    the whole night long. Thereby valuable migration time is destroyed.
+#
+#    The other settings are explained in the variables.
 #
 # 6. Test the migration
 #    Run the migration in a screen to avoid broken migrations to do lost connections.
@@ -260,11 +298,16 @@ Write-MLog () {
 
 # find required commands
 SSHFS="$(which sshfs)"
-FUSERMOUNT="$(which fusermount)"
+# OpenSuse 15.4 provides fusermount3
+FUSERMOUNT="$(which fusermount3 2>/dev/null)"
+if [[ -z $FUSERMOUNT ]];then
+    # OpenSuse 15.3 and Debian 11 provides fusermount
+    FUSERMOUNT="$(which fusermount 2>/dev/null)"
+fi
 #
-for File in $SSHFS $FUSERMOUNT;
+for File in "$SSHFS" "$FUSERMOUNT";
 do
-    if [[ ! -e $File ]]; then
+    if [[ ! -f $File ]]; then
         # VERBOSE=1
         Write-MLog "Error: command $File not found, aborting." red
         exit 1 # terminate and indicate error
@@ -405,7 +448,7 @@ while IFS= read -r line; do
     else
         if [[ $CreateGrommunioMailbox -eq 1 ]]; then
             Write-MLog "Try to create the mailbox: $MigMBox" yellow
-            grommunio-admin ldap downsync -l $MailboxLanguage -a "$MigMBox" | tee -a $LOG
+            grommunio-admin ldap downsync -l $MailboxLanguage "$MigMBox" | tee -a $LOG
             ExitCode=${PIPESTATUS[0]}
             if [[ $ExitCode -eq 0 ]]; then
                 # OK
