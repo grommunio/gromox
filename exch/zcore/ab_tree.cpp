@@ -278,17 +278,14 @@ static BOOL ab_tree_load_class(
 		pabnode->node_type = abnode_type::abclass;
 		pabnode->id = cls.child_id;
 		pabnode->minid = ab_tree_make_minid(minid_type::abclass, cls.child_id);
-		if (!ab_tree_cache_node(pbase, pabnode)) {
-			ab_tree_put_abnode(pbanode);
-			return FALSE;
-		}
 		auto child_id = cls.child_id;
 		pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
 		if (pabnode->d_info == nullptr)
 			return false;
 		auto pclass = &pabnode->stree;
 		ptree->add_child(pnode, pclass, SIMPLE_TREE_ADD_LAST);
-		if (!ab_tree_load_class(child_id, ptree, pclass, pbase))
+		if (!ab_tree_cache_node(pbase, pabnode) ||
+		    !ab_tree_load_class(child_id, ptree, pclass, pbase))
 			return FALSE;
 	}
 
@@ -352,10 +349,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 	pabnode->node_type = abnode_type::domain;
 	pabnode->id = domain_id;
 	pabnode->minid = ab_tree_make_minid(minid_type::domain, domain_id);
-	if (!ab_tree_cache_node(pbase, pabnode)) {
-		ab_tree_put_abnode(pbanode);
-		return FALSE;
-	}
 	if (!utf8_check(dinfo.name.c_str()))
 		utf8_filter(dinfo.name.data());
 	if (!utf8_check(dinfo.title.c_str()))
@@ -367,6 +360,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 		return false;
 	auto pdomain = &pabnode->stree;
 	ptree->set_root(pdomain);
+	if (!ab_tree_cache_node(pbase, pabnode))
+		return false;
 
 	std::vector<sql_group> file_group;
 	if (!system_services_get_domain_groups(domain_id, file_group))
@@ -379,16 +374,14 @@ static BOOL ab_tree_load_tree(int domain_id,
 		pabnode->node_type = abnode_type::group;
 		pabnode->id = grp.id;
 		pabnode->minid = ab_tree_make_minid(minid_type::group, grp.id);
-		if (!ab_tree_cache_node(pbase, pabnode)) {
-			ab_tree_put_abnode(pbanode);
-			return FALSE;
-		}
 		auto grp_id = grp.id;
 		pabnode->d_info = new(std::nothrow) sql_group(std::move(grp));
 		if (pabnode->d_info == nullptr)
 			return false;
 		auto pgroup = &pabnode->stree;
 		ptree->add_child(pdomain, pgroup, SIMPLE_TREE_ADD_LAST);
+		if (!ab_tree_cache_node(pbase, pabnode))
+			return false;
 		
 		std::vector<sql_class> file_class;
 		if (!system_services_get_group_classes(grp_id, file_class))
@@ -401,17 +394,14 @@ static BOOL ab_tree_load_tree(int domain_id,
 			pabnode->node_type = abnode_type::abclass;
 			pabnode->id = cls.child_id;
 			pabnode->minid = ab_tree_make_minid(minid_type::abclass, cls.child_id);
-			if (!ab_tree_cache_node(pbase, pabnode)) {
-				ab_tree_put_abnode(pabnode);
-				return FALSE;
-			}
 			auto child_id = cls.child_id;
 			pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
 			if (pabnode->d_info == nullptr)
 				return false;
 			auto pclass = &pabnode->stree;
 			ptree->add_child(pgroup, pclass, SIMPLE_TREE_ADD_LAST);
-			if (!ab_tree_load_class(child_id, ptree, pclass, pbase))
+			if (!ab_tree_cache_node(pbase, pabnode) ||
+			    !ab_tree_load_class(child_id, ptree, pclass, pbase))
 				return FALSE;
 		}
 		
