@@ -27,7 +27,7 @@ struct curl_del {
 using namespace std::string_literals;
 using namespace gromox;
 
-static bool g_tty;
+static bool g_tty, g_verbose;
 static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
 static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_legacydn, *g_auth_user;
 static constexpr HXoption g_options_table[] = {
@@ -35,6 +35,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'H', HXTYPE_STRING, &g_disc_url, nullptr, nullptr, 0, "Full autodiscover URL to use"},
 	{nullptr, 'e', HXTYPE_STRING, &g_emailaddr, nullptr, nullptr, 0, "Perform discovery for this specific store (username/emailaddr)", "USERNAME"},
 	{nullptr, 'u', HXTYPE_STRING, &g_auth_user, nullptr, nullptr, 0, "Use a distinct user for authentication", "USERNAME"},
+	{nullptr, 'v', HXTYPE_NONE, &g_verbose, nullptr, nullptr, 0, "Be verbose, dump HTTP and XML"},
 	{nullptr, 'x', HXTYPE_STRING, &g_legacydn, nullptr, nullptr, 0, "Legacy DN"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -295,9 +296,11 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 	ret = curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, oxd_write);
 	if (ret != CURLE_OK)
 		return ret;
-	ret = curl_easy_setopt(ch, CURLOPT_VERBOSE, 1L);
-	if (ret != CURLE_OK)
-		return ret;
+	if (g_verbose) {
+		ret = curl_easy_setopt(ch, CURLOPT_VERBOSE, 1L);
+		if (ret != CURLE_OK)
+			return ret;
+	}
 	ret = curl_easy_setopt(ch, CURLOPT_USERAGENT, g_user_agent);
 	if (ret != CURLE_OK)
 		return ret;
@@ -342,15 +345,21 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "curl_easy_setopt(): %s\n", curl_easy_strerror(result));
 		return EXIT_FAILURE;
 	}
-	printf("* Request body:\n%s\n\n", xml_request->CStr());
+	if (g_verbose)
+		printf("* Request body:\n%s\n\n", xml_request->CStr());
 	result = curl_easy_perform(ch);
 	if (result != CURLE_OK) {
 		fprintf(stderr, "curl_easy_perform(): %s\n", curl_easy_strerror(result));
 		return EXIT_FAILURE;
 	}
-	printf("* Response body:\n%s\n", xml_response.c_str());
-	if (!oxd_validate_response(xml_response))
+	if (g_verbose)
+		printf("* Response body:\n%s\n", xml_response.c_str());
+	auto ret = oxd_validate_response(xml_response);
+	if (!ret) {
+		if (!g_verbose)
+			fprintf(stderr, "* Use -v option for verbose results.\n");
 		return EXIT_FAILURE;
+	}
 	fprintf(stderr, "* Response has validated\n");
 	return EXIT_SUCCESS;
 }

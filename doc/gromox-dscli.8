@@ -5,7 +5,7 @@
 gromox\-dscli \(em AutoDiscover command line utility
 .SH Synopsis
 \fBPASS=\fP\fIsecret\fP \fBgromox\-dscli\fP [\fB\-H\fP \fIhttps://host/path\fP]
-[\fB\-h\fP \fIhostonly\fP] [\fB\-u\fP \fIemailaddr\fP]
+[\fB\-h\fP \fIhostonly\fP] [\fB\-u\fP \fIemailaddr\fP] [\fB\-v\fP]
 .SH Description
 This utility facilitates sending/receiving AutoDiscover request/responses
 to/from a server for testing.
@@ -33,6 +33,9 @@ Default: derive from \-e argument, otherwise (\-x) \fIlocalhost\fP
 Use a distinct username for authentication.
 .br
 Default: inherit from \-e option
+.TP
+\fB\-v\fP
+Be verbose and dump the HTTP/XML request/responses.
 .TP
 \fB\-x\fP \fI/o=1234578/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=username\fP
 LegacyDN field to send along in the request.
