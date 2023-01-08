@@ -41,6 +41,7 @@ using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 namespace gromox {
 bool g_oxcical_allday_ymd = true;
+bool oxcmail_exchsched_compat = false;
 }
 
 static constexpr char
@@ -1254,10 +1255,13 @@ static BOOL oxcical_parse_organizer(const ical_component &main_event,
 			paddress = NULL;
 	}
 	pdisplay_name = piline->get_first_paramval("CN");
-	if (pdisplay_name != nullptr)
-		if (pmsg->proplist.set(PR_SENT_REPRESENTING_NAME, pdisplay_name) != 0 ||
-		    pmsg->proplist.set(PR_SENDER_NAME, pdisplay_name) != 0)
+	if (pdisplay_name != nullptr) {
+		if (pmsg->proplist.set(PR_SENT_REPRESENTING_NAME, pdisplay_name) != 0)
 			return FALSE;
+		if (oxcmail_exchsched_compat &&
+		    pmsg->proplist.set(PR_SENDER_NAME, pdisplay_name) != 0)
+			return false;
+	}
 	if (paddress == nullptr)
 		return TRUE;
 	tmp_bin.pb = tmp_buff;
@@ -1267,12 +1271,15 @@ static BOOL oxcical_parse_organizer(const ical_component &main_event,
 	if (pmsg->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP") != 0 ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, paddress) != 0 ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, paddress) != 0 ||
-	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != 0 ||
-	    pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != 0 ||
-	    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != 0 ||
-	    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != 0 ||
-	    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != 0)
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != 0)
 		return FALSE;
+	if (oxcmail_exchsched_compat) {
+		if (pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != 0 ||
+		    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != 0 ||
+		    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != 0 ||
+		    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != 0)
+			return false;
+	}
 	return TRUE;
 }
 

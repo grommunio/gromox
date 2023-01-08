@@ -36,8 +36,11 @@ enum class repr_grant {
 };
 
 /**
- * @send_as:	mangle message for Send-As (true) or just
- * 		Send-On-Behalf/No-Change (false)
+ * @send_as:	if true, copy PR_SENT_REPR to PR_SENDER
+ * 		if false, leave PR_SENT_REPR at its value
+ *
+ * Re-lookup PR_SENT_REP and PR_SENDER and fill in ADDRTYPE, EMAIL_ADDRESS,
+ * SMTP_ADDRESS, etc.
  */
 static gxerr_t oxomsg_rectify_message(message_object *pmessage,
     const char *representing_username, bool send_as)
@@ -228,7 +231,11 @@ static repr_grant oxomsg_get_perm(const char *account, const char *repr)
 static ec_error_t pass_scheduling(const char *code, const char *account,
     const char *username, message_object &msg, const char *cls)
 {
-	/* This models EXC behavior. It's silly. */
+	/*
+	 * IPM.Schedule is special; PR_SENT_REPRESENTING contains the
+	 * organizer, not the delegator. So there is no delegation to
+	 * check/reject. oxcmail_export also checks message class again.
+	 */
 	if (cls != nullptr && strncasecmp(cls, "IPM.Schedule.", 13) == 0)
 		return ecSuccess;
 	mlog(LV_ERR, "%s: %s tried to send message %llxh (class %s) with repr/from=<%s>, "
@@ -320,11 +327,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		           tmp_propvals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
 			return ret;
-		/* Unlike EXC, do not allow representation. */
-		gx_strlcpy(username, account, std::size(username));
-		repr_grant = repr_grant::send_as;
 	}
-	assert(repr_grant >= repr_grant::send_on_behalf);
 	gxerr_t err = oxomsg_rectify_message(pmessage, username,
 	              repr_grant >= repr_grant::send_as);
 	if (err != GXERR_SUCCESS)
@@ -638,11 +641,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		           cls_vals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
 			return ret;
-		/* Unlike EXC, do not allow representation. */
-		gx_strlcpy(username, account, std::size(username));
-		repr_grant = repr_grant::send_as;
 	}
-	assert(repr_grant >= repr_grant::send_on_behalf);
 	gxerr_t err = oxomsg_rectify_message(pmessage, username,
 	              repr_grant >= repr_grant::send_as);
 	if (err != GXERR_SUCCESS)
