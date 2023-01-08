@@ -962,6 +962,9 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 	
 	memset(&tmp_tm, 0, sizeof(tmp_tm));
 	str_zone = strptime(str_time, "%a, %d %b %Y %H:%M:%S ", &tmp_tm);
+	if (str_zone == nullptr)
+		/* DOW is optional */
+		str_zone = strptime(str_time, "%d %b %Y %H:%M:%S ", &tmp_tm);
 	if (NULL == str_zone) {
 		return FALSE;
 	}
