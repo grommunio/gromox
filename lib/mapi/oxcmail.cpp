@@ -1533,6 +1533,17 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 		penum_param->last_propid ++;
+	} else if (strcasecmp(key, "Received") == 0 &&
+	    !penum_param->pmsg->proplist.has(PR_MESSAGE_DELIVERY_TIME)) {
+		/* Try to find a halfway useful value for last delivery for EML imports */
+		for (auto p = strchr(field, ';'); p != nullptr;
+		     p = strchr(p, ';')) {
+			if (!parse_rfc822_timestamp(++p, &tmp_time))
+				continue;
+			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
+			if (penum_param->pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &tmp_int64) != 0)
+				return false;
+		}
 	}
 	return TRUE;
 }
