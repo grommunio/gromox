@@ -1,7 +1,7 @@
 #
-# A PowerShell migration script for Exchange.
+# A PowerShell script for Exchange to grommunio migration.
 #
-# Copyright 2022 grommunio GmbH
+# Copyright 2022-2023 Walter Hofstaedtler & grommunio GmbH
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Authors: grommunio <dev@grommunio.com>
 #          Walter Hofstaedtler <walter@hofstaedtler.com>
@@ -26,19 +26,49 @@
 #
 # 4. Test the SSH login for plink.exe that it accepts the host key.
 #
-# 5. Fill in the variables.
+# 5. Set the variables - how should the migration proceed
+#    Here you have to decide if the mailboxes should be created by the script and when the mailboxes should be created.
+#
+#    If the mailboxes are already created:
+#      $CreateGrommunioMailbox = $false
+#      $OnlyCreateGrommunioMailbox = $false
+#    In this case, the script migrates the Exchange data into existing mailboxes, mailbox by mailbox.
+#
+#    The mailboxes should be created during the migration process:
+#      $CreateGrommunioMailbox = $true
+#      $OnlyCreateGrommunioMailbox = $false
+#    In this case, the script creates the mailbox and migrates the Exchange data,
+#    then creates the next mailbox and migrates the Exchange data, and so on.
+#
+#    If the mailboxes should be created by the script before the actual migration.
+#    This is a 2 pass migration, first all mailboxes are created and in the 2nd pass the Exchange data is migrated:
+#      $CreateGrommunioMailbox = $true
+#      $OnlyCreateGrommunioMailbox = $true
+#    This is especially useful for large migrations, the mailboxes are created in advance,
+#    the users may work with Grommunio immediately but still have empty mailboxes,
+#    new mails arrive in the mailboxes and the old mails are migrated one by one.
+#    For the 2nd pass set the variables like this:
+#      $CreateGrommunioMailbox = $false
+#      $OnlyCreateGrommunioMailbox = $false
+#
+#    When the migration is running unattended:
+#      $StopOnError = $false
+#    Otherwise the script waits for a command from the Administrator in case of an error and that
+#    the whole night long. Thereby valuable migration time is destroyed.
+#
+#    The other settings are explained in the variables.
 #
 # 6. Launch the script from an Exchange Admin shell.
 #
 #	Optional: Manually launch the Exchange Admin Shell for advanced functionality.
-#	The Exchange 2013 Management Shell reports an old PowerShell 2.0.
+#	The Exchange 2010 Management Shell reports an old PowerShell 2.0.
 #	Unfortunately, PowerShell 2.0 is missing some important commands
 #	which this script needs for advanced functionality.
-#	If you are migrating from Exchange 2013 and want to record the output of the
+#	If you are migrating from Exchange 2010 and want to record the output of the
 #	Linux commands in the log, you need to start the PowerShell session with this command:
 #	C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -version 3.0 -noexit -command ". 'C:\Program Files\Microsoft\Exchange Server\V14\bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto"
 #
-# 7. Test.
+# 7. Test the migration.
 #
 # You may see this error:
 #
@@ -94,6 +124,7 @@ $LinuxUserPWD = "Secret_root_Password"
 $DeletePST = $true
 
 # Wait after each mailbox import and allow exiting.
+# See $StopMarker how to interrupt migration
 $WaitAfterImport = $true
 
 # Stops the script if a mailbox creation or import error occurs
@@ -116,16 +147,23 @@ $WindowsPassword = "<Windows user password>"
 # LDAP must be configured and also be working. Do test LDAP before import.
 $CreateGrommunioMailbox = $true
 
+# Create only the mailboxes, but do not import data
+# This sets CreateGrommunioMailbox = $true and $DeletePST = $false
+$OnlyCreateGrommunioMailbox = $false
+
 # The language with which all mailboxes are created.
 # The languages can be found in: /usr/share/grommunio-admin-api/res/storelangs.json
 $MailboxLanguage = "de_DE"
+
+# Stop marker, if $WaitAfterImport = $false, create this file and migration will be interrupted after current mailbox
+$StopMarker = $WinSharedFolder + "\exchange2grommunio.STOP"
 
 # Write timestamps and summary to this log file.
 #
 $LogFile = $WinSharedFolder + "\exchange2grommunio.log"
 
 # New-MailboxExportRequest accepts the -Priority parameter.
-# Use "Normal" or "High" for Exchange 2013. We found "Normal" is much faster
+# Use "Normal" or "High" for Exchange 2010. We found "Normal" is much faster
 # than "High".
 #
 $MigrationPriority = "Normal"
@@ -180,13 +218,13 @@ function isLocked
 		}
 		if ($LockedFile) {
 			return $True
+		} else {
+			if ($stream) {
+				$stream.Close()
+			}
+			return $False
 		}
-		if ($stream) {
-			$stream.Close()
-		}
-		return $False
 	}
-	return $False
 }
 
 # Mount the Windows shared folder via CIFS
@@ -273,6 +311,8 @@ function Test-Exchange
 	}
 }
 
+# The Main code
+#
 # Do we use an old PowerShell == Version 2.0?
 $PowerShellOld = ($PSVersionTable.PSVersion.Major -eq 2)
 
@@ -312,26 +352,34 @@ if ($PowerShellOld) {
 }
 Write-MLog "" white
 
+if ($OnlyCreateGrommunioMailbox ) {
+	$DeletePST = $false
+	$CreateGrommunioMailbox = $true
+}
+
 # Document settings in log
 #
 Write-MLog "Settings" none
-Write-MLog "`$GrommunioServer ......: $GrommunioServer" none
-Write-MLog "`$WinSharedFolder ......: $WinSharedFolder" none
-Write-MLog "`$LinuxSharedFolder ....: $LinuxSharedFolder" none
-Write-MLog "`$LinuxUser ............: $LinuxUser" none
-Write-MLog "`$IgnoreMboxes .........: $IgnoreMboxes" none
-Write-MLog "`$DeletePST ............: $DeletePST" none
-Write-MLog "`$WaitAfterImport ......: $WaitAfterImport" none
-Write-MLog "`$StopOnError ..........: $StopOnError" none
-Write-MLog "`$AutoMount ............: $AutoMount" none
-Write-MLog "`$WindowsUser ..........: $WindowsUser" none
-Write-MLog "`$CreateGrommunioMailbox: $CreateGrommunioMailbox" none
-Write-MLog "`$MailboxLanguage ......: $MailboxLanguage" none
-Write-MLog "`$LogFile ..............: $$LogFile" none
-Write-MLog "`$MigrationPriority ....: $MigrationPriority" none
+Write-MLog "`$GrommunioServer ...........: $GrommunioServer" none
+Write-MLog "`$WinSharedFolder ...........: $WinSharedFolder" none
+Write-MLog "`$LinuxSharedFolder .........: $LinuxSharedFolder" none
+Write-MLog "`$LinuxUser .................: $LinuxUser" none
+Write-MLog "`$IgnoreMboxes ..............: $IgnoreMboxes" none
+Write-MLog "`$DeletePST .................: $DeletePST" none
+Write-MLog "`$WaitAfterImport ...........: $WaitAfterImport" none
+Write-MLog "`$StopOnError ...............: $StopOnError" none
+Write-MLog "`$AutoMount .................: $AutoMount" none
+Write-MLog "`$WindowsUser ...............: $WindowsUser" none
+Write-MLog "`$CreateGrommunioMailbox ....: $CreateGrommunioMailbox" none
+Write-MLog "`$OnlyCreateGrommunioMailbox : $OnlyCreateGrommunioMailbox" none
+Write-MLog "`$MailboxLanguage ...........: $MailboxLanguage" none
+Write-MLog "`$StopMarker ................: $StopMarker" none
+
+Write-MLog "`$LogFile ...................: $LogFile" none
+Write-MLog "`$MigrationPriority .........: $MigrationPriority" none
 Write-MLog "" none
-Write-MLog "`$PowerShellOld ........: $PowerShellOld" none
-Write-MLog "`$PSScriptRoot .........: $PSScriptRoot" none
+Write-MLog "`$PowerShellOld .............: $PowerShellOld" none
+Write-MLog "`$PSScriptRoot ..............: $PSScriptRoot" none
 Write-MLog "" none
 
 # Check for prerequisites
@@ -369,77 +417,79 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	}
 	Write-MLog "" white
 
-	# Create a .pst file for every mailbox found on system.
-	#
-	Write-MLog "Exporting mailbox $MigMBox to file $MigMBox.pst..." green
+	if (!$OnlyCreateGrommunioMailbox ) {
+		# Create a .pst file for every mailbox found on system.
+		#
+		Write-MLog "Exporting mailbox $MigMBox to file $MigMBox.pst..." green
 
-	# -Mailbox
-	#
-	# The Mailbox parameter specifies the source mailbox where the
-	# contents are being exported from.
-	#
-	# In Exchange 2016 CU7 or later, this parameter is the type
-	# MailboxLocationIdParameter, so the easiest value that you can
-	# use to identify the mailbox is the Alias value.
-	#
-	# In Exchange 2016 CU6 or earlier, this parameter is the type
-	# MailboxOrMailUserIdParameter, so you can use any value that
-	# uniquely identifies the mailbox.
-	#
-	# https://docs.microsoft.com/en-us/powershell/module/exchange/new-mailboxexportrequest?view=exchange-ps
-	#
-	# Exchange 2010 only supports "Normal, High" for the -Priority parameter.
-	#
-	New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority | ft -HideTableHeaders
-	Write-Host -NoNewline "[Wait] " -fore yellow
-	$MailboxesTotal++
+		# -Mailbox
+		#
+		# The Mailbox parameter specifies the source mailbox where the
+		# contents are being exported from.
+		#
+		# In Exchange 2016 CU7 or later, this parameter is the type
+		# MailboxLocationIdParameter, so the easiest value that you can
+		# use to identify the mailbox is the Alias value.
+		#
+		# In Exchange 2016 CU6 or earlier, this parameter is the type
+		# MailboxOrMailUserIdParameter, so you can use any value that
+		# uniquely identifies the mailbox.
+		#
+		# https://docs.microsoft.com/en-us/powershell/module/exchange/new-mailboxexportrequest?view=exchange-ps
+		#
+		# Exchange 2010 only supports "Normal, High" for the -Priority parameter
+		#
+		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority | ft -HideTableHeaders
+		Write-Host -NoNewline "[Wait] " -fore yellow
+		$MailboxesTotal++
 
-	# Wait until the .pst file is created.
-	# We probably should include a timeout to detect hanging exports.
-	$nTimeout = 0
-	while ((Get-MailboxExportRequest -Mailbox $Mailbox).Status -ne "Completed") {
-		Start-Sleep -s 2
-		$nTimeout += 2
-		if ($nTimeout % 60 -eq 0) {
-			Write-Host -NoNewline "|" -fore yellow
-		} else {
-			if ($nTimeout % 10 -eq 0) {
-				Write-Host -NoNewline "." -fore yellow
+		# Wait until the .pst file is created.
+		# We probably should include a timeout to detect hanging exports.
+		$nTimeout = 0
+		while ((Get-MailboxExportRequest -Mailbox $Mailbox).Status -ne "Completed") {
+			Start-Sleep -s 2
+			$nTimeout += 2
+			if ($nTimeout % 60 -eq 0) {
+				Write-Host -NoNewline "|" -fore yellow
+			} else {
+				if ($nTimeout % 10 -eq 0) {
+					Write-Host -NoNewline "." -fore yellow
+				}
 			}
 		}
-	}
 
-	Write-MLog "" white
-	Write-MLog "Export of mailbox $MigMBox took $nTimeout seconds." green
+		Write-MLog "" white
+		Write-MLog "Export of mailbox $MigMBox took $nTimeout seconds." green
 
-	# Show size of exported mailbox in MB.
-	if (Test-Path $WinSharedFolder\$MigMBox.pst) {
-		if ((Get-Item $WinSharedFolder\$MigMBox.pst).length -gt 0mb) {
-			$size = [math]::ceiling($(Get-Item $WinSharedFolder\$MigMBox.pst).length/(1024*1024))
-			Write-MLog "Size of mailbox $MigMBox.pst is $size MB" green
-		}
-	} else {
-		Write-MLog "Error mailbox $MigMBox.pst do not exist!" red
-		# Do not import this mailbox
-		$SkipImportCreateError = $true
-	}
-
-	Write-MLog "" white
-	Write-Mlog "Wait until the file lock of .pst file is released." yellow
-
-	# Wait until the file lock of .pst file is released, Timeout is 300 seconds.
-	$nTimeout = 0
-	Write-Host -NoNewline "[Unlock] " -fore yellow
-	While ($nTimeout -lt 300) {
-		if (isLocked $WinSharedFolder\$MigMBox.pst) {
-			Write-Host -NoNewline "." -fore yellow
+		# Show size of exported mailbox in MB.
+		if (Test-Path $WinSharedFolder\$MigMBox.pst) {
+			if ((Get-Item $WinSharedFolder\$MigMBox.pst).length -gt 0mb) {
+				$size = [math]::ceiling($(Get-Item $WinSharedFolder\$MigMBox.pst).length/(1024*1024))
+				Write-MLog "Size of mailbox $MigMBox.pst is $size MB" green
+			}
 		} else {
-			Write-Host -NoNewline " "
-			Write-MLog "PST lock cleared, after $nTimeout seconds." green
-			break
+			Write-MLog "Error mailbox $MigMBox.pst do not exist!" red
+			# Do not import this mailbox
+			$SkipImportCreateError = $true
 		}
-		start-sleep -seconds 2
-		$nTimeout += 2
+
+		Write-MLog "" white
+		Write-Mlog "Wait until the file lock of .pst file is released." yellow
+
+		# Wait until the file lock of .pst file is released, Timeout is 300 seconds.
+		$nTimeout = 0
+		Write-Host -NoNewline "[Unlock] " -fore yellow
+		While ($nTimeout -lt 300) {
+			if (isLocked $WinSharedFolder\$MigMBox.pst) {
+				Write-Host -NoNewline "." -fore yellow
+			} else {
+				Write-Host -NoNewline " "
+				Write-MLog "PST lock cleared, after $nTimeout seconds." green
+				break
+			}
+			start-sleep -seconds 2
+			$nTimeout += 2
+		}
 	}
 
 	Write-MLog "" white
@@ -472,7 +522,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		}
 	}
 
-	if (!$SkipImportCreateError) {
+	if ( (!$SkipImportCreateError) -and (!$OnlyCreateGrommunioMailbox) ) {
 		Write-MLog "" white
 		$ImportStartDate=(GET-DATE)
 
@@ -519,13 +569,19 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		if (Test-Path -Path $WinSharedFolder\$MigMBox.pst) {
 			Remove-Item -ErrorAction SilentlyContinue -Path $WinSharedFolder\$MigMBox.pst
 		} else {
-			Write-MLog "Error: $WinSharedFolder\$MigMBox.pst not found." red
+			Write-MLog "Error .pst file: $WinSharedFolder\$MigMBox.pst not found." red
 		}
 	}
 	Write-MLog "" white
 	Write-MLog "Total of $MailboxesTotal mailboxes processed, $MailboxesSkipped mailboxes skipped, $MailboxesCreated mailboxes created, $MailboxesImported mailboxes imported, " yellow
 	Write-MLog "$MailboxesCreateFailed mailboxes creation failed, $MailboxesImportFailed imports failed. $MailboxesMB MB of mailbox data imported." yellow
 	Write-MLog "" white
+
+	# if $StopMarker exists, interrupt migration and ask the Admin
+	if (Test-Path -Path $StopMarker) {
+		$WaitAfterImport = $true
+		Write-MLog "Stop marker: $StopMarker found, interrupting migration." yellow
+	}
 
 	if (!$WaitAfterImport) {
 		continue
