@@ -1,4 +1,4 @@
-Development 2.0.39
+Development 2.0.67
 ==================
 
 Behavioral changes:
@@ -8,21 +8,31 @@ Behavioral changes:
 * midb: the "midb_schema_upgrade" config directive is now enabled by default
 * exmdb_provider: increase default value for the "max_store_message_count"
   directive from 200k to infinity
-* mkmidb: remove no-op -T command-line option
+* mkmidb: removed the no-op -T command-line option
+* dscli: XML dumps are now only shown with the (newly added) -v option
 
 Enhancements:
 
 * exmdb_provider: support for private store message and folder softdelete
   (and thus the Recover Deleted Items feature in OL)
 * http: print HTTP responses in full, not just until the first \0
+* mapi_lib: parse "Received" headers into PR_MESSAGE_DELIVERY_TIME for the
+  sake of EML imports
 
 Fixes:
 
 * emsmdb: work around OL crash with Recover Deleted Items dialog
+* emsmdb: rework interpretation of PR_SENT_REPRESENTING on
+  IPM.Schedule objects (relates to the organizer of a meeting when such
+  meeting is forwarded)
 * Deletion of a folder from a public store did trash the store size counter and
   reduce it by an arbitrary amount towards 0, reporting the store to be smaller
   than it really was.
+* nsp: attempt to fix infinite function recursion when trying to resolve
+  ESSDN which are present in the GAB forest but out-of-organization
+* oxcmail: recognize RFC822/5322 dates without a day-of-week part
 * mt2exm: avoid running into PF-1123 error when -D option is used
+* dscli: repair the warning that the tool was not built with DNS SRV support
 
 
 Gromox 2.0 (2023-01-03)
