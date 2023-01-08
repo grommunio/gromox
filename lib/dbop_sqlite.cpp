@@ -218,7 +218,7 @@ static constexpr char tbl_pvt_folders_0[] =
 "  FOREIGN KEY (parent_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE);"
 "CREATE INDEX search_index ON folders(is_search);";
 
-static constexpr char tbl_pvt_folders_9[] =
+static constexpr char tbl_pvt_folders_10[] =
 "CREATE TABLE folders ("
 "  folder_id INTEGER PRIMARY KEY,"
 "  parent_id INTEGER,"
@@ -230,7 +230,10 @@ static constexpr char tbl_pvt_folders_9[] =
 "  max_eid INTEGER NOT NULL,"
 "  `is_deleted` INTEGER DEFAULT 0,"
 "  FOREIGN KEY (parent_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE);"
-"CREATE INDEX search_index9 ON folders(is_search);";
+"CREATE INDEX search_index10 ON folders(is_search);";
+
+static constexpr char tbl_pvt_folders_move10[] =
+"INSERT INTO folders SELECT folder_id, parent_id, change_number, is_search, search_flags, search_criteria, cur_eid, max_eid, 0 AS is_deleted FROM u0";
 
 static constexpr char tbl_pvt_msgs_0[] =
 "CREATE TABLE messages ("
@@ -391,7 +394,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"recipients_properties", tbl_rcptprops_5},
 	{"attachments", tbl_attach_0},
 	{"attachment_properties", tbl_atxprops_6},
-	{"folders", tbl_pvt_folders_9},
+	{"folders", tbl_pvt_folders_10},
 	{"messages", tbl_pvt_msgs_8},
 	{"receive_table", tbl_pvt_recvfld_0},
 	{"search_scopes", tbl_pvt_searchscopes_0},
@@ -525,12 +528,13 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{5, nullptr, "recipients_properties", tbl_rcptprops_5, tbl_rcptprops_move5},
 	{6, nullptr, "attachment_properties", tbl_atxprops_6, tbl_atxprops_move6},
 	/*
-	 * Some AAPI versions generated schema 0 databases with an is_deleted column.
-	 * Some dbop_sqlite versions generated schema 7 databases without
-	 * an is_deleted column. Make it right.
+	 * Some AAPI versions generated schema 0 databases with a
+	 * messages.is_deleted and/or folders.is_deleted column. Some
+	 * dbop_sqlite versions generated schema 7 databases without a
+	 * messages.is_deleted column. Make it right.
 	 */
 	{8, nullptr, "messages", tbl_pvt_msgs_8, tbl_pvt_msgs_move8},
-	{9, "ALTER TABLE `folders` ADD COLUMN `is_deleted` INTEGER DEFAULT 0"},
+	{10, nullptr, "folders", tbl_pvt_folders_10, tbl_pvt_folders_move10},
 	TABLE_END,
 };
 
