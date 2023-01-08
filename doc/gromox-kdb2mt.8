@@ -21,8 +21,9 @@ of the user must be active. Databases with a schema version \fBn61\fP or
 newer (ZCP versions 7.0.3 and onwards, and all KC versions) are supported.
 The kopano\-server(8) process need not be running. Its LDAP need not be
 available either.
+.PP
 ACLs can be extracted, but, owing to the independence of the Kopano LDAP
-data model, require custom post-processing.
+data model, require pre- or post-processing (see below).
 .PP
 The directory of Kopano attachments of the home server should be made available
 in the mount namespace wherever gromox\-kdb2mt runs.
