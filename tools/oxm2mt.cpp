@@ -59,7 +59,12 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static constexpr char S_PROPFILE[] = "__properties_version1.0";
+static constexpr char
+	S_PROPFILE[]   = "__properties_version1.0",
+	S_NP_BASE[]    = "__nameid_version1.0",
+	S_NP_GUIDS[]   = "__substg1.0_00020102",
+	S_NP_ENTRIES[] = "__substg1.0_00030102",
+	S_NP_STRINGS[] = "__substg1.0_00040102";
 
 static YError az_error(const char *prefix, const oxm_error_ptr &err)
 {
@@ -110,6 +115,10 @@ static bin_ptr slurp_stream(libolecf_item_t *dir, const char *file)
 static int read_pte(EXT_PULL &ep, struct pte &pte)
 {
 	if (ep.m_offset + 16 > ep.m_data_size)
+		/*
+		 * read_pte won't always read the entire 16 bytes, so perform a
+		 * check now.
+		 */
 		return EXT_ERR_FORMAT;
 	auto ret = ep.g_uint32(&pte.proptag);
 	if (ret != EXT_ERR_SUCCESS)
@@ -429,6 +438,82 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
 	return 0;
 }
 
+static int npg_read(gi_name_map &map, libolecf_item_t *root)
+{
+	oxm_error_ptr err;
+	oxm_item_ptr nvdir;
+
+	auto ret = libolecf_item_get_sub_item_by_utf8_path(root,
+	           reinterpret_cast<const uint8_t *>(S_NP_BASE),
+	           strlen(S_NP_BASE), &unique_tie(nvdir),
+	           &unique_tie(err));
+	if (ret < 0)
+		return -EIO;
+	else if (ret == 0)
+		return 0;
+
+	auto guidpool = slurp_stream(nvdir.get(), S_NP_GUIDS);
+	auto tblpool = slurp_stream(nvdir.get(), S_NP_ENTRIES);
+	auto strpool = slurp_stream(nvdir.get(), S_NP_STRINGS);
+	EXT_PULL ep;
+	ep.init(tblpool->pv, tblpool->cb, malloc, 0);
+	for (uint16_t current_np = 0; ep.m_offset < ep.m_data_size; ++current_np) {
+		uint32_t niso = 0, iki = 0;
+		auto ret = ep.g_uint32(&niso);
+		if (ret != EXT_ERR_SUCCESS)
+			return -EIO;
+		ret = ep.g_uint32(&iki);
+		if (ret != EXT_ERR_SUCCESS)
+			return -EIO;
+		uint16_t propidx = (iki >> 16) & 0xFFFF;
+		uint16_t guididx = (iki >> 1) & 0x7FF;
+		std::unique_ptr<char[], stdlib_delete> pnstr;
+		PROPERTY_NAME pn_req{};
+		pn_req.kind = (iki & 0x1) ? MNID_STRING : MNID_ID;
+		if (pn_req.kind == MNID_ID) {
+			pn_req.lid = niso;
+		} else {
+			EXT_PULL sp;
+			uint32_t len = 0;
+			sp.init(strpool->pv, strpool->cb, malloc, 0);
+			if (sp.advance(niso) != EXT_ERR_SUCCESS)
+				return -EIO;
+			if (sp.g_uint32(&len) != EXT_ERR_SUCCESS)
+				return -EIO;
+			if (len > 510)
+				len = 510;
+			auto wbuf = std::make_unique<char[]>(len + 2);
+			if (sp.g_bytes(wbuf.get(), len) != EXT_ERR_SUCCESS)
+				return -EIO;
+			wbuf[len] = wbuf[len+1] = '\0';
+			auto s = iconvtext(wbuf.get(), len, "UTF-16", "UTF-8//IGNORE");
+			pnstr.reset(strdup(s.c_str()));
+			if (pnstr == nullptr)
+				return -ENOMEM;
+			pn_req.pname = pnstr.get();
+		}
+		if (guididx == 1) {
+			pn_req.guid = PS_MAPI;
+		} else if (guididx == 2) {
+			pn_req.guid = PS_PUBLIC_STRINGS;
+		} else if (guididx >= 3) {
+			uint32_t ofs = (guididx - 3) * sizeof(GUID);
+			if (guidpool->cb < ofs + sizeof(GUID))
+				return -EIO;
+			EXT_PULL gp;
+			gp.init(&guidpool->pb[ofs], sizeof(GUID), malloc, 0);
+			if (gp.g_guid(&pn_req.guid) != EXT_ERR_SUCCESS)
+				return -EIO;
+		}
+		if (propidx != current_np) {
+			fprintf(stderr, "[NP propidx mismatch %04xh != %04xh\n", propidx, current_np);
+			return -EIO;
+		}
+		map.emplace(PROP_TAG(PT_UNSPECIFIED, 0x8000 + current_np), std::move(pn_req));
+	}
+	return 0;
+}
+
 static errno_t do_file(const char *filename) try
 {
 	oxm_error_ptr err;
@@ -478,6 +563,11 @@ static errno_t do_file(const char *filename) try
 	gi_folder_map_write({});
 
 	gi_name_map name_map;
+	ret = npg_read(name_map, root.get());
+	if (ret < 0) {
+		fprintf(stderr, "Error reading nameids\n");
+		return EXIT_FAILURE;
+	}
 	gi_dump_name_map(name_map);
 	gi_name_map_write(name_map);
 
