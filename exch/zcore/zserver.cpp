@@ -715,7 +715,7 @@ uint32_t zs_logon(const char *username,
 		return ecServerOOM;
 	}
 	auto c = lang_to_charset(lang);
-	tmp_info.cpid = c != nullptr ? cset_to_cpid(c) : 1252;
+	tmp_info.cpid = c != nullptr ? cset_to_cpid(c) : CP_UTF8;
 	tmp_info.flags = flags;
 	time(&tmp_info.last_time);
 	tmp_info.reload_time = tmp_info.last_time;

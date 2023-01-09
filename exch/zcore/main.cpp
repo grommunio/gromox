@@ -70,7 +70,7 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"address_table_size", "3000", CFG_SIZE, "1"},
 	{"config_file_path", PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR},
 	{"data_file_path", PKGDATADIR "/zcore:" PKGDATADIR},
-	{"default_charset", "windows-1252"},
+	{"default_charset", "utf-8"},
 	{"freebusy_tool_path", PKGLIBEXECDIR "/freebusy"},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "1min", "1h"},
