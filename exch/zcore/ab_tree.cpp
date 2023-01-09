@@ -324,7 +324,8 @@ static BOOL ab_tree_load_class(
 				return false;
 			}
 		}
-		ab_tree_get_display_name(&pabnode->stree, 1252, temp_buff, arsizeof(temp_buff));
+		ab_tree_get_display_name(&pabnode->stree, CP_UTF8,
+			temp_buff, std::size(temp_buff));
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
@@ -447,7 +448,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 				}
 			}
 			char temp_buff[1024];
-			ab_tree_get_display_name(&pabnode->stree, 1252, temp_buff, arsizeof(temp_buff));
+			ab_tree_get_display_name(&pabnode->stree, CP_UTF8,
+				temp_buff, std::size(temp_buff));
 			try {
 				parray.push_back(sort_item{&pabnode->stree, temp_buff});
 			} catch (const std::bad_alloc &) {
@@ -491,7 +493,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 			}
 		}
 		char temp_buff[1024];
-		ab_tree_get_display_name(&pabnode->stree, 1252, temp_buff, arsizeof(temp_buff));
+		ab_tree_get_display_name(&pabnode->stree, CP_UTF8,
+			temp_buff, arsizeof(temp_buff));
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
@@ -546,7 +549,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 		return TRUE;
 	std::vector<sort_item> parray;
 	for (auto ptr : pbase->gal_list) {
-		ab_tree_get_display_name(ptr, 1252, temp_buff, arsizeof(temp_buff));
+		ab_tree_get_display_name(ptr, CP_UTF8, temp_buff, std::size(temp_buff));
 		parray.push_back(sort_item{ptr, temp_buff});
 	}
 	std::sort(parray.begin(), parray.end());

@@ -45,7 +45,7 @@ files.
 Default: \fI/usr/share/gromox/zcore\fP
 .TP
 \fBdefault_charset\fP
-Default: \fIwindows-1252\fP
+Default: \fIutf-8\fP
 .TP
 \fBfreebusy_tool_path\fP
 Default: \fI/usr/libexec/gromox/freebusy\fP
