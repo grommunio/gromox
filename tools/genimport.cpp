@@ -410,13 +410,14 @@ void gi_dump_name_map(const gi_name_map &map)
 	fprintf(stderr, "Named properties (%zu entries):\n", map.size());
 	fprintf(stderr, "\t# PROPID (hex) <-> MAPINAMEID definition:\n");
 	for (const auto &[propid, propname] : map) {
+		char g[40];
+		propname.guid.to_str(g, std::size(g), 38);
 		if (propname.kind == MNID_ID)
 			fprintf(stderr, "\t%08xh <-> {MNID_ID, %s, %xh}\n",
-				propid, bin2hex(propname.guid).c_str(),
-				static_cast<unsigned int>(propname.lid));
+				propid, g, static_cast<unsigned int>(propname.lid));
 		else if (propname.kind == MNID_STRING)
 			fprintf(stderr, "\t%08xh <-> {MNID_STRING, %s, %s}\n",
-				propid, bin2hex(propname.guid).c_str(), propname.name.c_str());
+				propid, g, propname.name.c_str());
 	}
 }
 
