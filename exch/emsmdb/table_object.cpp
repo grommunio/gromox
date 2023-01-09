@@ -143,7 +143,7 @@ BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 		pset->count = 0;
 		return TRUE;
 	}
-	if (m_position >= ptable->m_total && b_forward) {
+	if (m_position >= ptable->get_total() && b_forward) {
 		pset->count = 0;
 		return TRUE;
 	}
@@ -168,8 +168,9 @@ void table_object::seek_current(BOOL b_forward, uint16_t row_count)
 	assert(is_loaded());
 	if (b_forward) {
 		m_position += row_count;
-		if (m_position > m_total)
-			m_position = m_total;
+		auto total_rows = get_total();
+		if (m_position > total_rows)
+			m_position = total_rows;
 	} else {
 		if (m_position < row_count) {
 			m_position = 0;
@@ -218,9 +219,19 @@ BOOL table_object::set_restriction(const RESTRICTION *prestriction)
 void table_object::set_position(uint32_t position)
 {
 	assert(is_loaded());
-	if (position > m_total)
-		position = m_total;
+	auto total_rows = get_total();
+	if (position > total_rows)
+		position = total_rows;
 	m_position = position;
+}
+
+uint32_t table_object::get_total() const
+{
+	if (rop_id != ropGetAttachmentTable)
+		return m_total;
+	uint16_t num = 0;
+	static_cast<message_object *>(pparent_obj)->get_attachments_num(&num);
+	return num;
 }
 
 std::unique_ptr<table_object> table_object::create(logon_object *plogon,
@@ -290,8 +301,9 @@ BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 	} else {
 		m_position = bm->position;
 	}
-	if (m_position > m_total)
-		m_position = m_total;
+	auto total_rows = ptable->get_total();
+	if (m_position > total_rows)
+		m_position = total_rows;
 	return TRUE;
 }
 
