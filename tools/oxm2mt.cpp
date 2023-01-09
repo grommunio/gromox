@@ -60,7 +60,6 @@ static constexpr HXoption g_options_table[] = {
 };
 
 static constexpr char S_PROPFILE[] = "__properties_version1.0";
-static gi_name_map name_map;
 
 static YError az_error(const char *prefix, const oxm_error_ptr &err)
 {
@@ -430,7 +429,7 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
 	return 0;
 }
 
-static errno_t do_file(const char *filename, std::vector<message_ptr> &msgvec) try
+static errno_t do_file(const char *filename) try
 {
 	oxm_error_ptr err;
 	oxm_file_ptr file;
@@ -465,7 +464,46 @@ static errno_t do_file(const char *filename, std::vector<message_ptr> &msgvec) t
 	auto ret = do_message(root.get(), *ctnt);
 	if (ret != 0)
 		return ret;
-	msgvec.push_back(std::move(ctnt));
+
+	auto wrret = HXio_fullwrite(STDOUT_FILENO, "GXMT0002", 8);
+	if (wrret < 0)
+		throw YError("PG-1014: %s", strerror(errno));
+	uint8_t flag = false;
+	wrret = HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)); /* splice */
+	if (wrret < 0)
+		throw YError("PG-1015: %s", strerror(errno));
+	wrret = HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)); /* public store */
+	if (wrret < 0)
+		throw YError("PG-1016: %s", strerror(errno));
+	gi_folder_map_write({});
+
+	gi_name_map name_map;
+	gi_dump_name_map(name_map);
+	gi_name_map_write(name_map);
+
+	auto parent = parent_desc::as_folder(~0ULL);
+	if (g_show_tree)
+		gi_dump_msgctnt(0, *ctnt);
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
+		fprintf(stderr, "E-2020: ENOMEM\n");
+		return EXIT_FAILURE;
+	}
+	if (ep.p_uint32(MAPI_MESSAGE) != EXT_ERR_SUCCESS ||
+	    ep.p_uint32(1) != EXT_ERR_SUCCESS ||
+	    ep.p_uint32(parent.type) != EXT_ERR_SUCCESS ||
+	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
+	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS) {
+		fprintf(stderr, "E-2021\n");
+		return EXIT_FAILURE;
+	}
+	uint64_t xsize = cpu_to_le64(ep.m_offset);
+	wrret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
+	if (wrret < 0)
+		throw YError("PG-1017: %s", strerror(errno));
+	wrret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	if (wrret < 0)
+		throw YError("PG-1018: %s", strerror(errno));
 	return 0;
 } catch (const char *e) {
 	fprintf(stderr, "oxm: Exception: %s\n", e);
@@ -490,7 +528,7 @@ int main(int argc, const char **argv)
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (argc < 2) {
+	if (argc != 2) {
 		terse_help();
 		return EXIT_FAILURE;
 	}
@@ -503,55 +541,10 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	textmaps_init(PKGDATADIR);
 
-	std::vector<message_ptr> msgs;
-	for (int i = 1; i < argc; ++i) {
-		auto ret = do_file(argv[i], msgs);
-		if (ret != 0) {
-			fprintf(stderr, "oxm2mt: Import unsuccessful.\n");
-			return EXIT_FAILURE;
-		}
-	}
-
-	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0002", 8);
-	if (ret < 0)
-		throw YError("PG-1014: %s", strerror(errno));
-	uint8_t flag = false;
-	ret = HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)); /* splice */
-	if (ret < 0)
-		throw YError("PG-1015: %s", strerror(errno));
-	ret = HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)); /* public store */
-	if (ret < 0)
-		throw YError("PG-1016: %s", strerror(errno));
-	gi_folder_map_write({});
-	gi_dump_name_map(name_map);
-	gi_name_map_write(name_map);
-
-	auto parent = parent_desc::as_folder(~0ULL);
-	for (size_t i = 0; i < msgs.size(); ++i) {
-		if (g_show_tree) {
-			fprintf(stderr, "Message %zu\n", i + 1);
-			gi_dump_msgctnt(0, *msgs[i]);
-		}
-		EXT_PUSH ep;
-		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
-			fprintf(stderr, "E-2020: ENOMEM\n");
-			return EXIT_FAILURE;
-		}
-		if (ep.p_uint32(MAPI_MESSAGE) != EXT_ERR_SUCCESS ||
-		    ep.p_uint32(i + 1) != EXT_ERR_SUCCESS ||
-		    ep.p_uint32(parent.type) != EXT_ERR_SUCCESS ||
-		    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
-		    ep.p_msgctnt(*msgs[i]) != EXT_ERR_SUCCESS) {
-			fprintf(stderr, "E-2021\n");
-			return EXIT_FAILURE;
-		}
-		uint64_t xsize = cpu_to_le64(ep.m_offset);
-		ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
-		if (ret < 0)
-			throw YError("PG-1017: %s", strerror(errno));
-		ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
-		if (ret < 0)
-			throw YError("PG-1018: %s", strerror(errno));
+	auto ret = do_file(argv[1]);
+	if (ret != 0) {
+		fprintf(stderr, "oxm2mt: Import unsuccessful.\n");
+		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }
