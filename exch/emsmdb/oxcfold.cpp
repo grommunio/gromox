@@ -993,6 +993,6 @@ uint32_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	 */
 	if (!rtable->load())
 		return ecError;
-	*prow_count = rtable->m_total;
+	*prow_count = rtable->get_total();
 	return ecSuccess;
 }

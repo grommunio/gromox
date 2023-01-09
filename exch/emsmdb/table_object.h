@@ -35,6 +35,7 @@ struct table_object {
 	uint32_t get_position() const { return m_position; }
 	void set_position(uint32_t position);
 	void clear_position() { m_position = 0; }
+	uint32_t get_total() const;
 	BOOL create_bookmark(uint32_t *pindex);
 	void remove_bookmark(uint32_t index);
 	void clear_bookmarks() { bookmark_list.clear(); }
