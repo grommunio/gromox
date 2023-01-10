@@ -40,6 +40,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"exmdb_listen_port", "5000"},
 	{"exmdb_pf_read_per_user", "1"},
 	{"exmdb_pf_read_states", "2"},
+	{"exmdb_private_folder_softdelete", "0", CFG_BOOL},
 	{"exmdb_schema_upgrades", "auto"},
 	{"exmdb_search_nice", "0"},
 	{"exmdb_search_pacing", "250", CFG_SIZE},
@@ -89,6 +90,7 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	exmdb_body_autosynthesis = pconfig->get_ll("exmdb_body_autosynthesis");
 	exmdb_pf_read_per_user = pconfig->get_ll("exmdb_pf_read_per_user");
 	exmdb_pf_read_states = pconfig->get_ll("exmdb_pf_read_states");
+	g_exmdb_pvt_folder_softdel = pconfig->get_ll("exmdb_private_folder_softdelete");
 	g_exmdb_search_pacing = pconfig->get_ll("exmdb_search_pacing");
 	g_exmdb_search_yield = pconfig->get_ll("exmdb_search_yield");
 	g_exmdb_search_nice = pconfig->get_ll("exmdb_search_nice");

@@ -156,3 +156,4 @@ extern void db_engine_cancel_batch_mode(db_item_ptr &);
 
 extern unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 extern unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
+extern unsigned int g_exmdb_pvt_folder_softdel;

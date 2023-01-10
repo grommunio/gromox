@@ -73,6 +73,12 @@ When set to 2, folder summaries will indicate the number of new messages.
 .br
 Default: \fI2\fP
 .TP
+\fBexmdb_pmb_folder_softdel\fP
+Enables soft-delete support for folders in private stores. (This feature is
+experimental.) Public folders always have this on.
+.br
+Default: \fIno\fP
+.TP
 \fBexmdb_schema_upgrades\fP
 This directive controls whether database schemas are automatically upgraded
 when a mailbox is loaded. During this time, the mailbox is unavailable and
