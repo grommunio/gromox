@@ -976,7 +976,7 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 		if (pstmt.step() != SQLITE_ROW)
 			return TRUE;
 		if (pstmt.col_int64(0) != 0)
-			b_search = TRUE;
+			b_search = b_hard = TRUE;
 	} else if (fid_val < PUBLIC_FID_CUSTOM) {
 		*pb_result = FALSE;
 		return TRUE;
