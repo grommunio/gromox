@@ -59,7 +59,6 @@ struct HTTP_AUTH_INFO {
 	x void (*wakeup_context)(int); \
 	x void (*activate_context)(int); \
 	x const char *(*get_host_ID)(); \
-	x const char *(*get_plugin_name)(); \
 	x const char *(*get_config_path)(); \
 	x const char *(*get_data_path)(); \
 	x const char *(*get_state_path)(); \
@@ -87,7 +86,6 @@ DECLARE_HPM_API(extern);
 	query_service1(wakeup_context); \
 	query_service1(activate_context); \
 	query_service1(get_host_ID); \
-	query_service1(get_plugin_name); \
 	query_service1(get_config_path); \
 	query_service1(get_data_path); \
 	query_service1(get_state_path); \

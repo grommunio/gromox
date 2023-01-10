@@ -142,8 +142,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 	char separator[16];
 	char org_name[256];
 	int average_handles;
-	char file_name[256];
-	char submit_command[1024], *psearch;
+	char submit_command[1024];
 	
 	/* path contains the config files directory */
 	switch (reason) {
@@ -156,17 +155,11 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
 		textmaps_init();
-		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
-		psearch = strrchr(file_name, '.');
-		if (NULL != psearch) {
-			*psearch = '\0';
-		}
-		auto cfg_path = file_name + ".cfg"s;
-		auto pfile = config_file_initd(cfg_path.c_str(),
+		auto pfile = config_file_initd("exchange_emsmdb.cfg",
 		             get_config_path(), emsmdb_cfg_defaults);
 		if (NULL == pfile) {
-			mlog(LV_ERR, "emsmdb: config_file_initd %s: %s",
-			       cfg_path.c_str(), strerror(errno));
+			mlog(LV_ERR, "emsmdb: config_file_initd exchange_emsmdb.cfg: %s",
+			       strerror(errno));
 			return FALSE;
 		}
 		if (!exch_emsmdb_reload(pfile))

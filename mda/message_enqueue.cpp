@@ -80,7 +80,6 @@ static BOOL (*feedback_entity)(std::list<FLUSH_ENTITY> &&);
 static BOOL (*register_cancel)(CANCEL_FUNCTION);
 static std::list<FLUSH_ENTITY> (*get_from_queue)();
 static const char *(*get_host_ID)();
-static const char *(*get_plugin_name)();
 static const char *(*get_config_path)();
 static const char *(*get_data_path)();
 static const char *(*get_state_path)();
@@ -428,27 +427,16 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 		query_service1(get_from_queue);
 		query_service1(get_host_ID);
 		query_service1(set_flush_ID);
-		query_service1(get_plugin_name);
 		query_service1(get_config_path);
 		query_service1(get_data_path);
 		query_service1(get_state_path);
 		query_service1(get_extra_num);
 		query_service1(get_extra_tag);
 		query_service1(get_extra_value);
-		std::string plugname, filename;
-		try {
-			plugname = get_plugin_name();
-			auto pos = plugname.find('.');
-			if (pos != plugname.npos)
-				plugname.erase(pos);
-			filename = plugname + ".cfg";
-		} catch (...) {
-			return false;
-		}
-		auto pfile = config_file_initd(filename.c_str(), get_config_path(), nullptr);
+		auto pfile = config_file_initd("message_enqueue.cfg", get_config_path(), nullptr);
 		if (pfile == nullptr) {
-			mlog(LV_ERR, "message_enqueue: config_file_initd %s: %s",
-			       filename.c_str(), strerror(errno));
+			mlog(LV_ERR, "message_enqueue: config_file_initd message_enqueue.cfg: %s",
+				strerror(errno));
 			return false;
 		}
 		queue_path = pfile->get_value("ENQUEUE_PATH");

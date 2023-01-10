@@ -153,21 +153,10 @@ static BOOL svc_ip6_filter(int reason, void **data)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_SVC_API(data);
-	std::string plugname, filename;
-	try {
-		plugname = get_plugin_name();
-		auto pos = plugname.find('.');
-		if (pos != plugname.npos)
-			plugname.erase(pos);
-		filename = plugname + ".cfg";
-	} catch (...) {
-		return false;
-	}
-
-	auto pfile = config_file_initd(filename.c_str(), get_config_path(), nullptr);
+	auto pfile = config_file_initd("ip6_filter.cfg", get_config_path(), nullptr);
 	if (pfile == nullptr) {
-		mlog(LV_ERR, "ip6_container: config_file_initd %s: %s",
-		       filename.c_str(), strerror(errno));
+		mlog(LV_ERR, "ip6_filter: config_file_initd ip6_filter.cfg: %s",
+			strerror(errno));
 		return false;
 	}
 	auto strv = pfile->get_value("audit_max_num");
@@ -186,10 +175,10 @@ static BOOL svc_ip6_filter(int reason, void **data)
 		add_name = "ip_filter_add";
 	char temp_buff[64];
 	HX_unit_seconds(temp_buff, arsizeof(temp_buff), std::chrono::duration_cast<std::chrono::seconds>(g_audit_intvl).count(), 0);
-	mlog(LV_INFO, "%s: audit capacity is %d", plugname.c_str(), g_audit_max);
-	mlog(LV_INFO, "%s: audit interval is %s", plugname.c_str(), temp_buff);
-	mlog(LV_INFO, "%s: audit times is %d", plugname.c_str(), g_max_within_interval);
-	mlog(LV_INFO, "%s: temporary list capacity is %zu", plugname.c_str(), g_templist_maxsize);
+	mlog(LV_INFO, "ip6_filter: audit capacity is %d", g_audit_max);
+	mlog(LV_INFO, "ip6_filter: audit interval is %s", temp_buff);
+	mlog(LV_INFO, "ip6_filter: audit times is %d", g_max_within_interval);
+	mlog(LV_INFO, "ip6_filter: temporary list capacity is %zu", g_templist_maxsize);
 
 	if ((add_name != nullptr && !register_service(add_name, ip6flt_add)) ||
 	    (judge_name != nullptr && !register_service(judge_name, ip6flt_judge))) {

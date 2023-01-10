@@ -400,16 +400,11 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 		return TRUE;
 
 	LINK_HOOK_API(apidata);
-	std::string plugname = get_plugin_name();
-	auto pos = plugname.find('.');
-	if (pos != plugname.npos)
-		plugname.erase(pos);
-	auto filename = plugname + ".cfg";
-	auto cfg_file = config_file_initd(filename.c_str(), get_config_path(),
+	auto cfg_file = config_file_initd("remote_delivery.cfg", get_config_path(),
 	                remote_delivery_cfg_defaults);
 	if (cfg_file == nullptr) {
-		mlog(LV_ERR, "remote_delivery: config_file_initd %s: %s",
-		       filename.c_str(), strerror(errno));
+		mlog(LV_ERR, "remote_delivery: config_file_initd remote_delivery.cfg: %s",
+			strerror(errno));
 		return false;
 	}
 	g_files_allocator = alloc_limiter<file_block>(256 * get_threads_num(),

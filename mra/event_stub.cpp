@@ -61,21 +61,11 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		g_notify_stop = true;
 		g_event_stub_func = NULL;
 		double_list_init(&g_back_list);
-		std::string plugname, filename;
-		try {
-			plugname = get_plugin_name();
-			auto pos = plugname.find('.');
-			if (pos != plugname.npos)
-				plugname.erase(pos);
-			filename = plugname + ".cfg";
-		} catch (...) {
-			return false;
-		}
-		auto pfile = config_file_initd(filename.c_str(),
+		auto pfile = config_file_initd("event_stub.cfg",
 		             get_config_path(), nullptr);
 		if (NULL == pfile) {
-			printf("[event_stub]: config_file_initd %s: %s\n",
-			       filename.c_str(), strerror(errno));
+			mlog(LV_ERR, "event_stub: config_file_initd event_stub.cfg: %s\n",
+				strerror(errno));
 			return FALSE;
 		}
 

@@ -66,16 +66,11 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
 		g_notify_stop = true;
-		std::string plugname = get_plugin_name();
-		auto pos = plugname.find('.');
-		if (pos != plugname.npos)
-			plugname.erase(pos);
-		auto cfg_path = plugname + ".cfg";
-		auto pfile = config_file_initd(cfg_path.c_str(),
+		auto pfile = config_file_initd("timer_agent.cfg",
 		             get_config_path(), timer_agent_cfg_defaults);
 		if (NULL == pfile) {
-			mlog(LV_ERR, "timer_agent: config_file_initd %s: %s",
-			       cfg_path.c_str(), strerror(errno));
+			mlog(LV_ERR, "timer_agent: config_file_initd timer_agent.cfg: %s",
+				strerror(errno));
 			return FALSE;
 		}
 

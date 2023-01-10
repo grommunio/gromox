@@ -9,7 +9,6 @@
 #define	DECLARE_SVC_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_serviceF)(const char *, void *, const std::type_info &); \
-	x const char *(*get_plugin_name)(); \
 	x const char *(*get_config_path)(); \
 	x const char *(*get_data_path)(); \
 	x const char *(*get_state_path)(); \
@@ -30,7 +29,6 @@ DECLARE_SVC_API(extern);
 #define LINK_SVC_API(param) do { \
 	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
 	query_service2("register_service", register_serviceF); \
-	query_service1(get_plugin_name); \
 	query_service1(get_config_path); \
 	query_service1(get_data_path); \
 	query_service1(get_state_path); \
