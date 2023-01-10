@@ -136,7 +136,6 @@ static bool transporter_register_remote(HOOK_FUNCTION);
 static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	THREAD_DATA *pthr_data); 
 static void transporter_clean_up_unloading();
-static const char *transporter_get_plugin_name();
 static const char *transporter_get_host_ID();
 static const char *transporter_get_default_domain();
 static const char *transporter_get_admin_mailbox();
@@ -828,7 +827,6 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 	E("get_host_ID", transporter_get_host_ID);
 	E("get_default_domain", transporter_get_default_domain);
 	E("get_admin_mailbox", transporter_get_admin_mailbox);
-	E("get_plugin_name", transporter_get_plugin_name);
 	E("get_config_path", transporter_get_config_path);
 	E("get_data_path", transporter_get_data_path);
 	E("get_state_path", transporter_get_state_path);
@@ -1139,16 +1137,6 @@ static unsigned int transporter_get_context_num()
 static unsigned int transporter_get_threads_num()
 {
 	return g_threads_max;
-}
-
-static const char* transporter_get_plugin_name()
-{
-	if (NULL == g_cur_lib) {
-		return NULL;
-    }
-	if (strncmp(g_cur_lib->file_name, "libgxm_", 7) == 0)
-		return g_cur_lib->file_name + 7;
-    return g_cur_lib->file_name;
 }
 
 static const char* transporter_get_queue_path()

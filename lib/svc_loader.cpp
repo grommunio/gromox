@@ -60,7 +60,6 @@ struct SVC_PLUG_ENTITY {
 
 static int service_load_library(const char *);
 static void *service_query_service(const char *service, const std::type_info &);
-static const char *service_get_plugin_name();
 static const char *service_get_config_path();
 static const char *service_get_data_path();
 static unsigned int service_get_context_num();
@@ -248,9 +247,6 @@ static void *service_query_service(const char *service, const std::type_info &ti
     if (0 == strcmp(service, "register_service")) {
 		return reinterpret_cast<void *>(service_register_service);
     }
-	if (0 == strcmp(service, "get_plugin_name")) {
-		return reinterpret_cast<void *>(service_get_plugin_name);
-	}
 	if (0 == strcmp(service, "get_config_path")) {
 		return reinterpret_cast<void *>(service_get_config_path);
 	}
@@ -268,15 +264,6 @@ static void *service_query_service(const char *service, const std::type_info &ti
 	if (strcmp(service, "get_prog_id") == 0)
 		return reinterpret_cast<void *>(service_get_prog_id);
 	return service_query(service, nullptr, ti);
-}
-
-static const char* service_get_plugin_name()
-{
-	if (NULL == g_cur_plug) {
-		return NULL;
-	}
-	auto fn = g_cur_plug->file_name.c_str();
-	return strncmp(fn, "libgxs_", 7) == 0 ? fn + 7 : fn;
 }
 
 static const char* service_get_config_path()

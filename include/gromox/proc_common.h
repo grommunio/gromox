@@ -23,7 +23,6 @@ struct DCERPC_INTERFACE;
 	x BOOL (*register_interface)(DCERPC_ENDPOINT *, const DCERPC_INTERFACE *); \
 	x void (*unregister_interface)(DCERPC_ENDPOINT *, const DCERPC_INTERFACE *); \
 	x const char *(*get_host_ID)(); \
-	x const char *(*get_plugin_name)(); \
 	x const char *(*get_config_path)(); \
 	x const char *(*get_data_path)(); \
 	x const char *(*get_state_path)(); \
@@ -55,7 +54,6 @@ DECLARE_PROC_API(extern);
 	query_service1(register_interface); \
 	query_service1(unregister_interface); \
 	query_service1(get_host_ID); \
-	query_service1(get_plugin_name); \
 	query_service1(get_config_path); \
 	query_service1(get_data_path); \
 	query_service1(get_state_path); \

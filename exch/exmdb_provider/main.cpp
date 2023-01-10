@@ -115,16 +115,11 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		textmaps_init();
 		exmdb_rpc_alloc = common_util_alloc;
 		exmdb_rpc_free = [](void *) {};
-		std::string cfg_path = get_plugin_name();
-		auto pos = cfg_path.find_last_of('.');
-		if (pos != cfg_path.npos)
-			cfg_path.erase(pos);
-		cfg_path += ".cfg";
-		auto pconfig = g_config_during_init = config_file_initd(cfg_path.c_str(),
+		auto pconfig = g_config_during_init = config_file_initd("exmdb_provider.cfg",
 		               get_config_path(), exmdb_cfg_defaults);
 		if (NULL == pconfig) {
-			mlog(LV_ERR, "exmdb_provider: config_file_initd %s: %s",
-			       cfg_path.c_str(), strerror(errno));
+			mlog(LV_ERR, "exmdb_provider: config_file_initd exmdb_provider.cfg: %s",
+				strerror(errno));
 			return FALSE;
 		}
 		if (!exmdb_provider_reload(pconfig))

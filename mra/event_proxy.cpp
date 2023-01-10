@@ -61,21 +61,11 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
 		g_notify_stop = true;
-		std::string plugname, filename;
-		try {
-			plugname = get_plugin_name();
-			auto pos = plugname.find('.');
-			if (pos != plugname.npos)
-				plugname.erase(pos);
-			filename = plugname + ".cfg";
-		} catch (...) {
-			return false;
-		}
-		auto pfile = config_file_initd(filename.c_str(),
+		auto pfile = config_file_initd("event_proxy.cfg",
 		             get_config_path(), nullptr);
 		if (NULL == pfile) {
-			printf("[event_proxy]: config_file_initd %s: %s\n",
-			       filename.c_str(), strerror(errno));
+			mlog(LV_ERR, "event_proxy: config_file_initd event_proxy.cfg: %s\n",
+				strerror(errno));
 			return FALSE;
 		}
 

@@ -92,16 +92,10 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata) try
 		LINK_PROC_API(ppdata);
 		textmaps_init();
 		/* get the plugin name from system api */
-		std::string plugname = get_plugin_name();
-		auto pos = plugname.find('.');
-		if (pos != plugname.npos)
-			plugname.erase(pos);
-		auto cfg_path = plugname + ".cfg";
-		auto pfile = config_file_initd(cfg_path.c_str(),
+		auto pfile = config_file_initd("exchange_nsp.cfg",
 		             get_config_path(), nsp_cfg_defaults);
 		if (NULL == pfile) {
-			mlog(LV_ERR, "nsp: config_file_initd %s: %s",
-			       cfg_path.c_str(), strerror(errno));
+			mlog(LV_ERR, "nsp: config_file_initd exchange_nsp.cfg: %s", strerror(errno));
 			return FALSE;
 		}
 		if (!exch_nsp_reload(pfile))

@@ -34,21 +34,11 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 	case PLUGIN_INIT: {
 		LINK_HOOK_API(ppdata);
 		textmaps_init();
-		std::string plugname, filename;
-		try {
-			plugname = get_plugin_name();
-			auto pos = plugname.find('.');
-			if (pos != plugname.npos)
-				plugname.erase(pos);
-			filename = plugname + ".cfg";
-		} catch (...) {
-			return false;
-		}
-		auto pfile = config_file_initd(filename.c_str(), get_config_path(),
-		             nullptr);
+		auto pfile = config_file_initd("exmdb_local.cfg",
+		             get_config_path(), nullptr);
 		if (NULL == pfile) {
-			mlog(LV_ERR, "exmdb_local: config_file_initd %s: %s",
-			       filename.c_str(), strerror(errno));
+			mlog(LV_ERR, "exmdb_local: config_file_initd exmdb_local.cfg: %s",
+				strerror(errno));
 			return FALSE;
 		}
 

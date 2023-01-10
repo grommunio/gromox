@@ -7,11 +7,8 @@ user_filter \(em Service plugin for application of user login limits
 The usual config file location is /etc/gromox/user_filter.cfg.
 .TP
 \fBadd_service_name\fP
-The plugin instance will expose its function through this service function
-name. You should not generally this, because other plugins rely on certain
-fixed values.
 .br
-Default: \fIinstance_name\fP_add (e.g. user_filter_add for libgxs_user_filter.so)
+Default: \fIuser_filter_add\fP
 .TP
 \fBaudit_interval\fP
 Default: \fI1minute\fP
@@ -40,27 +37,19 @@ differently or not.
 Default: \fIfalse\fP
 .TP
 \fBjudge_service_name\fP
-The plugin instance will expose its function through this service function
-name. You should not generally this, because other plugins rely on certain
-fixed values.
 .br
-Default: \fIinstance_name\fP_judge
+Default: \fIuser_filter_judge\fP
 .TP
 \fBquery_service_name\fP
-The plugin instance will expose its function through this service function
-name. You should not generally this, because other plugins rely on certain
-fixed values.
 .br
-Default: \fIinstance_name\fP_query
+Default: \fIuser_filter_query\fP
 .TP
 \fBtemp_list_size\fP
 Default: \fI2000\fP
 .SH Files
 .IP \(bu 4
-\fIconfig_file_path\fP/\fIinstance\fP.cfg: configuration file for the instance
-of str_filter (e.g. /etc/gromox/http/user_list.cfg when http(8gx) was made to
-load libgxs_user_list.so.)
+\fIconfig_file_path\fP/user_filter.cfg: configuration
 .IP \(bu 4
-\fIstate_file_path\fP/\fIinstance\fP.txt: greylist
+\fIstate_file_path\fP/user_filter.txt: greylist
 .SH See also
 \fBgromox\fP(7)

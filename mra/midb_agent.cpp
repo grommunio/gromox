@@ -197,21 +197,11 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
 		g_notify_stop = true;
-		std::string plugname, filename;
-		try {
-			plugname = get_plugin_name();
-			auto pos = plugname.find('.');
-			if (pos != plugname.npos)
-				plugname.erase(pos);
-			filename = plugname + ".cfg";
-		} catch (...) {
-			return false;
-		}
-		auto pconfig = config_file_initd(filename.c_str(),
+		auto pconfig = config_file_initd("midb_agent.cfg",
 		               get_config_path(), midb_agent_cfg_defaults);
 		if (NULL == pconfig) {
-			printf("[midb_agent]: config_file_initd %s: %s\n",
-			       filename.c_str(), strerror(errno));
+			mlog(LV_ERR, "midb_agent: config_file_initd midb_agent.cfg: %s\n",
+				strerror(errno));
 			return FALSE;
 		}
 		if (!midb_agent_reload(pconfig))

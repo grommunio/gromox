@@ -61,20 +61,10 @@ static BOOL svc_ip6_container(int reason, void **data)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_SVC_API(data);
-	std::string filename;
-	try {
-		filename = get_plugin_name();
-		auto pos = filename.find('.');
-		if (pos != filename.npos)
-			filename.erase(pos);
-		filename += ".cfg";
-	} catch (...) {
-		return false;
-	}
-	auto pfile = config_file_initd(filename.c_str(), get_config_path(), nullptr);
+	auto pfile = config_file_initd("ip6_container.cfg", get_config_path(), nullptr);
 	if (pfile == nullptr) {
-		mlog(LV_ERR, "ip6_container: config_file_initd %s: %s",
-		       filename.c_str(), strerror(errno));
+		mlog(LV_ERR, "ip6_container: config_file_initd ip6_container.cfg: %s",
+			strerror(errno));
 		return false;
 	}
 	auto strv = pfile->get_value("CONNECTION_MAX_NUM");

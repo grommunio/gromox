@@ -3191,15 +3191,6 @@ static const char *pdu_processor_get_host_ID()
 	return resource_get_string("HOST_ID");
 }
 
-static const char* pdu_processor_get_plugin_name()
-{
-	if (NULL == g_cur_plugin) {
-		return NULL;
-	}
-	auto fn = g_cur_plugin->file_name.c_str();
-	return strncmp(fn, "libgxp_", 7) == 0 ? fn + 7 : fn;
-}
-
 static const char* pdu_processor_get_config_path()
 {
 	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
@@ -3319,9 +3310,6 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 		return reinterpret_cast<void *>(service_register_service);
 	if (strcmp(service, "get_host_ID") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_get_host_ID);
-	}
-	if (strcmp(service, "get_plugin_name") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_get_plugin_name);
 	}
 	if (strcmp(service, "get_config_path") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_get_config_path);

@@ -52,7 +52,6 @@ static const char* flusher_get_extra_tag(int context_ID, int pos);
 static const char* flusher_get_extra_value(int context_ID, int pos);
 
 static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func);
-static const char *flusher_get_plugin_name();
 static const char *flusher_get_config_path();
 static const char *flusher_get_data_path();
 static const char *flusher_get_state_path();
@@ -235,7 +234,6 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 	E("get_extra_tag", flusher_get_extra_tag);
 	E("get_extra_value", flusher_get_extra_value);
 	E("set_flush_ID", flusher_set_flush_ID);
-	E("get_plugin_name", flusher_get_plugin_name);
 	E("get_config_path", flusher_get_config_path);
 	E("get_data_path", flusher_get_data_path);
 	E("get_state_path", flusher_get_state_path);
@@ -292,16 +290,6 @@ static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func)
 		return FALSE;
 	g_flusher_plug->flush_cancel = cancel_func;
 	return TRUE;
-}
-
-static const char* flusher_get_plugin_name()
-{
-	if (NULL == g_flusher_plug) {
-		    return NULL;
-	}
-	if (strncmp(g_flusher_plug->file_name, "libgxf_", 7) == 0)
-		return g_flusher_plug->file_name + 7;
-	return g_flusher_plug->file_name;
 }
 
 static const char* flusher_get_config_path()

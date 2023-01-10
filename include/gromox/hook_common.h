@@ -38,7 +38,6 @@ using HOOK_FUNCTION = BOOL (*)(MESSAGE_CONTEXT *);
 	x const char *(*get_host_ID)(); \
 	x const char *(*get_default_domain)(); \
 	x const char *(*get_admin_mailbox)(); \
-	x const char *(*get_plugin_name)(); \
 	x const char *(*get_config_path)(); \
 	x const char *(*get_data_path)(); \
 	x const char *(*get_state_path)(); \
@@ -65,7 +64,6 @@ DECLARE_HOOK_API(extern);
 	query_service1(get_host_ID); \
 	query_service1(get_default_domain); \
 	query_service1(get_admin_mailbox); \
-	query_service1(get_plugin_name); \
 	query_service1(get_config_path); \
 	query_service1(get_data_path); \
 	query_service1(get_state_path); \
