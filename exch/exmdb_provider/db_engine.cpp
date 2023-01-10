@@ -105,6 +105,7 @@ static std::unordered_map<std::string, DB_ITEM> g_hash_table;
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
 unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
+unsigned int g_exmdb_pvt_folder_softdel;
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_t);
 static void db_engine_notify_content_table_modify_row(db_item_ptr &, uint64_t folder_id, uint64_t message_id);

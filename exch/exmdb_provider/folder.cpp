@@ -962,7 +962,8 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 	BOOL b_search = false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (exmdb_server::is_private()) {
-		b_hard = TRUE;
+		if (!g_exmdb_pvt_folder_softdel)
+			b_hard = TRUE;
 		if (fid_val < PRIVATE_FID_CUSTOM) {
 			*pb_result = FALSE;
 			return TRUE;
