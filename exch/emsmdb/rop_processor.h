@@ -66,4 +66,4 @@ extern logon_object *rop_processor_get_logon_object(LOGMAP *, uint8_t logon_id);
 
 extern unsigned int emsmdb_max_cxh_per_user;
 extern unsigned int emsmdb_max_hoc;
-extern unsigned int emsmdb_max_obh_per_session;
+extern unsigned int emsmdb_max_obh_per_session, emsmdb_pvt_folder_softdel;

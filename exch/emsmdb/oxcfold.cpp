@@ -324,6 +324,10 @@ uint32_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	BOOL b_sub    = (flags & DEL_FOLDERS) ? TRUE : false;
 	BOOL b_hard   = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	if (plogon->is_private()) {
+		if (!emsmdb_pvt_folder_softdel) {
+			flags |= DELETE_HARD_DELETE;
+			b_hard = TRUE;
+		}
 		if (!exmdb_client::get_folder_property(plogon->get_dir(), 0,
 		    folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
