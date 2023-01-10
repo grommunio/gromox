@@ -79,6 +79,7 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"emsmdb_max_cxh_per_user", "100", CFG_SIZE, "100"},
 	{"emsmdb_max_hoc", "10", CFG_SIZE, "1"},
 	{"emsmdb_max_obh_per_session", "500", CFG_SIZE, "500"},
+	{"emsmdb_private_folder_softdelete", "0", CFG_BOOL},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "60s", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
 	{"max_mail_length", "64M", CFG_SIZE, "1"},
@@ -106,6 +107,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	g_rop_debug = pconfig->get_ll("rop_debug");
 	emsmdb_max_cxh_per_user = pconfig->get_ll("emsmdb_max_obh_per_session");
 	emsmdb_max_obh_per_session = pconfig->get_ll("emsmdb_max_obh_per_session");
+	emsmdb_pvt_folder_softdel = pconfig->get_ll("emsmdb_private_folder_softdelete");
 	return true;
 } catch (const cfg_error &) {
 	return false;
