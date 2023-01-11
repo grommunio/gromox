@@ -906,7 +906,6 @@ static BOOL oxdisco_init(void **apidata)
 		mlog(LV_DEBUG, "[oxdisco] failed to initialize plugin: %s", e.what());
 		return false;
 	}
-	mlog(LV_DEBUG, "[oxdisco]: plugin is loaded into system");
 	return TRUE;
 }
 
