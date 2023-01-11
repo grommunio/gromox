@@ -9,3 +9,6 @@ extern GX_EXPORT int gx_inet_listen(const char *host, uint16_t port);
 extern GX_EXPORT int gx_local_listen(const char *path);
 extern GX_EXPORT int gx_peer_is_local2(const sockaddr *, socklen_t);
 extern GX_EXPORT bool gx_peer_is_local(const char *);
+extern GX_EXPORT void gx_reexec_record(int);
+
+extern int gx_reexec_top_fd;

@@ -51,6 +51,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/socket.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
@@ -71,7 +72,6 @@ class hxmc_deleter {
 
 }
 
-static int gx_reexec_top_fd = -1;
 static unsigned int g_max_loglevel = LV_NOTICE;
 static std::shared_mutex g_log_mutex;
 static std::unique_ptr<FILE, file_deleter> g_logfp;
@@ -594,12 +594,6 @@ errno_t gx_reexec(const char *const *argv) try
 #endif
 } catch (const std::bad_alloc &) {
 	return ENOMEM;
-}
-
-void gx_reexec_record(int fd)
-{
-	if (fd > gx_reexec_top_fd)
-		gx_reexec_top_fd = fd;
 }
 
 errno_t switch_user_exec(const CONFIG_FILE &cf, const char **argv)

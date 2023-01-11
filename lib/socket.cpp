@@ -31,6 +31,8 @@ struct sock_del {
 };
 }
 
+int gx_reexec_top_fd = -1;
+
 /**
  * Return the pointer to the singular colon character, any other input
  * yields nullptr.
@@ -362,4 +364,21 @@ bool gx_peer_is_local(const char *addr)
 	if (getaddrinfo(addr, nullptr, &hints, &unique_tie(aires)) < 0)
 		return false;
 	return gx_peer_is_local2(aires->ai_addr, aires->ai_addrlen) > 0;
+}
+
+void gx_reexec_record(int new_fd)
+{
+	for (int fd = gx_reexec_top_fd; fd <= new_fd; ++fd) {
+		unsigned int flags = 0;
+		socklen_t fz = sizeof(flags);
+		if (fd < 0 || getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN,
+		    &flags, &fz) != 0 || !flags ||
+		    fcntl(fd, F_GETFL, &flags) != 0)
+			continue;
+		flags &= ~FD_CLOEXEC;
+		if (fcntl(fd, F_SETFL, flags) != 0)
+			/* ignore */;
+	}
+	if (new_fd > gx_reexec_top_fd)
+		gx_reexec_top_fd = new_fd;
 }
