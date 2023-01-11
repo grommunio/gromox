@@ -731,6 +731,14 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email) const
 	if (domain == nullptr)
 		return -1;
 	++domain;
+	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
+	std::pair<std::string, std::string> homesrv_buf;
+	if (mysql.get_homeserver(is_private ? email : domain,
+	    is_private, homesrv_buf) != 0)
+		return -1;
+	const char *homesrv = homesrv_buf.second.c_str();
+	if (*homesrv == '\0')
+		homesrv = host_id.c_str();
 
 	if (!RedirectAddr.empty() && strcasecmp(domain, RedirectAddr.c_str()) != 0) {
 		auto redirect_addr = get_redirect_addr(email);
@@ -740,7 +748,7 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email) const
 		auto resp_set = add_child(resp_act, "Settings");
 		auto resp_ser = add_child(resp_set, "Server");
 		add_child(resp_ser, "Type", "MobileSync");
-		auto url = fmt::format(msas_base_url, domain);
+		auto url = fmt::format(msas_base_url, homesrv);
 		add_child(resp_ser, "Url", url);
 		add_child(resp_ser, "Name", url);
 	}
