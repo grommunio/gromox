@@ -278,7 +278,8 @@ static int instance_get_html_unspec(MESSAGE_CONTENT *mc, unsigned int cpid,
 	auto tpv = cu_alloc<TYPED_PROPVAL>();
 	if (tpv == nullptr)
 		return -1;
-	auto &pv = pval->ppropval[pval->count];
+	/* Overwrite what instance_get_html has written to. */
+	auto &pv = pval->ppropval[pval->count-1];
 	tpv->type   = PT_BINARY;
 	tpv->pvalue = pv.pvalue;
 	pv.proptag  = CHANGE_PROP_TYPE(PR_HTML, PT_UNSPECIFIED);
