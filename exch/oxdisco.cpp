@@ -211,7 +211,8 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	}
 
 	if (request_logging > 0)
-		mlog(LV_DEBUG, "[oxdisco] incoming: %s", static_cast<const char *>(content));
+		mlog(LV_DEBUG, "[oxdisco] incoming: %.*s",
+			static_cast<int>(len), static_cast<const char *>(content));
 
 	auto req_node = root->FirstChildElement("Request");
 	if (req_node == nullptr)
