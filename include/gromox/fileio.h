@@ -66,7 +66,6 @@ extern GX_EXPORT std::string resource_parse_stcode_line(const char *);
 extern GX_EXPORT void startup_banner(const char *);
 extern GX_EXPORT void gx_reexec_finish();
 extern GX_EXPORT errno_t gx_reexec(const char *const *);
-extern GX_EXPORT void gx_reexec_record(int);
 extern GX_EXPORT unsigned long gx_gettid();
 extern GX_EXPORT std::string zstd_decompress(std::string_view);
 extern GX_EXPORT size_t gx_decompressed_size(const char *);
