@@ -117,7 +117,6 @@ static BOOL oab_init(void **apidata)
 		mlog(LV_DEBUG, "[oab] failed to initialize plugin: %s\n", e.what());
 		return false;
 	}
-	mlog(LV_DEBUG, "[oab]: plugin is loaded into system\n");
 	return TRUE;
 }
 
