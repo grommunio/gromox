@@ -855,7 +855,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 		return FALSE;
 	oneoff_entry.flags = 0;
 	oneoff_entry.version = 0;
-	oneoff_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
+	oneoff_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
 	oneoff_entry.pdisplay_name = pdisplay_name != nullptr && *pdisplay_name != '\0' ?
 	                             deconst(pdisplay_name) : deconst(username);
 	oneoff_entry.paddress_type = deconst("SMTP");
@@ -864,7 +864,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 		return false;
 	status = ext_push.p_oneoff_eid(oneoff_entry);
 	if (EXT_ERR_CHARCNV == status) {
-		oneoff_entry.ctrl_flags = CTRL_FLAG_NORICH;
+		oneoff_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
 		status = ext_push.p_oneoff_eid(oneoff_entry);
 	}
 	if (status != EXT_ERR_SUCCESS)
