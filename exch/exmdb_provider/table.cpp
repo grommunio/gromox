@@ -846,8 +846,9 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				char tmp_string[128];
 				encode_hex_binary(conv_id->pb,
 					16, tmp_string, sizeof(tmp_string));
-				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
+				snprintf(sql_string, arsizeof(sql_string), "SELECT mp.message_id "
 				         "FROM message_properties AS mp INNER JOIN messages AS m "
+				         "ON mp.message_id=m.message_id "
 				         "WHERE mp.proptag=%u AND mp.propval=x'%s' "
 				         "AND m.is_deleted=%u", PR_CONVERSATION_ID,
 				         tmp_string, b_deleted);
