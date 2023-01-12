@@ -3283,7 +3283,7 @@ uint32_t zs_modifyrecipients(GUID hsession,
 					return ecError;
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PR_SEND_RICH_INFO;
-				tmp_propval.pvalue = deconst((oneoff_entry.ctrl_flags & CTRL_FLAG_NORICH) ? &persist_false : &persist_true);
+				tmp_propval.pvalue = deconst((oneoff_entry.ctrl_flags & MAPI_ONE_OFF_NO_RICH_INFO) ? &persist_false : &persist_true);
 				common_util_set_propvals(prcpt, &tmp_propval);
 			}
 		}

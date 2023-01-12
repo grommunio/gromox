@@ -1571,7 +1571,7 @@ int EXT_PULL::g_oneoff_eid(ONEOFF_ENTRYID *r)
 		return EXT_ERR_FORMAT;
 	TRY(g_uint16(&r->version));
 	TRY(g_uint16(&r->ctrl_flags));
-	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
+	if (r->ctrl_flags & MAPI_ONE_OFF_UNICODE) {
 		TRY(g_wstr(&r->pdisplay_name));
 		TRY(g_wstr(&r->paddress_type));
 		return g_wstr(&r->pmail_address);
@@ -3091,7 +3091,7 @@ int EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID &r)
 	TRY(p_guid(muidOOP));
 	TRY(p_uint16(r.version));
 	TRY(p_uint16(r.ctrl_flags));
-	if (r.ctrl_flags & CTRL_FLAG_UNICODE) {
+	if (r.ctrl_flags & MAPI_ONE_OFF_UNICODE) {
 		TRY(p_wstr(r.pdisplay_name));
 		TRY(p_wstr(r.paddress_type));
 		return p_wstr(r.pmail_address);

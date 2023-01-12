@@ -283,7 +283,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	
 	tmp_entry.flags = 0;
 	tmp_entry.version = 0;
-	tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
+	tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
 	tmp_entry.pdisplay_name = pdisplay_name != nullptr && *pdisplay_name != '\0' ?
 	                          deconst(pdisplay_name) : deconst(username);
 	tmp_entry.paddress_type = deconst("SMTP");
@@ -292,7 +292,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 		return false;
 	status = ext_push.p_oneoff_eid(tmp_entry);
 	if (EXT_ERR_CHARCNV == status) {
-		tmp_entry.ctrl_flags = CTRL_FLAG_NORICH;
+		tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
 		status = ext_push.p_oneoff_eid(tmp_entry);
 	}
 	if (EXT_ERR_SUCCESS != status) {
@@ -684,11 +684,11 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 				return FALSE;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%s@%s",
 			         email_addr.local_part, email_addr.domain);
-			tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
+			tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
 			status = ext_push.p_oneoff_eid(tmp_entry);
 			if (EXT_ERR_CHARCNV == status) {
 				ext_push.m_offset = offset1 + sizeof(uint32_t);
-				tmp_entry.ctrl_flags = CTRL_FLAG_NORICH;
+				tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
 				status = ext_push.p_oneoff_eid(tmp_entry);
 			}
 			if (EXT_ERR_SUCCESS != status) {
