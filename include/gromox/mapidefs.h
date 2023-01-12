@@ -684,6 +684,7 @@ enum zmapi_group {
 	ZMG_ADVISESINK = 12,
 	ZMG_ICSDOWNCTX = 13,
 	ZMG_ICSUPCTX = 14,
+	ZMG_ONEOFF,
 	ZMG_INVALID = 255,
 };
 

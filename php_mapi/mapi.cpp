@@ -927,6 +927,7 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 	presource->hobject = hobject;
 	switch (mapi_type) {
 	case ZMG_MAILUSER:
+	case ZMG_ONEOFF:
 		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_mailuser);
 		break;
 	case ZMG_DISTLIST:
@@ -2701,7 +2702,8 @@ static ZEND_FUNCTION(mapi_openpropertytostream)
 	} else if (type == le_mapi_mailuser) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_mailuser, le_mapi_mailuser);
-		if (probject->type != ZMG_MAILUSER) {
+		if (probject->type != ZMG_MAILUSER &&
+		    probject->type != ZMG_ONEOFF) {
 			MAPI_G(hr) = ecInvalidObject;
 			THROW_EXCEPTION;
 		}
@@ -3486,7 +3488,8 @@ static ZEND_FUNCTION(mapi_getprops)
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 				&pzresource, -1, name_mapi_mailuser,
 				le_mapi_mailuser);
-		if (probject->type != ZMG_MAILUSER) {
+		if (probject->type != ZMG_MAILUSER &&
+		    probject->type != ZMG_ONEOFF) {
 			MAPI_G(hr) = ecInvalidObject;
 			THROW_EXCEPTION;
 		}

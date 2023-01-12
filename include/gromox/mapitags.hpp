@@ -622,7 +622,7 @@ enum {
 	PR_OTHER_ADDRESS_STREET = PROP_TAG(PT_UNICODE, 0x3A63), /* PidTagOtherAddressStreet */
 	PR_OTHER_ADDRESS_POST_OFFICE_BOX = PROP_TAG(PT_UNICODE, 0x3A64), /* PidTagOtherAddressPostOfficeBox */
 	PR_USER_X509_CERTIFICATE = PROP_TAG(PT_MV_BINARY, 0x3A70), /* PidTagUserX509Certificate */
-	// PR_SEND_INTERNET_ENCODING = PROP_TAG(PT_LONG, 0x3A71), /* PidTagSendInternetEncoding */
+	PR_SEND_INTERNET_ENCODING = PROP_TAG(PT_LONG, 0x3A71), /* PidTagSendInternetEncoding */
 	// PR_STORE_PROVIDERS = PROP_TAG(PT_BINARY, 0x3D00), /* PidTagStoreProviders */
 	// PR_AB_PROVIDERS = PROP_TAG(PT_BINARY, 0x3D01), /* PidTagAbProviders */
 	// PR_TRANSPORT_PROVIDERS = PROP_TAG(PT_BINARY, 0x3D02), /* PidTagTransportProviders */
