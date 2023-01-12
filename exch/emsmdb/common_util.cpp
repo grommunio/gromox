@@ -1774,7 +1774,7 @@ ec_error_t cu_send_mail(MAIL *pmail, const char *sender,
 		        g_smtp_ip, g_smtp_port, sender);
 		return ecSuccess;
 	}
-	return ecSuccess;
+	return ecError;
 }
 
 static void common_util_set_dir(const char *dir)
