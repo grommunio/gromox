@@ -1,5 +1,5 @@
-Development 2.0.67
-==================
+Gromox 2.1 (2023-01-12)
+=======================
 
 Behavioral changes:
 
@@ -18,6 +18,9 @@ Enhancements:
 * http: print HTTP responses in full, not just until the first \0
 * mapi_lib: parse "Received" headers into PR_MESSAGE_DELIVERY_TIME for the
   sake of EML imports
+* oxm2mt: named property translation
+* oxdisco: homeserver support for EAS block
+* zcore: allow opening oneoff entryids with openabentry RPC
 
 Fixes:
 
@@ -28,11 +31,14 @@ Fixes:
 * Deletion of a folder from a public store did trash the store size counter and
   reduce it by an arbitrary amount towards 0, reporting the store to be smaller
   than it really was.
+* zcore: perform texttohtml conversion in UTF-8 not Windows-1252
 * nsp: attempt to fix infinite function recursion when trying to resolve
   ESSDN which are present in the GAB forest but out-of-organization
 * oxcmail: recognize RFC822/5322 dates without a day-of-week part
 * mt2exm: avoid running into PF-1123 error when -D option is used
 * dscli: repair the warning that the tool was not built with DNS SRV support
+* oxdisco: avoid read beyond end of buffer when request_logging is on
+* exmdb_provider: fix an out of bounds write when PR_HTML_U is requested
 
 
 Gromox 2.0 (2023-01-03)
