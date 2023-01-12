@@ -176,6 +176,9 @@ object_node::~object_node()
 	case ZMG_DISTLIST:
 		delete static_cast<user_object *>(pobject);
 		break;
+	case ZMG_ONEOFF:
+		delete static_cast<oneoff_object *>(pobject);
+		break;
 	case ZMG_PROFPROPERTY:
 		/* do not free TPROPVAL_ARRAY,
 		it's an element of pprof_set */

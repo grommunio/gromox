@@ -221,6 +221,22 @@ struct user_object {
 	std::vector<uint32_t> m_members;
 };
 
+struct oneoff_object {
+	protected:
+	oneoff_object(const ONEOFF_ENTRYID &);
+
+	public:
+	static std::unique_ptr<oneoff_object> create(const ONEOFF_ENTRYID &);
+	ec_error_t get_props(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+
+	static const uint32_t all_tags_raw[];
+	static const PROPTAG_ARRAY all_tags;
+
+	private:
+	uint16_t m_flags = 0;
+	std::string m_dispname, m_addrtype, m_emaddr;
+};
+
 extern BOOL container_object_fetch_special_property(uint8_t special_type, uint32_t proptag, void **value);
 extern void container_object_get_container_table_all_proptags(PROPTAG_ARRAY *);
 extern void container_object_get_user_table_all_proptags(PROPTAG_ARRAY *);

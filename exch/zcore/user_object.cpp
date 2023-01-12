@@ -12,6 +12,81 @@
 
 using namespace gromox;
 
+std::unique_ptr<oneoff_object> oneoff_object::create(const ONEOFF_ENTRYID &e) try
+{
+	return std::unique_ptr<oneoff_object>(new oneoff_object(e));
+} catch (const std::bad_alloc &) {
+	return nullptr;
+}
+
+const uint32_t oneoff_object::all_tags_raw[] = {
+	PR_ADDRTYPE, PR_DISPLAY_NAME, PR_DISPLAY_TYPE, PR_EMAIL_ADDRESS,
+	PR_OBJECT_TYPE, PR_SEARCH_KEY, PR_SEND_INTERNET_ENCODING,
+	PR_SEND_RICH_INFO, PR_SMTP_ADDRESS,
+};
+const PROPTAG_ARRAY oneoff_object::all_tags =
+	{std::size(all_tags_raw), deconst(all_tags_raw)};
+
+oneoff_object::oneoff_object(const ONEOFF_ENTRYID &e) :
+	m_flags(e.ctrl_flags), m_dispname(znul(e.pdisplay_name)),
+	m_addrtype(znul(e.paddress_type)), m_emaddr(znul(e.pmail_address))
+{}
+
+ec_error_t oneoff_object::get_props(const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *vals)
+{
+	static constexpr uint32_t disptype = DT_MAILUSER, objtype = MAPI_MAILUSER;
+	vals->ppropval = cu_alloc<TAGGED_PROPVAL>(std::size(all_tags_raw));
+	if (vals->ppropval == nullptr)
+		return ecServerOOM;
+	for (size_t i = 0; i < tags->count; ++i) {
+		auto &vc = vals->ppropval[vals->count];
+		switch (tags->pproptag[i]) {
+		case PR_ADDRTYPE:      vc.pvalue = deconst(m_addrtype.c_str()); break;
+		case PR_DISPLAY_NAME:  vc.pvalue = deconst(m_dispname.c_str()); break;
+		case PR_DISPLAY_TYPE:  vc.pvalue = deconst(&disptype); break;
+		case PR_EMAIL_ADDRESS: vc.pvalue = deconst(m_emaddr.c_str()); break;
+		case PR_OBJECT_TYPE:   vc.pvalue = deconst(&objtype); break;
+		case PR_SEARCH_KEY: {
+			auto s = cu_alloc<char>(m_emaddr.size() + 6);
+			strcpy(s, "SMTP:");
+			strcat(s, m_emaddr.c_str());
+			auto bin = cu_alloc<BINARY>();
+			if (bin == nullptr)
+				return ecServerOOM;
+			bin->cb = m_emaddr.size() + 6;
+			bin->pc = s;
+			vc.pvalue = bin;
+			break;
+		}
+		case PR_SEND_INTERNET_ENCODING: {
+			auto enc = cu_alloc<uint32_t>();
+			if (enc == nullptr)
+				return ecServerOOM;
+			*enc = m_flags & 0x7E;
+			vc.pvalue = enc;
+			break;
+		}
+		case PR_SEND_RICH_INFO: {
+			auto rich = cu_alloc<BOOL>();
+			if (rich == nullptr)
+				return ecServerOOM;
+			*rich = !!(m_flags & MAPI_ONE_OFF_NO_RICH_INFO);
+			vc.pvalue = rich;
+			break;
+		}
+		case PR_SMTP_ADDRESS:
+			if (m_emaddr.empty())
+				continue;
+			vc.pvalue = deconst(m_emaddr.c_str());
+			break;
+		default:
+			continue;
+		}
+		vals->ppropval[vals->count++].proptag = tags->pproptag[i];
+	}
+	return ecSuccess;
+}
+
 std::unique_ptr<user_object> user_object::create(int base_id, uint32_t minid)
 {
 	std::unique_ptr<user_object> puser;

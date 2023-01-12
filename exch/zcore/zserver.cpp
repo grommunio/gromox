@@ -1093,6 +1093,22 @@ uint32_t zs_openstoreentry(GUID hsession,
 static uint32_t zs_openab_emsab(USER_INFO_REF &&, BINARY eid, int base_id, uint8_t *, uint32_t *);
 static uint32_t zs_openab_zcsab(USER_INFO_REF &&, BINARY eid, int base_id, uint8_t *, uint32_t *);
 
+static uint32_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
+    uint8_t *zmg_type, uint32_t *objh)
+{
+	ONEOFF_ENTRYID eid;
+	EXT_PULL ep;
+	ep.init(bin.pv, bin.cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+	if (ep.g_oneoff_eid(&eid) != EXT_ERR_SUCCESS)
+		return ecInvalidParam;
+	auto u = oneoff_object::create(eid);
+	if (u == nullptr)
+		return ecServerOOM;
+	*zmg_type = ZMG_ONEOFF;
+	*objh = info->ptree->add_object_handle(ROOT_HANDLE, {*zmg_type, std::move(u)});
+	return *objh != INVALID_HANDLE ? ecSuccess : ecError;
+}
+
 uint32_t zs_openabentry(GUID hsession,
 	BINARY entryid, uint8_t *pmapi_type, uint32_t *phobject)
 {
@@ -1115,10 +1131,13 @@ uint32_t zs_openabentry(GUID hsession,
 	}
 	if (entryid.cb < 20)
 		return ecInvalidParam;
-	if (*reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidEMSAB)
+	const auto &prov = *reinterpret_cast<const FLATUID *>(&entryid.pb[4]);
+	if (prov == muidEMSAB)
 		return zs_openab_emsab(std::move(pinfo), entryid, base_id, pmapi_type, phobject);
-	if (*reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidZCSAB)
+	else if (prov == muidZCSAB)
 		return zs_openab_zcsab(std::move(pinfo), entryid, base_id, pmapi_type, phobject);
+	else if (prov == muidOOP)
+		return zs_openab_oop(std::move(pinfo), entryid, pmapi_type, phobject);
 	return ecInvalidParam;
 }
 
@@ -3760,6 +3779,10 @@ uint32_t zs_getpropvals(GUID hsession,
 		if (!static_cast<user_object *>(pobject)->get_properties(pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
+	case ZMG_ONEOFF:
+		if (pproptags == nullptr)
+			pproptags = &oneoff_object::all_tags;
+		return static_cast<oneoff_object *>(pobject)->get_props(pproptags, ppropvals);
 	default:
 		return ecNotSupported;
 	}
