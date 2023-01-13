@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <memory>
+#include <libHX/string.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/util.hpp>
 #include "ab_tree.h"
@@ -50,6 +51,7 @@ ec_error_t oneoff_object::get_props(const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *v
 			auto s = cu_alloc<char>(m_emaddr.size() + 6);
 			strcpy(s, "SMTP:");
 			strcat(s, m_emaddr.c_str());
+			HX_strupper(s);
 			auto bin = cu_alloc<BINARY>();
 			if (bin == nullptr)
 				return ecServerOOM;
