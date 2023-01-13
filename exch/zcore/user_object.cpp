@@ -75,7 +75,7 @@ ec_error_t oneoff_object::get_props(const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *v
 			break;
 		}
 		case PR_SMTP_ADDRESS:
-			if (m_emaddr.empty())
+			if (m_emaddr.empty() || strcasecmp(m_addrtype.c_str(), "SMTP") != 0)
 				continue;
 			vc.pvalue = deconst(m_emaddr.c_str());
 			break;
