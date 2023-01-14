@@ -2750,9 +2750,9 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	std::vector<std::string> rcpt_list;
 	if (!cu_rcpts_to_list(pmsgctnt->children.prcpts, rcpt_list))
 		return FALSE;
-	auto ret = cu_send_mail(&imail, tmp_buff, rcpt_list);
+	auto ret = ems_send_mail(&imail, tmp_buff, rcpt_list);
 	if (ret != ecSuccess)
-		mlog(LV_ERR, "E-1188: cu_send_mail: %s", mapi_strerror(ret));
+		mlog(LV_ERR, "E-1188: ems_send_mail: %s", mapi_strerror(ret));
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -2800,9 +2800,9 @@ static ec_error_t message_bounce_message(const char *from_address,
 	const char *pvalue2 = strchr(account, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "postmaster@%s",
 	         pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
-	auto ret = cu_send_mail(&imail, tmp_buff, rcpt_list);
+	auto ret = ems_send_mail(&imail, tmp_buff, rcpt_list);
 	if (ret != ecSuccess)
-		mlog(LV_ERR, "E-1187: cu_send_mail: %s", mapi_strerror(ret));
+		mlog(LV_ERR, "E-1187: ems_send_mail: %s", mapi_strerror(ret));
 	return ecSuccess;
 }
 
@@ -2972,7 +2972,7 @@ static ec_error_t message_forward_message(const char *from_address,
 		/* Envelope FROM */
 		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
 		           from_address : username, std::size(tmp_buff));
-		ret = cu_send_mail(&imail1, tmp_buff, rcpt_list);
+		ret = ems_send_mail(&imail1, tmp_buff, rcpt_list);
 	} else {
 		auto pmime = imail.get_head();
 		if (NULL == pmime) {
@@ -2983,10 +2983,10 @@ static ec_error_t message_forward_message(const char *from_address,
 		/* Envelope FROM */
 		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
 		           from_address : username, std::size(tmp_buff));
-		ret = cu_send_mail(&imail, tmp_buff, rcpt_list);
+		ret = ems_send_mail(&imail, tmp_buff, rcpt_list);
 	}
 	if (ret != ecSuccess)
-		mlog(LV_ERR, "E-1186: cu_send_mail: %s", mapi_strerror(ret));
+		mlog(LV_ERR, "E-1186: ems_send_mail: %s", mapi_strerror(ret));
 	return ecSuccess;
 }
 

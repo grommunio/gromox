@@ -1477,9 +1477,9 @@ void common_util_notify_receipt(const char *username, int type,
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	if (!emsmdb_bouncer_make(username, pbrief, bounce_type, &imail))
 		return;
-	auto ret = cu_send_mail(&imail, username, rcpt_list);
+	auto ret = ems_send_mail(&imail, username, rcpt_list);
 	if (ret != ecSuccess)
-		mlog2(LV_ERR, "E-1189: cu_send_mail: %s\n", mapi_strerror(ret));
+		mlog2(LV_ERR, "E-1189: ems_send_mail: %s\n", mapi_strerror(ret));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2035: ENOMEM");
 }
@@ -1601,7 +1601,7 @@ static int common_util_get_response(int sockd,
 	return SMTP_UNKOWN_RESPONSE;
 }
 
-ec_error_t cu_send_mail(MAIL *pmail, const char *sender,
+ec_error_t ems_send_mail(MAIL *pmail, const char *sender,
     const std::vector<std::string> &rcpt_list)
 {
 	int res_val;
@@ -1938,7 +1938,7 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 		        LLU{rop_util_get_gc_value(message_id)});
 		return ecError;	
 	}
-	auto ret = cu_send_mail(&imail, plogon->get_account(), rcpt_list);
+	auto ret = ems_send_mail(&imail, plogon->get_account(), rcpt_list);
 	if (ret != ecSuccess) {
 		mlog2(LV_ERR, "E-1280: Failed to send mid:%llu via SMTP: %s",
 		        LLU{rop_util_get_gc_value(message_id)}, mapi_strerror(ret));
