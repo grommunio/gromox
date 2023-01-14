@@ -19,6 +19,7 @@ struct GX_EXPORT MIME {
 	NOMOVE(MIME);
 	~MIME();
 
+	using write_func = ssize_t (*)(void *, const void *, size_t);
 	bool retrieve(MIME *parent, char *in_buf, size_t len);
 	void clear();
 	bool write_content(const char *content, size_t len, enum mime_encoding);
@@ -38,8 +39,7 @@ struct GX_EXPORT MIME {
 	ssize_t get_mimes_digest(const char *, size_t *, size_t *, char *, size_t) const;
 	ssize_t get_structure_digest(const char *, size_t *, size_t *, char *, size_t) const;
 	bool serialize(STREAM *) const;
-	bool to_file(int fd) const;
-	bool to_tls(SSL *) const;
+	bool emit(write_func, void *) const;
 	bool check_dot() const;
 	ssize_t get_length() const;
 	bool get_filename(char *file_name, size_t) const;
