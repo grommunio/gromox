@@ -1034,8 +1034,9 @@ ec_error_t rop_readstream(uint16_t byte_count, uint32_t max_byte_count,
 	if (object_type != OBJECT_TYPE_STREAM)
 		return ecNotSupported;
 	if (0xBABE == byte_count) {
+		if (max_byte_count > static_cast<uint32_t>(INT32_MAX) + 1)
+			return ecRpcFormat;
 		buffer_size = max_byte_count;
-		// if (max_byte_count > static_cast<uint32_t>(INT32_MAX) + 1) return ecRpcFormat;
 	} else {
 		buffer_size = byte_count;
 	}
