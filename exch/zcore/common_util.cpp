@@ -26,6 +26,7 @@
 #include <gromox/fileio.h>
 #include <gromox/ical.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mime_pool.hpp>
 #include <gromox/oxcmail.hpp>
@@ -90,6 +91,7 @@ static thread_local std::unique_ptr<env_context> g_env_key;
 static char g_freebusy_path[256];
 static char g_default_charset[32];
 static char g_submit_command[1024];
+static constexpr char ZCORE_UA[] = PACKAGE_NAME "-zcore " PACKAGE_VERSION;
 
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
@@ -1281,234 +1283,6 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 	return TRUE;
 }
 
-static BOOL common_util_send_command(int sockd,
-	const char *command, int command_len)
-{
-	int write_len;
-
-	write_len = write(sockd, command, command_len);
-    if (write_len != command_len) {
-		return FALSE;
-	}
-	return TRUE;
-}
-
-static int common_util_get_response(int sockd,
-	char *response, int response_len, BOOL expect_3xx)
-{
-	int read_len;
-
-	memset(response, 0, response_len);
-	read_len = read(sockd, response, response_len);
-	if (-1 == read_len || 0 == read_len) {
-		return SMTP_TIME_OUT;
-	}
-	if ('\n' == response[read_len - 1] && '\r' == response[read_len - 2]){
-		/* remove /r/n at the end of response */
-		read_len -= 2;
-	}
-	response[read_len] = '\0';
-	if (!expect_3xx && response[0] == '2' &&
-	    HX_isdigit(response[1]) && HX_isdigit(response[2]))
-		return SMTP_SEND_OK;
-	else if (expect_3xx && response[0] == '3' &&
-	    HX_isdigit(response[1]) && HX_isdigit(response[2]))
-		return SMTP_SEND_OK;
-	else if (response[0] == '4')
-		return SMTP_TEMP_ERROR;
-	else if (response[0] == '5')
-		return SMTP_PERMANENT_ERROR;
-	return SMTP_UNKOWN_RESPONSE;
-}
-
-static void log_err(const char *format, ...)
-{
-	va_list ap;
-	char log_buf[2048];
-	
-	auto pinfo = zs_get_info();
-	if (NULL == pinfo) {
-		return;
-	}
-	va_start(ap, format);
-	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
-	va_end(ap);
-	log_buf[sizeof(log_buf) - 1] = '\0';
-	mlog(LV_ERR, "user=%s  %s", pinfo->get_username(), log_buf);
-}
-
-static BOOL cu_send_mail(MAIL *pmail, const char *sender,
-    const std::vector<std::string> &rcpt_list)
-{
-	int res_val;
-	int command_len;
-	char last_command[1024];
-	char last_response[1024];
-	
-	MAIL dot_encoded(pmail->pmime_pool);
-	if (pmail->check_dot()) {
-		if (!pmail->transfer_dot(&dot_encoded, true))
-			return false;
-		pmail = &dot_encoded;
-	}
-	int sockd = gx_inet_connect(g_smtp_ip, g_smtp_port, 0);
-	if (sockd < 0) {
-		log_err("Cannot connect to SMTP server [%s]:%hu: %s",
-			g_smtp_ip, g_smtp_port, strerror(-sockd));
-		return FALSE;
-	}
-	/* read welcome information of MTA */
-	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
-	switch (res_val) {
-	case SMTP_TIME_OUT:
-		close(sockd);
-		log_err("Timeout with SMTP server [%s]:%hu",
-			g_smtp_ip, g_smtp_port);
-		return FALSE;
-	case SMTP_PERMANENT_ERROR:
-	case SMTP_TEMP_ERROR:
-	case SMTP_UNKOWN_RESPONSE:
-        /* send quit command to server */
-        common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		log_err("Failed to connect to SMTP. "
-			"Server response is \"%s\".", last_response);
-		return FALSE;
-	}
-
-	/* send helo xxx to server */
-	snprintf(last_command, 1024, "helo %s\r\n", g_hostname);
-	command_len = strlen(last_command);
-	if (!common_util_send_command(sockd, last_command, command_len)) {
-		close(sockd);
-		log_err("Failed to send \"HELO\" command");
-		return FALSE;
-	}
-	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
-	switch (res_val) {
-	case SMTP_TIME_OUT:
-		close(sockd);
-		log_err("Timeout with SMTP server [%s]:%hu", g_smtp_ip, g_smtp_port);
-		return FALSE;
-	case SMTP_PERMANENT_ERROR:
-	case SMTP_TEMP_ERROR:
-	case SMTP_UNKOWN_RESPONSE:
-		/* send quit command to server */
-		common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		log_err("SMTP server responded \"%s\" "
-			"after sending \"HELO\" command", last_response);
-		return FALSE;
-	}
-
-	command_len = sprintf(last_command, "mail from:<%s>\r\n", sender);
-	if (!common_util_send_command(sockd, last_command, command_len)) {
-		close(sockd);
-		log_err("Failed to send \"MAIL FROM\" command");
-		return FALSE;
-	}
-	/* read mail from response information */
-	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
-	switch (res_val) {
-	case SMTP_TIME_OUT:
-		close(sockd);
-		log_err("Timeout with SMTP server [%s]:%hu", g_smtp_ip, g_smtp_port);
-		return FALSE;
-	case SMTP_PERMANENT_ERROR:
-		case SMTP_TEMP_ERROR:
-		case SMTP_UNKOWN_RESPONSE:
-		/* send quit command to server */
-		common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		log_err("SMTP server responded \"%s\" "
-			"after sending \"MAIL FROM\" command", last_response);
-		return FALSE;
-	}
-
-	for (const auto &eaddr : rcpt_list) {
-		auto have_at = strchr(eaddr.c_str(), '@') != nullptr;
-		command_len = sprintf(last_command, have_at ? "rcpt to:<%s>\r\n" :
-		              "rcpt to:<%s@none>\r\n", eaddr.c_str());
-		if (!common_util_send_command(sockd, last_command, command_len)) {
-			close(sockd);
-			log_err("Failed to send \"RCPT TO\" command");
-			return FALSE;
-		}
-		/* read rcpt to response information */
-		res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
-		switch (res_val) {
-		case SMTP_TIME_OUT:
-			close(sockd);
-			log_err("Timeout with SMTP server [%s]:%hu", g_smtp_ip, g_smtp_port);
-			return FALSE;
-		case SMTP_PERMANENT_ERROR:
-		case SMTP_TEMP_ERROR:
-		case SMTP_UNKOWN_RESPONSE:
-			common_util_send_command(sockd, "quit\r\n", 6);
-			close(sockd);
-			log_err("SMTP server responded \"%s\" "
-				"after sending \"RCPT TO\" command", last_response);
-			return FALSE;
-		}		
-	}
-	/* send data */
-	strcpy(last_command, "data\r\n");
-	command_len = strlen(last_command);
-	if (!common_util_send_command(sockd, last_command, command_len)) {
-		close(sockd);
-		log_err("Sender %s: failed to send \"DATA\" command", sender);
-		return FALSE;
-	}
-
-	/* read data response information */
-	res_val = common_util_get_response(sockd, last_response, 1024, TRUE);
-	switch (res_val) {
-	case SMTP_TIME_OUT:
-		close(sockd);
-		log_err("Sender %s: Timeout with SMTP server [%s]:%hu",
-			sender, g_smtp_ip, g_smtp_port);
-		return FALSE;
-	case SMTP_PERMANENT_ERROR:
-	case SMTP_TEMP_ERROR:
-	case SMTP_UNKOWN_RESPONSE:
-		common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		log_err("Sender %s: SMTP server responded \"%s\" "
-				"after sending \"data\" command", sender, last_response);
-		return FALSE;
-	}
-
-	pmail->set_header("X-Mailer", "gromox-zcore " PACKAGE_VERSION);
-	if (!pmail->to_file(sockd) ||
-	    !common_util_send_command(sockd, ".\r\n", 3)) {
-		close(sockd);
-		log_err("Sender %s: Failed to send mail content", sender);
-		return FALSE;
-	}
-	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
-	switch (res_val) {
-	case SMTP_TIME_OUT:
-		close(sockd);
-		log_err("Sender %s: Timeout with SMTP server [%s]:%hu", sender, g_smtp_ip, g_smtp_port);
-		return FALSE;
-	case SMTP_PERMANENT_ERROR:
-	case SMTP_TEMP_ERROR:
-	case SMTP_UNKOWN_RESPONSE:	
-        common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		log_err("Sender %s: SMTP server responded \"%s\" "
-					"after sending mail content", sender, last_response);
-		return FALSE;
-	case SMTP_SEND_OK:
-		common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		log_err("outgoing SMTP [%s]:%hu: from=<%s> OK",
-		        g_smtp_ip, g_smtp_port, sender);
-		return TRUE;
-	}
-	return false;
-}
-
 static void common_util_set_dir(const char *dir)
 {
 	g_dir_key = dir;
@@ -1656,8 +1430,13 @@ BOOL common_util_send_message(store_object *pstore,
 		    &imail, common_util_alloc, common_util_get_propids,
 		    common_util_get_propname))
 			return FALSE;	
-		if (!cu_send_mail(&imail, pstore->get_account(), rcpt_list))
+		imail.set_header("X-Mailer", ZCORE_UA);
+		auto ret = cu_send_mail(imail, "smtp", g_smtp_ip, g_smtp_port,
+		           pstore->get_account(), rcpt_list);
+		if (ret != ecSuccess) {
+			mlog(LV_ERR, "E-1194: cu_send_mail: %xh\n", ret);
 			return FALSE;
+		}
 	}
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
@@ -1705,7 +1484,11 @@ void common_util_notify_receipt(const char *username, int type,
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	if (!zcore_bouncer_make(username, pbrief, bounce_type, &imail))
 		return;
-	cu_send_mail(&imail, username, rcpt_list);
+	imail.set_header("X-Mailer", ZCORE_UA);
+	auto ret = cu_send_mail(imail, "smtp", g_smtp_ip, g_smtp_port,
+	           username, rcpt_list);
+	if (ret != ecSuccess)
+		mlog(LV_ERR, "E-1193: cu_send_mail: %xh\n", ret);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2038: ENOMEM");
 }

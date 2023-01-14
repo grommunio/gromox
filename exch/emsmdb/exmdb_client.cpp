@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mail_func.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include "common_util.h"
