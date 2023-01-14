@@ -48,7 +48,7 @@ E(get_timezone)
 E(get_user_displayname)
 E(get_user_lang)
 #undef E
-extern BOOL (*cu_send_mail)(MAIL *, const char *sender, std::vector<std::string> &rcpts);
+extern ec_error_t (*ems_send_mail)(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
 extern std::shared_ptr<MIME_POOL> (*common_util_get_mime_pool)();
 extern const GUID *(*common_util_get_handle)();
 
