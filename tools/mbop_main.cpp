@@ -18,7 +18,7 @@ static uint64_t g_folderid;
 static unsigned int g_soft;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'f', HXTYPE_UINT64, &g_folderid, nullptr, nullptr, 0, "Folder ID"},
-	{"soft", 0, HXTYPE_NONE, &g_soft, nullptr, nullptr, 0, "Soft-delete (experimental)"},
+	{"soft", 0, HXTYPE_NONE, &g_soft, nullptr, nullptr, 0, "Soft-delete"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
