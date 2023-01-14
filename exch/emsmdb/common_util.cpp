@@ -1477,8 +1477,9 @@ void common_util_notify_receipt(const char *username, int type,
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	if (!emsmdb_bouncer_make(username, pbrief, bounce_type, &imail))
 		return;
-	if (cu_send_mail(&imail, username, rcpt_list) != ecSuccess)
-		/* ignore */;
+	auto ret = cu_send_mail(&imail, username, rcpt_list);
+	if (ret != ecSuccess)
+		mlog2(LV_ERR, "E-1189: cu_send_mail: %s\n", mapi_strerror(ret));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2035: ENOMEM");
 }
@@ -1939,8 +1940,8 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 	}
 	auto ret = cu_send_mail(&imail, plogon->get_account(), rcpt_list);
 	if (ret != ecSuccess) {
-		mlog2(LV_ERR, "E-1280: Failed to send mid:%llu via SMTP",
-		        LLU{rop_util_get_gc_value(message_id)});
+		mlog2(LV_ERR, "E-1280: Failed to send mid:%llu via SMTP: %s",
+		        LLU{rop_util_get_gc_value(message_id)}, mapi_strerror(ret));
 		return ret;
 	}
 	imail.clear();
