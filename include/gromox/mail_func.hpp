@@ -2,8 +2,10 @@
  * Email Address Kids Lib Header
  */
 #pragma once
+#include <cstdint>
 #include <ctime>
 #include <string>
+#include <vector>
 #include <gromox/defs.h>
 #include <gromox/mem_file.hpp>
 #define MIME_NAME_LEN 80U
@@ -30,6 +32,7 @@ struct ENCODE_STRING {
     char title[1024];
 };
 
+struct MAIL;
 void parse_email_addr(EMAIL_ADDR *e_addr, const char *email);
 void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email);
 BOOL parse_uri(const char *uri_buff, char *parsed_uri);
@@ -49,3 +52,9 @@ void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
 extern GX_EXPORT int html_to_plain(const void *inbuf, size_t inlen, std::string &outbuf);
 extern GX_EXPORT char *plain_to_html(const char *rbuf);
+
+namespace gromox {
+
+extern GX_EXPORT ec_error_t cu_send_mail(MAIL &, const char *smtpprot, const char *smtphost, uint16_t smtpport, const char *sender, const std::vector<std::string> &rcpt);
+
+}
