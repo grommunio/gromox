@@ -8,6 +8,7 @@
 #include <sqlite3.h>
 #include <string>
 #include <unistd.h>
+#include <libHX/option.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/database.h>
@@ -22,6 +23,11 @@ struct sqlite_del {
 	inline void operator()(sqlite3 *x) const { sqlite3_close(x); }
 };
 }
+
+static constexpr HXoption g_options_table[] = {
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 static errno_t copy_perms(const char *old_file, const char *new_file)
 {
@@ -111,6 +117,8 @@ static int do_file(const char *old_file)
 
 int main(int argc, const char **argv)
 {
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s xyz.sqlite3[...]\n", argv[0]);
 		return EXIT_FAILURE;
