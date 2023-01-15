@@ -329,7 +329,10 @@ ec_error_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	    object_type != OBJECT_TYPE_FASTDOWNCTX)
 		return ecNotSupported;
 	emsmdb_interface_get_rop_left(&max_rop);
-	max_rop -= 32;
+	if (max_rop >= 32)
+		max_rop -= 32;
+	else
+		max_rop = 0;
 	if (max_rop > 0x7b00) {
 		max_rop = 0x7b00;
 	}
