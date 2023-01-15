@@ -1041,7 +1041,10 @@ ec_error_t rop_readstream(uint16_t byte_count, uint32_t max_byte_count,
 		buffer_size = byte_count;
 	}
 	emsmdb_interface_get_rop_left(&max_rop);
-	max_rop -= 16;
+	if (max_rop >= 16)
+		max_rop -= 16;
+	else
+		max_rop = 0;
 	if (buffer_size > max_rop) {
 		buffer_size = max_rop;
 	}
