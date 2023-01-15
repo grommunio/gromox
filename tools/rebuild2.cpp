@@ -46,7 +46,7 @@ static errno_t copy_skel(sqlite3 *db)
 	if (stm == nullptr)
 		return EIO;
 	while (stm.step() == SQLITE_ROW) {
-		fprintf(stderr, "\t%s %s\n", stm.col_text(0), stm.col_text(1));
+		fprintf(stderr, "%s %s\n", stm.col_text(0), stm.col_text(1));
 		if (strncmp(stm.col_text(1), "sqlite_", 7) == 0)
 			continue;
 		auto ret = gx_sql_exec(db, stm.col_text(2));
@@ -62,7 +62,7 @@ static errno_t copy_contents(sqlite3 *db)
 	if (stm == nullptr)
 		return EIO;
 	while (stm.step() == SQLITE_ROW) {
-		fprintf(stderr, "\tcontents of %s...\n", stm.col_text(0));
+		fprintf(stderr, "contents of %s...\n", stm.col_text(0));
 		std::unique_ptr<char[], stdlib_delete> qbuf;
 		auto qname = HX_strquote(stm.col_text(0), HXQUOTE_SQLBQUOTE,
 		             &unique_tie(qbuf));
@@ -102,7 +102,7 @@ static int do_file(const char *old_file)
 		fprintf(stderr, "attach %s: %s\n", old_file, sqlite3_errstr(ret));
 		return EXIT_FAILURE;
 	}
-	fprintf(stderr, "Processing %s...\n", old_file);
+	fprintf(stderr, "=== Processing %s...\n", old_file);
 	if (copy_skel(db.get()) != 0 || copy_contents(db.get()) != 0)
 		return EXIT_FAILURE;
 	ret = rename(new_file.c_str(), old_file);
@@ -130,10 +130,12 @@ int main(int argc, const char **argv)
 	}
 	auto cl_0 = make_scope_exit(sqlite3_shutdown);
 	int main_ret = EXIT_SUCCESS;
-	while (*++argv != nullptr) {
-		ret = do_file(*argv);
+	while (--argc > 0) {
+		ret = do_file(*++argv);
 		if (ret != EXIT_SUCCESS)
 			main_ret = ret;
+		if (argc > 1)
+			fprintf(stderr, "\n");
 	}
 	return main_ret;
 }
