@@ -678,6 +678,15 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 	}
 	while (entry->v <= static_cast<unsigned int>(current) && entry->v != 0)
 		++entry;
+	if (entry->v == 0)
+		/* Already recent */
+		return 0;
+	auto errors = dbop_sqlite_integcheck(db, LV_ERR);
+	if (errors != 0) {
+		mlog(LV_ERR, "Upgrade of %s not started because of %zd integrity problems",
+			filedesc, errors);
+		return -EIO;
+	}
 
 	if (gx_sql_exec(db, "PRAGMA foreign_keys=OFF") != SQLITE_OK ||
 	    gx_sql_exec(db, "PRAGMA legacy_alter_table=ON") != SQLITE_OK)
