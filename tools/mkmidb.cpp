@@ -31,9 +31,12 @@ enum {
 	CONFIG_ID_USERNAME = 1, /* obsolete */
 };
 
-static unsigned int opt_force, opt_create_old, opt_upgrade, opt_verbose;
+static unsigned int opt_force, opt_create_old, opt_upgrade;
+static unsigned int opt_verbose, opt_integ;
 static char *opt_config_file;
+
 static constexpr HXoption g_options_table[] = {
+	{"integrity", 0, HXTYPE_NONE, &opt_integ, nullptr, nullptr, 0, "Perform integrity SQLite check"},
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting exchange.sqlite3"},
 	{nullptr, 'U', HXTYPE_NONE, &opt_upgrade, nullptr, nullptr, 0, "Perform schema upgrade"},
@@ -144,7 +147,7 @@ int main(int argc, const char **argv) try
 	}
 	adjust_rights(temp_path.c_str());
 	temp_path += "/midb.sqlite3";
-	if (!opt_upgrade) {
+	if (!opt_upgrade && !opt_integ) {
 		auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);
 		if (ret != 0)
 			return EXIT_FAILURE;
@@ -160,6 +163,8 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
+	if (opt_integ)
+		return dbop_sqlite_integcheck(psqlite, LV_ERR) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 	unsigned int flags = 0;
 	if (opt_upgrade) {
 		auto ret = dbop_sqlite_upgrade(psqlite, temp_path.c_str(),

@@ -34,9 +34,11 @@ using namespace std::string_literals;
 using namespace gromox;
 
 static char *opt_config_file, *opt_datadir;
-static unsigned int opt_force, opt_create_old, opt_upgrade, opt_verbose;
+static unsigned int opt_force, opt_create_old, opt_upgrade;
+static unsigned int opt_verbose, opt_integ;
 
 static constexpr HXoption g_options_table[] = {
+	{"integrity", 0, HXTYPE_NONE, &opt_integ, nullptr, nullptr, 0, "Perform integrity SQLite check"},
 	{nullptr, 'T', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting exchange.sqlite3"},
@@ -139,7 +141,7 @@ int main(int argc, const char **argv) try
 	if (!make_mailbox_hierarchy(dir))
 		return EXIT_FAILURE;
 	auto temp_path = dir + "/exmdb/exchange.sqlite3";
-	if (!opt_upgrade) {
+	if (!opt_upgrade && !opt_integ) {
 		auto ret = mbop_truncate_chown(argv[0], temp_path.c_str(), opt_force);
 		if (ret != 0)
 			return EXIT_FAILURE;
@@ -157,6 +159,8 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
+	if (opt_integ)
+		return dbop_sqlite_integcheck(psqlite, LV_ERR) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 	unsigned int flags = 0;
 	if (opt_upgrade) {
 		auto ret = dbop_sqlite_upgrade(psqlite, temp_path.c_str(),
