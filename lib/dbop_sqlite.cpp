@@ -644,6 +644,24 @@ static int dbop_sqlite_chcol(sqlite3 *db, const tblite_upgradefn *entry)
 	return 0;
 }
 
+ssize_t dbop_sqlite_integcheck(sqlite3 *db, int loglevel)
+{
+	auto stm = gx_sql_prep(db, "PRAGMA integrity_check");
+	if (stm == nullptr)
+		return -1;
+	size_t errors = 0;
+	int ret;
+	while ((ret = stm.step()) == SQLITE_ROW) {
+		if (errors < SSIZE_MAX)
+			++errors;
+		if (errors == 1 && strcmp(stm.col_text(0), "ok") == 0)
+			errors = 0;
+		else if (loglevel >= 0)
+			mlog(loglevel, "%s", stm.col_text(0));
+	}
+	return errors;
+}
+
 int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
     sqlite_kind kind, unsigned int flags)
 {

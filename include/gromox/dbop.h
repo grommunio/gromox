@@ -27,6 +27,7 @@ extern GX_EXPORT int dbop_mysql_upgrade(MYSQL *);
 extern GX_EXPORT int dbop_sqlite_create(sqlite3 *, sqlite_kind, unsigned int flags);
 extern GX_EXPORT int dbop_sqlite_recentversion(sqlite_kind);
 extern GX_EXPORT int dbop_sqlite_schemaversion(sqlite3 *, sqlite_kind);
+extern GX_EXPORT ssize_t dbop_sqlite_integcheck(sqlite3 *, int loglevel = -1);
 extern GX_EXPORT int dbop_sqlite_upgrade(sqlite3 *, const char *, sqlite_kind, unsigned int flags);
 
 }
