@@ -39,9 +39,6 @@
 #define RPCEXT2_FLAG_NOCOMPRESSION		0x00000001
 #define RPCEXT2_FLAG_NOXORMAGIC			0x00000002
 #define RPCEXT2_FLAG_CHAIN				0x00000004
-
-#define MAX_ROP_PAYLOADS				96
-
 #define HGROWING_SIZE					250
 
 using namespace gromox;
@@ -53,6 +50,7 @@ static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, uint32_t> g_logon_hash;
 static unsigned int g_emsmdb_full_parenting;
+static unsigned int g_max_rop_payloads = 96;
 
 unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
@@ -336,6 +334,8 @@ void rop_processor_stop()
 	g_logon_hash.clear();
 }
 
+static uint32_t rpcext_cutoff = 32U << 10; /* OXCRPC v23 3.1.4.2.1.2.2 */
+
 static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
     uint32_t *pbuff_len, ROP_BUFFER *prop_buff, BOOL b_notify,
     DOUBLE_LIST *presponse_list) try
@@ -358,8 +358,8 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	PENDING_RESPONSE tmp_pending;
 	
 	/* ms-oxcrpc 3.1.4.2.1.2 */
-	if (*pbuff_len > 0x8000)
-		*pbuff_len = 0x8000;
+	if (*pbuff_len > rpcext_cutoff)
+		*pbuff_len = rpcext_cutoff;
 	auto endroom_needed = 5 * sizeof(uint16_t) + prop_buff->hnum * sizeof(uint32_t);
 	auto tmp_len = *pbuff_len;
 	if (tmp_len >= endroom_needed)
@@ -417,7 +417,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			if (rsp->ppayload == nullptr)
 				return ecServerOOM;
 			auto bts = static_cast<BUFFERTOOSMALL_RESPONSE *>(rsp->ppayload);
-			bts->size_needed = 0x8000;
+			bts->size_needed = rpcext_cutoff;
 			bts->buffer = req->bookmark;
 			if (rop_ext_push_rop_response(&ext_push, req->logon_id, rsp) != EXT_ERR_SUCCESS)
 				return ecBufferTooSmall;
@@ -536,7 +536,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out)
 {
-	int count;
 	uint32_t tmp_cb;
 	uint32_t offset;
 	EXT_PULL ext_pull;
@@ -570,7 +569,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		return result;
 	offset = tmp_cb;
 	last_offset = 0;
-	count = double_list_get_nodes_num(&response_list);
+	auto count = double_list_get_nodes_num(&response_list);
 	pnode = double_list_get_tail(&rop_buff.rop_list);
 	pnode1 = double_list_get_tail(&response_list);
 	if (!(flags & RPCEXT2_FLAG_CHAIN) || pnode == nullptr || pnode1 == nullptr) {
@@ -601,7 +600,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		}
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (presponse->result == ecSuccess &&
-			*pcb_out - offset >= 0x8000 && count < MAX_ROP_PAYLOADS) {
+		       *pcb_out - offset >= 0x8000 && count < g_max_rop_payloads) {
 			if (req->forward_read != 0) {
 				if (rsp->seek_pos == BOOKMARK_END)
 					break;
@@ -633,7 +632,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	} else if (presponse->rop_id == ropReadStream) {
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (presponse->result == ecSuccess &&
-			*pcb_out - offset >= 0x2000 && count < MAX_ROP_PAYLOADS) {
+		       *pcb_out - offset >= 0x2000 && count < g_max_rop_payloads) {
 			if (static_cast<READSTREAM_RESPONSE *>(presponse->ppayload)->data.cb == 0)
 				break;
 			tmp_cb = *pcb_out - offset;
@@ -657,7 +656,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	} else if (presponse->rop_id == ropFastTransferSourceGetBuffer) {
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (presponse->result == ecSuccess &&
-			*pcb_out - offset >= 0x2000 && count < MAX_ROP_PAYLOADS) {
+		       *pcb_out - offset >= 0x2000 && count < g_max_rop_payloads) {
 			auto sgb = static_cast<const FASTTRANSFERSOURCEGETBUFFER_RESPONSE *>(presponse->ppayload);
 			if (sgb->transfer_status == TRANSFER_STATUS_DONE ||
 			    sgb->transfer_status == TRANSFER_STATUS_ERROR)
