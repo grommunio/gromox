@@ -73,6 +73,18 @@ static errno_t copy_contents(sqlite3 *db)
 		auto ret = gx_sql_exec(db, qstr.c_str());
 		if (ret != SQLITE_OK)
 			return EIO;
+		qstr = "PRAGMA main.integrity_check(`"s + qname + "`)";
+		auto stm = gx_sql_prep(db, qstr.c_str());
+		if (stm == nullptr)
+			return EIO;
+		size_t errors = 0;
+		while ((ret = stm.step()) == SQLITE_ROW) {
+			++errors;
+			if (errors == 1 && strcmp(stm.col_text(0), "ok") == 0)
+				errors = 0;
+			else
+				fprintf(stderr, "Inconsistency copied over...\n%s\n", stm.col_text(0));
+		}
 	}
 	return 0;
 }
