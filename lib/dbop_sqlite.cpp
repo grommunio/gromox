@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
+#include <climits>
 #include <cstdio>
 #include <memory>
 #include <fmt/core.h>
@@ -649,7 +650,7 @@ ssize_t dbop_sqlite_integcheck(sqlite3 *db, int loglevel)
 	auto stm = gx_sql_prep(db, "PRAGMA integrity_check");
 	if (stm == nullptr)
 		return -1;
-	size_t errors = 0;
+	ssize_t errors = 0;
 	int ret;
 	while ((ret = stm.step()) == SQLITE_ROW) {
 		if (errors < SSIZE_MAX)
