@@ -520,7 +520,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 	if (NULL == pcontext->connection.ssl) {
 		pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 		if (NULL == pcontext->connection.ssl) {
-			pcontext->log(LV_DEBUG, "out of TLS objects");
+			mlog(LV_ERR, "E-1185: ENOMEM");
 			http_5xx(pcontext, "Resources exhausted", 503);
 			return X_LOOP;
 		}
@@ -854,7 +854,7 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 	}
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-		pcontext->log(LV_DEBUG, "out of memory");
+		mlog(LV_ERR, "E-1184: ENOMEM");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
@@ -886,7 +886,7 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 	}
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-		pcontext->log(LV_DEBUG, "out of memory");
+		mlog(LV_ERR, "E-1183: ENOMEM");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
@@ -900,7 +900,7 @@ static int htp_delegate_cache(HTTP_CONTEXT *pcontext)
 	pcontext->total_length = 0;
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-		pcontext->log(LV_DEBUG, "out of memory");
+		mlog(LV_ERR, "E-1182: ENOMEM");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
@@ -943,7 +943,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 
 		/* met the end of request header */
 		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-			pcontext->log(LV_DEBUG, "out of memory");
+			mlog(LV_ERR, "E-1181: ENOMEM");
 			http_5xx(pcontext, "Resources exhausted", 503);
 			return X_LOOP;
 		}
@@ -1059,7 +1059,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 	unsigned int size = STREAM_BLOCK_SIZE;
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
 	if (NULL == pbuff) {
-		pcontext->log(LV_DEBUG, "out of memory");
+		mlog(LV_ERR, "E-1180: ENOMEM");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
@@ -1350,7 +1350,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 	unsigned int size = STREAM_BLOCK_SIZE;
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
 	if (NULL == pbuff) {
-		pcontext->log(LV_DEBUG, "out of memory");
+		mlog(LV_ERR, "E-1179: ENOMEM");
 		http_5xx(pcontext);
 		return X_LOOP;
 	}
@@ -1377,7 +1377,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			}
 			pcontext->sched_stat = SCHED_STAT_WRREP;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-				pcontext->log(LV_DEBUG, "out of memory");
+				mlog(LV_ERR, "E-1178: ENOMEM");
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;
 			}
@@ -1401,7 +1401,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			}
 			pcontext->sched_stat = SCHED_STAT_WRREP;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-				pcontext->log(LV_DEBUG, "out of memory");
+				mlog(LV_ERR, "E-1177: ENOMEM");
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;
 			}
@@ -1455,7 +1455,7 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-		pcontext->log(LV_DEBUG, "out of memory");
+		mlog(LV_ERR, "E-1176: ENOMEM");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
@@ -1479,7 +1479,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		unsigned int size = STREAM_BLOCK_SIZE;
 		auto pbuff = pcontext->stream_in.get_write_buf(&size);
 		if (NULL == pbuff) {
-			pcontext->log(LV_DEBUG, "out of memory");
+			mlog(LV_ERR, "E-1175: ENOMEM");
 			http_5xx(pcontext, "Resources exhausted", 503);
 			return X_LOOP;
 		}
@@ -1598,7 +1598,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		pchannel_out->frag_length = 0;
 	}
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-		pcontext->log(LV_DEBUG, "out of memory");
+		mlog(LV_ERR, "E-1174: ENOMEM");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
@@ -2057,7 +2057,7 @@ BOOL http_context::try_create_vconnection()
 		HX_strlower(hash_key.data());
 		xp = g_vconnection_hash.try_emplace(std::move(hash_key));
 	} catch (const std::bad_alloc &) {
-		pcontext->log(LV_DEBUG, "W-1292: Out of memory");
+		mlog(LV_ERR, "E-1292: ENOMEM");
 		return false;
 	}
 	if (!xp.second) {
