@@ -1,10 +1,23 @@
-Development 2.1.13
-==================
+Gromox 2.2 (2023-01-16)
+=======================
 
 Behavioral changes:
 
 * The /usr/libexec/gromox/rebuild utility has been removed in favor
   of using SQLite's own `.clone` / `.recover` commands.
+* dbop_sqlite: perform integrity check ahead of sqlite database upgrades
+
+Fixes:
+
+* emsmdb: sending mail could have yielded success even if there was
+  an outgoing SMTP server outage
+* exmdb_provider: repair SQL logic errors showing up when a folder's
+  contents are requested in Conversation mode
+* exmdb_provider: only delete links, not messages, from search folders
+
+Enhancements:
+
+* tools: add --integrity option for mkprivate, mkpublic, mkmidb
 
 
 Gromox 2.1 (2023-01-12)
