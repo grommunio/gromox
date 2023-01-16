@@ -1018,7 +1018,11 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 	}
 	auto parent_id = common_util_get_folder_parent_fid(pdb->psqlite, fid_val);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (b_hard) {
+	if (b_search) {
+		/* empty_folder is too much for search folders; it would delete not just the links. */
+		snprintf(sql_string, std::size(sql_string), "DELETE FROM folders"
+		         " WHERE folder_id=%llu", LLU{fid_val});
+	} else if (b_hard) {
 		BOOL b_partial = false;
 		uint64_t normal_size = 0, fai_size = 0;
 		if (!folder_empty_folder(pdb, cpid, nullptr, fid_val, TRUE,
