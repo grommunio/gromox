@@ -108,8 +108,6 @@ gromox\-mkmidb(8) \(em Tool for creating a blank message index database
 gromox\-mkprivate(8) \(em Tool for creating a blank private store
 .IP \(bu 4
 gromox\-mkpublic(8) \(em Tool for creating a blank public store
-.IP \(bu 4
-rebuild(8gx) \(em Tool for rebuilding a message store
 .SS Mail import, export and conversion
 .IP \(bu 4
 gromox\-eml2mbox(8) \(em Utility to concatenate Internet Mail messages into
@@ -159,6 +157,9 @@ autodiscover(8gx): renamed to gromox\-dscli to avoid a name clash with the
 autodiscover(4gx) manpage
 .IP \(bu 4
 delmsg(8gx): integrated into gromox\-mbop as a subcommand
+.IP \(bu 4
+rebuild(8gx): use `sqlite3 corrupt.db ".clone fixed.db"` or
+`sqlite3 corrupt.db .recover | sqlite3 fixed.db` instead.
 .SS Language bindings
 .IP \(bu 4
 mapi(4gx) \(em PHP module providing MAPI functions

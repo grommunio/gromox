@@ -1,3 +1,12 @@
+Development 2.1.13
+==================
+
+Behavioral changes:
+
+* The /usr/libexec/gromox/rebuild utility has been removed in favor
+  of using SQLite's own `.clone` / `.recover` commands.
+
+
 Gromox 2.1 (2023-01-12)
 =======================
 
