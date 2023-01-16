@@ -50,6 +50,10 @@ int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 		propval_free(PROP_TYPE(tag), pvalue);
 		return 0;
 	}
+	/*
+	 * XXX: _dup could bail out because of unrecognized type, so
+	 * ENOMEM is not correct all the time.
+	 */
 	return tpropval_array_append(this, tag, xpropval) ? 0 : -ENOMEM;
 }
 
