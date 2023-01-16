@@ -194,11 +194,11 @@ autodiscover(4gx) inside php-fpm(8): /etc/gromox/autodiscover.ini,
 /etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
 delivery(8gx): /etc/gromox/alias_resolve.cfg, /etc/gromox/exmdb_local.cfg,
-/etc/gromox/ldap_adaptor.cfg, /etc/gromox/log_plugin.cfg,
+/etc/gromox/ldap_adaptor.cfg,
 /etc/gromox/mlist_expand.cfg, /etc/gromox/mysql_adaptor.cfg,
 /etc/gromox/remote_delivery.cfg
 .IP \(bu 4
-delivery-queue(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/log_plugin.cfg,
+delivery-queue(8gx): /etc/gromox/authmgr.cfg,
 /etc/gromox/midb_agent.cfg, /etc/gromox/ldap_adaptor.cfg,
 /etc/gromox/mysql_adaptor.cfg, /etc/gromox/user_filter.cfg
 .IP \(bu 4
@@ -216,11 +216,11 @@ freebusy(8gx) subprocess run from php-fpm(8): no config file
 .IP \(bu 4
 http(8gx): /etc/gromox/cache.txt, /etc/gromox/exchange_emsmdb.cfg,
 /etc/gromox/exchange_nsp.cfg, etc/gromox/exmdb_provider.cfg,
-/etc/gromox/fastcgi.txt, /etc/gromox/log_plugin.cfg, /etc/gromox/rewrite.txt
+/etc/gromox/fastcgi.txt, /etc/gromox/rewrite.txt
 .IP \(bu 4
 imap(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/event_proxy.cfg,
 /etc/gromox/event_stub.cfg, /etc/gromox/imap.cfg, /etc/gromox/ldap_adaptor.cfg,
-/etc/gromox/log_plugin.cfg, /etc/gromox/mysql_adaptor.cfg
+/etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
 ip6_container(4gx) inside (no process by default):
 /etc/gromox/ip6_container.cfg
@@ -241,7 +241,7 @@ mh_emsmdb(4gx) inside http(8gx): no config file
 mh_nsp(4gx) inside http(8gx): no config file
 .IP \(bu 4
 pop3(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/event_proxy.cfg,
-/etc/gromox/imap.cfg, /etc/gromox/ldap_adaptor.cfg, /etc/gromox/log_plugin.cfg,
+/etc/gromox/imap.cfg, /etc/gromox/ldap_adaptor.cfg,
 /etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
 remote_delivery(4gx) inside delivery(8gx): /etc/gromox/remote_delivery.cfg
@@ -256,7 +256,7 @@ user_filter(4gx) inside delivery-queue(8gx), http(8gx), imap(8gx), pop3(8gx):
 /etc/gromox/user_filter.cfg
 .IP \(bu 4
 zcore(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/zcore.cfg,
-/etc/gromox/ldap_adaptor.cfg, /etc/gromox/log_plugin.cfg,
+/etc/gromox/ldap_adaptor.cfg,
 /etc/gromox/mysql_adaptor.cfg, /etc/gromox/timer_agent.cfg
 .SS Listing of components per config file
 .IP \(bu 4
@@ -300,10 +300,6 @@ mod_rewrite(4gx) plugins, and the http(8gx) process.
 /etc/gromox/ldap_adaptor.cfg: used by the ldap_adaptor(4gx) plugin, accessed
 process-wise by delivery(8gx), delivery-queue(8gx), http(8gx), imap(8gx),
 midb(8gx), pop3(8gx), zcore(8gx), and arbitrary PAM applications.
-.IP \(bu 4
-/etc/gromox/log_plugin.cfg: used by the log_plugin(4gx) plugin, accessed
-process-wise by delivery(8gx), delivery-queue(8gx), http(8gx), imap(8gx),
-pop3(8gx), zcore(8gx).
 .IP \(bu 4
 /etc/gromox/midb_agent.cfg: used by the midb_agent(4gx) plugin, accessed
 process-wise by delivery-queue(8gx), imap(8gx), pop3(8gx).

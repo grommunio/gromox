@@ -167,6 +167,13 @@ Enhancements:
 * mod_cache: remodel the whole module to be a passthrough to the kernel's
   buffer cache by using mmap and thus saving a lot of resident memory.
 
+Changes:
+
+* The `logthru` service plugin has been removed in favor of
+  direct function calls.
+* `log_plugin.cfg` is no longer used, switch to (e.g.)
+  `http.cfg`:`http_log_level`.
+
 Fixes:
 
 * oxcical: resolve Exchange complaining about the X-MICROSOFT-CDO-OWNERAPPTID
@@ -1145,7 +1152,7 @@ Enhancements:
 Changes:
 
 * mysql_adaptor: change default schema_upgrades action to "skip"
-* exch: remove log_plugin service plugin
+* exch: remove the ``log_plugin`` service plugin (replacement: ``logthru`` plugin)
 * exch: remove mod_proxy plugin
 
 Fixes:
