@@ -374,6 +374,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	emsmdb_interface_set_rop_num(rop_num);
 	b_icsup = FALSE;
 	pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+	size_t rop_count = double_list_get_nodes_num(&prop_buff->rop_list), rop_idx = 0;
 	for (pnode=double_list_get_head(&prop_buff->rop_list); NULL!=pnode;
 		pnode=double_list_get_after(&prop_buff->rop_list, pnode)) {
 		auto pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
@@ -391,11 +392,13 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			dbg = true;
 		if (dbg) {
 			if (rsp != nullptr)
-				mlog(LV_DEBUG, "rop_dispatch(%s) EC=%xh RS=%xh",
+				mlog(LV_DEBUG, "[%zu/%zu] rop_dispatch(%s) EC=%xh RS=%xh",
+					++rop_idx, rop_count,
 					rop_idtoname(req->rop_id), result,
 					static_cast<unsigned int>(rsp->result));
 			else
-				mlog(LV_DEBUG, "rop_dispatch(%s) EC=%xh RS=none",
+				mlog(LV_DEBUG, "[%zu/%zu] rop_dispatch(%s) EC=%xh RS=none",
+					++rop_idx, rop_count,
 					rop_idtoname(req->rop_id),
 					static_cast<unsigned int>(result));
 		}
