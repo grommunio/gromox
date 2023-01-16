@@ -327,7 +327,7 @@ man_MANS = \
 	doc/mh_emsmdb.4gx doc/mh_nsp.4gx \
 	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_rewrite.4gx \
 	doc/mysql_adaptor.4gx \
-	doc/pam_gromox.4gx doc/pop3.8gx doc/rebuild.8gx doc/rtf2html.1gx \
+	doc/pam_gromox.4gx doc/pop3.8gx doc/rtf2html.1gx \
 	doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 if HAVE_OLECF
