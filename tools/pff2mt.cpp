@@ -1142,9 +1142,16 @@ static errno_t do_file(const char *filename) try
 	}
 	fprintf(stderr, "pff: Reading %s...\n", filename);
 	errno = 0;
-	if (libpff_file_open(file.get(), filename, LIBPFF_OPEN_READ, nullptr) < 1) {
-		if (errno != 0)
-			fprintf(stderr, "pff: Could not open \"%s\": %s\n", filename, strerror(errno));
+	if (libpff_file_open(file.get(), filename, LIBPFF_OPEN_READ,
+	    &~unique_tie(err)) < 1) {
+		auto se = errno;
+		char buf[160];
+		buf[0] = '\0';
+		libpff_error_sprint(err.get(), buf, std::size(buf));
+		if (*buf != '\0')
+			fprintf(stderr, "pff: %s\n", buf);
+		if (se != 0)
+			fprintf(stderr, "pff: Could not open \"%s\": %s\n", filename, strerror(se));
 		else
 			fprintf(stderr, "pff: \"%s\" not recognized as PFF\n", filename);
 		return ECANCELED;
