@@ -271,8 +271,11 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 			throw std::bad_alloc();
 		auto ret = exm_create_folder(current_it->second.fid_to,
 			   &props, g_oexcl, &new_fid);
-		if (ret < 0)
+		if (ret < 0) {
+			fprintf(stderr, "exm: folder for input object %lxh could not be created\n",
+			        static_cast<unsigned long>(obd.nid));
 			return ret;
+		}
 		if (new_fid != 0) {
 			if (g_show_tree)
 				fprintf(stderr, "Updated mapping {%lxh -> %llxh}\n",
@@ -299,8 +302,11 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 		 */
 		auto ret = exm_create_folder(parent_it->second.fid_to,
 			   &props, !g_splice && g_oexcl, &new_fid);
-		if (ret < 0)
+		if (ret < 0) {
+			fprintf(stderr, "exm: folder for input object %lxh could not be created\n",
+			        static_cast<unsigned long>(obd.nid));
 			return ret;
+		}
 		if (new_fid != 0) {
 			/* Make subobjects (seen later) to take exm_folder case #3/exm_messages case #n. */
 			if (g_show_tree)

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <cassert>
 #include <cerrno>
 #include <cstdarg>
@@ -23,6 +26,8 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/paths.h>
+#include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
@@ -93,6 +98,7 @@ enum {
 
 enum {
 	NID_MESSAGE_STORE = 0x20 | NID_TYPE_INTERNAL,
+	/* Properties in NID_NAME_TO_ID_MAP are modeled based on OXMSG's __nameid_version1.0 */
 	NID_NAME_TO_ID_MAP = 0x60 | NID_TYPE_INTERNAL,
 	NID_NORMAL_FOLDER_TEMPLATE = 0xA0 | NID_TYPE_INTERNAL,
 	NID_SEARCH_FOLDER_TEMPLATE = 0xC0 | NID_TYPE_INTERNAL,
@@ -114,6 +120,7 @@ static std::vector<uint32_t> g_only_objs;
 static gi_folder_map_t g_folder_map;
 static unsigned int g_splice;
 static int g_with_hidden = -1;
+static const char *g_ascii_charset;
 
 static void cb_only_obj(const HXoptcb *cb)
 {
@@ -542,13 +549,22 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 			if (libpff_record_entry_get_data_as_utf8_string(rent,
 			    buf.get(), dsize2, &~unique_tie(err)) < 1)
 				throw az_error("PF-1036", err);
-		} else {
-			fprintf(stderr, "PF-1041: Garbage in Unicode string\n");
-			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize, "UTF-16", "UTF-8//IGNORE");
+		} else if (vtype == PT_UNICODE) {
+			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
+			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize,
+			         "UTF-16", "UTF-8//IGNORE");
 			dsize = s.size() + 1;
 			buf = std::make_unique<uint8_t[]>(dsize);
 			memcpy(buf.get(), s.data(), dsize);
+		} else if (vtype == PT_STRING8) {
+			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
+			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize,
+			         g_ascii_charset, "UTF-8//IGNORE");
+			dsize = s.size() * 3 + 1;
+			buf = std::make_unique<uint8_t[]>(dsize);
+			memcpy(buf.get(), s.data(), dsize);
 		}
+		pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_UNICODE);
 		pv.pvalue = buf.get();
 		break;
 	}
@@ -1142,11 +1158,29 @@ static errno_t do_file(const char *filename) try
 	}
 	fprintf(stderr, "pff: Reading %s...\n", filename);
 	errno = 0;
-	if (libpff_file_open(file.get(), filename, LIBPFF_OPEN_READ, nullptr) < 1) {
-		if (errno != 0)
-			fprintf(stderr, "pff: Could not open \"%s\": %s\n", filename, strerror(errno));
+	if (libpff_file_open(file.get(), filename, LIBPFF_OPEN_READ,
+	    &~unique_tie(err)) < 1) {
+		auto se = errno;
+		char buf[160];
+		buf[0] = '\0';
+		libpff_error_sprint(err.get(), buf, std::size(buf));
+		if (*buf != '\0')
+			fprintf(stderr, "pff: %s\n", buf);
+		if (se != 0)
+			fprintf(stderr, "pff: Could not open \"%s\": %s\n", filename, strerror(se));
 		else
 			fprintf(stderr, "pff: \"%s\" not recognized as PFF\n", filename);
+		return ECANCELED;
+	}
+	int cpid = 0;
+	if (libpff_file_get_ascii_codepage(file.get(), &cpid, &~unique_tie(err)) < 1)
+		/* ignore */;
+	if (cpid == 0)
+		g_ascii_charset = "cp850"; /* make encoding problems visible */
+	else if (cpid != 0)
+		g_ascii_charset = cpid_to_cset(cpid);
+	if (g_ascii_charset == nullptr) {
+		fprintf(stderr, "pff: no charset for cpid %d\n", cpid);
 		return ECANCELED;
 	}
 
@@ -1237,6 +1271,7 @@ int main(int argc, const char **argv)
 	}
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
+	textmaps_init(PKGDATADIR);
 	auto ret = do_file(argv[1]);
 	if (ret != 0) {
 		fprintf(stderr, "pff: Import unsuccessful.\n");
