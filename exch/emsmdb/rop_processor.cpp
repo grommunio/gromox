@@ -429,7 +429,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		if (pemsmdb_info->upctx_ref != 0)
 			b_icsup = TRUE;	
 		/* some ROPs do not have response, for example ropRelease */
-		if (pnode1->pdata == nullptr)
+		if (rsp == nullptr)
 			continue;
 		uint32_t last_offset = ext_push.m_offset;
 		status = rop_ext_push_rop_response(&ext_push, req->logon_id, rsp);
@@ -438,7 +438,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			double_list_append_as_tail(presponse_list, pnode1);
 			break;
 		case EXT_ERR_BUFSIZE: {
-			/* MS-OXCPRPT 3.2.5.2, fail to whole RPC */
+			/* MS-OXCPRPT 3.2.5.2, fail the whole RPC */
 			if (req->rop_id == ropGetPropertiesAll &&
 			    pnode == double_list_get_head(&prop_buff->rop_list))
 				return ecServerOOM;
@@ -615,6 +615,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
+			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
+				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
 			if (result != ecSuccess)
 				break;
 			pnode1 = double_list_pop_front(&response_list);
@@ -637,6 +639,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
+			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
+				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
 			if (result != ecSuccess)
 				break;
 			pnode1 = double_list_pop_front(&response_list);
@@ -661,6 +665,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
+			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
+				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
 			if (result != ecSuccess)
 				break;
 			pnode1 = double_list_pop_front(&response_list);
