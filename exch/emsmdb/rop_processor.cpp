@@ -345,7 +345,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	int rop_num;
 	BOOL b_icsup;
 	BINARY tmp_bin;
-	uint32_t tmp_len;
 	EXT_PUSH ext_push;
 	EXT_PUSH ext_push1;
 	PROPERTY_ROW tmp_row;
@@ -361,8 +360,12 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	/* ms-oxcrpc 3.1.4.2.1.2 */
 	if (*pbuff_len > 0x8000)
 		*pbuff_len = 0x8000;
-	tmp_len = *pbuff_len - 5*sizeof(uint16_t)
-			- sizeof(uint32_t)*prop_buff->hnum;
+	auto endroom_needed = 5 * sizeof(uint16_t) + prop_buff->hnum * sizeof(uint32_t);
+	auto tmp_len = *pbuff_len;
+	if (tmp_len >= endroom_needed)
+		tmp_len -= endroom_needed;
+	else
+		tmp_len = 0;
 	if (tmp_len > ext_buff_size)
 		tmp_len = ext_buff_size;
 	if (!ext_push.init(ext_buff.get(), tmp_len, EXT_FLAG_UTF16))
