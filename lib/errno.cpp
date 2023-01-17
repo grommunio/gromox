@@ -1,7 +1,8 @@
 #include <cstdio>
 #include <gromox/defs.h>
+#include <gromox/mapierr.hpp>
 
-unsigned int gxerr_to_hresult(gxerr_t e)
+ec_error_t gxerr_to_hresult(gxerr_t e)
 {
 	switch (e) {
 	case GXERR_SUCCESS: return ecSuccess;

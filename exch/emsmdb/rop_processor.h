@@ -54,7 +54,7 @@ extern std::unique_ptr<LOGMAP> rop_processor_create_logmap();
 void rop_processor_init(int average_handles, int scan_interval);
 extern int rop_processor_run();
 extern void rop_processor_stop();
-extern uint32_t rop_processor_proc(uint32_t flags, const uint8_t *in, uint32_t cb_in, uint8_t *out, uint32_t *cb_out);
+extern ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *in, uint32_t cb_in, uint8_t *out, uint32_t *cb_out);
 extern int32_t rop_processor_create_logon_item(LOGMAP *, uint8_t logon_id, std::unique_ptr<logon_object> &&);
 extern int32_t rop_processor_add_object_handle(LOGMAP *, uint8_t logon_id, int32_t parent_handle, object_node &&);
 extern void *rop_processor_get_object(LOGMAP *, uint8_t logon_id, uint32_t obj_handle, int *type);

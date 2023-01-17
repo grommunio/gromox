@@ -21,7 +21,7 @@
 
 using namespace gromox;
 
-uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
+ec_error_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
     uint8_t open_mode_flags, uint64_t message_id,
     uint8_t *phas_named_properties, TYPED_STRING *psubject_prefix,
     TYPED_STRING *pnormalized_subject, uint16_t *precipient_count,
@@ -164,7 +164,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	return ecSuccess;
 }
 
-uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
+ec_error_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
     uint8_t associated_flag, uint64_t **ppmessage_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
@@ -251,7 +251,7 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 	return ecSuccess;
 }
 
-uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
+ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hresponse, uint32_t hin)
 {
 	int object_type;
@@ -301,7 +301,7 @@ uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	return ecSuccess;
 }
 
-uint32_t rop_removeallrecipients(uint32_t reserved, LOGMAP *plogmap,
+ec_error_t rop_removeallrecipients(uint32_t reserved, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -314,7 +314,7 @@ uint32_t rop_removeallrecipients(uint32_t reserved, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
+ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
     const MODIFYRECIPIENT_ROW *prow, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin)
 {
@@ -378,7 +378,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 	return ecSuccess;
 }
 
-uint32_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcount,
+ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcount,
     EXT_PUSH *pext, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	auto &ext = *pext;
@@ -415,7 +415,7 @@ uint32_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcount,
 	return ecSuccess;
 }
 
-uint32_t rop_reloadcachedinformation(uint16_t reserved,
+ec_error_t rop_reloadcachedinformation(uint16_t reserved,
     uint8_t *phas_named_properties, TYPED_STRING *psubject_prefix,
     TYPED_STRING *pnormalized_subject, uint16_t *precipient_count,
     PROPTAG_ARRAY *precipient_columns, uint8_t *prow_count,
@@ -477,7 +477,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	return ecSuccess;
 }
 
-uint32_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
+ec_error_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
     uint32_t status_mask, uint32_t *pmessage_status, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -514,10 +514,10 @@ uint32_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 	if (!exmdb_client::set_message_property(plogon->get_dir(), nullptr, 0,
 	    message_id, &propval, &result))
 		return ecError;
-	return result;
+	return static_cast<ec_error_t>(result);
 }
 
-uint32_t rop_getmessagestatus(uint64_t message_id, uint32_t *pmessage_status,
+ec_error_t rop_getmessagestatus(uint64_t message_id, uint32_t *pmessage_status,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	void *pvalue;
@@ -644,7 +644,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	return TRUE;
 }
 
-uint32_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
+ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
     const LONGLONG_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -667,7 +667,7 @@ uint32_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 	return ecSuccess;
 }
 
-uint32_t rop_setmessagereadflag(uint8_t read_flags,
+ec_error_t rop_setmessagereadflag(uint8_t read_flags,
     const LONG_TERM_ID *pclient_data, uint8_t *pread_change, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hresponse, uint32_t hin)
 {
@@ -690,7 +690,7 @@ uint32_t rop_setmessagereadflag(uint8_t read_flags,
 	return ecSuccess;
 }
 
-uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
+ec_error_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
@@ -726,7 +726,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 	return ecSuccess;
 }
 
-uint32_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
+ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
@@ -760,7 +760,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_deleteattachment(uint32_t attachment_id, LOGMAP *plogmap,
+ec_error_t rop_deleteattachment(uint32_t attachment_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -777,7 +777,7 @@ uint32_t rop_deleteattachment(uint32_t attachment_id, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
+ec_error_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hresponse, uint32_t hin)
 {
 	int object_type;
@@ -814,7 +814,7 @@ uint32_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
+ec_error_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
     uint8_t *preserved, uint64_t *pmessage_id, uint8_t *phas_named_properties,
     TYPED_STRING *psubject_prefix, TYPED_STRING *pnormalized_subject,
     uint16_t *precipient_count, PROPTAG_ARRAY *precipient_columns,
@@ -944,7 +944,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 	return ecSuccess;
 }
 
-uint32_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
+ec_error_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
@@ -971,7 +971,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_getvalidattachments(LONG_ARRAY *pattachment_ids, LOGMAP *plogmap,
+ec_error_t rop_getvalidattachments(LONG_ARRAY *pattachment_ids, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	/* just like exchange 2010 or later,

@@ -15,9 +15,8 @@ using namespace gromox;
 
 unsigned int g_rop_debug;
 
-int rop_dispatch(ROP_REQUEST *prequest,
-	ROP_RESPONSE **ppresponse,
-	uint32_t *phandles, uint8_t hnum)
+ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
+    uint32_t *phandles, uint8_t hnum)
 {
 	void *pdata;
 	uint8_t rop_id;

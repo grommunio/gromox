@@ -164,7 +164,7 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	return pmessage;
 }
 
-uint32_t message_object::check_original_touched() const
+ec_error_t message_object::check_original_touched() const
 {
 	auto pmessage = this;
 	uint64_t *pchange_num;

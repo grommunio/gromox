@@ -344,16 +344,15 @@ void rop_processor_stop()
 	g_logon_hash.clear();
 }
 
-static int rop_processor_execute_and_push(uint8_t *pbuff,
-	uint32_t *pbuff_len, ROP_BUFFER *prop_buff,
-	BOOL b_notify, DOUBLE_LIST *presponse_list)
+static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
+    uint32_t *pbuff_len, ROP_BUFFER *prop_buff, BOOL b_notify,
+    DOUBLE_LIST *presponse_list)
 {
 	int type;
 	int status;
 	int rop_num;
 	BOOL b_icsup;
 	BINARY tmp_bin;
-	uint32_t result;
 	uint32_t tmp_len;
 	EXT_PUSH ext_push;
 	EXT_PUSH ext_push1;
@@ -386,8 +385,8 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		}
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.m_offset);
 		auto req = static_cast<ROP_REQUEST *>(pnode->pdata);
-		result = rop_dispatch(req, reinterpret_cast<ROP_RESPONSE **>(&pnode1->pdata),
-				prop_buff->phandles, prop_buff->hnum);
+		auto result = rop_dispatch(req, reinterpret_cast<ROP_RESPONSE **>(&pnode1->pdata),
+		              prop_buff->phandles, prop_buff->hnum);
 		auto rsp = static_cast<ROP_RESPONSE *>(pnode1->pdata);
 		bool dbg = g_rop_debug >= 2;
 		if (g_rop_debug >= 1 && result != 0)
@@ -397,10 +396,12 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		if (dbg) {
 			if (rsp != nullptr)
 				mlog(LV_DEBUG, "rop_dispatch(%s) EC=%xh RS=%xh",
-					rop_idtoname(req->rop_id), result, rsp->result);
+					rop_idtoname(req->rop_id), result,
+					static_cast<unsigned int>(rsp->result));
 			else
 				mlog(LV_DEBUG, "rop_dispatch(%s) EC=%xh RS=none",
-					rop_idtoname(req->rop_id), result);
+					rop_idtoname(req->rop_id),
+					static_cast<unsigned int>(result));
 		}
 		switch (result) {
 		case ecSuccess:
@@ -537,11 +538,10 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	return ecSuccess;
 }
 
-uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
+ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out)
 {
 	int count;
-	uint32_t result;
 	uint32_t tmp_cb;
 	uint32_t offset;
 	EXT_PULL ext_pull;
@@ -567,10 +567,10 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		rop_buff.rhe_flags |= RHE_FLAG_COMPRESSED;
 	double_list_init(&response_list);
 	tmp_cb = *pcb_out;
-	result = rop_processor_execute_and_push(pout,
-		&tmp_cb, &rop_buff, TRUE, &response_list);
+	auto result = rop_processor_execute_and_push(pout, &tmp_cb, &rop_buff,
+	              TRUE, &response_list);
 	if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
-		mlog(LV_DEBUG, "rop_proc_ex+push() EC = %xh", result);
+		mlog(LV_DEBUG, "rop_proc_ex+push() EC = %xh", static_cast<unsigned int>(result));
 	if (result != ecSuccess)
 		return result;
 	offset = tmp_cb;
