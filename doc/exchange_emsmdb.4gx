@@ -60,6 +60,10 @@ Default: \fIno\fP
 Default: \fI5 minutes\fP
 .TP
 \fBmail_max_length\fP
+The maximum size for any individual attachment and message. Attempts to store
+objects larger than this are rejected. The upper limit is 2G, imposed by
+Exchange protocols.
+.br
 Default: \fI64M\fP
 .TP
 \fBmax_ext_rule_length\fP

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <utility>
 #include <gromox/mapi_types.hpp>
 #define MAX_LENGTH_FOR_FOLDER						64*1024
 
@@ -15,14 +16,14 @@ struct stream_object {
 	BOOL check() const { return content_bin.pb != nullptr ? TRUE : false; }
 	uint32_t get_max_length() const { return max_length; }
 	uint32_t read(void *buf, uint32_t len);
-	uint16_t write(void *buf, uint16_t len);
+	std::pair<uint16_t, ec_error_t> write(void *buf, uint16_t len);
 	uint8_t get_open_flags() const { return open_flags; }
 	int get_parent_type() const { return object_type; }
 	uint32_t get_proptag() const { return proptag; }
 	void* get_content();
 	uint32_t get_length() const { return content_bin.cb; }
-	BOOL set_length(uint32_t len);
-	BOOL seek(uint8_t opt, int64_t offset);
+	ec_error_t set_length(uint32_t len);
+	ec_error_t seek(uint8_t opt, int64_t offset);
 	uint32_t get_seek_position() const { return seek_ptr; }
 	BOOL copy(stream_object *src, uint32_t *len);
 	BOOL commit();

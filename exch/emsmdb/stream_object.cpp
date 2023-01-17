@@ -143,34 +143,37 @@ uint32_t stream_object::read(void *pbuff, uint32_t buf_len)
 	return length;
 }
 
-uint16_t stream_object::write(void *pbuff, uint16_t buf_len)
+std::pair<uint16_t, ec_error_t> stream_object::write(void *pbuff, uint16_t buf_len)
 {
 	auto pstream = this;
 	if (OPENSTREAM_FLAG_READONLY == pstream->open_flags) {
-		return 0;
+		return {0, STG_E_ACCESSDENIED};
 	}
 	if (pstream->content_bin.cb >= pstream->max_length &&
 		pstream->seek_ptr >= pstream->content_bin.cb) {
-		return 0;
+		return {0, ecTooBig};
 	}
 	int8_t clamped = 0;
 	auto newpos = safe_add_s(pstream->seek_ptr, buf_len, &clamped);
 	if (clamped >= 1)
-		return 0;
-	if (newpos > pstream->content_bin.cb && !set_length(newpos))
-		return 0;
+		return {0, ecTooBig};
+	if (newpos > pstream->content_bin.cb) {
+		auto ret = set_length(newpos);
+		if (ret != ecSuccess)
+			return {0, ret};
+	}
 	if (OBJECT_TYPE_ATTACHMENT == pstream->object_type) {
 		if (!static_cast<attachment_object *>(pstream->pparent)->append_stream_object(pstream))
-			return 0;	
+			return {0, ecServerOOM};
 	} else if (OBJECT_TYPE_MESSAGE == pstream->object_type) {
 		if (!static_cast<message_object *>(pstream->pparent)->append_stream_object(pstream))
-			return 0;	
+			return {0, ecServerOOM};
 	}
 	memcpy(pstream->content_bin.pb +
 		pstream->seek_ptr, pbuff, buf_len);
 	pstream->seek_ptr = newpos;
 	pstream->b_touched = TRUE;
-	return buf_len;
+	return {buf_len, ecSuccess};
 }
 
 void *stream_object::get_content()
@@ -198,20 +201,20 @@ void *stream_object::get_content()
 	return NULL;
 }
 
-BOOL stream_object::set_length(uint32_t length)
+ec_error_t stream_object::set_length(uint32_t length)
 {
 	auto pstream = this;
 	
 	if (OPENSTREAM_FLAG_READONLY == pstream->open_flags) {
-		return FALSE;
+		return STG_E_ACCESSDENIED;
 	}
 	if (length > pstream->content_bin.cb) {
 		if (length > pstream->max_length) {
-			return FALSE;
+			return ecStreamSizeError;
 		}
 		auto pdata = gromox::re_alloc<uint8_t>(pstream->content_bin.pb, length);
 		if (NULL == pdata) {
-			return FALSE;
+			return ecServerOOM;
 		}
 		pstream->content_bin.pb = pdata;
 		memset(pstream->content_bin.pb + pstream->content_bin.cb,
@@ -223,10 +226,10 @@ BOOL stream_object::set_length(uint32_t length)
 	}
 	pstream->content_bin.cb = length;
 	pstream->b_touched = TRUE;
-	return TRUE;
+	return ecSuccess;
 }
 
-BOOL stream_object::seek(uint8_t opt, int64_t offset)
+ec_error_t stream_object::seek(uint8_t opt, int64_t offset)
 {	
 	auto pstream = this;
 	uint64_t origin;
@@ -234,16 +237,19 @@ BOOL stream_object::seek(uint8_t opt, int64_t offset)
 	case STREAM_SEEK_SET: origin = 0; break;
 	case STREAM_SEEK_CUR: origin = pstream->seek_ptr; break;
 	case STREAM_SEEK_END: origin = pstream->content_bin.cb; break;
-	default: return false;
+	default: return STG_E_INVALIDPARAMETER;
 	}
 	int8_t clamped = 0;
 	auto newpos = safe_add_s(origin, offset, &clamped);
 	if (clamped > 1)
-		return false;
-	if (newpos > pstream->content_bin.cb && !set_length(newpos))
-		return false;
+		return StreamSeekError;
+	if (newpos > pstream->content_bin.cb) {
+		auto ret = set_length(newpos);
+		if (ret != ecSuccess)
+			return ret;
+	}
 	pstream->seek_ptr = newpos;
-	return TRUE;
+	return ecSuccess;
 }
 
 BOOL stream_object::copy(stream_object *pstream_src, uint32_t *plength)
