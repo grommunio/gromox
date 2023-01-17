@@ -1020,7 +1020,7 @@ static size_t find_first_nonprint(const void *vptr, size_t z)
 	auto begin = static_cast<const uint8_t *>(vptr);
 	auto end = begin + z;
 	for (auto p = begin; p < end; ++p)
-		if (!isprint(*p) && *p != '\r' && *p != '\n')
+		if (!isprint(*p) && !isspace(*p))
 			return p - begin;
 	return z;
 }
