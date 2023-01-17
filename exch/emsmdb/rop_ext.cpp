@@ -3090,8 +3090,7 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 			}
 		}
 	}
-	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
-		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
+	rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
 	if (!ext_push.init(pbuff_out, *pout_len, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	TRY(ext_push.p_rpchdr(rpc_header_ext));
