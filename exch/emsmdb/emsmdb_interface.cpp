@@ -836,6 +836,7 @@ BOOL emsmdb_interface_get_rop_left(uint16_t *psize)
 {
 	auto phandle = g_handle_key;
 	if (NULL == phandle) {
+		*psize = 0;
 		return FALSE;
 	}
 	*psize = phandle->rop_left;
