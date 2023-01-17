@@ -195,7 +195,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	return pfldctnt;
 }
 
-uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
+ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
@@ -283,7 +283,7 @@ uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
 	return ecSuccess;
 }
 
-uint32_t rop_fasttransferdestputbuffer(const BINARY *ptransfer_data,
+ec_error_t rop_fasttransferdestputbuffer(const BINARY *ptransfer_data,
     uint16_t *ptransfer_status, uint16_t *pin_progress_count,
     uint16_t *ptotal_step_count, uint8_t *preserved, uint16_t *pused_size,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
@@ -307,7 +307,7 @@ uint32_t rop_fasttransferdestputbuffer(const BINARY *ptransfer_data,
 	return ecSuccess;
 }
 
-uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
+ec_error_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
     uint16_t max_buffer_size, uint16_t *ptransfer_status,
     uint16_t *pin_progress_count, uint16_t *ptotal_step_count,
     uint8_t *preserved, BINARY *ptransfer_data, LOGMAP *plogmap,
@@ -372,7 +372,7 @@ static bool send_options_ok(uint32_t f)
 	return true;
 }
 
-uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
+ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
@@ -407,7 +407,7 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 	return ecSuccess;
 }
 
-uint32_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids,
+ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids,
     uint8_t flags, uint8_t send_options, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
 {
@@ -471,7 +471,7 @@ uint32_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	return ecSuccess;
 }
 
-uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
+ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
     uint8_t send_options, const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
@@ -596,7 +596,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	return ecSuccess;
 }
 
-uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
+ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
     uint8_t send_options, const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
@@ -727,13 +727,13 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	return ecSuccess;
 }
 
-uint32_t rop_tellversion(const uint16_t *pversion, LOGMAP *plogmap,
+ec_error_t rop_tellversion(const uint16_t *pversion, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	return ecSuccess;
 }
 
-uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
+ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
     uint16_t sync_flags, const RESTRICTION *pres, uint32_t extra_flags,
     const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
@@ -800,7 +800,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	return ecSuccess;
 }
 
-static uint32_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
+static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
     unsigned int import_flags, icsupctx_object *ctx,
     const TPROPVAL_ARRAY *props, uint64_t *msg_idp,
     uint32_t hnd_in, uint32_t *hnd_out)
@@ -872,7 +872,7 @@ static uint32_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 	return ecSuccess;
 }
 
-uint32_t rop_syncimportmessagechange(uint8_t import_flags,
+ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
     const TPROPVAL_ARRAY *ppropvals, uint64_t *pmessage_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
@@ -1017,7 +1017,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	return ecSuccess;
 }
 
-uint32_t rop_syncimportreadstatechanges(uint16_t count,
+ec_error_t rop_syncimportreadstatechanges(uint16_t count,
     const MESSAGE_READ_STAT *pread_stat, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -1105,7 +1105,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	return ecSuccess;
 }
 
-uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
+ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
     const TPROPVAL_ARRAY *ppropvals, uint64_t *pfolder_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -1346,7 +1346,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	return ecSuccess;
 }
 
-uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
+ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	XID tmp_xid;
@@ -1508,7 +1508,7 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	return ecSuccess;
 }
 
-uint32_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
+ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
     const BINARY *psrc_message_id, const BINARY *pchange_list,
     const BINARY *pdst_message_id, const BINARY *pchange_number,
     uint64_t *pmessage_id, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
@@ -1631,7 +1631,7 @@ uint32_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	return ecSuccess;
 }
 
-uint32_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *plogmap,
+ec_error_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
@@ -1654,7 +1654,7 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
+ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
 {
 	int object_type;
@@ -1689,7 +1689,7 @@ uint32_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 	return ecSuccess;
 }
 
-uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
+ec_error_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
     uint32_t buffer_size, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -1708,7 +1708,7 @@ uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 	return ecSuccess;
 }
 
-uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
+ec_error_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -1727,7 +1727,7 @@ uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 	return ecSuccess;
 }
 
-uint32_t rop_syncuploadstatestreamend(LOGMAP *plogmap,
+ec_error_t rop_syncuploadstatestreamend(LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -1746,14 +1746,14 @@ uint32_t rop_syncuploadstatestreamend(LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_setlocalreplicamidsetdeleted(uint32_t count,
+ec_error_t rop_setlocalreplicamidsetdeleted(uint32_t count,
     const LONG_TERM_ID_RANGE *prange, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	return ecSuccess;
 }
 
-uint32_t rop_getlocalreplicaids(uint32_t count, GUID *pguid,
+ec_error_t rop_getlocalreplicaids(uint32_t count, GUID *pguid,
     GLOBCNT *pglobal_count, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;

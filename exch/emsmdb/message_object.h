@@ -21,7 +21,7 @@ struct message_object {
 	~message_object();
 	static std::unique_ptr<message_object> create(logon_object *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, uint8_t open_flags, std::shared_ptr<ics_state>);
 	uint32_t get_instance_id() const { return instance_id; }
-	uint32_t check_original_touched() const;
+	ec_error_t check_original_touched() const;
 	bool importing() const { return message_id != 0 && pstate != nullptr; }
 	gromox::errno_t init_message(bool fai, uint32_t cpid);
 	uint64_t get_id() const { return message_id; }

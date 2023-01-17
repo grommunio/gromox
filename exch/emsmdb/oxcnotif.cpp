@@ -8,7 +8,7 @@
 #include "rop_processor.h"
 #include "subscription_object.h"
 
-uint32_t rop_registernotification(uint8_t notification_types, uint8_t reserved,
+ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved,
     uint8_t want_whole_store, const uint64_t *pfolder_id,
     const uint64_t *pmessage_id, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)

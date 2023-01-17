@@ -25,7 +25,7 @@
 
 using namespace gromox;
 
-uint32_t rop_getpropertyidsfromnames(uint8_t flags,
+ec_error_t rop_getpropertyidsfromnames(uint8_t flags,
     const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -65,7 +65,7 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 	return ecSuccess;
 }
 
-uint32_t rop_getnamesfrompropertyids(const PROPID_ARRAY *ppropids,
+ec_error_t rop_getnamesfrompropertyids(const PROPID_ARRAY *ppropids,
     PROPNAME_ARRAY *ppropnames, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -124,7 +124,7 @@ static uint32_t propval_size_xfer(uint16_t type, void *val)
 	return len;
 }
 
-uint32_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
+ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
     const PROPTAG_ARRAY *pproptags, PROPERTY_ROW *prow, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -223,7 +223,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	return ecSuccess;
 }
 
-uint32_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
+ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
     TPROPVAL_ARRAY *ppropvals, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int i;
@@ -330,7 +330,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 	return ecSuccess;
 }
 
-uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
+ec_error_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -359,7 +359,7 @@ uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 	}
 }
 
-uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
+ec_error_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -415,14 +415,14 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	}
 }
 
-uint32_t rop_setpropertiesnoreplicate(const TPROPVAL_ARRAY *ppropvals,
+ec_error_t rop_setpropertiesnoreplicate(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	return rop_setproperties(ppropvals,
 		pproblems, plogmap, logon_id, hin);
 }
 
-uint32_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
+ec_error_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -478,14 +478,14 @@ uint32_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
 	}
 }
 
-uint32_t rop_deletepropertiesnoreplicate(const PROPTAG_ARRAY *pproptags,
+ec_error_t rop_deletepropertiesnoreplicate(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	return rop_deleteproperties(pproptags,
 		pproblems, plogmap, logon_id, hin);
 }
 
-uint32_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
+ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
     PROPIDNAME_ARRAY *ppropidnames, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -576,7 +576,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	return ecSuccess;
 }
 
-uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
+ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
     const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
@@ -789,7 +789,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 	}
 }
 
-uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
+ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
     uint8_t copy_flags, const PROPTAG_ARRAY *pexcluded_proptags,
     PROBLEM_ARRAY *pproblems, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hsrc, uint32_t hdst)
@@ -935,14 +935,14 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 	}
 }
 
-uint32_t rop_progress(uint8_t want_cancel, uint32_t *pcompleted_count,
+ec_error_t rop_progress(uint8_t want_cancel, uint32_t *pcompleted_count,
     uint32_t *ptotal_count, uint8_t *prop_id, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	return ecNotSupported;
 }
 
-uint32_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
+ec_error_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
@@ -1020,7 +1020,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
 	return ecSuccess;
 }
 
-uint32_t rop_readstream(uint16_t byte_count, uint32_t max_byte_count,
+ec_error_t rop_readstream(uint16_t byte_count, uint32_t max_byte_count,
     BINARY *pdata_bin, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	uint16_t max_rop;
@@ -1057,7 +1057,7 @@ uint32_t rop_readstream(uint16_t byte_count, uint32_t max_byte_count,
 	return ecSuccess;
 }
 
-uint32_t rop_writestream(const BINARY *pdata_bin, uint16_t *pwritten_size,
+ec_error_t rop_writestream(const BINARY *pdata_bin, uint16_t *pwritten_size,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int32_t object_type;
@@ -1085,7 +1085,7 @@ uint32_t rop_writestream(const BINARY *pdata_bin, uint16_t *pwritten_size,
 	return ecSuccess;
 }
 
-uint32_t rop_commitstream(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
+ec_error_t rop_commitstream(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
 	
@@ -1107,7 +1107,7 @@ uint32_t rop_commitstream(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 	}
 }
 
-uint32_t rop_getstreamsize(uint32_t *pstream_size, LOGMAP *plogmap,
+ec_error_t rop_getstreamsize(uint32_t *pstream_size, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -1121,7 +1121,7 @@ uint32_t rop_getstreamsize(uint32_t *pstream_size, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_setstreamsize(uint64_t stream_size, LOGMAP *plogmap,
+ec_error_t rop_setstreamsize(uint64_t stream_size, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -1141,7 +1141,7 @@ uint32_t rop_setstreamsize(uint64_t stream_size, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_seekstream(uint8_t seek_pos, int64_t offset, uint64_t *pnew_pos,
+ec_error_t rop_seekstream(uint8_t seek_pos, int64_t offset, uint64_t *pnew_pos,
    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -1169,7 +1169,7 @@ uint32_t rop_seekstream(uint8_t seek_pos, int64_t offset, uint64_t *pnew_pos,
 	return ecSuccess;
 }
 
-uint32_t rop_copytostream(uint64_t byte_count, uint64_t *pread_bytes,
+ec_error_t rop_copytostream(uint64_t byte_count, uint64_t *pread_bytes,
     uint64_t *pwritten_bytes, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hsrc, uint32_t hdst)
 {
@@ -1199,28 +1199,28 @@ uint32_t rop_copytostream(uint64_t byte_count, uint64_t *pread_bytes,
 	return ecSuccess;
 }
 
-uint32_t rop_lockregionstream(uint64_t region_offset, uint64_t region_size,
+ec_error_t rop_lockregionstream(uint64_t region_offset, uint64_t region_size,
     uint32_t lock_flags, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	 /* just like exchange 2010 or later */
 	 return NotImplemented;
 }
 
-uint32_t rop_unlockregionstream(uint64_t region_offset, uint64_t region_size,
+ec_error_t rop_unlockregionstream(uint64_t region_offset, uint64_t region_size,
     uint32_t lock_flags, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	 /* just like exchange 2010 or later */
 	return NotImplemented;
 }
 
-uint32_t rop_writeandcommitstream(const BINARY *pdata, uint16_t *pwritten_size,
+ec_error_t rop_writeandcommitstream(const BINARY *pdata, uint16_t *pwritten_size,
    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	 /* just like exchange 2010 or later */
 	return NotImplemented;
 }
 
-uint32_t rop_clonestream(LOGMAP *plogmap, uint8_t logon_id,
+ec_error_t rop_clonestream(LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
 {
 	 /* just like exchange 2010 or later */

@@ -14,7 +14,7 @@
 #include "rop_processor.h"
 #include "table_object.h"
 
-uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
+ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int i, j;
@@ -66,7 +66,7 @@ uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	return ecSuccess;
 }
 
-uint32_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
+ec_error_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
 {
 	int object_type;
@@ -93,7 +93,7 @@ uint32_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
 	return ecSuccess;
 }
 
-uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
+ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
     const BINARY *pclient_entry_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {

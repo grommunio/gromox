@@ -245,7 +245,7 @@ static ec_error_t pass_scheduling(const char *code, const char *account,
 	return ecAccessDenied;
 }
 
-uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
+ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int timer_id;
@@ -431,7 +431,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	return ret;
 }
 
-uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
+ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_exist;
@@ -486,7 +486,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	return ecSuccess;
 }
 
-uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
+ec_error_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	static constexpr const char *address_types[] = {"SMTP", "EX"};
@@ -501,7 +501,7 @@ uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_setspooler(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
+ec_error_t rop_setspooler(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -509,7 +509,7 @@ uint32_t rop_setspooler(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 	return plogon->is_private() ? ecSuccess : ecNotSupported;
 }
 
-uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
+ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_exist;
@@ -576,7 +576,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	return ecSuccess;
 }
 
-uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
+ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -671,7 +671,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	return cu_send_message(plogon, pmessage->get_id(), false);
 }
 
-uint32_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,
+ec_error_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,
     const char *pstr_class, uint32_t message_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -684,7 +684,7 @@ uint32_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,
 	return ecSuccess;
 }
 
-uint32_t rop_gettransportfolder(uint64_t *pfolder_id, LOGMAP *plogmap,
+ec_error_t rop_gettransportfolder(uint64_t *pfolder_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -696,7 +696,7 @@ uint32_t rop_gettransportfolder(uint64_t *pfolder_id, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_optionsdata(const char *paddress_type, uint8_t want_win32,
+ec_error_t rop_optionsdata(const char *paddress_type, uint8_t want_win32,
     uint8_t *preserved, BINARY *poptions_info, BINARY *phelp_file,
     char **ppfile_name, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {

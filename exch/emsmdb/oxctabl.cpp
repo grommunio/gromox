@@ -75,7 +75,7 @@ static inline bool table_acceptable_type(uint16_t type)
 	}
 }
 
-uint32_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
+ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
     uint8_t *ptable_status, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int i;
@@ -108,7 +108,7 @@ uint32_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 	return ecSuccess;
 }
 
-uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
+ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
     uint8_t *ptable_status, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_max;
@@ -185,7 +185,7 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 	return ecSuccess;
 }
 
-uint32_t rop_restrict(uint8_t res_flags, RESTRICTION *pres,
+ec_error_t rop_restrict(uint8_t res_flags, RESTRICTION *pres,
     uint8_t *ptable_status, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -215,7 +215,7 @@ uint32_t rop_restrict(uint8_t res_flags, RESTRICTION *pres,
 	return ecSuccess;
 }
 
-uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
+ec_error_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
     uint8_t *pseek_pos, uint16_t *pcount, EXT_PUSH *pext, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -270,7 +270,7 @@ uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
 	return ecSuccess;
 }
 
-uint32_t rop_abort(uint8_t *ptable_status, LOGMAP *plogmap,
+ec_error_t rop_abort(uint8_t *ptable_status, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -283,7 +283,7 @@ uint32_t rop_abort(uint8_t *ptable_status, LOGMAP *plogmap,
 	return ecUnableToAbort;
 }
 
-uint32_t rop_getstatus(uint8_t *ptable_status, LOGMAP *plogmap,
+ec_error_t rop_getstatus(uint8_t *ptable_status, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -297,7 +297,7 @@ uint32_t rop_getstatus(uint8_t *ptable_status, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
+ec_error_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -314,7 +314,7 @@ uint32_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
 	return ecSuccess;
 }
 
-uint32_t rop_seekrow(uint8_t seek_pos, int32_t offset, uint8_t want_moved_count,
+ec_error_t rop_seekrow(uint8_t seek_pos, int32_t offset, uint8_t want_moved_count,
     uint8_t *phas_soughtless, int32_t *poffset_sought, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -358,7 +358,7 @@ uint32_t rop_seekrow(uint8_t seek_pos, int32_t offset, uint8_t want_moved_count,
 	return ecSuccess;
 }
 
-uint32_t rop_seekrowbookmark(const BINARY *pbookmark, int32_t offset,
+ec_error_t rop_seekrowbookmark(const BINARY *pbookmark, int32_t offset,
     uint8_t want_moved_count, uint8_t *prow_invisible, uint8_t *phas_soughtless,
     uint32_t *poffset_sought, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -392,7 +392,7 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark, int32_t offset,
 	       phas_soughtless, reinterpret_cast<int32_t *>(poffset_sought), plogmap, logon_id, hin);
 }
 
-uint32_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator,
+ec_error_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -411,7 +411,7 @@ uint32_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator,
 	return ecSuccess;
 }
 
-uint32_t rop_createbookmark(BINARY *pbookmark, LOGMAP *plogmap,
+ec_error_t rop_createbookmark(BINARY *pbookmark, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -441,7 +441,7 @@ uint32_t rop_createbookmark(BINARY *pbookmark, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
+ec_error_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -458,11 +458,10 @@ uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
+ec_error_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
     const BINARY *pbookmark, uint8_t *pbookmark_invisible, PROPERTY_ROW **pprow,
     PROPTAG_ARRAY **ppcolumns, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	uint32_t result;
 	int object_type;
 	int32_t position;
 	uint8_t has_soughtless;
@@ -489,16 +488,17 @@ uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	BOOL b_forward = (flags & FIND_ROW_FLAG_BACKWARD) ? false : TRUE;
 	*pbookmark_invisible = 0;
 	switch (seek_pos) {
-	case BOOKMARK_CUSTOM:
+	case BOOKMARK_CUSTOM: {
 		if (ptable->rop_id == ropGetRulesTable)
 			return ecNotSupported;
 		if (pbookmark->cb != sizeof(uint32_t))
 			return ecInvalidBookmark;
-		result = rop_seekrowbookmark(pbookmark, 0, 0, pbookmark_invisible,
+		auto result = rop_seekrowbookmark(pbookmark, 0, 0, pbookmark_invisible,
 				&has_soughtless, &offset_sought, plogmap, logon_id, hin);
 		if (result != ecSuccess)
 			return result;
 		break;
+	}
 	case BOOKMARK_BEGINNING:
 		ptable->set_position(0);
 		break;
@@ -526,7 +526,7 @@ uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	return ecSuccess;
 }
 
-uint32_t rop_freebookmark(const BINARY *pbookmark, LOGMAP *plogmap,
+ec_error_t rop_freebookmark(const BINARY *pbookmark, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -553,7 +553,7 @@ uint32_t rop_freebookmark(const BINARY *pbookmark, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_resettable(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
+ec_error_t rop_resettable(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
 	
@@ -566,7 +566,7 @@ uint32_t rop_resettable(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 	return ecSuccess;
 }
 
-uint32_t rop_expandrow(uint16_t max_count, uint64_t category_id,
+ec_error_t rop_expandrow(uint16_t max_count, uint64_t category_id,
     uint32_t *pexpanded_count, uint16_t *pcount, EXT_PUSH *pext,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -622,7 +622,7 @@ uint32_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 	return ecSuccess;
 }
 
-uint32_t rop_collapserow(uint64_t category_id, uint32_t *pcollapsed_count,
+ec_error_t rop_collapserow(uint64_t category_id, uint32_t *pcollapsed_count,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_found;
@@ -656,7 +656,7 @@ uint32_t rop_collapserow(uint64_t category_id, uint32_t *pcollapsed_count,
 	return ecSuccess;
 }
 
-uint32_t rop_getcollapsestate(uint64_t row_id, uint32_t row_instance,
+ec_error_t rop_getcollapsestate(uint64_t row_id, uint32_t row_instance,
     BINARY *pcollapse_state, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -682,7 +682,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id, uint32_t row_instance,
 	return ecSuccess;
 }
 
-uint32_t rop_setcollapsestate(const BINARY *pcollapse_state, BINARY *pbookmark,
+ec_error_t rop_setcollapsestate(const BINARY *pcollapse_state, BINARY *pbookmark,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;

@@ -17,7 +17,7 @@
 
 using namespace gromox;
 
-uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
+ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
     uint8_t *phas_rules, GHOST_SERVER **ppghost, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
@@ -116,7 +116,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	return ecSuccess;
 }
 
-uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
+ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
     uint8_t open_existing, uint8_t reserved, const char *pfolder_name,
     const char *pfolder_comment, uint64_t *pfolder_id, uint8_t *pis_existing,
     uint8_t *phas_rules, GHOST_SERVER **ppghost, LOGMAP *plogmap,
@@ -272,7 +272,7 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	return ecSuccess;
 }
 
-uint32_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
+ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_done;
@@ -357,7 +357,7 @@ uint32_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	return ecSuccess;
 }
 
-uint32_t rop_setsearchcriteria(RESTRICTION *pres,
+ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
     const LONGLONG_ARRAY *pfolder_ids, uint32_t search_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -429,7 +429,7 @@ uint32_t rop_setsearchcriteria(RESTRICTION *pres,
 	return ecSuccess;
 }
 
-uint32_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction,
+ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction,
     uint8_t include_folders, RESTRICTION **ppres, LONGLONG_ARRAY *pfolder_ids,
     uint32_t *psearch_flags, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -464,7 +464,7 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction,
 	return ecSuccess;
 }
 
-uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
+ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
     uint8_t want_asynchronous, uint8_t want_copy, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
@@ -518,7 +518,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	return ecSuccess;
 }
 
-uint32_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
+ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
     uint64_t folder_id, const char *pnew_name, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
@@ -633,7 +633,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	return ecSuccess;
 }
 
-uint32_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
+ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
     uint8_t use_unicode, uint64_t folder_id, const char *pnew_name,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hsrc, uint32_t hdst)
@@ -714,7 +714,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	return ecSuccess;
 }
 
-static uint32_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associated,
+static ec_error_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associated,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_partial;
@@ -759,7 +759,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associated,
 	return ecSuccess;
 }
 
-uint32_t rop_emptyfolder(uint8_t want_asynchronous,
+ec_error_t rop_emptyfolder(uint8_t want_asynchronous,
     uint8_t want_delete_associated, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -767,7 +767,7 @@ uint32_t rop_emptyfolder(uint8_t want_asynchronous,
 			ppartial_completion, plogmap, logon_id, hin);	
 }
 
-uint32_t rop_harddeletemessagesandsubfolders(uint8_t want_asynchronous,
+ec_error_t rop_harddeletemessagesandsubfolders(uint8_t want_asynchronous,
     uint8_t want_delete_associated, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -775,7 +775,7 @@ uint32_t rop_harddeletemessagesandsubfolders(uint8_t want_asynchronous,
 			ppartial_completion, plogmap, logon_id, hin);
 }
 
-static uint32_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
+static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
     uint8_t notify_non_read, const LONGLONG_ARRAY *pmessage_ids,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -869,7 +869,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	return ecSuccess;
 }
 
-uint32_t rop_deletemessages(uint8_t want_asynchronous, uint8_t notify_non_read,
+ec_error_t rop_deletemessages(uint8_t want_asynchronous, uint8_t notify_non_read,
     const LONGLONG_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -878,7 +878,7 @@ uint32_t rop_deletemessages(uint8_t want_asynchronous, uint8_t notify_non_read,
 			plogmap, logon_id, hin);
 }
 
-uint32_t rop_harddeletemessages(uint8_t want_asynchronous,
+ec_error_t rop_harddeletemessages(uint8_t want_asynchronous,
     uint8_t notify_non_read, const LONGLONG_ARRAY *pmessage_ids,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -887,7 +887,7 @@ uint32_t rop_harddeletemessages(uint8_t want_asynchronous,
 			plogmap, logon_id, hin);
 }
 
-uint32_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
+ec_error_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
@@ -925,7 +925,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 	return ecSuccess;
 }
 
-uint32_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
+ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	BOOL b_fai;

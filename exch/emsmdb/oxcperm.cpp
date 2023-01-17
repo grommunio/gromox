@@ -13,7 +13,7 @@
 #include "rop_processor.h"
 #include "table_object.h"
 
-uint32_t rop_modifypermissions(uint8_t flags, uint16_t count,
+ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
     const PERMISSION_DATA *prow, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -69,7 +69,7 @@ uint32_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	return ecSuccess;
 }
 
-uint32_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
+ec_error_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
