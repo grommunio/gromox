@@ -1674,22 +1674,21 @@ static int rop_ext_push_syncimportmessagechange_response(
 	return pext->p_uint64(r->message_id);
 }
 
-static int rop_ext_pull_syncimportreadstatechanges_request(
-	EXT_PULL *pext, SYNCIMPORTREADSTATECHANGES_REQUEST *r)
+static int rop_ext_pull_syncimportreadstatechanges_request(EXT_PULL *pext,
+    SYNCIMPORTREADSTATECHANGES_REQUEST *r) try
 {
 	auto &ext = *pext;
 	uint16_t size;
-	MESSAGE_READ_STAT tmp_array[0x1000];
+	static constexpr size_t ta_size = 0x1000;
+	auto tmp_array = std::make_unique<MESSAGE_READ_STAT[]>(ta_size);
 	
 	TRY(pext->g_uint16(&size));
 	if (size == 0)
 		return EXT_ERR_FORMAT;
 	r->count = 0;
 	uint32_t offset = ext.m_offset + size;
-	while (ext.m_offset < offset && r->count < 0x1000) {
-		TRY(rop_ext_pull_message_read_stat(pext, tmp_array + r->count));
-		r->count ++;
-	}
+	while (ext.m_offset < offset && r->count < ta_size)
+		TRY(rop_ext_pull_message_read_stat(pext, &tmp_array[r->count++]));
 	if (ext.m_offset != offset)
 		return EXT_ERR_FORMAT;
 	r->pread_stat = pext->anew<MESSAGE_READ_STAT>(r->count);
@@ -1697,8 +1696,11 @@ static int rop_ext_pull_syncimportreadstatechanges_request(
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	memcpy(r->pread_stat, tmp_array, sizeof(MESSAGE_READ_STAT)*r->count);
+	memcpy(r->pread_stat, tmp_array.get(), sizeof(tmp_array[0]) * r->count);
 	return EXT_ERR_SUCCESS;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1171: ENOMEM");
+	return EXT_ERR_ALLOC;
 }
 
 static int rop_ext_pull_syncimporthierarchychange_request(
@@ -3075,15 +3077,16 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 }
 
 int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
-    const ROP_BUFFER *prop_buff, void *pbuff_out, uint32_t *pout_len)
+    const ROP_BUFFER *prop_buff, void *pbuff_out, uint32_t *pout_len) try
 {
 	EXT_PUSH subext;
 	EXT_PUSH ext_push;
-	uint8_t ext_buff[0x10000];
-	uint8_t tmp_buff[0x10000];
+	static constexpr size_t ext_buff_size = 0x10000;
+	auto ext_buff = std::make_unique<uint8_t[]>(ext_buff_size);
+	auto tmp_buff = std::make_unique<uint8_t[]>(ext_buff_size);
 	RPC_HEADER_EXT rpc_header_ext;
 	
-	if (!subext.init(ext_buff, sizeof(ext_buff), EXT_FLAG_UTF16))
+	if (!subext.init(ext_buff.get(), ext_buff_size, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	TRY(subext.p_uint16(in_len + sizeof(uint16_t)));
 	TRY(subext.p_bytes(pbuff_in, in_len));
@@ -3097,14 +3100,14 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 		if (rpc_header_ext.size_actual < MINIMUM_COMPRESS_SIZE) {
 			rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 		} else {
-			uint32_t compressed_len = lzxpress_compress(ext_buff, subext.m_offset, tmp_buff);
+			uint32_t compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get());
 			if (compressed_len == 0 || compressed_len >= subext.m_offset) {
 				/* if we can not get benefit from the
 					compression, unmask the compress bit */
 				rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 			} else {
 				rpc_header_ext.size = compressed_len;
-				memcpy(ext_buff, tmp_buff, compressed_len);
+				memcpy(ext_buff.get(), tmp_buff.get(), compressed_len);
 			}
 		}
 	}
@@ -3113,9 +3116,12 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	if (!ext_push.init(pbuff_out, *pout_len, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	TRY(ext_push.p_rpchdr(rpc_header_ext));
-	TRY(ext_push.p_bytes(ext_buff, rpc_header_ext.size));
+	TRY(ext_push.p_bytes(ext_buff.get(), rpc_header_ext.size));
 	*pout_len = ext_push.m_offset;
 	return EXT_ERR_SUCCESS;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1172: ENOMEM");
+	return EXT_ERR_ALLOC;
 }
 
 void rop_ext_set_rhe_flag_last(uint8_t *pdata, uint32_t last_offset)
