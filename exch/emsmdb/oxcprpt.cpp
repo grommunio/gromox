@@ -1075,10 +1075,12 @@ ec_error_t rop_writestream(const BINARY *pdata_bin, uint16_t *pwritten_size,
 	}
 	if (pstream->get_seek_position() >= pstream->get_max_length())
 		return ecTooBig;
-	*pwritten_size = pstream->write(pdata_bin->pb, pdata_bin->cb);
-	if (0 == *pwritten_size) {
-		return ecError;
+	auto result = pstream->write(pdata_bin->pb, pdata_bin->cb);
+	if (result.second != ecSuccess) {
+		*pwritten_size = 0;
+		return result.second;
 	}
+	*pwritten_size = result.first;
 	if (*pwritten_size < pdata_bin->cb) {
 		return ecTooBig;
 	}
@@ -1136,9 +1138,7 @@ ec_error_t rop_setstreamsize(uint64_t stream_size, LOGMAP *plogmap,
 		return ecNotSupported;
 	if (stream_size > pstream->get_max_length())
 		return ecTooBig;
-	if (!pstream->set_length(stream_size))
-		return ecError;
-	return ecSuccess;
+	return pstream->set_length(stream_size);
 }
 
 ec_error_t rop_seekstream(uint8_t seek_pos, int64_t offset, uint64_t *pnew_pos,
@@ -1163,8 +1163,9 @@ ec_error_t rop_seekstream(uint8_t seek_pos, int64_t offset, uint64_t *pnew_pos,
 		return ecNullObject;
 	if (object_type != OBJECT_TYPE_STREAM)
 		return ecNotSupported;
-	if (!pstream->seek(seek_pos, offset))
-		return StreamSeekError;
+	auto ret = pstream->seek(seek_pos, offset);
+	if (ret != ecSuccess)
+		return ret;
 	*pnew_pos = pstream->get_seek_position();
 	return ecSuccess;
 }
