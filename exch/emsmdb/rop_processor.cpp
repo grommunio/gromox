@@ -346,7 +346,7 @@ void rop_processor_stop()
 
 static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
     uint32_t *pbuff_len, ROP_BUFFER *prop_buff, BOOL b_notify,
-    DOUBLE_LIST *presponse_list)
+    DOUBLE_LIST *presponse_list) try
 {
 	int type;
 	int status;
@@ -357,8 +357,9 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	EXT_PUSH ext_push;
 	EXT_PUSH ext_push1;
 	PROPERTY_ROW tmp_row;
-	char ext_buff[0x8000];
-	char ext_buff1[0x8000];
+	static constexpr size_t ext_buff_size = 0x8000;
+	auto ext_buff = std::make_unique<uint8_t[]>(ext_buff_size);
+	auto ext_buff1 = std::make_unique<uint8_t[]>(ext_buff_size);
 	TPROPVAL_ARRAY propvals;
 	DOUBLE_LIST_NODE *pnode;
 	EMSMDB_INFO *pemsmdb_info;
@@ -371,7 +372,9 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	}
 	tmp_len = *pbuff_len - 5*sizeof(uint16_t)
 			- sizeof(uint32_t)*prop_buff->hnum;
-	if (!ext_push.init(ext_buff, tmp_len, EXT_FLAG_UTF16))
+	if (tmp_len > ext_buff_size)
+		tmp_len = ext_buff_size;
+	if (!ext_push.init(ext_buff.get(), tmp_len, EXT_FLAG_UTF16))
 		return ecServerOOM;
 	rop_num = double_list_get_nodes_num(&prop_buff->rop_list);
 	emsmdb_interface_set_rop_num(rop_num);
@@ -491,7 +494,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				*pnotify->notification_data.ptable_event)) {
 				auto tbl = static_cast<table_object *>(pobject);
 				auto pcolumns = tbl->get_columns();
-				if (!ext_push1.init(ext_buff1, sizeof(ext_buff1), EXT_FLAG_UTF16))
+				if (!ext_push1.init(ext_buff1.get(), ext_buff_size, EXT_FLAG_UTF16))
 					goto NEXT_NOTIFY;
 				if (pnotify->notification_data.notification_flags
 					&NOTIFICATION_FLAG_MOST_MESSAGE) {
@@ -532,10 +535,13 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	}
 	
  MAKE_RPC_EXT:
-	if (rop_ext_make_rpc_ext(ext_buff, ext_push.m_offset, prop_buff,
+	if (rop_ext_make_rpc_ext(ext_buff.get(), ext_push.m_offset, prop_buff,
 	    pbuff, pbuff_len) != EXT_ERR_SUCCESS)
 		return ecError;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1173: ENOMEM");
+	return ecServerOOM;
 }
 
 ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,

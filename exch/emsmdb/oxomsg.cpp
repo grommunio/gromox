@@ -43,7 +43,7 @@ enum class repr_grant {
  * SMTP_ADDRESS, etc.
  */
 static ec_error_t oxomsg_rectify_message(message_object *pmessage,
-    const char *representing_username, bool send_as)
+    const char *representing_username, bool send_as) try
 {
 	BINARY *pentryid;
 	uint64_t nt_time;
@@ -51,12 +51,11 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	int32_t tmp_level;
 	BINARY search_bin;
 	BINARY search_bin1;
-	char essdn_buff[1024];
+	static constexpr size_t essdn_buff_size = 1024;
+	auto essdn_buff = std::make_unique<char[]>(essdn_buff_size);
+	auto essdn_buff1 = std::make_unique<char[]>(essdn_buff_size);
 	char tmp_display[256];
-	char essdn_buff1[1024];
 	char tmp_display1[256];
-	char search_buff[1024];
-	char search_buff1[1024];
 	PROBLEM_ARRAY tmp_problems;
 	
 	auto account = pmessage->plogon->get_account();
@@ -64,7 +63,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	tmp_byte = 1;
 	nt_time = rop_util_current_nttime();
 	tmp_level = -1;
-	if (!common_util_username_to_essdn(account, essdn_buff, GX_ARRAY_SIZE(essdn_buff)))
+	if (!common_util_username_to_essdn(account, essdn_buff.get(), essdn_buff_size))
 		return ecRpcFailed;
 	if (!common_util_get_user_displayname(account,
 	    tmp_display, arsizeof(tmp_display)))
@@ -74,11 +73,12 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		return ecRpcFailed;
 	}
 	auto pentryid1 = pentryid;
-	search_bin.cb = gx_snprintf(search_buff, GX_ARRAY_SIZE(search_buff), "EX:%s", essdn_buff) + 1;
-	search_bin.pv = search_buff;
+	const std::string search_buff = "EX:"s + essdn_buff.get();
+	search_bin.cb = search_buff.size() + 1;
+	search_bin.pv = deconst(search_buff.c_str());
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,
-		    essdn_buff1, GX_ARRAY_SIZE(essdn_buff1)))
+		    essdn_buff1.get(), essdn_buff_size))
 			return ecRpcFailed;
 		if (!common_util_get_user_displayname(representing_username,
 		    tmp_display1, arsizeof(tmp_display1)))
@@ -88,11 +88,12 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		if (pentryid1 == nullptr)
 			return ecRpcFailed;
 	} else {
-		strcpy(essdn_buff1, essdn_buff);
+		strcpy(essdn_buff1.get(), essdn_buff.get());
 		strcpy(tmp_display1, tmp_display);
 	}
-	search_bin1.cb = gx_snprintf(search_buff1, GX_ARRAY_SIZE(search_buff1), "EX:%s", essdn_buff1) + 1;
-	search_bin1.pv = search_buff1;
+	const std::string search_buff1 = "EX:"s + essdn_buff1.get();
+	search_bin1.cb = search_buff1.size() + 1;
+	search_bin1.pv = deconst(search_buff1.c_str());
 	char msgid[UADDR_SIZE+2];
 	make_inet_msgid(msgid, arsizeof(msgid), 0x4553);
 	TAGGED_PROPVAL pv[] = {
@@ -102,13 +103,13 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_MESSAGE_LOCALE_ID, &pinfo->lcid_string},
 		{PR_SENDER_SMTP_ADDRESS, deconst(send_as ? representing_username : account)},
 		{PR_SENDER_ADDRTYPE, deconst("EX")},
-		{PR_SENDER_EMAIL_ADDRESS, send_as ? essdn_buff1 : essdn_buff},
+		{PR_SENDER_EMAIL_ADDRESS, send_as ? essdn_buff1.get() : essdn_buff.get()},
 		{PR_SENDER_NAME, send_as ? tmp_display1 : tmp_display},
 		{PR_SENDER_ENTRYID, send_as ? pentryid1 : pentryid},
 		{PR_SENDER_SEARCH_KEY, send_as ? &search_bin1 : &search_bin},
 		{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(representing_username)},
 		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("EX")},
-		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn_buff1},
+		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn_buff1.get()},
 		{PR_SENT_REPRESENTING_NAME, tmp_display1},
 		{PR_SENT_REPRESENTING_ENTRYID, pentryid1},
 		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_bin1},
@@ -118,6 +119,9 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	if (!pmessage->set_properties(&tmp_propvals, &tmp_problems))
 		return ecRpcFailed;
 	return pmessage->save();
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1166: ENOMEM");
+	return ecRpcFailed;
 }
 
 static bool oxomsg_extract_delegate(message_object *pmessage,

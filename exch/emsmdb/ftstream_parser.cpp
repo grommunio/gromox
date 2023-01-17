@@ -798,8 +798,7 @@ BOOL FTSTREAM_PARSER::write_buffer(const BINARY *ptransfer_data)
 	return TRUE;
 }
 
-static BOOL ftstream_parser_truncate_fd(
-	FTSTREAM_PARSER *pstream)
+static BOOL ftstream_parser_truncate_fd(FTSTREAM_PARSER *pstream) try
 {
 	if (0 == pstream->offset) {
 		return TRUE;
@@ -813,19 +812,22 @@ static BOOL ftstream_parser_truncate_fd(
 	}
 	if (lseek(pstream->fd, pstream->offset, SEEK_SET) < 0)
 		mlog(LV_WARN, "W-1425: lseek: %s", strerror(errno));
-	char buff[0x10000];
-	auto len = read(pstream->fd, buff, sizeof(buff));
+	static constexpr size_t buff_size = 0x10000;
+	auto buff = std::make_unique<char[]>(buff_size);
+	auto len = read(pstream->fd, buff.get(), buff_size);
 	if (len <= 0) {
 		return FALSE;
 	}
 	ftruncate(pstream->fd, 0);
 	lseek(pstream->fd, 0, SEEK_SET);
-	if (len != write(pstream->fd, buff, len)) {
+	if (write(pstream->fd, buff.get(), len) != len)
 		return FALSE;
-	}
 	pstream->st_size = len;
 	pstream->offset = 0;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1170: ENOMEM");
+	return false;
 }
 
 ec_error_t fxstream_parser::process(fastupctx_object &upctx)
