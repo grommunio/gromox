@@ -570,7 +570,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	count = double_list_get_nodes_num(&response_list);
 	pnode = double_list_get_tail(&rop_buff.rop_list);
 	pnode1 = double_list_get_tail(&response_list);
-	if (NULL == pnode || NULL == pnode1) {
+	if (!(flags & RPCEXT2_FLAG_CHAIN) || pnode == nullptr || pnode1 == nullptr) {
 		rop_ext_set_rhe_flag_last(pout, last_offset);
 		*pcb_out = offset;
 		return ecSuccess;
