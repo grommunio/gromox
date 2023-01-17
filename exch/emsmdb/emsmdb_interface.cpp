@@ -681,6 +681,14 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		memset(pcxh, 0, sizeof(CXH));
 		return ecRpcFailed;
 	}
+	if (cb_in > 0x40000)
+		return RPC_X_BAD_STUB_DATA;
+	/*
+	 * OXCRPC says to check *pcb_out for 0x40000 and *pcb_auxout for
+	 * 0x1008, but this only applies to RPCH where those are INOUT
+	 * parameters (cf. emsmdb_ndr_pull_ecdorpcext2). In our MH, *pcb_out is
+	 * the buffer size MH is offering us (auxout is unused).
+	 */
 	if (cb_auxin > 0x1008) {
 		*pcb_out = 0;
 		memset(pcxh, 0, sizeof(CXH));

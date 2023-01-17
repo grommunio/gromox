@@ -59,7 +59,7 @@ enum ncacn_pkt_type : uint8_t {
 	DCERPC_PKT_SHUTDOWN = 17,
 	DCERPC_PKT_CO_CANCEL = 18,
 	DCERPC_PKT_ORPHANED = 19,
-	DCERPC_PKT_RTS = 20, /* MS-RPCH v20210625 */
+	DCERPC_PKT_RTS = 20, /* MS-RPCH v19: Request To Send */
 	DCERPC_PKT_INVALID = 0xffU,
 };
 
