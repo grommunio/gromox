@@ -560,7 +560,6 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 BOOL exmdb_server::get_folder_all_proptags(const char *dir,
 	uint64_t folder_id, PROPTAG_ARRAY *pproptags)
 {
-	unsigned int i;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	auto pdb = db_engine_get_db(dir);
@@ -570,22 +569,19 @@ BOOL exmdb_server::get_folder_all_proptags(const char *dir,
 	    rop_util_get_gc_value(folder_id), pdb->psqlite, &tmp_proptags))
 		return FALSE;
 	pdb.reset();
-	for (i = 0; i < tmp_proptags.count; ++i)
-		if (tmp_proptags.pproptag[i] == PR_SOURCE_KEY)
-			break;
-	if (i < tmp_proptags.count) {
+	if (tmp_proptags.has(PR_SOURCE_KEY)) {
 		*pproptags = tmp_proptags;
-	} else {
-		pproptags->count = tmp_proptags.count + 1;
-		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
-		if (NULL == pproptags->pproptag) {
-			pproptags->count = 0;
-			return FALSE;
-		}
-		memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-					sizeof(uint32_t)*tmp_proptags.count);
-		pproptags->pproptag[tmp_proptags.count] = PR_SOURCE_KEY;
+		return TRUE;
 	}
+	pproptags->count = tmp_proptags.count + 1;
+	pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
+	if (NULL == pproptags->pproptag) {
+		pproptags->count = 0;
+		return FALSE;
+	}
+	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
+	       sizeof(uint32_t) * tmp_proptags.count);
+	pproptags->pproptag[tmp_proptags.count] = PR_SOURCE_KEY;
 	return TRUE;
 }
 
