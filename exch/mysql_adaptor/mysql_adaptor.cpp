@@ -72,7 +72,8 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		"op1.value AS ldap_uri, op2.value AS ldap_binddn, "
 		"op3.value AS ldap_bindpw, op4.value AS ldap_basedn "
 		"FROM users AS u " JOIN_WITH_DISPLAYTYPE
-		" LEFT JOIN orgs ON u.domain_id=orgs.id"
+		" LEFT JOIN domains AS d ON u.domain_id=d.id"
+		" LEFT JOIN orgs ON d.org_id=orgs.id"
 		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
 		" LEFT JOIN orgparam AS op2 ON orgs.id=op2.org_id AND op2.key='ldap_binddn'"
 		" LEFT JOIN orgparam AS op3 ON orgs.id=op3.org_id AND op3.key='ldap_bindpw'"
