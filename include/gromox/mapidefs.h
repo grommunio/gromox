@@ -119,13 +119,13 @@ enum attach_method {
 };
 
 enum { /* for PR_ATTACH_FLAGS */
-	ATT_INVISIBLE_IN_HTML = 1U << 0,
-	ATT_INVISIBLE_IN_RTF  = 1U << 1,
-	ATT_MHTML_REF         = 1U << 2,
+	ATT_INVISIBLE_IN_HTML = 0x1U,
+	ATT_INVISIBLE_IN_RTF  = 0x2U,
+	ATT_MHTML_REF         = 0x4U,
 };
 
 enum { /* for PR_ATTACHMENT_FLAGS */
-	afException = 1U << 1, /* OXOCAL v20 §2.2.10.1.2 */
+	afException = 0x2U, /* OXOCAL v20 §2.2.10.1.2 */
 };
 
 enum { /* for PR_AUTO_RESPONSE_SUPPRESS */
@@ -138,20 +138,20 @@ enum { /* for PR_AUTO_RESPONSE_SUPPRESS */
 };
 
 enum { /* bits for PidLidChangeHighlight */
-	BIT_CH_START        = 1U << 0,
-	BIT_CH_END          = 1U << 1,
-	BIT_CH_RECUR        = 1U << 2,
-	BIT_CH_LOCATION     = 1U << 3,
-	BIT_CH_SUBJECT      = 1U << 4,
-	BIT_CH_REQATT       = 1U << 5,
-	BIT_CH_OPTATT       = 1U << 6,
-	BIT_CH_BODY         = 1U << 7,
-	BIT_CH_RESPONSE     = 1U << 9,
-	BIT_CH_ALLOWPROPOSE = 1U << 10,
-	BIT_CH_CNF          = 1U << 11, /* deprecated since OXOCAL v0.1 */
-	BIT_CH_REM          = 1U << 12, /* reserved since OXOCAL v0.1 */
-	// 1U << 27 was reserved from OXOCAL v0.1 to v4.1,
-	// 1U << 31 is reversed since OXOCAL v5.0.
+	BIT_CH_START        = 0x1U,
+	BIT_CH_END          = 0x2U,
+	BIT_CH_RECUR        = 0x4U,
+	BIT_CH_LOCATION     = 0x8U,
+	BIT_CH_SUBJECT      = 0x10U,
+	BIT_CH_REQATT       = 0x20U,
+	BIT_CH_OPTATT       = 0x40U,
+	BIT_CH_BODY         = 0x80U,
+	BIT_CH_RESPONSE     = 0x200U,
+	BIT_CH_ALLOWPROPOSE = 0x400U,
+	BIT_CH_CNF          = 0x800U, /* deprecated since OXOCAL v0.1 */
+	BIT_CH_REM          = 0x1000U, /* reserved since OXOCAL v0.1 */
+	// 0x8000000 (bit 27) was reserved from OXOCAL v0.1 to v4.1,
+	// 0x80000000 (bit 31) is reversed since OXOCAL v5.0.
 };
 
 enum bm_relop {
@@ -244,8 +244,8 @@ enum display_type {
 	DT_FOLDER_SPECIAL = 1 << 26,
 
 	/* Flag-related things for PR_DISPLAY_TYPE_EX */
-	DTE_FLAG_ACL_CAPABLE  = 1U << 30,
-	DTE_FLAG_REMOTE_VALID = 1U << 31,
+	DTE_FLAG_ACL_CAPABLE  = 0x40000000U,
+	DTE_FLAG_REMOTE_VALID = 0x80000000U,
 	DTE_MASK_REMOTE       = 0xFF00U,
 	DTE_MASK_LOCAL        = 0xFFU,
 };
@@ -253,13 +253,13 @@ enum display_type {
 enum {
 	/* PR_CONTROL_FLAGS (PidTagControlFlags), MS-OXOABKT v14 §2.2.2.1.2 */
 	_DT_NONE         = 0U, /* gromox-only */
-	DT_MULTILINE     = 1U << 0,
-	DT_EDITABLE      = 1U << 1,
-	DT_REQUIRED      = 1U << 2,
-	DT_SET_IMMEDIATE = 1U << 3,
-	DT_PASSWORD_EDIT = 1U << 4,
-	DT_ACCEPT_DBCS   = 1U << 5,
-	DT_SET_SELECTION = 1U << 6,
+	DT_MULTILINE     = 0x1U,
+	DT_EDITABLE      = 0x2U,
+	DT_REQUIRED      = 0x4U,
+	DT_SET_IMMEDIATE = 0x8U,
+	DT_PASSWORD_EDIT = 0x10U,
+	DT_ACCEPT_DBCS   = 0x20U,
+	DT_SET_SELECTION = 0x40U,
 };
 
 enum {
@@ -280,13 +280,13 @@ enum {
 };
 
 enum {
-	EVENT_TYPE_NEWMAIL = 1U << 1,
-	EVENT_TYPE_OBJECTCREATED = 1U << 2,
-	EVENT_TYPE_OBJECTDELETED = 1U << 3,
-	EVENT_TYPE_OBJECTMODIFIED = 1U << 4,
-	EVENT_TYPE_OBJECTMOVED = 1U << 5,
-	EVENT_TYPE_OBJECTCOPIED = 1U << 6,
-	EVENT_TYPE_SEARCHCOMPLETE = 1U << 7,
+	EVENT_TYPE_NEWMAIL        = 0x2U,
+	EVENT_TYPE_OBJECTCREATED  = 0x4U,
+	EVENT_TYPE_OBJECTDELETED  = 0x8U,
+	EVENT_TYPE_OBJECTMODIFIED = 0x10U,
+	EVENT_TYPE_OBJECTMOVED    = 0x20U,
+	EVENT_TYPE_OBJECTCOPIED   = 0x40U,
+	EVENT_TYPE_SEARCHCOMPLETE = 0x80U,
 };
 
 enum mapi_folder_type {
@@ -326,8 +326,8 @@ enum mapi_recipient_type {
 	MAPI_TO = 1U,
 	MAPI_CC = 2U,
 	MAPI_BCC = 3U,
-	MAPI_P1 = 1U << 28, /* a need to resend */
-	MAPI_SUBMITTED = 1U << 31, /* no need to resend */
+	MAPI_P1        = 0x10000000U, /* bit 28: a need to resend */
+	MAPI_SUBMITTED = 0x80000000U, /* bit 31: no need to resend */
 };
 
 enum mapi_sensitivity {
@@ -365,27 +365,27 @@ enum {
 };
 
 enum {
-	MODRECIP_ADD = 1U << 1,
-	MODRECIP_MODIFY = 1U << 2,
-	MODRECIP_REMOVE = 1U << 3,
+	MODRECIP_ADD    = 0x2U,
+	MODRECIP_MODIFY = 0x4U,
+	MODRECIP_REMOVE = 0x8U,
 };
 
 enum {
-	MSGFLAG_READ               = 1U << 0,
-	MSGFLAG_UNMODIFIED         = 1U << 1, /* mfUnmodified */
-	MSGFLAG_SUBMITTED          = 1U << 2, /* mfSubmitted */
-	MSGFLAG_UNSENT             = 1U << 3,
-	MSGFLAG_HASATTACH          = 1U << 4, /* mfHasAttach */
-	MSGFLAG_FROMME             = 1U << 5, /* mfFromMe */
-	MSGFLAG_ASSOCIATED         = 1U << 6, /* mfFAI */
-	MSGFLAG_RESEND             = 1U << 7,
-	MSGFLAG_RN_PENDING         = 1U << 8, /* mfNotifyRead */
-	MSGFLAG_NRN_PENDING        = 1U << 9, /* mfNotifyUnread */
-	MSGFLAG_EVERREAD           = 1U << 10, /* mfEverRead */
-	MSGFLAG_ORIGIN_X400        = 1U << 12,
-	MSGFLAG_ORIGIN_INTERNET    = 1U << 13, /* mfInternet */
-	MSGFLAG_ORIGIN_MISC_EXT    = 1U << 15, /* mfUntrusted */
-	MSGFLAG_OUTLOOK_NON_EMS_XP = 1U << 16,
+	MSGFLAG_READ               = 0x1U, /* mfRead */
+	MSGFLAG_UNMODIFIED         = 0x2U, /* mfUnmodified */
+	MSGFLAG_SUBMITTED          = 0x4U, /* mfSubmitted */
+	MSGFLAG_UNSENT             = 0x8U,
+	MSGFLAG_HASATTACH          = 0x10U, /* mfHasAttach */
+	MSGFLAG_FROMME             = 0x20U, /* mfFromMe */
+	MSGFLAG_ASSOCIATED         = 0x40U, /* mfFAI */
+	MSGFLAG_RESEND             = 0x80U,
+	MSGFLAG_RN_PENDING         = 0x100U, /* mfNotifyRead */
+	MSGFLAG_NRN_PENDING        = 0x200U, /* mfNotifyUnread */
+	MSGFLAG_EVERREAD           = 0x400U, /* mfEverRead */
+	MSGFLAG_ORIGIN_X400        = 0x1000U,
+	MSGFLAG_ORIGIN_INTERNET    = 0x2000U, /* mfInternet */
+	MSGFLAG_ORIGIN_MISC_EXT    = 0x8000U, /* mfUntrusted */
+	MSGFLAG_OUTLOOK_NON_EMS_XP = 0x10000U,
 };
 
 enum ndr_diag_code { /* for PR_NDR_DIAG_CODE */
@@ -456,28 +456,28 @@ enum { /* for PR_MESSAGE_STATUS */
 };
 
 enum { /* for PR_PROFILE_OPEN_FLAGS */
-	OPENSTORE_USE_ADMIN_PRIVILEGE              = 1U << 0,
-	OPENSTORE_PUBLIC                           = 1U << 1,
-	OPENSTORE_HOME_LOGON                       = 1U << 2,
-	OPENSTORE_TAKE_OWNERSHIP                   = 1U << 3,
-	OPENSTORE_OVERRIDE_HOME_MDB                = 1U << 4,
-	OPENSTORE_TRANSPORT                        = 1U << 5,
-	OPENSTORE_REMOTE_TRANSPORT                 = 1U << 6,
-	OPENSTORE_INTERNET_ANONYMOUS               = 1U << 7,
-	OPENSTORE_ALTERNATE_SERVER                 = 1U << 8,
-	OPENSTORE_IGNORE_HOME_MDB                  = 1U << 9,
-	OPENSTORE_NO_MAIL                          = 1U << 10,
-	OPENSTORE_OVERRIDE_LAST_MODIFIER           = 1U << 11,
-	OPENSTORE_CALLBACK_LOGON                   = 1U << 12,
-	OPENSTORE_LOCAL                            = 1U << 13,
-	OPENSTORE_FAIL_IF_NO_MAILBOX               = 1U << 14,
-	OPENSTORE_CACHE_EXCHANGE                   = 1U << 15,
-	OPENSTORE_CLI_WITH_NAMEDPROP_FIX           = 1U << 16,
-	OPENSTORE_ENABLE_LAZY_LOGGING              = 1U << 17,
-	OPENSTORE_CLI_WITH_REPLID_GUID_MAPPING_FIX = 1U << 18,
-	OPENSTORE_NO_LOCALIZATION                  = 1U << 19,
-	OPENSTORE_RESTORE_DATABASE                 = 1U << 20,
-	OPENSTORE_XFOREST_MOVE                     = 1U << 21,
+	OPENSTORE_USE_ADMIN_PRIVILEGE              = 0x1U,
+	OPENSTORE_PUBLIC                           = 0x2U,
+	OPENSTORE_HOME_LOGON                       = 0x4U,
+	OPENSTORE_TAKE_OWNERSHIP                   = 0x8U,
+	OPENSTORE_OVERRIDE_HOME_MDB                = 0x10U,
+	OPENSTORE_TRANSPORT                        = 0x20U,
+	OPENSTORE_REMOTE_TRANSPORT                 = 0x40U,
+	OPENSTORE_INTERNET_ANONYMOUS               = 0x80U,
+	OPENSTORE_ALTERNATE_SERVER                 = 0x100U,
+	OPENSTORE_IGNORE_HOME_MDB                  = 0x200U,
+	OPENSTORE_NO_MAIL                          = 0x400U,
+	OPENSTORE_OVERRIDE_LAST_MODIFIER           = 0x800U,
+	OPENSTORE_CALLBACK_LOGON                   = 0x1000U,
+	OPENSTORE_LOCAL                            = 0x2000U,
+	OPENSTORE_FAIL_IF_NO_MAILBOX               = 0x4000U,
+	OPENSTORE_CACHE_EXCHANGE                   = 0x8000U,
+	OPENSTORE_CLI_WITH_NAMEDPROP_FIX           = 0x10000U,
+	OPENSTORE_ENABLE_LAZY_LOGGING              = 0x20000U,
+	OPENSTORE_CLI_WITH_REPLID_GUID_MAPPING_FIX = 0x40000U,
+	OPENSTORE_NO_LOCALIZATION                  = 0x80000U,
+	OPENSTORE_RESTORE_DATABASE                 = 0x100000U,
+	OPENSTORE_XFOREST_MOVE                     = 0x200000U,
 };
 
 enum ol_busy_status {
@@ -571,9 +571,9 @@ enum {
 };
 
 enum { /* ROWENTRY::ulRowFlags bits */
-	ROW_ADD    = 1U << 0,
-	ROW_MODIFY = 1U << 1,
-	ROW_REMOVE = 1U << 2,
+	ROW_ADD    = 0x1U,
+	ROW_MODIFY = 0x2U,
+	ROW_REMOVE = 0x4U,
 	ROW_EMPTY  = ROW_ADD | ROW_REMOVE,
 };
 
@@ -613,33 +613,33 @@ enum ren_special_folder {
 };
 
 enum { /* for PR_STORE_SUPPORT_MASK and PR_STORE_STATE */
-	STORE_ENTRYID_UNIQUE    = 1U << 0,
-	STORE_READONLY          = 1U << 1,
-	STORE_SEARCH_OK         = 1U << 2,
-	STORE_MODIFY_OK         = 1U << 3,
-	STORE_CREATE_OK         = 1U << 4,
-	STORE_ATTACH_OK         = 1U << 5,
-	STORE_OLE_OK            = 1U << 6,
-	STORE_SUBMIT_OK         = 1U << 7,
-	STORE_NOTIFY_OK         = 1U << 8,
-	STORE_MV_PROPS_OK       = 1U << 9,
-	STORE_CATEGORIZE_OK     = 1U << 10,
-	STORE_RTF_OK            = 1U << 11,
-	STORE_RESTRICTION_OK    = 1U << 12,
-	STORE_SORT_OK           = 1U << 13,
-	STORE_PUBLIC_FOLDERS    = 1U << 14,
-	STORE_UNCOMPRESSED_RTF  = 1U << 15,
-	STORE_HTML_OK           = 1U << 16,
-	STORE_ANSI_OK           = 1U << 17,
-	STORE_UNICODE_OK        = 1U << 18,
-	STORE_LOCALSTORE        = 1U << 19,
-	STORE_ITEMPROC          = 1U << 21,
-	// ??                   = 1U << 22, /* Exch 2019 does present this */
-	STORE_PUSHER_OK         = 1U << 23,
-	STORE_HAS_SEARCHES      = 1U << 24,
-	STORE_FULLTEXT_QUERY_OK = 1U << 25,
-	STORE_FILTER_SEARCH_OK  = 1U << 26,
-	STORE_RULES_OK          = 1U << 28,
+	STORE_ENTRYID_UNIQUE    = 0x1U,
+	STORE_READONLY          = 0x2U,
+	STORE_SEARCH_OK         = 0x4U,
+	STORE_MODIFY_OK         = 0x8U,
+	STORE_CREATE_OK         = 0x10U,
+	STORE_ATTACH_OK         = 0x20U,
+	STORE_OLE_OK            = 0x40U,
+	STORE_SUBMIT_OK         = 0x80U,
+	STORE_NOTIFY_OK         = 0x100U,
+	STORE_MV_PROPS_OK       = 0x200U,
+	STORE_CATEGORIZE_OK     = 0x400U,
+	STORE_RTF_OK            = 0x800U,
+	STORE_RESTRICTION_OK    = 0x1000U,
+	STORE_SORT_OK           = 0x2000U,
+	STORE_PUBLIC_FOLDERS    = 0x4000U,
+	STORE_UNCOMPRESSED_RTF  = 0x8000U,
+	STORE_HTML_OK           = 0x10000U,
+	STORE_ANSI_OK           = 0x20000U,
+	STORE_UNICODE_OK        = 0x40000U,
+	STORE_LOCALSTORE        = 0x80000U,
+	STORE_ITEMPROC          = 0x200000U,
+	STORE_PUSHER_OK         = 0x800000U,
+	STORE_HAS_SEARCHES      = 0x1000000U,
+	STORE_FULLTEXT_QUERY_OK = 0x2000000U,
+	STORE_FILTER_SEARCH_OK  = 0x4000000U,
+	// ??                   = 0x8000000U, /* MSMAPI/EMSMDB32 shows this */
+	STORE_RULES_OK          = 0x10000000U,
 };
 
 enum mapi_row_type { /* for PR_ROW_TYPE */
@@ -702,11 +702,11 @@ enum BOOKMARK {
 };
 
 enum {
-	DEL_MESSAGES = 1U << 0,
-	DEL_FOLDERS = 1U << 2,
-	DEL_ASSOCIATED = 1U << 3, /* MAPI only, not used in OXCROPS. */
-	DELETE_HARD_DELETE = 1U << 4, /* undocumented on MSDN */
-	ZC_DELMSG_NOTIFY_UNREAD = 1U << 30,
+	DEL_MESSAGES            = 0x1U,
+	DEL_FOLDERS             = 0x4U,
+	DEL_ASSOCIATED          = 0x8U, /* MAPI only, not used in OXCROPS. */
+	DELETE_HARD_DELETE      = 0x10U,
+	ZC_DELMSG_NOTIFY_UNREAD = 0x40000000U, /* Gromox-specific */
 };
 
 enum {
@@ -714,11 +714,11 @@ enum {
 	FL_SUBSTRING,
 	FL_PREFIX,
 
-	FL_PREFIX_ON_ANY_WORD = 1U << 4, /* split value and attempt match on each word */
-	FL_PHRASE_MATCH       = 1U << 5, /* match exact words and in order only */
-	FL_IGNORECASE         = 1U << 16,
-	FL_IGNORENONSPACE     = 1U << 17,
-	FL_LOOSE              = 1U << 18,
+	FL_PREFIX_ON_ANY_WORD = 0x10U, /* split value and attempt match on each word */
+	FL_PHRASE_MATCH       = 0x20U, /* match exact words and in order only */
+	FL_IGNORECASE         = 0x10000U,
+	FL_IGNORENONSPACE     = 0x20000U,
+	FL_LOOSE              = 0x40000U,
 };
 
 enum mapi_access { /* for PR_ACCESS */
@@ -747,10 +747,10 @@ enum zaccess_type {
 
 enum {
 	RIGHT_NORMAL = 0,
-	RIGHT_NEW = 1U << 0,
-	RIGHT_MODIFY = 1U << 1,
-	RIGHT_DELETED = 1U << 2,
-	RIGHT_AUTOUPDATE_DENIED = 1U << 3,
+	RIGHT_NEW               = 0x1U,
+	RIGHT_MODIFY            = 0x2U,
+	RIGHT_DELETED           = 0x4U,
+	RIGHT_AUTOUPDATE_DENIED = 0x8U,
 };
 
 struct eid_t {
