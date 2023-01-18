@@ -115,7 +115,7 @@ static bool validate_response(LDAP *ld, LDAPMessage *result)
 }
 
 static ldap_ptr make_conn(const std::string &uri, const char *bind_user,
-    const char *bind_pass,  bool perform_bind)
+    const char *bind_pass, bool start_tls, bool perform_bind)
 {
 	ldap_ptr ld;
 	auto ret = ldap_initialize(&unique_tie(ld), uri.empty() ? nullptr : uri.c_str());
@@ -128,7 +128,7 @@ static ldap_ptr make_conn(const std::string &uri, const char *bind_user,
 	ret = ldap_set_option(ld.get(), LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 	if (ret != LDAP_SUCCESS)
 		return {};
-	if (g_use_tls) {
+	if (start_tls) {
 		ret = ldap_start_tls_s(ld.get(), nullptr, nullptr);
 		if (ret != LDAP_SUCCESS) {
 			mlog(LV_ERR, "ldap_start_tls_s: %s", ldap_err2string(ret));
@@ -160,7 +160,7 @@ static constexpr bool AVOID_BIND = false, DO_BIND = true;
 static int gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 {
 	if (ld == nullptr)
-		ld = make_conn(g_ldap_host, nullptr, nullptr, AVOID_BIND);
+		ld = make_conn(g_ldap_host, nullptr, nullptr, g_use_tls, AVOID_BIND);
 	if (ld == nullptr)
 		return LDAP_SERVER_DOWN;
 	auto ret = ldap_sasl_bind_s(ld.get(), dn, LDAP_SASL_SIMPLE, bv,
@@ -169,7 +169,7 @@ static int gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 		/* try full reconnect */;
 	else if (ret != LDAP_SERVER_DOWN)
 		return ret;
-	ld = make_conn(g_ldap_host, nullptr, nullptr, AVOID_BIND);
+	ld = make_conn(g_ldap_host, nullptr, nullptr, g_use_tls, AVOID_BIND);
 	if (ld == nullptr)
 		return ret;
 	return ldap_sasl_bind_s(ld.get(), dn, LDAP_SASL_SIMPLE, bv,
@@ -181,7 +181,7 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 {
 	if (ld == nullptr)
 		ld = make_conn(g_ldap_host, g_bind_user.c_str(),
-		     g_bind_pass.c_str(), DO_BIND);
+		     g_bind_pass.c_str(), g_use_tls, DO_BIND);
 	if (ld == nullptr)
 		return LDAP_SERVER_DOWN;
 	auto ret = ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
@@ -191,7 +191,7 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 	else if (ret != LDAP_SERVER_DOWN)
 		return ret;
 	ld = make_conn(g_ldap_host, g_bind_user.c_str(),
-	     g_bind_pass.c_str(), DO_BIND);
+	     g_bind_pass.c_str(), g_use_tls, DO_BIND);
 	if (ld == nullptr)
 		return ret;
 	return ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
@@ -199,12 +199,13 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 }
 
 static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
-    const char *username, const char *password, const std::string &base_dn)
+    const char *attr, const char *username, const char *password,
+    const std::string &base_dn)
 {
 	ldap_msg msg;
 	std::unique_ptr<char[], stdlib_delete> freeme;
 	auto quoted = HX_strquote(username, HXQUOTE_LDAPRDN, &unique_tie(freeme));
-	auto filter = g_mail_attr + "="s + quoted;
+	auto filter = attr + "="s + quoted;
 	auto ret = gx_ldap_search(tok_meta,
 	           base_dn.size() > 0 ? base_dn.c_str() : nullptr,
 	      filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
@@ -235,8 +236,8 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 static BOOL ldaplogin_dpool(const char *username, const char *password)
 {
 	auto tok = g_conn_pool.get_wait();
-	return ldaplogin_host(tok->meta, tok->bind, username, password,
-	       g_search_base);
+	return ldaplogin_host(tok->meta, tok->bind, g_mail_attr.c_str(),
+	       username, password, g_search_base);
 }
 
 BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_result &m)
@@ -255,12 +256,14 @@ BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_resu
 	}
 	if (m.ldap_uri.empty()) {
 		auto conn = make_conn(g_ldap_host.c_str(), g_bind_user.c_str(),
-		            g_bind_pass.c_str(), true);
-		return ldaplogin_host(conn, conn, user, pass, g_search_base.c_str());
+		            g_bind_pass.c_str(), g_use_tls, true);
+		return ldaplogin_host(conn, conn, g_mail_attr.c_str(), user,
+		       pass, g_search_base.c_str());
 	}
 	auto conn = make_conn(m.ldap_uri.c_str(), m.ldap_binddn.c_str(),
-	            m.ldap_bindpw.c_str(), true);
-	return ldaplogin_host(conn, conn, user, pass, m.ldap_basedn);
+	            m.ldap_bindpw.c_str(), m.ldap_start_tls, true);
+	auto attr = m.ldap_mail_attr.empty() ? g_mail_attr.c_str() : g_mail_attr.c_str();
+	return ldaplogin_host(conn, conn, attr, user, pass, m.ldap_basedn);
 }
 
 static bool ldap_adaptor_load() try
