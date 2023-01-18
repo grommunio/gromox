@@ -86,7 +86,7 @@ BOOL common_util_allocate_folder_art(sqlite3 *psqlite, uint32_t *part);
 BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	uint64_t eid_val, BOOL *pb_result);
 BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid);
-extern BOOL cu_get_proptags(db_table, uint64_t id, sqlite3 *, PROPTAG_ARRAY *);
+extern BOOL cu_get_proptags(db_table, uint64_t id, sqlite3 *, std::vector<uint32_t> &);
 BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	uint16_t replid, BOOL *pb_found, GUID *pguid);
 BOOL common_util_begin_message_optimize(sqlite3 *psqlite);

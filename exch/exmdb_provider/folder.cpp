@@ -557,32 +557,30 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 	return TRUE;
 }
 
-BOOL exmdb_server::get_folder_all_proptags(const char *dir,
-	uint64_t folder_id, PROPTAG_ARRAY *pproptags)
+BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
+    PROPTAG_ARRAY *pproptags) try
 {
-	PROPTAG_ARRAY tmp_proptags;
+	std::vector<uint32_t> tags;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!cu_get_proptags(db_table::folder_props,
-	    rop_util_get_gc_value(folder_id), pdb->psqlite, &tmp_proptags))
+	    rop_util_get_gc_value(folder_id), pdb->psqlite, tags))
 		return FALSE;
 	pdb.reset();
-	if (tmp_proptags.has(PR_SOURCE_KEY)) {
-		*pproptags = tmp_proptags;
-		return TRUE;
-	}
-	pproptags->count = tmp_proptags.count + 1;
-	pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
+	if (std::find(tags.cbegin(), tags.cend(), PR_SOURCE_KEY) == tags.cend())
+		tags.push_back(PR_SOURCE_KEY);
+	pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
 	if (NULL == pproptags->pproptag) {
-		pproptags->count = 0;
 		return FALSE;
 	}
-	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-	       sizeof(uint32_t) * tmp_proptags.count);
-	pproptags->pproptag[tmp_proptags.count] = PR_SOURCE_KEY;
+	pproptags->count = tags.size();
+	memcpy(pproptags->pproptag, tags.data(), sizeof(tags[0]) * pproptags->count);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1164: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_server::get_folder_properties(const char *dir, uint32_t cpid,

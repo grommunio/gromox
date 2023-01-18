@@ -527,8 +527,8 @@ static sqlite3_stmt *cu_get_optimize_stmt(db_table table_type, bool b_normal)
 	return b_normal ? op->rcpt_norm : op->rcpt_str;
 }
 
-BOOL cu_get_proptags(db_table table_type, uint64_t id,
-	sqlite3 *psqlite, PROPTAG_ARRAY *pproptags)
+BOOL cu_get_proptags(db_table table_type, uint64_t id, sqlite3 *psqlite,
+    std::vector<uint32_t> &tags) try
 {
 	static constexpr uint32_t folder_tags[] = {
 		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT,
@@ -548,74 +548,68 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 	};
 	BOOL b_subject;
 	char sql_string[128];
-	uint32_t proptags[0x8000];
-	size_t i = 0;
+	tags.clear();
+	tags.reserve(std::size(folder_tags) + 1);
 
 	switch (table_type) {
 	case db_table::store_props:
 		gx_strlcpy(sql_string, "SELECT proptag FROM store_properties", arsizeof(sql_string));
-		proptags[i++] = PR_INTERNET_ARTICLE_NUMBER;
+		tags.push_back(PR_INTERNET_ARTICLE_NUMBER);
 		break;
 	case db_table::folder_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "folder_properties WHERE folder_id=%llu", LLU{id});
-		for (auto t : folder_tags)
-			proptags[i++] = t;
+		tags.insert(tags.end(), std::begin(folder_tags), std::end(folder_tags));
 		break;
 	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "message_properties WHERE message_id=%llu AND proptag NOT IN (0x0e05001e,0x0e05001f)", LLU{id});
-		for (auto t : msg_tags)
-			proptags[i++] = t;
+		tags.insert(tags.end(), std::begin(msg_tags), std::end(msg_tags));
 		break;
 	case db_table::rcpt_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "recipients_properties WHERE recipient_id=%llu", LLU{id});
+		tags.insert(tags.end(), std::begin(rcpt_tags), std::end(rcpt_tags));
 		break;
 	case db_table::atx_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "attachment_properties WHERE attachment_id=%llu", LLU{id});
-		proptags[i++] = PR_RECORD_KEY;
+		tags.push_back(PR_RECORD_KEY);
 		break;
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	b_subject = FALSE;
-	while (sqlite3_step(pstmt) == SQLITE_ROW && i < GX_ARRAY_SIZE(proptags)) {
-		proptags[i] = sqlite3_column_int64(pstmt, 0);
-		if (table_type == db_table::msg_props &&
-		    proptags[i] == PR_MESSAGE_FLAGS)
+	while (sqlite3_step(pstmt) == SQLITE_ROW && tags.size() < 0xfff0) {
+		auto tag = pstmt.col_uint64(0);
+		if (table_type == db_table::msg_props && tag == PR_MESSAGE_FLAGS)
 			continue;
 		if (table_type == db_table::msg_props && !b_subject) {
-			if ((proptags[i] == PR_NORMALIZED_SUBJECT ||
-			    proptags[i] == PR_SUBJECT_PREFIX) &&
-			    i + 1 < GX_ARRAY_SIZE(proptags)) {
+			if (tag == PR_NORMALIZED_SUBJECT ||
+			    tag == PR_SUBJECT_PREFIX) {
 				b_subject = TRUE;
-				i ++;
-				proptags[i] = PR_SUBJECT;
-			} else if ((proptags[i] == PR_NORMALIZED_SUBJECT_A ||
-			    proptags[i] == PR_SUBJECT_PREFIX_A) &&
-			    i + 1 < GX_ARRAY_SIZE(proptags)) {
+				tags.push_back(PR_SUBJECT);
+				continue;
+			} else if (tag == PR_NORMALIZED_SUBJECT_A ||
+			    tag == PR_SUBJECT_PREFIX_A) {
 				b_subject = TRUE;
-				i ++;
-				proptags[i] = PR_SUBJECT_A;
+				tags.push_back(PR_SUBJECT_A);
+				continue;
 			}
 		}
-		i ++;
+		tags.push_back(tag);
 	}
 	pstmt.finalize();
 	if (table_type == db_table::rcpt_props)
 		/* Maybe-computed props */
 		for (auto t : rcpt_tags)
-			if (std::find(proptags, &proptags[i], t) == &proptags[i])
-				proptags[i++] = t;
-	pproptags->count = i;
-	pproptags->pproptag = cu_alloc<uint32_t>(i);
-	if (pproptags->pproptag == nullptr)
-		return FALSE;
-	memcpy(pproptags->pproptag, proptags, sizeof(uint32_t)*i);
+			if (std::find(tags.cbegin(), tags.cend(), t) == tags.cend())
+				tags.push_back(t);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1161: ENOMEM");
+	return false;
 }
 
 static BINARY* common_util_get_mailbox_guid(sqlite3 *psqlite)

@@ -89,7 +89,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	uint64_t message_id, uint32_t *plast_id,
 	MESSAGE_CONTENT **ppmsgctnt)
 {
-	int i;
 	uint64_t cid;
 	uint32_t row_id;
 	uint32_t last_id;
@@ -98,7 +97,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	TARRAY_SET *prcpts;
 	char sql_string[256];
 	uint64_t message_id1;
-	PROPTAG_ARRAY proptags;
 	uint64_t attachment_id;
 	MESSAGE_CONTENT *pmsgctnt;
 	MESSAGE_CONTENT *pmsgctnt1;
@@ -120,12 +118,12 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		return FALSE;
 	}
 	auto cl_msgctnt = make_scope_exit([&]() { message_content_free(pmsgctnt); });
+	std::vector<uint32_t> proptags;
 	if (!cu_get_proptags(db_table::msg_props, message_id,
-		psqlite, &proptags)) {
+	    psqlite, proptags))
 		return FALSE;
-	}
-	for (i=0; i<proptags.count; i++) {
-		switch (proptags.pproptag[i]) {
+	for (uint32_t tag : proptags) {
+		switch (tag) {
 		case PR_DISPLAY_TO:
 		case PR_DISPLAY_TO_A:
 		case PR_DISPLAY_CC:
@@ -160,15 +158,14 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PR_RTF_COMPRESSED: {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
 				"message_properties WHERE message_id=%llu AND "
-				"proptag=%u", LLU{message_id}, XUI{proptags.pproptag[i]});
+				"proptag=%u", LLU{message_id}, XUI{tag});
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
 				return FALSE;
 			}
 			cid = sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
-			uint32_t tag = proptags.pproptag[i] == PR_HTML ?
-			               ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
+			tag = tag == PR_HTML ? ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
 			if (pmsgctnt->proplist.set(tag, &cid) != 0) {
 				return FALSE;
 			}
@@ -199,11 +196,10 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		default: {
 			void *newval = nullptr;
 			if (!cu_get_property(db_table::msg_props,
-			    message_id, 0, psqlite, proptags.pproptag[i], &newval) ||
+			    message_id, 0, psqlite, tag, &newval) ||
 			    newval == nullptr ||
-			    pmsgctnt->proplist.set(proptags.pproptag[i], newval) != 0) {
+			    pmsgctnt->proplist.set(tag, newval) != 0)
 				return FALSE;
-			}
 			break;
 		}
 		}
@@ -290,25 +286,24 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		(*plast_id) ++;
 		attachment_id = sqlite3_column_int64(pstmt, 0);
 		if (!cu_get_proptags(db_table::atx_props,
-			attachment_id, psqlite, &proptags)) {
+		    attachment_id, psqlite, proptags))
 			return FALSE;
-		}
-		for (i=0; i<proptags.count; i++) {
-			switch (proptags.pproptag[i]) {
+		for (auto tag : proptags) {
+			switch (tag) {
 			case PR_ATTACH_DATA_BIN:
 			case PR_ATTACH_DATA_OBJ: {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
 					"attachment_properties WHERE attachment_id=%llu AND"
 					" proptag=%u", static_cast<unsigned long long>(attachment_id),
-					static_cast<unsigned int>(proptags.pproptag[i]));
+					XUI{tag});
 				auto pstmt2 = gx_sql_prep(psqlite, sql_string);
 				if (pstmt2 == nullptr || sqlite3_step(pstmt2) != SQLITE_ROW) {
 					return FALSE;
 				}
 				cid = sqlite3_column_int64(pstmt2, 0);
 				pstmt2.finalize();
-				uint32_t tag = proptags.pproptag[i] == PR_ATTACH_DATA_BIN ?
-				               ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT;
+				tag = tag == PR_ATTACH_DATA_BIN ?
+				      ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT;
 				if (pattachment->proplist.set(tag, &cid) != 0) {
 					return FALSE;
 				}
@@ -317,11 +312,10 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			default: {
 				void *newval = nullptr;
 				if (!cu_get_property(db_table::atx_props,
-				    attachment_id, 0, psqlite, proptags.pproptag[i], &newval) ||
+				    attachment_id, 0, psqlite, tag, &newval) ||
 				    newval == nullptr ||
-				    pattachment->proplist.set(proptags.pproptag[i], newval) != 0) {
+				    pattachment->proplist.set(tag, newval) != 0)
 					return FALSE;
-				}
 				break;
 			}
 			}

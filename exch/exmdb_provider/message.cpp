@@ -1455,17 +1455,14 @@ BOOL exmdb_server::get_message_timer(const char *dir,
 }
 
 static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
-	uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt)
+    uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt) try
 {
-	int i;
 	uint32_t count;
 	uint32_t attach_num;
 	char sql_string[256];
 	PROPTAG_ARRAY proptags;
 	uint64_t attachment_id;
 	TAGGED_PROPVAL *ppropval;
-	PROPTAG_ARRAY tmp_proptags;
-	uint32_t proptag_buff[0x8000];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU{message_id});
@@ -1481,25 +1478,17 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	if (NULL == *ppmsgctnt) {
 		return FALSE;
 	}
-	if (!cu_get_proptags(db_table::msg_props, message_id,
-		psqlite, &tmp_proptags)) {
+	std::vector<uint32_t> mtags;
+	if (!cu_get_proptags(db_table::msg_props, message_id, psqlite, mtags))
 		return FALSE;	
-	}
-	proptags.count = 0;
-	proptags.pproptag = proptag_buff;
-	for (i=0; i<tmp_proptags.count; i++) {
-		switch (tmp_proptags.pproptag[i]) {
-		case PR_DISPLAY_TO:
-		case PR_DISPLAY_TO_A:
-		case PR_DISPLAY_CC:
-		case PR_DISPLAY_CC_A:
-		case PR_DISPLAY_BCC:
-		case PR_DISPLAY_BCC_A:
-		case PR_HASATTACH:
-			continue;
-		}
-		proptag_buff[proptags.count++] = tmp_proptags.pproptag[i];
-	}
+	mtags.erase(std::remove_if(mtags.begin(), mtags.end(), [](uint32_t t) {
+		return t == PR_DISPLAY_TO || t == PR_DISPLAY_TO_A ||
+		       t == PR_DISPLAY_CC || t == PR_DISPLAY_CC_A ||
+		       t == PR_DISPLAY_BCC || t == PR_DISPLAY_BCC_A ||
+		       t == PR_HASATTACH;
+	}), mtags.end());
+	proptags.count    = mtags.size();
+	proptags.pproptag = mtags.data();
 	if (!cu_get_properties(db_table::msg_props, message_id, cpid,
 		psqlite, &proptags, &(*ppmsgctnt)->proplist)) {
 		return FALSE;
@@ -1540,19 +1529,17 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	attach_num = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		attachment_id = sqlite3_column_int64(pstmt, 0);
+		std::vector<uint32_t> atags;
 		if (!cu_get_proptags(db_table::atx_props, attachment_id,
-			psqlite, &tmp_proptags)) {
+		    psqlite, atags))
 			return FALSE;
-		}
 		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (NULL == pattachment) {
 			return FALSE;
 		}
-		proptags.count = tmp_proptags.count;
-		proptags.pproptag = proptag_buff;
-		memcpy(proptag_buff, tmp_proptags.pproptag,
-			sizeof(uint32_t)*tmp_proptags.count);
-		proptag_buff[proptags.count++] = PR_ATTACH_NUM;
+		atags.push_back(PR_ATTACH_NUM);
+		proptags.count    = atags.size();
+		proptags.pproptag = atags.data();
 		if (!cu_get_properties(db_table::atx_props, attachment_id, cpid,
 			psqlite, &proptags, &pattachment->proplist)) {
 			return FALSE;
@@ -1582,6 +1569,9 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		ats.pplist[ats.count++] = pattachment;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1163: ENOMEM");
+	return false;
 }
 
 static bool message_md5_string(const char *string, uint8_t *pdgt) __attribute__((warn_unused_result));
