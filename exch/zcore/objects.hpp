@@ -145,7 +145,7 @@ struct message_object {
 	gromox::errno_t init_message(bool fai, uint32_t cpid);
 	uint64_t get_id() const { return message_id; }
 	store_object *get_store() const { return pstore; }
-	gxerr_t save();
+	ec_error_t save();
 	BOOL reload();
 	BOOL write_message(const MESSAGE_CONTENT *);
 	BOOL get_recipient_all_proptags(PROPTAG_ARRAY *);
@@ -191,7 +191,7 @@ struct attachment_object {
 	BOOL init_attachment();
 	uint32_t get_attachment_num() const { return attachment_num; }
 	uint32_t get_tag_access() const { return pparent->tag_access; }
-	gxerr_t save();
+	ec_error_t save();
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *);

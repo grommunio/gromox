@@ -1705,8 +1705,8 @@ BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppr
 	return TRUE;
 }
 
-gxerr_t common_util_remote_copy_message(store_object *pstore,
-    uint64_t message_id, store_object *pstore1, uint64_t folder_id1)
+ec_error_t cu_remote_copy_message(store_object *pstore, uint64_t message_id,
+    store_object *pstore1, uint64_t folder_id1)
 {
 	uint64_t change_num;
 	TAGGED_PROPVAL propval;
@@ -1716,9 +1716,9 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 	auto username = pstore->b_private ? nullptr : pinfo->get_username();
 	if (!exmdb_client::read_message(pstore->get_dir(), username,
 	    pinfo->cpid, message_id, &pmsgctnt))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	if (NULL == pmsgctnt) {
-		return GXERR_SUCCESS;
+		return ecSuccess;
 	}
 	static constexpr uint32_t tags[] = {
 		PR_CONVERSATION_ID, PR_DISPLAY_TO,
@@ -1732,13 +1732,13 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	propval.proptag = PidTagChangeNumber;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
 	if (NULL == pbin) {
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	}
 	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
@@ -1747,15 +1747,15 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
 	if (NULL == propval.pvalue) {
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	}
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client::write_message(pstore1->get_dir(),
 	    pstore1->get_account(), pinfo->cpid, folder_id1,
 	    pmsgctnt, &e_result) || e_result != GXERR_SUCCESS)
-		return e_result;
-	return GXERR_SUCCESS;
+		return gxerr_to_hresult(e_result);
+	return ecSuccess;
 }
 
 static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
@@ -1879,7 +1879,7 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	return pmessage_ids;
 }
 
-gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
+ec_error_t cu_remote_copy_folder(store_object *pstore, uint64_t folder_id,
     store_object *pstore1, uint64_t folder_id1, const char *new_name)
 {
 	uint64_t new_fid;
@@ -1894,61 +1894,61 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	
 	if (!exmdb_client::get_folder_all_proptags(pstore->get_dir(),
 	    folder_id, &tmp_proptags))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	if (!exmdb_client::get_folder_properties(pstore->get_dir(), 0,
 	    folder_id, &tmp_proptags, &tmp_propvals))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	if (NULL != new_name) {
 		propval.proptag = PR_DISPLAY_NAME;
 		propval.pvalue = deconst(new_name);
 		common_util_set_propvals(&tmp_propvals, &propval);
 	}
 	if (!common_util_create_folder(pstore1, folder_id1, &tmp_propvals, &new_fid))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	auto pinfo = zs_get_info();
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
 		username = pinfo->get_username();
 		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
 		    folder_id, username, &permission))
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		if (!(permission & (frightsReadAny | frightsOwner)))
-			return GXERR_CALL_FAILED;
+			return ecAccessDenied;
 	}
 	pmessage_ids = common_util_load_folder_messages(
 						pstore, folder_id, username);
 	if (NULL == pmessage_ids) {
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	}
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
-		gxerr_t err = common_util_remote_copy_message(pstore,
-		              pmessage_ids->pids[i], pstore1, new_fid);
-		if (err != GXERR_SUCCESS)
+		auto err = cu_remote_copy_message(pstore, pmessage_ids->pids[i],
+		           pstore1, new_fid);
+		if (err != ecSuccess)
 			return err;
 	}
 	username = pstore->owner_mode() ? nullptr : pinfo->get_username();
 	if (!exmdb_client::load_hierarchy_table(pstore->get_dir(), folder_id,
 	    username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	uint32_t tmp_proptag = PidTagFolderId;
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &tmp_proptag;
 	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, 0, table_id,
 	    &tmp_proptags, 0, row_count, &tmp_set))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	exmdb_client::unload_table(pstore->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
 		if (NULL == pfolder_id) {
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
-		gxerr_t err = common_util_remote_copy_folder(pstore,
-		              *pfolder_id, pstore1, new_fid, nullptr);
-		if (err != GXERR_SUCCESS)
+		auto err = cu_remote_copy_folder(pstore, *pfolder_id, pstore1,
+		           new_fid, nullptr);
+		if (err != ecSuccess)
 			return err;
 	}
-	return GXERR_SUCCESS;
+	return ecSuccess;
 }
 
 BOOL common_util_message_to_rfc822(store_object *pstore,

@@ -89,7 +89,7 @@ attachment_object::~attachment_object()
 	}
 }
 
-gxerr_t attachment_object::save()
+ec_error_t attachment_object::save()
 {
 	auto pattachment = this;
 	uint64_t nt_time;
@@ -97,23 +97,23 @@ gxerr_t attachment_object::save()
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (!pattachment->b_writable || !pattachment->b_touched)
-		return GXERR_SUCCESS;
+		return ecSuccess;
 	tmp_propvals.count = 1;
 	tmp_propvals.ppropval = &tmp_propval;
 	tmp_propval.proptag = PR_LAST_MODIFICATION_TIME;
 	nt_time = rop_util_current_nttime();
 	tmp_propval.pvalue = &nt_time;
 	if (!set_properties(&tmp_propvals))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client::flush_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, nullptr, &e_result) || e_result != GXERR_SUCCESS)
-		return e_result;
+		return gxerr_to_hresult(e_result);
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;
 	proptag_array_append(pattachment->pparent->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
-	return GXERR_SUCCESS;
+	return ecSuccess;
 }
 
 BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
