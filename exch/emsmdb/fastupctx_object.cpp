@@ -191,7 +191,7 @@ static BOOL fastupctx_object_empty_folder(fastupctx_object *pctx,
 	return TRUE;
 }
 
-static gxerr_t
+static ec_error_t
 fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 {
 	uint64_t change_num;
@@ -209,30 +209,30 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 	auto plogon = pctx->pstream->plogon;
 	auto dir = plogon->get_dir();
 	if (!exmdb_client::allocate_cn(dir, &change_num))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	if (pproplist->set(PidTagChangeNumber, &change_num) != 0)
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	auto pbin = cu_xid_to_bin({plogon->guid(), change_num});
 	if (NULL == pbin) {
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	}
 	if (pproplist->set(PR_CHANGE_KEY, pbin) != 0)
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	auto pvalue = common_util_pcl_append(pbin1, pbin);
 	if (pvalue == nullptr)
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	if (pproplist->set(PR_PREDECESSOR_CHANGE_LIST, pvalue) != 0)
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client::write_message(dir, plogon->get_account(), pinfo->cpid,
 	    folder_id, pctx->m_content, &e_result) || e_result != GXERR_SUCCESS)
-		return e_result;
-	return GXERR_SUCCESS;
+		return gxerr_to_hresult(e_result);
+	return ecSuccess;
 }
 
-gxerr_t fastupctx_object::record_marker(uint32_t marker)
+ec_error_t fastupctx_object::record_marker(uint32_t marker)
 {
 	auto pctx = this;
 	uint32_t tmp_id;
@@ -259,7 +259,7 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		if (m_props == nullptr)
 			break;
 		if (m_props->count == 0)
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		/*
 		 * Normally there should be a TOPFLD in the stack (hence using
 		 * prev(node)->folder_id); but maybe there are cases when
@@ -270,7 +270,7 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		                     std::prev(pnode)->folder_id;
 		if (!fastupctx_object_create_folder(pctx, parent_id,
 		    m_props, &folder_id))
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		tpropval_array_free(m_props);
 		m_props = nullptr;
 		pnode->folder_id = folder_id;
@@ -281,7 +281,7 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			break;
 		if (m_props->count > 0 &&
 		    !static_cast<folder_object *>(pctx->pobject)->set_properties(m_props, &tmp_problems))
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		tpropval_array_free(m_props);
 		m_props = nullptr;
 		break;
@@ -292,7 +292,7 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			break;
 		if (m_props->count > 0 &&
 		    !static_cast<folder_object *>(pctx->pobject)->set_properties(m_props, &tmp_problems))
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		tpropval_array_free(m_props);
 		m_props = nullptr;
 		break;
@@ -302,77 +302,77 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 	case STARTTOPFLD:
 		if (ROOT_ELEMENT_TOPFOLDER !=
 			pctx->root_element || 0 != last_marker) {
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 		if (m_props != nullptr)
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		m_props = tpropval_array_init();
 		if (m_props == nullptr)
-			return GXERR_CALL_FAILED;
+			return ecServerOOM;
 		pmarker->marker = marker;
 		pmarker->folder_id = static_cast<folder_object *>(pctx->pobject)->folder_id;
 		break;
 	case STARTSUBFLD:
 		if (ROOT_ELEMENT_TOPFOLDER != pctx->root_element &&
 			ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element) {
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 		if (m_props != nullptr)
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		m_props = tpropval_array_init();
 		if (m_props == nullptr)
-			return GXERR_CALL_FAILED;
+			return ecServerOOM;
 		pmarker->marker = marker;
 		break;
 	case ENDFOLDER:
 		if (STARTTOPFLD != last_marker &&
 			STARTSUBFLD != last_marker) {
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 		pctx->marker_stack.erase(pnode);
 		if (STARTTOPFLD == last_marker) {
 			/* mark fast stream ended */
 			pctx->b_ended = TRUE;
 		}
-		return GXERR_SUCCESS;
+		return ecSuccess;
 	case STARTFAIMSG:
 	case STARTMESSAGE: {
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_MESSAGELIST:
 			if (0 != last_marker) {
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			}
 			break;
 		case ROOT_ELEMENT_TOPFOLDER:
 			if (STARTTOPFLD != last_marker &&
 				STARTSUBFLD != last_marker) {
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			}
 			break;
 		case ROOT_ELEMENT_FOLDERCONTENT:
 			break;
 		default:
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 		if (m_content != nullptr)
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		m_content = message_content_init();
 		if (m_content == nullptr)
-			return GXERR_CALL_FAILED;
+			return ecServerOOM;
 		prcpts = tarray_set_init();
 		if (NULL == prcpts) {
-			return GXERR_CALL_FAILED;
+			return ecServerOOM;
 		}
 		message_content_set_rcpts_internal(m_content, prcpts);
 		pattachments = attachment_list_init();
 		if (NULL == pattachments) {
-			return GXERR_CALL_FAILED;
+			return ecServerOOM;
 		}
 		message_content_set_attachments_internal(m_content, pattachments);
 		pproplist = message_content_get_proplist(m_content);
 		uint8_t tmp_byte = marker == STARTFAIMSG;
 		if (pproplist->set(PR_ASSOCIATED, &tmp_byte) != 0)
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		pmarker->marker = marker;
 		pmarker->msg = m_content;
 		break;
@@ -380,18 +380,18 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 	case ENDMESSAGE: {
 		if (STARTMESSAGE != last_marker &&
 			STARTFAIMSG != last_marker) {
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 		if (m_content == nullptr || m_content != pnode->msg)
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		pctx->marker_stack.erase(pnode);
 		folder_id = fastupctx_object_get_last_folder(pctx);
-		gxerr_t err = fastupctx_object_write_message(pctx, folder_id);
-		if (err != GXERR_SUCCESS)
+		auto err = fastupctx_object_write_message(pctx, folder_id);
+		if (err != ecSuccess)
 			return err;
 		message_content_free(m_content);
 		m_content = nullptr;
-		return GXERR_SUCCESS;
+		return ecSuccess;
 	}
 	case STARTRECIP:
 		switch (pctx->root_element) {
@@ -401,34 +401,34 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			case STARTEMBED:
 				break;
 			default:
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			}
 			break;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
 			if (STARTEMBED != last_marker) {
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			}
 			break;
 		default:
 			if (STARTMESSAGE != last_marker &&
 				STARTFAIMSG != last_marker &&
 				STARTEMBED != last_marker) {
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			}
 			break;
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			if (m_props != nullptr)
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			m_props = tpropval_array_init();
 			if (m_props == nullptr)
-				return GXERR_CALL_FAILED;
+				return ecServerOOM;
 		} else {
 			pmsgctnt = pnode->msg;
 			prcpt = pmsgctnt->children.prcpts->emplace();
 			if (prcpt == nullptr)
-				return GXERR_CALL_FAILED;
+				return ecServerOOM;
 		}
 		pmarker->marker = marker;
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
@@ -440,7 +440,7 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		break;
 	case ENDTORECIP:
 		if (STARTRECIP != last_marker) {
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
@@ -448,12 +448,12 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			tmp_rcpts.pparray = &m_props;
 			if (!exmdb_client::update_message_instance_rcpts(dir,
 			    pnode->instance_id, &tmp_rcpts))
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			tpropval_array_free(m_props);
 			m_props = nullptr;
 		}
 		pctx->marker_stack.erase(pnode);
-		return GXERR_SUCCESS;
+		return ecSuccess;
 	case NEWATTACH:
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_MESSAGECONTENT:
@@ -462,19 +462,19 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			case STARTEMBED:
 				break;
 			default:
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			}
 			break;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
 			if (STARTEMBED != last_marker) {
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			}
 			break;
 		default:
 			if (STARTMESSAGE != last_marker &&
 				STARTFAIMSG != last_marker &&
 				STARTEMBED != last_marker) {
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			}
 			break;
 		}
@@ -483,16 +483,16 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 			instance_id = fastupctx_object_get_last_message_instance(pctx);
 			if (!exmdb_client::create_attachment_instance(dir,
 			    instance_id, &tmp_id, &tmp_num) || tmp_id == 0)
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 		} else {
 			pattachment = attachment_content_init();
 			if (NULL == pattachment) {
-				return GXERR_CALL_FAILED;
+				return ecServerOOM;
 			}
 			pmsgctnt = pnode->msg;
 			if (!attachment_list_append_internal(pmsgctnt->children.pattachments, pattachment)) {
 				attachment_content_free(pattachment);
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			}
 		}
 		pmarker->marker = marker;
@@ -505,62 +505,62 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		break;
 	case ENDATTACH:
 		if (NEWATTACH != last_marker) {
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			gxerr_t e_result = GXERR_CALL_FAILED;
 			if (!exmdb_client::flush_instance(dir, pnode->instance_id,
 			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
-				return e_result;
+				return gxerr_to_hresult(e_result);
 			if (!exmdb_client::unload_instance(dir, pnode->instance_id))
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 		}
 		pctx->marker_stack.erase(pnode);
-		return GXERR_SUCCESS;
+		return ecSuccess;
 	case STARTEMBED:
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
 				if (NEWATTACH != last_marker) {
-					return GXERR_CALL_FAILED;
+					return ecRpcFailed;
 				}
 			} else {
 				if (0 != last_marker && NEWATTACH != last_marker) {
-					return GXERR_CALL_FAILED;
+					return ecRpcFailed;
 				}
 			}
 			instance_id = fastupctx_object_get_last_attachment_instance(pctx);
 			if (!exmdb_client::load_embedded_instance(dir,
 			    false, instance_id, &tmp_id))
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			if (0 == tmp_id) {
 				if (!exmdb_client::load_embedded_instance(dir,
 				    TRUE, instance_id, &tmp_id) || tmp_id == 0)
-					return GXERR_CALL_FAILED;
+					return ecRpcFailed;
 			} else {
 				if (!exmdb_client::clear_message_instance(dir,
 				    instance_id))
-					return GXERR_CALL_FAILED;
+					return ecRpcFailed;
 			}
 		} else {
 			if (NEWATTACH != last_marker) {
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 			}
 			pmsgctnt = message_content_init();
 			if (NULL == pmsgctnt) {
-				return GXERR_CALL_FAILED;
+				return ecServerOOM;
 			}
 			prcpts = tarray_set_init();
 			if (NULL == prcpts) {
 				message_content_free(pmsgctnt);
-				return GXERR_CALL_FAILED;
+				return ecServerOOM;
 			}
 			message_content_set_rcpts_internal(pmsgctnt, prcpts);
 			pattachments = attachment_list_init();
 			if (NULL == pattachments) {
 				message_content_free(pmsgctnt);
-				return GXERR_CALL_FAILED;
+				return ecServerOOM;
 			}
 			message_content_set_attachments_internal(
 							pmsgctnt, pattachments);
@@ -576,32 +576,32 @@ gxerr_t fastupctx_object::record_marker(uint32_t marker)
 		break;
 	case ENDEMBED:
 		if (STARTEMBED != last_marker) {
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			gxerr_t e_result = GXERR_CALL_FAILED;
 			if (!exmdb_client::flush_instance(dir, pnode->instance_id,
 			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
-				return e_result;
+				return gxerr_to_hresult(e_result);
 			if (!exmdb_client::unload_instance(dir, pnode->instance_id))
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 		}
 		pctx->marker_stack.erase(pnode);
-		return GXERR_SUCCESS;
+		return ecSuccess;
 	case FXERRORINFO:
 		/* we do not support this feature */
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	default:
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	}
 	try {
 		pctx->marker_stack.emplace_back(std::move(new_mark));
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1600: ENOMEM");
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	}
-	return GXERR_SUCCESS;
+	return ecSuccess;
 }
 
 static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
@@ -720,7 +720,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 	return TRUE;
 }
 
-gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
+ec_error_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 {
 	auto pctx = this;
 	uint32_t b_result;
@@ -735,13 +735,13 @@ gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 		case PR_CONTAINER_HIERARCHY:
 			return fastupctx_object_del_props(pctx,
 			       *static_cast<uint32_t *>(ppropval->pvalue)) == TRUE ?
-			       GXERR_SUCCESS : GXERR_CALL_FAILED;
+			       ecSuccess : ecRpcFailed;
 		default:
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 	case MetaTagDnPrefix:
 	case MetaTagEcWarning:
-		return GXERR_SUCCESS;
+		return ecSuccess;
 	case MetaTagNewFXFolder:
 	case MetaTagIncrSyncGroupId:
 	case MetaTagIncrementalSyncMessagePartial:
@@ -755,7 +755,7 @@ gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 	case MetaTagIdsetExpired:
 	case MetaTagIdsetRead:
 	case MetaTagIdsetUnread:
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	}
 	auto pnode = pctx->marker_stack.rbegin();
 	auto last_marker = pnode == pctx->marker_stack.rend() ? 0U : pnode->marker;
@@ -763,9 +763,9 @@ gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 		if (NEWATTACH == last_marker || (0 == last_marker &&
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element)) {
 			if (ppropval->proptag != PR_ATTACH_DATA_OBJ)
-				return GXERR_CALL_FAILED;
+				return ecRpcFailed;
 		} else {
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 	}
 	switch (last_marker) {
@@ -773,14 +773,14 @@ gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_FOLDERCONTENT:
 			return m_props->set(*ppropval) == 0 ?
-			       GXERR_SUCCESS : GXERR_CALL_FAILED;
+			       ecSuccess : ecRpcFailed;
 		case ROOT_ELEMENT_MESSAGECONTENT: {
 			auto msg = static_cast<message_object *>(pctx->pobject);
 			TPROPVAL_ARRAY av;
 			av.count = 1;
 			av.ppropval = deconst(ppropval);
 			PROBLEM_ARRAY pa;
-			return msg->set_properties(&av, &pa) == TRUE ? GXERR_SUCCESS : GXERR_CALL_FAILED;
+			return msg->set_properties(&av, &pa) == TRUE ? ecSuccess : ecRpcFailed;
 		}
 		case ROOT_ELEMENT_ATTACHMENTCONTENT: {
 			auto atx = static_cast<attachment_object *>(pctx->pobject);
@@ -788,48 +788,47 @@ gxerr_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 			av.count = 1;
 			av.ppropval = deconst(ppropval);
 			PROBLEM_ARRAY pa;
-			return atx->set_properties(&av, &pa) == TRUE ? GXERR_SUCCESS : GXERR_CALL_FAILED;
+			return atx->set_properties(&av, &pa) == TRUE ? ecSuccess : ecRpcFailed;
 		}
 		case ROOT_ELEMENT_MESSAGELIST:
 		case ROOT_ELEMENT_TOPFOLDER:
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	case STARTTOPFLD:
 	case STARTSUBFLD:
-		return m_props->set(*ppropval) == 0 ?
-		       GXERR_SUCCESS : GXERR_CALL_FAILED;
+		return m_props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
 	case STARTMESSAGE:
 	case STARTFAIMSG:
-		return pnode->props->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
+		return pnode->props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
 	case STARTEMBED:
 	case NEWATTACH:
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
 			return exmdb_client::set_instance_property(pctx->pstream->plogon->get_dir(),
 			       pnode->instance_id, ppropval, &b_result) == TRUE ?
-			       GXERR_SUCCESS : GXERR_CALL_FAILED;
+			       ecSuccess : ecRpcFailed;
 		}
-		return pnode->props->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
+		return pnode->props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
 	case STARTRECIP:
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
 			return m_props->set(*ppropval) == 0 ?
-			       GXERR_SUCCESS : GXERR_CALL_FAILED;
+			       ecSuccess : ecRpcFailed;
 		}
-		return pnode->props->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
+		return pnode->props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
 	default:
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	}
 }
 
-gxerr_t fastupctx_object::write_buffer(const BINARY *ptransfer_data)
+ec_error_t fastupctx_object::write_buffer(const BINARY *ptransfer_data)
 {
 	auto pctx = this;
 	/* check if the fast stream is marked as ended */
 	if (pctx->b_ended)
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	if (!pstream->write_buffer(ptransfer_data))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	return pstream->process(*this);
 }

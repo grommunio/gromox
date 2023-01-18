@@ -4,6 +4,7 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mapierr.hpp>
 
 /* message_object and attachment_object are friend classes,
 	so they can operate internal variables of each other */
@@ -29,7 +30,7 @@ struct message_object {
 	uint32_t get_tag_access() const { return tag_access; }
 	uint8_t get_open_flags() const { return open_flags; }
 	void set_open_flags(uint8_t open_flags);
-	gxerr_t save();
+	ec_error_t save();
 	BOOL reload();
 	PROPTAG_ARRAY *get_rcpt_columns() const { return precipient_columns; }
 	BOOL read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *);

@@ -289,8 +289,8 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	}
 	*pmessage_id = *pvalue;
 	auto err = pmessage->save();
-	if (err != GXERR_SUCCESS)
-		return gxerr_to_hresult(err);
+	if (err != ecSuccess)
+		return err;
 	switch (save_flags) {
 	case SAVE_FLAG_KEEPOPENREADWRITE:
 	case SAVE_FLAG_FORCESAVE:
@@ -802,8 +802,8 @@ ec_error_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
 	    save_flags != SAVE_FLAG_FORCESAVE)
 		return ecAccessDenied;
 	auto err = pattachment->save();
-	if (err != GXERR_SUCCESS)
-		return gxerr_to_hresult(err);
+	if (err != ecSuccess)
+		return err;
 	switch (save_flags) {
 	case SAVE_FLAG_KEEPOPENREADWRITE:
 	case SAVE_FLAG_FORCESAVE:

@@ -301,8 +301,8 @@ ec_error_t rop_fasttransferdestputbuffer(const BINARY *ptransfer_data,
 	if (object_type != OBJECT_TYPE_FASTUPCTX)
 		return ecNotSupported;
 	auto err = static_cast<fastupctx_object *>(pobject)->write_buffer(ptransfer_data);
-	if (err != GXERR_SUCCESS)
-		return gxerr_to_hresult(err);
+	if (err != ecSuccess)
+		return err;
 	*pused_size = ptransfer_data->cb;
 	return ecSuccess;
 }
