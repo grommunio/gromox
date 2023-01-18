@@ -3,6 +3,7 @@
 #include <string>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mapierr.hpp>
 
 struct fastupctx_object;
 struct logon_object;
@@ -16,7 +17,7 @@ struct fxstream_parser {
 	~fxstream_parser();
 	static std::unique_ptr<fxstream_parser> create(logon_object *);
 	BOOL write_buffer(const BINARY *transfer_data);
-	gxerr_t process(fastupctx_object &);
+	ec_error_t process(fastupctx_object &);
 
 	int fd = -1;
 	uint32_t offset = 0, st_size = 0;

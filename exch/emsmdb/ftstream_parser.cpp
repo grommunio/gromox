@@ -828,7 +828,7 @@ static BOOL ftstream_parser_truncate_fd(
 	return TRUE;
 }
 
-gxerr_t fxstream_parser::process(fastupctx_object &upctx)
+ec_error_t fxstream_parser::process(fastupctx_object &upctx)
 {
 	auto pstream = this;
 	uint32_t marker;
@@ -840,8 +840,8 @@ gxerr_t fxstream_parser::process(fastupctx_object &upctx)
 		switch (ftstream_parser_read_element(*this, marker, propval)) {
 		case FTSTREAM_PARSER_READ_OK: {
 			if (0 != marker) {
-				gxerr_t err = upctx.record_marker(marker);
-				if (err != GXERR_SUCCESS)
+				auto err = upctx.record_marker(marker);
+				if (err != ecSuccess)
 					return err;
 				break;
 			}
@@ -859,16 +859,16 @@ gxerr_t fxstream_parser::process(fastupctx_object &upctx)
 					propval.pvalue = pvalue;
 				}
 			}
-			gxerr_t err = upctx.record_propval(&propval);
-			if (err != GXERR_SUCCESS)
+			auto err = upctx.record_propval(&propval);
+			if (err != ecSuccess)
 				return err;
 			break;
 		}
 		case FTSTREAM_PARSER_READ_CONTINUE:
 			return ftstream_parser_truncate_fd(pstream) == TRUE ?
-			       GXERR_SUCCESS : GXERR_CALL_FAILED;
+			       ecSuccess : ecRpcFailed;
 		default:
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		}
 	}
 }
