@@ -613,16 +613,14 @@ BOOL exmdb_server::delete_messages(const char *dir,
 	return TRUE;
 }
 
-static BOOL message_get_message_rcpts(sqlite3 *psqlite,
-	uint64_t message_id, TARRAY_SET *pset)
+static BOOL message_get_message_rcpts(sqlite3 *psqlite, uint64_t message_id,
+    TARRAY_SET *pset) try
 {
 	uint32_t row_id;
 	uint64_t rcpt_id;
 	uint32_t rcpt_num;
 	char sql_string[256];
-	PROPTAG_ARRAY proptags;
 	TAGGED_PROPVAL *ppropval;
-	uint32_t tmp_proptags[0x8000];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM"
 	          " recipients WHERE message_id=%llu", LLU{message_id});
@@ -654,15 +652,15 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		rcpt_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_bind_int64(pstmt1, 1, rcpt_id);
-		proptags.count = 0;
-		proptags.pproptag = tmp_proptags;
-		while (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			tmp_proptags[proptags.count++] = sqlite3_column_int64(pstmt1, 0);
-		}
+		std::vector<uint32_t> tags;
+		while (pstmt1.step() == SQLITE_ROW && tags.size() < 0xfff0)
+			/* You can only have 64K props anyway */
+			tags.push_back(pstmt1.col_uint64(0));
 		/* Nudge cu_get_properties allocation to make extra room. */
 		for (size_t i = 0; i < 5; ++i)
-			tmp_proptags[proptags.count++] = PR_NULL;
+			tags.push_back(PR_NULL);
 		sqlite3_reset(pstmt1);
+		PROPTAG_ARRAY proptags = {static_cast<uint16_t>(tags.size()), tags.data()};
 		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == pset->pparray[pset->count] ||
 		    !cu_get_properties(db_table::rcpt_props,
@@ -711,6 +709,9 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 		pset->count ++;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1165: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_server::get_message_brief(const char *dir, uint32_t cpid,
@@ -1092,15 +1093,16 @@ BOOL exmdb_server::set_message_group_id(const char *dir,
 }
 
 /* if count of indices and ungroup_proptags are both 0 means full change */
-BOOL exmdb_server::save_change_indices(const char *dir,
-	uint64_t message_id, uint64_t cn, const INDEX_ARRAY *pindices,
-	const PROPTAG_ARRAY *pungroup_proptags)
+BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
+    uint64_t cn, const INDEX_ARRAY *pindices,
+    const PROPTAG_ARRAY *pungroup_proptags) try
 {
 	uint64_t mid_val;
 	EXT_PUSH ext_push;
 	char sql_string[128];
-	uint8_t indices_buff[0x8000];
-	uint8_t proptags_buff[0x8000];
+	static constexpr size_t idbuff_size = 0x8000;
+	auto indices_buff = std::make_unique<uint8_t[]>(idbuff_size);
+	auto proptags_buff = std::make_unique<uint8_t[]>(idbuff_size);
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1123,15 +1125,18 @@ BOOL exmdb_server::save_change_indices(const char *dir,
 	}
 	sqlite3_bind_int64(pstmt, 1, mid_val);
 	sqlite3_bind_int64(pstmt, 2, rop_util_get_gc_value(cn));
-	if (!ext_push.init(indices_buff, sizeof(indices_buff), 0) ||
+	if (!ext_push.init(indices_buff.get(), idbuff_size, 0) ||
 	    ext_push.p_proptag_a(*pindices) != EXT_ERR_SUCCESS)
 		return false;
 	sqlite3_bind_blob(pstmt, 3, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
-	if (!ext_push.init(proptags_buff, sizeof(proptags_buff), 0) ||
+	if (!ext_push.init(proptags_buff.get(), idbuff_size, 0) ||
 	    ext_push.p_proptag_a(*pungroup_proptags) != EXT_ERR_SUCCESS)
 		return false;
 	sqlite3_bind_blob(pstmt, 4, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1162: ENOMEM");
+	return false;
 }
 
 /* if count of indices and ungroup_proptags are both 0 means full change */
