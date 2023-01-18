@@ -1862,11 +1862,10 @@ uint32_t zs_copymessages(GUID hsession,
 			    account_id != pstore->account_id ||
 			    folder_id != psrc_folder->folder_id)
 				continue;
-			gxerr_t err = common_util_remote_copy_message(pstore,
-			              message_id, pstore1, pdst_folder->folder_id);
-			if (err != GXERR_SUCCESS) {
-				return gxerr_to_hresult(err);
-			}
+			auto ret = cu_remote_copy_message(pstore, message_id,
+			           pstore1, pdst_folder->folder_id);
+			if (ret != ecSuccess)
+				return ret;
 			if (!b_copy) {
 				if (b_guest) {
 					if (!exmdb_client_check_message_owner(pstore->get_dir(),
@@ -2353,11 +2352,10 @@ uint32_t zs_copyfolder(GUID hsession,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		gxerr_t err = common_util_remote_copy_folder(pstore, folder_id,
-		              pstore1, pdst_folder->folder_id, new_name);
-		if (err != GXERR_SUCCESS) {
-			return gxerr_to_hresult(err);
-		}
+		auto ret = cu_remote_copy_folder(pstore, folder_id, pstore1,
+		           pdst_folder->folder_id, new_name);
+		if (ret != ecSuccess)
+			return ret;
 		if (!b_copy) {
 			if (!exmdb_client::empty_folder(pstore->get_dir(),
 			    pinfo->cpid, username, folder_id, false, TRUE,
@@ -3314,7 +3312,7 @@ uint32_t zs_modifyrecipients(GUID hsession,
  * @send_as:	mangle message for Send-As (true) or just
  * 		Send-On-Behalf/No-Change (false)
  */
-static gxerr_t rectify_message(message_object *pmessage,
+static ec_error_t rectify_message(message_object *pmessage,
     const char *representing_username, bool send_as)
 {
 	auto account = pmessage->pstore->get_account();
@@ -3323,14 +3321,14 @@ static gxerr_t rectify_message(message_object *pmessage,
 	int32_t tmp_level = -1;
 	char essdn[1024], essdn1[1024];
 	if (!common_util_username_to_essdn(account, essdn, arsizeof(essdn)))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	char dispname[256], dispname1[256], search_buff[1024], search_buff1[1024];
 	if (!system_services_get_user_displayname(account,
 	    dispname, arsizeof(dispname)))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	auto entryid = common_util_username_to_addressbook_entryid(account);
 	if (entryid == nullptr)
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	auto entryid1 = entryid;
 	BINARY search_bin, search_bin1;
 	search_bin.cb = gx_snprintf(search_buff, arsizeof(search_buff), "EX:%s", essdn) + 1;
@@ -3338,13 +3336,13 @@ static gxerr_t rectify_message(message_object *pmessage,
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,
 		    essdn1, arsizeof(essdn1)))
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		if (!system_services_get_user_displayname(representing_username,
 		    dispname1, arsizeof(dispname1)))
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		entryid1 = common_util_username_to_addressbook_entryid(representing_username);
 		if (entryid1 == nullptr)
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 	} else {
 		strcpy(essdn1, essdn);
 		strcpy(dispname1, dispname);
@@ -3374,7 +3372,7 @@ static gxerr_t rectify_message(message_object *pmessage,
 	};
 	TPROPVAL_ARRAY tmp_propvals = {arsizeof(pv), pv};
 	if (!pmessage->set_properties(&tmp_propvals))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	return pmessage->save();
 }
 
@@ -3444,9 +3442,8 @@ uint32_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 	}
 	auto err = rectify_message(pmessage, username,
 	           repr_grant >= repr_grant::send_as);
-	if (err != GXERR_SUCCESS) {
-		return gxerr_to_hresult(err);
-	}
+	if (err != ecSuccess)
+		return err;
 	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_MAX_SUBMIT_MESSAGE_SIZE;
@@ -4092,18 +4089,12 @@ uint32_t zs_savechanges(GUID hsession, uint32_t hobject)
 			return ecError;
 		if (b_touched)
 			return ecObjectModified;
-		auto err = msg->save();
-		if (err != GXERR_SUCCESS)
-			return gxerr_to_hresult(err);
-		return ecSuccess;
+		return msg->save();
 	} else if (mapi_type == ZMG_ATTACH) {
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->writable())
 			return ecAccessDenied;
-		auto err = atx->save();
-		if (err != GXERR_SUCCESS)
-			return gxerr_to_hresult(err);
-		return ecSuccess;
+		return atx->save();
 	} else {
 		return ecNotSupported;
 	}
