@@ -218,12 +218,12 @@ static std::string domain_to_oxsrv(const char *dom)
 	auto ptr = ns_rr_rdata(rr);
 	ptr += 3 * sizeof(uint16_t);
 	auto port = ns_get16(ptr - sizeof(uint16_t));
-	char hostname[256];
+	char hostname[256]{};
 	ret = ns_name_uncompress(ns_msg_base(handle), ns_msg_end(handle), ptr,
 	      hostname, std::size(hostname));
-	if (ret == 0)
+	if (ret <= 0)
 		return {};
-	return std::string(hostname, ret) + ":" + std::to_string(port);
+	return hostname + ":"s + std::to_string(port);
 }
 #endif
 
