@@ -103,6 +103,8 @@ struct sql_class {
 struct sql_meta_result {
 	std::string maildir, lang, enc_passwd, errstr;
 	std::string ldap_uri, ldap_binddn, ldap_bindpw, ldap_basedn;
+	std::string ldap_mail_attr;
+	bool ldap_start_tls = false;
 	uint8_t have_xid = 0xFF;
 };
 

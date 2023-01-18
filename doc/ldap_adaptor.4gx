@@ -11,9 +11,12 @@ metadata searches that lead up to such Binds, i.e. looking for the LDAP object
 that has a particular "mail" attribute.
 .PP
 Gromox versions 1.33 and onwards have support for per-organization LDAP
-credentials. These are properties on the individual organization objects that
-live in the SQL database for Gromox users. Use Grommunio AAPI/AWEB to create
-and/or change organizations and their properties.
+credentials. The SQL database for Gromox users (and domains and organizations)
+has room to store properties on the individual organization objects. Use
+Grommunio AAPI/AWEB to create and/or change organizations and their properties.
+These properties from SQL can selectively override the six config directives
+ldap_host, ldap_start_tls, ldap_bind_user, ldap_bind_pass, ldap_search_base and
+ldap_mail_attr.
 .SH Configuration directives
 The configuration file, /etc/gromox/ldap_adaptor.cfg, serves not only the
 ldap_adaptor plugin, but is also read by the Grommunio Admin API.
@@ -71,13 +74,9 @@ Default: (empty)
 Default: (libldap default)
 .TP
 \fBldap_start_tls\fP
-Use the STARTTLS mechanism on all LDAP connections. Prefer using Explicit TLS
+Use the STARTTLS mechanism on LDAP connections. Prefer using Explicit TLS
 (ldaps:// in the URI field) in favor of ldap:// with STARTTLS; see Internet
 blog posts "STARTTLS considered harmful" for details.
-.br
-You cannot use ldap_start_tls when any LDAP server URI (including those from
-per-organization LDAP credentials) use ldaps://. Doing so could lead to runtime
-errors worded "TLS already started" or similar.
 .br
 Default: \fIoff\fP
 .br
