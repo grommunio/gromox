@@ -347,11 +347,11 @@ ec_error_t message_object::save()
 	    pmessage->instance_id, &tmp_propval, &result))
 		return ecServerOOM;
 	
-	gxerr_t e_result = GXERR_CALL_FAILED;
+	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::flush_instance(dir, pmessage->instance_id,
 	    pmessage->pstore->get_account(), &e_result) ||
-	    e_result != GXERR_SUCCESS)
-		return gxerr_to_hresult(e_result);
+	    e_result != ecSuccess)
+		return e_result;
 
 	auto is_new = pmessage->b_new;
 	pmessage->b_new = FALSE;
