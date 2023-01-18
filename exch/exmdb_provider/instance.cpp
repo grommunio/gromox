@@ -1404,7 +1404,7 @@ BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
 
 /* account must be available when it is a normal message instance */ 
 BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
-    const char *account, gxerr_t *pe_result)
+    const char *account, ec_error_t *pe_result)
 {
 	int i;
 	uint64_t folder_id;
@@ -1472,7 +1472,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 				return FALSE;
 			}
 		}
-		*pe_result = GXERR_SUCCESS;
+		*pe_result = ecSuccess;
 		return TRUE;
 	}
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -1507,7 +1507,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 			return FALSE;
 		}
 		attachment_content_set_embedded_internal(static_cast<ATTACHMENT_CONTENT *>(pinstance1->pcontent), pmsgctnt);
-		*pe_result = GXERR_SUCCESS;
+		*pe_result = ecSuccess;
 		return TRUE;
 	}
 	auto pmsgctnt = message_content_dup(ict);

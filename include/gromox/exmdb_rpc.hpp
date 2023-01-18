@@ -83,13 +83,13 @@ enum class exmdb_callid : uint8_t {
 	reload_message_instance = 0x3c,
 	clear_message_instance = 0x3d,
 	read_message_instance = 0x3e,
-	write_message_instance = 0x3f,
+	// write_message_instance_v1 = 0x3f,
 	load_attachment_instance = 0x40,
 	create_attachment_instance = 0x41,
 	read_attachment_instance = 0x42,
 	write_attachment_instance = 0x43,
 	delete_message_instance_attachment = 0x44,
-	flush_instance = 0x45,
+	// flush_instance_v1 = 0x45,
 	unload_instance = 0x46,
 	get_instance_all_proptags = 0x47,
 	get_instance_properties = 0x48,
@@ -146,6 +146,8 @@ enum class exmdb_callid : uint8_t {
 	vacuum = 0x7b,
 	get_folder_by_class /* v2 */ = 0x7c,
 	load_permission_table /* v2 */ = 0x7d,
+	write_message_instance /* v2 */ = 0x7e,
+	flush_instance /* v2 */ = 0x7f,
 	unload_store = 0x80,
 };
 
@@ -1088,7 +1090,7 @@ struct exresp_write_attachment_instance : public exresp {
 };
 
 struct exresp_flush_instance : public exresp {
-	gxerr_t e_result;
+	ec_error_t e_result;
 };
 
 struct exresp_get_instance_all_proptags : public exresp {
@@ -1203,7 +1205,7 @@ struct exresp_delivery_message : public exresp {
 };
 
 struct exresp_write_message : public exresp {
-	gxerr_t e_result;
+	ec_error_t e_result;
 };
 
 struct exresp_read_message : public exresp {

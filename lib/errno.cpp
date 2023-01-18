@@ -2,15 +2,6 @@
 #include <gromox/defs.h>
 #include <gromox/mapierr.hpp>
 
-ec_error_t gxerr_to_hresult(gxerr_t e)
-{
-	switch (e) {
-	case GXERR_SUCCESS: return ecSuccess;
-	case GXERR_OVER_QUOTA: return MAPI_E_STORE_FULL;
-	default: return ecError;
-	}
-}
-
 const char *mapi_strerror(unsigned int e)
 {
 	// STG = storage

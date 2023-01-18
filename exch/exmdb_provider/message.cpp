@@ -4206,7 +4206,7 @@ BOOL exmdb_server::delivery_message(const char *dir,
 	in somewhere except the folder, result will be FALSE */
 BOOL exmdb_server::write_message(const char *dir, const char *account,
     uint32_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
-    gxerr_t *pe_result)
+    ec_error_t *pe_result)
 {
 	BOOL b_exist;
 	uint64_t nt_time;
@@ -4215,7 +4215,7 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 	uint64_t fid_val1;
 	
 	if (!pmsgctnt->proplist.has(PidTagChangeNumber)) {
-		*pe_result = GXERR_CALL_FAILED;
+		*pe_result = ecRpcFailed;
 		return TRUE;
 	}
 	b_exist = FALSE;
@@ -4225,7 +4225,7 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 		return FALSE;
 	if (cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) ||
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
-		*pe_result = GXERR_OVER_QUOTA;
+		*pe_result = MAPI_E_DISK_FULL;
 		return TRUE;	
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -4236,7 +4236,7 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 		if (0 != fid_val1) {
 			b_exist = TRUE;
 			if (fid_val != fid_val1) {
-				*pe_result = GXERR_CALL_FAILED;
+				*pe_result = ecRpcFailed;
 				return TRUE;
 			}
 		}
@@ -4253,10 +4253,10 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 		return FALSE;
 	if (0 == mid_val) {
 		// auto rollback at end of scope
-		*pe_result = GXERR_CALL_FAILED;
+		*pe_result = ecRpcFailed;
 	} else {
 		sql_transact.commit();
-		*pe_result = GXERR_SUCCESS;
+		*pe_result = ecSuccess;
 	}
 	}
 	if (b_exist) {

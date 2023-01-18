@@ -225,10 +225,10 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 	if (pproplist->set(PR_PREDECESSOR_CHANGE_LIST, pvalue) != 0)
 		return ecRpcFailed;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	gxerr_t e_result = GXERR_CALL_FAILED;
+	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(dir, plogon->get_account(), pinfo->cpid,
-	    folder_id, pctx->m_content, &e_result) || e_result != GXERR_SUCCESS)
-		return gxerr_to_hresult(e_result);
+	    folder_id, pctx->m_content, &e_result) || e_result != ecSuccess)
+		return e_result;
 	return ecSuccess;
 }
 
@@ -509,10 +509,10 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
-			gxerr_t e_result = GXERR_CALL_FAILED;
+			ec_error_t e_result = ecRpcFailed;
 			if (!exmdb_client::flush_instance(dir, pnode->instance_id,
-			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
-				return gxerr_to_hresult(e_result);
+			    nullptr, &e_result) || e_result != ecSuccess)
+				return e_result;
 			if (!exmdb_client::unload_instance(dir, pnode->instance_id))
 				return ecRpcFailed;
 		}
@@ -580,10 +580,10 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
-			gxerr_t e_result = GXERR_CALL_FAILED;
+			ec_error_t e_result = ecRpcFailed;
 			if (!exmdb_client::flush_instance(dir, pnode->instance_id,
-			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
-				return gxerr_to_hresult(e_result);
+			    nullptr, &e_result) || e_result != ecSuccess)
+				return e_result;
 			if (!exmdb_client::unload_instance(dir, pnode->instance_id))
 				return ecRpcFailed;
 		}

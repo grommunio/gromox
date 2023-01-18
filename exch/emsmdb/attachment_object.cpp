@@ -125,10 +125,10 @@ ec_error_t attachment_object::save()
 	tmp_propval.pvalue = &nt_time;
 	if (!set_properties(&tmp_propvals, &tmp_problems))
 		return ecRpcFailed;
-	gxerr_t e_result = GXERR_CALL_FAILED;
+	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::flush_instance(pattachment->pparent->plogon->get_dir(),
-	    pattachment->instance_id, NULL, &e_result) || e_result != GXERR_SUCCESS)
-		return gxerr_to_hresult(e_result);
+	    pattachment->instance_id, NULL, &e_result) || e_result != ecSuccess)
+		return e_result;
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;

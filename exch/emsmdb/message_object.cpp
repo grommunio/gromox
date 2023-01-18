@@ -1,4 +1,4 @@
-	// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -537,11 +537,11 @@ ec_error_t message_object::save()
 	    pmessage->instance_id, &tmp_propval, &result))
 		return ecRpcFailed;
 	
-	gxerr_t e_result = GXERR_CALL_FAILED;
+	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::flush_instance(dir,
 	    pmessage->instance_id, pmessage->plogon->get_account(),
-	    &e_result) || e_result != GXERR_SUCCESS)
-		return gxerr_to_hresult(e_result);
+	    &e_result) || e_result != ecSuccess)
+		return e_result;
 	auto is_new = pmessage->b_new;
 	pmessage->b_new = FALSE;
 	pmessage->b_touched = FALSE;

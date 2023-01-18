@@ -1750,11 +1750,11 @@ ec_error_t cu_remote_copy_message(store_object *pstore, uint64_t message_id,
 		return ecRpcFailed;
 	}
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	gxerr_t e_result = GXERR_CALL_FAILED;
+	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(pstore1->get_dir(),
 	    pstore1->get_account(), pinfo->cpid, folder_id1,
-	    pmsgctnt, &e_result) || e_result != GXERR_SUCCESS)
-		return gxerr_to_hresult(e_result);
+	    pmsgctnt, &e_result) || e_result != ecSuccess)
+		return e_result;
 	return ecSuccess;
 }
 
