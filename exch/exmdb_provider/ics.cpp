@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <gromox/database.h>
@@ -718,27 +719,18 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 			return FALSE;
 		auto fid_val1 = sqlite3_column_int64(stm_select_chg, 0);
 		PROPTAG_ARRAY proptags;
+		std::vector<uint32_t> tags;
 		if (!cu_get_proptags(db_table::folder_props, fid_val1,
-			pdb->psqlite, &proptags)) {
+		    pdb->psqlite, tags))
 			return FALSE;
-		}
-
-		uint32_t tmp_proptags[0x8000];
-		size_t count = 0;
-		for (size_t j = 0; j < proptags.count; ++j) {
-			if (proptags.pproptag[j] == PR_HAS_RULES ||
-			    proptags.pproptag[j] == PidTagChangeNumber ||
-			    proptags.pproptag[j] == PR_LOCAL_COMMIT_TIME ||
-			    proptags.pproptag[j] == PR_DELETED_COUNT_TOTAL ||
-			    proptags.pproptag[j] == PR_NORMAL_MESSAGE_SIZE ||
-			    proptags.pproptag[j] == PR_LOCAL_COMMIT_TIME_MAX ||
-			    proptags.pproptag[j] == PR_HIERARCHY_CHANGE_NUM)
-				continue;
-			tmp_proptags[count++] = proptags.pproptag[j];
-		}
-		tmp_proptags[count++] = PidTagParentFolderId;
-		proptags.count = count;
-		proptags.pproptag = tmp_proptags;
+		tags.erase(std::remove_if(tags.begin(), tags.end(), [](uint32_t t) {
+			return t == PR_HAS_RULES || t == PidTagChangeNumber ||
+			       t == PR_LOCAL_COMMIT_TIME || t == PR_DELETED_COUNT_TOTAL ||
+			       t == PR_NORMAL_MESSAGE_SIZE || t == PR_LOCAL_COMMIT_TIME_MAX ||
+			       t == PR_HIERARCHY_CHANGE_NUM;
+		}), tags.end());
+		proptags.count = tags.size();
+		proptags.pproptag = tags.data();
 		if (!cu_get_properties(db_table::folder_props, fid_val1, 0,
 			pdb->psqlite, &proptags, pfldchgs->pfldchgs + i)) {
 			return FALSE;

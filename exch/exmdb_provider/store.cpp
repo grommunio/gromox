@@ -141,10 +141,14 @@ BOOL exmdb_server::get_store_all_proptags(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!cu_get_proptags(db_table::store_props, 0,
-		pdb->psqlite, pproptags)) {
+	std::vector<uint32_t> tags;
+	if (!cu_get_proptags(db_table::store_props, 0, pdb->psqlite, tags))
 		return FALSE;
-	}
+	pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
+	if (pproptags->pproptag == nullptr)
+		return false;
+	pproptags->count = tags.size();
+	memcpy(pproptags->pproptag, tags.data(), sizeof(tags[0]) * pproptags->count);
 	return TRUE;
 }
 
