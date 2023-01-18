@@ -65,53 +65,34 @@ static constexpr cfg_directive ldap_adaptor_cfg_defaults[] = {
  * Make sure the response has exactly one entry and at most
  * one optional informational search trailer.
  */
-static bool validate_response(LDAP *ld, LDAPMessage *result)
+static int validate_response(LDAP *ld, LDAPMessage *result)
 {
 	if (result == nullptr) {
 		mlog(LV_ERR, "ldap_adaptor: ldap_search yielded success, but result is null?!");
-		return false;
+		return -1;
 	}
 	auto count = ldap_count_messages(ld, result);
-	if (count == 0) {
-		mlog(LV_ERR, "ldap_adaptor: result set has 0 messages");
-		return false;
-	}
-	auto msg = ldap_first_message(ld, result);
-	if (msg == nullptr) {
-		mlog(LV_ERR, "ldap_adaptor: ldap_search result set has no first message");
-		return false;
-	} else if (ldap_msgtype(msg) != LDAP_RES_SEARCH_ENTRY) {
-		mlog(LV_ERR, "ldap_adaptor: ldap_search: result set's 1st message is not a "
-		        "LDAP_RES_SEARCH_ENTRY (%d) but %d",
-		        static_cast<int>(LDAP_RES_SEARCH_ENTRY), ldap_msgtype(msg));
-		return false;
-	}
-	int i = 0;
-	while ((msg = ldap_next_message(ld, msg)) != nullptr) {
+	unsigned int i = 0, match = 0;
+	for (auto msg = ldap_first_message(ld, result); msg != nullptr;
+	     msg = ldap_next_message(ld, msg)) {
+		++i;
 		auto mtype = ldap_msgtype(msg);
-		switch (mtype) {
-		case LDAP_RES_SEARCH_REFERENCE:
-			/* ignore referrals */
-			continue;
-		case LDAP_RES_SEARCH_RESULT:
+		if (mtype == LDAP_RES_SEARCH_REFERENCE ||
+		    mtype == LDAP_RES_SEARCH_RESULT)
 			/*
-			 * this is the part that appears in ldapsearch(1) as
-			 * # search result
-			 * search: 2
-			 * result: 0 Success
+			 * Ignore referrals and the "# search result" block
+			 * (visible in ldapsearch(1) output).
 			 */
 			continue;
-		case LDAP_RES_SEARCH_ENTRY:
-			mlog(LV_ERR, "ldap_adaptor: ldap_search yielded ambiguous result "
-			        "(msg %d/%d is also LDAP_RES_SEARCH_ENTRY)", i, count);
-			return false;
-		default:
+		if (mtype != LDAP_RES_SEARCH_ENTRY) {
 			mlog(LV_ERR, "ldap_adaptor: ldap_search yielded a result with "
 			        "msg %d/%d of unexpected type %d", i, count, mtype);
-			return false;
+			return -1;
 		}
+		if (match < INT_MAX)
+			++match;
 	}
-	return true;
+	return match;
 }
 
 static ldap_ptr make_conn(const std::string &uri, const char *bind_user,
@@ -214,8 +195,18 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 		        base_dn.c_str(), filter.c_str(), ldap_err2string(ret));
 		return FALSE;
 	}
-	if (!validate_response(tok_meta.get(), msg.get()))
+	auto matches = validate_response(tok_meta.get(), msg.get());
+	if (matches < 0) {
 		return FALSE;
+	} else if (matches == 0) {
+		mlog(LV_DEBUG, "ldap_adaptor: search for %s=%s yielded 0 matches",
+			attr, username);
+		return false;
+	} else if (matches >= 2) {
+		mlog(LV_ERR, "ldap_adaptor: search for %s=%s yielded %d matches, ambiguous result",
+			attr, username, matches);
+		return false;
+	}
 	auto firstmsg = ldap_first_message(tok_meta.get(), msg.get());
 	if (firstmsg == nullptr)
 		return FALSE;
