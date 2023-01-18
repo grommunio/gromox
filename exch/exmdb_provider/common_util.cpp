@@ -702,15 +702,13 @@ static BOOL common_util_check_subfolders(
 	return pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW ? TRUE : false;
 }
 
-static char* common_util_calculate_folder_path(
-	uint32_t folder_id, sqlite3 *psqlite)
+static char *common_util_calculate_folder_path(uint32_t folder_id,
+    sqlite3 *psqlite) try
 {
-	int len;
-	int len1;
 	uint64_t tmp_fid;
-	char sql_string[128], temp_path[4096]{};
+	char sql_string[128];
+	std::string path;
 	
-	len = 0;
 	tmp_fid = folder_id;
 	auto b_private = exmdb_server::is_private();
 	while (true) {
@@ -720,14 +718,14 @@ static char* common_util_calculate_folder_path(
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return NULL;
-		len1 = sqlite3_column_bytes(pstmt, 0);
-		len += len1;
-		if (len >= 4096)
-			return NULL;
-		memcpy(temp_path + 4095 - len, sqlite3_column_text(pstmt, 0), len1);
-		pstmt.finalize();
-		len ++;
-		temp_path[4095-len] = '\\';
+		auto dnlen = sqlite3_column_bytes(pstmt, 0);
+		if (dnlen == 0 || dnlen > 255 || path.size() + dnlen + 1 >= 4096)
+			return nullptr;
+		auto dispname = pstmt.col_text(0);
+		if (dispname == nullptr)
+			return nullptr;
+		path.insert(0, dispname);
+		path.insert(0, "\\");
 		if ((b_private && tmp_fid == PRIVATE_FID_ROOT) ||
 		    (!b_private && tmp_fid == PUBLIC_FID_ROOT))
 			break;
@@ -738,8 +736,10 @@ static char* common_util_calculate_folder_path(
 			return NULL;
 		tmp_fid = sqlite3_column_int64(pstmt, 0);
 	}
-	memmove(temp_path, temp_path + 4095 - len, len);
-	return common_util_dup(temp_path);
+	return common_util_dup(path.c_str());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1155: ENOMEM");
+	return nullptr;
 }
 
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
@@ -1377,15 +1377,13 @@ static BOOL common_util_get_message_subject(
 	return TRUE;
 }
 	
-static BOOL common_util_get_message_display_recipients(
-	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
-	uint32_t proptag, void **ppvalue)
+static BOOL common_util_get_message_display_recipients(sqlite3 *psqlite,
+    uint32_t cpid, uint64_t message_id, uint32_t proptag, void **ppvalue) try
 {
-	int offset;
 	void *pvalue;
 	uint64_t rcpt_id;
 	char sql_string[256];
-	char tmp_buff[64*1024];
+	std::string dr;
 	uint32_t recipient_type = 0;
 	static const uint8_t fake_empty = 0;
 	
@@ -1408,7 +1406,6 @@ static BOOL common_util_get_message_display_recipients(
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	offset = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		rcpt_id = sqlite3_column_int64(pstmt, 0);
 		if (!cu_get_property(db_table::rcpt_props,
@@ -1426,22 +1423,21 @@ static BOOL common_util_get_message_display_recipients(
 		}
 		if (pvalue == nullptr)
 			continue;
-		if (offset == 0)
-			offset = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s",
-			         static_cast<const char *>(pvalue));
-		else
-			offset += gx_snprintf(tmp_buff + offset,
-			          GX_ARRAY_SIZE(tmp_buff) - offset, "; %s",
-			          static_cast<const char *>(pvalue));
+		if (!dr.empty())
+			dr += "; ";
+		dr += static_cast<const char *>(pvalue);
 	}
 	pstmt.finalize();
-	if  (0 == offset) {
+	if (dr.empty()) {
 		*ppvalue = deconst(&fake_empty);
 		return TRUE;
 	}
-	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(tmp_buff) :
-	           common_util_convert_copy(false, cpid, tmp_buff);
+	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(dr.c_str()) :
+	           common_util_convert_copy(false, cpid, dr.c_str());
 	return *ppvalue != nullptr ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1159: ENOMEM");
+	return false;
 }
 
 std::string cu_cid_path(const char *dir, uint64_t id, unsigned int type) try

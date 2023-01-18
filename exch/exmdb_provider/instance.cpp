@@ -1675,11 +1675,10 @@ BOOL exmdb_server::get_instance_all_proptags(const char *dir,
 	return TRUE;
 }
 
-static BOOL instance_get_message_display_recipients(
-	TARRAY_SET *prcpts, uint32_t cpid, uint32_t proptag,
-	void **ppvalue)
+static BOOL instance_get_message_display_recipients(TARRAY_SET *prcpts,
+    uint32_t cpid, uint32_t proptag, void **ppvalue) try
 {
-	char tmp_buff[64*1024];
+	std::string dr;
 	uint32_t recipient_type = 0;
 	static constexpr uint8_t fake_empty = 0;
 
@@ -1697,7 +1696,6 @@ static BOOL instance_get_message_display_recipients(
 		recipient_type = MAPI_BCC;
 		break;
 	}
-	size_t offset = 0;
 	for (size_t i = 0; i < prcpts->count; ++i) {
 		auto rcpttype = prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
 		if (rcpttype == nullptr || *rcpttype != recipient_type)
@@ -1712,20 +1710,20 @@ static BOOL instance_get_message_display_recipients(
 			name = prcpts->pparray[i]->get<char>(PR_SMTP_ADDRESS);
 		if (name == nullptr)
 			continue;
-		if (0 == offset) {
-			offset = gx_snprintf(tmp_buff, arsizeof(tmp_buff), "%s", name);
-		} else {
-			offset += gx_snprintf(tmp_buff + offset,
-			          arsizeof(tmp_buff) - offset, "; %s", name);
-		}
+		if (!dr.empty())
+			dr += "; ";
+		dr += name;
 	}
-	if  (0 == offset) {
+	if (dr.empty()) {
 		*ppvalue = deconst(&fake_empty);
 		return TRUE;
 	}
-	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(tmp_buff) :
-	           common_util_convert_copy(FALSE, cpid, tmp_buff);
+	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(dr.c_str()) :
+	           common_util_convert_copy(false, cpid, dr.c_str());
 	return *ppvalue != nullptr ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1160: ENOMEM");
+	return false;
 }
 
 static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)

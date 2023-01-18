@@ -1875,15 +1875,15 @@ static BOOL folder_clear_search_folder(db_item_ptr &pdb,
 	return TRUE;
 }
 
-BOOL exmdb_server::set_search_criteria(const char *dir,
-	uint32_t cpid, uint64_t folder_id, uint32_t search_flags,
-	const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids,
-	BOOL *pb_result)
+BOOL exmdb_server::set_search_criteria(const char *dir, uint32_t cpid,
+    uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction,
+    const LONGLONG_ARRAY *pfolder_ids, BOOL *pb_result) try
 {
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
 	char sql_string[128];
-	uint8_t tmp_buff[0x8000];
+	static constexpr size_t buff_size = 0x8000;
+	auto tmp_buff = std::make_unique<uint8_t[]>(buff_size);
 	LONGLONG_ARRAY folder_ids{};
 	
 	if (!exmdb_server::is_private())
@@ -1918,7 +1918,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir,
 	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return false;
 	if (NULL != prestriction) {
-		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+		if (!ext_push.init(tmp_buff.get(), buff_size, 0) ||
 		    ext_push.p_restriction(*prestriction) != EXT_ERR_SUCCESS)
 			return false;
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET "
@@ -2012,6 +2012,9 @@ BOOL exmdb_server::set_search_criteria(const char *dir,
 		return FALSE;
 	*pb_result = TRUE;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1161: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_server::get_folder_perm(const char *dir,
