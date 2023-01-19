@@ -600,9 +600,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 	} else {
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (NULL == pobj_notify) {
+		if (pobj_notify == nullptr)
 			return NULL;
-		}
 	}
 	memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
 	pnotification1->pnotification_data = pobj_notify;
@@ -959,9 +958,8 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 	case EITLT_PRIVATE_MESSAGE:
 		*pb_private = TRUE;
 		*pdb_id = rop_util_get_user_id(tmp_entryid.folder_database_guid);
-		if (-1 == *pdb_id) {
+		if (*pdb_id == -1)
 			return FALSE;
-		}
 		*pfolder_id = rop_util_make_eid(1,
 			tmp_entryid.folder_global_counter);
 		*pmessage_id = rop_util_make_eid(1,
@@ -978,9 +976,8 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 			return TRUE;
 		}
 		auto pinfo = zs_get_info();
-		if (NULL == pinfo || *pdb_id != pinfo->domain_id) {
+		if (pinfo == nullptr || *pdb_id != pinfo->domain_id)
 			return FALSE;
-		}
 		if (!exmdb_client::get_mapping_replid(pinfo->get_homedir(),
 		    tmp_entryid.folder_database_guid, &b_found, &replid) ||
 		    !b_found)
@@ -1029,9 +1026,8 @@ BINARY *cu_fid_to_entryid(store_object *pstore, uint64_t folder_id)
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(256);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
@@ -1049,9 +1045,8 @@ BINARY *cu_fid_to_sk(store_object *pstore,
 	LONG_TERM_ID longid;
 	
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->cb = 22;
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
@@ -1116,9 +1111,8 @@ BINARY *cu_mid_to_entryid(store_object *pstore,
 	tmp_entryid.pad2[0] = 0;
 	tmp_entryid.pad2[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(256);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
@@ -1171,9 +1165,8 @@ BINARY *cu_mid_to_sk(store_object *pstore,
 	LONG_TERM_ID longid;
 	
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->cb = 22;
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
@@ -1192,9 +1185,8 @@ BINARY *cu_xid_to_bin(const XID &xid)
 	EXT_PUSH ext_push;
 	
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
 	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
@@ -1207,9 +1199,8 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 {
 	EXT_PULL ext_pull;
 	
-	if (pbin->cb < 17 || pbin->cb > 24) {
+	if (pbin->cb < 17 || pbin->cb > 24)
 		return FALSE;
-	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
 }
@@ -1217,9 +1208,8 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 BINARY* common_util_guid_to_binary(GUID guid)
 {
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->cb = 0;
 	pbin->pv = common_util_alloc(16);
 	if (pbin->pv == nullptr)
@@ -1232,9 +1222,8 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	PCL ppcl;
 	if (pbin_pcl != nullptr && !ppcl.deserialize(pbin_pcl))
 		return nullptr;
@@ -1246,9 +1235,8 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 		return NULL;
 	auto ptmp_bin = ppcl.serialize();
 	ppcl.clear();
-	if (NULL == ptmp_bin) {
+	if (ptmp_bin == nullptr)
 		return NULL;
-	}
 	pbin->cb = ptmp_bin->cb;
 	pbin->pv = common_util_alloc(ptmp_bin->cb);
 	if (pbin->pv == nullptr) {
@@ -1265,9 +1253,8 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 	struct stat node_state;
 	
 	auto fd = open(path, O_RDONLY);
-	if (-1 == fd) {
+	if (fd < 0)
 		return FALSE;
-	}
 	if (fstat(fd, &node_state) != 0) {
 		close(fd);
 		return FALSE;
@@ -1317,10 +1304,9 @@ static BOOL common_util_get_propname(
 	
 	propids.count = 1;
 	propids.ppropid = &propid;
-	if (!exmdb_client::get_named_propnames(
-		common_util_get_dir(), &propids, &propnames)) {
+	if (!exmdb_client::get_named_propnames(common_util_get_dir(),
+	    &propids, &propnames))
 		return FALSE;
-	}
 	*pppropname = propnames.count != 1 ? nullptr : propnames.ppropname;
 	return TRUE;
 }
@@ -1351,9 +1337,8 @@ BOOL common_util_send_message(store_object *pstore,
 		return FALSE;
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
-		if (NULL == ppropval) {
+		if (ppropval == nullptr)
 			return FALSE;
-		}
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
@@ -1365,9 +1350,8 @@ BOOL common_util_send_message(store_object *pstore,
 		return FALSE;
 	BOOL b_resend = (*num & MSGFLAG_RESEND) ? TRUE : false;
 	prcpts = pmsgctnt->children.prcpts;
-	if (NULL == prcpts) {
+	if (prcpts == nullptr)
 		return FALSE;
-	}
 	if (prcpts->count == 0)
 		mlog(LV_INFO, "I-1504: Store %s attempted to send message %llxh to 0 recipients",
 		        pstore->get_account(), static_cast<unsigned long long>(message_id));
@@ -1503,13 +1487,11 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 	EXT_PULL ext_pull;
 	
 	auto pmovecopy1 = cu_alloc<MOVECOPY_ACTION>();
-	if (NULL == pmovecopy1) {
+	if (pmovecopy1 == nullptr)
 		return NULL;
-	}
 	auto pstore_entryid = cu_alloc<STORE_ENTRYID>();
-	if (NULL == pstore_entryid) {
+	if (pstore_entryid == nullptr)
 		return NULL;
-	}
 	ext_pull.init(pmovecopy->store_eid.pb, pmovecopy->store_eid.cb,
 		common_util_alloc, EXT_FLAG_UTF16);
 	if (ext_pull.g_store_eid(pstore_entryid) != EXT_ERR_SUCCESS)
@@ -1525,9 +1507,8 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 		pmovecopy1->same_store = 1;
 		pmovecopy1->pstore_eid = NULL;
 		psvreid = cu_alloc<SVREID>();
-		if (NULL == psvreid) {
+		if (psvreid == nullptr)
 			return NULL;
-		}
 		psvreid->pbin = NULL;
 		if (!cu_entryid_to_fid(pmovecopy->folder_eid,
 		    &b_private, &db_id, &psvreid->folder_id))
@@ -1545,9 +1526,8 @@ static REPLY_ACTION* common_util_convert_from_zreply(ZREPLY_ACTION *preply)
 	BOOL b_private;
 	
 	auto preply1 = cu_alloc<REPLY_ACTION>();
-	if (NULL == preply1) {
+	if (preply1 == nullptr)
 		return NULL;
-	}
 	if (!cu_entryid_to_mid(preply->message_eid, &b_private,
 	    &db_id, &preply1->template_folder_id, &preply1->template_message_id))
 		return NULL;	
@@ -1569,18 +1549,16 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 			pactions->pblock[i].pdata =
 				common_util_convert_from_zmovecopy(
 				static_cast<ZMOVECOPY_ACTION *>(pactions->pblock[i].pdata));
-			if (NULL == pactions->pblock[i].pdata) {
+			if (pactions->pblock[i].pdata == nullptr)
 				return FALSE;
-			}
 			break;
 		case OP_REPLY:
 		case OP_OOF_REPLY:
 			pactions->pblock[i].pdata =
 				common_util_convert_from_zreply(
 				static_cast<ZREPLY_ACTION *>(pactions->pblock[i].pdata));
-			if (NULL == pactions->pblock[i].pdata) {
+			if (pactions->pblock[i].pdata == nullptr)
 				return FALSE;
-			}
 			break;
 		}
 	}
@@ -1615,9 +1593,8 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 	}
 	store_entryid.pmailbox_dn = tmp_buff;
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(1024);
 	if (pbin->pb == nullptr ||
 	    !ext_push.init(pbin->pv, 1024, EXT_FLAG_UTF16) ||
@@ -1633,9 +1610,8 @@ static ZMOVECOPY_ACTION *common_util_convert_to_zmovecopy(store_object *pstore,
 	EXT_PUSH ext_push;
 	
 	auto pmovecopy1 = cu_alloc<ZMOVECOPY_ACTION>();
-	if (NULL == pmovecopy1) {
+	if (pmovecopy1 == nullptr)
 		return NULL;
-	}
 	if (0 == pmovecopy->same_store) {
 		pmovecopy1->store_eid.pv = common_util_alloc(1024);
 		if (pmovecopy1->store_eid.pv == nullptr ||
@@ -1646,14 +1622,12 @@ static ZMOVECOPY_ACTION *common_util_convert_to_zmovecopy(store_object *pstore,
 		pmovecopy1->folder_eid = *static_cast<BINARY *>(pmovecopy->pfolder_eid);
 	} else {
 		auto pbin = common_util_to_store_entryid(pstore);
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return NULL;
-		}
 		pmovecopy1->store_eid = *pbin;
 		pbin = cu_fid_to_entryid(pstore, static_cast<SVREID *>(pmovecopy->pfolder_eid)->folder_id);
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return NULL;
-		}
 		pmovecopy1->folder_eid = *pbin;
 	}
 	return pmovecopy1;
@@ -1663,9 +1637,8 @@ static ZREPLY_ACTION *common_util_convert_to_zreply(store_object *pstore,
     REPLY_ACTION *preply)
 {
 	auto preply1 = cu_alloc<ZREPLY_ACTION>();
-	if (NULL == preply1) {
+	if (preply1 == nullptr)
 		return NULL;
-	}
 	if (cu_mid_to_entryid(pstore, preply->template_folder_id,
 	    preply->template_message_id) == nullptr)
 		return NULL;	
@@ -1687,18 +1660,16 @@ BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppr
 			pactions->pblock[i].pdata =
 				common_util_convert_to_zmovecopy(
 				pstore, static_cast<MOVECOPY_ACTION *>(pactions->pblock[i].pdata));
-			if (NULL == pactions->pblock[i].pdata) {
+			if (pactions->pblock[i].pdata == nullptr)
 				return FALSE;
-			}
 			break;
 		case OP_REPLY:
 		case OP_OOF_REPLY:
 			pactions->pblock[i].pdata =
 				common_util_convert_to_zreply(
 				pstore, static_cast<REPLY_ACTION *>(pactions->pblock[i].pdata));
-			if (NULL == pactions->pblock[i].pdata) {
+			if (pactions->pblock[i].pdata == nullptr)
 				return FALSE;
-			}
 			break;
 		}
 	}
@@ -1717,9 +1688,8 @@ ec_error_t cu_remote_copy_message(store_object *pstore, uint64_t message_id,
 	if (!exmdb_client::read_message(pstore->get_dir(), username,
 	    pinfo->cpid, message_id, &pmsgctnt))
 		return ecRpcFailed;
-	if (NULL == pmsgctnt) {
+	if (pmsgctnt == nullptr)
 		return ecSuccess;
-	}
 	static constexpr uint32_t tags[] = {
 		PR_CONVERSATION_ID, PR_DISPLAY_TO,
 		PR_DISPLAY_TO_A, PR_DISPLAY_CC,
@@ -1737,18 +1707,16 @@ ec_error_t cu_remote_copy_message(store_object *pstore, uint64_t message_id,
 	propval.pvalue = &change_num;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return ecRpcFailed;
-	}
 	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	auto pbin1 = pmsgctnt->proplist.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
-	if (NULL == propval.pvalue) {
+	if (propval.pvalue == nullptr)
 		return ecRpcFailed;
-	}
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(pstore1->get_dir(),
@@ -1802,18 +1770,16 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	propval.pvalue = &change_num;
 	common_util_set_propvals(pproplist, &propval);
 	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return FALSE;
-	}
 	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	common_util_set_propvals(pproplist, &propval);
 	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
-	if (NULL == propval.pvalue) {
+	if (propval.pvalue == nullptr)
 		return FALSE;
-	}
 	common_util_set_propvals(pproplist, &propval);
 	auto pinfo = zs_get_info();
 	if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
@@ -1861,19 +1827,16 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 		return NULL;	
 	exmdb_client::unload_table(pstore->get_dir(), table_id);
 	pmessage_ids = cu_alloc<EID_ARRAY>();
-	if (NULL == pmessage_ids) {
+	if (pmessage_ids == nullptr)
 		return NULL;
-	}
 	pmessage_ids->count = 0;
 	pmessage_ids->pids = cu_alloc<uint64_t>(tmp_set.count);
-	if (NULL == pmessage_ids->pids) {
+	if (pmessage_ids->pids == nullptr)
 		return NULL;
-	}
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
-		if (NULL == pmid) {
+		if (pmid == nullptr)
 			return NULL;
-		}
 		pmessage_ids->pids[pmessage_ids->count++] = *pmid;
 	}
 	return pmessage_ids;
@@ -1917,9 +1880,8 @@ ec_error_t cu_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	}
 	pmessage_ids = common_util_load_folder_messages(
 						pstore, folder_id, username);
-	if (NULL == pmessage_ids) {
+	if (pmessage_ids == nullptr)
 		return ecRpcFailed;
-	}
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		auto err = cu_remote_copy_message(pstore, pmessage_ids->pids[i],
 		           pstore1, new_fid);
@@ -1940,9 +1902,8 @@ ec_error_t cu_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	exmdb_client::unload_table(pstore->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
-		if (NULL == pfolder_id) {
+		if (pfolder_id == nullptr)
 			return ecRpcFailed;
-		}
 		auto err = cu_remote_copy_folder(pstore, *pfolder_id, pstore1,
 		           new_fid, nullptr);
 		if (err != ecSuccess)
@@ -1977,9 +1938,8 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		return FALSE;
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
-		if (NULL == ppropval) {
+		if (ppropval == nullptr)
 			return FALSE;
-		}
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
@@ -1994,20 +1954,17 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	    common_util_alloc, common_util_get_propids, common_util_get_propname))
 		return FALSE;	
 	auto mail_len = imail.get_length();
-	if (mail_len < 0) {
+	if (mail_len < 0)
 		return false;
-	}
 	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
 		"zcu_msgtorfc822", "(dynamic)");
 	STREAM tmp_stream(&pallocator);
-	if (!imail.serialize(&tmp_stream)) {
+	if (!imail.serialize(&tmp_stream))
 		return FALSE;
-	}
 	imail.clear();
 	peml_bin->pv = common_util_alloc(mail_len + 128);
-	if (peml_bin->pv == nullptr) {
+	if (peml_bin->pv == nullptr)
 		return FALSE;
-	}
 
 	peml_bin->cb = 0;
 	size = STREAM_BLOCK_SIZE;
@@ -2114,9 +2071,8 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	    arsizeof(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, common_util_get_default_timezone());
 	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return nullptr;
-	}
 	memcpy(pbuff, pical_bin->pb, pical_bin->cb);
 	pbuff[pical_bin->cb] = '\0';
 	if (!ical.retrieve(pbuff))
@@ -2166,9 +2122,8 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	if (!oxvcard_export(pmsgctnt, vcard, common_util_get_propids))
 		return FALSE;
 	pvcf_bin->pv = common_util_alloc(VCARD_MAX_BUFFER_LEN);
-	if (pvcf_bin->pv == nullptr) {
+	if (pvcf_bin->pv == nullptr)
 		return FALSE;
-	}
 	if (!vcard.serialize(pvcf_bin->pc, VCARD_MAX_BUFFER_LEN))
 		return FALSE;	
 	pvcf_bin->cb = strlen(pvcf_bin->pc);
@@ -2183,9 +2138,8 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pbuff = cu_alloc<char>(pvcf_bin->cb + 1);
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return nullptr;
-	}
 	memcpy(pbuff, pvcf_bin->pb, pvcf_bin->cb);
 	pbuff[pvcf_bin->cb] = '\0';
 	vcard vcard;
