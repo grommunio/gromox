@@ -1614,58 +1614,59 @@ enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
 
 static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 {
+	uint32_t *v = nullptr;
 	switch (tag) {
-	case PR_STORE_STATE: {
-		auto v = cu_alloc<uint32_t>();
+	case PR_STORE_STATE:
+	case PR_CONTENT_COUNT:
+	case PR_ASSOC_CONTENT_COUNT:
+	case PR_INTERNET_ARTICLE_NUMBER:
+		v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = common_util_get_store_state(db);
-		return GP_ADV;
+		break;
+	default:
+		return GP_UNHANDLED;
 	}
-	case PR_CONTENT_COUNT: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_store_message_count(db, false);
-		return GP_ADV;
+	switch (tag) {
+	case PR_STORE_STATE: *v = common_util_get_store_state(db); break;
+	case PR_CONTENT_COUNT: *v = common_util_get_store_message_count(db, false); break;
+	case PR_ASSOC_CONTENT_COUNT: *v = common_util_get_store_message_count(db, TRUE); break;
+	case PR_INTERNET_ARTICLE_NUMBER: *v = common_util_get_store_article_number(db); break;
 	}
-	case PR_ASSOC_CONTENT_COUNT: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_store_message_count(db, TRUE);
-		return GP_ADV;
-	}
-	case PR_INTERNET_ARTICLE_NUMBER: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_store_article_number(db);
-		return GP_ADV;
-	}
-	}
-	return GP_UNHANDLED;
+	return GP_ADV;
 }
 
 static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
     sqlite3 *db, uint64_t id)
 {
+	uint32_t *v = nullptr;
+	uint64_t *w = nullptr;
 	switch (tag) {
-	case PR_ENTRYID:
-		pv.pvalue = cu_fid_to_entryid(db, id);
-		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PidTagFolderId: {
-		auto v = cu_alloc<uint64_t>();
+	case PR_FOLDER_FLAGS:
+	case PR_CONTENT_COUNT:
+	case PR_ASSOC_CONTENT_COUNT:
+	case PR_FOLDER_CHILD_COUNT:
+	case PR_CONTENT_UNREAD:
+	case PR_FOLDER_TYPE:
+		v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = rop_util_nfid_to_eid(id);
-		return GP_ADV;
-	}
+		break;
+	case PidTagFolderId:
+	case PidTagChangeNumber:
+	case PR_MESSAGE_SIZE_EXTENDED:
+	case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
+	case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
+		w = cu_alloc<uint64_t>();
+		pv.pvalue = w;
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		break;
+	case PR_ENTRYID:
+		pv.pvalue = cu_fid_to_entryid(db, id);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	case PidTagParentFolderId: {
 		auto v = cu_alloc<uint64_t>();
 		pv.pvalue = v;
@@ -1684,22 +1685,6 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = cu_fid_to_entryid(db, tmp_id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
-	case PidTagChangeNumber: {
-		auto v = cu_alloc<uint64_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_changenum(db, id);
-		return GP_ADV;
-	}
-	case PR_FOLDER_FLAGS: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_flags(db, id);
-		return GP_ADV;
-	}
 	case PR_SUBFOLDERS: {
 		auto v = cu_alloc<uint8_t>();
 		pv.pvalue = v;
@@ -1707,44 +1692,6 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 			return GP_ERR;
 		*v = !!common_util_check_subfolders(db, id);
 		return GP_ADV;
-	}
-	case PR_CONTENT_COUNT: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_count(db, id, false);
-		return GP_ADV;
-	}
-	case PR_ASSOC_CONTENT_COUNT: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_count(db, id, TRUE);
-		return GP_ADV;
-	}
-	case PR_FOLDER_CHILD_COUNT: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_calculate_childcount(id, db);
-		return GP_ADV;
-	}
-	case PR_CONTENT_UNREAD: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_unread_count(db, id);
-		return GP_ADV;
-	}
-	case PR_FOLDER_TYPE: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		return pv.pvalue != nullptr && common_util_get_folder_type(db,
-		       id, v) ? GP_ADV : GP_ERR;
 	}
 	case PR_HAS_RULES: {
 		auto v = cu_alloc<uint8_t>();
@@ -1757,32 +1704,23 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	case PR_FOLDER_PATHNAME:
 		pv.pvalue = common_util_calculate_folder_path(id, db);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PR_MESSAGE_SIZE_EXTENDED: {
-		auto v = cu_alloc<uint64_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_message_size(db, id, TRUE, TRUE);
-		return GP_ADV;
+	default:
+		return GP_UNHANDLED;
 	}
-	case PR_ASSOC_MESSAGE_SIZE_EXTENDED: {
-		auto v = cu_alloc<uint64_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_message_size(db, id, false, TRUE);
-		return GP_ADV;
+	switch (tag) {
+	case PR_FOLDER_FLAGS: *v = common_util_get_folder_flags(db, id); break;
+	case PR_CONTENT_COUNT: *v = common_util_get_folder_count(db, id, false); break;
+	case PR_ASSOC_CONTENT_COUNT: *v = common_util_get_folder_count(db, id, TRUE); break;
+	case PR_CONTENT_UNREAD: *v = common_util_get_folder_unread_count(db, id); break;
+	case PR_FOLDER_CHILD_COUNT: *v = common_util_calculate_childcount(id, db); break;
+	case PR_MESSAGE_SIZE_EXTENDED: *w = common_util_get_folder_message_size(db, id, TRUE, TRUE); break;
+	case PR_ASSOC_MESSAGE_SIZE_EXTENDED: *w = common_util_get_folder_message_size(db, id, false, TRUE); break;
+	case PR_NORMAL_MESSAGE_SIZE_EXTENDED: *w = common_util_get_folder_message_size(db, id, TRUE, false); break;
+	case PidTagFolderId: *w = rop_util_nfid_to_eid(id); break;
+	case PidTagChangeNumber: *w = common_util_get_folder_changenum(db, id); break;
+	case PR_FOLDER_TYPE: return common_util_get_folder_type(db, id, v) ? GP_ADV : GP_ERR;
 	}
-	case PR_NORMAL_MESSAGE_SIZE_EXTENDED: {
-		auto v = cu_alloc<uint64_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_message_size(db, id, TRUE, false);
-		return GP_ADV;
-	}
-	}
-	return GP_UNHANDLED;
+	return GP_ADV;
 }
 
 static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
