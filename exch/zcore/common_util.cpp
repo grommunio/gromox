@@ -1503,20 +1503,20 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 		pmovecopy1->same_store = 0;
 		pmovecopy1->pstore_eid = pstore_entryid;
 		pmovecopy1->pfolder_eid = &pmovecopy->folder_eid;
-	} else {
-		pmovecopy1->same_store = 1;
-		pmovecopy1->pstore_eid = NULL;
-		psvreid = cu_alloc<SVREID>();
-		if (psvreid == nullptr)
-			return NULL;
-		psvreid->pbin = NULL;
-		if (!cu_entryid_to_fid(pmovecopy->folder_eid,
-		    &b_private, &db_id, &psvreid->folder_id))
-			return NULL;	
-		psvreid->message_id = 0;
-		psvreid->instance = 0;
-		pmovecopy1->pfolder_eid = psvreid;
+		return pmovecopy1;
 	}
+	pmovecopy1->same_store = 1;
+	pmovecopy1->pstore_eid = NULL;
+	psvreid = cu_alloc<SVREID>();
+	if (psvreid == nullptr)
+		return NULL;
+	psvreid->pbin = NULL;
+	if (!cu_entryid_to_fid(pmovecopy->folder_eid,
+	    &b_private, &db_id, &psvreid->folder_id))
+		return NULL;
+	psvreid->message_id = 0;
+	psvreid->instance = 0;
+	pmovecopy1->pfolder_eid = psvreid;
 	return pmovecopy1;
 }
 

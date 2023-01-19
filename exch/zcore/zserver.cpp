@@ -3650,18 +3650,18 @@ uint32_t zs_getpropvals(GUID hsession,
 	case ZMG_PROFPROPERTY:
 		if (NULL == pproptags) {
 			*ppropvals = *static_cast<TPROPVAL_ARRAY *>(pobject);
-		} else {
-			ppropvals->count = 0;
-			ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-			if (ppropvals->ppropval == nullptr)
-				return ecError;
-			for (i=0; i<pproptags->count; i++) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(pproptags->pproptag[i]);
-				if (ppropvals->ppropval[ppropvals->count].pvalue != nullptr)
-					ppropvals->count ++;	
-			}
+			return ecSuccess;
+		}
+		ppropvals->count = 0;
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		if (ppropvals->ppropval == nullptr)
+			return ecError;
+		for (i = 0; i < pproptags->count; i++) {
+			ppropvals->ppropval[ppropvals->count].proptag =
+				pproptags->pproptag[i];
+			ppropvals->ppropval[ppropvals->count].pvalue = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(pproptags->pproptag[i]);
+			if (ppropvals->ppropval[ppropvals->count].pvalue != nullptr)
+				ppropvals->count++;
 		}
 		return ecSuccess;
 	case ZMG_STORE: {
