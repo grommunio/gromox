@@ -790,14 +790,14 @@ BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 	       *ptotal >= static_cast<uint64_t>(*qv_kb) * 1024;
 }
 
-static uint32_t common_util_get_store_message_count(
-	sqlite3 *psqlite, BOOL b_associated)
+static uint32_t cu_get_store_msgcount(sqlite3 *psqlite, unsigned int flags)
 {
-	char sql_string[64];
+	char sql_string[70];
 	
-	snprintf(sql_string, arsizeof(sql_string), b_associated ?
-	         "SELECT count(*) FROM messages WHERE is_associated=1" :
-	         "SELECT count(*) FROM messages WHERE is_associated=0");
+	snprintf(sql_string, std::size(sql_string),
+	         "SELECT COUNT(*) FROM messages WHERE is_associated=%u AND is_deleted=%u",
+	         !!(flags & TABLE_FLAG_ASSOCIATED),
+	         !!(flags & TABLE_FLAG_SOFTDELETES));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 	       sqlite3_column_int64(pstmt, 0);
@@ -1620,6 +1620,8 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 	case PR_CONTENT_COUNT:
 	case PR_ASSOC_CONTENT_COUNT:
 	case PR_INTERNET_ARTICLE_NUMBER:
+	case PR_DELETED_MSG_COUNT:
+	case PR_DELETED_ASSOC_MSG_COUNT:
 		v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
@@ -1630,8 +1632,10 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 	}
 	switch (tag) {
 	case PR_STORE_STATE: *v = common_util_get_store_state(db); break;
-	case PR_CONTENT_COUNT: *v = common_util_get_store_message_count(db, false); break;
-	case PR_ASSOC_CONTENT_COUNT: *v = common_util_get_store_message_count(db, TRUE); break;
+	case PR_CONTENT_COUNT: *v = cu_get_store_msgcount(db, 0); break;
+	case PR_ASSOC_CONTENT_COUNT: *v = cu_get_store_msgcount(db, TABLE_FLAG_ASSOCIATED); break;
+	case PR_DELETED_MSG_COUNT: *v = cu_get_store_msgcount(db, TABLE_FLAG_SOFTDELETES); break;
+	case PR_DELETED_ASSOC_MSG_COUNT: *v = cu_get_store_msgcount(db, TABLE_FLAG_ASSOCIATED | TABLE_FLAG_SOFTDELETES); break;
 	case PR_INTERNET_ARTICLE_NUMBER: *v = common_util_get_store_article_number(db); break;
 	}
 	return GP_ADV;
