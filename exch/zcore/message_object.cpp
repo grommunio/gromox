@@ -453,14 +453,14 @@ BOOL message_object::reload()
 	proptag_array_clear(pmessage->premoved_proptags);
 	pmessage->b_touched = FALSE;
 	pmessage->change_num = 0;
-	if (!pmessage->b_new) {
-		if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
-		    pmessage->instance_id, PidTagChangeNumber,
-		    reinterpret_cast<void **>(&pchange_num)) ||
-		    pchange_num == nullptr)
-			return FALSE;
-		pmessage->change_num = *pchange_num;
-	}
+	if (pmessage->b_new)
+		return TRUE;
+	if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
+	    pmessage->instance_id, PidTagChangeNumber,
+	    reinterpret_cast<void **>(&pchange_num)) ||
+	    pchange_num == nullptr)
+		return FALSE;
+	pmessage->change_num = *pchange_num;
 	return TRUE;
 }
 
