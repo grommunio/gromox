@@ -1649,6 +1649,9 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	case PR_FOLDER_CHILD_COUNT:
 	case PR_CONTENT_UNREAD:
 	case PR_FOLDER_TYPE:
+	case PR_MESSAGE_SIZE:
+	case PR_ASSOC_MESSAGE_SIZE:
+	case PR_NORMAL_MESSAGE_SIZE:
 		v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
@@ -1713,8 +1716,11 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	case PR_ASSOC_CONTENT_COUNT: *v = common_util_get_folder_count(db, id, TRUE); break;
 	case PR_CONTENT_UNREAD: *v = common_util_get_folder_unread_count(db, id); break;
 	case PR_FOLDER_CHILD_COUNT: *v = common_util_calculate_childcount(id, db); break;
+	case PR_MESSAGE_SIZE: *v = std::min(common_util_get_folder_message_size(db, id, TRUE, TRUE), static_cast<uint64_t>(INT32_MAX)); break;
 	case PR_MESSAGE_SIZE_EXTENDED: *w = common_util_get_folder_message_size(db, id, TRUE, TRUE); break;
+	case PR_ASSOC_MESSAGE_SIZE: *v = std::min(common_util_get_folder_message_size(db, id, false, TRUE), static_cast<uint64_t>(INT32_MAX)); break;
 	case PR_ASSOC_MESSAGE_SIZE_EXTENDED: *w = common_util_get_folder_message_size(db, id, false, TRUE); break;
+	case PR_NORMAL_MESSAGE_SIZE: *v = std::min(common_util_get_folder_message_size(db, id, TRUE, false), static_cast<uint64_t>(INT32_MAX)); break;
 	case PR_NORMAL_MESSAGE_SIZE_EXTENDED: *w = common_util_get_folder_message_size(db, id, TRUE, false); break;
 	case PidTagFolderId: *w = rop_util_nfid_to_eid(id); break;
 	case PidTagChangeNumber: *w = common_util_get_folder_changenum(db, id); break;
