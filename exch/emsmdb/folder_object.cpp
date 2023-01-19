@@ -170,42 +170,6 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		return exmdb_client::get_public_folder_unread_count(dir,
 		       rpc_info.username, pfolder->folder_id, v);
 	}
-	case PR_MESSAGE_SIZE: {
-		auto v = cu_alloc<uint32_t>();
-		*outvalue = v;
-		if (*outvalue == nullptr)
-			return FALSE;
-		if (!exmdb_client::get_folder_property(dir,
-		    0, pfolder->folder_id, PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
-		    pvalue == nullptr)
-			return FALSE;	
-		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
-		return TRUE;
-	}
-	case PR_ASSOC_MESSAGE_SIZE: {
-		auto v = cu_alloc<uint32_t>();
-		*outvalue = v;
-		if (*outvalue == nullptr)
-			return FALSE;
-		if (!exmdb_client::get_folder_property(dir,
-		    0, pfolder->folder_id, PR_ASSOC_MESSAGE_SIZE_EXTENDED,
-		    &pvalue) || pvalue == nullptr)
-			return FALSE;	
-		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
-		return TRUE;
-	}
-	case PR_NORMAL_MESSAGE_SIZE: {
-		auto v = cu_alloc<uint32_t>();
-		*outvalue = v;
-		if (*outvalue == nullptr)
-			return FALSE;
-		if (!exmdb_client::get_folder_property(dir,
-		    0, pfolder->folder_id, PR_NORMAL_MESSAGE_SIZE_EXTENDED,
-		    &pvalue) || pvalue == nullptr)
-			return FALSE;	
-		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
-		return TRUE;
-	}
 	case PR_ACCESS:
 		*outvalue = &pfolder->tag_access;
 		return TRUE;

@@ -790,14 +790,14 @@ BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 	       *ptotal >= static_cast<uint64_t>(*qv_kb) * 1024;
 }
 
-static uint32_t common_util_get_store_message_count(
-	sqlite3 *psqlite, BOOL b_associated)
+static uint32_t cu_get_store_msgcount(sqlite3 *psqlite, unsigned int flags)
 {
-	char sql_string[64];
+	char sql_string[70];
 	
-	snprintf(sql_string, arsizeof(sql_string), b_associated ?
-	         "SELECT count(*) FROM messages WHERE is_associated=1" :
-	         "SELECT count(*) FROM messages WHERE is_associated=0");
+	snprintf(sql_string, std::size(sql_string),
+	         "SELECT COUNT(*) FROM messages WHERE is_associated=%u AND is_deleted=%u",
+	         !!(flags & TABLE_FLAG_ASSOCIATED),
+	         !!(flags & TABLE_FLAG_SOFTDELETES));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 	       sqlite3_column_int64(pstmt, 0);
@@ -815,49 +815,56 @@ static uint32_t common_util_get_store_article_number(sqlite3 *psqlite)
 	       sqlite3_column_int64(pstmt, 0);
 }
 
-static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
-	uint64_t folder_id, BOOL b_associated)
+static uint32_t cu_folder_count(sqlite3 *psqlite, uint64_t folder_id,
+    unsigned int flags = 0)
 {
 	uint32_t folder_type;
-	char sql_string[256];
+	char sql_string[168];
+	const bool del   = flags & TABLE_FLAG_SOFTDELETES;
+	const bool assoc = flags & TABLE_FLAG_ASSOCIATED;
 	
 	if (common_util_get_folder_type(psqlite, folder_id, &folder_type) &&
 	    folder_type == FOLDER_SEARCH)
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-			" FROM messages JOIN search_result ON "
-			"search_result.folder_id=%llu AND "
-			"search_result.message_id=messages.message_id"
-			" AND messages.is_associated=%u",
-			LLU{folder_id}, !!b_associated);
+		snprintf(sql_string, std::size(sql_string),
+		         "SELECT COUNT(*) FROM messages AS m "
+		         "JOIN search_result AS s ON s.folder_id=%llu "
+		         "AND s.message_id=m.message_id AND m.is_deleted=%u "
+		         "AND m.is_associated=%u",
+		         LLU{folder_id}, del, assoc);
 	else
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-			" FROM messages WHERE parent_fid=%llu "
-			"AND is_deleted=0 AND is_associated=%u",
-			LLU{folder_id}, !!b_associated);
+		snprintf(sql_string, std::size(sql_string),
+		         "SELECT COUNT(*) FROM messages AS m "
+		         "WHERE parent_fid=%llu AND is_deleted=%u AND "
+		         "is_associated=%u",
+		         LLU{folder_id}, del, assoc);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 	       sqlite3_column_int64(pstmt, 0);
 }
 
-uint32_t common_util_get_folder_unread_count(
-	sqlite3 *psqlite, uint64_t folder_id)
+uint32_t cu_folder_unread_count(sqlite3 *psqlite, uint64_t folder_id,
+    unsigned int flags)
 {
 	uint32_t folder_type;
-	char sql_string[220];
+	char sql_string[192];
+	const bool del   = flags & TABLE_FLAG_SOFTDELETES;
+	const bool assoc = flags & TABLE_FLAG_ASSOCIATED;
 	
 	if (exmdb_server::is_private()) {
 		if (common_util_get_folder_type(psqlite, folder_id, &folder_type) &&
 		    folder_type == FOLDER_SEARCH)
-			gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
-				" FROM messages JOIN search_result ON "
-				"search_result.folder_id=%llu AND "
-				"search_result.message_id=messages.message_id AND "
-				"messages.read_state=0 AND messages.is_associated=0",
-				LLU{folder_id});
+			snprintf(sql_string, std::size(sql_string),
+			         "SELECT COUNT(*) FROM messages AS m "
+			         "JOIN search_result AS s ON s.folder_id=%llu "
+			         "AND s.message_id=m.message_id AND m.read_state=0 "
+			         "AND m.is_deleted=%u AND m.is_associated=%u",
+			         LLU{folder_id}, del, assoc);
 		else
-			gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
-				" FROM messages WHERE parent_fid=%llu AND "
-				"read_state=0 AND is_associated=0", LLU{folder_id});
+			snprintf(sql_string, std::size(sql_string),
+			         "SELECT COUNT(*) FROM messages AS m "
+			         "WHERE parent_fid=%llu AND read_state=0 "
+			         "AND is_deleted=%u AND is_associated=%u",
+			         LLU{folder_id}, del, assoc);
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 		       sqlite3_column_int64(pstmt, 0);
@@ -865,20 +872,20 @@ uint32_t common_util_get_folder_unread_count(
 	auto username = exmdb_pf_read_per_user ? exmdb_server::get_public_username() : "";
 	if (username == nullptr)
 		return 0;
-	gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM messages WHERE"
-				" parent_fid=%llu AND is_deleted=0 AND is_associated=0",
-				LLU{folder_id});
+	snprintf(sql_string, std::size(sql_string),
+	         "SELECT COUNT(*) FROM messages AS m WHERE parent_fid=%llu "
+	         "AND is_deleted=%u AND is_associated=%u",
+	         LLU{folder_id}, del, assoc);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
 	auto count = pstmt.col_uint64(0);
 	pstmt.finalize();
-	gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM read_states"
-				" JOIN messages ON read_states.username=?"
-				" AND messages.parent_fid=%llu AND "
-				"messages.message_id=read_states.message_id"
-				" AND messages.is_deleted=0"
-				" AND messages.is_associated=0", LLU{folder_id});
+	snprintf(sql_string, std::size(sql_string),
+	         "SELECT COUNT(*) FROM read_states AS rs JOIN messages AS m "
+	         "ON rs.username=? AND m.parent_fid=%llu "
+	         "AND m.message_id=rs.message_id AND m.is_deleted=%u "
+	         "AND m.is_associated=%u", LLU{folder_id}, del, assoc);
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return 0;
@@ -1614,58 +1621,66 @@ enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
 
 static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 {
+	uint32_t *v = nullptr;
 	switch (tag) {
-	case PR_STORE_STATE: {
-		auto v = cu_alloc<uint32_t>();
+	case PR_STORE_STATE:
+	case PR_CONTENT_COUNT:
+	case PR_ASSOC_CONTENT_COUNT:
+	case PR_INTERNET_ARTICLE_NUMBER:
+	case PR_DELETED_MSG_COUNT:
+	case PR_DELETED_ASSOC_MSG_COUNT:
+		v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = common_util_get_store_state(db);
-		return GP_ADV;
+		break;
+	default:
+		return GP_UNHANDLED;
 	}
-	case PR_CONTENT_COUNT: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_store_message_count(db, false);
-		return GP_ADV;
+	switch (tag) {
+	case PR_STORE_STATE: *v = common_util_get_store_state(db); break;
+	case PR_CONTENT_COUNT: *v = cu_get_store_msgcount(db, 0); break;
+	case PR_ASSOC_CONTENT_COUNT: *v = cu_get_store_msgcount(db, TABLE_FLAG_ASSOCIATED); break;
+	case PR_DELETED_MSG_COUNT: *v = cu_get_store_msgcount(db, TABLE_FLAG_SOFTDELETES); break;
+	case PR_DELETED_ASSOC_MSG_COUNT: *v = cu_get_store_msgcount(db, TABLE_FLAG_ASSOCIATED | TABLE_FLAG_SOFTDELETES); break;
+	case PR_INTERNET_ARTICLE_NUMBER: *v = common_util_get_store_article_number(db); break;
 	}
-	case PR_ASSOC_CONTENT_COUNT: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_store_message_count(db, TRUE);
-		return GP_ADV;
-	}
-	case PR_INTERNET_ARTICLE_NUMBER: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_store_article_number(db);
-		return GP_ADV;
-	}
-	}
-	return GP_UNHANDLED;
+	return GP_ADV;
 }
 
 static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
     sqlite3 *db, uint64_t id)
 {
+	uint32_t *v = nullptr;
+	uint64_t *w = nullptr;
 	switch (tag) {
-	case PR_ENTRYID:
-		pv.pvalue = cu_fid_to_entryid(db, id);
-		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PidTagFolderId: {
-		auto v = cu_alloc<uint64_t>();
+	case PR_FOLDER_FLAGS:
+	case PR_CONTENT_COUNT:
+	case PR_ASSOC_CONTENT_COUNT:
+	case PR_FOLDER_CHILD_COUNT:
+	case PR_CONTENT_UNREAD:
+	case PR_FOLDER_TYPE:
+	case PR_MESSAGE_SIZE:
+	case PR_ASSOC_MESSAGE_SIZE:
+	case PR_NORMAL_MESSAGE_SIZE:
+		v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = rop_util_nfid_to_eid(id);
-		return GP_ADV;
-	}
+		break;
+	case PidTagFolderId:
+	case PidTagChangeNumber:
+	case PR_MESSAGE_SIZE_EXTENDED:
+	case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
+	case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
+		w = cu_alloc<uint64_t>();
+		pv.pvalue = w;
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		break;
+	case PR_ENTRYID:
+		pv.pvalue = cu_fid_to_entryid(db, id);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	case PidTagParentFolderId: {
 		auto v = cu_alloc<uint64_t>();
 		pv.pvalue = v;
@@ -1684,22 +1699,6 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = cu_fid_to_entryid(db, tmp_id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
-	case PidTagChangeNumber: {
-		auto v = cu_alloc<uint64_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_changenum(db, id);
-		return GP_ADV;
-	}
-	case PR_FOLDER_FLAGS: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_flags(db, id);
-		return GP_ADV;
-	}
 	case PR_SUBFOLDERS: {
 		auto v = cu_alloc<uint8_t>();
 		pv.pvalue = v;
@@ -1707,44 +1706,6 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 			return GP_ERR;
 		*v = !!common_util_check_subfolders(db, id);
 		return GP_ADV;
-	}
-	case PR_CONTENT_COUNT: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_count(db, id, false);
-		return GP_ADV;
-	}
-	case PR_ASSOC_CONTENT_COUNT: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_count(db, id, TRUE);
-		return GP_ADV;
-	}
-	case PR_FOLDER_CHILD_COUNT: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_calculate_childcount(id, db);
-		return GP_ADV;
-	}
-	case PR_CONTENT_UNREAD: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_unread_count(db, id);
-		return GP_ADV;
-	}
-	case PR_FOLDER_TYPE: {
-		auto v = cu_alloc<uint32_t>();
-		pv.pvalue = v;
-		return pv.pvalue != nullptr && common_util_get_folder_type(db,
-		       id, v) ? GP_ADV : GP_ERR;
 	}
 	case PR_HAS_RULES: {
 		auto v = cu_alloc<uint8_t>();
@@ -1757,32 +1718,26 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	case PR_FOLDER_PATHNAME:
 		pv.pvalue = common_util_calculate_folder_path(id, db);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PR_MESSAGE_SIZE_EXTENDED: {
-		auto v = cu_alloc<uint64_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_message_size(db, id, TRUE, TRUE);
-		return GP_ADV;
+	default:
+		return GP_UNHANDLED;
 	}
-	case PR_ASSOC_MESSAGE_SIZE_EXTENDED: {
-		auto v = cu_alloc<uint64_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_message_size(db, id, false, TRUE);
-		return GP_ADV;
+	switch (tag) {
+	case PR_FOLDER_FLAGS: *v = common_util_get_folder_flags(db, id); break;
+	case PR_CONTENT_COUNT: *v = cu_folder_count(db, id); break;
+	case PR_ASSOC_CONTENT_COUNT: *v = cu_folder_count(db, id, TABLE_FLAG_ASSOCIATED); break;
+	case PR_CONTENT_UNREAD: *v = cu_folder_unread_count(db, id); break;
+	case PR_FOLDER_CHILD_COUNT: *v = common_util_calculate_childcount(id, db); break;
+	case PR_MESSAGE_SIZE: *v = std::min(common_util_get_folder_message_size(db, id, TRUE, TRUE), static_cast<uint64_t>(INT32_MAX)); break;
+	case PR_MESSAGE_SIZE_EXTENDED: *w = common_util_get_folder_message_size(db, id, TRUE, TRUE); break;
+	case PR_ASSOC_MESSAGE_SIZE: *v = std::min(common_util_get_folder_message_size(db, id, false, TRUE), static_cast<uint64_t>(INT32_MAX)); break;
+	case PR_ASSOC_MESSAGE_SIZE_EXTENDED: *w = common_util_get_folder_message_size(db, id, false, TRUE); break;
+	case PR_NORMAL_MESSAGE_SIZE: *v = std::min(common_util_get_folder_message_size(db, id, TRUE, false), static_cast<uint64_t>(INT32_MAX)); break;
+	case PR_NORMAL_MESSAGE_SIZE_EXTENDED: *w = common_util_get_folder_message_size(db, id, TRUE, false); break;
+	case PidTagFolderId: *w = rop_util_nfid_to_eid(id); break;
+	case PidTagChangeNumber: *w = common_util_get_folder_changenum(db, id); break;
+	case PR_FOLDER_TYPE: return common_util_get_folder_type(db, id, v) ? GP_ADV : GP_ERR;
 	}
-	case PR_NORMAL_MESSAGE_SIZE_EXTENDED: {
-		auto v = cu_alloc<uint64_t>();
-		pv.pvalue = v;
-		if (pv.pvalue == nullptr)
-			return GP_ERR;
-		*v = common_util_get_folder_message_size(db, id, TRUE, false);
-		return GP_ADV;
-	}
-	}
-	return GP_UNHANDLED;
+	return GP_ADV;
 }
 
 static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,

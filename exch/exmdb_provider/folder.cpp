@@ -2501,8 +2501,7 @@ BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	exmdb_server::set_public_username(username);
-	*pcount = common_util_get_folder_unread_count(
-		pdb->psqlite, rop_util_get_gc_value(folder_id));
+	*pcount = cu_folder_unread_count(pdb->psqlite, rop_util_get_gc_value(folder_id));
 	exmdb_server::set_public_username(nullptr);
 	return TRUE;
 	
