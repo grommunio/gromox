@@ -4820,22 +4820,13 @@ uint32_t zs_importreadstates(GUID hsession,
 		if (flag != nullptr && *flag != 0)
 			continue;
 		flag = tmp_propvals.get<uint8_t>(PR_READ);
-		if (flag == nullptr || *flag == 0) {
-			if (!mark_as_read)
-				continue;
-		} else {
-			if (mark_as_read)
-				continue;
-		}
-		if (pstore->b_private) {
-			if (!exmdb_client::set_message_read_state(pstore->get_dir(),
-			    nullptr, message_id, mark_as_read, &read_cn))
-				return ecError;
-		} else {
-			if (!exmdb_client::set_message_read_state(pstore->get_dir(),
-			    pinfo->get_username(), message_id, mark_as_read, &read_cn))
-				return ecError;
-		}
+		if ((flag != nullptr && *flag != 0) == mark_as_read)
+			/* Already set to the value we want it to be */
+			continue;
+		if (!exmdb_client::set_message_read_state(pstore->get_dir(),
+		    pstore->b_private ? nullptr : pinfo->get_username(),
+		    message_id, mark_as_read, &read_cn))
+			return ecError;
 		pctx->pstate->pread->append(read_cn);
 	}
 	return ecSuccess;
