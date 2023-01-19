@@ -4,6 +4,7 @@
 #define DECLARE_SVC_API_STATIC
 #include <cassert>
 #include <cerrno>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
