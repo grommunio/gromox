@@ -405,12 +405,10 @@ ec_error_t message_object::save()
 		}
 	}
 	for (i=0; i<pmessage->premoved_proptags->count; i++) {
-		if (!pgpinfo->get_partial_index(pmessage->premoved_proptags->pproptag[i], &tmp_index)) {
+		if (!pgpinfo->get_partial_index(pmessage->premoved_proptags->pproptag[i], &tmp_index))
 			goto SAVE_FULL_CHANGE;
-		} else {
-			if (!proptag_array_append(pindices.get(), tmp_index))
-				return ecRpcFailed;
-		}
+		else if (!proptag_array_append(pindices.get(), tmp_index))
+			return ecRpcFailed;
 	}
 	if (!exmdb_client::save_change_indices(
 		dir, pmessage->message_id, pmessage->change_num,
@@ -704,10 +702,7 @@ static BOOL msgo_is_readonly_prop(const message_object *pmessage,
 			return FALSE;
 		return TRUE;
 	case PR_READ:
-		if (NULL == pmessage->pembedding) {
-			return FALSE;
-		}
-		return TRUE;
+		return pmessage->pembedding != nullptr ? TRUE : false;
 	}
 	return FALSE;
 }
@@ -776,10 +771,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		return TRUE;
 	case PR_STORE_ENTRYID:
 		*ppvalue = common_util_to_store_entryid(pmessage->pstore);
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-		return TRUE;
+		return *ppvalue != nullptr ? TRUE : false;
 	}
 	return FALSE;
 }
@@ -1020,7 +1012,6 @@ BOOL message_object::copy_to(message_object *pmessage_src,
     const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force, BOOL *pb_cycle)
 {
 	auto pmessage = this;
-	int i;
 	PROPTAG_ARRAY proptags;
 	MESSAGE_CONTENT msgctnt;
 	PROBLEM_ARRAY tmp_problems;
@@ -1035,7 +1026,7 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 		return FALSE;
 	for (auto t : trimtags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
-	i = 0;
+	size_t i = 0;
 	while (i < msgctnt.proplist.count) {
 		if (pexcluded_proptags->has(msgctnt.proplist.ppropval[i].proptag)) {
 			common_util_remove_propvals(&msgctnt.proplist,
@@ -1053,10 +1044,9 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 		return FALSE;	
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	for (i=0; i<proptags.count; i++) {
+	for (i = 0; i < proptags.count; ++i)
 		proptag_array_append(pmessage->pchanged_proptags,
 			proptags.pproptag[i]);
-	}
 	return TRUE;
 }
 

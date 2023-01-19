@@ -777,10 +777,8 @@ uint32_t zs_uinfo(const char *username, BINARY *pentryid,
 	pentryid->cb = ext_push.m_offset;
 	*ppdisplay_name = common_util_dup(display_name);
 	*ppx500dn = common_util_dup(x500dn);
-	if (NULL == *ppdisplay_name || NULL == *ppx500dn) {
-		return ecError;
-	}
-	return ecSuccess;
+	return *ppdisplay_name == nullptr || *ppx500dn == nullptr ?
+	       ecError : ecSuccess;
 }
 
 uint32_t zs_unloadobject(GUID hsession, uint32_t hobject)
@@ -1365,7 +1363,6 @@ uint32_t zs_modifypermissions(GUID hsession,
 uint32_t zs_modifyrules(GUID hsession,
 	uint32_t hfolder, uint32_t flags, const RULE_LIST *plist)
 {
-	int i;
 	uint8_t mapi_type;
 	
 	auto pinfo = zs_query_session(hsession);
@@ -1376,12 +1373,10 @@ uint32_t zs_modifyrules(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	if (MODIFY_RULES_FLAG_REPLACE & flags) {
-		for (i=0; i<plist->count; i++) {
+	if (flags & MODIFY_RULES_FLAG_REPLACE)
+		for (size_t i = 0; i < plist->count; ++i)
 			if (plist->prule[i].flags != ROW_ADD)
 				return ecInvalidParam;
-		}
-	}
 	return pfolder->updaterules(flags, plist) ? ecSuccess : ecError;
 }
 
@@ -2303,13 +2298,9 @@ uint32_t zs_copyfolder(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore1 = pdst_folder->pstore;
-	if (pstore->b_private) {
-		if (rop_util_get_gc_value(folder_id) == PRIVATE_FID_ROOT)
-			return ecAccessDenied;
-	} else {
-		if (rop_util_get_gc_value(folder_id) == PUBLIC_FID_ROOT)
-			return ecAccessDenied;
-	}
+	auto fidtest = pstore->b_private ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT;
+	if (rop_util_get_gc_value(folder_id) == fidtest)
+		return ecAccessDenied;
 	BOOL b_guest = false;
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
@@ -3582,7 +3573,6 @@ uint32_t zs_deleteattachment(GUID hsession,
 uint32_t zs_setpropvals(GUID hsession, uint32_t hobject,
     TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
 	uint8_t mapi_type;
 	uint32_t permission;
 	
@@ -3594,10 +3584,9 @@ uint32_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		return ecNullObject;
 	switch (mapi_type) {
 	case ZMG_PROFPROPERTY:
-		for (i=0; i<ppropvals->count; i++) {
+		for (size_t i = 0; i < ppropvals->count; ++i)
 			if (static_cast<TPROPVAL_ARRAY *>(pobject)->set(ppropvals->ppropval[i]) != 0)
 				return ecError;
-		}
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
 	case ZMG_STORE: {
@@ -3749,7 +3738,6 @@ uint32_t zs_getpropvals(GUID hsession,
 uint32_t zs_deletepropvals(GUID hsession,
 	uint32_t hobject, const PROPTAG_ARRAY *pproptags)
 {
-	int i;
 	uint8_t mapi_type;
 	uint32_t permission;
 	
@@ -3761,9 +3749,8 @@ uint32_t zs_deletepropvals(GUID hsession,
 		return ecNullObject;
 	switch (mapi_type) {
 	case ZMG_PROFPROPERTY:
-		for (i=0; i<pproptags->count; i++) {
+		for (size_t i = 0; i < pproptags->count; ++i)
 			static_cast<TPROPVAL_ARRAY *>(pobject)->erase(pproptags->pproptag[i]);
-		}
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
 	case ZMG_STORE: {
@@ -4420,7 +4407,6 @@ uint32_t zs_importmessage(GUID hsession, uint32_t hctx,
 uint32_t zs_importfolder(GUID hsession,
 	uint32_t hctx, const TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
 	XID tmp_xid;
 	BOOL b_exist;
 	BINARY *pbin;
@@ -4565,9 +4551,8 @@ uint32_t zs_importfolder(GUID hsession,
 		tmp_propvals.ppropval[4].proptag = PidTagChangeNumber;
 		tmp_propvals.ppropval[4].pvalue = &change_num;
 		tmp_propvals.count = 5;
-		for (i=0; i<ppropvals->count; i++) {
+		for (size_t i = 0; i < ppropvals->count; ++i)
 			tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
-		}
 		if (!tmp_propvals.has(PR_FOLDER_TYPE)) {
 			tmp_type = FOLDER_GENERIC;
 			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
@@ -4631,9 +4616,8 @@ uint32_t zs_importfolder(GUID hsession,
 	tmp_propvals.ppropval[2].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[2].pvalue = &change_num;
 	tmp_propvals.count = 3;
-	for (i=0; i<ppropvals->count; i++) {
+	for (size_t i = 0; i < ppropvals->count; ++i)
 		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
-	}
 	if (!exmdb_client::set_folder_properties(pstore->get_dir(),
 	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
 		return ecError;
