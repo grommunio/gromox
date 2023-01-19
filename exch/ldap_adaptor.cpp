@@ -254,7 +254,7 @@ BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_resu
 	}
 	auto conn = make_conn(m.ldap_uri.c_str(), m.ldap_binddn.c_str(),
 	            m.ldap_bindpw.c_str(), m.ldap_start_tls, true);
-	auto attr = m.ldap_mail_attr.empty() ? g_mail_attr.c_str() : g_mail_attr.c_str();
+	auto attr = m.ldap_mail_attr.empty() ? g_mail_attr.c_str() : m.ldap_mail_attr.c_str();
 	return ldaplogin_host(conn, conn, attr, user, pass, m.ldap_basedn);
 }
 
