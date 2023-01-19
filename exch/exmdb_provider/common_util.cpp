@@ -815,49 +815,56 @@ static uint32_t common_util_get_store_article_number(sqlite3 *psqlite)
 	       sqlite3_column_int64(pstmt, 0);
 }
 
-static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
-	uint64_t folder_id, BOOL b_associated)
+static uint32_t cu_folder_count(sqlite3 *psqlite, uint64_t folder_id,
+    unsigned int flags = 0)
 {
 	uint32_t folder_type;
-	char sql_string[256];
+	char sql_string[168];
+	const bool del   = flags & TABLE_FLAG_SOFTDELETES;
+	const bool assoc = flags & TABLE_FLAG_ASSOCIATED;
 	
 	if (common_util_get_folder_type(psqlite, folder_id, &folder_type) &&
 	    folder_type == FOLDER_SEARCH)
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-			" FROM messages JOIN search_result ON "
-			"search_result.folder_id=%llu AND "
-			"search_result.message_id=messages.message_id"
-			" AND messages.is_associated=%u",
-			LLU{folder_id}, !!b_associated);
+		snprintf(sql_string, std::size(sql_string),
+		         "SELECT COUNT(*) FROM messages AS m "
+		         "JOIN search_result AS s ON s.folder_id=%llu "
+		         "AND s.message_id=m.message_id AND m.is_deleted=%u "
+		         "AND m.is_associated=%u",
+		         LLU{folder_id}, del, assoc);
 	else
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-			" FROM messages WHERE parent_fid=%llu "
-			"AND is_deleted=0 AND is_associated=%u",
-			LLU{folder_id}, !!b_associated);
+		snprintf(sql_string, std::size(sql_string),
+		         "SELECT COUNT(*) FROM messages AS m "
+		         "WHERE parent_fid=%llu AND is_deleted=%u AND "
+		         "is_associated=%u",
+		         LLU{folder_id}, del, assoc);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 	       sqlite3_column_int64(pstmt, 0);
 }
 
-uint32_t common_util_get_folder_unread_count(
-	sqlite3 *psqlite, uint64_t folder_id)
+uint32_t cu_folder_unread_count(sqlite3 *psqlite, uint64_t folder_id,
+    unsigned int flags)
 {
 	uint32_t folder_type;
-	char sql_string[220];
+	char sql_string[192];
+	const bool del   = flags & TABLE_FLAG_SOFTDELETES;
+	const bool assoc = flags & TABLE_FLAG_ASSOCIATED;
 	
 	if (exmdb_server::is_private()) {
 		if (common_util_get_folder_type(psqlite, folder_id, &folder_type) &&
 		    folder_type == FOLDER_SEARCH)
-			gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
-				" FROM messages JOIN search_result ON "
-				"search_result.folder_id=%llu AND "
-				"search_result.message_id=messages.message_id AND "
-				"messages.read_state=0 AND messages.is_associated=0",
-				LLU{folder_id});
+			snprintf(sql_string, std::size(sql_string),
+			         "SELECT COUNT(*) FROM messages AS m "
+			         "JOIN search_result AS s ON s.folder_id=%llu "
+			         "AND s.message_id=m.message_id AND m.read_state=0 "
+			         "AND m.is_deleted=%u AND m.is_associated=%u",
+			         LLU{folder_id}, del, assoc);
 		else
-			gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
-				" FROM messages WHERE parent_fid=%llu AND "
-				"read_state=0 AND is_associated=0", LLU{folder_id});
+			snprintf(sql_string, std::size(sql_string),
+			         "SELECT COUNT(*) FROM messages AS m "
+			         "WHERE parent_fid=%llu AND read_state=0 "
+			         "AND is_deleted=%u AND is_associated=%u",
+			         LLU{folder_id}, del, assoc);
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 		       sqlite3_column_int64(pstmt, 0);
@@ -865,20 +872,20 @@ uint32_t common_util_get_folder_unread_count(
 	auto username = exmdb_pf_read_per_user ? exmdb_server::get_public_username() : "";
 	if (username == nullptr)
 		return 0;
-	gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM messages WHERE"
-				" parent_fid=%llu AND is_deleted=0 AND is_associated=0",
-				LLU{folder_id});
+	snprintf(sql_string, std::size(sql_string),
+	         "SELECT COUNT(*) FROM messages AS m WHERE parent_fid=%llu "
+	         "AND is_deleted=%u AND is_associated=%u",
+	         LLU{folder_id}, del, assoc);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
 	auto count = pstmt.col_uint64(0);
 	pstmt.finalize();
-	gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM read_states"
-				" JOIN messages ON read_states.username=?"
-				" AND messages.parent_fid=%llu AND "
-				"messages.message_id=read_states.message_id"
-				" AND messages.is_deleted=0"
-				" AND messages.is_associated=0", LLU{folder_id});
+	snprintf(sql_string, std::size(sql_string),
+	         "SELECT COUNT(*) FROM read_states AS rs JOIN messages AS m "
+	         "ON rs.username=? AND m.parent_fid=%llu "
+	         "AND m.message_id=rs.message_id AND m.is_deleted=%u "
+	         "AND m.is_associated=%u", LLU{folder_id}, del, assoc);
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return 0;
@@ -1716,9 +1723,9 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	}
 	switch (tag) {
 	case PR_FOLDER_FLAGS: *v = common_util_get_folder_flags(db, id); break;
-	case PR_CONTENT_COUNT: *v = common_util_get_folder_count(db, id, false); break;
-	case PR_ASSOC_CONTENT_COUNT: *v = common_util_get_folder_count(db, id, TRUE); break;
-	case PR_CONTENT_UNREAD: *v = common_util_get_folder_unread_count(db, id); break;
+	case PR_CONTENT_COUNT: *v = cu_folder_count(db, id); break;
+	case PR_ASSOC_CONTENT_COUNT: *v = cu_folder_count(db, id, TABLE_FLAG_ASSOCIATED); break;
+	case PR_CONTENT_UNREAD: *v = cu_folder_unread_count(db, id); break;
 	case PR_FOLDER_CHILD_COUNT: *v = common_util_calculate_childcount(id, db); break;
 	case PR_MESSAGE_SIZE: *v = std::min(common_util_get_folder_message_size(db, id, TRUE, TRUE), static_cast<uint64_t>(INT32_MAX)); break;
 	case PR_MESSAGE_SIZE_EXTENDED: *w = common_util_get_folder_message_size(db, id, TRUE, TRUE); break;
