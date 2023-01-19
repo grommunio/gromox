@@ -71,7 +71,7 @@ E(get_id_from_homedir)
 E(get_mime_pool)
 E(get_handle)
 #undef E
-decltype(cu_send_mail) cu_send_mail;
+decltype(ems_send_mail) ems_send_mail;
 
 static BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
 static BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum display_type *);
@@ -179,7 +179,7 @@ void common_util_pass_service(int service_id, void *func)
 	E(SERVICE_ID_GET_DOMAIN_IDS, common_util_get_domain_ids);
 	E(SERVICE_ID_GET_ID_FROM_MAILDIR, common_util_get_id_from_maildir);
 	E(SERVICE_ID_GET_ID_FROM_HOMEDIR, common_util_get_id_from_homedir);
-	E(SERVICE_ID_SEND_MAIL, cu_send_mail);
+	E(SERVICE_ID_SEND_MAIL, ems_send_mail);
 	E(SERVICE_ID_GET_MIME_POOL, common_util_get_mime_pool);
 	E(SERVICE_ID_GET_HANDLE, common_util_get_handle);
 	}

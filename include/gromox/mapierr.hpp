@@ -311,11 +311,11 @@ enum ec_error_t {
 	// EncryptionPermanentError = 0x00000b16,
 	// InvalidInternetMessageHeaderName = 0x00000b17,
 	// SyncStateTooOld = 0x00000b19,
-	// MAPI_W_NO_SERVICE = 0x00040203,
+	MAPI_W_NO_SERVICE = 0x00040203,
 	ecWarnWithErrors = 0x00040380, /* MAPI_W_ERRORS_RETURNED */
 	// ecWarnPositionChanged = 0x00040481, /* MAPI_W_POSITION_CHANGED */
 	// ecWarnApproxCount = 0x00040482, /* MAPI_W_APPROX_COUNT */
-	// MAPI_W_CANCEL_MESSAGE = 0x00040580,
+	MAPI_W_CANCEL_MESSAGE = 0x00040580,
 	// ecPartialCompletion = 0x00040680, /* MAPI_W_PARTIAL_COMPLETION */
 	// MapiSecurityRequiredLow = 0x00040681,
 	// MapiSecuirtyRequiredMedium = 0x00040682,

@@ -233,33 +233,27 @@ bool MAIL::serialize(STREAM *pstream) const
 	return static_cast<const MIME *>(pnode->pdata)->serialize(pstream);
 }
 
-/*
- *	serialize the mail object into file
- *	@param
- *		pmail [in]		indicate the mail object
- *		fd				file descriptor
- *	@return
- *		TRUE			OK
- *		FALSE			fail
- */
+bool MAIL::emit(MIME::write_func xw, void *fd) const
+{
+	auto nd = tree.get_root();
+	if (nd == nullptr)
+		return false;
+	return static_cast<const MIME *>(nd->pdata)->emit(xw, fd);
+}
+
 bool MAIL::to_file(int fd) const
 {
 	auto pmail = this;
 	auto pnode = pmail->tree.get_root();
 	if (pnode == nullptr)
 		return false;
-	return static_cast<const MIME *>(pnode->pdata)->to_file(fd);
+	auto f = +[](void *obj, const void *buf, size_t z) {
+	         	return ::write(reinterpret_cast<intptr_t>(obj), buf, z);
+	         };
+	return static_cast<const MIME *>(pnode->pdata)->emit(f,
+	       reinterpret_cast<void *>(static_cast<intptr_t>(fd)));
 }
 
-/*
- *	serialize the mail object into ssl
- *	@param
- *		pmail [in]		indicate the mail object
- *		ssl [in]		SSL object
- *	@return
- *		TRUE			OK
- *		FALSE			fail
- */
 bool MAIL::to_tls(SSL *ssl) const
 {
 	auto pmail = this;
@@ -270,7 +264,10 @@ bool MAIL::to_tls(SSL *ssl) const
 	auto pnode = pmail->tree.get_root();
 	if (pnode == nullptr)
 		return false;
-	return static_cast<const MIME *>(pnode->pdata)->to_tls(ssl);
+	auto f = +[](void *obj, const void *buf, size_t z) -> ssize_t {
+	         	return SSL_write(static_cast<SSL *>(obj), buf, z);
+	         };
+	return static_cast<const MIME *>(pnode->pdata)->emit(f, ssl);
 }
 
 /*

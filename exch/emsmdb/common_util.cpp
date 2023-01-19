@@ -26,6 +26,7 @@
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mime_pool.hpp>
 #include <gromox/oxcmail.hpp>
@@ -63,6 +64,7 @@ static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static char g_submit_command[1024];
 static alloc_limiter<file_block> g_file_allocator{"emsmdb.g_file_allocator.d"};
+static constexpr char EMSMDB_UA[] = PACKAGE_NAME "-emsmdb " PACKAGE_VERSION;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
 E(get_maildir)
@@ -1464,6 +1466,12 @@ BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions)
 	return TRUE;
 }
 
+ec_error_t ems_send_mail(MAIL *m, const char *sender, const std::vector<std::string> &rcpts)
+{
+	m->set_header("X-Mailer", EMSMDB_UA);
+	return cu_send_mail(*m, "smtp", g_smtp_ip, g_smtp_port, sender, rcpts);
+}
+
 void common_util_notify_receipt(const char *username, int type,
     MESSAGE_CONTENT *pbrief) try
 {
@@ -1477,8 +1485,9 @@ void common_util_notify_receipt(const char *username, int type,
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	if (!emsmdb_bouncer_make(username, pbrief, bounce_type, &imail))
 		return;
-	if (cu_send_mail(&imail, username, rcpt_list) != ecSuccess)
-		/* ignore */;
+	auto ret = ems_send_mail(&imail, username, rcpt_list);
+	if (ret != ecSuccess)
+		mlog2(LV_ERR, "E-1189: ems_send_mail: %s\n", mapi_strerror(ret));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2035: ENOMEM");
 }
@@ -1558,223 +1567,6 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	}
 	return exmdb_client::save_change_indices(dir, message_id,
 	       change_num, pindices.get(), pungroup_proptags.get());
-}
-
-static BOOL common_util_send_command(int sockd,
-	const char *command, int command_len)
-{
-	int write_len;
-
-	write_len = write(sockd, command, command_len);
-    if (write_len != command_len) {
-		return FALSE;
-	}
-	return TRUE;
-}
-
-static int common_util_get_response(int sockd,
-	char *response, int response_len, BOOL expect_3xx)
-{
-	int read_len;
-
-	memset(response, 0, response_len);
-	read_len = read(sockd, response, response_len);
-	if (-1 == read_len || 0 == read_len) {
-		return SMTP_TIME_OUT;
-	}
-	if ('\n' == response[read_len - 1] && '\r' == response[read_len - 2]){
-		/* remove /r/n at the end of response */
-		read_len -= 2;
-	}
-	response[read_len] = '\0';
-	if (!expect_3xx && response[0] == '2' &&
-	    HX_isdigit(response[1]) && HX_isdigit(response[2]))
-		return SMTP_SEND_OK;
-	else if (expect_3xx && response[0] == '3' &&
-	    HX_isdigit(response[1]) && HX_isdigit(response[2]))
-		return SMTP_SEND_OK;
-	else if (response[0] == '4')
-		return SMTP_TEMP_ERROR;
-	else if (response[0] == '5')
-		return SMTP_PERMANENT_ERROR;
-	return SMTP_UNKOWN_RESPONSE;
-}
-
-ec_error_t cu_send_mail(MAIL *pmail, const char *sender,
-    const std::vector<std::string> &rcpt_list)
-{
-	int res_val;
-	int command_len;
-	char last_command[1024];
-	char last_response[1024];
-	
-	MAIL dot_encoded(pmail->pmime_pool);
-	if (pmail->check_dot()) {
-		if (!pmail->transfer_dot(&dot_encoded, true))
-			return ecError;
-		pmail = &dot_encoded;
-	}
-	int sockd = gx_inet_connect(g_smtp_ip, g_smtp_port, 0);
-	if (sockd < 0) {
-		mlog2(LV_ERR, "Cannot connect to SMTP server [%s]:%hu: %s",
-			g_smtp_ip, g_smtp_port, strerror(-sockd));
-		return ecNetwork;
-	}
-	/* read welcome information of MTA */
-	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
-	switch (res_val) {
-	case SMTP_TIME_OUT:
-		close(sockd);
-		mlog2(LV_ERR, "Timeout with SMTP server [%s]:%hu",
-			g_smtp_ip, g_smtp_port);
-		return ecNetwork;
-	case SMTP_PERMANENT_ERROR:
-	case SMTP_TEMP_ERROR:
-	case SMTP_UNKOWN_RESPONSE:
-        /* send quit command to server */
-        common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		mlog2(LV_ERR, "Failed to connect to SMTP. "
-			"Server response is \"%s\"", last_response);
-		return ecNetwork;
-	}
-
-	/* send helo xxx to server */
-	snprintf(last_command, 1024, "helo %s\r\n", get_host_ID());
-	command_len = strlen(last_command);
-	if (!common_util_send_command(sockd, last_command, command_len)) {
-		close(sockd);
-		mlog2(LV_ERR, "Failed to send \"HELO\" command");
-		return ecNetwork;
-	}
-	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
-	switch (res_val) {
-	case SMTP_TIME_OUT:
-		close(sockd);
-		mlog2(LV_ERR, "Timeout with SMTP "
-			"server [%s]:%hu", g_smtp_ip, g_smtp_port);
-		return ecNetwork;
-	case SMTP_PERMANENT_ERROR:
-	case SMTP_TEMP_ERROR:
-	case SMTP_UNKOWN_RESPONSE:
-		/* send quit command to server */
-		common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		mlog2(LV_ERR, "SMTP server responded with \"%s\" "
-			"after sending \"HELO\" command", last_response);
-		return ecNetwork;
-	}
-
-	command_len = sprintf(last_command, "mail from:<%s>\r\n", sender);
-	if (!common_util_send_command(sockd, last_command, command_len)) {
-		close(sockd);
-		mlog2(LV_ERR, "Failed to send \"MAIL FROM\" command");
-		return ecNetwork;
-	}
-	/* read mail from response information */
-	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
-	switch (res_val) {
-	case SMTP_TIME_OUT:
-		close(sockd);
-		mlog2(LV_ERR, "Timeout with SMTP server [%s]:%hu",
-			g_smtp_ip, g_smtp_port);
-		return ecNetwork;
-	case SMTP_PERMANENT_ERROR:
-		case SMTP_TEMP_ERROR:
-		case SMTP_UNKOWN_RESPONSE:
-		/* send quit command to server */
-		common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		mlog2(LV_ERR, "SMTP server responded \"%s\" "
-			"after sending \"MAIL FROM\" command", last_response);
-		return ecNetwork;
-	}
-
-	for (const auto &eaddr : rcpt_list) {
-		bool have_at = strchr(eaddr.c_str(), '@') != nullptr;
-		command_len = sprintf(last_command, have_at ? "rcpt to:<%s>\r\n" :
-		              "rcpt to:<%s@none>\r\n", eaddr.c_str());
-		if (!common_util_send_command(sockd, last_command, command_len)) {
-			close(sockd);
-			mlog2(LV_ERR, "Failed to send \"RCPT TO\" command");
-			return ecNetwork;
-		}
-		/* read rcpt to response information */
-		res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
-		switch (res_val) {
-		case SMTP_TIME_OUT:
-			close(sockd);
-			mlog2(LV_ERR, "Timeout with SMTP server [%s]:%hu",
-				g_smtp_ip, g_smtp_port);
-			return ecNetwork;
-		case SMTP_PERMANENT_ERROR:
-		case SMTP_TEMP_ERROR:
-		case SMTP_UNKOWN_RESPONSE:
-			common_util_send_command(sockd, "quit\r\n", 6);
-			close(sockd);
-			mlog2(LV_ERR, "SMTP server responded with \"%s\" "
-				"after sending \"RCPT TO\" command", last_response);
-			return ecNetwork;
-		}						
-	}
-	/* send data */
-	strcpy(last_command, "data\r\n");
-	command_len = strlen(last_command);
-	if (!common_util_send_command(sockd, last_command, command_len)) {
-		close(sockd);
-		mlog2(LV_ERR, "Sender %s: Failed "
-			"to send \"DATA\" command", sender);
-		return ecNetwork;
-	}
-
-	/* read data response information */
-	res_val = common_util_get_response(sockd, last_response, 1024, TRUE);
-	switch (res_val) {
-	case SMTP_TIME_OUT:
-		close(sockd);
-		mlog2(LV_ERR, "Sender %s: Timeout with SMTP server [%s]:%hu",
-			sender, g_smtp_ip, g_smtp_port);
-		return ecNetwork;
-	case SMTP_PERMANENT_ERROR:
-	case SMTP_TEMP_ERROR:
-	case SMTP_UNKOWN_RESPONSE:
-		common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		mlog2(LV_ERR, "Sender %s: SMTP server responded \"%s\" "
-			"after sending \"DATA\" command", sender, last_response);
-		return ecNetwork;
-	}
-
-	pmail->set_header("X-Mailer", "gromox-emsmdb " PACKAGE_VERSION);
-	if (!pmail->to_file(sockd) ||
-	    !common_util_send_command(sockd, ".\r\n", 3)) {
-		close(sockd);
-		mlog2(LV_ERR, "Sender %s: Failed to send mail content", sender);
-		return ecNetwork;
-	}
-	res_val = common_util_get_response(sockd, last_response, 1024, FALSE);
-	switch (res_val) {
-	case SMTP_TIME_OUT:
-		close(sockd);
-		mlog2(LV_ERR, "Sender %s: Timeout with SMTP server [%s]:%hu",
-			sender, g_smtp_ip, g_smtp_port);
-		return ecNetwork;
-	case SMTP_PERMANENT_ERROR:
-	case SMTP_TEMP_ERROR:
-	case SMTP_UNKOWN_RESPONSE:	
-        common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		mlog2(LV_ERR, "Sender %s: SMTP server responded \"%s\" "
-					"after sending mail content", sender, last_response);
-		return ecNetwork;
-	case SMTP_SEND_OK:
-		common_util_send_command(sockd, "quit\r\n", 6);
-		close(sockd);
-		mlog2(LV_NOTICE, "emsmdb: outgoing SMTP [%s]:%hu: from=<%s> OK",
-		        g_smtp_ip, g_smtp_port, sender);
-		return ecSuccess;
-	}
-	return ecError;
 }
 
 static void common_util_set_dir(const char *dir)
@@ -1937,10 +1729,10 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 		        LLU{rop_util_get_gc_value(message_id)});
 		return ecError;	
 	}
-	auto ret = cu_send_mail(&imail, plogon->get_account(), rcpt_list);
+	auto ret = ems_send_mail(&imail, plogon->get_account(), rcpt_list);
 	if (ret != ecSuccess) {
-		mlog2(LV_ERR, "E-1280: Failed to send mid:%llu via SMTP",
-		        LLU{rop_util_get_gc_value(message_id)});
+		mlog2(LV_ERR, "E-1280: Failed to send mid:%llu via SMTP: %s",
+		        LLU{rop_util_get_gc_value(message_id)}, mapi_strerror(ret));
 		return ret;
 	}
 	imail.clear();

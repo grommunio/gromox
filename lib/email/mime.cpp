@@ -1404,16 +1404,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	return false;
 }
 
-/*
- *	write MIME object into file
- *	@param
- *		pmime [in]		indicate the MIME object
- *		fd				file descriptor
- *	@return
- *		TRUE			OK to copy out the MIME
- *		FALSE			buffer is too short
- */
-bool MIME::to_file(int fd) const
+bool MIME::emit(write_func write, void *fd) const
 {
 	auto pmime = this;
 	BOOL has_submime;
@@ -1511,7 +1502,7 @@ bool MIME::to_file(int fd) const
 				if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
 					return false;
 			} else {
-				if (!reinterpret_cast<MAIL *>(pmime->content_begin)->to_file(fd))
+				if (!reinterpret_cast<MAIL *>(pmime->content_begin)->emit(write, fd))
 					return false;
 			}
 		} else {
@@ -1546,7 +1537,7 @@ bool MIME::to_file(int fd) const
 		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 			return false;
 		pmime_child = (MIME*)pnode->pdata;
-		if (!pmime_child->to_file(fd))
+		if (!pmime_child->emit(write, fd))
 			return false;
 		pnode = pnode->get_sibling();
 	}
@@ -1586,198 +1577,6 @@ bool MIME::to_file(int fd) const
 		}
 	}
 	auto wrlen = write(fd, tmp_buff, len);
-	if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-		return false;
-	return true;
-}
-
-/*
- *	write MIME object into ssl
- *	@param
- *		pmime [in]		indicate the MIME object
- *		ssl	[in]		SSL object
- *	@return
- *		TRUE			OK to copy out the MIME
- *		FALSE			buffer is too short
- */
-bool MIME::to_tls(SSL *ssl) const
-{
-	auto pmime = this;
-	BOOL has_submime;
-	MIME *pmime_child;
-	size_t len, tmp_len;
-	int tag_len, val_len;
-	char tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
-	
-#ifdef _DEBUG_UMTA
-	if (tls == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
-	if (pmime->mime_type == mime_type::none) {
-#ifdef _DEBUG_UMTA
-		mlog(LV_DEBUG, "mime: mime content type is not set");
-#endif
-		return false;
-	}
-	if (!pmime->head_touched) {
-		/* the original buffer contains \r\n */
-		if (pmime->head_begin + pmime->head_length
-			+ 2 == pmime->content_begin) {
-			auto wrlen = SSL_write(ssl, pmime->head_begin, pmime->head_length + 2);
-			if (wrlen < 0 || static_cast<size_t>(wrlen))
-				return false;
-		} else {
-			auto wrlen = SSL_write(ssl, pmime->head_begin, pmime->head_length);
-			if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->head_length)
-				return false;
-			if (2 != SSL_write(ssl, "\r\n", 2)) {
-				return false;
-			}
-		}
-	} else {	
-		MEM_FILE fh = pmime->f_other_fields;
-		fh.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (fh.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-			/* xxxxx: yyyyy */
-			fh.read(tmp_buff, tag_len);
-			len = tag_len;
-			memcpy(tmp_buff + len, ": ", 2);
-			len += 2;
-			fh.read(&val_len, sizeof(uint32_t));
-			fh.read(tmp_buff + len, val_len);
-			len += val_len;
-			memcpy(tmp_buff + len, "\r\n", 2);
-			len += 2;
-			auto wrlen = SSL_write(ssl, tmp_buff, len);
-			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-				return false;
-		}
-
-		/* Content-Type: xxxxx */
-		memcpy(tmp_buff, "Content-Type: ", 14);
-		len = 14;
-		val_len = strlen(pmime->content_type);
-		memcpy(tmp_buff + len, pmime->content_type, val_len);
-		len += val_len;
-		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		fh = pmime->f_type_params;
-		fh.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (fh.read(&tag_len,
-		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
-			/* content-type: xxxxx"; \r\n\t"yyyyy */
-			if (len > MIME_FIELD_LEN + MIME_NAME_LEN - tag_len) {
-				return false;
-			}
-			memcpy(tmp_buff + len, ";\r\n\t", 4);
-			len += 4;
-			fh.read(tmp_buff + len, tag_len);
-			len += tag_len;
-			fh.read(&val_len, sizeof(uint32_t));
-			if (len > MIME_FIELD_LEN + MIME_NAME_LEN + 3 - val_len) {
-				return false;
-			}
-			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
-			if (0 != val_len) {
-				memcpy(tmp_buff + len, "=", 1);
-				len += 1;
-				fh.read(tmp_buff + len, val_len);
-				len += val_len;
-			}
-		}
-		if (len > MIME_FIELD_LEN + MIME_NAME_LEN) {
-			return false;
-		}
-		/* \r\n for separate head and content */
-		memcpy(tmp_buff + len, "\r\n\r\n", 4);
-		len += 4;
-		auto wrlen = SSL_write(ssl, tmp_buff, len);
-		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-			return false;
-	}
-	if (pmime->mime_type == mime_type::single) {
-		if (NULL != pmime->content_begin) {
-			if (0 != pmime->content_length) {
-				auto wrlen = SSL_write(ssl, pmime->content_begin, pmime->content_length);
-				if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
-					return false;
-			} else {
-				if (!reinterpret_cast<MAIL *>(pmime->content_begin)->to_tls(ssl))
-					return false;
-			}
-		} else {
-			/* if there's nothing, just append an empty line */
-			if (2 != SSL_write(ssl, "\r\n", 2)) {
-				return false;
-			}
-		}
-		return true;
-	}
-	if (NULL == pmime->first_boundary) {
-		if (48 != SSL_write(ssl, "This is a multi-part message "
-		    "in MIME format.\r\n\r\n", 48)) {
-			return false;
-		}
-	} else if (SSL_write(ssl, pmime->content_begin, pmime->first_boundary - pmime->content_begin) !=
-	    pmime->first_boundary - pmime->content_begin) {
-		return false;
-	}
-	auto pnode = pmime->node.get_child();
-	has_submime = FALSE;
-	while (NULL != pnode) {
-		has_submime = TRUE;
-		memcpy(tmp_buff, "--", 2);
-		len = 2;
-		memcpy(tmp_buff + len, pmime->boundary_string,
-		       pmime->boundary_len);
-		len += pmime->boundary_len;
-		memcpy(tmp_buff + len, "\r\n", 2);
-		len += 2;
-		auto wrlen = SSL_write(ssl, tmp_buff, len);
-		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-			return false;
-		pmime_child = (MIME*)pnode->pdata;
-		if (!pmime_child->to_tls(ssl))
-			return false;
-		pnode = pnode->get_sibling();
-	}
-	if (!has_submime) {
-		memcpy(tmp_buff, "--", 2);
-		len = 2;
-		memcpy(tmp_buff + len, pmime->boundary_string,
-		       pmime->boundary_len);
-		len += pmime->boundary_len;
-		memcpy(tmp_buff + len, "\r\n\r\n", 4);
-		len += 4;
-		auto wrlen = SSL_write(ssl, tmp_buff, len);
-		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-			return false;
-	}
-	memcpy(tmp_buff, "--", 2);
-	len = 2;
-	memcpy(tmp_buff + len, pmime->boundary_string, pmime->boundary_len);
-	len += pmime->boundary_len;
-	memcpy(tmp_buff + len, "--", 2);
-	len += 2;
-	if (NULL == pmime->last_boundary) {
-		memcpy(tmp_buff + len, "\r\n\r\n", 4);
-		len += 4;
-	} else {
-		tmp_len = pmime->content_length -
-		          (pmime->last_boundary - pmime->content_begin);
-		if (tmp_len > 0 && tmp_len < sizeof(tmp_buff) - len) {
-			memcpy(tmp_buff + len, pmime->last_boundary, tmp_len);
-			len +=  tmp_len;
-		} else if (0 == tmp_len) {
-			memcpy(tmp_buff + len, "\r\n", 2);
-			len += 2;
-		} else {
-			mlog(LV_ERR, "E-1641");
-			return false;
-		}
-	}
-	auto wrlen = SSL_write(ssl, tmp_buff, len);
 	if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 		return false;
 	return true;
