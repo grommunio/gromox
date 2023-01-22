@@ -114,20 +114,30 @@ silent, since our queries ought to never fail.)
 Default: \fI0\fP
 .TP
 \fBsqlite_mmap_size\fP
-See https://www.sqlite.org/pragma.html#pragma_mmap_size for details.
+See
+.UR https://www.sqlite.org/pragma.html#pragma_mmap_size
+SQLite documentation
+.UE
+for details.
 .br
 Default: \fI0\fP (use SQLite default)
 .TP
 \fBsqlite_synchronous\fP
 Enables/disables synchronous mode for SQLite databases. See
-https://www.sqlite.org/pragma.html#pragma_synchronous for details.
+.UR https://www.sqlite.org/pragma.html#pragma_synchronous
+SQLite documentation
+.UE
+for details.
 .br
 Default: \fIoff\fP
 .TP
 \fBsqlite_wal_mode\fP
 Selects the particular journal mode for SQLite databases; \fBoff\fP selects
 DELETE mode, \fBon\fP selects WAL mode. See
-https://www.sqlite.org/pragma.html#pragma_journal_mode for details.
+.UR https://www.sqlite.org/pragma.html#pragma_journal_mode
+SQLite documentation
+.UE
+for details.
 .br
 Default: \fIon\fP
 .TP
