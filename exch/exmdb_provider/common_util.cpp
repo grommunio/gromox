@@ -530,6 +530,22 @@ static sqlite3_stmt *cu_get_optimize_stmt(db_table table_type, bool b_normal)
 BOOL cu_get_proptags(db_table table_type, uint64_t id,
 	sqlite3 *psqlite, PROPTAG_ARRAY *pproptags)
 {
+	static constexpr uint32_t folder_tags[] = {
+		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT,
+		PR_MESSAGE_SIZE_EXTENDED, PR_ASSOC_MESSAGE_SIZE_EXTENDED,
+		PR_NORMAL_MESSAGE_SIZE_EXTENDED, PR_FOLDER_CHILD_COUNT,
+		PR_FOLDER_TYPE, PR_CONTENT_UNREAD, PR_SUBFOLDERS, PR_HAS_RULES,
+		PR_FOLDER_PATHNAME, PR_LOCAL_COMMIT_TIME, PidTagFolderId,
+		PidTagChangeNumber, PR_FOLDER_FLAGS,
+	};
+	static constexpr uint32_t msg_tags[] = {
+		PidTagMid, PR_MESSAGE_SIZE, PR_ASSOCIATED, PidTagChangeNumber,
+		PR_READ, PR_HASATTACH, PR_MESSAGE_FLAGS, PR_DISPLAY_TO,
+		PR_DISPLAY_CC, PR_DISPLAY_BCC,
+	};
+	static constexpr uint32_t rcpt_tags[] = {
+		PR_RECIPIENT_TYPE, PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS,
+	};
 	BOOL b_subject;
 	char sql_string[128];
 	uint32_t proptags[0x8000];
@@ -543,35 +559,14 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 	case db_table::folder_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "folder_properties WHERE folder_id=%llu", LLU{id});
-		proptags[i++] = PR_ASSOC_CONTENT_COUNT;
-		proptags[i++] = PR_CONTENT_COUNT;
-		proptags[i++] = PR_MESSAGE_SIZE_EXTENDED;
-		proptags[i++] = PR_ASSOC_MESSAGE_SIZE_EXTENDED;
-		proptags[i++] = PR_NORMAL_MESSAGE_SIZE_EXTENDED;
-		proptags[i++] = PR_FOLDER_CHILD_COUNT;
-		proptags[i++] = PR_FOLDER_TYPE;
-		proptags[i++] = PR_CONTENT_UNREAD;
-		proptags[i++] = PR_SUBFOLDERS;
-		proptags[i++] = PR_HAS_RULES;
-		proptags[i++] = PR_FOLDER_PATHNAME;
-		proptags[i++] = PR_LOCAL_COMMIT_TIME;
-		proptags[i++] = PidTagFolderId;
-		proptags[i++] = PidTagChangeNumber;
-		proptags[i++] = PR_FOLDER_FLAGS;
+		for (auto t : folder_tags)
+			proptags[i++] = t;
 		break;
 	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "message_properties WHERE message_id=%llu AND proptag NOT IN (0x0e05001e,0x0e05001f)", LLU{id});
-		proptags[i++] = PidTagMid;
-		proptags[i++] = PR_MESSAGE_SIZE;
-		proptags[i++] = PR_ASSOCIATED;
-		proptags[i++] = PidTagChangeNumber;
-		proptags[i++] = PR_READ;
-		proptags[i++] = PR_HASATTACH;
-		proptags[i++] = PR_MESSAGE_FLAGS;
-		proptags[i++] = PR_DISPLAY_TO;
-		proptags[i++] = PR_DISPLAY_CC;
-		proptags[i++] = PR_DISPLAY_BCC;
+		for (auto t : msg_tags)
+			proptags[i++] = t;
 		break;
 	case db_table::rcpt_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
@@ -610,16 +605,11 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		i ++;
 	}
 	pstmt.finalize();
-	if (table_type == db_table::rcpt_props) {
-		if (std::find(proptags, proptags + i, PR_RECIPIENT_TYPE) == proptags + i)
-			proptags[i++] = PR_RECIPIENT_TYPE;
-		if (std::find(proptags, proptags + i, PR_DISPLAY_NAME) == proptags + i)
-			proptags[i++] = PR_DISPLAY_NAME;
-		if (std::find(proptags, proptags + i, PR_ADDRTYPE) == proptags + i)
-			proptags[i++] = PR_ADDRTYPE;
-		if (std::find(proptags, proptags + i, PR_EMAIL_ADDRESS) == proptags + i)
-			proptags[i++] = PR_EMAIL_ADDRESS;
-	}
+	if (table_type == db_table::rcpt_props)
+		/* Maybe-computed props */
+		for (auto t : rcpt_tags)
+			if (std::find(proptags, &proptags[i], t) == &proptags[i])
+				proptags[i++] = t;
 	pproptags->count = i;
 	pproptags->pproptag = cu_alloc<uint32_t>(i);
 	if (pproptags->pproptag == nullptr)
