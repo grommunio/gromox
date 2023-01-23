@@ -42,7 +42,7 @@ enum class repr_grant {
  * Re-lookup PR_SENT_REP and PR_SENDER and fill in ADDRTYPE, EMAIL_ADDRESS,
  * SMTP_ADDRESS, etc.
  */
-static gxerr_t oxomsg_rectify_message(message_object *pmessage,
+static ec_error_t oxomsg_rectify_message(message_object *pmessage,
     const char *representing_username, bool send_as)
 {
 	BINARY *pentryid;
@@ -65,13 +65,13 @@ static gxerr_t oxomsg_rectify_message(message_object *pmessage,
 	nt_time = rop_util_current_nttime();
 	tmp_level = -1;
 	if (!common_util_username_to_essdn(account, essdn_buff, GX_ARRAY_SIZE(essdn_buff)))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	if (!common_util_get_user_displayname(account,
 	    tmp_display, arsizeof(tmp_display)))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	pentryid = common_util_username_to_addressbook_entryid(account);
 	if (NULL == pentryid) {
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	}
 	auto pentryid1 = pentryid;
 	search_bin.cb = gx_snprintf(search_buff, GX_ARRAY_SIZE(search_buff), "EX:%s", essdn_buff) + 1;
@@ -79,14 +79,14 @@ static gxerr_t oxomsg_rectify_message(message_object *pmessage,
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,
 		    essdn_buff1, GX_ARRAY_SIZE(essdn_buff1)))
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		if (!common_util_get_user_displayname(representing_username,
 		    tmp_display1, arsizeof(tmp_display1)))
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		pentryid1 = common_util_username_to_addressbook_entryid(
 										representing_username);
 		if (pentryid1 == nullptr)
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 	} else {
 		strcpy(essdn_buff1, essdn_buff);
 		strcpy(tmp_display1, tmp_display);
@@ -116,7 +116,7 @@ static gxerr_t oxomsg_rectify_message(message_object *pmessage,
 	};
 	TPROPVAL_ARRAY tmp_propvals = {arsizeof(pv), pv};
 	if (!pmessage->set_properties(&tmp_propvals, &tmp_problems))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	return pmessage->save();
 }
 
@@ -328,10 +328,10 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		if (ret != ecSuccess)
 			return ret;
 	}
-	gxerr_t err = oxomsg_rectify_message(pmessage, username,
-	              repr_grant >= repr_grant::send_as);
-	if (err != GXERR_SUCCESS)
-		return gxerr_to_hresult(err);
+	auto ret = oxomsg_rectify_message(pmessage, username,
+	           repr_grant >= repr_grant::send_as);
+	if (ret != ecSuccess)
+		return ret;
 	
 	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
@@ -421,7 +421,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecSuccess;
 	}
 	
-	auto ret = cu_send_message(plogon, pmessage->get_id(), true);
+	ret = cu_send_message(plogon, pmessage->get_id(), true);
 	if (ret != ecSuccess && ret != ecWarnWithErrors)
 		exmdb_client::clear_submit(dir, pmessage->get_id(), b_unsent);
 	else if (!b_delete)
@@ -642,10 +642,10 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		if (ret != ecSuccess)
 			return ret;
 	}
-	gxerr_t err = oxomsg_rectify_message(pmessage, username,
-	              repr_grant >= repr_grant::send_as);
-	if (err != GXERR_SUCCESS)
-		return gxerr_to_hresult(err);
+	auto ret = oxomsg_rectify_message(pmessage, username,
+	           repr_grant >= repr_grant::send_as);
+	if (ret != ecSuccess)
+		return ret;
 	*pppropvals = cu_alloc<TPROPVAL_ARRAY>();
 	if (NULL != *pppropvals) {
 		proptags.count = 7;

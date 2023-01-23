@@ -4,6 +4,7 @@
 #include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mapierr.hpp>
 
 #define ROOT_ELEMENT_FOLDERCONTENT			1
 #define ROOT_ELEMENT_MESSAGECONTENT			2
@@ -36,9 +37,9 @@ struct fastupctx_object final {
 	public:
 	~fastupctx_object();
 	static std::unique_ptr<fastupctx_object> create(logon_object *, void *pobject, int root_element);
-	gxerr_t write_buffer(const BINARY *transfer_data);
-	gxerr_t record_marker(uint32_t marker);
-	gxerr_t record_propval(const TAGGED_PROPVAL *);
+	ec_error_t write_buffer(const BINARY *transfer_data);
+	ec_error_t record_marker(uint32_t marker);
+	ec_error_t record_propval(const TAGGED_PROPVAL *);
 
 	std::unique_ptr<fxstream_parser> pstream;
 	void *pobject = nullptr;

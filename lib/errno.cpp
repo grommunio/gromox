@@ -2,15 +2,6 @@
 #include <gromox/defs.h>
 #include <gromox/mapierr.hpp>
 
-ec_error_t gxerr_to_hresult(gxerr_t e)
-{
-	switch (e) {
-	case GXERR_SUCCESS: return ecSuccess;
-	case GXERR_OVER_QUOTA: return MAPI_E_STORE_FULL;
-	default: return ecError;
-	}
-}
-
 const char *mapi_strerror(unsigned int e)
 {
 	// STG = storage
@@ -22,6 +13,7 @@ const char *mapi_strerror(unsigned int e)
 	E(ecLoginPerm, "This user does not have access rights to the mailbox")
 	E(ecNotSearchFolder, "The operation is valid only on a search folder")
 	E(ecNoReceiveFolder, "No receive folder is available")
+	E(ecInvalidRecips, "No valid recipients set on the message")
 	E(ecWrongServer, "The server does not host the user's mailbox database")
 	E(ecBufferTooSmall, "A buffer passed to this function is not big enough")
 	E(ecSearchFolderScopeViolation, "Attempted to perform a recursive search on a search folder")
@@ -40,10 +32,13 @@ const char *mapi_strerror(unsigned int e)
 	E(SYNC_W_CLIENT_CHANGE_NEWER, "In a change conflict, the client has the more recent change.")
 	E(ecError, "The operation failed for an unspecified reason")
 	E(STG_E_ACCESSDENIED, "Insufficient access rights to perform the operation")
+	E(STG_E_INVALIDPARAMETER, "Invalid parameter passed to a IStorage/IStream operation")
+	E(ecStreamSizeError, "The maximum size for the object was reached")
 	E(StreamSeekError, "Tried to seek to offset before the start or beyond the max stream size of 2^31")
 	E(ecNotSupported, "The server does not support this method call")
 	E(ecInvalidObject, "A method call was made using a reference to an object that has been destroyed or is not in a viable state")
 	E(ecObjectModified, "Change commit failed because the object was changed separately")
+	E(ecObjectDeleted, "Change commit suppressed because the object was deleted on the server")
 	E(ecInsufficientResrc, "Not enough of an unspecified resource was available to complete the operation")
 	E(ecNotFound, "The requested object could not be found at the server")
 	E(ecLoginFailure, "Client unable to log on to the server")

@@ -26,12 +26,6 @@ template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { retu
  */
 #define GROMOX_FALLBACK_TIMEZONE "Pacific/Chatham"
 
-enum gxerr_t {
-	GXERR_SUCCESS = 0,
-	GXERR_CALL_FAILED,
-	GXERR_OVER_QUOTA,
-};
-
 enum gx_loglevel {
 	LV_CRIT = 1,
 	LV_ERR = 2,
@@ -67,7 +61,6 @@ enum {
 	CP_UTF8 = 65001,
 };
 
-extern GX_EXPORT ec_error_t gxerr_to_hresult(gxerr_t);
 extern GX_EXPORT const char *mapi_strerror(unsigned int);
 
 template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x); }

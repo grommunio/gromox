@@ -179,9 +179,8 @@ static void *zcorezs_scanwork(void *param)
 	while (!g_notify_stop) {
 		sleep(1);
 		count ++;
-		if (count >= g_ping_interval) {
+		if (count >= g_ping_interval)
 			count = 0;
-		}
 		std::vector<std::string> maildir_list;
 		std::list<sink_node> expired_list;
 		std::unique_lock tl_hold(g_table_lock);
@@ -195,11 +194,10 @@ static void *zcorezs_scanwork(void *param)
 			auto ptail = pinfo->sink_list.size() > 0 ? &pinfo->sink_list.back() : nullptr;
 			while (pinfo->sink_list.size() > 0) {
 				auto psink_node = &pinfo->sink_list.front();
-				if (cur_time >= psink_node->until_time) {
+				if (cur_time >= psink_node->until_time)
 					expired_list.splice(expired_list.end(), pinfo->sink_list, pinfo->sink_list.begin());
-				} else {
+				else
 					pinfo->sink_list.splice(pinfo->sink_list.end(), pinfo->sink_list, pinfo->sink_list.begin());
-				}
 				if (psink_node == ptail)
 					break;
 			}
@@ -265,9 +263,8 @@ static void *zcorezs_scanwork(void *param)
 			if (read(psink_node->clifd, &tmp_byte, 1))
 				/* ignore */;
 		}
-		if (0 != count) {
+		if (count != 0)
 			continue;
-		}
 		time(&cur_time);
 		std::unique_lock nl_hold(g_notify_lock);
 #if __cplusplus >= 202000L
@@ -354,10 +351,9 @@ static void zs_notification_proc(const char *dir,
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = PR_MESSAGE_CLASS;
 		proptag_buff[1] = PR_MESSAGE_FLAGS;
-		if (!exmdb_client::get_message_properties(dir,
-			NULL, 0, message_id, &proptags, &propvals)) {
+		if (!exmdb_client::get_message_properties(dir, nullptr, 0,
+		    message_id, &proptags, &propvals))
 			return;
-		}
 		auto str = propvals.get<char>(PR_MESSAGE_CLASS);
 		if (str == nullptr)
 			return;
@@ -586,13 +582,11 @@ static void zs_notification_proc(const char *dir,
 			fdpoll.events = POLLOUT | POLLWRBAND;
 			if (!rpc_ext_push_response(&response, &tmp_bin)) {
 				auto tmp_byte = zcore_response::push_error;
-				if (1 == poll(&fdpoll, 1, tv_msec)) {
+				if (poll(&fdpoll, 1, tv_msec) == 1)
 					write(psink_node->clifd, &tmp_byte, 1);
-				}
 			} else {
-				if (1 == poll(&fdpoll, 1, tv_msec)) {
+				if (poll(&fdpoll, 1, tv_msec) == 1)
 					write(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
-				}
 				free(tmp_bin.pb);
 			}
 			/* implied ~sink_node */
@@ -783,10 +777,8 @@ uint32_t zs_uinfo(const char *username, BINARY *pentryid,
 	pentryid->cb = ext_push.m_offset;
 	*ppdisplay_name = common_util_dup(display_name);
 	*ppx500dn = common_util_dup(x500dn);
-	if (NULL == *ppdisplay_name || NULL == *ppx500dn) {
-		return ecError;
-	}
-	return ecSuccess;
+	return *ppdisplay_name == nullptr || *ppx500dn == nullptr ?
+	       ecError : ecSuccess;
 }
 
 uint32_t zs_unloadobject(GUID hsession, uint32_t hobject)
@@ -1056,14 +1048,12 @@ uint32_t zs_openstoreentry(GUID hsession,
 			if (permission == rightsNone) {
 				fid_val = rop_util_get_gc_value(folder_id);
 				if (pstore->b_private) {
-					if (PRIVATE_FID_ROOT == fid_val ||
-						PRIVATE_FID_IPMSUBTREE == fid_val) {
+					if (fid_val == PRIVATE_FID_ROOT ||
+					    fid_val == PRIVATE_FID_IPMSUBTREE)
 						permission = frightsVisible;
-					}
 				} else {
-					if (PUBLIC_FID_ROOT == fid_val) {
+					if (fid_val == PUBLIC_FID_ROOT)
 						permission = frightsVisible;
-					}
 				}
 			}
 			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
@@ -1149,9 +1139,8 @@ static uint32_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_
 	uint32_t address_type;
 
 	if (!common_util_parse_addressbook_entryid(entryid, &address_type,
-	    essdn, GX_ARRAY_SIZE(essdn))) {
+	    essdn, std::size(essdn)))
 		return ecInvalidParam;
-	}
 
 	if (address_type == DT_CONTAINER) {
 		CONTAINER_ID container_id;
@@ -1167,9 +1156,8 @@ static uint32_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_
 			container_id.abtree_id.base_id = base_id;
 			container_id.abtree_id.minid = SPECIAL_CONTAINER_EMPTY;
 		} else {
-			if (0 != strncmp(essdn, "/guid=", 6) || 38 != strlen(essdn)) {
+			if (strncmp(essdn, "/guid=", 6) != 0 || strlen(essdn) != 38)
 				return ecNotFound;
-			}
 			char tmp_buff[16];
 			GUID guid;
 			memcpy(tmp_buff, essdn + 6, 8);
@@ -1322,9 +1310,8 @@ uint32_t zs_resolvename(GUID hsession,
 		presult_set->pparray[presult_set->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == presult_set->pparray[presult_set->count] ||
 		    !ab_tree_fetch_node_properties(ptr,
-		    &proptags, presult_set->pparray[presult_set->count])) {
+		    &proptags, presult_set->pparray[presult_set->count]))
 			return ecError;
-		}
 		presult_set->count ++;
 	}
 	return ecSuccess;
@@ -1376,7 +1363,6 @@ uint32_t zs_modifypermissions(GUID hsession,
 uint32_t zs_modifyrules(GUID hsession,
 	uint32_t hfolder, uint32_t flags, const RULE_LIST *plist)
 {
-	int i;
 	uint8_t mapi_type;
 	
 	auto pinfo = zs_query_session(hsession);
@@ -1387,12 +1373,10 @@ uint32_t zs_modifyrules(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
-	if (MODIFY_RULES_FLAG_REPLACE & flags) {
-		for (i=0; i<plist->count; i++) {
+	if (flags & MODIFY_RULES_FLAG_REPLACE)
+		for (size_t i = 0; i < plist->count; ++i)
 			if (plist->prule[i].flags != ROW_ADD)
 				return ecInvalidParam;
-		}
-	}
 	return pfolder->updaterules(flags, plist) ? ecSuccess : ecError;
 }
 
@@ -1667,9 +1651,8 @@ uint32_t zs_createmessage(GUID hsession,
 	int64_t max_quota = num == nullptr ? -1 : static_cast<int64_t>(*num) * 1024;
 	auto lnum = tmp_propvals.get<const uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	uint64_t total_size = lnum != nullptr ? *lnum : 0;
-	if (max_quota > 0 && total_size > static_cast<uint64_t>(max_quota)) {
+	if (max_quota > 0 && total_size > static_cast<uint64_t>(max_quota))
 		return ecQuotaExceeded;
-	}
 	num = tmp_propvals.get<uint32_t>(PR_ASSOC_CONTENT_COUNT);
 	uint32_t total_mail = num != nullptr ? *num : 0;
 	num = tmp_propvals.get<uint32_t>(PR_CONTENT_COUNT);
@@ -1813,9 +1796,8 @@ uint32_t zs_copymessages(GUID hsession,
 	uint64_t message_id;
 	uint32_t permission;
 	
-	if (0 == pentryids->count) {
+	if (pentryids->count == 0)
 		return ecSuccess;
-	}
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -1862,11 +1844,10 @@ uint32_t zs_copymessages(GUID hsession,
 			    account_id != pstore->account_id ||
 			    folder_id != psrc_folder->folder_id)
 				continue;
-			gxerr_t err = common_util_remote_copy_message(pstore,
-			              message_id, pstore1, pdst_folder->folder_id);
-			if (err != GXERR_SUCCESS) {
-				return gxerr_to_hresult(err);
-			}
+			auto ret = cu_remote_copy_message(pstore, message_id,
+			           pstore1, pdst_folder->folder_id);
+			if (ret != ecSuccess)
+				return ret;
 			if (!b_copy) {
 				if (b_guest) {
 					if (!exmdb_client_check_message_owner(pstore->get_dir(),
@@ -1978,9 +1959,8 @@ uint32_t zs_setreadflags(GUID hsession,
 			if (tmp_bins.pbin == nullptr)
 				return ecError;
 			for (size_t i = 0; i < tmp_set.count; ++i) {
-				if (1 != tmp_set.pparray[i]->count) {
+				if (tmp_set.pparray[i]->count != 1)
 					continue;
-				}
 				tmp_bins.pbin[tmp_bins.count++] = *static_cast<BINARY *>(tmp_set.pparray[i]->ppropval[0].pvalue);
 			}
 			pentryids = &tmp_bins;
@@ -2263,10 +2243,8 @@ uint32_t zs_emptyfolder(GUID hsession,
 	if (!pstore->b_private)
 		return ecNotSupported;
 	auto fid_val = rop_util_get_gc_value(pfolder->folder_id);
-	if (PRIVATE_FID_ROOT == fid_val ||
-		PRIVATE_FID_IPMSUBTREE == fid_val) {
+	if (fid_val == PRIVATE_FID_ROOT || fid_val == PRIVATE_FID_IPMSUBTREE)
 		return ecAccessDenied;
-	}
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
 		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
@@ -2320,15 +2298,9 @@ uint32_t zs_copyfolder(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore1 = pdst_folder->pstore;
-	if (pstore->b_private) {
-		if (PRIVATE_FID_ROOT == rop_util_get_gc_value(folder_id)) {
-			return ecAccessDenied;
-		}
-	} else {
-		if (PUBLIC_FID_ROOT == rop_util_get_gc_value(folder_id)) {
-			return ecAccessDenied;
-		}
-	}
+	auto fidtest = pstore->b_private ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT;
+	if (rop_util_get_gc_value(folder_id) == fidtest)
+		return ecAccessDenied;
 	BOOL b_guest = false;
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
@@ -2353,11 +2325,10 @@ uint32_t zs_copyfolder(GUID hsession,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		gxerr_t err = common_util_remote_copy_folder(pstore, folder_id,
-		              pstore1, pdst_folder->folder_id, new_name);
-		if (err != GXERR_SUCCESS) {
-			return gxerr_to_hresult(err);
-		}
+		auto ret = cu_remote_copy_folder(pstore, folder_id, pstore1,
+		           pdst_folder->folder_id, new_name);
+		if (ret != ecSuccess)
+			return ret;
 		if (!b_copy) {
 			if (!exmdb_client::empty_folder(pstore->get_dir(),
 			    pinfo->cpid, username, folder_id, false, TRUE,
@@ -2433,10 +2404,8 @@ uint32_t zs_entryidfromsourcekey(
 	uint64_t folder_id;
 	uint64_t message_id;
 	
-	if (22 != folder_key.cb || (NULL != pmessage_key
-		&& 22 != pmessage_key->cb)) {
+	if (folder_key.cb != 22 || (pmessage_key != nullptr && pmessage_key->cb != 22))
 		return ecInvalidParam;
-	}
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -2454,9 +2423,8 @@ uint32_t zs_entryidfromsourcekey(
 		folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	} else {
 		auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
-		if (-1 == domain_id) {
+		if (domain_id == -1)
 			return ecInvalidParam;
-		}
 		if (domain_id == pstore->account_id) {
 			replid = 1;
 		} else {
@@ -2482,9 +2450,8 @@ uint32_t zs_entryidfromsourcekey(
 			message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
 			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
-			if (-1 == domain_id) {
+			if (domain_id == -1)
 				return ecInvalidParam;
-			}
 			if (domain_id != pstore->account_id)
 				return ecInvalidParam;
 			message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
@@ -2625,14 +2592,12 @@ uint32_t zs_notifdequeue(const NOTIF_SINK *psink,
 			free(pnode);
 			if (ppnotifications[count] != nullptr)
 				count ++;
-			if (1024 == count) {
+			if (count == 1024)
 				break;
-			}
 		}
 		nl_hold.unlock();
-		if (1024 == count) {
+		if (count == 1024)
 			break;
-		}
 	}
 	if (count > 0) {
 		pinfo.reset();
@@ -2658,9 +2623,8 @@ uint32_t zs_notifdequeue(const NOTIF_SINK *psink,
 	psink_node->sink.hsession = psink->hsession;
 	psink_node->sink.count = psink->count;
 	psink_node->sink.padvise = me_alloc<ADVISE_INFO>(psink->count);
-	if (NULL == psink_node->sink.padvise) {
+	if (psink_node->sink.padvise == nullptr)
 		return ecError;
-	}
 	memcpy(psink_node->sink.padvise, psink->padvise,
 				psink->count*sizeof(ADVISE_INFO));
 	pinfo->sink_list.splice(pinfo->sink_list.end(), holder, holder.begin());
@@ -2704,9 +2668,8 @@ uint32_t zs_queryrows(
 		case zcore_tbltype::content:
 		case zcore_tbltype::rule:
 			row_num = ptable->get_total();
-			if (row_num > count) {
+			if (row_num > count)
 				row_num = count;
-			}
 			prowset->count = 0;
 			prowset->pparray = cu_alloc<TPROPVAL_ARRAY *>(row_num);
 			if (prowset->pparray == nullptr)
@@ -2714,20 +2677,17 @@ uint32_t zs_queryrows(
 			while (true) {
 				if (!ptable->match_row(TRUE, prestriction, &position))
 					return ecError;
-				if (position < 0) {
+				if (position < 0)
 					break;
-				}
 				ptable->set_position(position);
 				if (!ptable->query_rows(pproptags, 1, &tmp_set))
 					return ecError;
-				if (1 != tmp_set.count) {
+				if (tmp_set.count != 1)
 					break;
-				}
 				ptable->seek_current(TRUE, 1);
 				prowset->pparray[prowset->count++] = tmp_set.pparray[0];
-				if (count == prowset->count) {
+				if (count == prowset->count)
 					break;
-				}
 			}
 			break;
 		case zcore_tbltype::attachment:
@@ -2816,16 +2776,14 @@ uint32_t zs_seekrow(GUID hsession,
 		return ecError;
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
-		if (seek_rows < 0) {
+		if (seek_rows < 0)
 			return ecInvalidParam;
-		}
 		original_position = 0;
 		ptable->set_position(seek_rows);
 		break;
 	case BOOKMARK_END:
-		if (seek_rows > 0) {
+		if (seek_rows > 0)
 			return ecInvalidParam;
-		}
 		original_position = ptable->get_total();
 		ptable->set_position(safe_add_s(original_position, seek_rows));
 		break;
@@ -2897,9 +2855,8 @@ uint32_t zs_sorttable(GUID hsession,
 	BOOL b_multi_inst;
 	uint32_t tmp_proptag;
 	
-	if (psortset->count > MAXIMUM_SORT_COUNT) {
+	if (psortset->count > MAXIMUM_SORT_COUNT)
 		return ecTooComplex;
-	}
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -2925,10 +2882,9 @@ uint32_t zs_sorttable(GUID hsession,
 			break;
 		case TABLE_SORT_MAXIMUM_CATEGORY:
 		case TABLE_SORT_MINIMUM_CATEGORY:
-			if (0 == psortset->ccategories ||
-				psortset->ccategories != i) {
+			if (psortset->ccategories == 0 ||
+			    psortset->ccategories != i)
 				return ecInvalidParam;
-			}
 			break;
 		default:
 			return ecInvalidParam;
@@ -2937,9 +2893,8 @@ uint32_t zs_sorttable(GUID hsession,
 		if (type & MV_FLAG) {
 			/* we do not support multivalue property
 				without multivalue instances */
-			if (!(type & MV_INSTANCE)) {
+			if (!(type & MV_INSTANCE))
 				return ecNotSupported;
-			}
 			type &= ~MV_INSTANCE;
 			/* MUST NOT contain more than one multivalue property! */
 			if (b_multi_inst)
@@ -3061,9 +3016,8 @@ uint32_t zs_findrow(GUID hsession, uint32_t htable,
 	}
 	if (ptable->match_row(TRUE, prestriction, &position))
 		return ecError;
-	if (position < 0) {
+	if (position < 0)
 		return ecNotFound;
-	}
 	ptable->set_position(position);
 	*prow_idx = position;
 	return ecSuccess;
@@ -3165,10 +3119,9 @@ uint32_t zs_modifyrecipients(GUID hsession,
 	ONEOFF_ENTRYID oneoff_entry;
 	EMSAB_ENTRYID ab_entryid;
 	
-	if (prcpt_list->count >= 0x7FEF || (MODRECIP_ADD != flags &&
-		MODRECIP_MODIFY != flags && MODRECIP_REMOVE != flags)) {
+	if (prcpt_list->count >= 0x7fef || (flags != MODRECIP_ADD &&
+	    flags != MODRECIP_MODIFY && flags != MODRECIP_REMOVE))
 		return ecInvalidParam;
-	}
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -3207,11 +3160,10 @@ uint32_t zs_modifyrecipients(GUID hsession,
 			return ecInvalidParam;
 		auto prowid = prcpt_list->pparray[i]->get<uint32_t>(PR_ROWID);
 		if (NULL != prowid) {
-			if (*prowid < last_rowid) {
+			if (*prowid < last_rowid)
 				*prowid = last_rowid;
-			} else {
+			else
 				last_rowid = *prowid;
-			}
 		} else {
 			prcpt = prcpt_list->pparray[i];
 			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 1);
@@ -3314,7 +3266,7 @@ uint32_t zs_modifyrecipients(GUID hsession,
  * @send_as:	mangle message for Send-As (true) or just
  * 		Send-On-Behalf/No-Change (false)
  */
-static gxerr_t rectify_message(message_object *pmessage,
+static ec_error_t rectify_message(message_object *pmessage,
     const char *representing_username, bool send_as)
 {
 	auto account = pmessage->pstore->get_account();
@@ -3323,14 +3275,14 @@ static gxerr_t rectify_message(message_object *pmessage,
 	int32_t tmp_level = -1;
 	char essdn[1024], essdn1[1024];
 	if (!common_util_username_to_essdn(account, essdn, arsizeof(essdn)))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	char dispname[256], dispname1[256], search_buff[1024], search_buff1[1024];
 	if (!system_services_get_user_displayname(account,
 	    dispname, arsizeof(dispname)))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	auto entryid = common_util_username_to_addressbook_entryid(account);
 	if (entryid == nullptr)
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	auto entryid1 = entryid;
 	BINARY search_bin, search_bin1;
 	search_bin.cb = gx_snprintf(search_buff, arsizeof(search_buff), "EX:%s", essdn) + 1;
@@ -3338,13 +3290,13 @@ static gxerr_t rectify_message(message_object *pmessage,
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,
 		    essdn1, arsizeof(essdn1)))
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		if (!system_services_get_user_displayname(representing_username,
 		    dispname1, arsizeof(dispname1)))
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 		entryid1 = common_util_username_to_addressbook_entryid(representing_username);
 		if (entryid1 == nullptr)
-			return GXERR_CALL_FAILED;
+			return ecRpcFailed;
 	} else {
 		strcpy(essdn1, essdn);
 		strcpy(dispname1, dispname);
@@ -3374,7 +3326,7 @@ static gxerr_t rectify_message(message_object *pmessage,
 	};
 	TPROPVAL_ARRAY tmp_propvals = {arsizeof(pv), pv};
 	if (!pmessage->set_properties(&tmp_propvals))
-		return GXERR_CALL_FAILED;
+		return ecRpcFailed;
 	return pmessage->save();
 }
 
@@ -3444,9 +3396,8 @@ uint32_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 	}
 	auto err = rectify_message(pmessage, username,
 	           repr_grant >= repr_grant::send_as);
-	if (err != GXERR_SUCCESS) {
-		return gxerr_to_hresult(err);
-	}
+	if (err != ecSuccess)
+		return err;
 	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_MAX_SUBMIT_MESSAGE_SIZE;
@@ -3459,9 +3410,8 @@ uint32_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 	auto storesize = tmp_propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	/* Sendquota is in KiB, storesize in bytes */
 	if (sendquota != nullptr && storesize != nullptr &&
-	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize) {
+	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize)
 		return ecQuotaExceeded;
-	}
 
 	auto num = tmp_propvals.get<const uint32_t>(PR_MAX_SUBMIT_MESSAGE_SIZE);
 	ssize_t max_length = -1;
@@ -3481,9 +3431,8 @@ uint32_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 	if (num == nullptr)
 		return ecError;
 	auto mail_length = *num;
-	if (max_length > 0 && mail_length > static_cast<size_t>(max_length)) {
+	if (max_length > 0 && mail_length > static_cast<size_t>(max_length))
 		return EC_EXCEEDED_SIZE;
-	}
 	num = tmp_propvals.get<uint32_t>(PR_MESSAGE_FLAGS);
 	if (num == nullptr)
 		return ecError;
@@ -3624,7 +3573,6 @@ uint32_t zs_deleteattachment(GUID hsession,
 uint32_t zs_setpropvals(GUID hsession, uint32_t hobject,
     TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
 	uint8_t mapi_type;
 	uint32_t permission;
 	
@@ -3636,10 +3584,9 @@ uint32_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		return ecNullObject;
 	switch (mapi_type) {
 	case ZMG_PROFPROPERTY:
-		for (i=0; i<ppropvals->count; i++) {
+		for (size_t i = 0; i < ppropvals->count; ++i)
 			if (static_cast<TPROPVAL_ARRAY *>(pobject)->set(ppropvals->ppropval[i]) != 0)
 				return ecError;
-		}
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
 	case ZMG_STORE: {
@@ -3703,18 +3650,18 @@ uint32_t zs_getpropvals(GUID hsession,
 	case ZMG_PROFPROPERTY:
 		if (NULL == pproptags) {
 			*ppropvals = *static_cast<TPROPVAL_ARRAY *>(pobject);
-		} else {
-			ppropvals->count = 0;
-			ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-			if (ppropvals->ppropval == nullptr)
-				return ecError;
-			for (i=0; i<pproptags->count; i++) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(pproptags->pproptag[i]);
-				if (ppropvals->ppropval[ppropvals->count].pvalue != nullptr)
-					ppropvals->count ++;	
-			}
+			return ecSuccess;
+		}
+		ppropvals->count = 0;
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		if (ppropvals->ppropval == nullptr)
+			return ecError;
+		for (i = 0; i < pproptags->count; i++) {
+			ppropvals->ppropval[ppropvals->count].proptag =
+				pproptags->pproptag[i];
+			ppropvals->ppropval[ppropvals->count].pvalue = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(pproptags->pproptag[i]);
+			if (ppropvals->ppropval[ppropvals->count].pvalue != nullptr)
+				ppropvals->count++;
 		}
 		return ecSuccess;
 	case ZMG_STORE: {
@@ -3791,7 +3738,6 @@ uint32_t zs_getpropvals(GUID hsession,
 uint32_t zs_deletepropvals(GUID hsession,
 	uint32_t hobject, const PROPTAG_ARRAY *pproptags)
 {
-	int i;
 	uint8_t mapi_type;
 	uint32_t permission;
 	
@@ -3803,9 +3749,8 @@ uint32_t zs_deletepropvals(GUID hsession,
 		return ecNullObject;
 	switch (mapi_type) {
 	case ZMG_PROFPROPERTY:
-		for (i=0; i<pproptags->count; i++) {
+		for (size_t i = 0; i < pproptags->count; ++i)
 			static_cast<TPROPVAL_ARRAY *>(pobject)->erase(pproptags->pproptag[i]);
-		}
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
 	case ZMG_STORE: {
@@ -3970,9 +3915,9 @@ uint32_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 	auto pobject_dst = pinfo->ptree->get_object<void>(hdstobject, &dst_type);
 	if (pobject_dst == nullptr)
 		return ecNullObject;
-	if (mapi_type != dst_type) {
+	if (mapi_type != dst_type)
 		return ecNotSupported;
-	}
+
 	BOOL b_force = (flags & COPY_FLAG_NOOVERWRITE) ? TRUE : false;
 	switch (mapi_type) {
 	case ZMG_FOLDER: {
@@ -4092,18 +4037,12 @@ uint32_t zs_savechanges(GUID hsession, uint32_t hobject)
 			return ecError;
 		if (b_touched)
 			return ecObjectModified;
-		auto err = msg->save();
-		if (err != GXERR_SUCCESS)
-			return gxerr_to_hresult(err);
-		return ecSuccess;
+		return msg->save();
 	} else if (mapi_type == ZMG_ATTACH) {
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->writable())
 			return ecAccessDenied;
-		auto err = atx->save();
-		if (err != GXERR_SUCCESS)
-			return gxerr_to_hresult(err);
-		return ecSuccess;
+		return atx->save();
 	} else {
 		return ecNotSupported;
 	}
@@ -4395,9 +4334,8 @@ uint32_t zs_importmessage(GUID hsession, uint32_t hctx,
 	auto folder_id = pctx->get_parent_folder_id();
 	if (!b_new) {
 		pbin = pproplist->get<BINARY>(PR_SOURCE_KEY);
-		if (pbin == nullptr || pbin->cb != 22) {
+		if (pbin == nullptr || pbin->cb != 22)
 			return ecInvalidParam;
-		}
 		if (!common_util_binary_to_xid(pbin, &tmp_xid))
 			return ecError;
 		auto tmp_guid = pstore->guid();
@@ -4469,7 +4407,6 @@ uint32_t zs_importmessage(GUID hsession, uint32_t hctx,
 uint32_t zs_importfolder(GUID hsession,
 	uint32_t hctx, const TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
 	XID tmp_xid;
 	BOOL b_exist;
 	BINARY *pbin;
@@ -4533,9 +4470,8 @@ uint32_t zs_importfolder(GUID hsession,
 			return SYNC_E_NO_PARENT;
 	} else {
 		pbin = static_cast<BINARY *>(pproplist->ppropval[0].pvalue);
-		if (pbin == nullptr || pbin->cb != 22) {
+		if (pbin == nullptr || pbin->cb != 22)
 			return ecInvalidParam;
-		}
 		if (!common_util_binary_to_xid(pbin, &tmp_xid))
 			return ecError;
 		if (pstore->b_private) {
@@ -4555,9 +4491,8 @@ uint32_t zs_importfolder(GUID hsession,
 			return SYNC_E_NO_PARENT;
 	}
 	pbin = static_cast<BINARY *>(pproplist->ppropval[1].pvalue);
-	if (pbin == nullptr || pbin->cb != 22) {
+	if (pbin == nullptr || pbin->cb != 22)
 		return ecInvalidParam;
-	}
 	if (!common_util_binary_to_xid(pbin, &tmp_xid))
 		return ecError;
 	if (pstore->b_private) {
@@ -4569,9 +4504,8 @@ uint32_t zs_importfolder(GUID hsession,
 		auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
 		if (tmp_guid != tmp_xid.guid) {
 			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
-			if (-1 == domain_id) {
+			if (domain_id == -1)
 				return ecInvalidParam;
-			}
 			if (!system_services_check_same_org(domain_id, pstore->account_id))
 				return ecInvalidParam;
 			if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
@@ -4596,12 +4530,10 @@ uint32_t zs_importfolder(GUID hsession,
 		}
 		if (!exmdb_client::get_folder_by_name(pstore->get_dir(),
 		    parent_id1, static_cast<char *>(pproplist->ppropval[3].pvalue),
-		    &tmp_fid)) {
+		    &tmp_fid))
 			return ecError;
-		}
-		if (0 != tmp_fid) {
+		if (tmp_fid != 0)
 			return ecDuplicateName;
-		}
 		if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
 			return ecError;
 		tmp_propvals.count = 0;
@@ -4619,9 +4551,8 @@ uint32_t zs_importfolder(GUID hsession,
 		tmp_propvals.ppropval[4].proptag = PidTagChangeNumber;
 		tmp_propvals.ppropval[4].pvalue = &change_num;
 		tmp_propvals.count = 5;
-		for (i=0; i<ppropvals->count; i++) {
+		for (size_t i = 0; i < ppropvals->count; ++i)
 			tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
-		}
 		if (!tmp_propvals.has(PR_FOLDER_TYPE)) {
 			tmp_type = FOLDER_GENERIC;
 			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
@@ -4649,9 +4580,8 @@ uint32_t zs_importfolder(GUID hsession,
 		within public mailbox is not supported */
 		if (!pstore->b_private)
 			return ecNotSupported;
-		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
+		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM)
 			return ecAccessDenied;
-		}
 		if (!pstore->owner_mode()) {
 			if (!exmdb_client::get_folder_perm(pstore->get_dir(),
 			    parent_id1, pinfo->get_username(), &permission))
@@ -4666,9 +4596,8 @@ uint32_t zs_importfolder(GUID hsession,
 		    pstore->account_id, pinfo->cpid, b_guest,
 		    pinfo->get_username(), parent_id, folder_id, parent_id1,
 		    static_cast<char *>(pproplist->ppropval[3].pvalue), false,
-		    &b_exist, &b_partial)) {
+		    &b_exist, &b_partial))
 			return ecError;
-		}
 		if (b_exist)
 			return ecDuplicateName;
 		if (b_partial)
@@ -4687,9 +4616,8 @@ uint32_t zs_importfolder(GUID hsession,
 	tmp_propvals.ppropval[2].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[2].pvalue = &change_num;
 	tmp_propvals.count = 3;
-	for (i=0; i<ppropvals->count; i++) {
+	for (size_t i = 0; i < ppropvals->count; ++i)
 		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
-	}
 	if (!exmdb_client::set_folder_properties(pstore->get_dir(),
 	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
 		return ecError;
@@ -4746,9 +4674,8 @@ uint32_t zs_importdeletion(GUID hsession,
 			return ecError;
 	}
 	for (size_t i = 0; i < pbins->count; ++i) {
-		if (22 != pbins->pbin[i].cb) {
+		if (pbins->pbin[i].cb != 22)
 			return ecInvalidParam;
-		}
 		if (!common_util_binary_to_xid(&pbins->pbin[i], &tmp_xid))
 			return ecError;
 		if (pstore->b_private) {
@@ -4765,9 +4692,8 @@ uint32_t zs_importdeletion(GUID hsession,
 			auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
 			if (tmp_guid != tmp_xid.guid) {
 				auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
-				if (-1 == domain_id) {
+				if (domain_id == -1)
 					return ecInvalidParam;
-				}
 				if (!system_services_check_same_org(domain_id,
 				    pstore->account_id))
 					return ecInvalidParam;
@@ -4894,22 +4820,13 @@ uint32_t zs_importreadstates(GUID hsession,
 		if (flag != nullptr && *flag != 0)
 			continue;
 		flag = tmp_propvals.get<uint8_t>(PR_READ);
-		if (flag == nullptr || *flag == 0) {
-			if (!mark_as_read)
-				continue;
-		} else {
-			if (mark_as_read)
-				continue;
-		}
-		if (pstore->b_private) {
-			if (!exmdb_client::set_message_read_state(pstore->get_dir(),
-			    nullptr, message_id, mark_as_read, &read_cn))
-				return ecError;
-		} else {
-			if (!exmdb_client::set_message_read_state(pstore->get_dir(),
-			    pinfo->get_username(), message_id, mark_as_read, &read_cn))
-				return ecError;
-		}
+		if ((flag != nullptr && *flag != 0) == mark_as_read)
+			/* Already set to the value we want it to be */
+			continue;
+		if (!exmdb_client::set_message_read_state(pstore->get_dir(),
+		    pstore->b_private ? nullptr : pinfo->get_username(),
+		    message_id, mark_as_read, &read_cn))
+			return ecError;
 		pctx->pstate->pread->append(read_cn);
 	}
 	return ecSuccess;
@@ -4994,9 +4911,8 @@ uint32_t zs_setsearchcriteria(
 		if (!exmdb_client::get_search_criteria(pstore->get_dir(),
 		    pfolder->folder_id, &search_status, nullptr, nullptr))
 			return ecError;
-		if (SEARCH_STATUS_NOT_INITIALIZED == search_status) {
+		if (search_status == SEARCH_STATUS_NOT_INITIALIZED)
 			return ecNotInitialized;
-		}
 		if (!(flags & RESTART_SEARCH) && prestriction == nullptr &&
 		    pfolder_array->count == 0)
 			return ecSuccess;
@@ -5197,20 +5113,18 @@ uint32_t zs_getuseravailability(GUID hsession,
 		*ppresult_string = NULL;
 		return ecSuccess;
 	}
-	if (strcasecmp(pinfo->get_username(), username) == 0) {
+	if (strcasecmp(pinfo->get_username(), username) == 0)
 		tmp_len = gx_snprintf(cookie_buff, GX_ARRAY_SIZE(cookie_buff),
 		          "starttime=%llu;endtime=%llu;dirs=1;dir0=%s",
 		          LLU{starttime}, LLU{endtime}, maildir);
-	} else {
+	else
 		tmp_len = gx_snprintf(cookie_buff, GX_ARRAY_SIZE(cookie_buff),
 		          "username=%s;starttime=%llu;endtime=%llu;dirs=1;dir0=%s",
 		          pinfo->get_username(),
 		          LLU{starttime}, LLU{endtime}, maildir);
-	}
 	pinfo.reset();
-	 if (-1 == pipe(pipes_in)) {
+	if (pipe(pipes_in) < 0)
 		return ecError;
-	}
 	if (-1 == pipe(pipes_out)) {
 		close(pipes_in[0]);
 		close(pipes_in[1]);

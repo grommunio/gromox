@@ -3,6 +3,7 @@
 #include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mapierr.hpp>
 #include "message_object.h"
 
 struct stream_object;
@@ -24,7 +25,7 @@ struct attachment_object {
 	uint8_t get_open_flags() const { return open_flags; }
 	void set_open_flags(uint8_t open_flags);
 	uint32_t get_cpid() const { return pparent->cpid; }
-	gxerr_t save();
+	ec_error_t save();
 	BOOL append_stream_object(stream_object *);
 	BOOL commit_stream_object(stream_object *);
 	BOOL flush_streams();

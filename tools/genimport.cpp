@@ -701,13 +701,13 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		fprintf(stderr, "exm: tpropval: %s\n", strerror(-ret));
 		return ret;
 	}
-	gxerr_t e_result = GXERR_SUCCESS;
+	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(g_storedir, g_dstuser.c_str(), CP_UTF8,
 	    parent_fld, ctnt, &e_result)) {
 		fprintf(stderr, "exm: write_message RPC failed\n");
 		return -EIO;
-	} else if (e_result != 0) {
-		fprintf(stderr, "exm: write_message: gxerr %d\n", e_result);
+	} else if (e_result != ecSuccess) {
+		fprintf(stderr, "exm: write_message: %s\n", mapi_strerror(e_result));
 		return -EIO;
 	}
 	return 0;

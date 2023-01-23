@@ -2727,10 +2727,10 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	auto cpid = cset_to_cpid(charset);
 	if (cpid == 0)
 		cpid = 1252;
-	gxerr_t e_result = GXERR_CALL_FAILED;
+	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
-	    e_result != GXERR_SUCCESS)
+	    e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
 	return cmd_write(sockd, "TRUE\r\n");
 }
@@ -2943,10 +2943,10 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	auto cpid = cset_to_cpid(charset);
 	if (cpid == 0)
 		cpid = 1252;
-	gxerr_t e_result = GXERR_CALL_FAILED;
+	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &e_result) ||
-	    e_result != GXERR_SUCCESS)
+	    e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
 	cl_msg.release();
 	message_content_free(pmsgctnt);
