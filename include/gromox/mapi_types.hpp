@@ -1057,7 +1057,9 @@ struct DB_NOTIFY_CONTENT_TABLE_ROW_DELETED {
 #define LOCK_FLAG_RDONLY_FOR_OTHERS					0x00000001
 
 enum {
+	/* First 8 bits used to transport table flags specified by OXCRPC. */
 	PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY = 0x2U,
+	/* Gromox-specific: */
 	PERMISSIONS_TABLE_FLAG_ROPFILTER       = 0x100U,
 };
 
