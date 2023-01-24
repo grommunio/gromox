@@ -2537,14 +2537,95 @@ BOOL exmdb_server::set_instance_properties(const char *dir,
 	return set_xns_props_atx(ins, props, prob);
 }
 
+static BOOL rip_message(MESSAGE_CONTENT *pmsgctnt,
+    const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+{
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		switch (pproptags->pproptag[i]) {
+		case PR_BODY:
+		case PR_BODY_A:
+		case PR_BODY_U: {
+			pmsgctnt->proplist.erase(ID_TAG_BODY);
+			pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
+			auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
+			if (num != nullptr && *num == NATIVE_BODY_PLAIN)
+				*num = NATIVE_BODY_UNDEFINED;
+			break;
+		}
+		case PR_HTML:
+		case PR_BODY_HTML:
+		case PR_BODY_HTML_A:
+		case PR_HTML_U: {
+			pmsgctnt->proplist.erase(PR_BODY_HTML);
+			pmsgctnt->proplist.erase(PR_BODY_HTML_A);
+			pmsgctnt->proplist.erase(ID_TAG_HTML);
+			auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
+			if (num != nullptr && *num == NATIVE_BODY_HTML)
+				*num = NATIVE_BODY_UNDEFINED;
+			break;
+		}
+		case PR_RTF_COMPRESSED: {
+			auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
+			if (num != nullptr && *num == NATIVE_BODY_RTF)
+				*num = NATIVE_BODY_UNDEFINED;
+			pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
+			break;
+		}
+		}
+		pmsgctnt->proplist.erase(pproptags->pproptag[i]);
+		switch (PROP_TYPE(pproptags->pproptag[i])) {
+		case PT_STRING8:
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
+			break;
+		case PT_UNICODE:
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
+			break;
+		case PT_MV_STRING8:
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
+			break;
+		case PT_MV_UNICODE:
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
+			break;
+		}
+	}
+	return TRUE;
+}
+
+static BOOL rip_attachment(ATTACHMENT_CONTENT *pattachment,
+    const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+{
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		switch (pproptags->pproptag[i]) {
+		case PR_ATTACH_DATA_BIN:
+			pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
+			break;
+		case PR_ATTACH_DATA_OBJ:
+			pattachment->proplist.erase(ID_TAG_ATTACHDATAOBJECT);
+			break;
+		}
+		pattachment->proplist.erase(pproptags->pproptag[i]);
+		switch (PROP_TYPE(pproptags->pproptag[i])) {
+		case PT_STRING8:
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
+			break;
+		case PT_UNICODE:
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
+			break;
+		case PT_MV_STRING8:
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
+			break;
+		case PT_MV_UNICODE:
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
+			break;
+		}
+	}
+	return TRUE;
+}
+
 BOOL exmdb_server::remove_instance_properties(const char *dir,
     uint32_t instance_id, const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
-	int i;
-	MESSAGE_CONTENT *pmsgctnt;
-	ATTACHMENT_CONTENT *pattachment;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -2553,85 +2634,9 @@ BOOL exmdb_server::remove_instance_properties(const char *dir,
 		return FALSE;
 	}
 	pproblems->count = 0;
-	if (pinstance->type == instance_type::message) {
-		pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-		for (i=0; i<pproptags->count; i++) {
-			switch (pproptags->pproptag[i]) {
-			case PR_BODY:
-			case PR_BODY_A:
-			case PR_BODY_U: {
-				pmsgctnt->proplist.erase(ID_TAG_BODY);
-				pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
-				auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
-				if (num != nullptr && *num == NATIVE_BODY_PLAIN)
-					*num = NATIVE_BODY_UNDEFINED;
-				break;
-			}
-			case PR_HTML:
-			case PR_BODY_HTML:
-			case PR_BODY_HTML_A:
-			case PR_HTML_U: {
-				pmsgctnt->proplist.erase(PR_BODY_HTML);
-				pmsgctnt->proplist.erase(PR_BODY_HTML_A);
-				pmsgctnt->proplist.erase(ID_TAG_HTML);
-				auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
-				if (num != nullptr && *num == NATIVE_BODY_HTML)
-					*num = NATIVE_BODY_UNDEFINED;
-				break;
-			}
-			case PR_RTF_COMPRESSED: {
-				auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
-				if (num != nullptr && *num == NATIVE_BODY_RTF)
-					*num = NATIVE_BODY_UNDEFINED;
-				pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
-				break;
-			}
-			}
-			pmsgctnt->proplist.erase(pproptags->pproptag[i]);
-			switch (PROP_TYPE(pproptags->pproptag[i])) {
-			case PT_STRING8:
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
-				break;
-			case PT_UNICODE:
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
-				break;
-			case PT_MV_STRING8:
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
-				break;
-			case PT_MV_UNICODE:
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
-				break;
-			}
-		}
-	} else {
-		pattachment = static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent);
-		for (i=0; i<pproptags->count; i++) {
-			switch (pproptags->pproptag[i]) {
-			case PR_ATTACH_DATA_BIN:
-				pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
-				break;
-			case PR_ATTACH_DATA_OBJ:
-				pattachment->proplist.erase(ID_TAG_ATTACHDATAOBJECT);
-				break;
-			}
-			pattachment->proplist.erase(pproptags->pproptag[i]);
-			switch (PROP_TYPE(pproptags->pproptag[i])) {
-			case PT_STRING8:
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
-				break;
-			case PT_UNICODE:
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
-				break;
-			case PT_MV_STRING8:
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
-				break;
-			case PT_MV_UNICODE:
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
-				break;
-			}
-		}
-	}
-	return TRUE;
+	return pinstance->type == instance_type::message ?
+	       rip_message(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pproptags, pproblems) :
+	       rip_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pproptags, pproblems);
 }
 
 BOOL exmdb_server::check_instance_cycle(const char *dir,
