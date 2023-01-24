@@ -464,20 +464,18 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 	}
 	case PT_STRING8:
 		propval.pvalue = ftstream_parser_read_string(pstream, &b_continue);
-		if (propval.pvalue == nullptr) {
-			if (b_continue)
-				goto CONTINUE_WAITING;
-			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		return FTSTREAM_PARSER_READ_OK;
+		if (propval.pvalue != nullptr)
+			return FTSTREAM_PARSER_READ_OK;
+		if (b_continue)
+			goto CONTINUE_WAITING;
+		return FTSTREAM_PARSER_READ_FAIL;
 	case PT_UNICODE:
 		propval.pvalue = ftstream_parser_read_wstring(pstream, &b_continue);
-		if (propval.pvalue == nullptr) {
-			if (b_continue)
-				goto CONTINUE_WAITING;
-			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		return FTSTREAM_PARSER_READ_OK;
+		if (propval.pvalue != nullptr)
+			return FTSTREAM_PARSER_READ_OK;
+		if (b_continue)
+			goto CONTINUE_WAITING;
+		return FTSTREAM_PARSER_READ_FAIL;
 	case PT_CLSID: {
 		auto v = cu_alloc<GUID>();
 		if (v == nullptr)
