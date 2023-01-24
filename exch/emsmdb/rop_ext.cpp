@@ -201,12 +201,10 @@ static int rop_ext_pull_publicfolderisghosted_request(
 static int rop_ext_push_publicfolderisghosted_response(
 	EXT_PUSH *pext, const PUBLICFOLDERISGHOSTED_RESPONSE *r)
 {
-	if (NULL != r->pghost) {
-		TRY(pext->p_uint8(1));
-		return rop_ext_push_ghost_server(pext, r->pghost);
-	} else {
+	if (r->pghost == nullptr)
 		return pext->p_uint8(0);
-	}
+	TRY(pext->p_uint8(1));
+	return rop_ext_push_ghost_server(pext, r->pghost);
 }
 
 static int rop_ext_pull_longtermidfromid_request(
@@ -302,12 +300,10 @@ static int rop_ext_push_openfolder_response(
 	EXT_PUSH *pext, const OPENFOLDER_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->has_rules));
-	if (NULL != r->pghost) {
-		TRY(pext->p_uint8(1));
-		return rop_ext_push_ghost_server(pext, r->pghost);
-	} else {
+	if (r->pghost == nullptr)
 		return pext->p_uint8(0);
-	}
+	TRY(pext->p_uint8(1));
+	return rop_ext_push_ghost_server(pext, r->pghost);
 }
 
 static int rop_ext_pull_createfolder_request(
@@ -321,10 +317,9 @@ static int rop_ext_pull_createfolder_request(
 	if (0 == r->use_unicode) {
 		TRY(pext->g_str(&r->pfolder_name));
 		return pext->g_str(&r->pfolder_comment);
-	} else {
-		TRY(pext->g_wstr(&r->pfolder_name));
-		return pext->g_wstr(&r->pfolder_comment);
 	}
+	TRY(pext->g_wstr(&r->pfolder_name));
+	return pext->g_wstr(&r->pfolder_comment);
 }
 
 static int rop_ext_push_createfolder_response(
@@ -332,16 +327,13 @@ static int rop_ext_push_createfolder_response(
 {
 	TRY(pext->p_uint64(r->folder_id));
 	TRY(pext->p_uint8(r->is_existing));
-	if (0 != r->is_existing) {
-		TRY(pext->p_uint8(r->has_rules));
-		if (NULL != r->pghost) {
-			TRY(pext->p_uint8(1));
-			return rop_ext_push_ghost_server(pext, r->pghost);
-		} else {
-			return pext->p_uint8(0);
-		}
-	}
-	return EXT_ERR_SUCCESS;
+	if (r->is_existing == 0)
+		return EXT_ERR_SUCCESS;
+	TRY(pext->p_uint8(r->has_rules));
+	if (r->pghost == nullptr)
+		return pext->p_uint8(0);
+	TRY(pext->p_uint8(1));
+	return rop_ext_push_ghost_server(pext, r->pghost);
 }
 
 static int rop_ext_pull_deletefolder_request(
@@ -579,16 +571,16 @@ static int rop_ext_pull_restrict_request(
 	TRY(pext->g_uint16(&res_size));
 	if (0 == res_size) {
 		r->pres = NULL;
-	} else {
-		r->pres = pext->anew<RESTRICTION>();
-		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
-		uint32_t offset = ext.m_offset + res_size;
-		TRY(pext->g_restriction(r->pres));
-		if (ext.m_offset > offset)
-			return EXT_ERR_FORMAT;
-		ext.m_offset = offset;
+		return EXT_ERR_SUCCESS;
 	}
+	r->pres = pext->anew<RESTRICTION>();
+	if (r->pres == nullptr)
+		return EXT_ERR_ALLOC;
+	uint32_t offset = ext.m_offset + res_size;
+	TRY(pext->g_restriction(r->pres));
+	if (ext.m_offset > offset)
+		return EXT_ERR_FORMAT;
+	ext.m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -709,13 +701,11 @@ static int rop_ext_push_findrow_response(
 	EXT_PUSH *pext, const FINDROW_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->bookmark_invisible));
-	if (NULL != r->prow) {
-		TRY(pext->p_uint8(1));
-		TRY(pext->p_proprow(*r->pcolumns, *r->prow));
-		return EXT_ERR_SUCCESS;
-	} else {
+	if (r->prow == nullptr)
 		return pext->p_uint8(0);
-	}
+	TRY(pext->p_uint8(1));
+	TRY(pext->p_proprow(*r->pcolumns, *r->prow));
+	return EXT_ERR_SUCCESS;
 }
 
 static int rop_ext_pull_freebookmark_request(EXT_PULL *pext,
@@ -831,12 +821,10 @@ static int rop_ext_pull_createmessage_request(
 static int rop_ext_push_createmessage_response(
 	EXT_PUSH *pext, CREATEMESSAGE_RESPONSE *r)
 {
-	if (NULL != r->pmessage_id) {
-		TRY(pext->p_uint8(1));
-		return pext->p_uint64(*r->pmessage_id);
-	} else {
+	if (r->pmessage_id == nullptr)
 		return pext->p_uint8(0);
-	}
+	TRY(pext->p_uint8(1));
+	return pext->p_uint64(*r->pmessage_id);
 }
 
 static int rop_ext_pull_savechangesmessage_request(
@@ -979,23 +967,21 @@ static int rop_ext_pull_setmessagereadflag_request(EXT_PULL *pext,
 	if (b_private) {
 		r->pclient_data = NULL;
 		return EXT_ERR_SUCCESS;
-	} else {
-		r->pclient_data = pext->anew<LONG_TERM_ID>();
-		if (r->pclient_data == nullptr)
-			return EXT_ERR_ALLOC;
-		return pext->g_longterm(r->pclient_data);
 	}
+	r->pclient_data = pext->anew<LONG_TERM_ID>();
+	if (r->pclient_data == nullptr)
+		return EXT_ERR_ALLOC;
+	return pext->g_longterm(r->pclient_data);
 }
 
 static int rop_ext_push_setmessagereadflag_response(
 	EXT_PUSH *pext, const SETMESSAGEREADFLAG_RESPONSE *r)
 {
-	if (0 != r->read_changed && NULL != r->pclient_data) {
-		TRY(pext->p_uint8(1));
-		TRY(pext->p_uint8(r->logon_id));
-		return pext->p_longterm(*r->pclient_data);
-	}
-	return pext->p_uint8(0);
+	if (r->read_changed == 0 || r->pclient_data == nullptr)
+		return pext->p_uint8(0);
+	TRY(pext->p_uint8(1));
+	TRY(pext->p_uint8(r->logon_id));
+	return pext->p_longterm(*r->pclient_data);
 }
 
 static int rop_ext_pull_openattachment_request(
@@ -1128,12 +1114,10 @@ static int rop_ext_pull_spoolerlockmessage_request(
 static int rop_ext_push_transportsend_response(
 	EXT_PUSH *pext, const TRANSPORTSEND_RESPONSE *r)
 {
-	if (NULL == r->ppropvals) {
+	if (r->ppropvals == nullptr)
 		return pext->p_uint8(1);
-	} else {
-		TRY(pext->p_uint8(0));
-		return pext->p_tpropval_a(*r->ppropvals);
-	}
+	TRY(pext->p_uint8(0));
+	return pext->p_tpropval_a(*r->ppropvals);
 }
 
 static int rop_ext_pull_transportnewmail_request(
@@ -1378,12 +1362,10 @@ static int rop_ext_pull_readstream_request(
 	EXT_PULL *pext, READSTREAM_REQUEST *r)
 {
 	TRY(pext->g_uint16(&r->byte_count));
-	if (0xBABE == r->byte_count) {
+	if (r->byte_count == 0xBABE)
 		return pext->g_uint32(&r->max_byte_count);
-	} else {
-		r->max_byte_count = 0;
-		return EXT_ERR_SUCCESS;
-	}
+	r->max_byte_count = 0;
+	return EXT_ERR_SUCCESS;
 }
 
 static int rop_ext_push_readstream_response(
@@ -1570,12 +1552,10 @@ static int rop_ext_pull_fasttransfersourcegetbuffer_request(
 	EXT_PULL *pext, FASTTRANSFERSOURCEGETBUFFER_REQUEST *r)
 {
 	TRY(pext->g_uint16(&r->buffer_size));
-	if (0xBABE == r->buffer_size) {
+	if (r->buffer_size == 0xBABE)
 		return pext->g_uint16(&r->max_buffer_size);
-	} else {
-		r->max_buffer_size = 0;
-		return EXT_ERR_SUCCESS;
-	}
+	r->max_buffer_size = 0;
+	return EXT_ERR_SUCCESS;
 }
 
 static int rop_ext_push_fasttransfersourcegetbuffer_response(
@@ -1809,20 +1789,19 @@ static int rop_ext_pull_registernotification_request(
 	TRY(pext->g_uint8(&r->notification_types));
 	TRY(pext->g_uint8(&r->reserved));
 	TRY(pext->g_uint8(&r->want_whole_store));
-	if (0 == r->want_whole_store) {
-		r->pfolder_id = pext->anew<uint64_t>();
-		if (r->pfolder_id == nullptr)
-			return EXT_ERR_ALLOC;
-		TRY(pext->g_uint64(r->pfolder_id));
-		r->pmessage_id = pext->anew<uint64_t>();
-		if (r->pmessage_id == nullptr)
-			return EXT_ERR_ALLOC;
-		return pext->g_uint64(r->pmessage_id);
-	} else {
+	if (r->want_whole_store) {
 		r->pfolder_id = NULL;
 		r->pmessage_id = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	r->pfolder_id = pext->anew<uint64_t>();
+	if (r->pfolder_id == nullptr)
+		return EXT_ERR_ALLOC;
+	TRY(pext->g_uint64(r->pfolder_id));
+	r->pmessage_id = pext->anew<uint64_t>();
+	if (r->pmessage_id == nullptr)
+		return EXT_ERR_ALLOC;
+	return pext->g_uint64(r->pmessage_id);
 }
 
 static int rop_ext_push_notification_data(

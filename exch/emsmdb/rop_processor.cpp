@@ -294,9 +294,8 @@ static void *emsrop_scanwork(void *param)
 		if (count < g_scan_interval) {
 			count ++;
 			continue;
-		} else {
-			count = 0;
 		}
+		count = 0;
 		std::unique_lock hl_hold(g_hash_lock);
 		std::vector<std::string> dirs;
 		for (const auto &pair : g_logon_hash)
@@ -444,12 +443,10 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			double_list_append_as_tail(presponse_list, pnode1);
 			break;
 		case EXT_ERR_BUFSIZE: {
-			if (req->rop_id == ropGetPropertiesAll) {
-				/* MS-OXCPRPT 3.2.5.2, fail to whole RPC */
-				if (pnode == double_list_get_head(&prop_buff->rop_list)) {
-					return ecServerOOM;
-				}
-			}
+			/* MS-OXCPRPT 3.2.5.2, fail to whole RPC */
+			if (req->rop_id == ropGetPropertiesAll &&
+			    pnode == double_list_get_head(&prop_buff->rop_list))
+				return ecServerOOM;
 			rsp->rop_id = ropBufferTooSmall;
 			auto bts = cu_alloc<BUFFERTOOSMALL_RESPONSE>();
 			rsp->ppayload = bts;
