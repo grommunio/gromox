@@ -1144,7 +1144,6 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 	uint64_t message_id, uint64_t cn, INDEX_ARRAY *pindices,
 	PROPTAG_ARRAY *pungroup_proptags)
 {
-	int i;
 	uint64_t cn_val;
 	uint64_t mid_val;
 	EXT_PULL ext_pull;
@@ -1182,12 +1181,10 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 			if (ext_pull.g_proptag_a(&tmp_indices) != EXT_ERR_SUCCESS) {
 				return FALSE;
 			}
-			for (i=0; i<tmp_indices.count; i++) {
+			for (unsigned int i = 0; i < tmp_indices.count; ++i)
 				if (!proptag_array_append(ptmp_indices.get(),
-				    tmp_indices.pproptag[i])) {
+				    tmp_indices.pproptag[i]))
 					return FALSE;
-				}
-			}
 		}
 		if (sqlite3_column_bytes(pstmt, 2) > 0) {
 			ext_pull.init(sqlite3_column_blob(pstmt, 2),
@@ -1196,12 +1193,10 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 			if (ext_pull.g_proptag_a(&tmp_proptags) != EXT_ERR_SUCCESS) {
 				return FALSE;
 			}
-			for (i=0; i<tmp_proptags.count; i++) {
+			for (unsigned int i = 0; i < tmp_proptags.count; ++i)
 				if (!proptag_array_append(ptmp_proptags.get(),
-				    tmp_proptags.pproptag[i])) {
+				    tmp_proptags.pproptag[i]))
 					return FALSE;
-				}
-			}
 		}
 	}
 	pstmt.finalize();
@@ -2850,7 +2845,6 @@ static ec_error_t message_forward_message(const char *from_address,
 	uint64_t message_id, const char *pdigest, uint32_t action_flavor,
 	BOOL b_extended, uint32_t count, void *pblock)
 {
-	int i;
 	int offset;
 	const char *pdomain;
 	time_t cur_time;
@@ -2902,11 +2896,10 @@ static ec_error_t message_forward_message(const char *from_address,
 			return ecError;
 		}
 		auto num = pmime->get_field_num("Delivered-To");
-		for (i=0; i<num; i++) {
+		for (int i = 0; i < num; ++i)
 			if (pmime->search_field("Delivered-To", i, tmp_buff, 256) &&
 			    strcasecmp(tmp_buff, username) == 0)
 				return ecSuccess;
-		}
 	} else {
 		if (!message_read_message(psqlite, cpid, message_id,
 		    &pmsgctnt) || pmsgctnt == nullptr)

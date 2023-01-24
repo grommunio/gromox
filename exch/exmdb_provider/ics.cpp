@@ -56,10 +56,9 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 {
 	auto pcache = this;
 	
-	if (SQLITE_OK != sqlite3_open_v2(":memory:", &pcache->psqlite,
-		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
+	if (sqlite3_open_v2(":memory:", &pcache->psqlite,
+	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
 	if (gx_sql_exec(pcache->psqlite, "CREATE TABLE id_vals "
 	    "(id_val INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
@@ -160,10 +159,9 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	auto b_private = exmdb_server::is_private();
 
 	/* Setup of scratch space db */
-	if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
-		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
+	if (sqlite3_open_v2(":memory:", &psqlite,
+	    SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
 	    "(message_id INTEGER PRIMARY KEY)") != SQLITE_OK)
@@ -645,10 +643,9 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	sqlite3 *psqlite;
 	
 	/* Setup of scratch space db */
-	if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
-		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
+	if (sqlite3_open_v2(":memory:", &psqlite,
+	    SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
 	    "(folder_id INTEGER PRIMARY KEY)") != SQLITE_OK)
