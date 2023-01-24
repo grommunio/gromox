@@ -572,9 +572,8 @@ BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
 	if (std::find(tags.cbegin(), tags.cend(), PR_SOURCE_KEY) == tags.cend())
 		tags.push_back(PR_SOURCE_KEY);
 	pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
-	if (NULL == pproptags->pproptag) {
+	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	}
 	pproptags->count = tags.size();
 	memcpy(pproptags->pproptag, tags.data(), sizeof(tags[0]) * pproptags->count);
 	return TRUE;
@@ -836,9 +835,8 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 					continue;
 				}
 			}
-			if (NULL != pmessage_count) {
+			if (pmessage_count != nullptr)
 				(*pmessage_count) ++;
-			}
 			if (b_hard && is_associated && pfai_size != nullptr)
 				*pfai_size += sqlite3_column_int64(pstmt, 1);
 			else if (b_hard && !is_associated && pnormal_size != nullptr)
