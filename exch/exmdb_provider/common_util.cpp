@@ -1416,11 +1416,9 @@ static BOOL common_util_get_message_display_recipients(sqlite3 *psqlite,
 		if (!cu_get_property(db_table::rcpt_props,
 		    rcpt_id, cpid, psqlite, PR_DISPLAY_NAME, &pvalue))
 			return FALSE;	
-		if (NULL == pvalue) {
-			if (!cu_get_property(db_table::rcpt_props,
-			    rcpt_id, cpid, psqlite, PR_SMTP_ADDRESS, &pvalue))
-				return FALSE;	
-		}
+		if (pvalue == nullptr && !cu_get_property(db_table::rcpt_props,
+		    rcpt_id, cpid, psqlite, PR_SMTP_ADDRESS, &pvalue))
+			return FALSE;
 		if (pvalue == nullptr)
 			continue;
 		if (!dr.empty())
@@ -2869,17 +2867,16 @@ BOOL cu_set_properties(db_table table_type,
 				tmp_id = common_util_get_folder_parent_fid(psqlite, id);
 				if (tmp_id == 0 && tmp_id == id)
 					break;
-				if (common_util_get_folder_by_name(psqlite,
-				    tmp_id, pstring, &tmp_id)) {
-					if (tmp_id == 0 || tmp_id == id)
-						break;
-					pproblems->pproblem[pproblems->count].index = i;
-					pproblems->pproblem[pproblems->count].proptag =
-									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count++].err = ecDuplicateName;
-					continue;
-				}
-				break;
+				if (!common_util_get_folder_by_name(psqlite,
+				    tmp_id, pstring, &tmp_id))
+					break;
+				if (tmp_id == 0 || tmp_id == id)
+					break;
+				pproblems->pproblem[pproblems->count].index = i;
+				pproblems->pproblem[pproblems->count].proptag =
+								ppropvals->ppropval[i].proptag;
+				pproblems->pproblem[pproblems->count++].err = ecDuplicateName;
+				continue;
 			}
 			break;
 		case db_table::msg_props:
@@ -2959,12 +2956,12 @@ BOOL cu_set_properties(db_table table_type,
 			case PR_BODY_A:
 			case PR_TRANSPORT_MESSAGE_HEADERS:
 			case PR_TRANSPORT_MESSAGE_HEADERS_A:
-				if (!common_util_set_message_body(psqlite, cpid, id, &ppropvals->ppropval[i])) {
-					pproblems->pproblem[pproblems->count].index = i;
-					pproblems->pproblem[pproblems->count].proptag =
-									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count++].err = ecError;
-				}
+				if (common_util_set_message_body(psqlite, cpid, id, &ppropvals->ppropval[i]))
+					break;
+				pproblems->pproblem[pproblems->count].index = i;
+				pproblems->pproblem[pproblems->count].proptag =
+					ppropvals->ppropval[i].proptag;
+				pproblems->pproblem[pproblems->count++].err = ecError;
 				continue;
 			case ID_TAG_HTML:
 				if (!g_inside_flush_instance)
@@ -2982,13 +2979,13 @@ BOOL cu_set_properties(db_table table_type,
 				continue;
 			case PR_HTML:
 			case PR_RTF_COMPRESSED:
-				if (!cu_set_object_cid_value(psqlite,
-				    table_type, id, &ppropvals->ppropval[i])) {
-					pproblems->pproblem[pproblems->count].index = i;
-					pproblems->pproblem[pproblems->count].proptag =
-									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count++].err = ecError;
-				}
+				if (cu_set_object_cid_value(psqlite,
+				    table_type, id, &ppropvals->ppropval[i]))
+					continue;
+				pproblems->pproblem[pproblems->count].index = i;
+				pproblems->pproblem[pproblems->count].proptag =
+					ppropvals->ppropval[i].proptag;
+				pproblems->pproblem[pproblems->count++].err = ecError;
 				continue;
 			case ID_TAG_TRANSPORTMESSAGEHEADERS:
 				if (!g_inside_flush_instance)
@@ -3009,10 +3006,8 @@ BOOL cu_set_properties(db_table table_type,
 			}
 			break;
 		case db_table::rcpt_props:
-			switch (ppropvals->ppropval[i].proptag) {
-			case PR_ROWID:
+			if (ppropvals->ppropval[i].proptag == PR_ROWID)
 				continue;
-			}
 			break;
 		case db_table::atx_props:
 			switch (ppropvals->ppropval[i].proptag) {
@@ -3037,13 +3032,13 @@ BOOL cu_set_properties(db_table table_type,
 				continue;
 			case PR_ATTACH_DATA_BIN:
 			case PR_ATTACH_DATA_OBJ:
-				if (!cu_set_object_cid_value(psqlite,
-				    table_type, id, &ppropvals->ppropval[i])) {
-					pproblems->pproblem[pproblems->count].index = i;
-					pproblems->pproblem[pproblems->count].proptag =
-									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count++].err = ecError;
-				}
+				if (cu_set_object_cid_value(psqlite,
+				    table_type, id, &ppropvals->ppropval[i]))
+					continue;
+				pproblems->pproblem[pproblems->count].index = i;
+				pproblems->pproblem[pproblems->count].proptag =
+					ppropvals->ppropval[i].proptag;
+				pproblems->pproblem[pproblems->count++].err = ecError;
 				continue;
 			}
 			break;
@@ -4335,13 +4330,12 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 				return FALSE;
 			if (pvalue == nullptr)
 				break;
-			if (rprop->proptag == PR_ANR) {
-				if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-					return FALSE;
-				return strcasestr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
-			}
-			break;
+			if (rprop->proptag != PR_ANR)
+				break;
+			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
+				return FALSE;
+			return strcasestr(static_cast<char *>(pvalue),
+			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 		}
 		return propval_compare_relop_nullok(rprop->relop,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
@@ -4416,12 +4410,11 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		auto rcnt = pres->count;
 		if (rcnt->count == 0)
 			return FALSE;
-		if (cu_eval_msg_restriction(psqlite,
-		    cpid, message_id, &rcnt->sub_res)) {
-			--rcnt->count;
-			return TRUE;
-		}
-		return FALSE;
+		if (!cu_eval_msg_restriction(psqlite,
+		    cpid, message_id, &rcnt->sub_res))
+			return false;
+		--rcnt->count;
+		return TRUE;
 	}
 	case RES_NULL:
 		return TRUE;
