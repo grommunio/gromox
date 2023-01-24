@@ -201,12 +201,10 @@ static int rop_ext_pull_publicfolderisghosted_request(
 static int rop_ext_push_publicfolderisghosted_response(
 	EXT_PUSH *pext, const PUBLICFOLDERISGHOSTED_RESPONSE *r)
 {
-	if (NULL != r->pghost) {
-		TRY(pext->p_uint8(1));
-		return rop_ext_push_ghost_server(pext, r->pghost);
-	} else {
+	if (r->pghost == nullptr)
 		return pext->p_uint8(0);
-	}
+	TRY(pext->p_uint8(1));
+	return rop_ext_push_ghost_server(pext, r->pghost);
 }
 
 static int rop_ext_pull_longtermidfromid_request(
@@ -302,12 +300,10 @@ static int rop_ext_push_openfolder_response(
 	EXT_PUSH *pext, const OPENFOLDER_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->has_rules));
-	if (NULL != r->pghost) {
-		TRY(pext->p_uint8(1));
-		return rop_ext_push_ghost_server(pext, r->pghost);
-	} else {
+	if (r->pghost == nullptr)
 		return pext->p_uint8(0);
-	}
+	TRY(pext->p_uint8(1));
+	return rop_ext_push_ghost_server(pext, r->pghost);
 }
 
 static int rop_ext_pull_createfolder_request(
@@ -321,10 +317,9 @@ static int rop_ext_pull_createfolder_request(
 	if (0 == r->use_unicode) {
 		TRY(pext->g_str(&r->pfolder_name));
 		return pext->g_str(&r->pfolder_comment);
-	} else {
-		TRY(pext->g_wstr(&r->pfolder_name));
-		return pext->g_wstr(&r->pfolder_comment);
 	}
+	TRY(pext->g_wstr(&r->pfolder_name));
+	return pext->g_wstr(&r->pfolder_comment);
 }
 
 static int rop_ext_push_createfolder_response(
@@ -332,16 +327,13 @@ static int rop_ext_push_createfolder_response(
 {
 	TRY(pext->p_uint64(r->folder_id));
 	TRY(pext->p_uint8(r->is_existing));
-	if (0 != r->is_existing) {
-		TRY(pext->p_uint8(r->has_rules));
-		if (NULL != r->pghost) {
-			TRY(pext->p_uint8(1));
-			return rop_ext_push_ghost_server(pext, r->pghost);
-		} else {
-			return pext->p_uint8(0);
-		}
-	}
-	return EXT_ERR_SUCCESS;
+	if (r->is_existing == 0)
+		return EXT_ERR_SUCCESS;
+	TRY(pext->p_uint8(r->has_rules));
+	if (r->pghost == nullptr)
+		return pext->p_uint8(0);
+	TRY(pext->p_uint8(1));
+	return rop_ext_push_ghost_server(pext, r->pghost);
 }
 
 static int rop_ext_pull_deletefolder_request(
@@ -579,16 +571,16 @@ static int rop_ext_pull_restrict_request(
 	TRY(pext->g_uint16(&res_size));
 	if (0 == res_size) {
 		r->pres = NULL;
-	} else {
-		r->pres = pext->anew<RESTRICTION>();
-		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
-		uint32_t offset = ext.m_offset + res_size;
-		TRY(pext->g_restriction(r->pres));
-		if (ext.m_offset > offset)
-			return EXT_ERR_FORMAT;
-		ext.m_offset = offset;
+		return EXT_ERR_SUCCESS;
 	}
+	r->pres = pext->anew<RESTRICTION>();
+	if (r->pres == nullptr)
+		return EXT_ERR_ALLOC;
+	uint32_t offset = ext.m_offset + res_size;
+	TRY(pext->g_restriction(r->pres));
+	if (ext.m_offset > offset)
+		return EXT_ERR_FORMAT;
+	ext.m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
@@ -709,13 +701,11 @@ static int rop_ext_push_findrow_response(
 	EXT_PUSH *pext, const FINDROW_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->bookmark_invisible));
-	if (NULL != r->prow) {
-		TRY(pext->p_uint8(1));
-		TRY(pext->p_proprow(*r->pcolumns, *r->prow));
-		return EXT_ERR_SUCCESS;
-	} else {
+	if (r->prow == nullptr)
 		return pext->p_uint8(0);
-	}
+	TRY(pext->p_uint8(1));
+	TRY(pext->p_proprow(*r->pcolumns, *r->prow));
+	return EXT_ERR_SUCCESS;
 }
 
 static int rop_ext_pull_freebookmark_request(EXT_PULL *pext,
@@ -831,12 +821,10 @@ static int rop_ext_pull_createmessage_request(
 static int rop_ext_push_createmessage_response(
 	EXT_PUSH *pext, CREATEMESSAGE_RESPONSE *r)
 {
-	if (NULL != r->pmessage_id) {
-		TRY(pext->p_uint8(1));
-		return pext->p_uint64(*r->pmessage_id);
-	} else {
+	if (r->pmessage_id == nullptr)
 		return pext->p_uint8(0);
-	}
+	TRY(pext->p_uint8(1));
+	return pext->p_uint64(*r->pmessage_id);
 }
 
 static int rop_ext_pull_savechangesmessage_request(
@@ -979,23 +967,21 @@ static int rop_ext_pull_setmessagereadflag_request(EXT_PULL *pext,
 	if (b_private) {
 		r->pclient_data = NULL;
 		return EXT_ERR_SUCCESS;
-	} else {
-		r->pclient_data = pext->anew<LONG_TERM_ID>();
-		if (r->pclient_data == nullptr)
-			return EXT_ERR_ALLOC;
-		return pext->g_longterm(r->pclient_data);
 	}
+	r->pclient_data = pext->anew<LONG_TERM_ID>();
+	if (r->pclient_data == nullptr)
+		return EXT_ERR_ALLOC;
+	return pext->g_longterm(r->pclient_data);
 }
 
 static int rop_ext_push_setmessagereadflag_response(
 	EXT_PUSH *pext, const SETMESSAGEREADFLAG_RESPONSE *r)
 {
-	if (0 != r->read_changed && NULL != r->pclient_data) {
-		TRY(pext->p_uint8(1));
-		TRY(pext->p_uint8(r->logon_id));
-		return pext->p_longterm(*r->pclient_data);
-	}
-	return pext->p_uint8(0);
+	if (r->read_changed == 0 || r->pclient_data == nullptr)
+		return pext->p_uint8(0);
+	TRY(pext->p_uint8(1));
+	TRY(pext->p_uint8(r->logon_id));
+	return pext->p_longterm(*r->pclient_data);
 }
 
 static int rop_ext_pull_openattachment_request(
@@ -1128,12 +1114,10 @@ static int rop_ext_pull_spoolerlockmessage_request(
 static int rop_ext_push_transportsend_response(
 	EXT_PUSH *pext, const TRANSPORTSEND_RESPONSE *r)
 {
-	if (NULL == r->ppropvals) {
+	if (r->ppropvals == nullptr)
 		return pext->p_uint8(1);
-	} else {
-		TRY(pext->p_uint8(0));
-		return pext->p_tpropval_a(*r->ppropvals);
-	}
+	TRY(pext->p_uint8(0));
+	return pext->p_tpropval_a(*r->ppropvals);
 }
 
 static int rop_ext_pull_transportnewmail_request(
@@ -1378,12 +1362,10 @@ static int rop_ext_pull_readstream_request(
 	EXT_PULL *pext, READSTREAM_REQUEST *r)
 {
 	TRY(pext->g_uint16(&r->byte_count));
-	if (0xBABE == r->byte_count) {
+	if (r->byte_count == 0xBABE)
 		return pext->g_uint32(&r->max_byte_count);
-	} else {
-		r->max_byte_count = 0;
-		return EXT_ERR_SUCCESS;
-	}
+	r->max_byte_count = 0;
+	return EXT_ERR_SUCCESS;
 }
 
 static int rop_ext_push_readstream_response(
@@ -1570,12 +1552,10 @@ static int rop_ext_pull_fasttransfersourcegetbuffer_request(
 	EXT_PULL *pext, FASTTRANSFERSOURCEGETBUFFER_REQUEST *r)
 {
 	TRY(pext->g_uint16(&r->buffer_size));
-	if (0xBABE == r->buffer_size) {
+	if (r->buffer_size == 0xBABE)
 		return pext->g_uint16(&r->max_buffer_size);
-	} else {
-		r->max_buffer_size = 0;
-		return EXT_ERR_SUCCESS;
-	}
+	r->max_buffer_size = 0;
+	return EXT_ERR_SUCCESS;
 }
 
 static int rop_ext_push_fasttransfersourcegetbuffer_response(
@@ -1674,22 +1654,21 @@ static int rop_ext_push_syncimportmessagechange_response(
 	return pext->p_uint64(r->message_id);
 }
 
-static int rop_ext_pull_syncimportreadstatechanges_request(
-	EXT_PULL *pext, SYNCIMPORTREADSTATECHANGES_REQUEST *r)
+static int rop_ext_pull_syncimportreadstatechanges_request(EXT_PULL *pext,
+    SYNCIMPORTREADSTATECHANGES_REQUEST *r) try
 {
 	auto &ext = *pext;
 	uint16_t size;
-	MESSAGE_READ_STAT tmp_array[0x1000];
+	static constexpr size_t ta_size = 0x1000;
+	auto tmp_array = std::make_unique<MESSAGE_READ_STAT[]>(ta_size);
 	
 	TRY(pext->g_uint16(&size));
 	if (size == 0)
 		return EXT_ERR_FORMAT;
 	r->count = 0;
 	uint32_t offset = ext.m_offset + size;
-	while (ext.m_offset < offset && r->count < 0x1000) {
-		TRY(rop_ext_pull_message_read_stat(pext, tmp_array + r->count));
-		r->count ++;
-	}
+	while (ext.m_offset < offset && r->count < ta_size)
+		TRY(rop_ext_pull_message_read_stat(pext, &tmp_array[r->count++]));
 	if (ext.m_offset != offset)
 		return EXT_ERR_FORMAT;
 	r->pread_stat = pext->anew<MESSAGE_READ_STAT>(r->count);
@@ -1697,8 +1676,11 @@ static int rop_ext_pull_syncimportreadstatechanges_request(
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	memcpy(r->pread_stat, tmp_array, sizeof(MESSAGE_READ_STAT)*r->count);
+	memcpy(r->pread_stat, tmp_array.get(), sizeof(tmp_array[0]) * r->count);
 	return EXT_ERR_SUCCESS;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1171: ENOMEM");
+	return EXT_ERR_ALLOC;
 }
 
 static int rop_ext_pull_syncimporthierarchychange_request(
@@ -1807,20 +1789,19 @@ static int rop_ext_pull_registernotification_request(
 	TRY(pext->g_uint8(&r->notification_types));
 	TRY(pext->g_uint8(&r->reserved));
 	TRY(pext->g_uint8(&r->want_whole_store));
-	if (0 == r->want_whole_store) {
-		r->pfolder_id = pext->anew<uint64_t>();
-		if (r->pfolder_id == nullptr)
-			return EXT_ERR_ALLOC;
-		TRY(pext->g_uint64(r->pfolder_id));
-		r->pmessage_id = pext->anew<uint64_t>();
-		if (r->pmessage_id == nullptr)
-			return EXT_ERR_ALLOC;
-		return pext->g_uint64(r->pmessage_id);
-	} else {
+	if (r->want_whole_store) {
 		r->pfolder_id = NULL;
 		r->pmessage_id = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	r->pfolder_id = pext->anew<uint64_t>();
+	if (r->pfolder_id == nullptr)
+		return EXT_ERR_ALLOC;
+	TRY(pext->g_uint64(r->pfolder_id));
+	r->pmessage_id = pext->anew<uint64_t>();
+	if (r->pmessage_id == nullptr)
+		return EXT_ERR_ALLOC;
+	return pext->g_uint64(r->pmessage_id);
 }
 
 static int rop_ext_push_notification_data(
@@ -3075,15 +3056,16 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 }
 
 int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
-    const ROP_BUFFER *prop_buff, void *pbuff_out, uint32_t *pout_len)
+    const ROP_BUFFER *prop_buff, void *pbuff_out, uint32_t *pout_len) try
 {
 	EXT_PUSH subext;
 	EXT_PUSH ext_push;
-	uint8_t ext_buff[0x10000];
-	uint8_t tmp_buff[0x10000];
+	static constexpr size_t ext_buff_size = 0x10000;
+	auto ext_buff = std::make_unique<uint8_t[]>(ext_buff_size);
+	auto tmp_buff = std::make_unique<uint8_t[]>(ext_buff_size);
 	RPC_HEADER_EXT rpc_header_ext;
 	
-	if (!subext.init(ext_buff, sizeof(ext_buff), EXT_FLAG_UTF16))
+	if (!subext.init(ext_buff.get(), ext_buff_size, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	TRY(subext.p_uint16(in_len + sizeof(uint16_t)));
 	TRY(subext.p_bytes(pbuff_in, in_len));
@@ -3097,14 +3079,14 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 		if (rpc_header_ext.size_actual < MINIMUM_COMPRESS_SIZE) {
 			rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 		} else {
-			uint32_t compressed_len = lzxpress_compress(ext_buff, subext.m_offset, tmp_buff);
+			uint32_t compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get());
 			if (compressed_len == 0 || compressed_len >= subext.m_offset) {
 				/* if we can not get benefit from the
 					compression, unmask the compress bit */
 				rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 			} else {
 				rpc_header_ext.size = compressed_len;
-				memcpy(ext_buff, tmp_buff, compressed_len);
+				memcpy(ext_buff.get(), tmp_buff.get(), compressed_len);
 			}
 		}
 	}
@@ -3113,9 +3095,12 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	if (!ext_push.init(pbuff_out, *pout_len, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	TRY(ext_push.p_rpchdr(rpc_header_ext));
-	TRY(ext_push.p_bytes(ext_buff, rpc_header_ext.size));
+	TRY(ext_push.p_bytes(ext_buff.get(), rpc_header_ext.size));
 	*pout_len = ext_push.m_offset;
 	return EXT_ERR_SUCCESS;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1172: ENOMEM");
+	return EXT_ERR_ALLOC;
 }
 
 void rop_ext_set_rhe_flag_last(uint8_t *pdata, uint32_t last_offset)

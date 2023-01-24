@@ -1005,15 +1005,15 @@ static int aux_ext_pull_aux_header(EXT_PULL *pext, AUX_HEADER *r)
 	return EXT_ERR_SUCCESS;
 }
 
-
-static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r)
+static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r) try
 {
 	uint16_t size;
 	EXT_PUSH subext;
-	uint8_t tmp_buff[0x1008];
+	static constexpr size_t tmp_buff_size = 0x1008;
+	auto tmp_buff = std::make_unique<uint8_t[]>(tmp_buff_size);
 	uint8_t paddings[AUX_ALIGN_SIZE]{};
 	
-	if (!subext.init(tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16))
+	if (!subext.init(tmp_buff.get(), tmp_buff_size, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	switch (r->version) {
 	case AUX_VERSION_1:
@@ -1032,13 +1032,17 @@ static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r)
 	TRY(pext->p_uint8(r->type));
 	TRY(pext->p_bytes(subext.m_udata, subext.m_offset));
 	return pext->p_bytes(paddings, size - actual_size);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1169: ENOMEM");
+	return EXT_ERR_ALLOC;
 }
 
-int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
+int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r) try
 {
 	auto &ext = *pext;
 	EXT_PULL subext;
-	uint8_t buff[0x1008];
+	static constexpr size_t buff_size = 0x1008;
+	auto buff = std::make_unique<uint8_t[]>(buff_size);
 	DOUBLE_LIST_NODE *pnode;
 	uint32_t decompressed_len;
 	RPC_HEADER_EXT rpc_header_ext;
@@ -1057,14 +1061,14 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 		/* lzxpress case */
 		if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
 			decompressed_len = lzxpress_decompress(pdata,
-				rpc_header_ext.size, buff, sizeof(buff));
+				rpc_header_ext.size, buff.get(), buff_size);
 			if (decompressed_len != rpc_header_ext.size_actual) {
 				mlog(LV_WARN, "W-1098: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)",
 				        rpc_header_ext.size, rpc_header_ext.size_actual,
 				        decompressed_len);
 				return EXT_ERR_LZXPRESS;
 			}
-			pdata = buff;
+			pdata = buff.get();
 		}
 		subext.init(pdata, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 		while (subext.m_offset < subext.m_data_size) {
@@ -1079,20 +1083,24 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 		}
 	}
 	return EXT_ERR_SUCCESS;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1168: ENOMEM");
+	return EXT_ERR_ALLOC;
 }
 
-int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
+int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r) try
 {
 	EXT_PUSH subext;
 	DOUBLE_LIST_NODE *pnode;
-	uint8_t ext_buff[0x1008];
-	uint8_t tmp_buff[0x1008];
+	static constexpr size_t ext_buff_size = 0x1008;
+	auto ext_buff = std::make_unique<uint8_t[]>(ext_buff_size);
+	auto tmp_buff = std::make_unique<uint8_t[]>(ext_buff_size);
 	RPC_HEADER_EXT rpc_header_ext;
 
 
 	if ((r->rhe_flags & RHE_FLAG_LAST) == 0)
 		return EXT_ERR_HEADER_FLAGS;
-	if (!subext.init(ext_buff, sizeof(ext_buff), EXT_FLAG_UTF16))
+	if (!subext.init(ext_buff.get(), ext_buff_size, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
 	for (pnode=double_list_get_head(&r->aux_list); NULL!=pnode;
 	     pnode = double_list_get_after(&r->aux_list, pnode))
@@ -1105,19 +1113,22 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 		if (rpc_header_ext.size_actual < MINIMUM_COMPRESS_SIZE) {
 			rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 		} else {
-			uint32_t compressed_len = lzxpress_compress(ext_buff, subext.m_offset, tmp_buff);
+			auto compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get());
 			if (compressed_len == 0 || compressed_len >= subext.m_offset) {
 				/* if we can not get benefit from the
 					compression, unmask the compress bit */
 				rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 			} else {
 				rpc_header_ext.size = compressed_len;
-				memcpy(ext_buff, tmp_buff, compressed_len);
+				memcpy(ext_buff.get(), tmp_buff.get(), compressed_len);
 			}
 		}
 	}
 	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
 		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
 	TRY(pext->p_rpchdr(rpc_header_ext));
-	return pext->p_bytes(ext_buff, rpc_header_ext.size);
+	return pext->p_bytes(ext_buff.get(), rpc_header_ext.size);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1167: ENOMEM");
+	return EXT_ERR_ALLOC;
 }

@@ -89,7 +89,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	uint64_t message_id, uint32_t *plast_id,
 	MESSAGE_CONTENT **ppmsgctnt)
 {
-	int i;
 	uint64_t cid;
 	uint32_t row_id;
 	uint32_t last_id;
@@ -98,7 +97,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	TARRAY_SET *prcpts;
 	char sql_string[256];
 	uint64_t message_id1;
-	PROPTAG_ARRAY proptags;
 	uint64_t attachment_id;
 	MESSAGE_CONTENT *pmsgctnt;
 	MESSAGE_CONTENT *pmsgctnt1;
@@ -116,16 +114,15 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	}
 	pstmt.finalize();
 	pmsgctnt = message_content_init();
-	if (NULL == pmsgctnt) {
+	if (pmsgctnt == nullptr)
 		return FALSE;
-	}
 	auto cl_msgctnt = make_scope_exit([&]() { message_content_free(pmsgctnt); });
+	std::vector<uint32_t> proptags;
 	if (!cu_get_proptags(db_table::msg_props, message_id,
-		psqlite, &proptags)) {
+	    psqlite, proptags))
 		return FALSE;
-	}
-	for (i=0; i<proptags.count; i++) {
-		switch (proptags.pproptag[i]) {
+	for (uint32_t tag : proptags) {
+		switch (tag) {
 		case PR_DISPLAY_TO:
 		case PR_DISPLAY_TO_A:
 		case PR_DISPLAY_CC:
@@ -144,34 +141,29 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				" OR (message_id=%llu AND proptag=%u)", LLU{message_id},
 				PR_BODY, LLU{message_id}, PR_BODY_A);
 			pstmt = gx_sql_prep(psqlite, sql_string);
-			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
+			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
-			}
 			proptag = sqlite3_column_int64(pstmt, 0);
 			cid = sqlite3_column_int64(pstmt, 1);
 			pstmt.finalize();
 			uint32_t tag = proptag == PR_BODY ? ID_TAG_BODY : ID_TAG_BODY_STRING8;
-			if (pmsgctnt->proplist.set(tag, &cid) != 0) {
+			if (pmsgctnt->proplist.set(tag, &cid) != 0)
 				return FALSE;	
-			}
 			break;
 		}
 		case PR_HTML:
 		case PR_RTF_COMPRESSED: {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
 				"message_properties WHERE message_id=%llu AND "
-				"proptag=%u", LLU{message_id}, XUI{proptags.pproptag[i]});
+				"proptag=%u", LLU{message_id}, XUI{tag});
 			pstmt = gx_sql_prep(psqlite, sql_string);
-			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
+			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
-			}
 			cid = sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
-			uint32_t tag = proptags.pproptag[i] == PR_HTML ?
-			               ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
-			if (pmsgctnt->proplist.set(tag, &cid) != 0) {
+			tag = tag == PR_HTML ? ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
+			if (pmsgctnt->proplist.set(tag, &cid) != 0)
 				return FALSE;
-			}
 			break;
 		}
 		case PR_TRANSPORT_MESSAGE_HEADERS:
@@ -182,57 +174,47 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			         PR_TRANSPORT_MESSAGE_HEADERS, LLU{message_id},
 			         PR_TRANSPORT_MESSAGE_HEADERS_A);
 			pstmt = gx_sql_prep(psqlite, sql_string);
-			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
+			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
-			}
 			proptag = sqlite3_column_int64(pstmt, 0);
 			cid = sqlite3_column_int64(pstmt, 1);
 			pstmt.finalize();
 			uint32_t tag = proptag == PR_TRANSPORT_MESSAGE_HEADERS ?
 			               ID_TAG_TRANSPORTMESSAGEHEADERS :
 			               ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
-			if (pmsgctnt->proplist.set(tag, &cid) != 0) {
+			if (pmsgctnt->proplist.set(tag, &cid) != 0)
 				return FALSE;	
-			}
 			break;
 		}
 		default: {
 			void *newval = nullptr;
 			if (!cu_get_property(db_table::msg_props,
-			    message_id, 0, psqlite, proptags.pproptag[i], &newval) ||
+			    message_id, 0, psqlite, tag, &newval) ||
 			    newval == nullptr ||
-			    pmsgctnt->proplist.set(proptags.pproptag[i], newval) != 0) {
+			    pmsgctnt->proplist.set(tag, newval) != 0)
 				return FALSE;
-			}
 			break;
 		}
 		}
 	}
 	prcpts = tarray_set_init();
-	if (NULL == prcpts) {
+	if (prcpts == nullptr)
 		return FALSE;
-	}
 	message_content_set_rcpts_internal(pmsgctnt, prcpts);
 	snprintf(sql_string, arsizeof(sql_string), "SELECT recipient_id FROM"
 	          " recipients WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	auto pstmt1 = gx_sql_prep(psqlite, "SELECT proptag FROM"
 	              " recipients_properties WHERE recipient_id=?");
-	if (pstmt1 == nullptr) {
+	if (pstmt1 == nullptr)
 		return FALSE;
-	}
 	row_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		auto pproplist = prcpts->emplace();
-		if (NULL == pproplist) {
-			return FALSE;
-		}
-		if (pproplist->set(PR_ROWID, &row_id) != 0) {
+		if (pproplist == nullptr || pproplist->set(PR_ROWID, &row_id) != 0)
 			return FALSE;	
-		}
 		row_id ++;
 		rcpt_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_bind_int64(pstmt1, 1, rcpt_id);
@@ -242,9 +224,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			if (!cu_get_property(db_table::rcpt_props,
 			    rcpt_id, 0, psqlite, tag, &newval) ||
 			    newval == nullptr ||
-			    pproplist->set(tag, newval) != 0) {
+			    pproplist->set(tag, newval) != 0)
 				return FALSE;
-			}
 		}
 		sqlite3_reset(pstmt1);
 		if (!pproplist->has(PR_RECIPIENT_TYPE))
@@ -260,68 +241,59 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	pstmt.finalize();
 	pstmt1.finalize();
 	pattachments = attachment_list_init();
-	if (NULL == pattachments) {
+	if (pattachments == nullptr)
 		return FALSE;
-	}
 	message_content_set_attachments_internal(pmsgctnt, pattachments);
 	snprintf(sql_string, arsizeof(sql_string), "SELECT attachment_id FROM "
 	          "attachments WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	pstmt1 = gx_sql_prep(psqlite, "SELECT message_id"
 	         " FROM messages WHERE parent_attid=?");
-	if (pstmt1 == nullptr) {
+	if (pstmt1 == nullptr)
 		return FALSE;
-	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		pattachment = attachment_content_init();
-		if (NULL == pattachment) {
+		if (pattachment == nullptr)
 			return FALSE;
-		}
 		if (!attachment_list_append_internal(pattachments, pattachment)) {
 			attachment_content_free(pattachment);
 			return FALSE;
 		}
-		if (pattachment->proplist.set(PR_ATTACH_NUM, plast_id) != 0) {
+		if (pattachment->proplist.set(PR_ATTACH_NUM, plast_id) != 0)
 			return FALSE;	
-		}
 		(*plast_id) ++;
 		attachment_id = sqlite3_column_int64(pstmt, 0);
 		if (!cu_get_proptags(db_table::atx_props,
-			attachment_id, psqlite, &proptags)) {
+		    attachment_id, psqlite, proptags))
 			return FALSE;
-		}
-		for (i=0; i<proptags.count; i++) {
-			switch (proptags.pproptag[i]) {
+		for (auto tag : proptags) {
+			switch (tag) {
 			case PR_ATTACH_DATA_BIN:
 			case PR_ATTACH_DATA_OBJ: {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
 					"attachment_properties WHERE attachment_id=%llu AND"
 					" proptag=%u", static_cast<unsigned long long>(attachment_id),
-					static_cast<unsigned int>(proptags.pproptag[i]));
+					XUI{tag});
 				auto pstmt2 = gx_sql_prep(psqlite, sql_string);
-				if (pstmt2 == nullptr || sqlite3_step(pstmt2) != SQLITE_ROW) {
+				if (pstmt2 == nullptr || pstmt2.step() != SQLITE_ROW)
 					return FALSE;
-				}
 				cid = sqlite3_column_int64(pstmt2, 0);
 				pstmt2.finalize();
-				uint32_t tag = proptags.pproptag[i] == PR_ATTACH_DATA_BIN ?
-				               ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT;
-				if (pattachment->proplist.set(tag, &cid) != 0) {
+				tag = tag == PR_ATTACH_DATA_BIN ?
+				      ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT;
+				if (pattachment->proplist.set(tag, &cid) != 0)
 					return FALSE;
-				}
 				break;
 			}
 			default: {
 				void *newval = nullptr;
 				if (!cu_get_property(db_table::atx_props,
-				    attachment_id, 0, psqlite, proptags.pproptag[i], &newval) ||
+				    attachment_id, 0, psqlite, tag, &newval) ||
 				    newval == nullptr ||
-				    pattachment->proplist.set(proptags.pproptag[i], newval) != 0) {
+				    pattachment->proplist.set(tag, newval) != 0)
 					return FALSE;
-				}
 				break;
 			}
 			}
@@ -372,24 +344,20 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	pinstance->cpid = cpid;
 	mid_val = rop_util_get_gc_value(message_id);
 	pinstance->type = instance_type::message;
-	if (!exmdb_server::is_private()) {
+	if (!exmdb_server::is_private())
 		pinstance->username = username;
-	}
 	if (b_new) {
 		/* message_id MUST NOT exist in messages table */
 		pinstance->b_new = TRUE;
 		pinstance->pcontent = message_content_init();
-		if (NULL == pinstance->pcontent) {
+		if (pinstance->pcontent == nullptr)
 			return FALSE;
-		}
 		auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-		if (ict->proplist.set(PidTagMid, &message_id) != 0) {
+		if (ict->proplist.set(PidTagMid, &message_id) != 0)
 			return FALSE;
-		}
 		tmp_int32 = 0;
-		if (ict->proplist.set(PR_MSG_STATUS, &tmp_int32) != 0) {
+		if (ict->proplist.set(PR_MSG_STATUS, &tmp_int32) != 0)
 			return false;
-		}
 		pdb->instance_list.push_back(std::move(inode));
 		*pinstance_id = instance_id;
 		return TRUE;
@@ -467,13 +435,11 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 		pinstance->type = instance_type::message;
 		pinstance->b_new = TRUE;
 		pinstance->pcontent = message_content_init();
-		if (NULL == pinstance->pcontent) {
+		if (pinstance->pcontent == nullptr)
 			return FALSE;
-		}
 		auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-		if (ict->proplist.set(PidTagMid, &message_id) != 0) {
+		if (ict->proplist.set(PidTagMid, &message_id) != 0)
 			return FALSE;
-		}
 		pdb->instance_list.push_back(std::move(inode));
 		*pinstance_id = instance_id;
 		return TRUE;
@@ -501,9 +467,8 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 	pinstance->type = instance_type::message;
 	pinstance->b_new = FALSE;
 	pinstance->pcontent = message_content_dup(pmsgctnt);
-	if (NULL == pinstance->pcontent) {
+	if (pinstance->pcontent == nullptr)
 		return FALSE;
-	}
 	pdb->instance_list.push_back(std::move(inode));
 	*pinstance_id = instance_id;
 	return TRUE;
@@ -558,9 +523,8 @@ BOOL exmdb_server::reload_message_instance(const char *dir,
 			*pb_result = FALSE;
 			return TRUE;
 		}
-		if (pinstance->last_id < last_id) {
+		if (pinstance->last_id < last_id)
 			pinstance->last_id = last_id;
-		}
 	} else {
 		auto pinstance1 = instance_get_instance_c(pdb, pinstance->parent_id);
 		if (pinstance1 == nullptr || pinstance1->type != instance_type::attachment)
@@ -571,9 +535,8 @@ BOOL exmdb_server::reload_message_instance(const char *dir,
 			return TRUE;	
 		}
 		pmsgctnt = message_content_dup(atx->pembedded);
-		if (NULL == pmsgctnt) {
+		if (pmsgctnt == nullptr)
 			return FALSE;
-		}
 		if (NULL != pmsgctnt->children.pattachments &&
 			0 != pmsgctnt->children.pattachments->count) {
 			pattachment = pmsgctnt->children.pattachments->pplist[
@@ -604,9 +567,8 @@ BOOL exmdb_server::clear_message_instance(const char *dir, uint32_t instance_id)
 	if (lnum == nullptr)
 		return FALSE;
 	auto pmsgctnt = message_content_init();
-	if (NULL == pmsgctnt) {
+	if (pmsgctnt == nullptr)
 		return FALSE;
-	}
 	if (pmsgctnt->proplist.set(PidTagMid, lnum) != 0) {
 		message_content_free(pmsgctnt);
 		return FALSE;
@@ -692,9 +654,8 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag) try
 		mlog(LV_ERR, "E-1587: %s: %s", path.c_str(), strerror(errno));
 		return nullptr;
 	}
-	if (fstat(fd.get(), &node_stat) != 0) {
+	if (fstat(fd.get(), &node_stat) != 0)
 		return NULL;
-	}
 #if defined(HAVE_POSIX_FADVISE)
 	if (posix_fadvise(fd.get(), 0, node_stat.st_size, POSIX_FADV_SEQUENTIAL) != 0)
 		/* ignore */;
@@ -704,9 +665,8 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag) try
 	    read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
 		return NULL;
 	pbuff[node_stat.st_size] = '\0';
-	if (NULL != plen) {
+	if (plen != nullptr)
 		*plen = node_stat.st_size;
-	}
 	return pbuff;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1588: ENOMEM");
@@ -721,9 +681,8 @@ static BOOL instance_read_attachment(
 	
 	if (pattachment1->proplist.count > 1) {
 		pattachment->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pattachment1->proplist.count);
-		if (NULL == pattachment->proplist.ppropval) {
+		if (pattachment->proplist.ppropval == nullptr)
 			return FALSE;
-		}
 	} else {
 		pattachment->proplist.count = 0;
 		pattachment->proplist.ppropval = NULL;
@@ -735,19 +694,15 @@ static BOOL instance_read_attachment(
 		case ID_TAG_ATTACHDATABINARY:
 		case ID_TAG_ATTACHDATAOBJECT: {
 			auto pbin = cu_alloc<BINARY>();
-			if (NULL == pbin) {
+			if (pbin == nullptr)
 				return FALSE;
-			}
 			auto cid = *static_cast<uint64_t *>(pattachment1->proplist.ppropval[i].pvalue);
 			pbin->pv = instance_read_cid_content(cid, &pbin->cb, 0);
 			if (pbin->pv == nullptr)
 				return FALSE;
-			if (ID_TAG_ATTACHDATABINARY ==
-				pattachment1->proplist.ppropval[i].proptag) {
-				pattachment->proplist.ppropval[pattachment->proplist.count].proptag = PR_ATTACH_DATA_BIN;
-			} else {
-				pattachment->proplist.ppropval[pattachment->proplist.count].proptag = PR_ATTACH_DATA_OBJ;
-			}
+			pattachment->proplist.ppropval[pattachment->proplist.count].proptag =
+				pattachment1->proplist.ppropval[i].proptag == ID_TAG_ATTACHDATABINARY ?
+				PR_ATTACH_DATA_BIN : PR_ATTACH_DATA_OBJ;
 			pattachment->proplist.ppropval[pattachment->proplist.count++].pvalue = pbin;
 			break;
 		}
@@ -757,18 +712,14 @@ static BOOL instance_read_attachment(
 			break;
 		}
 	}
-	if (NULL != pattachment1->pembedded) {
-		pattachment->pembedded = cu_alloc<MESSAGE_CONTENT>();
-		if (NULL == pattachment->pembedded) {
-			return FALSE;
-		}
-		return instance_read_message(
-				pattachment1->pembedded,
-				pattachment->pembedded);
-	} else {
+	if (pattachment1->pembedded == nullptr) {
 		pattachment->pembedded = NULL;
+		return TRUE;
 	}
-	return TRUE;
+	pattachment->pembedded = cu_alloc<MESSAGE_CONTENT>();
+	if (pattachment->pembedded == nullptr)
+		return FALSE;
+	return instance_read_message(pattachment1->pembedded, pattachment->pembedded);
 }
 
 static BOOL instance_read_message(
@@ -784,9 +735,8 @@ static BOOL instance_read_message(
 	pmsgctnt->proplist.count = pmsgctnt1->proplist.count;
 	if (0 != pmsgctnt1->proplist.count) {
 		pmsgctnt->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt1->proplist.count + 1);
-		if (NULL == pmsgctnt->proplist.ppropval) {
+		if (pmsgctnt->proplist.ppropval == nullptr)
 			return FALSE;
-		}
 	} else {
 		pmsgctnt->proplist.ppropval = NULL;
 	}
@@ -796,9 +746,8 @@ static BOOL instance_read_message(
 		case ID_TAG_BODY: {
 			auto cid = *static_cast<uint64_t *>(pmsgctnt1->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cid, nullptr, ID_TAG_BODY);
-			if (NULL == pbuff) {
+			if (pbuff == nullptr)
 				return FALSE;
-			}
 			pmsgctnt->proplist.ppropval[i].proptag = PR_BODY;
 			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff) + sizeof(uint32_t);
 			break;
@@ -806,9 +755,8 @@ static BOOL instance_read_message(
 		case ID_TAG_BODY_STRING8: {
 			auto cid = *static_cast<uint64_t *>(pmsgctnt1->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cid, nullptr, 0);
-			if (NULL == pbuff) {
+			if (pbuff == nullptr)
 				return FALSE;
-			}
 			pmsgctnt->proplist.ppropval[i].proptag = PR_BODY_A;
 			pmsgctnt->proplist.ppropval[i].pvalue = pbuff;
 			break;
@@ -817,16 +765,14 @@ static BOOL instance_read_message(
 		case ID_TAG_RTFCOMPRESSED: {
 			auto cid = *static_cast<uint64_t *>(pmsgctnt1->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cid, &length, pmsgctnt1->proplist.ppropval[i].proptag);
-			if (NULL == pbuff) {
+			if (pbuff == nullptr)
 				return FALSE;
-			}
 			pmsgctnt->proplist.ppropval[i].proptag =
 				pmsgctnt1->proplist.ppropval[i].proptag == ID_TAG_HTML ?
 				PR_HTML : PR_RTF_COMPRESSED;
 			auto pbin = cu_alloc<BINARY>();
-			if (NULL == pbin) {
+			if (pbin == nullptr)
 				return FALSE;
-			}
 			pbin->cb = length;
 			pbin->pv = pbuff;
 			pmsgctnt->proplist.ppropval[i].pvalue = pbin;
@@ -835,9 +781,8 @@ static BOOL instance_read_message(
 		case ID_TAG_TRANSPORTMESSAGEHEADERS: {
 			auto cid = *static_cast<uint64_t *>(pmsgctnt1->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cid, nullptr, ID_TAG_BODY);
-			if (NULL == pbuff) {
+			if (pbuff == nullptr)
 				return FALSE;
-			}
 			pmsgctnt->proplist.ppropval[i].proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff) + sizeof(uint32_t);
 			break;
@@ -845,9 +790,8 @@ static BOOL instance_read_message(
 		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8: {
 			auto cid = *static_cast<uint64_t *>(pmsgctnt1->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cid, nullptr, 0);
-			if (NULL == pbuff) {
+			if (pbuff == nullptr)
 				return FALSE;
-			}
 			pmsgctnt->proplist.ppropval[i].proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
 			pmsgctnt->proplist.ppropval[i].pvalue = pbuff;
 			break;
@@ -863,17 +807,15 @@ static BOOL instance_read_message(
 		pnormalized_subject = wtf->get<char>(PR_NORMALIZED_SUBJECT_A);
 		if (NULL != pnormalized_subject) {
 			psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX_A);
-			if (NULL == psubject_prefix) {
+			if (psubject_prefix == nullptr)
 				psubject_prefix = "";
-			}
 			length = strlen(pnormalized_subject)
 					+ strlen(psubject_prefix) + 1;
 			pmsgctnt->proplist.ppropval[i].proptag = PR_SUBJECT_A;
 			pmsgctnt->proplist.ppropval[i].pvalue =
 						common_util_alloc(length);
-			if (NULL == pmsgctnt->proplist.ppropval[i].pvalue) {
+			if (pmsgctnt->proplist.ppropval[i].pvalue == nullptr)
 				return FALSE;
-			}
 			sprintf(static_cast<char *>(pmsgctnt->proplist.ppropval[i].pvalue),
 				"%s%s", psubject_prefix, pnormalized_subject);
 			pmsgctnt->proplist.count ++;
@@ -896,17 +838,15 @@ static BOOL instance_read_message(
 		}
 	} else {
 		psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX);
-		if (NULL == psubject_prefix) {
+		if (psubject_prefix == nullptr)
 			psubject_prefix = "";
-		}
 		length = strlen(pnormalized_subject)
 					+ strlen(psubject_prefix) + 1;
 		pmsgctnt->proplist.ppropval[i].proptag = PR_SUBJECT;
 		pmsgctnt->proplist.ppropval[i].pvalue =
 					common_util_alloc(length);
-		if (NULL == pmsgctnt->proplist.ppropval[i].pvalue) {
+		if (pmsgctnt->proplist.ppropval[i].pvalue == nullptr)
 			return FALSE;
-		}
 		sprintf(static_cast<char *>(pmsgctnt->proplist.ppropval[i].pvalue),
 			"%s%s", psubject_prefix, pnormalized_subject);
 		pmsgctnt->proplist.count ++;
@@ -915,70 +855,63 @@ static BOOL instance_read_message(
 		pmsgctnt->children.prcpts = NULL;
 	} else {
 		pmsgctnt->children.prcpts = cu_alloc<TARRAY_SET>();
-		if (NULL == pmsgctnt->children.prcpts) {
+		if (pmsgctnt->children.prcpts == nullptr)
 			return FALSE;
-		}
 		pmsgctnt->children.prcpts->count =
 			pmsgctnt1->children.prcpts->count;
 		if (0 != pmsgctnt1->children.prcpts->count) {
 			pmsgctnt->children.prcpts->pparray = cu_alloc<TPROPVAL_ARRAY *>(pmsgctnt1->children.prcpts->count);
-			if (NULL == pmsgctnt->children.prcpts->pparray) {
+			if (pmsgctnt->children.prcpts->pparray == nullptr)
 				return FALSE;
-			}
 		} else {
 			pmsgctnt->children.prcpts->pparray = NULL;
 		}
 		for (i=0; i<pmsgctnt1->children.prcpts->count; i++) {
 			auto pproplist = cu_alloc<TPROPVAL_ARRAY>();
-			if (NULL == pproplist) {
+			if (pproplist == nullptr)
 				return FALSE;
-			}
 			pmsgctnt->children.prcpts->pparray[i] = pproplist;
 			pproplist1 = pmsgctnt1->children.prcpts->pparray[i];
 			if (pproplist1->count > 1) {
 				pproplist->ppropval = cu_alloc<TAGGED_PROPVAL>(pproplist1->count);
-				if (NULL == pproplist->ppropval) {
+				if (pproplist->ppropval == nullptr)
 					return FALSE;
-				}
 			} else {
 				pproplist->count = 0;
 				pproplist->ppropval = NULL;
 				continue;
 			}
 			pproplist->count = 0;
-			for (size_t j = 0; j < pproplist1->count; ++j) {
+			for (size_t j = 0; j < pproplist1->count; ++j)
 				pproplist->ppropval[pproplist->count++] = pproplist1->ppropval[j];
-			}
 		}
 	}
 	if (NULL == pmsgctnt1->children.pattachments) {
 		pmsgctnt->children.pattachments = NULL;
-	} else {
-		pmsgctnt->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
-		if (NULL == pmsgctnt->children.pattachments) {
+		return TRUE;
+	}
+	pmsgctnt->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
+	if (NULL == pmsgctnt->children.pattachments) {
+		return FALSE;
+	}
+	pmsgctnt->children.pattachments->count =
+		pmsgctnt1->children.pattachments->count;
+	if (0 != pmsgctnt1->children.pattachments->count) {
+		pmsgctnt->children.pattachments->pplist = cu_alloc<ATTACHMENT_CONTENT *>(pmsgctnt1->children.pattachments->count);
+		if (pmsgctnt->children.pattachments->pplist == nullptr)
 			return FALSE;
-		}
-		pmsgctnt->children.pattachments->count =
-			pmsgctnt1->children.pattachments->count;
-		if (0 != pmsgctnt1->children.pattachments->count) {
-			pmsgctnt->children.pattachments->pplist = cu_alloc<ATTACHMENT_CONTENT *>(pmsgctnt1->children.pattachments->count);
-			if (NULL == pmsgctnt->children.pattachments->pplist) {
-				return FALSE;
-			}
-		} else {
-			pmsgctnt->children.pattachments->pplist = NULL;
-		}
-		for (i=0; i<pmsgctnt1->children.pattachments->count; i++) {
-			auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
-			if (NULL == pattachment) {
-				return FALSE;
-			}
-			memset(pattachment, 0 ,sizeof(ATTACHMENT_CONTENT));
-			pmsgctnt->children.pattachments->pplist[i] = pattachment;
-			pattachment1 = pmsgctnt1->children.pattachments->pplist[i];
-			if (!instance_read_attachment(pattachment1, pattachment))
-				return FALSE;	
-		}
+	} else {
+		pmsgctnt->children.pattachments->pplist = NULL;
+	}
+	for (i = 0; i < pmsgctnt1->children.pattachments->count; i++) {
+		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
+		if (pattachment == nullptr)
+			return FALSE;
+		memset(pattachment, 0 ,sizeof(ATTACHMENT_CONTENT));
+		pmsgctnt->children.pattachments->pplist[i] = pattachment;
+		pattachment1 = pmsgctnt1->children.pattachments->pplist[i];
+		if (!instance_read_attachment(pattachment1, pattachment))
+			return FALSE;
 	}
 	return TRUE;
 }
@@ -998,12 +931,9 @@ BOOL exmdb_server::read_message_instance(const char *dir,
 
 static BOOL instance_identify_rcpts(TARRAY_SET *prcpts)
 {
-	uint32_t i;
-	
-	for (i=0; i<prcpts->count; i++) {
+	for (uint32_t i = 0; i < prcpts->count; ++i)
 		if (prcpts->pparray[i]->set(PR_ROWID, &i) != 0)
 			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1051,14 +981,12 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 		return FALSE;
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pmsgctnt->proplist.count + 2);
-	if (NULL == pproblems->pproblem) {
+	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	}
 	pproptags->count = 0;
 	pproptags->pproptag = cu_alloc<uint32_t>(pmsgctnt->proplist.count + 2);
-	if (NULL == pproptags->pproptag) {
+	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	}
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	auto pproplist = &ict->proplist;
 	for (i=0; i<pmsgctnt->proplist.count; i++) {
@@ -1143,34 +1071,30 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 		}
 		pproptags->pproptag[pproptags->count++] = proptag;
 	}
-	if (NULL != pmsgctnt->children.prcpts) {
-		if (b_force || ict->children.prcpts == nullptr) {
-			prcpts = pmsgctnt->children.prcpts->dup();
-			if (NULL == prcpts) {
-				return FALSE;
-			}
-			if (!instance_identify_rcpts(prcpts)) {
-				tarray_set_free(prcpts);
-				return FALSE;
-			}
-			message_content_set_rcpts_internal(ict, prcpts);
-			pproptags->pproptag[pproptags->count++] = PR_MESSAGE_RECIPIENTS;
+	if (pmsgctnt->children.prcpts != nullptr &&
+	    (b_force || ict->children.prcpts == nullptr)) {
+		prcpts = pmsgctnt->children.prcpts->dup();
+		if (prcpts == nullptr)
+			return FALSE;
+		if (!instance_identify_rcpts(prcpts)) {
+			tarray_set_free(prcpts);
+			return FALSE;
 		}
+		message_content_set_rcpts_internal(ict, prcpts);
+		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_RECIPIENTS;
 	}
-	if (NULL != pmsgctnt->children.pattachments) {
-		if (b_force || ict->children.pattachments == nullptr) {
-			pattachments = attachment_list_dup(
-				pmsgctnt->children.pattachments);
-			if (NULL == pattachments) {
-				return FALSE;
-			}
-			if (!instance_identify_attachments(pattachments)) {
-				attachment_list_free(pattachments);
-				return FALSE;
-			}
-			message_content_set_attachments_internal(ict, pattachments);
-			pproptags->pproptag[pproptags->count++] = PR_MESSAGE_ATTACHMENTS;
+	if (pmsgctnt->children.pattachments != nullptr &&
+	    (b_force || ict->children.pattachments == nullptr)) {
+		pattachments = attachment_list_dup(
+		               pmsgctnt->children.pattachments);
+		if (pattachments == nullptr)
+			return FALSE;
+		if (!instance_identify_attachments(pattachments)) {
+			attachment_list_free(pattachments);
+			return FALSE;
 		}
+		message_content_set_attachments_internal(ict, pattachments);
+		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_ATTACHMENTS;
 	}
 	return TRUE;
 }
@@ -1199,9 +1123,8 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
 		pattachment = pmsgctnt->children.pattachments->pplist[i];
 		auto pvalue = pattachment->proplist.get<uint32_t>(PR_ATTACH_NUM);
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return FALSE;
-		}
 		if (*pvalue == attachment_num)
 			break;
 	}
@@ -1218,9 +1141,8 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 	pinstance->type = instance_type::attachment;
 	pinstance->b_new = FALSE;
 	pinstance->pcontent = attachment_content_dup(pattachment);
-	if (NULL == pinstance->pcontent) {
+	if (pinstance->pcontent == nullptr)
 		return FALSE;
-	}
 	pdb->instance_list.push_back(std::move(inode));
 	*pinstance_id = instance_id;
 	return TRUE;
@@ -1261,9 +1183,8 @@ BOOL exmdb_server::create_attachment_instance(const char *dir,
 	pinstance->type = instance_type::attachment;
 	pinstance->b_new = TRUE;
 	pattachment = attachment_content_init();
-	if (NULL == pattachment) {
+	if (pattachment == nullptr)
 		return FALSE;
-	}
 	*pattachment_num = pinstance1->last_id++;
 	if (pattachment->proplist.set(PR_ATTACH_NUM, pattachment_num) != 0) {
 		attachment_content_free(pattachment);
@@ -1307,9 +1228,8 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 		return FALSE;
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pattctnt->proplist.count + 1);
-	if (NULL == pproblems->pproblem) {
+	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	}
 	auto pproplist = &static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent)->proplist;
 	for (i=0; i<pattctnt->proplist.count; i++) {
 		proptag = pattctnt->proplist.ppropval[i].proptag;
@@ -1355,9 +1275,8 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 	if (pattctnt->pembedded != nullptr &&
 	    (!b_force || static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent)->pembedded == nullptr)) {
 		pmsgctnt = message_content_dup(pattctnt->pembedded);
-		if (NULL == pmsgctnt) {
+		if (pmsgctnt == nullptr)
 			return FALSE;
-		}
 		if (!instance_identify_message(pmsgctnt)) {
 			message_content_free(pmsgctnt);
 			return FALSE;
@@ -1379,21 +1298,18 @@ BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-	if (NULL == pmsgctnt->children.pattachments) {
+	if (pmsgctnt->children.pattachments == nullptr)
 		return TRUE;
-	}
 	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
 		auto pattachment = pmsgctnt->children.pattachments->pplist[i];
 		auto pvalue = pattachment->proplist.get<uint32_t>(PR_ATTACH_NUM);
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return FALSE;
-		}
 		if (*pvalue == attachment_num)
 			break;
 	}
-	if (i >= pmsgctnt->children.pattachments->count) {
+	if (i >= pmsgctnt->children.pattachments->count)
 		return TRUE;
-	}
 	attachment_list_remove(pmsgctnt->children.pattachments, i);
 	if (0 == pmsgctnt->children.pattachments->count) {
 		attachment_list_free(pmsgctnt->children.pattachments);
@@ -1415,18 +1331,16 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto pinstance = instance_get_instance(pdb, instance_id);
-	if (NULL == pinstance) {
+	if (pinstance == nullptr)
 		return FALSE;
-	}
 	if (pinstance->type == instance_type::attachment) {
 		auto pinstance1 = instance_get_instance_c(pdb, pinstance->parent_id);
 		if (pinstance1 == nullptr || pinstance1->type != instance_type::message)
 			return FALSE;
 		auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance1->pcontent);
 		auto pattachment = attachment_content_dup(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent));
-		if (NULL == pattachment) {
+		if (pattachment == nullptr)
 			return FALSE;
-		}
 		if (pinstance->b_new) {
 			if (NULL == pmsgctnt->children.pattachments) {
 				pmsgctnt->children.pattachments = attachment_list_init();
@@ -1503,17 +1417,15 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		if (pinstance1 == nullptr || pinstance1->type != instance_type::attachment)
 			return FALSE;
 		auto pmsgctnt = message_content_dup(ict);
-		if (NULL == pmsgctnt) {
+		if (pmsgctnt == nullptr)
 			return FALSE;
-		}
 		attachment_content_set_embedded_internal(static_cast<ATTACHMENT_CONTENT *>(pinstance1->pcontent), pmsgctnt);
 		*pe_result = ecSuccess;
 		return TRUE;
 	}
 	auto pmsgctnt = message_content_dup(ict);
-	if (NULL == pmsgctnt) {
+	if (pmsgctnt == nullptr)
 		return FALSE;	
-	}
 	std::unique_ptr<MESSAGE_CONTENT, mc_delete> upmsgctnt(pmsgctnt);
 	auto pbin = pmsgctnt->proplist.get<BINARY>(PR_SENT_REPRESENTING_ENTRYID);
 	if (pbin != nullptr &&
@@ -1589,103 +1501,104 @@ BOOL exmdb_server::unload_instance(const char *dir, uint32_t instance_id)
 	return TRUE;
 }
 
+static BOOL giat_message(MESSAGE_CONTENT *pmsgctnt, PROPTAG_ARRAY *pproptags)
+{
+	pproptags->count = pmsgctnt->proplist.count + 6;
+	if (NULL != pmsgctnt->children.prcpts) {
+		pproptags->count++;
+	}
+	if (NULL != pmsgctnt->children.pattachments) {
+		pproptags->count++;
+	}
+	pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
+	if (NULL == pproptags->pproptag) {
+		pproptags->count = 0;
+		return FALSE;
+	}
+	for (unsigned int i = 0; i < pmsgctnt->proplist.count; ++i) {
+		switch (pmsgctnt->proplist.ppropval[i].proptag) {
+		case ID_TAG_BODY:
+			pproptags->pproptag[i] = PR_BODY;
+			break;
+		case ID_TAG_BODY_STRING8:
+			pproptags->pproptag[i] = PR_BODY_A;
+			break;
+		case ID_TAG_HTML:
+			pproptags->pproptag[i] = PR_HTML;
+			break;
+		case ID_TAG_RTFCOMPRESSED:
+			pproptags->pproptag[i] = PR_RTF_COMPRESSED;
+			break;
+		case ID_TAG_TRANSPORTMESSAGEHEADERS:
+			pproptags->pproptag[i] = PR_TRANSPORT_MESSAGE_HEADERS;
+			break;
+		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
+			pproptags->pproptag[i] = PR_TRANSPORT_MESSAGE_HEADERS_A;
+			break;
+		default:
+			pproptags->pproptag[i] =
+				pmsgctnt->proplist.ppropval[i].proptag;
+			break;
+		}
+	}
+	pproptags->count = pmsgctnt->proplist.count;
+	pproptags->pproptag[pproptags->count++] = PR_CODE_PAGE_ID;
+	pproptags->pproptag[pproptags->count++] = PR_MESSAGE_SIZE;
+	pproptags->pproptag[pproptags->count++] = PR_HASATTACH;
+	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_TO;
+	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_CC;
+	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_BCC;
+	return TRUE;
+}
+
+static BOOL giat_attachment(ATTACHMENT_CONTENT *pattachment, PROPTAG_ARRAY *pproptags)
+{
+	pproptags->count = pattachment->proplist.count + 1;
+	if (NULL != pattachment->pembedded) {
+		pproptags->count++;
+	}
+	pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
+	if (NULL == pproptags->pproptag) {
+		pproptags->count = 0;
+		return FALSE;
+	}
+	for (unsigned int i = 0; i < pattachment->proplist.count; ++i) {
+		switch (pattachment->proplist.ppropval[i].proptag) {
+		case ID_TAG_ATTACHDATABINARY:
+			pproptags->pproptag[i] = PR_ATTACH_DATA_BIN;
+			break;
+		case ID_TAG_ATTACHDATAOBJECT:
+			pproptags->pproptag[i] = PR_ATTACH_DATA_OBJ;
+			break;
+		default:
+			pproptags->pproptag[i] =
+				pattachment->proplist.ppropval[i].proptag;
+			break;
+		}
+	}
+	pproptags->count = pattachment->proplist.count;
+	pproptags->pproptag[pproptags->count++] = PR_ATTACH_SIZE;
+	return TRUE;
+}
+
 BOOL exmdb_server::get_instance_all_proptags(const char *dir,
     uint32_t instance_id, PROPTAG_ARRAY *pproptags)
 {
-	int i;
-	MESSAGE_CONTENT *pmsgctnt;
-	ATTACHMENT_CONTENT *pattachment = nullptr;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto pinstance = instance_get_instance_c(pdb, instance_id);
-	if (NULL == pinstance) {
+	if (pinstance == nullptr)
 		return FALSE;
-	}
-	if (pinstance->type == instance_type::message) {
-		pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-		pproptags->count = pmsgctnt->proplist.count + 6;
-		if (NULL != pmsgctnt->children.prcpts) {
-			pproptags->count ++;
-		}
-		if (NULL != pmsgctnt->children.pattachments) {
-			pproptags->count ++;
-		}
-		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
-		if (NULL == pproptags->pproptag) {
-			pproptags->count = 0;
-			return FALSE;
-		}
-		for (i=0; i<pmsgctnt->proplist.count; i++) {
-			switch (pmsgctnt->proplist.ppropval[i].proptag) {
-			case ID_TAG_BODY:
-				pproptags->pproptag[i] = PR_BODY;
-				break;
-			case ID_TAG_BODY_STRING8:
-				pproptags->pproptag[i] = PR_BODY_A;
-				break;
-			case ID_TAG_HTML:
-				pproptags->pproptag[i] = PR_HTML;
-				break;
-			case ID_TAG_RTFCOMPRESSED:
-				pproptags->pproptag[i] = PR_RTF_COMPRESSED;
-				break;
-			case ID_TAG_TRANSPORTMESSAGEHEADERS:
-				pproptags->pproptag[i] = PR_TRANSPORT_MESSAGE_HEADERS;
-				break;
-			case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
-				pproptags->pproptag[i] = PR_TRANSPORT_MESSAGE_HEADERS_A;
-				break;
-			default:
-				pproptags->pproptag[i] =
-					pmsgctnt->proplist.ppropval[i].proptag;
-				break;
-			}
-		}
-		pproptags->count = pmsgctnt->proplist.count;
-		pproptags->pproptag[pproptags->count++] = PR_CODE_PAGE_ID;
-		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_SIZE;
-		pproptags->pproptag[pproptags->count++] = PR_HASATTACH;
-		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_TO;
-		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_CC;
-		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_BCC;
-	} else {
-		pattachment = static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent);
-		pproptags->count = pattachment->proplist.count + 1;
-		if (NULL != pattachment->pembedded) {
-			pproptags->count ++;
-		}
-		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
-		if (NULL == pproptags->pproptag) {
-			pproptags->count = 0;
-			return FALSE;
-		}
-		for (i=0; i<pattachment->proplist.count; i++) {
-			switch (pattachment->proplist.ppropval[i].proptag) {
-			case ID_TAG_ATTACHDATABINARY:
-				pproptags->pproptag[i] = PR_ATTACH_DATA_BIN;
-				break;
-			case ID_TAG_ATTACHDATAOBJECT:
-				pproptags->pproptag[i] = PR_ATTACH_DATA_OBJ;
-				break;
-			default:
-				pproptags->pproptag[i] =
-					pattachment->proplist.ppropval[i].proptag;
-				break;
-			}
-		}
-		pproptags->count = pattachment->proplist.count;
-		pproptags->pproptag[pproptags->count++] = PR_ATTACH_SIZE;
-	}
-	return TRUE;
+	return pinstance->type == instance_type::message ?
+	       giat_message(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pproptags) :
+	       giat_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pproptags);
 }
 
-static BOOL instance_get_message_display_recipients(
-	TARRAY_SET *prcpts, uint32_t cpid, uint32_t proptag,
-	void **ppvalue)
+static BOOL instance_get_message_display_recipients(TARRAY_SET *prcpts,
+    uint32_t cpid, uint32_t proptag, void **ppvalue) try
 {
-	char tmp_buff[64*1024];
+	std::string dr;
 	uint32_t recipient_type = 0;
 	static constexpr uint8_t fake_empty = 0;
 
@@ -1703,7 +1616,6 @@ static BOOL instance_get_message_display_recipients(
 		recipient_type = MAPI_BCC;
 		break;
 	}
-	size_t offset = 0;
 	for (size_t i = 0; i < prcpts->count; ++i) {
 		auto rcpttype = prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
 		if (rcpttype == nullptr || *rcpttype != recipient_type)
@@ -1718,20 +1630,20 @@ static BOOL instance_get_message_display_recipients(
 			name = prcpts->pparray[i]->get<char>(PR_SMTP_ADDRESS);
 		if (name == nullptr)
 			continue;
-		if (0 == offset) {
-			offset = gx_snprintf(tmp_buff, arsizeof(tmp_buff), "%s", name);
-		} else {
-			offset += gx_snprintf(tmp_buff + offset,
-			          arsizeof(tmp_buff) - offset, "; %s", name);
-		}
+		if (!dr.empty())
+			dr += "; ";
+		dr += name;
 	}
-	if  (0 == offset) {
+	if (dr.empty()) {
 		*ppvalue = deconst(&fake_empty);
 		return TRUE;
 	}
-	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(tmp_buff) :
-	           common_util_convert_copy(FALSE, cpid, tmp_buff);
+	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(dr.c_str()) :
+	           common_util_convert_copy(false, cpid, dr.c_str());
 	return *ppvalue != nullptr ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1160: ENOMEM");
+	return false;
 }
 
 static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)
@@ -1747,10 +1659,9 @@ static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)
 	auto pbool = pproplist->get<const uint8_t>(PR_READ);
 	if (pbool != nullptr && *pbool)
 		message_flags |= MSGFLAG_READ;
-	if (NULL != pmsgctnt->children.pattachments &&
-		0 != pmsgctnt->children.pattachments->count) {
+	if (pmsgctnt->children.pattachments != nullptr &&
+	    pmsgctnt->children.pattachments->count != 0)
 		message_flags |= MSGFLAG_HASATTACH;
-	}
 	pbool = pproplist->get<uint8_t>(PR_ASSOCIATED);
 	if (pbool != nullptr && *pbool)
 		message_flags |= MSGFLAG_ASSOCIATED;
@@ -1770,44 +1681,36 @@ static BOOL instance_get_message_subject(
 	auto pnormalized_subject = pproplist->get<const char>(PR_NORMALIZED_SUBJECT);
 	if (NULL == pnormalized_subject) {
 		auto pvalue = pproplist->get<char>(PR_NORMALIZED_SUBJECT_A);
-		if (NULL != pvalue) {
+		if (pvalue != nullptr)
 			pnormalized_subject =
 				common_util_convert_copy(TRUE, cpid, pvalue);
-		}
 	}
 	auto psubject_prefix = pproplist->get<const char>(PR_SUBJECT_PREFIX);
 	if (NULL == psubject_prefix) {
 		auto pvalue = pproplist->get<char>(PR_SUBJECT_PREFIX_A);
-		if (NULL != pvalue) {
+		if (pvalue != nullptr)
 			psubject_prefix =
 				common_util_convert_copy(TRUE, cpid, pvalue);
-		}
 	}
 	if (NULL == pnormalized_subject && NULL == psubject_prefix) {
 		*ppvalue = NULL;
 		return TRUE;
 	}
-	if (NULL == pnormalized_subject) {
+	if (pnormalized_subject == nullptr)
 		pnormalized_subject = "";
-	}
-	if (NULL == psubject_prefix) {
+	if (psubject_prefix == nullptr)
 		psubject_prefix = "";
-	}
 	auto pvalue = cu_alloc<char>(strlen(pnormalized_subject) + strlen(psubject_prefix) + 1);
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return FALSE;
-	}
 	strcpy(pvalue, psubject_prefix);
 	strcat(pvalue, pnormalized_subject);
-	if (PROP_TYPE(proptag) == PT_UNICODE) {
-		*ppvalue = common_util_dup(pvalue);
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-	} else {
+	if (PROP_TYPE(proptag) != PT_UNICODE) {
 		*ppvalue = common_util_convert_copy(FALSE, cpid, pvalue);
+		return TRUE;
 	}
-	return TRUE;
+	*ppvalue = common_util_dup(pvalue);
+	return *ppvalue != nullptr ? TRUE : false;
 }
 
 static BOOL instance_get_attachment_properties(uint32_t cpid,
@@ -1821,9 +1724,8 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 	
 	ppropvals->count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-	if (NULL == ppropvals->ppropval) {
+	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	}
 	for (i=0; i<pproptags->count; i++) {
 		auto pvalue = pattachment->proplist.getval(pproptags->pproptag[i]);
 		auto &vc = ppropvals->ppropval[ppropvals->count];
@@ -1922,13 +1824,11 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				auto lnum = pattachment->proplist.get<const uint64_t>(ID_TAG_ATTACHDATABINARY);
 				if (lnum != nullptr) {
 					pvalue = instance_read_cid_content(*lnum, &length, 0);
-					if (NULL == pvalue) {
+					if (pvalue == nullptr)
 						return FALSE;
-					}
 					pbin = cu_alloc<BINARY>();
-					if (NULL == pbin) {
+					if (pbin == nullptr)
 						return FALSE;
-					}
 					pbin->cb = length;
 					pbin->pv = pvalue;
 				}
@@ -1940,13 +1840,11 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 					auto lnum = pattachment->proplist.get<const uint64_t>(ID_TAG_ATTACHDATAOBJECT);
 					if (lnum != nullptr) {
 						pvalue = instance_read_cid_content(*lnum, &length, 0);
-						if (NULL == pvalue) {
+						if (pvalue == nullptr)
 							return FALSE;
-						}
 						pbin = cu_alloc<BINARY>();
-						if (NULL == pbin) {
+						if (pbin == nullptr)
 							return FALSE;
-						}
 						pbin->cb = length;
 						pbin->pv = pvalue;
 					}
@@ -1972,13 +1870,11 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 			if (lnum == nullptr)
 				break;
 			pvalue = instance_read_cid_content(*lnum, &length, 0);
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 			auto pbin = cu_alloc<BINARY>();
-			if (NULL == pbin) {
+			if (pbin == nullptr)
 				return FALSE;
-			}
 			pbin->cb = length;
 			pbin->pv = pvalue;
 			vc.proptag = pproptags->pproptag[i];
@@ -2005,28 +1901,24 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto pinstance = instance_get_instance_c(pdb, instance_id);
-	if (NULL == pinstance) {
+	if (pinstance == nullptr)
 		return FALSE;
-	}
 	if (pinstance->type == instance_type::attachment) {
 		auto pinstance1 = instance_get_instance_c(pdb, pinstance->parent_id);
-		if (NULL == pinstance1) {
+		if (pinstance1 == nullptr)
 			return FALSE;
-		}
 		auto pvalue = static_cast<MESSAGE_CONTENT *>(pinstance1->pcontent)->proplist.get<uint64_t>(PidTagMid);
 		if (!instance_get_attachment_properties(pinstance->cpid, pvalue,
 		    static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent),
-			pproptags, ppropvals)) {
+		    pproptags, ppropvals))
 			return FALSE;
-		}
 		return TRUE;
 	}
 	pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	ppropvals->count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-	if (NULL == ppropvals->ppropval) {
+	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	}
 	for (i=0; i<pproptags->count; i++) {
 		auto &vc = ppropvals->ppropval[ppropvals->count];
 		if (pproptags->pproptag[i] == PR_MESSAGE_FLAGS) {
@@ -2106,18 +1998,16 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 		case PR_HTML_U:
 		case PR_RTF_COMPRESSED: {
 			auto ret = instance_get_message_body(pmsgctnt, pproptags->pproptag[i], pinstance->cpid, ppropvals);
-			if (ret < 0) {
+			if (ret < 0)
 				return false;
-			}
 			break;
 		}
 		case PR_TRANSPORT_MESSAGE_HEADERS_U: {
 			auto lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS);
 			if (lnum != nullptr) {
 				pvalue = instance_read_cid_content(*lnum, nullptr, ID_TAG_BODY);
-				if (NULL == pvalue) {
+				if (pvalue == nullptr)
 					return FALSE;
-				}
 				vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_U;
 				auto tp = cu_alloc<TYPED_PROPVAL>();
 				vc.pvalue = tp;
@@ -2132,9 +2022,8 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			if (lnum == nullptr)
 				break;
 			pvalue = instance_read_cid_content(*lnum, nullptr, 0);
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_U;
 			auto tp = cu_alloc<TYPED_PROPVAL>();
 			vc.pvalue = tp;
@@ -2160,9 +2049,8 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			auto lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS);
 			if (lnum != nullptr) {
 				pvalue = instance_read_cid_content(*lnum, nullptr, ID_TAG_BODY);
-				if (NULL == pvalue) {
+				if (pvalue == nullptr)
 					return FALSE;
-				}
 				vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 				vc.pvalue = static_cast<char *>(pvalue) + sizeof(uint32_t);
 				ppropvals->count ++;
@@ -2172,9 +2060,8 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			if (lnum == nullptr)
 				break;
 			pvalue = instance_read_cid_content(*lnum, nullptr, 0);
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 			vc.pvalue = common_util_convert_copy(TRUE,
 				    pinstance->cpid, static_cast<char *>(pvalue));
@@ -2188,9 +2075,8 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			auto lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
 			if (lnum != nullptr) {
 				pvalue = instance_read_cid_content(*lnum, nullptr, 0);
-				if (NULL == pvalue) {
+				if (pvalue == nullptr)
 					return FALSE;
-				}
 				vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
 				vc.pvalue = pvalue;
 				ppropvals->count ++;
@@ -2200,9 +2086,8 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			if (lnum == nullptr)
 				break;
 			pvalue = instance_read_cid_content(*lnum, nullptr, ID_TAG_BODY);
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
 			vc.pvalue = common_util_convert_copy(false,
 				    pinstance->cpid, static_cast<char *>(pvalue) + sizeof(uint32_t));
@@ -2286,9 +2171,8 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproperties->count);
-	if (NULL == pproblems->pproblem) {
+	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	}
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	for (size_t i = 0; i < pproperties->count; ++i) {
 		switch (pproperties->ppropval[i].proptag) {
@@ -2405,9 +2289,8 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 			}
 			propval.pvalue = common_util_convert_copy(TRUE,
 				pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
-			if (NULL == propval.pvalue) {
+			if (propval.pvalue == nullptr)
 				return FALSE;
-			}
 			break;
 		case PT_MV_STRING8:
 		case PT_MV_UNICODE:
@@ -2421,9 +2304,8 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 			propval.pvalue = common_util_convert_copy_string_array(
 			                 TRUE, pinstance->cpid,
 			                 static_cast<STRING_ARRAY *>(pproperties->ppropval[i].pvalue));
-			if (NULL == propval.pvalue) {
+			if (propval.pvalue == nullptr)
 				return FALSE;
-			}
 			break;
 		default:
 			propval = pproperties->ppropval[i];
@@ -2463,9 +2345,8 @@ static BOOL set_xns_props_atx(INSTANCE_NODE *pinstance,
 {
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproperties->count);
-	if (NULL == pproblems->pproblem) {
+	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	}
 	auto pattachment = static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent);
 	for (size_t i = 0; i < pproperties->count; ++i) {
 		TAGGED_PROPVAL propval;
@@ -2498,9 +2379,8 @@ static BOOL set_xns_props_atx(INSTANCE_NODE *pinstance,
 			}
 			propval.pvalue = common_util_convert_copy(TRUE,
 				pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
-			if (NULL == propval.pvalue) {
+			if (propval.pvalue == nullptr)
 				return FALSE;
-			}
 			break;
 		case PT_MV_STRING8:
 		case PT_MV_UNICODE:
@@ -2514,9 +2394,8 @@ static BOOL set_xns_props_atx(INSTANCE_NODE *pinstance,
 			propval.pvalue = common_util_convert_copy_string_array(
 			                 TRUE, pinstance->cpid,
 					 static_cast<STRING_ARRAY *>(pproperties->ppropval[i].pvalue));
-			if (NULL == propval.pvalue) {
+			if (propval.pvalue == nullptr)
 				return FALSE;
-			}
 			break;
 		default:
 			propval = pproperties->ppropval[i];
@@ -2542,101 +2421,105 @@ BOOL exmdb_server::set_instance_properties(const char *dir,
 	return set_xns_props_atx(ins, props, prob);
 }
 
+static BOOL rip_message(MESSAGE_CONTENT *pmsgctnt,
+    const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+{
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		switch (pproptags->pproptag[i]) {
+		case PR_BODY:
+		case PR_BODY_A:
+		case PR_BODY_U: {
+			pmsgctnt->proplist.erase(ID_TAG_BODY);
+			pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
+			auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
+			if (num != nullptr && *num == NATIVE_BODY_PLAIN)
+				*num = NATIVE_BODY_UNDEFINED;
+			break;
+		}
+		case PR_HTML:
+		case PR_BODY_HTML:
+		case PR_BODY_HTML_A:
+		case PR_HTML_U: {
+			pmsgctnt->proplist.erase(PR_BODY_HTML);
+			pmsgctnt->proplist.erase(PR_BODY_HTML_A);
+			pmsgctnt->proplist.erase(ID_TAG_HTML);
+			auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
+			if (num != nullptr && *num == NATIVE_BODY_HTML)
+				*num = NATIVE_BODY_UNDEFINED;
+			break;
+		}
+		case PR_RTF_COMPRESSED: {
+			auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
+			if (num != nullptr && *num == NATIVE_BODY_RTF)
+				*num = NATIVE_BODY_UNDEFINED;
+			pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
+			break;
+		}
+		}
+		pmsgctnt->proplist.erase(pproptags->pproptag[i]);
+		switch (PROP_TYPE(pproptags->pproptag[i])) {
+		case PT_STRING8:
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
+			break;
+		case PT_UNICODE:
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
+			break;
+		case PT_MV_STRING8:
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
+			break;
+		case PT_MV_UNICODE:
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
+			break;
+		}
+	}
+	return TRUE;
+}
+
+static BOOL rip_attachment(ATTACHMENT_CONTENT *pattachment,
+    const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+{
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		switch (pproptags->pproptag[i]) {
+		case PR_ATTACH_DATA_BIN:
+			pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
+			break;
+		case PR_ATTACH_DATA_OBJ:
+			pattachment->proplist.erase(ID_TAG_ATTACHDATAOBJECT);
+			break;
+		}
+		pattachment->proplist.erase(pproptags->pproptag[i]);
+		switch (PROP_TYPE(pproptags->pproptag[i])) {
+		case PT_STRING8:
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
+			break;
+		case PT_UNICODE:
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
+			break;
+		case PT_MV_STRING8:
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
+			break;
+		case PT_MV_UNICODE:
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
+			break;
+		}
+	}
+	return TRUE;
+}
+
 BOOL exmdb_server::remove_instance_properties(const char *dir,
     uint32_t instance_id, const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
-	int i;
-	MESSAGE_CONTENT *pmsgctnt;
-	ATTACHMENT_CONTENT *pattachment;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto pinstance = instance_get_instance_c(pdb, instance_id);
-	if (NULL == pinstance) {
+	if (pinstance == nullptr)
 		return FALSE;
-	}
 	pproblems->count = 0;
-	if (pinstance->type == instance_type::message) {
-		pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-		for (i=0; i<pproptags->count; i++) {
-			switch (pproptags->pproptag[i]) {
-			case PR_BODY:
-			case PR_BODY_A:
-			case PR_BODY_U: {
-				pmsgctnt->proplist.erase(ID_TAG_BODY);
-				pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
-				auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
-				if (num != nullptr && *num == NATIVE_BODY_PLAIN)
-					*num = NATIVE_BODY_UNDEFINED;
-				break;
-			}
-			case PR_HTML:
-			case PR_BODY_HTML:
-			case PR_BODY_HTML_A:
-			case PR_HTML_U: {
-				pmsgctnt->proplist.erase(PR_BODY_HTML);
-				pmsgctnt->proplist.erase(PR_BODY_HTML_A);
-				pmsgctnt->proplist.erase(ID_TAG_HTML);
-				auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
-				if (num != nullptr && *num == NATIVE_BODY_HTML)
-					*num = NATIVE_BODY_UNDEFINED;
-				break;
-			}
-			case PR_RTF_COMPRESSED: {
-				auto num = pmsgctnt->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
-				if (num != nullptr && *num == NATIVE_BODY_RTF)
-					*num = NATIVE_BODY_UNDEFINED;
-				pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
-				break;
-			}
-			}
-			pmsgctnt->proplist.erase(pproptags->pproptag[i]);
-			switch (PROP_TYPE(pproptags->pproptag[i])) {
-			case PT_STRING8:
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
-				break;
-			case PT_UNICODE:
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
-				break;
-			case PT_MV_STRING8:
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
-				break;
-			case PT_MV_UNICODE:
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
-				break;
-			}
-		}
-	} else {
-		pattachment = static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent);
-		for (i=0; i<pproptags->count; i++) {
-			switch (pproptags->pproptag[i]) {
-			case PR_ATTACH_DATA_BIN:
-				pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
-				break;
-			case PR_ATTACH_DATA_OBJ:
-				pattachment->proplist.erase(ID_TAG_ATTACHDATAOBJECT);
-				break;
-			}
-			pattachment->proplist.erase(pproptags->pproptag[i]);
-			switch (PROP_TYPE(pproptags->pproptag[i])) {
-			case PT_STRING8:
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
-				break;
-			case PT_UNICODE:
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
-				break;
-			case PT_MV_STRING8:
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
-				break;
-			case PT_MV_UNICODE:
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
-				break;
-			}
-		}
-	}
-	return TRUE;
+	return pinstance->type == instance_type::message ?
+	       rip_message(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pproptags, pproblems) :
+	       rip_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pproptags, pproblems);
 }
 
 BOOL exmdb_server::check_instance_cycle(const char *dir,
@@ -2711,16 +2594,14 @@ BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
 		return TRUE;
 	}
 	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pproptags1(proptag_array_init());
-	if (NULL == pproptags1) {
+	if (pproptags1 == nullptr)
 		return FALSE;
-	}
 	prcpts = pmsgctnt->children.prcpts;
 	for (size_t i = 0; i < prcpts->count; ++i)
 		for (size_t j = 0; j < prcpts->pparray[i]->count; ++j)
 			if (!proptag_array_append(pproptags1.get(),
-			    prcpts->pparray[i]->ppropval[j].proptag)) {
+			    prcpts->pparray[i]->ppropval[j].proptag))
 				return FALSE;
-			}
 	/* MSMAPI expects to always see these four tags, even if no rows are sent later. */
 	proptag_array_append(pproptags1.get(), PR_RECIPIENT_TYPE);
 	proptag_array_append(pproptags1.get(), PR_DISPLAY_NAME);
@@ -2728,9 +2609,8 @@ BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
 	proptag_array_append(pproptags1.get(), PR_EMAIL_ADDRESS);
 	pproptags->count = pproptags1->count;
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
-	if (NULL == pproptags->pproptag) {
+	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	}
 	memcpy(pproptags->pproptag, pproptags1->pproptag,
 				sizeof(uint32_t)*pproptags1->count);
 	return TRUE;
@@ -2758,9 +2638,8 @@ BOOL exmdb_server::get_message_instance_rcpts(const char *dir,
 	size_t i;
 	for (i=0; i<prcpts->count; i++) {
 		auto prow_id = prcpts->pparray[i]->get<uint32_t>(PR_ROWID);
-		if (NULL != prow_id && row_id == *prow_id) {
+		if (prow_id != nullptr && row_id == *prow_id)
 			break;
-		}
 	}
 	if (i >= prcpts->count) {
 		pset->count = 0;
@@ -2768,19 +2647,16 @@ BOOL exmdb_server::get_message_instance_rcpts(const char *dir,
 		return TRUE;
 	}
 	auto begin_pos = i;
-	if (begin_pos + need_count > prcpts->count) {
+	if (begin_pos + need_count > prcpts->count)
 		need_count = prcpts->count - begin_pos;
-	}
 	pset->count = need_count;
 	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(need_count);
-	if (NULL == pset->pparray) {
+	if (pset->pparray == nullptr)
 		return FALSE;
-	}
 	for (i=0; i<need_count; i++) {
 		pset->pparray[i] = cu_alloc<TPROPVAL_ARRAY>();
-		if (NULL == pset->pparray[i]) {
+		if (pset->pparray[i] == nullptr)
 			return FALSE;
-		}
 		pset->pparray[i]->count =
 			prcpts->pparray[begin_pos + i]->count;
 		pset->pparray[i]->ppropval = cu_alloc<TAGGED_PROPVAL>(pset->pparray[i]->count + 4);
@@ -2833,16 +2709,14 @@ BOOL exmdb_server::update_message_instance_rcpts(const char *dir,
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	if (NULL == pmsgctnt->children.prcpts) {
 		pmsgctnt->children.prcpts = tarray_set_init();
-		if (NULL == pmsgctnt->children.prcpts) {
+		if (pmsgctnt->children.prcpts == nullptr)
 			return FALSE;
-		}
 	}
 	for (size_t i = 0; i < pset->count; ++i) {
 		auto &mod = *pset->pparray[i];
 		auto prow_id = mod.get<uint32_t>(PR_ROWID);
-		if (NULL == prow_id) {
+		if (prow_id == nullptr)
 			continue;
-		}
 		row_id = *prow_id;
 		bool did_match = false;
 		size_t j;
@@ -2858,9 +2732,8 @@ BOOL exmdb_server::update_message_instance_rcpts(const char *dir,
 				break;
 			}
 			auto prcpt = mod.dup();
-			if (NULL == prcpt) {
+			if (prcpt == nullptr)
 				return FALSE;
-			}
 			tpropval_array_free(ex_rcpt);
 			pmsgctnt->children.prcpts->pparray[j] = prcpt;
 			break;
@@ -2868,14 +2741,11 @@ BOOL exmdb_server::update_message_instance_rcpts(const char *dir,
 		if (j < pmsgctnt->children.prcpts->count || did_match)
 			continue;
 		/* No previous rowid matched, so this constitutes a new entry */
-		if (pmsgctnt->children.prcpts->count
-			>= MAX_RECIPIENT_NUMBER) {
+		if (pmsgctnt->children.prcpts->count >= MAX_RECIPIENT_NUMBER)
 			return FALSE;
-		}
 		tpropval_array_ptr prcpt(mod.dup());
-		if (NULL == prcpt) {
+		if (prcpt == nullptr)
 			return FALSE;
-		}
 		if (pmsgctnt->children.prcpts->append_move(std::move(prcpt)) != 0)
 			return FALSE;
 	}
@@ -2903,9 +2773,8 @@ BOOL exmdb_server::copy_instance_rcpts(const char *dir, BOOL b_force,
 		return TRUE;	
 	}
 	auto prcpts = static_cast<MESSAGE_CONTENT *>(pinstance_src->pcontent)->children.prcpts->dup();
-	if (NULL == prcpts) {
+	if (prcpts == nullptr)
 		return FALSE;
-	}
 	auto dm = static_cast<MESSAGE_CONTENT *>(pinstance_dst->pcontent);
 	if (dm->children.prcpts != nullptr)
 		tarray_set_free(dm->children.prcpts);
@@ -2949,8 +2818,6 @@ BOOL exmdb_server::get_message_instance_attachments_num(const char *dir,
 BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char *dir,
     uint32_t instance_id, PROPTAG_ARRAY *pproptags)
 {
-	int i, j;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -2964,23 +2831,18 @@ BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char
 		return TRUE;
 	}
 	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pproptags1(proptag_array_init());
-	if (NULL == pproptags1) {
+	if (pproptags1 == nullptr)
 		return FALSE;
-	}
 	auto pattachments = pmsgctnt->children.pattachments;
-	for (i=0; i<pattachments->count; i++) {
-		for (j=0; j<pattachments->pplist[i]->proplist.count; j++) {
+	for (unsigned int i = 0; i < pattachments->count; ++i)
+		for (unsigned int j = 0; j < pattachments->pplist[i]->proplist.count; ++j)
 			if (!proptag_array_append(pproptags1.get(),
-			    pattachments->pplist[i]->proplist.ppropval[j].proptag)) {
+			    pattachments->pplist[i]->proplist.ppropval[j].proptag))
 				return FALSE;
-			}
-		}
-	}
 	pproptags->count = pproptags1->count;
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
-	if (NULL == pproptags->pproptag) {
+	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	}
 	memcpy(pproptags->pproptag, pproptags1->pproptag,
 				sizeof(uint32_t)*pproptags1->count);
 	return TRUE;
@@ -3009,9 +2871,8 @@ BOOL exmdb_server::copy_instance_attachments(const char *dir, BOOL b_force,
 		return TRUE;	
 	}
 	auto pattachments = attachment_list_dup(srcmsg->children.pattachments);
-	if (NULL == pattachments) {
+	if (pattachments == nullptr)
 		return FALSE;
-	}
 	if (dstmsg->children.pattachments != nullptr)
 		attachment_list_free(dstmsg->children.pattachments);
 	dstmsg->children.pattachments = pattachments;
@@ -3041,21 +2902,18 @@ BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
 	}
 	auto msgidnum = pmsgctnt->proplist.get<const uint64_t>(PidTagMid);
 	auto pattachments = pmsgctnt->children.pattachments;
+	end_pos = start_pos + row_needed;
+	pset->count = 0;
 	if (row_needed > 0) {
-		end_pos = start_pos + row_needed;
-		if (end_pos >= pattachments->count) {
+		if (end_pos >= pattachments->count)
 			end_pos = pattachments->count - 1;
-		}
-		pset->count = 0;
 		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - start_pos + 1);
-		if (NULL == pset->pparray) {
+		if (pset->pparray == nullptr)
 			return FALSE;
-		}
 		for (i=start_pos; i<=end_pos; i++) {
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-			if (NULL == pset->pparray[pset->count]) {
+			if (pset->pparray[pset->count] == nullptr)
 				return FALSE;
-			}
 			if (!instance_get_attachment_properties(
 			    pinstance->cpid, msgidnum,
 			    pattachments->pplist[i], pproptags,
@@ -3064,20 +2922,15 @@ BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
 			pset->count ++;
 		}
 	} else {
-		end_pos = start_pos + row_needed;
-		if (end_pos < 0) {
+		if (end_pos < 0)
 			end_pos = 0;
-		}
-		pset->count = 0;
 		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(start_pos - end_pos + 1);
-		if (NULL == pset->pparray) {
+		if (pset->pparray == nullptr)
 			return FALSE;
-		}
 		for (i=start_pos; i>=end_pos; i--) {
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-			if (NULL == pset->pparray[pset->count]) {
+			if (pset->pparray[pset->count] == nullptr)
 				return FALSE;
-			}
 			if (!instance_get_attachment_properties(
 			    pinstance->cpid, msgidnum,
 			    pattachments->pplist[i],
@@ -3116,17 +2969,15 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 			return FALSE;
 		if (NULL == pmsg->children.pattachments) {
 			pattachments = attachment_list_init();
-			if (NULL == pattachments) {
+			if (pattachments == nullptr)
 				return FALSE;
-			}
 			pmsg->children.pattachments = pattachments;
 		} else {
 			pattachments = pmsg->children.pattachments;
 		}
 		pattachment = attachment_content_init();
-		if (NULL == pattachment) {
+		if (pattachment == nullptr)
 			return FALSE;
-		}
 		pembedded = message_content_dup(&msgctnt);
 		if (NULL == pembedded) {
 			attachment_content_free(pattachment);
@@ -3143,17 +2994,15 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 			/* ignore; reevaluate another time */;
 	} else if (pmsg->children.pattachments == nullptr) {
 		pattachments = attachment_list_init();
-		if (NULL == pattachments) {
+		if (pattachments == nullptr)
 			return FALSE;
-		}
 		pmsg->children.pattachments = pattachments;
 	} else {
 		pattachments = pmsg->children.pattachments;
 	}
 	pattachment = attachment_content_init();
-	if (NULL == pattachment) {
+	if (pattachment == nullptr)
 		return FALSE;
-	}
 	pembedded = message_content_dup(pmsgctnt);
 	if (NULL == pembedded) {
 		attachment_content_free(pattachment);

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <gromox/database.h>
@@ -55,10 +56,9 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 {
 	auto pcache = this;
 	
-	if (SQLITE_OK != sqlite3_open_v2(":memory:", &pcache->psqlite,
-		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
+	if (sqlite3_open_v2(":memory:", &pcache->psqlite,
+	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
 	if (gx_sql_exec(pcache->psqlite, "CREATE TABLE id_vals "
 	    "(id_val INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
@@ -70,9 +70,8 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 			break;
 		}
 	}
-	if (NULL == prange_list) {
+	if (prange_list == nullptr)
 		return TRUE;
-	}
 	auto stmt = gx_sql_prep(pcache->psqlite, "INSERT INTO id_vals VALUES (?)");
 	if (stmt == nullptr)
 		return FALSE;
@@ -106,9 +105,8 @@ BOOL IDSET_CACHE::hint(uint64_t id_val)
 	}
 	sqlite3_reset(pcache->pstmt);
 	sqlite3_bind_int64(pcache->pstmt, 1, id_val);
-	if (SQLITE_ROW == sqlite3_step(pcache->pstmt)) {
+	if (pcache->pstmt.step() == SQLITE_ROW)
 		return TRUE;
-	}
 	for (const auto &range_node : pcache->range_list)
 		if (range_node.contains(id_val))
 			return TRUE;	
@@ -159,10 +157,9 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	auto b_private = exmdb_server::is_private();
 
 	/* Setup of scratch space db */
-	if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
-		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
+	if (sqlite3_open_v2(":memory:", &psqlite,
+	    SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
 	    "(message_id INTEGER PRIMARY KEY)") != SQLITE_OK)
@@ -197,9 +194,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	{
 	auto transact1 = gx_sql_begin_trans(psqlite);
 	xtransaction transact2;
-	if (NULL != prestriction) {
+	if (prestriction != nullptr)
 		transact2 = gx_sql_begin_trans(pdb->psqlite);
-	}
 	char sql_string[256];
 	if (b_private)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
@@ -270,9 +266,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		sqlite3_bind_int64(stm_insert_exist, 1, mid_val);
 		if (sqlite3_step(stm_insert_exist) != SQLITE_DONE)
 			return false;
-		if (change_num > *plast_cn) {
+		if (change_num > *plast_cn)
 			*plast_cn = change_num;
-		}
 		uint64_t read_cn;
 		if (b_private) {
 			read_cn = sqlite3_column_type(stm_select_msg, 5) == SQLITE_NULL ? 0 :
@@ -285,22 +280,19 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			read_cn = sqlite3_step(stm_select_rcn) != SQLITE_ROW ? 0 :
 			          sqlite3_column_int64(stm_select_rcn, 0);
 		}
-		if (read_cn > *plast_readcn) {
+		if (read_cn > *plast_readcn)
 			*plast_readcn = read_cn;
-		}
 		if (b_fai) {
 			if (cache.hint(mid_val) &&
 			    const_cast<IDSET *>(pseen_fai)->hint(rop_util_make_eid_ex(1, change_num)))
 				continue;
 		} else if (cache.hint(mid_val) &&
 		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num))) {
-			if (NULL == pread) {
+			if (pread == nullptr)
 				continue;
-			}
 			if (read_cn == 0 ||
-			    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn))) {
+			    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn)))
 				continue;
-			}
 			int read_state;
 			if (b_private) {
 				read_state = sqlite3_column_int64(stm_select_msg, 4);
@@ -354,12 +346,10 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	stm_select_rcn.finalize();
 	stm_select_rst.finalize();
 	stm_select_mp.finalize();
-	if (0 != *plast_cn) {
+	if (*plast_cn != 0)
 		*plast_cn = rop_util_make_eid_ex(1, *plast_cn);
-	}
-	if (0 != *plast_readcn) {
+	if (*plast_readcn != 0)
 		*plast_readcn = rop_util_make_eid_ex(1, *plast_readcn);
-	}
 	transact1.commit();
 	transact2.commit();
 	} /* section 1 */
@@ -378,9 +368,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (count > 0) {
 		pupdated_mids->pids = cu_alloc<uint64_t>(count);
 		pchg_mids->pids = cu_alloc<uint64_t>(count);
-		if (NULL == pupdated_mids->pids || NULL == pchg_mids->pids) {
+		if (pupdated_mids->pids == nullptr || pchg_mids->pids == nullptr)
 			return FALSE;
-		}
 	} else {
 		pupdated_mids->pids = NULL;
 		pchg_mids->pids = NULL;
@@ -418,9 +407,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		return FALSE;
 	enum_param.b_result = TRUE;
 	enum_param.pdeleted_eids = eid_array_init();
-	if (NULL == enum_param.pdeleted_eids) {
+	if (enum_param.pdeleted_eids == nullptr)
 		return FALSE;
-	}
 	enum_param.pnolonger_mids = eid_array_init();
 	if (NULL == enum_param.pnolonger_mids) {
 		eid_array_free(enum_param.pdeleted_eids);
@@ -482,9 +470,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		pgiven_mids->pids = NULL;
 	} else {
 		pgiven_mids->pids = cu_alloc<uint64_t>(count);
-		if (NULL == pgiven_mids->pids) {
+		if (pgiven_mids->pids == nullptr)
 			return FALSE;
-		}
 		auto stm_select_ex = gx_sql_prep(psqlite, "SELECT message_id"
 		                     " FROM existence ORDER BY message_id DESC");
 		if (stm_select_ex == nullptr)
@@ -511,13 +498,11 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			punread_mids->pids = NULL;
 		} else {
 			pread_mids->pids = cu_alloc<uint64_t>(count);
-			if (NULL == pread_mids->pids) {
+			if (pread_mids->pids == nullptr)
 				return FALSE;
-			}
 			punread_mids->pids = cu_alloc<uint64_t>(count);
-			if (NULL == punread_mids->pids) {
+			if (punread_mids->pids == nullptr)
 				return FALSE;
-			}
 			stm_select_rd = gx_sql_prep(psqlite,
 					"SELECT message_id, read_state FROM reads");
 			if (stm_select_rd == nullptr)
@@ -557,9 +542,8 @@ static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
 		return;
 	replid = rop_util_get_replid(folder_id);
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (1 != replid) {
+	if (replid != 1)
 		fid_val |= ((uint64_t)replid) << 48;
-	}
 	sqlite3_reset(pparam->stm_exist);
 	sqlite3_bind_int64(pparam->stm_exist, 1, fid_val);
 	if (sqlite3_step(pparam->stm_exist) == SQLITE_ROW)
@@ -571,9 +555,8 @@ static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
 static void ics_enum_hierarchy_replist(void *vpar, uint16_t replid)
 {
 	auto preplids = static_cast<REPLID_ARRAY *>(vpar);
-	if (preplids->count < 1024) {
+	if (preplids->count < 1024)
 		preplids->replids[preplids->count++] = replid;
-	}
 }
 
 static BOOL ics_load_folder_changes(sqlite3 *psqlite,
@@ -601,23 +584,20 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 				continue;
 		}
 		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (NULL == pnode) {
+		if (pnode == nullptr)
 			return FALSE;
-		}
 		auto uv = cu_alloc<uint64_t>();
 		pnode->pdata = uv;
-		if (NULL == pnode->pdata) {
+		if (pnode->pdata == nullptr)
 			return FALSE;
-		}
 		*uv = fid_val;
 		double_list_append_as_tail(&tmp_list, pnode);
 		sqlite3_reset(stm_insert_exist);
 		sqlite3_bind_int64(stm_insert_exist, 1, fid_val);
 		if (sqlite3_step(stm_insert_exist) != SQLITE_DONE)
 			return FALSE;
-		if (change_num > *plast_cn) {
+		if (change_num > *plast_cn)
 			*plast_cn = change_num;
-		}
 		if (const_cast<IDSET *>(pgiven)->hint(rop_util_make_eid_ex(1, fid_val)) &&
 		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num)))
 			continue;
@@ -627,12 +607,11 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 			return FALSE;
 	}
 	DOUBLE_LIST_NODE *pnode;
-	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
+	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr)
 		if (!ics_load_folder_changes(psqlite,
 		    *static_cast<uint64_t *>(pnode->pdata), username, pgiven,
 		    pseen, pstmt, stm_insert_chg, stm_insert_exist, plast_cn))
 			return FALSE;	
-	}
 	return TRUE;
 }
 
@@ -644,10 +623,9 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	sqlite3 *psqlite;
 	
 	/* Setup of scratch space db */
-	if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
-		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
+	if (sqlite3_open_v2(":memory:", &psqlite,
+	    SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
 	    "(folder_id INTEGER PRIMARY KEY)") != SQLITE_OK)
@@ -682,9 +660,8 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	stm_select_fld.finalize();
 	stm_insert_chg.finalize();
 	stm_insert_exist.finalize();
-	if (0 != *plast_cn) {
+	if (*plast_cn != 0)
 		*plast_cn = rop_util_make_eid_ex(1, *plast_cn);
-	}
 	sql_transact.commit();
 	} /* section 1 */
 
@@ -718,31 +695,21 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 			return FALSE;
 		auto fid_val1 = sqlite3_column_int64(stm_select_chg, 0);
 		PROPTAG_ARRAY proptags;
+		std::vector<uint32_t> tags;
 		if (!cu_get_proptags(db_table::folder_props, fid_val1,
-			pdb->psqlite, &proptags)) {
+		    pdb->psqlite, tags))
 			return FALSE;
-		}
-
-		uint32_t tmp_proptags[0x8000];
-		size_t count = 0;
-		for (size_t j = 0; j < proptags.count; ++j) {
-			if (proptags.pproptag[j] == PR_HAS_RULES ||
-			    proptags.pproptag[j] == PidTagChangeNumber ||
-			    proptags.pproptag[j] == PR_LOCAL_COMMIT_TIME ||
-			    proptags.pproptag[j] == PR_DELETED_COUNT_TOTAL ||
-			    proptags.pproptag[j] == PR_NORMAL_MESSAGE_SIZE ||
-			    proptags.pproptag[j] == PR_LOCAL_COMMIT_TIME_MAX ||
-			    proptags.pproptag[j] == PR_HIERARCHY_CHANGE_NUM)
-				continue;
-			tmp_proptags[count++] = proptags.pproptag[j];
-		}
-		tmp_proptags[count++] = PidTagParentFolderId;
-		proptags.count = count;
-		proptags.pproptag = tmp_proptags;
+		tags.erase(std::remove_if(tags.begin(), tags.end(), [](uint32_t t) {
+			return t == PR_HAS_RULES || t == PidTagChangeNumber ||
+			       t == PR_LOCAL_COMMIT_TIME || t == PR_DELETED_COUNT_TOTAL ||
+			       t == PR_NORMAL_MESSAGE_SIZE || t == PR_LOCAL_COMMIT_TIME_MAX ||
+			       t == PR_HIERARCHY_CHANGE_NUM;
+		}), tags.end());
+		proptags.count = tags.size();
+		proptags.pproptag = tags.data();
 		if (!cu_get_properties(db_table::folder_props, fid_val1, 0,
-			pdb->psqlite, &proptags, pfldchgs->pfldchgs + i)) {
+		    pdb->psqlite, &proptags, &pfldchgs->pfldchgs[i]))
 			return FALSE;
-		}
 	}
 	stm_select_chg.finalize();
 	sql_transact2.commit();
@@ -763,9 +730,8 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		pgiven_fids->pids = NULL;
 	} else {
 		pgiven_fids->pids = cu_alloc<uint64_t>(count);
-		if (NULL == pgiven_fids->pids) {
+		if (pgiven_fids->pids == nullptr)
 			return FALSE;
-		}
 		auto stm_select_ex = gx_sql_prep(psqlite, "SELECT folder_id"
 		                     " FROM existence ORDER BY folder_id DESC");
 		if (stm_select_ex == nullptr)
@@ -792,9 +758,8 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		return FALSE;
 	enum_param.b_result = TRUE;
 	enum_param.pdeleted_eids = eid_array_init();
-	if (NULL == enum_param.pdeleted_eids) {
+	if (enum_param.pdeleted_eids == nullptr)
 		return FALSE;
-	}
 	for (size_t i = 0; i < replids.count; ++i) {
 		if (!const_cast<IDSET *>(pgiven)->enum_repl(replids.replids[i],
 		    &enum_param, ics_enum_hierarchy_idset)) {

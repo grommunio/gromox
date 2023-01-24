@@ -557,36 +557,29 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 	return TRUE;
 }
 
-BOOL exmdb_server::get_folder_all_proptags(const char *dir,
-	uint64_t folder_id, PROPTAG_ARRAY *pproptags)
+BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
+    PROPTAG_ARRAY *pproptags) try
 {
-	unsigned int i;
-	PROPTAG_ARRAY tmp_proptags;
+	std::vector<uint32_t> tags;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!cu_get_proptags(db_table::folder_props,
-	    rop_util_get_gc_value(folder_id), pdb->psqlite, &tmp_proptags))
+	    rop_util_get_gc_value(folder_id), pdb->psqlite, tags))
 		return FALSE;
 	pdb.reset();
-	for (i = 0; i < tmp_proptags.count; ++i)
-		if (tmp_proptags.pproptag[i] == PR_SOURCE_KEY)
-			break;
-	if (i < tmp_proptags.count) {
-		*pproptags = tmp_proptags;
-	} else {
-		pproptags->count = tmp_proptags.count + 1;
-		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
-		if (NULL == pproptags->pproptag) {
-			pproptags->count = 0;
-			return FALSE;
-		}
-		memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-					sizeof(uint32_t)*tmp_proptags.count);
-		pproptags->pproptag[tmp_proptags.count] = PR_SOURCE_KEY;
-	}
+	if (std::find(tags.cbegin(), tags.cend(), PR_SOURCE_KEY) == tags.cend())
+		tags.push_back(PR_SOURCE_KEY);
+	pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
+	if (pproptags->pproptag == nullptr)
+		return FALSE;
+	pproptags->count = tags.size();
+	memcpy(pproptags->pproptag, tags.data(), sizeof(tags[0]) * pproptags->count);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1164: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_server::get_folder_properties(const char *dir, uint32_t cpid,
@@ -842,9 +835,8 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 					continue;
 				}
 			}
-			if (NULL != pmessage_count) {
+			if (pmessage_count != nullptr)
 				(*pmessage_count) ++;
-			}
 			if (b_hard && is_associated && pfai_size != nullptr)
 				*pfai_size += sqlite3_column_int64(pstmt, 1);
 			else if (b_hard && !is_associated && pnormal_size != nullptr)
@@ -1881,15 +1873,15 @@ static BOOL folder_clear_search_folder(db_item_ptr &pdb,
 	return TRUE;
 }
 
-BOOL exmdb_server::set_search_criteria(const char *dir,
-	uint32_t cpid, uint64_t folder_id, uint32_t search_flags,
-	const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids,
-	BOOL *pb_result)
+BOOL exmdb_server::set_search_criteria(const char *dir, uint32_t cpid,
+    uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction,
+    const LONGLONG_ARRAY *pfolder_ids, BOOL *pb_result) try
 {
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
 	char sql_string[128];
-	uint8_t tmp_buff[0x8000];
+	static constexpr size_t buff_size = 0x8000;
+	auto tmp_buff = std::make_unique<uint8_t[]>(buff_size);
 	LONGLONG_ARRAY folder_ids{};
 	
 	if (!exmdb_server::is_private())
@@ -1924,7 +1916,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir,
 	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return false;
 	if (NULL != prestriction) {
-		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+		if (!ext_push.init(tmp_buff.get(), buff_size, 0) ||
 		    ext_push.p_restriction(*prestriction) != EXT_ERR_SUCCESS)
 			return false;
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET "
@@ -2018,6 +2010,9 @@ BOOL exmdb_server::set_search_criteria(const char *dir,
 		return FALSE;
 	*pb_result = TRUE;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1161: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_server::get_folder_perm(const char *dir,

@@ -26,10 +26,7 @@ static constexpr uint64_t GLOBCNT_MAX = 0x7fffffffffff;
 BOOL exmdb_server::ping_store(const char *dir)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
-		return FALSE;
-	}
-	return TRUE;
+	return pdb != nullptr ? TRUE : false;
 }
 
 BOOL exmdb_server::get_all_named_propids(const char *dir,
@@ -54,19 +51,16 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 		return TRUE;
 	}
 	ppropids->ppropid = cu_alloc<uint16_t>(total_count);
-	if (NULL == ppropids->ppropid) {
+	if (ppropids->ppropid == nullptr)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT"
 		" propid FROM named_properties");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	ppropids->count = 0;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW)
 		ppropids->ppropid[ppropids->count++] = sqlite3_column_int64(pstmt, 0);
-	}
 	return TRUE;
 }
 
@@ -123,9 +117,8 @@ BOOL exmdb_server::get_mapping_replid(const char *dir,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT replid FROM "
 		"replca_mapping WHERE replguid='%s'", guid_string);
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		*pb_found = FALSE;
 		return TRUE;
@@ -141,10 +134,14 @@ BOOL exmdb_server::get_store_all_proptags(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!cu_get_proptags(db_table::store_props, 0,
-		pdb->psqlite, pproptags)) {
+	std::vector<uint32_t> tags;
+	if (!cu_get_proptags(db_table::store_props, 0, pdb->psqlite, tags))
 		return FALSE;
-	}
+	pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
+	if (pproptags->pproptag == nullptr)
+		return false;
+	pproptags->count = tags.size();
+	memcpy(pproptags->pproptag, tags.data(), sizeof(tags[0]) * pproptags->count);
 	return TRUE;
 }
 
@@ -155,11 +152,8 @@ BOOL exmdb_server::get_store_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!cu_get_properties(db_table::store_props, 0, cpid, pdb->psqlite,
-		pproptags, ppropvals)) {
-		return FALSE;
-	}
-	return TRUE;
+	return cu_get_properties(db_table::store_props, 0, cpid, pdb->psqlite,
+	       pproptags, ppropvals);
 }
 
 BOOL exmdb_server::set_store_properties(const char *dir,
@@ -171,9 +165,8 @@ BOOL exmdb_server::set_store_properties(const char *dir,
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!cu_set_properties(db_table::store_props, 0, cpid, pdb->psqlite,
-		ppropvals, pproblems)) {
+	    ppropvals, pproblems))
 		return FALSE;
-	}
 	transact.commit();
 	return TRUE;
 }
@@ -185,9 +178,8 @@ BOOL exmdb_server::remove_store_properties(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!cu_remove_properties(db_table::store_props, 0, pdb->psqlite, pproptags)) {
+	if (!cu_remove_properties(db_table::store_props, 0, pdb->psqlite, pproptags))
 		return FALSE;
-	}
 	transact.commit();
 	return TRUE;
 }
@@ -208,9 +200,8 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	/* Store permission := union of folder permissions */
 	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT permission, folder_id "
 	             "FROM permissions WHERE username=?");
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		auto perm = pstmt.col_uint64(0);
@@ -240,9 +231,8 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 		"username, permission FROM permissions");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		auto ben = pstmt.col_text(0);
 		if (!common_util_check_mlist_include(ben, username))
@@ -344,9 +334,8 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 		pnsub->remote_id = NULL;
 	} else {
 		pnsub->remote_id = strdup(remote_id);
-		if (NULL == pnsub->remote_id) {
+		if (pnsub->remote_id == nullptr)
 			return FALSE;
-		}
 	}
 	pnsub->notificaton_type = notificaton_type;
 	pnsub->b_whole = b_whole;
@@ -415,14 +404,12 @@ static BOOL table_check_address_in_contact_folder(
 	sqlite3_bind_int64(pstmt_subfolder, 1, folder_id);
 	while (SQLITE_ROW == sqlite3_step(pstmt_subfolder)) {
 		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (NULL == pnode) {
+		if (pnode == nullptr)
 			return FALSE;
-		}
 		auto uv = cu_alloc<uint64_t>();
 		pnode->pdata = uv;
-		if (NULL == pnode->pdata) {
+		if (pnode->pdata == nullptr)
 			return FALSE;
-		}
 		*uv = sqlite3_column_int64(pstmt_subfolder, 0);
 		double_list_append_as_tail(&folder_list, pnode);
 	}
@@ -468,9 +455,8 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 	proptags[2] = PROP_TAG(PT_UNICODE, propids.ppropid[2]);
 	auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT folder_id"
 	              " FROM folders WHERE parent_id=?");
-	if (pstmt1 == nullptr) {
+	if (pstmt1 == nullptr)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT messages.message_id"
 		" FROM messages JOIN message_properties ON "
 		"messages.message_id=message_properties.message_id "
@@ -481,9 +467,8 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 		" LIMIT 1", proptags[0], proptags[1],
 		proptags[2]);
 	auto pstmt2 = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt2 == nullptr) {
+	if (pstmt2 == nullptr)
 		return FALSE;
-	}
 	return table_check_address_in_contact_folder(pstmt1, pstmt2,
 	       PRIVATE_FID_CONTACTS, paddress, pb_found);
 }
