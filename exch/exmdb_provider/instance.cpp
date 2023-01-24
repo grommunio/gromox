@@ -751,18 +751,15 @@ static BOOL instance_read_attachment(
 			break;
 		}
 	}
-	if (NULL != pattachment1->pembedded) {
-		pattachment->pembedded = cu_alloc<MESSAGE_CONTENT>();
-		if (NULL == pattachment->pembedded) {
-			return FALSE;
-		}
-		return instance_read_message(
-				pattachment1->pembedded,
-				pattachment->pembedded);
-	} else {
+	if (pattachment1->pembedded == nullptr) {
 		pattachment->pembedded = NULL;
+		return TRUE;
 	}
-	return TRUE;
+	pattachment->pembedded = cu_alloc<MESSAGE_CONTENT>();
+	if (NULL == pattachment->pembedded) {
+		return FALSE;
+	}
+	return instance_read_message(pattachment1->pembedded, pattachment->pembedded);
 }
 
 static BOOL instance_read_message(
@@ -947,32 +944,32 @@ static BOOL instance_read_message(
 	}
 	if (NULL == pmsgctnt1->children.pattachments) {
 		pmsgctnt->children.pattachments = NULL;
-	} else {
-		pmsgctnt->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
-		if (NULL == pmsgctnt->children.pattachments) {
+		return TRUE;
+	}
+	pmsgctnt->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
+	if (NULL == pmsgctnt->children.pattachments) {
+		return FALSE;
+	}
+	pmsgctnt->children.pattachments->count =
+		pmsgctnt1->children.pattachments->count;
+	if (0 != pmsgctnt1->children.pattachments->count) {
+		pmsgctnt->children.pattachments->pplist = cu_alloc<ATTACHMENT_CONTENT *>(pmsgctnt1->children.pattachments->count);
+		if (NULL == pmsgctnt->children.pattachments->pplist) {
 			return FALSE;
 		}
-		pmsgctnt->children.pattachments->count =
-			pmsgctnt1->children.pattachments->count;
-		if (0 != pmsgctnt1->children.pattachments->count) {
-			pmsgctnt->children.pattachments->pplist = cu_alloc<ATTACHMENT_CONTENT *>(pmsgctnt1->children.pattachments->count);
-			if (NULL == pmsgctnt->children.pattachments->pplist) {
-				return FALSE;
-			}
-		} else {
-			pmsgctnt->children.pattachments->pplist = NULL;
+	} else {
+		pmsgctnt->children.pattachments->pplist = NULL;
+	}
+	for (i = 0; i < pmsgctnt1->children.pattachments->count; i++) {
+		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
+		if (NULL == pattachment) {
+			return FALSE;
 		}
-		for (i=0; i<pmsgctnt1->children.pattachments->count; i++) {
-			auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
-			if (NULL == pattachment) {
-				return FALSE;
-			}
-			memset(pattachment, 0 ,sizeof(ATTACHMENT_CONTENT));
-			pmsgctnt->children.pattachments->pplist[i] = pattachment;
-			pattachment1 = pmsgctnt1->children.pattachments->pplist[i];
-			if (!instance_read_attachment(pattachment1, pattachment))
-				return FALSE;	
-		}
+		memset(pattachment, 0 ,sizeof(ATTACHMENT_CONTENT));
+		pmsgctnt->children.pattachments->pplist[i] = pattachment;
+		pattachment1 = pmsgctnt1->children.pattachments->pplist[i];
+		if (!instance_read_attachment(pattachment1, pattachment))
+			return FALSE;
 	}
 	return TRUE;
 }
@@ -1137,34 +1134,32 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 		}
 		pproptags->pproptag[pproptags->count++] = proptag;
 	}
-	if (NULL != pmsgctnt->children.prcpts) {
-		if (b_force || ict->children.prcpts == nullptr) {
-			prcpts = pmsgctnt->children.prcpts->dup();
-			if (NULL == prcpts) {
-				return FALSE;
-			}
-			if (!instance_identify_rcpts(prcpts)) {
-				tarray_set_free(prcpts);
-				return FALSE;
-			}
-			message_content_set_rcpts_internal(ict, prcpts);
-			pproptags->pproptag[pproptags->count++] = PR_MESSAGE_RECIPIENTS;
+	if (pmsgctnt->children.prcpts != nullptr &&
+	    (b_force || ict->children.prcpts == nullptr)) {
+		prcpts = pmsgctnt->children.prcpts->dup();
+		if (NULL == prcpts) {
+			return FALSE;
 		}
+		if (!instance_identify_rcpts(prcpts)) {
+			tarray_set_free(prcpts);
+			return FALSE;
+		}
+		message_content_set_rcpts_internal(ict, prcpts);
+		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_RECIPIENTS;
 	}
-	if (NULL != pmsgctnt->children.pattachments) {
-		if (b_force || ict->children.pattachments == nullptr) {
-			pattachments = attachment_list_dup(
-				pmsgctnt->children.pattachments);
-			if (NULL == pattachments) {
-				return FALSE;
-			}
-			if (!instance_identify_attachments(pattachments)) {
-				attachment_list_free(pattachments);
-				return FALSE;
-			}
-			message_content_set_attachments_internal(ict, pattachments);
-			pproptags->pproptag[pproptags->count++] = PR_MESSAGE_ATTACHMENTS;
+	if (pmsgctnt->children.pattachments != nullptr &&
+	    (b_force || ict->children.pattachments == nullptr)) {
+		pattachments = attachment_list_dup(
+		               pmsgctnt->children.pattachments);
+		if (NULL == pattachments) {
+			return FALSE;
 		}
+		if (!instance_identify_attachments(pattachments)) {
+			attachment_list_free(pattachments);
+			return FALSE;
+		}
+		message_content_set_attachments_internal(ict, pattachments);
+		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_ATTACHMENTS;
 	}
 	return TRUE;
 }
@@ -1794,13 +1789,13 @@ static BOOL instance_get_message_subject(
 	}
 	strcpy(pvalue, psubject_prefix);
 	strcat(pvalue, pnormalized_subject);
-	if (PROP_TYPE(proptag) == PT_UNICODE) {
-		*ppvalue = common_util_dup(pvalue);
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-	} else {
+	if (PROP_TYPE(proptag) != PT_UNICODE) {
 		*ppvalue = common_util_convert_copy(FALSE, cpid, pvalue);
+		return TRUE;
+	}
+	*ppvalue = common_util_dup(pvalue);
+	if (NULL == *ppvalue) {
+		return FALSE;
 	}
 	return TRUE;
 }

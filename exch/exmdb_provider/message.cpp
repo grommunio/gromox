@@ -1216,18 +1216,18 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 			sizeof(uint32_t)*ptmp_indices->count);
 	}
 	ptmp_indices.reset();
-	if (ptmp_proptags->count > 0) {
-		pungroup_proptags->count = ptmp_proptags->count;
-		pungroup_proptags->pproptag = cu_alloc<uint32_t>(ptmp_proptags->count);
-		if (NULL == pungroup_proptags->pproptag) {
-			return FALSE;
-		}
-		memcpy(pungroup_proptags->pproptag, ptmp_proptags->pproptag,
-			sizeof(uint32_t)*ptmp_proptags->count);
-	} else {
+	if (ptmp_proptags->count == 0) {
 		pungroup_proptags->count = 0;
 		pungroup_proptags->pproptag = NULL;
+		return TRUE;
 	}
+	pungroup_proptags->count = ptmp_proptags->count;
+	pungroup_proptags->pproptag = cu_alloc<uint32_t>(ptmp_proptags->count);
+	if (NULL == pungroup_proptags->pproptag) {
+		return FALSE;
+	}
+	memcpy(pungroup_proptags->pproptag, ptmp_proptags->pproptag,
+	       sizeof(uint32_t)*ptmp_proptags->count);
 	return TRUE;
 }
 
@@ -2534,19 +2534,19 @@ static ec_error_t message_disable_rule(sqlite3 *psqlite,
 		         "WHERE rule_id=%llu", ST_ERROR, LLU{id});
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return ecError;
-	} else {
-		if (!cu_get_property(db_table::msg_props, id, 0, psqlite,
-			PR_RULE_MSG_STATE, &pvalue) ||
-			NULL == pvalue) {
-			return ecError;
-		}
-		*static_cast<uint32_t *>(pvalue) |= ST_ERROR;
-		propval.proptag = PR_RULE_MSG_STATE;
-		propval.pvalue = pvalue;
-		if (!cu_set_property(db_table::msg_props, id, 0,
-		    psqlite, &propval, &b_result))
-			return ecError;
+		return ecSuccess;
 	}
+	if (!cu_get_property(db_table::msg_props, id, 0, psqlite,
+	    PR_RULE_MSG_STATE, &pvalue) ||
+	    NULL == pvalue) {
+		return ecError;
+	}
+	*static_cast<uint32_t *>(pvalue) |= ST_ERROR;
+	propval.proptag = PR_RULE_MSG_STATE;
+	propval.pvalue = pvalue;
+	if (!cu_set_property(db_table::msg_props, id, 0,
+	    psqlite, &propval, &b_result))
+		return ecError;
 	return ecSuccess;
 }
 
@@ -3120,15 +3120,13 @@ static BOOL message_make_deferred_action_messages(const char *username,
 	auto tail = dam_list.size() > 0 ? &dam_list.back() : nullptr;
 	while (dam_list.size() > 0) {
 		auto pdnode = &dam_list.front();
-		if (NULL != provider) {
-			if (0 == strcasecmp(provider, pdnode->provider)) {
-				tmp_list.splice(tmp_list.end(), dam_list, dam_list.begin());
-			} else {
-				dam_list.splice(dam_list.end(), dam_list, dam_list.begin());
-			}
-		} else {
+		if (provider == nullptr) {
 			provider = pdnode->provider;
 			tmp_list.splice(tmp_list.end(), dam_list, dam_list.begin());
+		} else if (strcasecmp(provider, pdnode->provider) == 0) {
+			tmp_list.splice(tmp_list.end(), dam_list, dam_list.begin());
+		} else {
+			dam_list.splice(dam_list.end(), dam_list, dam_list.begin());
 		}
 		if (pdnode == tail) {
 			if (!message_make_deferred_action_message(username,
@@ -3272,13 +3270,12 @@ static ec_error_t op_reply(const char *from_address, const char *account,
 	    preply->template_message_id), preply->template_guid,
 	    &b_result))
 		return ecError;
-	if (!b_result) {
-		message_make_deferred_error_message(account, psqlite, folder_id,
-			message_id, prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
-			block.type, rule_idx, prnode->provider.c_str(), seen);
-		return message_disable_rule(psqlite, false, prnode->id);
-	}
-	return ecSuccess;
+	if (b_result)
+		return ecSuccess;
+	message_make_deferred_error_message(account, psqlite, folder_id,
+		message_id, prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
+		block.type, rule_idx, prnode->provider.c_str(), seen);
+	return message_disable_rule(psqlite, false, prnode->id);
 }
 
 static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
@@ -3980,13 +3977,13 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK ||
 	    !cu_adjust_store_size(psqlite, ADJ_DECREASE, message_size, 0))
 		return ecError;
-	if (NULL != pdigest) {
-		char mid_string1[128], tmp_path1[256];
-		get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
-		snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
-		         exmdb_server::get_dir(), mid_string1);
-		remove(tmp_path1);
-	}
+	if (pdigest == nullptr)
+		return ecSuccess;
+	char mid_string1[128], tmp_path1[256];
+	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
+	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
+	         exmdb_server::get_dir(), mid_string1);
+	remove(tmp_path1);
 	return ecSuccess;
 }
 
