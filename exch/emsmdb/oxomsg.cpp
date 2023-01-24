@@ -69,9 +69,8 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	    tmp_display, arsizeof(tmp_display)))
 		return ecRpcFailed;
 	pentryid = common_util_username_to_addressbook_entryid(account);
-	if (NULL == pentryid) {
+	if (pentryid == nullptr)
 		return ecRpcFailed;
-	}
 	auto pentryid1 = pentryid;
 	const std::string search_buff = "EX:"s + essdn_buff.get();
 	search_bin.cb = search_buff.size() + 1;
@@ -462,9 +461,8 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	    nullptr, 0, message_id, PR_MESSAGE_FLAGS,
 	    reinterpret_cast<void **>(&pmessage_flags)))
 		return ecError;
-	if (NULL == pmessage_flags) {
+	if (pmessage_flags == nullptr)
 		return ecError;
-	}
 	if (*pmessage_flags & MSGFLAG_SUBMITTED) {
 		if (!exmdb_client::get_message_timer(plogon->get_dir(),
 		    message_id, &ptimer_id))
@@ -536,9 +534,8 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		return ecNotSupported;
 	if (plogon->logon_mode == logon_mode::guest)
 		return ecAccessDenied;
-	if (LOCK_STAT_1STFINISHED != lock_stat) {
+	if (lock_stat != LOCK_STAT_1STFINISHED)
 		return ecSuccess;
-	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
 	auto dir = plogon->get_dir();
 	if (!exmdb_client::check_message(dir, fid_spooler, message_id, &b_exist))

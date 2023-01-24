@@ -100,9 +100,8 @@ static char* ftstream_parser_read_wstring(
 	}
 	tmp_len = 2*len;
 	auto pbuff = gromox::me_alloc<char>(len + 2);
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return NULL;
-	}
 	auto ret = read(pstream->fd, pbuff, len);
 	if (ret < 0 || static_cast<size_t>(ret) != len) {
 		free(pbuff);
@@ -146,17 +145,15 @@ static char* ftstream_parser_read_string(
 		return NULL;
 	}
 	auto pbuff = cu_alloc<char>(len + 1);
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return NULL;
-	}
 	auto ret = read(pstream->fd, pbuff, len);
 	if (ret < 0 || static_cast<size_t>(ret) != len)
 		return NULL;
 	pstream->offset += len;
 	/* if trail null not found, append it */
-	if ('\0' != pbuff[len - 1]) {
+	if (pbuff[len-1] != '\0')
 		pbuff[len] = '\0';
-	}
 	return pbuff;
 }
 
@@ -169,23 +166,19 @@ static char* ftstream_parser_read_naked_wstring(
 	
 	offset = 0;
 	while (true) {
-		if (2 != read(pstream->fd, buff + offset, 2)) {
+		if (read(pstream->fd, &buff[offset], 2) != 2)
 			return NULL;
-		}
-		if (0 == buff[offset] && 0 == buff[offset + 1]) {
+		if (buff[offset] == '\0' && buff[offset+1] == '\0')
 			break;
-		}
 		offset += 2;
-		if (offset == sizeof(buff)) {
+		if (offset == sizeof(buff))
 			return NULL;
-		}
 	}
 	len = offset + 2;
 	pstream->offset += len;
 	auto pbuff = cu_alloc<char>(2 * len);
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return NULL;
-	}
 	if (!utf16le_to_utf8(buff, len, pbuff, 2 * len))
 		return NULL;
 	return pbuff;
@@ -200,13 +193,11 @@ static BOOL ftstream_parser_read_guid(
 		return FALSE;
 	if (!ftstream_parser_read_uint16(pstream, &pguid->time_hi_and_version))
 		return FALSE;
-	if (2 != read(pstream->fd, pguid->clock_seq, 2)) {
+	if (read(pstream->fd, pguid->clock_seq, 2) != 2)
 		return FALSE;
-	}
 	pstream->offset += 2;
-	if (6 != read(pstream->fd, pguid->node, 6)) {
+	if (read(pstream->fd, pguid->node, 6) != 6)
 		return FALSE;
-	}
 	pstream->offset += 6;
 	return TRUE;
 }
@@ -228,16 +219,13 @@ static BOOL ftstream_parser_read_svreid(
 		*pb_continue = TRUE;
 		return FALSE;
 	}
-	if (sizeof(uint8_t) != read(pstream->fd,
-		&ours, sizeof(uint8_t))) {
+	if (read(pstream->fd, &ours, sizeof(uint8_t)) != sizeof(uint8_t))
 		return FALSE;
-	}
 	pstream->offset += sizeof(uint8_t);
 	if (0 == ours) {
 		psvreid->pbin = cu_alloc<BINARY>();
-		if (NULL == psvreid->pbin) {
+		if (psvreid->pbin == nullptr)
 			return FALSE;
-		}
 		psvreid->pbin->cb = len - 1;
 		if (0 == psvreid->pbin->cb) {
 			psvreid->pbin->pb = NULL;
@@ -251,9 +239,8 @@ static BOOL ftstream_parser_read_svreid(
 			pstream->offset += psvreid->pbin->cb;
 		}
 	}
-	if (21 != len) {
+	if (len != 21)
 		return FALSE;
-	}
 	psvreid->pbin = NULL;
 	if (!ftstream_parser_read_uint64(pstream, &psvreid->folder_id))
 		return FALSE;
@@ -299,15 +286,12 @@ static PROPERTY_NAME* ftstream_parser_read_property_name(
 	FTSTREAM_PARSER *pstream)
 {
 	auto pname = cu_alloc<PROPERTY_NAME>();
-	if (NULL == pname) {
+	if (pname == nullptr)
 		return NULL;
-	}
 	if (!ftstream_parser_read_guid(pstream, &pname->guid))
 		return NULL;	
-	if (sizeof(uint8_t) != read(pstream->fd,
-		&pname->kind, sizeof(uint8_t))) {
+	if (read(pstream->fd, &pname->kind, sizeof(uint8_t)) != sizeof(uint8_t))
 		return NULL;
-	}
 	pstream->offset += sizeof(uint8_t);
 	pname->lid = 0;
 	pname->pname = NULL;
@@ -318,9 +302,8 @@ static PROPERTY_NAME* ftstream_parser_read_property_name(
 		return pname;
 	case MNID_STRING:
 		pname->pname = ftstream_parser_read_naked_wstring(pstream);
-		if (NULL == pname->pname) {
+		if (pname->pname == nullptr)
 			return NULL;
-		}
 		return pname;
 	}
 	return NULL;
@@ -336,9 +319,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 	PROPERTY_NAME *ppropname;
 	
 	uint32_t origin_offset = pstream->offset;
-	if (origin_offset == pstream->st_size) {
+	if (origin_offset == pstream->st_size)
 		return FTSTREAM_PARSER_READ_CONTINUE;
-	}
 	if (!ftstream_parser_read_uint32(pstream, &atom_element))
 		return FTSTREAM_PARSER_READ_FAIL;
 	switch (atom_element) {
@@ -379,15 +361,13 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 		mlog(LV_WARN, "W-1272: ftstream with PROP_ID_INVALID seen");
 	if (is_nameprop_id(propid)) {
 		ppropname = ftstream_parser_read_property_name(pstream);
-		if (NULL == ppropname) {
+		if (ppropname == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (!pstream->plogon->get_named_propid(TRUE, ppropname, &propid))
 			return FTSTREAM_PARSER_READ_FAIL;
 	}
-	if (pstream->st_size == pstream->offset) {
+	if (pstream->st_size == pstream->offset)
 		goto CONTINUE_WAITING;
-	}
 	propval.proptag = PROP_TAG(proptype, propid);
 	if (proptype & FXICS_CODEPAGE_FLAG) {
 		/* codepage string */
@@ -513,13 +493,10 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (count*sizeof(uint16_t) > 0x10000) {
+		if (count * sizeof(uint16_t) > 0x10000)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (pstream->st_size < count*sizeof(uint16_t) +
-			pstream->offset) {
+		if (pstream->st_size < count * sizeof(uint16_t) + pstream->offset)
 			goto CONTINUE_WAITING;
-		}
 		sa->count = count;
 		if (0 == count) {
 			sa->ps = nullptr;
@@ -528,10 +505,9 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			if (sa->ps == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
 		}
-		for (size_t i = 0; i < count; ++i) {
+		for (size_t i = 0; i < count; ++i)
 			if (!ftstream_parser_read_uint16(pstream, &sa->ps[i]))
 				return FTSTREAM_PARSER_READ_FAIL;	
-		}
 		return FTSTREAM_PARSER_READ_OK;
 	}
 	case PT_MV_LONG: {
@@ -541,13 +517,10 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (count*sizeof(uint32_t) > 0x10000) {
+		if (count * sizeof(uint32_t) > 0x10000)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (pstream->st_size < count*sizeof(uint32_t) +
-			pstream->offset) {
+		if (pstream->st_size < count * sizeof(uint32_t) + pstream->offset)
 			goto CONTINUE_WAITING;
-		}
 		la->count = count;
 		if (0 == count) {
 			la->pl = nullptr;
@@ -556,10 +529,9 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			if (la->pl == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
 		}
-		for (size_t i = 0; i < count; ++i) {
+		for (size_t i = 0; i < count; ++i)
 			if (!ftstream_parser_read_uint32(pstream, &la->pl[i]))
 				return FTSTREAM_PARSER_READ_FAIL;	
-		}
 		return FTSTREAM_PARSER_READ_OK;
 	}
 	case PT_MV_CURRENCY:
@@ -571,13 +543,10 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (count*sizeof(uint64_t) > 0x10000) {
+		if (count * sizeof(uint64_t) > 0x10000)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (pstream->st_size < count*sizeof(uint64_t) +
-			pstream->offset) {
+		if (pstream->st_size < count * sizeof(uint64_t) + pstream->offset)
 			goto CONTINUE_WAITING;
-		}
 		la->count = count;
 		if (0 == count) {
 			la->pll = nullptr;
@@ -586,10 +555,9 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			if (la->pll == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
 		}
-		for (size_t i = 0; i < count; ++i) {
+		for (size_t i = 0; i < count; ++i)
 			if (!ftstream_parser_read_uint64(pstream, &la->pll[i]))
 				return FTSTREAM_PARSER_READ_FAIL;	
-		}
 		return FTSTREAM_PARSER_READ_OK;
 	}
 	case PT_MV_FLOAT: {
@@ -644,9 +612,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (pstream->st_size == pstream->offset) {
+		if (pstream->st_size == pstream->offset)
 			goto CONTINUE_WAITING;
-		}
 		sa->count = count;
 		if (0 == count) {
 			sa->ppstr = nullptr;
@@ -660,15 +627,13 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			if (sa->ppstr[i] == nullptr) {
 				if (!b_continue)
 					return FTSTREAM_PARSER_READ_FAIL;
-				if (pstream->offset - origin_offset > 0x10000) {
+				if (pstream->offset - origin_offset > 0x10000)
 					return FTSTREAM_PARSER_READ_FAIL;
-				}
 				goto CONTINUE_WAITING;
 			}
 			if (pstream->st_size == pstream->offset) {
-				if (pstream->offset - origin_offset > 0x10000) {
+				if (pstream->offset - origin_offset > 0x10000)
 					return FTSTREAM_PARSER_READ_FAIL;
-				}
 				goto CONTINUE_WAITING;
 			}
 		}
@@ -681,9 +646,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (pstream->st_size == pstream->offset) {
+		if (pstream->st_size == pstream->offset)
 			goto CONTINUE_WAITING;
-		}
 		sa->count = count;
 		if (0 == count) {
 			sa->ppstr = nullptr;
@@ -697,15 +661,13 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			if (sa->ppstr[i] == nullptr) {
 				if (!b_continue)
 					return FTSTREAM_PARSER_READ_FAIL;
-				if (pstream->offset - origin_offset > 0x10000) {
+				if (pstream->offset - origin_offset > 0x10000)
 					return FTSTREAM_PARSER_READ_FAIL;
-				}
 				goto CONTINUE_WAITING;
 			}
 			if (pstream->st_size == pstream->offset) {
-				if (pstream->offset - origin_offset > 0x10000) {
+				if (pstream->offset - origin_offset > 0x10000)
 					return FTSTREAM_PARSER_READ_FAIL;
-				}
 				goto CONTINUE_WAITING;
 			}
 		}
@@ -718,12 +680,10 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (16*count > 0x10000) {
+		if (16 * count > 0x10000)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (pstream->st_size < 16*count + pstream->offset) {
+		if (pstream->st_size < 16 * count + pstream->offset)
 			goto CONTINUE_WAITING;
-		}
 		ga->count = count;
 		if (0 == count) {
 			ga->pguid = nullptr;
@@ -732,10 +692,9 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			if (ga->pguid == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
 		}
-		for (size_t i = 0; i < count; ++i) {
+		for (size_t i = 0; i < count; ++i)
 			if (!ftstream_parser_read_guid(pstream, &ga->pguid[i]))
 				return FTSTREAM_PARSER_READ_FAIL;	
-		}
 		return FTSTREAM_PARSER_READ_OK;
 	}
 	case PT_MV_BINARY: {
@@ -745,9 +704,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (pstream->st_size == pstream->offset) {
+		if (pstream->st_size == pstream->offset)
 			goto CONTINUE_WAITING;
-		}
 		ba->count = count;
 		if (0 == count) {
 			ba->pbin = nullptr;
@@ -763,15 +721,13 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			    ba->pbin + i, &b_continue)) {
 				if (!b_continue)
 					return FTSTREAM_PARSER_READ_FAIL;
-				if (pstream->offset - origin_offset > 0x10000) {
+				if (pstream->offset - origin_offset > 0x10000)
 					return FTSTREAM_PARSER_READ_FAIL;
-				}
 				goto CONTINUE_WAITING;
 			}
 			if (pstream->st_size == pstream->offset) {
-				if (pstream->offset - origin_offset > 0x10000) {
+				if (pstream->offset - origin_offset > 0x10000)
 					return FTSTREAM_PARSER_READ_FAIL;
-				}
 				goto CONTINUE_WAITING;
 			}
 		}
@@ -798,9 +754,8 @@ BOOL FTSTREAM_PARSER::write_buffer(const BINARY *ptransfer_data)
 
 static BOOL ftstream_parser_truncate_fd(FTSTREAM_PARSER *pstream) try
 {
-	if (0 == pstream->offset) {
+	if (pstream->offset == 0)
 		return TRUE;
-	}
 	if (pstream->st_size == pstream->offset) {
 		ftruncate(pstream->fd, 0);
 		lseek(pstream->fd, 0, SEEK_SET);
@@ -813,9 +768,8 @@ static BOOL ftstream_parser_truncate_fd(FTSTREAM_PARSER *pstream) try
 	static constexpr size_t buff_size = 0x10000;
 	auto buff = std::make_unique<char[]>(buff_size);
 	auto len = read(pstream->fd, buff.get(), buff_size);
-	if (len <= 0) {
+	if (len <= 0)
 		return FALSE;
-	}
 	ftruncate(pstream->fd, 0);
 	lseek(pstream->fd, 0, SEEK_SET);
 	if (write(pstream->fd, buff.get(), len) != len)
