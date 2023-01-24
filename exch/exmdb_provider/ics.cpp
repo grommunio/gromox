@@ -70,9 +70,8 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 			break;
 		}
 	}
-	if (NULL == prange_list) {
+	if (prange_list == nullptr)
 		return TRUE;
-	}
 	auto stmt = gx_sql_prep(pcache->psqlite, "INSERT INTO id_vals VALUES (?)");
 	if (stmt == nullptr)
 		return FALSE;
@@ -106,9 +105,8 @@ BOOL IDSET_CACHE::hint(uint64_t id_val)
 	}
 	sqlite3_reset(pcache->pstmt);
 	sqlite3_bind_int64(pcache->pstmt, 1, id_val);
-	if (SQLITE_ROW == sqlite3_step(pcache->pstmt)) {
+	if (pcache->pstmt.step() == SQLITE_ROW)
 		return TRUE;
-	}
 	for (const auto &range_node : pcache->range_list)
 		if (range_node.contains(id_val))
 			return TRUE;	
@@ -196,9 +194,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	{
 	auto transact1 = gx_sql_begin_trans(psqlite);
 	xtransaction transact2;
-	if (NULL != prestriction) {
+	if (prestriction != nullptr)
 		transact2 = gx_sql_begin_trans(pdb->psqlite);
-	}
 	char sql_string[256];
 	if (b_private)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
@@ -269,9 +266,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		sqlite3_bind_int64(stm_insert_exist, 1, mid_val);
 		if (sqlite3_step(stm_insert_exist) != SQLITE_DONE)
 			return false;
-		if (change_num > *plast_cn) {
+		if (change_num > *plast_cn)
 			*plast_cn = change_num;
-		}
 		uint64_t read_cn;
 		if (b_private) {
 			read_cn = sqlite3_column_type(stm_select_msg, 5) == SQLITE_NULL ? 0 :
@@ -284,22 +280,19 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			read_cn = sqlite3_step(stm_select_rcn) != SQLITE_ROW ? 0 :
 			          sqlite3_column_int64(stm_select_rcn, 0);
 		}
-		if (read_cn > *plast_readcn) {
+		if (read_cn > *plast_readcn)
 			*plast_readcn = read_cn;
-		}
 		if (b_fai) {
 			if (cache.hint(mid_val) &&
 			    const_cast<IDSET *>(pseen_fai)->hint(rop_util_make_eid_ex(1, change_num)))
 				continue;
 		} else if (cache.hint(mid_val) &&
 		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num))) {
-			if (NULL == pread) {
+			if (pread == nullptr)
 				continue;
-			}
 			if (read_cn == 0 ||
-			    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn))) {
+			    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn)))
 				continue;
-			}
 			int read_state;
 			if (b_private) {
 				read_state = sqlite3_column_int64(stm_select_msg, 4);
@@ -353,12 +346,10 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	stm_select_rcn.finalize();
 	stm_select_rst.finalize();
 	stm_select_mp.finalize();
-	if (0 != *plast_cn) {
+	if (*plast_cn != 0)
 		*plast_cn = rop_util_make_eid_ex(1, *plast_cn);
-	}
-	if (0 != *plast_readcn) {
+	if (*plast_readcn != 0)
 		*plast_readcn = rop_util_make_eid_ex(1, *plast_readcn);
-	}
 	transact1.commit();
 	transact2.commit();
 	} /* section 1 */
@@ -377,9 +368,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (count > 0) {
 		pupdated_mids->pids = cu_alloc<uint64_t>(count);
 		pchg_mids->pids = cu_alloc<uint64_t>(count);
-		if (NULL == pupdated_mids->pids || NULL == pchg_mids->pids) {
+		if (pupdated_mids->pids == nullptr || pchg_mids->pids == nullptr)
 			return FALSE;
-		}
 	} else {
 		pupdated_mids->pids = NULL;
 		pchg_mids->pids = NULL;
@@ -417,9 +407,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		return FALSE;
 	enum_param.b_result = TRUE;
 	enum_param.pdeleted_eids = eid_array_init();
-	if (NULL == enum_param.pdeleted_eids) {
+	if (enum_param.pdeleted_eids == nullptr)
 		return FALSE;
-	}
 	enum_param.pnolonger_mids = eid_array_init();
 	if (NULL == enum_param.pnolonger_mids) {
 		eid_array_free(enum_param.pdeleted_eids);
@@ -481,9 +470,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		pgiven_mids->pids = NULL;
 	} else {
 		pgiven_mids->pids = cu_alloc<uint64_t>(count);
-		if (NULL == pgiven_mids->pids) {
+		if (pgiven_mids->pids == nullptr)
 			return FALSE;
-		}
 		auto stm_select_ex = gx_sql_prep(psqlite, "SELECT message_id"
 		                     " FROM existence ORDER BY message_id DESC");
 		if (stm_select_ex == nullptr)
@@ -510,13 +498,11 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			punread_mids->pids = NULL;
 		} else {
 			pread_mids->pids = cu_alloc<uint64_t>(count);
-			if (NULL == pread_mids->pids) {
+			if (pread_mids->pids == nullptr)
 				return FALSE;
-			}
 			punread_mids->pids = cu_alloc<uint64_t>(count);
-			if (NULL == punread_mids->pids) {
+			if (punread_mids->pids == nullptr)
 				return FALSE;
-			}
 			stm_select_rd = gx_sql_prep(psqlite,
 					"SELECT message_id, read_state FROM reads");
 			if (stm_select_rd == nullptr)
@@ -556,9 +542,8 @@ static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
 		return;
 	replid = rop_util_get_replid(folder_id);
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (1 != replid) {
+	if (replid != 1)
 		fid_val |= ((uint64_t)replid) << 48;
-	}
 	sqlite3_reset(pparam->stm_exist);
 	sqlite3_bind_int64(pparam->stm_exist, 1, fid_val);
 	if (sqlite3_step(pparam->stm_exist) == SQLITE_ROW)
@@ -570,9 +555,8 @@ static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
 static void ics_enum_hierarchy_replist(void *vpar, uint16_t replid)
 {
 	auto preplids = static_cast<REPLID_ARRAY *>(vpar);
-	if (preplids->count < 1024) {
+	if (preplids->count < 1024)
 		preplids->replids[preplids->count++] = replid;
-	}
 }
 
 static BOOL ics_load_folder_changes(sqlite3 *psqlite,
@@ -600,23 +584,20 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 				continue;
 		}
 		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (NULL == pnode) {
+		if (pnode == nullptr)
 			return FALSE;
-		}
 		auto uv = cu_alloc<uint64_t>();
 		pnode->pdata = uv;
-		if (NULL == pnode->pdata) {
+		if (pnode->pdata == nullptr)
 			return FALSE;
-		}
 		*uv = fid_val;
 		double_list_append_as_tail(&tmp_list, pnode);
 		sqlite3_reset(stm_insert_exist);
 		sqlite3_bind_int64(stm_insert_exist, 1, fid_val);
 		if (sqlite3_step(stm_insert_exist) != SQLITE_DONE)
 			return FALSE;
-		if (change_num > *plast_cn) {
+		if (change_num > *plast_cn)
 			*plast_cn = change_num;
-		}
 		if (const_cast<IDSET *>(pgiven)->hint(rop_util_make_eid_ex(1, fid_val)) &&
 		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num)))
 			continue;
@@ -626,12 +607,11 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 			return FALSE;
 	}
 	DOUBLE_LIST_NODE *pnode;
-	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
+	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr)
 		if (!ics_load_folder_changes(psqlite,
 		    *static_cast<uint64_t *>(pnode->pdata), username, pgiven,
 		    pseen, pstmt, stm_insert_chg, stm_insert_exist, plast_cn))
 			return FALSE;	
-	}
 	return TRUE;
 }
 
@@ -680,9 +660,8 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	stm_select_fld.finalize();
 	stm_insert_chg.finalize();
 	stm_insert_exist.finalize();
-	if (0 != *plast_cn) {
+	if (*plast_cn != 0)
 		*plast_cn = rop_util_make_eid_ex(1, *plast_cn);
-	}
 	sql_transact.commit();
 	} /* section 1 */
 
@@ -729,9 +708,8 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		proptags.count = tags.size();
 		proptags.pproptag = tags.data();
 		if (!cu_get_properties(db_table::folder_props, fid_val1, 0,
-			pdb->psqlite, &proptags, pfldchgs->pfldchgs + i)) {
+		    pdb->psqlite, &proptags, &pfldchgs->pfldchgs[i]))
 			return FALSE;
-		}
 	}
 	stm_select_chg.finalize();
 	sql_transact2.commit();
@@ -752,9 +730,8 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		pgiven_fids->pids = NULL;
 	} else {
 		pgiven_fids->pids = cu_alloc<uint64_t>(count);
-		if (NULL == pgiven_fids->pids) {
+		if (pgiven_fids->pids == nullptr)
 			return FALSE;
-		}
 		auto stm_select_ex = gx_sql_prep(psqlite, "SELECT folder_id"
 		                     " FROM existence ORDER BY folder_id DESC");
 		if (stm_select_ex == nullptr)
@@ -781,9 +758,8 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		return FALSE;
 	enum_param.b_result = TRUE;
 	enum_param.pdeleted_eids = eid_array_init();
-	if (NULL == enum_param.pdeleted_eids) {
+	if (enum_param.pdeleted_eids == nullptr)
 		return FALSE;
-	}
 	for (size_t i = 0; i < replids.count; ++i) {
 		if (!const_cast<IDSET *>(pgiven)->enum_repl(replids.replids[i],
 		    &enum_param, ics_enum_hierarchy_idset)) {
