@@ -142,9 +142,8 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 	auto rlogon = plogon.get();
 	auto handle = rop_processor_add_object_handle(plogmap,
 				logon_id, -1, {OBJECT_TYPE_LOGON, std::move(plogon)});
-	if (handle < 0) {
+	if (handle < 0)
 		return -3;
-	}
 	std::lock_guard hl_hold(g_hash_lock);
 	auto pref = g_logon_hash.find(rlogon->get_dir());
 	if (pref != g_logon_hash.end())
@@ -193,9 +192,8 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	EMSMDB_INFO *pemsmdb_info;
 	
 	auto plogitem = plogmap->p[logon_id].get();
-	if (NULL == plogitem) {
+	if (plogitem == nullptr)
 		return -1;
-	}
 	if (plogitem->phash.size() >= emsmdb_max_obh_per_session)
 		return -3;
 
@@ -215,9 +213,8 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	if (!emsmdb_interface_alloc_handle_number(&pobjnode->handle))
 		return -8;
 	auto xp = plogitem->phash.emplace(pobjnode->handle, pobjnode);
-	if (!xp.second) {
+	if (!xp.second)
 		return -8;
-	}
 	if (parent == nullptr)
 		plogitem->root = pobjnode;
 	else if (g_emsmdb_full_parenting || object_dep(parent->type, pobjnode->type))
@@ -238,9 +235,8 @@ void *rop_processor_get_object(LOGMAP *plogmap,
 	if (obj_handle >= INT32_MAX)
 		return NULL;
 	auto &plogitem = plogmap->p[logon_id];
-	if (NULL == plogitem) {
+	if (plogitem == nullptr)
 		return NULL;
-	}
 	auto i = plogitem->phash.find(obj_handle);
 	if (i == plogitem->phash.end())
 		return NULL;
@@ -256,9 +252,8 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 	if (obj_handle >= INT32_MAX)
 		return;
 	auto &plogitem = plogmap->p[logon_id];
-	if (NULL == plogitem) {
+	if (plogitem == nullptr)
 		return;
-	}
 	auto i = plogitem->phash.find(obj_handle);
 	if (i == plogitem->phash.end())
 		return;
@@ -273,13 +268,11 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
 {
 	auto &plogitem = plogmap->p[logon_id];
-	if (NULL == plogitem) {
+	if (plogitem == nullptr)
 		return nullptr;
-	}
 	auto proot = plogitem->root;
-	if (NULL == proot) {
+	if (proot == nullptr)
 		return nullptr;
-	}
 	return static_cast<logon_object *>(proot->pobject);
 }
 
@@ -366,9 +359,8 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	PENDING_RESPONSE tmp_pending;
 	
 	/* ms-oxcrpc 3.1.4.2.1.2 */
-	if (*pbuff_len > 0x8000) {
+	if (*pbuff_len > 0x8000)
 		*pbuff_len = 0x8000;
-	}
 	tmp_len = *pbuff_len - 5*sizeof(uint16_t)
 			- sizeof(uint32_t)*prop_buff->hnum;
 	if (tmp_len > ext_buff_size)
@@ -382,9 +374,8 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	for (pnode=double_list_get_head(&prop_buff->rop_list); NULL!=pnode;
 		pnode=double_list_get_after(&prop_buff->rop_list, pnode)) {
 		auto pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
-		if (NULL == pnode1) {
+		if (pnode1 == nullptr)
 			return ecServerOOM;
-		}
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.m_offset);
 		auto req = static_cast<ROP_REQUEST *>(pnode->pdata);
 		auto result = rop_dispatch(req, reinterpret_cast<ROP_RESPONSE **>(&pnode1->pdata),
@@ -429,13 +420,11 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		default:
 			return result;
 		}
-		if (0 != pemsmdb_info->upctx_ref) {
+		if (pemsmdb_info->upctx_ref != 0)
 			b_icsup = TRUE;	
-		}
 		/* some ROPs do not have response, for example ropRelease */
-		if (NULL == pnode1->pdata) {
+		if (pnode1->pdata == nullptr)
 			continue;
-		}
 		uint32_t last_offset = ext_push.m_offset;
 		status = rop_ext_push_rop_response(&ext_push, req->logon_id, rsp);
 		switch (status) {
@@ -471,14 +460,12 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		goto MAKE_RPC_EXT;
 	while (true) {
 		pnotify_list = emsmdb_interface_get_notify_list();
-		if (NULL == pnotify_list) {
+		if (pnotify_list == nullptr)
 			return ecRpcFailed;
-		}
 		pnode = double_list_pop_front(pnotify_list);
 		emsmdb_interface_put_notify_list();
-		if (NULL == pnode) {
+		if (pnode == nullptr)
 			break;
-		}
 		uint32_t last_offset = ext_push.m_offset;
 		auto pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
 		auto pobject = rop_processor_get_object(pemsmdb_info->plogmap.get(), pnotify->logon_id, pnotify->handle, &type);
@@ -519,9 +506,8 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
 				status = rop_ext_push_pending_response(
 								&ext_push, &tmp_pending);
-				if (EXT_ERR_SUCCESS != status) {
+				if (status != EXT_ERR_SUCCESS)
 					ext_push.m_offset = last_offset;
-				}
 				break;
 			}
 		}
@@ -626,9 +612,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			if (result != ecSuccess)
 				break;
 			pnode1 = double_list_pop_front(&response_list);
-			if (NULL == pnode1) {
+			if (pnode1 == nullptr)
 				break;
-			}
 			presponse = static_cast<ROP_RESPONSE *>(pnode1->pdata);
 			if (presponse->rop_id != ropQueryRows ||
 			    presponse->result != ecSuccess)
@@ -649,9 +634,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			if (result != ecSuccess)
 				break;
 			pnode1 = double_list_pop_front(&response_list);
-			if (NULL == pnode1) {
+			if (pnode1 == nullptr)
 				break;
-			}
 			presponse = static_cast<ROP_RESPONSE *>(pnode1->pdata);
 			if (presponse->rop_id != ropReadStream ||
 			    presponse->result != ecSuccess)
@@ -674,9 +658,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			if (result != ecSuccess)
 				break;
 			pnode1 = double_list_pop_front(&response_list);
-			if (NULL == pnode1) {
+			if (pnode1 == nullptr)
 				break;
-			}
 			presponse = static_cast<ROP_RESPONSE *>(pnode1->pdata);
 			if (presponse->rop_id != ropFastTransferSourceGetBuffer ||
 			    presponse->result != ecSuccess)
