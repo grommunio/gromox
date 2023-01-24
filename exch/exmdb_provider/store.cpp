@@ -26,10 +26,7 @@ static constexpr uint64_t GLOBCNT_MAX = 0x7fffffffffff;
 BOOL exmdb_server::ping_store(const char *dir)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (NULL == pdb) {
-		return FALSE;
-	}
-	return TRUE;
+	return pdb != nullptr ? TRUE : false;
 }
 
 BOOL exmdb_server::get_all_named_propids(const char *dir,
@@ -159,11 +156,8 @@ BOOL exmdb_server::get_store_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!cu_get_properties(db_table::store_props, 0, cpid, pdb->psqlite,
-		pproptags, ppropvals)) {
-		return FALSE;
-	}
-	return TRUE;
+	return cu_get_properties(db_table::store_props, 0, cpid, pdb->psqlite,
+	       pproptags, ppropvals);
 }
 
 BOOL exmdb_server::set_store_properties(const char *dir,

@@ -223,12 +223,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	row_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		auto pproplist = prcpts->emplace();
-		if (NULL == pproplist) {
-			return FALSE;
-		}
-		if (pproplist->set(PR_ROWID, &row_id) != 0) {
+		if (pproplist == nullptr || pproplist->set(PR_ROWID, &row_id) != 0)
 			return FALSE;	
-		}
 		row_id ++;
 		rcpt_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_bind_int64(pstmt1, 1, rcpt_id);
@@ -736,12 +732,9 @@ static BOOL instance_read_attachment(
 			pbin->pv = instance_read_cid_content(cid, &pbin->cb, 0);
 			if (pbin->pv == nullptr)
 				return FALSE;
-			if (ID_TAG_ATTACHDATABINARY ==
-				pattachment1->proplist.ppropval[i].proptag) {
-				pattachment->proplist.ppropval[pattachment->proplist.count].proptag = PR_ATTACH_DATA_BIN;
-			} else {
-				pattachment->proplist.ppropval[pattachment->proplist.count].proptag = PR_ATTACH_DATA_OBJ;
-			}
+			pattachment->proplist.ppropval[pattachment->proplist.count].proptag =
+				pattachment1->proplist.ppropval[i].proptag == ID_TAG_ATTACHDATABINARY ?
+				PR_ATTACH_DATA_BIN : PR_ATTACH_DATA_OBJ;
 			pattachment->proplist.ppropval[pattachment->proplist.count++].pvalue = pbin;
 			break;
 		}
@@ -989,12 +982,9 @@ BOOL exmdb_server::read_message_instance(const char *dir,
 
 static BOOL instance_identify_rcpts(TARRAY_SET *prcpts)
 {
-	uint32_t i;
-	
-	for (i=0; i<prcpts->count; i++) {
+	for (uint32_t i = 0; i < prcpts->count; ++i)
 		if (prcpts->pparray[i]->set(PR_ROWID, &i) != 0)
 			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1794,10 +1784,7 @@ static BOOL instance_get_message_subject(
 		return TRUE;
 	}
 	*ppvalue = common_util_dup(pvalue);
-	if (NULL == *ppvalue) {
-		return FALSE;
-	}
-	return TRUE;
+	return *ppvalue != nullptr ? TRUE : false;
 }
 
 static BOOL instance_get_attachment_properties(uint32_t cpid,
@@ -2944,8 +2931,6 @@ BOOL exmdb_server::get_message_instance_attachments_num(const char *dir,
 BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char *dir,
     uint32_t instance_id, PROPTAG_ARRAY *pproptags)
 {
-	int i, j;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -2963,14 +2948,11 @@ BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char
 		return FALSE;
 	}
 	auto pattachments = pmsgctnt->children.pattachments;
-	for (i=0; i<pattachments->count; i++) {
-		for (j=0; j<pattachments->pplist[i]->proplist.count; j++) {
+	for (unsigned int i = 0; i < pattachments->count; ++i)
+		for (unsigned int j = 0; j < pattachments->pplist[i]->proplist.count; ++j)
 			if (!proptag_array_append(pproptags1.get(),
-			    pattachments->pplist[i]->proplist.ppropval[j].proptag)) {
+			    pattachments->pplist[i]->proplist.ppropval[j].proptag))
 				return FALSE;
-			}
-		}
-	}
 	pproptags->count = pproptags1->count;
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
 	if (NULL == pproptags->pproptag) {
@@ -3036,12 +3018,12 @@ BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
 	}
 	auto msgidnum = pmsgctnt->proplist.get<const uint64_t>(PidTagMid);
 	auto pattachments = pmsgctnt->children.pattachments;
+	end_pos = start_pos + row_needed;
+	pset->count = 0;
 	if (row_needed > 0) {
-		end_pos = start_pos + row_needed;
 		if (end_pos >= pattachments->count) {
 			end_pos = pattachments->count - 1;
 		}
-		pset->count = 0;
 		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - start_pos + 1);
 		if (NULL == pset->pparray) {
 			return FALSE;
@@ -3059,11 +3041,9 @@ BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
 			pset->count ++;
 		}
 	} else {
-		end_pos = start_pos + row_needed;
 		if (end_pos < 0) {
 			end_pos = 0;
 		}
-		pset->count = 0;
 		pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(start_pos - end_pos + 1);
 		if (NULL == pset->pparray) {
 			return FALSE;
