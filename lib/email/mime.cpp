@@ -969,7 +969,6 @@ bool MIME::serialize(STREAM *pstream) const
 	int		tag_len, val_len;
 	long	len, tmp_len;
 	char	tmp_buff[MIME_FIELD_LEN];
-	MIME	*pmime_child;
 	BOOL	has_submime;
 	
 #ifdef _DEBUG_UMTA
@@ -1049,8 +1048,7 @@ bool MIME::serialize(STREAM *pstream) const
 		pstream->write("--", 2);
 		pstream->write(pmime->boundary_string, pmime->boundary_len);
 		pstream->write("\r\n", 2);
-		pmime_child = (MIME*)pnode->pdata;
-		if (!pmime_child->serialize(pstream))
+		if (!static_cast<const MIME *>(pnode->pdata)->serialize(pstream))
 			return false;
 		pnode = pnode->get_sibling();
 	}
@@ -1085,7 +1083,6 @@ static bool mime_read_multipart_content(const MIME *pmime,
 	size_t offset, tmp_len;
 	unsigned int buff_size;
 	BOOL has_submime;
-	MIME *pmime_child;
 	
 	auto tmp_size = pmime->get_length();
 	if (tmp_size < 0) {
@@ -1107,8 +1104,7 @@ static bool mime_read_multipart_content(const MIME *pmime,
 		tmp_stream.write("--", 2);
 		tmp_stream.write(pmime->boundary_string, pmime->boundary_len);
 		tmp_stream.write("\r\n", 2);
-		pmime_child = (MIME*)pnode->pdata;
-		if (!pmime_child->serialize(&tmp_stream))
+		if (!static_cast<MIME *>(pnode->pdata)->serialize(&tmp_stream))
 			return false;
 		pnode = pnode->get_sibling();
 	}
@@ -1408,7 +1404,6 @@ bool MIME::emit(write_func write, void *fd) const
 {
 	auto pmime = this;
 	BOOL has_submime;
-	MIME *pmime_child;
 	size_t len, tmp_len;
 	int	tag_len, val_len;
 	char tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
@@ -1536,8 +1531,7 @@ bool MIME::emit(write_func write, void *fd) const
 		auto wrlen = write(fd, tmp_buff, len);
 		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 			return false;
-		pmime_child = (MIME*)pnode->pdata;
-		if (!pmime_child->emit(write, fd))
+		if (!static_cast<const MIME *>(pnode->pdata)->emit(write, fd))
 			return false;
 		pnode = pnode->get_sibling();
 	}
@@ -1596,7 +1590,6 @@ bool MIME::check_dot() const
 	size_t	tmp_len;
 	int		tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
-	MIME	*pmime_child;
 	
 	if (pmime->mime_type == mime_type::none) {
 #ifdef _DEBUG_UMTA
@@ -1650,8 +1643,7 @@ bool MIME::check_dot() const
 	}
 	auto pnode = pmime->node.get_child();
 	while (NULL != pnode) {
-		pmime_child = (MIME *)pnode->pdata;
-		if (pmime_child->check_dot())
+		if (static_cast<const MIME *>(pnode->pdata)->check_dot())
 			return true;
 		pnode = pnode->get_sibling();
 	}
@@ -1678,7 +1670,6 @@ ssize_t MIME::get_length() const
 {
 	auto pmime = this;
 	int		tag_len, val_len;
-	MIME	*pmime_child;
 	BOOL	has_submime;
 	
 	if (pmime->mime_type == mime_type::none)
@@ -1746,8 +1737,7 @@ ssize_t MIME::get_length() const
 	while (NULL != pnode) {
 		has_submime = TRUE;
 		mime_len += pmime->boundary_len + 4;
-		pmime_child = (MIME*)pnode->pdata;
-		auto mgl = pmime_child->get_length();
+		auto mgl = static_cast<const MIME *>(pnode->pdata)->get_length();
 		if (mgl < 0)
 			return -1;
 		mime_len += mgl;
@@ -2074,7 +2064,6 @@ static ssize_t mime_get_digest_mul(const MIME *pmime, const char *id_string,
 {
 	int count;
 	size_t buff_len = 0, tmp_len;
-	MIME *pmime_child;
 	BOOL has_submime;
 	char temp_id[64];
 
@@ -2089,13 +2078,12 @@ static ssize_t mime_get_digest_mul(const MIME *pmime, const char *id_string,
 	while (NULL != pnode) {
 		has_submime = TRUE;
 		*poffset += pmime->boundary_len + 4;
-		pmime_child = (MIME *)pnode->pdata;
 		if ('\0' == id_string[0]) {
 			snprintf(temp_id, 64, "%d", count);
 		} else {
 			snprintf(temp_id, 64, "%s.%d", id_string, count);
 		}
-		auto gmd = pmime_child->get_mimes_digest(temp_id, poffset,
+		auto gmd = static_cast<const MIME *>(pnode->pdata)->get_mimes_digest(temp_id, poffset,
 		           pcount, pbuff + buff_len, length - buff_len);
 		if (gmd < 0 || buff_len + gmd >= length - 1) {
 			return -1;
@@ -2211,7 +2199,6 @@ static ssize_t mime_get_struct_mul(const MIME *pmime, const char *id_string,
     size_t length)
 {
 	size_t count = 0, i, buff_len = 0, tmp_len;
-	MIME	*pmime_child;
 	BOOL	has_submime;
 	char temp_id[64], content_type[256];
 
@@ -2254,13 +2241,12 @@ static ssize_t mime_get_struct_mul(const MIME *pmime, const char *id_string,
 	while (NULL != pnode) {
 		has_submime = TRUE;
 		*poffset += pmime->boundary_len + 4;
-		pmime_child = (MIME *)pnode->pdata;
 		if ('\0' == id_string[0]) {
 			snprintf(temp_id, 64, "%zu", count);
 		} else {
 			snprintf(temp_id, 64, "%s.%zu", id_string, count);
 		}
-		auto gsd = pmime_child->get_structure_digest(temp_id, poffset,
+		auto gsd = static_cast<const MIME *>(pnode->pdata)->get_structure_digest(temp_id, poffset,
 		           pcount, pbuff + buff_len, length - buff_len);
 		if (gsd < 0 || buff_len + gsd >= length - 1)
 			return -1;

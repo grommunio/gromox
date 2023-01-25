@@ -397,7 +397,7 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 				return FALSE;
 			}
 		} else {
-			pmime = (MJSON_MIME *)pnode->pdata;
+			pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 		}
 
 		for (j = 1; j < offset; j++) {
@@ -444,7 +444,6 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
     int length) try
 {
 	auto pjson = this;
-	MJSON_MIME *pmime;
 
 #ifdef _DEBUG_UMTA
 	if (buff == nullptr) {
@@ -456,8 +455,7 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
 	if (NULL == pnode) {
 		return -1;
 	}
-	
-	pmime = (MJSON_MIME*)pnode->pdata;
+	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, nullptr, nullptr, cset,
 	               pjson->charset.c_str(), b_ext, buff, length);
 	if (ret_len == -1)
@@ -481,7 +479,6 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	const char *email_charset, BOOL b_ext, char *buff, int length)
 {
 	int offset;
-	int ret_len;
 	BOOL b_space;
 	size_t ecode_len;
 	char temp_buff[2048];
@@ -721,7 +718,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		if (NULL == pnode) {
 			return -1;
 		}
-		ret_len = mjson_fetch_mime_structure((MJSON_MIME*)pnode->pdata,
+		auto ret_len = mjson_fetch_mime_structure(static_cast<MJSON_MIME *>(pnode->pdata),
 					storage_path, msg_filename, charset, email_charset,
 					b_ext, buff + offset, length - offset);
 		if (-1 == ret_len) {
@@ -742,7 +739,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 
 	auto pnode = pmime->node.get_sibling();
 	if (NULL != pnode) {
-		pmime = (MJSON_MIME*)pnode->pdata;
+		pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 		goto FETCH_STRUCTURE_LOOP;
 	}
 	
@@ -1311,7 +1308,6 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
     BOOL b_ext, char *buff, int length)
 {
 	auto pjson = this;
-	MJSON_MIME *pmime;
 	char temp_path[256];
 	struct stat node_stat;
 
@@ -1333,8 +1329,7 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 	if (NULL == pnode) {
 		return -1;
 	}
-	
-	pmime = (MJSON_MIME*)pnode->pdata;
+	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, temp_path, "", cset,
 	               pjson->charset.c_str(), b_ext, buff, length);
 	if (ret_len == -1)
@@ -1346,8 +1341,6 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length)
 {
-	MJSON_MIME *pmime;
-
 #ifdef _DEBUG_UMTA
 	if (NULL == pjson || NULL == storage_path || NULL == buff) {
 		mlog(LV_DEBUG, "mail: NULL pointer in mjson_rfc822_fetch_internal");
@@ -1358,8 +1351,7 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	if (NULL == pnode) {
 		return -1;
 	}
-	
-	pmime = (MJSON_MIME*)pnode->pdata;
+	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, storage_path,
 	               pjson->get_mail_filename(), charset,
 	               pjson->charset.c_str(), b_ext, buff, length);
