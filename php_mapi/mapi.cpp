@@ -384,12 +384,10 @@ static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
 
 static void mapi_resource_dtor(zend_resource *rsrc)
 {
-	MAPI_RESOURCE *presource;
-	
 	if (NULL == rsrc->ptr) {
 		return;
 	}
-	presource = (MAPI_RESOURCE*)rsrc->ptr;
+	auto presource = static_cast<MAPI_RESOURCE *>(rsrc->ptr);
 	if (0 != presource->hobject) {
 		zclient_unloadobject(
 			presource->hsession, presource->hobject);
@@ -413,12 +411,10 @@ static void stream_object_dtor(zend_resource *rsrc)
 
 static void ics_import_ctx_dtor(zend_resource *rsrc)
 {	
-	ICS_IMPORT_CTX *pctx;
-	
 	if (NULL == rsrc->ptr) {
 		return;
 	}
-	pctx = (ICS_IMPORT_CTX*)rsrc->ptr;
+	auto pctx = static_cast<ICS_IMPORT_CTX *>(rsrc->ptr);
 	zval_ptr_dtor(&pctx->pztarget_obj);
 	if (0 != pctx->hobject) {
 		zclient_unloadobject(
@@ -429,12 +425,10 @@ static void ics_import_ctx_dtor(zend_resource *rsrc)
 
 static void ics_export_ctx_dtor(zend_resource *rsrc)
 {
-	ICS_EXPORT_CTX *pctx;
-	
 	if (NULL == rsrc->ptr) {
 		return;
 	}
-	pctx = (ICS_EXPORT_CTX*)rsrc->ptr;
+	auto pctx = static_cast<ICS_EXPORT_CTX *>(rsrc->ptr);
 	zval_ptr_dtor(&pctx->pztarget_obj);
 	if (0 != pctx->hobject) {
 		zclient_unloadobject(

@@ -1273,7 +1273,6 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 {
 	char key[HXSIZEOF_Z64];
 	zval pzmval, pzalist, pzactval, pzpropval, pzactarray;
-	RULE_ACTIONS *prule;
 	char proptag_string[16];
 	TAGGED_PROPVAL *ppropval;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -1292,24 +1291,24 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_LONG:
 		case PT_ERROR:
-			add_assoc_long(pzret, proptag_string, *(uint32_t*)ppropval->pvalue);
+			add_assoc_long(pzret, proptag_string, *static_cast<uint32_t *>(ppropval->pvalue));
 			break;
 		case PT_SHORT:
-			add_assoc_long(pzret, proptag_string, *(uint16_t*)ppropval->pvalue);
+			add_assoc_long(pzret, proptag_string, *static_cast<uint16_t *>(ppropval->pvalue));
 			break;
 		case PT_DOUBLE:
 		case PT_APPTIME:
-			add_assoc_double(pzret, proptag_string, *(double*)ppropval->pvalue);
+			add_assoc_double(pzret, proptag_string, *static_cast<double *>(ppropval->pvalue));
 			break;
 		case PT_CURRENCY:
 		case PT_I8:
- 			add_assoc_double(pzret, proptag_string, *(uint64_t*)ppropval->pvalue);
+			add_assoc_double(pzret, proptag_string, *static_cast<uint64_t *>(ppropval->pvalue));
 			break;
 		case PT_FLOAT:
-			add_assoc_double(pzret, proptag_string, *(float*)ppropval->pvalue);
+			add_assoc_double(pzret, proptag_string, *static_cast<float *>(ppropval->pvalue));
 			break;
 		case PT_BOOLEAN:
-			add_assoc_bool(pzret, proptag_string, *(uint8_t*)ppropval->pvalue);
+			add_assoc_bool(pzret, proptag_string, *static_cast<uint8_t *>(ppropval->pvalue));
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
@@ -1322,7 +1321,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 			break;
 		case PT_SYSTIME:
 			add_assoc_long(pzret, proptag_string,
-				nttime_to_unix(*(uint64_t*)ppropval->pvalue));
+				nttime_to_unix(*static_cast<uint64_t *>(ppropval->pvalue)));
 			break;
 		case PT_CLSID:
 			add_assoc_stringl(pzret, proptag_string,
@@ -1404,8 +1403,8 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
 		}
-		case PT_ACTIONS:
-			prule = (RULE_ACTIONS*)ppropval->pvalue;
+		case PT_ACTIONS: {
+			auto prule = static_cast<RULE_ACTIONS *>(ppropval->pvalue);
 			zarray_init(&pzactarray);
 			for (size_t j = 0; j < prule->count; ++j) {
 				zarray_init(&pzactval);
@@ -1443,7 +1442,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 					break;
 				case OP_BOUNCE:
 					add_assoc_long(&pzactval, "code",
-						*(uint32_t*)prule->pblock[j].pdata);
+						*static_cast<uint32_t *>(prule->pblock[j].pdata));
 					break;
 				case OP_FORWARD:
 				case OP_DELEGATE: {
@@ -1478,6 +1477,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 			}
 			add_assoc_zval(pzret, proptag_string, &pzactarray);
 			break;
+		}
 		case PT_SRESTRICTION:
 			if (!restriction_to_php(static_cast<RESTRICTION *>(ppropval->pvalue), &pzactval))
 				return 0;
