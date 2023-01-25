@@ -263,11 +263,11 @@ ec_error_t message_object::save()
 	auto dir = pmessage->pstore->get_dir();
 	auto pinfo = zs_get_info();
 	if (!exmdb_client::allocate_cn(dir, &pmessage->change_num))
-		return ecRpcFailed;
+		return ecError;
 	void *assoc = nullptr;
 	if (!exmdb_client_get_instance_property(dir, pmessage->instance_id,
 	    PR_ASSOCIATED, &assoc))
-		return ecRpcFailed;
+		return ecError;
 	BOOL b_fai = pvb_disabled(assoc) ? false : TRUE;
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8);
@@ -300,29 +300,29 @@ ec_error_t message_object::save()
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFIER_ENTRYID;
 	auto abk_eid = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (abk_eid == nullptr)
-		return ecRpcFailed;
+		return ecError;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = abk_eid;
 	if (0 != pmessage->message_id) {
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
 		    reinterpret_cast<void **>(&pbin_pcl)))
-			return ecRpcFailed;
+			return ecError;
 		if (!pmessage->b_new && pbin_pcl == nullptr)
-			return ecRpcFailed;
+			return ecError;
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
 		auto pbin_changekey = cu_xid_to_bin({pmessage->pstore->guid(), pmessage->change_num});
 		if (pbin_changekey == nullptr)
-			return ecRpcFailed;
+			return ecError;
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_changekey;
 		pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
 		if (pbin_pcl == nullptr)
-			return ecRpcFailed;
+			return ecError;
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;	
 	}
 	
 	if (!message_object_set_properties_internal(pmessage, false, &tmp_propvals))
-		return ecRpcFailed;
+		return ecError;
 	
 	/* change number of embedding message is used for message
 		modification's check when the rop_savechangesmessage
@@ -334,7 +334,7 @@ ec_error_t message_object::save()
 	    pmessage->instance_id, &tmp_propval, &result))
 		return ecServerOOM;
 	
-	ec_error_t e_result = ecRpcFailed;
+	ec_error_t e_result = ecError;
 	if (!exmdb_client::flush_instance(dir, pmessage->instance_id,
 	    pmessage->pstore->get_account(), &e_result) ||
 	    e_result != ecSuccess)
@@ -366,22 +366,22 @@ ec_error_t message_object::save()
 		goto SAVE_FULL_CHANGE;
 	if (!exmdb_client::get_message_group_id(dir,
 	    pmessage->message_id, &pgroup_id))
-		return ecRpcFailed;
+		return ecError;
 	if (NULL == pgroup_id) {
 		pgpinfo = pmessage->pstore->get_last_property_groupinfo();
 		if (pgpinfo == nullptr)
-			return ecRpcFailed;
+			return ecError;
 		if (!exmdb_client::set_message_group_id(dir,
 		    pmessage->message_id, pgpinfo->group_id))
-			return ecRpcFailed;
+			return ecError;
 	}  else {
 		pgpinfo = pmessage->pstore->get_property_groupinfo(*pgroup_id);
 		if (pgpinfo == nullptr)
-			return ecRpcFailed;
+			return ecError;
 	}
 	
 	if (!exmdb_client::mark_modified(dir, pmessage->message_id))
-		return ecRpcFailed;
+		return ecError;
 	
 	{
 	std::unique_ptr<INDEX_ARRAY, pta_delete> pindices(proptag_array_init());
@@ -393,27 +393,27 @@ ec_error_t message_object::save()
 	/* always mark PR_MESSAGE_FLAGS as changed */
 	if (!proptag_array_append(pmessage->pchanged_proptags,
 	    PR_MESSAGE_FLAGS))
-		return ecRpcFailed;
+		return ecError;
 	for (i=0; i<pmessage->pchanged_proptags->count; i++) {
 		if (!pgpinfo->get_partial_index(pmessage->pchanged_proptags->pproptag[i], &tmp_index)) {
 			if (!proptag_array_append(pungroup_proptags.get(),
 			    pmessage->pchanged_proptags->pproptag[i]))
-				return ecRpcFailed;
+				return ecError;
 		} else {
 			if (!proptag_array_append(pindices.get(), tmp_index))
-				return ecRpcFailed;
+				return ecError;
 		}
 	}
 	for (i=0; i<pmessage->premoved_proptags->count; i++) {
 		if (!pgpinfo->get_partial_index(pmessage->premoved_proptags->pproptag[i], &tmp_index))
 			goto SAVE_FULL_CHANGE;
 		else if (!proptag_array_append(pindices.get(), tmp_index))
-			return ecRpcFailed;
+			return ecError;
 	}
 	if (!exmdb_client::save_change_indices(
 		dir, pmessage->message_id, pmessage->change_num,
 	    pindices.get(), pungroup_proptags.get()))
-		return ecRpcFailed;
+		return ecError;
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
 	return ecSuccess;
@@ -427,7 +427,7 @@ ec_error_t message_object::save()
 	if (!exmdb_client::save_change_indices(
 		dir, pmessage->message_id, pmessage->change_num,
 	    &tmp_indices, static_cast<PROPTAG_ARRAY *>(&tmp_indices)))
-		return ecRpcFailed;
+		return ecError;
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&

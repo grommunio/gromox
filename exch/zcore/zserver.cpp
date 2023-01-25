@@ -3275,14 +3275,14 @@ static ec_error_t rectify_message(message_object *pmessage,
 	int32_t tmp_level = -1;
 	char essdn[1024], essdn1[1024];
 	if (!common_util_username_to_essdn(account, essdn, arsizeof(essdn)))
-		return ecRpcFailed;
+		return ecError;
 	char dispname[256], dispname1[256], search_buff[1024], search_buff1[1024];
 	if (!system_services_get_user_displayname(account,
 	    dispname, arsizeof(dispname)))
-		return ecRpcFailed;
+		return ecError;
 	auto entryid = common_util_username_to_addressbook_entryid(account);
 	if (entryid == nullptr)
-		return ecRpcFailed;
+		return ecError;
 	auto entryid1 = entryid;
 	BINARY search_bin, search_bin1;
 	search_bin.cb = gx_snprintf(search_buff, arsizeof(search_buff), "EX:%s", essdn) + 1;
@@ -3290,13 +3290,13 @@ static ec_error_t rectify_message(message_object *pmessage,
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,
 		    essdn1, arsizeof(essdn1)))
-			return ecRpcFailed;
+			return ecError;
 		if (!system_services_get_user_displayname(representing_username,
 		    dispname1, arsizeof(dispname1)))
-			return ecRpcFailed;
+			return ecError;
 		entryid1 = common_util_username_to_addressbook_entryid(representing_username);
 		if (entryid1 == nullptr)
-			return ecRpcFailed;
+			return ecError;
 	} else {
 		strcpy(essdn1, essdn);
 		strcpy(dispname1, dispname);
@@ -3326,7 +3326,7 @@ static ec_error_t rectify_message(message_object *pmessage,
 	};
 	TPROPVAL_ARRAY tmp_propvals = {arsizeof(pv), pv};
 	if (!pmessage->set_properties(&tmp_propvals))
-		return ecRpcFailed;
+		return ecError;
 	return pmessage->save();
 }
 
