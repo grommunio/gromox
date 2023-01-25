@@ -956,14 +956,12 @@ static bool rtf_attrstack_pop_express(RTF_READER *preader, int attr)
 		return true;
 	}
 	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
-	if (pattrstack->tos >= 0 &&
-		pattrstack->attr_stack[pattrstack->tos] == attr) {
-		if (!rtf_express_attr_end(preader, attr,
-		    pattrstack->attr_params[pattrstack->tos]))
-			return false;
-		pattrstack->tos --;
+	if (pattrstack->tos < 0 || pattrstack->attr_stack[pattrstack->tos] != attr)
 		return true;
-	}
+	if (!rtf_express_attr_end(preader, attr,
+	    pattrstack->attr_params[pattrstack->tos]))
+		return false;
+	pattrstack->tos--;
 	return true;
 }
 
@@ -995,14 +993,14 @@ static bool rtf_attrstack_pop_express_all(RTF_READER *preader)
 	ATTRSTACK_NODE *pattrstack;
 	
 	pnode = double_list_get_tail(&preader->attr_stack_list);
-	if (NULL != pnode) {
-		pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
-		for (; pattrstack->tos>=0; pattrstack->tos--) {
-			if (!rtf_express_attr_end(preader,
-			    pattrstack->attr_stack[pattrstack->tos],
-			    pattrstack->attr_params[pattrstack->tos]))
-				return false;
-		}
+	if (pnode == nullptr)
+		return true;
+	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
+	for (; pattrstack->tos>=0; pattrstack->tos--) {
+		if (!rtf_express_attr_end(preader,
+		    pattrstack->attr_stack[pattrstack->tos],
+		    pattrstack->attr_params[pattrstack->tos]))
+			return false;
 	}
 	return true;
 }
@@ -2610,10 +2608,8 @@ static int rtf_cmd_fonttbl(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	pword = pword->get_sibling();
-	if (NULL != pword) {
-		if (!rtf_build_font_table(preader, pword))
-			return CMD_RESULT_ERROR;
-	}
+	if (pword != nullptr && !rtf_build_font_table(preader, pword))
+		return CMD_RESULT_ERROR;
 	return CMD_RESULT_IGNORE_REST;
 }
 
@@ -2630,15 +2626,15 @@ static int rtf_cmd_maybe_ignore(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 	char name[MAX_CONTROL_LEN];
 	
 	pword = pword->get_sibling();
-	if (NULL != pword && NULL != pword->pdata &&
-		'\\' == ((char*)pword->pdata)[0]) {
-		if (rtf_parse_control(static_cast<char *>(pword->pdata) + 1,
-			name, MAX_CONTROL_LEN, &param) < 0) {
-			return CMD_RESULT_ERROR;
-		}
-		if (NULL != rtf_find_cmd_function(name)) {
-			return CMD_RESULT_CONTINUE;
-		}
+	if (pword == nullptr || pword->pdata == nullptr ||
+	    static_cast<char *>(pword->pdata)[0] == '\\')
+		return CMD_RESULT_IGNORE_REST;
+	if (rtf_parse_control(static_cast<char *>(pword->pdata) + 1,
+		name, MAX_CONTROL_LEN, &param) < 0) {
+		return CMD_RESULT_ERROR;
+	}
+	if (NULL != rtf_find_cmd_function(name)) {
+		return CMD_RESULT_CONTINUE;
 	}
 	return CMD_RESULT_IGNORE_REST;
 }
