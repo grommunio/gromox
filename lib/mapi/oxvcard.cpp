@@ -736,7 +736,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	}
 	
 	auto &n_line = vcard.append_line("N");
-	for (size_t i = 0; i < 5; ++i) {
+	for (size_t i = 0; i < std::size(g_n_proptags); ++i) {
 		pvalue = pmsg->proplist.get<char>(g_n_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
@@ -748,7 +748,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		vcard.append_line("NICKNAME", pvalue);
 	}
 	
-	for (size_t i = 0; i < 3; ++i) {
+	for (size_t i = 0; i < std::size(g_email_proptags); ++i) {
 		propid = PROP_ID(g_email_proptags[i]);
 		proptag = PROP_TAG(PROP_TYPE(g_email_proptags[i]), propids.ppropid[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
@@ -819,7 +819,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	
 	auto adr_line = &vcard.append_line("ADR");
 	adr_line->append_param("TYPE", "WORK");
-	for (size_t i = 0; i < 6; ++i) {
+	for (size_t i = 0; i < std::size(g_workaddr_proptags); ++i) {
 		propid = PROP_ID(g_workaddr_proptags[i]);
 		proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[i]), propids.ppropid[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
@@ -831,7 +831,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	
 	adr_line = &vcard.append_line("ADR");
 	adr_line->append_param("TYPE", "HOME");
-	for (size_t i = 0; i < 6; ++i) {
+	for (size_t i = 0; i < std::size(g_homeaddr_proptags); ++i) {
 		pvalue = pmsg->proplist.get<char>(g_homeaddr_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
@@ -841,7 +841,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	
 	adr_line = &vcard.append_line("ADR");
 	adr_line->append_param("TYPE", "POSTAL");
-	for (size_t i = 0; i < 6; ++i) {
+	for (size_t i = 0; i < std::size(g_otheraddr_proptags); ++i) {
 		pvalue = pmsg->proplist.get<char>(g_otheraddr_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
@@ -849,7 +849,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	}
 	adr_line->append_value();
 	
-	for (size_t i = 0; i < 10; ++i) {
+	for (size_t i = 0; i < std::size(tel_proptags); ++i) {
 		pvalue = pmsg->proplist.get<char>(tel_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
@@ -918,7 +918,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		}
 	}
 	
-	for (size_t i = 0; i < 4; ++i) {
+	for (size_t i = 0; i < std::size(g_ufld_proptags); ++i) {
 		propid = PROP_ID(g_ufld_proptags[i]);
 		proptag = PROP_TAG(PROP_TYPE(g_ufld_proptags[i]), propids.ppropid[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
@@ -927,7 +927,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		vcard.append_line("X-MS-TEXT", pvalue);
 	}
 	
-	for (size_t i = 0; i < 5; ++i) {
+	for (size_t i = 0; i < std::size(ms_tel_proptags); ++i) {
 		pvalue = pmsg->proplist.get<char>(ms_tel_proptags[i]);
 		if (pvalue == nullptr)
 			continue;

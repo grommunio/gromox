@@ -99,8 +99,8 @@ ec_error_t attachment_object::save()
 	nt_time = rop_util_current_nttime();
 	tmp_propval.pvalue = &nt_time;
 	if (!set_properties(&tmp_propvals))
-		return ecRpcFailed;
-	ec_error_t e_result = ecRpcFailed;
+		return ecError;
+	ec_error_t e_result = ecError;
 	if (!exmdb_client::flush_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, nullptr, &e_result) || e_result != ecSuccess)
 		return e_result;
