@@ -438,7 +438,7 @@ static size_t vcard_serialize_string(char *pbuff,
 	return offset;
 }
 
-BOOL vcard::serialize(char *out_buff, size_t max_length)
+BOOL vcard::serialize(char *out_buff, size_t max_length) const
 {
 	size_t offset;
 	BOOL need_comma;

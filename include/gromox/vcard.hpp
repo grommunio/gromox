@@ -42,7 +42,7 @@ using VCARD_LINE = vcard_line;
 struct GX_EXPORT vcard {
 	inline void clear() { m_lines.clear(); }
 	ec_error_t retrieve_single(char *in_buff);
-	BOOL serialize(char *out_buff, size_t max_length);
+	BOOL serialize(char *out_buff, size_t max_length) const;
 	vcard_line &append_line(vcard_line &&o);
 	vcard_line &append_line(const char *);
 	vcard_line &append_line(const char *, const char *);
