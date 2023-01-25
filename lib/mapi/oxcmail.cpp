@@ -1218,9 +1218,8 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 	uint8_t tmp_byte;
 	uint64_t tmp_int64;
 	EMAIL_ADDR email_addr;
-	FIELD_ENUM_PARAM *penum_param;
 	
-	penum_param = (FIELD_ENUM_PARAM*)pparam;
+	auto penum_param = static_cast<FIELD_ENUM_PARAM *>(pparam);
 	if (strcasecmp(key, "From") == 0) {
 		parse_mime_addr(&email_addr, field);
 		if (!oxcmail_parse_address(penum_param->charset, &email_addr,
@@ -1841,7 +1840,7 @@ static BOOL oxcmail_parse_appledouble(const MIME *pmime,
 		return FALSE;
 	}
 	tmp_bin.cb = content_len;
-	tmp_bin.pb = (uint8_t*)pcontent;
+	tmp_bin.pc = pcontent;
 	if (pattachment->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0) {
 		free(pcontent);
 		return FALSE;
@@ -2618,9 +2617,8 @@ static bool oxcmail_enum_dsn_action_field(const char *tag,
 	} else {
 		return true;
 	}
-	if (severity > *(int*)pparam) {
-		*(int*)pparam = severity;
-	}
+	if (severity > *static_cast<int *>(pparam))
+		*static_cast<int *>(pparam) = severity;
 	return true;
 }
 
@@ -2632,9 +2630,7 @@ static bool oxcmail_enum_dsn_action_fields(const std::vector<dsn_field> &pfields
 static bool oxcmail_enum_dsn_rcpt_field(const char *tag,
     const char *value, void *pparam)
 {
-	DSN_FILEDS_INFO *pinfo;
-	
-	pinfo = (DSN_FILEDS_INFO*)pparam;
+	auto pinfo = static_cast<DSN_FILEDS_INFO *>(pparam);
 	if (0 == strcasecmp(tag, "Final-Recipient") &&
 		0 == strncasecmp(value, "rfc822;", 7)) {
 		gx_strlcpy(pinfo->final_recipient, value + 7, GX_ARRAY_SIZE(pinfo->final_recipient));
@@ -2747,11 +2743,10 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields, 
 	BINARY tmp_bin;
 	char essdn[1280];
 	char tmp_buff[1280];
-	DSN_ENUM_INFO *pinfo;
 	DSN_FILEDS_INFO f_info;
 	char display_name[512];
 	
-	pinfo = (DSN_ENUM_INFO*)pparam;
+	auto pinfo = static_cast<const DSN_ENUM_INFO *>(pparam);
 	f_info.final_recipient[0] = '\0';
 	f_info.action_severity = -1;
 	f_info.remote_mta[0] = '\0';

@@ -61,8 +61,10 @@ uint32_t lzxpress_compress(const void *uncompressedv,
 	uint32_t indic = 0, indic_bit = 0, length = 0;
 	uint32_t coding_pos = 0, compressed_pos = sizeof(uint32_t);
 	uint32_t byte_left = uncompressed_size, nibble_index = 0;
-	*(uint32_t *)compressed = 0;
 	auto ptr_indic = compressed;
+	indic = cpu_to_le32(0);
+	memcpy(ptr_indic, &indic, sizeof(indic));
+	indic = 0;
 	
 	do {
 		bool b_found = false;

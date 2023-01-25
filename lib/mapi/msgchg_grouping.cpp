@@ -66,11 +66,10 @@ static msg_group_node *msgchg_grouping_create_group_node(uint32_t index)
 
 static void msgchg_grouping_free_group_node(msg_group_node *pgp_node)
 {
-	TAG_NODE *ptag_node;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_pop_front(&pgp_node->tag_list)) != nullptr) {
-		ptag_node = (TAG_NODE*)pnode->pdata;
+		auto ptag_node = static_cast<TAG_NODE *>(pnode->pdata);
 		if (0 == ptag_node->propid) {
 			switch (ptag_node->ppropname->kind) {
 			case MNID_STRING:
@@ -131,10 +130,10 @@ static BOOL msgchg_grouping_append_info_list(INFO_NODE *pinfo_node)
 	
 	for (pnode=double_list_get_head(&g_info_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_info_list, pnode)) {
-		if (((INFO_NODE*)pnode->pdata)->group_id == pinfo_node->group_id) {
+		auto i = static_cast<INFO_NODE *>(pnode->pdata);
+		if (i->group_id == pinfo_node->group_id) {
 			return FALSE;
-		} else if (pinfo_node->group_id <
-			((INFO_NODE*)pnode->pdata)->group_id) {
+		} else if (pinfo_node->group_id < i->group_id) {
 			double_list_insert_before(&g_info_list,
 							pnode, &pinfo_node->node);
 			return TRUE;
@@ -378,7 +377,7 @@ uint32_t msgchg_grouping_get_last_group_id()
 	DOUBLE_LIST_NODE *pnode;
 	
 	pnode = double_list_get_tail(&g_info_list);
-	return ((INFO_NODE*)pnode->pdata)->group_id;
+	return static_cast<INFO_NODE *>(pnode->pdata)->group_id;
 }
 
 std::unique_ptr<property_groupinfo>
@@ -387,7 +386,6 @@ std::unique_ptr<property_groupinfo>
 {
 	uint16_t propid;
 	uint32_t proptag;
-	TAG_NODE *ptag_node;
 	msg_group_node *pgp_node;
 	INFO_NODE *pinfo_node;
 	DOUBLE_LIST_NODE *pnode;
@@ -396,7 +394,7 @@ std::unique_ptr<property_groupinfo>
 	
 	for (pnode=double_list_get_head(&g_info_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_info_list, pnode)) {
-		pinfo_node = (INFO_NODE*)pnode->pdata;
+		pinfo_node = static_cast<INFO_NODE *>(pnode->pdata);
 		if (group_id == pinfo_node->group_id) {
 			break;
 		}
@@ -414,7 +412,7 @@ std::unique_ptr<property_groupinfo>
 		pproptags = proptag_array_init();
 		for (pnode1=double_list_get_head(&pgp_node->tag_list); NULL!=pnode1;
 			pnode1=double_list_get_after(&pgp_node->tag_list, pnode1)) {
-			ptag_node = (TAG_NODE*)pnode1->pdata;
+			auto ptag_node = static_cast<TAG_NODE *>(pnode1->pdata);
 			if (0 != ptag_node->propid) {
 				proptag = PROP_TAG(ptag_node->type, ptag_node->propid);
 			} else {

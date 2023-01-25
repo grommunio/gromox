@@ -322,10 +322,11 @@ void propval_free(uint16_t type, void *pvalue)
 		return;
 	}
 	switch (type) {
-	case PT_UNSPECIFIED:
-		propval_free(((TYPED_PROPVAL*)pvalue)->type,
-					((TYPED_PROPVAL*)pvalue)->pvalue);
+	case PT_UNSPECIFIED: {
+		auto &tp = *static_cast<TYPED_PROPVAL *>(pvalue);
+		propval_free(tp.type, tp.pvalue);
 		break;
+	}
 	case PT_SHORT:
 	case PT_LONG:
 	case PT_FLOAT:
@@ -346,26 +347,28 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_ACTIONS:
 		rule_actions_free(static_cast<RULE_ACTIONS *>(pvalue));
 		return;
-	case PT_SVREID:
-		if (NULL != ((SVREID*)pvalue)->pbin) {
-			free(((SVREID*)pvalue)->pbin->pb);
-			free(((SVREID*)pvalue)->pbin);
-		}
+	case PT_SVREID: {
+		auto &e = *static_cast<SVREID *>(pvalue);
+		if (e.pbin == nullptr)
+			break;
+		free(e.pbin->pb);
+		free(e.pbin);
 		break;
+	}
 	case PT_BINARY:
 	case PT_OBJECT:
 		free(static_cast<BINARY *>(pvalue)->pb);
 		break;
 	case PT_MV_SHORT:
-		free(((SHORT_ARRAY*)pvalue)->ps);
+		free(static_cast<SHORT_ARRAY *>(pvalue)->ps);
 		break;
 	case PT_MV_LONG:
-		free(((LONG_ARRAY*)pvalue)->pl);
+		free(static_cast<LONG_ARRAY *>(pvalue)->pl);
 		break;
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
-		free(((LONGLONG_ARRAY*)pvalue)->pll);
+		free(static_cast<LONGLONG_ARRAY *>(pvalue)->pll);
 		break;
 	case PT_MV_FLOAT:
 		free(static_cast<FLOAT_ARRAY *>(pvalue)->mval);
@@ -383,7 +386,7 @@ void propval_free(uint16_t type, void *pvalue)
 		break;
 	}
 	case PT_MV_CLSID:
-		free(((GUID_ARRAY*)pvalue)->pguid);
+		free(static_cast<GUID_ARRAY *>(pvalue)->pguid);
 		break;
 	case PT_MV_BINARY: {
 		auto ba = static_cast<BINARY_ARRAY *>(pvalue);
@@ -401,9 +404,10 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	uint32_t length;
 	
 	switch (type) {
-	case PT_UNSPECIFIED:
-		return propval_size(((TYPED_PROPVAL*)pvalue)->type,
-						((TYPED_PROPVAL*)pvalue)->pvalue);
+	case PT_UNSPECIFIED: {
+		auto &tp = *static_cast<TYPED_PROPVAL *>(pvalue);
+		return propval_size(tp.type, tp.pvalue);
+	}
 	case PT_SHORT:
 		return sizeof(uint16_t);
 	case PT_ERROR:
@@ -428,22 +432,22 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return strlen(static_cast<char *>(pvalue));
 	case PT_CLSID:
 		return 16;
-	case PT_SVREID:
-		if (static_cast<SVREID *>(pvalue)->pbin != nullptr)
-			return ((SVREID*)pvalue)->pbin->cb + 1;
-		return 21;
+	case PT_SVREID: {
+		auto &e = *static_cast<SVREID *>(pvalue);
+		return e.pbin != nullptr ? e.pbin->cb + 1 : 21;
+	}
 	case PT_SRESTRICTION:
 		return restriction_size(static_cast<RESTRICTION *>(pvalue));
 	case PT_ACTIONS:
 		return rule_actions_size(static_cast<RULE_ACTIONS *>(pvalue));
 	case PT_MV_SHORT:
-		return sizeof(uint16_t)*((SHORT_ARRAY*)pvalue)->count;
+		return sizeof(uint16_t) * static_cast<SHORT_ARRAY *>(pvalue)->count;
 	case PT_MV_LONG:
-		return sizeof(uint32_t)*((LONG_ARRAY*)pvalue)->count;
+		return sizeof(uint32_t) * static_cast<LONG_ARRAY *>(pvalue)->count;
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
-		return sizeof(uint64_t)*((LONGLONG_ARRAY*)pvalue)->count;
+		return sizeof(uint64_t) * static_cast<LONGLONG_ARRAY *>(pvalue)->count;
 	case PT_MV_FLOAT:
 		return sizeof(float) * static_cast<FLOAT_ARRAY *>(pvalue)->count;
 	case PT_MV_DOUBLE:
@@ -458,7 +462,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return length;
 	}
 	case PT_MV_CLSID:
-		return 16*((GUID_ARRAY*)pvalue)->count;
+		return 16 * static_cast<GUID_ARRAY *>(pvalue)->count;
 	case PT_MV_BINARY: {
 		length = 0;
 		auto ba = static_cast<BINARY_ARRAY *>(pvalue);

@@ -1362,8 +1362,8 @@ int EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
 		r->pvalue = anew<TYPED_PROPVAL>();
 		if (r->pvalue == nullptr)
 			return EXT_ERR_ALLOC;
-		((TYPED_PROPVAL*)r->pvalue)->type = type;
-		ppvalue = &((TYPED_PROPVAL*)r->pvalue)->pvalue;
+		static_cast<TYPED_PROPVAL *>(r->pvalue)->type = type;
+		ppvalue = &static_cast<TYPED_PROPVAL *>(r->pvalue)->pvalue;
 	} else {
 		ppvalue = &r->pvalue;
 	}
@@ -1512,7 +1512,7 @@ int EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_ROW *r)
 	if (r->count > pproptags->count)
 		return EXT_ERR_FORMAT;
 	proptags.count = r->count;
-	proptags.pproptag = (uint32_t*)pproptags->pproptag;
+	proptags.pproptag = deconst(pproptags->pproptag);
 	return g_proprow(&proptags, &r->properties);
 }
 

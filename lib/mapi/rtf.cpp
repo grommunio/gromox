@@ -549,10 +549,9 @@ static const char *rtf_get_from_collection(const DOUBLE_LIST *plist, int nr)
 static void rtf_free_collection(DOUBLE_LIST *plist)
 {
 	DOUBLE_LIST_NODE *pnode;
-	COLLECTION_NODE *pcollection;
 
 	while ((pnode = double_list_pop_front(plist)) != nullptr) {
-		pcollection = (COLLECTION_NODE*)pnode->pdata;
+		auto pcollection = static_cast<COLLECTION_NODE *>(pnode->pdata);
 		free(pcollection->text);
 		free(pcollection);
 	}
@@ -586,10 +585,9 @@ RTF_READER::~RTF_READER()
 {
 	auto preader = this;
 	DOUBLE_LIST_NODE *pnode;
-	ATTRSTACK_NODE *pattrstack;
 	
 	while ((pnode = double_list_pop_front(&preader->attr_stack_list)) != nullptr) {
-		pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
+		auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
 		free(pattrstack);
 	}
 	double_list_free(&preader->attr_stack_list);
@@ -892,14 +890,13 @@ static bool rtf_attrstack_express_all(RTF_READER *preader)
 {
 	int i;
 	DOUBLE_LIST_NODE *pnode;
-	ATTRSTACK_NODE *pattrstack;
 	
 	pnode = double_list_get_tail(&preader->attr_stack_list);
 	if (NULL == pnode) {
 		mlog(LV_DEBUG, "rtf: no stack to express all attribute from");
 		return true;
 	}
-	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
+	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
 	for (i=0; i<= pattrstack->tos; i++) { 
 		if (!rtf_express_attr_begin(preader, pattrstack->attr_stack[i],
 		    pattrstack->attr_params[i]))
@@ -911,14 +908,13 @@ static bool rtf_attrstack_express_all(RTF_READER *preader)
 static bool rtf_attrstack_push_express(RTF_READER *preader, int attr, int param)
 {
 	DOUBLE_LIST_NODE *pnode;
-	ATTRSTACK_NODE *pattrstack;
 	
 	pnode = double_list_get_tail(&preader->attr_stack_list);
 	if (NULL == pnode) {
 		mlog(LV_DEBUG, "rtf: cannot find stack node for pushing attribute");
 		return false;
 	}
-	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
+	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
 	if (pattrstack->tos >= MAX_ATTRS - 1) {
 		mlog(LV_DEBUG, "rtf: too many attributes");
 		return false;
@@ -949,13 +945,12 @@ static bool rtf_stack_list_new_node(RTF_READER *preader)
 static bool rtf_attrstack_pop_express(RTF_READER *preader, int attr)
 {
 	DOUBLE_LIST_NODE *pnode;
-	ATTRSTACK_NODE *pattrstack;
 	
 	pnode = double_list_get_tail(&preader->attr_stack_list);
 	if (NULL == pnode) {
 		return true;
 	}
-	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
+	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
 	if (pattrstack->tos < 0 || pattrstack->attr_stack[pattrstack->tos] != attr)
 		return true;
 	if (!rtf_express_attr_end(preader, attr,
@@ -990,12 +985,11 @@ static void rtf_stack_list_free_node(RTF_READER *preader)
 static bool rtf_attrstack_pop_express_all(RTF_READER *preader)
 {
 	DOUBLE_LIST_NODE *pnode;
-	ATTRSTACK_NODE *pattrstack;
 	
 	pnode = double_list_get_tail(&preader->attr_stack_list);
 	if (pnode == nullptr)
 		return true;
-	pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
+	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
 	for (; pattrstack->tos>=0; pattrstack->tos--) {
 		if (!rtf_express_attr_end(preader,
 		    pattrstack->attr_stack[pattrstack->tos],
@@ -1713,12 +1707,12 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			     pword2 != nullptr; pword2 = pword2->get_sibling()) {
 				if (pword2->pdata == nullptr)
 					continue;
-				if ('\\' != ((char *)pword2->pdata)[0]) {
+				if (static_cast<char *>(pword2->pdata)[0] != '\\') {
 					if (!rtf_flush_iconv_cache(preader))
 						return false;
 					if (!rtf_escape_output(preader, static_cast<char *>(pword2->pdata)))
 						return false;
-				} else if ('\'' == ((char *)pword2->pdata)[1]) {
+				} else if (static_cast<char *>(pword2->pdata)[1] == '\'') {
 					ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
 					QRF(preader->iconv_push.p_uint8(ch));
 				}
@@ -1732,12 +1726,12 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			     pword2 != nullptr; pword2 = pword2->get_sibling()) {
 				if (pword2->pdata == nullptr)
 					continue;
-				if ('\\' != ((char *)pword2->pdata)[0]) {
+				if (static_cast<char *>(pword2->pdata)[0] != '\\') {
 					if (!rtf_flush_iconv_cache(preader))
 						return false;
 					if (!rtf_escape_output(preader, static_cast<char *>(pword2->pdata)))
 						return false;
-				} else if ('\'' == ((char *)pword2->pdata)[1]) {
+				} else if (static_cast<char *>(pword2->pdata)[1] == '\'') {
 					ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
 					QRF(preader->iconv_push.p_uint8(ch));
 				}

@@ -223,7 +223,7 @@ static BOOL action_block_dup_internal(
 		if (NULL == pblock->pdata) {
 			return FALSE;
 		}
-		*(uint32_t*)pblock->pdata = *(uint32_t*)paction->pdata;
+		*static_cast<uint32_t *>(pblock->pdata) = *static_cast<uint32_t *>(paction->pdata);
 		return TRUE;
 	case OP_FORWARD:
 	case OP_DELEGATE:
