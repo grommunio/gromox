@@ -603,7 +603,10 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 		ab_tree_dump_base(*pbase);
 	phandle->guid = pbase->guid;
 	if (NULL != pserver_guid) {
-		*(GUID*)pserver_guid = common_util_get_server_guid();
+		EXT_PUSH ep;
+		ep.init(pserver_guid, sizeof(*pserver_guid), 0);
+		if (ep.p_guid(common_util_get_server_guid()) != EXT_ERR_SUCCESS)
+			return ecError;
 	}
 	nsp_trace(__func__, 1, pstat);
 	return ecSuccess;
