@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <libHX/string.h>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
@@ -228,6 +229,13 @@ static int t_cmp_guid()
 {
 	GUID g1 = {0x01}, g2 = {0x0100};
 	assert(g1.compare(g2) < 0);
+
+	char buf[sizeof(FLATUID)];
+	EXT_PUSH ep;
+	ep.init(buf, sizeof(buf), 0);
+	if (ep.p_guid(muidEMSAB) != EXT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	assert((memcmp(&muidEMSAB, buf, sizeof(buf)) != 0) == GX_BIG_ENDIAN);
 	return EXIT_SUCCESS;
 }
 
