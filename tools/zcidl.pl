@@ -46,7 +46,7 @@ while (<STDIN>) {
 		next;
 	}
 
-	print "uint32_t zarafa_client_$func($rbsig)\n{\n";
+	print "uint32_t zclient_$func($rbsig)\n{\n";
 	print "\tzcreq_$func q{};\n\tzcresp_$func r{};\n\n";
 	print "\tq.call_id = zcore_callid::$func;\n";
 	for (@$iargs) {
@@ -57,7 +57,7 @@ while (<STDIN>) {
 			print "\tq.$field = $field;\n";
 		}
 	}
-	print "\tif (!zarafa_client_do_rpc(&q, &r))\n\t\treturn ecRpcFailed;\n";
+	print "\tif (!zclient_do_rpc(&q, &r))\n\t\treturn ecRpcFailed;\n";
 	if (scalar(@$oargs) > 0) {
 		print "\tif (r.result != ecSuccess)\n\t\treturn r.result;\n";
 	}
