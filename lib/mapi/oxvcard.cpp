@@ -7,6 +7,7 @@
 #include <cstring>
 #include <ctime>
 #include <string>
+#include <vector>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/oxcmail.hpp>
@@ -159,8 +160,7 @@ static std::string join(const char *gn, const char *mn, const char *sn)
 	return r;
 }
 
-MESSAGE_CONTENT* oxvcard_import(
-	const VCARD *pvcard, GET_PROPIDS get_propids)
+MESSAGE_CONTENT *oxvcard_import(const VCARD *pvcard, GET_PROPIDS get_propids) try
 {
 	int i;
 	int count;
@@ -423,16 +423,18 @@ MESSAGE_CONTENT* oxvcard_import(
 			auto pvvalue = pvline->m_values.cbegin();
 			if (pvvalue == pvline->m_values.cend())
 				continue;
-			char tmp_buff[VCARD_MAX_BUFFER_LEN];
+			std::vector<char *> ptrs;
 			STRING_ARRAY strings_array;
-			strings_array.count = 0;
-			strings_array.ppstr = (char**)tmp_buff;
 			for (const auto &sv : pvvalue->m_subvals) {
 				if (sv.empty())
 					continue;
-				strings_array.ppstr[strings_array.count++] = deconst(sv.c_str());
+				ptrs.push_back(deconst(sv.c_str()));
+				if (ptrs.size() >= 128)
+					break;
 			}
-			if (strings_array.count != 0 && strings_array.count < 128 &&
+			strings_array.count = ptrs.size();
+			strings_array.ppstr = ptrs.data();
+			if (strings_array.count != 0 &&
 			    pmsg->proplist.set(g_categories_proptag, &strings_array) != 0)
 				return nullptr;
 		} else if (strcasecmp(pvline_name, "NOTE") == 0) {
@@ -620,16 +622,18 @@ MESSAGE_CONTENT* oxvcard_import(
 			auto pvvalue = pvline->m_values.cbegin();
 			if (pvvalue == pvline->m_values.cend())
 				continue;
-			char tmp_buff[VCARD_MAX_BUFFER_LEN];
+			std::vector<char *> ptrs;
 			STRING_ARRAY strings_array;
-			strings_array.count = 0;
-			strings_array.ppstr = (char**)tmp_buff;
 			for (const auto &sv : pvvalue->m_subvals) {
 				if (sv.empty())
 					continue;
-				strings_array.ppstr[strings_array.count++] = deconst(sv.c_str());
+				ptrs.push_back(deconst(sv.c_str()));
+				if (ptrs.size() >= 128)
+					break;
 			}
-			if (strings_array.count != 0 && strings_array.count < 128 &&
+			strings_array.count = ptrs.size();
+			strings_array.ppstr = ptrs.data();
+			if (strings_array.count != 0 &&
 			    pmsg->proplist.set(PR_HOBBIES, &strings_array) != 0)
 				return nullptr;
 		}
@@ -680,6 +684,9 @@ MESSAGE_CONTENT* oxvcard_import(
 			PROP_TAG(PROP_TYPE(pmsg->proplist.ppropval[i].proptag), proptag);
 	}
 	return pmsg.release();
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1158: ENOMEM");
+	return nullptr;
 }
 
 BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids) try
