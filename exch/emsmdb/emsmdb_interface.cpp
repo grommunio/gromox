@@ -670,51 +670,48 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	EXT_PULL ext_pull;
 	char username[UADDR_SIZE];
 	HANDLE_DATA *phandle;
+	auto input_flags = *pflags;
+	*pflags = 0;
+	*pcb_auxout = 0;
+	*ptrans_time = 0;
 	
 	/* ms-oxcrpc 3.1.4.2 */
-	if (cb_in < 0x00000008 || *pcb_out < 0x00000008) {
-		*pflags = 0;
+	if (cb_in < 8 || *pcb_out < 8) {
 		*pcb_out = 0;
-		*pcb_auxout = 0;
-		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
 		return ecRpcFailed;
 	}
+	if (cb_in > 0x40000)
+		return RPC_X_BAD_STUB_DATA;
+	/*
+	 * OXCRPC says to check *pcb_out for 0x40000 and *pcb_auxout for
+	 * 0x1008, but this only applies to RPCH where those are INOUT
+	 * parameters (cf. emsmdb_ndr_pull_ecdorpcext2). In our MH, *pcb_out is
+	 * the buffer size MH is offering us (auxout is unused).
+	 */
 	if (cb_auxin > 0x1008) {
-		*pflags = 0;
 		*pcb_out = 0;
-		*pcb_auxout = 0;
-		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
 		return RPC_X_BAD_STUB_DATA;
 	}
 	auto first_time = tp_now();
 	phandle = emsmdb_interface_get_handle_data(pcxh);
 	if (NULL == phandle) {
-		*pflags = 0;
 		*pcb_out = 0;
-		*pcb_auxout = 0;
-		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
 		return ecError;
 	}
 	auto rpc_info = get_rpc_info();
 	if (0 != strcasecmp(phandle->username, rpc_info.username)) {
 		emsmdb_interface_put_handle_data(phandle);
-		*pflags = 0;
 		*pcb_out = 0;
-		*pcb_auxout = 0;
-		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
 		return ecAccessDenied;
 	}
 	if (first_time - phandle->last_time > HANDLE_VALID_INTERVAL) {
 		emsmdb_interface_put_handle_data(phandle);
 		emsmdb_interface_remove_handle(pcxh);
-		*pflags = 0;
 		*pcb_out = 0;
-		*pcb_auxout = 0;
-		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
 		return ecError;
 	}
@@ -727,7 +724,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 				"auxiliary buffer in emsmdb_interface_rpc_ext2");
 		}
 	}
-	result = rop_processor_proc(*pflags, pin, cb_in, pout, pcb_out);
+	result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
 	gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
 	cxr = phandle->cxr;
 	BOOL b_wakeup = double_list_get_nodes_num(&phandle->notify_list) == 0 ? false : TRUE;
@@ -735,18 +732,12 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	if (b_wakeup)
 		asyncemsmdb_interface_wakeup(username, cxr);
 	g_handle_key = nullptr;
-	if (result == ecSuccess) {
-		*pflags = 0;
-		*pcb_auxout = 0;
-		*ptrans_time = std::chrono::duration_cast<std::chrono::milliseconds>(tp_now() - first_time).count();
-		return ecSuccess;
-	} else {
-		*pflags = 0;
+	if (result != ecSuccess) {
 		*pcb_out = 0;
-		*pcb_auxout = 0;
-		*ptrans_time = 0;
 		return result;
 	}
+	*ptrans_time = std::chrono::duration_cast<std::chrono::milliseconds>(tp_now() - first_time).count();
+	return ecSuccess;
 }
 	
 int emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh)
@@ -845,6 +836,7 @@ BOOL emsmdb_interface_get_rop_left(uint16_t *psize)
 {
 	auto phandle = g_handle_key;
 	if (NULL == phandle) {
+		*psize = 0;
 		return FALSE;
 	}
 	*psize = phandle->rop_left;

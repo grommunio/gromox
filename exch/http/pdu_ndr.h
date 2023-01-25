@@ -176,9 +176,13 @@ union DCERPC_PAYLOAD {
 };
 
 /*
+ * RTS PDU Header
+ *
  * NCA = Network Connection Architecture
  * CN = Connection
  * DG = Datagram / Connectionless
+ *
+ * C706 §12.6.1 / RPCH v19 §2.2.3.6.1
  */
 struct dcerpc_ncacn_packet {
 	constexpr dcerpc_ncacn_packet(bool be)

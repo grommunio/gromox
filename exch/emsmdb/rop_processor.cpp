@@ -39,9 +39,6 @@
 #define RPCEXT2_FLAG_NOCOMPRESSION		0x00000001
 #define RPCEXT2_FLAG_NOXORMAGIC			0x00000002
 #define RPCEXT2_FLAG_CHAIN				0x00000004
-
-#define MAX_ROP_PAYLOADS				96
-
 #define HGROWING_SIZE					250
 
 using namespace gromox;
@@ -53,6 +50,7 @@ static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, uint32_t> g_logon_hash;
 static unsigned int g_emsmdb_full_parenting;
+static unsigned int g_max_rop_payloads = 96;
 
 unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
@@ -336,6 +334,8 @@ void rop_processor_stop()
 	g_logon_hash.clear();
 }
 
+static uint32_t rpcext_cutoff = 32U << 10; /* OXCRPC v23 3.1.4.2.1.2.2 */
+
 static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
     uint32_t *pbuff_len, ROP_BUFFER *prop_buff, BOOL b_notify,
     DOUBLE_LIST *presponse_list) try
@@ -345,7 +345,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	int rop_num;
 	BOOL b_icsup;
 	BINARY tmp_bin;
-	uint32_t tmp_len;
 	EXT_PUSH ext_push;
 	EXT_PUSH ext_push1;
 	PROPERTY_ROW tmp_row;
@@ -359,10 +358,14 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	PENDING_RESPONSE tmp_pending;
 	
 	/* ms-oxcrpc 3.1.4.2.1.2 */
-	if (*pbuff_len > 0x8000)
-		*pbuff_len = 0x8000;
-	tmp_len = *pbuff_len - 5*sizeof(uint16_t)
-			- sizeof(uint32_t)*prop_buff->hnum;
+	if (*pbuff_len > rpcext_cutoff)
+		*pbuff_len = rpcext_cutoff;
+	auto endroom_needed = 5 * sizeof(uint16_t) + prop_buff->hnum * sizeof(uint32_t);
+	auto tmp_len = *pbuff_len;
+	if (tmp_len >= endroom_needed)
+		tmp_len -= endroom_needed;
+	else
+		tmp_len = 0;
 	if (tmp_len > ext_buff_size)
 		tmp_len = ext_buff_size;
 	if (!ext_push.init(ext_buff.get(), tmp_len, EXT_FLAG_UTF16))
@@ -371,6 +374,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	emsmdb_interface_set_rop_num(rop_num);
 	b_icsup = FALSE;
 	pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+	size_t rop_count = double_list_get_nodes_num(&prop_buff->rop_list), rop_idx = 0;
 	for (pnode=double_list_get_head(&prop_buff->rop_list); NULL!=pnode;
 		pnode=double_list_get_after(&prop_buff->rop_list, pnode)) {
 		auto pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
@@ -388,11 +392,13 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			dbg = true;
 		if (dbg) {
 			if (rsp != nullptr)
-				mlog(LV_DEBUG, "rop_dispatch(%s) EC=%xh RS=%xh",
+				mlog(LV_DEBUG, "[%zu/%zu] rop_dispatch(%s) EC=%xh RS=%xh",
+					++rop_idx, rop_count,
 					rop_idtoname(req->rop_id), result,
 					static_cast<unsigned int>(rsp->result));
 			else
-				mlog(LV_DEBUG, "rop_dispatch(%s) EC=%xh RS=none",
+				mlog(LV_DEBUG, "[%zu/%zu] rop_dispatch(%s) EC=%xh RS=none",
+					++rop_idx, rop_count,
 					rop_idtoname(req->rop_id),
 					static_cast<unsigned int>(result));
 		}
@@ -411,7 +417,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			if (rsp->ppayload == nullptr)
 				return ecServerOOM;
 			auto bts = static_cast<BUFFERTOOSMALL_RESPONSE *>(rsp->ppayload);
-			bts->size_needed = 0x8000;
+			bts->size_needed = rpcext_cutoff;
 			bts->buffer = req->bookmark;
 			if (rop_ext_push_rop_response(&ext_push, req->logon_id, rsp) != EXT_ERR_SUCCESS)
 				return ecBufferTooSmall;
@@ -423,7 +429,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		if (pemsmdb_info->upctx_ref != 0)
 			b_icsup = TRUE;	
 		/* some ROPs do not have response, for example ropRelease */
-		if (pnode1->pdata == nullptr)
+		if (rsp == nullptr)
 			continue;
 		uint32_t last_offset = ext_push.m_offset;
 		status = rop_ext_push_rop_response(&ext_push, req->logon_id, rsp);
@@ -432,7 +438,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			double_list_append_as_tail(presponse_list, pnode1);
 			break;
 		case EXT_ERR_BUFSIZE: {
-			/* MS-OXCPRPT 3.2.5.2, fail to whole RPC */
+			/* MS-OXCPRPT 3.2.5.2, fail the whole RPC */
 			if (req->rop_id == ropGetPropertiesAll &&
 			    pnode == double_list_get_head(&prop_buff->rop_list))
 				return ecServerOOM;
@@ -530,7 +536,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out)
 {
-	int count;
 	uint32_t tmp_cb;
 	uint32_t offset;
 	EXT_PULL ext_pull;
@@ -564,10 +569,10 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		return result;
 	offset = tmp_cb;
 	last_offset = 0;
-	count = double_list_get_nodes_num(&response_list);
+	auto count = double_list_get_nodes_num(&response_list);
 	pnode = double_list_get_tail(&rop_buff.rop_list);
 	pnode1 = double_list_get_tail(&response_list);
-	if (NULL == pnode || NULL == pnode1) {
+	if (!(flags & RPCEXT2_FLAG_CHAIN) || pnode == nullptr || pnode1 == nullptr) {
 		rop_ext_set_rhe_flag_last(pout, last_offset);
 		*pcb_out = offset;
 		return ecSuccess;
@@ -595,7 +600,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		}
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (presponse->result == ecSuccess &&
-			*pcb_out - offset >= 0x8000 && count < MAX_ROP_PAYLOADS) {
+		       *pcb_out - offset >= 0x8000 && count < g_max_rop_payloads) {
 			if (req->forward_read != 0) {
 				if (rsp->seek_pos == BOOKMARK_END)
 					break;
@@ -609,6 +614,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
+			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
+				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
 			if (result != ecSuccess)
 				break;
 			pnode1 = double_list_pop_front(&response_list);
@@ -625,12 +632,14 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	} else if (presponse->rop_id == ropReadStream) {
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (presponse->result == ecSuccess &&
-			*pcb_out - offset >= 0x2000 && count < MAX_ROP_PAYLOADS) {
+		       *pcb_out - offset >= 0x2000 && count < g_max_rop_payloads) {
 			if (static_cast<READSTREAM_RESPONSE *>(presponse->ppayload)->data.cb == 0)
 				break;
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
+			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
+				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
 			if (result != ecSuccess)
 				break;
 			pnode1 = double_list_pop_front(&response_list);
@@ -647,7 +656,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	} else if (presponse->rop_id == ropFastTransferSourceGetBuffer) {
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (presponse->result == ecSuccess &&
-			*pcb_out - offset >= 0x2000 && count < MAX_ROP_PAYLOADS) {
+		       *pcb_out - offset >= 0x2000 && count < g_max_rop_payloads) {
 			auto sgb = static_cast<const FASTTRANSFERSOURCEGETBUFFER_RESPONSE *>(presponse->ppayload);
 			if (sgb->transfer_status == TRANSFER_STATUS_DONE ||
 			    sgb->transfer_status == TRANSFER_STATUS_ERROR)
@@ -655,6 +664,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
+			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
+				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
 			if (result != ecSuccess)
 				break;
 			pnode1 = double_list_pop_front(&response_list);
