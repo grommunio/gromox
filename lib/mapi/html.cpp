@@ -302,27 +302,26 @@ static BOOL html_init_writer(RTF_WRITER *pwriter)
 	return TRUE;
 } 
  
-static uint32_t html_utf8_to_wchar(iconv_t cd, const char *src, int length)
+static std::pair<uint16_t, uint16_t>
+html_utf8_to_utf16(iconv_t cd, const char *src, size_t ilen)
 {
-	size_t len;
-	size_t in_len;
-	uint32_t wchar;
-	
+	std::pair<uint16_t, uint16_t> wchar{};
 	auto pin = deconst(src);
 	auto pout = reinterpret_cast<char *>(&wchar);
-	in_len = length;
-	len = sizeof(uint16_t);
+	auto olen = sizeof(wchar);
 	iconv(cd, nullptr, nullptr, nullptr, nullptr);
-	auto ret = iconv(cd, &pin, &in_len, &pout, &len);
+	auto ret = iconv(cd, &pin, &ilen, &pout, &olen);
 	if (ret == static_cast<size_t>(-1))
-		return 0xFFFD;
-	return le16_to_cpu(wchar);
+		wchar = {0xFFFD, 0};
+	else
+		wchar = {le16_to_cpu(wchar.first), le16_to_cpu(wchar.second)};
+	return wchar;
 }
 
 static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 {
 	int tmp_len;
-	char tmp_buff[9];
+	char tmp_buff[24];
 	const char *ptr = string, *pend = string + strlen(string);
 
 	while ('\0' != *ptr) {
@@ -344,13 +343,18 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 			ptr += len;
 			continue;
 		}
-		auto wchar = html_utf8_to_wchar(pwriter->cd, ptr, len);
-		if (wchar != 0) {
-			snprintf(tmp_buff, sizeof(tmp_buff), "\\u%hu?", wchar);
-			tmp_len = strlen(tmp_buff);
-			QRF(pwriter->ext_push.p_bytes(tmp_buff, tmp_len));
-		}
+		auto [w1, w2] = html_utf8_to_utf16(pwriter->cd, ptr, len);
 		ptr += len;
+		if (w1 == 0)
+			continue;
+		else if (w2 == 0)
+			snprintf(tmp_buff, sizeof(tmp_buff), "\\u%hu?", w1);
+		else
+			/* MSO uses %hd, which is a bad joke but expected */
+			snprintf(tmp_buff, sizeof(tmp_buff), "\\uc0\\u%hu\\uc1\\u%hu?", w1, w2);
+
+		tmp_len = strlen(tmp_buff);
+		QRF(pwriter->ext_push.p_bytes(tmp_buff, tmp_len));
 	}
 	return TRUE;
 }
