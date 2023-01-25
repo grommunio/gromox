@@ -232,14 +232,12 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
     uint64_t handle, void *pin, void **ppout, uint32_t *ecode)
 {
-	RFRGETNEWDSA_IN *prfr_in;
 	RFRGETNEWDSA_OUT *prfr_out;
-	RFRGETFQDNFROMLEGACYDN_IN *prfr_dn_in;
 	RFRGETFQDNFROMLEGACYDN_OUT *prfr_dn_out;
 	
 	switch (opnum) {
-	case RfrGetNewDSA:
-		prfr_in = (RFRGETNEWDSA_IN*)pin;
+	case RfrGetNewDSA: {
+		auto prfr_in = static_cast<RFRGETNEWDSA_IN *>(pin);
 		prfr_out = ndr_stack_anew<RFRGETNEWDSA_OUT>(NDR_STACK_OUT);
 		if (prfr_out == nullptr)
 			return DISPATCH_FAIL;
@@ -250,8 +248,9 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 		strcpy(prfr_out->pserver, prfr_in->pserver);
 		*ppout = prfr_out;
 		return DISPATCH_SUCCESS;
-	case RfrGetFQDNFromServerDN:
-		prfr_dn_in = (RFRGETFQDNFROMLEGACYDN_IN*)pin;
+	}
+	case RfrGetFQDNFromServerDN: {
+		auto prfr_dn_in = static_cast<RFRGETFQDNFROMLEGACYDN_IN *>(pin);
 		prfr_dn_out = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_OUT>(NDR_STACK_OUT);
 		if (prfr_dn_out == nullptr)
 			return DISPATCH_FAIL;
@@ -261,6 +260,7 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 		                      GX_ARRAY_SIZE(prfr_dn_out->serverfqdn));
 		*ppout = prfr_dn_out;
 		return DISPATCH_SUCCESS;
+	}
 	default:
 		return DISPATCH_FAIL;
 	}
@@ -269,12 +269,10 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 {
 	int length;
-	RFRGETNEWDSA_OUT *prfr;
-	RFRGETFQDNFROMLEGACYDN_OUT *prfr_dn;
 	
 	switch (opnum) {
-	case RfrGetNewDSA:
-		prfr = (RFRGETNEWDSA_OUT*)pout;
+	case RfrGetNewDSA: {
+		auto prfr = static_cast<RFRGETNEWDSA_OUT *>(pout);
 		if ('\0' == *prfr->punused) {
 			TRY(ndr_push_unique_ptr(pndr, nullptr));
 		} else {
@@ -299,8 +297,9 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 			TRY(ndr_push_string(pndr, prfr->pserver, length));
 		}
 		return ndr_push_uint32(pndr, prfr->result);
-	case RfrGetFQDNFromServerDN:
-		prfr_dn = (RFRGETFQDNFROMLEGACYDN_OUT*)pout;
+	}
+	case RfrGetFQDNFromServerDN: {
+		auto prfr_dn = static_cast<RFRGETFQDNFROMLEGACYDN_OUT *>(pout);
 		if ('\0' == *prfr_dn->serverfqdn) {
 			TRY(ndr_push_unique_ptr(pndr, nullptr));
 		} else {
@@ -312,6 +311,7 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 			TRY(ndr_push_string(pndr, prfr_dn->serverfqdn, length));
 		}
 		return ndr_push_uint32(pndr, prfr_dn->result);
+	}
 	}
 	return NDR_ERR_SUCCESS;
 }

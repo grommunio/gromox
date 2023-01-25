@@ -471,7 +471,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 				return ecServerOOM;
 			}
 		} else {
-			pprop->value.string_array.ppstr = (char**)pbuff;
+			pprop->value.string_array.ppstr = static_cast<char **>(pbuff);
 			pprop->value.string_array.ppstr[0] =
 				static_cast<char *>(pbuff) + 2 * sizeof(char **);
 			pprop->value.string_array.ppstr[1] =
