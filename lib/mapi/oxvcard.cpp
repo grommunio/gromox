@@ -691,13 +691,11 @@ MESSAGE_CONTENT *oxvcard_import(const VCARD *pvcard, GET_PROPIDS get_propids) tr
 
 BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids) try
 {
-	BINARY *pbin;
 	const char *pvalue;
 	STRING_ARRAY *saval = nullptr;
 	size_t out_len;
 	uint16_t propid;
 	uint32_t proptag;
-	time_t unix_time;
 	struct tm tmp_tm;
 	PROPID_ARRAY propids;
 	const char *photo_type;
@@ -763,9 +761,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		email_line.append_value(pvalue);
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PR_ATTACHMENT_CONTACTPHOTO);
-	if (pvalue != nullptr && *reinterpret_cast<const uint8_t *>(pvalue) != 0 &&
-		NULL != pmsg->children.pattachments) {
+	auto flag = pmsg->proplist.get<const uint8_t>(PR_ATTACHMENT_CONTACTPHOTO);
+	if (flag != nullptr && *flag != 0 && pmsg->children.pattachments != nullptr) {
 		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {
 			pattachment = pmsg->children.pattachments->pplist[i];
 			pvalue = pattachment->proplist.get<char>(PR_ATTACH_EXTENSION);
@@ -799,22 +796,15 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	pvalue = pmsg->proplist.get<char>(PR_DEPARTMENT_NAME);
 	org_line.append_value(pvalue);
 	
-	pvalue = pmsg->proplist.get<char>(PR_SENSITIVITY);
-	if (NULL == pvalue) {
+	auto num = pmsg->proplist.get<uint32_t>(PR_SENSITIVITY);
+	if (num == nullptr)
 		pvalue = "PUBLIC";
-	} else {
-		switch (*(uint32_t*)pvalue) {
-		case SENSITIVITY_PRIVATE:
-			pvalue = "PRIVATE";
-			break;
-		case SENSITIVITY_COMPANY_CONFIDENTIAL:
-			pvalue = "CONFIDENTIAL";
-			break;
-		default:
-			pvalue = "PUBLIC";
-			break;
-		}
-	}
+	else if (*num == SENSITIVITY_COMPANY_CONFIDENTIAL)
+		pvalue = "CONFIDENTIAL";
+	else if (*num == SENSITIVITY_PRIVATE)
+		pvalue = "PRIVATE";
+	else
+		pvalue = "PUBLIC";
 	vcard.append_line("CLASS", pvalue);
 	
 	auto adr_line = &vcard.append_line("ADR");
@@ -983,13 +973,12 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		}
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PR_USER_X509_CERTIFICATE);
-	if (NULL != pvalue && 0 != ((BINARY_ARRAY*)pvalue)->count) {
+	auto ba = pmsg->proplist.get<const BINARY_ARRAY>(PR_USER_X509_CERTIFICATE);
+	if (ba != nullptr && ba->count != 0) {
 		auto &key_line = vcard.append_line("KEY");
 		key_line.append_param("ENCODING", "B");
-		pbin = ((BINARY_ARRAY*)pvalue)->pbin;
-		if (0 != encode64(pbin->pb, pbin->cb, tmp_buff,
-		    VCARD_MAX_BUFFER_LEN - 1, &out_len))
+		if (encode64(ba->pbin->pb, ba->pbin->cb, tmp_buff,
+		    std::size(tmp_buff) - 1, &out_len) != 0)
 			return false;
 		tmp_buff[out_len] = '\0';
 		key_line.append_value(tmp_buff);
@@ -1003,9 +992,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	pvalue = pmsg->proplist.get<char>(proptag);
 	vcard.append_line("X-MS-IMADDRESS", pvalue);
 	
-	pvalue = pmsg->proplist.get<char>(PR_BIRTHDAY);
-	if (NULL != pvalue) {
-		unix_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
+	auto lnum = pmsg->proplist.get<uint64_t>(PR_BIRTHDAY);
+	if (lnum != nullptr) {
+		auto unix_time = rop_util_nttime_to_unix(*lnum);
 		gmtime_r(&unix_time, &tmp_tm);
 		strftime(tmp_buff, 1024, "%Y-%m-%d", &tmp_tm);
 		auto &day_line = vcard.append_line("BDAY");
@@ -1013,9 +1002,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		day_line.append_value(tmp_buff);
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PR_LAST_MODIFICATION_TIME);
-	if (NULL != pvalue) {
-		unix_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
+	lnum = pmsg->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
+	if (lnum != nullptr) {
+		auto unix_time = rop_util_nttime_to_unix(*lnum);
 		gmtime_r(&unix_time, &tmp_tm);
 		strftime(tmp_buff, 1024, "%Y-%m-%dT%H:%M:%SZ", &tmp_tm);
 		auto &day_line = vcard.append_line("REV");
@@ -1023,9 +1012,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		day_line.append_value(tmp_buff);
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PR_WEDDING_ANNIVERSARY);
+	lnum = pmsg->proplist.get<uint64_t>(PR_WEDDING_ANNIVERSARY);
 	if (NULL != pvalue) {
-		unix_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
+		auto unix_time = rop_util_nttime_to_unix(*lnum);
 		gmtime_r(&unix_time, &tmp_tm);
 		strftime(tmp_buff, 1024, "%Y-%m-%d", &tmp_tm);
 		auto &day_line = vcard.append_line("X-MS-ANNIVERSARY");
