@@ -1,3 +1,24 @@
+Development 2.2.79
+==================
+
+Enhancements:
+
+* pff2mt: support non-Unicode PFF files
+* ldap_adaptor: read ldap_start_tls, ldap_mail_attr from orgparam table
+* Support Emojis in HTML-to-RTF conversion code
+* exmdb_provider: implement message store softdelete count properties
+
+Fixes:
+
+* Do not fail entire HTML-to-RTF conversion or calls like
+  getpropvals(PR_RTF_COMPRESSED) when encountering garbage bytes.
+* exmdb_provider: have folder message count properties respect softdelete
+
+Implementation changes:
+
+* Replace custom SMTP sending code with vmime's
+
+
 Gromox 2.2 (2023-01-16)
 =======================
 
