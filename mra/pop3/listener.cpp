@@ -125,7 +125,6 @@ static void *p3ls_thrwork(void *arg)
 	size_t string_length = 0;
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
-	POP3_CONTEXT *pcontext;
 	const char *pop3_reply_str, *pop3_reply_str2, *host_ID;
 	char buff[1024];
 	
@@ -172,7 +171,7 @@ static void *p3ls_thrwork(void *arg)
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1339: setsockopt: %s", strerror(errno));
-		pcontext = (POP3_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
+		auto pcontext = static_cast<POP3_CONTEXT *>(contexts_pool_get_context(CONTEXT_FREE));
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			/* 421 <domain> Service not available */

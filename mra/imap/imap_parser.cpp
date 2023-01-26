@@ -1149,7 +1149,6 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 {
 	char buff[1024];
 	DOUBLE_LIST_NODE *pnode;
-	IMAP_CONTEXT *pcontext1;
 	
 	gx_strlcpy(buff, username, arsizeof(buff));
 	HX_strlower(buff);
@@ -1160,7 +1159,7 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 	}
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		pcontext1 = (IMAP_CONTEXT*)(pnode->pdata);
+		auto pcontext1 = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 		if (pcontext != pcontext1 && 0 == strcmp(folder, pcontext1->selected_folder)) {
 			pcontext1->b_modify = TRUE;
 		}
@@ -1174,7 +1173,6 @@ static void imap_parser_event_touch(char *username, char *folder)
 {
 	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST_NODE *pnode;
-	IMAP_CONTEXT *pcontext;
 	
 	gx_strlcpy(temp_string, username, arsizeof(temp_string));
 	HX_strlower(temp_string);
@@ -1185,7 +1183,7 @@ static void imap_parser_event_touch(char *username, char *folder)
 	}
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		pcontext = (IMAP_CONTEXT*)(pnode->pdata);
+		auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 		if (0 == strcmp(folder, pcontext->selected_folder)) {
 			pcontext->b_modify = TRUE;
 		}
@@ -1196,7 +1194,6 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 {
 	char buff[1024];
 	DOUBLE_LIST_NODE *pnode;
-	IMAP_CONTEXT *pcontext1;
 	
 	gx_strlcpy(buff, pcontext->username, arsizeof(buff));
 	HX_strlower(buff);
@@ -1207,7 +1204,7 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 	}
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		pcontext1 = (IMAP_CONTEXT*)(pnode->pdata);
+		auto pcontext1 = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 		if (pcontext != pcontext1 && 0 == strcmp(pcontext->selected_folder,
 			pcontext1->selected_folder)) {
 			pcontext1->f_flags.writeline(mid_string);
@@ -1228,7 +1225,6 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 {
 	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST_NODE *pnode;
-	IMAP_CONTEXT *pcontext;
 	
 	gx_strlcpy(temp_string, username, arsizeof(temp_string));
 	HX_strlower(temp_string);
@@ -1239,7 +1235,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	}
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		pcontext = (IMAP_CONTEXT*)(pnode->pdata);
+		auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 		if (0 == strcmp(pcontext->selected_folder, folder)) {
 			pcontext->f_flags.writeline(mid_string);
 		}
@@ -1531,7 +1527,6 @@ static void *imps_thrwork(void *argp)
 	char tmp_buff;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *ptail;
-	IMAP_CONTEXT *pcontext;
 	
 	while (!g_notify_stop) {
 		std::unique_lock ll_hold(g_list_lock);
@@ -1548,7 +1543,7 @@ static void *imps_thrwork(void *argp)
 			ll_hold.unlock();
 			if (pnode == nullptr)
 				break;
-			pcontext = (IMAP_CONTEXT*)pnode->pdata;
+			auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 			if (SCHED_STAT_IDLING == pcontext->sched_stat) {
 				std::unique_lock hl_hold(g_hash_lock);
 				if (pcontext->b_modify) {
@@ -1654,7 +1649,6 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 	BOOL should_remove;
 	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST_NODE *pnode;
-	IMAP_CONTEXT *pcontext1;
 	
 	should_remove = TRUE;
 	pcontext->selected_time = 0;
@@ -1671,7 +1665,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 			pcontext->f_flags.clear();
 			for (pnode=double_list_get_head(plist); NULL!=pnode;
 				pnode=double_list_get_after(plist, pnode)) {
-				pcontext1 = (IMAP_CONTEXT*)pnode->pdata;
+				auto pcontext1 = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 				if (0 == strcmp(pcontext->selected_folder, pcontext1->selected_folder)) {
 					should_remove = FALSE;
 					break;
@@ -1693,8 +1687,6 @@ static void *imps_scanwork(void *argp)
 	char maildir[256];
 	char username[UADDR_SIZE];
 	MEM_FILE temp_file;
-	DOUBLE_LIST *plist;
-	IMAP_CONTEXT *pcontext;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while (!g_notify_stop) {
@@ -1712,10 +1704,10 @@ static void *imps_scanwork(void *argp)
 		auto iter = g_select_hash->make_iter();
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
-			plist = (DOUBLE_LIST*)str_hash_iter_get_value(iter, username);
+			auto plist = static_cast<DOUBLE_LIST *>(str_hash_iter_get_value(iter, username));
 			for (pnode=double_list_get_head(plist); NULL!=pnode;
 				pnode=double_list_get_after(plist, pnode)) {
-				pcontext = (IMAP_CONTEXT*)pnode->pdata;
+				auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 				if (cur_time - pcontext->selected_time > SELECT_INTERVAL) {
 					temp_file.writeline(pcontext->username);
 					temp_file.writeline(pcontext->maildir);

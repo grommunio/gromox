@@ -52,7 +52,6 @@ static void install_event_stub(EVENT_STUB_FUNC event_stub_func);
 static BOOL svc_event_stub(int reason, void **ppdata)
 {
 	int i, conn_num;
-    BACK_CONN *pback;
 	DOUBLE_LIST_NODE *pnode;
 	
 	switch(reason) {
@@ -96,7 +95,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		g_notify_stop = false;
 		int ret = 0;
 		for (i=0; i<conn_num; i++) {
-			pback = (BACK_CONN*)malloc(sizeof(BACK_CONN));
+			auto pback = me_alloc<BACK_CONN>();
 			if (NULL != pback) {
 		        pback->node.pdata = pback;
 				pback->sockd = -1;
@@ -115,7 +114,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		if (i < conn_num) {
 			g_notify_stop = true;
 			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
-				pback = (BACK_CONN*)pnode->pdata;
+				auto pback = static_cast<BACK_CONN *>(pnode->pdata);
 				if (-1 != pback->sockd) {
 					close(pback->sockd);
 					pback->sockd = -1;
@@ -137,7 +136,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		if (!g_notify_stop) {
 			g_notify_stop = true;
 			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
-				pback = static_cast<BACK_CONN *>(pnode->pdata);
+				auto pback = static_cast<BACK_CONN *>(pnode->pdata);
 				pthread_kill(pback->thr_id, SIGALRM);
 				pthread_join(pback->thr_id, nullptr);
 			}
@@ -215,10 +214,8 @@ static int connect_event()
 
 static void *evst_thrwork(void *param)
 {
-	BACK_CONN *pback;
 	char buff[MAX_CMD_LENGTH];	
-	
-	pback = (BACK_CONN*)param;
+	auto pback = static_cast<BACK_CONN *>(param);
 
 	while (!g_notify_stop) {
 		pback->sockd = connect_event();
