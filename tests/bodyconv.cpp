@@ -19,6 +19,17 @@
 
 using namespace gromox;
 
+static int ts()
+{
+	uint8_t b1[] = {0xf0, 0x9f, 0x93, 0xb1, 0x00};
+	size_t fmlen = 0;
+	std::unique_ptr<char, stdlib_delete> fm;
+
+	if (!html_to_rtf(b1, sizeof(b1), CP_UTF8, &unique_tie(fm), &fmlen))
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
 static void help()
 {
 	std::cout << "Usage: bodyconv {texttohtml|htmltortf|rtfcptortf|rtftohtml|htmltotext}" << std::endl;
@@ -36,8 +47,11 @@ int main(int argc, const char **argv)
 	std::string all;
 	char buf[4096];
 	ssize_t have_read;
-	while ((have_read = read(STDIN_FILENO, buf, sizeof(buf))) > 0)
-		all += std::string_view(buf, have_read);
+
+	if (strcmp(argv[1], "ts") != 0)
+		while ((have_read = read(STDIN_FILENO, buf, sizeof(buf))) > 0)
+			all += std::string_view(buf, have_read);
+
 	if (strcmp(argv[1], "texttohtml") == 0) {
 		std::unique_ptr<char[], stdlib_delete> out(plain_to_html(all.c_str()));
 		if (out != nullptr)
@@ -74,6 +88,8 @@ int main(int argc, const char **argv)
 				std::cout << std::move(unc_data) << std::endl;
 			}
 		}
+	} else if (strcmp(argv[1], "ts") == 0) {
+		return ts();
 	} else {
 		help();
 		return EXIT_FAILURE;
