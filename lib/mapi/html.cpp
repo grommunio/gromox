@@ -315,7 +315,7 @@ static uint32_t html_utf8_to_wchar(iconv_t cd, const char *src, int length)
 	iconv(cd, nullptr, nullptr, nullptr, nullptr);
 	auto ret = iconv(cd, &pin, &in_len, &pout, &len);
 	if (ret == static_cast<size_t>(-1))
-		return 0;
+		return 0xFFFD;
 	return le16_to_cpu(wchar);
 }
 
