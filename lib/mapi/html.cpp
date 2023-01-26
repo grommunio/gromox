@@ -17,6 +17,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/html.hpp>
@@ -293,8 +294,10 @@ static uint32_t html_utf8_to_wchar(const char *src, int length)
 	auto pout = reinterpret_cast<char *>(&wchar);
 	in_len = length;
 	len = sizeof(uint16_t);
-	return iconv(g_conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1) ||
-	       len != 0 ? 0 : wchar;
+	auto ret = iconv(g_conv_id, &pin, &in_len, &pout, &len);
+	if (ret == static_cast<size_t>(-1))
+		return 0;
+	return le16_to_cpu(wchar);
 }
 
 static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
