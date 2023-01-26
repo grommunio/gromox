@@ -40,18 +40,34 @@ namespace {
 using rgb_t = unsigned int;
 
 struct RTF_WRITER {
+	RTF_WRITER();
+	~RTF_WRITER();
 	EXT_PUSH ext_push{};
 	std::map<std::string, unsigned int> pfont_hash /* font -> index */;
 	std::map<rgb_t, unsigned int> pcolor_hash; /* color -> index */
 	std::vector<rgb_t> colors_ordered; /* index -> color */
 	std::vector<std::string> fonts_ordered; /* index -> font */
+	iconv_t cd;
 };
 }
 
-static iconv_t g_conv_id;
 static std::map<std::string, rgb_t> g_color_hash;
 
 static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode);
+
+static inline iconv_t html_iconv_open()
+{
+	return iconv_open("UTF-16LE", "UTF-8");
+}
+
+RTF_WRITER::RTF_WRITER() : cd(html_iconv_open())
+{}
+
+RTF_WRITER::~RTF_WRITER()
+{
+	if (cd != (iconv_t)-1)
+		iconv_close(cd);
+}
 
 BOOL html_init_library()
 {
@@ -215,11 +231,13 @@ BOOL html_init_library()
 		g_color_hash.clear();
 		return FALSE;
 	}
-	g_conv_id = iconv_open("UTF-16LE", "UTF-8");
-	if ((iconv_t)-1 == g_conv_id) {
+	/* Test for availability of converters */
+	auto cd = html_iconv_open();
+	if (cd == (iconv_t)-1) {
 		mlog(LV_ERR, "E-2107: iconv_open: %s", strerror(errno));
 		return FALSE;
 	}
+	iconv_close(cd);
 	return TRUE;
 }
 
@@ -284,7 +302,7 @@ static BOOL html_init_writer(RTF_WRITER *pwriter)
 	return TRUE;
 } 
  
-static uint32_t html_utf8_to_wchar(const char *src, int length)
+static uint32_t html_utf8_to_wchar(iconv_t cd, const char *src, int length)
 {
 	size_t len;
 	size_t in_len;
@@ -294,7 +312,7 @@ static uint32_t html_utf8_to_wchar(const char *src, int length)
 	auto pout = reinterpret_cast<char *>(&wchar);
 	in_len = length;
 	len = sizeof(uint16_t);
-	auto ret = iconv(g_conv_id, &pin, &in_len, &pout, &len);
+	auto ret = iconv(cd, &pin, &in_len, &pout, &len);
 	if (ret == static_cast<size_t>(-1))
 		return 0;
 	return le16_to_cpu(wchar);
@@ -325,7 +343,7 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 			ptr += len;
 			continue;
 		}
-		uint16_t wchar = html_utf8_to_wchar(ptr, len);
+		auto wchar = html_utf8_to_wchar(pwriter->cd, ptr, len);
 		if (wchar != 0) {
 			snprintf(tmp_buff, sizeof(tmp_buff), "\\u%hu?", wchar);
 			tmp_len = strlen(tmp_buff);
