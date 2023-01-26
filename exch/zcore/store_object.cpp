@@ -1356,7 +1356,8 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			if (fd.get() < 0)
 				break;
 			auto bv = static_cast<BINARY *>(ppropvals->ppropval[i].pvalue);
-			if (HXio_fullwrite(fd.get(), bv->pb, bv->cb) != bv->cb ||
+			auto rdret = HXio_fullwrite(fd.get(), bv->pb, bv->cb);
+			if (rdret < 0 || static_cast<size_t>(rdret) != bv->cb ||
 			    fd.close_wr() < 0) {
 				mlog(LV_ERR, "E-1236: write %s: %s", pic_path.c_str(), strerror(errno));
 				return false;
