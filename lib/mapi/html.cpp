@@ -17,6 +17,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/html.hpp>
@@ -39,18 +40,34 @@ namespace {
 using rgb_t = unsigned int;
 
 struct RTF_WRITER {
+	RTF_WRITER();
+	~RTF_WRITER();
 	EXT_PUSH ext_push{};
 	std::map<std::string, unsigned int> pfont_hash /* font -> index */;
 	std::map<rgb_t, unsigned int> pcolor_hash; /* color -> index */
 	std::vector<rgb_t> colors_ordered; /* index -> color */
 	std::vector<std::string> fonts_ordered; /* index -> font */
+	iconv_t cd;
 };
 }
 
-static iconv_t g_conv_id;
 static std::map<std::string, rgb_t> g_color_hash;
 
 static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode);
+
+static inline iconv_t html_iconv_open()
+{
+	return iconv_open("UTF-16LE", "UTF-8");
+}
+
+RTF_WRITER::RTF_WRITER() : cd(html_iconv_open())
+{}
+
+RTF_WRITER::~RTF_WRITER()
+{
+	if (cd != (iconv_t)-1)
+		iconv_close(cd);
+}
 
 BOOL html_init_library()
 {
@@ -214,11 +231,13 @@ BOOL html_init_library()
 		g_color_hash.clear();
 		return FALSE;
 	}
-	g_conv_id = iconv_open("UTF-16LE", "UTF-8");
-	if ((iconv_t)-1 == g_conv_id) {
+	/* Test for availability of converters */
+	auto cd = html_iconv_open();
+	if (cd == (iconv_t)-1) {
 		mlog(LV_ERR, "E-2107: iconv_open: %s", strerror(errno));
 		return FALSE;
 	}
+	iconv_close(cd);
 	return TRUE;
 }
 
@@ -283,25 +302,26 @@ static BOOL html_init_writer(RTF_WRITER *pwriter)
 	return TRUE;
 } 
  
-static uint32_t html_utf8_to_wchar(const char *src, int length)
+static std::pair<uint16_t, uint16_t>
+html_utf8_to_utf16(iconv_t cd, const char *src, size_t ilen)
 {
-	size_t len;
-	size_t in_len;
-	uint32_t wchar;
-	
+	std::pair<uint16_t, uint16_t> wchar{};
 	auto pin = deconst(src);
 	auto pout = reinterpret_cast<char *>(&wchar);
-	in_len = length;
-	len = sizeof(uint16_t);
-	return iconv(g_conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1) ||
-	       len != 0 ? 0 : wchar;
+	auto olen = sizeof(wchar);
+	iconv(cd, nullptr, nullptr, nullptr, nullptr);
+	auto ret = iconv(cd, &pin, &ilen, &pout, &olen);
+	if (ret == static_cast<size_t>(-1))
+		wchar = {0xFFFD, 0};
+	else
+		wchar = {le16_to_cpu(wchar.first), le16_to_cpu(wchar.second)};
+	return wchar;
 }
 
 static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 {
 	int tmp_len;
-	uint16_t wchar;
-	char tmp_buff[9];
+	char tmp_buff[24];
 	const char *ptr = string, *pend = string + strlen(string);
 
 	while ('\0' != *ptr) {
@@ -320,16 +340,21 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 			} else {
 				QRF(pwriter->ext_push.p_uint8(*ptr));
 			}
-		} else {
-			wchar = html_utf8_to_wchar(ptr, len);
-			if (0 == wchar) {
-				return FALSE;
-			}
-			snprintf(tmp_buff, sizeof(tmp_buff), "\\u%hu?", wchar);
-			tmp_len = strlen(tmp_buff);
-			QRF(pwriter->ext_push.p_bytes(tmp_buff, tmp_len));
+			ptr += len;
+			continue;
 		}
+		auto [w1, w2] = html_utf8_to_utf16(pwriter->cd, ptr, len);
 		ptr += len;
+		if (w1 == 0)
+			continue;
+		else if (w2 == 0)
+			snprintf(tmp_buff, sizeof(tmp_buff), "\\u%hu?", w1);
+		else
+			/* MSO uses %hd, which is a bad joke but expected */
+			snprintf(tmp_buff, sizeof(tmp_buff), "\\uc0\\u%hu\\uc1\\u%hu?", w1, w2);
+
+		tmp_len = strlen(tmp_buff);
+		QRF(pwriter->ext_push.p_bytes(tmp_buff, tmp_len));
 	}
 	return TRUE;
 }
