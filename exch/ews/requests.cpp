@@ -152,7 +152,7 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
  */
 void process(mGetServiceConfigurationRequest&&, XMLElement* response, const EWSContext&)
 {
-	response->SetName("GetMailTipsResponse");
+	response->SetName("GetServiceConfigurationResponse");
 
 	mGetServiceConfigurationResponse data;
 	mGetServiceConfigurationResponseMessageType& msg = data.ResponseMessages.emplace_back();
