@@ -300,7 +300,6 @@ static uint32_t html_utf8_to_wchar(const char *src, int length)
 static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 {
 	int tmp_len;
-	uint16_t wchar;
 	char tmp_buff[9];
 	const char *ptr = string, *pend = string + strlen(string);
 
@@ -320,11 +319,11 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 			} else {
 				QRF(pwriter->ext_push.p_uint8(*ptr));
 			}
-		} else {
-			wchar = html_utf8_to_wchar(ptr, len);
-			if (0 == wchar) {
-				return FALSE;
-			}
+			ptr += len;
+			continue;
+		}
+		uint16_t wchar = html_utf8_to_wchar(ptr, len);
+		if (wchar != 0) {
 			snprintf(tmp_buff, sizeof(tmp_buff), "\\u%hu?", wchar);
 			tmp_len = strlen(tmp_buff);
 			QRF(pwriter->ext_push.p_bytes(tmp_buff, tmp_len));
