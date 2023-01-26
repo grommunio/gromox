@@ -900,7 +900,7 @@ errno_t wrapfd::close_rd() noexcept
 		mlog(LV_ERR, "wrapfd::close: %s", strerror(ret));
 	} catch (...) {
 	}
-	return ret;
+	return (errno = ret);
 }
 
 std::string zstd_decompress(std::string_view x)

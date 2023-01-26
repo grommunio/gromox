@@ -21,7 +21,7 @@
 #include <cerrno>
 #include <cstdint>
 
-static int zarafa_client_connect()
+static int zclient_connect()
 {
 	int sockd, len;
 	struct sockaddr_un un;
@@ -44,7 +44,7 @@ static int zarafa_client_connect()
 	return sockd;
 }
 
-static zend_bool zarafa_client_read_socket(int sockd, BINARY &pbin)
+static zend_bool zclient_read_socket(int sockd, BINARY &pbin)
 {
 	int read_len;
 	uint32_t offset = 0;
@@ -87,7 +87,7 @@ static zend_bool zarafa_client_read_socket(int sockd, BINARY &pbin)
 	}
 }
 
-static zend_bool zarafa_client_write_socket(int sockd, const BINARY &pbin)
+static zend_bool zclient_write_socket(int sockd, const BINARY &pbin)
 {
 	int written_len;
 	uint32_t offset;
@@ -104,26 +104,25 @@ static zend_bool zarafa_client_write_socket(int sockd, const BINARY &pbin)
 	}
 }
 
-zend_bool zarafa_client_do_rpc(const zcreq *prequest, zcresp *presponse)
+zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 {
-	int sockd;
 	BINARY tmp_bin;
 	
 	if (!rpc_ext_push_request(prequest, &tmp_bin)) {
 		return 0;
 	}
-	sockd = zarafa_client_connect();
+	auto sockd = zclient_connect();
 	if (sockd < 0) {
 		efree(tmp_bin.pb);
 		return 0;
 	}
-	if (!zarafa_client_write_socket(sockd, tmp_bin)) {
+	if (!zclient_write_socket(sockd, tmp_bin)) {
 		efree(tmp_bin.pb);
 		close(sockd);
 		return 0;
 	}
 	efree(tmp_bin.pb);
-	if (!zarafa_client_read_socket(sockd, tmp_bin)) {
+	if (!zclient_read_socket(sockd, tmp_bin)) {
 		close(sockd);
 		return 0;
 	}
@@ -146,8 +145,8 @@ zend_bool zarafa_client_do_rpc(const zcreq *prequest, zcresp *presponse)
 	return 1;
 }
 
-uint32_t zarafa_client_setpropval(GUID hsession,
-	uint32_t hobject, uint32_t proptag, const void *pvalue)
+uint32_t zclient_setpropval(GUID hsession, uint32_t hobject, uint32_t proptag,
+    const void *pvalue)
 {
 	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY propvals;
@@ -156,20 +155,18 @@ uint32_t zarafa_client_setpropval(GUID hsession,
 	propvals.ppropval = &propval;
 	propval.proptag = proptag;
 	propval.pvalue = deconst(pvalue);
-	return zarafa_client_setpropvals(hsession, hobject, &propvals);
+	return zclient_setpropvals(hsession, hobject, &propvals);
 }
 
-uint32_t zarafa_client_getpropval(GUID hsession,
-	uint32_t hobject, uint32_t proptag, void **ppvalue)
+uint32_t zclient_getpropval(GUID hsession, uint32_t hobject, uint32_t proptag,
+    void **ppvalue)
 {
-	uint32_t result;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	
 	proptags.count = 1;
 	proptags.pproptag = &proptag;
-	result = zarafa_client_getpropvals(hsession,
-				hobject, &proptags, &propvals);
+	auto result = zclient_getpropvals(hsession, hobject, &proptags, &propvals);
 	if (result != ecSuccess)
 		return result;
 	*ppvalue = propvals.count == 0 ? nullptr : propvals.ppropval[0].pvalue;

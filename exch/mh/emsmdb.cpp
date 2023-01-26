@@ -16,6 +16,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
@@ -98,9 +99,9 @@ static void (*asyncemsmdb_interface_register_active)(void *);
 static void (*asyncemsmdb_interface_remove)(CONTEXT_HANDLE *);
 
 static int (*emsmdb_interface_connect_ex)(uint64_t, CONTEXT_HANDLE *, const char *, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint16_t, uint32_t *, uint32_t *, uint32_t *, uint16_t *, char *, char *, const uint16_t *, uint16_t *, uint16_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *);
-static int (*emsmdb_interface_rpc_ext2)(CONTEXT_HANDLE *, uint32_t *flags, const uint8_t *, uint32_t, uint8_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *, uint32_t *);
-static int (*emsmdb_interface_disconnect)(CONTEXT_HANDLE *);
-static void (*emsmdb_interface_touch_handle)(CONTEXT_HANDLE *);
+static int (*emsmdb_interface_rpc_ext2)(CONTEXT_HANDLE &, uint32_t *flags, const uint8_t *, uint32_t, uint8_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *, uint32_t *);
+static int (*emsmdb_interface_disconnect)(CONTEXT_HANDLE &);
+static void (*emsmdb_interface_touch_handle)(const CONTEXT_HANDLE &);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Plugin structure declarations
@@ -154,17 +155,17 @@ struct notificationwait_response {
 };
 
 struct ems_pull : public EXT_PULL {
-	int g_connect_req(connect_request &);
-	int g_execute_req(execute_request &);
-	int g_disconnect_req(disconnect_request &);
-	int g_notificationwait_req(notificationwait_request &);
+	pack_result g_connect_req(connect_request &);
+	pack_result g_execute_req(execute_request &);
+	pack_result g_disconnect_req(disconnect_request &);
+	pack_result g_notificationwait_req(notificationwait_request &);
 };
 
 struct ems_push : public EXT_PUSH {
-	int p_connect_rsp(const connect_response &);
-	int p_execute_rsp(const execute_response &);
-	int p_disconnect_rsp(const disconnect_response &);
-	int p_notificationwait_rsp(const notificationwait_response &);
+	pack_result p_connect_rsp(const connect_response &);
+	pack_result p_execute_rsp(const execute_response &);
+	pack_result p_disconnect_rsp(const disconnect_response &);
+	pack_result p_notificationwait_rsp(const notificationwait_response &);
 };
 
 /**
@@ -258,7 +259,7 @@ MhEmsmdbPlugin::MhEmsmdbPlugin(void** ppdata)
 	users.reserve(AVERAGE_SESSION_PER_CONTEXT*contextnum);
 	sessions.reserve(AVERAGE_SESSION_PER_CONTEXT*contextnum);
 	stop = false;
-	if (pthread_create(&scan, nullptr, &MhEmsmdbPlugin::scanWork, this)) {
+	if (pthread_create4(&scan, nullptr, &MhEmsmdbPlugin::scanWork, this)) {
 		stop = true;
 		throw std::runtime_error("failed to create scanning thread");
 	}
@@ -407,7 +408,7 @@ static BOOL notification_response(int ID, time_point start_time, uint32_t result
 {
 	decltype(MhEmsmdbContext::response) response;
 	ems_push ext_push;
-	char push_buff[32], text_buff[128], chunk_string[32];
+	char push_buff[32], chunk_string[32];
 
 	ext_push.init(push_buff, sizeof(push_buff), 0);
 	response.notificationwait.status = 0;
@@ -416,25 +417,27 @@ static BOOL notification_response(int ID, time_point start_time, uint32_t result
 	ext_push.p_notificationwait_rsp(response.notificationwait);
 
 	auto current_time = tp_now();
-	auto text_len = render_content(text_buff, current_time, start_time);
-	auto tmp_len = sprintf(chunk_string, "%x\r\n", text_len + ext_push.m_offset);
+	auto ct = render_content(current_time, start_time);
+	auto tmp_len = sprintf(chunk_string, "%zx\r\n", ct.size() + ext_push.m_offset);
 	if (!write_response(ID, chunk_string, tmp_len) ||
-	    !write_response(ID, text_buff, text_len) ||
+	    !write_response(ID, ct.c_str(), ct.size()) ||
 	    !write_response(ID, ext_push.m_udata, ext_push.m_offset) ||
 	    !write_response(ID, "\r\n0\r\n\r\n", 7))
 		return false;
 	return TRUE;
 }
 
-BOOL MhEmsmdbContext::notification_response() const
+BOOL MhEmsmdbContext::notification_response() const try
 {
-	char response_buff[4096];
 	auto current_time = tp_now();
-	size_t response_len = StringRenderer(response_buff, sizeof(response_buff))
-	                      .add(commonHeader, "NotificationWait", request_id, client_info, session_string, current_time)
-	                      .add("Transfer-Encoding: chunked\r\n\r\n");
-	return write_response(ID, response_buff, static_cast<int>(response_len)) &&
+	auto rs = commonHeader("NotificationWait", request_id, client_info,
+	          session_string, current_time) +
+	          "Transfer-Encoding: chunked\r\n\r\n";
+	return write_response(ID, rs.c_str(), rs.size()) &&
 	       write_response(ID, "c\r\nPROCESSING\r\n\r\n", 17) ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1145: ENOMEM");
+	return false;
 }
 
 BOOL MhEmsmdbContext::notification_response(uint32_t result, uint32_t flags_out) const
@@ -443,11 +446,11 @@ BOOL MhEmsmdbContext::notification_response(uint32_t result, uint32_t flags_out)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Emsmdb bridge
 
-static uint32_t emsmdb_bridge_connect(const connect_request& request, connect_response& response,
-                                       uint16_t& cxr, GUID& ses_guid)
+static uint32_t emsmdb_bridge_connect(const connect_request &request,
+    connect_response &response, uint16_t &cxr, GUID &ses_guid, uint16_t client_ver[3])
 {
 	uint32_t timestamp;
-	uint16_t best_ver[3]{}, client_ver[3]{}, server_ver[3]{};
+	uint16_t best_ver[3]{}, server_ver[3]{};
 	EMSMDB_HANDLE ses;
 	uint32_t result = emsmdb_interface_connect_ex(0, &ses, request.userdn,
 	                  request.flags, 0, 0, request.cpid, request.lcid_string,
@@ -467,17 +470,14 @@ static uint32_t emsmdb_bridge_execute(const GUID& session_guid, const execute_re
 {
 	uint32_t trans_time;
 	EMSMDB_HANDLE ses = {HANDLE_EXCHANGE_EMSMDB, session_guid};
-	return emsmdb_interface_rpc_ext2(&ses, &response.flags, request.in,
+	return emsmdb_interface_rpc_ext2(ses, &response.flags, request.in,
 	       request.cb_in, response.out, &response.cb_out, request.auxin,
 	       request.cb_auxin, response.auxout, &response.cb_auxout,
 	       &trans_time);
 }
 
 static uint32_t emsmdb_bridge_disconnect(EMSMDB_HANDLE2 ses)
-{return emsmdb_interface_disconnect(&ses);}
-
-static void emsmdb_bridge_touch_handle(EMSMDB_HANDLE2 ses)
-{emsmdb_interface_touch_handle(&ses);}
+{return emsmdb_interface_disconnect(ses);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Request processing
@@ -563,6 +563,33 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	return std::nullopt;
 }
 
+static bool parse_xclientapp(const char *ca, const char *ua, uint16_t clv[3])
+{
+	char *p = nullptr;
+	if (strncasecmp(deconst(ca), "Outlook/", 8) == 0)
+		p = deconst(&ca[8]);
+	else if ((p = strstr(deconst(ua), "MAPI ")) != nullptr)
+		p += 5;
+	else
+		return false;
+	uint16_t a = strtoul(p, &p, 10);
+	if (*p != '.')
+		return false;
+	uint16_t b = strtoul(p + 1, deconst(&p), 10);
+	if (*p != '.')
+		return false;
+	uint16_t c = strtoul(p + 1, &p, 10);
+	if (*p != '.')
+		return false;
+	uint16_t d = strtoul(p + 1, &p, 10);
+	if (*p != '\0')
+		return false;
+	clv[0] = (a << 8) | b;
+	clv[1] = c | 0x8000;
+	clv[2] = d;
+	return true;
+}
+
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_connect_req(ctx.request.connect) != EXT_ERR_SUCCESS)
@@ -570,7 +597,9 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 	uint16_t cxr;
 	GUID old_guid;
 	ctx.response.connect.status = 0;
-	ctx.response.connect.result = emsmdb_bridge_connect(ctx.request.connect, ctx.response.connect, cxr, ctx.session_guid);
+	uint16_t clv[3];
+	parse_xclientapp(ctx.cl_app, ctx.user_agent, clv);
+	ctx.response.connect.result = emsmdb_bridge_connect(ctx.request.connect, ctx.response.connect, cxr, ctx.session_guid, clv);
 	if (ctx.response.connect.result == ecSuccess) {
 		if (ctx.session != nullptr) {
 			std::unique_lock hl_hold(ses_lock);
@@ -625,8 +654,9 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::execute(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_execute_req(ctx.request.execute) != EXT_ERR_SUCCESS)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
+	auto z = std::min(static_cast<size_t>(ctx.request.execute.cb_out), sizeof(ctx.response.execute.out));
 	ctx.response.execute.flags = ctx.request.execute.flags;
-	ctx.response.execute.cb_out = ctx.request.execute.cb_out;
+	ctx.response.execute.cb_out = z;
 	ctx.response.execute.status = 0;
 	ctx.response.execute.result = emsmdb_bridge_execute(ctx.session_guid, ctx.request.execute, ctx.response.execute);
 	if (ctx.ext_push.p_execute_rsp(ctx.response.execute) != EXT_ERR_SUCCESS)
@@ -683,7 +713,7 @@ BOOL MhEmsmdbPlugin::process(int context_id, const void *content, uint64_t lengt
 	if ((result = loadCookies(ctx)))
 		return result.value();
 	if (strcasecmp(ctx.request_value, "PING") == 0) {
-		emsmdb_bridge_touch_handle(ctx.session_guid);
+		emsmdb_interface_touch_handle({HANDLE_EXCHANGE_EMSMDB, ctx.session_guid});
 		return ctx.ping_response();
 	}
 	set_context(context_id);
@@ -799,9 +829,9 @@ static BOOL emsmdb_preproc(int context_id)
 	return TRUE;
 }
 
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
-int ems_pull::g_connect_req(connect_request &req)
+pack_result ems_pull::g_connect_req(connect_request &req)
 {
 	TRY(g_str(&req.userdn));
 	TRY(g_uint32(&req.flags));
@@ -821,7 +851,7 @@ int ems_pull::g_connect_req(connect_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int ems_pull::g_execute_req(execute_request &req)
+pack_result ems_pull::g_execute_req(execute_request &req)
 {
 	TRY(g_uint32(&req.flags));
 	TRY(g_uint32(&req.cb_in));
@@ -849,7 +879,7 @@ int ems_pull::g_execute_req(execute_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int ems_pull::g_disconnect_req(disconnect_request &req)
+pack_result ems_pull::g_disconnect_req(disconnect_request &req)
 {
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -864,7 +894,7 @@ int ems_pull::g_disconnect_req(disconnect_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int ems_pull::g_notificationwait_req(notificationwait_request &req)
+pack_result ems_pull::g_notificationwait_req(notificationwait_request &req)
 {
 	TRY(g_uint32(&req.flags));
 	TRY(g_uint32(&req.cb_auxin));
@@ -880,7 +910,7 @@ int ems_pull::g_notificationwait_req(notificationwait_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int ems_push::p_connect_rsp(const connect_response &rsp)
+pack_result ems_push::p_connect_rsp(const connect_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
@@ -895,7 +925,7 @@ int ems_push::p_connect_rsp(const connect_response &rsp)
 	return p_bytes(rsp.auxout, rsp.cb_auxout);
 }
 
-int ems_push::p_execute_rsp(const execute_response &rsp)
+pack_result ems_push::p_execute_rsp(const execute_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
@@ -909,14 +939,14 @@ int ems_push::p_execute_rsp(const execute_response &rsp)
 	return p_bytes(rsp.auxout, rsp.cb_auxout);
 }
 
-int ems_push::p_disconnect_rsp(const disconnect_response &rsp)
+pack_result ems_push::p_disconnect_rsp(const disconnect_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	return p_uint32(0);
 }
 
-int ems_push::p_notificationwait_rsp(const notificationwait_response &rsp)
+pack_result ems_push::p_notificationwait_rsp(const notificationwait_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));

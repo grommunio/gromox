@@ -5,7 +5,8 @@
 mod_cache \(em http(8gx) processing plugin for serving objects from a local
 filesystem
 .SH Description
-mod_cache serves local files when certain URIs are requests.
+mod_cache serves local files when certain URIs are requested. Note that
+mod_fastcgi(4gx) has a table of its own and higher precedence.
 .PP
 mod_cache is built into http(8gx) and not a separate .so file.
 .SH Configuration directives

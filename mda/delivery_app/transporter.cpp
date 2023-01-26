@@ -34,7 +34,6 @@
 #define MAX_THROWING_NUM		16
 #define SCAN_INTERVAL			1
 #define MAX_TIMES_NOT_SERVED	5
-#define THREAD_STACK_SIZE       0x400000
 
 using namespace gromox;
 
@@ -276,18 +275,10 @@ int transporter_run()
 	for (unsigned int i = g_threads_min; i < g_threads_max; ++i)
 		double_list_append_as_tail(&g_free_threads, &g_data_ptr[i].node);
 
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
-	auto ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-	if (ret != 0) {
-		mlog(LV_ERR, "transporter: pthread_attr_setstacksize: %s", strerror(ret));
-		return -1;
-	}
-
 	for (size_t i = 0; i < g_threads_min; ++i) {
 		g_data_ptr[i].wait_on_event = TRUE;
-		auto ret = pthread_create(&g_data_ptr[i].id, &attr, dxp_thrwork, &g_data_ptr[i]);
+		auto ret = pthread_create4(&g_data_ptr[i].id, nullptr,
+		           dxp_thrwork, &g_data_ptr[i]);
 		if (ret != 0) {
 			transporter_collect_hooks();
 			transporter_collect_resource();
@@ -301,7 +292,7 @@ int transporter_run()
 		double_list_append_as_tail(&g_threads_list, &g_data_ptr[i].node);
     }
 	/* create the scanning thread */
-	ret = pthread_create(&g_scan_id, nullptr, dxp_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, dxp_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		transporter_collect_hooks();
@@ -353,13 +344,12 @@ static void transporter_collect_resource()
 void transporter_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
-	THREAD_DATA *pthr;
 
 	g_notify_stop = true;
 	std::unique_lock tl_hold(g_threads_list_mutex);
 	g_waken_cond.notify_all();
 	while ((pnode = double_list_pop_front(&g_threads_list)) != nullptr) {
-		pthr = (THREAD_DATA*)pnode->pdata;
+		auto pthr = static_cast<THREAD_DATA *>(pnode->pdata);
 		auto id = pthr->id;
 		pthread_kill(id, SIGALRM);
 		pthread_join(id, nullptr);
@@ -397,7 +387,6 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	THREAD_DATA *pthr_data)
 {
 	DOUBLE_LIST_NODE *pnode, *phead, *ptail;
-	HOOK_ENTRY *phook;
 	BOOL hook_result;
 	
 	/*
@@ -412,7 +401,7 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	hook_result = FALSE;
 	for (pnode=phead; NULL!=pnode;
 		pnode=double_list_get_after(&g_hook_list, pnode)) {
-		phook = (HOOK_ENTRY*)(pnode->pdata);
+		auto phook = static_cast<HOOK_ENTRY *>(pnode->pdata);
 		/* check if this hook is valid, if it is, execute the function */
 		if (phook->valid) {
 			if (pthr_data->last_thrower == phook->hook_addr) {
@@ -457,12 +446,11 @@ static void *dxp_thrwork(void *arg)
 	char *ptr;
 	int len, cannot_served_times;
 	BOOL b_self, pass_result;
-	THREAD_DATA *pthr_data;
 	MESSAGE *pmessage;
 	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTEXT *pcontext;
 	
-	pthr_data = (THREAD_DATA*)arg;
+	auto pthr_data = static_cast<THREAD_DATA *>(arg);
 	g_tls_key = pthr_data;
 	for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_lib_list, pnode)) {
@@ -515,7 +503,8 @@ static void *dxp_thrwork(void *arg)
 		} else {
 			cannot_served_times = 0;
 			pcontext = &pthr_data->fake_context.context;
-			if (!pcontext->pmail->retrieve(static_cast<char *>(pmessage->mail_begin), pmessage->mail_length)) {
+			if (!pcontext->pmail->load_from_str_move(static_cast<char *>(pmessage->mail_begin),
+			    pmessage->mail_length)) {
 				mlog(LV_ERR, "QID %d: Failed to "
 					"load into mail object", pmessage->flush_ID);
 				message_dequeue_save(pmessage);
@@ -562,17 +551,7 @@ static void *dxp_thrwork(void *arg)
 
 static void *dxp_scanwork(void *arg)
 {
-	THREAD_DATA *pthr_data;
 	DOUBLE_LIST_NODE *pnode;
-	pthread_attr_t attr;
-
-	pthread_attr_init(&attr);
-	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
-	auto ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-	if (ret != 0) {
-		mlog(LV_ERR, "transporter: pthread_attr_setstacksize: %s", strerror(ret));
-		return nullptr;
-	}
 
 	while (!g_notify_stop) {
 		sleep(SCAN_INTERVAL);
@@ -590,8 +569,8 @@ static void *dxp_scanwork(void *arg)
 		if (NULL == pnode) {
 			continue;
 		}
-		pthr_data = (THREAD_DATA *)pnode->pdata;
-		auto ret = pthread_create(&pthr_data->id, &attr, dxp_thrwork, pthr_data);
+		auto pthr_data = static_cast<THREAD_DATA *>(pnode->pdata);
+		auto ret = pthread_create4(&pthr_data->id, nullptr, dxp_thrwork, pthr_data);
 		if (ret == 0) {
 			pthread_setname_np(pthr_data->id, "xprt/+");
 			tl_hold.lock();
@@ -719,7 +698,7 @@ int transporter_unload_library(const char* path)
     if (NULL != ptr) {
         ptr++;
     } else {
-        ptr = (char*)path;
+		ptr = path;
     }
     /* first find the plugin node in lib list */
     for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
@@ -740,7 +719,7 @@ int transporter_unload_library(const char* path)
         for (pnode=double_list_get_head(&plib->list_hook); NULL!=pnode;
              pnode=double_list_get_after(&plib->list_hook, pnode)) {
 			/* invalidate the hook */
-            ((HOOK_ENTRY*)(pnode->pdata))->valid = FALSE;
+			static_cast<HOOK_ENTRY *>(pnode->pdata)->valid = FALSE;
         }
 	}
     double_list_remove(&g_lib_list, &plib->node);
@@ -751,7 +730,6 @@ int transporter_unload_library(const char* path)
 static void transporter_clean_up_unloading()
 {
 	DOUBLE_LIST_NODE *pnode, *pnode1;
-	HOOK_ENTRY *phook;
 	BOOL can_clean;
 	std::vector<DOUBLE_LIST_NODE *> stack;
 
@@ -761,7 +739,7 @@ static void transporter_clean_up_unloading()
 		can_clean = TRUE;
 		for (pnode1=double_list_get_head(&plib->list_hook); NULL!=pnode1;
 			pnode1=double_list_get_after(&plib->list_hook, pnode1)) {
-			phook = (HOOK_ENTRY*)(pnode1->pdata);
+			auto phook = static_cast<HOOK_ENTRY *>(pnode1->pdata);
 			if (0 != phook->count) {
 				can_clean = FALSE;
 			}
@@ -778,12 +756,12 @@ static void transporter_clean_up_unloading()
 			/* free the service reference of the plugin */
 			for (pnode1=double_list_get_head(&plib->list_reference); NULL!=pnode1;
 				pnode1=double_list_get_after(&plib->list_reference, pnode1)) {
-				service_release(((SERVICE_NODE*)(pnode1->pdata))->service_name,
+				service_release(static_cast<SERVICE_NODE *>(pnode1->pdata)->service_name,
 					plib->file_name);
 			}
 			/* free the reference list */
 			while ((pnode1 = double_list_pop_front(&plib->list_reference)) != nullptr) {
-				free(((SERVICE_NODE*)(pnode1->pdata))->service_name);
+				free(static_cast<SERVICE_NODE *>(pnode1->pdata)->service_name);
 				free(pnode1->pdata);
 			}
 			mlog(LV_INFO, "transporter: unloading %s", plib->file_name);
@@ -810,7 +788,6 @@ static const char *transporter_get_state_path()
 static void *transporter_queryservice(const char *service, const std::type_info &ti)
 {
 	DOUBLE_LIST_NODE *pnode;
-    SERVICE_NODE *pservice;
     void *ret_addr;
 
     if (NULL == g_cur_lib) {
@@ -841,7 +818,7 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 	/* check if already exists in the reference list */
     for (pnode=double_list_get_head(&g_cur_lib->list_reference); NULL!=pnode;
          pnode=double_list_get_after(&g_cur_lib->list_reference, pnode)) {
-        pservice =  (SERVICE_NODE*)(pnode->pdata);
+		auto pservice = static_cast<SERVICE_NODE *>(pnode->pdata);
         if (0 == strcmp(service, pservice->service_name)) {
             return pservice->service_addr;
         }
@@ -850,7 +827,7 @@ static void *transporter_queryservice(const char *service, const std::type_info 
     if (NULL == ret_addr) {
         return NULL;
     }
-	pservice = me_alloc<SERVICE_NODE>();
+	auto pservice = me_alloc<SERVICE_NODE>();
     if (NULL == pservice) {
 		mlog(LV_DEBUG, "transporter: Failed to allocate memory for service node");
         service_release(service, g_cur_lib->file_name);
@@ -976,7 +953,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	for (pnode=double_list_get_head(&pthr_data->anti_loop.thrown_list);
 		NULL!=pnode; pnode=double_list_get_after(
 		&pthr_data->anti_loop.thrown_list, pnode)) {
-		if (((CIRCLE_NODE*)(pnode->pdata))->hook_addr ==
+		if (static_cast<CIRCLE_NODE *>(pnode->pdata)->hook_addr ==
 			pthr_data->last_hook) {
 			break;
 		}
@@ -1046,7 +1023,7 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
 	found_hook = FALSE;
     for (pnode=double_list_get_head(&g_hook_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_hook_list, pnode)) {
-		phook = (HOOK_ENTRY*)(pnode->pdata);
+		phook = static_cast<HOOK_ENTRY *>(pnode->pdata);
 		if (!phook->valid && phook->count == 0) {
 			found_hook = TRUE;
 			break;

@@ -3,6 +3,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 
 enum class exmdb_response : uint8_t {
@@ -149,6 +150,7 @@ enum class exmdb_callid : uint8_t {
 	write_message_instance /* v2 */ = 0x7e,
 	flush_instance /* v2 */ = 0x7f,
 	unload_store = 0x80,
+	/* update exch/exmdb_provider/names.cpp! */
 };
 
 struct exreq {
@@ -1293,12 +1295,12 @@ struct DB_NOTIFY_DATAGRAM {
 	DB_NOTIFY db_notify;
 };
 
-extern GX_EXPORT int exmdb_ext_pull_request(const BINARY *, exreq *&);
-extern GX_EXPORT int exmdb_ext_push_request(const exreq *, BINARY *);
-extern GX_EXPORT int exmdb_ext_pull_response(const BINARY *, exresp *);
-extern GX_EXPORT int exmdb_ext_push_response(const exresp *presponse, BINARY *);
-extern GX_EXPORT int exmdb_ext_pull_db_notify(const BINARY *, DB_NOTIFY_DATAGRAM *);
-extern GX_EXPORT int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *, BINARY *);
+extern GX_EXPORT pack_result exmdb_ext_pull_request(const BINARY *, exreq *&);
+extern GX_EXPORT pack_result exmdb_ext_push_request(const exreq *, BINARY *);
+extern GX_EXPORT pack_result exmdb_ext_pull_response(const BINARY *, exresp *);
+extern GX_EXPORT pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *);
+extern GX_EXPORT pack_result exmdb_ext_pull_db_notify(const BINARY *, DB_NOTIFY_DATAGRAM *);
+extern GX_EXPORT pack_result exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *, BINARY *);
 extern GX_EXPORT const char *exmdb_rpc_strerror(exmdb_response);
 extern GX_EXPORT BOOL exmdb_client_read_socket(int, BINARY &, long timeout = -1);
 extern GX_EXPORT BOOL exmdb_client_write_socket(int, const BINARY &, long timeout = -1);

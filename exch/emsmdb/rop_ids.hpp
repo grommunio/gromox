@@ -170,9 +170,11 @@ enum {
 	// ropExtendedError = 0xFA,
 	// ropBookmarkReturned = 0xFB,
 	// ropFidReturned = 0xFC,
-	// ropHsotReturned = 0xFD, /* Handle in Server Object Table */
+	/* HSOT = Handle in Server Object Table, a.k.a. SOHT = Server Object Handle Table */
+	// ropHsotReturned = 0xFD,
 	ropLogon = 0xFE,
 	ropBufferTooSmall = 0xFF,
+	/* update names.cpp! */
 };
 
 #ifdef __cplusplus

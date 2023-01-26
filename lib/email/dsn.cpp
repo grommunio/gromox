@@ -9,7 +9,7 @@
 
 using namespace gromox;
 
-bool DSN::retrieve(char *in_buff, size_t length)
+bool DSN::load_from_str_move(char *in_buff, size_t length)
 {
 	auto pdsn = this;
 	MIME_FIELD mime_field;
@@ -64,7 +64,7 @@ bool DSN::append_field(std::vector<dsn_field> *pfields, const char *tag,
 	return false;
 }
 
-bool DSN::enum_rcpts_fields(RCPTS_FIELDS_ENUM enum_func, void *pparam)
+bool DSN::enum_rcpts_fields(RCPTS_FIELDS_ENUM enum_func, void *pparam) const
 {
 	for (const auto &r : rcpts_fields)
 		if (!enum_func(r.fields, pparam))
@@ -81,7 +81,7 @@ bool DSN::enum_fields(const std::vector<dsn_field> &pfields,
 	return true;
 }
 
-bool DSN::serialize(char *out_buff, size_t max_length)
+bool DSN::serialize(char *out_buff, size_t max_length) const
 {
 	size_t offset;
 

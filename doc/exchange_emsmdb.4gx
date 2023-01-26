@@ -49,12 +49,18 @@ mailbox opened.
 .br
 Default: \fI500\fP
 .TP
-\fBexmdb_pmb_folder_softdel\fP
+\fBemsmdb_private_folder_softdel\fP
 Enables soft-delete support for folders in private stores. (This feature is
 experimental.) Public folders always have this on. (Take note that
-exmdb_provider.cfg:exmdb_pmb_folder_softdel also need to be enabled.)
+exmdb_provider.cfg:exmdb_private_folder_softdelete also need to be enabled.)
 .br
 Default: \fIno\fP
+.TP
+\fBemsmdb_rop_chaining\fP
+0: Deactivate ROP chaining. 1: Enable ROP chaining for OL < 15 and OL >=
+16.0.10000 (OL2019, OL2021, OLM365). 2: Enabled for all clients.
+.br
+Default: \fI1\fP
 .TP
 \fBmailbox_ping_interval\fP
 Default: \fI5 minutes\fP

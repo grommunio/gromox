@@ -81,7 +81,7 @@ int listener_run()
 
 int listener_trigger_accept()
 {
-	auto ret = pthread_create(&g_thr_id, nullptr, imls_thrwork,
+	auto ret = pthread_create4(&g_thr_id, nullptr, imls_thrwork,
 	           reinterpret_cast<void *>(uintptr_t(false)));
 	if (ret != 0) {
 		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
@@ -89,7 +89,7 @@ int listener_trigger_accept()
 	}
 	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
-		ret = pthread_create(&g_ssl_thr_id, nullptr, imls_thrwork,
+		ret = pthread_create4(&g_ssl_thr_id, nullptr, imls_thrwork,
 		      reinterpret_cast<void *>(uintptr_t(true)));
 		if (ret != 0) {
 			printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
@@ -140,7 +140,6 @@ static void *imls_thrwork(void *arg)
 	size_t string_length = 0;
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
-	IMAP_CONTEXT *pcontext;
 	const char *imap_reply_str, *imap_reply_str2;
 	char buff[1024];
 	
@@ -187,7 +186,7 @@ static void *imls_thrwork(void *arg)
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1417: setsockopt: %s", strerror(errno));
-		pcontext = (IMAP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
+		auto pcontext = static_cast<IMAP_CONTEXT *>(contexts_pool_get_context(CONTEXT_FREE));
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			/* IMAP_CODE_2180015: BAD Service not available */

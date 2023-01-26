@@ -25,7 +25,7 @@ struct GX_EXPORT MAIL {
 	MAIL &operator=(MAIL &&);
 
 	void clear();
-	bool retrieve(char *in_buff, size_t length);
+	bool load_from_str_move(char *in_buff, size_t length);
 	bool serialize(STREAM *) const;
 	bool emit(MIME::write_func, void *) const;
 	bool to_file(int fd) const;

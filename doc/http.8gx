@@ -27,7 +27,7 @@ stream is handed off to the exchange_emsmdb(4gx) plugin.
 .IP \(bu 4
 Otherwise, HTTP processing modules (HPM) are invoked. Processing ends when
 one module signals that the request was handled. The order depends on the HPM
-list (which is fixed): mh_emsmdb, mh_nsp.
+list (which is fixed): ews, mh_emsmdb, mh_nsp, oxdisco, oab.
 .IP \(bu 4
 Otherwise, the mod_fastcgi(4gx) module (built-in) is invoked. Processing ends
 if the module handled the request.

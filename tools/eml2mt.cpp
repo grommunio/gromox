@@ -115,7 +115,7 @@ do_mail(const char *file, std::shared_ptr<MIME_POOL> mime_pool)
 	}
 
 	MAIL imail(std::move(mime_pool));
-	if (!imail.retrieve(slurp_data.get(), slurp_len)) {
+	if (!imail.load_from_str_move(slurp_data.get(), slurp_len)) {
 		fprintf(stderr, "Unable to parse %s\n", file);
 		return nullptr;
 	}
@@ -136,7 +136,7 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		return errno;
 	}
 	ICAL ical;
-	if (!ical.retrieve(slurp_data.get())) {
+	if (!ical.load_from_str_move(slurp_data.get())) {
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return EIO;
 	}
@@ -162,7 +162,7 @@ static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 		return errno;
 	}
 	std::vector<vcard> cardvec;
-	auto ret = vcard_retrieve_multi(slurp_data.get(), cardvec);
+	auto ret = vcard_load_multi_from_str_move(slurp_data.get(), cardvec);
 	if (ret != ecSuccess) {
 		fprintf(stderr, "vcard_parse %s unsuccessful (ecode=%xh)\n", file, ret);
 		return EIO;

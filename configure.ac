@@ -1,4 +1,4 @@
-AC_INIT([gromox], [2.2])
+AC_INIT([gromox], [2.3])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
 AC_PREFIX_DEFAULT([/usr])
@@ -88,7 +88,7 @@ dl_LIBS=""
 libldap_LIBS=""
 resolv_LIBS=""
 PKG_PROG_PKG_CONFIG
-PKG_CHECK_MODULES([HX], [libHX >= 4.3])
+PKG_CHECK_MODULES([HX], [libHX >= 4.9])
 PKG_CHECK_MODULES([crypto], [libcrypto])
 PKG_CHECK_MODULES([curl], [libcurl])
 PKG_CHECK_MODULES([fmt], [fmt >= 8])
@@ -199,7 +199,7 @@ AC_ARG_WITH([php], [
 	],
 	[PHP_CONFIG="$withval"],
 	[
-	AC_PATH_PROGS([PHP_CONFIG], [php-config php-config-8.1 php-config8.1 php-config-8.0 php-config8.0 php-config-7.4 php-config7.4])
+	AC_PATH_PROGS([PHP_CONFIG], [php-config php-config-8.2 php-config8.1 php-config-8.0 php-config8.0 php-config-7.4 php-config7.4])
 	dnl Set something so the error messages make more sense
 	AS_IF([test -z "$PHP_CONFIG"], [PHP_CONFIG="php-config"])
 ])

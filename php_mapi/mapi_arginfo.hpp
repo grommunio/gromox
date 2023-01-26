@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 0e27c698cb3e75e77589a783849e05326dbcbdc1 */
+ * Stub hash: 39a6ae2208a75784f0bd0a473a4acae1db942391 */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_load_mapidefs, 0, 1, IS_VOID, 0)
 	ZEND_ARG_TYPE_INFO(0, level, IS_LONG, 1)
@@ -133,7 +133,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_msgstore_unadvise, 0, 2, _I
 	ZEND_ARG_TYPE_INFO(0, sub_id, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_INFO_EX(arginfo_mapi_msgstore_abortsubmit, 0, 1, true, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_msgstore_abortsubmit, 0, 1, IS_TRUE, 0)
 	ZEND_ARG_OBJ_INFO(0, store, resource, 1)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, entryid, IS_STRING, 1, "null")
 ZEND_END_ARG_INFO()
@@ -598,4 +598,8 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_ianatz_to_tzdef, 0, 1, MAY_BE_STRING|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, tz, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_strerror, 0, 1, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, code, IS_LONG, 0)
 ZEND_END_ARG_INFO()

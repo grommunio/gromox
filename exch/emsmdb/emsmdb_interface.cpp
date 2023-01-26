@@ -25,7 +25,6 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
-#include "aux_ext.hpp"
 #include "aux_types.h"
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -185,8 +184,9 @@ BOOL emsmdb_interface_check_notify(ACXH *pacxh)
 }
 
 /* called by moh_emsmdb module */
-void emsmdb_interface_touch_handle(CXH *pcxh)
+void emsmdb_interface_touch_handle(const CXH &cxh)
 {
+	auto pcxh = &cxh;
 	if (HANDLE_EXCHANGE_EMSMDB != pcxh->handle_type) {
 		return;
 	}
@@ -303,7 +303,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	temp_handle.info.cpid = cpid;
 	temp_handle.info.lcid_string = lcid_string;
 	temp_handle.info.lcid_sort = lcid_sort;
-	memcpy(temp_handle.info.client_version, client_version, 4);
+	memcpy(temp_handle.info.client_version, client_version, sizeof(temp_handle.info.client_version));
 	temp_handle.info.client_mode = client_mode;
 	gx_strlcpy(temp_handle.username, username, GX_ARRAY_SIZE(temp_handle.username));
 	HX_strlower(temp_handle.username);
@@ -364,8 +364,9 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	return TRUE;
 }
 
-static void emsmdb_interface_remove_handle(CXH *pcxh)
+static void emsmdb_interface_remove_handle(const CXH &cxh)
 {
+	auto pcxh = &cxh;
 	HANDLE_DATA *phandle;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -425,7 +426,7 @@ int emsmdb_interface_run()
 	g_user_hash_max = context_num + 1;
 	g_notify_hash_max = AVERAGE_NOTIFY_NUM * context_num;
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_id, nullptr, emsi_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, emsi_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		mlog(LV_ERR, "E-1447: pthread_create: %s", strerror(ret));
@@ -449,10 +450,10 @@ void emsmdb_interface_stop()
 	g_handle_hash.clear();
 }
 
-int emsmdb_interface_disconnect(CXH *pcxh)
+int emsmdb_interface_disconnect(CXH &cxh)
 {
-	emsmdb_interface_remove_handle(pcxh);
-	memset(pcxh, 0, sizeof(CXH));
+	emsmdb_interface_remove_handle(cxh);
+	memset(&cxh, 0, sizeof(CXH));
 	return ecSuccess;
 }
 
@@ -516,24 +517,14 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	uint16_t pbest_vers[3], uint32_t *ptimestamp, const uint8_t *pauxin,
 	uint32_t cb_auxin, uint8_t *pauxout, uint32_t *pcb_auxout)
 {
-	AUX_INFO aux_in;
 	AUX_INFO aux_out;
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
 	char username[UADDR_SIZE];
 	char temp_buff[1024];
 	uint16_t client_mode;
-	AUX_HEADER header_cap;
-	AUX_HEADER header_info;
-	DOUBLE_LIST_NODE *pnode;
-	AUX_HEADER header_control;
-	AUX_EXORGINFO aux_orginfo;
-	DOUBLE_LIST_NODE node_cap;
-	DOUBLE_LIST_NODE node_info;
-	DOUBLE_LIST_NODE node_ctrl;
 	uint16_t client_version[4];
 	AUX_CLIENT_CONTROL aux_control;
-	AUX_ENDPOINT_CAPABILITIES aux_cap;
 	uint16_t server_normal_version[4] = {15, 0, 847, 4040};
 	bool is_success = false;
 
@@ -553,38 +544,31 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	
 	aux_out.rhe_version = 0;
 	aux_out.rhe_flags = RHE_FLAG_LAST;
-	double_list_init(&aux_out.aux_list);
+
+	AUX_HEADER aux_header;
+	aux_header.version = AUX_VERSION_1;
+	aux_header.type = AUX_TYPE_EXORGINFO;
+	aux_header.immed = PUBLIC_FOLDERS_ENABLED | USE_AUTODISCOVER_FOR_PUBLIC_FOLDER_CONFIGURATION;
+	aux_out.aux_list.emplace_back(std::move(aux_header));
 	
-	header_info.version = AUX_VERSION_1;
-	header_info.type = AUX_TYPE_EXORGINFO;
-	aux_orginfo.org_flags = PUBLIC_FOLDERS_ENABLED |
-		USE_AUTODISCOVER_FOR_PUBLIC_FOLDER_CONFIGURATION;
-	header_info.ppayload = &aux_orginfo;
-	node_info.pdata = &header_info;
-	double_list_append_as_tail(&aux_out.aux_list, &node_info);
-	
-	header_control.version = AUX_VERSION_1;
-	header_control.type = AUX_TYPE_CLIENT_CONTROL;
 	aux_control.enable_flags = ENABLE_COMPRESSION | ENABLE_HTTP_TUNNELING;
 	aux_control.expiry_time = 604800000;
-	header_control.ppayload = &aux_control;
-	node_ctrl.pdata = &header_control;
-	double_list_append_as_tail(&aux_out.aux_list, &node_ctrl);
+	aux_header.version = AUX_VERSION_1;
+	aux_header.type = AUX_TYPE_CLIENT_CONTROL;
+	aux_header.ppayload = &aux_control;
+	aux_out.aux_list.emplace_back(std::move(aux_header));
 	
-	header_cap.version = AUX_VERSION_1;
-	header_cap.type = AUX_TYPE_ENDPOINT_CAPABILITIES;
-	aux_cap.endpoint_capability_flag = ENDPOINT_CAPABILITIES_SINGLE_ENDPOINT;
-	header_cap.ppayload = &aux_cap;
-	node_cap.pdata = &header_cap;
-	double_list_append_as_tail(&aux_out.aux_list, &node_cap);
+	aux_header.version = AUX_VERSION_1;
+	aux_header.type = AUX_TYPE_ENDPOINT_CAPABILITIES;
+	aux_header.immed = ENDPOINT_CAPABILITIES_SINGLE_ENDPOINT;
+	aux_out.aux_list.emplace_back(std::move(aux_header));
+
 	DCERPC_INFO rpc_info;
-	if (!ext_push.init(pauxout, 0x1008, EXT_FLAG_UTF16)) {
-		double_list_free(&aux_out.aux_list);
+	if (!ext_push.init(pauxout, 0x1008, EXT_FLAG_UTF16))
 		return ecServerOOM;
-	}
-	*pcb_auxout = aux_ext_push_aux_info(&ext_push, &aux_out) != EXT_ERR_SUCCESS ?
+	*pcb_auxout = aux_ext_push_aux_info(&ext_push, aux_out) != EXT_ERR_SUCCESS ?
 	              0 : ext_push.m_offset;
-	double_list_free(&aux_out.aux_list);
+	aux_out.aux_list.clear();
 	
 	pdn_prefix[0] = '\0';
 	rpc_info = get_rpc_info();
@@ -630,24 +614,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	}
 	
 	client_mode = CLIENT_MODE_UNKNOWN;
-	if (0 != cb_auxin) {
-		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != aux_ext_pull_aux_info(&ext_pull, &aux_in)) {
-			mlog(LV_DEBUG, "emsmdb: failed to pull input "
-				"auxiliary buffer in emsmdb_interface_connect_ex");
-		} else {
-			for (pnode=double_list_get_head(&aux_in.aux_list); NULL!=pnode;
-				pnode=double_list_get_after(&aux_in.aux_list, pnode)) {
-				auto pheader = static_cast<const AUX_HEADER *>(pnode->pdata);
-				if (AUX_VERSION_1 == pheader->version &&
-					AUX_TYPE_PERF_CLIENTINFO == pheader->type) {
-					auto ci = static_cast<const AUX_PERF_CLIENTINFO *>(pheader->ppayload);
-					client_mode = ci->client_mode;
-				}
-			}
-		}
-	}
-	
+	/* auxin parsing in commit history */
 	/* just like EXCHANGE 2010 or later, we do
 		not support session context linking */
 	if (cxr_link == UINT32_MAX)
@@ -659,14 +626,22 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	return ecSuccess;
 }
 
-int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
+static bool enable_rop_chaining(uint16_t v[4])
+{
+	if (emsmdb_rop_chaining == 0)
+		return false;
+	return emsmdb_rop_chaining >= 2 || v[0] <= 14 || v[0] > 16 ||
+	       (v[0] == 16 && v[2] >= 10000);
+}
+
+int emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	const uint8_t *pin, uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out,
 	const uint8_t *pauxin, uint32_t cb_auxin, uint8_t *pauxout,
 	uint32_t *pcb_auxout, uint32_t *ptrans_time)
 {
+	auto pcxh = &cxh;
 	int result;
 	uint16_t cxr;
-	AUX_INFO aux_in;
 	EXT_PULL ext_pull;
 	char username[UADDR_SIZE];
 	HANDLE_DATA *phandle;
@@ -710,20 +685,18 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	}
 	if (first_time - phandle->last_time > HANDLE_VALID_INTERVAL) {
 		emsmdb_interface_put_handle_data(phandle);
-		emsmdb_interface_remove_handle(pcxh);
+		emsmdb_interface_remove_handle(cxh);
 		*pcb_out = 0;
 		memset(pcxh, 0, sizeof(CXH));
 		return ecError;
 	}
 	phandle->last_time = tp_now();
 	g_handle_key = phandle;
-	if (cb_auxin > 0) {
-		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != aux_ext_pull_aux_info(&ext_pull, &aux_in)) {
-			mlog(LV_DEBUG, "emsmdb: failed to parse input "
-				"auxiliary buffer in emsmdb_interface_rpc_ext2");
-		}
-	}
+	/* auxin parsing in commit history */
+	if (enable_rop_chaining(phandle->info.client_version))
+		input_flags &= ~GROMOX_READSTREAM_NOCHAIN;
+	else
+		input_flags |= GROMOX_READSTREAM_NOCHAIN;
 	result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
 	gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
 	cxr = phandle->cxr;
@@ -1212,8 +1185,6 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 
 static void *emsi_scanwork(void *pparam)
 {
-	CXH cxh;
-	
 	while (!g_notify_stop) {
 		std::vector<GUID> temp_list;
 		auto cur_time = tp_now();
@@ -1230,11 +1201,8 @@ static void *emsi_scanwork(void *pparam)
 			}
 		}
 		gl_hold.unlock();
-		for (auto &&guid : temp_list) {
-			cxh.handle_type = HANDLE_EXCHANGE_EMSMDB;
-			cxh.guid = std::move(guid);
-			emsmdb_interface_remove_handle(&cxh);
-		}
+		for (auto &&guid : temp_list)
+			emsmdb_interface_remove_handle({HANDLE_EXCHANGE_EMSMDB, std::move(guid)});
 		sleep(3);
 	}
 	return nullptr;

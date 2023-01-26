@@ -1717,7 +1717,7 @@ static BOOL message_rectify_message(const char *account,
 		    ext_push.p_uint8((nt_time >> 24) & 0xff) != EXT_ERR_SUCCESS ||
 		    ext_push.p_bytes(pbin->pb, 16) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint32(0xFFFFFFFF) != EXT_ERR_SUCCESS ||
-		    ext_push.p_uint8(nt_time & 0xFF))
+		    ext_push.p_uint8(nt_time & 0xFF) != EXT_ERR_SUCCESS)
 			return false;
 		pbin1->cb = 27;
 		vc->proptag = PR_CONVERSATION_INDEX;
@@ -2772,7 +2772,7 @@ static ec_error_t message_forward_message(const char *from_address,
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return ecError;
 		imail = MAIL(common_util_get_mime_pool());
-		if (!imail.retrieve(pbuff.get(), node_stat.st_size))
+		if (!imail.load_from_str_move(pbuff.get(), node_stat.st_size))
 			return ecError;
 		auto pmime = imail.get_head();
 		if (pmime == nullptr)

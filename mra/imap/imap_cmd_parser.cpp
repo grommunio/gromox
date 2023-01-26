@@ -35,6 +35,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+using LLU = unsigned long long;
 
 enum {
 	TYPE_WILDS = 1,
@@ -151,7 +152,7 @@ static void imap_cmd_parser_find_arg_node(DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		if (0 == strcasecmp((char*)pnode->pdata, arg_name)) {
+		if (strcasecmp(static_cast<char *>(pnode->pdata), arg_name) == 0) {
 			double_list_remove(plist, pnode);
 			double_list_append_as_tail(plist_to, pnode);
 			break;
@@ -697,7 +698,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			return 1918;
 		}
 		if (eml_path.size() == 0 ||
-		    !mjson.retrieve(buff, len, eml_path.c_str()))
+		    !mjson.load_from_str_move(buff, len, eml_path.c_str()))
 			return 1923;
 	}
 
@@ -1504,21 +1505,21 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			"* %d EXISTS\r\n"
 			"* %d RECENT\r\n"
 			"* OK [UNSEEN %d] message %d is first unseen\r\n"
-			"* OK [UIDVALIDITY %u] UIDs valid\r\n"
+			"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
 			"* OK [UIDNEXT %d] predicted next UID\r\n"
 			"%s OK [READ-WRITE] SELECT completed\r\n", 
 			exists, recent, firstunseen, firstunseen,
-			(unsigned int)uidvalid, uidnext, argv[0]);
+			LLU{uidvalid}, uidnext, argv[0]);
 	else
 		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
 			"* OK [PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited\r\n"
 			"* %d EXISTS\r\n"
 			"* %d RECENT\r\n"
-			"* OK [UIDVALIDITY %u] UIDs valid\r\n"
+			"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
 			"* OK [UIDNEXT %d] predicted next UID\r\n"
 			"%s OK [READ-WRITE] SELECT completed\r\n", 
-			exists, recent, (unsigned int)uidvalid, uidnext, argv[0]);
+			exists, recent, LLU{uidvalid}, uidnext, argv[0]);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
@@ -1562,21 +1563,21 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			"* %d EXISTS\r\n"
 			"* %d RECENT\r\n"
 			"* OK [UNSEEN %d] message %d is first unseen\r\n"
-			"* OK [UIDVALIDITY %u] UIDs valid\r\n"
+			"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
 			"* OK [UIDNEXT %d] predicted next UID\r\n"
 			"%s OK [READ-ONLY] EXAMINE completed\r\n",
 			exists, recent, firstunseen, firstunseen,
-			(unsigned int)uidvalid, uidnext, argv[0]);
+			LLU{uidvalid}, uidnext, argv[0]);
 	else
 		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
 			"* OK [PERMANENTFLAGS ()] no permanenet flag permitted\r\n"
 			"* %d EXISTS\r\n"
 			"* %d RECENT\r\n"
-			"* OK [UIDVALIDITY %u] UIDs valid\r\n"
+			"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
 			"* OK [UIDNEXT %d] predicted next UID\r\n"
 			"%s OK [READ-ONLY] EXAMINE completed\r\n",
-			exists, recent, (unsigned int)uidvalid, uidnext, argv[0]);
+			exists, recent, LLU{uidvalid}, uidnext, argv[0]);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
@@ -1792,7 +1793,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		temp_file.writeline("junk");
 		imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 		dir_tree temp_tree(imap_parser_get_dpool());
-		temp_tree.retrieve(&temp_file);
+		temp_tree.load_from_memfile(&temp_file);
 		len = 0;
 		temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
@@ -1888,7 +1889,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	dir_tree temp_tree(imap_parser_get_dpool());
-	temp_tree.retrieve(&temp_file);
+	temp_tree.load_from_memfile(&temp_file);
 	len = 0;
 	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern)) {
 		auto pdir = temp_tree.match("INBOX");
@@ -1988,7 +1989,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	temp_file1.writeline("junk");
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file1);
 	dir_tree temp_tree(imap_parser_get_dpool());
-	temp_tree.retrieve(&temp_file1);
+	temp_tree.load_from_memfile(&temp_file1);
 	mem_file_free(&temp_file1);
 	len = 0;
 	while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
@@ -2070,8 +2071,8 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			                 arsizeof(buff) - string_length, "UIDNEXT %d", uidnext);
 		else if (strcasecmp(temp_argv[i], "UIDVALIDITY") == 0)
 			string_length += gx_snprintf(buff + string_length,
-			                 arsizeof(buff) - string_length, "UIDVALIDITY %u",
-					(unsigned int)uidvalid);
+			                 arsizeof(buff) - string_length, "UIDVALIDITY %llu",
+			                 LLU{uidvalid});
 		else if (strcasecmp(temp_argv[i], "UNSEEN") == 0)
 			string_length += gx_snprintf(buff + string_length,
 			                 arsizeof(buff) - string_length, "UNSEEN %d", unseen);
@@ -2150,7 +2151,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 	}
 	MAIL imail(imap_parser_get_mpool());
-	if (!imail.retrieve(argv[argc-1], strlen(argv[argc-1])))
+	if (!imail.load_from_str_move(argv[argc-1], strlen(argv[argc-1])))
 		return 1908;
 	strcpy(flag_buff, "(");
 	if (b_seen)
@@ -2208,8 +2209,8 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		    system_services_get_uid(pcontext->maildir, temp_name,
 		    mid_string.c_str(), &uid) == MIDB_RESULT_OK) {
 			string_length = gx_snprintf(buff, arsizeof(buff),
-			                "%s %s [APPENDUID %u %d] %s",
-				argv[0], imap_reply_str, (unsigned int)uidvalid,
+			                "%s %s [APPENDUID %llu %d] %s",
+			                argv[0], imap_reply_str, LLU{uidvalid},
 				uid, imap_reply_str1);
 			break;
 		}
@@ -2364,7 +2365,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	pcontext->message_fd = -1;
 	memcpy(&tmp_len, pbuff.get(), sizeof(tmp_len));
 	MAIL imail(imap_parser_get_mpool());
-	if (!imail.retrieve(pbuff.get() + tmp_len, node_stat.st_size - tmp_len)) {
+	if (!imail.load_from_str_move(&pbuff[tmp_len], node_stat.st_size - tmp_len)) {
 		imail.clear();
 		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
@@ -2453,8 +2454,8 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		    nullptr, nullptr, &errnum) == MIDB_RESULT_OK &&
 		    system_services_get_uid(pcontext->maildir, temp_name,
 		    pcontext->mid.c_str(), &uid) == MIDB_RESULT_OK) {
-			string_length = gx_snprintf(buff, arsizeof(buff), "%s %s [APPENDUID %u %d] %s",
-				pcontext->tag_string, imap_reply_str, (unsigned int)uidvalid,
+			string_length = gx_snprintf(buff, arsizeof(buff), "%s %s [APPENDUID %llu %d] %s",
+				pcontext->tag_string, imap_reply_str, LLU{uidvalid},
 				uid, imap_reply_str1);
 			break;
 		}
@@ -2822,8 +2823,8 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		auto imap_reply_str1 = resource_get_imap_code(1722, 2, &string_length1);
 		if (uidvalidity != 0)
 			string_length = gx_snprintf(buff, arsizeof(buff),
-				"%s %s [COPYUID %u %s %s] %s", argv[0],
-				imap_reply_str, (unsigned int)uidvalidity,
+				"%s %s [COPYUID %llu %s %s] %s", argv[0],
+				imap_reply_str, LLU{uidvalidity},
 				uid_string, uid_string1, imap_reply_str1);
 		else
 			string_length = gx_snprintf(buff, arsizeof(buff),
@@ -3082,8 +3083,8 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		auto imap_reply_str1 = resource_get_imap_code(1725, 2, &string_length1);
 		if (uidvalidity != 0)
 			string_length = gx_snprintf(buff, arsizeof(buff),
-				"%s %s [COPYUID %u %s %s] %s", argv[0],
-				imap_reply_str, (unsigned int)uidvalidity, argv[3],
+				"%s %s [COPYUID %llu %s %s] %s", argv[0],
+				imap_reply_str, LLU{uidvalidity}, argv[3],
 				uid_string, imap_reply_str1);
 		else
 			string_length = gx_snprintf(buff, arsizeof(buff), "%s %s %s",

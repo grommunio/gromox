@@ -57,10 +57,9 @@ extern zend_module_entry mapi_module_entry;
 			RETURN_FALSE; \
 		} while (false); \
 	} while (false)
-#define ZEND_REGISTER_RESOURCE(return_value, ses, le_mapi_thing) \
-	do { \
-		ZVAL_RES(return_value, zend_register_resource(ses, le_mapi_thing)); \
-	} while (false)
+/* PHP macros do not have proper do..while guards on their own */
+#define RETVAL_RG(obj, category) \
+	do { RETVAL_RES(zend_register_resource(obj, category)); } while (false)
 #define THROW_EXCEPTION \
 	do { \
 		if (MAPI_G(exceptions_enabled)) \
@@ -303,12 +302,12 @@ static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 		return ecInvalidParam;
 	switch (PROP_TYPE(pstream->proptag)) {
 	case PT_BINARY:
-		return zarafa_client_setpropval(
+		return zclient_setpropval(
 			pstream->hsession, pstream->hparent,
 			pstream->proptag, &pstream->content_bin);
 	case PT_STRING8:
 	case PT_UNICODE:
-		return zarafa_client_setpropval(pstream->hsession,
+		return zclient_setpropval(pstream->hsession,
 			pstream->hparent,
 			CHANGE_PROP_TYPE(pstream->proptag, PT_UNICODE),
 			pstream->content_bin.pb);
@@ -338,7 +337,7 @@ static void notif_sink_free(NOTIF_SINK *psink)
 	if (NULL != psink->padvise) {
 		if (psink->hsession != GUID_NONE) {
 			for (i=0; i<psink->count; i++) {
-				zarafa_client_unadvise(psink->hsession,
+				zclient_unadvise(psink->hsession,
 					psink->padvise[i].hstore, psink->padvise[i].sub_id);
 			}
 		}
@@ -355,7 +354,7 @@ static uint32_t notif_sink_timedwait(NOTIF_SINK *psink,
 		pnotifications->ppnotification = NULL;
 		return ecSuccess;
 	}
-	return zarafa_client_notifdequeue(
+	return zclient_notifdequeue(
 		psink, timeval, pnotifications);
 }
 
@@ -384,14 +383,12 @@ static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
 
 static void mapi_resource_dtor(zend_resource *rsrc)
 {
-	MAPI_RESOURCE *presource;
-	
 	if (NULL == rsrc->ptr) {
 		return;
 	}
-	presource = (MAPI_RESOURCE*)rsrc->ptr;
+	auto presource = static_cast<MAPI_RESOURCE *>(rsrc->ptr);
 	if (0 != presource->hobject) {
-		zarafa_client_unloadobject(
+		zclient_unloadobject(
 			presource->hsession, presource->hobject);
 	}
 	efree(presource);
@@ -413,15 +410,13 @@ static void stream_object_dtor(zend_resource *rsrc)
 
 static void ics_import_ctx_dtor(zend_resource *rsrc)
 {	
-	ICS_IMPORT_CTX *pctx;
-	
 	if (NULL == rsrc->ptr) {
 		return;
 	}
-	pctx = (ICS_IMPORT_CTX*)rsrc->ptr;
+	auto pctx = static_cast<ICS_IMPORT_CTX *>(rsrc->ptr);
 	zval_ptr_dtor(&pctx->pztarget_obj);
 	if (0 != pctx->hobject) {
-		zarafa_client_unloadobject(
+		zclient_unloadobject(
 			pctx->hsession, pctx->hobject);
 	}
 	efree(pctx);
@@ -429,15 +424,13 @@ static void ics_import_ctx_dtor(zend_resource *rsrc)
 
 static void ics_export_ctx_dtor(zend_resource *rsrc)
 {
-	ICS_EXPORT_CTX *pctx;
-	
 	if (NULL == rsrc->ptr) {
 		return;
 	}
-	pctx = (ICS_EXPORT_CTX*)rsrc->ptr;
+	auto pctx = static_cast<ICS_EXPORT_CTX *>(rsrc->ptr);
 	zval_ptr_dtor(&pctx->pztarget_obj);
 	if (0 != pctx->hobject) {
-		zarafa_client_unloadobject(
+		zclient_unloadobject(
 			pctx->hsession, pctx->hobject);
 	}
 	efree(pctx);
@@ -524,7 +517,7 @@ static PHP_RSHUTDOWN_FUNCTION(mapi)
 
 static ZEND_FUNCTION(mapi_load_mapidefs)
 {
-	long level = 0;
+	zend_long level = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|l", &level) == FAILURE)
 		;
 
@@ -556,91 +549,82 @@ static ZEND_FUNCTION(mapi_last_hresult)
 
 static ZEND_FUNCTION(mapi_prop_type)
 {
-	long proptag;
-
+	zend_long proptag;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &proptag) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
-	} else {
-		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG(PROP_TYPE(proptag));
+		return;
 	}
+	MAPI_G(hr) = ecSuccess;
+	RETURN_LONG(PROP_TYPE(proptag));
 }
 
 static ZEND_FUNCTION(mapi_prop_id)
 {
-	long proptag;
-
+	zend_long proptag;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &proptag) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
-	} else {
-		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG(PROP_ID(proptag));
+		return;
 	}
+	MAPI_G(hr) = ecSuccess;
+	RETURN_LONG(PROP_ID(proptag));
 }
 
 static ZEND_FUNCTION(mapi_is_error)
 {
-	long errcode;
-
+	zend_long errcode;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &errcode) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
-	} else {
-		MAPI_G(hr) = ecSuccess;
-		RETURN_BOOL(errcode & 0x80000000);
+		return;
 	}
+	MAPI_G(hr) = ecSuccess;
+	RETURN_BOOL(errcode & 0x80000000);
 }
 
 static ZEND_FUNCTION(mapi_make_scode)
 {
-	long sev, code;
+	zend_long sev, code;
 	uint32_t scode;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll", &sev, &code) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
-	} else {
-		if (0 == sev) {
-			scode = 0x40000 | ((uint32_t)code);
-		} else {
-			scode = 0x80000000 | 0x40000 | ((uint32_t)code);
-		}
-		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG(scode);
+		return;
 	}
+	if (0 == sev) {
+		scode = 0x40000 | ((uint32_t)code);
+	} else {
+		scode = 0x80000000 | 0x40000 | ((uint32_t)code);
+	}
+	MAPI_G(hr) = ecSuccess;
+	RETURN_LONG(scode);
 }
 
 static ZEND_FUNCTION(mapi_prop_tag)
 {
-	long propid;
-	long proptype;
+	zend_long propid, proptype;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ll", &proptype, &propid) == FAILURE || propid >
 		0xFFFF || proptype > 0xFFFF) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
-	} else {
-		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG(PROP_TAG(proptype, propid));
+		return;
 	}
+	MAPI_G(hr) = ecSuccess;
+	RETURN_LONG(PROP_TAG(proptype, propid));
 }
 
 static ZEND_FUNCTION(mapi_createoneoff)
 {
-	long flags;
-	char *ptype;
+	zend_long flags = 0;
+	char *ptype, *paddress, *pdisplayname, empty[1]{};
 	size_t type_len = 0, name_len = 0, address_len = 0;
-	char *paddress;
 	PUSH_CTX push_ctx;
-	char *pdisplayname;
 	ONEOFF_ENTRYID tmp_entry;
-	char empty[1]{};
 	
-	flags = 0;
-	name_len = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"sss|l", &pdisplayname, &name_len, &ptype, &type_len,
 		&paddress, &address_len, &flags) == FAILURE ||
@@ -693,23 +677,15 @@ static ZEND_FUNCTION(mapi_parseoneoff)
 
 static ZEND_FUNCTION(mapi_logon_zarafa)
 {
-	long flags;
-	size_t wa_len = 0, misc_len = 0;
+	zend_long flags = 0;
+	size_t wa_len = 0, misc_len = 0, username_len = 0, password_len = 0;
 	size_t server_len = 0, sslcert_len = 0, sslpass_len = 0;
-	size_t username_len = 0, password_len = 0;
-	char *server;
-	char *sslcert;
-	char *sslpass;
-	char *username;
-	char *password;
-	uint32_t result;
-	char *wa_version;
-	char *misc_version;
+	char *server, *sslcert, *sslpass, *username, *password;
+	char *wa_version, *misc_version;
 	MAPI_RESOURCE *presource;
 	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
 	zstrplus str_user(zend_string_init(ZEND_STRL("REMOTE_USER"), 0));
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|ssslss",
 		&username, &username_len, &password, &password_len, &server,
 		&server_len, &sslcert, &sslcert_len, &sslpass, &sslpass_len,
@@ -724,36 +700,24 @@ static ZEND_FUNCTION(mapi_logon_zarafa)
 		MAPI_G(hr) = ecMAPIOOM;
 		THROW_EXCEPTION;
 	}
-	{
-	auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
-	if (server_vars != nullptr && Z_TYPE_P(server_vars) == IS_ARRAY) {
-		auto ustr = zend_hash_find(Z_ARRVAL_P(server_vars), str_user.get());
-		if (ustr != nullptr && Z_TYPE_P(ustr) == IS_STRING &&
-		    Z_STRLEN_P(ustr) > 0)
-			password = nullptr;
-	}
-	result = zarafa_client_logon(username, password, 0, &presource->hsession);
+	auto result = zclient_logon(username, password, 0, &presource->hsession);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
 	}
-	}
 	presource->type = ZMG_SESSION;
 	presource->hobject = 0;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_session);
+	RETVAL_RG(presource, le_mapi_session);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_logon_ex)
 {
-	long flags;
-	char *username;
-	char *password;
-	uint32_t result;
+	zend_long flags = 0;
+	char *username, *password;
 	size_t username_len = 0, password_len = 0;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssl",
 		&username, &username_len, &password, &password_len, &flags)
 		== FAILURE || NULL == username || '\0' == username[0] ||
@@ -786,7 +750,7 @@ static ZEND_FUNCTION(mapi_logon_ex)
 		MAPI_G(hr) = ecMAPIOOM;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_logon(username,
+	auto result = zclient_logon(username,
 		password, flags, &presource->hsession);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -794,23 +758,20 @@ static ZEND_FUNCTION(mapi_logon_ex)
 	}
 	presource->type = ZMG_SESSION;
 	presource->hobject = 0;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_session);
+	RETVAL_RG(presource, le_mapi_session);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_openentry)
 {
-	long flags;
+	zend_long flags = 0;
 	BINARY entryid;
 	size_t eid_size = 0;
-	uint32_t result;
 	zval *pzresource;
 	uint32_t hobject;
 	uint8_t mapi_type;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|sl",
 	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
 		|| NULL == pzresource || NULL == entryid.pb) {
@@ -824,7 +785,7 @@ static ZEND_FUNCTION(mapi_openentry)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_openentry(psession->hsession,
+	auto result = zclient_openentry(psession->hsession,
 					entryid, flags, &mapi_type, &hobject);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -840,10 +801,10 @@ static ZEND_FUNCTION(mapi_openentry)
 	presource->hobject = hobject;
 	switch (mapi_type) {
 	case ZMG_FOLDER:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_folder);
+		RETVAL_RG(presource, le_mapi_folder);
 		break;
 	case ZMG_MESSAGE:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
+		RETVAL_RG(presource, le_mapi_message);
 		break;
 	default:
 		efree(presource);
@@ -856,8 +817,7 @@ static ZEND_FUNCTION(mapi_openentry)
 static ZEND_FUNCTION(mapi_openaddressbook)
 {
 	zval *pzresource;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -878,23 +838,20 @@ static ZEND_FUNCTION(mapi_openaddressbook)
 	presource->type = ZMG_ADDRBOOK;
 	presource->hsession = psession->hsession;
 	presource->hobject = 0;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_addressbook);
+	RETVAL_RG(presource, le_mapi_addressbook);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_ab_openentry)
 {
-	long flags;
+	zend_long flags = 0;
 	BINARY entryid;
 	size_t eid_size = 0;
-	uint32_t result;
 	zval *pzresource;
 	uint32_t hobject;
 	uint8_t mapi_type;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
-	flags = 0;
 	entryid.cb = 0;
 	entryid.pb = NULL;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|sl",
@@ -911,7 +868,7 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_openabentry(psession->hsession,
+	auto result = zclient_openabentry(psession->hsession,
 							entryid, &mapi_type, &hobject);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -928,13 +885,13 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 	switch (mapi_type) {
 	case ZMG_MAILUSER:
 	case ZMG_ONEOFF:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_mailuser);
+		RETVAL_RG(presource, le_mapi_mailuser);
 		break;
 	case ZMG_DISTLIST:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_distlist);
+		RETVAL_RG(presource, le_mapi_distlist);
 		break;
 	case ZMG_ABCONT:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_abcont);
+		RETVAL_RG(presource, le_mapi_abcont);
 		break;
 	default:
 		efree(presource);
@@ -946,17 +903,12 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 
 static ZEND_FUNCTION(mapi_ab_resolvename)
 {
-	long flags;
-	zval *pzarray;
-	zval pzrowset;
-	uint32_t result;
-	zval *pzresource;
-	TARRAY_SET cond_set;
-	TARRAY_SET result_set;
+	zend_long flags = 0;
+	zval *pzarray, pzrowset, *pzresource;
+	TARRAY_SET cond_set, result_set;
 	MAPI_RESOURCE *psession;
 	
 	ZVAL_NULL(&pzrowset);
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra|l", &pzresource, &pzarray, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzarray) {
@@ -974,7 +926,7 @@ static ZEND_FUNCTION(mapi_ab_resolvename)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_resolvename(
+	auto result = zclient_resolvename(
 		psession->hsession, &cond_set,
 		&result_set);
 	if (result != ecSuccess) {
@@ -992,7 +944,6 @@ static ZEND_FUNCTION(mapi_ab_resolvename)
 static ZEND_FUNCTION(mapi_ab_getdefaultdir)
 {
 	BINARY entryid;
-	uint32_t result;
 	zval *pzresource;
 	MAPI_RESOURCE *psession;
 	
@@ -1008,7 +959,7 @@ static ZEND_FUNCTION(mapi_ab_getdefaultdir)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_getabgal(psession->hsession, &entryid);
+	auto result = zclient_getabgal(psession->hsession, &entryid);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
@@ -1019,11 +970,9 @@ static ZEND_FUNCTION(mapi_ab_getdefaultdir)
 
 static ZEND_FUNCTION(mapi_getmsgstorestable)
 {
-	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -1036,7 +985,7 @@ static ZEND_FUNCTION(mapi_getmsgstorestable)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_loadstoretable(psession->hsession, &hobject);
+	auto result = zclient_loadstoretable(psession->hsession, &hobject);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
@@ -1049,7 +998,7 @@ static ZEND_FUNCTION(mapi_getmsgstorestable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = psession->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -1057,11 +1006,9 @@ static ZEND_FUNCTION(mapi_openmsgstore)
 {
 	BINARY entryid;
 	size_t eid_size = 0;
-	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 	    "rs", &pzresource, &entryid.pb, &eid_size) ==
@@ -1076,7 +1023,7 @@ static ZEND_FUNCTION(mapi_openmsgstore)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_openstore(
+	auto result = zclient_openstore(
 		psession->hsession, entryid,
 		&hobject);
 	if (result != ecSuccess) {
@@ -1091,7 +1038,7 @@ static ZEND_FUNCTION(mapi_openmsgstore)
 	presource->type = ZMG_STORE;
 	presource->hsession = psession->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_msgstore);
+	RETVAL_RG(presource, le_mapi_msgstore);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -1101,8 +1048,7 @@ static ZEND_FUNCTION(mapi_openprofilesection)
 	FLATUID *puid;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rs", &pzresource, &puid, &uidlen) == FAILURE ||
@@ -1124,7 +1070,7 @@ static ZEND_FUNCTION(mapi_openprofilesection)
 			THROW_EXCEPTION;
 		}
 	}
-	auto result = zarafa_client_openprofilesec(
+	auto result = zclient_openprofilesec(
 		psession->hsession, puid, &hobject);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -1138,20 +1084,17 @@ static ZEND_FUNCTION(mapi_openprofilesection)
 	presource->type = ZMG_PROFPROPERTY;
 	presource->hsession = psession->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_property);
+	RETVAL_RG(presource, le_mapi_property);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 {
-	long flags;
-	uint32_t result;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *probject;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *probject, *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -1178,7 +1121,7 @@ static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 		THROW_EXCEPTION;
 	}
 	}
-	result = zarafa_client_loadhierarchytable(
+	auto result = zclient_loadhierarchytable(
 		probject->hsession, probject->hobject,
 		flags, &hobject);
 	if (result != ecSuccess) {
@@ -1193,20 +1136,17 @@ static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = probject->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_folder_getcontentstable)
 {
-	long flags;
-	uint32_t result;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *probject;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *probject, *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -1240,7 +1180,7 @@ static ZEND_FUNCTION(mapi_folder_getcontentstable)
 		THROW_EXCEPTION;
 	}
 	}
-	result = zarafa_client_loadcontenttable(
+	auto result = zclient_loadcontenttable(
 		probject->hsession, probject->hobject,
 		flags, &hobject);
 	if (result != ecSuccess) {
@@ -1255,20 +1195,17 @@ static ZEND_FUNCTION(mapi_folder_getcontentstable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = probject->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_folder_createmessage)
 {
-	long flags;
-	uint32_t result;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pfolder;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pfolder, *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -1280,7 +1217,7 @@ static ZEND_FUNCTION(mapi_folder_createmessage)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_createmessage(
+	auto result = zclient_createmessage(
 		pfolder->hsession, pfolder->hobject,
 		flags, &hobject);
 	if (result != ecSuccess) {
@@ -1295,20 +1232,17 @@ static ZEND_FUNCTION(mapi_folder_createmessage)
 	presource->type = ZMG_MESSAGE;
 	presource->hsession = pfolder->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
+	RETVAL_RG(presource, le_mapi_message);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_folder_deletemessages)
 {
-	long flags;
-	zval *pzarray;
-	uint32_t result;
-	zval *pzresource;
+	zend_long flags = 0;
+	zval *pzarray, *pzresource;
 	MAPI_RESOURCE *pfolder;
 	BINARY_ARRAY entryid_array;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra|l", &pzresource, &pzarray, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzarray) {
@@ -1325,7 +1259,7 @@ static ZEND_FUNCTION(mapi_folder_deletemessages)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_deletemessages(
+	auto result = zclient_deletemessages(
 		pfolder->hsession, pfolder->hobject,
 		&entryid_array, flags);
 	if (result != ecSuccess) {
@@ -1338,16 +1272,11 @@ static ZEND_FUNCTION(mapi_folder_deletemessages)
 
 static ZEND_FUNCTION(mapi_folder_copymessages)
 {
-	long flags;
-	zval *pzarray;
-	uint32_t result;
-	zval *pzsrcfolder;
-	zval *pzdstfolder;
-	MAPI_RESOURCE *psrcfolder;
-	MAPI_RESOURCE *pdstfolder;
+	zend_long flags = 0;
+	zval *pzarray, *pzsrcfolder, *pzdstfolder;
+	MAPI_RESOURCE *psrcfolder, *pdstfolder;
 	BINARY_ARRAY entryid_array;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rar|l",
 		&pzsrcfolder, &pzarray, &pzdstfolder, &flags) == FAILURE ||
 		NULL == pzsrcfolder || NULL == pzarray || NULL == pzdstfolder) {
@@ -1370,7 +1299,7 @@ static ZEND_FUNCTION(mapi_folder_copymessages)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_copymessages(
+	auto result = zclient_copymessages(
 		psrcfolder->hsession, psrcfolder->hobject,
 		pdstfolder->hobject, &entryid_array, flags);
 	if (result != ecSuccess) {
@@ -1383,14 +1312,11 @@ static ZEND_FUNCTION(mapi_folder_copymessages)
 
 static ZEND_FUNCTION(mapi_folder_setreadflags)
 {
-	long flags;
-	zval *pzarray;
-	uint32_t result;
-	zval *pzresource;
+	zend_long flags = 0;
+	zval *pzarray, *pzresource;
 	MAPI_RESOURCE *pfolder;
 	BINARY_ARRAY entryid_array;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra|l", &pzresource, &pzarray, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzarray) {
@@ -1407,7 +1333,7 @@ static ZEND_FUNCTION(mapi_folder_setreadflags)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_setreadflags(
+	auto result = zclient_setreadflags(
 		pfolder->hsession, pfolder->hobject,
 		&entryid_array, flags);
 	if (result != ecSuccess) {
@@ -1420,21 +1346,17 @@ static ZEND_FUNCTION(mapi_folder_setreadflags)
 
 static ZEND_FUNCTION(mapi_folder_createfolder)
 {
-	int flags;
 	char *pfname;
 	size_t name_len = 0, comment_len = 0;
 	char *pcomment;
-	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pfolder;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pfolder, *presource;
 	char empty[1]{};
 	
-	flags = 0;
 	pcomment = NULL;
 	comment_len = 0;
-	long folder_type = FOLDER_GENERIC;
+	zend_long flags = 0, folder_type = FOLDER_GENERIC;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs|sll",
 		&pzresource, &pfname, &name_len, &pcomment, &comment_len,
 		&flags, &folder_type) == FAILURE || NULL == pzresource ||
@@ -1451,7 +1373,7 @@ static ZEND_FUNCTION(mapi_folder_createfolder)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_createfolder(
+	auto result = zclient_createfolder(
 		pfolder->hsession, pfolder->hobject,
 		folder_type, pfname, pcomment, flags,
 		&hobject);
@@ -1467,20 +1389,18 @@ static ZEND_FUNCTION(mapi_folder_createfolder)
 	presource->type = ZMG_FOLDER;
 	presource->hsession = pfolder->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_folder);
+	RETVAL_RG(presource, le_mapi_folder);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_folder_deletefolder)
 {
-	long flags;
+	zend_long flags = 0;
 	BINARY entryid;
 	size_t eid_size = 0;
-	uint32_t result;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs|l",
 	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
 		|| NULL == pzresource || NULL == entryid.pb) {
@@ -1494,7 +1414,7 @@ static ZEND_FUNCTION(mapi_folder_deletefolder)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_deletefolder(
+	auto result = zclient_deletefolder(
 		pfolder->hsession, pfolder->hobject,
 		entryid, flags);
 	if (result != ecSuccess) {
@@ -1507,12 +1427,10 @@ static ZEND_FUNCTION(mapi_folder_deletefolder)
 
 static ZEND_FUNCTION(mapi_folder_emptyfolder)
 {
-	long flags;
-	uint32_t result;
+	zend_long flags = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -1524,7 +1442,7 @@ static ZEND_FUNCTION(mapi_folder_emptyfolder)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_emptyfolder(
+	auto result = zclient_emptyfolder(
 		pfolder->hsession, pfolder->hobject,
 		flags);
 	if (result != ecSuccess) {
@@ -1537,17 +1455,13 @@ static ZEND_FUNCTION(mapi_folder_emptyfolder)
 
 static ZEND_FUNCTION(mapi_folder_copyfolder)
 {
-	long flags;
+	zend_long flags = 0;
 	char *pname;
 	size_t name_len = 0, eid_size = 0;
 	BINARY entryid;
-	uint32_t result;
-	zval *pzvalsrcfolder;
-	zval *pzvaldstfolder;
-	MAPI_RESOURCE *psrcfolder;
-	MAPI_RESOURCE *pdstfolder;
+	zval *pzvalsrcfolder, *pzvaldstfolder;
+	MAPI_RESOURCE *psrcfolder, *pdstfolder;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rsr|sl",
 	    &pzvalsrcfolder, &entryid.pb, &eid_size, &pzvaldstfolder,
 		&pname, &name_len, &flags) == FAILURE || NULL == pzvalsrcfolder ||
@@ -1571,7 +1485,7 @@ static ZEND_FUNCTION(mapi_folder_copyfolder)
 	if (0 == name_len) {
 		pname = NULL;
 	}
-	result = zarafa_client_copyfolder(psrcfolder->hsession,
+	auto result = zclient_copyfolder(psrcfolder->hsession,
 		psrcfolder->hobject, entryid, pdstfolder->hobject,
 		pname, flags);
 	if (result != ecSuccess) {
@@ -1587,7 +1501,6 @@ static ZEND_FUNCTION(mapi_msgstore_createentryid)
 	size_t dn_len = 0;
 	BINARY entryid;
 	char *mailboxdn;
-	uint32_t result;
 	zval *pzresource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -1596,7 +1509,7 @@ static ZEND_FUNCTION(mapi_msgstore_createentryid)
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_getstoreentryid(mailboxdn, &entryid);
+	auto result = zclient_getstoreentryid(mailboxdn, &entryid);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
@@ -1617,17 +1530,14 @@ static ZEND_FUNCTION(mapi_msgstore_getarchiveentryid)
 
 static ZEND_FUNCTION(mapi_msgstore_openentry)
 {
-	long flags;
+	zend_long flags = 0;
 	BINARY entryid;
 	size_t eid_size = 0;
-	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
 	uint8_t mapi_type;
-	MAPI_RESOURCE *pstore;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pstore, *presource;
 	
-	flags = 0;
 	entryid.cb = 0;
 	entryid.pb = NULL;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -1643,7 +1553,7 @@ static ZEND_FUNCTION(mapi_msgstore_openentry)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_openstoreentry(pstore->hsession,
+	auto result = zclient_openstoreentry(pstore->hsession,
 		pstore->hobject, entryid, flags, &mapi_type, &hobject);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -1658,24 +1568,19 @@ static ZEND_FUNCTION(mapi_msgstore_openentry)
 	presource->hsession = pstore->hsession;
 	presource->hobject = hobject;
 	if (mapi_type == ZMG_FOLDER) {
-		ZEND_REGISTER_RESOURCE(return_value,
-			presource, le_mapi_folder);
+		RETVAL_RG(presource, le_mapi_folder);
 	} else if (mapi_type == ZMG_MESSAGE) {
-		ZEND_REGISTER_RESOURCE(return_value,
-			presource, le_mapi_message);
+		RETVAL_RG(presource, le_mapi_message);
 	}
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 {
-	BINARY entryid;
 	size_t skey_size = 0, skmsg_size = 0;
-	uint32_t result;
 	zval *pzresource;
-	BINARY *pmessage_key;
 	MAPI_RESOURCE *pstore;
-	BINARY sourcekey_folder{}, sourcekey_message{};
+	BINARY entryid, sourcekey_folder{}, sourcekey_message{}, *pmessage_key;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs|s",
 	    &pzresource, &sourcekey_folder.pb, &skey_size,
@@ -1698,7 +1603,7 @@ static ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 	} else {
 		pmessage_key = &sourcekey_message;
 	}
-	result = zarafa_client_entryidfromsourcekey(pstore->hsession,
+	auto result = zclient_entryidfromsourcekey(pstore->hsession,
 		pstore->hobject, sourcekey_folder, pmessage_key, &entryid);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -1710,14 +1615,11 @@ static ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 
 static ZEND_FUNCTION(mapi_msgstore_advise)
 {
-	BINARY entryid;
+	BINARY entryid, *pentryid;
 	size_t eid_size = 0;
-	uint32_t result;
 	uint32_t sub_id;
-	long event_mask;
-	zval *pzressink;
-	zval *pzresource;
-	BINARY *pentryid;
+	zend_long event_mask;
+	zval *pzressink, *pzresource;
 	NOTIF_SINK *psink;
 	MAPI_RESOURCE *pstore;
 	
@@ -1742,7 +1644,7 @@ static ZEND_FUNCTION(mapi_msgstore_advise)
 	} else {
 		pentryid = &entryid;
 	}
-	result = zarafa_client_storeadvise(
+	auto result = zclient_storeadvise(
 		pstore->hsession, pstore->hobject,
 		pentryid, event_mask, &sub_id);
 	if (result != ecSuccess) {
@@ -1751,7 +1653,7 @@ static ZEND_FUNCTION(mapi_msgstore_advise)
 	}
 	if (!notif_sink_add_subscription(psink,
 		pstore->hsession, pstore->hobject, sub_id)) {
-		zarafa_client_unadvise(pstore->hsession,
+		zclient_unadvise(pstore->hsession,
 			pstore->hobject, sub_id);
 		MAPI_G(hr) = ecMAPIOOM;
 		THROW_EXCEPTION;
@@ -1762,8 +1664,7 @@ static ZEND_FUNCTION(mapi_msgstore_advise)
 
 static ZEND_FUNCTION(mapi_msgstore_unadvise)
 {
-	long sub_id;
-	uint32_t result;
+	zend_long sub_id;
 	zval *pzresource;
 	MAPI_RESOURCE *pstore;
 
@@ -1779,7 +1680,7 @@ static ZEND_FUNCTION(mapi_msgstore_unadvise)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_unadvise(pstore->hsession,
+	auto result = zclient_unadvise(pstore->hsession,
 							pstore->hobject, sub_id);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -1803,17 +1704,15 @@ static ZEND_FUNCTION(mapi_sink_create)
 		}
 	} else {
 		MAPI_G(hr) = ecSuccess;
-		ZEND_REGISTER_RESOURCE(return_value, psink, le_mapi_advisesink);
+		RETVAL_RG(psink, le_mapi_advisesink);
 	}	
 }
 
 static ZEND_FUNCTION(mapi_sink_timedwait)
 {
-	long tmp_time;
-	uint32_t result;
-	zval *pzressink;
+	zend_long tmp_time;
 	NOTIF_SINK *psink;
-	zval pznotifications;
+	zval pznotifications, *pzressink;
 	ZNOTIFICATION_ARRAY notifications;
 
 	ZVAL_NULL(&pznotifications);
@@ -1833,7 +1732,7 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 		if (tmp_time < 1) {
 			tmp_time = 1;
 		}
-		result = notif_sink_timedwait(psink,
+		auto result = notif_sink_timedwait(psink,
 				tmp_time, &notifications);
 		if (result != ecSuccess) {
 			MAPI_G(hr) = result;
@@ -1854,17 +1753,11 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 
 static ZEND_FUNCTION(mapi_table_queryallrows)
 {
-	zval pzrowset;
-	uint32_t result;
-	zval *pzresource;
-	zval *pzproptags;
+	zval pzrowset, *pzresource, *pzproptags, *pzrestriction;
 	TARRAY_SET rowset;
-	zval *pzrestriction;
 	MAPI_RESOURCE *ptable;
-	PROPTAG_ARRAY proptags;
-	RESTRICTION restriction;
-	PROPTAG_ARRAY *pproptags;
-	RESTRICTION *prestriction;
+	PROPTAG_ARRAY proptags, *pproptags;
+	RESTRICTION restriction, *prestriction;
 	
 	ZVAL_NULL(&pzrowset);
 	pzproptags = NULL;
@@ -1899,7 +1792,7 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 	} else {
 		pproptags = NULL;
 	}
-	result = zarafa_client_queryrows(ptable->hsession, ptable->hobject, 0,
+	auto result = zclient_queryrows(ptable->hsession, ptable->hobject, 0,
 	         INT32_MAX, prestriction, pproptags, &rowset);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -1915,17 +1808,13 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 
 static ZEND_FUNCTION(mapi_table_queryrows)
 {
-	zval pzrowset;
-	uint32_t result;
-	zval *pzresource;
-	zval *pzproptags;
+	zval pzrowset, *pzresource, *pzproptags;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
-	PROPTAG_ARRAY proptags;
-	PROPTAG_ARRAY *pproptags;
+	PROPTAG_ARRAY proptags, *pproptags;
 	
 	ZVAL_NULL(&pzrowset);
-	long start = UINT32_MAX, row_count = UINT32_MAX;
+	zend_long start = UINT32_MAX, row_count = UINT32_MAX;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|a!ll",
 		&pzresource, &pzproptags, &start, &row_count) == FAILURE ||
 		NULL == pzresource) {
@@ -1947,7 +1836,7 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 	} else {
 		pproptags = NULL;
 	}
-	result = zarafa_client_queryrows(ptable->hsession,
+	auto result = zclient_queryrows(ptable->hsession,
 			ptable->hobject, start, row_count, NULL,
 			pproptags, &rowset);
 	if (result != ecSuccess) {
@@ -1964,14 +1853,11 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 
 static ZEND_FUNCTION(mapi_table_setcolumns)
 {
-	long flags;
-	uint32_t result;
-	zval *pzresource;
-	zval *pzproptags;
+	zend_long flags = 0;
+	zval *pzresource, *pzproptags;
 	MAPI_RESOURCE *ptable;
 	PROPTAG_ARRAY proptags;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ra|l",
 		&pzresource, &pzproptags, &flags) == FAILURE || NULL ==
 		pzresource || NULL == pzproptags) {
@@ -1988,7 +1874,7 @@ static ZEND_FUNCTION(mapi_table_setcolumns)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_setcolumns(
+	auto result = zclient_setcolumns(
 		ptable->hsession, ptable->hobject,
 		&proptags, flags);
 	if (result != ecSuccess) {
@@ -2001,15 +1887,11 @@ static ZEND_FUNCTION(mapi_table_setcolumns)
 
 static ZEND_FUNCTION(mapi_table_seekrow)
 {
-	long bookmark;
-	long row_count;
-	uint32_t result;
+	zend_long bookmark = BOOKMARK_BEGINNING, row_count = 0;
 	zval *pzresource;
 	int32_t rows_sought;
 	MAPI_RESOURCE *ptable;
 	
-	row_count = 0;
-	bookmark = BOOKMARK_BEGINNING;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rll",
 		&pzresource, &bookmark, &row_count) == FAILURE || NULL
 		== pzresource) {
@@ -2022,7 +1904,7 @@ static ZEND_FUNCTION(mapi_table_seekrow)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_seekrow(ptable->hsession,
+	auto result = zclient_seekrow(ptable->hsession,
 		ptable->hobject, bookmark, row_count, &rows_sought);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -2034,14 +1916,11 @@ static ZEND_FUNCTION(mapi_table_seekrow)
 
 static ZEND_FUNCTION(mapi_table_sort)
 {
-	long flags;
-	uint32_t result;
-	zval *pzresource;
-	zval *pzsortarray;
+	zend_long flags = 0;
+	zval *pzresource, *pzsortarray;
 	MAPI_RESOURCE *ptable;
 	SORTORDER_SET sortcriteria;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ra|l",
 		&pzresource, &pzsortarray, &flags) == FAILURE || NULL ==
 		pzresource || NULL == pzsortarray) {
@@ -2058,7 +1937,7 @@ static ZEND_FUNCTION(mapi_table_sort)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_sorttable(ptable->hsession,
+	auto result = zclient_sorttable(ptable->hsession,
 					ptable->hobject, &sortcriteria);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -2071,7 +1950,6 @@ static ZEND_FUNCTION(mapi_table_sort)
 static ZEND_FUNCTION(mapi_table_getrowcount)
 {
 	uint32_t count;
-	uint32_t result;
 	zval *pzresource;
 	MAPI_RESOURCE *ptable;
 	
@@ -2086,7 +1964,7 @@ static ZEND_FUNCTION(mapi_table_getrowcount)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_getrowcount(
+	auto result = zclient_getrowcount(
 		ptable->hsession, ptable->hobject,
 		&count);
 	if (result != ecSuccess) {
@@ -2099,14 +1977,11 @@ static ZEND_FUNCTION(mapi_table_getrowcount)
 
 static ZEND_FUNCTION(mapi_table_restrict)
 {
-	unsigned long flags;
-	uint32_t result;
-	zval *pzresource;
-	zval *pzrestrictarray;
+	zend_long flags = 0;
+	zval *pzresource, *pzrestrictarray;
 	MAPI_RESOURCE *ptable;
 	RESTRICTION restriction;
 
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ra|l",
 		&pzresource, &pzrestrictarray, &flags) == FAILURE ||
 		NULL == pzresource || NULL == pzrestrictarray || 0 ==
@@ -2124,7 +1999,7 @@ static ZEND_FUNCTION(mapi_table_restrict)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_restricttable(
+	auto result = zclient_restricttable(
 		ptable->hsession, ptable->hobject,
 		&restriction, flags);
 	if (result != ecSuccess) {
@@ -2137,16 +2012,12 @@ static ZEND_FUNCTION(mapi_table_restrict)
 
 static ZEND_FUNCTION(mapi_table_findrow)
 {
-	unsigned long flags, bookmark;
-	uint32_t result;
+	zend_long flags = 0, bookmark = BOOKMARK_BEGINNING;
 	uint32_t row_idx;
-	zval *pzresource;
-	zval *pzrestrictarray;
+	zval *pzresource, *pzrestrictarray;
 	MAPI_RESOURCE *ptable;
 	RESTRICTION restriction;
 	
-	flags = 0;
-	bookmark = BOOKMARK_BEGINNING;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ra|ll",
 		&pzresource, &pzrestrictarray, &bookmark, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzrestrictarray || 0 ==
@@ -2164,7 +2035,7 @@ static ZEND_FUNCTION(mapi_table_findrow)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_findrow(ptable->hsession,
+	auto result = zclient_findrow(ptable->hsession,
 			ptable->hobject, bookmark, &restriction,
 			flags, &row_idx);
 	if (result != ecSuccess) {
@@ -2177,7 +2048,6 @@ static ZEND_FUNCTION(mapi_table_findrow)
 
 static ZEND_FUNCTION(mapi_table_createbookmark)
 {
-	uint32_t result;
 	zval *pzresource;
 	uint32_t bookmark;
 	MAPI_RESOURCE *ptable;
@@ -2193,7 +2063,7 @@ static ZEND_FUNCTION(mapi_table_createbookmark)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_createbookmark(
+	auto result = zclient_createbookmark(
 		ptable->hsession, ptable->hobject,
 		&bookmark);
 	if (result != ecSuccess) {
@@ -2206,8 +2076,7 @@ static ZEND_FUNCTION(mapi_table_createbookmark)
 
 static ZEND_FUNCTION(mapi_table_freebookmark)
 {
-	long bookmark;
-	uint32_t result;
+	zend_long bookmark;
 	zval *pzresource;
 	MAPI_RESOURCE *ptable;
 	
@@ -2222,7 +2091,7 @@ static ZEND_FUNCTION(mapi_table_freebookmark)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_freebookmark(
+	auto result = zclient_freebookmark(
 		ptable->hsession, ptable->hobject,
 		bookmark);
 	if (result != ecSuccess) {
@@ -2236,12 +2105,10 @@ static ZEND_FUNCTION(mapi_table_freebookmark)
 static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 {
 	BINARY entryid;
-	uint32_t result;
 	zval *pzresource;
 	uint32_t hobject;
 	uint8_t mapi_type;
-	MAPI_RESOURCE *pstore;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pstore, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -2254,14 +2121,14 @@ static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_getreceivefolder(
+	auto result = zclient_getreceivefolder(
 			pstore->hsession, pstore->hobject,
 			NULL, &entryid);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_openstoreentry(
+	result = zclient_openstoreentry(
 		pstore->hsession, pstore->hobject,
 		entryid, 0, &mapi_type, &hobject);
 	if (result != ecSuccess) {
@@ -2276,20 +2143,17 @@ static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	presource->type = ZMG_FOLDER;
 	presource->hsession = pstore->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_folder);
+	RETVAL_RG(presource, le_mapi_folder);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_message_modifyrecipients)
 {
-	long flags;
-	uint32_t result;
-	zval *pzadrlist;
-	zval *pzresource;
+	zend_long flags = MODRECIP_ADD;
+	zval *pzadrlist, *pzresource;
 	TARRAY_SET rcpt_list;
 	MAPI_RESOURCE *pmessage;
 	
-	flags = MODRECIP_ADD;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rla", &pzresource, &flags, &pzadrlist) == FAILURE
 		|| NULL == pzresource || NULL == pzadrlist) {
@@ -2306,7 +2170,7 @@ static ZEND_FUNCTION(mapi_message_modifyrecipients)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_modifyrecipients(
+	auto result = zclient_modifyrecipients(
 		pmessage->hsession, pmessage->hobject,
 		flags, &rcpt_list);
 	if (result != ecSuccess) {
@@ -2319,7 +2183,6 @@ static ZEND_FUNCTION(mapi_message_modifyrecipients)
 
 static ZEND_FUNCTION(mapi_message_submitmessage)
 {
-	uint32_t result;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage;
 	
@@ -2334,7 +2197,7 @@ static ZEND_FUNCTION(mapi_message_submitmessage)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_submitmessage(
+	auto result = zclient_submitmessage(
 		pmessage->hsession, pmessage->hobject);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -2346,11 +2209,9 @@ static ZEND_FUNCTION(mapi_message_submitmessage)
 
 static ZEND_FUNCTION(mapi_message_getattachmenttable)
 {
-	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pmessage;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pmessage, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -2363,7 +2224,7 @@ static ZEND_FUNCTION(mapi_message_getattachmenttable)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_loadattachmenttable(
+	auto result = zclient_loadattachmenttable(
 			pmessage->hsession, pmessage->hobject,
 			&hobject);
 	if (result != ecSuccess) {
@@ -2378,18 +2239,16 @@ static ZEND_FUNCTION(mapi_message_getattachmenttable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_message_openattach)
 {
-	long attach_id;
-	uint32_t result;
+	zend_long attach_id;
 	zval *pzresource;
 	uint32_t hobject;
-	MAPI_RESOURCE *pmessage;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pmessage, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rl",
 		&pzresource, &attach_id) == FAILURE || NULL == pzresource) {
@@ -2402,7 +2261,7 @@ static ZEND_FUNCTION(mapi_message_openattach)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_openattachment(
+	auto result = zclient_openattachment(
 		pmessage->hsession, pmessage->hobject,
 		attach_id, &hobject);
 	if (result != ecSuccess) {
@@ -2417,20 +2276,17 @@ static ZEND_FUNCTION(mapi_message_openattach)
 	presource->type = ZMG_ATTACH;
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_attachment);
+	RETVAL_RG(presource, le_mapi_attachment);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_message_createattach)
 {
-	long flags;
-	uint32_t result;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pmessage;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pmessage, *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -2442,7 +2298,7 @@ static ZEND_FUNCTION(mapi_message_createattach)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_createattachment(
+	auto result = zclient_createattachment(
 		pmessage->hsession, pmessage->hobject,
 		&hobject);
 	if (result != ecSuccess) {
@@ -2457,19 +2313,16 @@ static ZEND_FUNCTION(mapi_message_createattach)
 	presource->type = ZMG_ATTACH;
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_attachment);
+	RETVAL_RG(presource, le_mapi_attachment);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_message_deleteattach)
 {	
-	long flags;
-	long attach_id;
-	uint32_t result;
+	zend_long flags = 0, attach_id;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rl|l",
 		&pzresource, &attach_id, &flags) == FAILURE || NULL ==
 		pzresource) {
@@ -2482,7 +2335,7 @@ static ZEND_FUNCTION(mapi_message_deleteattach)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_deleteattachment(
+	auto result = zclient_deleteattachment(
 		pmessage->hsession, pmessage->hobject,
 		attach_id);
 	if (result != ecSuccess) {
@@ -2499,7 +2352,7 @@ static ZEND_FUNCTION(mapi_stream_read)
 	zval *pzresource;
 	uint32_t actual_bytes;
 	STREAM_OBJECT *pstream;
-	unsigned long wanted_bytes;
+	zend_long wanted_bytes;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rl", &pzresource, &wanted_bytes) == FAILURE ||
@@ -2520,12 +2373,10 @@ static ZEND_FUNCTION(mapi_stream_read)
 
 static ZEND_FUNCTION(mapi_stream_seek)
 {
-	long flags;
+	zend_long flags = STREAM_SEEK_CUR, seek_offset;
 	zval *pzresource;
-	long seek_offset;
 	STREAM_OBJECT *pstream;
 	
-	flags = STREAM_SEEK_CUR;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rl|l",
 		&pzresource, &seek_offset, &flags) == FAILURE || NULL ==
 		pzresource) {
@@ -2544,7 +2395,7 @@ static ZEND_FUNCTION(mapi_stream_seek)
 
 static ZEND_FUNCTION(mapi_stream_setsize)
 {
-	long newsize;
+	zend_long newsize;
 	zval *pzresource;
 	STREAM_OBJECT *pstream;
 	
@@ -2637,23 +2488,20 @@ static ZEND_FUNCTION(mapi_stream_create)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
+	RETVAL_RG(pstream, le_stream);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_openpropertytostream)
 {
-	long flags;
+	zend_long flags = 0, proptag;
 	size_t guidlen = 0;
 	void *pvalue;
-	long proptag;
 	char *guidstr;
-	uint32_t result;
 	zval *pzresource;
 	STREAM_OBJECT *pstream;
 	MAPI_RESOURCE *probject;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rl|ls", &pzresource, &proptag, &flags, &guidstr,
 		&guidlen) == FAILURE || NULL == pzresource) {
@@ -2720,7 +2568,7 @@ static ZEND_FUNCTION(mapi_openpropertytostream)
 	stream_object_set_parent(
 		pstream, probject->hsession,
 		probject->hobject, proptag);
-	result = zarafa_client_getpropval(probject->hsession,
+	auto result = zclient_getpropval(probject->hsession,
 		probject->hobject, phptag_to_proptag(proptag), &pvalue);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -2735,17 +2583,15 @@ static ZEND_FUNCTION(mapi_openpropertytostream)
 		}
 		stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 	}
-	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
+	RETVAL_RG(pstream, le_stream);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_message_getrecipienttable)
 {
-	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pmessage;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pmessage, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -2758,7 +2604,7 @@ static ZEND_FUNCTION(mapi_message_getrecipienttable)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_loadrecipienttable(
+	auto result = zclient_loadrecipienttable(
 		pmessage->hsession, pmessage->hobject,
 		&hobject);
 	if (result != ecSuccess) {
@@ -2773,18 +2619,16 @@ static ZEND_FUNCTION(mapi_message_getrecipienttable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_message_setreadflag)
 {
-	long flags;
-	uint32_t result;
+	zend_long flags = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rl",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -2796,7 +2640,7 @@ static ZEND_FUNCTION(mapi_message_setreadflag)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_setmessagereadflag(
+	auto result = zclient_setmessagereadflag(
 		pmessage->hsession, pmessage->hobject,
 		flags);
 	if (result != ecSuccess) {
@@ -2809,14 +2653,11 @@ static ZEND_FUNCTION(mapi_message_setreadflag)
 
 static ZEND_FUNCTION(mapi_attach_openobj)
 {
-	long flags;
-	uint32_t result;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pattach;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pattach, *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -2829,7 +2670,7 @@ static ZEND_FUNCTION(mapi_attach_openobj)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_openembedded(
+	auto result = zclient_openembedded(
 		pattach->hsession, pattach->hobject,
 		flags, &hobject);
 	if (result != ecSuccess) {
@@ -2844,17 +2685,14 @@ static ZEND_FUNCTION(mapi_attach_openobj)
 	presource->type = ZMG_MESSAGE;
 	presource->hsession = pattach->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
+	RETVAL_RG(presource, le_mapi_message);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_getidsfromnames)
 {
 	int i;
-	zval *pzstore;
-	zval *pznames;
-	zval *pzguids;
-	uint32_t result;
+	zval *pzstore, *pznames, *pzguids;
 	PROPID_ARRAY propids;
 	MAPI_RESOURCE *pstore;
 	PROPNAME_ARRAY propnames;
@@ -2876,7 +2714,7 @@ static ZEND_FUNCTION(mapi_getidsfromnames)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_getnamedpropids(
+	auto result = zclient_getnamedpropids(
 		pstore->hsession, pstore->hobject,
 		&propnames, &propids);
 	if (result != ecSuccess) {
@@ -2892,9 +2730,7 @@ static ZEND_FUNCTION(mapi_getidsfromnames)
 
 static ZEND_FUNCTION(mapi_setprops)
 {
-	uint32_t result;
-	zval *pzpropvals;
-	zval *pzresource;
+	zval *pzpropvals, *pzresource;
 	MAPI_RESOURCE *probject;
 	TPROPVAL_ARRAY propvals;
 	
@@ -2950,7 +2786,7 @@ static ZEND_FUNCTION(mapi_setprops)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_setpropvals(probject->hsession,
+	auto result = zclient_setpropvals(probject->hsession,
 							probject->hobject, &propvals);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -2962,18 +2798,11 @@ static ZEND_FUNCTION(mapi_setprops)
 
 static ZEND_FUNCTION(mapi_copyto)
 {
-	long flags;
-	zval *pzsrc;
-	zval *pzdst;
-	uint32_t result;
-	zval *pzexcludeiids;
-	zval *pzexcludeprops;
-	MAPI_RESOURCE *psrcobject;
-	MAPI_RESOURCE *pdstobject;
-	PROPTAG_ARRAY exclude_proptags;
-	PROPTAG_ARRAY *pexclude_proptags;
+	zend_long flags = 0;
+	zval *pzsrc, *pzdst, *pzexcludeiids, *pzexcludeprops;
+	MAPI_RESOURCE *psrcobject, *pdstobject;
+	PROPTAG_ARRAY exclude_proptags, *pexclude_proptags;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raar|l",
 		&pzsrc, &pzexcludeiids, &pzexcludeprops, &pzdst, &flags)
 		== FAILURE || NULL == pzsrc || NULL == pzdst) {
@@ -3041,7 +2870,7 @@ static ZEND_FUNCTION(mapi_copyto)
 		}
 		pexclude_proptags = &exclude_proptags;
 	}
-	result = zarafa_client_copyto(psrcobject->hsession,
+	auto result = zclient_copyto(psrcobject->hsession,
 				psrcobject->hobject, pexclude_proptags,
 				pdstobject->hobject, flags);
 	if (result != ecSuccess) {
@@ -3054,12 +2883,10 @@ static ZEND_FUNCTION(mapi_copyto)
 
 static ZEND_FUNCTION(mapi_savechanges)
 {
-	long flags;
-	uint32_t result;
+	zend_long flags = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *probject;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -3110,7 +2937,7 @@ static ZEND_FUNCTION(mapi_savechanges)
 	switch (probject->type) {
 	case ZMG_ATTACH:
 	case ZMG_MESSAGE:
-		result = zarafa_client_savechanges(
+		auto result = zclient_savechanges(
 			probject->hsession, probject->hobject);
 		if (result != ecSuccess) {
 			MAPI_G(hr) = result;
@@ -3124,9 +2951,7 @@ static ZEND_FUNCTION(mapi_savechanges)
 
 static ZEND_FUNCTION(mapi_deleteprops)
 {
-	uint32_t result;
-	zval *pzresource;
-	zval *pzproptags;
+	zval *pzresource, *pzproptags;
 	PROPTAG_ARRAY proptags;
 	MAPI_RESOURCE *probject;
 	
@@ -3175,7 +3000,7 @@ static ZEND_FUNCTION(mapi_deleteprops)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_deletepropvals(probject->hsession,
+	auto result = zclient_deletepropvals(probject->hsession,
 								probject->hobject, &proptags);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -3187,25 +3012,19 @@ static ZEND_FUNCTION(mapi_deleteprops)
 
 static ZEND_FUNCTION(mapi_openproperty)
 {
-	int type = -1;
-	int flags;
 	size_t guidlen = 0;
-	long proptag;
 	void *pvalue;
 	char *guidstr;
 	FLATUID iid_guid;
-	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
 	PULL_CTX pull_ctx;
-	long interfaceflags;
+	zend_long flags = 0, interfaceflags = 0, proptag;
 	STREAM_OBJECT *pstream;
-	MAPI_RESOURCE *probject;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *probject, *presource;
 	ICS_IMPORT_CTX *pimporter;
 	ICS_EXPORT_CTX *pexporter;
 	
-	flags = 0;
 	if (ZEND_NUM_ARGS() == 2) {
 		if (zend_parse_parameters(ZEND_NUM_ARGS(),
 			"rl", &pzresource, &proptag) == FAILURE || NULL
@@ -3213,8 +3032,6 @@ static ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = ecInvalidParam;
 			THROW_EXCEPTION;
 		}
-		flags = 0;
-		interfaceflags = 0;
 		iid_guid = IID_IStream;
 	} else {
 		if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -3230,7 +3047,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 			THROW_EXCEPTION;
 		}
 	}
-	type = Z_RES_TYPE_P(pzresource);
+	auto type = Z_RES_TYPE_P(pzresource);
 	if (type == le_mapi_message) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_message, le_mapi_message);
@@ -3273,7 +3090,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = ecNotSupported;
 			THROW_EXCEPTION;
 		}
-		result = zarafa_client_getpropval(probject->hsession,
+		auto result = zclient_getpropval(probject->hsession,
 			probject->hobject, phptag_to_proptag(proptag), &pvalue); /* memleak(pvalue) */
 		if (result != ecSuccess) {
 			MAPI_G(hr) = result;
@@ -3307,14 +3124,14 @@ static ZEND_FUNCTION(mapi_openproperty)
 				}
 				stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 			}
-			ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
+			RETVAL_RG(pstream, le_stream);
 		}
 	} else if (iid_guid == IID_IMessage) {
 		if (type != le_mapi_attachment || proptag != PR_ATTACH_DATA_OBJ) {
 			MAPI_G(hr) = ecNotSupported;
 			THROW_EXCEPTION;
 		}
-		result = zarafa_client_openembedded(probject->hsession,
+		auto result = zclient_openembedded(probject->hsession,
 							probject->hobject, flags, &hobject);
 		if (result != ecSuccess) {
 			MAPI_G(hr) = result;
@@ -3328,21 +3145,21 @@ static ZEND_FUNCTION(mapi_openproperty)
 		presource->type = ZMG_MESSAGE;
 		presource->hsession = probject->hsession;
 		presource->hobject = hobject;
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
+		RETVAL_RG(presource, le_mapi_message);
 	} else if (iid_guid == IID_IExchangeExportChanges) {
 		if (type != le_mapi_folder) {
 			MAPI_G(hr) = ecNotSupported;
 			THROW_EXCEPTION;
 		}
 		if (PR_CONTENTS_SYNCHRONIZER == proptag) {
-			result = zarafa_client_contentsync(probject->hsession,
+			auto result = zclient_contentsync(probject->hsession,
 									probject->hobject, &hobject);
 			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				THROW_EXCEPTION;
 			}
 		} else if (PR_HIERARCHY_SYNCHRONIZER == proptag) {
-			result = zarafa_client_hierarchysync(probject->hsession,
+			auto result = zclient_hierarchysync(probject->hsession,
 										probject->hobject, &hobject);
 			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
@@ -3368,8 +3185,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 		pexporter->progress = 0;
 		pexporter->sync_steps = 0;
 		pexporter->total_steps = 0;
-		ZEND_REGISTER_RESOURCE(return_value,
-			pexporter, le_mapi_exportchanges);
+		RETVAL_RG(pexporter, le_mapi_exportchanges);
 	} else if (iid_guid == IID_IExchangeImportHierarchyChanges) {
 		if (type != le_mapi_folder) {
 			MAPI_G(hr) = ecNotSupported;
@@ -3379,7 +3195,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = ecNotSupported;
 			THROW_EXCEPTION;
 		}
-		result = zarafa_client_hierarchyimport(
+		auto result = zclient_hierarchyimport(
 			probject->hsession, probject->hobject,
 			&hobject);
 		if (result != ecSuccess) {
@@ -3395,8 +3211,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 		pimporter->hobject = hobject;
 		ZVAL_NULL(&pimporter->pztarget_obj);
 		pimporter->ics_type = ICS_TYPE_HIERARCHY;
-		ZEND_REGISTER_RESOURCE(return_value,
-			pimporter, le_mapi_importhierarchychanges);
+		RETVAL_RG(pimporter, le_mapi_importhierarchychanges);
 	} else if (iid_guid == IID_IExchangeImportContentsChanges) {
 		if (type != le_mapi_folder) {
 			MAPI_G(hr) = ecNotSupported;
@@ -3406,7 +3221,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = ecNotSupported;
 			THROW_EXCEPTION;
 		}
-		result = zarafa_client_contentimport(
+		auto result = zclient_contentimport(
 			probject->hsession, probject->hobject,
 			&hobject);
 		if (result != ecSuccess) {
@@ -3422,8 +3237,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 		pimporter->hobject = hobject;
 		ZVAL_NULL(&pimporter->pztarget_obj);
 		pimporter->ics_type = ICS_TYPE_CONTENTS;
-		ZEND_REGISTER_RESOURCE(return_value,
-			pimporter, le_mapi_importcontentschanges);
+		RETVAL_RG(pimporter, le_mapi_importcontentschanges);
 	} else {
 		MAPI_G(hr) = ecNotSupported;
 		THROW_EXCEPTION;
@@ -3433,14 +3247,10 @@ static ZEND_FUNCTION(mapi_openproperty)
 
 static ZEND_FUNCTION(mapi_getprops)
 {
-	uint32_t result;
-	zval *pzresource;
-	zval *pztagarray;
-	zval pzpropvals;
-	PROPTAG_ARRAY proptags;
+	zval pzpropvals, *pzresource, *pztagarray;
+	PROPTAG_ARRAY proptags, *pproptags;
 	TPROPVAL_ARRAY propvals;
 	MAPI_RESOURCE *probject;
-	PROPTAG_ARRAY *pproptags;
 	
 	ZVAL_NULL(&pzpropvals);
 	pztagarray = NULL;
@@ -3540,7 +3350,7 @@ static ZEND_FUNCTION(mapi_getprops)
 	} else {
 		pproptags = NULL;
 	}
-	result = zarafa_client_getpropvals(probject->hsession,
+	auto result = zclient_getpropvals(probject->hsession,
 				probject->hobject, pproptags, &propvals);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -3558,9 +3368,7 @@ static ZEND_FUNCTION(mapi_getprops)
 static ZEND_FUNCTION(mapi_getnamesfromids)
 {
 	int i;
-	zval *pzarray;
-	uint32_t result;
-	zval *pzresource;
+	zval *pzarray, *pzresource;
 	char num_buff[20];
 	PROPID_ARRAY propids;
 	MAPI_RESOURCE *pstore;
@@ -3592,7 +3400,7 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 	for (i=0; i<proptags.count; i++) {
 		propids.ppropid[i] = PROP_ID(proptags.pproptag[i]);
 	}
-	result = zarafa_client_getpropnames(
+	auto result = zclient_getpropnames(
 		pstore->hsession, pstore->hobject,
 		&propids, &propnames);
 	if (result != ecSuccess) {
@@ -3623,16 +3431,10 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 static ZEND_FUNCTION(mapi_decompressrtf)
 {
 	pid_t pid;
-	int status;
-	int offset;
+	int status, offset, bufflen, readlen;
 	size_t rtflen = 0;
-	int bufflen;
-	int readlen;
-	char *pbuff;
-	char* args[2];
-	char *rtfbuffer;
-	int pipes_in[2] = {-1, -1};
-	int pipes_out[2] = {-1, -1};
+	char *pbuff, *rtfbuffer, *args[2];
+	int pipes_in[2] = {-1, -1}, pipes_out[2] = {-1, -1};
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"s", &rtfbuffer, &rtflen) == FAILURE || NULL ==
@@ -3708,11 +3510,9 @@ static ZEND_FUNCTION(mapi_decompressrtf)
 
 static ZEND_FUNCTION(mapi_folder_getrulestable)
 {
-	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pfolder;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pfolder, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -3725,7 +3525,7 @@ static ZEND_FUNCTION(mapi_folder_getrulestable)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_loadruletable(
+	auto result = zclient_loadruletable(
 		pfolder->hsession, pfolder->hobject,
 		&hobject);
 	if (result != ecSuccess) {
@@ -3740,17 +3540,14 @@ static ZEND_FUNCTION(mapi_folder_getrulestable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = pfolder->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value,
-				presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 {
-	long flags;
-	uint32_t result;
-	zval *pzresource;
-	zval pzfolderlist, pzrestriction;
+	zend_long flags = 0;
+	zval pzfolderlist, pzrestriction, *pzresource;
 	uint32_t search_state;
 	MAPI_RESOURCE *pfolder;
 	RESTRICTION *prestriction;
@@ -3758,7 +3555,6 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 
 	ZVAL_NULL(&pzfolderlist);
 	ZVAL_NULL(&pzrestriction);
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -3770,7 +3566,7 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_getsearchcriteria(
+	auto result = zclient_getsearchcriteria(
 		pfolder->hsession, pfolder->hobject,
 		&entryid_array, &prestriction,
 		&search_state);
@@ -3796,18 +3592,12 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 
 static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 {
-	long flags;
-	uint32_t result;
-	zval *pzresource;
-	zval *pzfolderlist;
-	zval *pzrestriction;
+	zend_long flags = 0;
+	zval *pzresource, *pzfolderlist, *pzrestriction;
 	MAPI_RESOURCE *pfolder;
-	RESTRICTION restriction;
-	RESTRICTION *prestriction;
-	BINARY_ARRAY entryid_array;
-	BINARY_ARRAY *pentryid_array;
+	RESTRICTION restriction, *prestriction;
+	BINARY_ARRAY entryid_array, *pentryid_array;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raal",
 		&pzresource, &pzrestriction, &pzfolderlist, &flags) ==
 		FAILURE || NULL == pzresource) {
@@ -3840,7 +3630,7 @@ static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 		}
 		pentryid_array = &entryid_array;
 	}
-	result = zarafa_client_setsearchcriteria(
+	auto result = zclient_setsearchcriteria(
 		pfolder->hsession, pfolder->hobject,
 		flags, pentryid_array, prestriction);
 	if (result != ecSuccess) {
@@ -3853,14 +3643,11 @@ static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 
 static ZEND_FUNCTION(mapi_folder_modifyrules)
 {
-	long flags;
-	zval *pzrows;
-	uint32_t result;
-	zval *pzresource;
+	zend_long flags = 0;
+	zval *pzrows, *pzresource;
 	RULE_LIST rule_list;
 	MAPI_RESOURCE *pfolder;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra|l", &pzresource, &pzrows, &flags) == FAILURE
 		|| NULL == pzresource) {
@@ -3877,7 +3664,7 @@ static ZEND_FUNCTION(mapi_folder_modifyrules)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_modifyrules(pfolder->hsession,
+	auto result = zclient_modifyrules(pfolder->hsession,
 					pfolder->hobject, flags, &rule_list);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -3890,8 +3677,7 @@ static ZEND_FUNCTION(mapi_folder_modifyrules)
 static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 {
 	int i;
-	long acl_type;
-	uint32_t result;
+	zend_long acl_type;
 	zval *pzresource;
 	PERMISSION_SET perm_set;
 	MAPI_RESOURCE *presource;
@@ -3927,7 +3713,7 @@ static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 		THROW_EXCEPTION;
 	}
 	}
-	result = zarafa_client_getpermissions(
+	auto result = zclient_getpermissions(
 		presource->hsession, presource->hobject,
 		&perm_set);
 	if (result != ecSuccess) {
@@ -3955,13 +3741,10 @@ static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 {
 	int i, j;
-	zval *pzperms;
-	uint32_t result;
-	zval *pzresource;
-	HashTable *pdata;
+	zval *pzperms, *pzresource;
+	HashTable *pdata, *ptarget_hash;
 	MAPI_RESOURCE *pfolder;
 	PERMISSION_SET perm_set;
-	HashTable *ptarget_hash;
 	zstrplus str_userid(zend_string_init(ZEND_STRL("userid"), 0));
 	zstrplus str_type(zend_string_init(ZEND_STRL("type"), 0));
 	zstrplus str_rights(zend_string_init(ZEND_STRL("rights"), 0));
@@ -4031,7 +3814,7 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 		j ++;
 		zend_hash_move_forward(ptarget_hash);
 	}
-	result = zarafa_client_modifypermissions(
+	auto result = zclient_modifypermissions(
 		pfolder->hsession, pfolder->hobject,
 		&perm_set);
 	if (result != ecSuccess) {
@@ -4059,11 +3842,9 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 */
 static ZEND_FUNCTION(mapi_getuseravailability)
 {
-	long endtime;
-	long starttime;
+	zend_long starttime, endtime;
 	BINARY entryid;
 	size_t eid_size = 0;
-	uint32_t result;
 	zval *pzresource;
 	char *presult_string;
 	MAPI_RESOURCE *psession;
@@ -4081,7 +3862,7 @@ static ZEND_FUNCTION(mapi_getuseravailability)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_getuseravailability(
+	auto result = zclient_getuseravailability(
 		psession->hsession, entryid, starttime,
 		endtime, &presult_string);
 	if (result != ecSuccess) {
@@ -4098,23 +3879,14 @@ static ZEND_FUNCTION(mapi_getuseravailability)
 
 static ZEND_FUNCTION(mapi_exportchanges_config)
 {
-	long flags;
-	long buffersize;
-	uint32_t result;
-	zval *pzrestrict;
-	zval *pzresstream;
-	zval *pzincludeprops;
-	zval *pzexcludeprops;
+	zend_long flags = 0, buffersize = 0;
+	zval *pzrestrict, *pzresstream, *pzincludeprops, *pzexcludeprops;
+	zval *pzresimportchanges, *pzresexportchanges;
 	ICS_EXPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
-	RESTRICTION restriction;
-	zval *pzresimportchanges;
-	zval *pzresexportchanges;
-	RESTRICTION *prestriction;
+	RESTRICTION restriction, *prestriction;
 	ICS_IMPORT_CTX *pimporter;
 	
-	flags = 0;
-	buffersize = 1;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rrlzzzzl", &pzresexportchanges, &pzresstream, &flags,
 		&pzresimportchanges, &pzrestrict, &pzincludeprops,
@@ -4163,7 +3935,7 @@ static ZEND_FUNCTION(mapi_exportchanges_config)
 	ZVAL_OBJ(&pctx->pztarget_obj, Z_OBJ(pimporter->pztarget_obj));
 	Z_ADDREF(pctx->pztarget_obj);
 	pctx->ics_type = pimporter->ics_type;
-	result = zarafa_client_configsync(pctx->hsession, pctx->hobject,
+	auto result = zclient_configsync(pctx->hsession, pctx->hobject,
 			flags, stream_object_get_content(pstream), prestriction,
 			&pctx->b_changed, &pctx->total_steps);
 	if (result != ecSuccess) {
@@ -4323,7 +4095,6 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 {
 	uint32_t flags;
 	zend_bool b_new;
-	uint32_t result;
 	zval *pzresource;
 	BINARY_ARRAY bins;
 	STATE_ARRAY states;
@@ -4344,7 +4115,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 	}
 	if (0 == pctx->progress) {
 		if (ICS_TYPE_CONTENTS == pctx->ics_type) {
-			result = zarafa_client_syncdeletions(
+			auto result = zclient_syncdeletions(
 				pctx->hsession, pctx->hobject, 0, &bins);
 			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
@@ -4354,7 +4125,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				MAPI_G(hr) = ecError;
 				THROW_EXCEPTION;
 			}
-			result = zarafa_client_syncdeletions(pctx->hsession,
+			result = zclient_syncdeletions(pctx->hsession,
 						pctx->hobject, SYNC_SOFT_DELETE, &bins);
 			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
@@ -4364,7 +4135,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				MAPI_G(hr) = ecError;
 				THROW_EXCEPTION;
 			}
-			result = zarafa_client_syncreadstatechanges(
+			result = zclient_syncreadstatechanges(
 				pctx->hsession, pctx->hobject, &states);
 			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
@@ -4375,7 +4146,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				THROW_EXCEPTION;
 			}
 		} else {
-			result = zarafa_client_syncdeletions(
+			auto result = zclient_syncdeletions(
 				pctx->hsession, pctx->hobject, 0, &bins);
 			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
@@ -4389,7 +4160,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 	}
 	for (size_t i = 0; i < pctx->sync_steps; ++i, ++pctx->progress) {
 		if (ICS_TYPE_CONTENTS == pctx->ics_type) {
-			result = zarafa_client_syncmessagechange(
+			auto result = zclient_syncmessagechange(
 				pctx->hsession, pctx->hobject, &b_new,
 				&propvals);
 			if (result == ecNotFound)
@@ -4409,7 +4180,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				THROW_EXCEPTION;
 			}
 		} else {
-			result = zarafa_client_syncfolderchange(
+			auto result = zclient_syncfolderchange(
 				pctx->hsession, pctx->hobject,
 				&propvals);
 			if (result == ecNotFound)
@@ -4437,12 +4208,10 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 
 static ZEND_FUNCTION(mapi_exportchanges_updatestate)
 {
-	uint32_t result;
 	BINARY state_bin;
-	zval *pzresstream;
+	zval *pzresstream, *pzresexportchanges;
 	ICS_EXPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
-	zval *pzresexportchanges;
 	
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "rr",
 		&pzresexportchanges, &pzresstream) == FAILURE || NULL
@@ -4454,7 +4223,7 @@ static ZEND_FUNCTION(mapi_exportchanges_updatestate)
 		-1, name_mapi_exportchanges, le_mapi_exportchanges);
     ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresstream, -1, name_stream, le_stream);
-	result = zarafa_client_statesync(pctx->hsession,
+	auto result = zclient_statesync(pctx->hsession,
 						pctx->hobject, &state_bin);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -4488,14 +4257,11 @@ static ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_config)
 {
-	long flags;
-	uint32_t result;
-	zval *pzresimport;
-	zval *pzresstream;
+	zend_long flags = 0;
+	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rrl",
 		&pzresimport, &pzresstream, &flags) == FAILURE || NULL
 		== pzresimport || NULL == pzresstream) {
@@ -4506,7 +4272,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_config)
 		name_mapi_importcontentschanges, le_mapi_importcontentschanges);
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresstream, -1, name_stream, le_stream);
-	result = zarafa_client_configimport(pctx->hsession,
+	auto result = zclient_configimport(pctx->hsession,
 					pctx->hobject, ICS_TYPE_CONTENTS,
 					stream_object_get_content(pstream));
 	if (result != ecSuccess) {
@@ -4519,10 +4285,8 @@ static ZEND_FUNCTION(mapi_importcontentschanges_config)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 {
-	uint32_t result;
 	BINARY state_bin;
-	zval *pzresimport;
-	zval *pzresstream;
+	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
@@ -4536,7 +4300,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 		name_mapi_importcontentschanges, le_mapi_importcontentschanges);
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresstream, -1, name_stream, le_stream);
-	result = zarafa_client_stateimport(pctx->hsession,
+	auto result = zclient_stateimport(pctx->hsession,
 							pctx->hobject, &state_bin);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -4550,17 +4314,13 @@ static ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 {
-	long flags;
-	uint32_t result;
+	zend_long flags = 0;
 	uint32_t hobject;
-	zval *pzresprops;
-	zval *pzresimport;
-	zval *pzresmessage;
+	zval *pzresprops, *pzresimport, *pzresmessage;
 	ICS_IMPORT_CTX *pctx;
 	TPROPVAL_ARRAY propvals;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ralz", &pzresimport, &pzresprops, &flags,
 		&pzresmessage) == FAILURE || NULL == pzresimport
@@ -4574,7 +4334,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-    result = zarafa_client_importmessage(pctx->hsession,
+	auto result = zclient_importmessage(pctx->hsession,
 			pctx->hobject, flags, &propvals, &hobject);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -4589,21 +4349,18 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 	presource->hsession = pctx->hsession;
 	presource->hobject = hobject;
 	ZVAL_DEREF(pzresmessage);
-	ZEND_REGISTER_RESOURCE(pzresmessage, presource, le_mapi_message);
+	ZVAL_RES(pzresmessage, zend_register_resource(presource, le_mapi_message));
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 {
-	long flags;
-	uint32_t result;
-	zval *pzresimport;
-	zval *pzresmessages;
+	zend_long flags = 0;
+	zval *pzresimport, *pzresmessages;
 	ICS_IMPORT_CTX *pctx;
 	BINARY_ARRAY message_bins;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rla",
 		&pzresimport, &flags, &pzresmessages) == FAILURE ||
 		NULL == pzresimport || NULL == pzresmessages) {
@@ -4623,7 +4380,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 	} else {
 		flags = SYNC_DELETES_FLAG_HARDDELETE;
 	}
-	result = zarafa_client_importdeletion(
+	auto result = zclient_importdeletion(
 			pctx->hsession, pctx->hobject,
 			flags, &message_bins);
 	if (result != ecSuccess) {
@@ -4636,10 +4393,8 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 {
-	uint32_t result;
-	zval *pzresimport;
+	zval *pzresimport, *pzresreadstates;
 	ICS_IMPORT_CTX *pctx;
-	zval *pzresreadstates;
 	STATE_ARRAY message_states;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ra",
@@ -4654,7 +4409,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_importreadstates(
+	auto result = zclient_importreadstates(
 				pctx->hsession, pctx->hobject,
 				&message_states);
 	if (result != ecSuccess) {
@@ -4677,14 +4432,11 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_config)
 {
-	long flags;
-	uint32_t result;
-	zval *pzresimport;
-	zval *pzresstream;
+	zend_long flags = 0;
+	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rrl",
 		&pzresimport, &pzresstream, &flags) == FAILURE || NULL
 		== pzresimport || NULL == pzresstream) {
@@ -4695,7 +4447,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_config)
 		name_mapi_importhierarchychanges, le_mapi_importhierarchychanges);
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresstream, -1, name_stream, le_stream);
-	result = zarafa_client_configimport(pctx->hsession, pctx->hobject,
+	auto result = zclient_configimport(pctx->hsession, pctx->hobject,
 				ICS_TYPE_HIERARCHY, stream_object_get_content(pstream));
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -4707,10 +4459,8 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_config)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 {
-	uint32_t result;
 	BINARY state_bin;
-	zval *pzresimport;
-	zval *pzresstream;
+	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
@@ -4726,7 +4476,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 		le_mapi_importhierarchychanges);
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresstream, -1, name_stream, le_stream);
-	result = zarafa_client_stateimport(pctx->hsession,
+	auto result = zclient_stateimport(pctx->hsession,
 							pctx->hobject, &state_bin);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -4740,9 +4490,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 {
-	uint32_t result;
-	zval *pzresprops;
-	zval *pzresimport;
+	zval *pzresprops, *pzresimport;
 	ICS_IMPORT_CTX *pctx;
 	TPROPVAL_ARRAY propvals;
 	
@@ -4760,7 +4508,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_importfolder(
+	auto result = zclient_importfolder(
 			pctx->hsession, pctx->hobject,
 			&propvals);
 	if (result != ecSuccess) {
@@ -4773,14 +4521,11 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 {
-	long flags;
-	uint32_t result;
-	zval *pzresimport;
-	zval *pzresfolders;
+	zend_long flags = 0;
+	zval *pzresimport, *pzresfolders;
 	ICS_IMPORT_CTX *pctx;
 	BINARY_ARRAY folder_bins;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rla", &pzresimport, &flags, &pzresfolders) == FAILURE
 		|| NULL == pzresimport || NULL == pzresfolders) {
@@ -4793,7 +4538,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_importdeletion(
+	auto result = zclient_importdeletion(
 			pctx->hsession, pctx->hobject,
 			flags, &folder_bins);
 	if (result != ecSuccess) {
@@ -4823,8 +4568,7 @@ static ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 	pctx->hobject = 0;
 	ZVAL_OBJ(&pctx->pztarget_obj, Z_OBJ_P(pzobject));
 	Z_ADDREF(pctx->pztarget_obj);
-	ZEND_REGISTER_RESOURCE(return_value,
-		pctx, le_mapi_importcontentschanges);
+	RETVAL_RG(pctx, le_mapi_importcontentschanges);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -4847,19 +4591,14 @@ static ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 	pctx->hobject = 0;
 	ZVAL_OBJ(&pctx->pztarget_obj, Z_OBJ_P(pzobject));
 	Z_ADDREF(pctx->pztarget_obj);
-	ZEND_REGISTER_RESOURCE(return_value,
-		pctx, le_mapi_importhierarchychanges);
+	RETVAL_RG(pctx, le_mapi_importhierarchychanges);
 	MAPI_G(hr) = ecSuccess;
 }
 
 static ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 {
 	BINARY eml_bin;
-	uint32_t result;
-	zval *pzressession;
-	zval *pzresmessage;
-	zval *pzresoptions;
-	zval *pzresaddrbook;
+	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	STREAM_OBJECT *pstream;
 	MAPI_RESOURCE *pmessage;
 	
@@ -4875,7 +4614,7 @@ static ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_messagetorfc822(
+	auto result = zclient_messagetorfc822(
 		pmessage->hsession, pmessage->hobject,
 		&eml_bin);
 	if (result != ecSuccess) {
@@ -4889,7 +4628,7 @@ static ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 	}
 	stream_object_write(pstream, eml_bin.pb, eml_bin.cb);
 	stream_object_seek(pstream, STREAM_SEEK_SET, 0);
-	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
+	RETVAL_RG(pstream, le_stream);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -4898,12 +4637,7 @@ static ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 	size_t cbstring = 0;
 	char *szstring;
 	BINARY eml_bin;
-	uint32_t result;
-	zval *pzresstore;
-	zval *pzressession;
-	zval *pzresmessage;
-	zval *pzresoptions;
-	zval *pzresaddrbook;
+	zval *pzresstore, *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rrrrsa",
@@ -4936,7 +4670,7 @@ static ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 	}
 	eml_bin.pb = reinterpret_cast<uint8_t *>(szstring);
 	eml_bin.cb = cbstring;
-	result = zarafa_client_rfc822tomessage(pmessage->hsession,
+	auto result = zclient_rfc822tomessage(pmessage->hsession,
 	         pmessage->hobject, mxf_flags, &eml_bin);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -4951,11 +4685,7 @@ static ZEND_FUNCTION(mapi_icaltomapi)
 	size_t cbstring = 0;
 	char *szstring;
 	BINARY ical_bin;
-	uint32_t result;
-	zval *pzresstore;
-	zval *pzresmessage;
-	zval *pzressession;
-	zval *pzresaddrbook;
+	zval *pzresstore, *pzresmessage, *pzressession, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
 	zend_bool b_norecipients;
 	
@@ -4974,7 +4704,7 @@ static ZEND_FUNCTION(mapi_icaltomapi)
 	}
 	ical_bin.pb = reinterpret_cast<uint8_t *>(szstring);
 	ical_bin.cb = cbstring;
-	result = zarafa_client_icaltomessage(
+	auto result = zclient_icaltomessage(
 		pmessage->hsession, pmessage->hobject,
 		&ical_bin);
 	if (result != ecSuccess) {
@@ -5016,7 +4746,7 @@ static ZEND_FUNCTION(mapi_icaltomapi2)
 	ZEND_FETCH_RESOURCE(fld, MAPI_RESOURCE *, &resfolder, -1,
 		name_mapi_folder, le_mapi_folder);
 	LONG_ARRAY msg_handles{};
-	auto ret = zarafa_client_imtomessage2(abk->hsession, fld->hobject,
+	auto ret = zclient_imtomessage2(abk->hsession, fld->hobject,
 	           IMTOMESSAGE_ICAL, icsdata, &msg_handles);
 	if (ret != ecSuccess) {
 		MAPI_G(hr) = ret;
@@ -5040,7 +4770,7 @@ static void imtomapi2_proc(INTERNAL_FUNCTION_PARAMETERS,
 		res->hsession = session;
 		res->hobject = msg_handles.pl[i];
 		zval mres;
-		ZEND_REGISTER_RESOURCE(&mres, res, le_mapi_message);
+		ZVAL_RES(&mres, zend_register_resource(res, le_mapi_message));
 		add_index_zval(return_value, i, &mres);
 	}
 	MAPI_G(hr) = ecSuccess;
@@ -5072,7 +4802,7 @@ static ZEND_FUNCTION(mapi_vcftomapi2)
 	ZEND_FETCH_RESOURCE(fld, MAPI_RESOURCE *, &resfolder, -1,
 		name_mapi_folder, le_mapi_folder);
 	LONG_ARRAY msg_handles{};
-	auto ret = zarafa_client_imtomessage2(fld->hsession, fld->hobject,
+	auto ret = zclient_imtomessage2(fld->hsession, fld->hobject,
 	           IMTOMESSAGE_VCARD, vcdata, &msg_handles);
 	if (ret != ecSuccess) {
 		MAPI_G(hr) = ret;
@@ -5085,11 +4815,7 @@ static ZEND_FUNCTION(mapi_vcftomapi2)
 static ZEND_FUNCTION(mapi_mapitoical)
 {
 	BINARY ical_bin;
-	uint32_t result;
-	zval *pzressession;
-	zval *pzresmessage;
-	zval *pzresoptions;
-	zval *pzresaddrbook;
+	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -5104,7 +4830,7 @@ static ZEND_FUNCTION(mapi_mapitoical)
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_messagetoical(
+	auto result = zclient_messagetoical(
 		pmessage->hsession, pmessage->hobject,
 		&ical_bin);
 	if (result != ecSuccess) {
@@ -5120,10 +4846,7 @@ static ZEND_FUNCTION(mapi_vcftomapi)
 	size_t cbstring = 0;
 	char *szstring;
 	BINARY vcf_bin;
-	uint32_t result;
-	zval *pzresstore;
-	zval *pzressession;
-	zval *pzresmessage;
+	zval *pzresstore, *pzressession, *pzresmessage;
 	MAPI_RESOURCE *pmessage;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rrrs",
@@ -5140,7 +4863,7 @@ static ZEND_FUNCTION(mapi_vcftomapi)
 	}
 	vcf_bin.pb = reinterpret_cast<uint8_t *>(szstring);
 	vcf_bin.cb = cbstring;
-	result = zarafa_client_vcftomessage(
+	auto result = zclient_vcftomessage(
 		pmessage->hsession, pmessage->hobject,
 		&vcf_bin);
 	if (result != ecSuccess) {
@@ -5154,11 +4877,7 @@ static ZEND_FUNCTION(mapi_vcftomapi)
 static ZEND_FUNCTION(mapi_mapitovcf)
 {
 	BINARY vcf_bin;
-	uint32_t result;
-	zval *pzressession;
-	zval *pzresmessage;
-	zval *pzresoptions;
-	zval *pzresaddrbook;
+	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -5173,7 +4892,7 @@ static ZEND_FUNCTION(mapi_mapitovcf)
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_messagetovcf(
+	auto result = zclient_messagetovcf(
 		pmessage->hsession, pmessage->hobject,
 		&vcf_bin);
 	if (result != ecSuccess) {
@@ -5232,8 +4951,7 @@ static ZEND_FUNCTION(mapi_msgstore_abortsubmit)
 
 static ZEND_FUNCTION(kc_session_save)
 {
-	zval *pzres;
-	zval *pzoutstr;
+	zval *pzres, *pzoutstr;
 	PUSH_CTX push_ctx;
 	MAPI_RESOURCE *psession;
 
@@ -5260,11 +4978,9 @@ static ZEND_FUNCTION(kc_session_save)
 
 static ZEND_FUNCTION(kc_session_restore)
 {
-	zval *pzres;
-	zval *pzdata;
+	zval *pzres, *pzdata;
 	GUID hsession;
 	BINARY data_bin;
-	uint32_t result;
 	PULL_CTX pull_ctx;
 	MAPI_RESOURCE *presource;
 
@@ -5281,7 +4997,7 @@ static ZEND_FUNCTION(kc_session_restore)
 		RETVAL_LONG(ecInvalidParam);
 		return;
 	}
-	result = zarafa_client_checksession(hsession);
+	auto result = zclient_checksession(hsession);
 	if (result != ecSuccess) {
 		RETVAL_LONG(result);
 		return;
@@ -5294,19 +5010,16 @@ static ZEND_FUNCTION(kc_session_restore)
 	presource->type = ZMG_SESSION;
 	presource->hobject = 0;
 	presource->hsession = hsession;
-	ZEND_REGISTER_RESOURCE(pzres, presource, le_mapi_session);
+	ZVAL_RES(pzres, zend_register_resource(presource, le_mapi_session));
 	RETVAL_LONG(ecSuccess);
 }
 
 
 static ZEND_FUNCTION(nsp_getuserinfo)
 {
-	char *px500dn;
+	char *px500dn, *username, *pdisplay_name;
 	BINARY entryid;
-	char *username;
-	uint32_t result;
 	size_t username_len = 0;
-	char *pdisplay_name;
 	uint32_t privilege_bits;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -5314,7 +5027,7 @@ static ZEND_FUNCTION(nsp_getuserinfo)
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_uinfo(username, &entryid,
+	auto result = zclient_uinfo(username, &entryid,
 		&pdisplay_name, &px500dn, &privilege_bits);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -5332,11 +5045,8 @@ static ZEND_FUNCTION(nsp_getuserinfo)
 
 static ZEND_FUNCTION(nsp_setuserpasswd)
 {
-	char *username;
-	uint32_t result;
+	char *username, *old_passwd, *new_passwd;
 	size_t username_len = 0, old_passwd_len = 0, new_passwd_len = 0;
-	char *old_passwd;
-	char *new_passwd;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"sss", &username, &username_len, &old_passwd,
@@ -5345,7 +5055,7 @@ static ZEND_FUNCTION(nsp_setuserpasswd)
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_setpasswd(username, old_passwd, new_passwd);
+	auto result = zclient_setpasswd(username, old_passwd, new_passwd);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
@@ -5355,11 +5065,9 @@ static ZEND_FUNCTION(nsp_setuserpasswd)
 
 static ZEND_FUNCTION(mapi_linkmessage)
 {
-	uint32_t result;
 	size_t srcheid_size = 0, msgeid_size = 0;
 	zval *pzresource;
-	BINARY search_entryid;
-	BINARY message_entryid;
+	BINARY search_entryid, message_entryid;
 	MAPI_RESOURCE *psession;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|ss",
@@ -5378,7 +5086,7 @@ static ZEND_FUNCTION(mapi_linkmessage)
 		MAPI_G(hr) = ecInvalidObject;
 		THROW_EXCEPTION;
 	}
-	result = zarafa_client_linkmessage(psession->hsession,
+	auto result = zclient_linkmessage(psession->hsession,
 						search_entryid, message_entryid);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
@@ -5411,6 +5119,27 @@ static ZEND_FUNCTION(mapi_ianatz_to_tzdef)
 	}
 	RETVAL_STRINGL(def->data(), def->size());
 	MAPI_G(hr) = ecSuccess;
+}
+
+/**
+ * mapi_strerror : string
+ *
+ * @code:	error code
+ *
+ * Returns a textual representation of the error code.
+ */
+static ZEND_FUNCTION(mapi_strerror)
+{
+	zend_long code = 0;
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &code) == FAILURE) {
+		RETVAL_FALSE;
+		return;
+	}
+	auto s = mapi_strerror(code);
+	if (s == nullptr)
+		RETVAL_FALSE;
+	else
+		RETVAL_STRING(s);
 }
 
 static zend_function_entry mapi_functions[] = {
@@ -5546,6 +5275,7 @@ static zend_function_entry mapi_functions[] = {
 	F(nsp_setuserpasswd)
 	F(mapi_linkmessage)
 	F(mapi_ianatz_to_tzdef)
+	F(mapi_strerror)
 	{NULL, NULL, NULL}
 #undef A
 #undef F

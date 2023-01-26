@@ -722,7 +722,7 @@ int db_engine_run()
 		return -2;
 	}
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_tid, nullptr, mdpeng_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_tid, nullptr, mdpeng_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "exmdb_provider: failed to create db scan thread: %s", strerror(ret));
 		return -4;
@@ -730,7 +730,7 @@ int db_engine_run()
 	pthread_setname_np(g_scan_tid, "exmdbeng/scan");
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		ret = pthread_create(&tid, nullptr, mdpeng_thrwork, nullptr);
+		ret = pthread_create4(&tid, nullptr, mdpeng_thrwork, nullptr);
 		if (ret != 0) {
 			mlog(LV_ERR, "E-1448: pthread_create: %s", strerror(ret));
 			db_engine_stop();

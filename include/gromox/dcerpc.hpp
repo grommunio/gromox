@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #define DCERPC_CALL_STAT_FLAG_HEADER_SIGNING 0x04
 #define DCERPC_CALL_STAT_FLAG_MULTIPLEXED 0x10
@@ -26,11 +27,11 @@ struct DCERPC_INTERFACE {
 	GUID uuid{};
 	uint32_t version = 0;
 	/* the ndr_pull function for the chosen interface. */
-	int (*ndr_pull)(int opnum, NDR_PULL* pndr, void **ppin) = nullptr;
+	pack_result (*ndr_pull)(int opnum, NDR_PULL* pndr, void **ppin) = nullptr;
 	/* the dispatch function for the chosen interface. */
 	int (*dispatch)(unsigned int op, const GUID *, uint64_t handle, void *in, void **out, uint32_t *ecode) = nullptr;
 	/* the ndr_push function for the chosen interface. */
-	int (*ndr_push)(int opnum, NDR_PUSH *pndr, void *pout) = nullptr;
+	pack_result (*ndr_push)(int opnum, NDR_PUSH *pndr, void *pout) = nullptr;
 	/* the unbind function for the chosen interface */
 	void (*unbind)(uint64_t handle) = nullptr;
 	/* the reclaim function for the chosen interface */

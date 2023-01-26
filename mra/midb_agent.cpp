@@ -215,7 +215,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		}
 
 		g_notify_stop = false;
-		auto ret = pthread_create(&g_scan_id, nullptr, midbag_scanwork, nullptr);
+		auto ret = pthread_create4(&g_scan_id, nullptr, midbag_scanwork, nullptr);
 		if (ret != 0) {
 			printf("[midb_agent]: failed to create scan thread: %s\n", strerror(ret));
 			return FALSE;

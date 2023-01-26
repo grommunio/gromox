@@ -1,8 +1,44 @@
 #pragma once
 #include <cstdint>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rpc_types.hpp>
 #include <gromox/zz_ndr_stack.hpp>
+
+enum {
+	// ecDoConnect = 0,
+	ecDoDisconnect = 1,
+	// ecDoRpc = 2,
+	// ecGetMoreRpc = 3,
+	ecRRegisterPushNotification = 4,
+	// ecRUnregisterPushNotification = 5,
+	ecDummyRpc = 6,
+	// ecRGetDCName = 7,
+	// ecRNetGetDCName = 8,
+	// ecDoRpcExt = 9,
+	ecDoConnectEx = 10,
+	ecDoRpcExt2 = 11,
+	// ecDoAsyncConnect = 12,
+	// ecDoAsyncWait = 13,
+	ecDoAsyncConnectEx = 14,
+};
+
+enum {
+	ecDoAsyncWaitEx = 0,
+};
+
+struct NDR_PULL;
+struct NDR_PUSH;
+
+struct ECDOASYNCWAITEX_IN {
+	ACXH acxh;
+	uint32_t flags_in;
+};
+
+struct ECDOASYNCWAITEX_OUT {
+	uint32_t flags_out;
+	int32_t result;
+};
 
 struct ECDODISCONNECT_IN {
 	CXH cxh;
@@ -93,19 +129,7 @@ struct ECDOASYNCCONNECTEX_OUT {
 	int32_t result;
 };
 
-int emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r);
-int emsmdb_ndr_push_ecdodisconnect(NDR_PUSH *pndr,
-	const ECDODISCONNECT_OUT *r);
-int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
-	ECRREGISTERPUSHNOTIFICATION_IN *r);
-int emsmdb_ndr_push_ecrregisterpushnotification(NDR_PUSH *pndr,
-	const ECRREGISTERPUSHNOTIFICATION_OUT *r);
-int emsmdb_ndr_push_ecdummyrpc(NDR_PUSH *pndr, int32_t *r);
-int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r);
-int emsmdb_ndr_push_ecdoconnectex(NDR_PUSH *pndr, const ECDOCONNECTEX_OUT *r);
-int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r);
-int emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2_OUT *r);
-int emsmdb_ndr_pull_ecdoasyncconnectex(NDR_PULL *pndr,
-	ECDOASYNCCONNECTEX_IN *r);
-int emsmdb_ndr_push_ecdoasyncconnectex(NDR_PUSH *pndr,
-	const ECDOASYNCCONNECTEX_OUT *r);
+extern pack_result asyncemsmdb_ndr_pull(int op, NDR_PULL *, void **in);
+extern pack_result asyncemsmdb_ndr_push(int op, NDR_PUSH *, void *out);
+extern pack_result emsmdb_ndr_pull(int op, NDR_PULL *, void **in);
+extern pack_result emsmdb_ndr_push(int op, NDR_PUSH *, void *out);

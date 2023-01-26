@@ -591,11 +591,9 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 	TPROPVAL_ARRAY propvals;
 	PROBLEM_ARRAY tmp_problems;
 	
-	/* we don't support COPY_FLAG_MOVE, just
-		like exchange 2010 or later */
-	if (copy_flags & ~(COPY_FLAG_MOVE|COPY_FLAG_NOOVERWRITE)) {
+	/* We do not support MAPI_MOVE, just like EXC 2010 or later */
+	if (copy_flags & ~(MAPI_MOVE | MAPI_NOREPLACE))
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -607,10 +605,8 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		return ecDstNullObject;
 	if (object_type != dst_type)
 		return MAPI_E_DECLINE_COPY;
-	if (OBJECT_TYPE_FOLDER == object_type &&
-		(COPY_FLAG_MOVE & copy_flags)) {
+	if (object_type == OBJECT_TYPE_FOLDER && copy_flags & MAPI_MOVE)
 		return ecNotSupported;
-	}
 	proptags.count = 0;
 	proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == proptags.pproptag) {
@@ -637,10 +633,9 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		if (copy_flags & COPY_FLAG_NOOVERWRITE) {
-			if (!flddst->get_all_proptags(&proptags1))
-				return ecError;
-		}
+		if (copy_flags & MAPI_NOREPLACE &&
+		    !flddst->get_all_proptags(&proptags1))
+			return ecError;
 		for (i=0; i<pproptags->count; i++) {
 			if (flddst->is_readonly_prop(pproptags->pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index = i;
@@ -649,7 +644,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			}
-			if ((copy_flags & COPY_FLAG_NOOVERWRITE) &&
+			if (copy_flags & MAPI_NOREPLACE &&
 			    proptags1.has(pproptags->pproptag[i]))
 				continue;
 			proptags.pproptag[proptags.count] = 
@@ -682,7 +677,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
 		b_force = TRUE;
-		if (copy_flags & COPY_FLAG_NOOVERWRITE) {
+		if (copy_flags & MAPI_NOREPLACE) {
 			b_force = FALSE;
 			if (!msgdst->get_all_proptags(&proptags1))
 				return ecError;
@@ -714,7 +709,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			}
-			if ((copy_flags & COPY_FLAG_NOOVERWRITE) &&
+			if (copy_flags & MAPI_NOREPLACE &&
 			    proptags1.has(pproptags->pproptag[i]))
 				continue;
 			proptags.pproptag[proptags.count] = 
@@ -746,10 +741,9 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		auto tag_access = atdst->get_tag_access();
 		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		if (copy_flags & COPY_FLAG_NOOVERWRITE) {
-			if (!atdst->get_all_proptags(&proptags1))
-				return ecError;
-		}
+		if (copy_flags & MAPI_NOREPLACE &&
+		    !atdst->get_all_proptags(&proptags1))
+			return ecError;
 		for (i=0; i<pproptags->count; i++) {
 			if (atdst->is_readonly_prop(pproptags->pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index = i;
@@ -758,7 +752,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			}
-			if ((copy_flags & COPY_FLAG_NOOVERWRITE) &&
+			if (copy_flags & MAPI_NOREPLACE &&
 			    proptags1.has(pproptags->pproptag[i]))
 				continue;
 			proptags.pproptag[proptags.count] = 
@@ -808,11 +802,9 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 	TPROPVAL_ARRAY propvals;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	/* we don't support COPY_FLAG_MOVE, just
-		like exchange 2010 or later */
-	if (copy_flags & ~(COPY_FLAG_MOVE|COPY_FLAG_NOOVERWRITE)) {
+	/* We do not support MAPI_MOVE, just like EXC 2010 or later */
+	if (copy_flags & ~(MAPI_MOVE | MAPI_NOREPLACE))
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -824,11 +816,9 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		return ecDstNullObject;
 	if (object_type != dst_type)
 		return MAPI_E_DECLINE_COPY;
-	if (OBJECT_TYPE_FOLDER == object_type &&
-		(COPY_FLAG_MOVE & copy_flags)) {
+	if (object_type == OBJECT_TYPE_FOLDER && copy_flags & MAPI_MOVE)
 		return ecNotSupported;
-	}
-	BOOL b_force = (copy_flags & COPY_FLAG_NOOVERWRITE) ? false : TRUE;
+	BOOL b_force = (copy_flags & MAPI_NOREPLACE) ? false : TRUE;
 	switch (object_type) {
 	case OBJECT_TYPE_FOLDER: {
 		auto fldsrc = static_cast<folder_object *>(pobject);

@@ -315,8 +315,8 @@ static bool vcard_std_keyword(const char *name)
 	return false;
 }
 
-ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
-    size_t limit) try
+ec_error_t vcard_load_multi_from_str_move(char *in_buff,
+    std::vector<vcard> &finalvec, size_t limit) try
 {
 	char *pline;
 	char *pnext;
@@ -371,10 +371,10 @@ ec_error_t vcard_retrieve_multi(char *in_buff, std::vector<vcard> &finalvec,
 	return ecServerOOM;
 }
 
-ec_error_t vcard::retrieve_single(char *in_buff)
+ec_error_t vcard::load_single_from_str_move(char *in_buff)
 {
 	std::vector<vcard> cardvec;
-	auto ret = vcard_retrieve_multi(in_buff, cardvec, 1);
+	auto ret = vcard_load_multi_from_str_move(in_buff, cardvec, 1);
 	if (ret != ecSuccess)
 		return ret;
 	if (cardvec.size() == 0)
@@ -438,7 +438,7 @@ static size_t vcard_serialize_string(char *pbuff,
 	return offset;
 }
 
-BOOL vcard::serialize(char *out_buff, size_t max_length)
+BOOL vcard::serialize(char *out_buff, size_t max_length) const
 {
 	size_t offset;
 	BOOL need_comma;

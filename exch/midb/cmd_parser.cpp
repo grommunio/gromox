@@ -84,25 +84,11 @@ int cmd_parser_run()
 	cmd_parser_register_command("PING", cmd_parser_ping);
 	g_notify_stop = false;
 
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
-	size_t tss = 8UL << 20;
-	auto ret = pthread_attr_getstacksize(&attr, &tss);
-	if (ret == 0)
-		tss = std::max(tss, static_cast<size_t>(8UL << 20));
-	ret = pthread_attr_setstacksize(&attr, tss);
-	if (ret != 0) {
-		mlog(LV_ERR, "cmd_parser: pthread_attr_setstacksize: %s", strerror(ret));
-		return -1;
-	}
-
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		ret = pthread_create(&tid, &attr, midcp_thrwork, nullptr);
+		auto ret = pthread_create4(&tid, nullptr, midcp_thrwork, nullptr);
 		if (ret != 0) {
-			mlog(LV_ERR, "cmd_parser: failed to create pool thread "
-				"(TSS 0x%zx): %s", tss, strerror(ret));
+			mlog(LV_ERR, "cmd_parser: failed to create pool thread: %s", strerror(ret));
 			return -1;
 		}
 		char buf[32];

@@ -154,7 +154,7 @@ MJSON::~MJSON()
  *                          or seek file descriptor in
  *                          message, path cannot be NULL.
  */
-BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath) try
+BOOL MJSON::load_from_str_move(char *digest_buff, int length, const char *inpath) try
 {
 	auto pjson = this;
 	BOOL b_none;
@@ -397,7 +397,7 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 				return FALSE;
 			}
 		} else {
-			pmime = (MJSON_MIME *)pnode->pdata;
+			pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 		}
 
 		for (j = 1; j < offset; j++) {
@@ -444,7 +444,6 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
     int length) try
 {
 	auto pjson = this;
-	MJSON_MIME *pmime;
 
 #ifdef _DEBUG_UMTA
 	if (buff == nullptr) {
@@ -456,8 +455,7 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
 	if (NULL == pnode) {
 		return -1;
 	}
-	
-	pmime = (MJSON_MIME*)pnode->pdata;
+	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, nullptr, nullptr, cset,
 	               pjson->charset.c_str(), b_ext, buff, length);
 	if (ret_len == -1)
@@ -481,7 +479,6 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	const char *email_charset, BOOL b_ext, char *buff, int length)
 {
 	int offset;
-	int ret_len;
 	BOOL b_space;
 	size_t ecode_len;
 	char temp_buff[2048];
@@ -656,7 +653,8 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			digest_buff[rdret] = '\0';
 			fd.close_rd();
 			MJSON temp_mjson(pmime->ppool);
-			if (!temp_mjson.retrieve(digest_buff, node_stat.st_size, storage_path)) {
+			if (!temp_mjson.load_from_str_move(digest_buff,
+			    node_stat.st_size, storage_path)) {
 				free(digest_buff);
 				goto RFC822_FAILURE;
 			}
@@ -721,7 +719,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		if (NULL == pnode) {
 			return -1;
 		}
-		ret_len = mjson_fetch_mime_structure((MJSON_MIME*)pnode->pdata,
+		auto ret_len = mjson_fetch_mime_structure(static_cast<MJSON_MIME *>(pnode->pdata),
 					storage_path, msg_filename, charset, email_charset,
 					b_ext, buff + offset, length - offset);
 		if (-1 == ret_len) {
@@ -742,7 +740,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 
 	auto pnode = pmime->node.get_sibling();
 	if (NULL != pnode) {
-		pmime = (MJSON_MIME*)pnode->pdata;
+		pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 		goto FETCH_STRUCTURE_LOOP;
 	}
 	
@@ -1131,98 +1129,97 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	
 	MJSON temp_mjson(pmime->ppool);
 	MAIL imail(pbuild->ppool);
-	if (!imail.retrieve(pbuff.get(), length)) {
+	if (!imail.load_from_str_move(pbuff.get(), length)) {
 		pbuild->build_result = FALSE;
 		return;
+	}
+	/* for saving stacking size, so use C++
+		style of local variable declaration */
+	size_t mess_len;
+	int digest_len;
+	char digest_buff[MAX_DIGLEN];
+
+	fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
+	if (-1 == fd) {
+		pbuild->build_result = FALSE;
+		return;
+	}
+	if (!imail.to_file(fd)) {
+		close(fd);
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1372: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
+		return;
+	}
+	close(fd);
+	if (1 == pbuild->depth) {
+		digest_len = sprintf(digest_buff, "{\"file\":\"%s\",",
+			     pmime->get_id());
 	} else {
-		/* for saving stacking size, so use C++
-			style of local variable declaration */
-		size_t mess_len;
-		int digest_len;
-		char digest_buff[MAX_DIGLEN];
-		
-		fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-		if (-1 == fd) {
-			pbuild->build_result = FALSE;
-			return;
-		}
-		if (!imail.to_file(fd)) {
-			close(fd);
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1372: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-			return;
-		}
+		digest_len = sprintf(digest_buff, "{\"file\":\"%s.%s\",",
+			     pbuild->filename, pmime->get_id());
+	}
+	int result = imail.get_digest(&mess_len, digest_buff + digest_len,
+	             MAX_DIGLEN - digest_len - 1);
+	imail.clear();
+	pbuff.reset();
+	if (result <= 0) {
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1373: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
+		return;
+	}
+	digest_len = strlen(digest_buff);
+	digest_buff[digest_len] = '}';
+	digest_len ++;
+	digest_buff[digest_len] = '\0';
+
+	fd = open(dgt_path, O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
+	if (-1 == fd) {
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1374: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
+		return;
+	}
+	if (digest_len != write(fd, digest_buff, digest_len)) {
 		close(fd);
-		if (1 == pbuild->depth) {
-			digest_len = sprintf(digest_buff, "{\"file\":\"%s\",",
-			             pmime->get_id());
-		} else {
-			digest_len = sprintf(digest_buff, "{\"file\":\"%s.%s\",",
-			             pbuild->filename, pmime->get_id());
-		}
-		int result = imail.get_digest(&mess_len, digest_buff + digest_len,
-					MAX_DIGLEN - digest_len - 1);
-		imail.clear();
-		pbuff.reset();
-		if (result <= 0) {
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1373: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-			return;
-		}
-		digest_len = strlen(digest_buff);
-		digest_buff[digest_len] = '}';
-		digest_len ++;
-		digest_buff[digest_len] = '\0';
-		
-		fd = open(dgt_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-		if (-1 == fd) {
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1374: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-			return;
-		}
-		if (digest_len != write(fd, digest_buff, digest_len)) {
-			close(fd);
-			if (remove(dgt_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1375: remove %s: %s", dgt_path, strerror(errno));
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1376: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-			return;
-		}
-		close(fd);
-		
-		if (!temp_mjson.retrieve(digest_buff, digest_len, pbuild->storage_path)) {
-			if (remove(dgt_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1377: remove %s: %s", dgt_path, strerror(errno));
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1378: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-			return;
-		}
+		if (remove(dgt_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1375: remove %s: %s", dgt_path, strerror(errno));
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1376: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
+		return;
+	}
+	close(fd);
+
+	if (!temp_mjson.load_from_str_move(digest_buff, digest_len,
+	    pbuild->storage_path)) {
+		if (remove(dgt_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1377: remove %s: %s", dgt_path, strerror(errno));
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1378: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
+		return;
 	}
 	
-	if (pbuild->depth < MAX_RFC822_DEPTH && temp_mjson.rfc822_check()) {
-		BUILD_PARAM build_param;
-		build_param.filename = temp_mjson.get_mail_filename();
-		build_param.msg_path = temp_mjson.path.c_str();
-		build_param.storage_path = pbuild->storage_path;
-		build_param.depth = pbuild->depth + 1;
-		build_param.ppool = pbuild->ppool;
-		build_param.build_result = TRUE;
-		
-		temp_mjson.enum_mime(mjson_enum_build, &build_param);
-		if (!build_param.build_result) {
-			if (remove(dgt_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1379: remove %s: %s", dgt_path, strerror(errno));
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1380: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-		}
+	if (pbuild->depth >= MAX_RFC822_DEPTH || !temp_mjson.rfc822_check())
+		return;
+	BUILD_PARAM build_param;
+	build_param.filename = temp_mjson.get_mail_filename();
+	build_param.msg_path = temp_mjson.path.c_str();
+	build_param.storage_path = pbuild->storage_path;
+	build_param.depth = pbuild->depth + 1;
+	build_param.ppool = pbuild->ppool;
+	build_param.build_result = TRUE;
+
+	temp_mjson.enum_mime(mjson_enum_build, &build_param);
+	if (!build_param.build_result) {
+		if (remove(dgt_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1379: remove %s: %s", dgt_path, strerror(errno));
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1380: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
 	}
-	return;
 }
 
 BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> pool, const char *storage_path)
@@ -1298,9 +1295,9 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 			}
 			close(fd);
 			pjson->clear();
-			if (!pjson->retrieve(digest_buff, node_stat.st_size, temp_path)) {
-				/* was never implemented */
-			}
+			if (!pjson->load_from_str_move(digest_buff,
+			    node_stat.st_size, temp_path))
+				/* was never implemented */;
 			strcpy(mime_id, pdot + 1);
 			return TRUE;
 	}
@@ -1311,7 +1308,6 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
     BOOL b_ext, char *buff, int length)
 {
 	auto pjson = this;
-	MJSON_MIME *pmime;
 	char temp_path[256];
 	struct stat node_stat;
 
@@ -1333,8 +1329,7 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 	if (NULL == pnode) {
 		return -1;
 	}
-	
-	pmime = (MJSON_MIME*)pnode->pdata;
+	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, temp_path, "", cset,
 	               pjson->charset.c_str(), b_ext, buff, length);
 	if (ret_len == -1)
@@ -1346,8 +1341,6 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length)
 {
-	MJSON_MIME *pmime;
-
 #ifdef _DEBUG_UMTA
 	if (NULL == pjson || NULL == storage_path || NULL == buff) {
 		mlog(LV_DEBUG, "mail: NULL pointer in mjson_rfc822_fetch_internal");
@@ -1358,8 +1351,7 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	if (NULL == pnode) {
 		return -1;
 	}
-	
-	pmime = (MJSON_MIME*)pnode->pdata;
+	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, storage_path,
 	               pjson->get_mail_filename(), charset,
 	               pjson->charset.c_str(), b_ext, buff, length);

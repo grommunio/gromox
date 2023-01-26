@@ -52,7 +52,7 @@ void MAIL::clear()
  *		TRUE				OK
  *		FALSE				fail
  */
-bool MAIL::retrieve(char *in_buff, size_t length)
+bool MAIL::load_from_str_move(char *in_buff, size_t length)
 {
 	auto pmail = this;
 
@@ -68,7 +68,7 @@ bool MAIL::retrieve(char *in_buff, size_t length)
 		mlog(LV_DEBUG, "mail: failed to get mime from pool");
 		return false;
 	}
-	if (!pmime->retrieve(nullptr, in_buff, length)) {
+	if (!pmime->load_from_str_move(nullptr, in_buff, length)) {
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
 	}
@@ -94,7 +94,7 @@ bool MAIL::retrieve(char *in_buff, size_t length)
 		mlog(LV_DEBUG, "mail: failed to get mime from pool");
 		return false;
 	}
-	if (!pmime->retrieve(nullptr, in_buff, length)) {
+	if (!pmime->load_from_str_move(nullptr, in_buff, length)) {
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
 	}
@@ -136,7 +136,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			mlog(LV_DEBUG, "mail: failed to get mime from pool");
 			return false;
 		}
-		if (!pmime->retrieve(pmime_parent, ptr_last, ptr - ptr_last)) {
+		if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr - ptr_last)) {
 			pmail->pmime_pool->put_mime(pmime);
 			return false;
 		}
@@ -184,7 +184,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		mlog(LV_DEBUG, "mail: failed to get mime from pool");
 		return false;
 	}
-	if (!pmime->retrieve(pmime_parent, ptr_last, ptr_end - ptr_last)) {
+	if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr_end - ptr_last)) {
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
 	}
@@ -627,11 +627,10 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 	      poffset, &count, pbuff + buff_len, length - buff_len);
 	if (gmd < 0 || buff_len + gmd > length - 2) {
 		goto PARSE_FAILURE;
-	} else {
-		buff_len += gmd;
-		pbuff[buff_len] = ']';
-		buff_len ++;
 	}
+	buff_len += gmd;
+	pbuff[buff_len] = ']';
+	buff_len ++;
 	
 	count = 0;
 	memcpy(pbuff + buff_len, ",\"mimes\":[", 10);
@@ -641,11 +640,10 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 	      pbuff + buff_len, length - buff_len);
 	if (gmd < 0 || buff_len + gmd > length - 20) {
 		goto PARSE_FAILURE;
-	} else {
-		buff_len += gmd;
-		sprintf(pbuff + buff_len, "],\"size\":%zu", *poffset);
-		return 1;
 	}
+	buff_len += gmd;
+	sprintf(pbuff + buff_len, "],\"size\":%zu", *poffset);
+	return 1;
 	
  PARSE_FAILURE:
 	auto mgl = pmail->get_length();
@@ -694,29 +692,29 @@ static void mail_enum_html_charset(const MIME *pmime, void *param)
 		return;
 	}
 	length = 128*1024;
-	if (pmime->read_content(buff, &length)) {
-		if (length > 4096) {
-			length = 4096;
+	if (!pmime->read_content(buff, &length))
+		return;
+	if (length > 4096) {
+		length = 4096;
+	}
+	ptr = search_string(buff, "charset=", length);
+	if (ptr == nullptr)
+		return;
+	ptr += 8;
+	if ('"' == *ptr || '\'' == *ptr) {
+		ptr ++;
+	}
+	for (i=0; i<32; i++) {
+		if ('"' == ptr[i] || '\'' == ptr[i] || ' ' == ptr[i] ||
+			',' == ptr[i] || ';' == ptr[i] || '>' == ptr[i]) {
+			email_charset[i] = '\0';
+			break;
+		} else {
+			email_charset[i] = ptr[i];
 		}
-		ptr = search_string(buff, "charset=", length);
-		if (NULL != ptr) {
-			ptr += 8;
-			if ('"' == *ptr || '\'' == *ptr) {
-				ptr ++;
-			}
-			for (i=0; i<32; i++) {
-				if ('"' == ptr[i] || '\'' == ptr[i] || ' ' == ptr[i] ||
-					',' == ptr[i] || ';' == ptr[i] || '>' == ptr[i]) {
-					email_charset[i] = '\0';
-					break;
-				} else {
-					email_charset[i] = ptr[i];
-				}
-			}
-			if (32 == i) {
-				email_charset[0] = '\0';
-			}
-		}
+	}
+	if (32 == i) {
+		email_charset[0] = '\0';
 	}
 }
 
@@ -824,7 +822,7 @@ bool MAIL::dup(MAIL *pmail_dst)
 		size = STREAM_BLOCK_SIZE;
 	}
 	tmp_stream.clear();
-	if (!pmail_dst->retrieve(pbuff, offset)) {
+	if (!pmail_dst->load_from_str_move(pbuff, offset)) {
 		free(pbuff);
 		return false;
 	} else {
@@ -888,7 +886,7 @@ bool MAIL::transfer_dot(MAIL *pmail_dst, bool add_dot)
 	}
 	
 	tmp_stream.clear();
-	if (!pmail_dst->retrieve(pbuff,  offset)) {
+	if (!pmail_dst->load_from_str_move(pbuff, offset)) {
 		free(pbuff);
 		return false;
 	} else {

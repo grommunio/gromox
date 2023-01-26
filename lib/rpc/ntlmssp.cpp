@@ -706,35 +706,33 @@ static const char *ntlmssp_target_name(NTLMSSP_CTX *pntlmssp,
 	}
 }
 
-static int ntlmssp_ndr_push_ntlm_version(NDR_PUSH *pndr, NTLMSSP_VERSION *r)
+static pack_result ntlmssp_ndr_push_ntlm_version(NDR_PUSH *pndr, NTLMSSP_VERSION *r)
 {
-	int status;
-	
-	status = ndr_push_align(pndr, 2);
+	auto status = pndr->align(2);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_uint8(pndr, r->major_vers);
+	status = pndr->p_uint8(r->major_vers);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_uint8(pndr, r->minor_vers);
+	status = pndr->p_uint8(r->minor_vers);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_uint16(pndr, r->product_build);
+	status = pndr->p_uint16(r->product_build);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_array_uint8(pndr, r->reserved, 3);
+	status = pndr->p_uint8_a(r->reserved, 3);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_uint8(pndr, r->ntlm_revers);
+	status = pndr->p_uint8(r->ntlm_revers);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_trailer_align(pndr, 2);
+	return pndr->trailer_align(2);
 }
 
 static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
@@ -811,8 +809,7 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 		vers.product_build = 0;
 		vers.ntlm_revers = NTLMSSP_REVISION_W2K3;
 		
-		ndr_push_init(&ndr_push, ndr_buff, sizeof(ndr_buff), 0);
-		
+		ndr_push.init(ndr_buff, sizeof(ndr_buff), 0);
 		if (NDR_ERR_SUCCESS != ntlmssp_ndr_push_ntlm_version(&ndr_push,
 			&vers)) {
 			return false;

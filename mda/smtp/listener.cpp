@@ -83,7 +83,7 @@ int listener_run()
 
 int listener_trigger_accept()
 {
-	auto ret = pthread_create(&g_thr_id, nullptr, smls_thrwork,
+	auto ret = pthread_create4(&g_thr_id, nullptr, smls_thrwork,
 	           reinterpret_cast<void *>(uintptr_t(false)));
 	if (ret != 0) {
 		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
@@ -91,7 +91,7 @@ int listener_trigger_accept()
 	}
 	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
-		ret = pthread_create(&g_ssl_thr_id, nullptr, smls_thrwork,
+		ret = pthread_create4(&g_ssl_thr_id, nullptr, smls_thrwork,
 		      reinterpret_cast<void *>(uintptr_t(true)));
 		if (ret != 0) {
 			mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));

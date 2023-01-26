@@ -95,7 +95,7 @@ int listener_run()
 
 int listener_trigger_accept()
 {
-	auto ret = pthread_create(&g_thr_id, nullptr, htls_thrwork,
+	auto ret = pthread_create4(&g_thr_id, nullptr, htls_thrwork,
 	           reinterpret_cast<void *>(uintptr_t(false)));
 	if (ret != 0) {
 		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
@@ -103,7 +103,7 @@ int listener_trigger_accept()
 	}
 	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
-		ret = pthread_create(&g_ssl_thr_id, nullptr, htls_thrwork,
+		ret = pthread_create4(&g_ssl_thr_id, nullptr, htls_thrwork,
 		      reinterpret_cast<void *>(uintptr_t(true)));
 		if (ret != 0) {
 			mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
@@ -138,7 +138,6 @@ static void *htls_thrwork(void *arg)
 	int len, flag, sockd2;
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
-	HTTP_CONTEXT *pcontext;
 	char buff[1024];
 	
 	for (;;) {
@@ -184,7 +183,7 @@ static void *htls_thrwork(void *arg)
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1409: setsockopt: %s", strerror(errno));
-		pcontext = (HTTP_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
+		auto pcontext = static_cast<HTTP_CONTEXT *>(contexts_pool_get_context(CONTEXT_FREE));
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			mlog(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 #include <gromox/database.h>
 #include <gromox/eid_array.hpp>
 #include <gromox/exmdb_common_util.hpp>
@@ -559,18 +560,16 @@ static void ics_enum_hierarchy_replist(void *vpar, uint16_t replid)
 		preplids->replids[preplids->count++] = replid;
 }
 
-static BOOL ics_load_folder_changes(sqlite3 *psqlite,
-	uint64_t folder_id, const char *username,
-	const IDSET *pgiven, const IDSET *pseen,
-	sqlite3_stmt *pstmt, sqlite3_stmt *stm_insert_chg,
-	sqlite3_stmt *stm_insert_exist, uint64_t *plast_cn)
+static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
+    const char *username, const IDSET *pgiven, const IDSET *pseen,
+    sqlite3_stmt *pstmt, sqlite3_stmt *stm_insert_chg,
+    sqlite3_stmt *stm_insert_exist, uint64_t *plast_cn) try
 {
 	uint64_t fid_val;
 	uint64_t change_num;
 	uint32_t permission;
-	DOUBLE_LIST tmp_list;
+	std::vector<eid_t> recurse_list;
 	
-	double_list_init(&tmp_list);
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, folder_id);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -583,15 +582,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 				continue;
 		}
-		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (pnode == nullptr)
-			return FALSE;
-		auto uv = cu_alloc<uint64_t>();
-		pnode->pdata = uv;
-		if (pnode->pdata == nullptr)
-			return FALSE;
-		*uv = fid_val;
-		double_list_append_as_tail(&tmp_list, pnode);
+		recurse_list.push_back(fid_val);
 		sqlite3_reset(stm_insert_exist);
 		sqlite3_bind_int64(stm_insert_exist, 1, fid_val);
 		if (sqlite3_step(stm_insert_exist) != SQLITE_DONE)
@@ -606,13 +597,14 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 		if (sqlite3_step(stm_insert_chg) != SQLITE_DONE)
 			return FALSE;
 	}
-	DOUBLE_LIST_NODE *pnode;
-	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr)
-		if (!ics_load_folder_changes(psqlite,
-		    *static_cast<uint64_t *>(pnode->pdata), username, pgiven,
+	for (auto fid_val : recurse_list)
+		if (!ics_load_folder_changes(psqlite, fid_val, username, pgiven,
 		    pseen, pstmt, stm_insert_chg, stm_insert_exist, plast_cn))
 			return FALSE;	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1141: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_server::get_hierarchy_sync(const char *dir,
@@ -705,6 +697,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 			       t == PR_NORMAL_MESSAGE_SIZE || t == PR_LOCAL_COMMIT_TIME_MAX ||
 			       t == PR_HIERARCHY_CHANGE_NUM;
 		}), tags.end());
+		tags.push_back(PidTagParentFolderId);
 		proptags.count = tags.size();
 		proptags.pproptag = tags.data();
 		if (!cu_get_properties(db_table::folder_props, fid_val1, 0,

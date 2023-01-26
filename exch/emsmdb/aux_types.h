@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <vector>
 #include <gromox/double_list.hpp>
 #include <gromox/rpc_types.hpp>
 
@@ -39,24 +40,7 @@ enum {
 	AUX_TYPE_CLIENT_CONNECTION_INFO = 0x4AU,
 	AUX_TYPE_SERVER_SESSION_INFO    = 0x4BU,
 	AUX_TYPE_PROTOCOL_DEVICE_ID     = 0x4EU,
-};
-
-struct AUX_PERF_REQUESTID {
-	uint16_t session_id;
-	uint16_t request_id;
-};
-
-struct AUX_PERF_SESSIONINFO {
-	uint16_t session_id;
-	uint16_t reserved;
-	GUID session_guid;
-};
-
-struct AUX_PERF_SESSIONINFO_V2 {
-	uint16_t session_id;
-	uint16_t reserved;
-	GUID session_guid;
-	uint32_t connection_id;
+	AUX_TYPE_82                     = 0x52U, /* seen with OL2016/2021 */
 };
 
 enum { /* OXCRPC v23 §2.2.2.2.4 */
@@ -89,105 +73,6 @@ enum { /* OXCRPC v23 §2.2.2.2.5 */
 	SERVER_TYPE_REFERRAL  = 0x4U,
 };
 
-struct AUX_PERF_SERVERINFO {
-	uint16_t server_id;
-	uint16_t server_type;
-	char *server_dn;
-	char *server_name;
-};
-
-struct AUX_PERF_PROCESSINFO {
-	uint16_t process_id;
-	uint16_t reserved1;
-	GUID process_guid;
-	uint16_t reserved2;
-	char *process_name;
-};
-
-struct AUX_PERF_DEFMDB_SUCCESS {
-	uint32_t time_since_request;
-	uint32_t time_to_complete_request;
-	uint16_t request_id;
-	uint16_t reserved;
-};
-
-struct AUX_PERF_DEFGC_SUCCESS {
-	uint16_t server_id;
-	uint16_t session_id;
-	uint32_t time_since_request;
-	uint32_t time_to_complete_request;
-	uint8_t request_operation;
-	uint8_t reserved[3];
-};
-
-struct AUX_PERF_MDB_SUCCESS {
-	uint16_t client_id;
-	uint16_t server_id;
-	uint16_t session_id;
-	uint16_t request_id;
-	uint32_t time_since_request;
-	uint32_t time_to_complete_request;
-};
-
-struct AUX_PERF_MDB_SUCCESS_V2 {
-	uint16_t process_id;
-	uint16_t client_id;
-	uint16_t server_id;
-	uint16_t session_id;
-	uint16_t request_id;
-	uint16_t reserved;
-	uint32_t time_since_request;
-	uint32_t time_to_complete_request;
-};
-
-struct AUX_PERF_GC_SUCCESS {
-	uint16_t client_id;
-	uint16_t server_id;
-	uint16_t session_id;
-	uint16_t reserved1;
-	uint32_t time_since_request;
-	uint32_t time_to_complete_request;
-	uint8_t request_operation;
-	uint8_t reserved2[3];
-};
-
-struct AUX_PERF_GC_SUCCESS_V2 {
-	uint16_t process_id;
-	uint16_t client_id;
-	uint16_t server_id;
-	uint16_t session_id;
-	uint32_t time_since_request;
-	uint32_t time_to_complete_request;
-	uint8_t request_operation;
-	uint8_t reserved[3];
-};
-
-struct AUX_PERF_FAILURE {
-	uint16_t client_id;
-	uint16_t server_id;
-	uint16_t session_id;
-	uint16_t request_id;
-	uint32_t time_since_request;
-	uint32_t time_to_fail_request;
-	uint32_t result_code;
-	uint8_t request_operation;
-	uint8_t reserved[3];
-};
-
-struct AUX_PERF_FAILURE_V2 {
-	uint16_t process_id;
-	uint16_t client_id;
-	uint16_t server_id;
-	uint16_t session_id;
-	uint16_t request_id;
-	uint16_t reserved1;
-	uint32_t time_since_request;
-	uint32_t time_to_fail_request;
-	uint32_t result_code;
-	uint8_t request_operation;
-	uint8_t reserved2[3];
-};
-
 /* Bitmap for CLIENT_CONTROL_ENABLEFLAGS (OXCRPC v23 §2.2.2.2.15) */
 enum {
 	ENABLE_PERF_SENDTOSERVER = 0x01U,
@@ -201,25 +86,10 @@ struct AUX_CLIENT_CONTROL {
 	uint32_t expiry_time;
 };
 
-struct AUX_OSVERSIONINFO {
-	uint32_t os_version_info_size;
-	uint32_t major_version;
-	uint32_t minor_version;
-	uint32_t build_number;
-	uint8_t reserved1[132];
-	uint16_t service_pack_major;
-	uint16_t service_pack_minor;
-	uint32_t reserved2;
-};
-
 /* bitmap EXORGINFO_ORGFLAGS (OXCRPC v23 §2.2.2.2.17) */
 enum {
 	PUBLIC_FOLDERS_ENABLED = 0x1U,
 	USE_AUTODISCOVER_FOR_PUBLIC_FOLDER_CONFIGURATION = 0x2U,
-};
-
-struct AUX_EXORGINFO {
-	uint32_t org_flags;
 };
 
 struct AUX_PERF_ACCOUNTINFO {
@@ -232,38 +102,12 @@ enum {
 	ENDPOINT_CAPABILITIES_SINGLE_ENDPOINT = 0x1U,
 };
 
-struct AUX_ENDPOINT_CAPABILITIES {
-	uint32_t endpoint_capability_flag;
-};
-
-enum {
-	CONNECTION_FLAG_CACHED_MODE = 0x1U,
-};
-
-struct AUX_CLIENT_CONNECTION_INFO {
-	GUID connection_guid;
-	uint16_t reserved;
-	uint32_t connection_attempts;
-	uint32_t connection_flags;
-	char *connection_context_info;
-};
-
-struct AUX_SERVER_SESSION_INFO {
-	char *server_session_context_info;
-};
-
-struct AUX_PROTOCOL_DEVICE_IDENTIFICATION {
-	char *device_manufacturer;
-	char *device_model;
-	char *device_serial_number;
-	char *device_version;
-	char *device_firmware_version;
-};
-
 struct AUX_HEADER {
-	uint8_t version;
-	uint8_t type;
-	void *ppayload;
+	uint8_t version = 0, type = 0;
+	union {
+		void *ppayload = nullptr;
+		uint32_t immed;
+	};
 };
 
 /* bitmap pulFlags (OXCRPC v23 §2.2.2.1) */
@@ -276,5 +120,7 @@ enum {
 struct AUX_INFO {
 	uint16_t rhe_version;
 	uint16_t rhe_flags;
-	DOUBLE_LIST aux_list;
+	std::vector<AUX_HEADER> aux_list;
 };
+
+extern pack_result aux_ext_push_aux_info(EXT_PUSH *, const AUX_INFO &);

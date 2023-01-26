@@ -32,8 +32,8 @@
 #include "http_parser.h"
 #include "mod_fastcgi.h"
 #include "resource.h"
-#define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
-#define QRF(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return FALSE; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
 #define SERVER_SOFTWARE							"medusa/1.0"
 
 #define POLL_MILLISECONDS_FOR_CHECK				50
@@ -218,7 +218,7 @@ void mod_fastcgi_stop()
 	g_context_list.reset();
 }
 
-static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
+static pack_result mod_fastcgi_push_name_value(NDR_PUSH *pndr,
     const char *pname, const char *pvalue)
 {
 	uint32_t tmp_len;
@@ -227,55 +227,55 @@ static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
 	
 	name_len = strlen(pname);
 	if (name_len <= 0x7F) {
-		TRY(ndr_push_uint8(pndr, name_len));
+		TRY(pndr->p_uint8(name_len));
 	} else {
 		tmp_len = name_len | 0x80000000;
-		TRY(ndr_push_uint32(pndr, tmp_len));
+		TRY(pndr->p_uint32(tmp_len));
 	}
 	val_len = strlen(pvalue);
 	if (val_len <= 0x7F) {
-		TRY(ndr_push_uint8(pndr, val_len));
+		TRY(pndr->p_uint8(val_len));
 	} else {
 		tmp_len = val_len | 0x80000000;
-		TRY(ndr_push_uint32(pndr, tmp_len));
+		TRY(pndr->p_uint32(tmp_len));
 	}
-	TRY(ndr_push_array_uint8(pndr, reinterpret_cast<const uint8_t *>(pname), name_len));
-	return ndr_push_array_uint8(pndr, reinterpret_cast<const uint8_t *>(pvalue), val_len);
+	TRY(pndr->p_uint8_a(reinterpret_cast<const uint8_t *>(pname), name_len));
+	return pndr->p_uint8_a(reinterpret_cast<const uint8_t *>(pvalue), val_len);
 }
 
-static int mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
+static pack_result mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
 {
-	TRY(ndr_push_uint8(pndr, FCGI_VERSION));
-	TRY(ndr_push_uint8(pndr, RECORD_TYPE_BEGIN_REQUEST));
-	TRY(ndr_push_uint16(pndr, FCGI_REQUEST_ID));
+	TRY(pndr->p_uint8(FCGI_VERSION));
+	TRY(pndr->p_uint8(RECORD_TYPE_BEGIN_REQUEST));
+	TRY(pndr->p_uint16(FCGI_REQUEST_ID));
 	/* push content length */
-	TRY(ndr_push_uint16(pndr, 8));
+	TRY(pndr->p_uint16(8));
 	/* push padding length */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	/* reserved */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	/* begin request role */
-	TRY(ndr_push_uint16(pndr, ROLE_RESPONDER));
+	TRY(pndr->p_uint16(ROLE_RESPONDER));
 	/* begin request flags */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	/* begin request reserved bytes */
-	return ndr_push_zero(pndr, 5);
+	return pndr->p_zero(5);
 }
 
-static int mod_fastcgi_push_params_begin(NDR_PUSH *pndr)
+static pack_result mod_fastcgi_push_params_begin(NDR_PUSH *pndr)
 {
-	TRY(ndr_push_uint8(pndr, FCGI_VERSION));
-	TRY(ndr_push_uint8(pndr, RECORD_TYPE_PARAMS));
-	TRY(ndr_push_uint16(pndr, FCGI_REQUEST_ID));
+	TRY(pndr->p_uint8(FCGI_VERSION));
+	TRY(pndr->p_uint8(RECORD_TYPE_PARAMS));
+	TRY(pndr->p_uint16(FCGI_REQUEST_ID));
 	/* push fake content length */
-	TRY(ndr_push_uint16(pndr, 0));
+	TRY(pndr->p_uint16(0));
 	/* push fake padding length */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	/* reserved */
-	return ndr_push_uint8(pndr, 0);
+	return pndr->p_uint8(0);
 }
 
-static int mod_fastcgi_push_align_record(NDR_PUSH *pndr)
+static pack_result mod_fastcgi_push_align_record(NDR_PUSH *pndr)
 {
 	uint8_t padding_len;
 	
@@ -283,10 +283,10 @@ static int mod_fastcgi_push_align_record(NDR_PUSH *pndr)
 		return NDR_ERR_SUCCESS;
 	padding_len = 8 - (pndr->offset & 7);
 	pndr->data[6] = padding_len;
-	return ndr_push_zero(pndr, padding_len);
+	return pndr->p_zero(padding_len);
 }
 
-static int mod_fastcgi_push_params_end(NDR_PUSH *pndr)
+static pack_result mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 {
 	uint16_t len;
 	uint32_t offset;
@@ -296,51 +296,51 @@ static int mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 	if (len > 0xFFFF)
 		return NDR_ERR_FAILURE;
 	pndr->offset = 4;
-	TRY(ndr_push_uint16(pndr, len));
+	TRY(pndr->p_uint16(len));
 	pndr->offset = offset;
 	return mod_fastcgi_push_align_record(pndr);
 }
 
-static int mod_fastcgi_push_stdin(NDR_PUSH *pndr,
+static pack_result mod_fastcgi_push_stdin(NDR_PUSH *pndr,
     const void *pbuff, uint16_t length)
 {
-	TRY(ndr_push_uint8(pndr, FCGI_VERSION));
-	TRY(ndr_push_uint8(pndr, RECORD_TYPE_STDIN));
-	TRY(ndr_push_uint16(pndr, FCGI_REQUEST_ID));
-	TRY(ndr_push_uint16(pndr, length));
+	TRY(pndr->p_uint8(FCGI_VERSION));
+	TRY(pndr->p_uint8(RECORD_TYPE_STDIN));
+	TRY(pndr->p_uint16(FCGI_REQUEST_ID));
+	TRY(pndr->p_uint16(length));
 	/* push padding length */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	/* reserved */
-	TRY(ndr_push_uint8(pndr, 0));
-	TRY(ndr_push_array_uint8(pndr, static_cast<const uint8_t *>(pbuff), length));
+	TRY(pndr->p_uint8(0));
+	TRY(pndr->p_uint8_a(static_cast<const uint8_t *>(pbuff), length));
 	return mod_fastcgi_push_align_record(pndr);
 }
 
-static int mod_fastcgi_pull_end_request(NDR_PULL *pndr,
+static pack_result mod_fastcgi_pull_end_request(NDR_PULL *pndr,
 	uint8_t padding_len, FCGI_ENDREQUESTBODY *pend_request)
 {
-	TRY(ndr_pull_uint32(pndr, &pend_request->app_status));
-	TRY(ndr_pull_uint8(pndr, &pend_request->protocol_status));
-	TRY(ndr_pull_array_uint8(pndr, pend_request->reserved, 3));
-	return ndr_pull_advance(pndr, padding_len);
+	TRY(pndr->g_uint32(&pend_request->app_status));
+	TRY(pndr->g_uint8(&pend_request->protocol_status));
+	TRY(pndr->g_uint8_a(pend_request->reserved, 3));
+	return pndr->advance(padding_len);
 }
 
-static int mod_fastcgi_pull_stdstream(NDR_PULL *pndr,
+static pack_result mod_fastcgi_pull_stdstream(NDR_PULL *pndr,
 	uint8_t padding_len, FCGI_STDSTREAM *pstd_stream)
 {
-	TRY(ndr_pull_array_uint8(pndr, pstd_stream->buffer, pstd_stream->length));
-	return ndr_pull_advance(pndr, padding_len);
+	TRY(pndr->g_uint8_a(pstd_stream->buffer, pstd_stream->length));
+	return pndr->advance(padding_len);
 }
 
-static int mod_fastcgi_pull_record_header(
+static pack_result mod_fastcgi_pull_record_header(
 	NDR_PULL *pndr, RECORD_HEADER *pheader)
 {
-	TRY(ndr_pull_uint8(pndr, &pheader->version));
-	TRY(ndr_pull_uint8(pndr, &pheader->type));
-	TRY(ndr_pull_uint16(pndr, &pheader->request_id));
-	TRY(ndr_pull_uint16(pndr, &pheader->content_len));
-	TRY(ndr_pull_uint8(pndr, &pheader->padding_len));
-	return ndr_pull_uint8(pndr, &pheader->reserved);
+	TRY(pndr->g_uint8(&pheader->version));
+	TRY(pndr->g_uint8(&pheader->type));
+	TRY(pndr->g_uint16(&pheader->request_id));
+	TRY(pndr->g_uint16(&pheader->content_len));
+	TRY(pndr->g_uint8(&pheader->padding_len));
+	return pndr->g_uint8(&pheader->reserved);
 }
 
 static BOOL mod_fastcgi_get_others_field(MEM_FILE *pf_others,
@@ -555,8 +555,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	char tmp_buff[8192];
 	struct stat node_stat;
 	
-	ndr_push_init(&ndr_push, pbuff, *plength,
-		NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+	ndr_push.init(pbuff, *plength, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 	QRF(mod_fastcgi_push_params_begin(&ndr_push));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "GATEWAY_INTERFACE", "CGI/1.1"));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_SOFTWARE", SERVER_SOFTWARE));
@@ -774,8 +773,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	char tmp_buff[65535];
 	uint8_t ndr_buff[65800];
 	
-	ndr_push_init(&ndr_push, tmp_buff, 16,
-		NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+	ndr_push.init(tmp_buff, 16, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 	if (mod_fastcgi_push_begin_request(&ndr_push) != NDR_ERR_SUCCESS ||
 	    ndr_push.offset != 16)
 		return FALSE;
@@ -798,8 +796,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			phttp->pfast_context->pfnode->sock_path.c_str());
 		return FALSE;
 	}
-	ndr_push_init(&ndr_push, tmp_buff, 8,
-		NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+	ndr_push.init(tmp_buff, 8, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 	if (NDR_ERR_SUCCESS != mod_fastcgi_push_params_begin(&ndr_push) ||
 		NDR_ERR_SUCCESS != mod_fastcgi_push_params_end(&ndr_push) ||
 		8 != ndr_push.offset || 8 != write(cli_sockd, tmp_buff, 8)) {
@@ -821,8 +818,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			} else{
 				phttp->pfast_context->content_length -= tmp_len;
 			}
-			ndr_push_init(&ndr_push, ndr_buff, sizeof(ndr_buff),
-						NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+			ndr_push.init(ndr_buff, sizeof(ndr_buff), NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 			if (NDR_ERR_SUCCESS != mod_fastcgi_push_stdin(
 				&ndr_push, pbuff, tmp_len)) {
 				close(cli_sockd);
@@ -864,8 +860,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 					        strerror(errno));
 				break;
 			}
-			ndr_push_init(&ndr_push, ndr_buff, sizeof(ndr_buff),
-						NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+			ndr_push.init(ndr_buff, sizeof(ndr_buff), NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 			if (NDR_ERR_SUCCESS != mod_fastcgi_push_stdin(
 				&ndr_push, tmp_buff, tmp_len)) {
 				close(cli_sockd);
@@ -885,8 +880,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		}
 	}
  END_OF_STDIN:
-	ndr_push_init(&ndr_push, ndr_buff, sizeof(ndr_buff),
-				NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+	ndr_push.init(ndr_buff, sizeof(ndr_buff), NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 	if (NDR_ERR_SUCCESS != mod_fastcgi_push_stdin(
 		&ndr_push, NULL, 0)) {
 		close(cli_sockd);
@@ -1124,8 +1118,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			mod_fastcgi_put_context(phttp);
 			return FALSE;	
 		}
-		ndr_pull_init(&ndr_pull, header_buff, 8,
-			NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+		ndr_pull.init(header_buff, 8, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 		if (NDR_ERR_SUCCESS != mod_fastcgi_pull_record_header(
 			&ndr_pull, &header)) {
 			phttp->log(LV_DEBUG, "failed to "
@@ -1151,8 +1144,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				mod_fastcgi_put_context(phttp);
 				return FALSE;
 			}
-			ndr_pull_init(&ndr_pull, tmp_buff, tmp_len,
-				NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+			ndr_pull.init(tmp_buff, tmp_len, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 			if (mod_fastcgi_pull_end_request(&ndr_pull,
 			    header.padding_len, &end_request) != NDR_ERR_SUCCESS)
 				phttp->log(LV_DEBUG, "failed to"
@@ -1179,8 +1171,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				mod_fastcgi_put_context(phttp);
 				return FALSE;
 			}
-			ndr_pull_init(&ndr_pull, tmp_buff, tmp_len,
-					NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+			ndr_pull.init(tmp_buff, tmp_len, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 			std_stream.length = header.content_len;
 			if (NDR_ERR_SUCCESS != mod_fastcgi_pull_stdstream(
 				&ndr_pull, header.padding_len, &std_stream)) {

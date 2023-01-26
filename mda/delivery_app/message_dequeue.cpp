@@ -179,7 +179,7 @@ int message_dequeue_run()
 		message_dequeue_collect_resource();
 		return -8;
 	}
-	auto ret = pthread_create(&g_thread_id, nullptr, mdq_thrwork, nullptr);
+	auto ret = pthread_create4(&g_thread_id, nullptr, mdq_thrwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "mdq: failed to create message dequeue thread: %s", strerror(ret));
 		message_dequeue_collect_resource();

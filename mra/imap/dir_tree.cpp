@@ -8,16 +8,14 @@
 
 static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 {
-	DIR_NODE *pdir;
-
-	pdir = (DIR_NODE*)pnode->pdata;
+	auto pdir = static_cast<DIR_NODE *>(pnode->pdata);
 	pdir->ppool->put(pdir);
 }
 
 dir_tree::dir_tree(alloc_limiter<DIR_NODE> *a) : ppool(a)
 {}
 
-void dir_tree::retrieve(MEM_FILE *pfile)
+void dir_tree::load_from_memfile(MEM_FILE *pfile)
 {
 	auto ptree = this;
 	char *ptr1, *ptr2;
@@ -71,11 +69,8 @@ void dir_tree::retrieve(MEM_FILE *pfile)
 			}
 			ptr1 = ptr2 + 1;
 		}
-
-		((DIR_NODE*)(pnode->pdata))->b_loaded = TRUE;
-		
+		static_cast<DIR_NODE *>(pnode->pdata)->b_loaded = TRUE;
 	}
-
 }
 
 static void dir_tree_clear(DIR_TREE *ptree)
@@ -123,7 +118,7 @@ DIR_NODE *dir_tree::match(const char *path)
 			return NULL;
 		}
 		do {
-			pdir = (DIR_NODE*)pnode->pdata;
+			pdir = static_cast<DIR_NODE *>(pnode->pdata);
 			if (0 == strcmp(pdir->name, ptr1)) {
 				break;
 			}

@@ -41,8 +41,8 @@ using VCARD_LINE = vcard_line;
 
 struct GX_EXPORT vcard {
 	inline void clear() { m_lines.clear(); }
-	ec_error_t retrieve_single(char *in_buff);
-	BOOL serialize(char *out_buff, size_t max_length);
+	ec_error_t load_single_from_str_move(char *in_buff);
+	BOOL serialize(char *out_buff, size_t max_length) const;
 	vcard_line &append_line(vcard_line &&o);
 	vcard_line &append_line(const char *);
 	vcard_line &append_line(const char *, const char *);
@@ -51,4 +51,4 @@ struct GX_EXPORT vcard {
 };
 using VCARD = vcard;
 
-extern GX_EXPORT ec_error_t vcard_retrieve_multi(char *input, std::vector<vcard> &, size_t limit = 0);
+extern GX_EXPORT ec_error_t vcard_load_multi_from_str_move(char *input, std::vector<vcard> &, size_t limit = 0);

@@ -28,11 +28,8 @@ If the file has no lines, no paths will be rewritten.
 If the file is absent however, a set of default entries will be used.
 .SH Default rules
 .nf
-/autodiscover/autodiscover.xml => \\0/EWS/autodiscover.php
 /EWS/Exchange.asmx => \\0/EWS/exchange.php
-/OAB/oab.xml => \\0/EWS/oab.php
 \\(/Microsoft-Server-ActiveSync\\) => \\1/grommunio-sync/index.php
-\\(/.well-known/autoconfig/mail/config-v1.1.xml\\) => \\1/well-known/autoconfig-mail.php
 .fi
 .SH Files
 .IP \(bu 4

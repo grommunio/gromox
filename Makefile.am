@@ -27,7 +27,12 @@ phplib_LTLIBRARIES = mapi.la
 endif
 sysusers_DATA = system/sysusers-gromox.conf
 tmpfiles_DATA = system/tmpfiles-gromox.conf
-unit_DATA = system/gromox-delivery.service system/gromox-delivery-queue.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-timer.service system/gromox-zcore.service
+unit_DATA = system/gromox-delivery.service \
+	system/gromox-delivery-queue.service system/gromox-event.service \
+	system/gromox-http.service system/gromox-imap.service \
+	system/gromox-midb.service system/gromox-pop3.service \
+	system/gromox-snapshot.service system/gromox-snapshot.timer \
+	system/gromox-timer.service system/gromox-zcore.service
 
 mta_plugins = \
 	libgxm_alias_resolve.la \
@@ -79,7 +84,7 @@ if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
 sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
-pkglibexec_SCRIPTS = tools/create_queue.sh
+pkglibexec_SCRIPTS = tools/create_queue.sh tools/gromox-snapshot
 
 BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h \
 	php_mapi/zrpc.cpp \
@@ -88,7 +93,7 @@ BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.
 CLEANFILES = ${BUILT_SOURCES} ${noinst_DATA}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/bounce_gen.cpp lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/errno.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/socket.cpp lib/str_hash.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
-libgromox_common_la_LIBADD = ${crypt_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${tinyxml_LIBS} ${vmime_LIBS} ${zstd_LIBS}
+libgromox_common_la_LIBADD = -lpthread ${crypt_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${tinyxml_LIBS} ${vmime_LIBS} ${zstd_LIBS}
 libgromox_cplus_la_SOURCES = lib/cryptoutil.cpp lib/dbhelper.cpp lib/fileio.cpp lib/fopen.cpp lib/oxoabkt.cpp lib/textmaps.cpp
 libgromox_cplus_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${ssl_LIBS} libgromox_common.la
 libgromox_dbop_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
@@ -161,7 +166,7 @@ libgxs_timer_agent_la_SOURCES = exch/timer_agent.cpp
 libgxs_timer_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_timer_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxs_timer_agent_la_DEPENDENCIES = ${default_sym}
-libgxp_exchange_emsmdb_la_SOURCES = exch/emsmdb/asyncemsmdb_interface.cpp exch/emsmdb/asyncemsmdb_ndr.cpp exch/emsmdb/attachment_object.cpp exch/emsmdb/aux_ext.cpp exch/emsmdb/bounce_producer.cpp exch/emsmdb/common_util.cpp exch/emsmdb/emsmdb_interface.cpp exch/emsmdb/emsmdb_ndr.cpp exch/emsmdb/exmdb_client.cpp exch/emsmdb/fastdownctx_object.cpp exch/emsmdb/fastupctx_object.cpp exch/emsmdb/folder_object.cpp exch/emsmdb/ftstream_parser.cpp exch/emsmdb/ftstream_producer.cpp exch/emsmdb/ics_state.cpp exch/emsmdb/icsdownctx_object.cpp exch/emsmdb/icsupctx_object.cpp exch/emsmdb/logon_object.cpp exch/emsmdb/main.cpp exch/emsmdb/message_object.cpp exch/emsmdb/names.cpp exch/emsmdb/notify_response.cpp exch/emsmdb/oxcfold.cpp exch/emsmdb/oxcfxics.cpp exch/emsmdb/oxcmsg.cpp exch/emsmdb/oxcnotif.cpp exch/emsmdb/oxcperm.cpp exch/emsmdb/oxcprpt.cpp exch/emsmdb/oxcstore.cpp exch/emsmdb/oxctabl.cpp exch/emsmdb/oxomsg.cpp exch/emsmdb/oxorule.cpp exch/emsmdb/rop_dispatch.cpp exch/emsmdb/rop_ext.cpp exch/emsmdb/rop_processor.cpp exch/emsmdb/stream_object.cpp exch/emsmdb/subscription_object.cpp exch/emsmdb/table_object.cpp
+libgxp_exchange_emsmdb_la_SOURCES = exch/emsmdb/asyncemsmdb_interface.cpp exch/emsmdb/attachment_object.cpp exch/emsmdb/aux_ext.cpp exch/emsmdb/bounce_producer.cpp exch/emsmdb/common_util.cpp exch/emsmdb/emsmdb_interface.cpp exch/emsmdb/emsmdb_ndr.cpp exch/emsmdb/exmdb_client.cpp exch/emsmdb/fastdownctx_object.cpp exch/emsmdb/fastupctx_object.cpp exch/emsmdb/folder_object.cpp exch/emsmdb/ftstream_parser.cpp exch/emsmdb/ftstream_producer.cpp exch/emsmdb/ics_state.cpp exch/emsmdb/icsdownctx_object.cpp exch/emsmdb/icsupctx_object.cpp exch/emsmdb/logon_object.cpp exch/emsmdb/main.cpp exch/emsmdb/message_object.cpp exch/emsmdb/names.cpp exch/emsmdb/notify_response.cpp exch/emsmdb/oxcfold.cpp exch/emsmdb/oxcfxics.cpp exch/emsmdb/oxcmsg.cpp exch/emsmdb/oxcnotif.cpp exch/emsmdb/oxcperm.cpp exch/emsmdb/oxcprpt.cpp exch/emsmdb/oxcstore.cpp exch/emsmdb/oxctabl.cpp exch/emsmdb/oxomsg.cpp exch/emsmdb/oxorule.cpp exch/emsmdb/rop_dispatch.cpp exch/emsmdb/rop_ext.cpp exch/emsmdb/rop_processor.cpp exch/emsmdb/stream_object.cpp exch/emsmdb/subscription_object.cpp exch/emsmdb/table_object.cpp
 libgxp_exchange_emsmdb_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxp_exchange_emsmdb_la_LIBADD = -lpthread ${HX_LIBS} ${iconv_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la
 EXTRA_libgxp_exchange_emsmdb_la_DEPENDENCIES = ${default_sym}
@@ -179,11 +184,11 @@ libgxh_ews_la_LIBADD = ${HX_LIBS} ${fmt_LIBS} ${tinyxml_LIBS} libgromox_common.l
 EXTRA_libgxh_ews_la_DEPENDENCIES = ${default_sym}
 libgxh_mh_emsmdb_la_SOURCES = exch/mh/emsmdb.cpp exch/mh/mh_common.cpp
 libgxh_mh_emsmdb_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxh_mh_emsmdb_la_LIBADD = -lpthread libgromox_common.la libgromox_mapi.la
+libgxh_mh_emsmdb_la_LIBADD = -lpthread ${fmt_LIBS} libgromox_common.la libgromox_mapi.la
 EXTRA_libgxh_mh_emsmdb_la_DEPENDENCIES = ${default_sym}
 libgxh_mh_nsp_la_SOURCES = exch/mh/mh_common.cpp exch/mh/nsp.cpp exch/mh/nsp_bridge.cpp exch/mh/nsp_common.cpp exch/mh/nsp_ops.cpp
 libgxh_mh_nsp_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxh_mh_nsp_la_LIBADD = -lpthread libgromox_common.la libgromox_mapi.la
+libgxh_mh_nsp_la_LIBADD = -lpthread ${fmt_LIBS} libgromox_common.la libgromox_mapi.la
 EXTRA_libgxh_mh_nsp_la_DEPENDENCIES = ${default_sym}
 libgxh_oxdisco_la_SOURCES = exch/oxdisco.cpp
 libgxh_oxdisco_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -341,10 +346,10 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	${AM_V_GEN}${MKDIR_P} include/gromox
 	${AM_V_at}sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \
 	 -e 's|#define PKGLIBDIR .*|#define PKGLIBDIR "${pkglibdir}"|' \
-	 -e 's|#define PKGDATADIR .*|#define PKGDATADIR "${pkgdatadir}"|' \
-	 -e 's|#define PKGSTATEDIR .*|#define PKGSTATEDIR "${localstatedir}/lib/${PACKAGE_NAME}"|' \
-	 -e 's|#define PKGLOGDIR .*|#define PKGLOGDIR "${localstatedir}/log/${PACKAGE_NAME}"|' \
+	 -e 's|#define PKGLIBEXECDIR .*|#define PKGLIBEXECDIR "${pkglibexecdir}"|' \
 	 -e 's|#define DATADIR .*|#define DATADIR "${datadir}"|' \
+	 -e 's|#define LOCALSTATEDIR .*|#define LOCALSTATEDIR "${localstatedir}"|' \
+	 -e 's|#define PKGDATADIR .*|#define PKGDATADIR "${pkgdatadir}"|' \
 		<${srcdir}/include/gromox/paths.h.in >"$@.tmp"
 	${AM_V_at}if ! cmp "$@" "$@.tmp" 2>/dev/null; then mv "$@.tmp" "$@"; fi; rm -f "$@.tmp"
 

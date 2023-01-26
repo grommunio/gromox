@@ -8,10 +8,12 @@
 #include <cstring>
 #include <list>
 #include <mutex>
+#include <netdb.h>
 #include <poll.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <vector>
+#include <libHX/socket.h>
 #include <gromox/atomic.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
@@ -23,6 +25,9 @@
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
+#ifndef AI_V4MAPPED
+#	define AI_V4MAPPED 0
+#endif
 
 namespace gromox {
 
@@ -315,7 +320,7 @@ static int launch_notify_listener(remote_svr &srv) try
 	ag.pserver = &srv;
 	ag.sockd = -1;
 	ag.startup_wait = true;
-	auto ret = pthread_create(&ag.thr_id, nullptr, cl_notif_reader, &ag);
+	auto ret = pthread_create4(&ag.thr_id, nullptr, cl_notif_reader, &ag);
 	if (ret != 0) {
 		mlog(LV_ERR, "E-1449: pthread_create: %s", strerror(ret));
 		mdcl_agent_list.pop_back();
@@ -366,7 +371,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		if (flags & EXMDB_CLIENT_SKIP_PUBLIC &&
 		    item.type != EXMDB_ITEM::EXMDB_PRIVATE)
 			continue; /* mostly used by midb */
-		auto local = gx_peer_is_local(item.host.c_str());
+		auto local = HX_ipaddr_is_local(item.host.c_str(), AI_V4MAPPED);
 		if (flags & EXMDB_CLIENT_SKIP_REMOTE && !local)
 			continue; /* mostly used by midb */
 		item.local = (flags & EXMDB_CLIENT_ALLOW_DIRECT) ? local : false;
@@ -398,7 +403,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		return 0;
 	if (!(flags & EXMDB_CLIENT_ASYNC_CONNECT))
 		cl_pinger2();
-	auto ret = pthread_create(&mdcl_scan_id, nullptr, cl_pinger, nullptr);
+	auto ret = pthread_create4(&mdcl_scan_id, nullptr, cl_pinger, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "exmdb_client: failed to create proxy scan thread: %s", strerror(ret));
 		mdcl_notify_stop = true;

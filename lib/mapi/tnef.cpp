@@ -17,7 +17,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>
 #include <gromox/util.hpp>
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 #define TNEF_LEGACY								0x0001
 #define TNEF_VERSION							0x10000
@@ -142,15 +142,15 @@ struct TNEF_PROPSET {
 };
 
 struct tnef_pull : public EXT_PULL {
-	int g_propname(PROPERTY_NAME *);
-	int g_propval(TNEF_PROPVAL *);
-	int g_attr(TNEF_ATTRIBUTE *);
+	pack_result g_propname(PROPERTY_NAME *);
+	pack_result g_propval(TNEF_PROPVAL *);
+	pack_result g_attr(TNEF_ATTRIBUTE *);
 };
 
 struct tnef_push : public EXT_PUSH {
-	int p_propname(const PROPERTY_NAME &);
-	int p_propval(const TNEF_PROPVAL &);
-	int p_attr(uint8_t level, uint32_t attr_id, const void *value);
+	pack_result p_propname(const PROPERTY_NAME &);
+	pack_result p_propval(const TNEF_PROPVAL &);
+	pack_result p_attr(uint8_t level, uint32_t attr_id, const void *value);
 
 	EXT_BUFFER_ALLOC tnef_alloc = nullptr;
 	GET_PROPNAME tnef_getpropname = nullptr;
@@ -206,7 +206,7 @@ static uint8_t tnef_align(uint32_t length)
     return ((length + 3) & ~3) - length;
 }
 
-int tnef_pull::g_propname(PROPERTY_NAME *r)
+pack_result tnef_pull::g_propname(PROPERTY_NAME *r)
 {
 	auto pext = this;
 	auto &ext = *pext;
@@ -230,7 +230,7 @@ int tnef_pull::g_propname(PROPERTY_NAME *r)
 	return EXT_ERR_FORMAT;
 }
 
-int tnef_pull::g_propval(TNEF_PROPVAL *r)
+pack_result tnef_pull::g_propval(TNEF_PROPVAL *r)
 {
 	auto pext = this;
 	auto &ext = *pext;
@@ -283,7 +283,7 @@ int tnef_pull::g_propval(TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		TRY(pext->g_uint16(&fake_byte));
-		*(uint8_t*)r->pvalue = fake_byte;
+		*static_cast<uint8_t *>(r->pvalue) = fake_byte;
 		return pext->advance(2);
 	case PT_CURRENCY:
 	case PT_I8:
@@ -612,7 +612,7 @@ int tnef_pull::g_propval(TNEF_PROPVAL *r)
 	return EXT_ERR_BAD_SWITCH;
 }
 
-int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
+pack_result tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 {
 	auto pext = this;
 	auto &ext = *pext;
@@ -756,7 +756,7 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		tmp_tm.tm_wday = tmp_dtr.dow - 1;
 		tmp_tm.tm_yday = 0;
 		tmp_tm.tm_isdst = 0;
-		*(uint64_t*)r->pvalue = rop_util_unix_to_nttime(mktime(&tmp_tm));
+		*static_cast<uint64_t *>(r->pvalue) = rop_util_unix_to_nttime(mktime(&tmp_tm));
 		break;
 	case ATTRIBUTE_ID_REQUESTRES:
 	case ATTRIBUTE_ID_PRIORITY:
@@ -779,7 +779,7 @@ int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 			return EXT_ERR_ALLOC;
 		}
 		TRY(pext->g_bytes(r->pvalue, len));
-		((char*)r->pvalue)[len] = '\0';
+		static_cast<char *>(r->pvalue)[len] = '\0';
 		break;
 	case ATTRIBUTE_ID_MSGPROPS:
 	case ATTRIBUTE_ID_ATTACHMENT: {
@@ -1212,7 +1212,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid)
 {
 	BOOL b_props;
-	uint32_t cpid;
 	BINARY tmp_bin;
 	uint8_t cur_lvl;
 	uint8_t tmp_byte;
@@ -1253,11 +1252,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		mlog(LV_DEBUG, "tnef: cannot find idOEMCodePage");
 		return NULL;
 	}
-	if (0 == ((LONG_ARRAY*)attribute.pvalue)->count) {
+	if (static_cast<LONG_ARRAY *>(attribute.pvalue)->count == 0) {
 		mlog(LV_DEBUG, "tnef: cannot find PrimaryCodePage");
 		return NULL;
 	}
-	cpid = ((LONG_ARRAY*)attribute.pvalue)->pl[0];
+	uint32_t cpid = static_cast<LONG_ARRAY *>(attribute.pvalue)->pl[0];
 	b_props = FALSE;
 	cur_lvl = LVL_MESSAGE;
 	powner = NULL;
@@ -1406,7 +1405,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_PRIORITY:
-			switch (*(uint16_t*)attribute.pvalue) {
+			switch (*static_cast<uint16_t *>(attribute.pvalue)) {
 			case 3:
 				tmp_int32 = IMPORTANCE_LOW;
 				break;
@@ -1569,22 +1568,20 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				attachment_content_free(pattachment);
 				return NULL;
 			}
-			if (ATTACH_TYPE_OLE == ((REND_DATA*)
-				attribute.pvalue)->attach_type) {
+			auto &rend = *static_cast<REND_DATA *>(attribute.pvalue);
+			if (rend.attach_type == ATTACH_TYPE_OLE) {
 				tmp_bin.cb = sizeof(OLE_TAG);
 				tmp_bin.pb = deconst(OLE_TAG);
 				if (pattachment->proplist.set(PR_ATTACH_TAG, &tmp_bin) != 0)
 					return NULL;
-			}
-			if (FILE_DATA_MACBINARY == ((REND_DATA*)
-				attribute.pvalue)->attach_type) {
+			} else if (rend.attach_type == FILE_DATA_MACBINARY) {
 				tmp_bin.cb = sizeof(MACBINARY_ENCODING);
 				tmp_bin.pb = deconst(MACBINARY_ENCODING);
 				if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
 					return NULL;
 			}
 			if (pattachment->proplist.set(PR_RENDERING_POSITION,
-			    &static_cast<REND_DATA *>(attribute.pvalue)->attach_position) != 0)
+			    &rend.attach_position) != 0)
 				return NULL;
 			b_props = FALSE;
 			break;
@@ -1659,7 +1656,7 @@ MESSAGE_CONTENT* tnef_deserialize(const void *pbuff,
 			alloc, get_propids, username_to_entryid);
 }
 
-int tnef_push::p_propname(const PROPERTY_NAME &rr)
+pack_result tnef_push::p_propname(const PROPERTY_NAME &rr)
 {
 	auto pext = this;
 	auto &ext = *pext;
@@ -1685,7 +1682,7 @@ int tnef_push::p_propname(const PROPERTY_NAME &rr)
 	return EXT_ERR_SUCCESS;
 }
 
-int tnef_push::p_propval(const TNEF_PROPVAL &rr)
+pack_result tnef_push::p_propval(const TNEF_PROPVAL &rr)
 {
 	auto pext = this;
 	auto &ext = *pext;
@@ -1867,7 +1864,7 @@ int tnef_push::p_propval(const TNEF_PROPVAL &rr)
 	return EXT_ERR_BAD_SWITCH;
 }
 
-int tnef_push::p_attr(uint8_t level, uint32_t attr_id, const void *value)
+pack_result tnef_push::p_attr(uint8_t level, uint32_t attr_id, const void *value)
 {
 	auto pext = this;
 	auto &ext = *pext;

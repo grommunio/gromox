@@ -1894,6 +1894,6 @@ static void mlog2(unsigned int level, const char *format, ...)
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
-	mlog(level, "user=%s host=%s  %s",
+	mlog(level, "user=%s host=[%s]  %s",
 		rpc_info.username, rpc_info.client_ip, log_buf);
 }

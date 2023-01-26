@@ -5,11 +5,17 @@
 #define PKGLIBDIR "/usr/lib/gromox"
 #define PKGLIBEXECDIR "/usr/libexec/gromox"
 #define DATADIR "/usr/share"
-#define PKGDATADIR "/usr/share/gromox"
-#define PKGRUNDIR "/run/gromox"
-#define PKGSTATEDIR "/var/lib/gromox"
+#define LOCALSTATEDIR "/var"
+#define PKGDATADIR DATADIR "/gromox"
+#if __OpenBSD__
+#	define PKGSTATEDIR LOCALSTATEDIR "/db/gromox"
+#	define PKGRUNDIR LOCALSTATEDIR "/run/gromox"
+#else
+#	define PKGSTATEDIR LOCALSTATEDIR "/lib/gromox"
+#	define PKGRUNDIR "/run/gromox"
+#endif
 #define PKGSTATEGATEWAYDIR PKGSTATEDIR "/gateway"
 #define PKGSTATEQUEUEDIR PKGSTATEDIR "/queue"
-#define PKGLOGDIR "/var/log/gromox"
+#define PKGLOGDIR LOCALSTATEDIR "/log/gromox"
 #define LOCAL_DISK_TMPDIR "/var/tmp/gromox" /* not RAM and not networked */
 #define DFL_LOGOLINK "https://gromox.com/"

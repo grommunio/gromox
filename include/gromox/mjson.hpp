@@ -35,7 +35,7 @@ struct GX_EXPORT MJSON {
 	NOMOVE(MJSON);
 
 	void clear();
-	BOOL retrieve(char *digest_buf, int len, const char *path);
+	BOOL load_from_str_move(char *digest_buf, int len, const char *path);
 	int fetch_structure(const char *charset, BOOL ext, char *buf, int len);
 	int fetch_envelope(const char *charset, char *buf, int len);
 	BOOL rfc822_check();

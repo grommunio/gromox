@@ -19,7 +19,6 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
-#include "asyncemsmdb_ndr.h"
 #include "bounce_producer.hpp"
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -32,41 +31,9 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-enum {
-	// ecDoConnect = 0,
-	ecDoDisconnect = 1,
-	// ecDoRpc = 2,
-	// ecGetMoreRpc = 3,
-	ecRRegisterPushNotification = 4,
-	// ecRUnregisterPushNotification = 5,
-	ecDummyRpc = 6,
-	// ecRGetDCName = 7,
-	// ecRNetGetDCName = 8,
-	// ecDoRpcExt = 9,
-	ecDoConnectEx = 10,
-	ecDoRpcExt2 = 11,
-	// ecDoAsyncConnect = 12,
-	// ecDoAsyncWait = 13,
-	ecDoAsyncConnectEx = 14,
-};
-
-enum {
-	ecDoAsyncWaitEx = 0,
-};
-
-static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **pin);
 static int exchange_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
-static int exchange_emsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
-
 static void exchange_emsmdb_unbind(uint64_t handle);
-
-static int exchange_async_emsmdb_ndr_pull(int opnum,
-	NDR_PULL* pndr, void **pin);
 static int exchange_async_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
-
-static int exchange_async_emsmdb_ndr_push(int opnum,
-	NDR_PUSH *pndr, void *pout);
-
 static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 
 DECLARE_PROC_API();
@@ -80,6 +47,7 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"emsmdb_max_hoc", "10", CFG_SIZE, "1"},
 	{"emsmdb_max_obh_per_session", "500", CFG_SIZE, "500"},
 	{"emsmdb_private_folder_softdelete", "0", CFG_BOOL},
+	{"emsmdb_rop_chaining", "1"},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "60s", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
 	{"max_mail_length", "64M", CFG_SIZE, "1"},
@@ -108,6 +76,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	emsmdb_max_cxh_per_user = pconfig->get_ll("emsmdb_max_obh_per_session");
 	emsmdb_max_obh_per_session = pconfig->get_ll("emsmdb_max_obh_per_session");
 	emsmdb_pvt_folder_softdel = pconfig->get_ll("emsmdb_private_folder_softdelete");
+	emsmdb_rop_chaining = pconfig->get_ll("emsmdb_rop_chaining");
 	return true;
 } catch (const cfg_error &) {
 	return false;
@@ -117,16 +86,16 @@ static constexpr DCERPC_INTERFACE interface_emsmdb = {
 	"exchangeEMSMDB",
 	/* {a4f1db00-ca47-1067-b31f-00dd010662da} */
 	{0xa4f1db00, 0xca47, 0x1067, {0xb3, 0x1f}, {0x00, 0xdd, 0x01, 0x06, 0x62, 0xda}},
-	0x510000, exchange_emsmdb_ndr_pull, exchange_emsmdb_dispatch,
-	exchange_emsmdb_ndr_push, exchange_emsmdb_unbind,
+	0x510000, emsmdb_ndr_pull, exchange_emsmdb_dispatch,
+	emsmdb_ndr_push, exchange_emsmdb_unbind,
 };
 
 static constexpr DCERPC_INTERFACE interface_async_emsmdb = {
 	"exchangeAsyncEMSMDB",
 	/* {5261574a-4572-206e-b268-6b199213b4e4} */
 	{0x5261574a, 0x4572, 0x206e, {0xb2, 0x68}, {0x6b, 0x19, 0x92, 0x13, 0xb4, 0xe4}},
-	0x10000, exchange_async_emsmdb_ndr_pull, exchange_async_emsmdb_dispatch,
-	exchange_async_emsmdb_ndr_push, nullptr, exchange_async_emsmdb_reclaim,
+	0x10000, asyncemsmdb_ndr_pull, exchange_async_emsmdb_dispatch,
+	asyncemsmdb_ndr_push, nullptr, exchange_async_emsmdb_reclaim,
 };
 
 extern void emsmdb_report();
@@ -269,47 +238,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 }
 PROC_ENTRY(proc_exchange_emsmdb);
 
-static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
-{
-	switch (opnum) {
-	case ecDoDisconnect:
-		*ppin = ndr_stack_anew<ECDODISCONNECT_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return emsmdb_ndr_pull_ecdodisconnect(pndr, static_cast<ECDODISCONNECT_IN *>(*ppin));
-	case ecRRegisterPushNotification:
-		*ppin = ndr_stack_anew<ECRREGISTERPUSHNOTIFICATION_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return emsmdb_ndr_pull_ecrregisterpushnotification(pndr, static_cast<ECRREGISTERPUSHNOTIFICATION_IN *>(*ppin));
-	case ecDummyRpc:
-		*ppin = NULL;
-		return NDR_ERR_SUCCESS;
-	case ecDoConnectEx:
-		*ppin = ndr_stack_anew<ECDOCONNECTEX_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return emsmdb_ndr_pull_ecdoconnectex(pndr, static_cast<ECDOCONNECTEX_IN *>(*ppin));
-	case ecDoRpcExt2:
-		*ppin = ndr_stack_anew<ECDORPCEXT2_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return emsmdb_ndr_pull_ecdorpcext2(pndr, static_cast<ECDORPCEXT2_IN *>(*ppin));
-	case ecDoAsyncConnectEx:
-		*ppin = ndr_stack_anew<ECDOASYNCCONNECTEX_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return emsmdb_ndr_pull_ecdoasyncconnectex(pndr, static_cast<ECDOASYNCCONNECTEX_IN *>(*ppin));
-	default:
-		return NDR_ERR_BAD_SWITCH;
-	}
-}
-
 static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
     uint64_t handle, void *pin, void **ppout, uint32_t *ecode)
 {
@@ -320,7 +248,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out == nullptr)
 			return DISPATCH_FAIL;
 		*ppout = out;
-		out->result = emsmdb_interface_disconnect(&in->cxh);
+		out->result = emsmdb_interface_disconnect(in->cxh);
 		out->cxh = in->cxh;
 		*ecode = out->result;
 		return DISPATCH_SUCCESS;
@@ -371,7 +299,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out == nullptr)
 			return DISPATCH_FAIL;
 		*ppout = out;
-		out->result = emsmdb_interface_rpc_ext2(&in->cxh, &in->flags,
+		out->result = emsmdb_interface_rpc_ext2(in->cxh, &in->flags,
 		              in->pin, in->cb_in, out->pout, &in->cb_out,
 		              in->pauxin, in->cb_auxin, out->pauxout,
 		              &in->cb_auxout, &out->trans_time);
@@ -397,44 +325,9 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 	}
 }
 
-static int exchange_emsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
-{
-	switch (opnum) {
-	case ecDoDisconnect:
-		return emsmdb_ndr_push_ecdodisconnect(pndr, static_cast<ECDODISCONNECT_OUT *>(pout));
-	case ecRRegisterPushNotification:
-		return emsmdb_ndr_push_ecrregisterpushnotification(pndr, static_cast<ECRREGISTERPUSHNOTIFICATION_OUT *>(pout));
-	case ecDummyRpc:
-		return emsmdb_ndr_push_ecdummyrpc(pndr, static_cast<int32_t *>(pout));
-	case ecDoConnectEx:
-		return emsmdb_ndr_push_ecdoconnectex(pndr, static_cast<ECDOCONNECTEX_OUT *>(pout));
-	case ecDoRpcExt2:
-		return emsmdb_ndr_push_ecdorpcext2(pndr, static_cast<ECDORPCEXT2_OUT *>(pout));
-	case ecDoAsyncConnectEx:
-		return emsmdb_ndr_push_ecdoasyncconnectex(pndr, static_cast<ECDOASYNCCONNECTEX_OUT *>(pout));
-	default:
-		return NDR_ERR_BAD_SWITCH;
-	}
-}
-
 static void exchange_emsmdb_unbind(uint64_t handle)
 {
 	emsmdb_interface_unbind_rpc_handle(handle);
-}
-
-static int exchange_async_emsmdb_ndr_pull(int opnum,
-	NDR_PULL* pndr, void **ppin)
-{
-	switch (opnum) {
-	case ecDoAsyncWaitEx:
-		*ppin = ndr_stack_anew<ECDOASYNCWAITEX_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return asyncemsmdb_ndr_pull_ecdoasyncwaitex(pndr, static_cast<ECDOASYNCWAITEX_IN *>(*ppin));
-	default:
-		return NDR_ERR_BAD_SWITCH;
-	}
 }
 
 static int exchange_async_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
@@ -465,17 +358,6 @@ static int exchange_async_emsmdb_dispatch(unsigned int opnum, const GUID *pobjec
 	}
 	default:
 		return DISPATCH_FAIL;
-	}
-}
-
-static int exchange_async_emsmdb_ndr_push(int opnum,
-	NDR_PUSH *pndr, void *pout)
-{
-	switch (opnum) {
-	case ecDoAsyncWaitEx:
-		return asyncemsmdb_ndr_push_ecdoasyncwaitex(pndr, static_cast<ECDOASYNCWAITEX_OUT *>(pout));
-	default:
-		return NDR_ERR_BAD_SWITCH;
 	}
 }
 

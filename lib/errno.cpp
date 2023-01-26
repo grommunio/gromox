@@ -64,9 +64,24 @@ const char *mapi_strerror(unsigned int e)
 	E(ecAccessDenied, "Insufficient access rights to perform the operation")
 	E(ecMAPIOOM, "Not enough memory was available to complete the operation")
 	E(ecInvalidParam, "An invalid parameter was passed to a function or remote procedure call")
+	E(ecInterfaceNotSupported, "MAPI interface not supported")
+	E(ecInvalidEntryId, "Invalid EntryID")
+	E(ecCorruptData, "There is an internal inconsistency in a database, or in a complex property value")
+	E(MAPI_E_UNCONFIGURED, "MAPI_E_UNCONFIGURED")
+	E(MAPI_E_FAILONEPROVIDER, "MAPI_E_FAILONEPROVIDER")
+	E(MAPI_E_PASSWORD_CHANGE_REQUIRED, "Password change is required")
+	E(MAPI_E_PASSWORD_EXPIRED, "Password has expired")
+	E(MAPI_E_INVALID_WORKSTATION_ACCOUNT, "Invalid workstation account")
+	E(ecTimeSkew, "The operation failed due to clock skew between servers")
+	E(MAPI_E_ACCOUNT_DISABLED, "Account is disabled")
+	E(MAPI_E_END_OF_SESSION, "The server session has been destroyed, possibly by a server restart")
+	E(MAPI_E_UNKNOWN_ENTRYID, "The EntryID passed to OpenEntry was created by a different MAPI provider")
+	E(ecTableEmpty, "A table essential to the operation is empty")
+	E(MAPI_E_NO_RECIPIENTS, "A message cannot be sent because it has no recipients")
+	E(MAPI_E_STORE_FULL, "Store is full")
 	}
-	thread_local char xbuf[32];
-	snprintf(xbuf, gromox::arsizeof(xbuf), "Unknown error %xh", e);
+	thread_local char xbuf[40];
+	snprintf(xbuf, sizeof(xbuf), "Unknown MAPI error code %xh", e);
 	return xbuf;
 #undef E
 }

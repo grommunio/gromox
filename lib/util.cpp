@@ -3,7 +3,7 @@
  *	this file includes some utility functions that will be used by many 
  *	programs
  */
-#ifdef HAVE_CONFIG_H
+#if defined(HAVE_CONFIG_H)
 #	include "config.h"
 #endif
 #include <algorithm>
@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iconv.h>
+#include <pthread.h>
 #include <random>
 #include <unistd.h>
 #include <json/reader.h>
@@ -27,8 +28,10 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
-#if __linux__
+#if defined(__linux__)
 #	include <sys/random.h>
+#elif defined(__OpenBSD__)
+#	include <pwd.h>
 #endif
 
 using namespace gromox;
@@ -414,11 +417,16 @@ char* search_string(const char *haystack, const char *needle,
 	return NULL;
 }
 
-static char crypt_salt[65]=
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./";
-
 const char *crypt_wrapper(const char *pw)
 {
+#if defined(__OpenBSD__)
+	static char ret[_PASSWORD_LEN];
+	if (crypt_newhash(pw, "bcrypt", ret, sizeof(ret)) != 0)
+		return "*0";
+	return ret;
+#else
+	static char crypt_salt[65]=
+	    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./";
 	char salt[21] = "$6$";
 	randstring(salt + 3, 16, crypt_salt);
 	salt[19] = '$';
@@ -429,6 +437,7 @@ const char *crypt_wrapper(const char *pw)
 	salt[1] = '1';
 	ret = crypt(pw, salt);
 	return ret != nullptr ? ret : "*0";
+#endif
 }
 
 
@@ -883,6 +892,25 @@ size_t qp_encoded_size_estimate(const char *s, size_t n)
 		if (qp_nonprintable(*s) && *s != '\t' && *s != '\n' && *s != '\r')
 			enc += 2;
 	return enc;
+}
+
+int pthread_create4(pthread_t *t, std::nullptr_t, void *(*f)(void *), void *a) noexcept
+{
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	size_t tss = 0;
+	auto ret = pthread_attr_getstacksize(&attr, &tss);
+	if (ret == 0)
+		tss = std::max(tss, static_cast<size_t>(16UL << 20));
+	ret = pthread_attr_setstacksize(&attr, tss);
+	if (ret != 0) {
+		mlog(LV_ERR, "E-1135: pthread_attr_setstacksize: %s", strerror(ret));
+		pthread_attr_destroy(&attr);
+		return ret;
+	}
+	ret = pthread_create(t, &attr, f, a);
+	pthread_attr_destroy(&attr);
+	return ret;
 }
 
 }

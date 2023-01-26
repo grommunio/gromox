@@ -175,7 +175,7 @@ Do not bother changing this config directive's default value.
 
 In various daemons, the ``x500_org_name`` config directive influences the DN
 used in muidEMSAB entryids. In Exchange, the DN would be derived from the
-ActiveDirectory hierarchy or something — feel free to google for “X500 DN
+Active Directory hierarchy or something — feel free to google for “X500 DN
 Exchange” and cringe —, but as far as MAPI is concerned, the value is
 arbitrary. The x500_org_name ought not be changed after initial installation as
 it will invalidate participants of e-mail messages, calendar events, etc.

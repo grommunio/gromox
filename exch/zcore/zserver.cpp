@@ -623,7 +623,7 @@ void zserver_init(size_t table_size, int cache_interval, int ping_interval)
 int zserver_run()
 {
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "E-1443: pthread_create: %s", strerror(ret));
 		return -4;
@@ -645,7 +645,7 @@ void zserver_stop()
 	g_notify_table.clear();
 }
 
-uint32_t zs_logon(const char *username,
+ec_error_t zs_logon(const char *username,
 	const char *password, uint32_t flags, GUID *phsession)
 {
 	int org_id;
@@ -661,9 +661,8 @@ uint32_t zs_logon(const char *username,
 	if (pdomain == nullptr)
 		return ecUnknownUser;
 	pdomain ++;
-	if (password != nullptr && !system_services_auth_login(username,
-	    password, maildir, arsizeof(maildir), lang, arsizeof(lang),
-	    reason, arsizeof(reason),
+	if (!system_services_auth_login(username, znul(password), maildir,
+	    sizeof(maildir), lang, sizeof(lang), reason, sizeof(reason),
 	    USER_PRIVILEGE_EXCH)) {
 		mlog(LV_ERR, "Auth rejected for \"%s\": %s", username, reason);
 		return ecLoginFailure;
@@ -744,7 +743,7 @@ uint32_t zs_logon(const char *username,
 	return ecSuccess;
 }
 
-uint32_t zs_checksession(GUID hsession)
+ec_error_t zs_checksession(GUID hsession)
 {
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -752,7 +751,7 @@ uint32_t zs_checksession(GUID hsession)
 	return ecSuccess;
 }
 
-uint32_t zs_uinfo(const char *username, BINARY *pentryid,
+ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
 	char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits)
 {
 	char x500dn[1024];
@@ -781,7 +780,7 @@ uint32_t zs_uinfo(const char *username, BINARY *pentryid,
 	       ecError : ecSuccess;
 }
 
-uint32_t zs_unloadobject(GUID hsession, uint32_t hobject)
+ec_error_t zs_unloadobject(GUID hsession, uint32_t hobject)
 {
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -790,10 +789,10 @@ uint32_t zs_unloadobject(GUID hsession, uint32_t hobject)
 	return ecSuccess;
 }
 
-static uint32_t zs_openentry_emsab(GUID, BINARY, uint32_t, const char *, uint32_t, uint8_t *, uint32_t *);
-static uint32_t zs_openentry_zcsab(GUID, BINARY, uint32_t, uint8_t *, uint32_t *);
+static ec_error_t zs_openentry_emsab(GUID, BINARY, uint32_t, const char *, uint32_t, uint8_t *, uint32_t *);
+static ec_error_t zs_openentry_zcsab(GUID, BINARY, uint32_t, uint8_t *, uint32_t *);
 
-uint32_t zs_openentry(GUID hsession, BINARY entryid,
+ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 	uint32_t flags, uint8_t *pmapi_type, uint32_t *phobject)
 {
 	BOOL b_private;
@@ -852,7 +851,7 @@ uint32_t zs_openentry(GUID hsession, BINARY entryid,
 	return ecInvalidParam;
 }
 
-static uint32_t zs_openentry_emsab(GUID hsession, BINARY entryid,
+static ec_error_t zs_openentry_emsab(GUID hsession, BINARY entryid,
     uint32_t flags, const char *essdn, uint32_t address_type,
     uint8_t *pmapi_type, uint32_t *phobject)
 {
@@ -894,7 +893,7 @@ static uint32_t zs_openentry_emsab(GUID hsession, BINARY entryid,
 		handle, entryid, flags, pmapi_type, phobject);
 }
 
-static uint32_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
+static ec_error_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
     uint8_t *mapi_type, uint32_t *objh)
 {
 	if (entryid.cb < 28)
@@ -903,9 +902,8 @@ static uint32_t zs_openentry_zcsab(GUID ses, BINARY entryid, uint32_t flags,
 	return zs_openentry(ses, lower_eid, flags, mapi_type, objh);
 }
 
-uint32_t zs_openstoreentry(GUID hsession,
-	uint32_t hobject, BINARY entryid, uint32_t flags,
-	uint8_t *pmapi_type, uint32_t *phobject)
+ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
+    uint32_t flags, uint8_t *pmapi_type, uint32_t *phobject)
 {
 	BOOL b_del;
 	BOOL b_exist;
@@ -1080,10 +1078,10 @@ uint32_t zs_openstoreentry(GUID hsession,
 	return ecSuccess;
 }
 
-static uint32_t zs_openab_emsab(USER_INFO_REF &&, BINARY eid, int base_id, uint8_t *, uint32_t *);
-static uint32_t zs_openab_zcsab(USER_INFO_REF &&, BINARY eid, int base_id, uint8_t *, uint32_t *);
+static ec_error_t zs_openab_emsab(USER_INFO_REF &&, BINARY, int, uint8_t *, uint32_t *);
+static ec_error_t zs_openab_zcsab(USER_INFO_REF &&, BINARY, int, uint8_t *, uint32_t *);
 
-static uint32_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
+static ec_error_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
     uint8_t *zmg_type, uint32_t *objh)
 {
 	ONEOFF_ENTRYID eid;
@@ -1099,7 +1097,7 @@ static uint32_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
 	return *objh != INVALID_HANDLE ? ecSuccess : ecError;
 }
 
-uint32_t zs_openabentry(GUID hsession,
+ec_error_t zs_openabentry(GUID hsession,
 	BINARY entryid, uint8_t *pmapi_type, uint32_t *phobject)
 {
 	auto pinfo = zs_query_session(hsession);
@@ -1131,8 +1129,8 @@ uint32_t zs_openabentry(GUID hsession,
 	return ecInvalidParam;
 }
 
-static uint32_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_id,
-    uint8_t *pmapi_type, uint32_t *phobject)
+static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
+    int base_id, uint8_t *pmapi_type, uint32_t *phobject)
 {
 	int user_id, domain_id;
 	char essdn[1024];
@@ -1232,8 +1230,8 @@ static uint32_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid, int base_
 	return ecSuccess;
 }
 
-static uint32_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid, int base_id,
-    uint8_t *zmg_type, uint32_t *objh)
+static ec_error_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid,
+    int base_id, uint8_t *zmg_type, uint32_t *objh)
 {
 	EXT_PULL ep;
 	FOLDER_ENTRYID fe;
@@ -1257,7 +1255,7 @@ static uint32_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid, int base_i
 	return *objh != INVALID_HANDLE ? ecSuccess : ecError;
 }
 
-uint32_t zs_resolvename(GUID hsession,
+ec_error_t zs_resolvename(GUID hsession,
 	const TARRAY_SET *pcond_set, TARRAY_SET *presult_set)
 {
 	PROPTAG_ARRAY proptags;
@@ -1317,7 +1315,7 @@ uint32_t zs_resolvename(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_getpermissions(GUID hsession,
+ec_error_t zs_getpermissions(GUID hsession,
 	uint32_t hobject, PERMISSION_SET *pperm_set)
 {
 	uint8_t mapi_type;
@@ -1344,7 +1342,7 @@ uint32_t zs_getpermissions(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_modifypermissions(GUID hsession,
+ec_error_t zs_modifypermissions(GUID hsession,
 	uint32_t hfolder, const PERMISSION_SET *pset)
 {
 	uint8_t mapi_type;
@@ -1360,7 +1358,7 @@ uint32_t zs_modifypermissions(GUID hsession,
 	return pfolder->set_permissions(pset) ? ecSuccess : ecError;
 }
 
-uint32_t zs_modifyrules(GUID hsession,
+ec_error_t zs_modifyrules(GUID hsession,
 	uint32_t hfolder, uint32_t flags, const RULE_LIST *plist)
 {
 	uint8_t mapi_type;
@@ -1380,7 +1378,7 @@ uint32_t zs_modifyrules(GUID hsession,
 	return pfolder->updaterules(flags, plist) ? ecSuccess : ecError;
 }
 
-uint32_t zs_getabgal(GUID hsession, BINARY *pentryid)
+ec_error_t zs_getabgal(GUID hsession, BINARY *pentryid)
 {
 	void *pvalue;
 	
@@ -1393,8 +1391,7 @@ uint32_t zs_getabgal(GUID hsession, BINARY *pentryid)
 	return ecSuccess;
 }
 
-uint32_t zs_loadstoretable(
-	GUID hsession, uint32_t *phobject)
+ec_error_t zs_loadstoretable(GUID hsession, uint32_t *phobject)
 {
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -1408,8 +1405,7 @@ uint32_t zs_loadstoretable(
 	return ecSuccess;
 }
 
-uint32_t zs_openstore(GUID hsession,
-	BINARY entryid, uint32_t *phobject)
+ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 {
 	int user_id;
 	char dir[256];
@@ -1459,7 +1455,7 @@ uint32_t zs_openstore(GUID hsession,
 	return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
 }
 
-uint32_t zs_openprofilesec(GUID hsession,
+ec_error_t zs_openprofilesec(GUID hsession,
 	const FLATUID *puid, uint32_t *phobject)
 {
 	GUID guid;
@@ -1480,7 +1476,7 @@ uint32_t zs_openprofilesec(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_loadhierarchytable(GUID hsession,
+ec_error_t zs_loadhierarchytable(GUID hsession,
 	uint32_t hfolder, uint32_t flags, uint32_t *phobject)
 {
 	uint8_t mapi_type;
@@ -1513,7 +1509,7 @@ uint32_t zs_loadhierarchytable(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_loadcontenttable(GUID hsession,
+ec_error_t zs_loadcontenttable(GUID hsession,
 	uint32_t hfolder, uint32_t flags, uint32_t *phobject)
 {
 	uint8_t mapi_type;
@@ -1559,7 +1555,7 @@ uint32_t zs_loadcontenttable(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_loadrecipienttable(GUID hsession,
+ec_error_t zs_loadrecipienttable(GUID hsession,
 	uint32_t hmessage, uint32_t *phobject)
 {
 	uint8_t mapi_type;
@@ -1581,8 +1577,7 @@ uint32_t zs_loadrecipienttable(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_loadruletable(GUID hsession,
-	uint32_t hfolder, uint32_t *phobject)
+ec_error_t zs_loadruletable(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -1603,7 +1598,7 @@ uint32_t zs_loadruletable(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_createmessage(GUID hsession,
+ec_error_t zs_createmessage(GUID hsession,
 	uint32_t hfolder, uint32_t flags, uint32_t *phobject)
 {
 	uint8_t mapi_type;
@@ -1680,9 +1675,8 @@ uint32_t zs_createmessage(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_deletemessages(GUID hsession,
-	uint32_t hfolder, const BINARY_ARRAY *pentryids,
-	uint32_t flags)
+ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
+    const BINARY_ARRAY *pentryids, uint32_t flags)
 {
 	BOOL b_owner;
 	EID_ARRAY ids;
@@ -1702,7 +1696,7 @@ uint32_t zs_deletemessages(GUID hsession,
 	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
-		return FALSE;
+		return ecError;
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
@@ -1782,9 +1776,8 @@ uint32_t zs_deletemessages(GUID hsession,
 	       ecSuccess : ecError;
 }
 
-uint32_t zs_copymessages(GUID hsession,
-	uint32_t hsrcfolder, uint32_t hdstfolder,
-	const BINARY_ARRAY *pentryids, uint32_t flags)
+ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
+    uint32_t hdstfolder, const BINARY_ARRAY *pentryids, uint32_t flags)
 {
 	BOOL b_done, b_guest = TRUE, b_owner;
 	EID_ARRAY ids;
@@ -1895,9 +1888,8 @@ uint32_t zs_copymessages(GUID hsession,
 	       ecSuccess : ecError;
 }
 
-uint32_t zs_setreadflags(GUID hsession,
-	uint32_t hfolder, const BINARY_ARRAY *pentryids,
-	uint32_t flags)
+ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
+    const BINARY_ARRAY *pentryids, uint32_t flags)
 {
 	void *pvalue;
 	BOOL b_private;
@@ -2022,10 +2014,9 @@ uint32_t zs_setreadflags(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_createfolder(GUID hsession,
-	uint32_t hparent_folder, uint32_t folder_type,
-	const char *folder_name, const char *folder_comment,
-	uint32_t flags, uint32_t *phobject)
+ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
+    uint32_t folder_type, const char *folder_name, const char *folder_comment,
+    uint32_t flags, uint32_t *phobject)
 {
 	void *pvalue;
 	uint64_t tmp_id;
@@ -2147,7 +2138,7 @@ uint32_t zs_createfolder(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_deletefolder(GUID hsession,
+ec_error_t zs_deletefolder(GUID hsession,
 	uint32_t hparent_folder, BINARY entryid, uint32_t flags)
 {
 	BOOL b_done;
@@ -2224,8 +2215,7 @@ uint32_t zs_deletefolder(GUID hsession,
 	       pinfo->cpid, folder_id, b_hard, &b_done) ? ecSuccess : ecError;
 }
 
-uint32_t zs_emptyfolder(GUID hsession,
-	uint32_t hfolder, uint32_t flags)
+ec_error_t zs_emptyfolder(GUID hsession, uint32_t hfolder, uint32_t flags)
 {
 	BOOL b_partial;
 	uint8_t mapi_type;
@@ -2261,9 +2251,8 @@ uint32_t zs_emptyfolder(GUID hsession,
 	       b_hard, TRUE, b_fai, TRUE, &b_partial) ? ecSuccess : ecError;
 }
 
-uint32_t zs_copyfolder(GUID hsession,
-	uint32_t hsrc_folder, BINARY entryid, uint32_t hdst_folder,
-	const char *new_name, uint32_t flags)
+ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
+    uint32_t hdst_folder, const char *new_name, uint32_t flags)
 {
 	BOOL b_done;
 	BOOL b_exist;
@@ -2356,8 +2345,7 @@ uint32_t zs_copyfolder(GUID hsession,
 	return b_exist ? ecDuplicateName : ecSuccess;
 }
 
-uint32_t zs_getstoreentryid(
-	const char *mailbox_dn, BINARY *pentryid)
+ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 {
 	EXT_PUSH ext_push;
 	char username[UADDR_SIZE];
@@ -2392,9 +2380,8 @@ uint32_t zs_getstoreentryid(
 	return ecSuccess;
 }
 
-uint32_t zs_entryidfromsourcekey(
-	GUID hsession, uint32_t hstore, BINARY folder_key,
-	const BINARY *pmessage_key, BINARY *pentryid)
+ec_error_t zs_entryidfromsourcekey(GUID hsession, uint32_t hstore,
+    BINARY folder_key, const BINARY *pmessage_key, BINARY *pentryid)
 {
 	XID tmp_xid;
 	BOOL b_found;
@@ -2466,9 +2453,8 @@ uint32_t zs_entryidfromsourcekey(
 	return ecSuccess;
 }
 
-uint32_t zs_storeadvise(GUID hsession,
-	uint32_t hstore, const BINARY *pentryid,
-	uint32_t event_mask, uint32_t *psub_id)
+ec_error_t zs_storeadvise(GUID hsession, uint32_t hstore,
+    const BINARY *pentryid, uint32_t event_mask, uint32_t *psub_id)
 {
 	char dir[256];
 	uint16_t type;
@@ -2531,7 +2517,7 @@ uint32_t zs_storeadvise(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_unadvise(GUID hsession, uint32_t hstore,
+ec_error_t zs_unadvise(GUID hsession, uint32_t hstore,
      uint32_t sub_id) try
 {	
 	uint8_t mapi_type;
@@ -2555,7 +2541,7 @@ uint32_t zs_unadvise(GUID hsession, uint32_t hstore,
 	return ecServerOOM;
 }
 
-uint32_t zs_notifdequeue(const NOTIF_SINK *psink,
+ec_error_t zs_notifdequeue(const NOTIF_SINK *psink,
 	uint32_t timeval, ZNOTIFICATION_ARRAY *pnotifications)
 {
 	int i;
@@ -2614,7 +2600,7 @@ uint32_t zs_notifdequeue(const NOTIF_SINK *psink,
 		holder.emplace_back();
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2179: ENOMEM");
-		return false;
+		return ecServerOOM;
 	}
 	auto psink_node = &holder.front();
 	psink_node->clifd = common_util_get_clifd();
@@ -2631,8 +2617,7 @@ uint32_t zs_notifdequeue(const NOTIF_SINK *psink,
 	return ecNotFound;
 }
 
-uint32_t zs_queryrows(
-	GUID hsession, uint32_t htable, uint32_t start,
+ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 	uint32_t count, const RESTRICTION *prestriction,
 	const PROPTAG_ARRAY *pproptags, TARRAY_SET *prowset)
 {
@@ -2741,7 +2726,7 @@ uint32_t zs_queryrows(
 	return ecSuccess;
 }
 	
-uint32_t zs_setcolumns(GUID hsession, uint32_t htable,
+ec_error_t zs_setcolumns(GUID hsession, uint32_t htable,
 	const PROPTAG_ARRAY *pproptags, uint32_t flags)
 {
 	uint8_t mapi_type;
@@ -2756,9 +2741,8 @@ uint32_t zs_setcolumns(GUID hsession, uint32_t htable,
 	return ptable->set_columns(pproptags) ? ecSuccess : ecError;
 }
 
-uint32_t zs_seekrow(GUID hsession,
-	uint32_t htable, uint32_t bookmark, int32_t seek_rows,
-	int32_t *psought_rows)
+ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
+    int32_t seek_rows, int32_t *psought_rows)
 {
 	BOOL b_exist;
 	uint8_t mapi_type;
@@ -2846,7 +2830,7 @@ static bool table_acceptable_type(uint16_t type)
 	}
 }
 
-uint32_t zs_sorttable(GUID hsession,
+ec_error_t zs_sorttable(GUID hsession,
 	uint32_t htable, const SORTORDER_SET *psortset)
 {
 	BOOL b_max;
@@ -2924,8 +2908,7 @@ uint32_t zs_sorttable(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_getrowcount(GUID hsession,
-	uint32_t htable, uint32_t *pcount)
+ec_error_t zs_getrowcount(GUID hsession, uint32_t htable, uint32_t *pcount)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -2942,7 +2925,7 @@ uint32_t zs_getrowcount(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_restricttable(GUID hsession, uint32_t htable,
+ec_error_t zs_restricttable(GUID hsession, uint32_t htable,
 	const RESTRICTION *prestriction, uint32_t flags)
 {
 	uint8_t mapi_type;
@@ -2972,9 +2955,8 @@ uint32_t zs_restricttable(GUID hsession, uint32_t htable,
 	return ecSuccess;
 }
 
-uint32_t zs_findrow(GUID hsession, uint32_t htable,
-	uint32_t bookmark, const RESTRICTION *prestriction,
-	uint32_t flags, uint32_t *prow_idx)
+ec_error_t zs_findrow(GUID hsession, uint32_t htable, uint32_t bookmark,
+    const RESTRICTION *prestriction, uint32_t flags, uint32_t *prow_idx)
 {
 	BOOL b_exist;
 	int32_t position;
@@ -3023,8 +3005,7 @@ uint32_t zs_findrow(GUID hsession, uint32_t htable,
 	return ecSuccess;
 }
 
-uint32_t zs_createbookmark(GUID hsession,
-	uint32_t htable, uint32_t *pbookmark)
+ec_error_t zs_createbookmark(GUID hsession, uint32_t htable, uint32_t *pbookmark)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -3047,8 +3028,7 @@ uint32_t zs_createbookmark(GUID hsession,
 	return ptable->create_bookmark(pbookmark) ? ecSuccess : ecError;
 }
 
-uint32_t zs_freebookmark(GUID hsession,
-	uint32_t htable, uint32_t bookmark)
+ec_error_t zs_freebookmark(GUID hsession, uint32_t htable, uint32_t bookmark)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -3070,7 +3050,7 @@ uint32_t zs_freebookmark(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_getreceivefolder(GUID hsession,
+ec_error_t zs_getreceivefolder(GUID hsession,
 	uint32_t hstore, const char *pstrclass, BINARY *pentryid)
 {
 	BINARY *pbin;
@@ -3102,7 +3082,7 @@ uint32_t zs_getreceivefolder(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_modifyrecipients(GUID hsession,
+ec_error_t zs_modifyrecipients(GUID hsession,
 	uint32_t hmessage, uint32_t flags, const TARRAY_SET *prcpt_list)
 {
 	static constexpr uint8_t persist_true = true, persist_false = false;
@@ -3330,7 +3310,7 @@ static ec_error_t rectify_message(message_object *pmessage,
 	return pmessage->save();
 }
 
-uint32_t zs_submitmessage(GUID hsession, uint32_t hmessage)
+ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 {
 	int timer_id;
 	BOOL b_marked;
@@ -3481,7 +3461,7 @@ uint32_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 	return ecSuccess;
 }
 
-uint32_t zs_loadattachmenttable(GUID hsession,
+ec_error_t zs_loadattachmenttable(GUID hsession,
 	uint32_t hmessage, uint32_t *phobject)
 {
 	uint8_t mapi_type;
@@ -3503,7 +3483,7 @@ uint32_t zs_loadattachmenttable(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_openattachment(GUID hsession,
+ec_error_t zs_openattachment(GUID hsession,
 	uint32_t hmessage, uint32_t attach_id, uint32_t *phobject)
 {
 	uint8_t mapi_type;
@@ -3526,7 +3506,7 @@ uint32_t zs_openattachment(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_createattachment(GUID hsession,
+ec_error_t zs_createattachment(GUID hsession,
 	uint32_t hmessage, uint32_t *phobject)
 {
 	uint8_t mapi_type;
@@ -3553,7 +3533,7 @@ uint32_t zs_createattachment(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_deleteattachment(GUID hsession,
+ec_error_t zs_deleteattachment(GUID hsession,
 	uint32_t hmessage, uint32_t attach_id)
 {
 	uint8_t mapi_type;
@@ -3570,7 +3550,7 @@ uint32_t zs_deleteattachment(GUID hsession,
 	return pmessage->delete_attachment(attach_id) ? ecSuccess : ecError;
 }
 
-uint32_t zs_setpropvals(GUID hsession, uint32_t hobject,
+ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
     TPROPVAL_ARRAY *ppropvals)
 {
 	uint8_t mapi_type;
@@ -3632,9 +3612,8 @@ uint32_t zs_setpropvals(GUID hsession, uint32_t hobject,
 	}
 }
 
-uint32_t zs_getpropvals(GUID hsession,
-	uint32_t hobject, const PROPTAG_ARRAY *pproptags,
-	TPROPVAL_ARRAY *ppropvals)
+ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
+    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	uint8_t mapi_type;
@@ -3735,7 +3714,7 @@ uint32_t zs_getpropvals(GUID hsession,
 	}
 }
 
-uint32_t zs_deletepropvals(GUID hsession,
+ec_error_t zs_deletepropvals(GUID hsession,
 	uint32_t hobject, const PROPTAG_ARRAY *pproptags)
 {
 	uint8_t mapi_type;
@@ -3796,8 +3775,8 @@ uint32_t zs_deletepropvals(GUID hsession,
 	}
 }
 
-uint32_t zs_setmessagereadflag(
-	GUID hsession, uint32_t hmessage, uint32_t flags)
+ec_error_t zs_setmessagereadflag(GUID hsession, uint32_t hmessage,
+    uint32_t flags)
 {
 	BOOL b_changed;
 	uint8_t mapi_type;
@@ -3812,7 +3791,7 @@ uint32_t zs_setmessagereadflag(
 	return pmessage->set_readflag(flags, &b_changed) ? ecSuccess : ecError;
 }
 
-uint32_t zs_openembedded(GUID hsession,
+ec_error_t zs_openembedded(GUID hsession,
 	uint32_t hattachment, uint32_t flags, uint32_t *phobject)
 {
 	uint8_t mapi_type;
@@ -3858,7 +3837,7 @@ uint32_t zs_openembedded(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_getnamedpropids(GUID hsession, uint32_t hstore,
+ec_error_t zs_getnamedpropids(GUID hsession, uint32_t hstore,
 	const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
 {
 	uint8_t mapi_type;
@@ -3874,7 +3853,7 @@ uint32_t zs_getnamedpropids(GUID hsession, uint32_t hstore,
 	       ecSuccess : ecError;
 }
 
-uint32_t zs_getpropnames(GUID hsession, uint32_t hstore,
+ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
 	uint8_t mapi_type;
@@ -3890,9 +3869,8 @@ uint32_t zs_getpropnames(GUID hsession, uint32_t hstore,
 	       ecSuccess : ecError;
 }
 
-uint32_t zs_copyto(GUID hsession, uint32_t hsrcobject,
-	const PROPTAG_ARRAY *pexclude_proptags, uint32_t hdstobject,
-	uint32_t flags)
+ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
+    const PROPTAG_ARRAY *pexclude_proptags, uint32_t hdstobject, uint32_t flags)
 {
 	int i;
 	BOOL b_cycle;
@@ -3918,7 +3896,7 @@ uint32_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 	if (mapi_type != dst_type)
 		return ecNotSupported;
 
-	BOOL b_force = (flags & COPY_FLAG_NOOVERWRITE) ? TRUE : false;
+	BOOL b_force = (flags & MAPI_NOREPLACE) ? false : TRUE;
 	switch (mapi_type) {
 	case ZMG_FOLDER: {
 		auto folder = static_cast<folder_object *>(pobject);
@@ -4019,7 +3997,7 @@ uint32_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 	}
 }
 
-uint32_t zs_savechanges(GUID hsession, uint32_t hobject)
+ec_error_t zs_savechanges(GUID hsession, uint32_t hobject)
 {
 	BOOL b_touched;
 	uint8_t mapi_type;
@@ -4048,8 +4026,7 @@ uint32_t zs_savechanges(GUID hsession, uint32_t hobject)
 	}
 }
 
-uint32_t zs_hierarchysync(GUID hsession,
-	uint32_t hfolder, uint32_t *phobject)
+ec_error_t zs_hierarchysync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -4073,8 +4050,7 @@ uint32_t zs_hierarchysync(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_contentsync(GUID hsession,
-	uint32_t hfolder, uint32_t *phobject)
+ec_error_t zs_contentsync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -4098,7 +4074,7 @@ uint32_t zs_contentsync(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
+ec_error_t zs_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
     const BINARY *pstate, const RESTRICTION *prestriction, uint8_t *pb_changed,
     uint32_t *pcount)
 {
@@ -4123,8 +4099,7 @@ uint32_t zs_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
 	return ecSuccess;
 }
 
-uint32_t zs_statesync(GUID hsession,
-	uint32_t hctx, BINARY *pstate)
+ec_error_t zs_statesync(GUID hsession, uint32_t hctx, BINARY *pstate)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -4142,7 +4117,7 @@ uint32_t zs_statesync(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_syncmessagechange(GUID hsession, uint32_t hctx,
+ec_error_t zs_syncmessagechange(GUID hsession, uint32_t hctx,
     uint8_t *pb_new, TPROPVAL_ARRAY *pproplist)
 {
 	BOOL b_found;
@@ -4162,7 +4137,7 @@ uint32_t zs_syncmessagechange(GUID hsession, uint32_t hctx,
 	return b_found ? ecSuccess : ecNotFound;
 }
 
-uint32_t zs_syncfolderchange(GUID hsession,
+ec_error_t zs_syncfolderchange(GUID hsession,
 	uint32_t hctx, TPROPVAL_ARRAY *pproplist)
 {
 	BOOL b_found;
@@ -4180,8 +4155,8 @@ uint32_t zs_syncfolderchange(GUID hsession,
 	return b_found ? ecSuccess : ecNotFound;
 }
 
-uint32_t zs_syncreadstatechanges(
-	GUID hsession, uint32_t hctx, STATE_ARRAY *pstates)
+ec_error_t zs_syncreadstatechanges(GUID hsession, uint32_t hctx,
+    STATE_ARRAY *pstates)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -4195,7 +4170,7 @@ uint32_t zs_syncreadstatechanges(
 	return pctx->sync_readstates(pstates) ? ecSuccess : ecError;
 }
 
-uint32_t zs_syncdeletions(GUID hsession,
+ec_error_t zs_syncdeletions(GUID hsession,
 	uint32_t hctx, uint32_t flags, BINARY_ARRAY *pbins)
 {
 	uint8_t mapi_type;
@@ -4210,7 +4185,7 @@ uint32_t zs_syncdeletions(GUID hsession,
 	return pctx->sync_deletions(flags, pbins) ? ecSuccess : ecError;
 }
 
-uint32_t zs_hierarchyimport(GUID hsession,
+ec_error_t zs_hierarchyimport(GUID hsession,
 	uint32_t hfolder, uint32_t *phobject)
 {
 	uint8_t mapi_type;
@@ -4235,8 +4210,7 @@ uint32_t zs_hierarchyimport(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_contentimport(GUID hsession,
-	uint32_t hfolder, uint32_t *phobject)
+ec_error_t zs_contentimport(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -4260,7 +4234,7 @@ uint32_t zs_contentimport(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_configimport(GUID hsession,
+ec_error_t zs_configimport(GUID hsession,
 	uint32_t hctx, uint8_t sync_type, const BINARY *pstate)
 {
 	uint8_t mapi_type;
@@ -4275,8 +4249,7 @@ uint32_t zs_configimport(GUID hsession,
 	return pctx->upload_state(pstate) ? ecSuccess : ecError;
 }
 
-uint32_t zs_stateimport(GUID hsession,
-	uint32_t hctx, BINARY *pstate)
+ec_error_t zs_stateimport(GUID hsession, uint32_t hctx, BINARY *pstate)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -4294,7 +4267,7 @@ uint32_t zs_stateimport(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_importmessage(GUID hsession, uint32_t hctx,
+ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 	uint32_t flags, const TPROPVAL_ARRAY *pproplist, uint32_t *phobject)
 {
 	BOOL b_fai;
@@ -4404,7 +4377,7 @@ uint32_t zs_importmessage(GUID hsession, uint32_t hctx,
 	return ecSuccess;
 }
 
-uint32_t zs_importfolder(GUID hsession,
+ec_error_t zs_importfolder(GUID hsession,
 	uint32_t hctx, const TPROPVAL_ARRAY *ppropvals)
 {
 	XID tmp_xid;
@@ -4625,7 +4598,7 @@ uint32_t zs_importfolder(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_importdeletion(GUID hsession,
+ec_error_t zs_importdeletion(GUID hsession,
 	uint32_t hctx, uint32_t flags, const BINARY_ARRAY *pbins)
 {
 	XID tmp_xid;
@@ -4760,7 +4733,7 @@ uint32_t zs_importdeletion(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_importreadstates(GUID hsession,
+ec_error_t zs_importreadstates(GUID hsession,
 	uint32_t hctx, const STATE_ARRAY *pstates)
 {
 	XID tmp_xid;
@@ -4832,7 +4805,7 @@ uint32_t zs_importreadstates(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_getsearchcriteria(GUID hsession,
+ec_error_t zs_getsearchcriteria(GUID hsession,
 	uint32_t hfolder, BINARY_ARRAY *pfolder_array,
 	RESTRICTION **pprestriction, uint32_t *psearch_stat)
 {
@@ -4870,10 +4843,8 @@ uint32_t zs_getsearchcriteria(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zs_setsearchcriteria(
-	GUID hsession, uint32_t hfolder, uint32_t flags,
-	const BINARY_ARRAY *pfolder_array,
-	const RESTRICTION *prestriction)
+ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
+    const BINARY_ARRAY *pfolder_array, const RESTRICTION *prestriction)
 {
 	int db_id;
 	BOOL b_result;
@@ -4941,8 +4912,7 @@ uint32_t zs_setsearchcriteria(
 	return b_result ? ecSuccess : ecSearchFolderScopeViolation;
 }
 
-uint32_t zs_messagetorfc822(GUID hsession,
-	uint32_t hmessage, BINARY *peml_bin)
+ec_error_t zs_messagetorfc822(GUID hsession, uint32_t hmessage, BINARY *peml_bin)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -4957,8 +4927,8 @@ uint32_t zs_messagetorfc822(GUID hsession,
 	       pmessage->get_id(), peml_bin) ? ecSuccess : ecError;
 }
 
-uint32_t zs_rfc822tomessage(GUID hsession,
-    uint32_t hmessage, uint32_t mxf_flags, const BINARY *peml_bin)
+ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
+    uint32_t mxf_flags, /* effective-moved-from */ BINARY *peml_bin)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -4975,8 +4945,7 @@ uint32_t zs_rfc822tomessage(GUID hsession,
 	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;
 }
 
-uint32_t zs_messagetoical(GUID hsession,
-	uint32_t hmessage, BINARY *pical_bin)
+ec_error_t zs_messagetoical(GUID hsession, uint32_t hmessage, BINARY *pical_bin)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -4991,7 +4960,7 @@ uint32_t zs_messagetoical(GUID hsession,
 	       pmessage->get_id(), pical_bin) ? ecSuccess : ecError;
 }
 
-uint32_t zs_icaltomessage(GUID hsession,
+ec_error_t zs_icaltomessage(GUID hsession,
 	uint32_t hmessage, const BINARY *pical_bin)
 {
 	uint8_t mapi_type;
@@ -5009,7 +4978,7 @@ uint32_t zs_icaltomessage(GUID hsession,
 	return pmessage->write_message(pmsgctnt.get()) ? ecSuccess : ecError;
 }
 
-uint32_t zs_imtomessage2(GUID session, uint32_t fld_handle,
+ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
     uint32_t data_type, char *im_data, LONG_ARRAY *outhandles)
 {
 	auto info = zs_query_session(session);
@@ -5054,8 +5023,7 @@ uint32_t zs_imtomessage2(GUID session, uint32_t fld_handle,
 	return ecSuccess;
 }
 
-uint32_t zs_messagetovcf(GUID hsession,
-	uint32_t hmessage, BINARY *pvcf_bin)
+ec_error_t zs_messagetovcf(GUID hsession, uint32_t hmessage, BINARY *pvcf_bin)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -5069,7 +5037,7 @@ uint32_t zs_messagetovcf(GUID hsession,
 	return common_util_message_to_vcf(pmessage, pvcf_bin) ? ecSuccess : ecError;
 }
 
-uint32_t zs_vcftomessage(GUID hsession,
+ec_error_t zs_vcftomessage(GUID hsession,
 	uint32_t hmessage, const BINARY *pvcf_bin)
 {
 	uint8_t mapi_type;
@@ -5087,9 +5055,8 @@ uint32_t zs_vcftomessage(GUID hsession,
 	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;
 }
 
-uint32_t zs_getuseravailability(GUID hsession,
-	BINARY entryid, uint64_t starttime, uint64_t endtime,
-	char **ppresult_string)
+ec_error_t zs_getuseravailability(GUID hsession, BINARY entryid,
+    uint64_t starttime, uint64_t endtime, char **ppresult_string)
 {
 	pid_t pid;
 	int status;
@@ -5180,14 +5147,14 @@ uint32_t zs_getuseravailability(GUID hsession,
 	return status == 0 ? ecSuccess : ecError;
 }
 
-uint32_t zs_setpasswd(const char *username,
+ec_error_t zs_setpasswd(const char *username,
 	const char *passwd, const char *new_passwd)
 {
 	return system_services_setpasswd(username, passwd, new_passwd) ?
 	       ecSuccess : ecAccessDenied;
 }
 
-uint32_t zs_linkmessage(GUID hsession,
+ec_error_t zs_linkmessage(GUID hsession,
 	BINARY search_entryid, BINARY message_entryid)
 {
 	uint32_t cpid;

@@ -206,7 +206,7 @@ int ab_tree_run()
 	E(get_mlist_ids, "get_mlist_ids");
 #undef E
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_id, nullptr, nspab_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, nspab_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "nsp: failed to create scanning thread: %s", strerror(ret));
 		g_notify_stop = true;

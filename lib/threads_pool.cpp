@@ -20,8 +20,6 @@
 
 #define MAX_NOT_EMPTY_TIMES				10
 
-#define THREAD_STACK_SIZE           	16 * 1024 * 1024
-
 using namespace gromox;
 
 namespace {
@@ -76,28 +74,20 @@ int threads_pool_run(const char *hint)
 	                      "threads_data_buff", hint);
 	/* list is also protected by g_threads_pool_data_lock */
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_id, nullptr, tpol_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, tpol_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "threads_pool: failed to create scan thread: %s", strerror(ret));
 		return -2;
 	}
 	pthread_setname_np(g_scan_id, "ep_pool/scan");
 
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
-	ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-	if (ret != 0) {
-		mlog(LV_ERR, "threads_pool: pthread_attr_setstacksize: %s", strerror(ret));
-		return -1;
-	}
 	created_thr_num = 0;
 	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
 		auto pdata = g_threads_data_buff.get();
 		pdata->node.pdata = pdata;
 		pdata->id = (pthread_t)-1;
 		pdata->notify_stop = FALSE;
-		ret = pthread_create(&pdata->id, &attr, tpol_thrwork, pdata);
+		ret = pthread_create4(&pdata->id, nullptr, tpol_thrwork, pdata);
 		if (ret != 0) {
 			mlog(LV_ERR, "threads_pool: failed to create a pool thread: %s", strerror(ret));
 		} else {
@@ -260,15 +250,7 @@ void threads_pool_wakeup_all_threads()
 static void *tpol_scanwork(void *pparam)
 {
 	int not_empty_times;
-	pthread_attr_t attr;
 
-	pthread_attr_init(&attr);
-	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
-	auto ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-	if (ret != 0) {
-		mlog(LV_ERR, "tpolscanwork: pthread_attr_setstacksize: %s", strerror(ret));
-		return nullptr;
-	}
 	not_empty_times = 0;
 	while (!g_notify_stop) {
 		sleep(1);
@@ -286,7 +268,7 @@ static void *tpol_scanwork(void *pparam)
 				pdata->node.pdata = pdata;
 				pdata->id = (pthread_t)-1;
 				pdata->notify_stop = FALSE;
-				auto ret = pthread_create(&pdata->id, &attr, tpol_thrwork, pdata);
+				auto ret = pthread_create4(&pdata->id, nullptr, tpol_thrwork, pdata);
 				if (ret != 0) {
 					mlog(LV_WARN, "W-1445: failed to increase pool threads: %s", strerror(ret));
 					g_threads_data_buff.put(pdata);

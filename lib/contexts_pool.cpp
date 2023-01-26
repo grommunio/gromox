@@ -324,14 +324,14 @@ int contexts_pool_run()
 		return -1;
 	}
 	g_notify_stop = false;
-	ret = pthread_create(&g_thread_id, nullptr, ctxp_thrwork, nullptr);
+	ret = pthread_create4(&g_thread_id, nullptr, ctxp_thrwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "contexts_pool: failed to create epoll thread: %s", strerror(ret));
 		g_notify_stop = true;
 		return -3;
 	}
 	pthread_setname_np(g_thread_id, "epollctx/work");
-	ret = pthread_create(&g_scan_id, nullptr, ctxp_scanwork, nullptr);
+	ret = pthread_create4(&g_scan_id, nullptr, ctxp_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "contexts_pool: failed to create scan thread: %s", strerror(ret));
 		g_notify_stop = true;

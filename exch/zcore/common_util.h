@@ -155,7 +155,7 @@ extern BINARY *common_util_to_store_entryid(store_object *);
 extern BINARY *cu_fid_to_entryid(store_object *, uint64_t folder_id);
 extern BINARY *cu_fid_to_sk(store_object *, uint64_t folder_id);
 extern BINARY *cu_mid_to_entryid(store_object *, uint64_t folder_id, uint64_t msg_id);
-extern int cu_calc_msg_access(store_object *, const char *user, uint64_t folder_id, uint64_t msg_id, uint32_t &access);
+extern ec_error_t cu_calc_msg_access(store_object *, const char *user, uint64_t folder_id, uint64_t msg_id, uint32_t &access);
 extern BINARY *cu_mid_to_sk(store_object *, uint64_t msg_id);
 extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
@@ -171,7 +171,7 @@ extern ec_error_t cu_remote_copy_message(store_object *s0, uint64_t message_id, 
 extern ec_error_t cu_remote_copy_folder(store_object *s0, uint64_t folder_id, store_object *s1, uint64_t folder_id1, const char *new_name);
 extern BOOL common_util_send_message(store_object *, uint64_t msg_id, BOOL submit);
 extern BOOL common_util_message_to_rfc822(store_object *, uint64_t msg_id, BINARY *eml);
-extern MESSAGE_CONTENT *cu_rfc822_to_message(store_object *, unsigned int mxf_flags, const BINARY *eml);
+extern MESSAGE_CONTENT *cu_rfc822_to_message(store_object *, unsigned int mxf_flags, BINARY *eml);
 extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY *ical);
 extern std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete> cu_ical_to_message(store_object *, const BINARY *ical);
 extern ec_error_t cu_ical_to_message2(store_object *, char *ical_data, std::vector<std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>> &);

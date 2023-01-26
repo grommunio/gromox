@@ -488,7 +488,7 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 		return FALSE;
 	op->msg_str = gx_sql_prep(psqlite, "SELECT proptag, "
 	              "propval FROM message_properties WHERE "
-	              "message_id=? AND (proptag=? OR proptag=?)");
+	              "message_id=? AND proptag IN (?,?)");
 	if (op->msg_str == nullptr)
 		return FALSE;
 	op->rcpt_norm = gx_sql_prep(psqlite, "SELECT propval "
@@ -498,7 +498,7 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 		return FALSE;
 	op->rcpt_str = gx_sql_prep(psqlite, "SELECT proptag, propval"
 	               " FROM recipients_properties WHERE recipient_id=?"
-	               " AND (proptag=? OR proptag=?)");
+	               " AND proptag IN (?,?)");
 	if (op->rcpt_str == nullptr)
 		return FALSE;
 	g_opt_key = op.release();
@@ -589,13 +589,13 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id, sqlite3 *psqlite,
 			if (tag == PR_NORMALIZED_SUBJECT ||
 			    tag == PR_SUBJECT_PREFIX) {
 				b_subject = TRUE;
-				tags.push_back(PR_SUBJECT);
-				continue;
+				tags.push_back(tag);
+				tag = PR_SUBJECT;
 			} else if (tag == PR_NORMALIZED_SUBJECT_A ||
 			    tag == PR_SUBJECT_PREFIX_A) {
 				b_subject = TRUE;
-				tags.push_back(PR_SUBJECT_A);
-				continue;
+				tags.push_back(tag);
+				tag = PR_SUBJECT_A;
 			}
 		}
 		tags.push_back(tag);
@@ -623,7 +623,7 @@ static BINARY* common_util_get_mailbox_guid(sqlite3 *psqlite)
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return NULL;
-	if (!tmp_guid.from_str(S2A(sqlite3_column_text(pstmt, 0))))
+	if (!tmp_guid.from_str(pstmt.col_text(0)))
 		return NULL;
 	pstmt.finalize();
 	auto ptmp_bin = cu_alloc<BINARY>();
@@ -663,7 +663,7 @@ BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	if (!pguid->from_str(S2A(sqlite3_column_text(pstmt, 0)))) {
+	if (!pguid->from_str(pstmt.col_text(0))) {
 		mlog(LV_ERR, "E-1621: illegal GUID in dataset");
 		return false;
 	}
@@ -1066,7 +1066,7 @@ BOOL common_util_get_folder_by_name(
 		tmp_val = sqlite3_column_int64(pstmt, 0);
 		sqlite3_bind_int64(pstmt1, 1, tmp_val);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			if (strcasecmp(str_name, S2A(sqlite3_column_text(pstmt1, 0))) == 0) {
+			if (strcasecmp(str_name, pstmt1.col_text(0)) == 0) {
 				*pfolder_id = tmp_val;
 				break;
 			}
@@ -2033,7 +2033,7 @@ static bool gp_prepare_anystr(sqlite3 *psqlite, db_table table_type, uint64_t id
 		} else {
 			own_stmt = gx_sql_prep(psqlite, "SELECT proptag, "
 			           "propval FROM message_properties WHERE "
-			           "message_id=? AND (proptag=? OR proptag=?)");
+			           "message_id=? AND proptag IN (?,?)");
 			if (own_stmt == nullptr)
 				return FALSE;
 			pstmt = own_stmt;
@@ -2049,7 +2049,7 @@ static bool gp_prepare_anystr(sqlite3 *psqlite, db_table table_type, uint64_t id
 		} else {
 			own_stmt = gx_sql_prep(psqlite, "SELECT proptag,"
 			           " propval FROM recipients_properties WHERE"
-			           " recipient_id=? AND (proptag=? OR proptag=?)");
+			           " recipient_id=? AND proptag IN (?,?)");
 			if (own_stmt == nullptr)
 				return FALSE;
 			pstmt = own_stmt;
@@ -2061,7 +2061,7 @@ static bool gp_prepare_anystr(sqlite3 *psqlite, db_table table_type, uint64_t id
 	case db_table::atx_props:
 		own_stmt = gx_sql_prep(psqlite, "SELECT proptag, propval"
 		           " FROM attachment_properties WHERE attachment_id=?"
-		           " AND (proptag=? OR proptag=?)");
+		           " AND proptag IN (?,?)");
 		if (own_stmt == nullptr)
 			return FALSE;
 		pstmt = own_stmt;
@@ -2957,7 +2957,7 @@ BOOL cu_set_properties(db_table table_type,
 			case PR_TRANSPORT_MESSAGE_HEADERS:
 			case PR_TRANSPORT_MESSAGE_HEADERS_A:
 				if (common_util_set_message_body(psqlite, cpid, id, &ppropvals->ppropval[i]))
-					break;
+					continue;
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 					ppropvals->ppropval[i].proptag;
@@ -3432,7 +3432,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 	}
 	case PR_RULE_NAME:
 	case PR_RULE_PROVIDER:
-		*ppvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
+		*ppvalue = common_util_dup(pstmt.col_text(0));
 		if (*ppvalue == nullptr)
 			return FALSE;
 		break;
@@ -3552,7 +3552,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			*ppvalue = NULL;
 			return TRUE;
 		}
-		pusername = S2A(sqlite3_column_text(pstmt, 0));
+		pusername = pstmt.col_text(0);
 		if (*pusername == '\0')
 			*v = UINT64_MAX;
 		else if (strcasecmp(pusername, "default") == 0)
@@ -3567,7 +3567,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	}
 	switch (proptag) {
 	case PR_ENTRYID:
-		pusername = S2A(sqlite3_column_text(pstmt, 0));
+		pusername = pstmt.col_text(0);
 		if ('\0' == pusername[0] || 0 == strcasecmp(pusername, "default")) {
 			*ppvalue = deconst(&fake_bin);
 			return TRUE;
@@ -3576,7 +3576,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		break;
 	case PR_MEMBER_NAME:
 	case PR_SMTP_ADDRESS:
-		pusername = S2A(sqlite3_column_text(pstmt, 0));
+		pusername = pstmt.col_text(0);
 		if ('\0' == pusername[0]) {
 			*ppvalue = deconst("default");
 			return TRUE;
@@ -3768,7 +3768,7 @@ BOOL cu_get_folder_permission(sqlite3 *psqlite, uint64_t folder_id,
 		if (pstmt1 == nullptr)
 			return FALSE;
 		while (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			if (common_util_check_mlist_include(S2A(sqlite3_column_text(pstmt1, 0)), username) == TRUE) {
+			if (common_util_check_mlist_include(pstmt1.col_text(0), username)) {
 				*ppermission = sqlite3_column_int64(pstmt1, 1);
 				return TRUE;
 			}
@@ -4451,7 +4451,7 @@ BOOL common_util_get_mid_string(sqlite3 *psqlite,
 		*ppmid_string = NULL;
 		return TRUE;
 	}
-	*ppmid_string = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
+	*ppmid_string = common_util_dup(pstmt.col_text(0));
 	return *ppmid_string != nullptr ? TRUE : false;
 }
 
@@ -4551,7 +4551,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		if (SQLITE_NULL == sqlite3_column_type(pstmt, 3)) {
 			mid_string[0] = '\0';
 		} else {
-			gx_strlcpy(mid_string1, S2A(sqlite3_column_text(pstmt, 3)), sizeof(mid_string1));
+			gx_strlcpy(mid_string1, pstmt.col_text(3), std::size(mid_string1));
 			snprintf(mid_string, arsizeof(mid_string), "%lld.%u.%s",
 			         LLD{time(nullptr)}, common_util_sequence_ID(), get_host_ID());
 			snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
@@ -4836,7 +4836,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 			sqlite3_reset(pstmt);
 			goto NOT_FOUND_PROPNAME;
 		}
-		gx_strlcpy(temp_name, S2A(sqlite3_column_text(pstmt, 0)), sizeof(temp_name));
+		gx_strlcpy(temp_name, pstmt.col_text(0), std::size(temp_name));
 		sqlite3_reset(pstmt);
 		if (strncasecmp(temp_name, "GUID=", 5) != 0)
 			goto NOT_FOUND_PROPNAME;

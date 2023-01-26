@@ -2428,10 +2428,8 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 					return false;
 				sqlite3_bind_blob(pstmt1, 1, condition_buff.get(),
 						condition_len, SQLITE_STATIC);
-				if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-					pstmt1.finalize();
+				if (pstmt1.step() != SQLITE_DONE)
 					return false;
-				}
 				pstmt1.finalize();
 			}
 			auto paction = prow[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);

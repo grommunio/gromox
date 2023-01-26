@@ -1013,7 +1013,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	}
 	
 	lnum = pmsg->proplist.get<uint64_t>(PR_WEDDING_ANNIVERSARY);
-	if (NULL != pvalue) {
+	if (lnum != nullptr) {
 		auto unix_time = rop_util_nttime_to_unix(*lnum);
 		gmtime_r(&unix_time, &tmp_tm);
 		strftime(tmp_buff, 1024, "%Y-%m-%d", &tmp_tm);

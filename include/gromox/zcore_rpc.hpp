@@ -98,6 +98,7 @@ enum class zcore_callid : uint8_t {
 	rfc822tomessage = 0x56,
 	// icaltomessage2 = 0x57,
 	imtomessage2 = 0x58,
+	/* update exch/zcore/names.cpp! */
 };
 
 struct zcreq {
@@ -626,7 +627,7 @@ struct zcreq_restoresession : public zcreq {
 
 struct zcresp {
 	zcore_callid call_id;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct zcresp_logon : public zcresp {

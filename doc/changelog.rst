@@ -1,3 +1,48 @@
+Development 2.3.48
+==================
+
+Enhancements:
+
+* php_mapi: add mapi_strerror function
+* mbop: emptyfld/delmsg support folder names now
+
+Fixes:
+
+* php_mapi: fix stack corruption in zif_mapi_createfolder
+
+Behavioral changes:
+
+* exmdb_provider: enable CID file compression by default
+* php_mapi: add mapi_strerror function
+  (requires new version of mapi-header-php)
+* exch: remove old PHP-OXDISCO and PHP-OAB implementation
+
+
+Gromox 2.3 (2023-03-03)
+=======================
+
+Enhancements:
+
+* pff2mt: support non-Unicode PFF files
+* ldap_adaptor: read ldap_start_tls, ldap_mail_attr from orgparam table
+* Support Emojis in HTML-to-RTF conversion code
+* exmdb_provider: implement message store softdelete count properties
+* dbop_sqlite: guard schema upgrades with transaction
+
+Fixes:
+
+* Do not fail entire HTML-to-RTF conversion or calls like
+  getpropvals(PR_RTF_COMPRESSED) when encountering garbage bytes.
+* exmdb_provider: have folder message count properties respect softdelete
+* zcore: mapi_copyto had inverted meaning of MAPI_NOREPLACE
+
+Implementation changes:
+
+* Replace custom SMTP sending code with vmime's
+* emsmdb: temporarily deactivate ROP chaining for OL2013,2016 to work
+  around a case where OL corrupts larger attachments (2 MB+)
+
+
 Gromox 2.2 (2023-01-16)
 =======================
 

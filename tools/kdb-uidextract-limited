@@ -88,7 +88,7 @@ sub main
 					$object{"st"} = lc($1);
 				}
 			}
-			print $json->encode(\%object), "\n";
+			print $json->encode(\%object), ",\n";
 		}
 	}
 	print "{}]\n";

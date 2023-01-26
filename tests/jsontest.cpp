@@ -59,7 +59,7 @@ int main()
 {
 	alloc_limiter<MJSON_MIME> al(4096, "mjson");
 	MJSON m(&al);
-	if (!m.retrieve(tdata1, std::size(tdata1), "/tmp")) {
+	if (!m.load_from_str_move(tdata1, std::size(tdata1), "/tmp")) {
 		fprintf(stderr, "retrieve failed\n");
 		return EXIT_FAILURE;
 	}

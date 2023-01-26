@@ -425,9 +425,9 @@ static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
-		"Content-Length: 0\r\n"
+		"Content-Length: %zu\r\n"
 		"Connection: close\r\n"
-		"\r\n", code, msg, dstring);
+		"\r\n%s\r\n", code, msg, dstring, strlen(msg) + 2, msg);
 	ctx->stream_out.write(response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
@@ -450,9 +450,9 @@ static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
-		"Content-Length: 0\r\n"
+		"Content-Length: %zu\r\n"
 		"Connection: close\r\n"
-		"\r\n", code, msg, dstring);
+		"\r\n%s\r\n", code, msg, dstring, strlen(msg) + 2, msg);
 	ctx->stream_out.write(response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
@@ -532,8 +532,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 	}
 	auto ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 	if (ssl_errno != SSL_ERROR_WANT_READ && ssl_errno != SSL_ERROR_WANT_WRITE) {
-		pcontext->log(LV_DEBUG, "failed to accept"
-				" SSL connection, errno is %d", ssl_errno);
+		pcontext->log(LV_DEBUG, "failed to accept TLS connection (ssl_errno=%d)", ssl_errno);
 		return X_RUNOFF;
 	}
 	auto current_time = tp_now();
@@ -701,7 +700,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 			           GX_ARRAY_SIZE(pcontext->lang));
 		}
 		pcontext->b_authed = TRUE;
-		pcontext->log(LV_DEBUG, "login success");
+		pcontext->log(LV_DEBUG, "htp_auth success");
 		return X_RUNOFF;
 	}
 

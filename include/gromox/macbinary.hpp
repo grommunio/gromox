@@ -57,5 +57,5 @@ struct MACBINARY {
 	const uint8_t *pcomment;
 };
 
-int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r);
-int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r);
+extern pack_result macbinary_pull_binary(EXT_PULL *, MACBINARY *);
+extern pack_result macbinary_push_binary(EXT_PUSH *, const MACBINARY *);

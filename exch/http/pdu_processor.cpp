@@ -250,13 +250,12 @@ int pdu_processor_run()
 
 void pdu_processor_free_call(DCERPC_CALL *pcall)
 {
-	BLOB_NODE *pblob_node;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (pcall->pkt_loaded)
 		pdu_ndr_free_ncacnpkt(&pcall->pkt);
 	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
-		pblob_node = (BLOB_NODE*)pnode->pdata;
+		auto pblob_node = static_cast<BLOB_NODE *>(pnode->pdata);
 		free(pblob_node->blob.pb);
 		g_bnode_allocator->put(pblob_node);
 	}
@@ -269,7 +268,6 @@ void pdu_processor_free_call(DCERPC_CALL *pcall)
 static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 {
 	DOUBLE_LIST_NODE *pnode;
-	ASYNC_NODE *pasync_node;
 	
 	while (true) {
 		std::unique_lock as_hold(g_async_lock);
@@ -277,7 +275,7 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 		if (NULL == pnode) {
 			break;
 		}
-		pasync_node = (ASYNC_NODE*)pnode->pdata;
+		auto pasync_node = static_cast<ASYNC_NODE *>(pnode->pdata);
 		g_async_hash->remove(pasync_node->async_id);
 		as_hold.unlock();
 		if (NULL != pcontext->pinterface->reclaim) {
@@ -360,14 +358,11 @@ PDU_PROCESSOR::~PDU_PROCESSOR()
 {
 	auto pprocessor = this;
 	uint64_t handle;
-	DCERPC_CALL *pcall;
 	DCERPC_CALL fake_call;
 	DOUBLE_LIST_NODE *pnode;
-	DCERPC_CONTEXT *pcontext;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	
 	while ((pnode = double_list_pop_front(&pprocessor->context_list)) != nullptr) {
-		pcontext = (DCERPC_CONTEXT*)pnode->pdata;
+		auto pcontext = static_cast<DCERPC_CONTEXT *>(pnode->pdata);
 		if (NULL != pcontext->pinterface->unbind) {
 			fake_call.pprocessor = pprocessor;
 			fake_call.pcontext = pcontext;
@@ -383,7 +378,7 @@ PDU_PROCESSOR::~PDU_PROCESSOR()
 	double_list_free(&pprocessor->context_list);
 	
 	while ((pnode = double_list_pop_front(&pprocessor->auth_list)) != nullptr) {
-		pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
+		auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 		pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
 		if (NULL != pauth_ctx->pntlmssp) {
 			ntlmssp_destroy(pauth_ctx->pntlmssp);
@@ -394,7 +389,7 @@ PDU_PROCESSOR::~PDU_PROCESSOR()
 	double_list_free(&pprocessor->auth_list);
 	
 	while ((pnode = double_list_pop_front(&pprocessor->fragmented_list)) != nullptr) {
-		pcall = (DCERPC_CALL*)pnode->pdata;
+		auto pcall = static_cast<DCERPC_CALL *>(pnode->pdata);
 		pdu_processor_free_call(pcall);
 	}
 	double_list_free(&pprocessor->fragmented_list);
@@ -440,11 +435,10 @@ static void pdu_processor_set_auth_length(DATA_BLOB *pblob, uint16_t v)
 
 void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream)
 {
-	BLOB_NODE *pblob_node;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
-		pblob_node = (BLOB_NODE*)pnode->pdata;
+		auto pblob_node = static_cast<BLOB_NODE *>(pnode->pdata);
 		pstream->write(pblob_node->blob.pb, pblob_node->blob.cb);
 		free(pblob_node->blob.pb);
 		g_bnode_allocator->put(pblob_node);
@@ -467,12 +461,11 @@ void pdu_processor_free_blob(BLOB_NODE *pbnode)
 static DCERPC_CALL* pdu_processor_get_fragmented_call(
 	PDU_PROCESSOR *pprocessor, uint32_t call_id)
 {
-	DCERPC_CALL *pcall;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pprocessor->fragmented_list); NULL!=pnode;
 		pnode=double_list_get_after(&pprocessor->fragmented_list, pnode)) {
-		pcall = (DCERPC_CALL*)pnode->pdata;
+		auto pcall = static_cast<DCERPC_CALL *>(pnode->pdata);
 		if (pcall->pkt.call_id == call_id) {
 			double_list_remove(&pprocessor->fragmented_list, pnode);
 			return pcall;
@@ -497,11 +490,10 @@ static DCERPC_CONTEXT* pdu_processor_find_context(PDU_PROCESSOR *pprocessor,
 	uint32_t context_id)
 {
 	DOUBLE_LIST_NODE *pnode;
-	DCERPC_CONTEXT *pcontext;
 	
 	for (pnode=double_list_get_head(&pprocessor->context_list); NULL!=pnode;
 		pnode=double_list_get_after(&pprocessor->context_list, pnode)) {
-		pcontext = (DCERPC_CONTEXT*)pnode->pdata;
+		auto pcontext = static_cast<DCERPC_CONTEXT *>(pnode->pdata);
 		if (context_id == pcontext->context_id) {
 			return pcontext;
 		}
@@ -513,11 +505,10 @@ static DCERPC_AUTH_CONTEXT* pdu_processor_find_auth_context(
 	PDU_PROCESSOR *pprocessor, uint32_t auth_context_id)
 {
 	DOUBLE_LIST_NODE *pnode;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	
 	for (pnode=double_list_get_head(&pprocessor->auth_list); NULL!=pnode;
 		pnode=double_list_get_after(&pprocessor->auth_list, pnode)) {
-		pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
+		auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 		if (auth_context_id == pauth_ctx->auth_info.auth_context_id) {
 			return pauth_ctx;
 		}
@@ -539,10 +530,9 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 	flags = 0;
 	if (!(ppkt->drep[0] & DCERPC_DREP_LE))
 		flags = NDR_FLAG_BIGENDIAN;
-	ndr_pull_init(&ndr, ptrailer->pb, ptrailer->cb, flags);
-	if (NDR_ERR_SUCCESS != ndr_pull_advance(&ndr, data_and_pad)) {
+	ndr.init(ptrailer->pb, ptrailer->cb, flags);
+	if (ndr.advance(data_and_pad) != NDR_ERR_SUCCESS)
 		return FALSE;
-	}
 	if (NDR_ERR_SUCCESS != pdu_ndr_pull_dcerpc_auth(&ndr, pauth)) {
 		return FALSE;
 	}
@@ -577,7 +567,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 			return FALSE;
 		}
 		pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
-		pcall->pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
+		pcall->pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 		switch (pcall->pauth_ctx->auth_info.auth_level) {
 		case RPC_C_AUTHN_LEVEL_DEFAULT:
 		case RPC_C_AUTHN_LEVEL_CONNECT:
@@ -680,7 +670,7 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	}
 	
-	ndr_push_init(&ndr, pdata, DCERPC_BASE_MARSHALL_SIZE, flags);
+	ndr.init(pdata, DCERPC_BASE_MARSHALL_SIZE, flags);
 	ppkt->auth_length = pauth_info != nullptr ? pauth_info->credentials.cb : 0;
 	if (NDR_ERR_SUCCESS != pdu_ndr_push_ncacnpkt(&ndr, ppkt)) {
 		free(pdata);
@@ -821,14 +811,12 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 {
 	DOUBLE_LIST_NODE *pnode;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
-	
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
 		return TRUE;
 	}
-	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
+	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 	switch (pauth_ctx->auth_info.auth_type) {
 	case RPC_C_AUTHN_NONE:
 		return pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT ||
@@ -890,7 +878,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	uint32_t extra_flags;
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	BOOL b_negotiate = FALSE;
 
 	pbind = &pcall->pkt.payload.bind;
@@ -1090,7 +1077,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		}
 		return pdu_processor_bind_nak(pcall, 0);
 	}
-	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
+	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 	auto pblob_node = g_bnode_allocator->get();
 	if (NULL == pblob_node) {
 		pdu_ndr_free_ncacnpkt(&pkt);
@@ -1128,15 +1115,13 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	uint32_t auth_length;
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_NCACN_PACKET *ppkt;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
-	
 	
 	ppkt = &pcall->pkt;
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
 		return TRUE;
 	}
-	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
+	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 	/* can't work without an existing state, and an new blob to feed it */
 	if ((pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NONE &&
 	    pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT) ||
@@ -1194,8 +1179,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext = nullptr;
 	PDU_PROCESSOR *pprocessor;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
-	
 	
 	palter = &pcall->pkt.payload.alter;
 	pprocessor = pcall->pprocessor;
@@ -1370,8 +1353,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		}
 		return FALSE;
 	}
-	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
-	
+	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 	auto pblob_node = g_bnode_allocator->get();
 	if (NULL == pblob_node) {
 		pdu_ndr_free_ncacnpkt(&pkt);
@@ -1441,18 +1423,15 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	}
 	if (pcall->pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
-	ndr_push_init(&ndr, ndr_buff, DCERPC_BASE_MARSHALL_SIZE, flags);
-	
+	ndr.init(ndr_buff, DCERPC_BASE_MARSHALL_SIZE, flags);
 	if (NDR_ERR_SUCCESS != pdu_ndr_push_ncacnpkt(&ndr, ppkt)) {
 		return FALSE;
 	}
 	
 	pauth_ctx->auth_info.auth_pad_length =
 		(16 - (ppkt->payload.response.stub_and_verifier.cb & 15)) & 15;
-	if (NDR_ERR_SUCCESS != ndr_push_zero(&ndr,
-		pauth_ctx->auth_info.auth_pad_length)) {
+	if (ndr.p_zero(pauth_ctx->auth_info.auth_pad_length) != NDR_ERR_SUCCESS)
 		return FALSE;
-	}
 
 	payload_length = ppkt->payload.response.stub_and_verifier.cb +
 						pauth_ctx->auth_info.auth_pad_length;
@@ -1555,14 +1534,14 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 			prequest->opnum, pcall->pcontext->pinterface->name);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 	}
-	ndr_push_init(&ndr_push, pdata, alloc_size, flags);
-	
-	ndr_push_set_ptrcnt(&ndr_push, pcall->ptr_cnt);
+	ndr_push.init(pdata, alloc_size, flags);
+	ndr_push.set_ptrcnt(pcall->ptr_cnt);
 	
 	/* marshaling the NDR out param data */
 	auto ret = pcall->pcontext->pinterface->ndr_push(prequest->opnum, &ndr_push, pout);
 	if (ret != EXT_ERR_SUCCESS) {
-		mlog(LV_ERR, "E-1918: ndr_push failed with result code %d", ret);
+		mlog(LV_ERR, "E-1918: ndr_push failed with result code %u",
+			static_cast<unsigned int>(ret));
 		free(pdata);
 		pdu_processor_free_stack_root(pstack_root);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
@@ -1637,7 +1616,6 @@ static uint32_t pdu_processor_apply_async_id()
 	DCERPC_CALL *pcall;
 	HTTP_CONTEXT *pcontext;
 	ASYNC_NODE *pfake_async;
-	RPC_IN_CHANNEL *pchannel_in;
 	
 	pcall = pdu_processor_get_call();
 	if (NULL == pcall) {
@@ -1658,7 +1636,7 @@ static uint32_t pdu_processor_apply_async_id()
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return 0;
 	}
-	pchannel_in = (RPC_IN_CHANNEL*)pcontext->pchannel;
+	auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 	auto pasync_node = g_async_allocator->get();
 	if (NULL == pasync_node) {
 		return 0;
@@ -1692,7 +1670,6 @@ static void pdu_processor_activate_async_id(uint32_t async_id)
 {
 	DCERPC_CALL *pcall;
 	DOUBLE_LIST_NODE *pnode;
-	ASYNC_NODE *pasync_node;
 	
 	pcall = pdu_processor_get_call();
 	if (NULL == pcall) {
@@ -1705,7 +1682,7 @@ static void pdu_processor_activate_async_id(uint32_t async_id)
 	}
 	for (pnode=double_list_get_head(&pcall->pcontext->async_list); NULL!=pnode;
 		pnode=double_list_get_after(&pcall->pcontext->async_list, pnode)) {
-		pasync_node = (ASYNC_NODE*)pnode->pdata;
+		auto pasync_node = static_cast<ASYNC_NODE *>(pnode->pdata);
 		if (pasync_node->async_id == async_id) {
 			*ppasync_node = pasync_node;
 			break;
@@ -1730,7 +1707,7 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 	}
 	for (pnode=double_list_get_head(&pcall->pcontext->async_list); NULL!=pnode;
 		pnode=double_list_get_after(&pcall->pcontext->async_list, pnode)) {
-		pasync_node = (ASYNC_NODE*)pnode->pdata;
+		pasync_node = static_cast<ASYNC_NODE *>(pnode->pdata);
 		if (pasync_node->async_id == async_id) {
 			g_async_hash->remove(async_id);
 			double_list_remove(&pcall->pcontext->async_list, pnode);
@@ -1807,7 +1784,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 	std::unique_lock as_hold(g_async_lock);
 	for (pnode=double_list_get_head(&pcall->pcontext->async_list); NULL!=pnode;
 		pnode=double_list_get_after(&pcall->pcontext->async_list, pnode)) {
-		pasync_node = (ASYNC_NODE*)pnode->pdata;
+		pasync_node = static_cast<ASYNC_NODE *>(pnode->pdata);
 		if (pasync_node->async_id == async_id) {
 			break;
 		}
@@ -1878,7 +1855,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		flags |= NDR_FLAG_BIGENDIAN;
 	if (pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
-	ndr_pull_init(&ndr_pull, prequest->stub_and_verifier.pb,
+	ndr_pull.init(prequest->stub_and_verifier.pb,
 		prequest->stub_and_verifier.cb, flags);
 	pcall->pcontext	= pcontext;
 	
@@ -1891,8 +1868,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
 	}
 	
-	pcall->ptr_cnt = ndr_pull_get_ptrcnt(&ndr_pull);
-	
+	pcall->ptr_cnt = ndr_pull.get_ptrcnt();
 	if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
 		pobject = &prequest->object.object;
 	} else {
@@ -1949,10 +1925,10 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 	plist = &pcall->pprocessor->context_list;
 	for (pnode = double_list_pop_front(plist); pnode != nullptr;
 		pnode=double_list_get_after(plist, pnode)) {
-		pcontext = (DCERPC_CONTEXT*)pnode->pdata;
+		pcontext = static_cast<DCERPC_CONTEXT *>(pnode->pdata);
 		for (pnode1=double_list_get_head(&pcontext->async_list); NULL!=pnode1;
 			pnode1=double_list_get_after(&pcontext->async_list, pnode1)) {
-			pasync_node = (ASYNC_NODE*)pnode1->pdata;
+			pasync_node = static_cast<ASYNC_NODE *>(pnode1->pdata);
 			if (pasync_node->pcall->pkt.call_id == pcall->pkt.call_id) {
 				async_id = pasync_node->async_id;
 				pasync_node->b_cancelled = TRUE;
@@ -2007,9 +1983,9 @@ void pdu_processor_rts_echo(char *pbuff)
 		flags = NDR_FLAG_BIGENDIAN;
 	else
 		flags = 0;
-	ndr_push_init(&ndr, pbuff, 20, flags);
+	ndr.init(pbuff, 20, flags);
 	pdu_ndr_push_ncacnpkt(&ndr, &pkt);
-	ndr_push_destroy(&ndr);
+	ndr.destroy();
 }
 
 BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
@@ -2592,8 +2568,6 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	uint32_t flags;
 	BOOL b_bigendian;
 	HTTP_CONTEXT *pcontext;
-	RPC_IN_CHANNEL *pchannel_in;
-	RPC_OUT_CHANNEL *pchannel_out;
 	
 	/* only rts pdu can be processed by this function */
 	if (pbuff[DCERPC_PTYPE_OFFSET] != DCERPC_PKT_RTS)
@@ -2612,7 +2586,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 		return PDU_PROCESSOR_ERROR;
 	}
 	
-	ndr_pull_init(&ndr, (uint8_t *)pbuff, length, flags);
+	ndr.init(pbuff, length, flags);
 	auto pcall = g_call_allocator->get();
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
@@ -2626,7 +2600,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	
 	
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
-		pchannel_out = (RPC_OUT_CHANNEL*)pcontext->pchannel;
+		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		if (76 == length) {
 			if (CHANNEL_STAT_OPENSTART != pchannel_out->channel_stat) {
 				pdu_processor_free_call(pcall);
@@ -2697,7 +2671,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			return PDU_PROCESSOR_OUTPUT;
 		}
 	} else if (CHANNEL_TYPE_IN == pcontext->channel_type) {
-		pchannel_in = (RPC_IN_CHANNEL*)pcontext->pchannel;
+		auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 		if (104 == length) {
 			if (CHANNEL_STAT_OPENSTART != pchannel_in->channel_stat) {
 				pdu_processor_free_call(pcall);
@@ -2868,8 +2842,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	}
 	if (pbuff[DCERPC_PFC_OFFSET] & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
-	ndr_pull_init(&ndr, (uint8_t *)pbuff, length, flags);
-	
+	ndr.init(pbuff, length, flags);
 	auto pcall = g_call_allocator->get();
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;

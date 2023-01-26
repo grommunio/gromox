@@ -11,12 +11,12 @@
 
 struct zcreq;
 struct zcresp;
-extern zend_bool zarafa_client_do_rpc(const zcreq *, zcresp *);
-extern uint32_t zarafa_client_setpropval(GUID hsession, uint32_t hobject, uint32_t proptag, const void *pvalue);
-extern uint32_t zarafa_client_getpropval(GUID hsession, uint32_t hobject, uint32_t proptag, void **ppvalue);
+extern zend_bool zclient_do_rpc(const zcreq *, zcresp *);
+extern uint32_t zclient_setpropval(GUID hsession, uint32_t hobject, uint32_t proptag, const void *pvalue);
+extern uint32_t zclient_getpropval(GUID hsession, uint32_t hobject, uint32_t proptag, void **ppvalue);
 
 #define IDLOUT
-#define ZCIDL(n, p) extern uint32_t zarafa_client_ ## n p;
+#define ZCIDL(n, p) extern uint32_t zclient_ ## n p;
 /* When calling these functions, none of the IDLOUT parameters may be NULL */
 ZCIDL(logon, (const char *username, const char *password, uint32_t flags, IDLOUT GUID *hsession))
 ZCIDL(uinfo, (const char *username, IDLOUT BINARY *entryid, char **pdisplay_name, char **px500dn, uint32_t *privilege_bits))

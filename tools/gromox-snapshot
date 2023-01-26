@@ -1,0 +1,39 @@
+#!/bin/sh -e
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2023 grommunio GmbH
+# This file is part of Gromox.
+retention_months=0
+retention_weeks=4
+retention_days=7
+retention_hours=24
+if [ -e /etc/gromox/snapshot.cfg ]; then
+	. /etc/gromox/snapshot.cfg
+fi
+DB="/var/lib/gromox"
+S="/var/lib/gromox-snapshots"
+month="$(date "+%Y%m")"
+week="$(date "+%YW%W")"
+day="$(date "+%F")"
+hour="$(date "+%FT%H")"
+now="$(date "+%FT%T")"
+touch -c "$DB"
+if [ -n "$retention_months" ] && [ "$retention_months" != 0 ] && [ ! -d "$S/monthly/$month" ]; then
+	mkdir -p "$S/monthly"
+	btrfs sub snap -r "$DB" "$S/monthly/$month"
+	find "$S/monthly" -mindepth 1 -maxdepth 1 -type d -mtime "+$((31*$retention_months))" -exec btrfs sub del {} +
+fi
+if [ -n "$retention_weeks" ] && [ "$retention_weeks" != 0 ] && [ ! -d "$S/weekly/$week" ]; then
+	mkdir -p "$S/weekly"
+	btrfs sub snap -r "$DB" "$S/weekly/$week"
+	find "$S/weekly" -mindepth 1 -maxdepth 1 -type d -mtime "+$((7*$retention_weeks))" -exec btrfs sub del {} +
+fi
+if [ -n "$retention_days" ] && [ "$retention_days" != 0 ] && [ ! -d "$S/daily/$day" ]; then
+	mkdir -p "$S/daily"
+	btrfs sub snap -r "$DB" "$S/daily/$day"
+	find "$S/daily" -mindepth 1 -maxdepth 1 -type d -mtime "+$retention_days" -exec btrfs sub del {} +
+fi
+if [ -n "$retention_hours" ] && [ "$retention_hours" != 0 ] && [ ! -d "$S/hourly/$hour" ]; then
+	mkdir -p "$S/hourly"
+	btrfs sub snap -r "$DB" "$S/hourly/$hour"
+	find "$S/hourly" -mindepth 1 -maxdepth 1 -type d -mmin "+$((60*$retention_hours))" -exec btrfs sub del {} +
+fi

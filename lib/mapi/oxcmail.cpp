@@ -277,7 +277,6 @@ BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 static BOOL oxcmail_username_to_oneoff(const char *username,
 	const char *pdisplay_name, BINARY *pbin)
 {
-	int status;
 	EXT_PUSH ext_push;
 	ONEOFF_ENTRYID tmp_entry;
 	
@@ -290,7 +289,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	tmp_entry.pmail_address = deconst(username);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
 		return false;
-	status = ext_push.p_oneoff_eid(tmp_entry);
+	auto status = ext_push.p_oneoff_eid(tmp_entry);
 	if (EXT_ERR_CHARCNV == status) {
 		tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
 		status = ext_push.p_oneoff_eid(tmp_entry);
@@ -618,7 +617,6 @@ static BOOL oxcmail_parse_address(const char *charset,
 static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
     TPROPVAL_ARRAY *pproplist)
 {
-	int status;
 	uint32_t count;
 	BINARY tmp_bin;
 	int str_offset;
@@ -685,7 +683,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%s@%s",
 			         email_addr.local_part, email_addr.domain);
 			tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
-			status = ext_push.p_oneoff_eid(tmp_entry);
+			auto status = ext_push.p_oneoff_eid(tmp_entry);
 			if (EXT_ERR_CHARCNV == status) {
 				ext_push.m_offset = offset1 + sizeof(uint32_t);
 				tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
@@ -1218,9 +1216,8 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 	uint8_t tmp_byte;
 	uint64_t tmp_int64;
 	EMAIL_ADDR email_addr;
-	FIELD_ENUM_PARAM *penum_param;
 	
-	penum_param = (FIELD_ENUM_PARAM*)pparam;
+	auto penum_param = static_cast<FIELD_ENUM_PARAM *>(pparam);
 	if (strcasecmp(key, "From") == 0) {
 		parse_mime_addr(&email_addr, field);
 		if (!oxcmail_parse_address(penum_param->charset, &email_addr,
@@ -1841,7 +1838,7 @@ static BOOL oxcmail_parse_appledouble(const MIME *pmime,
 		return FALSE;
 	}
 	tmp_bin.cb = content_len;
-	tmp_bin.pb = (uint8_t*)pcontent;
+	tmp_bin.pc = pcontent;
 	if (pattachment->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0) {
 		free(pcontent);
 		return FALSE;
@@ -2313,7 +2310,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 				if (!utf8_check(pcontent.get() + content_len + 1))
 					utf8_filter(pcontent.get() + content_len + 1);
 				vcard vcard;
-				auto ret = vcard.retrieve_single(pcontent.get() + content_len + 1);
+				auto ret = vcard.load_single_from_str_move(pcontent.get() + content_len + 1);
 				if (ret == ecSuccess &&
 				    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
 					attachment_content_set_embedded_internal(pattachment, pmsg);
@@ -2350,7 +2347,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			return;
 		}
 		MAIL mail(pmime_enum->pmime_pool);
-		if (mail.retrieve(pcontent.get(), content_len)) {
+		if (mail.load_from_str_move(pcontent.get(), content_len)) {
 			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME);
 			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME_A);
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION);
@@ -2618,9 +2615,8 @@ static bool oxcmail_enum_dsn_action_field(const char *tag,
 	} else {
 		return true;
 	}
-	if (severity > *(int*)pparam) {
-		*(int*)pparam = severity;
-	}
+	if (severity > *static_cast<int *>(pparam))
+		*static_cast<int *>(pparam) = severity;
 	return true;
 }
 
@@ -2632,9 +2628,7 @@ static bool oxcmail_enum_dsn_action_fields(const std::vector<dsn_field> &pfields
 static bool oxcmail_enum_dsn_rcpt_field(const char *tag,
     const char *value, void *pparam)
 {
-	DSN_FILEDS_INFO *pinfo;
-	
-	pinfo = (DSN_FILEDS_INFO*)pparam;
+	auto pinfo = static_cast<DSN_FILEDS_INFO *>(pparam);
 	if (0 == strcasecmp(tag, "Final-Recipient") &&
 		0 == strncasecmp(value, "rfc822;", 7)) {
 		gx_strlcpy(pinfo->final_recipient, value + 7, GX_ARRAY_SIZE(pinfo->final_recipient));
@@ -2747,11 +2741,10 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields, 
 	BINARY tmp_bin;
 	char essdn[1280];
 	char tmp_buff[1280];
-	DSN_ENUM_INFO *pinfo;
 	DSN_FILEDS_INFO f_info;
 	char display_name[512];
 	
-	pinfo = (DSN_ENUM_INFO*)pparam;
+	auto pinfo = static_cast<const DSN_ENUM_INFO *>(pparam);
 	f_info.final_recipient[0] = '\0';
 	f_info.action_severity = -1;
 	f_info.remote_mta[0] = '\0';
@@ -2941,7 +2934,7 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 
 	DSN dsn;
-	if (!dsn.retrieve(tmp_buff, content_len))
+	if (!dsn.load_from_str_move(tmp_buff, content_len))
 		return NULL;
 	dsn_info.action_severity = -1;
 	dsn.enum_rcpts_fields(oxcmail_enum_dsn_action_fields,
@@ -3065,7 +3058,7 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 
 	DSN dsn;
-	if (!dsn.retrieve(tmp_buff, content_len) ||
+	if (!dsn.load_from_str_move(tmp_buff, content_len) ||
 	    !dsn.enum_fields(*dsn.get_message_fields(), oxcmail_enum_mdn, pmsg))
 		return NULL;
 	dsn.clear();
@@ -3527,7 +3520,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		} else {
 			if (!utf8_check(pcontent + content_len + 1))
 				utf8_filter(pcontent + content_len + 1);
-			if (!ical.retrieve(pcontent + content_len + 1)) {
+			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
 				mime_enum.pcalendar = nullptr;
 			} else {
 				pmsg1 = oxcical_import_single(str_zone, ical, alloc,
@@ -5066,7 +5059,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 }
 
 static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
-    const BINARY *hdrs, MIME_FIELD &f)
+    /* effective-moved-from */ BINARY *hdrs, MIME_FIELD &f)
 {
 	if (hdrs == nullptr || hdrs->cb == 0)
 		return false;
@@ -5075,7 +5068,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 		return false;
 	auto cl_0 = make_scope_exit([&]() { origmail.pmime_pool->put_mime(sec); });
 	char buf[512];
-	if (!sec->retrieve(nullptr, hdrs->pc, hdrs->cb))
+	if (!sec->load_from_str_move(nullptr, hdrs->pc, hdrs->cb))
 		return false;
 	if (!sec->get_field("Content-Type", buf, arsizeof(buf)))
 		return false;
@@ -5267,7 +5260,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		auto a = pmsg->children.pattachments;
 		if (a == nullptr || a->count != 1)
 			goto EXPORT_FAILURE;
-		auto pbin = a->pplist[0]->proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
+		auto pbin = a->pplist[0]->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 		if (!smime_signed_writeout(*pmail, *pmime, pbin, mime_field))
 			goto EXPORT_FAILURE;
 		return TRUE;

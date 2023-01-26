@@ -132,7 +132,7 @@ static int message_enqueue_run()
     }
     g_last_flush_ID = message_enqueue_retrieve_max_ID();
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_flushing_thread, nullptr, meq_thrwork, nullptr);
+	auto ret = pthread_create4(&g_flushing_thread, nullptr, meq_thrwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "message_enqueue: failed to create flushing thread: %s", strerror(ret));
         return -7;
