@@ -203,15 +203,15 @@ int main(int argc, const char **argv) try
 			mlog(LV_ERR, "dq: turning off TLS support because certificate or "
 				"private key path is empty");
 		} else {
-			mlog(LV_NOTICE, "dq: SMTP supports ESMTP TLS mode");
+			mlog(LV_NOTICE, "dq: STARTTLS support is available");
 		}
 	} else {
-		mlog(LV_NOTICE, "dq: SMTP does not support ESMTP TLS mode");
+		mlog(LV_NOTICE, "dq: STARTTLS support is off");
 	}
 
 	scfg.force_starttls = parse_bool(g_config_file->get_value("smtp_force_starttls"));
 	if (scfg.support_starttls && scfg.force_starttls)
-		mlog(LV_NOTICE, "dq: SMTP MUST be used in TLS mode");
+		mlog(LV_NOTICE, "dq: clients are required to use STARTTLS");
 	uint16_t listen_port = g_config_file->get_ll("lda_listen_port");
 	uint16_t listen_tls_port = g_config_file->get_ll("lda_listen_tls_port");
 	if (!scfg.support_starttls && listen_tls_port > 0)
