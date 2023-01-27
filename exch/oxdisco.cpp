@@ -11,6 +11,8 @@
 #include <string>
 #include <functional>
 #include <tinyxml2.h>
+#include <unordered_map>
+#include <gromox/json.hpp>
 #include <fmt/core.h>
 #include <fmt/printf.h>
 #include <libHX/ctype_helper.h>
