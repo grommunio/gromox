@@ -2957,7 +2957,7 @@ BOOL cu_set_properties(db_table table_type,
 			case PR_TRANSPORT_MESSAGE_HEADERS:
 			case PR_TRANSPORT_MESSAGE_HEADERS_A:
 				if (common_util_set_message_body(psqlite, cpid, id, &ppropvals->ppropval[i]))
-					break;
+					continue;
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 					ppropvals->ppropval[i].proptag;
