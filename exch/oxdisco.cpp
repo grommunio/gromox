@@ -110,6 +110,17 @@ static constexpr char
 	provider_unavailable_msg[] = "Provider is not available",
 	server_error_code[] = "603",
 	server_error_msg[] = "Server Error",
+
+protocol_err0[] =	"ProtocolNotSupported",
+protocol_err_message0[] =	"Protocol: 'AutodioverV1' is not supported. Supported protocols are: 'ActiveSync,AutodiscoverV1,Ews,Rest,Substrate,SubstrateSearchService,SubstrateNotificationService,OutlookMeetingScheduler,OutlookPay,Actions,Connectors,ConnectorsProcessors,ConnectorsWebhook,NotesClient,OwaPoweredExperience,ToDo,Weve,OutlookLocationsService,OutlookCloudSettingsService,OutlookTailoredExperiences,OwaPoweredExperienceV2,Speedway,SpeechAndLanguagePersonalization,SubstrateSignalService,CompliancePolicyService'.",			
+
+protocol_err1[] =	"MissingProtocol",
+protocol_err_message1[] =	"A valid value must be provided for the query parameter 'Protocol'.",			
+
+protocol_err2[] =	"MandatoryParameterMissing",
+protocol_err_message2[] =	"A valid value must be provided for the query parameter 'Protocol",			
+
+
 	exchange_asmx[] = "Exchange.asmx",
 	header_templ[] =
 		"HTTP/1.1 {} {}\r\n"
