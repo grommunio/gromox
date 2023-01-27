@@ -140,6 +140,31 @@ protocol_err_message2[] =	"A valid value must be provided for the query paramete
 
 static BOOL unauthed(int);
 
+unordered_map<string, string> protocolList
+{
+    {"ews", "https://outlook.office365.com/EWS/Exchange.asmx"},
+    {"rest", "https://outlook.office.com/api"},
+    {"ToDo", "https://substrate.office.com/todob2"},
+    {"Weve", "https://substrate.office.com/WeveB2"},
+    {"Actions", "https://outlook.office365.com/actionsb2netcore"},
+    {"substrate", "https://substrate.office.com/"},
+    {"ActiveSync", "https://outlook.office365.com/Microsoft-Server-ActiveSync"},
+    {"OutlookPay", "https://outlook.office.com/opay"},
+    {"Connectors", "https://outlook.office365.com/connectors"},
+    {"NotesClient", "https://substrate.office.com/notesfabric"},
+    {"AutodiscoverV1", "https://outlook.office365.com/autodiscover/autodiscover.xml"},
+    {"ConnectorsWebhook", "https://outlook.office365.com/webhook"},
+    {"ConnectorsProcessors", "https://outlook.office365.com/connectorsprocessors"},
+    {"OwaPoweredExperience", "https://outlook.office365.com/"},
+    {"OwaPoweredExperienceV2", "https://outlook.office.com/ows/v1.0/Opx/configuration"},
+    {"SubstrateSearchService", "https://outlook.office365.com/search"},
+    {"OutlookMeetingScheduler", "https://outlook.office.com/scheduling/api"},
+    {"OutlookLocationsService", "https://outlook.office365.com/locations/api"},
+    {"OutlookTailoredExperiences", "https://substrate.office.com/txpB2"},
+    {"OutlookCloudSettingsService", "https://substrate.office.com/ows/v1/outlookcloudsettings/settings"},
+    {"SubstrateNotificationService", "https://substrate.office.com/insights"},
+ };
+
 OxdiscoPlugin::OxdiscoPlugin()
 {
 	host_id = get_host_ID();
