@@ -203,7 +203,11 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 		/* still need hex decoding */
 		return resp_autocfg(ctx_id, username);
 	}
-
+	else
+	if(strncasecmp(uri, "/autodiscover/autodiscover.json", 30) == 0)
+	{
+		return json_request(ctx_id, uri);
+	}
 	XMLDocument doc;
 	if (doc.Parse(static_cast<const char *>(content), len) != XML_SUCCESS)
 		return die(ctx_id, invalid_request_code, invalid_request_msg);
