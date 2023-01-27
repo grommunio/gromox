@@ -147,16 +147,40 @@ int main(int argc, const char **argv) try
 	auto cl_1 = make_scope_exit(gi_shutdown);
 
 	MESSAGE_CONTENT *ctnt = nullptr;
-	auto msg_id = strtoull(argv[1], nullptr, 0);
-	if (!exmdb_client_remote::read_message(g_storedir, nullptr, CP_UTF8,
-	    rop_util_make_eid_ex(1, msg_id), &ctnt)) {
-		fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
-		return EXIT_FAILURE;
-	}
-	if (ctnt == nullptr) {
-		fprintf(stderr, "A message by the id %llxh was not found\n",
-		        static_cast<unsigned long long>(msg_id));
-		return EXIT_FAILURE;
+	if (strchr(argv[1], ':') != nullptr) {
+		char *sep = nullptr;
+		auto folder_id = strtoull(argv[1], &sep, 0);
+		if (sep == nullptr || *sep != ':') {
+			fprintf(stderr, "Unparsable: \"%s\"\n", argv[1]);
+			return EXIT_FAILURE;
+		}
+		auto msg_id = strtoull(sep + 1, nullptr, 0);
+		uint32_t inst_id = 0;
+		ctnt = message_content_init();
+		if (!exmdb_client_remote::load_message_instance(g_storedir,
+		    nullptr, CP_UTF8, false, rop_util_make_eid_ex(1, folder_id),
+		    rop_util_make_eid_ex(1, msg_id), &inst_id)) {
+			fprintf(stderr, "RPC load_message_instance rejected; probably message not found.\n");
+			return EXIT_FAILURE;
+		}
+		auto cl_0 = make_scope_exit([&]() { exmdb_client_remote::unload_instance(g_storedir, inst_id); });
+		if (!exmdb_client_remote::read_message_instance(g_storedir,
+		    inst_id, ctnt)) {
+			fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
+			return EXIT_FAILURE;
+		}
+	} else {
+		auto msg_id = strtoull(argv[1], nullptr, 0);
+		if (!exmdb_client_remote::read_message(g_storedir, nullptr, CP_UTF8,
+		    rop_util_make_eid_ex(1, msg_id), &ctnt)) {
+			fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
+			return EXIT_FAILURE;
+		}
+		if (ctnt == nullptr) {
+			fprintf(stderr, "A message by the id %llxh was not found\n",
+			        static_cast<unsigned long long>(msg_id));
+			return EXIT_FAILURE;
+		}
 	}
 	if (g_export_mode == EXPORT_MAIL) {
 		if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html, mimepool,
