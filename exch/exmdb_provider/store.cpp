@@ -433,7 +433,7 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 	const char *paddress, BOOL *pb_found)
 {
 	uint32_t proptags[3];
-	char sql_string[512];
+	char sql_string[198];
 	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
 	PROPERTY_NAME propname_buff[3];
@@ -460,15 +460,11 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 	              " FROM folders WHERE parent_id=?");
 	if (pstmt1 == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT messages.message_id"
-		" FROM messages JOIN message_properties ON "
-		"messages.message_id=message_properties.message_id "
-		"WHERE parent_fid=? AND (message_properties.proptag=%u"
-		" OR message_properties.proptag=%u"
-		" OR message_properties.proptag=%u)"
-		" AND message_properties.propval=?"
-		" LIMIT 1", proptags[0], proptags[1],
-		proptags[2]);
+	snprintf(sql_string, sizeof(sql_string), "SELECT m.message_id "
+	         "FROM messages AS m JOIN message_properties AS mp ON "
+	         "m.message_id=mp.message_id WHERE m.parent_fid=? AND "
+	         "mp.proptag IN (%u,%u,%u) AND mp.propval=? LIMIT 1",
+	         proptags[0], proptags[1], proptags[2]);
 	auto pstmt2 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt2 == nullptr)
 		return FALSE;

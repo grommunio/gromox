@@ -488,7 +488,7 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 		return FALSE;
 	op->msg_str = gx_sql_prep(psqlite, "SELECT proptag, "
 	              "propval FROM message_properties WHERE "
-	              "message_id=? AND (proptag=? OR proptag=?)");
+	              "message_id=? AND proptag IN (?,?)");
 	if (op->msg_str == nullptr)
 		return FALSE;
 	op->rcpt_norm = gx_sql_prep(psqlite, "SELECT propval "
@@ -498,7 +498,7 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 		return FALSE;
 	op->rcpt_str = gx_sql_prep(psqlite, "SELECT proptag, propval"
 	               " FROM recipients_properties WHERE recipient_id=?"
-	               " AND (proptag=? OR proptag=?)");
+	               " AND proptag IN (?,?)");
 	if (op->rcpt_str == nullptr)
 		return FALSE;
 	g_opt_key = op.release();
@@ -2033,7 +2033,7 @@ static bool gp_prepare_anystr(sqlite3 *psqlite, db_table table_type, uint64_t id
 		} else {
 			own_stmt = gx_sql_prep(psqlite, "SELECT proptag, "
 			           "propval FROM message_properties WHERE "
-			           "message_id=? AND (proptag=? OR proptag=?)");
+			           "message_id=? AND proptag IN (?,?)");
 			if (own_stmt == nullptr)
 				return FALSE;
 			pstmt = own_stmt;
@@ -2049,7 +2049,7 @@ static bool gp_prepare_anystr(sqlite3 *psqlite, db_table table_type, uint64_t id
 		} else {
 			own_stmt = gx_sql_prep(psqlite, "SELECT proptag,"
 			           " propval FROM recipients_properties WHERE"
-			           " recipient_id=? AND (proptag=? OR proptag=?)");
+			           " recipient_id=? AND proptag IN (?,?)");
 			if (own_stmt == nullptr)
 				return FALSE;
 			pstmt = own_stmt;
@@ -2061,7 +2061,7 @@ static bool gp_prepare_anystr(sqlite3 *psqlite, db_table table_type, uint64_t id
 	case db_table::atx_props:
 		own_stmt = gx_sql_prep(psqlite, "SELECT proptag, propval"
 		           " FROM attachment_properties WHERE attachment_id=?"
-		           " AND (proptag=? OR proptag=?)");
+		           " AND proptag IN (?,?)");
 		if (own_stmt == nullptr)
 			return FALSE;
 		pstmt = own_stmt;
