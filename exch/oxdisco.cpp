@@ -218,6 +218,46 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
  *
  * @return     TRUE if request was handled, false otherwise
  */
+
+static BOOL OxdiscoPlugin::json_request(int ctx_id, const char* linK)
+{
+	Json::Value respdoc;
+	respdoc["protocol"] = "";
+   	const char* findAt = strchr(linK, '@');
+    const char* findQ = strchr(linK, '?');
+    const char* findProtocol = strchr(linK, '=');    
+	if (findAt != nullptr && findQ != nullptr && findProtocol != nullptr)
+    {
+        if (strncmp(&linK[findQ - linK + 1], "?protocol=", 10) != 0)
+        {
+            for(const auto& iterator: protocolList) 
+            {
+                if (strcmp(&linK[findProtocol - linK + 1], iterator.first.c_str()) == 0)
+                {
+					respdoc["protocol"] = iterator.first;
+					respdoc["url"] = iterator.second;
+					int code = 200;
+					const char* response = respdoc.toStyledString().c_str();
+					if (response_logging > 0)
+						mlog(LV_DEBUG, "[oxdisco_v2] response: %s", response);
+					writeheader(ctx_id, code, strlen(response));
+					return write_response(ctx_id, response, strlen(response));
+                }
+            }
+			//protocol does not existr
+			return die(ctx_id, protocol_err0, protocol_err_message0);
+        } 
+		//no protocol
+		return die(ctx_id, protocol_err1, protocol_err_message1);
+    }
+    else
+    {
+       // missing parameter
+		return die(ctx_id, protocol_err2, protocol_err_message2);			
+    }
+
+}
+
 BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
