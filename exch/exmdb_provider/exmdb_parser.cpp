@@ -403,13 +403,16 @@ void exmdb_parser_stop()
 			return;
 		}
 	for (auto &pconnection : g_connection_list) {
-		pthr_ids[i++] = pconnection->thr_id;
 		pconnection->b_stop = true;
 		if (pconnection->sockd >= 0)
 			shutdown(pconnection->sockd, SHUT_RDWR); /* closed in ~EXMDB_CONNECTION */
-		pthread_kill(pconnection->thr_id, SIGALRM);
+		if (!pthread_equal(pconnection->thr_id, {})) {
+			pthr_ids[i++] = pconnection->thr_id;
+			pthread_kill(pconnection->thr_id, SIGALRM);
+		}
 	}
 	chold.unlock();
+	num = i;
 	for (i=0; i<num; i++) {
 		pthread_join(pthr_ids[i], NULL);
 	}
@@ -427,12 +430,15 @@ void exmdb_parser_stop()
 		}
 	i = 0;
 	for (auto &rt : g_router_list) {
-		pthr_ids[i++] = rt->thr_id;
 		rt->b_stop = true;
 		rt->waken_cond.notify_one();
-		pthread_kill(rt->thr_id, SIGALRM);
+		if (!pthread_equal(rt->thr_id, {})) {
+			pthr_ids[i++] = rt->thr_id;
+			pthread_kill(rt->thr_id, SIGALRM);
+		}
 	}
 	rhold.unlock();
+	num = i;
 	for (i=0; i<num; i++) {
 		pthread_join(pthr_ids[i], NULL);
 	}
