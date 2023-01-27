@@ -324,6 +324,10 @@ static void *mdpps_thrwork(void *pparam)
 	if (NULL != pbuff) {
 		free(pbuff);
 	}
+	if (!pconnection->b_stop) {
+		pconnection->thr_id = {};
+		pthread_detach(pthread_self());
+	}
 	return nullptr;
 }
 
