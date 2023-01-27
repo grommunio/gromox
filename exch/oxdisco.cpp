@@ -66,6 +66,7 @@ class OxdiscoPlugin {
 
 	void loadConfig();
 	static void writeheader(int, int, size_t);
+	static BOOL json_request(int, const char* );
 	BOOL die(int, const char *, const char *) const;
 	BOOL resp(int, const char *, const char *, const char *) const;
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
