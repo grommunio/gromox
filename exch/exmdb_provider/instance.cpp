@@ -145,6 +145,11 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				return FALSE;
 			proptag = sqlite3_column_int64(pstmt, 0);
 			cid = sqlite3_column_int64(pstmt, 1);
+			if (cid <= 0) {
+				mlog(LV_DEBUG, "W-1441: illegal CID reference in msg %llu prop %xh",
+					LLU{message_id}, tag);
+				break;
+			}
 			pstmt.finalize();
 			uint32_t tag = proptag == PR_BODY ? ID_TAG_BODY : ID_TAG_BODY_STRING8;
 			if (pmsgctnt->proplist.set(tag, &cid) != 0)
@@ -160,6 +165,11 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
 			cid = sqlite3_column_int64(pstmt, 0);
+			if (cid <= 0) {
+				mlog(LV_DEBUG, "W-1442: illegal CID reference in msg %llu prop %xh",
+					LLU{message_id}, tag);
+				break;
+			}
 			pstmt.finalize();
 			tag = tag == PR_HTML ? ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
 			if (pmsgctnt->proplist.set(tag, &cid) != 0)
@@ -178,6 +188,11 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				return FALSE;
 			proptag = sqlite3_column_int64(pstmt, 0);
 			cid = sqlite3_column_int64(pstmt, 1);
+			if (cid <= 0) {
+				mlog(LV_DEBUG, "W-1444: illegal CID reference in msg %llu prop %xh",
+					LLU{message_id}, tag);
+				break;
+			}
 			pstmt.finalize();
 			uint32_t tag = proptag == PR_TRANSPORT_MESSAGE_HEADERS ?
 			               ID_TAG_TRANSPORTMESSAGEHEADERS :
