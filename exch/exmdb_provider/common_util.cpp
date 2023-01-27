@@ -589,13 +589,13 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id, sqlite3 *psqlite,
 			if (tag == PR_NORMALIZED_SUBJECT ||
 			    tag == PR_SUBJECT_PREFIX) {
 				b_subject = TRUE;
-				tags.push_back(PR_SUBJECT);
-				continue;
+				tags.push_back(tag);
+				tag = PR_SUBJECT;
 			} else if (tag == PR_NORMALIZED_SUBJECT_A ||
 			    tag == PR_SUBJECT_PREFIX_A) {
 				b_subject = TRUE;
-				tags.push_back(PR_SUBJECT_A);
-				continue;
+				tags.push_back(tag);
+				tag = PR_SUBJECT_A;
 			}
 		}
 		tags.push_back(tag);
