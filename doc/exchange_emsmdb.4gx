@@ -49,10 +49,10 @@ mailbox opened.
 .br
 Default: \fI500\fP
 .TP
-\fBexmdb_pmb_folder_softdel\fP
+\fBemsmdb_private_folder_softdel\fP
 Enables soft-delete support for folders in private stores. (This feature is
 experimental.) Public folders always have this on. (Take note that
-exmdb_provider.cfg:exmdb_pmb_folder_softdel also need to be enabled.)
+exmdb_provider.cfg:exmdb_private_folder_softdelete also need to be enabled.)
 .br
 Default: \fIno\fP
 .TP

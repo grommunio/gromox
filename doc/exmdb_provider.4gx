@@ -73,7 +73,7 @@ When set to 2, folder summaries will indicate the number of new messages.
 .br
 Default: \fI2\fP
 .TP
-\fBexmdb_pmb_folder_softdel\fP
+\fBexmdb_private_folder_softdelete\fP
 Enables soft-delete support for folders in private stores. (This feature is
 experimental.) Public folders always have this on.
 .br
