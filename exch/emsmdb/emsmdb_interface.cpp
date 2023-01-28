@@ -303,7 +303,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	temp_handle.info.cpid = cpid;
 	temp_handle.info.lcid_string = lcid_string;
 	temp_handle.info.lcid_sort = lcid_sort;
-	memcpy(temp_handle.info.client_version, client_version, 4);
+	memcpy(temp_handle.info.client_version, client_version, sizeof(temp_handle.info.client_version));
 	temp_handle.info.client_mode = client_mode;
 	gx_strlcpy(temp_handle.username, username, GX_ARRAY_SIZE(temp_handle.username));
 	HX_strlower(temp_handle.username);
@@ -659,6 +659,14 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	return ecSuccess;
 }
 
+static bool enable_rop_chaining(uint16_t v[4])
+{
+	if (emsmdb_rop_chaining == 0)
+		return false;
+	return emsmdb_rop_chaining >= 2 || v[0] <= 14 || v[0] > 16 ||
+	       (v[0] == 16 && v[2] >= 10000);
+}
+
 int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	const uint8_t *pin, uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out,
 	const uint8_t *pauxin, uint32_t cb_auxin, uint8_t *pauxout,
@@ -724,6 +732,10 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 				"auxiliary buffer in emsmdb_interface_rpc_ext2");
 		}
 	}
+	if (enable_rop_chaining(phandle->info.client_version))
+		input_flags &= ~GROMOX_READSTREAM_NOCHAIN;
+	else
+		input_flags |= GROMOX_READSTREAM_NOCHAIN;
 	result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
 	gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
 	cxr = phandle->cxr;

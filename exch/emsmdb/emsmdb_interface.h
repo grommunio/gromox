@@ -5,6 +5,15 @@
 #include <gromox/rpc_types.hpp>
 #include "rop_processor.h"
 
+enum {
+	RPCEXT2_FLAG_NOCOMPRESSION = 0x1U,
+	RPCEXT2_FLAG_NOXORMAGIC    = 0x2U,
+	RPCEXT2_FLAG_CHAIN         = 0x4U,
+
+	/* Only for within Gromox */
+	GROMOX_READSTREAM_NOCHAIN  = 0x8000U,
+};
+
 struct emsmdb_info {
 	emsmdb_info() = default;
 	emsmdb_info(emsmdb_info &&) noexcept;

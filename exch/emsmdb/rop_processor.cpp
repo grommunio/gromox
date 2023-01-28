@@ -36,10 +36,6 @@
 #include "stream_object.h"
 #include "subscription_object.h"
 #include "table_object.h"
-#define RPCEXT2_FLAG_NOCOMPRESSION		0x00000001
-#define RPCEXT2_FLAG_NOXORMAGIC			0x00000002
-#define RPCEXT2_FLAG_CHAIN				0x00000004
-#define HGROWING_SIZE					250
 
 using namespace gromox;
 
@@ -55,7 +51,7 @@ static unsigned int g_max_rop_payloads = 96;
 unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
 unsigned int emsmdb_max_hoc = 10;
-unsigned int emsmdb_pvt_folder_softdel;
+unsigned int emsmdb_pvt_folder_softdel, emsmdb_rop_chaining;
 
 std::unique_ptr<LOGMAP> rop_processor_create_logmap() try
 {
@@ -570,9 +566,14 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	offset = tmp_cb;
 	last_offset = 0;
 	auto count = double_list_get_nodes_num(&response_list);
+	if (!(flags & RPCEXT2_FLAG_CHAIN)) {
+		rop_ext_set_rhe_flag_last(pout, last_offset);
+		*pcb_out = offset;
+		return ecSuccess;
+	}
 	pnode = double_list_get_tail(&rop_buff.rop_list);
 	pnode1 = double_list_get_tail(&response_list);
-	if (!(flags & RPCEXT2_FLAG_CHAIN) || pnode == nullptr || pnode1 == nullptr) {
+	if (pnode == nullptr || pnode1 == nullptr) {
 		rop_ext_set_rhe_flag_last(pout, last_offset);
 		*pcb_out = offset;
 		return ecSuccess;
@@ -629,7 +630,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			offset += tmp_cb;
 			count ++;
 		}
-	} else if (presponse->rop_id == ropReadStream) {
+	} else if (presponse->rop_id == ropReadStream &&
+	    !(flags & GROMOX_READSTREAM_NOCHAIN)) {
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (presponse->result == ecSuccess &&
 		       *pcb_out - offset >= 0x2000 && count < g_max_rop_payloads) {
