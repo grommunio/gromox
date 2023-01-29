@@ -1079,34 +1079,34 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r) try
 	r->rhe_version = rpc_header_ext.version;
 	r->rhe_flags = rpc_header_ext.flags;
 	double_list_init(&r->aux_list);
-	if (0 != rpc_header_ext.size) {
-		auto pdata = ext.m_udata + ext.m_offset;
-		/* obfuscation case */
-		if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
-			common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size_actual);
-		/* lzxpress case */
-		if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
-			decompressed_len = lzxpress_decompress(pdata,
-				rpc_header_ext.size, buff.get(), buff_size);
-			if (decompressed_len != rpc_header_ext.size_actual) {
-				mlog(LV_WARN, "W-1098: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)",
-				        rpc_header_ext.size, rpc_header_ext.size_actual,
-				        decompressed_len);
-				return EXT_ERR_LZXPRESS;
-			}
-			pdata = buff.get();
+	if (rpc_header_ext.size == 0)
+		return EXT_ERR_SUCCESS;
+	auto pdata = ext.m_udata + ext.m_offset;
+	/* obfuscation case */
+	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
+		common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size_actual);
+	/* lzxpress case */
+	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
+		decompressed_len = lzxpress_decompress(pdata,
+			rpc_header_ext.size, buff.get(), buff_size);
+		if (decompressed_len != rpc_header_ext.size_actual) {
+			mlog(LV_WARN, "W-1098: lzxdecompress failed for client input (z=%u, exp=%u, got=%u)",
+				rpc_header_ext.size, rpc_header_ext.size_actual,
+				decompressed_len);
+			return EXT_ERR_LZXPRESS;
 		}
-		subext.init(pdata, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
-		while (subext.m_offset < subext.m_data_size) {
-			pnode = pext->anew<DOUBLE_LIST_NODE>();
-			if (pnode == nullptr)
-				return EXT_ERR_ALLOC;
-			pnode->pdata = pext->anew<AUX_HEADER>();
-			if (pnode->pdata == nullptr)
-				return EXT_ERR_ALLOC;
-			TRY(aux_ext_pull_aux_header(&subext, static_cast<AUX_HEADER *>(pnode->pdata)));
-			double_list_append_as_tail(&r->aux_list, pnode);
-		}
+		pdata = buff.get();
+	}
+	subext.init(pdata, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
+	while (subext.m_offset < subext.m_data_size) {
+		pnode = pext->anew<DOUBLE_LIST_NODE>();
+		if (pnode == nullptr)
+			return EXT_ERR_ALLOC;
+		pnode->pdata = pext->anew<AUX_HEADER>();
+		if (pnode->pdata == nullptr)
+			return EXT_ERR_ALLOC;
+		TRY(aux_ext_pull_aux_header(&subext, static_cast<AUX_HEADER *>(pnode->pdata)));
+		double_list_append_as_tail(&r->aux_list, pnode);
 	}
 	return EXT_ERR_SUCCESS;
 } catch (const std::bad_alloc &) {
