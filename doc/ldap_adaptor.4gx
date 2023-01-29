@@ -66,7 +66,7 @@ Default: (libldap default, see ldap.conf(5))
 .TP
 \fBldap_mail_attr\fP
 The name of the LDAP attribute which holds the primary e-mail address of the
-user. Pick \fBmail\fP (OpenLDAP as well as ActiveDirectory schemes).
+user. Pick \fBmail\fP (OpenLDAP as well as Active Directory schemes).
 .br
 Default: (empty)
 .TP
@@ -109,20 +109,20 @@ as far as Gromox is concerned.
 \fBldap_object_id\fP
 The name of the LDAP attribute which holds a unique, unchanging object
 identifier for synchronization purposes. Pick \fBentryUUID\fP for OpenLDAP,
-\fBobjectGUID\fP for ActiveDirectory.
+\fBobjectGUID\fP for Active Directory.
 .br
 Default: (empty)
 .TP
 \fBldap_user_filter\fP
 An LDAP search filter that specifies which users should be synchronized.
 Recommendations are \fB(objectClass=posixAccount)\fP for OpenLDAP/RFC2307bis,
-\fB(objectClass=user)\fP for ActiveDirectory.
+\fB(objectClass=user)\fP for Active Directory.
 .br
 Default: (empty)
 .TP
 \fBldap_user_displayname\fP
 The name of the LDAP attribute which holds the value for PR_DISPLAY_NAME. Pick
-\fBdisplayName\fP (OpenLDAP as well as ActiveDirectory schemes).
+\fBdisplayName\fP (OpenLDAP as well as Active Directory schemes).
 .br
 Default: (empty)
 .TP
@@ -139,14 +139,15 @@ The name(s) of Admin API templates to use. Multi-value directive like
 search_attrs. Pick \fBldap_user_template=common\fP and
 \fBldap_user_template=OpenLDAP\fP for OpenLDAP, or
 \fBldap_user_template=common\fP and \fPldap_user_template=ActiveDirectory\fP
-for AD.
+for Active Directory.
 .br
 Default: (empty set)
 .TP
 \fBldap_user_aliases\fP
 The name of the LDAP attribute which contains secondary e-mail addresses. Pick
-\fBmailAlternativeAddress\fP (OpenLDAP) or \fBproxyAddresses\fP (AD). The
-\fBsmtp:\fP prefix in proxyAddresses is automatically trimmed when read.
+\fBmailAlternativeAddress\fP (OpenLDAP) or \fBproxyAddresses\fP (Active
+Directory). The \fBsmtp:\fP prefix in proxyAddresses is automatically trimmed
+when read.
 .br
 Default: (empty)
 .SH See also
