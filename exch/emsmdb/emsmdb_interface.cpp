@@ -521,10 +521,8 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	char username[UADDR_SIZE];
 	char temp_buff[1024];
 	uint16_t client_mode;
-	AUX_EXORGINFO aux_orginfo;
 	uint16_t client_version[4];
 	AUX_CLIENT_CONTROL aux_control;
-	AUX_ENDPOINT_CAPABILITIES aux_cap;
 	uint16_t server_normal_version[4] = {15, 0, 847, 4040};
 	bool is_success = false;
 
@@ -546,11 +544,9 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	aux_out.rhe_flags = RHE_FLAG_LAST;
 
 	AUX_HEADER aux_header;
-	aux_orginfo.org_flags = PUBLIC_FOLDERS_ENABLED |
-		USE_AUTODISCOVER_FOR_PUBLIC_FOLDER_CONFIGURATION;
 	aux_header.version = AUX_VERSION_1;
 	aux_header.type = AUX_TYPE_EXORGINFO;
-	aux_header.ppayload = &aux_orginfo;
+	aux_header.immed = PUBLIC_FOLDERS_ENABLED | USE_AUTODISCOVER_FOR_PUBLIC_FOLDER_CONFIGURATION;
 	aux_out.aux_list.emplace_back(std::move(aux_header));
 	
 	aux_control.enable_flags = ENABLE_COMPRESSION | ENABLE_HTTP_TUNNELING;
@@ -560,10 +556,9 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	aux_header.ppayload = &aux_control;
 	aux_out.aux_list.emplace_back(std::move(aux_header));
 	
-	aux_cap.endpoint_capability_flag = ENDPOINT_CAPABILITIES_SINGLE_ENDPOINT;
 	aux_header.version = AUX_VERSION_1;
 	aux_header.type = AUX_TYPE_ENDPOINT_CAPABILITIES;
-	aux_header.ppayload = &aux_cap;
+	aux_header.immed = ENDPOINT_CAPABILITIES_SINGLE_ENDPOINT;
 	aux_out.aux_list.emplace_back(std::move(aux_header));
 
 	DCERPC_INFO rpc_info;

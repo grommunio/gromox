@@ -45,27 +45,14 @@ static int aux_ext_push_aux_client_control(EXT_PUSH &x, const AUX_CLIENT_CONTROL
 	return x.p_uint32(r.expiry_time);
 }
 
-static int aux_ext_push_aux_exorginfo(EXT_PUSH &x, const AUX_EXORGINFO &r)
+static int aux_ext_push_aux_header_type_union1(EXT_PUSH &x, const AUX_HEADER &r)
 {
-	return x.p_uint32(r.org_flags);
-}
-
-static int aux_ext_push_aux_endpoint_capabilities(EXT_PUSH &x,
-    const AUX_ENDPOINT_CAPABILITIES &r)
-{
-	return x.p_uint32(r.endpoint_capability_flag);
-}
-
-static int aux_ext_push_aux_header_type_union1(EXT_PUSH &x, uint8_t type,
-    const void *payload)
-{
-	switch (type) {
+	switch (r.type) {
 	case AUX_TYPE_CLIENT_CONTROL:
-		return aux_ext_push_aux_client_control(x, *static_cast<const AUX_CLIENT_CONTROL *>(payload));
+		return aux_ext_push_aux_client_control(x, *static_cast<const AUX_CLIENT_CONTROL *>(r.ppayload));
 	case AUX_TYPE_EXORGINFO:
-		return aux_ext_push_aux_exorginfo(x, *static_cast<const AUX_EXORGINFO *>(payload));
 	case AUX_TYPE_ENDPOINT_CAPABILITIES:
-		return aux_ext_push_aux_endpoint_capabilities(x, *static_cast<const AUX_ENDPOINT_CAPABILITIES *>(payload));
+		return x.p_uint32(r.immed);
 	default:
 		return EXT_CTRL_SKIP;
 	}
@@ -83,7 +70,7 @@ static int aux_ext_push_aux_header(EXT_PUSH &x, const AUX_HEADER &r) try
 		return EXT_ERR_ALLOC;
 	switch (r.version) {
 	case AUX_VERSION_1: {
-		auto ret = aux_ext_push_aux_header_type_union1(subext, r.type, r.ppayload);
+		auto ret = aux_ext_push_aux_header_type_union1(subext, r);
 		if (ret == EXT_CTRL_SKIP)
 			return EXT_ERR_SUCCESS;
 		else if (ret != EXT_ERR_SUCCESS)

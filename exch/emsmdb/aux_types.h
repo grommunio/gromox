@@ -92,10 +92,6 @@ enum {
 	USE_AUTODISCOVER_FOR_PUBLIC_FOLDER_CONFIGURATION = 0x2U,
 };
 
-struct AUX_EXORGINFO {
-	uint32_t org_flags;
-};
-
 struct AUX_PERF_ACCOUNTINFO {
 	uint16_t client_id;
 	uint16_t reserved;
@@ -106,13 +102,12 @@ enum {
 	ENDPOINT_CAPABILITIES_SINGLE_ENDPOINT = 0x1U,
 };
 
-struct AUX_ENDPOINT_CAPABILITIES {
-	uint32_t endpoint_capability_flag;
-};
-
 struct AUX_HEADER {
 	uint8_t version = 0, type = 0;
-	void *ppayload = nullptr;
+	union {
+		void *ppayload = nullptr;
+		uint32_t immed;
+	};
 };
 
 /* bitmap pulFlags (OXCRPC v23 §2.2.2.1) */
