@@ -521,13 +521,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	char username[UADDR_SIZE];
 	char temp_buff[1024];
 	uint16_t client_mode;
-	AUX_HEADER header_cap;
-	AUX_HEADER header_info;
-	AUX_HEADER header_control;
 	AUX_EXORGINFO aux_orginfo;
-	DOUBLE_LIST_NODE node_cap;
-	DOUBLE_LIST_NODE node_info;
-	DOUBLE_LIST_NODE node_ctrl;
 	uint16_t client_version[4];
 	AUX_CLIENT_CONTROL aux_control;
 	AUX_ENDPOINT_CAPABILITIES aux_cap;
@@ -550,38 +544,34 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	
 	aux_out.rhe_version = 0;
 	aux_out.rhe_flags = RHE_FLAG_LAST;
-	double_list_init(&aux_out.aux_list);
-	
-	header_info.version = AUX_VERSION_1;
-	header_info.type = AUX_TYPE_EXORGINFO;
+
+	AUX_HEADER aux_header;
 	aux_orginfo.org_flags = PUBLIC_FOLDERS_ENABLED |
 		USE_AUTODISCOVER_FOR_PUBLIC_FOLDER_CONFIGURATION;
-	header_info.ppayload = &aux_orginfo;
-	node_info.pdata = &header_info;
-	double_list_append_as_tail(&aux_out.aux_list, &node_info);
+	aux_header.version = AUX_VERSION_1;
+	aux_header.type = AUX_TYPE_EXORGINFO;
+	aux_header.ppayload = &aux_orginfo;
+	aux_out.aux_list.emplace_back(std::move(aux_header));
 	
-	header_control.version = AUX_VERSION_1;
-	header_control.type = AUX_TYPE_CLIENT_CONTROL;
 	aux_control.enable_flags = ENABLE_COMPRESSION | ENABLE_HTTP_TUNNELING;
 	aux_control.expiry_time = 604800000;
-	header_control.ppayload = &aux_control;
-	node_ctrl.pdata = &header_control;
-	double_list_append_as_tail(&aux_out.aux_list, &node_ctrl);
+	aux_header.version = AUX_VERSION_1;
+	aux_header.type = AUX_TYPE_CLIENT_CONTROL;
+	aux_header.ppayload = &aux_control;
+	aux_out.aux_list.emplace_back(std::move(aux_header));
 	
-	header_cap.version = AUX_VERSION_1;
-	header_cap.type = AUX_TYPE_ENDPOINT_CAPABILITIES;
 	aux_cap.endpoint_capability_flag = ENDPOINT_CAPABILITIES_SINGLE_ENDPOINT;
-	header_cap.ppayload = &aux_cap;
-	node_cap.pdata = &header_cap;
-	double_list_append_as_tail(&aux_out.aux_list, &node_cap);
+	aux_header.version = AUX_VERSION_1;
+	aux_header.type = AUX_TYPE_ENDPOINT_CAPABILITIES;
+	aux_header.ppayload = &aux_cap;
+	aux_out.aux_list.emplace_back(std::move(aux_header));
+
 	DCERPC_INFO rpc_info;
-	if (!ext_push.init(pauxout, 0x1008, EXT_FLAG_UTF16)) {
-		double_list_free(&aux_out.aux_list);
+	if (!ext_push.init(pauxout, 0x1008, EXT_FLAG_UTF16))
 		return ecServerOOM;
-	}
 	*pcb_auxout = aux_ext_push_aux_info(&ext_push, aux_out) != EXT_ERR_SUCCESS ?
 	              0 : ext_push.m_offset;
-	double_list_free(&aux_out.aux_list);
+	aux_out.aux_list.clear();
 	
 	pdn_prefix[0] = '\0';
 	rpc_info = get_rpc_info();

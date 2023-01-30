@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <vector>
 #include <gromox/double_list.hpp>
 #include <gromox/rpc_types.hpp>
 
@@ -110,9 +111,8 @@ struct AUX_ENDPOINT_CAPABILITIES {
 };
 
 struct AUX_HEADER {
-	uint8_t version;
-	uint8_t type;
-	void *ppayload;
+	uint8_t version = 0, type = 0;
+	void *ppayload = nullptr;
 };
 
 /* bitmap pulFlags (OXCRPC v23 §2.2.2.1) */
@@ -125,7 +125,7 @@ enum {
 struct AUX_INFO {
 	uint16_t rhe_version;
 	uint16_t rhe_flags;
-	DOUBLE_LIST aux_list;
+	std::vector<AUX_HEADER> aux_list;
 };
 
 extern int aux_ext_push_aux_info(EXT_PUSH *, const AUX_INFO &);

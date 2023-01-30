@@ -117,9 +117,8 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, const AUX_INFO &r) try
 		return EXT_ERR_HEADER_FLAGS;
 	if (!subext.init(ext_buff.get(), ext_buff_size, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
-	for (auto pnode = double_list_get_head(&r.aux_list); pnode != nullptr;
-	     pnode = double_list_get_after(&r.aux_list, pnode))
-		TRY(aux_ext_push_aux_header(subext, *static_cast<const AUX_HEADER *>(pnode->pdata)));
+	for (const auto &ah : r.aux_list)
+		TRY(aux_ext_push_aux_header(subext, ah));
 	rpc_header_ext.version = r.rhe_version;
 	rpc_header_ext.flags = r.rhe_flags;
 	rpc_header_ext.size_actual = subext.m_offset;
