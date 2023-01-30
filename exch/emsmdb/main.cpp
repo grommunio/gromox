@@ -322,7 +322,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out == nullptr)
 			return DISPATCH_FAIL;
 		*ppout = out;
-		out->result = emsmdb_interface_disconnect(&in->cxh);
+		out->result = emsmdb_interface_disconnect(in->cxh);
 		out->cxh = in->cxh;
 		*ecode = out->result;
 		return DISPATCH_SUCCESS;
@@ -373,7 +373,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out == nullptr)
 			return DISPATCH_FAIL;
 		*ppout = out;
-		out->result = emsmdb_interface_rpc_ext2(&in->cxh, &in->flags,
+		out->result = emsmdb_interface_rpc_ext2(in->cxh, &in->flags,
 		              in->pin, in->cb_in, out->pout, &in->cb_out,
 		              in->pauxin, in->cb_auxin, out->pauxout,
 		              &in->cb_auxout, &out->trans_time);

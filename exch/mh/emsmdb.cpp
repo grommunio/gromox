@@ -98,9 +98,9 @@ static void (*asyncemsmdb_interface_register_active)(void *);
 static void (*asyncemsmdb_interface_remove)(CONTEXT_HANDLE *);
 
 static int (*emsmdb_interface_connect_ex)(uint64_t, CONTEXT_HANDLE *, const char *, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint16_t, uint32_t *, uint32_t *, uint32_t *, uint16_t *, char *, char *, const uint16_t *, uint16_t *, uint16_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *);
-static int (*emsmdb_interface_rpc_ext2)(CONTEXT_HANDLE *, uint32_t *flags, const uint8_t *, uint32_t, uint8_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *, uint32_t *);
-static int (*emsmdb_interface_disconnect)(CONTEXT_HANDLE *);
-static void (*emsmdb_interface_touch_handle)(CONTEXT_HANDLE *);
+static int (*emsmdb_interface_rpc_ext2)(CONTEXT_HANDLE &, uint32_t *flags, const uint8_t *, uint32_t, uint8_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *, uint32_t *);
+static int (*emsmdb_interface_disconnect)(CONTEXT_HANDLE &);
+static void (*emsmdb_interface_touch_handle)(const CONTEXT_HANDLE &);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Plugin structure declarations
@@ -467,17 +467,14 @@ static uint32_t emsmdb_bridge_execute(const GUID& session_guid, const execute_re
 {
 	uint32_t trans_time;
 	EMSMDB_HANDLE ses = {HANDLE_EXCHANGE_EMSMDB, session_guid};
-	return emsmdb_interface_rpc_ext2(&ses, &response.flags, request.in,
+	return emsmdb_interface_rpc_ext2(ses, &response.flags, request.in,
 	       request.cb_in, response.out, &response.cb_out, request.auxin,
 	       request.cb_auxin, response.auxout, &response.cb_auxout,
 	       &trans_time);
 }
 
 static uint32_t emsmdb_bridge_disconnect(EMSMDB_HANDLE2 ses)
-{return emsmdb_interface_disconnect(&ses);}
-
-static void emsmdb_bridge_touch_handle(EMSMDB_HANDLE2 ses)
-{emsmdb_interface_touch_handle(&ses);}
+{return emsmdb_interface_disconnect(ses);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Request processing
@@ -712,7 +709,7 @@ BOOL MhEmsmdbPlugin::process(int context_id, const void *content, uint64_t lengt
 	if ((result = loadCookies(ctx)))
 		return result.value();
 	if (strcasecmp(ctx.request_value, "PING") == 0) {
-		emsmdb_bridge_touch_handle(ctx.session_guid);
+		emsmdb_interface_touch_handle({HANDLE_EXCHANGE_EMSMDB, ctx.session_guid});
 		return ctx.ping_response();
 	}
 	set_context(context_id);

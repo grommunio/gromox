@@ -184,8 +184,9 @@ BOOL emsmdb_interface_check_notify(ACXH *pacxh)
 }
 
 /* called by moh_emsmdb module */
-void emsmdb_interface_touch_handle(CXH *pcxh)
+void emsmdb_interface_touch_handle(const CXH &cxh)
 {
+	auto pcxh = &cxh;
 	if (HANDLE_EXCHANGE_EMSMDB != pcxh->handle_type) {
 		return;
 	}
@@ -363,8 +364,9 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	return TRUE;
 }
 
-static void emsmdb_interface_remove_handle(CXH *pcxh)
+static void emsmdb_interface_remove_handle(const CXH &cxh)
 {
+	auto pcxh = &cxh;
 	HANDLE_DATA *phandle;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -448,10 +450,10 @@ void emsmdb_interface_stop()
 	g_handle_hash.clear();
 }
 
-int emsmdb_interface_disconnect(CXH *pcxh)
+int emsmdb_interface_disconnect(CXH &cxh)
 {
-	emsmdb_interface_remove_handle(pcxh);
-	memset(pcxh, 0, sizeof(CXH));
+	emsmdb_interface_remove_handle(cxh);
+	memset(&cxh, 0, sizeof(CXH));
 	return ecSuccess;
 }
 
@@ -632,11 +634,12 @@ static bool enable_rop_chaining(uint16_t v[4])
 	       (v[0] == 16 && v[2] >= 10000);
 }
 
-int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
+int emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	const uint8_t *pin, uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out,
 	const uint8_t *pauxin, uint32_t cb_auxin, uint8_t *pauxout,
 	uint32_t *pcb_auxout, uint32_t *ptrans_time)
 {
+	auto pcxh = &cxh;
 	int result;
 	uint16_t cxr;
 	EXT_PULL ext_pull;
@@ -682,7 +685,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	}
 	if (first_time - phandle->last_time > HANDLE_VALID_INTERVAL) {
 		emsmdb_interface_put_handle_data(phandle);
-		emsmdb_interface_remove_handle(pcxh);
+		emsmdb_interface_remove_handle(cxh);
 		*pcb_out = 0;
 		memset(pcxh, 0, sizeof(CXH));
 		return ecError;
@@ -1182,8 +1185,6 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 
 static void *emsi_scanwork(void *pparam)
 {
-	CXH cxh;
-	
 	while (!g_notify_stop) {
 		std::vector<GUID> temp_list;
 		auto cur_time = tp_now();
@@ -1200,11 +1201,8 @@ static void *emsi_scanwork(void *pparam)
 			}
 		}
 		gl_hold.unlock();
-		for (auto &&guid : temp_list) {
-			cxh.handle_type = HANDLE_EXCHANGE_EMSMDB;
-			cxh.guid = std::move(guid);
-			emsmdb_interface_remove_handle(&cxh);
-		}
+		for (auto &&guid : temp_list)
+			emsmdb_interface_remove_handle({HANDLE_EXCHANGE_EMSMDB, std::move(guid)});
 		sleep(3);
 	}
 	return nullptr;

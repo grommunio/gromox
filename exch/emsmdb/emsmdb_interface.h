@@ -29,7 +29,7 @@ using EMSMDB_INFO = emsmdb_info;
 extern void emsmdb_interface_init();
 extern int emsmdb_interface_run();
 extern void emsmdb_interface_stop();
-int emsmdb_interface_disconnect(CXH *pcxh);
+extern int emsmdb_interface_disconnect(CXH &);
 int emsmdb_interface_register_push_notification(CXH *pcxh, uint32_t rpc,
 	uint8_t *pctx, uint16_t cb_ctx, uint32_t advise_bits, uint8_t *paddr,
 	uint16_t cb_addr, uint32_t *phnotification);
@@ -43,16 +43,13 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	const uint16_t pclient_vers[3], uint16_t pserver_vers[3],
 	uint16_t pbest_vers[3], uint32_t *ptimestamp, const uint8_t *pauxin,
 	uint32_t cb_auxin, uint8_t *pauxout, uint32_t *pcb_auxout);
-int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
-	const uint8_t *pin, uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out,
-	const uint8_t *pauxin, uint32_t cb_auxin, uint8_t *pauxout,
-	uint32_t *pcb_auxout, uint32_t *ptrans_time);
+extern int emsmdb_interface_rpc_ext2(CXH &, uint32_t *flags, const uint8_t *in, uint32_t cb_in, uint8_t *out, uint32_t *cb_out, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout, uint32_t *trans_time);
 int emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh);
 void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc);
 BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 	char *username, uint16_t *pcxr, BOOL b_touch);
 BOOL emsmdb_interface_check_notify(ACXH *pacxh);
-extern void emsmdb_interface_touch_handle(CXH *);
+extern void emsmdb_interface_touch_handle(const CXH &);
 extern const GUID *emsmdb_interface_get_handle();
 extern EMSMDB_INFO *emsmdb_interface_get_emsmdb_info();
 extern DOUBLE_LIST *emsmdb_interface_get_notify_list();
