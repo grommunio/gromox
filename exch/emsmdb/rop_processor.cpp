@@ -17,7 +17,6 @@
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include "attachment_object.h"
-#include "aux_types.h"
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"

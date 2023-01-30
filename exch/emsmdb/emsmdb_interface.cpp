@@ -25,7 +25,6 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
-#include "aux_ext.hpp"
 #include "aux_types.h"
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -516,7 +515,6 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	uint16_t pbest_vers[3], uint32_t *ptimestamp, const uint8_t *pauxin,
 	uint32_t cb_auxin, uint8_t *pauxout, uint32_t *pcb_auxout)
 {
-	AUX_INFO aux_in;
 	AUX_INFO aux_out;
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
@@ -525,7 +523,6 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	uint16_t client_mode;
 	AUX_HEADER header_cap;
 	AUX_HEADER header_info;
-	DOUBLE_LIST_NODE *pnode;
 	AUX_HEADER header_control;
 	AUX_EXORGINFO aux_orginfo;
 	DOUBLE_LIST_NODE node_cap;
@@ -630,24 +627,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	}
 	
 	client_mode = CLIENT_MODE_UNKNOWN;
-	if (0 != cb_auxin) {
-		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != aux_ext_pull_aux_info(&ext_pull, &aux_in)) {
-			mlog(LV_DEBUG, "emsmdb: failed to pull input "
-				"auxiliary buffer in emsmdb_interface_connect_ex");
-		} else {
-			for (pnode=double_list_get_head(&aux_in.aux_list); NULL!=pnode;
-				pnode=double_list_get_after(&aux_in.aux_list, pnode)) {
-				auto pheader = static_cast<const AUX_HEADER *>(pnode->pdata);
-				if (AUX_VERSION_1 == pheader->version &&
-					AUX_TYPE_PERF_CLIENTINFO == pheader->type) {
-					auto ci = static_cast<const AUX_PERF_CLIENTINFO *>(pheader->ppayload);
-					client_mode = ci->client_mode;
-				}
-			}
-		}
-	}
-	
+	/* auxin parsing in commit history */
 	/* just like EXCHANGE 2010 or later, we do
 		not support session context linking */
 	if (cxr_link == UINT32_MAX)
@@ -674,7 +654,6 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 {
 	int result;
 	uint16_t cxr;
-	AUX_INFO aux_in;
 	EXT_PULL ext_pull;
 	char username[UADDR_SIZE];
 	HANDLE_DATA *phandle;
@@ -725,13 +704,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	}
 	phandle->last_time = tp_now();
 	g_handle_key = phandle;
-	if (cb_auxin > 0) {
-		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != aux_ext_pull_aux_info(&ext_pull, &aux_in)) {
-			mlog(LV_DEBUG, "emsmdb: failed to parse input "
-				"auxiliary buffer in emsmdb_interface_rpc_ext2");
-		}
-	}
+	/* auxin parsing in commit history */
 	if (enable_rop_chaining(phandle->info.client_version))
 		input_flags &= ~GROMOX_READSTREAM_NOCHAIN;
 	else
