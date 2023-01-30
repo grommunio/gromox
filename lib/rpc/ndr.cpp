@@ -393,7 +393,7 @@ int ndr_push_align(NDR_PUSH *pndr, size_t size)
 	if (!(pndr->flags & NDR_FLAG_NOALIGN)) {
 		pad = ((pndr->offset + (size - 1)) & ~(size - 1)) - pndr->offset;
 		while (pad--) {
-			TRY(ndr_push_uint8(pndr, 0));
+			TRY(pndr->p_uint8(0));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -451,11 +451,7 @@ int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v)
 
 int ndr_push_ulong(NDR_PUSH *pndr, uint32_t v)
 {
-	if (pndr->flags & NDR_FLAG_NDR64) {
-		return ndr_push_uint64(pndr, v);
-	} else {
-		return ndr_push_uint32(pndr, v);
-	}
+	return (pndr->flags & NDR_FLAG_NDR64) ? pndr->p_uint64(v) : pndr->p_uint32(v);
 }
 
 int ndr_push_array_uint8(NDR_PUSH *pndr, const uint8_t *data, uint32_t n)
@@ -492,7 +488,7 @@ int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob)
 		status = ndr_push_bytes(pndr, buff, length);
 		return status;
 	} else {
-		TRY(ndr_push_uint32(pndr, blob.cb));
+		TRY(pndr->p_uint32(blob.cb));
 	}
 	assert(blob.pb != nullptr || blob.cb == 0);
 	TRY(ndr_push_bytes(pndr, blob.pb, blob.cb));
@@ -511,9 +507,9 @@ int ndr_push_string(NDR_PUSH *pndr, const char *var, uint32_t required)
 int ndr_push_guid(NDR_PUSH *pndr, const GUID *r)
 {
 	TRY(ndr_push_align(pndr, 4));
-	TRY(ndr_push_uint32(pndr, r->time_low));
-	TRY(ndr_push_uint16(pndr, r->time_mid));
-	TRY(ndr_push_uint16(pndr, r->time_hi_and_version));
+	TRY(pndr->p_uint32(r->time_low));
+	TRY(pndr->p_uint16(r->time_mid));
+	TRY(pndr->p_uint16(r->time_hi_and_version));
 	TRY(ndr_push_array_uint8(pndr, r->clock_seq, 2));
 	TRY(ndr_push_array_uint8(pndr, r->node, 6));
 	return ndr_push_trailer_align(pndr, 4);
@@ -523,7 +519,7 @@ int ndr_push_syntax_id(NDR_PUSH *pndr, const SYNTAX_ID *r)
 {
 	TRY(ndr_push_align(pndr, 4));
 	TRY(ndr_push_guid(pndr, &r->uuid));
-	TRY(ndr_push_uint32(pndr, r->version));
+	TRY(pndr->p_uint32(r->version));
 	TRY(ndr_push_trailer_align(pndr, 4));
 	return NDR_ERR_SUCCESS;
 }
@@ -547,13 +543,13 @@ int ndr_push_unique_ptr(NDR_PUSH *pndr, const void *p)
 		ptr |= 0x00020000;
 		pndr->ptr_count++;
 	}
-	return ndr_push_ulong(pndr, ptr);
+	return pndr->p_ulong(ptr);
 }
 
 int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r)
 {
 	TRY(ndr_push_align(pndr, 4));
-	TRY(ndr_push_uint32(pndr, r->handle_type));
+	TRY(pndr->p_uint32(r->handle_type));
 	TRY(ndr_push_guid(pndr, &r->guid));
 	TRY(ndr_push_trailer_align(pndr, 4));
 	return NDR_ERR_SUCCESS;

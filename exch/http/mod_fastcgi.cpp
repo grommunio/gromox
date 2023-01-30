@@ -227,17 +227,17 @@ static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
 	
 	name_len = strlen(pname);
 	if (name_len <= 0x7F) {
-		TRY(ndr_push_uint8(pndr, name_len));
+		TRY(pndr->p_uint8(name_len));
 	} else {
 		tmp_len = name_len | 0x80000000;
-		TRY(ndr_push_uint32(pndr, tmp_len));
+		TRY(pndr->p_uint32(tmp_len));
 	}
 	val_len = strlen(pvalue);
 	if (val_len <= 0x7F) {
-		TRY(ndr_push_uint8(pndr, val_len));
+		TRY(pndr->p_uint8(val_len));
 	} else {
 		tmp_len = val_len | 0x80000000;
-		TRY(ndr_push_uint32(pndr, tmp_len));
+		TRY(pndr->p_uint32(tmp_len));
 	}
 	TRY(ndr_push_array_uint8(pndr, reinterpret_cast<const uint8_t *>(pname), name_len));
 	return ndr_push_array_uint8(pndr, reinterpret_cast<const uint8_t *>(pvalue), val_len);
@@ -245,34 +245,34 @@ static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
 
 static int mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
 {
-	TRY(ndr_push_uint8(pndr, FCGI_VERSION));
-	TRY(ndr_push_uint8(pndr, RECORD_TYPE_BEGIN_REQUEST));
-	TRY(ndr_push_uint16(pndr, FCGI_REQUEST_ID));
+	TRY(pndr->p_uint8(FCGI_VERSION));
+	TRY(pndr->p_uint8(RECORD_TYPE_BEGIN_REQUEST));
+	TRY(pndr->p_uint16(FCGI_REQUEST_ID));
 	/* push content length */
-	TRY(ndr_push_uint16(pndr, 8));
+	TRY(pndr->p_uint16(8));
 	/* push padding length */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	/* reserved */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	/* begin request role */
-	TRY(ndr_push_uint16(pndr, ROLE_RESPONDER));
+	TRY(pndr->p_uint16(ROLE_RESPONDER));
 	/* begin request flags */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	/* begin request reserved bytes */
 	return ndr_push_zero(pndr, 5);
 }
 
 static int mod_fastcgi_push_params_begin(NDR_PUSH *pndr)
 {
-	TRY(ndr_push_uint8(pndr, FCGI_VERSION));
-	TRY(ndr_push_uint8(pndr, RECORD_TYPE_PARAMS));
-	TRY(ndr_push_uint16(pndr, FCGI_REQUEST_ID));
+	TRY(pndr->p_uint8(FCGI_VERSION));
+	TRY(pndr->p_uint8(RECORD_TYPE_PARAMS));
+	TRY(pndr->p_uint16(FCGI_REQUEST_ID));
 	/* push fake content length */
-	TRY(ndr_push_uint16(pndr, 0));
+	TRY(pndr->p_uint16(0));
 	/* push fake padding length */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	/* reserved */
-	return ndr_push_uint8(pndr, 0);
+	return pndr->p_uint8(0);
 }
 
 static int mod_fastcgi_push_align_record(NDR_PUSH *pndr)
@@ -296,7 +296,7 @@ static int mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 	if (len > 0xFFFF)
 		return NDR_ERR_FAILURE;
 	pndr->offset = 4;
-	TRY(ndr_push_uint16(pndr, len));
+	TRY(pndr->p_uint16(len));
 	pndr->offset = offset;
 	return mod_fastcgi_push_align_record(pndr);
 }
@@ -304,14 +304,14 @@ static int mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 static int mod_fastcgi_push_stdin(NDR_PUSH *pndr,
     const void *pbuff, uint16_t length)
 {
-	TRY(ndr_push_uint8(pndr, FCGI_VERSION));
-	TRY(ndr_push_uint8(pndr, RECORD_TYPE_STDIN));
-	TRY(ndr_push_uint16(pndr, FCGI_REQUEST_ID));
-	TRY(ndr_push_uint16(pndr, length));
+	TRY(pndr->p_uint8(FCGI_VERSION));
+	TRY(pndr->p_uint8(RECORD_TYPE_STDIN));
+	TRY(pndr->p_uint16(FCGI_REQUEST_ID));
+	TRY(pndr->p_uint16(length));
 	/* push padding length */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	/* reserved */
-	TRY(ndr_push_uint8(pndr, 0));
+	TRY(pndr->p_uint8(0));
 	TRY(ndr_push_array_uint8(pndr, static_cast<const uint8_t *>(pbuff), length));
 	return mod_fastcgi_push_align_record(pndr);
 }

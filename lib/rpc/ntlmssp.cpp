@@ -714,15 +714,15 @@ static int ntlmssp_ndr_push_ntlm_version(NDR_PUSH *pndr, NTLMSSP_VERSION *r)
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_uint8(pndr, r->major_vers);
+	status = pndr->p_uint8(r->major_vers);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_uint8(pndr, r->minor_vers);
+	status = pndr->p_uint8(r->minor_vers);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_uint16(pndr, r->product_build);
+	status = pndr->p_uint16(r->product_build);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
@@ -730,7 +730,7 @@ static int ntlmssp_ndr_push_ntlm_version(NDR_PUSH *pndr, NTLMSSP_VERSION *r)
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_uint8(pndr, r->ntlm_revers);
+	status = pndr->p_uint8(r->ntlm_revers);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}

@@ -279,9 +279,9 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 			TRY(ndr_push_unique_ptr(pndr, reinterpret_cast<void *>(0x1)));
 			length = strlen(prfr->punused) + 1;
 			TRY(ndr_push_unique_ptr(pndr, prfr->punused));
-			TRY(ndr_push_ulong(pndr, length));
-			TRY(ndr_push_ulong(pndr, 0));
-			TRY(ndr_push_ulong(pndr, length));
+			TRY(pndr->p_ulong(length));
+			TRY(pndr->p_ulong(0));
+			TRY(pndr->p_ulong(length));
 			TRY(ndr_push_string(pndr, prfr->punused, length));
 		}
 		
@@ -291,12 +291,12 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 			TRY(ndr_push_unique_ptr(pndr, reinterpret_cast<void *>(0x2)));
 			length = strlen(prfr->pserver) + 1;
 			TRY(ndr_push_unique_ptr(pndr, prfr->pserver));
-			TRY(ndr_push_ulong(pndr, length));
-			TRY(ndr_push_ulong(pndr, 0));
-			TRY(ndr_push_ulong(pndr, length));
+			TRY(pndr->p_ulong(length));
+			TRY(pndr->p_ulong(0));
+			TRY(pndr->p_ulong(length));
 			TRY(ndr_push_string(pndr, prfr->pserver, length));
 		}
-		return ndr_push_uint32(pndr, prfr->result);
+		return pndr->p_uint32(prfr->result);
 	}
 	case RfrGetFQDNFromServerDN: {
 		auto prfr_dn = static_cast<RFRGETFQDNFROMLEGACYDN_OUT *>(pout);
@@ -305,12 +305,12 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 		} else {
 			length = strlen(prfr_dn->serverfqdn) + 1;
 			TRY(ndr_push_unique_ptr(pndr, prfr_dn->serverfqdn));
-			TRY(ndr_push_ulong(pndr, length));
-			TRY(ndr_push_ulong(pndr, 0));
-			TRY(ndr_push_ulong(pndr, length));
+			TRY(pndr->p_ulong(length));
+			TRY(pndr->p_ulong(0));
+			TRY(pndr->p_ulong(length));
 			TRY(ndr_push_string(pndr, prfr_dn->serverfqdn, length));
 		}
-		return ndr_push_uint32(pndr, prfr_dn->result);
+		return pndr->p_uint32(prfr_dn->result);
 	}
 	}
 	return NDR_ERR_SUCCESS;
