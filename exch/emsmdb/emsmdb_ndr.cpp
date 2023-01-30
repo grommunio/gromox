@@ -6,32 +6,55 @@
 #include "emsmdb_ndr.h"
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
 
-int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr, ECDOASYNCWAITEX_IN *r)
+static int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr, ECDOASYNCWAITEX_IN *r)
 {
 	TRY(ndr_pull_context_handle(pndr, &r->acxh));
 	return ndr_pull_uint32(pndr, &r->flags_in);
 }
 
-int asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *pndr,
+static int asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *pndr,
 	const ECDOASYNCWAITEX_OUT *r)
 {
 	TRY(ndr_push_uint32(pndr, r->flags_out));
 	return ndr_push_int32(pndr, r->result);
 }
 
-int emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r)
+int asyncemsmdb_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
+{
+	switch (opnum) {
+	case ecDoAsyncWaitEx:
+		*ppin = ndr_stack_anew<ECDOASYNCWAITEX_IN>(NDR_STACK_IN);
+		if (*ppin == nullptr)
+			return NDR_ERR_ALLOC;
+		return asyncemsmdb_ndr_pull_ecdoasyncwaitex(pndr, static_cast<ECDOASYNCWAITEX_IN *>(*ppin));
+	default:
+		return NDR_ERR_BAD_SWITCH;
+	}
+}
+
+int asyncemsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
+{
+	switch (opnum) {
+	case ecDoAsyncWaitEx:
+		return asyncemsmdb_ndr_push_ecdoasyncwaitex(pndr, static_cast<ECDOASYNCWAITEX_OUT *>(pout));
+	default:
+		return NDR_ERR_BAD_SWITCH;
+	}
+}
+
+static int emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r)
 {
 	return ndr_pull_context_handle(pndr, &r->cxh);
 }
 
-int emsmdb_ndr_push_ecdodisconnect(NDR_PUSH *pndr,
+static int emsmdb_ndr_push_ecdodisconnect(NDR_PUSH *pndr,
 	const ECDODISCONNECT_OUT *r)
 {
 	TRY(ndr_push_context_handle(pndr, &r->cxh));
 	return ndr_push_int32(pndr, r->result);
 }
 
-int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
+static int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	ECRREGISTERPUSHNOTIFICATION_IN *r)
 {
 	uint32_t size;
@@ -58,7 +81,7 @@ int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	return NDR_ERR_SUCCESS;
 }
 
-int emsmdb_ndr_push_ecrregisterpushnotification(NDR_PUSH *pndr,
+static int emsmdb_ndr_push_ecrregisterpushnotification(NDR_PUSH *pndr,
 	const ECRREGISTERPUSHNOTIFICATION_OUT *r)
 {
 	TRY(ndr_push_context_handle(pndr, &r->cxh));
@@ -66,12 +89,12 @@ int emsmdb_ndr_push_ecrregisterpushnotification(NDR_PUSH *pndr,
 	return ndr_push_int32(pndr, r->result);
 }
 
-int emsmdb_ndr_push_ecdummyrpc(NDR_PUSH *pndr, int32_t *r)
+static int emsmdb_ndr_push_ecdummyrpc(NDR_PUSH *pndr, int32_t *r)
 {
 	return ndr_push_int32(pndr, *r);
 }
 
-int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
+static int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 {
 	uint32_t size;
 	uint32_t offset;
@@ -110,7 +133,8 @@ int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 	return NDR_ERR_SUCCESS;
 }
 
-int emsmdb_ndr_push_ecdoconnectex(NDR_PUSH *pndr, const ECDOCONNECTEX_OUT *r)
+static int emsmdb_ndr_push_ecdoconnectex(NDR_PUSH *pndr,
+    const ECDOCONNECTEX_OUT *r)
 {
 	uint32_t length;
 	
@@ -149,7 +173,7 @@ int emsmdb_ndr_push_ecdoconnectex(NDR_PUSH *pndr, const ECDOCONNECTEX_OUT *r)
 	return ndr_push_int32(pndr, r->result);
 }
 
-int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
+static int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 {
 	uint32_t size;
 	
@@ -180,7 +204,7 @@ int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 	return NDR_ERR_SUCCESS;
 }
 
-int emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2_OUT *r)
+static int emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2_OUT *r)
 {
 	TRY(ndr_push_context_handle(pndr, &r->cxh));
 	TRY(ndr_push_uint32(pndr, r->flags));
@@ -202,15 +226,71 @@ int emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2_OUT *r)
 	return ndr_push_int32(pndr, r->result);
 }
 
-int emsmdb_ndr_pull_ecdoasyncconnectex(NDR_PULL *pndr,
+static int emsmdb_ndr_pull_ecdoasyncconnectex(NDR_PULL *pndr,
 	ECDOASYNCCONNECTEX_IN *r)
 {
 	return ndr_pull_context_handle(pndr, &r->cxh);
 }
 
-int emsmdb_ndr_push_ecdoasyncconnectex(NDR_PUSH *pndr,
+static int emsmdb_ndr_push_ecdoasyncconnectex(NDR_PUSH *pndr,
 	const ECDOASYNCCONNECTEX_OUT *r)
 {
 	TRY(ndr_push_context_handle(pndr, &r->acxh));
 	return ndr_push_int32(pndr, r->result);
+}
+
+int emsmdb_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
+{
+	switch (opnum) {
+	case ecDoDisconnect:
+		*ppin = ndr_stack_anew<ECDODISCONNECT_IN>(NDR_STACK_IN);
+		if (*ppin == nullptr)
+			return NDR_ERR_ALLOC;
+		return emsmdb_ndr_pull_ecdodisconnect(pndr, static_cast<ECDODISCONNECT_IN *>(*ppin));
+	case ecRRegisterPushNotification:
+		*ppin = ndr_stack_anew<ECRREGISTERPUSHNOTIFICATION_IN>(NDR_STACK_IN);
+		if (*ppin == nullptr)
+			return NDR_ERR_ALLOC;
+		return emsmdb_ndr_pull_ecrregisterpushnotification(pndr, static_cast<ECRREGISTERPUSHNOTIFICATION_IN *>(*ppin));
+	case ecDummyRpc:
+		*ppin = NULL;
+		return NDR_ERR_SUCCESS;
+	case ecDoConnectEx:
+		*ppin = ndr_stack_anew<ECDOCONNECTEX_IN>(NDR_STACK_IN);
+		if (*ppin == nullptr)
+			return NDR_ERR_ALLOC;
+		return emsmdb_ndr_pull_ecdoconnectex(pndr, static_cast<ECDOCONNECTEX_IN *>(*ppin));
+	case ecDoRpcExt2:
+		*ppin = ndr_stack_anew<ECDORPCEXT2_IN>(NDR_STACK_IN);
+		if (*ppin == nullptr)
+			return NDR_ERR_ALLOC;
+		return emsmdb_ndr_pull_ecdorpcext2(pndr, static_cast<ECDORPCEXT2_IN *>(*ppin));
+	case ecDoAsyncConnectEx:
+		*ppin = ndr_stack_anew<ECDOASYNCCONNECTEX_IN>(NDR_STACK_IN);
+		if (*ppin == nullptr)
+			return NDR_ERR_ALLOC;
+		return emsmdb_ndr_pull_ecdoasyncconnectex(pndr, static_cast<ECDOASYNCCONNECTEX_IN *>(*ppin));
+	default:
+		return NDR_ERR_BAD_SWITCH;
+	}
+}
+
+int emsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
+{
+	switch (opnum) {
+	case ecDoDisconnect:
+		return emsmdb_ndr_push_ecdodisconnect(pndr, static_cast<ECDODISCONNECT_OUT *>(pout));
+	case ecRRegisterPushNotification:
+		return emsmdb_ndr_push_ecrregisterpushnotification(pndr, static_cast<ECRREGISTERPUSHNOTIFICATION_OUT *>(pout));
+	case ecDummyRpc:
+		return emsmdb_ndr_push_ecdummyrpc(pndr, static_cast<int32_t *>(pout));
+	case ecDoConnectEx:
+		return emsmdb_ndr_push_ecdoconnectex(pndr, static_cast<ECDOCONNECTEX_OUT *>(pout));
+	case ecDoRpcExt2:
+		return emsmdb_ndr_push_ecdorpcext2(pndr, static_cast<ECDORPCEXT2_OUT *>(pout));
+	case ecDoAsyncConnectEx:
+		return emsmdb_ndr_push_ecdoasyncconnectex(pndr, static_cast<ECDOASYNCCONNECTEX_OUT *>(pout));
+	default:
+		return NDR_ERR_BAD_SWITCH;
+	}
 }
