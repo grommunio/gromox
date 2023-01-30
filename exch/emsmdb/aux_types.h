@@ -36,11 +36,13 @@ enum {
 	AUX_TYPE_OSVERSIONINFO          = 0x16U,
 	AUX_TYPE_EXORGINFO              = 0x17U,
 	AUX_TYPE_PERF_ACCOUNTINFO       = 0x18U,
+	AUX_TYPE_67                     = 0x43U, /* EXC2019 response */
+	AUX_TYPE_SERVER_CAPABILITIES    = 0x46U,
 	AUX_TYPE_ENDPOINT_CAPABILITIES  = 0x48U,
 	AUX_TYPE_CLIENT_CONNECTION_INFO = 0x4AU,
 	AUX_TYPE_SERVER_SESSION_INFO    = 0x4BU,
 	AUX_TYPE_PROTOCOL_DEVICE_ID     = 0x4EU,
-	AUX_TYPE_82                     = 0x52U, /* seen with OL2016/2021 */
+	AUX_TYPE_82                     = 0x52U, /* OL2016/2021 request */
 };
 
 enum { /* OXCRPC v23 §2.2.2.2.4 */
