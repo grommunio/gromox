@@ -417,7 +417,7 @@ int ndr_push_trailer_align(NDR_PUSH *pndr, size_t size)
 
 int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v)
 {
-	TRY(ndr_push_align(pndr, 2));
+	TRY(pndr->align(2));
 	if (!ndr_push_check_overflow(pndr, 2))
 		return NDR_ERR_BUFSIZE;
 	auto r = &pndr->data[pndr->offset];
@@ -428,7 +428,7 @@ int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v)
 
 int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	if (!ndr_push_check_overflow(pndr, 4))
 		return NDR_ERR_BUFSIZE;
 	auto r = &pndr->data[pndr->offset];
@@ -440,7 +440,7 @@ int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v)
 int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v)
 {
 	static_assert(CHAR_BIT == 8, "");
-	TRY(ndr_push_align(pndr, 8));
+	TRY(pndr->align(8));
 	if (!ndr_push_check_overflow(pndr, 8))
 		return NDR_ERR_BUFSIZE;
 	auto r = &pndr->data[pndr->offset];
@@ -471,8 +471,8 @@ int ndr_push_array_uint8(NDR_PUSH *pndr, const uint8_t *data, uint32_t n)
  */
 int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob)
 {
-	int status, length = 0;
-	char buff[8];
+	int length = 0;
+	uint8_t buff[8];
 	
 	if (pndr->flags & NDR_FLAG_REMAINING) {
 		/* nothing to do */
@@ -485,13 +485,12 @@ int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob)
 			length = ndr_align_size(pndr->offset, 8);
 		}
 		memset(buff, 0, length);
-		status = ndr_push_bytes(pndr, buff, length);
-		return status;
+		return pndr->p_uint8_a(buff, length);
 	} else {
 		TRY(pndr->p_uint32(blob.cb));
 	}
 	assert(blob.pb != nullptr || blob.cb == 0);
-	TRY(ndr_push_bytes(pndr, blob.pb, blob.cb));
+	TRY(pndr->p_uint8_a(blob.pb, blob.cb));
 	return NDR_ERR_SUCCESS;
 }
 
@@ -506,21 +505,21 @@ int ndr_push_string(NDR_PUSH *pndr, const char *var, uint32_t required)
 
 int ndr_push_guid(NDR_PUSH *pndr, const GUID *r)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->time_low));
 	TRY(pndr->p_uint16(r->time_mid));
 	TRY(pndr->p_uint16(r->time_hi_and_version));
-	TRY(ndr_push_array_uint8(pndr, r->clock_seq, 2));
-	TRY(ndr_push_array_uint8(pndr, r->node, 6));
-	return ndr_push_trailer_align(pndr, 4);
+	TRY(pndr->p_uint8_a(r->clock_seq, 2));
+	TRY(pndr->p_uint8_a(r->node, 6));
+	return pndr->trailer_align(4);
 }
 
 int ndr_push_syntax_id(NDR_PUSH *pndr, const SYNTAX_ID *r)
 {
-	TRY(ndr_push_align(pndr, 4));
-	TRY(ndr_push_guid(pndr, &r->uuid));
+	TRY(pndr->align(4));
+	TRY(pndr->p_guid(r->uuid));
 	TRY(pndr->p_uint32(r->version));
-	TRY(ndr_push_trailer_align(pndr, 4));
+	TRY(pndr->trailer_align(4));
 	return NDR_ERR_SUCCESS;
 }
 
@@ -548,9 +547,9 @@ int ndr_push_unique_ptr(NDR_PUSH *pndr, const void *p)
 
 int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->handle_type));
-	TRY(ndr_push_guid(pndr, &r->guid));
-	TRY(ndr_push_trailer_align(pndr, 4));
+	TRY(pndr->p_guid(r->guid));
+	TRY(pndr->trailer_align(4));
 	return NDR_ERR_SUCCESS;
 }

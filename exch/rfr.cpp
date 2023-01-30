@@ -274,41 +274,41 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 	case RfrGetNewDSA: {
 		auto prfr = static_cast<RFRGETNEWDSA_OUT *>(pout);
 		if ('\0' == *prfr->punused) {
-			TRY(ndr_push_unique_ptr(pndr, nullptr));
+			TRY(pndr->p_unique_ptr(nullptr));
 		} else {
-			TRY(ndr_push_unique_ptr(pndr, reinterpret_cast<void *>(0x1)));
+			TRY(pndr->p_unique_ptr(reinterpret_cast<void *>(0x1)));
 			length = strlen(prfr->punused) + 1;
-			TRY(ndr_push_unique_ptr(pndr, prfr->punused));
+			TRY(pndr->p_unique_ptr(prfr->punused));
 			TRY(pndr->p_ulong(length));
 			TRY(pndr->p_ulong(0));
 			TRY(pndr->p_ulong(length));
-			TRY(ndr_push_string(pndr, prfr->punused, length));
+			TRY(pndr->p_str(prfr->punused, length));
 		}
 		
 		if ('\0' == *prfr->pserver) {
-			TRY(ndr_push_unique_ptr(pndr, nullptr));
+			TRY(pndr->p_unique_ptr(nullptr));
 		} else {
-			TRY(ndr_push_unique_ptr(pndr, reinterpret_cast<void *>(0x2)));
+			TRY(pndr->p_unique_ptr(reinterpret_cast<void *>(0x2)));
 			length = strlen(prfr->pserver) + 1;
-			TRY(ndr_push_unique_ptr(pndr, prfr->pserver));
+			TRY(pndr->p_unique_ptr(prfr->pserver));
 			TRY(pndr->p_ulong(length));
 			TRY(pndr->p_ulong(0));
 			TRY(pndr->p_ulong(length));
-			TRY(ndr_push_string(pndr, prfr->pserver, length));
+			TRY(pndr->p_str(prfr->pserver, length));
 		}
 		return pndr->p_uint32(prfr->result);
 	}
 	case RfrGetFQDNFromServerDN: {
 		auto prfr_dn = static_cast<RFRGETFQDNFROMLEGACYDN_OUT *>(pout);
 		if ('\0' == *prfr_dn->serverfqdn) {
-			TRY(ndr_push_unique_ptr(pndr, nullptr));
+			TRY(pndr->p_unique_ptr(nullptr));
 		} else {
 			length = strlen(prfr_dn->serverfqdn) + 1;
-			TRY(ndr_push_unique_ptr(pndr, prfr_dn->serverfqdn));
+			TRY(pndr->p_unique_ptr(prfr_dn->serverfqdn));
 			TRY(pndr->p_ulong(length));
 			TRY(pndr->p_ulong(0));
 			TRY(pndr->p_ulong(length));
-			TRY(ndr_push_string(pndr, prfr_dn->serverfqdn, length));
+			TRY(pndr->p_str(prfr_dn->serverfqdn, length));
 		}
 		return pndr->p_uint32(prfr_dn->result);
 	}

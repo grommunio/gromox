@@ -920,9 +920,9 @@ void pdu_ndr_free_ncacnpkt(DCERPC_NCACN_PACKET *pkt)
 static int pdu_ndr_push_dcerpc_object(NDR_PUSH *pndr,
 	const DCERPC_OBJECT *r)
 {
-	TRY(ndr_push_union_align(pndr, 4));
+	TRY(pndr->union_align(4));
 	if (pndr->flags & NDR_FLAG_OBJECT_PRESENT) {
-		return ndr_push_guid(pndr, &r->object);
+		return pndr->p_guid(r->object);
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -931,83 +931,80 @@ static int pdu_ndr_push_dcerpc_object(NDR_PUSH *pndr,
 static int pdu_ndr_push_dcerpc_request(NDR_PUSH *pndr,
 	const DCERPC_REQUEST *r)
 {
-	int status;
 	uint32_t saved_flags;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->alloc_hint));
 	TRY(pndr->p_uint16(r->context_id));
 	TRY(pndr->p_uint16(r->opnum));
 	TRY(pdu_ndr_push_dcerpc_object(pndr, &r->object));
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN8);
-	status = ndr_push_data_blob(pndr, r->pad);
+	auto status = pndr->p_blob(r->pad);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
-	status = ndr_push_data_blob(pndr, r->stub_and_verifier);
+	status = pndr->p_blob(r->stub_and_verifier);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 
 static int pdu_ndr_push_dcerpc_response(NDR_PUSH *pndr,
 	const DCERPC_RESPONSE *r)
 {
-	int status;
 	uint32_t saved_flags;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->alloc_hint));
 	TRY(pndr->p_uint16(r->context_id));
 	TRY(pndr->p_uint8(r->cancel_count));
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN8);
-	status = ndr_push_data_blob(pndr, r->pad);
+	auto status = pndr->p_blob(r->pad);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
-	status = ndr_push_data_blob(pndr, r->stub_and_verifier);
+	status = pndr->p_blob(r->stub_and_verifier);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_dcerpc_fault(NDR_PUSH *pndr,
 	const DCERPC_FAULT *r)
 {
-	int status;
 	uint32_t saved_flags;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->alloc_hint));
 	TRY(pndr->p_uint16(r->context_id));
 	TRY(pndr->p_uint8(r->cancel_count));
 	TRY(pndr->p_uint32(r->status));
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
-	status = ndr_push_data_blob(pndr, r->pad);
+	auto status = pndr->p_blob(r->pad);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_dcerpc_fack(NDR_PUSH *pndr, const DCERPC_FACK *r)
 {
 	int i;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->version));
 	TRY(pndr->p_uint8(r->pad));
 	TRY(pndr->p_uint16(r->window_size));
@@ -1018,17 +1015,17 @@ static int pdu_ndr_push_dcerpc_fack(NDR_PUSH *pndr, const DCERPC_FACK *r)
 	for (i=0; i<r->selack_size; i++) {
 		TRY(pndr->p_uint32(r->selack[i]));
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_dcerpc_cancel_ack(NDR_PUSH *pndr,
 	const DCERPC_CANCEL_ACK *r)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->version));
 	TRY(pndr->p_uint32(r->id));
 	TRY(pndr->p_uint32(r->server_is_accepting));
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_dcerpc_ctx_list(NDR_PUSH *pndr,
@@ -1036,23 +1033,22 @@ static int pdu_ndr_push_dcerpc_ctx_list(NDR_PUSH *pndr,
 {
 	int i;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->context_id));
 	TRY(pndr->p_uint8(r->num_transfer_syntaxes));
-	TRY(ndr_push_syntax_id(pndr, &r->abstract_syntax));
+	TRY(pndr->p_syntax(r->abstract_syntax));
 	for (i=0; i<r->num_transfer_syntaxes; i++) {
-		TRY(ndr_push_syntax_id(pndr, &r->transfer_syntaxes[i]));
+		TRY(pndr->p_syntax(r->transfer_syntaxes[i]));
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_dcerpc_bind(NDR_PUSH *pndr, const DCERPC_BIND *r)
 {
 	int i;
-	int status;
 	uint32_t saved_flags;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->max_xmit_frag));
 	TRY(pndr->p_uint16(r->max_recv_frag));
 	TRY(pndr->p_uint32(r->assoc_group_id));
@@ -1062,22 +1058,22 @@ static int pdu_ndr_push_dcerpc_bind(NDR_PUSH *pndr, const DCERPC_BIND *r)
 	}
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
-	status = ndr_push_data_blob(pndr, r->auth_info);
+	auto status = pndr->p_blob(r->auth_info);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_dcerpc_ack_ctx(NDR_PUSH *pndr,
 	const DCERPC_ACK_CTX *r)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->result));
 	TRY(pndr->p_uint16(r->reason));
-	TRY(ndr_push_syntax_id(pndr, &r->syntax));
-	return ndr_push_trailer_align(pndr, 4);
+	TRY(pndr->p_syntax(r->syntax));
+	return pndr->trailer_align(4);
 }
 
 
@@ -1085,10 +1081,9 @@ static int pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 	const DCERPC_BIND_ACK *r)
 {
 	int i;
-	int status;
 	uint32_t saved_flags;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->max_xmit_frag));
 	TRY(pndr->p_uint16(r->max_recv_frag));
 	TRY(pndr->p_uint32(r->assoc_group_id));
@@ -1096,12 +1091,12 @@ static int pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 		TRY(pndr->p_uint16(0));
 	} else {
 		TRY(pndr->p_uint16(strlen(r->secondary_address) + 1));
-		TRY(ndr_push_string(pndr, r->secondary_address,
+		TRY(pndr->p_str(r->secondary_address,
 					strlen(r->secondary_address) + 1));
 	}
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_ALIGN4);
-	status = ndr_push_data_blob(pndr, r->pad);
+	auto status = pndr->p_blob(r->pad);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
@@ -1111,102 +1106,99 @@ static int pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 		TRY(pdu_ndr_push_dcerpc_ack_ctx(pndr, &r->ctx_list[i]));
 	}
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
-	status = ndr_push_data_blob(pndr, r->auth_info);
+	status = pndr->p_blob(r->auth_info);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 
 static int pdu_ndr_push_dcerpc_bind_nak(NDR_PUSH *pndr,
 	DCERPC_BIND_NAK *r)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->reject_reason));
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	
 	if (DECRPC_BIND_REASON_VERSION_NOT_SUPPORTED == r->reject_reason) {
 		TRY(pndr->p_uint32(r->num_versions));
 		for (size_t i = 0; i < r->num_versions; ++i)
 			TRY(pndr->p_uint32(r->versions[i]));
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_dcerpc_co_cancel(NDR_PUSH *pndr,
 	const DCERPC_CO_CANCEL *r)
 {
-	int status;
 	uint32_t saved_flags;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(0));
 	
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
-	status = ndr_push_data_blob(pndr, r->auth_info);
+	auto status = pndr->p_blob(r->auth_info);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 
 static int pdu_ndr_push_dcerpc_orphaned(NDR_PUSH *pndr,
 	const DCERPC_ORPHANED *r)
 {
-	int status;
 	uint32_t saved_flags;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(0));
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
-	status = ndr_push_data_blob(pndr, r->auth_info);
+	auto status = pndr->p_blob(r->auth_info);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_dcerpc_auth3(NDR_PUSH *pndr,
 	const DCERPC_AUTH3 *r)
 {
-	int status;
 	uint32_t saved_flags;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(0));
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
-	status = ndr_push_data_blob(pndr, r->auth_info);
+	auto status = pndr->p_blob(r->auth_info);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_rts_flowcontrolack(NDR_PUSH *pndr,
 	const RTS_FLOWCONTROLACK *r)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->bytes_received));
 	TRY(pndr->p_uint32(r->available_window));
-	TRY(ndr_push_guid(pndr, &r->channel_cookie));
-	return ndr_push_trailer_align(pndr, 4);
+	TRY(pndr->p_guid(r->channel_cookie));
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_rts_padding(NDR_PUSH *pndr, uint32_t v)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(v));
-	TRY(ndr_push_array_uint8(pndr, nullptr, v));
-	return ndr_push_trailer_align(pndr, 4);
+	TRY(pndr->p_uint8_a(nullptr, v));
+	return pndr->trailer_align(4);
 	
 }
 
@@ -1217,7 +1209,7 @@ static int pdu_ndr_push_ipv4address(NDR_PUSH *pndr, const char *address)
 	if (inet_pton(AF_INET, address, &in) > 0)
 		v = ntohl(in.s_addr);
 	TRY(pndr->p_uint32(v));
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_ipv6address(NDR_PUSH *pndr, const char *address)
@@ -1227,16 +1219,16 @@ static int pdu_ndr_push_ipv6address(NDR_PUSH *pndr, const char *address)
 	if (ret <= 0) {
 		return NDR_ERR_IPV6ADDRESS;
 	}
-	TRY(ndr_push_array_uint8(pndr, in6.s6_addr, GX_ARRAY_SIZE(in6.s6_addr)));
-	return ndr_push_trailer_align(pndr, 4);
+	TRY(pndr->p_uint8_a(in6.s6_addr, GX_ARRAY_SIZE(in6.s6_addr)));
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_rts_clientaddress(NDR_PUSH *pndr,
 	const RTS_CLIENTADDRESS *r)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->address_type));
-	TRY(ndr_push_union_align(pndr, 4));
+	TRY(pndr->union_align(4));
 	switch (r->address_type) {
 	case RTS_IPV4:
 		TRY(pdu_ndr_push_ipv4address(pndr, r->client_address));
@@ -1247,14 +1239,14 @@ static int pdu_ndr_push_rts_clientaddress(NDR_PUSH *pndr,
 	default:
 		return NDR_ERR_BAD_SWITCH;
 	}
-	TRY(ndr_push_array_uint8(pndr, nullptr, 12));
-	return ndr_push_trailer_align(pndr, 4);
+	TRY(pndr->p_uint8_a(nullptr, 12));
+	return pndr->trailer_align(4);
 }
 
 static int pdu_ndr_push_rts_cmds(NDR_PUSH *pndr,
 	uint32_t command_type, const RTS_CMDS *r)
 {
-	TRY(ndr_push_union_align(pndr, 4));
+	TRY(pndr->union_align(4));
 	switch (command_type) {
 	case RTS_CMD_RECEIVE_WINDOW_SIZE:
 		TRY(pndr->p_uint32(r->receivewindowsize));
@@ -1266,7 +1258,7 @@ static int pdu_ndr_push_rts_cmds(NDR_PUSH *pndr,
 		TRY(pndr->p_uint32(r->connectiontimeout));
 		break;
 	case RTS_CMD_COOKIE:
-		TRY(ndr_push_guid(pndr, &r->cookie));
+		TRY(pndr->p_guid(r->cookie));
 		break;
 	case RTS_CMD_CHANNEL_LIFETIME:
 		TRY(pndr->p_uint32(r->channellifetime));
@@ -1293,7 +1285,7 @@ static int pdu_ndr_push_rts_cmds(NDR_PUSH *pndr,
 		TRY(pdu_ndr_push_rts_clientaddress(pndr, &r->clientaddress));
 		break;
 	case RTS_CMD_ASSOCIATION_GROUP_ID:
-		TRY(ndr_push_guid(pndr, &r->associationgroupid));
+		TRY(pndr->p_guid(r->associationgroupid));
 		break;
 	case RTS_CMD_DESTINATION:
 		TRY(pndr->p_uint32(r->destination));
@@ -1310,10 +1302,10 @@ static int pdu_ndr_push_rts_cmds(NDR_PUSH *pndr,
 
 static int pdu_ndr_push_rts_cmd(NDR_PUSH *pndr, const RTS_CMD *r)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->command_type));
 	TRY(pdu_ndr_push_rts_cmds(pndr, r->command_type, &r->command));
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 	
 }
 
@@ -1321,20 +1313,20 @@ static int pdu_ndr_push_dcerpc_rts(NDR_PUSH *pndr, const DCERPC_RTS *r)
 {
 	int i;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->flags));
 	TRY(pndr->p_uint16(r->num));
 	for (i=0; i<r->num; i++) {
 		TRY(pdu_ndr_push_rts_cmd(pndr, &r->commands[i]));
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 
 static int pdu_ndr_push_dcerpc_payload(NDR_PUSH *pndr, uint8_t pkt_type,
 	DCERPC_PAYLOAD *r)
 {
-	TRY(ndr_push_union_align(pndr, 4));
+	TRY(pndr->union_align(4));
 	switch (pkt_type) {
 	case DCERPC_PKT_REQUEST:
 		return pdu_ndr_push_dcerpc_request(pndr, &r->request);
@@ -1386,25 +1378,24 @@ static int pdu_ndr_push_dcerpc_payload(NDR_PUSH *pndr, uint8_t pkt_type,
 
 int pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, DCERPC_NCACN_PACKET *pkt)
 {
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint8(pkt->rpc_vers));
 	TRY(pndr->p_uint8(pkt->rpc_vers_minor));
 	TRY(pndr->p_uint8(pkt->pkt_type));
 	TRY(pndr->p_uint8(pkt->pfc_flags));
-	TRY(ndr_push_array_uint8(pndr, pkt->drep, 4));
+	TRY(pndr->p_uint8_a(pkt->drep, 4));
 	TRY(pndr->p_uint16(pkt->frag_length));
 	TRY(pndr->p_uint16(pkt->auth_length));
 	TRY(pndr->p_uint32(pkt->call_id));
 	TRY(pdu_ndr_push_dcerpc_payload(pndr, pkt->pkt_type, &pkt->payload));
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 
 int pdu_ndr_push_dcerpc_auth(NDR_PUSH *pndr, const DCERPC_AUTH *r)
 {
-	int status;
 	uint32_t saved_flags;
 	
-	TRY(ndr_push_align(pndr, 4));
+	TRY(pndr->align(4));
 	TRY(pndr->p_uint8(r->auth_type));
 	TRY(pndr->p_uint8(r->auth_level));
 	TRY(pndr->p_uint8(r->auth_pad_length));
@@ -1412,11 +1403,11 @@ int pdu_ndr_push_dcerpc_auth(NDR_PUSH *pndr, const DCERPC_AUTH *r)
 	TRY(pndr->p_uint32(r->auth_context_id));
 	saved_flags = pndr->flags;
 	ndr_set_flags(&pndr->flags, NDR_FLAG_REMAINING);
-	status = ndr_push_data_blob(pndr, r->credentials);
+	auto status = pndr->p_blob(r->credentials);
 	pndr->flags = saved_flags;
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_trailer_align(pndr, 4);
+	return pndr->trailer_align(4);
 }
 

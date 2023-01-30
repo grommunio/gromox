@@ -105,7 +105,7 @@ struct GX_EXPORT NDR_PUSH {
 	int p_ulong(uint32_t v) { return ndr_push_ulong(this, v); }
 	int p_uint8_a(const uint8_t *v, uint32_t z) { return ndr_push_array_uint8(this, v, z); }
 	int p_guid(const GUID &v) { return ndr_push_guid(this, &v); }
-	int p_syntax_id(const SYNTAX_ID &v) { return ndr_push_syntax_id(this, &v); }
+	int p_syntax(const SYNTAX_ID &v) { return ndr_push_syntax_id(this, &v); }
 	int p_blob(DATA_BLOB v) { return ndr_push_data_blob(this, v); }
 	int p_zero(uint32_t n) { return ndr_push_zero(this, n); }
 	int p_unique_ptr(const void *v) { return ndr_push_unique_ptr(this, v); }
