@@ -42,11 +42,7 @@ struct NDR_PULL {
 	uint32_t flags = 0, data_size = 0, offset = 0, ptr_count = 0;
 };
 
-struct NDR_PUSH {
-	uint8_t *data;
-	uint32_t flags = 0, alloc_size = 0, offset = 0, ptr_count = 0;
-	DOUBLE_LIST full_ptr_list{};
-};
+struct NDR_PUSH;
 
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
 extern GX_EXPORT uint32_t ndr_pull_get_ptrcnt(const NDR_PULL *);
@@ -92,3 +88,30 @@ int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob);
 int ndr_push_zero(NDR_PUSH *pndr, uint32_t n);
 int ndr_push_unique_ptr(NDR_PUSH *pndr, const void *p);
 int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r);
+
+struct GX_EXPORT NDR_PUSH {
+	void init(void *d, uint32_t asize, uint32_t fl) { return ndr_push_init(this, d, asize, fl); }
+	void set_ptrcnt(uint32_t c) { ptr_count = c; }
+	void destroy() { ndr_push_destroy(this); }
+	int align(size_t z) { return ndr_push_align(this, z); }
+	int union_align(size_t z) { return ndr_push_union_align(this, z); }
+	int trailer_align(size_t z) { return ndr_push_trailer_align(this, z); }
+	int p_str(const char *v, uint32_t req) { return ndr_push_string(this, v, req); }
+	int p_uint8(uint8_t v) { return ndr_push_uint8(this, v); }
+	int p_uint16(uint16_t v) { return ndr_push_uint16(this, v); }
+	int p_uint32(uint32_t v) { return ndr_push_uint32(this, v); }
+	int p_int32(int32_t v) { return ndr_push_uint32(this, v); }
+	int p_uint64(uint64_t v) { return ndr_push_uint64(this, v); }
+	int p_ulong(uint32_t v) { return ndr_push_ulong(this, v); }
+	int p_uint8_a(const uint8_t *v, uint32_t z) { return ndr_push_array_uint8(this, v, z); }
+	int p_guid(const GUID &v) { return ndr_push_guid(this, &v); }
+	int p_syntax_id(const SYNTAX_ID &v) { return ndr_push_syntax_id(this, &v); }
+	int p_blob(DATA_BLOB v) { return ndr_push_data_blob(this, v); }
+	int p_zero(uint32_t n) { return ndr_push_zero(this, n); }
+	int p_unique_ptr(const void *v) { return ndr_push_unique_ptr(this, v); }
+	int p_ctx_handle(const CONTEXT_HANDLE &v) { return ndr_push_context_handle(this, &v); }
+
+	uint8_t *data = nullptr;
+	uint32_t flags = 0, alloc_size = 0, offset = 0, ptr_count = 0;
+	DOUBLE_LIST full_ptr_list{};
+};
