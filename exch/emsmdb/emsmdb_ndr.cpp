@@ -1,9 +1,23 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <cstring>
+#include <gromox/ndr.hpp>
 #include "emsmdb_interface.h"
 #include "emsmdb_ndr.h"
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
+
+int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr, ECDOASYNCWAITEX_IN *r)
+{
+	TRY(ndr_pull_context_handle(pndr, &r->acxh));
+	return ndr_pull_uint32(pndr, &r->flags_in);
+}
+
+int asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *pndr,
+	const ECDOASYNCWAITEX_OUT *r)
+{
+	TRY(ndr_push_uint32(pndr, r->flags_out));
+	return ndr_push_int32(pndr, r->result);
+}
 
 int emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r)
 {

@@ -19,9 +19,9 @@
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
-#include "asyncemsmdb_ndr.h"
 #include "common_util.h"
 #include "emsmdb_interface.h"
+#include "emsmdb_ndr.h"
 #define WAITING_INTERVAL						300
 
 #define FLAG_NOTIFICATION_PENDING				0x00000001

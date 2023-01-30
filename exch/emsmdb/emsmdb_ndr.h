@@ -4,6 +4,19 @@
 #include <gromox/rpc_types.hpp>
 #include <gromox/zz_ndr_stack.hpp>
 
+struct NDR_PULL;
+struct NDR_PUSH;
+
+struct ECDOASYNCWAITEX_IN {
+	ACXH acxh;
+	uint32_t flags_in;
+};
+
+struct ECDOASYNCWAITEX_OUT {
+	uint32_t flags_out;
+	int32_t result;
+};
+
 struct ECDODISCONNECT_IN {
 	CXH cxh;
 };
@@ -93,6 +106,8 @@ struct ECDOASYNCCONNECTEX_OUT {
 	int32_t result;
 };
 
+extern int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *, ECDOASYNCWAITEX_IN *);
+extern int asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *, const ECDOASYNCWAITEX_OUT *);
 int emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r);
 int emsmdb_ndr_push_ecdodisconnect(NDR_PUSH *pndr,
 	const ECDODISCONNECT_OUT *r);
