@@ -651,8 +651,9 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::execute(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_execute_req(ctx.request.execute) != EXT_ERR_SUCCESS)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
+	auto z = std::min(static_cast<size_t>(ctx.request.execute.cb_out), sizeof(ctx.response.execute.out));
 	ctx.response.execute.flags = ctx.request.execute.flags;
-	ctx.response.execute.cb_out = ctx.request.execute.cb_out;
+	ctx.response.execute.cb_out = z;
 	ctx.response.execute.status = 0;
 	ctx.response.execute.result = emsmdb_bridge_execute(ctx.session_guid, ctx.request.execute, ctx.response.execute);
 	if (ctx.ext_push.p_execute_rsp(ctx.response.execute) != EXT_ERR_SUCCESS)
