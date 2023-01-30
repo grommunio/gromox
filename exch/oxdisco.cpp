@@ -66,6 +66,7 @@ class OxdiscoPlugin {
 
 	void loadConfig();
 	static void writeheader(int, int, size_t);
+	static void writeheader_json(int, int, size_t);
 	static BOOL json_request(int, const char* );
 	BOOL die(int, const char *, const char *) const;
 	BOOL resp(int, const char *, const char *, const char *) const;
@@ -125,6 +126,10 @@ protocol_err_message2[] =	"A valid value must be provided for the query paramete
 	header_templ[] =
 		"HTTP/1.1 {} {}\r\n"
 		"Content-Type: text/xml\r\n"
+		"Content-Length: {}\r\n\r\n",
+	header_templ1[] =
+		"HTTP/1.1 {} {}\r\n"
+		"Content-Type: text/json\r\n"
 		"Content-Length: {}\r\n\r\n",
 	error_templ[] =
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
@@ -232,7 +237,7 @@ static BOOL OxdiscoPlugin::json_request(int ctx_id, const char* linK)
         {
             for(const auto& iterator: protocolList) 
             {
-                if (strcmp(&linK[findProtocol - linK + 1], iterator.first.c_str()) == 0)
+                if (strcasecmp(&linK[findProtocol - linK + 1], iterator.first.c_str()) == 0)
                 {
 					respdoc["protocol"] = iterator.first;
 					respdoc["url"] = iterator.second;
@@ -240,7 +245,7 @@ static BOOL OxdiscoPlugin::json_request(int ctx_id, const char* linK)
 					const char* response = respdoc.toStyledString().c_str();
 					if (response_logging > 0)
 						mlog(LV_DEBUG, "[oxdisco_v2] response: %s", response);
-					writeheader(ctx_id, code, strlen(response));
+					writeheader_json(ctx_id, code, strlen(response));
 					return write_response(ctx_id, response, strlen(response));
                 }
             }
@@ -443,6 +448,17 @@ void OxdiscoPlugin::writeheader(int ctx_id, int code, size_t content_length)
 	case 500: status = "Internal Server Error"; break;
 	}
 	auto buff = fmt::format(header_templ, code, status, content_length);
+	write_response(ctx_id, buff.c_str(), buff.size());
+}
+
+void OxdiscoPlugin::writeheader_json(int ctx_id, int code, size_t content_length)
+{
+	const char* status = "OK";
+	switch(code) {
+	case 400: status = "Bad Request"; break;
+	case 500: status = "Internal Server Error"; break;
+	}
+	auto buff = fmt::format(header_templ1, code, status, content_length);
 	write_response(ctx_id, buff.c_str(), buff.size());
 }
 
