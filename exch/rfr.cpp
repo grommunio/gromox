@@ -168,36 +168,36 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size || length > 1024)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-		TRY(ndr_pull_string(pndr, prfr->puserdn, length));
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->check_str(length, sizeof(uint8_t)));
+		TRY(pndr->g_str(prfr->puserdn, length));
+		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
-			TRY(ndr_pull_generic_ptr(pndr, &ptr));
+			TRY(pndr->g_genptr(&ptr));
 			if (0 != ptr) {
 				TRY(pndr->g_ulong(&size));
 				TRY(pndr->g_ulong(&offset));
 				TRY(pndr->g_ulong(&length));
 				if (offset != 0 || length > size || length > 256)
 					return NDR_ERR_ARRAY_SIZE;
-				TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-				TRY(ndr_pull_string(pndr, prfr->punused, length));
+				TRY(pndr->check_str(length, sizeof(uint8_t)));
+				TRY(pndr->g_str(prfr->punused, length));
 			} else {
 				prfr->punused[0] = '\0';
 			}
 		} else {
 			prfr->punused[0] = '\0';
 		}
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
-			TRY(ndr_pull_generic_ptr(pndr, &ptr));
+			TRY(pndr->g_genptr(&ptr));
 			if (0 != ptr) {
 				TRY(pndr->g_ulong(&size));
 				TRY(pndr->g_ulong(&offset));
 				TRY(pndr->g_ulong(&length));
 				if (offset != 0 || length > size || length > 256)
 					return NDR_ERR_ARRAY_SIZE;
-				TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-				TRY(ndr_pull_string(pndr, prfr->pserver, length));
+				TRY(pndr->check_str(length, sizeof(uint8_t)));
+				TRY(pndr->g_str(prfr->pserver, length));
 			} else {
 				prfr->pserver[0] = '\0';
 			}
@@ -220,8 +220,8 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size || length > 1024)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-		TRY(ndr_pull_string(pndr, prfr_dn->mbserverdn, length));
+		TRY(pndr->check_str(length, sizeof(uint8_t)));
+		TRY(pndr->g_str(prfr_dn->mbserverdn, length));
 		*ppin = prfr_dn;
 		return NDR_ERR_SUCCESS;
 	default:

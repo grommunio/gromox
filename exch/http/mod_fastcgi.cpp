@@ -321,15 +321,15 @@ static int mod_fastcgi_pull_end_request(NDR_PULL *pndr,
 {
 	TRY(pndr->g_uint32(&pend_request->app_status));
 	TRY(pndr->g_uint8(&pend_request->protocol_status));
-	TRY(ndr_pull_array_uint8(pndr, pend_request->reserved, 3));
-	return ndr_pull_advance(pndr, padding_len);
+	TRY(pndr->g_uint8_a(pend_request->reserved, 3));
+	return pndr->advance(padding_len);
 }
 
 static int mod_fastcgi_pull_stdstream(NDR_PULL *pndr,
 	uint8_t padding_len, FCGI_STDSTREAM *pstd_stream)
 {
-	TRY(ndr_pull_array_uint8(pndr, pstd_stream->buffer, pstd_stream->length));
-	return ndr_pull_advance(pndr, padding_len);
+	TRY(pndr->g_uint8_a(pstd_stream->buffer, pstd_stream->length));
+	return pndr->advance(padding_len);
 }
 
 static int mod_fastcgi_pull_record_header(
@@ -1118,8 +1118,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			mod_fastcgi_put_context(phttp);
 			return FALSE;	
 		}
-		ndr_pull_init(&ndr_pull, header_buff, 8,
-			NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+		ndr_pull.init(header_buff, 8, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 		if (NDR_ERR_SUCCESS != mod_fastcgi_pull_record_header(
 			&ndr_pull, &header)) {
 			phttp->log(LV_DEBUG, "failed to "
@@ -1145,8 +1144,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				mod_fastcgi_put_context(phttp);
 				return FALSE;
 			}
-			ndr_pull_init(&ndr_pull, tmp_buff, tmp_len,
-				NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+			ndr_pull.init(tmp_buff, tmp_len, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 			if (mod_fastcgi_pull_end_request(&ndr_pull,
 			    header.padding_len, &end_request) != NDR_ERR_SUCCESS)
 				phttp->log(LV_DEBUG, "failed to"
@@ -1173,8 +1171,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				mod_fastcgi_put_context(phttp);
 				return FALSE;
 			}
-			ndr_pull_init(&ndr_pull, tmp_buff, tmp_len,
-					NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
+			ndr_pull.init(tmp_buff, tmp_len, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 			std_stream.length = header.content_len;
 			if (NDR_ERR_SUCCESS != mod_fastcgi_pull_stdstream(
 				&ndr_pull, header.padding_len, &std_stream)) {

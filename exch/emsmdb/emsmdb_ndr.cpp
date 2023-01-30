@@ -8,7 +8,7 @@
 
 static int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr, ECDOASYNCWAITEX_IN *r)
 {
-	TRY(ndr_pull_context_handle(pndr, &r->acxh));
+	TRY(pndr->g_ctx_handle(&r->acxh));
 	return pndr->g_uint32(&r->flags_in);
 }
 
@@ -44,7 +44,7 @@ int asyncemsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 
 static int emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r)
 {
-	return ndr_pull_context_handle(pndr, &r->cxh);
+	return pndr->g_ctx_handle(&r->cxh);
 }
 
 static int emsmdb_ndr_push_ecdodisconnect(NDR_PUSH *pndr,
@@ -59,13 +59,13 @@ static int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 {
 	uint32_t size;
 	
-	TRY(ndr_pull_context_handle(pndr, &r->cxh));
+	TRY(pndr->g_ctx_handle(&r->cxh));
 	TRY(pndr->g_uint32(&r->rpc));
 	TRY(pndr->g_ulong(&size));
 	r->pctx = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pctx == nullptr)
 		return NDR_ERR_ALLOC;
-	TRY(ndr_pull_array_uint8(pndr, r->pctx, size));
+	TRY(pndr->g_uint8_a(r->pctx, size));
 	TRY(pndr->g_uint16(&r->cb_ctx));
 	if (r->cb_ctx != size)
 		return NDR_ERR_ARRAY_SIZE;
@@ -74,7 +74,7 @@ static int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	r->paddr = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->paddr == nullptr)
 		return NDR_ERR_ALLOC;
-	TRY(ndr_pull_array_uint8(pndr, r->paddr, size));
+	TRY(pndr->g_uint8_a(r->paddr, size));
 	TRY(pndr->g_uint16(&r->cb_addr));
 	if (r->cb_addr != size)
 		return NDR_ERR_ARRAY_SIZE;
@@ -105,8 +105,8 @@ static int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 	TRY(pndr->g_ulong(&length));
 	if (offset != 0 || length > size || length > 1024)
 		return NDR_ERR_ARRAY_SIZE;
-	TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-	TRY(ndr_pull_string(pndr, r->puserdn, length));
+	TRY(pndr->check_str(length, sizeof(uint8_t)));
+	TRY(pndr->g_str(r->puserdn, length));
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(pndr->g_uint32(&r->conmod));
 	TRY(pndr->g_uint32(&r->limit));
@@ -123,7 +123,7 @@ static int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pauxin == nullptr)
 		return NDR_ERR_ALLOC;
-	TRY(ndr_pull_array_uint8(pndr, r->pauxin, size));
+	TRY(pndr->g_uint8_a(r->pauxin, size));
 	TRY(pndr->g_uint32(&r->cb_auxin));
 	if (r->cb_auxin != size)
 		return NDR_ERR_ARRAY_SIZE;
@@ -177,13 +177,13 @@ static int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 {
 	uint32_t size;
 	
-	TRY(ndr_pull_context_handle(pndr, &r->cxh));
+	TRY(pndr->g_ctx_handle(&r->cxh));
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(pndr->g_ulong(&size));
 	r->pin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pin == nullptr)
 		return NDR_ERR_ALLOC;
-	TRY(ndr_pull_array_uint8(pndr, r->pin, size));
+	TRY(pndr->g_uint8_a(r->pin, size));
 	TRY(pndr->g_uint32(&r->cb_in));
 	if (r->cb_in != size)
 		return NDR_ERR_ARRAY_SIZE;
@@ -194,7 +194,7 @@ static int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pauxin == nullptr)
 		return NDR_ERR_ALLOC;
-	TRY(ndr_pull_array_uint8(pndr, r->pauxin, size));
+	TRY(pndr->g_uint8_a(r->pauxin, size));
 	TRY(pndr->g_uint32(&r->cb_auxin));
 	if (r->cb_auxin != size)
 		return NDR_ERR_ARRAY_SIZE;
@@ -229,7 +229,7 @@ static int emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2_OUT *r)
 static int emsmdb_ndr_pull_ecdoasyncconnectex(NDR_PULL *pndr,
 	ECDOASYNCCONNECTEX_IN *r)
 {
-	return ndr_pull_context_handle(pndr, &r->cxh);
+	return pndr->g_ctx_handle(&r->cxh);
 }
 
 static int emsmdb_ndr_push_ecdoasyncconnectex(NDR_PUSH *pndr,

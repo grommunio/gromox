@@ -93,7 +93,7 @@ static int nsp_ndr_push_stat(NDR_PUSH *pndr, const STAT *r)
 
 static int nsp_ndr_pull_flatuid(NDR_PULL *pndr, FLATUID *r)
 {
-	return ndr_pull_array_uint8(pndr, r->ab, 16);
+	return pndr->g_uint8_a(r->ab, 16);
 }
 
 static int nsp_ndr_push_flatuid(NDR_PUSH *pndr, const FLATUID *r)
@@ -144,7 +144,7 @@ static int nsp_ndr_pull_property_name(NDR_PULL *pndr, unsigned int flag, NSP_PRO
 	
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
 			r->pguid = ndr_stack_anew<FLATUID>(NDR_STACK_IN);
 			if (r->pguid == nullptr)
@@ -177,7 +177,7 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, unsigned int flag, STRING_A
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->ppstr = ptr != 0 ? reinterpret_cast<char **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
@@ -191,7 +191,7 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, unsigned int flag, STRING_A
 	if (r->ppstr == nullptr)
 		return NDR_ERR_ALLOC;
 	for (cnt = 0; cnt < size; cnt++) {
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 	}
 	for (cnt = 0; cnt < size; cnt++) {
@@ -202,11 +202,11 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, unsigned int flag, STRING_A
 		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length1, sizeof(uint8_t)));
+		TRY(pndr->check_str(length1, sizeof(uint8_t)));
 		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, length1 + 1);
 		if (r->ppstr[cnt] == nullptr)
 			return NDR_ERR_ALLOC;
-		TRY(ndr_pull_string(pndr, r->ppstr[cnt], length1));
+		TRY(pndr->g_str(r->ppstr[cnt], length1));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -259,7 +259,7 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, unsigned int flag, STRINGS
 		if (r->ppstr == nullptr)
 			return NDR_ERR_ALLOC;
 		for (size_t cnt = 0; cnt < size; ++cnt) {
-			TRY(ndr_pull_generic_ptr(pndr, &ptr));
+			TRY(pndr->g_genptr(&ptr));
 			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		}
 		TRY(pndr->trailer_align(5));
@@ -275,11 +275,11 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, unsigned int flag, STRINGS
 		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length1, sizeof(uint8_t)));
+		TRY(pndr->check_str(length1, sizeof(uint8_t)));
 		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, length1 + 1);
 		if (r->ppstr[cnt] == nullptr)
 			return NDR_ERR_ALLOC;
-		TRY(ndr_pull_string(pndr, r->ppstr[cnt], length1));
+		TRY(pndr->g_str(r->ppstr[cnt], length1));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -299,7 +299,7 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, unsigned int flag, STRING_
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->ppstr = ptr != 0 ? reinterpret_cast<char **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
@@ -313,7 +313,7 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, unsigned int flag, STRING_
 	if (r->ppstr == nullptr)
 		return NDR_ERR_ALLOC;
 	for (cnt = 0; cnt < size; cnt++) {
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 	}
 	for (cnt = 0; cnt < size; cnt++) {
@@ -324,14 +324,14 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, unsigned int flag, STRING_
 		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length1, sizeof(uint16_t)));
+		TRY(pndr->check_str(length1, sizeof(uint16_t)));
 		std::unique_ptr<char[]> pwstring;
 		try {
 			pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length1 + 1);
 		} catch (const std::bad_alloc &) {
 			return NDR_ERR_ALLOC;
 		}
-		TRY(ndr_pull_string(pndr, pwstring.get(), sizeof(uint16_t) * length1));
+		TRY(pndr->g_str(pwstring.get(), sizeof(uint16_t) * length1));
 		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
 		if (r->ppstr[cnt] == nullptr)
 			return NDR_ERR_ALLOC;
@@ -406,7 +406,7 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, unsigned int flag, STRING
 			return NDR_ERR_ALLOC;
 		}
 		for (size_t cnt = 0; cnt < size; ++cnt) {
-			TRY(ndr_pull_generic_ptr(pndr, &ptr));
+			TRY(pndr->g_genptr(&ptr));
 			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		}
 		TRY(pndr->trailer_align(5));
@@ -422,14 +422,14 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, unsigned int flag, STRING
 		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length1, sizeof(uint16_t)));
+		TRY(pndr->check_str(length1, sizeof(uint16_t)));
 		std::unique_ptr<char[]> pwstring;
 		try {
 			pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length1 + 1);
 		} catch (const std::bad_alloc &) {
 			return NDR_ERR_ALLOC;
 		}
-		TRY(ndr_pull_string(pndr, pwstring.get(), sizeof(uint16_t) * length1));
+		TRY(pndr->g_str(pwstring.get(), sizeof(uint16_t) * length1));
 		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
 		if (r->ppstr[cnt] == nullptr)
 			return NDR_ERR_ALLOC;
@@ -453,7 +453,7 @@ static int nsp_ndr_pull_binary(NDR_PULL *pndr, unsigned int flag, BINARY *r)
 			r->cb = 0;
 			return NDR_ERR_RANGE;
 		}
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->pb = ptr != 0 ? reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
@@ -470,7 +470,7 @@ static int nsp_ndr_pull_binary(NDR_PULL *pndr, unsigned int flag, BINARY *r)
 		r->cb = 0;
 		return NDR_ERR_ALLOC;
 	}
-	TRY(ndr_pull_array_uint8(pndr, r->pb, size));
+	TRY(pndr->g_uint8_a(r->pb, size));
 	return NDR_ERR_SUCCESS;
 }
 
@@ -516,7 +516,7 @@ static int nsp_ndr_pull_short_array(NDR_PULL *pndr, unsigned int flag, SHORT_ARR
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->ps = ptr != 0 ? reinterpret_cast<uint16_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
@@ -561,7 +561,7 @@ static int nsp_ndr_pull_long_array(NDR_PULL *pndr, unsigned int flag, LONG_ARRAY
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->pl = ptr != 0 ? reinterpret_cast<uint32_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
@@ -606,7 +606,7 @@ static int nsp_ndr_pull_binary_array(NDR_PULL *pndr, unsigned int flag, BINARY_A
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->pbin = ptr != 0 ? reinterpret_cast<BINARY *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
@@ -655,7 +655,7 @@ static int nsp_ndr_pull_flatuid_array(NDR_PULL *pndr, unsigned int flag, FLATUID
 		TRY(pndr->g_uint32(&r->cvalues));
 		if (r->cvalues > 100000)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->ppguid = ptr != 0 ? reinterpret_cast<FLATUID **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
@@ -669,7 +669,7 @@ static int nsp_ndr_pull_flatuid_array(NDR_PULL *pndr, unsigned int flag, FLATUID
 	if (r->ppguid == nullptr)
 		return NDR_ERR_ALLOC;
 	for (size_t cnt = 0; cnt < size; ++cnt) {
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
 			r->ppguid[cnt] = ndr_stack_anew<FLATUID>(NDR_STACK_IN);
 			if (r->ppguid[cnt] == nullptr)
@@ -714,7 +714,7 @@ static int nsp_ndr_pull_filetime_array(NDR_PULL *pndr, unsigned int flag, FILETI
 		TRY(pndr->g_uint32(&r->cvalues));
 		if (r->cvalues > 100000)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->pftime = ptr != 0 ? reinterpret_cast<FILETIME *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
@@ -773,14 +773,14 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, unsigned int flag,
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
-			TRY(ndr_pull_generic_ptr(pndr, &ptr));
+			TRY(pndr->g_genptr(&ptr));
 			r->pstr = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 			break;
 		case PT_BINARY:
 			TRY(nsp_ndr_pull_binary(pndr, FLAG_HEADER, &r->bin));
 			break;
 		case PT_CLSID:
-			TRY(ndr_pull_generic_ptr(pndr, &ptr));
+			TRY(pndr->g_genptr(&ptr));
 			r->pguid = ptr != 0 ? reinterpret_cast<FLATUID *>(static_cast<uintptr_t>(ptr)) : nullptr;
 			break;
 		case PT_SYSTIME:
@@ -836,11 +836,11 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, unsigned int flag,
 		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
+		TRY(pndr->check_str(length, sizeof(uint8_t)));
 		r->pstr = ndr_stack_anew<char>(NDR_STACK_IN, length + 1);
 		if (r->pstr == nullptr)
 			return NDR_ERR_ALLOC;
-		TRY(ndr_pull_string(pndr, r->pstr, length));
+		TRY(pndr->g_str(r->pstr, length));
 		break;
 	case PT_UNICODE: {
 		if (r->pstr == nullptr)
@@ -850,14 +850,14 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, unsigned int flag,
 		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length, sizeof(uint16_t)));
+		TRY(pndr->check_str(length, sizeof(uint16_t)));
 		std::unique_ptr<char[]> pwstring;
 		try {
 			pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length + 1);
 		} catch (const std::bad_alloc &) {
 			return NDR_ERR_ALLOC;
 		}
-		TRY(ndr_pull_string(pndr, pwstring.get(), sizeof(uint16_t) * length));
+		TRY(pndr->g_str(pwstring.get(), sizeof(uint16_t) * length));
 		r->pstr = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length);
 		if (r->pstr == nullptr)
 			return NDR_ERR_ALLOC;
@@ -1099,7 +1099,7 @@ static int nsp_ndr_pull_property_row(NDR_PULL *pndr, unsigned int flag, NSP_PROP
 		TRY(pndr->g_uint32(&r->cvalues));
 		if (r->cvalues > 100000)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->pprops = ptr != 0 ? reinterpret_cast<PROPERTY_VALUE *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
@@ -1166,7 +1166,7 @@ static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, unsigned int flag,
 		TRY(pndr->g_uint32(&r->cres));
 		if (r->cres > 100000)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		r->pres = ptr != 0 ? reinterpret_cast<NSPRES *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
@@ -1213,7 +1213,7 @@ static int nsp_ndr_pull_restriction_not(NDR_PULL *pndr, unsigned int flag,
 	
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
 			r->pres = ndr_stack_anew<NSPRES>(NDR_STACK_IN);
 			if (r->pres == nullptr)
@@ -1251,7 +1251,7 @@ static int nsp_ndr_pull_restriction_content(NDR_PULL *pndr, unsigned int flag,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->fuzzy_level));
 		TRY(pndr->g_uint32(&r->proptag));
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
 			r->pprop = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_IN);
 			if (r->pprop == nullptr)
@@ -1291,7 +1291,7 @@ static int nsp_ndr_pull_restriction_property(NDR_PULL *pndr, unsigned int flag,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->relop));
 		TRY(pndr->g_uint32(&r->proptag));
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
 			r->pprop = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_IN);
 			if (r->pprop == nullptr)
@@ -1413,7 +1413,7 @@ static int nsp_ndr_pull_restriction_sub(NDR_PULL *pndr, unsigned int flag, NSPRE
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->subobject));
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
 			r->pres = ndr_stack_anew<NSPRES>(NDR_STACK_IN);
 			if (r->pres == nullptr)
@@ -1643,7 +1643,7 @@ int nsp_ndr_pull_nspibind(NDR_PULL *pndr, NSPIBIND_IN *r)
 
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pserver_guid = ndr_stack_anew<FLATUID>(NDR_STACK_IN);
 		if (r->pserver_guid == nullptr)
@@ -1668,7 +1668,7 @@ int nsp_ndr_push_nspibind(NDR_PUSH *pndr, const NSPIBIND_OUT *r)
 
 int nsp_ndr_pull_nspiunbind(NDR_PULL *pndr, NSPIUNBIND_IN *r)
 {
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	return NDR_ERR_SUCCESS;
 }
@@ -1684,10 +1684,10 @@ int nsp_ndr_pull_nspiupdatestat(NDR_PULL *pndr, NSPIUPDATESTAT_IN *r)
 {
 	uint32_t ptr;
 	
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pdelta = ndr_stack_anew<int32_t>(NDR_STACK_IN);
 		if (r->pdelta == nullptr)
@@ -1716,13 +1716,13 @@ int nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
 	uint32_t size;
 	
 	
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(pndr->g_uint32(&r->table_count));
 	if (r->table_count > 100000)
 		return NDR_ERR_RANGE;
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		TRY(pndr->g_ulong(&size));
 		if (size != r->table_count)
@@ -1736,7 +1736,7 @@ int nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
 		r->ptable = NULL;
 	}
 	TRY(pndr->g_uint32(&r->count));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
@@ -1762,11 +1762,11 @@ int nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
 {
 	uint32_t ptr;
 	
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(nsp_ndr_pull_property_value(pndr, FLAG_HEADER|FLAG_CONTENT, &r->target));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->ptable = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->ptable == nullptr)
@@ -1775,7 +1775,7 @@ int nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
 	} else {
 		r->ptable = NULL;
 	}
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
@@ -1800,10 +1800,10 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 {
 	uint32_t ptr;
 
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved1));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->preserved = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->preserved == nullptr)
@@ -1813,7 +1813,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 		r->preserved = NULL;
 	}
 	TRY(pndr->g_uint32(&r->reserved2));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pfilter = ndr_stack_anew<NSPRES>(NDR_STACK_IN);
 		if (r->pfilter == nullptr)
@@ -1822,7 +1822,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	} else {
 		r->pfilter = NULL;
 	}
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->ppropname = ndr_stack_anew<NSP_PROPNAME>(NDR_STACK_IN);
 		if (r->ppropname == nullptr)
@@ -1833,7 +1833,7 @@ int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	}
 	
 	TRY(pndr->g_uint32(&r->requested));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
@@ -1861,11 +1861,11 @@ int nsp_ndr_pull_nspiresortrestriction(NDR_PULL *pndr, NSPIRESORTRESTRICTION_IN 
 {
 	uint32_t ptr;
 	
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(nsp_ndr_pull_proptag_array(pndr, &r->inmids));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->poutmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->poutmids == nullptr)
@@ -1888,7 +1888,7 @@ int nsp_ndr_push_nspiresortrestriction(NDR_PUSH *pndr, const NSPIRESORTRESTRICTI
 
 int nsp_ndr_pull_nspidntomid(NDR_PULL *pndr, NSPIDNTOMID_IN *r)
 {
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	return nsp_ndr_pull_strings_array(pndr, FLAG_HEADER|FLAG_CONTENT, &r->names);
 }
@@ -1903,7 +1903,7 @@ int nsp_ndr_push_nspidntomid(NDR_PUSH *pndr, const NSPIDNTOMID_OUT *r)
 
 int nsp_ndr_pull_nspigetproplist(NDR_PULL *pndr, NSPIGETPROPLIST_IN *r)
 {
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(pndr->g_uint32(&r->mid));
 	return pndr->g_uint32(&r->codepage);
@@ -1921,10 +1921,10 @@ int nsp_ndr_pull_nspigetprops(NDR_PULL *pndr, NSPIGETPROPS_IN *r)
 {
 	uint32_t ptr;
 	
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
@@ -1947,7 +1947,7 @@ int nsp_ndr_push_nspigetprops(NDR_PUSH *pndr, const NSPIGETPROPS_OUT *r)
 
 int nsp_ndr_pull_nspicomparemids(NDR_PULL *pndr, NSPICOMPAREMIDS_IN *r)
 {
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(pndr->g_uint32(&r->mid1));
@@ -1964,10 +1964,10 @@ int nsp_ndr_pull_nspimodprops(NDR_PULL *pndr, NSPIMODPROPS_IN *r)
 {
 	uint32_t ptr;
 	
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
@@ -1987,7 +1987,7 @@ int nsp_ndr_push_nspimodprops(NDR_PUSH *pndr, const NSPIMODPROPS_OUT *r)
 
 int nsp_ndr_pull_nspigetspecialtable(NDR_PULL *pndr, NSPIGETSPECIALTABLE_IN *r)
 {
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	return pndr->g_uint32(&r->version);
@@ -2009,21 +2009,21 @@ int nsp_ndr_pull_nspigettemplateinfo(NDR_PULL *pndr, NSPIGETTEMPLATEINFO_IN *r)
 	uint32_t offset;
 	uint32_t length;
 	
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(pndr->g_uint32(&r->type));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		TRY(pndr->g_ulong(&size));
 		TRY(pndr->g_ulong(&offset));
 		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
+		TRY(pndr->check_str(length, sizeof(uint8_t)));
 		r->pdn = ndr_stack_anew<char>(NDR_STACK_IN, length + 1);
 		if (r->pdn == nullptr)
 			return NDR_ERR_ALLOC;
-		TRY(ndr_pull_string(pndr, r->pdn, length));
+		TRY(pndr->g_str(r->pdn, length));
 	} else {
 		r->pdn = NULL;
 	}
@@ -2041,7 +2041,7 @@ int nsp_ndr_push_nspigettemplateinfo(NDR_PUSH *pndr, const NSPIGETTEMPLATEINFO_O
 
 int nsp_ndr_pull_nspimodlinkatt(NDR_PULL *pndr, NSPIMODLINKATT_IN *r)
 {
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(pndr->g_uint32(&r->proptag));
 	TRY(pndr->g_uint32(&r->mid));
@@ -2055,7 +2055,7 @@ int nsp_ndr_push_nspimodlinkatt(NDR_PUSH *pndr, const NSPIMODLINKATT_OUT *r)
 
 int nsp_ndr_pull_nspiquerycolumns(NDR_PULL *pndr, NSPIQUERYCOLUMNS_IN *r)
 {
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	return pndr->g_uint32(&r->flags);
 }
@@ -2072,10 +2072,10 @@ int nsp_ndr_pull_nspiresolvenames(NDR_PULL *pndr, NSPIRESOLVENAMES_IN *r)
 {
 	uint32_t ptr;
 	
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
@@ -2103,10 +2103,10 @@ int nsp_ndr_pull_nspiresolvenamesw(NDR_PULL *pndr, NSPIRESOLVENAMESW_IN *r)
 {
 	uint32_t ptr;
 	
-	TRY(ndr_pull_context_handle(pndr, &r->handle));
+	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
-	TRY(ndr_pull_generic_ptr(pndr, &ptr));
+	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)

@@ -121,8 +121,7 @@ int ndr_pull_string(NDR_PULL *pndr, char *buff, uint32_t inbytes)
 	
 	memcpy(buff, pndr->data + pndr->offset, inbytes);
 	buff[inbytes] = '\0';
-	
-	return ndr_pull_advance(pndr, inbytes);
+	return pndr->advance(inbytes);
 }
 
 int ndr_pull_uint8(NDR_PULL *pndr, uint8_t *v)
@@ -214,8 +213,8 @@ int ndr_pull_guid(NDR_PULL *pndr, GUID *r)
 	TRY(pndr->g_uint32(&r->time_low));
 	TRY(pndr->g_uint16(&r->time_mid));
 	TRY(pndr->g_uint16(&r->time_hi_and_version));
-	TRY(ndr_pull_array_uint8(pndr, r->clock_seq, 2));
-	TRY(ndr_pull_array_uint8(pndr, r->node, 6));
+	TRY(pndr->g_uint8_a(r->clock_seq, 2));
+	TRY(pndr->g_uint8_a(r->node, 6));
 	TRY(pndr->trailer_align(4));
 	return NDR_ERR_SUCCESS;
 }
@@ -224,7 +223,7 @@ int ndr_pull_guid(NDR_PULL *pndr, GUID *r)
 int ndr_pull_syntax_id(NDR_PULL *pndr, SYNTAX_ID *r)
 {
 	TRY(pndr->align(4));
-	TRY(ndr_pull_guid(pndr, &r->uuid));
+	TRY(pndr->g_guid(&r->uuid));
 	TRY(pndr->g_uint32(&r->version));
 	TRY(pndr->trailer_align(4));
 	return NDR_ERR_SUCCESS;
@@ -281,7 +280,7 @@ int ndr_pull_check_string(NDR_PULL *pndr,
 	uint32_t saved_offset;
 
 	saved_offset = pndr->offset;
-	TRY(ndr_pull_advance(pndr, (count - 1) * element_size));
+	TRY(pndr->advance((count - 1) * element_size));
 	if (pndr->data_size < element_size ||
 		pndr->offset + element_size > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
@@ -309,7 +308,7 @@ int ndr_pull_context_handle(NDR_PULL *pndr, CONTEXT_HANDLE *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->handle_type));
-	TRY(ndr_pull_guid(pndr, &r->guid));
+	TRY(pndr->g_guid(&r->guid));
 	TRY(pndr->trailer_align(4));
 	return NDR_ERR_SUCCESS;
 }
