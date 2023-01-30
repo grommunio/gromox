@@ -11,6 +11,7 @@
 #include <string>
 #include <functional>
 #include <tinyxml2.h>
+#include <unordered_map>
 #include <gromox/json.hpp>
 #include <json/reader.h>
 #include <json/writer.h>
@@ -69,9 +70,7 @@ class OxdiscoPlugin {
 	void loadConfig();
 	static void writeheader(int, int, size_t);
 	BOOL die(int, const char *, const char *) const;
-	BOOL die_json0(int) const;
-	BOOL die_json1(int) const;
-	BOOL die_json2(int) const;
+	BOOL die_json(int, const char *) const;
 	static BOOL json_resp(int, const char* );
 	BOOL resp(int, const char *, const char *, const char *) const;
 	static void writeheader_json(int, int, size_t);
@@ -214,17 +213,12 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 		return false;
 	uri[len] = '\0';
 	char* query_string = strchr(uri, '?');
-    // Extract the Protocol query parameter from the GET request
+
 	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") != 0 &&
 			strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 40) != 0 && 
-			query_string == nullptr)
-		return false;
-
-	if (sscanf(query_string, "?Protocol=%s", protocol) != 1)
-		return false;
-
-	// Check if the GET request is in the desired format
-	if (strncmp(uri, "/autodiscover/autodiscover.json", 30) != 0)
+			query_string == nullptr &&
+			sscanf(query_string, "?Protocol=%s", protocol) != 1 &&
+			strncmp(uri, "/autodiscover/autodiscover.json", 30) != 0)
 		return false;
 
     return TRUE;
@@ -268,7 +262,7 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	else
 	if(strncasecmp(uri, "/autodiscover/autodiscover.json", 30) == 0)
 	{
-		return json_resp(ctx_id, uri);  // change this
+		return json_resp(ctx_id, uri);
 	}
 
 	XMLDocument doc;
@@ -468,27 +462,14 @@ BOOL OxdiscoPlugin::die(int ctx_id, const char *error_code,
 	return false;
 }
 
-BOOL OxdiscoPlugin::die_json0(int ctx_id) const
+BOOL OxdiscoPlugin::die_json(int ctx_id, const char *json_err) const
 {
-	auto data = fmt::format(protocol_err0, protocol);
-	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s", data.size(), data.c_str());
-	writeheader_json(ctx_id, 200, data.size());
-	write_response(ctx_id, data.c_str(), data.size());
-	return false;
-}
-
-BOOL OxdiscoPlugin::die_json1(int ctx_id) const
-{
-	auto data = fmt::format(protocol_err1);
-	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s", data.size(), data.c_str());
-	writeheader_json(ctx_id, 200, data.size());
-	write_response(ctx_id, data.c_str(), data.size());
-	return false;
-}
-
-BOOL OxdiscoPlugin::die_json2(int ctx_id) const
-{
-	auto data = fmt::format(protocol_err2);
+	if (json_err == protocol_err0){
+		auto data = fmt::format(json_err, protocol);
+	}
+	else{
+		auto data = fmt::format(json_err);
+	}
 	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s", data.size(), data.c_str());
 	writeheader_json(ctx_id, 200, data.size());
 	write_response(ctx_id, data.c_str(), data.size());
@@ -569,15 +550,15 @@ static BOOL OxdiscoPlugin::json_resp(int ctx_id, const char* linK)
                 }
             }
 			//protocol does not exist
-			return die_json0(ctx_id);
+			return die_json(ctx_id, protocol_err0);
         } 
 		//no protocol
-		return die_json1(ctx_id);
+		return die_json(ctx_id, protocol_err1);
     }
     else
     {
        // missing parameter
-		return die_json2(ctx_id);			
+		return die_json(ctx_id, protocol_err2);			
     }
 }
 
