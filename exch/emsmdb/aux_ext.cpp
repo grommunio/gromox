@@ -39,41 +39,39 @@ using namespace gromox;
 
 /* Code for parsing a bunch of other AUX blocks is present in commit history */
 
-static int aux_ext_push_aux_client_control(
-	EXT_PUSH *pext, const AUX_CLIENT_CONTROL *r)
+static int aux_ext_push_aux_client_control(EXT_PUSH &x, const AUX_CLIENT_CONTROL &r)
 {
-	TRY(pext->p_uint32(r->enable_flags));
-	return pext->p_uint32(r->expiry_time);
+	TRY(x.p_uint32(r.enable_flags));
+	return x.p_uint32(r.expiry_time);
 }
 
-static int aux_ext_push_aux_exorginfo(
-	EXT_PUSH *pext, const AUX_EXORGINFO *r)
+static int aux_ext_push_aux_exorginfo(EXT_PUSH &x, const AUX_EXORGINFO &r)
 {
-	return pext->p_uint32(r->org_flags);
+	return x.p_uint32(r.org_flags);
 }
 
-static int aux_ext_push_aux_endpoint_capabilities(
-	EXT_PUSH *pext, const AUX_ENDPOINT_CAPABILITIES *r)
+static int aux_ext_push_aux_endpoint_capabilities(EXT_PUSH &x,
+    const AUX_ENDPOINT_CAPABILITIES &r)
 {
-	return pext->p_uint32(r->endpoint_capability_flag);
+	return x.p_uint32(r.endpoint_capability_flag);
 }
 
-static int aux_ext_push_aux_header_type_union1(
-	EXT_PUSH *pext, uint8_t type, void *ppayload)
+static int aux_ext_push_aux_header_type_union1(EXT_PUSH &x, uint8_t type,
+    const void *payload)
 {
 	switch (type) {
 	case AUX_TYPE_CLIENT_CONTROL:
-		return aux_ext_push_aux_client_control(pext, static_cast<AUX_CLIENT_CONTROL *>(ppayload));
+		return aux_ext_push_aux_client_control(x, *static_cast<const AUX_CLIENT_CONTROL *>(payload));
 	case AUX_TYPE_EXORGINFO:
-		return aux_ext_push_aux_exorginfo(pext, static_cast<AUX_EXORGINFO *>(ppayload));
+		return aux_ext_push_aux_exorginfo(x, *static_cast<const AUX_EXORGINFO *>(payload));
 	case AUX_TYPE_ENDPOINT_CAPABILITIES:
-		return aux_ext_push_aux_endpoint_capabilities(pext, static_cast<AUX_ENDPOINT_CAPABILITIES *>(ppayload));
+		return aux_ext_push_aux_endpoint_capabilities(x, *static_cast<const AUX_ENDPOINT_CAPABILITIES *>(payload));
 	default:
 		return EXT_CTRL_SKIP;
 	}
 }
 
-static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r) try
+static int aux_ext_push_aux_header(EXT_PUSH &x, const AUX_HEADER &r) try
 {
 	uint16_t size;
 	EXT_PUSH subext;
@@ -83,9 +81,9 @@ static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r) try
 	
 	if (!subext.init(tmp_buff.get(), tmp_buff_size, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
-	switch (r->version) {
+	switch (r.version) {
 	case AUX_VERSION_1: {
-		auto ret = aux_ext_push_aux_header_type_union1(&subext, r->type, r->ppayload);
+		auto ret = aux_ext_push_aux_header_type_union1(subext, r.type, r.ppayload);
 		if (ret == EXT_CTRL_SKIP)
 			return EXT_ERR_SUCCESS;
 		else if (ret != EXT_ERR_SUCCESS)
@@ -97,35 +95,33 @@ static int aux_ext_push_aux_header(EXT_PUSH *pext, AUX_HEADER *r) try
 	}
 	uint16_t actual_size = subext.m_offset + sizeof(uint16_t) + 2 * sizeof(uint8_t);
 	size = (actual_size + (AUX_ALIGN_SIZE - 1)) & ~(AUX_ALIGN_SIZE - 1);
-	TRY(pext->p_uint16(size));
-	TRY(pext->p_uint8(r->version));
-	TRY(pext->p_uint8(r->type));
-	TRY(pext->p_bytes(subext.m_udata, subext.m_offset));
-	return pext->p_bytes(paddings, size - actual_size);
+	TRY(x.p_uint16(size));
+	TRY(x.p_uint8(r.version));
+	TRY(x.p_uint8(r.type));
+	TRY(x.p_bytes(subext.m_udata, subext.m_offset));
+	return x.p_bytes(paddings, size - actual_size);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1169: ENOMEM");
 	return EXT_ERR_ALLOC;
 }
 
-int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r) try
+int aux_ext_push_aux_info(EXT_PUSH *pext, const AUX_INFO &r) try
 {
 	EXT_PUSH subext;
-	DOUBLE_LIST_NODE *pnode;
 	static constexpr size_t ext_buff_size = 0x1008;
 	auto ext_buff = std::make_unique<uint8_t[]>(ext_buff_size);
 	auto tmp_buff = std::make_unique<uint8_t[]>(ext_buff_size);
 	RPC_HEADER_EXT rpc_header_ext;
 
-
-	if ((r->rhe_flags & RHE_FLAG_LAST) == 0)
+	if (!(r.rhe_flags & RHE_FLAG_LAST))
 		return EXT_ERR_HEADER_FLAGS;
 	if (!subext.init(ext_buff.get(), ext_buff_size, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
-	for (pnode=double_list_get_head(&r->aux_list); NULL!=pnode;
-	     pnode = double_list_get_after(&r->aux_list, pnode))
-		TRY(aux_ext_push_aux_header(&subext, static_cast<AUX_HEADER *>(pnode->pdata)));
-	rpc_header_ext.version = r->rhe_version;
-	rpc_header_ext.flags = r->rhe_flags;
+	for (auto pnode = double_list_get_head(&r.aux_list); pnode != nullptr;
+	     pnode = double_list_get_after(&r.aux_list, pnode))
+		TRY(aux_ext_push_aux_header(subext, *static_cast<const AUX_HEADER *>(pnode->pdata)));
+	rpc_header_ext.version = r.rhe_version;
+	rpc_header_ext.flags = r.rhe_flags;
 	rpc_header_ext.size_actual = subext.m_offset;
 	rpc_header_ext.size = rpc_header_ext.size_actual;
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {

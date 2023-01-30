@@ -128,4 +128,4 @@ struct AUX_INFO {
 	DOUBLE_LIST aux_list;
 };
 
-extern int aux_ext_push_aux_info(EXT_PUSH *, AUX_INFO *);
+extern int aux_ext_push_aux_info(EXT_PUSH *, const AUX_INFO &);

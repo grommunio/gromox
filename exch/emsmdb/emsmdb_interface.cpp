@@ -579,7 +579,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 		double_list_free(&aux_out.aux_list);
 		return ecServerOOM;
 	}
-	*pcb_auxout = aux_ext_push_aux_info(&ext_push, &aux_out) != EXT_ERR_SUCCESS ?
+	*pcb_auxout = aux_ext_push_aux_info(&ext_push, aux_out) != EXT_ERR_SUCCESS ?
 	              0 : ext_push.m_offset;
 	double_list_free(&aux_out.aux_list);
 	
