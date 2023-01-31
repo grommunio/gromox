@@ -697,6 +697,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 			       t == PR_NORMAL_MESSAGE_SIZE || t == PR_LOCAL_COMMIT_TIME_MAX ||
 			       t == PR_HIERARCHY_CHANGE_NUM;
 		}), tags.end());
+		tags.push_back(PidTagParentFolderId);
 		proptags.count = tags.size();
 		proptags.pproptag = tags.data();
 		if (!cu_get_properties(db_table::folder_props, fid_val1, 0,
