@@ -3918,7 +3918,7 @@ uint32_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 	if (mapi_type != dst_type)
 		return ecNotSupported;
 
-	BOOL b_force = (flags & COPY_FLAG_NOOVERWRITE) ? TRUE : false;
+	BOOL b_force = (flags & MAPI_NOREPLACE) ? TRUE : false;
 	switch (mapi_type) {
 	case ZMG_FOLDER: {
 		auto folder = static_cast<folder_object *>(pobject);
