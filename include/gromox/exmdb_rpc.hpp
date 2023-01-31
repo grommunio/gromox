@@ -149,6 +149,7 @@ enum class exmdb_callid : uint8_t {
 	write_message_instance /* v2 */ = 0x7e,
 	flush_instance /* v2 */ = 0x7f,
 	unload_store = 0x80,
+	/* update exch/exmdb_provider/names.cpp! */
 };
 
 struct exreq {

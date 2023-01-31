@@ -98,6 +98,7 @@ enum class zcore_callid : uint8_t {
 	rfc822tomessage = 0x56,
 	// icaltomessage2 = 0x57,
 	imtomessage2 = 0x58,
+	/* update exch/zcore/names.cpp! */
 };
 
 struct zcreq {
