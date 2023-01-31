@@ -3,7 +3,7 @@
  *	this file includes some utility functions that will be used by many 
  *	programs
  */
-#ifdef HAVE_CONFIG_H
+#if defined(HAVE_CONFIG_H)
 #	include "config.h"
 #endif
 #include <algorithm>
@@ -27,8 +27,10 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
-#if __linux__
+#if defined(__linux__)
 #	include <sys/random.h>
+#elif defined(__OpenBSD__)
+#	include <pwd.h>
 #endif
 
 using namespace gromox;
@@ -414,11 +416,16 @@ char* search_string(const char *haystack, const char *needle,
 	return NULL;
 }
 
-static char crypt_salt[65]=
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./";
-
 const char *crypt_wrapper(const char *pw)
 {
+#if defined(__OpenBSD__)
+	static char ret[_PASSWORD_LEN];
+	if (crypt_newhash(pw, "bcrypt", ret, sizeof(ret)) != 0)
+		return "*0";
+	return ret;
+#else
+	static char crypt_salt[65]=
+	    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./";
 	char salt[21] = "$6$";
 	randstring(salt + 3, 16, crypt_salt);
 	salt[19] = '$';
@@ -429,6 +436,7 @@ const char *crypt_wrapper(const char *pw)
 	salt[1] = '1';
 	ret = crypt(pw, salt);
 	return ret != nullptr ? ret : "*0";
+#endif
 }
 
 
