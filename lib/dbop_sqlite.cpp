@@ -696,7 +696,9 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 		if (flags & DBOP_VERBOSE)
 			mlog(LV_NOTICE, "dbop_sqlite: upgrading %s to schema E%c-%u",
 			        filedesc, kind_to_char(kind), entry->v);
-		int ret;
+		auto ret = gx_sql_exec(db, "BEGIN TRANSACTION");
+		if (ret != SQLITE_OK)
+			return -EIO;
 		if (entry->command != nullptr && entry->tbl_name == nullptr &&
 		    entry->q_create == nullptr && entry->q_move == nullptr) {
 			ret = gx_sql_exec(db, entry->command);
@@ -714,6 +716,9 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 			return -EINVAL;
 		}
 		dbop_sqlite_bump(db, entry->v);
+		ret = gx_sql_exec(db, "COMMIT TRANSACTION");
+		if (ret != SQLITE_OK)
+			return -EIO;
 	}
 	/* Reclaim some diskspace */
 	if (did_chcol && gx_sql_exec(db, "VACUUM") != SQLITE_OK)
