@@ -1,4 +1,30 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+/*
+
+The AUX headers sent with EcDoConnectEx are rather boring in
+practice.
+
+AUX_PERF_CLIENTINFO: adapter_speed=1000000, client_id=1, machine_name="",
+user_name="", adapter_name="Ethernet0", adapter_name="LAN", macaddr="",
+ipaddr=""/""
+
+AUX_PERF_ACCOUNTINFO: client_id=1, account=<someguid>
+
+AUX_PERF_SESSIONINFO_V2: session_id=1, guid=<someguid>, conn_id=<integer
+matching Outlook Connection Status dialog CID column>
+
+AUX_PERF_PROCESSINFO: pid=1, guid=<someguid>, name="MFCMapi64.exe",
+name="MFCMapi.exe", name="OUTLOOK.EXE"
+
+AUX_CLIENT_CONNECTION_INFO: guid=<someguid>, ctxinfo="",
+connection_attempts=<integer>, connection_flags=0
+
+HTTP headers are more informative:
+
+User-Agent: Microsoft Office/16.0 (Windows NT 10.0; MAPI 16.0.15928; Pro)
+X-ClientApplication: Outlook/16.0.15928.20006
+
+*/
 #include <cstdint>
 #include <cstring>
 #include <gromox/lzxpress.hpp>
