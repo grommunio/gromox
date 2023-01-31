@@ -823,14 +823,8 @@ BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 
 void table_object::remove_bookmark(uint32_t index)
 {
-#if __cplusplus >= 202000L
-	std::erase_if(bookmark_list,
-		[&](const bookmark_node &b) { return b.index == index; });
-#else
-	bookmark_list.erase(std::remove_if(bookmark_list.begin(), bookmark_list.end(),
-		[&](const bookmark_node &b) { return b.index == index; }),
-		bookmark_list.end());
-#endif
+	gromox::erase_first_if(bookmark_list,
+		[index](const bookmark_node &b) { return b.index == index; });
 }
 
 static void table_object_reset(table_object *ptable)

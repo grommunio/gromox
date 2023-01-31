@@ -153,4 +153,24 @@ constexpr inline bool pvb_enabled(const void *z)
 	return z != nullptr && *static_cast<const uint8_t *>(z) != 0;
 }
 
+template<typename Container, typename U> void erase_first(Container &c, const U &value)
+{
+	for (auto i = c.begin(); i != c.end(); ++i) {
+		if (*i == value) {
+			c.erase(i);
+			return;
+		}
+	}
+}
+
+template<typename Container, typename Pred> void erase_first_if(Container &c, Pred &&pred)
+{
+	for (auto i = c.begin(); i != c.end(); ++i) {
+		if (pred(*i)) {
+			c.erase(i);
+			return;
+		}
+	}
+}
+
 }

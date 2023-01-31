@@ -394,11 +394,7 @@ static void emsmdb_interface_remove_handle(const CXH &cxh)
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter != g_user_hash.end()) {
 		auto &uhv = uh_iter->second;
-#if __cplusplus >= 202000L
-		std::erase(uhv, phandle);
-#else
-		uhv.erase(std::remove(uhv.begin(), uhv.end(), phandle), uhv.end());
-#endif
+		gromox::erase_first(uhv, phandle);
 		if (uhv.empty())
 			g_user_hash.erase(phandle->username);
 	}
