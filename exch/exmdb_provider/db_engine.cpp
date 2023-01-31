@@ -243,7 +243,6 @@ db_item_ptr db_engine_get_db(const char *path)
 		hhold.unlock();
 		return NULL;
 	}
-	double_list_init(&pdb->tables.table_list);
 	pdb->tables.last_id = 0;
 	pdb->tables.b_batch = FALSE;
 	pdb->tables.psqlite = NULL;
@@ -338,11 +337,6 @@ dynamic_node &dynamic_node::operator=(dynamic_node &&o) noexcept
 	return *this;
 }
 
-table_node::table_node()
-{
-	node.pdata = this;
-}
-
 table_node::table_node(const table_node &o, clone_t) :
 	table_id(o.table_id), table_flags(o.table_flags), cpid(o.cpid),
 	type(o.type), cloned(true), remote_id(o.remote_id), username(o.username),
@@ -350,9 +344,7 @@ table_node::table_node(const table_node &o, clone_t) :
 	prestriction(o.prestriction), psorts(o.psorts),
 	instance_tag(o.instance_tag), extremum_tag(o.extremum_tag),
 	header_id(o.header_id), b_search(o.b_search), b_hint(o.b_hint)
-{
-	node.pdata = this;
-}
+{}
 
 table_node::~table_node()
 {
@@ -371,13 +363,10 @@ table_node::~table_node()
 DB_ITEM::~DB_ITEM()
 {
 	auto pdb = this;
-	DOUBLE_LIST_NODE *pnode;
 	
 	pdb->instance_list.clear();
 	dynamic_list.clear();
-	while ((pnode = double_list_pop_front(&pdb->tables.table_list)) != nullptr)
-		delete static_cast<table_node *>(pnode->pdata);
-	double_list_free(&pdb->tables.table_list);
+	tables.table_list.clear();
 	if (NULL != pdb->tables.psqlite) {
 		sqlite3_close(pdb->tables.psqlite);
 		pdb->tables.psqlite = NULL;
@@ -392,7 +381,7 @@ DB_ITEM::~DB_ITEM()
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &it, time_t now)
 {
 	auto &pdb = it.second;
-	if (double_list_get_nodes_num(&pdb.tables.table_list) > 0)
+	if (pdb.tables.table_list.size() > 0)
 		/* emsmdb still references in-memory tables */
 		return false;
 	if (pdb.nsub_list.size() > 0)
@@ -624,7 +613,6 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 static void *mdpeng_thrwork(void *param)
 {
 	nice(g_exmdb_search_nice);
-	DOUBLE_LIST_NODE *pnode;
 	
 	while (!g_notify_stop) {
 		std::unique_lock chold(g_cond_mutex);
@@ -677,19 +665,14 @@ static void *mdpeng_thrwork(void *param)
 			psearch->folder_id);
 		std::vector<uint32_t> table_ids;
 		try {
-			table_ids.reserve(double_list_get_nodes_num(&pdb->tables.table_list));
+			table_ids.reserve(pdb->tables.table_list.size());
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1649: ENOMEM");
 		}
-		for (pnode = double_list_get_head(
-		     &pdb->tables.table_list); NULL != pnode;
-		     pnode = double_list_get_after(
-		     &pdb->tables.table_list, pnode)) {
-			auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
-			if (ptable->type == table_type::content &&
-			    psearch->folder_id == ptable->folder_id)
-				table_ids.push_back(ptable->table_id);
-		}
+		for (const auto &t : pdb->tables.table_list)
+			if (t.type == table_type::content &&
+			    psearch->folder_id == t.folder_id)
+				table_ids.push_back(t.table_id);
 		pdb.reset();
 		while (table_ids.size() > 0) {
 			exmdb_server::reload_content_table(psearch->dir.c_str(), table_ids.back());
@@ -1278,9 +1261,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			common_util_end_message_optimize();
 	});
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
-	for (auto pnode = double_list_get_head(&pdb->tables.table_list); pnode != nullptr;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
+	for (auto &tnode : pdb->tables.table_list) {
+		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
 			continue;
@@ -2005,14 +1987,12 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 	uint64_t folder_id1;
 	xstmt pstmt;
 	char sql_string[256];
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE};
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
 	
 	padded_row = NULL;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
+	for (const auto &tnode : pdb->tables.table_list) {
+		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
 			continue;
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
@@ -2250,7 +2230,6 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 	ROWINFO_NODE *prnode;
 	char sql_string[1024];
 	DOUBLE_LIST notify_list;
-	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
@@ -2258,9 +2237,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row = nullptr;
 	
 	pdeleted_row = NULL;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
+	for (auto &tnode : pdb->tables.table_list) {
+		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
 			continue;
@@ -2751,15 +2729,12 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 	int idx;
 	BOOL b_included;
 	char sql_string[256];
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE};
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *pdeleted_row;
 	
 	pdeleted_row = NULL;
-	for (pnode=double_list_get_head(&pdb->tables.table_list);
-		NULL!=pnode; pnode=double_list_get_after(
-		&pdb->tables.table_list, pnode)) {
-		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
+	for (const auto &tnode : pdb->tables.table_list) {
+		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
 			continue;
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
@@ -2854,27 +2829,18 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 	uint32_t inst_num, multi_num = 0;
 	uint64_t parent_id;
 	int8_t unread_delta;
-	DOUBLE_LIST tmp_list;
-	DOUBLE_LIST tmp_list1;
+	std::list<table_node> tmp_list;
 	char sql_string[1024];
 	uint64_t row_folder_id;
 	DOUBLE_LIST notify_list;
-	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE};
 	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row;
 	
 	pmodified_row = NULL;
-	double_list_init(&tmp_list);
-	auto cl_0 = make_scope_exit([&tmp_list]() {
-		DOUBLE_LIST_NODE *n;
-		while ((n = double_list_pop_front(&tmp_list)) != nullptr)
-			delete static_cast<table_node *>(n->pdata);
-	});
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
+	for (const auto &tnode : pdb->tables.table_list) {
+		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
 			continue;
@@ -3392,31 +3358,29 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 		continue;
 		}
  REFRESH_TABLE:
-		auto ptnode = std::make_unique<table_node>(*ptable, table_node::clone_t{});
-		if (ptnode == nullptr)
-			return;
+		auto &stor = tmp_list.emplace_back(*ptable, table_node::clone_t{});
 		if (ptable->psorts->ccategories != 0)
-			ptnode->table_flags |= TABLE_FLAG_NONOTIFICATIONS;
-		double_list_append_as_tail(&tmp_list, &ptnode.release()->node);
+			stor.table_flags |= TABLE_FLAG_NONOTIFICATIONS;
+
+		/* Else, some methods will need to be written */
+		static_assert(!std::is_copy_constructible_v<table_node>);
+		static_assert(!std::is_copy_assignable_v<table_node>);
+		static_assert(!std::is_move_constructible_v<table_node>);
+		static_assert(!std::is_move_assignable_v<table_node>);
 	}
-	if (double_list_get_nodes_num(&tmp_list) == 0)
+	if (tmp_list.empty())
 		return;
-	tmp_list1 = pdb->tables.table_list;
-	pdb->tables.table_list = tmp_list;
+	std::swap(pdb->tables.table_list, tmp_list);
 	db_engine_notify_content_table_delete_row(
 		pdb, folder_id, message_id);
 	db_engine_notify_content_table_add_row(
 		pdb, folder_id, message_id);
-	pdb->tables.table_list = tmp_list1;
-	for (pnode = double_list_get_head(&tmp_list); NULL != pnode;
-	     pnode = double_list_get_after(&tmp_list, pnode)) {
-		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
+	std::swap(pdb->tables.table_list, tmp_list);
+	for (const auto &tnode : tmp_list) {
+		auto ptable = &tnode;
 		datagram.id_array = {1, deconst(&ptable->table_id)};
-		for (pnode1 = double_list_get_head(
-		     &pdb->tables.table_list); NULL != pnode1;
-		     pnode1 = double_list_get_after(
-		     &pdb->tables.table_list, pnode1)) {
-			auto ptnode = static_cast<TABLE_NODE *>(pnode1->pdata);
+		for (auto &tnode1 : pdb->tables.table_list) {
+			auto ptnode = &tnode1;
 			if (ptable->table_id != ptnode->table_id)
 				continue;
 			ptnode->header_id = ptable->header_id;
@@ -3469,7 +3433,6 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 	int idx;
 	BOOL b_included;
 	char sql_string[256];
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
 	DB_NOTIFY_DATAGRAM datagram2 = datagram;
@@ -3480,10 +3443,8 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 	padded_row = NULL;
 	pdeleted_row = NULL;
 	pmodified_row = NULL;
-	for (pnode=double_list_get_head(&pdb->tables.table_list);
-		NULL!=pnode; pnode=double_list_get_after(
-		&pdb->tables.table_list, pnode)) {
-		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
+	for (const auto &tnode : pdb->tables.table_list) {
+		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
 			continue;
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
@@ -3759,17 +3720,13 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 
 void db_engine_notify_content_table_reload(db_item_ptr &pdb, uint32_t table_id)
 {
-	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
 	
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		if (static_cast<TABLE_NODE *>(pnode->pdata)->table_id == table_id)
-			break;
-	}
-	if (pnode == nullptr)
+	const auto &list = pdb->tables.table_list;
+	auto ptable = std::find_if(list.cbegin(), list.cend(),
+	              [=](const table_node &n) { return n.table_id == table_id; });
+	if (ptable == list.cend())
 		return;
-	auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
 	datagram.dir = deconst(exmdb_server::get_dir());
 	datagram.db_notify.type = !ptable->b_search ?
 		db_notify_type::content_table_changed :
@@ -3788,15 +3745,11 @@ void db_engine_begin_batch_mode(db_item_ptr &pdb)
 
 void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 {
-	int table_num;
-	DOUBLE_LIST_NODE *pnode;
-	
-	table_num = double_list_get_nodes_num(&pdb->tables.table_list);
+	auto table_num = pdb->tables.table_list.size();
 	auto ptable_ids = table_num > 0 ? cu_alloc<uint32_t>(table_num) : nullptr;
 	table_num = 0;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
+	for (auto &tnode : pdb->tables.table_list) {
+		auto ptable = &tnode;
 		if (ptable->b_hint) {
 			if (ptable_ids != nullptr)
 				ptable_ids[table_num++] = ptable->table_id;
@@ -3812,12 +3765,7 @@ void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 
 void db_engine_cancel_batch_mode(db_item_ptr &pdb)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
-		ptable->b_hint = FALSE;
-	}
+	for (auto &t : pdb->tables.table_list)
+		t.b_hint = false;
 	pdb->tables.b_batch = FALSE;
 }

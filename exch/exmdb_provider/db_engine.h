@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <cstdint>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <sqlite3.h>
@@ -45,12 +46,11 @@ enum class instance_type {
 struct table_node {
 	struct clone_t {};
 
-	table_node();
+	table_node() = default;
 	table_node(const table_node &, clone_t);
 	~table_node();
 	NOMOVE(table_node);
 
-	DOUBLE_LIST_NODE node{};
 	uint32_t table_id = 0, table_flags = 0;
 	cpid_t cpid = CP_ACP;
 	enum table_type type = table_type::hierarchy;
@@ -113,7 +113,7 @@ struct DB_ITEM {
 	struct {
 		uint32_t last_id = 0;
 		BOOL b_batch = false; /* message database is in batch-mode */
-		DOUBLE_LIST table_list{};
+		std::list<table_node> table_list;
 		sqlite3 *psqlite = nullptr;
 	} tables;
 };

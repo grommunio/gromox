@@ -7,7 +7,9 @@
 #include <cstring>
 #include <fcntl.h>
 #include <iconv.h>
+#include <list>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -219,7 +221,9 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 		"depth INTEGER NOT NULL)", table_id);
 	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	auto ptnode = std::make_unique<table_node>();
+
+	std::list<table_node> holder;
+	auto ptnode = &holder.emplace_back();
 	ptnode->table_id = table_id;
 	auto remote_id = exmdb_server::get_remote_id();
 	if (NULL != remote_id) {
@@ -255,7 +259,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 	if (table_transact.commit() != 0)
 		return false;
 	*ptable_id = ptnode->table_id;
-	double_list_append_as_tail(&pdb->tables.table_list, &ptnode.release()->node);
+	pdb->tables.table_list.splice(pdb->tables.table_list.end(), std::move(holder));
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	return false;
@@ -611,7 +615,9 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
-	auto ptnode = std::make_unique<table_node>();
+
+	std::list<table_node> holder;
+	auto ptnode = &holder.emplace_back();
 	xstmt pstmt, pstmt1;
 	sqlite3 *psqlite = nullptr;
 	ptnode->table_id = table_id;
@@ -1131,7 +1137,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	all_ok = true;
 	if (table_transact.commit() != 0)
 		return false;
-	double_list_append_as_tail(&pdb->tables.table_list, &ptnode.release()->node);
+	pdb->tables.table_list.splice(pdb->tables.table_list.end(), std::move(holder));
 	if (*ptable_id == 0)
 		*ptable_id = table_id;
 	*prow_count = 0;
@@ -1161,37 +1167,27 @@ BOOL exmdb_server::reload_content_table(const char *dir, uint32_t table_id)
 	BOOL b_result;
 	uint32_t row_count;
 	char sql_string[128];
-	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		auto t = static_cast<const TABLE_NODE *>(pnode->pdata);
-		if (t->type == table_type::content && t->table_id == table_id) {
-			double_list_remove(&pdb->tables.table_list, pnode);
-			break;
-		}
-	}
-	if (pnode == nullptr)
+	auto &table_list = pdb->tables.table_list;
+	auto iter = std::find_if(table_list.begin(), table_list.end(),
+	            [&](const table_node &t) {
+	            	return t.type == table_type::content && t.table_id == table_id;
+	            });
+	if (iter == table_list.end())
 		return TRUE;
-	auto ptnode = static_cast<TABLE_NODE *>(pnode->pdata);
+
+	std::list<table_node> holder;
+	holder.splice(holder.end(), table_list, iter);
+	auto ptnode = &holder.back();
 	snprintf(sql_string, arsizeof(sql_string), "DROP TABLE t%u", table_id);
 	gx_sql_exec(pdb->tables.psqlite, sql_string);
 	b_result = table_load_content_table(pdb, ptnode->cpid,
 			ptnode->folder_id, ptnode->username, ptnode->table_flags,
 			ptnode->prestriction, ptnode->psorts, &table_id,
 			&row_count);
-	if (ptnode->remote_id != nullptr)
-		free(ptnode->remote_id);
-	if (ptnode->username != nullptr)
-		free(ptnode->username);
-	if (ptnode->prestriction != nullptr)
-		restriction_free(ptnode->prestriction);
-	if (ptnode->psorts != nullptr)
-		sortorder_set_free(ptnode->psorts);
-	free(ptnode);
 	db_engine_notify_content_table_reload(pdb, table_id);
 	return b_result;
 }
@@ -1274,7 +1270,9 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 		"AUTOINCREMENT, member_id INTEGER UNIQUE NOT NULL)", table_id);
 	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	auto ptnode = std::make_unique<table_node>();
+
+	std::list<table_node> holder;
+	auto ptnode = &holder.emplace_back();
 	ptnode->table_id = table_id;
 	auto remote_id = exmdb_server::get_remote_id();
 	if (NULL != remote_id) {
@@ -1297,7 +1295,7 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 	if (table_transact.commit() != 0)
 		return false;
 	*ptable_id = ptnode->table_id;
-	double_list_append_as_tail(&pdb->tables.table_list, &ptnode.release()->node);
+	pdb->tables.table_list.splice(pdb->tables.table_list.end(), std::move(holder));
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	return false;
@@ -1445,7 +1443,9 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 		"AUTOINCREMENT, rule_id INTEGER UNIQUE NOT NULL)", table_id);
 	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	auto ptnode = std::make_unique<table_node>();
+
+	std::list<table_node> holder;
+	auto ptnode = &holder.emplace_back();
 	ptnode->table_id = table_id;
 	auto remote_id = exmdb_server::get_remote_id();
 	if (NULL != remote_id) {
@@ -1472,7 +1472,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 	pstmt.finalize();
 	if (table_transact.commit() != 0)
 		return false;
-	double_list_append_as_tail(&pdb->tables.table_list, &ptnode.release()->node);
+	pdb->tables.table_list.splice(pdb->tables.table_list.end(), std::move(holder));
 	*ptable_id = ptnode->table_id;
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -1482,33 +1482,19 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 BOOL exmdb_server::unload_table(const char *dir, uint32_t table_id)
 {
 	char sql_string[128];
-	DOUBLE_LIST_NODE *pnode;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
-		auto t = static_cast<const TABLE_NODE *>(pnode->pdata);
-		if (t->table_id == table_id) {
-			double_list_remove(&pdb->tables.table_list, pnode);
-			break;
-		}
-	}
-	if (pnode == nullptr)
+	auto &table_list = pdb->tables.table_list;
+	auto iter = std::find_if(table_list.begin(), table_list.end(),
+	            [&](const table_node &t) { return t.table_id == table_id; });
+	if (iter == table_list.end())
 		return TRUE;
-	auto ptnode = static_cast<TABLE_NODE *>(pnode->pdata);
+
+	std::list<table_node> holder;
+	holder.splice(holder.end(), table_list, iter);
 	snprintf(sql_string, arsizeof(sql_string), "DROP TABLE t%u", table_id);
 	gx_sql_exec(pdb->tables.psqlite, sql_string);
-	if (ptnode->remote_id != nullptr)
-		free(ptnode->remote_id);
-	if (ptnode->username != nullptr)
-		free(ptnode->username);
-	if (ptnode->prestriction != nullptr)
-		restriction_free(ptnode->prestriction);
-	if (ptnode->psorts != nullptr)
-		sortorder_set_free(ptnode->psorts);
-	free(ptnode);
 	return TRUE;
 }
 
@@ -1672,13 +1658,9 @@ static void table_truncate_string(cpid_t cpid, char *pstring)
 
 static const TABLE_NODE *find_table(db_item_ptr &pdb, uint32_t table_id)
 {
-	auto tl = &pdb->tables.table_list;
-	for (auto n = double_list_get_head(tl); n != nullptr;
-	     n = double_list_get_after(tl, n)) {
-		auto t = static_cast<TABLE_NODE *>(n->pdata);
-		if (t->table_id == table_id)
-			return t;
-	}
+	for (const auto &t : pdb->tables.table_list)
+		if (t.table_id == table_id)
+			return &t;
 	return nullptr;
 }
 
