@@ -6,7 +6,9 @@ mod_fastcgi \(em http(8gx) processing plugin for proxying requests to
 FastCGI servers
 .SH Description
 mod_fastcgi can forward HTTP requests to one or more FastCGI servers when
-certain URIs are requested.
+certain URIs are requested. Take special note of the file suffix column
+documented below; in particular, to override an entire directory, you may also
+need to edit the table for mod_cache(4gx).
 .PP
 mod_fastcgi plugin is built into http(8gx) and not a separate .so file.
 .SH Configuration directives
