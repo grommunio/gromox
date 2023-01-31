@@ -63,27 +63,6 @@ int ndr_pull_check_string(NDR_PULL *pndr,
 	uint32_t count, uint32_t element_size);
 int ndr_pull_generic_ptr(NDR_PULL *pndr, uint32_t *v);
 int ndr_pull_context_handle(NDR_PULL *pndr, CONTEXT_HANDLE *r);
-void ndr_push_set_ptrcnt(NDR_PUSH *pndr, uint32_t ptr_count);
-extern void ndr_push_init(NDR_PUSH *pndr, void *pdata,
-	uint32_t alloc_size, uint32_t flags);
-void ndr_push_destroy(NDR_PUSH *pndr);
-int ndr_push_align(NDR_PUSH *pndr, size_t size);
-int ndr_push_union_align(NDR_PUSH *pndr, size_t size);
-int ndr_push_trailer_align(NDR_PUSH *pndr, size_t size);
-int ndr_push_string(NDR_PUSH *pndr, const char *var, uint32_t required);
-int ndr_push_uint8(NDR_PUSH *pndr, uint8_t v);
-int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v);
-#define ndr_push_int32(e, v) ndr_push_uint32((e), (v))
-int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v);
-int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v);
-int ndr_push_ulong(NDR_PUSH *pndr, uint32_t v);
-int ndr_push_array_uint8(NDR_PUSH *pndr, const uint8_t *data, uint32_t n);
-int ndr_push_guid(NDR_PUSH *pndr, const GUID *r);
-int ndr_push_syntax_id(NDR_PUSH *pndr, const SYNTAX_ID *r);
-int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob);
-int ndr_push_zero(NDR_PUSH *pndr, uint32_t n);
-int ndr_push_unique_ptr(NDR_PUSH *pndr, const void *p);
-int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r);
 
 struct GX_EXPORT NDR_PULL {
 	void init(const void *d, uint32_t z, uint32_t f) { return ndr_pull_init(this, d, z, f); }
@@ -112,26 +91,26 @@ struct GX_EXPORT NDR_PULL {
 };
 
 struct GX_EXPORT NDR_PUSH {
-	void init(void *d, uint32_t asize, uint32_t fl) { return ndr_push_init(this, d, asize, fl); }
+	void init(void *d, uint32_t asize, uint32_t fl);
 	void set_ptrcnt(uint32_t c) { ptr_count = c; }
-	void destroy() { ndr_push_destroy(this); }
-	int align(size_t z) { return ndr_push_align(this, z); }
-	int union_align(size_t z) { return ndr_push_union_align(this, z); }
-	int trailer_align(size_t z) { return ndr_push_trailer_align(this, z); }
-	int p_str(const char *v, uint32_t req) { return ndr_push_string(this, v, req); }
-	int p_uint8(uint8_t v) { return ndr_push_uint8(this, v); }
-	int p_uint16(uint16_t v) { return ndr_push_uint16(this, v); }
-	int p_uint32(uint32_t v) { return ndr_push_uint32(this, v); }
-	int p_int32(int32_t v) { return ndr_push_uint32(this, v); }
-	int p_uint64(uint64_t v) { return ndr_push_uint64(this, v); }
-	int p_ulong(uint32_t v) { return ndr_push_ulong(this, v); }
-	int p_uint8_a(const uint8_t *v, uint32_t z) { return ndr_push_array_uint8(this, v, z); }
-	int p_guid(const GUID &v) { return ndr_push_guid(this, &v); }
-	int p_syntax(const SYNTAX_ID &v) { return ndr_push_syntax_id(this, &v); }
-	int p_blob(DATA_BLOB v) { return ndr_push_data_blob(this, v); }
-	int p_zero(uint32_t n) { return ndr_push_zero(this, n); }
-	int p_unique_ptr(const void *v) { return ndr_push_unique_ptr(this, v); }
-	int p_ctx_handle(const CONTEXT_HANDLE &v) { return ndr_push_context_handle(this, &v); }
+	void destroy();
+	int align(size_t);
+	int union_align(size_t);
+	int trailer_align(size_t);
+	int p_str(const char *v, uint32_t req);
+	int p_uint8(uint8_t);
+	int p_uint16(uint16_t);
+	int p_uint32(uint32_t);
+	int p_int32(int32_t v) { return p_uint32(v); }
+	int p_uint64(uint64_t);
+	int p_ulong(uint32_t);
+	int p_uint8_a(const uint8_t *v, uint32_t z);
+	int p_guid(const GUID &);
+	int p_syntax(const SYNTAX_ID &);
+	int p_blob(DATA_BLOB);
+	int p_zero(uint32_t z);
+	int p_unique_ptr(const void *v);
+	int p_ctx_handle(const CONTEXT_HANDLE &);
 
 	uint8_t *data = nullptr;
 	uint32_t flags = 0, alloc_size = 0, offset = 0, ptr_count = 0;
