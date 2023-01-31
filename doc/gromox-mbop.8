@@ -60,7 +60,8 @@ may reopen it, though. The unload RPC is useful after a mailbox was deleted
 and/or reinitialized with grommunio-admin-api or tools like
 gromox-mkprivate(8)/gromox-mkpublic(8). [zcore also has store state in memory.
 This would also need to be purged \(em but there is no RPC for such action at
-this time.]
+this time.] unload will fail to succeed if there is still a client connected to
+the mailbox via a notification channel.
 .SH vacuum
 The "vacuum" RPC makes exmdb_provider issue the SQLite "vacuum" command on
 exchange.sqlite3, which rebuilds and compacts the database file.
