@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <climits>
@@ -113,12 +114,11 @@ static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_t);
 static void db_engine_notify_content_table_modify_row(db_item_ptr &, uint64_t folder_id, uint64_t message_id);
 
-static void db_engine_load_dynamic_list(DB_ITEM *pdb)
+static void db_engine_load_dynamic_list(DB_ITEM *pdb) try
 {
 	EXT_PULL ext_pull;
 	char sql_string[256];
 	uint32_t search_flags;
-	DYNAMIC_NODE *pdynamic;
 	LONGLONG_ARRAY tmp_fids;
 	RESTRICTION tmp_restriction;
 	
@@ -129,46 +129,34 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 	if (pstmt == nullptr)
 		return;
 	while (pstmt.step() == SQLITE_ROW) {
-		if (double_list_get_nodes_num(&pdb->dynamic_list) >= MAX_DYNAMIC_NODES)
+		if (pdb->dynamic_list.size() >= MAX_DYNAMIC_NODES)
 			break;
 		search_flags = sqlite3_column_int64(pstmt, 1);
 		if (search_flags == 0 || (search_flags & (STATIC_SEARCH | STOP_SEARCH)))
 			continue;
-		pdynamic = me_alloc<DYNAMIC_NODE>();
-		if (pdynamic == nullptr)
-			break;
-		pdynamic->node.pdata = pdynamic;
+		dynamic_node dn, *pdynamic = &dn;
 		pdynamic->folder_id = sqlite3_column_int64(pstmt, 0);
 		pdynamic->search_flags = search_flags;
 		ext_pull.init(sqlite3_column_blob(pstmt, 2),
 			sqlite3_column_bytes(pstmt, 2), common_util_alloc, 0);
-		if (ext_pull.g_restriction(&tmp_restriction) != EXT_ERR_SUCCESS) {
-			free(pdynamic);
+		if (ext_pull.g_restriction(&tmp_restriction) != EXT_ERR_SUCCESS)
 			continue;
-		}
 		pdynamic->prestriction = restriction_dup(&tmp_restriction);
-		if (NULL == pdynamic->prestriction) {
-			free(pdynamic);
+		if (pdynamic->prestriction == nullptr)
 			break;
-		}
 		if (!common_util_load_search_scopes(pdb->psqlite,
-		    pdynamic->folder_id, &tmp_fids)) {
-			restriction_free(pdynamic->prestriction);
-			free(pdynamic);
+		    pdynamic->folder_id, &tmp_fids))
 			continue;
-		}
 		pdynamic->folder_ids.count = tmp_fids.count;
 		pdynamic->folder_ids.pll = me_alloc<uint64_t>(tmp_fids.count);
-		if (NULL == pdynamic->folder_ids.pll) {
-			restriction_free(pdynamic->prestriction);
-			free(pdynamic);
+		if (pdynamic->folder_ids.pll == nullptr)
 			break;
-		}
 		memcpy(pdynamic->folder_ids.pll, tmp_fids.pll,
 					sizeof(uint64_t)*tmp_fids.count);
-		double_list_append_as_tail(
-			&pdb->dynamic_list, &pdynamic->node);
+		pdb->dynamic_list.push_back(std::move(dn));
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1142: ENOMEM");
 }
 
 static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
@@ -255,7 +243,6 @@ db_item_ptr db_engine_get_db(const char *path)
 		hhold.unlock();
 		return NULL;
 	}
-	double_list_init(&pdb->dynamic_list);
 	double_list_init(&pdb->tables.table_list);
 	pdb->tables.last_id = 0;
 	pdb->tables.b_batch = FALSE;
@@ -324,19 +311,40 @@ BOOL db_engine_unload_db(const char *path)
 	return FALSE;
 }
 
+dynamic_node::dynamic_node(dynamic_node &&o) noexcept :
+	folder_id(o.folder_id), search_flags(o.search_flags),
+	prestriction(o.prestriction), folder_ids(o.folder_ids)
+{
+	o.prestriction = nullptr;
+	o.folder_ids = {};
+}
+
+dynamic_node::~dynamic_node()
+{
+	if (prestriction != nullptr)
+		restriction_free(prestriction);
+	if (folder_ids.pll != nullptr)
+		free(folder_ids.pll);
+}
+
+dynamic_node &dynamic_node::operator=(dynamic_node &&o) noexcept
+{
+	folder_id = o.folder_id;
+	search_flags = o.search_flags;
+	std::swap(prestriction, o.prestriction);
+	folder_ids.count = o.folder_ids.count;
+	o.folder_ids.count = 0;
+	std::swap(folder_ids.pll, o.folder_ids.pll);
+	return *this;
+}
+
 DB_ITEM::~DB_ITEM()
 {
 	auto pdb = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	pdb->instance_list.clear();
-	while ((pnode = double_list_pop_front(&pdb->dynamic_list)) != nullptr) {
-		auto pdynamic = static_cast<DYNAMIC_NODE *>(pnode->pdata);
-		restriction_free(pdynamic->prestriction);
-		free(pdynamic->folder_ids.pll);
-		free(pdynamic);
-	}
-	double_list_free(&pdb->dynamic_list);
+	dynamic_list.clear();
 	while ((pnode = double_list_pop_front(&pdb->tables.table_list)) != nullptr) {
 		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
 		if (ptable->remote_id != nullptr)
@@ -781,64 +789,35 @@ bool db_engine_check_populating(const char *dir, uint64_t folder_id)
 }
 
 void db_engine_update_dynamic(db_item_ptr &pdb, uint64_t folder_id,
-	uint32_t search_flags, const RESTRICTION *prestriction,
-	const LONGLONG_ARRAY *pfolder_ids)
+    uint32_t search_flags, const RESTRICTION *prestriction,
+    const LONGLONG_ARRAY *pfolder_ids) try
 {
-	uint64_t *pll;
-	DYNAMIC_NODE *pdynamic;
-	DOUBLE_LIST_NODE *pnode;
-	RESTRICTION *prestriction1;
+	dynamic_node dn;
 	
-	for (pnode=double_list_get_head(&pdb->dynamic_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->dynamic_list, pnode)) {
-		pdynamic = static_cast<DYNAMIC_NODE *>(pnode->pdata);
-		if (pdynamic->folder_id == folder_id)
-			break;
-	}
-	prestriction1 = restriction_dup(prestriction);
-	if (prestriction1 == nullptr)
+	dn.folder_id    = folder_id;
+	dn.search_flags = search_flags;
+	dn.prestriction = restriction_dup(prestriction);
+	if (dn.prestriction == nullptr)
 		return;
-	pll = me_alloc<uint64_t>(pfolder_ids->count);
-	if (NULL == pll) {
-		restriction_free(prestriction1);
+	dn.folder_ids.count = pfolder_ids->count;
+	dn.folder_ids.pll   = me_alloc<uint64_t>(pfolder_ids->count);
+	if (dn.folder_ids.pll == nullptr)
 		return;
-	}
-	memcpy(pll, pfolder_ids->pll, sizeof(uint64_t)*pfolder_ids->count);
-	if (NULL == pnode) {
-		pdynamic = me_alloc<DYNAMIC_NODE>();
-		if (NULL == pdynamic) {
-			free(pll);
-			restriction_free(prestriction1);
-			return;
-		}
-		pdynamic->node.pdata = pdynamic;
-		pdynamic->folder_id = folder_id;
-		double_list_append_as_tail(&pdb->dynamic_list, &pdynamic->node);
-	} else {
-		free(pdynamic->folder_ids.pll);
-		restriction_free(pdynamic->prestriction);
-	}
-	pdynamic->search_flags = search_flags;
-	pdynamic->prestriction = prestriction1;
-	pdynamic->folder_ids.count = pfolder_ids->count;
-	pdynamic->folder_ids.pll = pll;
+	memcpy(dn.folder_ids.pll, pfolder_ids->pll, sizeof(*pfolder_ids->pll) * pfolder_ids->count);
+	auto i = std::find_if(pdb->dynamic_list.begin(), pdb->dynamic_list.end(),
+	         [=](const dynamic_node &n) { return n.folder_id == folder_id; });
+	if (i == pdb->dynamic_list.end())
+		pdb->dynamic_list.push_back(std::move(dn));
+	else
+		*i = std::move(dn);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1143: ENOMEM");
 }
 
 void db_engine_delete_dynamic(db_item_ptr &pdb, uint64_t folder_id)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pdb->dynamic_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->dynamic_list, pnode)) {
-		auto pdynamic = static_cast<DYNAMIC_NODE *>(pnode->pdata);
-		if (pdynamic->folder_id == folder_id) {
-			double_list_remove(&pdb->dynamic_list, pnode);
-			restriction_free(pdynamic->prestriction);
-			free(pdynamic->folder_ids.pll);
-			free(pdynamic);
-			break;
-		}
-	}
+	gromox::erase_first_if(pdb->dynamic_list,
+		[=](const dynamic_node &n) { return n.folder_id == folder_id; });
 }
 
 static void dbeng_dynevt_1(db_item_ptr &pdb, cpid_t cpid, uint64_t id1,
@@ -1020,16 +999,14 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, cpid_t cpid,
     dynamic_event event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
 	uint32_t folder_type;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (event_type == dynamic_event::move_folder &&
 	    !common_util_get_folder_type(pdb->psqlite, id3, &folder_type)) {
 		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
 	}
-	for (pnode=double_list_get_head(&pdb->dynamic_list); NULL!=pnode;
-		pnode=double_list_get_after(&pdb->dynamic_list, pnode)) {
-		auto pdynamic = static_cast<const DYNAMIC_NODE *>(pnode->pdata);
+	for (auto &dn : pdb->dynamic_list) {
+		auto pdynamic = &dn;
 		for (size_t i = 0; i < pdynamic->folder_ids.count; ++i) {
 			if (dynamic_event::move_folder == event_type) {
 				dbeng_dynevt_1(pdb, cpid, id1, id2, id3, folder_type, pdynamic, i);

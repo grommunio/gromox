@@ -21,13 +21,18 @@ enum class dynamic_event {
 	new_msg, modify_msg, del_msg, move_folder,
 };
 
-struct DYNAMIC_NODE {
-	DOUBLE_LIST_NODE node;
-	uint64_t folder_id;
-	uint32_t search_flags;
-	RESTRICTION *prestriction;
-	LONGLONG_ARRAY folder_ids;
+struct dynamic_node {
+	dynamic_node() = default;
+	dynamic_node(dynamic_node &&) noexcept;
+	~dynamic_node();
+	dynamic_node &operator=(dynamic_node &&) noexcept;
+
+	uint64_t folder_id = 0;
+	uint32_t search_flags = 0;
+	RESTRICTION *prestriction = nullptr;
+	LONGLONG_ARRAY folder_ids{};
 };
+using DYNAMIC_NODE = dynamic_node;
 
 enum class table_type {
 	hierarchy, content, permission, rule,
@@ -95,7 +100,7 @@ struct DB_ITEM {
 	time_t last_time = 0;
 	std::timed_mutex giant_lock; /* should be broken up */
 	sqlite3 *psqlite = nullptr;
-	DOUBLE_LIST dynamic_list{};	/* dynamic search list */
+	std::vector<dynamic_node> dynamic_list; /* dynamic searches */
 	std::vector<nsub_node> nsub_list;
 	std::vector<instance_node> instance_list;
 
