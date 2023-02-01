@@ -31,7 +31,7 @@ bool MhContext::loadHeaders()
 	uint32_t tmp_len;
 	char tmp_buff[1024];
 	while (orig.f_others.read(&tmp_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-		if (tmp_len >= 11 && tmp_len <= 13) {
+		if (tmp_len >= 10 && tmp_len <= 19) {
 			orig.f_others.read(tmp_buff, tmp_len);
 			if (strncasecmp(tmp_buff, "X-RequestId", 11) == 0) {
 				if (!getHeader(request_id, arsizeof(request_id)))
@@ -43,6 +43,14 @@ bool MhContext::loadHeaders()
 				continue;
 			} else if (strncasecmp(tmp_buff, "X-RequestType", 13) == 0) {
 				if (!getHeader(request_value, arsizeof(request_value)))
+					return false;
+				continue;
+			} else if (strncasecmp(tmp_buff, "User-Agent", 10) == 0) {
+				if (!getHeader(user_agent, std::size(user_agent)))
+					return false;
+				continue;
+			} else if (strncasecmp(tmp_buff, "X-ClientApplication", 19) == 0) {
+				if (!getHeader(cl_app, std::size(cl_app)))
 					return false;
 				continue;
 			}

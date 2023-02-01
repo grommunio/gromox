@@ -443,11 +443,11 @@ BOOL MhEmsmdbContext::notification_response(uint32_t result, uint32_t flags_out)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Emsmdb bridge
 
-static uint32_t emsmdb_bridge_connect(const connect_request& request, connect_response& response,
-                                       uint16_t& cxr, GUID& ses_guid)
+static uint32_t emsmdb_bridge_connect(const connect_request &request,
+    connect_response &response, uint16_t &cxr, GUID &ses_guid, uint16_t client_ver[3])
 {
 	uint32_t timestamp;
-	uint16_t best_ver[3]{}, client_ver[3]{}, server_ver[3]{};
+	uint16_t best_ver[3]{}, server_ver[3]{};
 	EMSMDB_HANDLE ses;
 	uint32_t result = emsmdb_interface_connect_ex(0, &ses, request.userdn,
 	                  request.flags, 0, 0, request.cpid, request.lcid_string,
@@ -563,6 +563,33 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	return std::nullopt;
 }
 
+static bool parse_xclientapp(const char *ca, const char *ua, uint16_t clv[3])
+{
+	char *p = nullptr;
+	if (strncasecmp(deconst(ca), "Outlook/", 8) == 0)
+		p = deconst(&ca[8]);
+	else if ((p = strstr(deconst(ua), "MAPI ")) != nullptr)
+		p += 5;
+	else
+		return false;
+	uint16_t a = strtoul(p, &p, 10);
+	if (*p != '.')
+		return false;
+	uint16_t b = strtoul(p + 1, deconst(&p), 10);
+	if (*p != '.')
+		return false;
+	uint16_t c = strtoul(p + 1, &p, 10);
+	if (*p != '.')
+		return false;
+	uint16_t d = strtoul(p + 1, &p, 10);
+	if (*p != '\0')
+		return false;
+	clv[0] = (a << 8) | b;
+	clv[1] = c | 0x8000;
+	clv[2] = d;
+	return true;
+}
+
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_connect_req(ctx.request.connect) != EXT_ERR_SUCCESS)
@@ -570,7 +597,9 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 	uint16_t cxr;
 	GUID old_guid;
 	ctx.response.connect.status = 0;
-	ctx.response.connect.result = emsmdb_bridge_connect(ctx.request.connect, ctx.response.connect, cxr, ctx.session_guid);
+	uint16_t clv[3];
+	parse_xclientapp(ctx.cl_app, ctx.user_agent, clv);
+	ctx.response.connect.result = emsmdb_bridge_connect(ctx.request.connect, ctx.response.connect, cxr, ctx.session_guid, clv);
 	if (ctx.response.connect.result == ecSuccess) {
 		if (ctx.session != nullptr) {
 			std::unique_lock hl_hold(ses_lock);
