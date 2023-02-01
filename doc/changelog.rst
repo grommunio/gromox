@@ -1,5 +1,5 @@
-Development 2.2.79
-==================
+Development 2.2.129
+===================
 
 Enhancements:
 
@@ -7,12 +7,14 @@ Enhancements:
 * ldap_adaptor: read ldap_start_tls, ldap_mail_attr from orgparam table
 * Support Emojis in HTML-to-RTF conversion code
 * exmdb_provider: implement message store softdelete count properties
+* dbop_sqlite: guard schema upgrades with transaction
 
 Fixes:
 
 * Do not fail entire HTML-to-RTF conversion or calls like
   getpropvals(PR_RTF_COMPRESSED) when encountering garbage bytes.
 * exmdb_provider: have folder message count properties respect softdelete
+* zcore: mapi_copyto had inverted meaning of MAPI_NOREPLACE
 
 Implementation changes:
 
