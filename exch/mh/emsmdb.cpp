@@ -98,9 +98,9 @@ static void (*asyncemsmdb_interface_register_active)(void *);
 static void (*asyncemsmdb_interface_remove)(CONTEXT_HANDLE *);
 
 static int (*emsmdb_interface_connect_ex)(uint64_t, CONTEXT_HANDLE *, const char *, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint16_t, uint32_t *, uint32_t *, uint32_t *, uint16_t *, char *, char *, const uint16_t *, uint16_t *, uint16_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *);
-static int (*emsmdb_interface_rpc_ext2)(CONTEXT_HANDLE *, uint32_t *flags, const uint8_t *, uint32_t, uint8_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *, uint32_t *);
-static int (*emsmdb_interface_disconnect)(CONTEXT_HANDLE *);
-static void (*emsmdb_interface_touch_handle)(CONTEXT_HANDLE *);
+static int (*emsmdb_interface_rpc_ext2)(CONTEXT_HANDLE &, uint32_t *flags, const uint8_t *, uint32_t, uint8_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *, uint32_t *);
+static int (*emsmdb_interface_disconnect)(CONTEXT_HANDLE &);
+static void (*emsmdb_interface_touch_handle)(const CONTEXT_HANDLE &);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Plugin structure declarations
@@ -443,11 +443,11 @@ BOOL MhEmsmdbContext::notification_response(uint32_t result, uint32_t flags_out)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Emsmdb bridge
 
-static uint32_t emsmdb_bridge_connect(const connect_request& request, connect_response& response,
-                                       uint16_t& cxr, GUID& ses_guid)
+static uint32_t emsmdb_bridge_connect(const connect_request &request,
+    connect_response &response, uint16_t &cxr, GUID &ses_guid, uint16_t client_ver[3])
 {
 	uint32_t timestamp;
-	uint16_t best_ver[3]{}, client_ver[3]{}, server_ver[3]{};
+	uint16_t best_ver[3]{}, server_ver[3]{};
 	EMSMDB_HANDLE ses;
 	uint32_t result = emsmdb_interface_connect_ex(0, &ses, request.userdn,
 	                  request.flags, 0, 0, request.cpid, request.lcid_string,
@@ -467,17 +467,14 @@ static uint32_t emsmdb_bridge_execute(const GUID& session_guid, const execute_re
 {
 	uint32_t trans_time;
 	EMSMDB_HANDLE ses = {HANDLE_EXCHANGE_EMSMDB, session_guid};
-	return emsmdb_interface_rpc_ext2(&ses, &response.flags, request.in,
+	return emsmdb_interface_rpc_ext2(ses, &response.flags, request.in,
 	       request.cb_in, response.out, &response.cb_out, request.auxin,
 	       request.cb_auxin, response.auxout, &response.cb_auxout,
 	       &trans_time);
 }
 
 static uint32_t emsmdb_bridge_disconnect(EMSMDB_HANDLE2 ses)
-{return emsmdb_interface_disconnect(&ses);}
-
-static void emsmdb_bridge_touch_handle(EMSMDB_HANDLE2 ses)
-{emsmdb_interface_touch_handle(&ses);}
+{return emsmdb_interface_disconnect(ses);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Request processing
@@ -563,6 +560,33 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	return std::nullopt;
 }
 
+static bool parse_xclientapp(const char *ca, const char *ua, uint16_t clv[3])
+{
+	char *p = nullptr;
+	if (strncasecmp(deconst(ca), "Outlook/", 8) == 0)
+		p = deconst(&ca[8]);
+	else if ((p = strstr(deconst(ua), "MAPI ")) != nullptr)
+		p += 5;
+	else
+		return false;
+	uint16_t a = strtoul(p, &p, 10);
+	if (*p != '.')
+		return false;
+	uint16_t b = strtoul(p + 1, deconst(&p), 10);
+	if (*p != '.')
+		return false;
+	uint16_t c = strtoul(p + 1, &p, 10);
+	if (*p != '.')
+		return false;
+	uint16_t d = strtoul(p + 1, &p, 10);
+	if (*p != '\0')
+		return false;
+	clv[0] = (a << 8) | b;
+	clv[1] = c | 0x8000;
+	clv[2] = d;
+	return true;
+}
+
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_connect_req(ctx.request.connect) != EXT_ERR_SUCCESS)
@@ -570,7 +594,9 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 	uint16_t cxr;
 	GUID old_guid;
 	ctx.response.connect.status = 0;
-	ctx.response.connect.result = emsmdb_bridge_connect(ctx.request.connect, ctx.response.connect, cxr, ctx.session_guid);
+	uint16_t clv[3];
+	parse_xclientapp(ctx.cl_app, ctx.user_agent, clv);
+	ctx.response.connect.result = emsmdb_bridge_connect(ctx.request.connect, ctx.response.connect, cxr, ctx.session_guid, clv);
 	if (ctx.response.connect.result == ecSuccess) {
 		if (ctx.session != nullptr) {
 			std::unique_lock hl_hold(ses_lock);
@@ -625,8 +651,9 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::execute(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_execute_req(ctx.request.execute) != EXT_ERR_SUCCESS)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
+	auto z = std::min(static_cast<size_t>(ctx.request.execute.cb_out), sizeof(ctx.response.execute.out));
 	ctx.response.execute.flags = ctx.request.execute.flags;
-	ctx.response.execute.cb_out = ctx.request.execute.cb_out;
+	ctx.response.execute.cb_out = z;
 	ctx.response.execute.status = 0;
 	ctx.response.execute.result = emsmdb_bridge_execute(ctx.session_guid, ctx.request.execute, ctx.response.execute);
 	if (ctx.ext_push.p_execute_rsp(ctx.response.execute) != EXT_ERR_SUCCESS)
@@ -683,7 +710,7 @@ BOOL MhEmsmdbPlugin::process(int context_id, const void *content, uint64_t lengt
 	if ((result = loadCookies(ctx)))
 		return result.value();
 	if (strcasecmp(ctx.request_value, "PING") == 0) {
-		emsmdb_bridge_touch_handle(ctx.session_guid);
+		emsmdb_interface_touch_handle({HANDLE_EXCHANGE_EMSMDB, ctx.session_guid});
 		return ctx.ping_response();
 	}
 	set_context(context_id);

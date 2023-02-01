@@ -3008,9 +3008,12 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	if (pbuff == nullptr)
 		return EXT_ERR_ALLOC;
 	auto pdata = ext.m_udata + ext.m_offset;
-	/* obfuscation case */
+	/*
+	 * Obfuscation case - modify data in place (devs: ensure callers
+	 * have the object actually mutable)
+	 */
 	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
-		common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size_actual);
+		common_util_obfuscate_data(deconst(pdata), rpc_header_ext.size);
 	/* lzxpress case */
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
 		decompressed_len = lzxpress_decompress(pdata,
