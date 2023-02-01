@@ -706,7 +706,7 @@ static const char *ntlmssp_target_name(NTLMSSP_CTX *pntlmssp,
 	}
 }
 
-static int ntlmssp_ndr_push_ntlm_version(NDR_PUSH *pndr, NTLMSSP_VERSION *r)
+static pack_result ntlmssp_ndr_push_ntlm_version(NDR_PUSH *pndr, NTLMSSP_VERSION *r)
 {
 	auto status = pndr->align(2);
 	if (NDR_ERR_SUCCESS != status) {

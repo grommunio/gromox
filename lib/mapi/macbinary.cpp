@@ -65,7 +65,7 @@ static uint16_t macbinary_crc(const uint8_t *ptr,
 	return crc;
 }
 
-static int macbinary_pull_uint16(EXT_PULL *pext, uint16_t *v)
+static pack_result macbinary_pull_uint16(EXT_PULL *pext, uint16_t *v)
 {
 	auto &ext = *pext;
 	if (ext.m_data_size < sizeof(uint16_t) ||
@@ -77,7 +77,7 @@ static int macbinary_pull_uint16(EXT_PULL *pext, uint16_t *v)
 	return EXT_ERR_SUCCESS;
 }
 
-static int macbinary_pull_uint32(EXT_PULL *pext, uint32_t *v)
+static pack_result macbinary_pull_uint32(EXT_PULL *pext, uint32_t *v)
 {
 	auto &ext = *pext;
 	if (ext.m_data_size < sizeof(uint32_t) ||
@@ -89,12 +89,12 @@ static int macbinary_pull_uint32(EXT_PULL *pext, uint32_t *v)
 	return EXT_ERR_SUCCESS;
 }
 
-static int macbinary_pull_int32(EXT_PULL *pext, int32_t *v)
+static pack_result macbinary_pull_int32(EXT_PULL *pext, int32_t *v)
 {
 	return macbinary_pull_uint32(pext, reinterpret_cast<uint32_t *>(v));
 }
 
-static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
+static pack_result macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 {
 	auto &ext = *pext;
 	uint16_t crc;
@@ -151,7 +151,7 @@ static int macbinary_pull_header(EXT_PULL *pext, MACBINARY_HEADER *r)
 	return pext->g_bytes(r->pads2, 2);
 }
 
-static int macbinary_push_uint16(EXT_PUSH *pext, uint16_t v)
+static pack_result macbinary_push_uint16(EXT_PUSH *pext, uint16_t v)
 {
 	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint16_t)))
@@ -161,7 +161,7 @@ static int macbinary_push_uint16(EXT_PUSH *pext, uint16_t v)
 	return EXT_ERR_SUCCESS;
 }
 
-static int macbinary_push_uint32(EXT_PUSH *pext, uint32_t v)
+static pack_result macbinary_push_uint32(EXT_PUSH *pext, uint32_t v)
 {
 	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint32_t)))
@@ -171,7 +171,7 @@ static int macbinary_push_uint32(EXT_PUSH *pext, uint32_t v)
 	return EXT_ERR_SUCCESS;
 }
 
-static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
+static pack_result macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 {
 	auto &ext = *pext;
 	int32_t tmp_int;
@@ -226,7 +226,7 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	return pext->p_bytes(r->pads2, 2);
 }
 
-int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
+pack_result macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 {
 	auto &ext = *pext;
 	TRY(macbinary_pull_header(pext, &r->header));
@@ -269,7 +269,7 @@ int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
+pack_result macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r)
 {
 	auto &ext = *pext;
 	uint8_t pad_buff[128]{};

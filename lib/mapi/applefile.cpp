@@ -11,7 +11,7 @@
 /* Mac time of 00:00:00 GMT, Jan 1, 1970 */
 #define TIMEDIFF 0x7c25b080
 
-static int applefile_pull_uint16(EXT_PULL *pext, uint16_t *v)
+static pack_result applefile_pull_uint16(EXT_PULL *pext, uint16_t *v)
 {
 	auto &ext = *pext;
 	if (ext.m_data_size < sizeof(uint16_t) ||
@@ -22,7 +22,7 @@ static int applefile_pull_uint16(EXT_PULL *pext, uint16_t *v)
 	return EXT_ERR_SUCCESS;
 }
 
-static int applefile_pull_uint32(EXT_PULL *pext, uint32_t *v)
+static pack_result applefile_pull_uint32(EXT_PULL *pext, uint32_t *v)
 {
 	auto &ext = *pext;
 	if (ext.m_data_size < sizeof(uint32_t) ||
@@ -33,17 +33,17 @@ static int applefile_pull_uint32(EXT_PULL *pext, uint32_t *v)
 	return EXT_ERR_SUCCESS;
 }
 
-static int applefile_pull_int16(EXT_PULL *pext, int16_t *v)
+static pack_result applefile_pull_int16(EXT_PULL *pext, int16_t *v)
 {
 	return applefile_pull_uint16(pext, reinterpret_cast<uint16_t *>(v));
 }
 
-static int applefile_pull_int32(EXT_PULL *pext, int32_t *v)
+static pack_result applefile_pull_int32(EXT_PULL *pext, int32_t *v)
 {
 	return applefile_pull_uint32(pext, reinterpret_cast<uint32_t *>(v));
 }
 
-static int applefile_pull_asheader(EXT_PULL *pext, ASHEADER *r)
+static pack_result applefile_pull_asheader(EXT_PULL *pext, ASHEADER *r)
 {
 	TRY(applefile_pull_uint32(pext, &r->magic_num));
 	if (APPLESINGLE_MAGIC != r->magic_num &&
@@ -57,7 +57,7 @@ static int applefile_pull_asheader(EXT_PULL *pext, ASHEADER *r)
 	return pext->g_bytes(r->filler, 16);
 }
 
-static int applefile_pull_asiconbw(EXT_PULL *pext,
+static pack_result applefile_pull_asiconbw(EXT_PULL *pext,
 	uint32_t entry_length, ASICONBW *r)
 {
 	auto &ext = *pext;
@@ -73,7 +73,7 @@ static int applefile_pull_asiconbw(EXT_PULL *pext,
 	return EXT_ERR_SUCCESS;
 }
 
-static int applefile_pull_asfiledates(EXT_PULL *pext,
+static pack_result applefile_pull_asfiledates(EXT_PULL *pext,
 	uint32_t entry_length, ASFILEDATES *r)
 {
 	auto &ext = *pext;
@@ -98,7 +98,7 @@ static int applefile_pull_asfiledates(EXT_PULL *pext,
 	return EXT_ERR_SUCCESS;
 }
 
-static int applefile_pull_asfinderinfo(EXT_PULL *pext,
+static pack_result applefile_pull_asfinderinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASFINDERINFO *r)
 {
 	auto &ext = *pext;
@@ -157,7 +157,7 @@ static int applefile_pull_asfinderinfo(EXT_PULL *pext,
 	return EXT_ERR_SUCCESS;
 }
 
-static int applefile_pull_asmacinfo(EXT_PULL *pext,
+static pack_result applefile_pull_asmacinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASMACINFO *r)
 {
 	auto &ext = *pext;
@@ -170,7 +170,7 @@ static int applefile_pull_asmacinfo(EXT_PULL *pext,
 	return pext->g_uint8(&r->attribute);
 }
 
-static int applefile_pull_asprodosinfo(EXT_PULL *pext,
+static pack_result applefile_pull_asprodosinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASPRODOSINFO *r)
 {
 	auto &ext = *pext;
@@ -186,7 +186,7 @@ static int applefile_pull_asprodosinfo(EXT_PULL *pext,
 	return applefile_pull_uint32(pext, &r->auxtype);
 }
 
-static int applefile_pull_asmsdosinfo(EXT_PULL *pext,
+static pack_result applefile_pull_asmsdosinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASMSDOSINFO *r)
 {
 	auto &ext = *pext;
@@ -199,7 +199,7 @@ static int applefile_pull_asmsdosinfo(EXT_PULL *pext,
 	return pext->g_uint8(&r->attr);
 }
 
-static int applefile_pull_asafpinfo(EXT_PULL *pext,
+static pack_result applefile_pull_asafpinfo(EXT_PULL *pext,
 	uint32_t entry_length, ASAFPINFO *r)
 {
 	auto &ext = *pext;
@@ -212,12 +212,12 @@ static int applefile_pull_asafpinfo(EXT_PULL *pext,
 	return pext->g_uint8(&r->attr);
 }
 
-static int applefile_pull_asafpdirid(EXT_PULL *pext, ASAFPDIRID *r)
+static pack_result applefile_pull_asafpdirid(EXT_PULL *pext, ASAFPDIRID *r)
 {
 	return applefile_pull_uint32(pext, &r->dirid);
 }
 
-static int applefile_pull_entry(EXT_PULL *pext,
+static pack_result applefile_pull_entry(EXT_PULL *pext,
 	uint32_t entry_id, uint32_t entry_length, void **ppentry)
 {	
 	auto &ext = *pext;
@@ -291,7 +291,7 @@ static int applefile_pull_entry(EXT_PULL *pext,
 	
 }
 
-static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
+static pack_result applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 {
 	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint16_t)))
@@ -301,7 +301,7 @@ static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 	return EXT_ERR_SUCCESS;
 }
 
-static int applefile_push_uint32(EXT_PUSH *pext, uint32_t v)
+static pack_result applefile_push_uint32(EXT_PUSH *pext, uint32_t v)
 {
 	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint32_t)))
@@ -311,7 +311,7 @@ static int applefile_push_uint32(EXT_PUSH *pext, uint32_t v)
 	return EXT_ERR_SUCCESS;
 }
 
-static int applefile_push_asheader(EXT_PUSH *pext, const ASHEADER *r)
+static pack_result applefile_push_asheader(EXT_PUSH *pext, const ASHEADER *r)
 {
 	if (APPLESINGLE_MAGIC != r->magic_num &&
 		APPLEDOUBLE_MAGIC != r->magic_num) {
@@ -325,7 +325,7 @@ static int applefile_push_asheader(EXT_PUSH *pext, const ASHEADER *r)
 	return pext->p_bytes(r->filler, 16);
 }
 
-static int applefile_push_asiconbw(EXT_PUSH *pext, const ASICONBW *r)
+static pack_result applefile_push_asiconbw(EXT_PUSH *pext, const ASICONBW *r)
 {
 	int i;
 	
@@ -335,7 +335,7 @@ static int applefile_push_asiconbw(EXT_PUSH *pext, const ASICONBW *r)
 	return EXT_ERR_SUCCESS;
 }
 
-static int applefile_push_asfiledates(EXT_PUSH *pext, const ASFILEDATES *r)
+static pack_result applefile_push_asfiledates(EXT_PUSH *pext, const ASFILEDATES *r)
 {
 	int32_t tmp_time;
 	
@@ -349,7 +349,7 @@ static int applefile_push_asfiledates(EXT_PUSH *pext, const ASFILEDATES *r)
 	return applefile_push_int32(pext, tmp_time);
 }
 
-static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
+static pack_result applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
 {
 	int i;
 	uint8_t count;
@@ -410,37 +410,37 @@ static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
 	
 }
 
-static int applefile_push_asmacinfo(EXT_PUSH *pext, const ASMACINFO *r)
+static pack_result applefile_push_asmacinfo(EXT_PUSH *pext, const ASMACINFO *r)
 {
 	TRY(pext->p_bytes(r->filler, 3));
 	return pext->p_uint8(r->attribute);
 }
 
-static int applefile_push_asprodosinfo(EXT_PUSH *pext, const ASPRODOSINFO *r)
+static pack_result applefile_push_asprodosinfo(EXT_PUSH *pext, const ASPRODOSINFO *r)
 {
 	TRY(applefile_push_uint16(pext, r->access));
 	TRY(applefile_push_uint16(pext, r->filetype));
 	return applefile_push_uint32(pext, r->auxtype);
 }
 
-static int applefile_push_asmsdosinfo(EXT_PUSH *pext, const ASMSDOSINFO *r)
+static pack_result applefile_push_asmsdosinfo(EXT_PUSH *pext, const ASMSDOSINFO *r)
 {
 	TRY(pext->p_uint8(r->filler));
 	return pext->p_uint8(r->attr);
 }
 
-static int applefile_push_asafpinfo(EXT_PUSH *pext, const ASAFPINFO *r)
+static pack_result applefile_push_asafpinfo(EXT_PUSH *pext, const ASAFPINFO *r)
 {
 	TRY(pext->p_bytes(r->filler, 3));
 	return pext->p_uint8(r->attr);
 }
 
-static int applefile_push_asafpdirid(EXT_PUSH *pext, const ASAFPDIRID *r)
+static pack_result applefile_push_asafpdirid(EXT_PUSH *pext, const ASAFPDIRID *r)
 {
 	return applefile_push_uint32(pext, r->dirid);
 }
 
-static int applefile_push_entry(EXT_PUSH *pext,
+static pack_result applefile_push_entry(EXT_PUSH *pext,
 	uint32_t entry_id, const void *pentry)
 {
 	switch (entry_id) {
@@ -467,7 +467,7 @@ static int applefile_push_entry(EXT_PUSH *pext,
 	
 }
 
-int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r)
+pack_result applefile_pull_file(EXT_PULL *pext, APPLEFILE *r)
 {
 	auto &ext = *pext;
 	int i;
@@ -495,7 +495,7 @@ int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r)
+pack_result applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r)
 {
 	auto &ext = *pext;
 	int i;

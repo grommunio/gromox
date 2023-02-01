@@ -1055,10 +1055,9 @@ static void rtf_ungetchar(RTF_READER *preader, int ch)
 	preader->ungot_chars[0] = ch;
 }
 
-static int rtf_getchar(RTF_READER *preader, int *pch)
+static pack_result rtf_getchar(RTF_READER *preader, int *pch)
 {
 	int ch;
-	int status;
 	int8_t tmp_char;
 
 	if (preader->ungot_chars[0] >= 0) {
@@ -1071,7 +1070,7 @@ static int rtf_getchar(RTF_READER *preader, int *pch)
 		return EXT_ERR_SUCCESS;
 	}
 	do {
-		status = preader->ext_pull.g_int8(&tmp_char);
+		auto status = preader->ext_pull.g_int8(&tmp_char);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
