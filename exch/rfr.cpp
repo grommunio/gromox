@@ -162,42 +162,42 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		if (prfr == nullptr)
 			return NDR_ERR_ALLOC;
 		memset(prfr, 0, sizeof(RFRGETNEWDSA_IN));
-		TRY(ndr_pull_uint32(pndr, &prfr->flags));
-		TRY(ndr_pull_ulong(pndr, &size));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length));
+		TRY(pndr->g_uint32(&prfr->flags));
+		TRY(pndr->g_ulong(&size));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size || length > 1024)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-		TRY(ndr_pull_string(pndr, prfr->puserdn, length));
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->check_str(length, sizeof(uint8_t)));
+		TRY(pndr->g_str(prfr->puserdn, length));
+		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
-			TRY(ndr_pull_generic_ptr(pndr, &ptr));
+			TRY(pndr->g_genptr(&ptr));
 			if (0 != ptr) {
-				TRY(ndr_pull_ulong(pndr, &size));
-				TRY(ndr_pull_ulong(pndr, &offset));
-				TRY(ndr_pull_ulong(pndr, &length));
+				TRY(pndr->g_ulong(&size));
+				TRY(pndr->g_ulong(&offset));
+				TRY(pndr->g_ulong(&length));
 				if (offset != 0 || length > size || length > 256)
 					return NDR_ERR_ARRAY_SIZE;
-				TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-				TRY(ndr_pull_string(pndr, prfr->punused, length));
+				TRY(pndr->check_str(length, sizeof(uint8_t)));
+				TRY(pndr->g_str(prfr->punused, length));
 			} else {
 				prfr->punused[0] = '\0';
 			}
 		} else {
 			prfr->punused[0] = '\0';
 		}
-		TRY(ndr_pull_generic_ptr(pndr, &ptr));
+		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
-			TRY(ndr_pull_generic_ptr(pndr, &ptr));
+			TRY(pndr->g_genptr(&ptr));
 			if (0 != ptr) {
-				TRY(ndr_pull_ulong(pndr, &size));
-				TRY(ndr_pull_ulong(pndr, &offset));
-				TRY(ndr_pull_ulong(pndr, &length));
+				TRY(pndr->g_ulong(&size));
+				TRY(pndr->g_ulong(&offset));
+				TRY(pndr->g_ulong(&length));
 				if (offset != 0 || length > size || length > 256)
 					return NDR_ERR_ARRAY_SIZE;
-				TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-				TRY(ndr_pull_string(pndr, prfr->pserver, length));
+				TRY(pndr->check_str(length, sizeof(uint8_t)));
+				TRY(pndr->g_str(prfr->pserver, length));
 			} else {
 				prfr->pserver[0] = '\0';
 			}
@@ -211,17 +211,17 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		if (prfr_dn == nullptr)
 			return NDR_ERR_ALLOC;
 		memset(prfr_dn, 0, sizeof(RFRGETFQDNFROMLEGACYDN_IN));
-		TRY(ndr_pull_uint32(pndr, &prfr_dn->flags));
-		TRY(ndr_pull_uint32(pndr, &prfr_dn->cb));
+		TRY(pndr->g_uint32(&prfr_dn->flags));
+		TRY(pndr->g_uint32(&prfr_dn->cb));
 		if (prfr_dn->cb < 10 || prfr_dn->cb > 1024)
 			return NDR_ERR_RANGE;
-		TRY(ndr_pull_ulong(pndr, &size));
-		TRY(ndr_pull_ulong(pndr, &offset));
-		TRY(ndr_pull_ulong(pndr, &length));
+		TRY(pndr->g_ulong(&size));
+		TRY(pndr->g_ulong(&offset));
+		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size || length > 1024)
 			return NDR_ERR_ARRAY_SIZE;
-		TRY(ndr_pull_check_string(pndr, length, sizeof(uint8_t)));
-		TRY(ndr_pull_string(pndr, prfr_dn->mbserverdn, length));
+		TRY(pndr->check_str(length, sizeof(uint8_t)));
+		TRY(pndr->g_str(prfr_dn->mbserverdn, length));
 		*ppin = prfr_dn;
 		return NDR_ERR_SUCCESS;
 	default:
@@ -274,43 +274,43 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 	case RfrGetNewDSA: {
 		auto prfr = static_cast<RFRGETNEWDSA_OUT *>(pout);
 		if ('\0' == *prfr->punused) {
-			TRY(ndr_push_unique_ptr(pndr, nullptr));
+			TRY(pndr->p_unique_ptr(nullptr));
 		} else {
-			TRY(ndr_push_unique_ptr(pndr, reinterpret_cast<void *>(0x1)));
+			TRY(pndr->p_unique_ptr(reinterpret_cast<void *>(0x1)));
 			length = strlen(prfr->punused) + 1;
-			TRY(ndr_push_unique_ptr(pndr, prfr->punused));
-			TRY(ndr_push_ulong(pndr, length));
-			TRY(ndr_push_ulong(pndr, 0));
-			TRY(ndr_push_ulong(pndr, length));
-			TRY(ndr_push_string(pndr, prfr->punused, length));
+			TRY(pndr->p_unique_ptr(prfr->punused));
+			TRY(pndr->p_ulong(length));
+			TRY(pndr->p_ulong(0));
+			TRY(pndr->p_ulong(length));
+			TRY(pndr->p_str(prfr->punused, length));
 		}
 		
 		if ('\0' == *prfr->pserver) {
-			TRY(ndr_push_unique_ptr(pndr, nullptr));
+			TRY(pndr->p_unique_ptr(nullptr));
 		} else {
-			TRY(ndr_push_unique_ptr(pndr, reinterpret_cast<void *>(0x2)));
+			TRY(pndr->p_unique_ptr(reinterpret_cast<void *>(0x2)));
 			length = strlen(prfr->pserver) + 1;
-			TRY(ndr_push_unique_ptr(pndr, prfr->pserver));
-			TRY(ndr_push_ulong(pndr, length));
-			TRY(ndr_push_ulong(pndr, 0));
-			TRY(ndr_push_ulong(pndr, length));
-			TRY(ndr_push_string(pndr, prfr->pserver, length));
+			TRY(pndr->p_unique_ptr(prfr->pserver));
+			TRY(pndr->p_ulong(length));
+			TRY(pndr->p_ulong(0));
+			TRY(pndr->p_ulong(length));
+			TRY(pndr->p_str(prfr->pserver, length));
 		}
-		return ndr_push_uint32(pndr, prfr->result);
+		return pndr->p_uint32(prfr->result);
 	}
 	case RfrGetFQDNFromServerDN: {
 		auto prfr_dn = static_cast<RFRGETFQDNFROMLEGACYDN_OUT *>(pout);
 		if ('\0' == *prfr_dn->serverfqdn) {
-			TRY(ndr_push_unique_ptr(pndr, nullptr));
+			TRY(pndr->p_unique_ptr(nullptr));
 		} else {
 			length = strlen(prfr_dn->serverfqdn) + 1;
-			TRY(ndr_push_unique_ptr(pndr, prfr_dn->serverfqdn));
-			TRY(ndr_push_ulong(pndr, length));
-			TRY(ndr_push_ulong(pndr, 0));
-			TRY(ndr_push_ulong(pndr, length));
-			TRY(ndr_push_string(pndr, prfr_dn->serverfqdn, length));
+			TRY(pndr->p_unique_ptr(prfr_dn->serverfqdn));
+			TRY(pndr->p_ulong(length));
+			TRY(pndr->p_ulong(0));
+			TRY(pndr->p_ulong(length));
+			TRY(pndr->p_str(prfr_dn->serverfqdn, length));
 		}
-		return ndr_push_uint32(pndr, prfr_dn->result);
+		return pndr->p_uint32(prfr_dn->result);
 	}
 	}
 	return NDR_ERR_SUCCESS;

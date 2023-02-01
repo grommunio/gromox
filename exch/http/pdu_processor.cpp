@@ -530,10 +530,9 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 	flags = 0;
 	if (!(ppkt->drep[0] & DCERPC_DREP_LE))
 		flags = NDR_FLAG_BIGENDIAN;
-	ndr_pull_init(&ndr, ptrailer->pb, ptrailer->cb, flags);
-	if (NDR_ERR_SUCCESS != ndr_pull_advance(&ndr, data_and_pad)) {
+	ndr.init(ptrailer->pb, ptrailer->cb, flags);
+	if (ndr.advance(data_and_pad) != NDR_ERR_SUCCESS)
 		return FALSE;
-	}
 	if (NDR_ERR_SUCCESS != pdu_ndr_pull_dcerpc_auth(&ndr, pauth)) {
 		return FALSE;
 	}
@@ -671,7 +670,7 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	}
 	
-	ndr_push_init(&ndr, pdata, DCERPC_BASE_MARSHALL_SIZE, flags);
+	ndr.init(pdata, DCERPC_BASE_MARSHALL_SIZE, flags);
 	ppkt->auth_length = pauth_info != nullptr ? pauth_info->credentials.cb : 0;
 	if (NDR_ERR_SUCCESS != pdu_ndr_push_ncacnpkt(&ndr, ppkt)) {
 		free(pdata);
@@ -1424,18 +1423,15 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	}
 	if (pcall->pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
-	ndr_push_init(&ndr, ndr_buff, DCERPC_BASE_MARSHALL_SIZE, flags);
-	
+	ndr.init(ndr_buff, DCERPC_BASE_MARSHALL_SIZE, flags);
 	if (NDR_ERR_SUCCESS != pdu_ndr_push_ncacnpkt(&ndr, ppkt)) {
 		return FALSE;
 	}
 	
 	pauth_ctx->auth_info.auth_pad_length =
 		(16 - (ppkt->payload.response.stub_and_verifier.cb & 15)) & 15;
-	if (NDR_ERR_SUCCESS != ndr_push_zero(&ndr,
-		pauth_ctx->auth_info.auth_pad_length)) {
+	if (ndr.p_zero(pauth_ctx->auth_info.auth_pad_length) != NDR_ERR_SUCCESS)
 		return FALSE;
-	}
 
 	payload_length = ppkt->payload.response.stub_and_verifier.cb +
 						pauth_ctx->auth_info.auth_pad_length;
@@ -1538,9 +1534,8 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 			prequest->opnum, pcall->pcontext->pinterface->name);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 	}
-	ndr_push_init(&ndr_push, pdata, alloc_size, flags);
-	
-	ndr_push_set_ptrcnt(&ndr_push, pcall->ptr_cnt);
+	ndr_push.init(pdata, alloc_size, flags);
+	ndr_push.set_ptrcnt(pcall->ptr_cnt);
 	
 	/* marshaling the NDR out param data */
 	auto ret = pcall->pcontext->pinterface->ndr_push(prequest->opnum, &ndr_push, pout);
@@ -1859,7 +1854,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		flags |= NDR_FLAG_BIGENDIAN;
 	if (pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
-	ndr_pull_init(&ndr_pull, prequest->stub_and_verifier.pb,
+	ndr_pull.init(prequest->stub_and_verifier.pb,
 		prequest->stub_and_verifier.cb, flags);
 	pcall->pcontext	= pcontext;
 	
@@ -1872,8 +1867,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
 	}
 	
-	pcall->ptr_cnt = ndr_pull_get_ptrcnt(&ndr_pull);
-	
+	pcall->ptr_cnt = ndr_pull.get_ptrcnt();
 	if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
 		pobject = &prequest->object.object;
 	} else {
@@ -1988,9 +1982,9 @@ void pdu_processor_rts_echo(char *pbuff)
 		flags = NDR_FLAG_BIGENDIAN;
 	else
 		flags = 0;
-	ndr_push_init(&ndr, pbuff, 20, flags);
+	ndr.init(pbuff, 20, flags);
 	pdu_ndr_push_ncacnpkt(&ndr, &pkt);
-	ndr_push_destroy(&ndr);
+	ndr.destroy();
 }
 
 BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
@@ -2591,7 +2585,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 		return PDU_PROCESSOR_ERROR;
 	}
 	
-	ndr_pull_init(&ndr, pbuff, length, flags);
+	ndr.init(pbuff, length, flags);
 	auto pcall = g_call_allocator->get();
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
@@ -2847,7 +2841,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	}
 	if (pbuff[DCERPC_PFC_OFFSET] & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
-	ndr_pull_init(&ndr, pbuff, length, flags);
+	ndr.init(pbuff, length, flags);
 	auto pcall = g_call_allocator->get();
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
