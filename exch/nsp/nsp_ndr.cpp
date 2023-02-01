@@ -15,8 +15,8 @@
 
 using namespace gromox;
 
-static int nsp_ndr_pull_restriction(NDR_PULL *pndr, unsigned int flag, NSPRES *r);
-static int nsp_ndr_push_restriction(NDR_PUSH *pndr, unsigned int flag, const NSPRES *r);
+static pack_result nsp_ndr_pull_restriction(NDR_PULL *pndr, unsigned int flag, NSPRES *r);
+static pack_result nsp_ndr_push_restriction(NDR_PUSH *pndr, unsigned int flag, const NSPRES *r);
 
 static int32_t nsp_ndr_to_utf16(int ndr_flag, const char *src, char *dst, size_t len)
 {
@@ -61,7 +61,7 @@ static BOOL nsp_ndr_to_utf8(int ndr_flag, const char *src,
 	}
 }
 
-static int nsp_ndr_pull_stat(NDR_PULL *pndr, STAT *r)
+static pack_result nsp_ndr_pull_stat(NDR_PULL *pndr, STAT *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->sort_type));
@@ -76,7 +76,7 @@ static int nsp_ndr_pull_stat(NDR_PULL *pndr, STAT *r)
 	return pndr->trailer_align(4);
 }
 
-static int nsp_ndr_push_stat(NDR_PUSH *pndr, const STAT *r)
+static pack_result nsp_ndr_push_stat(NDR_PUSH *pndr, const STAT *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->sort_type));
@@ -91,17 +91,17 @@ static int nsp_ndr_push_stat(NDR_PUSH *pndr, const STAT *r)
 	return pndr->trailer_align(4);
 }
 
-static int nsp_ndr_pull_flatuid(NDR_PULL *pndr, FLATUID *r)
+static pack_result nsp_ndr_pull_flatuid(NDR_PULL *pndr, FLATUID *r)
 {
 	return pndr->g_uint8_a(r->ab, 16);
 }
 
-static int nsp_ndr_push_flatuid(NDR_PUSH *pndr, const FLATUID *r)
+static pack_result nsp_ndr_push_flatuid(NDR_PUSH *pndr, const FLATUID *r)
 {	
 	return pndr->p_uint8_a(r->ab, 16);
 }
 
-static int nsp_ndr_pull_proptag_array(NDR_PULL *pndr, LPROPTAG_ARRAY *r)
+static pack_result nsp_ndr_pull_proptag_array(NDR_PULL *pndr, LPROPTAG_ARRAY *r)
 {
 	uint32_t size;
 	uint32_t offset;
@@ -126,7 +126,7 @@ static int nsp_ndr_pull_proptag_array(NDR_PULL *pndr, LPROPTAG_ARRAY *r)
 	return pndr->trailer_align(4);
 }
 
-static int nsp_ndr_push_proptag_array(NDR_PUSH *pndr, const LPROPTAG_ARRAY *r)
+static pack_result nsp_ndr_push_proptag_array(NDR_PUSH *pndr, const LPROPTAG_ARRAY *r)
 {
 	TRY(pndr->p_ulong(r->cvalues + 1));
 	TRY(pndr->align(4));
@@ -138,7 +138,8 @@ static int nsp_ndr_push_proptag_array(NDR_PUSH *pndr, const LPROPTAG_ARRAY *r)
 	return pndr->trailer_align(4);
 }
 
-static int nsp_ndr_pull_property_name(NDR_PULL *pndr, unsigned int flag, NSP_PROPNAME *r)
+static pack_result nsp_ndr_pull_property_name(NDR_PULL *pndr,
+    unsigned int flag, NSP_PROPNAME *r)
 {
 	uint32_t ptr;
 	
@@ -162,7 +163,8 @@ static int nsp_ndr_pull_property_name(NDR_PULL *pndr, unsigned int flag, NSP_PRO
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_string_array(NDR_PULL *pndr, unsigned int flag, STRING_ARRAY *r)
+static pack_result nsp_ndr_pull_string_array(NDR_PULL *pndr,
+    unsigned int flag, STRING_ARRAY *r)
 {
 	uint32_t ptr;
 	uint32_t cnt;
@@ -211,7 +213,8 @@ static int nsp_ndr_pull_string_array(NDR_PULL *pndr, unsigned int flag, STRING_A
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_string_array(NDR_PUSH *pndr, unsigned int flag, const STRING_ARRAY *r)
+static pack_result nsp_ndr_push_string_array(NDR_PUSH *pndr,
+    unsigned int flag, const STRING_ARRAY *r)
 {
 	uint32_t length;
 	
@@ -239,7 +242,8 @@ static int nsp_ndr_push_string_array(NDR_PUSH *pndr, unsigned int flag, const ST
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, unsigned int flag, STRINGS_ARRAY *r)
+static pack_result nsp_ndr_pull_strings_array(NDR_PULL *pndr,
+    unsigned int flag, STRINGS_ARRAY *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -284,7 +288,8 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, unsigned int flag, STRINGS
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, unsigned int flag, STRING_ARRAY *r)
+static pack_result nsp_ndr_pull_wstring_array(NDR_PULL *pndr,
+    unsigned int flag, STRING_ARRAY *r)
 {
 	uint32_t ptr;
 	uint32_t cnt;
@@ -343,7 +348,8 @@ static int nsp_ndr_pull_wstring_array(NDR_PULL *pndr, unsigned int flag, STRING_
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_wstring_array(NDR_PUSH *pndr, unsigned int flag, const STRING_ARRAY *r)
+static pack_result nsp_ndr_push_wstring_array(NDR_PUSH *pndr,
+    unsigned int flag, const STRING_ARRAY *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -380,7 +386,8 @@ static int nsp_ndr_push_wstring_array(NDR_PUSH *pndr, unsigned int flag, const S
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, unsigned int flag, STRINGS_ARRAY *r)
+static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL *pndr,
+    unsigned int flag, STRINGS_ARRAY *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -441,7 +448,7 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, unsigned int flag, STRING
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_binary(NDR_PULL *pndr, unsigned int flag, BINARY *r)
+static pack_result nsp_ndr_pull_binary(NDR_PULL *pndr, unsigned int flag, BINARY *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -474,7 +481,7 @@ static int nsp_ndr_pull_binary(NDR_PULL *pndr, unsigned int flag, BINARY *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_binary(NDR_PUSH *pndr, unsigned int flag, const BINARY *r)
+static pack_result nsp_ndr_push_binary(NDR_PUSH *pndr, unsigned int flag, const BINARY *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -490,7 +497,7 @@ static int nsp_ndr_push_binary(NDR_PUSH *pndr, unsigned int flag, const BINARY *
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_filetime(NDR_PULL *pndr, FILETIME *r)
+static pack_result nsp_ndr_pull_filetime(NDR_PULL *pndr, FILETIME *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->low_datetime));
@@ -498,7 +505,7 @@ static int nsp_ndr_pull_filetime(NDR_PULL *pndr, FILETIME *r)
 	return pndr->trailer_align(4);
 }
 
-static int nsp_ndr_push_filetime(NDR_PUSH *pndr, const FILETIME *r)
+static pack_result nsp_ndr_push_filetime(NDR_PUSH *pndr, const FILETIME *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->low_datetime));
@@ -506,7 +513,8 @@ static int nsp_ndr_push_filetime(NDR_PUSH *pndr, const FILETIME *r)
 	return pndr->trailer_align(4);
 }
 
-static int nsp_ndr_pull_short_array(NDR_PULL *pndr, unsigned int flag, SHORT_ARRAY *r)
+static pack_result nsp_ndr_pull_short_array(NDR_PULL *pndr,
+    unsigned int flag, SHORT_ARRAY *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -534,7 +542,8 @@ static int nsp_ndr_pull_short_array(NDR_PULL *pndr, unsigned int flag, SHORT_ARR
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_short_array(NDR_PUSH *pndr, unsigned int flag, const SHORT_ARRAY *r)
+static pack_result nsp_ndr_push_short_array(NDR_PUSH *pndr,
+    unsigned int flag, const SHORT_ARRAY *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -551,7 +560,8 @@ static int nsp_ndr_push_short_array(NDR_PUSH *pndr, unsigned int flag, const SHO
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_long_array(NDR_PULL *pndr, unsigned int flag, LONG_ARRAY *r)
+static pack_result nsp_ndr_pull_long_array(NDR_PULL *pndr,
+    unsigned int flag, LONG_ARRAY *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -579,7 +589,8 @@ static int nsp_ndr_pull_long_array(NDR_PULL *pndr, unsigned int flag, LONG_ARRAY
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_long_array(NDR_PUSH *pndr, unsigned int flag, const LONG_ARRAY *r)
+static pack_result nsp_ndr_push_long_array(NDR_PUSH *pndr,
+    unsigned int flag, const LONG_ARRAY *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -596,7 +607,8 @@ static int nsp_ndr_push_long_array(NDR_PUSH *pndr, unsigned int flag, const LONG
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_binary_array(NDR_PULL *pndr, unsigned int flag, BINARY_ARRAY *r)
+static pack_result nsp_ndr_pull_binary_array(NDR_PULL *pndr,
+    unsigned int flag, BINARY_ARRAY *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -626,7 +638,8 @@ static int nsp_ndr_pull_binary_array(NDR_PULL *pndr, unsigned int flag, BINARY_A
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_binary_array(NDR_PUSH *pndr, unsigned int flag, const BINARY_ARRAY *r)
+static pack_result nsp_ndr_push_binary_array(NDR_PUSH *pndr,
+    unsigned int flag, const BINARY_ARRAY *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -645,7 +658,8 @@ static int nsp_ndr_push_binary_array(NDR_PUSH *pndr, unsigned int flag, const BI
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_flatuid_array(NDR_PULL *pndr, unsigned int flag, FLATUID_ARRAY *r)
+static pack_result nsp_ndr_pull_flatuid_array(NDR_PULL *pndr,
+    unsigned int flag, FLATUID_ARRAY *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -684,7 +698,8 @@ static int nsp_ndr_pull_flatuid_array(NDR_PULL *pndr, unsigned int flag, FLATUID
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_flatuid_array(NDR_PUSH *pndr, unsigned int flag, const FLATUID_ARRAY *r)
+static pack_result nsp_ndr_push_flatuid_array(NDR_PUSH *pndr,
+    unsigned int flag, const FLATUID_ARRAY *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -704,7 +719,8 @@ static int nsp_ndr_push_flatuid_array(NDR_PUSH *pndr, unsigned int flag, const F
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_filetime_array(NDR_PULL *pndr, unsigned int flag, FILETIME_ARRAY *r)
+static pack_result nsp_ndr_pull_filetime_array(NDR_PULL *pndr,
+    unsigned int flag, FILETIME_ARRAY *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -731,7 +747,8 @@ static int nsp_ndr_pull_filetime_array(NDR_PULL *pndr, unsigned int flag, FILETI
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_filetime_array(NDR_PUSH *pndr, unsigned int flag, const FILETIME_ARRAY *r)
+static pack_result nsp_ndr_push_filetime_array(NDR_PUSH *pndr,
+    unsigned int flag, const FILETIME_ARRAY *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -748,8 +765,8 @@ static int nsp_ndr_push_filetime_array(NDR_PUSH *pndr, unsigned int flag, const 
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, unsigned int flag,
-    uint32_t *ptype, PROP_VAL_UNION *r)
+static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
+    unsigned int flag, uint32_t *ptype, PROP_VAL_UNION *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -908,8 +925,8 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, unsigned int flag,
-    uint32_t type, const PROP_VAL_UNION *r)
+static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
+    unsigned int flag, uint32_t type, const PROP_VAL_UNION *r)
 {
 	uint32_t length;
 	
@@ -1053,7 +1070,8 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_property_value(NDR_PULL *pndr, unsigned int flag, PROPERTY_VALUE *r)
+static pack_result nsp_ndr_pull_property_value(NDR_PULL *pndr,
+    unsigned int flag, PROPERTY_VALUE *r)
 {
 	if (flag & FLAG_HEADER) {
 		uint32_t type = PT_UNSPECIFIED;
@@ -1074,7 +1092,8 @@ static int nsp_ndr_pull_property_value(NDR_PULL *pndr, unsigned int flag, PROPER
 	
 }
 
-static int nsp_ndr_push_property_value(NDR_PUSH *pndr, unsigned int flag, const PROPERTY_VALUE *r)
+static pack_result nsp_ndr_push_property_value(NDR_PUSH *pndr,
+    unsigned int flag, const PROPERTY_VALUE *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -1088,7 +1107,8 @@ static int nsp_ndr_push_property_value(NDR_PUSH *pndr, unsigned int flag, const 
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_property_row(NDR_PULL *pndr, unsigned int flag, NSP_PROPROW *r)
+static pack_result nsp_ndr_pull_property_row(NDR_PULL *pndr,
+    unsigned int flag, NSP_PROPROW *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -1119,7 +1139,8 @@ static int nsp_ndr_pull_property_row(NDR_PULL *pndr, unsigned int flag, NSP_PROP
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_property_row(NDR_PUSH *pndr, unsigned int flag, const NSP_PROPROW *r)
+static pack_result nsp_ndr_push_property_row(NDR_PUSH *pndr,
+    unsigned int flag, const NSP_PROPROW *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -1139,7 +1160,8 @@ static int nsp_ndr_push_property_row(NDR_PUSH *pndr, unsigned int flag, const NS
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_proprow_set(NDR_PUSH *pndr, unsigned int flag, const NSP_ROWSET *r)
+static pack_result nsp_ndr_push_proprow_set(NDR_PUSH *pndr,
+    unsigned int flag, const NSP_ROWSET *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->p_ulong(r->crows));
@@ -1155,8 +1177,8 @@ static int nsp_ndr_push_proprow_set(NDR_PUSH *pndr, unsigned int flag, const NSP
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, unsigned int flag,
-    NSPRES_AND_OR *r)
+static pack_result nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr,
+    unsigned int flag, NSPRES_AND_OR *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -1186,8 +1208,8 @@ static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_and_or(NDR_PUSH *pndr, unsigned int flag,
-    const NSPRES_AND_OR *r)
+static pack_result nsp_ndr_push_restriction_and_or(NDR_PUSH *pndr,
+    unsigned int flag, const NSPRES_AND_OR *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -1206,8 +1228,8 @@ static int nsp_ndr_push_restriction_and_or(NDR_PUSH *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_not(NDR_PULL *pndr, unsigned int flag,
-    NSPRES_NOT *r)
+static pack_result nsp_ndr_pull_restriction_not(NDR_PULL *pndr,
+    unsigned int flag, NSPRES_NOT *r)
 {
 	uint32_t ptr;
 	
@@ -1229,8 +1251,8 @@ static int nsp_ndr_pull_restriction_not(NDR_PULL *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_not(NDR_PUSH *pndr, unsigned int flag,
-    const NSPRES_NOT *r)
+static pack_result nsp_ndr_push_restriction_not(NDR_PUSH *pndr,
+    unsigned int flag, const NSPRES_NOT *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -1242,8 +1264,8 @@ static int nsp_ndr_push_restriction_not(NDR_PUSH *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_content(NDR_PULL *pndr, unsigned int flag,
-     NSPRES_CONTENT *r)
+static pack_result nsp_ndr_pull_restriction_content(NDR_PULL *pndr,
+    unsigned int flag, NSPRES_CONTENT *r)
 {
 	uint32_t ptr;
 	
@@ -1267,8 +1289,8 @@ static int nsp_ndr_pull_restriction_content(NDR_PULL *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_content(NDR_PUSH *pndr, unsigned int flag,
-    const NSPRES_CONTENT *r)
+static pack_result nsp_ndr_push_restriction_content(NDR_PUSH *pndr,
+    unsigned int flag, const NSPRES_CONTENT *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -1282,8 +1304,8 @@ static int nsp_ndr_push_restriction_content(NDR_PUSH *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_property(NDR_PULL *pndr, unsigned int flag,
-    NSPRES_PROPERTY *r)
+static pack_result nsp_ndr_pull_restriction_property(NDR_PULL *pndr,
+    unsigned int flag, NSPRES_PROPERTY *r)
 {
 	uint32_t ptr;
 	
@@ -1307,8 +1329,8 @@ static int nsp_ndr_pull_restriction_property(NDR_PULL *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_property(NDR_PUSH *pndr, unsigned int flag,
-    const NSPRES_PROPERTY *r)
+static pack_result nsp_ndr_push_restriction_property(NDR_PUSH *pndr,
+    unsigned int flag, const NSPRES_PROPERTY *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -1322,7 +1344,7 @@ static int nsp_ndr_push_restriction_property(NDR_PUSH *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_propcompare(NDR_PULL *pndr,
+static pack_result nsp_ndr_pull_restriction_propcompare(NDR_PULL *pndr,
     NSPRES_PROPCOMPARE *r)
 {
 	TRY(pndr->align(4));
@@ -1333,7 +1355,7 @@ static int nsp_ndr_pull_restriction_propcompare(NDR_PULL *pndr,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_propcompare(NDR_PUSH *pndr,
+static pack_result nsp_ndr_push_restriction_propcompare(NDR_PUSH *pndr,
     const NSPRES_PROPCOMPARE *r)
 {
 	TRY(pndr->align(4));
@@ -1344,7 +1366,7 @@ static int nsp_ndr_push_restriction_propcompare(NDR_PUSH *pndr,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_bitmask(NDR_PULL *pndr, NSPRES_BITMASK *r)
+static pack_result nsp_ndr_pull_restriction_bitmask(NDR_PULL *pndr, NSPRES_BITMASK *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->rel_mbr));
@@ -1355,7 +1377,7 @@ static int nsp_ndr_pull_restriction_bitmask(NDR_PULL *pndr, NSPRES_BITMASK *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_bitmask(NDR_PUSH *pndr,
+static pack_result nsp_ndr_push_restriction_bitmask(NDR_PUSH *pndr,
     const NSPRES_BITMASK *r)
 {
 	TRY(pndr->align(4));
@@ -1366,7 +1388,7 @@ static int nsp_ndr_push_restriction_bitmask(NDR_PUSH *pndr,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_size(NDR_PULL *pndr, NSPRES_SIZE *r)
+static pack_result nsp_ndr_pull_restriction_size(NDR_PULL *pndr, NSPRES_SIZE *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->relop));
@@ -1376,7 +1398,7 @@ static int nsp_ndr_pull_restriction_size(NDR_PULL *pndr, NSPRES_SIZE *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_size(NDR_PUSH *pndr, const NSPRES_SIZE *r)
+static pack_result nsp_ndr_push_restriction_size(NDR_PUSH *pndr, const NSPRES_SIZE *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->relop));
@@ -1386,7 +1408,7 @@ static int nsp_ndr_push_restriction_size(NDR_PUSH *pndr, const NSPRES_SIZE *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_exist(NDR_PULL *pndr, NSPRES_EXIST *r)
+static pack_result nsp_ndr_pull_restriction_exist(NDR_PULL *pndr, NSPRES_EXIST *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->reserved1));
@@ -1396,7 +1418,7 @@ static int nsp_ndr_pull_restriction_exist(NDR_PULL *pndr, NSPRES_EXIST *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_exist(NDR_PUSH *pndr, const NSPRES_EXIST *r)
+static pack_result nsp_ndr_push_restriction_exist(NDR_PUSH *pndr, const NSPRES_EXIST *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint32(r->reserved1));
@@ -1406,7 +1428,8 @@ static int nsp_ndr_push_restriction_exist(NDR_PUSH *pndr, const NSPRES_EXIST *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_sub(NDR_PULL *pndr, unsigned int flag, NSPRES_SUB *r)
+static pack_result nsp_ndr_pull_restriction_sub(NDR_PULL *pndr,
+    unsigned int flag, NSPRES_SUB *r)
 {
 	uint32_t ptr;
 	
@@ -1429,8 +1452,8 @@ static int nsp_ndr_pull_restriction_sub(NDR_PULL *pndr, unsigned int flag, NSPRE
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_sub(NDR_PUSH *pndr, unsigned int flag,
-    const NSPRES_SUB *r)
+static pack_result nsp_ndr_push_restriction_sub(NDR_PUSH *pndr,
+    unsigned int flag, const NSPRES_SUB *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
@@ -1444,8 +1467,8 @@ static int nsp_ndr_push_restriction_sub(NDR_PUSH *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, unsigned int flag,
-    uint32_t *ptype, NSPRES_UNION *r)
+static pack_result nsp_ndr_pull_restriction_union(NDR_PULL *pndr,
+    unsigned int flag, uint32_t *ptype, NSPRES_UNION *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->union_align(5));
@@ -1524,8 +1547,8 @@ static int nsp_ndr_pull_restriction_union(NDR_PULL *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, unsigned int flag,
-    uint32_t type, const NSPRES_UNION *r)
+static pack_result nsp_ndr_push_restriction_union(NDR_PUSH *pndr,
+    unsigned int flag, uint32_t type, const NSPRES_UNION *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->union_align(5));
@@ -1604,7 +1627,8 @@ static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, unsigned int flag,
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction(NDR_PULL *pndr, unsigned int flag, NSPRES *r)
+static pack_result nsp_ndr_pull_restriction(NDR_PULL *pndr,
+    unsigned int flag, NSPRES *r)
 {
 	if (flag & FLAG_HEADER) {
 		uint32_t type = RES_NULL;
@@ -1623,7 +1647,8 @@ static int nsp_ndr_pull_restriction(NDR_PULL *pndr, unsigned int flag, NSPRES *r
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction(NDR_PUSH *pndr, unsigned int flag, const NSPRES *r)
+static pack_result nsp_ndr_push_restriction(NDR_PUSH *pndr,
+    unsigned int flag, const NSPRES *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(4));
@@ -1636,7 +1661,7 @@ static int nsp_ndr_push_restriction(NDR_PUSH *pndr, unsigned int flag, const NSP
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_nspibind(NDR_PULL *pndr, NSPIBIND_IN *r)
+static pack_result nsp_ndr_pull_nspibind(NDR_PULL *pndr, NSPIBIND_IN *r)
 {
 	uint32_t ptr;
 	
@@ -1656,7 +1681,7 @@ static int nsp_ndr_pull_nspibind(NDR_PULL *pndr, NSPIBIND_IN *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_nspibind(NDR_PUSH *pndr, const NSPIBIND_OUT *r)
+static pack_result nsp_ndr_push_nspibind(NDR_PUSH *pndr, const NSPIBIND_OUT *r)
 {
 	TRY(pndr->p_unique_ptr(r->pserver_guid));
 	if (r->pserver_guid != nullptr)
@@ -1666,21 +1691,21 @@ static int nsp_ndr_push_nspibind(NDR_PUSH *pndr, const NSPIBIND_OUT *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_nspiunbind(NDR_PULL *pndr, NSPIUNBIND_IN *r)
+static pack_result nsp_ndr_pull_nspiunbind(NDR_PULL *pndr, NSPIUNBIND_IN *r)
 {
 	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_nspiunbind(NDR_PUSH *pndr, const NSPIUNBIND_OUT *r)
+static pack_result nsp_ndr_push_nspiunbind(NDR_PUSH *pndr, const NSPIUNBIND_OUT *r)
 {
 	TRY(pndr->p_ctx_handle(r->handle));
 	TRY(pndr->p_uint32(r->result));
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_nspiupdatestat(NDR_PULL *pndr, NSPIUPDATESTAT_IN *r)
+static pack_result nsp_ndr_pull_nspiupdatestat(NDR_PULL *pndr, NSPIUPDATESTAT_IN *r)
 {
 	uint32_t ptr;
 	
@@ -1700,7 +1725,8 @@ static int nsp_ndr_pull_nspiupdatestat(NDR_PULL *pndr, NSPIUPDATESTAT_IN *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_nspiupdatestat(NDR_PUSH *pndr, const NSPIUPDATESTAT_OUT *r)
+static pack_result nsp_ndr_push_nspiupdatestat(NDR_PUSH *pndr,
+    const NSPIUPDATESTAT_OUT *r)
 {
 	TRY(nsp_ndr_push_stat(pndr, &r->stat));
 	TRY(pndr->p_unique_ptr(r->pdelta));
@@ -1710,7 +1736,7 @@ static int nsp_ndr_push_nspiupdatestat(NDR_PUSH *pndr, const NSPIUPDATESTAT_OUT 
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
+static pack_result nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -1748,7 +1774,8 @@ static int nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_nspiqueryrows(NDR_PUSH *pndr, const NSPIQUERYROWS_OUT *r)
+static pack_result nsp_ndr_push_nspiqueryrows(NDR_PUSH *pndr,
+    const NSPIQUERYROWS_OUT *r)
 {
 	TRY(nsp_ndr_push_stat(pndr, &r->stat));
 	TRY(pndr->p_unique_ptr(r->prows));
@@ -1758,7 +1785,7 @@ static int nsp_ndr_push_nspiqueryrows(NDR_PUSH *pndr, const NSPIQUERYROWS_OUT *r
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
+static pack_result nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
 {
 	uint32_t ptr;
 	
@@ -1787,7 +1814,8 @@ static int nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_nspiseekentries(NDR_PUSH *pndr, const NSPISEEKENTRIES_OUT *r)
+static pack_result nsp_ndr_push_nspiseekentries(NDR_PUSH *pndr,
+    const NSPISEEKENTRIES_OUT *r)
 {
 	TRY(nsp_ndr_push_stat(pndr, &r->stat));
 	TRY(pndr->p_unique_ptr(r->prows));
@@ -1796,7 +1824,7 @@ static int nsp_ndr_push_nspiseekentries(NDR_PUSH *pndr, const NSPISEEKENTRIES_OU
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
+static pack_result nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 {
 	uint32_t ptr;
 
@@ -1845,7 +1873,8 @@ static int nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_nspigetmatches(NDR_PUSH *pndr, const NSPIGETMATCHES_OUT *r)
+static pack_result nsp_ndr_push_nspigetmatches(NDR_PUSH *pndr,
+    const NSPIGETMATCHES_OUT *r)
 {
 	TRY(nsp_ndr_push_stat(pndr, &r->stat));
 	TRY(pndr->p_unique_ptr(r->poutmids));
@@ -1857,7 +1886,8 @@ static int nsp_ndr_push_nspigetmatches(NDR_PUSH *pndr, const NSPIGETMATCHES_OUT 
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspiresortrestriction(NDR_PULL *pndr, NSPIRESORTRESTRICTION_IN *r)
+static pack_result nsp_ndr_pull_nspiresortrestriction(NDR_PULL *pndr,
+    NSPIRESORTRESTRICTION_IN *r)
 {
 	uint32_t ptr;
 	
@@ -1877,7 +1907,8 @@ static int nsp_ndr_pull_nspiresortrestriction(NDR_PULL *pndr, NSPIRESORTRESTRICT
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_nspiresortrestriction(NDR_PUSH *pndr, const NSPIRESORTRESTRICTION_OUT *r)
+static pack_result nsp_ndr_push_nspiresortrestriction(NDR_PUSH *pndr,
+    const NSPIRESORTRESTRICTION_OUT *r)
 {
 	TRY(nsp_ndr_push_stat(pndr, &r->stat));
 	TRY(pndr->p_unique_ptr(r->poutmids));
@@ -1886,14 +1917,14 @@ static int nsp_ndr_push_nspiresortrestriction(NDR_PUSH *pndr, const NSPIRESORTRE
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspidntomid(NDR_PULL *pndr, NSPIDNTOMID_IN *r)
+static pack_result nsp_ndr_pull_nspidntomid(NDR_PULL *pndr, NSPIDNTOMID_IN *r)
 {
 	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	return nsp_ndr_pull_strings_array(pndr, FLAG_HEADER|FLAG_CONTENT, &r->names);
 }
 
-static int nsp_ndr_push_nspidntomid(NDR_PUSH *pndr, const NSPIDNTOMID_OUT *r)
+static pack_result nsp_ndr_push_nspidntomid(NDR_PUSH *pndr, const NSPIDNTOMID_OUT *r)
 {
 	TRY(pndr->p_unique_ptr(r->poutmids));
 	if (r->poutmids != nullptr)
@@ -1901,7 +1932,7 @@ static int nsp_ndr_push_nspidntomid(NDR_PUSH *pndr, const NSPIDNTOMID_OUT *r)
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspigetproplist(NDR_PULL *pndr, NSPIGETPROPLIST_IN *r)
+static pack_result nsp_ndr_pull_nspigetproplist(NDR_PULL *pndr, NSPIGETPROPLIST_IN *r)
 {
 	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->flags));
@@ -1909,7 +1940,8 @@ static int nsp_ndr_pull_nspigetproplist(NDR_PULL *pndr, NSPIGETPROPLIST_IN *r)
 	return pndr->g_uint32(&r->codepage);
 }
 
-static int nsp_ndr_push_nspigetproplist(NDR_PUSH *pndr, const NSPIGETPROPLIST_OUT *r)
+static pack_result nsp_ndr_push_nspigetproplist(NDR_PUSH *pndr,
+    const NSPIGETPROPLIST_OUT *r)
 {
 	TRY(pndr->p_unique_ptr(r->pproptags));
 	if (r->pproptags != nullptr)
@@ -1917,7 +1949,7 @@ static int nsp_ndr_push_nspigetproplist(NDR_PUSH *pndr, const NSPIGETPROPLIST_OU
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspigetprops(NDR_PULL *pndr, NSPIGETPROPS_IN *r)
+static pack_result nsp_ndr_pull_nspigetprops(NDR_PULL *pndr, NSPIGETPROPS_IN *r)
 {
 	uint32_t ptr;
 	
@@ -1937,7 +1969,8 @@ static int nsp_ndr_pull_nspigetprops(NDR_PULL *pndr, NSPIGETPROPS_IN *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_nspigetprops(NDR_PUSH *pndr, const NSPIGETPROPS_OUT *r)
+static pack_result nsp_ndr_push_nspigetprops(NDR_PUSH *pndr,
+    const NSPIGETPROPS_OUT *r)
 {
 	TRY(pndr->p_unique_ptr(r->prows));
 	if (r->prows != nullptr)
@@ -1945,7 +1978,7 @@ static int nsp_ndr_push_nspigetprops(NDR_PUSH *pndr, const NSPIGETPROPS_OUT *r)
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspicomparemids(NDR_PULL *pndr, NSPICOMPAREMIDS_IN *r)
+static pack_result nsp_ndr_pull_nspicomparemids(NDR_PULL *pndr, NSPICOMPAREMIDS_IN *r)
 {
 	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
@@ -1954,13 +1987,14 @@ static int nsp_ndr_pull_nspicomparemids(NDR_PULL *pndr, NSPICOMPAREMIDS_IN *r)
 	return pndr->g_uint32(&r->mid2);
 }
 
-static int nsp_ndr_push_nspicomparemids(NDR_PUSH *pndr, const NSPICOMPAREMIDS_OUT *r)
+static pack_result nsp_ndr_push_nspicomparemids(NDR_PUSH *pndr,
+    const NSPICOMPAREMIDS_OUT *r)
 {
 	TRY(pndr->p_uint32(r->result));
 	return pndr->p_uint32(r->result1);
 }
 
-static int nsp_ndr_pull_nspimodprops(NDR_PULL *pndr, NSPIMODPROPS_IN *r)
+static pack_result nsp_ndr_pull_nspimodprops(NDR_PULL *pndr, NSPIMODPROPS_IN *r)
 {
 	uint32_t ptr;
 	
@@ -1980,12 +2014,14 @@ static int nsp_ndr_pull_nspimodprops(NDR_PULL *pndr, NSPIMODPROPS_IN *r)
 	return nsp_ndr_pull_property_row(pndr, FLAG_HEADER|FLAG_CONTENT, &r->row);
 }
 
-static int nsp_ndr_push_nspimodprops(NDR_PUSH *pndr, const NSPIMODPROPS_OUT *r)
+static pack_result nsp_ndr_push_nspimodprops(NDR_PUSH *pndr,
+    const NSPIMODPROPS_OUT *r)
 {
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspigetspecialtable(NDR_PULL *pndr, NSPIGETSPECIALTABLE_IN *r)
+static pack_result nsp_ndr_pull_nspigetspecialtable(NDR_PULL *pndr,
+    NSPIGETSPECIALTABLE_IN *r)
 {
 	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->flags));
@@ -1993,7 +2029,8 @@ static int nsp_ndr_pull_nspigetspecialtable(NDR_PULL *pndr, NSPIGETSPECIALTABLE_
 	return pndr->g_uint32(&r->version);
 }
 
-static int nsp_ndr_push_nspigetspecialtable(NDR_PUSH *pndr, const NSPIGETSPECIALTABLE_OUT *r)
+static pack_result nsp_ndr_push_nspigetspecialtable(NDR_PUSH *pndr,
+    const NSPIGETSPECIALTABLE_OUT *r)
 {
 	TRY(pndr->p_uint32(r->version));
 	TRY(pndr->p_unique_ptr(r->prows));
@@ -2002,7 +2039,8 @@ static int nsp_ndr_push_nspigetspecialtable(NDR_PUSH *pndr, const NSPIGETSPECIAL
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspigettemplateinfo(NDR_PULL *pndr, NSPIGETTEMPLATEINFO_IN *r)
+static pack_result nsp_ndr_pull_nspigettemplateinfo(NDR_PULL *pndr,
+    NSPIGETTEMPLATEINFO_IN *r)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -2031,7 +2069,8 @@ static int nsp_ndr_pull_nspigettemplateinfo(NDR_PULL *pndr, NSPIGETTEMPLATEINFO_
 	return pndr->g_uint32(&r->locale_id);
 }
 
-static int nsp_ndr_push_nspigettemplateinfo(NDR_PUSH *pndr, const NSPIGETTEMPLATEINFO_OUT *r)
+static pack_result nsp_ndr_push_nspigettemplateinfo(NDR_PUSH *pndr,
+    const NSPIGETTEMPLATEINFO_OUT *r)
 {
 	TRY(pndr->p_unique_ptr(r->pdata));
 	if (r->pdata != nullptr)
@@ -2039,7 +2078,7 @@ static int nsp_ndr_push_nspigettemplateinfo(NDR_PUSH *pndr, const NSPIGETTEMPLAT
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspimodlinkatt(NDR_PULL *pndr, NSPIMODLINKATT_IN *r)
+static pack_result nsp_ndr_pull_nspimodlinkatt(NDR_PULL *pndr, NSPIMODLINKATT_IN *r)
 {
 	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->flags));
@@ -2048,19 +2087,21 @@ static int nsp_ndr_pull_nspimodlinkatt(NDR_PULL *pndr, NSPIMODLINKATT_IN *r)
 	return nsp_ndr_pull_binary_array(pndr, FLAG_HEADER|FLAG_CONTENT, &r->entry_ids);
 }
 
-static int nsp_ndr_push_nspimodlinkatt(NDR_PUSH *pndr, const NSPIMODLINKATT_OUT *r)
+static pack_result nsp_ndr_push_nspimodlinkatt(NDR_PUSH *pndr,
+    const NSPIMODLINKATT_OUT *r)
 {
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspiquerycolumns(NDR_PULL *pndr, NSPIQUERYCOLUMNS_IN *r)
+static pack_result nsp_ndr_pull_nspiquerycolumns(NDR_PULL *pndr, NSPIQUERYCOLUMNS_IN *r)
 {
 	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
 	return pndr->g_uint32(&r->flags);
 }
 
-static int nsp_ndr_push_nspiquerycolumns(NDR_PUSH *pndr, const NSPIQUERYCOLUMNS_OUT *r)
+static pack_result nsp_ndr_push_nspiquerycolumns(NDR_PUSH *pndr,
+    const NSPIQUERYCOLUMNS_OUT *r)
 {
 	TRY(pndr->p_unique_ptr(r->pcolumns));
 	if (r->pcolumns != nullptr)
@@ -2068,7 +2109,7 @@ static int nsp_ndr_push_nspiquerycolumns(NDR_PUSH *pndr, const NSPIQUERYCOLUMNS_
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspiresolvenames(NDR_PULL *pndr, NSPIRESOLVENAMES_IN *r)
+static pack_result nsp_ndr_pull_nspiresolvenames(NDR_PULL *pndr, NSPIRESOLVENAMES_IN *r)
 {
 	uint32_t ptr;
 	
@@ -2088,7 +2129,8 @@ static int nsp_ndr_pull_nspiresolvenames(NDR_PULL *pndr, NSPIRESOLVENAMES_IN *r)
 	
 }
 
-static int nsp_ndr_push_nspiresolvenames(NDR_PUSH *pndr, const NSPIRESOLVENAMES_OUT *r)
+static pack_result nsp_ndr_push_nspiresolvenames(NDR_PUSH *pndr,
+    const NSPIRESOLVENAMES_OUT *r)
 {
 	TRY(pndr->p_unique_ptr(r->pmids));
 	if (r->pmids != nullptr)
@@ -2099,7 +2141,7 @@ static int nsp_ndr_push_nspiresolvenames(NDR_PUSH *pndr, const NSPIRESOLVENAMES_
 	return pndr->p_uint32(r->result);
 }
 
-static int nsp_ndr_pull_nspiresolvenamesw(NDR_PULL *pndr, NSPIRESOLVENAMESW_IN *r)
+static pack_result nsp_ndr_pull_nspiresolvenamesw(NDR_PULL *pndr, NSPIRESOLVENAMESW_IN *r)
 {
 	uint32_t ptr;
 	
@@ -2119,7 +2161,8 @@ static int nsp_ndr_pull_nspiresolvenamesw(NDR_PULL *pndr, NSPIRESOLVENAMESW_IN *
 	return nsp_ndr_pull_wstrings_array(pndr, FLAG_HEADER|FLAG_CONTENT, &r->strs);
 }
 
-static int nsp_ndr_push_nspiresolvenamesw(NDR_PUSH *pndr, const NSPIRESOLVENAMESW_OUT *r)
+static pack_result nsp_ndr_push_nspiresolvenamesw(NDR_PUSH *pndr,
+    const NSPIRESOLVENAMESW_OUT *r)
 {
 	TRY(pndr->p_unique_ptr(r->pmids));
 	if (r->pmids != nullptr)
@@ -2130,7 +2173,7 @@ static int nsp_ndr_push_nspiresolvenamesw(NDR_PUSH *pndr, const NSPIRESOLVENAMES
 	return pndr->p_uint32(r->result);
 }
 
-int exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
+pack_result exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 {
 	switch (opnum) {
 	case nspiBind:
@@ -2246,7 +2289,7 @@ int exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 	}
 }
 
-int exchange_nsp_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
+pack_result exchange_nsp_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 {
 	switch (opnum) {
 	case nspiBind:

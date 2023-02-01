@@ -260,5 +260,5 @@ struct NSPIRESOLVENAMESW_OUT {
 	uint32_t result;
 };
 
-extern int exchange_nsp_ndr_pull(int op, NDR_PULL *, void **in);
-extern int exchange_nsp_ndr_push(int op, NDR_PUSH *, void *out);
+extern pack_result exchange_nsp_ndr_pull(int op, NDR_PULL *, void **in);
+extern pack_result exchange_nsp_ndr_push(int op, NDR_PUSH *, void *out);

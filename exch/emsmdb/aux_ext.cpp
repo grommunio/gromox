@@ -39,13 +39,14 @@ using namespace gromox;
 
 /* Code for parsing a bunch of other AUX blocks is present in commit history */
 
-static int aux_ext_push_aux_client_control(EXT_PUSH &x, const AUX_CLIENT_CONTROL &r)
+static pack_result aux_ext_push_aux_client_control(EXT_PUSH &x,
+    const AUX_CLIENT_CONTROL &r)
 {
 	TRY(x.p_uint32(r.enable_flags));
 	return x.p_uint32(r.expiry_time);
 }
 
-static int aux_ext_push_aux_header_type_union1(EXT_PUSH &x, const AUX_HEADER &r)
+static pack_result aux_ext_push_aux_header_type_union1(EXT_PUSH &x, const AUX_HEADER &r)
 {
 	switch (r.type) {
 	case AUX_TYPE_CLIENT_CONTROL:
@@ -58,7 +59,7 @@ static int aux_ext_push_aux_header_type_union1(EXT_PUSH &x, const AUX_HEADER &r)
 	}
 }
 
-static int aux_ext_push_aux_header(EXT_PUSH &x, const AUX_HEADER &r) try
+static pack_result aux_ext_push_aux_header(EXT_PUSH &x, const AUX_HEADER &r) try
 {
 	uint16_t size;
 	EXT_PUSH subext;
@@ -92,7 +93,7 @@ static int aux_ext_push_aux_header(EXT_PUSH &x, const AUX_HEADER &r) try
 	return EXT_ERR_ALLOC;
 }
 
-int aux_ext_push_aux_info(EXT_PUSH *pext, const AUX_INFO &r) try
+pack_result aux_ext_push_aux_info(EXT_PUSH *pext, const AUX_INFO &r) try
 {
 	EXT_PUSH subext;
 	static constexpr size_t ext_buff_size = 0x1008;

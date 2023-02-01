@@ -14,7 +14,7 @@
 	(cls).m_flags &= ~EXT_FLAG_ABK; \
 	auto cl_flag_X2 = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags_X2; });
 
-static int nsp_ext_g_stat(nsp_ext_pull &ext, STAT &s)
+static pack_result nsp_ext_g_stat(nsp_ext_pull &ext, STAT &s)
 {
 	TRY(ext.g_uint32(&s.sort_type));
 	TRY(ext.g_uint32(&s.container_id));
@@ -27,13 +27,13 @@ static int nsp_ext_g_stat(nsp_ext_pull &ext, STAT &s)
 	return ext.g_uint32(&s.sort_locale);
 }
 
-static int nsp_ext_g_propname(nsp_ext_pull &ext, nsp_propname2 *propname)
+static pack_result nsp_ext_g_propname(nsp_ext_pull &ext, nsp_propname2 *propname)
 {
 	TRY(ext.g_guid(&propname->guid));
 	return ext.g_uint32(&propname->id);
 }
 
-int nsp_ext_pull::g_nsp_request(bind_request &req)
+pack_result nsp_ext_pull::g_nsp_request(bind_request &req)
 {
 	uint8_t tmp_byte;
 
@@ -60,7 +60,7 @@ int nsp_ext_pull::g_nsp_request(bind_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(unbind_request &req)
+pack_result nsp_ext_pull::g_nsp_request(unbind_request &req)
 {
 	TRY(g_uint32(&req.reserved));
 	TRY(g_uint32(&req.cb_auxin));
@@ -76,7 +76,7 @@ int nsp_ext_pull::g_nsp_request(unbind_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(comparemids_request &req)
+pack_result nsp_ext_pull::g_nsp_request(comparemids_request &req)
 {
 	uint8_t tmp_byte;
 
@@ -105,7 +105,7 @@ int nsp_ext_pull::g_nsp_request(comparemids_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(dntomid_request &req)
+pack_result nsp_ext_pull::g_nsp_request(dntomid_request &req)
 {
 	uint8_t tmp_byte;
 
@@ -132,7 +132,7 @@ int nsp_ext_pull::g_nsp_request(dntomid_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(getmatches_request &req)
+pack_result nsp_ext_pull::g_nsp_request(getmatches_request &req)
 {
 	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
@@ -198,7 +198,7 @@ int nsp_ext_pull::g_nsp_request(getmatches_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(getproplist_request &req)
+pack_result nsp_ext_pull::g_nsp_request(getproplist_request &req)
 {
 	TRY(g_uint32(&req.flags));
 	TRY(g_uint32(&req.mid));
@@ -216,7 +216,7 @@ int nsp_ext_pull::g_nsp_request(getproplist_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(getprops_request &req)
+pack_result nsp_ext_pull::g_nsp_request(getprops_request &req)
 {
 	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
@@ -253,7 +253,7 @@ int nsp_ext_pull::g_nsp_request(getprops_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(getspecialtable_request &req)
+pack_result nsp_ext_pull::g_nsp_request(getspecialtable_request &req)
 {
 	uint8_t tmp_byte;
 
@@ -289,7 +289,7 @@ int nsp_ext_pull::g_nsp_request(getspecialtable_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(gettemplateinfo_request &req)
+pack_result nsp_ext_pull::g_nsp_request(gettemplateinfo_request &req)
 {
 	uint8_t tmp_byte;
 
@@ -316,7 +316,7 @@ int nsp_ext_pull::g_nsp_request(gettemplateinfo_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(modlinkatt_request &req)
+pack_result nsp_ext_pull::g_nsp_request(modlinkatt_request &req)
 {
 	uint8_t tmp_byte;
 
@@ -343,7 +343,7 @@ int nsp_ext_pull::g_nsp_request(modlinkatt_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(modprops_request &req)
+pack_result nsp_ext_pull::g_nsp_request(modprops_request &req)
 {
 	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
@@ -389,7 +389,7 @@ int nsp_ext_pull::g_nsp_request(modprops_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(queryrows_request &req)
+pack_result nsp_ext_pull::g_nsp_request(queryrows_request &req)
 {
 	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
@@ -428,7 +428,7 @@ int nsp_ext_pull::g_nsp_request(queryrows_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(querycolumns_request &req)
+pack_result nsp_ext_pull::g_nsp_request(querycolumns_request &req)
 {
 	TRY(g_uint32(&req.reserved));
 	TRY(g_uint32(&req.flags));
@@ -445,7 +445,7 @@ int nsp_ext_pull::g_nsp_request(querycolumns_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(resolvenames_request &req)
+pack_result nsp_ext_pull::g_nsp_request(resolvenames_request &req)
 {
 	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
@@ -492,7 +492,7 @@ int nsp_ext_pull::g_nsp_request(resolvenames_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(resortrestriction_request &req)
+pack_result nsp_ext_pull::g_nsp_request(resortrestriction_request &req)
 {
 	uint8_t tmp_byte;
 
@@ -528,7 +528,7 @@ int nsp_ext_pull::g_nsp_request(resortrestriction_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(seekentries_request &req)
+pack_result nsp_ext_pull::g_nsp_request(seekentries_request &req)
 {
 	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
@@ -583,7 +583,7 @@ int nsp_ext_pull::g_nsp_request(seekentries_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(updatestat_request &req)
+pack_result nsp_ext_pull::g_nsp_request(updatestat_request &req)
 {
 	uint8_t tmp_byte;
 
@@ -611,7 +611,7 @@ int nsp_ext_pull::g_nsp_request(updatestat_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(getmailboxurl_request &req)
+pack_result nsp_ext_pull::g_nsp_request(getmailboxurl_request &req)
 {
 	TRY(g_uint32(&req.flags));
 	TRY(g_wstr(&req.user_dn));
@@ -628,7 +628,7 @@ int nsp_ext_pull::g_nsp_request(getmailboxurl_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int nsp_ext_pull::g_nsp_request(getaddressbookurl_request &req)
+pack_result nsp_ext_pull::g_nsp_request(getaddressbookurl_request &req)
 {
 	TRY(g_uint32(&req.flags));
 	TRY(g_wstr(&req.user_dn));
@@ -645,7 +645,7 @@ int nsp_ext_pull::g_nsp_request(getaddressbookurl_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-static int nsp_ext_p_stat(nsp_ext_push &ext, const STAT &s)
+static pack_result nsp_ext_p_stat(nsp_ext_push &ext, const STAT &s)
 {
 	TRY(ext.p_uint32(s.sort_type));
 	TRY(ext.p_uint32(s.container_id));
@@ -658,7 +658,7 @@ static int nsp_ext_p_stat(nsp_ext_push &ext, const STAT &s)
 	return ext.p_uint32(s.sort_locale);
 }
 
-static int nsp_ext_p_colrow(nsp_ext_push &ext, const nsp_rowset2 *colrow)
+static pack_result nsp_ext_p_colrow(nsp_ext_push &ext, const nsp_rowset2 *colrow)
 {
 	TRY(ext.p_proptag_a(colrow->columns));
 	TRY(ext.p_uint32(colrow->row_count));
@@ -667,7 +667,7 @@ static int nsp_ext_p_colrow(nsp_ext_push &ext, const nsp_rowset2 *colrow)
 	return EXT_ERR_SUCCESS;
 }
 
-int nsp_ext_push::p_nsp_response(const bind_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const bind_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
@@ -675,14 +675,14 @@ int nsp_ext_push::p_nsp_response(const bind_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const unbind_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const unbind_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const comparemids_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const comparemids_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
@@ -690,7 +690,7 @@ int nsp_ext_push::p_nsp_response(const comparemids_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const dntomid_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const dntomid_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
@@ -703,7 +703,7 @@ int nsp_ext_push::p_nsp_response(const dntomid_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
 {
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
@@ -729,7 +729,7 @@ int nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const getproplist_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const getproplist_response &rsp)
 {
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
@@ -743,7 +743,7 @@ int nsp_ext_push::p_nsp_response(const getproplist_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const getprops_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const getprops_response &rsp)
 {
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
@@ -758,7 +758,7 @@ int nsp_ext_push::p_nsp_response(const getprops_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const getspecialtable_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const getspecialtable_response &rsp)
 {
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
@@ -781,7 +781,7 @@ int nsp_ext_push::p_nsp_response(const getspecialtable_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const gettemplateinfo_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const gettemplateinfo_response &rsp)
 {
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
@@ -796,21 +796,21 @@ int nsp_ext_push::p_nsp_response(const gettemplateinfo_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const modlinkatt_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const modlinkatt_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const modprops_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const modprops_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const queryrows_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const queryrows_response &rsp)
 {
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
@@ -830,7 +830,7 @@ int nsp_ext_push::p_nsp_response(const queryrows_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const querycolumns_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const querycolumns_response &rsp)
 {
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
@@ -844,7 +844,7 @@ int nsp_ext_push::p_nsp_response(const querycolumns_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const resolvenames_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const resolvenames_response &rsp)
 {
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
@@ -865,7 +865,7 @@ int nsp_ext_push::p_nsp_response(const resolvenames_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const resortrestriction_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const resortrestriction_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
@@ -884,7 +884,7 @@ int nsp_ext_push::p_nsp_response(const resortrestriction_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const seekentries_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const seekentries_response &rsp)
 {
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
@@ -904,7 +904,7 @@ int nsp_ext_push::p_nsp_response(const seekentries_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const updatestat_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const updatestat_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
@@ -923,7 +923,7 @@ int nsp_ext_push::p_nsp_response(const updatestat_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const getmailboxurl_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const getmailboxurl_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
@@ -931,7 +931,7 @@ int nsp_ext_push::p_nsp_response(const getmailboxurl_response &rsp)
 	return p_uint32(0);
 }
 
-int nsp_ext_push::p_nsp_response(const getaddressbookurl_response &rsp)
+pack_result nsp_ext_push::p_nsp_response(const getaddressbookurl_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));

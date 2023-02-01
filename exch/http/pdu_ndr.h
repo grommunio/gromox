@@ -207,9 +207,9 @@ struct dcerpc_ncacn_packet {
 };
 using DCERPC_NCACN_PACKET = dcerpc_ncacn_packet;
 
-int pdu_ndr_pull_dcerpc_auth(NDR_PULL *pndr, DCERPC_AUTH *r);
+extern pack_result pdu_ndr_pull_dcerpc_auth(NDR_PULL *, DCERPC_AUTH *);
 extern void pdu_ndr_free_dcerpc_auth(DCERPC_AUTH *r);
-int pdu_ndr_push_dcerpc_auth(NDR_PUSH *pndr, const DCERPC_AUTH *r);
-int pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt);
+extern pack_result pdu_ndr_push_dcerpc_auth(NDR_PUSH *, const DCERPC_AUTH *);
+extern pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *, DCERPC_NCACN_PACKET *);
 void pdu_ndr_free_ncacnpkt(DCERPC_NCACN_PACKET *pkt);
-int pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, DCERPC_NCACN_PACKET *pkt);
+extern pack_result pdu_ndr_push_ncacnpkt(NDR_PUSH *, DCERPC_NCACN_PACKET *);

@@ -47,9 +47,9 @@ struct RFRGETFQDNFROMLEGACYDN_OUT {
 
 }
 
-static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **pin);
+static pack_result exchange_rfr_ndr_pull(int op, NDR_PULL *, void **in);
 static int exchange_rfr_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
-static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
+static pack_result exchange_rfr_ndr_push(int op, NDR_PUSH *, void *out);
 
 static BOOL (*get_id_from_username)(const char *username, int *puser_id);
 static DCERPC_ENDPOINT *ep_6001, *ep_6002;
@@ -146,7 +146,7 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags, uint32_t cb,
 	return ecSuccess;
 }
 
-static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
+static pack_result exchange_rfr_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
 {
 	uint32_t ptr;
 	uint32_t size;
@@ -266,7 +266,7 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 	}
 }
 
-static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
+static pack_result exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 {
 	int length;
 	

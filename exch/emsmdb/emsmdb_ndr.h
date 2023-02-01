@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rpc_types.hpp>
 #include <gromox/zz_ndr_stack.hpp>
@@ -128,7 +129,7 @@ struct ECDOASYNCCONNECTEX_OUT {
 	int32_t result;
 };
 
-extern int asyncemsmdb_ndr_pull(int op, NDR_PULL *, void **in);
-extern int asyncemsmdb_ndr_push(int op, NDR_PUSH *, void *out);
-extern int emsmdb_ndr_pull(int op, NDR_PULL *, void **in);
-extern int emsmdb_ndr_push(int op, NDR_PUSH *, void *out);
+extern pack_result asyncemsmdb_ndr_pull(int op, NDR_PULL *, void **in);
+extern pack_result asyncemsmdb_ndr_push(int op, NDR_PUSH *, void *out);
+extern pack_result emsmdb_ndr_pull(int op, NDR_PULL *, void **in);
+extern pack_result emsmdb_ndr_push(int op, NDR_PUSH *, void *out);

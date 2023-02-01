@@ -112,7 +112,7 @@ static bin_ptr slurp_stream(libolecf_item_t *dir, const char *file)
 	return slurp_stream(propstrm.get());
 }
 
-static int read_pte(EXT_PULL &ep, struct pte &pte)
+static pack_result read_pte(EXT_PULL &ep, struct pte &pte)
 {
 	if (ep.m_offset + 16 > ep.m_data_size)
 		/*
@@ -318,10 +318,10 @@ static errno_t parse_propstrm(EXT_PULL &ep, const char *cset,
 {
 	while (ep.m_offset < ep.m_data_size) {
 		struct pte pte;
-		auto ret = read_pte(ep, pte);
-		if (ret != EXT_ERR_SUCCESS)
+		auto st = read_pte(ep, pte);
+		if (st != EXT_ERR_SUCCESS)
 			return -EIO;
-		ret = pte_to_prop(pte, cset, dir, proplist);
+		auto ret = pte_to_prop(pte, cset, dir, proplist);
 		if (ret != 0)
 			return ret;
 	}
