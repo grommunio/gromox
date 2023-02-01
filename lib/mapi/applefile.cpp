@@ -479,7 +479,7 @@ int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r)
 	r->pentries = pext->anew<ENTRY_DATA>(r->count);
 	if (NULL == r->pentries) {
 		r->count = 0;
-		return FALSE;
+		return EXT_ERR_ALLOC;
 	}
 	for (i=0; i<r->count; i++) {
 		TRY(applefile_pull_uint32(pext, &r->pentries[i].entry_id));

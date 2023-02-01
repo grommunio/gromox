@@ -1674,7 +1674,7 @@ BOOL rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE))
 		return FALSE;
 	QRF(ext_push.p_uint8(static_cast<uint8_t>(zcore_response::success)));
-	if (EXT_ERR_SUCCESS != presponse->result) {
+	if (presponse->result != ecSuccess) {
 		if (ext_push.p_uint32(4) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint32(presponse->result) != EXT_ERR_SUCCESS)
 			return FALSE;

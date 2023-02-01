@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <gromox/defs.h>
 #include "ext.hpp"
-#define TRY(expr) do { if ((expr) != EXT_ERR_SUCCESS) return 0; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define GROWING_BLOCK_SIZE				0x1000
 
 /* emalloc is a macro and cannot be used like a function */
