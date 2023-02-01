@@ -10,7 +10,7 @@
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include <gromox/zz_ndr_stack.hpp>
-#define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 
 using namespace gromox;
 

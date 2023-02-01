@@ -5,7 +5,7 @@
 #include <gromox/endian.hpp>
 #include <gromox/macbinary.hpp>
 #include <gromox/util.hpp>
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define macbinary_push_int32(e, v) macbinary_push_uint32((e), (v))
 
 /* Mac time of 00:00:00 GMT, Jan 1, 1970 */

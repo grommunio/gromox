@@ -4,7 +4,7 @@
 #include <gromox/scope.hpp>
 #include "nsp_common.hpp"
 #include "nsp_ops.hpp"
-#define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define SCOPED_ABKFLAG(cls) \
 	auto saved_flags_X1 = (cls).m_flags; \
 	(cls).m_flags |= EXT_FLAG_ABK; \

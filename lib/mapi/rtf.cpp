@@ -23,7 +23,7 @@
 #include <gromox/str_hash.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#define QRF(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return false; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
 
 #define MAX_ATTRS						10000
 #define MAX_GROUP_DEPTH					1000

@@ -33,7 +33,7 @@ X-ClientApplication: Outlook/16.0.15928.20006
 #include "aux_types.h"
 #include "common_util.h"
 #define AUX_ALIGN_SIZE									4
-#define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 using namespace gromox;
 

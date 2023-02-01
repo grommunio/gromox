@@ -11,7 +11,7 @@
 #include "nsp_ndr.hpp"
 #define FLAG_HEADER			0x1
 #define FLAG_CONTENT		0x2
-#define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 
 using namespace gromox;
 

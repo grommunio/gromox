@@ -35,7 +35,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 enum { /* for PidLidAppointmentStateFlags */
 	asfMeeting = 0x1U,

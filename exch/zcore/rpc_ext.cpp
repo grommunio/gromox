@@ -5,7 +5,7 @@
 #include <gromox/zcore_rpc.hpp>
 #include "common_util.h"
 #include "rpc_ext.h"
-#define QRF(expr) do { if ((expr) != EXT_ERR_SUCCESS) return false; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
 
 static BOOL rpc_ext_pull_propval(
 	EXT_PULL *pext, uint16_t type, void **ppval)

@@ -17,7 +17,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>
 #include <gromox/util.hpp>
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 #define TNEF_LEGACY								0x0001
 #define TNEF_VERSION							0x10000

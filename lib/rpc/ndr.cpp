@@ -10,7 +10,7 @@
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/ndr.hpp>
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define NDR_BE(pndr) ((pndr->flags & NDR_FLAG_BIGENDIAN) != 0)
 
 int NDR_PULL::advance(uint32_t size)

@@ -25,6 +25,7 @@ enum {
 	EXT_ERR_IPV6ADDRESS,
 	EXT_CTRL_SKIP,
 };
+using pack_result = int;
 
 /**
  * %EXT_FLAG_UTF16:	packed representation encodes wide strings as UTF-16

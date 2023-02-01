@@ -32,8 +32,8 @@
 #include "http_parser.h"
 #include "mod_fastcgi.h"
 #include "resource.h"
-#define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
-#define QRF(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return FALSE; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
 #define SERVER_SOFTWARE							"medusa/1.0"
 
 #define POLL_MILLISECONDS_FOR_CHECK				50

@@ -4,7 +4,7 @@
 #include <gromox/applefile.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define applefile_push_int16(e, v) applefile_push_uint16((e), (v))
 #define applefile_push_int32(e, v) applefile_push_uint32((e), (v))
 

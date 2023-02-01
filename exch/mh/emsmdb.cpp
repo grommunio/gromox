@@ -826,7 +826,7 @@ static BOOL emsmdb_preproc(int context_id)
 	return TRUE;
 }
 
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 int ems_pull::g_connect_req(connect_request &req)
 {
