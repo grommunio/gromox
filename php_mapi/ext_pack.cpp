@@ -17,15 +17,14 @@ static void ext_pack_free(void *p) { efree(p); }
 
 const EXT_BUFFER_MGT ext_buffer_mgt = {ext_pack_alloc, ext_pack_realloc, ext_pack_free};
 
-static int ext_pack_pull_permission_row(
-	PULL_CTX *pctx, PERMISSION_ROW *r)
+static pack_result ext_pack_pull_permission_row(PULL_CTX *pctx, PERMISSION_ROW *r)
 {
 	TRY(pctx->g_uint32(&r->flags));
 	TRY(pctx->g_bin(&r->entryid));
 	return pctx->g_uint32(&r->member_rights);
 }
 
-int PULL_CTX::g_perm_set(PERMISSION_SET *r)
+pack_result PULL_CTX::g_perm_set(PERMISSION_SET *r)
 {
 	int i;
 	
@@ -41,13 +40,13 @@ int PULL_CTX::g_perm_set(PERMISSION_SET *r)
 	return EXT_ERR_SUCCESS;
 }
 
-static int ext_pack_pull_message_state(PULL_CTX *pctx, MESSAGE_STATE *r)
+static pack_result ext_pack_pull_message_state(PULL_CTX *pctx, MESSAGE_STATE *r)
 {
 	TRY(pctx->g_bin(&r->source_key));
 	return pctx->g_uint32(&r->message_flags);
 }
 
-int PULL_CTX::g_state_a(STATE_ARRAY *r)
+pack_result PULL_CTX::g_state_a(STATE_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
 	if (0 == r->count) {
@@ -64,8 +63,8 @@ int PULL_CTX::g_state_a(STATE_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-static int ext_pack_pull_newmail_znotification(
-	PULL_CTX *pctx, NEWMAIL_ZNOTIFICATION *r)
+static pack_result ext_pack_pull_newmail_znotification(PULL_CTX *pctx,
+    NEWMAIL_ZNOTIFICATION *r)
 {
 	TRY(pctx->g_bin(&r->entryid));
 	TRY(pctx->g_bin(&r->parentid));
@@ -74,8 +73,8 @@ static int ext_pack_pull_newmail_znotification(
 	return pctx->g_uint32(&r->message_flags);
 }
 
-static int ext_pack_pull_object_znotification(
-	PULL_CTX *pctx, OBJECT_ZNOTIFICATION *r)
+static pack_result ext_pack_pull_object_znotification(PULL_CTX *pctx,
+    OBJECT_ZNOTIFICATION *r)
 {
 	uint8_t tmp_byte;
 	
@@ -133,8 +132,7 @@ static int ext_pack_pull_object_znotification(
 	}
 }
 
-static int ext_pack_pull_znotification(
-	PULL_CTX *pctx, ZNOTIFICATION *r)
+static pack_result ext_pack_pull_znotification(PULL_CTX *pctx, ZNOTIFICATION *r)
 {
 	TRY(pctx->g_uint32(&r->event_type));
 	switch (r->event_type) {
@@ -163,7 +161,7 @@ static int ext_pack_pull_znotification(
 	}
 }
 
-int PULL_CTX::g_znotif_a(ZNOTIFICATION_ARRAY *r)
+pack_result PULL_CTX::g_znotif_a(ZNOTIFICATION_ARRAY *r)
 {
 	int i;
 	
@@ -187,15 +185,14 @@ int PULL_CTX::g_znotif_a(ZNOTIFICATION_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-static int ext_pack_push_permission_row(
-	PUSH_CTX *pctx, const PERMISSION_ROW *r)
+static pack_result ext_pack_push_permission_row(PUSH_CTX *pctx, const PERMISSION_ROW *r)
 {
 	TRY(pctx->p_uint32(r->flags));
 	TRY(pctx->p_bin(r->entryid));
 	return pctx->p_uint32(r->member_rights);
 }
 
-int PUSH_CTX::p_perm_set(const PERMISSION_SET *r)
+pack_result PUSH_CTX::p_perm_set(const PERMISSION_SET *r)
 {
 	int i;
 	
@@ -206,13 +203,13 @@ int PUSH_CTX::p_perm_set(const PERMISSION_SET *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int PUSH_CTX::p_rule_data(const RULE_DATA *r)
+pack_result PUSH_CTX::p_rule_data(const RULE_DATA *r)
 {
 	TRY(p_uint8(r->flags));
 	return p_tpropval_a(r->propvals);
 }
 
-int PUSH_CTX::p_rule_list(const RULE_LIST *r)
+pack_result PUSH_CTX::p_rule_list(const RULE_LIST *r)
 {
 	int i;
 	
@@ -223,14 +220,13 @@ int PUSH_CTX::p_rule_list(const RULE_LIST *r)
 	return EXT_ERR_SUCCESS;
 }
 
-static int ext_pack_push_message_state(
-	PUSH_CTX *pctx, const MESSAGE_STATE *r)
+static pack_result ext_pack_push_message_state(PUSH_CTX *pctx, const MESSAGE_STATE *r)
 {
 	TRY(pctx->p_bin(r->source_key));
 	return pctx->p_uint32(r->message_flags);
 }
 
-int PUSH_CTX::p_state_a(const STATE_ARRAY *r)
+pack_result PUSH_CTX::p_state_a(const STATE_ARRAY *r)
 {
 	TRY(p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
