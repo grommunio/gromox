@@ -129,7 +129,7 @@ protocol_err_message2[] =	"A valid value must be provided for the query paramete
 		"Content-Length: {}\r\n\r\n",
 	header_templ1[] =
 		"HTTP/1.1 {} {}\r\n"
-		"Content-Type: text/json\r\n"
+		"Content-Type: application/json\r\n"
 		"Content-Length: {}\r\n\r\n",
 	error_templ[] =
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
