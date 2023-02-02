@@ -5,19 +5,17 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rpc_types.hpp>
 
-enum {
-	NDR_ERR_SUCCESS = EXT_ERR_SUCCESS,
-	NDR_ERR_FAILURE = EXT_ERR_FAILURE,
-	NDR_ERR_CHARCNV = EXT_ERR_CHARCNV,
-	NDR_ERR_BUFSIZE = EXT_ERR_BUFSIZE,
-	NDR_ERR_ALLOC = EXT_ERR_ALLOC,
-	NDR_ERR_NDR64 = EXT_ERR_NDR64,
-	NDR_ERR_PADDING = EXT_ERR_PADDING,
-	NDR_ERR_RANGE = EXT_ERR_RANGE,
-	NDR_ERR_ARRAY_SIZE = EXT_ERR_ARRAY_SIZE,
-	NDR_ERR_BAD_SWITCH = EXT_ERR_BAD_SWITCH,
-	NDR_ERR_IPV6ADDRESS = EXT_ERR_IPV6ADDRESS,
-};
+#define NDR_ERR_SUCCESS pack_result::success
+#define NDR_ERR_FAILURE pack_result::failure
+#define NDR_ERR_CHARCNV pack_result::charconv
+#define NDR_ERR_BUFSIZE pack_result::bufsize
+#define NDR_ERR_ALLOC pack_result::alloc
+#define NDR_ERR_NDR64 pack_result::ndr64
+#define NDR_ERR_PADDING pack_result::padding
+#define NDR_ERR_RANGE pack_result::range
+#define NDR_ERR_ARRAY_SIZE pack_result::array_size
+#define NDR_ERR_BAD_SWITCH pack_result::bad_switch
+#define NDR_ERR_IPV6ADDRESS pack_result::ipv6addr
 
 #define NDR_FLAG_BIGENDIAN				(1<<0)
 #define NDR_FLAG_NOALIGN				(1<<1)

@@ -6,26 +6,28 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 
-enum {
-	EXT_ERR_SUCCESS = 0,
-	EXT_ERR_FAILURE,
-	EXT_ERR_FORMAT,
-	EXT_ERR_BUFSIZE,
-	EXT_ERR_ALLOC,
-	EXT_ERR_BAD_SWITCH,
-	EXT_ERR_CHARCNV,
-	EXT_ERR_LZXPRESS,
-	EXT_ERR_HEADER_FLAGS,
-	EXT_ERR_HEADER_SIZE,
-	EXT_ERR_RANGE,
-	EXT_ERR_INVALID_OBJECT,
-	EXT_ERR_NDR64,
-	EXT_ERR_PADDING,
-	EXT_ERR_ARRAY_SIZE,
-	EXT_ERR_IPV6ADDRESS,
-	EXT_CTRL_SKIP,
+enum class pack_result {
+	success, failure, format, bufsize, alloc, bad_switch, charconv,
+	compress, header_flags, header_size, range, invalid_obj, ndr64,
+	padding, array_size, ipv6addr, ctrl_skip,
 };
-using pack_result = int;
+#define EXT_ERR_SUCCESS pack_result::success
+#define EXT_ERR_FAILURE pack_result::failure
+#define EXT_ERR_FORMAT pack_result::format
+#define EXT_ERR_BUFSIZE pack_result::bufsize
+#define EXT_ERR_ALLOC pack_result::alloc
+#define EXT_ERR_BAD_SWITCH pack_result::bad_switch
+#define EXT_ERR_CHARCNV pack_result::charconv
+#define EXT_ERR_LZXPRESS pack_result::compress
+#define EXT_ERR_HEADER_FLAGS pack_result::header_flags
+#define EXT_ERR_HEADER_SIZE pack_result::header_size
+#define EXT_ERR_RANGE pack_result::range
+#define EXT_ERR_INVALID_OBJECT pack_result::invalid_obj
+#define EXT_ERR_NDR64 pack_result::ndr64
+#define EXT_ERR_PADDING pack_result::padding
+#define EXT_ERR_ARRAY_SIZE pack_result::array_size
+#define EXT_ERR_IPV6ADDRESS pack_result::ipv6addr
+#define EXT_CTRL_SKIP pack_result::ctrl_skip
 
 /**
  * %EXT_FLAG_UTF16:	packed representation encodes wide strings as UTF-16
