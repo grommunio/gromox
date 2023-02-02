@@ -239,14 +239,14 @@ static BOOL OxdiscoPlugin::json_request(int ctx_id, const char* linK)
             {
                 if (strcasecmp(&linK[findProtocol - linK + 1], iterator.first.c_str()) == 0)
                 {
-					respdoc["protocol"] = iterator.first;
-					respdoc["url"] = iterator.second;
-					int code = 200;
-					const char* response = respdoc.toStyledString().c_str();
-					if (response_logging > 0)
-						mlog(LV_DEBUG, "[oxdisco_v2] response: %s", response);
-					writeheader_json(ctx_id, code, strlen(response));
-					return write_response(ctx_id, response, strlen(response));
+			respdoc["protocol"] = iterator.first;
+			respdoc["url"] = iterator.second;
+			int code = 200;
+			const char* response = respdoc.toStyledString().c_str();
+			if (response_logging > 0)
+				mlog(LV_DEBUG, "[oxdisco_v2] response: %s", response);
+			writeheader_json(ctx_id, code, strlen(response));
+			return write_response(ctx_id, response, strlen(response));
                 }
             }
 			//protocol does not existr
