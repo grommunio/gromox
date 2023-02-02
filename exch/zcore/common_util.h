@@ -155,7 +155,7 @@ extern BINARY *common_util_to_store_entryid(store_object *);
 extern BINARY *cu_fid_to_entryid(store_object *, uint64_t folder_id);
 extern BINARY *cu_fid_to_sk(store_object *, uint64_t folder_id);
 extern BINARY *cu_mid_to_entryid(store_object *, uint64_t folder_id, uint64_t msg_id);
-extern int cu_calc_msg_access(store_object *, const char *user, uint64_t folder_id, uint64_t msg_id, uint32_t &access);
+extern ec_error_t cu_calc_msg_access(store_object *, const char *user, uint64_t folder_id, uint64_t msg_id, uint32_t &access);
 extern BINARY *cu_mid_to_sk(store_object *, uint64_t msg_id);
 extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);

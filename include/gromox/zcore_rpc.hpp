@@ -627,7 +627,7 @@ struct zcreq_restoresession : public zcreq {
 
 struct zcresp {
 	zcore_callid call_id;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct zcresp_logon : public zcresp {
