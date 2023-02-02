@@ -1202,7 +1202,9 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 	PULL_CTX pull_ctx;
 	
 	pull_ctx.init(pbin_in->pb, pbin_in->cb);
-	TRY(pull_ctx.g_uint32(&presponse->result));
+	uint32_t v;
+	TRY(pull_ctx.g_uint32(&v));
+	presponse->result = static_cast<ec_error_t>(v);
 	if (presponse->result != ecSuccess)
 		return 1;
 	switch (presponse->call_id) {

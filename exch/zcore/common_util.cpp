@@ -1120,7 +1120,7 @@ BINARY *cu_mid_to_entryid(store_object *pstore,
 	return pbin;
 }
 
-int cu_calc_msg_access(store_object *pstore, const char *user,
+ec_error_t cu_calc_msg_access(store_object *pstore, const char *user,
     uint64_t folder_id, uint64_t message_id, uint32_t &tag_access)
 {
 	BOOL b_owner = false;
@@ -1154,7 +1154,7 @@ int cu_calc_msg_access(store_object *pstore, const char *user,
  PERMISSION_CHECK:
 	if (!(tag_access & MAPI_ACCESS_READ))
 		return ecAccessDenied;
-	return 0;
+	return ecSuccess;
 }
 
 BINARY *cu_mid_to_sk(store_object *pstore,
