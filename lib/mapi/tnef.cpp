@@ -17,7 +17,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>
 #include <gromox/util.hpp>
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 #define TNEF_LEGACY								0x0001
 #define TNEF_VERSION							0x10000
@@ -142,15 +142,15 @@ struct TNEF_PROPSET {
 };
 
 struct tnef_pull : public EXT_PULL {
-	int g_propname(PROPERTY_NAME *);
-	int g_propval(TNEF_PROPVAL *);
-	int g_attr(TNEF_ATTRIBUTE *);
+	pack_result g_propname(PROPERTY_NAME *);
+	pack_result g_propval(TNEF_PROPVAL *);
+	pack_result g_attr(TNEF_ATTRIBUTE *);
 };
 
 struct tnef_push : public EXT_PUSH {
-	int p_propname(const PROPERTY_NAME &);
-	int p_propval(const TNEF_PROPVAL &);
-	int p_attr(uint8_t level, uint32_t attr_id, const void *value);
+	pack_result p_propname(const PROPERTY_NAME &);
+	pack_result p_propval(const TNEF_PROPVAL &);
+	pack_result p_attr(uint8_t level, uint32_t attr_id, const void *value);
 
 	EXT_BUFFER_ALLOC tnef_alloc = nullptr;
 	GET_PROPNAME tnef_getpropname = nullptr;
@@ -206,7 +206,7 @@ static uint8_t tnef_align(uint32_t length)
     return ((length + 3) & ~3) - length;
 }
 
-int tnef_pull::g_propname(PROPERTY_NAME *r)
+pack_result tnef_pull::g_propname(PROPERTY_NAME *r)
 {
 	auto pext = this;
 	auto &ext = *pext;
@@ -230,7 +230,7 @@ int tnef_pull::g_propname(PROPERTY_NAME *r)
 	return EXT_ERR_FORMAT;
 }
 
-int tnef_pull::g_propval(TNEF_PROPVAL *r)
+pack_result tnef_pull::g_propval(TNEF_PROPVAL *r)
 {
 	auto pext = this;
 	auto &ext = *pext;
@@ -612,7 +612,7 @@ int tnef_pull::g_propval(TNEF_PROPVAL *r)
 	return EXT_ERR_BAD_SWITCH;
 }
 
-int tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
+pack_result tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 {
 	auto pext = this;
 	auto &ext = *pext;
@@ -1656,7 +1656,7 @@ MESSAGE_CONTENT* tnef_deserialize(const void *pbuff,
 			alloc, get_propids, username_to_entryid);
 }
 
-int tnef_push::p_propname(const PROPERTY_NAME &rr)
+pack_result tnef_push::p_propname(const PROPERTY_NAME &rr)
 {
 	auto pext = this;
 	auto &ext = *pext;
@@ -1682,7 +1682,7 @@ int tnef_push::p_propname(const PROPERTY_NAME &rr)
 	return EXT_ERR_SUCCESS;
 }
 
-int tnef_push::p_propval(const TNEF_PROPVAL &rr)
+pack_result tnef_push::p_propval(const TNEF_PROPVAL &rr)
 {
 	auto pext = this;
 	auto &ext = *pext;
@@ -1864,7 +1864,7 @@ int tnef_push::p_propval(const TNEF_PROPVAL &rr)
 	return EXT_ERR_BAD_SWITCH;
 }
 
-int tnef_push::p_attr(uint8_t level, uint32_t attr_id, const void *value)
+pack_result tnef_push::p_attr(uint8_t level, uint32_t attr_id, const void *value)
 {
 	auto pext = this;
 	auto &ext = *pext;

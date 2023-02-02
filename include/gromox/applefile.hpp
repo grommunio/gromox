@@ -223,5 +223,5 @@ struct APPLEFILE {
    ENTRY_DATA *pentries;	/* array of entry descriptors */
 };
 
-int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r);
-int applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r);
+extern pack_result applefile_pull_file(EXT_PULL *, APPLEFILE *);
+extern pack_result applefile_push_file(EXT_PUSH *, const APPLEFILE *);

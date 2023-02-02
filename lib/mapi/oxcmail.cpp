@@ -277,7 +277,6 @@ BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 static BOOL oxcmail_username_to_oneoff(const char *username,
 	const char *pdisplay_name, BINARY *pbin)
 {
-	int status;
 	EXT_PUSH ext_push;
 	ONEOFF_ENTRYID tmp_entry;
 	
@@ -290,7 +289,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	tmp_entry.pmail_address = deconst(username);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
 		return false;
-	status = ext_push.p_oneoff_eid(tmp_entry);
+	auto status = ext_push.p_oneoff_eid(tmp_entry);
 	if (EXT_ERR_CHARCNV == status) {
 		tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
 		status = ext_push.p_oneoff_eid(tmp_entry);
@@ -618,7 +617,6 @@ static BOOL oxcmail_parse_address(const char *charset,
 static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
     TPROPVAL_ARRAY *pproplist)
 {
-	int status;
 	uint32_t count;
 	BINARY tmp_bin;
 	int str_offset;
@@ -685,7 +683,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%s@%s",
 			         email_addr.local_part, email_addr.domain);
 			tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
-			status = ext_push.p_oneoff_eid(tmp_entry);
+			auto status = ext_push.p_oneoff_eid(tmp_entry);
 			if (EXT_ERR_CHARCNV == status) {
 				ext_push.m_offset = offset1 + sizeof(uint32_t);
 				tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;

@@ -821,7 +821,6 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 static BOOL common_util_username_to_entryid(const char *username,
     const char *pdisplay_name, BINARY *pbin, enum display_type *dtpp)
 {
-	int status;
 	int user_id;
 	int domain_id;
 	char *pdomain;
@@ -863,7 +862,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	oneoff_entry.pmail_address = deconst(username);
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
 		return false;
-	status = ext_push.p_oneoff_eid(oneoff_entry);
+	auto status = ext_push.p_oneoff_eid(oneoff_entry);
 	if (EXT_ERR_CHARCNV == status) {
 		oneoff_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
 		status = ext_push.p_oneoff_eid(oneoff_entry);

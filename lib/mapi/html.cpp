@@ -25,7 +25,7 @@
 #include <gromox/str_hash.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#define QRF(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return false; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
 #define RTF_PARAGRAPHALIGN_DEFAULT			0
 #define RTF_PARAGRAPHALIGN_LEFT				1
 #define RTF_PARAGRAPHALIGN_CENTER			2

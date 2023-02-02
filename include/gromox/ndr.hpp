@@ -5,19 +5,17 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rpc_types.hpp>
 
-enum {
-	NDR_ERR_SUCCESS = EXT_ERR_SUCCESS,
-	NDR_ERR_FAILURE = EXT_ERR_FAILURE,
-	NDR_ERR_CHARCNV = EXT_ERR_CHARCNV,
-	NDR_ERR_BUFSIZE = EXT_ERR_BUFSIZE,
-	NDR_ERR_ALLOC = EXT_ERR_ALLOC,
-	NDR_ERR_NDR64 = EXT_ERR_NDR64,
-	NDR_ERR_PADDING = EXT_ERR_PADDING,
-	NDR_ERR_RANGE = EXT_ERR_RANGE,
-	NDR_ERR_ARRAY_SIZE = EXT_ERR_ARRAY_SIZE,
-	NDR_ERR_BAD_SWITCH = EXT_ERR_BAD_SWITCH,
-	NDR_ERR_IPV6ADDRESS = EXT_ERR_IPV6ADDRESS,
-};
+#define NDR_ERR_SUCCESS pack_result::success
+#define NDR_ERR_FAILURE pack_result::failure
+#define NDR_ERR_CHARCNV pack_result::charconv
+#define NDR_ERR_BUFSIZE pack_result::bufsize
+#define NDR_ERR_ALLOC pack_result::alloc
+#define NDR_ERR_NDR64 pack_result::ndr64
+#define NDR_ERR_PADDING pack_result::padding
+#define NDR_ERR_RANGE pack_result::range
+#define NDR_ERR_ARRAY_SIZE pack_result::array_size
+#define NDR_ERR_BAD_SWITCH pack_result::bad_switch
+#define NDR_ERR_IPV6ADDRESS pack_result::ipv6addr
 
 #define NDR_FLAG_BIGENDIAN				(1<<0)
 #define NDR_FLAG_NOALIGN				(1<<1)
@@ -46,24 +44,24 @@ void ndr_free_data_blob(DATA_BLOB *pblob);
 struct GX_EXPORT NDR_PULL {
 	void init(const void *d, uint32_t z, uint32_t f);
 	uint32_t get_ptrcnt() const { return ptr_count; }
-	int advance(uint32_t);
-	int align(size_t);
-	int union_align(size_t);
-	int trailer_align(size_t);
-	int g_str(char *v, uint32_t z);
-	int g_uint8(uint8_t *);
-	int g_uint16(uint16_t *);
-	int g_int32(int32_t *);
-	int g_uint32(uint32_t *);
-	int g_uint64(uint64_t *);
-	int g_ulong(uint32_t *);
-	int g_uint8_a(uint8_t *v, uint32_t z);
-	int g_guid(GUID *);
-	int g_syntax(SYNTAX_ID *);
-	int g_blob(DATA_BLOB *);
-	int check_str(uint32_t c, uint32_t z);
-	int g_genptr(uint32_t *v);
-	int g_ctx_handle(CONTEXT_HANDLE *);
+	pack_result advance(uint32_t);
+	pack_result align(size_t);
+	pack_result union_align(size_t);
+	pack_result trailer_align(size_t);
+	pack_result g_str(char *v, uint32_t z);
+	pack_result g_uint8(uint8_t *);
+	pack_result g_uint16(uint16_t *);
+	pack_result g_int32(int32_t *);
+	pack_result g_uint32(uint32_t *);
+	pack_result g_uint64(uint64_t *);
+	pack_result g_ulong(uint32_t *);
+	pack_result g_uint8_a(uint8_t *v, uint32_t z);
+	pack_result g_guid(GUID *);
+	pack_result g_syntax(SYNTAX_ID *);
+	pack_result g_blob(DATA_BLOB *);
+	pack_result check_str(uint32_t c, uint32_t z);
+	pack_result g_genptr(uint32_t *v);
+	pack_result g_ctx_handle(CONTEXT_HANDLE *);
 
 	const uint8_t *data = nullptr;
 	uint32_t flags = 0, data_size = 0, offset = 0, ptr_count = 0;
@@ -73,23 +71,23 @@ struct GX_EXPORT NDR_PUSH {
 	void init(void *d, uint32_t asize, uint32_t fl);
 	void set_ptrcnt(uint32_t c) { ptr_count = c; }
 	void destroy();
-	int align(size_t);
-	int union_align(size_t);
-	int trailer_align(size_t);
-	int p_str(const char *v, uint32_t req);
-	int p_uint8(uint8_t);
-	int p_uint16(uint16_t);
-	int p_uint32(uint32_t);
-	int p_int32(int32_t v) { return p_uint32(v); }
-	int p_uint64(uint64_t);
-	int p_ulong(uint32_t);
-	int p_uint8_a(const uint8_t *v, uint32_t z);
-	int p_guid(const GUID &);
-	int p_syntax(const SYNTAX_ID &);
-	int p_blob(DATA_BLOB);
-	int p_zero(uint32_t z);
-	int p_unique_ptr(const void *v);
-	int p_ctx_handle(const CONTEXT_HANDLE &);
+	pack_result align(size_t);
+	pack_result union_align(size_t);
+	pack_result trailer_align(size_t);
+	pack_result p_str(const char *v, uint32_t req);
+	pack_result p_uint8(uint8_t);
+	pack_result p_uint16(uint16_t);
+	pack_result p_uint32(uint32_t);
+	pack_result p_int32(int32_t v) { return p_uint32(v); }
+	pack_result p_uint64(uint64_t);
+	pack_result p_ulong(uint32_t);
+	pack_result p_uint8_a(const uint8_t *v, uint32_t z);
+	pack_result p_guid(const GUID &);
+	pack_result p_syntax(const SYNTAX_ID &);
+	pack_result p_blob(DATA_BLOB);
+	pack_result p_zero(uint32_t z);
+	pack_result p_unique_ptr(const void *v);
+	pack_result p_ctx_handle(const CONTEXT_HANDLE &);
 
 	uint8_t *data = nullptr;
 	uint32_t flags = 0, alloc_size = 0, offset = 0, ptr_count = 0;

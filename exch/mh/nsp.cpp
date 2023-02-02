@@ -578,7 +578,7 @@ MhNspPlugin::ProcRes MhNspPlugin::proxy(MhNspContext& ctx)
 	response.result = nsp_bridge_run(ctx.session_guid, request, response);
 	if constexpr(copystat)
 		response.stat = request.stat;
-	if (ctx.ext_push.p_nsp_response(response))
+	if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
 }

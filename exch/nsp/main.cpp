@@ -18,30 +18,7 @@
 
 using namespace gromox;
 
-enum {
-	nspiBind = 0,
-	nspiUnbind = 1,
-	nspiUpdateStat = 2,
-	nspiQueryRows = 3,
-	nspiSeekEntries = 4,
-	nspiGetMatches = 5,
-	nspiResortRestriction = 6,
-	nspiDNToMId = 7,
-	nspiGetPropList = 8,
-	nspiGetProps = 9,
-	nspiCompareMIds = 10,
-	nspiModProps = 11,
-	nspiGetSpecialTable = 12,
-	nspiGetTemplateInfo = 13,
-	nspiModLinkAtt = 14,
-	nspiQueryColumns = 16,
-	nspiResolveNames = 19,
-	nspiResolveNamesW = 20,
-};
-
-static int exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin);
 static int exchange_nsp_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
-static int exchange_nsp_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 static void exchange_nsp_unbind(uint64_t handle);
 
 DECLARE_PROC_API();
@@ -180,123 +157,6 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata) try
 	return false;
 }
 PROC_ENTRY(proc_exchange_nsp);
-
-static int exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
-{
-	
-	switch (opnum) {
-	case nspiBind:
-		*ppin = ndr_stack_anew<NSPIBIND_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspibind(pndr, static_cast<NSPIBIND_IN *>(*ppin));
-	case nspiUnbind:
-		*ppin = ndr_stack_anew<NSPIUNBIND_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspiunbind(pndr, static_cast<NSPIUNBIND_IN *>(*ppin));
-	case nspiUpdateStat:
-		*ppin = ndr_stack_anew<NSPIUPDATESTAT_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspiupdatestat(pndr, static_cast<NSPIUPDATESTAT_IN *>(*ppin));
-	case nspiQueryRows:
-		*ppin = ndr_stack_anew<NSPIQUERYROWS_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspiqueryrows(pndr, static_cast<NSPIQUERYROWS_IN *>(*ppin));
-	case nspiSeekEntries:
-		*ppin = ndr_stack_anew<NSPISEEKENTRIES_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspiseekentries(pndr, static_cast<NSPISEEKENTRIES_IN *>(*ppin));
-	case nspiGetMatches:
-		*ppin = ndr_stack_anew<NSPIGETMATCHES_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspigetmatches(pndr, static_cast<NSPIGETMATCHES_IN *>(*ppin));
-	case nspiResortRestriction:
-		*ppin = ndr_stack_anew<NSPIRESORTRESTRICTION_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspiresortrestriction(pndr, static_cast<NSPIRESORTRESTRICTION_IN *>(*ppin));
-	case nspiDNToMId:
-		*ppin = ndr_stack_anew<NSPIDNTOMID_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspidntomid(pndr, static_cast<NSPIDNTOMID_IN *>(*ppin));
-	case nspiGetPropList:
-		*ppin = ndr_stack_anew<NSPIGETPROPLIST_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspigetproplist(pndr, static_cast<NSPIGETPROPLIST_IN *>(*ppin));
-	case nspiGetProps:
-		*ppin = ndr_stack_anew<NSPIGETPROPS_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspigetprops(pndr, static_cast<NSPIGETPROPS_IN *>(*ppin));
-	case nspiCompareMIds:
-		*ppin = ndr_stack_anew<NSPICOMPAREMIDS_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspicomparemids(pndr, static_cast<NSPICOMPAREMIDS_IN *>(*ppin));
-	case nspiModProps:
-		*ppin = ndr_stack_anew<NSPIMODPROPS_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspimodprops(pndr, static_cast<NSPIMODPROPS_IN *>(*ppin));
-	case nspiGetSpecialTable:
-		*ppin = ndr_stack_anew<NSPIGETSPECIALTABLE_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspigetspecialtable(pndr, static_cast<NSPIGETSPECIALTABLE_IN *>(*ppin));
-	case nspiGetTemplateInfo:
-		*ppin = ndr_stack_anew<NSPIGETTEMPLATEINFO_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspigettemplateinfo(pndr, static_cast<NSPIGETTEMPLATEINFO_IN *>(*ppin));
-	case nspiModLinkAtt:
-		*ppin = ndr_stack_anew<NSPIMODLINKATT_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspimodlinkatt(pndr, static_cast<NSPIMODLINKATT_IN *>(*ppin));
-	case nspiQueryColumns:
-		*ppin = ndr_stack_anew<NSPIQUERYCOLUMNS_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspiquerycolumns(pndr, static_cast<NSPIQUERYCOLUMNS_IN *>(*ppin));
-	case nspiResolveNames:
-		*ppin = ndr_stack_anew<NSPIRESOLVENAMES_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspiresolvenames(pndr, static_cast<NSPIRESOLVENAMES_IN *>(*ppin));
-	case nspiResolveNamesW:
-		*ppin = ndr_stack_anew<NSPIRESOLVENAMESW_IN>(NDR_STACK_IN);
-		if (NULL == *ppin) {
-			return NDR_ERR_ALLOC;
-		}
-		return nsp_ndr_pull_nspiresolvenamesw(pndr, static_cast<NSPIRESOLVENAMESW_IN *>(*ppin));
-	default:
-		return NDR_ERR_BAD_SWITCH;
-	}
-}
 
 static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
     uint64_t handle, void *pin, void **ppout, uint32_t *ecode)
@@ -524,51 +384,6 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 	}
 	default:
 		return DISPATCH_FAIL;
-	}
-}
-
-static int exchange_nsp_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
-{
-	
-	switch (opnum) {
-	case nspiBind:
-		return nsp_ndr_push_nspibind(pndr, static_cast<NSPIBIND_OUT *>(pout));
-	case nspiUnbind:
-		return nsp_ndr_push_nspiunbind(pndr, static_cast<NSPIUNBIND_OUT *>(pout));
-	case nspiUpdateStat:
-		return nsp_ndr_push_nspiupdatestat(pndr, static_cast<NSPIUPDATESTAT_OUT *>(pout));
-	case nspiQueryRows:
-		return nsp_ndr_push_nspiqueryrows(pndr, static_cast<NSPIQUERYROWS_OUT *>(pout));
-	case nspiSeekEntries:
-		return nsp_ndr_push_nspiseekentries(pndr, static_cast<NSPISEEKENTRIES_OUT *>(pout));
-	case nspiGetMatches:
-		return nsp_ndr_push_nspigetmatches(pndr, static_cast<NSPIGETMATCHES_OUT *>(pout));
-	case nspiResortRestriction:
-		return nsp_ndr_push_nspiresortrestriction(pndr, static_cast<NSPIRESORTRESTRICTION_OUT *>(pout));
-	case nspiDNToMId:
-		return nsp_ndr_push_nspidntomid(pndr, static_cast<NSPIDNTOMID_OUT *>(pout));
-	case nspiGetPropList:
-		return nsp_ndr_push_nspigetproplist(pndr, static_cast<NSPIGETPROPLIST_OUT *>(pout));
-	case nspiGetProps:
-		return nsp_ndr_push_nspigetprops(pndr, static_cast<NSPIGETPROPS_OUT *>(pout));
-	case nspiCompareMIds:
-		return nsp_ndr_push_nspicomparemids(pndr, static_cast<NSPICOMPAREMIDS_OUT *>(pout));
-	case nspiModProps:
-		return nsp_ndr_push_nspimodprops(pndr, static_cast<NSPIMODPROPS_OUT *>(pout));
-	case nspiGetSpecialTable:
-		return nsp_ndr_push_nspigetspecialtable(pndr, static_cast<NSPIGETSPECIALTABLE_OUT *>(pout));
-	case nspiGetTemplateInfo:
-		return nsp_ndr_push_nspigettemplateinfo(pndr, static_cast<NSPIGETTEMPLATEINFO_OUT *>(pout));
-	case nspiModLinkAtt:
-		return nsp_ndr_push_nspimodlinkatt(pndr, static_cast<NSPIMODLINKATT_OUT *>(pout));
-	case nspiQueryColumns:
-		return nsp_ndr_push_nspiquerycolumns(pndr, static_cast<NSPIQUERYCOLUMNS_OUT *>(pout));
-	case nspiResolveNames:
-		return nsp_ndr_push_nspiresolvenames(pndr, static_cast<NSPIRESOLVENAMES_OUT *>(pout));
-	case nspiResolveNamesW:
-		return nsp_ndr_push_nspiresolvenamesw(pndr, static_cast<NSPIRESOLVENAMESW_OUT *>(pout));
-	default:
-		return NDR_ERR_BAD_SWITCH;
 	}
 }
 

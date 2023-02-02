@@ -33,9 +33,9 @@ struct PULL_CTX : public EXT_PULL {
 		return EXT_PULL::init(d, s, ext_pack_alloc,
 		       EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
 	}
-	int g_perm_set(PERMISSION_SET *);
-	int g_state_a(STATE_ARRAY *);
-	int g_znotif_a(ZNOTIFICATION_ARRAY *);
+	pack_result g_perm_set(PERMISSION_SET *);
+	pack_result g_state_a(STATE_ARRAY *);
+	pack_result g_znotif_a(ZNOTIFICATION_ARRAY *);
 };
 
 struct PUSH_CTX : public EXT_PUSH {
@@ -43,10 +43,10 @@ struct PUSH_CTX : public EXT_PUSH {
 		return EXT_PUSH::init(nullptr, 0,
 		       EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE, &ext_buffer_mgt);
 	}
-	int p_perm_set(const PERMISSION_SET *);
-	int p_rule_data(const RULE_DATA *);
-	int p_rule_list(const RULE_LIST *);
-	int p_state_a(const STATE_ARRAY *);
+	pack_result p_perm_set(const PERMISSION_SET *);
+	pack_result p_rule_data(const RULE_DATA *);
+	pack_result p_rule_list(const RULE_LIST *);
+	pack_result p_state_a(const STATE_ARRAY *);
 };
 
 extern zend_bool rpc_ext_push_request(const zcreq *, BINARY *);

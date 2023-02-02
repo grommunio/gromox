@@ -336,7 +336,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
     DOUBLE_LIST *presponse_list) try
 {
 	int type;
-	int status;
 	int rop_num;
 	BOOL b_icsup;
 	BINARY tmp_bin;
@@ -427,7 +426,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		if (rsp == nullptr)
 			continue;
 		uint32_t last_offset = ext_push.m_offset;
-		status = rop_ext_push_rop_response(&ext_push, req->logon_id, rsp);
+		auto status = rop_ext_push_rop_response(&ext_push, req->logon_id, rsp);
 		switch (status) {
 		case EXT_ERR_SUCCESS:
 			double_list_append_as_tail(presponse_list, pnode1);
@@ -505,8 +504,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				ext_push.m_offset = last_offset;
 				double_list_insert_as_head(pnotify_list, pnode);
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
-				status = rop_ext_push_pending_response(
-								&ext_push, &tmp_pending);
+				auto status = rop_ext_push_pending_response(&ext_push, &tmp_pending);
 				if (status != EXT_ERR_SUCCESS)
 					ext_push.m_offset = last_offset;
 				break;

@@ -1717,7 +1717,7 @@ static BOOL message_rectify_message(const char *account,
 		    ext_push.p_uint8((nt_time >> 24) & 0xff) != EXT_ERR_SUCCESS ||
 		    ext_push.p_bytes(pbin->pb, 16) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint32(0xFFFFFFFF) != EXT_ERR_SUCCESS ||
-		    ext_push.p_uint8(nt_time & 0xFF))
+		    ext_push.p_uint8(nt_time & 0xFF) != EXT_ERR_SUCCESS)
 			return false;
 		pbin1->cb = 27;
 		vc->proptag = PR_CONVERSATION_INDEX;

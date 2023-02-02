@@ -10,10 +10,10 @@
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/ndr.hpp>
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define NDR_BE(pndr) ((pndr->flags & NDR_FLAG_BIGENDIAN) != 0)
 
-int NDR_PULL::advance(uint32_t size)
+pack_result NDR_PULL::advance(uint32_t size)
 {
 	auto pndr = this;
 	pndr->offset += size;
@@ -62,7 +62,7 @@ static bool ndr_pull_check_padding(NDR_PULL *pndr, size_t n)
 	return true;
 }
 
-int NDR_PULL::align(size_t size)
+pack_result NDR_PULL::align(size_t size)
 {
 	auto pndr = this;
 	if (5 == size) {
@@ -84,19 +84,19 @@ int NDR_PULL::align(size_t size)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::union_align(size_t size)
+pack_result NDR_PULL::union_align(size_t size)
 {
 	/* MS-RPCE section 2.2.5.3.4.4 */
 	return (flags & NDR_FLAG_NDR64) ? align(size) : NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::trailer_align(size_t size)
+pack_result NDR_PULL::trailer_align(size_t size)
 {
 	/* MS-RPCE section 2.2.5.3.4.1 */
 	return (flags & NDR_FLAG_NDR64) ? align(size) : NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::g_str(char *buff, uint32_t inbytes)
+pack_result NDR_PULL::g_str(char *buff, uint32_t inbytes)
 {
 	auto pndr = this;
 	if (0 == inbytes) {
@@ -114,7 +114,7 @@ int NDR_PULL::g_str(char *buff, uint32_t inbytes)
 	return pndr->advance(inbytes);
 }
 
-int NDR_PULL::g_uint8(uint8_t *v)
+pack_result NDR_PULL::g_uint8(uint8_t *v)
 {
 	auto pndr = this;
 	if (pndr->data_size < 1 || pndr->offset + 1 > pndr->data_size) {
@@ -125,7 +125,7 @@ int NDR_PULL::g_uint8(uint8_t *v)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::g_uint16(uint16_t *v)
+pack_result NDR_PULL::g_uint16(uint16_t *v)
 {
 	auto pndr = this;
 	TRY(pndr->align(2));
@@ -138,13 +138,13 @@ int NDR_PULL::g_uint16(uint16_t *v)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::g_int32(int32_t *v)
+pack_result NDR_PULL::g_int32(int32_t *v)
 {
 	auto pndr = this;
 	return pndr->g_uint32(reinterpret_cast<uint32_t *>(v));
 }
 
-int NDR_PULL::g_uint32(uint32_t *v)
+pack_result NDR_PULL::g_uint32(uint32_t *v)
 {
 	auto pndr = this;
 	TRY(pndr->align(4));
@@ -157,7 +157,7 @@ int NDR_PULL::g_uint32(uint32_t *v)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::g_uint64(uint64_t *v)
+pack_result NDR_PULL::g_uint64(uint64_t *v)
 {
 	auto pndr = this;
 	TRY(pndr->align(8));
@@ -170,7 +170,7 @@ int NDR_PULL::g_uint64(uint64_t *v)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::g_ulong(uint32_t *v)
+pack_result NDR_PULL::g_ulong(uint32_t *v)
 {
 	auto pndr = this;
 	uint64_t v64;
@@ -186,7 +186,7 @@ int NDR_PULL::g_ulong(uint32_t *v)
 	return pndr->g_uint32(v);
 }
 
-int NDR_PULL::g_uint8_a(uint8_t *data, uint32_t n)
+pack_result NDR_PULL::g_uint8_a(uint8_t *data, uint32_t n)
 {
 	auto pndr = this;
 	if (pndr->data_size < n || pndr->offset + n > pndr->data_size) {
@@ -198,7 +198,7 @@ int NDR_PULL::g_uint8_a(uint8_t *data, uint32_t n)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::g_guid(GUID *r)
+pack_result NDR_PULL::g_guid(GUID *r)
 {
 	auto pndr = this;
 	TRY(pndr->align(4));
@@ -211,7 +211,7 @@ int NDR_PULL::g_guid(GUID *r)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::g_syntax(SYNTAX_ID *r)
+pack_result NDR_PULL::g_syntax(SYNTAX_ID *r)
 {
 	auto pndr = this;
 	TRY(pndr->align(4));
@@ -221,7 +221,7 @@ int NDR_PULL::g_syntax(SYNTAX_ID *r)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::g_blob(DATA_BLOB *pblob)
+pack_result NDR_PULL::g_blob(DATA_BLOB *pblob)
 {
 	auto pndr = this;
 	uint32_t length;
@@ -266,7 +266,7 @@ void ndr_free_data_blob(DATA_BLOB *pblob)
 	pblob->cb = 0;
 }
 
-int NDR_PULL::check_str(uint32_t count, uint32_t element_size)
+pack_result NDR_PULL::check_str(uint32_t count, uint32_t element_size)
 {
 	auto pndr = this;
 	uint32_t i;
@@ -289,7 +289,7 @@ int NDR_PULL::check_str(uint32_t count, uint32_t element_size)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::g_genptr(uint32_t *v)
+pack_result NDR_PULL::g_genptr(uint32_t *v)
 {
 	auto pndr = this;
 	auto status = pndr->g_ulong(v);
@@ -298,7 +298,7 @@ int NDR_PULL::g_genptr(uint32_t *v)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PULL::g_ctx_handle(CONTEXT_HANDLE *r)
+pack_result NDR_PULL::g_ctx_handle(CONTEXT_HANDLE *r)
 {
 	auto pndr = this;
 	TRY(pndr->align(4));
@@ -346,7 +346,7 @@ static bool ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
 	return true;
 }
 
-int NDR_PUSH::p_uint8_a(const uint8_t *pdata, uint32_t n)
+pack_result NDR_PUSH::p_uint8_a(const uint8_t *pdata, uint32_t n)
 {
 	auto pndr = this;
 	if (n == 0)
@@ -361,7 +361,7 @@ int NDR_PUSH::p_uint8_a(const uint8_t *pdata, uint32_t n)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::p_uint8(uint8_t v)
+pack_result NDR_PUSH::p_uint8(uint8_t v)
 {
 	auto pndr = this;
 	if (!ndr_push_check_overflow(pndr, 1))
@@ -371,7 +371,7 @@ int NDR_PUSH::p_uint8(uint8_t v)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::align(size_t size)
+pack_result NDR_PUSH::align(size_t size)
 {
 	auto pndr = this;
 	uint32_t pad;
@@ -390,17 +390,17 @@ int NDR_PUSH::align(size_t size)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::union_align(size_t size)
+pack_result NDR_PUSH::union_align(size_t size)
 {
 	return (flags & NDR_FLAG_NDR64) ? align(size) : NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::trailer_align(size_t size)
+pack_result NDR_PUSH::trailer_align(size_t size)
 {
 	return (flags & NDR_FLAG_NDR64) ? align(size) : NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::p_uint16(uint16_t v)
+pack_result NDR_PUSH::p_uint16(uint16_t v)
 {
 	auto pndr = this;
 	TRY(pndr->align(2));
@@ -412,7 +412,7 @@ int NDR_PUSH::p_uint16(uint16_t v)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::p_uint32(uint32_t v)
+pack_result NDR_PUSH::p_uint32(uint32_t v)
 {
 	auto pndr = this;
 	TRY(pndr->align(4));
@@ -424,7 +424,7 @@ int NDR_PUSH::p_uint32(uint32_t v)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::p_uint64(uint64_t v)
+pack_result NDR_PUSH::p_uint64(uint64_t v)
 {
 	static_assert(CHAR_BIT == 8, "");
 	auto pndr = this;
@@ -437,7 +437,7 @@ int NDR_PUSH::p_uint64(uint64_t v)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::p_ulong(uint32_t v)
+pack_result NDR_PUSH::p_ulong(uint32_t v)
 {
 	return (flags & NDR_FLAG_NDR64) ? p_uint64(v) : p_uint32(v);
 }
@@ -452,7 +452,7 @@ int NDR_PUSH::p_ulong(uint32_t v)
  * 3) Otherwise, push a uint32 length _and_ a corresponding byte array to the
  *    ndr buffer.
  */
-int NDR_PUSH::p_blob(DATA_BLOB blob)
+pack_result NDR_PUSH::p_blob(DATA_BLOB blob)
 {
 	auto pndr = this;
 	int length = 0;
@@ -478,7 +478,7 @@ int NDR_PUSH::p_blob(DATA_BLOB blob)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::p_str(const char *var, uint32_t required)
+pack_result NDR_PUSH::p_str(const char *var, uint32_t required)
 {	
 	auto pndr = this;
 	if (!ndr_push_check_overflow(pndr, required))
@@ -488,7 +488,7 @@ int NDR_PUSH::p_str(const char *var, uint32_t required)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::p_guid(const GUID &v)
+pack_result NDR_PUSH::p_guid(const GUID &v)
 {
 	auto pndr = this;
 	auto r = &v;
@@ -501,7 +501,7 @@ int NDR_PUSH::p_guid(const GUID &v)
 	return pndr->trailer_align(4);
 }
 
-int NDR_PUSH::p_syntax(const SYNTAX_ID &v)
+pack_result NDR_PUSH::p_syntax(const SYNTAX_ID &v)
 {
 	auto pndr = this;
 	auto r = &v;
@@ -512,7 +512,7 @@ int NDR_PUSH::p_syntax(const SYNTAX_ID &v)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::p_zero(uint32_t n)
+pack_result NDR_PUSH::p_zero(uint32_t n)
 {
 	auto pndr = this;
 	if (!ndr_push_check_overflow(pndr, n))
@@ -522,7 +522,7 @@ int NDR_PUSH::p_zero(uint32_t n)
 	return NDR_ERR_SUCCESS;
 }
 
-int NDR_PUSH::p_unique_ptr(const void *p)
+pack_result NDR_PUSH::p_unique_ptr(const void *p)
 {
 	auto pndr = this;
 	uint32_t ptr;
@@ -536,7 +536,7 @@ int NDR_PUSH::p_unique_ptr(const void *p)
 	return pndr->p_ulong(ptr);
 }
 
-int NDR_PUSH::p_ctx_handle(const CONTEXT_HANDLE &v)
+pack_result NDR_PUSH::p_ctx_handle(const CONTEXT_HANDLE &v)
 {
 	auto pndr = this;
 	auto r = &v;

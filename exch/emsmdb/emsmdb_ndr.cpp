@@ -4,22 +4,23 @@
 #include <gromox/ndr.hpp>
 #include "emsmdb_interface.h"
 #include "emsmdb_ndr.h"
-#define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 
-static int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr, ECDOASYNCWAITEX_IN *r)
+static pack_result asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr,
+    ECDOASYNCWAITEX_IN *r)
 {
 	TRY(pndr->g_ctx_handle(&r->acxh));
 	return pndr->g_uint32(&r->flags_in);
 }
 
-static int asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *pndr,
+static pack_result asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *pndr,
 	const ECDOASYNCWAITEX_OUT *r)
 {
 	TRY(pndr->p_uint32(r->flags_out));
 	return pndr->p_int32(r->result);
 }
 
-int asyncemsmdb_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
+pack_result asyncemsmdb_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
 {
 	switch (opnum) {
 	case ecDoAsyncWaitEx:
@@ -32,7 +33,7 @@ int asyncemsmdb_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
 	}
 }
 
-int asyncemsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
+pack_result asyncemsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 {
 	switch (opnum) {
 	case ecDoAsyncWaitEx:
@@ -42,19 +43,19 @@ int asyncemsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 	}
 }
 
-static int emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r)
+static pack_result emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r)
 {
 	return pndr->g_ctx_handle(&r->cxh);
 }
 
-static int emsmdb_ndr_push_ecdodisconnect(NDR_PUSH *pndr,
+static pack_result emsmdb_ndr_push_ecdodisconnect(NDR_PUSH *pndr,
 	const ECDODISCONNECT_OUT *r)
 {
 	TRY(pndr->p_ctx_handle(r->cxh));
 	return pndr->p_int32(r->result);
 }
 
-static int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
+static pack_result emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	ECRREGISTERPUSHNOTIFICATION_IN *r)
 {
 	uint32_t size;
@@ -81,7 +82,7 @@ static int emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
 	return NDR_ERR_SUCCESS;
 }
 
-static int emsmdb_ndr_push_ecrregisterpushnotification(NDR_PUSH *pndr,
+static pack_result emsmdb_ndr_push_ecrregisterpushnotification(NDR_PUSH *pndr,
 	const ECRREGISTERPUSHNOTIFICATION_OUT *r)
 {
 	TRY(pndr->p_ctx_handle(r->cxh));
@@ -89,12 +90,12 @@ static int emsmdb_ndr_push_ecrregisterpushnotification(NDR_PUSH *pndr,
 	return pndr->p_int32(r->result);
 }
 
-static int emsmdb_ndr_push_ecdummyrpc(NDR_PUSH *pndr, int32_t *r)
+static pack_result emsmdb_ndr_push_ecdummyrpc(NDR_PUSH *pndr, int32_t *r)
 {
 	return pndr->p_int32(*r);
 }
 
-static int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
+static pack_result emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 {
 	uint32_t size;
 	uint32_t offset;
@@ -133,7 +134,7 @@ static int emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int emsmdb_ndr_push_ecdoconnectex(NDR_PUSH *pndr,
+static pack_result emsmdb_ndr_push_ecdoconnectex(NDR_PUSH *pndr,
     const ECDOCONNECTEX_OUT *r)
 {
 	uint32_t length;
@@ -173,7 +174,7 @@ static int emsmdb_ndr_push_ecdoconnectex(NDR_PUSH *pndr,
 	return pndr->p_int32(r->result);
 }
 
-static int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
+static pack_result emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 {
 	uint32_t size;
 	
@@ -204,7 +205,7 @@ static int emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
 	return NDR_ERR_SUCCESS;
 }
 
-static int emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2_OUT *r)
+static pack_result emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2_OUT *r)
 {
 	TRY(pndr->p_ctx_handle(r->cxh));
 	TRY(pndr->p_uint32(r->flags));
@@ -226,20 +227,20 @@ static int emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2_OUT *r)
 	return pndr->p_int32(r->result);
 }
 
-static int emsmdb_ndr_pull_ecdoasyncconnectex(NDR_PULL *pndr,
+static pack_result emsmdb_ndr_pull_ecdoasyncconnectex(NDR_PULL *pndr,
 	ECDOASYNCCONNECTEX_IN *r)
 {
 	return pndr->g_ctx_handle(&r->cxh);
 }
 
-static int emsmdb_ndr_push_ecdoasyncconnectex(NDR_PUSH *pndr,
+static pack_result emsmdb_ndr_push_ecdoasyncconnectex(NDR_PUSH *pndr,
 	const ECDOASYNCCONNECTEX_OUT *r)
 {
 	TRY(pndr->p_ctx_handle(r->acxh));
 	return pndr->p_int32(r->result);
 }
 
-int emsmdb_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
+pack_result emsmdb_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
 {
 	switch (opnum) {
 	case ecDoDisconnect:
@@ -275,7 +276,7 @@ int emsmdb_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
 	}
 }
 
-int emsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
+pack_result emsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 {
 	switch (opnum) {
 	case ecDoDisconnect:

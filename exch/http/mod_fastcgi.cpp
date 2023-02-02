@@ -32,8 +32,8 @@
 #include "http_parser.h"
 #include "mod_fastcgi.h"
 #include "resource.h"
-#define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
-#define QRF(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return FALSE; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
 #define SERVER_SOFTWARE							"medusa/1.0"
 
 #define POLL_MILLISECONDS_FOR_CHECK				50
@@ -218,7 +218,7 @@ void mod_fastcgi_stop()
 	g_context_list.reset();
 }
 
-static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
+static pack_result mod_fastcgi_push_name_value(NDR_PUSH *pndr,
     const char *pname, const char *pvalue)
 {
 	uint32_t tmp_len;
@@ -243,7 +243,7 @@ static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
 	return pndr->p_uint8_a(reinterpret_cast<const uint8_t *>(pvalue), val_len);
 }
 
-static int mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
+static pack_result mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
 {
 	TRY(pndr->p_uint8(FCGI_VERSION));
 	TRY(pndr->p_uint8(RECORD_TYPE_BEGIN_REQUEST));
@@ -262,7 +262,7 @@ static int mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
 	return pndr->p_zero(5);
 }
 
-static int mod_fastcgi_push_params_begin(NDR_PUSH *pndr)
+static pack_result mod_fastcgi_push_params_begin(NDR_PUSH *pndr)
 {
 	TRY(pndr->p_uint8(FCGI_VERSION));
 	TRY(pndr->p_uint8(RECORD_TYPE_PARAMS));
@@ -275,7 +275,7 @@ static int mod_fastcgi_push_params_begin(NDR_PUSH *pndr)
 	return pndr->p_uint8(0);
 }
 
-static int mod_fastcgi_push_align_record(NDR_PUSH *pndr)
+static pack_result mod_fastcgi_push_align_record(NDR_PUSH *pndr)
 {
 	uint8_t padding_len;
 	
@@ -286,7 +286,7 @@ static int mod_fastcgi_push_align_record(NDR_PUSH *pndr)
 	return pndr->p_zero(padding_len);
 }
 
-static int mod_fastcgi_push_params_end(NDR_PUSH *pndr)
+static pack_result mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 {
 	uint16_t len;
 	uint32_t offset;
@@ -301,7 +301,7 @@ static int mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 	return mod_fastcgi_push_align_record(pndr);
 }
 
-static int mod_fastcgi_push_stdin(NDR_PUSH *pndr,
+static pack_result mod_fastcgi_push_stdin(NDR_PUSH *pndr,
     const void *pbuff, uint16_t length)
 {
 	TRY(pndr->p_uint8(FCGI_VERSION));
@@ -316,7 +316,7 @@ static int mod_fastcgi_push_stdin(NDR_PUSH *pndr,
 	return mod_fastcgi_push_align_record(pndr);
 }
 
-static int mod_fastcgi_pull_end_request(NDR_PULL *pndr,
+static pack_result mod_fastcgi_pull_end_request(NDR_PULL *pndr,
 	uint8_t padding_len, FCGI_ENDREQUESTBODY *pend_request)
 {
 	TRY(pndr->g_uint32(&pend_request->app_status));
@@ -325,14 +325,14 @@ static int mod_fastcgi_pull_end_request(NDR_PULL *pndr,
 	return pndr->advance(padding_len);
 }
 
-static int mod_fastcgi_pull_stdstream(NDR_PULL *pndr,
+static pack_result mod_fastcgi_pull_stdstream(NDR_PULL *pndr,
 	uint8_t padding_len, FCGI_STDSTREAM *pstd_stream)
 {
 	TRY(pndr->g_uint8_a(pstd_stream->buffer, pstd_stream->length));
 	return pndr->advance(padding_len);
 }
 
-static int mod_fastcgi_pull_record_header(
+static pack_result mod_fastcgi_pull_record_header(
 	NDR_PULL *pndr, RECORD_HEADER *pheader)
 {
 	TRY(pndr->g_uint8(&pheader->version));

@@ -154,17 +154,17 @@ struct notificationwait_response {
 };
 
 struct ems_pull : public EXT_PULL {
-	int g_connect_req(connect_request &);
-	int g_execute_req(execute_request &);
-	int g_disconnect_req(disconnect_request &);
-	int g_notificationwait_req(notificationwait_request &);
+	pack_result g_connect_req(connect_request &);
+	pack_result g_execute_req(execute_request &);
+	pack_result g_disconnect_req(disconnect_request &);
+	pack_result g_notificationwait_req(notificationwait_request &);
 };
 
 struct ems_push : public EXT_PUSH {
-	int p_connect_rsp(const connect_response &);
-	int p_execute_rsp(const execute_response &);
-	int p_disconnect_rsp(const disconnect_response &);
-	int p_notificationwait_rsp(const notificationwait_response &);
+	pack_result p_connect_rsp(const connect_response &);
+	pack_result p_execute_rsp(const execute_response &);
+	pack_result p_disconnect_rsp(const disconnect_response &);
+	pack_result p_notificationwait_rsp(const notificationwait_response &);
 };
 
 /**
@@ -826,9 +826,9 @@ static BOOL emsmdb_preproc(int context_id)
 	return TRUE;
 }
 
-#define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
-int ems_pull::g_connect_req(connect_request &req)
+pack_result ems_pull::g_connect_req(connect_request &req)
 {
 	TRY(g_str(&req.userdn));
 	TRY(g_uint32(&req.flags));
@@ -848,7 +848,7 @@ int ems_pull::g_connect_req(connect_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int ems_pull::g_execute_req(execute_request &req)
+pack_result ems_pull::g_execute_req(execute_request &req)
 {
 	TRY(g_uint32(&req.flags));
 	TRY(g_uint32(&req.cb_in));
@@ -876,7 +876,7 @@ int ems_pull::g_execute_req(execute_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int ems_pull::g_disconnect_req(disconnect_request &req)
+pack_result ems_pull::g_disconnect_req(disconnect_request &req)
 {
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -891,7 +891,7 @@ int ems_pull::g_disconnect_req(disconnect_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int ems_pull::g_notificationwait_req(notificationwait_request &req)
+pack_result ems_pull::g_notificationwait_req(notificationwait_request &req)
 {
 	TRY(g_uint32(&req.flags));
 	TRY(g_uint32(&req.cb_auxin));
@@ -907,7 +907,7 @@ int ems_pull::g_notificationwait_req(notificationwait_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-int ems_push::p_connect_rsp(const connect_response &rsp)
+pack_result ems_push::p_connect_rsp(const connect_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
@@ -922,7 +922,7 @@ int ems_push::p_connect_rsp(const connect_response &rsp)
 	return p_bytes(rsp.auxout, rsp.cb_auxout);
 }
 
-int ems_push::p_execute_rsp(const execute_response &rsp)
+pack_result ems_push::p_execute_rsp(const execute_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
@@ -936,14 +936,14 @@ int ems_push::p_execute_rsp(const execute_response &rsp)
 	return p_bytes(rsp.auxout, rsp.cb_auxout);
 }
 
-int ems_push::p_disconnect_rsp(const disconnect_response &rsp)
+pack_result ems_push::p_disconnect_rsp(const disconnect_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	return p_uint32(0);
 }
 
-int ems_push::p_notificationwait_rsp(const notificationwait_response &rsp)
+pack_result ems_push::p_notificationwait_rsp(const notificationwait_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
