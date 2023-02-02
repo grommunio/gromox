@@ -1702,7 +1702,7 @@ uint32_t zs_deletemessages(GUID hsession,
 	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
-		return FALSE;
+		return ecError;
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
@@ -2614,7 +2614,7 @@ uint32_t zs_notifdequeue(const NOTIF_SINK *psink,
 		holder.emplace_back();
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2179: ENOMEM");
-		return false;
+		return ecServerOOM;
 	}
 	auto psink_node = &holder.front();
 	psink_node->clifd = common_util_get_clifd();

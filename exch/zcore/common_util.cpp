@@ -1154,7 +1154,7 @@ int cu_calc_msg_access(store_object *pstore, const char *user,
  PERMISSION_CHECK:
 	if (!(tag_access & MAPI_ACCESS_READ))
 		return ecAccessDenied;
-	return 0;
+	return ecSuccess;
 }
 
 BINARY *cu_mid_to_sk(store_object *pstore,
