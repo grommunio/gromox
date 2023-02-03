@@ -2639,6 +2639,10 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 		}
 	}
 
+#define H(rop, f, t) \
+	case (rop): \
+		return rop_ext_push_ ## f ## _response(pext, static_cast<t ## _RESPONSE *>(r->ppayload));
+
 	switch (r->rop_id) {
 	case ropLogon: {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
@@ -2651,249 +2655,87 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 		       rop_ext_push_logon_pf_response(pext,
 		       static_cast<LOGON_PF_RESPONSE *>(r->ppayload));
 	}
-	case ropGetReceiveFolder:
-		return rop_ext_push_getreceivefolder_response(pext,
-		       static_cast<GETRECEIVEFOLDER_RESPONSE *>(r->ppayload));
-	case ropGetReceiveFolderTable:
-		return rop_ext_push_getreceivefoldertable_response(pext,
-		       static_cast<GETRECEIVEFOLDERTABLE_RESPONSE *>(r->ppayload));
-	case ropGetStoreState:
-		return rop_ext_push_getstorestat_response(pext,
-		       static_cast<GETSTORESTAT_RESPONSE *>(r->ppayload));
-	case ropGetOwningServers:
-		return rop_ext_push_getowningservers_response(pext,
-		       static_cast<GETOWNINGSERVERS_RESPONSE *>(r->ppayload));
-	case ropPublicFolderIsGhosted:
-		return rop_ext_push_publicfolderisghosted_response(pext,
-		       static_cast<PUBLICFOLDERISGHOSTED_RESPONSE *>(r->ppayload));
-	case ropLongTermIdFromId:
-		return rop_ext_push_longtermidfromid_response(pext,
-		       static_cast<LONGTERMIDFROMID_RESPONSE *>(r->ppayload));
-	case ropIdFromLongTermId:
-		return rop_ext_push_idfromlongtermid_response(pext,
-		       static_cast<IDFROMLONGTERMID_RESPONSE *>(r->ppayload));
-	case ropGetPerUserLongTermIds:
-		return rop_ext_push_getperuserlongtermids_response(pext,
-		       static_cast<GETPERUSERLONGTERMIDS_RESPONSE *>(r->ppayload));
-	case ropGetPerUserGuid:
-		return rop_ext_push_getperuserguid_response(pext,
-		       static_cast<GETPERUSERGUID_RESPONSE *>(r->ppayload));
-	case ropReadPerUserInformation:
-		return rop_ext_push_readperuserinformation_response(pext,
-		       static_cast<READPERUSERINFORMATION_RESPONSE *>(r->ppayload));
-	case ropOpenFolder:
-		return rop_ext_push_openfolder_response(pext,
-		       static_cast<OPENFOLDER_RESPONSE *>(r->ppayload));
-	case ropCreateFolder:
-		return rop_ext_push_createfolder_response(pext,
-		       static_cast<CREATEFOLDER_RESPONSE *>(r->ppayload));
-	case ropDeleteFolder:
-		return rop_ext_push_deletefolder_response(pext,
-		       static_cast<DELETEFOLDER_RESPONSE *>(r->ppayload));
-	case ropGetSearchCriteria:
-		return rop_ext_push_getsearchcriteria_response(pext,
-		       static_cast<GETSEARCHCRITERIA_RESPONSE *>(r->ppayload));
-	case ropMoveCopyMessages:
-		return rop_ext_push_movecopymessages_response(pext,
-		       static_cast<MOVECOPYMESSAGES_RESPONSE *>(r->ppayload));
-	case ropMoveFolder:
-		return rop_ext_push_movefolder_response(pext,
-		       static_cast<MOVEFOLDER_RESPONSE *>(r->ppayload));
-	case ropCopyFolder:
-		return rop_ext_push_copyfolder_response(pext,
-		       static_cast<COPYFOLDER_RESPONSE *>(r->ppayload));
-	case ropEmptyFolder:
-		return rop_ext_push_emptyfolder_response(pext,
-		       static_cast<EMPTYFOLDER_RESPONSE *>(r->ppayload));
-	case ropHardDeleteMessagesAndSubfolders:
-		return rop_ext_push_harddeletemessagesandsubfolders_response(pext,
-		       static_cast<HARDDELETEMESSAGESANDSUBFOLDERS_RESPONSE *>(r->ppayload));
-	case ropDeleteMessages:
-		return rop_ext_push_deletemessages_response(pext,
-		       static_cast<DELETEMESSAGES_RESPONSE *>(r->ppayload));
-	case ropHardDeleteMessages:
-		return rop_ext_push_harddeletemessages_response(pext,
-		       static_cast<DELETEMESSAGES_RESPONSE *>(r->ppayload));
-	case ropGetHierarchyTable:
-		return rop_ext_push_gethierarchytable_response(pext,
-		       static_cast<GETHIERARCHYTABLE_RESPONSE *>(r->ppayload));
-	case ropGetContentsTable:
-		return rop_ext_push_getcontentstable_response(pext,
-		       static_cast<GETCONTENTSTABLE_RESPONSE *>(r->ppayload));
-	case ropSetColumns:
-		return rop_ext_push_setcolumns_response(pext,
-		       static_cast<SETCOLUMNS_RESPONSE *>(r->ppayload));
-	case ropSortTable:
-		return rop_ext_push_sorttable_response(pext,
-		       static_cast<SORTTABLE_RESPONSE *>(r->ppayload));
-	case ropRestrict:
-		return rop_ext_push_restrict_response(pext,
-		       static_cast<RESTRICT_RESPONSE *>(r->ppayload));
-	case ropQueryRows:
-		return rop_ext_push_queryrows_response(pext,
-		       static_cast<QUERYROWS_RESPONSE *>(r->ppayload));
-	case ropAbort:
-		return rop_ext_push_abort_response(pext,
-		       static_cast<ABORT_RESPONSE *>(r->ppayload));
-	case ropGetStatus:
-		return rop_ext_push_getstatus_response(pext,
-		       static_cast<GETSTATUS_RESPONSE *>(r->ppayload));
-	case ropQueryPosition:
-		return rop_ext_push_queryposition_response(pext,
-		       static_cast<QUERYPOSITION_RESPONSE *>(r->ppayload));
-	case ropSeekRow:
-		return rop_ext_push_seekrow_response(pext,
-		       static_cast<SEEKROW_RESPONSE *>(r->ppayload));
-	case ropSeekRowBookmark:
-		return rop_ext_push_seekrowbookmark_response(pext,
-		       static_cast<SEEKROWBOOKMARK_RESPONSE *>(r->ppayload));
-	case ropCreateBookmark:
-		return rop_ext_push_createbookmark_response(pext,
-		       static_cast<CREATEBOOKMARK_RESPONSE *>(r->ppayload));
-	case ropQueryColumnsAll:
-		return rop_ext_push_querycolumnsall_response(pext,
-		       static_cast<QUERYCOLUMNSALL_RESPONSE *>(r->ppayload));
-	case ropFindRow:
-		return rop_ext_push_findrow_response(pext,
-		       static_cast<FINDROW_RESPONSE *>(r->ppayload));
-	case ropExpandRow:
-		return rop_ext_push_expandrow_response(pext,
-		       static_cast<EXPANDROW_RESPONSE *>(r->ppayload));
-	case ropCollapseRow:
-		return rop_ext_push_collapserow_response(pext,
-		       static_cast<COLLAPSEROW_RESPONSE *>(r->ppayload));
-	case ropGetCollapseState:
-		return rop_ext_push_getcollapsestate_response(pext,
-		       static_cast<GETCOLLAPSESTATE_RESPONSE *>(r->ppayload));
-	case ropSetCollapseState:
-		return rop_ext_push_setcollapsestate_response(pext,
-		       static_cast<SETCOLLAPSESTATE_RESPONSE *>(r->ppayload));
-	case ropOpenMessage:
-		return rop_ext_push_openmessage_response(pext,
-		       static_cast<OPENMESSAGE_RESPONSE *>(r->ppayload));
-	case ropCreateMessage:
-		return rop_ext_push_createmessage_response(pext,
-		       static_cast<CREATEMESSAGE_RESPONSE *>(r->ppayload));
-	case ropSaveChangesMessage:
-		return rop_ext_push_savechangesmessage_response(pext,
-		       static_cast<SAVECHANGESMESSAGE_RESPONSE *>(r->ppayload));
-	case ropReadRecipients:
-		return rop_ext_push_readrecipients_response(pext,
-		       static_cast<READRECIPIENTS_RESPONSE *>(r->ppayload));
-	case ropReloadCachedInformation:
-		return rop_ext_push_reloadcachedinformation_response(pext,
-		       static_cast<RELOADCACHEDINFORMATION_RESPONSE *>(r->ppayload));
-	case ropSetMessageStatus:
-		return rop_ext_push_setmessagestatus_response(pext,
-		       static_cast<SETMESSAGESTATUS_RESPONSE *>(r->ppayload));
-	case ropGetMessageStatus:
-		return rop_ext_push_getmessagestatus_response(pext,
-		       static_cast<GETMESSAGESTATUS_RESPONSE *>(r->ppayload));
-	case ropSetReadFlags:
-		return rop_ext_push_setreadflags_response(pext,
-		       static_cast<SETREADFLAGS_RESPONSE *>(r->ppayload));
-	case ropSetMessageReadFlag:
-		return rop_ext_push_setmessagereadflag_response(pext,
-		       static_cast<SETMESSAGEREADFLAG_RESPONSE *>(r->ppayload));
-	case ropCreateAttachment:
-		return rop_ext_push_createattachment_response(pext,
-		       static_cast<CREATEATTACHMENT_RESPONSE *>(r->ppayload));
-	case ropOpenEmbeddedMessage:
-		return rop_ext_push_openembeddedmessage_response(pext,
-		       static_cast<OPENEMBEDDEDMESSAGE_RESPONSE *>(r->ppayload));
-	case ropGetValidAttachments:
-		return rop_ext_push_getvalidattachments_response(pext,
-		       static_cast<GETVALIDATTACHMENTS_RESPONSE *>(r->ppayload));
-	case ropGetAddressTypes:
-		return rop_ext_push_getaddresstypes_response(pext,
-		       static_cast<GETADDRESSTYPES_RESPONSE *>(r->ppayload));
-	case ropTransportSend:
-		return rop_ext_push_transportsend_response(pext,
-		       static_cast<TRANSPORTSEND_RESPONSE *>(r->ppayload));
-	case ropGetTransportFolder:
-		return rop_ext_push_gettransportfolder_response(pext,
-		       static_cast<GETTRANSPORTFOLDER_RESPONSE *>(r->ppayload));
-	case ropOptionsData:
-		return rop_ext_push_optionsdata_response(pext,
-		       static_cast<OPTIONSDATA_RESPONSE *>(r->ppayload));
-	case ropGetPropertyIdsFromNames:
-		return rop_ext_push_getpropertyidsfromnames_response(pext,
-		       static_cast<GETPROPERTYIDSFROMNAMES_RESPONSE *>(r->ppayload));
-	case ropGetNamesFromPropertyIds:
-		return rop_ext_push_getnamesfrompropertyids_response(pext,
-		       static_cast<GETNAMESFROMPROPERTYIDS_RESPONSE *>(r->ppayload));
-	case ropGetPropertiesSpecific:
-		return rop_ext_push_getpropertiesspecific_response(pext,
-		       static_cast<GETPROPERTIESSPECIFIC_RESPONSE *>(r->ppayload));
-	case ropGetPropertiesAll:
-		return rop_ext_push_getpropertiesall_response(pext,
-		       static_cast<GETPROPERTIESALL_RESPONSE *>(r->ppayload));
-	case ropGetPropertiesList:
-		return rop_ext_push_getpropertieslist_response(pext,
-		       static_cast<GETPROPERTIESLIST_RESPONSE *>(r->ppayload));
-	case ropSetProperties:
-		return rop_ext_push_setproperties_response(pext,
-		       static_cast<SETPROPERTIES_RESPONSE *>(r->ppayload));
-	case ropSetPropertiesNoReplicate:
-		return rop_ext_push_setpropertiesnoreplicate_response(pext,
-		       static_cast<SETPROPERTIESNOREPLICATE_RESPONSE *>(r->ppayload));
-	case ropDeleteProperties:
-		return rop_ext_push_deleteproperties_response(pext,
-		       static_cast<DELETEPROPERTIES_RESPONSE *>(r->ppayload));
-	case ropDeletePropertiesNoReplicate:
-		return rop_ext_push_deletepropertiesnoreplicate_response(pext,
-		       static_cast<DELETEPROPERTIESNOREPLICATE_RESPONSE *>(r->ppayload));
-	case ropQueryNamedProperties:
-		return rop_ext_push_querynamedproperties_response(pext,
-		       static_cast<QUERYNAMEDPROPERTIES_RESPONSE *>(r->ppayload));
-	case ropCopyProperties:
-		return rop_ext_push_copyproperties_response(pext,
-		       static_cast<COPYPROPERTIES_RESPONSE *>(r->ppayload));
-	case ropCopyTo:
-		return rop_ext_push_copyto_response(pext,
-		       static_cast<COPYTO_RESPONSE *>(r->ppayload));
-	case ropProgress:
-		return rop_ext_push_progress_response(pext,
-		       static_cast<PROGRESS_RESPONSE *>(r->ppayload));
-	case ropOpenStream:
-		return rop_ext_push_openstream_response(pext,
-		       static_cast<OPENSTREAM_RESPONSE *>(r->ppayload));
-	case ropReadStream:
-		return rop_ext_push_readstream_response(pext,
-		       static_cast<READSTREAM_RESPONSE *>(r->ppayload));
-	case ropWriteStream:
-		return rop_ext_push_writestream_response(pext,
-		       static_cast<WRITESTREAM_RESPONSE *>(r->ppayload));
-	case ropGetStreamSize:
-		return rop_ext_push_getstreamsize_response(pext,
-		       static_cast<GETSTREAMSIZE_RESPONSE *>(r->ppayload));
-	case ropSeekStream:
-		return rop_ext_push_seekstream_response(pext,
-		       static_cast<SEEKSTREAM_RESPONSE *>(r->ppayload));
-	case ropCopyToStream:
-		return rop_ext_push_copytostream_response(pext,
-		       static_cast<COPYTOSTREAM_RESPONSE *>(r->ppayload));
-	case ropWriteAndCommitStream:
-		return rop_ext_push_writeandcommitstream_response(pext,
-		       static_cast<WRITEANDCOMMITSTREAM_RESPONSE *>(r->ppayload));
-	case ropFastTransferDestinationPutBuffer:
-		return rop_ext_push_fasttransferdestputbuffer_response(pext,
-		       static_cast<FASTTRANSFERDESTPUTBUFFER_RESPONSE *>(r->ppayload));
-	case ropFastTransferSourceGetBuffer:
-		return rop_ext_push_fasttransfersourcegetbuffer_response(pext,
-		       static_cast<FASTTRANSFERSOURCEGETBUFFER_RESPONSE *>(r->ppayload));
-	case ropSynchronizationImportMessageChange:
-		return rop_ext_push_syncimportmessagechange_response(pext,
-		       static_cast<SYNCIMPORTMESSAGECHANGE_RESPONSE *>(r->ppayload));
-	case ropSynchronizationImportHierarchyChange:
-		return rop_ext_push_syncimporthierarchychange_response(pext,
-		       static_cast<SYNCIMPORTHIERARCHYCHANGE_RESPONSE *>(r->ppayload));
-	case ropSynchronizationImportMessageMove:
-		return rop_ext_push_syncimportmessagemove_response(pext,
-		       static_cast<SYNCIMPORTMESSAGEMOVE_RESPONSE *>(r->ppayload));
-	case ropGetLocalReplicaIds:
-		return rop_ext_push_getlocalreplicaids_response(pext,
-		       static_cast<GETLOCALREPLICAIDS_RESPONSE *>(r->ppayload));
+	H(ropGetReceiveFolder, getreceivefolder, GETRECEIVEFOLDER);
+	H(ropGetReceiveFolderTable, getreceivefoldertable, GETRECEIVEFOLDERTABLE);
+	H(ropGetStoreState, getstorestat, GETSTORESTAT);
+	H(ropGetOwningServers, getowningservers, GETOWNINGSERVERS);
+	H(ropPublicFolderIsGhosted, publicfolderisghosted, PUBLICFOLDERISGHOSTED);
+	H(ropLongTermIdFromId, longtermidfromid, LONGTERMIDFROMID);
+	H(ropIdFromLongTermId, idfromlongtermid, IDFROMLONGTERMID);
+	H(ropGetPerUserLongTermIds, getperuserlongtermids, GETPERUSERLONGTERMIDS);
+	H(ropGetPerUserGuid, getperuserguid, GETPERUSERGUID);
+	H(ropReadPerUserInformation, readperuserinformation, READPERUSERINFORMATION);
+	H(ropOpenFolder, openfolder, OPENFOLDER);
+	H(ropCreateFolder, createfolder, CREATEFOLDER);
+	H(ropDeleteFolder, deletefolder, DELETEFOLDER);
+	H(ropGetSearchCriteria, getsearchcriteria, GETSEARCHCRITERIA);
+	H(ropMoveCopyMessages, movecopymessages, MOVECOPYMESSAGES);
+	H(ropMoveFolder, movefolder, MOVEFOLDER);
+	H(ropCopyFolder, copyfolder, COPYFOLDER);
+	H(ropEmptyFolder, emptyfolder, EMPTYFOLDER);
+	H(ropHardDeleteMessagesAndSubfolders, harddeletemessagesandsubfolders, HARDDELETEMESSAGESANDSUBFOLDERS);
+	H(ropDeleteMessages, deletemessages, DELETEMESSAGES);
+	H(ropHardDeleteMessages, harddeletemessages, DELETEMESSAGES);
+	H(ropGetHierarchyTable, gethierarchytable, GETHIERARCHYTABLE);
+	H(ropGetContentsTable, getcontentstable, GETCONTENTSTABLE);
+	H(ropSetColumns, setcolumns, SETCOLUMNS);
+	H(ropSortTable, sorttable, SORTTABLE);
+	H(ropRestrict, restrict, RESTRICT);
+	H(ropQueryRows, queryrows, QUERYROWS);
+	H(ropAbort, abort, ABORT);
+	H(ropGetStatus, getstatus, GETSTATUS);
+	H(ropQueryPosition, queryposition, QUERYPOSITION);
+	H(ropSeekRow, seekrow, SEEKROW);
+	H(ropSeekRowBookmark, seekrowbookmark, SEEKROWBOOKMARK);
+	H(ropCreateBookmark, createbookmark, CREATEBOOKMARK);
+	H(ropQueryColumnsAll, querycolumnsall, QUERYCOLUMNSALL);
+	H(ropFindRow, findrow, FINDROW);
+	H(ropExpandRow, expandrow, EXPANDROW);
+	H(ropCollapseRow, collapserow, COLLAPSEROW);
+	H(ropGetCollapseState, getcollapsestate, GETCOLLAPSESTATE);
+	H(ropSetCollapseState, setcollapsestate, SETCOLLAPSESTATE);
+	H(ropOpenMessage, openmessage, OPENMESSAGE);
+	H(ropCreateMessage, createmessage, CREATEMESSAGE);
+	H(ropSaveChangesMessage, savechangesmessage, SAVECHANGESMESSAGE);
+	H(ropReadRecipients, readrecipients, READRECIPIENTS);
+	H(ropReloadCachedInformation, reloadcachedinformation, RELOADCACHEDINFORMATION);
+	H(ropSetMessageStatus, setmessagestatus, SETMESSAGESTATUS);
+	H(ropGetMessageStatus, getmessagestatus, GETMESSAGESTATUS);
+	H(ropSetReadFlags, setreadflags, SETREADFLAGS);
+	H(ropSetMessageReadFlag, setmessagereadflag, SETMESSAGEREADFLAG);
+	H(ropCreateAttachment, createattachment, CREATEATTACHMENT);
+	H(ropOpenEmbeddedMessage, openembeddedmessage, OPENEMBEDDEDMESSAGE);
+	H(ropGetValidAttachments, getvalidattachments, GETVALIDATTACHMENTS);
+	H(ropGetAddressTypes, getaddresstypes, GETADDRESSTYPES);
+	H(ropTransportSend, transportsend, TRANSPORTSEND);
+	H(ropGetTransportFolder, gettransportfolder, GETTRANSPORTFOLDER);
+	H(ropOptionsData, optionsdata, OPTIONSDATA);
+	H(ropGetPropertyIdsFromNames, getpropertyidsfromnames, GETPROPERTYIDSFROMNAMES);
+	H(ropGetNamesFromPropertyIds, getnamesfrompropertyids, GETNAMESFROMPROPERTYIDS);
+	H(ropGetPropertiesSpecific, getpropertiesspecific, GETPROPERTIESSPECIFIC);
+	H(ropGetPropertiesAll, getpropertiesall, GETPROPERTIESALL);
+	H(ropGetPropertiesList, getpropertieslist, GETPROPERTIESLIST);
+	H(ropSetProperties, setproperties, SETPROPERTIES);
+	H(ropSetPropertiesNoReplicate, setpropertiesnoreplicate, SETPROPERTIESNOREPLICATE);
+	H(ropDeleteProperties, deleteproperties, DELETEPROPERTIES);
+	H(ropDeletePropertiesNoReplicate, deletepropertiesnoreplicate, DELETEPROPERTIESNOREPLICATE);
+	H(ropQueryNamedProperties, querynamedproperties, QUERYNAMEDPROPERTIES);
+	H(ropCopyProperties, copyproperties, COPYPROPERTIES);
+	H(ropCopyTo, copyto, COPYTO);
+	H(ropProgress, progress, PROGRESS);
+	H(ropOpenStream, openstream, OPENSTREAM);
+	H(ropReadStream, readstream, READSTREAM);
+	H(ropWriteStream, writestream, WRITESTREAM);
+	H(ropGetStreamSize, getstreamsize, GETSTREAMSIZE);
+	H(ropSeekStream, seekstream, SEEKSTREAM);
+	H(ropCopyToStream, copytostream, COPYTOSTREAM);
+	H(ropWriteAndCommitStream, writeandcommitstream, WRITEANDCOMMITSTREAM);
+	H(ropFastTransferDestinationPutBuffer, fasttransferdestputbuffer, FASTTRANSFERDESTPUTBUFFER);
+	H(ropFastTransferSourceGetBuffer, fasttransfersourcegetbuffer, FASTTRANSFERSOURCEGETBUFFER);
+	H(ropSynchronizationImportMessageChange, syncimportmessagechange, SYNCIMPORTMESSAGECHANGE);
+	H(ropSynchronizationImportHierarchyChange, syncimporthierarchychange, SYNCIMPORTHIERARCHYCHANGE);
+	H(ropSynchronizationImportMessageMove, syncimportmessagemove, SYNCIMPORTMESSAGEMOVE);
+	H(ropGetLocalReplicaIds, getlocalreplicaids, GETLOCALREPLICAIDS);
 	case ropSetReceiveFolder:
 	case ropWritePerUserInformation:
 	case ropSetSearchCriteria:
@@ -2941,6 +2783,7 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
+#undef H
 }
 
 pack_result rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
