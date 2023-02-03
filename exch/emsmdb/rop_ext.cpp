@@ -2654,8 +2654,6 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 	case ropGetReceiveFolder:
 		return rop_ext_push_getreceivefolder_response(pext,
 		       static_cast<GETRECEIVEFOLDER_RESPONSE *>(r->ppayload));
-	case ropSetReceiveFolder:
-		return EXT_ERR_SUCCESS;
 	case ropGetReceiveFolderTable:
 		return rop_ext_push_getreceivefoldertable_response(pext,
 		       static_cast<GETRECEIVEFOLDERTABLE_RESPONSE *>(r->ppayload));
@@ -2683,8 +2681,6 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 	case ropReadPerUserInformation:
 		return rop_ext_push_readperuserinformation_response(pext,
 		       static_cast<READPERUSERINFORMATION_RESPONSE *>(r->ppayload));
-	case ropWritePerUserInformation:
-		return EXT_ERR_SUCCESS;
 	case ropOpenFolder:
 		return rop_ext_push_openfolder_response(pext,
 		       static_cast<OPENFOLDER_RESPONSE *>(r->ppayload));
@@ -2694,8 +2690,6 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 	case ropDeleteFolder:
 		return rop_ext_push_deletefolder_response(pext,
 		       static_cast<DELETEFOLDER_RESPONSE *>(r->ppayload));
-	case ropSetSearchCriteria:
-		return EXT_ERR_SUCCESS;
 	case ropGetSearchCriteria:
 		return rop_ext_push_getsearchcriteria_response(pext,
 		       static_cast<GETSEARCHCRITERIA_RESPONSE *>(r->ppayload));
@@ -2753,8 +2747,6 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 	case ropSeekRowBookmark:
 		return rop_ext_push_seekrowbookmark_response(pext,
 		       static_cast<SEEKROWBOOKMARK_RESPONSE *>(r->ppayload));
-	case ropSeekRowFractional:
-		return EXT_ERR_SUCCESS;
 	case ropCreateBookmark:
 		return rop_ext_push_createbookmark_response(pext,
 		       static_cast<CREATEBOOKMARK_RESPONSE *>(r->ppayload));
@@ -2764,10 +2756,6 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 	case ropFindRow:
 		return rop_ext_push_findrow_response(pext,
 		       static_cast<FINDROW_RESPONSE *>(r->ppayload));
-	case ropFreeBookmark:
-		return EXT_ERR_SUCCESS;
-	case ropResetTable:
-		return EXT_ERR_SUCCESS;
 	case ropExpandRow:
 		return rop_ext_push_expandrow_response(pext,
 		       static_cast<EXPANDROW_RESPONSE *>(r->ppayload));
@@ -2789,10 +2777,6 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 	case ropSaveChangesMessage:
 		return rop_ext_push_savechangesmessage_response(pext,
 		       static_cast<SAVECHANGESMESSAGE_RESPONSE *>(r->ppayload));
-	case ropRemoveAllRecipients:
-		return EXT_ERR_SUCCESS;
-	case ropModifyRecipients:
-		return EXT_ERR_SUCCESS;
 	case ropReadRecipients:
 		return rop_ext_push_readrecipients_response(pext,
 		       static_cast<READRECIPIENTS_RESPONSE *>(r->ppayload));
@@ -2811,39 +2795,21 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 	case ropSetMessageReadFlag:
 		return rop_ext_push_setmessagereadflag_response(pext,
 		       static_cast<SETMESSAGEREADFLAG_RESPONSE *>(r->ppayload));
-	case ropOpenAttachment:
-		return EXT_ERR_SUCCESS;
 	case ropCreateAttachment:
 		return rop_ext_push_createattachment_response(pext,
 		       static_cast<CREATEATTACHMENT_RESPONSE *>(r->ppayload));
-	case ropDeleteAttachment:
-		return EXT_ERR_SUCCESS;
-	case ropSaveChangesAttachment:
-		return EXT_ERR_SUCCESS;
 	case ropOpenEmbeddedMessage:
 		return rop_ext_push_openembeddedmessage_response(pext,
 		       static_cast<OPENEMBEDDEDMESSAGE_RESPONSE *>(r->ppayload));
-	case ropGetAttachmentTable:
-		return EXT_ERR_SUCCESS;
 	case ropGetValidAttachments:
 		return rop_ext_push_getvalidattachments_response(pext,
 		       static_cast<GETVALIDATTACHMENTS_RESPONSE *>(r->ppayload));
-	case ropSubmitMessage:
-		return EXT_ERR_SUCCESS;
-	case ropAbortSubmit:
-		return EXT_ERR_SUCCESS;
 	case ropGetAddressTypes:
 		return rop_ext_push_getaddresstypes_response(pext,
 		       static_cast<GETADDRESSTYPES_RESPONSE *>(r->ppayload));
-	case ropSetSpooler:
-		return EXT_ERR_SUCCESS;
-	case ropSpoolerLockMessage:
-		return EXT_ERR_SUCCESS;
 	case ropTransportSend:
 		return rop_ext_push_transportsend_response(pext,
 		       static_cast<TRANSPORTSEND_RESPONSE *>(r->ppayload));
-	case ropTransportNewMail:
-		return EXT_ERR_SUCCESS;
 	case ropGetTransportFolder:
 		return rop_ext_push_gettransportfolder_response(pext,
 		       static_cast<GETTRANSPORTFOLDER_RESPONSE *>(r->ppayload));
@@ -2898,86 +2864,78 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 	case ropWriteStream:
 		return rop_ext_push_writestream_response(pext,
 		       static_cast<WRITESTREAM_RESPONSE *>(r->ppayload));
-	case ropCommitStream:
-		return EXT_ERR_SUCCESS;
 	case ropGetStreamSize:
 		return rop_ext_push_getstreamsize_response(pext,
 		       static_cast<GETSTREAMSIZE_RESPONSE *>(r->ppayload));
-	case ropSetStreamSize:
-		return EXT_ERR_SUCCESS;
 	case ropSeekStream:
 		return rop_ext_push_seekstream_response(pext,
 		       static_cast<SEEKSTREAM_RESPONSE *>(r->ppayload));
 	case ropCopyToStream:
 		return rop_ext_push_copytostream_response(pext,
 		       static_cast<COPYTOSTREAM_RESPONSE *>(r->ppayload));
-	case ropLockRegionStream:
-		return EXT_ERR_SUCCESS;
-	case ropUnlockRegionStream:
-		return EXT_ERR_SUCCESS;
 	case ropWriteAndCommitStream:
 		return rop_ext_push_writeandcommitstream_response(pext,
 		       static_cast<WRITEANDCOMMITSTREAM_RESPONSE *>(r->ppayload));
-	case ropCloneStream:
-		return EXT_ERR_SUCCESS;
-	case ropModifyPermissions:
-		return EXT_ERR_SUCCESS;
-	case ropGetPermissionsTable:
-		return EXT_ERR_SUCCESS;
-	case ropModifyRules:
-		return EXT_ERR_SUCCESS;
-	case ropGetRulesTable:
-		return EXT_ERR_SUCCESS;
-	case ropUpdateDeferredActionMessages:
-		return EXT_ERR_SUCCESS;
-	case ropFastTransferDestinationConfigure:
-		return EXT_ERR_SUCCESS;
 	case ropFastTransferDestinationPutBuffer:
 		return rop_ext_push_fasttransferdestputbuffer_response(pext,
 		       static_cast<FASTTRANSFERDESTPUTBUFFER_RESPONSE *>(r->ppayload));
 	case ropFastTransferSourceGetBuffer:
 		return rop_ext_push_fasttransfersourcegetbuffer_response(pext,
 		       static_cast<FASTTRANSFERSOURCEGETBUFFER_RESPONSE *>(r->ppayload));
-	case ropFastTransferSourceCopyFolder:
-		return EXT_ERR_SUCCESS;
-	case ropFastTransferSourceCopyMessages:
-		return EXT_ERR_SUCCESS;
-	case ropFastTransferSourceCopyTo:
-		return EXT_ERR_SUCCESS;
-	case ropFastTransferSourceCopyProperties:
-		return EXT_ERR_SUCCESS;
-	case ropTellVersion:
-		return EXT_ERR_SUCCESS;
-	case ropSynchronizationConfigure:
-		return EXT_ERR_SUCCESS;
 	case ropSynchronizationImportMessageChange:
 		return rop_ext_push_syncimportmessagechange_response(pext,
 		       static_cast<SYNCIMPORTMESSAGECHANGE_RESPONSE *>(r->ppayload));
-	case ropSynchronizationImportReadStateChanges:
-		return EXT_ERR_SUCCESS;
 	case ropSynchronizationImportHierarchyChange:
 		return rop_ext_push_syncimporthierarchychange_response(pext,
 		       static_cast<SYNCIMPORTHIERARCHYCHANGE_RESPONSE *>(r->ppayload));
-	case ropSynchronizationImportDeletes:
-		return EXT_ERR_SUCCESS;
 	case ropSynchronizationImportMessageMove:
 		return rop_ext_push_syncimportmessagemove_response(pext,
 		       static_cast<SYNCIMPORTMESSAGEMOVE_RESPONSE *>(r->ppayload));
-	case ropSynchronizationOpenCollector:
-		return EXT_ERR_SUCCESS;
-	case ropSynchronizationGetTransferState:
-		return EXT_ERR_SUCCESS;
-	case ropSynchronizationUploadStateStreamBegin:
-		return EXT_ERR_SUCCESS;
-	case ropSynchronizationUploadStateStreamContinue:
-		return EXT_ERR_SUCCESS;
-	case ropSynchronizationUploadStateStreamEnd:
-		return EXT_ERR_SUCCESS;
-	case ropSetLocalReplicaMidsetDeleted:
-		return EXT_ERR_SUCCESS;
 	case ropGetLocalReplicaIds:
 		return rop_ext_push_getlocalreplicaids_response(pext,
 		       static_cast<GETLOCALREPLICAIDS_RESPONSE *>(r->ppayload));
+	case ropSetReceiveFolder:
+	case ropWritePerUserInformation:
+	case ropSetSearchCriteria:
+	case ropSeekRowFractional:
+	case ropFreeBookmark:
+	case ropResetTable:
+	case ropRemoveAllRecipients:
+	case ropModifyRecipients:
+	case ropOpenAttachment:
+	case ropDeleteAttachment:
+	case ropSaveChangesAttachment:
+	case ropGetAttachmentTable:
+	case ropSubmitMessage:
+	case ropAbortSubmit:
+	case ropSetSpooler:
+	case ropSpoolerLockMessage:
+	case ropTransportNewMail:
+	case ropCommitStream:
+	case ropSetStreamSize:
+	case ropLockRegionStream:
+	case ropUnlockRegionStream:
+	case ropCloneStream:
+	case ropModifyPermissions:
+	case ropGetPermissionsTable:
+	case ropModifyRules:
+	case ropGetRulesTable:
+	case ropUpdateDeferredActionMessages:
+	case ropFastTransferDestinationConfigure:
+	case ropFastTransferSourceCopyFolder:
+	case ropFastTransferSourceCopyMessages:
+	case ropFastTransferSourceCopyTo:
+	case ropFastTransferSourceCopyProperties:
+	case ropTellVersion:
+	case ropSynchronizationConfigure:
+	case ropSynchronizationImportReadStateChanges:
+	case ropSynchronizationImportDeletes:
+	case ropSynchronizationOpenCollector:
+	case ropSynchronizationGetTransferState:
+	case ropSynchronizationUploadStateStreamBegin:
+	case ropSynchronizationUploadStateStreamContinue:
+	case ropSynchronizationUploadStateStreamEnd:
+	case ropSetLocalReplicaMidsetDeleted:
 	case ropRegisterNotification:
 		return EXT_ERR_SUCCESS;
 	default:
