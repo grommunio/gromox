@@ -1,5 +1,5 @@
-Development 2.2.129
-===================
+Gromox 2.3 (2023-03-03)
+=======================
 
 Enhancements:
 
@@ -19,6 +19,8 @@ Fixes:
 Implementation changes:
 
 * Replace custom SMTP sending code with vmime's
+* emsmdb: temporarily deactivate ROP chaining for OL2013,2016 to work
+  around a case where OL corrupts larger attachments (2 MB+)
 
 
 Gromox 2.2 (2023-01-16)
