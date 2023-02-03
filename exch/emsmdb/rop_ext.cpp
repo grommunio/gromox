@@ -1902,10 +1902,6 @@ static pack_result rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_setreceivefolder_request(pext,
 		       static_cast<SETRECEIVEFOLDER_REQUEST *>(r->ppayload));
-	case ropGetReceiveFolderTable:
-		return EXT_ERR_SUCCESS;
-	case ropGetStoreState:
-		return EXT_ERR_SUCCESS;
 	case ropGetOwningServers:
 		r->ppayload = pext->anew<GETOWNINGSERVERS_REQUEST>();
 		if (r->ppayload == nullptr)
@@ -2068,12 +2064,6 @@ static pack_result rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_queryrows_request(pext,
 		       static_cast<QUERYROWS_REQUEST *>(r->ppayload));
-	case ropAbort:
-		return EXT_ERR_SUCCESS;
-	case ropGetStatus:
-		return EXT_ERR_SUCCESS;
-	case ropQueryPosition:
-		return EXT_ERR_SUCCESS;
 	case ropSeekRow:
 		r->ppayload = pext->anew<SEEKROW_REQUEST>();
 		if (r->ppayload == nullptr)
@@ -2092,10 +2082,6 @@ static pack_result rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_seekrowfractional_request(pext,
 		       static_cast<SEEKROWFRACTIONAL_REQUEST *>(r->ppayload));
-	case ropCreateBookmark:
-		return EXT_ERR_SUCCESS;
-	case ropQueryColumnsAll:
-		return EXT_ERR_SUCCESS;
 	case ropFindRow:
 		r->ppayload = pext->anew<FINDROW_REQUEST>();
 		if (r->ppayload == nullptr)
@@ -2108,8 +2094,6 @@ static pack_result rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_freebookmark_request(pext,
 		       static_cast<FREEBOOKMARK_REQUEST *>(r->ppayload));
-	case ropResetTable:
-		return EXT_ERR_SUCCESS;
 	case ropExpandRow:
 		r->ppayload = pext->anew<EXPANDROW_REQUEST>();
 		if (r->ppayload == nullptr)
@@ -2242,8 +2226,6 @@ static pack_result rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_getattachmenttable_request(pext,
 		       static_cast<GETATTACHMENTTABLE_REQUEST *>(r->ppayload));
-	case ropGetValidAttachments:
-		return EXT_ERR_SUCCESS;
 	case ropSubmitMessage:
 		r->ppayload = pext->anew<SUBMITMESSAGE_REQUEST>();
 		if (r->ppayload == nullptr)
@@ -2256,26 +2238,18 @@ static pack_result rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_abortsubmit_request(pext,
 		       static_cast<ABORTSUBMIT_REQUEST *>(r->ppayload));
-	case ropGetAddressTypes:
-		return EXT_ERR_SUCCESS;
-	case ropSetSpooler:
-		return EXT_ERR_SUCCESS;
 	case ropSpoolerLockMessage:
 		r->ppayload = pext->anew<SPOOLERLOCKMESSAGE_REQUEST>();
 		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_spoolerlockmessage_request(pext,
 		       static_cast<SPOOLERLOCKMESSAGE_REQUEST *>(r->ppayload));
-	case ropTransportSend:
-		return EXT_ERR_SUCCESS;
 	case ropTransportNewMail:
 		r->ppayload = pext->anew<TRANSPORTNEWMAIL_REQUEST>();
 		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_transportnewmail_request(pext,
 		       static_cast<TRANSPORTNEWMAIL_REQUEST *>(r->ppayload));
-	case ropGetTransportFolder:
-		return EXT_ERR_SUCCESS;
 	case ropOptionsData:
 		r->ppayload = pext->anew<OPTIONSDATA_REQUEST>();
 		if (r->ppayload == nullptr)
@@ -2306,8 +2280,6 @@ static pack_result rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_getpropertiesall_request(pext,
 		       static_cast<GETPROPERTIESALL_REQUEST *>(r->ppayload));
-	case ropGetPropertiesList:
-		return EXT_ERR_SUCCESS;
 	case ropSetProperties:
 		r->ppayload = pext->anew<SETPROPERTIES_REQUEST>();
 		if (r->ppayload == nullptr)
@@ -2374,10 +2346,6 @@ static pack_result rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_writestream_request(pext,
 		       static_cast<WRITESTREAM_REQUEST *>(r->ppayload));
-	case ropCommitStream:
-		return EXT_ERR_SUCCESS;
-	case ropGetStreamSize:
-		return EXT_ERR_SUCCESS;
 	case ropSetStreamSize:
 		r->ppayload = pext->anew<SETSTREAMSIZE_REQUEST>();
 		if (r->ppayload == nullptr)
@@ -2558,8 +2526,6 @@ static pack_result rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_syncuploadstatestreamcontinue_request(pext,
 		       static_cast<SYNCUPLOADSTATESTREAMCONTINUE_REQUEST *>(r->ppayload));
-	case ropSynchronizationUploadStateStreamEnd:
-		return EXT_ERR_SUCCESS;
 	case ropSetLocalReplicaMidsetDeleted:
 		r->ppayload = pext->anew<SETLOCALREPLICAMIDSETDELETED_REQUEST>();
 		if (r->ppayload == nullptr)
@@ -2578,6 +2544,23 @@ static pack_result rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 			return EXT_ERR_ALLOC;
 		return rop_ext_pull_registernotification_request(pext,
 		       static_cast<REGISTERNOTIFICATION_REQUEST *>(r->ppayload));
+	case ropGetReceiveFolderTable:
+	case ropGetStoreState:
+	case ropAbort:
+	case ropGetStatus:
+	case ropQueryPosition:
+	case ropCreateBookmark:
+	case ropQueryColumnsAll:
+	case ropResetTable:
+	case ropGetValidAttachments:
+	case ropGetAddressTypes:
+	case ropSetSpooler:
+	case ropTransportSend:
+	case ropGetTransportFolder:
+	case ropGetPropertiesList:
+	case ropCommitStream:
+	case ropGetStreamSize:
+	case ropSynchronizationUploadStateStreamEnd:
 	case ropRelease:
 		return EXT_ERR_SUCCESS;
 	default:
