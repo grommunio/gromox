@@ -2604,30 +2604,28 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 			if (r->result == ecWrongServer)
 				return rop_ext_push_logon_redirect_response(pext,
 				       static_cast<LOGON_REDIRECT_RESPONSE *>(r->ppayload));
-			break;
+			return pack_result::success;
 		case ropGetPropertyIdsFromNames:
 			if (r->result == ecWarnWithErrors)
-				goto PUSH_PAYLOAD;
-			break;
+				break;
+			return pack_result::success;
 		case ropMoveCopyMessages:
 		case ropMoveFolder:
 		case ropCopyFolder:
 			if (r->result == ecDstNullObject)
 				return rop_ext_push_null_dest_response(pext,
 				       static_cast<NULL_DST_RESPONSE *>(r->ppayload));
-			else
-				goto PUSH_PAYLOAD;
 			break;
 		case ropCopyProperties:
 		case ropCopyTo:
 			if (r->result == ecDstNullObject)
 				return pext->p_uint32(*static_cast<uint8_t *>(r->ppayload));
-			break;
+			return pack_result::success;
 		case ropCopyToStream:
 			if (r->result == ecDstNullObject)
 				return rop_ext_push_copytostream_null_dest_response(pext,
 				       static_cast<COPYTOSTREAM_NULL_DEST_RESPONSE *>(r->ppayload));
-			break;
+			return pack_result::success;
 		case ropEmptyFolder:
 		case ropDeleteFolder:
 		case ropDeleteMessages:
@@ -2635,12 +2633,12 @@ pack_result rop_ext_push_rop_response(EXT_PUSH *pext,
 		case ropHardDeleteMessagesAndSubfolders:
 		case ropFastTransferDestinationPutBuffer:
 		case ropFastTransferSourceGetBuffer:
-			goto PUSH_PAYLOAD;
+			break;
+		default:
+			return pack_result::success;
 		}
-		return EXT_ERR_SUCCESS;
 	}
 
- PUSH_PAYLOAD:
 	switch (r->rop_id) {
 	case ropLogon: {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
