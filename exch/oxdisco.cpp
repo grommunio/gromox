@@ -13,8 +13,6 @@
 #include <tinyxml2.h>
 #include <unordered_map>
 #include <gromox/json.hpp>
-#include <json/reader.h>
-#include <json/writer.h>
 #include <fmt/core.h>
 #include <fmt/printf.h>
 #include <libHX/ctype_helper.h>
@@ -57,7 +55,6 @@ class OxdiscoPlugin {
 	private:
 	std::string x500_org_name = "Gromox default";
 	uint server_id; // Hash of the name of the mail server
-	std::string protocol;
 	std::string RedirectAddr; // Domain to perform Autodiscover
 	std::string RedirectUrl; // URL for a subsequent Autodiscover request
 	std::string host_id;
@@ -69,11 +66,10 @@ class OxdiscoPlugin {
 
 	void loadConfig();
 	static void writeheader(int, int, size_t);
-	BOOL die(int, const char *, const char *) const;
-	BOOL die_json(int, const char *) const;
-	static BOOL json_resp(int, const char* );
-	BOOL resp(int, const char *, const char *, const char *) const;
 	static void writeheader_json(int, int, size_t);
+	static BOOL json_response(int, const char* );
+	BOOL die(int, const char *, const char *) const;
+	BOOL resp(int, const char *, const char *, const char *) const;
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
 	int resp_eas(tinyxml2::XMLElement *, const char *) const;
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
@@ -115,27 +111,26 @@ static constexpr char
 	provider_unavailable_msg[] = "Provider is not available",
 	server_error_code[] = "603",
 	server_error_msg[] = "Server Error",
+
+protocol_err0[] =	"ProtocolNotSupported",
+protocol_err_message0[] =	"Protocol: The selected protocol is not supported. Supported protocols are: 'ActiveSync,AutodiscoverV1,Ews,Rest,Substrate,SubstrateSearchService,SubstrateNotificationService,OutlookMeetingScheduler,OutlookPay,Actions,Connectors,ConnectorsProcessors,ConnectorsWebhook,NotesClient,OwaPoweredExperience,ToDo,Weve,OutlookLocationsService,OutlookCloudSettingsService,OutlookTailoredExperiences,OwaPoweredExperienceV2,Speedway,SpeechAndLanguagePersonalization,SubstrateSignalService,CompliancePolicyService'.",			
+
+protocol_err1[] =	"MissingProtocol",
+protocol_err_message1[] =	"A valid value must be provided for the query parameter 'Protocol'.",			
+
+protocol_err2[] =	"MandatoryParameterMissing",
+protocol_err_message2[] =	"A valid value must be provided for the query parameter 'Protocol",			
+
+
 	exchange_asmx[] = "Exchange.asmx",
 	header_templ[] =
 		"HTTP/1.1 {} {}\r\n"
 		"Content-Type: text/xml\r\n"
 		"Content-Length: {}\r\n\r\n",
-	header_json[] = 
+	header_templ1[] =
 		"HTTP/1.1 {} {}\r\n"
 		"Content-Type: application/json\r\n"
 		"Content-Length: {}\r\n\r\n",
-	protocol_err0[] = R"({
-        "ErrorCode": "ProtocolNotSupported",
-        "ErrorMessage": "Protocol: '{}' is not supported. Supported protocols are: 'ActiveSync,AutodiscoverV1,Ews,Rest,Substrate,SubstrateSearchService,SubstrateNotificationService,OutlookMeetingScheduler,OutlookPay,Actions,Connectors,ConnectorsProcessors,ConnectorsWebhook,NotesClient,OwaPoweredExperience,ToDo,Weve,OutlookLocationsService,OutlookCloudSettingsService,OutlookTailoredExperiences,OwaPoweredExperienceV2,Speedway,SpeechAndLanguagePersonalization,SubstrateSignalService,CompliancePolicyService'."
-    })",
-	protocol_err1[] = R"({
-        "ErrorCode": "MissingProtocol",
-        "ErrorMessage": "A valid value must be provided for the query parameter 'Protocol
-	})",
-	protocol_err2[] = R"({
-        "ErrorCode": "MandatoryParameterMissing",
-        "ErrorMessage": "A valid value must be provided for the query parameter 'Protocol"
-	})",
 	error_templ[] =
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 		"<Autodiscover xmlns=\"http://schemas.microsoft.com/exchange/autodiscover/responseschema/2006\">"
@@ -152,17 +147,16 @@ static BOOL unauthed(int);
 
 unordered_map<string, string> protocolList
 {
-    {"Ews", "https://outlook.office365.com/EWS/Exchange.asmx"},
-    {"Rest", "https://outlook.office.com/api"},
+    {"ews", "https://outlook.office365.com/EWS/Exchange.asmx"},
+    {"rest", "https://outlook.office.com/api"},
     {"ToDo", "https://substrate.office.com/todob2"},
     {"Weve", "https://substrate.office.com/WeveB2"},
     {"Actions", "https://outlook.office365.com/actionsb2netcore"},
-    {"Substrate", "https://substrate.office.com/"},
+    {"substrate", "https://substrate.office.com/"},
     {"ActiveSync", "https://outlook.office365.com/Microsoft-Server-ActiveSync"},
     {"OutlookPay", "https://outlook.office.com/opay"},
     {"Connectors", "https://outlook.office365.com/connectors"},
     {"NotesClient", "https://substrate.office.com/notesfabric"},
-	{"Speedway", "https://outlook.office.com/ows/groupsapi/v0.1/"},
     {"AutodiscoverV1", "https://outlook.office365.com/autodiscover/autodiscover.xml"},
     {"ConnectorsWebhook", "https://outlook.office365.com/webhook"},
     {"ConnectorsProcessors", "https://outlook.office365.com/connectorsprocessors"},
@@ -174,8 +168,6 @@ unordered_map<string, string> protocolList
     {"OutlookTailoredExperiences", "https://substrate.office.com/txpB2"},
     {"OutlookCloudSettingsService", "https://substrate.office.com/ows/v1/outlookcloudsettings/settings"},
     {"SubstrateNotificationService", "https://substrate.office.com/insights"},
-	{"CompliancePolicyService", "https://outlook.office.com/CompliancePolicy/api/"},
-	{"SpeechAndLanguagePersonalization", "https://outlook.office365.com/slp"},
  };
 
 OxdiscoPlugin::OxdiscoPlugin()
@@ -212,15 +204,11 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 	if (len == MEM_END_OF_FILE)
 		return false;
 	uri[len] = '\0';
-	char* query_string = strchr(uri, '?');
-	sscanf(query_string, "?Protocol=%s", protocol);
-
 	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") != 0 &&
 			strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 40) != 0
 	   && 	strncasecmp(uri, "/autodiscover/autodiscover.json", 30) != 0)
 		return false;
-
-    return TRUE;
+	return TRUE;
 }
 
 /**
@@ -236,6 +224,52 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
  * @return     TRUE if request was handled, false otherwise
  */
 
+static BOOL OxdiscoPlugin::json_response(int ctx_id, const char* linK)
+{
+	Json::Value respdoc;
+	respdoc["protocol"] = "";
+   	const char* findAt = strchr(linK, '@');
+    const char* findQ = strchr(linK, '?');
+    const char* findProtocol = strchr(linK, '=');    
+	if (findAt != nullptr && findQ != nullptr && findProtocol != nullptr)
+    {
+        if (strncmp(&linK[findQ - linK + 1], "?protocol=", 10) != 0)
+        {
+            for(const auto& iterator: protocolList) 
+            {
+                if (strcasecmp(&linK[findProtocol - linK + 1], iterator.first.c_str()) == 0)
+                {
+					respdoc["protocol"] = iterator.first;
+					respdoc["url"] = iterator.second;
+                }
+            }
+			//protocol does not exist
+			if(respdoc["protocol"] == "")
+			{
+				respdoc["protocol"] = protocol_err0;
+				respdoc["url"] = protocol_err_message0;
+			}
+        } 
+		//no protocol
+		if(respdoc["protocol"] == "")
+		{
+			respdoc["protocol"] = protocol_err1;
+			respdoc["url"] = protocol_err_message1;
+		}
+    }
+	// missing parameter
+	if(respdoc["protocol"] == "")
+	{
+		respdoc["protocol"] = protocol_err2;
+		respdoc["url"] = protocol_err_message2;
+	}			
+	int code = 200;
+	const char* response = respdoc.toStyledString().c_str();
+	if (response_logging > 0)
+		mlog(LV_DEBUG, "[oxdisco_v2] response: %s", response);
+	writeheader_json(ctx_id, code, strlen(response));
+	return write_response(ctx_id, response, strlen(response));
+}
 
 BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
@@ -261,9 +295,8 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	else
 	if(strncasecmp(uri, "/autodiscover/autodiscover.json", 30) == 0)
 	{
-		return json_resp(ctx_id, uri);
+		return json_response(ctx_id, uri);
 	}
-
 	XMLDocument doc;
 	if (doc.Parse(static_cast<const char *>(content), len) != XML_SUCCESS)
 		return die(ctx_id, invalid_request_code, invalid_request_msg);
@@ -433,7 +466,7 @@ void OxdiscoPlugin::writeheader_json(int ctx_id, int code, size_t content_length
 	case 400: status = "Bad Request"; break;
 	case 500: status = "Internal Server Error"; break;
 	}
-	auto buff = fmt::format(header_json, code, status, content_length);
+	auto buff = fmt::format(header_templ1, code, status, content_length);
 	write_response(ctx_id, buff.c_str(), buff.size());
 }
 
@@ -457,20 +490,6 @@ BOOL OxdiscoPlugin::die(int ctx_id, const char *error_code,
 	auto data = fmt::format(error_templ, error_time, server_id, error_code, error_msg);
 	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s", data.size(), data.c_str());
 	writeheader(ctx_id, 200, data.size());
-	write_response(ctx_id, data.c_str(), data.size());
-	return false;
-}
-
-BOOL OxdiscoPlugin::die_json(int ctx_id, const char *json_err) const
-{
-	if (json_err == protocol_err0){
-		auto data = fmt::format(json_err, protocol);
-	}
-	else{
-		auto data = fmt::format(json_err);
-	}
-	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s", data.size(), data.c_str());
-	writeheader_json(ctx_id, 200, data.size());
 	write_response(ctx_id, data.c_str(), data.size());
 	return false;
 }
@@ -523,44 +542,6 @@ XMLElement *OxdiscoPlugin::add_child(XMLElement *el, const char *tag,
  *
  * @return     BOOL            TRUE if response was successful, false otherwise
  */
-static BOOL OxdiscoPlugin::json_resp(int ctx_id, const char* linK)
-{
-	Json::Value respdoc;
-	respdoc["Protocol"] = "";
-   	const char* findAt = strchr(linK, '@');
-    const char* findQ = strchr(linK, '?');
-    const char* findProtocol = strchr(linK, '=');    
-	if (findAt != nullptr && findQ != nullptr && findProtocol != nullptr)
-    {
-        if (strncmp(&linK[findQ - linK + 1], "?Protocol=", 10) != 0)
-        {
-            for(const auto& iterator: protocolList) 
-            {
-                if (strcmp(&linK[findProtocol - linK + 1], iterator.first.c_str()) == 0)
-                {
-					respdoc["Protocol"] = iterator.first;
-					respdoc["Url"] = iterator.second;
-					int code = 200;
-					const char* response = respdoc.toStyledString().c_str();
-					if (response_logging > 0)
-						mlog(LV_DEBUG, "[oxdisco_v2] response: %s", response);
-					writeheader_json(ctx_id, code, strlen(response));
-					return write_response(ctx_id, response, strlen(response));
-                }
-            }
-			//protocol does not exist
-			return die_json(ctx_id, protocol_err0);
-        } 
-		//no protocol
-		return die_json(ctx_id, protocol_err1);
-    }
-    else
-    {
-       // missing parameter
-		return die_json(ctx_id, protocol_err2);			
-    }
-}
-
 BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
     const char *email, const char *ars) const
 {
