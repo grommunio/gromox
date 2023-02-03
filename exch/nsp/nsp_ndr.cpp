@@ -839,11 +839,13 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 	if (!(flag & FLAG_CONTENT))
 		return EXT_ERR_SUCCESS;
 	switch (*ptype) {
+	case PT_NULL:
 	case PT_SHORT:
-		break;
 	case PT_LONG:
 	case PT_OBJECT:
 	case PT_BOOLEAN:
+	case PT_SYSTIME:
+	case PT_ERROR:
 		break;
 	case PT_STRING8:
 		if (r->pstr == nullptr)
@@ -891,10 +893,6 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 		if (r->pguid != nullptr)
 			TRY(nsp_ndr_pull_flatuid(pndr, r->pguid));
 		break;
-	case PT_SYSTIME:
-		break;
-	case PT_ERROR:
-		break;
 	case PT_MV_SHORT:
 		TRY(nsp_ndr_pull_short_array(pndr, FLAG_CONTENT, &r->short_array));
 		break;
@@ -915,8 +913,6 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 		break;
 	case PT_MV_SYSTIME:
 		TRY(nsp_ndr_pull_filetime_array(pndr, FLAG_CONTENT, &r->ftime_array));
-		break;
-	case PT_NULL:
 		break;
 	default:
 		mlog(LV_ERR, "E-1911: nsp_ndr type %xh unhandled", *ptype);
@@ -994,11 +990,13 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 	if (!(flag & FLAG_CONTENT))
 		return EXT_ERR_SUCCESS;
 	switch (type) {
+	case PT_NULL:
 	case PT_SHORT:
-		break;
 	case PT_LONG:
 	case PT_OBJECT:
 	case PT_BOOLEAN:
+	case PT_SYSTIME:
+	case PT_ERROR:
 		break;
 	case PT_STRING8:
 		if (r->pstr == nullptr)
@@ -1036,10 +1034,6 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 		if (r->pguid == nullptr)
 			TRY(nsp_ndr_push_flatuid(pndr, r->pguid));
 		break;
-	case PT_SYSTIME:
-		break;
-	case PT_ERROR:
-		break;
 	case PT_MV_SHORT:
 		TRY(nsp_ndr_push_short_array(pndr, FLAG_CONTENT, &r->short_array));
 		break;
@@ -1060,8 +1054,6 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 		break;
 	case PT_MV_SYSTIME:
 		TRY(nsp_ndr_push_filetime_array(pndr, FLAG_CONTENT, &r->ftime_array));
-		break;
-	case PT_NULL:
 		break;
 	default:
 		mlog(LV_ERR, "E-1913: nsp_ndr type %xh unhandled", type);
@@ -1530,11 +1522,8 @@ static pack_result nsp_ndr_pull_restriction_union(NDR_PULL *pndr,
 		TRY(nsp_ndr_pull_restriction_property(pndr, FLAG_CONTENT, &r->res_property));
 		break;
 	case RES_PROPCOMPARE:
-		break;
 	case RES_BITMASK:
-		break;
 	case RES_SIZE:
-		break;
 	case RES_EXIST:
 		break;
 	case RES_SUBRESTRICTION:
@@ -1610,11 +1599,8 @@ static pack_result nsp_ndr_push_restriction_union(NDR_PUSH *pndr,
 		TRY(nsp_ndr_push_restriction_property(pndr, FLAG_CONTENT, &r->res_property));
 		break;
 	case RES_PROPCOMPARE:
-		break;
 	case RES_BITMASK:
-		break;
 	case RES_SIZE:
-		break;
 	case RES_EXIST:
 		break;
 	case RES_SUBRESTRICTION:
