@@ -213,13 +213,11 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 		return false;
 	uri[len] = '\0';
 	char* query_string = strchr(uri, '?');
-	if (query_string != nullptr){
-		sscanf(query_string, "?Protocol=%s", protocol)
-	}
+	sscanf(query_string, "?Protocol=%s", protocol);
 
 	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") != 0 &&
-			strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 40) != 0 &&
-			strncmp(uri, "/autodiscover/autodiscover.json", 30) != 0)
+			strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 40) != 0
+	   && 	strncasecmp(uri, "/autodiscover/autodiscover.json", 30) != 0)
 		return false;
 
     return TRUE;
