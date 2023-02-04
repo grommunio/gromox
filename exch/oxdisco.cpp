@@ -67,7 +67,7 @@ class OxdiscoPlugin {
 	void loadConfig();
 	static void writeheader(int, int, size_t);
 	static void writeheader_json(int, int, size_t);
-	static BOOL json_response(int, const char* );
+	static BOOL json_request(int, const char* );
 	BOOL die(int, const char *, const char *) const;
 	BOOL resp(int, const char *, const char *, const char *) const;
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
@@ -224,10 +224,10 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
  * @return     TRUE if request was handled, false otherwise
  */
 
-static BOOL OxdiscoPlugin::json_response(int ctx_id, const char* linK)
+static BOOL OxdiscoPlugin::json_request(int ctx_id, const char* linK)
 {
 	Json::Value respdoc;
-	respdoc["protocol"] = "";
+	bool error = true;
    	const char* findAt = strchr(linK, '@');
     const char* findQ = strchr(linK, '?');
     const char* findProtocol = strchr(linK, '=');    
@@ -241,27 +241,31 @@ static BOOL OxdiscoPlugin::json_response(int ctx_id, const char* linK)
                 {
 					respdoc["protocol"] = iterator.first;
 					respdoc["url"] = iterator.second;
+					error = false;
                 }
             }
 			//protocol does not exist
-			if(respdoc["protocol"] == "")
+			if(error == true)
 			{
 				respdoc["protocol"] = protocol_err0;
 				respdoc["url"] = protocol_err_message0;
+				error = false;
 			}
         } 
 		//no protocol
-		if(respdoc["protocol"] == "")
+		if(error == true)
 		{
 			respdoc["protocol"] = protocol_err1;
 			respdoc["url"] = protocol_err_message1;
+			error = false;
 		}
     }
 	// missing parameter
-	if(respdoc["protocol"] == "")
+	if(error == true)
 	{
 		respdoc["protocol"] = protocol_err2;
 		respdoc["url"] = protocol_err_message2;
+		error = false;
 	}			
 	int code = 200;
 	const char* response = respdoc.toStyledString().c_str();
@@ -295,7 +299,7 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	else
 	if(strncasecmp(uri, "/autodiscover/autodiscover.json", 30) == 0)
 	{
-		return json_response(ctx_id, uri);
+		return json_request(ctx_id, uri);
 	}
 	XMLDocument doc;
 	if (doc.Parse(static_cast<const char *>(content), len) != XML_SUCCESS)
