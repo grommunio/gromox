@@ -4,6 +4,7 @@
 #include <cstdarg>
 #include <cstddef>
 #include <cstdio>
+#include <string>
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/clock.hpp>
@@ -55,8 +56,8 @@ static constexpr const char *g_error_text[] = {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-extern int render_content(char *, gromox::time_point, gromox::time_point);
-extern size_t commonHeader(char *, size_t, const char *, const char *, const char *, const char *, gromox::time_point);
+extern std::string render_content(gromox::time_point, gromox::time_point);
+extern std::string commonHeader(const char *rq_type, const char *rq_id, const char *cl_info, const char *sid, gromox::time_point);
 
 struct MhContext
 {
@@ -91,81 +92,5 @@ protected:
 
 	EXT_PUSH *epush = nullptr;
 };
-
-///////////////////////////////////////////////////////////////////////////////
-
-
-/**
- * @brief	Utility class to easily generate strings from templates.
- */
-class StringRenderer
-{
-public:
-	StringRenderer(char* dest, size_t maxlen) noexcept;
-
-	template<typename...Params, typename... Args>
-	StringRenderer& add(size_t(&func)(char*, size_t, Params...), Args&&...);
-
-	StringRenderer& add(const char* format, ...) __attribute__((format(printf, 2, 3)));
-
-	operator size_t() const noexcept;
-private:
-	char *start, *current, *end;
-};
-
-
-/**
- * @brief	Constructor
- *
- * @param	Destination buffer
- * @param	Size of the destination buffer
- */
-inline StringRenderer::StringRenderer(char* dest, size_t maxlen) noexcept
-    : start(dest), current(dest), end(dest+maxlen)
-{*dest = '\0';}
-
-/**
- * @brief	Append template (printf style)
- *
- * @param	Format string
- *
- * @return Reference to string renderer
- */
-inline StringRenderer& StringRenderer::add(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	current += vsnprintf(current, end-current, format, args);
-	va_end(args);
-	return *this;
-}
-
-/**
- * @brief	Append template (generator function)
- *
- * The generator function must take at least the destination buffer and
- * maximum length as arguments and return the number of bytes written
- * to the buffer (excluding the terminating null character).
- *
- * @param	func	Function generating content.
- * @param	args	Arguments forwarded to function
- *
- * @tparam	Sig		Function argument types
- * @tparam	Arg		Argument types (must be compatible with function argument types)
- *
- * @return	Reference to string renderer
- */
-template<typename...Params, typename... Args>
-inline StringRenderer& StringRenderer::add(size_t(&func)(char*, size_t, Params...), Args&&... args)
-{
-	current += (*func)(current, end-current, std::forward<Args>(args)...);
-	return *this;
-}
-
-/**
- * @brief	Convert renderer to number of bytes written (excluding terminating null)
- */
-inline StringRenderer::operator size_t() const noexcept
-{return current-start;}
 
 }

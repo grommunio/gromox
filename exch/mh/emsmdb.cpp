@@ -16,6 +16,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
@@ -407,7 +408,7 @@ static BOOL notification_response(int ID, time_point start_time, uint32_t result
 {
 	decltype(MhEmsmdbContext::response) response;
 	ems_push ext_push;
-	char push_buff[32], text_buff[128], chunk_string[32];
+	char push_buff[32], chunk_string[32];
 
 	ext_push.init(push_buff, sizeof(push_buff), 0);
 	response.notificationwait.status = 0;
@@ -416,25 +417,27 @@ static BOOL notification_response(int ID, time_point start_time, uint32_t result
 	ext_push.p_notificationwait_rsp(response.notificationwait);
 
 	auto current_time = tp_now();
-	auto text_len = render_content(text_buff, current_time, start_time);
-	auto tmp_len = sprintf(chunk_string, "%x\r\n", text_len + ext_push.m_offset);
+	auto ct = render_content(current_time, start_time);
+	auto tmp_len = sprintf(chunk_string, "%zx\r\n", ct.size() + ext_push.m_offset);
 	if (!write_response(ID, chunk_string, tmp_len) ||
-	    !write_response(ID, text_buff, text_len) ||
+	    !write_response(ID, ct.c_str(), ct.size()) ||
 	    !write_response(ID, ext_push.m_udata, ext_push.m_offset) ||
 	    !write_response(ID, "\r\n0\r\n\r\n", 7))
 		return false;
 	return TRUE;
 }
 
-BOOL MhEmsmdbContext::notification_response() const
+BOOL MhEmsmdbContext::notification_response() const try
 {
-	char response_buff[4096];
 	auto current_time = tp_now();
-	size_t response_len = StringRenderer(response_buff, sizeof(response_buff))
-	                      .add(commonHeader, "NotificationWait", request_id, client_info, session_string, current_time)
-	                      .add("Transfer-Encoding: chunked\r\n\r\n");
-	return write_response(ID, response_buff, static_cast<int>(response_len)) &&
+	auto rs = commonHeader("NotificationWait", request_id, client_info,
+	          session_string, current_time) +
+	          "Transfer-Encoding: chunked\r\n\r\n";
+	return write_response(ID, rs.c_str(), rs.size()) &&
 	       write_response(ID, "c\r\nPROCESSING\r\n\r\n", 17) ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1145: ENOMEM");
+	return false;
 }
 
 BOOL MhEmsmdbContext::notification_response(uint32_t result, uint32_t flags_out) const
