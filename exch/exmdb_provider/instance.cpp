@@ -381,6 +381,8 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	if (!sql_transact)
+		return false;
 	if (!common_util_begin_message_optimize(pdb->psqlite))
 		return FALSE;
 	if (!instance_load_message(pdb->psqlite, mid_val, &pinstance->last_id,
@@ -389,7 +391,8 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 		return FALSE;
 	}
 	common_util_end_message_optimize();
-	sql_transact.commit();
+	if (sql_transact.commit() != 0)
+		return false;
 	if (NULL == pinstance->pcontent) {
 		*pinstance_id = 0;
 		return TRUE;
