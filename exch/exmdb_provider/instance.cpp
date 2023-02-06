@@ -373,7 +373,8 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	common_util_end_message_optimize();
 	if (!ret)
 		return FALSE;
-	sql_transact.commit();
+	if (sql_transact.commit() != 0)
+		return false;
 	if (NULL == pinstance->pcontent) {
 		*pinstance_id = 0;
 		return TRUE;
