@@ -27,7 +27,12 @@ phplib_LTLIBRARIES = mapi.la
 endif
 sysusers_DATA = system/sysusers-gromox.conf
 tmpfiles_DATA = system/tmpfiles-gromox.conf
-unit_DATA = system/gromox-delivery.service system/gromox-delivery-queue.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-timer.service system/gromox-zcore.service
+unit_DATA = system/gromox-delivery.service \
+	system/gromox-delivery-queue.service system/gromox-event.service \
+	system/gromox-http.service system/gromox-imap.service \
+	system/gromox-midb.service system/gromox-pop3.service \
+	system/gromox-snapshot.service system/gromox-snapshot.timer \
+	system/gromox-timer.service system/gromox-zcore.service
 
 mta_plugins = \
 	libgxm_alias_resolve.la \
@@ -79,7 +84,7 @@ if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
 sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
-pkglibexec_SCRIPTS = tools/create_queue.sh
+pkglibexec_SCRIPTS = tools/create_queue.sh tools/gromox-snapshot
 
 BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h \
 	php_mapi/zrpc.cpp \
