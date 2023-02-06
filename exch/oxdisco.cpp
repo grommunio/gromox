@@ -145,7 +145,7 @@ protocol_err_message2[] =	"A valid value must be provided for the query paramete
 
 static BOOL unauthed(int);
 
-unordered_map<string, string> protocolList
+std::unordered_map<std::string, std::string> protocolList
 {
     {"ews", "https://outlook.office365.com/EWS/Exchange.asmx"},
     {"rest", "https://outlook.office.com/api"},
