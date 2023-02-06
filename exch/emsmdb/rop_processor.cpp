@@ -413,7 +413,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			auto bts = static_cast<BUFFERTOOSMALL_RESPONSE *>(rsp->ppayload);
 			bts->size_needed = rpcext_cutoff;
 			bts->buffer = req->bookmark;
-			if (rop_ext_push_rop_response(&ext_push, req->logon_id, rsp) != EXT_ERR_SUCCESS)
+			if (rop_ext_push(&ext_push, req->logon_id, rsp) != pack_result::success)
 				return ecBufferTooSmall;
 			goto MAKE_RPC_EXT;
 		}
@@ -426,7 +426,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		if (rsp == nullptr)
 			continue;
 		uint32_t last_offset = ext_push.m_offset;
-		auto status = rop_ext_push_rop_response(&ext_push, req->logon_id, rsp);
+		auto status = rop_ext_push(&ext_push, req->logon_id, rsp);
 		switch (status) {
 		case EXT_ERR_SUCCESS:
 			double_list_append_as_tail(presponse_list, pnode1);
@@ -444,8 +444,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			bts->size_needed = 0x8000;
 			bts->buffer = req->bookmark;
 			ext_push.m_offset = last_offset;
-			if (rop_ext_push_rop_response(&ext_push, req->logon_id,
-			    rsp) != EXT_ERR_SUCCESS)
+			if (rop_ext_push(&ext_push, req->logon_id, rsp) != pack_result::success)
 				return ecBufferTooSmall;
 			goto MAKE_RPC_EXT;
 		}
@@ -499,12 +498,11 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				tmp_bin.pb = ext_push1.m_udata;
 				pnotify->notification_data.prow_data = &tmp_bin;
 			}
-			if (EXT_ERR_SUCCESS != rop_ext_push_notify_response(
-				&ext_push, pnotify)) {
+			if (rop_ext_push(&ext_push, pnotify) != pack_result::success) {
 				ext_push.m_offset = last_offset;
 				double_list_insert_as_head(pnotify_list, pnode);
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
-				auto status = rop_ext_push_pending_response(&ext_push, &tmp_pending);
+				auto status = rop_ext_push(&ext_push, &tmp_pending);
 				if (status != EXT_ERR_SUCCESS)
 					ext_push.m_offset = last_offset;
 				break;
@@ -539,7 +537,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	DOUBLE_LIST response_list;
 	
 	ext_pull.init(pin, cb_in, common_util_alloc, EXT_FLAG_UTF16);
-	switch(rop_ext_pull_rop_buffer(&ext_pull, &rop_buff)) {
+	switch (rop_ext_pull(&ext_pull, &rop_buff)) {
 	case EXT_ERR_SUCCESS:
 		break;
 	case EXT_ERR_ALLOC:
