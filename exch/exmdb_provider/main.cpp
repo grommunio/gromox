@@ -37,6 +37,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"dbg_synthesize_content", "0"},
 	{"enable_dam", "1", CFG_BOOL},
 	{"exmdb_body_autosynthesis", "1", CFG_BOOL},
+	{"exmdb_file_compression", "zstd-6"},
 	{"exmdb_listen_port", "5000"},
 	{"exmdb_pf_read_per_user", "1"},
 	{"exmdb_pf_read_states", "2"},

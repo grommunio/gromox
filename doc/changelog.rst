@@ -1,3 +1,11 @@
+Development
+===========
+
+Behavioral changes:
+
+* exmdb_provider: enable CID file compression by default
+
+
 Gromox 2.3 (2023-03-03)
 =======================
 

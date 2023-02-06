@@ -49,7 +49,7 @@ Compress content files (bodytexts and attachments). Possible values: \fBno\fP,
 \fByes\fP (Gromox recommendation), \fBzstd\fP (zstd at a Gromox-recommended
 level), \fBzstd-\fP\fIlevel\fP (level=1..19).
 .br
-Default: \fIoff\fP
+Default: \fIzstd\-6\fP
 .TP
 \fBexmdb_listen_port\fP
 The TCP port number for exposing the timer service on.
