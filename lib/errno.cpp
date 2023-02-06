@@ -65,8 +65,8 @@ const char *mapi_strerror(unsigned int e)
 	E(ecMAPIOOM, "Not enough memory was available to complete the operation")
 	E(ecInvalidParam, "An invalid parameter was passed to a function or remote procedure call")
 	}
-	thread_local char xbuf[32];
-	snprintf(xbuf, gromox::arsizeof(xbuf), "Unknown error %xh", e);
+	thread_local char xbuf[40];
+	snprintf(xbuf, sizeof(xbuf), "Unknown MAPI error code %xh", e);
 	return xbuf;
 #undef E
 }

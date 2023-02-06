@@ -1,6 +1,10 @@
 Development
 ===========
 
+Enhancements:
+
+* php_mapi: add mapi_strerror function
+
 Behavioral changes:
 
 * exmdb_provider: enable CID file compression by default

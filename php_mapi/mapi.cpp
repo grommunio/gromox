@@ -5325,6 +5325,27 @@ static ZEND_FUNCTION(mapi_ianatz_to_tzdef)
 	MAPI_G(hr) = ecSuccess;
 }
 
+/**
+ * mapi_strerror : string
+ *
+ * @code:	error code
+ *
+ * Returns a textual representation of the error code.
+ */
+static ZEND_FUNCTION(mapi_strerror)
+{
+	long code = 0;
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &code) == FAILURE) {
+		RETVAL_FALSE;
+		return;
+	}
+	auto s = mapi_strerror(code);
+	if (s == nullptr)
+		RETVAL_FALSE;
+	else
+		RETVAL_STRING(s);
+}
+
 static zend_function_entry mapi_functions[] = {
 #if PHP_MAJOR_VERSION >= 8
 #	define A(a, s) ZEND_FALIAS(a, s, arginfo_ ## s)
@@ -5458,6 +5479,7 @@ static zend_function_entry mapi_functions[] = {
 	F(nsp_setuserpasswd)
 	F(mapi_linkmessage)
 	F(mapi_ianatz_to_tzdef)
+	F(mapi_strerror)
 	{NULL, NULL, NULL}
 #undef A
 #undef F
