@@ -9,6 +9,7 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <netdb.h>
 #include <poll.h>
 #include <pthread.h>
 #include <string>
@@ -19,6 +20,7 @@
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <libHX/socket.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_ext.hpp>
@@ -26,10 +28,12 @@
 #include <gromox/exmdb_server.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include "exmdb_parser.h"
 #include "notification_agent.h"
+#ifndef AI_V4MAPPED
+#	define AI_V4MAPPED 0
+#endif
 
 using namespace gromox;
 
@@ -384,10 +388,10 @@ int exmdb_parser_run(const char *config_path)
 	}
 #if __cplusplus >= 202000L
 	std::erase_if(g_local_list,
-		[&](const EXMDB_ITEM &s) { return !gx_peer_is_local(s.host.c_str()); });
+		[&](const EXMDB_ITEM &s) { return !HX_ipaddr_is_local(s.host.c_str(), AI_V4MAPPED); });
 #else
 	g_local_list.erase(std::remove_if(g_local_list.begin(), g_local_list.end(),
-		[&](const EXMDB_ITEM &s) { return !gx_peer_is_local(s.host.c_str()); }),
+		[&](const EXMDB_ITEM &s) { return !HX_ipaddr_is_local(s.host.c_str(), AI_V4MAPPED); }),
 		g_local_list.end());
 #endif
 	return 0;

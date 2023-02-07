@@ -8,10 +8,12 @@
 #include <cstring>
 #include <list>
 #include <mutex>
+#include <netdb.h>
 #include <poll.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <vector>
+#include <libHX/socket.h>
 #include <gromox/atomic.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
@@ -23,6 +25,9 @@
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
+#ifndef AI_V4MAPPED
+#	define AI_V4MAPPED 0
+#endif
 
 namespace gromox {
 
@@ -366,7 +371,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		if (flags & EXMDB_CLIENT_SKIP_PUBLIC &&
 		    item.type != EXMDB_ITEM::EXMDB_PRIVATE)
 			continue; /* mostly used by midb */
-		auto local = gx_peer_is_local(item.host.c_str());
+		auto local = HX_ipaddr_is_local(item.host.c_str(), AI_V4MAPPED);
 		if (flags & EXMDB_CLIENT_SKIP_REMOTE && !local)
 			continue; /* mostly used by midb */
 		item.local = (flags & EXMDB_CLIENT_ALLOW_DIRECT) ? local : false;
