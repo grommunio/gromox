@@ -661,9 +661,8 @@ ec_error_t zs_logon(const char *username,
 	if (pdomain == nullptr)
 		return ecUnknownUser;
 	pdomain ++;
-	if (password != nullptr && !system_services_auth_login(username,
-	    password, maildir, arsizeof(maildir), lang, arsizeof(lang),
-	    reason, arsizeof(reason),
+	if (!system_services_auth_login(username, znul(password), maildir,
+	    sizeof(maildir), lang, sizeof(lang), reason, sizeof(reason),
 	    USER_PRIVILEGE_EXCH)) {
 		mlog(LV_ERR, "Auth rejected for \"%s\": %s", username, reason);
 		return ecLoginFailure;
