@@ -717,19 +717,10 @@ static ZEND_FUNCTION(mapi_logon_zarafa)
 		MAPI_G(hr) = ecMAPIOOM;
 		THROW_EXCEPTION;
 	}
-	{
-	auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
-	if (server_vars != nullptr && Z_TYPE_P(server_vars) == IS_ARRAY) {
-		auto ustr = zend_hash_find(Z_ARRVAL_P(server_vars), str_user.get());
-		if (ustr != nullptr && Z_TYPE_P(ustr) == IS_STRING &&
-		    Z_STRLEN_P(ustr) > 0)
-			password = nullptr;
-	}
 	auto result = zclient_logon(username, password, 0, &presource->hsession);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
-	}
 	}
 	presource->type = ZMG_SESSION;
 	presource->hobject = 0;
