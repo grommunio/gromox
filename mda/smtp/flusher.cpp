@@ -43,18 +43,7 @@ struct FLH_PLUG_ENTITY {
 
 static BOOL flusher_load_plugin();
 static void *flusher_queryservice(const char *service, const std::type_info &);
-static int flusher_get_queue_length();
-static const char *flusher_get_host_ID();
-static int flusher_get_extra_num(int context_ID);
-
-static const char* flusher_get_extra_tag(int context_ID, int pos);
-
-static const char* flusher_get_extra_value(int context_ID, int pos);
-
 static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func);
-static const char *flusher_get_config_path();
-static const char *flusher_get_data_path();
-static const char *flusher_get_state_path();
 static int flusher_increase_max_ID();
 static void flusher_set_flush_ID(int);
 	
@@ -226,17 +215,35 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 			return reinterpret_cast<void *>(f); \
 	} while (false)
 	E("feedback_entity", flusher_feedback_entity);
-	E("get_queue_length", flusher_get_queue_length);
+	E("get_queue_length", +[]() { return g_max_queue_len; });
 	E("register_cancel", flusher_register_cancel);
 	E("get_from_queue", flusher_get_from_queue);
-	E("get_host_ID", flusher_get_host_ID);
-	E("get_extra_num", flusher_get_extra_num);
-	E("get_extra_tag", flusher_get_extra_tag);
-	E("get_extra_value", flusher_get_extra_value);
+	E("get_host_ID", +[]() { return g_config_file->get_value("host_id"); });
+	E("get_extra_num", +[](unsigned int id) {
+		auto c = static_cast<smtp_context *>(smtp_parser_get_contexts_list()[id]);
+		return smtp_parser_get_extra_num(c);
+	});
+	E("get_extra_tag", +[](unsigned int id, int pos) {
+		auto c = static_cast<smtp_context *>(smtp_parser_get_contexts_list()[id]);
+		return smtp_parser_get_extra_tag(c, pos);
+	});
+	E("get_extra_value", +[](unsigned int id, int pos) {
+		auto c = static_cast<smtp_context *>(smtp_parser_get_contexts_list()[id]);
+		return smtp_parser_get_extra_value(c, pos);
+	});
 	E("set_flush_ID", flusher_set_flush_ID);
-	E("get_config_path", flusher_get_config_path);
-	E("get_data_path", flusher_get_data_path);
-	E("get_state_path", flusher_get_state_path);
+	E("get_config_path", +[]() {
+		auto r = g_config_file->get_value("config_file_path");
+		return r != nullptr ? r : PKGSYSCONFDIR;
+	});
+	E("get_data_path", +[]() {
+		auto r = g_config_file->get_value("data_file_path");
+		return r != nullptr ? r : PKGDATADIR "/smtp:" PKGDATADIR;
+	});
+	E("get_state_path", +[]() {
+		auto r = g_config_file->get_value("state_file_path");
+		return r != nullptr ? r : PKGSTATEDIR;
+	});
 #undef E
 	/* check if already exists in the reference list */
 	for (const auto &svc : g_flusher_plug->list_ref)
@@ -256,63 +263,10 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 	return ret_addr;
 }
 
-static int flusher_get_extra_num(int context_ID)
-{
-	auto pcontext = static_cast<SMTP_CONTEXT *>(smtp_parser_get_contexts_list()[context_ID]);
-	return smtp_parser_get_extra_num(pcontext);
-}
-	
-static const char* flusher_get_extra_tag(int context_ID, int pos)
-{
-	auto pcontext = static_cast<SMTP_CONTEXT *>(smtp_parser_get_contexts_list()[context_ID]);
-	return smtp_parser_get_extra_tag(pcontext, pos);
-}
-
-static const char* flusher_get_extra_value(int context_ID, int pos)
-{
-	auto pcontext = static_cast<SMTP_CONTEXT *>(smtp_parser_get_contexts_list()[context_ID]);
-	return smtp_parser_get_extra_value(pcontext, pos);
-}
-
-static const char *flusher_get_host_ID()
-{
-	return resource_get_string("HOST_ID");
-}
-
-static int flusher_get_queue_length()
-{
-	return g_max_queue_len;
-}
-
 static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func)
 {
 	if (!g_can_register || g_flusher_plug->flush_cancel != nullptr)
 		return FALSE;
 	g_flusher_plug->flush_cancel = cancel_func;
 	return TRUE;
-}
-
-static const char* flusher_get_config_path()
-{
-	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
-	if (NULL == ret_value) {
-		ret_value = PKGSYSCONFDIR;
-	}
-	return ret_value;
-
-}
-
-static const char* flusher_get_data_path()
-{
-	const char *ret_value = resource_get_string("DATA_FILE_PATH");
-	if (NULL == ret_value) {
-		ret_value = PKGDATADIR "/smtp:" PKGDATADIR;
-	}
-	return ret_value;
-}
-
-static const char *flusher_get_state_path()
-{
-	const char *r = resource_get_string("state_file_path");
-	return r != nullptr ? r : PKGSTATEDIR;
 }

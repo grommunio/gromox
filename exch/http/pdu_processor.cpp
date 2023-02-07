@@ -3162,40 +3162,6 @@ PROC_PLUGIN::~PROC_PLUGIN()
 		dlclose(handle);
 }
 
-static const char *pdu_processor_get_host_ID()
-{
-	return resource_get_string("HOST_ID");
-}
-
-static const char* pdu_processor_get_config_path()
-{
-	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
-    if (NULL == ret_value) {
-		ret_value = PKGSYSCONFDIR;
-    }
-    return ret_value;
-}
-
-static const char* pdu_processor_get_data_path()
-{
-	const char *ret_value = resource_get_string("DATA_FILE_PATH");
-    if (NULL == ret_value) {
-		ret_value = PKGDATADIR "/http:" PKGDATADIR;
-    }
-    return ret_value;
-}
-
-static const char *pdu_processor_get_state_path()
-{
-	const char *p = resource_get_string("STATE_PATH");
-	return p != nullptr ? p : PKGSTATEDIR;
-}
-
-static unsigned int pdu_processor_get_context_num()
-{
-	return g_connection_num;
-}
-
 /* this function can also be invoked from hpm_plugins,
 	you should first set context TLS before call this
 	function, if you don't do that, you will get nothing
@@ -3240,17 +3206,6 @@ static DCERPC_INFO pdu_processor_get_rpc_info()
 	return info;
 }
 
-static BOOL pdu_processor_is_rpc_bigendian()
-{
-	DCERPC_CALL *pcall;
-	
-	pcall = pdu_processor_get_call();
-	if (NULL != pcall) {
-		return pcall->b_bigendian;
-	}
-	return g_bigendian;
-}
-
 static uint64_t pdu_processor_get_binding_handle()
 {
 	uint64_t handle;
@@ -3285,18 +3240,27 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 	if (strcmp(service, "register_service") == 0)
 		return reinterpret_cast<void *>(service_register_service);
 	if (strcmp(service, "get_host_ID") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_get_host_ID);
+		return reinterpret_cast<void *>(+[]() { return g_config_file->get_value("host_id"); });
 	}
 	if (strcmp(service, "get_config_path") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_get_config_path);
+		return reinterpret_cast<void *>(+[]() {
+			auto r = g_config_file->get_value("config_file_path");
+			return r != nullptr ? r : PKGSYSCONFDIR;
+		});
 	}
 	if (strcmp(service, "get_data_path") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_get_data_path);
+		return reinterpret_cast<void *>(+[]() {
+			auto r = g_config_file->get_value("data_file_path");
+			return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
+		});
 	}
 	if (strcmp(service, "get_state_path") == 0)
-		return reinterpret_cast<void *>(pdu_processor_get_state_path);
+		return reinterpret_cast<void *>(+[]() {
+			auto r = g_config_file->get_value("state_path");
+			return r != nullptr ? r : PKGSTATEDIR;
+		});
 	if (strcmp(service, "get_context_num") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_get_context_num);
+		return reinterpret_cast<void *>(+[]() { return g_connection_num; });
 	}
 	if (strcmp(service, "get_binding_handle") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_get_binding_handle);
@@ -3305,7 +3269,10 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 		return reinterpret_cast<void *>(pdu_processor_get_rpc_info);
 	}
 	if (strcmp(service, "is_rpc_bigendian") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_is_rpc_bigendian);
+		return reinterpret_cast<void *>(+[]() -> BOOL {
+			auto c = pdu_processor_get_call();
+			return c != nullptr ? c->b_bigendian : g_bigendian;
+		});
 	}
 	if (strcmp(service, "ndr_stack_alloc") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc);

@@ -60,10 +60,6 @@ struct SVC_PLUG_ENTITY {
 
 static int service_load_library(const char *);
 static void *service_query_service(const char *service, const std::type_info &);
-static const char *service_get_config_path();
-static const char *service_get_data_path();
-static unsigned int service_get_context_num();
-static const char *service_get_host_ID();
 
 static char g_config_dir[256], g_data_dir[256], g_state_dir[256];
 static std::list<SVC_PLUG_ENTITY> g_list_plug;
@@ -73,8 +69,6 @@ static unsigned int g_context_num;
 static std::vector<std::string> g_plugin_names;
 static const char *g_program_identifier;
 static SVC_PLUG_ENTITY g_system_image;
-
-static const char *service_get_prog_id() { return g_program_identifier; }
 
 /*
  *  init the service module with the path specified where
@@ -229,11 +223,6 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 		dlclose(handle);
 }
 
-static const char *service_get_state_path()
-{
-	return g_state_dir;
-}
-
 /*
  *  get services
  *  @param
@@ -248,46 +237,25 @@ static void *service_query_service(const char *service, const std::type_info &ti
 		return reinterpret_cast<void *>(service_register_service);
     }
 	if (0 == strcmp(service, "get_config_path")) {
-		return reinterpret_cast<void *>(service_get_config_path);
+		return reinterpret_cast<void *>(+[]() { return g_config_dir; });
 	}
 	if (0 == strcmp(service, "get_data_path")) {
-		return reinterpret_cast<void *>(service_get_data_path);
+		return reinterpret_cast<void *>(+[]() { return g_data_dir; });
 	}
 	if (strcmp(service, "get_state_path") == 0)
-		return reinterpret_cast<void *>(service_get_state_path);
+		return reinterpret_cast<void *>(+[]() { return g_state_dir; });
 	if (0 == strcmp(service, "get_context_num")) {
-		return reinterpret_cast<void *>(service_get_context_num);
+		return reinterpret_cast<void *>(+[]() { return g_context_num; });
 	}
 	if (0 == strcmp(service, "get_host_ID")) {
-		return reinterpret_cast<void *>(service_get_host_ID);
+		return reinterpret_cast<void *>(+[]() {
+			auto r = g_config_file->get_value("host_id");
+			return r != nullptr ? r : "localhost";
+		});
 	}
 	if (strcmp(service, "get_prog_id") == 0)
-		return reinterpret_cast<void *>(service_get_prog_id);
+		return reinterpret_cast<void *>(+[]() { return g_program_identifier; });
 	return service_query(service, nullptr, ti);
-}
-
-static const char* service_get_config_path()
-{
-	return g_config_dir;
-}
-
-static const char* service_get_data_path()
-{
-	return g_data_dir;
-}
-
-static unsigned int service_get_context_num()
-{
-	return g_context_num;
-}
-
-static const char* service_get_host_ID()
-{
-	const char *ret_value = resource_get_string("HOST_ID");
-	if (NULL == ret_value) {
-		ret_value = "localhost";
-	}
-	return ret_value;
 }
 
 /*

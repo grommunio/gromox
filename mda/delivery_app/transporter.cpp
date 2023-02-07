@@ -134,14 +134,6 @@ static BOOL transporter_register_local(HOOK_FUNCTION func);
 static bool transporter_register_remote(HOOK_FUNCTION);
 static hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *, THREAD_DATA *);
 static void transporter_clean_up_unloading();
-static const char *transporter_get_host_ID();
-static const char *transporter_get_default_domain();
-static const char *transporter_get_admin_mailbox();
-static const char *transporter_get_config_path();
-static const char *transporter_get_data_path();
-static const char *transporter_get_queue_path();
-static unsigned int transporter_get_threads_num();
-static unsigned int transporter_get_context_num();
 static MESSAGE_CONTEXT *transporter_get_context();
 static void transporter_put_context(MESSAGE_CONTEXT *pcontext);
 
@@ -783,10 +775,6 @@ static void transporter_clean_up_unloading()
 	}
 }
 
-static const char *transporter_get_state_path()
-{
-	return resource_get_string("STATE_PATH");
-}
 /*
  *	get services
  *	@param
@@ -810,15 +798,21 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 	E("register_hook", transporter_register_hook);
 	E("register_local", transporter_register_local);
 	E("register_remote", transporter_register_remote);
-	E("get_host_ID", transporter_get_host_ID);
-	E("get_default_domain", transporter_get_default_domain);
-	E("get_admin_mailbox", transporter_get_admin_mailbox);
-	E("get_config_path", transporter_get_config_path);
-	E("get_data_path", transporter_get_data_path);
-	E("get_state_path", transporter_get_state_path);
-	E("get_queue_path", transporter_get_queue_path);
-	E("get_threads_num", transporter_get_threads_num);
-	E("get_context_num", transporter_get_context_num);
+	E("get_host_ID", +[]() { return g_config_file->get_value("host_id"); });
+	E("get_default_domain", +[]() { return g_config_file->get_value("default_domain"); });
+	E("get_admin_mailbox", +[]() { return g_config_file->get_value("admin_mailbox"); });
+	E("get_config_path", +[]() {
+		auto r = g_config_file->get_value("config_file_path");
+		return r != nullptr ? r : PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR;
+	});
+	E("get_data_path", +[]() {
+		auto r = g_config_file->get_value("data_file_path");
+		return r != nullptr ? r : PKGDATADIR "/delivery:" PKGDATADIR;
+	});
+	E("get_state_path", +[]() { return g_config_file->get_value("state_path"); });
+	E("get_queue_path", +[]() { return g_config_file->get_value("dequeue_path"); });
+	E("get_threads_num", +[]() { return g_threads_max; });
+	E("get_context_num", +[]() { return g_threads_max + g_free_num; });
 	E("get_context", transporter_get_context);
 	E("put_context", transporter_put_context);
 	E("enqueue_context", transporter_enqueue_context);
@@ -1083,54 +1077,6 @@ static bool transporter_register_remote(HOOK_FUNCTION func)
 	g_remote_hook = func;
 	gx_strlcpy(g_remote_path, g_cur_lib->file_name, arsizeof(g_remote_path));
 	return true;
-}
-
-static const char* transporter_get_host_ID()
-{
-	return resource_get_string("HOST_ID");
-}
-
-static const char* transporter_get_default_domain()
-{
-	return resource_get_string("DEFAULT_DOMAIN");
-}
-
-static const char* transporter_get_admin_mailbox()
-{
-	return resource_get_string("ADMIN_MAILBOX");
-}
-
-static const char* transporter_get_config_path()
-{
-	const char *ret_value  = resource_get_string("CONFIG_FILE_PATH");
-    if (NULL == ret_value) {
-		ret_value = PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR;
-    }
-    return ret_value;
-}
-
-static const char* transporter_get_data_path()
-{
-	const char *ret_value = resource_get_string("DATA_FILE_PATH");
-    if (NULL == ret_value) {
-		ret_value = PKGDATADIR "/delivery:" PKGDATADIR;
-    }
-    return ret_value;
-}
-
-static unsigned int transporter_get_context_num()
-{
-    return g_threads_max + g_free_num;
-}
-
-static unsigned int transporter_get_threads_num()
-{
-	return g_threads_max;
-}
-
-static const char* transporter_get_queue_path()
-{
-	return resource_get_string("DEQUEUE_PATH");
 }
 
 static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,

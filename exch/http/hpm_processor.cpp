@@ -53,7 +53,7 @@ struct HPM_CONTEXT {
 
 }
 
-static int g_context_num;
+static unsigned int g_context_num;
 static uint64_t g_max_size;
 static uint64_t g_cache_size;
 static thread_local HPM_PLUGIN *g_cur_plugin;
@@ -97,46 +97,6 @@ static BOOL hpm_processor_register_interface(
 	return TRUE;
 }
 
-static const char *hpm_processor_get_host_ID()
-{
-	return resource_get_string("HOST_ID");
-}
-
-static const char* hpm_processor_get_config_path()
-{
-	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
-    if (NULL == ret_value) {
-		ret_value = PKGSYSCONFDIR;
-    }
-    return ret_value;
-}
-
-static const char* hpm_processor_get_data_path()
-{
-	const char *ret_value = resource_get_string("DATA_FILE_PATH");
-    if (NULL == ret_value) {
-		ret_value = PKGDATADIR "/http:" PKGDATADIR;
-    }
-    return ret_value;
-}
-
-static const char *hpm_processor_get_state_path()
-{
-	const char *p = resource_get_string("STATE_PATH");
-	return p != nullptr ? p : PKGSTATEDIR;
-}
-
-static unsigned int hpm_processor_get_context_num()
-{
-	return g_context_num;
-}
-
-static GENERIC_CONNECTION *hpm_processor_get_connection(unsigned int context_id)
-{
-	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
-	return &phttp->connection;
-}
-
 static HTTP_REQUEST *hpm_processor_get_request(unsigned int context_id)
 {
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
@@ -175,13 +135,6 @@ static void hpm_processor_set_ep_info(unsigned int context_id,
 	phttp->port = port;
 }
 
-static BOOL hpm_processor_write_response(unsigned int context_id,
-	void *response_buff, int response_len)
-{
-	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
-	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
-}
-
 static void hpm_processor_wakeup_context(unsigned int context_id)
 {
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
@@ -190,11 +143,6 @@ static void hpm_processor_wakeup_context(unsigned int context_id)
 	}
 	phttp->sched_stat = SCHED_STAT_WRREP;
 	contexts_pool_signal(phttp);
-}
-
-static void hpm_processor_activate_context(unsigned int context_id)
-{
-	context_pool_activate_context(http_parser_get_contexts_list()[context_id]);
 }
 
 static void *hpm_processor_queryservice(const char *service, const std::type_info &ti)
@@ -210,18 +158,27 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 	if (strcmp(service, "register_service") == 0)
 		return reinterpret_cast<void *>(service_register_service);
 	if (strcmp(service, "get_host_ID") == 0) {
-		return reinterpret_cast<void *>(hpm_processor_get_host_ID);
+		return reinterpret_cast<void *>(+[]() { return g_config_file->get_value("host_id"); });
 	}
 	if (strcmp(service, "get_config_path") == 0) {
-		return reinterpret_cast<void *>(hpm_processor_get_config_path);
+		return reinterpret_cast<void *>(+[]() {
+			auto r = g_config_file->get_value("config_file_path");
+			return r != nullptr ? r : PKGSYSCONFDIR;
+		});
 	}
 	if (strcmp(service, "get_data_path") == 0) {
-		return reinterpret_cast<void *>(hpm_processor_get_data_path);
+		return reinterpret_cast<void *>(+[]() {
+			auto r = g_config_file->get_value("data_file_path");
+			return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
+		});
 	}
 	if (strcmp(service, "get_state_path") == 0)
-		return reinterpret_cast<void *>(hpm_processor_get_state_path);
+		return reinterpret_cast<void *>(+[]() {
+			auto r = g_config_file->get_value("state_path");
+			return r != nullptr ? r : PKGSTATEDIR;
+		});
 	if (strcmp(service, "get_context_num") == 0) {
-		return reinterpret_cast<void *>(hpm_processor_get_context_num);
+		return reinterpret_cast<void *>(+[]() { return g_context_num; });
 	}
 	if (strcmp(service, "get_request") == 0) {
 		return reinterpret_cast<void *>(hpm_processor_get_request);
@@ -230,16 +187,24 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 		return reinterpret_cast<void *>(hpm_processor_get_auth_info);
 	}
 	if (strcmp(service, "get_connection") == 0) {
-		return reinterpret_cast<void *>(hpm_processor_get_connection);
+		return reinterpret_cast<void *>(+[](unsigned int id) {
+			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
+			return &h->connection;
+		});
 	}
 	if (strcmp(service, "write_response") == 0) {
-		return reinterpret_cast<void *>(hpm_processor_write_response);
+		return reinterpret_cast<void *>(+[](unsigned int id, const void *b, size_t z) -> BOOL {
+			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
+			return h->stream_out.write(b, z) == STREAM_WRITE_OK ? TRUE : false;
+		});
 	}
 	if (strcmp(service, "wakeup_context") == 0) {
 		return reinterpret_cast<void *>(hpm_processor_wakeup_context);
 	}
 	if (strcmp(service, "activate_context") == 0) {
-		return reinterpret_cast<void *>(hpm_processor_activate_context);
+		return reinterpret_cast<void *>(+[](unsigned int id) {
+			context_pool_activate_context(http_parser_get_contexts_list()[id]);
+		});
 	}
 	if (strcmp(service, "set_context") == 0) {
 		return reinterpret_cast<void *>(http_parser_set_context);
