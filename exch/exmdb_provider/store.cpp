@@ -72,12 +72,11 @@ BOOL exmdb_server::get_named_propids(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!transact)
-		return false;
 	if (!common_util_get_named_propids(pdb->psqlite,
 	    b_create, ppropnames, ppropids))
 		return FALSE;
-	return transact.commit() == 0 ? TRUE : false;
+	transact.commit();
+	return TRUE;
 }
 
 BOOL exmdb_server::get_named_propnames(const char *dir,
@@ -165,12 +164,11 @@ BOOL exmdb_server::set_store_properties(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!transact)
-		return false;
 	if (!cu_set_properties(db_table::store_props, 0, cpid, pdb->psqlite,
 	    ppropvals, pproblems))
 		return FALSE;
-	return transact.commit() == 0 ? TRUE : false;
+	transact.commit();
+	return TRUE;
 }
 
 BOOL exmdb_server::remove_store_properties(const char *dir,
@@ -180,11 +178,10 @@ BOOL exmdb_server::remove_store_properties(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!transact)
-		return false;
 	if (!cu_remove_properties(db_table::store_props, 0, pdb->psqlite, pproptags))
 		return FALSE;
-	return transact.commit() == 0 ? TRUE : false;
+	transact.commit();
+	return TRUE;
 }
 
 /* private only */

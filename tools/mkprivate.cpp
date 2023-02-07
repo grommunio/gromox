@@ -220,8 +220,6 @@ int main(int argc, const char **argv) try
 		return dbop_sqlite_integcheck(psqlite, LV_ERR) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 	unsigned int flags = 0;
 	auto sql_transact = gx_sql_begin_trans(psqlite);
-	if (!sql_transact)
-		return false;
 	if (opt_create_old)
 		flags |= DBOP_SCHEMA_0;
 	if (opt_verbose)
@@ -349,7 +347,8 @@ int main(int argc, const char **argv) try
 		sqlite3_reset(pstmt);
 	}
 	pstmt.finalize();
-	return sql_transact.commit() == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+	sql_transact.commit();
+	return EXIT_SUCCESS;
 } catch (const cfg_error &) {
 	return EXIT_FAILURE;
 }

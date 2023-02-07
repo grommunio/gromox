@@ -1690,8 +1690,6 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 	{
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	auto sql_transact = gx_sql_begin_trans(psqlite);
-	if (!sql_transact)
-		return false;
 	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE messages "
 			"(message_id INTEGER PRIMARY KEY,"
 			"mid_string TEXT,"
@@ -1729,8 +1727,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 			return FALSE;
 	}
 	pstmt.finalize();
-	if (sql_transact.commit() != 0)
-		return false;
+	sql_transact.commit();
 
 	pstmt = gx_sql_prep(psqlite, "SELECT COUNT(*) FROM messages");
 	size_t totalmsgs = 0, procmsgs = 0;
@@ -1980,8 +1977,6 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	{
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	auto sql_transact = gx_sql_begin_trans(psqlite);
-	if (!sql_transact)
-		return false;
 	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE folders "
 			"(folder_id INTEGER PRIMARY KEY,"
 			"parent_fid INTEGER,"
@@ -2029,11 +2024,8 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 			return FALSE;
 	}
 	pstmt.finalize();
-	if (sql_transact.commit() != 0)
-		return false;
+	sql_transact.commit();
 	auto pidb_transact = gx_sql_begin_trans(pidb->psqlite);
-	if (!pidb_transact)
-		return false;
 	pstmt = gx_sql_prep(psqlite, "SELECT folder_id, "
 	        "parent_fid, commit_max FROM folders");
 	if (pstmt == nullptr)
@@ -2133,8 +2125,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 		}
 		pstmt.finalize();
 	}
-	if (pidb_transact.commit() != 0)
-		return false;
+	pidb_transact.commit();
 	}
 	cl_err.release();
 	if (!exmdb_client::subscribe_notification(dir,
