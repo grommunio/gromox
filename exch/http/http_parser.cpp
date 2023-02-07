@@ -532,8 +532,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 	}
 	auto ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 	if (ssl_errno != SSL_ERROR_WANT_READ && ssl_errno != SSL_ERROR_WANT_WRITE) {
-		pcontext->log(LV_DEBUG, "failed to accept"
-				" SSL connection, errno is %d", ssl_errno);
+		pcontext->log(LV_DEBUG, "failed to accept TLS connection (ssl_errno=%d)", ssl_errno);
 		return X_RUNOFF;
 	}
 	auto current_time = tp_now();
@@ -701,7 +700,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 			           GX_ARRAY_SIZE(pcontext->lang));
 		}
 		pcontext->b_authed = TRUE;
-		pcontext->log(LV_DEBUG, "login success");
+		pcontext->log(LV_DEBUG, "htp_auth success");
 		return X_RUNOFF;
 	}
 
