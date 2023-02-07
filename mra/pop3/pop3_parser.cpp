@@ -248,7 +248,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 				/* +OK <domain> Service ready */
 				auto pop3_reply_str = resource_get_pop3_code(1711, 1, &string_length);
 				auto pop3_reply_str2 = resource_get_pop3_code(1711, 2, &string_length);
-				host_ID = resource_get_string("HOST_ID");
+				host_ID = znul(g_config_file->get_value("host_id"));
 				len = sprintf(reply_buf, "%s%s%s", pop3_reply_str, host_ID,
 						      pop3_reply_str2);
 				SSL_write(pcontext->connection.ssl, reply_buf, len);

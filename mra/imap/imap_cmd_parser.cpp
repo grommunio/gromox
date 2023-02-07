@@ -1237,7 +1237,7 @@ int imap_cmd_parser_id(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	
 	if (pcontext->proto_stat == PROTO_STAT_SELECT)
 		imap_parser_echo_modify(pcontext, NULL);
-	if (parse_bool(resource_get_string("enable_rfc2971_commands"))) {
+	if (parse_bool(g_config_file->get_value("enable_rfc2971_commands"))) {
 		/* IMAP_CODE_2170029: OK ID completed */
 		auto imap_reply_str = resource_get_imap_code(1729, 1, &string_length);
 		snprintf(buff, sizeof(buff), "* ID (\"name\" \"gromox-imap\" "
@@ -1361,7 +1361,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		if (*pcontext->maildir == '\0')
 			return 1902 | DISPATCH_TAG;
 		if (*pcontext->lang == '\0')
-			gx_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), arsizeof(pcontext->lang));
+			gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("default_lang")), sizeof(pcontext->lang));
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
 		char caps[128], buff[160];
@@ -1422,7 +1422,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (*pcontext->maildir == '\0')
 			return 1902;
 		if (*pcontext->lang == '\0')
-			gx_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), arsizeof(pcontext->lang));
+			gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("default_lang")), sizeof(pcontext->lang));
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
 		return 1705;
@@ -2170,7 +2170,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	try {
 		mid_string = std::to_string(tmp_time) + "." +
 		             std::to_string(imap_parser_get_sequence_ID()) + "." +
-		             resource_get_string("host_id");
+		             znul(g_config_file->get_value("host_id"));
 		eml_path = std::string(pcontext->maildir) + "/eml/" + mid_string;
 		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
 	} catch (const std::bad_alloc &) {
@@ -2276,7 +2276,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 	try {
 		pcontext->mid = std::to_string(time(nullptr)) + "." +
 			std::to_string(imap_parser_get_sequence_ID()) + "." +
-			resource_get_string("HOST_ID");
+			znul(g_config_file->get_value("host_id"));
 		pcontext->file_path = pcontext->maildir + "/tmp/"s + pcontext->mid;
 	} catch (const std::bad_alloc &) {
 		return 1918 | DISPATCH_BREAK;

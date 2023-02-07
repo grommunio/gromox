@@ -127,7 +127,7 @@ char *capability_list(char *dst, size_t z, IMAP_CONTEXT *ctx)
 	}
 	if (offer_tls)
 		HX_strlcat(dst, " STARTTLS", z);
-	if (parse_bool(resource_get_string("enable_rfc2971_commands")))
+	if (parse_bool(g_config_file->get_value("enable_rfc2971_commands")))
 		HX_strlcat(dst, " ID", z);
 	return dst;
 }

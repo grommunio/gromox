@@ -244,11 +244,11 @@ static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 	char temp_buff[256];
 	char line[MAX_FILE_LINE_LEN];
 	
-	const char *filename = resource_get_string("IMAP_LANG_PATH");
+	const char *filename = g_config_file->get_value("imap_lang_path");
 	if (NULL == filename) {
 		filename = "imap_lang.txt";
 	}
-	auto file_ptr = fopen_sd(filename, resource_get_string("data_file_path"));
+	auto file_ptr = fopen_sd(filename, g_config_file->get_value("data_file_path"));
 	if (file_ptr == nullptr) {
 		printf("[resource]: fopen_sd %s: %s\n", filename, strerror(errno));
         return -1;
@@ -305,7 +305,7 @@ static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 		return -1;
 	}
 
-	const char *dfl_lang = resource_get_string("DEFAULT_LANG");
+	const char *dfl_lang = g_config_file->get_value("default_lang");
 	if (dfl_lang == NULL) {
 		dfl_lang = "en";
 		resource_set_string("DEFAULT_LANG", dfl_lang);
@@ -334,7 +334,7 @@ const char* resource_get_default_charset(const char *lang)
 	if (i != g_lang_list.cend())
 		return i->charset;
 	i = std::find(g_lang_list.cbegin(), g_lang_list.cend(),
-	    resource_get_string("DEFAULT_LANG"));
+	    g_config_file->get_value("default_lang"));
 	return i != g_lang_list.cend() ? i->charset : nullptr;
 }
 
@@ -344,7 +344,7 @@ const char *const *resource_get_folder_strings(const char *lang)
 	if (i != g_lang_list.cend())
 		return i->folders;
 	i = std::find(g_lang_list.cbegin(), g_lang_list.cend(),
-	    resource_get_string("DEFAULT_LANG"));
+	    g_config_file->get_value("default_lang"));
 	return i != g_lang_list.cend() ? i->folders : nullptr;
 }
 

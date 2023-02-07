@@ -177,7 +177,7 @@ static void *p3ls_thrwork(void *arg)
 			/* 421 <domain> Service not available */
 			pop3_reply_str = resource_get_pop3_code(1713, 1, &string_length);
 			pop3_reply_str2 = resource_get_pop3_code(1713, 2, &string_length);
-			host_ID = resource_get_string("HOST_ID");
+			host_ID = znul(g_config_file->get_value("host_id"));
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, host_ID,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
@@ -222,7 +222,7 @@ static void *p3ls_thrwork(void *arg)
 			/* +OK <domain> Service ready */
 			pop3_reply_str = resource_get_pop3_code(1711, 1, &string_length);
 			pop3_reply_str2 = resource_get_pop3_code(1711, 2, &string_length);
-			host_ID = resource_get_string("HOST_ID");
+			host_ID = znul(g_config_file->get_value("host_id"));
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, host_ID,
 			      pop3_reply_str2);
 			if (HXio_fullwrite(sockd2, buff, len) != len)

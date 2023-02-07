@@ -141,7 +141,7 @@ int main(int argc, const char **argv) try
 	}
 	printf("[system]: host ID is %s\n", str_val);
 	
-	str_val = resource_get_string("DEFAULT_DOMAIN");
+	str_val = g_config_file->get_value("DEFAULT_DOMAIN");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		getdomainname(temp_buff, arsizeof(temp_buff));

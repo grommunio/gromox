@@ -105,7 +105,7 @@ int main(int argc, const char **argv) try
 	}
 	mlog(LV_NOTICE, "system: host ID is \"%s\"", str_val);
 
-	str_val = resource_get_string("DEFAULT_DOMAIN");
+	str_val = g_config_file->get_value("default_domain");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		getdomainname(temp_buff, arsizeof(temp_buff));

@@ -702,8 +702,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		}
 
 		if ('\0' == pcontext->lang[0]) {
-			gx_strlcpy(pcontext->lang, resource_get_string("USER_DEFAULT_LANG"),
-			           GX_ARRAY_SIZE(pcontext->lang));
+			gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("user_default_lang")), sizeof(pcontext->lang));
 		}
 		pcontext->b_authed = TRUE;
 		pcontext->log(LV_DEBUG, "htp_auth success");

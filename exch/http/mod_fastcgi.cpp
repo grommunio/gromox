@@ -171,7 +171,7 @@ static int mod_fastcgi_read_txt() try
 		char domain[256], path[256], dir[256], suffix[16], index[256];
 		char extra_headers[304], sock_path[256];
 	};
-	auto pfile = list_file_initd("fastcgi.txt", resource_get_string("config_file_path"),
+	auto pfile = list_file_initd("fastcgi.txt", g_config_file->get_value("config_file_path"),
 		"%s:256%s:256%s:256%s:16%s:256%s:304%s:256", ERROR_ON_ABSENCE);
 	if (pfile == nullptr && errno == ENOENT) {
 		return mod_fastcgi_defaults();

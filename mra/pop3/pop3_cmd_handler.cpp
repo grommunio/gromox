@@ -44,7 +44,7 @@ int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
 			"PIPELINING\r\n"
 			"UIDL\r\n"
 			"TOP\r\n");
-	if (parse_bool(resource_get_string("enable_capa_implementation")))
+	if (parse_bool(g_config_file->get_value("enable_capa_implementation")))
 		snprintf(buff + strlen(buff), sizeof(buff) - strlen(buff),
 			"IMPLEMENTATION gromox-pop3-%s\r\n",
 			PACKAGE_VERSION);
@@ -499,7 +499,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 
 	pcontext->msg_array.clear();
 	sprintf(temp_buff, "%s%s%s", resource_get_pop3_code(1710, 1,
-		&string_length), resource_get_string("HOST_ID"),
+		&string_length), znul(g_config_file->get_value("host_id")),
 			resource_get_pop3_code(1710, 2, &string_length));
 	pcontext->connection.write(temp_buff, strlen(temp_buff));
 	return DISPATCH_SHOULD_CLOSE;

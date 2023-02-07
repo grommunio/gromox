@@ -69,7 +69,7 @@ static int smtp_cmd_handler_xhlo(const char *cmd_line, int line_length,
 
     /* inform client side the esmtp type*/
     pcontext->last_cmd = T_EHLO_CMD;
-	string_length = sprintf(buff, "250-%s\r\n", resource_get_string("HOST_ID"));
+	string_length = sprintf(buff, "250-%s\r\n", znul(g_config_file->get_value("host_id")));
 	if (g_param.support_pipeline)
 		string_length += sprintf(buff + string_length,
                              "250-PIPELINING\r\n");
@@ -328,7 +328,7 @@ int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
     /* 221 <domain> Good-bye */
 	sprintf(buff, "%s%s%s",
 		resource_get_smtp_code(203, 1, &string_length),
-		resource_get_string("HOST_ID"),
+		znul(g_config_file->get_value("host_id")),
 		resource_get_smtp_code(203, 2, &string_length));
 	pcontext->connection.write(buff, strlen(buff));
     return DISPATCH_SHOULD_CLOSE;

@@ -167,7 +167,7 @@ int main(int argc, const char **argv) try
 	if (g_config_file == nullptr || !http_reload_config(g_config_file))
 		return EXIT_FAILURE;
 
-	auto str_val = resource_get_string("HOST_ID");
+	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		gethostname(temp_buff, arsizeof(temp_buff));
@@ -181,7 +181,7 @@ int main(int argc, const char **argv) try
 	gx_strlcpy(host_name, str_val, GX_ARRAY_SIZE(host_name));
 	dns_name = str_val;
 	
-	str_val = resource_get_string("DEFAULT_DOMAIN");
+	str_val = g_config_file->get_value("default_domain");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		if (getdomainname(temp_buff, arsizeof(temp_buff)) < 0)
@@ -363,7 +363,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
-	if (mod_rewrite_run(resource_get_string("config_file_path")) != 0) {
+	if (mod_rewrite_run(g_config_file->get_value("config_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start mod_rewrite");
 		return EXIT_FAILURE;
 	}

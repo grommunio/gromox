@@ -134,7 +134,7 @@ int main(int argc, const char **argv) try
 	}
 	mlog(LV_NOTICE, "system: host ID is \"%s\"", str_val);
 	
-	str_val = resource_get_string("DEFAULT_DOMAIN");
+	str_val = g_config_file->get_value("default_domain");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		getdomainname(temp_buff, arsizeof(temp_buff));
@@ -188,13 +188,13 @@ int main(int argc, const char **argv) try
 
 	scfg.support_pipeline = parse_bool(g_config_file->get_value("smtp_support_pipeline"));
 	scfg.support_starttls = parse_bool(g_config_file->get_value("smtp_support_starttls")) ? TRUE : false;
-	str_val = resource_get_string("SMTP_CERTIFICATE_PATH");
+	str_val = g_config_file->get_value("smtp_certificate_path");
 	if (str_val != nullptr)
 		scfg.cert_path = str_val;
-	str_val = resource_get_string("SMTP_CERTIFICATE_PASSWD");
+	str_val = g_config_file->get_value("smtp_certificate_passwd");
 	if (str_val != nullptr)
 		scfg.cert_passwd = str_val;
-	str_val = resource_get_string("SMTP_PRIVATE_KEY_PATH");
+	str_val = g_config_file->get_value("smtp_private_key_path");
 	if (str_val != nullptr)
 		scfg.key_path = str_val;
 	if (scfg.support_starttls) {
@@ -241,7 +241,7 @@ int main(int argc, const char **argv) try
 	mlog(LV_INFO, "dq: blocking remote side for %s when mails number is exceed for one "
 			"session", temp_buff);
 	
-	str_val = resource_get_string("command_protocol");
+	str_val = g_config_file->get_value("command_protocol");
 	if (strcasecmp(str_val, "both") == 0)
 		scfg.cmd_prot = HT_LMTP | HT_SMTP;
 	else if (strcasecmp(str_val, "lmtp") == 0)

@@ -139,7 +139,7 @@ static int mod_cache_read_txt() try
 {
 	struct srcitem { char domain[256], uri_path[256], dir[256]; };
 	
-	auto pfile = list_file_initd("cache.txt", resource_get_string("config_file_path"),
+	auto pfile = list_file_initd("cache.txt", g_config_file->get_value("config_file_path"),
 	             "%s:256%s:256%s:256", ERROR_ON_ABSENCE);
 	if (pfile == nullptr && errno == ENOENT) {
 		return mod_cache_defaults();
