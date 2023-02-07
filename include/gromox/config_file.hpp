@@ -3,10 +3,6 @@
 #include <memory>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#define resource_set_string(k, v) g_config_file->set_value((k), (v))
-#define resource_get_integer(k, vp) g_config_file->get_int((k), (vp))
-#define resource_get_uint(k, vp) g_config_file->get_uint((k), (vp))
-#define resource_set_integer(k, v) g_config_file->set_int((k), (v))
 #define CFG_TABLE_END {}
 
 enum cfg_flags {

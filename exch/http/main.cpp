@@ -172,7 +172,7 @@ int main(int argc, const char **argv) try
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		gethostname(temp_buff, arsizeof(temp_buff));
 		temp_buff[arsizeof(temp_buff)-1] = '\0';
-		resource_set_string("HOST_ID", temp_buff);
+		g_config_file->set_value("host_id", temp_buff);
 		str_val = temp_buff;
 		if (strchr(str_val, '.') == nullptr)
 			mlog(LV_NOTICE, "System hostname \"%s\" has no dot, which may point to a misconfiguration", str_val);
@@ -186,7 +186,7 @@ int main(int argc, const char **argv) try
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		if (getdomainname(temp_buff, arsizeof(temp_buff)) < 0)
 			*temp_buff = '\0';
-		resource_set_string("DEFAULT_DOMAIN", temp_buff);
+		g_config_file->set_value("default_domain", temp_buff);
 		str_val = temp_buff;
 		mlog(LV_WARN, "system: No domain name set. "
 			"OS domain name will be used as default domain.");
@@ -205,7 +205,7 @@ int main(int argc, const char **argv) try
 	unsigned int thread_charge_num = g_config_file->get_ll("http_thread_charge_num");
 	if (thread_charge_num % 4 != 0) {
 		thread_charge_num = thread_charge_num / 4 * 4;
-		resource_set_integer("http_thread_charge_num", thread_charge_num);
+		g_config_file->set_int("http_thread_charge_num", thread_charge_num);
 	}
 	mlog(LV_INFO, "system: one thread is in charge of %d contexts",
 		thread_charge_num);
@@ -217,10 +217,10 @@ int main(int argc, const char **argv) try
 		if (0 == thread_init_num) {
 			thread_init_num = 1;
 			context_num = thread_charge_num;
-			resource_set_integer("CONTEXT_NUM", context_num);
+			g_config_file->set_int("context_num", context_num);
 			mlog(LV_NOTICE, "system: rectified contexts number to %d", context_num);
 		}
-		resource_set_integer("http_thread_init_num", thread_init_num);
+		g_config_file->set_int("http_thread_init_num", thread_init_num);
 	}
 	mlog(LV_INFO, "system: threads pool initial threads number is %d",
 		thread_init_num);

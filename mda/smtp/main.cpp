@@ -129,7 +129,7 @@ int main(int argc, const char **argv) try
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		gethostname(temp_buff, arsizeof(temp_buff));
 		temp_buff[arsizeof(temp_buff)-1] = '\0';
-		resource_set_string("HOST_ID", temp_buff);
+		g_config_file->set_value("host_id", temp_buff);
 		str_val = temp_buff;
 	}
 	mlog(LV_NOTICE, "system: host ID is \"%s\"", str_val);
@@ -138,7 +138,7 @@ int main(int argc, const char **argv) try
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		getdomainname(temp_buff, arsizeof(temp_buff));
-		resource_set_string("DEFAULT_DOMAIN", temp_buff);
+		g_config_file->set_value("default_domain", temp_buff);
 		str_val = temp_buff;
 		mlog(LV_WARN, "system: Cannot find default domain. OS domain name "
 			"will be used as default domain.");
@@ -149,7 +149,7 @@ int main(int argc, const char **argv) try
 	unsigned int thread_charge_num = g_config_file->get_ll("lda_thread_charge_num");
 		if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
-			resource_set_integer("lda_thread_charge_num", thread_charge_num);
+			g_config_file->set_int("lda_thread_charge_num", thread_charge_num);
 		}
 	mlog(LV_INFO, "system: one thread is in charge of %d contexts",
 		thread_charge_num);
@@ -160,10 +160,10 @@ int main(int argc, const char **argv) try
 		if (0 == thread_init_num) {
 			thread_init_num = 1;
 			scfg.context_num = thread_charge_num;
-			resource_set_integer("CONTEXT_NUM", scfg.context_num);
+			g_config_file->set_int("context_num", scfg.context_num);
 			mlog(LV_NOTICE, "system: rectified contexts number to %d", scfg.context_num);
 		}
-		resource_set_integer("lda_thread_init_num", thread_init_num);
+		g_config_file->set_int("lda_thread_init_num", thread_init_num);
 	}
 	mlog(LV_INFO, "system: threads pool initial threads number is %d",
 		thread_init_num);
@@ -176,7 +176,7 @@ int main(int argc, const char **argv) try
 	if (scfg.flushing_size < context_aver_mem) {
 		scfg.flushing_size = context_aver_mem;
 		HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.flushing_size * 64 * 1024, 1024, 0);
-		resource_set_string("CONTEXT_MAX_MEM", temp_buff);
+		g_config_file->set_value("context_max_mem", temp_buff);
 	} 
 	scfg.flushing_size *= 64 * 1024;
 	HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.flushing_size, 1024, 0);

@@ -100,7 +100,7 @@ int main(int argc, const char **argv) try
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		gethostname(temp_buff, arsizeof(temp_buff));
 		temp_buff[arsizeof(temp_buff)-1] = '\0';
-		resource_set_string("HOST_ID", temp_buff);
+		g_config_file->set_value("host_id", temp_buff);
 		str_val = temp_buff;
 	}
 	mlog(LV_NOTICE, "system: host ID is \"%s\"", str_val);
@@ -109,7 +109,7 @@ int main(int argc, const char **argv) try
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		getdomainname(temp_buff, arsizeof(temp_buff));
-		resource_set_string("DEFAULT_DOMAIN", temp_buff);
+		g_config_file->set_value("default_domain", temp_buff);
 		str_val = temp_buff;
 		mlog(LV_WARN, "system: Cannot find default domain. OS domain name "
 			"will be used as default domain.");
@@ -124,10 +124,10 @@ int main(int argc, const char **argv) try
 		threads_min, threads_max);
 
 	unsigned int free_contexts = threads_max;
-	if (resource_get_uint("FREE_CONTEXT_NUM", &free_contexts)) {
+	if (g_config_file->get_uint("free_context_num", &free_contexts)) {
 		if (free_contexts < threads_max) {
 			free_contexts = threads_max; 
-			resource_set_integer("FREE_CONTEXT_NUM", free_contexts);
+			g_config_file->set_int("free_context_num", free_contexts);
 		}
 	}
 	mlog(LV_INFO, "system: free contexts number is %d", free_contexts);

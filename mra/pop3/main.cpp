@@ -136,7 +136,7 @@ int main(int argc, const char **argv) try
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		gethostname(temp_buff, arsizeof(temp_buff));
 		temp_buff[arsizeof(temp_buff)-1] = '\0';
-		resource_set_string("HOST_ID", temp_buff);
+		g_config_file->set_value("host_id", temp_buff);
 		str_val = temp_buff;
 	}
 	printf("[system]: host ID is %s\n", str_val);
@@ -145,7 +145,7 @@ int main(int argc, const char **argv) try
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		getdomainname(temp_buff, arsizeof(temp_buff));
-		resource_set_string("DEFAULT_DOMAIN", temp_buff);
+		g_config_file->set_value("default_domain", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find default domain, OS domain name "
 			"will be used as default domain\n");
@@ -156,7 +156,7 @@ int main(int argc, const char **argv) try
 	unsigned int thread_charge_num = g_config_file->get_ll("pop3_thread_charge_num");
 	if (thread_charge_num % 4 != 0) {
 		thread_charge_num = thread_charge_num / 4 * 4;
-		resource_set_integer("pop3_thread_charge_num", thread_charge_num);
+		g_config_file->set_int("pop3_thread_charge_num", thread_charge_num);
 	}
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
@@ -167,10 +167,10 @@ int main(int argc, const char **argv) try
 		if (0 == thread_init_num) {
 			thread_init_num = 1;
 			context_num = thread_charge_num;
-			resource_set_integer("CONTEXT_NUM", context_num);
+			g_config_file->set_int("context_num", context_num);
 			printf("[system]: rectify contexts number %d\n", context_num);
 		}
-		resource_set_integer("pop3_thread_init_num", thread_init_num);
+		g_config_file->set_int("pop3_thread_init_num", thread_init_num);
 	}
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);
@@ -183,7 +183,7 @@ int main(int argc, const char **argv) try
 	if (context_max_mem < context_aver_mem) {
 		context_max_mem = context_aver_mem;
 		HX_unit_size(temp_buff, arsizeof(temp_buff), context_max_mem * 64 * 1024, 1024, 0);
-		resource_set_string("CONTEXT_MAX_MEM", temp_buff);
+		g_config_file->set_value("context_max_mem", temp_buff);
 	} 
 	context_max_mem *= 64*1024;
 	HX_unit_size(temp_buff, arsizeof(temp_buff), context_max_mem, 1024, 0);

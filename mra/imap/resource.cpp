@@ -308,7 +308,7 @@ static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 	const char *dfl_lang = g_config_file->get_value("default_lang");
 	if (dfl_lang == NULL) {
 		dfl_lang = "en";
-		resource_set_string("DEFAULT_LANG", dfl_lang);
+		g_config_file->set_value("default_lang", dfl_lang);
 	}
 	auto it = std::find(temp_list.cbegin(), temp_list.cend(), dfl_lang);
 	if (it == temp_list.cend()) {
