@@ -10,9 +10,8 @@ class GX_EXPORT xtransaction {
 	constexpr xtransaction(sqlite3 *d = nullptr) { m_db = d; }
 	xtransaction(xtransaction &&) noexcept = delete;
 	~xtransaction();
-	int commit();
+	void commit();
 	xtransaction &operator=(xtransaction &&) noexcept;
-	operator bool() const { return m_db != nullptr; }
 
 	protected:
 	sqlite3 *m_db = nullptr;

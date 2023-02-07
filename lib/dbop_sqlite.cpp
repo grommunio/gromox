@@ -696,18 +696,18 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 		if (flags & DBOP_VERBOSE)
 			mlog(LV_NOTICE, "dbop_sqlite: upgrading %s to schema E%c-%u",
 			        filedesc, kind_to_char(kind), entry->v);
-		auto tx = gx_sql_begin_trans(db);
-		if (!tx)
+		auto ret = gx_sql_exec(db, "BEGIN TRANSACTION");
+		if (ret != SQLITE_OK)
 			return -EIO;
 		if (entry->command != nullptr && entry->tbl_name == nullptr &&
 		    entry->q_create == nullptr && entry->q_move == nullptr) {
-			auto ret = gx_sql_exec(db, entry->command);
+			ret = gx_sql_exec(db, entry->command);
 			if (ret != SQLITE_OK)
 				return -EIO;
 		} else if (entry->command == nullptr &&
 		    entry->tbl_name != nullptr && entry->q_create != nullptr &&
 		    entry->q_move != nullptr) {
-			auto ret = dbop_sqlite_chcol(db, entry);
+			ret = dbop_sqlite_chcol(db, entry);
 			if (ret < 0)
 				return ret;
 			did_chcol = true;
@@ -715,7 +715,9 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 			mlog(LV_ERR, "dbop_sqlite: malformed entry in upgrade table, sv %u", entry->v);
 			return -EINVAL;
 		}
-		if (dbop_sqlite_bump(db, entry->v) != 0 || tx.commit() != 0)
+		dbop_sqlite_bump(db, entry->v);
+		ret = gx_sql_exec(db, "COMMIT TRANSACTION");
+		if (ret != SQLITE_OK)
 			return -EIO;
 	}
 	/* Reclaim some diskspace */
