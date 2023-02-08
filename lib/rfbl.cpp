@@ -1297,6 +1297,13 @@ bool json_from_str(std::string_view sv, Json::Value &jv)
 	       strm, &jv, nullptr);
 }
 
+std::string json_to_str(const Json::Value &jv)
+{
+	Json::StreamWriterBuilder swb;
+	swb["indentation"] = "";
+	return Json::writeString(swb, jv);
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try

@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
@@ -2107,7 +2108,7 @@ static ssize_t mime_get_digest_multi(const MIME *pmime, const char *id_string,
 	return buff_len;
 }
 
-static ssize_t mime_get_struct_multi(const MIME *, const char *id, size_t *ofs, size_t head_ofs, size_t *cnt, char *buf, size_t len);
+static int mime_get_struct_multi(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
 
 /*
  *  get the digest string of mail struct
@@ -2115,18 +2116,15 @@ static ssize_t mime_get_struct_multi(const MIME *, const char *id, size_t *ofs, 
  *      pmime [in]          indicate the mime object
  *      id_string[in]       id string
  *      poffset[in, out]    offset in mail
- *      pcount[in, out]     count of mime in mail
- *      pbuff [out]         for retrieving the digest
- *      length              maximum length of buffer
  *  @return
  *      string length in pbuff
  */
-ssize_t MIME::get_structure_digest(const char *id_string, size_t *poffset,
-    size_t *pcount, char *pbuff, size_t length) const
+int MIME::get_structure_digest(const char *id_string, size_t *poffset,
+    Json::Value &dsarray) const try
 {
 	auto pmime = this;
 #ifdef _DEBUG_UMTA
-	if (pbuff == nullptr || poffset == nullptr || pcount == nulllptr) {
+	if (poffset == nullptr) {
 		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return -1;
 	}
@@ -2174,7 +2172,7 @@ ssize_t MIME::get_structure_digest(const char *id_string, size_t *poffset,
 	}
 	if (pmime->mime_type != mime_type::single)
 		return mime_get_struct_multi(this, id_string, poffset,
-		       head_offset, pcount, pbuff, length);
+		       head_offset, dsarray);
 	if (pmime->content_begin == nullptr) {
 		/* if there's nothing, just append an empty line */
 		*poffset += 2;
@@ -2189,20 +2187,18 @@ ssize_t MIME::get_structure_digest(const char *id_string, size_t *poffset,
 		return -1;
 	*poffset += mgl;
 	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1333: ENOMEM");
+	return -1;
 }
 
-static ssize_t mime_get_struct_multi(const MIME *pmime, const char *id_string,
-    size_t *poffset, size_t head_offset, size_t *pcount, char *pbuff,
-    size_t length)
+static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
+    size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
-	size_t count = 0, i, buff_len = 0, tmp_len;
+	size_t count = 0, i, tmp_len;
 	BOOL	has_submime;
 	char temp_id[64], content_type[256];
 
-	if (*pcount > 0) {
-		pbuff[buff_len] = ',';
-		buff_len++;
-	}
 	strcpy(content_type, pmime->content_type);
 	if (!mime_check_ascii_printable(content_type))
 		strcpy(content_type, "multipart/mixed");
@@ -2217,16 +2213,13 @@ static ssize_t mime_get_struct_multi(const MIME *pmime, const char *id_string,
 	auto mgl = pmime->get_length();
 	if (mgl < 0)
 		return -1;
-	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-	            "{\"id\":\"%s\",\"ctype\":\"%s\",\"head\":%zu,"
-	            "\"begin\":%zu, \"length\":%zu}", id_string,
-	            content_type, head_offset, *poffset,
-	            head_offset + mgl - *poffset);
-	if (buff_len >= length - 1) {
-		return -1;
-	}
-
-	*pcount += 1;
+	Json::Value digest;
+	digest["id"]     = id_string;
+	digest["ctype"]  = content_type;
+	digest["head"]   = Json::Value::UInt64(head_offset);
+	digest["begin"]  = Json::Value::UInt64(*poffset);
+	digest["length"] = Json::Value::UInt64(head_offset + mgl - *poffset);
+	dsarray.append(std::move(digest));
 	if (NULL == pmime->first_boundary) {
 		*poffset += 48;
 	} else {
@@ -2243,11 +2236,9 @@ static ssize_t mime_get_struct_multi(const MIME *pmime, const char *id_string,
 		} else {
 			snprintf(temp_id, 64, "%s.%zu", id_string, count);
 		}
-		auto gsd = static_cast<const MIME *>(pnode->pdata)->get_structure_digest(temp_id, poffset,
-		           pcount, pbuff + buff_len, length - buff_len);
-		if (gsd < 0 || buff_len + gsd >= length - 1)
+		if (static_cast<const MIME *>(pnode->pdata)->get_structure_digest(temp_id,
+		    poffset, dsarray) < 0)
 			return -1;
-		buff_len += gsd;
 		pnode = pnode->get_sibling();
 		count++;
 	}
@@ -2265,10 +2256,7 @@ static ssize_t mime_get_struct_multi(const MIME *pmime, const char *id_string,
 			*poffset += 2;
 		}
 	}
-	if (buff_len >= length - 1) {
-		return -1;
-	}
-	return buff_len;
+	return 0;
 }
 
 static bool mime_parse_multiple(MIME *pmime)

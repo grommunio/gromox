@@ -1,4 +1,5 @@
 #pragma once
+#include <json/value.h>
 #include <openssl/ssl.h>
 #include <gromox/mem_file.hpp>
 #include <gromox/simple_tree.hpp>
@@ -37,7 +38,7 @@ struct GX_EXPORT MIME {
 	bool get_content_param(const char *tag, char *value, int len) const;
 	bool set_content_param(const char *tag, const char *value);
 	ssize_t get_mimes_digest(const char *, size_t *, size_t *, char *, size_t) const;
-	ssize_t get_structure_digest(const char *, size_t *, size_t *, char *, size_t) const;
+	int get_structure_digest(const char *, size_t *, Json::Value &) const;
 	bool serialize(STREAM *) const;
 	bool emit(write_func, void *) const;
 	bool check_dot() const;

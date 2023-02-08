@@ -6,6 +6,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mime_pool.hpp>
@@ -422,9 +423,10 @@ bool MAIL::get_charset(char *charset) const
  *		0					buffer length insufficient
  *		1					digest mail OK
  */
-int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
+int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const try
 {
 	auto pmail = this;
+	{
 	char *ptr;
 	int priority;
 	size_t count;
@@ -625,24 +627,19 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 			goto PARSE_FAILURE;
 	}
 
-	count = 0;
 	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-	            ",\"structure\":[");
+	            ",\"structure\":");
 	if (buff_len >= length - 1)
 		goto PARSE_FAILURE;
 	*poffset = 0;
-	gmd = pmail->get_head()->get_structure_digest("",
-	      poffset, &count, pbuff + buff_len, length - buff_len);
-	if (gmd < 0 || buff_len + gmd > length - 2) {
+	Json::Value dsarray = Json::arrayValue;
+	if (pmail->get_head()->get_structure_digest("", poffset, dsarray) < 0)
 		goto PARSE_FAILURE;
-	}
-	buff_len += gmd;
+	auto s = json_to_str(dsarray);
+	buff_len += gx_snprintf(&pbuff[buff_len], length - buff_len,
+	            "%s", s.c_str());
 	if (buff_len >= length - 1)
 		goto PARSE_FAILURE;
-	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len, "]");
-	if (buff_len >= length - 1)
-		goto PARSE_FAILURE;
-	
 	count = 0;
 	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 	            ",\"mimes\":[");
@@ -662,6 +659,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 	if (buff_len >= length - 1)
 		goto PARSE_FAILURE;
 	return 1;
+	}
 	
  PARSE_FAILURE:
 	auto mgl = pmail->get_length();
@@ -671,6 +669,8 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 		"\"unsent\":0,\"forwarded\":0,\"flag\":0,\"size\":%zd", mgl);
 	*poffset = mgl;
 	return 0;
+} catch (const std::bad_alloc &) {
+	return -1;
 }
 
 static void mail_enum_text_mime_charset(const MIME *pmime, void *param)
