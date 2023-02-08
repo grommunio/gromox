@@ -1843,7 +1843,7 @@ bool MIME::get_filename(char *file_name, size_t fnsize) const
 }
 
 static ssize_t mime_get_digest_single(const MIME *, const char *id, size_t *ofs, size_t head_ofs, size_t *cnt, char *buf, size_t len);
-static ssize_t mime_get_digest_mul(const MIME *, const char *id, size_t *ofs, size_t *cnt, char *buf, size_t len);
+static ssize_t mime_get_digest_multi(const MIME *, const char *id, size_t *ofs, size_t *cnt, char *buf, size_t len);
 
 /*
  *  get the digest string of mail mime
@@ -1907,11 +1907,9 @@ ssize_t MIME::get_mimes_digest(const char *id_string, size_t *poffset,
 		/* \r\n for separate head and content */
 		*poffset += 4;
 	}
-	if (pmime->mime_type == mime_type::single)
-		return mime_get_digest_single(this, id_string, poffset,
-		       head_offset, pcount, pbuff, length);
-	return mime_get_digest_mul(this, id_string, poffset, pcount,
-	       pbuff, length);
+	return pmime->mime_type == mime_type::single ?
+	       mime_get_digest_single(this, id_string, poffset, head_offset, pcount, pbuff, length) :
+	       mime_get_digest_multi(this, id_string, poffset, pcount, pbuff, length);
 }
 
 static ssize_t mime_get_digest_single(const MIME *pmime, const char *id_string,
@@ -2059,7 +2057,7 @@ static ssize_t mime_get_digest_single(const MIME *pmime, const char *id_string,
 	return buff_len;
 }
 
-static ssize_t mime_get_digest_mul(const MIME *pmime, const char *id_string,
+static ssize_t mime_get_digest_multi(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t *pcount, char *pbuff, size_t length)
 {
 	int count;
@@ -2097,19 +2095,19 @@ static ssize_t mime_get_digest_mul(const MIME *pmime, const char *id_string,
 	*poffset += pmime->boundary_len + 4;
 	if (NULL == pmime->last_boundary) {
 		*poffset += 4;
-	} else {
-		tmp_len = pmime->content_length - (pmime->last_boundary -
-		          pmime->content_begin);
-		if (tmp_len > 0) {
-			*poffset += tmp_len;
-		} else if (0 == tmp_len) {
-			*poffset += 2;
-		}
+		return buff_len;
+	}
+	tmp_len = pmime->content_length - (pmime->last_boundary -
+	          pmime->content_begin);
+	if (tmp_len > 0) {
+		*poffset += tmp_len;
+	} else if (0 == tmp_len) {
+		*poffset += 2;
 	}
 	return buff_len;
 }
 
-static ssize_t mime_get_struct_mul(const MIME *, const char *id, size_t *ofs, size_t head_ofs, size_t *cnt, char *buf, size_t len);
+static ssize_t mime_get_struct_multi(const MIME *, const char *id, size_t *ofs, size_t head_ofs, size_t *cnt, char *buf, size_t len);
 
 /*
  *  get the digest string of mail struct
@@ -2174,27 +2172,26 @@ ssize_t MIME::get_structure_digest(const char *id_string, size_t *poffset,
 		/* \r\n for separate head and content */
 		*poffset += 4;
 	}
-	if (pmime->mime_type == mime_type::single) {
-		if (NULL != pmime->content_begin) {
-			if (0 != pmime->content_length) {
-				*poffset += pmime->content_length;
-			} else {
-				auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
-				if (mgl < 0)
-					return -1;
-				*poffset += mgl;
-			}
-		} else {
-			/* if there's nothing, just append an empty line */
-			*poffset += 2;
-		}
+	if (pmime->mime_type != mime_type::single)
+		return mime_get_struct_multi(this, id_string, poffset,
+		       head_offset, pcount, pbuff, length);
+	if (pmime->content_begin == nullptr) {
+		/* if there's nothing, just append an empty line */
+		*poffset += 2;
 		return 0;
 	}
-	return mime_get_struct_mul(this, id_string, poffset, head_offset,
-	       pcount, pbuff, length);;
+	if (pmime->content_length != 0) {
+		*poffset += pmime->content_length;
+		return 0;
+	}
+	auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
+	if (mgl < 0)
+		return -1;
+	*poffset += mgl;
+	return 0;
 }
 
-static ssize_t mime_get_struct_mul(const MIME *pmime, const char *id_string,
+static ssize_t mime_get_struct_multi(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t head_offset, size_t *pcount, char *pbuff,
     size_t length)
 {
