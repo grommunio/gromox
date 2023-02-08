@@ -16,6 +16,7 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/json.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mem_file.hpp>
@@ -319,7 +320,6 @@ static bool exmdb_local_lang_to_charset(const char *lang, char (&charset)[32])
 int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 {
 	MAIL *pmail;
-	int tmp_len;
 	size_t mess_len;
 	int sequence_ID;
 	time_t cur_time;
@@ -328,7 +328,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	uint32_t tmp_int32;
 	uint32_t suppress_mask = 0;
 	BOOL b_bounce_delivered = false;
-	char temp_buff[MAX_DIGLEN];
 	MESSAGE_CONTEXT *pcontext1;
 
 	if (!exmdb_local_get_user_info(address, home_dir, arsizeof(home_dir),
@@ -404,10 +403,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	if (ret < 0)
 		mlog(LV_ERR, "E-1120: close %s: %s", eml_path.c_str(), strerror(ret));
 
-	tmp_len = sprintf(temp_buff, "{\"file\":\"%s\",", mid_string.c_str());
-	int result = pmail->get_digest(&mess_len, temp_buff + tmp_len,
-				MAX_DIGLEN - tmp_len - 1);
-	
+	Json::Value digest;
+	auto result = pmail->get_digest(&mess_len, digest);
 	if (result <= 0) {
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1387: remove %s: %s",
@@ -419,11 +416,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 			"permanent failure getting mail digest");
 		return DELIVERY_OPERATION_ERROR;
 	}
-	tmp_len = strlen(temp_buff);
-	temp_buff[tmp_len] = '}';
-	tmp_len ++;
-	temp_buff[tmp_len] = '\0';
-	
+	digest["file"] = std::move(mid_string);
+	auto djson = json_to_str(digest);
 	alloc_context alloc_ctx;
 	g_alloc_key = &alloc_ctx;
 	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
@@ -454,7 +448,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	pmsg->proplist.erase(PidTagChangeNumber);
 	uint32_t r32 = 0;
 	if (!exmdb_client_remote::deliver_message(home_dir,
-	    pcontext->pcontrol->from, address, CP_ACP, pmsg, temp_buff, &r32))
+	    pcontext->pcontrol->from, address, CP_ACP, pmsg, djson.c_str(), &r32))
 		return DELIVERY_OPERATION_ERROR;
 	auto dm_status = static_cast<deliver_message_result>(r32);
 	if (dm_status == deliver_message_result::result_ok) {

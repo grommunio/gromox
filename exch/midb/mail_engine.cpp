@@ -36,6 +36,7 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/midb.hpp>
@@ -212,11 +213,10 @@ static std::unique_ptr<char[]> mail_engine_ct_to_utf8(const char *charset,
 	return nullptr;
 }
 
-static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
-	const char *mid_string, char *digest_buff)
+static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
+    char *digest_buff) try
 {
 	size_t size;
-	int tmp_len;
 	char temp_path[256];
 	
 	snprintf(temp_path, 256, "%s/ext/%s",
@@ -242,19 +242,21 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		if (!imail.load_from_str_move(slurp_data.get(), slurp_size))
 			return 0;
 		slurp_data.reset();
-		tmp_len = sprintf(digest_buff, "{\"file\":\"\",");
-		if (imail.get_digest(&size, digest_buff + tmp_len,
-		    MAX_DIGLEN - tmp_len - 1) <= 0)
+		Json::Value digest;
+		if (imail.get_digest(&size, digest) <= 0)
 			return 0;
 		imail.clear();
-		tmp_len = strlen(digest_buff);
-		strcpy(&digest_buff[tmp_len], "}");
-		tmp_len ++;
+		digest["file"] = "";
+		auto djson = json_to_str(digest);
+		if (djson.size() >= MAX_DIGLEN - 1)
+			return 0;
+		gx_strlcpy(digest_buff, djson.c_str(), MAX_DIGLEN);
 		snprintf(temp_path, 256, "%s/ext/%s",
 			common_util_get_maildir(), mid_string);
 		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() >= 0) {
-			if (HXio_fullwrite(fd.get(), digest_buff, tmp_len) != tmp_len ||
+			auto wr_ret = HXio_fullwrite(fd.get(), digest_buff, djson.size());
+			if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
 			    fd.close_wr() != 0)
 				mlog(LV_ERR, "E-2082: write %s: %s", temp_path, strerror(errno));
 		}
@@ -278,6 +280,9 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 	set_digest(digest_buff, MAX_DIGLEN, "forwarded", pstmt.col_int64(6));
 	set_digest(digest_buff, MAX_DIGLEN, "deleted", pstmt.col_int64(7));
 	return folder_id;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1139: ENOMEM");
+	return 0;
 }
 
 static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
@@ -1517,12 +1522,11 @@ static void mail_engine_extract_digest_fields(const char *digest, char *subject,
 		*psize = strtoull(temp_buff, nullptr, 0);
 }
 
-static void mail_engine_insert_message(sqlite3_stmt *pstmt,
-	uint32_t *puidnext, uint64_t message_id, const char *mid_string,
-	uint32_t message_flags, uint64_t received_time, uint64_t mod_time)
+static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
+    uint64_t message_id, const char *mid_string, uint32_t message_flags,
+    uint64_t received_time, uint64_t mod_time) try
 {
 	size_t size;
-	int tmp_len;
 	char from[UADDR_SIZE], rcpt[UADDR_SIZE];
 	const char *dir;
 	char subject[1024];
@@ -1567,13 +1571,14 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 			return;
 		}
 		common_util_switch_allocator();
-		tmp_len = sprintf(temp_buff, "{\"file\":\"\",");
-		if (imail.get_digest(&size, temp_buff + tmp_len,
-		    MAX_DIGLEN - tmp_len - 1) <= 0)
+		Json::Value digest;
+		if (imail.get_digest(&size, digest) <= 0)
 			return;
-		tmp_len = strlen(temp_buff);
-		strcpy(&temp_buff[tmp_len], "}");
-		tmp_len ++;
+		digest["file"] = "";
+		auto djson = json_to_str(digest);
+		if (djson.size() >= std::size(temp_buff) - 1)
+			return;
+		gx_strlcpy(temp_buff, djson.data(), std::size(temp_buff));
 		snprintf(mid_string1, arsizeof(mid_string1), "%lld.%u.midb",
 		         static_cast<long long>(time(nullptr)), ++g_sequence_id);
 		mid_string = mid_string1;
@@ -1581,9 +1586,10 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() < 0)
 			return;
-		if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len ||
+		auto wr_ret = HXio_fullwrite(fd.get(), djson.c_str(), djson.size());
+		if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
 		    fd.close_wr() != 0) {
-			mlog(LV_ERR, "E-1683: write %s: %s", temp_path, strerror(errno));
+			mlog(LV_ERR, "E-1135: write %s: %s", temp_path, strerror(errno));
 			return;
 		}
 		sprintf(temp_path1, "%s/eml/%s", dir, mid_string1);
@@ -1612,6 +1618,8 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 	sqlite3_bind_int64(pstmt, 11, received_time);
 	if (sqlite3_step(pstmt) != SQLITE_DONE)
 		mlog(LV_ERR, "E-2075: sqlite_step not finished");
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1137: ENOMEM");
 }
 
 static void mail_engine_sync_message(IDB_ITEM *pidb,
@@ -2585,7 +2593,6 @@ static bool system_services_lang_to_charset(const char *lang, char (&charset)[32
 
 static int mail_engine_minst(int argc, char **argv, int sockd)
 {
-	int tmp_len;
 	int user_id;
 	char lang[32];
 	size_t mess_len;
@@ -2595,7 +2602,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	uint64_t change_num;
 	uint64_t message_id;
 	char sql_string[1024];
-	char temp_buff[MAX_DIGLEN];
 	
 	if (argc != 6 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
@@ -2614,21 +2620,20 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	MAIL imail(g_mime_pool);
 	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
 		return MIDB_E_IMAIL_RETRIEVE;
-	tmp_len = sprintf(temp_buff, "{\"file\":\"\",");
-	if (imail.get_digest(&mess_len, temp_buff + tmp_len, MAX_DIGLEN - tmp_len - 1) <= 0)
+	Json::Value digest;
+	if (imail.get_digest(&mess_len, digest) <= 0)
 		return MIDB_E_IMAIL_DIGEST;
-	tmp_len = strlen(temp_buff);
-	temp_buff[tmp_len] = '}';
-	tmp_len ++;
-	temp_buff[tmp_len] = '\0';
+	digest["file"] = "";
+	auto djson = json_to_str(digest);
 	sprintf(temp_path, "%s/ext/%s", argv[1], argv[3]);
 	wrapfd fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
 	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-2073: Opening %s for writing failed: %s", temp_path, strerror(errno));
 		return MIDB_E_DISK_ERROR;
 	}
-	auto wr_ret = HXio_fullwrite(fd.get(), temp_buff, tmp_len);
-	if (wr_ret < 0 || wr_ret != tmp_len || fd.close_wr() != 0)
+	auto wr_ret = HXio_fullwrite(fd.get(), djson.data(), djson.size());
+	if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
+	    fd.close_wr() != 0)
 		mlog(LV_ERR, "E-2085: write %s: %s", temp_path, strerror(errno));
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)

@@ -414,19 +414,15 @@ bool MAIL::get_charset(char *charset) const
 /*
  *	get the digest string of mail
  *	@param
- *		pmail [in]			indicate the mail object
  *		poffset [out]       for retrieving mail length
- *		pbuff [out]			for retrieving the digest
- *		length              maximum length of buffer
  *	@return
  *	   -1                   fatal error
  *		0					buffer length insufficient
  *		1					digest mail OK
  */
-int MAIL::get_digest(size_t *poffset, char *pbuff, size_t length) const try
+int MAIL::get_digest(size_t *poffset, Json::Value &digest) const try
 {
 	auto pmail = this;
-	{
 	char *ptr;
 	int priority;
 	BOOL b_tags[TAG_NUM];
@@ -447,16 +443,11 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, size_t length) const try
 	char mime_notification[1024];
 
 #ifdef _DEBUG_UMTA
-	if (poffset == nullptr || pbuff == nullptr) {
+	if (poffset == nullptr) {
 		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
 		return -1;
 	}
 #endif
-
-
-	if (length < 128) {
-		return -1;
-	}
 	auto pnode = pmail->tree.get_root();
 	if (NULL == pnode) {
 		return -1;
@@ -534,7 +525,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, size_t length) const try
 	
 	if (!get_charset(email_charset))
 		email_charset[0] = '\0';
-	Json::Value digest  = Json::objectValue;
+	digest              = Json::objectValue;
 	digest["uid"]       = 0;
 	digest["recent"]    = 1;
 	digest["read"]      = 0;
@@ -594,35 +585,17 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, size_t length) const try
 	*poffset = 0;
 	Json::Value dsarray = Json::arrayValue;
 	if (pmail->get_head()->get_structure_digest("", poffset, dsarray) < 0)
-		goto PARSE_FAILURE;
+		return -1;
 	digest["structure"] = std::move(dsarray);
 	*poffset = 0;
 	dsarray = Json::arrayValue;
 	if (pmail->get_head()->get_mimes_digest("", poffset, dsarray) < 0)
-		goto PARSE_FAILURE;
+		return -1;
 	digest["mimes"] = std::move(dsarray);
 	digest["size"] = Json::Value::UInt64(*poffset);
-	auto s = json_to_str(digest);
-	if (s.size() < 2 || s[0] != '{' || s[s.size()-1] != '}')
-		goto PARSE_FAILURE;
-	gx_strlcpy(pbuff, &s[1], length);
-	auto z = strlen(pbuff);
-	if (z >= length - 1)
-		goto PARSE_FAILURE;
-	if (s[z-1] == '}')
-		s[z-1] = '\0';
 	return 1;
-	}
-	
- PARSE_FAILURE:
-	auto mgl = pmail->get_length();
-	if (mgl < 0)
-		return -1;
-	snprintf(pbuff, length, "\"recent\":1,\"read\":0,\"replied\":0,"
-		"\"unsent\":0,\"forwarded\":0,\"flag\":0,\"size\":%zd", mgl);
-	*poffset = mgl;
-	return 0;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1131: ENOMEM");
 	return -1;
 }
 

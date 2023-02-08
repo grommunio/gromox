@@ -1049,7 +1049,7 @@ BOOL MJSON::rfc822_check()
 	return b_found;
 }
 
-static void mjson_enum_build(MJSON_MIME *pmime, void *param)
+static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 {
 	auto pbuild = static_cast<BUILD_PARAM *>(param);
 	size_t length1;
@@ -1133,9 +1133,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	}
 	/* for saving stacking size, so use C++
 		style of local variable declaration */
-	size_t mess_len, digest_len;
-	char digest_buff[MAX_DIGLEN];
-
+	size_t mess_len;
 	fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (fd.get() < 0) {
 		pbuild->build_result = FALSE;
@@ -1148,15 +1146,8 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		pbuild->build_result = FALSE;
 		return;
 	}
-	if (1 == pbuild->depth) {
-		digest_len = sprintf(digest_buff, "{\"file\":\"%s\",",
-			     pmime->get_id());
-	} else {
-		digest_len = sprintf(digest_buff, "{\"file\":\"%s.%s\",",
-			     pbuild->filename, pmime->get_id());
-	}
-	int result = imail.get_digest(&mess_len, digest_buff + digest_len,
-	             MAX_DIGLEN - digest_len - 1);
+	Json::Value digest;
+	auto result = imail.get_digest(&mess_len, digest);
 	imail.clear();
 	pbuff.reset();
 	if (result <= 0) {
@@ -1165,11 +1156,11 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		pbuild->build_result = FALSE;
 		return;
 	}
-	digest_len = strlen(digest_buff);
-	digest_buff[digest_len] = '}';
-	digest_len ++;
-	digest_buff[digest_len] = '\0';
-
+	if (pbuild->depth == 1)
+		digest["file"] = pmime->get_id();
+	else
+		digest["file"] = std::string(pbuild->filename) + "." + pmime->get_id();
+	auto djson = json_to_str(digest);
 	fd = open(dgt_path, O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
 	if (fd.get() < 0) {
 		if (remove(msg_path) < 0 && errno != ENOENT)
@@ -1177,9 +1168,10 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		pbuild->build_result = FALSE;
 		return;
 	}
-	auto wr_ret = HXio_fullwrite(fd.get(), digest_buff, digest_len);
-	if (wr_ret < 0 || static_cast<size_t>(wr_ret) != digest_len ||
+	auto wr_ret = HXio_fullwrite(fd.get(), djson.data(), djson.size());
+	if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
 	    fd.close_wr() != 0) {
+		mlog(LV_ERR, "E-1333: write %s: %s", dgt_path, strerror(errno));
 		fd.close_rd();
 		if (remove(dgt_path) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1375: remove %s: %s", dgt_path, strerror(errno));
@@ -1189,7 +1181,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		return;
 	}
 
-	if (!temp_mjson.load_from_str_move(digest_buff, digest_len,
+	if (!temp_mjson.load_from_str_move(djson.data(), djson.size(),
 	    pbuild->storage_path)) {
 		if (remove(dgt_path) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1377: remove %s: %s", dgt_path, strerror(errno));
@@ -1217,6 +1209,8 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 			mlog(LV_WARN, "W-1380: remove %s: %s", msg_path, strerror(errno));
 		pbuild->build_result = FALSE;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1138: ENOMEM");
 }
 
 BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> pool, const char *storage_path)
