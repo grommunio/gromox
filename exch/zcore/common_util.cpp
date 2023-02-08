@@ -2008,7 +2008,7 @@ static void zc_unwrap_smime(MAIL &ma) try
 }
 
 MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
-    unsigned int mxf_flags, const BINARY *peml_bin)
+    unsigned int mxf_flags, /* effective-moved-from */ BINARY *peml_bin)
 {
 	char charset[32], tmzone[64];
 	

@@ -126,7 +126,7 @@ extern ec_error_t zs_importreadstates(GUID ses, uint32_t ctx_handle, const STATE
 extern ec_error_t zs_getsearchcriteria(GUID ses, uint32_t fld_handle, BINARY_ARRAY *folders, RESTRICTION **, uint32_t *srch_stat);
 extern ec_error_t zs_setsearchcriteria(GUID ses, uint32_t fld_handle, uint32_t flags, const BINARY_ARRAY *folders, const RESTRICTION *);
 extern ec_error_t zs_messagetorfc822(GUID ses, uint32_t msg_handle, BINARY *eml);
-extern ec_error_t zs_rfc822tomessage(GUID ses, uint32_t msg_handle, uint32_t mxf_flags, const BINARY *eml);
+extern ec_error_t zs_rfc822tomessage(GUID ses, uint32_t msg_handle, uint32_t mxf_flags, BINARY *eml);
 extern ec_error_t zs_messagetoical(GUID ses, uint32_t msg_handle, BINARY *ical);
 extern ec_error_t zs_icaltomessage(GUID ses, uint32_t msg_handle, const BINARY *ical);
 extern ec_error_t zs_imtomessage2(GUID session, uint32_t folder_handle, uint32_t data_type, char *im_data, LONG_ARRAY *outhandles);

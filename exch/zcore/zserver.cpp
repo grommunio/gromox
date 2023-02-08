@@ -4927,8 +4927,8 @@ ec_error_t zs_messagetorfc822(GUID hsession, uint32_t hmessage, BINARY *peml_bin
 	       pmessage->get_id(), peml_bin) ? ecSuccess : ecError;
 }
 
-ec_error_t zs_rfc822tomessage(GUID hsession,
-    uint32_t hmessage, uint32_t mxf_flags, const BINARY *peml_bin)
+ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
+    uint32_t mxf_flags, /* effective-moved-from */ BINARY *peml_bin)
 {
 	uint8_t mapi_type;
 	auto pinfo = zs_query_session(hsession);

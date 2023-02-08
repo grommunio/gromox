@@ -5059,7 +5059,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 }
 
 static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
-    const BINARY *hdrs, MIME_FIELD &f)
+    /* effective-moved-from */ BINARY *hdrs, MIME_FIELD &f)
 {
 	if (hdrs == nullptr || hdrs->cb == 0)
 		return false;
@@ -5260,7 +5260,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		auto a = pmsg->children.pattachments;
 		if (a == nullptr || a->count != 1)
 			goto EXPORT_FAILURE;
-		auto pbin = a->pplist[0]->proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
+		auto pbin = a->pplist[0]->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 		if (!smime_signed_writeout(*pmail, *pmime, pbin, mime_field))
 			goto EXPORT_FAILURE;
 		return TRUE;
