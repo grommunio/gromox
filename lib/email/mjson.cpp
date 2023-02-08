@@ -1132,96 +1132,94 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	if (!imail.load_from_str_move(pbuff.get(), length)) {
 		pbuild->build_result = FALSE;
 		return;
+	}
+	/* for saving stacking size, so use C++
+		style of local variable declaration */
+	size_t mess_len;
+	int digest_len;
+	char digest_buff[MAX_DIGLEN];
+
+	fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
+	if (-1 == fd) {
+		pbuild->build_result = FALSE;
+		return;
+	}
+	if (!imail.to_file(fd)) {
+		close(fd);
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1372: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
+		return;
+	}
+	close(fd);
+	if (1 == pbuild->depth) {
+		digest_len = sprintf(digest_buff, "{\"file\":\"%s\",",
+			     pmime->get_id());
 	} else {
-		/* for saving stacking size, so use C++
-			style of local variable declaration */
-		size_t mess_len;
-		int digest_len;
-		char digest_buff[MAX_DIGLEN];
-		
-		fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-		if (-1 == fd) {
-			pbuild->build_result = FALSE;
-			return;
-		}
-		if (!imail.to_file(fd)) {
-			close(fd);
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1372: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-			return;
-		}
+		digest_len = sprintf(digest_buff, "{\"file\":\"%s.%s\",",
+			     pbuild->filename, pmime->get_id());
+	}
+	int result = imail.get_digest(&mess_len, digest_buff + digest_len,
+	             MAX_DIGLEN - digest_len - 1);
+	imail.clear();
+	pbuff.reset();
+	if (result <= 0) {
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1373: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
+		return;
+	}
+	digest_len = strlen(digest_buff);
+	digest_buff[digest_len] = '}';
+	digest_len ++;
+	digest_buff[digest_len] = '\0';
+
+	fd = open(dgt_path, O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
+	if (-1 == fd) {
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1374: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
+		return;
+	}
+	if (digest_len != write(fd, digest_buff, digest_len)) {
 		close(fd);
-		if (1 == pbuild->depth) {
-			digest_len = sprintf(digest_buff, "{\"file\":\"%s\",",
-			             pmime->get_id());
-		} else {
-			digest_len = sprintf(digest_buff, "{\"file\":\"%s.%s\",",
-			             pbuild->filename, pmime->get_id());
-		}
-		int result = imail.get_digest(&mess_len, digest_buff + digest_len,
-					MAX_DIGLEN - digest_len - 1);
-		imail.clear();
-		pbuff.reset();
-		if (result <= 0) {
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1373: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-			return;
-		}
-		digest_len = strlen(digest_buff);
-		digest_buff[digest_len] = '}';
-		digest_len ++;
-		digest_buff[digest_len] = '\0';
-		
-		fd = open(dgt_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-		if (-1 == fd) {
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1374: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-			return;
-		}
-		if (digest_len != write(fd, digest_buff, digest_len)) {
-			close(fd);
-			if (remove(dgt_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1375: remove %s: %s", dgt_path, strerror(errno));
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1376: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-			return;
-		}
-		close(fd);
-		
-		if (!temp_mjson.load_from_str_move(digest_buff, digest_len,
-		    pbuild->storage_path)) {
-			if (remove(dgt_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1377: remove %s: %s", dgt_path, strerror(errno));
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1378: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-			return;
-		}
+		if (remove(dgt_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1375: remove %s: %s", dgt_path, strerror(errno));
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1376: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
+		return;
+	}
+	close(fd);
+
+	if (!temp_mjson.load_from_str_move(digest_buff, digest_len,
+	    pbuild->storage_path)) {
+		if (remove(dgt_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1377: remove %s: %s", dgt_path, strerror(errno));
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1378: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
+		return;
 	}
 	
-	if (pbuild->depth < MAX_RFC822_DEPTH && temp_mjson.rfc822_check()) {
-		BUILD_PARAM build_param;
-		build_param.filename = temp_mjson.get_mail_filename();
-		build_param.msg_path = temp_mjson.path.c_str();
-		build_param.storage_path = pbuild->storage_path;
-		build_param.depth = pbuild->depth + 1;
-		build_param.ppool = pbuild->ppool;
-		build_param.build_result = TRUE;
-		
-		temp_mjson.enum_mime(mjson_enum_build, &build_param);
-		if (!build_param.build_result) {
-			if (remove(dgt_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1379: remove %s: %s", dgt_path, strerror(errno));
-			if (remove(msg_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1380: remove %s: %s", msg_path, strerror(errno));
-			pbuild->build_result = FALSE;
-		}
+	if (pbuild->depth >= MAX_RFC822_DEPTH || !temp_mjson.rfc822_check())
+		return;
+	BUILD_PARAM build_param;
+	build_param.filename = temp_mjson.get_mail_filename();
+	build_param.msg_path = temp_mjson.path.c_str();
+	build_param.storage_path = pbuild->storage_path;
+	build_param.depth = pbuild->depth + 1;
+	build_param.ppool = pbuild->ppool;
+	build_param.build_result = TRUE;
+
+	temp_mjson.enum_mime(mjson_enum_build, &build_param);
+	if (!build_param.build_result) {
+		if (remove(dgt_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1379: remove %s: %s", dgt_path, strerror(errno));
+		if (remove(msg_path) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1380: remove %s: %s", msg_path, strerror(errno));
+		pbuild->build_result = FALSE;
 	}
-	return;
 }
 
 BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> pool, const char *storage_path)
