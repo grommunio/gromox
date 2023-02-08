@@ -27,7 +27,6 @@ struct instbody_delete : public stdlib_delete {
 }
 
 unsigned int exmdb_body_autosynthesis;
-static constexpr size_t UTF8LEN_MARKER_SIZE = sizeof(uint32_t);
 
 /* Get an arbitrary body, no fallbacks. */
 static int instance_get_raw(MESSAGE_CONTENT *mc, BINARY *&bin, unsigned int tag)
@@ -115,8 +114,6 @@ static int instance_conv_htmlfromlower(MESSAGE_CONTENT *mc,
     unsigned int cpid, BINARY *&bin)
 {
 	auto ret = instance_get_raw(mc, bin, ID_TAG_BODY);
-	if (ret > 0)
-		bin->pc += UTF8LEN_MARKER_SIZE;
 	if (ret == 0) {
 		ret = instance_get_raw(mc, bin, ID_TAG_BODY_STRING8);
 		if (ret > 0) {
@@ -164,9 +161,7 @@ static int instance_get_body_unspec(MESSAGE_CONTENT *mc, TPROPVAL_ARRAY *pval)
 	BINARY *bin = nullptr;
 	auto ret = instance_get_raw(mc, bin, ID_TAG_BODY);
 	auto unicode_body = ret > 0;
-	if (ret > 0)
-		bin->pc += UTF8LEN_MARKER_SIZE;
-	else if (ret == 0)
+	if (ret == 0)
 		ret = instance_get_raw(mc, bin, ID_TAG_BODY_STRING8);
 	if (exmdb_body_autosynthesis && ret == 0) {
 		ret = instance_conv_textfromhigher(mc, bin);
@@ -195,8 +190,6 @@ static int instance_get_body_utf8(MESSAGE_CONTENT *mc, unsigned int cpid,
 {
 	BINARY *bin = nullptr;
 	int ret = instance_get_raw(mc, bin, ID_TAG_BODY);
-	if (ret > 0)
-		bin->pc += UTF8LEN_MARKER_SIZE;
 	if (ret == 0) {
 		ret = instance_get_raw(mc, bin, ID_TAG_BODY_STRING8);
 		if (ret > 0) {
@@ -226,7 +219,7 @@ static int instance_get_body_8bit(MESSAGE_CONTENT *mc, unsigned int cpid,
 	if (ret == 0) {
 		ret = instance_get_raw(mc, bin, ID_TAG_BODY);
 		if (ret > 0) {
-			bin->pc = common_util_convert_copy(false, cpid, bin->pc + UTF8LEN_MARKER_SIZE);
+			bin->pc = common_util_convert_copy(false, cpid, bin->pc);
 			if (bin->pc == nullptr)
 				return -1;
 		}

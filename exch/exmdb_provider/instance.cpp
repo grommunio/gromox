@@ -677,8 +677,15 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag) try
 		/* ignore */;
 #endif
 	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
-	if (pbuff == nullptr ||
-	    read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
+	if (pbuff == nullptr)
+		return nullptr;
+	if (tag == ID_TAG_BODY || tag == ID_TAG_BODY_STRING8) {
+		/* Skip over old UTF8LEN_MARKER */
+		if (lseek(fd.get(), 4, SEEK_CUR) != 4)
+			return nullptr;
+		node_stat.st_size -= 4;
+	}
+	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
 		return NULL;
 	pbuff[node_stat.st_size] = '\0';
 	if (plen != nullptr)
