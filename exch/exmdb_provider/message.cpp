@@ -4044,7 +4044,8 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(tmp_path, &slurp_size));
 		if (slurp_data != nullptr) {
 			digest.emplace();
-			json_from_str({slurp_data.get(), slurp_size}, *digest);
+			if (!json_from_str({slurp_data.get(), slurp_size}, *digest))
+				digest.reset();
 		}
 	}
 	seen_list seen{{fid_val}};
