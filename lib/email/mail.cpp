@@ -423,7 +423,7 @@ bool MAIL::get_charset(char *charset) const
  *		0					buffer length insufficient
  *		1					digest mail OK
  */
-int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const try
+int MAIL::get_digest(size_t *poffset, char *pbuff, size_t length) const try
 {
 	auto pmail = this;
 	{
@@ -534,17 +534,22 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const try
 	
 	if (!get_charset(email_charset))
 		email_charset[0] = '\0';
-	ssize_t buff_len = gx_snprintf(pbuff, length, "\"uid\":0,\"recent\":1,"
-				"\"read\":0,\"replied\":0,\"unsent\":0,\"forwarded\":0,"
-				"\"flag\":0,\"priority\":%d,\"msgid\":\"%s\",\"from\":"
-				"\"%s\",\"to\":\"%s\",\"cc\":\"%s\",\"subject\":\"%s\","
-				"\"received\":\"%s\",\"date\":\"%s\"", priority,
-				mime_msgid, mime_from, mime_to, mime_cc,
-				mime_subject, mime_received, mime_date);
-	if (buff_len >= length - 1) {
-		goto PARSE_FAILURE;
-	}
-	
+	Json::Value digest  = Json::objectValue;
+	digest["uid"]       = 0;
+	digest["recent"]    = 1;
+	digest["read"]      = 0;
+	digest["replied"]   = 0;
+	digest["unsent"]    = 0;
+	digest["forwarded"] = 0;
+	digest["flag"]      = 0;
+	digest["priority"]  = Json::Value::UInt64(priority);
+	digest["msgid"]     = mime_msgid;
+	digest["from"]      = mime_from;
+	digest["to"]        = mime_to;
+	digest["cc"]        = mime_cc;
+	digest["subject"]   = mime_subject;
+	digest["received"]  = mime_received;
+	digest["date"]      = mime_date;
 	if (email_charset[0] != '\0' && mail_check_ascii_printable(email_charset)) {
 		auto tmp_len = strlen(email_charset);
 		for (size_t i = 0; i < tmp_len; ++i) {
@@ -552,53 +557,23 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const try
 				email_charset[i] = ' ';
 			}
 		}
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-					",\"charset\":\"%s\"", email_charset);
-		if (buff_len >= length - 1) {
-			goto PARSE_FAILURE;
-		}
+		digest["charset"] = email_charset;
 	}
-
-	if ('\0' != mime_sender[0]) {
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-					",\"sender\":\"%s\"", mime_sender);
-		if (buff_len >= length - 1) {
-			goto PARSE_FAILURE;
-		}
-	}
-
-	if ('\0' != mime_reply_to[0]) {
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-					",\"reply\":\"%s\"", mime_reply_to);
-		if (buff_len >= length - 1) {
-			goto PARSE_FAILURE;
-		}
-	}
-
-	if ('\0' != mime_in_reply_to[0]) {
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-					",\"inreply\":\"%s\"", mime_in_reply_to);
-		if (buff_len >= length - 1) {
-			goto PARSE_FAILURE;
-		}
-	}
+	if (*mime_sender != '\0')
+		digest["sender"] = mime_sender;
+	if (*mime_reply_to != '\0')
+		digest["reply"] = mime_reply_to;
+	if (*mime_in_reply_to != '\0')
+		digest["inreply"] = mime_in_reply_to;
 
 	if (pmime->get_field("Disposition-Notification-To", temp_buff, 1024)) {
 		encode64(temp_buff, strlen(temp_buff), mime_notification, 1024, NULL);
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-					",\"notification\":\"%s\"", mime_notification);
-
-		if (buff_len >= length - 1) {
-			goto PARSE_FAILURE;
-		}
+		digest["notification"] = mime_notification;
 	}
 
 	if (pmime->get_field("References", temp_buff, 1024)) {
 		encode64(temp_buff, strlen(temp_buff), mime_reference, 2048, NULL);
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-					",\"ref\":\"%s\"", mime_reference);
-		if (buff_len >= length - 1)
-			goto PARSE_FAILURE;
+		digest["ref"] = mime_reference;
 	}
 
 	b_tags[TAG_SIGNED] = FALSE;
@@ -612,49 +587,30 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const try
 		if (m->get_content_param("smime-type", buf, arsizeof(buf)))
 			b_tags[TAG_ENCRYPT] = TRUE;
 	});
-	if (b_tags[TAG_SIGNED]) {
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-		            ",\"signed\":1");
-		if (buff_len >= length - 1)
-			goto PARSE_FAILURE;
-	}
-	if (b_tags[TAG_ENCRYPT]) {
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-		            ",\"encrypt\":1");
-		if (buff_len >= length - 1)
-			goto PARSE_FAILURE;
-	}
-
-	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-	            ",\"structure\":");
-	if (buff_len >= length - 1)
-		goto PARSE_FAILURE;
+	if (b_tags[TAG_SIGNED])
+		digest["signed"] = 1;
+	if (b_tags[TAG_ENCRYPT])
+		digest["encrypt"] = 1;
 	*poffset = 0;
 	Json::Value dsarray = Json::arrayValue;
 	if (pmail->get_head()->get_structure_digest("", poffset, dsarray) < 0)
 		goto PARSE_FAILURE;
-	auto s = json_to_str(dsarray);
-	buff_len += gx_snprintf(&pbuff[buff_len], length - buff_len,
-	            "%s", s.c_str());
-	if (buff_len >= length - 1)
-		goto PARSE_FAILURE;
-	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-	            ",\"mimes\":");
-	if (buff_len >= length - 1)
-		goto PARSE_FAILURE;
+	digest["structure"] = std::move(dsarray);
 	*poffset = 0;
 	dsarray = Json::arrayValue;
 	if (pmail->get_head()->get_mimes_digest("", poffset, dsarray) < 0)
 		goto PARSE_FAILURE;
-	s = json_to_str(dsarray);
-	buff_len += gx_snprintf(&pbuff[buff_len], length - buff_len,
-	            "%s", s.c_str());
-	if (buff_len >= length - 1)
+	digest["mimes"] = std::move(dsarray);
+	digest["size"] = Json::Value::UInt64(*poffset);
+	auto s = json_to_str(digest);
+	if (s.size() < 2 || s[0] != '{' || s[s.size()-1] != '}')
 		goto PARSE_FAILURE;
-	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-	            ",\"size\":%zu", *poffset);
-	if (buff_len >= length - 1)
+	gx_strlcpy(pbuff, &s[1], length);
+	auto z = strlen(pbuff);
+	if (z >= length - 1)
 		goto PARSE_FAILURE;
+	if (s[z-1] == '}')
+		s[z-1] = '\0';
 	return 1;
 	}
 	

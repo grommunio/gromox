@@ -37,7 +37,7 @@ struct GX_EXPORT MAIL {
 	MIME *get_head();
 	const MIME *get_head() const;
 	bool get_charset(char *out) const;
-	int get_digest(size_t *offset, char *buf, int len) const;
+	int get_digest(size_t *offset, char *buf, size_t len) const;
 	MIME *add_child(MIME *base, int opt);
 	void enum_mime(MAIL_MIME_ENUM, void *) const;
 	bool dup(MAIL *dst);
