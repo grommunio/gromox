@@ -3742,14 +3742,30 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 	return ecSuccess;
 }
 
+static unsigned int detect_rcpt_type(const char *account, const TARRAY_SET *rcpts)
+{
+	if (rcpts == nullptr)
+		return MAPI_BCC;
+	for (size_t i = 0; i < rcpts->count; ++i) {
+		auto rcpt = rcpts->pparray[i];
+		auto smtpaddr = rcpt->get<const char>(PR_SMTP_ADDRESS);
+		if (smtpaddr == nullptr || strcasecmp(account, smtpaddr) != 0)
+			continue;
+		auto type = rcpt->get<const uint32_t>(PR_RECIPIENT_TYPE);
+		if (type == nullptr)
+			continue;
+		if (*type == MAPI_TO || *type == MAPI_CC)
+			return *type;
+	}
+	return MAPI_BCC;
+}
+
 /* 0 means success, 1 means mailbox full, other unknown error */
 BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
     const char *account, cpid_t cpid, const MESSAGE_CONTENT *pmsg,
     const char *pdigest, uint32_t *presult) try
 {
 	BOOL b_oof;
-	BOOL b_to_me;
-	BOOL b_cc_me;
 	uint64_t nt_time;
 	uint64_t fid_val;
 	BINARY *pentryid;
@@ -3763,28 +3779,6 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	/* Buffers above may be referenced by tmp_msg (cu_set_propvals) */
 	MESSAGE_CONTENT tmp_msg;
 	
-	b_to_me = FALSE;
-	b_cc_me = FALSE;
-	if (NULL != pmsg->children.prcpts) {
-		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-			auto rcpttype = pmsg->children.prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
-			if (rcpttype == nullptr)
-				continue;
-			auto smtpaddr = pmsg->children.prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
-			switch (*rcpttype) {
-			case MAPI_TO:
-				if (smtpaddr != nullptr && strcasecmp(account, smtpaddr) == 0)
-					b_to_me = TRUE;	
-				break;
-			case MAPI_CC:
-				if (smtpaddr != nullptr && strcasecmp(account, smtpaddr) == 0)
-					b_cc_me = TRUE;	
-				break;
-			}
-			if (b_to_me || b_cc_me)
-				break;
-		}
-	}
 	if (exmdb_server::is_private()) {
 		paccount = account;
 	} else {
@@ -3852,10 +3846,10 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			}
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
 		}
-		if (b_to_me)
-			cu_set_propval(&tmp_msg.proplist, PR_MESSAGE_TO_ME, &fake_true);
-		else if (b_cc_me)
-			cu_set_propval(&tmp_msg.proplist, PR_MESSAGE_CC_ME, &fake_true);
+		auto rcpt_type = detect_rcpt_type(account, pmsg->children.prcpts);
+		if (rcpt_type != MAPI_BCC)
+			cu_set_propval(&tmp_msg.proplist, rcpt_type == MAPI_TO ?
+				PR_MESSAGE_TO_ME : PR_MESSAGE_CC_ME, &fake_true);
 	}
 	nt_time = rop_util_current_nttime();
 	auto ts = tmp_msg.proplist.get<uint64_t>(PR_MESSAGE_DELIVERY_TIME);
