@@ -694,29 +694,29 @@ static void mail_enum_html_charset(const MIME *pmime, void *param)
 		return;
 	}
 	length = 128*1024;
-	if (pmime->read_content(buff, &length)) {
-		if (length > 4096) {
-			length = 4096;
+	if (!pmime->read_content(buff, &length))
+		return;
+	if (length > 4096) {
+		length = 4096;
+	}
+	ptr = search_string(buff, "charset=", length);
+	if (ptr == nullptr)
+		return;
+	ptr += 8;
+	if ('"' == *ptr || '\'' == *ptr) {
+		ptr ++;
+	}
+	for (i=0; i<32; i++) {
+		if ('"' == ptr[i] || '\'' == ptr[i] || ' ' == ptr[i] ||
+			',' == ptr[i] || ';' == ptr[i] || '>' == ptr[i]) {
+			email_charset[i] = '\0';
+			break;
+		} else {
+			email_charset[i] = ptr[i];
 		}
-		ptr = search_string(buff, "charset=", length);
-		if (NULL != ptr) {
-			ptr += 8;
-			if ('"' == *ptr || '\'' == *ptr) {
-				ptr ++;
-			}
-			for (i=0; i<32; i++) {
-				if ('"' == ptr[i] || '\'' == ptr[i] || ' ' == ptr[i] ||
-					',' == ptr[i] || ';' == ptr[i] || '>' == ptr[i]) {
-					email_charset[i] = '\0';
-					break;
-				} else {
-					email_charset[i] = ptr[i];
-				}
-			}
-			if (32 == i) {
-				email_charset[0] = '\0';
-			}
-		}
+	}
+	if (32 == i) {
+		email_charset[0] = '\0';
 	}
 }
 
