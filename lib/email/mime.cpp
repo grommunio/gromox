@@ -1843,8 +1843,8 @@ bool MIME::get_filename(char *file_name, size_t fnsize) const
 	return true;
 }
 
-static ssize_t mime_get_digest_single(const MIME *, const char *id, size_t *ofs, size_t head_ofs, size_t *cnt, char *buf, size_t len);
-static ssize_t mime_get_digest_multi(const MIME *, const char *id, size_t *ofs, size_t *cnt, char *buf, size_t len);
+static int mime_get_digest_single(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
+static int mime_get_digest_multi(const MIME *, const char *id, size_t *ofs, Json::Value &);
 
 /*
  *  get the digest string of mail mime
@@ -1852,18 +1852,15 @@ static ssize_t mime_get_digest_multi(const MIME *, const char *id, size_t *ofs, 
  *      pmime [in]          indicate the mime object
  *      id_string[in]       id string
  *      poffset[in, out]    offset in mail
- *      pcount[in, out]     count of mime in mail
- *      pbuff [out]         for retrieving the digest
- *      length              maximum length of buffer
  *  @return
  *      string length in pbuff
  */
-ssize_t MIME::get_mimes_digest(const char *id_string, size_t *poffset,
-    size_t *pcount, char *pbuff, size_t length) const
+int MIME::get_mimes_digest(const char *id_string, size_t *poffset,
+    Json::Value &dsarray) const try
 {
 	auto pmime = this;
 #ifdef _DEBUG_UMTA
-	if (pbuff == nullptr || poffset == nullptr || pcount == nullptr) {
+	if (poffset == nullptr) {
 		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return -1;
 	}
@@ -1909,23 +1906,21 @@ ssize_t MIME::get_mimes_digest(const char *id_string, size_t *poffset,
 		*poffset += 4;
 	}
 	return pmime->mime_type == mime_type::single ?
-	       mime_get_digest_single(this, id_string, poffset, head_offset, pcount, pbuff, length) :
-	       mime_get_digest_multi(this, id_string, poffset, pcount, pbuff, length);
+	       mime_get_digest_single(this, id_string, poffset, head_offset, dsarray) :
+	       mime_get_digest_multi(this, id_string, poffset, dsarray);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1132: ENOMEM");
+	return -1;
 }
 
-static ssize_t mime_get_digest_single(const MIME *pmime, const char *id_string,
-    size_t *poffset, size_t head_offset, size_t *pcount, char *pbuff,
-    size_t length)
+static int mime_get_digest_single(const MIME *pmime, const char *id_string,
+    size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
-	size_t i, content_len, buff_len = 0, tmp_len;
+	size_t i, content_len, tmp_len;
 	char charset_buff[32], content_type[256], encoding_buff[128];
 	char file_name[256], temp_buff[512], content_ID[128];
 	char content_location[256], content_disposition[256], *ptoken;
 
-	if (*pcount > 0) {
-		pbuff[buff_len] = ',';
-		buff_len ++;
-	}
 	strcpy(content_type, pmime->content_type);
 	if (!mime_check_ascii_printable(content_type))
 		strcpy(content_type, "application/octet-stream");
@@ -1938,12 +1933,14 @@ static ssize_t mime_get_digest_single(const MIME *pmime, const char *id_string,
 	HX_strrtrim(content_type);
 	HX_strltrim(content_type);
 
+	Json::Value digest;
+	digest["id"]    = id_string;
+	digest["ctype"] = content_type;
+	digest["head"]  = Json::Value::UInt64(head_offset);
+	digest["begin"] = Json::Value::UInt64(*poffset);
 	if (!pmime->get_field("Content-Transfer-Encoding", encoding_buff, 128) ||
 	    !mime_check_ascii_printable(encoding_buff)) {
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-		            "{\"id\":\"%s\",\"ctype\":\"%s\","
-		            "\"encoding\":\"8bit\",\"head\":%zu,\"begin\":%zu,",
-		            id_string, content_type, head_offset, *poffset);
+		digest["encoding"] = "8bit";
 	} else {
 		tmp_len = strlen(encoding_buff);
 		for (i = 0; i < tmp_len; i++) {
@@ -1953,15 +1950,7 @@ static ssize_t mime_get_digest_single(const MIME *pmime, const char *id_string,
 		}
 		HX_strrtrim(encoding_buff);
 		HX_strltrim(encoding_buff);
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-		            "{\"id\":\"%s\",\"ctype\":\"%s\","
-		            "\"encoding\":\"%s\",\"head\":%zu,\"begin\":%zu,",
-		            id_string, content_type, encoding_buff, head_offset,
-		            *poffset);
-	}
-
-	if (buff_len >= length - 1) {
-		return -1;
+		digest["encoding"] = encoding_buff;
 	}
 
 	if (NULL != pmime->content_begin) {
@@ -1981,13 +1970,7 @@ static ssize_t mime_get_digest_single(const MIME *pmime, const char *id_string,
 		content_len = 0;
 	}
 
-	*pcount += 1;
-	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-	            "\"length\":%zu", content_len);
-	if (buff_len >= length - 1) {
-		return -1;
-	}
-
+	digest["length"] = Json::Value::UInt64(content_len);
 	if (pmime->get_content_param("charset", charset_buff, 32) &&
 	    mime_check_ascii_printable(charset_buff)) {
 		tmp_len = strlen(charset_buff);
@@ -1998,17 +1981,12 @@ static ssize_t mime_get_digest_single(const MIME *pmime, const char *id_string,
 		}
 		HX_strrtrim(charset_buff);
 		HX_strltrim(charset_buff);
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-		            ",\"charset\":\"%s\"", charset_buff);
-		if (buff_len >= length - 1) {
-			return -1;
-		}
+		digest["charset"] = charset_buff;
 	}
 
 	if (pmime->get_filename(file_name, std::size(file_name))) {
 		encode64(file_name, strlen(file_name), temp_buff, 512, &tmp_len);
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-		            ",\"filename\":\"%s\"", temp_buff);
+		digest["filename"] = temp_buff;
 	}
 	if (pmime->get_field("Content-Disposition", content_disposition, 256)) {
 		ptoken = strchr(content_disposition, ';');
@@ -2026,43 +2004,28 @@ static ssize_t mime_get_digest_single(const MIME *pmime, const char *id_string,
 					content_disposition[i] = ' ';
 				}
 			}
-			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-			            ",\"cntdspn\":\"%s\"", content_disposition);
+			digest["cntdspn"] = content_disposition;
 		}
-	}
-
-	if (buff_len >= length - 1) {
-		return -1;
 	}
 	if (pmime->get_field("Content-ID", content_ID, 128)) {
 		tmp_len = strlen(content_ID);
 		encode64(content_ID, tmp_len, temp_buff, 256, &tmp_len);
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-		            ",\"cid\":\"%s\"", temp_buff);
-		if (buff_len >= length - 1) {
-			return -1;
-		}
+		digest["cid"] = temp_buff;
 	}
 	if (pmime->get_field("Content-Location", content_location, 256)) {
 		tmp_len = strlen(content_location);
 		encode64(content_location, tmp_len, temp_buff, 512, &tmp_len);
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-		            ",\"cntl\":\"%s\"", temp_buff);
-		if (buff_len >= length - 1) {
-			return -1;
-		}
+		digest["cntl"] = temp_buff;
 	}
-
-	pbuff[buff_len] = '}';
-	buff_len++;
-	return buff_len;
+	dsarray.append(std::move(digest));
+	return 0;
 }
 
-static ssize_t mime_get_digest_multi(const MIME *pmime, const char *id_string,
-    size_t *poffset, size_t *pcount, char *pbuff, size_t length)
+static int mime_get_digest_multi(const MIME *pmime, const char *id_string,
+    size_t *poffset, Json::Value &dsarray)
 {
 	int count;
-	size_t buff_len = 0, tmp_len;
+	size_t tmp_len;
 	BOOL has_submime;
 	char temp_id[64];
 
@@ -2082,12 +2045,11 @@ static ssize_t mime_get_digest_multi(const MIME *pmime, const char *id_string,
 		} else {
 			snprintf(temp_id, 64, "%s.%d", id_string, count);
 		}
-		auto gmd = static_cast<const MIME *>(pnode->pdata)->get_mimes_digest(temp_id, poffset,
-		           pcount, pbuff + buff_len, length - buff_len);
-		if (gmd < 0 || buff_len + gmd >= length - 1) {
+		auto mime = static_cast<const MIME *>(pnode->pdata);
+		Json::Value digest;
+		if (mime->get_mimes_digest(temp_id, poffset, digest) < 0)
 			return -1;
-		}
-		buff_len += gmd;
+		dsarray.append(std::move(digest));
 		pnode = pnode->get_sibling();
 		count++;
 	}
@@ -2096,7 +2058,7 @@ static ssize_t mime_get_digest_multi(const MIME *pmime, const char *id_string,
 	*poffset += pmime->boundary_len + 4;
 	if (NULL == pmime->last_boundary) {
 		*poffset += 4;
-		return buff_len;
+		return 0;
 	}
 	tmp_len = pmime->content_length - (pmime->last_boundary -
 	          pmime->content_begin);
@@ -2105,7 +2067,7 @@ static ssize_t mime_get_digest_multi(const MIME *pmime, const char *id_string,
 	} else if (0 == tmp_len) {
 		*poffset += 2;
 	}
-	return buff_len;
+	return 0;
 }
 
 static int mime_get_struct_multi(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);

@@ -429,8 +429,6 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const try
 	{
 	char *ptr;
 	int priority;
-	size_t count;
-	ssize_t gmd;
 	BOOL b_tags[TAG_NUM];
 	char temp_buff[1024];
 	char email_charset[64];
@@ -640,22 +638,21 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const try
 	            "%s", s.c_str());
 	if (buff_len >= length - 1)
 		goto PARSE_FAILURE;
-	count = 0;
 	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-	            ",\"mimes\":[");
+	            ",\"mimes\":");
 	if (buff_len >= length - 1)
 		goto PARSE_FAILURE;
 	*poffset = 0;
-	gmd = pmail->get_head()->get_mimes_digest("", poffset, &count,
-	      pbuff + buff_len, length - buff_len);
-	if (gmd < 0 || buff_len + gmd > length - 20) {
+	dsarray = Json::arrayValue;
+	if (pmail->get_head()->get_mimes_digest("", poffset, dsarray) < 0)
 		goto PARSE_FAILURE;
-	}
-	buff_len += gmd;
+	s = json_to_str(dsarray);
+	buff_len += gx_snprintf(&pbuff[buff_len], length - buff_len,
+	            "%s", s.c_str());
 	if (buff_len >= length - 1)
 		goto PARSE_FAILURE;
 	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-	            "],\"size\":%zu", *poffset);
+	            ",\"size\":%zu", *poffset);
 	if (buff_len >= length - 1)
 		goto PARSE_FAILURE;
 	return 1;
