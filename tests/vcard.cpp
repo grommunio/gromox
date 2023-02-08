@@ -24,12 +24,12 @@ static void t_card()
 	C.serialize(buf, std::size(buf));
 	printf("%s\n", buf);
 	C.clear();
-	C.retrieve_single(buf);
+	C.load_single_from_str_move(buf);
 	C.serialize(buf, std::size(buf));
 	printf("%s\n", buf);
 
 	strcpy(buf, "BEGIN:VCARD\n\nEND:VCARD\n");
-	C.retrieve_single(buf);
+	C.load_single_from_str_move(buf);
 }
 
 static void t_ical()

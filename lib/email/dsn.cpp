@@ -9,7 +9,7 @@
 
 using namespace gromox;
 
-bool DSN::retrieve(char *in_buff, size_t length)
+bool DSN::load_from_str_move(char *in_buff, size_t length)
 {
 	auto pdsn = this;
 	MIME_FIELD mime_field;

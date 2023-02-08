@@ -245,7 +245,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 			return 0;
 		fd.close_rd();
 		MAIL imail(g_mime_pool);
-		if (!imail.retrieve(pbuff.get(), node_stat.st_size))
+		if (!imail.load_from_str_move(pbuff.get(), node_stat.st_size))
 			return 0;
 		tmp_len = sprintf(digest_buff, "{\"file\":\"\",");
 		if (imail.get_digest(&size, digest_buff + tmp_len,
@@ -572,7 +572,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
-				if (!temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff))
+				if (!temp_mjson.load_from_str_move(digest_buff, strlen(digest_buff), temp_buff))
 					break;
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
@@ -846,7 +846,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
-				if (!temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff))
+				if (!temp_mjson.load_from_str_move(digest_buff, strlen(digest_buff), temp_buff))
 					break;
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
@@ -2638,7 +2638,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	fd.close_rd();
 
 	MAIL imail(g_mime_pool);
-	if (!imail.retrieve(pbuff.get(), node_stat.st_size))
+	if (!imail.load_from_str_move(pbuff.get(), node_stat.st_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	tmp_len = sprintf(temp_buff, "{\"file\":\"\",");
 	if (imail.get_digest(&mess_len, temp_buff + tmp_len, MAX_DIGLEN - tmp_len - 1) <= 0)
@@ -2824,7 +2824,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	fd.close_rd();
 
 	MAIL imail(g_mime_pool);
-	if (!imail.retrieve(pbuff.get(), node_stat.st_size))
+	if (!imail.load_from_str_move(pbuff.get(), node_stat.st_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)

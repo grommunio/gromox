@@ -79,7 +79,7 @@ MIME::~MIME()
  *		TRUE				OK to parse mime buffer
  *		FALSE				fail to parse mime buffer, there's error inside
  */
-bool MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
+bool MIME::load_from_str_move(MIME *pmime_parent, char *in_buff, size_t length)
 {
 	auto pmime = this;
 	size_t current_offset = 0;

@@ -1999,7 +1999,7 @@ static void zc_unwrap_smime(MAIL &ma) try
 		return;
 	written_so_far += len;
 	MAIL m2(g_mime_pool);
-	if (!m2.retrieve(ctbuf.get(), written_so_far))
+	if (!m2.load_from_str_move(ctbuf.get(), written_so_far))
 		return;
 	m2.buffer = ctbuf.release();
 	ma = std::move(m2);
@@ -2014,7 +2014,7 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 	
 	auto pinfo = zs_get_info();
 	MAIL imail(g_mime_pool);
-	if (!imail.retrieve(peml_bin->pc, peml_bin->cb))
+	if (!imail.load_from_str_move(peml_bin->pc, peml_bin->cb))
 		return NULL;
 	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
 		zc_unwrap_smime(imail);
@@ -2074,7 +2074,7 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 		return nullptr;
 	memcpy(pbuff, pical_bin->pb, pical_bin->cb);
 	pbuff[pical_bin->cb] = '\0';
-	if (!ical.retrieve(pbuff))
+	if (!ical.load_from_str_move(pbuff))
 		return NULL;
 	common_util_set_dir(pstore->get_dir());
 	return oxcical_import_single(tmzone, ical, common_util_alloc,
@@ -2094,7 +2094,7 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 		gx_strlcpy(tmzone, common_util_get_default_timezone(), std::size(tmzone));
 
 	ICAL icobj;
-	if (!icobj.retrieve(ical_data))
+	if (!icobj.load_from_str_move(ical_data))
 		return ecError;
 	common_util_set_dir(store->get_dir());
 	return oxcical_import_multi(tmzone, icobj, common_util_alloc,
@@ -2142,7 +2142,7 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	memcpy(pbuff, pvcf_bin->pb, pvcf_bin->cb);
 	pbuff[pvcf_bin->cb] = '\0';
 	vcard vcard;
-	auto ret = vcard.retrieve_single(pbuff);
+	auto ret = vcard.load_single_from_str_move(pbuff);
 	if (ret != ecSuccess)
 		return nullptr;
 	common_util_set_dir(pstore->get_dir());
@@ -2154,7 +2154,7 @@ ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
     std::vector<message_ptr> &msgvec) try
 {
 	std::vector<vcard> cardvec;
-	auto ret = vcard_retrieve_multi(vcf_data, cardvec);
+	auto ret = vcard_load_multi_from_str_move(vcf_data, cardvec);
 	if (ret != ecSuccess)
 		return ret;
 	common_util_set_dir(store->get_dir());

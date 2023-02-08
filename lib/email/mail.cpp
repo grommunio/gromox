@@ -52,7 +52,7 @@ void MAIL::clear()
  *		TRUE				OK
  *		FALSE				fail
  */
-bool MAIL::retrieve(char *in_buff, size_t length)
+bool MAIL::load_from_str_move(char *in_buff, size_t length)
 {
 	auto pmail = this;
 
@@ -68,7 +68,7 @@ bool MAIL::retrieve(char *in_buff, size_t length)
 		mlog(LV_DEBUG, "mail: failed to get mime from pool");
 		return false;
 	}
-	if (!pmime->retrieve(nullptr, in_buff, length)) {
+	if (!pmime->load_from_str_move(nullptr, in_buff, length)) {
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
 	}
@@ -94,7 +94,7 @@ bool MAIL::retrieve(char *in_buff, size_t length)
 		mlog(LV_DEBUG, "mail: failed to get mime from pool");
 		return false;
 	}
-	if (!pmime->retrieve(nullptr, in_buff, length)) {
+	if (!pmime->load_from_str_move(nullptr, in_buff, length)) {
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
 	}
@@ -136,7 +136,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			mlog(LV_DEBUG, "mail: failed to get mime from pool");
 			return false;
 		}
-		if (!pmime->retrieve(pmime_parent, ptr_last, ptr - ptr_last)) {
+		if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr - ptr_last)) {
 			pmail->pmime_pool->put_mime(pmime);
 			return false;
 		}
@@ -184,7 +184,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		mlog(LV_DEBUG, "mail: failed to get mime from pool");
 		return false;
 	}
-	if (!pmime->retrieve(pmime_parent, ptr_last, ptr_end - ptr_last)) {
+	if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr_end - ptr_last)) {
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
 	}
@@ -824,7 +824,7 @@ bool MAIL::dup(MAIL *pmail_dst)
 		size = STREAM_BLOCK_SIZE;
 	}
 	tmp_stream.clear();
-	if (!pmail_dst->retrieve(pbuff, offset)) {
+	if (!pmail_dst->load_from_str_move(pbuff, offset)) {
 		free(pbuff);
 		return false;
 	} else {
@@ -888,7 +888,7 @@ bool MAIL::transfer_dot(MAIL *pmail_dst, bool add_dot)
 	}
 	
 	tmp_stream.clear();
-	if (!pmail_dst->retrieve(pbuff,  offset)) {
+	if (!pmail_dst->load_from_str_move(pbuff, offset)) {
 		free(pbuff);
 		return false;
 	} else {

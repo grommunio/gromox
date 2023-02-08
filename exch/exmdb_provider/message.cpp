@@ -2772,7 +2772,7 @@ static ec_error_t message_forward_message(const char *from_address,
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return ecError;
 		imail = MAIL(common_util_get_mime_pool());
-		if (!imail.retrieve(pbuff.get(), node_stat.st_size))
+		if (!imail.load_from_str_move(pbuff.get(), node_stat.st_size))
 			return ecError;
 		auto pmime = imail.get_head();
 		if (pmime == nullptr)

@@ -698,7 +698,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			return 1918;
 		}
 		if (eml_path.size() == 0 ||
-		    !mjson.retrieve(buff, len, eml_path.c_str()))
+		    !mjson.load_from_str_move(buff, len, eml_path.c_str()))
 			return 1923;
 	}
 
@@ -1793,7 +1793,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		temp_file.writeline("junk");
 		imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 		dir_tree temp_tree(imap_parser_get_dpool());
-		temp_tree.retrieve(&temp_file);
+		temp_tree.load_from_memfile(&temp_file);
 		len = 0;
 		temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
@@ -1889,7 +1889,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	dir_tree temp_tree(imap_parser_get_dpool());
-	temp_tree.retrieve(&temp_file);
+	temp_tree.load_from_memfile(&temp_file);
 	len = 0;
 	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern)) {
 		auto pdir = temp_tree.match("INBOX");
@@ -1989,7 +1989,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	temp_file1.writeline("junk");
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file1);
 	dir_tree temp_tree(imap_parser_get_dpool());
-	temp_tree.retrieve(&temp_file1);
+	temp_tree.load_from_memfile(&temp_file1);
 	mem_file_free(&temp_file1);
 	len = 0;
 	while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
@@ -2151,7 +2151,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 	}
 	MAIL imail(imap_parser_get_mpool());
-	if (!imail.retrieve(argv[argc-1], strlen(argv[argc-1])))
+	if (!imail.load_from_str_move(argv[argc-1], strlen(argv[argc-1])))
 		return 1908;
 	strcpy(flag_buff, "(");
 	if (b_seen)
@@ -2365,7 +2365,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	pcontext->message_fd = -1;
 	memcpy(&tmp_len, pbuff.get(), sizeof(tmp_len));
 	MAIL imail(imap_parser_get_mpool());
-	if (!imail.retrieve(pbuff.get() + tmp_len, node_stat.st_size - tmp_len)) {
+	if (!imail.load_from_str_move(&pbuff[tmp_len], node_stat.st_size - tmp_len)) {
 		imail.clear();
 		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)

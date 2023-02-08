@@ -76,7 +76,7 @@ struct DIR_NODE {
 struct dir_tree {
 	dir_tree(alloc_limiter<DIR_NODE> *);
 	~dir_tree();
-	void retrieve(MEM_FILE *);
+	void load_from_memfile(MEM_FILE *);
 	DIR_NODE *match(const char *path);
 	static DIR_NODE *get_child(DIR_NODE *);
 

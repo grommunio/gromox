@@ -154,7 +154,7 @@ MJSON::~MJSON()
  *                          or seek file descriptor in
  *                          message, path cannot be NULL.
  */
-BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath) try
+BOOL MJSON::load_from_str_move(char *digest_buff, int length, const char *inpath) try
 {
 	auto pjson = this;
 	BOOL b_none;
@@ -653,7 +653,8 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			digest_buff[rdret] = '\0';
 			fd.close_rd();
 			MJSON temp_mjson(pmime->ppool);
-			if (!temp_mjson.retrieve(digest_buff, node_stat.st_size, storage_path)) {
+			if (!temp_mjson.load_from_str_move(digest_buff,
+			    node_stat.st_size, storage_path)) {
 				free(digest_buff);
 				goto RFC822_FAILURE;
 			}
@@ -1128,7 +1129,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	
 	MJSON temp_mjson(pmime->ppool);
 	MAIL imail(pbuild->ppool);
-	if (!imail.retrieve(pbuff.get(), length)) {
+	if (!imail.load_from_str_move(pbuff.get(), length)) {
 		pbuild->build_result = FALSE;
 		return;
 	} else {
@@ -1191,7 +1192,8 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		}
 		close(fd);
 		
-		if (!temp_mjson.retrieve(digest_buff, digest_len, pbuild->storage_path)) {
+		if (!temp_mjson.load_from_str_move(digest_buff, digest_len,
+		    pbuild->storage_path)) {
 			if (remove(dgt_path) < 0 && errno != ENOENT)
 				mlog(LV_WARN, "W-1377: remove %s: %s", dgt_path, strerror(errno));
 			if (remove(msg_path) < 0 && errno != ENOENT)
@@ -1295,9 +1297,9 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 			}
 			close(fd);
 			pjson->clear();
-			if (!pjson->retrieve(digest_buff, node_stat.st_size, temp_path)) {
-				/* was never implemented */
-			}
+			if (!pjson->load_from_str_move(digest_buff,
+			    node_stat.st_size, temp_path))
+				/* was never implemented */;
 			strcpy(mime_id, pdot + 1);
 			return TRUE;
 	}

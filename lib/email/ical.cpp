@@ -405,7 +405,7 @@ static bool ical_retrieve_component(ical_component &comp,
 	return false;
 }
 
-bool ical::retrieve(char *in_buff)
+bool ical::load_from_str_move(char *in_buff)
 {
 	auto pical = this;
 	char *pline;

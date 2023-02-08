@@ -325,7 +325,7 @@ static void *mdl_thrwork(void *arg)
 				mlog(LV_ERR, "exmdb_local: partial read from %s", temp_path.c_str());
 				continue;
 			}
-			if (!pcontext->pmail->retrieve(pbuff, mess_len)) {
+			if (!pcontext->pmail->load_from_str_move(pbuff, mess_len)) {
 				free(pbuff);
 				mlog(LV_ERR, "exmdb_local: failed to retrieve message %s in "
 				       "cache queue into mail object", temp_path.c_str());

@@ -19,7 +19,7 @@ using RCPTS_FIELDS_ENUM = bool (*)(const std::vector<dsn_field> &, void *);
 using DSN_FIELDS_ENUM = bool (*)(const char *, const char *, void *);
 
 struct GX_EXPORT DSN {
-	bool retrieve(char *in_buff, size_t length);
+	bool load_from_str_move(char *in_buff, size_t length);
 	void clear() {
 		message_fields.clear();
 		rcpts_fields.clear();

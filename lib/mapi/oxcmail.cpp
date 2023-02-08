@@ -2310,7 +2310,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 				if (!utf8_check(pcontent.get() + content_len + 1))
 					utf8_filter(pcontent.get() + content_len + 1);
 				vcard vcard;
-				auto ret = vcard.retrieve_single(pcontent.get() + content_len + 1);
+				auto ret = vcard.load_single_from_str_move(pcontent.get() + content_len + 1);
 				if (ret == ecSuccess &&
 				    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
 					attachment_content_set_embedded_internal(pattachment, pmsg);
@@ -2347,7 +2347,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			return;
 		}
 		MAIL mail(pmime_enum->pmime_pool);
-		if (mail.retrieve(pcontent.get(), content_len)) {
+		if (mail.load_from_str_move(pcontent.get(), content_len)) {
 			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME);
 			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME_A);
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION);
@@ -2934,7 +2934,7 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 
 	DSN dsn;
-	if (!dsn.retrieve(tmp_buff, content_len))
+	if (!dsn.load_from_str_move(tmp_buff, content_len))
 		return NULL;
 	dsn_info.action_severity = -1;
 	dsn.enum_rcpts_fields(oxcmail_enum_dsn_action_fields,
@@ -3058,7 +3058,7 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 
 	DSN dsn;
-	if (!dsn.retrieve(tmp_buff, content_len) ||
+	if (!dsn.load_from_str_move(tmp_buff, content_len) ||
 	    !dsn.enum_fields(*dsn.get_message_fields(), oxcmail_enum_mdn, pmsg))
 		return NULL;
 	dsn.clear();
@@ -3520,7 +3520,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		} else {
 			if (!utf8_check(pcontent + content_len + 1))
 				utf8_filter(pcontent + content_len + 1);
-			if (!ical.retrieve(pcontent + content_len + 1)) {
+			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
 				mime_enum.pcalendar = nullptr;
 			} else {
 				pmsg1 = oxcical_import_single(str_zone, ical, alloc,
@@ -5068,7 +5068,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 		return false;
 	auto cl_0 = make_scope_exit([&]() { origmail.pmime_pool->put_mime(sec); });
 	char buf[512];
-	if (!sec->retrieve(nullptr, hdrs->pc, hdrs->cb))
+	if (!sec->load_from_str_move(nullptr, hdrs->pc, hdrs->cb))
 		return false;
 	if (!sec->get_field("Content-Type", buf, arsizeof(buf)))
 		return false;
