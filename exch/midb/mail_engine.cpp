@@ -214,7 +214,7 @@ static std::unique_ptr<char[]> mail_engine_ct_to_utf8(const char *charset,
 }
 
 static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
-    char *digest_buff) try
+    Json::Value &digest) try
 {
 	size_t size;
 	char temp_path[256];
@@ -224,9 +224,8 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 	size_t slurp_size = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(temp_path, &slurp_size));
 	if (slurp_data != nullptr) {
-		if (slurp_size >= MAX_DIGLEN)
+		if (!json_from_str(slurp_data.get(), digest))
 			return 0;
-		gx_strlcpy(digest_buff, slurp_data.get(), MAX_DIGLEN);
 	} else if (errno != ENOENT) {
 		mlog(LV_ERR, "E-1131: read %s: %s", temp_path, strerror(errno));
 		return 0;
@@ -242,23 +241,21 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 		if (!imail.load_from_str_move(slurp_data.get(), slurp_size))
 			return 0;
 		slurp_data.reset();
-		Json::Value digest;
 		if (imail.get_digest(&size, digest) <= 0)
 			return 0;
 		imail.clear();
 		digest["file"] = "";
 		auto djson = json_to_str(digest);
-		if (djson.size() >= MAX_DIGLEN - 1)
-			return 0;
-		gx_strlcpy(digest_buff, djson.c_str(), MAX_DIGLEN);
 		snprintf(temp_path, 256, "%s/ext/%s",
 			common_util_get_maildir(), mid_string);
 		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() >= 0) {
-			auto wr_ret = HXio_fullwrite(fd.get(), digest_buff, djson.size());
+			auto wr_ret = HXio_fullwrite(fd.get(), djson.c_str(), djson.size());
 			if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
 			    fd.close_wr() != 0)
 				mlog(LV_ERR, "E-2082: write %s: %s", temp_path, strerror(errno));
+		} else {
+			mlog(LV_ERR, "E-1137: open %s for write: %s", temp_path, strerror(errno));
 		}
 	}
 	auto pstmt = gx_sql_prep(psqlite, "SELECT uid, recent, read,"
@@ -270,15 +267,15 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 	if (sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
 	auto folder_id = pstmt.col_uint64(8);
-	set_digest(digest_buff, MAX_DIGLEN, "file", mid_string);
-	set_digest(digest_buff, MAX_DIGLEN, "uid", pstmt.col_int64(0));
-	set_digest(digest_buff, MAX_DIGLEN, "recent", pstmt.col_int64(1));
-	set_digest(digest_buff, MAX_DIGLEN, "read", pstmt.col_int64(2));
-	set_digest(digest_buff, MAX_DIGLEN, "unsent", pstmt.col_int64(3));
-	set_digest(digest_buff, MAX_DIGLEN, "flag", pstmt.col_int64(4));
-	set_digest(digest_buff, MAX_DIGLEN, "replied", pstmt.col_int64(5));
-	set_digest(digest_buff, MAX_DIGLEN, "forwarded", pstmt.col_int64(6));
-	set_digest(digest_buff, MAX_DIGLEN, "deleted", pstmt.col_int64(7));
+	digest["file"]      = mid_string;
+	digest["uid"]       = Json::Value::UInt64(pstmt.col_int64(0));
+	digest["recent"]    = Json::Value::UInt64(pstmt.col_int64(1));
+	digest["read"]      = Json::Value::UInt64(pstmt.col_int64(2));
+	digest["unsent"]    = Json::Value::UInt64(pstmt.col_int64(3));
+	digest["flag"]      = Json::Value::UInt64(pstmt.col_int64(4));
+	digest["replied"]   = Json::Value::UInt64(pstmt.col_int64(5));
+	digest["forwarded"] = Json::Value::UInt64(pstmt.col_int64(6));
+	digest["deleted"]   = Json::Value::UInt64(pstmt.col_int64(7));
 	return folder_id;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1139: ENOMEM");
@@ -476,7 +473,7 @@ enum ctm_field {
 
 static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
     sqlite3_stmt *pstmt_message, const char *mid_string, int id, int total_mail,
-    uint32_t uidnext, const CONDITION_TREE *ptree)
+    uint32_t uidnext, const CONDITION_TREE *ptree) try
 {
 	int sp = 0;
 	BOOL b_loaded;
@@ -492,7 +489,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	KEYWORD_ENUM keyword_enum;
 	const CONDITION_TREE *trees[1024];
 	CONDITION_TREE::const_iterator pnode, nodes[1024];
-	char digest_buff[MAX_DIGLEN];
+	std::string djson;
 	
 #define PUSH_MATCH(TREE, NODE, CONJUNCTION, RESULT) \
 		{trees[sp]=TREE;nodes[sp]=NODE;conjunctions[sp]=CONJUNCTION;results[sp]=RESULT;sp++;}
@@ -550,14 +547,18 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			case midb_cond::body: {
 				if (!b_loaded) {
-					if (mail_engine_get_digest(psqlite, mid_string, digest_buff) == 0)
+					Json::Value digest;
+					if (mail_engine_get_digest(psqlite, mid_string,
+					    digest) == 0)
 						break;
+					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
 				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
-				if (!temp_mjson.load_from_str_move(digest_buff, strlen(digest_buff), temp_buff))
+				if (!temp_mjson.load_from_str_move(djson.data(),
+				    djson.size(), temp_buff))
 					break;
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
@@ -570,11 +571,14 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 			}
 			case midb_cond::cc: {
 				if (!b_loaded) {
-					if (mail_engine_get_digest(psqlite, mid_string, digest_buff) == 0)
+					Json::Value digest;
+					if (mail_engine_get_digest(psqlite, mid_string,
+					    digest) == 0)
 						break;
+					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
-				if (!get_digest(digest_buff, "cc", temp_buff, arsizeof(temp_buff)) ||
+				if (!get_digest(djson.data(), "cc", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
 					break;
@@ -615,11 +619,14 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			case midb_cond::from: {
 				if (!b_loaded) {
-					if (mail_engine_get_digest(psqlite, mid_string, digest_buff) == 0)
+					Json::Value digest;
+					if (mail_engine_get_digest(psqlite, mid_string,
+					    digest) == 0)
 						break;
+					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
-				if (!get_digest(digest_buff, "from", temp_buff, arsizeof(temp_buff)) ||
+				if (!get_digest(djson.data(), "from", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
 					break;
@@ -756,12 +763,14 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			case midb_cond::subject: {
 				if (!b_loaded) {
-					if (mail_engine_get_digest(psqlite,
-					    mid_string, digest_buff) == 0)
+					Json::Value digest;
+					if (mail_engine_get_digest(psqlite, mid_string,
+					    digest) == 0)
 						break;
+					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
-				if (!get_digest(digest_buff, "subject", temp_buff, arsizeof(temp_buff)) ||
+				if (!get_digest(djson.data(), "subject", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
 					break;
@@ -775,12 +784,14 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 			}
 			case midb_cond::text: {
 				if (!b_loaded) {
-					if (mail_engine_get_digest(psqlite,
-					    mid_string, digest_buff) == 0)
+					Json::Value digest;
+					if (mail_engine_get_digest(psqlite, mid_string,
+					    digest) == 0)
 						break;
+					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
-				if (get_digest(digest_buff, "cc", temp_buff, arsizeof(temp_buff)) &&
+				if (get_digest(djson.data(), "cc", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -792,7 +803,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				}
 				if (b_result1)
 					break;
-				if (get_digest(digest_buff, "from", temp_buff, arsizeof(temp_buff)) &&
+				if (get_digest(djson.data(), "from", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -804,7 +815,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				}
 				if (b_result1)
 					break;
-				if (get_digest(digest_buff, "subject", temp_buff, arsizeof(temp_buff)) &&
+				if (get_digest(djson.data(), "subject", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -816,7 +827,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				}
 				if (b_result1)
 					break;
-				if (get_digest(digest_buff, "to", temp_buff, arsizeof(temp_buff)) &&
+				if (get_digest(djson.data(), "to", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -831,7 +842,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
-				if (!temp_mjson.load_from_str_move(digest_buff, strlen(digest_buff), temp_buff))
+				if (!temp_mjson.load_from_str_move(djson.data(),
+				    djson.size(), temp_buff))
 					break;
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
@@ -844,12 +856,14 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 			}
 			case midb_cond::to: {
 				if (!b_loaded) {
-					if (mail_engine_get_digest(psqlite,
-					    mid_string, digest_buff) == 0)
+					Json::Value digest;
+					if (mail_engine_get_digest(psqlite, mid_string,
+					    digest) == 0)
 						break;
+					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
-				if (!get_digest(digest_buff, "to", temp_buff, arsizeof(temp_buff)) ||
+				if (!get_digest(djson.data(), "to", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
 					break;
@@ -947,6 +961,9 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 }
 /* end of recursion procedure */
 
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1133: ENOMEM");
+	return false;
 }
 
 static int mail_engine_ct_compile_criteria(int argc,
@@ -1533,24 +1550,19 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 	char temp_path[256];
 	char temp_path1[256];
 	char mid_string1[128];
-	struct stat node_stat;
 	MESSAGE_CONTENT *pmsgctnt;
-	char temp_buff[MAX_DIGLEN];
 	
 	temp_path[0] = '\0';
 	temp_path1[0] = '\0';
 	dir = common_util_get_maildir();
+	std::string djson;
 	if (NULL != mid_string) {
 		sprintf(temp_path, "%s/ext/%s", dir, mid_string);
-		wrapfd fd = open(temp_path, O_RDONLY);
-		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
-		    node_stat.st_size >= MAX_DIGLEN)
-			return;
 		size_t slurp_size = 0;
-		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(fd.get(), &slurp_size));
+		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(temp_path, &slurp_size));
 		if (slurp_data == nullptr)
 			return;
-		gx_strlcpy(temp_buff, slurp_data.get(), MAX_DIGLEN);
+		djson.assign(slurp_data.get(), slurp_size);
 	} else {
 		if (!common_util_switch_allocator())
 			return;
@@ -1575,10 +1587,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		if (imail.get_digest(&size, digest) <= 0)
 			return;
 		digest["file"] = "";
-		auto djson = json_to_str(digest);
-		if (djson.size() >= std::size(temp_buff) - 1)
-			return;
-		gx_strlcpy(temp_buff, djson.data(), std::size(temp_buff));
+		djson = json_to_str(digest);
 		snprintf(mid_string1, arsizeof(mid_string1), "%lld.%u.midb",
 		         static_cast<long long>(time(nullptr)), ++g_sequence_id);
 		mid_string = mid_string1;
@@ -1589,7 +1598,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		auto wr_ret = HXio_fullwrite(fd.get(), djson.c_str(), djson.size());
 		if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
 		    fd.close_wr() != 0) {
-			mlog(LV_ERR, "E-1135: write %s: %s", temp_path, strerror(errno));
+			mlog(LV_ERR, "E-1134: write %s: %s", temp_path, strerror(errno));
 			return;
 		}
 		sprintf(temp_path1, "%s/eml/%s", dir, mid_string1);
@@ -1602,8 +1611,9 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 	(*puidnext) ++;
 	auto b_unsent = !!(message_flags & MSGFLAG_UNSENT);
 	auto b_read   = !!(message_flags & MSGFLAG_READ);
-	mail_engine_extract_digest_fields(temp_buff, subject, arsizeof(subject),
-		from, arsizeof(from), rcpt, arsizeof(rcpt), &size);
+	mail_engine_extract_digest_fields(djson.c_str(), subject,
+		std::size(subject), from, std::size(from), rcpt,
+		std::size(rcpt), &size);
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, message_id);
 	sqlite3_bind_text(pstmt, 2, mid_string, -1, SQLITE_STATIC);
@@ -2436,11 +2446,9 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 {
 	int offset;
 	int length;
-	int temp_len;
 	int idx1, idx2;
 	int total_mail;
 	char sql_string[1024];
-	char temp_buff[MAX_DIGLEN];
 	
 	if ((argc != 5 && argc != 7) || strlen(argv[1]) >= 256 ||
 	    strlen(argv[2]) >= 1024)
@@ -2513,20 +2521,19 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	temp_len = sprintf(temp_buff, "TRUE %d\r\n", length);
+	char temp_buff[32];
+	auto temp_len = gx_snprintf(temp_buff, std::size(temp_buff), "TRUE %d\r\n", length);
 	auto ret = cmd_write(sockd, temp_buff, temp_len);
 	if (ret != 0)
 		return ret;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		Json::Value digest;
 		if (mail_engine_get_digest(pidb->psqlite,
-		    pstmt.col_text(0), temp_buff) == 0)
+		    pstmt.col_text(0), digest) == 0)
 			return MIDB_E_DIGEST;
-		temp_len = strlen(temp_buff);
-		temp_buff[temp_len] = '\r';
-		temp_len ++;
-		temp_buff[temp_len] = '\n';
-		temp_len ++;
-		ret = cmd_write(sockd, temp_buff, temp_len);
+		auto djson = json_to_str(digest);
+		djson.append("\r\n");
+		ret = cmd_write(sockd, djson.c_str(), djson.size());
 		if (ret != 0)
 			return ret;
 	}
@@ -2591,7 +2598,7 @@ static bool system_services_lang_to_charset(const char *lang, char (&charset)[32
 	return true;
 }
 
-static int mail_engine_minst(int argc, char **argv, int sockd)
+static int mail_engine_minst(int argc, char **argv, int sockd) try
 {
 	int user_id;
 	char lang[32];
@@ -2712,6 +2719,9 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	    e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
 	return cmd_write(sockd, "TRUE\r\n");
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1136: ENOMEM");
+	return MIDB_E_NO_MEMORY;
 }
 
 /*
@@ -3754,7 +3764,6 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	BOOL b_asc;
 	int total_mail = 0;
 	char sql_string[1024];
-	char temp_buff[MAX_DIGLEN + 16];
 	
 	if (argc != 7 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
@@ -3863,19 +3872,23 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 			return iret;
 	}
 
-	auto temp_len = sprintf(temp_buff, "TRUE %zu\r\n", temp_list.size());
+	char temp_buff[32];
+	auto temp_len = gx_snprintf(temp_buff, std::size(temp_buff),
+	                "TRUE %zu\r\n", temp_list.size());
 	auto ret = cmd_write(sockd, temp_buff, temp_len);
 	if (ret != 0)
 		return ret;
 	for (const auto &dt : temp_list) {
-		temp_len = snprintf(temp_buff, std::size(temp_buff), "%d ", dt.second - 1);
+		temp_len = gx_snprintf(temp_buff, std::size(temp_buff),
+		           "%d ", dt.second - 1);
+		Json::Value digest;
 		if (mail_engine_get_digest(pidb->psqlite, dt.first.c_str(),
-		    temp_buff + temp_len) == 0)
+		    digest) == 0)
 			return MIDB_E_DIGEST;
-		temp_len = strlen(temp_buff);
-		temp_buff[temp_len++] = '\r';
-		temp_buff[temp_len++] = '\n';
-		ret = cmd_write(sockd, temp_buff, temp_len);
+		auto djson = json_to_str(digest);
+		djson.insert(0, temp_buff);
+		djson.append("\r\n");
+		ret = cmd_write(sockd, djson.c_str(), djson.size());
 		if (ret != 0)
 			return ret;
 	}
