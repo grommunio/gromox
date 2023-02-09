@@ -324,7 +324,7 @@ static bool exmdb_local_lang_to_charset(const char *lang, char (&charset)[32])
 	return true;
 }
 
-int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
+int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 {
 	MAIL *pmail;
 	int tmp_len;
@@ -381,27 +381,23 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		else
 			hostname[arsizeof(hostname)-1] = '\0';
 	}
-	std::string mid_string, json_string, eml_path;
-	int fd = -1;
-	try {
-		mid_string = std::to_string(cur_time) + "." +
-		             std::to_string(sequence_ID) + "." + hostname;
-		eml_path = std::string(home_dir) + "/eml/" + mid_string;
-		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, DEF_MODE);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1472: ENOMEM");
-	}
-	if (-1 == fd) {
+	auto mid_string = std::to_string(cur_time) + "." +
+	                  std::to_string(sequence_ID) + "." + hostname;
+	auto eml_path = std::string(home_dir) + "/eml/" + mid_string;
+	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, DEF_MODE);
+	if (fd.get() < 0) {
+		auto se = errno;
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
 		exmdb_local_log_info(pcontext, address, LV_ERR,
-			"open WR %s: %s", eml_path.c_str(), strerror(errno));
+			"open WR %s: %s", eml_path.c_str(), strerror(se));
+		errno = se;
 		return DELIVERY_OPERATION_FAILURE;
 	}
 	
-	if (!pmail->to_file(fd)) {
-		close(fd);
+	if (!pmail->to_file(fd.get())) {
+		fd.close_rd();
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1386: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
@@ -412,7 +408,9 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			"%s: pmail->to_file failed for unspecified reasons", eml_path.c_str());
 		return DELIVERY_OPERATION_FAILURE;
 	}
-	close(fd);
+	auto ret = fd.close_wr();
+	if (ret < 0)
+		mlog(LV_ERR, "E-1120: close %s: %s", eml_path.c_str(), strerror(ret));
 
 	tmp_len = sprintf(temp_buff, "{\"file\":\"%s\",", mid_string.c_str());
 	int result = pmail->get_digest(&mess_len, temp_buff + tmp_len,
@@ -503,6 +501,9 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			LV_NOTICE, "user's mailbox is full");
 		return DELIVERY_MAILBOX_FULL;
 	}
+	return DELIVERY_OPERATION_FAILURE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1472: ENOMEM");
 	return DELIVERY_OPERATION_FAILURE;
 }
 
