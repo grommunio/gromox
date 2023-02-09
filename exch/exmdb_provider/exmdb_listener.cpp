@@ -135,7 +135,7 @@ int exmdb_listener_trigger_accept()
 		return 0;
 	}
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_listener_id, nullptr, mdpls_thrwork, nullptr);
+	auto ret = pthread_create4(&g_listener_id, nullptr, mdpls_thrwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "exmdb_provider: failed to create exmdb listener thread: %s", strerror(ret));
 		return -1;

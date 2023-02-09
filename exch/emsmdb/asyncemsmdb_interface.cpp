@@ -84,7 +84,7 @@ int asyncemsmdb_interface_run()
 	                   "wait_allocator", "http.cfg:context_num");
 	g_tag_hash_max = context_num;
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_id, nullptr, aemsi_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, aemsi_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "emsmdb: failed to create scanning thread "
 		       "for asyncemsmdb: %s", strerror(ret));
@@ -94,7 +94,7 @@ int asyncemsmdb_interface_run()
 	pthread_setname_np(g_scan_id, "asyncems/scan");
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		ret = pthread_create(&tid, nullptr, aemsi_thrwork, nullptr);
+		ret = pthread_create4(&tid, nullptr, aemsi_thrwork, nullptr);
 		if (ret != 0) {
 			mlog(LV_ERR, "emsmdb: failed to create wake up "
 			       "thread for asyncemsmdb: %s", strerror(ret));

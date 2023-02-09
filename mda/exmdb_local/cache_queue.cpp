@@ -72,7 +72,7 @@ int cache_queue_run()
     }
 	g_mess_id = cache_queue_retrieve_mess_ID();
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_thread_id, nullptr, mdl_thrwork, nullptr);
+	auto ret = pthread_create4(&g_thread_id, nullptr, mdl_thrwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		mlog(LV_ERR, "exmdb_local: failed to create timer thread: %s", strerror(ret));

@@ -251,15 +251,14 @@ int imap_parser_run()
     }
 	
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_thr_id, nullptr, imps_thrwork, nullptr);
+	auto ret = pthread_create4(&g_thr_id, nullptr, imps_thrwork, nullptr);
 	if (ret != 0) {
 		printf("[imap_parser]: failed to create sleeping list scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
 		return -11;
 	}
 	pthread_setname_np(g_thr_id, "parser/worker");
-	
-	ret = pthread_create(&g_scan_id, nullptr, imps_scanwork, nullptr);
+	ret = pthread_create4(&g_scan_id, nullptr, imps_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[imap_parser]: failed to create select hash scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;

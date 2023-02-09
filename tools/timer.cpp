@@ -315,7 +315,7 @@ int main(int argc, const char **argv) try
 	});
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		auto ret = pthread_create(&tid, nullptr, tmr_thrwork, nullptr);
+		auto ret = pthread_create4(&tid, nullptr, tmr_thrwork, nullptr);
 		if (ret != 0) {
 			printf("[system]: failed to create pool thread: %s\n", strerror(ret));
 			g_notify_stop = true;
@@ -338,7 +338,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	
-	auto ret = pthread_create(&thr_accept_id, nullptr, tmr_acceptwork,
+	auto ret = pthread_create4(&thr_accept_id, nullptr, tmr_acceptwork,
 	      reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));

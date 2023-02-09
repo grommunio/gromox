@@ -34,7 +34,6 @@
 #define MAX_THROWING_NUM		16
 #define SCAN_INTERVAL			1
 #define MAX_TIMES_NOT_SERVED	5
-#define THREAD_STACK_SIZE       0x400000
 
 using namespace gromox;
 
@@ -276,18 +275,10 @@ int transporter_run()
 	for (unsigned int i = g_threads_min; i < g_threads_max; ++i)
 		double_list_append_as_tail(&g_free_threads, &g_data_ptr[i].node);
 
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
-	auto ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-	if (ret != 0) {
-		mlog(LV_ERR, "transporter: pthread_attr_setstacksize: %s", strerror(ret));
-		return -1;
-	}
-
 	for (size_t i = 0; i < g_threads_min; ++i) {
 		g_data_ptr[i].wait_on_event = TRUE;
-		auto ret = pthread_create(&g_data_ptr[i].id, &attr, dxp_thrwork, &g_data_ptr[i]);
+		auto ret = pthread_create4(&g_data_ptr[i].id, nullptr,
+		           dxp_thrwork, &g_data_ptr[i]);
 		if (ret != 0) {
 			transporter_collect_hooks();
 			transporter_collect_resource();
@@ -301,7 +292,7 @@ int transporter_run()
 		double_list_append_as_tail(&g_threads_list, &g_data_ptr[i].node);
     }
 	/* create the scanning thread */
-	ret = pthread_create(&g_scan_id, nullptr, dxp_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, dxp_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		transporter_collect_hooks();
@@ -560,15 +551,6 @@ static void *dxp_thrwork(void *arg)
 static void *dxp_scanwork(void *arg)
 {
 	DOUBLE_LIST_NODE *pnode;
-	pthread_attr_t attr;
-
-	pthread_attr_init(&attr);
-	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&attr); });
-	auto ret = pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-	if (ret != 0) {
-		mlog(LV_ERR, "transporter: pthread_attr_setstacksize: %s", strerror(ret));
-		return nullptr;
-	}
 
 	while (!g_notify_stop) {
 		sleep(SCAN_INTERVAL);
@@ -587,7 +569,7 @@ static void *dxp_scanwork(void *arg)
 			continue;
 		}
 		auto pthr_data = static_cast<THREAD_DATA *>(pnode->pdata);
-		auto ret = pthread_create(&pthr_data->id, &attr, dxp_thrwork, pthr_data);
+		auto ret = pthread_create4(&pthr_data->id, nullptr, dxp_thrwork, pthr_data);
 		if (ret == 0) {
 			pthread_setname_np(pthr_data->id, "xprt/+");
 			tl_hold.lock();

@@ -4890,7 +4890,7 @@ int mail_engine_run()
 	}
 	g_alloc_mjson = mjson_allocator_init(g_table_size * 10);
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "mail_engine: failed to create scan thread: %s", strerror(ret));
 		return -5;

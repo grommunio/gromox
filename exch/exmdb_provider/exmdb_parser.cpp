@@ -340,7 +340,7 @@ void exmdb_parser_put_connection(std::shared_ptr<EXMDB_CONNECTION> &&pconnection
 	std::unique_lock chold(g_connection_lock);
 	auto stpair = g_connection_list.insert(pconnection);
 	chold.unlock();
-	auto ret = pthread_create(&pconnection->thr_id, nullptr, mdpps_thrwork, pconnection.get());
+	auto ret = pthread_create4(&pconnection->thr_id, nullptr, mdpps_thrwork, pconnection.get());
 	if (ret == 0)
 		return;
 	mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));

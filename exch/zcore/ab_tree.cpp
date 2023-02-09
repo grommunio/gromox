@@ -176,7 +176,7 @@ void ab_tree_init(const char *org_name, int base_size, int cache_interval)
 int ab_tree_run()
 {
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_id, nullptr, zcoreab_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, zcoreab_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "zcore: failed to create scanning thread: %s", strerror(ret));
 		g_notify_stop = true;

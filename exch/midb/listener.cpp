@@ -75,7 +75,7 @@ int listener_trigger_accept()
 	pthread_t thr_id;
 
 	g_notify_stop = false;
-	auto ret = pthread_create(&thr_id, nullptr, midls_thrwork, nullptr);
+	auto ret = pthread_create4(&thr_id, nullptr, midls_thrwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
 		return -1;

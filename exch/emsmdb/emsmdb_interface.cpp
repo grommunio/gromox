@@ -426,7 +426,7 @@ int emsmdb_interface_run()
 	g_user_hash_max = context_num + 1;
 	g_notify_hash_max = AVERAGE_NOTIFY_NUM * context_num;
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_id, nullptr, emsi_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, emsi_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		mlog(LV_ERR, "E-1447: pthread_create: %s", strerror(ret));

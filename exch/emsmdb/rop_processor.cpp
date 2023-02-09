@@ -306,7 +306,7 @@ void rop_processor_init(int average_handles, int scan_interval)
 int rop_processor_run()
 {
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
 	if (ret != 0) {
 		g_notify_stop = true;
 		mlog(LV_ERR, "emsmdb: failed to create scanning thread "

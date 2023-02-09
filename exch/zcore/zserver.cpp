@@ -623,7 +623,7 @@ void zserver_init(size_t table_size, int cache_interval, int ping_interval)
 int zserver_run()
 {
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "E-1443: pthread_create: %s", strerror(ret));
 		return -4;

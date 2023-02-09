@@ -99,7 +99,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 			if (NULL != pback) {
 		        pback->node.pdata = pback;
 				pback->sockd = -1;
-				ret = pthread_create(&pback->thr_id, nullptr, evst_thrwork, pback);
+				ret = pthread_create4(&pback->thr_id, nullptr, evst_thrwork, pback);
 				if (ret != 0) {
 					free(pback);
 					break;

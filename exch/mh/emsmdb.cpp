@@ -259,7 +259,7 @@ MhEmsmdbPlugin::MhEmsmdbPlugin(void** ppdata)
 	users.reserve(AVERAGE_SESSION_PER_CONTEXT*contextnum);
 	sessions.reserve(AVERAGE_SESSION_PER_CONTEXT*contextnum);
 	stop = false;
-	if (pthread_create(&scan, nullptr, &MhEmsmdbPlugin::scanWork, this)) {
+	if (pthread_create4(&scan, nullptr, &MhEmsmdbPlugin::scanWork, this)) {
 		stop = true;
 		throw std::runtime_error("failed to create scanning thread");
 	}

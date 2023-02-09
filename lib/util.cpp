@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iconv.h>
+#include <pthread.h>
 #include <random>
 #include <unistd.h>
 #include <json/reader.h>
@@ -891,6 +892,25 @@ size_t qp_encoded_size_estimate(const char *s, size_t n)
 		if (qp_nonprintable(*s) && *s != '\t' && *s != '\n' && *s != '\r')
 			enc += 2;
 	return enc;
+}
+
+int pthread_create4(pthread_t *t, std::nullptr_t, void *(*f)(void *), void *a) noexcept
+{
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	size_t tss = 0;
+	auto ret = pthread_attr_getstacksize(&attr, &tss);
+	if (ret == 0)
+		tss = std::max(tss, static_cast<size_t>(16UL << 20));
+	ret = pthread_attr_setstacksize(&attr, tss);
+	if (ret != 0) {
+		mlog(LV_ERR, "E-1135: pthread_attr_setstacksize: %s", strerror(ret));
+		pthread_attr_destroy(&attr);
+		return ret;
+	}
+	ret = pthread_create(t, &attr, f, a);
+	pthread_attr_destroy(&attr);
+	return ret;
 }
 
 }

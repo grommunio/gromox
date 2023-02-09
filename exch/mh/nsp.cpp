@@ -239,7 +239,7 @@ MhNspPlugin::MhNspPlugin(void** ppdata)
 	users.reserve(AVERAGE_SESSION_PER_CONTEXT*context_num);
 	sessions.reserve(AVERAGE_SESSION_PER_CONTEXT*context_num);
 	stop = false;
-	if (pthread_create(&scan, nullptr, &MhNspPlugin::scanWork, this)) {
+	if (pthread_create4(&scan, nullptr, &MhNspPlugin::scanWork, this)) {
 		stop = true;
 		throw std::runtime_error("failed to create scanning thread");
 	}

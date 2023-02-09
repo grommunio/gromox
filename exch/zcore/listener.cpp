@@ -62,7 +62,7 @@ int listener_run(const char *CS_PATH)
 		return -3;
 	}
 	g_notify_stop = false;
-	auto ret = pthread_create(&g_listener_id, nullptr, zcls_thrwork, nullptr);
+	auto ret = pthread_create4(&g_listener_id, nullptr, zcls_thrwork, nullptr);
 	if (ret != 0) {
 		close(g_listen_sockd);
 		mlog(LV_ERR, "listener: failed to create accept thread: %s", strerror(ret));

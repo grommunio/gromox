@@ -100,7 +100,7 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 		}
 
 		g_notify_stop = false;
-		auto ret = pthread_create(&g_scan_id, nullptr, evpx_scanwork, nullptr);
+		auto ret = pthread_create4(&g_scan_id, nullptr, evpx_scanwork, nullptr);
 		if (ret != 0) {
 			g_notify_stop = true;
 			g_back_list.clear();

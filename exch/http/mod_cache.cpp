@@ -173,7 +173,7 @@ int mod_cache_run() try
 		return ret;
 	g_context_list = std::make_unique<cache_context[]>(g_context_num);
 	g_notify_stop = false;
-	ret = pthread_create(&g_scan_tid, nullptr, mod_cache_scanwork, nullptr);
+	ret = pthread_create4(&g_scan_tid, nullptr, mod_cache_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "mod_cache: failed to create scanning thread: %s", strerror(ret));
 		g_notify_stop = true;

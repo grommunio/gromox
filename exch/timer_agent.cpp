@@ -89,7 +89,7 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 		}
 
 		g_notify_stop = false;
-		auto ret = pthread_create(&g_scan_id, nullptr, tmrag_scanwork, nullptr);
+		auto ret = pthread_create4(&g_scan_id, nullptr, tmrag_scanwork, nullptr);
 		if (ret != 0) {
 			g_notify_stop = true;
 			g_back_list.clear();

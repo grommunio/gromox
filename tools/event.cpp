@@ -233,8 +233,6 @@ void qsock::sk_close()
 
 int main(int argc, const char **argv) try
 {
-	pthread_attr_t thr_attr;
-
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv,
 	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
@@ -279,13 +277,6 @@ int main(int argc, const char **argv) try
 	g_file_alloc = alloc_limiter<file_block>(g_threads_num * FIFO_AVERAGE_LENGTH,
 	               "file_alloc", "event.cfg:threads_num");
 	g_dequeue_list1.reserve(g_threads_num);
-	pthread_attr_init(&thr_attr);
-	auto cl_3 = make_scope_exit([&]() { pthread_attr_destroy(&thr_attr); });
-	auto ret = pthread_attr_setstacksize(&thr_attr, 1U << 20);
-	if (ret != 0) {
-		fprintf(stderr, "pthread_attr_setstacksize: %s\n", strerror(ret));
-		return EXIT_FAILURE;
-	}
 	
 	std::vector<pthread_t> tidlist;
 	tidlist.reserve(g_threads_num * 2);
@@ -299,7 +290,7 @@ int main(int argc, const char **argv) try
 	});
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		ret = pthread_create(&tid, &thr_attr, ev_enqwork, nullptr);
+		auto ret = pthread_create4(&tid, nullptr, ev_enqwork, nullptr);
 		if (ret != 0) {
 			g_notify_stop = true;
 			printf("[system]: failed to create enqueue pool thread: %s\n", strerror(ret));
@@ -310,7 +301,7 @@ int main(int argc, const char **argv) try
 		pthread_setname_np(tid, buf);
 		tidlist.push_back(tid);
 
-		ret = pthread_create(&tid, &thr_attr, ev_deqwork, nullptr);
+		ret = pthread_create4(&tid, nullptr, ev_deqwork, nullptr);
 		if (ret != 0) {
 			g_notify_stop = true;
 			printf("[system]: failed to create dequeue pool thread: %s\n", strerror(ret));
@@ -333,8 +324,8 @@ int main(int argc, const char **argv) try
 	}
 
 	pthread_t acc_thr{}, scan_thr{};
-	ret = pthread_create(&acc_thr, nullptr, ev_acceptwork,
-	      reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
+	auto ret = pthread_create4(&acc_thr, nullptr, ev_acceptwork,
+	           reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		g_notify_stop = true;
@@ -345,7 +336,7 @@ int main(int argc, const char **argv) try
 		pthread_join(acc_thr, nullptr);
 	});
 	pthread_setname_np(acc_thr, "accept");
-	ret = pthread_create(&scan_thr, nullptr, ev_scanwork, nullptr);
+	ret = pthread_create4(&scan_thr, nullptr, ev_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[system]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;

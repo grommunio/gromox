@@ -228,7 +228,7 @@ int rpc_parser_run()
 	int ret = 0;
 	for (unsigned int i = 0; i < g_thread_num; ++i) {
 		pthread_t tid;
-		ret = pthread_create(&tid, nullptr, zcrp_thrwork, nullptr);
+		ret = pthread_create4(&tid, nullptr, zcrp_thrwork, nullptr);
 		if (ret != 0) {
 			mlog(LV_ERR, "rpc_parser: failed to create pool thread: %s", strerror(ret));
 			rpc_parser_stop();
