@@ -346,10 +346,10 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	${AM_V_GEN}${MKDIR_P} include/gromox
 	${AM_V_at}sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \
 	 -e 's|#define PKGLIBDIR .*|#define PKGLIBDIR "${pkglibdir}"|' \
-	 -e 's|#define PKGDATADIR .*|#define PKGDATADIR "${pkgdatadir}"|' \
-	 -e 's|#define PKGSTATEDIR .*|#define PKGSTATEDIR "${localstatedir}/lib/${PACKAGE_NAME}"|' \
-	 -e 's|#define PKGLOGDIR .*|#define PKGLOGDIR "${localstatedir}/log/${PACKAGE_NAME}"|' \
+	 -e 's|#define PKGLIBEXECDIR .*|#define PKGLIBEXECDIR "${pkglibexecdir}"|' \
 	 -e 's|#define DATADIR .*|#define DATADIR "${datadir}"|' \
+	 -e 's|#define LOCALSTATEDIR .*|#define LOCALSTATEDIR "${localstatedir}"|' \
+	 -e 's|#define PKGDATADIR .*|#define PKGDATADIR "${pkgdatadir}"|' \
 		<${srcdir}/include/gromox/paths.h.in >"$@.tmp"
 	${AM_V_at}if ! cmp "$@" "$@.tmp" 2>/dev/null; then mv "$@.tmp" "$@"; fi; rm -f "$@.tmp"
 
