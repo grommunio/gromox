@@ -9,19 +9,31 @@ if [ ! -e "${topdir}/configure" ]; then
 	autoreconf -fi
 	cd -
 fi
-echo -en '#include <libHX/string.h>\nint main(void) { HXmc_free(NULL); }' >conftest.c
-libdir=""
-if gcc -o conftest conftest.c $(pkg-config --cflags --libs libHX) >/dev/null 2>/dev/null; then
-	libdir=$(ldd conftest 2>/dev/null | perl -lne 'if(m{(\S+)/libHX.so.}){print$1;exit}')
-	if [ -n "$libdir" ]; then
-		libdir="--libdir=$libdir"
-		echo "[33m""qconf: Adding $libdir""[0m"
+case "$(uname -s)" in
+OpenBSD)
+	set -x
+	"$topdir/configure" --sysconfdir=/etc --prefix=/usr/local --localstatedir=/var \
+		CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" "$@"
+	set +x
+	ncpus=$(sysctl hw.ncpuonline 2>/dev/zero | cut -b15-)
+	;;
+*)
+	echo -en '#include <libHX/string.h>\nint main(void) { HXmc_free(NULL); }' >conftest.c
+	libdir=""
+	if gcc -o conftest conftest.c $(pkg-config --cflags --libs libHX) >/dev/null 2>/dev/null; then
+		libdir=$(ldd conftest 2>/dev/null | perl -lne 'if(m{(\S+)/libHX.so.}){print$1;exit}')
+		if [ -n "$libdir" ]; then
+			libdir="--libdir=$libdir"
+			echo "[33m""qconf: Adding $libdir""[0m"
+		fi
 	fi
-fi
-set -x
-"$topdir/configure" --sysconfdir=/etc --localstatedir=/var $libdir CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" "$@"
-set +x
-ncpus=$(lscpu -b --parse=cpu 2>/dev/null | grep -Ec '[0-9]' || :)
+	set -x
+	"$topdir/configure" --sysconfdir=/etc --localstatedir=/var $libdir \
+		CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" "$@"
+	set +x
+	ncpus=$(lscpu -b --parse=cpu 2>/dev/null | grep -Ec '[0-9]' || :)
+	;;
+esac
 if [ "$ncpus" != "0" ]; then
 	ncpus=" -j$ncpus"
 else
