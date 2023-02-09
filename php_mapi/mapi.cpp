@@ -621,13 +621,10 @@ static ZEND_FUNCTION(mapi_prop_tag)
 static ZEND_FUNCTION(mapi_createoneoff)
 {
 	zend_long flags = 0;
-	char *ptype;
+	char *ptype, *paddress, *pdisplayname, empty[1]{};
 	size_t type_len = 0, name_len = 0, address_len = 0;
-	char *paddress;
 	PUSH_CTX push_ctx;
-	char *pdisplayname;
 	ONEOFF_ENTRYID tmp_entry;
-	char empty[1]{};
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"sss|l", &pdisplayname, &name_len, &ptype, &type_len,
@@ -682,16 +679,10 @@ static ZEND_FUNCTION(mapi_parseoneoff)
 static ZEND_FUNCTION(mapi_logon_zarafa)
 {
 	zend_long flags = 0;
-	size_t wa_len = 0, misc_len = 0;
+	size_t wa_len = 0, misc_len = 0, username_len = 0, password_len = 0;
 	size_t server_len = 0, sslcert_len = 0, sslpass_len = 0;
-	size_t username_len = 0, password_len = 0;
-	char *server;
-	char *sslcert;
-	char *sslpass;
-	char *username;
-	char *password;
-	char *wa_version;
-	char *misc_version;
+	char *server, *sslcert, *sslpass, *username, *password;
+	char *wa_version, *misc_version;
 	MAPI_RESOURCE *presource;
 	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
 	zstrplus str_user(zend_string_init(ZEND_STRL("REMOTE_USER"), 0));
@@ -724,8 +715,7 @@ static ZEND_FUNCTION(mapi_logon_zarafa)
 static ZEND_FUNCTION(mapi_logon_ex)
 {
 	zend_long flags = 0;
-	char *username;
-	char *password;
+	char *username, *password;
 	size_t username_len = 0, password_len = 0;
 	MAPI_RESOURCE *presource;
 	
@@ -781,8 +771,7 @@ static ZEND_FUNCTION(mapi_openentry)
 	zval *pzresource;
 	uint32_t hobject;
 	uint8_t mapi_type;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|sl",
 	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
@@ -829,8 +818,7 @@ static ZEND_FUNCTION(mapi_openentry)
 static ZEND_FUNCTION(mapi_openaddressbook)
 {
 	zval *pzresource;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -863,8 +851,7 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 	zval *pzresource;
 	uint32_t hobject;
 	uint8_t mapi_type;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
 	entryid.cb = 0;
 	entryid.pb = NULL;
@@ -918,11 +905,8 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 static ZEND_FUNCTION(mapi_ab_resolvename)
 {
 	zend_long flags = 0;
-	zval *pzarray;
-	zval pzrowset;
-	zval *pzresource;
-	TARRAY_SET cond_set;
-	TARRAY_SET result_set;
+	zval *pzarray, pzrowset, *pzresource;
+	TARRAY_SET cond_set, result_set;
 	MAPI_RESOURCE *psession;
 	
 	ZVAL_NULL(&pzrowset);
@@ -989,8 +973,7 @@ static ZEND_FUNCTION(mapi_getmsgstorestable)
 {
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -1026,8 +1009,7 @@ static ZEND_FUNCTION(mapi_openmsgstore)
 	size_t eid_size = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 	    "rs", &pzresource, &entryid.pb, &eid_size) ==
@@ -1067,8 +1049,7 @@ static ZEND_FUNCTION(mapi_openprofilesection)
 	FLATUID *puid;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *psession;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *psession, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rs", &pzresource, &puid, &uidlen) == FAILURE ||
@@ -1113,8 +1094,7 @@ static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *probject;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *probject, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
@@ -1166,8 +1146,7 @@ static ZEND_FUNCTION(mapi_folder_getcontentstable)
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *probject;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *probject, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
@@ -1226,8 +1205,7 @@ static ZEND_FUNCTION(mapi_folder_createmessage)
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pfolder;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pfolder, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
@@ -1262,8 +1240,7 @@ static ZEND_FUNCTION(mapi_folder_createmessage)
 static ZEND_FUNCTION(mapi_folder_deletemessages)
 {
 	zend_long flags = 0;
-	zval *pzarray;
-	zval *pzresource;
+	zval *pzarray, *pzresource;
 	MAPI_RESOURCE *pfolder;
 	BINARY_ARRAY entryid_array;
 	
@@ -1297,11 +1274,8 @@ static ZEND_FUNCTION(mapi_folder_deletemessages)
 static ZEND_FUNCTION(mapi_folder_copymessages)
 {
 	zend_long flags = 0;
-	zval *pzarray;
-	zval *pzsrcfolder;
-	zval *pzdstfolder;
-	MAPI_RESOURCE *psrcfolder;
-	MAPI_RESOURCE *pdstfolder;
+	zval *pzarray, *pzsrcfolder, *pzdstfolder;
+	MAPI_RESOURCE *psrcfolder, *pdstfolder;
 	BINARY_ARRAY entryid_array;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rar|l",
@@ -1340,8 +1314,7 @@ static ZEND_FUNCTION(mapi_folder_copymessages)
 static ZEND_FUNCTION(mapi_folder_setreadflags)
 {
 	zend_long flags = 0;
-	zval *pzarray;
-	zval *pzresource;
+	zval *pzarray, *pzresource;
 	MAPI_RESOURCE *pfolder;
 	BINARY_ARRAY entryid_array;
 	
@@ -1379,8 +1352,7 @@ static ZEND_FUNCTION(mapi_folder_createfolder)
 	char *pcomment;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pfolder;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pfolder, *presource;
 	char empty[1]{};
 	
 	pcomment = NULL;
@@ -1488,10 +1460,8 @@ static ZEND_FUNCTION(mapi_folder_copyfolder)
 	char *pname;
 	size_t name_len = 0, eid_size = 0;
 	BINARY entryid;
-	zval *pzvalsrcfolder;
-	zval *pzvaldstfolder;
-	MAPI_RESOURCE *psrcfolder;
-	MAPI_RESOURCE *pdstfolder;
+	zval *pzvalsrcfolder, *pzvaldstfolder;
+	MAPI_RESOURCE *psrcfolder, *pdstfolder;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rsr|sl",
 	    &pzvalsrcfolder, &entryid.pb, &eid_size, &pzvaldstfolder,
@@ -1567,8 +1537,7 @@ static ZEND_FUNCTION(mapi_msgstore_openentry)
 	uint32_t hobject;
 	zval *pzresource;
 	uint8_t mapi_type;
-	MAPI_RESOURCE *pstore;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pstore, *presource;
 	
 	entryid.cb = 0;
 	entryid.pb = NULL;
@@ -1611,12 +1580,10 @@ static ZEND_FUNCTION(mapi_msgstore_openentry)
 
 static ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 {
-	BINARY entryid;
 	size_t skey_size = 0, skmsg_size = 0;
 	zval *pzresource;
-	BINARY *pmessage_key;
 	MAPI_RESOURCE *pstore;
-	BINARY sourcekey_folder{}, sourcekey_message{};
+	BINARY entryid, sourcekey_folder{}, sourcekey_message{}, *pmessage_key;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs|s",
 	    &pzresource, &sourcekey_folder.pb, &skey_size,
@@ -1651,13 +1618,11 @@ static ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 
 static ZEND_FUNCTION(mapi_msgstore_advise)
 {
-	BINARY entryid;
+	BINARY entryid, *pentryid;
 	size_t eid_size = 0;
 	uint32_t sub_id;
 	zend_long event_mask;
-	zval *pzressink;
-	zval *pzresource;
-	BINARY *pentryid;
+	zval *pzressink, *pzresource;
 	NOTIF_SINK *psink;
 	MAPI_RESOURCE *pstore;
 	
@@ -1749,9 +1714,8 @@ static ZEND_FUNCTION(mapi_sink_create)
 static ZEND_FUNCTION(mapi_sink_timedwait)
 {
 	zend_long tmp_time;
-	zval *pzressink;
 	NOTIF_SINK *psink;
-	zval pznotifications;
+	zval pznotifications, *pzressink;
 	ZNOTIFICATION_ARRAY notifications;
 
 	ZVAL_NULL(&pznotifications);
@@ -1792,16 +1756,11 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 
 static ZEND_FUNCTION(mapi_table_queryallrows)
 {
-	zval pzrowset;
-	zval *pzresource;
-	zval *pzproptags;
+	zval pzrowset, *pzresource, *pzproptags, *pzrestriction;
 	TARRAY_SET rowset;
-	zval *pzrestriction;
 	MAPI_RESOURCE *ptable;
-	PROPTAG_ARRAY proptags;
-	RESTRICTION restriction;
-	PROPTAG_ARRAY *pproptags;
-	RESTRICTION *prestriction;
+	PROPTAG_ARRAY proptags, *pproptags;
+	RESTRICTION restriction, *prestriction;
 	
 	ZVAL_NULL(&pzrowset);
 	pzproptags = NULL;
@@ -1852,13 +1811,10 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 
 static ZEND_FUNCTION(mapi_table_queryrows)
 {
-	zval pzrowset;
-	zval *pzresource;
-	zval *pzproptags;
+	zval pzrowset, *pzresource, *pzproptags;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
-	PROPTAG_ARRAY proptags;
-	PROPTAG_ARRAY *pproptags;
+	PROPTAG_ARRAY proptags, *pproptags;
 	
 	ZVAL_NULL(&pzrowset);
 	zend_long start = UINT32_MAX, row_count = UINT32_MAX;
@@ -1901,8 +1857,7 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 static ZEND_FUNCTION(mapi_table_setcolumns)
 {
 	zend_long flags = 0;
-	zval *pzresource;
-	zval *pzproptags;
+	zval *pzresource, *pzproptags;
 	MAPI_RESOURCE *ptable;
 	PROPTAG_ARRAY proptags;
 	
@@ -1965,8 +1920,7 @@ static ZEND_FUNCTION(mapi_table_seekrow)
 static ZEND_FUNCTION(mapi_table_sort)
 {
 	zend_long flags = 0;
-	zval *pzresource;
-	zval *pzsortarray;
+	zval *pzresource, *pzsortarray;
 	MAPI_RESOURCE *ptable;
 	SORTORDER_SET sortcriteria;
 	
@@ -2027,8 +1981,7 @@ static ZEND_FUNCTION(mapi_table_getrowcount)
 static ZEND_FUNCTION(mapi_table_restrict)
 {
 	zend_long flags = 0;
-	zval *pzresource;
-	zval *pzrestrictarray;
+	zval *pzresource, *pzrestrictarray;
 	MAPI_RESOURCE *ptable;
 	RESTRICTION restriction;
 
@@ -2064,8 +2017,7 @@ static ZEND_FUNCTION(mapi_table_findrow)
 {
 	zend_long flags = 0, bookmark = BOOKMARK_BEGINNING;
 	uint32_t row_idx;
-	zval *pzresource;
-	zval *pzrestrictarray;
+	zval *pzresource, *pzrestrictarray;
 	MAPI_RESOURCE *ptable;
 	RESTRICTION restriction;
 	
@@ -2159,8 +2111,7 @@ static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	zval *pzresource;
 	uint32_t hobject;
 	uint8_t mapi_type;
-	MAPI_RESOURCE *pstore;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pstore, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -2202,8 +2153,7 @@ static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 static ZEND_FUNCTION(mapi_message_modifyrecipients)
 {
 	zend_long flags = MODRECIP_ADD;
-	zval *pzadrlist;
-	zval *pzresource;
+	zval *pzadrlist, *pzresource;
 	TARRAY_SET rcpt_list;
 	MAPI_RESOURCE *pmessage;
 	
@@ -2264,8 +2214,7 @@ static ZEND_FUNCTION(mapi_message_getattachmenttable)
 {
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pmessage;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pmessage, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -2302,8 +2251,7 @@ static ZEND_FUNCTION(mapi_message_openattach)
 	zend_long attach_id;
 	zval *pzresource;
 	uint32_t hobject;
-	MAPI_RESOURCE *pmessage;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pmessage, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rl",
 		&pzresource, &attach_id) == FAILURE || NULL == pzresource) {
@@ -2340,8 +2288,7 @@ static ZEND_FUNCTION(mapi_message_createattach)
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pmessage;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pmessage, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
@@ -2647,8 +2594,7 @@ static ZEND_FUNCTION(mapi_message_getrecipienttable)
 {
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pmessage;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pmessage, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -2713,8 +2659,7 @@ static ZEND_FUNCTION(mapi_attach_openobj)
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pattach;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pattach, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
@@ -2750,9 +2695,7 @@ static ZEND_FUNCTION(mapi_attach_openobj)
 static ZEND_FUNCTION(mapi_getidsfromnames)
 {
 	int i;
-	zval *pzstore;
-	zval *pznames;
-	zval *pzguids;
+	zval *pzstore, *pznames, *pzguids;
 	PROPID_ARRAY propids;
 	MAPI_RESOURCE *pstore;
 	PROPNAME_ARRAY propnames;
@@ -2790,8 +2733,7 @@ static ZEND_FUNCTION(mapi_getidsfromnames)
 
 static ZEND_FUNCTION(mapi_setprops)
 {
-	zval *pzpropvals;
-	zval *pzresource;
+	zval *pzpropvals, *pzresource;
 	MAPI_RESOURCE *probject;
 	TPROPVAL_ARRAY propvals;
 	
@@ -2860,14 +2802,9 @@ static ZEND_FUNCTION(mapi_setprops)
 static ZEND_FUNCTION(mapi_copyto)
 {
 	zend_long flags = 0;
-	zval *pzsrc;
-	zval *pzdst;
-	zval *pzexcludeiids;
-	zval *pzexcludeprops;
-	MAPI_RESOURCE *psrcobject;
-	MAPI_RESOURCE *pdstobject;
-	PROPTAG_ARRAY exclude_proptags;
-	PROPTAG_ARRAY *pexclude_proptags;
+	zval *pzsrc, *pzdst, *pzexcludeiids, *pzexcludeprops;
+	MAPI_RESOURCE *psrcobject, *pdstobject;
+	PROPTAG_ARRAY exclude_proptags, *pexclude_proptags;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raar|l",
 		&pzsrc, &pzexcludeiids, &pzexcludeprops, &pzdst, &flags)
@@ -3017,8 +2954,7 @@ static ZEND_FUNCTION(mapi_savechanges)
 
 static ZEND_FUNCTION(mapi_deleteprops)
 {
-	zval *pzresource;
-	zval *pzproptags;
+	zval *pzresource, *pzproptags;
 	PROPTAG_ARRAY proptags;
 	MAPI_RESOURCE *probject;
 	
@@ -3088,8 +3024,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 	PULL_CTX pull_ctx;
 	zend_long flags = 0, interfaceflags = 0, proptag;
 	STREAM_OBJECT *pstream;
-	MAPI_RESOURCE *probject;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *probject, *presource;
 	ICS_IMPORT_CTX *pimporter;
 	ICS_EXPORT_CTX *pexporter;
 	
@@ -3318,13 +3253,10 @@ static ZEND_FUNCTION(mapi_openproperty)
 
 static ZEND_FUNCTION(mapi_getprops)
 {
-	zval *pzresource;
-	zval *pztagarray;
-	zval pzpropvals;
-	PROPTAG_ARRAY proptags;
+	zval pzpropvals, *pzresource, *pztagarray;
+	PROPTAG_ARRAY proptags, *pproptags;
 	TPROPVAL_ARRAY propvals;
 	MAPI_RESOURCE *probject;
-	PROPTAG_ARRAY *pproptags;
 	
 	ZVAL_NULL(&pzpropvals);
 	pztagarray = NULL;
@@ -3442,8 +3374,7 @@ static ZEND_FUNCTION(mapi_getprops)
 static ZEND_FUNCTION(mapi_getnamesfromids)
 {
 	int i;
-	zval *pzarray;
-	zval *pzresource;
+	zval *pzarray, *pzresource;
 	char num_buff[20];
 	PROPID_ARRAY propids;
 	MAPI_RESOURCE *pstore;
@@ -3506,16 +3437,10 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 static ZEND_FUNCTION(mapi_decompressrtf)
 {
 	pid_t pid;
-	int status;
-	int offset;
+	int status, offset, bufflen, readlen;
 	size_t rtflen = 0;
-	int bufflen;
-	int readlen;
-	char *pbuff;
-	char* args[2];
-	char *rtfbuffer;
-	int pipes_in[2] = {-1, -1};
-	int pipes_out[2] = {-1, -1};
+	char *pbuff, *rtfbuffer, *args[2];
+	int pipes_in[2] = {-1, -1}, pipes_out[2] = {-1, -1};
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"s", &rtfbuffer, &rtflen) == FAILURE || NULL ==
@@ -3593,8 +3518,7 @@ static ZEND_FUNCTION(mapi_folder_getrulestable)
 {
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *pfolder;
-	MAPI_RESOURCE *presource;
+	MAPI_RESOURCE *pfolder, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
@@ -3630,8 +3554,7 @@ static ZEND_FUNCTION(mapi_folder_getrulestable)
 static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 {
 	zend_long flags = 0;
-	zval *pzresource;
-	zval pzfolderlist, pzrestriction;
+	zval pzfolderlist, pzrestriction, *pzresource;
 	uint32_t search_state;
 	MAPI_RESOURCE *pfolder;
 	RESTRICTION *prestriction;
@@ -3677,14 +3600,10 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 {
 	zend_long flags = 0;
-	zval *pzresource;
-	zval *pzfolderlist;
-	zval *pzrestriction;
+	zval *pzresource, *pzfolderlist, *pzrestriction;
 	MAPI_RESOURCE *pfolder;
-	RESTRICTION restriction;
-	RESTRICTION *prestriction;
-	BINARY_ARRAY entryid_array;
-	BINARY_ARRAY *pentryid_array;
+	RESTRICTION restriction, *prestriction;
+	BINARY_ARRAY entryid_array, *pentryid_array;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raal",
 		&pzresource, &pzrestriction, &pzfolderlist, &flags) ==
@@ -3732,8 +3651,7 @@ static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 static ZEND_FUNCTION(mapi_folder_modifyrules)
 {
 	zend_long flags = 0;
-	zval *pzrows;
-	zval *pzresource;
+	zval *pzrows, *pzresource;
 	RULE_LIST rule_list;
 	MAPI_RESOURCE *pfolder;
 	
@@ -3830,12 +3748,10 @@ static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 {
 	int i, j;
-	zval *pzperms;
-	zval *pzresource;
-	HashTable *pdata;
+	zval *pzperms, *pzresource;
+	HashTable *pdata, *ptarget_hash;
 	MAPI_RESOURCE *pfolder;
 	PERMISSION_SET perm_set;
-	HashTable *ptarget_hash;
 	zstrplus str_userid(zend_string_init(ZEND_STRL("userid"), 0));
 	zstrplus str_type(zend_string_init(ZEND_STRL("type"), 0));
 	zstrplus str_rights(zend_string_init(ZEND_STRL("rights"), 0));
@@ -3971,16 +3887,11 @@ static ZEND_FUNCTION(mapi_getuseravailability)
 static ZEND_FUNCTION(mapi_exportchanges_config)
 {
 	zend_long flags = 0, buffersize = 0;
-	zval *pzrestrict;
-	zval *pzresstream;
-	zval *pzincludeprops;
-	zval *pzexcludeprops;
+	zval *pzrestrict, *pzresstream, *pzincludeprops, *pzexcludeprops;
+	zval *pzresimportchanges, *pzresexportchanges;
 	ICS_EXPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
-	RESTRICTION restriction;
-	zval *pzresimportchanges;
-	zval *pzresexportchanges;
-	RESTRICTION *prestriction;
+	RESTRICTION restriction, *prestriction;
 	ICS_IMPORT_CTX *pimporter;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -4305,10 +4216,9 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 static ZEND_FUNCTION(mapi_exportchanges_updatestate)
 {
 	BINARY state_bin;
-	zval *pzresstream;
+	zval *pzresstream, *pzresexportchanges;
 	ICS_EXPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
-	zval *pzresexportchanges;
 	
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "rr",
 		&pzresexportchanges, &pzresstream) == FAILURE || NULL
@@ -4355,8 +4265,7 @@ static ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 static ZEND_FUNCTION(mapi_importcontentschanges_config)
 {
 	zend_long flags = 0;
-	zval *pzresimport;
-	zval *pzresstream;
+	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
@@ -4384,8 +4293,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_config)
 static ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 {
 	BINARY state_bin;
-	zval *pzresimport;
-	zval *pzresstream;
+	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
@@ -4415,9 +4323,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 {
 	zend_long flags = 0;
 	uint32_t hobject;
-	zval *pzresprops;
-	zval *pzresimport;
-	zval *pzresmessage;
+	zval *pzresprops, *pzresimport, *pzresmessage;
 	ICS_IMPORT_CTX *pctx;
 	TPROPVAL_ARRAY propvals;
 	MAPI_RESOURCE *presource;
@@ -4458,8 +4364,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 {
 	zend_long flags = 0;
-	zval *pzresimport;
-	zval *pzresmessages;
+	zval *pzresimport, *pzresmessages;
 	ICS_IMPORT_CTX *pctx;
 	BINARY_ARRAY message_bins;
 	
@@ -4495,9 +4400,8 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 {
-	zval *pzresimport;
+	zval *pzresimport, *pzresreadstates;
 	ICS_IMPORT_CTX *pctx;
-	zval *pzresreadstates;
 	STATE_ARRAY message_states;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ra",
@@ -4536,8 +4440,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove)
 static ZEND_FUNCTION(mapi_importhierarchychanges_config)
 {
 	zend_long flags = 0;
-	zval *pzresimport;
-	zval *pzresstream;
+	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
@@ -4564,8 +4467,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_config)
 static ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 {
 	BINARY state_bin;
-	zval *pzresimport;
-	zval *pzresstream;
+	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
@@ -4595,8 +4497,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 {
-	zval *pzresprops;
-	zval *pzresimport;
+	zval *pzresprops, *pzresimport;
 	ICS_IMPORT_CTX *pctx;
 	TPROPVAL_ARRAY propvals;
 	
@@ -4628,8 +4529,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 {
 	zend_long flags = 0;
-	zval *pzresimport;
-	zval *pzresfolders;
+	zval *pzresimport, *pzresfolders;
 	ICS_IMPORT_CTX *pctx;
 	BINARY_ARRAY folder_bins;
 	
@@ -4707,10 +4607,7 @@ static ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 static ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 {
 	BINARY eml_bin;
-	zval *pzressession;
-	zval *pzresmessage;
-	zval *pzresoptions;
-	zval *pzresaddrbook;
+	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	STREAM_OBJECT *pstream;
 	MAPI_RESOURCE *pmessage;
 	
@@ -4749,11 +4646,7 @@ static ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 	size_t cbstring = 0;
 	char *szstring;
 	BINARY eml_bin;
-	zval *pzresstore;
-	zval *pzressession;
-	zval *pzresmessage;
-	zval *pzresoptions;
-	zval *pzresaddrbook;
+	zval *pzresstore, *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rrrrsa",
@@ -4801,10 +4694,7 @@ static ZEND_FUNCTION(mapi_icaltomapi)
 	size_t cbstring = 0;
 	char *szstring;
 	BINARY ical_bin;
-	zval *pzresstore;
-	zval *pzresmessage;
-	zval *pzressession;
-	zval *pzresaddrbook;
+	zval *pzresstore, *pzresmessage, *pzressession, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
 	zend_bool b_norecipients;
 	
@@ -4934,10 +4824,7 @@ static ZEND_FUNCTION(mapi_vcftomapi2)
 static ZEND_FUNCTION(mapi_mapitoical)
 {
 	BINARY ical_bin;
-	zval *pzressession;
-	zval *pzresmessage;
-	zval *pzresoptions;
-	zval *pzresaddrbook;
+	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -4968,9 +4855,7 @@ static ZEND_FUNCTION(mapi_vcftomapi)
 	size_t cbstring = 0;
 	char *szstring;
 	BINARY vcf_bin;
-	zval *pzresstore;
-	zval *pzressession;
-	zval *pzresmessage;
+	zval *pzresstore, *pzressession, *pzresmessage;
 	MAPI_RESOURCE *pmessage;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rrrs",
@@ -5001,10 +4886,7 @@ static ZEND_FUNCTION(mapi_vcftomapi)
 static ZEND_FUNCTION(mapi_mapitovcf)
 {
 	BINARY vcf_bin;
-	zval *pzressession;
-	zval *pzresmessage;
-	zval *pzresoptions;
-	zval *pzresaddrbook;
+	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -5078,8 +4960,7 @@ static ZEND_FUNCTION(mapi_msgstore_abortsubmit)
 
 static ZEND_FUNCTION(kc_session_save)
 {
-	zval *pzres;
-	zval *pzoutstr;
+	zval *pzres, *pzoutstr;
 	PUSH_CTX push_ctx;
 	MAPI_RESOURCE *psession;
 
@@ -5106,8 +4987,7 @@ static ZEND_FUNCTION(kc_session_save)
 
 static ZEND_FUNCTION(kc_session_restore)
 {
-	zval *pzres;
-	zval *pzdata;
+	zval *pzres, *pzdata;
 	GUID hsession;
 	BINARY data_bin;
 	PULL_CTX pull_ctx;
@@ -5146,11 +5026,9 @@ static ZEND_FUNCTION(kc_session_restore)
 
 static ZEND_FUNCTION(nsp_getuserinfo)
 {
-	char *px500dn;
+	char *px500dn, *username, *pdisplay_name;
 	BINARY entryid;
-	char *username;
 	size_t username_len = 0;
-	char *pdisplay_name;
 	uint32_t privilege_bits;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -5176,10 +5054,8 @@ static ZEND_FUNCTION(nsp_getuserinfo)
 
 static ZEND_FUNCTION(nsp_setuserpasswd)
 {
-	char *username;
+	char *username, *old_passwd, *new_passwd;
 	size_t username_len = 0, old_passwd_len = 0, new_passwd_len = 0;
-	char *old_passwd;
-	char *new_passwd;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"sss", &username, &username_len, &old_passwd,
@@ -5200,8 +5076,7 @@ static ZEND_FUNCTION(mapi_linkmessage)
 {
 	size_t srcheid_size = 0, msgeid_size = 0;
 	zval *pzresource;
-	BINARY search_entryid;
-	BINARY message_entryid;
+	BINARY search_entryid, message_entryid;
 	MAPI_RESOURCE *psession;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|ss",
