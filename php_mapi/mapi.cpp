@@ -57,10 +57,9 @@ extern zend_module_entry mapi_module_entry;
 			RETURN_FALSE; \
 		} while (false); \
 	} while (false)
-#define ZEND_REGISTER_RESOURCE(return_value, ses, le_mapi_thing) \
-	do { \
-		ZVAL_RES(return_value, zend_register_resource(ses, le_mapi_thing)); \
-	} while (false)
+/* PHP macros do not have proper do..while guards on their own */
+#define RETVAL_RG(obj, category) \
+	do { RETVAL_RES(zend_register_resource(obj, category)); } while (false)
 #define THROW_EXCEPTION \
 	do { \
 		if (MAPI_G(exceptions_enabled)) \
@@ -708,7 +707,7 @@ static ZEND_FUNCTION(mapi_logon_zarafa)
 	}
 	presource->type = ZMG_SESSION;
 	presource->hobject = 0;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_session);
+	RETVAL_RG(presource, le_mapi_session);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -759,7 +758,7 @@ static ZEND_FUNCTION(mapi_logon_ex)
 	}
 	presource->type = ZMG_SESSION;
 	presource->hobject = 0;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_session);
+	RETVAL_RG(presource, le_mapi_session);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -802,10 +801,10 @@ static ZEND_FUNCTION(mapi_openentry)
 	presource->hobject = hobject;
 	switch (mapi_type) {
 	case ZMG_FOLDER:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_folder);
+		RETVAL_RG(presource, le_mapi_folder);
 		break;
 	case ZMG_MESSAGE:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
+		RETVAL_RG(presource, le_mapi_message);
 		break;
 	default:
 		efree(presource);
@@ -839,7 +838,7 @@ static ZEND_FUNCTION(mapi_openaddressbook)
 	presource->type = ZMG_ADDRBOOK;
 	presource->hsession = psession->hsession;
 	presource->hobject = 0;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_addressbook);
+	RETVAL_RG(presource, le_mapi_addressbook);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -886,13 +885,13 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 	switch (mapi_type) {
 	case ZMG_MAILUSER:
 	case ZMG_ONEOFF:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_mailuser);
+		RETVAL_RG(presource, le_mapi_mailuser);
 		break;
 	case ZMG_DISTLIST:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_distlist);
+		RETVAL_RG(presource, le_mapi_distlist);
 		break;
 	case ZMG_ABCONT:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_abcont);
+		RETVAL_RG(presource, le_mapi_abcont);
 		break;
 	default:
 		efree(presource);
@@ -999,7 +998,7 @@ static ZEND_FUNCTION(mapi_getmsgstorestable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = psession->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -1039,7 +1038,7 @@ static ZEND_FUNCTION(mapi_openmsgstore)
 	presource->type = ZMG_STORE;
 	presource->hsession = psession->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_msgstore);
+	RETVAL_RG(presource, le_mapi_msgstore);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -1085,7 +1084,7 @@ static ZEND_FUNCTION(mapi_openprofilesection)
 	presource->type = ZMG_PROFPROPERTY;
 	presource->hsession = psession->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_property);
+	RETVAL_RG(presource, le_mapi_property);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -1137,7 +1136,7 @@ static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = probject->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -1196,7 +1195,7 @@ static ZEND_FUNCTION(mapi_folder_getcontentstable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = probject->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -1233,7 +1232,7 @@ static ZEND_FUNCTION(mapi_folder_createmessage)
 	presource->type = ZMG_MESSAGE;
 	presource->hsession = pfolder->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
+	RETVAL_RG(presource, le_mapi_message);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -1390,7 +1389,7 @@ static ZEND_FUNCTION(mapi_folder_createfolder)
 	presource->type = ZMG_FOLDER;
 	presource->hsession = pfolder->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_folder);
+	RETVAL_RG(presource, le_mapi_folder);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -1569,11 +1568,9 @@ static ZEND_FUNCTION(mapi_msgstore_openentry)
 	presource->hsession = pstore->hsession;
 	presource->hobject = hobject;
 	if (mapi_type == ZMG_FOLDER) {
-		ZEND_REGISTER_RESOURCE(return_value,
-			presource, le_mapi_folder);
+		RETVAL_RG(presource, le_mapi_folder);
 	} else if (mapi_type == ZMG_MESSAGE) {
-		ZEND_REGISTER_RESOURCE(return_value,
-			presource, le_mapi_message);
+		RETVAL_RG(presource, le_mapi_message);
 	}
 	MAPI_G(hr) = ecSuccess;
 }
@@ -1707,7 +1704,7 @@ static ZEND_FUNCTION(mapi_sink_create)
 		}
 	} else {
 		MAPI_G(hr) = ecSuccess;
-		ZEND_REGISTER_RESOURCE(return_value, psink, le_mapi_advisesink);
+		RETVAL_RG(psink, le_mapi_advisesink);
 	}	
 }
 
@@ -2146,7 +2143,7 @@ static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	presource->type = ZMG_FOLDER;
 	presource->hsession = pstore->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_folder);
+	RETVAL_RG(presource, le_mapi_folder);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -2242,7 +2239,7 @@ static ZEND_FUNCTION(mapi_message_getattachmenttable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -2279,7 +2276,7 @@ static ZEND_FUNCTION(mapi_message_openattach)
 	presource->type = ZMG_ATTACH;
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_attachment);
+	RETVAL_RG(presource, le_mapi_attachment);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -2316,7 +2313,7 @@ static ZEND_FUNCTION(mapi_message_createattach)
 	presource->type = ZMG_ATTACH;
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_attachment);
+	RETVAL_RG(presource, le_mapi_attachment);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -2491,7 +2488,7 @@ static ZEND_FUNCTION(mapi_stream_create)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
+	RETVAL_RG(pstream, le_stream);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -2586,7 +2583,7 @@ static ZEND_FUNCTION(mapi_openpropertytostream)
 		}
 		stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 	}
-	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
+	RETVAL_RG(pstream, le_stream);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -2622,7 +2619,7 @@ static ZEND_FUNCTION(mapi_message_getrecipienttable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -2688,7 +2685,7 @@ static ZEND_FUNCTION(mapi_attach_openobj)
 	presource->type = ZMG_MESSAGE;
 	presource->hsession = pattach->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
+	RETVAL_RG(presource, le_mapi_message);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -3127,7 +3124,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 				}
 				stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 			}
-			ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
+			RETVAL_RG(pstream, le_stream);
 		}
 	} else if (iid_guid == IID_IMessage) {
 		if (type != le_mapi_attachment || proptag != PR_ATTACH_DATA_OBJ) {
@@ -3148,7 +3145,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 		presource->type = ZMG_MESSAGE;
 		presource->hsession = probject->hsession;
 		presource->hobject = hobject;
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
+		RETVAL_RG(presource, le_mapi_message);
 	} else if (iid_guid == IID_IExchangeExportChanges) {
 		if (type != le_mapi_folder) {
 			MAPI_G(hr) = ecNotSupported;
@@ -3188,8 +3185,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 		pexporter->progress = 0;
 		pexporter->sync_steps = 0;
 		pexporter->total_steps = 0;
-		ZEND_REGISTER_RESOURCE(return_value,
-			pexporter, le_mapi_exportchanges);
+		RETVAL_RG(pexporter, le_mapi_exportchanges);
 	} else if (iid_guid == IID_IExchangeImportHierarchyChanges) {
 		if (type != le_mapi_folder) {
 			MAPI_G(hr) = ecNotSupported;
@@ -3215,8 +3211,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 		pimporter->hobject = hobject;
 		ZVAL_NULL(&pimporter->pztarget_obj);
 		pimporter->ics_type = ICS_TYPE_HIERARCHY;
-		ZEND_REGISTER_RESOURCE(return_value,
-			pimporter, le_mapi_importhierarchychanges);
+		RETVAL_RG(pimporter, le_mapi_importhierarchychanges);
 	} else if (iid_guid == IID_IExchangeImportContentsChanges) {
 		if (type != le_mapi_folder) {
 			MAPI_G(hr) = ecNotSupported;
@@ -3242,8 +3237,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 		pimporter->hobject = hobject;
 		ZVAL_NULL(&pimporter->pztarget_obj);
 		pimporter->ics_type = ICS_TYPE_CONTENTS;
-		ZEND_REGISTER_RESOURCE(return_value,
-			pimporter, le_mapi_importcontentschanges);
+		RETVAL_RG(pimporter, le_mapi_importcontentschanges);
 	} else {
 		MAPI_G(hr) = ecNotSupported;
 		THROW_EXCEPTION;
@@ -3546,8 +3540,7 @@ static ZEND_FUNCTION(mapi_folder_getrulestable)
 	presource->type = ZMG_TABLE;
 	presource->hsession = pfolder->hsession;
 	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value,
-				presource, le_mapi_table);
+	RETVAL_RG(presource, le_mapi_table);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -4356,7 +4349,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 	presource->hsession = pctx->hsession;
 	presource->hobject = hobject;
 	ZVAL_DEREF(pzresmessage);
-	ZEND_REGISTER_RESOURCE(pzresmessage, presource, le_mapi_message);
+	ZVAL_RES(pzresmessage, zend_register_resource(presource, le_mapi_message));
 	RETVAL_TRUE;
 	MAPI_G(hr) = ecSuccess;
 }
@@ -4575,8 +4568,7 @@ static ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 	pctx->hobject = 0;
 	ZVAL_OBJ(&pctx->pztarget_obj, Z_OBJ_P(pzobject));
 	Z_ADDREF(pctx->pztarget_obj);
-	ZEND_REGISTER_RESOURCE(return_value,
-		pctx, le_mapi_importcontentschanges);
+	RETVAL_RG(pctx, le_mapi_importcontentschanges);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -4599,8 +4591,7 @@ static ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 	pctx->hobject = 0;
 	ZVAL_OBJ(&pctx->pztarget_obj, Z_OBJ_P(pzobject));
 	Z_ADDREF(pctx->pztarget_obj);
-	ZEND_REGISTER_RESOURCE(return_value,
-		pctx, le_mapi_importhierarchychanges);
+	RETVAL_RG(pctx, le_mapi_importhierarchychanges);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -4637,7 +4628,7 @@ static ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 	}
 	stream_object_write(pstream, eml_bin.pb, eml_bin.cb);
 	stream_object_seek(pstream, STREAM_SEEK_SET, 0);
-	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
+	RETVAL_RG(pstream, le_stream);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -4779,7 +4770,7 @@ static void imtomapi2_proc(INTERNAL_FUNCTION_PARAMETERS,
 		res->hsession = session;
 		res->hobject = msg_handles.pl[i];
 		zval mres;
-		ZEND_REGISTER_RESOURCE(&mres, res, le_mapi_message);
+		ZVAL_RES(&mres, zend_register_resource(res, le_mapi_message));
 		add_index_zval(return_value, i, &mres);
 	}
 	MAPI_G(hr) = ecSuccess;
@@ -5019,7 +5010,7 @@ static ZEND_FUNCTION(kc_session_restore)
 	presource->type = ZMG_SESSION;
 	presource->hobject = 0;
 	presource->hsession = hsession;
-	ZEND_REGISTER_RESOURCE(pzres, presource, le_mapi_session);
+	ZVAL_RES(pzres, zend_register_resource(presource, le_mapi_session));
 	RETVAL_LONG(ecSuccess);
 }
 
