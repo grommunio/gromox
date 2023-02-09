@@ -475,6 +475,12 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 	return FALSE;
 }
 
+enum ctm_field {
+	CTM_MSGID, CTM_MODTIME, CTM_UID, CTM_RECENT, CTM_READ, CTM_UNSENT,
+	CTM_FLAGGED, CTM_REPLIED, CTM_FWD, CTM_DELETED, CTM_RCVDTIME, CTM_EXT,
+	CTM_FOLDERID, CTM_SIZE,
+};
+
 static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
     sqlite3_stmt *pstmt_message, const char *mid_string, int id, int total_mail,
     uint32_t uidnext, const CONDITION_TREE *ptree)
@@ -531,7 +537,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 7) != 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_REPLIED) != 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::bcc:
@@ -545,7 +551,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
 				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, 10));
+					sqlite3_column_int64(pstmt_message, CTM_RCVDTIME));
 				if (tmp_time < ptree_node->ct_time)
 					b_result1 = TRUE;
 				break;
@@ -593,7 +599,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 9) != 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_DELETED) != 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::draft:
@@ -602,7 +608,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 5) != 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_UNSENT) != 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::flagged:
@@ -611,7 +617,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 6) != 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_FLAGGED) != 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::from: {
@@ -658,8 +664,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 3) != 0 &&
-				    sqlite3_column_int64(pstmt_message, 4) == 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_RECENT) != 0 &&
+				    sqlite3_column_int64(pstmt_message, CTM_READ) == 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::old:
@@ -668,7 +674,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 3) == 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_RECENT) == 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::on:
@@ -678,7 +684,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
 				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, 10));
+					sqlite3_column_int64(pstmt_message, CTM_RCVDTIME));
 				if (tmp_time >= ptree_node->ct_time &&
 				    tmp_time < ptree_node->ct_time + 86400)
 					b_result1 = TRUE;
@@ -689,7 +695,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 3) != 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_RECENT) != 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::seen:
@@ -698,7 +704,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 4) != 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_READ) != 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::sent_before:
@@ -708,7 +714,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
 				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, 1));
+					sqlite3_column_int64(pstmt_message, CTM_MODTIME));
 				if (tmp_time < ptree_node->ct_time)
 					b_result1 = TRUE;
 				break;
@@ -719,7 +725,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
 				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, 1));
+					sqlite3_column_int64(pstmt_message, CTM_MODTIME));
 				if (tmp_time >= ptree_node->ct_time &&
 				    tmp_time < ptree_node->ct_time + 86400)
 					b_result1 = TRUE;
@@ -731,7 +737,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
 				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, 1));
+					sqlite3_column_int64(pstmt_message, CTM_MODTIME));
 				if (tmp_time >= ptree_node->ct_time)
 					b_result1 = TRUE;
 				break;
@@ -742,7 +748,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
 				tmp_time = rop_util_nttime_to_unix(
-					sqlite3_column_int64(pstmt_message, 10));
+					sqlite3_column_int64(pstmt_message, CTM_RCVDTIME));
 				if (tmp_time >= ptree_node->ct_time)
 					b_result1 = TRUE;
 				break;
@@ -868,7 +874,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 7) == 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_REPLIED) == 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::uid:
@@ -878,7 +884,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
 				b_result1 = ct_hint_seq(*ptree_node->ct_seq,
-					sqlite3_column_int64(pstmt_message, 2),
+					sqlite3_column_int64(pstmt_message, CTM_UID),
 					uidnext);
 				break;
 			case midb_cond::undeleted:
@@ -887,7 +893,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 9) == 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_DELETED) == 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::undraft:
@@ -896,7 +902,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 5) == 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_UNSENT) == 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::unflagged:
@@ -905,7 +911,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 6) == 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_FLAGGED) == 0)
 					b_result1 = TRUE;
 				break;
 			case midb_cond::unseen:
@@ -914,7 +920,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (sqlite3_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (sqlite3_column_int64(pstmt_message, 4) == 0)
+				if (sqlite3_column_int64(pstmt_message, CTM_READ) == 0)
 					b_result1 = TRUE;
 				break;
 			default:
@@ -1375,6 +1381,7 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
 		return {};
 	uidnext = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
+	/* Match this column list to ctm_field */
 	auto pstmt_message = gx_sql_prep(psqlite, "SELECT message_id, mod_time, "
 	                     "uid, recent, read, unsent, flagged, replied, forwarded,"
 	                     "deleted, received, ext, folder_id, size FROM messages "
@@ -2767,7 +2774,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	int user_id;
 	char lang[32];
 	int flags_len;
-	uint64_t nt_time;
 	char charset[32], tmzone[64];
 	uint32_t tmp_flags;
 	char flags_buff[16];
@@ -2804,6 +2810,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	auto folder_id1 = mail_engine_get_folder_id(pidb.get(), argv[4]);
 	if (folder_id1 == 0)
 		return MIDB_E_NO_FOLDER;
+	/* Match this column list to ctm_field */
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT message_id, mod_time, "
 	             "uid, recent, read, unsent, flagged, replied, forwarded,"
 	             "deleted, received, ext, folder_id, size FROM messages "
@@ -2812,21 +2819,21 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_SQLPREP;
 	sqlite3_bind_text(pstmt, 1, argv[3], -1, SQLITE_STATIC);
 	if (sqlite3_step(pstmt) != SQLITE_ROW ||
-	    gx_sql_col_uint64(pstmt, 12) != folder_id)
+	    pstmt.col_uint64(CTM_FOLDERID) != folder_id)
 		return MIDB_E_NO_MESSAGE;
 	flags_buff[0] = '(';
 	flags_len = 1;
-	if (pstmt.col_int64(7) != 0)
+	if (pstmt.col_uint64(CTM_REPLIED) != 0)
 		flags_buff[flags_len++] = 'A';
-	if (pstmt.col_int64(6) != 0)
+	if (pstmt.col_uint64(CTM_FLAGGED) != 0)
 		flags_buff[flags_len++] = 'F';
-	if (pstmt.col_int64(8) != 0)
+	if (pstmt.col_uint64(CTM_FWD) != 0)
 		flags_buff[flags_len++] = 'W';
 	flags_buff[flags_len++] = ')';
 	flags_buff[flags_len] = '\0';
-	auto b_unsent = pstmt.col_int64(5) != 0;
-	uint8_t b_read = pstmt.col_int64(4) != 0;
-	nt_time = sqlite3_column_int64(pstmt, 10);
+	auto b_unsent = pstmt.col_uint64(CTM_UNSENT) != 0;
+	uint8_t b_read = pstmt.col_uint64(CTM_READ) != 0;
+	uint64_t nt_time = pstmt.col_int64(CTM_RCVDTIME);
 	pstmt.finalize();
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return MIDB_E_SSGETID;
