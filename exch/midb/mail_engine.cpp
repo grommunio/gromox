@@ -220,57 +220,46 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 	char *ptoken;
 	uint64_t folder_id;
 	char temp_path[256];
-	struct stat node_stat;
 	
 	snprintf(temp_path, 256, "%s/ext/%s",
 		common_util_get_maildir(), mid_string);
-	wrapfd fd = open(temp_path, O_RDONLY);
-	if (fd.get() < 0) {
+	size_t slurp_size = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(temp_path, &slurp_size));
+	if (slurp_data != nullptr) {
+		if (slurp_size >= MAX_DIGLEN)
+			return 0;
+		gx_strlcpy(digest_buff, slurp_data.get(), MAX_DIGLEN);
+	} else if (errno != ENOENT) {
+		mlog(LV_ERR, "E-1131: read %s: %s", temp_path, strerror(errno));
+		return 0;
+	} else {
 		snprintf(temp_path, 256, "%s/eml/%s",
 			common_util_get_maildir(), mid_string);
-		fd = open(temp_path, O_RDONLY);
-		if (fd.get() < 0 || fstat(fd.get(), &node_stat) < 0) {
+		slurp_data.reset(HX_slurp_file(temp_path, &slurp_size));
+		if (slurp_data == nullptr) {
 			mlog(LV_ERR, "E-1252: %s: %s", temp_path, strerror(errno));
 			return 0;
 		}
-		if (!S_ISREG(node_stat.st_mode))
-			return 0;
-		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
-		if (pbuff == nullptr)
-			return 0;
-		if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
-			return 0;
-		fd.close_rd();
 		MAIL imail(g_mime_pool);
-		if (!imail.load_from_str_move(pbuff.get(), node_stat.st_size))
+		if (!imail.load_from_str_move(slurp_data.get(), slurp_size))
 			return 0;
+		slurp_data.reset();
 		tmp_len = sprintf(digest_buff, "{\"file\":\"\",");
 		if (imail.get_digest(&size, digest_buff + tmp_len,
 		    MAX_DIGLEN - tmp_len - 1) <= 0)
 			return 0;
 		imail.clear();
-		pbuff.reset();
 		tmp_len = strlen(digest_buff);
 		strcpy(&digest_buff[tmp_len], "}");
 		tmp_len ++;
 		snprintf(temp_path, 256, "%s/ext/%s",
 			common_util_get_maildir(), mid_string);
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() >= 0) {
 			if (HXio_fullwrite(fd.get(), digest_buff, tmp_len) != tmp_len ||
 			    fd.close_wr() < 0)
 				mlog(LV_ERR, "E-2082: write %s: %s", temp_path, strerror(errno));
 		}
-	} else {
-		if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode) ||
-		    node_stat.st_size >= MAX_DIGLEN)
-			return 0;
-		fd = open(temp_path, O_RDONLY);
-		if (fd.get() < 0 || HXio_fullread(fd.get(), digest_buff,
-		    node_stat.st_size) != node_stat.st_size)
-			return 0;
-		digest_buff[node_stat.st_size] = '\0';
-		fd.close_rd();
 	}
 	auto pstmt = gx_sql_prep(psqlite, "SELECT uid, recent, read,"
 	             " unsent, flagged, replied, forwarded, deleted, ext,"
@@ -1556,11 +1545,13 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		sprintf(temp_path, "%s/ext/%s", dir, mid_string);
 		wrapfd fd = open(temp_path, O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
-		    node_stat.st_size >= MAX_DIGLEN ||
-		    HXio_fullread(fd.get(), temp_buff,
-		    node_stat.st_size) != node_stat.st_size)
+		    node_stat.st_size >= MAX_DIGLEN)
 			return;
-		temp_buff[node_stat.st_size] = '\0';
+		size_t slurp_size = 0;
+		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(fd.get(), &slurp_size));
+		if (slurp_data == nullptr)
+			return;
+		gx_strlcpy(temp_buff, slurp_data.get(), MAX_DIGLEN);
 	} else {
 		if (!common_util_switch_allocator())
 			return;
@@ -2606,7 +2597,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	uint64_t change_num;
 	uint64_t message_id;
 	char sql_string[1024];
-	struct stat node_stat;
 	char temp_buff[MAX_DIGLEN];
 	
 	if (argc != 6 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
@@ -2616,24 +2606,15 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (strcmp(argv[2], "draft") == 0)
 		b_unsent = 1;
 	sprintf(temp_path, "%s/eml/%s", argv[1], argv[3]);
-	wrapfd fd = open(temp_path, O_RDONLY);
-	if (fd.get() < 0) {
-		mlog(LV_ERR, "E-2071: Opening %s for reading failed: %s", temp_path, strerror(errno));
-		return MIDB_E_DISK_ERROR;
+	size_t slurp_size = 0;
+	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(temp_path, &slurp_size));
+	if (pbuff == nullptr) {
+		mlog(LV_ERR, "E-2071: read %s: %s", temp_path, strerror(errno));
+		return errno == ENOMEM ? MIDB_E_NO_MEMORY : MIDB_E_DISK_ERROR;
 	}
-	if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode)) {
-		mlog(LV_ERR, "E-2072: fstat/type mismatch");
-		return MIDB_E_DISK_ERROR;
-	}
-	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
-	if (pbuff == nullptr)
-		return MIDB_E_NO_MEMORY;
-	if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
-		return MIDB_E_SHORT_READ;
-	fd.close_rd();
 
 	MAIL imail(g_mime_pool);
-	if (!imail.load_from_str_move(pbuff.get(), node_stat.st_size))
+	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	tmp_len = sprintf(temp_buff, "{\"file\":\"\",");
 	if (imail.get_digest(&mess_len, temp_buff + tmp_len, MAX_DIGLEN - tmp_len - 1) <= 0)
@@ -2643,14 +2624,17 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	tmp_len ++;
 	temp_buff[tmp_len] = '\0';
 	sprintf(temp_path, "%s/ext/%s", argv[1], argv[3]);
-	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+	wrapfd fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
 	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-2073: Opening %s for writing failed: %s", temp_path, strerror(errno));
 		return MIDB_E_DISK_ERROR;
 	}
-	if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len ||
-	    fd.close_wr() < 0)
+	auto wr_ret = HXio_fullwrite(fd.get(), temp_buff, tmp_len);
+	if (wr_ret < 0 || wr_ret != tmp_len)
 		mlog(LV_ERR, "E-2085: write %s: %s", temp_path, strerror(errno));
+	wr_ret = fd.close_wr();
+	if (wr_ret < 0)
+		mlog(LV_ERR, "E-2072: close %s: %s", temp_path, strerror(errno));
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2790,7 +2774,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	uint64_t change_num;
 	uint64_t message_id;
 	char sql_string[1024];
-	struct stat node_stat;
 
 	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024 ||
 	    strlen(argv[4]) >= 1024)
@@ -2802,24 +2785,15 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		mlog(LV_ERR, "E-1486: ENOMEM");
 		return MIDB_E_NO_MEMORY;
 	}
-	wrapfd fd = open(eml_path.c_str(), O_RDONLY);
-	if (fd.get() < 0) {
+	size_t slurp_size = 0;
+	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(eml_path.c_str(), &slurp_size));
+	if (pbuff == nullptr) {
 		mlog(LV_ERR, "E-2074: Opening %s for reading failed: %s", eml_path.c_str(), strerror(errno));
-		return MIDB_E_DISK_ERROR;
+		return errno == ENOMEM ? MIDB_E_NO_MEMORY : MIDB_E_DISK_ERROR;
 	}
-	if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode)) {
-		mlog(LV_ERR, "E-2089: fstat/type mismatch");
-		return MIDB_E_DISK_ERROR;
-	}
-	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
-	if (pbuff == nullptr)
-		return MIDB_E_NO_MEMORY;
-	if (HXio_fullread(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
-		return MIDB_E_SHORT_READ;
-	fd.close_rd();
 
 	MAIL imail(g_mime_pool);
-	if (!imail.load_from_str_move(pbuff.get(), node_stat.st_size))
+	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
