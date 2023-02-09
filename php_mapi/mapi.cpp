@@ -518,7 +518,7 @@ static PHP_RSHUTDOWN_FUNCTION(mapi)
 
 static ZEND_FUNCTION(mapi_load_mapidefs)
 {
-	long level = 0;
+	zend_long level = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|l", &level) == FAILURE)
 		;
 
@@ -550,8 +550,7 @@ static ZEND_FUNCTION(mapi_last_hresult)
 
 static ZEND_FUNCTION(mapi_prop_type)
 {
-	long proptag;
-
+	zend_long proptag;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &proptag) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
@@ -563,8 +562,7 @@ static ZEND_FUNCTION(mapi_prop_type)
 
 static ZEND_FUNCTION(mapi_prop_id)
 {
-	long proptag;
-
+	zend_long proptag;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &proptag) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
@@ -576,8 +574,7 @@ static ZEND_FUNCTION(mapi_prop_id)
 
 static ZEND_FUNCTION(mapi_is_error)
 {
-	long errcode;
-
+	zend_long errcode;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &errcode) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
@@ -589,7 +586,7 @@ static ZEND_FUNCTION(mapi_is_error)
 
 static ZEND_FUNCTION(mapi_make_scode)
 {
-	long sev, code;
+	zend_long sev, code;
 	uint32_t scode;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll", &sev, &code) == FAILURE) {
@@ -608,8 +605,7 @@ static ZEND_FUNCTION(mapi_make_scode)
 
 static ZEND_FUNCTION(mapi_prop_tag)
 {
-	long propid;
-	long proptype;
+	zend_long propid, proptype;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ll", &proptype, &propid) == FAILURE || propid >
@@ -624,7 +620,7 @@ static ZEND_FUNCTION(mapi_prop_tag)
 
 static ZEND_FUNCTION(mapi_createoneoff)
 {
-	long flags;
+	zend_long flags = 0;
 	char *ptype;
 	size_t type_len = 0, name_len = 0, address_len = 0;
 	char *paddress;
@@ -633,8 +629,6 @@ static ZEND_FUNCTION(mapi_createoneoff)
 	ONEOFF_ENTRYID tmp_entry;
 	char empty[1]{};
 	
-	flags = 0;
-	name_len = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"sss|l", &pdisplayname, &name_len, &ptype, &type_len,
 		&paddress, &address_len, &flags) == FAILURE ||
@@ -687,7 +681,7 @@ static ZEND_FUNCTION(mapi_parseoneoff)
 
 static ZEND_FUNCTION(mapi_logon_zarafa)
 {
-	long flags;
+	zend_long flags = 0;
 	size_t wa_len = 0, misc_len = 0;
 	size_t server_len = 0, sslcert_len = 0, sslpass_len = 0;
 	size_t username_len = 0, password_len = 0;
@@ -702,7 +696,6 @@ static ZEND_FUNCTION(mapi_logon_zarafa)
 	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
 	zstrplus str_user(zend_string_init(ZEND_STRL("REMOTE_USER"), 0));
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|ssslss",
 		&username, &username_len, &password, &password_len, &server,
 		&server_len, &sslcert, &sslcert_len, &sslpass, &sslpass_len,
@@ -730,13 +723,12 @@ static ZEND_FUNCTION(mapi_logon_zarafa)
 
 static ZEND_FUNCTION(mapi_logon_ex)
 {
-	long flags;
+	zend_long flags = 0;
 	char *username;
 	char *password;
 	size_t username_len = 0, password_len = 0;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssl",
 		&username, &username_len, &password, &password_len, &flags)
 		== FAILURE || NULL == username || '\0' == username[0] ||
@@ -783,7 +775,7 @@ static ZEND_FUNCTION(mapi_logon_ex)
 
 static ZEND_FUNCTION(mapi_openentry)
 {
-	long flags;
+	zend_long flags = 0;
 	BINARY entryid;
 	size_t eid_size = 0;
 	zval *pzresource;
@@ -792,7 +784,6 @@ static ZEND_FUNCTION(mapi_openentry)
 	MAPI_RESOURCE *psession;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|sl",
 	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
 		|| NULL == pzresource || NULL == entryid.pb) {
@@ -866,7 +857,7 @@ static ZEND_FUNCTION(mapi_openaddressbook)
 
 static ZEND_FUNCTION(mapi_ab_openentry)
 {
-	long flags;
+	zend_long flags = 0;
 	BINARY entryid;
 	size_t eid_size = 0;
 	zval *pzresource;
@@ -875,7 +866,6 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 	MAPI_RESOURCE *psession;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
 	entryid.cb = 0;
 	entryid.pb = NULL;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|sl",
@@ -927,7 +917,7 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 
 static ZEND_FUNCTION(mapi_ab_resolvename)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzarray;
 	zval pzrowset;
 	zval *pzresource;
@@ -936,7 +926,6 @@ static ZEND_FUNCTION(mapi_ab_resolvename)
 	MAPI_RESOURCE *psession;
 	
 	ZVAL_NULL(&pzrowset);
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra|l", &pzresource, &pzarray, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzarray) {
@@ -1121,13 +1110,12 @@ static ZEND_FUNCTION(mapi_openprofilesection)
 
 static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 {
-	long flags;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *probject;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -1175,13 +1163,12 @@ static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 
 static ZEND_FUNCTION(mapi_folder_getcontentstable)
 {
-	long flags;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *probject;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -1236,13 +1223,12 @@ static ZEND_FUNCTION(mapi_folder_getcontentstable)
 
 static ZEND_FUNCTION(mapi_folder_createmessage)
 {
-	long flags;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -1275,13 +1261,12 @@ static ZEND_FUNCTION(mapi_folder_createmessage)
 
 static ZEND_FUNCTION(mapi_folder_deletemessages)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzarray;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
 	BINARY_ARRAY entryid_array;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra|l", &pzresource, &pzarray, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzarray) {
@@ -1311,7 +1296,7 @@ static ZEND_FUNCTION(mapi_folder_deletemessages)
 
 static ZEND_FUNCTION(mapi_folder_copymessages)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzarray;
 	zval *pzsrcfolder;
 	zval *pzdstfolder;
@@ -1319,7 +1304,6 @@ static ZEND_FUNCTION(mapi_folder_copymessages)
 	MAPI_RESOURCE *pdstfolder;
 	BINARY_ARRAY entryid_array;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rar|l",
 		&pzsrcfolder, &pzarray, &pzdstfolder, &flags) == FAILURE ||
 		NULL == pzsrcfolder || NULL == pzarray || NULL == pzdstfolder) {
@@ -1355,13 +1339,12 @@ static ZEND_FUNCTION(mapi_folder_copymessages)
 
 static ZEND_FUNCTION(mapi_folder_setreadflags)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzarray;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
 	BINARY_ARRAY entryid_array;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra|l", &pzresource, &pzarray, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzarray) {
@@ -1391,7 +1374,6 @@ static ZEND_FUNCTION(mapi_folder_setreadflags)
 
 static ZEND_FUNCTION(mapi_folder_createfolder)
 {
-	int flags;
 	char *pfname;
 	size_t name_len = 0, comment_len = 0;
 	char *pcomment;
@@ -1401,10 +1383,9 @@ static ZEND_FUNCTION(mapi_folder_createfolder)
 	MAPI_RESOURCE *presource;
 	char empty[1]{};
 	
-	flags = 0;
 	pcomment = NULL;
 	comment_len = 0;
-	long folder_type = FOLDER_GENERIC;
+	zend_long flags = 0, folder_type = FOLDER_GENERIC;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs|sll",
 		&pzresource, &pfname, &name_len, &pcomment, &comment_len,
 		&flags, &folder_type) == FAILURE || NULL == pzresource ||
@@ -1443,13 +1424,12 @@ static ZEND_FUNCTION(mapi_folder_createfolder)
 
 static ZEND_FUNCTION(mapi_folder_deletefolder)
 {
-	long flags;
+	zend_long flags = 0;
 	BINARY entryid;
 	size_t eid_size = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs|l",
 	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
 		|| NULL == pzresource || NULL == entryid.pb) {
@@ -1476,11 +1456,10 @@ static ZEND_FUNCTION(mapi_folder_deletefolder)
 
 static ZEND_FUNCTION(mapi_folder_emptyfolder)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -1505,7 +1484,7 @@ static ZEND_FUNCTION(mapi_folder_emptyfolder)
 
 static ZEND_FUNCTION(mapi_folder_copyfolder)
 {
-	long flags;
+	zend_long flags = 0;
 	char *pname;
 	size_t name_len = 0, eid_size = 0;
 	BINARY entryid;
@@ -1514,7 +1493,6 @@ static ZEND_FUNCTION(mapi_folder_copyfolder)
 	MAPI_RESOURCE *psrcfolder;
 	MAPI_RESOURCE *pdstfolder;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rsr|sl",
 	    &pzvalsrcfolder, &entryid.pb, &eid_size, &pzvaldstfolder,
 		&pname, &name_len, &flags) == FAILURE || NULL == pzvalsrcfolder ||
@@ -1583,7 +1561,7 @@ static ZEND_FUNCTION(mapi_msgstore_getarchiveentryid)
 
 static ZEND_FUNCTION(mapi_msgstore_openentry)
 {
-	long flags;
+	zend_long flags = 0;
 	BINARY entryid;
 	size_t eid_size = 0;
 	uint32_t hobject;
@@ -1592,7 +1570,6 @@ static ZEND_FUNCTION(mapi_msgstore_openentry)
 	MAPI_RESOURCE *pstore;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
 	entryid.cb = 0;
 	entryid.pb = NULL;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -1677,7 +1654,7 @@ static ZEND_FUNCTION(mapi_msgstore_advise)
 	BINARY entryid;
 	size_t eid_size = 0;
 	uint32_t sub_id;
-	long event_mask;
+	zend_long event_mask;
 	zval *pzressink;
 	zval *pzresource;
 	BINARY *pentryid;
@@ -1725,7 +1702,7 @@ static ZEND_FUNCTION(mapi_msgstore_advise)
 
 static ZEND_FUNCTION(mapi_msgstore_unadvise)
 {
-	long sub_id;
+	zend_long sub_id;
 	zval *pzresource;
 	MAPI_RESOURCE *pstore;
 
@@ -1771,7 +1748,7 @@ static ZEND_FUNCTION(mapi_sink_create)
 
 static ZEND_FUNCTION(mapi_sink_timedwait)
 {
-	long tmp_time;
+	zend_long tmp_time;
 	zval *pzressink;
 	NOTIF_SINK *psink;
 	zval pznotifications;
@@ -1884,7 +1861,7 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 	PROPTAG_ARRAY *pproptags;
 	
 	ZVAL_NULL(&pzrowset);
-	long start = UINT32_MAX, row_count = UINT32_MAX;
+	zend_long start = UINT32_MAX, row_count = UINT32_MAX;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|a!ll",
 		&pzresource, &pzproptags, &start, &row_count) == FAILURE ||
 		NULL == pzresource) {
@@ -1923,13 +1900,12 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 
 static ZEND_FUNCTION(mapi_table_setcolumns)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresource;
 	zval *pzproptags;
 	MAPI_RESOURCE *ptable;
 	PROPTAG_ARRAY proptags;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ra|l",
 		&pzresource, &pzproptags, &flags) == FAILURE || NULL ==
 		pzresource || NULL == pzproptags) {
@@ -1959,14 +1935,11 @@ static ZEND_FUNCTION(mapi_table_setcolumns)
 
 static ZEND_FUNCTION(mapi_table_seekrow)
 {
-	long bookmark;
-	long row_count;
+	zend_long bookmark = BOOKMARK_BEGINNING, row_count = 0;
 	zval *pzresource;
 	int32_t rows_sought;
 	MAPI_RESOURCE *ptable;
 	
-	row_count = 0;
-	bookmark = BOOKMARK_BEGINNING;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rll",
 		&pzresource, &bookmark, &row_count) == FAILURE || NULL
 		== pzresource) {
@@ -1991,13 +1964,12 @@ static ZEND_FUNCTION(mapi_table_seekrow)
 
 static ZEND_FUNCTION(mapi_table_sort)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresource;
 	zval *pzsortarray;
 	MAPI_RESOURCE *ptable;
 	SORTORDER_SET sortcriteria;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ra|l",
 		&pzresource, &pzsortarray, &flags) == FAILURE || NULL ==
 		pzresource || NULL == pzsortarray) {
@@ -2054,13 +2026,12 @@ static ZEND_FUNCTION(mapi_table_getrowcount)
 
 static ZEND_FUNCTION(mapi_table_restrict)
 {
-	unsigned long flags;
+	zend_long flags = 0;
 	zval *pzresource;
 	zval *pzrestrictarray;
 	MAPI_RESOURCE *ptable;
 	RESTRICTION restriction;
 
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ra|l",
 		&pzresource, &pzrestrictarray, &flags) == FAILURE ||
 		NULL == pzresource || NULL == pzrestrictarray || 0 ==
@@ -2091,15 +2062,13 @@ static ZEND_FUNCTION(mapi_table_restrict)
 
 static ZEND_FUNCTION(mapi_table_findrow)
 {
-	unsigned long flags, bookmark;
+	zend_long flags = 0, bookmark = BOOKMARK_BEGINNING;
 	uint32_t row_idx;
 	zval *pzresource;
 	zval *pzrestrictarray;
 	MAPI_RESOURCE *ptable;
 	RESTRICTION restriction;
 	
-	flags = 0;
-	bookmark = BOOKMARK_BEGINNING;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ra|ll",
 		&pzresource, &pzrestrictarray, &bookmark, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzrestrictarray || 0 ==
@@ -2158,7 +2127,7 @@ static ZEND_FUNCTION(mapi_table_createbookmark)
 
 static ZEND_FUNCTION(mapi_table_freebookmark)
 {
-	long bookmark;
+	zend_long bookmark;
 	zval *pzresource;
 	MAPI_RESOURCE *ptable;
 	
@@ -2232,13 +2201,12 @@ static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 
 static ZEND_FUNCTION(mapi_message_modifyrecipients)
 {
-	long flags;
+	zend_long flags = MODRECIP_ADD;
 	zval *pzadrlist;
 	zval *pzresource;
 	TARRAY_SET rcpt_list;
 	MAPI_RESOURCE *pmessage;
 	
-	flags = MODRECIP_ADD;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rla", &pzresource, &flags, &pzadrlist) == FAILURE
 		|| NULL == pzresource || NULL == pzadrlist) {
@@ -2331,7 +2299,7 @@ static ZEND_FUNCTION(mapi_message_getattachmenttable)
 
 static ZEND_FUNCTION(mapi_message_openattach)
 {
-	long attach_id;
+	zend_long attach_id;
 	zval *pzresource;
 	uint32_t hobject;
 	MAPI_RESOURCE *pmessage;
@@ -2369,13 +2337,12 @@ static ZEND_FUNCTION(mapi_message_openattach)
 
 static ZEND_FUNCTION(mapi_message_createattach)
 {
-	long flags;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -2408,12 +2375,10 @@ static ZEND_FUNCTION(mapi_message_createattach)
 
 static ZEND_FUNCTION(mapi_message_deleteattach)
 {	
-	long flags;
-	long attach_id;
+	zend_long flags = 0, attach_id;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rl|l",
 		&pzresource, &attach_id, &flags) == FAILURE || NULL ==
 		pzresource) {
@@ -2443,7 +2408,7 @@ static ZEND_FUNCTION(mapi_stream_read)
 	zval *pzresource;
 	uint32_t actual_bytes;
 	STREAM_OBJECT *pstream;
-	unsigned long wanted_bytes;
+	zend_long wanted_bytes;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rl", &pzresource, &wanted_bytes) == FAILURE ||
@@ -2464,12 +2429,10 @@ static ZEND_FUNCTION(mapi_stream_read)
 
 static ZEND_FUNCTION(mapi_stream_seek)
 {
-	long flags;
+	zend_long flags = STREAM_SEEK_CUR, seek_offset;
 	zval *pzresource;
-	long seek_offset;
 	STREAM_OBJECT *pstream;
 	
-	flags = STREAM_SEEK_CUR;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rl|l",
 		&pzresource, &seek_offset, &flags) == FAILURE || NULL ==
 		pzresource) {
@@ -2488,7 +2451,7 @@ static ZEND_FUNCTION(mapi_stream_seek)
 
 static ZEND_FUNCTION(mapi_stream_setsize)
 {
-	long newsize;
+	zend_long newsize;
 	zval *pzresource;
 	STREAM_OBJECT *pstream;
 	
@@ -2587,16 +2550,14 @@ static ZEND_FUNCTION(mapi_stream_create)
 
 static ZEND_FUNCTION(mapi_openpropertytostream)
 {
-	long flags;
+	zend_long flags = 0, proptag;
 	size_t guidlen = 0;
 	void *pvalue;
-	long proptag;
 	char *guidstr;
 	zval *pzresource;
 	STREAM_OBJECT *pstream;
 	MAPI_RESOURCE *probject;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rl|ls", &pzresource, &proptag, &flags, &guidstr,
 		&guidlen) == FAILURE || NULL == pzresource) {
@@ -2721,11 +2682,10 @@ static ZEND_FUNCTION(mapi_message_getrecipienttable)
 
 static ZEND_FUNCTION(mapi_message_setreadflag)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rl",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -2750,13 +2710,12 @@ static ZEND_FUNCTION(mapi_message_setreadflag)
 
 static ZEND_FUNCTION(mapi_attach_openobj)
 {
-	long flags;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *pattach;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -2900,7 +2859,7 @@ static ZEND_FUNCTION(mapi_setprops)
 
 static ZEND_FUNCTION(mapi_copyto)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzsrc;
 	zval *pzdst;
 	zval *pzexcludeiids;
@@ -2910,7 +2869,6 @@ static ZEND_FUNCTION(mapi_copyto)
 	PROPTAG_ARRAY exclude_proptags;
 	PROPTAG_ARRAY *pexclude_proptags;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raar|l",
 		&pzsrc, &pzexcludeiids, &pzexcludeprops, &pzdst, &flags)
 		== FAILURE || NULL == pzsrc || NULL == pzdst) {
@@ -2991,11 +2949,10 @@ static ZEND_FUNCTION(mapi_copyto)
 
 static ZEND_FUNCTION(mapi_savechanges)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *probject;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -3122,24 +3079,20 @@ static ZEND_FUNCTION(mapi_deleteprops)
 
 static ZEND_FUNCTION(mapi_openproperty)
 {
-	int type = -1;
-	int flags;
 	size_t guidlen = 0;
-	long proptag;
 	void *pvalue;
 	char *guidstr;
 	FLATUID iid_guid;
 	uint32_t hobject;
 	zval *pzresource;
 	PULL_CTX pull_ctx;
-	long interfaceflags;
+	zend_long flags = 0, interfaceflags = 0, proptag;
 	STREAM_OBJECT *pstream;
 	MAPI_RESOURCE *probject;
 	MAPI_RESOURCE *presource;
 	ICS_IMPORT_CTX *pimporter;
 	ICS_EXPORT_CTX *pexporter;
 	
-	flags = 0;
 	if (ZEND_NUM_ARGS() == 2) {
 		if (zend_parse_parameters(ZEND_NUM_ARGS(),
 			"rl", &pzresource, &proptag) == FAILURE || NULL
@@ -3147,8 +3100,6 @@ static ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = ecInvalidParam;
 			THROW_EXCEPTION;
 		}
-		flags = 0;
-		interfaceflags = 0;
 		iid_guid = IID_IStream;
 	} else {
 		if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -3164,7 +3115,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 			THROW_EXCEPTION;
 		}
 	}
-	type = Z_RES_TYPE_P(pzresource);
+	auto type = Z_RES_TYPE_P(pzresource);
 	if (type == le_mapi_message) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_message, le_mapi_message);
@@ -3678,7 +3629,7 @@ static ZEND_FUNCTION(mapi_folder_getrulestable)
 
 static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresource;
 	zval pzfolderlist, pzrestriction;
 	uint32_t search_state;
@@ -3688,7 +3639,6 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 
 	ZVAL_NULL(&pzfolderlist);
 	ZVAL_NULL(&pzrestriction);
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -3726,7 +3676,7 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 
 static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresource;
 	zval *pzfolderlist;
 	zval *pzrestriction;
@@ -3736,7 +3686,6 @@ static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	BINARY_ARRAY entryid_array;
 	BINARY_ARRAY *pentryid_array;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raal",
 		&pzresource, &pzrestriction, &pzfolderlist, &flags) ==
 		FAILURE || NULL == pzresource) {
@@ -3782,13 +3731,12 @@ static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 
 static ZEND_FUNCTION(mapi_folder_modifyrules)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzrows;
 	zval *pzresource;
 	RULE_LIST rule_list;
 	MAPI_RESOURCE *pfolder;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra|l", &pzresource, &pzrows, &flags) == FAILURE
 		|| NULL == pzresource) {
@@ -3818,7 +3766,7 @@ static ZEND_FUNCTION(mapi_folder_modifyrules)
 static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 {
 	int i;
-	long acl_type;
+	zend_long acl_type;
 	zval *pzresource;
 	PERMISSION_SET perm_set;
 	MAPI_RESOURCE *presource;
@@ -3985,8 +3933,7 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 */
 static ZEND_FUNCTION(mapi_getuseravailability)
 {
-	long endtime;
-	long starttime;
+	zend_long starttime, endtime;
 	BINARY entryid;
 	size_t eid_size = 0;
 	zval *pzresource;
@@ -4023,8 +3970,7 @@ static ZEND_FUNCTION(mapi_getuseravailability)
 
 static ZEND_FUNCTION(mapi_exportchanges_config)
 {
-	long flags;
-	long buffersize;
+	zend_long flags = 0, buffersize = 0;
 	zval *pzrestrict;
 	zval *pzresstream;
 	zval *pzincludeprops;
@@ -4037,8 +3983,6 @@ static ZEND_FUNCTION(mapi_exportchanges_config)
 	RESTRICTION *prestriction;
 	ICS_IMPORT_CTX *pimporter;
 	
-	flags = 0;
-	buffersize = 1;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rrlzzzzl", &pzresexportchanges, &pzresstream, &flags,
 		&pzresimportchanges, &pzrestrict, &pzincludeprops,
@@ -4410,13 +4354,12 @@ static ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_config)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresimport;
 	zval *pzresstream;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rrl",
 		&pzresimport, &pzresstream, &flags) == FAILURE || NULL
 		== pzresimport || NULL == pzresstream) {
@@ -4470,7 +4413,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 {
-	long flags;
+	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresprops;
 	zval *pzresimport;
@@ -4479,7 +4422,6 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 	TPROPVAL_ARRAY propvals;
 	MAPI_RESOURCE *presource;
 	
-	flags = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ralz", &pzresimport, &pzresprops, &flags,
 		&pzresmessage) == FAILURE || NULL == pzresimport
@@ -4515,13 +4457,12 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresimport;
 	zval *pzresmessages;
 	ICS_IMPORT_CTX *pctx;
 	BINARY_ARRAY message_bins;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rla",
 		&pzresimport, &flags, &pzresmessages) == FAILURE ||
 		NULL == pzresimport || NULL == pzresmessages) {
@@ -4594,13 +4535,12 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_config)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresimport;
 	zval *pzresstream;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rrl",
 		&pzresimport, &pzresstream, &flags) == FAILURE || NULL
 		== pzresimport || NULL == pzresstream) {
@@ -4687,13 +4627,12 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 {
-	long flags;
+	zend_long flags = 0;
 	zval *pzresimport;
 	zval *pzresfolders;
 	ICS_IMPORT_CTX *pctx;
 	BINARY_ARRAY folder_bins;
 	
-	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rla", &pzresimport, &flags, &pzresfolders) == FAILURE
 		|| NULL == pzresimport || NULL == pzresfolders) {
@@ -5325,7 +5264,7 @@ static ZEND_FUNCTION(mapi_ianatz_to_tzdef)
  */
 static ZEND_FUNCTION(mapi_strerror)
 {
-	long code = 0;
+	zend_long code = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &code) == FAILURE) {
 		RETVAL_FALSE;
 		return;
