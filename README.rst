@@ -52,6 +52,9 @@ at `<https://community.grommunio.com/>`_.
 The source code repository and technical issue tracker can be found at
 `<https://github.com/grommunio/gromox>`_.
 
+For direct contact and supplying information about a security-related
+responsible disclosure, contact `dev@grommunio.com <dev@grommunio.com>`_.
+
 
 Standards and protocols
 =======================
@@ -65,3 +68,18 @@ OXCRPC, OXCSTOR, OXCTABL, OXMSG, OXOABK, OXOABKT, OXOCAL, OXOCNTC, OXODLGT,
 OXOMSG, OXORULE, OXOSFLD, OXOSMIME, OXPROPS, OXTNEF, OXVCARD, and (partially)
 OXABREF, OXOCFG, OXRTFCP, OXWOOF, PST, as well as parts of the specifications
 of DCERPC/C7086, RPCE and RPCH.
+
+
+Contributing
+============
+
+* https://docs.github.com/en/get-started/quickstart/contributing-to-projects
+* Alternatively, upload commits to a git store of your choosing, or export the
+  series as a patchset using `git format-patch
+  <https://git-scm.com/docs/git-format-patch>`_, then convey the git
+  link/patches through our direct contact address (above).
+
+Coding style
+------------
+
+When in Rome, do as the Romans do.
