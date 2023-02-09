@@ -554,10 +554,10 @@ static ZEND_FUNCTION(mapi_prop_type)
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &proptag) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
-	} else {
-		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG(PROP_TYPE(proptag));
+		return;
 	}
+	MAPI_G(hr) = ecSuccess;
+	RETURN_LONG(PROP_TYPE(proptag));
 }
 
 static ZEND_FUNCTION(mapi_prop_id)
@@ -566,10 +566,10 @@ static ZEND_FUNCTION(mapi_prop_id)
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &proptag) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
-	} else {
-		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG(PROP_ID(proptag));
+		return;
 	}
+	MAPI_G(hr) = ecSuccess;
+	RETURN_LONG(PROP_ID(proptag));
 }
 
 static ZEND_FUNCTION(mapi_is_error)
@@ -578,10 +578,10 @@ static ZEND_FUNCTION(mapi_is_error)
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &errcode) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
-	} else {
-		MAPI_G(hr) = ecSuccess;
-		RETURN_BOOL(errcode & 0x80000000);
+		return;
 	}
+	MAPI_G(hr) = ecSuccess;
+	RETURN_BOOL(errcode & 0x80000000);
 }
 
 static ZEND_FUNCTION(mapi_make_scode)
@@ -592,15 +592,15 @@ static ZEND_FUNCTION(mapi_make_scode)
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll", &sev, &code) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
-	} else {
-		if (0 == sev) {
-			scode = 0x40000 | ((uint32_t)code);
-		} else {
-			scode = 0x80000000 | 0x40000 | ((uint32_t)code);
-		}
-		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG(scode);
+		return;
 	}
+	if (0 == sev) {
+		scode = 0x40000 | ((uint32_t)code);
+	} else {
+		scode = 0x80000000 | 0x40000 | ((uint32_t)code);
+	}
+	MAPI_G(hr) = ecSuccess;
+	RETURN_LONG(scode);
 }
 
 static ZEND_FUNCTION(mapi_prop_tag)
@@ -612,10 +612,10 @@ static ZEND_FUNCTION(mapi_prop_tag)
 		0xFFFF || proptype > 0xFFFF) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
-	} else {
-		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG(PROP_TAG(proptype, propid));
+		return;
 	}
+	MAPI_G(hr) = ecSuccess;
+	RETURN_LONG(PROP_TAG(proptype, propid));
 }
 
 static ZEND_FUNCTION(mapi_createoneoff)
