@@ -627,11 +627,10 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 	      poffset, &count, pbuff + buff_len, length - buff_len);
 	if (gmd < 0 || buff_len + gmd > length - 2) {
 		goto PARSE_FAILURE;
-	} else {
-		buff_len += gmd;
-		pbuff[buff_len] = ']';
-		buff_len ++;
 	}
+	buff_len += gmd;
+	pbuff[buff_len] = ']';
+	buff_len ++;
 	
 	count = 0;
 	memcpy(pbuff + buff_len, ",\"mimes\":[", 10);
@@ -641,11 +640,10 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 	      pbuff + buff_len, length - buff_len);
 	if (gmd < 0 || buff_len + gmd > length - 20) {
 		goto PARSE_FAILURE;
-	} else {
-		buff_len += gmd;
-		sprintf(pbuff + buff_len, "],\"size\":%zu", *poffset);
-		return 1;
 	}
+	buff_len += gmd;
+	sprintf(pbuff + buff_len, "],\"size\":%zu", *poffset);
+	return 1;
 	
  PARSE_FAILURE:
 	auto mgl = pmail->get_length();
