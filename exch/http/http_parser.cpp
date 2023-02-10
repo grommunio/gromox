@@ -425,9 +425,9 @@ static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
-		"Content-Length: 0\r\n"
+		"Content-Length: %zu\r\n"
 		"Connection: close\r\n"
-		"\r\n", code, msg, dstring);
+		"\r\n%s\r\n", code, msg, dstring, strlen(msg) + 2, msg);
 	ctx->stream_out.write(response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
@@ -450,9 +450,9 @@ static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
-		"Content-Length: 0\r\n"
+		"Content-Length: %zu\r\n"
 		"Connection: close\r\n"
-		"\r\n", code, msg, dstring);
+		"\r\n%s\r\n", code, msg, dstring, strlen(msg) + 2, msg);
 	ctx->stream_out.write(response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
