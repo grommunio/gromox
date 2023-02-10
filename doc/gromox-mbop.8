@@ -22,7 +22,7 @@ unload: issue the "unload_store" RPC for a mailbox
 vacuum: issue the "vacuum" RPC for a mailbox
 .SH delmsg
 .SS Synopsis
-\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBdelmsg \-f\fP \fIfolder_id\fP
+\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBdelmsg \-f\fP \fIfolder_spec\fP
 [\fImsgid\fP...]
 .SS Description
 This command hard-deletes messages from a store, including issuing proper
@@ -32,16 +32,17 @@ The folder and message IDs taken as arguments on the command-line should be
 of the GC-value form, i.e. as they appear in the the SQLite database.
 .SS Subcommand options
 .TP
-\fB-f\fP \fIfolder_id\fP
-The folder from which to delete the messages. (If a msgid is specified which is
-not located in the particular folder, that message will not be deleted.)
+\fB-f\fP \fIfolder_spec\fP
+The folder from which to delete the messages. See below for details. (If a
+msgid is specified which is not located in the particular folder, that message
+will not be deleted.)
 .TP
 \fB\-\-soft\fP
 Perform a soft deletion.
 .SH emptyfld
 .SS Synopsis
 \fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBemptyfld\fP [\fB\-R\fP] [\fB\-\-soft\fP]
-\fIfolder_id\fP...
+\fIfolder_spec\fP...
 .SS Description
 This command deletes messages from a folder.
 .SS Subcommand options
@@ -65,5 +66,22 @@ the mailbox via a notification channel.
 .SH vacuum
 The "vacuum" RPC makes exmdb_provider issue the SQLite "vacuum" command on
 exchange.sqlite3, which rebuilds and compacts the database file.
+.SH Folder specification
+\fIfolder_spec\fP can either be a numeric identifier, or a path-like
+specification into the folder hierarchy. If the name starts with the slash
+character '/', it is interpreted as starting from the root; otherwise, the
+first component must be a special name (CALENDAR, COMMON_VIEWS, CONFLICTS,
+CONTACTS, DEFERRED_ACTION, DELETED, DRAFT, FINDER, INBOX, IPM_SUBTREE, JOURNAL,
+JUNK, LOCAL_FAILURES, NOTES, OUTBOX, SENT, SERVER_FAILURES, SHORTCUTS,
+SYNC_ISSUES, TASKS, VIEWS). These special names can be used with private stores
+only; there are no names defined for public folder contents at this time. There
+is also no parsing support for slashes in folder names currently in mbop; the
+slash character is always treated as a hierarchy separator. Examples:
+.IP \(bu 4
+/Top of Information Store/Sent Items/2022
+.IP \(bu 4
+IPM_SUBTREE/Sent Items/2022
+.IP \(bu 4
+SENT/2022
 .SH See also
 \fBgromox\fP(7)
