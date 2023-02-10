@@ -1,13 +1,21 @@
-Development
-===========
+Development 2.3.48
+==================
 
 Enhancements:
 
 * php_mapi: add mapi_strerror function
+* mbop: emptyfld/delmsg support folder names now
+
+Fixes:
+
+* php_mapi: fix stack corruption in zif_mapi_createfolder
 
 Behavioral changes:
 
 * exmdb_provider: enable CID file compression by default
+* php_mapi: add mapi_strerror function
+  (requires new version of mapi-header-php)
+* exch: remove old PHP-OXDISCO and PHP-OAB implementation
 
 
 Gromox 2.3 (2023-03-03)
