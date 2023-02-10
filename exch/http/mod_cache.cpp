@@ -329,9 +329,6 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	strftime(modified_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
 	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	auto pcontent_type = pcontext->pitem->content_type;
-	if (NULL == pcontent_type) {
-		pcontent_type = "application/octet-stream";
-	}
 	bool emit_206 = pcontext->offset != 0 ||
 	                pcontext->until != pcontext->pitem->sb.st_size;
 	strcpy(response_buff, emit_206 ?
@@ -340,14 +337,17 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	response_len += gx_snprintf(response_buff + response_len,
 	                GX_ARRAY_SIZE(response_buff) - response_len,
 					"Date: %s\r\n"
-					"Content-Type: %s\r\n"
 					"Content-Length: %u\r\n"
 					"Accept-Ranges: bytes\r\n"
 					"Last-Modified: %s\r\n"
 					"ETag: \"%s\"\r\n",
-					date_string, pcontent_type,
+					date_string,
 					pcontext->until - pcontext->offset,
 					modified_string, etag);
+	if (pcontent_type != nullptr)
+		response_len += gx_snprintf(&response_buff[response_len],
+				std::size(response_buff) - response_len,
+				"Content-Type: %s\r\n", pcontent_type);
 	if (emit_206) {
 		response_len += gx_snprintf(response_buff + response_len,
 		                GX_ARRAY_SIZE(response_buff) - response_len,
