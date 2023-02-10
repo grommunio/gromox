@@ -15,22 +15,12 @@ using namespace gromox;
 
 uint64_t unix_to_nttime(time_t unix_time)
 {
-	uint64_t nt_time; 
-
-	nt_time = unix_time;
-	nt_time += TIME_FIXUP_CONSTANT_INT;
-	nt_time *= 10000000;
-	return nt_time;
+	return (static_cast<uint64_t>(unix_time) + TIME_FIXUP_CONSTANT_INT) * 10000000;
 }
 
 time_t nttime_to_unix(uint64_t nt_time)
 {
-	uint64_t unix_time;
-
-	unix_time = nt_time;
-	unix_time /= 10000000;
-	unix_time -= TIME_FIXUP_CONSTANT_INT;
-	return (time_t)unix_time;
+	return nt_time / 10000000 - TIME_FIXUP_CONSTANT_INT;
 }
 
 /* In PHP-MAPI, PT_STRING8 means UTF-8
@@ -38,34 +28,26 @@ time_t nttime_to_unix(uint64_t nt_time)
 	there's no definition for ansi string */
 uint32_t proptag_to_phptag(uint32_t proptag)
 {
-	uint32_t proptag1;
-	
-	proptag1 = proptag;
 	switch (PROP_TYPE(proptag)) {
 	case PT_UNICODE:
-		proptag1 = CHANGE_PROP_TYPE(proptag1, PT_STRING8);
-		break;
+		return CHANGE_PROP_TYPE(proptag, PT_STRING8);
 	case PT_MV_UNICODE:
-		proptag1 = CHANGE_PROP_TYPE(proptag1, PT_MV_STRING8);
-		break;
+		return CHANGE_PROP_TYPE(proptag, PT_MV_STRING8);
+	default:
+		return proptag;
 	}
-	return proptag1;
 }
 
 uint32_t phptag_to_proptag(uint32_t proptag)
 {
-	uint32_t proptag1;
-	
-	proptag1 = proptag;
 	switch (PROP_TYPE(proptag)) {
 	case PT_STRING8:
-		proptag1 = CHANGE_PROP_TYPE(proptag1, PT_UNICODE);
-		break;
+		return CHANGE_PROP_TYPE(proptag, PT_UNICODE);
 	case PT_MV_STRING8:
-		proptag1 = CHANGE_PROP_TYPE(proptag1, PT_MV_UNICODE);
-		break;
+		return CHANGE_PROP_TYPE(proptag, PT_MV_UNICODE);
+	default:
+		return proptag;
 	}
-	return proptag1;
 }
 
 zend_bool php_to_binary_array(zval *pzval, BINARY_ARRAY *pbins)
