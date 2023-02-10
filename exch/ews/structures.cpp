@@ -2,139 +2,38 @@
 // SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 /**
- * @brief      Implementation of EWS structure (de-)serialization
+ * @brief      Implementation of EWS structure methods
+ *
+ * This file only contains data type logic, the implementation
+ * of (de-)serialization functions was moved to serialization.cpp.
  */
+#include <algorithm>
 #include <iterator>
 
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/util.hpp>
 #include <gromox/ical.hpp>
 
 #include "ews.hpp"
-#include "serialization.hpp"
-#include "soaputil.hpp"
 #include "structures.hpp"
 
 using namespace gromox::EWS;
-using namespace gromox::EWS::Serialization;
+using namespace gromox::EWS::Exceptions;
 using namespace gromox::EWS::Structures;
-using namespace tinyxml2;
-
-//Shortcuts to call toXML* and fromXML* functions on members
-#define XMLINIT(name) name(fromXMLNode<decltype(name)>(xml, # name)) ///< Init member from XML node
-#define VXMLINIT(name) name(fromXMLNode<decltype(name)>(xml, nullptr)) ///< Init variant from XML node
-#define XMLDUMP(name) toXMLNode(xml, # name, name) ///< Write member into XML node
-#define VXMLDUMP(name) toXMLNode(xml, getName(name, # name), name) ///< Write variant into XML node
-#define XMLINITA(name) name(fromXMLAttr<decltype(name)>(xml, # name)) ///< Initialize member from XML attribute
-#define XMLDUMPA(name) toXMLAttr(xml, # name, name) ///< Write member into XML attribute
-
 using namespace std::string_literals;
-using namespace Exceptions;
-using gromox::EWS::SOAP::NS_MSGS;
-using gromox::EWS::SOAP::NS_TYPS;
+using namespace tinyxml2;
 
 namespace
 {
 
-/**
- * @brief     Generic deleter struct
- *
- * Provides explicit deleters for classes without destructor.
- */
-struct Cleaner
-{
-	inline void operator()(BINARY* x) {rop_util_free_binary(x);}
-	inline void operator()(TPROPVAL_ARRAY* x) {tpropval_array_free(x);}
-};
-
-
-/**
- * @brief     Compute Base64 encoded string
- *
- * @param     data    Data to encode
- * @param     len     Number of bytes
- *
- * @return    Base64 encoded string
- */
-std::string b64encode(const void* data, size_t len)
-{
-	std::string out(4*((len+2)/3)+1, '\0');
-	size_t outlen;
-	encode64(data, len, out.data(), out.length(), &outlen);
-	out.resize(outlen);
-	return out;
-}
-
-/**
- * @brief     Compute Base64 decoded string
- *
- * @param     data    Data to decode
- * @param     len     Number of bytes
- *
- * @return    Base64 encoded string
- */
-std::vector<uint8_t> b64decode(const char* data, size_t len)
-{
-	std::vector<uint8_t> out(len*3/4+1, 0);
-	size_t outlen;
-	if(decode64(data, len, out.data(), out.size(), &outlen))
-		throw DeserializationError("Invalid base64 string");
-	out.resize(outlen);
-	return out;
-}
-
 inline gromox::time_point nttime_to_time_point(uint64_t nttime)
 {return gromox::time_point::clock::from_time_t(rop_util_nttime_to_unix(nttime));}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLElement* xml, gromox::time_point& value)
-{
-	const char* data = xml->GetText();
-	if(!data)
-		return tinyxml2::XML_NO_TEXT_NODE;
-	tm t{};
-	float seconds = 0, unused;
-	int tz_hour = 0, tz_min = 0;
-	if(std::sscanf(data, "%4d-%02d-%02dT%02d:%02d:%f%03d:%02d", &t.tm_year, &t.tm_mon, &t.tm_mday, &t.tm_hour, &t.tm_min,
-	               &seconds, &tz_hour, &tz_min) < 6) //Timezone info is optional, date and time values mandatory
-		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
-	t.tm_sec = int(seconds);
-	t.tm_year -= 1900;
-	t.tm_mon -= 1;
-	t.tm_hour -= tz_hour;
-	t.tm_min -= tz_hour	< 0? -tz_min : tz_min;
-	time_t timestamp = mktime(&t)-timezone;
-	if(timestamp == time_t(-1))
-		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
-	value = gromox::time_point::clock::from_time_t(timestamp);
-	seconds = std::modf(seconds, &unused);
-	value += std::chrono::microseconds(int(seconds*1000000));
-	return tinyxml2::XML_SUCCESS;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * @brief     Decode Base64 encoded data from XML element
- */
-sBase64Binary::sBase64Binary(const XMLElement* xml)
-{
-	const char* data = xml->GetText();
-	if(!data)
-		throw DeserializationError("Element '"s+xml->Name()+"'is empty");
-	std::vector<uint8_t>::operator=(b64decode(data, strlen(data)));
-}
-
-/**
- * @brief     Decode Base64 encoded data from XML attribute
- */
-sBase64Binary::sBase64Binary(const XMLAttribute* xml) : std::vector<uint8_t>(b64decode(xml->Value(), strlen(xml->Value())))
-{}
 
 /**
  * @brief     Initilize binary data from tagged propval
@@ -149,36 +48,9 @@ sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 	assign(bin->pb, bin->pb+bin->cb);
 }
 
-/**
- * @brief     Return Base64 encoded data
- *
- * @return    std::string conatining base64 encoded data
- */
-std::string sBase64Binary::serialize() const
-{return empty()? std::string() : b64encode(data(), size());}
-
-/**
- * @brief     Store Base64 encoded data in xml element
- *
- * @param     xml     XML element to store data in
- */
-void sBase64Binary::serialize(XMLElement* xml) const
-{xml->SetText(empty()? "" : b64encode(data(), size()).c_str());}
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define TRY(expr) EWSContext::ext_error(expr)
-
-/**
- * @brief     Read entry ID from XML attribute
- *
- * @param     xml     XML attribute containing Base64 encoded entry ID
- */
-sFolderEntryId::sFolderEntryId(const XMLAttribute* xml)
-{
-	sBase64Binary bin(xml);
-	init(bin.data(), bin.size());
-}
 
 /**
  * @brief     Parse entry ID from binary data
@@ -202,20 +74,6 @@ void sFolderEntryId::init(const void* data, uint64_t size)
 		throw DeserializationError("Folder entry ID data to large");
 	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
 	TRY(ext_pull.g_folder_eid(this));
-}
-
-/**
- * @brief     Generate entry ID object
- *
- * @return    String containing base64 encoded entry ID
- */
-std::string sFolderEntryId::serialize() const
-{
-	char buff[64];
-	EXT_PUSH ext_push;
-	ext_push.init(buff, 64, 0, nullptr);
-	TRY(ext_push.p_folder_eid(*this));
-	return b64encode(buff, ext_push.m_offset);
 }
 
 /**
@@ -392,58 +250,8 @@ void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fi
 	if(lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
 		throw DispatchError("Failed to generate sync state cnset");
 }
-/**
- * @brief     Serialize sync state
- *
- * @return    Base64 encoded state
- */
-std::string sSyncState::serialize()
-{
-	std::unique_ptr<TPROPVAL_ARRAY, Cleaner> pproplist(tpropval_array_init());
-	if (!pproplist)
-		throw DispatchError("Out of memory");
-	std::unique_ptr<BINARY, Cleaner> ser(given.serialize());
-	if (!ser || pproplist->set(MetaTagIdsetGiven1, ser.get()))
-		throw DispatchError("Failed to generate sync state given idset data");
-	ser.reset(seen.serialize());
-	if (!ser || pproplist->set(MetaTagCnsetSeen, ser.get()))
-		throw DispatchError("Failed to generate sync state seen cnset data");
-	ser.reset();
-	if(!seen_fai.empty() && !read.empty())
-	{
-		ser.reset(seen_fai.serialize());
-		if (!ser || pproplist->set(MetaTagCnsetSeenFAI, ser.get()))
-			throw DispatchError("Failed to generate sync state seen fai cnset data");
-		ser.reset(read.serialize());
-		if (!ser || pproplist->set(MetaTagCnsetRead, ser.get()))
-			throw DispatchError("Failed to generate sync state read cnset data");
-	}
-	ser.reset();
-
-	EXT_PUSH stateBuffer;
-	if(!stateBuffer.init(nullptr, 0, 0) || stateBuffer.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
-		throw DispatchError("Failed to generate sync state");
-
-	return b64encode(stateBuffer.m_vdata, stateBuffer.m_offset);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-/**
- * @brief     Parse time string
- *
- *  Accepts HH:MM:SS format.
- *
- * @param     xml
- */
-sTime::sTime(const XMLElement* xml)
-{
-	const char* data = xml->GetText();
-	if(!data)
-		throw DeserializationError("Element '"s+xml->Name()+"'is empty");
-	if(sscanf(data, "%02hhu:%02hhu:%02hhu", &hour, &minute, &second) != 3)
-		throw DeserializationError("Element "s+xml->Name()+"="+xml->GetText()+"' has bad format (expected hh:mm:ss)");
-}
 
 sTimePoint::sTimePoint(const gromox::time_point& tp) : time(tp)
 {}
@@ -451,20 +259,6 @@ sTimePoint::sTimePoint(const gromox::time_point& tp) : time(tp)
 sTimePoint::sTimePoint(const gromox::time_point& tp, const tSerializableTimeZone& tz) :
     time(tp), offset(tz.offset(tp))
 {}
-
-void sTimePoint::serialize(XMLElement* xml) const
-{
-	tm t;
-	time_t timestamp = gromox::time_point::clock::to_time_t(time-offset);
-	gmtime_r(&timestamp, &t);
-	auto frac = time.time_since_epoch() % std::chrono::seconds(1);
-	long fsec = std::chrono::duration_cast<std::chrono::microseconds>(frac).count();
-	int off = -int(offset.count());
-	if(offset.count() == 0)
-		xml->SetText(fmt::format("{:%FT%T}.{:06}Z", t, fsec).c_str());
-	else
-		xml->SetText(fmt::format("{:%FT%T}.{:06}{:+03}{:02}", t, fsec, off / 60, abs(off) % 60).c_str());
-}
 
 /**
  * @brief      Generate time point from NT timestamp
@@ -485,8 +279,6 @@ tBaseFolderType::tBaseFolderType(const TPROPVAL_ARRAY& folderProps)
 	tFolderId& fId = FolderId.emplace();
 	for(const TAGGED_PROPVAL* tp = folderProps.ppropval; tp < folderProps.ppropval+folderProps.count; ++tp)
 	{
-		//if(!filter.empty() && !std::binary_search(filter.begin(), filter.end(), tp->proptag))
-		//	continue;
 		switch(tp->proptag)
 		{
 		case PR_CONTENT_UNREAD:
@@ -509,18 +301,6 @@ tBaseFolderType::tBaseFolderType(const TPROPVAL_ARRAY& folderProps)
 			ExtendedProperty.emplace_back(*tp);
 		}
 	}
-}
-
-void tBaseFolderType::serialize(XMLElement* xml) const
-{
-	XMLDUMP(FolderId);
-	XMLDUMP(ParentFolderId);
-	XMLDUMP(FolderClass);
-	XMLDUMP(DisplayName);
-	XMLDUMP(TotalCount);
-	XMLDUMP(ChildFolderCount);
-	for(const tExtendedProperty& ep : ExtendedProperty)
-		toXMLNode(xml, "ExtendedProperty", ep);
 }
 
 /**
@@ -561,92 +341,15 @@ sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps)
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-tBaseItemId::tBaseItemId(const XMLElement* xml) :
-    XMLINITA(Id), XMLINITA(ChangeKey)
-{}
-
 tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBase64Binary>& chKey) :
     Id(fEntryID), ChangeKey(chKey)
 {}
-
-void tBaseItemId::serialize(XMLElement* xml) const
-{
-	XMLDUMPA(Id);
-	XMLDUMPA(ChangeKey);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void tCalendarEventDetails::serialize(tinyxml2::XMLElement* xml) const
-{
-	XMLDUMP(ID);
-	XMLDUMP(Subject);
-	XMLDUMP(Location);
-	XMLDUMP(IsMeeting);
-	XMLDUMP(IsRecurring);
-	XMLDUMP(IsException);
-	XMLDUMP(IsReminderSet);
-	XMLDUMP(IsPrivate);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-
-void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
-{
-	XMLDUMP(StartTime);
-	XMLDUMP(EndTime);
-	XMLDUMP(BusyType);
-	XMLDUMP(CalenderEventDetails);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 tDistinguishedFolderId::tDistinguishedFolderId(const std::string_view& name) :
     Id(name)
 {}
-
-
-tDistinguishedFolderId::tDistinguishedFolderId(const tinyxml2::XMLElement* xml) :
-    XMLINIT(Mailbox),
-    XMLINITA(ChangeKey),
-    XMLINITA(Id)
-{}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tDuration::tDuration(const XMLElement* xml) :
-    XMLINIT(StartTime), XMLINIT(EndTime)
-{}
-
-void tDuration::serialize(XMLElement* xml) const
-{
-	XMLDUMP(StartTime);
-	XMLDUMP(EndTime);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tEmailAddressType::tEmailAddressType(const tinyxml2::XMLElement* xml) :
-    XMLINIT(Name),
-    XMLINIT(EmailAddress),
-    XMLINIT(RoutingType),
-    XMLINIT(MailboxType),
-    XMLINIT(ItemId),
-    XMLINIT(OriginalDisplayName)
-{}
-
-void tEmailAddressType::serialize(tinyxml2::XMLElement* xml) const
-{
-	XMLDUMP(Name);
-    XMLDUMP(EmailAddress);
-    XMLDUMP(RoutingType);
-    XMLDUMP(MailboxType);
-    XMLDUMP(ItemId);
-    XMLDUMP(OriginalDisplayName);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -679,14 +382,6 @@ decltype(tExtendedFieldURI::typeMap) tExtendedFieldURI::typeMap = {{
 	{"SystemTime", PT_SYSTIME},
 	{"SystemTimeArray", PT_MV_SYSTIME},
 }};
-
-tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
-    XMLINITA(PropertyTag),
-    XMLINITA(PropertyType),
-    XMLINITA(PropertyId),
-    XMLINITA(PropertySetId),
-    XMLINITA(PropertyName)
-{}
 
 /**
  * @brief     Generate URI from tag ID
@@ -747,15 +442,6 @@ void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PR
 	}
 	else
 		throw InputError("Invalid ExtendedFieldURI: missing tag or set ID");
-}
-
-void tExtendedFieldURI::serialize(XMLElement* xml) const
-{
-	XMLDUMPA(PropertyType);
-	XMLDUMPA(PropertyTag);
-	XMLDUMPA(PropertyId);
-	XMLDUMPA(PropertySetId);
-	XMLDUMPA(PropertyName);
 }
 
 /**
@@ -830,19 +516,6 @@ void tExtendedProperty::serialize(const void* data, size_t idx, uint16_t type, X
 	}
 }
 
-void tExtendedProperty::serialize(XMLElement* xml) const
-{
-	const void* data = propval.pvalue;
-	if(!data)
-		return;
-	bool ismv = propval.proptag & MV_FLAG;
-	toXMLNode(xml , "ExtendedFieldURI", tExtendedFieldURI(propval.proptag));
-	XMLElement* value = xml->InsertNewChildElement(ismv? "Values" : "Value");
-	if(!ismv)
-		return serialize(data, 0, PROP_TYPE(propval.proptag), value);
-	//throw NotImplementedError("MV tags are currently not supported");
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
@@ -881,10 +554,6 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_STRING8}}
 };
 
-tFieldURI::tFieldURI(const XMLElement* xml) :
-    XMLINITA(FieldURI)
-{}
-
 /**
  * @brief     Collect property tags and names for field URI
 
@@ -907,16 +576,6 @@ void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void tFlagType::serialize(XMLElement* xml) const
-{XMLDUMP(FlagStatus);}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tFolderResponseShape::tFolderResponseShape(const XMLElement* xml) :
-    XMLINIT(BaseShape),
-    XMLINIT(AdditionalProperties)
-{}
 
 /**
  * @brief     Collect property tags and names for folder shape
@@ -947,28 +606,6 @@ tFolderType::tFolderType(const TPROPVAL_ARRAY& folderProps) :
 	if(folderProps.has(PR_CONTENT_UNREAD))
 		UnreadCount = *folderProps.get<uint32_t>(PR_CONTENT_UNREAD);
 }
-
-void tFolderType::serialize(XMLElement* xml) const
-{
-	tBaseFolderType::serialize(xml);
-	XMLDUMP(UnreadCount);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void tFreeBusyView::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", NS_TYPS);
-	XMLDUMP(FreeBusyViewType);
-	XMLDUMP(MergedFreeBusy);
-	XMLDUMP(CalendarEventArray);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tFreeBusyViewOptions::tFreeBusyViewOptions(const tinyxml2::XMLElement* xml) :
-    XMLINIT(TimeWindow), XMLINIT(MergedFreeBusyIntervalInMinutes), XMLINIT(RequestedView)
-{}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1052,29 +689,6 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap&)
 
 #undef pval
 
-void tItem::serialize(XMLElement* xml) const
-{
-	XMLDUMP(ItemId);
-	XMLDUMP(ParentFolderId);
-	XMLDUMP(ItemClass);
-	XMLDUMP(Subject);
-	XMLDUMP(DateTimeReceived);
-	XMLDUMP(Size);
-	XMLDUMP(InReplyTo);
-	XMLDUMP(DateTimeSent);
-	XMLDUMP(DisplayCc);
-	XMLDUMP(DisplayTo);
-	XMLDUMP(DisplayBcc);
-	XMLDUMP(HasAttachments);
-	XMLDUMP(LastModifiedName);
-	XMLDUMP(LastModifiedTime);
-	XMLDUMP(IsAssociated);
-	XMLDUMP(ConversationId);
-	XMLDUMP(Flag);
-	for(const tExtendedProperty& ep : ExtendedProperty)
-		toXMLNode(xml, "ExtendedProperty", ep);
-}
-
 sItem tItem::create(const TPROPVAL_ARRAY& itemProps, const sNamedPropertyMap& namedProps)
 {
 	const char* itemClass = itemProps.get<const char>(PR_MESSAGE_CLASS);
@@ -1086,11 +700,6 @@ sItem tItem::create(const TPROPVAL_ARRAY& itemProps, const sNamedPropertyMap& na
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-tItemResponseShape::tItemResponseShape(const XMLElement* xml) :
-    //XMLINIT(BaseShape),
-    XMLINIT(AdditionalProperties)
-{}
 
 /**
  * @brief     Collect property tags and names for item shape
@@ -1107,40 +716,6 @@ void tItemResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
 			additional.tags(tagIns, nameIns, typeIns);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tMailbox::tMailbox(const XMLElement* xml) :
-    XMLINIT(Name), XMLINIT(Address), XMLINIT(RoutingType)
-{}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tMailboxData::tMailboxData(const tinyxml2::XMLElement* xml) :
-    XMLINIT(Email), XMLINIT(AttendeeType), XMLINIT(ExcludeConflicts)
-{}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void tMailTips::serialize(XMLElement* xml) const
-{
-	XMLDUMP(RecipientAddress);
-	XMLDUMP(PendingMailTips);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void tMailTipsServiceConfiguration::serialize(tinyxml2::XMLElement* xml) const
-{
-	XMLDUMP(MailTipsEnabled);
-	XMLDUMP(MaxRecipientsPerGetMailTipsRequest);
-	XMLDUMP(MaxMessageSize);
-	XMLDUMP(LargeAudienceThreshold);
-	XMLDUMP(ShowExternalRecipientCount);
-	XMLDUMP(InternalDomains);
-	XMLDUMP(PolicyTipsEnabled);
-	XMLDUMP(LargeAudienceCap);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1181,28 +756,7 @@ tMessage::tMessage(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& name
 
 #undef pval
 
-void tMessage::serialize(tinyxml2::XMLElement* xml) const
-{
-	tItem::serialize(xml);
-	XMLDUMP(Sender);
-	//XMLDUMP(ToRecipients);
-	//XMLDUMP(CcRecipients);
-	//XMLDUMP(BccRecipients);
-	XMLDUMP(IsReadReceiptRequested);
-	XMLDUMP(IsDeliveryReceiptRequested);
-	XMLDUMP(From);
-	XMLDUMP(IsRead);
-	XMLDUMP(IsResponseRequested);
-	XMLDUMP(ReplyTo);
-	XMLDUMP(ReceivedBy);
-	XMLDUMP(ReceivedRepresenting);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
-
-tPath::tPath(const XMLElement* xml)
-        : Base(fromXMLNodeDispatch<Base>(xml))
-{}
 
 /**
  * @brief     Collect property tags and names for path specification
@@ -1216,31 +770,6 @@ void tPath::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAM
 {return std::visit([&](auto&& v){return v.tags(tagIns, nameIns, typeIns);}, *static_cast<const Base*>(this));};
 
 ///////////////////////////////////////////////////////////////////////////////
-
-tReplyBody::tReplyBody(const XMLElement* xml):
-    XMLINIT(Message), XMLINITA(lang)
-{}
-
-void tReplyBody::serialize(XMLElement* xml) const
-{
-	XMLDUMP(Message);
-	XMLDUMPA(lang);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tSerializableTimeZoneTime::tSerializableTimeZoneTime(const tinyxml2::XMLElement* xml) :
-    XMLINIT(Bias),
-    XMLINIT(Time),
-    XMLINIT(DayOrder),
-    XMLINIT(Month),
-    XMLINIT(DayOfWeek),
-    XMLINIT(Year)
-{}
-
-tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement* xml) :
-    XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
-{}
 
 /**
  * @brief      Calculate time zone offset for time point
@@ -1302,177 +831,19 @@ gromox::time_point tSerializableTimeZone::remove(const gromox::time_point& tp) c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void tSmtpDomain::serialize(XMLElement* xml) const
-{
-	XMLDUMP(Name);
-	XMLDUMP(IncludeSubdomains);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tSuggestionsViewOptions::tSuggestionsViewOptions(const tinyxml2::XMLElement* xml) :
-    XMLINIT(GoodThreshold),
-    XMLINIT(MaximumResultsByDay),
-    XMLINIT(MaximumNonWorkHourResultsByDay),
-    XMLINIT(MeetingDurationInMinutes),
-    XMLINIT(MinimumSuggestionQuality),
-    XMLINIT(DetailedSuggestionsWindow),
-    XMLINIT(CurrentMeetingTime),
-    XMLINIT(GlobalObjectId)
-{}
-
-///////////////////////////////////////////////////////////////////////////////
-
 tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder&& folder) : folder(folder)
 {}
 
-void tSyncFolderHierarchyCU::serialize(XMLElement* xml) const
-{VXMLDUMP(folder);}
-
-tSyncFolderHierarchyDelete::tSyncFolderHierarchyDelete(const sBase64Binary& fEntryID) :
-    FolderId(fEntryID)
-{}
-
-void tSyncFolderHierarchyDelete::serialize(XMLElement* xml) const
-{XMLDUMP(FolderId);}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void tSyncFolderItemsCU::serialize(XMLElement* xml) const
-{VXMLDUMP(item);}
-
-tSyncFolderItemsDelete::tSyncFolderItemsDelete(const TAGGED_PROPVAL& tp) : ItemId(tp)
-{}
-
-
-void tSyncFolderItemsDelete::serialize(tinyxml2::XMLElement* xml) const
-{XMLDUMP(ItemId);}
-
-void tSyncFolderItemsReadFlag::serialize(tinyxml2::XMLElement* xml) const
-{
-	XMLDUMP(ItemId);
-	XMLDUMP(IsRead);
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 tTargetFolderIdType::tTargetFolderIdType(std::variant<tFolderId, tDistinguishedFolderId>&& id) :
     folderId(std::move(id))
 {}
 
-tTargetFolderIdType::tTargetFolderIdType(const XMLElement* xml) :
-    VXMLINIT(folderId)
-{}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tUserOofSettings::tUserOofSettings(const XMLElement* xml) :
-    XMLINIT(OofState),
-    XMLINIT(ExternalAudience),
-    XMLINIT(Duration),
-    XMLINIT(InternalReply),
-    XMLINIT(ExternalReply)
-{}
-
-void tUserOofSettings::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", NS_TYPS);
-	XMLDUMP(OofState);
-	XMLDUMP(ExternalAudience);
-	XMLDUMP(Duration);
-	XMLDUMP(InternalReply);
-	XMLDUMP(ExternalReply);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Message implementation
-
-mGetFolderRequest::mGetFolderRequest(const XMLElement* xml) :
-    XMLINIT(FolderShape), XMLINIT(FolderIds)
-{}
-
-
-void mGetFolderResponseMessage::serialize(XMLElement* xml) const
-{
-	mResponseMessageType::serialize(xml);
-	XMLDUMP(Folders);
-}
-
-void mGetFolderResponse::serialize(XMLElement* xml) const
-{XMLDUMP(ResponseMessages);}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 mFreeBusyResponse::mFreeBusyResponse(tFreeBusyView&& fbv) : FreeBusyView(std::move(fbv))
 {}
-
-void mFreeBusyResponse::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", NS_MSGS);
-	XMLDUMP(ResponseMessage);
-	XMLDUMP(FreeBusyView);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-mGetMailTipsRequest::mGetMailTipsRequest(const XMLElement* xml) :
-    XMLINIT(SendingAs),
-    XMLINIT(Recipients),
-    XMLINIT(MailTipsRequested)
-{}
-
-void mMailTipsResponseMessageType::serialize(XMLElement* xml) const
-{
-	mResponseMessageType::serialize(xml);
-	XMLDUMP(MailTips);
-}
-
-void mGetMailTipsResponse::serialize(XMLElement* xml) const
-{
-	mResponseMessageType::serialize(xml);
-	XMLDUMP(ResponseMessages);
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-mGetServiceConfigurationRequest::mGetServiceConfigurationRequest(const XMLElement* xml) :
-    XMLINIT(ActingAs), XMLINIT(RequestedConfiguration)
-{}
-
-void mGetServiceConfigurationResponse::serialize(XMLElement* xml) const
-{
-	mResponseMessageType::serialize(xml);
-	XMLDUMP(ResponseMessages);
-}
-
-void mGetServiceConfigurationResponseMessageType::serialize(XMLElement* xml) const
-{
-	mResponseMessageType::serialize(xml);
-	XMLDUMP(MailTipsConfiguration);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-mGetUserAvailabilityRequest::mGetUserAvailabilityRequest(const XMLElement* xml) :
-    XMLINIT(TimeZone), XMLINIT(MailboxDataArray), XMLINIT(FreeBusyViewOptions), XMLINIT(SuggestionsViewOptions)
-{}
-
-void mGetUserAvailabilityResponse::serialize(XMLElement* xml) const
-{XMLDUMP(FreeBusyResponseArray);}
-
-///////////////////////////////////////////////////////////////////////////////
-
-mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
-    XMLINIT(Mailbox)
-{}
-
-void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", NS_MSGS);
-	XMLDUMP(ResponseMessage);
-	toXMLNode(xml, "OofSettings", UserOofSettings);
-	XMLDUMP(AllowExternalOof);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1492,63 +863,3 @@ mResponseMessageType& mResponseMessageType::success()
 	ResponseCode = "NoError";
 	return *this;
 }
-
-void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
-{
-	XMLDUMPA(ResponseClass);
-	XMLDUMP(ResponseCode);
-	XMLDUMP(MessageText);
-	XMLDUMP(DescriptiveLinkKey);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-mSetUserOofSettingsRequest::mSetUserOofSettingsRequest(const XMLElement* xml) :
-    XMLINIT(Mailbox), XMLINIT(UserOofSettings)
-{}
-
-void mSetUserOofSettingsResponse::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", NS_MSGS);
-	XMLDUMP(ResponseMessage);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-mSyncFolderHierarchyRequest::mSyncFolderHierarchyRequest(const XMLElement* xml) :
-    XMLINIT(FolderShape),
-    XMLINIT(SyncFolderId),
-    XMLINIT(SyncState)
-{}
-
-void mSyncFolderHierarchyResponseMessage::serialize(tinyxml2::XMLElement* xml) const
-{
-	mResponseMessageType::serialize(xml);
-	XMLDUMP(SyncState);
-	XMLDUMP(IncludesLastFolderInRange);
-	XMLDUMP(Changes);
-}
-
-void mSyncFolderHierarchyResponse::serialize(tinyxml2::XMLElement* xml) const
-{XMLDUMP(ResponseMessages);}
-
-///////////////////////////////////////////////////////////////////////////////
-
-mSyncFolderItemsRequest::mSyncFolderItemsRequest(const XMLElement* xml) :
-	XMLINIT(ItemShape),
-	XMLINIT(SyncFolderId),
-	XMLINIT(SyncState),
-	XMLINIT(MaxChangesReturned),
-	XMLINIT(SyncScope)
-{}
-
-void mSyncFolderItemsResponseMessage::serialize(XMLElement* xml) const
-{
-	XMLDUMP(SyncState);
-	XMLDUMP(IncludesLastItemInRange);
-	XMLDUMP(Changes);
-}
-
-
-void mSyncFolderItemsResponse::serialize(XMLElement* xml) const
-{XMLDUMP(ResponseMessages);}
