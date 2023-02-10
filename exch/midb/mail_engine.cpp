@@ -217,8 +217,6 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 {
 	size_t size;
 	int tmp_len;
-	char *ptoken;
-	uint64_t folder_id;
 	char temp_path[256];
 	
 	snprintf(temp_path, 256, "%s/ext/%s",
@@ -262,14 +260,14 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		}
 	}
 	auto pstmt = gx_sql_prep(psqlite, "SELECT uid, recent, read,"
-	             " unsent, flagged, replied, forwarded, deleted, ext,"
+	             " unsent, flagged, replied, forwarded, deleted,"
 	             " folder_id FROM messages WHERE mid_string=?");
 	if (pstmt == nullptr)
 		return 0;
 	sqlite3_bind_text(pstmt, 1, mid_string, -1, SQLITE_STATIC);
 	if (sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
-	folder_id = sqlite3_column_int64(pstmt, 9);
+	auto folder_id = pstmt.col_uint64(8);
 	set_digest(digest_buff, MAX_DIGLEN, "file", mid_string);
 	set_digest(digest_buff, MAX_DIGLEN, "uid", pstmt.col_int64(0));
 	set_digest(digest_buff, MAX_DIGLEN, "recent", pstmt.col_int64(1));
@@ -279,16 +277,6 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 	set_digest(digest_buff, MAX_DIGLEN, "replied", pstmt.col_int64(5));
 	set_digest(digest_buff, MAX_DIGLEN, "forwarded", pstmt.col_int64(6));
 	set_digest(digest_buff, MAX_DIGLEN, "deleted", pstmt.col_int64(7));
-	if (sqlite3_column_type(pstmt, 8) == SQLITE_NULL)
-		return folder_id;
-	auto pext = pstmt.col_text(8);
-	ptoken = strrchr(digest_buff, '}');
-	if (ptoken == nullptr)
-		return 0;
-	*ptoken = ',';
-	if (ptoken + 1 - digest_buff + strlen(pext + 1) >= MAX_DIGLEN)
-		return 0;
-	strcpy(ptoken + 1, pext + 1);
 	return folder_id;
 }
 
@@ -477,7 +465,7 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 
 enum ctm_field {
 	CTM_MSGID, CTM_MODTIME, CTM_UID, CTM_RECENT, CTM_READ, CTM_UNSENT,
-	CTM_FLAGGED, CTM_REPLIED, CTM_FWD, CTM_DELETED, CTM_RCVDTIME, CTM_EXT,
+	CTM_FLAGGED, CTM_REPLIED, CTM_FWD, CTM_DELETED, CTM_RCVDTIME,
 	CTM_FOLDERID, CTM_SIZE,
 };
 
@@ -1384,7 +1372,7 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
 	/* Match this column list to ctm_field */
 	auto pstmt_message = gx_sql_prep(psqlite, "SELECT message_id, mod_time, "
 	                     "uid, recent, read, unsent, flagged, replied, forwarded,"
-	                     "deleted, received, ext, folder_id, size FROM messages "
+	                     "deleted, received, folder_id, size FROM messages "
 	                     "WHERE mid_string=?");
 	if (pstmt_message == nullptr)
 		return {};
@@ -2813,7 +2801,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	/* Match this column list to ctm_field */
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT message_id, mod_time, "
 	             "uid, recent, read, unsent, flagged, replied, forwarded,"
-	             "deleted, received, ext, folder_id, size FROM messages "
+	             "deleted, received, folder_id, size FROM messages "
 	             "WHERE mid_string=?");
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;

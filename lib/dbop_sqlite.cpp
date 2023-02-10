@@ -477,7 +477,7 @@ static constexpr char tbl_midb_msgs_0[] =
 "  sender TEXT NOT NULL,"
 "  rcpt TEXT NOT NULL,"
 "  size INTEGER NOT NULL,"
-"  ext TEXT DEFAULT NULL,"
+"  ext TEXT DEFAULT NULL," /* unused */
 "  received INTEGER NOT NULL,"
 "  FOREIGN KEY (folder_id)"
 "  	REFERENCES folders (folder_id)"
