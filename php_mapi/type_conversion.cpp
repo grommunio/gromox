@@ -72,14 +72,12 @@ zend_bool php_to_binary_array(zval *pzval, BINARY_ARRAY *pbins)
 {
 	HashTable *ptarget_hash;
 	
-	if (NULL == pzval) {
+	if (pzval == nullptr)
 		return 0;
-	}
 	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
-	if (NULL == ptarget_hash) {
+	if (ptarget_hash == nullptr)
 		return 0;
-	}
 	pbins->count = zend_hash_num_elements(Z_ARRVAL_P(pzval));
 	if (0 == pbins->count) {
 		pbins->pbin = NULL;
@@ -126,14 +124,12 @@ zend_bool php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)
 	unsigned long idx;
 	HashTable *ptarget_hash;
 	
-	if (NULL == pzval) {
+	if (pzval == nullptr)
 		return 0;
-	}
 	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
-	if (NULL == ptarget_hash) {
+	if (ptarget_hash == nullptr)
 		return 0;
-	}
 	pset->count = zend_hash_num_elements(Z_ARRVAL_P(pzval));
 	pset->ccategories = 0;
 	pset->cexpanded = 0;
@@ -164,14 +160,12 @@ zend_bool php_to_proptag_array(zval *pzval, PROPTAG_ARRAY *pproptags)
 {
 	HashTable *ptarget_hash;
 	
-	if (NULL == pzval) {
+	if (pzval == nullptr)
 		return 0;
-	}
 	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
-	if (NULL == ptarget_hash) {
+	if (ptarget_hash == nullptr)
 		return 0;
-	}
 	pproptags->count = zend_hash_num_elements(ptarget_hash);
 	if (0 == pproptags->count) {
 		pproptags->pproptag = NULL;
@@ -219,55 +213,48 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	switch(proptype)	{
 	case PT_SHORT:
 		pvalue = emalloc(sizeof(uint16_t));
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		*static_cast<uint16_t *>(pvalue) = zval_get_long(entry);
 		break;
 	case PT_LONG:
 	case PT_ERROR:
 		pvalue = emalloc(sizeof(uint32_t));
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		*static_cast<uint32_t *>(pvalue) = zval_get_long(entry);
 		break;
 	case PT_FLOAT:
 		pvalue = emalloc(sizeof(float));
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		*static_cast<float *>(pvalue) = zval_get_double(entry);
 		break;
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		pvalue = emalloc(sizeof(double));
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		*static_cast<double *>(pvalue) = zval_get_double(entry);
 		break;
 	case PT_CURRENCY:
 	case PT_I8:
 		pvalue = emalloc(sizeof(uint64_t));
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		*static_cast<uint64_t *>(pvalue) = zval_get_double(entry);
 		break;
 	case PT_BOOLEAN:
 		pvalue = emalloc(sizeof(uint8_t));
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		*static_cast<uint8_t *>(pvalue) = zval_is_true(entry);
 		break;
 	case PT_SYSTIME:
 		/* convert unix timestamp to nt timestamp */
 		pvalue = emalloc(sizeof(uint64_t));
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		*static_cast<uint64_t *>(pvalue) = unix_to_nttime(zval_get_long(entry));
 		break;
 	case PT_BINARY: {
@@ -293,9 +280,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	case PT_UNICODE: {
 		zstrplus str(zval_get_string(entry));
 		pvalue = emalloc(str->len + 1);
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		memcpy(pvalue, str->val, str->len);
 		static_cast<char *>(pvalue)[str->len] = '\0';
 		break;
@@ -305,18 +291,16 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		if (str->len != sizeof(GUID))
 			return NULL;
 		pvalue = emalloc(sizeof(GUID));
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		memcpy(pvalue, str->val, sizeof(GUID));
 		break;
 	}
 	case PT_MV_SHORT: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
-		if (NULL == pdata_hash) {
+		if (pdata_hash == nullptr)
 			return NULL;
-		}
 		pvalue = emalloc(sizeof(SHORT_ARRAY));
 		auto xs = static_cast<SHORT_ARRAY *>(pvalue);
 		if (xs == nullptr)
@@ -339,9 +323,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	case PT_MV_LONG: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
-		if (NULL == pdata_hash) {
+		if (pdata_hash == nullptr)
 			return NULL;
-		}
 		pvalue = emalloc(sizeof(LONG_ARRAY));
 		auto xl = static_cast<LONG_ARRAY *>(pvalue);
 		if (xl == nullptr)
@@ -365,9 +348,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	case PT_MV_I8: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
-		if (NULL == pdata_hash) {
+		if (pdata_hash == nullptr)
 			return NULL;
-		}
 		pvalue = emalloc(sizeof(LONGLONG_ARRAY));
 		auto xl = static_cast<LONGLONG_ARRAY *>(pvalue);
 		if (xl == nullptr)
@@ -440,9 +422,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	case PT_MV_UNICODE: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
-		if (NULL == pdata_hash) {
+		if (pdata_hash == nullptr)
 			return NULL;
-		}
 		pvalue = emalloc(sizeof(STRING_ARRAY));
 		auto xs = static_cast<STRING_ARRAY *>(pvalue);
 		if (xs == nullptr)
@@ -460,9 +441,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			zstrplus str(zval_get_string(data_entry));
 			pstring = sta_malloc<char>(str->len + 1);
-			if (NULL == pstring) {
+			if (pstring == nullptr)
 				return NULL;
-			}
 			xs->ppstr[j++] = pstring;
 			memcpy(pstring, str->val, str->len);
 			pstring[str->len] = '\0';
@@ -496,9 +476,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	case PT_MV_BINARY: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
-		if (NULL == pdata_hash) {
+		if (pdata_hash == nullptr)
 			return NULL;
-		}
 		pvalue = emalloc(sizeof(BINARY_ARRAY));
 		auto xb = static_cast<BINARY_ARRAY *>(pvalue);
 		if (xb == nullptr)
@@ -531,9 +510,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	case PT_MV_CLSID: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
-		if (NULL == pdata_hash) {
+		if (pdata_hash == nullptr)
 			return NULL;
-		}
 		pvalue = emalloc(sizeof(GUID_ARRAY));
 		auto xb = static_cast<GUID_ARRAY *>(pvalue);
 		if (xb == nullptr)
@@ -581,9 +559,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			ZVAL_DEREF(data_entry);
 			paction_hash = HASH_OF(data_entry);
-			if (NULL == paction_hash) {
+			if (paction_hash == nullptr)
 				return NULL;
-			}
 			data_entry = zend_hash_find(paction_hash, str_action.get());
 			if (data_entry == nullptr)
 				return NULL;
@@ -664,9 +641,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 					return NULL;
 				pblock->length = str1->len + sizeof(uint8_t) + 2 * sizeof(uint32_t);
 				pblock->pdata = emalloc(str1->len);
-				if (NULL == pblock->pdata) {
+				if (pblock->pdata == nullptr)
 					return NULL;
-				}
 				memcpy(pblock->pdata, str1->val, str1->len);
 				break;
 			}
@@ -675,9 +651,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				if (data_entry == nullptr)
 					return NULL;
 				pblock->pdata = emalloc(sizeof(uint32_t));
-				if (NULL == pblock->pdata) {
+				if (pblock->pdata == nullptr)
 					return NULL;
-				}
 				*static_cast<uint32_t *>(pblock->pdata) = zval_get_long(data_entry);
 				break;
 			case OP_FORWARD:
@@ -718,9 +693,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 					return NULL;
 				if (!php_to_tpropval_array(data_entry, &tmp_propvals))
 					return NULL;
-				if (1 != tmp_propvals.count) {
+				if (tmp_propvals.count != 1)
 					return NULL;
-				}
 				pblock->pdata = tmp_propvals.ppropval;
 				break;
 			case OP_DELETE:
@@ -736,9 +710,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	}
 	case PT_SRESTRICTION:
 		pvalue = emalloc(sizeof(RESTRICTION));
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		if (!php_to_restriction(entry, static_cast<RESTRICTION *>(pvalue)))
 			return NULL;
 		break;
@@ -758,9 +731,8 @@ zend_bool php_to_tpropval_array(zval *pzval, TPROPVAL_ARRAY *ppropvals)
 		return 0;
 	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
-	if (NULL == ptarget_hash) {
+	if (ptarget_hash == nullptr)
 		return 0;
-	}
 	ppropvals->count = zend_hash_num_elements(ptarget_hash);
 	if (0 == ppropvals->count) {
 	   ppropvals->ppropval = NULL;
@@ -778,9 +750,8 @@ zend_bool php_to_tpropval_array(zval *pzval, TPROPVAL_ARRAY *ppropvals)
 		static_cast<void>(pstring);
 		ppropvals->ppropval[i].proptag = phptag_to_proptag(idx);
 		ppropvals->ppropval[i].pvalue = php_to_propval(entry, PROP_TYPE(idx));
-		if (NULL == ppropvals->ppropval[i].pvalue) {
+		if (ppropvals->ppropval[i].pvalue == nullptr)
 			return 0;
-		}
 		++i;
 	} ZEND_HASH_FOREACH_END();
 	return 1;
@@ -790,16 +761,14 @@ zend_bool php_to_tarray_set(zval *pzval, TARRAY_SET *pset)
 {
 	HashTable *ptarget_hash;
 	
-	if (NULL == pzval) {
+	if (pzval == nullptr)
 		return 0;
-	}
 	ZVAL_DEREF(pzval);
 	if (Z_TYPE_P(pzval) != IS_ARRAY)
 		return 0;
 	ptarget_hash = HASH_OF(pzval);
-	if (NULL == ptarget_hash) {
+	if (ptarget_hash == nullptr)
 		return 0;
-	}
 	pset->count = zend_hash_num_elements(ptarget_hash);
 	if (0 == pset->count) {
 		pset->pparray = NULL;
@@ -817,9 +786,8 @@ zend_bool php_to_tarray_set(zval *pzval, TARRAY_SET *pset)
 		if (Z_TYPE_P(entry) != IS_ARRAY)
 			return 0;
 		pset->pparray[i] = st_malloc<TPROPVAL_ARRAY>();
-		if (NULL == pset->pparray[i]) {
+		if (pset->pparray[i] == nullptr)
 			return 0;
-		}
 		if (!php_to_tpropval_array(entry, pset->pparray[i]))
 			return 0;
 		++i;
@@ -833,16 +801,14 @@ zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist)
 	zstrplus str_rowflags(zend_string_init("rowflags", sizeof("rowflags") - 1, 0));
 	HashTable *ptarget_hash;
 	
-	if (NULL == pzval) {
+	if (pzval == nullptr)
 		return 0;
-	}
 	ZVAL_DEREF(pzval);
 	if (Z_TYPE_P(pzval) != IS_ARRAY)
 		return 0;
 	ptarget_hash = HASH_OF(pzval);
-	if (NULL == ptarget_hash) {
+	if (ptarget_hash == nullptr)
 		return 0;
-	}
 	plist->count = zend_hash_num_elements(ptarget_hash);
 	if (0 == plist->count) {
 		plist->prule = NULL;
@@ -897,9 +863,8 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		return 0;
 	ZVAL_DEREF(pzval);
 	pres_hash = HASH_OF(pzval);
-	if (NULL == pres_hash || zend_hash_num_elements(pres_hash) != 2) {
+	if (pres_hash == nullptr || zend_hash_num_elements(pres_hash) != 2)
 		return 0;
-	}
 
 	HashPosition hpos;
 	zend_hash_internal_pointer_reset_ex(pres_hash, &hpos);
@@ -910,9 +875,8 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 	pres->rt = static_cast<enum res_type>(zval_get_long(type_entry));
 	ZVAL_DEREF(value_entry);
 	pdata_hash = HASH_OF(value_entry);
-	if (NULL == pdata_hash) {
+	if (pdata_hash == nullptr)
 		return 0;
-	}
 	switch(pres->rt) {
 	case RES_AND:
 	case RES_OR: {
@@ -1004,9 +968,8 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		if (Z_TYPE_P(value_entry) == IS_ARRAY) {
 			if (!php_to_tpropval_array(value_entry, &tmp_propvals))
 				return 0;
-			if (1 != tmp_propvals.count) {
+			if (tmp_propvals.count != 1)
 				return 0;
-			}
 			rcon->propval = *tmp_propvals.ppropval;
 		} else {
 			rcon->propval.proptag = rcon->proptag;
@@ -1035,9 +998,8 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		if (Z_TYPE_P(value_entry) == IS_ARRAY) {
 			if (!php_to_tpropval_array(value_entry, &tmp_propvals))
 				return 0;
-			if (1 != tmp_propvals.count) {
+			if (tmp_propvals.count != 1)
 				return 0;
-			}
 			rprop->propval = *tmp_propvals.ppropval;
 		} else {
 			rprop->propval.proptag = rprop->proptag;
@@ -1259,13 +1221,10 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 
 zend_bool proptag_array_to_php(const PROPTAG_ARRAY *pproptags, zval *pzret)
 {
-	int i;
-	
 	zarray_init(pzret);
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i)
 		add_next_index_long(pzret,
 			proptag_to_phptag(pproptags->pproptag[i]));
-	}
 	return 1;
 }
 
@@ -1526,14 +1485,12 @@ zend_bool php_to_state_array(zval *pzval, STATE_ARRAY *pstates)
 	zstrplus str_sourcekey(zend_string_init("sourcekey", sizeof("sourcekey") - 1, 0));
 	zstrplus str_flags(zend_string_init("flags", sizeof("flags") - 1, 0));
 	
-	if (NULL == pzval) {
+	if (pzval == nullptr)
 		return 0;
-	}
 	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
-	if (NULL == ptarget_hash) {
+	if (ptarget_hash == nullptr)
 		return 0;
-	}
 	pstates->count = zend_hash_num_elements(Z_ARRVAL_P(pzval));
 	if (0 == pstates->count) {
 		pstates->pstate = NULL;
@@ -1665,23 +1622,20 @@ zend_bool php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 		return 0;
 	}
 	zend_hash_internal_pointer_reset(pnameshash);
-	if (NULL != pguidhash) {
+	if (pguidhash != nullptr)
 		zend_hash_internal_pointer_reset(pguidhash);
-	}
 	HashPosition thpos, ghpos;
 	zend_hash_internal_pointer_reset_ex(pnameshash, &thpos);
 	if (pguidhash != nullptr)
 		zend_hash_internal_pointer_reset_ex(pguidhash, &ghpos);
 	for (i=0; i<ppropnames->count; i++) {
 		auto entry = zend_hash_get_current_data_ex(pnameshash, &thpos);
-		if (NULL != pguidhash) {
+		if (pguidhash != nullptr)
 			guidentry = zend_hash_get_current_data_ex(pguidhash, &ghpos);
-		}
 		ppropnames->ppropname[i].guid = guid_appointment;
-		if (NULL != pguidhash) {
-			if (Z_TYPE_P(guidentry) == IS_STRING && Z_STRLEN_P(guidentry) == sizeof(GUID))
-				memcpy(&ppropnames->ppropname[i].guid, Z_STRVAL_P(guidentry), sizeof(GUID));
-		}
+		if (pguidhash != nullptr && Z_TYPE_P(guidentry) == IS_STRING &&
+		    Z_STRLEN_P(guidentry) == sizeof(GUID))
+			memcpy(&ppropnames->ppropname[i].guid, Z_STRVAL_P(guidentry), sizeof(GUID));
 		switch (Z_TYPE_P(entry)) {
 		case IS_LONG:
 			ppropnames->ppropname[i].kind = MNID_ID;
@@ -1692,9 +1646,8 @@ zend_bool php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 			ppropnames->ppropname[i].kind = MNID_STRING;
 			ppropnames->ppropname[i].lid = 0;
 			ppropnames->ppropname[i].pname = estrdup(Z_STRVAL_P(entry));
-			if (NULL == ppropnames->ppropname[i].pname) {
+			if (ppropnames->ppropname[i].pname == nullptr)
 				return 0;
-			}
 			break;
 		case IS_DOUBLE:
 			ppropnames->ppropname[i].kind = MNID_ID;
@@ -1705,9 +1658,8 @@ zend_bool php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 			return 0;
 		}
 		zend_hash_move_forward_ex(pnameshash, &thpos);
-		if(NULL != pguidhash) {
+		if (pguidhash != nullptr)
 			zend_hash_move_forward_ex(pguidhash, &ghpos);
-		}
 	}
 	return 1;
 }
