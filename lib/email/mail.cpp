@@ -597,6 +597,8 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 		encode64(temp_buff, strlen(temp_buff), mime_reference, 2048, NULL);
 		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 					",\"ref\":\"%s\"", mime_reference);
+		if (buff_len >= length - 1)
+			goto PARSE_FAILURE;
 	}
 
 	b_tags[TAG_SIGNED] = FALSE;
@@ -611,17 +613,23 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 			b_tags[TAG_ENCRYPT] = TRUE;
 	});
 	if (b_tags[TAG_SIGNED]) {
-		memcpy(pbuff + buff_len, ",\"signed\":1", 11);
-		buff_len += 11;
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+		            ",\"signed\":1");
+		if (buff_len >= length - 1)
+			goto PARSE_FAILURE;
 	}
 	if (b_tags[TAG_ENCRYPT]) {
-		memcpy(pbuff + buff_len, ",\"encrypt\":1", 12);
-		buff_len += 12;
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+		            ",\"encrypt\":1");
+		if (buff_len >= length - 1)
+			goto PARSE_FAILURE;
 	}
 
 	count = 0;
-	memcpy(pbuff + buff_len, ",\"structure\":[", 14);
-	buff_len += 14;
+	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+	            ",\"structure\":[");
+	if (buff_len >= length - 1)
+		goto PARSE_FAILURE;
 	*poffset = 0;
 	gmd = pmail->get_head()->get_structure_digest("",
 	      poffset, &count, pbuff + buff_len, length - buff_len);
@@ -629,12 +637,17 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 		goto PARSE_FAILURE;
 	}
 	buff_len += gmd;
-	pbuff[buff_len] = ']';
-	buff_len ++;
+	if (buff_len >= length - 1)
+		goto PARSE_FAILURE;
+	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len, "]");
+	if (buff_len >= length - 1)
+		goto PARSE_FAILURE;
 	
 	count = 0;
-	memcpy(pbuff + buff_len, ",\"mimes\":[", 10);
-	buff_len += 10;
+	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+	            ",\"mimes\":[");
+	if (buff_len >= length - 1)
+		goto PARSE_FAILURE;
 	*poffset = 0;
 	gmd = pmail->get_head()->get_mimes_digest("", poffset, &count,
 	      pbuff + buff_len, length - buff_len);
@@ -642,7 +655,12 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length) const
 		goto PARSE_FAILURE;
 	}
 	buff_len += gmd;
-	sprintf(pbuff + buff_len, "],\"size\":%zu", *poffset);
+	if (buff_len >= length - 1)
+		goto PARSE_FAILURE;
+	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+	            "],\"size\":%zu", *poffset);
+	if (buff_len >= length - 1)
+		goto PARSE_FAILURE;
 	return 1;
 	
  PARSE_FAILURE:
