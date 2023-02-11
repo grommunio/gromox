@@ -2627,9 +2627,9 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	auto wr_ret = HXio_fullwrite(fd.get(), temp_buff, tmp_len);
 	if (wr_ret < 0 || wr_ret != tmp_len)
 		mlog(LV_ERR, "E-2085: write %s: %s", temp_path, strerror(errno));
-	wr_ret = fd.close_wr();
-	if (wr_ret < 0)
-		mlog(LV_ERR, "E-2072: close %s: %s", temp_path, strerror(errno));
+	auto err = fd.close_wr();
+	if (err != 0)
+		mlog(LV_ERR, "E-2072: close %s: %s", temp_path, strerror(err));
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
