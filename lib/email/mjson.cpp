@@ -10,6 +10,7 @@
 #include <utility>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -1051,7 +1052,6 @@ BOOL MJSON::rfc822_check()
 static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 {
 	auto pbuild = static_cast<BUILD_PARAM *>(param);
-	int fd;
 	size_t length1;
 	char msg_path[256];
 	char dgt_path[256];
@@ -1074,10 +1074,8 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		         pbuild->filename, pmime->get_id());
 	}
 		
-	
-	fd = open(temp_path, O_RDONLY);
-	
-	if (-1 == fd) {
+	wrapfd fd = open(temp_path, O_RDONLY);
+	if (fd.get() < 0) {
 		pbuild->build_result = FALSE;
 		return;
 	}
@@ -1085,20 +1083,20 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	auto length = pmime->get_length(MJSON_MIME_CONTENT);
 	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
 	if (NULL == pbuff) {
-		close(fd);
 		pbuild->build_result = FALSE;
 		return;
 	}
-	
-	if (lseek(fd, pmime->get_offset(MJSON_MIME_CONTENT), SEEK_SET) < 0)
+	if (lseek(fd.get(), pmime->get_offset(MJSON_MIME_CONTENT), SEEK_SET) < 0) {
 		mlog(LV_ERR, "E-1430: lseek: %s", strerror(errno));
-	auto rdlen = ::read(fd, pbuff.get(), length);
-	if (rdlen < 0 || static_cast<size_t>(rdlen) != length) {
-		close(fd);
 		pbuild->build_result = FALSE;
 		return;
 	}
-	close(fd);
+	auto rdlen = ::read(fd.get(), pbuff.get(), length);
+	if (rdlen < 0 || static_cast<size_t>(rdlen) != length) {
+		pbuild->build_result = FALSE;
+		return;
+	}
+	fd.close_rd();
 	
 	if (pmime->encoding_is_b()) {
 		std::unique_ptr<char[], stdlib_delete> pbuff1(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
@@ -1135,23 +1133,21 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	}
 	/* for saving stacking size, so use C++
 		style of local variable declaration */
-	size_t mess_len;
-	int digest_len;
+	size_t mess_len, digest_len;
 	char digest_buff[MAX_DIGLEN];
 
 	fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-	if (-1 == fd) {
+	if (fd.get() < 0) {
 		pbuild->build_result = FALSE;
 		return;
 	}
-	if (!imail.to_file(fd)) {
-		close(fd);
+	if (!imail.to_file(fd.get()) || fd.close_wr() != 0) {
+		fd.close_rd();
 		if (remove(msg_path) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1372: remove %s: %s", msg_path, strerror(errno));
 		pbuild->build_result = FALSE;
 		return;
 	}
-	close(fd);
 	if (1 == pbuild->depth) {
 		digest_len = sprintf(digest_buff, "{\"file\":\"%s\",",
 			     pmime->get_id());
@@ -1175,14 +1171,16 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	digest_buff[digest_len] = '\0';
 
 	fd = open(dgt_path, O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
-	if (-1 == fd) {
+	if (fd.get() < 0) {
 		if (remove(msg_path) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1374: remove %s: %s", msg_path, strerror(errno));
 		pbuild->build_result = FALSE;
 		return;
 	}
-	if (digest_len != write(fd, digest_buff, digest_len)) {
-		close(fd);
+	auto wr_ret = HXio_fullwrite(fd.get(), digest_buff, digest_len);
+	if (wr_ret < 0 || static_cast<size_t>(wr_ret) != digest_len ||
+	    fd.close_wr() != 0) {
+		fd.close_rd();
 		if (remove(dgt_path) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1375: remove %s: %s", dgt_path, strerror(errno));
 		if (remove(msg_path) < 0 && errno != ENOENT)
@@ -1190,7 +1188,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		pbuild->build_result = FALSE;
 		return;
 	}
-	close(fd);
 
 	if (!temp_mjson.load_from_str_move(digest_buff, digest_len,
 	    pbuild->storage_path)) {
@@ -1255,7 +1252,6 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
     char *mjson_id, char *mime_id)
 {
 	auto pjson_base = this;
-	int fd;
 	char *pdot;
 	char temp_path[256];
 	struct stat node_stat;
@@ -1275,25 +1271,22 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 		char dgt_path[256];
 		snprintf(dgt_path, arsizeof(dgt_path), "%s/%s/%s.dgt", storage_path,
 		         pjson_base->get_mail_filename(), mjson_id);
-		fd = open(dgt_path, O_RDONLY);
-		if (-1 == fd) {
+		wrapfd fd = open(dgt_path, O_RDONLY);
+		if (fd.get() < 0) {
 			if (errno == ENOENT || errno == EISDIR)
 				continue;
 			return FALSE;
 		}
-		if (fstat(fd, &node_stat) != 0) {
-			close(fd);
+		if (fstat(fd.get(), &node_stat) != 0)
 			return false;
-		}
 		if (!S_ISREG(node_stat.st_mode) || node_stat.st_size > MAX_DIGLEN) {
-			close(fd);
 			return FALSE;
 		}
-			if (::read(fd, digest_buff, node_stat.st_size) != node_stat.st_size) {
-				close(fd);
-				return FALSE;
-			}
-			close(fd);
+		auto rd_ret = HXio_fullread(fd.get(), digest_buff, node_stat.st_size);
+		if (rd_ret < 0 || static_cast<size_t>(rd_ret) !=
+		    static_cast<unsigned long long>(node_stat.st_size))
+			return false;
+		fd.close_rd();
 			pjson->clear();
 			if (!pjson->load_from_str_move(digest_buff,
 			    node_stat.st_size, temp_path))
