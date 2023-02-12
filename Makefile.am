@@ -111,7 +111,7 @@ libgromox_mapi_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_mapi_la_SOURCES = lib/mapi/apple_util.cpp lib/mapi/applefile.cpp lib/mapi/binhex.cpp lib/mapi/eid_array.cpp lib/mapi/element_data.cpp lib/mapi/html.cpp lib/mapi/idset.cpp lib/mapi/lzxpress.cpp lib/mapi/macbinary.cpp lib/mapi/msgchg_grouping.cpp lib/mapi/oxcical.cpp lib/mapi/oxcmail.cpp lib/mapi/oxvcard.cpp lib/mapi/pcl.cpp lib/mapi/proptag_array.cpp lib/mapi/propval.cpp lib/mapi/restriction.cpp lib/mapi/restriction2.cpp lib/mapi/rop_util.cpp lib/mapi/rtf.cpp lib/mapi/rtfcp.cpp lib/mapi/rule_actions.cpp lib/mapi/sortorder_set.cpp lib/mapi/tarray_set.cpp lib/mapi/tnef.cpp lib/mapi/tpropval_array.cpp
 libgromox_mapi_la_LIBADD = ${gumbo_LIBS} ${HX_LIBS} ${iconv_LIBS} ${vmime_LIBS} libgromox_common.la libgromox_cplus.la libgromox_email.la
 libgromox_rpc_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
-libgromox_rpc_la_SOURCES = lib/rpc/arcfour.cpp lib/rpc/crc32.cpp lib/rpc/ndr.cpp lib/rpc/ntlmssp.cpp
+libgromox_rpc_la_SOURCES = lib/rpc/arcfour.cpp lib/rpc/ndr.cpp lib/rpc/ntlmssp.cpp
 libgromox_rpc_la_LIBADD = ${crypto_LIBS} ${HX_LIBS} ${iconv_LIBS} libgromox_common.la libgromox_cplus.la
 
 delivery_SOURCES = lib/svc_loader.cpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/system_services.cpp mda/delivery_app/transporter.cpp
