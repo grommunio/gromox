@@ -37,16 +37,17 @@ xtransaction::~xtransaction()
 		sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
 }
 
-void xtransaction::commit()
+int xtransaction::commit()
 {
-	sqlite3_exec(m_db, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
+	auto ret = gx_sql_exec(m_db, "COMMIT TRANSACTION");
 	m_db = nullptr;
+	return ret;
 }
 
 xtransaction gx_sql_begin_trans(sqlite3 *db)
 {
-	sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
-	return xtransaction(db);
+	auto ret = gx_sql_exec(db, "BEGIN TRANSACTION");
+	return xtransaction(ret == SQLITE_OK ? db : nullptr);
 }
 
 int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)

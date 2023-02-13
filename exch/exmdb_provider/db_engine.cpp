@@ -1478,6 +1478,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				padded_row->after_row_id = inst_id1;
 			} else {
 				auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+				if (!sql_transact)
+					continue;
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 					" WHERE idx>=%u;UPDATE t%u SET idx=-idx WHERE"
 					" idx<0", ptable->table_id, idx, ptable->table_id);
@@ -1505,7 +1507,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				        " row_id=%llu", ptable->table_id, LLU{row_id}, LLU{row_id1});
 				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 					continue;
-				sql_transact.commit();
+				if (sql_transact.commit() != 0)
+					continue;
 				padded_row->after_row_id = inst_id;
 			}
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
@@ -1566,6 +1569,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			}
 		}
 		auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+		if (!sql_transact)
+			continue;
 		char sql_string[164];
 		snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, inst_id, "
 		         "value FROM t%u WHERE prev_id=?", ptable->table_id);
@@ -1854,7 +1859,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			return;
 		pstmt.finalize();
 		pstmt1.finalize();
-		sql_transact.commit();
+		if (sql_transact.commit() != 0)
+			continue;
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 			continue;
 		}
@@ -2223,12 +2229,15 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				goto APPEND_END_OF_TABLE;
 			}
 			auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+			if (!sql_transact)
+				continue;
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 				" WHERE idx>%u;UPDATE t%u SET idx=-idx WHERE"
 				" idx<0", ptable->table_id, idx, ptable->table_id);
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				continue;
-			sql_transact.commit();
+			if (sql_transact.commit() != 0)
+				continue;
 			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (idx, "
 				"folder_id, depth) VALUES (%u, %llu, %u)",
 				ptable->table_id, idx + 1, LLU{folder_id}, depth);
@@ -2465,6 +2474,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			prev_id = sqlite3_column_int64(pstmt, 2);
 			pstmt.finalize();
 			auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+			if (!sql_transact)
+				continue;
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM t%u WHERE "
 				"row_id=%llu", ptable->table_id, LLU{row_id});
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
@@ -2483,7 +2494,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				ptable->table_id, ptable->table_id);
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				continue;
-			sql_transact.commit();
+			if (sql_transact.commit() != 0)
+				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 				continue;
 			}
@@ -2537,6 +2549,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		}
 		pstmt.finalize();
 		auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+		if (!sql_transact)
+			continue;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM"
 			" t%u WHERE row_id=?", ptable->table_id);
 		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
@@ -2769,7 +2783,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pstmt.finalize();
 			pstmt1.finalize();
 		}
-		sql_transact.commit();
+		if (sql_transact.commit() != 0)
+			continue;
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 			continue;
 		}
