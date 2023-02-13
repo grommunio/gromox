@@ -12,6 +12,7 @@
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
+#include <vector>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/exmdb_rpc.hpp>
@@ -64,9 +65,6 @@ void exmdb_local_init(const char *org_name, const char *default_charset)
 
 int exmdb_local_run() try
 {
-	int last_propid;
-	char temp_line[256];
-	
 #define E(f, s) do { \
 	query_service2((s), f); \
 	if ((f) == nullptr) { \
@@ -89,19 +87,21 @@ int exmdb_local_run() try
 		mlog(LV_ERR, "exmdb_local: failed to init oxcmail library");
 		return -2;
 	}
-	struct srcitem { char s[256]; };
-	auto plist = list_file_initd("propnames.txt", get_data_path(), "%s:256");
-	if (NULL == plist) {
-		mlog(LV_ERR, "exmdb_local: list_file_initd propnames.txt: %s", strerror(errno));
+	std::vector<std::string> nplist;
+	auto err = list_file_read_fixedstrings("propnames.txt", get_data_path(), nplist);
+	if (err == ENOENT) {
+	} else if (err != 0) {
+		mlog(LV_ERR, "exmdb_local: list_file_initd propnames.txt: %s", strerror(err));
 		return -3;
 	}
-	auto num = plist->get_size();
-	auto pitem = static_cast<srcitem *>(plist->get_list());
-	last_propid = 0x8001;
-	for (decltype(num) i = 0; i < num; ++i) {
-		gx_strlcpy(temp_line, pitem[i].s, sizeof(temp_line));
-		HX_strlower(temp_line);
-		g_str_hash.emplace(temp_line, last_propid++);
+	uint16_t last_propid = 0x8001;
+	for (auto &&elem : nplist) {
+		HX_strlower(elem.data());
+		if (last_propid >= 0xFFFF) {
+			mlog(LV_ERR, "exmdb_local: too many predefined namedprops\n");
+			return -3;
+		}
+		g_str_hash.emplace(std::move(elem), last_propid++);
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
