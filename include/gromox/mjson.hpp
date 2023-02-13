@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <json/value.h>
 #include <gromox/mime_pool.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/util.hpp>
@@ -35,7 +36,7 @@ struct GX_EXPORT MJSON {
 	NOMOVE(MJSON);
 
 	void clear();
-	BOOL load_from_str_move(char *digest_buf, int len, const char *path);
+	BOOL load_from_json(const Json::Value &, const char *path);
 	int fetch_structure(const char *charset, BOOL ext, char *buf, int len);
 	int fetch_envelope(const char *charset, char *buf, int len);
 	BOOL rfc822_check();

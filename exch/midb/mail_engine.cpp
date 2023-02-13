@@ -489,6 +489,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	KEYWORD_ENUM keyword_enum;
 	const CONDITION_TREE *trees[1024];
 	CONDITION_TREE::const_iterator pnode, nodes[1024];
+	Json::Value digest;
 	std::string djson;
 	
 #define PUSH_MATCH(TREE, NODE, CONJUNCTION, RESULT) \
@@ -547,7 +548,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			case midb_cond::body: {
 				if (!b_loaded) {
-					Json::Value digest;
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
@@ -557,8 +557,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
-				if (!temp_mjson.load_from_str_move(djson.data(),
-				    djson.size(), temp_buff))
+				if (!temp_mjson.load_from_json(digest, temp_buff))
 					break;
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
@@ -571,7 +570,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 			}
 			case midb_cond::cc: {
 				if (!b_loaded) {
-					Json::Value digest;
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
@@ -619,7 +617,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			case midb_cond::from: {
 				if (!b_loaded) {
-					Json::Value digest;
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
@@ -763,7 +760,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			case midb_cond::subject: {
 				if (!b_loaded) {
-					Json::Value digest;
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
@@ -784,7 +780,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 			}
 			case midb_cond::text: {
 				if (!b_loaded) {
-					Json::Value digest;
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
@@ -842,8 +837,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
-				if (!temp_mjson.load_from_str_move(djson.data(),
-				    djson.size(), temp_buff))
+				if (!temp_mjson.load_from_json(digest, temp_buff))
 					break;
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
@@ -856,7 +850,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 			}
 			case midb_cond::to: {
 				if (!b_loaded) {
-					Json::Value digest;
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;

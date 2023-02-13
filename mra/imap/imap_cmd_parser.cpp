@@ -23,6 +23,7 @@
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mem_file.hpp>
@@ -697,8 +698,11 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			mlog(LV_ERR, "E-1464: ENOMEM");
 			return 1918;
 		}
-		if (eml_path.size() == 0 ||
-		    !mjson.load_from_str_move(buff, len, eml_path.c_str()))
+		if (eml_path.size() == 0)
+			return 1923;
+		Json::Value digest;
+		if (!json_from_str({buff, len}, digest) ||
+		    !mjson.load_from_json(digest, eml_path.c_str()))
 			return 1923;
 	}
 

@@ -3,6 +3,8 @@
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstring>
+#include <json/value.h>
+#include <gromox/json.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/util.hpp>
 
@@ -14,7 +16,7 @@ static void enx(MJSON_MIME *mi, void *q)
 	       static_cast<unsigned int>(mi->mime_type), mi->get_id());
 }
 
-static char tdata1[] =
+static constexpr char tdata1[] =
 	"{\"file\":\"\",\"uid\":0,\"recent\":1,\"read\":0,\"replied\":0,"
 	"\"unsent\":0,\"forwarded\":0,\"flag\":0,\"priority\":3,"
 	"\"msgid\":\"PDg0YzA3MWFiM2ViOWUyNDU4YTg0MDRhYjhjMzBlMDAxQGFrby1kZXYtMDEuZ3JhbW1tLmNvbT4=\","
@@ -58,8 +60,11 @@ static int t_digest()
 int main()
 {
 	alloc_limiter<MJSON_MIME> al(4096, "mjson");
+	Json::Value json;
+	if (!json_from_str(tdata1, json))
+		return EXIT_FAILURE;
 	MJSON m(&al);
-	if (!m.load_from_str_move(tdata1, std::size(tdata1), "/tmp")) {
+	if (!m.load_from_json(json, "/tmp")) {
 		fprintf(stderr, "retrieve failed\n");
 		return EXIT_FAILURE;
 	}

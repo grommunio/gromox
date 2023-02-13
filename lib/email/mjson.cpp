@@ -155,7 +155,7 @@ MJSON::~MJSON()
  *                          or seek file descriptor in
  *                          message, path cannot be NULL.
  */
-BOOL MJSON::load_from_str_move(char *digest_buff, int length, const char *inpath) try
+BOOL MJSON::load_from_json(const Json::Value &root, const char *inpath) try
 {
 	auto pjson = this;
 	BOOL b_none;
@@ -167,9 +167,7 @@ BOOL MJSON::load_from_str_move(char *digest_buff, int length, const char *inpath
 	}
 #endif
 	clear();
-	Json::Value root;
-	auto valid_json = json_from_str(digest_buff, root);
-	if (valid_json) {
+	{
 		pjson->filename     = root["file"].asString();
 		pjson->uid          = root["uid"].asUInt();
 		pjson->msgid        = base64_decode(root["msgid"].asString());
@@ -476,8 +474,8 @@ static bool mjson_check_ascii_printable(const char *astring)
 }
 
 static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
-	const char *storage_path, const char *msg_filename, const char *charset,
-	const char *email_charset, BOOL b_ext, char *buff, int length)
+    const char *storage_path, const char *msg_filename, const char *charset,
+    const char *email_charset, BOOL b_ext, char *buff, int length) try
 {
 	int offset;
 	BOOL b_space;
@@ -627,8 +625,6 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			int envl_len;
 			int body_len;
 			char temp_path[256];
-			struct stat node_stat;
-			char *digest_buff;
 			
 			if ('\0' == msg_filename[0]) {
 				snprintf(temp_path, 256, "%s/%s.dgt", storage_path,
@@ -637,30 +633,16 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				snprintf(temp_path, 256, "%s/%s.%s.dgt", storage_path,
 				         msg_filename, pmime->get_id());
 			}
-			wrapfd fd = open(temp_path, O_RDONLY);
-			if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
-			    !S_ISREG(node_stat.st_mode) ||
-			    node_stat.st_size >= MAX_DIGLEN)
+			size_t slurp_size = 0;
+			std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(temp_path, &slurp_size));
+			if (slurp_data == nullptr)
 				goto RFC822_FAILURE;
-			digest_buff = me_alloc<char>(MAX_DIGLEN);
-			if (NULL == digest_buff) {
+			Json::Value digest;
+			if (!json_from_str({slurp_data.get(), slurp_size}, digest))
 				goto RFC822_FAILURE;
-			}
-			auto rdret = ::read(fd.get(), digest_buff, node_stat.st_size);
-			if (rdret < 0 || rdret != node_stat.st_size) {
-				free(digest_buff);
-				goto RFC822_FAILURE;
-			}
-			digest_buff[rdret] = '\0';
-			fd.close_rd();
 			MJSON temp_mjson(pmime->ppool);
-			if (!temp_mjson.load_from_str_move(digest_buff,
-			    node_stat.st_size, storage_path)) {
-				free(digest_buff);
+			if (!temp_mjson.load_from_json(digest, storage_path))
 				goto RFC822_FAILURE;
-			}
-			free(digest_buff);
-			
 			buff[offset] = ' ';
 			envl_len = temp_mjson.fetch_envelope(charset,
 						buff + offset + 1, length - offset - 1);
@@ -750,6 +732,9 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	}
 	
 	return offset;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1322: ENOMEM");
+	return -1;
 }
 
 static int mjson_convert_address(const char *address, const char *charset,
@@ -1180,9 +1165,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 		pbuild->build_result = FALSE;
 		return;
 	}
-
-	if (!temp_mjson.load_from_str_move(djson.data(), djson.size(),
-	    pbuild->storage_path)) {
+	if (!temp_mjson.load_from_json(digest, pbuild->storage_path)) {
 		if (remove(dgt_path) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1377: remove %s: %s", dgt_path, strerror(errno));
 		if (remove(msg_path) < 0 && errno != ENOENT)
@@ -1243,13 +1226,12 @@ BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> pool, const char *storage_pa
 }
 
 BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
-    char *mjson_id, char *mime_id)
+    char *mjson_id, char *mime_id) try
 {
 	auto pjson_base = this;
 	char *pdot;
 	char temp_path[256];
 	struct stat node_stat;
-	char digest_buff[MAX_DIGLEN];
 
 	if (!rfc822_check())
 		return FALSE;
@@ -1265,30 +1247,25 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 		char dgt_path[256];
 		snprintf(dgt_path, arsizeof(dgt_path), "%s/%s/%s.dgt", storage_path,
 		         pjson_base->get_mail_filename(), mjson_id);
-		wrapfd fd = open(dgt_path, O_RDONLY);
-		if (fd.get() < 0) {
+		size_t slurp_size = 0;
+		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(dgt_path, &slurp_size));
+		if (slurp_data == nullptr) {
 			if (errno == ENOENT || errno == EISDIR)
 				continue;
 			return FALSE;
 		}
-		if (fstat(fd.get(), &node_stat) != 0)
+		pjson->clear();
+		Json::Value digest;
+		if (!json_from_str({slurp_data.get(), slurp_size}, digest) ||
+		    !pjson->load_from_json(digest, temp_path))
 			return false;
-		if (!S_ISREG(node_stat.st_mode) || node_stat.st_size > MAX_DIGLEN) {
-			return FALSE;
-		}
-		auto rd_ret = HXio_fullread(fd.get(), digest_buff, node_stat.st_size);
-		if (rd_ret < 0 || static_cast<size_t>(rd_ret) !=
-		    static_cast<unsigned long long>(node_stat.st_size))
-			return false;
-		fd.close_rd();
-			pjson->clear();
-			if (!pjson->load_from_str_move(digest_buff,
-			    node_stat.st_size, temp_path))
-				/* was never implemented */;
-			strcpy(mime_id, pdot + 1);
-			return TRUE;
+		strcpy(mime_id, pdot + 1);
+		return TRUE;
 	}
 	return FALSE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1321: ENOMEM");
+	return false;
 }
 	
 int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
