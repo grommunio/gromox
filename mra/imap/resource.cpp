@@ -16,6 +16,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/midb.hpp>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
@@ -262,8 +263,7 @@ static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 
 		ptr = strchr(line, ':');
 		if (NULL == ptr) {
-			printf("[resource]: line %d format error in %s\n", total + 1,
-                filename);
+			mlog(LV_ERR, "[resource]: line %d format error in %s\n", total + 1, filename);
 			return -1;
 		}
 		
@@ -272,22 +272,27 @@ static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 		gx_strlcpy(plang->lang, line, arsizeof(plang->lang));
 		HX_strrtrim(plang->lang);
 		HX_strltrim(plang->lang);
+		Json::Value digest;
+		if (!json_from_str(ptr + 1, digest)) {
+			mlog(LV_ERR, "[resource]: line %d format error in %s\n", total + 1, filename);
+			return -1;
+		}
 		if (0 == strlen(plang->lang) ||
-		    !get_digest(ptr + 1, "default-charset", plang->charset, arsizeof(plang->charset)) ||
+		    !get_digest(digest, "default-charset", plang->charset, arsizeof(plang->charset)) ||
 		    strlen(plang->charset) == 0 ||
-		    !get_digest(ptr + 1, "draft", temp_buff, arsizeof(temp_buff)) ||
+		    !get_digest(digest, "draft", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
 		    decode64(temp_buff, strlen(temp_buff), plang->draft,
 		    arsizeof(plang->draft), &temp_len) != 0 ||
-		    !get_digest(ptr + 1, "sent", temp_buff, arsizeof(temp_buff)) ||
+		    !get_digest(digest, "sent", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
 		    decode64(temp_buff, strlen(temp_buff), plang->sent,
 		    arsizeof(plang->sent), &temp_len) != 0 ||
-		    !get_digest(ptr + 1, "trash", temp_buff, arsizeof(temp_buff)) ||
+		    !get_digest(digest, "trash", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
 		    decode64(temp_buff, strlen(temp_buff), plang->trash,
 		    arsizeof(plang->trash), &temp_len) != 0 ||
-		    !get_digest(ptr + 1, "junk", temp_buff, arsizeof(temp_buff)) ||
+		    !get_digest(digest, "junk", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
 		    decode64(temp_buff, strlen(temp_buff), plang->junk,
 		    arsizeof(plang->junk), &temp_len) != 0) {
