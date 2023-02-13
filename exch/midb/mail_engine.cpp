@@ -490,7 +490,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	const CONDITION_TREE *trees[1024];
 	CONDITION_TREE::const_iterator pnode, nodes[1024];
 	Json::Value digest;
-	std::string djson;
 	
 #define PUSH_MATCH(TREE, NODE, CONJUNCTION, RESULT) \
 		{trees[sp]=TREE;nodes[sp]=NODE;conjunctions[sp]=CONJUNCTION;results[sp]=RESULT;sp++;}
@@ -551,7 +550,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
 				MJSON temp_mjson(&g_alloc_mjson);
@@ -573,10 +571,9 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
-				if (!get_digest(djson.data(), "cc", temp_buff, arsizeof(temp_buff)) ||
+				if (!get_digest(digest, "cc", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
 					break;
@@ -620,10 +617,9 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
-				if (!get_digest(djson.data(), "from", temp_buff, arsizeof(temp_buff)) ||
+				if (!get_digest(digest, "from", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
 					break;
@@ -763,10 +759,9 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
-				if (!get_digest(djson.data(), "subject", temp_buff, arsizeof(temp_buff)) ||
+				if (!get_digest(digest, "subject", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
 					break;
@@ -783,10 +778,9 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
-				if (get_digest(djson.data(), "cc", temp_buff, arsizeof(temp_buff)) &&
+				if (get_digest(digest, "cc", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -798,7 +792,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				}
 				if (b_result1)
 					break;
-				if (get_digest(djson.data(), "from", temp_buff, arsizeof(temp_buff)) &&
+				if (get_digest(digest, "from", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -810,7 +804,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				}
 				if (b_result1)
 					break;
-				if (get_digest(djson.data(), "subject", temp_buff, arsizeof(temp_buff)) &&
+				if (get_digest(digest, "subject", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -822,7 +816,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				}
 				if (b_result1)
 					break;
-				if (get_digest(djson.data(), "to", temp_buff, arsizeof(temp_buff)) &&
+				if (get_digest(digest, "to", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -853,10 +847,9 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					djson = json_to_str(digest);
 					b_loaded = TRUE;
 				}
-				if (!get_digest(djson.data(), "to", temp_buff, arsizeof(temp_buff)) ||
+				if (!get_digest(digest, "to", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
 				    temp_buff1, arsizeof(temp_buff1), &temp_len) != 0)
 					break;
@@ -1487,7 +1480,7 @@ static BOOL mail_engine_sort_folder(IDB_ITEM *pidb,
 	return TRUE;
 }
 
-static void mail_engine_extract_digest_fields(const char *digest, char *subject,
+static void mail_engine_extract_digest_fields(const Json::Value &digest, char *subject,
     size_t subjsize, char *from, size_t fromsize, char *rcpt, size_t rcptsize,
     size_t *psize)
 {

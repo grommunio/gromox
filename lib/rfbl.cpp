@@ -917,11 +917,8 @@ int iconv_validate()
 	return 0;
 }
 
-bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
+bool get_digest(const Json::Value &jval, const char *key, char *out, size_t outmax) try
 {
-	Json::Value jval;
-	if (!gromox::json_from_str(json, jval))
-		return false;
 	if (!jval.isMember(key))
 		return false;
 	auto &memb = jval[key];
@@ -932,6 +929,17 @@ bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1988: ENOMEM");
+	return false;
+}
+
+bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
+{
+	Json::Value jval;
+	if (!gromox::json_from_str(json, jval))
+		return false;
+	return get_digest(jval, key, out, outmax);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1324: ENOMEM");
 	return false;
 }
 
