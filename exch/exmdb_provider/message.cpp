@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unistd.h>
 #include <utility>
@@ -26,6 +27,7 @@
 #include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/oxcmail.hpp>
 #include <gromox/proptag_array.hpp>
@@ -68,7 +70,7 @@ struct seen_list {
 
 }
 
-static ec_error_t message_rule_new_message(BOOL, const char *, const char *, cpid_t, sqlite3 *, uint64_t, uint64_t, const char *, seen_list &);
+static ec_error_t message_rule_new_message(BOOL, const char *, const char *, cpid_t, sqlite3 *, uint64_t, uint64_t, const std::optional<Json::Value> &, seen_list &);
 
 static constexpr uint8_t fake_true = true;
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
@@ -2674,9 +2676,9 @@ static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
 }
 
 static ec_error_t message_forward_message(const char *from_address,
-    const char *username, sqlite3 *psqlite, cpid_t cpid,
-	uint64_t message_id, const char *pdigest, uint32_t action_flavor,
-	BOOL b_extended, uint32_t count, void *pblock)
+    const char *username, sqlite3 *psqlite, cpid_t cpid, uint64_t message_id,
+    const std::optional<Json::Value> &digest, uint32_t action_flavor,
+    BOOL b_extended, uint32_t count, void *pblock)
 {
 	int offset;
 	const char *pdomain;
@@ -2706,8 +2708,8 @@ static ec_error_t message_forward_message(const char *from_address,
 	}
 	std::unique_ptr<char[], stdlib_delete> pbuff;
 	MAIL imail;
-	if (NULL != pdigest) {
-		if (!get_digest(pdigest, "file", mid_string, std::size(mid_string)))
+	if (digest.has_value()) {
+		if (!get_digest(*digest, "file", mid_string, std::size(mid_string)))
 			return ecError;
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
 		         exmdb_server::get_dir(), mid_string);
@@ -2958,9 +2960,9 @@ static BOOL message_make_deferred_action_messages(const char *username,
 
 static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, seen_list &seen,
-    const ACTION_BLOCK &block, size_t rule_idx,
-    const RULE_NODE *prnode, BOOL &b_del)
+    uint64_t message_id, const std::optional<Json::Value> &digest,
+    seen_list &seen, const ACTION_BLOCK &block, size_t rule_idx,
+    const RULE_NODE *prnode, BOOL &b_del) try
 {
 	auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 	auto dst_fid = rop_util_get_gc_value(static_cast<SVREID *>(
@@ -3008,25 +3010,17 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
 		return ecError;
-	try {
-		seen.fld.emplace_back(dst_fid);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-2033: ENOMEM");
-		return ecServerOOM;
-	}
-	char tmp_buff[MAX_DIGLEN];
-	char *pmid_string = nullptr, *pdigest1 = nullptr;
-	if (is_pvt && pdigest != nullptr &&
+	seen.fld.emplace_back(dst_fid);
+	char *pmid_string = nullptr;
+	std::optional<Json::Value> newdigest;
+	if (is_pvt && digest.has_value() &&
 	    common_util_get_mid_string(psqlite, dst_mid, &pmid_string) &&
 	    pmid_string != nullptr) {
-		strcpy(tmp_buff, pdigest);
-		set_digest(tmp_buff, MAX_DIGLEN, "file", pmid_string);
-		pdigest1 = tmp_buff;
-	} else {
-		pdigest1 = NULL;
+		newdigest = digest;
+		(*newdigest)["file"] = pmid_string;
 	}
 	auto ec = message_rule_new_message(b_oof, from_address, account,
-	          cpid, psqlite, dst_fid, dst_mid, pdigest1, seen);
+	          cpid, psqlite, dst_fid, dst_mid, newdigest, seen);
 	if (ec != ecSuccess)
 		return ec;
 	if (block.type == OP_MOVE) {
@@ -3044,6 +3038,9 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 			LLU{dst_mid}, LLU{dst_fid});
 	}
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2033: ENOMEM");
+	return ecServerOOM;
 }
 
 /**
@@ -3107,8 +3104,8 @@ static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
 
 static ec_error_t op_forward(const char *from_address, const char *account,
     cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const char *pdigest, seen_list &seen, const ACTION_BLOCK &block,
-    size_t rule_idx, const RULE_NODE *prnode)
+    const std::optional<Json::Value> &pdigest, seen_list &seen,
+    const ACTION_BLOCK &block, size_t rule_idx, const RULE_NODE *prnode)
 {
 	if (!exmdb_server::is_private())
 		return ecSuccess;
@@ -3126,12 +3123,12 @@ static ec_error_t op_forward(const char *from_address, const char *account,
 
 static ec_error_t op_delegate(const char *from_address, const char *account,
     cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const char *pdigest, seen_list &seen, const ACTION_BLOCK &block,
-    size_t rule_idx, const RULE_NODE *prnode)
+    const std::optional<Json::Value> &digest, seen_list &seen,
+    const ACTION_BLOCK &block, size_t rule_idx, const RULE_NODE *prnode) try
 {
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
-	if (!exmdb_server::is_private() ||
-	    pdigest == nullptr || pfwddlgt->count == 0)
+	if (!exmdb_server::is_private() || !digest.has_value() ||
+	    pfwddlgt->count == 0)
 		return ecSuccess;
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
@@ -3191,7 +3188,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	    pfwddlgt->pblock, rcpt_list))
 		return ecError;
 	char mid_string1[128], tmp_path1[256];
-	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
+	get_digest(*digest, "file", mid_string1, arsizeof(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 		 exmdb_server::get_dir(), mid_string1);
 	for (const auto &eaddr : rcpt_list) {
@@ -3208,22 +3205,24 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 			        tmp_path1, eml_path.c_str(), strerror(-ret));
 			continue;
 		}
-		char tmp_buff[MAX_DIGLEN];
-		strcpy(tmp_buff, pdigest);
-		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string.c_str());
-		const char *pdigest1 = tmp_buff;
+		Json::Value newdigest = *digest;
+		newdigest["file"] = std::move(mid_string);
+		auto djson = json_to_str(newdigest);
 		uint32_t result = 0;
 		if (!exmdb_client_relay_delivery(maildir, from_address,
-		    eaddr.c_str(), cpid, pmsgctnt, pdigest1, &result))
+		    eaddr.c_str(), cpid, pmsgctnt, djson.c_str(), &result))
 			return ecError;
 	}
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1130: ENOMEM");
+	return ecServerOOM;
 }
 
 static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, seen_list &seen,
-    const ACTION_BLOCK &block, size_t rule_idx,
+    uint64_t message_id, const std::optional<Json::Value> &pdigest,
+    seen_list &seen, const ACTION_BLOCK &block, size_t rule_idx,
     const RULE_NODE *prnode, BOOL &b_del, std::list<DAM_NODE> &dam_list)
 {
 	switch (block.type) {
@@ -3292,8 +3291,8 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 
 static ec_error_t op_process(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, seen_list &seen,
-    const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit,
+    uint64_t message_id, const std::optional<Json::Value> &pdigest,
+    seen_list &seen, const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit,
     std::list<DAM_NODE> &dam_list)
 {
 	if (b_exit && !(prnode->state & ST_ONLY_WHEN_OOF))
@@ -3358,9 +3357,9 @@ static ec_error_t opx_move_public(const char *account, sqlite3 *psqlite,
 
 static ec_error_t opx_move(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, seen_list &seen,
-    const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode,
-    BOOL &b_del)
+    uint64_t message_id, const std::optional<Json::Value> &pdigest,
+    seen_list &seen, const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode,
+    BOOL &b_del) try
 {
 	auto pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(block.pdata);
 	auto ec = exmdb_server::is_private() ?
@@ -3400,25 +3399,17 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
 		return ecError;
-	try {
-		seen.fld.emplace_back(dst_fid);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-2031: ENOMEM");
-		return ecServerOOM;
-	}
-	char tmp_buff[MAX_DIGLEN];
-	char *pmid_string = nullptr, *pdigest1 = nullptr;
-	if (is_pvt && pdigest != nullptr &&
+	seen.fld.emplace_back(dst_fid);
+	std::optional<Json::Value> newdigest;
+	char *pmid_string = nullptr;
+	if (is_pvt && pdigest.has_value() &&
 	    common_util_get_mid_string(psqlite, dst_mid, &pmid_string) &&
 	    pmid_string != nullptr) {
-		strcpy(tmp_buff, pdigest);
-		set_digest(tmp_buff, MAX_DIGLEN, "file", pmid_string);
-		pdigest1 = tmp_buff;
-	} else {
-		pdigest1 = NULL;
+		newdigest.emplace(*pdigest);
+		(*newdigest)["file"] = pmid_string;
 	}
 	ec = message_rule_new_message(b_oof, from_address, account,
-	     cpid, psqlite, dst_fid, dst_mid, pdigest1, seen);
+	     cpid, psqlite, dst_fid, dst_mid, newdigest, seen);
 	if (ec != ecSuccess)
 		return ec;
 	if (block.type == OP_MOVE) {
@@ -3436,6 +3427,9 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 			LLU{folder_id}, LLU{dst_mid}, LLU{dst_fid});
 	}
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2031: ENOMEM");
+	return ecServerOOM;
 }
 
 static ec_error_t opx_reply(const char *from_address, const char *account,
@@ -3476,11 +3470,12 @@ static ec_error_t opx_reply(const char *from_address, const char *account,
 
 static ec_error_t opx_delegate(const char *from_address, const char *account,
     cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const char *pdigest, const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode)
+    const std::optional<Json::Value> &pdigest, const EXT_ACTION_BLOCK &block,
+    const RULE_NODE *prnode) try
 {
 	auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
-	if (!exmdb_server::is_private() ||
-	    pdigest == nullptr || pextfwddlgt->count == 0)
+	if (!exmdb_server::is_private() || !pdigest.has_value() ||
+	    pextfwddlgt->count == 0)
 		return ecSuccess;
 	if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
 		return message_disable_rule(psqlite, TRUE, prnode->id);
@@ -3535,7 +3530,7 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 	    pextfwddlgt->pblock, rcpt_list))
 		return ecError;
 	char mid_string1[128], tmp_path1[256];
-	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
+	get_digest(*pdigest, "file", mid_string1, arsizeof(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 	         exmdb_server::get_dir(), mid_string1);
 	for (const auto &eaddr : rcpt_list) {
@@ -3552,22 +3547,24 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 			        tmp_path1, eml_path.c_str(), strerror(-ret));
 			continue;
 		}
-		char tmp_buff[MAX_DIGLEN];
-		strcpy(tmp_buff, pdigest);
-		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string.c_str());
-		const char *pdigest1 = tmp_buff;
+		Json::Value newdigest = *pdigest;
+		newdigest["file"] = std::move(mid_string);
+		auto djson = json_to_str(newdigest);
 		uint32_t result = 0;
 		if (!exmdb_client_relay_delivery(maildir, from_address,
-		    eaddr.c_str(), cpid, pmsgctnt, pdigest1, &result))
+		    eaddr.c_str(), cpid, pmsgctnt, djson.c_str(), &result))
 			return ecError;
 	}
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1128: ENOMEM");
+	return ecServerOOM;
 }
 
 static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, seen_list &seen,
-    const EXT_ACTION_BLOCK &block, size_t rule_idx,
+    uint64_t message_id, const std::optional<Json::Value> &pdigest,
+    seen_list &seen, const EXT_ACTION_BLOCK &block, size_t rule_idx,
     const RULE_NODE *prnode, BOOL &b_del)
 {
 	switch (block.type) {
@@ -3635,8 +3632,8 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 
 static ec_error_t opx_process(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, seen_list &seen,
-    const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit)
+    uint64_t message_id, const std::optional<Json::Value> &pdigest,
+    seen_list &seen, const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit)
 {
 	if (b_exit && !(prnode->state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
@@ -3690,7 +3687,8 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 /* extended rules do not produce DAM or DEM */
 static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const char *pdigest, seen_list &seen)
+    uint64_t message_id, const std::optional<Json::Value> &pdigest,
+    seen_list &seen)
 {
 	std::list<RULE_NODE> rule_list, ext_rule_list;
 	std::list<DAM_NODE> dam_list;
@@ -3734,10 +3732,10 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK ||
 	    !cu_adjust_store_size(psqlite, ADJ_DECREASE, message_size, 0))
 		return ecError;
-	if (pdigest == nullptr)
+	if (!pdigest.has_value())
 		return ecSuccess;
 	char mid_string1[128], tmp_path1[256];
-	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
+	get_digest(*pdigest, "file", mid_string1, arsizeof(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 	         exmdb_server::get_dir(), mid_string1);
 	remove(tmp_path1);
@@ -3747,9 +3745,8 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 /* 0 means success, 1 means mailbox full, other unknown error */
 BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
     const char *account, cpid_t cpid, const MESSAGE_CONTENT *pmsg,
-    const char *pdigest, uint32_t *presult)
+    const char *pdigest, uint32_t *presult) try
 {
-	int fd;
 	BOOL b_oof;
 	BOOL b_to_me;
 	BOOL b_cc_me;
@@ -3765,10 +3762,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	char display_name[1024];
 	/* Buffers above may be referenced by tmp_msg (cu_set_propvals) */
 	MESSAGE_CONTENT tmp_msg;
-	char digest_buff[MAX_DIGLEN];
 	
-	if (pdigest != nullptr && strlen(pdigest) >= MAX_DIGLEN)
-		return FALSE;
 	b_to_me = FALSE;
 	b_cc_me = FALSE;
 	if (NULL != pmsg->children.prcpts) {
@@ -3822,13 +3816,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		mlog(LV_ERR, "%s - public folder not implemented", __PRETTY_FUNCTION__);
 		return false;
 	}
-	seen_list seen;
-	try {
-		seen.fld.emplace_back(fid_val);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-2032: ENOMEM");
-		return false;
-	}
+	seen_list seen{{fid_val}};
 	tmp_msg = *pmsg;
 	if (exmdb_server::is_private()) {
 		tmp_msg.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsg->proplist.count + 15);
@@ -3884,16 +3872,26 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		*presult = static_cast<uint32_t>(deliver_message_result::result_error);
 		return TRUE;
 	}
-	if (pdigest != nullptr &&
-	    get_digest(pdigest, "file", mid_string, arsizeof(mid_string))) {
-		strcpy(digest_buff, pdigest);
-		set_digest(digest_buff, MAX_DIGLEN, "file", "");
+	std::optional<Json::Value> digest;
+	if (pdigest != nullptr) {
+		digest.emplace();
+		if (!json_from_str(pdigest, *digest))
+			digest.reset();
+	}
+	if (digest.has_value() &&
+	    get_digest(*digest, "file", mid_string, arsizeof(mid_string))) {
+		(*digest)["file"] = "";
 		snprintf(tmp_path, std::size(tmp_path), "%s/ext/%s",
 		         exmdb_server::get_dir(), mid_string);
-		fd = open(tmp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-		if (-1 != fd) {
-			write(fd, digest_buff, strlen(digest_buff));
-			close(fd);
+		auto djson = json_to_str(*digest);
+		wrapfd fd = open(tmp_path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
+		if (fd.get() >= 0) {
+			auto wr_ret = HXio_fullwrite(fd.get(), djson.c_str(), djson.size());
+			if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
+			    fd.close_wr() != 0) {
+				mlog(LV_ERR, "E-1319: write %s: %s", tmp_path, strerror(errno));
+				return false;
+			}
 			if (!common_util_set_mid_string(pdb->psqlite,
 			    message_id, mid_string))
 				return FALSE;
@@ -3903,7 +3901,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		"Message %llu is delivered into folder "
 		"%llu", account, LLU{message_id}, LLU{fid_val});
 	auto ec = message_rule_new_message(b_oof, from_address, account,
-	          cpid, pdb->psqlite, fid_val, message_id, pdigest, seen);
+	          cpid, pdb->psqlite, fid_val, message_id, digest, seen);
 	if (ec != ecSuccess)
 		return FALSE;
 	sql_transact.commit();
@@ -3920,6 +3918,9 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	}
 	*presult = static_cast<uint32_t>(deliver_message_result::result_ok);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2032: ENOMEM");
+	return false;
 }
 
 /* create or cover message under folder, if message exists
@@ -4016,16 +4017,13 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 	return TRUE;
 }
 
-BOOL exmdb_server::rule_new_message(const char *dir,
-    const char *username, const char *account, cpid_t cpid,
-	uint64_t folder_id, uint64_t message_id)
+BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
+    const char *account, cpid_t cpid, uint64_t folder_id,
+    uint64_t message_id) try
 {
-	int fd, len;
-	char *pdigest;
 	uint64_t fid_val;
 	uint64_t mid_val;
 	char *pmid_string = nullptr, tmp_path[256];
-	char digest_buff[MAX_DIGLEN];
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -4036,32 +4034,23 @@ BOOL exmdb_server::rule_new_message(const char *dir,
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	fid_val = rop_util_get_gc_value(folder_id);
 	mid_val = rop_util_get_gc_value(message_id);
-	pdigest = NULL;
 	if (is_pvt && !common_util_get_mid_string(pdb->psqlite, mid_val, &pmid_string))
 		return FALSE;
+	std::optional<Json::Value> digest;
 	if (NULL != pmid_string) {
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/ext/%s",
 		         exmdb_server::get_dir(), pmid_string);
-		fd = open(tmp_path, O_RDONLY);
-		if (-1 != fd) {
-			len = read(fd, digest_buff, MAX_DIGLEN);
-			if (len > 0) {
-				digest_buff[len] = '\0';
-				pdigest = digest_buff;
-			}
-			close(fd);
+		size_t slurp_size = 0;
+		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(tmp_path, &slurp_size));
+		if (slurp_data != nullptr) {
+			digest.emplace();
+			json_from_str({slurp_data.get(), slurp_size}, *digest);
 		}
 	}
-	seen_list seen;
-	try {
-		seen.fld.emplace_back(fid_val);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-2034: ENOMEM");
-		return false;
-	}
+	seen_list seen{{fid_val}};
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	auto ec = message_rule_new_message(false, "none@none", account,
-	          cpid, pdb->psqlite, fid_val, mid_val, pdigest, seen);
+	          cpid, pdb->psqlite, fid_val, mid_val, digest, seen);
 	if (ec != ecSuccess)
 		return FALSE;
 	sql_transact.commit();
@@ -4075,4 +4064,7 @@ BOOL exmdb_server::rule_new_message(const char *dir,
 			mn.folder_id, mn.message_id);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2034: ENOMEM");
+	return false;
 }
