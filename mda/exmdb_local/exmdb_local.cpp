@@ -216,8 +216,6 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			    !exml_bouncer_make(pcontext->pcontrol->from,
 			    rcpt_buff, pcontext->pmail, current_time,
 			    "BOUNCE_MAILBOX_FULL", pbounce_context->pmail)) {
-				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-					"Mailbox is chock-full for %s", rcpt_buff);
 				put_context(pbounce_context);
 				break;
 			}
