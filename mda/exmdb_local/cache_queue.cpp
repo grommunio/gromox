@@ -193,7 +193,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	lseek(fd.get(), 0, SEEK_SET);
 	enc_times = cpu_to_le32(1);
 	if (write(fd.get(), &enc_times, sizeof(enc_times)) != sizeof(enc_times) ||
-	    fd.close_wr() < 0) {
+	    fd.close_wr() != 0) {
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1360: remove %s: %s",
 			        file_name.c_str(), strerror(errno));
@@ -439,7 +439,7 @@ static void *mdl_thrwork(void *arg)
 				lseek(fd.get(), 0, SEEK_SET);
 				times = cpu_to_le32(times + 1);
 				if (write(fd.get(), &times, sizeof(uint32_t)) != sizeof(uint32_t) ||
-				    fd.close_wr() < 0)
+				    fd.close_wr() != 0)
 					mlog(LV_ERR, "exmdb_local: error while updating "
 						"times");
 			}

@@ -2361,11 +2361,17 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			return ecError;
 		}
 		for (const auto &u : tmp_list) {
-			write(fd.get(), u.c_str(), u.size());
-			write(fd.get(), "\r\n", 2);
+			auto wr_ret = write(fd.get(), u.c_str(), u.size());
+			if (wr_ret < 0 || static_cast<size_t>(wr_ret) != u.size() ||
+			    write(fd.get(), "\r\n", 2) != 2) {
+				mlog(LV_ERR, "E-1687: write %s: %s", dlg_path.c_str(), strerror(errno));
+				break;
+			}
 		}
-		if (fd.close_wr() < 0)
+		if (fd.close_wr() != 0) {
+			mlog(LV_ERR, "E-1686: write %s: %s", dlg_path.c_str(), strerror(errno));
 			return ecError;
+		}
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
