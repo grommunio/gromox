@@ -1811,7 +1811,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_update_folder_rule &d)
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_delivery_message &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_deliver_message &d)
 {
 	TRY(x.g_str(&d.from_address));
 	TRY(x.g_str(&d.account));
@@ -1823,7 +1823,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_delivery_message &d)
 	return x.g_str(&d.pdigest);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_delivery_message &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_deliver_message &d)
 {
 	TRY(x.p_str(d.from_address));
 	TRY(x.p_str(d.account));
@@ -2291,7 +2291,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_public_folder_unread_
 	E(update_folder_permission) \
 	E(empty_folder_rule) \
 	E(update_folder_rule) \
-	E(delivery_message) \
+	E(deliver_message) \
 	E(write_message) \
 	E(read_message) \
 	E(get_content_sync) \
@@ -3413,12 +3413,12 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_update_folder_rule &d)
 	return x.p_bool(d.b_exceed);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_delivery_message &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_deliver_message &d)
 {
 	return x.g_uint32(&d.result);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_delivery_message &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_deliver_message &d)
 {
 	return x.p_uint32(d.result);
 }
@@ -3677,7 +3677,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_public_folder_unread
 	E(link_message) \
 	E(get_message_timer) \
 	E(update_folder_rule) \
-	E(delivery_message) \
+	E(deliver_message) \
 	E(write_message) \
 	E(read_message) \
 	E(get_content_sync) \

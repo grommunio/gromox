@@ -3844,10 +3844,9 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 }
 
 /* 0 means success, 1 means mailbox full, other unknown error */
-BOOL exmdb_server::delivery_message(const char *dir,
-	const char *from_address, const char *account,
-	uint32_t cpid, const MESSAGE_CONTENT *pmsg,
-	const char *pdigest, uint32_t *presult)
+BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
+    const char *account, uint32_t cpid, const MESSAGE_CONTENT *pmsg,
+    const char *pdigest, uint32_t *presult)
 {
 	int fd;
 	BOOL b_oof;
@@ -3904,7 +3903,7 @@ BOOL exmdb_server::delivery_message(const char *dir,
 		return FALSE;
 	if (cu_check_msgsize_overflow(pdb->psqlite, PR_PROHIBIT_RECEIVE_QUOTA) ||
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
-		*presult = static_cast<uint32_t>(delivery_message_result::mailbox_full);
+		*presult = static_cast<uint32_t>(deliver_message_result::mailbox_full);
 		return TRUE;
 	}
 	if (exmdb_server::is_private()) {
@@ -4005,7 +4004,7 @@ BOOL exmdb_server::delivery_message(const char *dir,
 	    paccount, cpid, false, fid_val, &tmp_msg, &message_id))
 		return FALSE;
 	if (0 == message_id) {
-		*presult = static_cast<uint32_t>(delivery_message_result::result_error);
+		*presult = static_cast<uint32_t>(deliver_message_result::result_error);
 		return TRUE;
 	}
 	if (pdigest != nullptr &&
@@ -4042,7 +4041,7 @@ BOOL exmdb_server::delivery_message(const char *dir,
 			db_engine_notify_message_creation(pdb,
 				mn.folder_id, mn.message_id);
 	}
-	*presult = static_cast<uint32_t>(delivery_message_result::result_ok);
+	*presult = static_cast<uint32_t>(deliver_message_result::result_ok);
 	return TRUE;
 }
 
