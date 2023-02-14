@@ -787,8 +787,12 @@ BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
 	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 		"count(message_id) FROM messages");
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	return pstmt != nullptr && pstmt.step() == SQLITE_ROW &&
-	       sqlite3_column_int64(pstmt, 0) >= g_max_msg ? TRUE : false;
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
+		return false;
+	auto c = pstmt.col_uint64(0);
+	mlog(LV_DEBUG, "D-1681: %llu messages <=> max_store_message_count %u",
+		LLU{c}, g_max_msg);
+	return c >= g_max_msg ? TRUE : false;
 }
 
 BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
@@ -804,10 +808,15 @@ BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 	if (!cu_get_properties(MAPI_STORE, 0, CP_ACP, psqlite,
 	    &proptags, &propvals))
 		return FALSE;
+	/* Another checking point is in midb, CKFL */
 	auto ptotal = propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	auto qv_kb = propvals.get<uint32_t>(qtag);
-	return ptotal != nullptr && qv_kb != nullptr &&
-	       *ptotal >= static_cast<uint64_t>(*qv_kb) * 1024;
+	if (ptotal == nullptr || qv_kb == nullptr)
+		return false;
+	auto qvbytes = static_cast<uint64_t>(*qv_kb) * 1024;
+	mlog(LV_DEBUG, "D-1680: storesize %llu <=> quota(%xh) %llu bytes",
+		LLU{*ptotal}, XUI{qtag}, LLU{qvbytes});
+	return *ptotal >= qvbytes;
 }
 
 static uint32_t cu_get_store_msgcount(sqlite3 *psqlite, unsigned int flags)

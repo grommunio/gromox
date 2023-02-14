@@ -2295,6 +2295,8 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 	if (NULL != ptotal && NULL != pmax) {
 		quota = *pmax;
 		quota *= 1024;
+		mlog(LV_DEBUG, "D-1682: storesize %llu <=> quota(%xh) %llu bytes",
+			LLU{*ptotal}, PR_PROHIBIT_RECEIVE_QUOTA, LLU{quota});
 		if (*ptotal >= quota)
 			return cmd_write(sockd, "TRUE 1\r\n");
 	}
