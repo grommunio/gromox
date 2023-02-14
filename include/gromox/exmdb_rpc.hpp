@@ -1198,8 +1198,10 @@ struct exresp_update_folder_rule : public exresp {
 
 enum deliver_message_result {
 	result_ok = 0,
-	mailbox_full = 1,
+	/* mailbox_full (unused) = 1, */
 	result_error = 2,
+	mailbox_full_bysize = 3,
+	mailbox_full_bymsg = 4,
 };
 
 struct exresp_deliver_message : public exresp {

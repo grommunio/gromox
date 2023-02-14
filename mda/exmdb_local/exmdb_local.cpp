@@ -494,9 +494,13 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 			"error result returned when delivering "
 			"message into directory %s!", home_dir);
 		return DELIVERY_OPERATION_FAILURE;
-	case deliver_message_result::mailbox_full:
+	case deliver_message_result::mailbox_full_bysize:
 		exmdb_local_log_info(pcontext, address,
-			LV_NOTICE, "user's mailbox is full");
+			LV_NOTICE, "user's mailbox has reached quota limit");
+		return DELIVERY_MAILBOX_FULL;
+	case deliver_message_result::mailbox_full_bymsg:
+		exmdb_local_log_info(pcontext, address,
+			LV_NOTICE, "user's mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
 		return DELIVERY_MAILBOX_FULL;
 	}
 	return DELIVERY_OPERATION_FAILURE;

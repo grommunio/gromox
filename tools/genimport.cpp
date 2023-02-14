@@ -643,11 +643,14 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct)
 	switch (dm_status) {
 	case deliver_message_result::result_ok:
 		break;
-	case deliver_message_result::mailbox_full:
-		fprintf(stderr, "Message rejected - mailbox is full (either bytes or exmdb_provider.cfg:max_store_message_count)\n");
-		return EXIT_FAILURE;
 	case deliver_message_result::result_error:
 		fprintf(stderr, "Message rejected - unspecified reason\n");
+		return EXIT_FAILURE;
+	case deliver_message_result::mailbox_full_bysize:
+		fprintf(stderr, "Message rejected - mailbox has reached quota limit");
+		return EXIT_FAILURE;
+	case deliver_message_result::mailbox_full_bymsg:
+		fprintf(stderr, "Message rejected - mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

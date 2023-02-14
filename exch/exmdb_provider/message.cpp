@@ -3901,9 +3901,11 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (cu_check_msgsize_overflow(pdb->psqlite, PR_PROHIBIT_RECEIVE_QUOTA) ||
-	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
-		*presult = static_cast<uint32_t>(deliver_message_result::mailbox_full);
+	if (cu_check_msgsize_overflow(pdb->psqlite, PR_PROHIBIT_RECEIVE_QUOTA)) {
+		*presult = static_cast<uint32_t>(deliver_message_result::mailbox_full_bysize);
+		return TRUE;
+	} else if (common_util_check_msgcnt_overflow(pdb->psqlite)) {
+		*presult = static_cast<uint32_t>(deliver_message_result::mailbox_full_bymsg);
 		return TRUE;
 	}
 	if (exmdb_server::is_private()) {
