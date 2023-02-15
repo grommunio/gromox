@@ -1203,24 +1203,17 @@ BOOL common_util_modifyrecipient_to_propvals(
 	 uint32_t cpid, const MODIFYRECIPIENT_ROW *prow,
 	const PROPTAG_ARRAY *pcolumns, TPROPVAL_ARRAY *ppropvals)
 {
-	TAGGED_PROPVAL propval;
-	
 	ppropvals->count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(16 + pcolumns->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
-	propval.proptag = PR_ROWID;
-	propval.pvalue = deconst(&prow->row_id);
-	common_util_set_propvals(ppropvals, &propval);
-	propval.proptag = PR_RECIPIENT_TYPE;
+	cu_set_propval(ppropvals, PR_ROWID, deconst(&prow->row_id));
 	auto rcpttype = cu_alloc<uint32_t>();
-	propval.pvalue = rcpttype;
-	if (NULL == propval.pvalue) {
+	if (rcpttype == nullptr)
 		return FALSE;
-	}
 	*rcpttype = prow->recipient_type;
-	common_util_set_propvals(ppropvals, &propval);
+	cu_set_propval(ppropvals, PR_RECIPIENT_TYPE, rcpttype);
 	if (NULL == prow->precipient_row) {
 		return TRUE;
 	}

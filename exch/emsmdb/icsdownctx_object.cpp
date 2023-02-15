@@ -381,54 +381,34 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		}
 		memcpy(ppropval, chg.ppropval, sizeof(TAGGED_PROPVAL) * chg.count);
 		chg.ppropval = ppropval;
-		tmp_propval.proptag = PR_IPM_DRAFTS_ENTRYID;
-		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
-		                     rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
-		if (NULL == tmp_propval.pvalue) {
+		auto pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
+		if (pvalue == nullptr)
 			return FALSE;
-		}
-		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-		tmp_propval.proptag = PR_IPM_CONTACT_ENTRYID;
-		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
-		                     rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
-		if (NULL == tmp_propval.pvalue) {
+		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_DRAFTS_ENTRYID, pvalue);
+		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
+		if (pvalue == nullptr)
 			return FALSE;
-		}
-		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-		tmp_propval.proptag = PR_IPM_APPOINTMENT_ENTRYID;
-		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
-		                     rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
-		if (NULL == tmp_propval.pvalue) {
+		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_CONTACT_ENTRYID, pvalue);
+		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
+		if (pvalue == nullptr)
 			return FALSE;
-		}
-		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-		tmp_propval.proptag = PR_IPM_JOURNAL_ENTRYID;
-		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
-		                     rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
-		if (NULL == tmp_propval.pvalue) {
+		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_APPOINTMENT_ENTRYID, pvalue);
+		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
+		if (pvalue == nullptr)
 			return FALSE;
-		}
-		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-		tmp_propval.proptag = PR_IPM_NOTE_ENTRYID;
-		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
-		                     rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
-		if (NULL == tmp_propval.pvalue) {
+		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_JOURNAL_ENTRYID, pvalue);
+		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
+		if (pvalue == nullptr)
 			return FALSE;
-		}
-		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-		tmp_propval.proptag = PR_IPM_TASK_ENTRYID;
-		tmp_propval.pvalue = cu_fid_to_entryid(pctx->pstream->plogon,
-		                     rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
-		if (NULL == tmp_propval.pvalue) {
+		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_NOTE_ENTRYID, pvalue);
+		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
+		if (pvalue == nullptr)
 			return FALSE;
-		}
-		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_TASK_ENTRYID, pvalue);
 		if (!chg.has(PR_ADDITIONAL_REN_ENTRYIDS)) {
-			tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS;
 			auto ba = cu_alloc<BINARY_ARRAY>();
 			if (ba == nullptr)
 				return FALSE;
-			tmp_propval.pvalue = ba;
 			ba->count = 5;
 			ba->pbin = cu_alloc<BINARY>(ba->count);
 			if (ba->pbin == nullptr) {
@@ -464,15 +444,12 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				return FALSE;
 			}
 			ba->pbin[4] = *pbin;
-			common_util_set_propvals(
-				fldchgs.pfldchgs + i, &tmp_propval);
+			cu_set_propval(&fldchgs.pfldchgs[i], PR_ADDITIONAL_REN_ENTRYIDS, ba);
 		}
 		if (!chg.has(PR_ADDITIONAL_REN_ENTRYIDS_EX)) {
-			tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS_EX;
 			auto bv = cu_alloc<BINARY>();
 			if (bv == nullptr)
 				return FALSE;
-			tmp_propval.pvalue = bv;
 			persistdatas.count = 3;
 			persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
 			if (NULL == persistdatas.ppitems) {
@@ -508,15 +485,12 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (bv->pv == nullptr)
 				return FALSE;
 			memcpy(bv->pv, ext_push.m_udata, bv->cb);
-			common_util_set_propvals(
-				fldchgs.pfldchgs + i, &tmp_propval);
+			cu_set_propval(&fldchgs.pfldchgs[i], PR_ADDITIONAL_REN_ENTRYIDS_EX, bv);
 		}
 		if (!chg.has(PR_FREEBUSY_ENTRYIDS)) {
-			tmp_propval.proptag = PR_FREEBUSY_ENTRYIDS;
 			auto ba = cu_alloc<BINARY_ARRAY>();
 			if (ba == nullptr)
 				return FALSE;
-			tmp_propval.pvalue = ba;
 			ba->count = 4;
 			ba->pbin = cu_alloc<BINARY>(ba->count);
 			if (ba->pbin == nullptr)
@@ -533,8 +507,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				return FALSE;
 			}
 			ba->pbin[3] = *pbin;
-			common_util_set_propvals(
-				fldchgs.pfldchgs + i, &tmp_propval);
+			cu_set_propval(&fldchgs.pfldchgs[i], PR_FREEBUSY_ENTRYIDS, ba);
 		}
 	}
 	icsdownctx_object_adjust_fldchgs(&fldchgs, pctx->pproptags, !(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES));

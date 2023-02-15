@@ -583,7 +583,6 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	int object_type;
 	char username[UADDR_SIZE];
 	PROPTAG_ARRAY proptags;
-	TAGGED_PROPVAL propval;
 	uint32_t proptag_buff[7];
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -661,11 +660,10 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		if (!pmessage->get_properties(0, &proptags, *pppropvals))
 			*pppropvals = NULL;
 		if (!(**pppropvals).has(PR_PROVIDER_SUBMIT_TIME)) {
-			propval.proptag = PR_PROVIDER_SUBMIT_TIME;
-			propval.pvalue = cu_alloc<uint64_t>();
-			if (NULL != propval.pvalue) {
-				*static_cast<uint64_t *>(propval.pvalue) = rop_util_current_nttime();
-				common_util_set_propvals(*pppropvals, &propval);
+			auto nt = cu_alloc<uint64_t>();
+			if (nt != nullptr) {
+				*nt = rop_util_current_nttime();
+				cu_set_propval(*pppropvals, PR_PROVIDER_SUBMIT_TIME, nt);
 			}
 		}
 	}
