@@ -1244,12 +1244,9 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 		if (pfilter->res.res_property.proptag == PR_ANR) {
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_ACCOUNT, &prop_val, temp_buff,
-			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
-				if (NULL != strcasestr(temp_buff,
-					pfilter->res.res_property.pprop->value.pstr)) {
-					return TRUE;
-				}
-			}
+			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess &&
+			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
+				return TRUE;
 			ptoken = strchr(pfilter->res.res_property.pprop->value.pstr, ':');
 			if (NULL != ptoken) {
 				/* =SMTP:user@company.com */
@@ -2512,15 +2509,13 @@ static const SIMPLE_TREE_NODE *nsp_interface_resolve_gal(const gal_list_t &plist
 		if (NULL != ptnode) {
 			*pb_ambiguous = TRUE;
 			return NULL;
-		} else {
-			ptnode = ptr;
 		}
+		ptnode = ptr;
 	}
-	if (NULL == ptnode) {
-		*pb_ambiguous = FALSE;
-		return NULL;
-	}
-	return ptnode;
+	if (ptnode != nullptr)
+		return ptnode;
+	*pb_ambiguous = FALSE;
+	return NULL;
 }
 
 int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
