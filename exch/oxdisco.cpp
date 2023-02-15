@@ -853,11 +853,11 @@ BOOL OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
 		error = false;
 	}
 	int code = 200;
-	const char *response = respdoc.toStyledString().c_str();
+	auto response = respdoc.toStyledString();
 	if (response_logging > 0)
-		mlog(LV_DEBUG, "[oxdisco_v2] response: %s", response);
-	writeheader_json(ctx_id, code, strlen(response));
-	return write_response(ctx_id, response, strlen(response));
+		mlog(LV_DEBUG, "[oxdisco_v2] response: %s", response.c_str());
+	writeheader_json(ctx_id, code, response.size());
+	return write_response(ctx_id, response.c_str(), response.size());
 }
 
 BOOL OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
