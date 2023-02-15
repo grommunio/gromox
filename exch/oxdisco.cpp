@@ -14,10 +14,11 @@
 #include <fmt/core.h>
 #include <fmt/printf.h>
 #include <json/value.h>
+#include <json/writer.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/hpm_common.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mem_file.hpp>
@@ -818,14 +819,21 @@ BOOL OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
 {
 	Json::Value respdoc;
 	bool error = true;
-	const char *find_at = strchr(get_request_uri, '@');
 	const char *find_q = strchr(get_request_uri, '?');
-	const char *find_protocol = strchr(get_request_uri, '=');
-	const char *protocol_name = &get_request_uri[find_protocol - get_request_uri + 1]; // Name of the GET protocol sent by client
-	if (find_at != nullptr && find_q != nullptr && find_protocol != nullptr) {
-		if (strncmp(&get_request_uri[find_q - get_request_uri + 1], "?Protocol=", 10) != 0) {
+	if (find_q != nullptr) {
+		std::string protocol_name;
+		for (auto &&kvpair : gx_split(find_q + 1, '&')) {
+			auto k = kvpair.data();
+			auto v = strchr(k, '=');
+			if (v != nullptr) {
+				*v = '\0';
+				if (strcasecmp(k, "Protocol") == 0)
+					protocol_name = v + 1;
+			}
+		}
+		if (!protocol_name.empty()) {
 			for (const auto &iterator : protocol_list) {
-				if (strcasecmp(protocol_name, iterator.first.c_str()) == 0) {
+				if (strcasecmp(protocol_name.c_str(), iterator.first.c_str()) == 0) {
 					respdoc["Protocol"] = iterator.first;
 					respdoc["Url"] = fmt::format(fmt::runtime(iterator.second), host_id);
 					error = false;
@@ -853,7 +861,9 @@ BOOL OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
 		error = false;
 	}
 	int code = 200;
-	auto response = respdoc.toStyledString();
+	Json::StreamWriterBuilder swb;
+	swb["indentation"] = "";
+	auto response = Json::writeString(swb, respdoc);
 	if (response_logging > 0)
 		mlog(LV_DEBUG, "[oxdisco_v2] response: %s", response.c_str());
 	writeheader_json(ctx_id, code, response.size());
