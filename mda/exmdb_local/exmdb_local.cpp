@@ -216,8 +216,6 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			    !exml_bouncer_make(pcontext->pcontrol->from,
 			    rcpt_buff, pcontext->pmail, current_time,
 			    "BOUNCE_MAILBOX_FULL", pbounce_context->pmail)) {
-				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-					"Mailbox is chock-full for %s", rcpt_buff);
 				put_context(pbounce_context);
 				break;
 			}
@@ -461,11 +459,11 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	
 	pmsg->proplist.erase(PidTagChangeNumber);
 	uint32_t r32 = 0;
-	if (!exmdb_client_remote::delivery_message(home_dir,
+	if (!exmdb_client_remote::deliver_message(home_dir,
 	    pcontext->pcontrol->from, address, 0, pmsg, temp_buff, &r32))
 		return DELIVERY_OPERATION_ERROR;
-	auto dm_status = static_cast<delivery_message_result>(r32);
-	if (dm_status == delivery_message_result::result_ok) {
+	auto dm_status = static_cast<deliver_message_result>(r32);
+	if (dm_status == deliver_message_result::result_ok) {
 		auto num = pmsg->proplist.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
 		if (num != nullptr)
 			suppress_mask = *num;
@@ -481,7 +479,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	}
 	message_content_free(pmsg);
 	switch (dm_status) {
-	case delivery_message_result::result_ok:
+	case deliver_message_result::result_ok:
 		exmdb_local_log_info(pcontext, address, LV_DEBUG,
 			"message %s was delivered OK", eml_path.c_str());
 		if (pcontext->pcontrol->need_bounce &&
@@ -491,14 +489,18 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		if (b_bounce_delivered)
 			return DELIVERY_OPERATION_DELIVERED;
 		return DELIVERY_OPERATION_OK;
-	case delivery_message_result::result_error:
+	case deliver_message_result::result_error:
 		exmdb_local_log_info(pcontext, address, LV_ERR,
 			"error result returned when delivering "
 			"message into directory %s!", home_dir);
 		return DELIVERY_OPERATION_FAILURE;
-	case delivery_message_result::mailbox_full:
+	case deliver_message_result::mailbox_full_bysize:
 		exmdb_local_log_info(pcontext, address,
-			LV_NOTICE, "user's mailbox is full");
+			LV_NOTICE, "user's mailbox has reached quota limit");
+		return DELIVERY_MAILBOX_FULL;
+	case deliver_message_result::mailbox_full_bymsg:
+		exmdb_local_log_info(pcontext, address,
+			LV_NOTICE, "user's mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
 		return DELIVERY_MAILBOX_FULL;
 	}
 	return DELIVERY_OPERATION_FAILURE;

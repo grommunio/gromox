@@ -11,6 +11,8 @@
  *
  * Needless to say MSMAPI messed this up, with some MAPI_E_* defined as
  * in-facility codes (< 0xffff) and some as COM HRESULTs (0x8xxxxxxx).
+ *
+ * -- Changes here should be reflected in lib/errno.cpp.
  */
 enum ec_error_t {
 	ecSuccess = 0, // ecNone

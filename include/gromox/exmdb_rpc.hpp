@@ -130,7 +130,7 @@ enum class exmdb_callid : uint8_t {
 	update_folder_permission = 0x6a,
 	empty_folder_rule = 0x6b,
 	update_folder_rule = 0x6c,
-	delivery_message = 0x6d,
+	deliver_message = 0x6d,
 	write_message = 0x6e,
 	read_message = 0x6f,
 	get_content_sync = 0x70,
@@ -750,7 +750,7 @@ struct exreq_update_folder_rule : public exreq {
 	RULE_DATA *prow;
 };
 
-struct exreq_delivery_message : public exreq {
+struct exreq_deliver_message : public exreq {
 	char *from_address;
 	char *account;
 	uint32_t cpid;
@@ -1196,13 +1196,15 @@ struct exresp_update_folder_rule : public exresp {
 	BOOL b_exceed;
 };
 
-enum delivery_message_result {
+enum deliver_message_result {
 	result_ok = 0,
-	mailbox_full = 1,
+	/* mailbox_full (unused) = 1, */
 	result_error = 2,
+	mailbox_full_bysize = 3,
+	mailbox_full_bymsg = 4,
 };
 
-struct exresp_delivery_message : public exresp {
+struct exresp_deliver_message : public exresp {
 	uint32_t result;
 };
 

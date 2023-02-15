@@ -255,7 +255,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() >= 0) {
 			if (HXio_fullwrite(fd.get(), digest_buff, tmp_len) != tmp_len ||
-			    fd.close_wr() < 0)
+			    fd.close_wr() != 0)
 				mlog(LV_ERR, "E-2082: write %s: %s", temp_path, strerror(errno));
 		}
 	}
@@ -1582,8 +1582,10 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		if (fd.get() < 0)
 			return;
 		if (HXio_fullwrite(fd.get(), temp_buff, tmp_len) != tmp_len ||
-		    fd.close_wr() < 0)
+		    fd.close_wr() != 0) {
+			mlog(LV_ERR, "E-1683: write %s: %s", temp_path, strerror(errno));
 			return;
+		}
 		sprintf(temp_path1, "%s/eml/%s", dir, mid_string1);
 		fd = open(temp_path1, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() < 0)
@@ -2625,11 +2627,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return MIDB_E_DISK_ERROR;
 	}
 	auto wr_ret = HXio_fullwrite(fd.get(), temp_buff, tmp_len);
-	if (wr_ret < 0 || wr_ret != tmp_len)
+	if (wr_ret < 0 || wr_ret != tmp_len || fd.close_wr() != 0)
 		mlog(LV_ERR, "E-2085: write %s: %s", temp_path, strerror(errno));
-	auto err = fd.close_wr();
-	if (err != 0)
-		mlog(LV_ERR, "E-2072: close %s: %s", temp_path, strerror(err));
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;

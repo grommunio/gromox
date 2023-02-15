@@ -1,6 +1,93 @@
 #include <cstdio>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapierr.hpp>
+
+static const char *mapi_errname(unsigned int e)
+{
+#define E(s) case (s): return #s;
+	switch(e) {
+	E(ecSuccess)
+	E(MAPI_E_DISK_FULL)
+	E(ecUnknownUser)
+	E(ecServerOOM)
+	E(ecLoginPerm)
+	E(ecNotSearchFolder)
+	E(ecNoReceiveFolder)
+	E(ecInvalidRecips)
+	E(ecWrongServer)
+	E(ecBufferTooSmall)
+	E(ecSearchFolderScopeViolation)
+	case ecRpcFormat: return "ecRpcFormat/ecNetwork";
+	E(ecNullObject)
+	E(ecQuotaExceeded)
+	E(ecMaxAttachmentExceeded)
+	E(ecSendAsDenied)
+	E(ecNotExpanded)
+	E(ecNotCollapsed)
+	E(ecDstNullObject)
+	E(ecMsgCycle)
+	E(ecTooManyRecips)
+	E(RPC_X_BAD_STUB_DATA)
+	E(ecRejected)
+	E(MAPI_W_NO_SERVICE)
+	E(ecWarnWithErrors)
+	E(MAPI_W_CANCEL_MESSAGE)
+	E(SYNC_W_CLIENT_CHANGE_NEWER)
+	E(ecInterfaceNotSupported)
+	E(ecError)
+	E(STG_E_ACCESSDENIED)
+	E(StreamSeekError)
+	E(STG_E_INVALIDPARAMETER)
+	E(ecStreamSizeError)
+	E(ecNotSupported)
+	E(ecInvalidObject)
+	E(ecObjectModified)
+	E(ecObjectDeleted)
+	E(ecInsufficientResrc)
+	E(ecNotFound)
+	E(ecLoginFailure)
+	E(ecUnableToAbort)
+	E(ecRpcFailed)
+	E(ecTooComplex)
+	E(ecComputed)
+	E(MAPI_E_UNKNOWN_CPID)
+	E(MAPI_E_UNKNOWN_LCID)
+	E(ecTooBig)
+	E(MAPI_E_DECLINE_COPY)
+	E(ecTableTooBig)
+	E(ecInvalidBookmark)
+	E(ecNotInQueue)
+	E(ecDuplicateName)
+	E(ecNotInitialized)
+	E(MAPI_E_NO_RECIPIENTS)
+	E(ecRootFolder)
+	E(MAPI_E_STORE_FULL)
+	E(EC_EXCEEDED_SIZE)
+	E(ecAmbiguousRecip)
+	E(SYNC_E_OBJECT_DELETED)
+	E(SYNC_E_IGNORE)
+	E(SYNC_E_CONFLICT)
+	E(SYNC_E_NO_PARENT)
+	E(ecNPQuotaExceeded)
+	E(NotImplemented)
+	E(ecAccessDenied)
+	E(ecMAPIOOM)
+	E(ecInvalidParam)
+	default: {
+		thread_local char xbuf[32];
+		snprintf(xbuf, std::size(xbuf), "%xh", e);
+		return xbuf;
+	}
+	}
+#undef E
+}
+
+const char *mapi_errname_r(unsigned int e, char *b, size_t bz)
+{
+	HX_strlcpy(b, mapi_errname(e), bz);
+	return b;
+}
 
 const char *mapi_strerror(unsigned int e)
 {
@@ -79,9 +166,11 @@ const char *mapi_strerror(unsigned int e)
 	E(ecTableEmpty, "A table essential to the operation is empty")
 	E(MAPI_E_NO_RECIPIENTS, "A message cannot be sent because it has no recipients")
 	E(MAPI_E_STORE_FULL, "Store is full")
+	default: {
+		thread_local char xbuf[40];
+		snprintf(xbuf, sizeof(xbuf), "Unknown MAPI error code %xh", e);
+		return xbuf;
 	}
-	thread_local char xbuf[40];
-	snprintf(xbuf, sizeof(xbuf), "Unknown MAPI error code %xh", e);
-	return xbuf;
+	}
 #undef E
 }
