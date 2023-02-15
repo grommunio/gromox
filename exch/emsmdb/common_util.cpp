@@ -2,6 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <cerrno>
 #include <cstdarg>
 #include <cstdint>
@@ -154,10 +155,7 @@ static char* common_util_dup_mb_to_utf8(
 	if (NULL == pdst) {
 		return NULL;
 	}
-	if (common_util_mb_to_utf8(cpid, src, pdst, len) < 0) {
-		return NULL;
-	}
-	return pdst;
+	return common_util_mb_to_utf8(cpid, src, pdst, len) >= 0 ? pdst : nullptr;
 }
 
 /* only for being invoked under rop environment */
@@ -259,10 +257,7 @@ const char* common_util_essdn_to_domain(const char *pessdn)
 		"/o=%s/ou=Exchange Administrative Group "
 		"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn="
 		"f98430ae-22ad-459a-afba-68c972eefc56@", g_emsmdb_org_name);
-	if (0 != strncasecmp(pessdn, tmp_essdn, tmp_len)) {
-		return NULL;
-	}
-	return pessdn + tmp_len;
+	return strncasecmp(pessdn, tmp_essdn, tmp_len) == 0 ? &pessdn[tmp_len] : nullptr;
 }
 
 void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t dnmax)
@@ -757,13 +752,11 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 				return FALSE;
 			}
 			*pguid = rop_util_make_user_guid(plogon->account_id);
-		} else {
-			if (1 == *preplid) {
-				*pguid = rop_util_make_domain_guid(plogon->account_id);
-			} else if (!exmdb_client::get_mapping_guid(dir,
-			    *preplid, &b_found, pguid) || !b_found) {
-				return FALSE;
-			}
+		} else if (*preplid == 1) {
+			*pguid = rop_util_make_domain_guid(plogon->account_id);
+		} else if (!exmdb_client::get_mapping_guid(dir,
+		    *preplid, &b_found, pguid) || !b_found) {
+			return FALSE;
 		}
 	} else {
 		if (plogon->is_private()) {
@@ -803,14 +796,14 @@ void common_util_remove_propvals(
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
-		if (proptag == parray->ppropval[i].proptag) {
-			parray->count --;
-			if (i < parray->count) {
-				memmove(parray->ppropval + i, parray->ppropval + i + 1,
-					(parray->count - i) * sizeof(TAGGED_PROPVAL));
-			}
-			return;
+		if (proptag != parray->ppropval[i].proptag)
+			continue;
+		parray->count--;
+		if (i < parray->count) {
+			memmove(parray->ppropval + i, parray->ppropval + i + 1,
+				(parray->count - i) * sizeof(TAGGED_PROPVAL));
 		}
+		return;
 	}
 }
 
@@ -835,17 +828,16 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	
 	for (j=0; j<pproptags_subtractor->count; j++) {
 		for (i=0; i<pproptags_minuend->count; i++) {
-			if (pproptags_subtractor->pproptag[j] ==
-				pproptags_minuend->pproptag[i]) {
-				pproptags_minuend->count --;
-				if (i < pproptags_minuend->count) {
-					memmove(pproptags_minuend->pproptag + i,
-						pproptags_minuend->pproptag + i + 1,
-						(pproptags_minuend->count - i) *
-						sizeof(uint32_t));
-				}
-				break;
+			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
+				continue;
+			pproptags_minuend->count--;
+			if (i < pproptags_minuend->count) {
+				memmove(pproptags_minuend->pproptag + i,
+					pproptags_minuend->pproptag + i + 1,
+					(pproptags_minuend->count - i) *
+					sizeof(uint32_t));
 			}
+			break;
 		}
 	}
 }
@@ -958,12 +950,11 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 	}
 	for (i=0; i<pcolumns->count; i++) {
 		prow->pppropval[i] = ppropvals->getval(pcolumns->pproptag[i]);
-		if (NULL != prow->pppropval[i] &&
-		    PROP_TYPE(pcolumns->pproptag[i]) == PT_UNSPECIFIED) {
-			if (!common_util_convert_unspecified(cpid, b_unicode,
-			    static_cast<TYPED_PROPVAL *>(prow->pppropval[i])))
-				return FALSE;
-		}
+		if (prow->pppropval[i] != nullptr &&
+		    PROP_TYPE(pcolumns->pproptag[i]) == PT_UNSPECIFIED &&
+		    !common_util_convert_unspecified(cpid, b_unicode,
+		    static_cast<TYPED_PROPVAL *>(prow->pppropval[i])))
+			return FALSE;
 		if (prow->flag != PROPERTY_ROW_FLAG_FLAGGED)
 			continue;
 		auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
@@ -1158,15 +1149,15 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	if (!common_util_row_to_propvals(&prow->properties, &tmp_columns, ppropvals))
 		return FALSE;	
 	auto str = ppropvals->get<const char>(PR_DISPLAY_NAME);
-	if (str == nullptr || *str == '\0' || strcmp(str, "''") == 0 ||
-	    strcmp(str, "\"\"") == 0) {
-		str = ppropvals->get<char>(PR_RECIPIENT_DISPLAY_NAME);
-		if (str == nullptr)
-			str = ppropvals->get<char>(PR_SMTP_ADDRESS);
-		if (str == nullptr)
-			str = "Undisclosed-Recipients";
-		cu_set_propval(ppropvals, PR_DISPLAY_NAME, str);
-	}
+	if (str != nullptr && *str != '\0' && strcmp(str, "''") != 0 &&
+	    strcmp(str, "\"\"") != 0)
+		return TRUE;
+	str = ppropvals->get<char>(PR_RECIPIENT_DISPLAY_NAME);
+	if (str == nullptr)
+		str = ppropvals->get<char>(PR_SMTP_ADDRESS);
+	if (str == nullptr)
+		str = "Undisclosed-Recipients";
+	cu_set_propval(ppropvals, PR_DISPLAY_NAME, str);
 	return TRUE;
 }
 
@@ -1806,7 +1797,6 @@ void common_util_init(const char *org_name, int average_blocks,
 
 int common_util_run()
 {
-	int mime_num;
 	int context_num;
 	
 	context_num = get_context_num();
@@ -1844,12 +1834,7 @@ int common_util_run()
 	}
 	g_file_allocator = alloc_limiter<file_block>(g_average_blocks * context_num,
 	                   "emsmdb_file_allocator", "http.cfg:context_num");
-	mime_num = 16*context_num;
-	if (mime_num < 1024) {
-		mime_num = 1024;
-	} else if (mime_num > 16*1024) {
-		mime_num = 16*1024;
-	}
+	auto mime_num = std::clamp(16 * context_num, 1024, 16 * 1024);
 	g_mime_pool = MIME_POOL::create(mime_num, 16,
 	              "emsmdb_mime_pool (http.cfg:context_num)");
 	if (NULL == g_mime_pool) {
