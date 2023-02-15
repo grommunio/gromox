@@ -174,8 +174,10 @@ int main(int argc, const char **argv) try
 		temp_buff[arsizeof(temp_buff)-1] = '\0';
 		resource_set_string("HOST_ID", temp_buff);
 		str_val = temp_buff;
+		if (strchr(str_val, '.') == nullptr)
+			mlog(LV_NOTICE, "System hostname \"%s\" has no dot, which may point to a misconfiguration", str_val);
 	}
-	mlog(LV_NOTICE, "system: host ID is \"%s\"", str_val);
+	mlog(LV_INFO, "system: host ID is \"%s\"", str_val);
 	gx_strlcpy(host_name, str_val, GX_ARRAY_SIZE(host_name));
 	dns_name = str_val;
 	
