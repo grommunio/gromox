@@ -385,16 +385,18 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		if (g_rop_debug >= 1 && rsp != nullptr && rsp->result != 0)
 			dbg = true;
 		if (dbg) {
+			char e1[32], e2[32];
 			if (rsp != nullptr)
-				mlog(LV_DEBUG, "[%zu/%zu] rop_dispatch(%s) EC=%xh RS=%xh",
-					++rop_idx, rop_count,
-					rop_idtoname(req->rop_id), result,
-					static_cast<unsigned int>(rsp->result));
-			else
-				mlog(LV_DEBUG, "[%zu/%zu] rop_dispatch(%s) EC=%xh RS=none",
+				mlog(LV_DEBUG, "[%zu/%zu] rop_dispatch(%s) EC=%s RS=%s",
 					++rop_idx, rop_count,
 					rop_idtoname(req->rop_id),
-					static_cast<unsigned int>(result));
+					mapi_errname_r(result, e1, std::size(e1)),
+					mapi_errname_r(rsp->result, e2, std::size(e2)));
+			else
+				mlog(LV_DEBUG, "[%zu/%zu] rop_dispatch(%s) EC=%s RS=none",
+					++rop_idx, rop_count,
+					rop_idtoname(req->rop_id),
+					mapi_errname_r(result, e1, std::size(e1)));
 		}
 		switch (result) {
 		case ecSuccess:

@@ -61,6 +61,7 @@ enum {
 	CP_UTF8 = 65001,
 };
 
+extern GX_EXPORT const char *mapi_errname_r(unsigned int, char *, size_t);
 extern GX_EXPORT const char *mapi_strerror(unsigned int);
 
 template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x); }
