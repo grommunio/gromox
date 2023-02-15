@@ -223,8 +223,6 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
-	if(!auth_info.b_authed)
-		return unauthed(ctx_id);
 
 	char uri[1024];
 	auto req = get_request(ctx_id);
@@ -235,6 +233,8 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	uri[l] = '\0';
 	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 &&
 	    (uri[44] == '\0' || uri[44] == '?')) {
+		if (!auth_info.b_authed)
+			return unauthed(ctx_id);
 		if (strncmp(&uri[44], "?emailaddress=", 14) != 0)
 			return resp_autocfg(ctx_id, auth_info.username);
 		auto username = &uri[44+14];
@@ -244,6 +244,8 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 		return resp_json(ctx_id, uri);
 	}
 
+	if (!auth_info.b_authed)
+		return unauthed(ctx_id);
 	XMLDocument doc;
 	if (doc.Parse(static_cast<const char *>(content), len) != XML_SUCCESS)
 		return die(ctx_id, invalid_request_code, invalid_request_msg);
