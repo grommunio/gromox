@@ -102,9 +102,8 @@ ssize_t common_util_mb_from_utf8(uint32_t cpid, const char *src,
 	char temp_charset[256];
 	
 	auto charset = cpid_to_cset(cpid);
-	if (NULL == charset) {
+	if (charset == nullptr)
 		return -1;
-	}
 	sprintf(temp_charset, "%s//IGNORE",
 		replace_iconv_charset(charset));
 	conv_id = iconv_open(temp_charset, "UTF-8");
@@ -129,9 +128,8 @@ ssize_t common_util_mb_to_utf8(uint32_t cpid, const char *src,
 
 	cpid_cstr_compatible(cpid);
 	auto charset = cpid_to_cset(cpid);
-	if (NULL == charset) {
+	if (charset == nullptr)
 		return -1;
-	}
 	conv_id = iconv_open("UTF-8//IGNORE",
 		replace_iconv_charset(charset));
 	if (conv_id == (iconv_t)-1)
@@ -152,9 +150,8 @@ static char* common_util_dup_mb_to_utf8(
 	cpid_cstr_compatible(cpid);
 	auto len = mb_to_utf8_len(src);
 	auto pdst = cu_alloc<char>(len);
-	if (NULL == pdst) {
+	if (pdst == nullptr)
 		return NULL;
-	}
 	return common_util_mb_to_utf8(cpid, src, pdst, len) >= 0 ? pdst : nullptr;
 }
 
@@ -171,11 +168,8 @@ ssize_t common_util_convert_string(bool to_utf8, const char *src,
 
 void common_util_obfuscate_data(uint8_t *data, uint32_t size)
 {
-	uint32_t i;
-
-	for (i=0; i<size; i++) {
+	for (uint32_t i = 0; i < size; ++i)
 		data[i] ^= 0xA5;
-	}
 }
 
 BOOL common_util_essdn_to_username(const char *pessdn,
@@ -190,23 +184,19 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 			"/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
 	               g_emsmdb_org_name);
-	if (0 != strncasecmp(pessdn, tmp_essdn, tmp_len)) {
+	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0)
 		return FALSE;
-	}
-	if ('-' != pessdn[tmp_len + 16]) {
+	if (pessdn[tmp_len+16] != '-')
 		return FALSE;
-	}
 	plocal = pessdn + tmp_len + 17;
 	user_id = decode_hex_int(pessdn + tmp_len + 8);
 	if (!common_util_get_username_from_id(user_id, username, ulen))
 		return FALSE;
 	pat = strchr(username, '@');
-	if (NULL == pat) {
+	if (pat == nullptr)
 		return FALSE;
-	}
-	if (0 != strncasecmp(username, plocal, pat - username)) {
+	if (strncasecmp(username, plocal, pat - username) != 0)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -221,9 +211,8 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	pdomain = strchr(tmp_name, '@');
-	if (NULL == pdomain) {
+	if (pdomain == nullptr)
 		return FALSE;
-	}
 	*pdomain++ = '\0';
 	if (!common_util_get_user_ids(username, &user_id, &domain_id, nullptr))
 		return FALSE;
@@ -274,9 +263,8 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	EXT_PULL ext_pull;
 	FLATUID provider_uid;
 	
-	if (pbin->cb < 20) {
+	if (pbin->cb < 20)
 		return FALSE;
-	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
 	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
@@ -309,9 +297,8 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = x500dn;
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(1280);
 	if (pbin->pv == nullptr ||
 	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
@@ -334,9 +321,8 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = x500dn;
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(1280);
 	if (pbin->pv == nullptr ||
 	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
@@ -379,9 +365,8 @@ BINARY *cu_fid_to_entryid(logon_object *plogon, uint64_t folder_id)
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(256);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
@@ -398,9 +383,8 @@ BINARY *cu_fid_to_sk(logon_object *plogon, uint64_t folder_id)
 	LONG_TERM_ID longid;
 	
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->cb = 22;
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
@@ -465,9 +449,8 @@ BINARY *cu_mid_to_entryid(logon_object *plogon,
 	tmp_entryid.pad2[0] = 0;
 	tmp_entryid.pad2[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(256);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
 	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
@@ -482,9 +465,8 @@ BINARY *cu_mid_to_sk(logon_object *plogon, uint64_t message_id)
 	LONG_TERM_ID longid;
 	
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->cb = 22;
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
@@ -600,9 +582,8 @@ BINARY *cu_xid_to_bin(const XID &xid)
 	EXT_PUSH ext_push;
 	
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
 	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
@@ -615,9 +596,8 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 {
 	EXT_PULL ext_pull;
 	
-	if (pbin->cb < 17 || pbin->cb > 24) {
+	if (pbin->cb < 17 || pbin->cb > 24)
 		return FALSE;
-	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
 }
@@ -625,9 +605,8 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 BINARY* common_util_guid_to_binary(GUID guid)
 {
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->cb = 0;
 	pbin->pv = common_util_alloc(16);
 	if (pbin->pv == nullptr)
@@ -650,9 +629,8 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	PCL ppcl;
 	if (pbin_pcl != nullptr && !ppcl.deserialize(pbin_pcl))
 		return nullptr;
@@ -664,9 +642,8 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 		return NULL;
 	auto ptmp_bin = ppcl.serialize();
 	ppcl.clear();
-	if (NULL == ptmp_bin) {
+	if (ptmp_bin == nullptr)
 		return NULL;
-	}
 	pbin->cb = ptmp_bin->cb;
 	pbin->pv = common_util_alloc(ptmp_bin->cb);
 	if (pbin->pv == nullptr) {
@@ -682,9 +659,8 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	const BINARY *pbin_pcl2)
 {
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	PCL ppcl1;
 	if (!ppcl1.deserialize(pbin_pcl1))
 		return NULL;
@@ -695,9 +671,8 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 		return NULL;
 	auto ptmp_bin = ppcl1.serialize();
 	ppcl1.clear();
-	if (NULL == ptmp_bin) {
+	if (ptmp_bin == nullptr)
 		return NULL;
-	}
 	pbin->cb = ptmp_bin->cb;
 	pbin->pv = common_util_alloc(ptmp_bin->cb);
 	if (pbin->pv == nullptr) {
@@ -715,9 +690,8 @@ BINARY* common_util_to_folder_replica(
 	EXT_PUSH ext_push;
 	
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(1024);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 1024, 0) ||
 	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS ||
@@ -748,9 +722,8 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 
 	if (to_guid) {
 		if (plogon->is_private()) {
-			if (1 != *preplid) {
+			if (*preplid != 1)
 				return FALSE;
-			}
 			*pguid = rop_util_make_user_guid(plogon->account_id);
 		} else if (*preplid == 1) {
 			*pguid = rop_util_make_domain_guid(plogon->account_id);
@@ -799,10 +772,9 @@ void common_util_remove_propvals(
 		if (proptag != parray->ppropval[i].proptag)
 			continue;
 		parray->count--;
-		if (i < parray->count) {
+		if (i < parray->count)
 			memmove(parray->ppropval + i, parray->ppropval + i + 1,
 				(parray->count - i) * sizeof(TAGGED_PROPVAL));
-		}
 		return;
 	}
 }
@@ -831,12 +803,11 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
 				continue;
 			pproptags_minuend->count--;
-			if (i < pproptags_minuend->count) {
+			if (i < pproptags_minuend->count)
 				memmove(pproptags_minuend->pproptag + i,
 					pproptags_minuend->pproptag + i + 1,
 					(pproptags_minuend->count - i) *
 					sizeof(uint32_t));
-			}
 			break;
 		}
 	}
@@ -847,9 +818,8 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 	int i;
 	
 	auto ptmp_proptags = cu_alloc<PROPTAG_ARRAY>();
-	if (NULL == ptmp_proptags) {
+	if (ptmp_proptags == nullptr)
 		return NULL;
-	}
 	ptmp_proptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (ptmp_proptags->pproptag == nullptr)
 		return NULL;
@@ -869,29 +839,25 @@ BOOL common_util_propvals_to_row(
 	int i;
 	static const uint32_t errcode = ecNotFound;
 	
-	for (i=0; i<pcolumns->count; i++) {
+	for (i = 0; i < pcolumns->count; ++i)
 		if (!ppropvals->has(pcolumns->pproptag[i]))
 			break;	
-	}
 	prow->flag = i < pcolumns->count ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
 	prow->pppropval = cu_alloc<void *>(pcolumns->count);
-	if (NULL == prow->pppropval) {
+	if (prow->pppropval == nullptr)
 		return FALSE;
-	}
 	for (i=0; i<pcolumns->count; i++) {
 		prow->pppropval[i] = ppropvals->getval(pcolumns->pproptag[i]);
 		if (prow->flag != PROPERTY_ROW_FLAG_FLAGGED)
 			continue;
 		auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
-		if (NULL == pflagged_val) {
+		if (pflagged_val == nullptr)
 			return FALSE;
-		}
 		if (NULL == prow->pppropval[i]) {
 			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
 			pflagged_val->pvalue = ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
-			if (NULL == pflagged_val->pvalue) {
+			if (pflagged_val->pvalue == nullptr)
 				pflagged_val->pvalue = deconst(&errcode);
-			}
 		} else {
 			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
 			pflagged_val->pvalue = prow->pppropval[i];
@@ -909,9 +875,8 @@ BOOL common_util_convert_unspecified(uint32_t cpid,
 			return TRUE;
 		auto tmp_len = mb_to_utf8_len(static_cast<char *>(ptyped->pvalue));
 		auto pvalue = common_util_alloc(tmp_len);
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return FALSE;
-		}
 		if (common_util_mb_to_utf8(cpid, static_cast<char *>(ptyped->pvalue),
 		    static_cast<char *>(pvalue), tmp_len) < 0)
 			return FALSE;	
@@ -922,9 +887,8 @@ BOOL common_util_convert_unspecified(uint32_t cpid,
 		return TRUE;
 	auto tmp_len = utf8_to_mb_len(static_cast<char *>(ptyped->pvalue));
 	auto pvalue = common_util_alloc(tmp_len);
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return FALSE;
-	}
 	if (common_util_mb_from_utf8(cpid, static_cast<char *>(ptyped->pvalue),
 	    static_cast<char *>(pvalue), tmp_len) < 0)
 		return FALSE;
@@ -936,18 +900,16 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 	BOOL b_unicode, const TPROPVAL_ARRAY *ppropvals,
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow)
 {
-	int i;
 	static const uint32_t errcode = ecNotFound;
+	unsigned int i;
 	
-	for (i=0; i<pcolumns->count; i++) {
+	for (i = 0; i < pcolumns->count; ++i)
 		if (!ppropvals->has(pcolumns->pproptag[i]))
 			break;	
-	}
 	prow->flag = i < pcolumns->count ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
 	prow->pppropval = cu_alloc<void *>(pcolumns->count);
-	if (NULL == prow->pppropval) {
+	if (prow->pppropval == nullptr)
 		return FALSE;
-	}
 	for (i=0; i<pcolumns->count; i++) {
 		prow->pppropval[i] = ppropvals->getval(pcolumns->pproptag[i]);
 		if (prow->pppropval[i] != nullptr &&
@@ -958,15 +920,13 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 		if (prow->flag != PROPERTY_ROW_FLAG_FLAGGED)
 			continue;
 		auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
-		if (NULL == pflagged_val) {
+		if (pflagged_val == nullptr)
 			return FALSE;
-		}
 		if (NULL == prow->pppropval[i]) {
 			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
 			pflagged_val->pvalue = ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
-			if (NULL == pflagged_val->pvalue) {
+			if (pflagged_val->pvalue == nullptr)
 				pflagged_val->pvalue = deconst(&errcode);
-			}
 		} else {
 			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
 			pflagged_val->pvalue = prow->pppropval[i];
@@ -1026,21 +986,18 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 		prow->flags |= RECIPIENT_ROW_FLAG_SAME;
 		prow->ptransmittable_name = NULL;
 	}
-	if (NULL != prow->ptransmittable_name) {
+	if (prow->ptransmittable_name != nullptr)
 		prow->flags |= RECIPIENT_ROW_FLAG_TRANSMITTABLE;
-	}
-	if (NULL != prow->pdisplay_name) {
+	if (prow->pdisplay_name != nullptr)
 		prow->flags |= RECIPIENT_ROW_FLAG_DISPLAY;
-	}
 	prow->psimple_name = ppropvals->get<char>(PR_EMS_AB_DISPLAY_NAME_PRINTABLE);
 	if (NULL == prow->psimple_name) {
 		auto name = ppropvals->get<const char>(PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A);
 		if (name != nullptr)
 			prow->psimple_name = common_util_dup_mb_to_utf8(cpid, name);
 	}
-	if (NULL != prow->psimple_name) {
+	if (prow->psimple_name != nullptr)
 		prow->flags |= RECIPIENT_ROW_FLAG_SIMPLE;
-	}
 	auto addrtype = ppropvals->get<const char>(PR_ADDRTYPE);
 	if (addrtype != nullptr) {
 		if (strcasecmp(addrtype, "EX") == 0) {
@@ -1057,27 +1014,24 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 			}
 			prow->have_display_type = true;
 			prow->px500dn = ppropvals->get<char>(PR_EMAIL_ADDRESS);
-			if (NULL == prow->px500dn) {
+			if (prow->px500dn == nullptr)
 				return FALSE;
-			}
 		} else if (strcasecmp(addrtype, "SMTP") == 0) {
 			prow->flags |= RECIPIENT_ROW_TYPE_SMTP |
 							RECIPIENT_ROW_FLAG_EMAIL;
 			prow->pmail_address = ppropvals->get<char>(PR_EMAIL_ADDRESS);
 			if (NULL == prow->pmail_address) {
 				prow->pmail_address = ppropvals->get<char>(PR_SMTP_ADDRESS);
-				if (NULL == prow->pmail_address) {
+				if (prow->pmail_address == nullptr)
 					return FALSE;
-				}
 			}
 		} else {
 			prow->flags |= RECIPIENT_ROW_FLAG_EMAIL |
 					RECIPIENT_ROW_FLAG_OUTOFSTANDARD;
 			prow->paddress_type = deconst(addrtype);
 			prow->pmail_address = ppropvals->get<char>(PR_EMAIL_ADDRESS);
-			if (NULL == prow->pmail_address) {
+			if (prow->pmail_address == nullptr)
 				return FALSE;
-			}
 		}
 	}
 	prow->count = pcolumns->count;
@@ -1126,14 +1080,12 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	}
 	switch (prow->flags & 0x0007) {
 	case RECIPIENT_ROW_TYPE_NONE:
-		if (NULL != prow->paddress_type) {
+		if (prow->paddress_type != nullptr)
 			cu_set_propval(ppropvals, PR_ADDRTYPE, prow->paddress_type);
-		}
 		break;
 	case RECIPIENT_ROW_TYPE_X500DN:
-		if (NULL == prow->px500dn) {
+		if (prow->px500dn == nullptr)
 			return FALSE;
-		}
 		cu_set_propval(ppropvals, PR_ADDRTYPE, "EX");
 		cu_set_propval(ppropvals, PR_EMAIL_ADDRESS, prow->px500dn);
 		break;
@@ -1178,9 +1130,8 @@ BOOL common_util_propvals_to_readrecipient(uint32_t cpid,
 	READRECIPIENT_ROW *prow)
 {
 	auto pvalue = ppropvals->get<uint32_t>(PR_ROWID);
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return FALSE;
-	}
 	prow->row_id = *pvalue;
 	pvalue = ppropvals->get<uint32_t>(PR_RECIPIENT_TYPE);
 	prow->recipient_type = pvalue == nullptr ? MAPI_ORIG : *pvalue;
@@ -1196,18 +1147,16 @@ BOOL common_util_modifyrecipient_to_propvals(
 {
 	ppropvals->count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(16 + pcolumns->count);
-	if (NULL == ppropvals->ppropval) {
+	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	}
 	cu_set_propval(ppropvals, PR_ROWID, deconst(&prow->row_id));
 	auto rcpttype = cu_alloc<uint32_t>();
 	if (rcpttype == nullptr)
 		return FALSE;
 	*rcpttype = prow->recipient_type;
 	cu_set_propval(ppropvals, PR_RECIPIENT_TYPE, rcpttype);
-	if (NULL == prow->precipient_row) {
+	if (prow->precipient_row == nullptr)
 		return TRUE;
-	}
 	return common_util_recipient_to_propvals(cpid,
 			prow->precipient_row, pcolumns, ppropvals);
 }
@@ -1236,13 +1185,11 @@ BOOL common_util_convert_tagged_propval(
 		case PT_STRING8: {
 			auto len = mb_to_utf8_len(static_cast<char *>(ppropval->pvalue));
 			auto pstring = cu_alloc<char>(len);
-			if (NULL == pstring) {
+			if (pstring == nullptr)
 				return FALSE;
-			}
 			if (common_util_convert_string(true,
-			    static_cast<char *>(ppropval->pvalue), pstring, len) < 0) {
+			    static_cast<char *>(ppropval->pvalue), pstring, len) < 0)
 				return FALSE;	
-			}
 			ppropval->pvalue = pstring;
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
@@ -1252,9 +1199,8 @@ BOOL common_util_convert_tagged_propval(
 			for (size_t i = 0; i < sa->count; ++i) {
 				auto len = mb_to_utf8_len(sa->ppstr[i]);
 				auto pstring = cu_alloc<char>(len);
-				if (NULL == pstring) {
+				if (pstring == nullptr)
 					return FALSE;
-				}
 				if (common_util_convert_string(true,
 				    sa->ppstr[i], pstring, len) < 0)
 					return FALSE;	
@@ -1279,9 +1225,8 @@ BOOL common_util_convert_tagged_propval(
 		case PT_UNICODE: {
 			auto len = utf8_to_mb_len(static_cast<char *>(ppropval->pvalue));
 			auto pstring = cu_alloc<char>(len);
-			if (NULL == pstring) {
+			if (pstring == nullptr)
 				return FALSE;
-			}
 			if (common_util_convert_string(false,
 			    static_cast<char *>(ppropval->pvalue), pstring, len) < 0)
 				return FALSE;	
@@ -1294,9 +1239,8 @@ BOOL common_util_convert_tagged_propval(
 			for (size_t i = 0; i < sa->count; ++i) {
 				auto len = utf8_to_mb_len(sa->ppstr[i]);
 				auto pstring = cu_alloc<char>(len);
-				if (NULL == pstring) {
+				if (pstring == nullptr)
 					return FALSE;
-				}
 				if (common_util_convert_string(false,
 				    sa->ppstr[i], pstring, len) < 0)
 					return FALSE;	
@@ -1385,24 +1329,18 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 static BOOL common_util_convert_recipient_block(
 	BOOL to_unicode, RECIPIENT_BLOCK *prcpt)
 {
-	int i;
-	
-	for (i=0; i<prcpt->count; i++) {
+	for (unsigned int i = 0; i < prcpt->count; ++i)
 		if (!common_util_convert_tagged_propval(to_unicode, &prcpt->ppropval[i]))
 			return FALSE;	
-	}
 	return TRUE;
 }
 
 static BOOL common_util_convert_forwarddelegate_action(
 	BOOL to_unicode, FORWARDDELEGATE_ACTION *pfwd)
 {
-	int i;
-	
-	for (i=0; i<pfwd->count; i++) {
+	for (unsigned int i = 0; i < pfwd->count; ++i)
 		if (!common_util_convert_recipient_block(to_unicode, &pfwd->pblock[i]))
 			return FALSE;	
-	}
 	return TRUE;
 }
 
@@ -1441,12 +1379,9 @@ static BOOL common_util_convert_action_block(
 
 BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions)
 {
-	int i;
-	
-	for (i=0; i<pactions->count; i++) {
+	for (unsigned int i = 0; i < pactions->count; ++i)
 		if (!common_util_convert_action_block(to_unicode, &pactions->pblock[i]))
 			return FALSE;	
-	}
 	return TRUE;
 }
 
@@ -1496,9 +1431,8 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	propval_buff[0].pvalue = &change_num;
 	propval_buff[1].proptag = PR_CHANGE_KEY;
 	propval_buff[1].pvalue = cu_xid_to_bin({plogon->guid(), change_num});
-	if (NULL == propval_buff[1].pvalue) {
+	if (propval_buff[1].pvalue == nullptr)
 		return FALSE;
-	}
 	if (!exmdb_client::set_message_properties(dir, nullptr, 0,
 	    message_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
@@ -1507,27 +1441,23 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	const property_groupinfo *pgpinfo;
 	if (NULL == pgroup_id) {
 		pgpinfo = plogon->get_last_property_groupinfo();
-		if (NULL == pgpinfo) {
+		if (pgpinfo == nullptr)
 			return FALSE;
-		}
 		if (!exmdb_client::set_message_group_id(dir,
 		    message_id, pgpinfo->group_id))
 			return FALSE;	
 	}  else {
 		pgpinfo = plogon->get_property_groupinfo(*pgroup_id);
-		if (NULL == pgpinfo) {
+		if (pgpinfo == nullptr)
 			return FALSE;
-		}
 	}
 	/* memory format of PROPTAG_ARRAY is identical to LONG_ARRAY */
 	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pindices(proptag_array_init());
-	if (NULL == pindices) {
+	if (pindices == nullptr)
 		return FALSE;
-	}
 	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pungroup_proptags(proptag_array_init());
-	if (NULL == pungroup_proptags) {
+	if (pungroup_proptags == nullptr)
 		return FALSE;
-	}
 	if (!pgpinfo->get_partial_index(PR_CHANGE_KEY, &tmp_index)) {
 		if (!proptag_array_append(pungroup_proptags.get(), PR_CHANGE_KEY))
 			return FALSE;
@@ -1539,9 +1469,8 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 		for (i=0; i<pchanged_proptags->count; i++) {
 			if (!pgpinfo->get_partial_index(pchanged_proptags->pproptag[i], &tmp_index)) {
 				if (!proptag_array_append(pungroup_proptags.get(),
-				    pchanged_proptags->pproptag[i])) {
+				    pchanged_proptags->pproptag[i]))
 					return FALSE;
-				}
 			} else {
 				if (!proptag_array_append(pindices.get(), tmp_index))
 					return FALSE;
@@ -1617,9 +1546,8 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 	}
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		auto ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
-		if (NULL == ppropval) {
+		if (ppropval == nullptr)
 			return ecServerOOM;
-		}
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
@@ -1865,9 +1793,8 @@ static void mlog2(unsigned int level, const char *format, ...)
 	char log_buf[2048];
 	
 	auto rpc_info = get_rpc_info();
-	if (NULL == rpc_info.username) {
+	if (rpc_info.username == nullptr)
 		return;
-	}
 	va_start(ap, format);
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
 	va_end(ap);
