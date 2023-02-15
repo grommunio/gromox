@@ -7,12 +7,13 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <string>
-#include <functional>
 #include <tinyxml2.h>
 #include <fmt/core.h>
 #include <fmt/printf.h>
+#include <json/value.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
@@ -64,10 +65,12 @@ class OxdiscoPlugin {
 
 	void loadConfig();
 	static void writeheader(int, int, size_t);
+	static void writeheader_json(int, int, size_t);
 	BOOL die(int, const char *, const char *) const;
 	BOOL resp(int, const char *, const char *, const char *) const;
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
 	int resp_eas(tinyxml2::XMLElement *, const char *) const;
+	BOOL resp_json(int, const char *) const;
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool) const;
 	BOOL resp_autocfg(int, const char *) const;
@@ -107,10 +110,20 @@ static constexpr char
 	provider_unavailable_msg[] = "Provider is not available",
 	server_error_code[] = "603",
 	server_error_msg[] = "Server Error",
+	not_supported_protocol[] = "ProtocolNotSupported",
+	not_supported_protocol_message[] = "Protocol: The protocol '{}' is not supported. Supported protocols are: 'ActiveSync,AutodiscoverV1,Ews,Rest,Substrate,SubstrateSearchService,SubstrateNotificationService,OutlookMeetingScheduler,OutlookPay,Actions,Connectors,ConnectorsProcessors,ConnectorsWebhook,NotesClient,OwaPoweredExperience,ToDo,Weve,OutlookLocationsService,OutlookCloudSettingsService,OutlookTailoredExperiences,OwaPoweredExperienceV2,Speedway,SpeechAndLanguagePersonalization,SubstrateSignalService,CompliancePolicyService'.",
+	no_protocol[] = "MissingProtocol",
+	no_protocol_message[] = "A valid value must be provided for the query parameter 'Protocol'.",
+	missing_parameter[] = "MandatoryParameterMissing",
+	missing_parameter_message[] = "The get request sent does not match the valid format.",
 	exchange_asmx[] = "Exchange.asmx",
 	header_templ[] =
 		"HTTP/1.1 {} {}\r\n"
 		"Content-Type: text/xml\r\n"
+		"Content-Length: {}\r\n\r\n",
+	header_templ_json[] =
+		"HTTP/1.1 {} {}\r\n"
+		"Content-Type: application/json\r\n"
 		"Content-Length: {}\r\n\r\n",
 	error_templ[] =
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
@@ -125,6 +138,33 @@ static constexpr char
 		"</Autodiscover>";
 
 static BOOL unauthed(int);
+
+std::unordered_map<std::string, std::string> protocol_list = {
+	{"Actions", ""}, // outlook.office365.com/actionsb2netcore
+	{"ActiveSync", "https://{}/Microsoft-Server-ActiveSync"},
+	{"AutodiscoverV1", "https://{}/autodiscover/autodiscover.xml"},
+	{"CompliancePolicyService", ""}, // outlook.office.com/CompliancePolicy/api/
+	{"Connectors", ""}, // outlook.office365.com/connectors
+	{"ConnectorsProcessors", ""}, // outlook.office365.com/connectorsprocessors
+	{"ConnectorsWebhook", ""}, // outlook.office365.com/webhook
+	{"Ews", "https://{}/EWS/Exchange.asmx"}, // outlook.office365.com/EWS/Exchange.asmx
+	{"NotesClient", ""}, // substrate.office.com/notesfabric
+	{"OutlookCloudSettingsService", ""}, // substrate.office.com/ows/v1/outlookcloudsettings/settings
+	{"OutlookLocationsService", ""}, // outlook.office365.com/locations/api
+	{"OutlookMeetingScheduler", ""}, // outlook.office.com/scheduling/api
+	{"OutlookPay", ""}, // outlook.office.com/opay
+	{"OutlookTailoredExperiences", ""}, // substrate.office.com/txpB2
+	{"OwaPoweredExperience", ""}, // outlook.office365.com/
+	{"OwaPoweredExperienceV2", ""}, // outlook.office.com/ows/v1.0/Opx/configuration
+	{"Rest", ""}, // outlook.office.com/api
+	{"SpeechAndLanguagePersonalization", ""}, // outlook.office365.com/slp
+	{"Speedway", ""}, // outlook.office.com/ows/groupsapi/v0.1/
+	{"Substrate", ""}, // substrate.office.com/
+	{"SubstrateNotificationService", ""}, // substrate.office.com/insights
+	{"SubstrateSearchService", ""}, // outlook.office365.com/search
+	{"ToDo", ""}, // substrate.office.com/todob2
+	{"Weve", ""}, // substrate.office.com/WeveB2
+};
 
 OxdiscoPlugin::OxdiscoPlugin()
 {
@@ -161,7 +201,8 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 		return false;
 	uri[len] = '\0';
 	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") != 0 &&
-			strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 40) != 0)
+	    strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 40) != 0 &&
+	    strncasecmp(uri, "/autodiscover/autodiscover.json", 30) != 0)
 		return false;
 	return TRUE;
 }
@@ -198,6 +239,8 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 		auto username = &uri[44+14];
 		/* still need hex decoding */
 		return resp_autocfg(ctx_id, username);
+	} else if (strncasecmp(uri, "/autodiscover/autodiscover.json", 30) == 0) {
+		return resp_json(ctx_id, uri);
 	}
 
 	XMLDocument doc;
@@ -359,6 +402,21 @@ void OxdiscoPlugin::writeheader(int ctx_id, int code, size_t content_length)
 	case 500: status = "Internal Server Error"; break;
 	}
 	auto buff = fmt::format(header_templ, code, status, content_length);
+	write_response(ctx_id, buff.c_str(), buff.size());
+}
+
+void OxdiscoPlugin::writeheader_json(int ctx_id, int code, size_t content_length)
+{
+	const char *status = "OK";
+	switch (code) {
+	case 400:
+		status = "Bad Request";
+			break;
+	case 500:
+		status = "Internal Server Error";
+		break;
+	}
+	auto buff = fmt::format(header_templ_json, code, status, content_length);
 	write_response(ctx_id, buff.c_str(), buff.size());
 }
 
@@ -754,6 +812,52 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email) const
 		add_child(resp_ser, "Name", url);
 	}
 	return 0;
+}
+
+BOOL OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
+{
+	Json::Value respdoc;
+	bool error = true;
+	const char *find_at = strchr(get_request_uri, '@');
+	const char *find_q = strchr(get_request_uri, '?');
+	const char *find_protocol = strchr(get_request_uri, '=');
+	const char *protocol_name = &get_request_uri[find_protocol - get_request_uri + 1]; // Name of the GET protocol sent by client
+	if (find_at != nullptr && find_q != nullptr && find_protocol != nullptr) {
+		if (strncmp(&get_request_uri[find_q - get_request_uri + 1], "?Protocol=", 10) != 0) {
+			for (const auto &iterator : protocol_list) {
+				if (strcasecmp(protocol_name, iterator.first.c_str()) == 0) {
+					respdoc["Protocol"] = iterator.first;
+					respdoc["Url"] = fmt::format(fmt::runtime(iterator.second), host_id);
+					error = false;
+				}
+			}
+			// protocol not supported
+			if (error == true) {
+				respdoc["ErrorCode"] = not_supported_protocol;
+				auto err_rsp = fmt::format(not_supported_protocol_message, protocol_name);
+				respdoc["ErrorMessage"] = err_rsp;
+				error = false;
+			}
+		}
+		// missing protocol
+		if (error == true) {
+			respdoc["ErrorCode"] = no_protocol;
+			respdoc["ErrorMessage"] = no_protocol_message;
+			error = false;
+		}
+	}
+	// missing mandatory parameter
+	if (error == true) {
+		respdoc["ErrorCode"] = missing_parameter;
+		respdoc["ErrorMessage"] = missing_parameter_message;
+		error = false;
+	}
+	int code = 200;
+	const char *response = respdoc.toStyledString().c_str();
+	if (response_logging > 0)
+		mlog(LV_DEBUG, "[oxdisco_v2] response: %s", response);
+	writeheader_json(ctx_id, code, strlen(response));
+	return write_response(ctx_id, response, strlen(response));
 }
 
 BOOL OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
