@@ -26,6 +26,7 @@ dependencies are needed:
 * SQLite3
 * tinyxml2 >= 8
 * zlib
+* vmime (github: kisli/vmime)
 
 Optional deps:
 
