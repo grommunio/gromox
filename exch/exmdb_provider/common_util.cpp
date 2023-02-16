@@ -81,18 +81,18 @@ static bool gp_prepare_mvstr(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, s
 static bool gp_prepare_default(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, uint32_t);
 
-void common_util_set_propvals(TPROPVAL_ARRAY *parray,
-	const TAGGED_PROPVAL *ppropval)
+void cu_set_propval(TPROPVAL_ARRAY *parray, uint32_t tag, const void *data)
 {
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
-		if (ppropval->proptag != parray->ppropval[i].proptag)
+		if (parray->ppropval[i].proptag != tag)
 			continue;
-		parray->ppropval[i].pvalue = ppropval->pvalue;
+		parray->ppropval[i].pvalue = deconst(data);
 		return;
 	}
-	parray->ppropval[parray->count++] = *ppropval;
+	parray->ppropval[parray->count].proptag = tag;
+	parray->ppropval[parray->count++].pvalue = deconst(data);
 }
 
 void common_util_remove_propvals(
