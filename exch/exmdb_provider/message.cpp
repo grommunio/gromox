@@ -2478,6 +2478,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	BINARY tmp_bin;
 	char content_type[128];
 	char tmp_buff[256*1024];
+	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	if (0 == strcasecmp(from_address, "none@none")) {
@@ -3190,7 +3191,12 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 			block.type, rule_idx, prnode->provider.c_str(), seen);
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
+
+	char essdn_buff[1280], display_name[1024];
+	BINARY searchkey_bin;
+	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
+
 	if (!message_read_message(psqlite, cpid, message_id, &pmsgctnt) ||
 	    pmsgctnt == nullptr)
 		return ecError;
@@ -3212,7 +3218,6 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
-		char essdn_buff[1280];
 		strcpy(essdn_buff, "EX:");
 		if (!common_util_username_to_essdn(account,
 		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
@@ -3224,11 +3229,9 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ENTRYID, pvalue);
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-		char display_name[1024];
 		if (common_util_get_user_displayname(account, display_name,
 		    arsizeof(display_name)))
 			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name);
-		BINARY searchkey_bin;
 		searchkey_bin.cb = strlen(essdn_buff) + 1;
 		searchkey_bin.pv = essdn_buff;
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
@@ -3540,7 +3543,12 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 		return ecSuccess;
 	if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
 		return message_disable_rule(psqlite, TRUE, prnode->id);
+
+	char essdn_buff[1280], display_name[1024];
+	BINARY searchkey_bin;
+	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
+
 	if (!message_read_message(psqlite, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecError;
@@ -3562,7 +3570,6 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
-		char essdn_buff[1280];
 		strcpy(essdn_buff, "EX:");
 		if (!common_util_username_to_essdn(account,
 		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
@@ -3573,11 +3580,9 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ENTRYID, pvalue);
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-		char display_name[1024];
 		if (common_util_get_user_displayname(account, display_name,
 		    arsizeof(display_name)))
 			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name);
-		BINARY searchkey_bin;
 		searchkey_bin.cb = strlen(essdn_buff) + 1;
 		searchkey_bin.pv = essdn_buff;
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
@@ -3822,6 +3827,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	char mid_string[128];
 	char essdn_buff[1280];
 	char display_name[1024];
+	/* Buffers above may be referenced by tmp_msg (cu_set_propvals) */
 	MESSAGE_CONTENT tmp_msg;
 	char digest_buff[MAX_DIGLEN];
 	
