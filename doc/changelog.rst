@@ -1,14 +1,17 @@
-Development 2.3.48
+Development 2.3.83
 ==================
 
 Enhancements:
 
 * php_mapi: add mapi_strerror function
 * mbop: emptyfld/delmsg support folder names now
+* dscli: added an --eas option
+* oxdisco: handle requests for autodiscover.json
 
 Fixes:
 
 * php_mapi: fix stack corruption in zif_mapi_createfolder
+* exmdb_provider: resolved possible use-after-free in OP_DELEGATE rule handling
 
 Behavioral changes:
 
@@ -18,7 +21,7 @@ Behavioral changes:
 * exch: remove old PHP-OXDISCO and PHP-OAB implementation
 
 
-Gromox 2.3 (2023-03-03)
+Gromox 2.3 (2023-02-03)
 =======================
 
 Enhancements:
