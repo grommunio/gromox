@@ -4,8 +4,9 @@
 .SH Name
 gromox\-dscli \(em AutoDiscover command line utility
 .SH Synopsis
-\fBPASS=\fP\fIsecret\fP \fBgromox\-dscli\fP [\fB\-H\fP \fIhttps://host/path\fP]
-[\fB\-h\fP \fIhostonly\fP] [\fB\-u\fP \fIemailaddr\fP] [\fB\-v\fP]
+\fBPASS=\fP\fIsecret\fP \fBgromox\-dscli\fP [\fB\-\-eas\fP] [\fB\-H\fP
+\fIhttps://host/path\fP] [\fB\-h\fP \fIhostonly\fP] [\fB\-e\fP \fIemailaddr\fP]
+[\fB\-v\fP]
 .SH Description
 This utility facilitates sending/receiving AutoDiscover request/responses
 to/from a server for testing.
@@ -41,6 +42,9 @@ Be verbose and dump the HTTP/XML request/responses.
 LegacyDN field to send along in the request.
 .br
 Default: (none)
+.TP
+\fB\-\-eas\fP
+Use the request schema from [MS-ASCMD].
 .SH Examples
 Discover your store:
 .PP

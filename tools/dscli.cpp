@@ -28,6 +28,7 @@ using namespace std::string_literals;
 using namespace gromox;
 
 static bool g_tty, g_verbose;
+static unsigned int g_eas_mode;
 static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
 static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_legacydn, *g_auth_user;
 static constexpr HXoption g_options_table[] = {
@@ -37,6 +38,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'u', HXTYPE_STRING, &g_auth_user, nullptr, nullptr, 0, "Use a distinct user for authentication", "USERNAME"},
 	{nullptr, 'v', HXTYPE_NONE, &g_verbose, nullptr, nullptr, 0, "Be verbose, dump HTTP and XML"},
 	{nullptr, 'x', HXTYPE_STRING, &g_legacydn, nullptr, nullptr, 0, "Legacy DN"},
+	{"eas", 0, HXTYPE_NONE, &g_eas_mode, nullptr, nullptr, 0, "Request EAS response"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -78,7 +80,9 @@ oxd_make_request(const char *email, const char *dn)
 		adc(req, "EMailAddress", email);
 	if (dn != nullptr)
 		adc(req, "LegacyDN", dn);
-	adc(req, "AcceptableResponseSchema", "http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a");
+	adc(req, "AcceptableResponseSchema", g_eas_mode ?
+		"http://schemas.microsoft.com/exchange/autodiscover/mobilesync/responseschema/2006" :
+		"http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a");
 
 	auto prt = std::make_unique<tinyxml2::XMLPrinter>(nullptr, false, 0);
 	doc.Print(prt.get());
