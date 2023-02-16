@@ -14,10 +14,8 @@ jobs:
     - name: install-deps
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: autoconf automake autotools-dev binutils g++ gettext libbfio-dev libcurl4-openssl-dev libfmt-dev libgumbo-dev libjsoncpp-dev libldap2-dev libmariadb-dev libpam0g-dev libolecf-dev libpff-dev libsqlite3-dev libssl-dev libtinyxml2-dev libtool libvmime-dev libzstd-dev make m4 openssl php-dev pkg-config systemd uuid-dev zlib1g-dev
-        version: 1.1
-    - name: show-os
-      run: lscpu -b --online --parse | grep -v '^#' | wc -l >/tmp/ncpus
+        packages: autoconf automake autotools-dev binutils cmake g++ gettext libbfio-dev libcurl4-openssl-dev libfmt-dev libgnutls28-dev libgsasl7-dev libgumbo-dev libjsoncpp-dev libldap2-dev libmariadb-dev libpam0g-dev libolecf-dev libpff-dev libsqlite3-dev libssl-dev libtinyxml2-dev libtool libzstd-dev make m4 openssl php-dev pkg-config systemd uuid-dev zlib1g-dev
+        version: 1.2
     - name: clone-gromox
       uses: actions/checkout@v3
     - name: clone-vmime
@@ -30,15 +28,12 @@ jobs:
       with:
         repository: jengelh/libHX
         path: libHX
-    - name: newer-vmime
-      run: pushd vmime && cmake . -DVMIME_SENDMAIL_PATH:STRING="/usr/sbin/sendmail" -DVMIME_BUILD_SAMPLES:BOOL=OFF -DVMIME_HAVE_TLS_SUPPORT:BOOL=ON -DVMIME_BUILD_STATIC_LIBRARY:BOOL=OFF && make "-j$(cat /tmp/ncpus)" && sudo make install && popd
-    - name: newer-libHX
-      run: pushd libHX && ./qconf && make "-j$(cat /tmp/ncpus)" && sudo make install && popd
-    - name: configure
-      run: ./qconf
-    - name: make
-      run: LD_LIBRARY_PATH=/usr/local/lib make "-j$(cat /tmp/ncpus)"
-    - name: make_install
-      run: LD_LIBRARY_PATH=/usr/local/lib make install DESTDIR=$PWD/rt && rm -Rf rt
-    - name: make_clean
-      run: make clean
+    - name: buildall
+      run: |
+        lscpu -b --online --parse | grep -v '^#' | wc -l >/tmp/ncpus
+        pushd vmime && cmake . -DVMIME_SENDMAIL_PATH:STRING="/usr/sbin/sendmail" -DVMIME_BUILD_SAMPLES:BOOL=OFF -DVMIME_HAVE_TLS_SUPPORT:BOOL=ON -DVMIME_BUILD_STATIC_LIBRARY:BOOL=OFF && make "-j$(cat /tmp/ncpus)" && sudo make install && popd
+        pushd libHX && ./qconf && make "-j$(cat /tmp/ncpus)" && sudo make install && popd
+        ./qconf
+        LD_LIBRARY_PATH=/usr/local/lib make "-j$(cat /tmp/ncpus)"
+        LD_LIBRARY_PATH=/usr/local/lib make install DESTDIR="$PWD/rt" && rm -Rf rt
+        make distclean
