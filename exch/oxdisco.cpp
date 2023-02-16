@@ -140,7 +140,7 @@ static constexpr char
 
 static BOOL unauthed(int);
 
-std::unordered_map<std::string, std::string> protocol_list = {
+static const std::pair<const char *, const char *> protocol_list[] = {
 	{"Actions", ""}, // outlook.office365.com/actionsb2netcore
 	{"ActiveSync", "https://{}/Microsoft-Server-ActiveSync"},
 	{"AutodiscoverV1", "https://{}/autodiscover/autodiscover.xml"},
@@ -834,12 +834,16 @@ BOOL OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
 			}
 		}
 		if (!protocol_name.empty()) {
-			for (const auto &iterator : protocol_list) {
-				if (strcasecmp(protocol_name.c_str(), iterator.first.c_str()) == 0) {
-					respdoc["Protocol"] = iterator.first;
-					respdoc["Url"] = fmt::format(fmt::runtime(iterator.second), host_id);
-					error = false;
-				}
+			auto iterator = std::lower_bound(std::begin(protocol_list),
+			                std::end(protocol_list), protocol_name.c_str(),
+			                [](const std::pair<const char *, const char *> &i, const char *n) {
+			                	return strcasecmp(i.first, n) < 0;
+			                });
+			if (iterator != std::end(protocol_list) &&
+			    strcasecmp(iterator->first, protocol_name.c_str()) == 0) {
+				respdoc["Protocol"] = iterator->first;
+				respdoc["Url"] = fmt::format(fmt::runtime(iterator->second), host_id);
+				error = false;
 			}
 			// protocol not supported
 			if (error == true) {
