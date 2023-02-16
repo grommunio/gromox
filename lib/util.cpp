@@ -417,6 +417,12 @@ char* search_string(const char *haystack, const char *needle,
 	return NULL;
 }
 
+const char *crypt_estar(const char *a, const char *b)
+{
+	auto r = crypt(a, b);
+	return r != nullptr ? r : "*0";
+}
+
 const char *crypt_wrapper(const char *pw)
 {
 #if defined(__OpenBSD__)
@@ -431,12 +437,11 @@ const char *crypt_wrapper(const char *pw)
 	randstring(salt + 3, 16, crypt_salt);
 	salt[19] = '$';
 	salt[20] = '\0';
-	auto ret = crypt(pw, salt);
-	if (ret != nullptr && ret[0] == '$')
+	auto ret = crypt_estar(pw, salt);
+	if (ret[0] == '$')
 		return ret;
 	salt[1] = '1';
-	ret = crypt(pw, salt);
-	return ret != nullptr ? ret : "*0";
+	return crypt_estar(pw, salt);
 #endif
 }
 

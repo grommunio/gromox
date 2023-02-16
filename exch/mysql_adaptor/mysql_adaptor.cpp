@@ -165,9 +165,8 @@ static BOOL verify_password(const char *username, const char *password,
     const char *encrypt_passwd, std::string &errstr)
 {
 	std::unique_lock cr_hold(g_crypt_lock);
-	if (0 == strcmp(crypt(password, encrypt_passwd), encrypt_passwd)) {
+	if (strcmp(crypt_estar(password, encrypt_passwd), encrypt_passwd) == 0)
 		return TRUE;
-	}
 	cr_hold.unlock();
 	errstr = "password error, please check it and retry";
 	return FALSE;
@@ -224,10 +223,9 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	encrypt_passwd[sizeof(encrypt_passwd) - 1] = '\0';
 	
 	std::unique_lock cr_hold(g_crypt_lock);
-	if ('\0' != encrypt_passwd[0] && 0 != strcmp(crypt(
-		password, encrypt_passwd), encrypt_passwd)) {
+	if (encrypt_passwd[0] != '\0' &&
+	    strcmp(crypt_estar(password, encrypt_passwd), encrypt_passwd) != 0)
 		return FALSE;
-	}
 	gx_strlcpy(encrypt_passwd, crypt_wrapper(new_password), arsizeof(encrypt_passwd));
 	cr_hold.unlock();
 	qstr = "UPDATE users SET password='"s + encrypt_passwd +
