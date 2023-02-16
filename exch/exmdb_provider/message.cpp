@@ -314,11 +314,11 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 			if (b_check) {
 				if (!cu_get_folder_permission(pdb->psqlite,
 				    parent_fid, username, &permission))
-					goto MVCP_FAILURE;
+					return false;
 				if (!(permission & (frightsOwner | frightsReadAny))) {
 					if (!common_util_check_message_owner(pdb->psqlite,
 					    tmp_val, username, &b_owner))
-						goto MVCP_FAILURE;
+						return false;
 					if (!b_owner) {
 						*pb_partial = TRUE;
 						continue;
@@ -333,7 +333,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 			if (b_check) {
 				if (!common_util_check_message_owner(pdb->psqlite,
 				    tmp_val, username, &b_owner))
-					goto MVCP_FAILURE;
+					return false;
 				if (!b_owner) {
 					*pb_partial = TRUE;
 					continue;
@@ -365,13 +365,13 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 			del_count ++;
 			sqlite3_bind_int64(pstmt1, 1, tmp_val);
 			if (pstmt1.step() != SQLITE_DONE)
-				goto MVCP_FAILURE;
+				return false;
 			sqlite3_reset(pstmt1);
 			if (!exmdb_server::is_private()) {
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 				        " WHERE message_id=%llu", LLU{tmp_val});
 				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-					goto MVCP_FAILURE;
+					return false;
 			}
 		}
 	}
@@ -426,9 +426,6 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 		db_engine_commit_batch_mode(std::move(pdb));
 	}
 	return TRUE;
-
- MVCP_FAILURE:
-	return FALSE;
 }
 
 BOOL exmdb_server::delete_messages(const char *dir,
