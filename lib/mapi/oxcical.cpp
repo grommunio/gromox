@@ -3330,7 +3330,7 @@ static void busystatus_to_line(ol_busy_status status, const char *key,
 	auto it = std::lower_bound(std::cbegin(busy_status_names),
 	          std::cend(busy_status_names), status,
 	          [](const auto &p, ol_busy_status v) { return p.first < v; });
-	if (it != std::cend(busy_status_names))
+	if (it != std::cend(busy_status_names) && it->first == status)
 		com->append_line(key, it->second);
 }
 
@@ -3504,7 +3504,9 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		auto it = std::lower_bound(cal_scale_names, std::end(cal_scale_names),
 		          apprecurr.recur_pat.calendartype,
 		          [&](const auto &p, unsigned int v) { return p.first < v; });
-		str = it != std::end(cal_scale_names) ? it->second : nullptr;
+		str = it != std::end(cal_scale_names) &&
+		      it->first == apprecurr.recur_pat.calendartype ?
+		      it->second : nullptr;
 		if (PATTERNTYPE_HJMONTH ==
 			apprecurr.recur_pat.patterntype ||
 			PATTERNTYPE_HJMONTHNTH ==
