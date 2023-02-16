@@ -632,7 +632,7 @@ BOOL MhNspPlugin::process(int context_id, const void *content, uint64_t length)
 	            ctx.request_value, [](const auto &a, const char *b) -> bool {
 	            	return strcmp(a.first, b) < 0;
 	            });
-	if (proc == cend(reqProcessors))
+	if (proc == cend(reqProcessors) || strcmp(proc->first, ctx.request_value) != 0)
 		return ctx.error_responsecode(resp_code::invalid_rq_type);
 	result = (this->*proc->second)(ctx);
 	if (result.has_value())
