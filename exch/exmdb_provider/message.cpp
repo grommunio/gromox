@@ -3948,7 +3948,7 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 		return FALSE;
 	if (cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) ||
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
-		*pe_result = MAPI_E_DISK_FULL;
+		*pe_result = MAPI_E_STORE_FULL;
 		return TRUE;	
 	}
 	fid_val = rop_util_get_gc_value(folder_id);

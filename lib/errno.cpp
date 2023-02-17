@@ -8,7 +8,6 @@ static const char *mapi_errname(unsigned int e)
 #define E(s) case (s): return #s;
 	switch(e) {
 	E(ecSuccess)
-	E(MAPI_E_DISK_FULL)
 	E(ecUnknownUser)
 	E(ecServerOOM)
 	E(ecLoginPerm)
