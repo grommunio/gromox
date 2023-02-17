@@ -3011,27 +3011,6 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 	return ecServerOOM;
 }
 
-/**
- * Have the message moved to another store by the client.
- */
-static ec_error_t op_move_across(uint64_t folder_id, uint64_t message_id,
-    const rule_node &rule, const ACTION_BLOCK &block,
-    std::list<DAM_NODE> &dam_list) try
-{
-	if (!exmdb_server::is_private())
-		return ecSuccess;
-	dam_list.emplace_back();
-	auto pdnode = &dam_list.back();
-	pdnode->rule_id = rule.id;
-	pdnode->folder_id = folder_id;
-	pdnode->message_id = message_id;
-	pdnode->provider = rule.provider.c_str();
-	pdnode->pblock = &block;
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	return ecServerOOM;
-}
-
 static ec_error_t op_reply(const char *from_address, const char *account,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id, seen_list &seen,
     const rule_node &rule, const ACTION_BLOCK &block, size_t act_idx)
@@ -3201,7 +3180,7 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 		       op_move_same(b_oof, from_address, account, cpid, psqlite,
 		       folder_id, message_id, pdigest, seen, rule, block,
 		       act_idx, b_del) :
-		       op_move_across(folder_id, message_id, rule, block, dam_list);
+		       op_defer(folder_id, message_id, rule, block, dam_list);
 	}
 	case OP_REPLY:
 	case OP_OOF_REPLY:
