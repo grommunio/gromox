@@ -48,12 +48,13 @@ using namespace gromox;
 
 namespace {
 
-struct RULE_NODE {
+struct rule_node {
 	int32_t sequence = 0;
 	uint32_t state = 0;
 	uint64_t id = 0;
 	std::string provider;
 };
+using RULE_NODE = rule_node;
 
 struct DAM_NODE {
 	uint64_t rule_id = 0, folder_id = 0, message_id = 0;
@@ -2928,8 +2929,8 @@ static BOOL message_make_dams(const char *username,
 static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const std::optional<Json::Value> &digest,
-    seen_list &seen, const ACTION_BLOCK &block, size_t act_idx,
-    const RULE_NODE *prnode, BOOL &b_del) try
+    seen_list &seen, const rule_node &rule, const ACTION_BLOCK &block,
+    size_t act_idx, BOOL &b_del) try
 {
 	auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 	auto dst_fid = rop_util_get_gc_value(static_cast<SVREID *>(
@@ -2946,10 +2947,10 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		        "because target folder %llxh does not exist",
 		        znul(account), LLU{message_id}, LLU{folder_id}, LLU{dst_fid});
 		message_make_dem(account,
-			psqlite, folder_id, message_id, prnode->id,
+			psqlite, folder_id, message_id, rule.id,
 			RULE_ERROR_MOVECOPY, block.type,
-			act_idx, prnode->provider.c_str(), seen);
-		return message_disable_rule(psqlite, false, prnode->id);
+			act_idx, rule.provider.c_str(), seen);
+		return message_disable_rule(psqlite, false, rule.id);
 	}
 	int tmp_id = 0, tmp_id1 = 0;
 	auto is_pvt = exmdb_server::is_private();
@@ -2968,8 +2969,8 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		return ecError;
 	if (!b_result) {
 		message_make_dem(account, psqlite, folder_id,
-			message_id, prnode->id, RULE_ERROR_MOVECOPY, block.type,
-			act_idx, prnode->provider.c_str(), seen);
+			message_id, rule.id, RULE_ERROR_MOVECOPY, block.type,
+			act_idx, rule.provider.c_str(), seen);
 		return ecSuccess;
 	}
 	auto nt_time = rop_util_current_nttime();
@@ -3014,17 +3015,17 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
  * Have the message moved to another store by the client.
  */
 static ec_error_t op_move_across(uint64_t folder_id, uint64_t message_id,
-    const RULE_NODE *prnode, const ACTION_BLOCK &block,
+    const rule_node &rule, const ACTION_BLOCK &block,
     std::list<DAM_NODE> &dam_list) try
 {
 	if (!exmdb_server::is_private())
 		return ecSuccess;
 	dam_list.emplace_back();
 	auto pdnode = &dam_list.back();
-	pdnode->rule_id = prnode->id;
+	pdnode->rule_id = rule.id;
 	pdnode->folder_id = folder_id;
 	pdnode->message_id = message_id;
-	pdnode->provider = prnode->provider.c_str();
+	pdnode->provider = rule.provider.c_str();
 	pdnode->pblock = &block;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -3033,7 +3034,7 @@ static ec_error_t op_move_across(uint64_t folder_id, uint64_t message_id,
 
 static ec_error_t op_reply(const char *from_address, const char *account,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id, seen_list &seen,
-    const ACTION_BLOCK &block, size_t act_idx, const RULE_NODE *prnode)
+    const rule_node &rule, const ACTION_BLOCK &block, size_t act_idx)
 {
 	auto preply = static_cast<REPLY_ACTION *>(block.pdata);
 	BOOL b_result = false;
@@ -3046,23 +3047,23 @@ static ec_error_t op_reply(const char *from_address, const char *account,
 	if (b_result)
 		return ecSuccess;
 	message_make_dem(account, psqlite, folder_id,
-		message_id, prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
-		block.type, act_idx, prnode->provider.c_str(), seen);
-	return message_disable_rule(psqlite, false, prnode->id);
+		message_id, rule.id, RULE_ERROR_RETRIEVE_TEMPLATE,
+		block.type, act_idx, rule.provider.c_str(), seen);
+	return message_disable_rule(psqlite, false, rule.id);
 }
 
 static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
-    const ACTION_BLOCK &block, const RULE_NODE *prnode,
+    const rule_node &rule, const ACTION_BLOCK &block,
     std::list<DAM_NODE> &dam_list) try
 {
 	if (!exmdb_server::is_private())
 		return ecSuccess;
 	dam_list.emplace_back();
 	auto pdnode = &dam_list.back();
-	pdnode->rule_id = prnode->id;
+	pdnode->rule_id = rule.id;
 	pdnode->folder_id = folder_id;
 	pdnode->message_id = message_id;
-	pdnode->provider = prnode->provider.c_str();
+	pdnode->provider = rule.provider.c_str();
 	pdnode->pblock = &block;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -3072,16 +3073,16 @@ static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
 static ec_error_t op_forward(const char *from_address, const char *account,
     cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const std::optional<Json::Value> &pdigest, seen_list &seen,
-    const ACTION_BLOCK &block, size_t act_idx, const RULE_NODE *prnode)
+    const rule_node &rule, const ACTION_BLOCK &block, size_t act_idx)
 {
 	if (!exmdb_server::is_private())
 		return ecSuccess;
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_dem(account, psqlite, folder_id,
-			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
-			block.type, act_idx, prnode->provider.c_str(), seen);
-		return message_disable_rule(psqlite, false, prnode->id);
+			message_id, rule.id, RULE_ERROR_TOO_MANY_RCPTS,
+			block.type, act_idx, rule.provider.c_str(), seen);
+		return message_disable_rule(psqlite, false, rule.id);
 	}
 	return message_forward_message(from_address, account, psqlite, cpid,
 	       message_id, pdigest, block.flavor, false, pfwddlgt->count,
@@ -3091,7 +3092,7 @@ static ec_error_t op_forward(const char *from_address, const char *account,
 static ec_error_t op_delegate(const char *from_address, const char *account,
     cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const std::optional<Json::Value> &digest, seen_list &seen,
-    const ACTION_BLOCK &block, size_t act_idx, const RULE_NODE *prnode) try
+    const rule_node &rule, const ACTION_BLOCK &block, size_t act_idx) try
 {
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (!exmdb_server::is_private() || !digest.has_value() ||
@@ -3099,9 +3100,9 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 		return ecSuccess;
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_dem(account, psqlite, folder_id,
-			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
-			block.type, act_idx, prnode->provider.c_str(), seen);
-		return message_disable_rule(psqlite, false, prnode->id);
+			message_id, rule.id, RULE_ERROR_TOO_MANY_RCPTS,
+			block.type, act_idx, rule.provider.c_str(), seen);
+		return message_disable_rule(psqlite, false, rule.id);
 	}
 
 	char essdn_buff[1280], display_name[1024];
@@ -3189,8 +3190,8 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const std::optional<Json::Value> &pdigest,
-    seen_list &seen, const ACTION_BLOCK &block, size_t act_idx,
-    const RULE_NODE *prnode, BOOL &b_del, std::list<DAM_NODE> &dam_list)
+    seen_list &seen, const rule_node &rule, const ACTION_BLOCK &block,
+    size_t act_idx, BOOL &b_del, std::list<DAM_NODE> &dam_list)
 {
 	switch (block.type) {
 	case OP_MOVE:
@@ -3198,16 +3199,16 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 		auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 		return pmovecopy->same_store ?
 		       op_move_same(b_oof, from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, seen, block, act_idx,
-		       prnode, b_del) :
-		       op_move_across(folder_id, message_id, prnode, block, dam_list);
+		       folder_id, message_id, pdigest, seen, rule, block,
+		       act_idx, b_del) :
+		       op_move_across(folder_id, message_id, rule, block, dam_list);
 	}
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		return op_reply(from_address, account, psqlite, folder_id,
-		       message_id, seen, block, act_idx, prnode);
+		       message_id, seen, rule, block, act_idx);
 	case OP_DEFER_ACTION:
-		return op_defer(folder_id, message_id, block, prnode, dam_list);
+		return op_defer(folder_id, message_id, rule, block, dam_list);
 	case OP_BOUNCE: {
 		auto ec = message_bounce_message(from_address, account, psqlite,
 		          message_id, *static_cast<uint32_t *>(block.pdata));
@@ -3222,12 +3223,12 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 	}
 	case OP_FORWARD:
 		return op_forward(from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, seen, block,
-		       act_idx, prnode);
+		       folder_id, message_id, pdigest, seen, rule, block,
+		       act_idx);
 	case OP_DELEGATE:
 		return op_delegate(from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, seen, block,
-		       act_idx, prnode);
+		       folder_id, message_id, pdigest, seen, rule, block,
+		       act_idx);
 	case OP_TAG: {
 		PROBLEM_ARRAY problems{};
 		const TPROPVAL_ARRAY vals = {1, static_cast<TAGGED_PROPVAL *>(block.pdata)};
@@ -3259,22 +3260,22 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 static ec_error_t op_process(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const std::optional<Json::Value> &pdigest,
-    seen_list &seen, const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit,
+    seen_list &seen, const rule_node &rule, BOOL &b_del, BOOL &b_exit,
     std::list<DAM_NODE> &dam_list)
 {
-	if (b_exit && !(prnode->state & ST_ONLY_WHEN_OOF))
+	if (b_exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	void *pvalue = nullptr;
-	if (!common_util_get_rule_property(prnode->id, psqlite,
+	if (!common_util_get_rule_property(rule.id, psqlite,
 	    PR_RULE_CONDITION, &pvalue))
 		return ecError;
 	if (pvalue == nullptr || !cu_eval_msg_restriction(psqlite,
 	    CP_ACP, message_id, static_cast<RESTRICTION *>(pvalue)))
 		return ecSuccess;
-	if (prnode->state & ST_EXIT_LEVEL)
+	if (rule.state & ST_EXIT_LEVEL)
 		b_exit = TRUE;
 	RULE_ACTIONS *pactions = nullptr;
-	if (!common_util_get_rule_property(prnode->id, psqlite,
+	if (!common_util_get_rule_property(rule.id, psqlite,
 	    PR_RULE_ACTIONS, reinterpret_cast<void **>(&pactions)))
 		return ecError;
 	if (pactions == nullptr)
@@ -3282,7 +3283,7 @@ static ec_error_t op_process(BOOL b_oof, const char *from_address,
 	for (size_t i = 0; i < pactions->count; ++i) {
 		auto ret = op_switcheroo(b_oof, from_address, account, cpid,
 		           psqlite, folder_id, message_id, pdigest, seen,
-		           pactions->pblock[i], i, prnode, b_del, dam_list);
+		           rule, pactions->pblock[i], i, b_del, dam_list);
 		if (ret != ecSuccess)
 			return ret;
 	}
@@ -3290,24 +3291,24 @@ static ec_error_t op_process(BOOL b_oof, const char *from_address,
 }
 
 static ec_error_t opx_move_private(const char *account, sqlite3 *psqlite,
-    const RULE_NODE *prnode, const EXT_MOVECOPY_ACTION *pextmvcp)
+    const rule_node &rule, const EXT_MOVECOPY_ACTION *pextmvcp)
 {
 	if (pextmvcp->folder_eid.folder_type != EITLT_PRIVATE_FOLDER)
-		return message_disable_rule(psqlite, TRUE, prnode->id);
+		return message_disable_rule(psqlite, TRUE, rule.id);
 	int tmp_id = 0;
 	if (!common_util_get_id_from_username(account, &tmp_id))
 		return ecSuccess;
 	auto tmp_guid = rop_util_make_user_guid(tmp_id);
 	if (tmp_guid != pextmvcp->folder_eid.database_guid)
-		return message_disable_rule(psqlite, TRUE, prnode->id);
+		return message_disable_rule(psqlite, TRUE, rule.id);
 	return ecSuccess;
 }
 
 static ec_error_t opx_move_public(const char *account, sqlite3 *psqlite,
-    const RULE_NODE *prnode, const EXT_MOVECOPY_ACTION *pextmvcp)
+    const rule_node &rule, const EXT_MOVECOPY_ACTION *pextmvcp)
 {
 	if (pextmvcp->folder_eid.folder_type != EITLT_PUBLIC_FOLDER)
-		return message_disable_rule(psqlite, TRUE, prnode->id);
+		return message_disable_rule(psqlite, TRUE, rule.id);
 	const char *pc = strchr(account, '@'); /* CONST-STRCHR-MARKER */
 	if (pc == nullptr)
 		pc = account;
@@ -3318,20 +3319,20 @@ static ec_error_t opx_move_public(const char *account, sqlite3 *psqlite,
 		return ecSuccess;
 	auto tmp_guid = rop_util_make_domain_guid(tmp_id);
 	if (tmp_guid != pextmvcp->folder_eid.database_guid)
-		return message_disable_rule(psqlite, TRUE, prnode->id);
+		return message_disable_rule(psqlite, TRUE, rule.id);
 	return ecSuccess;
 }
 
 static ec_error_t opx_move(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const std::optional<Json::Value> &pdigest,
-    seen_list &seen, const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode,
+    seen_list &seen, const rule_node &rule, const EXT_ACTION_BLOCK &block,
     BOOL &b_del) try
 {
 	auto pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(block.pdata);
 	auto ec = exmdb_server::is_private() ?
-	          opx_move_private(account, psqlite, prnode, pextmvcp) :
-	          opx_move_public(account, psqlite, prnode, pextmvcp);
+	          opx_move_private(account, psqlite, rule, pextmvcp) :
+	          opx_move_public(account, psqlite, rule, pextmvcp);
 	if (ec != ecSuccess)
 		return ec;
 	auto dst_fid = rop_util_gc_to_value(
@@ -3343,7 +3344,7 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 	if (!common_util_check_folder_id(psqlite, dst_fid, &b_exist))
 		return ecError;
 	if (!b_exist)
-		return message_disable_rule(psqlite, TRUE, prnode->id);
+		return message_disable_rule(psqlite, TRUE, rule.id);
 	int tmp_id = 0, tmp_id1 = 0;
 	auto is_pvt = exmdb_server::is_private();
 	if (is_pvt) {
@@ -3400,8 +3401,8 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 }
 
 static ec_error_t opx_reply(const char *from_address, const char *account,
-    sqlite3 *psqlite, uint64_t message_id, const EXT_ACTION_BLOCK &block,
-    const RULE_NODE *prnode)
+    sqlite3 *psqlite, uint64_t message_id, const rule_node &rule,
+    const EXT_ACTION_BLOCK &block)
 {
 	auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
 	if (exmdb_server::is_private()) {
@@ -3410,7 +3411,7 @@ static ec_error_t opx_reply(const char *from_address, const char *account,
 			return ecSuccess;
 		auto tmp_guid = rop_util_make_user_guid(tmp_id);
 		if (tmp_guid != pextreply->message_eid.message_database_guid)
-			return message_disable_rule(psqlite, TRUE, prnode->id);
+			return message_disable_rule(psqlite, TRUE, rule.id);
 	} else {
 		auto pc = strchr(account, '@');
 		if (pc == nullptr)
@@ -3421,7 +3422,7 @@ static ec_error_t opx_reply(const char *from_address, const char *account,
 			return ecSuccess;
 		auto tmp_guid = rop_util_make_domain_guid(tmp_id);
 		if (tmp_guid != pextreply->message_eid.message_database_guid)
-			return message_disable_rule(psqlite, TRUE, prnode->id);
+			return message_disable_rule(psqlite, TRUE, rule.id);
 	}
 	auto dst_mid = rop_util_gc_to_value(
 		       pextreply->message_eid.message_global_counter);
@@ -3431,21 +3432,21 @@ static ec_error_t opx_reply(const char *from_address, const char *account,
 	    dst_mid, pextreply->template_guid, &b_result))
 		return ecError;
 	if (!b_result)
-		return message_disable_rule(psqlite, TRUE, prnode->id);
+		return message_disable_rule(psqlite, TRUE, rule.id);
 	return ecSuccess;
 }
 
 static ec_error_t opx_delegate(const char *from_address, const char *account,
     cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const std::optional<Json::Value> &pdigest, const EXT_ACTION_BLOCK &block,
-    const RULE_NODE *prnode) try
+    const std::optional<Json::Value> &pdigest, const rule_node &rule,
+    const EXT_ACTION_BLOCK &block) try
 {
 	auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (!exmdb_server::is_private() || !pdigest.has_value() ||
 	    pextfwddlgt->count == 0)
 		return ecSuccess;
 	if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
-		return message_disable_rule(psqlite, TRUE, prnode->id);
+		return message_disable_rule(psqlite, TRUE, rule.id);
 
 	char essdn_buff[1280], display_name[1024];
 	BINARY searchkey_bin;
@@ -3531,19 +3532,18 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const std::optional<Json::Value> &pdigest,
-    seen_list &seen, const EXT_ACTION_BLOCK &block, size_t act_idx,
-    const RULE_NODE *prnode, BOOL &b_del)
+    seen_list &seen, const rule_node &rule, const EXT_ACTION_BLOCK &block,
+    size_t act_idx, BOOL &b_del)
 {
 	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY:
 		return opx_move(b_oof, from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, seen, block,
-		       prnode, b_del);
+		       folder_id, message_id, pdigest, seen, rule, block, b_del);
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		return opx_reply(from_address, account, psqlite, message_id,
-		       block, prnode);
+		       rule, block);
 	case OP_DEFER_ACTION:
 		break;
 	case OP_BOUNCE: {
@@ -3561,14 +3561,14 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 	case OP_FORWARD: {
 		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
-			return message_disable_rule(psqlite, TRUE, prnode->id);
+			return message_disable_rule(psqlite, TRUE, rule.id);
 		return message_forward_message(from_address, account, psqlite,
 		       cpid, message_id, pdigest, block.flavor, TRUE,
 		       pextfwddlgt->count, pextfwddlgt->pblock);
 	}
 	case OP_DELEGATE:
 		return opx_delegate(from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, block, prnode);
+		       folder_id, message_id, pdigest, rule, block);
 	case OP_TAG: {
 		PROBLEM_ARRAY problems{};
 		TPROPVAL_ARRAY vals = {1, static_cast<TAGGED_PROPVAL *>(block.pdata)};
@@ -3600,12 +3600,12 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 static ec_error_t opx_process(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const std::optional<Json::Value> &pdigest,
-    seen_list &seen, const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit)
+    seen_list &seen, const rule_node &rule, BOOL &b_del, BOOL &b_exit)
 {
-	if (b_exit && !(prnode->state & ST_ONLY_WHEN_OOF))
+	if (b_exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	void *pvalue = nullptr;
-	if (!cu_get_property(MAPI_MESSAGE, prnode->id, CP_ACP, psqlite,
+	if (!cu_get_property(MAPI_MESSAGE, rule.id, CP_ACP, psqlite,
 	    PR_EXTENDED_RULE_MSG_CONDITION, &pvalue))
 		return ecError;
 	auto bv = static_cast<BINARY *>(pvalue);
@@ -3623,9 +3623,9 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 		return ecError;
 	if (!cu_eval_msg_restriction(psqlite, CP_ACP, message_id, &restriction))
 		return ecSuccess;
-	if (prnode->state & ST_EXIT_LEVEL)
+	if (rule.state & ST_EXIT_LEVEL)
 		b_exit = TRUE;
-	if (!cu_get_property(MAPI_MESSAGE, prnode->id, CP_ACP, psqlite,
+	if (!cu_get_property(MAPI_MESSAGE, rule.id, CP_ACP, psqlite,
 	    PR_EXTENDED_RULE_MSG_ACTIONS, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
@@ -3644,7 +3644,7 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 	for (size_t i = 0; i < ext_actions.count; ++i) {
 		auto ret = opx_switcheroo(b_oof, from_address, account, cpid,
 		           psqlite, folder_id, message_id, pdigest, seen,
-		           ext_actions.pblock[i], i, prnode, b_del);
+		           rule, ext_actions.pblock[i], i, b_del);
 		if (ret != ecSuccess)
 			return ret;
 	}
@@ -3667,7 +3667,7 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 	for (const auto &rnode : rule_list) {
 		auto ec = op_process(b_oof, from_address, account, cpid,
 		          psqlite, folder_id, message_id, pdigest, seen,
-		          &rnode, b_del, b_exit, dam_list);
+		          rnode, b_del, b_exit, dam_list);
 		if (ec != ecSuccess)
 			return ec;
 	}
@@ -3677,7 +3677,7 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 	for (const auto &rnode : ext_rule_list) {
 		auto ec = opx_process(b_oof, from_address, account, cpid,
 		          psqlite, folder_id, message_id, pdigest, seen,
-		          &rnode, b_del, b_exit);
+		          rnode, b_del, b_exit);
 		if (ec != ecSuccess)
 			return ec;
 	}
