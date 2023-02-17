@@ -35,7 +35,7 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		return ecError;
 	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_LOGON && object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
 	replid = rop_util_get_replid(folder_id);
 	if (plogon->is_private()) {
@@ -108,7 +108,7 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	if (pfolder == nullptr)
 		return ecServerOOM;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_FOLDER, std::move(pfolder)});
+	           logon_id, hin, {ems_objtype::folder, std::move(pfolder)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -149,7 +149,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	auto pparent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pparent == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	if (rop_util_get_replid(pparent->folder_id) != 1)
 		return ecAccessDenied;
@@ -261,7 +261,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	if (pfolder == nullptr)
 		return ecServerOOM;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_FOLDER, std::move(pfolder)});
+	           logon_id, hin, {ems_objtype::folder, std::move(pfolder)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -287,7 +287,7 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -380,7 +380,7 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	if (pfolder->type != FOLDER_SEARCH)
 		return ecNotSearchFolder;
@@ -443,7 +443,7 @@ ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restrictio
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	if (pfolder->type != FOLDER_SEARCH)
 		return ecNotSearchFolder;
@@ -482,12 +482,12 @@ ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	auto psrc_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
 	if (psrc_folder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto pdst_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hdst, &object_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	if (pdst_folder->type == FOLDER_SEARCH)
 		return ecNotSupported;
@@ -540,12 +540,12 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	auto psrc_parent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
 	if (psrc_parent == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto pdst_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hdst, &object_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -650,12 +650,12 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	auto psrc_parent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
 	if (psrc_parent == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto pdst_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hdst, &object_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -726,7 +726,7 @@ static ec_error_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associate
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -796,7 +796,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -903,7 +903,7 @@ ec_error_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	BOOL b_depth = (table_flags & TABLE_FLAG_DEPTH) ? TRUE : false;
 	auto rpc_info = get_rpc_info();
@@ -917,7 +917,7 @@ ec_error_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 		return ecServerOOM;
 	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});
+	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
 		return ecError;
 	rtable->set_handle(hnd);
@@ -939,7 +939,7 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	b_conversation = FALSE;
 	if (plogon->is_private()) {
@@ -983,7 +983,7 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 		return ecServerOOM;
 	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});
+	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
 		return ecError;
 	rtable->set_handle(hnd);

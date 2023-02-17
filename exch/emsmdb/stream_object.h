@@ -30,7 +30,7 @@ struct stream_object {
 	BOOL commit();
 
 	void *pparent = nullptr;
-	ems_objtype object_type = 0;
+	ems_objtype object_type = ems_objtype::none;
 	uint8_t open_flags = 0;
 	uint32_t proptag = 0, seek_ptr = 0;
 	BINARY content_bin{};

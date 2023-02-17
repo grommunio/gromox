@@ -64,14 +64,14 @@ object_node::object_node(object_node &&o) noexcept :
 	type(std::move(o.type)), pobject(std::move(o.pobject))
 {
 	o.handle = 0;
-	o.type = OBJECT_TYPE_NONE;
+	o.type = ems_objtype::none;
 	o.pobject = nullptr;
 }
 
 void object_node::clear() noexcept
 {
 	switch (type) {
-	case OBJECT_TYPE_LOGON: {
+	case ems_objtype::logon: {
 		auto logon = static_cast<logon_object *>(pobject);
 		{
 			/* Remove from pinger list */
@@ -83,38 +83,40 @@ void object_node::clear() noexcept
 		delete logon;
 		break;
 	}
-	case OBJECT_TYPE_FOLDER:
+	case ems_objtype::folder:
 		delete static_cast<folder_object *>(pobject);
 		break;
-	case OBJECT_TYPE_MESSAGE:
+	case ems_objtype::message:
 		delete static_cast<message_object *>(pobject);
 		break;
-	case OBJECT_TYPE_ATTACHMENT:
+	case ems_objtype::attach:
 		delete static_cast<attachment_object *>(pobject);
 		break;
-	case OBJECT_TYPE_TABLE:
+	case ems_objtype::table:
 		delete static_cast<table_object *>(pobject);
 		break;
-	case OBJECT_TYPE_STREAM:
+	case ems_objtype::stream:
 		delete static_cast<stream_object *>(pobject);
 		break;
-	case OBJECT_TYPE_FASTDOWNCTX:
+	case ems_objtype::fastdownctx:
 		delete static_cast<fastdownctx_object *>(pobject);
 		break;
-	case OBJECT_TYPE_FASTUPCTX:
+	case ems_objtype::fastupctx:
 		delete static_cast<fastupctx_object *>(pobject);
 		break;
-	case OBJECT_TYPE_ICSDOWNCTX:
+	case ems_objtype::icsdownctx:
 		delete static_cast<icsdownctx_object *>(pobject);
 		break;
-	case OBJECT_TYPE_ICSUPCTX:
+	case ems_objtype::icsupctx:
 		delete static_cast<icsupctx_object *>(pobject);
 		break;
-	case OBJECT_TYPE_SUBSCRIPTION:
+	case ems_objtype::subscription:
 		delete static_cast<subscription_object *>(pobject);
 		break;
+	default:
+		break;
 	}
-	type = OBJECT_TYPE_NONE;
+	type = ems_objtype::none;
 	pobject = nullptr;
 }
 
@@ -123,7 +125,7 @@ void object_node::operator=(object_node &&o) noexcept
 	clear();
 	type = std::move(o.type);
 	pobject = std::move(o.pobject);
-	o.type = OBJECT_TYPE_NONE;
+	o.type = ems_objtype::none;
 	o.pobject = nullptr;
 }
 
@@ -133,8 +135,8 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 	/* MS-OXCROPS 3.1.4.2 */
 	plogmap->p[logon_id] = std::make_unique<LOGON_ITEM>();
 	auto rlogon = plogon.get();
-	auto handle = rop_processor_add_object_handle(plogmap,
-				logon_id, -1, {OBJECT_TYPE_LOGON, std::move(plogon)});
+	auto handle = rop_processor_add_object_handle(plogmap, logon_id, -1,
+	              {ems_objtype::logon, std::move(plogon)});
 	if (handle < 0)
 		return -3;
 	std::lock_guard hl_hold(g_hash_lock);
@@ -151,32 +153,32 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 
 static bool object_dep(ems_objtype p, ems_objtype c)
 {
-	if (p == OBJECT_TYPE_LOGON)
+	if (p == ems_objtype::logon)
 		/* emsmdb special */
-		return c == OBJECT_TYPE_FASTDOWNCTX || c == OBJECT_TYPE_FASTUPCTX ||
-		       c == OBJECT_TYPE_FOLDER || c == OBJECT_TYPE_MESSAGE ||
-		       c == OBJECT_TYPE_ICSDOWNCTX || c == OBJECT_TYPE_ICSUPCTX ||
-		       c == OBJECT_TYPE_SUBSCRIPTION || c == OBJECT_TYPE_TABLE;
+		return c == ems_objtype::fastdownctx || c == ems_objtype::fastupctx ||
+		       c == ems_objtype::folder || c == ems_objtype::message ||
+		       c == ems_objtype::icsdownctx || c == ems_objtype::icsupctx ||
+		       c == ems_objtype::subscription || c == ems_objtype::table;
 
-	if (p == OBJECT_TYPE_ATTACHMENT)
-		return c == OBJECT_TYPE_STREAM || c == OBJECT_TYPE_MESSAGE ||
-		       c == OBJECT_TYPE_FASTDOWNCTX ||
-		       c == OBJECT_TYPE_FASTUPCTX;
-	if (p == OBJECT_TYPE_MESSAGE)
-		return c == OBJECT_TYPE_ATTACHMENT || c == OBJECT_TYPE_STREAM ||
-		       c == OBJECT_TYPE_TABLE ||
-		       c == OBJECT_TYPE_FASTDOWNCTX ||
-		       c == OBJECT_TYPE_FASTUPCTX ||
+	if (p == ems_objtype::attach)
+		return c == ems_objtype::stream || c == ems_objtype::message ||
+		       c == ems_objtype::fastdownctx ||
+		       c == ems_objtype::fastupctx;
+	if (p == ems_objtype::message)
+		return c == ems_objtype::attach || c == ems_objtype::stream ||
+		       c == ems_objtype::table ||
+		       c == ems_objtype::fastdownctx ||
+		       c == ems_objtype::fastupctx ||
 		       /* emsmdb special */
-		       c == OBJECT_TYPE_LOGON;
+		       c == ems_objtype::logon;
 
-	if (p != OBJECT_TYPE_FOLDER)
+	if (p != ems_objtype::folder)
 		return false;
-	return c == OBJECT_TYPE_STREAM || c == OBJECT_TYPE_TABLE ||
-	       c == OBJECT_TYPE_FASTDOWNCTX || c == OBJECT_TYPE_FASTUPCTX ||
-	       c == OBJECT_TYPE_ICSDOWNCTX || c == OBJECT_TYPE_ICSUPCTX ||
+	return c == ems_objtype::stream || c == ems_objtype::table ||
+	       c == ems_objtype::fastdownctx || c == ems_objtype::fastupctx ||
+	       c == ems_objtype::icsdownctx || c == ems_objtype::icsupctx ||
 	       /* emsmdb special */
-	       c == OBJECT_TYPE_LOGON;
+	       c == ems_objtype::logon;
 }
 
 int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
@@ -212,7 +214,7 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 		plogitem->root = pobjnode;
 	else if (g_emsmdb_full_parenting || object_dep(parent->type, pobjnode->type))
 		pobjnode->parent = parent;
-	if (pobjnode->type == OBJECT_TYPE_ICSUPCTX) {
+	if (pobjnode->type == ems_objtype::icsupctx) {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref ++;
 	}
@@ -251,7 +253,7 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 	if (i == plogitem->phash.end())
 		return;
 	auto objnode = i->second;
-	if (objnode->type == OBJECT_TYPE_ICSUPCTX) {
+	if (objnode->type == ems_objtype::icsupctx) {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref --;
 	}
@@ -471,7 +473,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		ems_objtype type;
 		auto pobject = rop_processor_get_object(pemsmdb_info->plogmap.get(), pnotify->logon_id, pnotify->handle, &type);
 		if (NULL != pobject) {
-			if (OBJECT_TYPE_TABLE == type &&
+			if (type == ems_objtype::table &&
 				NULL != pnotify->notification_data.ptable_event &&
 				(TABLE_EVENT_ROW_ADDED ==
 				*pnotify->notification_data.ptable_event ||

@@ -38,7 +38,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	pstream->proptag = proptag;
 	pstream->max_length = max_length;
 	switch (object_type) {
-	case OBJECT_TYPE_MESSAGE: {
+	case ems_objtype::message: {
 		proptags.count = 2;
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
@@ -50,7 +50,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 			return NULL;
 		break;
 	}
-	case OBJECT_TYPE_ATTACHMENT: {
+	case ems_objtype::attach: {
 		proptags.count = 2;
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
@@ -62,7 +62,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 			return NULL;
 		break;
 	}
-	case OBJECT_TYPE_FOLDER:
+	case ems_objtype::folder:
 		proptags.count = 1;
 		proptags.pproptag = &proptag;
 		if (!static_cast<folder_object *>(pparent)->get_properties(&proptags, &propvals))
@@ -162,10 +162,10 @@ std::pair<uint16_t, ec_error_t> stream_object::write(void *pbuff, uint16_t buf_l
 		if (ret != ecSuccess)
 			return {0, ret};
 	}
-	if (OBJECT_TYPE_ATTACHMENT == pstream->object_type) {
+	if (pstream->object_type == ems_objtype::attach) {
 		if (!static_cast<attachment_object *>(pstream->pparent)->append_stream_object(pstream))
 			return {0, ecServerOOM};
-	} else if (OBJECT_TYPE_MESSAGE == pstream->object_type) {
+	} else if (pstream->object_type == ems_objtype::message) {
 		if (!static_cast<message_object *>(pstream->pparent)->append_stream_object(pstream))
 			return {0, ecServerOOM};
 	}
@@ -296,9 +296,8 @@ BOOL stream_object::commit()
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 	
-	if (OBJECT_TYPE_FOLDER != pstream->object_type) {
+	if (pstream->object_type != ems_objtype::folder)
 		return FALSE;
-	}
 	if (pstream->open_flags == OPENSTREAM_FLAG_READONLY)
 		return FALSE;
 	if (!pstream->b_touched)
@@ -324,17 +323,19 @@ stream_object::~stream_object()
 		return;
 	}
 	switch (pstream->object_type) {
-	case OBJECT_TYPE_FOLDER:
+	case ems_objtype::folder:
 		if (pstream->b_touched)
 			commit();
 		break;
-	case OBJECT_TYPE_ATTACHMENT:
+	case ems_objtype::attach:
 		if (pstream->b_touched)
 			static_cast<attachment_object *>(pstream->pparent)->commit_stream_object(pstream);
 		break;
-	case OBJECT_TYPE_MESSAGE:
+	case ems_objtype::message:
 		if (pstream->b_touched)
 			static_cast<message_object *>(pstream->pparent)->commit_stream_object(pstream);
+		break;
+	default:
 		break;
 	}
 	free(pstream->content_bin.pb);

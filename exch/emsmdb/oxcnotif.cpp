@@ -38,7 +38,7 @@ ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved
 		return ecServerOOM;
 	auto rsub = psub.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_SUBSCRIPTION, std::move(psub)});
+	           logon_id, hin, {ems_objtype::subscription, std::move(psub)});
 	if (hnd < 0)
 		return ecError;
 	rsub->set_handle(hnd);

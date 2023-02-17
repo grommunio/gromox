@@ -87,7 +87,7 @@ ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	for (i=0; i<pproptags->count; i++) {
 		type = PROP_TYPE(pproptags->pproptag[i]);
@@ -122,7 +122,7 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	if (ptable->rop_id != ropGetContentsTable)
 		return ecNotSupported;
@@ -193,7 +193,7 @@ ec_error_t rop_restrict(uint8_t res_flags, RESTRICTION *pres,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	switch (ptable->rop_id) {
 	case ropGetHierarchyTable:
@@ -227,7 +227,7 @@ ec_error_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
@@ -278,7 +278,7 @@ ec_error_t rop_abort(uint8_t *ptable_status, LOGMAP *plogmap,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	return ecUnableToAbort;
 }
@@ -291,7 +291,7 @@ ec_error_t rop_getstatus(uint8_t *ptable_status, LOGMAP *plogmap,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	return ecSuccess;
@@ -305,7 +305,7 @@ ec_error_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	if (!ptable->load())
 		return ecError;
@@ -324,7 +324,7 @@ ec_error_t rop_seekrow(uint8_t seek_pos, int32_t offset, uint8_t want_moved_coun
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	if (!ptable->load())
 		return ecError;
@@ -370,7 +370,7 @@ ec_error_t rop_seekrowbookmark(const BINARY *pbookmark, int32_t offset,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	switch (ptable->rop_id) {
 	case ropGetContentsTable:
@@ -402,7 +402,7 @@ ec_error_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	if (!ptable->load())
 		return ecError;
@@ -419,7 +419,7 @@ ec_error_t rop_createbookmark(BINARY *pbookmark, LOGMAP *plogmap,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	switch (ptable->rop_id) {
 	case ropGetContentsTable:
@@ -449,7 +449,7 @@ ec_error_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	if (!ptable->load())
 		return ecError;
@@ -471,7 +471,7 @@ ec_error_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	switch (ptable->rop_id) {
 	case ropGetContentsTable:
@@ -536,7 +536,7 @@ ec_error_t rop_freebookmark(const BINARY *pbookmark, LOGMAP *plogmap,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	switch (ptable->rop_id) {
 	case ropGetContentsTable:
@@ -560,7 +560,7 @@ ec_error_t rop_resettable(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	ptable->reset();
 	return ecSuccess;
@@ -581,7 +581,7 @@ ec_error_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	if (ptable->rop_id != ropGetContentsTable)
 		return ecNotSupported;
@@ -632,7 +632,7 @@ ec_error_t rop_collapserow(uint64_t category_id, uint32_t *pcollapsed_count,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	if (ptable->rop_id != ropGetContentsTable)
 		return ecNotSupported;
@@ -664,7 +664,7 @@ ec_error_t rop_getcollapsestate(uint64_t row_id, uint32_t row_instance,
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	if (ropGetContentsTable != ptable->rop_id)
 		return ecNotSupported;
@@ -690,7 +690,7 @@ ec_error_t rop_setcollapsestate(const BINARY *pcollapse_state, BINARY *pbookmark
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_TABLE)
+	if (object_type != ems_objtype::table)
 		return ecNotSupported;
 	if (ropGetContentsTable != ptable->rop_id)
 		return ecNotSupported;

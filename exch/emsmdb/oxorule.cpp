@@ -32,7 +32,7 @@ ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto rpc_info = get_rpc_info();
 	auto dir = plogon->get_dir();
@@ -77,7 +77,7 @@ ec_error_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	auto ptable = table_object::create(plogon, pfolder,
 	              flags, ropGetRulesTable, logon_id);
@@ -85,7 +85,7 @@ ec_error_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
 		return ecServerOOM;
 	auto rtable = ptable.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_TABLE, std::move(ptable)});
+	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
 		return ecError;
 	rtable->set_handle(hnd);

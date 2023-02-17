@@ -217,13 +217,13 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 	case FAST_SOURCE_OPERATION_COPYTO:
 	case FAST_SOURCE_OPERATION_COPYPROPERTIES:
 		switch (object_type) {
-		case OBJECT_TYPE_FOLDER:
+		case ems_objtype::folder:
 			root_element = ROOT_ELEMENT_FOLDERCONTENT;
 			break;
-		case OBJECT_TYPE_MESSAGE:
+		case ems_objtype::message:
 			root_element = ROOT_ELEMENT_MESSAGECONTENT;
 			break;
-		case OBJECT_TYPE_ATTACHMENT:
+		case ems_objtype::attach:
 			root_element = ROOT_ELEMENT_ATTACHMENTCONTENT;
 			break;
 		default:
@@ -231,12 +231,12 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 		}
 		break;
 	case FAST_SOURCE_OPERATION_COPYMESSAGES:
-		if (object_type != OBJECT_TYPE_FOLDER)
+		if (object_type != ems_objtype::folder)
 			return ecNotSupported;
 		root_element = ROOT_ELEMENT_MESSAGELIST;
 		break;
 	case FAST_SOURCE_OPERATION_COPYFOLDER:
-		if (object_type != OBJECT_TYPE_FOLDER)
+		if (object_type != ems_objtype::folder)
 			return ecNotSupported;
 		root_element = ROOT_ELEMENT_TOPFOLDER;
 		break;
@@ -276,7 +276,7 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 	if (pctx == nullptr)
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_FASTUPCTX, std::move(pctx)});
+	           logon_id, hin, {ems_objtype::fastupctx, std::move(pctx)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -298,7 +298,7 @@ ec_error_t rop_fasttransferdestputbuffer(const BINARY *ptransfer_data,
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FASTUPCTX)
+	if (object_type != ems_objtype::fastupctx)
 		return ecNotSupported;
 	auto err = static_cast<fastupctx_object *>(pobject)->write_buffer(ptransfer_data);
 	if (err != ecSuccess)
@@ -325,8 +325,8 @@ ec_error_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_ICSDOWNCTX &&
-	    object_type != OBJECT_TYPE_FASTDOWNCTX)
+	if (object_type != ems_objtype::icsdownctx &&
+	    object_type != ems_objtype::fastdownctx)
 		return ecNotSupported;
 	emsmdb_interface_get_rop_left(&max_rop);
 	if (max_rop >= 32)
@@ -343,11 +343,11 @@ ec_error_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	ptransfer_data->pv = common_util_alloc(len);
 	if (ptransfer_data->pv == nullptr)
 		return ecServerOOM;
-	if (OBJECT_TYPE_FASTDOWNCTX == object_type) {
+	if (object_type == ems_objtype::fastdownctx) {
 		if (!static_cast<fastdownctx_object *>(pobject)->get_buffer(
 		    ptransfer_data->pv, &len, &b_last, pin_progress_count, ptotal_step_count))
 			return ecError;
-	} else if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
+	} else if (object_type == ems_objtype::icsdownctx) {
 		auto dobj = static_cast<icsdownctx_object *>(pobject);
 		if (!dobj->check_started() && !dobj->make_sync())
 			return ecError;
@@ -388,7 +388,7 @@ ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	BOOL b_sub = (flags & (FAST_COPY_FOLDER_FLAG_MOVE |
 	             FAST_COPY_FOLDER_FLAG_COPYSUBFOLDERS)) ? TRUE : false;
@@ -403,7 +403,7 @@ ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 	if (!pctx->make_topfolder(std::move(pfldctnt)))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_FASTDOWNCTX, std::move(pctx)});
+	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -429,7 +429,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	if (plogon->logon_mode != logon_mode::owner) {
 		auto rpc_info = get_rpc_info();
@@ -467,7 +467,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 		return ecError;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_FASTDOWNCTX, std::move(pctx)});
+	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -498,15 +498,15 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER &&
-	    object_type != OBJECT_TYPE_MESSAGE &&
-	    object_type != OBJECT_TYPE_ATTACHMENT)
+	if (object_type != ems_objtype::folder &&
+	    object_type != ems_objtype::message &&
+	    object_type != ems_objtype::attach)
 		return ecNotSupported;
 	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
 	if (pctx == nullptr)
 		return ecError;
 	switch (object_type) {
-	case OBJECT_TYPE_FOLDER: {
+	case ems_objtype::folder: {
 		if (0 == level) {
 			b_sub = TRUE;
 			b_fai = TRUE;
@@ -543,7 +543,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			return ecError;
 		break;
 	}
-	case OBJECT_TYPE_MESSAGE:
+	case ems_objtype::message:
 		if (!static_cast<message_object *>(pobject)->flush_streams())
 			return ecError;
 		if (!exmdb_client::read_message_instance(plogon->get_dir(),
@@ -570,7 +570,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!pctx->make_messagecontent(&msgctnt))
 			return ecError;
 		break;
-	case OBJECT_TYPE_ATTACHMENT:
+	case ems_objtype::attach:
 		if (!static_cast<attachment_object *>(pobject)->flush_streams())
 			return ecError;
 		if (!exmdb_client::read_attachment_instance(plogon->get_dir(),
@@ -590,9 +590,11 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!pctx->make_attachmentcontent(&attctnt))
 			return ecError;
 		break;
+	default:
+		break;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_FASTDOWNCTX, std::move(pctx)});
+	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -623,15 +625,15 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER &&
-	    object_type != OBJECT_TYPE_MESSAGE &&
-	    object_type != OBJECT_TYPE_ATTACHMENT)
+	if (object_type != ems_objtype::folder &&
+	    object_type != ems_objtype::message &&
+	    object_type != ems_objtype::attach)
 		return ecNotSupported;
 	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
 	if (pctx == nullptr)
 		return ecError;
 	switch (object_type) {
-	case OBJECT_TYPE_FOLDER: {
+	case ems_objtype::folder: {
 		if (0 == level) {
 			b_sub = FALSE;
 			b_fai = FALSE;
@@ -675,7 +677,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			return ecError;
 		break;
 	}
-	case OBJECT_TYPE_MESSAGE:
+	case ems_objtype::message:
 		if (!static_cast<message_object *>(pobject)->flush_streams())
 			return ecError;
 		if (!exmdb_client::read_message_instance(plogon->get_dir(),
@@ -701,7 +703,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		if (!pctx->make_messagecontent(&msgctnt))
 			return ecError;
 		break;
-	case OBJECT_TYPE_ATTACHMENT:
+	case ems_objtype::attach:
 		if (!static_cast<attachment_object *>(pobject)->flush_streams())
 			return ecError;
 		if (!exmdb_client::read_attachment_instance(plogon->get_dir(),
@@ -721,9 +723,11 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		if (!pctx->make_attachmentcontent(&attctnt))
 			return ecError;
 		break;
+	default:
+		break;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_FASTDOWNCTX, std::move(pctx)});
+	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -796,7 +800,7 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	auto pctx = icsdownctx_object::create(plogon, pfolder, sync_type,
 	            send_options, sync_flags, pres, extra_flags, pproptags);
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_ICSDOWNCTX, std::move(pctx)});
+	           logon_id, hin, {ems_objtype::icsdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -868,7 +872,7 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 	    msg->get_instance_id(), &nuprops, &problems))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(logmap, logon_id, hnd_in,
-	           {OBJECT_TYPE_MESSAGE, std::move(msg)});
+	           {ems_objtype::message, std::move(msg)});
 	if (hnd < 0)
 		return ecError;
 	*hnd_out = hnd;
@@ -906,7 +910,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_ICSUPCTX)
+	if (object_type != ems_objtype::icsupctx)
 		return ecNotSupported;
 	if (pctx->get_sync_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
@@ -1013,7 +1017,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	    pmessage->get_instance_id(), &tmp_propvals, &tmp_problems))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_MESSAGE, std::move(pmessage)});
+	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -1042,7 +1046,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_ICSUPCTX)
+	if (object_type != ems_objtype::icsupctx)
 		return ecNotSupported;
 	if (pctx->get_sync_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
@@ -1147,7 +1151,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_ICSUPCTX)
+	if (object_type != ems_objtype::icsupctx)
 		return ecNotSupported;
 	if (pctx->get_sync_type() != SYNC_TYPE_HIERARCHY)
 		return ecNotSupported;
@@ -1378,7 +1382,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_ICSUPCTX)
+	if (object_type != ems_objtype::icsupctx)
 		return ecNotSupported;
 	auto sync_type = pctx->get_sync_type();
 	BOOL b_hard = (flags & SYNC_DELETES_FLAG_HARDDELETE) ? TRUE : false;
@@ -1542,7 +1546,7 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_ICSUPCTX)
+	if (object_type != ems_objtype::icsupctx)
 		return ecNotSupported;
 	if (pctx->get_sync_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
@@ -1645,12 +1649,12 @@ ec_error_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *plogmap,
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_FOLDER)
+	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	uint8_t sync_type = is_content_collector == 0 ? SYNC_TYPE_HIERARCHY : SYNC_TYPE_CONTENTS;
 	auto pctx = icsupctx_object::create(plogon, pfolder, sync_type);
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_ICSUPCTX, std::move(pctx)});
+	           logon_id, hin, {ems_objtype::icsupctx, std::move(pctx)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -1669,13 +1673,12 @@ ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
-	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
+	if (object_type == ems_objtype::icsdownctx)
 		pstate = static_cast<icsdownctx_object *>(pobject)->get_state();
-	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
+	else if (object_type == ems_objtype::icsupctx)
 		pstate = static_cast<icsupctx_object *>(pobject)->get_state();
-	} else {
+	else
 		return ecNotSupported;
-	}
 	if (NULL == pstate) {
 		return ecError;
 	}
@@ -1685,7 +1688,7 @@ ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 	if (!pctx->make_state(pstate))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
-	           logon_id, hin, {OBJECT_TYPE_FASTDOWNCTX, std::move(pctx)});
+	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return ecError;
 	*phout = hnd;
@@ -1699,10 +1702,10 @@ ec_error_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
+	if (object_type == ems_objtype::icsdownctx) {
 		if (!static_cast<icsdownctx_object *>(pctx)->begin_state_stream(proptag_state))
 			return ecError;
-	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
+	} else if (object_type == ems_objtype::icsupctx) {
 		if (!static_cast<icsupctx_object *>(pctx)->begin_state_stream(proptag_state))
 			return ecError;
 	} else {
@@ -1718,10 +1721,10 @@ ec_error_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
+	if (object_type == ems_objtype::icsdownctx) {
 		if (!static_cast<icsdownctx_object *>(pctx)->continue_state_stream(pstream_data))
 			return ecError;
-	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
+	} else if (object_type == ems_objtype::icsupctx) {
 		if (!static_cast<icsupctx_object *>(pctx)->continue_state_stream(pstream_data))
 			return ecError;
 	} else {
@@ -1737,10 +1740,10 @@ ec_error_t rop_syncuploadstatestreamend(LOGMAP *plogmap,
 	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
+	if (object_type == ems_objtype::icsdownctx) {
 		if (!static_cast<icsdownctx_object *>(pctx)->end_state_stream())
 			return ecError;
-	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
+	} else if (object_type == ems_objtype::icsupctx) {
 		if (!static_cast<icsupctx_object *>(pctx)->end_state_stream())
 			return ecError;
 	} else {
@@ -1764,7 +1767,7 @@ ec_error_t rop_getlocalreplicaids(uint32_t count, GUID *pguid,
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_LOGON)
+	if (object_type != ems_objtype::logon)
 		return ecError;
 	if (!exmdb_client::allocate_ids(plogon->get_dir(), count, &begin_eid))
 		return ecError;

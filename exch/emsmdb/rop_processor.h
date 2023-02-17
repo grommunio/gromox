@@ -4,19 +4,11 @@
 #include <memory>
 #include <gromox/mapi_types.hpp>
 #include "logon_object.h"
-#define OBJECT_TYPE_NONE					0
-#define OBJECT_TYPE_LOGON					1
-#define OBJECT_TYPE_FOLDER					2
-#define OBJECT_TYPE_MESSAGE					3
-#define OBJECT_TYPE_ATTACHMENT				4
-#define OBJECT_TYPE_TABLE					5
-#define OBJECT_TYPE_STREAM					6
-#define OBJECT_TYPE_FASTDOWNCTX				7
-#define OBJECT_TYPE_FASTUPCTX				8
-#define OBJECT_TYPE_ICSDOWNCTX				9
-#define OBJECT_TYPE_ICSUPCTX				10
-#define OBJECT_TYPE_SUBSCRIPTION			11
-using ems_objtype = uint8_t;
+
+enum class ems_objtype : uint8_t {
+	none = 0, logon, folder, message, attach, table, stream, fastdownctx,
+	fastupctx, icsdownctx, icsupctx, subscription,
+};
 
 struct object_node;
 
@@ -45,7 +37,7 @@ struct object_node {
 	void clear() noexcept;
 
 	uint32_t handle = 0;
-	ems_objtype type = OBJECT_TYPE_NONE;
+	ems_objtype type = ems_objtype::none;
 	void *pobject = nullptr;
 	std::shared_ptr<object_node> parent;
 };

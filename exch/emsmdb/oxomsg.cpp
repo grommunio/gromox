@@ -277,7 +277,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_MESSAGE)
+	if (object_type != ems_objtype::message)
 		return ecNotSupported;
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
@@ -597,7 +597,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (object_type != OBJECT_TYPE_MESSAGE)
+	if (object_type != ems_objtype::message)
 		return ecNotSupported;
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;

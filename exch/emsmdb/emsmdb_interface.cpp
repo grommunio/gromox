@@ -124,7 +124,7 @@ void emsmdb_report()
 			if (li == nullptr)
 				continue;
 			auto root = li->root.get();
-			if (root == nullptr || root->type != OBJECT_TYPE_LOGON) {
+			if (root == nullptr || root->type != ems_objtype::logon) {
 				mlog(LV_INFO, "%5u  null", i);
 				continue;
 			}
