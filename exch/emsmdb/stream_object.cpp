@@ -299,9 +299,8 @@ BOOL stream_object::commit()
 	if (OBJECT_TYPE_FOLDER != pstream->object_type) {
 		return FALSE;
 	}
-	if (OPENSTREAM_FLAG_READONLY == pstream->object_type) {
+	if (pstream->open_flags == OPENSTREAM_FLAG_READONLY)
 		return FALSE;
-	}
 	if (!pstream->b_touched)
 		return TRUE;
 	propvals.count = 1;
