@@ -2276,7 +2276,7 @@ static BOOL message_replace_actions_propid(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static BOOL message_make_deferred_error_message(const char *username,
+static BOOL message_make_dem(const char *username,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id, uint64_t rule_id,
     uint32_t rule_error, uint32_t action_type, uint32_t block_index,
     const char *provider, seen_list &seen) try
@@ -2774,7 +2774,7 @@ static ec_error_t message_forward_message(const char *from_address,
 	return ecSuccess;
 }
 
-static BOOL message_make_deferred_action_message(const char *username,
+static BOOL message_make_dam(const char *username,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const char *provider, std::list<DAM_NODE> &&dam_list, seen_list &seen) try
 {
@@ -2879,7 +2879,7 @@ static BOOL message_make_deferred_action_message(const char *username,
 	return false;
 }
 
-static BOOL message_make_deferred_action_messages(const char *username,
+static BOOL message_make_dams(const char *username,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     std::list<DAM_NODE> &&dam_list, seen_list &seen) try
 {
@@ -2910,7 +2910,7 @@ static BOOL message_make_deferred_action_messages(const char *username,
 			dam_list.splice(dam_list.end(), dam_list, dam_list.begin());
 		}
 		if (pdnode == tail) {
-			if (!message_make_deferred_action_message(username,
+			if (!message_make_dam(username,
 			    psqlite, folder_id, message_id, provider,
 			    std::move(tmp_list), seen))
 				return FALSE;
@@ -2945,7 +2945,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		        "an OP_MOVE/OP_COPY rule was disabled "
 		        "because target folder %llxh does not exist",
 		        znul(account), LLU{message_id}, LLU{folder_id}, LLU{dst_fid});
-		message_make_deferred_error_message(account,
+		message_make_dem(account,
 			psqlite, folder_id, message_id, prnode->id,
 			RULE_ERROR_MOVECOPY, block.type,
 			rule_idx, prnode->provider.c_str(), seen);
@@ -2967,7 +2967,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 	    &dst_mid, &b_result, &message_size))
 		return ecError;
 	if (!b_result) {
-		message_make_deferred_error_message(account, psqlite, folder_id,
+		message_make_dem(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_MOVECOPY, block.type,
 			rule_idx, prnode->provider.c_str(), seen);
 		return ecSuccess;
@@ -3045,7 +3045,7 @@ static ec_error_t op_reply(const char *from_address, const char *account,
 		return ecError;
 	if (b_result)
 		return ecSuccess;
-	message_make_deferred_error_message(account, psqlite, folder_id,
+	message_make_dem(account, psqlite, folder_id,
 		message_id, prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
 		block.type, rule_idx, prnode->provider.c_str(), seen);
 	return message_disable_rule(psqlite, false, prnode->id);
@@ -3078,7 +3078,7 @@ static ec_error_t op_forward(const char *from_address, const char *account,
 		return ecSuccess;
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
-		message_make_deferred_error_message(account, psqlite, folder_id,
+		message_make_dem(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
 			block.type, rule_idx, prnode->provider.c_str(), seen);
 		return message_disable_rule(psqlite, false, prnode->id);
@@ -3098,7 +3098,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	    pfwddlgt->count == 0)
 		return ecSuccess;
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
-		message_make_deferred_error_message(account, psqlite, folder_id,
+		message_make_dem(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
 			block.type, rule_idx, prnode->provider.c_str(), seen);
 		return message_disable_rule(psqlite, false, prnode->id);
@@ -3671,7 +3671,7 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 		if (ec != ecSuccess)
 			return ec;
 	}
-	if (dam_list.size() > 0 && !message_make_deferred_action_messages(account,
+	if (dam_list.size() > 0 && !message_make_dams(account,
 	    psqlite, folder_id, message_id, std::move(dam_list), seen))
 		return ecError;
 	for (const auto &rnode : ext_rule_list) {
