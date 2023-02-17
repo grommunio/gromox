@@ -54,9 +54,9 @@ extern ec_error_t zs_logon(const char *username, const char *password, uint32_t 
 extern ec_error_t zs_checksession(GUID ses);
 extern ec_error_t zs_uinfo(const char *username, BINARY *entryid, char **dispname, char **x500dn, uint32_t *priv_bits);
 extern ec_error_t zs_unloadobject(GUID ses, uint32_t obj_handle);
-extern ec_error_t zs_openentry(GUID ses, BINARY entryid, uint32_t flags, uint8_t *mapi_type, uint32_t *obj_handle);
-extern ec_error_t zs_openstoreentry(GUID ses, uint32_t obj_handle, BINARY entryid, uint32_t flags, uint8_t *mapi_type, uint32_t *out_handle);
-extern ec_error_t zs_openabentry(GUID ses, BINARY entryid, uint8_t *mapi_type, uint32_t *obj_handle);
+extern ec_error_t zs_openentry(GUID ses, BINARY entryid, uint32_t flags, zs_objtype *, uint32_t *obj_handle);
+extern ec_error_t zs_openstoreentry(GUID ses, uint32_t obj_handle, BINARY entryid, uint32_t flags, zs_objtype *, uint32_t *out_handle);
+extern ec_error_t zs_openabentry(GUID ses, BINARY entryid, zs_objtype *, uint32_t *obj_handle);
 extern ec_error_t zs_resolvename(GUID ses, const TARRAY_SET *cond, TARRAY_SET *);
 extern ec_error_t zs_getpermissions(GUID ses, uint32_t obj_handle, PERMISSION_SET *);
 extern ec_error_t zs_modifypermissions(GUID ses, uint32_t fld_handle, const PERMISSION_SET *);

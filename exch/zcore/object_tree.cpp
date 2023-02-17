@@ -189,6 +189,8 @@ object_node::~object_node()
 	case ZMG_ICSUPCTX:
 		delete static_cast<icsupctx_object *>(pobject);
 		break;
+	default:
+		break;
 	}
 }
 
@@ -278,7 +280,7 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 	return pobjtree;
 }
 
-void *OBJECT_TREE::get_object1(uint32_t obj_handle, uint8_t *ptype)
+void *OBJECT_TREE::get_object1(uint32_t obj_handle, zs_objtype *ptype)
 {
 	if (obj_handle > INT32_MAX)
 		return NULL;

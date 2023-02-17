@@ -642,17 +642,17 @@ struct zcresp_uinfo : public zcresp {
 };
 
 struct zcresp_openentry : public zcresp {
-	uint8_t mapi_type;
+	zs_objtype mapi_type;
 	uint32_t hobject;
 };
 
 struct zcresp_openstoreentry : public zcresp {
-	uint8_t mapi_type;
+	zs_objtype mapi_type;
 	uint32_t hxobject;
 };
 
 struct zcresp_openabentry : public zcresp {
-	uint8_t mapi_type;
+	zs_objtype mapi_type;
 	uint32_t hobject;
 };
 

@@ -173,7 +173,7 @@ static BOOL container_object_match_contact_message(
 
 static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 {
-	uint8_t mapi_type;
+	zs_objtype mapi_type;
 	PROPID_ARRAY propids;
 	PROPERTY_NAME propname_buff[9];
 	PROPNAME_ARRAY propnames;
@@ -235,7 +235,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 	uint32_t tmp_int;
 	uint32_t row_num;
 	uint32_t table_id;
-	uint8_t mapi_type;
+	zs_objtype mapi_type;
 	char username[UADDR_SIZE];
 	TARRAY_SET tmp_set;
 	PROPTAG_ARRAY proptags;
@@ -545,7 +545,7 @@ static BOOL container_object_fetch_folder_properties(
 		}
 		case PR_ENTRYID:
 		case PR_PARENT_ENTRYID: {
-			uint8_t mapi_type = 0;
+			zs_objtype mapi_type = ZMG_INVALID;
 			auto pinfo = zs_get_info();
 			auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
 			auto store = pinfo->ptree->get_object<store_object>(handle, &mapi_type);

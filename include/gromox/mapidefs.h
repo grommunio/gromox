@@ -679,7 +679,7 @@ enum zics_type {
 	ICS_TYPE_HIERARCHY = 2,
 };
 
-enum zmapi_group {
+enum zs_objtype : uint8_t {
 	/* Zend resource type groups */
 	ZMG_ROOT = 0,
 	ZMG_TABLE = 1,

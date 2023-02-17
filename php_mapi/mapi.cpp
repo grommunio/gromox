@@ -769,7 +769,7 @@ static ZEND_FUNCTION(mapi_openentry)
 	size_t eid_size = 0;
 	zval *pzresource;
 	uint32_t hobject;
-	uint8_t mapi_type;
+	zs_objtype mapi_type;
 	MAPI_RESOURCE *psession, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|sl",
@@ -849,7 +849,7 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 	size_t eid_size = 0;
 	zval *pzresource;
 	uint32_t hobject;
-	uint8_t mapi_type;
+	zs_objtype mapi_type;
 	MAPI_RESOURCE *psession, *presource;
 	
 	entryid.cb = 0;
@@ -1535,7 +1535,7 @@ static ZEND_FUNCTION(mapi_msgstore_openentry)
 	size_t eid_size = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	uint8_t mapi_type;
+	zs_objtype mapi_type;
 	MAPI_RESOURCE *pstore, *presource;
 	
 	entryid.cb = 0;
@@ -2107,7 +2107,7 @@ static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	BINARY entryid;
 	zval *pzresource;
 	uint32_t hobject;
-	uint8_t mapi_type;
+	zs_objtype mapi_type;
 	MAPI_RESOURCE *pstore, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),

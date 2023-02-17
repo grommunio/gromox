@@ -62,7 +62,9 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openentry &d)
 
 static zend_bool zrpc_pull(PULL_CTX &x, zcresp_openentry &d)
 {
-	TRY(x.g_uint8(&d.mapi_type));
+	uint8_t v;
+	TRY(x.g_uint8(&v));
+	d.mapi_type = static_cast<zs_objtype>(v);
 	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
@@ -78,7 +80,9 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openstoreentry &d)
 
 static zend_bool zrpc_pull(PULL_CTX &x, zcresp_openstoreentry &d)
 {
-	TRY(x.g_uint8(&d.mapi_type));
+	uint8_t v;
+	TRY(x.g_uint8(&v));
+	d.mapi_type = static_cast<zs_objtype>(v);
 	TRY(x.g_uint32(&d.hxobject));
 	return true;
 }
@@ -92,7 +96,9 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openabentry &d)
 
 static zend_bool zrpc_pull(PULL_CTX &x, zcresp_openabentry &d)
 {
-	TRY(x.g_uint8(&d.mapi_type));
+	uint8_t v;
+	TRY(x.g_uint8(&v));
+	d.mapi_type = static_cast<zs_objtype>(v);
 	TRY(x.g_uint32(&d.hobject));
 	return true;
 }

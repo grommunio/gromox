@@ -8,8 +8,8 @@
 
 struct object_node {
 	object_node() = default;
-	object_node(uint8_t t, void *p) : type(t), pobject(p) {}
-	template<typename T> object_node(uint8_t t, std::unique_ptr<T> &&o) :
+	object_node(zs_objtype t, void *p) : type(t), pobject(p) {}
+	template<typename T> object_node(zs_objtype t, std::unique_ptr<T> &&o) :
 		type(t)
 	{
 		pobject = o.release();
@@ -20,7 +20,7 @@ struct object_node {
 
 	tree_node node{};
 	uint32_t handle = INVALID_HANDLE;
-	uint8_t type = ZMG_INVALID;
+	zs_objtype type = ZMG_INVALID;
 	void *pobject = nullptr;
 };
 using OBJECT_NODE = object_node;
@@ -30,8 +30,8 @@ struct OBJECT_TREE {
 	~OBJECT_TREE();
 	NOMOVE(OBJECT_TREE);
 	uint32_t add_object_handle(int parent, object_node &&);
-	void *get_object1(uint32_t obj_handle, uint8_t *type);
-	template<typename T> inline T *get_object(uint32_t h, uint8_t *t)
+	void *get_object1(uint32_t obj_handle, zs_objtype *);
+	template<typename T> inline T *get_object(uint32_t h, zs_objtype *t)
 		{ return static_cast<T *>(get_object1(h, t)); }
 	void release_object_handle(uint32_t obj_handle);
 	void *get_zstore_propval(uint32_t proptag);
