@@ -48,7 +48,8 @@ using namespace gromox;
 namespace {
 
 struct RULE_NODE {
-	uint32_t sequence = 0, state = 0;
+	int32_t sequence = 0;
+	uint32_t state = 0;
 	uint64_t id = 0;
 	std::string provider;
 };
@@ -2082,12 +2083,11 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 			continue;
 		}
 		std::list<RULE_NODE> rn;
-		uint32_t seq = 0;
 		auto prov = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 3));
 		if (prov == nullptr)
 			continue;
 		uint64_t msg_id = sqlite3_column_int64(pstmt, 1);
-		seq = sqlite3_column_int64(pstmt, 2);
+		int32_t seq = pstmt.col_int64(2);
 		rn.push_back(RULE_NODE{seq, state, msg_id, prov});
 		auto it = std::find_if(plist.begin(), plist.end(),
 		          [&](const RULE_NODE &r) { return r.sequence == seq; });
@@ -2144,7 +2144,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 			return FALSE;
 		if (pvalue == nullptr)
 			continue;
-		auto seq = *static_cast<uint32_t *>(pvalue);
+		auto seq = *static_cast<int32_t *>(pvalue);
 		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
 		    PR_RULE_MSG_PROVIDER, &pvalue))
 			return FALSE;
