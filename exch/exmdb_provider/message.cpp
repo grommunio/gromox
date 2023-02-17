@@ -2065,9 +2065,9 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 {
 	char sql_string[256];
 	
-	snprintf(sql_string, arsizeof(sql_string), "SELECT state, rule_id,"
-					" sequence, provider FROM rules WHERE"
-					" folder_id=%lld", LLU{folder_id});
+	snprintf(sql_string, arsizeof(sql_string), "SELECT state, rule_id, "
+	         "sequence, provider FROM rules WHERE folder_id=%lld "
+	         "AND provider IS NOT NULL ORDER BY sequence", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -2083,16 +2083,9 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 		} else {
 			continue;
 		}
-		std::list<RULE_NODE> rn;
-		auto prov = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 3));
-		if (prov == nullptr)
-			continue;
 		uint64_t msg_id = sqlite3_column_int64(pstmt, 1);
 		int32_t seq = pstmt.col_int64(2);
-		rn.push_back(RULE_NODE{seq, state, msg_id, prov});
-		auto it = std::find_if(plist.begin(), plist.end(),
-		          [&](const RULE_NODE &r) { return r.sequence == seq; });
-		plist.splice(it, std::move(rn));
+		plist.push_back(RULE_NODE{seq, state, msg_id, pstmt.col_text(3)});
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
