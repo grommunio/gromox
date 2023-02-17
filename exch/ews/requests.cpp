@@ -119,7 +119,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 
 	sProptags requestedTags = ctx.collectTags(request.FolderShape);
 	if(requestedTags.tags.size() > std::numeric_limits<decltype(PROPTAG_ARRAY::count)>::max())
-		throw InputError("Too many tags requested");
+		throw InputError(E3029);
 	const PROPTAG_ARRAY tags{uint16_t(requestedTags.tags.size()), requestedTags.tags.data()};
 
 	mGetFolderResponse data;
@@ -425,8 +425,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	EID_ARRAY given_fids, deleted_fids;
 	if(!exmdb.get_hierarchy_sync(dir.c_str(), folder.folderId, nullptr,
 	                             &syncState.given, &syncState.seen, &changes, &lastCn, &given_fids, &deleted_fids))
-		throw DispatchError("Failed to get hierarchy sync data");
-	//std::vector<uint32_t> tagFilter = request.FolderShape.tags();
+		throw DispatchError(E3030);
 	sProptags requestedTags = ctx.collectTags(request.FolderShape);
 	std::sort(requestedTags.tags.begin(), requestedTags.tags.end());
 
@@ -491,12 +490,12 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	                          &syncState.read, 0, nullptr, TRUE, &fai_count, &fai_total, &normal_count, &normal_total,
 	                          &updated_mids, &chg_mids, &last_cn, &given_mids, &deleted_mids, &nolonger_mids, &read_mids,
 	                          &unread_mids, &last_readcn))
-		throw DispatchError("Failed to get content sync data");
+		throw DispatchError(E3031);
 	syncState.update(given_mids, deleted_mids, last_cn);
 
 	sProptags itemTags = ctx.collectTags(request.ItemShape);
 	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
-		throw DispatchError("Too many tags requested");
+		throw DispatchError(E3032);
 	PROPTAG_ARRAY requestedTags{uint16_t(itemTags.tags.size()), itemTags.tags.data()};
 
 	mSyncFolderItemsResponse data;

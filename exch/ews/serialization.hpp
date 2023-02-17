@@ -379,10 +379,9 @@ static T fromXMLNode(const tinyxml2::XMLElement* child)
 	BaseType_t<T> val;
 	tinyxml2::XMLError err = ExplicitConvert<BaseType_t<T>>::deserialize(child, val);
 	if(err == tinyxml2::XML_NO_TEXT_NODE)
-		throw DeserializationError("Element '"s+child->Name()+"'is empty");
+		throw DeserializationError(Exceptions::E3043(child->Name()));
 	else if(err == tinyxml2::XML_CAN_NOT_CONVERT_TEXT)
-		throw DeserializationError("Failed to convert element "s+child->Name()+"="+child->GetText()
-	                               +"' to "+typeid(BaseType_t<T>).name());
+		throw DeserializationError(Exceptions::E3044(child->Name(), child->GetText(), typeid(BaseType_t<T>).name()));
 	return val;
 }
 
@@ -438,7 +437,7 @@ static T fromXMLNodeVariant(const tinyxml2::XMLElement* child)
 {
 	using namespace std::string_literals;
 	if constexpr(I >= std::variant_size_v<T>)
-		throw Exceptions::DeserializationError("Failed to find proper type for node "s+child->Name());
+		throw Exceptions::DeserializationError(Exceptions::E3045(child->Name()));
 	else
 	{
 		using Contained = std::variant_alternative_t<I, T>;
@@ -490,7 +489,7 @@ static T fromXMLNode(const tinyxml2::XMLElement* xml, const char* name)
 	if constexpr(BaseType<T>::container == OPTIONAL)
 	    return fromXMLNodeOpt<T>(child);
 	else if(!child)
-		throw DeserializationError("Missing required child element '"s+name+"' in element '"+xml->Name()+"'");
+		throw DeserializationError(Exceptions::E3046(name, xml->Name()));
 	else
 		return fromXMLNodeDispatch<T>(child);
 }
@@ -520,15 +519,14 @@ static T fromXMLAttr(const tinyxml2::XMLElement* xml, const char* name)
 	{
 		if constexpr(BaseType<T>::container == OPTIONAL)
 		    return std::nullopt;
-		throw DeserializationError("Missing required attribute '"s+name+"' in element '"+xml->Name()+"'");
+		throw DeserializationError(Exceptions::E3047(name, xml->Name()));
 	}
 	if constexpr(explicit_convert<T>(EC_IN))
 	{
 		BaseType_t<T> val;
 		tinyxml2::XMLError err = ExplicitConvert<BaseType_t<T>>::deserialize(attr, val);
 		if(err == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE)
-			throw DeserializationError("Failed to convert attribute "s+name+"="+attr->Value()+" in element '"+xml->Name()
-		                               +"' to "+typeid(BaseType_t<T>).name());
+			throw DeserializationError(Exceptions::E3048(name, attr->Value(), xml->Name(), typeid(BaseType_t<T>).name()));
 		return val;
 	}
 	else

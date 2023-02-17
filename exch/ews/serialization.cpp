@@ -64,7 +64,7 @@ std::vector<uint8_t> b64decode(const char* data, size_t len)
 	std::vector<uint8_t> out(len*3/4+1, 0);
 	size_t outlen;
 	if(decode64(data, len, out.data(), out.size(), &outlen))
-		throw DeserializationError("Invalid base64 string");
+		throw DeserializationError(E3033);
 	out.resize(outlen);
 	return out;
 }
@@ -117,7 +117,7 @@ sBase64Binary::sBase64Binary(const XMLElement* xml)
 {
 	const char* data = xml->GetText();
 	if(!data)
-		throw DeserializationError("Element '"s+xml->Name()+"'is empty");
+		throw DeserializationError(E3034(xml->Name()));
 	std::vector<uint8_t>::operator=(b64decode(data, strlen(data)));
 }
 
@@ -177,28 +177,28 @@ std::string sSyncState::serialize()
 {
 	std::unique_ptr<TPROPVAL_ARRAY, Cleaner> pproplist(tpropval_array_init());
 	if (!pproplist)
-		throw DispatchError("Out of memory");
+		throw DispatchError(E3035);
 	std::unique_ptr<BINARY, Cleaner> ser(given.serialize());
 	if (!ser || pproplist->set(MetaTagIdsetGiven1, ser.get()))
-		throw DispatchError("Failed to generate sync state given idset data");
+		throw DispatchError(E3036);
 	ser.reset(seen.serialize());
 	if (!ser || pproplist->set(MetaTagCnsetSeen, ser.get()))
-		throw DispatchError("Failed to generate sync state seen cnset data");
+		throw DispatchError(E3037);
 	ser.reset();
 	if(!seen_fai.empty() && !read.empty())
 	{
 		ser.reset(seen_fai.serialize());
 		if (!ser || pproplist->set(MetaTagCnsetSeenFAI, ser.get()))
-			throw DispatchError("Failed to generate sync state seen fai cnset data");
+			throw DispatchError(E3038);
 		ser.reset(read.serialize());
 		if (!ser || pproplist->set(MetaTagCnsetRead, ser.get()))
-			throw DispatchError("Failed to generate sync state read cnset data");
+			throw DispatchError(E3039);
 	}
 	ser.reset();
 
 	EXT_PUSH stateBuffer;
 	if(!stateBuffer.init(nullptr, 0, 0) || stateBuffer.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
-		throw DispatchError("Failed to generate sync state");
+		throw DispatchError(E3040);
 
 	return b64encode(stateBuffer.m_vdata, stateBuffer.m_offset);
 }
@@ -214,9 +214,9 @@ sTime::sTime(const XMLElement* xml)
 {
 	const char* data = xml->GetText();
 	if(!data)
-		throw DeserializationError("Element '"s+xml->Name()+"'is empty");
+		throw DeserializationError(E3041(xml->Name()));
 	if(sscanf(data, "%02hhu:%02hhu:%02hhu", &hour, &minute, &second) != 3)
-		throw DeserializationError("Element "s+xml->Name()+"="+xml->GetText()+"' has bad format (expected hh:mm:ss)");
+		throw DeserializationError(E3042(xml->Name(), xml->GetText()));
 }
 
 void sTimePoint::serialize(XMLElement* xml) const

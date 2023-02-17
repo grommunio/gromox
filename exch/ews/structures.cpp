@@ -43,7 +43,7 @@ inline gromox::time_point nttime_to_time_point(uint64_t nttime)
 sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 {
 	if(PROP_TYPE(tp.proptag) != PT_BINARY)
-		throw DispatchError("Can only convert binary properties to Base64Binary");
+		throw DispatchError(E3049);
 	const BINARY* bin = static_cast<const BINARY*>(tp.pvalue);
 	assign(bin->pb, bin->pb+bin->cb);
 }
@@ -71,7 +71,7 @@ void sFolderEntryId::init(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
 	if(size >	std::numeric_limits<uint32_t>::max())
-		throw DeserializationError("Folder entry ID data to large");
+		throw DeserializationError(E3050);
 	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
 	TRY(ext_pull.g_folder_eid(this));
 }
@@ -143,7 +143,7 @@ sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
 	auto it = std::find_if(distNameInfo.begin(), distNameInfo.end(),
 	                       [&folder](const auto& elem){return folder.Id == elem.name;});
 	if(it == distNameInfo.end())
-		throw DeserializationError("Unknown distinguished folder id "+folder.Id);
+		throw DeserializationError(E3051(folder.Id));
 	folderId = rop_util_make_eid_ex(1, it->id);
 	location = it->isPrivate? PRIVATE : PUBLIC;
 	if(folder.Mailbox)
@@ -204,7 +204,7 @@ void sSyncState::init(const std::string& data64)
 	if(data.size() <= 16)
 		return;
 	if(data.size() > std::numeric_limits<uint32_t>::max())
-		throw InputError("Sync state too big");
+		throw InputError(E3052);
 	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, 0);
 	if(ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return;
@@ -213,19 +213,19 @@ void sSyncState::init(const std::string& data64)
 		switch (propval->proptag) {
 		case MetaTagIdsetGiven1:
 			if(!given.deserialize(static_cast<BINARY *>(propval->pvalue)) || !given.convert())
-				throw InputError("Failed to deserialize given idset");
+				throw InputError(E3053);
 			break;
 		case MetaTagCnsetSeen:
 			if(!seen.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen.convert())
-				throw InputError("Failed to deserialize seen cnset");
+				throw InputError(E3054);
 			break;
 		case MetaTagCnsetRead:
 			if(!read.deserialize(static_cast<BINARY *>(propval->pvalue)) || !read.convert())
-				throw InputError("Failed to deserialize read cnset");
+				throw InputError(E3055);
 			break;
 		case MetaTagCnsetSeenFAI:
 			if(!seen_fai.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen_fai.convert())
-				throw InputError("Failed to deserialize seen fai cnset");
+				throw InputError(E3056);
 			break;
 		}
 	}
@@ -245,10 +245,10 @@ void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fi
 		given.remove(*pid);
 	for(uint64_t* pid = given_fids.pids; pid < given_fids.pids+given_fids.count; ++pid)
 		if(!given.append(*pid))
-			throw DispatchError("Failed to generated sync state idset");
+			throw DispatchError(E3057);
 	seen.convert();
 	if(lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
-		throw DispatchError("Failed to generate sync state cnset");
+		throw DispatchError(E3058);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -415,7 +415,7 @@ void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PR
 	static auto compval = [](const TMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto type = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
 	if(type == typeMap.end() || strcmp(type->first, PropertyType.c_str()))
-		throw InputError("Unknown tag type "+PropertyType);
+		throw InputError(E3059(PropertyType));
 	if(PropertyTag)
 	{
 		unsigned long long tagId = std::stoull(*PropertyTag, nullptr, 16);
@@ -436,12 +436,12 @@ void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PR
 			name.lid = *PropertyId;
 		}
 		else
-			throw InputError("Invalid ExtendedFieldURI: missing name or ID");
+			throw InputError(E3060);
 		names = name;
 		types = type->second;
 	}
 	else
-		throw InputError("Invalid ExtendedFieldURI: missing tag or set ID");
+		throw InputError(E3061);
 }
 
 /**

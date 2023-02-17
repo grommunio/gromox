@@ -151,7 +151,7 @@ std::string EWSContext::essdn_to_username(const std::string& essdn) const
 void EWSContext::experimental() const
 {
 	if(!plugin.experimental)
-		throw UnknownRequestError("Request is marked experimental and can be enabled with 'ews_experimental = 1'");
+		throw UnknownRequestError(E3021);
 }
 
 /**
@@ -226,7 +226,7 @@ TAGGED_PROPVAL EWSContext::getFolderEntryId(const sFolderSpec& folder) const
 	PROPTAG_ARRAY proptags{1, const_cast<uint32_t*>(propids)};
 	TPROPVAL_ARRAY props = getFolderProps(folder, proptags);
 	if(props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
-		throw DispatchError("Failed to get folder entry id");
+		throw DispatchError(E3022);
 	return *props.ppropval;
 }
 
@@ -243,7 +243,7 @@ TPROPVAL_ARRAY EWSContext::getFolderProps(const sFolderSpec& folder, const PROPT
 	std::string targetDir = getDir(folder);
 	TPROPVAL_ARRAY result;
 	if(!plugin.exmdb.get_folder_properties(targetDir.c_str(), 0, folder.folderId, &props, &result))
-		throw DispatchError("Failed to get folder properties");
+		throw DispatchError(E3023);
 	return result;
 }
 
@@ -262,7 +262,7 @@ TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) 
 	PROPTAG_ARRAY proptags{1, const_cast<uint32_t*>(propids)};
 	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
 	if(props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
-		throw DispatchError("Failed to get item entry id");
+		throw DispatchError(E3024);
 	return *props.ppropval;
 }
 
@@ -279,7 +279,7 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 {
 	TPROPVAL_ARRAY result;
 	if(!plugin.exmdb.get_message_properties(dir.c_str(), auth_info.username, 0, mid, &props, &result))
-		throw DispatchError("Failed to get item properties");
+		throw DispatchError(E3025);
 	return result;
 }
 
@@ -361,14 +361,14 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	{
 		char temp[UADDR_SIZE];
 		if(!plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
-			throw DispatchError("Failed to get username from id");
+			throw DispatchError(E3026);
 		folderSpec.target = temp;
 	}
 	else
 	{
 		sql_domain domaininfo;
 		if(!plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
-			throw DispatchError("Failed to get domain info from id");
+			throw DispatchError(E3027);
 		folderSpec.target = domaininfo.name;
 	}
 	return folderSpec;
@@ -388,7 +388,7 @@ void EWSContext::ext_error(pack_result code)
 	{
 	case EXT_ERR_SUCCESS: return;
 	case EXT_ERR_ALLOC: throw std::bad_alloc();
-	default: throw DispatchError("Buffer error ("+std::to_string(int(code))+")");
+	default: throw DispatchError(E3028(int(code)));
 	}
 }
 
