@@ -20,7 +20,7 @@
 using namespace gromox;
 
 std::unique_ptr<stream_object> stream_object::create(void *pparent,
-    int object_type, uint32_t open_flags, uint32_t proptag, uint32_t max_length)
+    ems_objtype object_type, uint32_t open_flags, uint32_t proptag, uint32_t max_length)
 {
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;

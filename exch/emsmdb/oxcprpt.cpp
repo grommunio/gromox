@@ -30,7 +30,7 @@ ec_error_t rop_getpropertyidsfromnames(uint8_t flags,
     uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_create;
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -68,7 +68,7 @@ ec_error_t rop_getpropertyidsfromnames(uint8_t flags,
 ec_error_t rop_getnamesfrompropertyids(const PROPID_ARRAY *ppropids,
     PROPNAME_ARRAY *ppropnames, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -130,7 +130,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 {
 	int i;
 	uint32_t cpid;
-	int object_type;
+	ems_objtype object_type;
 	uint16_t proptype;
 	uint32_t total_size;
 	TPROPVAL_ARRAY propvals;
@@ -229,7 +229,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 	int i;
 	uint32_t cpid;
 	BOOL b_unicode = false;
-	int object_type;
+	ems_objtype object_type;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY *ptmp_proptags;
 	
@@ -333,7 +333,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 ec_error_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
@@ -362,7 +362,7 @@ ec_error_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 ec_error_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -425,7 +425,7 @@ ec_error_t rop_setpropertiesnoreplicate(const TPROPVAL_ARRAY *ppropvals,
 ec_error_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -490,7 +490,7 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
     uint8_t logon_id, uint32_t hin)
 {
 	int i;
-	int object_type;
+	ems_objtype object_type;
 	uint16_t propid;
 	PROPID_ARRAY propids;
 	PROPTAG_ARRAY proptags;
@@ -582,9 +582,8 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 {
 	int i;
 	BOOL b_force;
-	int dst_type;
 	BOOL b_result;
-	int object_type;
+	ems_objtype object_type, dst_type;
 	uint32_t permission;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY proptags1;
@@ -791,10 +790,9 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 	int i;
 	BOOL b_sub;
 	BOOL b_cycle;
-	int dst_type;
 	BOOL b_collid;
 	BOOL b_partial;
-	int object_type;
+	ems_objtype object_type, dst_type;
 	uint32_t permission;
 	const char *username;
 	PROPTAG_ARRAY proptags;
@@ -935,7 +933,7 @@ ec_error_t rop_progress(uint8_t want_cancel, uint32_t *pcompleted_count,
 ec_error_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	uint32_t max_length;
 	uint32_t permission;
 	
@@ -1016,7 +1014,7 @@ ec_error_t rop_readstream(uint16_t byte_count, uint32_t max_byte_count,
 	uint16_t max_rop;
 	uint16_t read_len;
 	uint32_t buffer_size;
-	int32_t object_type;
+	ems_objtype object_type;
 	
 	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (pstream == nullptr)
@@ -1054,7 +1052,7 @@ ec_error_t rop_readstream(uint16_t byte_count, uint32_t max_byte_count,
 ec_error_t rop_writestream(const BINARY *pdata_bin, uint16_t *pwritten_size,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int32_t object_type;
+	ems_objtype object_type;
 	
 	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (pstream == nullptr)
@@ -1083,7 +1081,7 @@ ec_error_t rop_writestream(const BINARY *pdata_bin, uint16_t *pwritten_size,
 
 ec_error_t rop_commitstream(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (pstream == nullptr)
@@ -1106,7 +1104,7 @@ ec_error_t rop_commitstream(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 ec_error_t rop_getstreamsize(uint32_t *pstream_size, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (pstream == nullptr)
@@ -1120,7 +1118,7 @@ ec_error_t rop_getstreamsize(uint32_t *pstream_size, LOGMAP *plogmap,
 ec_error_t rop_setstreamsize(uint64_t stream_size, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	if (stream_size > static_cast<uint64_t>(INT32_MAX) + 1)
 		/* That weird +1 is specified in MS-OXCPRPT v17 §2.2.19 and §2.2.20 */
@@ -1138,7 +1136,7 @@ ec_error_t rop_setstreamsize(uint64_t stream_size, LOGMAP *plogmap,
 ec_error_t rop_seekstream(uint8_t seek_pos, int64_t offset, uint64_t *pnew_pos,
    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	switch (seek_pos) {
 	case STREAM_SEEK_SET:
@@ -1168,7 +1166,7 @@ ec_error_t rop_copytostream(uint64_t byte_count, uint64_t *pread_bytes,
     uint64_t *pwritten_bytes, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hsrc, uint32_t hdst)
 {
-	int object_type;
+	ems_objtype object_type;
 	uint32_t length;
 	
 	auto psrc_stream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hsrc, &object_type);

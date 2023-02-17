@@ -16,6 +16,7 @@
 #define OBJECT_TYPE_ICSDOWNCTX				9
 #define OBJECT_TYPE_ICSUPCTX				10
 #define OBJECT_TYPE_SUBSCRIPTION			11
+using ems_objtype = uint8_t;
 
 struct object_node;
 
@@ -35,7 +36,7 @@ struct LOGMAP {
 
 struct object_node {
 	object_node() = default;
-	template<typename T> object_node(uint8_t t, std::unique_ptr<T> &&p) :
+	template<typename T> object_node(ems_objtype t, std::unique_ptr<T> &&p) :
 		type(t), pobject(p.release())
 	{}
 	object_node(object_node &&) noexcept;
@@ -44,7 +45,7 @@ struct object_node {
 	void clear() noexcept;
 
 	uint32_t handle = 0;
-	uint8_t type = OBJECT_TYPE_NONE;
+	ems_objtype type = OBJECT_TYPE_NONE;
 	void *pobject = nullptr;
 	std::shared_ptr<object_node> parent;
 };
@@ -57,8 +58,8 @@ extern void rop_processor_stop();
 extern ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *in, uint32_t cb_in, uint8_t *out, uint32_t *cb_out);
 extern int32_t rop_processor_create_logon_item(LOGMAP *, uint8_t logon_id, std::unique_ptr<logon_object> &&);
 extern int32_t rop_processor_add_object_handle(LOGMAP *, uint8_t logon_id, int32_t parent_handle, object_node &&);
-extern void *rop_processor_get_object(LOGMAP *, uint8_t logon_id, uint32_t obj_handle, int *type);
-template<typename T> T *rop_proc_get_obj(LOGMAP *l, uint8_t id, uint32_t oh, int *ty) {
+extern void *rop_processor_get_object(LOGMAP *, uint8_t logon_id, uint32_t obj_handle, ems_objtype *);
+template<typename T> T *rop_proc_get_obj(LOGMAP *l, uint8_t id, uint32_t oh, ems_objtype *ty) {
 	return static_cast<T *>(rop_processor_get_object(l, id, oh, ty));
 }
 extern void rop_processor_release_object_handle(LOGMAP *, uint8_t logon_id, uint32_t obj_handle);

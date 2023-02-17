@@ -34,7 +34,7 @@ ec_error_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	BOOL b_exist;
 	BOOL b_owner;
 	void *pvalue;
-	int object_type;
+	ems_objtype object_type;
 	TARRAY_SET rcpts;
 	uint32_t tag_access;
 	uint32_t permission;
@@ -168,7 +168,7 @@ ec_error_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
     uint8_t associated_flag, uint64_t **ppmessage_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	uint32_t tag_access;
 	uint32_t permission;
 	uint32_t proptag_buff[4];
@@ -254,7 +254,7 @@ ec_error_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hresponse, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	
@@ -304,7 +304,7 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 ec_error_t rop_removeallrecipients(uint32_t reserved, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
@@ -319,7 +319,7 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
     uint32_t hin)
 {
 	int i;
-	int object_type;
+	ems_objtype object_type;
 	TARRAY_SET tmp_set;
 	TPROPVAL_ARRAY *ppropvals;
 	
@@ -383,7 +383,7 @@ ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcoun
 {
 	auto &ext = *pext;
 	size_t i;
-	int object_type;
+	ems_objtype object_type;
 	TARRAY_SET tmp_set;
 	READRECIPIENT_ROW tmp_row;
 	
@@ -422,7 +422,7 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
     OPENRECIPIENT_ROW **pprecipient_row, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	TARRAY_SET rcpts;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
@@ -483,7 +483,7 @@ ec_error_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 {
 	void *pvalue;
 	uint32_t result;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t new_status;
 	TAGGED_PROPVAL propval;
 	
@@ -521,7 +521,7 @@ ec_error_t rop_getmessagestatus(uint64_t message_id, uint32_t *pmessage_status,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	void *pvalue;
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -649,7 +649,7 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_partial;
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -672,7 +672,7 @@ ec_error_t rop_setmessagereadflag(uint8_t read_flags,
     uint8_t logon_id, uint32_t hresponse, uint32_t hin)
 {
 	BOOL b_changed;
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -693,7 +693,7 @@ ec_error_t rop_setmessagereadflag(uint8_t read_flags,
 ec_error_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -729,7 +729,7 @@ ec_error_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -763,7 +763,7 @@ ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 ec_error_t rop_deleteattachment(uint32_t attachment_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
@@ -780,7 +780,7 @@ ec_error_t rop_deleteattachment(uint32_t attachment_id, LOGMAP *plogmap,
 ec_error_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hresponse, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	save_flags &= SAVE_FLAG_KEEPOPENREADONLY |
 					SAVE_FLAG_KEEPOPENREADWRITE |
@@ -821,7 +821,7 @@ ec_error_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
     uint8_t *prow_count, OPENRECIPIENT_ROW **pprecipient_row, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	TARRAY_SET rcpts;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
@@ -947,7 +947,7 @@ ec_error_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 ec_error_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)

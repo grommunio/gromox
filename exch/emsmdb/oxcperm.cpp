@@ -18,7 +18,7 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
     uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_freebusy;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -72,7 +72,7 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 ec_error_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);

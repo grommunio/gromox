@@ -25,7 +25,7 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	BOOL b_exist;
 	void *pvalue;
 	uint16_t replid;
-	int object_type;
+	ems_objtype object_type;
 	uint64_t fid_val;
 	uint32_t tag_access;
 	uint32_t permission;
@@ -124,7 +124,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 {
 	void *pvalue;
 	uint64_t tmp_id;
-	int object_type;
+	ems_objtype object_type;
 	BINARY *pentryid;
 	uint32_t tmp_type;
 	uint64_t last_time;
@@ -279,7 +279,7 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	void *pvalue;
 	BOOL b_exist;
 	BOOL b_partial;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	const char *username;
 	
@@ -362,7 +362,7 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
     uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_result;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	uint32_t search_status;
 	
@@ -433,7 +433,7 @@ ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restrictio
     uint8_t include_folders, RESTRICTION **ppres, LONGLONG_ARRAY *pfolder_ids,
     uint32_t *psearch_flags, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -471,7 +471,7 @@ ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	BOOL b_guest;
 	EID_ARRAY ids;
 	BOOL b_partial;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	
 	if (0 == pmessage_ids->count) {
@@ -526,7 +526,7 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	BOOL b_cycle;
 	BOOL b_guest;
 	BOOL b_partial;
-	int object_type;
+	ems_objtype object_type;
 	BINARY *pbin_pcl;
 	uint64_t nt_time;
 	char new_name[128];
@@ -642,7 +642,7 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	BOOL b_cycle;
 	BOOL b_guest;
 	BOOL b_partial;
-	int object_type;
+	ems_objtype object_type;
 	char new_name[128];
 	uint32_t permission;
 	
@@ -718,7 +718,7 @@ static ec_error_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associate
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_partial;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	const char *username;
 	
@@ -783,7 +783,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	EID_ARRAY ids;
 	BOOL b_partial;
 	BOOL b_partial1;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	const char *username;
 	MESSAGE_CONTENT *pbrief;
@@ -890,7 +890,7 @@ ec_error_t rop_harddeletemessages(uint8_t want_asynchronous,
 ec_error_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	if (table_flags & (~(TABLE_FLAG_DEPTH | TABLE_FLAG_DEFERREDERRORS |
 		TABLE_FLAG_NONOTIFICATIONS | TABLE_FLAG_SOFTDELETES |
@@ -929,7 +929,7 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	BOOL b_fai;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	BOOL b_conversation;
 	

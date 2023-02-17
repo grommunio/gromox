@@ -253,7 +253,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 {
 	int timer_id;
 	BOOL b_marked;
-	int object_type;
+	ems_objtype object_type;
 	uint16_t rcpt_num;
 	char username[UADDR_SIZE];
 	char command_buff[1024];
@@ -580,7 +580,7 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	char username[UADDR_SIZE];
 	PROPTAG_ARRAY proptags;
 	uint32_t proptag_buff[7];

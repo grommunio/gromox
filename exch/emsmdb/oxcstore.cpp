@@ -221,7 +221,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 ec_error_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
     char **ppstr_explicit, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	if (!cu_validate_msgclass(pstr_class))
 		return ecInvalidParam;
@@ -243,7 +243,7 @@ ec_error_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 {
 	void *pvalue;
 	BOOL b_result;
-	int object_type;
+	ems_objtype object_type;
 	
 	if (!cu_validate_msgclass(pstr_class))
 		return ecInvalidParam;
@@ -284,7 +284,7 @@ ec_error_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 ec_error_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	PROPTAG_ARRAY columns;
 	TARRAY_SET class_table;
 	uint32_t proptags[] = {PidTagFolderId, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
@@ -329,7 +329,7 @@ ec_error_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 {
 	GUID guid;
 	BOOL b_found;
-	int object_type;
+	ems_objtype object_type;
 	uint16_t replid;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
@@ -374,7 +374,7 @@ ec_error_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 ec_error_t rop_publicfolderisghosted(uint64_t folder_id, GHOST_SERVER **ppghost,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	uint16_t replid;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
@@ -404,7 +404,7 @@ ec_error_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 {
 	BOOL b_found;
 	uint16_t replid;
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
@@ -449,7 +449,7 @@ ec_error_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_found;
-	int object_type;
+	ems_objtype object_type;
 	uint16_t replid;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
@@ -489,7 +489,7 @@ ec_error_t rop_getperuserlongtermids(const GUID *pguid,
     LONG_TERM_ID_ARRAY *plong_term_ids, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
@@ -506,7 +506,7 @@ ec_error_t rop_getperuserlongtermids(const GUID *pguid,
 ec_error_t rop_getperuserguid(const LONG_TERM_ID *plong_term_id, GUID *pguid,
     LOGMAP *plogmap,uint8_t logon_id,  uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
@@ -521,7 +521,7 @@ ec_error_t rop_readperuserinformation(const LONG_TERM_ID *plong_folder_id,
     uint8_t *phas_finished, BINARY *pdata, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
@@ -538,7 +538,7 @@ ec_error_t rop_writeperuserinformation(const LONG_TERM_ID *plong_folder_id,
     uint8_t has_finished, uint32_t offset, const BINARY *pdata,
     const GUID *pguid, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)

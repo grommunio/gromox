@@ -149,7 +149,7 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 	return -1;
 }
 
-static bool object_dep(uint8_t p, uint8_t c)
+static bool object_dep(ems_objtype p, ems_objtype c)
 {
 	if (p == OBJECT_TYPE_LOGON)
 		/* emsmdb special */
@@ -222,8 +222,8 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	return -1;
 }
 
-void *rop_processor_get_object(LOGMAP *plogmap,
-	uint8_t logon_id, uint32_t obj_handle, int *ptype)
+void *rop_processor_get_object(LOGMAP *plogmap, uint8_t logon_id,
+    uint32_t obj_handle, ems_objtype *ptype)
 {
 	if (obj_handle >= INT32_MAX)
 		return NULL;
@@ -335,7 +335,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
     uint32_t *pbuff_len, ROP_BUFFER *prop_buff, BOOL b_notify,
     DOUBLE_LIST *presponse_list) try
 {
-	int type;
 	int rop_num;
 	BOOL b_icsup;
 	BINARY tmp_bin;
@@ -469,6 +468,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			break;
 		uint32_t last_offset = ext_push.m_offset;
 		auto pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
+		ems_objtype type;
 		auto pobject = rop_processor_get_object(pemsmdb_info->plogmap.get(), pnotify->logon_id, pnotify->handle, &type);
 		if (NULL != pobject) {
 			if (OBJECT_TYPE_TABLE == type &&

@@ -14,7 +14,7 @@ ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved
     uint32_t hin, uint32_t *phout)
 {
 	BOOL b_whole;
-	int object_type;
+	ems_objtype object_type;
 	uint64_t folder_id;
 	uint64_t message_id;
 	

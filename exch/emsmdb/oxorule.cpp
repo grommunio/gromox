@@ -19,7 +19,7 @@ ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 {
 	int i, j;
 	BOOL b_exceed;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	
 	/* MS-OXORULE 3.2.5.2 */
@@ -69,7 +69,7 @@ ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 ec_error_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)

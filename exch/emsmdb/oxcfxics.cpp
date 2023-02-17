@@ -198,7 +198,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	int root_element;
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
@@ -288,7 +288,7 @@ ec_error_t rop_fasttransferdestputbuffer(const BINARY *ptransfer_data,
     uint16_t *ptotal_step_count, uint8_t *preserved, uint16_t *pused_size,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	*ptransfer_status = 0;
 	*pin_progress_count = 0;
@@ -314,7 +314,7 @@ ec_error_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
     uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_last;
-	int object_type;
+	ems_objtype object_type;
 	uint16_t max_rop;
 	
 	*ptransfer_status = TRANSFER_STATUS_ERROR;
@@ -378,7 +378,7 @@ static bool send_options_ok(uint32_t f)
 ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	if (!send_options_ok(send_options))
 		return ecInvalidParam;
@@ -415,7 +415,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
     uint32_t hin, uint32_t *phout)
 {
 	BOOL b_owner;
-	int object_type;
+	ems_objtype object_type;
 	EID_ARRAY *pmids;
 	uint32_t permission;
 	
@@ -482,7 +482,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	BOOL b_sub;
 	BOOL b_fai;
 	BOOL b_normal;
-	int object_type;
+	ems_objtype object_type;
 	MESSAGE_CONTENT msgctnt;
 	ATTACHMENT_CONTENT attctnt;
 	
@@ -607,7 +607,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	BOOL b_sub;
 	BOOL b_fai;
 	BOOL b_normal;
-	int object_type;
+	ems_objtype object_type;
 	MESSAGE_CONTENT msgctnt;
 	ATTACHMENT_CONTENT attctnt;
 	
@@ -741,7 +741,7 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
     const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	
 	if (SYNC_TYPE_CONTENTS != sync_type &&
@@ -884,7 +884,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	BOOL b_owner;
 	void *pvalue;
 	uint32_t result;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission = rightsNone, tag_access = 0, tmp_proptag;
 	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY tmp_problems;
@@ -1027,7 +1027,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 	int i;
 	XID tmp_xid;
 	BOOL b_owner;
-	int object_type;
+	ems_objtype object_type;
 	uint64_t read_cn;
 	uint64_t folder_id;
 	uint32_t permission;
@@ -1121,7 +1121,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	void *pvalue;
 	BOOL b_partial;
 	uint32_t result;
-	int object_type;
+	ems_objtype object_type;
 	uint16_t replid;
 	uint64_t tmp_fid;
 	uint32_t tmp_type;
@@ -1360,7 +1360,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	BOOL b_owner;
 	BOOL b_result;
 	BOOL b_partial;
-	int object_type;
+	ems_objtype object_type;
 	uint16_t replid;
 	uint32_t permission;
 	const char *username;
@@ -1524,7 +1524,7 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	BOOL b_owner;
 	BOOL b_result;
 	uint32_t result;
-	int object_type;
+	ems_objtype object_type;
 	uint32_t permission;
 	TAGGED_PROPVAL tmp_propval;
 	
@@ -1637,7 +1637,7 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 ec_error_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -1660,7 +1660,7 @@ ec_error_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *plogmap,
 ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
 {
-	int object_type;
+	ems_objtype object_type;
 	ICS_STATE *pstate;
 
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -1695,7 +1695,7 @@ ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 ec_error_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
     uint32_t buffer_size, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
@@ -1714,7 +1714,7 @@ ec_error_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 ec_error_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
@@ -1733,7 +1733,7 @@ ec_error_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 ec_error_t rop_syncuploadstatestreamend(LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pctx == nullptr)
 		return ecNullObject;
@@ -1759,7 +1759,7 @@ ec_error_t rop_setlocalreplicamidsetdeleted(uint32_t count,
 ec_error_t rop_getlocalreplicaids(uint32_t count, GUID *pguid,
     GLOBCNT *pglobal_count, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int object_type;
+	ems_objtype object_type;
 	uint64_t begin_eid;
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
