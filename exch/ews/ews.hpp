@@ -43,8 +43,9 @@ public:
 	EWSPlugin();
 
 	BOOL proc(int, const void*, uint64_t);
-
 	static BOOL preproc(int);
+
+	bool logEnabled(const std::string_view&) const;
 
 	struct _mysql {
 		_mysql();
@@ -75,7 +76,10 @@ private:
 
 	static void writeheader(int, int, size_t);
 
-	std::pair<std::string, int> dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t);
+	std::vector<std::string> logFilters;
+	bool invertFilter = true;
+
+	std::pair<std::string, int> dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t, bool&);
 	void loadConfig();
 
 };
