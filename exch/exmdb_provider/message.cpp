@@ -2928,7 +2928,7 @@ static BOOL message_make_dams(const char *username,
 static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const std::optional<Json::Value> &digest,
-    seen_list &seen, const ACTION_BLOCK &block, size_t rule_idx,
+    seen_list &seen, const ACTION_BLOCK &block, size_t act_idx,
     const RULE_NODE *prnode, BOOL &b_del) try
 {
 	auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
@@ -2948,7 +2948,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		message_make_dem(account,
 			psqlite, folder_id, message_id, prnode->id,
 			RULE_ERROR_MOVECOPY, block.type,
-			rule_idx, prnode->provider.c_str(), seen);
+			act_idx, prnode->provider.c_str(), seen);
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	int tmp_id = 0, tmp_id1 = 0;
@@ -2969,7 +2969,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 	if (!b_result) {
 		message_make_dem(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_MOVECOPY, block.type,
-			rule_idx, prnode->provider.c_str(), seen);
+			act_idx, prnode->provider.c_str(), seen);
 		return ecSuccess;
 	}
 	auto nt_time = rop_util_current_nttime();
@@ -3033,7 +3033,7 @@ static ec_error_t op_move_across(uint64_t folder_id, uint64_t message_id,
 
 static ec_error_t op_reply(const char *from_address, const char *account,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id, seen_list &seen,
-    const ACTION_BLOCK &block, size_t rule_idx, const RULE_NODE *prnode)
+    const ACTION_BLOCK &block, size_t act_idx, const RULE_NODE *prnode)
 {
 	auto preply = static_cast<REPLY_ACTION *>(block.pdata);
 	BOOL b_result = false;
@@ -3047,7 +3047,7 @@ static ec_error_t op_reply(const char *from_address, const char *account,
 		return ecSuccess;
 	message_make_dem(account, psqlite, folder_id,
 		message_id, prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
-		block.type, rule_idx, prnode->provider.c_str(), seen);
+		block.type, act_idx, prnode->provider.c_str(), seen);
 	return message_disable_rule(psqlite, false, prnode->id);
 }
 
@@ -3072,7 +3072,7 @@ static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
 static ec_error_t op_forward(const char *from_address, const char *account,
     cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const std::optional<Json::Value> &pdigest, seen_list &seen,
-    const ACTION_BLOCK &block, size_t rule_idx, const RULE_NODE *prnode)
+    const ACTION_BLOCK &block, size_t act_idx, const RULE_NODE *prnode)
 {
 	if (!exmdb_server::is_private())
 		return ecSuccess;
@@ -3080,7 +3080,7 @@ static ec_error_t op_forward(const char *from_address, const char *account,
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_dem(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
-			block.type, rule_idx, prnode->provider.c_str(), seen);
+			block.type, act_idx, prnode->provider.c_str(), seen);
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	return message_forward_message(from_address, account, psqlite, cpid,
@@ -3091,7 +3091,7 @@ static ec_error_t op_forward(const char *from_address, const char *account,
 static ec_error_t op_delegate(const char *from_address, const char *account,
     cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const std::optional<Json::Value> &digest, seen_list &seen,
-    const ACTION_BLOCK &block, size_t rule_idx, const RULE_NODE *prnode) try
+    const ACTION_BLOCK &block, size_t act_idx, const RULE_NODE *prnode) try
 {
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (!exmdb_server::is_private() || !digest.has_value() ||
@@ -3100,7 +3100,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_dem(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
-			block.type, rule_idx, prnode->provider.c_str(), seen);
+			block.type, act_idx, prnode->provider.c_str(), seen);
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
 
@@ -3189,7 +3189,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const std::optional<Json::Value> &pdigest,
-    seen_list &seen, const ACTION_BLOCK &block, size_t rule_idx,
+    seen_list &seen, const ACTION_BLOCK &block, size_t act_idx,
     const RULE_NODE *prnode, BOOL &b_del, std::list<DAM_NODE> &dam_list)
 {
 	switch (block.type) {
@@ -3198,14 +3198,14 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 		auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 		return pmovecopy->same_store ?
 		       op_move_same(b_oof, from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, seen, block, rule_idx,
+		       folder_id, message_id, pdigest, seen, block, act_idx,
 		       prnode, b_del) :
 		       op_move_across(folder_id, message_id, prnode, block, dam_list);
 	}
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		return op_reply(from_address, account, psqlite, folder_id,
-		       message_id, seen, block, rule_idx, prnode);
+		       message_id, seen, block, act_idx, prnode);
 	case OP_DEFER_ACTION:
 		return op_defer(folder_id, message_id, block, prnode, dam_list);
 	case OP_BOUNCE: {
@@ -3223,11 +3223,11 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 	case OP_FORWARD:
 		return op_forward(from_address, account, cpid, psqlite,
 		       folder_id, message_id, pdigest, seen, block,
-		       rule_idx, prnode);
+		       act_idx, prnode);
 	case OP_DELEGATE:
 		return op_delegate(from_address, account, cpid, psqlite,
 		       folder_id, message_id, pdigest, seen, block,
-		       rule_idx, prnode);
+		       act_idx, prnode);
 	case OP_TAG: {
 		PROBLEM_ARRAY problems{};
 		const TPROPVAL_ARRAY vals = {1, static_cast<TAGGED_PROPVAL *>(block.pdata)};
@@ -3531,7 +3531,7 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const std::optional<Json::Value> &pdigest,
-    seen_list &seen, const EXT_ACTION_BLOCK &block, size_t rule_idx,
+    seen_list &seen, const EXT_ACTION_BLOCK &block, size_t act_idx,
     const RULE_NODE *prnode, BOOL &b_del)
 {
 	switch (block.type) {
