@@ -1548,7 +1548,7 @@ zend_bool znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval *
 					pobject_notification->pentryid->cb);
 			}
 			add_assoc_long(&pzvalnotif, "objtype",
-				pobject_notification->object_type);
+				static_cast<uint32_t>(pobject_notification->object_type));
 			if (NULL != pobject_notification->pparentid) {
 				add_assoc_stringl(&pzvalnotif, "parentid",
 				reinterpret_cast<const char *>(pobject_notification->pparentid->pb),

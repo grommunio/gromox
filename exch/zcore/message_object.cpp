@@ -733,12 +733,14 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 			return TRUE;
 		}
 		return FALSE;
-	case PR_OBJECT_TYPE:
-		*ppvalue = cu_alloc<uint32_t>();
-		if (*ppvalue == nullptr)
+	case PR_OBJECT_TYPE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
+		if (v == nullptr)
 			return FALSE;
-		*static_cast<uint32_t *>(*ppvalue) = MAPI_MESSAGE;
+		*v = static_cast<uint32_t>(MAPI_MESSAGE);
 		return TRUE;
+	}
 	case PR_PARENT_ENTRYID:
 		if (pmessage->message_id == 0)
 			return FALSE;

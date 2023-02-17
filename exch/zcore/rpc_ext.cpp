@@ -291,7 +291,7 @@ static BOOL rpc_ext_push_newmail_znotification(
 static BOOL rpc_ext_push_object_znotification(
 	EXT_PUSH *pext, const OBJECT_ZNOTIFICATION *r)
 {	
-	QRF(pext->p_uint32(r->object_type));
+	QRF(pext->p_uint32(static_cast<uint32_t>(r->object_type)));
 	if (NULL == r->pentryid) {
 		QRF(pext->p_uint8(0));
 	} else {

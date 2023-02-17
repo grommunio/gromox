@@ -1239,7 +1239,8 @@ static ec_error_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid,
 	ep.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
 	ep.m_offset += 20;
 	if (ep.g_uint32(&mapi_type) != EXT_ERR_SUCCESS ||
-	    mapi_type != MAPI_ABCONT || ep.advance(4) != EXT_ERR_SUCCESS ||
+	    static_cast<mapi_object_type>(mapi_type) != MAPI_ABCONT ||
+	    ep.advance(4) != EXT_ERR_SUCCESS ||
 	    ep.g_folder_eid(&fe) != EXT_ERR_SUCCESS ||
 	    fe.folder_type != EITLT_PRIVATE_FOLDER)
 		return ecInvalidParam;
@@ -2627,10 +2628,6 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 	TARRAY_SET tmp_set;
 	uint32_t *pobject_type = nullptr;
 	TAGGED_PROPVAL *ppropvals;
-	static const uint32_t object_type_store = MAPI_STORE;
-	static const uint32_t object_type_folder = MAPI_FOLDER;
-	static const uint32_t object_type_message = MAPI_MESSAGE;
-	static const uint32_t object_type_attachment = MAPI_ATTACH;
 	
 	if (count > INT32_MAX)
 		count = INT32_MAX;
@@ -2697,6 +2694,10 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 	     table_type != zcore_tbltype::attachment) ||
 	    (pproptags != nullptr && !pproptags->has(PR_OBJECT_TYPE)))
 		return ecSuccess;
+	static constexpr auto object_type_store      = static_cast<uint32_t>(MAPI_STORE);
+	static constexpr auto object_type_folder     = static_cast<uint32_t>(MAPI_FOLDER);
+	static constexpr auto object_type_message    = static_cast<uint32_t>(MAPI_MESSAGE);
+	static constexpr auto object_type_attachment = static_cast<uint32_t>(MAPI_ATTACH);
 	switch (table_type) {
 	case zcore_tbltype::store:
 		pobject_type = deconst(&object_type_store);

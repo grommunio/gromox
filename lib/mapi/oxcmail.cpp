@@ -516,7 +516,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		    pproplist->set(PR_RECIPIENT_ENTRYID, &tmp_bin) != 0 ||
 		    pproplist->set(PR_RECORD_KEY, &tmp_bin) != 0)
 			return FALSE;
-		tmp_int32 = dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
+		tmp_int32 = static_cast<uint32_t>(dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER);
 		if (pproplist->set(PR_OBJECT_TYPE, &tmp_int32) != 0)
 			return FALSE;
 		tmp_int32 = static_cast<uint32_t>(dtypx);
@@ -2846,7 +2846,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields, 
 	    pproplist->set(PR_RECIPIENT_ENTRYID, &tmp_bin) != 0 ||
 	    pproplist->set(PR_RECORD_KEY, &tmp_bin) != 0)
 		return false;
-	tmp_int32 = dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
+	tmp_int32 = static_cast<uint32_t>(dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER);
 	if (pproplist->set(PR_OBJECT_TYPE, &tmp_int32) != 0)
 		return false;
 	tmp_int32 = static_cast<uint32_t>(dtypx);

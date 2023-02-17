@@ -163,11 +163,12 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		}
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
-	case PR_OBJECT_TYPE:
-		pprop->value.l = node_type == abnode_type::mlist ? MAPI_DISTLIST :
-		                 node_type == abnode_type::folder ? MAPI_FOLDER :
-		                 MAPI_MAILUSER;
+	case PR_OBJECT_TYPE: {
+		auto t = node_type == abnode_type::mlist ? MAPI_DISTLIST :
+		         node_type == abnode_type::folder ? MAPI_FOLDER : MAPI_MAILUSER;
+		pprop->value.l = static_cast<uint32_t>(t);
 		return ecSuccess;
+	}
 	case PR_DISPLAY_TYPE:
 		pprop->value.l = ab_tree_get_dtyp(pnode);
 		return ecSuccess;

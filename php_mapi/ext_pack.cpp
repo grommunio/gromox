@@ -77,8 +77,10 @@ static pack_result ext_pack_pull_object_znotification(PULL_CTX *pctx,
     OBJECT_ZNOTIFICATION *r)
 {
 	uint8_t tmp_byte;
+	uint32_t ot;
 	
-	TRY(pctx->g_uint32(&r->object_type));
+	TRY(pctx->g_uint32(&ot));
+	r->object_type = static_cast<mapi_object_type>(ot);
 	TRY(pctx->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		r->pentryid = NULL;

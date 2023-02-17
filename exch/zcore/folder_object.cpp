@@ -503,13 +503,14 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		ba->pbin[3] = *pbin;
 		return TRUE;
 	}
-	case PR_OBJECT_TYPE:
-		*ppvalue = cu_alloc<uint32_t>();
-		if (NULL == *ppvalue) {
+	case PR_OBJECT_TYPE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
+		if (v == nullptr)
 			return FALSE;
-		}
-		*static_cast<uint32_t *>(*ppvalue) = MAPI_FOLDER;
+		*v = static_cast<uint32_t>(MAPI_FOLDER);
 		return TRUE;
+	}
 	}
 	return FALSE;
 }

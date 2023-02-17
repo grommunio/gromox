@@ -207,7 +207,8 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-static BINARY *zcsab_prepend(const BINARY *lower_eid, uint32_t type, uint32_t ofs)
+static BINARY *zcsab_prepend(const BINARY *lower_eid,
+    mapi_object_type type, uint32_t ofs)
 {
 	if (lower_eid == nullptr)
 		return nullptr;
@@ -219,7 +220,7 @@ static BINARY *zcsab_prepend(const BINARY *lower_eid, uint32_t type, uint32_t of
 	if (new_eid->pb == nullptr || !ep.init(new_eid->pb, 256, EXT_FLAG_UTF16) ||
 	    ep.p_uint32(0) != EXT_ERR_SUCCESS ||
 	    ep.p_guid(muidZCSAB) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(type) != EXT_ERR_SUCCESS ||
+	    ep.p_uint32(static_cast<uint32_t>(type)) != EXT_ERR_SUCCESS ||
 	    ep.p_uint32(ofs) != EXT_ERR_SUCCESS ||
 	    ep.p_bytes(lower_eid->pb, lower_eid->cb) != EXT_ERR_SUCCESS)
 		return nullptr;
@@ -396,7 +397,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			tmp_bin.pv = deconst(&muidZCSAB);
 			if (ppropvals->set(PR_AB_PROVIDER_ID, &tmp_bin) != 0)
 				return FALSE;
-			tmp_int = MAPI_MAILUSER;
+			tmp_int = static_cast<uint32_t>(MAPI_MAILUSER);
 			if (ppropvals->set(PR_OBJECT_TYPE, &tmp_int) != 0) {
 				return FALSE;
 			}

@@ -1401,9 +1401,10 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		auto v = cu_alloc<uint32_t>();
 		if (v == nullptr)
 			return FALSE;
-		*v = node_type >= abnode_type::containers ? MAPI_ABCONT :
-		     node_type == abnode_type::mlist ? MAPI_DISTLIST :
-		     node_type == abnode_type::folder ? MAPI_FOLDER : MAPI_MAILUSER;
+		auto t = node_type >= abnode_type::containers ? MAPI_ABCONT :
+		         node_type == abnode_type::mlist ? MAPI_DISTLIST :
+		         node_type == abnode_type::folder ? MAPI_FOLDER : MAPI_MAILUSER;
+		*v = static_cast<uint32_t>(t);
 		*ppvalue = v;
 		return TRUE;
 	}

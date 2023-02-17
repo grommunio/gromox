@@ -118,7 +118,7 @@ struct kdb_item final {
 	size_t get_sub_count() { return m_sub_hids.size(); }
 	std::unique_ptr<kdb_item> get_sub_item(size_t idx);
 
-	using hidxtype = std::pair<uint32_t, unsigned int>;
+	using hidxtype = std::pair<uint32_t, mapi_object_type>;
 
 	driver &m_drv;
 	uint32_t m_hid = 0;
@@ -536,7 +536,7 @@ static const char *kp_item_type_to_str(enum mapi_object_type t)
 	case MAPI_MAILUSER: return "mailuser";
 	case MAPI_ATTACH: return "attach";
 	case MAPI_DISTLIST: return "distlist";
-	default: snprintf(buf, arsizeof(buf), "other-%u", t); return buf;
+	default: snprintf(buf, arsizeof(buf), "other-%u", static_cast<unsigned int>(t)); return buf;
 	}
 }
 
@@ -926,7 +926,7 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr) {
 		auto xid   = strtoul(row[0], nullptr, 0);
-		auto xtype = strtoul(row[1], nullptr, 0);
+		auto xtype = static_cast<mapi_object_type>(strtoul(row[1], nullptr, 0));
 		auto xflag = strtoul(row[2], nullptr, 0);
 		if (xid == hid) {
 			/* Own existence validated */
@@ -1114,9 +1114,9 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
-	ep.p_uint32(MAPI_FOLDER);
+	ep.p_uint32(static_cast<uint32_t>(MAPI_FOLDER));
 	ep.p_uint32(item.m_hid);
-	ep.p_uint32(parent.type);
+	ep.p_uint32(static_cast<uint32_t>(parent.type));
 	ep.p_uint64(parent.folder_id);
 	ep.p_tpropval_a(*props);
 	ep.p_uint64(item.m_acl.size());
@@ -1189,9 +1189,9 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
-	if (ep.p_uint32(MAPI_MESSAGE) != EXT_ERR_SUCCESS ||
+	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
 	    ep.p_uint32(item.m_hid) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(parent.type) != EXT_ERR_SUCCESS ||
+	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
 	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
 	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS)
 		throw YError("PF-1058");

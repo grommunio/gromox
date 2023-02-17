@@ -391,7 +391,7 @@ static int exm_packet(const void *buf, size_t bufsize)
 			throw YError("PG-1119");
 		return exm_message(obd, ctnt);
 	}
-	throw YError("PG-1117: unknown obd.mapitype %u", obd.mapitype);
+	throw YError("PG-1117: unknown obd.mapitype %u", static_cast<unsigned int>(obd.mapitype));
 }
 
 static void gi_dump_thru_map(const propididmap_t &map)

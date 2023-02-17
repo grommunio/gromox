@@ -789,13 +789,14 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*r = g_max_mail_len;
 		return TRUE;
 	}
-	case PR_OBJECT_TYPE:
-		*ppvalue = cu_alloc<uint32_t>();
-		if (NULL == *ppvalue) {
+	case PR_OBJECT_TYPE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
+		if (v == nullptr)
 			return FALSE;
-		}
-		*static_cast<uint32_t *>(*ppvalue) = MAPI_STORE;
+		*v = static_cast<uint32_t>(MAPI_STORE);
 		return TRUE;
+	}
 	case PR_PROVIDER_DISPLAY:
 		*ppvalue = deconst("Exchange Message Store");
 		return TRUE;

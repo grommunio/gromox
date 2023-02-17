@@ -273,10 +273,9 @@ static BOOL attachment_object_get_calculated_property(
 	case PR_OBJECT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
-		if (NULL == *ppvalue) {
+		if (v == nullptr)
 			return FALSE;
-		}
-		*v = MAPI_ATTACH;
+		*v = static_cast<uint32_t>(MAPI_ATTACH);
 		return TRUE;
 	}
 	case PR_STORE_RECORD_KEY:

@@ -171,12 +171,14 @@ static BOOL attachment_object_get_calculated_property(attachment_object *pattach
 		*static_cast<uint32_t *>(*ppvalue) = pattachment->b_writable ?
 			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
-	case PR_OBJECT_TYPE:
-		*ppvalue = cu_alloc<uint32_t>();
-		if (*ppvalue == nullptr)
+	case PR_OBJECT_TYPE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
+		if (v == nullptr)
 			return FALSE;
-		*static_cast<uint32_t *>(*ppvalue) = MAPI_ATTACH;
+		*v = static_cast<uint32_t>(MAPI_ATTACH);
 		return TRUE;
+	}
 	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(pattachment->pparent->pstore->mailbox_guid);
 		return TRUE;

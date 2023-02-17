@@ -306,20 +306,32 @@ enum mapi_importance {
 	IMPORTANCE_HIGH = 2,
 };
 
-enum mapi_object_type {
-	MAPI_STORE = 0x1,
-	MAPI_ADDRBOOK = 0x2,
-	MAPI_FOLDER = 0x3,
-	MAPI_ABCONT = 0x4,
-	MAPI_MESSAGE = 0x5,
-	MAPI_MAILUSER = 0x6,
-	MAPI_ATTACH = 0x7,
-	MAPI_DISTLIST = 0x8,
-	MAPI_PROFSECT = 0x9,
-	MAPI_STATUS = 0xA,
-	MAPI_SESSION = 0xB,
-	MAPI_FORMINFO = 0xC,
+enum class mapi_object_type {
+	store = 1,
+	addrbook = 2,
+	folder = 3,
+	abcont = 4,
+	message = 5,
+	mailuser = 6,
+	attach = 7,
+	distlist = 8,
+	profsect = 9,
+	status = 10,
+	session = 11,
+	forminfo = 12,
 };
+#define MAPI_STORE    mapi_object_type::store
+#define MAPI_ADDRBOOK mapi_object_type::addrbook
+#define MAPI_FOLDER   mapi_object_type::folder
+#define MAPI_ABCONT   mapi_object_type::abcont
+#define MAPI_MESSAGE  mapi_object_type::message
+#define MAPI_MAILUSER mapi_object_type::mailuser
+#define MAPI_ATTACH   mapi_object_type::attach
+#define MAPI_DISTLIST mapi_object_type::distlist
+#define MAPI_PROFSECT mapi_object_type::profsect
+#define MAPI_STATUS   mapi_object_type::status
+#define MAPI_SESSION  mapi_object_type::session
+#define MAPI_FORMINFO mapi_object_type::forminfo
 
 enum mapi_recipient_type {
 	MAPI_ORIG = 0U,
@@ -1064,7 +1076,7 @@ struct NEWMAIL_ZNOTIFICATION {
 };
 
 struct OBJECT_ZNOTIFICATION {
-	uint32_t object_type;
+	mapi_object_type object_type;
 	BINARY *pentryid;
 	BINARY *pparentid;
 	BINARY *pold_entryid;

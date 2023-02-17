@@ -35,7 +35,8 @@ oneoff_object::oneoff_object(const ONEOFF_ENTRYID &e) :
 
 ec_error_t oneoff_object::get_props(const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *vals)
 {
-	static constexpr uint32_t disptype = DT_MAILUSER, objtype = MAPI_MAILUSER;
+	static constexpr uint32_t disptype = DT_MAILUSER;
+	static constexpr auto objtype = static_cast<uint32_t>(MAPI_MAILUSER);
 	vals->ppropval = cu_alloc<TAGGED_PROPVAL>(std::size(all_tags_raw));
 	if (vals->ppropval == nullptr)
 		return ecServerOOM;
@@ -126,7 +127,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	auto puser = this;
 	char username[UADDR_SIZE];
 	char tmp_buff[1024];
-	static const uint32_t fake_type = MAPI_MAILUSER;
+	static constexpr auto fake_type = static_cast<uint32_t>(MAPI_MAILUSER);
 	
 	auto pbase = ab_tree_get_base(puser->base_id);
 	if (pbase == nullptr)

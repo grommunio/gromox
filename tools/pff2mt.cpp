@@ -756,9 +756,9 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
-	ep.p_uint32(MAPI_FOLDER);
+	ep.p_uint32(static_cast<uint32_t>(MAPI_FOLDER));
 	ep.p_uint32(ident);
-	ep.p_uint32(parent.type);
+	ep.p_uint32(static_cast<uint32_t>(parent.type));
 	ep.p_uint64(parent.folder_id);
 	ep.p_tpropval_a(*props);
 	ep.p_uint64(0); /* ACL count */
@@ -824,9 +824,9 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
-	if (ep.p_uint32(MAPI_MESSAGE) != EXT_ERR_SUCCESS ||
+	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
 	    ep.p_uint32(ident) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(parent.type) != EXT_ERR_SUCCESS ||
+	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
 	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
 	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS)
 		throw YError("PF-1058");
