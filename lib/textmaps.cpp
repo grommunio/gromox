@@ -262,21 +262,21 @@ const char *folder_namedb_resolve(const char *xpg_loc) try
 {
 	std::string rloc = xpg_loc;
 	/* Always ignore .encoding part */
-	auto pos = rloc.find_first_of('.');
+	auto pos = rloc.find('.');
 	if (pos != rloc.npos)
-		rloc.erase(pos, rloc.find_first_of('@', pos));
+		rloc.erase(pos, rloc.find('@', pos));
 	auto iter = folder_name_map.find(rloc);
 	if (iter != folder_name_map.end())
 		return iter->first.c_str();
 	/* Try without @variant part */
-	pos = rloc.find_first_of('@');
+	pos = rloc.find('@');
 	if (pos != rloc.npos)
 		rloc.erase(pos);
 	iter = folder_name_map.find(rloc);
 	if (iter != folder_name_map.end())
 		return iter->first.c_str();
 	/* Try without _territory part */
-	pos = rloc.find_first_of('_');
+	pos = rloc.find('_');
 	if (pos != rloc.npos)
 		rloc.erase(pos);
 	iter = folder_name_map.find(rloc);

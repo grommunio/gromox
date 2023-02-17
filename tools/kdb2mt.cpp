@@ -674,7 +674,7 @@ static void present_user_stores(const char *storeuser)
 	bdash(79);
 	std::string last_srv;
 	for (const auto &e : g_username_to_storeguid) {
-		auto slash = e.first.find_first_of('/');
+		auto slash = e.first.find('/');
 		if (slash == e.first.npos) {
 			fmt::print(stderr, "Malformed user-map entry: {}\n", e.first);
 			continue;
