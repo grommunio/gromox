@@ -323,7 +323,7 @@ static void zs_notification_proc(const char *dir,
 	if (pinfo == nullptr)
 		return;
 	auto pstore = pinfo->ptree->get_object<store_object>(hstore, &mapi_type);
-	if (pstore == nullptr || mapi_type != ZMG_STORE ||
+	if (pstore == nullptr || mapi_type != zs_objtype::store ||
 	    strcmp(dir, pstore->get_dir()) != 0)
 		return;
 	pnotification = cu_alloc<ZNOTIFICATION>();
@@ -928,7 +928,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 	auto pstore = pinfo->ptree->get_object<store_object>(hobject, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_STORE)
+	if (mapi_type != zs_objtype::store)
 		return ecNotSupported;
 	if (0 == entryid.cb) {
 		folder_id = rop_util_make_eid_ex(1, pstore->b_private ?
@@ -1016,10 +1016,10 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		                b_writable ? TRUE : false, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
-		*phobject = pinfo->ptree->add_object_handle(hobject, {ZMG_MESSAGE, std::move(pmessage)});
+		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::message, std::move(pmessage)});
 		if (*phobject == INVALID_HANDLE)
 			return ecError;
-		*pmapi_type = ZMG_MESSAGE;
+		*pmapi_type = zs_objtype::message;
 	} else {
 		if (!exmdb_client::check_folder_id(pstore->get_dir(),
 		    folder_id, &b_exist))
@@ -1070,10 +1070,10 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		               folder_type, tag_access);
 		if (pfolder == nullptr)
 			return ecError;
-		*phobject = pinfo->ptree->add_object_handle(hobject, {ZMG_FOLDER, std::move(pfolder)});
+		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::folder, std::move(pfolder)});
 		if (*phobject == INVALID_HANDLE)
 			return ecError;
-		*pmapi_type = ZMG_FOLDER;
+		*pmapi_type = zs_objtype::folder;
 	}
 	return ecSuccess;
 }
@@ -1092,7 +1092,7 @@ static ec_error_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
 	auto u = oneoff_object::create(eid);
 	if (u == nullptr)
 		return ecServerOOM;
-	*zmg_type = ZMG_ONEOFF;
+	*zmg_type = zs_objtype::oneoff;
 	*objh = info->ptree->add_object_handle(ROOT_HANDLE, {*zmg_type, std::move(u)});
 	return *objh != INVALID_HANDLE ? ecSuccess : ecError;
 }
@@ -1111,7 +1111,7 @@ ec_error_t zs_openabentry(GUID hsession,
 		auto contobj = container_object::create(CONTAINER_TYPE_ABTREE, container_id);
 		if (contobj == nullptr)
 			return ecError;
-		*pmapi_type = ZMG_ABCONT;
+		*pmapi_type = zs_objtype::abcont;
 		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {*pmapi_type, std::move(contobj)});
 		if (*phobject == INVALID_HANDLE)
 			return ecError;
@@ -1205,7 +1205,7 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 		auto contobj = container_object::create(type, container_id);
 		if (contobj == nullptr)
 			return ecError;
-		*pmapi_type = ZMG_ABCONT;
+		*pmapi_type = zs_objtype::abcont;
 		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {*pmapi_type, std::move(contobj)});
 	} else if (address_type == DT_DISTLIST || address_type == DT_MAILUSER) {
 		if (!common_util_essdn_to_ids(essdn, &domain_id, &user_id))
@@ -1220,7 +1220,7 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 		if (!userobj->valid())
 			return ecNotFound;
 		*pmapi_type = address_type == DT_DISTLIST ?
-			      ZMG_DISTLIST : ZMG_MAILUSER;
+			      zs_objtype::distlist : zs_objtype::mailuser;
 		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {*pmapi_type, std::move(userobj)});
 	} else {
 		return ecInvalidParam;
@@ -1251,7 +1251,7 @@ static ec_error_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid,
 	auto contobj = container_object::create(CONTAINER_TYPE_FOLDER, ctid);
 	if (contobj == nullptr)
 		return ecError;
-	*zmg_type = ZMG_ABCONT;
+	*zmg_type = zs_objtype::abcont;
 	*objh = info->ptree->add_object_handle(ROOT_HANDLE, {*zmg_type, std::move(contobj)});
 	return *objh != INVALID_HANDLE ? ecSuccess : ecError;
 }
@@ -1329,11 +1329,11 @@ ec_error_t zs_getpermissions(GUID hsession,
 		return ecNullObject;
 	}
 	switch (mapi_type) {
-	case ZMG_STORE:
+	case zs_objtype::store:
 		if (!static_cast<store_object *>(pobject)->get_permissions(pperm_set))
 			return ecError;
 		break;
-	case ZMG_FOLDER:
+	case zs_objtype::folder:
 		if (!static_cast<folder_object *>(pobject)->get_permissions(pperm_set))
 			return ecError;
 		break;
@@ -1354,7 +1354,7 @@ ec_error_t zs_modifypermissions(GUID hsession,
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	return pfolder->set_permissions(pset) ? ecSuccess : ecError;
 }
@@ -1370,7 +1370,7 @@ ec_error_t zs_modifyrules(GUID hsession,
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	if (flags & MODIFY_RULES_FLAG_REPLACE)
 		for (size_t i = 0; i < plist->count; ++i)
@@ -1400,7 +1400,7 @@ ec_error_t zs_loadstoretable(GUID hsession, uint32_t *phobject)
 	auto ptable = table_object::create(nullptr, nullptr, zcore_tbltype::store, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {ZMG_TABLE, std::move(ptable)});
+	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {zs_objtype::table, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -1471,7 +1471,7 @@ ec_error_t zs_openprofilesec(GUID hsession,
 	auto ppropvals = pinfo->ptree->get_profile_sec(guid);
 	if (ppropvals == nullptr)
 		return ecNotFound;
-	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {ZMG_PROFPROPERTY, ppropvals});
+	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {zs_objtype::profproperty, ppropvals});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -1492,11 +1492,11 @@ ec_error_t zs_loadhierarchytable(GUID hsession,
 	store_object *pstore = nullptr;
 	std::unique_ptr<table_object> ptable;
 	switch (mapi_type) {
-	case ZMG_FOLDER:
+	case zs_objtype::folder:
 		pstore = static_cast<folder_object *>(pobject)->pstore;
 		ptable = table_object::create(pstore, pobject, zcore_tbltype::hierarchy, flags);
 		break;
-	case ZMG_ABCONT:
+	case zs_objtype::abcont:
 		ptable = table_object::create(nullptr, pobject, zcore_tbltype::container, flags);
 		break;
 	default:
@@ -1504,7 +1504,7 @@ ec_error_t zs_loadhierarchytable(GUID hsession,
 	}
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hfolder, {ZMG_TABLE, std::move(ptable)});
+	*phobject = pinfo->ptree->add_object_handle(hfolder, {zs_objtype::table, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -1526,7 +1526,7 @@ ec_error_t zs_loadcontenttable(GUID hsession,
 	store_object *pstore;
 	std::unique_ptr<table_object> ptable;
 	switch (mapi_type) {
-	case ZMG_FOLDER: {
+	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);
 		pstore = folder->pstore;
 		if (!pstore->owner_mode()) {
@@ -1539,10 +1539,10 @@ ec_error_t zs_loadcontenttable(GUID hsession,
 		ptable = table_object::create(folder->pstore, pobject, zcore_tbltype::content, flags);
 		break;
 	}
-	case ZMG_DISTLIST:
+	case zs_objtype::distlist:
 		ptable = table_object::create(nullptr, pobject, zcore_tbltype::distlist, 0);
 		break;
-	case ZMG_ABCONT:
+	case zs_objtype::abcont:
 		ptable = table_object::create(nullptr, pobject, zcore_tbltype::abcontusr, 0);
 		break;
 	default:
@@ -1550,7 +1550,7 @@ ec_error_t zs_loadcontenttable(GUID hsession,
 	}
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hfolder, {ZMG_TABLE, std::move(ptable)});
+	*phobject = pinfo->ptree->add_object_handle(hfolder, {zs_objtype::table, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -1567,12 +1567,12 @@ ec_error_t zs_loadrecipienttable(GUID hsession,
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	auto ptable = table_object::create(pmessage->get_store(), pmessage, zcore_tbltype::recipient, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hmessage, {ZMG_TABLE, std::move(ptable)});
+	*phobject = pinfo->ptree->add_object_handle(hmessage, {zs_objtype::table, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -1587,13 +1587,13 @@ ec_error_t zs_loadruletable(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto folder_id = pfolder->folder_id;
 	auto ptable = table_object::create(pfolder->pstore, &folder_id, zcore_tbltype::rule, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hfolder, {ZMG_TABLE, std::move(ptable)});
+	*phobject = pinfo->ptree->add_object_handle(hfolder, {zs_objtype::table, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -1616,7 +1616,7 @@ ec_error_t zs_createmessage(GUID hsession,
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto folder_id = pfolder->folder_id;
 	auto pstore = pfolder->pstore;
@@ -1670,7 +1670,7 @@ ec_error_t zs_createmessage(GUID hsession,
 	/* add the store handle as the parent object handle
 		because the caller normally will not keep the
 		handle of folder */
-	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_MESSAGE, std::move(pmessage)});
+	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::message, std::move(pmessage)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -1701,7 +1701,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	const char *username = nullptr;
@@ -1798,13 +1798,13 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	auto psrc_folder = pinfo->ptree->get_object<folder_object>(hsrcfolder, &mapi_type);
 	if (psrc_folder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = psrc_folder->pstore;
 	auto pdst_folder = pinfo->ptree->get_object<folder_object>(hdstfolder, &mapi_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER || pdst_folder->type == FOLDER_SEARCH)
+	if (mapi_type != zs_objtype::folder || pdst_folder->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto pstore1 = pdst_folder->pstore;
 	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
@@ -1922,7 +1922,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto username = pstore->owner_mode() ? nullptr : pinfo->get_username();
@@ -2040,7 +2040,7 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 	auto pparent = pinfo->ptree->get_object<folder_object>(hparent_folder, &mapi_type);
 	if (pparent == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	if (rop_util_get_replid(pparent->folder_id) != 1 ||
 	    pparent->type == FOLDER_SEARCH)
@@ -2130,9 +2130,9 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 		auto hstore = pinfo->ptree->get_store_handle(TRUE, pstore->account_id);
 		if (hstore == INVALID_HANDLE)
 			return ecError;
-		*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_FOLDER, std::move(pfolder)});
+		*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::folder, std::move(pfolder)});
 	} else {
-		*phobject = pinfo->ptree->add_object_handle(hparent_folder, {ZMG_FOLDER, std::move(pfolder)});
+		*phobject = pinfo->ptree->add_object_handle(hparent_folder, {zs_objtype::folder, std::move(pfolder)});
 	}
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
@@ -2158,7 +2158,7 @@ ec_error_t zs_deletefolder(GUID hsession,
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hparent_folder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	if (!cu_entryid_to_fid(entryid,
@@ -2228,7 +2228,7 @@ ec_error_t zs_emptyfolder(GUID hsession, uint32_t hfolder, uint32_t flags)
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	if (!pstore->b_private)
@@ -2274,7 +2274,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
 	if (psrc_parent->type == FOLDER_SEARCH && !b_copy)
 		return ecNotSupported;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = psrc_parent->pstore;
 	if (!cu_entryid_to_fid(entryid,
@@ -2285,7 +2285,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 	auto pdst_folder = pinfo->ptree->get_object<folder_object>(hdst_folder, &mapi_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore1 = pdst_folder->pstore;
 	auto fidtest = pstore->b_private ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT;
@@ -2400,7 +2400,7 @@ ec_error_t zs_entryidfromsourcekey(GUID hsession, uint32_t hstore,
 	auto pstore = pinfo->ptree->get_object<store_object>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_STORE)
+	if (mapi_type != zs_objtype::store)
 		return ecNotSupported;
 	if (!common_util_binary_to_xid(&folder_key, &tmp_xid))
 		return ecNotSupported;
@@ -2471,7 +2471,7 @@ ec_error_t zs_storeadvise(GUID hsession, uint32_t hstore,
 	auto pstore = pinfo->ptree->get_object<store_object>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_STORE)
+	if (mapi_type != zs_objtype::store)
 		return ecNotSupported;
 	folder_id = 0;
 	message_id = 0;
@@ -2528,7 +2528,7 @@ ec_error_t zs_unadvise(GUID hsession, uint32_t hstore,
 	auto pstore = pinfo->ptree->get_object<store_object>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_STORE)
+	if (mapi_type != zs_objtype::store)
 		return ecNotSupported;
 	std::string dir = pstore->get_dir();
 	pinfo.reset();
@@ -2557,7 +2557,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink,
 	count = 0;
 	for (i=0; i<psink->count; i++) {
 		auto pstore = pinfo->ptree->get_object<store_object>(psink->padvise[i].hstore, &mapi_type);
-		if (pstore == nullptr || mapi_type != ZMG_STORE)
+		if (pstore == nullptr || mapi_type != zs_objtype::store)
 			continue;
 		std::string tmp_buf;
 		try {
@@ -2637,7 +2637,7 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 	auto ptable = pinfo->ptree->get_object<table_object>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_TABLE)
+	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
 	if (!ptable->load())
 		return ecError;
@@ -2737,7 +2737,7 @@ ec_error_t zs_setcolumns(GUID hsession, uint32_t htable,
 	auto ptable = pinfo->ptree->get_object<table_object>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_TABLE)
+	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
 	return ptable->set_columns(pproptags) ? ecSuccess : ecError;
 }
@@ -2755,7 +2755,7 @@ ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 	auto ptable = pinfo->ptree->get_object<table_object>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_TABLE)
+	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
 	if (!ptable->load())
 		return ecError;
@@ -2848,7 +2848,7 @@ ec_error_t zs_sorttable(GUID hsession,
 	auto ptable = pinfo->ptree->get_object<table_object>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_TABLE)
+	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
 	if (ptable->table_type != zcore_tbltype::content)
 		return ecSuccess;
@@ -2918,7 +2918,7 @@ ec_error_t zs_getrowcount(GUID hsession, uint32_t htable, uint32_t *pcount)
 	auto ptable = pinfo->ptree->get_object<table_object>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_TABLE)
+	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
 	if (!ptable->load())
 		return ecError;
@@ -2936,7 +2936,7 @@ ec_error_t zs_restricttable(GUID hsession, uint32_t htable,
 	auto ptable = pinfo->ptree->get_object<table_object>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_TABLE)
+	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
 	switch (ptable->table_type) {
 	case zcore_tbltype::hierarchy:
@@ -2969,7 +2969,7 @@ ec_error_t zs_findrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 	auto ptable = pinfo->ptree->get_object<table_object>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_TABLE)
+	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
 	switch (ptable->table_type) {
 	case zcore_tbltype::hierarchy:
@@ -3015,7 +3015,7 @@ ec_error_t zs_createbookmark(GUID hsession, uint32_t htable, uint32_t *pbookmark
 	auto ptable = pinfo->ptree->get_object<table_object>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_TABLE)
+	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
 	switch (ptable->table_type) {
 	case zcore_tbltype::hierarchy:
@@ -3038,7 +3038,7 @@ ec_error_t zs_freebookmark(GUID hsession, uint32_t htable, uint32_t bookmark)
 	auto ptable = pinfo->ptree->get_object<table_object>(htable, &mapi_type);
 	if (ptable == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_TABLE)
+	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
 	switch (ptable->table_type) {
 	case zcore_tbltype::hierarchy:
@@ -3069,7 +3069,7 @@ ec_error_t zs_getreceivefolder(GUID hsession,
 	auto pstore = pinfo->ptree->get_object<store_object>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_STORE)
+	if (mapi_type != zs_objtype::store)
 		return ecNotSupported;
 	if (!pstore->b_private)
 		return ecNotSupported;
@@ -3109,7 +3109,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	if (MODRECIP_MODIFY == flags) {
 		pmessage->empty_rcpts();
@@ -3329,7 +3329,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	auto pstore = pmessage->get_store();
 	if (!pstore->b_private)
@@ -3472,13 +3472,13 @@ ec_error_t zs_loadattachmenttable(GUID hsession,
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	auto pstore = pmessage->get_store();
 	auto ptable = table_object::create(pstore, pmessage, zcore_tbltype::attachment, 0);
 	if (ptable == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hmessage, {ZMG_TABLE, std::move(ptable)});
+	*phobject = pinfo->ptree->add_object_handle(hmessage, {zs_objtype::table, std::move(ptable)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -3494,14 +3494,14 @@ ec_error_t zs_openattachment(GUID hsession,
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	auto pattachment = attachment_object::create(pmessage, attach_id);
 	if (pattachment == nullptr)
 		return ecError;
 	if (pattachment->get_instance_id() == 0)
 		return ecNotFound;
-	*phobject = pinfo->ptree->add_object_handle(hmessage, {ZMG_ATTACH, std::move(pattachment)});
+	*phobject = pinfo->ptree->add_object_handle(hmessage, {zs_objtype::attach, std::move(pattachment)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -3517,7 +3517,7 @@ ec_error_t zs_createattachment(GUID hsession,
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	if (!pmessage->writable())
 		return ecAccessDenied;
@@ -3528,7 +3528,7 @@ ec_error_t zs_createattachment(GUID hsession,
 		return ecMaxAttachmentExceeded;
 	if (!pattachment->init_attachment())
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hmessage, {ZMG_ATTACH, std::move(pattachment)});
+	*phobject = pinfo->ptree->add_object_handle(hmessage, {zs_objtype::attach, std::move(pattachment)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -3544,7 +3544,7 @@ ec_error_t zs_deleteattachment(GUID hsession,
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	if (!pmessage->writable())
 		return ecAccessDenied;
@@ -3564,13 +3564,13 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 	if (pobject == nullptr)
 		return ecNullObject;
 	switch (mapi_type) {
-	case ZMG_PROFPROPERTY:
+	case zs_objtype::profproperty:
 		for (size_t i = 0; i < ppropvals->count; ++i)
 			if (static_cast<TPROPVAL_ARRAY *>(pobject)->set(ppropvals->ppropval[i]) != 0)
 				return ecError;
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
-	case ZMG_STORE: {
+	case zs_objtype::store: {
 		auto store = static_cast<store_object *>(pobject);
 		if (!store->owner_mode())
 			return ecAccessDenied;
@@ -3578,7 +3578,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_FOLDER: {
+	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);
 		auto pstore = folder->pstore;
 		if (!pstore->owner_mode()) {
@@ -3592,7 +3592,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_MESSAGE: {
+	case zs_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
@@ -3600,7 +3600,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_ATTACH: {
+	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->writable())
 			return ecAccessDenied;
@@ -3627,7 +3627,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 	if (pobject == nullptr)
 		return ecNullObject;
 	switch (mapi_type) {
-	case ZMG_PROFPROPERTY:
+	case zs_objtype::profproperty:
 		if (NULL == pproptags) {
 			*ppropvals = *static_cast<TPROPVAL_ARRAY *>(pobject);
 			return ecSuccess;
@@ -3644,7 +3644,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				ppropvals->count++;
 		}
 		return ecSuccess;
-	case ZMG_STORE: {
+	case zs_objtype::store: {
 		auto store = static_cast<store_object *>(pobject);
 		if (NULL == pproptags) {
 			if (!store->get_all_proptags(&proptags))
@@ -3655,7 +3655,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_FOLDER: {
+	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);
 		if (NULL == pproptags) {
 			if (!folder->get_all_proptags(&proptags))
@@ -3666,7 +3666,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_MESSAGE: {
+	case zs_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
 		if (NULL == pproptags) {
 			if (!msg->get_all_proptags(&proptags))
@@ -3677,7 +3677,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_ATTACH: {
+	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (NULL == pproptags) {
 			if (!atx->get_all_proptags(&proptags))
@@ -3688,7 +3688,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_ABCONT:
+	case zs_objtype::abcont:
 		if (NULL == pproptags) {
 			container_object_get_container_table_all_proptags(
 				&proptags);
@@ -3697,8 +3697,8 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (!static_cast<container_object *>(pobject)->get_properties(pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
-	case ZMG_MAILUSER:
-	case ZMG_DISTLIST:
+	case zs_objtype::mailuser:
+	case zs_objtype::distlist:
 		if (NULL == pproptags) {
 			container_object_get_user_table_all_proptags(&proptags);
 			pproptags = &proptags;
@@ -3706,7 +3706,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (!static_cast<user_object *>(pobject)->get_properties(pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
-	case ZMG_ONEOFF:
+	case zs_objtype::oneoff:
 		if (pproptags == nullptr)
 			pproptags = &oneoff_object::all_tags;
 		return static_cast<oneoff_object *>(pobject)->get_props(pproptags, ppropvals);
@@ -3728,12 +3728,12 @@ ec_error_t zs_deletepropvals(GUID hsession,
 	if (pobject == nullptr)
 		return ecNullObject;
 	switch (mapi_type) {
-	case ZMG_PROFPROPERTY:
+	case zs_objtype::profproperty:
 		for (size_t i = 0; i < pproptags->count; ++i)
 			static_cast<TPROPVAL_ARRAY *>(pobject)->erase(pproptags->pproptag[i]);
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
-	case ZMG_STORE: {
+	case zs_objtype::store: {
 		auto store = static_cast<store_object *>(pobject);
 		if (!store->owner_mode())
 			return ecAccessDenied;
@@ -3741,7 +3741,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_FOLDER: {
+	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);
 		auto pstore = folder->pstore;
 		if (!pstore->owner_mode()) {
@@ -3755,7 +3755,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_MESSAGE: {
+	case zs_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
@@ -3763,7 +3763,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_ATTACH: {
+	case zs_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->writable())
 			return ecAccessDenied;
@@ -3787,7 +3787,7 @@ ec_error_t zs_setmessagereadflag(GUID hsession, uint32_t hmessage,
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	return pmessage->set_readflag(flags, &b_changed) ? ecSuccess : ecError;
 }
@@ -3803,7 +3803,7 @@ ec_error_t zs_openembedded(GUID hsession,
 	auto pattachment = pinfo->ptree->get_object<attachment_object>(hattachment, &mapi_type);
 	if (pattachment == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ATTACH)
+	if (mapi_type != zs_objtype::attach)
 		return ecNotSupported;
 	auto pstore = pattachment->get_store();
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
@@ -3832,7 +3832,7 @@ ec_error_t zs_openembedded(GUID hsession,
 	/* add the store handle as the parent object handle
 		because the caller normally will not keep the
 		handle of attachment */
-	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_MESSAGE, std::move(pmessage)});
+	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::message, std::move(pmessage)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -3848,7 +3848,7 @@ ec_error_t zs_getnamedpropids(GUID hsession, uint32_t hstore,
 	auto pstore = pinfo->ptree->get_object<store_object>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_STORE)
+	if (mapi_type != zs_objtype::store)
 		return ecNotSupported;
 	return pstore->get_named_propids(TRUE, ppropnames, ppropids) ?
 	       ecSuccess : ecError;
@@ -3864,7 +3864,7 @@ ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
 	auto pstore = pinfo->ptree->get_object<store_object>(hstore, &mapi_type);
 	if (pstore == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_STORE)
+	if (mapi_type != zs_objtype::store)
 		return ecNotSupported;
 	return pstore->get_named_propnames(ppropids, ppropnames) ?
 	       ecSuccess : ecError;
@@ -3898,7 +3898,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 
 	BOOL b_force = (flags & MAPI_NOREPLACE) ? false : TRUE;
 	switch (mapi_type) {
-	case ZMG_FOLDER: {
+	case zs_objtype::folder: {
 		auto folder = static_cast<folder_object *>(pobject);
 		auto fdst = static_cast<folder_object *>(pobject_dst);
 		auto pstore = folder->pstore;
@@ -3974,7 +3974,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 			return ecError;
 		return ecSuccess;
 	}
-	case ZMG_MESSAGE: {
+	case zs_objtype::message: {
 		auto mdst = static_cast<message_object *>(pobject_dst);
 		if (!mdst->writable())
 			return ecAccessDenied;
@@ -3983,7 +3983,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 			return ecError;
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}
-	case ZMG_ATTACH: {
+	case zs_objtype::attach: {
 		auto adst = static_cast<attachment_object *>(pobject_dst);
 		if (!adst->writable())
 			return ecAccessDenied;
@@ -4007,7 +4007,7 @@ ec_error_t zs_savechanges(GUID hsession, uint32_t hobject)
 	auto pobject = pinfo->ptree->get_object<void>(hobject, &mapi_type);
 	if (pobject == nullptr)
 		return ecNullObject;
-	if (mapi_type == ZMG_MESSAGE) {
+	if (mapi_type == zs_objtype::message) {
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
@@ -4016,7 +4016,7 @@ ec_error_t zs_savechanges(GUID hsession, uint32_t hobject)
 		if (b_touched)
 			return ecObjectModified;
 		return msg->save();
-	} else if (mapi_type == ZMG_ATTACH) {
+	} else if (mapi_type == zs_objtype::attach) {
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->writable())
 			return ecAccessDenied;
@@ -4035,7 +4035,7 @@ ec_error_t zs_hierarchysync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
@@ -4044,7 +4044,7 @@ ec_error_t zs_hierarchysync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 	auto pctx = icsdownctx_object::create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_ICSDOWNCTX, std::move(pctx)});
+	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::icsdownctx, std::move(pctx)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -4059,7 +4059,7 @@ ec_error_t zs_contentsync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
@@ -4068,7 +4068,7 @@ ec_error_t zs_contentsync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 	auto pctx = icsdownctx_object::create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_ICSDOWNCTX, std::move(pctx)});
+	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::icsdownctx, std::move(pctx)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -4085,7 +4085,7 @@ ec_error_t zs_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
 	auto pctx = pinfo->ptree->get_object<icsdownctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSDOWNCTX)
+	if (mapi_type != zs_objtype::icsdownctx)
 		return ecNotSupported;
 	BOOL b_changed = false;
 	if (pctx->get_type() == SYNC_TYPE_CONTENTS) {
@@ -4108,7 +4108,7 @@ ec_error_t zs_statesync(GUID hsession, uint32_t hctx, BINARY *pstate)
 	auto pctx = pinfo->ptree->get_object<icsdownctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSDOWNCTX)
+	if (mapi_type != zs_objtype::icsdownctx)
 		return ecNotSupported;
 	auto pbin = pctx->get_state();
 	if (pbin == nullptr)
@@ -4128,7 +4128,7 @@ ec_error_t zs_syncmessagechange(GUID hsession, uint32_t hctx,
 	auto pctx = pinfo->ptree->get_object<icsdownctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSDOWNCTX || pctx->get_type() != SYNC_TYPE_CONTENTS)
+	if (mapi_type != zs_objtype::icsdownctx || pctx->get_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
 	BOOL b_new = false;
 	if (!pctx->sync_message_change(&b_found, &b_new, pproplist))
@@ -4148,7 +4148,7 @@ ec_error_t zs_syncfolderchange(GUID hsession,
 	auto pctx = pinfo->ptree->get_object<icsdownctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSDOWNCTX || pctx->get_type() != SYNC_TYPE_HIERARCHY)
+	if (mapi_type != zs_objtype::icsdownctx || pctx->get_type() != SYNC_TYPE_HIERARCHY)
 		return ecNotSupported;
 	if (!pctx->sync_folder_change(&b_found, pproplist))
 		return ecError;
@@ -4165,7 +4165,7 @@ ec_error_t zs_syncreadstatechanges(GUID hsession, uint32_t hctx,
 	auto pctx = pinfo->ptree->get_object<icsdownctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSDOWNCTX || pctx->get_type() != SYNC_TYPE_CONTENTS)
+	if (mapi_type != zs_objtype::icsdownctx || pctx->get_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
 	return pctx->sync_readstates(pstates) ? ecSuccess : ecError;
 }
@@ -4180,7 +4180,7 @@ ec_error_t zs_syncdeletions(GUID hsession,
 	auto pctx = pinfo->ptree->get_object<icsdownctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSDOWNCTX)
+	if (mapi_type != zs_objtype::icsdownctx)
 		return ecNotSupported;
 	return pctx->sync_deletions(flags, pbins) ? ecSuccess : ecError;
 }
@@ -4195,7 +4195,7 @@ ec_error_t zs_hierarchyimport(GUID hsession,
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER || pfolder->type == FOLDER_SEARCH)
+	if (mapi_type != zs_objtype::folder || pfolder->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
@@ -4204,7 +4204,7 @@ ec_error_t zs_hierarchyimport(GUID hsession,
 	auto pctx = icsupctx_object::create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_ICSUPCTX, std::move(pctx)});
+	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::icsupctx, std::move(pctx)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -4219,7 +4219,7 @@ ec_error_t zs_contentimport(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
@@ -4228,7 +4228,7 @@ ec_error_t zs_contentimport(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 	auto pctx = icsupctx_object::create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hstore, {ZMG_ICSUPCTX, std::move(pctx)});
+	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::icsupctx, std::move(pctx)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -4244,7 +4244,7 @@ ec_error_t zs_configimport(GUID hsession,
 	auto pctx = pinfo->ptree->get_object<icsupctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSUPCTX)
+	if (mapi_type != zs_objtype::icsupctx)
 		return ecNotSupported;
 	return pctx->upload_state(pstate) ? ecSuccess : ecError;
 }
@@ -4258,7 +4258,7 @@ ec_error_t zs_stateimport(GUID hsession, uint32_t hctx, BINARY *pstate)
 	auto pctx = pinfo->ptree->get_object<icsupctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSUPCTX)
+	if (mapi_type != zs_objtype::icsupctx)
 		return ecNotSupported;
 	auto pbin = pctx->get_state();
 	if (pbin == nullptr)
@@ -4299,7 +4299,7 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 	auto pctx = pinfo->ptree->get_object<icsupctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSUPCTX)
+	if (mapi_type != zs_objtype::icsupctx)
 		return ecNotSupported;
 	auto pstore = pctx->get_store();
 	if (pctx->get_type() != SYNC_TYPE_CONTENTS)
@@ -4371,7 +4371,7 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 		return ecError;
 	if (b_new && pmessage->init_message(b_fai, pinfo->cpid) != 0)
 		return ecError;
-	*phobject = pinfo->ptree->add_object_handle(hctx, {ZMG_MESSAGE, std::move(pmessage)});
+	*phobject = pinfo->ptree->add_object_handle(hctx, {zs_objtype::message, std::move(pmessage)});
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
 	return ecSuccess;
@@ -4429,7 +4429,7 @@ ec_error_t zs_importfolder(GUID hsession,
 	auto pctx = pinfo->ptree->get_object<icsupctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSUPCTX)
+	if (mapi_type != zs_objtype::icsupctx)
 		return ecNotSupported;
 	auto pstore = pctx->get_store();
 	if (pctx->get_type() != SYNC_TYPE_HIERARCHY)
@@ -4620,7 +4620,7 @@ ec_error_t zs_importdeletion(GUID hsession,
 	auto pctx = pinfo->ptree->get_object<icsupctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSUPCTX)
+	if (mapi_type != zs_objtype::icsupctx)
 		return ecNotSupported;
 	auto pstore = pctx->get_store();
 	auto sync_type = pctx->get_type();
@@ -4752,7 +4752,7 @@ ec_error_t zs_importreadstates(GUID hsession,
 	auto pctx = pinfo->ptree->get_object<icsupctx_object>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSUPCTX)
+	if (mapi_type != zs_objtype::icsupctx)
 		return ecNotSupported;
 	auto pstore = pctx->get_store();
 	if (pctx->get_type() != SYNC_TYPE_CONTENTS)
@@ -4818,7 +4818,7 @@ ec_error_t zs_getsearchcriteria(GUID hsession,
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	if (pfolder->type != FOLDER_SEARCH)
@@ -4866,7 +4866,7 @@ ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
 	auto pfolder = pinfo->ptree->get_object<folder_object>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	if (!pstore->b_private)
@@ -4921,7 +4921,7 @@ ec_error_t zs_messagetorfc822(GUID hsession, uint32_t hmessage, BINARY *peml_bin
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	return common_util_message_to_rfc822(pmessage->get_store(),
 	       pmessage->get_id(), peml_bin) ? ecSuccess : ecError;
@@ -4937,7 +4937,7 @@ ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	auto pmsgctnt = cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin);
 	if (pmsgctnt == nullptr)
@@ -4954,7 +4954,7 @@ ec_error_t zs_messagetoical(GUID hsession, uint32_t hmessage, BINARY *pical_bin)
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	return common_util_message_to_ical(pmessage->get_store(),
 	       pmessage->get_id(), pical_bin) ? ecSuccess : ecError;
@@ -4970,7 +4970,7 @@ ec_error_t zs_icaltomessage(GUID hsession,
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	auto pmsgctnt = cu_ical_to_message(pmessage->get_store(), pical_bin);
 	if (pmsgctnt == nullptr)
@@ -4988,7 +4988,7 @@ ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
 	auto fld = info->ptree->get_object<folder_object>(fld_handle, &mapi_type);
 	if (fld == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER)
+	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	std::vector<message_ptr> msgvec;
 	ec_error_t ret = ecInvalidParam;
@@ -5014,7 +5014,7 @@ ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
 		if (rt2 != ecSuccess)
 			return rt2;
 		auto zmo = info->ptree->get_object<message_object>(msg_handle, &mapi_type);
-		if (zmo == nullptr || mapi_type != ZMG_MESSAGE ||
+		if (zmo == nullptr || mapi_type != zs_objtype::message ||
 		    !zmo->write_message(msgctnt.get()))
 			return ecError;
 		outhandles->pl[outhandles->count++] = msg_handle;
@@ -5032,7 +5032,7 @@ ec_error_t zs_messagetovcf(GUID hsession, uint32_t hmessage, BINARY *pvcf_bin)
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	return common_util_message_to_vcf(pmessage, pvcf_bin) ? ecSuccess : ecError;
 }
@@ -5047,7 +5047,7 @@ ec_error_t zs_vcftomessage(GUID hsession,
 	auto pmessage = pinfo->ptree->get_object<message_object>(hmessage, &mapi_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_MESSAGE)
+	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	auto pmsgctnt = common_util_vcf_to_message(pmessage->get_store(), pvcf_bin);
 	if (pmsgctnt == nullptr)
@@ -5188,7 +5188,7 @@ ec_error_t zs_linkmessage(GUID hsession,
 	if (pinfo->user_id < 0)
 		return ecAccessDenied;
 	auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
-	if (pstore == nullptr || mapi_type != ZMG_STORE)
+	if (pstore == nullptr || mapi_type != zs_objtype::store)
 		return ecError;
 	if (!pstore->owner_mode()) {
 		uint32_t permission = rightsNone;

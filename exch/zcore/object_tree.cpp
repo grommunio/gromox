@@ -144,49 +144,49 @@ object_node::object_node(object_node &&o) noexcept :
 	handle(o.handle), type(o.type), pobject(o.pobject)
 {
 	o.handle = INVALID_HANDLE;
-	o.type = ZMG_INVALID;
+	o.type = zs_objtype::invalid;
 	o.pobject = nullptr;
 }
 
 object_node::~object_node()
 {
 	switch (type) {
-	case ZMG_ROOT:
+	case zs_objtype::root:
 		object_tree_free_root(static_cast<root_object *>(pobject));
 		break;
-	case ZMG_TABLE:
+	case zs_objtype::table:
 		delete static_cast<table_object *>(pobject);
 		break;
-	case ZMG_MESSAGE:
+	case zs_objtype::message:
 		delete static_cast<message_object *>(pobject);
 		break;
-	case ZMG_ATTACH:
+	case zs_objtype::attach:
 		delete static_cast<attachment_object *>(pobject);
 		break;
-	case ZMG_ABCONT:
+	case zs_objtype::abcont:
 		delete static_cast<container_object *>(pobject);
 		break;
-	case ZMG_FOLDER:
+	case zs_objtype::folder:
 		delete static_cast<folder_object *>(pobject);
 		break;
-	case ZMG_STORE:
+	case zs_objtype::store:
 		delete static_cast<store_object *>(pobject);
 		break;
-	case ZMG_MAILUSER:
-	case ZMG_DISTLIST:
+	case zs_objtype::mailuser:
+	case zs_objtype::distlist:
 		delete static_cast<user_object *>(pobject);
 		break;
-	case ZMG_ONEOFF:
+	case zs_objtype::oneoff:
 		delete static_cast<oneoff_object *>(pobject);
 		break;
-	case ZMG_PROFPROPERTY:
+	case zs_objtype::profproperty:
 		/* do not free TPROPVAL_ARRAY,
 		it's an element of pprof_set */
 		break;
-	case ZMG_ICSDOWNCTX:
+	case zs_objtype::icsdownctx:
 		delete static_cast<icsdownctx_object *>(pobject);
 		break;
-	case ZMG_ICSUPCTX:
+	case zs_objtype::icsupctx:
 		delete static_cast<icsupctx_object *>(pobject);
 		break;
 	default:
@@ -274,7 +274,7 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 	if (NULL == prootobj) {
 		return NULL;
 	}
-	auto handle = pobjtree->add_object_handle(-1, {ZMG_ROOT, std::move(prootobj)});
+	auto handle = pobjtree->add_object_handle(-1, {zs_objtype::root, std::move(prootobj)});
 	if (handle == INVALID_HANDLE)
 		return nullptr;
 	return pobjtree;
@@ -300,7 +300,7 @@ void OBJECT_TREE::release_object_handle(uint32_t obj_handle)
 	auto iter = pobjtree->m_hash.find(obj_handle);
 	/* do not release store object until
 	the whole object tree is unloaded */
-	if (iter == pobjtree->m_hash.end() || iter->second->type == ZMG_STORE)
+	if (iter == pobjtree->m_hash.end() || iter->second->type == zs_objtype::store)
 		return;
 	object_tree_release_objnode(pobjtree, iter->second);
 }
@@ -402,7 +402,7 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	if (NULL != pnode) {
 		do {
 			auto pobjnode = static_cast<OBJECT_NODE *>(pnode->pdata);
-			if (pobjnode->type != ZMG_STORE)
+			if (pobjnode->type != zs_objtype::store)
 				continue;
 			auto store = static_cast<store_object *>(pobjnode->pobject);
 			if (store->b_private == b_private &&
@@ -437,5 +437,5 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	if (NULL == pstore) {
 		return INVALID_HANDLE;
 	}
-	return add_object_handle(ROOT_HANDLE, {ZMG_STORE, std::move(pstore)});
+	return add_object_handle(ROOT_HANDLE, {zs_objtype::store, std::move(pstore)});
 }

@@ -20,7 +20,7 @@ struct object_node {
 
 	tree_node node{};
 	uint32_t handle = INVALID_HANDLE;
-	zs_objtype type = ZMG_INVALID;
+	zs_objtype type = zs_objtype::invalid;
 	void *pobject = nullptr;
 };
 using OBJECT_NODE = object_node;

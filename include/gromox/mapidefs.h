@@ -681,23 +681,9 @@ enum zics_type {
 
 enum zs_objtype : uint8_t {
 	/* Zend resource type groups */
-	ZMG_ROOT = 0,
-	ZMG_TABLE = 1,
-	ZMG_MESSAGE = 2,
-	ZMG_ATTACH = 3,
-	ZMG_ABCONT = 4,
-	ZMG_FOLDER = 5,
-	ZMG_SESSION = 6,
-	ZMG_ADDRBOOK = 7,
-	ZMG_STORE = 8,
-	ZMG_MAILUSER = 9,
-	ZMG_DISTLIST = 10,
-	ZMG_PROFPROPERTY = 11,
-	ZMG_ADVISESINK = 12,
-	ZMG_ICSDOWNCTX = 13,
-	ZMG_ICSUPCTX = 14,
-	ZMG_ONEOFF,
-	ZMG_INVALID = 255,
+	root = 0, table, message, attach, abcont, folder, session, addrbook,
+	store, mailuser, distlist, profproperty, advisesink, icsdownctx,
+	icsupctx, oneoff, invalid = 255,
 };
 
 enum STREAM_SEEK {

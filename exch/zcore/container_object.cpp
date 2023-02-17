@@ -181,7 +181,7 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	auto pinfo = zs_get_info();
 	auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
 	auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
-	if (pstore == nullptr || mapi_type != ZMG_STORE)
+	if (pstore == nullptr || mapi_type != zs_objtype::store)
 		return FALSE;
 	propnames.count = 9;
 	propnames.ppropname = propname_buff;
@@ -295,7 +295,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 		return FALSE;
 	auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
 	auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
-	if (pstore == nullptr || mapi_type != ZMG_STORE)
+	if (pstore == nullptr || mapi_type != zs_objtype::store)
 		return false;
 	if (row_num > 0) {
 		proptags.pproptag = proptag_buff;
@@ -545,11 +545,11 @@ static BOOL container_object_fetch_folder_properties(
 		}
 		case PR_ENTRYID:
 		case PR_PARENT_ENTRYID: {
-			zs_objtype mapi_type = ZMG_INVALID;
+			zs_objtype mapi_type = zs_objtype::invalid;
 			auto pinfo = zs_get_info();
 			auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
 			auto store = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
-			if (store == nullptr || mapi_type != ZMG_STORE)
+			if (store == nullptr || mapi_type != zs_objtype::store)
 				return false;
 			void *pvalue = nullptr;
 			if (pproptags->pproptag[i] != PR_PARENT_ENTRYID) {

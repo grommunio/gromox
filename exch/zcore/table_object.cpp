@@ -42,9 +42,9 @@ static errno_t storetbl_add_row(table_object *tbl, const USER_INFO &info,
     const PROPTAG_ARRAY &tags, bool is_private, unsigned int user_id)
 {
 	uint32_t handle = info.ptree->get_store_handle(is_private ? TRUE : false, user_id);
-	zs_objtype mapi_type = ZMG_INVALID;
+	zs_objtype mapi_type = zs_objtype::invalid;
 	auto store = info.ptree->get_object<store_object>(handle, &mapi_type);
-	if (store == nullptr || mapi_type != ZMG_STORE)
+	if (store == nullptr || mapi_type != zs_objtype::store)
 		return ENOENT;
 	auto props = cu_alloc<TPROPVAL_ARRAY>();
 	if (props == nullptr)
