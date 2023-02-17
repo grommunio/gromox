@@ -194,6 +194,8 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 	for(XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
 	{
 		XMLElement* responseContainer = context.response.body->InsertNewChildElement(xml->Name());
+		responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
+		responseContainer->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
 		if(request_logging)
 			mlog(LV_DEBUG, "[ews] Processing %s", xml->Name());
 		auto handler = requestMap.find(xml->Name());

@@ -263,20 +263,64 @@ template<typename T>
 static constexpr const char* getName(const char* def=nullptr)
 {
 	if constexpr(HasName<T>::value)
-	    return T::NAME;
+		return T::NAME;
 	else
-	    return def;
+		return def;
 }
 
+/**
+ * @brief      Retrieve value of `NAME` member
+ *
+ * This overload deduces the correct name for variants.
+ *
+ * @param      val   Value to get name for
+ * @param      def   Default value to return if type has no `NAME` member
+ *
+ * @return     Name or default
+ */
 template<typename T>
 static constexpr const char* getName(const T&val, const char* def=nullptr)
 {
 	if constexpr(BaseType<T>::container == VARIANT)
 		return std::visit([def](const auto& v){return getName(v, def);}, val);
-	if constexpr(HasName<T>::value)
-	    return T::NAME;
 	else
-	    return def;
+		return getName<T>(def);
+}
+
+/**
+ * @brief      Determine correct XML namespace prefix
+ *
+ * @tparam     T     Type to determine the XML namespace for
+ *
+ * @return     Namespace prefix or empty string
+ */
+template<typename T>
+static constexpr const char* getNSPrefix()
+{
+	if constexpr(std::is_base_of_v<Structures::NSInfo, T>)
+		return T::NS_ABBREV;
+	else
+		return "";
+}
+
+/**
+ * @brief      Determine correct XML namespace prefix
+ *
+ * This overload deduces the correct namespace for variants.
+ *
+ * @param      val   Value to get name for
+ *
+ * @tparam     T     Type to determine the XML namespace for
+ *
+ * @return     Namespace prefix or empty string
+ */
+template<typename T>
+static constexpr const char* getNSPrefix(const T&val)
+{
+	if constexpr(BaseType<T>::container == VARIANT)
+		return std::visit([](const auto& v){return getNSPrefix(v);}, val);
+	else
+		return getNSPrefix<T>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -540,7 +584,14 @@ static void toXMLNodeList(tinyxml2::XMLElement* xml, const T& value)
 {
 	using BT = BaseType_t<T>;
 	for(const BT& element : value)
-		toXMLNode<BT>(xml, getName(element, "x"), element);
+	{
+		const char* name = getName(element, "x");
+		const char* ns = getNSPrefix(element);
+		if(ns)
+			toXMLNode<BT>(xml, fmt::format("{}{}", ns, name).c_str(), element);
+		else
+			toXMLNode<BT>(xml, name, element);
+	}
 }
 
 /**
@@ -593,7 +644,13 @@ static void toXMLNode(tinyxml2::XMLElement* parent, const char* name, const T& v
 	if constexpr(BaseType<T>::container == OPTIONAL)
 		if(!value)
 			return;
-	tinyxml2::XMLElement* xml = parent->InsertNewChildElement(name);
+	const char* ns = nullptr;
+	if constexpr(BaseType<T>::container == VARIANT)
+	{
+		name = getName(value, name);
+		ns = getNSPrefix(value);
+	}
+	tinyxml2::XMLElement* xml = parent->InsertNewChildElement(ns? fmt::format("{}{}", ns, name).c_str() : name);
 	toXMLNodeDispatch(xml, value);
 }
 

@@ -47,6 +47,32 @@ struct tSyncFolderItemsReadFlag;
 struct tTasksFolderType;
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//XML namespace info types
+
+/**
+ * @brief Base struct (no namespace) for XML namespace information
+ */
+struct NSInfo
+{
+	static constexpr char NS_ABBREV[] = "";
+	static constexpr char NS_URL[] = "";
+};
+
+struct NS_EWS_Messages : public NSInfo
+{
+	static constexpr char NS_ABBREV[] = "m:";
+	static constexpr char NS_URL[] = "http://schemas.microsoft.com/exchange/services/2006/messages";
+};
+
+struct NS_EWS_Types : public NSInfo
+{
+	static constexpr char NS_ABBREV[] = "t:";
+	static constexpr char NS_URL[] = "http://schemas.microsoft.com/exchange/services/2006/types";
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 /**
  * @brief     Convenience wrapper for Base64 encoded data
  *
@@ -218,7 +244,7 @@ struct tCalendarEventDetails
 /**
  * Types.xsd:6301
  */
-struct tCalendarEvent
+struct tCalendarEvent : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "CalendarEvent";
 
@@ -337,10 +363,8 @@ private:
 /**
  * Types.xsd:1981
  */
-struct tBaseFolderType
+struct tBaseFolderType : public NS_EWS_Types
 {
-	using TagFilter = std::vector<uint32_t>;
-
 	explicit tBaseFolderType(const TPROPVAL_ARRAY&);
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -485,7 +509,7 @@ struct tItemId : public tBaseItemId
 /**
  * Types.xsd:2353
  */
-struct tItem
+struct tItem : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Item";
 
@@ -646,7 +670,7 @@ using tSyncFolderHierarchyChange = std::variant<tSyncFolderHierarchyCreate, tSyn
  *
  * Types.xsd:6223
  */
-struct tSyncFolderHierarchyCU
+struct tSyncFolderHierarchyCU : public NS_EWS_Types
 {
 	tSyncFolderHierarchyCU(sFolder&&);
 
@@ -678,7 +702,7 @@ struct tSyncFolderHierarchyUpdate : public tSyncFolderHierarchyCU
 /**
  * Types.xsd:6233
  */
-struct tSyncFolderHierarchyDelete
+struct tSyncFolderHierarchyDelete : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Delete";
 
@@ -749,7 +773,7 @@ using tSyncFolderItemsChange = std::variant<tSyncFolderItemsCreate, tSyncFolderI
  *
  * Types.xsd:1634
  */
-struct tSyncFolderItemsCU
+struct tSyncFolderItemsCU : public NS_EWS_Types
 {
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -765,7 +789,7 @@ struct tSyncFolderItemsUpdate : public tSyncFolderItemsCU
 /**
  * Types.xsd:6198
  */
-struct tSyncFolderItemsDelete
+struct tSyncFolderItemsDelete : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Delete";
 
@@ -779,7 +803,7 @@ struct tSyncFolderItemsDelete
 /**
  * Types.xsd:6204
  */
-struct tSyncFolderItemsReadFlag
+struct tSyncFolderItemsReadFlag : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "ReadFlagChange";
 
@@ -1011,7 +1035,7 @@ struct tUserOofSettings
  *
  * Messages.xsd:550
  */
-struct mResponseMessageType
+struct mResponseMessageType : public NS_EWS_Messages
 {
 	mResponseMessageType() = default;
 	explicit mResponseMessageType(const std::string&, const std::optional<std::string>& = std::nullopt,
@@ -1162,8 +1186,9 @@ struct mGetUserAvailabilityRequest
 /**
  * Messages.xsd:2182
  */
-struct mFreeBusyResponse
+struct mFreeBusyResponse : public NS_EWS_Messages
 {
+
 	static constexpr char NAME[] = "FreeBusyResponse";
 
 	mFreeBusyResponse() = default;
@@ -1206,7 +1231,7 @@ struct mGetUserOofSettingsRequest
 struct mGetUserOofSettingsResponse
 {
 	mResponseMessageType ResponseMessage;
-	std::optional<tUserOofSettings> UserOofSettings;
+	std::optional<tUserOofSettings> OofSettings;
 
 	/* OXWOOF v15 §7.1 says it's optional, but OL disagrees */
 	std::string AllowExternalOof = "All";

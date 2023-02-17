@@ -113,7 +113,7 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
  */
 void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	response->SetName("GetFolderResponse");
+	response->SetName("m:GetFolderResponse");
 
 	sProptags requestedTags = ctx.collectTags(request.FolderShape);
 	if(requestedTags.tags.size() > std::numeric_limits<decltype(PROPTAG_ARRAY::count)>::max())
@@ -160,7 +160,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
  */
 void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSContext&)
 {
-	response->SetName("GetMailTipsResponse");
+	response->SetName("m:GetMailTipsResponse");
 
 	mGetMailTipsResponse data;
 	data.ResponseMessages.reserve(request.Recipients.size());
@@ -193,7 +193,7 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
  */
 void process(mGetServiceConfigurationRequest&&, XMLElement* response, const EWSContext&)
 {
-	response->SetName("GetServiceConfigurationResponse");
+	response->SetName("m:GetServiceConfigurationResponse");
 
 	mGetServiceConfigurationResponse data;
 	mGetServiceConfigurationResponseMessageType& msg = data.ResponseMessages.emplace_back();
@@ -220,7 +220,7 @@ void process(mGetServiceConfigurationRequest&&, XMLElement* response, const EWSC
  */
 void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	response->SetName("GetUserAvailabilityResponse");
+	response->SetName("m:GetUserAvailabilityResponse");
 
 	if(!request.FreeBusyViewOptions && !request.SuggestionsViewOptions)
 		throw InputError(E3013);
@@ -275,7 +275,7 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
 	//Set name of the response node
-	response->SetName("GetUserOofSettingsResponse");
+	response->SetName("m:GetUserOofSettingsResponse");
 
 	ctx.normalize(request.Mailbox);
 	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info.username))
@@ -283,7 +283,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 
 	//Initialize response data structure
 	mGetUserOofSettingsResponse data;
-	data.UserOofSettings.emplace();
+	data.OofSettings.emplace();
 
 	//Get OOF state
 	std::string maildir = ctx.get_maildir(request.Mailbox);
@@ -297,32 +297,32 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 		configFile->get_int("external_audience", &external_audience);
 		switch(oof_state) {
 		case 1:
-			data.UserOofSettings->OofState = "Enabled"; break;
+			data.OofSettings->OofState = "Enabled"; break;
 		case 2:
-			data.UserOofSettings->OofState = "Scheduled"; break;
+			data.OofSettings->OofState = "Scheduled"; break;
 		default:
-			data.UserOofSettings->OofState = "Disabled"; break;
+			data.OofSettings->OofState = "Disabled"; break;
 		}
 		if(allow_external_oof)
-			data.UserOofSettings->ExternalAudience = external_audience? "Known" : "All";
+			data.OofSettings->ExternalAudience = external_audience? "Known" : "All";
 		else
-			data.UserOofSettings->ExternalAudience = "None";
+			data.OofSettings->ExternalAudience = "None";
 		auto start_time = configFile->get_value("start_time");
 		auto end_time = configFile->get_value("end_time");
 		if (start_time != nullptr && end_time != nullptr) {
-			tDuration& Duration = data.UserOofSettings->Duration.emplace();
+			tDuration& Duration = data.OofSettings->Duration.emplace();
 			Duration.StartTime = Clock::from_time_t(strtoll(start_time, nullptr, 0));
 			Duration.EndTime = Clock::from_time_t(strtoll(end_time, nullptr, 0));
 		}
 		optional<string> reply = readMessageBody(maildir+"/config/internal-reply");
 		if(reply)
-			data.UserOofSettings->InternalReply.emplace(std::move(reply));
+			data.OofSettings->InternalReply.emplace(std::move(reply));
 		if((reply = readMessageBody(maildir+"/config/external-reply")))
-			data.UserOofSettings->ExternalReply.emplace(std::move(reply));
+			data.OofSettings->ExternalReply.emplace(std::move(reply));
 	} else
 	{
-		data.UserOofSettings->OofState = "Disabled";
-		data.UserOofSettings->ExternalAudience = "None";
+		data.OofSettings->OofState = "Disabled";
+		data.OofSettings->ExternalAudience = "None";
 	}
 
 	//Finalize response
@@ -345,7 +345,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
  */
 void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	response->SetName("SetUserOofSettingsResponse");
+	response->SetName("m:SetUserOofSettingsResponse");
 
 	ctx.normalize(request.Mailbox);
 	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info.username))
@@ -401,7 +401,7 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
  */
 void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	response->SetName("SyncFolderHierarchyResponse");
+	response->SetName("m:SyncFolderHierarchyResponse");
 
 	auto& exmdb = ctx.plugin.exmdb;
 	if(!request.SyncFolderId)
@@ -460,7 +460,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 
 void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	response->SetName("SyncFolderItemsResponse");
+	response->SetName("m:SyncFolderItemsResponse");
 
 	sFolderSpec folder = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, request.SyncFolderId.folderId);
 
@@ -503,17 +503,17 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	for(uint64_t* mid = updated_mids.pids; mid < updated_mids.pids+updated_mids.count; ++mid)
 	{
 		TPROPVAL_ARRAY itemProps = ctx.getItemProps(dir, *mid, requestedTags);
-		msg.Changes.emplace_back(tSyncFolderItemsCreate{tItem::create(itemProps)});
+		msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, tItem::create(itemProps)}});
 	}
 	for(uint64_t* mid = chg_mids.pids; mid < chg_mids.pids+chg_mids.count; ++mid)
 	{
 		TPROPVAL_ARRAY itemProps = ctx.getItemProps(dir, *mid, requestedTags);
-		msg.Changes.emplace_back(tSyncFolderItemsCreate{tItem::create(itemProps)});
+		msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, tItem::create(itemProps)}});
 	}
 	for(uint64_t* mid = read_mids.pids; mid < read_mids.pids+read_mids.count; ++mid)
-		msg.Changes.emplace_back(tSyncFolderItemsReadFlag{tItemId(ctx.getItemEntryId(dir, *mid)), true});
+		msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(ctx.getItemEntryId(dir, *mid)), true});
 	for(uint64_t* mid = unread_mids.pids; mid < read_mids.pids+read_mids.count; ++mid)
-		msg.Changes.emplace_back(tSyncFolderItemsReadFlag{tItemId(ctx.getItemEntryId(dir, *mid)), false});
+		msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(ctx.getItemEntryId(dir, *mid)), false});
 	msg.SyncState = syncState.serialize();
 	msg.IncludesLastItemInRange = true;
 	msg.success();

@@ -319,12 +319,12 @@ sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps)
 	Type folderType = NORMAL;
 	if(frClass)
 	{
-		if(!strcmp(frClass, "IPF.Appointment"))
+		if(!strncmp(frClass, "IPF.Appointment", 15))
 			folderType = CALENDAR;
-		else if(!strcmp(frClass, "IPF.Task"))
-			folderType = TASKS;
-		else if(!strcmp(frClass, "IPF.Contact"))
+		else if(!strncmp(frClass, "IPF.Contact", 11))
 			folderType = CONTACTS;
+		else if(!strncmp(frClass, "IPF.Task", 8))
+			folderType = TASKS;
 	}
 	switch(folderType)
 	{

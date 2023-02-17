@@ -22,12 +22,12 @@ using namespace tinyxml2;
 using namespace std::string_literals;
 
 //Shortcuts to call toXML* and fromXML* functions on members
-#define XMLINIT(name) name(fromXMLNode<decltype(name)>(xml, # name)) ///< Init member from XML node
+#define XMLINIT(name) name(fromXMLNode<decltype(name)>(xml, #name)) ///< Init member from XML node
 #define VXMLINIT(name) name(fromXMLNode<decltype(name)>(xml, nullptr)) ///< Init variant from XML node
-#define XMLDUMP(name) toXMLNode(xml, # name, name) ///< Write member into XML node
-#define VXMLDUMP(name) toXMLNode(xml, getName(name, # name), name) ///< Write variant into XML node
-#define XMLINITA(name) name(fromXMLAttr<decltype(name)>(xml, # name)) ///< Initialize member from XML attribute
-#define XMLDUMPA(name) toXMLAttr(xml, # name, name) ///< Write member into XML attribute
+#define XMLDUMPM(name) toXMLNode(xml, "m:"#name, name) ///< Write member into XML node (Messages namespace)
+#define XMLDUMPT(name) toXMLNode(xml, "t:"#name, name) ///< Write member into XML node (Types namespace)
+#define XMLINITA(name) name(fromXMLAttr<decltype(name)>(xml, #name)) ///< Initialize member from XML attribute
+#define XMLDUMPA(name) toXMLAttr(xml, #name, name) ///< Write member into XML attribute
 
 #define EXT_TRY(expr) EWSContext::ext_error(expr)
 
@@ -233,21 +233,19 @@ void sTimePoint::serialize(XMLElement* xml) const
 		xml->SetText(fmt::format("{:%FT%T}.{:06}{:+03}{:02}", t, fsec, off / 60, abs(off) % 60).c_str());
 }
 
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void tBaseFolderType::serialize(XMLElement* xml) const
 {
-	XMLDUMP(FolderId);
-	XMLDUMP(ParentFolderId);
-	XMLDUMP(FolderClass);
-	XMLDUMP(DisplayName);
-	XMLDUMP(TotalCount);
-	XMLDUMP(ChildFolderCount);
+	XMLDUMPT(FolderId);
+	XMLDUMPT(ParentFolderId);
+	XMLDUMPT(FolderClass);
+	XMLDUMPT(DisplayName);
+	XMLDUMPT(TotalCount);
+	XMLDUMPT(ChildFolderCount);
 	for(const tExtendedProperty& ep : ExtendedProperty)
-		toXMLNode(xml, "ExtendedProperty", ep);
+		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
-
-///////////////////////////////////////////////////////////////////////////////
 
 tBaseItemId::tBaseItemId(const XMLElement* xml) :
     XMLINITA(Id), XMLINITA(ChangeKey)
@@ -261,22 +259,22 @@ void tBaseItemId::serialize(XMLElement* xml) const
 
 void tCalendarEventDetails::serialize(tinyxml2::XMLElement* xml) const
 {
-	XMLDUMP(ID);
-	XMLDUMP(Subject);
-	XMLDUMP(Location);
-	XMLDUMP(IsMeeting);
-	XMLDUMP(IsRecurring);
-	XMLDUMP(IsException);
-	XMLDUMP(IsReminderSet);
-	XMLDUMP(IsPrivate);
+	XMLDUMPT(ID);
+	XMLDUMPT(Subject);
+	XMLDUMPT(Location);
+	XMLDUMPT(IsMeeting);
+	XMLDUMPT(IsRecurring);
+	XMLDUMPT(IsException);
+	XMLDUMPT(IsReminderSet);
+	XMLDUMPT(IsPrivate);
 }
 
 void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
 {
-	XMLDUMP(StartTime);
-	XMLDUMP(EndTime);
-	XMLDUMP(BusyType);
-	XMLDUMP(CalenderEventDetails);
+	XMLDUMPT(StartTime);
+	XMLDUMPT(EndTime);
+	XMLDUMPT(BusyType);
+	XMLDUMPT(CalenderEventDetails);
 }
 
 tDistinguishedFolderId::tDistinguishedFolderId(const tinyxml2::XMLElement* xml) :
@@ -291,8 +289,8 @@ tDuration::tDuration(const XMLElement* xml) :
 
 void tDuration::serialize(XMLElement* xml) const
 {
-	XMLDUMP(StartTime);
-	XMLDUMP(EndTime);
+	XMLDUMPT(StartTime);
+	XMLDUMPT(EndTime);
 }
 
 tEmailAddressType::tEmailAddressType(const tinyxml2::XMLElement* xml) :
@@ -306,12 +304,12 @@ tEmailAddressType::tEmailAddressType(const tinyxml2::XMLElement* xml) :
 
 void tEmailAddressType::serialize(tinyxml2::XMLElement* xml) const
 {
-	XMLDUMP(Name);
-    XMLDUMP(EmailAddress);
-    XMLDUMP(RoutingType);
-    XMLDUMP(MailboxType);
-    XMLDUMP(ItemId);
-    XMLDUMP(OriginalDisplayName);
+	XMLDUMPT(Name);
+    XMLDUMPT(EmailAddress);
+    XMLDUMPT(RoutingType);
+    XMLDUMPT(MailboxType);
+    XMLDUMPT(ItemId);
+    XMLDUMPT(OriginalDisplayName);
 }
 
 tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
@@ -337,8 +335,8 @@ void tExtendedProperty::serialize(XMLElement* xml) const
 	if(!data)
 		return;
 	bool ismv = propval.proptag & MV_FLAG;
-	toXMLNode(xml , "ExtendedFieldURI", tExtendedFieldURI(propval.proptag));
-	XMLElement* value = xml->InsertNewChildElement(ismv? "Values" : "Value");
+	toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(propval.proptag));
+	XMLElement* value = xml->InsertNewChildElement(ismv? "t:Values" : "t:Value");
 	if(!ismv)
 		return serialize(data, 0, PROP_TYPE(propval.proptag), value);
 	//throw NotImplementedError("MV tags are currently not supported");
@@ -349,7 +347,7 @@ tFieldURI::tFieldURI(const XMLElement* xml) :
 {}
 
 void tFlagType::serialize(XMLElement* xml) const
-{XMLDUMP(FlagStatus);}
+{XMLDUMPT(FlagStatus);}
 
 tFolderResponseShape::tFolderResponseShape(const XMLElement* xml) :
     XMLINIT(BaseShape),
@@ -359,15 +357,14 @@ tFolderResponseShape::tFolderResponseShape(const XMLElement* xml) :
 void tFolderType::serialize(XMLElement* xml) const
 {
 	tBaseFolderType::serialize(xml);
-	XMLDUMP(UnreadCount);
+	XMLDUMPT(UnreadCount);
 }
 
 void tFreeBusyView::serialize(XMLElement* xml) const
 {
-	xml->SetAttribute("xmlns", SOAP::NS_TYPS);
-	XMLDUMP(FreeBusyViewType);
-	XMLDUMP(MergedFreeBusy);
-	XMLDUMP(CalendarEventArray);
+	XMLDUMPT(FreeBusyViewType);
+	XMLDUMPT(MergedFreeBusy);
+	XMLDUMPT(CalendarEventArray);
 }
 
 tFreeBusyViewOptions::tFreeBusyViewOptions(const tinyxml2::XMLElement* xml) :
@@ -376,25 +373,25 @@ tFreeBusyViewOptions::tFreeBusyViewOptions(const tinyxml2::XMLElement* xml) :
 
 void tItem::serialize(XMLElement* xml) const
 {
-	XMLDUMP(ItemId);
-	XMLDUMP(ParentFolderId);
-	XMLDUMP(ItemClass);
-	XMLDUMP(Subject);
-	XMLDUMP(DateTimeReceived);
-	XMLDUMP(Size);
-	XMLDUMP(InReplyTo);
-	XMLDUMP(DateTimeSent);
-	XMLDUMP(DisplayCc);
-	XMLDUMP(DisplayTo);
-	XMLDUMP(DisplayBcc);
-	XMLDUMP(HasAttachments);
-	XMLDUMP(LastModifiedName);
-	XMLDUMP(LastModifiedTime);
-	XMLDUMP(IsAssociated);
-	XMLDUMP(ConversationId);
-	XMLDUMP(Flag);
+	XMLDUMPT(ItemId);
+	XMLDUMPT(ParentFolderId);
+	XMLDUMPT(ItemClass);
+	XMLDUMPT(Subject);
+	XMLDUMPT(DateTimeReceived);
+	XMLDUMPT(Size);
+	XMLDUMPT(InReplyTo);
+	XMLDUMPT(DateTimeSent);
+	XMLDUMPT(DisplayCc);
+	XMLDUMPT(DisplayTo);
+	XMLDUMPT(DisplayBcc);
+	XMLDUMPT(HasAttachments);
+	XMLDUMPT(LastModifiedName);
+	XMLDUMPT(LastModifiedTime);
+	XMLDUMPT(IsAssociated);
+	XMLDUMPT(ConversationId);
+	XMLDUMPT(Flag);
 	for(const tExtendedProperty& ep : ExtendedProperty)
-		toXMLNode(xml, "ExtendedProperty", ep);
+		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
 
 tItemResponseShape::tItemResponseShape(const XMLElement* xml) :
@@ -412,37 +409,37 @@ tMailboxData::tMailboxData(const tinyxml2::XMLElement* xml) :
 
 void tMailTips::serialize(XMLElement* xml) const
 {
-	XMLDUMP(RecipientAddress);
-	XMLDUMP(PendingMailTips);
+	XMLDUMPT(RecipientAddress);
+	XMLDUMPT(PendingMailTips);
 }
 
 void tMailTipsServiceConfiguration::serialize(tinyxml2::XMLElement* xml) const
 {
-	XMLDUMP(MailTipsEnabled);
-	XMLDUMP(MaxRecipientsPerGetMailTipsRequest);
-	XMLDUMP(MaxMessageSize);
-	XMLDUMP(LargeAudienceThreshold);
-	XMLDUMP(ShowExternalRecipientCount);
-	XMLDUMP(InternalDomains);
-	XMLDUMP(PolicyTipsEnabled);
-	XMLDUMP(LargeAudienceCap);
+	XMLDUMPT(MailTipsEnabled);
+	XMLDUMPT(MaxRecipientsPerGetMailTipsRequest);
+	XMLDUMPT(MaxMessageSize);
+	XMLDUMPT(LargeAudienceThreshold);
+	XMLDUMPT(ShowExternalRecipientCount);
+	XMLDUMPT(InternalDomains);
+	XMLDUMPT(PolicyTipsEnabled);
+	XMLDUMPT(LargeAudienceCap);
 }
 
 void tMessage::serialize(tinyxml2::XMLElement* xml) const
 {
 	tItem::serialize(xml);
-	XMLDUMP(Sender);
+	XMLDUMPT(Sender);
 	//XMLDUMP(ToRecipients);
 	//XMLDUMP(CcRecipients);
 	//XMLDUMP(BccRecipients);
-	XMLDUMP(IsReadReceiptRequested);
-	XMLDUMP(IsDeliveryReceiptRequested);
-	XMLDUMP(From);
-	XMLDUMP(IsRead);
-	XMLDUMP(IsResponseRequested);
-	XMLDUMP(ReplyTo);
-	XMLDUMP(ReceivedBy);
-	XMLDUMP(ReceivedRepresenting);
+	XMLDUMPT(IsReadReceiptRequested);
+	XMLDUMPT(IsDeliveryReceiptRequested);
+	XMLDUMPT(From);
+	XMLDUMPT(IsRead);
+	XMLDUMPT(IsResponseRequested);
+	XMLDUMPT(ReplyTo);
+	XMLDUMPT(ReceivedBy);
+	XMLDUMPT(ReceivedRepresenting);
 }
 
 tPath::tPath(const XMLElement* xml)
@@ -455,7 +452,7 @@ tReplyBody::tReplyBody(const XMLElement* xml):
 
 void tReplyBody::serialize(XMLElement* xml) const
 {
-	XMLDUMP(Message);
+	XMLDUMPT(Message);
 	XMLDUMPA(lang);
 }
 
@@ -474,8 +471,8 @@ tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement* xml) :
 
 void tSmtpDomain::serialize(XMLElement* xml) const
 {
-	XMLDUMP(Name);
-	XMLDUMP(IncludeSubdomains);
+	XMLDUMPT(Name);
+	XMLDUMPT(IncludeSubdomains);
 }
 
 tSuggestionsViewOptions::tSuggestionsViewOptions(const tinyxml2::XMLElement* xml) :
@@ -490,29 +487,29 @@ tSuggestionsViewOptions::tSuggestionsViewOptions(const tinyxml2::XMLElement* xml
 {}
 
 void tSyncFolderHierarchyCU::serialize(XMLElement* xml) const
-{VXMLDUMP(folder);}
+{XMLDUMPT(folder);}
 
 tSyncFolderHierarchyDelete::tSyncFolderHierarchyDelete(const sBase64Binary& fEntryID) :
     FolderId(fEntryID)
 {}
 
 void tSyncFolderHierarchyDelete::serialize(XMLElement* xml) const
-{XMLDUMP(FolderId);}
+{XMLDUMPT(FolderId);}
 
 void tSyncFolderItemsCU::serialize(XMLElement* xml) const
-{VXMLDUMP(item);}
+{XMLDUMPT(item);}
 
 tSyncFolderItemsDelete::tSyncFolderItemsDelete(const TAGGED_PROPVAL& tp) : ItemId(tp)
 {}
 
 
 void tSyncFolderItemsDelete::serialize(tinyxml2::XMLElement* xml) const
-{XMLDUMP(ItemId);}
+{XMLDUMPT(ItemId);}
 
 void tSyncFolderItemsReadFlag::serialize(tinyxml2::XMLElement* xml) const
 {
-	XMLDUMP(ItemId);
-	XMLDUMP(IsRead);
+	XMLDUMPT(ItemId);
+	XMLDUMPT(IsRead);
 }
 
 tTargetFolderIdType::tTargetFolderIdType(const XMLElement* xml) :
@@ -529,12 +526,11 @@ tUserOofSettings::tUserOofSettings(const XMLElement* xml) :
 
 void tUserOofSettings::serialize(XMLElement* xml) const
 {
-	xml->SetAttribute("xmlns", SOAP::NS_TYPS);
-	XMLDUMP(OofState);
-	XMLDUMP(ExternalAudience);
-	XMLDUMP(Duration);
-	XMLDUMP(InternalReply);
-	XMLDUMP(ExternalReply);
+	XMLDUMPT(OofState);
+	XMLDUMPT(ExternalAudience);
+	XMLDUMPT(Duration);
+	XMLDUMPT(InternalReply);
+	XMLDUMPT(ExternalReply);
 }
 
 mGetFolderRequest::mGetFolderRequest(const XMLElement* xml) :
@@ -545,17 +541,16 @@ mGetFolderRequest::mGetFolderRequest(const XMLElement* xml) :
 void mGetFolderResponseMessage::serialize(XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);
-	XMLDUMP(Folders);
+	XMLDUMPM(Folders);
 }
 
 void mGetFolderResponse::serialize(XMLElement* xml) const
-{XMLDUMP(ResponseMessages);}
+{XMLDUMPM(ResponseMessages);}
 
 void mFreeBusyResponse::serialize(XMLElement* xml) const
 {
-	xml->SetAttribute("xmlns", SOAP::NS_MSGS);
-	XMLDUMP(ResponseMessage);
-	XMLDUMP(FreeBusyView);
+	XMLDUMPM(ResponseMessage);
+	XMLDUMPM(FreeBusyView);
 }
 
 mGetMailTipsRequest::mGetMailTipsRequest(const XMLElement* xml) :
@@ -567,13 +562,13 @@ mGetMailTipsRequest::mGetMailTipsRequest(const XMLElement* xml) :
 void mMailTipsResponseMessageType::serialize(XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);
-	XMLDUMP(MailTips);
+	XMLDUMPM(MailTips);
 }
 
 void mGetMailTipsResponse::serialize(XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);
-	XMLDUMP(ResponseMessages);
+	XMLDUMPM(ResponseMessages);
 }
 
 mGetServiceConfigurationRequest::mGetServiceConfigurationRequest(const XMLElement* xml) :
@@ -583,13 +578,13 @@ mGetServiceConfigurationRequest::mGetServiceConfigurationRequest(const XMLElemen
 void mGetServiceConfigurationResponse::serialize(XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);
-	XMLDUMP(ResponseMessages);
+	XMLDUMPM(ResponseMessages);
 }
 
 void mGetServiceConfigurationResponseMessageType::serialize(XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);
-	XMLDUMP(MailTipsConfiguration);
+	XMLDUMPM(MailTipsConfiguration);
 }
 
 mGetUserAvailabilityRequest::mGetUserAvailabilityRequest(const XMLElement* xml) :
@@ -597,7 +592,7 @@ mGetUserAvailabilityRequest::mGetUserAvailabilityRequest(const XMLElement* xml) 
 {}
 
 void mGetUserAvailabilityResponse::serialize(XMLElement* xml) const
-{XMLDUMP(FreeBusyResponseArray);}
+{XMLDUMPM(FreeBusyResponseArray);}
 
 mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
     XMLINIT(Mailbox)
@@ -605,18 +600,18 @@ mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
 
 void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
 {
-	xml->SetAttribute("xmlns", SOAP::NS_MSGS);
-	XMLDUMP(ResponseMessage);
-	toXMLNode(xml, "OofSettings", UserOofSettings);
-	XMLDUMP(AllowExternalOof);
+	XMLDUMPM(ResponseMessage);
+	XMLDUMPT(OofSettings);
+	XMLDUMPM(AllowExternalOof);
 }
 
+//TODO: Verify namespaces
 void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPA(ResponseClass);
-	XMLDUMP(ResponseCode);
-	XMLDUMP(MessageText);
-	XMLDUMP(DescriptiveLinkKey);
+	XMLDUMPM(ResponseCode);
+	XMLDUMPM(MessageText);
+	XMLDUMPM(DescriptiveLinkKey);
 }
 
 mSetUserOofSettingsRequest::mSetUserOofSettingsRequest(const XMLElement* xml) :
@@ -624,10 +619,7 @@ mSetUserOofSettingsRequest::mSetUserOofSettingsRequest(const XMLElement* xml) :
 {}
 
 void mSetUserOofSettingsResponse::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", SOAP::NS_MSGS);
-	XMLDUMP(ResponseMessage);
-}
+{XMLDUMPM(ResponseMessage);}
 
 mSyncFolderHierarchyRequest::mSyncFolderHierarchyRequest(const XMLElement* xml) :
     XMLINIT(FolderShape),
@@ -638,13 +630,13 @@ mSyncFolderHierarchyRequest::mSyncFolderHierarchyRequest(const XMLElement* xml) 
 void mSyncFolderHierarchyResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);
-	XMLDUMP(SyncState);
-	XMLDUMP(IncludesLastFolderInRange);
-	XMLDUMP(Changes);
+	XMLDUMPM(SyncState);
+	XMLDUMPM(IncludesLastFolderInRange);
+	XMLDUMPM(Changes);
 }
 
 void mSyncFolderHierarchyResponse::serialize(tinyxml2::XMLElement* xml) const
-{XMLDUMP(ResponseMessages);}
+{XMLDUMPM(ResponseMessages);}
 
 mSyncFolderItemsRequest::mSyncFolderItemsRequest(const XMLElement* xml) :
 	XMLINIT(ItemShape),
@@ -656,10 +648,11 @@ mSyncFolderItemsRequest::mSyncFolderItemsRequest(const XMLElement* xml) :
 
 void mSyncFolderItemsResponseMessage::serialize(XMLElement* xml) const
 {
-	XMLDUMP(SyncState);
-	XMLDUMP(IncludesLastItemInRange);
-	XMLDUMP(Changes);
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(SyncState);
+	XMLDUMPM(IncludesLastItemInRange);
+	XMLDUMPM(Changes);
 }
 
 void mSyncFolderItemsResponse::serialize(XMLElement* xml) const
-{XMLDUMP(ResponseMessages);}
+{XMLDUMPM(ResponseMessages);}
