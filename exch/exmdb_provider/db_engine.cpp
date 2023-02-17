@@ -1317,7 +1317,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 	
 	uint8_t *pread_byte = nullptr;
 	void *pvalue0;
-	if (!cu_get_property(db_table::msg_props, message_id, 0,
+	if (!cu_get_property(MAPI_MESSAGE, message_id, 0,
 	    pdb->psqlite, PR_ASSOCIATED, &pvalue0))
 		return;	
 	bool b_optimize = false;
@@ -1421,7 +1421,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 		} else if (0 == ptable->psorts->ccategories) {
 			for (size_t i = 0; i < ptable->psorts->count; ++i) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
-				if (!cu_get_property(db_table::msg_props, message_id,
+				if (!cu_get_property(MAPI_MESSAGE, message_id,
 					ptable->cpid, pdb->psqlite, propvals[i].proptag,
 					&propvals[i].pvalue)) {
 					return;
@@ -1444,7 +1444,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				idx = sqlite3_column_int64(pstmt, 2);
 				for (size_t i = 0; i < ptable->psorts->count; ++i) {
 					void *pvalue = nullptr;
-					if (!cu_get_property(db_table::msg_props, inst_id1,
+					if (!cu_get_property(MAPI_MESSAGE, inst_id1,
 						ptable->cpid, pdb->psqlite,
 						propvals[i].proptag, &pvalue)) {
 						return;
@@ -1527,7 +1527,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (NULL == pread_byte) {
-			if (!cu_get_property(db_table::msg_props,
+			if (!cu_get_property(MAPI_MESSAGE,
 			    message_id, ptable->cpid, pdb->psqlite, PR_READ,
 			    reinterpret_cast<void **>(&pread_byte)) ||
 			    pread_byte == nullptr)
@@ -1540,11 +1540,11 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			if (propvals[i].proptag == ptable->instance_tag) {
 				multi_index = i;
 				if (!cu_get_property(
-				    db_table::msg_props, message_id, ptable->cpid,
+				    MAPI_MESSAGE, message_id, ptable->cpid,
 				    pdb->psqlite, propvals[i].proptag & ~MV_INSTANCE,
 				    &propvals[i].pvalue))
 					return;
-			} else if (!cu_get_property(db_table::msg_props, message_id,
+			} else if (!cu_get_property(MAPI_MESSAGE, message_id,
 			    ptable->cpid, pdb->psqlite, propvals[i].proptag,
 			    &propvals[i].pvalue)) {
 				return;
@@ -1662,7 +1662,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				for (i = ptable->psorts->ccategories;
 				     i < ptable->psorts->count; i++) {
 					void *pvalue = nullptr;
-					if (!cu_get_property(db_table::msg_props, inst_id,
+					if (!cu_get_property(MAPI_MESSAGE, inst_id,
 					    ptable->cpid, pdb->psqlite,
 					    propvals[i].proptag, &pvalue)) {
 						return;
@@ -2003,12 +2003,12 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		datagram.db_notify.pdata = pnew_mail;
 		pnew_mail->folder_id = folder_id;
 		pnew_mail->message_id = message_id;
-		if (!cu_get_property(db_table::msg_props,
+		if (!cu_get_property(MAPI_MESSAGE,
 		    message_id, 0, pdb->psqlite, PR_MESSAGE_FLAGS,
 		    &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->message_flags = *static_cast<uint32_t *>(pvalue);
-		if (!cu_get_property(db_table::msg_props,
+		if (!cu_get_property(MAPI_MESSAGE,
 		    message_id, 0, pdb->psqlite, PR_MESSAGE_CLASS, &pvalue) ||
 		    pvalue == nullptr)
 			return;
@@ -2354,7 +2354,7 @@ static void* db_engine_get_extremum_value(db_item_ptr &pdb,
 	b_first = FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		message_id = sqlite3_column_int64(pstmt, 0);
-		if (!cu_get_property(db_table::msg_props, message_id,
+		if (!cu_get_property(MAPI_MESSAGE, message_id,
 			cpid, pdb->psqlite, extremum_tag, &pvalue1)) {
 			continue;	
 		}
@@ -3164,7 +3164,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			size_t i;
 			for (i=0; i<ptable->psorts->count; i++) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
-				if (!cu_get_property(db_table::msg_props, message_id,
+				if (!cu_get_property(MAPI_MESSAGE, message_id,
 					ptable->cpid, pdb->psqlite, propvals[i].proptag,
 					&propvals[i].pvalue)) {
 					break;
@@ -3204,7 +3204,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			for (i=0; i<ptable->psorts->count; i++) {
 				if (inst_id == 0)
 					continue;
-				if (!cu_get_property(db_table::msg_props, inst_id,
+				if (!cu_get_property(MAPI_MESSAGE, inst_id,
 					ptable->cpid, pdb->psqlite,
 					propvals[i].proptag, &pvalue)) {
 					b_error = TRUE;
@@ -3224,7 +3224,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			for (i=0; i<ptable->psorts->count; i++) {
 				if (inst_id1 == 0)
 					continue;
-				if (!cu_get_property(db_table::msg_props, inst_id1,
+				if (!cu_get_property(MAPI_MESSAGE, inst_id1,
 					ptable->cpid, pdb->psqlite,
 					propvals[i].proptag, &pvalue)) {
 					b_error = TRUE;
@@ -3262,7 +3262,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			/* check if the multiple instance value is changed */ 
 			if (0 != ptable->instance_tag) {
 				type = PROP_TYPE(ptable->instance_tag) & ~MVI_FLAG;
-				if (!cu_get_property(db_table::msg_props,
+				if (!cu_get_property(MAPI_MESSAGE,
 				    message_id, ptable->cpid, pdb->psqlite,
 				    ptable->instance_tag & ~MV_INSTANCE, &pmultival))
 					continue;
@@ -3317,7 +3317,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (propvals[i].proptag == ptable->instance_tag) {
 					propvals[i].pvalue = NULL;
-				} else if (!cu_get_property(db_table::msg_props, message_id,
+				} else if (!cu_get_property(MAPI_MESSAGE, message_id,
 				    ptable->cpid, pdb->psqlite, propvals[i].proptag,
 				    &propvals[i].pvalue)) {
 					break;
@@ -3440,7 +3440,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				for (; i<ptable->psorts->count; i++) {
 					if (inst_id == 0)
 						continue;
-					if (!cu_get_property(db_table::msg_props, inst_id,
+					if (!cu_get_property(MAPI_MESSAGE, inst_id,
 						ptable->cpid, pdb->psqlite,
 						propvals[i].proptag, &pvalue)) {
 						b_error = TRUE;
@@ -3466,7 +3466,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				for (; i<ptable->psorts->count; i++) {
 					if (inst_id1 == 0)
 						continue;
-					if (!cu_get_property(db_table::msg_props, inst_id1,
+					if (!cu_get_property(MAPI_MESSAGE, inst_id1,
 						ptable->cpid, pdb->psqlite,
 						propvals[i].proptag, &pvalue)) {
 						b_error = TRUE;
@@ -3486,7 +3486,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				}
 				if (b_error)
 					break;
-				if (!cu_get_property(db_table::msg_props,
+				if (!cu_get_property(MAPI_MESSAGE,
 				    message_id, 0, pdb->psqlite, PR_READ, &pvalue) ||
 				    pvalue == nullptr) {
 					b_error = TRUE;

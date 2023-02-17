@@ -135,7 +135,7 @@ BOOL exmdb_server::get_store_all_proptags(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	std::vector<uint32_t> tags;
-	if (!cu_get_proptags(db_table::store_props, 0, pdb->psqlite, tags))
+	if (!cu_get_proptags(MAPI_STORE, 0, pdb->psqlite, tags))
 		return FALSE;
 	pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
 	if (pproptags->pproptag == nullptr)
@@ -152,7 +152,7 @@ BOOL exmdb_server::get_store_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	return cu_get_properties(db_table::store_props, 0, cpid, pdb->psqlite,
+	return cu_get_properties(MAPI_STORE, 0, cpid, pdb->psqlite,
 	       pproptags, ppropvals);
 }
 
@@ -164,7 +164,7 @@ BOOL exmdb_server::set_store_properties(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!cu_set_properties(db_table::store_props, 0, cpid, pdb->psqlite,
+	if (!cu_set_properties(MAPI_STORE, 0, cpid, pdb->psqlite,
 	    ppropvals, pproblems))
 		return FALSE;
 	transact.commit();
@@ -178,7 +178,7 @@ BOOL exmdb_server::remove_store_properties(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!cu_remove_properties(db_table::store_props, 0, pdb->psqlite, pproptags))
+	if (!cu_remove_properties(MAPI_STORE, 0, pdb->psqlite, pproptags))
 		return FALSE;
 	transact.commit();
 	return TRUE;

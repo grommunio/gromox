@@ -45,7 +45,7 @@ static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 		return 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		auto attachment_id = pstmt.col_uint64(0);
-		if (!cu_get_property(db_table::atx_props,
+		if (!cu_get_property(MAPI_ATTACH,
 		    attachment_id, 0, psqlite, PR_ATTACH_LONG_FILENAME, &pvalue))
 			return 0;
 		if (NULL == pvalue) {
@@ -92,12 +92,12 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	if ('\0' != time_zone[0]) {
 		snprintf(date_buff + len, 128 - len, " %s", time_zone);
 	}
-	if (!cu_get_property(db_table::msg_props, message_id, 0,
+	if (!cu_get_property(MAPI_MESSAGE, message_id, 0,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
 		return FALSE;
 	auto message_size = *static_cast<uint32_t *>(pvalue);
 	if ('\0' == charset[0]) {
-		if (!cu_get_property(db_table::msg_props,
+		if (!cu_get_property(MAPI_MESSAGE,
 		    message_id, 0, psqlite, PR_INTERNET_CPID, &pvalue))
 			return FALSE;
 		if (NULL == pvalue) {
@@ -122,7 +122,7 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "rcpt", rcpt, HXTYPE_STRING) < 0)
 		return false;
-	if (!cu_get_property(db_table::msg_props,
+	if (!cu_get_property(MAPI_MESSAGE,
 	    message_id, 0, psqlite, PR_SUBJECT, &pvalue))
 		return FALSE;
 	if (HXformat_add(fa, "subject", pvalue != nullptr ?

@@ -923,7 +923,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				auto tmp_proptag = tmp_proptags[i];
 				if (tmp_proptag == ptnode->instance_tag)
 					continue;
-				if (!cu_get_property(db_table::msg_props, mid_val,
+				if (!cu_get_property(MAPI_MESSAGE, mid_val,
 				    cpid, pdb->psqlite, tmp_proptag, &pvalue))
 					return false;
 				if (pvalue == nullptr)
@@ -933,7 +933,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					return false;
 			}
 			if (psorts->ccategories > 0) {
-				if (!cu_get_property(db_table::msg_props,
+				if (!cu_get_property(MAPI_MESSAGE,
 				    mid_val, 0, pdb->psqlite, PR_READ, &pvalue))
 					return false;
 				sqlite3_bind_int64(pstmt1, tag_count + 2,
@@ -943,7 +943,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			if (0 != ptnode->instance_tag) {
 				uint16_t type = PROP_TYPE(ptnode->instance_tag);
 				type &= ~MV_INSTANCE;
-				if (!cu_get_property(db_table::msg_props,
+				if (!cu_get_property(MAPI_MESSAGE,
 				    mid_val, cpid, pdb->psqlite,
 				    ptnode->instance_tag & ~MV_INSTANCE, &pvalue))
 					return false;
@@ -1940,7 +1940,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 					}
 					*v = sqlite3_column_int64(pstmt, 1);
 				} else {
-					if (!cu_get_property(db_table::folder_props, folder_id, cpid,
+					if (!cu_get_property(MAPI_FOLDER, folder_id, cpid,
 						pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 						return FALSE;
 					}
@@ -2036,7 +2036,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 					if (CONTENT_ROW_HEADER == row_type) {
 						continue;
 					}
-					if (!cu_get_property(db_table::msg_props, inst_id, cpid,
+					if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
 						pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 						common_util_end_message_optimize();
 						return FALSE;
@@ -2236,7 +2236,7 @@ static BOOL table_get_content_row_property(
 			*ppvalue = NULL;
 			return TRUE;
 		}
-		if (!cu_get_property(db_table::msg_props, prow_param->inst_id,
+		if (!cu_get_property(MAPI_MESSAGE, prow_param->inst_id,
 			prow_param->cpid, prow_param->psqlite, proptag,
 			ppvalue)) {
 			return FALSE;	
@@ -2250,7 +2250,7 @@ static BOOL table_get_hierarchy_row_property(
 {
 	auto prow_param = static_cast<HIERARCHY_ROW_PARAM *>(pparam);
 	if (proptag != PR_DEPTH)
-		return cu_get_property(db_table::folder_props, prow_param->folder_id,
+		return cu_get_property(MAPI_FOLDER, prow_param->folder_id,
 		       prow_param->cpid, prow_param->psqlite, proptag, ppvalue);
 	auto v = cu_alloc<uint32_t>();
 	*ppvalue = v;
@@ -2464,7 +2464,7 @@ static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 				}
 				*v = sqlite3_column_int64(pstmt, 2);
 			} else {
-				if (!cu_get_property(db_table::folder_props, folder_id, cpid,
+				if (!cu_get_property(MAPI_FOLDER, folder_id, cpid,
 				    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 					return FALSE;
 				}
@@ -2573,7 +2573,7 @@ static BOOL match_tbl_ctnt(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 				if (CONTENT_ROW_HEADER == row_type) {
 					continue;
 				}
-				if (!cu_get_property(db_table::msg_props, inst_id, cpid,
+				if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
 				    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 					common_util_end_message_optimize();
 					return FALSE;
@@ -2806,7 +2806,7 @@ static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
 			}
 			*v = depth;
 		} else {
-			if (!cu_get_property(db_table::folder_props, folder_id, cpid,
+			if (!cu_get_property(MAPI_FOLDER, folder_id, cpid,
 			    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 				return FALSE;
 			}
@@ -2889,7 +2889,7 @@ static BOOL read_tblrow_ctnt(uint32_t cpid, uint32_t table_id,
 			if (CONTENT_ROW_HEADER == row_type) {
 				continue;
 			}
-			if (!cu_get_property(db_table::msg_props, inst_id, cpid,
+			if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
 			    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 				return FALSE;
 			}

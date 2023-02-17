@@ -118,7 +118,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		return FALSE;
 	auto cl_msgctnt = make_scope_exit([&]() { message_content_free(pmsgctnt); });
 	std::vector<uint32_t> proptags;
-	if (!cu_get_proptags(db_table::msg_props, message_id,
+	if (!cu_get_proptags(MAPI_MESSAGE, message_id,
 	    psqlite, proptags))
 		return FALSE;
 	for (uint32_t tag : proptags) {
@@ -204,7 +204,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		default: {
 			void *newval = nullptr;
-			if (!cu_get_property(db_table::msg_props,
+			if (!cu_get_property(MAPI_MESSAGE,
 			    message_id, 0, psqlite, tag, &newval) ||
 			    newval == nullptr ||
 			    pmsgctnt->proplist.set(tag, newval) != 0)
@@ -237,7 +237,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			uint32_t tag = sqlite3_column_int64(pstmt1, 0);
 			void *newval = nullptr;
-			if (!cu_get_property(db_table::rcpt_props,
+			if (!cu_get_property(MAPI_MAILUSER,
 			    rcpt_id, 0, psqlite, tag, &newval) ||
 			    newval == nullptr ||
 			    pproplist->set(tag, newval) != 0)
@@ -281,7 +281,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			return FALSE;	
 		(*plast_id) ++;
 		attachment_id = sqlite3_column_int64(pstmt, 0);
-		if (!cu_get_proptags(db_table::atx_props,
+		if (!cu_get_proptags(MAPI_ATTACH,
 		    attachment_id, psqlite, proptags))
 			return FALSE;
 		for (auto tag : proptags) {
@@ -305,7 +305,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			}
 			default: {
 				void *newval = nullptr;
-				if (!cu_get_property(db_table::atx_props,
+				if (!cu_get_property(MAPI_ATTACH,
 				    attachment_id, 0, psqlite, tag, &newval) ||
 				    newval == nullptr ||
 				    pattachment->proplist.set(tag, newval) != 0)

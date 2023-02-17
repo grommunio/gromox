@@ -688,7 +688,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		auto fid_val1 = sqlite3_column_int64(stm_select_chg, 0);
 		PROPTAG_ARRAY proptags;
 		std::vector<uint32_t> tags;
-		if (!cu_get_proptags(db_table::folder_props, fid_val1,
+		if (!cu_get_proptags(MAPI_FOLDER, fid_val1,
 		    pdb->psqlite, tags))
 			return FALSE;
 		tags.erase(std::remove_if(tags.begin(), tags.end(), [](uint32_t t) {
@@ -700,7 +700,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		tags.push_back(PidTagParentFolderId);
 		proptags.count = tags.size();
 		proptags.pproptag = tags.data();
-		if (!cu_get_properties(db_table::folder_props, fid_val1, 0,
+		if (!cu_get_properties(MAPI_FOLDER, fid_val1, 0,
 		    pdb->psqlite, &proptags, &pfldchgs->pfldchgs[i]))
 			return FALSE;
 	}
