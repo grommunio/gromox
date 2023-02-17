@@ -2059,7 +2059,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 }
 
 static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
-    uint64_t folder_id, std::list<RULE_NODE> &plist)
+    uint64_t folder_id, std::list<RULE_NODE> &plist) try
 {
 	char sql_string[256];
 	
@@ -2083,26 +2083,24 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 		}
 		std::list<RULE_NODE> rn;
 		uint32_t seq = 0;
-		try {
-			auto prov = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 3));
-			if (prov == nullptr)
-				continue;
-			uint64_t msg_id = sqlite3_column_int64(pstmt, 1);
-			seq = sqlite3_column_int64(pstmt, 2);
-			rn.push_back(RULE_NODE{seq, state, msg_id, prov});
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1561: ENOMEM");
-			return false;
-		}
+		auto prov = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 3));
+		if (prov == nullptr)
+			continue;
+		uint64_t msg_id = sqlite3_column_int64(pstmt, 1);
+		seq = sqlite3_column_int64(pstmt, 2);
+		rn.push_back(RULE_NODE{seq, state, msg_id, prov});
 		auto it = std::find_if(plist.begin(), plist.end(),
 		          [&](const RULE_NODE &r) { return r.sequence == seq; });
 		plist.splice(it, std::move(rn));
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1561: ENOMEM");
+	return false;
 }
 
 static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
-    uint64_t folder_id, std::list<RULE_NODE> &plist)
+    uint64_t folder_id, std::list<RULE_NODE> &plist) try
 {
 	char sql_string[107];
 	
@@ -2153,12 +2151,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 		if (pvalue == nullptr)
 			continue;
 		std::list<RULE_NODE> rn;
-		try {
-			rn.push_back(RULE_NODE{seq, state, message_id, static_cast<char *>(pvalue)});
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1507: ENOMEM");
-			return false;
-		}
+		rn.push_back(RULE_NODE{seq, state, message_id, static_cast<char *>(pvalue)});
 		auto it = std::find_if(plist.begin(), plist.end(),
 		          [&](const RULE_NODE &r) { return r.sequence == seq; });
 		plist.splice(it, std::move(rn));
@@ -2166,6 +2159,9 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 			break;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1507: ENOMEM");
+	return false;
 }
 
 static BOOL message_get_real_propid(sqlite3 *psqlite,
