@@ -2753,12 +2753,12 @@ static BOOL cu_set_obj_cid_val_v0(sqlite3 *psqlite, mapi_object_type table_type,
 	return TRUE;
 }
 
-BOOL cu_set_property(mapi_object_type table_type,
-	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
-	const TAGGED_PROPVAL *ppropval, BOOL *pb_result)
+BOOL cu_set_property(mapi_object_type table_type, uint64_t id, uint32_t cpid,
+    sqlite3 *psqlite, uint32_t tag, const void *data, BOOL *pb_result)
 {
 	PROBLEM_ARRAY tmp_problems;
-	const TPROPVAL_ARRAY tmp_propvals = {1, deconst(ppropval)};
+	const TAGGED_PROPVAL tp = {tag, deconst(data)};
+	const TPROPVAL_ARRAY tmp_propvals = {1, deconst(&tp)};
 	if (!cu_set_properties(table_type,
 	    id, cpid, psqlite, &tmp_propvals, &tmp_problems))
 		return FALSE;
@@ -4711,7 +4711,6 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 	uint64_t change_num;
 	TPROPVAL_ARRAY propvals;
 	PROBLEM_ARRAY tmp_problems;
-	TAGGED_PROPVAL tmp_propval;
 	static const uint32_t fake_uid = 1;
 	TAGGED_PROPVAL propval_buff[4];
 	
@@ -4727,10 +4726,8 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 	if (pvalue == nullptr)
 		pvalue = deconst(&fake_uid);
 	auto next = *static_cast<uint32_t *>(pvalue) + 1;
-	tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER_NEXT;
-	tmp_propval.pvalue = &next;
 	if (!cu_set_property(MAPI_FOLDER, folder_id, 0, psqlite,
-	    &tmp_propval, &b_result))
+	    PR_INTERNET_ARTICLE_NUMBER_NEXT, &next, &b_result))
 		return FALSE;
 	propval_buff[0].proptag = PR_CHANGE_KEY;
 	propval_buff[0].pvalue = cu_xid_to_bin({

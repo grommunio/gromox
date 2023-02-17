@@ -362,7 +362,6 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 	uint32_t type = 0, parent_type = 0;
 	uint64_t tmp_fid = 0, folder_id = 0;
 	char sql_string[128];
-	TAGGED_PROPVAL tmp_propval;
 	PROBLEM_ARRAY tmp_problems;
 
 	auto folder_id_p = pproperties->get<const eid_t>(PidTagFolderId);
@@ -492,14 +491,10 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 		    folder_id, cpid, pdb->psqlite, pproperties, &tmp_problems))
 			return FALSE;
 		uint32_t next = 1, del_cnt = 0;
-		tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER_NEXT;
-		tmp_propval.pvalue = &next;
 		cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
-			&tmp_propval, &b_result);
-		tmp_propval.proptag = PR_DELETED_COUNT_TOTAL;
-		tmp_propval.pvalue = &del_cnt;
+			PR_INTERNET_ARTICLE_NUMBER_NEXT, &next, &b_result);
 		cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
-			&tmp_propval, &b_result);
+			PR_DELETED_COUNT_TOTAL, &del_cnt, &b_result);
 	} else {
 		if (0 == tmp_fid) {
 			if (!common_util_allocate_eid(pdb->psqlite, &max_eid))
@@ -526,31 +521,23 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 	uint32_t art = 0, hcn = 0;
 	if (!common_util_allocate_folder_art(pdb->psqlite, &art))
 		return FALSE;
-	tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER;
-	tmp_propval.pvalue = &art;
 	cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
-		&tmp_propval, &b_result);
+		PR_INTERNET_ARTICLE_NUMBER, &art, &b_result);
 	auto nt_time = rop_util_current_nttime();
-	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
-	tmp_propval.pvalue = &nt_time;
 	cu_set_property(MAPI_FOLDER, parent_id, 0, pdb->psqlite,
-		&tmp_propval, &b_result);
+		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
-		&tmp_propval, &b_result);
-	tmp_propval.proptag = PR_HIERARCHY_CHANGE_NUM;
-	tmp_propval.pvalue = &hcn;
+		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
-		&tmp_propval, &b_result);
+		PR_HIERARCHY_CHANGE_NUM, &hcn, &b_result);
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
 		"proptag=%u", LLU{parent_id}, PR_HIERARCHY_CHANGE_NUM);
 	gx_sql_exec(pdb->psqlite, sql_string);
-	tmp_propval.proptag = PR_HIER_REV;
-	tmp_propval.pvalue = &nt_time;
 	cu_set_property(MAPI_FOLDER, parent_id, 0, pdb->psqlite,
-		&tmp_propval, &b_result);
+		PR_HIER_REV, &nt_time, &b_result);
 	cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
-		&tmp_propval, &b_result);
+		PR_HIER_REV, &nt_time, &b_result);
 	sql_transact.commit();
 	db_engine_notify_folder_creation(pdb, parent_id, folder_id);
 	*pfolder_id = rop_util_make_eid_ex(1, folder_id);
@@ -599,8 +586,6 @@ BOOL exmdb_server::set_folder_properties(const char *dir, uint32_t cpid,
     PROBLEM_ARRAY *pproblems)
 {
 	unsigned int i;
-	BOOL b_result = false;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -612,9 +597,10 @@ BOOL exmdb_server::set_folder_properties(const char *dir, uint32_t cpid,
 			    pproperties->ppropval[i].proptag != PR_ADDITIONAL_REN_ENTRYIDS_EX &&
 			    pproperties->ppropval[i].proptag != PR_REM_ONLINE_ENTRYID)
 				continue;
-			if (!cu_set_property(MAPI_FOLDER, PRIVATE_FID_INBOX,
-			    0, pdb->psqlite, &pproperties->ppropval[i],
-			    &b_result))
+			TPROPVAL_ARRAY values = {1, &pproperties->ppropval[i]};
+			PROBLEM_ARRAY problem;
+			if (!cu_set_properties(MAPI_FOLDER, PRIVATE_FID_INBOX,
+			    0, pdb->psqlite, &values, &problem))
 				return FALSE;
 		}
 	}

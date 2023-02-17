@@ -88,7 +88,7 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite);
 extern void common_util_end_message_optimize();
 extern BOOL cu_get_property(mapi_object_type, uint64_t id, uint32_t cpid, sqlite3 *, uint32_t proptag, void **out);
 extern BOOL cu_get_properties(mapi_object_type, uint64_t id, uint32_t cpid, sqlite3 *, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
-extern BOOL cu_set_property(mapi_object_type, uint64_t id, uint32_t cpid, sqlite3 *, const TAGGED_PROPVAL *, BOOL *result);
+extern BOOL cu_set_property(mapi_object_type, uint64_t id, uint32_t cpid, sqlite3 *, uint32_t tag, const void *data, BOOL *result);
 extern BOOL cu_set_properties(mapi_object_type, uint64_t id, uint32_t cpid, sqlite3 *, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 extern BOOL cu_remove_property(mapi_object_type, uint64_t id, sqlite3 *, uint32_t proptag);
 extern BOOL cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, const PROPTAG_ARRAY *);
