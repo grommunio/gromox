@@ -2104,17 +2104,12 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
     uint64_t folder_id, std::list<RULE_NODE> &plist)
 {
-	char sql_string[256];
+	char sql_string[107];
 	
-	if (exmdb_server::is_private())
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
-				"FROM messages WHERE parent_fid=%llu AND "
-				"is_associated=1", LLU{folder_id});
-	else
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
-				"FROM messages WHERE parent_fid=%llu AND "
-				"is_associated=1 AND is_deleted=0",
-				LLU{folder_id});
+	snprintf(sql_string, std::size(sql_string), "SELECT message_id "
+	         "FROM messages WHERE parent_fid=%llu AND "
+	         "is_associated=1 AND is_deleted=0",
+	         LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
