@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/evp.h>
@@ -2102,33 +2103,29 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
     uint64_t folder_id, std::list<RULE_NODE> &plist) try
 {
-	char sql_string[107];
-	
-	snprintf(sql_string, std::size(sql_string), "SELECT message_id "
-	         "FROM messages WHERE parent_fid=%llu AND "
-	         "is_associated=1 AND is_deleted=0",
-	         LLU{folder_id});
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
+	auto qstr = fmt::format(
+		"SELECT m.message_id, p2.propval AS state, p3.propval AS seq, "
+		"p4.propval AS prov FROM messages AS m "
+		"INNER JOIN message_properties AS p1 "
+		"ON m.message_id=p1.message_id AND m.parent_fid={} AND "
+		"m.is_associated=1 AND m.is_deleted=0 AND p1.proptag={} AND "
+		"(p1.propval='IPM.ExtendedRule.Message' COLLATE NOCASE OR "
+		"p1.propval LIKE 'IPM.ExtendedRule.Message.')"
+		"LEFT JOIN message_properties AS p2 "
+		"ON m.message_id=p2.message_id AND p2.proptag={} "
+		"LEFT JOIN message_properties AS p3 "
+		"ON m.message_id=p3.message_id AND p3.proptag={} "
+		"LEFT JOIN message_properties AS p4 "
+		"ON m.message_id=p4.message_id AND p4.proptag={} "
+		"ORDER BY seq",
+		folder_id, PR_MESSAGE_CLASS, PR_RULE_MSG_STATE,
+		PR_RULE_MSG_SEQUENCE, PR_RULE_MSG_PROVIDER);
+	auto pstmt = gx_sql_prep(psqlite, qstr.c_str());
 	if (pstmt == nullptr)
 		return FALSE;
-	size_t count = 0, ext_count = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		if (++count > MAX_FAI_COUNT)
-			break;
 		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
-		void *pvalue = nullptr;
-		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
-		    PR_MESSAGE_CLASS, &pvalue))
-			return FALSE;
-		if (pvalue != nullptr && strcasecmp(static_cast<char *>(pvalue),
-		    "IPM.ExtendedRule.Message") != 0)
-			continue;
-		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
-		    PR_RULE_MSG_STATE, &pvalue))
-			return FALSE;
-		if (pvalue == nullptr)
-			continue;
-		auto state = *static_cast<uint32_t *>(pvalue);
+		uint32_t state = pstmt.col_uint64(1);
 		if (state & (ST_PARSE_ERROR | ST_ERROR))
 			continue;
 		if (state & ST_ENABLED) {
@@ -2139,23 +2136,9 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 		} else {
 			continue;
 		}
-		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
-		    PR_RULE_MSG_SEQUENCE, &pvalue))
-			return FALSE;
-		if (pvalue == nullptr)
-			continue;
-		auto seq = *static_cast<int32_t *>(pvalue);
-		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
-		    PR_RULE_MSG_PROVIDER, &pvalue))
-			return FALSE;
-		if (pvalue == nullptr)
-			continue;
-		std::list<RULE_NODE> rn;
-		rn.push_back(RULE_NODE{seq, state, message_id, static_cast<char *>(pvalue)});
-		auto it = std::find_if(plist.begin(), plist.end(),
-		          [&](const RULE_NODE &r) { return r.sequence == seq; });
-		plist.splice(it, std::move(rn));
-		if (++ext_count > g_max_extrule_num)
+		int32_t seq = pstmt.col_int64(2);
+		plist.push_back(RULE_NODE{seq, state, message_id, pstmt.col_text(3)});
+		if (plist.size() >= g_max_extrule_num)
 			break;
 	}
 	return TRUE;

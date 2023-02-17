@@ -14,7 +14,6 @@
 #define MAX_DIGLEN											256*1024
 #define MAX_RULE_RECIPIENTS									256
 #define MAX_DAMS_PER_RULE_FOLDER							128
-#define MAX_FAI_COUNT										1024
 
 #define ID_TAG_BODY 												0x00010014
 #define ID_TAG_BODY_STRING8											0x00020014
