@@ -271,6 +271,7 @@ static constexpr cfg_directive x500_defaults[] = {
 };
 
 static constexpr cfg_directive ews_cfg_defaults[] = {
+	{"ews_experimental", "0", CFG_BOOL},
 	{"ews_log_filter", "!"},
 	{"ews_pretty_response", "0", CFG_BOOL},
 	{"ews_request_logging", "0"},
@@ -288,6 +289,7 @@ void EWSPlugin::loadConfig()
 	mlog(LV_INFO, "[ews]: x500 org name is \"%s\"", x500_org_name.c_str());
 
 	cfg = config_file_initd("ews.cfg", get_config_path(), ews_cfg_defaults);
+	cfg->get_int("ews_experimental", &experimental);
 	cfg->get_int("ews_pretty_response", &pretty_response);
 	cfg->get_int("ews_request_logging", &request_logging);
 	cfg->get_int("ews_response_logging", &response_logging);

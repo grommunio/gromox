@@ -113,6 +113,8 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
  */
 void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
+	ctx.experimental();
+
 	response->SetName("m:GetFolderResponse");
 
 	sProptags requestedTags = ctx.collectTags(request.FolderShape);
@@ -401,6 +403,8 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
  */
 void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
+	ctx.experimental();
+
 	response->SetName("m:SyncFolderHierarchyResponse");
 
 	auto& exmdb = ctx.plugin.exmdb;
@@ -460,6 +464,8 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 
 void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
+	ctx.experimental();
+
 	response->SetName("m:SyncFolderItemsResponse");
 
 	sFolderSpec folder = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, request.SyncFolderId.folderId);

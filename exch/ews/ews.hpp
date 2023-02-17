@@ -70,6 +70,7 @@ public:
 	int request_logging = 0; ///< 0 = none, 1 = request names, 2 = request data
 	int response_logging = 0; ///< 0 = none, 1 = response names, 2 = response data
 	int pretty_response = 0; ///< 0 = compact output, 1 = pretty printed response
+	int experimental = 0; ///< Enable experimental requests, 0 = disabled
 
 private:
 	static const std::unordered_map<std::string, Handler> requestMap;
@@ -108,6 +109,8 @@ public:
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
+
+	void experimental() const;
 
 	int ID = 0;
 	HTTP_REQUEST& orig;
