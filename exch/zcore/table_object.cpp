@@ -109,12 +109,10 @@ BOOL table_object::load()
 		auto username = ptable->pstore->owner_mode() ?
 		                nullptr : pinfo->get_username();
 		new_table_flags = TABLE_FLAG_NONOTIFICATIONS;
-		if (ptable->table_flags & FLAG_SOFT_DELETE) {
+		if (ptable->table_flags & SHOW_SOFT_DELETES)
 			new_table_flags |= TABLE_FLAG_SOFTDELETES;
-		}
-		if (ptable->table_flags & FLAG_CONVENIENT_DEPTH) {
+		if (ptable->table_flags & CONVENIENT_DEPTH)
 			new_table_flags |= TABLE_FLAG_DEPTH;
-		}
 		if (!exmdb_client::load_hierarchy_table(ptable->pstore->get_dir(),
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    username, new_table_flags, ptable->prestriction,
@@ -138,12 +136,10 @@ BOOL table_object::load()
 			}
 		}
 		new_table_flags = TABLE_FLAG_NONOTIFICATIONS;
-		if (ptable->table_flags & FLAG_SOFT_DELETE) {
+		if (ptable->table_flags & SHOW_SOFT_DELETES)
 			new_table_flags |= TABLE_FLAG_SOFTDELETES;
-		}
-		if (ptable->table_flags & FLAG_ASSOCIATED) {
+		if (ptable->table_flags & MAPI_ASSOCIATED)
 			new_table_flags |= TABLE_FLAG_ASSOCIATED;
-		}
 		if (!exmdb_client::load_content_table(ptable->pstore->get_dir(), pinfo->cpid,
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    username, new_table_flags, ptable->prestriction,
@@ -581,7 +577,7 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 	} else if (ptable->table_type == zcore_tbltype::container) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->query_container_table(cols,
-		       (ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false,
+		       (ptable->table_flags & CONVENIENT_DEPTH) ? TRUE : false,
 		       ptable->position, row_count, pset);
 	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
@@ -713,7 +709,7 @@ uint32_t table_object::get_total()
 	} else if (ptable->table_type == zcore_tbltype::container) {
 		num1 = 0;
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
-		ct->get_container_table_num((ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false, &num1);
+		ct->get_container_table_num((ptable->table_flags & CONVENIENT_DEPTH) ? TRUE : false, &num1);
 		return num1;
 	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		num1 = 0;

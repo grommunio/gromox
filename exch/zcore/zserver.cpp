@@ -1004,7 +1004,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		if (!exmdb_client::check_message_deleted(pstore->get_dir(),
 		    message_id, &b_del))
 			return ecError;
-		if (b_del && !(flags & FLAG_SOFT_DELETE))
+		if (b_del && !(flags & SHOW_SOFT_DELETES))
 			return ecNotFound;
 		auto ret = cu_calc_msg_access(pstore, pinfo->get_username(),
 		           folder_id, message_id, tag_access);
@@ -1030,7 +1030,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			if (!exmdb_client::check_folder_deleted(pstore->get_dir(),
 			    folder_id, &b_del))
 				return ecError;
-			if (b_del && !(flags & FLAG_SOFT_DELETE))
+			if (b_del && !(flags & SHOW_SOFT_DELETES))
 				return ecNotFound;
 		}
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
@@ -1664,7 +1664,7 @@ ec_error_t zs_createmessage(GUID hsession,
 			tag_access, TRUE, NULL);
 	if (pmessage == nullptr)
 		return ecError;
-	BOOL b_fai = (flags & FLAG_ASSOCIATED) ? TRUE : false;
+	BOOL b_fai = (flags & MAPI_ASSOCIATED) ? TRUE : false;
 	if (pmessage->init_message(b_fai, pinfo->cpid) != 0)
 		return ecError;
 	/* add the store handle as the parent object handle

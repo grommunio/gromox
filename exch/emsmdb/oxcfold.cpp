@@ -892,7 +892,7 @@ ec_error_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 {
 	ems_objtype object_type;
 	
-	if (table_flags & (~(TABLE_FLAG_DEPTH | TABLE_FLAG_DEFERREDERRORS |
+	if (table_flags & (~(TABLE_FLAG_DEPTH | MAPI_DEFERRED_ERRORS |
 		TABLE_FLAG_NONOTIFICATIONS | TABLE_FLAG_SOFTDELETES |
 		TABLE_FLAG_USEUNICODE | TABLE_FLAG_SUPPRESSNOTIFICATIONS))) {
 		return ecInvalidParam;
@@ -988,7 +988,7 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 		return ecError;
 	rtable->set_handle(hnd);
 	*phout = hnd;
-	if (table_flags & TABLE_FLAG_DEFERREDERRORS)
+	if (table_flags & MAPI_DEFERRED_ERRORS)
 		/* Inaccurate rowcount permissible under OXCFOLD v23.2 §2.2.1.14.1 */
 		return ecSuccess;
 	/*

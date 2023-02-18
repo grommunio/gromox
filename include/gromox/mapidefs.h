@@ -1294,12 +1294,21 @@ enum { /* for PidLidRecurrenceType */
  */
 #define MAPI_MODIFY 0x1U
 
+/* Documented for IMAPIFolder::GetHierarchyTable. */
+#define CONVENIENT_DEPTH 0x1U
+
 /*
  * Documented for ropOpenStream, ropOpenEmbeddedMessage, (loosely)
  * ropGetPropertyIdsFromNames, IMAPIProp::{GetIDsFromNames, OpenEntry},
  * ITnef::OpenTaggedBody.
  */
 #define MAPI_CREATE 0x2U
+
+/*
+ * Documented for IMAPIFolder::{GetHierarchyTable, GetContentsTable},
+ * {IMAPISession, IMAPIContainer}::OpenEntry.
+ */
+#define SHOW_SOFT_DELETES 0x2U
 
 /*
  * Documented for ropOpenMessage, ropOpenAttachment, various I*::OpenEntry,
@@ -1311,6 +1320,18 @@ enum { /* for PidLidRecurrenceType */
  * Documented for ropOpenFolder.
  */
 #define OPEN_MODE_FLAG_OPENSOFTDELETE 0x4U
+
+/*
+ * Documented for ropGetHierarchyTable, IMAPIFolder::{CreateFolder,
+ * GetContentsTable, GetHierarchyTable}, various I*::OpenEntry,
+ * IMessage::{CreateAttach, GetAttachmentTable, GetRecipientTable}.
+ */
+#define MAPI_DEFERRED_ERRORS 0x8U
+
+/*
+ * Documented for IMAPIFolder::{CreateMessage, GetContentsTable}.
+ */
+#define MAPI_ASSOCIATED 0x40U
 
 extern const FLATUID
 	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
