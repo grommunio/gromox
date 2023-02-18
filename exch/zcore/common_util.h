@@ -8,16 +8,6 @@
 #include <gromox/mapierr.hpp>
 #include <gromox/zcore_rpc.hpp>
 
-/* defined by zarafa */
-#define MAPI_STORE_PROVIDER							33
-#define MAPI_AB										34
-#define MAPI_AB_PROVIDER							35
-#define MAPI_TRANSPORT_PROVIDER						36
-#define MAPI_SPOOLER								37
-#define MAPI_PROFILE_PROVIDER						38
-#define MAPI_SUBSYSTEM								39
-#define MAPI_HOOK_PROVIDER							40
-
 #define HOOK_INBOUND								0x00000200
 #define HOOK_OUTBOUND								0x00000400
 

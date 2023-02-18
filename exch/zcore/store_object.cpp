@@ -814,10 +814,9 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_RESOURCE_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
-		if (NULL == *ppvalue) {
+		if (v == nullptr)
 			return FALSE;
-		}
-		*v = MAPI_STORE_PROVIDER;
+		*v = static_cast<uint32_t>(MAPI_STORE_PROVIDER);
 		return TRUE;
 	}
 	case PR_STORE_SUPPORT_MASK: {

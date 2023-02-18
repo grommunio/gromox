@@ -306,6 +306,25 @@ enum mapi_importance {
 	IMPORTANCE_HIGH = 2,
 };
 
+enum class mapi_resource_type : uint32_t {
+	store_provider = 33,
+	ab = 34,
+	ab_provider = 35,
+	transport_provider = 36,
+	spooler = 37,
+	profile_provider = 38,
+	subsystem = 39,
+	hook_provider = 40,
+};
+#define MAPI_STORE_PROVIDER     mapi_resource_type::store_provider
+#define MAPI_AB                 mapi_resource_type::ab
+#define MAPI_AB_PROVIDER        mapi_resource_type::ab_provider
+#define MAPI_TRANSPORT_PROVIDER mapi_resource_type::transport_provider
+#define MAPI_SPOOLER            mapi_resource_type::spooler
+#define MAPI_PROFILE_PROVIDER   mapi_resource_type::profile_provider
+#define MAPI_SUBSYSTEM          mapi_resource_type::subsystem
+#define MAPI_HOOK_PROVIDER      mapi_resource_type::hook_provider
+
 enum class mapi_object_type {
 	store = 1,
 	addrbook = 2,
