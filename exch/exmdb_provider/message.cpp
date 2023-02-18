@@ -2062,7 +2062,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 }
 
 static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
-    uint64_t folder_id, std::list<RULE_NODE> &plist) try
+    uint64_t folder_id, std::vector<rule_node> &plist) try
 {
 	char sql_string[256];
 	
@@ -2095,7 +2095,7 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 }
 
 static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
-    uint64_t folder_id, std::list<RULE_NODE> &plist) try
+    uint64_t folder_id, std::vector<rule_node> &plist) try
 {
 	auto qstr = fmt::format(
 		"SELECT m.message_id, p2.propval AS state, p3.propval AS seq, "
@@ -3636,7 +3636,7 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
     uint64_t message_id, const std::optional<Json::Value> &pdigest,
     seen_list &seen)
 {
-	std::list<RULE_NODE> rule_list, ext_rule_list;
+	std::vector<rule_node> rule_list, ext_rule_list;
 	std::list<DAM_NODE> dam_list;
 	
 	if (!message_load_folder_rules(b_oof, psqlite, folder_id, rule_list) ||
