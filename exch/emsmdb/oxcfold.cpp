@@ -60,7 +60,7 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	if (!plogon->is_private()) {
 		if (!exmdb_client::check_folder_deleted(dir, folder_id, &b_del))
 			return ecError;
-		if (b_del && !(open_flags & OPEN_FOLDER_FLAG_OPENSOFTDELETED))
+		if (b_del && !(open_flags & OPEN_MODE_FLAG_OPENSOFTDELETE))
 			return ecNotFound;
 	}
 	if (!exmdb_client::get_folder_property(dir, 0, folder_id,
