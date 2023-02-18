@@ -114,16 +114,15 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
 		return FALSE;
 	}
-	
-	if (pctx->sync_flags & SYNC_FLAG_PROGRESS) {
+	if (pctx->sync_flags & SYNC_PROGRESS_MODE) {
 		pctx->pprogtotal = gromox::me_alloc<PROGRESS_INFORMATION>();
 		if (NULL == pctx->pprogtotal) {
 			return FALSE;
 		}
 	}
-	auto pread     = (pctx->sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread.get() : nullptr;
-	auto pseen_fai = (pctx->sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai.get() : nullptr;
-	auto pseen     = (pctx->sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen.get() : nullptr;
+	auto pread     = (pctx->sync_flags & SYNC_READ_STATE) ? pctx->pstate->pread.get() : nullptr;
+	auto pseen_fai = (pctx->sync_flags & SYNC_ASSOCIATED) ? pctx->pstate->pseen_fai.get() : nullptr;
+	auto pseen     = (pctx->sync_flags & SYNC_NORMAL) ? pctx->pstate->pseen.get() : nullptr;
 	BOOL b_ordered = (pctx->extra_flags & SYNC_EXTRA_FLAG_ORDERBYDELIVERYTIME) ? TRUE : false;
 	if (!pctx->pstream->plogon->is_private()) {
 		rpc_info = get_rpc_info();
@@ -147,15 +146,13 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 		if (!pctx->pstate->pgiven->append(given_messages.pids[i]))
 			return FALSE;	
 	}
-	
-	if (pctx->sync_flags & (SYNC_FLAG_FAI | SYNC_FLAG_NORMAL)) {
+	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
 		pctx->pmessages = eid_array_dup(&chg_messages);
 		if (NULL == pctx->pmessages) {
 			return FALSE;
 		}
 	}
-	
-	if (SYNC_FLAG_PROGRESS & pctx->sync_flags) {
+	if (pctx->sync_flags & SYNC_PROGRESS_MODE) {
 		pctx->pprogtotal->version = 0;
 		pctx->pprogtotal->padding1 = 0;
 		pctx->pprogtotal->fai_count = count_fai;
@@ -164,8 +161,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 		pctx->pprogtotal->padding2 = 0;
 		pctx->pprogtotal->normal_size = total_normal;
 	}
-	
-	if (!(pctx->sync_flags & SYNC_FLAG_NODELETIONS)) {
+	if (!(pctx->sync_flags & SYNC_NO_DELETIONS)) {
 		pctx->pdeleted_messages = eid_array_dup(&deleted_messages);
 		if (NULL == pctx->pdeleted_messages) {
 			return FALSE;
@@ -175,8 +171,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 			return FALSE;
 		}
 	}
-	
-	if (pctx->sync_flags & SYNC_FLAG_READSTATE) {
+	if (pctx->sync_flags & SYNC_READ_STATE) {
 		pctx->pread_messags = eid_array_dup(&read_messags);
 		if (NULL == pctx->pread_messags) {
 			return FALSE;
@@ -186,12 +181,10 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 			return FALSE;
 		}
 	}
-	if (SYNC_FLAG_PROGRESS & pctx->sync_flags) {
-		if (!pctx->flow_list.record_node(FUNC_ID_PROGRESSTOTAL))
-			return FALSE;
-	}
-	
-	if (pctx->sync_flags & (SYNC_FLAG_FAI | SYNC_FLAG_NORMAL)) {
+	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
+	    !pctx->flow_list.record_node(FUNC_ID_PROGRESSTOTAL))
+		return FALSE;
+	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
 		for (size_t i = 0; i < pctx->pmessages->count; ++i) {
 			size_t j;
 			for (j=0; j<updated_messages.count; j++) {
@@ -204,11 +197,10 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 				return FALSE;	
 		}
 	}
-	
-	if (!(pctx->sync_flags & SYNC_FLAG_NODELETIONS) &&
+	if (!(pctx->sync_flags & SYNC_NO_DELETIONS) &&
 	    !pctx->flow_list.record_node(FUNC_ID_DELETIONS))
 		return FALSE;
-	if (pctx->sync_flags & SYNC_FLAG_READSTATE &&
+	if (pctx->sync_flags & SYNC_READ_STATE &&
 	    !pctx->flow_list.record_node(FUNC_ID_READSTATECHANGES))
 		return FALSE;
 	if (!pctx->flow_list.record_node(FUNC_ID_STATE) ||
@@ -330,7 +322,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		if (lnum == nullptr)
 			return FALSE;
 		auto parent_fid = *lnum;
-		if (SYNC_FLAG_NOFOREIGNIDENTIFIERS & pctx->sync_flags) {
+		if (pctx->sync_flags & SYNC_NO_FOREIGN_KEYS) {
 			common_util_remove_propvals(&chg, PR_SOURCE_KEY);
 			auto psk = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
 			if (psk == nullptr)
@@ -510,8 +502,9 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			cu_set_propval(&fldchgs.pfldchgs[i], PR_FREEBUSY_ENTRYIDS, ba);
 		}
 	}
-	icsdownctx_object_adjust_fldchgs(&fldchgs, pctx->pproptags, !(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES));
-	if ((pctx->sync_flags & SYNC_FLAG_NODELETIONS) || deleted_folders.count == 0) {
+	icsdownctx_object_adjust_fldchgs(&fldchgs, pctx->pproptags,
+		!(pctx->sync_flags & SYNC_ONLY_SPECIFIED_PROPS));
+	if ((pctx->sync_flags & SYNC_NO_DELETIONS) || deleted_folders.count == 0) {
 		pproplist_deletions = NULL;
 	} else {
 		idset xset(true, REPL_TYPE_ID);
@@ -882,10 +875,10 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	if (NULL == pmsgctnt) {
 		pctx->pstate->pgiven->remove(message_id);
 		if (b_downloaded) {
-			if (!(pctx->sync_flags & SYNC_FLAG_NODELETIONS) &&
+			if (!(pctx->sync_flags & SYNC_NO_DELETIONS) &&
 			    !eid_array_append(pctx->pdeleted_messages, message_id))
 				return FALSE;
-			if (SYNC_FLAG_READSTATE & pctx->sync_flags) {
+			if (pctx->sync_flags & SYNC_READ_STATE) {
 				eid_array_remove(pctx->pread_messags, message_id);
 				eid_array_remove(pctx->punread_messags, message_id);
 			}
@@ -899,7 +892,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		return FALSE;
 	}
 	if (*pstatus & MSGSTATUS_IN_CONFLICT) {
-		if (!(pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
+		if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
 			if (!exmdb_client::get_folder_property(dir,
 			    0, folder_id, PR_SOURCE_KEY, &pvalue))
 				return FALSE;	
@@ -938,8 +931,9 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			if (!icsdownctx_object_extract_msgctntinfo(pembedded,
 			    pctx->extra_flags, &chgheader, &progmsg))
 				return FALSE;
-			icsdownctx_object_adjust_msgctnt(pembedded, pctx->pproptags, !(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES));
-			if (pctx->sync_flags & SYNC_FLAG_PROGRESS &&
+			icsdownctx_object_adjust_msgctnt(pembedded, pctx->pproptags,
+				!(pctx->sync_flags & SYNC_ONLY_SPECIFIED_PROPS));
+			if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
 			    !pctx->pstream->write_progresspermessage(&progmsg))
 				return FALSE;
 			common_util_remove_propvals(&pembedded->proplist, PR_READ);
@@ -965,7 +959,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	memcpy(ppropval, pmsgctnt->proplist.ppropval,
 		sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	pmsgctnt->proplist.ppropval = ppropval;
-	if (!(pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
+	if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
 		if (!exmdb_client::get_folder_property(dir,
 		    0, folder_id, PR_SOURCE_KEY, &pvalue))
 			return FALSE;	
@@ -994,8 +988,8 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	if (!icsdownctx_object_extract_msgctntinfo(pmsgctnt,
 	    pctx->extra_flags, &chgheader, &progmsg))
 		return FALSE;
-	auto cond1 = !(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES);
-	if (!(pctx->sync_flags & SYNC_FLAG_IGNORESPECIFIEDONFAI) ||
+	auto cond1 = !(pctx->sync_flags & SYNC_ONLY_SPECIFIED_PROPS);
+	if (!(pctx->sync_flags & SYNC_IGNORE_SPECIFIED_ON_ASSOCIATED) ||
 	    cond1 || !progmsg.b_fai)
 		icsdownctx_object_adjust_msgctnt(pmsgctnt, pctx->pproptags, cond1);
 	if (!b_downloaded || progmsg.b_fai) {
@@ -1026,7 +1020,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		    pmsgctnt, *pgroup_id, &indices, &proptags, &msg_partial))
 			return FALSE;
 	}
-	if (pctx->sync_flags & SYNC_FLAG_PROGRESS &&
+	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
 	    !pctx->pstream->write_progresspermessage(&progmsg))
 		return FALSE;
 	pctx->next_progress_steps += progmsg.message_size;
@@ -1071,7 +1065,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 		proplist.ppropval[proplist.count].proptag = MetaTagIdsetDeleted;
 		proplist.ppropval[proplist.count++].pvalue = pbin1;
 	}
-	if (!(pctx->sync_flags & SYNC_FLAG_IGNORENOLONGERINSCOPE) &&
+	if (!(pctx->sync_flags & SYNC_NO_SOFT_DELETIONS) &&
 	    pctx->pnolonger_messages->count > 0) {
 		idset xset(true, REPL_TYPE_ID);
 		for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
@@ -1167,17 +1161,17 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 static BOOL icsdownctx_object_write_state(icsdownctx_object *pctx)
 {
 	pctx->pstate->pseen->clear();
-	if (pctx->sync_flags & SYNC_FLAG_NORMAL && pctx->last_changenum != 0 &&
+	if (pctx->sync_flags & SYNC_NORMAL && pctx->last_changenum != 0 &&
 	    !pctx->pstate->pseen->append_range(1, 1,
 	    rop_util_get_gc_value(pctx->last_changenum)))
 		return FALSE;
 	pctx->pstate->pseen_fai->clear();
-	if (pctx->sync_flags & SYNC_FLAG_FAI && pctx->last_changenum != 0 &&
+	if (pctx->sync_flags & SYNC_ASSOCIATED && pctx->last_changenum != 0 &&
 	    !pctx->pstate->pseen_fai->append_range(1, 1,
 	    rop_util_get_gc_value(pctx->last_changenum)))
 		return FALSE;
 	pctx->pstate->pread->clear();
-	if (pctx->sync_flags & SYNC_FLAG_READSTATE) {
+	if (pctx->sync_flags & SYNC_READ_STATE) {
 		if (0 == pctx->last_readcn) {
 			if (pctx->last_changenum != 0 &&
 			    !pctx->pstate->pread->append_range(1, 1, CHANGE_NUMBER_BEGIN - 1))

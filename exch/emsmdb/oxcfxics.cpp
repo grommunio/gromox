@@ -779,7 +779,7 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	std::vector<uint32_t> new_tags;
 	PROPTAG_ARRAY new_pta;
 	auto bodyof = pproptags->indexof(PR_BODY);
-	if (!(sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES) &&
+	if (!(sync_flags & SYNC_ONLY_SPECIFIED_PROPS) &&
 	    bodyof != pproptags->npos && !pproptags->has(PR_HTML)) try {
 		/*
 		 * Ignore Outlook's request to exclude PR_BODY.

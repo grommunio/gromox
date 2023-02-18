@@ -660,6 +660,27 @@ enum { /* for PR_STORE_SUPPORT_MASK and PR_STORE_STATE */
 	STORE_RULES_OK          = 0x10000000U,
 };
 
+enum { /* for IExchangeImportContentsChanges et al */
+	SYNC_UNICODE                        = 0x1U,
+	SYNC_NO_DELETIONS                   = 0x2U,
+	SYNC_NO_SOFT_DELETIONS              = 0x4U,
+	SYNC_READ_STATE                     = 0x8U,
+	SYNC_ASSOCIATED                     = 0x10U,
+	SYNC_NORMAL                         = 0x20U,
+	SYNC_ONLY_SPECIFIED_PROPS           = 0x80U,
+	SYNC_NO_FOREIGN_KEYS                = 0x100U,
+	SYNC_LIMITED_IMESSAGE               = 0x200U,
+	SYNC_CATCHUP                        = 0x400U,
+	SYNC_NEW_MESSAGE                    = 0x800U,
+	SYNC_MSG_SELECTIVE                  = 0x1000U,
+	SYNC_BEST_BODY                      = 0x2000U,
+	SYNC_IGNORE_SPECIFIED_ON_ASSOCIATED = 0x4000U,
+	SYNC_PROGRESS_MODE                  = 0x8000U,
+	SYNC_FXRECOVERMODE                  = 0x10000U,
+	SYNC_DEFER_CONFIG                   = 0x20000U,
+	SYNC_FORCE_UNICODE                  = 0x40000U,
+};
+
 enum mapi_row_type { /* for PR_ROW_TYPE */
 	TBL_LEAF_ROW           = 0x1U,
 	TBL_EMPTY_CATEGORY     = 0x2U,

@@ -66,9 +66,9 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 	if (!pctx->pstate->deserialize(pstate_bin))
 		return FALSE;
 	auto pinfo = zs_get_info();
-	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread.get() : nullptr;
-	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai.get() : nullptr;
-	auto pseen = (sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen.get() : nullptr;
+	auto pread     = (sync_flags & SYNC_READ_STATE) ? pctx->pstate->pread.get()     : nullptr;
+	auto pseen_fai = (sync_flags & SYNC_ASSOCIATED) ? pctx->pstate->pseen_fai.get() : nullptr;
+	auto pseen     = (sync_flags & SYNC_NORMAL)     ? pctx->pstate->pseen.get()     : nullptr;
 	auto username = pctx->pstore->b_private ? nullptr : pinfo->get_username();
 	if (!exmdb_client::get_content_sync(pctx->pstore->get_dir(),
 	    pctx->folder_id, username, pctx->pstate->pgiven.get(), pseen, pseen_fai,
@@ -83,7 +83,7 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 	pctx->pgiven_eids = eid_array_dup(&given_messages);
 	if (pctx->pgiven_eids == nullptr)
 		return FALSE;
-	if (sync_flags & (SYNC_FLAG_FAI | SYNC_FLAG_NORMAL)) {
+	if (sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
 		if (pctx->pchg_eids != nullptr)
 			eid_array_free(pctx->pchg_eids);
 		pctx->pchg_eids = eid_array_dup(&chg_messages);
@@ -100,7 +100,7 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 	} else {
 		*pmsg_count = 0;
 	}
-	if (!(sync_flags & SYNC_FLAG_NODELETIONS)) {
+	if (!(sync_flags & SYNC_NO_DELETIONS)) {
 		if (pctx->pdeleted_eids != nullptr)
 			eid_array_free(pctx->pdeleted_eids);
 		pctx->pdeleted_eids = eid_array_dup(&deleted_messages);
@@ -114,7 +114,7 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 		if (deleted_messages.count > 0 || nolonger_messages.count > 0)
 			*pb_changed = TRUE;
 	}
-	if (sync_flags & SYNC_FLAG_READSTATE) {
+	if (sync_flags & SYNC_READ_STATE) {
 		if (pctx->pread_messags != nullptr)
 			eid_array_free(pctx->pread_messags);
 		pctx->pread_messags = eid_array_dup(&read_messags);
@@ -156,7 +156,7 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
 	pctx->pgiven_eids = eid_array_dup(&given_folders);
 	if (pctx->pgiven_eids == nullptr)
 		return FALSE;
-	if (!(sync_flags & SYNC_FLAG_NODELETIONS)) {
+	if (!(sync_flags & SYNC_NO_DELETIONS)) {
 		if (pctx->pdeleted_eids != nullptr)
 			eid_array_free(pctx->pdeleted_eids);
 		pctx->pdeleted_eids = eid_array_dup(&deleted_folders);
