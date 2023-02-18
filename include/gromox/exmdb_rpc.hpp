@@ -4,6 +4,8 @@
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/mapierr.hpp>
 #include <gromox/mapi_types.hpp>
 
 enum class exmdb_response : uint8_t {
@@ -1320,6 +1322,7 @@ extern GX_EXPORT pack_result exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *
 extern GX_EXPORT const char *exmdb_rpc_strerror(exmdb_response);
 extern GX_EXPORT BOOL exmdb_client_read_socket(int, BINARY &, long timeout = -1);
 extern GX_EXPORT BOOL exmdb_client_write_socket(int, const BINARY &, long timeout = -1);
+extern GX_EXPORT ec_error_t exmdb_local_rules_execute(const char *dir, const char *from, const char *to, eid_t fid, eid_t mid);
 
 extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);
 extern GX_EXPORT void (*exmdb_rpc_free)(void *);

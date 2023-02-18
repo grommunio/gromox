@@ -1736,6 +1736,7 @@ static const TABLE_NODE *find_table(db_item_ptr &pdb, uint32_t table_id)
 
 /* every property value returned in a row MUST
 be less than or equal to 510 bytes in size. */
+// XXX: But that's stupid for rules, which are not objects and cannot be opened any other way.
 BOOL exmdb_server::query_table(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
@@ -1771,6 +1772,8 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id, depth FROM"
 						" t%u WHERE idx>=%u AND idx<%u ORDER BY idx ASC",
 						table_id, start_pos + 1, end_pos + 1);
+			// XXX: ridiculously large upfront allocation,
+			// we do not know yet how many rows will come back
 			pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(row_needed);
 		} else {
 			end_pos = start_pos + row_needed;
