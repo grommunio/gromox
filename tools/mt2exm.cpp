@@ -38,7 +38,7 @@ static gi_name_map g_src_name_map;
 static propididmap_t g_thru_name_map;
 static uint8_t g_splice;
 static unsigned int g_oexcl = 1, g_anchor_folder;
-static unsigned int g_do_delivery, g_skip_notif, g_skip_rules;
+static unsigned int g_do_delivery, g_skip_notif, g_skip_rules, g_twostep;
 
 static void cb_anchor_folder(const HXoptcb *cb)
 {
@@ -76,6 +76,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'x', HXTYPE_VAL, &g_oexcl, nullptr, nullptr, 0, "Disable O_EXCL like behavior for non-spliced folders"},
 	{"skip-notif", 0, HXTYPE_NONE, &g_skip_notif, nullptr, nullptr, 0, "Skip emission of notifications (if -D)"},
 	{"skip-rules", 0, HXTYPE_NONE, &g_skip_rules, nullptr, nullptr, 0, "Skip execution of rules (if -D)"},
+	{"twostep", '2', HXTYPE_NONE, &g_twostep, nullptr, nullptr, 0, "TWOSTEP rule executor (implies -D; development)"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -353,6 +354,8 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 		mode |= DELIVERY_DO_RULES;
 	if (!g_skip_notif)
 		mode |= DELIVERY_DO_NOTIF;
+	if (g_twostep)
+		mode |= DELIVERY_TWOSTEP;
 	return exm_deliver_msg(g_username, &ctnt, mode);
 }
 
@@ -429,6 +432,8 @@ int main(int argc, const char **argv) try
 		terse_help();
 		return EXIT_FAILURE;
 	}
+	if (g_twostep)
+		g_do_delivery = true;
 	if (g_do_delivery && g_anchor_folder != 0)
 		fprintf(stderr, "mt2exm: -B option has no effect when -D is used\n");
 	if (iconv_validate() != 0)

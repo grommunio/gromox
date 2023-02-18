@@ -634,6 +634,8 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 		/* ignore */;
 	uint64_t folder_id = 0, msg_id = 0;
 	uint32_t r32 = 0;
+	if (mode & DELIVERY_TWOSTEP)
+		mode &= ~(DELIVERY_DO_RULES | DELIVERY_DO_NOTIF);
 	if (!exmdb_client::deliver_message(g_storedir, ENVELOPE_FROM_NULL,
 	    target, CP_ACP, mode, ct, "", &folder_id, &msg_id, &r32)) {
 		fprintf(stderr, "exm: deliver_message RPC failed: code %u\n",
@@ -652,6 +654,19 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 		return EXIT_FAILURE;
 	case deliver_message_result::mailbox_full_bymsg:
 		fprintf(stderr, "Message rejected - mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
+		return EXIT_FAILURE;
+	}
+	if (!(mode & DELIVERY_TWOSTEP))
+		return EXIT_SUCCESS;
+	fprintf(stderr, "Exercising TWOSTEP ruleprocessor:\n");
+	if (msg_id == 0) {
+		fprintf(stderr, "deliver_message RPC did not give us a message_id -- not executing any rules.\n");
+		return EXIT_SUCCESS;
+	}
+	auto err = exmdb_local_rules_execute(g_storedir, ENVELOPE_FROM_NULL,
+	           target, folder_id, msg_id);
+	if (err != ecSuccess) {
+		fprintf(stderr, "Rule execution not successful: %s\n", mapi_strerror(err));
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
