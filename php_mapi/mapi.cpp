@@ -436,6 +436,10 @@ static void ics_export_ctx_dtor(zend_resource *rsrc)
 	efree(pctx);
 }
 
+PHP_INI_BEGIN()
+	PHP_INI_ENTRY("mapi.zcore_socket", NULL, PHP_INI_PERDIR, NULL)
+PHP_INI_END()
+
 static PHP_MINIT_FUNCTION(mapi)
 {
 	le_mapi_session = zend_register_list_destructors_ex(
@@ -474,6 +478,9 @@ static PHP_MINIT_FUNCTION(mapi)
 		ics_import_ctx_dtor, NULL, name_mapi_importcontentschanges,
 		module_number);
 	ZEND_INIT_MODULE_GLOBALS(mapi, php_mapi_init_globals, NULL);
+
+	REGISTER_INI_ENTRIES();
+
 	return SUCCESS;
 }
 
@@ -487,6 +494,8 @@ static PHP_MINFO_FUNCTION(mapi)
 
 static PHP_MSHUTDOWN_FUNCTION(mapi)
 {
+	UNREGISTER_INI_ENTRIES();
+
 	return SUCCESS;
 }
 
