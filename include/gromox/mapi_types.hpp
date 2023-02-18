@@ -1035,11 +1035,6 @@ enum {
 #define QUERY_FLAG_NOSTRINGS						0x01
 #define QUERY_FLAG_NOIDS							0x02
 
-enum {
-	MAPI_MOVE      = 0x1U,
-	MAPI_NOREPLACE = 0x2U,
-};
-
 #define LOCK_FLAG_RDONLY_FOR_OTHERS					0x00000001
 
 enum {

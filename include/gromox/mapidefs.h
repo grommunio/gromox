@@ -454,6 +454,12 @@ enum ndr_diag_code { /* for PR_NDR_DIAG_CODE */
 	MAPI_DIAG_48 = 48U,
 };
 
+enum { /* for {IMAPIProp, IMAPISupport}::*Copy*. */
+	MAPI_MOVE       = 0x1U,
+	MAPI_NOREPLACE  = 0x2U,
+	MAPI_DECLINE_OK = 0x4U,
+};
+
 enum { /* for PR_MESSAGE_STATUS */
 	MSGSTATUS_HIGHLIGHTED     = 0x1U,
 	MSGSTATUS_TAGGED          = 0x2U,
@@ -699,7 +705,7 @@ enum BOOKMARK {
 	BOOKMARK_CUSTOM = 3,
 };
 
-enum {
+enum { /* for IMAPIFolder::{DeleteFolder, DeleteMessage, EmptyFolder} */
 	DEL_MESSAGES            = 0x1U,
 	DEL_FOLDERS             = 0x4U,
 	DEL_ASSOCIATED          = 0x8U, /* MAPI only, not used in OXCROPS. */
@@ -1293,6 +1299,9 @@ enum { /* for PidLidRecurrenceType */
  * IProviderAdmin, IXPLogon}::OpenEntry, ITnef::OpenTaggedBody.
  */
 #define MAPI_MODIFY 0x1U
+
+/* Documented for IMAPIFolder::CreateFolder.*/
+#define OPEN_IF_EXISTS 0x1U
 
 /* Documented for IMAPIFolder::GetHierarchyTable. */
 #define CONVENIENT_DEPTH 0x1U

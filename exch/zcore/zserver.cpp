@@ -1730,7 +1730,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 			continue;
 		ids.pids[ids.count++] = message_id;
 	}
-	BOOL b_hard = (flags & FLAG_HARD_DELETE) ? false : TRUE; /* XXX */
+	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? false : TRUE; /* XXX */
 	if (!notify_non_read) {
 		if (!exmdb_client::delete_messages(pstore->get_dir(),
 		    pstore->account_id, pinfo->cpid, username,
@@ -1807,7 +1807,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	if (mapi_type != zs_objtype::folder || pdst_folder->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto pstore1 = pdst_folder->pstore;
-	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
+	BOOL b_copy = (flags & MAPI_MOVE) ? false : TRUE;
 	if (pstore != pstore1) {
 		if (!b_copy) {
 			b_guest = FALSE;
@@ -2062,7 +2062,7 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
 		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
-		if (!(flags & FLAG_OPEN_IF_EXISTS) ||
+		if (!(flags & OPEN_IF_EXISTS) ||
 		    folder_type != *static_cast<uint32_t *>(pvalue))
 			return ecDuplicateName;
 	} else {
@@ -2245,8 +2245,8 @@ ec_error_t zs_emptyfolder(GUID hsession, uint32_t hfolder, uint32_t flags)
 			return ecAccessDenied;
 		username = pinfo->get_username();
 	}
-	BOOL b_fai = (flags & FLAG_DEL_ASSOCIATED) ? TRUE : false;
-	BOOL b_hard = (flags & FLAG_HARD_DELETE) ? TRUE : false;
+	BOOL b_fai = (flags & DEL_ASSOCIATED) ? TRUE : false;
+	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	return exmdb_client::empty_folder(pstore->get_dir(),
 	       pinfo->cpid, username, pfolder->folder_id,
 	       b_hard, TRUE, b_fai, TRUE, &b_partial) ? ecSuccess : ecError;
@@ -2271,7 +2271,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 	auto psrc_parent = pinfo->ptree->get_object<folder_object>(hsrc_folder, &mapi_type);
 	if (psrc_parent == nullptr)
 		return ecNullObject;
-	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
+	BOOL b_copy = (flags & MAPI_MOVE) ? false : TRUE;
 	if (psrc_parent->type == FOLDER_SEARCH && !b_copy)
 		return ecNotSupported;
 	if (mapi_type != zs_objtype::folder)
