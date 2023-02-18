@@ -842,7 +842,7 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 		return ecError;
 	auto info = emsmdb_interface_get_emsmdb_info();
 	auto msg = message_object::create(logon, TRUE, info->cpid, message_id,
-	           &folder_id, tag_access, OPEN_MODE_FLAG_READWRITE, ctx->pstate);
+	           &folder_id, tag_access, MAPI_MODIFY, ctx->pstate);
 	if (msg == nullptr)
 		return ecError;
 
@@ -978,7 +978,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto pmessage = message_object::create(plogon, b_new, pinfo->cpid,
 	                message_id, &folder_id, tag_access,
-	                OPEN_MODE_FLAG_READWRITE, pctx->pstate);
+	                MAPI_MODIFY, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
 	if (!b_new) {

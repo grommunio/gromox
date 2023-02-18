@@ -46,14 +46,14 @@ ec_error_t rop_getpropertyidsfromnames(uint8_t flags,
 	default:
 		return ecNotSupported;
 	}
-	if (PROPIDS_FROM_NAMES_FLAG_GETORCREATE == flags) {
+	if (flags == MAPI_CREATE)
 		b_create = plogon->is_private() &&
 		           plogon->logon_mode == logon_mode::guest ? false : TRUE;
-	} else if (PROPIDS_FROM_NAMES_FLAG_GETONLY == flags) {
+	else if (flags == MAPI_READONLY)
 		b_create = FALSE;
-	} else {
+	else
 		return ecInvalidParam;
-	}
+
 	if (ppropnames->count == 0 && object_type == ems_objtype::logon) {
 		if (!exmdb_client::get_all_named_propids(plogon->get_dir(), ppropids))
 			return ecError;
@@ -945,10 +945,10 @@ ec_error_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_siz
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
-	BOOL b_write = flags == OPENSTREAM_FLAG_CREATE || flags == OPENSTREAM_FLAG_READWRITE ? TRUE : false;
+	BOOL b_write = flags == MAPI_CREATE || flags == MAPI_MODIFY ? TRUE : false;
 	switch (object_type) {
 	case ems_objtype::folder:
-		if (!plogon->is_private() && flags != OPENSTREAM_FLAG_READONLY)
+		if (!plogon->is_private() && flags != MAPI_READONLY)
 			return ecNotSupported;
 		if (PROP_TYPE(proptag) != PT_BINARY)
 			return ecNotSupported;
@@ -1058,7 +1058,7 @@ ec_error_t rop_writestream(const BINARY *pdata_bin, uint16_t *pwritten_size,
 		return ecNullObject;
 	if (object_type != ems_objtype::stream)
 		return ecNotSupported;
-	if (pstream->get_open_flags() == OPENSTREAM_FLAG_READONLY)
+	if (pstream->get_open_flags() == MAPI_READONLY)
 		return STG_E_ACCESSDENIED;	
 	if (0 == pdata_bin->cb) {
 		*pwritten_size = 0;
@@ -1176,7 +1176,7 @@ ec_error_t rop_copytostream(uint64_t byte_count, uint64_t *pread_bytes,
 	auto pdst_stream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hdst, &object_type);
 	if (pdst_stream == nullptr)
 		return ecDstNullObject;
-	if (pdst_stream->get_open_flags() == OPENSTREAM_FLAG_READONLY)
+	if (pdst_stream->get_open_flags() == MAPI_READONLY)
 		return ecAccessDenied;
 	if (0 == byte_count) {
 		*pread_bytes = 0;

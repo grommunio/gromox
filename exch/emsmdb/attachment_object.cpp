@@ -266,7 +266,7 @@ static BOOL attachment_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*v = (pattachment->open_flags & OPEN_MODE_FLAG_READWRITE) ?
+		*v = (pattachment->open_flags & MAPI_MODIFY) ?
 		     ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
 	}

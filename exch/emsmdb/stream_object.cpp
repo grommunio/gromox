@@ -73,7 +73,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	}
 	auto pvalue = propvals.getval(proptag);
 	if (NULL == pvalue) {
-		if (!(open_flags & OPENSTREAM_FLAG_CREATE)) {
+		if (!(open_flags & MAPI_CREATE)) {
 			/* cannot find proptag, return immediately to
 			caller and the caller check the result by
 			calling stream_object_check */
@@ -146,9 +146,8 @@ uint32_t stream_object::read(void *pbuff, uint32_t buf_len)
 std::pair<uint16_t, ec_error_t> stream_object::write(void *pbuff, uint16_t buf_len)
 {
 	auto pstream = this;
-	if (OPENSTREAM_FLAG_READONLY == pstream->open_flags) {
+	if (pstream->open_flags == MAPI_READONLY)
 		return {0, STG_E_ACCESSDENIED};
-	}
 	if (pstream->content_bin.cb >= pstream->max_length &&
 		pstream->seek_ptr >= pstream->content_bin.cb) {
 		return {0, ecTooBig};
@@ -205,9 +204,8 @@ ec_error_t stream_object::set_length(uint32_t length)
 {
 	auto pstream = this;
 	
-	if (OPENSTREAM_FLAG_READONLY == pstream->open_flags) {
+	if (pstream->open_flags == MAPI_READONLY)
 		return STG_E_ACCESSDENIED;
-	}
 	if (length > pstream->content_bin.cb) {
 		if (length > pstream->max_length) {
 			return ecStreamSizeError;
@@ -298,7 +296,7 @@ BOOL stream_object::commit()
 	
 	if (pstream->object_type != ems_objtype::folder)
 		return FALSE;
-	if (pstream->open_flags == OPENSTREAM_FLAG_READONLY)
+	if (pstream->open_flags == MAPI_READONLY)
 		return FALSE;
 	if (!pstream->b_touched)
 		return TRUE;

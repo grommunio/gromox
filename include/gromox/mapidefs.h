@@ -1279,6 +1279,39 @@ enum { /* for PidLidRecurrenceType */
 	rectypeYearly,
 };
 
+/*
+ * Not in MSMAPI; Gromox-specific name. Documented for ropOpenMessage,
+ * ropOpenEmbeddedMessage, ropOpenAttachment, ropOpenStream, (via OXODLGT,
+ * OXOPFFB, OXOSFLD rather than OXCFOLD) ropOpenFolder.
+ */
+#define MAPI_READONLY 0x0U
+
+/*
+ * Documented for ropOpenMessage, ropOpenEmbeddedMessage, ropOpenAttachment,
+ * ropOpenStream, {IABLogon, IAddrBook, IMAPIContainer, IMAPIProp,
+ * IMAPISession, IMAPISupport, IMessage, IMsgServiceAdmin, IMSLogon,
+ * IProviderAdmin, IXPLogon}::OpenEntry, ITnef::OpenTaggedBody.
+ */
+#define MAPI_MODIFY 0x1U
+
+/*
+ * Documented for ropOpenStream, ropOpenEmbeddedMessage, (loosely)
+ * ropGetPropertyIdsFromNames, IMAPIProp::{GetIDsFromNames, OpenEntry},
+ * ITnef::OpenTaggedBody.
+ */
+#define MAPI_CREATE 0x2U
+
+/*
+ * Documented for ropOpenMessage, ropOpenAttachment, various I*::OpenEntry,
+ * IMAPISession::OpenMsgStore.
+ */
+#define MAPI_BEST_ACCESS 0x3U
+
+/*
+ * Documented for ropOpenFolder.
+ */
+#define OPEN_MODE_FLAG_OPENSOFTDELETE 0x4U
+
 extern const FLATUID
 	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,

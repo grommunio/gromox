@@ -3811,14 +3811,14 @@ ec_error_t zs_openembedded(GUID hsession,
 		return ecNullObject;
 	auto b_writable = pattachment->writable();
 	auto tag_access = pattachment->get_tag_access();
-	if ((flags & FLAG_CREATE) && !b_writable)
+	if ((flags & MAPI_CREATE) && !b_writable)
 		return ecAccessDenied;
 	auto pmessage = message_object::create(pstore, false, pinfo->cpid, 0,
 	                pattachment, tag_access, b_writable ? TRUE : false, nullptr);
 	if (pmessage == nullptr)
 		return ecError;
 	if (pmessage->get_instance_id() == 0) {
-		if (!(flags & FLAG_CREATE))
+		if (!(flags & MAPI_CREATE))
 			return ecNotFound;
 		if (!b_writable)
 			return ecAccessDenied;
@@ -4366,7 +4366,7 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 	}
 	auto pmessage = message_object::create(pstore, b_new, pinfo->cpid,
 	                message_id, &folder_id, tag_access,
-	                OPEN_MODE_FLAG_READWRITE, pctx->pstate);
+	                MAPI_MODIFY, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
 	if (b_new && pmessage->init_message(b_fai, pinfo->cpid) != 0)

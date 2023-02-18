@@ -100,11 +100,11 @@ ec_error_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
  PERMISSION_CHECK:
 	if (!(tag_access & MAPI_ACCESS_READ))
 		return ecAccessDenied;
-	if (!(open_mode_flags & OPEN_MODE_FLAG_READWRITE) &&
+	if (!(open_mode_flags & MAPI_MODIFY) &&
 	    !(tag_access & MAPI_ACCESS_MODIFY)) {
-		if (!(open_mode_flags & OPEN_MODE_FLAG_BESTACCESS))
+		if (!(open_mode_flags & MAPI_BEST_ACCESS))
 			return ecAccessDenied;
-		open_mode_flags &= ~OPEN_MODE_FLAG_BESTACCESS;
+		open_mode_flags &= ~MAPI_BEST_ACCESS;
 	}
 	
 	auto pmessage = message_object::create(plogon, false, cpid, message_id,
@@ -237,7 +237,7 @@ ec_error_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 		return ecError;
 	auto pmessage = message_object::create(plogon, TRUE, cpid,
 	                **ppmessage_id, &folder_id, tag_access,
-	                OPEN_MODE_FLAG_READWRITE, nullptr);
+	                MAPI_MODIFY, nullptr);
 	if (pmessage == nullptr)
 		return ecServerOOM;
 	BOOL b_fai = associated_flag == 0 ? false : TRUE;
@@ -270,7 +270,7 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	if (!(tag_access & MAPI_ACCESS_MODIFY))
 		return ecAccessDenied;
 	auto open_flags = pmessage->get_open_flags();
-	if (!(open_flags & OPEN_MODE_FLAG_READWRITE) &&
+	if (!(open_flags & MAPI_MODIFY) &&
 	    save_flags != SAVE_FLAG_FORCESAVE)
 		return ecAccessDenied;
 	if (SAVE_FLAG_FORCESAVE != save_flags) {
@@ -294,7 +294,7 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	switch (save_flags) {
 	case SAVE_FLAG_KEEPOPENREADWRITE:
 	case SAVE_FLAG_FORCESAVE:
-		open_flags = OPEN_MODE_FLAG_READWRITE;
+		open_flags = MAPI_MODIFY;
 		pmessage->set_open_flags(open_flags);
 		break;
 	}
@@ -702,14 +702,13 @@ ec_error_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
 		return ecNotSupported;
-	if (flags & OPEN_MODE_FLAG_READWRITE) {
+	if (flags & MAPI_MODIFY) {
 		auto tag_access = pmessage->get_tag_access();
 		if (!(tag_access & MAPI_ACCESS_MODIFY)) {
-			if (flags & OPEN_MODE_FLAG_BESTACCESS) {
-				flags &= ~OPEN_MODE_FLAG_BESTACCESS;
-			} else {
+			if (flags & MAPI_BEST_ACCESS)
+				flags &= ~MAPI_BEST_ACCESS;
+			else
 				return ecAccessDenied;
-			}
 		}
 	}
 	auto pattachment = attachment_object::create(pmessage, attachment_id, flags);
@@ -742,7 +741,7 @@ ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 	if (!(tag_access & MAPI_ACCESS_MODIFY))
 		return ecAccessDenied;
 	auto pattachment = attachment_object::create(pmessage,
-		ATTACHMENT_NUM_INVALID, OPEN_MODE_FLAG_READWRITE);
+		ATTACHMENT_NUM_INVALID, MAPI_MODIFY);
 	if (pattachment == nullptr)
 		return ecError;
 	*pattachment_id = pattachment->get_attachment_num();
@@ -797,7 +796,7 @@ ec_error_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
 	if (!(tag_access & MAPI_ACCESS_MODIFY))
 		return ecAccessDenied;
 	auto open_flags = pattachment->get_open_flags();
-	if (!(open_flags & OPEN_MODE_FLAG_READWRITE) &&
+	if (!(open_flags & MAPI_MODIFY) &&
 	    save_flags != SAVE_FLAG_FORCESAVE)
 		return ecAccessDenied;
 	auto err = pattachment->save();
@@ -806,7 +805,7 @@ ec_error_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
 	switch (save_flags) {
 	case SAVE_FLAG_KEEPOPENREADWRITE:
 	case SAVE_FLAG_FORCESAVE:
-		open_flags = OPEN_MODE_FLAG_READWRITE;
+		open_flags = MAPI_MODIFY;
 		pattachment->set_open_flags(open_flags);
 		break;
 	}
@@ -845,19 +844,19 @@ ec_error_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 		return ecNotSupported;
 	auto tag_access = pattachment->get_tag_access();
 	if (!(tag_access & MAPI_ACCESS_MODIFY) &&
-	    open_embedded_flags & OPEN_EMBEDDED_FLAG_READWRITE)
+	    open_embedded_flags & MAPI_MODIFY)
 		return ecAccessDenied;
 	auto pmessage = message_object::create(plogon, false, cpid, 0,
 	                pattachment, tag_access, open_embedded_flags, nullptr);
 	if (pmessage == nullptr)
 		return ecError;
 	if (pmessage->get_instance_id() == 0) {
-		if (!(open_embedded_flags & OPEN_EMBEDDED_FLAG_CREATE))
+		if (!(open_embedded_flags & MAPI_CREATE))
 			return ecNotFound;
 		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
 		pmessage = message_object::create(plogon, TRUE, cpid, 0,
-		           pattachment, tag_access, OPEN_MODE_FLAG_READWRITE,
+		           pattachment, tag_access, MAPI_MODIFY,
 		           nullptr);
 		if (pmessage == nullptr)
 			return ecError;
