@@ -563,7 +563,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 
 	switch (read_flag) {
 	case MSG_READ_FLAG_DEFAULT:
-	case MSG_READ_FLAG_SUPPRESS_RECEIPT:
+	case SUPPRESS_RECEIPT:
 		if (!exmdb_client::get_message_property(dir,
 		    username, 0, message_id, PR_READ, &pvalue))
 			return FALSE;	
@@ -580,7 +580,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
 		break;
-	case MSG_READ_FLAG_CLEAR_READ_FLAG:
+	case CLEAR_READ_FLAG:
 		if (!exmdb_client::get_message_property(dir,
 		    username, 0, message_id, PR_READ, &pvalue))
 			return FALSE;
@@ -589,7 +589,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 			b_changed = TRUE;
 		}
 		break;
-	case MSG_READ_FLAG_GENERATE_RECEIPT_ONLY:
+	case GENERATE_RECEIPT_ONLY:
 		if (!exmdb_client::get_message_property(dir,
 		    username, 0, message_id, PR_READ_RECEIPT_REQUESTED,
 		    &pvalue))
@@ -597,18 +597,17 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
 		break;
-	case MSG_READ_FLAG_CLEAR_NOTIFY_READ:
-	case MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
-	case MSG_READ_FLAG_CLEAR_NOTIFY_READ |
-		MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
-		if ((read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_READ) &&
+	case CLEAR_RN_PENDING:
+	case CLEAR_NRN_PENDING:
+	case CLEAR_RN_PENDING | CLEAR_NRN_PENDING:
+		if (read_flag & CLEAR_RN_PENDING &&
 		    exmdb_client::get_message_property(dir, username, 0,
 		    message_id, PR_READ_RECEIPT_REQUESTED, &pvalue) &&
 		    pvb_enabled(pvalue) &&
 		    !exmdb_client::remove_message_property(dir,
 		    pinfo->cpid, message_id, PR_READ_RECEIPT_REQUESTED))
 			return FALSE;
-		if ((read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD) &&
+		if (read_flag & CLEAR_NRN_PENDING &&
 		    exmdb_client::get_message_property(dir,
 		    username, 0, message_id,
 		    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &pvalue) &&

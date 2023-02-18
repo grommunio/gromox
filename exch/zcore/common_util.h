@@ -28,7 +28,6 @@
 #define FLAG_ASSOCIATED								0x00000040
 #define FLAG_HARD_DELETE							0x00000010
 #define FLAG_MOVE		            				0x00000001
-#define FLAG_CLEAR_READ								0x00000004
 #define FLAG_UNICODE            					0x80000000
 #define FLAG_OPEN_IF_EXISTS							0x00000001
 #define FLAG_DEL_ASSOCIATED							0x00000008
