@@ -768,7 +768,7 @@ enum {
 	PR_RULE_MSG_STATE = PROP_TAG(PT_LONG, 0x65E9), /* PidTagRuleMessageState */
 	// PR_RULE_MSG_USER_FLAGS = PROP_TAG(PT_LONG, 0x65EA), /* PidTagRuleMessageUserFlags */
 	PR_RULE_MSG_PROVIDER = PROP_TAG(PT_UNICODE, 0x65EB), /* PidTagRuleMessageProvider */
-	// PR_RULE_MSG_NAME = PROP_TAG(PT_UNICODE, 0x65EC), /* PidTagRuleMessageName */
+	PR_RULE_MSG_NAME = PROP_TAG(PT_UNICODE, 0x65EC), /* PidTagRuleMessageName */
 	// PR_RULE_MSG_LEVEL = PROP_TAG(PT_LONG, 0x65ED), /* PidTagRuleMessageLevel */
 	// PR_RULE_MSG_PROVIDER_DATA = PROP_TAG(PT_BINARY, 0x65EE), /* PidTagRuleMessageProviderData */
 	PR_RULE_MSG_SEQUENCE = PROP_TAG(PT_LONG, 0x65F3), /* PidTagRuleMessageSequence */

@@ -37,8 +37,12 @@ struct rule_node {
 
 	int32_t seq = 0;
 	uint32_t state = 0;
+	bool extended = false;
 	uint64_t rule_id = 0;
 	std::string name, provider;
+	RESTRICTION xcond{};
+	EXT_RULE_ACTIONS xact{};
+	NAMEDPROPERTY_INFO xcnames{}, xanames{};
 	RESTRICTION *cond = nullptr;
 	RULE_ACTIONS *act = nullptr;
 	/* XXX: Who frees this? */
@@ -73,10 +77,14 @@ struct rxparam {
 }
 
 rule_node::rule_node(rule_node &&o) :
-	seq(o.seq), state(o.state), rule_id(o.rule_id),
-	name(std::move(name)), provider(std::move(o.provider)),
+	seq(o.seq), state(o.state), extended(o.extended), rule_id(o.rule_id),
+	name(std::move(o.name)), provider(std::move(o.provider)),
+	xcond(std::move(o.xcond)), xact(std::move(o.xact)),
+	xcnames(std::move(o.xcnames)), xanames(std::move(o.xanames)),
 	cond(o.cond), act(o.act)
 {
+	if (o.cond == &o.xcond)
+		cond = &xcond;
 	o.cond = nullptr;
 	o.act = nullptr;
 }
@@ -85,10 +93,15 @@ rule_node &rule_node::operator=(rule_node &&o)
 {
 	seq = o.seq;
 	state = o.state;
+	extended = o.extended;
 	rule_id = o.rule_id;
 	name = std::move(o.name);
 	provider = std::move(o.provider);
-	cond = o.cond;
+	xcond = std::move(o.xcond);
+	xact = std::move(o.xact);
+	xcnames = std::move(o.xcnames);
+	xanames = std::move(o.xanames);
+	cond = o.cond == &o.xcond ? &xcond : o.cond;
 	o.cond = nullptr;
 	act = o.act;
 	o.act = nullptr;
@@ -159,7 +172,101 @@ static ec_error_t rx_load_std_rules(const char *dir, eid_t fid, bool oof,
 	return ecSuccess;
 }
 
+static ec_error_t rx_load_ext_rules(const char *dir, eid_t fid, bool oof,
+    std::vector<rule_node> &rule_list)
+{
+	uint32_t table_id = 0, row_count = 0;
+
+	RESTRICTION_BITMASK rst_1 = {BMR_NEZ, PR_RULE_MSG_STATE, ST_ENABLED};
+	RESTRICTION_BITMASK rst_2 = {BMR_NEZ, PR_RULE_MSG_STATE, oof ? ST_ONLY_WHEN_OOF : 0U};
+	RESTRICTION rst_3[2]      = {{RES_BITMASK, {&rst_1}}, {RES_BITMASK, {&rst_2}}};
+	RESTRICTION_AND_OR rst_4  = {std::size(rst_3), {rst_3}};
+
+	RESTRICTION_EXIST rst_5   = {PR_RULE_MSG_STATE};
+	RESTRICTION_EXIST rst_6   = {PR_MESSAGE_CLASS};
+	RESTRICTION_CONTENT rst_7 = {FL_FULLSTRING | FL_IGNORECASE, PR_MESSAGE_CLASS, {PR_MESSAGE_CLASS, deconst("IPM.ExtendedRule.Message")}};
+	RESTRICTION rst_8[]       = {{RES_EXIST, {&rst_5}}, {RES_OR, {&rst_4}}, {RES_EXIST, {&rst_6}}, {RES_CONTENT, {&rst_7}}};
+	RESTRICTION_AND_OR rst_9  = {std::size(rst_8), {rst_8}};
+	RESTRICTION rst_10        = {RES_AND, {&rst_9}};
+
+	static constexpr SORT_ORDER sort_spec[] = {{PT_LONG, PROP_ID(PR_RULE_MSG_SEQUENCE), TABLE_SORT_ASCEND}};
+	static constexpr SORTORDER_SET sort_order = {std::size(sort_spec), 0, 0, deconst(sort_spec)};
+	if (!exmdb_client::load_content_table(dir, CP_ACP, fid, nullptr,
+	    TABLE_FLAG_ASSOCIATED, &rst_10, &sort_order, &table_id, &row_count))
+		return ecError;
+	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
+
+	static constexpr uint32_t tags[] = {
+		PR_RULE_MSG_STATE, PidTagMid, PR_RULE_MSG_SEQUENCE,
+		PR_RULE_MSG_PROVIDER,
+	};
+	static constexpr uint32_t tags2[] = {
+		PR_EXTENDED_RULE_MSG_CONDITION, PR_EXTENDED_RULE_MSG_ACTIONS,
+	};
+	const PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
+	const PROPTAG_ARRAY ptags2 = {std::size(tags2), deconst(tags2)};
+	tarray_set output_rows{};
+	if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id, &ptags,
+	    0, row_count, &output_rows))
+		return ecError;
+
+	for (unsigned int i = 0; i < output_rows.count; ++i) {
+		auto row   = output_rows.pparray[i];
+		if (row == nullptr)
+			continue;
+		auto seq   = row->get<const int32_t>(PR_RULE_MSG_SEQUENCE);
+		auto state = row->get<const uint32_t>(PR_RULE_MSG_STATE);
+		auto mid   = row->get<const uint64_t>(PidTagMid);
+		if (seq == nullptr || state == nullptr || mid == nullptr)
+			continue;
+
+		rule_node rule;
+		rule.seq = *seq;
+		rule.state = *state;
+		rule.extended = true;
+		rule.rule_id = *mid;
+		rule.name = znul(row->get<const char>(PR_RULE_MSG_NAME));
+		rule.provider = znul(row->get<const char>(PR_RULE_MSG_PROVIDER));
+		TPROPVAL_ARRAY vals2{};
+		if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
+		    *mid, &ptags2, &vals2))
+			continue;
+		auto cond = vals2.get<const BINARY>(PR_EXTENDED_RULE_MSG_CONDITION);
+		auto act  = vals2.get<const BINARY>(PR_EXTENDED_RULE_MSG_ACTIONS);
+		if (act == nullptr || act->cb == 0)
+			continue;
+		EXT_PULL ep;
+		if (cond != nullptr && cond->cb != 0) {
+			ep.init(cond->pb, cond->cb, exmdb_rpc_alloc,
+				EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+			if (ep.g_namedprop_info(&rule.xcnames) != EXT_ERR_SUCCESS ||
+			    ep.g_restriction(&rule.xcond) != EXT_ERR_SUCCESS)
+				return ecError;
+			rule.cond = &rule.xcond;
+		}
+		uint32_t version = 0;
+		ep.init(act->pb, act->cb, exmdb_rpc_alloc,
+			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+		if (ep.g_namedprop_info(&rule.xanames) != EXT_ERR_SUCCESS ||
+		    ep.g_uint32(&version) != EXT_ERR_SUCCESS ||
+		    version != 1 ||
+		    ep.g_ext_rule_actions(&rule.xact) != EXT_ERR_SUCCESS)
+			return ecError;
+		rule_list.emplace_back(std::move(rule));
+	}
+	return ecSuccess;
+}
+
 static ec_error_t op_process(rxparam &par, const rule_node &rule)
+{
+	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
+		return ecSuccess;
+	if (rule.state & ST_EXIT_LEVEL)
+		par.exit = true;
+	return ecSuccess;
+}
+
+static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 {
 	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
@@ -179,6 +286,9 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 	err = rx_load_std_rules(dir, folder_id, oof, rule_list);
 	if (err != ecSuccess)
 		return err;
+	err = rx_load_ext_rules(dir, folder_id, oof, rule_list);
+	if (err != ecSuccess)
+		return err;
 	std::sort(rule_list.begin(), rule_list.end());
 
 	rxparam par = {ev_from, ev_to, {dir, folder_id, msg_id}, {{dir, folder_id}}};
@@ -186,7 +296,7 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 	    par.cur.mid, &par.ctnt))
 		return ecError;
 	for (auto &&rule : rule_list) {
-		err = op_process(par, rule);
+		err = rule.extended ? opx_process(par, rule) : op_process(par, rule);
 		if (err != ecSuccess)
 			return err;
 	}
