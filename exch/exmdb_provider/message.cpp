@@ -66,6 +66,15 @@ struct message_node {
 	uint64_t folder_id = 0, message_id = 0;
 };
 
+struct rulexec_in {
+	const char *ev_from = nullptr, *ev_to = nullptr;
+	cpid_t cpid = CP_ACP;
+	bool oof = false;
+	sqlite3 *sqlite = nullptr;
+	uint64_t folder_id = 0, message_id = 0;
+	std::optional<Json::Value> digest;
+};
+
 struct seen_list {
 	std::vector<uint64_t> fld;
 	std::vector<message_node> msg;
@@ -73,7 +82,7 @@ struct seen_list {
 
 }
 
-static ec_error_t message_rule_new_message(BOOL, const char *, const char *, cpid_t, sqlite3 *, uint64_t, uint64_t, const std::optional<Json::Value> &, seen_list &);
+static ec_error_t message_rule_new_message(const rulexec_in &, seen_list &);
 
 static constexpr uint8_t fake_true = true;
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
@@ -2926,9 +2935,7 @@ static BOOL message_make_dams(const char *username,
 	return false;
 }
 
-static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
-    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const std::optional<Json::Value> &digest,
+static ec_error_t op_move_same(const rulexec_in &rp,
     seen_list &seen, const rule_node &rule, const ACTION_BLOCK &block,
     size_t act_idx, BOOL &b_del) try
 {
@@ -2939,56 +2946,57 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		/* Already moved to this folder once. */
 		return ecSuccess;
 	BOOL b_exist = false;
-	if (!common_util_check_folder_id(psqlite, dst_fid, &b_exist))
+	if (!common_util_check_folder_id(rp.sqlite, dst_fid, &b_exist))
 		return ecError;
 	if (!b_exist) {
 		mlog(LV_WARN, "W-1978: inbox \"%s\": while processing msgid %llxh (folder %llxh), "
 		        "an OP_MOVE/OP_COPY rule was disabled "
 		        "because target folder %llxh does not exist",
-		        znul(account), LLU{message_id}, LLU{folder_id}, LLU{dst_fid});
-		message_make_dem(account,
-			psqlite, folder_id, message_id, rule.id,
+		        znul(rp.ev_to), LLU{rp.message_id}, LLU{rp.folder_id}, LLU{dst_fid});
+		message_make_dem(rp.ev_to,
+			rp.sqlite, rp.folder_id, rp.message_id, rule.id,
 			RULE_ERROR_MOVECOPY, block.type,
 			act_idx, rule.provider.c_str(), seen);
-		return message_disable_rule(psqlite, false, rule.id);
+		return message_disable_rule(rp.sqlite, false, rule.id);
 	}
 	int tmp_id = 0, tmp_id1 = 0;
 	auto is_pvt = exmdb_server::is_private();
 	if (is_pvt) {
-		if (!common_util_get_id_from_username(account, &tmp_id))
+		if (!common_util_get_id_from_username(rp.ev_to, &tmp_id))
 			return ecError;
 	} else {
-		if (!common_util_get_domain_ids(account, &tmp_id, &tmp_id1))
+		if (!common_util_get_domain_ids(rp.ev_to, &tmp_id, &tmp_id1))
 			return ecError;
 	}
 	uint64_t dst_mid = 0;
 	uint32_t message_size = 0;
 	BOOL b_result = false;
-	if (!common_util_copy_message(psqlite, tmp_id, message_id, dst_fid,
+	if (!common_util_copy_message(rp.sqlite, tmp_id, rp.message_id, dst_fid,
 	    &dst_mid, &b_result, &message_size))
 		return ecError;
 	if (!b_result) {
-		message_make_dem(account, psqlite, folder_id,
-			message_id, rule.id, RULE_ERROR_MOVECOPY, block.type,
+		message_make_dem(rp.ev_to, rp.sqlite, rp.folder_id,
+			rp.message_id, rule.id, RULE_ERROR_MOVECOPY, block.type,
 			act_idx, rule.provider.c_str(), seen);
 		return ecSuccess;
 	}
 	auto nt_time = rop_util_current_nttime();
-	cu_set_property(MAPI_FOLDER, dst_fid, CP_ACP, psqlite,
+	cu_set_property(MAPI_FOLDER, dst_fid, CP_ACP, rp.sqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
+	if (!cu_adjust_store_size(rp.sqlite, ADJ_INCREASE, message_size, 0))
 		return ecError;
 	seen.fld.emplace_back(dst_fid);
+
+	rulexec_in rex = rp;
 	char *pmid_string = nullptr;
-	std::optional<Json::Value> newdigest;
-	if (is_pvt && digest.has_value() &&
-	    common_util_get_mid_string(psqlite, dst_mid, &pmid_string) &&
+	rex.folder_id = dst_fid;
+	rex.message_id = dst_mid;
+	if (is_pvt && rp.digest.has_value() &&
+	    common_util_get_mid_string(rp.sqlite, dst_mid, &pmid_string) &&
 	    pmid_string != nullptr) {
-		newdigest = digest;
-		(*newdigest)["file"] = pmid_string;
+		(*rex.digest)["file"] = pmid_string;
 	}
-	auto ec = message_rule_new_message(b_oof, from_address, account,
-	          cpid, psqlite, dst_fid, dst_mid, newdigest, seen);
+	auto ec = message_rule_new_message(std::move(rex), seen);
 	if (ec != ecSuccess)
 		return ec;
 	if (block.type == OP_MOVE) {
@@ -2996,13 +3004,13 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be moved to %llu in folder %llu by"
-			" rule", account, LLU{message_id}, LLU{folder_id},
+			" rule", rp.ev_to, LLU{rp.message_id}, LLU{rp.folder_id},
 			LLU{dst_mid}, LLU{dst_fid});
 	} else {
 		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be copied to %llu in folder %llu by"
-			" rule", account, LLU{message_id}, LLU{folder_id},
+			" rule", rp.ev_to, LLU{rp.message_id}, LLU{rp.folder_id},
 			LLU{dst_mid}, LLU{dst_fid});
 	}
 	return ecSuccess;
@@ -3011,37 +3019,34 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 	return ecServerOOM;
 }
 
-static ec_error_t op_reply(const char *from_address, const char *account,
-    sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id, seen_list &seen,
+static ec_error_t op_reply(const rulexec_in &rp, seen_list &seen,
     const rule_node &rule, const ACTION_BLOCK &block, size_t act_idx)
 {
 	auto preply = static_cast<REPLY_ACTION *>(block.pdata);
 	BOOL b_result = false;
-	if (!message_auto_reply(psqlite, message_id,
-	    from_address, account, block.type,
-	    block.flavor, rop_util_get_gc_value(
+	if (!message_auto_reply(rp.sqlite, rp.message_id, rp.ev_from, rp.ev_to,
+	    block.type, block.flavor, rop_util_get_gc_value(
 	    preply->template_message_id), preply->template_guid,
 	    &b_result))
 		return ecError;
 	if (b_result)
 		return ecSuccess;
-	message_make_dem(account, psqlite, folder_id,
-		message_id, rule.id, RULE_ERROR_RETRIEVE_TEMPLATE,
+	message_make_dem(rp.ev_to, rp.sqlite, rp.folder_id,
+		rp.message_id, rule.id, RULE_ERROR_RETRIEVE_TEMPLATE,
 		block.type, act_idx, rule.provider.c_str(), seen);
-	return message_disable_rule(psqlite, false, rule.id);
+	return message_disable_rule(rp.sqlite, false, rule.id);
 }
 
-static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
-    const rule_node &rule, const ACTION_BLOCK &block,
-    std::list<DAM_NODE> &dam_list) try
+static ec_error_t op_defer(const rulexec_in &rp, const rule_node &rule,
+    const ACTION_BLOCK &block, std::list<DAM_NODE> &dam_list) try
 {
 	if (!exmdb_server::is_private())
 		return ecSuccess;
 	dam_list.emplace_back();
 	auto pdnode = &dam_list.back();
 	pdnode->rule_id = rule.id;
-	pdnode->folder_id = folder_id;
-	pdnode->message_id = message_id;
+	pdnode->folder_id = rp.folder_id;
+	pdnode->message_id = rp.message_id;
 	pdnode->provider = rule.provider.c_str();
 	pdnode->pblock = &block;
 	return ecSuccess;
@@ -3049,39 +3054,35 @@ static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
 	return ecServerOOM;
 }
 
-static ec_error_t op_forward(const char *from_address, const char *account,
-    cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const std::optional<Json::Value> &pdigest, seen_list &seen,
+static ec_error_t op_forward(const rulexec_in &rp, seen_list &seen,
     const rule_node &rule, const ACTION_BLOCK &block, size_t act_idx)
 {
 	if (!exmdb_server::is_private())
 		return ecSuccess;
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
-		message_make_dem(account, psqlite, folder_id,
-			message_id, rule.id, RULE_ERROR_TOO_MANY_RCPTS,
+		message_make_dem(rp.ev_to, rp.sqlite, rp.folder_id,
+			rp.message_id, rule.id, RULE_ERROR_TOO_MANY_RCPTS,
 			block.type, act_idx, rule.provider.c_str(), seen);
-		return message_disable_rule(psqlite, false, rule.id);
+		return message_disable_rule(rp.sqlite, false, rule.id);
 	}
-	return message_forward_message(from_address, account, psqlite, cpid,
-	       message_id, pdigest, block.flavor, false, pfwddlgt->count,
+	return message_forward_message(rp.ev_from, rp.ev_to, rp.sqlite, rp.cpid,
+	       rp.message_id, rp.digest, block.flavor, false, pfwddlgt->count,
 	       pfwddlgt->pblock);
 }
 
-static ec_error_t op_delegate(const char *from_address, const char *account,
-    cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const std::optional<Json::Value> &digest, seen_list &seen,
+static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
     const rule_node &rule, const ACTION_BLOCK &block, size_t act_idx) try
 {
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
-	if (!exmdb_server::is_private() || !digest.has_value() ||
+	if (!exmdb_server::is_private() || !rp.digest.has_value() ||
 	    pfwddlgt->count == 0)
 		return ecSuccess;
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
-		message_make_dem(account, psqlite, folder_id,
-			message_id, rule.id, RULE_ERROR_TOO_MANY_RCPTS,
+		message_make_dem(rp.ev_to, rp.sqlite, rp.folder_id,
+			rp.message_id, rule.id, RULE_ERROR_TOO_MANY_RCPTS,
 			block.type, act_idx, rule.provider.c_str(), seen);
-		return message_disable_rule(psqlite, false, rule.id);
+		return message_disable_rule(rp.sqlite, false, rule.id);
 	}
 
 	char essdn_buff[1280], display_name[1024];
@@ -3089,13 +3090,13 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 
-	if (!message_read_message(psqlite, cpid, message_id, &pmsgctnt) ||
+	if (!message_read_message(rp.sqlite, rp.cpid, rp.message_id, &pmsgctnt) ||
 	    pmsgctnt == nullptr)
 		return ecError;
 	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
 		mlog(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
-			" again", account, LLU{message_id}, LLU{folder_id});
+			" again", rp.ev_to, LLU{rp.message_id}, LLU{rp.folder_id});
 		return ecSuccess;
 	}
 	static constexpr uint32_t tags[] = {
@@ -3111,17 +3112,17 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 		strcpy(essdn_buff, "EX:");
-		if (!common_util_username_to_essdn(account,
+		if (!common_util_username_to_essdn(rp.ev_to,
 		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 			return ecError;
 		HX_strupper(essdn_buff);
-		auto pvalue = common_util_username_to_addressbook_entryid(account);
+		auto pvalue = common_util_username_to_addressbook_entryid(rp.ev_to);
 		if (pvalue == nullptr)
 			return ecError;
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ENTRYID, pvalue);
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-		if (common_util_get_user_displayname(account, display_name,
+		if (common_util_get_user_displayname(rp.ev_to, display_name,
 		    arsizeof(display_name)))
 			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name);
 		searchkey_bin.cb = strlen(essdn_buff) + 1;
@@ -3135,7 +3136,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	    pfwddlgt->pblock, rcpt_list))
 		return ecError;
 	char mid_string1[128], tmp_path1[256];
-	get_digest(*digest, "file", mid_string1, arsizeof(mid_string1));
+	get_digest(*rp.digest, "file", mid_string1, std::size(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 		 exmdb_server::get_dir(), mid_string1);
 	for (const auto &eaddr : rcpt_list) {
@@ -3152,12 +3153,12 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 			        tmp_path1, eml_path.c_str(), strerror(-ret));
 			continue;
 		}
-		Json::Value newdigest = *digest;
+		Json::Value newdigest = *rp.digest;
 		newdigest["file"] = std::move(mid_string);
 		auto djson = json_to_str(newdigest);
 		uint32_t result = 0;
-		if (!exmdb_client_relay_delivery(maildir, from_address,
-		    eaddr.c_str(), cpid, pmsgctnt, djson.c_str(), &result))
+		if (!exmdb_client_relay_delivery(maildir, rp.ev_from,
+		    eaddr.c_str(), rp.cpid, pmsgctnt, djson.c_str(), &result))
 			return ecError;
 	}
 	return ecSuccess;
@@ -3166,53 +3167,45 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 	return ecServerOOM;
 }
 
-static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
-    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const std::optional<Json::Value> &pdigest,
-    seen_list &seen, const rule_node &rule, const ACTION_BLOCK &block,
-    size_t act_idx, BOOL &b_del, std::list<DAM_NODE> &dam_list)
+static ec_error_t op_switch(const rulexec_in &rp, seen_list &seen,
+    const rule_node &rule, const ACTION_BLOCK &block, size_t act_idx,
+    BOOL &b_del, std::list<DAM_NODE> &dam_list)
 {
 	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY: {
 		auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 		return pmovecopy->same_store ?
-		       op_move_same(b_oof, from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, seen, rule, block,
-		       act_idx, b_del) :
-		       op_defer(folder_id, message_id, rule, block, dam_list);
+		       op_move_same(rp, seen, rule, block, act_idx, b_del) :
+		       op_defer(rp, rule, block, dam_list);
 	}
 	case OP_REPLY:
 	case OP_OOF_REPLY:
-		return op_reply(from_address, account, psqlite, folder_id,
-		       message_id, seen, rule, block, act_idx);
+		return op_reply(rp, seen, rule, block, act_idx);
 	case OP_DEFER_ACTION:
-		return op_defer(folder_id, message_id, rule, block, dam_list);
+		return op_defer(rp, rule, block, dam_list);
 	case OP_BOUNCE: {
-		auto ec = message_bounce_message(from_address, account, psqlite,
-		          message_id, *static_cast<uint32_t *>(block.pdata));
+		auto ec = message_bounce_message(rp.ev_from, rp.ev_to,
+		          rp.sqlite, rp.message_id,
+		          *static_cast<uint32_t *>(block.pdata));
 		if (ec != ecSuccess)
 			return ec;
 		b_del = TRUE;
 		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
-			" to be deleted by rule", account,
-			LLU{message_id}, LLU{folder_id});
+			" to be deleted by rule", rp.ev_to,
+			LLU{rp.message_id}, LLU{rp.folder_id});
 		break;
 	}
 	case OP_FORWARD:
-		return op_forward(from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, seen, rule, block,
-		       act_idx);
+		return op_forward(rp, seen, rule, block, act_idx);
 	case OP_DELEGATE:
-		return op_delegate(from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, seen, rule, block,
-		       act_idx);
+		return op_delegate(rp, seen, rule, block, act_idx);
 	case OP_TAG: {
 		PROBLEM_ARRAY problems{};
 		const TPROPVAL_ARRAY vals = {1, static_cast<TAGGED_PROPVAL *>(block.pdata)};
-		if (!cu_set_properties(MAPI_MESSAGE, message_id, cpid,
-		    psqlite, &vals, &problems))
+		if (!cu_set_properties(MAPI_MESSAGE, rp.message_id, rp.cpid,
+		    rp.sqlite, &vals, &problems))
 			return ecError;
 		break;
 	}
@@ -3220,14 +3213,14 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 		b_del = TRUE;
 		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
-			" to be deleted by rule", account,
-			LLU{message_id}, LLU{folder_id});
+			" to be deleted by rule", rp.ev_to,
+			LLU{rp.message_id}, LLU{rp.folder_id});
 		break;
 	case OP_MARK_AS_READ: {
 		if (!exmdb_server::is_private())
 			return ecSuccess;
 		BOOL b_result = false;
-		if (!cu_set_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+		if (!cu_set_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.sqlite,
 		    PR_READ, &fake_true, &b_result))
 			return ecError;
 		break;
@@ -3236,32 +3229,29 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 	return ecSuccess;
 }
 
-static ec_error_t op_process(BOOL b_oof, const char *from_address,
-    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const std::optional<Json::Value> &pdigest,
+static ec_error_t op_process(const rulexec_in &rp,
     seen_list &seen, const rule_node &rule, BOOL &b_del, BOOL &b_exit,
     std::list<DAM_NODE> &dam_list)
 {
 	if (b_exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	void *pvalue = nullptr;
-	if (!common_util_get_rule_property(rule.id, psqlite,
+	if (!common_util_get_rule_property(rule.id, rp.sqlite,
 	    PR_RULE_CONDITION, &pvalue))
 		return ecError;
-	if (pvalue == nullptr || !cu_eval_msg_restriction(psqlite,
-	    CP_ACP, message_id, static_cast<RESTRICTION *>(pvalue)))
+	if (pvalue == nullptr || !cu_eval_msg_restriction(rp.sqlite,
+	    CP_ACP, rp.message_id, static_cast<RESTRICTION *>(pvalue)))
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		b_exit = TRUE;
 	RULE_ACTIONS *pactions = nullptr;
-	if (!common_util_get_rule_property(rule.id, psqlite,
+	if (!common_util_get_rule_property(rule.id, rp.sqlite,
 	    PR_RULE_ACTIONS, reinterpret_cast<void **>(&pactions)))
 		return ecError;
 	if (pactions == nullptr)
 		return ecSuccess;
 	for (size_t i = 0; i < pactions->count; ++i) {
-		auto ret = op_switcheroo(b_oof, from_address, account, cpid,
-		           psqlite, folder_id, message_id, pdigest, seen,
+		auto ret = op_switch(rp, seen,
 		           rule, pactions->pblock[i], i, b_del, dam_list);
 		if (ret != ecSuccess)
 			return ret;
@@ -3302,16 +3292,14 @@ static ec_error_t opx_move_public(const char *account, sqlite3 *psqlite,
 	return ecSuccess;
 }
 
-static ec_error_t opx_move(BOOL b_oof, const char *from_address,
-    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const std::optional<Json::Value> &pdigest,
+static ec_error_t opx_move(const rulexec_in &rp,
     seen_list &seen, const rule_node &rule, const EXT_ACTION_BLOCK &block,
     BOOL &b_del) try
 {
 	auto pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(block.pdata);
 	auto ec = exmdb_server::is_private() ?
-	          opx_move_private(account, psqlite, rule, pextmvcp) :
-	          opx_move_public(account, psqlite, rule, pextmvcp);
+	          opx_move_private(rp.ev_to, rp.sqlite, rule, pextmvcp) :
+	          opx_move_public(rp.ev_to, rp.sqlite, rule, pextmvcp);
 	if (ec != ecSuccess)
 		return ec;
 	auto dst_fid = rop_util_gc_to_value(
@@ -3320,43 +3308,42 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 		/* Already moved to this folder once. */
 		return ecSuccess;
 	BOOL b_exist = false;
-	if (!common_util_check_folder_id(psqlite, dst_fid, &b_exist))
+	if (!common_util_check_folder_id(rp.sqlite, dst_fid, &b_exist))
 		return ecError;
 	if (!b_exist)
-		return message_disable_rule(psqlite, TRUE, rule.id);
+		return message_disable_rule(rp.sqlite, TRUE, rule.id);
 	int tmp_id = 0, tmp_id1 = 0;
 	auto is_pvt = exmdb_server::is_private();
 	if (is_pvt) {
-		if (!common_util_get_id_from_username(account, &tmp_id))
+		if (!common_util_get_id_from_username(rp.ev_to, &tmp_id))
 			return ecError;
 	} else {
-		if (!common_util_get_domain_ids(account, &tmp_id, &tmp_id1))
+		if (!common_util_get_domain_ids(rp.ev_to, &tmp_id, &tmp_id1))
 			return ecError;
 	}
 	uint64_t dst_mid = 0;
 	uint32_t message_size = 0;
 	BOOL b_result = 0;
-	if (!common_util_copy_message(psqlite, tmp_id, message_id, dst_fid,
+	if (!common_util_copy_message(rp.sqlite, tmp_id, rp.message_id, dst_fid,
 	    &dst_mid, &b_result, &message_size))
 		return ecError;
 	if (!b_result)
 		return ecSuccess;
 	auto nt_time = rop_util_current_nttime();
-	cu_set_property(MAPI_FOLDER, dst_fid, CP_ACP, psqlite,
+	cu_set_property(MAPI_FOLDER, dst_fid, CP_ACP, rp.sqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
+	if (!cu_adjust_store_size(rp.sqlite, ADJ_INCREASE, message_size, 0))
 		return ecError;
 	seen.fld.emplace_back(dst_fid);
-	std::optional<Json::Value> newdigest;
+
+	rulexec_in rex = rp;
 	char *pmid_string = nullptr;
-	if (is_pvt && pdigest.has_value() &&
-	    common_util_get_mid_string(psqlite, dst_mid, &pmid_string) &&
+	if (is_pvt && rp.digest.has_value() &&
+	    common_util_get_mid_string(rp.sqlite, dst_mid, &pmid_string) &&
 	    pmid_string != nullptr) {
-		newdigest.emplace(*pdigest);
-		(*newdigest)["file"] = pmid_string;
+		(*rex.digest)["file"] = pmid_string;
 	}
-	ec = message_rule_new_message(b_oof, from_address, account,
-	     cpid, psqlite, dst_fid, dst_mid, newdigest, seen);
+	ec = message_rule_new_message(std::move(rex), seen);
 	if (ec != ecSuccess)
 		return ec;
 	if (block.type == OP_MOVE) {
@@ -3364,14 +3351,14 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be moved to %llu in folder %llu by "
-			"ext rule", account, LLU{message_id},
-			LLU{folder_id}, LLU{dst_mid}, LLU{dst_fid});
+			"ext rule", rp.ev_to, LLU{rp.message_id},
+			LLU{rp.folder_id}, LLU{dst_mid}, LLU{dst_fid});
 	} else {
 		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
 			" to be copied to %llu in folder %llu by "
-			"ext rule", account, LLU{message_id},
-			LLU{folder_id}, LLU{dst_mid}, LLU{dst_fid});
+			"ext rule", rp.ev_to, LLU{rp.message_id},
+			LLU{rp.folder_id}, LLU{dst_mid}, LLU{dst_fid});
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -3379,20 +3366,19 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 	return ecServerOOM;
 }
 
-static ec_error_t opx_reply(const char *from_address, const char *account,
-    sqlite3 *psqlite, uint64_t message_id, const rule_node &rule,
+static ec_error_t opx_reply(const rulexec_in &rp, const rule_node &rule,
     const EXT_ACTION_BLOCK &block)
 {
 	auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
 	if (exmdb_server::is_private()) {
 		int tmp_id = 0;
-		if (!common_util_get_id_from_username(account, &tmp_id))
+		if (!common_util_get_id_from_username(rp.ev_to, &tmp_id))
 			return ecSuccess;
 		auto tmp_guid = rop_util_make_user_guid(tmp_id);
 		if (tmp_guid != pextreply->message_eid.message_database_guid)
-			return message_disable_rule(psqlite, TRUE, rule.id);
+			return message_disable_rule(rp.sqlite, TRUE, rule.id);
 	} else {
-		auto pc = strchr(account, '@');
+		auto pc = strchr(rp.ev_to, '@');
 		if (pc == nullptr)
 			return ecSuccess;
 		++pc;
@@ -3401,44 +3387,42 @@ static ec_error_t opx_reply(const char *from_address, const char *account,
 			return ecSuccess;
 		auto tmp_guid = rop_util_make_domain_guid(tmp_id);
 		if (tmp_guid != pextreply->message_eid.message_database_guid)
-			return message_disable_rule(psqlite, TRUE, rule.id);
+			return message_disable_rule(rp.sqlite, TRUE, rule.id);
 	}
 	auto dst_mid = rop_util_gc_to_value(
 		       pextreply->message_eid.message_global_counter);
 	BOOL b_result = false;
-	if (!message_auto_reply(psqlite, message_id, from_address, account,
+	if (!message_auto_reply(rp.sqlite, rp.message_id, rp.ev_from, rp.ev_to,
 	    block.type, block.flavor,
 	    dst_mid, pextreply->template_guid, &b_result))
 		return ecError;
 	if (!b_result)
-		return message_disable_rule(psqlite, TRUE, rule.id);
+		return message_disable_rule(rp.sqlite, TRUE, rule.id);
 	return ecSuccess;
 }
 
-static ec_error_t opx_delegate(const char *from_address, const char *account,
-    cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const std::optional<Json::Value> &pdigest, const rule_node &rule,
+static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
     const EXT_ACTION_BLOCK &block) try
 {
 	auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
-	if (!exmdb_server::is_private() || !pdigest.has_value() ||
+	if (!exmdb_server::is_private() || !rp.digest.has_value() ||
 	    pextfwddlgt->count == 0)
 		return ecSuccess;
 	if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
-		return message_disable_rule(psqlite, TRUE, rule.id);
+		return message_disable_rule(rp.sqlite, TRUE, rule.id);
 
 	char essdn_buff[1280], display_name[1024];
 	BINARY searchkey_bin;
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 
-	if (!message_read_message(psqlite, cpid,
-	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
+	if (!message_read_message(rp.sqlite, rp.cpid,
+	    rp.message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return ecError;
 	if (pmsgctnt->proplist.has(PR_DELEGATED_BY_RULE)) {
 		mlog(LV_DEBUG, "user=%s host=unknown  Delegated"
 			" message %llu in folder %llu cannot be delegated"
-			" again", account, LLU{message_id}, LLU{folder_id});
+			" again", rp.ev_to, LLU{rp.message_id}, LLU{rp.folder_id});
 		return ecSuccess;
 	}
 	static constexpr uint32_t tags[] = {
@@ -3454,16 +3438,16 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 		strcpy(essdn_buff, "EX:");
-		if (!common_util_username_to_essdn(account,
+		if (!common_util_username_to_essdn(rp.ev_to,
 		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 			return ecError;
-		auto pvalue = common_util_username_to_addressbook_entryid(account);
+		auto pvalue = common_util_username_to_addressbook_entryid(rp.ev_to);
 		if (pvalue == nullptr)
 			return ecError;
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ENTRYID, pvalue);
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-		if (common_util_get_user_displayname(account, display_name,
+		if (common_util_get_user_displayname(rp.ev_to, display_name,
 		    arsizeof(display_name)))
 			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name);
 		searchkey_bin.cb = strlen(essdn_buff) + 1;
@@ -3477,7 +3461,7 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 	    pextfwddlgt->pblock, rcpt_list))
 		return ecError;
 	char mid_string1[128], tmp_path1[256];
-	get_digest(*pdigest, "file", mid_string1, arsizeof(mid_string1));
+	get_digest(*rp.digest, "file", mid_string1, std::size(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 	         exmdb_server::get_dir(), mid_string1);
 	for (const auto &eaddr : rcpt_list) {
@@ -3494,12 +3478,12 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 			        tmp_path1, eml_path.c_str(), strerror(-ret));
 			continue;
 		}
-		Json::Value newdigest = *pdigest;
+		Json::Value newdigest = *rp.digest;
 		newdigest["file"] = std::move(mid_string);
 		auto djson = json_to_str(newdigest);
 		uint32_t result = 0;
-		if (!exmdb_client_relay_delivery(maildir, from_address,
-		    eaddr.c_str(), cpid, pmsgctnt, djson.c_str(), &result))
+		if (!exmdb_client_relay_delivery(maildir, rp.ev_from,
+		    eaddr.c_str(), rp.cpid, pmsgctnt, djson.c_str(), &result))
 			return ecError;
 	}
 	return ecSuccess;
@@ -3508,51 +3492,46 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 	return ecServerOOM;
 }
 
-static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
-    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const std::optional<Json::Value> &pdigest,
+static ec_error_t opx_switch(const rulexec_in &rp,
     seen_list &seen, const rule_node &rule, const EXT_ACTION_BLOCK &block,
     size_t act_idx, BOOL &b_del)
 {
 	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY:
-		return opx_move(b_oof, from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, seen, rule, block, b_del);
+		return opx_move(rp, seen, rule, block, b_del);
 	case OP_REPLY:
 	case OP_OOF_REPLY:
-		return opx_reply(from_address, account, psqlite, message_id,
-		       rule, block);
+		return opx_reply(rp, rule, block);
 	case OP_DEFER_ACTION:
 		break;
 	case OP_BOUNCE: {
-		auto ec = message_bounce_message(from_address, account, psqlite,
-		          message_id, *static_cast<uint32_t *>(block.pdata));
+		auto ec = message_bounce_message(rp.ev_from, rp.ev_to, rp.sqlite,
+		          rp.message_id, *static_cast<uint32_t *>(block.pdata));
 		if (ec != ecSuccess)
 			return ec;
 		b_del = TRUE;
 		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
-			" to be deleted by ext rule", account,
-			LLU{message_id}, LLU{folder_id});
+			" to be deleted by ext rule", rp.ev_to,
+			LLU{rp.message_id}, LLU{rp.folder_id});
 		break;
 	}
 	case OP_FORWARD: {
 		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
-			return message_disable_rule(psqlite, TRUE, rule.id);
-		return message_forward_message(from_address, account, psqlite,
-		       cpid, message_id, pdigest, block.flavor, TRUE,
+			return message_disable_rule(rp.sqlite, TRUE, rule.id);
+		return message_forward_message(rp.ev_from, rp.ev_to, rp.sqlite,
+		       rp.cpid, rp.message_id, rp.digest, block.flavor, TRUE,
 		       pextfwddlgt->count, pextfwddlgt->pblock);
 	}
 	case OP_DELEGATE:
-		return opx_delegate(from_address, account, cpid, psqlite,
-		       folder_id, message_id, pdigest, rule, block);
+		return opx_delegate(rp, rule, block);
 	case OP_TAG: {
 		PROBLEM_ARRAY problems{};
 		TPROPVAL_ARRAY vals = {1, static_cast<TAGGED_PROPVAL *>(block.pdata)};
-		if (!cu_set_properties(MAPI_MESSAGE, message_id, cpid,
-		    psqlite, &vals, &problems))
+		if (!cu_set_properties(MAPI_MESSAGE, rp.message_id, rp.cpid,
+		    rp.sqlite, &vals, &problems))
 			return ecError;
 		break;
 	}
@@ -3560,14 +3539,14 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 		b_del = TRUE;
 		mlog(LV_DEBUG, "user=%s host=unknown  "
 			"Message %llu in folder %llu is going"
-			" to be deleted by ext rule", account,
-			LLU{message_id}, LLU{folder_id});
+			" to be deleted by ext rule", rp.ev_to,
+			LLU{rp.message_id}, LLU{rp.folder_id});
 		break;
 	case OP_MARK_AS_READ: {
 		if (!exmdb_server::is_private())
 			return ecSuccess;
 		BOOL b_result = false;
-		if (!cu_set_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+		if (!cu_set_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.sqlite,
 		    PR_READ, &fake_true, &b_result))
 			return ecError;
 		break;
@@ -3576,15 +3555,13 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 	return ecSuccess;
 }
 
-static ec_error_t opx_process(BOOL b_oof, const char *from_address,
-    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const std::optional<Json::Value> &pdigest,
+static ec_error_t opx_process(const rulexec_in &rp,
     seen_list &seen, const rule_node &rule, BOOL &b_del, BOOL &b_exit)
 {
 	if (b_exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	void *pvalue = nullptr;
-	if (!cu_get_property(MAPI_MESSAGE, rule.id, CP_ACP, psqlite,
+	if (!cu_get_property(MAPI_MESSAGE, rule.id, CP_ACP, rp.sqlite,
 	    PR_EXTENDED_RULE_MSG_CONDITION, &pvalue))
 		return ecError;
 	auto bv = static_cast<BINARY *>(pvalue);
@@ -3598,13 +3575,13 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 	if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
 	    ext_pull.g_restriction(&restriction) != EXT_ERR_SUCCESS)
 		return ecSuccess;
-	if (!message_replace_restriction_propid(psqlite, &propname_info, &restriction))
+	if (!message_replace_restriction_propid(rp.sqlite, &propname_info, &restriction))
 		return ecError;
-	if (!cu_eval_msg_restriction(psqlite, CP_ACP, message_id, &restriction))
+	if (!cu_eval_msg_restriction(rp.sqlite, CP_ACP, rp.message_id, &restriction))
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		b_exit = TRUE;
-	if (!cu_get_property(MAPI_MESSAGE, rule.id, CP_ACP, psqlite,
+	if (!cu_get_property(MAPI_MESSAGE, rule.id, CP_ACP, rp.sqlite,
 	    PR_EXTENDED_RULE_MSG_ACTIONS, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
@@ -3618,11 +3595,10 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 	    version != 1 ||
 	    ext_pull.g_ext_rule_actions(&ext_actions) != EXT_ERR_SUCCESS)
 		return ecSuccess;
-	if (!message_replace_actions_propid(psqlite, &propname_info, &ext_actions))
+	if (!message_replace_actions_propid(rp.sqlite, &propname_info, &ext_actions))
 		return ecError;
 	for (size_t i = 0; i < ext_actions.count; ++i) {
-		auto ret = opx_switcheroo(b_oof, from_address, account, cpid,
-		           psqlite, folder_id, message_id, pdigest, seen,
+		auto ret = opx_switch(rp, seen,
 		           rule, ext_actions.pblock[i], i, b_del);
 		if (ret != ecSuccess)
 			return ret;
@@ -3631,57 +3607,52 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 }
 
 /* extended rules do not produce DAM or DEM */
-static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
-    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
-    uint64_t message_id, const std::optional<Json::Value> &pdigest,
-    seen_list &seen)
+static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen)
 {
 	std::vector<rule_node> rule_list, ext_rule_list;
 	std::list<DAM_NODE> dam_list;
 	
-	if (!message_load_folder_rules(b_oof, psqlite, folder_id, rule_list) ||
-	    !message_load_folder_ext_rules(b_oof, psqlite, folder_id, ext_rule_list))
+	if (!message_load_folder_rules(rp.oof, rp.sqlite, rp.folder_id, rule_list) ||
+	    !message_load_folder_ext_rules(rp.oof, rp.sqlite, rp.folder_id, ext_rule_list))
 		return ecError;
 	BOOL b_del = false, b_exit = false;
 	for (const auto &rnode : rule_list) {
-		auto ec = op_process(b_oof, from_address, account, cpid,
-		          psqlite, folder_id, message_id, pdigest, seen,
+		auto ec = op_process(rp, seen,
 		          rnode, b_del, b_exit, dam_list);
 		if (ec != ecSuccess)
 			return ec;
 	}
-	if (dam_list.size() > 0 && !message_make_dams(account,
-	    psqlite, folder_id, message_id, std::move(dam_list), seen))
+	if (dam_list.size() > 0 && !message_make_dams(rp.ev_to,
+	    rp.sqlite, rp.folder_id, rp.message_id, std::move(dam_list), seen))
 		return ecError;
 	for (const auto &rnode : ext_rule_list) {
-		auto ec = opx_process(b_oof, from_address, account, cpid,
-		          psqlite, folder_id, message_id, pdigest, seen,
+		auto ec = opx_process(rp, seen,
 		          rnode, b_del, b_exit);
 		if (ec != ecSuccess)
 			return ec;
 	}
 	if (!b_del) try {
-		seen.msg.emplace_back(message_node{folder_id, message_id});
+		seen.msg.emplace_back(message_node{rp.folder_id, rp.message_id});
 		return ecSuccess;
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2029: ENOMEM");
 		return ecServerOOM;
 	}
 	void *pvalue = nullptr;
-	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+	if (!cu_get_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.sqlite,
 	    PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
 		return ecError;
 	auto message_size = *static_cast<uint32_t *>(pvalue);
 	char sql_string[128];
 	snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
-		" WHERE message_id=%llu", LLU{message_id});
-	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK ||
-	    !cu_adjust_store_size(psqlite, ADJ_DECREASE, message_size, 0))
+		" WHERE message_id=%llu", LLU{rp.message_id});
+	if (gx_sql_exec(rp.sqlite, sql_string) != SQLITE_OK ||
+	    !cu_adjust_store_size(rp.sqlite, ADJ_DECREASE, message_size, 0))
 		return ecError;
-	if (!pdigest.has_value())
+	if (!rp.digest.has_value())
 		return ecSuccess;
 	char mid_string1[128], tmp_path1[256];
-	get_digest(*pdigest, "file", mid_string1, arsizeof(mid_string1));
+	get_digest(*rp.digest, "file", mid_string1, std::size(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 	         exmdb_server::get_dir(), mid_string1);
 	remove(tmp_path1);
@@ -3711,7 +3682,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
     const char *account, cpid_t cpid, const MESSAGE_CONTENT *pmsg,
     const char *pdigest, uint32_t *presult) try
 {
-	BOOL b_oof;
+	bool b_oof;
 	uint64_t nt_time;
 	uint64_t fid_val;
 	BINARY *pentryid;
@@ -3748,10 +3719,10 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		if (!cu_get_property(MAPI_STORE, 0, CP_ACP,
 		    pdb->psqlite, PR_OOF_STATE, &pvalue))
 			return FALSE;
-		b_oof = pvb_disabled(pvalue) ? false : TRUE;
+		b_oof = pvb_disabled(pvalue);
 		fid_val = PRIVATE_FID_INBOX;
 	} else {
-		b_oof = FALSE;
+		b_oof = false;
 		//TODO get public folder id
 		mlog(LV_ERR, "%s - public folder not implemented", __PRETTY_FUNCTION__);
 		return false;
@@ -3840,8 +3811,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	mlog(LV_DEBUG, "user=%s host=unknown  "
 		"Message %llu is delivered into folder "
 		"%llu", account, LLU{message_id}, LLU{fid_val});
-	auto ec = message_rule_new_message(b_oof, from_address, account,
-	          cpid, pdb->psqlite, fid_val, message_id, digest, seen);
+	auto ec = message_rule_new_message({from_address, account, cpid, b_oof,
+	          pdb->psqlite, fid_val, message_id, std::move(digest)}, seen);
 	if (ec != ecSuccess)
 		return FALSE;
 	sql_transact.commit();
@@ -3990,8 +3961,8 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	}
 	seen_list seen{{fid_val}};
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	auto ec = message_rule_new_message(false, "none@none", account,
-	          cpid, pdb->psqlite, fid_val, mid_val, digest, seen);
+	auto ec = message_rule_new_message({"none@none", account, cpid, false,
+	          pdb->psqlite, fid_val, mid_val, std::move(digest)}, seen);
 	if (ec != ecSuccess)
 		return FALSE;
 	sql_transact.commit();
