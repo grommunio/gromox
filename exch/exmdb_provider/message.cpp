@@ -2070,15 +2070,15 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	       PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 }
 
-static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
-    uint64_t folder_id, std::vector<rule_node> &plist) try
+static BOOL message_load_folder_rules(const rulexec_in &rp,
+    std::vector<rule_node> &plist) try
 {
 	char sql_string[256];
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT state, rule_id, "
 	         "sequence, provider FROM rules WHERE folder_id=%lld "
-	         "AND provider IS NOT NULL ORDER BY sequence", LLU{folder_id});
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
+	         "AND provider IS NOT NULL ORDER BY sequence", LLU{rp.folder_id});
+	auto pstmt = gx_sql_prep(rp.sqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -2088,7 +2088,7 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 		if (state & ST_ENABLED) {
 			/* do nothing */
 		} else if (state & ST_ONLY_WHEN_OOF) {
-			if (!b_oof)
+			if (!rp.oof)
 				continue;
 		} else {
 			continue;
@@ -2103,8 +2103,8 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 	return false;
 }
 
-static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
-    uint64_t folder_id, std::vector<rule_node> &plist) try
+static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
+    std::vector<rule_node> &plist) try
 {
 	auto qstr = fmt::format(
 		"SELECT m.message_id, p2.propval AS state, p3.propval AS seq, "
@@ -2121,9 +2121,9 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 		"LEFT JOIN message_properties AS p4 "
 		"ON m.message_id=p4.message_id AND p4.proptag={} "
 		"ORDER BY seq",
-		folder_id, PR_MESSAGE_CLASS, PR_RULE_MSG_STATE,
+		rp.folder_id, PR_MESSAGE_CLASS, PR_RULE_MSG_STATE,
 		PR_RULE_MSG_SEQUENCE, PR_RULE_MSG_PROVIDER);
-	auto pstmt = gx_sql_prep(psqlite, qstr.c_str());
+	auto pstmt = gx_sql_prep(rp.sqlite, qstr.c_str());
 	if (pstmt == nullptr)
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -2134,7 +2134,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 		if (state & ST_ENABLED) {
 			/* do nothing */
 		} else if (state & ST_ONLY_WHEN_OOF) {
-			if (!b_oof)
+			if (!rp.oof)
 				continue;
 		} else {
 			continue;
@@ -2401,9 +2401,7 @@ static BOOL message_get_propname(uint16_t propid,
 	return TRUE;
 }
 
-static BOOL message_auto_reply(sqlite3 *psqlite,
-	uint64_t message_id, const char *from_address,
-	const char *account, uint8_t action_type,
+static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	uint32_t action_flavor, uint32_t template_message_id,
 	GUID template_guid, BOOL *pb_result)
 {
@@ -2415,12 +2413,12 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	if (0 == strcasecmp(from_address, "none@none")) {
+	if (strcasecmp(rp.ev_from, "none@none") == 0) {
 		*pb_result = TRUE;
 		return TRUE;
 	}
-	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-	    psqlite, PR_AUTO_RESPONSE_SUPPRESS, &pvalue))
+	if (!cu_get_property(MAPI_MESSAGE, rp.message_id, CP_ACP,
+	    rp.sqlite, PR_AUTO_RESPONSE_SUPPRESS, &pvalue))
 		return FALSE;
 	if (NULL != pvalue) {
 		if (action_type == OP_REPLY) {
@@ -2435,7 +2433,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			}
 		}
 	}
-	if (!message_read_message(psqlite, CP_ACP, template_message_id, &pmsgctnt))
+	if (!message_read_message(rp.sqlite, CP_ACP, template_message_id, &pmsgctnt))
 		return FALSE;
 	if (NULL == pmsgctnt) {
 		*pb_result = FALSE;
@@ -2494,19 +2492,19 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		if ((*prcpts->pparray)->ppropval == nullptr)
 			return FALSE;
 		(*prcpts->pparray)->ppropval[0].proptag = PR_SMTP_ADDRESS;
-		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
-		    PR_SENT_REPRESENTING_SMTP_ADDRESS, &pvalue))
+		if (!cu_get_property(MAPI_MESSAGE, rp.message_id, CP_ACP,
+		    rp.sqlite, PR_SENT_REPRESENTING_SMTP_ADDRESS, &pvalue))
 			return FALSE;
 		(*prcpts->pparray)->ppropval[0].pvalue = pvalue == nullptr ?
-			deconst(from_address) : pvalue;
+			deconst(rp.ev_from) : pvalue;
 		(*prcpts->pparray)->ppropval[1].proptag = PR_RECIPIENT_TYPE;
 		auto uv = cu_alloc<uint32_t>();
 		if (uv == nullptr)
 			return FALSE;
 		*uv = MAPI_TO;
 		(*prcpts->pparray)->ppropval[1].pvalue = uv;
-		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
-		    PR_SENT_REPRESENTING_NAME, &pvalue))
+		if (!cu_get_property(MAPI_MESSAGE, rp.message_id, CP_ACP,
+		    rp.sqlite, PR_SENT_REPRESENTING_NAME, &pvalue))
 			return FALSE;
 		if (NULL == pvalue) {
 			(*prcpts->pparray)->count = 2;
@@ -2518,8 +2516,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		pmsgctnt->children.prcpts = prcpts;
 	}
 	if (action_flavor & STOCK_REPLY_TEMPLATE) {
-		if (!exmdb_bouncer_make_content(from_address, account,
-		    psqlite, message_id, "BOUNCE_AUTO_RESPONSE", nullptr,
+		if (!exmdb_bouncer_make_content(rp.ev_from, rp.ev_to,
+		    rp.sqlite, rp.message_id, "BOUNCE_AUTO_RESPONSE", nullptr,
 		    nullptr, content_type, tmp_buff, std::size(tmp_buff)))
 			return FALSE;
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
@@ -2540,7 +2538,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			cu_set_propval(&pmsgctnt->proplist, PR_HTML, &tmp_bin);
 		}
 	}
-	g_sqlite_for_oxcmail = psqlite;
+	g_sqlite_for_oxcmail = rp.sqlite;
 	MAIL imail;
 	if (!oxcmail_export(pmsgctnt, false, oxcmail_body::plain_and_html,
 	    common_util_get_mime_pool(), &imail, common_util_alloc,
@@ -2553,7 +2551,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	if (pmime == nullptr)
 		return FALSE;
 	pmime->set_field("X-Auto-Response-Suppress", "All");
-	const char *pvalue2 = strchr(from_address, '@');
+	const char *pvalue2 = strchr(rp.ev_from, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "auto-reply@%s", pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
 	std::vector<std::string> rcpt_list;
 	if (!cu_rcpts_to_list(pmsgctnt->children.prcpts, rcpt_list))
@@ -2652,10 +2650,8 @@ static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
 	return cu_rcpts_to_list(&rcpts, prcpt_list);
 }
 
-static ec_error_t message_forward_message(const char *from_address,
-    const char *username, sqlite3 *psqlite, cpid_t cpid, uint64_t message_id,
-    const std::optional<Json::Value> &digest, uint32_t action_flavor,
-    BOOL b_extended, uint32_t count, void *pblock)
+static ec_error_t message_forward_message(const rulexec_in &rp,
+    uint32_t action_flavor, BOOL b_extended, uint32_t count, void *pblock)
 {
 	int offset;
 	const char *pdomain;
@@ -2667,7 +2663,7 @@ static ec_error_t message_forward_message(const char *from_address,
 	char tmp_buff[64*1024];
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	pdomain = strchr(username, '@');
+	pdomain = strchr(rp.ev_to, '@');
 	if (pdomain != nullptr)
 		pdomain ++;
 	else
@@ -2685,8 +2681,8 @@ static ec_error_t message_forward_message(const char *from_address,
 	}
 	std::unique_ptr<char[], stdlib_delete> pbuff;
 	MAIL imail;
-	if (digest.has_value()) {
-		if (!get_digest(*digest, "file", mid_string, std::size(mid_string)))
+	if (rp.digest.has_value()) {
+		if (!get_digest(*rp.digest, "file", mid_string, std::size(mid_string)))
 			return ecError;
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
 		         exmdb_server::get_dir(), mid_string);
@@ -2707,15 +2703,15 @@ static ec_error_t message_forward_message(const char *from_address,
 		auto num = pmime->get_field_num("Delivered-To");
 		for (int i = 0; i < num; ++i)
 			if (pmime->search_field("Delivered-To", i, tmp_buff, 256) &&
-			    strcasecmp(tmp_buff, username) == 0)
+			    strcasecmp(tmp_buff, rp.ev_to) == 0)
 				return ecSuccess;
 	} else {
-		if (!message_read_message(psqlite, cpid, message_id,
+		if (!message_read_message(rp.sqlite, rp.cpid, rp.message_id,
 		    &pmsgctnt) || pmsgctnt == nullptr)
 			return ecError;
 		auto body_type = get_override_format(*pmsgctnt);
 		/* try to avoid TNEF message */
-		g_sqlite_for_oxcmail = psqlite;
+		g_sqlite_for_oxcmail = rp.sqlite;
 		if (!oxcmail_export(pmsgctnt, false, body_type,
 		    common_util_get_mime_pool(), &imail, common_util_alloc,
 		    message_get_propids, message_get_propname)) {
@@ -2736,7 +2732,7 @@ static ec_error_t message_forward_message(const char *from_address,
 		 * exclusive, so FWD_PRESERVE_SENDER is not evaluated to build
 		 * the From line.
 		 */
-		snprintf(tmp_buff, std::size(tmp_buff), "<%s>", username);
+		snprintf(tmp_buff, std::size(tmp_buff), "<%s>", rp.ev_to);
 		pmime->set_field("From", tmp_buff);
 		offset = 0;
 		for (const auto &eaddr : rcpt_list) {
@@ -2764,9 +2760,9 @@ static ec_error_t message_forward_message(const char *from_address,
 			localtime_r(&cur_time, &time_buff));
 		pmime->set_field("Date", tmp_buff);
 		pmime->write_mail(&imail);
-		/* Envelope FROM */
+		/* Set new envelope FROM */
 		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
-		           from_address : username, std::size(tmp_buff));
+		           rp.ev_from : rp.ev_to, std::size(tmp_buff));
 		ret = ems_send_mail(&imail1, tmp_buff, rcpt_list);
 	} else {
 		auto pmime = imail.get_head();
@@ -2774,9 +2770,9 @@ static ec_error_t message_forward_message(const char *from_address,
 			return ecError;
 		for (const auto &eaddr : rcpt_list)
 			pmime->append_field("Delivered-To", eaddr.c_str());
-		/* Envelope FROM */
+		/* Set new envelope FROM */
 		gx_strlcpy(tmp_buff, (action_flavor & FWD_PRESERVE_SENDER) ?
-		           from_address : username, std::size(tmp_buff));
+		           rp.ev_from : rp.ev_to, std::size(tmp_buff));
 		ret = ems_send_mail(&imail, tmp_buff, rcpt_list);
 	}
 	if (ret != ecSuccess)
@@ -2784,8 +2780,7 @@ static ec_error_t message_forward_message(const char *from_address,
 	return ecSuccess;
 }
 
-static BOOL message_make_dam(const char *username,
-    sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
+static BOOL message_make_dam(const rulexec_in &rp,
     const char *provider, std::list<DAM_NODE> &&dam_list, seen_list &seen) try
 {
 	if (!g_enable_dam)
@@ -2818,24 +2813,24 @@ static BOOL message_make_dam(const char *username,
 		return FALSE;
 	}
 	auto pvalue = common_util_to_private_message_entryid(
-					psqlite, username, folder_id, message_id);
+	              rp.sqlite, rp.ev_to, rp.folder_id, rp.message_id);
 	if (pvalue == nullptr ||
 	    pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, pvalue) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	svreid.pbin = NULL;
-	svreid.folder_id = rop_util_make_eid_ex(1, folder_id);
-	svreid.message_id = rop_util_make_eid_ex(1, message_id);
+	svreid.folder_id  = rop_util_make_eid_ex(1, rp.folder_id);
+	svreid.message_id = rop_util_make_eid_ex(1, rp.message_id);
 	svreid.instance = 0;
-	tmp_eid = rop_util_make_eid_ex(1, folder_id);
+	tmp_eid = rop_util_make_eid_ex(1, rp.folder_id);
 	if (pmsg->proplist.set(PR_DAM_ORIG_MSG_SVREID, &svreid) != 0 ||
 	    pmsg->proplist.set(PR_RULE_FOLDER_FID, &tmp_eid) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	pvalue = common_util_to_private_folder_entryid(
-							psqlite, username, folder_id);
+	         rp.sqlite, rp.ev_to, rp.folder_id);
 	if (pvalue == nullptr ||
 	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, pvalue) != 0 ||
 	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != 0) {
@@ -2874,14 +2869,14 @@ static BOOL message_make_dam(const char *username,
 	tmp_bin.pv = tmp_ids;
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
 	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != 0 ||
-	    !message_write_message(FALSE, psqlite, username, CP_ACP, false,
+	    !message_write_message(false, rp.sqlite, rp.ev_to, CP_ACP, false,
 	    PRIVATE_FID_DEFERRED_ACTION, pmsg, &mid_val)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	message_content_free(pmsg);
 	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, CP_ACP,
-		psqlite, PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
+		rp.sqlite, PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -2889,8 +2884,7 @@ static BOOL message_make_dam(const char *username,
 	return false;
 }
 
-static BOOL message_make_dams(const char *username,
-    sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
+static BOOL message_make_dams(const rulexec_in &rp,
     std::list<DAM_NODE> &&dam_list, seen_list &seen) try
 {
 	if (!g_enable_dam)
@@ -2903,7 +2897,7 @@ static BOOL message_make_dams(const char *username,
 		mlog(LV_NOTICE, "user=%s host=unknown  "
 			"DAM error: Too many Deferred Actions "
 			"triggered by message %llu in folder "
-			"%llu", username, LLU{message_id}, LLU{folder_id});
+			"%llu", rp.ev_to, LLU{rp.message_id}, LLU{rp.folder_id});
 		return TRUE;
 	}
 	provider = NULL;
@@ -2920,8 +2914,7 @@ static BOOL message_make_dams(const char *username,
 			dam_list.splice(dam_list.end(), dam_list, dam_list.begin());
 		}
 		if (pdnode == tail) {
-			if (!message_make_dam(username,
-			    psqlite, folder_id, message_id, provider,
+			if (!message_make_dam(rp, provider,
 			    std::move(tmp_list), seen))
 				return FALSE;
 			provider = NULL;
@@ -3024,7 +3017,7 @@ static ec_error_t op_reply(const rulexec_in &rp, seen_list &seen,
 {
 	auto preply = static_cast<REPLY_ACTION *>(block.pdata);
 	BOOL b_result = false;
-	if (!message_auto_reply(rp.sqlite, rp.message_id, rp.ev_from, rp.ev_to,
+	if (!message_auto_reply(rp,
 	    block.type, block.flavor, rop_util_get_gc_value(
 	    preply->template_message_id), preply->template_guid,
 	    &b_result))
@@ -3066,8 +3059,7 @@ static ec_error_t op_forward(const rulexec_in &rp, seen_list &seen,
 			block.type, act_idx, rule.provider.c_str(), seen);
 		return message_disable_rule(rp.sqlite, false, rule.id);
 	}
-	return message_forward_message(rp.ev_from, rp.ev_to, rp.sqlite, rp.cpid,
-	       rp.message_id, rp.digest, block.flavor, false, pfwddlgt->count,
+	return message_forward_message(rp, block.flavor, false, pfwddlgt->count,
 	       pfwddlgt->pblock);
 }
 
@@ -3392,8 +3384,7 @@ static ec_error_t opx_reply(const rulexec_in &rp, const rule_node &rule,
 	auto dst_mid = rop_util_gc_to_value(
 		       pextreply->message_eid.message_global_counter);
 	BOOL b_result = false;
-	if (!message_auto_reply(rp.sqlite, rp.message_id, rp.ev_from, rp.ev_to,
-	    block.type, block.flavor,
+	if (!message_auto_reply(rp, block.type, block.flavor,
 	    dst_mid, pextreply->template_guid, &b_result))
 		return ecError;
 	if (!b_result)
@@ -3521,8 +3512,7 @@ static ec_error_t opx_switch(const rulexec_in &rp,
 		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
 			return message_disable_rule(rp.sqlite, TRUE, rule.id);
-		return message_forward_message(rp.ev_from, rp.ev_to, rp.sqlite,
-		       rp.cpid, rp.message_id, rp.digest, block.flavor, TRUE,
+		return message_forward_message(rp, block.flavor, TRUE,
 		       pextfwddlgt->count, pextfwddlgt->pblock);
 	}
 	case OP_DELEGATE:
@@ -3612,8 +3602,8 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 	std::vector<rule_node> rule_list, ext_rule_list;
 	std::list<DAM_NODE> dam_list;
 	
-	if (!message_load_folder_rules(rp.oof, rp.sqlite, rp.folder_id, rule_list) ||
-	    !message_load_folder_ext_rules(rp.oof, rp.sqlite, rp.folder_id, ext_rule_list))
+	if (!message_load_folder_rules(rp, rule_list) ||
+	    !message_load_folder_ext_rules(rp, ext_rule_list))
 		return ecError;
 	BOOL b_del = false, b_exit = false;
 	for (const auto &rnode : rule_list) {
@@ -3622,8 +3612,7 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 		if (ec != ecSuccess)
 			return ec;
 	}
-	if (dam_list.size() > 0 && !message_make_dams(rp.ev_to,
-	    rp.sqlite, rp.folder_id, rp.message_id, std::move(dam_list), seen))
+	if (dam_list.size() > 0 && !message_make_dams(rp, std::move(dam_list), seen))
 		return ecError;
 	for (const auto &rnode : ext_rule_list) {
 		auto ec = opx_process(rp, seen,
