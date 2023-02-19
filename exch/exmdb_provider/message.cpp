@@ -116,13 +116,13 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	TPROPVAL_ARRAY propvals;
 	TAGGED_PROPVAL tmp_propvals[5];
 	
+	*pb_result = false;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!b_move &&
 	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
-		*pb_result = FALSE;
 		return TRUE;		
 	}
 	mid_val = rop_util_get_gc_value(message_id);
@@ -131,7 +131,6 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	if (!common_util_check_allocated_eid(pdb->psqlite, dst_val, &b_result))
 		return FALSE;
 	if (!b_result) {
-		*pb_result = FALSE;
 		return TRUE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
@@ -140,7 +139,6 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
-		*pb_result = FALSE;
 		return TRUE;
 	}
 	pstmt.finalize();
@@ -151,7 +149,6 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		*pb_result = FALSE;
 		return TRUE;
 	}
 	parent_fid = sqlite3_column_int64(pstmt, 0);
@@ -165,7 +162,6 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	    fid_val, &dst_val, &b_result, &message_size))
 		return FALSE;
 	if (!b_result) {
-		*pb_result = FALSE;
 		return TRUE;
 	}
 	db_engine_proc_dynamic_event(pdb, cpid,
@@ -1267,6 +1263,7 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	char sql_string[256];
 	uint32_t folder_type;
 	
+	*pb_result = false;
 	if (!exmdb_server::is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
@@ -1277,7 +1274,6 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
 		return FALSE;
 	if (folder_type != FOLDER_SEARCH) {
-		*pb_result = FALSE;
 		return TRUE;
 	}	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM "
@@ -1286,7 +1282,6 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		*pb_result = FALSE;
 		return TRUE;
 	}
 	pstmt.finalize();
@@ -2412,8 +2407,8 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt;
 	
+	*pb_result = TRUE;
 	if (strcasecmp(rp.ev_from, ENVELOPE_FROM_NULL) == 0) {
-		*pb_result = TRUE;
 		return TRUE;
 	}
 	if (!cu_get_property(MAPI_MESSAGE, rp.message_id, CP_ACP,
@@ -2422,58 +2417,49 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	if (NULL != pvalue) {
 		if (action_type == OP_REPLY) {
 			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_AUTOREPLY) {
-				*pb_result = TRUE;
 				return TRUE;
 			}
 		} else {
 			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_OOF) {
-				*pb_result = TRUE;
 				return TRUE;
 			}
 		}
 	}
 	if (!message_read_message(rp.sqlite, CP_ACP, template_message_id, &pmsgctnt))
 		return FALSE;
+	*pb_result = false;
 	if (NULL == pmsgctnt) {
-		*pb_result = FALSE;
 		return TRUE;
 	}
 	auto msgclass = pmsgctnt->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (msgclass == nullptr) {
-		*pb_result = FALSE;
 		return TRUE;
 	}
 	if (action_type == OP_REPLY) {
 		if (strncasecmp(msgclass,
 		    "IPM.Note.rules.ReplyTemplate.", 29) != 0) {
-			*pb_result = FALSE;
 			return TRUE;
 		}
 	} else {
 		if (strncasecmp(msgclass, "IPM.Note.rules.", 15) != 0) {
-			*pb_result = FALSE;
 			return TRUE;
 		}
 	}
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_ASSOCIATED);
 	if (flag == nullptr || *flag == 0) {
-		*pb_result = FALSE;
 		return TRUE;
 	}
 	auto bin = pmsgctnt->proplist.get<const BINARY>(PR_REPLY_TEMPLATE_ID);
 	if (bin == nullptr || bin->cb != 16) {
-		*pb_result = FALSE;
 		return TRUE;
 	}
 	tmp_guid = rop_util_binary_to_guid(bin);
 	if (tmp_guid != template_guid) {
-		*pb_result = FALSE;
 		return TRUE;
 	}
 	if (action_flavor & DO_NOT_SEND_TO_ORIGINATOR) {
 		if (NULL == pmsgctnt->children.prcpts ||
 			0 == pmsgctnt->children.prcpts->count) {
-			*pb_result = FALSE;
 			return TRUE;
 		}
 	} else {
