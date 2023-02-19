@@ -446,9 +446,12 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	}
 	
 	pmsg->proplist.erase(PidTagChangeNumber);
+	uint64_t folder_id, message_id = 0;
 	uint32_t r32 = 0;
 	if (!exmdb_client_remote::deliver_message(home_dir,
-	    pcontext->pcontrol->from, address, CP_ACP, pmsg, djson.c_str(), &r32))
+	    pcontext->pcontrol->from, address, CP_ACP,
+	    DELIVERY_DO_RULES | DELIVERY_DO_NOTIF,
+	    pmsg, djson.c_str(), &folder_id, &message_id, &r32))
 		return DELIVERY_OPERATION_ERROR;
 	auto dm_status = static_cast<deliver_message_result>(r32);
 	if (dm_status == deliver_message_result::result_ok) {

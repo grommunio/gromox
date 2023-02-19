@@ -2901,10 +2901,10 @@ static BOOL message_make_dams(const rulexec_in &rp,
 
 static ec_error_t op_move_same(const rulexec_in &rp,
     seen_list &seen, const rule_node &rule, const ACTION_BLOCK &block,
-    size_t act_idx, BOOL &b_del) try
+    size_t act_idx, uint64_t &dst_fid, uint64_t &dst_mid, BOOL &b_del) try
 {
 	auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
-	auto dst_fid = rop_util_get_gc_value(static_cast<SVREID *>(
+	dst_fid = rop_util_get_gc_value(static_cast<SVREID *>(
 		       pmovecopy->pfolder_eid)->folder_id);
 	if (std::find(seen.fld.cbegin(), seen.fld.cend(), dst_fid) != seen.fld.cend())
 		/* Already moved to this folder once. */
@@ -2932,7 +2932,6 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 		if (!common_util_get_domain_ids(rp.ev_to, &tmp_id, &tmp_id1))
 			return ecError;
 	}
-	uint64_t dst_mid = 0;
 	uint32_t message_size = 0;
 	BOOL b_result = false;
 	if (!common_util_copy_message(rp.sqlite, tmp_id, rp.message_id, dst_fid,
@@ -3137,9 +3136,10 @@ static ec_error_t op_switch(const rulexec_in &rp, seen_list &seen,
 	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY: {
+		uint64_t dst_fid, dst_mid = 0;
 		auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 		return pmovecopy->same_store ?
-		       op_move_same(rp, seen, rule, block, act_idx, b_del) :
+		       op_move_same(rp, seen, rule, block, act_idx, dst_fid, dst_mid, b_del) :
 		       op_defer(rp, rule, block, dam_list);
 	}
 	case OP_REPLY:
@@ -3638,8 +3638,9 @@ static unsigned int detect_rcpt_type(const char *account, const TARRAY_SET *rcpt
 
 /* 0 means success, 1 means mailbox full, other unknown error */
 BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
-    const char *account, cpid_t cpid, const MESSAGE_CONTENT *pmsg,
-    const char *pdigest, uint32_t *presult) try
+    const char *account, cpid_t cpid, uint32_t dlflags,
+    const MESSAGE_CONTENT *pmsg, const char *pdigest, uint64_t *new_folder_id,
+    uint64_t *new_msg_id, uint32_t *presult) try
 {
 	bool b_oof;
 	uint64_t nt_time;
@@ -3770,22 +3771,28 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	mlog(LV_DEBUG, "user=%s host=unknown  "
 		"Message %llu is delivered into folder "
 		"%llu", account, LLU{message_id}, LLU{fid_val});
-	auto ec = message_rule_new_message({from_address, account, cpid, b_oof,
-	          pdb->psqlite, fid_val, message_id, std::move(digest)}, seen);
-	if (ec != ecSuccess)
-		return FALSE;
-	sql_transact.commit();
-	for (const auto &mn : seen.msg) {
-		db_engine_proc_dynamic_event(
-			pdb, cpid, DYNAMIC_EVENT_NEW_MESSAGE,
-			mn.folder_id, mn.message_id, 0);
-		if (message_id == mn.message_id)
-			db_engine_notify_new_mail(pdb,
-				mn.folder_id, mn.message_id);
-		else
-			db_engine_notify_message_creation(pdb,
-				mn.folder_id, mn.message_id);
+	if (dlflags & DELIVERY_DO_RULES) {
+		auto ec = message_rule_new_message({from_address, account, cpid, b_oof,
+		          pdb->psqlite, fid_val, message_id, std::move(digest)}, seen);
+		if (ec != ecSuccess)
+			return FALSE;
 	}
+	sql_transact.commit();
+	if (dlflags & DELIVERY_DO_NOTIF) {
+		for (const auto &mn : seen.msg) {
+			db_engine_proc_dynamic_event(
+				pdb, cpid, DYNAMIC_EVENT_NEW_MESSAGE,
+				mn.folder_id, mn.message_id, 0);
+			if (message_id == mn.message_id)
+				db_engine_notify_new_mail(pdb,
+					mn.folder_id, mn.message_id);
+			else
+				db_engine_notify_message_creation(pdb,
+					mn.folder_id, mn.message_id);
+		}
+	}
+	*new_folder_id = rop_util_make_eid_ex(1, fid_val);
+	*new_msg_id = rop_util_make_eid_ex(1, message_id);
 	*presult = static_cast<uint32_t>(deliver_message_result::result_ok);
 	return TRUE;
 } catch (const std::bad_alloc &) {

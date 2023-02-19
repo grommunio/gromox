@@ -118,7 +118,7 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(UPDATE_FOLDER_PERMISSION),
 	E(EMPTY_FOLDER_RULE),
 	E(UPDATE_FOLDER_RULE),
-	E(DELIVER_MESSAGE),
+	"DELIVER_MESSAGE_V1",
 	E(WRITE_MESSAGE),
 	E(READ_MESSAGE),
 	E(GET_CONTENT_SYNC),
@@ -138,13 +138,14 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(WRITE_MESSAGE_INSTANCE),
 	E(FLUSH_INSTANCE),
 	E(UNLOAD_STORE),
+	E(DELIVER_MESSAGE),
 };
 #undef E
 
 const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(arsizeof(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::unload_store) + 1);
+	static_assert(arsizeof(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::deliver_message) + 1);
 	const char *s = j < arsizeof(exmdb_rpc_names) ? exmdb_rpc_names[j] : nullptr;
 	return znul(s);
 }

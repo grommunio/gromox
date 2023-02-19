@@ -632,9 +632,11 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct)
 	auto ts = rop_util_current_nttime();
 	if (ct->proplist.set(PR_MESSAGE_DELIVERY_TIME, &ts) != 0)
 		/* ignore */;
+	uint64_t folder_id = 0, msg_id = 0;
 	uint32_t r32 = 0;
+	unsigned int mode = DELIVERY_DO_RULES | DELIVERY_DO_NOTIF;
 	if (!exmdb_client::deliver_message(g_storedir, ENVELOPE_FROM_NULL,
-	    target, CP_ACP, ct, "", &r32)) {
+	    target, CP_ACP, mode, ct, "", &folder_id, &msg_id, &r32)) {
 		fprintf(stderr, "exm: deliver_message RPC failed: code %u\n",
 		        r32);
 		return -EIO;

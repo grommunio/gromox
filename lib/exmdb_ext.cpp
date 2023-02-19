@@ -1816,6 +1816,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_deliver_message &d)
 	TRY(x.g_str(&d.from_address));
 	TRY(x.g_str(&d.account));
 	TRY(x.g_nlscp(&d.cpid));
+	TRY(x.g_uint32(&d.dlflags));
 	d.pmsg = cu_alloc<MESSAGE_CONTENT>();
 	if (d.pmsg == nullptr)
 		return EXT_ERR_ALLOC;
@@ -1828,6 +1829,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_deliver_message &d)
 	TRY(x.p_str(d.from_address));
 	TRY(x.p_str(d.account));
 	TRY(x.p_uint32(d.cpid));
+	TRY(x.p_uint32(d.dlflags));
 	TRY(x.p_msgctnt(*d.pmsg));
 	return x.p_str(d.pdigest);
 }
@@ -3415,11 +3417,15 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_update_folder_rule &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_deliver_message &d)
 {
+	TRY(x.g_uint64(&d.folder_id));
+	TRY(x.g_uint64(&d.message_id));
 	return x.g_uint32(&d.result);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exresp_deliver_message &d)
 {
+	TRY(x.p_uint64(d.folder_id));
+	TRY(x.p_uint64(d.message_id));
 	return x.p_uint32(d.result);
 }
 

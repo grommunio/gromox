@@ -130,7 +130,7 @@ enum class exmdb_callid : uint8_t {
 	update_folder_permission = 0x6a,
 	empty_folder_rule = 0x6b,
 	update_folder_rule = 0x6c,
-	deliver_message = 0x6d,
+	// deliver_message_v1 = 0x6d,
 	write_message = 0x6e,
 	read_message = 0x6f,
 	get_content_sync = 0x70,
@@ -150,6 +150,7 @@ enum class exmdb_callid : uint8_t {
 	write_message_instance /* v2 */ = 0x7e,
 	flush_instance /* v2 */ = 0x7f,
 	unload_store = 0x80,
+	deliver_message = 0x81,
 	/* update exch/exmdb_provider/names.cpp! */
 };
 
@@ -750,10 +751,16 @@ struct exreq_update_folder_rule : public exreq {
 	RULE_DATA *prow;
 };
 
+enum delivery_flags {
+	DELIVERY_DO_RULES = 0x1U,
+	DELIVERY_DO_NOTIF = 0x2U,
+};
+
 struct exreq_deliver_message : public exreq {
 	char *from_address;
 	char *account;
 	cpid_t cpid;
+	uint32_t dlflags;
 	MESSAGE_CONTENT *pmsg;
 	char *pdigest;
 };
@@ -1205,6 +1212,7 @@ enum deliver_message_result {
 };
 
 struct exresp_deliver_message : public exresp {
+	uint64_t folder_id, message_id;
 	uint32_t result;
 };
 
