@@ -1630,6 +1630,9 @@ static pack_result nsp_ndr_pull_restriction(NDR_PULL *pndr,
 		return EXT_ERR_SUCCESS;
 	uint32_t type = r->res_type;
 	TRY(nsp_ndr_pull_restriction_union(pndr, FLAG_CONTENT, &type, &r->res));
+	if (type != r->res_type)
+		mlog(LV_WARN, "D-1689: encountered NSP restriction with two rtypes "
+			"(%xh,%xh)", r->res_type, type);
 	return NDR_ERR_SUCCESS;
 }
 
