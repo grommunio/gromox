@@ -184,7 +184,7 @@ have these characteristic properties:
 	Static value ``IPM.Rule.Version2.Message``.
 
 ``PR_RULE_MSG_LEVEL``
-	Equivalent to ``PR_RULE_LEVEL``.
+	Equivalent to ``PR_RULE_LEVEL`` from the SSRT.
 
 ``PR_RULE_MSG_NAME``
 	Equivalent to ``PR_RULE_NAME``.
@@ -195,9 +195,9 @@ have these characteristic properties:
 ``PR_RULE_MSG_PROVIDER_DATA``
 	Equivalent to ``PR_RULE_PROVIDER_DATA``.
 
-	For TDX OOF, the property is unset.
+	For the TDX OOF provider (more on that later), the property is unset.
 
-	For Organizer2, a 16-byte packed value:
+	For the Organizer2 provider, a 16-byte packed value:
 
 	.. code-block:: c
 
@@ -2230,7 +2230,8 @@ Layout:
 
 SSRT:
 
-(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``.)
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``, even though ``OP_MARK_AS_READ``
+could do it.)
 
 
 Action 335 (0x14f): Desktop notification
@@ -2881,8 +2882,7 @@ Server-side Rules Table
 Perhaps the earliest way inbox rules were defined. The "Inside MAPI" book from
 1996 does not mention it (nor does it any other method).
 
-The rules table is a special property (i.e. cannot be obtained with
-``IMessage::GetProps``) on the inbox, which is to be accessed using:
+The rules table is a PT_OBJECT property on the inbox folder. To open it::
 
 .. code-block:: c
 
@@ -2903,7 +2903,12 @@ table is documented on MSDN, therefore abridged here and limited to notes.
 	must not present this property.
 
 ``PR_RULE_PROVIDER``
-	Observed values: ``MSFT:TDX OOF Rules``, ``Organizer2``
+	Observed values:
+	* ``RuleOrganizer`` in private store folder standard and extended rules
+	* ``JunkEmailRule`` in an private store folder extended rule
+	* ``Organizer2``
+	* ``MSFT:TDX Rules`` in public store folder standard rules
+	* ``MSFT:TDX OOF Rules``
 
 ``PR_RULE_PROVIDER_DATA``
 	Left undocumented by MSDN, piecewise unraveled in this document.
