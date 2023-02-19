@@ -41,11 +41,8 @@ void auto_response_reply(const char *user_home,
 	char new_buff[128*1024];
 	MESSAGE_CONTEXT *pcontext;
 
-	if (0 == strcasecmp(from, rcpt) ||
-		0 == strcasecmp(rcpt, "none@none")) {
+	if (strcasecmp(from, rcpt) == 0 || strcasecmp(rcpt, ENVELOPE_RCPT_NULL) == 0)
 		return;
-	}
-
 	auto ptoken = strchr(from, '@');
 	auto ptoken1 = strchr(rcpt, '@');
 	if (NULL == ptoken || NULL == ptoken1) {

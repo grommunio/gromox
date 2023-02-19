@@ -144,7 +144,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
 	HX_strltrim(buff);
 	/* rfc require MTA support empty from address */
 	if (0 == strncmp(buff, "<>", 2)) {
-		strcpy(buff, "<none@none>");
+		strcpy(buff, ENVELOPE_FROM_NULL);
 	}
 	if (g_param.support_starttls && g_param.force_starttls &&
 		NULL == pcontext->connection.ssl) {

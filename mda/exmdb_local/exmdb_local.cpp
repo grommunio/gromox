@@ -148,7 +148,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 		case DELIVERY_OPERATION_DELIVERED:
 			net_failure_statistic(1, 0, 0, 0);
 			if (!pcontext->pcontrol->need_bounce ||
-			    strcasecmp(pcontext->pcontrol->from, "none@none") == 0)
+			    strcasecmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) == 0)
 				break;
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
@@ -175,7 +175,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 		case DELIVERY_NO_USER:
 			net_failure_statistic(0, 0, 0, 1);
 			if (!pcontext->pcontrol->need_bounce ||
-			    strcasecmp(pcontext->pcontrol->from, "none@none") == 0)
+			    strcasecmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) == 0)
 				break;
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
@@ -201,7 +201,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			break;
 		case DELIVERY_MAILBOX_FULL:
 			if (!pcontext->pcontrol->need_bounce ||
-			    strcasecmp(pcontext->pcontrol->from, "none@none") == 0)
+			    strcasecmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) == 0)
 				break;
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
@@ -226,7 +226,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 		case DELIVERY_OPERATION_ERROR:
 			net_failure_statistic(0, 0, 1, 0);
 			if (!pcontext->pcontrol->need_bounce ||
-			    strcasecmp(pcontext->pcontrol->from, "none@none") == 0)
+			    strcasecmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) == 0)
 				break;
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
@@ -471,7 +471,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		exmdb_local_log_info(pcontext, address, LV_DEBUG,
 			"message %s was delivered OK", eml_path.c_str());
 		if (pcontext->pcontrol->need_bounce &&
-		    strcmp(pcontext->pcontrol->from, "none@none") != 0&&
+		    strcmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) != 0&&
 		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
 			auto_response_reply(home_dir, address, pcontext->pcontrol->from);
 		if (b_bounce_delivered)

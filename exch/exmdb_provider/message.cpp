@@ -2412,7 +2412,7 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	if (strcasecmp(rp.ev_from, "none@none") == 0) {
+	if (strcasecmp(rp.ev_from, ENVELOPE_FROM_NULL) == 0) {
 		*pb_result = TRUE;
 		return TRUE;
 	}
@@ -2570,7 +2570,8 @@ static ec_error_t message_bounce_message(const char *from_address,
 	const char *bounce_type = nullptr;
 	char tmp_buff[256];
 	
-	if (strcasecmp(from_address, "none@none") == 0 || strchr(account, '@') == nullptr)
+	if (strcasecmp(from_address, ENVELOPE_FROM_NULL) == 0 ||
+	    strchr(account, '@') == nullptr)
 		return ecSuccess;
 	switch (bounce_code) {
 	case BOUNCE_CODE_MESSAGE_TOO_LARGE:
@@ -3954,7 +3955,7 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	}
 	seen_list seen{{fid_val}};
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	auto ec = message_rule_new_message({"none@none", account, cpid, false,
+	auto ec = message_rule_new_message({ENVELOPE_FROM_NULL, account, cpid, false,
 	          pdb->psqlite, fid_val, mid_val, std::move(digest)}, seen);
 	if (ec != ecSuccess)
 		return FALSE;

@@ -222,9 +222,8 @@ static errno_t rd_mailfrom(rd_connection &conn, MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	char cmd[UADDR_SIZE+24];
-	auto len = strcmp(ctx->pcontrol->from, "none@none") == 0 ?
-	           gx_snprintf(cmd, arsizeof(cmd), "MAIL FROM: <>\r\n") :
-	           gx_snprintf(cmd, arsizeof(cmd), "MAIL FROM: <%s>\r\n", ctx->pcontrol->from);
+	auto f = strcmp(ctx->pcontrol->from, ENVELOPE_FROM_NULL) != 0 ? ctx->pcontrol->from : "";
+	auto len = gx_snprintf(cmd, arsizeof(cmd), "MAIL FROM: <%s>\r\n", f);
 	if (!rd_send_cmd(conn, cmd, len))
 		return ETIMEDOUT;
 	auto ret = rd_get_response(conn, response);

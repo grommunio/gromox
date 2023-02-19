@@ -449,7 +449,8 @@ static void *mdl_thrwork(void *arg)
 				        temp_path.c_str(), strerror(errno));
 			need_bounce &= pcontext->pcontrol->need_bounce;
 			
-			if (need_bounce && strcasecmp(pcontext->pcontrol->from, "none@none") != 0) {
+			if (need_bounce && strcasecmp(pcontext->pcontrol->from,
+			    ENVELOPE_FROM_NULL) != 0) {
 				pbounce_context = get_context();
 				if (NULL == pbounce_context) {
 					exmdb_local_log_info(pcontext, ptr, LV_ERR, "fail to get one "

@@ -633,8 +633,8 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct)
 	if (ct->proplist.set(PR_MESSAGE_DELIVERY_TIME, &ts) != 0)
 		/* ignore */;
 	uint32_t r32 = 0;
-	if (!exmdb_client::deliver_message(g_storedir, "none@none", target,
-	    CP_ACP, ct, "", &r32)) {
+	if (!exmdb_client::deliver_message(g_storedir, ENVELOPE_FROM_NULL,
+	    target, CP_ACP, ct, "", &r32)) {
 		fprintf(stderr, "exm: deliver_message RPC failed: code %u\n",
 		        r32);
 		return -EIO;
