@@ -49,6 +49,13 @@ When importing an MT stream that does not request message splicing, mt2exm will
 raise an error if a to-be-created folder already exists. This behavior can be
 turned off with \-x. This option can be thought of what mkdir's \-p option
 would do.
+.TP
+\fB\-\-skip\-notif\fP
+Skip emitting MAPI notifications (when \-D is used). This is for development
+only.
+.TP
+\fB\-\-skip\-rules\fP
+Skip executing rules (when \-D is used).
 .SH Examples
 PFF import to a private mailbox:
 .PP
