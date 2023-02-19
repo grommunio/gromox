@@ -619,7 +619,7 @@ pack_result EXT_PULL::g_restriction(RESTRICTION *r)
 	uint8_t rt;
 	
 	TRY(g_uint8(&rt));
-	r->rt = static_cast<res_type>(rt);
+	r->rt = static_cast<mapi_rtype>(rt);
 	switch (r->rt) {
 	case RES_AND:
 	case RES_OR:
@@ -2477,7 +2477,7 @@ static pack_result ext_buffer_push_restriction_count(EXT_PUSH *pext,
 
 pack_result EXT_PUSH::p_restriction(const RESTRICTION &r)
 {
-	TRY(p_uint8(r.rt));
+	TRY(p_uint8(static_cast<uint8_t>(r.rt)));
 	switch (r.rt) {
 	case RES_AND:
 	case RES_OR:

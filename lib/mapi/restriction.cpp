@@ -10,9 +10,8 @@
 
 using namespace gromox;
 
-static void* restriction_dup_by_type(uint8_t rt, void *prestriction);
-
-static void restriction_free_by_type(uint8_t rt, void *prestriction);
+static void *restriction_dup_by_type(mapi_rtype, void *rst);
+static void restriction_free_by_type(mapi_rtype, void *rst);
 
 static RESTRICTION_AND_OR* restriction_dup_and_or(
 	const RESTRICTION_AND_OR *prestriction)
@@ -318,8 +317,7 @@ static void restriction_free_count(
 	free(prestriction);
 }
 
-static void* restriction_dup_by_type(
-	uint8_t rt, void *prestriction)
+static void *restriction_dup_by_type(mapi_rtype rt, void *prestriction)
 {
 	switch (rt) {
 	case RES_AND:
@@ -352,8 +350,7 @@ static void* restriction_dup_by_type(
 	return nullptr;
 }
 
-static void restriction_free_by_type(
-	uint8_t rt, void *prestriction)
+static void restriction_free_by_type(mapi_rtype rt, void *prestriction)
 {
 	switch (rt) {
 	case RES_AND:
@@ -380,6 +377,8 @@ static void restriction_free_by_type(
 		return restriction_free_comment(static_cast<RESTRICTION_COMMENT *>(prestriction));
 	case RES_COUNT:
 		return restriction_free_count(static_cast<RESTRICTION_COUNT *>(prestriction));
+	default:
+		return;
 	}
 }
 

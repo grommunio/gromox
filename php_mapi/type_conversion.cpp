@@ -854,7 +854,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 	auto type_entry = zend_hash_get_current_data_ex(pres_hash, &hpos);
 	zend_hash_move_forward_ex(pres_hash, &hpos);
 	auto value_entry = zend_hash_get_current_data_ex(pres_hash, &hpos);
-	pres->rt = static_cast<enum res_type>(zval_get_long(type_entry));
+	pres->rt = static_cast<mapi_rtype>(zval_get_long(type_entry));
 	ZVAL_DEREF(value_entry);
 	pdata_hash = HASH_OF(value_entry);
 	if (pdata_hash == nullptr)
@@ -1196,7 +1196,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 	default:
 		return 0;
 	}
-	add_assoc_long(pzret, "0", pres->rt);
+	add_assoc_long(pzret, "0", static_cast<uint8_t>(pres->rt));
 	add_assoc_zval(pzret, "1", &pzarray);
 	return 1;
 }

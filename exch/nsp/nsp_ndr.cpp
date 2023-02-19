@@ -1460,11 +1460,13 @@ static pack_result nsp_ndr_push_restriction_sub(NDR_PUSH *pndr,
 }
 
 static pack_result nsp_ndr_pull_restriction_union(NDR_PULL *pndr,
-    unsigned int flag, uint32_t *ptype, NSPRES_UNION *r)
+    unsigned int flag, mapi_rtype *ptype, NSPRES_UNION *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->union_align(5));
-		TRY(pndr->g_uint32(ptype));
+		uint32_t rt;
+		TRY(pndr->g_uint32(&rt));
+		*ptype = static_cast<mapi_rtype>(rt);
 		TRY(pndr->union_align(5));
 		switch (*ptype) {
 		case RES_AND:
@@ -1498,7 +1500,8 @@ static pack_result nsp_ndr_pull_restriction_union(NDR_PULL *pndr,
 			TRY(nsp_ndr_pull_restriction_sub(pndr, FLAG_HEADER, &r->res_sub));
 			break;
 		default:
-			mlog(LV_ERR, "E-1914: nsp_ndr type %xh unhandled", *ptype);
+			mlog(LV_ERR, "E-1914: nsp_ndr type %xh unhandled",
+				static_cast<unsigned int>(*ptype));
 			return NDR_ERR_BAD_SWITCH;
 		}
 	}
@@ -1530,18 +1533,19 @@ static pack_result nsp_ndr_pull_restriction_union(NDR_PULL *pndr,
 		TRY(nsp_ndr_pull_restriction_sub(pndr, FLAG_CONTENT, &r->res_sub));
 		break;
 	default:
-		mlog(LV_ERR, "E-1915: nsp_ndr type %xh unhandled", *ptype);
+		mlog(LV_ERR, "E-1915: nsp_ndr type %xh unhandled",
+			static_cast<unsigned int>(*ptype));
 		return NDR_ERR_BAD_SWITCH;
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 static pack_result nsp_ndr_push_restriction_union(NDR_PUSH *pndr,
-    unsigned int flag, uint32_t type, const NSPRES_UNION *r)
+    unsigned int flag, mapi_rtype type, const NSPRES_UNION *r)
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->union_align(5));
-		TRY(pndr->p_uint32(type));
+		TRY(pndr->p_uint32(static_cast<uint32_t>(type)));
 		TRY(pndr->union_align(5));
 		switch (type) {
 		case RES_AND:
@@ -1575,7 +1579,8 @@ static pack_result nsp_ndr_push_restriction_union(NDR_PUSH *pndr,
 			TRY(nsp_ndr_push_restriction_sub(pndr, FLAG_HEADER, &r->res_sub));
 			break;
 		default:
-			mlog(LV_ERR, "E-1916: nsp_ndr type %xh unhandled", type);
+			mlog(LV_ERR, "E-1916: nsp_ndr type %xh unhandled",
+				static_cast<unsigned int>(type));
 			return NDR_ERR_BAD_SWITCH;
 		}
 	}
@@ -1607,7 +1612,8 @@ static pack_result nsp_ndr_push_restriction_union(NDR_PUSH *pndr,
 		TRY(nsp_ndr_push_restriction_sub(pndr, FLAG_CONTENT, &r->res_sub));
 		break;
 	default:
-		mlog(LV_ERR, "E-1917: nsp_ndr type %xh unhandled", type);
+		mlog(LV_ERR, "E-1917: nsp_ndr type %xh unhandled",
+			static_cast<unsigned int>(type));
 		return NDR_ERR_BAD_SWITCH;
 	}
 	return NDR_ERR_SUCCESS;
@@ -1617,9 +1623,11 @@ static pack_result nsp_ndr_pull_restriction(NDR_PULL *pndr,
     unsigned int flag, NSPRES *r)
 {
 	if (flag & FLAG_HEADER) {
-		uint32_t type = RES_NULL;
+		auto type = RES_NULL;
 		TRY(pndr->align(4));
-		TRY(pndr->g_uint32(&r->res_type));
+		uint32_t rt;
+		TRY(pndr->g_uint32(&rt));
+		r->res_type = static_cast<mapi_rtype>(rt);
 		TRY(nsp_ndr_pull_restriction_union(pndr, FLAG_HEADER, &type, &r->res));
 		if (r->res_type != type)
 			return NDR_ERR_BAD_SWITCH;
@@ -1628,11 +1636,12 @@ static pack_result nsp_ndr_pull_restriction(NDR_PULL *pndr,
 	
 	if (!(flag & FLAG_CONTENT))
 		return EXT_ERR_SUCCESS;
-	uint32_t type = r->res_type;
+	auto type = r->res_type;
 	TRY(nsp_ndr_pull_restriction_union(pndr, FLAG_CONTENT, &type, &r->res));
 	if (type != r->res_type)
 		mlog(LV_WARN, "D-1689: encountered NSP restriction with two rtypes "
-			"(%xh,%xh)", r->res_type, type);
+			"(%xh,%xh)", static_cast<uint8_t>(r->res_type),
+			static_cast<uint8_t>(type));
 	return NDR_ERR_SUCCESS;
 }
 
@@ -1641,7 +1650,7 @@ static pack_result nsp_ndr_push_restriction(NDR_PUSH *pndr,
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(4));
-		TRY(pndr->p_uint32(r->res_type));
+		TRY(pndr->p_uint32(static_cast<uint32_t>(r->res_type)));
 		TRY(nsp_ndr_push_restriction_union(pndr, FLAG_HEADER, r->res_type, &r->res));
 		TRY(pndr->trailer_align(4));
 	}

@@ -545,23 +545,37 @@ enum relop {
 	RELOP_MEMBER_OF_DL = 0x64,
 };
 
-enum res_type {
-	RES_AND = 0x00,
-	RES_OR = 0x01,
-	RES_NOT = 0x02,
-	RES_CONTENT = 0x03,
-	RES_PROPERTY = 0x04,
-	RES_PROPCOMPARE = 0x05,
-	RES_BITMASK = 0x06,
-	RES_SIZE = 0x07,
-	RES_EXIST = 0x08,
-	RES_SUBRESTRICTION = 0x09,
-	RES_COMMENT = 0x0a,
-	RES_COUNT = 0x0b,
+enum class mapi_rtype : uint8_t {
+	r_and = 0x0U,
+	r_or = 0x01,
+	r_not = 0x02,
+	content = 0x03,
+	property = 0x04,
+	propcmp = 0x05,
+	bitmask = 0x06,
+	size = 0x07,
+	exist = 0x08,
+	sub = 0x09,
+	comment = 0x0a,
+	count = 0x0b,
 	/* https://docs.microsoft.com/en-us/archive/blogs/stephen_griffin/new-restriction-types-seen-in-wrapped-psts */
-	RES_ANNOTATION = 0x0c,
-	RES_NULL = 0xff, /* aka NULL_RESTRICTION */
+	annotation = 0x0c,
+	null = 0xff,
 };
+#define RES_AND            mapi_rtype::r_and
+#define RES_OR             mapi_rtype::r_or
+#define RES_NOT            mapi_rtype::r_not
+#define RES_CONTENT        mapi_rtype::content
+#define RES_PROPERTY       mapi_rtype::property
+#define RES_PROPCOMPARE    mapi_rtype::propcmp
+#define RES_BITMASK        mapi_rtype::bitmask
+#define RES_SIZE           mapi_rtype::size
+#define RES_EXIST          mapi_rtype::exist
+#define RES_SUBRESTRICTION mapi_rtype::sub
+#define RES_COMMENT        mapi_rtype::comment
+#define RES_COUNT          mapi_rtype::count
+#define RES_ANNOTATION     mapi_rtype::annotation
+#define RES_NULL           mapi_rtype::null /* aka NULL_RESTRICTION */
 
 enum {
 	/* right bits */
@@ -1137,7 +1151,7 @@ struct RESTRICTION_COMMENT;
 struct RESTRICTION_COUNT;
 
 struct RESTRICTION {
-	enum res_type rt;
+	enum mapi_rtype rt;
 	union {
 		void *pres;
 		RESTRICTION_AND_OR *andor;

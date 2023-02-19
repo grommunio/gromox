@@ -158,7 +158,7 @@ union NSPRES_UNION {
 };
 
 struct NSPRES {
-	uint32_t res_type;
+	mapi_rtype res_type;
 	NSPRES_UNION res;
 };
 

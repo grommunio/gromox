@@ -1279,6 +1279,7 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	case RES_SUBRESTRICTION:
+	default:
 		return FALSE;
 	}	
 	return false;
