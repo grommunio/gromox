@@ -72,6 +72,7 @@ enum class repr_grant {
 	error = -1, no_impersonation, send_on_behalf, send_as,
 };
 
+struct MAIL;
 struct MESSAGE_CONTENT;
 struct message_object;
 struct store_object;
@@ -160,6 +161,7 @@ extern const char *common_util_get_default_timezone();
 extern const char *common_util_get_submit_command();
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 extern const char *zcore_rpc_idtoname(zcore_callid);
+extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, MESSAGE_CONTENT *, const char *bounce_type, MAIL *);
 
 extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 extern unsigned int g_max_rule_len, g_max_extrule_len;

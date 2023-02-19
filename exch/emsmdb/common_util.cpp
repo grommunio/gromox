@@ -42,6 +42,7 @@
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
 #include "logon_object.h"
+#include "../bounce_exch.cpp"
 
 using namespace gromox;
 
@@ -1400,7 +1401,9 @@ void common_util_notify_receipt(const char *username, int type,
 	MAIL imail(g_mime_pool);
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
-	if (!emsmdb_bouncer_make(username, pbrief, bounce_type, &imail))
+	if (!exch_bouncer_make(common_util_get_user_displayname,
+	    common_util_get_user_lang, common_util_get_timezone,
+	    username, pbrief, bounce_type, &imail))
 		return;
 	auto ret = ems_send_mail(&imail, username, rcpt_list);
 	if (ret != ecSuccess)

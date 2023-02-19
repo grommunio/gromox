@@ -90,6 +90,7 @@ void common_util_notify_receipt(const char *username,
 extern BOOL common_util_save_message_ics(logon_object *plogon, uint64_t msg_id, PROPTAG_ARRAY *changed_tags);
 extern ec_error_t ems_send_mail(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t cu_send_message(logon_object *, uint64_t msg_id, bool submit);
+extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, MESSAGE_CONTENT *, const char *bounce_type, MAIL *);
 
 #define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
 E(check_mlist_include)

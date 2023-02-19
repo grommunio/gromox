@@ -46,6 +46,7 @@
 #include "store_object.h"
 #include "system_services.hpp"
 #include "zserver.hpp"
+#include "../bounce_exch.cpp"
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -1464,7 +1465,9 @@ void common_util_notify_receipt(const char *username, int type,
 	MAIL imail(g_mime_pool);
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
-	if (!zcore_bouncer_make(username, pbrief, bounce_type, &imail))
+	if (!exch_bouncer_make(system_services_get_user_displayname,
+	    system_services_get_user_lang, system_services_get_timezone,
+	    username, pbrief, bounce_type, &imail))
 		return;
 	imail.set_header("X-Mailer", ZCORE_UA);
 	auto ret = cu_send_mail(imail, "smtp", g_smtp_ip, g_smtp_port,
