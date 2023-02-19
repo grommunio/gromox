@@ -122,25 +122,22 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 		return FALSE;
 	if (!b_move &&
 	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
-	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
+	    common_util_check_msgcnt_overflow(pdb->psqlite))
 		return TRUE;		
-	}
 	mid_val = rop_util_get_gc_value(message_id);
 	fid_val = rop_util_get_gc_value(dst_fid);
 	dst_val = rop_util_get_gc_value(dst_id);
 	if (!common_util_check_allocated_eid(pdb->psqlite, dst_val, &b_result))
 		return FALSE;
-	if (!b_result) {
+	if (!b_result)
 		return TRUE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 	          "FROM messages WHERE message_id=%llu", LLU{dst_val});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW == sqlite3_step(pstmt)) {
+	if (pstmt.step() == SQLITE_ROW)
 		return TRUE;
-	}
 	pstmt.finalize();
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, is_associated"
@@ -148,9 +145,8 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_ROW)
 		return TRUE;
-	}
 	parent_fid = sqlite3_column_int64(pstmt, 0);
 	is_associated = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
@@ -161,9 +157,8 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	if (!common_util_copy_message(pdb->psqlite, account_id, mid_val,
 	    fid_val, &dst_val, &b_result, &message_size))
 		return FALSE;
-	if (!b_result) {
+	if (!b_result)
 		return TRUE;
-	}
 	db_engine_proc_dynamic_event(pdb, cpid,
 		DYNAMIC_EVENT_NEW_MESSAGE, fid_val, dst_val, 0);
 	db_engine_notify_message_movecopy(pdb, !b_move ? TRUE : false,
@@ -1273,17 +1268,15 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	mid_val = rop_util_get_gc_value(message_id);
 	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
 		return FALSE;
-	if (folder_type != FOLDER_SEARCH) {
+	if (folder_type != FOLDER_SEARCH)
 		return TRUE;
-	}	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM "
 	          "messages WHERE message_id=%llu", LLU{mid_val});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_ROW)
 		return TRUE;
-	}
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result"
 	        " VALUES (%llu, %llu)", LLU{fid_val}, LLU{mid_val});
@@ -2408,60 +2401,48 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	*pb_result = TRUE;
-	if (strcasecmp(rp.ev_from, ENVELOPE_FROM_NULL) == 0) {
+	if (strcasecmp(rp.ev_from, ENVELOPE_FROM_NULL) == 0)
 		return TRUE;
-	}
 	if (!cu_get_property(MAPI_MESSAGE, rp.message_id, CP_ACP,
 	    rp.sqlite, PR_AUTO_RESPONSE_SUPPRESS, &pvalue))
 		return FALSE;
 	if (NULL != pvalue) {
 		if (action_type == OP_REPLY) {
-			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_AUTOREPLY) {
+			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_AUTOREPLY)
 				return TRUE;
-			}
 		} else {
-			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_OOF) {
+			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_OOF)
 				return TRUE;
-			}
 		}
 	}
 	if (!message_read_message(rp.sqlite, CP_ACP, template_message_id, &pmsgctnt))
 		return FALSE;
 	*pb_result = false;
-	if (NULL == pmsgctnt) {
+	if (pmsgctnt == nullptr)
 		return TRUE;
-	}
 	auto msgclass = pmsgctnt->proplist.get<const char>(PR_MESSAGE_CLASS);
-	if (msgclass == nullptr) {
+	if (msgclass == nullptr)
 		return TRUE;
-	}
 	if (action_type == OP_REPLY) {
-		if (strncasecmp(msgclass,
-		    "IPM.Note.rules.ReplyTemplate.", 29) != 0) {
+		if (strncasecmp(msgclass, "IPM.Note.rules.ReplyTemplate.", 29) != 0)
 			return TRUE;
-		}
 	} else {
-		if (strncasecmp(msgclass, "IPM.Note.rules.", 15) != 0) {
+		if (strncasecmp(msgclass, "IPM.Note.rules.", 15) != 0)
 			return TRUE;
-		}
 	}
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_ASSOCIATED);
-	if (flag == nullptr || *flag == 0) {
+	if (flag == nullptr || *flag == 0)
 		return TRUE;
-	}
 	auto bin = pmsgctnt->proplist.get<const BINARY>(PR_REPLY_TEMPLATE_ID);
-	if (bin == nullptr || bin->cb != 16) {
+	if (bin == nullptr || bin->cb != 16)
 		return TRUE;
-	}
 	tmp_guid = rop_util_binary_to_guid(bin);
-	if (tmp_guid != template_guid) {
+	if (tmp_guid != template_guid)
 		return TRUE;
-	}
 	if (action_flavor & DO_NOT_SEND_TO_ORIGINATOR) {
-		if (NULL == pmsgctnt->children.prcpts ||
-			0 == pmsgctnt->children.prcpts->count) {
+		if (pmsgctnt->children.prcpts  == nullptr ||
+		    pmsgctnt->children.prcpts->count == 0)
 			return TRUE;
-		}
 	} else {
 		auto prcpts = cu_alloc<TARRAY_SET>();
 		if (prcpts == nullptr)
@@ -3322,9 +3303,8 @@ static ec_error_t opx_move(const rulexec_in &rp,
 	char *pmid_string = nullptr;
 	if (is_pvt && rp.digest.has_value() &&
 	    common_util_get_mid_string(rp.sqlite, dst_mid, &pmid_string) &&
-	    pmid_string != nullptr) {
+	    pmid_string != nullptr)
 		(*rex.digest)["file"] = pmid_string;
-	}
 	ec = message_rule_new_message(std::move(rex), seen);
 	if (ec != ecSuccess)
 		return ec;
@@ -3737,9 +3717,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_ENTRYID, pentryid);
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-			if ('\0' != display_name[0]) {
+			if (*display_name != '\0')
 				cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_NAME, display_name);
-			}
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
 		}
 		auto rcpt_type = detect_rcpt_type(account, pmsg->children.prcpts);
