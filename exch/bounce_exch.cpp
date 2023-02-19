@@ -48,7 +48,7 @@ static bool bounce_producer_make_content(buff_t gul, buff_t gutz,
 	auto ts = tsptr == nullptr ? time(nullptr) : rop_util_nttime_to_unix(*tsptr);
 	auto from = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (from == nullptr)
-		from = "none@none";
+		from = "";
 	if (gul(from, lang, std::size(lang))) {
 		gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
 		gutz(from, time_zone, std::size(time_zone));
