@@ -2159,7 +2159,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		return ecSuccess;
 	}
 	BOOL b_unicode = (flags & NspiUnicodeStrings) ? TRUE : false;
-	cpid_t codepage = pstat == nullptr ? 1252 : pstat->codepage;
+	cpid_t codepage = pstat == nullptr ? static_cast<cpid_t>(1252) : pstat->codepage;
 	/* in MS-OXNSPI 3.1.4.1.3 server processing rules */
 	if (!b_unicode && codepage == CP_WINUNICODE) {
 		*pprows = NULL;

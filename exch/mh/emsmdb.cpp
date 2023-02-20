@@ -837,7 +837,7 @@ pack_result ems_pull::g_connect_req(connect_request &req)
 {
 	TRY(g_str(&req.userdn));
 	TRY(g_uint32(&req.flags));
-	TRY(g_uint32(&req.cpid));
+	TRY(g_nlscp(&req.cpid));
 	TRY(g_uint32(&req.lcid_string));
 	TRY(g_uint32(&req.lcid_sort));
 	TRY(g_uint32(&req.cb_auxin));

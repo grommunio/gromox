@@ -236,7 +236,7 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	auto msgcpid = cu_alloc<uint32_t>();
 	if (msgcpid == nullptr)
 		return ENOMEM;
-	*msgcpid = new_cpid;
+	*msgcpid = static_cast<uint32_t>(new_cpid);
 	propvals.ppropval[propvals.count++].pvalue = msgcpid;
 	
 	propvals.ppropval[propvals.count].proptag = PR_IMPORTANCE;

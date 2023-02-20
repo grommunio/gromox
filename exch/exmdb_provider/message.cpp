@@ -2553,8 +2553,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		} else if (0 == strcasecmp(content_type, "text/html")) {
 			auto num = pmsgctnt->proplist.get<const uint32_t>(PR_INTERNET_CPID);
 			if (num != nullptr && *num != 1200)
-				tmp_bin.pc = common_util_convert_copy(
-				             false, *num, tmp_buff);
+				tmp_bin.pc = common_util_convert_copy(false,
+				             static_cast<cpid_t>(*num), tmp_buff);
 			else
 				tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = strlen(tmp_bin.pc);

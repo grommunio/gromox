@@ -105,7 +105,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_mapping_replid &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_get_store_properties &d)
 {
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
 	if (d.pproptags == nullptr)
 		return EXT_ERR_ALLOC;
@@ -120,7 +120,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_store_properties &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_set_store_properties &d)
 {
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	d.ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 	if (d.ppropvals == nullptr)
 		return EXT_ERR_ALLOC;
@@ -234,7 +234,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_folder_perm &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_create_folder_by_properties &d)
 {
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	d.pproperties = cu_alloc<TPROPVAL_ARRAY>();
 	if (d.pproperties == nullptr)
 		return EXT_ERR_ALLOC;
@@ -259,7 +259,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_folder_all_proptags &
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_get_folder_properties &d)
 {
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
 	if (d.pproptags == nullptr)
@@ -276,7 +276,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_folder_properties &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_set_folder_properties &d)
 {
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	d.pproperties = cu_alloc<TPROPVAL_ARRAY>();
 	if (d.pproperties == nullptr)
@@ -308,7 +308,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_folder_properties 
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_delete_folder &d)
 {
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_bool(&d.b_hard);
 }
@@ -324,7 +324,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_empty_folder &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte == '\0')
 		d.username = nullptr;
@@ -370,7 +370,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_copy_folder_internal &d)
 	uint8_t tmp_byte;
 	
 	TRY(x.g_uint32(&d.account_id));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_bool(&d.b_guest));
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte == 0)
@@ -416,7 +416,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_set_search_criteria &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	TRY(x.g_uint32(&d.search_flags));
 	TRY(x.g_uint8(&tmp_byte));
@@ -451,7 +451,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_search_criteria &d)
 static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_message &d)
 {
 	TRY(x.g_uint32(&d.account_id));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.message_id));
 	TRY(x.g_uint64(&d.dst_fid));
 	TRY(x.g_uint64(&d.dst_id));
@@ -473,7 +473,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_messages &d)
 	uint8_t tmp_byte;
 	
 	TRY(x.g_uint32(&d.account_id));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_bool(&d.b_guest));
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte == 0)
@@ -511,7 +511,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_folder &d)
 	uint8_t tmp_byte;
 	
 	TRY(x.g_uint32(&d.account_id));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_bool(&d.b_guest));
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte == 0)
@@ -548,7 +548,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_delete_messages &d)
 	uint8_t tmp_byte;
 	
 	TRY(x.g_uint32(&d.account_id));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte == 0)
 		d.username = nullptr;
@@ -579,7 +579,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_delete_messages &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_get_message_brief &d)
 {
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	return x.g_uint64(&d.message_id);
 }
 
@@ -671,7 +671,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_load_content_table &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte == 0)
@@ -812,7 +812,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_query_table &d)
 		d.username = nullptr;
 	else
 		TRY(x.g_str(&d.username));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint32(&d.table_id));
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
 	if (d.pproptags == nullptr)
@@ -846,7 +846,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_match_table &d)
 		d.username = nullptr;
 	else
 		TRY(x.g_str(&d.username));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint32(&d.table_id));
 	TRY(x.g_bool(&d.b_forward));
 	TRY(x.g_uint32(&d.start_pos));
@@ -899,7 +899,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_read_table_row &d)
 		d.username = nullptr;
 	else
 		TRY(x.g_str(&d.username));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint32(&d.table_id));
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
 	if (d.pproptags == nullptr)
@@ -1027,7 +1027,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_load_message_instance &d)
 		d.username = nullptr;
 	else
 		TRY(x.g_str(&d.username));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_bool(&d.b_new));
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint64(&d.message_id);
@@ -1465,7 +1465,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_message_properties &d)
 		d.username = nullptr;
 	else
 		TRY(x.g_str(&d.username));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.message_id));
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
 	if (d.pproptags == nullptr)
@@ -1495,7 +1495,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_set_message_properties &d)
 		d.username = nullptr;
 	else
 		TRY(x.g_str(&d.username));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.message_id));
 	d.pproperties = cu_alloc<TPROPVAL_ARRAY>();
 	if (d.pproperties == nullptr)
@@ -1543,7 +1543,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_message_read_state &d
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_remove_message_properties &d)
 {
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.message_id));
 	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
 	if (d.pproptags == nullptr)
@@ -1658,7 +1658,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_clear_submit &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_link_message &d)
 {
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint64(&d.message_id);
 }
@@ -1672,7 +1672,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_link_message &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_unlink_message &d)
 {
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint64(&d.message_id);
 }
@@ -1694,7 +1694,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_rule_new_message &d)
 	else
 		TRY(x.g_str(&d.username));
 	TRY(x.g_str(&d.account));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint64(&d.message_id);
 }
@@ -1815,7 +1815,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_deliver_message &d)
 {
 	TRY(x.g_str(&d.from_address));
 	TRY(x.g_str(&d.account));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	d.pmsg = cu_alloc<MESSAGE_CONTENT>();
 	if (d.pmsg == nullptr)
 		return EXT_ERR_ALLOC;
@@ -1835,7 +1835,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_deliver_message &d)
 static pack_result exmdb_pull(EXT_PULL &x, exreq_write_message &d)
 {
 	TRY(x.g_str(&d.account));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	d.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
 	if (d.pmsgctnt == nullptr)
@@ -1860,7 +1860,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_read_message &d)
 		d.username = nullptr;
 	else
 		TRY(x.g_str(&d.username));
-	TRY(x.g_uint32(&d.cpid));
+	TRY(x.g_nlscp(&d.cpid));
 	return x.g_uint64(&d.message_id);
 }
 
@@ -1942,7 +1942,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 		if (!d.pread->deserialize(&tmp_bin))
 			return gcsr_failure(EXT_ERR_FORMAT, d);
 	}
-	status = x.g_uint32(&d.cpid);
+	status = x.g_nlscp(&d.cpid);
 	if (status != EXT_ERR_SUCCESS)
 		return gcsr_failure(status, d);
 	status = x.g_uint8(&tmp_byte);

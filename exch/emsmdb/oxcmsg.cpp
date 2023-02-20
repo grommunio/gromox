@@ -21,7 +21,7 @@
 
 using namespace gromox;
 
-ec_error_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
+ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
     uint8_t open_mode_flags, uint64_t message_id,
     uint8_t *phas_named_properties, TYPED_STRING *psubject_prefix,
     TYPED_STRING *pnormalized_subject, uint16_t *precipient_count,
@@ -29,6 +29,7 @@ ec_error_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
     OPENRECIPIENT_ROW **pprecipient_row, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
 {
+	auto cpid = static_cast<cpid_t>(cpraw);
 	BOOL b_del;
 	int rop_num;
 	BOOL b_exist;
@@ -164,10 +165,11 @@ ec_error_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	return ecSuccess;
 }
 
-ec_error_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
+ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
     uint8_t associated_flag, uint64_t **ppmessage_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
+	auto cpid = static_cast<cpid_t>(cpraw);
 	ems_objtype object_type;
 	uint32_t tag_access;
 	uint32_t permission;
@@ -811,13 +813,14 @@ ec_error_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-ec_error_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
+ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
     uint8_t *preserved, uint64_t *pmessage_id, uint8_t *phas_named_properties,
     TYPED_STRING *psubject_prefix, TYPED_STRING *pnormalized_subject,
     uint16_t *precipient_count, PROPTAG_ARRAY *precipient_columns,
     uint8_t *prow_count, OPENRECIPIENT_ROW **pprecipient_row, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
+	auto cpid = static_cast<cpid_t>(cpraw);
 	ems_objtype object_type;
 	TARRAY_SET rcpts;
 	PROPTAG_ARRAY proptags;

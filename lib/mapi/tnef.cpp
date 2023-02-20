@@ -1255,7 +1255,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		mlog(LV_DEBUG, "tnef: cannot find PrimaryCodePage");
 		return NULL;
 	}
-	cpid_t cpid = static_cast<LONG_ARRAY *>(attribute.pvalue)->pl[0];
+	auto cpid = static_cast<cpid_t>(static_cast<LONG_ARRAY *>(attribute.pvalue)->pl[0]);
 	b_props = FALSE;
 	cur_lvl = LVL_MESSAGE;
 	powner = NULL;

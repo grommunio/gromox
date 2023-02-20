@@ -1178,7 +1178,7 @@ static errno_t do_file(const char *filename) try
 	if (cpid == CP_ACP)
 		g_ascii_charset = "cp850"; /* make encoding problems visible */
 	else if (cpid != CP_ACP)
-		g_ascii_charset = cpid_to_cset(cpid);
+		g_ascii_charset = cpid_to_cset(static_cast<cpid_t>(cpid));
 	if (g_ascii_charset == nullptr) {
 		fprintf(stderr, "pff: no charset for cpid %d\n", cpid);
 		return ECANCELED;

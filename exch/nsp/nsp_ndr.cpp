@@ -70,7 +70,9 @@ static pack_result nsp_ndr_pull_stat(NDR_PULL *pndr, STAT *r)
 	TRY(pndr->g_int32(&r->delta));
 	TRY(pndr->g_uint32(&r->num_pos));
 	TRY(pndr->g_uint32(&r->total_rec));
-	TRY(pndr->g_uint32(&r->codepage));
+	uint32_t v;
+	TRY(pndr->g_uint32(&v));
+	r->codepage = static_cast<cpid_t>(v);
 	TRY(pndr->g_uint32(&r->template_locale));
 	TRY(pndr->g_uint32(&r->sort_locale));
 	return pndr->trailer_align(4);
@@ -1935,7 +1937,10 @@ static pack_result nsp_ndr_pull_nspigetproplist(NDR_PULL *pndr, NSPIGETPROPLIST_
 	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(pndr->g_uint32(&r->mid));
-	return pndr->g_uint32(&r->codepage);
+	uint32_t v;
+	TRY(pndr->g_uint32(&v));
+	r->codepage = static_cast<cpid_t>(v);
+	return EXT_ERR_SUCCESS;
 }
 
 static pack_result nsp_ndr_push_nspigetproplist(NDR_PUSH *pndr,
@@ -2063,7 +2068,9 @@ static pack_result nsp_ndr_pull_nspigettemplateinfo(NDR_PULL *pndr,
 	} else {
 		r->pdn = NULL;
 	}
-	TRY(pndr->g_uint32(&r->codepage));
+	uint32_t v;
+	TRY(pndr->g_uint32(&v));
+	r->codepage = static_cast<cpid_t>(v);
 	return pndr->g_uint32(&r->locale_id);
 }
 

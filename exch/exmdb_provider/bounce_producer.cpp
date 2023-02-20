@@ -103,7 +103,7 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 		if (NULL == pvalue) {
 			strcpy(charset, "ascii");
 		} else {
-			auto pcharset = cpid_to_cset(*static_cast<uint32_t *>(pvalue));
+			auto pcharset = cpid_to_cset(static_cast<cpid_t>(*static_cast<uint32_t *>(pvalue)));
 			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", arsizeof(charset));
 		}
 	}

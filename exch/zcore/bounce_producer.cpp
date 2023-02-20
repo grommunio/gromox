@@ -80,7 +80,7 @@ static BOOL bounce_producer_make_content(const char *username,
 		if (num == nullptr) {
 			strcpy(charset, "ascii");
 		} else {
-			auto pcharset = cpid_to_cset(*num);
+			auto pcharset = cpid_to_cset(static_cast<cpid_t>(*num));
 			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", arsizeof(charset));
 		}
 	}

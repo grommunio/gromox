@@ -97,7 +97,7 @@ static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 	if (ret < 0)
 		return 0;
 	auto cpraw = mc->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-	cpid_t orig_cpid = cpraw == nullptr ? *cpraw : CP_UTF8;
+	cpid_t orig_cpid = cpraw == nullptr ? static_cast<cpid_t>(*cpraw) : CP_UTF8;
 	if (ret != CP_UTF8 && orig_cpid != CP_UTF8) {
 		bin->pv = common_util_convert_copy(TRUE, orig_cpid, plainbuf.c_str());
 		return bin->pv != nullptr ? 1 : -1;

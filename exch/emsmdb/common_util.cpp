@@ -1529,7 +1529,7 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto dir = plogon->get_dir();
-	cpid_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
+	cpid_t cpid = pinfo == nullptr ? static_cast<cpid_t>(1252) : pinfo->cpid;
 	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {
 		mlog2(LV_ERR, "E-1289: Cannot get parent folder_id of mid:%llu",

@@ -116,6 +116,7 @@ struct EXT_PULL {
 	pack_result g_int16(int16_t *v) { return g_uint16(reinterpret_cast<uint16_t *>(v)); }
 	pack_result g_uint32(uint32_t *);
 	pack_result g_int32(int32_t *v) { return g_uint32(reinterpret_cast<uint32_t *>(v)); }
+	pack_result g_nlscp(cpid_t *v) { return g_uint32(reinterpret_cast<uint32_t *>(v)); }
 	pack_result g_uint64(uint64_t *);
 	pack_result g_int64(int64_t *v) { return g_uint64(reinterpret_cast<uint64_t *>(v)); }
 	pack_result g_float(float *);

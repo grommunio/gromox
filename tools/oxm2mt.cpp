@@ -422,7 +422,7 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
 	auto cpid = parse_propstrm_to_cpid(ep);
 	if (cpid < 0)
 		return EIO;
-	auto cset = cpid_to_cset(cpid);
+	auto cset = cpid_to_cset(static_cast<cpid_t>(cpid));
 	if (cset == nullptr)
 		cset = "ascii";
 	fprintf(stderr, "Using codepage %s for 8-bit strings\n", cset);

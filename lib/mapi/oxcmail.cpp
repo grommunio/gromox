@@ -3589,9 +3589,9 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			auto phtml_bin = pmsg->proplist.get<const BINARY>(PR_HTML);
 			if (NULL != phtml_bin) {
 				auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-				tmp_int32 = num == nullptr ? CP_UTF8 : *num;
+				cpid_t cpid = num == nullptr ? CP_UTF8 : static_cast<cpid_t>(*num);
 				char *rtfout = nullptr;
-				if (html_to_rtf(phtml_bin->pv, phtml_bin->cb, tmp_int32,
+				if (html_to_rtf(phtml_bin->pv, phtml_bin->cb, cpid,
 				    &rtfout, &content_len)) {
 					auto bv = rtfcp_compress(rtfout, content_len);
 					free(rtfout);
@@ -3607,7 +3607,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		auto phtml_bin = pmsg->proplist.get<const BINARY>(PR_HTML);
 		if (NULL != phtml_bin) {
 			auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-			tmp_int32 = num == nullptr ? CP_UTF8 : *num;
+			auto cpid = num == nullptr ? CP_UTF8 : static_cast<cpid_t>(*num);
 			std::string plainbuf;
 			auto ret = html_to_plain(phtml_bin->pc, phtml_bin->cb, plainbuf);
 			if (ret < 0) {
@@ -3626,7 +3626,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 					message_content_free(pmsg);
 					return NULL;
 				}
-				auto encoding = cpid_to_cset(tmp_int32);
+				auto encoding = cpid_to_cset(cpid);
 				if (NULL == encoding) {
 					encoding = "windows-1252";
 				}
@@ -5121,7 +5121,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	if (num == nullptr || *num == 1200) {
 		pcharset = "utf-8";
 	} else {
-		pcharset = cpid_to_cset(*num);
+		pcharset = cpid_to_cset(static_cast<cpid_t>(*num));
 		if (NULL == pcharset) {
 			pcharset = "utf-8";
 		}

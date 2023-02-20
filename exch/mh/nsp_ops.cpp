@@ -22,7 +22,7 @@ static pack_result nsp_ext_g_stat(nsp_ext_pull &ext, STAT &s)
 	TRY(ext.g_int32(&s.delta));
 	TRY(ext.g_uint32(&s.num_pos));
 	TRY(ext.g_uint32(&s.total_rec));
-	TRY(ext.g_uint32(&s.codepage));
+	TRY(ext.g_nlscp(&s.codepage));
 	TRY(ext.g_uint32(&s.template_locale));
 	return ext.g_uint32(&s.sort_locale);
 }
@@ -202,7 +202,7 @@ pack_result nsp_ext_pull::g_nsp_request(getproplist_request &req)
 {
 	TRY(g_uint32(&req.flags));
 	TRY(g_uint32(&req.mid));
-	TRY(g_uint32(&req.codepage));
+	TRY(g_nlscp(&req.codepage));
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;
@@ -301,7 +301,7 @@ pack_result nsp_ext_pull::g_nsp_request(gettemplateinfo_request &req)
 	else
 		TRY(g_str(&req.dn));
 
-	TRY(g_uint32(&req.codepage));
+	TRY(g_nlscp(&req.codepage));
 	TRY(g_uint32(&req.locale_id));
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {

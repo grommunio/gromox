@@ -99,7 +99,8 @@ uint32_t nsp_bridge_run(const GUID& session_guid, const getmatches_request& requ
 uint32_t nsp_bridge_run(const GUID& session_guid, const getproplist_request& request, getproplist_response& response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_get_proplist(ses, request.flags, request.mid, request.codepage, &response.proptags);
+	return nsp_interface_get_proplist(ses, request.flags, request.mid,
+	       request.codepage, &response.proptags);
 }
 
 uint32_t nsp_bridge_run(const GUID& session_guid, const getprops_request& request, getprops_response& response)

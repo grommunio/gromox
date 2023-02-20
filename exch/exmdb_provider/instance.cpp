@@ -1424,7 +1424,9 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 			if (ret == CP_UTF8 || *pcpid == CP_UTF8) {
 				pvalue = plainbuf.data();
 			} else {
-				pvalue = common_util_convert_copy(TRUE, *pcpid, plainbuf.c_str());
+				pvalue = common_util_convert_copy(TRUE,
+				         static_cast<cpid_t>(*pcpid),
+				         plainbuf.c_str());
 				if (pvalue == nullptr)
 					return false;
 			}

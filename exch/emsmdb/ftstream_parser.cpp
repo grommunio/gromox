@@ -804,7 +804,7 @@ ec_error_t fxstream_parser::process(fastupctx_object &upctx)
 				auto codepage = proptype & ~FXICS_CODEPAGE_FLAG;
 				auto len = mb_to_utf8_len(static_cast<char *>(propval.pvalue));
 				auto pvalue = common_util_alloc(len);
-				if (pvalue == nullptr || common_util_mb_to_utf8(codepage,
+				if (pvalue == nullptr || common_util_mb_to_utf8(static_cast<cpid_t>(codepage),
 				    static_cast<char *>(propval.pvalue),
 				    static_cast<char *>(pvalue), len) <= 0) {
 					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PT_STRING8);

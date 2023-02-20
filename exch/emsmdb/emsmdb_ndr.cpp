@@ -111,7 +111,9 @@ static pack_result emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_I
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(pndr->g_uint32(&r->conmod));
 	TRY(pndr->g_uint32(&r->limit));
-	TRY(pndr->g_uint32(&r->cpid));
+	uint32_t v;
+	TRY(pndr->g_uint32(&v));
+	r->cpid = static_cast<cpid_t>(v);
 	TRY(pndr->g_uint32(&r->lcid_string));
 	TRY(pndr->g_uint32(&r->lcid_sort));
 	TRY(pndr->g_uint32(&r->cxr_link));

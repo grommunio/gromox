@@ -272,7 +272,8 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 			return DISPATCH_FAIL;
 		*ppout = out;
 		out->result = nsp_interface_get_proplist(in->handle, in->flags,
-		              in->mid, in->codepage, &out->pproptags);
+		              in->mid, static_cast<cpid_t>(in->codepage),
+		              &out->pproptags);
 		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
@@ -329,7 +330,8 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 			return DISPATCH_FAIL;
 		*ppout = out;
 		out->result = nsp_interface_get_templateinfo(in->handle,
-		              in->flags, in->type, in->pdn, in->codepage,
+		              in->flags, in->type, in->pdn,
+		              static_cast<cpid_t>(in->codepage),
 		              in->locale_id, &out->pdata);
 		*ecode = out->result;
 		return DISPATCH_SUCCESS;

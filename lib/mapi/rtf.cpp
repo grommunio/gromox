@@ -279,6 +279,8 @@ static std::unordered_map<std::string_view, CMD_PROC_FUNC> g_cmd_hash;
 static bool rtf_starting_body(RTF_READER *preader);
 static bool rtf_starting_text(RTF_READER *preader);
 
+static constexpr cpid_t CP_UNSET = static_cast<cpid_t>(-1);
+
 static int rtf_decode_hex_char(const char *in)
 {
 	int retval;
@@ -1493,12 +1495,9 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 {
 	int ret;
 	int num;
-	int cpid;
 	int param;
 	char *ptoken;
 	char *string;
-	int tmp_cpid;
-	int fcharsetcp;
 	char name[1024];
 	FONTENTRY tmp_entry;
 	char tmp_buff[1024];
@@ -1527,8 +1526,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			return false;
 		}
 		tmp_buff[0] = '\0';
-		cpid = -1;
-		fcharsetcp = -1;
+		cpid_t cpid = CP_UNSET, fcharsetcp = CP_UNSET;
 		size_t tmp_offset = 0;
 		while ((pword2 = pword2->get_sibling()) != nullptr) {
 			if (NULL == pword2->pdata) {
@@ -1565,13 +1563,9 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			/* ret > 0 */
 			if (0 == strcmp(tmp_name, "u")) {
 				wchar_to_utf8(param, tmp_name);
-				if (-1 != cpid) {
-					tmp_cpid = cpid;
-				} else if (-1 != fcharsetcp) {
-					tmp_cpid = fcharsetcp;
-				} else {
-					tmp_cpid = 1252;
-				}
+				cpid_t tmp_cpid = cpid != CP_UNSET ? cpid :
+				                   fcharsetcp != CP_UNSET ? fcharsetcp :
+				                   static_cast<cpid_t>(1252);
 				if (!string_from_utf8(rtf_cpid_to_encoding(tmp_cpid),
 				    tmp_name, name, arsizeof(name))) {
 					mlog(LV_DEBUG, "rtf: invalid font name");
@@ -1587,9 +1581,9 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 					tmp_offset += tmp_len;
 				}
 			} else if (0 == strcmp(tmp_name, "fcharset")) {
-				fcharsetcp = rtf_fcharset_to_cpid(param);
+				fcharsetcp = static_cast<cpid_t>(rtf_fcharset_to_cpid(param));
 			} else if (0 == strcmp(tmp_name, "cpg")) {
-				cpid = param;
+				cpid = static_cast<cpid_t>(param);
 			}
 		}
 		if (0 == tmp_offset) {
@@ -1597,18 +1591,16 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			return false;
 		}
 		tmp_buff[tmp_offset] = '\0';
-		if (-1 == cpid) {
+		if (cpid == CP_UNSET)
 			cpid = fcharsetcp;
-		}
-		if (cpid != -1)
+		if (cpid != CP_UNSET)
 			strcpy(tmp_entry.encoding, rtf_cpid_to_encoding(cpid));
 		else if (strcasestr(name, "symbol") != nullptr)
 			tmp_entry.encoding[0] = '\0';
 		else
 			strcpy(tmp_entry.encoding, "windows-1252");
-		if (-1 == cpid) {
-			cpid = 1252;
-		}
+		if (cpid == CP_UNSET)
+			cpid = static_cast<cpid_t>(1252);
 		if (!string_to_utf8(rtf_cpid_to_encoding(cpid), tmp_buff,
 		    name, std::size(name))) {
 			mlog(LV_DEBUG, "rtf: invalid font name");
@@ -2561,7 +2553,8 @@ static int rtf_cmd_ansi(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 static int rtf_cmd_ansicpg(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	gx_strlcpy(preader->default_encoding, rtf_cpid_to_encoding(num), GX_ARRAY_SIZE(preader->default_encoding));
+	auto enc = rtf_cpid_to_encoding(static_cast<cpid_t>(num));
+	gx_strlcpy(preader->default_encoding, enc, std::size(preader->default_encoding));
 	preader->have_ansicpg = true;
 	return CMD_RESULT_CONTINUE;
 }
