@@ -90,7 +90,7 @@ struct getmatches_response {
 };
 
 struct getproplist_request {
-	uint32_t flags = 0, mid = 0, codepage = 0, cb_auxin = 0;
+	uint32_t flags = 0, mid = 0, codepage = CP_ACP, cb_auxin = 0;
 	uint8_t *auxin = nullptr;
 };
 
@@ -107,7 +107,7 @@ struct getprops_request {
 };
 
 struct getprops_response {
-	uint32_t status = 0, result = 0, codepage = 0;
+	uint32_t status = 0, result = 0, codepage = CP_ACP;
 	LTPROPVAL_ARRAY *row = nullptr;
 };
 
@@ -119,7 +119,7 @@ struct getspecialtable_request {
 };
 
 struct getspecialtable_response {
-	uint32_t status = 0, result = 0, codepage = 0, count = 0;
+	uint32_t status = 0, result = 0, codepage = CP_ACP, count = 0;
 	uint32_t *version = nullptr;
 	LTPROPVAL_ARRAY *row = nullptr;
 };
@@ -127,12 +127,12 @@ struct getspecialtable_response {
 struct gettemplateinfo_request {
 	uint32_t flags = 0, type = 0;
 	char *dn = nullptr;
-	uint32_t codepage = 0, locale_id = 0, cb_auxin = 0;
+	uint32_t codepage = CP_ACP, locale_id = 0, cb_auxin = 0;
 	uint8_t *auxin = nullptr;
 };
 
 struct gettemplateinfo_response {
-	uint32_t status = 0, result = 0, codepage = 0;
+	uint32_t status = 0, result = 0, codepage = CP_ACP;
 	LTPROPVAL_ARRAY *row = nullptr;
 };
 
@@ -191,7 +191,7 @@ struct resolvenames_request {
 };
 
 struct resolvenames_response {
-	uint32_t status = 0, result = 0, codepage = 1200;
+	uint32_t status = 0, result = 0, codepage = CP_UTF16;
 	MID_ARRAY *mids = nullptr;
 	nsp_rowset2 column_rows{};
 };

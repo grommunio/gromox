@@ -700,7 +700,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		tags.push_back(PidTagParentFolderId);
 		proptags.count = tags.size();
 		proptags.pproptag = tags.data();
-		if (!cu_get_properties(MAPI_FOLDER, fid_val1, 0,
+		if (!cu_get_properties(MAPI_FOLDER, fid_val1, CP_ACP,
 		    pdb->psqlite, &proptags, &pfldchgs->pfldchgs[i]))
 			return FALSE;
 	}

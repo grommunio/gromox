@@ -695,7 +695,7 @@ static BOOL get_freebusy(const char *dir)
 	rprop->propval.pvalue = &end_nttime;
 	/* end of OR */
 	
-	if (!exmdb_client::load_content_table(dir, 0,
+	if (!exmdb_client::load_content_table(dir, CP_ACP,
 	    rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
 	    nullptr, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
 	    &table_id, &row_count))
@@ -715,8 +715,8 @@ static BOOL get_freebusy(const char *dir)
 	tmp_proptags[10] = pidlidglobalobjectid;
 	tmp_proptags[11] = pidlidtimezonestruct;
 	tmp_proptags[12] = PR_SUBJECT;
-	if (!exmdb_client::query_table(dir, nullptr, 0, table_id, &proptags,
-	    0, row_count, &tmp_set))
+	if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id,
+	    &proptags, 0, row_count, &tmp_set))
 		return FALSE;	
 	printf("{\"dir\":\"%s\", \"permission\":", dir);
 	printf((permission & (frightsFreeBusyDetailed | frightsReadAny)) ?

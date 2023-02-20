@@ -77,8 +77,8 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	proptags.count = 1;
 	proptags.pproptag = &proptag;
 	proptag = PR_STORE_RECORD_KEY;
-	if (!exmdb_client::get_store_properties(
-		dir, 0, &proptags, &propvals)) {
+	if (!exmdb_client::get_store_properties(dir, CP_ACP,
+	    &proptags, &propvals)) {
 		mlog(LV_ERR, "get_store_properties %s: failed", dir);
 		return NULL;	
 	}
@@ -1242,7 +1242,7 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	}
 	tmp_propvals.ppropval[1].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[1].pvalue = &change_num;
-	if (!exmdb_client_get_folder_property(pstore->dir, 0, folder_id,
+	if (!exmdb_client_get_folder_property(pstore->dir, CP_ACP, folder_id,
 	    PR_PREDECESSOR_CHANGE_LIST, reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
@@ -1261,9 +1261,8 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	tmp_propvals.ppropval[3].pvalue = pbin_pcl;
 	tmp_propvals.ppropval[4].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[4].pvalue = &last_time;
-	return exmdb_client::set_folder_properties(
-		pstore->dir, 0, folder_id, &tmp_propvals,
-		&tmp_problems);
+	return exmdb_client::set_folder_properties(pstore->dir, CP_ACP,
+	       folder_id, &tmp_propvals, &tmp_problems);
 }
 
 /**
@@ -1403,8 +1402,8 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	}
 	proptags.count = 2;
 	proptags.pproptag = deconst(proptag_buff);
-	if (!exmdb_client::query_table(pstore->dir, NULL,
-		0, table_id, &proptags, 0, row_num, &permission_set)) {
+	if (!exmdb_client::query_table(pstore->dir, nullptr, CP_ACP, table_id,
+	    &proptags, 0, row_num, &permission_set)) {
 		exmdb_client::unload_table(pstore->dir, table_id);
 		return FALSE;
 	}
@@ -1471,10 +1470,9 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PidTagFolderId;
-	if (!exmdb_client::query_table(pstore->dir, NULL,
-		0, table_id, &proptags, 0, row_num, &tmp_set)) {
+	if (!exmdb_client::query_table(pstore->dir, nullptr, CP_ACP, table_id,
+	    &proptags, 0, row_num, &tmp_set))
 		return FALSE;
-	}
 	pperm_set->count = 0;
 	pperm_set->prows = NULL;
 	for (size_t i = 0; i < tmp_set.count; ++i) {

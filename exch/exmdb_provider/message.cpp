@@ -196,9 +196,8 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 				rop_util_make_domain_guid(account_id),
 			change_num});
 		if (tmp_propvals[1].pvalue == nullptr ||
-		    !cu_get_property(MAPI_FOLDER,
-		     parent_fid, 0, pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST,
-		     &pvalue))
+		    !cu_get_property(MAPI_FOLDER, parent_fid, CP_ACP,
+		    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
 			return FALSE;
 		tmp_propvals[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
@@ -210,11 +209,11 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 		tmp_propvals[3].pvalue = &nt_time;
 		tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals[4].pvalue = &nt_time;
-		cu_set_properties(MAPI_FOLDER, parent_fid, 0, pdb->psqlite,
+		cu_set_properties(MAPI_FOLDER, parent_fid, CP_ACP, pdb->psqlite,
 			&propvals, &problems);
 		common_util_increase_deleted_count(pdb->psqlite, parent_fid, 1);
 	}
-	cu_set_property(MAPI_FOLDER, fid_val, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	sql_transact.commit();
 	*pb_result = TRUE;
@@ -393,9 +392,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 				rop_util_make_domain_guid(account_id),
 			change_num});
 		if (tmp_propvals[1].pvalue == nullptr ||
-		    !cu_get_property(MAPI_FOLDER,
-		    parent_fid, 0, pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST,
-		    &pvalue))
+		    !cu_get_property(MAPI_FOLDER, parent_fid, CP_ACP,
+		    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
 			return FALSE;
 		tmp_propvals[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
@@ -407,12 +405,12 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 		tmp_propvals[3].pvalue = &nt_time;
 		tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals[4].pvalue = &nt_time;
-		cu_set_properties(MAPI_FOLDER, parent_fid, 0, pdb->psqlite,
+		cu_set_properties(MAPI_FOLDER, parent_fid, CP_ACP, pdb->psqlite,
 			&propvals, &problems);
 		common_util_increase_deleted_count(
 			pdb->psqlite, parent_fid, del_count);
 	}
-	cu_set_property(MAPI_FOLDER, dst_val, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, dst_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	sql_transact.commit();
 	if (b_batch) {
@@ -562,7 +560,7 @@ BOOL exmdb_server::delete_messages(const char *dir,
 			rop_util_make_domain_guid(account_id),
 		change_num});
 	if (tmp_propvals[1].pvalue == nullptr ||
-	    !cu_get_property(MAPI_FOLDER, src_val, 0,
+	    !cu_get_property(MAPI_FOLDER, src_val, CP_ACP,
 	    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
 		return FALSE;
 	tmp_propvals[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
@@ -575,7 +573,8 @@ BOOL exmdb_server::delete_messages(const char *dir,
 	tmp_propvals[3].pvalue = &nt_time;
 	tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals[4].pvalue = &nt_time;
-	cu_set_properties(MAPI_FOLDER, src_val, 0, pdb->psqlite, &propvals, &problems);
+	cu_set_properties(MAPI_FOLDER, src_val, CP_ACP, pdb->psqlite,
+		&propvals, &problems);
 	common_util_increase_deleted_count(
 		pdb->psqlite, src_val, del_count);
 	sql_transact.commit();
@@ -634,7 +633,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite, uint64_t message_id,
 		PROPTAG_ARRAY proptags = {static_cast<uint16_t>(tags.size()), tags.data()};
 		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (pset->pparray[pset->count] == nullptr ||
-		    !cu_get_properties(MAPI_MAILUSER, rcpt_id, 0,
+		    !cu_get_properties(MAPI_MAILUSER, rcpt_id, CP_ACP,
 		    psqlite, &proptags, pset->pparray[pset->count]))
 			return FALSE;
 		/* PR_ROWID MUST be the first */
@@ -873,7 +872,7 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 	    mid_val, &fid_val) || fid_val == 0)
 		return FALSE;
 	nt_time = rop_util_current_nttime();
-	cu_set_property(MAPI_FOLDER, fid_val, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	sql_transact.commit();
 	db_engine_proc_dynamic_event(pdb,
@@ -904,7 +903,7 @@ BOOL exmdb_server::remove_message_properties(const char *dir, uint32_t cpid,
 	    mid_val, &fid_val) || fid_val == 0)
 		return FALSE;
 	nt_time = rop_util_current_nttime();
-	cu_set_property(MAPI_FOLDER, fid_val, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	sql_transact.commit();
 	db_engine_proc_dynamic_event(pdb,
@@ -960,11 +959,10 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 	    mid_val, &fid_val))
 		return FALSE;
 	nt_time = rop_util_current_nttime();
-	cu_set_property(MAPI_FOLDER, fid_val, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	sql_transact.commit();
-	db_engine_proc_dynamic_event(pdb,
-		0, DYNAMIC_EVENT_MODIFY_MESSAGE,
+	db_engine_proc_dynamic_event(pdb, CP_ACP, DYNAMIC_EVENT_MODIFY_MESSAGE,
 		fid_val, mid_val, 0);
 	db_engine_notify_message_modification(
 		pdb, fid_val, mid_val);
@@ -1175,7 +1173,7 @@ BOOL exmdb_server::mark_modified(const char *dir, uint64_t message_id)
 	if (!(*pmessage_flags & MSGFLAG_UNMODIFIED))
 		return TRUE;
 	*pmessage_flags &= ~MSGFLAG_UNMODIFIED;
-	return cu_set_property(MAPI_MESSAGE, mid_val, 0, pdb->psqlite,
+	return cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
 	       PR_MESSAGE_FLAGS, pmessage_flags, &b_result);
 }
 
@@ -1200,7 +1198,7 @@ BOOL exmdb_server::try_mark_submit(const char *dir,
 	}
 	*pmessage_flags |= MSGFLAG_SUBMITTED;
 	*pmessage_flags &= ~MSGFLAG_UNSENT;
-	return cu_set_property(MAPI_MESSAGE, mid_val, 0, pdb->psqlite,
+	return cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
 	       PR_MESSAGE_FLAGS, pmessage_flags, pb_marked);
 }
 
@@ -1228,7 +1226,7 @@ BOOL exmdb_server::clear_submit(const char *dir,
 	else
 		*pmessage_flags &= ~MSGFLAG_UNSENT;
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!cu_set_property(MAPI_MESSAGE, mid_val, 0, pdb->psqlite,
+	if (!cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
 	    PR_MESSAGE_FLAGS, pmessage_flags, &b_result))
 		return FALSE;
 	if (!b_result)
@@ -1939,16 +1937,16 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		return FALSE;
 	if (!b_embedded) {
 		void *pvalue = nullptr;
-		if (!cu_get_property(MAPI_FOLDER, parent_id, 0,
+		if (!cu_get_property(MAPI_FOLDER, parent_id, CP_ACP,
 		    psqlite, PR_INTERNET_ARTICLE_NUMBER_NEXT, &pvalue))
 			return FALSE;
 		if (pvalue == nullptr)
 			pvalue = deconst(&fake_uid);
 		auto next = *static_cast<uint32_t *>(pvalue) + 1;
-		if (!cu_set_property(MAPI_FOLDER, parent_id, 0, psqlite,
+		if (!cu_set_property(MAPI_FOLDER, parent_id, CP_ACP, psqlite,
 		    PR_INTERNET_ARTICLE_NUMBER_NEXT, &next, &b_result))
 			return FALSE;	
-		if (!cu_set_property(MAPI_MESSAGE, *pmessage_id, 0, psqlite,
+		if (!cu_set_property(MAPI_MESSAGE, *pmessage_id, CP_ACP, psqlite,
 		    PR_INTERNET_ARTICLE_NUMBER, pvalue, &b_result))
 			return FALSE;	
 	}
@@ -2054,7 +2052,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	if (b_embedded)
 		return TRUE;
 	nt_time = rop_util_current_nttime();
-	return cu_set_property(MAPI_FOLDER, parent_id, 0, psqlite,
+	return cu_set_property(MAPI_FOLDER, parent_id, CP_ACP, psqlite,
 	       PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 }
 
@@ -2124,14 +2122,14 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 			break;
 		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		void *pvalue = nullptr;
-		if (!cu_get_property(MAPI_MESSAGE,
-		    message_id, 0, psqlite, PR_MESSAGE_CLASS, &pvalue))
+		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+		    PR_MESSAGE_CLASS, &pvalue))
 			return FALSE;
 		if (pvalue != nullptr && strcasecmp(static_cast<char *>(pvalue),
 		    "IPM.ExtendedRule.Message") != 0)
 			continue;
-		if (!cu_get_property(MAPI_MESSAGE,
-		    message_id, 0, psqlite, PR_RULE_MSG_STATE, &pvalue))
+		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+		    PR_RULE_MSG_STATE, &pvalue))
 			return FALSE;
 		if (pvalue == nullptr)
 			continue;
@@ -2146,14 +2144,14 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 		} else {
 			continue;
 		}
-		if (!cu_get_property(MAPI_MESSAGE,
-		    message_id, 0, psqlite, PR_RULE_MSG_SEQUENCE, &pvalue))
+		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+		    PR_RULE_MSG_SEQUENCE, &pvalue))
 			return FALSE;
 		if (pvalue == nullptr)
 			continue;
 		auto seq = *static_cast<uint32_t *>(pvalue);
-		if (!cu_get_property(MAPI_MESSAGE,
-		    message_id, 0, psqlite, PR_RULE_MSG_PROVIDER, &pvalue))
+		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+		    PR_RULE_MSG_PROVIDER, &pvalue))
 			return FALSE;
 		if (pvalue == nullptr)
 			continue;
@@ -2359,14 +2357,14 @@ static BOOL message_make_deferred_error_message(const char *username,
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	if (!message_write_message(false, psqlite, username, 0, false,
+	if (!message_write_message(false, psqlite, username, CP_ACP, false,
 	    PRIVATE_FID_DEFERRED_ACTION, pmsg, &mid_val)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	message_content_free(pmsg);
-	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, 0, psqlite,
-		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
+	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, CP_ACP,
+		psqlite, PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -2388,11 +2386,11 @@ static ec_error_t message_disable_rule(sqlite3 *psqlite,
 			return ecError;
 		return ecSuccess;
 	}
-	if (!cu_get_property(MAPI_MESSAGE, id, 0, psqlite,
+	if (!cu_get_property(MAPI_MESSAGE, id, CP_ACP, psqlite,
 	    PR_RULE_MSG_STATE, &pvalue) || pvalue == nullptr)
 		return ecError;
 	*static_cast<uint32_t *>(pvalue) |= ST_ERROR;
-	if (!cu_set_property(MAPI_MESSAGE, id, 0, psqlite,
+	if (!cu_set_property(MAPI_MESSAGE, id, CP_ACP, psqlite,
 	    PR_RULE_MSG_STATE, pvalue, &b_result))
 		return ecError;
 	return ecSuccess;
@@ -2442,7 +2440,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		*pb_result = TRUE;
 		return TRUE;
 	}
-	if (!cu_get_property(MAPI_MESSAGE, message_id, 0,
+	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    psqlite, PR_AUTO_RESPONSE_SUPPRESS, &pvalue))
 		return FALSE;
 	if (NULL != pvalue) {
@@ -2458,7 +2456,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			}
 		}
 	}
-	if (!message_read_message(psqlite, 0, template_message_id, &pmsgctnt))
+	if (!message_read_message(psqlite, CP_ACP, template_message_id, &pmsgctnt))
 		return FALSE;
 	if (NULL == pmsgctnt) {
 		*pb_result = FALSE;
@@ -2517,8 +2515,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		if ((*prcpts->pparray)->ppropval == nullptr)
 			return FALSE;
 		(*prcpts->pparray)->ppropval[0].proptag = PR_SMTP_ADDRESS;
-		if (!cu_get_property(MAPI_MESSAGE, message_id,
-		    0, psqlite, PR_SENT_REPRESENTING_SMTP_ADDRESS, &pvalue))
+		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+		    PR_SENT_REPRESENTING_SMTP_ADDRESS, &pvalue))
 			return FALSE;
 		(*prcpts->pparray)->ppropval[0].pvalue = pvalue == nullptr ?
 			deconst(from_address) : pvalue;
@@ -2528,8 +2526,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			return FALSE;
 		*uv = MAPI_TO;
 		(*prcpts->pparray)->ppropval[1].pvalue = uv;
-		if (!cu_get_property(MAPI_MESSAGE, message_id,
-		    0, psqlite, PR_SENT_REPRESENTING_NAME, &pvalue))
+		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+		    PR_SENT_REPRESENTING_NAME, &pvalue))
 			return FALSE;
 		if (NULL == pvalue) {
 			(*prcpts->pparray)->count = 2;
@@ -2611,7 +2609,7 @@ static ec_error_t message_bounce_message(const char *from_address,
 	default:
 		return ecSuccess;
 	}
-	if (!cu_get_property(MAPI_MESSAGE, message_id, 0,
+	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    psqlite, PR_SENT_REPRESENTING_SMTP_ADDRESS, &pvalue))
 		return ecServerOOM;
 	std::vector<std::string> rcpt_list;
@@ -2897,14 +2895,14 @@ static BOOL message_make_deferred_action_message(const char *username,
 	tmp_bin.pv = tmp_ids;
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
 	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != 0 ||
-	    !message_write_message(FALSE, psqlite, username, 0, false,
+	    !message_write_message(FALSE, psqlite, username, CP_ACP, false,
 	    PRIVATE_FID_DEFERRED_ACTION, pmsg, &mid_val)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	message_content_free(pmsg);
-	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, 0, psqlite,
-		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
+	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, CP_ACP,
+		psqlite, PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -3006,7 +3004,7 @@ static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
 		return ecSuccess;
 	}
 	auto nt_time = rop_util_current_nttime();
-	cu_set_property(MAPI_FOLDER, dst_fid, 0, psqlite,
+	cu_set_property(MAPI_FOLDER, dst_fid, CP_ACP, psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
 		return ecError;
@@ -3283,7 +3281,7 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 		if (!exmdb_server::is_private())
 			return ecSuccess;
 		BOOL b_result = false;
-		if (!cu_set_property(MAPI_MESSAGE, message_id, 0, psqlite,
+		if (!cu_set_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
 		    PR_READ, &fake_true, &b_result))
 			return ecError;
 		break;
@@ -3305,7 +3303,7 @@ static ec_error_t op_process(BOOL b_oof, const char *from_address,
 	    PR_RULE_CONDITION, &pvalue))
 		return ecError;
 	if (pvalue == nullptr || !cu_eval_msg_restriction(psqlite,
-	    0, message_id, static_cast<RESTRICTION *>(pvalue)))
+	    CP_ACP, message_id, static_cast<RESTRICTION *>(pvalue)))
 		return ecSuccess;
 	if (prnode->state & ST_EXIT_LEVEL)
 		b_exit = TRUE;
@@ -3398,7 +3396,7 @@ static ec_error_t opx_move(BOOL b_oof, const char *from_address,
 	if (!b_result)
 		return ecSuccess;
 	auto nt_time = rop_util_current_nttime();
-	cu_set_property(MAPI_FOLDER, dst_fid, 0, psqlite,
+	cu_set_property(MAPI_FOLDER, dst_fid, CP_ACP, psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
 		return ecError;
@@ -3626,7 +3624,7 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 		if (!exmdb_server::is_private())
 			return ecSuccess;
 		BOOL b_result = false;
-		if (!cu_set_property(MAPI_MESSAGE, message_id, 0, psqlite,
+		if (!cu_set_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
 		    PR_READ, &fake_true, &b_result))
 			return ecError;
 		break;
@@ -3643,7 +3641,7 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 	if (b_exit && !(prnode->state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	void *pvalue = nullptr;
-	if (!cu_get_property(MAPI_MESSAGE, prnode->id, 0, psqlite,
+	if (!cu_get_property(MAPI_MESSAGE, prnode->id, CP_ACP, psqlite,
 	    PR_EXTENDED_RULE_MSG_CONDITION, &pvalue))
 		return ecError;
 	auto bv = static_cast<BINARY *>(pvalue);
@@ -3659,11 +3657,11 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 		return ecSuccess;
 	if (!message_replace_restriction_propid(psqlite, &propname_info, &restriction))
 		return ecError;
-	if (!cu_eval_msg_restriction(psqlite, 0, message_id, &restriction))
+	if (!cu_eval_msg_restriction(psqlite, CP_ACP, message_id, &restriction))
 		return ecSuccess;
 	if (prnode->state & ST_EXIT_LEVEL)
 		b_exit = TRUE;
-	if (!cu_get_property(MAPI_MESSAGE, prnode->id, 0, psqlite,
+	if (!cu_get_property(MAPI_MESSAGE, prnode->id, CP_ACP, psqlite,
 	    PR_EXTENDED_RULE_MSG_ACTIONS, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
@@ -3726,9 +3724,8 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 		return ecServerOOM;
 	}
 	void *pvalue = nullptr;
-	if (!cu_get_property(MAPI_MESSAGE,
-	    message_id, 0, psqlite, PR_MESSAGE_SIZE, &pvalue) ||
-	    pvalue == nullptr)
+	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+	    PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
 		return ecError;
 	auto message_size = *static_cast<uint32_t *>(pvalue);
 	char sql_string[128];
@@ -3814,7 +3811,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	}
 	if (exmdb_server::is_private()) {
 		void *pvalue;
-		if (!cu_get_property(MAPI_STORE, 0, 0,
+		if (!cu_get_property(MAPI_STORE, 0, CP_ACP,
 		    pdb->psqlite, PR_OOF_STATE, &pvalue))
 			return FALSE;
 		b_oof = pvb_disabled(pvalue) ? false : TRUE;

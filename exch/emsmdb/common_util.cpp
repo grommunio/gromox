@@ -1433,7 +1433,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	propval_buff[1].pvalue = cu_xid_to_bin({plogon->guid(), change_num});
 	if (propval_buff[1].pvalue == nullptr)
 		return FALSE;
-	if (!exmdb_client::set_message_properties(dir, nullptr, 0,
+	if (!exmdb_client::set_message_properties(dir, nullptr, CP_ACP,
 	    message_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	if (!exmdb_client::get_message_group_id(dir, message_id, &pgroup_id))
@@ -1531,7 +1531,7 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto dir = plogon->get_dir();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
-	if (!exmdb_client::get_message_property(dir, nullptr, 0,
+	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {
 		mlog2(LV_ERR, "E-1289: Cannot get parent folder_id of mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});

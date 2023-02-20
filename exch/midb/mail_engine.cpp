@@ -1550,7 +1550,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 	} else {
 		if (!common_util_switch_allocator())
 			return;
-		if (!exmdb_client::read_message(dir, NULL, 0,
+		if (!exmdb_client::read_message(dir, nullptr, CP_ACP,
 			rop_util_make_eid_ex(1, message_id), &pmsgctnt)) {
 			common_util_switch_allocator();
 			return;
@@ -1950,7 +1950,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	proptag_buff[4] = PR_DISPLAY_NAME;
 	proptag_buff[5] = PR_LOCAL_COMMIT_TIME_MAX;
 	if (!exmdb_client::query_table(dir, NULL,
-		0, table_id, &proptags, 0, row_count, &rows)) {
+	    CP_ACP, table_id, &proptags, 0, row_count, &rows)) {
 		exmdb_client::unload_table(dir, table_id);
 		return FALSE;
 	}
@@ -2337,7 +2337,8 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PR_PROHIBIT_RECEIVE_QUOTA;
 	tmp_proptags[1] = PR_MESSAGE_SIZE_EXTENDED;
-	if (!exmdb_client::get_store_properties(argv[1], 0, &proptags, &propvals))
+	if (!exmdb_client::get_store_properties(argv[1], CP_ACP,
+	    &proptags, &propvals))
 		return MIDB_E_MDB_GETSTOREPROPS;
 	auto ptotal = propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	auto pmax   = propvals.get<uint32_t>(PR_PROHIBIT_RECEIVE_QUOTA);
@@ -2698,8 +2699,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
 		return MIDB_E_NO_MEMORY;
 	auto cpid = cset_to_cpid(charset);
-	if (cpid == 0)
-		cpid = 1252;
+	if (cpid == CP_ACP)
+		cpid = static_cast<nlscp_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
@@ -2750,7 +2751,7 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	pstmt.finalize();
 	pidb.reset();
 	if (!exmdb_client::delete_messages(argv[1],
-	    user_id, 0, NULL, rop_util_make_eid_ex(1, folder_id),
+	    user_id, CP_ACP, nullptr, rop_util_make_eid_ex(1, folder_id),
 	    &message_ids, TRUE, &b_partial))
 		return MIDB_E_MDB_DELETEMESSAGES;
 	return cmd_write(sockd, "TRUE\r\n");
@@ -2904,8 +2905,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
 		return MIDB_E_NO_MEMORY;
 	auto cpid = cset_to_cpid(charset);
-	if (cpid == 0)
-		cpid = 1252;
+	if (cpid == CP_ACP)
+		cpid = static_cast<nlscp_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &e_result) ||
@@ -2998,8 +2999,8 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	}
 	pidb.reset();
 	if (parent_id != folder_id1) {
-		if (!exmdb_client::movecopy_folder(
-		    argv[1], user_id, 0, FALSE, NULL,
+		if (!exmdb_client::movecopy_folder(argv[1], user_id, CP_ACP,
+		    false, nullptr,
 		    rop_util_make_eid_ex(1, parent_id),
 		    rop_util_make_eid_ex(1, folder_id),
 		    rop_util_make_eid_ex(1, folder_id1),
@@ -3015,7 +3016,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
 	if (!exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
-	if (!exmdb_client::get_folder_properties(argv[1], 0,
+	if (!exmdb_client::get_folder_properties(argv[1], CP_ACP,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals) ||
 	     (pbin1 = propvals.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST)) == nullptr)
 		return MIDB_E_MDB_GETFOLDERPROPS;
@@ -3039,7 +3040,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		propval_buff[4].proptag = PR_DISPLAY_NAME;
 		propval_buff[4].pvalue = ptoken;
 	}
-	if (!exmdb_client::set_folder_properties(argv[1], 0,
+	if (!exmdb_client::set_folder_properties(argv[1], CP_ACP,
 	    rop_util_make_eid_ex(1, folder_id), &propvals, &problems))
 		return MIDB_E_MDB_SETFOLDERPROPS;
 	return cmd_write(sockd, "TRUE\r\n");
@@ -3120,11 +3121,11 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	}
 	pidb.reset();
 	folder_id = rop_util_make_eid_ex(1, folder_id);
-	if (!exmdb_client::empty_folder(argv[1], 0, NULL, folder_id,
+	if (!exmdb_client::empty_folder(argv[1], CP_ACP, nullptr, folder_id,
 	    TRUE, TRUE, TRUE, FALSE, &b_partial) || b_partial ||
-	    !exmdb_client::empty_folder(argv[1], 0, NULL, folder_id,
+	    !exmdb_client::empty_folder(argv[1], CP_ACP, nullptr, folder_id,
 	    TRUE, FALSE, FALSE, TRUE, &b_partial) || b_partial ||
-	    !exmdb_client::delete_folder(argv[1], 0, folder_id, TRUE,
+	    !exmdb_client::delete_folder(argv[1], CP_ACP, folder_id, TRUE,
 	    &b_result) || !b_result)
 		return MIDB_E_MDB_DELETEFOLDER;
 	return cmd_write(sockd, "TRUE\r\n");
@@ -3924,7 +3925,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 		proptags.pproptag = &tmp_proptag;
 		tmp_proptag = PR_MESSAGE_FLAGS;
 		if (!exmdb_client::get_message_properties(argv[1], NULL,
-		    0, rop_util_make_eid_ex(1, message_id),
+		    CP_ACP, rop_util_make_eid_ex(1, message_id),
 		    &proptags, &propvals) || propvals.count == 0)
 			return MIDB_E_MDB_GETMSGPROPS;
 		auto message_flags = *static_cast<uint32_t *>(propvals.ppropval[0].pvalue);
@@ -3932,7 +3933,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 			message_flags |= MSGFLAG_UNSENT;
 			propvals.ppropval[0].pvalue = &message_flags;
 			if (!exmdb_client::set_message_properties(argv[1],
-			    nullptr, 0, rop_util_make_eid_ex(1, message_id),
+			    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
 			    &propvals, &problems))
 				return MIDB_E_MDB_SETMSGPROPS;
 		}
@@ -4009,7 +4010,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 		proptags.pproptag = &tmp_proptag;
 		tmp_proptag = PR_MESSAGE_FLAGS;
 		if (!exmdb_client::get_message_properties(argv[1], nullptr,
-		    0, rop_util_make_eid_ex(1, message_id),
+		    CP_ACP, rop_util_make_eid_ex(1, message_id),
 		    &proptags, &propvals) || propvals.count == 0)
 			return MIDB_E_MDB_GETMSGPROPS;
 		auto message_flags = *static_cast<uint32_t *>(propvals.ppropval[0].pvalue);
@@ -4017,7 +4018,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 			message_flags &= ~MSGFLAG_UNSENT;
 			propvals.ppropval[0].pvalue = &message_flags;
 			if (!exmdb_client::set_message_properties(argv[1],
-			    nullptr, 0, rop_util_make_eid_ex(1, message_id),
+			    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
 			    &propvals, &problems))
 				return MIDB_E_MDB_SETMSGPROPS;
 		}
@@ -4327,7 +4328,7 @@ static void mail_engine_add_notification_message(
 	tmp_proptags[2] = PidTagMidString;
 	tmp_proptags[3] = PR_MESSAGE_FLAGS;
 	if (!exmdb_client::get_message_properties(common_util_get_maildir(),
-	    nullptr, 0, rop_util_make_eid_ex(1, message_id),
+	    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
 	    &proptags, &propvals))
 		return;		
 	auto lnum = propvals.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
@@ -4448,7 +4449,7 @@ static BOOL mail_engine_add_notification_folder(
 	tmp_proptags[3] = PR_ATTR_HIDDEN;
 	bool b_waited = false;
  REQUERY_FOLDER:
-	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), 0,
+	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), CP_ACP,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return FALSE;		
 	auto flag = propvals.get<const uint8_t>(PR_ATTR_HIDDEN);
@@ -4576,7 +4577,7 @@ static void mail_engine_move_notification_folder(
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PR_DISPLAY_NAME;
-	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), 0,
+	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), CP_ACP,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return;		
 
@@ -4629,7 +4630,7 @@ static void mail_engine_modify_notification_folder(
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PR_DISPLAY_NAME;
-	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), 0,
+	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), CP_ACP,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return;		
 	auto str = propvals.get<const char>(PR_DISPLAY_NAME);
@@ -4675,7 +4676,7 @@ static void mail_engine_modify_notification_message(
 	tmp_proptags[1] = PR_LAST_MODIFICATION_TIME;
 	tmp_proptags[2] = PidTagMidString;
 	if (!exmdb_client::get_message_properties(common_util_get_maildir(),
-	    nullptr, 0, rop_util_make_eid_ex(1, message_id),
+	    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
 	    &proptags, &propvals))
 		return;	
 	auto num = propvals.get<const uint32_t>(PR_MESSAGE_FLAGS);

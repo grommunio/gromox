@@ -51,8 +51,8 @@ struct POPULATING_NODE {
 	NOMOVE(POPULATING_NODE);
 
 	std::string dir;
-	uint32_t cpid = 0;
 	uint64_t folder_id = 0;
+	uint32_t cpid = CP_ACP;
 	BOOL b_recursive = false;
 	RESTRICTION *prestriction = nullptr;
 	LONGLONG_ARRAY folder_ids{};
@@ -1317,7 +1317,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 	
 	uint8_t *pread_byte = nullptr;
 	void *pvalue0;
-	if (!cu_get_property(MAPI_MESSAGE, message_id, 0,
+	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    pdb->psqlite, PR_ASSOCIATED, &pvalue0))
 		return;	
 	bool b_optimize = false;
@@ -2003,14 +2003,12 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		datagram.db_notify.pdata = pnew_mail;
 		pnew_mail->folder_id = folder_id;
 		pnew_mail->message_id = message_id;
-		if (!cu_get_property(MAPI_MESSAGE,
-		    message_id, 0, pdb->psqlite, PR_MESSAGE_FLAGS,
-		    &pvalue) || pvalue == nullptr)
+		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
+		    pdb->psqlite, PR_MESSAGE_FLAGS, &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->message_flags = *static_cast<uint32_t *>(pvalue);
-		if (!cu_get_property(MAPI_MESSAGE,
-		    message_id, 0, pdb->psqlite, PR_MESSAGE_CLASS, &pvalue) ||
-		    pvalue == nullptr)
+		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
+		    pdb->psqlite, PR_MESSAGE_CLASS, &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
 		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
@@ -3486,8 +3484,8 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				}
 				if (b_error)
 					break;
-				if (!cu_get_property(MAPI_MESSAGE,
-				    message_id, 0, pdb->psqlite, PR_READ, &pvalue) ||
+				if (!cu_get_property(MAPI_MESSAGE, message_id,
+				    CP_ACP, pdb->psqlite, PR_READ, &pvalue) ||
 				    pvalue == nullptr) {
 					b_error = TRUE;
 					break;

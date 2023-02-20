@@ -768,8 +768,8 @@ BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = qtag;
 	proptag_buff[1] = PR_MESSAGE_SIZE_EXTENDED;
-	if (!cu_get_properties(MAPI_STORE,
-	    0, 0, psqlite, &proptags, &propvals))
+	if (!cu_get_properties(MAPI_STORE, 0, CP_ACP, psqlite,
+	    &proptags, &propvals))
 		return FALSE;
 	auto ptotal = propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	auto qv_kb = propvals.get<uint32_t>(qtag);
@@ -1306,7 +1306,7 @@ static void* common_util_get_message_parent_display(
 	
 	if (!common_util_get_message_parent_folder(psqlite, message_id, &folder_id))
 		return NULL;	
-	if (!cu_get_property(MAPI_FOLDER, folder_id, 0,
+	if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP,
 	    psqlite, PR_DISPLAY_NAME, &pvalue))
 		return NULL;	
 	return pvalue;
@@ -1411,8 +1411,8 @@ static BOOL common_util_get_message_display_recipients(sqlite3 *psqlite,
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		rcpt_id = sqlite3_column_int64(pstmt, 0);
-		if (!cu_get_property(MAPI_MAILUSER,
-		    rcpt_id, 0, psqlite, PR_RECIPIENT_TYPE, &pvalue))
+		if (!cu_get_property(MAPI_MAILUSER, rcpt_id, CP_ACP, psqlite,
+		    PR_RECIPIENT_TYPE, &pvalue))
 			return FALSE;
 		if (pvalue == nullptr || *static_cast<uint32_t *>(pvalue) != recipient_type)
 			continue;
@@ -1857,7 +1857,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PR_HTML:
 	case PR_RTF_COMPRESSED:
-		pv.pvalue = cu_get_object_text(db, 0, id, tag);
+		pv.pvalue = cu_get_object_text(db, CP_ACP, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PidTagMidString: /* self-defined proptag */
 		return common_util_get_mid_string(db, id, reinterpret_cast<char **>(&pv.pvalue)) &&
@@ -1885,7 +1885,7 @@ static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	}
 	case PR_ATTACH_DATA_BIN:
 	case PR_ATTACH_DATA_OBJ:
-		pv.pvalue = cu_get_object_text(db, 0, id, tag);
+		pv.pvalue = cu_get_object_text(db, CP_ACP, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	}
 	return GP_UNHANDLED;
@@ -2541,7 +2541,7 @@ static BOOL common_util_set_message_subject(
 	if (ppropval->proptag == PR_SUBJECT) {
 		sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT);
 		sqlite3_bind_text(pstmt, 2, static_cast<char *>(ppropval->pvalue), -1, SQLITE_STATIC);
-	} else if (cpid == 0) {
+	} else if (cpid == CP_ACP) {
 		pstring = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
 		if (pstring == nullptr)
 			return FALSE;
@@ -2589,7 +2589,7 @@ static BOOL common_util_set_message_body(
 	uint32_t proptag;
 	
 	if (ppropval->proptag == PR_BODY_A) {
-		if (0 == cpid) {
+		if (cpid == CP_ACP) {
 			proptag = PR_BODY_A;
 			pvalue = ppropval->pvalue;
 		} else {
@@ -2599,7 +2599,7 @@ static BOOL common_util_set_message_body(
 				return FALSE;
 		}
 	} else if (ppropval->proptag == PR_TRANSPORT_MESSAGE_HEADERS_A) {
-		if (cpid == 0) {
+		if (cpid == CP_ACP) {
 			proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
 			pvalue = ppropval->pvalue;
 		} else {
@@ -3060,15 +3060,15 @@ BOOL cu_set_properties(mapi_object_type table_type,
 			break;
 		}
 		proptype = PROP_TYPE(ppropvals->ppropval[i].proptag);
-		if (cpid != 0 && proptype == PT_STRING8)
+		if (cpid != CP_ACP && proptype == PT_STRING8)
 			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_UNICODE));
-		else if (cpid != 0 && proptype == PT_MV_STRING8)
+		else if (cpid != CP_ACP && proptype == PT_MV_STRING8)
 			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_MV_UNICODE));
 		else
 			sqlite3_bind_int64(pstmt, 1, ppropvals->ppropval[i].proptag);
 		switch (proptype) {
 		case PT_STRING8:
-			if (0 != cpid) {
+			if (cpid != CP_ACP) {
 				pstring = common_util_convert_copy(TRUE, cpid,
 				          static_cast<char *>(ppropvals->ppropval[i].pvalue));
 				if (pstring == nullptr)
@@ -3211,7 +3211,7 @@ BOOL cu_set_properties(mapi_object_type table_type,
 			break;
 		}
 		case PT_MV_STRING8: {
-			if (0 != cpid) {
+			if (cpid != CP_ACP) {
 				auto arr = static_cast<const STRING_ARRAY *>(ppropvals->ppropval[i].pvalue);
 				tmp_strings.count = arr->count;
 				tmp_strings.ppstr = cu_alloc<char *>(tmp_strings.count);
@@ -4158,9 +4158,8 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
-		if (!cu_get_property(MAPI_FOLDER,
-		    folder_id, 0, psqlite, rcon->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
+		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		switch (rcon->fuzzy_level & 0xFFFF) {
 		case FL_FULLSTRING:
@@ -4194,8 +4193,8 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
-		if (!cu_get_property(MAPI_FOLDER,
-		    folder_id, 0, psqlite, rprop->proptag, &pvalue))
+		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
+		    rprop->proptag, &pvalue))
 			return FALSE;
 		if (pvalue == nullptr)
 			return propval_compare_relop_nullok(rprop->relop,
@@ -4213,11 +4212,11 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
-		if (!cu_get_property(MAPI_FOLDER,
-		    folder_id, 0, psqlite, rprop->proptag1, &pvalue))
+		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
+		    rprop->proptag1, &pvalue))
 			return FALSE;
-		if (!cu_get_property(MAPI_FOLDER,
-		    folder_id, 0, psqlite, rprop->proptag2, &pvalue1))
+		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
+		    rprop->proptag2, &pvalue1))
 			return FALSE;
 		return propval_compare_relop_nullok(rprop->relop,
 		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
@@ -4226,9 +4225,8 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
-		if (!cu_get_property(MAPI_FOLDER,
-		    folder_id, 0, psqlite, rbm->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
+		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		switch (rbm->bitmask_relop) {
 		case BMR_EQZ:
@@ -4240,17 +4238,16 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
-		if (!cu_get_property(MAPI_FOLDER,
-		    folder_id, 0, psqlite, rsize->proptag, &pvalue))
+		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
+		    rsize->proptag, &pvalue))
 			return FALSE;
 		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
 		return propval_compare_relop_nullok(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST:
-		if (!cu_get_property(MAPI_FOLDER,
-		    folder_id, 0, psqlite, pres->exist->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
+		    pres->exist->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		return TRUE;
 	case RES_COMMENT:
@@ -4497,8 +4494,8 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 	char tmp_name[UADDR_SIZE];
 	EMSAB_ENTRYID ab_entryid;
 	
-	if (!cu_get_property(MAPI_MESSAGE, message_id, 0,
-	    psqlite, PR_CREATOR_ENTRYID, reinterpret_cast<void **>(&pbin)))
+	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
+	    PR_CREATOR_ENTRYID, reinterpret_cast<void **>(&pbin)))
 		return FALSE;
 	if (NULL == pbin) {
 		*pb_owner = FALSE;
@@ -4720,13 +4717,13 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		return FALSE;
 	if (!*pb_result)
 		return TRUE;
-	if (!cu_get_property(MAPI_FOLDER,
-	    folder_id, 0, psqlite, PR_INTERNET_ARTICLE_NUMBER_NEXT, &pvalue))
+	if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
+	    PR_INTERNET_ARTICLE_NUMBER_NEXT, &pvalue))
 		return FALSE;
 	if (pvalue == nullptr)
 		pvalue = deconst(&fake_uid);
 	auto next = *static_cast<uint32_t *>(pvalue) + 1;
-	if (!cu_set_property(MAPI_FOLDER, folder_id, 0, psqlite,
+	if (!cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
 	    PR_INTERNET_ARTICLE_NUMBER_NEXT, &next, &b_result))
 		return FALSE;
 	propval_buff[0].proptag = PR_CHANGE_KEY;
@@ -4748,7 +4745,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 	propval_buff[3].pvalue = &nt_time;
 	propvals.count = 4;
 	propvals.ppropval = propval_buff;
-	return cu_set_properties(MAPI_MESSAGE, *pdst_mid, 0, psqlite,
+	return cu_set_properties(MAPI_MESSAGE, *pdst_mid, CP_ACP, psqlite,
 	       &propvals, &tmp_problems);
 }
 

@@ -458,7 +458,7 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	if (!b_exist)
 		return ecNotFound;
 	if (!exmdb_client::get_message_property(plogon->get_dir(),
-	    nullptr, 0, message_id, PR_MESSAGE_FLAGS,
+	    nullptr, CP_ACP, message_id, PR_MESSAGE_FLAGS,
 	    reinterpret_cast<void **>(&pmessage_flags)))
 		return ecError;
 	if (pmessage_flags == nullptr)
@@ -551,7 +551,7 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	proptag_buff[0] = PR_DELETE_AFTER_SUBMIT;
 	proptag_buff[1] = PR_TARGET_ENTRYID;
 	proptag_buff[2] = PR_PARENT_ENTRYID;
-	if (!exmdb_client::get_message_properties(dir, nullptr, 0,
+	if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
 	    message_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
@@ -613,8 +613,8 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	static constexpr PROPTAG_ARRAY rq_tags = {1, deconst(rq_tags1)};
 	static constexpr PROPTAG_ARRAY cls_tags = {1, deconst(cls_tags1)};
 	TPROPVAL_ARRAY outvalues{};
-	if (!exmdb_client::get_message_properties(plogon->get_dir(), nullptr, 0,
-	    pmessage->get_id(), &rq_tags, &outvalues))
+	if (!exmdb_client::get_message_properties(plogon->get_dir(), nullptr,
+	    CP_ACP, pmessage->get_id(), &rq_tags, &outvalues))
 		return ecError;
 	auto msgflags = outvalues.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (msgflags != nullptr && *msgflags & MSGFLAG_SUBMITTED) {

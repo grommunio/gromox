@@ -204,9 +204,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		default: {
 			void *newval = nullptr;
-			if (!cu_get_property(MAPI_MESSAGE,
-			    message_id, 0, psqlite, tag, &newval) ||
-			    newval == nullptr ||
+			if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
+			    psqlite, tag, &newval) || newval == nullptr ||
 			    pmsgctnt->proplist.set(tag, newval) != 0)
 				return FALSE;
 			break;
@@ -237,9 +236,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			uint32_t tag = sqlite3_column_int64(pstmt1, 0);
 			void *newval = nullptr;
-			if (!cu_get_property(MAPI_MAILUSER,
-			    rcpt_id, 0, psqlite, tag, &newval) ||
-			    newval == nullptr ||
+			if (!cu_get_property(MAPI_MAILUSER, rcpt_id, CP_ACP,
+			    psqlite, tag, &newval) || newval == nullptr ||
 			    pproplist->set(tag, newval) != 0)
 				return FALSE;
 		}
@@ -305,8 +303,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			}
 			default: {
 				void *newval = nullptr;
-				if (!cu_get_property(MAPI_ATTACH,
-				    attachment_id, 0, psqlite, tag, &newval) ||
+				if (!cu_get_property(MAPI_ATTACH, attachment_id,
+				    CP_ACP, psqlite, tag, &newval) ||
 				    newval == nullptr ||
 				    pattachment->proplist.set(tag, newval) != 0)
 					return FALSE;
@@ -1503,8 +1501,8 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		exmdb_server::set_public_username(pinstance->username.c_str());
 	pdb.reset();
 	g_inside_flush_instance = true;
-	BOOL b_result = exmdb_server::write_message(dir, account, 0, folder_id,
-	                pmsgctnt, pe_result);
+	BOOL b_result = exmdb_server::write_message(dir, account, CP_ACP,
+	                folder_id, pmsgctnt, pe_result);
 	g_inside_flush_instance = false;
 	exmdb_server::set_public_username(nullptr);
 	return b_result;

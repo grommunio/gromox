@@ -72,7 +72,7 @@ static eid_t lookup_eid_by_name(const char *dir, const char *name)
 		static constexpr uint32_t qtags[] = {PidTagFolderId};
 		static constexpr PROPTAG_ARRAY qtaginfo = {std::size(qtags), deconst(qtags)};
 		tarray_set rowset;
-		if (!exmdb_client::query_table(dir, nullptr, 0, table_id,
+		if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id,
 		    &qtaginfo, 0, rowcount, &rowset)) {
 			mlog(LV_ERR, "query_table RPC rejected");
 			return 0;
@@ -116,7 +116,7 @@ static uint32_t delcount(eid_t fid)
 	static constexpr uint32_t tag_msgc = PR_DELETED_COUNT_TOTAL;
 	static constexpr PROPTAG_ARRAY tags_msgc = {1, deconst(&tag_msgc)};
 	TPROPVAL_ARRAY props;
-	if (!exmdb_client::get_folder_properties(g_storedir, 0, fid,
+	if (!exmdb_client::get_folder_properties(g_storedir, CP_ACP, fid,
 	    &tags_msgc, &props))
 		return 0;
 	auto c = props.get<const uint32_t>(tag_msgc);

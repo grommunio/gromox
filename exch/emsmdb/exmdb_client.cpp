@@ -231,7 +231,7 @@ BOOL check_message_owner(const char *dir, uint64_t message_id,
 	char tmp_name[UADDR_SIZE];
 	EMSAB_ENTRYID ab_entryid;
 	
-	if (!exmdb_client::get_message_property(dir, nullptr, 0,
+	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
 	    message_id, PR_CREATOR_ENTRYID, reinterpret_cast<void **>(&pbin)))
 		return FALSE;
 	if (NULL == pbin) {

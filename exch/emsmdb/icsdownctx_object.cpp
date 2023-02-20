@@ -352,7 +352,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				psk = &tmp_bin;
 			} else {
 				if (!exmdb_client::get_folder_property(dir,
-				    0, parent_fid, PR_SOURCE_KEY, &psk))
+				    CP_ACP, parent_fid, PR_SOURCE_KEY, &psk))
 					return FALSE;	
 				if (psk == nullptr) {
 					psk = cu_fid_to_sk(pctx->pstream->plogon, parent_fid);
@@ -894,7 +894,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	if (*pstatus & MSGSTATUS_IN_CONFLICT) {
 		if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
 			if (!exmdb_client::get_folder_property(dir,
-			    0, folder_id, PR_SOURCE_KEY, &pvalue))
+			    CP_ACP, folder_id, PR_SOURCE_KEY, &pvalue))
 				return FALSE;	
 			if (NULL == pvalue) {
 				pvalue = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
@@ -961,7 +961,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	pmsgctnt->proplist.ppropval = ppropval;
 	if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
 		if (!exmdb_client::get_folder_property(dir,
-		    0, folder_id, PR_SOURCE_KEY, &pvalue))
+		    CP_ACP, folder_id, PR_SOURCE_KEY, &pvalue))
 			return FALSE;	
 		if (NULL == pvalue) {
 			pvalue = cu_fid_to_sk(pctx->pstream->plogon, folder_id);

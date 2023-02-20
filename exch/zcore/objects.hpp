@@ -168,9 +168,8 @@ struct message_object {
 
 	store_object *pstore = nullptr;
 	BOOL b_new = false, b_writable = false, b_touched = false;
-	uint32_t cpid = 0;
 	uint64_t change_num = 0, message_id = 0, folder_id = 0;
-	uint32_t instance_id = 0;
+	uint32_t cpid = CP_ACP, instance_id = 0;
 	attachment_object *pembedding = nullptr;
 	uint32_t tag_access = 0;
 	std::shared_ptr<ics_state> pstate;

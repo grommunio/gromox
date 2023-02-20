@@ -63,7 +63,7 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		if (b_del && !(open_flags & OPEN_MODE_FLAG_OPENSOFTDELETE))
 			return ecNotFound;
 	}
-	if (!exmdb_client::get_folder_property(dir, 0, folder_id,
+	if (!exmdb_client::get_folder_property(dir, CP_ACP, folder_id,
 	    PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 		return ecError;
 	uint8_t type = *static_cast<uint32_t *>(pvalue);
@@ -100,7 +100,7 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 				tag_access |= MAPI_ACCESS_CREATE_HIERARCHY;
 		}
 	}
-	if (!exmdb_client::get_folder_property(dir, 0, folder_id,
+	if (!exmdb_client::get_folder_property(dir, CP_ACP, folder_id,
 	    PR_HAS_RULES, &pvalue))
 		return ecError;
 	*phas_rules = pvb_enabled(pvalue);
@@ -188,7 +188,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	    pparent->folder_id, folder_name, &folder_id))
 		return ecError;
 	if (0 != folder_id) {
-		if (!exmdb_client::get_folder_property(plogon->get_dir(), 0,
+		if (!exmdb_client::get_folder_property(plogon->get_dir(), CP_ACP,
 		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
 		if (open_existing == 0 ||
@@ -328,8 +328,8 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 			flags |= DELETE_HARD_DELETE;
 			b_hard = TRUE;
 		}
-		if (!exmdb_client::get_folder_property(plogon->get_dir(), 0,
-		    folder_id, PR_FOLDER_TYPE, &pvalue))
+		if (!exmdb_client::get_folder_property(plogon->get_dir(),
+		    CP_ACP, folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (NULL == pvalue) {
 			*ppartial_completion = 0;
@@ -594,7 +594,7 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 		return ecRootFolder;
 	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return ecError;
-	if (!exmdb_client::get_folder_property(dir, 0,
+	if (!exmdb_client::get_folder_property(dir, CP_ACP,
 	    folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
@@ -627,7 +627,7 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	propval_buff[2].pvalue = pbin_pcl;
 	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &nt_time;
-	if (!exmdb_client::set_folder_properties(dir, 0,
+	if (!exmdb_client::set_folder_properties(dir, CP_ACP,
 	    folder_id, &propvals, &problems))
 		return ecError;
 	return ecSuccess;
@@ -844,8 +844,8 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		tmp_proptags.pproptag = proptag_buff;
 		proptag_buff[0] = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		proptag_buff[1] = PR_READ;
-		if (!exmdb_client::get_message_properties(dir,
-		    nullptr, 0, pmessage_ids->pll[i], &tmp_proptags, &tmp_propvals))
+		if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
+		    pmessage_ids->pll[i], &tmp_proptags, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
 		auto pvalue = tmp_propvals.get<uint8_t>(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);

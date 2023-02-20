@@ -50,7 +50,8 @@ enum {
 	NP_STRBUF_SIZE = 36 + 11 + NP_NAMEBUF_SIZE, /* "GUID=<>,NAME=<>" */
 };
 
-enum {
+enum nlscp_t : int {
+	CP_ACP = 0,
 	CP_UTF16 = 1200,
 	CP_WINUNICODE = CP_UTF16,
 	CP_UTF16BE = 1201,

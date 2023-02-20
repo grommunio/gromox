@@ -933,8 +933,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					return false;
 			}
 			if (psorts->ccategories > 0) {
-				if (!cu_get_property(MAPI_MESSAGE,
-				    mid_val, 0, pdb->psqlite, PR_READ, &pvalue))
+				if (!cu_get_property(MAPI_MESSAGE, mid_val,
+				    CP_ACP, pdb->psqlite, PR_READ, &pvalue))
 					return false;
 				sqlite3_bind_int64(pstmt1, tag_count + 2,
 					pvb_disabled(pvalue) ? 0 : 1);

@@ -491,9 +491,9 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 		    folder_id, cpid, pdb->psqlite, pproperties, &tmp_problems))
 			return FALSE;
 		uint32_t next = 1, del_cnt = 0;
-		cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
+		cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
 			PR_INTERNET_ARTICLE_NUMBER_NEXT, &next, &b_result);
-		cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
+		cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
 			PR_DELETED_COUNT_TOTAL, &del_cnt, &b_result);
 	} else {
 		if (0 == tmp_fid) {
@@ -521,22 +521,22 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
 	uint32_t art = 0, hcn = 0;
 	if (!common_util_allocate_folder_art(pdb->psqlite, &art))
 		return FALSE;
-	cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
 		PR_INTERNET_ARTICLE_NUMBER, &art, &b_result);
 	auto nt_time = rop_util_current_nttime();
-	cu_set_property(MAPI_FOLDER, parent_id, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, parent_id, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
 		PR_HIERARCHY_CHANGE_NUM, &hcn, &b_result);
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
 		"proptag=%u", LLU{parent_id}, PR_HIERARCHY_CHANGE_NUM);
 	gx_sql_exec(pdb->psqlite, sql_string);
-	cu_set_property(MAPI_FOLDER, parent_id, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, parent_id, CP_ACP, pdb->psqlite,
 		PR_HIER_REV, &nt_time, &b_result);
-	cu_set_property(MAPI_FOLDER, folder_id, 0, pdb->psqlite,
+	cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
 		PR_HIER_REV, &nt_time, &b_result);
 	sql_transact.commit();
 	db_engine_notify_folder_creation(pdb, parent_id, folder_id);
@@ -600,7 +600,7 @@ BOOL exmdb_server::set_folder_properties(const char *dir, uint32_t cpid,
 			TPROPVAL_ARRAY values = {1, &pproperties->ppropval[i]};
 			PROBLEM_ARRAY problem;
 			if (!cu_set_properties(MAPI_FOLDER, PRIVATE_FID_INBOX,
-			    0, pdb->psqlite, &values, &problem))
+			    CP_ACP, pdb->psqlite, &values, &problem))
 				return FALSE;
 		}
 	}

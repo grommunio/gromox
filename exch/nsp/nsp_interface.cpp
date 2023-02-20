@@ -2647,7 +2647,7 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 	fd.close_rd();
 	try {
 		/* .abkt files are Unicode, transform them to 8-bit codepage */
-		tpldata = abkt_tobinary(abkt_tojson(tpldata, 0), codepage, false);
+		tpldata = abkt_tobinary(abkt_tojson(tpldata, CP_ACP), codepage, false);
 	} catch (const std::bad_alloc &) {
 		return ecServerOOM;
 	} catch (const std::runtime_error &) {

@@ -486,10 +486,12 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 
 	bool getFai = request.SyncScope && *request.SyncScope == "NormalAndAssociatedItems";
 	idset* pseen_fai = getFai? &syncState.seen_fai : nullptr;
-	if(!exmdb.get_content_sync(dir.c_str(), folder.folderId, username, &syncState.given, &syncState.seen, pseen_fai,
-	                          &syncState.read, 0, nullptr, TRUE, &fai_count, &fai_total, &normal_count, &normal_total,
-	                          &updated_mids, &chg_mids, &last_cn, &given_mids, &deleted_mids, &nolonger_mids, &read_mids,
-	                          &unread_mids, &last_readcn))
+	if (!exmdb.get_content_sync(dir.c_str(), folder.folderId, username,
+	    &syncState.given, &syncState.seen, pseen_fai, &syncState.read,
+	    CP_ACP, nullptr, TRUE, &fai_count, &fai_total, &normal_count,
+	    &normal_total, &updated_mids, &chg_mids, &last_cn, &given_mids,
+	    &deleted_mids, &nolonger_mids, &read_mids, &unread_mids,
+	    &last_readcn))
 		throw DispatchError(E3031);
 	syncState.update(given_mids, deleted_mids, last_cn);
 

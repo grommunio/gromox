@@ -19,7 +19,7 @@ struct emsmdb_info {
 	emsmdb_info(emsmdb_info &&) noexcept;
 	void operator=(emsmdb_info &&) noexcept = delete;
 
-	uint32_t cpid = 0, lcid_string = 0, lcid_sort = 0;
+	uint32_t cpid = CP_ACP, lcid_string = 0, lcid_sort = 0;
 	uint16_t client_version[4]{}, client_mode = 0;
 	std::unique_ptr<LOGMAP> plogmap;
 	std::atomic<int> upctx_ref{0};

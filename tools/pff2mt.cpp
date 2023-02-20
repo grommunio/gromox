@@ -1172,12 +1172,12 @@ static errno_t do_file(const char *filename) try
 			fprintf(stderr, "pff: \"%s\" not recognized as PFF\n", filename);
 		return ECANCELED;
 	}
-	int cpid = 0;
+	int cpid = CP_ACP;
 	if (libpff_file_get_ascii_codepage(file.get(), &cpid, &~unique_tie(err)) < 1)
 		/* ignore */;
-	if (cpid == 0)
+	if (cpid == CP_ACP)
 		g_ascii_charset = "cp850"; /* make encoding problems visible */
-	else if (cpid != 0)
+	else if (cpid != CP_ACP)
 		g_ascii_charset = cpid_to_cset(cpid);
 	if (g_ascii_charset == nullptr) {
 		fprintf(stderr, "pff: no charset for cpid %d\n", cpid);

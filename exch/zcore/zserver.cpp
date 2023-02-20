@@ -351,7 +351,7 @@ static void zs_notification_proc(const char *dir,
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = PR_MESSAGE_CLASS;
 		proptag_buff[1] = PR_MESSAGE_FLAGS;
-		if (!exmdb_client::get_message_properties(dir, nullptr, 0,
+		if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
 		    message_id, &proptags, &propvals))
 			return;
 		auto str = propvals.get<char>(PR_MESSAGE_CLASS);
@@ -990,7 +990,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		if (LOC_TYPE_PRIVATE_MESSAGE == loc_type ||
 			LOC_TYPE_PUBLIC_MESSAGE == loc_type) {
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
-			    nullptr, 0, message_id, PidTagParentFolderId,
+			    nullptr, CP_ACP, message_id, PidTagParentFolderId,
 			    &pvalue) || pvalue == nullptr)
 				return ecError;
 			folder_id = *static_cast<uint64_t *>(pvalue);
@@ -1033,7 +1033,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			if (b_del && !(flags & SHOW_SOFT_DELETES))
 				return ecNotFound;
 		}
-		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
+		if (!exmdb_client_get_folder_property(pstore->get_dir(), CP_ACP,
 		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
 		auto folder_type = *static_cast<uint32_t *>(pvalue);
@@ -1755,7 +1755,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 		proptag_buff[0] = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		proptag_buff[1] = PR_READ;
 		if (!exmdb_client::get_message_properties(pstore->get_dir(),
-		    nullptr, 0, ids.pids[i], &tmp_proptags, &tmp_propvals))
+		    nullptr, CP_ACP, ids.pids[i], &tmp_proptags, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
@@ -1933,7 +1933,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		res_prop.proptag = PR_READ;
 		res_prop.propval.proptag = PR_READ;
 		res_prop.propval.pvalue = deconst(&fake_false);
-		if (!exmdb_client::load_content_table(pstore->get_dir(), 0,
+		if (!exmdb_client::load_content_table(pstore->get_dir(), CP_ACP,
 		    pfolder->folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 		    &restriction, nullptr, &table_id, &row_count))
 			return ecError;
@@ -1941,7 +1941,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		proptags.pproptag = &tmp_proptag;
 		tmp_proptag = PR_ENTRYID;
 		if (!exmdb_client::query_table(pstore->get_dir(), username,
-		    0, table_id, &proptags, 0, row_count, &tmp_set)) {
+		    CP_ACP, table_id, &proptags, 0, row_count, &tmp_set)) {
 			exmdb_client::unload_table(pstore->get_dir(), table_id);
 			return ecError;
 		}
@@ -1971,7 +1971,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		b_changed = FALSE;
 		if (flags == CLEAR_READ_FLAG) {
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
-			    username, 0, message_id, PR_READ, &pvalue))
+			    username, CP_ACP, message_id, PR_READ, &pvalue))
 				return ecError;
 			if (pvb_enabled(pvalue)) {
 				tmp_byte = 0;
@@ -1979,13 +1979,13 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 			}
 		} else {
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
-			    username, 0, message_id, PR_READ, &pvalue))
+			    username, CP_ACP, message_id, PR_READ, &pvalue))
 				return ecError;
 			if (pvb_disabled(pvalue)) {
 				tmp_byte = 1;
 				b_changed = TRUE;
 				if (!exmdb_client_get_message_property(pstore->get_dir(),
-				    username, 0, message_id,
+				    username, CP_ACP, message_id,
 				    PR_READ_RECEIPT_REQUESTED, &pvalue))
 					return ecError;
 				if (pvb_enabled(pvalue))
@@ -2009,7 +2009,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 			propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 			propval_buff[1].pvalue = deconst(&fake_false);
 			exmdb_client::set_message_properties(pstore->get_dir(), username,
-				0, message_id, &propvals, &problems);
+				CP_ACP, message_id, &propvals, &problems);
 		}
 	}
 	return ecSuccess;
@@ -2059,7 +2059,7 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 	    pparent->folder_id, folder_name, &folder_id))
 		return ecError;
 	if (0 != folder_id) {
-		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
+		if (!exmdb_client_get_folder_property(pstore->get_dir(), CP_ACP,
 		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
 		if (!(flags & OPEN_IF_EXISTS) ||
@@ -2195,7 +2195,7 @@ ec_error_t zs_deletefolder(GUID hsession,
 	BOOL b_sub = (flags & DEL_FOLDERS) ? TRUE : false;
 	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	if (pstore->b_private) {
-		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
+		if (!exmdb_client_get_folder_property(pstore->get_dir(), CP_ACP,
 		    folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (pvalue == nullptr)
@@ -4354,7 +4354,7 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 	if (!b_new) {
 		void *pvalue = nullptr;
 		if (!exmdb_client_get_message_property(pstore->get_dir(),
-		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
+		    nullptr, CP_ACP, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
 		bool orig_is_fai = pvb_enabled(pvalue);
 		if (b_fai != orig_is_fai)
@@ -4457,7 +4457,7 @@ ec_error_t zs_importfolder(GUID hsession,
 				return ecAccessDenied;
 		}
 		parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
-		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
+		if (!exmdb_client_get_folder_property(pstore->get_dir(), CP_ACP,
 		    parent_id1, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (pvalue == nullptr)
@@ -4544,8 +4544,8 @@ ec_error_t zs_importfolder(GUID hsession,
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
 	}
-	if (!exmdb_client_get_folder_property(pstore->get_dir(), 0, folder_id,
-	    PidTagParentFolderId, &pvalue) || pvalue == nullptr)
+	if (!exmdb_client_get_folder_property(pstore->get_dir(), CP_ACP,
+	    folder_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
 	if (parent_id != parent_id1) {
@@ -4708,7 +4708,7 @@ ec_error_t zs_importdeletion(GUID hsession,
 		} else {
 			if (pstore->b_private) {
 				if (!exmdb_client_get_folder_property(pstore->get_dir(),
-				    0, eid, PR_FOLDER_TYPE, &pvalue))
+				    CP_ACP, eid, PR_FOLDER_TYPE, &pvalue))
 					return ecError;
 				if (pvalue == nullptr)
 					return ecSuccess;
@@ -4787,7 +4787,7 @@ ec_error_t zs_importreadstates(GUID hsession,
 		proptag_buff[0] = PR_ASSOCIATED;
 		proptag_buff[1] = PR_READ;
 		if (!exmdb_client::get_message_properties(pstore->get_dir(),
-		    nullptr, 0, message_id, &tmp_proptags, &tmp_propvals))
+		    nullptr, CP_ACP, message_id, &tmp_proptags, &tmp_propvals))
 			return ecError;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 		if (flag != nullptr && *flag != 0)

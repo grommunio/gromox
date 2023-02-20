@@ -242,7 +242,8 @@ TPROPVAL_ARRAY EWSContext::getFolderProps(const sFolderSpec& folder, const PROPT
 {
 	std::string targetDir = getDir(folder);
 	TPROPVAL_ARRAY result;
-	if(!plugin.exmdb.get_folder_properties(targetDir.c_str(), 0, folder.folderId, &props, &result))
+	if (!plugin.exmdb.get_folder_properties(targetDir.c_str(), CP_ACP,
+	    folder.folderId, &props, &result))
 		throw DispatchError(E3023);
 	return result;
 }
@@ -278,7 +279,8 @@ TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) 
 TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, const PROPTAG_ARRAY& props) const
 {
 	TPROPVAL_ARRAY result;
-	if(!plugin.exmdb.get_message_properties(dir.c_str(), auth_info.username, 0, mid, &props, &result))
+	if (!plugin.exmdb.get_message_properties(dir.c_str(), auth_info.username,
+	    CP_ACP, mid, &props, &result))
 		throw DispatchError(E3025);
 	return result;
 }

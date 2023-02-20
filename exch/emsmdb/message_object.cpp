@@ -174,7 +174,7 @@ ec_error_t message_object::check_original_touched() const
 	}
 	if (0 != pmessage->message_id) {
 		if (!exmdb_client::get_message_property(pmessage->plogon->get_dir(),
-		    nullptr, 0, pmessage->message_id, PidTagChangeNumber,
+		    nullptr, CP_ACP, pmessage->message_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)))
 			return ecError;
 	} else {
@@ -363,7 +363,7 @@ static ec_error_t message_object_save2(message_object *pmessage, bool b_fai,
 	    pbin_pcl == nullptr)
 		return ecRpcFailed;
 	if (!exmdb_client::get_message_property(dir,
-	    nullptr, 0, pmessage->message_id, PR_PREDECESSOR_CHANGE_LIST,
+	    nullptr, CP_ACP, pmessage->message_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl1)) ||
 	    pbin_pcl1 == nullptr)
 		return ecRpcFailed;
@@ -376,7 +376,7 @@ static ec_error_t message_object_save2(message_object *pmessage, bool b_fai,
 
 	void *rv;
 	if (!exmdb_client::get_folder_property(dir,
-	    0, pmessage->folder_id, PR_RESOLVE_METHOD, &rv))
+	    CP_ACP, pmessage->folder_id, PR_RESOLVE_METHOD, &rv))
 		return ecRpcFailed;
 	uint32_t resolve_method = rv == nullptr ? RESOLVE_METHOD_DEFAULT :
 	                          *static_cast<uint32_t *>(rv);
@@ -1034,7 +1034,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
 		if (!exmdb_client::get_folder_property(pmessage->plogon->get_dir(),
-		    0, pmessage->folder_id, PR_SOURCE_KEY, ppvalue))
+		    CP_ACP, pmessage->folder_id, PR_SOURCE_KEY, ppvalue))
 			return FALSE;	
 		if (*ppvalue != nullptr)
 			return TRUE;
@@ -1523,7 +1523,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED, &result))
 				return FALSE;	
 			if (exmdb_client::get_message_property(dir,
-			    username, 0, pmessage->message_id,
+			    username, CP_ACP, pmessage->message_id,
 			    PR_READ_RECEIPT_REQUESTED, &pvalue) &&
 			    pvb_enabled(pvalue) &&
 			    !exmdb_client::remove_message_property(dir,
@@ -1536,7 +1536,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			    &result))
 				return FALSE;	
 			if (exmdb_client::get_message_property(dir,
-			    username, 0, pmessage->message_id,
+			    username, CP_ACP, pmessage->message_id,
 			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &pvalue) &&
 			    pvb_enabled(pvalue) &&
 			    !exmdb_client::remove_message_property(dir,
@@ -1595,6 +1595,6 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	exmdb_client::set_instance_properties(dir,
 		pmessage->instance_id, &propvals, &problems);
 	exmdb_client::set_message_properties(dir,
-		username, 0, pmessage->message_id, &propvals, &problems);
+		username, CP_ACP, pmessage->message_id, &propvals, &problems);
 	return TRUE;
 }

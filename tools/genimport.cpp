@@ -601,7 +601,8 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	}
 	if (dn == nullptr)
 		dn = "";
-	if (!exmdb_client::create_folder_by_properties(g_storedir, 0, props, new_fld_id)) {
+	if (!exmdb_client::create_folder_by_properties(g_storedir, CP_ACP,
+	    props, new_fld_id)) {
 		fprintf(stderr, "exm: create_folder_by_properties \"%s\" RPC failed\n", dn);
 		return -EIO;
 	}
@@ -634,7 +635,7 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct)
 		/* ignore */;
 	uint32_t r32 = 0;
 	if (!exmdb_client::deliver_message(g_storedir, "none@none", target,
-	    0, ct, "", &r32)) {
+	    CP_ACP, ct, "", &r32)) {
 		fprintf(stderr, "exm: deliver_message RPC failed: code %u\n",
 		        r32);
 		return -EIO;

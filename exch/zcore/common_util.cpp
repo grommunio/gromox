@@ -1327,7 +1327,7 @@ BOOL common_util_send_message(store_object *pstore,
 	
 	auto pinfo = zs_get_info();
 	uint32_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
-	if (!exmdb_client_get_message_property(pstore->get_dir(), nullptr, 0,
+	if (!exmdb_client_get_message_property(pstore->get_dir(), nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return FALSE;
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
@@ -1814,15 +1814,15 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	PROPTAG_ARRAY proptags;
 	EID_ARRAY *pmessage_ids;
 	
-	if (!exmdb_client::load_content_table(pstore->get_dir(), 0, folder_id,
-	    username, TABLE_FLAG_NONOTIFICATIONS,
+	if (!exmdb_client::load_content_table(pstore->get_dir(), CP_ACP,
+	    folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 	    nullptr, nullptr, &table_id, &row_count))
 		return NULL;	
 	uint32_t tmp_proptag = PidTagMid;
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, 0, table_id,
-	    &proptags, 0, row_count, &tmp_set))
+	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, CP_ACP,
+	    table_id, &proptags, 0, row_count, &tmp_set))
 		return NULL;	
 	exmdb_client::unload_table(pstore->get_dir(), table_id);
 	pmessage_ids = cu_alloc<EID_ARRAY>();
@@ -1857,7 +1857,7 @@ ec_error_t cu_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	if (!exmdb_client::get_folder_all_proptags(pstore->get_dir(),
 	    folder_id, &tmp_proptags))
 		return ecError;
-	if (!exmdb_client::get_folder_properties(pstore->get_dir(), 0,
+	if (!exmdb_client::get_folder_properties(pstore->get_dir(), CP_ACP,
 	    folder_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
 	if (NULL != new_name) {
@@ -1895,8 +1895,8 @@ ec_error_t cu_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	uint32_t tmp_proptag = PidTagFolderId;
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &tmp_proptag;
-	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, 0, table_id,
-	    &tmp_proptags, 0, row_count, &tmp_set))
+	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, CP_ACP,
+	    table_id, &tmp_proptags, 0, row_count, &tmp_set))
 		return ecError;
 	exmdb_client::unload_table(pstore->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
@@ -1920,7 +1920,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	if (exmdb_client_get_message_property(pstore->get_dir(), nullptr, 0,
+	if (exmdb_client_get_message_property(pstore->get_dir(), nullptr, CP_ACP,
 	    message_id, PidTagMidString, &pvalue) && pvalue != nullptr) try {
 		auto eml_path = pstore->get_dir() + "/eml/"s +
 		                static_cast<const char *>(pvalue);

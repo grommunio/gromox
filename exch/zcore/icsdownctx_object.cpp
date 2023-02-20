@@ -256,7 +256,7 @@ BOOL icsdownctx_object::sync_message_change(BOOL *pb_found, BOOL *pb_new,
 		message_id = pctx->pchg_eids->pids[pctx->eid_pos];
 		pctx->eid_pos ++;
 		if (!exmdb_client_get_message_property(pctx->pstore->get_dir(),
-		    nullptr, 0, message_id, PidTagChangeNumber, &pvalue))
+		    nullptr, CP_ACP, message_id, PidTagChangeNumber, &pvalue))
 			return FALSE;	
 	} while (NULL == pvalue);
 	*pb_new = !eid_array_check(pctx->pupdated_eids, message_id) ? TRUE : false;
@@ -320,7 +320,7 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	proptag_buff[3] = PR_ATTR_HIDDEN;
 	proptag_buff[4] = PR_EXTENDED_FOLDER_FLAGS;
 	proptag_buff[5] = PidTagChangeNumber;
-	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), 0,
+	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), CP_ACP,
 	    fid, &proptags, &tmp_propvals))
 		return FALSE;
 	auto lnum = tmp_propvals.get<const uint64_t>(PidTagChangeNumber);

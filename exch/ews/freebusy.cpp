@@ -433,7 +433,8 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 	RESTRICTION rst_26          = {RES_OR, {&rst_25}};
 
 	uint32_t table_id = 0, row_count = 0;
-	if (!exmdb_client.load_content_table(dir, 0, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
+	if (!exmdb_client.load_content_table(dir, CP_ACP,
+	    rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
 	    nullptr, TABLE_FLAG_NONOTIFICATIONS, &rst_26, nullptr, &table_id, &row_count))
 		throw DispatchError(E3019);
 	auto cl_0 = make_scope_exit([&]() {
@@ -447,8 +448,8 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 	};
 	const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	TARRAY_SET rows;
-	if (!exmdb_client.query_table(dir, nullptr, 0, table_id, &proptags, 0,
-	    row_count, &rows))
+	if (!exmdb_client.query_table(dir, nullptr, CP_ACP, table_id,
+	    &proptags, 0, row_count, &rows))
 		throw DispatchError(E3020);
 	auto &cal_events = CalendarEventArray.emplace();
 	cal_events.reserve(rows.count);

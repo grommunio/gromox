@@ -220,7 +220,7 @@ const char *cpid_to_cset(uint32_t id)
 uint32_t cset_to_cpid(const char *s)
 {
 	auto i = g_cpname2id_map.find(s);
-	return i != g_cpname2id_map.cend() ? i->second : 0;
+	return i != g_cpname2id_map.cend() ? i->second : CP_ACP;
 }
 
 const char *lcid_to_ltag(uint32_t id)

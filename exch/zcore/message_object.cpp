@@ -109,7 +109,7 @@ BOOL message_object::check_original_touched(BOOL *pb_touched)
 	}
 	if (0 != pmessage->message_id) {
 		if (!exmdb_client_get_message_property(pmessage->pstore->get_dir(),
-		    nullptr, 0, pmessage->message_id, PidTagChangeNumber,
+		    nullptr, CP_ACP, pmessage->message_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)))
 			return FALSE;
 	} else {
@@ -1121,7 +1121,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED,
 			    &result))
 				return FALSE;	
-			if (exmdb_client_get_message_property(dir, username, 0,
+			if (exmdb_client_get_message_property(dir, username, CP_ACP,
 			    pmessage->message_id, PR_READ_RECEIPT_REQUESTED,
 			    &pvalue) && pvb_enabled(pvalue) &&
 			    !exmdb_client_remove_message_property(dir,
@@ -1134,7 +1134,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			    pmessage->instance_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED,
 			    &result))
 				return FALSE;	
-			if (exmdb_client_get_message_property(dir, username, 0,
+			if (exmdb_client_get_message_property(dir, username, CP_ACP,
 			    pmessage->message_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED,
 			    &pvalue) && pvb_enabled(pvalue) &&
 			    !exmdb_client_remove_message_property(dir,
@@ -1188,7 +1188,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		exmdb_client::set_instance_properties(dir,
 			pmessage->instance_id, &propvals, &problems);
 		exmdb_client::set_message_properties(dir, username,
-			0, pmessage->message_id, &propvals, &problems);
+			CP_ACP, pmessage->message_id, &propvals, &problems);
 	}
 	return TRUE;
 }

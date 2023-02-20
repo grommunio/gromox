@@ -406,7 +406,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (!exmdb_client::get_store_property(plogon->dir, 0,
+		if (!exmdb_client::get_store_property(plogon->dir, CP_ACP,
 		    PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
@@ -419,7 +419,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (!exmdb_client::get_store_property(plogon->dir, 0,
+		if (!exmdb_client::get_store_property(plogon->dir, CP_ACP,
 		    PR_ASSOC_MESSAGE_SIZE_EXTENDED, &pvalue) || pvalue == nullptr)
 			return FALSE;	
 		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(INT32_MAX));
@@ -431,7 +431,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (!exmdb_client::get_store_property(plogon->dir, 0,
+		if (!exmdb_client::get_store_property(plogon->dir, CP_ACP,
 		    PR_NORMAL_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	

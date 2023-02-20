@@ -82,7 +82,7 @@ struct instance_node {
 	void release();
 
 	uint32_t instance_id = 0, parent_id = 0, folder_id = 0, last_id = 0;
-	uint32_t cpid = 0;
+	uint32_t cpid = CP_ACP;
 	enum instance_type type = instance_type::message;
 	BOOL b_new = false;
 	uint8_t change_mask{};

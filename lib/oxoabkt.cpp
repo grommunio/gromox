@@ -118,7 +118,7 @@ static void abkt_read_row(lb_reader &bin, Json::Value &jrow,
 	}
 	std::string text;
 	if (cttype_uses_label(ct_type) || cttype_uses_pattern(ct_type)) {
-		if (cpid == 0) {
+		if (cpid == CP_ACP) {
 			text = bin.preadustr(ulString);
 		} else {
 			text = bin.preadstr(ulString);
@@ -178,7 +178,7 @@ static void abkt_write_row(Json::Value &jrow, abktaux &aux, lb_writer &bin, unsi
 	auto field = cttype_uses_pattern(ct_type) ? "pattern" : "label";
 	std::string text = jrow[field].asString();
 	bin.w4(aux.offset);
-	if (cpid != 0) {
+	if (cpid != CP_ACP) {
 		auto cset = cpid_to_cset(cpid);
 		if (cset != nullptr)
 			text = iconvtext(text.data(), text.size(), "UTF-8", cset);

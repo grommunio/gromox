@@ -80,7 +80,8 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_STORE_RECORD_KEY;
 	proptag_buff[1] = PR_OOF_STATE;
-	if (!exmdb_client::get_store_properties(maildir, 0, &proptags, &propvals))
+	if (!exmdb_client::get_store_properties(maildir, CP_ACP,
+	    &proptags, &propvals))
 		return ecError;
 	auto bin = propvals.get<const BINARY>(PR_STORE_RECORD_KEY);
 	if (bin == nullptr)
@@ -199,7 +200,8 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	replguid->time_low = domain_id;
 	memset(pper_user_guid, 0, sizeof(GUID));
 	
-	if (!exmdb_client::get_store_property(homedir, 0, PR_STORE_RECORD_KEY, &pvalue))
+	if (!exmdb_client::get_store_property(homedir, CP_ACP,
+	    PR_STORE_RECORD_KEY, &pvalue))
 		return ecError;
 	if (NULL == pvalue) {
 		return ecError;
@@ -262,8 +264,8 @@ ec_error_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 	if (!plogon->is_private())
 		return ecNotSupported;
 	if (0 != folder_id) {
-		if (!exmdb_client::get_folder_property(plogon->get_dir(), 0,
-		    folder_id, PR_FOLDER_TYPE, &pvalue))
+		if (!exmdb_client::get_folder_property(plogon->get_dir(),
+		    CP_ACP, folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (NULL == pvalue) {
 			return ecNotFound;

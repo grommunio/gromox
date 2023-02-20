@@ -213,7 +213,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		return TRUE;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    0, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
+		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
 		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
@@ -237,7 +237,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			}
 		}
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    0, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
+		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
 		*ppvalue = cu_fid_to_sk(pfolder->pstore,
@@ -334,7 +334,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			return FALSE;	
 		}
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_REM_ONLINE_ENTRYID, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -350,7 +350,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			return FALSE;	
 		}
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS, &pvalue))
 			return FALSE;
 		if (NULL != pvalue) {
@@ -410,7 +410,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			return FALSE;	
 		}
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS_EX, &pvalue))
 			return FALSE;
 		if (NULL != pvalue) {
@@ -471,7 +471,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			return FALSE;	
 		}
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_FREEBUSY_ENTRYIDS, &pvalue))
 			return FALSE;
 		if (NULL != pvalue) {
@@ -588,7 +588,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &change_num;
 	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
+	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
@@ -647,7 +647,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	if (!exmdb_client::allocate_cn(pfolder->pstore->get_dir(), &change_num))
 		return TRUE;
 	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
+	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
@@ -668,7 +668,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	propval_buff[2].pvalue = pbin_pcl;
 	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &last_time;
-	exmdb_client::set_folder_properties(pfolder->pstore->get_dir(), 0,
+	exmdb_client::set_folder_properties(pfolder->pstore->get_dir(), CP_ACP,
 		pfolder->folder_id, &tmp_propvals, &tmp_problems);
 	return TRUE;
 }
@@ -692,7 +692,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	}
 	proptags.count = 2;
 	proptags.pproptag = deconst(proptag_buff);
-	if (!exmdb_client::query_table(dir, NULL, 0,
+	if (!exmdb_client::query_table(dir, nullptr, CP_ACP,
 		table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client::unload_table(dir, table_id);
 		return FALSE;
@@ -738,7 +738,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 	}
 	proptags.count = 2;
 	proptags.pproptag = deconst(proptag_buff);
-	if (!exmdb_client::query_table(dir, NULL, 0,
+	if (!exmdb_client::query_table(dir, nullptr, CP_ACP,
 		table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client::unload_table(dir, table_id);
 		return FALSE;
