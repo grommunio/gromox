@@ -76,15 +76,18 @@ std::string b64encode(const void* data, size_t len)
  *
  * @return    Base64 encoded string
  */
-std::string b64decode(const char* data, size_t len)
+std::vector<uint8_t> b64decode(const char* data, size_t len)
 {
-	std::string out(len*3/4+1, '\0');
+	std::vector<uint8_t> out(len*3/4+1, 0);
 	size_t outlen;
-	if(decode64(data, len, out.data(), out.length(), &outlen))
+	if(decode64(data, len, out.data(), out.size(), &outlen))
 		throw DeserializationError("Invalid base64 string");
 	out.resize(outlen);
 	return out;
 }
+
+inline gromox::time_point nttime_to_time_point(uint64_t nttime)
+{return gromox::time_point::clock::from_time_t(rop_util_nttime_to_unix(nttime));}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -124,13 +127,13 @@ sBase64Binary::sBase64Binary(const XMLElement* xml)
 	const char* data = xml->GetText();
 	if(!data)
 		throw DeserializationError("Element '"s+xml->Name()+"'is empty");
-	assign(b64decode(data, strlen(data)));
+	std::vector<uint8_t>::operator=(b64decode(data, strlen(data)));
 }
 
 /**
  * @brief     Decode Base64 encoded data from XML attribute
  */
-sBase64Binary::sBase64Binary(const XMLAttribute* xml) : std::string(b64decode(xml->Value(), strlen(xml->Value())))
+sBase64Binary::sBase64Binary(const XMLAttribute* xml) : std::vector<uint8_t>(b64decode(xml->Value(), strlen(xml->Value())))
 {}
 
 /**
@@ -143,7 +146,7 @@ sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 	if(PROP_TYPE(tp.proptag) != PT_BINARY)
 		throw DispatchError("Can only convert binary properties to Base64Binary");
 	const BINARY* bin = static_cast<const BINARY*>(tp.pvalue);
-	assign(bin->pc, bin->cb);
+	assign(bin->pb, bin->pb+bin->cb);
 }
 
 /**
@@ -318,7 +321,10 @@ sFolderSpec& sFolderSpec::normalize()
  * Initializes given and seen member for deserialization
  */
 sSyncState::sSyncState() :
-    given(false, REPL_TYPE_ID), seen(false, REPL_TYPE_ID)
+    given(false, REPL_TYPE_ID),
+    seen(false, REPL_TYPE_ID),
+    read(false, REPL_TYPE_ID),
+    seen_fai(false, REPL_TYPE_ID)
 {}
 
 /**
@@ -335,6 +341,8 @@ void sSyncState::init(const std::string& data64)
 
 	seen.clear();
 	given.clear();
+	read.clear();
+	seen_fai.clear();
 	if(data.size() <= 16)
 		return;
 	if(data.size() > std::numeric_limits<uint32_t>::max())
@@ -346,14 +354,20 @@ void sSyncState::init(const std::string& data64)
 	{
 		switch (propval->proptag) {
 		case MetaTagIdsetGiven1:
-			if(!given.deserialize(static_cast<BINARY *>(propval->pvalue)))
-				throw InputError("Failed to deserialize idset");
-			if(!given.convert())
-				throw InputError("Failed to convert idset");
+			if(!given.deserialize(static_cast<BINARY *>(propval->pvalue)) || !given.convert())
+				throw InputError("Failed to deserialize given idset");
 			break;
 		case MetaTagCnsetSeen:
 			if(!seen.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen.convert())
-				throw InputError("Failed to deserialize cnset");
+				throw InputError("Failed to deserialize seen cnset");
+			break;
+		case MetaTagCnsetRead:
+			if(!read.deserialize(static_cast<BINARY *>(propval->pvalue)) || !read.convert())
+				throw InputError("Failed to deserialize read cnset");
+			break;
+		case MetaTagCnsetSeenFAI:
+			if(!seen_fai.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen_fai.convert())
+				throw InputError("Failed to deserialize seen fai cnset");
 			break;
 		}
 	}
@@ -365,10 +379,12 @@ void sSyncState::init(const std::string& data64)
  * @param     given_fids  Ids marked as given
  * @param     lastCn      Change number marked as seen
  */
-void sSyncState::update(const EID_ARRAY& given_fids, uint64_t lastCn)
+void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fids, uint64_t lastCn)
 {
 	seen.clear();
 	given.convert();
+	for(uint64_t* pid = deleted_fids.pids; pid < deleted_fids.pids+deleted_fids.count; ++pid)
+		given.remove(*pid);
 	for(uint64_t* pid = given_fids.pids; pid < given_fids.pids+given_fids.count; ++pid)
 		if(!given.append(*pid))
 			throw DispatchError("Failed to generated sync state idset");
@@ -376,7 +392,6 @@ void sSyncState::update(const EID_ARRAY& given_fids, uint64_t lastCn)
 	if(lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
 		throw DispatchError("Failed to generate sync state cnset");
 }
-
 /**
  * @brief     Serialize sync state
  *
@@ -389,10 +404,20 @@ std::string sSyncState::serialize()
 		throw DispatchError("Out of memory");
 	std::unique_ptr<BINARY, Cleaner> ser(given.serialize());
 	if (!ser || pproplist->set(MetaTagIdsetGiven1, ser.get()))
-		throw DispatchError("Failed to generate sync state idset data");
+		throw DispatchError("Failed to generate sync state given idset data");
 	ser.reset(seen.serialize());
 	if (!ser || pproplist->set(MetaTagCnsetSeen, ser.get()))
-		throw DispatchError("Failed to generate sync state cnset data");
+		throw DispatchError("Failed to generate sync state seen cnset data");
+	ser.reset();
+	if(!seen_fai.empty() && !read.empty())
+	{
+		ser.reset(seen_fai.serialize());
+		if (!ser || pproplist->set(MetaTagCnsetSeenFAI, ser.get()))
+			throw DispatchError("Failed to generate sync state seen fai cnset data");
+		ser.reset(read.serialize());
+		if (!ser || pproplist->set(MetaTagCnsetRead, ser.get()))
+			throw DispatchError("Failed to generate sync state read cnset data");
+	}
 	ser.reset();
 
 	EXT_PUSH stateBuffer;
@@ -438,9 +463,14 @@ void sTimePoint::serialize(XMLElement* xml) const
 	if(offset.count() == 0)
 		xml->SetText(fmt::format("{:%FT%T}.{:06}Z", t, fsec).c_str());
 	else
-		xml->SetText(fmt::format("{:%FT%T}.{:06}{:+03}{:02}",
-			t, fsec, off / 60, abs(off) % 60).c_str());
+		xml->SetText(fmt::format("{:%FT%T}.{:06}{:+03}{:02}", t, fsec, off / 60, abs(off) % 60).c_str());
 }
+
+/**
+ * @brief      Generate time point from NT timestamp
+ */
+sTimePoint sTimePoint::fromNT(uint64_t timestamp)
+{return gromox::time_point::clock::from_time_t(rop_util_nttime_to_unix(timestamp));}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Types implementation
@@ -448,29 +478,21 @@ void sTimePoint::serialize(XMLElement* xml) const
 /**
  * @brief     Convert propvals to structured folder information
  *
- * If `filter` is not empty, all proptags not contained are ignored.
- * `filter` must be sorted in ascending order.
- *
- * @param     folder          Folder specification
  * @param     folderProps     folder property values
- * @param     filter          Sorted array of properties to consider
  */
-tBaseFolderType::tBaseFolderType(const TPROPVAL_ARRAY& folderProps, const TagFilter& filter)
+tBaseFolderType::tBaseFolderType(const TPROPVAL_ARRAY& folderProps)
 {
 	tFolderId& fId = FolderId.emplace();
 	for(const TAGGED_PROPVAL* tp = folderProps.ppropval; tp < folderProps.ppropval+folderProps.count; ++tp)
 	{
-		if(!filter.empty() && !std::binary_search(filter.begin(), filter.end(), tp->proptag))
-			continue;
+		//if(!filter.empty() && !std::binary_search(filter.begin(), filter.end(), tp->proptag))
+		//	continue;
 		switch(tp->proptag)
 		{
 		case PR_CONTENT_UNREAD:
 			break;
-		case PR_CHANGE_KEY: {
-			const BINARY* ck = reinterpret_cast<const BINARY*>(tp->pvalue);
-			fId.ChangeKey = b64encode(ck->pb, ck->cb);
-			break;
-		}
+		case PR_CHANGE_KEY:
+			fId.ChangeKey.emplace(*tp); break;
 		case PR_CONTAINER_CLASS:
 			FolderClass = reinterpret_cast<const char*>(tp->pvalue); break;
 		case PR_CONTENT_COUNT:
@@ -481,13 +503,10 @@ tBaseFolderType::tBaseFolderType(const TPROPVAL_ARRAY& folderProps, const TagFil
 			fId.Id = *tp; break;
 		case PR_FOLDER_CHILD_COUNT:
 			ChildFolderCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
-		case PR_PARENT_ENTRYID: {
-			tFolderId& pf = ParentFolderId.emplace();
-			pf.Id = *tp;
-			break;
-		}
+		case PR_PARENT_ENTRYID:
+			ParentFolderId.emplace().Id = *tp; break;
 		default:
-			ExtendendProperty.emplace_back(*tp);
+			ExtendedProperty.emplace_back(*tp);
 		}
 	}
 }
@@ -500,7 +519,7 @@ void tBaseFolderType::serialize(XMLElement* xml) const
 	XMLDUMP(DisplayName);
 	XMLDUMP(TotalCount);
 	XMLDUMP(ChildFolderCount);
-	for(const tExtendedProperty& ep : ExtendendProperty)
+	for(const tExtendedProperty& ep : ExtendedProperty)
 		toXMLNode(xml, "ExtendedProperty", ep);
 }
 
@@ -509,15 +528,13 @@ void tBaseFolderType::serialize(XMLElement* xml) const
  *
  * Automatically uses information from the tags to fill in folder id and type.
  *
- * @param     target          User or domain name the folder belongs to
  * @param     folderProps     Folder properties
- * @param     filter          Property filter, @see tBaseFolderType::tBaseFolderType
  *
  * @return    Variant containing the folder information struct
  */
-sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps, const TagFilter& filter)
+sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps)
 {
-	enum Type :uint8_t {NORMAL, CALENDAR, TASKS, CONTACTS, SEARCH};
+	enum Type : uint8_t {NORMAL, CALENDAR, TASKS, CONTACTS, SEARCH};
 	const char* frClass = folderProps.get<const char>(PR_CONTAINER_CLASS);
 	Type folderType = NORMAL;
 	if(frClass)
@@ -532,16 +549,32 @@ sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps, const TagFilt
 	switch(folderType)
 	{
 	case CALENDAR:
-		return tCalendarFolderType(folderProps, filter);
+		return tCalendarFolderType(folderProps);
 	case CONTACTS:
-		return tContactsFolderType(folderProps, filter);
+		return tContactsFolderType(folderProps);
 	case SEARCH:
-		return tSearchFolderType(folderProps, filter);
+		return tSearchFolderType(folderProps);
 	case TASKS:
-		return tTasksFolderType(folderProps, filter);
+		return tTasksFolderType(folderProps);
 	default:
-		return tFolderType(folderProps, filter);
+		return tFolderType(folderProps);
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tBaseItemId::tBaseItemId(const XMLElement* xml) :
+    XMLINITA(Id), XMLINITA(ChangeKey)
+{}
+
+tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBase64Binary>& chKey) :
+    Id(fEntryID), ChangeKey(chKey)
+{}
+
+void tBaseItemId::serialize(XMLElement* xml) const
+{
+	XMLDUMPA(Id);
+	XMLDUMPA(ChangeKey);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -570,6 +603,11 @@ void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+tDistinguishedFolderId::tDistinguishedFolderId(const std::string_view& name) :
+    Id(name)
+{}
+
 
 tDistinguishedFolderId::tDistinguishedFolderId(const tinyxml2::XMLElement* xml) :
     XMLINIT(Mailbox),
@@ -644,7 +682,10 @@ decltype(tExtendedFieldURI::typeMap) tExtendedFieldURI::typeMap = {{
 
 tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
     XMLINITA(PropertyTag),
-    XMLINITA(PropertyType)
+    XMLINITA(PropertyType),
+    XMLINITA(PropertyId),
+    XMLINITA(PropertySetId),
+    XMLINITA(PropertyName)
 {}
 
 /**
@@ -667,26 +708,54 @@ tExtendedFieldURI::tExtendedFieldURI(uint32_t tag) :
 }
 
 /**
- * @brief      Derive property tag from Tag/Type specification
- *
- * @return     Tag ID
+ * @brief     Collect property tags and names for field URI
+
+ * @param     tags    Inserter to use for property tags
+ * @param     names   Inserter to use for property names
+ * @param     types   Inserter to use for the type of each named property
  */
-uint32_t tExtendedFieldURI::tag() const
+void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PROPERTY_NAME>& names,
+                             vector_inserter<uint16_t>& types) const
 {
-	if(!PropertyTag)
-		throw InputError("Missing PropertyTag");
 	static auto compval = [](const TMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
-	auto it = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
-	if(it == typeMap.end() || strcmp(it->first, PropertyType.c_str()))
+	auto type = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
+	if(type == typeMap.end() || strcmp(type->first, PropertyType.c_str()))
 		throw InputError("Unknown tag type "+PropertyType);
-	unsigned long long tagId = std::stoull(*PropertyTag, nullptr, 0);
-	return PROP_TAG(it->second, tagId);
+	if(PropertyTag)
+	{
+		unsigned long long tagId = std::stoull(*PropertyTag, nullptr, 16);
+		tags = PROP_TAG(type->second, tagId);
+	}
+	else if(PropertySetId)
+	{
+		PROPERTY_NAME name;
+		name.guid = *PropertySetId;
+		if(PropertyName)
+		{
+			name.kind = MNID_STRING;
+			name.pname = const_cast<char*>(PropertyName->c_str());
+		}
+		else if(PropertyId)
+		{
+			name.kind = MNID_ID;
+			name.lid = *PropertyId;
+		}
+		else
+			throw InputError("Invalid ExtendedFieldURI: missing name or ID");
+		names = name;
+		types = type->second;
+	}
+	else
+		throw InputError("Invalid ExtendedFieldURI: missing tag or set ID");
 }
 
 void tExtendedFieldURI::serialize(XMLElement* xml) const
 {
 	XMLDUMPA(PropertyType);
 	XMLDUMPA(PropertyTag);
+	XMLDUMPA(PropertyId);
+	XMLDUMPA(PropertySetId);
+	XMLDUMPA(PropertyName);
 }
 
 /**
@@ -776,23 +845,40 @@ void tExtendedProperty::serialize(XMLElement* xml) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-decltype(tFieldURI::fieldMap) tFieldURI::fieldMap = {
+decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"folder:FolderId", PidTagFolderId},
-	{"folder:ParentFolderId", PidTagParentFolderId},
+	{"folder:ParentFolderId", PR_PARENT_ENTRYID},
 	{"folder:DisplayName", PR_DISPLAY_NAME},
 	{"folder:UnreadCount", PR_CONTENT_UNREAD},
 	{"folder:TotalCount", PR_CONTENT_COUNT},
 	{"folder:ChildFolderCount", PR_FOLDER_CHILD_COUNT},
 	{"folder:FolderClass", PR_CONTAINER_CLASS},
-	//{"folder:SearchParameters", ???},
-	//{"folder:ManagedFolderInformation", ??},
-	//{"folder:PermissionSet", ???},
-	//{"folder:EffectiveRights", ???},
-	//{"folder:SharingEffectiveRights", ??},
-    //{"folder:DistinguishedFolderId", ???},
-	//{"folder:PolicyTag", ???},
-	//{"folder:ArchiveTag", ???},
-	//{"folder:ReplicaList", ???},
+	{"item:ConversationId", PR_CONVERSATION_ID},
+	{"item:DisplayTo", PR_DISPLAY_TO},
+    {"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
+    {"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
+    {"item:HasAttachments", PR_HASATTACH},
+	{"item:Importance", PR_IMPORTANCE},
+    {"item:InReplyTo", PR_IN_REPLY_TO_ID},
+	{"item:IsAssociated", PR_ASSOCIATED},
+	{"item:ItemClass", PR_MESSAGE_CLASS},
+	{"item:Size", PR_MESSAGE_SIZE_EXTENDED},
+	{"item:Subject", PR_SUBJECT},
+	{"message:ConversationIndex", PR_CONVERSATION_INDEX},
+	{"message:ConversationTopic", PR_CONVERSATION_TOPIC},
+	{"message:From", PR_SENT_REPRESENTING_ADDRTYPE},
+	{"message:From", PR_SENT_REPRESENTING_EMAIL_ADDRESS},
+	{"message:From", PR_SENT_REPRESENTING_NAME},
+	{"message:InternetMessageId", PR_INTERNET_MESSAGE_ID},
+	{"message:IsRead", PR_READ},
+	{"message:References", PR_INTERNET_REFERENCES},
+	{"message:Sender", PR_SENDER_ADDRTYPE},
+	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
+	{"message:Sender", PR_SENDER_NAME},
+};
+
+decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
+	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_STRING8}}
 };
 
 tFieldURI::tFieldURI(const XMLElement* xml) :
@@ -800,32 +886,30 @@ tFieldURI::tFieldURI(const XMLElement* xml) :
 {}
 
 /**
- * @brief     Get tag ID from field URI
- *
- * @return    Property tag ID
+ * @brief     Collect property tags and names for field URI
+
+ * @param     tags    Inserter to use for property tags
+ * @param     names   Inserter to use for property names
+ * @param     types   Inserter to use for the type of each named property
  */
-uint32_t tFieldURI::tag() const
+void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY_NAME>& nameins,
+                     vector_inserter<uint16_t>& typeins) const
 {
-	auto it = fieldMap.find(FieldURI);
-	if(it == fieldMap.end())
-		throw InputError("Unknown field type "+FieldURI);
-	return it->second;
+	auto tags = tagMap.equal_range(FieldURI);
+	for(auto it = tags.first; it != tags.second; ++it)
+		tagins = it->second;
+	auto names = nameMap.equal_range(FieldURI);
+	for(auto it = names.first; it != names.second; ++it)
+	{
+		nameins = it->second.first;
+		typeins = it->second.second;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tFolderId::tFolderId(const XMLElement* xml) :
-    XMLINITA(Id), XMLINITA(ChangeKey)
-{}
-
-tFolderId::tFolderId(const sBase64Binary& fEntryID) : Id(fEntryID)
-{}
-
-void tFolderId::serialize(XMLElement* xml) const
-{
-	XMLDUMPA(Id);
-	XMLDUMPA(ChangeKey);
-}
+void tFlagType::serialize(XMLElement* xml) const
+{XMLDUMP(FlagStatus);}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -835,45 +919,32 @@ tFolderResponseShape::tFolderResponseShape(const XMLElement* xml) :
 {}
 
 /**
- * @brief      Collect tag IDs from tag specifications
- *
- * @return     Vector of tag IDs
+ * @brief     Collect property tags and names for folder shape
+
+ * @param     tags    Inserter to use for property tags
+ * @param     names   Inserter to use for property names
+ * @param     types   Inserter to use for the type of each named property
  */
-std::vector<uint32_t> tFolderResponseShape::tags() const
+void tFolderResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
+                                vector_inserter<uint16_t>& typeIns) const
 {
-	size_t tagCount = tagsIdOnly.size()+(AdditionalProperties? AdditionalProperties->size() : 0);
 	size_t baseShape = BaseShape.index();
+	for(uint32_t tag : tagsIdOnly)
+		tagIns = tag;
 	if(baseShape >= 1)
-		tagCount += tagsDefault.size();
-	std::vector<uint32_t> ret;
-	ret.reserve(tagCount);
-	ret.insert(ret.end(), tagsIdOnly.begin(), tagsIdOnly.end());
-	if(baseShape >= 1)
-		ret.insert(ret.end(), tagsDefault.begin(), tagsDefault.end());
+		for(uint32_t tag : tagsDefault)
+			tagIns = tag;
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
-			try {
-				ret.emplace_back(additional.tag());
-			} catch (InputError&) {}
-	return ret;
+			additional.tags(tagIns, nameIns, typeIns);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tFolderShape::tFolderShape(const XMLElement* xml)
-        : Base(fromXMLNodeDispatch<Base>(xml))
-{}
-
-uint32_t tFolderShape::tag() const
-{return std::visit([](auto&& v){return v.tag();}, *static_cast<const Base*>(this));};
-
-///////////////////////////////////////////////////////////////////////////////
-
-tFolderType::tFolderType(const TPROPVAL_ARRAY& folderProps, const TagFilter& filter) :
-    tBaseFolderType(folderProps, filter)
+tFolderType::tFolderType(const TPROPVAL_ARRAY& folderProps) :
+    tBaseFolderType(folderProps)
 {
-	if((filter.empty() || std::binary_search(filter.begin(), filter.end(), PR_CONTENT_UNREAD))
-	        && folderProps.has(PR_CONTENT_UNREAD))
+	if(folderProps.has(PR_CONTENT_UNREAD))
 		UnreadCount = *folderProps.get<uint32_t>(PR_CONTENT_UNREAD);
 }
 
@@ -898,6 +969,145 @@ void tFreeBusyView::serialize(XMLElement* xml) const
 tFreeBusyViewOptions::tFreeBusyViewOptions(const tinyxml2::XMLElement* xml) :
     XMLINIT(TimeWindow), XMLINIT(MergedFreeBusyIntervalInMinutes), XMLINIT(RequestedView)
 {}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tGuid::tGuid(const XMLAttribute* xml)
+{from_str(xml->Value());}
+
+std::string tGuid::serialize() const
+{
+	std::string repr(36, '\0');
+	to_str(repr.data(), 37);
+	return repr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#define pval(type) static_cast<const type*>(tp->pvalue)
+
+tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap&)
+{
+	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
+		switch(tp->proptag)
+		{
+		case PR_CONVERSATION_INDEX:
+		case PR_CONVERSATION_TOPIC:
+		case PR_READ:
+		case PR_INTERNET_MESSAGE_ID:
+		case PR_INTERNET_REFERENCES:
+		case PR_SENDER_ADDRTYPE:
+		case PR_SENDER_EMAIL_ADDRESS:
+		case PR_SENDER_NAME:
+		case PR_SENT_REPRESENTING_ADDRTYPE:
+		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
+		case PR_SENT_REPRESENTING_NAME:
+			continue;
+		case PR_ASSOCIATED:
+			IsAssociated.emplace(*pval(uint8_t)); break;
+		case PR_CHANGE_KEY:
+			ItemId? ItemId->ChangeKey = *tp : ItemId.emplace().ChangeKey.emplace(*tp); break;
+		case PR_CLIENT_SUBMIT_TIME:
+			DateTimeSent = sTimePoint::fromNT(*pval(uint64_t)); break;
+		case PR_CONVERSATION_ID:
+			ConversationId.emplace(*tp); break;
+		case PR_DISPLAY_CC:
+			DisplayCc.emplace(pval(char)); break;
+		case PR_DISPLAY_BCC:
+			DisplayBcc.emplace(pval(char)); break;
+		case PR_DISPLAY_TO:
+			DisplayTo.emplace(pval(char)); break;
+		case PR_ENTRYID:
+			ItemId? ItemId->Id = *tp : ItemId.emplace(*tp); break;
+		case PR_HASATTACH:
+			HasAttachments.emplace(*pval(uint8_t)); break;
+		case PR_FLAG_STATUS:
+			Flag.emplace().FlagStatus = *pval(uint32_t) == followupFlagged? Enum::Flagged :
+			                            *pval(uint32_t) == followupComplete? Enum::Complete : Enum::NotFlagged;
+			break;
+		case PR_IMPORTANCE:
+			Importance = *pval(uint32_t) == IMPORTANCE_LOW? Enum::Low :
+							 *pval(uint32_t) == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
+			break;
+		case PR_IN_REPLY_TO_ID:
+			InReplyTo.emplace(pval(char)); break;
+		case PR_LAST_MODIFIER_NAME:
+			LastModifiedName.emplace(pval(char)); break;
+		case PR_LAST_MODIFICATION_TIME:
+			LastModifiedTime.emplace(nttime_to_time_point(*pval(uint64_t))); break;
+		case PR_MESSAGE_CLASS:
+			ItemClass.emplace(pval(char)); break;
+		case PR_MESSAGE_DELIVERY_TIME:
+			DateTimeReceived = sTimePoint::fromNT(*pval(uint64_t)); break;
+		case PR_MESSAGE_SIZE_EXTENDED:
+			Size.emplace(*pval(uint64_t)); break;
+		case PR_PARENT_ENTRYID:
+			ParentFolderId.emplace(*tp); break;
+		case PR_SUBJECT:
+			Subject.emplace(pval(char)); break;
+		default:
+			ExtendedProperty.emplace_back(*tp);
+		}
+}
+
+#undef pval
+
+void tItem::serialize(XMLElement* xml) const
+{
+	XMLDUMP(ItemId);
+	XMLDUMP(ParentFolderId);
+	XMLDUMP(ItemClass);
+	XMLDUMP(Subject);
+	XMLDUMP(DateTimeReceived);
+	XMLDUMP(Size);
+	XMLDUMP(InReplyTo);
+	XMLDUMP(DateTimeSent);
+	XMLDUMP(DisplayCc);
+	XMLDUMP(DisplayTo);
+	XMLDUMP(DisplayBcc);
+	XMLDUMP(HasAttachments);
+	XMLDUMP(LastModifiedName);
+	XMLDUMP(LastModifiedTime);
+	XMLDUMP(IsAssociated);
+	XMLDUMP(ConversationId);
+	XMLDUMP(Flag);
+	for(const tExtendedProperty& ep : ExtendedProperty)
+		toXMLNode(xml, "ExtendedProperty", ep);
+}
+
+sItem tItem::create(const TPROPVAL_ARRAY& itemProps, const sNamedPropertyMap& namedProps)
+{
+	const char* itemClass = itemProps.get<const char>(PR_MESSAGE_CLASS);
+	if(!itemClass)
+		return tItem(itemProps, namedProps);
+	if(!strcasecmp(itemClass, "IPM.Note"))
+		return tMessage(itemProps, namedProps);
+	return tItem(itemProps, namedProps);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tItemResponseShape::tItemResponseShape(const XMLElement* xml) :
+    //XMLINIT(BaseShape),
+    XMLINIT(AdditionalProperties)
+{}
+
+/**
+ * @brief     Collect property tags and names for item shape
+
+ * @param     tags    Inserter to use for property tags
+ * @param     names   Inserter to use for property names
+ * @param     types   Inserter to use for the type of each named property
+ */
+void tItemResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
+                              vector_inserter<uint16_t>& typeIns) const
+{
+	for(uint32_t tag : tagsIdOnly)
+		tagIns = tag;
+	if(AdditionalProperties)
+		for(const auto& additional : *AdditionalProperties)
+			additional.tags(tagIns, nameIns, typeIns);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -932,6 +1142,78 @@ void tMailTipsServiceConfiguration::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMP(PolicyTipsEnabled);
 	XMLDUMP(LargeAudienceCap);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+#define pval(type) static_cast<const type*>(tp->pvalue)
+
+tMessage::tMessage(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps) : tItem(propvals, namedProps)
+{
+	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
+		switch(tp->proptag)
+		{
+		case PR_CONVERSATION_INDEX:
+			ConversationIndex = *tp; break;
+		case PR_CONVERSATION_TOPIC:
+		   ConversationTopic = pval(char); break;
+		case PR_READ:
+			IsRead = *pval(bool); break;
+		case PR_INTERNET_MESSAGE_ID:
+			InternetMessageId = pval(char); break;
+		case PR_INTERNET_REFERENCES:
+			References = pval(char); break;
+		case PR_SENDER_ADDRTYPE:
+			Sender? Sender->RoutingType = pval(char) : Sender.emplace().RoutingType = pval(char); break;
+		case PR_SENDER_EMAIL_ADDRESS:
+			Sender? Sender->EmailAddress = pval(char) : Sender.emplace().EmailAddress = pval(char); break;
+		case PR_SENDER_NAME:
+			Sender? Sender->Name = pval(char) : Sender.emplace().Name = pval(char); break;
+		case PR_SENT_REPRESENTING_ADDRTYPE:
+			From? From->RoutingType = pval(char) : From.emplace().RoutingType = pval(char); break;
+		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
+			From? From->EmailAddress = pval(char) : From.emplace().EmailAddress = pval(char); break;
+		case PR_SENT_REPRESENTING_NAME:
+			From? From->Name = pval(char) : From.emplace().Name = pval(char); break;
+		default:
+			break;
+		}
+}
+
+#undef pval
+
+void tMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	tItem::serialize(xml);
+	XMLDUMP(Sender);
+	//XMLDUMP(ToRecipients);
+	//XMLDUMP(CcRecipients);
+	//XMLDUMP(BccRecipients);
+	XMLDUMP(IsReadReceiptRequested);
+	XMLDUMP(IsDeliveryReceiptRequested);
+	XMLDUMP(From);
+	XMLDUMP(IsRead);
+	XMLDUMP(IsResponseRequested);
+	XMLDUMP(ReplyTo);
+	XMLDUMP(ReceivedBy);
+	XMLDUMP(ReceivedRepresenting);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tPath::tPath(const XMLElement* xml)
+        : Base(fromXMLNodeDispatch<Base>(xml))
+{}
+
+/**
+ * @brief     Collect property tags and names for path specification
+
+ * @param     tags    Inserter to use for property tags
+ * @param     names   Inserter to use for property names
+ * @param     types   Inserter to use for the type of each named property
+ */
+void tPath::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
+                     vector_inserter<uint16_t>& typeIns) const
+{return std::visit([&](auto&& v){return v.tags(tagIns, nameIns, typeIns);}, *static_cast<const Base*>(this));};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1055,6 +1337,27 @@ void tSyncFolderHierarchyDelete::serialize(XMLElement* xml) const
 {XMLDUMP(FolderId);}
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void tSyncFolderItemsCU::serialize(XMLElement* xml) const
+{VXMLDUMP(item);}
+
+tSyncFolderItemsDelete::tSyncFolderItemsDelete(const TAGGED_PROPVAL& tp) : ItemId(tp)
+{}
+
+
+void tSyncFolderItemsDelete::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMP(ItemId);}
+
+void tSyncFolderItemsReadFlag::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMP(ItemId);
+	XMLDUMP(IsRead);
+}
+///////////////////////////////////////////////////////////////////////////////
+
+tTargetFolderIdType::tTargetFolderIdType(std::variant<tFolderId, tDistinguishedFolderId>&& id) :
+    folderId(std::move(id))
+{}
 
 tTargetFolderIdType::tTargetFolderIdType(const XMLElement* xml) :
     VXMLINIT(folderId)
@@ -1227,4 +1530,25 @@ void mSyncFolderHierarchyResponseMessage::serialize(tinyxml2::XMLElement* xml) c
 }
 
 void mSyncFolderHierarchyResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMP(ResponseMessages);}
+
+///////////////////////////////////////////////////////////////////////////////
+
+mSyncFolderItemsRequest::mSyncFolderItemsRequest(const XMLElement* xml) :
+	XMLINIT(ItemShape),
+	XMLINIT(SyncFolderId),
+	XMLINIT(SyncState),
+	XMLINIT(MaxChangesReturned),
+	XMLINIT(SyncScope)
+{}
+
+void mSyncFolderItemsResponseMessage::serialize(XMLElement* xml) const
+{
+	XMLDUMP(SyncState);
+	XMLDUMP(IncludesLastItemInRange);
+	XMLDUMP(Changes);
+}
+
+
+void mSyncFolderItemsResponse::serialize(XMLElement* xml) const
 {XMLDUMP(ResponseMessages);}

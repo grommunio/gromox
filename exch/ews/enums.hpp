@@ -80,12 +80,14 @@ struct Enum
 	STR(AllProperties);
 	STR(ApplicationTime);
 	STR(ApplicationTimeArray);
+	STR(Best);
 	STR(Binary);
 	STR(BinaryArray);
 	STR(Boolean);
 	STR(Busy);
 	STR(CLSID);
 	STR(CLSIDArray);
+	STR(Complete);
 	STR(Contact);
 	STR(Currency);
 	STR(CurrencyArray);
@@ -103,6 +105,7 @@ struct Enum
 	STR(Excellent); // Smithers
 	STR(ExternalMemberCount);
 	STR(Fair);
+	STR(Flagged);
 	STR(Float);
 	STR(FloatArray);
 	STR(Free);
@@ -111,6 +114,8 @@ struct Enum
 	STR(Friday);
 	STR(Good);
 	STR(GroupMailbox);
+	STR(HTML);
+	STR(High);
 	STR(IdOnly);
 	STR(ImplicitContact);
 	STR(Integer);
@@ -119,6 +124,7 @@ struct Enum
 	STR(Known);
 	STR(Long);
 	STR(LongArray);
+	STR(Low);
 	STR(MailTips);
 	STR(Mailbox);
 	STR(MailboxFullStatus);
@@ -128,6 +134,10 @@ struct Enum
 	STR(Monday);
 	STR(NoData);
 	STR(None);
+	STR(Normal);
+	STR(NormalAndAssociatedItems);
+	STR(NormalItems);
+	STR(NotFlagged);
 	STR(Null);
 	STR(OOF);
 	STR(Object);
@@ -161,6 +171,7 @@ struct Enum
 	STR(SystemTime);
 	STR(SystemTimeArray);
 	STR(Tentative);
+	STR(Text);
 	STR(Thursday);
 	STR(TotalMemberCount);
 	STR(Tuesday);
@@ -245,12 +256,15 @@ struct Enum
 #undef STR
 
 	//Enum types
+	using BodyTypeResponseType = StrEnum<Best, HTML, Text>; ///< Types.xsd:1265
 	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, Weekendday>; ///< Types.xsd:4481
-	using DefaultNamesType = StrEnum<IdOnly, Default, AllProperties, PcxPeopleSearch>; ///< Types.xsd:1255
+	using DefaultShapeNamesType = StrEnum<IdOnly, Default, AllProperties, PcxPeopleSearch>; ///< Types.xsd:1255
 	using DistinguishedFolderIdNameType = StrEnum<calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot, publicfoldersroot, root, junkemail, searchfolders, voicemail, recoverableitemsroot, recoverableitemsdeletions, recoverableitemsversions, recoverableitemspurges, recoverableitemsdiscoveryholds, archiveroot, archivemsgfolderroot, archivedeleteditems, archiveinbox, archiverecoverableitemsroot, archiverecoverableitemsdeletions, archiverecoverableitemsversions, archiverecoverableitemspurges, archiverecoverableitemsdiscoveryholds, syncissues, conflicts, localfailures, serverfailures, recipientcache, quickcontacts, conversationhistory, adminauditlogs, todosearch, mycontacts, directory, imcontactlist, peopleconnect, favorites, mecontact, personmetadata, teamspaceactivity, teamspacemessaging, teamspaceworkitems, scheduled, orionnotes, tagitems, alltaggeditems, allcategorizeditems, externalcontacts, teamchat, teamchathistory, yammerdata, yammerroot, yammerinbound, yammeroutbound, yammerfeeds, kaizaladata, messageingestion, onedriveroot, onedriverecylebin, onedrivesystem, onedrivevolume, important, starred, archiv>; //Types.xsd:1768
 	using ExternalAudience = StrEnum<None, Known, All>; ///< Types.xsd:6530
+	using FlagStatusType = StrEnum<NotFlagged, Flagged, Complete>; ///< Types.xsd:2445
 	using FreeBusyViewType = StrEnum<None, MergedOnly, FreeBusy, FreeBusyMerged, Detailed, DetailedMerged>; ///< Types.xsd:6333
 	using LegacyFreeBusyType = StrEnum<Free, Tentative, Busy, OOF, WorkingElsewhere, NoData>; ///< Types.xsd:4352
+	using ImportanceChoicesType = StrEnum<Low, Normal, High>; ///< Types.xsd:1708
 	using MailboxTypeType = StrEnum<Unknown, OneOff, Mailbox, PublicDL, PrivateDL, Contact, PublicFolder, GroupMailbox, ImplicitContact, User>; ///< Types.xsd:253
 	using MailTipTypes = StrEnum<All, OutOfOfficeMessage, MailboxFullStatus, CustomMailTip, ExternalMemberCount, TotalMemberCount, MaxMessageSize, DeliveryRestriction, ModerationStatus, InvalidRecipient, Scope, RecipientSuggestions, PreferAccessibleContent>; ///< Types.xsd:6947
 	using MapiPropertyTypeType = StrEnum<ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray, Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object, ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray>; ///< Types.xsd:1060
@@ -258,6 +272,7 @@ struct Enum
 	using OofState = StrEnum<Disabled, Enabled, Scheduled>; ///< Types.xsd:6522
 	using ServiceConfigurationType = StrEnum<MailTips, UnifiedMessagingConfiguration, ProtectionRules, PolicyNudges, SharePointURLs, OfficeIntegrationConfiguration>; ///< Types.xsd:7019
 	using SuggestionQuality = StrEnum<Excellent, Good, Fair, Poor>; ///< Types.xsd:6423
+	using SyncFolderItemsScopeType = StrEnum<NormalItems, NormalAndAssociatedItems>; ///< Types.xsd:6256
 };
 
 }

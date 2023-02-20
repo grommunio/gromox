@@ -115,10 +115,10 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 {
 	response->SetName("GetFolderResponse");
 
-	std::vector<uint32_t> requestedTags = request.FolderShape.tags();
-	if(requestedTags.size() > std::numeric_limits<decltype(PROPTAG_ARRAY::count)>::max())
+	sProptags requestedTags = ctx.collectTags(request.FolderShape);
+	if(requestedTags.tags.size() > std::numeric_limits<decltype(PROPTAG_ARRAY::count)>::max())
 		throw InputError("Too many tags requested");
-	const PROPTAG_ARRAY tags{uint16_t(requestedTags.size()), requestedTags.data()};
+	const PROPTAG_ARRAY tags{uint16_t(requestedTags.tags.size()), requestedTags.tags.data()};
 
 	mGetFolderResponse data;
 	data.ResponseMessages.reserve(request.FolderIds.size());
@@ -405,10 +405,10 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 
 	auto& exmdb = ctx.plugin.exmdb;
 	if(!request.SyncFolderId)
-		throw InputError("Missing required parameter SyncFolderId");
+		request.SyncFolderId.emplace(tDistinguishedFolderId(Enum::msgfolderroot));
 
 	sSyncState syncState;
-	if(request.SyncState)
+	if(request.SyncState && !request.SyncState->empty())
 		syncState.init(*request.SyncState);
 
 	sFolderSpec folder = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, request.SyncFolderId->folderId);
@@ -422,8 +422,9 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	if(!exmdb.get_hierarchy_sync(dir.c_str(), folder.folderId, nullptr,
 	                             &syncState.given, &syncState.seen, &changes, &lastCn, &given_fids, &deleted_fids))
 		throw DispatchError("Failed to get hierarchy sync data");
-	std::vector<uint32_t> tagFilter = request.FolderShape.tags();
-	std::sort(tagFilter.begin(), tagFilter.end());
+	//std::vector<uint32_t> tagFilter = request.FolderShape.tags();
+	sProptags requestedTags = ctx.collectTags(request.FolderShape);
+	std::sort(requestedTags.tags.begin(), requestedTags.tags.end());
 
 	mSyncFolderHierarchyResponse data;
     mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
@@ -434,7 +435,9 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		uint64_t* folderId = folderProps->get<uint64_t>(PidTagFolderId);
 		if(!folderId)
 			continue;
-		auto folderData = tBaseFolderType::create(*folderProps, tagFilter);
+		PROPTAG_ARRAY tags {uint16_t(requestedTags.tags.size()), requestedTags.tags.data()};
+		TPROPVAL_ARRAY props = ctx.getFolderProps(sFolderSpec(*folder.target, *folderId), tags);
+		auto folderData = tBaseFolderType::create(props);
 		if(syncState.given.hint(*folderId))
 			msgChanges.emplace_back(tSyncFolderHierarchyUpdate(std::move(folderData)));
 		else
@@ -447,9 +450,72 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		msgChanges.emplace_back(tSyncFolderHierarchyDelete(entryID));
 	}
 
-	syncState.update(given_fids, lastCn);
+	syncState.update(given_fids, deleted_fids, lastCn);
 	msg.SyncState = syncState.serialize();
 	msg.IncludesLastFolderInRange = true;
+	msg.success();
+
+	data.serialize(response);
+}
+
+void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName("SyncFolderItemsResponse");
+
+	sFolderSpec folder = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, request.SyncFolderId.folderId);
+
+	sSyncState syncState;
+	if(request.SyncState && !request.SyncState->empty())
+		syncState.init(*request.SyncState);
+
+	if(!folder.target)
+		folder.target = ctx.auth_info.username;
+	std::string dir = ctx.getDir(folder.normalize());
+	const char* username = folder.target == ctx.auth_info.username? nullptr : ctx.auth_info.username;
+
+	auto& exmdb = ctx.plugin.exmdb;
+
+	uint32_t fai_count, normal_count;
+	uint64_t fai_total, normal_total, last_cn, last_readcn;
+	EID_ARRAY updated_mids, chg_mids, given_mids, deleted_mids, nolonger_mids, read_mids, unread_mids;
+
+	bool getFai = request.SyncScope && *request.SyncScope == "NormalAndAssociatedItems";
+	idset* pseen_fai = getFai? &syncState.seen_fai : nullptr;
+	if(!exmdb.get_content_sync(dir.c_str(), folder.folderId, username, &syncState.given, &syncState.seen, pseen_fai,
+	                          &syncState.read, 0, nullptr, TRUE, &fai_count, &fai_total, &normal_count, &normal_total,
+	                          &updated_mids, &chg_mids, &last_cn, &given_mids, &deleted_mids, &nolonger_mids, &read_mids,
+	                          &unread_mids, &last_readcn))
+		throw DispatchError("Failed to get content sync data");
+	syncState.update(given_mids, deleted_mids, last_cn);
+
+	sProptags itemTags = ctx.collectTags(request.ItemShape);
+	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
+		throw DispatchError("Too many tags requested");
+	PROPTAG_ARRAY requestedTags{uint16_t(itemTags.tags.size()), itemTags.tags.data()};
+
+	mSyncFolderItemsResponse data;
+	mSyncFolderItemsResponseMessage& msg = data.ResponseMessages.emplace_back();
+	msg.Changes.reserve(updated_mids.count+chg_mids.count+deleted_mids.count+read_mids.count+unread_mids.count);
+	for(uint64_t* mid = deleted_mids.pids; mid < deleted_mids.pids+deleted_mids.count; ++mid)
+		msg.Changes.emplace_back(tSyncFolderItemsDelete(ctx.getItemEntryId(dir, *mid)));
+	for(uint64_t* mid = nolonger_mids.pids; mid < nolonger_mids.pids+nolonger_mids.count; ++mid)
+		msg.Changes.emplace_back(tSyncFolderItemsDelete(ctx.getItemEntryId(dir, *mid)));
+	for(uint64_t* mid = updated_mids.pids; mid < updated_mids.pids+updated_mids.count; ++mid)
+	{
+		TPROPVAL_ARRAY itemProps = ctx.getItemProps(dir, *mid, requestedTags);
+		msg.Changes.emplace_back(tSyncFolderItemsCreate{tItem::create(itemProps)});
+	}
+	for(uint64_t* mid = chg_mids.pids; mid < chg_mids.pids+chg_mids.count; ++mid)
+	{
+		TPROPVAL_ARRAY itemProps = ctx.getItemProps(dir, *mid, requestedTags);
+		msg.Changes.emplace_back(tSyncFolderItemsCreate{tItem::create(itemProps)});
+	}
+	for(uint64_t* mid = read_mids.pids; mid < read_mids.pids+read_mids.count; ++mid)
+		msg.Changes.emplace_back(tSyncFolderItemsReadFlag{tItemId(ctx.getItemEntryId(dir, *mid)), true});
+	for(uint64_t* mid = unread_mids.pids; mid < read_mids.pids+read_mids.count; ++mid)
+		msg.Changes.emplace_back(tSyncFolderItemsReadFlag{tItemId(ctx.getItemEntryId(dir, *mid)), false});
+	msg.SyncState = syncState.serialize();
+	msg.IncludesLastItemInRange = true;
 	msg.success();
 
 	data.serialize(response);

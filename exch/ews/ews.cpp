@@ -66,6 +66,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
+	{"SyncFolderItems", process<Structures::mSyncFolderItemsRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -222,6 +223,7 @@ EWSPlugin::_mysql::_mysql()
 	if (query_service2(# f, f) == nullptr) \
 		throw std::runtime_error("[ews]: failed to get the \""# f"\" service")
 
+	getService(get_domain_info);
 	getService(get_homedir);
 	getService(get_maildir);
 	getService(get_username_from_id);

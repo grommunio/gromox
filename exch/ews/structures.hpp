@@ -28,17 +28,23 @@ namespace gromox::EWS
 namespace gromox::EWS::Structures
 {
 
-struct tSerializableTimeZone;
+struct tCalendarFolderType;
+struct tContactsFolderType;
 struct tDistinguishedFolderId;
 struct tFolderId;
 struct tFolderType;
-struct tCalendarFolderType;
-struct tContactsFolderType;
+struct tItem;
+struct tMessage;
 struct tSearchFolderType;
-struct tTasksFolderType;
+struct tSerializableTimeZone;
 struct tSyncFolderHierarchyCreate;
 struct tSyncFolderHierarchyUpdate;
 struct tSyncFolderHierarchyDelete;
+struct tSyncFolderItemsCreate;
+struct tSyncFolderItemsUpdate;
+struct tSyncFolderItemsDelete;
+struct tSyncFolderItemsReadFlag;
+struct tTasksFolderType;
 
 
 /**
@@ -47,7 +53,7 @@ struct tSyncFolderHierarchyDelete;
  * Automatically en- and decodes during (de-)serialization, providing direct
  * access to the binary data.
  */
-struct sBase64Binary : public std::string
+struct sBase64Binary : public std::vector<uint8_t>
 {
 	sBase64Binary() = default;
 	sBase64Binary(const TAGGED_PROPVAL&);
@@ -111,10 +117,19 @@ private:
  */
 using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderType, tSearchFolderType, tTasksFolderType>;
 
+using sItem = std::variant<tItem, tMessage>;
+
+using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
+
 /**
- * Joint hierarchy change type
+ * @brief      Utility struct to manage property tags and property name information
  */
-using sSyncFolderHierarchyChange = std::variant<tSyncFolderHierarchyCreate, tSyncFolderHierarchyUpdate, tSyncFolderHierarchyDelete>;
+struct sProptags
+{
+	std::vector<uint32_t> tags; ///< Properties return from the store
+	sNamedPropertyMap namedTags; ///< Tag -> named property mapping
+};
+
 
 /**
  * @brief     Sync state helper class
@@ -124,11 +139,14 @@ struct sSyncState
 	sSyncState();
 
 	void init(const std::string&);
-	void update(const EID_ARRAY&, uint64_t);
+	void update(const EID_ARRAY&, const EID_ARRAY&, uint64_t);
+	void update(const EID_ARRAY&, const EID_ARRAY&, const EID_ARRAY&, const EID_ARRAY&, const EID_ARRAY&, uint64_t);
 	std::string serialize();
 
 	idset given; ///< Set of known IDs
 	idset seen;  ///< Set of known change numbers
+	idset read;  ///< Set of read change numbers
+	idset seen_fai; //Set of seen fai change numbers
 };
 
 /**
@@ -156,11 +174,29 @@ struct sTimePoint
 
 	void serialize(tinyxml2::XMLElement*) const;
 
+	static sTimePoint fromNT(uint64_t);
+
 	gromox::time_point time;
 	std::chrono::minutes offset = std::chrono::minutes(0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+template<typename T> using vector_inserter = std::back_insert_iterator<std::vector<T>>;
+
+class tBaseItemId
+{
+public:
+
+	sBase64Binary Id; //Attribute
+	std::optional<sBase64Binary> ChangeKey; //Attribute
+
+	tBaseItemId() = default;
+	tBaseItemId(const tinyxml2::XMLElement*);
+	tBaseItemId(const sBase64Binary&, const std::optional<sBase64Binary>& = std::nullopt);
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
 
 /**
  * Types.xsd:6288
@@ -239,18 +275,21 @@ struct tEmailAddressType
 /**
  * Types.xsd:1862
  */
-struct tFolderId
+struct tFolderId : public tBaseItemId
 {
 	static constexpr char NAME[] = "FolderId";
 
-	tFolderId() = default;
-	tFolderId(const tinyxml2::XMLElement*);
-	tFolderId(const sBase64Binary&);
+	using tBaseItemId::tBaseItemId;
+};
 
-	void serialize(tinyxml2::XMLElement*) const;
+/**
+ * Types.xsd:1028
+ */
+struct tGuid : public GUID
+{
+	tGuid(const tinyxml2::XMLAttribute*);
 
-	sBase64Binary Id; //Attribute
-	std::optional<std::string> ChangeKey; //Attribute
+	std::string serialize() const;
 };
 
 /**
@@ -269,12 +308,13 @@ struct tExtendedFieldURI
 
 	std::optional<std::string> PropertyTag; //Attribute
 	Enum::MapiPropertyTypeType PropertyType; //Attribute
-	//<xs:attribute name="PropertyId" type="xs:int" use="optional"/>
+	std::optional<int32_t> PropertyId; // Attribute
 	//<xs:attribute name="DistinguishedPropertySetId" type="t:DistinguishedPropertySetType" use="optional"/>
-	//<xs:attribute name="PropertySetId" type="t:GuidType" use="optional"/>
-	//<xs:attribute name="PropertyName" type="xs:string" use="optional"/>
+	std::optional<tGuid> PropertySetId; // Attribute.
+	std::optional<std::string> PropertyName; //Attribute
 
-	uint32_t tag() const;
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&) const;
+
 	static const char* typeName(uint16_t);
 
 	static std::array<TMEntry, 26> typeMap; ///< Types.xsd:1060
@@ -301,7 +341,7 @@ struct tBaseFolderType
 {
 	using TagFilter = std::vector<uint32_t>;
 
-	explicit tBaseFolderType(const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
+	explicit tBaseFolderType(const TPROPVAL_ARRAY&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -311,7 +351,7 @@ struct tBaseFolderType
 	std::optional<std::string> DisplayName;
 	std::optional<int32_t> TotalCount;
 	std::optional<int32_t> ChildFolderCount;
-	std::vector<tExtendedProperty> ExtendendProperty;
+	std::vector<tExtendedProperty> ExtendedProperty;
 	//<xs:element name="ManagedFolderInformation" type="t:ManagedFolderInformationType" minOccurs="0"/>
 	//<xs:element name="EffectiveRights" type="t:EffectiveRightsType" minOccurs="0"/>
 	//<xs:element name="DistinguishedFolderId" type="t:DistinguishedFolderIdNameType" minOccurs="0"/>
@@ -319,7 +359,7 @@ struct tBaseFolderType
 	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ReplicaList" type="t:ArrayOfStringsType" minOccurs="0" />
 
-	static sFolder create(const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
+	static sFolder create(const TPROPVAL_ARRAY&);
 protected:
 	tBaseFolderType(const tBaseFolderType&) = default;
 	tBaseFolderType(tBaseFolderType&&) noexcept = default;
@@ -335,23 +375,39 @@ struct tFieldURI
 
 	tFieldURI(const tinyxml2::XMLElement*);
 
-	uint32_t tag() const;
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&) const;
 
 	std::string FieldURI; //Attribute
 
-	static std::unordered_map<std::string, uint32_t> fieldMap; ///< Types.xsd:402
+	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Types.xsd:402
+	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Types.xsd:402
 };
+
+/**
+ * Types.xsd:2436
+ */
+struct tFlagType
+{
+	Enum::FlagStatusType FlagStatus;
+	//<xs:element name="FlagStatus" type="t:FlagStatusType" minOccurs="1" maxOccurs="1"/>
+	//<xs:element name="StartDate" type="xs:dateTime" minOccurs="0" />
+	//<xs:element name="DueDate" type="xs:dateTime" minOccurs="0" />
+	//<xs:element name="CompleteDate" type="xs:dateTime" minOccurs="0" />
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
 
 /**
  * Types.xsd:1165
  */
-struct tFolderShape : public std::variant<tExtendedFieldURI, tFieldURI>
+struct tPath : public std::variant<tExtendedFieldURI, tFieldURI>
 {
 	using Base = std::variant<tExtendedFieldURI, tFieldURI>;
 
-	tFolderShape(const tinyxml2::XMLElement*);
+	tPath(const tinyxml2::XMLElement*);
 
-	uint32_t tag() const;
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&) const;
 };
 
 /**
@@ -361,7 +417,7 @@ struct tFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "Folder";
 
-	explicit tFolderType(const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
+	explicit tFolderType(const TPROPVAL_ARRAY&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -417,6 +473,127 @@ struct tSearchFolderType : public tBaseFolderType
 };
 
 /**
+ * Types.xsd:2128
+ */
+struct tItemId : public tBaseItemId
+{
+	static constexpr char NAME[] = "ItemId";
+
+	using tBaseItemId::tBaseItemId;
+};
+
+/**
+ * Types.xsd:2353
+ */
+struct tItem
+{
+	static constexpr char NAME[] = "Item";
+
+	tItem(const TPROPVAL_ARRAY&, const sNamedPropertyMap&);
+
+	//<xs:element name="MimeContent" type="t:MimeContentType" minOccurs="0" />
+	std::optional<tItemId> ItemId; ///< PR_ENTRYID+PR_CHANGEKEY
+	std::optional<tFolderId> ParentFolderId; ///< PR_PARENT_ENTRYID
+	std::optional<std::string> ItemClass; ///< PR_MESSAGE_CLASS
+	std::optional<std::string> Subject; ///< PR_SUBJECT
+	//<xs:element name="Sensitivity" type="t:SensitivityChoicesType" minOccurs="0" />
+	//<xs:element name="Body" type="t:BodyType" minOccurs="0" />
+	//<xs:element name="Attachments" type="t:NonEmptyArrayOfAttachmentsType" minOccurs="0" />
+	std::optional<sTimePoint> DateTimeReceived; ///< PR_MESSAGE_DELIVERY_TIME
+	std::optional<uint64_t> Size; ///< PR_MESSAGE_SIZE_EXTENDED
+	//<xs:element name="Categories" type="t:ArrayOfStringsType" minOccurs="0" />
+	std::optional<Enum::ImportanceChoicesType> Importance; ///< PR_IMPORTANCE
+	std::optional<std::string> InReplyTo; ///< PR_IN_REPLY_TO_ID
+	//std::optional<bool> IsSubmitted;
+	//std::optional<bool> IsDraft;
+	//std::optional<bool> IsFromMe;
+	//std::optional<bool> IsResend;
+	//std::optional<bool> IsUnmodified;
+	//<xs:element name="InternetMessageHeaders" type="t:NonEmptyArrayOfInternetHeadersType" minOccurs="0" />
+	std::optional<sTimePoint> DateTimeSent;
+	//std::optional<gromox::time_point> DateTimeCreated;
+	//<xs:element name="ResponseObjects" type="t:NonEmptyArrayOfResponseObjectsType" minOccurs="0" />
+	//std::optional<gromox::time_point> ReminderDueBy;
+	//std::optional<bool> ReminderIsSet;
+	//std::optional<gromox::time_point> ReminderNextTime;
+	//<xs:element name="ReminderMinutesBeforeStart" type="t:ReminderMinutesBeforeStartType" minOccurs="0" />
+	std::optional<std::string> DisplayCc;
+	std::optional<std::string> DisplayTo;
+	std::optional<std::string> DisplayBcc;
+	std::optional<bool> HasAttachments;
+	std::vector<tExtendedProperty> ExtendedProperty;
+	//<xs:element name="Culture" type="xs:language" minOccurs="0"/>
+	//<xs:element name="EffectiveRights" type="t:EffectiveRightsType" minOccurs="0" />
+	std::optional<std::string> LastModifiedName;
+	std::optional<gromox::time_point> LastModifiedTime;
+	std::optional<bool> IsAssociated;
+	//<xs:element name="WebClientReadFormQueryString" type="xs:string" minOccurs="0" />
+	//<xs:element name="WebClientEditFormQueryString" type="xs:string" minOccurs="0" />
+	std::optional<tItemId> ConversationId;
+	//<xs:element name="UniqueBody" type="t:BodyType" minOccurs="0" />
+	std::optional<tFlagType> Flag;
+	//<xs:element name="StoreEntryId" type="xs:base64Binary" minOccurs="0" />
+	//<xs:element name="InstanceKey" type="xs:base64Binary" minOccurs="0" />
+	//<xs:element name="NormalizedBody" type="t:BodyType" minOccurs="0"/>
+	//<xs:element name="EntityExtractionResult" type="t:EntityExtractionResultType" minOccurs="0" />
+	//<xs:element name="PolicyTag" type="t:RetentionTagType" minOccurs="0" />
+	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
+	//<xs:element name="RetentionDate" type="xs:dateTime" minOccurs="0" />
+	//<xs:element name="Preview" type="xs:string" minOccurs="0" />
+	//<xs:element name="RightsManagementLicenseData" type="t:RightsManagementLicenseDataType" minOccurs="0" />
+	//<xs:element name="PredictedActionReasons" type="t:NonEmptyArrayOfPredictedActionReasonType" minOccurs="0" />
+	//<xs:element name="IsClutter" type="xs:boolean" minOccurs="0" />
+	//<xs:element name="BlockStatus" type="xs:boolean" minOccurs="0" />
+	//<xs:element name="HasBlockedImages" type="xs:boolean" minOccurs="0" />
+	//<xs:element name="TextBody" type="t:BodyType" minOccurs="0"/>
+	//<xs:element name="IconIndex" type="t:IconIndexType" minOccurs="0"/>
+	//<xs:element name="SearchKey" type="xs:base64Binary" minOccurs="0" />
+	//<xs:element name="SortKey" type="xs:long" minOccurs="0" />
+	//<xs:element name="Hashtags" type="t:ArrayOfStringsType" minOccurs="0" />
+	//<xs:element name="Mentions" type="t:ArrayOfRecipientsType" minOccurs="0" />
+	//<xs:element name="MentionedMe" type="xs:boolean" minOccurs="0" />
+	//<xs:element name="MentionsPreview" type="t:MentionsPreviewType" minOccurs="0" />
+	//<xs:element name="MentionsEx" type="t:NonEmptyArrayOfMentionActionsType" minOccurs="0" />
+	//<xs:element name="AppliedHashtags" type="t:NonEmptyArrayOfAppliedHashtagType" minOccurs="0" />
+	//<xs:element name="AppliedHashtagsPreview" type="t:AppliedHashtagsPreviewType" minOccurs="0" />
+	//<xs:element name="Likes" type="t:NonEmptyArrayOfLikeType" minOccurs="0" />
+	//<xs:element name="LikesPreview" type="t:LikesPreviewType" minOccurs="0" />
+	//<xs:element name="PendingSocialActivityTagIds" type="t:ArrayOfStringsType" minOccurs="0" />
+	//<xs:element name="AtAllMention" type="xs:boolean" minOccurs="0" />
+	//<xs:element name="CanDelete" type="xs:boolean" minOccurs="0" />
+	//<xs:element name="InferenceClassification" type="t:InferenceClassificationType" minOccurs="0" />
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	static sItem create(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+};
+
+
+/**
+ * Types.xsd:1287
+ */
+struct tItemResponseShape
+{
+	tItemResponseShape(const tinyxml2::XMLElement*);
+
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&) const;
+
+	//Enum::DefaultShapeNamesType BaseShape;
+	//std::optional<bool> IncludeMimeContent;
+	//std::optional<Enum::BodyTypeResponseType> BodyType;
+	//std::optional<Enum::BodyTypeResponseType> UniqueBodyType;
+	//std::optional<Enum::BodyTypeResponseType> NormalizedBodyType;
+	//std::optional<bool> FilterHtmlContent;
+	//std::optional<std::string> InlineImageUrlTemplate;
+	//std::optional<bool> ConvertHtmlCodePageToUTF8;
+	//std::optional<bool> AddBlankTargetToLinks;
+	//std::optional<int32_t> MaximumBodySize;
+	std::optional<std::vector<tPath>> AdditionalProperties;
+
+	static constexpr std::array<uint32_t, 3> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY, PR_MESSAGE_CLASS};
+};
+
+/**
  * Types.xsd:2089
  */
 struct tTasksFolderType : public tBaseFolderType
@@ -456,6 +633,13 @@ struct tSerializableTimeZone
 	gromox::time_point apply(const gromox::time_point&) const;
 	gromox::time_point remove(const gromox::time_point&) const;
 };
+
+/**
+ * Joint hierarchy change type
+ *
+ * Types.xsd:6223
+ */
+using tSyncFolderHierarchyChange = std::variant<tSyncFolderHierarchyCreate, tSyncFolderHierarchyUpdate, tSyncFolderHierarchyDelete>;
 
 /**
  * @brief     Joint type for create and update
@@ -505,6 +689,106 @@ struct tSyncFolderHierarchyDelete
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
+using tSingleRecipient = tEmailAddressType;
+
+/**
+ * Types.xsd:4031
+ */
+struct tMessage : public tItem
+{
+	static constexpr char NAME[] = "Message";
+
+	tMessage(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+
+	std::optional<tSingleRecipient> Sender; ///< PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME
+	//std::optional<std::vector<tSingleRecipient>> ToRecipients;
+	//std::optional<std::vector<tSingleRecipient>> CcRecipients;
+	//std::optional<std::vector<tSingleRecipient>> BccRecipients;
+	std::optional<bool> IsReadReceiptRequested;
+	std::optional<bool> IsDeliveryReceiptRequested;
+	std::optional<sBase64Binary> ConversationIndex; ///< PR_CONVERSATION_INDEX
+	std::optional<std::string> ConversationTopic; ///< PR_CONVERSATION_TOPIC
+	//<xs:element name="ConversationTopic" type="xs:string" minOccurs="0" />
+	std::optional<tSingleRecipient> From;
+	std::optional<std::string> InternetMessageId; ///< PR_INTERNET_MESSAGE_ID
+	std::optional<bool> IsRead;
+	std::optional<bool> IsResponseRequested;
+	std::optional<std::string> References; ///< PR_INTERNET_REFERENCES
+	//<xs:element name="References" type="xs:string" minOccurs="0" />
+	std::optional<std::vector<tSingleRecipient>> ReplyTo;
+	std::optional<tSingleRecipient> ReceivedBy;
+	std::optional<tSingleRecipient> ReceivedRepresenting;
+
+	//<xs:element name="ApprovalRequestData" type="t:ApprovalRequestDataType" minOccurs="0" />
+	//<xs:element name="VotingInformation" type="t:VotingInformationType" minOccurs="0" />
+	//<xs:element name="ReminderMessageData" type="t:ReminderMessageDataType" minOccurs="0" />
+	//<xs:element name="MessageSafety" type="t:MessageSafetyType" minOccurs="0" />
+	//<xs:element name="SenderSMTPAddress" type="t:SmtpAddressType" minOccurs="0"/>
+	//<xs:element name="MailboxGuids" minOccurs="0" maxOccurs="1">
+	//<xs:complexType>
+	//  <xs:sequence>
+	//	<xs:element name="MailboxGuid" type="t:GuidType" maxOccurs="unbounded"/>
+	//  </xs:sequence>
+	//</xs:complexType>
+	//</xs:element>
+	//<xs:element name="PublishedCalendarItemIcs" type="xs:string" minOccurs="0" />
+	//<xs:element name="PublishedCalendarItemName" type="xs:string" minOccurs="0" />
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Joint item change type
+ *
+ * Types.xsd:6211
+ */
+using tSyncFolderItemsChange = std::variant<tSyncFolderItemsCreate, tSyncFolderItemsUpdate, tSyncFolderItemsDelete, tSyncFolderItemsReadFlag>;
+
+/**
+ * @brief     Joint type for create and update
+ *
+ * Types.xsd:1634
+ */
+struct tSyncFolderItemsCU
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	sItem item;
+};
+
+struct tSyncFolderItemsCreate : public tSyncFolderItemsCU
+{static constexpr char NAME[] = "Create";};
+
+struct tSyncFolderItemsUpdate : public tSyncFolderItemsCU
+{static constexpr char NAME[] = "Update";};
+
+/**
+ * Types.xsd:6198
+ */
+struct tSyncFolderItemsDelete
+{
+	static constexpr char NAME[] = "Delete";
+
+	tSyncFolderItemsDelete(const TAGGED_PROPVAL&);
+
+	tItemId ItemId;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:6204
+ */
+struct tSyncFolderItemsReadFlag
+{
+	static constexpr char NAME[] = "ReadFlagChange";
+
+	tItemId ItemId;
+	bool IsRead;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
 /**
  * Types.xsd:1273
  */
@@ -512,10 +796,10 @@ struct tFolderResponseShape
 {
 	tFolderResponseShape(const tinyxml2::XMLElement*);
 
-	std::vector<uint32_t> tags() const;
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&) const;
 
-	Enum::DefaultNamesType BaseShape;
-	std::optional<std::vector<tFolderShape>> AdditionalProperties;
+	Enum::DefaultShapeNamesType BaseShape;
+	std::optional<std::vector<tPath>> AdditionalProperties;
 
 	static constexpr std::array<uint32_t, 3> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY, PR_CONTAINER_CLASS};
 	static constexpr std::array<uint32_t, 4> tagsDefault = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
@@ -572,7 +856,8 @@ struct tDistinguishedFolderId
 {
 	static constexpr char NAME[] = "DistinguishedFolderId";
 
-	tDistinguishedFolderId(const tinyxml2::XMLElement*);
+	explicit tDistinguishedFolderId(const std::string_view&);
+	explicit tDistinguishedFolderId(const tinyxml2::XMLElement*);
 
 	std::optional<tEmailAddressType> Mailbox;
 	std::optional<std::string> ChangeKey; //Attribute
@@ -683,6 +968,7 @@ struct tSuggestionsViewOptions
  */
 struct tTargetFolderIdType
 {
+	explicit tTargetFolderIdType(std::variant<tFolderId, tDistinguishedFolderId>&&);
 	explicit tTargetFolderIdType(const tinyxml2::XMLElement*);
 
 	std::variant<tFolderId, tDistinguishedFolderId> folderId;
@@ -974,7 +1260,7 @@ struct mSyncFolderHierarchyResponseMessage : mResponseMessageType
 
 	std::optional<std::string> SyncState;
 	std::optional<bool> IncludesLastFolderInRange;
-	std::optional<std::vector<sSyncFolderHierarchyChange>> Changes;
+	std::optional<std::vector<tSyncFolderHierarchyChange>> Changes;
 
 	using mResponseMessageType::success;
 
@@ -987,6 +1273,43 @@ struct mSyncFolderHierarchyResponseMessage : mResponseMessageType
 struct mSyncFolderHierarchyResponse
 {
 	std::vector<mSyncFolderHierarchyResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2129
+ */
+struct mSyncFolderItemsRequest
+{
+	explicit mSyncFolderItemsRequest(const tinyxml2::XMLElement*);
+
+	tItemResponseShape ItemShape;
+	tTargetFolderIdType SyncFolderId;
+	std::optional<std::string> SyncState;
+	int32_t MaxChangesReturned;
+	std::optional<Enum::SyncFolderItemsScopeType> SyncScope;
+
+	//<xs:element name="Ignore" type="t:ArrayOfBaseItemIdsType" minOccurs="0"/>
+};
+
+struct mSyncFolderItemsResponseMessage : mResponseMessageType
+{
+	static constexpr char NAME[] = "SyncFolderItemsResponseMessage";
+
+	std::optional<std::string> SyncState;
+	std::optional<bool> IncludesLastItemInRange;
+	std::vector<tSyncFolderItemsChange> Changes;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2156
+ */
+struct mSyncFolderItemsResponse
+{
+	std::vector<mSyncFolderItemsResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

@@ -90,6 +90,21 @@ struct ExplicitConvert<int32_t>
 };
 
 /**
+ * @brief      Conversion specialization for unsigned long integer
+ */
+template<>
+struct ExplicitConvert<uint64_t>
+{
+	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
+
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, uint64_t& value)
+	{return xml->QueryUnsigned64Text(&value);}
+
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, uint64_t& value)
+	{return xml->QueryUnsigned64Value(&value);}
+};
+
+/**
  * @brief      Conversion specialization for std::string
  */
 template<>
@@ -596,9 +611,12 @@ static void toXMLAttr(tinyxml2::XMLElement* parent, const char* name, const T& v
 {
 	static_assert(BaseType<T>::container != LIST, "Cannot store list in attribute");
 	if constexpr(BaseType<T>::container == OPTIONAL)
+	{
 		if(!value)
 			return;
-	if constexpr(explicit_convert<T>(EC_OUT))
+		return toXMLAttr(parent, name, *value);
+	}
+	else if constexpr(explicit_convert<T>(EC_OUT))
 	{
 		const BaseType_t<T>* pvalue;
 		if constexpr(BaseType<T>::container == OPTIONAL)
