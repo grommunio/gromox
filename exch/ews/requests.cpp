@@ -126,7 +126,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 	{
 		sFolderSpec folderSpec;
 		try {
-			folderSpec = std::visit([](auto&& v){return sFolderSpec(v);}, folderId);
+			folderSpec = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, folderId);
 		} catch (DeserializationError& err) {
 			data.ResponseMessages.emplace_back("Error", "ErrorFolderNotFound", err.what());
 			continue;
@@ -137,20 +137,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 
 		mGetFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
 		TPROPVAL_ARRAY folderProps = ctx.getFolderProps(folderSpec, tags);
-
-		switch(folderSpec.type)
-		{
-		case gromox::EWS::Structures::sFolderSpec::CALENDAR:
-			msg.Folders.emplace_back(tCalendarFolderType(folderSpec, folderProps)); break;
-		case gromox::EWS::Structures::sFolderSpec::CONTACTS:
-			msg.Folders.emplace_back(tContactsFolderType(folderSpec, folderProps)); break;
-		case gromox::EWS::Structures::sFolderSpec::SEARCH:
-			msg.Folders.emplace_back(tSearchFolderType(folderSpec, folderProps)); break;
-		case gromox::EWS::Structures::sFolderSpec::TASKS:
-			msg.Folders.emplace_back(tTasksFolderType(folderSpec, folderProps)); break;
-		default:
-			msg.Folders.emplace_back(tFolderType(folderSpec, folderProps));
-		}
+		msg.Folders.emplace_back(tBaseFolderType::create(folderProps));
 
 		msg.success();
 	}
@@ -424,7 +411,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	if(request.SyncState)
 		syncState.init(*request.SyncState);
 
-	sFolderSpec folder = std::visit([](auto&& v){return sFolderSpec(v);}, request.SyncFolderId->folderId);
+	sFolderSpec folder = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, request.SyncFolderId->folderId);
 	if(!folder.target)
 		folder.target = ctx.auth_info.username;
 	std::string dir = ctx.getDir(folder.normalize());
@@ -447,7 +434,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		uint64_t* folderId = folderProps->get<uint64_t>(PidTagFolderId);
 		if(!folderId)
 			continue;
-		auto folderData = tBaseFolderType::create(*folder.target, *folderProps, tagFilter);
+		auto folderData = tBaseFolderType::create(*folderProps, tagFilter);
 		if(syncState.given.hint(*folderId))
 			msgChanges.emplace_back(tSyncFolderHierarchyUpdate(std::move(folderData)));
 		else
@@ -455,7 +442,10 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	}
 
 	for(uint64_t* fid = deleted_fids.pids; fid < deleted_fids.pids+deleted_fids.count; ++fid)
-		msgChanges.emplace_back(tSyncFolderHierarchyDelete(*folder.target, *fid));
+	{
+		TAGGED_PROPVAL entryID = ctx.getFolderEntryId(sFolderSpec(*folder.target, *fid));
+		msgChanges.emplace_back(tSyncFolderHierarchyDelete(entryID));
+	}
 
 	syncState.update(given_fids, lastCn);
 	msg.SyncState = syncState.serialize();

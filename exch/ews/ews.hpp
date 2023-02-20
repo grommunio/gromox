@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include <gromox/element_data.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/mapi_types.hpp>
@@ -18,6 +19,8 @@ namespace gromox::EWS {
 namespace Structures
 {
 struct sFolderSpec;
+struct tDistinguishedFolderId;
+struct tFolderId;
 struct tMailbox;
 struct tSerializableTimeZone;
 }
@@ -44,6 +47,7 @@ public:
 
 		decltype(mysql_adaptor_get_homedir)* get_homedir;
 		decltype(mysql_adaptor_get_maildir)* get_maildir;
+		decltype(mysql_adaptor_get_domain_info)* get_domain_info;
 		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
 	} mysql; ///< mysql adaptor function pointers
 
@@ -85,8 +89,12 @@ struct EWSContext
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
 	std::string getDir(const Structures::sFolderSpec&) const;
+	TAGGED_PROPVAL getFolderEntryId(const Structures::sFolderSpec&) const;
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	void normalize(Structures::tMailbox&) const;
+	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
+	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
+	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 
 	int ID = 0;
 	HTTP_REQUEST& orig;
@@ -96,6 +104,7 @@ struct EWSContext
 	EWSPlugin& plugin;
 
 	static void* alloc(size_t);
+	static void ext_error(pack_result);
 };
 
 }

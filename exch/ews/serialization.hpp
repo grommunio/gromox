@@ -121,8 +121,6 @@ struct ExplicitConvert<std::string>
 
 /**
  * @brief      Conversion specialization for timestamps
- *
- * @todo       Implement deserialization
  */
 template<>
 struct ExplicitConvert<gromox::time_point>
@@ -451,7 +449,7 @@ static T fromXMLNode(const tinyxml2::XMLElement* xml, const char* name)
  *
  * @return     New instance of the type
  */
-template<typename T, std::enable_if_t<explicit_convert<T>(EC_IN), bool> = true>
+template<typename T>
 static T fromXMLAttr(const tinyxml2::XMLElement* xml, const char* name)
 {
 	static_assert(BaseType<T>::container != LIST, "Cannot read list from attribute");
@@ -597,17 +595,18 @@ template<typename T>
 static void toXMLAttr(tinyxml2::XMLElement* parent, const char* name, const T& value)
 {
 	static_assert(BaseType<T>::container != LIST, "Cannot store list in attribute");
-	const BaseType_t<T>* pvalue;
 	if constexpr(BaseType<T>::container == OPTIONAL)
-	{
 		if(!value)
 			return;
-		pvalue = &value.value();
-	}
-	else
-		pvalue = &value;
 	if constexpr(explicit_convert<T>(EC_OUT))
+	{
+		const BaseType_t<T>* pvalue;
+		if constexpr(BaseType<T>::container == OPTIONAL)
+			pvalue = &value.value();
+		else
+			pvalue = &value;
 		ExplicitConvert<BaseType_t<T>>::serialize(*pvalue, [parent, name](const char* data){parent->SetAttribute(name, data);});
+	}
 	else if constexpr(explicit_convert<T>(EC_IMP_OUT))
 		parent->SetAttribute(name, value);
 	else

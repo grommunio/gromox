@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <cctype>
 #include <fmt/core.h>
+
+#include <gromox/rop_util.hpp>
+#include <gromox/ext_buffer.hpp>
+
 #include "exceptions.hpp"
 #include "ews.hpp"
 #include "structures.hpp"
@@ -118,6 +122,25 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
 }
 
 /**
+ * @brief     Get entry ID property of folder
+ *
+ * Also works on non-existant folders.
+ *
+ * @param     folder  Folder specification
+ *
+ * @return    Tagged property containing the entry ID
+ */
+TAGGED_PROPVAL EWSContext::getFolderEntryId(const sFolderSpec& folder) const
+{
+	static constexpr uint32_t propids[] = {PR_ENTRYID};
+	PROPTAG_ARRAY proptags{1, const_cast<uint32_t*>(propids)};
+	TPROPVAL_ARRAY props = getFolderProps(folder, proptags);
+	if(props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
+		throw DispatchError("Failed to get folder entry id");
+	return *props.ppropval;
+}
+
+/**
  * @brief     Get properties of specified folder
  *
  * @param     folder  Folder Specification
@@ -154,6 +177,93 @@ void EWSContext::normalize(tMailbox& Mailbox) const
 		throw  DispatchError(E3010(*Mailbox.RoutingType));
 	Mailbox.Address = essdn_to_username(Mailbox.Address);
 	Mailbox.RoutingType = "smtp";
+}
+
+/**
+ * @brief     Get folder permissions
+ *
+ * Always returns full access if target matches username.
+ *
+ * @param     username    Name of the user requesting access
+ * @param     folder      Target folder specification
+ * @param     maildir     Target maildir or nullptr to resolve automatically
+ *
+ * @return    Permission flags
+ */
+uint32_t EWSContext::permissions(const char* username, const sFolderSpec& folder, const char* maildir) const
+{
+	if(username == folder.target)
+		return 0xFFFFFFFF;
+	std::string temp;
+	if(!maildir)
+	{
+		temp = getDir(folder);
+		maildir = temp.c_str();
+	}
+	uint32_t permissions = 0;
+	plugin.exmdb.get_folder_perm(maildir, folder.folderId, username, &permissions);
+	return permissions;
+}
+
+/**
+ * @brief     Get folder specification from distinguished folder ID
+ *
+ * Convenience proxy for sFolderSpec constructor to be used with varian::visit.
+ *
+ * @param     fId     Distinguished folder ID to resolve
+ *
+ * @return    Folder specification
+ */
+sFolderSpec EWSContext::resolveFolder(const tDistinguishedFolderId& fId) const
+{return sFolderSpec(fId);}
+
+
+/**
+ * @brief      Get folder specification from entry ID
+ *
+ * @param      fId    Folder Id
+ *
+ * @return     Folder specification
+ */
+sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
+{
+	sFolderEntryId eid(fId.Id.data(), fId.Id.size());
+	sFolderSpec folderSpec;
+	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
+	folderSpec.folderId = rop_util_make_eid_ex(1, rop_util_gc_to_value(eid.global_counter));
+	if(eid.isPrivate())
+	{
+		char temp[UADDR_SIZE];
+		if(!plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
+			throw DispatchError("Failed to get username from id");
+		folderSpec.target = temp;
+	}
+	else
+	{
+		sql_domain domaininfo;
+		if(!plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
+			throw DispatchError("Failed to get domain info from id");
+		folderSpec.target = domaininfo.name;
+	}
+	return folderSpec;
+}
+
+
+/**
+ * @brief     Convert EXT_PUSH/EXT_PULL return code to exception
+ *
+ * @param     code    ext_buffer return code
+ *
+ * @todo      Add more exceptions for better differentiation
+ */
+void EWSContext::ext_error(pack_result code)
+{
+	switch(code)
+	{
+	case EXT_ERR_SUCCESS: return;
+	case EXT_ERR_ALLOC: throw std::bad_alloc();
+	default: throw DispatchError("Buffer error ("+std::to_string(int(code))+")");
+	}
 }
 
 }

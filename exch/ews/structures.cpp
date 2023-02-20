@@ -59,11 +59,29 @@ struct Cleaner
  *
  * @return    Base64 encoded string
  */
-std::string b64encode(void* data, size_t len)
+std::string b64encode(const void* data, size_t len)
 {
 	std::string out(4*((len+2)/3)+1, '\0');
 	size_t outlen;
 	encode64(data, len, out.data(), out.length(), &outlen);
+	out.resize(outlen);
+	return out;
+}
+
+/**
+ * @brief     Compute Base64 decoded string
+ *
+ * @param     data    Data to decode
+ * @param     len     Number of bytes
+ *
+ * @return    Base64 encoded string
+ */
+std::string b64decode(const char* data, size_t len)
+{
+	std::string out(len*3/4+1, '\0');
+	size_t outlen;
+	if(decode64(data, len, out.data(), out.length(), &outlen))
+		throw DeserializationError("Invalid base64 string");
 	out.resize(outlen);
 	return out;
 }
@@ -98,52 +116,161 @@ XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLEle
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-decltype(sFolderSpec::distNameInfo) sFolderSpec::distNameInfo = {{
-    {"calendar", PRIVATE_FID_CALENDAR, sFolderSpec::CALENDAR, true},
-    {"conflicts", PRIVATE_FID_CONFLICTS, sFolderSpec::NORMAL, true},
-    {"contacts", PRIVATE_FID_CONTACTS, sFolderSpec::CONTACTS, true},
-    {"deleteditems", PRIVATE_FID_DELETED_ITEMS, sFolderSpec::NORMAL, true},
-    {"drafts", PRIVATE_FID_DRAFT, sFolderSpec::NORMAL, true},
-    {"imcontactlist", PRIVATE_FID_IMCONTACTLIST, sFolderSpec::NORMAL, true},
-    {"inbox", PRIVATE_FID_INBOX, sFolderSpec::NORMAL, true},
-    {"journal", PRIVATE_FID_JOURNAL, sFolderSpec::NORMAL, true},
-    {"junkemail", PRIVATE_FID_JUNK, sFolderSpec::NORMAL, true},
-    {"localfailures", PRIVATE_FID_LOCAL_FAILURES, sFolderSpec::NORMAL, true},
-    {"msgfolderroot", PRIVATE_FID_IPMSUBTREE, sFolderSpec::NORMAL, true},
-    {"notes", PRIVATE_FID_NOTES, sFolderSpec::NORMAL, true},
-    {"outbox", PRIVATE_FID_OUTBOX, sFolderSpec::NORMAL, true},
-    {"publicfoldersroot", PUBLIC_FID_IPMSUBTREE, sFolderSpec::NORMAL, false},
-    {"quickcontacts", PRIVATE_FID_QUICKCONTACTS, sFolderSpec::NORMAL, true},
-    {"root", PRIVATE_FID_ROOT, sFolderSpec::NORMAL, true},
-    {"scheduled", PRIVATE_FID_SCHEDULE, sFolderSpec::NORMAL, true},
-    {"sentitems", PRIVATE_FID_SENT_ITEMS, sFolderSpec::NORMAL, true},
-    {"serverfailures", PRIVATE_FID_SERVER_FAILURES, sFolderSpec::NORMAL, true},
-    {"syncissues", PRIVATE_FID_SYNC_ISSUES, sFolderSpec::NORMAL, true},
-    {"tasks", PRIVATE_FID_TASKS, sFolderSpec::TASKS, true},
-}};
+/**
+ * @brief     Decode Base64 encoded data from XML element
+ */
+sBase64Binary::sBase64Binary(const XMLElement* xml)
+{
+	const char* data = xml->GetText();
+	if(!data)
+		throw DeserializationError("Element '"s+xml->Name()+"'is empty");
+	assign(b64decode(data, strlen(data)));
+}
 
 /**
- * @brief     Derive folder specification from FolderId type
- *
- * Currently uses a custom human readable format.
- *
- * @todo     Use a better Id representation
- *
- * @param    folder  Folder ID
+ * @brief     Decode Base64 encoded data from XML attribute
  */
-sFolderSpec::sFolderSpec(const tFolderId& folder)
+sBase64Binary::sBase64Binary(const XMLAttribute* xml) : std::string(b64decode(xml->Value(), strlen(xml->Value())))
+{}
+
+/**
+ * @brief     Initilize binary data from tagged propval
+ *
+ * Propval type must be PT_BINARY.
+ */
+sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 {
-	size_t b1 = folder.Id.find(':');
-	size_t b2 = folder.Id.find(':', b1+1);
-	if(b1 == std::string::npos || b2 == std::string::npos)
-		throw DeserializationError("Malformed folder specification: "+folder.Id);
-	if(b1 > 0)
-		target = folder.Id.substr(0, b1);
-	printf("%s\n", folder.Id.substr(b1+1, b2-b1).c_str());
-	printf("%s\n", folder.Id.substr(b2+1).c_str());
-	folderId = std::stoull(folder.Id.substr(b1+1, b2-b1));
-	type = Type(std::stoul(folder.Id.substr(b2+1)));
+	if(PROP_TYPE(tp.proptag) != PT_BINARY)
+		throw DispatchError("Can only convert binary properties to Base64Binary");
+	const BINARY* bin = static_cast<const BINARY*>(tp.pvalue);
+	assign(bin->pc, bin->cb);
 }
+
+/**
+ * @brief     Return Base64 encoded data
+ *
+ * @return    std::string conatining base64 encoded data
+ */
+std::string sBase64Binary::serialize() const
+{return empty()? std::string() : b64encode(data(), size());}
+
+/**
+ * @brief     Store Base64 encoded data in xml element
+ *
+ * @param     xml     XML element to store data in
+ */
+void sBase64Binary::serialize(XMLElement* xml) const
+{xml->SetText(empty()? "" : b64encode(data(), size()).c_str());}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define TRY(expr) EWSContext::ext_error(expr)
+
+/**
+ * @brief     Read entry ID from XML attribute
+ *
+ * @param     xml     XML attribute containing Base64 encoded entry ID
+ */
+sFolderEntryId::sFolderEntryId(const XMLAttribute* xml)
+{
+	sBase64Binary bin(xml);
+	init(bin.data(), bin.size());
+}
+
+/**
+ * @brief     Parse entry ID from binary data
+ *
+ * @param     data     Buffer containing the entry ID
+ * @param     size     Size of the buffer
+ */
+sFolderEntryId::sFolderEntryId(const void* data, uint64_t size)
+{init(data, size);}
+
+/**
+ * @brief     Parse entry ID from binary data
+ *
+ * @param     data     Buffer containing the entry ID
+ * @param     size     Size of the buffer
+ */
+void sFolderEntryId::init(const void* data, uint64_t size)
+{
+	EXT_PULL ext_pull;
+	if(size >	std::numeric_limits<uint32_t>::max())
+		throw DeserializationError("Folder entry ID data to large");
+	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	TRY(ext_pull.g_folder_eid(this));
+}
+
+/**
+ * @brief     Generate entry ID object
+ *
+ * @return    String containing base64 encoded entry ID
+ */
+std::string sFolderEntryId::serialize() const
+{
+	char buff[64];
+	EXT_PUSH ext_push;
+	ext_push.init(buff, 64, 0, nullptr);
+	TRY(ext_push.p_folder_eid(*this));
+	return b64encode(buff, ext_push.m_offset);
+}
+
+/**
+ * @brief     Retrieve account ID from entry ID
+ *
+ * @return    User or domain ID (depending on isPrivate())
+ */
+uint32_t sFolderEntryId::accountId() const
+{return database_guid.time_low;}
+
+/**
+ * @brief     Retrieve folder ID from entryID
+ *
+ * @return    Folder ID
+ */
+uint64_t sFolderEntryId::folderId() const
+{return rop_util_gc_to_value(global_counter);}
+
+/**
+ * @brief     Retrieve folder type
+ *
+ * @return    true if folder is private, false otherwise
+ */
+bool sFolderEntryId::isPrivate() const
+{return folder_type == EITLT_PRIVATE_FOLDER;}
+
+#undef TRY
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * List of known distinguished folder IDs
+ *
+ * Must be sorted alphabetically by name.
+ */
+decltype(sFolderSpec::distNameInfo) sFolderSpec::distNameInfo = {{
+    {"calendar", PRIVATE_FID_CALENDAR, true},
+    {"conflicts", PRIVATE_FID_CONFLICTS, true},
+    {"contacts", PRIVATE_FID_CONTACTS, true},
+    {"deleteditems", PRIVATE_FID_DELETED_ITEMS, true},
+    {"drafts", PRIVATE_FID_DRAFT, true},
+    {"imcontactlist", PRIVATE_FID_IMCONTACTLIST, true},
+    {"inbox", PRIVATE_FID_INBOX, true},
+    {"journal", PRIVATE_FID_JOURNAL, true},
+    {"junkemail", PRIVATE_FID_JUNK, true},
+    {"localfailures", PRIVATE_FID_LOCAL_FAILURES, true},
+    {"msgfolderroot", PRIVATE_FID_IPMSUBTREE, true},
+    {"notes", PRIVATE_FID_NOTES, true},
+    {"outbox", PRIVATE_FID_OUTBOX, true},
+    {"publicfoldersroot", PUBLIC_FID_IPMSUBTREE, false},
+    {"quickcontacts", PRIVATE_FID_QUICKCONTACTS, true},
+    {"root", PRIVATE_FID_ROOT, true},
+    {"scheduled", PRIVATE_FID_SCHEDULE, true},
+    {"sentitems", PRIVATE_FID_SENT_ITEMS, true},
+    {"serverfailures", PRIVATE_FID_SERVER_FAILURES, true},
+    {"syncissues", PRIVATE_FID_SYNC_ISSUES, true},
+    {"tasks", PRIVATE_FID_TASKS, true},
+}};
 
 /**
  * @brief     Derive folder specification from distinguished ID
@@ -157,7 +284,6 @@ sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
 	if(it == distNameInfo.end())
 		throw DeserializationError("Unknown distinguished folder id "+folder.Id);
 	folderId = rop_util_make_eid_ex(1, it->id);
-	type = it->type;
 	location = it->isPrivate? PRIVATE : PUBLIC;
 	if(folder.Mailbox)
 		target = folder.Mailbox->EmailAddress;
@@ -166,8 +292,8 @@ sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
 /**
  * @brief     Explicit initialization for direct serialization
  */
-sFolderSpec::sFolderSpec(const std::string& target, uint64_t folderId, Type type) :
-    target(target), folderId(folderId), type(type)
+sFolderSpec::sFolderSpec(const std::string& target, uint64_t folderId) :
+    target(target), folderId(folderId)
 {}
 
 /**
@@ -182,18 +308,6 @@ sFolderSpec& sFolderSpec::normalize()
 		return *this;
 	target->erase(0, at+1);
 	return *this;
-}
-
-/**
- * @brief     Generate ID string from specification
- *
- * @todo      Use a better Id representation
- *
- * @return    ID string
- */
-std::string sFolderSpec::serialize() const
-{
-	return (target? *target : "")+':'+std::to_string(folderId)+':'+std::to_string(type);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -341,11 +455,9 @@ void sTimePoint::serialize(XMLElement* xml) const
  * @param     folderProps     folder property values
  * @param     filter          Sorted array of properties to consider
  */
-tBaseFolderType::tBaseFolderType(const sFolderSpec& folder, const TPROPVAL_ARRAY& folderProps,
-                                 const TagFilter& filter)
+tBaseFolderType::tBaseFolderType(const TPROPVAL_ARRAY& folderProps, const TagFilter& filter)
 {
 	tFolderId& fId = FolderId.emplace();
-	fId.Id = folder.serialize();
 	for(const TAGGED_PROPVAL* tp = folderProps.ppropval; tp < folderProps.ppropval+folderProps.count; ++tp)
 	{
 		if(!filter.empty() && !std::binary_search(filter.begin(), filter.end(), tp->proptag))
@@ -365,11 +477,13 @@ tBaseFolderType::tBaseFolderType(const sFolderSpec& folder, const TPROPVAL_ARRAY
 			TotalCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
 		case PR_DISPLAY_NAME:
 			DisplayName = reinterpret_cast<const char*>(tp->pvalue); break;
+		case PR_ENTRYID:
+			fId.Id = *tp; break;
 		case PR_FOLDER_CHILD_COUNT:
 			ChildFolderCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
-		case PidTagParentFolderId: {
+		case PR_PARENT_ENTRYID: {
 			tFolderId& pf = ParentFolderId.emplace();
-			pf.Id = sFolderSpec(folder.target.value_or(""), *reinterpret_cast<uint64_t*>(tp->pvalue)).serialize();
+			pf.Id = *tp;
 			break;
 		}
 		default:
@@ -401,33 +515,32 @@ void tBaseFolderType::serialize(XMLElement* xml) const
  *
  * @return    Variant containing the folder information struct
  */
-sFolder tBaseFolderType::create(const std::string& target, const TPROPVAL_ARRAY& folderProps, const TagFilter& filter)
+sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps, const TagFilter& filter)
 {
-	uint64_t* fId = folderProps.get<uint64_t>(PidTagFolderId);
+	enum Type :uint8_t {NORMAL, CALENDAR, TASKS, CONTACTS, SEARCH};
 	const char* frClass = folderProps.get<const char>(PR_CONTAINER_CLASS);
-	sFolderSpec::Type folderType = sFolderSpec::NORMAL;
+	Type folderType = NORMAL;
 	if(frClass)
 	{
 		if(!strcmp(frClass, "IPF.Appointment"))
-			folderType = sFolderSpec::CALENDAR;
+			folderType = CALENDAR;
 		else if(!strcmp(frClass, "IPF.Task"))
-			folderType = sFolderSpec::TASKS;
+			folderType = TASKS;
 		else if(!strcmp(frClass, "IPF.Contact"))
-			folderType = sFolderSpec::CONTACTS;
+			folderType = CONTACTS;
 	}
-	sFolderSpec folderSpec(target, fId? *fId : 0, folderType);
 	switch(folderType)
 	{
-	case sFolderSpec::CALENDAR:
-		return tCalendarFolderType(folderSpec, folderProps, filter);
-	case sFolderSpec::CONTACTS:
-		return tContactsFolderType(folderSpec, folderProps, filter);
-	case  sFolderSpec::SEARCH:
-		return tSearchFolderType(folderSpec, folderProps, filter);
-	case sFolderSpec::TASKS:
-		return tTasksFolderType(folderSpec, folderProps, filter);
+	case CALENDAR:
+		return tCalendarFolderType(folderProps, filter);
+	case CONTACTS:
+		return tContactsFolderType(folderProps, filter);
+	case SEARCH:
+		return tSearchFolderType(folderProps, filter);
+	case TASKS:
+		return tTasksFolderType(folderProps, filter);
 	default:
-		return tFolderType(folderSpec, folderProps, filter);
+		return tFolderType(folderProps, filter);
 	}
 }
 
@@ -705,8 +818,7 @@ tFolderId::tFolderId(const XMLElement* xml) :
     XMLINITA(Id), XMLINITA(ChangeKey)
 {}
 
-tFolderId::tFolderId(const sFolderSpec& spec) :
-    Id(spec.serialize())
+tFolderId::tFolderId(const sBase64Binary& fEntryID) : Id(fEntryID)
 {}
 
 void tFolderId::serialize(XMLElement* xml) const
@@ -729,13 +841,13 @@ tFolderResponseShape::tFolderResponseShape(const XMLElement* xml) :
  */
 std::vector<uint32_t> tFolderResponseShape::tags() const
 {
-	size_t tagCount = 1+(AdditionalProperties? AdditionalProperties->size() : 0);
+	size_t tagCount = tagsIdOnly.size()+(AdditionalProperties? AdditionalProperties->size() : 0);
 	size_t baseShape = BaseShape.index();
 	if(baseShape >= 1)
 		tagCount += tagsDefault.size();
 	std::vector<uint32_t> ret;
 	ret.reserve(tagCount);
-	ret.emplace_back(PR_CHANGE_KEY);
+	ret.insert(ret.end(), tagsIdOnly.begin(), tagsIdOnly.end());
 	if(baseShape >= 1)
 		ret.insert(ret.end(), tagsDefault.begin(), tagsDefault.end());
 	if(AdditionalProperties)
@@ -757,8 +869,8 @@ uint32_t tFolderShape::tag() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tFolderType::tFolderType(const sFolderSpec& folder, const TPROPVAL_ARRAY& folderProps, const TagFilter& filter) :
-    tBaseFolderType(folder, folderProps, filter)
+tFolderType::tFolderType(const TPROPVAL_ARRAY& folderProps, const TagFilter& filter) :
+    tBaseFolderType(folderProps, filter)
 {
 	if((filter.empty() || std::binary_search(filter.begin(), filter.end(), PR_CONTENT_UNREAD))
 	        && folderProps.has(PR_CONTENT_UNREAD))
@@ -935,8 +1047,8 @@ tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder&& folder) : folder(folder
 void tSyncFolderHierarchyCU::serialize(XMLElement* xml) const
 {VXMLDUMP(folder);}
 
-tSyncFolderHierarchyDelete::tSyncFolderHierarchyDelete(const std::string& target, uint64_t fid) :
-    FolderId(sFolderSpec(target, fid))
+tSyncFolderHierarchyDelete::tSyncFolderHierarchyDelete(const sBase64Binary& fEntryID) :
+    FolderId(fEntryID)
 {}
 
 void tSyncFolderHierarchyDelete::serialize(XMLElement* xml) const

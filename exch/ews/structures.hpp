@@ -40,6 +40,43 @@ struct tSyncFolderHierarchyCreate;
 struct tSyncFolderHierarchyUpdate;
 struct tSyncFolderHierarchyDelete;
 
+
+/**
+ * @brief     Convenience wrapper for Base64 encoded data
+ *
+ * Automatically en- and decodes during (de-)serialization, providing direct
+ * access to the binary data.
+ */
+struct sBase64Binary : public std::string
+{
+	sBase64Binary() = default;
+	sBase64Binary(const TAGGED_PROPVAL&);
+	explicit sBase64Binary(const tinyxml2::XMLElement*);
+	explicit sBase64Binary(const tinyxml2::XMLAttribute*);
+
+	std::string serialize() const;
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * @brief     Folder entry ID extension
+ *
+ * Provides EWS conversions and access utilities.
+ */
+struct sFolderEntryId : public FOLDER_ENTRYID
+{
+	sFolderEntryId(const tinyxml2::XMLAttribute*);
+	sFolderEntryId(const void*, uint64_t);
+
+	std::string serialize() const;
+
+	uint32_t accountId() const;
+	uint64_t folderId() const;
+	bool isPrivate() const;
+private:
+	void init(const void*, uint64_t);
+};
+
 /**
  * @brief      Folder specification
  *
@@ -48,27 +85,21 @@ struct tSyncFolderHierarchyDelete;
  */
 struct sFolderSpec
 {
-	enum Type : uint8_t {NORMAL, CALENDAR, CONTACTS, SEARCH, TASKS};
-
 	sFolderSpec() = default;
-	explicit sFolderSpec(const tFolderId&);
 	explicit sFolderSpec(const tDistinguishedFolderId&);
-	sFolderSpec(const std::string&, uint64_t, Type=NORMAL);
+	sFolderSpec(const std::string&, uint64_t);
 
 	sFolderSpec& normalize();
-	std::string serialize() const;
 
 	std::optional<std::string> target;
 	uint64_t folderId;
-	Type type = NORMAL;
-	enum {AUTO, PRIVATE, PUBLIC} location = AUTO;
+	enum : uint8_t {AUTO, PRIVATE, PUBLIC} location = AUTO;
 
 private:
 	struct DistNameInfo
 	{
 		const char* name;
 		uint64_t id;
-		Type type;
 		bool isPrivate;
 	};
 
@@ -214,11 +245,11 @@ struct tFolderId
 
 	tFolderId() = default;
 	tFolderId(const tinyxml2::XMLElement*);
-	tFolderId(const sFolderSpec&);
+	tFolderId(const sBase64Binary&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	std::string Id; //Attribute
+	sBase64Binary Id; //Attribute
 	std::optional<std::string> ChangeKey; //Attribute
 };
 
@@ -270,7 +301,7 @@ struct tBaseFolderType
 {
 	using TagFilter = std::vector<uint32_t>;
 
-	explicit tBaseFolderType(const sFolderSpec&, const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
+	explicit tBaseFolderType(const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -288,7 +319,7 @@ struct tBaseFolderType
 	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ReplicaList" type="t:ArrayOfStringsType" minOccurs="0" />
 
-	static sFolder create(const std::string&, const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
+	static sFolder create(const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
 protected:
 	tBaseFolderType(const tBaseFolderType&) = default;
 	tBaseFolderType(tBaseFolderType&&) noexcept = default;
@@ -330,7 +361,7 @@ struct tFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "Folder";
 
-	explicit tFolderType(const sFolderSpec&, const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
+	explicit tFolderType(const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -467,7 +498,7 @@ struct tSyncFolderHierarchyDelete
 {
 	static constexpr char NAME[] = "Delete";
 
-	tSyncFolderHierarchyDelete(const std::string&, uint64_t);
+	tSyncFolderHierarchyDelete(const sBase64Binary&);
 
 	tFolderId FolderId;
 
@@ -486,7 +517,7 @@ struct tFolderResponseShape
 	Enum::DefaultNamesType BaseShape;
 	std::optional<std::vector<tFolderShape>> AdditionalProperties;
 
-	static constexpr std::array<uint32_t, 1> tagsIdOnly = {PR_CHANGE_KEY};
+	static constexpr std::array<uint32_t, 3> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY, PR_CONTAINER_CLASS};
 	static constexpr std::array<uint32_t, 4> tagsDefault = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
 };
 
