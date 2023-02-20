@@ -65,6 +65,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
+	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////

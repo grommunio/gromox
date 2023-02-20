@@ -340,7 +340,7 @@ static T fromXMLNode(const tinyxml2::XMLElement* child)
  */
 template<typename T>
 static T fromXMLNodeOpt(const tinyxml2::XMLElement* child)
-{return child? T(fromXMLNodeDispatch<BaseType_t<T>>(child)) : std::nullopt;}
+{return child && !child->NoChildren()? T(fromXMLNodeDispatch<BaseType_t<T>>(child)) : std::nullopt;}
 
 /**
  * @brief      Deserialize list of elements

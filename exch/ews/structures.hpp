@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <gromox/clock.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 
 #include "enums.hpp"
@@ -35,6 +36,9 @@ struct tCalendarFolderType;
 struct tContactsFolderType;
 struct tSearchFolderType;
 struct tTasksFolderType;
+struct tSyncFolderHierarchyCreate;
+struct tSyncFolderHierarchyUpdate;
+struct tSyncFolderHierarchyDelete;
 
 /**
  * @brief      Folder specification
@@ -49,9 +53,9 @@ struct sFolderSpec
 	sFolderSpec() = default;
 	explicit sFolderSpec(const tFolderId&);
 	explicit sFolderSpec(const tDistinguishedFolderId&);
-	sFolderSpec(const std::string_view&, uint64_t, Type=NORMAL);
+	sFolderSpec(const std::string&, uint64_t, Type=NORMAL);
 
-	void normalize();
+	sFolderSpec& normalize();
 	std::string serialize() const;
 
 	std::optional<std::string> target;
@@ -75,6 +79,26 @@ private:
  * Joint folder type
  */
 using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderType, tSearchFolderType, tTasksFolderType>;
+
+/**
+ * Joint hierarchy change type
+ */
+using sSyncFolderHierarchyChange = std::variant<tSyncFolderHierarchyCreate, tSyncFolderHierarchyUpdate, tSyncFolderHierarchyDelete>;
+
+/**
+ * @brief     Sync state helper class
+ */
+struct sSyncState
+{
+	sSyncState();
+
+	void init(const std::string&);
+	void update(const EID_ARRAY&, uint64_t);
+	std::string serialize();
+
+	idset given; ///< Set of known IDs
+	idset seen;  ///< Set of known change numbers
+};
 
 /**
  * @brief     Formatted time string helper struct
@@ -190,6 +214,7 @@ struct tFolderId
 
 	tFolderId() = default;
 	tFolderId(const tinyxml2::XMLElement*);
+	tFolderId(const sFolderSpec&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -243,6 +268,10 @@ private:
  */
 struct tBaseFolderType
 {
+	using TagFilter = std::vector<uint32_t>;
+
+	explicit tBaseFolderType(const sFolderSpec&, const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
+
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::optional<tFolderId> FolderId;
@@ -252,14 +281,17 @@ struct tBaseFolderType
 	std::optional<int32_t> TotalCount;
 	std::optional<int32_t> ChildFolderCount;
 	std::vector<tExtendedProperty> ExtendendProperty;
-	//<xs:element name="ExtendedProperty" type="t:ExtendedPropertyType" minOccurs="0" maxOccurs="unbounded"/>
 	//<xs:element name="ManagedFolderInformation" type="t:ManagedFolderInformationType" minOccurs="0"/>
 	//<xs:element name="EffectiveRights" type="t:EffectiveRightsType" minOccurs="0"/>
 	//<xs:element name="DistinguishedFolderId" type="t:DistinguishedFolderIdNameType" minOccurs="0"/>
 	//<xs:element name="PolicyTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ReplicaList" type="t:ArrayOfStringsType" minOccurs="0" />
+
+	static sFolder create(const std::string&, const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
 protected:
+	tBaseFolderType(const tBaseFolderType&) = default;
+	tBaseFolderType(tBaseFolderType&&) noexcept = default;
 	~tBaseFolderType() = default; ///< Abstract class, only available to derived classes
 };
 
@@ -298,6 +330,8 @@ struct tFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "Folder";
 
+	explicit tFolderType(const sFolderSpec&, const TPROPVAL_ARRAY&, const TagFilter& = TagFilter());
+
 	void serialize(tinyxml2::XMLElement*) const;
 
 	//<xs:element name="PermissionSet" type="t:PermissionSetType" minOccurs="0"/>
@@ -311,6 +345,8 @@ struct tCalendarFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "CalendarFolder";
 
+	using tBaseFolderType::tBaseFolderType;
+
 	//void serialize(tinyxml2::XMLElement*) const;
 
 	//<xs:element name="SharingEffectiveRights" type="t:CalendarPermissionReadAccessType" minOccurs="0"/>
@@ -323,6 +359,8 @@ struct tCalendarFolderType : public tBaseFolderType
 struct tContactsFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "ContactsFolder";
+
+	using tBaseFolderType::tBaseFolderType;
 
 	//void serialize(tinyxml2::XMLElement*) const;
 
@@ -339,6 +377,8 @@ struct tSearchFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "SearchFolder";
 
+	using tBaseFolderType::tBaseFolderType;
+
 	//void serialize(tinyxml2::XMLElement*) const;
 
 	//<xs:element name="SearchParameters" type="t:SearchParametersType" minOccurs="0" />
@@ -351,6 +391,7 @@ struct tSearchFolderType : public tBaseFolderType
 struct tTasksFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "TasksFolder";
+	using tBaseFolderType::tBaseFolderType;
 };
 
 
@@ -383,6 +424,54 @@ struct tSerializableTimeZone
 	std::chrono::minutes offset(const gromox::time_point&) const;
 	gromox::time_point apply(const gromox::time_point&) const;
 	gromox::time_point remove(const gromox::time_point&) const;
+};
+
+/**
+ * @brief     Joint type for create and update
+ *
+ * Types.xsd:6223
+ */
+struct tSyncFolderHierarchyCU
+{
+	tSyncFolderHierarchyCU(sFolder&&);
+
+	sFolder folder;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:6223
+ */
+struct tSyncFolderHierarchyCreate : public tSyncFolderHierarchyCU
+{
+	using tSyncFolderHierarchyCU::tSyncFolderHierarchyCU;
+
+	static constexpr char NAME[] = "Create";
+};
+
+/**
+ * Types.xsd:6223
+ */
+struct tSyncFolderHierarchyUpdate : public tSyncFolderHierarchyCU
+{
+	static constexpr char NAME[] = "Update";
+
+	using tSyncFolderHierarchyCU::tSyncFolderHierarchyCU;
+};
+
+/**
+ * Types.xsd:6233
+ */
+struct tSyncFolderHierarchyDelete
+{
+	static constexpr char NAME[] = "Delete";
+
+	tSyncFolderHierarchyDelete(const std::string&, uint64_t);
+
+	tFolderId FolderId;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -556,6 +645,16 @@ struct tSuggestionsViewOptions
 	tDuration DetailedSuggestionsWindow;
 	std::optional<gromox::time_point> CurrentMeetingTime;
 	std::optional<std::string> GlobalObjectId;
+};
+
+/**
+ * Types.xsd:1898
+ */
+struct tTargetFolderIdType
+{
+	explicit tTargetFolderIdType(const tinyxml2::XMLElement*);
+
+	std::variant<tFolderId, tDistinguishedFolderId> folderId;
 };
 
 /**
@@ -819,6 +918,44 @@ struct mSetUserOofSettingsRequest
 struct mSetUserOofSettingsResponse
 {
 	mResponseMessageType ResponseMessage;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2098
+ */
+struct mSyncFolderHierarchyRequest
+{
+	explicit mSyncFolderHierarchyRequest(const tinyxml2::XMLElement*);
+
+	tFolderResponseShape FolderShape;
+	std::optional<tTargetFolderIdType> SyncFolderId;
+	std::optional<std::string> SyncState;
+};
+
+/**
+ * Messages.xsd:2111
+ */
+struct mSyncFolderHierarchyResponseMessage : mResponseMessageType
+{
+	static constexpr char NAME[] = "SyncFolderHierarchyResponseMessage";
+
+	std::optional<std::string> SyncState;
+	std::optional<bool> IncludesLastFolderInRange;
+	std::optional<std::vector<sSyncFolderHierarchyChange>> Changes;
+
+	using mResponseMessageType::success;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2122
+ */
+struct mSyncFolderHierarchyResponse
+{
+	std::vector<mSyncFolderHierarchyResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

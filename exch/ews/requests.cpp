@@ -98,23 +98,6 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 	chmod(path.c_str(), 0666);
 }
 
-/**
- * @brief     Compute Base64 encoded string
- *
- * @param     data    Data to encode
- * @param     len     Number of bytes
- *
- * @return    Base64 encoded string
- */
-std::string b64encode(void* data, size_t len)
-{
-	std::string out(4*((len+2)/3)+1, '\0');
-	size_t outlen;
-	encode64(data, len, out.data(), out.length(), &outlen);
-	out.resize(outlen);
-	return out;
-}
-
 } //anonymous namespace
 ///////////////////////////////////////////////////////////////////////
 //Request implementations
@@ -141,7 +124,6 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 	data.ResponseMessages.reserve(request.FolderIds.size());
 	for(auto& folderId : request.FolderIds)
 	{
-
 		sFolderSpec folderSpec;
 		try {
 			folderSpec = std::visit([](auto&& v){return sFolderSpec(v);}, folderId);
@@ -153,61 +135,23 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 			folderSpec.target = ctx.auth_info.username;
 		folderSpec.normalize();
 
-		tBaseFolderType* pfolder;
-
 		mGetFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
 		TPROPVAL_ARRAY folderProps = ctx.getFolderProps(folderSpec, tags);
 
 		switch(folderSpec.type)
 		{
 		case gromox::EWS::Structures::sFolderSpec::CALENDAR:
-			pfolder = &std::get<1>(msg.Folders.emplace_back(tCalendarFolderType())); break;
+			msg.Folders.emplace_back(tCalendarFolderType(folderSpec, folderProps)); break;
 		case gromox::EWS::Structures::sFolderSpec::CONTACTS:
-			pfolder = &std::get<2>(msg.Folders.emplace_back(tContactsFolderType())); break;
+			msg.Folders.emplace_back(tContactsFolderType(folderSpec, folderProps)); break;
 		case gromox::EWS::Structures::sFolderSpec::SEARCH:
-			pfolder = &std::get<3>(msg.Folders.emplace_back(tSearchFolderType())); break;
+			msg.Folders.emplace_back(tSearchFolderType(folderSpec, folderProps)); break;
 		case gromox::EWS::Structures::sFolderSpec::TASKS:
-			pfolder = &std::get<4>(msg.Folders.emplace_back(tTasksFolderType())); break;
+			msg.Folders.emplace_back(tTasksFolderType(folderSpec, folderProps)); break;
 		default:
-			tFolderType& temp = std::get<0>(msg.Folders.emplace_back(tFolderType()));
-			if(folderProps.has(PR_CONTENT_UNREAD))
-				temp.UnreadCount = *folderProps.get<uint32_t>(PR_CONTENT_UNREAD);
-			pfolder = &temp;
+			msg.Folders.emplace_back(tFolderType(folderSpec, folderProps));
 		}
 
-		tBaseFolderType& folder = *pfolder;
-		tFolderId& fId = folder.FolderId.emplace();
-		fId.Id = folderSpec.serialize();
-
-		for(const TAGGED_PROPVAL* tp = folderProps.ppropval; tp < folderProps.ppropval+folderProps.count; ++tp)
-			switch(tp->proptag)
-			{
-			case PR_CONTENT_UNREAD:
-				break;
-			case PR_CHANGE_KEY: {
-				const BINARY* ck = reinterpret_cast<const BINARY*>(tp->pvalue);
-				fId.ChangeKey = b64encode(ck->pb, ck->cb);
-				break;
-				}
-			case PR_CONTAINER_CLASS:
-				folder.FolderClass = reinterpret_cast<const char*>(tp->pvalue); break;
-			case PR_CONTENT_COUNT:
-				folder.TotalCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
-			case PR_DISPLAY_NAME:
-				folder.DisplayName = reinterpret_cast<const char*>(tp->pvalue); break;
-			case PR_FOLDER_CHILD_COUNT:
-				folder.ChildFolderCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
-			case PidTagParentFolderId: {
-				tFolderId& pf = folder.ParentFolderId.emplace();
-				pf.Id = sFolderSpec(ctx.auth_info.username, *reinterpret_cast<uint64_t*>(tp->pvalue)).serialize();
-				break;
-			}
-			default:
-				folder.ExtendendProperty.emplace_back(*tp);
-			}
-
-		if(folderProps.has(PR_FOLDER_CHILD_COUNT))
-			folder.ChildFolderCount = *folderProps.get<uint32_t>(PR_FOLDER_CHILD_COUNT);
 		msg.success();
 	}
 	data.serialize(response);
@@ -456,6 +400,68 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 
 	mSetUserOofSettingsResponse data;
 	data.ResponseMessage.success();
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process GetFolder
+ *
+ * Return folder updates and hierarchy sync information
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName("SyncFolderHierarchyResponse");
+
+	auto& exmdb = ctx.plugin.exmdb;
+	if(!request.SyncFolderId)
+		throw InputError("Missing required parameter SyncFolderId");
+
+	sSyncState syncState;
+	if(request.SyncState)
+		syncState.init(*request.SyncState);
+
+	sFolderSpec folder = std::visit([](auto&& v){return sFolderSpec(v);}, request.SyncFolderId->folderId);
+	if(!folder.target)
+		folder.target = ctx.auth_info.username;
+	std::string dir = ctx.getDir(folder.normalize());
+
+	FOLDER_CHANGES changes;
+	uint64_t lastCn;
+	EID_ARRAY given_fids, deleted_fids;
+	if(!exmdb.get_hierarchy_sync(dir.c_str(), folder.folderId, nullptr,
+	                             &syncState.given, &syncState.seen, &changes, &lastCn, &given_fids, &deleted_fids))
+		throw DispatchError("Failed to get hierarchy sync data");
+	std::vector<uint32_t> tagFilter = request.FolderShape.tags();
+	std::sort(tagFilter.begin(), tagFilter.end());
+
+	mSyncFolderHierarchyResponse data;
+    mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
+	auto& msgChanges = msg.Changes.emplace();
+	msgChanges.reserve(changes.count+deleted_fids.count);
+	for(TPROPVAL_ARRAY* folderProps = changes.pfldchgs; folderProps < changes.pfldchgs+changes.count; ++folderProps)
+	{
+		uint64_t* folderId = folderProps->get<uint64_t>(PidTagFolderId);
+		if(!folderId)
+			continue;
+		auto folderData = tBaseFolderType::create(*folder.target, *folderProps, tagFilter);
+		if(syncState.given.hint(*folderId))
+			msgChanges.emplace_back(tSyncFolderHierarchyUpdate(std::move(folderData)));
+		else
+			msgChanges.emplace_back(tSyncFolderHierarchyCreate(std::move(folderData)));
+	}
+
+	for(uint64_t* fid = deleted_fids.pids; fid < deleted_fids.pids+deleted_fids.count; ++fid)
+		msgChanges.emplace_back(tSyncFolderHierarchyDelete(*folder.target, *fid));
+
+	syncState.update(given_fids, lastCn);
+	msg.SyncState = syncState.serialize();
+	msg.IncludesLastFolderInRange = true;
+	msg.success();
+
 	data.serialize(response);
 }
 

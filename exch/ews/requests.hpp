@@ -22,6 +22,7 @@ EWSFUNC(mGetServiceConfigurationRequest);
 EWSFUNC(mGetUserAvailabilityRequest);
 EWSFUNC(mGetUserOofSettingsRequest);
 EWSFUNC(mSetUserOofSettingsRequest);
+EWSFUNC(mSyncFolderHierarchyRequest);
 
 #undef EWSFUNC
 

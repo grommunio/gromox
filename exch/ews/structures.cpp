@@ -6,11 +6,14 @@
  */
 #include <iterator>
 
+#include <gromox/ext_buffer.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
-
 #include <gromox/ical.hpp>
+
+#include "ews.hpp"
 #include "serialization.hpp"
 #include "soaputil.hpp"
 #include "structures.hpp"
@@ -21,15 +24,50 @@ using namespace gromox::EWS::Structures;
 using namespace tinyxml2;
 
 //Shortcuts to call toXML* and fromXML* functions on members
-#define XMLINIT(name) name(fromXMLNode<decltype(name)>(xml, # name))
-#define XMLDUMP(name) toXMLNode(xml, # name, name)
-#define XMLINITA(name) name(fromXMLAttr<decltype(name)>(xml, # name))
-#define XMLDUMPA(name) toXMLAttr(xml, # name, name)
+#define XMLINIT(name) name(fromXMLNode<decltype(name)>(xml, # name)) ///< Init member from XML node
+#define VXMLINIT(name) name(fromXMLNode<decltype(name)>(xml, nullptr)) ///< Init variant from XML node
+#define XMLDUMP(name) toXMLNode(xml, # name, name) ///< Write member into XML node
+#define VXMLDUMP(name) toXMLNode(xml, getName(name, # name), name) ///< Write variant into XML node
+#define XMLINITA(name) name(fromXMLAttr<decltype(name)>(xml, # name)) ///< Initialize member from XML attribute
+#define XMLDUMPA(name) toXMLAttr(xml, # name, name) ///< Write member into XML attribute
 
 using namespace std::string_literals;
 using namespace Exceptions;
 using gromox::EWS::SOAP::NS_MSGS;
 using gromox::EWS::SOAP::NS_TYPS;
+
+namespace
+{
+
+/**
+ * @brief     Generic deleter struct
+ *
+ * Provides explicit deleters for classes without destructor.
+ */
+struct Cleaner
+{
+	inline void operator()(BINARY* x) {rop_util_free_binary(x);}
+	inline void operator()(TPROPVAL_ARRAY* x) {tpropval_array_free(x);}
+};
+
+
+/**
+ * @brief     Compute Base64 encoded string
+ *
+ * @param     data    Data to encode
+ * @param     len     Number of bytes
+ *
+ * @return    Base64 encoded string
+ */
+std::string b64encode(void* data, size_t len)
+{
+	std::string out(4*((len+2)/3)+1, '\0');
+	size_t outlen;
+	encode64(data, len, out.data(), out.length(), &outlen);
+	out.resize(outlen);
+	return out;
+}
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -128,21 +166,22 @@ sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
 /**
  * @brief     Explicit initialization for direct serialization
  */
-sFolderSpec::sFolderSpec(const std::string_view& target, uint64_t folderId, Type type) :
+sFolderSpec::sFolderSpec(const std::string& target, uint64_t folderId, Type type) :
     target(target), folderId(folderId), type(type)
 {}
 
 /**
  * @brief     Trim target specification according to location
  */
-void sFolderSpec::normalize()
+sFolderSpec& sFolderSpec::normalize()
 {
 	if(location != PUBLIC || !target)
-		return;
+		return *this;
 	size_t at = target->find('@');
 	if(at == std::string::npos)
-		return;
+		return *this;
 	target->erase(0, at+1);
+	return *this;
 }
 
 /**
@@ -159,6 +198,105 @@ std::string sFolderSpec::serialize() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief     Default constructor
+ *
+ * Initializes given and seen member for deserialization
+ */
+sSyncState::sSyncState() :
+    given(false, REPL_TYPE_ID), seen(false, REPL_TYPE_ID)
+{}
+
+/**
+ * @brief     Deserialize sync state
+ *
+ * @param     data64  Base64 encoded data
+ */
+void sSyncState::init(const std::string& data64)
+{
+	EXT_PULL ext_pull;
+	TPROPVAL_ARRAY propvals;
+
+	std::string data = base64_decode(data64);
+
+	seen.clear();
+	given.clear();
+	if(data.size() <= 16)
+		return;
+	if(data.size() > std::numeric_limits<uint32_t>::max())
+		throw InputError("Sync state too big");
+	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, 0);
+	if(ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
+		return;
+	for (TAGGED_PROPVAL* propval = propvals.ppropval; propval < propvals.ppropval+propvals.count; ++propval)
+	{
+		switch (propval->proptag) {
+		case MetaTagIdsetGiven1:
+			if(!given.deserialize(static_cast<BINARY *>(propval->pvalue)))
+				throw InputError("Failed to deserialize idset");
+			if(!given.convert())
+				throw InputError("Failed to convert idset");
+			break;
+		case MetaTagCnsetSeen:
+			if(!seen.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen.convert())
+				throw InputError("Failed to deserialize cnset");
+			break;
+		}
+	}
+}
+
+/**
+ * @brief     Update sync state with given and seen information
+ *
+ * @param     given_fids  Ids marked as given
+ * @param     lastCn      Change number marked as seen
+ */
+void sSyncState::update(const EID_ARRAY& given_fids, uint64_t lastCn)
+{
+	seen.clear();
+	given.convert();
+	for(uint64_t* pid = given_fids.pids; pid < given_fids.pids+given_fids.count; ++pid)
+		if(!given.append(*pid))
+			throw DispatchError("Failed to generated sync state idset");
+	seen.convert();
+	if(lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
+		throw DispatchError("Failed to generate sync state cnset");
+}
+
+/**
+ * @brief     Serialize sync state
+ *
+ * @return    Base64 encoded state
+ */
+std::string sSyncState::serialize()
+{
+	std::unique_ptr<TPROPVAL_ARRAY, Cleaner> pproplist(tpropval_array_init());
+	if (!pproplist)
+		throw DispatchError("Out of memory");
+	std::unique_ptr<BINARY, Cleaner> ser(given.serialize());
+	if (!ser || pproplist->set(MetaTagIdsetGiven1, ser.get()))
+		throw DispatchError("Failed to generate sync state idset data");
+	ser.reset(seen.serialize());
+	if (!ser || pproplist->set(MetaTagCnsetSeen, ser.get()))
+		throw DispatchError("Failed to generate sync state cnset data");
+	ser.reset();
+
+	EXT_PUSH stateBuffer;
+	if(!stateBuffer.init(nullptr, 0, 0) || stateBuffer.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
+		throw DispatchError("Failed to generate sync state");
+
+	return b64encode(stateBuffer.m_vdata, stateBuffer.m_offset);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief     Parse time string
+ *
+ *  Accepts HH:MM:SS format.
+ *
+ * @param     xml
+ */
 sTime::sTime(const XMLElement* xml)
 {
 	const char* data = xml->GetText();
@@ -193,6 +331,52 @@ void sTimePoint::serialize(XMLElement* xml) const
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Types implementation
 
+/**
+ * @brief     Convert propvals to structured folder information
+ *
+ * If `filter` is not empty, all proptags not contained are ignored.
+ * `filter` must be sorted in ascending order.
+ *
+ * @param     folder          Folder specification
+ * @param     folderProps     folder property values
+ * @param     filter          Sorted array of properties to consider
+ */
+tBaseFolderType::tBaseFolderType(const sFolderSpec& folder, const TPROPVAL_ARRAY& folderProps,
+                                 const TagFilter& filter)
+{
+	tFolderId& fId = FolderId.emplace();
+	fId.Id = folder.serialize();
+	for(const TAGGED_PROPVAL* tp = folderProps.ppropval; tp < folderProps.ppropval+folderProps.count; ++tp)
+	{
+		if(!filter.empty() && !std::binary_search(filter.begin(), filter.end(), tp->proptag))
+			continue;
+		switch(tp->proptag)
+		{
+		case PR_CONTENT_UNREAD:
+			break;
+		case PR_CHANGE_KEY: {
+			const BINARY* ck = reinterpret_cast<const BINARY*>(tp->pvalue);
+			fId.ChangeKey = b64encode(ck->pb, ck->cb);
+			break;
+		}
+		case PR_CONTAINER_CLASS:
+			FolderClass = reinterpret_cast<const char*>(tp->pvalue); break;
+		case PR_CONTENT_COUNT:
+			TotalCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
+		case PR_DISPLAY_NAME:
+			DisplayName = reinterpret_cast<const char*>(tp->pvalue); break;
+		case PR_FOLDER_CHILD_COUNT:
+			ChildFolderCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
+		case PidTagParentFolderId: {
+			tFolderId& pf = ParentFolderId.emplace();
+			pf.Id = sFolderSpec(folder.target.value_or(""), *reinterpret_cast<uint64_t*>(tp->pvalue)).serialize();
+			break;
+		}
+		default:
+			ExtendendProperty.emplace_back(*tp);
+		}
+	}
+}
 
 void tBaseFolderType::serialize(XMLElement* xml) const
 {
@@ -204,6 +388,47 @@ void tBaseFolderType::serialize(XMLElement* xml) const
 	XMLDUMP(ChildFolderCount);
 	for(const tExtendedProperty& ep : ExtendendProperty)
 		toXMLNode(xml, "ExtendedProperty", ep);
+}
+
+/**
+ * @brief     Create folder from properties
+ *
+ * Automatically uses information from the tags to fill in folder id and type.
+ *
+ * @param     target          User or domain name the folder belongs to
+ * @param     folderProps     Folder properties
+ * @param     filter          Property filter, @see tBaseFolderType::tBaseFolderType
+ *
+ * @return    Variant containing the folder information struct
+ */
+sFolder tBaseFolderType::create(const std::string& target, const TPROPVAL_ARRAY& folderProps, const TagFilter& filter)
+{
+	uint64_t* fId = folderProps.get<uint64_t>(PidTagFolderId);
+	const char* frClass = folderProps.get<const char>(PR_CONTAINER_CLASS);
+	sFolderSpec::Type folderType = sFolderSpec::NORMAL;
+	if(frClass)
+	{
+		if(!strcmp(frClass, "IPF.Appointment"))
+			folderType = sFolderSpec::CALENDAR;
+		else if(!strcmp(frClass, "IPF.Task"))
+			folderType = sFolderSpec::TASKS;
+		else if(!strcmp(frClass, "IPF.Contact"))
+			folderType = sFolderSpec::CONTACTS;
+	}
+	sFolderSpec folderSpec(target, fId? *fId : 0, folderType);
+	switch(folderType)
+	{
+	case sFolderSpec::CALENDAR:
+		return tCalendarFolderType(folderSpec, folderProps, filter);
+	case sFolderSpec::CONTACTS:
+		return tContactsFolderType(folderSpec, folderProps, filter);
+	case  sFolderSpec::SEARCH:
+		return tSearchFolderType(folderSpec, folderProps, filter);
+	case sFolderSpec::TASKS:
+		return tTasksFolderType(folderSpec, folderProps, filter);
+	default:
+		return tFolderType(folderSpec, folderProps, filter);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -433,7 +658,7 @@ void tExtendedProperty::serialize(XMLElement* xml) const
 	XMLElement* value = xml->InsertNewChildElement(ismv? "Values" : "Value");
 	if(!ismv)
 		return serialize(data, 0, PROP_TYPE(propval.proptag), value);
-	throw NotImplementedError("MV tags are currently not supported");
+	//throw NotImplementedError("MV tags are currently not supported");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -478,6 +703,10 @@ uint32_t tFieldURI::tag() const
 
 tFolderId::tFolderId(const XMLElement* xml) :
     XMLINITA(Id), XMLINITA(ChangeKey)
+{}
+
+tFolderId::tFolderId(const sFolderSpec& spec) :
+    Id(spec.serialize())
 {}
 
 void tFolderId::serialize(XMLElement* xml) const
@@ -527,6 +756,14 @@ uint32_t tFolderShape::tag() const
 {return std::visit([](auto&& v){return v.tag();}, *static_cast<const Base*>(this));};
 
 ///////////////////////////////////////////////////////////////////////////////
+
+tFolderType::tFolderType(const sFolderSpec& folder, const TPROPVAL_ARRAY& folderProps, const TagFilter& filter) :
+    tBaseFolderType(folder, folderProps, filter)
+{
+	if((filter.empty() || std::binary_search(filter.begin(), filter.end(), PR_CONTENT_UNREAD))
+	        && folderProps.has(PR_CONTENT_UNREAD))
+		UnreadCount = *folderProps.get<uint32_t>(PR_CONTENT_UNREAD);
+}
 
 void tFolderType::serialize(XMLElement* xml) const
 {
@@ -692,6 +929,27 @@ tSuggestionsViewOptions::tSuggestionsViewOptions(const tinyxml2::XMLElement* xml
 
 ///////////////////////////////////////////////////////////////////////////////
 
+tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder&& folder) : folder(folder)
+{}
+
+void tSyncFolderHierarchyCU::serialize(XMLElement* xml) const
+{VXMLDUMP(folder);}
+
+tSyncFolderHierarchyDelete::tSyncFolderHierarchyDelete(const std::string& target, uint64_t fid) :
+    FolderId(sFolderSpec(target, fid))
+{}
+
+void tSyncFolderHierarchyDelete::serialize(XMLElement* xml) const
+{XMLDUMP(FolderId);}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tTargetFolderIdType::tTargetFolderIdType(const XMLElement* xml) :
+    VXMLINIT(folderId)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
 tUserOofSettings::tUserOofSettings(const XMLElement* xml) :
     XMLINIT(OofState),
     XMLINIT(ExternalAudience),
@@ -839,3 +1097,22 @@ void mSetUserOofSettingsResponse::serialize(XMLElement* xml) const
 	xml->SetAttribute("xmlns", NS_MSGS);
 	XMLDUMP(ResponseMessage);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+mSyncFolderHierarchyRequest::mSyncFolderHierarchyRequest(const XMLElement* xml) :
+    XMLINIT(FolderShape),
+    XMLINIT(SyncFolderId),
+    XMLINIT(SyncState)
+{}
+
+void mSyncFolderHierarchyResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMP(SyncState);
+	XMLDUMP(IncludesLastFolderInRange);
+	XMLDUMP(Changes);
+}
+
+void mSyncFolderHierarchyResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMP(ResponseMessages);}

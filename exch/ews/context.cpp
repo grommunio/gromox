@@ -103,15 +103,7 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 		throw DispatchError(E3006(RoutingType));
 }
 
-/**
- * @brief     Get properties of specified folder
- *
- * @param     folder  Folder Specification
- * @param     props   Properties to get
- *
- * @return    Property values
- */
-TPROPVAL_ARRAY EWSContext::getFolderProps(const sFolderSpec& folder, const PROPTAG_ARRAY& props) const
+std::string EWSContext::getDir(const sFolderSpec& folder) const
 {
 	const char* target = folder.target? folder.target->c_str() : auth_info.username;
 	const char* at = strchr(target, '@');
@@ -122,9 +114,23 @@ TPROPVAL_ARRAY EWSContext::getFolderProps(const sFolderSpec& folder, const PROPT
 	char targetDir[256];
 	if(!func(target, targetDir, arsizeof(targetDir)))
 		throw DispatchError(E3007);
+	return targetDir;
+}
+
+/**
+ * @brief     Get properties of specified folder
+ *
+ * @param     folder  Folder Specification
+ * @param     props   Properties to get
+ *
+ * @return    Property values
+ */
+TPROPVAL_ARRAY EWSContext::getFolderProps(const sFolderSpec& folder, const PROPTAG_ARRAY& props) const
+{
+	std::string targetDir = getDir(folder);
 	TPROPVAL_ARRAY result;
-	if(!plugin.exmdb.get_folder_properties(targetDir, 0, folder.folderId, &props, &result))
-		throw DispatchError("exmdb call failed "+std::to_string(isPublic)+" "+targetDir);
+	if(!plugin.exmdb.get_folder_properties(targetDir.c_str(), 0, folder.folderId, &props, &result))
+		throw DispatchError("Failed to get folder properties");
 	return result;
 }
 

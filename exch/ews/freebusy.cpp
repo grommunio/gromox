@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -20,6 +20,7 @@
 static constexpr unsigned int asfMeeting = 1, asfReceived = 2, asfCanceled = 4;
 
 using namespace gromox;
+using EWSContext = gromox::EWS::EWSContext;
 
 template<> struct fmt::formatter<ICAL_TIME> {
 	auto parse(format_parse_context &ctx) { return ctx.begin(); }
@@ -487,7 +488,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 		auto bin = rows.pparray[i]->get<const BINARY>(ptag.timezonestruct);
 		if (bin != nullptr) {
 			TIMEZONESTRUCT tz;
-			epull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+			epull.init(bin->pb, bin->cb, EWSContext::alloc, EXT_FLAG_UTF16);
 			if (epull.g_tzstruct(&tz) != EXT_ERR_SUCCESS)
 				continue;
 			tzcom = tz_to_vtimezone(1600, "timezone", tz);
@@ -498,7 +499,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 		if(bin == nullptr)
 			continue;
 		APPOINTMENT_RECUR_PAT apprecurr;
-		epull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+		epull.init(bin->pb, bin->cb, EWSContext::alloc, EXT_FLAG_UTF16);
 		if (epull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 			continue;
 		std::vector<event> event_list;

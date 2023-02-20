@@ -69,6 +69,7 @@ private:
 
 	std::pair<std::string, int> dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t);
 	void loadConfig();
+
 };
 
 /**
@@ -76,13 +77,14 @@ private:
  */
 struct EWSContext
 {
-	EWSContext(int ID, HTTP_AUTH_INFO auth_info, const char *data, uint64_t length, EWSPlugin &plugin) :
-		ID(ID), orig(*get_request(ID)), auth_info(auth_info), request(data, length), plugin(plugin)
+	inline EWSContext(int ID, HTTP_AUTH_INFO auth_info, const char* data, uint64_t length, EWSPlugin& plugin)
+       : ID(ID), orig(*get_request(ID)), auth_info(auth_info), request(data, length), plugin(plugin)
 	{}
 
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
+	std::string getDir(const Structures::sFolderSpec&) const;
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	void normalize(Structures::tMailbox&) const;
 
@@ -94,7 +96,6 @@ struct EWSContext
 	EWSPlugin& plugin;
 
 	static void* alloc(size_t);
-	template<typename T> static inline T* alloc(size_t count=1) {return reinterpret_cast<T*>(alloc(sizeof(T)*count));}
 };
 
 }
